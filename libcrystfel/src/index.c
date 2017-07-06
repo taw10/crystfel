@@ -59,6 +59,17 @@
 #include "taketwo.h"
 
 
+struct _indexingprivate
+{
+	UnitCell *target_cell;
+	float tolerance[4];
+
+	int n_methods;
+	IndexingMethod *methods;
+	void **engine_private;
+};
+
+
 static int debug_index(struct image *image)
 {
 	Crystal *cr = crystal_new();
@@ -72,78 +83,119 @@ static int debug_index(struct image *image)
 }
 
 
-IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
-                                   struct detector *det, float *ltl,
-                                   const char *options)
+static void *prepare_method(IndexingMethod *m, UnitCell *cell,
+                            struct detector *det, float *ltl,
+                            const char *options)
 {
-	int n;
-	int nm = 0;
-	IndexingPrivate **iprivs;
+	char *str;
+	IndexingMethod in = *m;
+	void *priv = NULL;
 
-	while ( indm[nm] != INDEXING_NONE ) nm++;
-	iprivs = malloc((nm+1) * sizeof(IndexingPrivate *));
+	switch ( *m & INDEXING_METHOD_MASK ) {
 
-	for ( n=0; n<nm; n++ ) {
+		case INDEXING_NONE :
+		priv = "none";
+		break;
 
-		int i;
-		IndexingMethod in;
-		char *str;
+		case INDEXING_DIRAX :
+		priv = dirax_prepare(m, cell, det, ltl);
+		break;
 
-		in = indm[n];
+		case INDEXING_ASDF :
+		priv = asdf_prepare(m, cell, det, ltl);
+		break;
 
-		switch ( indm[n] & INDEXING_METHOD_MASK ) {
+		case INDEXING_MOSFLM :
+		priv = mosflm_prepare(m, cell, det, ltl);
+		break;
 
-			case INDEXING_DIRAX :
-			iprivs[n] = dirax_prepare(&indm[n], cell, det, ltl);
-			break;
+		case INDEXING_XDS :
+		priv = xds_prepare(m, cell, det, ltl);
+		break;
 
-			case INDEXING_ASDF :
-			iprivs[n] = asdf_prepare(&indm[n], cell, det, ltl);
-			break;
+		case INDEXING_DEBUG :
+		priv = (IndexingPrivate *)strdup("Hello!");
+		break;
 
-			case INDEXING_MOSFLM :
-			iprivs[n] = mosflm_prepare(&indm[n], cell, det, ltl);
-			break;
+		case INDEXING_FELIX :
+		priv = felix_prepare(m, cell, det, ltl, options);
+		break;
 
-			case INDEXING_XDS :
-			iprivs[n] = xds_prepare(&indm[n], cell, det, ltl);
-			break;
+		case INDEXING_TAKETWO :
+		priv = taketwo_prepare(m, cell, det, ltl);
+		break;
 
-			case INDEXING_DEBUG :
-			iprivs[n] = (IndexingPrivate *)strdup("Hello!");
-			break;
+		default :
+		ERROR("Don't know how to prepare indexing method %i\n", *m);
+		break;
 
-			case INDEXING_FELIX :
-			iprivs[n] = felix_prepare(&indm[n], cell, det, ltl,
-			                          options);
-			break;
+	}
 
-			case INDEXING_TAKETWO :
-			iprivs[n] = taketwo_prepare(&indm[n], cell, det, ltl);
-			break;
+	str = indexer_str(*m);
 
-			default :
-			ERROR("Don't know how to prepare indexing method %i\n",
-			      indm[n]);
-			break;
-
-		}
-
-		if ( iprivs[n] == NULL ) return NULL;
-
-		str = indexer_str(indm[n]);
-		STATUS("Prepared indexing method %i: %s\n", n, str);
+	if ( priv == NULL ) {
+		ERROR("Failed to prepare indexing method %s\n", str);
 		free(str);
+		return NULL;
+	}
 
-		if ( in != indm[n] ) {
-			ERROR("Note: flags were altered to take into account "
-			      "the information provided and/or the limitations "
-			      "of the indexing method.\nPlease check the "
-			      "methods listed above carefully.\n");
+	if ( *m != INDEXING_NONE ) {
+		STATUS("Prepared indexing method %s\n", str);
+	}
+	free(str);
+
+	if ( in != *m ) {
+		ERROR("Note: flags were altered to take into account "
+		      "the information provided and/or the limitations "
+		      "of the indexing method.\nPlease check the "
+		      "methods listed above carefully.\n");
+	}
+
+	return priv;
+}
+
+
+IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
+                                struct detector *det, float *ltl,
+                                int no_refine, const char *options)
+{
+	int i, n;
+	char **method_strings;
+	IndexingPrivate *ipriv;
+
+	/* Parse indexing methods */
+	n = assplode(method_list, ",", &method_strings, ASSPLODE_NONE);
+
+	IndexingMethod *methods = malloc(n * sizeof(IndexingMethod));
+	if ( methods == NULL ) {
+		ERROR("Failed to allocate indexing method list\n");
+		return NULL;
+	}
+
+	for ( i=0; i<n; i++ ) {
+		methods[i] = get_indm_from_string(method_strings[i]);
+		if ( methods[i] == INDEXING_ERROR ) {
+			free(methods);
+			return NULL;
 		}
+	}
 
-		for ( i=0; i<n; i++ ) {
-			if ( indm[i] == indm[n] ) {
+	ipriv = malloc(sizeof(struct _indexingprivate));
+	if ( ipriv == NULL ) {
+		ERROR("Failed to allocate indexing data\n");
+		return NULL;
+	}
+
+	ipriv->engine_private = malloc((n+1) * sizeof(void *));
+
+	for ( i=0; i<n; i++ ) {
+
+		int j;
+
+		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
+		                                          det, ltl, options);
+		for ( j=0; j<i; j++ ) {
+			if ( methods[i] == methods[j] ) {
 				ERROR("Duplicate indexing method.\n");
 				ERROR("Have you specified some flags which "
 				      "aren't accepted by one of your "
@@ -152,59 +204,66 @@ IndexingPrivate **prepare_indexing(IndexingMethod *indm, UnitCell *cell,
 			}
 		}
 
-
 	}
-	iprivs[n] = NULL;
 
-	return iprivs;
+	ipriv->methods = methods;
+	ipriv->n_methods = n;
+
+	if ( cell != NULL ) {
+		ipriv->target_cell = cell_new_from_cell(cell);
+	} else {
+		ipriv->target_cell = NULL;
+	}
+	for ( i=0; i<4; i++ ) ipriv->tolerance[i] = ltl[i];
+
+	return ipriv;
 }
 
 
-void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
+void cleanup_indexing(IndexingPrivate *ipriv)
 {
-	int n = 0;
+	int n;
 
-	if ( indms == NULL ) return;  /* Nothing to do */
-	if ( privs == NULL ) return;  /* Nothing to do */
+	if ( ipriv == NULL ) return;  /* Nothing to do */
 
-	while ( indms[n] != INDEXING_NONE ) {
+	for ( n=0; n<ipriv->n_methods; n++ ) {
 
-		switch ( indms[n] & INDEXING_METHOD_MASK ) {
+		switch ( ipriv->methods[n] & INDEXING_METHOD_MASK ) {
 
 			case INDEXING_NONE :
 			break;
 
 			case INDEXING_DIRAX :
-			dirax_cleanup(privs[n]);
+			dirax_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_ASDF :
-			asdf_cleanup(privs[n]);
+			asdf_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_MOSFLM :
-			mosflm_cleanup(privs[n]);
+			mosflm_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_XDS :
-			xds_cleanup(privs[n]);
+			xds_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_FELIX :
-			felix_cleanup(privs[n]);
+			felix_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_DEBUG :
-			free(privs[n]);
+			free(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_TAKETWO :
-			taketwo_cleanup(privs[n]);
+			taketwo_cleanup(ipriv->engine_private[n]);
 			break;
 
 			default :
 			ERROR("Don't know how to clean up indexing method %i\n",
-			      indms[n]);
+			      ipriv->methods[n]);
 			break;
 
 		}
@@ -213,8 +272,10 @@ void cleanup_indexing(IndexingMethod *indms, IndexingPrivate **privs)
 
 	}
 
-	free(indms);
-	free(privs);
+	free(ipriv->methods);
+	free(ipriv->engine_private);
+	cell_free(ipriv->target_cell);
+	free(ipriv);
 }
 
 
@@ -243,7 +304,7 @@ void map_all_peaks(struct image *image)
 
 /* Return non-zero for "success" */
 static int try_indexer(struct image *image, IndexingMethod indm,
-                       IndexingPrivate *ipriv)
+                       IndexingPrivate *ipriv, void *mpriv)
 {
 	int i, r;
 	int n_bad = 0;
@@ -254,19 +315,19 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		return 0;
 
 		case INDEXING_DIRAX :
-		r = run_dirax(image, ipriv);
+		r = run_dirax(image, mpriv);
 		break;
 
 		case INDEXING_ASDF :
-		r = run_asdf(image, ipriv);
+		r = run_asdf(image, mpriv);
 		break;
 
 		case INDEXING_MOSFLM :
-		r = run_mosflm(image, ipriv);
+		r = run_mosflm(image, mpriv);
 		break;
 
 		case INDEXING_XDS :
-		r = run_xds(image, ipriv);
+		r = run_xds(image, mpriv);
 		break;
 
 		case INDEXING_DEBUG :
@@ -274,11 +335,11 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		break;
 
 		case INDEXING_FELIX :
-		r = felix_index(image, ipriv);
+		r = felix_index(image, mpriv);
 		break;
 
 		case INDEXING_TAKETWO :
-		r = taketwo_index(image, ipriv);
+		r = taketwo_index(image, mpriv);
 		break;
 
 		default :
@@ -296,11 +357,35 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Prediction refinement if requested */
-		if ( (indm & INDEXING_REFINE)
-		   && (refine_prediction(image, cr) != 0) )
-		{
-			crystal_set_user_flag(cr, 1);
-			n_bad++;
+		if ( indm & INDEXING_REFINE ) {
+
+			UnitCell *out;
+
+			if ( refine_prediction(image, cr) ) {
+				crystal_set_user_flag(cr, 1);
+				n_bad++;
+				continue;
+			}
+
+			if ( (indm & INDEXING_CHECK_CELL_COMBINATIONS)
+			  || (indm & INDEXING_CHECK_CELL_AXES) )
+			{
+
+				/* Check that the cell parameters are still
+				 * within the tolerance */
+				out = match_cell(crystal_get_cell(cr),
+				                 ipriv->target_cell, 0,
+				                 ipriv->tolerance, 0);
+
+				if ( out == NULL ) {
+					crystal_set_user_flag(cr, 1);
+					n_bad++;
+				}
+
+				cell_free(out);
+
+			}
+
 		}
 
 	}
@@ -434,20 +519,18 @@ static int finished_retry(IndexingMethod indm, int r, struct image *image)
 	}
 }
 
-void index_pattern(struct image *image,
-                   IndexingMethod *indms, IndexingPrivate **iprivs)
+void index_pattern(struct image *image, IndexingPrivate *ipriv)
 {
-	index_pattern_2(image, indms, iprivs, NULL);
+	index_pattern_2(image, ipriv, NULL);
 }
 
 
-void index_pattern_2(struct image *image, IndexingMethod *indms,
-                     IndexingPrivate **iprivs, int *ping)
+void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
 {
 	int n = 0;
 	ImageFeatureList *orig;
 
-	if ( indms == NULL ) return;
+	if ( ipriv == NULL ) return;
 
 	map_all_peaks(image);
 	image->crystals = NULL;
@@ -455,7 +538,7 @@ void index_pattern_2(struct image *image, IndexingMethod *indms,
 
 	orig = image->features;
 
-	while ( indms[n] != INDEXING_NONE ) {
+	for ( n=0; n<ipriv->n_methods; n++ ) {
 
 		int done = 0;
 		int r;
@@ -466,10 +549,11 @@ void index_pattern_2(struct image *image, IndexingMethod *indms,
 
 		do {
 
-			r = try_indexer(image, indms[n], iprivs[n]);
+			r = try_indexer(image, ipriv->methods[n],
+			                ipriv, ipriv->engine_private[n]);
 			success += r;
 			ntry++;
-			done = finished_retry(indms[n], r, image);
+			done = finished_retry(ipriv->methods[n], r, image);
 			if ( ntry > 5 ) done = 1;
 			if ( ping != NULL ) (*ping)++;
 
@@ -481,11 +565,14 @@ void index_pattern_2(struct image *image, IndexingMethod *indms,
 		 * crystals with a different indexing method) */
 		if ( success ) break;
 
-		n++;
-
 	}
 
-	image->indexed_by = indms[n];
+	if ( n < ipriv->n_methods ) {
+		image->indexed_by = ipriv->methods[n];
+	} else {
+		image->indexed_by = INDEXING_NONE;
+	}
+
 	image->features = orig;
 }
 
@@ -656,100 +743,123 @@ char *indexer_str(IndexingMethod indm)
 }
 
 
-IndexingMethod *build_indexer_list(const char *str)
+static IndexingMethod warn_method(const char *str)
+{
+	ERROR("Indexing method must contain exactly one engine name: '%s'\n",
+	      str);
+	return INDEXING_ERROR;
+}
+
+
+IndexingMethod get_indm_from_string(const char *str)
 {
 	int n, i;
-	char **methods;
-	IndexingMethod *list;
-	int nmeth = 0;
+	char **bits;
+	IndexingMethod method = INDEXING_NONE;
+	int have_method = 0;
 
-	n = assplode(str, ",-", &methods, ASSPLODE_NONE);
-	list = malloc((n+1)*sizeof(IndexingMethod));
+	n = assplode(str, "-", &bits, ASSPLODE_NONE);
 
-	nmeth = -1;  /* So that the first method is #0 */
 	for ( i=0; i<n; i++ ) {
 
-		if ( strcmp(methods[i], "dirax") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_DIRAX;
+		if ( strcmp(bits[i], "dirax") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_DIRAX;
+			have_method = 1;
 
-		} else if ( strcmp(methods[i], "asdf") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_ASDF;
+		} else if ( strcmp(bits[i], "asdf") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_ASDF;
+			have_method = 1;
 
-		} else if ( strcmp(methods[i], "mosflm") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_MOSFLM;
+		} else if ( strcmp(bits[i], "mosflm") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_MOSFLM;
+			have_method = 1;
 
-		} else if ( strcmp(methods[i], "xds") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_XDS;
+		} else if ( strcmp(bits[i], "xds") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_XDS;
+			have_method = 1;
 
-		} else if ( strcmp(methods[i], "felix") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_FELIX;
+		} else if ( strcmp(bits[i], "felix") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_FELIX;
+			have_method = 1;
 
-		} else if ( strcmp(methods[i], "taketwo") == 0) {
-			list[++nmeth] = INDEXING_DEFAULTS_TAKETWO;
+		} else if ( strcmp(bits[i], "taketwo") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_TAKETWO;
+			have_method = 1;
 
-		} else if ( strcmp(methods[i], "none") == 0) {
-			list[++nmeth] = INDEXING_NONE;
+		} else if ( strcmp(bits[i], "none") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_NONE;
+			have_method = 1;
 
-		} else if ( strcmp(methods[i], "simulation") == 0) {
-			list[++nmeth] = INDEXING_SIMULATION;
-			return list;
+		} else if ( strcmp(bits[i], "simulation") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_SIMULATION;
+			return method;
 
-		} else if ( strcmp(methods[i], "debug") == 0) {
-			list[++nmeth] = INDEXING_DEBUG;
-			return list;
+		} else if ( strcmp(bits[i], "debug") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEBUG;
+			return method;
 
-		} else if ( strcmp(methods[i], "raw") == 0) {
-			list[nmeth] = set_raw(list[nmeth]);
+		} else if ( strcmp(bits[i], "raw") == 0) {
+			method = set_raw(method);
 
-		} else if ( strcmp(methods[i], "bad") == 0) {
-			list[nmeth] = set_bad(list[nmeth]);
+		} else if ( strcmp(bits[i], "bad") == 0) {
+			method = set_bad(method);
 
-		} else if ( strcmp(methods[i], "comb") == 0) {
-			list[nmeth] = set_comb(list[nmeth]);  /* Default */
+		} else if ( strcmp(bits[i], "comb") == 0) {
+			method = set_comb(method);  /* Default */
 
-		} else if ( strcmp(methods[i], "axes") == 0) {
-			list[nmeth] = set_axes(list[nmeth]);
+		} else if ( strcmp(bits[i], "axes") == 0) {
+			method = set_axes(method);
 
-		} else if ( strcmp(methods[i], "latt") == 0) {
-			list[nmeth] = set_lattice(list[nmeth]);
+		} else if ( strcmp(bits[i], "latt") == 0) {
+			method = set_lattice(method);
 
-		} else if ( strcmp(methods[i], "nolatt") == 0) {
-			list[nmeth] = set_nolattice(list[nmeth]);
+		} else if ( strcmp(bits[i], "nolatt") == 0) {
+			method = set_nolattice(method);
 
-		} else if ( strcmp(methods[i], "cell") == 0) {
-			list[nmeth] = set_cellparams(list[nmeth]);
+		} else if ( strcmp(bits[i], "cell") == 0) {
+			method = set_cellparams(method);
 
-		} else if ( strcmp(methods[i], "nocell") == 0) {
-			list[nmeth] = set_nocellparams(list[nmeth]);
+		} else if ( strcmp(bits[i], "nocell") == 0) {
+			method = set_nocellparams(method);
 
-		} else if ( strcmp(methods[i], "retry") == 0) {
-			list[nmeth] |= INDEXING_RETRY;
+		} else if ( strcmp(bits[i], "retry") == 0) {
+			method |= INDEXING_RETRY;
 
-		} else if ( strcmp(methods[i], "noretry") == 0) {
-			list[nmeth] &= ~INDEXING_RETRY;
+		} else if ( strcmp(bits[i], "noretry") == 0) {
+			method &= ~INDEXING_RETRY;
 
-		} else if ( strcmp(methods[i], "multi") == 0) {
-			list[nmeth] |= INDEXING_MULTI;
+		} else if ( strcmp(bits[i], "multi") == 0) {
+			method |= INDEXING_MULTI;
 
-		} else if ( strcmp(methods[i], "nomulti") == 0) {
-			list[nmeth] &= ~INDEXING_MULTI;
+		} else if ( strcmp(bits[i], "nomulti") == 0) {
+			method &= ~INDEXING_MULTI;
 
-		} else if ( strcmp(methods[i], "refine") == 0) {
-			list[nmeth] |= INDEXING_REFINE;
+		} else if ( strcmp(bits[i], "refine") == 0) {
+			method |= INDEXING_REFINE;
 
-		} else if ( strcmp(methods[i], "norefine") == 0) {
-			list[nmeth] &= ~INDEXING_REFINE;
+		} else if ( strcmp(bits[i], "norefine") == 0) {
+			method &= ~INDEXING_REFINE;
 
 		} else {
 			ERROR("Bad list of indexing methods: '%s'\n", str);
-			return NULL;
+			return INDEXING_ERROR;
 		}
 
-		free(methods[i]);
+		free(bits[i]);
 
 	}
-	free(methods);
-	list[++nmeth] = INDEXING_NONE;
+	free(bits);
 
-	return list;
+	if ( !have_method ) return warn_method(str);
+
+	return method;
 }

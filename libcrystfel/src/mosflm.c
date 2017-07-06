@@ -725,7 +725,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 }
 
 
-int run_mosflm(struct image *image, IndexingPrivate *ipriv)
+int run_mosflm(struct image *image, void *ipriv)
 {
 	struct mosflm_data *mosflm;
 	unsigned int opts;
@@ -843,8 +843,8 @@ int run_mosflm(struct image *image, IndexingPrivate *ipriv)
 }
 
 
-IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
-                                struct detector *det, float *ltl)
+void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
+                     struct detector *det, float *ltl)
 {
 	struct mosflm_private *mp;
 	int need_cell = 0;
@@ -911,7 +911,7 @@ IndexingPrivate *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 }
 
 
-void mosflm_cleanup(IndexingPrivate *pp)
+void mosflm_cleanup(void *pp)
 {
 	struct mosflm_private *p;
 	p = (struct mosflm_private *)pp;

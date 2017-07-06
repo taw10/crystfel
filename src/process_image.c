@@ -8,7 +8,7 @@
  *
  * Authors:
  *   2010-2017 Thomas White <taw@physics.org>
- *   2014      Valerio Mariani
+ *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -102,7 +102,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    int serial, struct sb_shm *sb_shared, TimeAccounts *taccs)
 {
 	int check;
-	struct hdfile *hdfile;
+	struct imagefile *imfile;
 	struct image image;
 	int i;
 	int r;
@@ -125,15 +125,15 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	time_accounts_set(taccs, TACC_HDF5OPEN);
 	sb_shared->pings[cookie]++;
-	hdfile = hdfile_open(image.filename);
-	if ( hdfile == NULL ) {
+	imfile = imagefile_open(image.filename);
+	if ( imfile == NULL ) {
 		ERROR("Couldn't open file: %s\n", image.filename);
 		return;
 	}
 
 	time_accounts_set(taccs, TACC_HDF5READ);
 	sb_shared->pings[cookie]++;
-	check = hdf5_read2(hdfile, &image, image.event, 0);
+	check = imagefile_read(imfile, &image, image.event);
 	if ( check ) {
 		return;
 	}
@@ -159,8 +159,14 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	sb_shared->pings[cookie]++;
 	switch ( iargs->peaks ) {
 
+		struct hdfile *hdfile;
+
 		case PEAK_HDF5:
-		if ( get_peaks(&image, hdfile, iargs->hdf5_peak_path) ) {
+		hdfile = imagefile_get_hdfile(imfile);
+		if ( (hdfile == NULL)
+		  || (get_peaks_2(&image, hdfile, iargs->hdf5_peak_path,
+		                  iargs->half_pixel_shift)) )
+		{
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
 		if ( !iargs->no_revalidate ) {
@@ -172,8 +178,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_CXI:
-		if ( get_peaks_cxi(&image, hdfile, iargs->hdf5_peak_path,
-		                   pargs->filename_p_e) ) {
+		hdfile = imagefile_get_hdfile(imfile);
+		if ( (hdfile == NULL)
+		 ||  (get_peaks_cxi_2(&image, hdfile, iargs->hdf5_peak_path,
+		                      pargs->filename_p_e,
+		                      iargs->half_pixel_shift)) )
+		{
 			ERROR("Failed to get peaks from CXI file.\n");
 		}
 		if ( !iargs->no_revalidate ) {
@@ -191,6 +201,28 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		             iargs->use_saturated);
 		break;
 
+	        case PEAK_PEAKFINDER8:
+		if ( search_peaks_peakfinder8(&image, 2048,
+		                               iargs->threshold,
+		                               iargs->min_snr,
+		                               iargs->min_pix_count,
+		                               iargs->max_pix_count,
+		                               iargs->local_bg_radius,
+		                               iargs->min_res,
+		                               iargs->max_res,
+		                               iargs->use_saturated) ) {
+			if ( image.event != NULL ) {
+				ERROR("Failed to find peaks in image %s"
+				      "(event %s).\n", image.filename,
+				      get_event_string(image.event));
+			} else {
+				ERROR("Failed to find peaks in image %s.",
+				      image.filename);
+			}
+
+		}
+		break;
+
 	}
 
 	restore_image_data(image.dp, image.det, prefilter);
@@ -201,7 +233,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	if ( r ) {
 		ERROR("Failed to chdir to temporary folder: %s\n",
 		      strerror(errno));
-		hdfile_close(hdfile);
+		imagefile_close(imfile);
 		return;
 	}
 
@@ -217,15 +249,30 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		image.bw = 0.00000001;
 	}
 
+	if ( image_feature_count(image.features) < iargs->min_peaks ) {
+		r = chdir(rn);
+		if ( r ) {
+			ERROR("Failed to chdir: %s\n", strerror(errno));
+			imagefile_close(imfile);
+			return;
+		}
+		free(rn);
+
+		if ( iargs->stream_nonhits ) {
+			goto streamwrite;
+		} else {
+			goto out;
+		}
+	}
+
 	/* Index the pattern */
 	time_accounts_set(taccs, TACC_INDEXING);
-	index_pattern_2(&image, iargs->indm, iargs->ipriv,
-	                &sb_shared->pings[cookie]);
+	index_pattern_2(&image, iargs->ipriv, &sb_shared->pings[cookie]);
 
 	r = chdir(rn);
 	if ( r ) {
 		ERROR("Failed to chdir: %s\n", strerror(errno));
-		hdfile_close(hdfile);
+		imagefile_close(imfile);
 		return;
 	}
 	free(rn);
@@ -261,9 +308,10 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->int_diag_k, iargs->int_diag_l,
 	                &sb_shared->term_lock);
 
+streamwrite:
 	time_accounts_set(taccs, TACC_WRITESTREAM);
 	sb_shared->pings[cookie]++;
-	ret = write_chunk(st, &image, hdfile,
+	ret = write_chunk(st, &image, imfile,
 	                  iargs->stream_peaks, iargs->stream_refls,
 	                  pargs->filename_p_e->ev);
 	if ( ret != 0 ) {
@@ -280,6 +328,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		       get_event_string(image.event));
 	}
 
+out:
 	/* Count crystals which are still good */
 	time_accounts_set(taccs, TACC_TOTALS);
 	sb_shared->pings[cookie]++;
@@ -313,5 +362,5 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	image_feature_list_free(image.features);
 	free_detector_geometry(image.det);
-	hdfile_close(hdfile);
+	imagefile_close(imfile);
 }

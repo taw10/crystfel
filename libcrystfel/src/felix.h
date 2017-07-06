@@ -3,12 +3,12 @@
  *
  * Invoke Felix for multi-crystal autoindexing
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
- *   2013-2014 Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2010-2013,2017 Thomas White <taw@physics.org>
+ *   2013-2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -36,11 +36,9 @@
 
 #include "cell.h"
 
-extern IndexingPrivate *felix_prepare(IndexingMethod *indm,
-                                             UnitCell *cell,
-                                             struct detector *det,
-                                             float *ltl,
-                                             const char *options);
+extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
+                           struct detector *det, float *ltl,
+                           const char *options);
 
 extern void felix_cleanup(IndexingPrivate *pp);
 

@@ -3,10 +3,11 @@
  *
  * Event properties
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
+ *   2017      Thomas White
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -26,10 +27,8 @@
  *
  */
 
-#define _ISOC99_SOURCE
-#define _GNU_SOURCE
-
 #include "events.h"
+#include "utils.h"
 
 #include <hdf5.h>
 #include <string.h>
@@ -585,46 +584,38 @@ char *retrieve_full_path(struct event *ev, const char *data)
 {
 	int ei ;
 	char *return_value;
-
-	return_value = strdup(data);
-
-	for ( ei=0; ei<ev->path_length; ei++ ) {
-
-		char *tmp;
-		tmp = event_path_placeholder_subst(ev->path_entries[ei],
-		                                   return_value);
-
-		free(return_value);
-		return_value = tmp;
-
-	}
-
-	return return_value;
-
-}
-
-
-char *partial_event_substitution(struct event *ev, const char *data)
-{
-	int ei ;
-	char *return_value;
 	char *pholder;
 
 	return_value = strdup(data);
 	pholder = strstr(return_value,"%");
 	ei = 0;
 
-	while( pholder != NULL) {
+	while ( pholder != NULL ) {
 
-		char *tmp_subst_data;
+		char *tmp;
 
-		tmp_subst_data = event_path_placeholder_subst(ev->path_entries[ei],
-                                                      return_value);
+		/* Check we have enough things to put in the placeholders */
+		if ( ei >= ev->path_length ) {
+			ERROR("Too many placeholders ('%%') in location.\n");
+			return NULL;
+		}
+
+		/* Substitute one placeholder */
+		tmp = event_path_placeholder_subst(ev->path_entries[ei++],
+		                                         return_value);
+
+		if ( tmp == NULL ) {
+			ERROR("Couldn't substitute placeholder\n");
+			return NULL;
+		}
+
+		/* Next time, we will substitute the next part of the path into
+		 * the partially substituted string */
 		free(return_value);
-		return_value = strdup(tmp_subst_data);
-		free(tmp_subst_data);
+		return_value = tmp;
+
 		pholder = strstr(return_value, "%");
-		ei += 1;
+
 	}
 
 	return return_value;

@@ -3,11 +3,11 @@
  *
  * Stream tools
  *
- * Copyright © 2013-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
  *
@@ -39,6 +39,7 @@
 struct image;
 struct hdfile;
 struct event;
+struct imagefile;
 #include "cell.h"
 
 #define GEOM_START_MARKER "----- Begin geometry file -----"
@@ -106,9 +107,14 @@ extern int read_chunk(Stream *st, struct image *image);
 extern int read_chunk_2(Stream *st, struct image *image,
                            StreamReadFlags srf);
 
-extern int write_chunk(Stream *st, struct image *image, struct hdfile *hdfile,
+extern int write_chunk(Stream *st, struct image *image, struct imagefile *imfile,
                        int include_peaks, int include_reflections,
                        struct event *ev);
+
+extern int write_chunk_2(Stream *st, struct image *image,
+                         struct imagefile *imfile,
+                         int include_peaks, int include_reflections,
+                         struct event *ev);
 
 extern void write_command(Stream *st, int argc, char *argv[]);
 extern void write_geometry_file(Stream *st, const char *geom_filename);

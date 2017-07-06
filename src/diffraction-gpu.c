@@ -379,6 +379,7 @@ struct gpu_context *setup_gpu(int no_sfac,
 	float *flags_ptr;
 	size_t maxwgsize;
 	int i;
+	int have_ctx = 0;
 	char cflags[512] = "";
 	char *insert_stuff = NULL;
 
@@ -393,16 +394,37 @@ struct gpu_context *setup_gpu(int no_sfac,
 		ERROR("Couldn't find at least one platform!\n");
 		return NULL;
 	}
-	prop[0] = CL_CONTEXT_PLATFORM;
-	prop[1] = (cl_context_properties)platforms[0];
-	prop[2] = 0;
 
-	gctx = malloc(sizeof(*gctx));
-	gctx->ctx = clCreateContextFromType(prop, CL_DEVICE_TYPE_GPU,
-	                                    NULL, NULL, &err);
-	if ( err != CL_SUCCESS ) {
-		ERROR("Couldn't create OpenCL context: %i\n", err);
-		free(gctx);
+	/* Find a GPU platform in the list */
+	for ( i=0; i<nplat; i++ ) {
+
+		prop[0] = CL_CONTEXT_PLATFORM;
+		prop[1] = (cl_context_properties)platforms[i];
+		prop[2] = 0;
+
+		gctx = malloc(sizeof(*gctx));
+		gctx->ctx = clCreateContextFromType(prop, CL_DEVICE_TYPE_GPU,
+		                                    NULL, NULL, &err);
+
+		if ( err != CL_SUCCESS ) {
+			if ( err == CL_DEVICE_NOT_FOUND ) {
+				/* No GPU device in this platform */
+				continue; /* Try next platform */
+			} else {
+				ERROR("Couldn't create OpenCL context: %s (%i)\n",
+				clError(err), err);
+				free(gctx);
+				return NULL;
+			}
+		} else {
+			STATUS("Using OpenCL platform %i (%i total)\n", i, nplat);
+			have_ctx = 1;
+			break;
+		}
+	}
+
+	if ( !have_ctx ) {
+		ERROR("Couldn't find a GPU device in any platform.\n");
 		return NULL;
 	}
 

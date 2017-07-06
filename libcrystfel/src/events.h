@@ -78,7 +78,6 @@ extern char *get_event_string(struct event *ev);
 extern struct event *get_event_from_event_string(const char *ev_string);
 extern char *event_path_placeholder_subst(const char *ev_name,
                                           const char *data);
-extern char *partial_event_substitution(struct event *ev, const char *data);
 extern char *retrieve_full_path(struct event *ev, const char *data);
 
 

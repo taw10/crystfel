@@ -3,7 +3,7 @@
  *
  * Peak search and other image analysis
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
@@ -12,6 +12,7 @@
  *   2012      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2011      Richard Kirian
+ *   2017      Valerio Mariani <valerio.mariani@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -52,6 +53,7 @@
 #include "reflist-utils.h"
 #include "cell-utils.h"
 #include "geometry.h"
+#include "peakfinder8.h"
 
 
 static int cull_peaks_in_panel(struct image *image, struct panel *p)
@@ -517,8 +519,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 
 void search_peaks(struct image *image, float threshold, float min_gradient,
-                  float min_snr, double ir_inn, double ir_mid, double ir_out,
-                  int use_saturated)
+                  float min_snr, double ir_inn, double ir_mid,
+                  double ir_out, int use_saturated)
 {
 	int i;
 
@@ -538,6 +540,26 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 		                      use_saturated);
 
 	}
+}
+
+
+int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
+                              float threshold, float min_snr,
+                              int min_pix_count, int max_pix_count,
+                              int local_bg_radius, int min_res,
+                              int max_res, int use_saturated)
+{
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+	image->num_peaks = 0;
+	image->num_saturated_peaks = 0;
+
+	return peakfinder8(image, max_n_peaks, threshold, min_snr,
+	                   min_pix_count, max_pix_count,
+	                   local_bg_radius, min_res,
+	                   max_res, use_saturated);
 }
 
 

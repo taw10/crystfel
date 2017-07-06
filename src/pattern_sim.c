@@ -745,7 +745,7 @@ int main(int argc, char *argv[])
 		       "each of a, b and c\n");
 	}
 	if ( intfile == NULL ) {
-		STATUS("               Full intensities: all equal");
+		STATUS("               Full intensities: all equal\n");
 	} else {
 		STATUS("               Full intensities: from %s\n", intfile);
 	}

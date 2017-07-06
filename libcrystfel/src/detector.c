@@ -31,8 +31,6 @@
  *
  */
 
-#define _ISOC99_SOURCE
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
@@ -530,37 +528,15 @@ int panel_number(struct detector *det, struct panel *p)
 }
 
 
-void fill_in_values(struct detector *det, struct hdfile *f, struct event* ev)
+void adjust_centering_for_rail(struct panel *p)
 {
-	int i;
+	double offs;
 
-	for ( i=0; i<det->n_panels; i++ ) {
-
-		double offs;
-		struct panel *p = &det->panels[i];
-
-		if ( p->clen_from != NULL ) {
-
-			double val;
-			int r;
-
-			r = hdfile_get_value(f, p->clen_from, ev, &val,
-			                     H5T_NATIVE_DOUBLE);
-			if ( r ) {
-				ERROR("Failed to read '%s'\n", p->clen_from);
-			} else {
-				p->clen = val * 1.0e-3;
-			}
-
-		}
-
-                /* Offset in +z direction from calibrated clen to actual */
-		offs = p->clen - p->clen_for_centering;
-		p->cnx += p->rail_x * offs;
-		p->cny += p->rail_y * offs;
-		p->clen = p->clen_for_centering + p->coffset + p->rail_z * offs;
-
-	}
+	/* Offset in +z direction from calibrated clen to actual */
+	offs = p->clen - p->clen_for_centering;
+	p->cnx += p->rail_x * offs;
+	p->cny += p->rail_y * offs;
+	p->clen = p->clen_for_centering + p->coffset + p->rail_z * offs;
 }
 
 
@@ -911,7 +887,6 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 		panel->adu_per_eV = atof(val);
 	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
 		panel->adu_per_photon = atof(val);
-		STATUS("got adu per photon: %s\n", val);
 	} else if ( strcmp(key, "rigid_group") == 0 ) {
 		add_to_rigid_group(find_or_add_rg(det, val), panel);
 	} else if ( strcmp(key, "clen") == 0 ) {
@@ -1079,12 +1054,15 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		if ( beam != NULL ) {
-			if ( strncmp(val, "/", 1) == 0 ) {
+			double v;
+			char *end;
+			v = strtod(val, &end);
+			if ( (val[0] != '\0') && (end[0] == '\0') ) {
+				beam->photon_energy = v;
+				beam->photon_energy_from = NULL;
+			} else {
 				beam->photon_energy = 0.0;
 				beam->photon_energy_from = strdup(val);
-			} else {
-				beam->photon_energy = atof(val);
-				beam->photon_energy_from = NULL;
 			}
 		}
 
@@ -1204,7 +1182,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 	int i;
 	int rgi, rgci;
 	int reject = 0;
-	int path_dim;
+	int path_dim, mask_path_dim;
 	int dim_dim;
 	int dim_reject = 0;
 	int dim_dim_reject = 0;
@@ -1389,6 +1367,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 
 	}
 
+	mask_path_dim = -1;
 	for ( i=0; i<det->n_panels; i++ ) {
 
 		int panel_mask_dim = 0;
@@ -1398,8 +1377,7 @@ struct detector *get_detector_geometry_2(const char *filename,
 
 			next_instance = det->panels[i].mask;
 
-			while(next_instance)
-			{
+			while ( next_instance ) {
 				next_instance = strstr(next_instance, "%");
 				if ( next_instance != NULL ) {
 					next_instance += 1*sizeof(char);
@@ -1407,15 +1385,26 @@ struct detector *get_detector_geometry_2(const char *filename,
 				}
 			}
 
-			if ( panel_mask_dim != path_dim ) {
-				dim_reject = 1;
+			if ( mask_path_dim == -1 ) {
+				mask_path_dim = panel_mask_dim;
+			} else {
+				if ( panel_mask_dim != mask_path_dim ) {
+					dim_reject = 1;
+				}
 			}
+
 		}
 	}
 
-	if ( dim_reject ==  1) {
+	if ( dim_reject ==  1 ) {
 		ERROR("All panels' data and mask entries must have the same "
 		      "number of placeholders\n");
+		reject = 1;
+	}
+
+	if ( mask_path_dim > path_dim ) {
+		ERROR("Number of placeholders in mask cannot be larger than "
+		      "for data\n");
 		reject = 1;
 	}
 
@@ -1992,6 +1981,11 @@ double largest_q(struct image *image)
 {
 	struct rvec q;
 	double tt;
+
+	if ( image->det == NULL ) {
+		ERROR("No detector geometry. assuming detector is infinite!\n");
+		return INFINITY;
+	}
 
 	q = get_q_for_panel(image->det->furthest_out_panel,
 	                    image->det->furthest_out_fs,

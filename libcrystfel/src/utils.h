@@ -61,43 +61,9 @@
 #define THOMSON_LENGTH (2.81794e-15)
 
 
-/* ------------------------------ Quaternions ------------------------------- */
-
-/**
- * quaternion:
- *
- * <programlisting>
- * struct quaternion
- * {
- *    double w
- *    double x
- *    double y
- *    double z
- * };
- * </programlisting>
- *
- * A structure representing a quaternion.
- *
- **/
-struct quaternion;
-
-struct quaternion {
-	double w;
-	double x;
-	double y;
-	double z;
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-extern struct quaternion normalise_quaternion(struct quaternion q);
-extern double quaternion_modulus(struct quaternion q);
-extern struct quaternion random_quaternion(gsl_rng *rng);
-extern int quaternion_valid(struct quaternion q);
-extern struct rvec quat_rot(struct rvec q, struct quaternion z);
-
 
 /* --------------------------- Useful functions ----------------------------- */
 
@@ -125,17 +91,6 @@ extern double random_flat(gsl_rng *rng, double max);
 extern double flat_noise(gsl_rng *rng, double expected, double width);
 extern double gaussian_noise(gsl_rng *rng, double expected, double stddev);
 extern int poisson_noise(gsl_rng *rng, double expected);
-
-/* Keep these ones inline, to avoid function call overhead */
-static inline struct quaternion invalid_quaternion(void)
-{
-	struct quaternion quat;
-	quat.w = 0.0;
-	quat.x = 0.0;
-	quat.y = 0.0;
-	quat.z = 0.0;
-	return quat;
-}
 
 static inline double distance(double x1, double y1, double x2, double y2)
 {
@@ -274,6 +229,47 @@ extern char *safe_basename(const char *in);
 #define likely(x) (x)
 #define unlikely(x) (x)
 #endif
+
+
+/* ------------------------------ Quaternions ------------------------------- */
+
+/**
+ * quaternion:
+ *  @w: component
+ *  @x: component
+ *  @y: component
+ *  @z: component
+ *
+ * A structure representing a quaternion.
+ *
+ **/
+struct quaternion;
+
+struct quaternion {
+	double w;
+	double x;
+	double y;
+	double z;
+};
+
+extern struct quaternion normalise_quaternion(struct quaternion q);
+extern double quaternion_modulus(struct quaternion q);
+extern struct quaternion random_quaternion(gsl_rng *rng);
+extern int quaternion_valid(struct quaternion q);
+extern struct rvec quat_rot(struct rvec q, struct quaternion z);
+
+/* Keep these ones inline, to avoid function call overhead */
+static inline struct quaternion invalid_quaternion(void)
+{
+	struct quaternion quat;
+	quat.w = 0.0;
+	quat.x = 0.0;
+	quat.y = 0.0;
+	quat.z = 0.0;
+	return quat;
+}
+
+
 
 #ifdef __cplusplus
 }

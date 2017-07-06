@@ -1,3 +1,48 @@
+Changes in this development version
+-----------------------------------
+
+- indexamajig --peaks=peakfinder8 was added (Valerio Mariani, Oleksandr Yefanov)
+- CBF files are now supported as input.
+- TakeTwo indexing was incorporated (Helen Ginn)
+- indexamajig: Hung worker processes will now be detected and killed.
+- Peak locations from HDF5 or CXI files are now offset by 0.5,0.5.
+- Detector panels no longer need to be perpendicular to the X-ray beam.
+- Detector "rail" direction ("camera length" axis) no longer needs to be along
+  the X-ray beam direction.
+- Lattice parameters are now checked after prediction refinement as well as before.
+- Multi-event HDF5 files can now contain peak lists.
+- The peak list location can now be given in geometry file (instead of --hdf5-peaks)
+- The number of detector units per photon (rather than per eV) can now be
+  specified in the geometry file.
+- indexamajig: Small changes to how peaks from HDF5 files are checked.
+- compare_hkl --fom=d1sig and d2sig were fixed (Wolfgang Brehm).
+- compare_hkl --min-measurements was added.
+- New polarisation correction.
+- Reflection data files now contain audit information (CrystFEL version number
+  and command line parameters).
+- Improvements to enumeration of events in multi-event files
+- scripts/detector-shift: Show a heat map, handle different panel resolutions
+  correctly
+- Add scripts/move-entire-detector, scripts/split-by-mask,
+  scripts/peakogram-stream and scripts/sum-peaks.
+- scripts/turbo-index was renamed to turbo-index-lsf, and turbo-index-slurm
+  was added (Steve Aplin).
+- An example geometry file for Eiger was added.
+- Multiple bug fixes for asdf indexing
+- cell_explorer: Fixed invisible Greek letters on some systems
+- Mask paths with fewer placeholders than data paths (e.g. some SACLA files)
+  are now handled properly.
+- cell_explorer: Added "Save cell" function.
+- pattern_sim: Multiple bug fixes.
+- geoptimiser: Multiple bug fixes.
+- partialator: Fixes for some edge case bugs.
+- indexamajig: Fix files left open when using XDS indexing.
+- {check,compare}_hkl: Add warnings for potentially silly option choices.
+- Remove "data slab" from detector data handling (simplifies internal data
+  structures a lot).
+- Python scripts were made compatible with Python 3.
+
+
 CrystFEL version 0.6.2, 21st March 2016
 ---------------------------------------
 

@@ -806,8 +806,8 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 }
 
 
-int write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
-                int include_peaks, int include_reflections, struct event* ev)
+int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
+                int include_peaks, int include_reflections, struct event *ev)
 {
 	int j;
 	char *indexer;
@@ -832,7 +832,7 @@ int write_chunk(Stream *st, struct image *i, struct hdfile *hdfile,
 	fprintf(st->fh, "beam_divergence = %.2e rad\n", i->div);
 	fprintf(st->fh, "beam_bandwidth = %.2e (fraction)\n", i->bw);
 
-	copy_hdf5_fields(hdfile, i->copyme, st->fh, ev);
+	imagefile_copy_fields(imfile, i->copyme, st->fh, ev);
 
 	if ( i->det != NULL ) {
 
@@ -1196,13 +1196,9 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {
-			IndexingMethod *list;
-			list = build_indexer_list(line+13);
-			if ( list == NULL ) {
+			image->indexed_by = get_indm_from_string(line+13);
+			if ( image->indexed_by == INDEXING_ERROR ) {
 				ERROR("Failed to read indexer list\n");
-			} else {
-				image->indexed_by = list[0];
-				free(list);
 			}
 		}
 

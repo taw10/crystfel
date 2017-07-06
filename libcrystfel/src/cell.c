@@ -460,10 +460,12 @@ int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
 		case CELL_REP_RECIP:
 		/* Convert reciprocal -> crystallographic.
                  * Start by converting reciprocal -> cartesian */
-		cell_invert(cell->axs, cell->ays, cell->azs,
-		            cell->bxs, cell->bys, cell->bzs,
-		            cell->cxs, cell->cys, cell->czs,
-		            &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+		if ( cell_invert(cell->axs, cell->ays, cell->azs,
+		                 cell->bxs, cell->bys, cell->bzs,
+		                         cell->cxs, cell->cys, cell->czs,
+		                         &ax, &ay, &az,
+		                         &bx, &by, &bz,
+		                         &cx, &cy, &cz) ) return 1;
 
 		/* Now convert cartesian -> crystallographic */
 		*a = modulus(ax, ay, az);

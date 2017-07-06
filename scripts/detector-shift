@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 #
 # Determine mean detector shift based on prediction refinement results
 #
-# Copyright (c) 2015-2016 Deutsches Elektronen-Synchrotron DESY,
-#                         a research centre of the Helmholtz Association.
+# Copyright © 2015-2017 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2015-2016 Thomas White <taw@physics.org>
+#    2015-2017 Thomas White <taw@physics.org>
 #    2016      Marmoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
 #
 
@@ -54,13 +54,13 @@ f.close()
 
 mean_x = sum(x_shifts) / len(x_shifts)
 mean_y = sum(y_shifts) / len(y_shifts)
-print 'Mean shifts: dx = %.2f mm,  dy = %.2f mm' % (mean_x,mean_y)
+print('Mean shifts: dx = {:.2} mm,  dy = {:.2} mm'.format(mean_x,mean_y))
 
 # Apply shifts to geometry
 if have_geom:
 
     out = os.path.splitext(geom)[0]+'-predrefine.geom'
-    print 'Applying corrections to %s, output filename %s' % (geom,out)
+    print('Applying corrections to {}, output filename {}'.format(geom,out))
     g = open(geom, 'r')
     h = open(out, 'w')
     panel_resolutions = {}
@@ -99,7 +99,7 @@ if have_geom:
                 res = panel_resolutions[panel]
             else:
                 res = default_res
-                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
+                print('Using default resolution ({} px/m) for panel {}'.format(res, panel))
             h.write('%s/corner_x = %f\n' % (panel,panel_cnx+(mean_x*res*1e-3)))
             continue
 
@@ -111,7 +111,7 @@ if have_geom:
                 res = panel_resolutions[panel]
             else:
                 res = default_res
-                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
+                print('Using default resolution ({} px/m) for panel {}'.format(res, panel))
             h.write('%s/corner_y = %f\n' % (panel,panel_cny+(mean_y*res*1e-3)))
             continue
 

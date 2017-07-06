@@ -501,7 +501,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		signed int hs, ks, ls;
 		int bin;
 
-		d = 2.0 * resolution(cell, h, k, l);
+		get_asymm(sym, h, k, l, &hs, &ks, &ls);
+		d = 2.0 * resolution(cell, hs, ks, ls);
 
 		if ( forbidden_reflection(cell, h, k, l) ) continue;
 
@@ -514,7 +515,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		}
 		if ( bin == -1 ) continue;
 
-		get_asymm(sym, h, k, l, &hs, &ks, &ls);
 		if ( find_refl(counted, hs, ks, ls) != NULL ) continue;
 		add_refl(counted, hs, ks, ls);
 
@@ -530,7 +530,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		signed int h, k, l;
+		signed int h, k, l, hs, ks, ls;
 		double d, val, esd;
 		int bin;
 		int j;
@@ -538,7 +538,8 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		get_indices(refl, &h, &k, &l);
 		if ( forbidden_reflection(cell, h, k, l) ) continue;
 
-		d = resolution(cell, h, k, l) * 2.0;
+		get_asymm(sym, h, k, l, &hs, &ks, &ls);
+		d = resolution(cell, hs, ks, ls) * 2.0;
 		val = get_intensity(refl);
 		esd = get_esd_intensity(refl);
 

@@ -3,12 +3,12 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2010-2016 Thomas White <taw@physics.org>
- *   2014      Valerio Mariani
+ *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -42,6 +42,7 @@ struct index_args;
 
 
 enum {
+        PEAK_PEAKFINDER8,
 	PEAK_ZAEF,
 	PEAK_HDF5,
 	PEAK_CXI,
@@ -61,24 +62,32 @@ struct index_args
 	float min_snr;
 	int check_hdf5_snr;
 	struct detector *det;
-	IndexingMethod *indm;
-	IndexingPrivate **ipriv;
+	IndexingPrivate *ipriv;
 	int peaks;                /* Peak detection method */
 	float tols[4];
 	struct beam_params *beam;
 	char *hdf5_peak_path;
+	int half_pixel_shift;
 	float pk_inn;
 	float pk_mid;
 	float pk_out;
 	float ir_inn;
 	float ir_mid;
 	float ir_out;
-	struct copy_hdf5_field *copyme;
+	int min_res;
+	int max_res;
+	int max_n_peaks;
+	int min_pix_count;
+	int max_pix_count;
+	int local_bg_radius;
+	int min_peaks;
+	struct imagefile_field_list *copyme;
 	int integrate_saturated;
 	int use_saturated;
 	int no_revalidate;
 	int stream_peaks;
 	int stream_refls;
+	int stream_nonhits;
 	IntegrationMethod int_meth;
 	IntDiag int_diag;
 	signed int int_diag_h;

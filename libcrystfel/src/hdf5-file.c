@@ -44,6 +44,19 @@
 #include "utils.h"
 
 
+/**
+ * SECTION:hdf5-file
+ * @short_description: HDF5 file handling
+ * @title: HDF5 file handling
+ * @section_id:
+ * @see_also:
+ * @include: "hdf5-file.h"
+ * @Image:
+ *
+ * Routines for accessing HDF5 files.
+ **/
+
+
 struct hdf5_write_location {
 
 	const char      *location;
@@ -121,8 +134,7 @@ struct hdfile *hdfile_open(const char *filename)
 }
 
 
-int hdfile_set_image(struct hdfile *f, const char *path,
-                     struct panel *p)
+int hdfile_set_image(struct hdfile *f, const char *path)
 {
 	f->dh = H5Dopen2(f->fh, path, H5P_DEFAULT);
 	if ( f->dh < 0 ) {
@@ -320,9 +332,34 @@ static float *read_hdf5_data(struct hdfile *f, char *path, int line)
 }
 
 
-/* Get peaks from HDF5, in "CXI format" (as in "CXIDB") */
-int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
-                  struct filename_plus_event *fpe)
+/**
+ * get_peaks_cxi_2:
+ * @image: An %image structure
+ * @f: An %hdfile structure
+ * @p: The HDF5 path to the peak data
+ * @fpe: A %filename_plus_event structure specifying the event
+ * @half_pixel_shift: Non-zero if 0.5 should be added to all peak coordinates
+ *
+ * Get peaks from HDF5, in "CXI format" (as in "CXIDB").  The data should be in
+ * a set of arrays under @p.  The number of peaks should be in a 1D array at
+ * @p/nPeaks. The fast-scan and slow-scan coordinates should be in 2D arrays at
+ * @p/peakXPosRaw and @p/peakYPosRaw respectively (sorry about the naming).  The
+ * first dimension of these arrays should be the event number (as given by
+ * @fpe).  The intensities are expected to be at @p/peakTotalIntensity in a
+ * similar 2D array.
+ *
+ * CrystFEL considers all peak locations to be distances from the corner of the
+ * detector panel, in pixel units, consistent with its description of detector
+ * geometry (see 'man crystfel_geometry').  The software which generates the
+ * CXI files, including Cheetah, may instead consider the peak locations to be
+ * pixel indices in the data array.  In this case, the peak coordinates should
+ * have 0.5 added to them.  This will be done if @half_pixel_shift is non-zero.
+ *
+ * Returns: non-zero on error, zero otherwise.
+ *
+ */
+int get_peaks_cxi_2(struct image *image, struct hdfile *f, const char *p,
+                    struct filename_plus_event *fpe, int half_pixel_shift)
 {
 	char path_n[1024];
 	char path_x[1024];
@@ -337,6 +374,8 @@ int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
 	float *buf_x;
 	float *buf_y;
 	float *buf_i;
+
+	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
 
 	if ( (fpe != NULL) && (fpe->ev != NULL)
 	  && (fpe->ev->dim_entries != NULL) )
@@ -375,8 +414,8 @@ int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
 		float fs, ss, val;
 		struct panel *p;
 
-		fs = buf_x[pk];
-		ss = buf_y[pk];
+		fs = buf_x[pk] + peak_offset;
+		ss = buf_y[pk] + peak_offset;
 		val = buf_i[pk];
 
 		p = find_orig_panel(image->det, fs, ss);
@@ -395,7 +434,53 @@ int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
 }
 
 
-int get_peaks(struct image *image, struct hdfile *f, const char *p)
+/**
+ * get_peaks_cxi:
+ * @image: An %image structure
+ * @f: An %hdfile structure
+ * @p: The HDF5 path to the peak data
+ * @fpe: A %filename_plus_event structure specifying the event
+ *
+ * This is a wrapper function to preserve API compatibility with older CrystFEL
+ * versions.  Use get_peaks_cxi_2() instead.
+ *
+ * This function is equivalent to get_peaks_cxi_2(@image, @f, @p, @fpe, 1).
+ *
+ * Returns: non-zero on error, zero otherwise.
+ *
+ */
+int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
+                  struct filename_plus_event *fpe)
+{
+	return get_peaks_cxi_2(image, f, p, fpe, 1);
+}
+
+
+/**
+ * get_peaks_2:
+ * @image: An %image structure
+ * @f: An %hdfile structure
+ * @p: The HDF5 path to the peak data
+ * @half_pixel_shift: Non-zero if 0.5 should be added to all peak coordinates
+ *
+ * Get peaks from HDF5.  The peak list should be located at @p in the HDF5 file,
+ * a 2D array where the first dimension equals the number of peaks and second
+ * dimension is three.  The first two columns contain the fast scan and slow
+ * scan coordinates, respectively, of the peaks.  The third column contains the
+ * intensities.
+ *
+ * CrystFEL considers all peak locations to be distances from the corner of the
+ * detector panel, in pixel units, consistent with its description of detector
+ * geometry (see 'man crystfel_geometry').  The software which generates the
+ * CXI files, including Cheetah, may instead consider the peak locations to be
+ * pixel indices in the data array.  In this case, the peak coordinates should
+ * have 0.5 added to them.  This will be done if @half_pixel_shift is non-zero.
+ *
+ * Returns: non-zero on error, zero otherwise.
+ *
+ */
+int get_peaks_2(struct image *image, struct hdfile *f, const char *p,
+                int half_pixel_shift)
 {
 	hid_t dh, sh;
 	hsize_t size[2];
@@ -405,6 +490,7 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 	herr_t r;
 	int tw;
 	char *np;
+	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
 
 	if ( image->event != NULL ) {
 		np = retrieve_full_path(image->event, p);
@@ -473,8 +559,8 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 		float fs, ss, val;
 		struct panel *p;
 
-		fs = buf[tw*i+0];
-		ss = buf[tw*i+1];
+		fs = buf[tw*i+0] + peak_offset;
+		ss = buf[tw*i+1] + peak_offset;
 		val = buf[tw*i+2];
 
 		p = find_orig_panel(image->det, fs, ss);
@@ -496,6 +582,26 @@ int get_peaks(struct image *image, struct hdfile *f, const char *p)
 	H5Dclose(dh);
 
 	return 0;
+}
+
+
+/**
+ * get_peaks:
+ * @image: An %image structure
+ * @f: An %hdfile structure
+ * @p: The HDF5 path to the peak data
+ *
+ * This is a wrapper function to preserve API compatibility with older CrystFEL
+ * versions.  Use get_peaks_2() instead.
+ *
+ * This function is equivalent to get_peaks_2(@image, @f, @p, 1).
+ *
+ * Returns: non-zero on error, zero otherwise.
+ *
+ */
+int get_peaks(struct image *image, struct hdfile *f, const char *p)
+{
+	return get_peaks_2(image, f, p, 1);
 }
 
 
@@ -1127,6 +1233,9 @@ static int get_scalar_value(struct hdfile *f, const char *name, void *val,
 		return 1;
 	}
 
+	H5Tclose(type);
+	H5Dclose(dh);
+
 	return 0;
 }
 
@@ -1154,7 +1263,7 @@ static int get_ev_based_value(struct hdfile *f, const char *name,
 	char *subst_name = NULL;
 
 	if ( ev->path_length != 0 ) {
-		subst_name = partial_event_substitution(ev, name);
+		subst_name = retrieve_full_path(ev, name);
 	} else {
 		subst_name = strdup(name);
 	}
@@ -1284,8 +1393,10 @@ int hdfile_get_value(struct hdfile *f, const char *name,
 }
 
 
-void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
-                             struct event *ev, struct image *image)
+static void hdfile_fill_in_beam_parameters(struct beam_params *beam,
+                                           struct hdfile *f,
+                                           struct event *ev,
+                                           struct image *image)
 {
 	double eV;
 
@@ -1298,8 +1409,8 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
 
 		int r;
 
-		r = hdfile_get_value(f, beam->photon_energy_from, ev, &eV,
-		                     H5T_NATIVE_DOUBLE);
+		r = hdfile_get_value(f, beam->photon_energy_from,
+		                     ev, &eV, H5T_NATIVE_DOUBLE);
 		if ( r ) {
 			ERROR("Failed to read '%s'\n",
 			      beam->photon_energy_from);
@@ -1308,6 +1419,36 @@ void fill_in_beam_parameters(struct beam_params *beam, struct hdfile *f,
 	}
 
 	image->lambda = ph_en_to_lambda(eV_to_J(eV))*beam->photon_energy_scale;
+}
+
+
+static void hdfile_fill_in_clen(struct detector *det, struct hdfile *f,
+                                struct event *ev)
+{
+	int i;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+
+		struct panel *p = &det->panels[i];
+
+		if ( p->clen_from != NULL ) {
+
+			double val;
+			int r;
+
+			r = hdfile_get_value(f, p->clen_from, ev, &val,
+			                     H5T_NATIVE_DOUBLE);
+			if ( r ) {
+				ERROR("Failed to read '%s'\n", p->clen_from);
+			} else {
+				p->clen = val * 1.0e-3;
+			}
+
+		}
+
+		adjust_centering_for_rail(p);
+
+	}
 }
 
 
@@ -1326,7 +1467,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 	if ( element == NULL ) {
 		fail = hdfile_set_first_image(f, "/");
 	} else {
-		fail = hdfile_set_image(f, element, NULL);
+		fail = hdfile_set_image(f, element);
 	}
 
 	if ( fail ) {
@@ -1375,7 +1516,7 @@ int hdf5_read(struct hdfile *f, struct image *image, const char *element,
 
 	if ( image->beam != NULL ) {
 
-		fill_in_beam_parameters(image->beam, f, NULL, image);
+		hdfile_fill_in_beam_parameters(image->beam, f, NULL, image);
 
 		if ( image->lambda > 1000 ) {
 			/* Error message covers a silly value in the beam file
@@ -1634,10 +1775,13 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			if ( !exists ) {
 				ERROR("Cannot find data for panel %s\n",
 				      p->name);
+				free(image->dp);
+				free(image->bad);
+				free(image->sat);
 				return 1;
 			}
 
-			fail = hdfile_set_image(f, panel_full_path, p);
+			fail = hdfile_set_image(f, panel_full_path);
 
 			free(panel_full_path);
 
@@ -1654,9 +1798,12 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 				if ( !exists ) {
 					ERROR("Cannot find data for panel %s\n",
 					      p->name);
+					free(image->dp);
+					free(image->bad);
+					free(image->sat);
 					return 1;
 				}
-				fail = hdfile_set_image(f, p->data, p);
+				fail = hdfile_set_image(f, p->data);
 
 			}
 
@@ -1664,6 +1811,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		if ( fail ) {
 			ERROR("Couldn't select path for panel %s\n",
 			      p->name);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 
@@ -1673,6 +1823,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		f_count = malloc(hsd->num_dims*sizeof(hsize_t));
 		if ( (f_offset == NULL) || (f_count == NULL ) ) {
 			ERROR("Failed to allocate offset or count.\n");
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 		for ( hsi=0; hsi<hsd->num_dims; hsi++ ) {
@@ -1700,6 +1853,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		if ( check < 0 ) {
 			ERROR("Error selecting file dataspace for panel %s\n",
 			      p->name);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 
@@ -1713,6 +1869,9 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			ERROR("Failed to allocate panel %s\n", p->name);
 			free(f_offset);
 			free(f_count);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 		for ( i=0; i<p->w*p->h; i++ ) image->sat[pi][i] = INFINITY;
@@ -1724,6 +1883,13 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			      p->name);
 			free(f_offset);
 			free(f_count);
+			for ( i=0; i<=pi; i++ ) {
+				free(image->dp[i]);
+				free(image->sat[i]);
+			}
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
 			return 1;
 		}
 
@@ -1740,7 +1906,7 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 			if ( load_satmap(f, ev, p, f_offset, f_count, hsd,
 			                 image->sat[pi]) )
 			{
-				ERROR("Failed to laod sat map for panel %s\n",
+				ERROR("Failed to load sat map for panel %s\n",
 				      p->name);
 			}
 		}
@@ -1753,13 +1919,13 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 	H5Dclose(f->dh);
 	f->data_open = 0;
-	fill_in_values(image->det, f, ev);
+	hdfile_fill_in_clen(image->det, f, ev);
 
 	if ( satcorr ) debodge_saturation(f, image);
 
 	if ( image->beam != NULL ) {
 
-		fill_in_beam_parameters(image->beam, f, ev, image);
+		hdfile_fill_in_beam_parameters(image->beam, f, ev, image);
 
 		if ( (image->lambda > 1.0) || (image->lambda < 1e-20) ) {
 
@@ -1966,7 +2132,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 	char *tmp = NULL, *subst_name = NULL;
 
 	if (ev != NULL && ev->path_length != 0 ) {
-		subst_name = partial_event_substitution(ev, name);
+		subst_name = retrieve_full_path(ev, name);
 	} else {
 		subst_name = strdup(name);
 	}
@@ -2166,7 +2332,7 @@ int hdfile_set_first_image(struct hdfile *f, const char *group)
 	for ( i=0; i<n; i++ ) {
 
 		if ( is_image[i] ) {
-			hdfile_set_image(f, names[i], NULL);
+			hdfile_set_image(f, names[i]);
 			for ( j=0; j<n; j++ ) free(names[j]);
 			free(is_image);
 			free(is_group);
@@ -2483,6 +2649,9 @@ static int check_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
 		free(max_size);
 		return 1;
 	}
+
+	H5Sclose(sh);
+	H5Dclose(dh);
 
 	return 0;
 }

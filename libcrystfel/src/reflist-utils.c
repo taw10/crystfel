@@ -27,8 +27,6 @@
  *
  */
 
-#define _ISOC99_SOURCE
-#define _GNU_SOURCE
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>

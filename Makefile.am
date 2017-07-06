@@ -159,6 +159,7 @@ crystfeldoc_DATA = doc/twin-calculator.pdf doc/examples/lcls-dec.geom \
                    doc/examples/cspad-cxiformat.geom \
                    doc/examples/pilatus.geom \
                    doc/examples/cell-example.cell \
+                   doc/examples/Eiger16M-binning2-nativefiles.geom \
                    doc/hitrate.html doc/hitrate.png
 
 EXTRA_DIST += $(crystfeldoc_DATA) doc/twin-calculator.odt \
@@ -180,9 +181,10 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/find-pairs scripts/plot-cc-and-scale.R \
               scripts/ave-resolution scripts/crystal-frame-number \
               scripts/plot-radius-resolution \
-              scripts/detector-shift scripts/turbo-index \
+              scripts/detector-shift scripts/turbo-index-lsf \
               scripts/gaincal-to-saturation-map scripts/move-entire-detector \
-              scripts/split-by-mask
+              scripts/split-by-mask scripts/turbo-index-slurm \
+              scripts/sum-peaks
 
 EXTRA_DIST += $(script_DATA)
 

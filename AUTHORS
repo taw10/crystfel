@@ -1,3 +1,23 @@
+Funding acknowledgements
+------------------------
+
+Development of CrystFEL is primarily funded by the Helmholtz Association via
+programme-oriented funds.
+
+Additional funding for CrystFEL is provided by "X-Probe", a project of the
+European Union's 2020 Research and Innovation Program Under the Marie
+Skłodowska-Curie grant agreement 637295 (2015-2018).
+
+Additional funding for CrystFEL is provided by the BMBF German-Russian
+Cooperation "SyncFELMed", grant 05K14CHA (2014-2017).
+
+Past funding for CrystFEL has been received from BioStruct-X, a project funded
+by the Seventh Framework Programme (FP7) of the European Commission.
+
+
+Contributors
+------------
+
 * Thomas White <taw@physics.org>
   Lead author, architecture, "vision" and so on.
 
@@ -44,6 +64,7 @@
 
 * Wolfgang Brehm <wolfgang.brehm@gmail.com>
   "Detwinning" algorithm (ambigator)
+  Fixes for d1sig and d2sig
 
 * Valerio Mariani <<alerio.mariani@desy.de>
   Packaging and general bug fixing
@@ -72,3 +93,13 @@
 
 * Thomas Grant <tgrant@hwi.buffalo.edu>
   Original version of scripts/peakogram-stream
+
+* Steve Aplin <steve.aplin@desy.de>
+  Original version of scripts/turbo-index-slurm
+
+* Oleksandr Yefanov <oleksandr.yefanov@desy.de>
+  geoptimiser
+  Peakfinder8 improvements
+
+* Helen Ginn  <helen@strubi.ox.ac.uk>
+  TakeTwo indexing algorithm

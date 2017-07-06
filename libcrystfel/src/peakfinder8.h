@@ -1,15 +1,15 @@
 /*
- * xds.h
+ * peakfinder8.h
  *
- * Invoke xds for crystal autoindexing
+ * The peakfinder8 algorithm
  *
- * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
- * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010-2013,2017 Thomas White <taw@physics.org>
- *        2013      Cornelius Gati <cornelius.gati@cfel.de>
+ *   2017  Valerio Mariani <valerio.mariani@desy.de>
+ *   2017  Anton Barty <anton.barty@desy.de>
+ *   2017  Oleksandr Yefanov <oleksandr.yefanov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -28,29 +28,23 @@
  *
  */
 
-#ifndef XDS_H
-#define XDS_H
+#ifndef PEAKFINDER8_H
+#define PEAKFINDER8_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "cell.h"
-#include "index.h"
+#include "image.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern int run_xds(struct image *image, void *ipriv);
-
-extern void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
-                         struct detector *det, float *ltl);
-
-extern void xds_cleanup(void *pp);
+extern int peakfinder8(struct image *img, int max_n_peaks,
+                       float threshold, float min_snr,
+                       int mix_pix_count, int max_pix_count,
+                       int local_bg_radius, int min_res,
+                       int max_res, int use_saturated);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* XDS_H */
+#endif // PEAKFINDER8_H

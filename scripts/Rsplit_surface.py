@@ -1,13 +1,5 @@
 #!/usr/bin/python
-# coding=utf-8
-
-from __future__ import division
-from array import array
-from numpy import *
-
-import matplotlib
-
-# Rsplit_surface.py
+# -*- coding: utf-8 -*-
 #
 # Plot Rsplit as a contour map
 #
@@ -31,6 +23,12 @@ import matplotlib
 # You should have received a copy of the GNU General Public License
 # along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
 
+
+from __future__ import division
+from array import array
+from numpy import *
+
+import matplotlib
 
 """there could be problems with dependencies, in this case, """
 #matplotlib.use('PS')

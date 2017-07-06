@@ -4,12 +4,12 @@
  * Alexandra's Superior Direction Finder, or
  * Algorithm Similar to DirAx, FFT-based
  *
- * Copyright © 2014-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2014-2015 Alexandra Tolstikova <alexandra.tolstikova@desy.de>
- *   2015      Thomas White <taw@physics.org>
+ *   2015,2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -43,33 +43,33 @@ extern "C" {
 
 #ifdef HAVE_FFTW
 
-extern int run_asdf(struct image *image, IndexingPrivate *ipriv);
+extern int run_asdf(struct image *image, void *ipriv);
 
-extern IndexingPrivate *asdf_prepare(IndexingMethod *indm,
-                                     UnitCell *cell, struct detector *det,
-                                     float *ltl);
+extern void *asdf_prepare(IndexingMethod *indm,
+                          UnitCell *cell, struct detector *det,
+                          float *ltl);
 
-extern void asdf_cleanup(IndexingPrivate *pp);
+extern void asdf_cleanup(void *pp);
 
 #else /* HAVE_FFTW */
 
-int run_asdf(struct image *image, IndexingPrivate *ipriv)
+int run_asdf(struct image *image, void *ipriv)
 {
 	ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
 	return 0;
 }
 
 
-IndexingPrivate *asdf_prepare(IndexingMethod *indm,
-                              UnitCell *cell, struct detector *det,
-                              float *ltl)
+void *asdf_prepare(IndexingMethod *indm,
+                   UnitCell *cell, struct detector *det,
+                   float *ltl)
 {
 	ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
 	ERROR("To use asdf indexing, recompile with FFTW.\n");
 	return NULL;
 }
 
-void asdf_cleanup(IndexingPrivate *pp)
+void asdf_cleanup(void *pp)
 {
 }
 

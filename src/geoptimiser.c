@@ -631,10 +631,18 @@ static int add_distance_to_list(struct gpanel *gp,
                                 double *det_shift)
 {
 	int pix_index;
+	int ifs, iss;
 	double rfs, rss;
 	double crx, cry;
 
-	pix_index = ((int)rint(imfe->fs) + gp->p->w*(int)rint(imfe->ss));
+	ifs = imfe->fs;
+	iss = imfe->ss;  /* Explicit rounding towards zero (truncation) */
+	pix_index = ifs + gp->p->w*iss;
+
+	if ( (ifs >= gp->p->w) || (iss >= gp->p->h) ) {
+		ERROR("Peak is outside panel!\n");
+		return 1;
+	}
 
 	if ( gp->num_pix_displ[pix_index] > 0 ) {
 
@@ -782,7 +790,14 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 
 				r = add_distance_to_list(gp, imfe, refl, fx, fy,
 				                         det_shift);
-				if ( r ) return r;
+				if ( r ) {
+					ERROR("Error processing peak %f,%f "
+					      "(panel %s), image %s %s\n",
+					      imfe->fs, imfe->ss, gp->p->name,
+					      images[cp].filename,
+					      get_event_string(images[cp].event));
+					return r;
+				}
 
 			}
 		}
@@ -1070,12 +1085,7 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 
 			/* Calculate corner adjustment
 			 * NB All panels follow the first one */
-			if ( ip == 0 ) {
-
-				new_cnx = p->cnx * cs;
-				new_cny = p->cny * cs;
-
-			} else {
+			if ( ip > 0 && connected->rigid_groups[di]->n_panels == 2 && !gparams->no_cspad ) {
 
 				struct panel *p0;
 				double delta_x, delta_y, delta;
@@ -1090,6 +1100,10 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 				new_cnx = p0->cnx + delta*p0->fsx;
 				new_cny = p0->cny + delta*p0->fsy;
 
+			} else {
+
+				new_cnx = p->cnx * cs;
+				new_cny = p->cny * cs;
 			}
 
 			/* The average displacements now need to be updated */
@@ -2488,7 +2502,9 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef HAVE_SAVE_TO_PNG
+#if !GLIB_CHECK_VERSION(2,36,0)
 	g_type_init();
+#endif
 #endif
 
 	ret_val = optimize_geometry(gparams, det, quadrants, connected);

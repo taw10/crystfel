@@ -3,16 +3,17 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
+ *   2017      Valerio Mariani <valerio.mariani@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -88,6 +89,7 @@ static void show_help(const char *s)
 "     --peaks=<method>     Use 'method' for finding peaks.  Choose from:\n"
 "                           zaef  : Use Zaefferer (2000) gradient detection.\n"
 "                                    This is the default method.\n"
+"                           peakfinder8: Use Peakfinder8 algorithm.\n"
 "                           hdf5  : Get from a table in HDF5 file.\n"
 "                           cxi   : Get from CXI format HDF5 file.\n"
 "     --hdf5-peaks=<p>     Find peaks table in HDF5 file here.\n"
@@ -95,32 +97,52 @@ static void show_help(const char *s)
 "     --integration=<meth> Perform final pattern integration using <meth>.\n"
 "\n\n"
 "For more control over the process, you might need:\n\n"
-"    --tolerance=<tol>   Set the tolerances for cell comparison.\n"
-"                          Default: 5,5,5,1.5.\n"
-"    --filter-noise      Apply an aggressive noise filter which sets all\n"
-"                         pixels in each 3x3 region to zero if any of them\n"
-"                         have negative values.  Intensity measurement will\n"
-"                         be performed on the image as it was before this.\n"
-"    --median-filter=<n> Apply a median filter to the image data.  Intensity\n"
-"                         measurement will be performed on the image as it\n"
-"                         was before this.  The side length of the median\n"
-"                         filter box will be 2<n>+1.  Default: 0 (no filter).\n"
-"    --no-sat-corr       Don't correct values of saturated peaks using a\n"
-"                         table included in the HDF5 file.\n"
-"    --threshold=<n>     Only accept peaks above <n> ADU.  Default: 800.\n"
-"    --min-gradient=<n>  Minimum squared gradient for Zaefferer peak search.\n"
-"                         Default: 100,000.\n"
-"    --min-snr=<n>       Minimum signal-to-noise ratio for peaks.\n"
-"                         Default: 5.\n"
-"    --check-hdf5-snr    Check SNR for peaks from --peaks=hdf5.\n"
-"    --peak-radius=<r>   Integration radii for peak search.\n"
-"    --int-radius=<r>    Set the integration radii.  Default: 4,5,7.\n"
-"    --push-res=<n>      Integrate higher than apparent resolution cutoff.\n"
-"    --highres=<n>       Absolute resolution cutoff in Angstroms.\n"
-"    --fix-profile-radius Fix the reciprocal space profile radius for spot\n"
-"                         prediction (default: automatically determine.\n"
-"    --fix-bandwidth     Set the bandwidth for spot prediction.\n"
-"    --fix-divergence    Set the divergence (full angle) for spot prediction.\n"
+"    --tolerance=<tol>     Set the tolerances for cell comparison.\n"
+"                            Default: 5,5,5,1.5.\n"
+"    --filter-noise        Apply an aggressive noise filter which sets all\n"
+"                           pixels in each 3x3 region to zero if any of them\n"
+"                           have negative values.  Intensity measurement will\n"
+"                           be performed on the image as it was before this.\n"
+"    --median-filter=<n>   Apply a median filter to the image data. Intensity\n"
+"                           measurement will be performed on the image as it\n"
+"                           was before this.  The side length of the median\n"
+"                           filter box will be 2<n>+1.\n"
+"                           Default: 0 (no filter).\n"
+"    --no-sat-corr         Don't correct values of saturated peaks using a\n"
+"                           table included in the HDF5 file.\n"
+"    --threshold=<n>       Only accept peaks above <n> ADU in both the\n"
+"	                    Zaefferer and Peakfinder8 algorithms.\n"
+"                           Default: 800.\n"
+"    --min-gradient=<n>    Minimum squared gradient for Zaefferer peak\n"
+"                           search. Default: 100,000.\n"
+"    --min-snr=<n>         Minimum signal-to-noise ratio for peaks, with both\n"
+"                           Zaefferer and Peakfinder8 algorithms.\n"
+"                           Default: 5.\n"
+"    --min-pix-count=<n>   Only accept peaks if they include more than <n>\n"
+"                           pixels, in the Peakfinder8 algorithm.\n"
+"                           Default: 2.\n"
+"    --max-pix-count=<n>   Only accept peaks if they include less than <n>\n"
+"                           pixels, in the Peakfinder8 algorithm.\n"
+"                           Default: 200.\n"
+"    --min-peaks=<n>       Minimum number of peaks for indexing.\n"
+"    --local-bg-radius=<n> Radius (in pixels) to use for the estimation of\n"
+"	                    local background in the Peakfinder8 algorithm.\n"
+"                           Default: 3.\n"
+"    --min-res=<n>         Only accept peaks if they lay at more than <n>\n"
+"	                    pixels from the center of the detector, in the\n"
+"                           peakfinder8 algorithm. Default: 0.\n"
+"    --max-res=<n>         Only accept peaks if they lay at less than <n>\n"
+"	                    pixels from the center of the detector, in the\n"
+"                           peakfinder8 algorithm. Default: 1200.\n"
+"    --check-hdf5-snr      Check SNR for peaks from --peaks=hdf5.\n"
+"    --peak-radius=<r>     Integration radii for peak search.\n"
+"    --int-radius=<r>      Set the integration radii.  Default: 4,5,7.\n"
+"    --push-res=<n>        Integrate higher than apparent resolution cutoff.\n"
+"    --highres=<n>         Absolute resolution cutoff in Angstroms.\n"
+"    --fix-profile-radius  Fix the reciprocal space profile radius for spot\n"
+"                           prediction (default: automatically determine.\n"
+"    --fix-bandwidth       Set the bandwidth for spot prediction.\n"
+"    --fix-divergence      Set the divergence (full angle) for spot prediction.\n"
 "\n"
 "\nFor time-resolved stuff, you might want to use:\n\n"
 "     --copy-hdf5-field <f>  Copy the value of field <f> into the stream. You\n"
@@ -131,16 +153,19 @@ static void show_help(const char *s)
 " --temp-dir=<path>        Put the temporary folder under <path>.\n"
 "\n"
 "\nOptions you probably won't need:\n\n"
-"     --no-check-prefix    Don't attempt to correct the --prefix.\n"
-"     --no-use-saturated   During the initial peak search, reject\n"
-"                           peaks which contain pixels above max_adu.\n"
-"     --no-revalidate      Don't re-integrate and check HDF5 peaks for\n"
-"                           validity.\n"
-"     --no-peaks-in-stream Do not record peak search results in the stream.\n"
-"     --no-refls-in-stream Do not record integrated reflections in the stream.\n"
-"     --int-diag=<cond>    Show debugging information about reflections.\n"
-"     --no-refine          Skip the prediction refinement step.\n"
-"     --profile            Show timing data for performance monitoring.\n"
+"     --no-check-prefix     Don't attempt to correct the --prefix.\n"
+"     --no-use-saturated    During the initial peak search, reject\n"
+"                            peaks which contain pixels above max_adu.\n"
+"     --no-revalidate       Don't re-integrate and check HDF5 peaks for\n"
+"                            validity.\n"
+"     --no-peaks-in-stream  Do not record peak search results in the stream.\n"
+"     --no-refls-in-stream  Do not record integrated reflections in the stream.\n"
+"     --no-non-hits-in-stream  Do not include non-hit frames in the stream.\n"
+"                               (see --min-peaks)\n"
+"     --int-diag=<cond>     Show debugging information about reflections.\n"
+"     --no-refine           Skip the prediction refinement step.\n"
+"     --profile             Show timing data for performance monitoring.\n"
+"     --no-half-pixel-shift Don't offset the HDF5 peak locations by 0.5 px.\n"
 "\nLow-level options for the felix indexer:\n\n"
 "     --felix-options      Change the default arguments passed to the indexer.\n"
 "                          Given as a list of comma separated list of \n"
@@ -150,9 +175,9 @@ static void show_help(const char *s)
 }
 
 
-static void add_geom_beam_stuff_to_copy_hdf5(struct copy_hdf5_field *copyme,
-                                             struct detector *det,
-                                             struct beam_params *beam)
+static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copyme,
+                                              struct detector *det,
+                                              struct beam_params *beam)
 {
 	int i;
 
@@ -161,12 +186,12 @@ static void add_geom_beam_stuff_to_copy_hdf5(struct copy_hdf5_field *copyme,
 		struct panel *p = &det->panels[i];
 
 		if ( p->clen_from != NULL ) {
-			add_copy_hdf5_field(copyme, p->clen_from);
+			add_imagefile_field(copyme, p->clen_from);
 		}
 	}
 
 	if ( beam->photon_energy_from != NULL ) {
-		add_copy_hdf5_field(copyme, beam->photon_energy_from);
+		add_imagefile_field(copyme, beam->photon_energy_from);
 	}
 }
 
@@ -181,8 +206,6 @@ int main(int argc, char *argv[])
 	int config_checkprefix = 1;
 	int config_basename = 0;
 	int integrate_saturated = 0;
-	IndexingMethod *indm;
-	IndexingPrivate **ipriv;
 	char *indm_str = NULL;
 	char *cellfile = NULL;
 	char *prefix = NULL;
@@ -214,11 +237,17 @@ int main(int argc, char *argv[])
 	iargs.threshold = 800.0;
 	iargs.min_gradient = 100000.0;
 	iargs.min_snr = 5.0;
+	iargs.min_pix_count = 2;
+	iargs.max_pix_count = 200;
+	iargs.min_res = 0;
+	iargs.max_res = 1200;
+	iargs.local_bg_radius = 3;
 	iargs.check_hdf5_snr = 0;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
 	iargs.beam = &beam;
 	iargs.hdf5_peak_path = NULL;
+	iargs.half_pixel_shift = 1;
 	iargs.copyme = NULL;
 	iargs.pk_inn = -1.0;
 	iargs.pk_mid = -1.0;
@@ -230,13 +259,14 @@ int main(int argc, char *argv[])
 	iargs.no_revalidate = 0;
 	iargs.stream_peaks = 1;
 	iargs.stream_refls = 1;
+	iargs.stream_nonhits = 1;
 	iargs.int_diag = INTDIAG_NONE;
-	iargs.copyme = new_copy_hdf5_field_list();
+	iargs.copyme = new_imagefile_field_list();
+	iargs.min_peaks = 0;
 	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
 		return 1;
 	}
-	iargs.indm = NULL;  /* No default */
 	iargs.ipriv = NULL;  /* No default */
 	iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
 	iargs.push_res = 0.0;
@@ -268,12 +298,14 @@ int main(int argc, char *argv[])
 		{"basename",           0, &config_basename,          1},
 		{"no-peaks-in-stream", 0, &iargs.stream_peaks,       0},
 		{"no-refls-in-stream", 0, &iargs.stream_refls,       0},
+		{"no-non-hits-in-stream", 0, &iargs.stream_nonhits,  0},
 		{"integrate-saturated",0, &integrate_saturated,      1},
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
 		{"no-refine",          0, &no_refine,                1},
 		{"profile",            0, &iargs.profile,            1},
+		{"no-half-pixel-shift",0, &iargs.half_pixel_shift,   0},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
@@ -306,6 +338,12 @@ int main(int argc, char *argv[])
 		{"fix-bandwidth",      1, NULL,               23},
 		{"fix-divergence",     1, NULL,               24},
 		{"felix-options",      1, NULL,               25},
+	        {"min-pix-count",      1, NULL,               26},
+	        {"max-pix-count",      1, NULL,               27},
+	        {"local-bg-radius",    1, NULL,               28},
+	        {"min-res",            1, NULL,               29},
+	        {"max-res",            1, NULL,               30},
+	        {"min-peaks",          1, NULL,               31},
 
 		{0, 0, NULL, 0}
 	};
@@ -400,7 +438,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 10 :
-			add_copy_hdf5_field(iargs.copyme, optarg);
+			add_imagefile_field(iargs.copyme, optarg);
 			break;
 
 			case 11 :
@@ -489,6 +527,30 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+		        case 26:
+			iargs.min_pix_count = atoi(optarg);
+			break;
+
+		        case 27:
+			iargs.max_pix_count = atoi(optarg);
+			break;
+
+		        case 28:
+			iargs.local_bg_radius = atoi(optarg);
+			break;
+
+		        case 29:
+			iargs.min_res = atoi(optarg);
+			break;
+
+		        case 30:
+			iargs.max_res = atoi(optarg);
+			break;
+
+			case 31:
+			iargs.min_peaks = atoi(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -541,6 +603,8 @@ int main(int argc, char *argv[])
 	}
 	if ( strcmp(speaks, "zaef") == 0 ) {
 		iargs.peaks = PEAK_ZAEF;
+	} else if ( strcmp(speaks, "peakfinder8") == 0 ) {
+		iargs.peaks = PEAK_PEAKFINDER8;
 	} else if ( strcmp(speaks, "hdf5") == 0 ) {
 		iargs.peaks = PEAK_HDF5;
 	} else if ( strcmp(speaks, "cxi") == 0 ) {
@@ -574,7 +638,7 @@ int main(int argc, char *argv[])
 		      geom_filename);
 		return 1;
 	}
-	add_geom_beam_stuff_to_copy_hdf5(iargs.copyme, iargs.det, iargs.beam);
+	add_geom_beam_stuff_to_field_list(iargs.copyme, iargs.det, iargs.beam);
 
 	/* If no peak path from geometry file, use these (but see later) */
 	if ( iargs.hdf5_peak_path == NULL ) {
@@ -589,35 +653,6 @@ int main(int argc, char *argv[])
 	if ( command_line_peak_path != NULL ) {
 		free(iargs.hdf5_peak_path);
 		iargs.hdf5_peak_path = command_line_peak_path;
-	}
-
-	/* Parse indexing methods */
-	if ( indm_str == NULL ) {
-
-		STATUS("You didn't specify an indexing method, so I  won't try "
-		       " to index anything.\n"
-		       "If that isn't what you wanted, re-run with"
-		       " --indexing=<methods>.\n");
-		indm = NULL;
-
-	} else {
-
-		int i = 0;
-
-		indm = build_indexer_list(indm_str);
-		if ( indm == NULL ) {
-			ERROR("Invalid indexer list '%s'\n", indm_str);
-			return 1;
-		}
-		free(indm_str);
-
-		/* If --no-refine, unset the refinement flag on all methods */
-		if ( no_refine ) {
-			while ( indm[i] != INDEXING_NONE ) {
-				indm[i] &= ~INDEXING_REFINE;
-				i++;
-			}
-		}
 	}
 
 	/* Parse integration method */
@@ -755,27 +790,34 @@ int main(int argc, char *argv[])
 	}
 	free(outfile);
 
-	/* Prepare the indexer */
-	if ( indm != NULL ) {
-		ipriv = prepare_indexing(indm, iargs.cell, iargs.det,
-		                         iargs.tols, iargs.felix_options);
-		if ( ipriv == NULL ) {
-			ERROR("Failed to prepare indexing.\n");
+	/* Prepare the indexing system */
+	if ( indm_str == NULL ) {
+
+		STATUS("You didn't specify an indexing method, so I  won't try "
+		       " to index anything.\n"
+		       "If that isn't what you wanted, re-run with"
+		       " --indexing=<methods>.\n");
+		iargs.ipriv = NULL;
+
+	} else {
+
+		iargs.ipriv = setup_indexing(indm_str, iargs.cell, iargs.det,
+		                             iargs.tols, no_refine,
+		                             iargs.felix_options);
+		if ( iargs.ipriv == NULL ) {
+			ERROR("Failed to set up indexing system\n");
 			return 1;
 		}
-	} else {
-		ipriv = NULL;
+		free(indm_str);
+
 	}
 
 	gsl_set_error_handler_off();
 
-	iargs.indm = indm;
-	iargs.ipriv = ipriv;
-
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
 	               st, tempdir);
 
-	free_copy_hdf5_field_list(iargs.copyme);
+	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);
 	free(iargs.beam->photon_energy_from);
 	free(prefix);
@@ -783,7 +825,7 @@ int main(int argc, char *argv[])
 	free_detector_geometry(iargs.det);
 	free(iargs.hdf5_peak_path);
 	close_stream(st);
-	cleanup_indexing(indm, ipriv);
+	cleanup_indexing(iargs.ipriv);
 
 	return 0;
 }

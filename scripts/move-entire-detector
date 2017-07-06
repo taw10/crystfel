@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 #
 # Shift the detector by a given amount
 #
-# Copyright (c) 2016 Deutsches Elektronen-Synchrotron DESY,
-#                    a research centre of the Helmholtz Association.
+# Copyright © 2016-2017 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2016 Thomas White <taw@physics.org>
+#    2016-2017 Thomas White <taw@physics.org>
 #
 
 import sys
@@ -58,8 +58,8 @@ if args.beam:
 else:
     bm = 'detector'
 
-print 'Input filename %s\nOutput filename %s' % (args.ifn,out)
-print 'Shifting %s by %f,%f %s' % (bm, args.xshift, args.yshift, units)
+print('Input filename {}\nOutput filename {}'.format(args.ifn,out))
+print('Shifting {} by {},{} {}'.format(bm, args.xshift, args.yshift, units))
 
 if args.beam:
     args.xshift = -args.xshift
@@ -104,7 +104,7 @@ while True:
         else:
             res = default_res
             if not args.px:
-                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
+                print('Using default resolution ({} px/m) for panel {}'.format(res, panel))
         if args.px:
             h.write('%s/corner_x = %f\n' % (panel,panel_cnx+args.xshift))
         else:
@@ -120,7 +120,7 @@ while True:
         else:
             res = default_res
             if not args.px:
-                print 'Using default resolution (%f px/m) for panel %s' % (res, panel)
+                print('Using default resolution ({} px/m) for panel {}'.format(res, panel))
         if args.px:
             h.write('%s/corner_y = %f\n' % (panel,panel_cny+args.yshift))
         else:

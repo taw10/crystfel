@@ -3,8 +3,8 @@
  *
  * Invoke Felix for multi-crystal autoindexing.
  *
- * Copyright © 2015 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2015-2017 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2015 Thomas White <taw@physics.org>
@@ -658,9 +658,8 @@ static void parse_options(const char *options, struct felix_private *gp)
 	free(option);
 }
 
-IndexingPrivate *felix_prepare(IndexingMethod *indm, UnitCell *cell,
-                                      struct detector *det, float *ltl,
-                                      const char *options)
+void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
+                    struct detector *det, float *ltl, const char *options)
 {
 	struct felix_private *gp;
 

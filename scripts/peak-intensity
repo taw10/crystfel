@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 #
 # Quantify peak intensities
 #
-# Copyright (c) 2015 Deutsches Elektronen-Synchrotron DESY,
-#                    a research centre of the Helmholtz Association.
+# Copyright © 2015-2017 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2015 Thomas White <taw@physics.org>
+#    2015-2017 Thomas White <taw@physics.org>
 #
 
 import sys
@@ -40,8 +40,8 @@ while True:
 
 f.close()
 
-print '%i patterns, %i peaks' % (n_patt,n_peaks)
-print 'Mean %.2f peaks per pattern' % (n_peaks/n_patt)
-print 'Mean %.2f ADU per peak' % (total_intens/n_peaks)
-print 'Mean %.2f ADU total per pattern' % (total_intens/n_patt)
+print('{} patterns, %i peaks'.format(n_patt,n_peaks))
+print('Mean {:.2f} peaks per pattern'.format(n_peaks/float(n_patt)))
+print('Mean {:.2f} ADU per peak'.format(total_intens/float(n_peaks)))
+print('Mean {:.2f} ADU total per pattern'.format(total_intens/n_patt))
 

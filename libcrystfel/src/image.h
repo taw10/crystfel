@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -44,6 +44,8 @@ struct detector;
 struct imagefeature;
 struct sample;
 struct image;
+struct imagefile;
+struct imagefile_field_list;
 
 #include "utils.h"
 #include "cell.h"
@@ -51,6 +53,7 @@ struct image;
 #include "reflist.h"
 #include "crystal.h"
 #include "index.h"
+#include "events.h"
 
 /**
  * SpectrumType:
@@ -67,7 +70,26 @@ typedef enum {
 	SPECTRUM_TWOCOLOUR
 } SpectrumType;
 
-/* Structure describing a feature in an image */
+
+/**
+ * imagefeature:
+ *  @parent: Image this feature belongs to
+ *  @fs: Fast scan coordinate
+ *  @ss: Slow scan coordinate
+ *  @p: Pointer to panel
+ *  @intensity: Intensity of peak
+ *  @rx: Reciprocal x coordinate in m^-1
+ *  @ry: Reciprocal y coordinate in m^-1
+ *  @rz: Reciprocal z coordinate in m^-1
+ *  @name: Text name for feature
+ *
+ *  Represents a peak in an image.
+ *
+ *  Note carefully that the @fs and @ss coordinates are the distances, measured
+ *  in pixels, from the corner of the panel.  They are NOT pixel indices.
+ *  If the peak is in the middle of the first pixel, its coordinates would be
+ *  0.5,0.5.
+ */
 struct imagefeature {
 
 	struct image                    *parent;
@@ -81,11 +103,20 @@ struct imagefeature {
 	double                          ry;
 	double                          rz;
 
-	/* Internal use only */
-	int                             valid;
-
 	const char                      *name;
+
+	/*< private >*/
+	int                             valid;
 };
+
+
+/* An enum representing the image file formats we can handle */
+enum imagefile_type
+{
+	IMAGEFILE_HDF5,
+	IMAGEFILE_CBF
+};
+
 
 /* An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
@@ -98,44 +129,46 @@ struct sample
 };
 
 
+/**
+ * beam_params:
+ *  @photon_energy: eV per photon
+ *  @photon_energy_from: HDF5 dataset name
+ *  @photon_energy_scale: Scale factor for photon energy, if it comes from HDF5
+ */
 struct beam_params
 {
-	double photon_energy;  /* eV per photon */
-	char  *photon_energy_from; /* HDF5 dataset name */
-	double photon_energy_scale;  /* Scale factor for photon energy, if the
-	                              * energy is to be from the HDF5 file */
+	double photon_energy;
+	char  *photon_energy_from;
+	double photon_energy_scale;
 };
 
 
 /**
  * image:
- *
- * <programlisting>
- * struct image
- * {
- *    Crystal                 **crystals;
- *    int                     n_crystals;
- *    IndexingMethod          indexed_by;
- *
- *    struct detector         *det;
- *    struct beam_params      *beam;
- *    char                    *filename;
- *    const struct copy_hdf5_field *copyme;
- *
- *    int                     id;
- *
- *    double                  lambda;
- *    double                  div;
- *    double                  bw;
- *
- *    int                     width;
- *    int                     height;
- *
- *    long long int           num_peaks;
- *    long long int           num_saturated_peaks;
- *    ImageFeatureList        *features;
- * };
- * </programlisting>
+ *   @crystals: Array of crystals in the image
+ *   @n_crystals: The number of crystals in the image
+ *   @indexed_by: Indexing method which indexed this pattern
+ *   @det: Detector structure
+ *   @beam: Beam parameters structure
+ *   @filename: Filename for the image file
+ *   @copyme: Fields to copy from the image file to the stream
+ *   @id: ID number of the thread handling this image
+ *   @serial: Serial number for this image
+ *   @lambda: Wavelength
+ *   @div: Divergence
+ *   @bw: Bandwidth
+ *   @num_peaks: The number of peaks
+ *   @num_saturated_peaks: The number of saturated peaks
+ *   @features: The peaks found in the image
+ *   @dp: The image data, by panel
+ *   @bad: The bad pixel mask, array by panel
+ *   @sat: The per-pixel saturation mask, array by panel
+ *   @event: Event ID for the image
+ *   @stuff_from_stream: Items read back from the stream
+ *   @avg_clen: Mean of camera length values for all panels
+ *   @spectrum: Spectrum information
+ *   @nsamples: Number of spectrum samples
+ *   @spectrum_size: SIze of spectrum array
  *
  * The field <structfield>data</structfield> contains the raw image data, if it
  * is currently available.  The data might be available throughout the
@@ -152,8 +185,8 @@ struct beam_params
  * returned by the low-level indexing system. <structfield>n_crystals</structfield>
  * is the number of crystals which were found in the image.
  *
- * <structfield>copyme</structfield> represents a list of HDF5 fields to copy
- * to the output stream.
+ * <structfield>copyme</structfield> represents a list of fields in the image
+ * file (e.g. HDF5 fields or CBF headers) to copy to the output stream.
  **/
 struct image;
 
@@ -171,7 +204,7 @@ struct image {
 	struct beam_params      *beam;  /* The nominal beam parameters */
 	char                    *filename;
 	struct event            *event;
-	const struct copy_hdf5_field *copyme;
+	const struct imagefile_field_list *copyme;
 	struct stuff_from_stream *stuff_from_stream;
 
 	double                  avg_clen;  /* Average camera length extracted
@@ -192,8 +225,8 @@ struct image {
 	double                  bw;            /* Bandwidth as a fraction */
 
 	/* Detected peaks */
-	long long int           num_peaks;
-	long long int           num_saturated_peaks;
+	long long               num_peaks;
+	long long               num_saturated_peaks;
 	ImageFeatureList        *features;
 
 };
@@ -232,6 +265,25 @@ extern ImageFeatureList *sort_peaks(ImageFeatureList *flist);
 extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern void remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
+
+/* Image files */
+extern struct imagefile *imagefile_open(const char *filename);
+extern int imagefile_read(struct imagefile *f, struct image *image,
+                          struct event *event);
+extern int imagefile_read_simple(struct imagefile *f, struct image *image);
+extern struct hdfile *imagefile_get_hdfile(struct imagefile *f);
+extern enum imagefile_type imagefile_get_type(struct imagefile *f);
+extern void imagefile_copy_fields(struct imagefile *f,
+                                  const struct imagefile_field_list *copyme,
+                                  FILE *fh, struct event *ev);
+extern void imagefile_close(struct imagefile *f);
+
+/* Field lists */
+extern struct imagefile_field_list *new_imagefile_field_list(void);
+extern void free_imagefile_field_list(struct imagefile_field_list *f);
+
+extern void add_imagefile_field(struct imagefile_field_list *copyme,
+                                const char *name);
 
 #ifdef __cplusplus
 }
