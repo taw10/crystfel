@@ -4,12 +4,12 @@
  * Alexandra's Superior Direction Finder, or
  * Algorithm Similar to DirAx, FFT-based
  *
- * Copyright © 2014-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2014-2015 Alexandra Tolstikova <alexandra.tolstikova@desy.de>
- *   2015      Thomas White <taw@physics.org>
+ *   2015,2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -1101,7 +1101,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 }
 
 
-int run_asdf(struct image *image, IndexingPrivate *ipriv)
+int run_asdf(struct image *image, void *ipriv)
 {
 	int i, j;
 
@@ -1202,8 +1202,8 @@ int run_asdf(struct image *image, IndexingPrivate *ipriv)
 }
 
 
-IndexingPrivate *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
-                               struct detector *det, float *ltl)
+void *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
+                   struct detector *det, float *ltl)
 {
 	struct asdf_private *dp;
 	int need_cell = 0;
@@ -1232,11 +1232,11 @@ IndexingPrivate *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	dp->fftw = fftw_vars_new();
 
-	return (IndexingPrivate *)dp;
+	return (void *)dp;
 }
 
 
-void asdf_cleanup(IndexingPrivate *pp)
+void asdf_cleanup(void *pp)
 {
 	struct asdf_private *p;
 	p = (struct asdf_private *)pp;

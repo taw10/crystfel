@@ -3,12 +3,12 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
@@ -498,7 +498,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 }
 
 
-int run_xds(struct image *image, IndexingPrivate *priv)
+int run_xds(struct image *image, void *priv)
 {
 	unsigned int opts;
 	int status;
@@ -619,8 +619,8 @@ int run_xds(struct image *image, IndexingPrivate *priv)
 }
 
 
-IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
-                             struct detector *det, float *ltl)
+void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
+                  struct detector *det, float *ltl)
 {
 	struct xds_private *xp;
 	int need_cell = 0;
@@ -687,11 +687,11 @@ IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
 	xp->cell = cell;
 	xp->indm = *indm;
 
-	return (IndexingPrivate *)xp;
+	return xp;
 }
 
 
-void xds_cleanup(IndexingPrivate *pp)
+void xds_cleanup(void *pp)
 {
 	struct xds_private *xp;
 

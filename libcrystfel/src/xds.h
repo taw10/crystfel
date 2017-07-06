@@ -3,13 +3,13 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010-2013 Thomas White <taw@physics.org>
- *        2013 Cornelius Gati <cornelius.gati@cfel.de>
+ *   2010-2013,2017 Thomas White <taw@physics.org>
+ *        2013      Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
  *
@@ -42,12 +42,12 @@
 extern "C" {
 #endif
 
-extern int run_xds(struct image *image, IndexingPrivate *ipriv);
+extern int run_xds(struct image *image, void *ipriv);
 
-extern IndexingPrivate *xds_prepare(IndexingMethod *indm, UnitCell *cell,
-                                    struct detector *det, float *ltl);
+extern void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
+                         struct detector *det, float *ltl);
 
-extern void xds_cleanup(IndexingPrivate *pp);
+extern void xds_cleanup(void *pp);
 
 #ifdef __cplusplus
 }
