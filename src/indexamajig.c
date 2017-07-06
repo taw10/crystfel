@@ -62,7 +62,7 @@
 #include "reflist-utils.h"
 #include "cell-utils.h"
 #include "integration.h"
-
+#include "taketwo.h"
 #include "im-sandbox.h"
 
 
@@ -171,6 +171,11 @@ static void show_help(const char *s)
 "                          Given as a list of comma separated list of \n"
 "                            indexer specific, key word arguments.\n"
 "                          Example: \"arg1=10,arg2=500\" \n"
+"\nLow-level options for the TakeTwo indexer:\n\n"
+"     --taketwo-member-threshold Minimum number of members in network\n"
+"     --taketwo-len-tolerance    Reciprocal space length tolerance (1/A)\n"
+"     --taketwo-angle-tolerance  Reciprocal space angle tolerance (in degrees)\n"
+"     --taketwo-trace-tolerance  Rotation matrix trace tolerance\n"
 );
 }
 
@@ -276,6 +281,10 @@ int main(int argc, char *argv[])
 	iargs.fix_divergence = -1.0;
 	iargs.felix_options = NULL;
 	iargs.profile = 0;
+	iargs.taketwo_opts.member_thresh = -1;
+	iargs.taketwo_opts.len_tol = -1.0;
+	iargs.taketwo_opts.angle_tol = -1.0;
+	iargs.taketwo_opts.trace_tol = -1.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -344,6 +353,10 @@ int main(int argc, char *argv[])
 	        {"min-res",            1, NULL,               29},
 	        {"max-res",            1, NULL,               30},
 	        {"min-peaks",          1, NULL,               31},
+	        {"taketwo-member-thresh", 1, NULL,            32},
+	        {"taketwo-len-tol",       1, NULL,            33},
+	        {"taketwo-angle-tol",     1, NULL,            34},
+	        {"taketwo-trace-tol",     1, NULL,            35},
 
 		{0, 0, NULL, 0}
 	};
@@ -549,6 +562,39 @@ int main(int argc, char *argv[])
 
 			case 31:
 			iargs.min_peaks = atoi(optarg);
+			break;
+
+			case 32:
+			if ( sscanf(optarg, "%i", &iargs.taketwo_opts.member_thresh) != 1 )
+			{
+				ERROR("Invalid value for --taketwo-member-threshold\n");
+				return 1;
+			}
+			break;
+
+			case 33:
+			if ( sscanf(optarg, "%lf", &iargs.taketwo_opts.len_tol) != 1 )
+			{
+				ERROR("Invalid value for --taketwo-len-tolerance\n");
+				return 1;
+			}
+			break;
+
+			case 34:
+			if ( sscanf(optarg, "%lf", &iargs.taketwo_opts.angle_tol) != 1 )
+			{
+				ERROR("Invalid value for --taketwo-angle-tolerance\n");
+				return 1;
+			}
+			break;
+
+
+			case 35:
+			if ( sscanf(optarg, "%lf", &iargs.taketwo_opts.trace_tol) != 1 )
+			{
+				ERROR("Invalid value for --taketwo-trace-tolerance\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -803,7 +849,8 @@ int main(int argc, char *argv[])
 
 		iargs.ipriv = setup_indexing(indm_str, iargs.cell, iargs.det,
 		                             iargs.tols, no_refine,
-		                             iargs.felix_options);
+		                             iargs.felix_options,
+		                             &iargs.taketwo_opts);
 		if ( iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");
 			return 1;

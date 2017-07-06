@@ -1511,7 +1511,7 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 
 /* CrystFEL interface hooks */
 
-int taketwo_index(struct image *image, void *priv)
+int taketwo_index(struct image *image, struct taketwo_options *opts, void *priv)
 {
 	Crystal *cr;
 	UnitCell *cell;

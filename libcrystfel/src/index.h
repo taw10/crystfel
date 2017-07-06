@@ -157,10 +157,13 @@ extern IndexingMethod get_indm_from_string(const char *method);
 #include "detector.h"
 #include "cell.h"
 #include "image.h"
+#include "taketwo.h"
+
 
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct detector *det, float *ltl,
-                                       int no_refine, const char *options);
+                                       int no_refine, const char *options,
+                                       struct taketwo_options *ttopts);
 
 extern void index_pattern(struct image *image, IndexingPrivate *ipriv);
 

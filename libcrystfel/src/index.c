@@ -64,6 +64,8 @@ struct _indexingprivate
 	UnitCell *target_cell;
 	float tolerance[4];
 
+	struct taketwo_options *ttopts;
+
 	int n_methods;
 	IndexingMethod *methods;
 	void **engine_private;
@@ -157,7 +159,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 struct detector *det, float *ltl,
-                                int no_refine, const char *options)
+                                int no_refine, const char *options,
+                                struct taketwo_options *ttopts)
 {
 	int i, n;
 	char **method_strings;
@@ -215,6 +218,8 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		ipriv->target_cell = NULL;
 	}
 	for ( i=0; i<4; i++ ) ipriv->tolerance[i] = ltl[i];
+
+	ipriv->ttopts = ttopts;
 
 	return ipriv;
 }
@@ -339,7 +344,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		break;
 
 		case INDEXING_TAKETWO :
-		r = taketwo_index(image, mpriv);
+		r = taketwo_index(image, ipriv->ttopts, mpriv);
 		break;
 
 		default :

@@ -3,13 +3,13 @@
  *
  * Rewrite of TakeTwo algorithm (Acta D72 (8) 956-965) for CrystFEL
  *
- * Copyright © 2016 Helen Ginn
- * Copyright © 2016 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2016-2017 Helen Ginn
+ * Copyright © 2016-2017 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2016 Helen Ginn <helen@strubi.ox.ac.uk>
- *   2016 Thomas White <taw@physics.org>
+ *   2016      Helen Ginn <helen@strubi.ox.ac.uk>
+ *   2016-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -32,10 +32,20 @@
 #define TAKETWO_H
 
 #include "cell.h"
+#include "index.h"
+
+struct taketwo_options
+{
+	int member_thresh;
+	double len_tol;
+	double angle_tol;
+	double trace_tol;
+};
+
 
 extern void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
                              struct detector *det, float *ltl);
-extern int taketwo_index(struct image *image, void *priv);
+extern int taketwo_index(struct image *image, struct taketwo_options *opts, void *priv);
 extern void taketwo_cleanup(IndexingPrivate *pp);
 
 #endif /* TAKETWO_H */
