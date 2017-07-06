@@ -1,15 +1,3 @@
-//
-//  ignore.h
-//  cppxfel
-//
-//  Created by Helen Ginn on 24/03/2017.
-//  Copyright (c) 2017 Division of Structural Biology Oxford. All rights reserved.
-//
-
-#ifndef cppxfel_ignore_h
-#define cppxfel_ignore_h
-
-
 /*
  * taketwo.c
  *
@@ -45,13 +33,13 @@
 #include <float.h>
 #include <math.h>
 #include <assert.h>
+#include <time.h>
 
 #include "cell-utils.h"
 #include "index.h"
 #include "taketwo.h"
 #include "peaks.h"
 #include "symmetry.h"
-#include <time.h>
 
 /**
  * spotvec
@@ -1634,5 +1622,3 @@ void taketwo_cleanup(IndexingPrivate *pp)
 	free(tp);
 }
 
-
-#endif
