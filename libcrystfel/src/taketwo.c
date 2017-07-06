@@ -1518,7 +1518,7 @@ int taketwo_index(struct image *image, void *priv)
 	struct rvec *rlps;
 	int n_rlps = 0;
 	int i;
-	struct taketwo_private *tp = (struct taketwo_private *)ipriv;
+	struct taketwo_private *tp = (struct taketwo_private *)priv;
 
 	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
