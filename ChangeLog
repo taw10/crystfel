@@ -4,8 +4,11 @@ Changes in this development version
 - indexamajig --peaks=peakfinder8 was added (Valerio Mariani, Oleksandr Yefanov)
 - CBF files are now supported as input.
 - TakeTwo indexing was incorporated (Helen Ginn)
+- indexamajig --min-peaks and --no-non-hits-in-stream were added
+  (basic hitfinder functionality)
 - indexamajig: Hung worker processes will now be detected and killed.
-- Peak locations from HDF5 or CXI files are now offset by 0.5,0.5.
+- Peak locations from HDF5 or CXI files are now offset by 0.5,0.5 (needed for
+  peaks from Cheetah and previously neglected).
 - Detector panels no longer need to be perpendicular to the X-ray beam.
 - Detector "rail" direction ("camera length" axis) no longer needs to be along
   the X-ray beam direction.
