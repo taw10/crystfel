@@ -402,6 +402,14 @@ Skip the prediction refinement step.
 Display timing data for performance monitoring.
 
 .PD 0
+.IP \fB--taketwo-member-threshold=\fIn\fR
+.IP \fB--taketwo-len-tolerance=\fIn\fR
+.IP \fB--taketwo-angle-tolerance=\fIn\fR
+.IP \fB--taketwo-trace-tolerance=\fIn\fR
+.PD
+These set low-level parameters for the TakeTwo indexing algorithm.  Respectively, the minimum number of vectors in the network before the pattern is considered indexed, the length and angle tolerances (in reciprocal Angstroms and degrees, respectively) and the matrix trace tolerance for considering rotation matrices as equal.
+
+.PD 0
 .IP \fB--felix-options\fR
 .PD
 Specify a comma-separated list of keyword arguments to change the default parameters passed to the felix indexer. For asthetics, this list can also be preceeded and followed by quotations - as in: \fB--felix-options="arg1=10,arg2=600"\fR. A list of parameters which can be modified through this option is detailed below.
