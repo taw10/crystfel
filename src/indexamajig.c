@@ -586,6 +586,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --taketwo-angle-tolerance\n");
 				return 1;
 			}
+			iargs.taketwo_opts.angle_tol = deg2rad(iargs.taketwo_opts.angle_tol);
 			break;
 
 
