@@ -82,6 +82,7 @@ struct TakeTwoCell
 	unsigned int   numOps;
 	struct SpotVec **obs_vecs; // Pointer to an array
 	int obs_vec_count;
+	struct taketwo_options *options;
 	gsl_matrix *twiz1Tmp;
 	gsl_matrix *twiz2Tmp;
 	gsl_vector *vec1Tmp;
@@ -403,7 +404,7 @@ static SymOpList *sym_ops_for_cell(UnitCell *cell)
 
 static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
   				gsl_matrix *sub, gsl_matrix *mul,
-				double *score)
+				double *score, struct TakeTwoCell *cell)
 {
 	double tr;
 
@@ -415,9 +416,7 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 	tr = matrix_trace(mul);
 	if (score != NULL) *score = tr;
 
-	double max = sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));
-
-	return (tr < max);
+	return (tr < cell->options->trace_tol);
 }
 
 static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
@@ -435,7 +434,7 @@ static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, rot1, symOp,
 		0.0, testRot);
 		
-		if (rot_mats_are_similar(testRot, rot2, sub, mul, NULL)) {
+		if (rot_mats_are_similar(testRot, rot2, sub, mul, NULL, cell)) {
 			gsl_matrix_free(testRot);
 			gsl_matrix_free(sub);
 			gsl_matrix_free(mul);
@@ -559,7 +558,7 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 static int obs_vecs_match_angles(struct SpotVec *her_obs,
                                  struct SpotVec *his_obs,
                                  int **her_match_idxs, int **his_match_idxs,
-                                 int *match_count)
+                                 int *match_count, struct TakeTwoCell *cell)
 {
         int i, j;
         *match_count = 0;
@@ -585,7 +584,7 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
                 double angle_diff = fabs(theory_angle - obs_angle);
 
-                if ( angle_diff < ANGLE_TOLERANCE ) {
+                if ( angle_diff < cell->options->angle_tol ) {
                         // in the case of a brief check only            
                         if (!her_match_idxs || !his_match_idxs) {
                                 return 1;
@@ -694,7 +693,7 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 			double addition;
 			rot_mats_are_similar(rotations[i], rotations[j],
 					     sub, mul,
-					     &addition);
+					     &addition, cell);
 
 			current_score += addition;
 		}
@@ -839,7 +838,7 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 
 				double trace = 0;
 				int ok = rot_mats_are_similar(rot, test_rot,
-						       sub, mul, &trace);
+						       sub, mul, &trace, cell);
 				
 				gsl_matrix_free(test_rot);
 
@@ -954,13 +953,13 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 		}
 
 		/* If member_num is high enough, we want to return a yes */
-		if ( member_num > NETWORK_MEMBER_THRESHOLD ) break;
+		if ( member_num > cell->options->member_thresh ) break;
 	}
 
 	finish_solution(rot, obs_vecs, obs_members,
 			  match_members, member_num, cell);
 	
-	return ( member_num > NETWORK_MEMBER_THRESHOLD );
+	return ( member_num > cell->options->member_thresh );
 }
 
 
@@ -1016,19 +1015,16 @@ static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
 
 			if ( !shared ) continue;
 
-			/* cell vector index matches stored in i, j and total number
-			 * stored in int matches.
+			/* cell vector index matches stored in i, j and total
+			 * number stored in int matches.
 			 */
 			int *i_idx = 0;
 			int *j_idx = 0;
 			int matches;
 				
-		//	double dist1Pc = 100 * obs_vecs[i].distance / MAX_RECIP_DISTANCE;
-//			double dist2Pc = 100 * obs_vecs[j].distance / MAX_RECIP_DISTANCE;
-			
 			/* Check to see if any angles match from the cell vectors */
 			obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
-					      &i_idx, &j_idx, &matches);
+					      &i_idx, &j_idx, &matches, cell);
 			if ( matches == 0 ) {
 				free(i_idx);
 				free(j_idx);
@@ -1192,7 +1188,7 @@ static int sort_func(const void *av, const void *bv)
 
 static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 				  struct SpotVec *obs_vecs, int obs_vec_count,
-				  int is_asymmetric)
+				  int is_asymmetric, struct TakeTwoCell *cell)
 {
 	int i, j;
 
@@ -1209,7 +1205,7 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 			/* check if this matches the observed length */
 			double dist_diff = fabs(cell_length - obs_length);
 
-			if ( dist_diff > RECIP_TOLERANCE ) continue;
+			if ( dist_diff > cell->options->len_tol ) continue;
 
 			/* we have a match, add to array! */
 
@@ -1449,7 +1445,8 @@ static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
  * @rot: pointer to be given an assignment (hopefully) if indexing is
  * successful.
  **/
-static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
+static UnitCell *run_taketwo(UnitCell *cell, struct taketwo_options *opts,
+			     struct rvec *rlps, int rlp_count)
 {
 	int cell_vec_count = 0;
 	int asym_vec_count = 0;
@@ -1463,6 +1460,7 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	
 	struct TakeTwoCell ttCell;
 	ttCell.cell = cell;
+	ttCell.options = opts;
 	ttCell.rotSymOps = NULL;
 	ttCell.twiz1Tmp = gsl_matrix_calloc(3, 3);
 	ttCell.twiz2Tmp = gsl_matrix_calloc(3, 3);
@@ -1483,10 +1481,10 @@ static UnitCell *run_taketwo(UnitCell *cell, struct rvec *rlps, int rlp_count)
 	ttCell.obs_vec_count = obs_vec_count;
 
 	success = match_obs_to_cell_vecs(asym_vecs, asym_vec_count,
-					 obs_vecs, obs_vec_count, 1);
+					 obs_vecs, obs_vec_count, 1, &ttCell);
 
 	success = match_obs_to_cell_vecs(cell_vecs, cell_vec_count,
-					 obs_vecs, obs_vec_count, 0);
+					 obs_vecs, obs_vec_count, 0, &ttCell);
 
 	free(cell_vecs);
 	free(asym_vecs);
@@ -1520,6 +1518,26 @@ int taketwo_index(struct image *image, struct taketwo_options *opts, void *priv)
 	int i;
 	struct taketwo_private *tp = (struct taketwo_private *)priv;
 
+	/* Replace negative values in options with defaults */
+
+	if (opts->member_thresh < 0) {
+		opts->member_thresh = NETWORK_MEMBER_THRESHOLD;
+	}
+
+	if (opts->len_tol < 0) {
+		opts->len_tol = RECIP_TOLERANCE;
+	}
+	
+	if (opts->angle_tol < 0) {
+		opts->angle_tol = ANGLE_TOLERANCE;
+	}
+
+	if (opts->trace_tol < 0) {
+		opts->trace_tol = TRACE_TOLERANCE;
+	}
+	
+	opts->trace_tol = sqrt(4.0*(1.0-cos(opts->trace_tol)));
+
 	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 		struct imagefeature *pk = image_get_feature(image->features, i);
@@ -1533,7 +1551,7 @@ int taketwo_index(struct image *image, struct taketwo_options *opts, void *priv)
 	rlps[n_rlps].v = 0.0;
 	rlps[n_rlps++].w = 0.0;
 
-	cell = run_taketwo(tp->cell, rlps, n_rlps);
+	cell = run_taketwo(tp->cell, opts, rlps, n_rlps);
 	free(rlps);
 	if ( cell == NULL ) return 0;
 
