@@ -115,11 +115,7 @@ struct TakeTwoCell
 /* Tolerance for rot_mats_are_similar */
 #define TRACE_TOLERANCE (deg2rad(3.0))
 
-/** TODO:
- *
- * - May need to be capable of playing with the tolerances/#defined stuff.
- * - Multiple lattices
- */
+/* TODO: Multiple lattices */
 
 
 /* ------------------------------------------------------------------------

@@ -175,7 +175,7 @@ static void show_help(const char *s)
 "     --taketwo-member-threshold Minimum number of members in network\n"
 "     --taketwo-len-tolerance    Reciprocal space length tolerance (1/A)\n"
 "     --taketwo-angle-tolerance  Reciprocal space angle tolerance (in degrees)\n"
-"     --taketwo-trace-tolerance  Rotation matrix trace tolerance\n"
+"     --taketwo-trace-tolerance  Rotation matrix equivalence tolerance (in degrees)\n"
 );
 }
 
@@ -578,6 +578,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --taketwo-len-tolerance\n");
 				return 1;
 			}
+			iargs.taketwo_opts.len_tol *= 1e10;
 			break;
 
 			case 34:
@@ -596,6 +597,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --taketwo-trace-tolerance\n");
 				return 1;
 			}
+			iargs.taketwo_opts.trace_tol = deg2rad(iargs.taketwo_opts.trace_tol);
 			break;
 
 			case 0 :
