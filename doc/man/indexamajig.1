@@ -407,7 +407,9 @@ Display timing data for performance monitoring.
 .IP \fB--taketwo-angle-tolerance=\fIn\fR
 .IP \fB--taketwo-trace-tolerance=\fIn\fR
 .PD
-These set low-level parameters for the TakeTwo indexing algorithm.  Respectively, the minimum number of vectors in the network before the pattern is considered indexed, the length and angle tolerances (in reciprocal Angstroms and degrees, respectively) and the matrix trace tolerance for considering rotation matrices as equal.
+These set low-level parameters for the TakeTwo indexing algorithm.  Respectively, the minimum number of vectors in the network before the pattern is considered indexed, the length and angle tolerances (in reciprocal Angstroms and degrees, respectively) and the rotation matrix angle tolerance (in degrees) for considering rotation matrices as equal.
+.IP
+The defaults are: \fB--taketwo-member-threshold=20\fR, \fB--taketwo-len-tolernace=0.001\fR, \fB--taketwo-angle-tolerance=0.6\fR and \fB--taketwo-trace-tolerance=3\fR.
 
 .PD 0
 .IP \fB--felix-options\fR
