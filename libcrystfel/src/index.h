@@ -58,6 +58,11 @@
                                      | INDEXING_USE_CELL_PARAMETERS            \
                                      | INDEXING_RETRY | INDEXING_REFINE)
 
+#define INDEXING_DEFAULTS_TAKETWO (INDEXING_TAKETWO | INDEXING_CHECK_PEAKS     \
+                                     | INDEXING_USE_CELL_PARAMETERS            \
+                                     | INDEXING_USE_LATTICE_TYPE               \
+                                     | INDEXING_RETRY | INDEXING_REFINE)
+
 /* Axis check is needed for XDS, because it likes to permute the axes */
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
                                      | INDEXING_USE_CELL_PARAMETERS            \
@@ -75,6 +80,7 @@
  * @INDEXING_SIMULATION: Dummy value
  * @INDEXING_DEBUG: Results injector for debugging
  * @INDEXING_ASDF: Use in-built "asdf" indexer
+ * @INDEXING_TAKETWO: Use in-built "taketwo" indexer
  * @INDEXING_ERROR: Special value for unrecognised indexing engine name
  * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
  *   axes for agreement with given cell.
@@ -108,6 +114,7 @@ typedef enum {
 	INDEXING_SIMULATION = 6,
 	INDEXING_DEBUG = 7,
 	INDEXING_ASDF = 8,
+	INDEXING_TAKETWO = 9,
 
 	INDEXING_ERROR = 255,  /* Unrecognised indexing engine */
 
@@ -150,10 +157,13 @@ extern IndexingMethod get_indm_from_string(const char *method);
 #include "detector.h"
 #include "cell.h"
 #include "image.h"
+#include "taketwo.h"
+
 
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct detector *det, float *ltl,
-                                       int no_refine, const char *options);
+                                       int no_refine, const char *options,
+                                       struct taketwo_options *ttopts);
 
 extern void index_pattern(struct image *image, IndexingPrivate *ipriv);
 

@@ -56,12 +56,15 @@
 #include "cell-utils.h"
 #include "felix.h"
 #include "predict-refine.h"
+#include "taketwo.h"
 
 
 struct _indexingprivate
 {
 	UnitCell *target_cell;
 	float tolerance[4];
+
+	struct taketwo_options *ttopts;
 
 	int n_methods;
 	IndexingMethod *methods;
@@ -120,6 +123,10 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		priv = felix_prepare(m, cell, det, ltl, options);
 		break;
 
+		case INDEXING_TAKETWO :
+		priv = taketwo_prepare(m, cell, det, ltl);
+		break;
+
 		default :
 		ERROR("Don't know how to prepare indexing method %i\n", *m);
 		break;
@@ -152,7 +159,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 struct detector *det, float *ltl,
-                                int no_refine, const char *options)
+                                int no_refine, const char *options,
+                                struct taketwo_options *ttopts)
 {
 	int i, n;
 	char **method_strings;
@@ -211,6 +219,8 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	}
 	for ( i=0; i<4; i++ ) ipriv->tolerance[i] = ltl[i];
 
+	ipriv->ttopts = ttopts;
+
 	return ipriv;
 }
 
@@ -250,6 +260,10 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 
 			case INDEXING_DEBUG :
 			free(ipriv->engine_private[n]);
+			break;
+
+			case INDEXING_TAKETWO :
+			taketwo_cleanup(ipriv->engine_private[n]);
 			break;
 
 			default :
@@ -327,6 +341,10 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_FELIX :
 		r = felix_index(image, mpriv);
+		break;
+
+		case INDEXING_TAKETWO :
+		r = taketwo_index(image, ipriv->ttopts, mpriv);
 		break;
 
 		default :
@@ -662,6 +680,10 @@ char *indexer_str(IndexingMethod indm)
 		strcpy(str, "xds");
 		break;
 
+		case INDEXING_TAKETWO :
+		strcpy(str, "taketwo");
+		break;
+
 		case INDEXING_SIMULATION :
 		strcpy(str, "simulation");
 		break;
@@ -768,6 +790,11 @@ IndexingMethod get_indm_from_string(const char *str)
 		} else if ( strcmp(bits[i], "felix") == 0) {
 			if ( have_method ) return warn_method(str);
 			method = INDEXING_DEFAULTS_FELIX;
+			have_method = 1;
+
+		} else if ( strcmp(bits[i], "taketwo") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_TAKETWO;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "none") == 0) {
