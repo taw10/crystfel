@@ -353,9 +353,13 @@ int main(int argc, char *argv[])
 	        {"min-res",            1, NULL,               29},
 	        {"max-res",            1, NULL,               30},
 	        {"min-peaks",          1, NULL,               31},
+	        {"taketwo-member-threshold", 1, NULL,         32},
 	        {"taketwo-member-thresh", 1, NULL,            32},
+	        {"taketwo-len-tolerance",    1, NULL,         33},
 	        {"taketwo-len-tol",       1, NULL,            33},
+	        {"taketwo-angle-tolerance",  1, NULL,         34},
 	        {"taketwo-angle-tol",     1, NULL,            34},
+	        {"taketwo-trace-tolerance",  1, NULL,         35},
 	        {"taketwo-trace-tol",     1, NULL,            35},
 
 		{0, 0, NULL, 0}
