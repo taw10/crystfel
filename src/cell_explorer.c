@@ -1045,7 +1045,8 @@ static int guess_centering(HistoBox *b, UnitCell *cell)
 	long int tots[8];
 	long int max = 0;
 	long int total = 0;
-	int i, j, mxj;
+	int i, j;
+	int mxj = 99;
 
 	/* Since the six histograms (a,b,c,al,be,ga) come from the same cells,
 	 * we only need to look at one of them */

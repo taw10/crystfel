@@ -158,7 +158,8 @@ static void run_merge_job(void *vwargs, int cookie)
 		Reflection *f;
 		signed int h, k, l;
 		double mean, sumweight, M2, temp, delta, R;
-		double corr, res, w, esd;
+		double corr, res, w;
+		//double esd;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
@@ -199,7 +200,7 @@ static void run_merge_job(void *vwargs, int cookie)
 			continue;
 		}
 
-		esd = get_esd_intensity(refl) * corr;
+		//esd = get_esd_intensity(refl) * corr;
 		w = 1.0;
 
 		/* Running mean and variance calculation */

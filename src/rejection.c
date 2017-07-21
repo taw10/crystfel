@@ -155,7 +155,7 @@ static void check_cc(Crystal *cr, RefList *full)
 }
 
 
-static void check_ccs(Crystal **crystals, int n_crystals, RefList *full)
+static UNUSED void check_ccs(Crystal **crystals, int n_crystals, RefList *full)
 {
 	int i;
 
