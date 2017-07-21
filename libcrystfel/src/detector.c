@@ -1536,6 +1536,13 @@ struct detector *get_detector_geometry_2(const char *filename,
 			reject = 1;
 		}
 
+		if ( (p->mask_file != NULL) && (p->mask == NULL) ) {
+			ERROR("You have specified 'mask_file' but not 'mask'.  "
+			      "'mask_file' will therefore have no effect.  "
+			      "(panel %s)\n", p->name);
+			reject = 1;
+		}
+
 		/* The default rail direction */
 		if ( isnan(p->rail_x) ) {
 			p->rail_x = 0.0;
