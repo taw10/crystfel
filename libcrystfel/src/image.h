@@ -173,13 +173,7 @@ struct beam_params
  * The field <structfield>data</structfield> contains the raw image data, if it
  * is currently available.  The data might be available throughout the
  * processing of an experimental pattern, but it might not be available when
- * simulating, scaling or merging patterns.  Similarly,
- * <structfield>flags</structfield> contains an array of the same dimensions
- * as <structfield>data</structfield> to contain the bad pixel flags.
- * <structfield>twotheta</structfield> likewise contains an array of 2*theta
- * (scattering angle) values in radians, since these values are generated as a
- * by-product of the scattering vector calculation and can be used later for
- * calculating intensities from differential scattering cross sections.
+ * simulating, scaling or merging patterns.
  *
  * <structfield>crystals</structfield> is an array of %Crystal directly
  * returned by the low-level indexing system. <structfield>n_crystals</structfield>
