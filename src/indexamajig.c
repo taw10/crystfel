@@ -582,6 +582,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --taketwo-len-tolerance\n");
 				return 1;
 			}
+			/* Convert to m^-1 */
 			iargs.taketwo_opts.len_tol *= 1e10;
 			break;
 
@@ -591,9 +592,9 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --taketwo-angle-tolerance\n");
 				return 1;
 			}
+			/* Convert to radians */
 			iargs.taketwo_opts.angle_tol = deg2rad(iargs.taketwo_opts.angle_tol);
 			break;
-
 
 			case 35:
 			if ( sscanf(optarg, "%lf", &iargs.taketwo_opts.trace_tol) != 1 )
@@ -601,6 +602,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --taketwo-trace-tolerance\n");
 				return 1;
 			}
+			/* Convert to radians */
 			iargs.taketwo_opts.trace_tol = deg2rad(iargs.taketwo_opts.trace_tol);
 			break;
 

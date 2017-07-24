@@ -82,7 +82,13 @@ struct TakeTwoCell
 	unsigned int   numOps;
 	struct SpotVec **obs_vecs; // Pointer to an array
 	int obs_vec_count;
-	struct taketwo_options *options;
+
+	/* Options */
+	int member_thresh;
+	double len_tol;   /* In reciprocal metres */
+	double angle_tol; /* In radians */
+	double trace_tol; /* Contains sqrt(4*(1-cos(angle))) */
+
 	gsl_matrix *twiz1Tmp;
 	gsl_matrix *twiz2Tmp;
 	gsl_vector *vec1Tmp;
@@ -98,9 +104,6 @@ struct TakeTwoCell
 
 /* Threshold for network members to consider a potential solution */
 #define NETWORK_MEMBER_THRESHOLD (20)
-
-/* Maximum network members (obviously a solution so should stop) */
-#define MAX_NETWORK_MEMBERS (NETWORK_MEMBER_THRESHOLD + 3)
 
 /* Maximum dead ends for a single branch extension during indexing */
 #define MAX_DEAD_ENDS (10)
@@ -412,7 +415,7 @@ static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
 	tr = matrix_trace(mul);
 	if (score != NULL) *score = tr;
 
-	return (tr < cell->options->trace_tol);
+	return (tr < cell->trace_tol);
 }
 
 static int symm_rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
@@ -580,7 +583,8 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
                 double angle_diff = fabs(theory_angle - obs_angle);
 
-                if ( angle_diff < cell->options->angle_tol ) {
+                if ( angle_diff < cell->angle_tol ) {
+
                         // in the case of a brief check only
                         if (!her_match_idxs || !his_match_idxs) {
                                 return 1;
@@ -882,10 +886,16 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 {
 	struct SpotVec *obs_vecs = *(cell->obs_vecs);
 	int obs_vec_count = cell->obs_vec_count;
+	int *obs_members;
+	int *match_members;
 
 	/* indices of members of the self-consistent network of vectors */
-	int obs_members[MAX_NETWORK_MEMBERS];
-	int match_members[MAX_NETWORK_MEMBERS];
+	obs_members = malloc((cell->member_thresh+3)*sizeof(int));
+	match_members = malloc((cell->member_thresh+3)*sizeof(int));
+	if ( (obs_members == NULL) || (match_members == NULL) ) {
+		apologise();
+		return 0;
+	}
 
 	/* initialise the ones we know already */
 	obs_members[0] = obs_idx1;
@@ -949,13 +959,17 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 		}
 
 		/* If member_num is high enough, we want to return a yes */
-		if ( member_num > cell->options->member_thresh ) break;
+		if ( member_num > cell->member_thresh ) break;
+
 	}
 
 	finish_solution(rot, obs_vecs, obs_members,
-			  match_members, member_num, cell);
+	                match_members, member_num, cell);
 
-	return ( member_num > cell->options->member_thresh );
+	free(obs_members);
+	free(match_members);
+
+	return ( member_num > cell->member_thresh );
 }
 
 
@@ -1201,7 +1215,7 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 			/* check if this matches the observed length */
 			double dist_diff = fabs(cell_length - obs_length);
 
-			if ( dist_diff > cell->options->len_tol ) continue;
+			if ( dist_diff > cell->len_tol ) continue;
 
 			/* we have a match, add to array! */
 
@@ -1456,7 +1470,6 @@ static UnitCell *run_taketwo(UnitCell *cell, struct taketwo_options *opts,
 
 	struct TakeTwoCell ttCell;
 	ttCell.cell = cell;
-	ttCell.options = opts;
 	ttCell.rotSymOps = NULL;
 	ttCell.twiz1Tmp = gsl_matrix_calloc(3, 3);
 	ttCell.twiz2Tmp = gsl_matrix_calloc(3, 3);
@@ -1475,6 +1488,30 @@ static UnitCell *run_taketwo(UnitCell *cell, struct taketwo_options *opts,
 
 	ttCell.obs_vecs = &obs_vecs;
 	ttCell.obs_vec_count = obs_vec_count;
+
+	if ( opts->member_thresh < 0 ) {
+		ttCell.member_thresh = NETWORK_MEMBER_THRESHOLD;
+	} else {
+		ttCell.member_thresh = opts->member_thresh;
+	}
+
+	if ( opts->len_tol < 0.0 ) {
+		ttCell.len_tol = RECIP_TOLERANCE;
+	} else {
+		ttCell.len_tol = opts->len_tol;  /* Already in m^-1 */
+	}
+
+	if ( opts->angle_tol < 0.0 ) {
+		ttCell.angle_tol = ANGLE_TOLERANCE;
+	} else {
+		ttCell.angle_tol = opts->angle_tol;  /* Already in radians */
+	}
+
+	if ( opts->trace_tol < 0.0 ) {
+		ttCell.trace_tol = sqrt(4.0*(1.0-cos(TRACE_TOLERANCE)));
+	} else {
+		ttCell.trace_tol = sqrt(4.0*(1.0-cos(opts->trace_tol)));
+	}
 
 	success = match_obs_to_cell_vecs(asym_vecs, asym_vec_count,
 					 obs_vecs, obs_vec_count, 1, &ttCell);
@@ -1513,26 +1550,6 @@ int taketwo_index(struct image *image, struct taketwo_options *opts, void *priv)
 	int n_rlps = 0;
 	int i;
 	struct taketwo_private *tp = (struct taketwo_private *)priv;
-
-	/* Replace negative values in options with defaults */
-
-	if (opts->member_thresh < 0) {
-		opts->member_thresh = NETWORK_MEMBER_THRESHOLD;
-	}
-
-	if (opts->len_tol < 0) {
-		opts->len_tol = RECIP_TOLERANCE;
-	}
-
-	if (opts->angle_tol < 0) {
-		opts->angle_tol = ANGLE_TOLERANCE;
-	}
-
-	if (opts->trace_tol < 0) {
-		opts->trace_tol = TRACE_TOLERANCE;
-	}
-
-	opts->trace_tol = sqrt(4.0*(1.0-cos(opts->trace_tol)));
 
 	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
