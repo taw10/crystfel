@@ -915,6 +915,8 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 	while ( 1 ) {
 
 		if (start > obs_vec_count) {
+			free(obs_members);
+			free(match_members);
 			return 0;
 		}
 
@@ -926,6 +928,8 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 							&match_found, cell);
 
 		if ( member_num < 2 ) {
+			free(obs_members);
+			free(match_members);
 			return 0;
 		}
 
