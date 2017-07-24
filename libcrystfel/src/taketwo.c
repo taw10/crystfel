@@ -1459,7 +1459,7 @@ static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
  * @rot: pointer to be given an assignment (hopefully) if indexing is
  * successful.
  **/
-static UnitCell *run_taketwo(UnitCell *cell, struct taketwo_options *opts,
+static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 			     struct rvec *rlps, int rlp_count)
 {
 	int cell_vec_count = 0;
@@ -1546,7 +1546,8 @@ static UnitCell *run_taketwo(UnitCell *cell, struct taketwo_options *opts,
 
 /* CrystFEL interface hooks */
 
-int taketwo_index(struct image *image, struct taketwo_options *opts, void *priv)
+int taketwo_index(struct image *image, const struct taketwo_options *opts,
+                  void *priv)
 {
 	Crystal *cr;
 	UnitCell *cell;
