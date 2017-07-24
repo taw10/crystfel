@@ -1,5 +1,5 @@
-Changes in this development version
------------------------------------
+CrystFEL version 0.6.3, 24th July 2017
+--------------------------------------
 
 - indexamajig --peaks=peakfinder8 was added (Valerio Mariani, Oleksandr Yefanov)
 - CBF files are now supported as input.

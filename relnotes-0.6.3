@@ -1,0 +1,211 @@
+CrystFEL - Crystallography with a FEL
+-------------------------------------
+
+Release notes for version 0.6.3
+
+Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+                      a research centre of the Helmholtz Association.
+
+Authors:
+  Thomas White <taw@physics.org>
+  Richard Kirian <rkirian@asu.edu>
+  Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+  Andrew Aquila <andrew.aquila@cfel.de>
+  Andrew Martin <andrew.martin@desy.de>
+  Lorenzo Galli <lorenzo.galli@desy.de>
+  Chun Hong Yoon <chun.hong.yoon@desy.de>
+  Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+  Karol Nass <karol.nass@desy.de>
+  Nadia Zatsepin <nadia.zatsepin@asu.edu>
+  Anton Barty <anton.barty@desy.de>
+  Cornelius Gati <cornelius.gati@desy.de>
+  Fedor Chervinskii <fedor.chervinskii@gmail.com>
+  Alexandra Tolstikova <alexandra.tolstikova@desy.de>
+  Wolfgang Brehm <wolfgang.brehm@gmail.com>
+  Valerio Mariani <valerio.mariani@desy.de>
+  Parker de Waal <Parker.deWaal@vai.org>
+  Takanori Nakane <nakane.t@gmail.com>
+  Keitaro Yamashita <k.yamashita@spring8.or.jp>
+  Oleksandr Yefanov <oleksandr.yefanov@cfel.de>
+  Steve Aplin <steve.aplin@desy.de>
+  Helen Ginn <helen@strubi.ox.ac.uk>
+
+CrystFEL is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Overview
+--------
+
+The most important new features in this version of CrystFEL are:
+
+- Support for CBF files as input
+
+- TakeTwo indexing algorithm
+
+- Improved peak detection and basic hitfinder functionality
+
+- Detector panels not perpendicular to X-ray beam, and "rail direction"
+
+These changes have sections below.  In addition, there were many bug fixes and
+other improvements.  See the "ChangeLog" or the changes page on the CrystFEL
+website for details.
+
+
+Support for CBF files as input
+------------------------------
+
+Crystallographic Binary Files (CBF) can now be used as input for indexamajig
+and hdfsee.  To enable this functionality, you must have "CBFlib" installed.
+Some distributions (eg Fedora) include CBFlib in their standard repositories -
+simply install "cbflib-devel" or similar.  Then compile and install CrystFEL as
+usual.  If CBFlib is installed somewhere non-standard, e.g. if you has to
+install it manually, you will need to give the path with the "--with-cbflib-dir"
+option to "./configure".
+
+After that, you can simply give the names of CBF files in the indexamajig input,
+and everything should work as usual!  There are some catches, for example you
+cannot yet use a bad pixel mask with CBF files, but these will be fixed in a
+future release.
+
+
+TakeTwo indexing algorithm
+--------------------------
+
+This version of CrystFEL includes the TakeTwo indexing algorithm by Helen Ginn.
+TakeTwo is a new indexing algorithm, designed specifically for diffraction
+snapshots and operating completely differently to conventional FFT-based methods.
+
+To use it, simply use "taketwo" as the indexing method, or add it to the list of
+indexing methods you have already:
+   $ indexamajig --indexing=taketwo
+   $ indexamajig --indexing=mosflm,taketwo,dirax
+
+If you use TakeTwo, please take careful note of the citation reminder which will
+be shown to you, and cite the following paper in any resulting publications:
+   Ginn et al., Acta Cryst. (2016). D72, 956-965
+
+TakeTwo is considered experimental in this version of CrystFEL.  We welcome any
+feedback, and will use the information to improve its performance for future
+versions.
+
+
+Improved peak detection and basic hitfinder functionality
+---------------------------------------------------------
+
+"Peak finder 8" from Cheetah, also used in OnDA, has been incorporated into
+CrystFEL.  It uses a radially varying background level to find peaks, which
+works very well with most diffraction data.
+
+Simply use "--peaks=peakfinder8", and set --threshold, --min-snr,
+--min-pix-count and --local-bg-radius.  See the manual for other options.
+
+Indexamajig can now skip over patterns which have a small number of peaks.  To
+use this, use the option "--min-peaks=N", where N is the minimum number of peaks
+before indexamajig will proceed to indexing (and hopefully integration) with the
+pattern.
+
+By combining the improved peak detection with the hitfinder functionality and
+CBF reading, you can process data from several different types of detector,
+without converting the files to HDF5 format or using any external program for
+hit finding!
+
+If the hit rate is very low, you might want to make CrystFEL stream smaller by
+excluding non-hits from it using "--no-non-hits-in-stream".  Without this
+option, standard information about the non-hits (e.g. photon energy and peaks
+found) will be recorded.
+
+
+Detector panels not perpendicular to X-ray beam, and "rail direction"
+----------------------------------------------------------------------
+
+CrystFEL now supports three-dimensional detector geometry.  The "fs" and "ss"
+vectors (which are the real-space directions of the fast scan and slow scan
+directions in the image data) can now contain a z component as well as x and y.
+
+For many detectors, the "rail" direction, along which the detector moves when
+the "camera length" (sample-detector distance) is adjusted, is not perpendicular
+to the detector plane.  The geometry file now allows you to specify this "rail"
+direction, containing x, y and z components.  See the crystfel_geometry manual
+page for more details.
+
+
+API changes
+-----------
+
+The following changes have been made to the libcrystfel API.  The biggest
+changes are the switch from the old "hdfile" API (which is still supported),
+to the new "imagefile" API, while allows multiple file types to be used.
+The indexing system was also updated, and there were changes to the detector
+geometry system, which no longer uses the "data slab" representation internally.
+
+New functions:
+	- crystal_{get,set}_det_shift()
+	- panel_number()
+	- get_detector_geometry_2()
+	- fill_in_adu()
+	- adjust_centering_for_rail()
+	- get_peaks_2()
+	- get_peaks_cxi_2()
+	- imagefile_open()
+	- imagefile_read()
+	- imagefile_read_simple()
+	- imagefile_get_hdfile()
+	- imagefile_get_type()
+	- imagefile_copy_fields()
+	- imagefile_close()
+	- {new,free}_imagefile_field_list()
+	- add_imagefile_field()
+	- get_indm_from_string()
+	- setup_indexing()
+	- index_pattern_2()
+	- search_peaks_peakfinder8()
+	- reflist_add_command_and_version()
+	- reflist_{add,get}_notes()
+	- write_chunk_2()
+	- pointgroup_warning()
+
+New structure definitions:
+	- struct image
+	- struct imagefile_field_list
+
+Removed functions:
+	- get_q()
+	- find_panel()
+	- find_panel_number()
+	- fill_in_values()
+	- partial_event_substitution()
+	- build_indexer_list()
+	- prepare_indexing()
+
+Changed function prototypes:
+	- in_bad_region()
+	- simple_geometry()
+	- reverse_2d_mapping()
+	- hdfile_set_image()
+	- image_add_feature()
+	- image_feature_closest()
+	- image_reflection_closest()
+	- index_pattern()
+	- cleanup_indexing()
+	- write_chunk()
+
+Changed structure definitions:
+	- struct panel: removed {min,max}_{fs,ss}, added adu_per_photon,
+	    added fsz,ssz, rail_{x,y,z} and clen_for_centering
+	- struct detector: removed max_{fs,ss}
+	- struct imagefeature: replaced "pn" with "p"
+	- struct beam_params: "copyme" is not an imagefile_field_list
+	    (previously: copy_hdf5_field)
+	- struct image: "copyme" is not an imagefile_field_list
+	    (previously: copy_hdf5_field).  width and height remoted.
+
