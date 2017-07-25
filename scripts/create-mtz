@@ -8,20 +8,17 @@ OUTFILE=`echo $1 | sed -e 's/\.hkl$/.mtz/'`
 
 echo " Input: $1"
 echo "Output: $OUTFILE"
-if [ -e create-mtz.temp.hkl -o -e $OUTFILE ]; then
-	echo "   I'm about to write to the following files, but one or more"
-	echo "   of them already exist:"
+if [ -e $OUTFILE ]; then
+	echo "   The output file already exists:"
 	echo "   " $OUTFILE
-	echo "    create-mtz.temp.hkl"
 	echo "   To confirm that you want to continue, which will DESTROY the"
-	echo "   current contents of these files, type 'y' and press enter."
+	echo "   current contents of this file, type 'y' and press enter."
 	read conf
 	if [ $conf != y ]; then
 		echo "Not confirmed."
 		exit 1
 	else
 		echo "Proceeding"
-		rm -f create-mtz.temp.hkl
 	fi
 fi
 
@@ -44,4 +41,5 @@ EOF
 
 if [ $? -ne 0 ]; then echo "Failed."; exit; fi
 
+rm -f create-mtz.temp.hkl
 echo "Done."
