@@ -38,7 +38,7 @@ AC_ARG_WITH(gsl,
 [PKG_CHECK_MODULES([GSL], [gsl])])
 
 AC_ARG_ENABLE(cbf, AS_HELP_STRING([--disable-cbf], [Disable CBF file support]))
-AC_ARG_WITH(cbflib_dir, AS_HELP_STRING([--with-cbflib],
+AC_ARG_WITH(cbflib,
             [Specify location of CBFlib headers and libraries]))
 AC_MSG_CHECKING([whether to use CBFlib])
 AS_IF([test "x$enable_cbf" != "xno"],
