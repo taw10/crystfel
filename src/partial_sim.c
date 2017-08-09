@@ -845,7 +845,7 @@ int main(int argc, char *argv[])
 		       background);
 	} else {
 		STATUS("                     Background: none (no image "
-		       "output\n");
+		       "output)\n");
 	}
 	STATUS("               Partiality model: scsphere (hardcoded)\n");
 	STATUS("       Noise standard deviation: %.2f detector units\n",
