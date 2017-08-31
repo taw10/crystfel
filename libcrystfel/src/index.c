@@ -181,6 +181,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 			free(methods);
 			return NULL;
 		}
+		if ( no_refine ) methods[i] &= ~INDEXING_REFINE;
 	}
 
 	ipriv = malloc(sizeof(struct _indexingprivate));
