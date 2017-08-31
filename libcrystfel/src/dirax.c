@@ -562,7 +562,7 @@ int run_dirax(struct image *image, void *ipriv)
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
-		execlp("dirax", "", (char *)NULL);
+		execlp("dirax", "dirax", (char *)NULL);
 		ERROR("Failed to invoke DirAx.\n");
 		_exit(0);
 

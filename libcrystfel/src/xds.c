@@ -549,7 +549,7 @@ int run_xds(struct image *image, void *priv)
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
-		execlp("xds", "", (char *)NULL);
+		execlp("xds", "xds", (char *)NULL);
 		ERROR("Failed to invoke XDS.\n");
 		_exit(0);
 

@@ -479,7 +479,7 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
 		STATUS("Running Felix '%s'\n", ini_filename);
-		execlp("Felix", "", ini_filename, (char *)NULL);
+		execlp("Felix", "Felix", ini_filename, (char *)NULL);
 		ERROR("Failed to invoke Felix.\n");
 		_exit(0);
 
