@@ -40,6 +40,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <hdf5.h>
 
 #include "version.h"
 #include "image.h"
@@ -241,6 +242,106 @@ static int geom_contains_references(struct detector *det)
 		if ( det->panels[i].clen_from != NULL ) return 1;
 	}
 	return 0;
+}
+
+
+static void add_metadata(const char *filename, struct quaternion q,
+                         UnitCell *cell)
+{
+	hid_t fh, gh, sh, dh;
+	herr_t r;
+	hsize_t size[1];
+	float data[4];
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
+	fh = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Failed to open file to add metadata.\n");
+		return;
+	}
+
+	gh = H5Gcreate2(fh, "pattern_sim", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( gh < 0 ) {
+		ERROR("Failed to create metadata group.\n");
+		H5Fclose(fh);
+		return;
+	}
+
+	size[0] = 4;
+	sh = H5Screate_simple(1, size, NULL);
+
+	dh = H5Dcreate2(gh, "quaternion", H5T_NATIVE_FLOAT, sh,
+	                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return;
+	}
+
+	data[0] = q.w;
+	data[1] = q.x;
+	data[2] = q.y;
+	data[3] = q.z;
+	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+	H5Dclose(dh);
+
+	size[0] = 3;
+	sh = H5Screate_simple(1, size, NULL);
+
+	dh = H5Dcreate2(gh, "astar", H5T_NATIVE_FLOAT, sh,
+	                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return;
+	}
+	data[0] = asx;
+	data[1] = asy;
+	data[2] = asz;
+	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+	if ( r < 0 ) {
+		ERROR("Failed to write astar to file.\n");
+	}
+	H5Dclose(dh);
+
+	dh = H5Dcreate2(gh, "bstar", H5T_NATIVE_FLOAT, sh,
+	                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return;
+	}
+	data[0] = bsx;
+	data[1] = bsy;
+	data[2] = bsz;
+	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+	if ( r < 0 ) {
+		ERROR("Failed to write bstar to file.\n");
+	}
+	H5Dclose(dh);
+
+	dh = H5Dcreate2(gh, "cstar", H5T_NATIVE_FLOAT, sh,
+	                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Couldn't create dataset\n");
+		H5Fclose(fh);
+		return;
+	}
+	data[0] = csx;
+	data[1] = csy;
+	data[2] = csz;
+	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+	if ( r < 0 ) {
+		ERROR("Failed to write cstar to file.\n");
+	}
+	H5Dclose(dh);
+
+	H5Gclose(gh);
+	H5Fclose(fh);
 }
 
 
@@ -923,6 +1024,7 @@ int main(int argc, char *argv[])
 
 			/* Write the output file */
 			hdf5_write_image(filename, &image, NULL);
+			add_metadata(filename, orientation, cell);
 
 		}
 
