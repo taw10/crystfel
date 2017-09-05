@@ -629,6 +629,7 @@ static void scan_cells(CellWindow *w)
 	int i;
 	UnitCell **cells = w->cells;
 	int n_cells = w->n_cells;
+	int n_excl = 0;
 
 	multihistogram_delete_all_values(w->hist_a->h);
 	multihistogram_delete_all_values(w->hist_b->h);
@@ -684,6 +685,7 @@ static void scan_cells(CellWindow *w)
 		     check_exclude(w->hist_ga, ga) )
 		{
 			cat = 1<<CAT_EXCLUDE;
+			n_excl++;
 		}
 
 		multihistogram_add_value(w->hist_a->h, a, cat);
@@ -694,6 +696,8 @@ static void scan_cells(CellWindow *w)
 		multihistogram_add_value(w->hist_ga->h, ga, cat);
 
 	}
+
+	STATUS("Selected %i of %i cells\n", n_cells-n_excl, n_cells);
 }
 
 
