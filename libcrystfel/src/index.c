@@ -61,6 +61,7 @@
 
 struct _indexingprivate
 {
+	IndexingFlags flags;
 	UnitCell *target_cell;
 	float tolerance[4];
 
@@ -70,6 +71,30 @@ struct _indexingprivate
 	IndexingMethod *methods;
 	void **engine_private;
 };
+
+
+static const char *onoff(int a)
+{
+	if ( a ) return "on";
+	return "off";
+}
+
+
+static void show_indexing_flags(IndexingFlags flags)
+{
+	STATUS("              Check unit cell (combinations): %s\n",
+	       onoff(flags & INDEXING_CHECK_CELL_COMBINATIONS));
+	STATUS("    Check unit cell (axis permutations only): %s\n",
+	       onoff(flags & INDEXING_CHECK_CELL_AXES));
+	STATUS("                        Check peak alignment: %s\n",
+	       onoff(flags & INDEXING_CHECK_PEAKS));
+	STATUS("                   Refine indexing solutions: %s\n",
+	       onoff(flags & INDEXING_REFINE));
+	STATUS(" Multi-lattice indexing (\"delete and retry\"): %s\n",
+	       onoff(flags & INDEXING_MULTI));
+	STATUS("                              Retry indexing: %s\n",
+	       onoff(flags & INDEXING_RETRY));
+}
 
 
 static int debug_index(struct image *image)
@@ -159,7 +184,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 struct detector *det, float *ltl,
-                                int no_refine, const char *options,
+                                IndexingFlags flags, const char *options,
                                 struct taketwo_options *ttopts)
 {
 	int i, n;
@@ -178,10 +203,30 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	for ( i=0; i<n; i++ ) {
 		methods[i] = get_indm_from_string(method_strings[i]);
 		if ( methods[i] == INDEXING_ERROR ) {
+			ERROR("----- Notice -----\n");
+			ERROR("The way indexing options are used has changed in this CrystFEL version.\n");
+			ERROR("To disable prediction refinement ('norefine'), use --no-refine.\n");
+			ERROR("To check cell axes only ('axes'), use --no-cell-combinations.\n");
+			ERROR("To disable all unit cell checks ('raw'), use --no-check-cell.\n");
+			ERROR("To disable indexing retry ('noretry'), use --no-retry.\n");
+			ERROR("Multi-lattice indexing ('multi') is now the default: "
+			      "use --no-multi to disable it.\n");
+			ERROR("------------------\n");
 			free(methods);
 			return NULL;
 		}
-		if ( no_refine ) methods[i] &= ~INDEXING_REFINE;
+	}
+
+	if ( cell == NULL ) {
+		if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
+		  || (flags & INDEXING_CHECK_CELL_COMBINATIONS) )
+		{
+			ERROR("WARNING: Forcing --no-cell-combinations "
+			      "and --no-check-cell because you didn't "
+			      "provide a unit cell.\n");
+			flags &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+			flags &= ~INDEXING_CHECK_CELL_AXES;
+		}
 	}
 
 	ipriv = malloc(sizeof(struct _indexingprivate));
@@ -212,6 +257,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 	ipriv->methods = methods;
 	ipriv->n_methods = n;
+	ipriv->flags = flags;
 
 	if ( cell != NULL ) {
 		ipriv->target_cell = cell_new_from_cell(cell);
@@ -221,6 +267,8 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	for ( i=0; i<4; i++ ) ipriv->tolerance[i] = ltl[i];
 
 	ipriv->ttopts = ttopts;
+
+	show_indexing_flags(flags);
 
 	return ipriv;
 }
@@ -369,34 +417,43 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Prediction refinement if requested */
-		if ( indm & INDEXING_REFINE ) {
-
-			UnitCell *out;
-
+		if ( ipriv->flags & INDEXING_REFINE )
+		{
 			if ( refine_prediction(image, cr) ) {
 				crystal_set_user_flag(cr, 1);
 				n_bad++;
 				continue;
 			}
+		}
 
-			if ( (indm & INDEXING_CHECK_CELL_COMBINATIONS)
-			  || (indm & INDEXING_CHECK_CELL_AXES) )
+		/* Unit cell check if requested */
+		assert( !((ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS)
+		      && (ipriv->flags & INDEXING_CHECK_CELL_AXES)) );
+		if ( (ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS)
+		  || (ipriv->flags & INDEXING_CHECK_CELL_AXES) )
+		{
+			UnitCell *out;
+			int reduce;
+
+			if ( ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS )
 			{
-
-				/* Check that the cell parameters are still
-				 * within the tolerance */
-				out = match_cell(crystal_get_cell(cr),
-				                 ipriv->target_cell, 0,
-				                 ipriv->tolerance, 0);
-
-				if ( out == NULL ) {
-					crystal_set_user_flag(cr, 1);
-				}
-
-				cell_free(out);
-
+				reduce = 1;
+			} else {
+				reduce = 0;
 			}
 
+			out = match_cell(crystal_get_cell(cr),
+			                 ipriv->target_cell, 0,
+			                 ipriv->tolerance, reduce);
+
+			if ( out == NULL ) {
+				crystal_set_user_flag(cr, 1);
+				n_bad++;
+				continue;
+			}
+
+			cell_free(crystal_get_cell(cr));
+			crystal_set_cell(cr, out);
 		}
 
 		/* Don't do similarity check if this crystal is bad */
@@ -514,14 +571,15 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
  *
  * Returns false for "try again", true for "no, stop now"
  */
-static int finished_retry(IndexingMethod indm, int r, struct image *image)
+static int finished_retry(IndexingMethod indm, IndexingFlags flags,
+                          int r, struct image *image)
 {
 	if ( r == 0 ) {
 
 		/* Indexing failed on the previous attempt.  Maybe try again
 		 * after poking the peak list a bit */
 
-		if ( indm & INDEXING_RETRY ) {
+		if ( flags & INDEXING_RETRY ) {
 			/* Retry with fewer peaks */
 			return delete_weakest_peaks(image->features);
 		} else {
@@ -534,7 +592,7 @@ static int finished_retry(IndexingMethod indm, int r, struct image *image)
 		/* Indexing succeeded on previous attempt.  Maybe try again
 		 * after deleting the explained peaks */
 
-		if ( indm & INDEXING_MULTI ) {
+		if ( flags & INDEXING_MULTI ) {
 			/* Remove "used" spots and try for another lattice */
 			Crystal *cr;
 			cr = image->crystals[image->n_crystals-1];
@@ -581,7 +639,8 @@ void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
 			                ipriv, ipriv->engine_private[n]);
 			success += r;
 			ntry++;
-			done = finished_retry(ipriv->methods[n], r, image);
+			done = finished_retry(ipriv->methods[n], ipriv->flags,
+			                      r, image);
 			if ( ntry > 5 ) done = 1;
 			if ( ping != NULL ) (*ping)++;
 
@@ -602,39 +661,6 @@ void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
 	}
 
 	image->features = orig;
-}
-
-
-/* Set the indexer flags for "raw mode" ("--cell-reduction=none") */
-static IndexingMethod set_raw(IndexingMethod a)
-{
-	/* Disable all unit cell checks */
-	a &= ~(INDEXING_CHECK_CELL_COMBINATIONS | INDEXING_CHECK_CELL_AXES);
-	return a;
-}
-
-
-/* Set the indexer flags for "bad mode" ("--insane) */
-static IndexingMethod set_bad(IndexingMethod a)
-{
-	/* Disable the peak check */
-	return a & ~INDEXING_CHECK_PEAKS;
-}
-
-
-/* Set the indexer flags for "axes mode" ("--cell-reduction=compare") */
-static IndexingMethod set_axes(IndexingMethod a)
-{
-	return (a & ~INDEXING_CHECK_CELL_COMBINATIONS)
-	          | INDEXING_CHECK_CELL_AXES;
-}
-
-
-/* Set the indexer flags for "combination mode" ("--cell-reduction=reduce") */
-static IndexingMethod set_comb(IndexingMethod a)
-{
-	return (a & ~INDEXING_CHECK_CELL_AXES)
-	          | INDEXING_CHECK_CELL_COMBINATIONS;
 }
 
 
@@ -725,18 +751,6 @@ char *indexer_str(IndexingMethod indm)
 
 	if ( (indm & INDEXING_METHOD_MASK) == INDEXING_SIMULATION ) return str;
 
-	if ( indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
-		strcat(str, "-comb");
-	} else if ( indm & INDEXING_CHECK_CELL_AXES ) {
-		strcat(str, "-axes");
-	} else {
-		strcat(str, "-raw");
-	}
-
-	if ( !(indm & INDEXING_CHECK_PEAKS) ) {
-		strcat(str, "-bad");
-	}
-
 	if ( indm & INDEXING_USE_LATTICE_TYPE ) {
 		strcat(str, "-latt");
 	} else {
@@ -747,24 +761,6 @@ char *indexer_str(IndexingMethod indm)
 		strcat(str, "-cell");
 	} else {
 		strcat(str, "-nocell");
-	}
-
-	if ( indm & INDEXING_RETRY ) {
-		strcat(str, "-retry");
-	} else {
-		strcat(str, "-noretry");
-	}
-
-	if ( indm & INDEXING_MULTI ) {
-		strcat(str, "-multi");
-	} else {
-		strcat(str, "-nomulti");
-	}
-
-	if ( indm & INDEXING_REFINE ) {
-		strcat(str, "-refine");
-	} else {
-		strcat(str, "-norefine");
 	}
 
 	return str;
@@ -835,18 +831,6 @@ IndexingMethod get_indm_from_string(const char *str)
 			method = INDEXING_DEBUG;
 			return method;
 
-		} else if ( strcmp(bits[i], "raw") == 0) {
-			method = set_raw(method);
-
-		} else if ( strcmp(bits[i], "bad") == 0) {
-			method = set_bad(method);
-
-		} else if ( strcmp(bits[i], "comb") == 0) {
-			method = set_comb(method);  /* Default */
-
-		} else if ( strcmp(bits[i], "axes") == 0) {
-			method = set_axes(method);
-
 		} else if ( strcmp(bits[i], "latt") == 0) {
 			method = set_lattice(method);
 
@@ -858,24 +842,6 @@ IndexingMethod get_indm_from_string(const char *str)
 
 		} else if ( strcmp(bits[i], "nocell") == 0) {
 			method = set_nocellparams(method);
-
-		} else if ( strcmp(bits[i], "retry") == 0) {
-			method |= INDEXING_RETRY;
-
-		} else if ( strcmp(bits[i], "noretry") == 0) {
-			method &= ~INDEXING_RETRY;
-
-		} else if ( strcmp(bits[i], "multi") == 0) {
-			method |= INDEXING_MULTI;
-
-		} else if ( strcmp(bits[i], "nomulti") == 0) {
-			method &= ~INDEXING_MULTI;
-
-		} else if ( strcmp(bits[i], "refine") == 0) {
-			method |= INDEXING_REFINE;
-
-		} else if ( strcmp(bits[i], "norefine") == 0) {
-			method &= ~INDEXING_REFINE;
 
 		} else {
 			ERROR("Bad list of indexing methods: '%s'\n", str);

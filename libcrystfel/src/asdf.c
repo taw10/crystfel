@@ -272,39 +272,14 @@ static int calc_reciprocal(gsl_vector **direct, gsl_vector **reciprocal)
 static int check_cell(struct asdf_private *dp, struct image *image,
                       UnitCell *cell)
 {
-	UnitCell *out;
 	Crystal *cr;
-
-	if ( dp->indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
-
-		out = match_cell(cell, dp->template, 0, dp->ltl, 1);
-		if ( out == NULL ) return 0;
-
-	} else if ( dp->indm & INDEXING_CHECK_CELL_AXES ) {
-
-		out = match_cell(cell, dp->template, 0, dp->ltl, 0);
-		if ( out == NULL ) return 0;
-
-	} else {
-		out = cell_new_from_cell(cell);
-	}
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
 		ERROR("Failed to allocate crystal.\n");
 		return 0;
 	}
-
-	crystal_set_cell(cr, out);
-
-	if ( dp->indm & INDEXING_CHECK_PEAKS ) {
-		if ( !peak_sanity_check(image, &cr, 1) ) {
-			crystal_free(cr);  /* Frees the cell as well */
-			cell_free(out);
-			return 0;
-		}
-	}
-
+	crystal_set_cell(cr, cell);
 	image_add_crystal(image, cr);
 
 	return 1;
@@ -1206,22 +1181,9 @@ void *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
                    struct detector *det, float *ltl)
 {
 	struct asdf_private *dp;
-	int need_cell = 0;
-
-	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
-	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
-
-	if ( need_cell && !cell_has_parameters(cell) ) {
-		ERROR("Altering your asdf flags because cell parameters were"
-		      " not provided.\n");
-		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
-		*indm &= ~INDEXING_CHECK_CELL_AXES;
-	}
 
 	/* Flags that asdf knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
-	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
-	       | INDEXING_CONTROL_FLAGS;
+	*indm &= INDEXING_METHOD_MASK;
 
 	dp = malloc(sizeof(struct asdf_private));
 	if ( dp == NULL ) return NULL;

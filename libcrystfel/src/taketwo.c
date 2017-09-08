@@ -1460,7 +1460,7 @@ static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
  * successful.
  **/
 static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
-			     struct rvec *rlps, int rlp_count)
+                             struct rvec *rlps, int rlp_count)
 {
 	int cell_vec_count = 0;
 	int asym_vec_count = 0;
@@ -1581,18 +1581,6 @@ int taketwo_index(struct image *image, const struct taketwo_options *opts,
 
 	crystal_set_cell(cr, cell);
 
-	if ( tp->indm & INDEXING_CHECK_PEAKS ) {
-		if ( !peak_sanity_check(image, &cr, 1) ) {
-			cell_free(cell);
-			crystal_free(cr);
-		//	STATUS("Rubbish!!\n");
-
-			return 0;
-		} else {
-		//	STATUS("That's good!\n");
-		}
-	}
-
 	image_add_crystal(image, cr);
 
 	return 1;
@@ -1605,9 +1593,8 @@ void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 	struct taketwo_private *tp;
 
 	/* Flags that TakeTwo knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS
-	| INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS
-	| INDEXING_CONTROL_FLAGS;
+	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_LATTICE_TYPE
+	                              | INDEXING_USE_CELL_PARAMETERS;
 
 	if ( !( (*indm & INDEXING_USE_LATTICE_TYPE)
 	       && (*indm & INDEXING_USE_CELL_PARAMETERS)) )
