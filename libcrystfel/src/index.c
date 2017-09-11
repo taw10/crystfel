@@ -356,6 +356,36 @@ void map_all_peaks(struct image *image)
 }
 
 
+static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
+                      float *tolerance)
+{
+	if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
+	  || (flags & INDEXING_CHECK_CELL_AXES) )
+	{
+		UnitCell *out;
+		int reduce;
+
+		if ( flags & INDEXING_CHECK_CELL_COMBINATIONS )
+		{
+			reduce = 1;
+		} else {
+			reduce = 0;
+		}
+
+		out = match_cell(crystal_get_cell(cr),
+		                 target, 0, tolerance, reduce);
+
+		if ( out == NULL ) {
+			return 1;
+		}
+
+		cell_free(crystal_get_cell(cr));
+		crystal_set_cell(cr, out);
+	}
+	return 0;
+}
+
+
 /* Return non-zero for "success" */
 static int try_indexer(struct image *image, IndexingMethod indm,
                        IndexingPrivate *ipriv, void *mpriv)
@@ -416,6 +446,18 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_profile_radius(cr, 0.02e9);
 		crystal_set_mosaicity(cr, 0.0);
 
+		assert( !((ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS)
+		      && (ipriv->flags & INDEXING_CHECK_CELL_AXES)) );
+
+		/* Pre-refinement unit cell check if requested */
+		if ( check_cell(ipriv->flags, cr, ipriv->target_cell,
+		                ipriv->tolerance) )
+		{
+			crystal_set_user_flag(cr, 1);
+			n_bad++;
+			continue;
+		}
+
 		/* Prediction refinement if requested */
 		if ( ipriv->flags & INDEXING_REFINE )
 		{
@@ -426,34 +468,13 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 			}
 		}
 
-		/* Unit cell check if requested */
-		assert( !((ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS)
-		      && (ipriv->flags & INDEXING_CHECK_CELL_AXES)) );
-		if ( (ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS)
-		  || (ipriv->flags & INDEXING_CHECK_CELL_AXES) )
+		/* After refinement unit cell check if requested */
+		if ( check_cell(ipriv->flags, cr, ipriv->target_cell,
+		                ipriv->tolerance) )
 		{
-			UnitCell *out;
-			int reduce;
-
-			if ( ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS )
-			{
-				reduce = 1;
-			} else {
-				reduce = 0;
-			}
-
-			out = match_cell(crystal_get_cell(cr),
-			                 ipriv->target_cell, 0,
-			                 ipriv->tolerance, reduce);
-
-			if ( out == NULL ) {
-				crystal_set_user_flag(cr, 1);
-				n_bad++;
-				continue;
-			}
-
-			cell_free(crystal_get_cell(cr));
-			crystal_set_cell(cr, out);
+			crystal_set_user_flag(cr, 1);
+			n_bad++;
+			continue;
 		}
 
 		/* Don't do similarity check if this crystal is bad */
