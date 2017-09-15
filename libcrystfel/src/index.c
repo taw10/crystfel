@@ -485,6 +485,16 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 			continue;
 		}
 
+		/* Peak alignment check if requested */
+		if ( ipriv->flags & INDEXING_CHECK_PEAKS )
+		{
+			if ( !peak_sanity_check(image, &cr, 1) ) {
+				crystal_set_user_flag(cr, 1);
+				n_bad++;
+				continue;
+			}
+		}
+
 		/* Don't do similarity check if this crystal is bad */
 		if ( crystal_get_user_flag(cr) ) continue;
 
