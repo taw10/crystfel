@@ -488,6 +488,18 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 	}
 
+	int k;
+	for ( k=0; k<num_params; k++ ) {
+		double M_curr;
+		M_curr = gsl_matrix_get(M, k, k);
+		if ( (rv[k] == GPARAM_DETX) || (rv[k] == GPARAM_DETY) ) {
+			M_curr += 10.0;
+		} else {
+			M_curr += 1e-18;
+		}
+		gsl_matrix_set(M, k, k, M_curr);
+	}
+
 	//show_matrix_eqn(M, v);
 	shifts = solve_svd(v, M, NULL, 0);
 	if ( shifts == NULL ) {
