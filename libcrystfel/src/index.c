@@ -82,10 +82,18 @@ static const char *onoff(int a)
 
 static void show_indexing_flags(IndexingFlags flags)
 {
-	STATUS("              Check unit cell (combinations): %s\n",
-	       onoff(flags & INDEXING_CHECK_CELL_COMBINATIONS));
-	STATUS("    Check unit cell (axis permutations only): %s\n",
-	       onoff(flags & INDEXING_CHECK_CELL_AXES));
+	char check[64];
+
+	assert( !((flags & INDEXING_CHECK_CELL_COMBINATIONS)
+	       && (flags & INDEXING_CHECK_CELL_AXES)) );
+	strcpy(check, onoff(flags & (INDEXING_CHECK_CELL_COMBINATIONS | INDEXING_CHECK_CELL_AXES)));
+	if ( flags & INDEXING_CHECK_CELL_AXES ) {
+		strcat(check, " (axis permutations only)");
+	}
+	if ( flags & INDEXING_CHECK_CELL_COMBINATIONS ) {
+		strcat(check, " (axis combinations)");
+	}
+	STATUS("                  Check unit cell parameters: %s\n", check);
 	STATUS("                        Check peak alignment: %s\n",
 	       onoff(flags & INDEXING_CHECK_PEAKS));
 	STATUS("                   Refine indexing solutions: %s\n",
