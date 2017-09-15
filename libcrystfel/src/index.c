@@ -501,7 +501,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 			                   0.1, deg2rad(5.0), NULL) )
 			{
 				crystal_set_user_flag(cr, 1);
-				ERROR("Excluding duplicate cell\n");
 			}
 		}
 
