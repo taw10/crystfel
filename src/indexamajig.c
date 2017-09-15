@@ -227,8 +227,13 @@ int main(int argc, char *argv[])
 	struct beam_params beam;
 	int have_push_res = 0;
 	int len;
-	int no_refine = 0;
 	char *command_line_peak_path = NULL;
+	int if_refine = 1;
+	int if_comb = 1;
+	int if_axes = 1;
+	int if_peaks = 0;
+	int if_multi = 1;
+	int if_retry = 1;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -312,9 +317,14 @@ int main(int argc, char *argv[])
 		{"no-use-saturated",   0, &iargs.use_saturated,      0},
 		{"no-revalidate",      0, &iargs.no_revalidate,      1},
 		{"check-hdf5-snr",     0, &iargs.check_hdf5_snr,     1},
-		{"no-refine",          0, &no_refine,                1},
 		{"profile",            0, &iargs.profile,            1},
 		{"no-half-pixel-shift",0, &iargs.half_pixel_shift,   0},
+		{"no-refine",          0, &if_refine,                0},
+		{"no-cell-combinations",0,&if_comb,                  0},
+		{"no-check-cell",      0, &if_axes,                  0},
+		{"check-peaks",        0, &if_peaks,                 1},
+		{"no-retry",           0, &if_retry,                 0},
+		{"no-multi",           0, &if_multi,                 0},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
@@ -856,8 +866,30 @@ int main(int argc, char *argv[])
 
 	} else {
 
+		IndexingFlags flags = 0;
+
+		if ( if_axes ) {
+			flags |= INDEXING_CHECK_CELL_AXES;
+		}
+		if ( if_comb ) {
+			flags |= INDEXING_CHECK_CELL_COMBINATIONS;
+			flags &= ~INDEXING_CHECK_CELL_AXES;  /* Not needed */
+		}
+		if ( if_refine ) {
+			flags |= INDEXING_REFINE;
+		}
+		if ( if_peaks ) {
+			flags |= INDEXING_CHECK_PEAKS;
+		}
+		if ( if_multi ) {
+			flags |= INDEXING_MULTI;
+		}
+		if ( if_retry ) {
+			flags |= INDEXING_RETRY;
+		}
+
 		iargs.ipriv = setup_indexing(indm_str, iargs.cell, iargs.det,
-		                             iargs.tols, no_refine,
+		                             iargs.tols, flags,
 		                             iargs.felix_options,
 		                             &iargs.taketwo_opts);
 		if ( iargs.ipriv == NULL ) {

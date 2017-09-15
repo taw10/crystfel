@@ -187,39 +187,14 @@ static int xds_readable(struct image *image, struct xds_data *xds)
 static int check_cell(struct xds_private *xp, struct image *image,
                       UnitCell *cell)
 {
-	UnitCell *out;
 	Crystal *cr;
-
-	if ( xp->indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
-
-		out = match_cell(cell, xp->cell, 0, xp->ltl, 1);
-		if ( out == NULL ) return 0;
-
-	} else if ( xp->indm & INDEXING_CHECK_CELL_AXES ) {
-
-		out = match_cell(cell, xp->cell, 0, xp->ltl, 0);
-		if ( out == NULL ) return 0;
-
-	} else {
-		out = cell_new_from_cell(cell);
-	}
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
 		ERROR("Failed to allocate crystal.\n");
 		return 0;
 	}
-
-	crystal_set_cell(cr, out);
-
-	if ( xp->indm & INDEXING_CHECK_PEAKS ) {
-		if ( !peak_sanity_check(image, &cr, 1) ) {
-			cell_free(out);
-			crystal_free(cr);
-			return 0;
-		}
-	}
-
+	crystal_set_cell(cr, cell);
 	image_add_crystal(image, cr);
 
 	return 1;
@@ -626,14 +601,10 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
 	int need_cell = 0;
 
 	/* Check if cell parameters are needed/provided */
-	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
-	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
 	if ( *indm & INDEXING_USE_CELL_PARAMETERS ) need_cell = 1;
 	if ( need_cell && !cell_has_parameters(cell) ) {
 		ERROR("Altering your XDS flags because cell parameters were"
 		      " not provided.\n");
-		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
-		*indm &= ~INDEXING_CHECK_CELL_AXES;
 		*indm &= ~INDEXING_USE_CELL_PARAMETERS;
 	}
 
@@ -652,36 +623,35 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
 	}
 
 	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
-	  && !(*indm & INDEXING_USE_CELL_PARAMETERS) ) {
+	  && !(*indm & INDEXING_USE_CELL_PARAMETERS) )
+	{
 		ERROR("Invalid XDS options (-latt-nocell): "
 		      "try xds-nolatt-nocell.\n");
 		return NULL;
 	}
 
 	if ( (*indm & INDEXING_USE_CELL_PARAMETERS)
-	  && !(*indm & INDEXING_USE_LATTICE_TYPE) ) {
+	  && !(*indm & INDEXING_USE_LATTICE_TYPE) )
+	{
 		ERROR("Invalid XDS options (-cell-nolatt): "
 		      "try xds-nolatt-nocell.\n");
 		return NULL;
 	}
 
 	if ( ((*indm & INDEXING_USE_CELL_PARAMETERS)
-	  || (*indm & INDEXING_USE_LATTICE_TYPE))
-	  && !(*indm & INDEXING_CHECK_CELL_AXES)
-	  && !(*indm & INDEXING_CHECK_CELL_COMBINATIONS) ) {
-		ERROR("The cell from xds-raw-cell or xds-raw-latt may have had"
+	  || (*indm & INDEXING_USE_LATTICE_TYPE)))
+	{
+		ERROR("The cell from xds-cell or xds-latt may have had"
 		      " its axes permuted from the cell you provided.  If this"
-		      " is a problem, consider using xds-axes-cell.\n");
+		      " is a problem, consider using xds-cell.\n");
 	}
 
 	xp = calloc(1, sizeof(*xp));
 	if ( xp == NULL ) return NULL;
 
 	/* Flags that XDS knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
-	          | INDEXING_CHECK_CELL_AXES | INDEXING_USE_LATTICE_TYPE
-	          | INDEXING_CHECK_PEAKS | INDEXING_USE_CELL_PARAMETERS
-		  | INDEXING_CONTROL_FLAGS;
+	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_LATTICE_TYPE
+	          | INDEXING_USE_CELL_PARAMETERS;
 
 	xp->ltl = ltl;
 	xp->cell = cell;

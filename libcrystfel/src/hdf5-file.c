@@ -409,6 +409,8 @@ int get_peaks_cxi_2(struct image *image, struct hdfile *f, const char *p,
 	}
 	image->features = image_feature_list_new();
 
+	image->num_peaks = 0;
+	image->num_saturated_peaks = 0;
 	for ( pk=0; pk<num_peaks; pk++ ) {
 
 		float fs, ss, val;
@@ -427,6 +429,7 @@ int get_peaks_cxi_2(struct image *image, struct hdfile *f, const char *p,
 		ss = ss - p->orig_min_ss;
 
 		image_add_feature(image->features, fs, ss, p, image, val, NULL);
+		image->num_peaks++;
 
 	}
 
@@ -554,6 +557,8 @@ int get_peaks_2(struct image *image, struct hdfile *f, const char *p,
 	}
 	image->features = image_feature_list_new();
 
+	image->num_peaks = 0;
+	image->num_saturated_peaks = 0;
 	for ( i=0; i<size[0]; i++ ) {
 
 		float fs, ss, val;
@@ -573,6 +578,7 @@ int get_peaks_2(struct image *image, struct hdfile *f, const char *p,
 
 		image_add_feature(image->features, fs, ss, p, image, val,
 		                  NULL);
+		image->num_peaks++;
 
 	}
 

@@ -222,16 +222,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 
 	fclose(fh);
 
-	if ( gp->indm & INDEXING_CHECK_PEAKS ) {
-		if ( !peak_sanity_check(image, image->crystals,
-		                        image->n_crystals) )
-		{
-			free_all_crystals(image);
-			return 0;
-		}
-	}
-
-    return n_crystals;
+	return n_crystals;
 }
 
 
@@ -672,9 +663,8 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( gp == NULL ) return NULL;
 
 	/* Flags that Felix knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_PEAKS
-	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS
-	       | INDEXING_CONTROL_FLAGS;
+	*indm &= INDEXING_METHOD_MASK
+	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
 
 	gp->cell = cell;
 	gp->indm = *indm;

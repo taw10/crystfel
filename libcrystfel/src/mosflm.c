@@ -128,7 +128,6 @@ struct mosflm_data {
 static int check_cell(struct mosflm_private *mp, struct image *image,
                       UnitCell *cell)
 {
-	UnitCell *out;
 	Crystal *cr;
 
 	/* If we sent lattice information, make sure that we got back what we
@@ -163,35 +162,13 @@ static int check_cell(struct mosflm_private *mp, struct image *image,
 
 	}
 
-	if ( mp->indm & INDEXING_CHECK_CELL_COMBINATIONS ) {
-
-		out = match_cell(cell, mp->template, 0, mp->ltl, 1);
-		if ( out == NULL ) return 0;
-
-	} else if ( mp->indm & INDEXING_CHECK_CELL_AXES ) {
-
-		out = match_cell(cell, mp->template, 0, mp->ltl, 0);
-		if ( out == NULL ) return 0;
-
-	} else {
-		out = cell_new_from_cell(cell);
-	}
-
 	cr = crystal_new();
 	if ( cr == NULL ) {
 		ERROR("Failed to allocate crystal.\n");
 		return 0;
 	}
 
-	crystal_set_cell(cr, out);
-
-	if ( mp->indm & INDEXING_CHECK_PEAKS ) {
-		if ( !peak_sanity_check(image, &cr, 1) ) {
-			cell_free(out);
-			crystal_free(cr);
-			return 0;
-		}
-	}
+	crystal_set_cell(cr, cell);
 
 	image_add_crystal(image, cr);
 
@@ -339,8 +316,6 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 		mosflm->success = 1;
 		mosflm->done = 1;
 	}
-
-	cell_free(cell);
 
         return 0;
 }
@@ -850,14 +825,10 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	int need_cell = 0;
 
 	/* Check if cell parameters are needed/provided */
-	if ( *indm & INDEXING_CHECK_CELL_COMBINATIONS ) need_cell = 1;
-	if ( *indm & INDEXING_CHECK_CELL_AXES ) need_cell = 1;
 	if ( *indm & INDEXING_USE_CELL_PARAMETERS ) need_cell = 1;
 	if ( need_cell && !cell_has_parameters(cell) ) {
 		ERROR("Altering your MOSFLM flags because cell parameters were"
 		      " not provided.\n");
-		*indm &= ~INDEXING_CHECK_CELL_COMBINATIONS;
-		*indm &= ~INDEXING_CHECK_CELL_AXES;
 		*indm &= ~INDEXING_USE_CELL_PARAMETERS;
 	}
 
@@ -869,36 +840,8 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	}
 
 	/* Flags that MOSFLM knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_CHECK_CELL_COMBINATIONS
-	       | INDEXING_CHECK_CELL_AXES | INDEXING_CHECK_PEAKS
-	       | INDEXING_USE_LATTICE_TYPE| INDEXING_USE_CELL_PARAMETERS
-	       | INDEXING_CONTROL_FLAGS;
-
-	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
-	   && !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
-	       || (*indm & INDEXING_CHECK_CELL_AXES))
-	   && (cell_has_parameters(cell)
-	       || (cell_get_unique_axis(cell) == 'a')
-	       || (cell_get_unique_axis(cell) == 'b')
-	       || (cell_get_unique_axis(cell) == 'c')) )
-	{
-		ERROR("WARNING: The unit cell from %s might have had "
-		      "its axes permuted from the unit cell you gave.\n"
-		      "If this is a problem, consider using "
-		      "mosflm-axes-latt or mosflm-comb-latt instead of "
-		      "mosflm-raw-latt.\n", indexer_str(*indm));
-		/* It'll be OK if INDEXING_CHECK_CELL_PARAMETERS and
-		 * MOSFLM 7.2.0 or later, but that's getting a bit too
-		 * complicated to explain to the user. */
-	}
-
-	if ( (*indm & INDEXING_USE_CELL_PARAMETERS)
-	  && !((*indm & INDEXING_CHECK_CELL_COMBINATIONS)
-	    || (*indm & INDEXING_CHECK_CELL_AXES)) )
-	{
-		ERROR("WARNING: Using 'mosflm-raw' but providing cell "
-		      "parameters as prior information to mosflm.\n");
-	}
+	*indm &= INDEXING_METHOD_MASK
+	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
 
 	mp = malloc(sizeof(struct mosflm_private));
 	if ( mp == NULL ) return NULL;

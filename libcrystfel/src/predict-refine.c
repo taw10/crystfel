@@ -138,10 +138,12 @@ static void UNUSED write_pairs(const char *filename, struct reflpeak *rps,
 		double write_fs, write_ss;
 		double fs, ss;
 		struct panel *p;
+		signed int h, k, l;
 
 		fs = rps[i].peak->fs;
 		ss = rps[i].peak->ss;
 		p = rps[i].panel;
+		get_indices(rps[i].refl, &h, &k, &l);
 
 		write_fs = fs + p->orig_min_fs;
 		write_ss = ss + p->orig_min_ss;
@@ -151,6 +153,9 @@ static void UNUSED write_pairs(const char *filename, struct reflpeak *rps,
 		        r_dev(&rps[i])/1e9, fabs(r_dev(&rps[i])/1e9),
 		        x_dev(&rps[i], det),
 		        y_dev(&rps[i], det));
+
+		//fprintf(fh, "%4i %4i %4i 0.0 - 0.0 1 %7.2f %7.2f %s\n",
+		//        h, k, l, write_fs, write_ss, p->name);
 
 	}
 
@@ -481,6 +486,18 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 		}
 
+	}
+
+	int k;
+	for ( k=0; k<num_params; k++ ) {
+		double M_curr;
+		M_curr = gsl_matrix_get(M, k, k);
+		if ( (rv[k] == GPARAM_DETX) || (rv[k] == GPARAM_DETY) ) {
+			M_curr += 10.0;
+		} else {
+			M_curr += 1e-18;
+		}
+		gsl_matrix_set(M, k, k, M_curr);
 	}
 
 	//show_matrix_eqn(M, v);

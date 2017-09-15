@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2013,2014 Thomas White <taw@physics.org>
- *   2012           Lorenzo Galli
+ *   2009-2013,2014,2017 Thomas White <taw@physics.org>
+ *   2012                 Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -79,6 +79,9 @@ extern int forbidden_reflection(UnitCell *cell,
                                 signed int h, signed int k, signed int l);
 
 extern double cell_get_volume(UnitCell *cell);
+
+extern int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
+                         IntegerMatrix **pmb);
 
 #ifdef __cplusplus
 }

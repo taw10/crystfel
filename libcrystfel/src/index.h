@@ -39,36 +39,22 @@
 #endif
 
 
-#define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX | INDEXING_CHECK_PEAKS         \
-                                     | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_RETRY | INDEXING_REFINE)
+#define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX)
 
-#define INDEXING_DEFAULTS_ASDF (INDEXING_ASDF | INDEXING_CHECK_PEAKS           \
-                                     | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_RETRY | INDEXING_REFINE)
+#define INDEXING_DEFAULTS_ASDF (INDEXING_ASDF)
 
-#define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_CHECK_PEAKS       \
-                                     | INDEXING_CHECK_CELL_COMBINATIONS        \
-                                     | INDEXING_USE_LATTICE_TYPE               \
-                                     | INDEXING_USE_CELL_PARAMETERS            \
-                                     | INDEXING_RETRY | INDEXING_REFINE)
+#define INDEXING_DEFAULTS_MOSFLM (INDEXING_MOSFLM | INDEXING_USE_LATTICE_TYPE  \
+                                  | INDEXING_USE_CELL_PARAMETERS)
 
-#define INDEXING_DEFAULTS_FELIX (INDEXING_FELIX                                \
-                                     | INDEXING_USE_LATTICE_TYPE               \
-                                     | INDEXING_USE_CELL_PARAMETERS            \
-                                     | INDEXING_RETRY | INDEXING_REFINE)
+#define INDEXING_DEFAULTS_FELIX (INDEXING_FELIX | INDEXING_USE_LATTICE_TYPE \
+                                     | INDEXING_USE_CELL_PARAMETERS)
 
-#define INDEXING_DEFAULTS_TAKETWO (INDEXING_TAKETWO | INDEXING_CHECK_PEAKS     \
-                                     | INDEXING_USE_CELL_PARAMETERS            \
-                                     | INDEXING_USE_LATTICE_TYPE               \
-                                     | INDEXING_RETRY | INDEXING_REFINE)
+#define INDEXING_DEFAULTS_TAKETWO (INDEXING_TAKETWO \
+                                   | INDEXING_USE_CELL_PARAMETERS \
+                                   | INDEXING_USE_LATTICE_TYPE)
 
-/* Axis check is needed for XDS, because it likes to permute the axes */
-#define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE        \
-                                     | INDEXING_USE_CELL_PARAMETERS            \
-                                     | INDEXING_CHECK_CELL_AXES                \
-                                     | INDEXING_CHECK_PEAKS                    \
-                                     | INDEXING_RETRY | INDEXING_REFINE)
+#define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE \
+                                     | INDEXING_USE_CELL_PARAMETERS)
 
 /**
  * IndexingMethod:
@@ -82,21 +68,10 @@
  * @INDEXING_ASDF: Use in-built "asdf" indexer
  * @INDEXING_TAKETWO: Use in-built "taketwo" indexer
  * @INDEXING_ERROR: Special value for unrecognised indexing engine name
- * @INDEXING_CHECK_CELL_COMBINATIONS: Check linear combinations of unit cell
- *   axes for agreement with given cell.
- * @INDEXING_CHECK_CELL_AXES: Check unit cell axes for agreement with given
- *   cell, and permute them if necessary.
- * @INDEXING_CHECK_PEAKS: Check that the peaks can be explained by the indexing
- *   result.
  * @INDEXING_USE_LATTICE_TYPE: Use lattice type and centering information to
  *   guide the indexing process.
  * @INDEXING_USE_CELL_PARAMETERS: Use the unit cell parameters to guide the
  *   indexing process.
- * @INDEXING_RETRY: If the indexer doesn't succeed, delete the weakest peaks
- *   and try again.
- * @INDEXING_MULTI: If the indexer succeeds, delete the peaks explained by the
- *   lattice and try again in the hope of finding another crystal.
- * @INDEXING_REFINE: Perform "prediction refinement" after indexing.
  *
  * An enumeration of all the available indexing methods.  The dummy value
  * @INDEXING_SIMULATION is used by partial_sim to indicate that no indexing was
@@ -120,14 +95,8 @@ typedef enum {
 
 	/* Bits at the top of the IndexingMethod are flags which modify the
 	 * behaviour of the indexer. */
-	INDEXING_CHECK_CELL_COMBINATIONS = 256,
-	INDEXING_CHECK_CELL_AXES         = 512,
-	INDEXING_CHECK_PEAKS             = 1024,
 	INDEXING_USE_LATTICE_TYPE        = 2048,
 	INDEXING_USE_CELL_PARAMETERS     = 4096,
-	INDEXING_RETRY                   = 8192,
-	INDEXING_MULTI                   = 16384,
-	INDEXING_REFINE                  = 32768,
 
 } IndexingMethod;
 
@@ -135,8 +104,16 @@ typedef enum {
  * core of the indexing method */
 #define INDEXING_METHOD_MASK (0xff)
 
-/* Indexing flags which the indexing method does not need to know about */
-#define INDEXING_CONTROL_FLAGS (INDEXING_RETRY | INDEXING_MULTI | INDEXING_REFINE)
+typedef enum {
+
+	INDEXING_RETRY = 1,
+	INDEXING_MULTI = 2,
+	INDEXING_REFINE = 4,
+	INDEXING_CHECK_CELL_COMBINATIONS = 8,
+	INDEXING_CHECK_CELL_AXES = 16,
+	INDEXING_CHECK_PEAKS = 32,
+
+} IndexingFlags;
 
 #ifdef __cplusplus
 extern "C" {
@@ -162,7 +139,7 @@ extern IndexingMethod get_indm_from_string(const char *method);
 
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct detector *det, float *ltl,
-                                       int no_refine, const char *options,
+                                       IndexingFlags flags, const char *options,
                                        struct taketwo_options *ttopts);
 
 extern void index_pattern(struct image *image, IndexingPrivate *ipriv);
