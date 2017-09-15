@@ -92,6 +92,12 @@ Apply a median filter with box "radius" \fIn\fR to the image.  Each pixel will b
 .PD
 Apply a noise filter to the image with checks 3x3 squares of pixels and sets all of them to zero if any of the nine pixels have a negative value.  If you also use \fB--median-filter\fR, the median filter will be applied first.
 
+.PD 0
+.IP "\fB-o \fIcoll\fR"
+.IP \fB--rigid-groups=\fIcoll\fR
+.PD
+Use \fIcoll\fR as the rigid group collection for calibration mode.
+
 .SH CALIBRATION MODE
 Calibration mode allows you to visually adjust the locations of panels.  To enter calibration mode, select Tools->Calibration Mode from the menu.  The currently selected panel will be bordered in white.  Press + or - to move to the next or previous panel (as listed in the geometry file).  Use the arrow keys to move the current panel.  Press 'f' to hide or restore the white border.  Press 's' to save the geometry file with your modifications.  Press 'g' to toggle between moving individual panels, rigid groups (if any are defined in the geometry file) and moving all panels together.
 Most of these actions can also be accessed from the Calibration menu, which becomes aptive when calibration mode is toggled once
