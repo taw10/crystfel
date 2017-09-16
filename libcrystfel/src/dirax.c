@@ -105,23 +105,6 @@ struct dirax_data {
 };
 
 
-static int check_cell(struct dirax_private *dp, struct image *image,
-                      UnitCell *cell)
-{
-	Crystal *cr;
-
-	cr = crystal_new();
-	if ( cr == NULL ) {
-		ERROR("Failed to allocate crystal.\n");
-		return 0;
-	}
-	crystal_set_cell(cr, cell);
-	image_add_crystal(image, cr);
-
-	return 1;
-}
-
-
 static void dirax_parseline(const char *line, struct image *image,
                             struct dirax_data *dirax)
 {
@@ -199,6 +182,7 @@ static void dirax_parseline(const char *line, struct image *image,
 		/* Third row of unit cell values */
 		int r;
 		UnitCell *cell;
+		Crystal *cr;
 
 		r = sscanf(line, "%f %f %f %f %f %f",
 		           &d, &d, &d, &dirax->cx, &dirax->cy, &dirax->cz);
@@ -218,13 +202,17 @@ static void dirax_parseline(const char *line, struct image *image,
 		                         dirax->bx, dirax->by, dirax->bz,
 		                         dirax->cx, dirax->cy, dirax->cz);
 
-		/* Finished reading a cell.  Time to check it... */
-		if ( check_cell(dirax->dp, image, cell) ) {
-			dirax->done = 1;
-			dirax->success = 1;
-		}
+		/* Finished reading a cell. */
 
-		cell_free(cell);
+		cr = crystal_new();
+		if ( cr == NULL ) {
+			ERROR("Failed to allocate crystal.\n");
+			return;
+		}
+		crystal_set_cell(cr, cell);
+		image_add_crystal(image, cr);
+		dirax->done = 1;
+		dirax->success = 1;
 
 		return;
 

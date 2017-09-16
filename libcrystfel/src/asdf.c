@@ -269,23 +269,6 @@ static int calc_reciprocal(gsl_vector **direct, gsl_vector **reciprocal)
 }
 
 
-static int check_cell(struct asdf_private *dp, struct image *image,
-                      UnitCell *cell)
-{
-	Crystal *cr;
-
-	cr = crystal_new();
-	if ( cr == NULL ) {
-		ERROR("Failed to allocate crystal.\n");
-		return 0;
-	}
-	crystal_set_cell(cr, cell);
-	image_add_crystal(image, cr);
-
-	return 1;
-}
-
-
 static int compare_doubles(const void *a, const void *b)
 {
 	const double *da = (const double *) a;
@@ -1150,7 +1133,9 @@ int run_asdf(struct image *image, void *ipriv)
 	}
 
 	if ( j ) {
+
 		UnitCell *uc;
+		Crystal *cr;
 		uc = cell_new();
 
 		cell_set_cartesian(uc, gsl_vector_get(c->axes[0], 0) * 1e-10,
@@ -1163,13 +1148,16 @@ int run_asdf(struct image *image, void *ipriv)
 				       gsl_vector_get(c->axes[2], 1) * 1e-10,
 				       gsl_vector_get(c->axes[2], 2) * 1e-10);
 
-		if ( check_cell(dp, image, uc) ) {
-			asdf_cell_free(c);
-			cell_free(uc);
-			return 1;
+		cr = crystal_new();
+		if ( cr == NULL ) {
+			ERROR("Failed to allocate crystal.\n");
+			return 0;
 		}
+		crystal_set_cell(cr, uc);
+		image_add_crystal(image, cr);
+		asdf_cell_free(c);
+		return 1;
 
-		cell_free(uc);
 	}
 
 	asdf_cell_free(c);
