@@ -235,8 +235,8 @@ int main(int argc, char *argv[])
 	int len;
 	char *command_line_peak_path = NULL;
 	int if_refine = 1;
-	int if_comb = 1;
-	int if_axes = 1;
+	int if_nocomb = 0;
+	int if_nocheck = 0;
 	int if_peaks = 0;
 	int if_multi = 1;
 	int if_retry = 1;
@@ -326,8 +326,9 @@ int main(int argc, char *argv[])
 		{"profile",            0, &iargs.profile,            1},
 		{"no-half-pixel-shift",0, &iargs.half_pixel_shift,   0},
 		{"no-refine",          0, &if_refine,                0},
-		{"no-cell-combinations",0,&if_comb,                  0},
-		{"no-check-cell",      0, &if_axes,                  0},
+		{"no-cell-combinations",0,&if_nocomb,                1},
+		{"no-check-cell",      0, &if_nocheck,               1},
+		{"no-cell-check",      0, &if_nocheck,               1},
 		{"check-peaks",        0, &if_peaks,                 1},
 		{"no-retry",           0, &if_retry,                 0},
 		{"no-multi",           0, &if_multi,                 0},
@@ -874,13 +875,17 @@ int main(int argc, char *argv[])
 
 		IndexingFlags flags = 0;
 
-		if ( if_axes ) {
+		if ( if_nocomb ) {
 			flags |= INDEXING_CHECK_CELL_AXES;
-		}
-		if ( if_comb ) {
+		} else {
 			flags |= INDEXING_CHECK_CELL_COMBINATIONS;
-			flags &= ~INDEXING_CHECK_CELL_AXES;  /* Not needed */
 		}
+
+		if ( if_nocheck ) {
+			flags &= ~INDEXING_CHECK_CELL_AXES;
+			flags &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+		}
+
 		if ( if_refine ) {
 			flags |= INDEXING_REFINE;
 		}
