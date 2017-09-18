@@ -85,8 +85,6 @@ static void show_help(const char *s)
 "      --no-error-maps                          Do not generate error map PNGs.\n"
 "  -x, --min-num-peaks-per-pixel=<num>          Minimum number of peaks per pixel.\n"
 "	                                         Default: 3. \n"
-"      --min-num-peaks-per-panel=<num>          DEPRECATED. This option has been\n"
-"                                                renamed to  --min-num-pixels-per-conn-group.\n"
 "  -p, --min-num-pixels-per-conn-group=<num>    Minimum number of useful pixels per\n"
 "                                                connected group.\n"
 "                         f                       Default: 100.\n"
