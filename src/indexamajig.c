@@ -802,8 +802,6 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(cellfile);
-		STATUS("This is what I understood your unit cell to be:\n");
-		cell_print(iargs.cell);
 	} else {
 		STATUS("No unit cell given.\n");
 		iargs.cell = NULL;
@@ -869,11 +867,25 @@ int main(int argc, char *argv[])
 		       " to index anything.\n"
 		       "If that isn't what you wanted, re-run with"
 		       " --indexing=<methods>.\n");
+		if ( iargs.cell != NULL ) {
+			STATUS("Ignoring your unit cell.\n");
+		}
+		iargs.ipriv = NULL;
+
+	} else if ( strcmp(indm_str, "none") == 0 ) {
+
+		STATUS("Indexing/integration disabled.\n");
+		if ( iargs.cell != NULL ) {
+			STATUS("Ignoring your unit cell.\n");
+		}
 		iargs.ipriv = NULL;
 
 	} else {
 
 		IndexingFlags flags = 0;
+
+		STATUS("This is what I understood your unit cell to be:\n");
+		cell_print(iargs.cell);
 
 		if ( if_nocomb ) {
 			flags |= INDEXING_CHECK_CELL_AXES;
