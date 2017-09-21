@@ -861,7 +861,7 @@ static int read_cbf(struct imagefile *f, struct image *image)
 /****************************** Image files ***********************************/
 
 
-static signed int is_cbf_file(const char *filename)
+signed int is_cbf_file(const char *filename)
 {
 	FILE *fh;
 	char line[1024];

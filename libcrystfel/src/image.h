@@ -271,6 +271,7 @@ extern void imagefile_copy_fields(struct imagefile *f,
                                   const struct imagefile_field_list *copyme,
                                   FILE *fh, struct event *ev);
 extern void imagefile_close(struct imagefile *f);
+extern signed int is_cbf_file(const char *filename);
 
 /* Field lists */
 extern struct imagefile_field_list *new_imagefile_field_list(void);
