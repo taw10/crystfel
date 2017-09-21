@@ -507,7 +507,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 
 			}
 
-			cairo_set_line_width(cr, 0.75/dw->binning);
+			cairo_set_line_width(cr, 1.75/dw->binning);
 			cairo_stroke(cr);
 ;
 		}
