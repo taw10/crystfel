@@ -154,7 +154,7 @@ same value as the inner radius, then the peaks are too close together to be
 accurately integrated.  Perhaps you got greedy with the resolution and put the
 detector too close to the interaction region?
 
-.SH OPTIONS
+.SH BASIC OPTIONS
 .PD 0
 .IP "\fB-i\fR \fIfilename\fR"
 .IP \fB--input=\fR\fIfilename\fR
@@ -168,58 +168,10 @@ Read the list of images to process from \fIfilename\fR.  \fB--input=-\fR means t
 Write the output data stream to \fIfilename\fR.
 
 .PD 0
-.IP \fB--peaks=\fR\fImethod\fR
-.PD
-Find peaks in the images using \fImethod\fR.  See the second titled \fBPEAK DETECTION\fB (above) for more information.
-
-.PD 0
-.IP \fB--indexing=\fR\fImethod\fR
-.PD
-Index the patterns using \fImethod\fR.  See the section titled \fBINDEXING METHODS\fR (above) for more information.  The default is \fB--indexing=none\fR.
-
-.PD 0
-.IP \fB--integration=\fR\fImethod\fR
-.PD
-Integrate the reflections using \fImethod\fR.  See the section titled \fBPEAK INTEGRATION\fR (above) for more information.  The default is \fB--integration=rings-nocen\fR.
-
-
-.PD 0
 .IP "\fB-g\fR \fIfilename\fR"
 .IP \fB--geometry=\fR\fIfilename\fR
 .PD
 Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
-
-.PD 0
-.IP "\fB-p\fR \fIunitcell.cell\fR"
-.IP "\fB-p\fR \fIunitcell.pdb\fR"
-.IP \fB--pdb=\fR\fIunitcell.pdb\fR
-.PD
-Specify the name of the file containing unit cell information, in PDB or CrystFEL format.
-
-.PD 0
-.IP \fB--peak-radius=\fR\fIinner,middle,outer\fR
-.PD
-Set the inner, middle and outer radii for three-ring integration during the peak search.  See the section about \fBPEAK INTEGRATION\fR, above, for details of how to determine
-these.  The default is to use the same values as for \fB--int-radius\fR.
-
-.PD 0
-.IP \fB--int-radius=\fR\fIinner,middle,outer\fR
-.PD
-Set the inner, middle and outer radii for three-ring integration.  See the
-section about \fBPEAK INTEGRATION\fR, above, for details of how to determine
-these.  The defaults are probably not appropriate for your situation.
-.PD
-The default is \fB--int-radius=4,5,7\fR.
-
-.PD 0
-.IP \fB--min-peaks=\fIn\fR
-.PD
-Do not try to index frames with fewer than \fIn\fR peaks.  These frames will still be described in the output stream.  To exclude them, use \fB--no-non-hits-in-stream\fR.
-
-.PD 0
-.IP \fB--no-non-hits-in-stream\fR
-.PD
-Completely exclude 'non-hit' frames in the stream.  When this option is given, frames with fewer than the number of peaks given to \fB--min-peaks\fR will not have chunks written to the stream at all.
 
 .PD 0
 .IP \fB--basename\fR
@@ -233,32 +185,56 @@ Remove the directory parts of the filenames taken from the input file.  If \fB--
 Prefix the filenames from the input file with \fIprefix\fR.  If \fB--basename\fR is also given, the filenames will be prefixed \fIafter\fR removing the directory parts of the filenames.
 
 .PD 0
+.IP "\fB-j\fR \fIn\fR"
+.PD
+Run \fIn\fR analyses in parallel.  Default: 1.
+
+.PD 0
+.IP \fB--no-check-prefix\fR
+.PD
+Don't attempt to correct the prefix (see \fB--prefix\fR) if it doesn't look correct.
+
+.PD 0
+.IP \fB--highres=\fIn\fR
+.PD
+Mark all pixels on the detector higher than \fIn\fR Angstroms as bad.  This might be useful when you have noisy patterns and don't expect any signal above a certain resolution.
+
+.PD 0
+.IP \fB--profile
+.PD
+Display timing data for performance monitoring.
+
+.SH PEAK SEARCH OPTIONS
+.PD 0
+.IP \fB--peaks=\fR\fImethod\fR
+.PD
+Find peaks in the images using \fImethod\fR.  See the second titled \fBPEAK DETECTION\fB (above) for more information.
+
+.PD 0
+.IP \fB--peak-radius=\fR\fIinner,middle,outer\fR
+.PD
+Set the inner, middle and outer radii for three-ring integration during the peak search.  See the section about \fBPEAK INTEGRATION\fR, above, for details of how to determine
+these.  The default is to use the same values as for \fB--int-radius\fR.
+
+.PD 0
+.IP \fB--min-peaks=\fIn\fR
+.PD
+Do not try to index frames with fewer than \fIn\fR peaks.  These frames will still be described in the output stream.  To exclude them, use \fB--no-non-hits-in-stream\fR.
+
+.PD 0
 .IP \fB--hdf5-peaks=\fR\fIpath\fR
 .PD
 When using \fB--peaks=hdf5\fR or \fB--peaks=cxi\fR, read the peak positions from location \fIpath\fR.  The path can include placeholders, e.g. \fB--hdf5-peaks=/%/peaks\fR.  See \fBPEAK DETECTION\fR above.
-
-.PD 0
-.IP \fB--tolerance=\fR\fItol\fR
-.PD
-Set the tolerances for unit cell comparison.  \fItol\fR takes the form \fIa\fR,\fIb\fR,\fIc\fR,\fIang\fR.  \fIa\fR, \fIb\fR and \fIc\fR are the tolerances, in percent, for the respective \fIreciprocal\fR space axes, and \fIang\fR is the tolerance in degrees for the reciprocal space angles.  If the unit cell is centered, the tolerances are applied to the corresponding primitive unit cell.
-.PD
-The default is \fB--tolerance=5,5,5,1.5\fR.
 
 .PD 0
 .IP \fB--median-filter=\fR\fIn\fR
 .PD
 Apply a median filter with box "radius" \fIn\fR to the image.  The median of the values from a \fI(n+1)\fRx\fI(n+1)\fR square centered on the pixel will be subtracted from each pixel.  This might help with peak detection if the background is high and/or noisy.  The \fIunfiltered\fR image will be used for the final integration of the peaks.  If you also use \fB--noise-filter\fR, the median filter will be applied first.
 
-
 .PD 0
 .IP \fB--filter-noise\fR
 .PD
 Apply a noise filter to the image with checks 3x3 squares of pixels and sets all of them to zero if any of the nine pixels have a negative value.  This filter may help with peak detection under certain circumstances.  The \fIunfiltered\fR image will be used for the final integration of the peaks, because the filter is destroys a lot of information from the pattern.  If you also use \fB--median-filter\fR, the median filter will be applied first.
-
-.PD 0
-.IP \fB--no-sat-corr\fR
-.PD
-This option is here for historical purposes only, to disable a correction which is done if certain extra information is included in the HDF5 file.
 
 .PD 0
 .IP \fB--threshold=\fR\fIthres\fR
@@ -301,21 +277,6 @@ Only accept peaks if they lay at more than \fR\fIpx\fR pixels from the center of
 Only accept peaks if they lay at less than \fR\fIpx\fR pixels from the center of the detector when using \fB--peaks=peakfinder8\fR.  The default is \fB--max-res=1200\fR.
 
 .PD 0
-.IP \fB--copy-hdf5-field=\fR\fIpath\fR
-.PD
-Copy the information from \fR\fIpath\fR in the HDF5 file into the output stream.  The information must be a single scalar value.  This option is sometimes useful to allow data to be separated after indexing according to some condition such the presence of an optical pump pulse.  You can give this option as many times as you need to copy multiple bits of information.
-
-.PD 0
-.IP "\fB-j\fR \fIn\fR"
-.PD
-Run \fIn\fR analyses in parallel.  Default: 1.
-
-.PD 0
-.IP \fB--no-check-prefix\fR
-.PD
-Don't attempt to correct the prefix (see \fB--prefix\fR) if it doesn't look correct.
-
-.PD 0
 .IP \fB--no-use-saturated\fR
 .PD
 Normally, peaks which contain one or more pixels above max_adu (defined in the detector geometry file) will be used for indexing (but not used in the final integration - see the section on peak integration above).  Using this option causes saturated peaks to be ignored completely.  The opposite is \fB--use-saturated\fR, which is the default.
@@ -335,40 +296,25 @@ CrystFEL considers all peak locations to be distances from the corner of the det
 .PD
 With this option with \fB--peaks=hdf5\fR, the peaks will additionally be checked to see that they satisfy the minimum SNR specified with \fB--min-snr\fR.
 
+.SH INDEXING OPTIONS
 .PD 0
-.IP \fB--no-peaks-in-stream\fR
+.IP \fB--indexing=\fR\fImethod\fR
 .PD
-Do not record peak search results in the stream.  You won't be able to check that the peak detection was any good, but the stream will be around 30% smaller.
+Index the patterns using \fImethod\fR.  See the section titled \fBINDEXING METHODS\fR (above) for more information.  The default is \fB--indexing=none\fR.
 
 .PD 0
-.IP \fB--no-refls-in-stream\fR
+.IP "\fB-p\fR \fIunitcell.cell\fR"
+.IP "\fB-p\fR \fIunitcell.pdb\fR"
+.IP \fB--pdb=\fR\fIunitcell.pdb\fR
 .PD
-Do not record integrated reflections in the stream.  The resulting output won't be usable for merging, but will be a lot smaller.  This option might be useful if you're only interested in things like unit cell parameters and orientations.
+Specify the name of the file containing unit cell information, in PDB or CrystFEL format.
 
 .PD 0
-.IP \fB--int-diag=\fIcondition\fR
+.IP \fB--tolerance=\fR\fItol\fR
 .PD
-Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, \fBrandom\fR, \fBimplausible\fR or \fBnegative\fR.  \fBrandom\fR means to show information about a random 1% of the peaks.  \fBnegative\fR means to show peaks with intensities which are negative by more than 3 sigma.  \fBimplausible\fR means to show peaks with intensities which are negative by more than 5 sigma.  \fBstrong\fR means to show peaks with intensities which are positive by more than 3 sigma  The default is \fB--int-diag=none\fR.
-
-.PD 0
-.IP \fB--push-res=\fIn\fR
+Set the tolerances for unit cell comparison.  \fItol\fR takes the form \fIa\fR,\fIb\fR,\fIc\fR,\fIang\fR.  \fIa\fR, \fIb\fR and \fIc\fR are the tolerances, in percent, for the respective \fIreciprocal\fR space axes, and \fIang\fR is the tolerance in degrees for the reciprocal space angles.  If the unit cell is centered, the tolerances are applied to the corresponding primitive unit cell.
 .PD
-When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  If \fBrescut\fR is not used, this option has no effect.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--push-res=0\fR, but note that the default integration method does \fInot\fR include \fBrescut\fR, so no per-pattern resolution cutoff is used.  Note that you can also apply this cutoff at the merging stage using \fBprocess_hkl --push-res\fR.
-
-.PD 0
-.IP \fB--highres=\fIn\fR
-.PD
-Mark all pixels on the detector higher than \fIn\fR Angstroms as bad.  This might be useful when you have noisy patterns and don't expect any signal above a certain resolution.
-
-
-.PD 0
-.IP \fB--fix-profile-radius=\fIn\fR
-.IP \fB--fix-bandwidth=\fIn\fR
-.IP \fB--fix-divergence=\fIn\fR
-.PD
-Fix the beam and crystal paramters to the given values.  The profile radius is given in m^-1, the bandwidth as a decimal fraction and the divergence in radians (full angle).  The default is to set the divergence to zero, the bandwidth to a very small value, and then to automatically determine the profile radius.
-.IP
-You do not have to use all three of these options together.  For example, if the automatic profile radius determination is not working well for your data set, you could fix that alone and continue using the default values for the other parameters (which might be automatically determined in future versions of CrystFEL, but are not currently).
+The default is \fB--tolerance=5,5,5,1.5\fR.
 
 .PD 0
 .IP \fB--no-check-cell
@@ -394,12 +340,6 @@ Disable retry indexing.  After an unsuccessful indexing attempt, indexamajig wou
 .IP \fB--no-refine
 .PD
 Skip the prediction refinement step.  Usually this will decrease the quality of the results and allow false solutions to get through, but occasionally it might be necessary.
-
-
-.PD 0
-.IP \fB--profile
-.PD
-Display timing data for performance monitoring.
 
 .PD 0
 .IP \fB--taketwo-member-threshold=\fIn\fR
@@ -520,6 +460,68 @@ Specify a file from which to read in the ideal gvectors for the crystal.
 .PD
 Specify a maximum time which Felix is allowed to attempt to index the pattern (seconds)
 (Default: 30 s)
+.SH INTEGRATION OPTIONS
+.PD 0
+.IP \fB--integration=\fR\fImethod\fR
+.PD
+Integrate the reflections using \fImethod\fR.  See the section titled \fBPEAK INTEGRATION\fR (above) for more information.  The default is \fB--integration=rings-nocen\fR.
+
+.PD 0
+.IP \fB--fix-profile-radius=\fIn\fR
+.IP \fB--fix-bandwidth=\fIn\fR
+.IP \fB--fix-divergence=\fIn\fR
+.PD
+Fix the beam and crystal paramters to the given values.  The profile radius is given in m^-1, the bandwidth as a decimal fraction and the divergence in radians (full angle).  The default is to set the divergence to zero, the bandwidth to a very small value, and then to automatically determine the profile radius.
+.IP
+You do not have to use all three of these options together.  For example, if the automatic profile radius determination is not working well for your data set, you could fix that alone and continue using the default values for the other parameters (which might be automatically determined in future versions of CrystFEL, but are not currently).
+
+.PD 0
+.IP \fB--int-radius=\fR\fIinner,middle,outer\fR
+.PD
+Set the inner, middle and outer radii for three-ring integration.  See the
+section about \fBPEAK INTEGRATION\fR, above, for details of how to determine
+these.  The defaults are probably not appropriate for your situation.
+.PD
+The default is \fB--int-radius=4,5,7\fR.
+
+.PD 0
+.IP \fB--int-diag=\fIcondition\fR
+.PD
+Show detailed information about reflection integration when \fIcondition\fR is met.  The \fIcondition\fR can be \fBall\fR, \fBnone\fR, a set of Miller indices separated by commas, \fBrandom\fR, \fBimplausible\fR or \fBnegative\fR.  \fBrandom\fR means to show information about a random 1% of the peaks.  \fBnegative\fR means to show peaks with intensities which are negative by more than 3 sigma.  \fBimplausible\fR means to show peaks with intensities which are negative by more than 5 sigma.  \fBstrong\fR means to show peaks with intensities which are positive by more than 3 sigma  The default is \fB--int-diag=none\fR.
+
+.PD 0
+.IP \fB--push-res=\fIn\fR
+.PD
+When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  If \fBrescut\fR is not used, this option has no effect.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--push-res=0\fR, but note that the default integration method does \fInot\fR include \fBrescut\fR, so no per-pattern resolution cutoff is used.  Note that you can also apply this cutoff at the merging stage using \fBprocess_hkl --push-res\fR.
+
+.SH OUTPUT OPTIONS
+
+.PD 0
+.IP \fB--no-non-hits-in-stream\fR
+.PD
+Completely exclude 'non-hit' frames in the stream.  When this option is given, frames with fewer than the number of peaks given to \fB--min-peaks\fR will not have chunks written to the stream at all.
+
+.PD 0
+.IP \fB--copy-hdf5-field=\fR\fIpath\fR
+.PD
+Copy the information from \fR\fIpath\fR in the HDF5 file into the output stream.  The information must be a single scalar value.  This option is sometimes useful to allow data to be separated after indexing according to some condition such the presence of an optical pump pulse.  You can give this option as many times as you need to copy multiple bits of information.
+
+.PD 0
+.IP \fB--no-peaks-in-stream\fR
+.PD
+Do not record peak search results in the stream.  You won't be able to check that the peak detection was any good, but the stream will be around 30% smaller.
+
+.PD 0
+.IP \fB--no-refls-in-stream\fR
+.PD
+Do not record integrated reflections in the stream.  The resulting output won't be usable for merging, but will be a lot smaller.  This option might be useful if you're only interested in things like unit cell parameters and orientations.
+
+.SH HISTORICAL OPTIONS
+
+.PD 0
+.IP \fB--no-sat-corr\fR
+.PD
+This option is here for historical purposes only, to disable a correction which is done if certain extra information is included in the HDF5 file.
 
 .SH IDENTIFYING SINGLE PATTERNS IN THE INPUT FILE
 
@@ -574,7 +576,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 indexamajig, and this manual, are part of CrystFEL.
 .P
