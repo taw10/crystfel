@@ -86,6 +86,7 @@ static void show_indexing_flags(IndexingFlags flags)
 
 	assert( !((flags & INDEXING_CHECK_CELL_COMBINATIONS)
 	       && (flags & INDEXING_CHECK_CELL_AXES)) );
+	STATUS("Indexing parameters:\n");
 	strcpy(check, onoff(flags & (INDEXING_CHECK_CELL_COMBINATIONS | INDEXING_CHECK_CELL_AXES)));
 	if ( flags & INDEXING_CHECK_CELL_AXES ) {
 		strcat(check, " (axis permutations only)");
@@ -115,6 +116,83 @@ static int debug_index(struct image *image)
 	crystal_set_cell(cr, cell);
 	image_add_crystal(image, cr);
 	return 1;
+}
+
+
+static char *base_indexer_str(IndexingMethod indm)
+{
+	char *str;
+
+	str = malloc(256);
+	if ( str == NULL ) {
+		ERROR("Failed to allocate string.\n");
+		return NULL;
+	}
+	str[0] = '\0';
+
+	switch ( indm & INDEXING_METHOD_MASK ) {
+
+		case INDEXING_NONE :
+		strcpy(str, "none");
+		return str;
+
+		case INDEXING_DIRAX :
+		strcpy(str, "dirax");
+		break;
+
+		case INDEXING_ASDF :
+		strcpy(str, "asdf");
+		break;
+
+		case INDEXING_MOSFLM :
+		strcpy(str, "mosflm");
+		break;
+
+		case INDEXING_FELIX :
+		strcpy(str, "felix");
+		break;
+
+		case INDEXING_XDS :
+		strcpy(str, "xds");
+		break;
+
+		case INDEXING_TAKETWO :
+		strcpy(str, "taketwo");
+		break;
+
+		case INDEXING_SIMULATION :
+		strcpy(str, "simulation");
+		break;
+
+		case INDEXING_DEBUG :
+		strcpy(str, "debug");
+		break;
+
+		default :
+		strcpy(str, "(unknown)");
+		break;
+
+	}
+
+	return str;
+}
+
+
+static char *friendly_indexer_name(IndexingMethod m)
+{
+	char *base = base_indexer_str(m & INDEXING_METHOD_MASK);
+	if ( (m & INDEXING_USE_CELL_PARAMETERS)
+	  && (m & INDEXING_USE_CELL_PARAMETERS) ) {
+		strcat(base, " using cell parameters and Bravais lattice type "
+		             "as prior information");
+	} else if ( m & INDEXING_USE_CELL_PARAMETERS ) {
+		strcat(base, " using cell parameters as prior information");
+	} else if ( m & INDEXING_USE_LATTICE_TYPE ) {
+		strcat(base, " using Bravais lattice type as prior information");
+	} else {
+		strcat(base, " - no prior information");
+	}
+	return base;
 }
 
 
@@ -174,9 +252,6 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		return NULL;
 	}
 
-	if ( *m != INDEXING_NONE ) {
-		STATUS("Prepared indexing method %s\n", str);
-	}
 	free(str);
 
 	if ( in != *m ) {
@@ -276,6 +351,14 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 	ipriv->ttopts = ttopts;
 
+	STATUS("List of indexing methods:\n");
+	for ( i=0; i<n; i++ ) {
+		char *str = indexer_str(methods[i]);
+		char *tmp = friendly_indexer_name(methods[i]);
+		STATUS("  %2i: %-25s (%s)\n", i, str, tmp);
+		free(str);
+		free(tmp);
+	}
 	show_indexing_flags(flags);
 
 	return ipriv;
@@ -732,60 +815,7 @@ static IndexingMethod set_cellparams(IndexingMethod a)
 
 char *indexer_str(IndexingMethod indm)
 {
-	char *str;
-
-	str = malloc(256);
-	if ( str == NULL ) {
-		ERROR("Failed to allocate string.\n");
-		return NULL;
-	}
-	str[0] = '\0';
-
-	switch ( indm & INDEXING_METHOD_MASK ) {
-
-		case INDEXING_NONE :
-		strcpy(str, "none");
-		return str;
-
-		case INDEXING_DIRAX :
-		strcpy(str, "dirax");
-		break;
-
-		case INDEXING_ASDF :
-		strcpy(str, "asdf");
-		break;
-
-		case INDEXING_MOSFLM :
-		strcpy(str, "mosflm");
-		break;
-
-		case INDEXING_FELIX :
-		strcpy(str, "felix");
-		break;
-
-		case INDEXING_XDS :
-		strcpy(str, "xds");
-		break;
-
-		case INDEXING_TAKETWO :
-		strcpy(str, "taketwo");
-		break;
-
-		case INDEXING_SIMULATION :
-		strcpy(str, "simulation");
-		break;
-
-		case INDEXING_DEBUG :
-		strcpy(str, "debug");
-		break;
-
-		default :
-		ERROR("No test description for indexing method %i\n",
-		      indm & INDEXING_METHOD_MASK);
-		strcpy(str, "(unknown)");
-		break;
-
-	}
+	char *str = base_indexer_str(indm);
 
 	if ( (indm & INDEXING_METHOD_MASK) == INDEXING_SIMULATION ) return str;
 
