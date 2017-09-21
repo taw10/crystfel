@@ -637,14 +637,6 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
 		return NULL;
 	}
 
-	if ( ((*indm & INDEXING_USE_CELL_PARAMETERS)
-	  || (*indm & INDEXING_USE_LATTICE_TYPE)))
-	{
-		ERROR("The cell from xds-cell or xds-latt may have had"
-		      " its axes permuted from the cell you provided.  If this"
-		      " is a problem, consider using xds-cell.\n");
-	}
-
 	xp = calloc(1, sizeof(*xp));
 	if ( xp == NULL ) return NULL;
 
