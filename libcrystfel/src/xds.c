@@ -285,7 +285,6 @@ static int read_cell(struct image *image, struct xds_private *xp)
 	                    bxstar*10e9, bystar*10e9, bzstar*10e9,
 	                   -cxstar*10e9, -cystar*10e9, -czstar*10e9);
 	r = check_cell(xp, image, cell);
-	cell_free(cell);
 
 	return r;
 }
