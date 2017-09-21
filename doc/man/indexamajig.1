@@ -85,47 +85,26 @@ Invoke XDS, and use its REFIDX procedure to attempt to index the pattern.
 Use the TakeTwo algorithm.  See Ginn et al., Acta Cryst. (2016). D72, 956-965.
 
 .PP
-You can add one or more of the following to the above indexing methods:
-
-.IP \fB-raw\fR
-.PD
-Do not check the resulting unit cell for correspondence with the target cell.  This option is useful when you need to determine the unit cell ab initio.  See \fB-comb\fR and \fB-axes\fR.
-
-.IP \fB-axes\fR
-.PD
-Check permutations of the axes for correspondence with your cell, but do not check linear combinations.  This is useful to avoid a potential problem when one of the unit cell axis lengths is close to a multiple of one of the others.  See \fB-raw\fR and \fB-comb\fR.
-
-.IP \fB-comb\fR
-.PD
-Check linear combinations of the unit cell basis vectors to see if a cell can be produced which looks like your unit cell.  See \fB-raw\fR and \fB-axes\fR.
-
-.IP \fB-retry\fR
-.PD
-If indexing fails, delete some of the weakest peaks and try again.  This increases the indexing yield, but decreases the speed.  The opposite is \fB-noretry\fR, which prevents indexing from being retried.  \fB-retry\fR is the default for all indexing methods.
-
-.IP \fB-multi\fR
-.PD
-If indexing succeeds, delete the peaks which are explained by the lattice and try again to see if another lattice can be found.  This allows the possibility of finding multiple crystals per pattern (above and beyond what is already found by multi-crystal indexing methods such as \fBfelix\fR.  The opposite is \fB-nomulti\fR, which prevents that further indexing attempts, and is the default for all indexing methods.
-
-.IP \fB-bad\fR
-.PD
-Do not check that the cell accounts for the peaks found by the peak search.  This might be useful to debug initial indexing problems, but as its name suggests it is usually a bad idea.
+You can add one or more of the following to the above indexing methods, to control what information should be provided to them.  Note that indexamajig performs a series of checks on the indexing results, including checking that the result is consistent with the target unit cell parameters.  To get completely "raw" indexing, you need to disable these checks (see below) \fBand\fR not provide prior information.
 
 .IP \fB-latt\fR
 .PD
-Use the lattice type information, e.g. the knowledge that the lattice (say) tetragonal primitive, to help guide the indexing.
+Provide the Bravais lattice type (e.g. the knowledge that the lattice tetragonal primitive), as prior information to the indexing engine.
 
 .IP \fB-nolatt\fR
 .PD
-The opposite of \fB-latt\fR: do not use lattice type information to guide the indexing.
+The opposite of \fB-latt\fR: do not provide Bravais lattice type information to the indexing engine.
 
 .IP \fB-cell\fR
 .PD
-Provide your unit cell parameters as prior information to the core indexing algorithm (not just for a filtering step after indexing as with \fBcomb\fR and \fBaxes\fR).
+Provide your unit cell parameters as prior information to the indexing engine.
 
 .IP \fB-nocell\fR
 .PD
 The opposite of \fB-cell\fR: do not use unit cell parameters as prior information for the core indexing algorithm.
+
+.PP
+Example: \fB--indexing=mosflm-cell-latt\fR means to use Mosflm for indexing, and provide it with unit cell parameters and Bravais lattice type information.
 
 .PP
 The default indexing method is 'none', which means no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.
@@ -133,13 +112,9 @@ The default indexing method is 'none', which means no indexing will be done.  Th
 .PP
 You do not need to explicitly specify anything more than the indexing method itself (e.g. \fBmosflm\fR or \fBasdf\fR).  The default behaviour for all indexing methods is to make the maximum possible use of prior information such as the lattice type and cell parameters.  If you do not provide this information, for example if you do not give any unit cell file or if the unit cell file does not contain cell parameters (only lattice type information), the indexing methods you give will be modified accordingly.  If you only specify the indexing methods themselves, in most cases \fBindexamajig\fR will do what you want and intuitively expect!  However, the options are available if you need finer control.
 
-.PP
-Your indexing methods will be checked for validity, incompatible flags removed, and warnings given about duplicates  For example, \fBmosflm\fR and \fBmosflm-comb-latt\fR represent the same indexing method, because \fB-comb\fR and \fB-latt\fR are the default behaviour for \fBmosflm\fR.  The 'long version' of each of your indexing methods will be listed in the output, and the stream will contain a record of which indexing method successfully indexed each pattern.
+If you don't know what to give for this option, try \fB--indexing=asdf,dirax,mosflm,xds,taketwo\fR.
 
-.PP
-It's risky to use \fBmosflm-nolatt\fR in conjunction with either \fB-comb\fR or \fB-axes\fR when you have a rhombohedral cell.  This would be an odd thing to do anyway: why withhold the lattice information from MOSFLM if you know what it is, and want to use it to check the result?  It's risky because MOSFLM will by default return the "H centered" lattice for your rhombohedral cell, and it's not completely certain that MOSFLM consistently uses one or other of the two possible conventions for the relationship between the "H" and "R" cells.  It is, however, very likely that it does.
-
-If you don't know what to give for this option, try \fB--indexing=asdf,dirax-axes,mosflm-axes-latt,mosflm-axes-nolatt,xds\fR.
+The indexing results from the indexing engine will be put through a number of refinement and checking stages.  See the options \fB--no-check-cell, --no-cell-combinations, --no-multi, --no-retry\fR and \fB--no-refine\fR below for more details.
 
 .SH PEAK INTEGRATION
 If the pattern could be successfully indexed, peaks will be predicted in the pattern and their intensities measured.  You have a choice of integration methods, and you specify the method using \fB--integration\fR.  Choose from:
@@ -396,9 +371,30 @@ Fix the beam and crystal paramters to the given values.  The profile radius is g
 You do not have to use all three of these options together.  For example, if the automatic profile radius determination is not working well for your data set, you could fix that alone and continue using the default values for the other parameters (which might be automatically determined in future versions of CrystFEL, but are not currently).
 
 .PD 0
+.IP \fB--no-check-cell
+.PD
+Do not check the cell parameters against the reference unit cell (given with \fB-p\fR).  If you've used older versions of CrystFEL, this replaces putting "-raw" in the indexing method.
+
+.PD 0
+.IP \fB--no-cell-combinations
+.PD
+When checking the cell parameters against the reference cell (see \fB-p\fR), do not make combinations of the axes of the candidate cell (such as \fBa'\fR=2\fBa\fR+\fBb\fR) to make it fit.  Usually this reduces the success rate, but is necessary if one of the cell parameters is close to a multiple of the others.  \fRThis happens for tetragonal lysozyme\fB.
+
+.PD 0
+.IP \fB--no-multi
+.PD
+Disable multi-lattice indexing.  This refers to the "subtract and retry" method, where after a successful indexing attempt the spots accounted for by the indexing solution are removed before trying to index again in the hope of finding a second lattice.  This doesn't have anything to do with the multi-lattice indexing algorithms such as Felix.
+
+.PD 0
+.IP \fB--no-retry
+.PD
+Disable retry indexing.  After an unsuccessful indexing attempt, indexamajig would normally remove the 10% weakest peaks and try again.  This option disables that, which makes things much faster but decreases the indexing success rate.
+
+.PD 0
 .IP \fB--no-refine
 .PD
-Skip the prediction refinement step.
+Skip the prediction refinement step.  Usually this will decrease the quality of the results and allow false solutions to get through, but occasionally it might be necessary.
+
 
 .PD 0
 .IP \fB--profile
