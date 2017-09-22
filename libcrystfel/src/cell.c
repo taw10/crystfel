@@ -246,18 +246,41 @@ UnitCell *cell_new_from_direct_axes(struct rvec a, struct rvec b, struct rvec c)
 
 UnitCell *cell_new_from_cell(UnitCell *orig)
 {
-	UnitCell *new;
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
+	UnitCell *n;
 
-	new = cell_new();
+	n = cell_new();
 
-	cell_get_cartesian(orig, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	cell_set_cartesian(new, ax, ay, az, bx, by, bz, cx, cy, cz);
-	cell_set_lattice_type(new, orig->lattice_type);
-	cell_set_centering(new, orig->centering);
-	cell_set_unique_axis(new, orig->unique_axis);
+	switch ( orig->rep ) {
 
-	return new;
+		case CELL_REP_CRYST :
+		n->a = orig->a;  n->b = orig->b;  n->c = orig->c;
+		n->alpha = orig->alpha;  n->beta = orig->beta;  n->gamma = orig->gamma;
+		break;
+
+		case CELL_REP_CART :
+		n->ax = orig->ax;  n->bx = orig->bx;  n->cx = orig->cx;
+		n->ay = orig->ay;  n->by = orig->by;  n->cy = orig->cy;
+		n->az = orig->az;  n->bz = orig->bz;  n->cz = orig->cz;
+		break;
+
+		case CELL_REP_RECIP :
+		n->axs = orig->axs;  n->bxs = orig->bxs;  n->cxs = orig->cxs;
+		n->ays = orig->ays;  n->bys = orig->bys;  n->cys = orig->cys;
+		n->azs = orig->azs;  n->bzs = orig->bzs;  n->czs = orig->czs;
+		break;
+
+		default :
+		ERROR("Bad cell representation %i\n", orig->rep);
+
+	}
+
+	n->lattice_type = orig->lattice_type;
+	n->centering = orig->centering;
+	n->unique_axis = orig->unique_axis;
+	n->rep = orig->rep;
+	n->have_parameters = orig->have_parameters;
+
+	return n;
 }
 
 
