@@ -222,7 +222,7 @@ static LatticeType spacegroup_to_lattice(const char *sg, char *ua, char *cen)
 		latt = L_HEXAGONAL;
 		*ua = 'c';
 	} else if ( sg[1] == '3' ) {
-		if ( sg[0] == 'H' ) {
+		if ( (sg[0] == 'H') || (sg[0] == 'P') ) {
 			latt = L_HEXAGONAL;
 			*ua = 'c';
 		} else {
