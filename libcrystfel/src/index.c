@@ -182,7 +182,7 @@ static char *friendly_indexer_name(IndexingMethod m)
 {
 	char *base = base_indexer_str(m & INDEXING_METHOD_MASK);
 	if ( (m & INDEXING_USE_CELL_PARAMETERS)
-	  && (m & INDEXING_USE_CELL_PARAMETERS) ) {
+	  && (m & INDEXING_USE_LATTICE_TYPE) ) {
 		strcat(base, " using cell parameters and Bravais lattice type "
 		             "as prior information");
 	} else if ( m & INDEXING_USE_CELL_PARAMETERS ) {
