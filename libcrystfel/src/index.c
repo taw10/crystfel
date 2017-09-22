@@ -300,19 +300,38 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		}
 	}
 
-	if ( cell == NULL ) {
+	/* No cell parameters -> no cell checking, no prior cell */
+	if ( !cell_has_parameters(cell) ) {
 
 		int warn = 0;
 
 		if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
 		  || (flags & INDEXING_CHECK_CELL_COMBINATIONS) )
 		{
-			ERROR("WARNING: Forcing --no-cell-combinations "
-			      "and --no-check-cell because you didn't "
-			      "provide a unit cell.\n");
+			ERROR("WARNING: Forcing --no-check-cell because "
+			      "reference unit cell parameters were not "
+			      "given.\n");
 			flags &= ~INDEXING_CHECK_CELL_COMBINATIONS;
 			flags &= ~INDEXING_CHECK_CELL_AXES;
 		}
+
+		for ( i=0; i<n; i++ ) {
+			if ( methods[i] & INDEXING_USE_CELL_PARAMETERS ) {
+				methods[i] &= ~INDEXING_USE_CELL_PARAMETERS;
+				warn = 1;
+			}
+		}
+		if ( warn ) {
+			ERROR("WARNING: Forcing all indexing methods to use "
+			      "\"-nocell\", because reference cell parameters "
+			      "were not given.\n");
+		}
+	}
+
+	/* No cell at all -> no prior lattice type */
+	if ( cell == NULL ) {
+
+		int warn = 0;
 
 		for ( i=0; i<n; i++ ) {
 			if ( methods[i] & INDEXING_USE_LATTICE_TYPE ) {
@@ -325,21 +344,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 			      "\"-nolatt\", because reference Bravais lattice "
 			      "type was not given.\n");
 		}
-	}
 
-	if ( !cell_has_parameters(cell) ) {
-		int warn = 0;
-		for ( i=0; i<n; i++ ) {
-			if ( methods[i] & INDEXING_USE_CELL_PARAMETERS ) {
-				methods[i] &= ~INDEXING_USE_CELL_PARAMETERS;
-				warn = 1;
-			}
-		}
-		if ( warn ) {
-			ERROR("WARNING: Forcing all indexing methods to use "
-			      "\"-nocell\", because reference cell parameters "
-			      "were not given.\n");
-		}
 	}
 
 	ipriv = malloc(sizeof(struct _indexingprivate));
