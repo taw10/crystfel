@@ -822,22 +822,6 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
                      struct detector *det, float *ltl)
 {
 	struct mosflm_private *mp;
-	int need_cell = 0;
-
-	/* Check if cell parameters are needed/provided */
-	if ( *indm & INDEXING_USE_CELL_PARAMETERS ) need_cell = 1;
-	if ( need_cell && !cell_has_parameters(cell) ) {
-		ERROR("Altering your MOSFLM flags because cell parameters were"
-		      " not provided.\n");
-		*indm &= ~INDEXING_USE_CELL_PARAMETERS;
-	}
-
-	/* Check if lattice type information is needed/provided */
-	if ( (*indm & INDEXING_USE_LATTICE_TYPE) && (cell == NULL) ) {
-		ERROR("Altering your MOSFLM flags because lattice type "
-		      "information was not provided.\n");
-		*indm &= ~INDEXING_USE_LATTICE_TYPE;
-	}
 
 	/* Flags that MOSFLM knows about */
 	*indm &= INDEXING_METHOD_MASK

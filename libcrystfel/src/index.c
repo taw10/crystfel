@@ -301,6 +301,9 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	}
 
 	if ( cell == NULL ) {
+
+		int warn = 0;
+
 		if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
 		  || (flags & INDEXING_CHECK_CELL_COMBINATIONS) )
 		{
@@ -309,6 +312,33 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 			      "provide a unit cell.\n");
 			flags &= ~INDEXING_CHECK_CELL_COMBINATIONS;
 			flags &= ~INDEXING_CHECK_CELL_AXES;
+		}
+
+		for ( i=0; i<n; i++ ) {
+			if ( methods[i] & INDEXING_USE_LATTICE_TYPE ) {
+				methods[i] &= ~INDEXING_USE_LATTICE_TYPE;
+				warn = 1;
+			}
+		}
+		if ( warn ) {
+			ERROR("WARNING: Forcing all indexing methods to use "
+			      "\"-nolatt\", because reference Bravais lattice "
+			      "type was not given.\n");
+		}
+	}
+
+	if ( !cell_has_parameters(cell) ) {
+		int warn = 0;
+		for ( i=0; i<n; i++ ) {
+			if ( methods[i] & INDEXING_USE_CELL_PARAMETERS ) {
+				methods[i] &= ~INDEXING_USE_CELL_PARAMETERS;
+				warn = 1;
+			}
+		}
+		if ( warn ) {
+			ERROR("WARNING: Forcing all indexing methods to use "
+			      "\"-nocell\", because reference cell parameters "
+			      "were not given.\n");
 		}
 	}
 
@@ -332,9 +362,6 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		for ( j=0; j<i; j++ ) {
 			if ( methods[i] == methods[j] ) {
 				ERROR("Duplicate indexing method.\n");
-				ERROR("Have you specified some flags which "
-				      "aren't accepted by one of your "
-				      "chosen indexing methods?\n");
 				return NULL;
 			}
 		}
