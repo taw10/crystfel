@@ -1171,18 +1171,7 @@ void *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
 	struct asdf_private *dp;
 
 	/* Flags that asdf knows about */
-	*indm &= INDEXING_METHOD_MASK
-	            | INDEXING_USE_CELL_PARAMETERS | INDEXING_USE_LATTICE_TYPE;
-
-	if ( ((*indm & INDEXING_USE_LATTICE_TYPE)
-	  && !(*indm & INDEXING_USE_CELL_PARAMETERS))
-	   || ((*indm & INDEXING_USE_CELL_PARAMETERS)
-	  && !(*indm & INDEXING_USE_LATTICE_TYPE)) )
-	{
-		ERROR("Invalid asdf options: "
-		      "try asdf-nolatt-nocell or asdf-latt-cell.\n");
-		return NULL;
-	}
+	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_CELL_PARAMETERS;
 
 	dp = malloc(sizeof(struct asdf_private));
 	if ( dp == NULL ) return NULL;
