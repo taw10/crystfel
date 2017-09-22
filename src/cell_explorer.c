@@ -657,9 +657,13 @@ static void scan_cells(CellWindow *w)
 			}
 		}
 
-		if ( ignore ) continue;
+		if ( ignore ) {
+			n_excl++;
+			continue;
+		}
 
 		if ( cell_get_parameters(cells[i], &a, &b, &c, &al, &be, &ga) ) {
+			n_excl++;
 			continue;
 		}
 		a *= 1e10;  b *= 1e10;  c *= 1e10;
