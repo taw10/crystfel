@@ -803,7 +803,6 @@ int main(int argc, char *argv[])
 		}
 		free(cellfile);
 	} else {
-		STATUS("No unit cell given.\n");
 		iargs.cell = NULL;
 	}
 
@@ -884,8 +883,12 @@ int main(int argc, char *argv[])
 
 		IndexingFlags flags = 0;
 
-		STATUS("This is what I understood your unit cell to be:\n");
-		cell_print(iargs.cell);
+		if ( iargs.cell != NULL ) {
+			STATUS("This is what I understood your unit cell to be:\n");
+			cell_print(iargs.cell);
+		} else {
+			STATUS("No reference unit cell provided.\n");
+		}
 
 		if ( if_nocomb ) {
 			flags |= INDEXING_CHECK_CELL_AXES;
