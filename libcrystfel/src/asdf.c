@@ -1073,8 +1073,8 @@ int run_asdf(struct image *image, void *ipriv)
 
 	struct asdf_private *dp = (struct asdf_private *)ipriv;
 
-	if ( dp->indm & INDEXING_CHECK_CELL_AXES ||
-             dp->indm & INDEXING_CHECK_CELL_COMBINATIONS) {
+	if ( dp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+
 		double a, b, c, gamma, beta, alpha;
 		cell_get_parameters(dp->template, &a, &b, &c,
                                                   &alpha, &beta, &gamma);
@@ -1171,7 +1171,18 @@ void *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
 	struct asdf_private *dp;
 
 	/* Flags that asdf knows about */
-	*indm &= INDEXING_METHOD_MASK;
+	*indm &= INDEXING_METHOD_MASK
+	            | INDEXING_USE_CELL_PARAMETERS | INDEXING_USE_LATTICE_TYPE;
+
+	if ( ((*indm & INDEXING_USE_LATTICE_TYPE)
+	  && !(*indm & INDEXING_USE_CELL_PARAMETERS))
+	   || ((*indm & INDEXING_USE_CELL_PARAMETERS)
+	  && !(*indm & INDEXING_USE_LATTICE_TYPE)) )
+	{
+		ERROR("Invalid asdf options: "
+		      "try asdf-nolatt-nocell or asdf-latt-cell.\n");
+		return NULL;
+	}
 
 	dp = malloc(sizeof(struct asdf_private));
 	if ( dp == NULL ) return NULL;
