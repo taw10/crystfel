@@ -41,8 +41,7 @@ extern "C" {
 
 extern int run_dirax(struct image *image, void *ipriv);
 
-extern void *dirax_prepare(IndexingMethod *indm,
-                           UnitCell *cell, struct detector *det, float *ltl);
+extern void *dirax_prepare(IndexingMethod *indm, UnitCell *cell);
 
 extern void dirax_cleanup(void *pp);
 

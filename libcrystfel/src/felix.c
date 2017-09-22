@@ -649,8 +649,7 @@ static void parse_options(const char *options, struct felix_private *gp)
 	free(option);
 }
 
-void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
-                    struct detector *det, float *ltl, const char *options)
+void *felix_prepare(IndexingMethod *indm, UnitCell *cell, const char *options)
 {
 	struct felix_private *gp;
 

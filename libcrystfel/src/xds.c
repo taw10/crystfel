@@ -61,7 +61,6 @@
 struct xds_private
 {
 	IndexingMethod indm;
-	float *ltl;
 	UnitCell *cell;
 };
 
@@ -593,8 +592,7 @@ int run_xds(struct image *image, void *priv)
 }
 
 
-void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
-                  struct detector *det, float *ltl)
+void *xds_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct xds_private *xp;
 
@@ -625,7 +623,6 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell,
 	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_LATTICE_TYPE
 	          | INDEXING_USE_CELL_PARAMETERS;
 
-	xp->ltl = ltl;
 	xp->cell = cell;
 	xp->indm = *indm;
 

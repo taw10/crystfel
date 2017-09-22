@@ -62,7 +62,6 @@ struct fftw_vars {
 
 struct asdf_private {
 	IndexingMethod          indm;
-	float                   *ltl;
 	UnitCell                *template;
 	struct fftw_vars        fftw;
 };
@@ -1082,8 +1081,6 @@ int run_asdf(struct image *image, void *ipriv)
 		d_max = max(a, b, c) * 3 * 1e10;
 
 		double volume = cell_get_volume(dp->template);
-		double vtol = (dp->ltl[0] + dp->ltl[1] + dp->ltl[2]) / 100 +
-		               dp->ltl[3] / 180 * M_PI;
 
 		/* Divide volume constraints by number of lattice points per
 		 * unit cell since asdf always finds primitive cell */
@@ -1095,8 +1092,8 @@ int run_asdf(struct image *image, void *ipriv)
 		     centering == 'I' ) latt_points_per_uc = 2;
 		else if ( centering == 'F' ) latt_points_per_uc = 4;
 
-		volume_min = volume * (1 - vtol)/latt_points_per_uc;
-		volume_max = volume * (1 + vtol)/latt_points_per_uc;
+		volume_min = volume * 0.9/latt_points_per_uc;
+		volume_max = volume * 1.1/latt_points_per_uc;
 	}
 
 	int n = image_feature_count(image->features);
@@ -1165,8 +1162,7 @@ int run_asdf(struct image *image, void *ipriv)
 }
 
 
-void *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
-                   struct detector *det, float *ltl)
+void *asdf_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct asdf_private *dp;
 
@@ -1176,7 +1172,6 @@ void *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
 	dp = malloc(sizeof(struct asdf_private));
 	if ( dp == NULL ) return NULL;
 
-	dp->ltl = ltl;
 	dp->template = cell;
 	dp->indm = *indm;
 

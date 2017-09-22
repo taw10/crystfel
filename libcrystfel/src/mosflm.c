@@ -98,7 +98,6 @@ typedef enum {
 
 struct mosflm_private {
 	IndexingMethod          indm;
-	float                   *ltl;
 	UnitCell                *template;
 };
 
@@ -818,8 +817,7 @@ int run_mosflm(struct image *image, void *ipriv)
 }
 
 
-void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
-                     struct detector *det, float *ltl)
+void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct mosflm_private *mp;
 
@@ -830,7 +828,6 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
 	mp = malloc(sizeof(struct mosflm_private));
 	if ( mp == NULL ) return NULL;
 
-	mp->ltl = ltl;
 	mp->template = cell;
 	mp->indm = *indm;
 

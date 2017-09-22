@@ -43,8 +43,7 @@ extern "C" {
 
 extern int run_mosflm(struct image *image, void *ipriv);
 
-extern void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell,
-                            struct detector *det, float *ltl);
+extern void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell);
 
 extern void mosflm_cleanup(void *pp);
 

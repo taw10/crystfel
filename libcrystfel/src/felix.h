@@ -37,7 +37,6 @@
 #include "cell.h"
 
 extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
-                           struct detector *det, float *ltl,
                            const char *options);
 
 extern void felix_cleanup(IndexingPrivate *pp);

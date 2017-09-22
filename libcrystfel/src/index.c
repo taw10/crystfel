@@ -197,7 +197,6 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
-                            struct detector *det, float *ltl,
                             const char *options)
 {
 	char *str;
@@ -211,19 +210,19 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_DIRAX :
-		priv = dirax_prepare(m, cell, det, ltl);
+		priv = dirax_prepare(m, cell);
 		break;
 
 		case INDEXING_ASDF :
-		priv = asdf_prepare(m, cell, det, ltl);
+		priv = asdf_prepare(m, cell);
 		break;
 
 		case INDEXING_MOSFLM :
-		priv = mosflm_prepare(m, cell, det, ltl);
+		priv = mosflm_prepare(m, cell);
 		break;
 
 		case INDEXING_XDS :
-		priv = xds_prepare(m, cell, det, ltl);
+		priv = xds_prepare(m, cell);
 		break;
 
 		case INDEXING_DEBUG :
@@ -231,11 +230,11 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_FELIX :
-		priv = felix_prepare(m, cell, det, ltl, options);
+		priv = felix_prepare(m, cell, options);
 		break;
 
 		case INDEXING_TAKETWO :
-		priv = taketwo_prepare(m, cell, det, ltl);
+		priv = taketwo_prepare(m, cell);
 		break;
 
 		default :
@@ -360,7 +359,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int j;
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
-		                                          det, ltl, options);
+		                                          options);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 

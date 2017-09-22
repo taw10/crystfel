@@ -70,7 +70,6 @@ struct SpotVec
 struct taketwo_private
 {
 	IndexingMethod indm;
-	float          *ltl;
 	UnitCell       *cell;
 };
 
@@ -1587,8 +1586,7 @@ int taketwo_index(struct image *image, const struct taketwo_options *opts,
 }
 
 
-void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
-                      struct detector *det, float *ltl)
+void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct taketwo_private *tp;
 
@@ -1631,7 +1629,6 @@ void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell,
 	tp = malloc(sizeof(struct taketwo_private));
 	if ( tp == NULL ) return NULL;
 
-	tp->ltl = ltl;
 	tp->cell = cell;
 	tp->indm = *indm;
 
