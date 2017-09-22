@@ -1258,13 +1258,16 @@ void write_cell(UnitCell *cell, FILE *fh)
 		fprintf(fh, "unique_axis = %c\n", cell_get_unique_axis(cell));
 	}
 	fprintf(fh, "centering = %c\n", cell_get_centering(cell));
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	fprintf(fh, "a = %.2f A\n", a*1e10);
-	fprintf(fh, "b = %.2f A\n", b*1e10);
-	fprintf(fh, "c = %.2f A\n", c*1e10);
-	fprintf(fh, "al = %.2f deg\n", rad2deg(al));
-	fprintf(fh, "be = %.2f deg\n", rad2deg(be));
-	fprintf(fh, "ga = %.2f deg\n", rad2deg(ga));
+
+	if ( cell_has_parameters(cell) ) {
+		cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+		fprintf(fh, "a = %.2f A\n", a*1e10);
+		fprintf(fh, "b = %.2f A\n", b*1e10);
+		fprintf(fh, "c = %.2f A\n", c*1e10);
+		fprintf(fh, "al = %.2f deg\n", rad2deg(al));
+		fprintf(fh, "be = %.2f deg\n", rad2deg(be));
+		fprintf(fh, "ga = %.2f deg\n", rad2deg(ga));
+	}
 }
 
 
