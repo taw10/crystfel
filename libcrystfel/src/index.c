@@ -326,6 +326,9 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
 		                                          det, ltl, options);
+
+		if ( ipriv->engine_private[i] == NULL ) return NULL;
+
 		for ( j=0; j<i; j++ ) {
 			if ( methods[i] == methods[j] ) {
 				ERROR("Duplicate indexing method.\n");
