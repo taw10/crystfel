@@ -579,7 +579,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		                ipriv->tolerance) )
 		{
 			crystal_set_user_flag(cr, 1);
-			n_bad++;
 			continue;
 		}
 
@@ -588,7 +587,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		{
 			if ( refine_prediction(image, cr) ) {
 				crystal_set_user_flag(cr, 1);
-				n_bad++;
 				continue;
 			}
 		}
@@ -598,7 +596,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		                ipriv->tolerance) )
 		{
 			crystal_set_user_flag(cr, 1);
-			n_bad++;
 			continue;
 		}
 
@@ -607,7 +604,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		{
 			if ( !peak_sanity_check(image, &cr, 1) ) {
 				crystal_set_user_flag(cr, 1);
-				n_bad++;
 				continue;
 			}
 		}
