@@ -304,6 +304,7 @@ int remove_flagged_crystals(struct image *image)
 			}
 			image->n_crystals--;
 			n_bad++;
+			i--;
 		}
 	}
 
