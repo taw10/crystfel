@@ -517,6 +517,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 {
 	int i, r;
 	int n_bad = 0;
+	int n_before = image->n_crystals;
 
 	switch ( indm & INDEXING_METHOD_MASK ) {
 
@@ -556,6 +557,9 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		return 0;
 
 	}
+
+	/* Stop a really difficult to debug situation in its tracks */
+	assert(image->n_crystals - n_before == r);
 
 	/* For all the crystals found this time ... */
 	for ( i=0; i<r; i++ ) {
