@@ -219,7 +219,7 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 
 		if ( det->path_dim != 0  || det->dim_dim != 0 ) {
 
-			if ( is_cbf_file(filename) ) {
+			if ( is_cbf_file(filename) == 1 ) {
 				ERROR("Your geometry file is for a multi-event "
 				      "format, but this file is in CBF format.\n");
 				ERROR("Your geometry file probably needs to be "
