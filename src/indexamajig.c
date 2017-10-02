@@ -154,6 +154,8 @@ static void show_help(const char *s)
 "     --no-multi             Don't repeat indexing to index multiple hits.\n"
 "     --no-retry             Don't repeat indexing to increase indexing rate.\n"
 "     --no-refine            Skip the prediction refinement step.\n"
+"     --check-peaks          Check that most of the peaks can be accounted for\n"
+"                             by the indexing solution.\n"
 "\n"
 "\nOptions for greater performance:\n\n"
 " -j <n>                   Run <n> analyses in parallel.  Default 1.\n"

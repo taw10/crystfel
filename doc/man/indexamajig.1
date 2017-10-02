@@ -342,6 +342,11 @@ Disable retry indexing.  After an unsuccessful indexing attempt, indexamajig wou
 Skip the prediction refinement step.  Usually this will decrease the quality of the results and allow false solutions to get through, but occasionally it might be necessary.
 
 .PD 0
+.IP \fB--check-peaks
+.PD
+Check that most of the peaks can be accounted for by the indexing solution.  This usually increases the quality of the indexing solutions, but prevents "subtract and retry" multi-lattice indexing from working well.
+
+.PD 0
 .IP \fB--taketwo-member-threshold=\fIn\fR
 .IP \fB--taketwo-len-tolerance=\fIn\fR
 .IP \fB--taketwo-angle-tolerance=\fIn\fR
