@@ -1919,8 +1919,8 @@ static void check_extents(struct panel p, double *min_x, double *min_y,
 
 
 static void process_panel_fields(const struct panel *p, char *line,
-                                     FILE *fh, char **bits,
-				     int write_panel_coffset)
+                                 FILE *fh, char **bits,
+                                 int write_panel_coffset)
 {
 	char new_line[1024];
 	char string_to_write[512];
