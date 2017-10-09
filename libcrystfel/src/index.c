@@ -851,6 +851,7 @@ char *indexer_str(IndexingMethod indm)
 	char *str = base_indexer_str(indm);
 
 	if ( (indm & INDEXING_METHOD_MASK) == INDEXING_SIMULATION ) return str;
+	if ( (indm & INDEXING_METHOD_MASK) == INDEXING_NONE ) return str;
 
 	if ( indm & INDEXING_USE_LATTICE_TYPE ) {
 		strcat(str, "-latt");
