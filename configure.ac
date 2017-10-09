@@ -44,13 +44,13 @@ AC_MSG_CHECKING([whether to use CBFlib])
 AS_IF([test "x$enable_cbf" != "xno"],
 [
    AC_MSG_RESULT([yes])
-   AS_IF([test "x$with_cbflib_dir" != "x"],
+   AS_IF([test "x$with_cbflib" != "x"],
    [
-      dnl NB not ${with_cbflib_dir}/include/cbflib, because cbflib installs
+      dnl NB not ${with_cbflib}/include/cbflib, because cbflib installs
       dnl its own HDF5 headers which we do not want in the include path
-      CBF_CFLAGS="-I${with_cbflib_dir}/include"
+      CBF_CFLAGS="-I${with_cbflib}/include"
       dnl Fortunately no libhdf5.so in this folder
-      CBF_LIBS="-lcbf -L${with_cbflib_dir}/lib"
+      CBF_LIBS="-lcbf -L${with_cbflib}/lib"
    ], [
       AC_CHECK_LIB([cbf], [cbf_make_handle], [
          CBF_LIBS="-lcbf"
