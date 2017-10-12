@@ -68,7 +68,6 @@ SERIAL
 <FILE>reflist-utils</FILE>
 write_reflist
 write_reflist_2
-write_reflections_to_file
 read_reflections
 read_reflections_from_file
 asymmetric_indices

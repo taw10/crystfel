@@ -154,17 +154,11 @@ int find_equiv_in_list(RefList *list, signed int h, signed int k,
 
 
 /**
- * write_reflections_to_file:
- * @fh: File handle to write to
- * @list: The reflection list to write
- *
- * This function writes the contents of @list to @fh,
- *
+ * Write the actual reflections to the file, no headers etc.
  * Reflections which have a redundancy of zero will not be written.
- *
  * The resulting list can be read back with read_reflections_from_file().
  **/
-void write_reflections_to_file(FILE *fh, RefList *list)
+static void write_reflections_to_file(FILE *fh, RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;

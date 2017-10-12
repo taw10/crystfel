@@ -1181,7 +1181,7 @@ const char *reflist_get_notes(RefList *reflist)
  *
  * Appends the string @notes_add to the notes field for @reflist.  The notes
  * will be stored in the reflection list file by, e.g.,
- * write_reflections_to_file(), and are meant to be for humans to read.
+ * write_reflist(), and are meant to be for humans to read.
  * Possible uses include making a record of the command line arguments used to
  * create the reflection list.
  */

@@ -46,8 +46,6 @@ extern "C" {
 #define REFLECTION_END_MARKER "End of reflections"
 
 
-extern void write_reflections_to_file(FILE *fh, RefList *list);
-
 extern int write_reflist(const char *filename, RefList *list);
 extern int write_reflist_2(const char *filename, RefList *list, SymOpList *sym);
 
