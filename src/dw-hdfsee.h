@@ -103,6 +103,7 @@ typedef struct {
 
 	struct imagefile *imagefile;
 	struct image	 *image;
+	int             peaktype;
 
 	char            *geom_filename;
 	char            *rg_coll_name;

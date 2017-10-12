@@ -1213,13 +1213,19 @@ static gint displaywindow_set_ringradius(GtkWidget *widget, DisplayWindow *dw)
 }
 
 
-static void load_features_from_file(struct image *image, const char *filename)
+/* Return value:
+ * 0: no peaks loaded
+ * 1: peak search peaks loaded
+ * 2: predicted peaks loaded
+ */
+static int load_features_from_file(struct image *image, const char *filename)
 {
 	FILE *fh;
 	char *rval;
+	int ret = 0;
 
 	fh = fopen(filename, "r");
-	if ( fh == NULL ) return;
+	if ( fh == NULL ) return 0;
 
 	if ( image->features != NULL ) {
 		image_feature_list_free(image->features);
@@ -1267,6 +1273,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 			image_add_feature(image->features, fs, ss, p,
 			                  image, 1.0, strdup(name));
+			ret = 2;
 			continue;
 
 		} else if ( r == 9 ) {
@@ -1292,6 +1299,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 			image_add_feature(image->features, fs, ss, p,
 			                  image, 1.0, strdup(name));
+			ret = 2;
 			continue;
 
 		}
@@ -1317,6 +1325,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 
 			image_add_feature(image->features, fs, ss, p, image,
 			                  1.0, "peak");
+			ret = 1;
 		} else if ( r == 4 ) {
 
 			p = find_orig_panel(image->det, fs, ss);
@@ -1333,6 +1342,7 @@ static void load_features_from_file(struct image *image, const char *filename)
 			}
 			image_add_feature(image->features, fs, ss, p, image,
 			                  1.0, "peak");
+			ret = 1;
 
 		} else if ( r == 2 ) {
 
@@ -1350,11 +1360,13 @@ static void load_features_from_file(struct image *image, const char *filename)
 			}
 			image_add_feature(image->features, fs, ss, p, image,
 			                  1.0, "peak");
+			ret = 1;
 
 		}
 
 	} while ( rval != NULL );
 
+	return ret;
 }
 
 
@@ -1368,7 +1380,7 @@ static gint displaywindow_peaklist_response(GtkWidget *d, gint response,
 
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
 
-		load_features_from_file(dw->image, filename);
+		dw->peaktype = load_features_from_file(dw->image, filename);
 		dw->show_peaks = 1;
 		w =  gtk_ui_manager_get_widget(dw->ui,
 					    "/ui/displaywindow/view/showpeaks");
@@ -1734,10 +1746,14 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 	bfn = safe_basename(dw->image->filename);
 	strip_extension(bfn);
 	if ( bfn != NULL ) {
-		size_t l = strlen(bfn)+10;
+		size_t l = strlen(bfn)+256;
 		fn = malloc(l);
 		if ( fn != NULL ) {
+
 			char *evs;
+			const char *pk;
+			const char *rings;
+
 			if ( dw->multi_event ) {
 				struct event *ev = dw->ev_list->events[dw->curr_event];
 				evs = get_event_string(ev);
@@ -1746,9 +1762,33 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 				evs = strdup("");
 			}
 
-			snprintf(fn, l, "%s%s.png", bfn, evs);
+			if ( dw->show_peaks ) {
+				switch ( dw->peaktype ) {
+
+					case 1 :
+					pk = "_peaks";
+					break;
+
+					case 2 :
+					pk = "_preds";
+					break;
+
+					default :
+					pk = "";
+					break;
+				}
+			} else {
+				pk = "";
+			}
+
+			if ( dw->show_rings ) {
+				rings = "_rings";
+			} else {
+				rings = "";
+			}
+
+			snprintf(fn, l, "%s%s%s%s.png", bfn, evs, pk, rings);
 			free(evs);
-			STATUS("%s'\n", fn);
 			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(d),
 			                                  fn);
 			free(fn);
@@ -2832,6 +2872,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
 	dw->pixbufs = NULL;
+	dw->peaktype = 0;
 	dw->binning_dialog = NULL;
 	dw->show_col_scale = 0;
 	dw->col_scale = NULL;
@@ -2979,7 +3020,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 
 	/* Peak list provided at startup? */
 	if ( peaks != NULL ) {
-		load_features_from_file(dw->image, peaks);
+		dw->peaktype = load_features_from_file(dw->image, peaks);
 		dw->show_peaks = 1;
 	}
 
