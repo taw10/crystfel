@@ -1681,6 +1681,43 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 }
 
 
+static void strip_extension(char *bfn)
+{
+	size_t r = strlen(bfn)-1;
+	while ( r > 0 ) {
+		if ( bfn[r] == '.') {
+			bfn[r] = '\0';
+			return;
+		}
+		r--;
+	}
+}
+
+
+static void move_back_one(char *a)
+{
+	int i;
+	size_t r = strlen(a);
+	for ( i=0; i<r; i++ ) {
+		a[i] = a[i+1];
+	}
+}
+
+
+static void substitute_slashes(char *bfn)
+{
+	size_t i;
+	size_t r = strlen(bfn);
+	for ( i=0; i<r; i++ ) {
+		if ( bfn[i] == '/') bfn[i] = '_';
+		while ( bfn[i+1] == '/' ) {
+			move_back_one(&bfn[i+1]);
+		}
+
+	}
+}
+
+
 static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 {
 	GtkWidget *d, *hbox, *l, *cb;
@@ -1695,10 +1732,22 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 	                                NULL);
 
 	bfn = safe_basename(dw->image->filename);
+	strip_extension(bfn);
 	if ( bfn != NULL ) {
-		fn = malloc(strlen(bfn)+10);
+		size_t l = strlen(bfn)+10;
+		fn = malloc(l);
 		if ( fn != NULL ) {
-			sprintf(fn, "%s.png", bfn);
+			char *evs;
+			if ( dw->multi_event ) {
+				struct event *ev = dw->ev_list->events[dw->curr_event];
+				evs = get_event_string(ev);
+				substitute_slashes(evs);
+			} else {
+				evs = strdup("");
+			}
+
+			snprintf(fn, l, "%s%s.png", bfn, evs);
+			free(evs);
 			STATUS("%s'\n", fn);
 			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(d),
 			                                  fn);
