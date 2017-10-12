@@ -135,12 +135,14 @@ extern IndexingMethod get_indm_from_string(const char *method);
 #include "cell.h"
 #include "image.h"
 #include "taketwo.h"
+#include "felix.h"
 
 
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct detector *det, float *ltl,
-                                       IndexingFlags flags, const char *options,
-                                       struct taketwo_options *ttopts);
+                                       IndexingFlags flags,
+                                       struct taketwo_options *ttopts,
+                                       struct felix_options *felix_opts);
 
 extern void index_pattern(struct image *image, IndexingPrivate *ipriv);
 

@@ -197,7 +197,7 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
-                            const char *options)
+                            struct felix_options *felix_opts)
 {
 	char *str;
 	IndexingMethod in = *m;
@@ -230,7 +230,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_FELIX :
-		priv = felix_prepare(m, cell, options);
+		priv = felix_prepare(m, cell, felix_opts);
 		break;
 
 		case INDEXING_TAKETWO :
@@ -266,8 +266,9 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 struct detector *det, float *ltl,
-                                IndexingFlags flags, const char *options,
-                                struct taketwo_options *ttopts)
+                                IndexingFlags flags,
+                                struct taketwo_options *ttopts,
+                                struct felix_options *felix_opts)
 {
 	int i, n;
 	char **method_strings;
@@ -359,7 +360,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int j;
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
-		                                          options);
+		                                          felix_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
