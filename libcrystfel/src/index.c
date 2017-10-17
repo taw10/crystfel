@@ -283,10 +283,13 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	}
 
 	for ( i=0; i<n; i++ ) {
-		methods[i] = get_indm_from_string(method_strings[i]);
-		if ( methods[i] == INDEXING_ERROR ) {
+		int err = 0;
+		methods[i] = get_indm_from_string_2(method_strings[i], &err);
+		if ( err ) {
 			ERROR("----- Notice -----\n");
-			ERROR("The way indexing options are used has changed in this CrystFEL version.\n");
+			ERROR("The way indexing options are given has changed in this CrystFEL version.\n");
+			ERROR("The indexing method should contain only the method itself and ");
+			ERROR("prior information modifiers ('cell' or 'latt')\n");
 			ERROR("To disable prediction refinement ('norefine'), use --no-refine.\n");
 			ERROR("To check cell axes only ('axes'), use --no-cell-combinations.\n");
 			ERROR("To disable all unit cell checks ('raw'), use --no-check-cell.\n");
@@ -297,6 +300,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 			free(methods);
 			return NULL;
 		}
+
 	}
 
 	/* No cell parameters -> no cell checking, no prior cell */
@@ -877,12 +881,14 @@ static IndexingMethod warn_method(const char *str)
 }
 
 
-IndexingMethod get_indm_from_string(const char *str)
+IndexingMethod get_indm_from_string_2(const char *str, int *err)
 {
 	int n, i;
 	char **bits;
 	IndexingMethod method = INDEXING_NONE;
 	int have_method = 0;
+
+	if ( err != NULL ) *err = 0;
 
 	n = assplode(str, "-", &bits, ASSPLODE_NONE);
 
@@ -945,6 +951,28 @@ IndexingMethod get_indm_from_string(const char *str)
 		} else if ( strcmp(bits[i], "nocell") == 0) {
 			method = set_nocellparams(method);
 
+		/* Deprecated options */
+		} else if ( strcmp(bits[i], "retry") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "noretry") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "multi") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "nomulti") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "refine") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "norefine") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "raw") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "bad") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "comb") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "axes") == 0) {
+			if ( err != NULL ) *err = 1;
+
 		} else {
 			ERROR("Bad list of indexing methods: '%s'\n", str);
 			return INDEXING_ERROR;
@@ -958,4 +986,10 @@ IndexingMethod get_indm_from_string(const char *str)
 	if ( !have_method ) return warn_method(str);
 
 	return method;
+}
+
+
+IndexingMethod get_indm_from_string(const char *str)
+{
+	return get_indm_from_string_2(str, NULL);
 }

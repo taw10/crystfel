@@ -1638,6 +1638,17 @@ int main(int argc, char *argv[])
 
 	fprintf(stderr, "\n");
 
+	if ( stream_has_old_indexers(st) ) {
+		ERROR("----- Notice -----\n");
+		ERROR("This stream contains indexing methods specified in an old way.\n");
+		ERROR("The full indexing method names will not be shown by cell_explorer, \n");
+		ERROR("only the methods themselves and prior information modifiers ");
+		ERROR("('cell' or 'latt').\n");
+		ERROR("Similar indexing methods will be combined.  For example\n");
+		ERROR("'mosflm-raw' and 'mosflm-axes' will both show up as 'mosflm'\n");
+		ERROR("To simplify matters, it's best to re-run indexamajig.\n");
+		ERROR("------------------\n");
+	}
 	close_stream(st);
 
 	w.cols_on[0] = 1;

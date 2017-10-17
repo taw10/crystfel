@@ -67,7 +67,17 @@ struct _stream
 	int minor_version;
 
 	long long int ln;
+
+	int old_indexers;  /* True if the stream reader encountered a deprecated
+	                    * indexing method */
 };
+
+
+int stream_has_old_indexers(Stream *st)
+{
+	return st->old_indexers;
+}
+
 
 static int read_peaks(Stream *st, struct image *image)
 {
@@ -1196,9 +1206,13 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {
-			image->indexed_by = get_indm_from_string(line+13);
+			int err = 0;
+			image->indexed_by = get_indm_from_string_2(line+13, &err);
 			if ( image->indexed_by == INDEXING_ERROR ) {
 				ERROR("Failed to read indexer list\n");
+			}
+			if ( err ) {
+				st->old_indexers = 1;
 			}
 		}
 
@@ -1327,6 +1341,7 @@ Stream *open_stream_for_read(const char *filename)
 
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
+	st->old_indexers = 0;
 
 	if ( strcmp(filename, "-") == 0 ) {
 		st->fh = stdin;
@@ -1393,6 +1408,7 @@ Stream *open_stream_fd_for_write(int fd)
 
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
+	st->old_indexers = 0;
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
@@ -1442,6 +1458,7 @@ Stream *open_stream_for_write_3(const char *filename,
 
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
+	st->old_indexers = 0;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1493,6 +1510,7 @@ Stream *open_stream_for_write_2(const char *filename,
 
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
+	st->old_indexers = 0;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {

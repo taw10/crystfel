@@ -130,6 +130,7 @@ typedef struct _indexingprivate IndexingPrivate;
 /* Convert indexing methods to/from text */
 extern char *indexer_str(IndexingMethod indm);
 extern IndexingMethod get_indm_from_string(const char *method);
+extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 
 #include "detector.h"
 #include "cell.h"

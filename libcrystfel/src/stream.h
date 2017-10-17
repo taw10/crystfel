@@ -106,6 +106,7 @@ extern void close_stream(Stream *st);
 extern int read_chunk(Stream *st, struct image *image);
 extern int read_chunk_2(Stream *st, struct image *image,
                            StreamReadFlags srf);
+extern int stream_has_old_indexers(Stream *st);
 
 extern int write_chunk(Stream *st, struct image *image, struct imagefile *imfile,
                        int include_peaks, int include_reflections,
