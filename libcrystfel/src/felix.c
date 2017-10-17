@@ -647,7 +647,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	gp->sigma_tth = 0.2;
 	gp->sigma_eta = 0.2;
 	gp->sigma_omega = 0.2;
-	gp->n_sigmas = 2;
+	gp->n_sigmas = 1;
 	gp->force4frustums = 0;
 	gp->orispace_frustum = 1;
 	gp->orispace_octa = 0;
