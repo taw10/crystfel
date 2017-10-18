@@ -835,17 +835,25 @@ int main(int argc, char *argv[])
 	}
 	free(outfile);
 
+	if ( indm_str == NULL ) {
+
+		STATUS("No indexing methods specified.  I will try to ");
+		STATUS("automatically detect the available methods.\n");
+		STATUS("To disable auto-detection of indexing methods, specify ");
+		STATUS("which methods to use with --indexing=<methods>.\n");
+		STATUS("Use --indexing=none to disable indexing and integration.\n");
+		indm_str = detect_indexing_methods(iargs.cell);
+
+	}
+
 	/* Prepare the indexing system */
 	if ( indm_str == NULL ) {
 
-		STATUS("You didn't specify an indexing method, so I  won't try "
-		       " to index anything.\n"
-		       "If that isn't what you wanted, re-run with"
-		       " --indexing=<methods>.\n");
-		if ( iargs.cell != NULL ) {
-			STATUS("Ignoring your unit cell.\n");
-		}
-		iargs.ipriv = NULL;
+		ERROR("No indexing method specified, and no usable indexing ");
+		ERROR("methods auto-detected.\n");
+		ERROR("Install some indexing programs (mosflm,dirax etc), or ");
+		ERROR("try again with --indexing=none.\n");
+		return 1;
 
 	} else if ( strcmp(indm_str, "none") == 0 ) {
 

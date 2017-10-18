@@ -143,6 +143,8 @@ extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        IndexingFlags flags, const char *options,
                                        struct taketwo_options *ttopts);
 
+extern char *detect_indexing_methods(UnitCell *cell);
+
 extern void index_pattern(struct image *image, IndexingPrivate *ipriv);
 
 extern void index_pattern_2(struct image *image, IndexingPrivate *ipriv,

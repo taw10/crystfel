@@ -993,3 +993,41 @@ IndexingMethod get_indm_from_string(const char *str)
 {
 	return get_indm_from_string_2(str, NULL);
 }
+
+
+static void do_probe(const char *(*func)(UnitCell *cell),
+                     UnitCell *cell, char *methods)
+{
+	const char *probe;
+	probe = func(cell);
+	if ( probe != NULL ) {
+		if ( methods[0] != '\0' ) {
+			strcat(methods, ",");
+		}
+		strcat(methods, probe);
+	}
+}
+
+
+char *detect_indexing_methods(UnitCell *cell)
+{
+	char *methods;
+
+	methods = malloc(1024);
+	if ( methods == NULL ) return NULL;
+	methods[0] = '\0';
+
+	do_probe(mosflm_probe, cell, methods);
+	do_probe(dirax_probe, cell, methods);
+	do_probe(asdf_probe, cell, methods);
+	do_probe(xds_probe, cell, methods);
+	/* Don't automatically use Felix (yet) */
+	//do_probe(felix_probe, cell, methods);
+
+	if ( strlen(methods) == 0 ) {
+		free(methods);
+		return NULL;
+	}
+
+	return methods;
+}
