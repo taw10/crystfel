@@ -3,11 +3,11 @@
  *
  * Utilities to complement the core reflist.c
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2016 Thomas White <taw@physics.org>
+ *   2011-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -283,15 +283,13 @@ int write_reflist(const char *filename, RefList *list)
 #define HEADER_2_0 "CrystFEL reflection list version 2.0"
 
 
-/**
- * read_reflections_from_file:
- * @fh: File handle to read from
- *
- * This function reads a reflection list from @fh.
+/* fh: File handle to read from
+ * sym: Location at which to store pointer to symmetry, or NULL if you don't
+ *  need it
  *
  * Returns: a %RefList read from the file, or NULL on error
- **/
-RefList *read_reflections_from_file(FILE *fh)
+ */
+static RefList *read_reflections_from_file(FILE *fh, char **sym)
 {
 	char *rval = NULL;
 	RefList *out;
@@ -317,7 +315,9 @@ RefList *read_reflections_from_file(FILE *fh)
 		chomp(line);
 		if ( strncmp(line, "Symmetry: ", 10) != 0 ) return NULL;
 
-		/* FIXME: Do something with the symmetry */
+		if ( sym != NULL ) {
+			*sym = strdup(line+10);
+		}
 
 		/* Read (and ignore) the header */
 		rval = fgets(line, 1023, fh);
@@ -418,7 +418,17 @@ RefList *read_reflections_from_file(FILE *fh)
 }
 
 
-RefList *read_reflections(const char *filename)
+/**
+ * read_reflections_2:
+ * @filename: Filename to read from
+ * @sym: Pointer to a "char *" at which to store the symmetry
+ *
+ * This function reads a reflection list from a file, including the
+ * symmetry from the header (e.g. "Symmetry: 4/mmm").
+ *
+ * Returns: A %RefList read from the file, or NULL on error
+ */
+RefList *read_reflections_2(const char *filename, char **sym)
 {
 	FILE *fh;
 	RefList *out;
@@ -434,11 +444,25 @@ RefList *read_reflections(const char *filename)
 		return NULL;
 	}
 
-	out = read_reflections_from_file(fh);
+	out = read_reflections_from_file(fh, sym);
 
 	fclose(fh);
 
 	return out;
+}
+
+
+/**
+ * read_reflections:
+ * @filename: Filename to read from
+ *
+ * This function reads a reflection list from a file.
+ *
+ * Returns: A %RefList read from the file, or NULL on error
+ */
+RefList *read_reflections(const char *filename)
+{
+	return read_reflections_2(filename, NULL);
 }
 
 

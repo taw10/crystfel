@@ -69,6 +69,7 @@ SERIAL
 write_reflist
 write_reflist_2
 read_reflections
+read_reflections_2
 asymmetric_indices
 res_cutoff
 check_list_symmetry
