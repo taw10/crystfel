@@ -623,3 +623,46 @@ void dirax_cleanup(void *pp)
 	p = (struct dirax_private *)pp;
 	free(p);
 }
+
+
+const char *dirax_probe(UnitCell *cell)
+{
+	pid_t pid;
+	int pty;
+	int status;
+	FILE *fh;
+	char line[1024];
+	int ok = 0;
+
+	pid = forkpty(&pty, NULL, NULL, NULL);
+	if ( pid == -1 ) {
+		return NULL;
+	}
+	if ( pid == 0 ) {
+
+		/* Child process: invoke DirAx */
+		struct termios t;
+
+		/* Turn echo off */
+		tcgetattr(STDIN_FILENO, &t);
+		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
+		tcsetattr(STDIN_FILENO, TCSANOW, &t);
+
+		execlp("dirax", "dirax", (char *)NULL);
+		_exit(1);
+
+	}
+
+	fh = fdopen(pty, "r");
+	fgets(line, 1024, fh);
+	if ( strncmp(line, "dirax", 5) == 0 ) {
+		ok = 1;
+	}
+
+	fclose(fh);
+	close(pty);
+	waitpid(pid, &status, 0);
+
+	if ( ok ) return "dirax";
+	return NULL;
+}

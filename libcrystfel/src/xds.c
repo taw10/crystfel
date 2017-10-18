@@ -637,3 +637,54 @@ void xds_cleanup(void *pp)
 	xp = (struct xds_private *)pp;
 	free(xp);
 }
+
+
+const char *xds_probe(UnitCell *cell)
+{
+	pid_t pid;
+	int pty;
+	int status;
+	FILE *fh;
+	char line[1024];
+	int ok = 0;
+	int l;
+
+	pid = forkpty(&pty, NULL, NULL, NULL);
+	if ( pid == -1 ) {
+		return NULL;
+	}
+	if ( pid == 0 ) {
+
+		/* Child process */
+		struct termios t;
+
+		/* Turn echo off */
+		tcgetattr(STDIN_FILENO, &t);
+		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
+		tcsetattr(STDIN_FILENO, TCSANOW, &t);
+
+		execlp("xds", "xds", (char *)NULL);
+		_exit(1);
+
+	}
+
+	fh = fdopen(pty, "r");
+
+	for ( l=0; l<10; l++ ) {
+		char *pos;
+		fgets(line, 1024, fh);
+		pos = strstr(line, "** XDS **");
+		if ( pos != NULL ) {
+			ok = 1;
+		}
+	}
+
+	fclose(fh);
+	close(pty);
+	waitpid(pid, &status, 0);
+
+	if ( !ok ) return NULL;
+
+	if ( cell_has_parameters(cell) ) return "xds-cell-latt";
+	return "xds-nocell-nolatt";
+}

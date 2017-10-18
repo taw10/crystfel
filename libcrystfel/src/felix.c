@@ -716,3 +716,50 @@ void felix_cleanup(IndexingPrivate *pp)
 	free(p->readhkl_file);
 	free(p);
 }
+
+
+const char *felix_probe(UnitCell *cell)
+{
+	pid_t pid;
+	int pty;
+	int status;
+	FILE *fh;
+	char line[1024];
+	int ok = 0;
+
+	if ( !cell_has_parameters(cell) ) {
+		return NULL;
+	}
+
+	pid = forkpty(&pty, NULL, NULL, NULL);
+	if ( pid == -1 ) {
+		return NULL;
+	}
+	if ( pid == 0 ) {
+
+		/* Child process: invoke DirAx */
+		struct termios t;
+
+		/* Turn echo off */
+		tcgetattr(STDIN_FILENO, &t);
+		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
+		tcsetattr(STDIN_FILENO, TCSANOW, &t);
+
+		execlp("Felix", "Felix", (char *)NULL);
+		_exit(1);
+
+	}
+
+	fh = fdopen(pty, "r");
+	fgets(line, 1024, fh);
+	if ( strncmp(line, "Felix", 5) == 0 ) {
+		ok = 1;
+	}
+
+	fclose(fh);
+	close(pty);
+	waitpid(pid, &status, 0);
+
+	if ( ok ) return "felix";
+	return NULL;
+}

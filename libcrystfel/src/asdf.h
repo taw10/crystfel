@@ -46,6 +46,7 @@ extern "C" {
 extern int run_asdf(struct image *image, void *ipriv);
 
 extern void *asdf_prepare(IndexingMethod *indm, UnitCell *cell);
+extern const char *asdf_probe(UnitCell *cell);
 
 extern void asdf_cleanup(void *pp);
 
@@ -64,6 +65,13 @@ void *asdf_prepare(IndexingMethod *indm, UnitCell *cell)
 	ERROR("To use asdf indexing, recompile with FFTW.\n");
 	return NULL;
 }
+
+
+const char *asdf_probe(UnitCell *cell)
+{
+	return NULL;
+}
+
 
 void asdf_cleanup(void *pp)
 {

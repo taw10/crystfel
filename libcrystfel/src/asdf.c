@@ -1188,3 +1188,9 @@ void asdf_cleanup(void *pp)
 	fftw_vars_free(p->fftw);
 	free(p);
 }
+
+
+const char *asdf_probe(UnitCell *cell)
+{
+	return "asdf";
+}

@@ -39,6 +39,8 @@
 extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
                            const char *options);
 
+extern const char *felix_probe(UnitCell *cell);
+
 extern void felix_cleanup(IndexingPrivate *pp);
 
 extern int felix_index(struct image *image, IndexingPrivate *p);
