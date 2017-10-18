@@ -3,11 +3,11 @@
  *
  * Draw pretty renderings of reflection lists
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -757,6 +757,7 @@ int main(int argc, char *argv[])
 	int r = 0;
 	double boost = 1.0;
 	char *sym_str = NULL;
+	char *sym_str_fromfile = NULL;
 	SymOpList *sym;
 	char *weighting = NULL;
 	int wght;
@@ -916,13 +917,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( sym_str == NULL ) {
-		sym_str = strdup("1");
-	}
-	pointgroup_warning(sym_str);
-	sym = get_pointgroup(sym_str);
-	free(sym_str);
-
 	if ( weighting == NULL ) {
 		weighting = strdup("I");
 	}
@@ -1003,11 +997,28 @@ int main(int argc, char *argv[])
 		ERROR("Couldn't load unit cell from %s\n", cellfile);
 		return 1;
 	}
-	list = read_reflections(infile);
+
+	list = read_reflections_2(infile, &sym_str_fromfile);
 	if ( list == NULL ) {
 		ERROR("Couldn't read file '%s'\n", infile);
 		return 1;
 	}
+
+	if ( sym_str == NULL ) {
+		if ( sym_str_fromfile != NULL ) {
+			STATUS("Using symmetry from reflection file: %s\n",
+			       sym_str_fromfile);
+			sym_str = sym_str_fromfile;
+		} else {
+			sym_str = strdup("1");
+		}
+	}
+
+	pointgroup_warning(sym_str);
+	sym = get_pointgroup(sym_str);
+	if ( sym == NULL ) return 1;
+	free(sym_str);
+
 	if ( check_list_symmetry(list, sym) ) {
 		ERROR("The input reflection list does not appear to"
 		      " have symmetry %s\n", symmetry_name(sym));
