@@ -3,11 +3,11 @@
  *
  * Characterise reflection lists
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -690,6 +690,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell;
 	char *file = NULL;
 	char *sym_str = NULL;
+	char *sym_str_fromfile = NULL;
 	SymOpList *sym;
 	RefList *raw_list;
 	RefList *list;
@@ -838,12 +839,6 @@ int main(int argc, char *argv[])
 		      "set!\n");
 	}
 
-	if ( sym_str == NULL ) {
-		sym_str = strdup("1");
-	}
-	sym = get_pointgroup(sym_str);
-	free(sym_str);
-
 	file = strdup(argv[optind++]);
 
 	if ( cellfile == NULL ) {
@@ -857,12 +852,24 @@ int main(int argc, char *argv[])
 	}
 	free(cellfile);
 
-	raw_list = read_reflections(file);
+	raw_list = read_reflections_2(file, &sym_str_fromfile);
 	if ( raw_list == NULL ) {
 		ERROR("Couldn't read file '%s'\n", file);
 		return 1;
 	}
 	free(file);
+
+	if ( sym_str == NULL ) {
+		if ( sym_str_fromfile != NULL ) {
+			STATUS("Using symmetry from reflection file: %s\n",
+			       sym_str_fromfile);
+			sym_str = sym_str_fromfile;
+		} else {
+			sym_str = strdup("1");
+		}
+	}
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
 
 	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
 
