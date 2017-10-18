@@ -49,7 +49,6 @@ extern "C" {
 extern int write_reflist(const char *filename, RefList *list);
 extern int write_reflist_2(const char *filename, RefList *list, SymOpList *sym);
 
-extern RefList *read_reflections_from_file(FILE *fh);
 extern RefList *read_reflections(const char *filename);
 
 extern int check_list_symmetry(RefList *list, const SymOpList *sym);
