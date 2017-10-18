@@ -3,11 +3,11 @@
  *
  * Compare reflection lists
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *   2013      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.
@@ -1124,6 +1124,9 @@ int main(int argc, char *argv[])
 	char *afile = NULL;
 	char *bfile = NULL;
 	char *sym_str = NULL;
+	char *sym_str_fromfile = NULL;
+	char *sym_str_fromfile1 = NULL;
+	char *sym_str_fromfile2 = NULL;
 	SymOpList *sym;
 	int ncom, nrej, nmul, nneg, nres, nbij, ncen;
 	RefList *list1_acc;
@@ -1320,8 +1323,53 @@ int main(int argc, char *argv[])
 		      "set!\n");
 	}
 
+	afile = strdup(argv[optind++]);
+	bfile = strdup(argv[optind]);
+
+	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
+
+	cell = load_cell_from_file(cellfile);
+	if ( cellfile == NULL ) {
+		ERROR("You must provide a unit cell.\n");
+		exit(1);
+	}
+	if ( cell == NULL ) {
+		ERROR("Failed to load cell.\n");
+		return 1;
+	}
+	free(cellfile);
+
+	list1_raw = read_reflections_2(afile, &sym_str_fromfile1);
+	if ( list1_raw == NULL ) {
+		ERROR("Couldn't read file '%s'\n", afile);
+		return 1;
+	}
+
+	list2_raw = read_reflections_2(bfile, &sym_str_fromfile2);
+	if ( list2_raw == NULL ) {
+		ERROR("Couldn't read file '%s'\n", bfile);
+		return 1;
+	}
+
+	if ( (sym_str_fromfile1 != NULL) && (sym_str_fromfile2 != NULL) ) {
+		if ( strcmp(sym_str_fromfile1, sym_str_fromfile2) != 0 ) {
+			ERROR("The symmetries of the two list do not match:\n");
+			ERROR(" %s: %s\n", afile, sym_str_fromfile1);
+			ERROR(" %s: %s\n", bfile, sym_str_fromfile2);
+			return 1;
+		}
+		sym_str_fromfile = sym_str_fromfile1;
+		free(sym_str_fromfile2);
+	}
+
 	if ( sym_str == NULL ) {
-		sym_str = strdup("1");
+		if ( sym_str_fromfile != NULL ) {
+			STATUS("Using symmetry from reflection files: %s\n",
+			       sym_str_fromfile);
+			sym_str = sym_str_fromfile;
+		} else {
+			sym_str = strdup("1");
+		}
 	}
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
@@ -1354,33 +1402,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	afile = strdup(argv[optind++]);
-	bfile = strdup(argv[optind]);
-
-	if ( shell_file == NULL ) shell_file = strdup("shells.dat");
-
-	cell = load_cell_from_file(cellfile);
-	if ( cellfile == NULL ) {
-		ERROR("You must provide a unit cell.\n");
-		exit(1);
-	}
-	if ( cell == NULL ) {
-		ERROR("Failed to load cell.\n");
-		return 1;
-	}
-	free(cellfile);
-
-	list1_raw = read_reflections(afile);
-	if ( list1_raw == NULL ) {
-		ERROR("Couldn't read file '%s'\n", afile);
-		return 1;
-	}
-
-	list2_raw = read_reflections(bfile);
-	if ( list2_raw == NULL ) {
-		ERROR("Couldn't read file '%s'\n", bfile);
-		return 1;
-	}
 
 	/* Check that the intensities have the correct symmetry */
 	if ( check_list_symmetry(list1_raw, sym) ) {
