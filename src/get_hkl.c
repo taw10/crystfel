@@ -3,11 +3,11 @@
  *
  * Small program to manipulate reflection lists
  *
- * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -415,6 +415,7 @@ int main(int argc, char *argv[])
 	int config_nap = 1;
 	char *holo_str = NULL;
 	char *mero_str = NULL;
+	char *sym_str_fromfile = NULL;
 	char *expand_str = NULL;
 	SymOpList *holo = NULL;
 	SymOpList *mero = NULL;
@@ -569,13 +570,6 @@ int main(int argc, char *argv[])
 	} else {
 		holo = NULL;
 	}
-	if ( mero_str != NULL ) {
-		pointgroup_warning(mero_str);
-		mero = get_pointgroup(mero_str);
-		free(mero_str);
-	} else {
-		mero = NULL;
-	}
 	if ( expand_str != NULL ) {
 		pointgroup_warning(expand_str);
 		expand = get_pointgroup(expand_str);
@@ -590,19 +584,36 @@ int main(int argc, char *argv[])
 		set_symmetry_name(reindex, "Reindex");
 	}
 
+	input = read_reflections_2(input_file, &sym_str_fromfile);
+	if ( input == NULL ) {
+		ERROR("Problem reading input file %s\n", input_file);
+		return 1;
+	}
+	free(input_file);
+
+	if ( mero_str == NULL ) {
+		if ( sym_str_fromfile != NULL ) {
+			STATUS("Using symmetry from reflection file: %s\n",
+			       sym_str_fromfile);
+			mero_str = sym_str_fromfile;
+		} else {
+			mero_str = strdup("1");
+		}
+	}
+	if ( mero_str != NULL ) {
+		pointgroup_warning(mero_str);
+		mero = get_pointgroup(mero_str);
+		free(mero_str);
+	} else {
+		mero = NULL;
+	}
+
 	if ( (expand != NULL) || (holo != NULL) || config_trimc
 	  || config_multi ) {
 		if ( mero == NULL ) {
 			ERROR("You must specify the point group with -y.\n");
 		}
 	}
-
-	input = read_reflections(input_file);
-	if ( input == NULL ) {
-		ERROR("Problem reading input file %s\n", input_file);
-		return 1;
-	}
-	free(input_file);
 
 	STATUS("%i reflections in input.\n", num_reflections(input));
 
