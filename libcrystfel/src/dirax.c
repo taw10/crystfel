@@ -604,6 +604,12 @@ void *dirax_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct dirax_private *dp;
 
+	if ( dirax_probe(cell) == NULL ) {
+		ERROR("DirAx does not appear to run properly.\n");
+		ERROR("Please check your DirAx installation.\n");
+		return NULL;
+	}
+
 	/* Flags that DirAx knows about */
 	*indm &= INDEXING_METHOD_MASK;
 

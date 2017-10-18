@@ -653,6 +653,12 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell, const char *options)
 {
 	struct felix_private *gp;
 
+	if ( felix_probe(cell) == NULL ) {
+		ERROR("Felix does not appear to run properly.\n");
+		ERROR("Please check your Felix installation.\n");
+		return NULL;
+	}
+
 	if ( cell == NULL ) {
 		ERROR("Felix needs a unit cell.\n");
 		return NULL;

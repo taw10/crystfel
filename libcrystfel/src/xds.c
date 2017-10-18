@@ -45,6 +45,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 
+#include "xds.h"
 #include "cell.h"
 #include "image.h"
 #include "utils.h"
@@ -595,6 +596,12 @@ int run_xds(struct image *image, void *priv)
 void *xds_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct xds_private *xp;
+
+	if ( xds_probe(cell) == NULL ) {
+		ERROR("XDS does not appear to run properly.\n");
+		ERROR("Please check your XDS installation.\n");
+		return NULL;
+	}
 
 	/* Either cell,latt and cell provided, or nocell-nolatt and no cell
 	 * - complain about anything else.  Could figure this out automatically,

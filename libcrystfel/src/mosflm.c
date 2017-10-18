@@ -821,6 +821,12 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct mosflm_private *mp;
 
+	if ( mosflm_probe(cell) == NULL ) {
+		ERROR("Mosflm does not appear to run properly.\n");
+		ERROR("Please check your Mosflm installation.\n");
+		return NULL;
+	}
+
 	/* Flags that MOSFLM knows about */
 	*indm &= INDEXING_METHOD_MASK
 	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
