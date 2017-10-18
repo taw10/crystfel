@@ -46,7 +46,7 @@ args = op.parse_args()
 if not args.ofn:
     out = os.path.splitext(args.ifn)[0]+'-shifted.geom'
 else:
-    out = opt.ofn
+    out = args.ofn
 
 if args.px:
     units = 'px'
