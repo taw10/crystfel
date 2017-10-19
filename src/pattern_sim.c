@@ -633,11 +633,6 @@ int main(int argc, char *argv[])
 		free(template_file);
 	}
 
-	if ( sym_str == NULL ) sym_str = strdup("1");
-	pointgroup_warning(sym_str);
-	sym = get_pointgroup(sym_str);
-	/* sym_str is used below */
-
 	if ( grad_str == NULL ) {
 		STATUS("You didn't specify a gradient calculation method, so"
 		       " I'm using the 'mosaic' method, which is fastest.\n");
@@ -720,15 +715,34 @@ int main(int argc, char *argv[])
 		phases = NULL;
 		flags = NULL;
 
+		if ( sym_str == NULL ) sym_str = strdup("1");
+		pointgroup_warning(sym_str);
+		sym = get_pointgroup(sym_str);
+
 	} else {
 
 		RefList *reflections;
+		char *sym_str_fromfile = NULL;
 
-		reflections = read_reflections(intfile);
+		reflections = read_reflections_2(intfile, &sym_str_fromfile);
 		if ( reflections == NULL ) {
 			ERROR("Problem reading input file %s\n", intfile);
 			return 1;
 		}
+
+		/* If we don't have a point group yet, and if the file provides
+		 * one, use the one from the file */
+		if ( (sym_str == NULL) && (sym_str_fromfile != NULL) ) {
+			sym_str = sym_str_fromfile;
+			STATUS("Using symmetry from reflection file: %s\n",
+			       sym_str);
+		}
+
+		/* If we still don't have a point group, use "1" */
+		if ( sym_str == NULL ) sym_str = strdup("1");
+
+		pointgroup_warning(sym_str);
+		sym = get_pointgroup(sym_str);
 
 		if ( grad == GRADIENT_PHASED ) {
 			phases = phases_from_list(reflections);
