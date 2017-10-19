@@ -3,11 +3,11 @@
  *
  * Generate partials for testing scaling
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2016 Thomas White <taw@physics.org>
+ *   2011-2017 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -763,23 +763,35 @@ int main(int argc, char *argv[])
 	}
 	fixup_geom(det);
 
-	if ( sym_str == NULL ) sym_str = strdup("1");
-	sym = get_pointgroup(sym_str);
-	free(sym_str);
-
 	if ( save_file == NULL ) save_file = strdup("partial_sim.hkl");
 
 	/* Load (full) reflections */
 	if ( input_file != NULL ) {
 
 		RefList *as;
+		char *sym_str_fromfile = NULL;
 
-		full = read_reflections(input_file);
+		full = read_reflections_2(input_file, &sym_str_fromfile);
 		if ( full == NULL ) {
 			ERROR("Failed to read reflections from '%s'\n",
 			      input_file);
 			return 1;
 		}
+
+		/* If we don't have a point group yet, and if the file provides
+		 * one, use the one from the file */
+		if ( (sym_str == NULL) && (sym_str_fromfile != NULL) ) {
+			sym_str = sym_str_fromfile;
+			STATUS("Using symmetry from reflection file: %s\n",
+			       sym_str);
+		}
+
+		/* If we still don't have a point group, use "1" */
+		if ( sym_str == NULL ) sym_str = strdup("1");
+
+		pointgroup_warning(sym_str);
+		sym = get_pointgroup(sym_str);
+
 		if ( check_list_symmetry(full, sym) ) {
 			ERROR("The input reflection list does not appear to"
 			      " have symmetry %s\n", symmetry_name(sym));
@@ -798,6 +810,8 @@ int main(int argc, char *argv[])
 
 	} else {
 		random_intensities = 1;
+		if ( sym_str == NULL ) sym_str = strdup("1");
+		sym = get_pointgroup(sym_str);
 	}
 
 	if ( n < 1 ) {
