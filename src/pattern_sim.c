@@ -862,7 +862,8 @@ int main(int argc, char *argv[])
 	if ( intfile == NULL ) {
 		STATUS("               Full intensities: all equal\n");
 	} else {
-		STATUS("               Full intensities: from %s\n", intfile);
+		STATUS("               Full intensities: from %s (symmetry %s)\n",
+		       intfile, sym_str);
 	}
 	do {
 
