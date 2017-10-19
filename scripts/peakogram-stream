@@ -102,7 +102,11 @@ with open(args.i) as f:
         # Add reflection to list
         columns = line.split()
         n += 1
-        data.append([resolution(cell, columns[0:3]),columns[5]])
+        try:
+            data.append([resolution(cell, columns[0:3]),columns[5]])
+        except:
+            print("Error with line: "+line.rstrip("\r\n"))
+            print("Cell: "+str(cell))
 
         if n%1000==0:
             sys.stdout.write("\r%i peaks found" % n)
