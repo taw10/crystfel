@@ -44,6 +44,7 @@ struct taketwo_options
 
 
 extern void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell);
+extern const char *taketwo_probe(UnitCell *cell);
 extern int taketwo_index(struct image *image,
                          const struct taketwo_options *opts, void *priv);
 extern void taketwo_cleanup(IndexingPrivate *pp);

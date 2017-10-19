@@ -1642,3 +1642,9 @@ void taketwo_cleanup(IndexingPrivate *pp)
 	free(tp);
 }
 
+
+const char *taketwo_probe(UnitCell *cell)
+{
+	if ( cell_has_parameters(cell) ) return "taketwo";
+	return NULL;
+}
