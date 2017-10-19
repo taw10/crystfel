@@ -866,10 +866,11 @@ int main(int argc, char *argv[])
 	       noise_stddev);
 	if ( random_intensities ) {
 		STATUS("               Full intensities: randomly generated: "
-		       "abs(Gaussian(sigma=%.2f))\n", full_stddev);
+		       "abs(Gaussian(sigma=%.2f)), symmetry %s\n",
+		       full_stddev, sym_str);
 	} else {
-		STATUS("               Full intensities: from %s\n",
-		       input_file);
+		STATUS("               Full intensities: from %s (symmetry %s)\n",
+		       input_file, sym_str);
 	}
 	STATUS("   Max error in cell components: %.2f %%\n", cnoise);
 
