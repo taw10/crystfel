@@ -47,8 +47,8 @@ def resolution(scell, shkl):
     c = float(scell[2])*10.0  # nm -> Angstroms
 
     al = m.radians(float(scell[3]))
-    be = m.radians(float(scell[3]))
-    ga = m.radians(float(scell[3])) # in degrees
+    be = m.radians(float(scell[4]))
+    ga = m.radians(float(scell[5])) # in degrees
 
     h = int(shkl[0])
     k = int(shkl[1])
