@@ -946,7 +946,7 @@ int main(int argc, char *argv[])
 
 	if ( random_intensities ) {
 		STATUS("Writing full intensities to %s\n", save_file);
-		write_reflist(save_file, full);
+		write_reflist_2(save_file, full, sym);
 	}
 
 	if ( phist_file != NULL ) {
