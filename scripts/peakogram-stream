@@ -141,7 +141,7 @@ if args.imin is not None:
 if args.imax is not None:
     ymax = args.imax
 
-keepers = np.where((x>xmin) & (x<xmax) & (y>ymin) & (y<ymax))
+keepers = np.where((x>=xmin) & (x<=xmax) & (y>=ymin) & (y<=ymax))
 
 x = x[keepers]
 y = y[keepers]
