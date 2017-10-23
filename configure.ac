@@ -23,11 +23,36 @@ AC_FUNC_MALLOC
 gl_INIT
 
 
+dnl Find HDF5
 AC_ARG_WITH(hdf5,
-[AS_HELP_STRING([--with-hdf5], [specify location of HDF5 library])],
-[HDF5_CFLAGS="-I$withval/include"
- HDF5_LIBS="-L$withval/lib -lhdf5"],
-[HDF5_LIBS="-lhdf5"])
+[AS_HELP_STRING([--with-hdf5],
+                [specify location of HDF5 (instead of trying pkg-config)])],
+[
+    AC_MSG_NOTICE([Using your specified location for HDF5])
+    HDF5_CFLAGS="-I$withval/include"
+    HDF5_LIBS="-L$withval/lib -lhdf5"
+],
+[
+    AC_MSG_NOTICE([checking for HDF5 using pkg-config])
+    PKG_CHECK_MODULES([HDF5], [hdf5],
+    [
+        AC_MSG_NOTICE([Found HDF5 using pkg-config])
+    ],
+    [
+        AC_MSG_NOTICE([Did not find HDF5 using pkg-config.  Assuming default location.])
+        HDF5_CFLAGS=""
+        HDF5_LIBS="-lhdf5"
+    ])
+])
+
+dnl Check that HDF5 *actually* works...
+LIBS_SAVE=$LIBS
+LIBS=$HDF5_LIBS
+AC_CHECK_LIB([hdf5], [H5Fcreate], [],
+[
+   AC_MSG_ERROR([HDF5 not found!])
+])
+LIBS=$LIBS_SAVE
 
 
 AC_ARG_WITH(gsl,
@@ -289,15 +314,6 @@ AC_CHECK_LIB([pthread], [sched_setaffinity], [
    AC_DEFINE([HAVE_CPU_AFFINITY], [1],
              [Define to 1 if sched_setaffinity is available.])
 ])
-
-
-LIBS_SAVE=$LIBS
-LIBS=$HDF5_LIBS
-AC_CHECK_LIB([hdf5], [H5Fcreate], [],
-[
-   AC_MSG_ERROR([HDF5 not found!])
-])
-LIBS=$LIBS_SAVE
 
 
 AC_CHECK_LIB([rt], [clock_gettime],
