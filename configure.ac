@@ -94,6 +94,7 @@ AS_IF([test "x$enable_cbf" != "xno"],
 AS_IF([test x$have_cbflib = xtrue],
 [
    AC_DEFINE([HAVE_CBFLIB], [1], [Define to 1 if CBFlib is available])
+   AC_MSG_NOTICE([CBFlib found.])
 ])
 
 AC_ARG_WITH(opencl, AS_HELP_STRING([--with-opencl], [Use OpenCL]))
