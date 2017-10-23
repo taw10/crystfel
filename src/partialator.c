@@ -1018,7 +1018,10 @@ int main(int argc, char *argv[])
 			ERROR("Failed to open '%s'\n", sparams_fn);
 			return 1;
 		}
-		fgets(line, 1024, sparams_fh);
+		if ( fgets(line, 1024, sparams_fh) == NULL ) {
+			ERROR("Failed to read header from %s\n", sparams_fn);
+			return 1;
+		}
 		STATUS("Reading initial scaling factors (G,B) from '%s'\n",
 		       sparams_fn);
 		free(sparams_fn);

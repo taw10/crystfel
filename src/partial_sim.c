@@ -917,10 +917,13 @@ int main(int argc, char *argv[])
 		for ( i=0; i<n_threads; i++ ) {
 
 			unsigned long int seed;
-
-			fread(&seed, sizeof(seed), 1, fh);
 			qargs.rngs[i] = gsl_rng_alloc(gsl_rng_mt19937);
-			gsl_rng_set(qargs.rngs[i], seed);
+
+			if ( fread(&seed, sizeof(seed), 1, fh) == 1 ) {
+				gsl_rng_set(qargs.rngs[i], seed);
+			} else {
+				ERROR("Failed to seed RNG %i\n", i);
+			}
 
 		}
 

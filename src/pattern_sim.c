@@ -799,9 +799,12 @@ int main(int argc, char *argv[])
 		FILE *fh;
 		unsigned long int seed;
 		fh = fopen("/dev/urandom", "r");
-		fread(&seed, sizeof(seed), 1, fh);
+		if ( fread(&seed, sizeof(seed), 1, fh) == 1 ) {
+			gsl_rng_set(rng, seed);
+		} else {
+			ERROR("Failed to seed random number generator\n");
+		}
 		fclose(fh);
-		gsl_rng_set(rng, seed);
 	}
 
 	powder.det = image.det;

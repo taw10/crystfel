@@ -65,9 +65,12 @@ int main(int argc, char *argv[])
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	fh = fopen("/dev/urandom", "r");
-	fread(&seed, sizeof(seed), 1, fh);
+	if ( fread(&seed, sizeof(seed), 1, fh) == 1 ) {
+		gsl_rng_set(rng, seed);
+	} else {
+		ERROR("Failed to seed RNG\n");
+	}
 	fclose(fh);
-	gsl_rng_set(rng, seed);
 
 	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(9000.0);

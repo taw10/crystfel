@@ -1254,8 +1254,11 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		fread(&seed, sizeof(seed), 1, fh);
-		gsl_rng_set(rng, seed);
+		if ( fread(&seed, sizeof(seed), 1, fh) == 1 ) {
+			gsl_rng_set(rng, seed);
+		} else {
+			ERROR("Failed to seed RNG\n");
+		}
 		fclose(fh);
 	}
 
