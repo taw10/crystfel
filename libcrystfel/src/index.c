@@ -108,11 +108,33 @@ static void show_indexing_flags(IndexingFlags flags)
 
 static int debug_index(struct image *image)
 {
-	Crystal *cr = crystal_new();
-	UnitCell *cell = cell_new();
-	cell_set_reciprocal(cell, +0.0000e9, +0.0000e9, +0.0000e9,
-	                          +0.0000e9, +0.0000e9, +0.0000e9,
-	                          +0.0000e9, +0.0000e9, +0.0000e9);
+	FILE *fh;
+	Crystal *cr;
+	UnitCell *cell;
+	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+
+	fh = fopen("../../indexing.debug", "r");
+	if ( fh == NULL ) {
+		ERROR("indexing.debug not found\n");
+		return 0;
+	}
+
+	if ( fscanf(fh, "%e %e %e", &asx, &asy, &asz) != 3 ) {
+		ERROR("Failed to read a* from indexing.debug\n");
+		return 0;
+	}
+	if ( fscanf(fh, "%e %e %e", &bsx, &bsy, &bsz) != 3 ) {
+		ERROR("Failed to read b* from indexing.debug\n");
+		return 0;
+	}
+	if ( fscanf(fh, "%e %e %e", &csx, &csy, &csz) != 3 ) {
+		ERROR("Failed to read c* from indexing.debug\n");
+		return 0;
+	}
+
+	cr = crystal_new();
+	cell = cell_new();
+	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 	crystal_set_cell(cr, cell);
 	image_add_crystal(image, cr);
 	return 1;
