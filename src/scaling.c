@@ -3,11 +3,11 @@
  *
  * Scaling
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -38,6 +38,7 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_fit.h>
 
 #include "merge.h"
 #include "post-refinement.h"
@@ -454,5 +455,101 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 
 	if ( niter == 10 ) {
 		ERROR("Too many iterations - giving up!\n");
+	}
+}
+
+
+int linear_scale(RefList *list1, const RefList *list2, double *G)
+{
+	Reflection *refl1;
+	Reflection *refl2;
+	RefListIterator *iter;
+	int max_n = 256;
+	int n = 0;
+	double *x;
+	double *y;
+	double *w;
+	int r;
+	double cov11;
+	double sumsq;
+
+	x = malloc(max_n*sizeof(double));
+	w = malloc(max_n*sizeof(double));
+	y = malloc(max_n*sizeof(double));
+	if ( (x==NULL) || (y==NULL) || (w==NULL) ) {
+		ERROR("Failed to allocate memory for scaling.\n");
+		return 1;
+	}
+
+	int nb = 0;
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) )
+	{
+		signed int h, k, l;
+		double Ih1, Ih2;
+		nb++;
+
+		get_indices(refl1, &h, &k, &l);
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) {
+			continue;
+		}
+
+		Ih1 = get_intensity(refl1);
+		Ih2 = get_intensity(refl2);
+
+		if ( (Ih1 <= 0.0) || (Ih2 <= 0.0) ) continue;
+		if ( isnan(Ih1) || isinf(Ih1) ) continue;
+		if ( isnan(Ih2) || isinf(Ih2) ) continue;
+
+		if ( n == max_n ) {
+			max_n *= 2;
+			x = realloc(x, max_n*sizeof(double));
+			y = realloc(y, max_n*sizeof(double));
+			w = realloc(w, max_n*sizeof(double));
+			if ( (x==NULL) || (y==NULL) || (w==NULL) ) {
+				ERROR("Failed to allocate memory for scaling.\n");
+				return 1;
+			}
+		}
+
+		x[n] = Ih2;
+		y[n] = Ih1;
+		w[n] = get_partiality(refl1);
+		n++;
+
+	}
+
+	if ( n < 2 ) {
+		ERROR("Not enough reflections for scaling (had %i, but %i remain)\n", nb, n);
+		return 1;
+	}
+
+	r = gsl_fit_wmul(x, 1, w, 1, y, 1, n, G, &cov11, &sumsq);
+
+	if ( r ) {
+		ERROR("Scaling failed.\n");
+		return 1;
+	}
+
+	free(x);
+	free(y);
+	free(w);
+
+	return 0;
+}
+
+
+void scale_all_to_reference(Crystal **crystals, int n_crystals,
+                            RefList *reference)
+{
+	int i;
+
+	for ( i=0; i<n_crystals; i++ ) {
+		double G;
+		linear_scale(crystal_get_reflections(crystals[i]), reference, &G);
+		crystal_set_osf(crystals[i], -log(G));
+		crystal_set_Bfac(crystals[i], 0.0);
 	}
 }
