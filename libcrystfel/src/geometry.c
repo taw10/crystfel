@@ -512,7 +512,7 @@ static void set_random_partialities(Crystal *cryst)
 
 
 static double do_integral(double q2, double zl, double R,
-                          double lambda, double sig, int verbose)
+                          double lambda, double sig, char *verbose)
 {
 	int i;
 	double kmin, kmax, kstart, kfinis;
@@ -578,7 +578,7 @@ static double do_integral(double q2, double zl, double R,
 
 	if ( verbose ) {
 		char fn[64];
-		snprintf(fn, 63, "partial%i.graph", verbose);
+		snprintf(fn, 63, "partial%s.graph", verbose);
 		fh = fopen(fn, "w");
 		fprintf(fh, "  n    p      wavelength   E           P\n");
 		STATUS("Nominal k = %e m^-1\n", 1.0/lambda);
@@ -695,8 +695,12 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 
 		R = r0 + m * sqrt(q2);
 
-		total = do_integral(q2, zl, R, lambda, sig, 0);
-		norm = do_integral(q2, -0.5*q2*lambda, R, lambda, sig, 0);
+		//char tmp[256];
+		//snprintf(tmp, 255, "-%i,%i,%i", h, k, l);
+		char *tmp = NULL;
+
+		total = do_integral(q2, zl, R, lambda, sig, tmp);
+		norm = do_integral(q2, -0.5*q2*lambda, R, lambda, sig, NULL);
 
 	        set_partiality(refl, total/norm);
 		set_lorentz(refl, 1.0);
@@ -704,8 +708,8 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 		if ( total > 2.0*norm ) {
 			/* Error! */
 			STATUS("total > 2*norm!\n");
-			do_integral(q2, zl, R, lambda, sig, 1);
-			do_integral(q2, -0.5*q2*lambda, R, lambda, sig, 2);
+			do_integral(q2, zl, R, lambda, sig, NULL);
+			do_integral(q2, -0.5*q2*lambda, R, lambda, sig, NULL);
 			abort();
 		}
 
