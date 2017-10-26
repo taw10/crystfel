@@ -183,7 +183,7 @@ static double scale_iterate(Crystal *cr, const RefList *full,
 
 			}
 
-			fx = G + log(p) - log(L) - B*s*s + log(I_full);
+			fx = -log(G) + log(p) - log(L) - B*s*s + log(I_full);
 			delta_I = log(I_partial) - fx;
 			v_c = w * delta_I * gradients[k];
 			v_curr = gsl_vector_get(v, k);
@@ -549,7 +549,7 @@ void scale_all_to_reference(Crystal **crystals, int n_crystals,
 	for ( i=0; i<n_crystals; i++ ) {
 		double G;
 		linear_scale(crystal_get_reflections(crystals[i]), reference, &G);
-		crystal_set_osf(crystals[i], -log(G));
+		crystal_set_osf(crystals[i], G);
 		crystal_set_Bfac(crystals[i], 0.0);
 	}
 }

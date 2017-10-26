@@ -115,7 +115,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 		p = get_partiality(refl);
 		//if ( p < 0.2 ) continue;
 
-		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl);
+		corr = (1.0/G) * exp(B*res*res) * get_lorentz(refl);
 		int1 = get_intensity(refl) * corr;
 		int2 = p*I_full;
 		w = 1.0;

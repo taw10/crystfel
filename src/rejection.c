@@ -137,7 +137,7 @@ static void check_cc(Crystal *cr, RefList *full)
 		pcalc = get_partiality(refl);
 
 		/* Observed partiality */
-		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl);
+		corr = (1.0/G) * exp(B*res*res) * get_lorentz(refl);
 		Ipart = get_intensity(refl) * corr;
 		pobs = Ipart / get_intensity(match);
 

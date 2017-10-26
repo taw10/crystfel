@@ -637,7 +637,7 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 		pcalc = get_partiality(refl);
 
 		/* Observed partiality */
-		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl);
+		corr = (1.0/G) * exp(B*res*res) * get_lorentz(refl);
 		Ipart = get_intensity(refl) * corr;
 		pobs = Ipart / get_intensity(match);
 
@@ -689,7 +689,7 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
 
-		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl);
+		corr = (1.0/G) * exp(B*res*res) * get_lorentz(refl);
 		Ipart = get_intensity(refl) * corr;
 		Ifull = get_intensity(match);
 		esd = get_esd_intensity(match);
