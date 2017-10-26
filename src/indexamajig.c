@@ -378,8 +378,8 @@ int main(int argc, char *argv[])
 	        {"taketwo-angle-tol",        1, NULL,         34}, /* compat */
 	        {"taketwo-trace-tolerance",  1, NULL,         35},
 	        {"taketwo-trace-tol",        1, NULL,         35}, /* compat */
-	        {"felix-ttrange-min",      1, NULL,           36},
-	        {"felix-ttrange-max",      1, NULL,           37},
+	        {"felix-tthrange-min",     1, NULL,           36},
+	        {"felix-tthrange-max",     1, NULL,           37},
 	        {"felix-min-measurements", 1, NULL,           38},
 	        {"felix-min-completeness", 1, NULL,           39},
 	        {"felix-min-uniqueness",   1, NULL,           40},
