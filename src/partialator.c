@@ -579,7 +579,7 @@ static int set_initial_params(Crystal *cr, FILE *fh)
 
 	} else {
 
-		crystal_set_osf(cr, 0.0);
+		crystal_set_osf(cr, 1.0);
 		crystal_set_Bfac(cr, 0.0);
 
 	}
