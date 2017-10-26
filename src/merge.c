@@ -282,8 +282,6 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 		}
 	}
 
-	STATUS("%lli reflections went into the merge.\n", qargs.n_reflections);
-
 	reflist_free(full);
 	return full2;
 }
