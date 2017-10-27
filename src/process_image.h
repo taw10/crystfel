@@ -40,6 +40,7 @@ struct index_args;
 #include "im-sandbox.h"
 #include "time-accounts.h"
 #include "taketwo.h"
+#include "felix.h"
 
 
 enum {
@@ -99,9 +100,9 @@ struct index_args
 	float fix_profile_r;
 	float fix_bandwidth;
 	float fix_divergence;
-	char *felix_options;
 	int profile;  /* Whether or not to do wall clock profiling */
 	struct taketwo_options taketwo_opts;
+	struct felix_options felix_opts;
 };
 
 

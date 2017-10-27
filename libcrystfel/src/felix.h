@@ -36,8 +36,20 @@
 
 #include "cell.h"
 
+struct felix_options
+{
+	double ttmin;  /* radians */
+	double ttmax;  /* radians */
+	int min_measurements;
+	double min_completeness;
+	double min_uniqueness;
+	int n_voxels;
+	double test_fraction;
+	double sigma;
+};
+
 extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
-                           const char *options);
+                           struct felix_options *opts);
 
 extern const char *felix_probe(UnitCell *cell);
 

@@ -129,6 +129,7 @@ static void show_help(const char *s)
 "     --no-refine           Skip the prediction refinement step\n"
 "     --check-peaks         Check that most of the peaks can be accounted for\n"
 "                            by the indexing solution\n"
+"\n"
 "     --taketwo-member-threshold\n"
 "                           Minimum number of members in network\n"
 "     --taketwo-len-tolerance\n"
@@ -137,8 +138,25 @@ static void show_help(const char *s)
 "                           Reciprocal space angle tolerance (in degrees)\n"
 "     --taketwo-trace-tolerance\n"
 "                           Rotation matrix equivalence tolerance (in degrees)\n"
-"     --felix-options       Change the default arguments passed to the indexer\n"
-"                           Comma-separated list of options, key=val\n"
+"\n"
+"     --felix-tthrange-min  Minimum 2theta to consider for indexing (degrees)\n"
+"                            Default: 0\n"
+"     --felix-tthrange-max  Maximum 2theta to consider for indexing (degrees)\n"
+"                            Default: 30\n"
+"     --felix-min-measurements\n"
+"                           How many Rodrigue lines cross in the first search\n"
+"                            Default: 15\n"
+"     --felix-min-completeness\n"
+"                           Fraction of projected spots found in the pattern\n"
+"                            Default: 0.001\n"
+"     --felix-min-uniqueness\n"
+"                           Fraction of found spots which can belong to other\n"
+"                            crystallites.  Default: 0.5\n"
+"     --felix-num-voxels    Number of voxels for Rodrigues space search\n"
+"                            Default: 100\n"
+"     --felix-test-fraction Fraction of space to test.  Default: 0.75\n"
+"     --felix-sigma         The sigma of the 2theta, eta and omega angles.\n"
+"                            Default: 0.2\n"
 "\nIntegration options:\n\n"
 "     --integration=<meth>  Integration method (rings,prof2d)-(cen,nocen)\n"
 "                            Default: rings-nocen\n"
@@ -208,7 +226,6 @@ int main(int argc, char *argv[])
 	char *geom_filename = NULL;
 	struct beam_params beam;
 	int have_push_res = 0;
-	int len;
 	char *command_line_peak_path = NULL;
 	int if_refine = 1;
 	int if_nocomb = 0;
@@ -266,12 +283,19 @@ int main(int argc, char *argv[])
 	iargs.fix_profile_r = -1.0;
 	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
-	iargs.felix_options = NULL;
 	iargs.profile = 0;
 	iargs.taketwo_opts.member_thresh = -1;
 	iargs.taketwo_opts.len_tol = -1.0;
 	iargs.taketwo_opts.angle_tol = -1.0;
 	iargs.taketwo_opts.trace_tol = -1.0;
+	iargs.felix_opts.ttmin = -1.0;
+	iargs.felix_opts.ttmax = -1.0;
+	iargs.felix_opts.min_measurements = 0;
+	iargs.felix_opts.min_completeness = -1.0;
+	iargs.felix_opts.min_uniqueness = -1.0;
+	iargs.felix_opts.n_voxels = 0;
+	iargs.felix_opts.test_fraction = -1.0;
+	iargs.felix_opts.sigma = -1.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -347,13 +371,21 @@ int main(int argc, char *argv[])
 	        {"max-res",            1, NULL,               30},
 	        {"min-peaks",          1, NULL,               31},
 	        {"taketwo-member-threshold", 1, NULL,         32},
-	        {"taketwo-member-thresh", 1, NULL,            32},
+	        {"taketwo-member-thresh",    1, NULL,         32}, /* compat */
 	        {"taketwo-len-tolerance",    1, NULL,         33},
-	        {"taketwo-len-tol",       1, NULL,            33},
+	        {"taketwo-len-tol",          1, NULL,         33}, /* compat */
 	        {"taketwo-angle-tolerance",  1, NULL,         34},
-	        {"taketwo-angle-tol",     1, NULL,            34},
+	        {"taketwo-angle-tol",        1, NULL,         34}, /* compat */
 	        {"taketwo-trace-tolerance",  1, NULL,         35},
-	        {"taketwo-trace-tol",     1, NULL,            35},
+	        {"taketwo-trace-tol",        1, NULL,         35}, /* compat */
+	        {"felix-ttrange-min",      1, NULL,           36},
+	        {"felix-ttrange-max",      1, NULL,           37},
+	        {"felix-min-measurements", 1, NULL,           38},
+	        {"felix-min-completeness", 1, NULL,           39},
+	        {"felix-min-uniqueness",   1, NULL,           40},
+	        {"felix-num-voxels",       1, NULL,           41},
+	        {"felix-test-fraction",    1, NULL,           42},
+	        {"felix-sigma",            1, NULL,           43},
 
 		{0, 0, NULL, 0}
 	};
@@ -524,18 +556,9 @@ int main(int argc, char *argv[])
 			break;
 
 			case 25 :
-			/* Remove leading and trailing quotes */
-			len = strlen(optarg);
-			if ( optarg[len-1] == '\'' || optarg[len-1] == '\"' ){
-				optarg[len-1] = 0;
-			}
-			if ( optarg[0] == '\'' || optarg[0] == '\"' ){
-				iargs.felix_options = strdup( optarg+1 );
-			}
-			else {
-				iargs.felix_options = strdup( optarg );
-			}
-			break;
+			ERROR("--felix-options is no longer used.\n");
+			ERROR("See --help for the new Felix options.\n");
+			return 1;
 
 		        case 26:
 			iargs.min_pix_count = atoi(optarg);
@@ -597,6 +620,72 @@ int main(int argc, char *argv[])
 			}
 			/* Convert to radians */
 			iargs.taketwo_opts.trace_tol = deg2rad(iargs.taketwo_opts.trace_tol);
+			break;
+
+			case 36:
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.ttmin) != 1 )
+			{
+				ERROR("Invalid value for --felix-tthrange-min\n");
+				return 1;
+			}
+			iargs.felix_opts.ttmin = deg2rad(iargs.felix_opts.ttmin);
+			break;
+
+			case 37:
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.ttmax) != 1 )
+			{
+				ERROR("Invalid value for --felix-tthrange-max\n");
+				return 1;
+			}
+			iargs.felix_opts.ttmax = deg2rad(iargs.felix_opts.ttmax);
+			break;
+
+			case 38:
+			if ( sscanf(optarg, "%i", &iargs.felix_opts.min_measurements) != 1 )
+			{
+				ERROR("Invalid value for --felix-min-measurements\n");
+				return 1;
+			}
+			break;
+
+			case 39:
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.min_completeness) != 1 )
+			{
+				ERROR("Invalid value for --felix-min-completeness\n");
+				return 1;
+			}
+			break;
+
+			case 40:
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.min_uniqueness) != 1 )
+			{
+				ERROR("Invalid value for --felix-min-uniqueness\n");
+				return 1;
+			}
+			break;
+
+			case 41:
+			if ( sscanf(optarg, "%i", &iargs.felix_opts.n_voxels) != 1 )
+			{
+				ERROR("Invalid value for --felix-num-voxels\n");
+				return 1;
+			}
+			break;
+
+			case 42:
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.test_fraction) != 1 )
+			{
+				ERROR("Invalid value for --felix-test-fraction\n");
+				return 1;
+			}
+			break;
+
+			case 43:
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.sigma) != 1 )
+			{
+				ERROR("Invalid value for --felix-sigma\n");
+				return 1;
+			}
 			break;
 
 			case 0 :
@@ -900,8 +989,8 @@ int main(int argc, char *argv[])
 
 		iargs.ipriv = setup_indexing(indm_str, iargs.cell, iargs.det,
 		                             iargs.tols, flags,
-		                             iargs.felix_options,
-		                             &iargs.taketwo_opts);
+		                             &iargs.taketwo_opts,
+		                             &iargs.felix_opts);
 		if ( iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");
 			return 1;

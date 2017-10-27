@@ -362,114 +362,17 @@ These set low-level parameters for the TakeTwo indexing algorithm.  Respectively
 The defaults are: \fB--taketwo-member-threshold=20\fR, \fB--taketwo-len-tolernace=0.001\fR, \fB--taketwo-angle-tolerance=0.6\fR and \fB--taketwo-trace-tolerance=3\fR.
 
 .PD 0
-.IP \fB--felix-options\fR
-.PD
-Specify a comma-separated list of keyword arguments to change the default parameters passed to the felix indexer. For asthetics, this list can also be preceeded and followed by quotations - as in: \fB--felix-options="arg1=10,arg2=600"\fR. A list of parameters which can be modified through this option is detailed below.
-
+.IP \fB--felix-tthrange-min=\fIn\fR
+.IP \fB--felix-tthrange-max=\fIn\fR
+.IP \fB--felix-min-measurements=\fIn\fR
+.IP \fB--felix-min-completeness=\fIn\fR
+.IP \fB--felix-min-uniqueness=\fIn\fR
+.IP \fB--felix-num-voxels=\fIn\fR
+.IP \fB--felix-test-fraction=\fIn\fR
+.IP \fB--felix-sigma=\fIn\fR
 .PD 0
-.IP "\fBspacegroup=\fIn\fR"
-.PD
-Specify the spacegroup number of the crystal structure. For example: spacegroup=96 is P43212.
+These set low-level parameters for the Felix indexing algorithm.
 
-.PD 0
-.IP "\fBn_voxels=\fIn\fR"
-.PD
-Specify the number of voxels used in the Rodrigues space search.
-(Default: 100)
-
-.PD 0
-.IP "\fBtest_fraction=\fIfract\fR"
-.PD
-Specify the fraction of space to test.
-(Default: 0.75)
-
-.PD 0
-.IP "\fBsigma_tth=\fIsig\fR"
-.PD
-Specify the sigma of the two-theta angle.
-(Default: 0.15)
-
-.PD 0
-.IP "\fBsigma_eta=\fIsig\fR"
-.PD
-Specify the sigma of the eta angle.
-(Default: 0.2)
-
-.PD 0
-.IP "\fBsigma_omega=\fIsig\fR"
-.PD
-Specify the sigma of the omega angle.
-(Default: 0.2)
-
-.PD 0
-.IP "\fBn_sigmas=\fIn\fR"
-.PD
-Specify the number of sigmas to use.
-(Default: 2)
-
-.PD 0
-.IP "\fBtthrange_min=\fImin\fR"
-.PD
-Specify the lower bound of the 2theta angle to consider when indexing (degrees).
-(Default: 0.0)
-
-.PD 0
-.IP "\fBtthrange_max=\fImax\fR"
-.PD
-Specify the upper bound of the 2theta angle to consider when indexing (degrees).
-(Default: 30.0)
-
-.PD 0
-.IP "\fBetarange_min=\fImin\fR"
-.PD
-Specify the lower bound of the eta angle to consider when indexing (degrees).
-(Default: 0.0)
-
-.PD 0
-.IP "\fBetarange_max=\fImax\fR"
-.PD
-Specify the upper bound of the eta angle to consider when indexing (degrees).
-(Default: 360.0)
-
-.PD 0
-.IP "\fBmin_measurements=\fIn\fR"
-.PD
-Specify a cutoff for how many Rodrigues lines cross in the first search.
-(Default: 15)
-
-.PD 0
-.IP "\fBmin_completeness=\fIfract\fR"
-.PD
-Specify a cutoff for the fraction of projected spots which are found in the pattern.
-(Default: 0.001)
-
-.PD 0
-.IP "\fBmin_uniqueness=\fIn\fR"
-.PD
-Specify a cutoff for the fraction of found spots which can belong to other crystallites.
-(Default: 0.5)
-
-.PD 0
-.IP "\fBforce4frustums\fR"
-.PD
-Tell Felix to use four frustums.
-
-.PD 0
-.IP "\fBorispace_octa\fR"
-.PD
-Tell Felix to use octahedral orispace as opposed to frustum.
-(Only possible with Felix.0.31)
-
-.PD 0
-.IP "\fBreadhkl=\fIfile\fR"
-.PD
-Specify a file from which to read in the ideal gvectors for the crystal.
-
-.PD 0
-.IP "\fBmaxtime=\fIn\fR"
-.PD
-Specify a maximum time which Felix is allowed to attempt to index the pattern (seconds)
-(Default: 30 s)
 .SH INTEGRATION OPTIONS
 .PD 0
 .IP \fB--integration=\fR\fImethod\fR

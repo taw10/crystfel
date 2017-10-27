@@ -136,12 +136,14 @@ extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 #include "cell.h"
 #include "image.h"
 #include "taketwo.h"
+#include "felix.h"
 
 
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct detector *det, float *ltl,
-                                       IndexingFlags flags, const char *options,
-                                       struct taketwo_options *ttopts);
+                                       IndexingFlags flags,
+                                       struct taketwo_options *ttopts,
+                                       struct felix_options *felix_opts);
 
 extern char *detect_indexing_methods(UnitCell *cell);
 

@@ -188,7 +188,9 @@ static int read_felix(struct felix_private *gp, struct image *image,
 		cell_set_cartesian(cell, ubi12/1e10, ubi13/1e10, ubi11/1e10,
 			                 ubi22/1e10, ubi23/1e10, ubi21/1e10,
 			                 ubi32/1e10, ubi33/1e10, ubi31/1e10);
+		cell_set_lattice_type(cell, cell_get_lattice_type(gp->cell));
 		cell_set_centering(cell, cell_get_centering(gp->cell));
+		cell_set_unique_axis(cell, cell_get_unique_axis(gp->cell));
 
 		cr = crystal_new();
 		if ( cr == NULL ) {
@@ -383,7 +385,8 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 	                &tt, 1.0/image->lambda);
 
 	fprintf(fh, "spacegroup %i\n", gp->spacegroup);
-	fprintf(fh, "tthrange %f %f\n", gp->tthrange_min, gp->tthrange_max);
+	fprintf(fh, "tthrange %f %f\n", rad2deg(gp->tthrange_min),
+	                                rad2deg(gp->tthrange_max));
 	fprintf(fh, "etarange %f %f\n", gp->etarange_min, gp->etarange_max);
 	fprintf(fh, "domega %f\n", gp->domega);
 	fprintf(fh, "omegarange %f %f\n", gp->omegarange_min, gp->omegarange_max);
@@ -544,112 +547,66 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 }
 
 
-static void parse_options(const char *options, struct felix_private *gp)
+static int sg_number_for_cell(UnitCell *cell)
 {
-	char *temp_options;
-	char *option;
-	char *freeme;
+	LatticeType lattice = cell_get_lattice_type(cell);
+	char cen = cell_get_centering(cell);
 
-	temp_options = strdup(options);
-	freeme = temp_options;
+	switch (lattice)
+	{
+		case L_TRICLINIC:
+		return 1;  /* P1 */
 
-	while ( (option=strsep(&temp_options, ",")) != NULL ) {
-
-		if ( strncmp(option, "spacegroup=", 11) == 0 ){
-			gp->spacegroup = atoi(option+11);
+		case L_MONOCLINIC:
+		switch ( cen ) {
+			case 'P' : return 3;  /* P2 */
+			case 'C' : return 5;  /* C2 */
+			default : return 0;
 		}
 
-		if ( strncmp(option, "tthrange_min=", 13) == 0 ){
-			gp->tthrange_min = atof(option+13);
+		case L_ORTHORHOMBIC:
+		switch ( cen ) {
+			case 'P' : return 16;  /* P222 */
+			case 'C' : return 21;  /* C222 */
+			case 'F' : return 22;  /* F222 */
+			case 'I' : return 23;  /* I222 */
+			case 'A' : return 38;  /* Amm2 */
+			default : return 0;
 		}
 
-		if ( strncmp(option, "tthrange_max=", 13 ) == 0 ){
-			gp->tthrange_max = atof(option+13);
+		case L_TETRAGONAL:
+		switch ( cen ) {
+			case 'P' : return 89;  /* P422 */
+			case 'I' : return 97;  /* I422 */
+			default : return 0;
 		}
 
-		if ( strncmp(option, "etarange_min=", 13 ) == 0 ){
-			gp->etarange_min = atof(option+13);
+		case L_RHOMBOHEDRAL:
+		return 155;  /* R32 */
+
+		case L_HEXAGONAL:
+		switch ( cen ) {
+			case 'P' : return 177;  /* P622 */
+			case 'H' : return 143;  /* P3 */
+			default : return 0;
 		}
 
-		if ( strncmp(option, "etarange_max=", 13 ) == 0 ){
-			gp->etarange_max = atof(option+13);
+		case L_CUBIC:
+		switch ( cen ) {
+			case 'P' : return 207;  /* P432 */
+			case 'F' : return 209;  /* F432 */
+			case 'I' : return 211;  /* I432 */
+			default : return 0;
 		}
 
-		if ( strncmp(option, "domega=", 7) == 0 ){
-			gp->domega = atof(option+7);
-		}
-
-		if ( strncmp(option, "omegarange_min=", 15) == 0 ){
-			gp->omegarange_min = atof(option+15);
-		}
-
-		if ( strncmp(option, "omegarange_max=", 15) == 0 ){
-			gp->omegarange_max = atof(option+15);
-		}
-
-		if ( strncmp(option, "min_measurements=", 17) == 0 ){
-			gp->min_measurements = atoi(option+17);
-		}
-
-		if ( strncmp(option, "min_completeness=", 17) == 0 ){
-			gp->min_completeness = atof(option+17);
-		}
-
-		if ( strncmp(option, "min_uniqueness=", 15) == 0 ){
-			gp->min_uniqueness = atof(option+15);
-		}
-
-		if ( strncmp(option, "n_voxels=", 9) == 0 ){
-			gp->n_voxels = atoi(option+9);
-		}
-
-		if ( strncmp(option, "test_fraction=", 14) == 0 ){
-			gp->test_fraction = atof(option+14);
-		}
-
-		if ( strncmp(option, "sigma_tth=", 10) == 0 ){
-			gp->sigma_tth = atof(option+10);
-		}
-
-		if ( strncmp(option, "sigma_eta=", 10) == 0 ){
-			gp->sigma_eta = atof(option+10);
-		}
-
-		if ( strncmp(option, "sigma_omega=", 12) == 0 ){
-			gp->sigma_omega = atof(option+12);
-		}
-
-		if ( strncmp(option, "n_sigmas=", 9) == 0 ){
-			gp->n_sigmas = atoi(option+9);
-		}
-
-		if ( strncmp(option, "force4frustums", 14) == 0 ){
-			gp->force4frustums = 1;
-		}
-
-		/* Only allow one orispace command.
-		 * orispace frustum is the default, so have to turn off to use octa.
-		 */
-		if ( strncmp(option, "orispace_octa", 13) == 0 ){
-			gp->orispace_octa = 1;
-			gp->orispace_frustum = 0;
-		}
-
-		if ( strncmp(option, "readhkl=", 8) == 0 ){
-			gp->readhkl_file = strdup(option+8);
-		}
-
-		if ( strncmp(option, "maxtime=", 8) == 0 ){
-			gp->maxtime = atof(option+8);
-		}
-
+		default:
+		return 0;
 	}
-
-	free(freeme);
-	free(option);
 }
 
-void *felix_prepare(IndexingMethod *indm, UnitCell *cell, const char *options)
+
+void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
+                    struct felix_options *opts)
 {
 	struct felix_private *gp;
 
@@ -659,7 +616,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell, const char *options)
 		return NULL;
 	}
 
-	if ( cell == NULL ) {
+	if ( !cell_has_parameters(cell) ) {
 		ERROR("Felix needs a unit cell.\n");
 		return NULL;
 	}
@@ -675,9 +632,15 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell, const char *options)
 	gp->indm = *indm;
 
 	/* Default values of felix options */
-	gp->spacegroup = 0;
-	gp->tthrange_min = 0;
-	gp->tthrange_max = 30.0;
+	gp->spacegroup = sg_number_for_cell(cell);
+	if ( gp->spacegroup == 0 ) {
+		ERROR("Couldn't determine representative space group for your cell.\n");
+		ERROR("Try again with a more conventional cell.\n");
+		return NULL;
+	}
+
+	/* Default parameters */
+	gp->n_voxels = 100;
 	gp->etarange_min = 0;
 	gp->etarange_max = 360;
 	gp->domega = 2;
@@ -686,28 +649,44 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell, const char *options)
 	gp->min_measurements = 15;
 	gp->min_completeness = 0.001;
 	gp->min_uniqueness = 0.5;
-	gp->n_voxels = 100;
 	gp->test_fraction = 0.75;
-	gp->sigma_tth = 0.15;
+	gp->sigma_tth = 0.2;
 	gp->sigma_eta = 0.2;
 	gp->sigma_omega = 0.2;
-	gp->n_sigmas = 2;
+	gp->n_sigmas = 1;
 	gp->force4frustums = 0;
 	gp->orispace_frustum = 1;
 	gp->orispace_octa = 0;
 	gp->readhkl_file = NULL;
 	gp->maxtime = 30.0;
+	gp->tthrange_min = deg2rad(0.0);
+	gp->tthrange_max = deg2rad(30.0);
 
-	/* Parse the options string and fill in the necessary
-	 * private variables. */
-	if ( options != NULL ) parse_options(options, gp);
-
-	/* Make sure that they at least specified the spacegroup number.*/
-
-	if ( gp->spacegroup == 0 ) {
-		ERROR("Felix requires that you specify the spacegroup number.\n");
-		ERROR("You should use the argument --felix-options=spacegroup=xx\n");
-		return NULL;
+	if ( opts->ttmin > 0.0 ) {
+		gp->tthrange_min = opts->ttmin;
+	}
+	if ( opts->ttmax > 0.0 ) {
+		gp->tthrange_max = opts->ttmax;
+	}
+	if ( opts->min_measurements > 0 ) {
+		gp->min_measurements = opts->min_measurements;
+	}
+	if ( opts->min_completeness > 0.0 ) {
+		gp->min_completeness = opts->min_completeness;
+	}
+	if ( opts->min_uniqueness > 0.0 ) {
+		gp->min_uniqueness = opts->min_uniqueness;
+	}
+	if ( opts->n_voxels > 0 ) {
+		gp->n_voxels = opts->n_voxels;
+	}
+	if ( opts->test_fraction > 0.0 ) {
+		gp->test_fraction = opts->test_fraction;
+	}
+	if ( opts->sigma > 0.0 ) {
+		gp->sigma_tth = opts->sigma;
+		gp->sigma_eta = opts->sigma;
+		gp->sigma_omega = opts->sigma;
 	}
 
 	return (IndexingPrivate *)gp;
