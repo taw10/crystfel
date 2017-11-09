@@ -65,9 +65,9 @@ static void apply_shift(Crystal *cr, int k, double shift)
 		break;
 
 		case GPARAM_OSF :
-		t = crystal_get_osf(cr);
+		t = -log(crystal_get_osf(cr));
 		t += shift;
-		crystal_set_osf(cr, t);
+		crystal_set_osf(cr, exp(-t));
 		break;
 
 		default :
@@ -272,7 +272,7 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 		if ( I_full <= 0 ) continue;  /* Because log */
 		if ( p <= 0.0 ) continue; /* Because of log */
 
-		fx = G + log(p) - log(L) - B*s*s + log(I_full);
+		fx = -log(G) + log(p) - log(L) - B*s*s + log(I_full);
 		dc = log(I_partial) - fx;
 		w = 1.0;
 		dev += w*dc*dc;
