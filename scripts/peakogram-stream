@@ -79,7 +79,12 @@ n=0
 in_list = 0
 cell = []
 
-with open(args.i) as f:
+if args.i == "-":
+    f = sys.stdin
+else:
+    f = open(args.i)
+
+if f:
     for line in f:
 
         if line.find("Cell parameters") != -1:
