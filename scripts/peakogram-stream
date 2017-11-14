@@ -114,7 +114,7 @@ if f:
             print("Cell: "+str(cell))
 
         if n%1000==0:
-            sys.stdout.write("\r%i peaks found" % n)
+            sys.stdout.write("\r%i predicted reflections found" % n)
             sys.stdout.flush()
 
         if n >= args.nmax:
