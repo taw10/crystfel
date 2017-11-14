@@ -17,7 +17,11 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 
-f = open(sys.argv[1], 'r')
+if sys.argv[1] == "-":
+    f = sys.stdin
+else:
+    f = open(sys.argv[1], 'r')
+
 if len(sys.argv) > 2:
     geom = sys.argv[2]
     have_geom = 1
