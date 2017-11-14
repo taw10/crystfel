@@ -2780,47 +2780,72 @@ static void calibmode_right(DisplayWindow *dw)
 }
 
 
+static void change_ring(DisplayWindow *dw, double inc)
+{
+	if ( dw->n_rings < 1 ) return;
+	if ( dw->n_rings == 1 ) {
+		dw->ring_radii[0] += inc;
+		STATUS("Ring radius = %.1f px\n", dw->ring_radii[0]);
+	} else {
+		dw->ring_radii[1] += inc;
+		STATUS("Ring radius = %.1f px\n", dw->ring_radii[1]);
+	}
+}
+
+
 static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
                                    DisplayWindow *dw)
 {
+	if ( dw->calib_mode ) {
 
-	if ( !dw->calib_mode ) {
-		return 0;
+		switch ( event->keyval ) {
+
+			case GDK_Up:
+			case GDK_KP_Up:
+			calibmode_up(dw);
+			redraw_window(dw);
+			break;
+
+			case GDK_Down:
+			case GDK_KP_Down:
+			calibmode_down(dw);
+			redraw_window(dw);
+			break;
+
+			case GDK_Left:
+			case GDK_KP_Left:
+			calibmode_left(dw);
+			redraw_window(dw);
+			break;
+
+			case GDK_Right:
+			case GDK_KP_Right:
+			calibmode_right(dw);
+			redraw_window(dw); break;
+
+			case GDK_KP_Add:
+			calibmode_next(NULL, dw);
+			break;
+
+			case GDK_KP_Subtract:
+			calibmode_prev(NULL, dw);
+			break;
+		}
+
 	}
 
 	switch ( event->keyval ) {
 
-		case GDK_Up:
-		case GDK_KP_Up:
-		calibmode_up(dw);
+		case GDK_KEY_a:
+		change_ring(dw, +1.0);
 		redraw_window(dw);
 		break;
 
-		case GDK_Down:
-		case GDK_KP_Down:
-		calibmode_down(dw);
+		case GDK_KEY_b:
+		change_ring(dw, -1.0);
 		redraw_window(dw);
 		break;
 
-		case GDK_Left:
-		case GDK_KP_Left:
-		calibmode_left(dw);
-		redraw_window(dw);
-		break;
-
-		case GDK_Right:
-		case GDK_KP_Right:
-		calibmode_right(dw);
-		redraw_window(dw);
-		break;
-
-		case GDK_KP_Add:
-		calibmode_next(NULL, dw);
-		break;
-
-		case GDK_KP_Subtract:
-		calibmode_prev(NULL, dw);
-		break;
 	}
 
 	return 0;
