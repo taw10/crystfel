@@ -2836,12 +2836,12 @@ static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
 
 	switch ( event->keyval ) {
 
-		case GDK_KEY_a:
+		case GDK_a:
 		change_ring(dw, +1.0);
 		redraw_window(dw);
 		break;
 
-		case GDK_KEY_b:
+		case GDK_b:
 		change_ring(dw, -1.0);
 		redraw_window(dw);
 		break;
