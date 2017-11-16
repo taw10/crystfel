@@ -608,6 +608,40 @@ struct sample *generate_tophat(struct image *image)
 }
 
 
+struct sample *generate_spectrum_fromfile(struct image *image,
+					  char *spectrum_fn)
+{
+	struct sample *spectrum;
+	int i;
+	double k, w;
+	double w_sum = 0;
+
+	spectrum = malloc(image->nsamples * sizeof(struct sample));
+	if ( spectrum == NULL ) return NULL;
+
+	FILE *f;
+	f = fopen(spectrum_fn, "r");
+
+	int nsamples = 0;
+	for ( i=0; i<image->nsamples; i++ ) {
+		if (fscanf(f, "%lf %lf", &k, &w) != EOF) {
+			spectrum[i].k = ph_eV_to_k(k);
+			spectrum[i].weight = w;
+			w_sum += w;
+			nsamples += 1;
+		} else break;
+	}
+
+	for ( i=0; i<nsamples; i++ ) {
+		spectrum[i].weight /= w_sum;
+	}
+
+	image->spectrum_size = nsamples;
+
+	return spectrum;
+}
+
+
 struct sample *generate_SASE(struct image *image, gsl_rng *rng)
 {
 	struct sample *spectrum;

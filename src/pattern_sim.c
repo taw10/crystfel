@@ -368,6 +368,7 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	char *geometry = NULL;
 	char *spectrum_str = NULL;
+	char *spectrum_fn = NULL;
 	GradientMethod grad;
 	SpectrumType spectrum_type;
 	int ndone = 0;    /* Number of simulations done (images or not) */
@@ -429,6 +430,7 @@ int main(int argc, char *argv[])
 		{"photon-energy",      1, NULL,                9},
 		{"nphotons",           1, NULL,               10},
 		{"beam-radius",        1, NULL,               11},
+		{"spectrum-file",      1, NULL,               12},
 
 		{0, 0, NULL, 0}
 	};
@@ -590,6 +592,9 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 12 :
+			spectrum_fn = strdup(optarg);
+			break;
 
 			case 0 :
 			break;
@@ -695,6 +700,8 @@ int main(int argc, char *argv[])
                     strcasecmp(spectrum_str, "twocolours") == 0 ||
                     strcasecmp(spectrum_str, "twocolors") == 0) {
 		spectrum_type = SPECTRUM_TWOCOLOUR;
+	} else if ( strcasecmp(spectrum_str, "fromfile") == 0) {
+		spectrum_type = SPECTRUM_FROMFILE;
 	} else {
 		ERROR("Unrecognised spectrum type '%s'\n", spectrum_str);
 		return 1;
@@ -855,6 +862,11 @@ int main(int argc, char *argv[])
 		STATUS("                 X-ray spectrum: two colour, "
 		       "separation %.5f %%\n", image.bw*100.0);
 		break;
+
+		case SPECTRUM_FROMFILE:
+		STATUS("                 X-ray spectrum: from %s\n",
+			spectrum_fn);
+		break;
 	}
 	if ( random_size ) {
 		STATUS("                   Crystal size: random, between "
@@ -975,6 +987,11 @@ int main(int argc, char *argv[])
 
                         case SPECTRUM_TWOCOLOUR :
                         image.spectrum = generate_twocolour(&image);
+                        break;
+
+                        case SPECTRUM_FROMFILE :
+                        image.spectrum = generate_spectrum_fromfile(&image,
+								   spectrum_fn);
                         break;
 
 		}

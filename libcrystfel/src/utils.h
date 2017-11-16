@@ -185,6 +185,8 @@ static inline int within_tolerance(double a, double b, double percent)
 /* Photon energy (eV) to wavelength (m) */
 #define ph_eV_to_lambda(a) ph_en_to_lambda(eV_to_J(a))
 
+/* Photon energy (eV) to k (1/m) */
+#define ph_eV_to_k(a) ((a)*ELECTRON_CHARGE/PLANCK/C_VACUO)
 
 
 /* ------------------------------ Message macros ---------------------------- */

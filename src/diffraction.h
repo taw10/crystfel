@@ -60,4 +60,7 @@ extern struct sample *generate_SASE(struct image *image, gsl_rng *rng);
 
 extern struct sample *generate_twocolour(struct image *image);
 
+extern struct sample *generate_spectrum_fromfile(struct image *image,
+					         char *spectrum_fn);
+
 #endif	/* DIFFRACTION_H */
