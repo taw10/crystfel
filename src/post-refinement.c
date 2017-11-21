@@ -338,6 +338,33 @@ static double get_initial_param(Crystal *cr, enum gparam p)
 }
 
 
+static int check_angle_shifts(gsl_vector *cur, gsl_vector *initial,
+                              enum gparam *rv, int n_params,
+                              struct rf_priv *residual_f_priv)
+{
+	int i;
+	double ang = 0.0;
+
+	for ( i=0; i<n_params; i++ ) {
+		if ( (rv[i] == GPARAM_ANG1) || (rv[i] == GPARAM_ANG2) ) {
+			ang += fabs(get_actual_val(cur, initial, rv, i));
+		}
+	}
+
+	if ( rad2deg(ang) > 5.0 ) {
+		ERROR("More than 5 degrees total rotation!\n");
+		residual_f_priv->verbose = 1;
+		double res = residual_f(cur, residual_f_priv);
+		STATUS("residual after rotation = %e\n", res);
+		residual_f_priv->verbose = 2;
+		res = residual_f(initial, residual_f_priv);
+		STATUS("residual before rotation = %e\n", res);
+		return 1;
+	}
+	return 0;
+}
+
+
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int verbose)
 {
@@ -352,7 +379,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int n_params = 0;
 	int n_iter = 0;
 	int status;
-	double ang1, ang2;
 	double residual_start, residual_free_start;
 
 	residual_start = residual(cr, full, 0, NULL, NULL);
@@ -422,19 +448,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		STATUS("status = %i (%s)\n", status, gsl_strerror(status));
 	}
 
-	/* FIXME: Not the right way to get the angles */
-	ang1 = get_actual_val(min->x, initial, rv, 0);
-	ang2 = get_actual_val(min->x, initial, rv, 1);
-	if ( rad2deg(fabs(ang1)+fabs(ang2)) > 5.0 ) {
-		ERROR("More than 5 degrees total rotation!\n");
-		residual_f_priv.verbose = 1;
-		double res = residual_f(min->x, &residual_f_priv);
-		STATUS("residual after rotation = %e\n", res);
-		residual_f_priv.verbose = 2;
-		res = residual_f(initial, &residual_f_priv);
-		STATUS("residual before rotation = %e\n", res);
-		return;
-	}
+	if ( check_angle_shifts(min->x, initial, rv, n_params, &residual_f_priv) ) return;
 
 	/* Apply the final shifts */
 	apply_parameters(min->x, initial, rv, cr);
