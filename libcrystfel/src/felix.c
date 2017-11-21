@@ -658,7 +658,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	gp->orispace_frustum = 1;
 	gp->orispace_octa = 0;
 	gp->readhkl_file = NULL;
-	gp->maxtime = 30.0;
+	gp->maxtime = 120.0;
 	gp->tthrange_min = deg2rad(0.0);
 	gp->tthrange_max = deg2rad(30.0);
 
@@ -687,6 +687,9 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 		gp->sigma_tth = opts->sigma;
 		gp->sigma_eta = opts->sigma;
 		gp->sigma_omega = opts->sigma;
+	}
+	if (opts->domega > 0.0 ) {
+		gp->domega = opts -> domega;
 	}
 
 	return (IndexingPrivate *)gp;

@@ -298,6 +298,7 @@ int main(int argc, char *argv[])
 	iargs.felix_opts.n_voxels = 0;
 	iargs.felix_opts.test_fraction = -1.0;
 	iargs.felix_opts.sigma = -1.0;
+	iargs.felix_opts.domega = -1.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -389,6 +390,7 @@ int main(int argc, char *argv[])
 	        {"felix-test-fraction",    1, NULL,           42},
 	        {"felix-sigma",            1, NULL,           43},
 	        {"serial-start",           1, NULL,           44},
+	        {"felix-domega",           1, NULL,           45},
 
 		{0, 0, NULL, 0}
 	};
@@ -695,6 +697,14 @@ int main(int argc, char *argv[])
 			if ( sscanf(optarg, "%i", &serial_start) != 1 )
 			{
 				ERROR("Invalid value for --serial-start\n");
+				return 1;
+			}
+			break;
+			
+			case 45:
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.domega) != 1 )
+			{
+				ERROR("Invalid value for --felix-domega\n");
 				return 1;
 			}
 			break;

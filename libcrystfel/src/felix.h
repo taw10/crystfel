@@ -46,6 +46,7 @@ struct felix_options
 	int n_voxels;
 	double test_fraction;
 	double sigma;
+	double domega;
 };
 
 extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
