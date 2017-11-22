@@ -157,8 +157,8 @@ int main(int argc, char *argv[])
 	gpu_image.det = det;
 	cpu_image.beam = NULL;
 	gpu_image.beam = NULL;
-	cpu_image.spectrum = NULL;
-	gpu_image.spectrum = NULL;
+	cpu_image.spectrum0 = NULL;
+	gpu_image.spectrum0 = NULL;
 
 	cpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
 	gpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
@@ -167,8 +167,8 @@ int main(int argc, char *argv[])
 
 	cpu_image.nsamples = 10;
 	gpu_image.nsamples = 10;
-	cpu_image.spectrum = generate_tophat(&cpu_image);
-	gpu_image.spectrum = generate_tophat(&gpu_image);
+	cpu_image.spectrum0 = generate_tophat(&cpu_image);
+	gpu_image.spectrum0 = generate_tophat(&gpu_image);
 
 	start = get_hires_seconds();
 	if ( get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell, 0, 0) ) {

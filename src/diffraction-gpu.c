@@ -342,16 +342,16 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	for ( i=0; i<image->nsamples; i++ ) {
 
 		printf("%.3f eV, weight = %.5f\n",
-		       ph_lambda_to_eV(1.0/image->spectrum[i].k),
-		       image->spectrum[i].weight);
+		       ph_lambda_to_eV(1.0/image->spectrum0[i].k),
+		       image->spectrum0[i].weight);
 
-		err = do_panels(gctx, image, image->spectrum[i].k,
-		                image->spectrum[i].weight,
+		err = do_panels(gctx, image, image->spectrum0[i].k,
+		                image->spectrum0[i].weight,
 		                &n_inf, &n_neg, &n_nan);
 
 		if ( err ) return 1;
 
-		tot += image->spectrum[i].weight;
+		tot += image->spectrum0[i].weight;
 
 	}
 	printf("total weight = %f\n", tot);

@@ -819,7 +819,7 @@ int main(int argc, char *argv[])
 	powder.det = image.det;
 	powder.beam = NULL;
 	powder.lambda = 0.0;
-	powder.spectrum = NULL;
+	powder.spectrum0 = NULL;
 	powder.dp = malloc(image.det->n_panels*sizeof(float *));
 	if ( powder.dp == NULL ) {
 		ERROR("Failed to allocate powder data\n");
@@ -978,19 +978,19 @@ int main(int argc, char *argv[])
 		switch ( spectrum_type ) {
 
 			case SPECTRUM_TOPHAT :
-			image.spectrum = generate_tophat(&image);
+			image.spectrum0 = generate_tophat(&image);
 			break;
 
 			case SPECTRUM_SASE :
-			image.spectrum = generate_SASE(&image, rng);
+			image.spectrum0 = generate_SASE(&image, rng);
 			break;
 
                         case SPECTRUM_TWOCOLOUR :
-                        image.spectrum = generate_twocolour(&image);
+                        image.spectrum0 = generate_twocolour(&image);
                         break;
 
                         case SPECTRUM_FROMFILE :
-                        image.spectrum = generate_spectrum_fromfile(&image,
+                        image.spectrum0 = generate_spectrum_fromfile(&image,
 								   spectrum_fn);
                         break;
 

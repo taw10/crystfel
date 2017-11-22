@@ -1047,9 +1047,9 @@ int hdf5_write_image(const char *filename, const struct image *image,
 
 	write_photon_energy(fh, ph_lambda_to_eV(image->lambda), ph_en_loc);
 
-	if ( image->spectrum != NULL && image->spectrum_size > 0 ) {
+	if ( image->spectrum0 != NULL && image->spectrum_size > 0 ) {
 
-		write_spectrum(fh, image->spectrum, image->spectrum_size,
+		write_spectrum(fh, image->spectrum0, image->spectrum_size,
 		              image->nsamples);
 	}
 

@@ -772,13 +772,13 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	for ( i=0; i<image->nsamples; i++ ) {
 
 		printf("%.1f eV, weight = %.5f\n",
-		       ph_lambda_to_eV(1.0/image->spectrum[i].k),
-		       image->spectrum[i].weight);
+		       ph_lambda_to_eV(1.0/image->spectrum0[i].k),
+		       image->spectrum0[i].weight);
 
 		diffraction_at_k(image, intensities, phases,
-		                flags, cell, m, sym, image->spectrum[i].k,
+		                flags, cell, m, sym, image->spectrum0[i].k,
 		                ax, ay, az, bx, by, bz, cx, cy, cz,
-		                lut_a, lut_b, lut_c, image->spectrum[i].weight);
+		                lut_a, lut_b, lut_c, image->spectrum0[i].weight);
 
 
 	}

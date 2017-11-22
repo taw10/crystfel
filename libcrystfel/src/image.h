@@ -213,7 +213,7 @@ struct image {
 	int                     serial;  /* Monotonically ascending serial
 	                                  * number for this image */
 
-	struct sample           *spectrum;
+	struct sample           *spectrum0;
 	int                     nsamples; /* Number of wavelengths */
 	int                     spectrum_size;  /* Size of "spectrum" */
 
