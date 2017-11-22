@@ -112,6 +112,7 @@ struct index_args
 	struct taketwo_options taketwo_opts;
     struct xgandalf_options xgandalf_opts;
 	struct felix_options felix_opts;
+	struct spectrum *spectrum;
 };
 
 

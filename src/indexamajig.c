@@ -64,6 +64,7 @@
 #include "integration.h"
 #include "taketwo.h"
 #include "im-sandbox.h"
+#include "image.h"
 
 
 static void show_help(const char *s)
@@ -240,6 +241,57 @@ static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copym
 }
 
 
+static struct spectrum *read_spectrum_fromfile(char *fn)
+{
+	FILE *f;
+	f = fopen(fn, "r");
+
+	struct spectrum *s = malloc(sizeof(struct spectrum));
+
+	if ( fscanf(f, "%d", &s->n) == EOF ) {
+		return NULL;
+	}
+
+	if ( s->n <= 0 ) {
+		return NULL;
+	}
+
+	s->ks = malloc(s->n * sizeof(double));
+	if ( s->ks == NULL ) {
+		ERROR("Failed to allocate spectrum!\n");
+		return NULL;
+	}
+
+	s->weights = malloc(s->n * sizeof(double));
+	if ( s->weights == NULL ) {
+		ERROR("Failed to allocate spectrum!\n");
+		return NULL;
+	}
+
+	int i;
+	double k, w;
+	double w_sum = 0;
+	for ( i = 0; i < s->n; i++ ) {
+		if (fscanf(f, "%lf %lf", &k, &w) != EOF) {
+			s->ks[i] = ph_eV_to_k(k);
+			s->weights[i] = w;
+			w_sum += w;
+		} else break;
+	}
+
+	if ( i < s->n - 1 ) {
+		ERROR("Failed to read %d lines from %s\n", s->n, fn);
+		return NULL;
+	}
+
+	for ( i = 0; i < s->n; i++ ) {
+		s->weights[i] /= w_sum;
+	}
+
+	return s;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -276,6 +328,7 @@ int main(int argc, char *argv[])
 	int if_multi = 0;
 	int if_retry = 1;
 	int serial_start = 1;
+	char *spectrum_fn = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -465,6 +518,7 @@ int main(int argc, char *argv[])
 		{"xgandalf-min-lvl",                         1, NULL, 355},
 		{"xgandalf-max-lattice-vector-length",       1, NULL, 356},
 		{"xgandalf-max-lvl",                         1, NULL, 356},
+	        {"spectrum-file",            1, NULL,        357},
 
 		{0, 0, NULL, 0}
 	};
@@ -855,6 +909,9 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 367:
+			spectrum_fn = strdup(optarg);
+			break;
 
 			case 0 :
 			break;
@@ -1041,6 +1098,19 @@ int main(int argc, char *argv[])
 		free(cellfile);
 	} else {
 		iargs.cell = NULL;
+	}
+
+	/* Load spectrum from file if given */
+	if ( spectrum_fn != NULL ) {
+		iargs.spectrum = read_spectrum_fromfile(spectrum_fn);
+		if ( iargs.spectrum == NULL ) {
+			ERROR("Couldn't read spectrum (from %s)\n", spectrum_fn);
+			return 1;
+		}
+		free(spectrum_fn);
+		STATUS("Read %d lines from %s\n", iargs.spectrum->n, spectrum_fn);
+	} else {
+		iargs.spectrum = NULL;
 	}
 
 	/* Parse integration diagnostic */

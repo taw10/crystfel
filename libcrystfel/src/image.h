@@ -123,6 +123,15 @@ enum imagefile_type
 /* An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
 
+
+struct spectrum
+{
+	int n;
+	double *ks; /* 1/m */
+	double *weights;
+};
+
+
 /* Structure describing a wavelength sample from a spectrum */
 struct sample
 {
@@ -213,6 +222,9 @@ struct image {
 	int                     serial;  /* Monotonically ascending serial
 	                                  * number for this image */
 
+	struct spectrum *spectrum; /* Beam spectrum for pink beam data */
+
+	// These only used in pattern_sim, to be changed to struct spectrum from above later...
 	struct sample           *spectrum0;
 	int                     nsamples; /* Number of wavelengths */
 	int                     spectrum_size;  /* Size of "spectrum" */
