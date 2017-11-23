@@ -551,5 +551,7 @@ void scale_all_to_reference(Crystal **crystals, int n_crystals,
 		linear_scale(crystal_get_reflections(crystals[i]), reference, &G);
 		crystal_set_osf(crystals[i], G);
 		crystal_set_Bfac(crystals[i], 0.0);
+		progress_bar(i, n_crystals, "Scaling to reference");
 	}
+	progress_bar(n_crystals, n_crystals, "Scaling to reference");
 }
