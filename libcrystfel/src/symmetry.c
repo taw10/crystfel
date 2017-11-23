@@ -1173,7 +1173,7 @@ void special_position(const SymOpList *ops, SymOpMask *m,
 	signed int *ktest;
 	signed int *ltest;
 
-	assert(m->list = ops);
+	assert(m->list == ops);
 
 	n = num_equivs(ops, NULL);
 	htest = malloc(n*sizeof(signed int));
