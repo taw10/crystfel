@@ -1736,8 +1736,8 @@ char *get_matrix_name(const IntegerMatrix *m, int row)
 		}
 
 		if ( abs(v) > 1 ) {
-			char num[3];
-			snprintf(num, 2, "%i", abs(v));
+			char num[11];
+			snprintf(num, 11, "%i", abs(v));
 			add_chars(text, num, max_len);
 		}
 

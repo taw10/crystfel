@@ -2626,9 +2626,12 @@ static void calibmode_press(DisplayWindow *dw, GdkEventButton *event)
 	if ( revmap_return_value == 0 ) {
 		fs = dfs;
 		ss = dss;
-		snprintf(statusbar_string, 80,
-                        "Last clicked position: x: %i, y: %i, fs: %u, ss: %u,"
-                        " (panel %s)", x, y, fs, ss, p->name);
+		if ( snprintf(statusbar_string, 80,
+		              "Last clicked position: x: %i, y: %i, fs: %u, ss: %u,"
+		              " (panel %s)", x, y, fs, ss, p->name) != 0 )
+		{
+			ERROR("Panel name is too long for status bar.\n");
+		}
 	}
 	gtk_statusbar_push(GTK_STATUSBAR(dw->statusbar), cc, statusbar_string);
 }
