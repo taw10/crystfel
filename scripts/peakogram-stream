@@ -124,7 +124,7 @@ if f:
 
 data = np.asarray(data,dtype=float)
 
-sys.stdout.write("\r%i peaks found" % n)
+sys.stdout.write("\r%i predicted reflections found" % n)
 sys.stdout.flush()
 
 print("")
