@@ -310,7 +310,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int warn = 0;
 
 		if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
-		  || (flags & INDEXING_CHECK_CELL_COMBINATIONS) )
+		  || (flags & INDEXING_CHECK_CELL_AXES) )
 		{
 			ERROR("WARNING: Forcing --no-check-cell because "
 			      "reference unit cell parameters were not "
