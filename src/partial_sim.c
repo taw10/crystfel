@@ -862,7 +862,7 @@ int main(int argc, char *argv[])
 		STATUS("                     Background: none (no image "
 		       "output)\n");
 	}
-	STATUS("               Partiality model: scsphere (hardcoded)\n");
+	STATUS("               Partiality model: xsphere (hardcoded)\n");
 	STATUS("       Noise standard deviation: %.2f detector units\n",
 	       noise_stddev);
 	if ( random_intensities ) {
@@ -874,6 +874,7 @@ int main(int argc, char *argv[])
 		       input_file, sym_str);
 	}
 	STATUS("   Max error in cell components: %.2f %%\n", cnoise);
+	STATUS("Scale factor standard deviation: %.2f\n", osf_stddev);
 
 	if ( random_intensities ) {
 		full = reflist_new();
