@@ -459,10 +459,11 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 }
 
 
-int linear_scale(RefList *list1, const RefList *list2, double *G)
+/* Calculates G, by which list2 should be multiplied to fit list1 */
+int linear_scale(const RefList *list1, const RefList *list2, double *G)
 {
-	Reflection *refl1;
-	Reflection *refl2;
+	const Reflection *refl1;
+	const Reflection *refl2;
 	RefListIterator *iter;
 	int max_n = 256;
 	int n = 0;
@@ -482,9 +483,9 @@ int linear_scale(RefList *list1, const RefList *list2, double *G)
 	}
 
 	int nb = 0;
-	for ( refl1 = first_refl(list1, &iter);
+	for ( refl1 = first_refl_const(list1, &iter);
 	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) )
+	      refl1 = next_refl_const(refl1, iter) )
 	{
 		signed int h, k, l;
 		double Ih1, Ih2;
@@ -542,15 +543,24 @@ int linear_scale(RefList *list1, const RefList *list2, double *G)
 
 
 void scale_all_to_reference(Crystal **crystals, int n_crystals,
-                            RefList *reference)
+                            const RefList *reference)
 {
 	int i;
 
 	for ( i=0; i<n_crystals; i++ ) {
 		double G;
-		linear_scale(crystal_get_reflections(crystals[i]), reference, &G);
-		crystal_set_osf(crystals[i], G);
-		crystal_set_Bfac(crystals[i], 0.0);
+		if ( linear_scale(reference,
+		                  crystal_get_reflections(crystals[i]),
+		                  &G) == 0 )
+		{
+			if ( isnan(G) ) {
+				ERROR("NaN scaling factor for crystal %i\n", i);
+			}
+			crystal_set_osf(crystals[i], G);
+			crystal_set_Bfac(crystals[i], 0.0);
+		} else {
+			ERROR("Scaling failed for crystal %i\n", i);
+		}
 		progress_bar(i, n_crystals, "Scaling to reference");
 	}
 	progress_bar(n_crystals, n_crystals, "Scaling to reference");
