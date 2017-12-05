@@ -955,7 +955,8 @@ struct _reflistiterator {
 	int stack_size;
 	int stack_ptr;
 	Reflection **stack;
-
+	const Reflection **stack_const;
+	int is_const;
 };
 
 
@@ -980,6 +981,7 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 	iter->stack_size = 32;
 	iter->stack = malloc(iter->stack_size*sizeof(Reflection *));
 	iter->stack_ptr = 0;
+	iter->is_const = 0;
 	*piter = iter;
 
 	if ( list == NULL ) return NULL;
@@ -1014,6 +1016,60 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 
 
 /**
+ * first_refl_const:
+ * @list: A %RefList to iterate over
+ * @piter: Address at which to store a %RefListIterator
+ *
+ * As first_refl(), except returns a const %Reflection.
+ * Use this when you don't need to modify any of the reflections.
+ *
+ * Returns: the first reflection in the list.
+ *
+ **/
+const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
+{
+	const Reflection *refl;
+	RefListIterator *iter;
+
+	iter = malloc(sizeof(struct _reflistiterator));
+	iter->stack_size = 32;
+	iter->stack_const = malloc(iter->stack_size*sizeof(Reflection *));
+	iter->stack_ptr = 0;
+	iter->is_const = 1;
+	*piter = iter;
+
+	if ( list == NULL ) return NULL;
+
+	refl = list->head;
+
+	do {
+
+		if ( refl != NULL ) {
+			iter->stack_const[iter->stack_ptr++] = refl;
+			if ( iter->stack_ptr == iter->stack_size ) {
+				iter->stack_size += 32;
+				iter->stack_const = realloc(iter->stack_const,
+				         iter->stack_size*sizeof(Reflection *));
+			}
+			refl = refl->child[0];
+			continue;
+		}
+
+		if ( iter->stack_ptr == 0 ) {
+			free(iter->stack_const);
+			free(iter);
+			return NULL;
+		}
+
+		refl = iter->stack_const[--iter->stack_ptr];
+
+		return refl;
+
+	} while ( 1 );
+}
+
+
+/**
  * next_refl:
  * @refl: A reflection
  * @iter: A %RefListIterator
@@ -1026,6 +1082,8 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
  **/
 Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 {
+	assert(!iter->is_const);
+
 	/* Are there more reflections with the same indices? */
 	if ( refl->next != NULL ) {
 		return refl->next;
@@ -1064,6 +1122,59 @@ Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 	} while ( 1 );
 }
 
+
+/**
+ * next_refl_const:
+ * @refl: A reflection
+ * @iter: A %RefListIterator
+ *
+ * As next_refl(), except returns a const %Reflection.
+ * Use this when you don't need to modify any of the reflections.
+ *
+ * Returns: the next reflection in the list, or NULL if no more.
+ *
+ **/
+const Reflection *next_refl_const(const Reflection *refl, RefListIterator *iter)
+{
+	assert(iter->is_const);
+
+	/* Are there more reflections with the same indices? */
+	if ( refl->next != NULL ) {
+		return refl->next;
+	} else {
+
+		/* No, so rewind back to the head of the list */
+		while ( refl->prev != NULL ) {
+			refl = refl->prev;
+		}
+
+	}
+
+	refl = refl->child[1];
+	do {
+
+		if ( refl != NULL ) {
+
+			iter->stack_const[iter->stack_ptr++] = refl;
+			if ( iter->stack_ptr == iter->stack_size ) {
+				iter->stack_size += 32;
+				iter->stack_const = realloc(iter->stack_const,
+				         iter->stack_size*sizeof(Reflection *));
+			}
+			refl = refl->child[0];
+			continue;
+
+		}
+		if ( iter->stack_ptr == 0 ) {
+			free(iter->stack_const);
+			free(iter);
+			return NULL;
+		}
+
+		return iter->stack_const[--iter->stack_ptr];
+
+	} while ( 1 );
+}
 
 /*********************************** Voodoo ***********************************/
 
