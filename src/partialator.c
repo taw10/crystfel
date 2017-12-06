@@ -1223,7 +1223,9 @@ int main(int argc, char *argv[])
 
 	/* Initial rejection, figures of merit etc */
 	if ( reference == NULL ) {
-		scale_all(crystals, n_crystals, nthreads, pmodel);
+		if ( !no_scale ) {
+			scale_all(crystals, n_crystals, nthreads, pmodel);
+		}
 		full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
 		                         min_measurements, push_res, 1);
 	} else {
@@ -1272,7 +1274,9 @@ int main(int argc, char *argv[])
 		check_rejection(crystals, n_crystals, full, max_B);
 
 		if ( reference == NULL ) {
-			scale_all(crystals, n_crystals, nthreads, pmodel);
+			if ( !no_scale ) {
+				scale_all(crystals, n_crystals, nthreads, pmodel);
+			}
 			reflist_free(full);
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         pmodel, min_measurements,
@@ -1317,7 +1321,9 @@ int main(int argc, char *argv[])
 
 
 	if ( reference == NULL ) {
-		scale_all(crystals, n_crystals, nthreads, pmodel);
+		if ( !no_scale ) {
+			scale_all(crystals, n_crystals, nthreads, pmodel);
+		}
 		reflist_free(full);
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         pmodel, min_measurements,
