@@ -45,6 +45,7 @@
 #include "symmetry.h"
 #include "cell.h"
 #include "cell-utils.h"
+#include "scaling.h"
 
 
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
@@ -549,7 +550,7 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 
 
 void scale_all_to_reference(Crystal **crystals, int n_crystals,
-                            const RefList *reference)
+                            RefList *reference)
 {
 	int i;
 
