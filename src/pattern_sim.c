@@ -3,11 +3,11 @@
  *
  * Simulate diffraction patterns from small crystals
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2017 Thomas White <taw@physics.org>
  *   2013-2014 Chun Hong Yoon <chun.hong.yoon@desy.de>
  *   2014      Valerio Mariani
  *   2013      Alexandra Tolstikova
@@ -95,6 +95,7 @@ static void show_help(const char *s)
 "     --background=<N>      Add N photons of Poisson background (default 0).\n"
 "     --template=<file>     Take orientations from stream <file>.\n"
 "     --no-fringes          Exclude the side maxima of Bragg peaks.\n"
+"     --flat                Make Bragg peaks flat.\n"
 "     --beam-bandwidth      Beam bandwidth as a fraction. Default 1%%.\n"
 "     --photon-energy       Photon energy in eV.  Default 9000.\n"
 "     --nphotons            Number of photons per X-ray pulse.  Default 1e12.\n"
@@ -388,6 +389,7 @@ int main(int argc, char *argv[])
 	char *template_file = NULL;
 	Stream *st = NULL;
 	int no_fringes = 0;
+	int flat = 0;
 	double nphotons = 1e12;
 	double beam_radius = 1e-6;  /* metres */
 	double bandwidth = 0.01;
@@ -417,6 +419,7 @@ int main(int argc, char *argv[])
 		{"spectrum",           1, NULL,               'x'},
 		{"really-random",      0, &config_random,      1},
 		{"no-fringes",         0, &no_fringes,         1},
+		{"flat",               0, &flat,               1},
 
 		{"gpu-dev",            1, NULL,                2},
 		{"min-size",           1, NULL,                3},
@@ -990,11 +993,11 @@ int main(int argc, char *argv[])
 				                 gpu_dev);
 			}
 			err = get_diffraction_gpu(gctx, &image, na, nb, nc,
-			                          cell, no_fringes);
+			                          cell, no_fringes, flat);
 
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, phases,
-			                flags, cell, grad, sym, no_fringes);
+			                flags, cell, grad, sym, no_fringes, flat);
 		}
 		if ( err ) {
 			ERROR("Diffraction calculation failed.\n");

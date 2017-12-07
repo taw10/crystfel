@@ -48,7 +48,7 @@
 #define SINC_LUT_ELEMENTS (4096)
 
 
-static double *get_sinc_lut(int n, int no_fringes)
+static double *get_sinc_lut(int n, int no_fringes, int flat)
 {
 	int i;
 	double *lut;
@@ -63,8 +63,10 @@ static double *get_sinc_lut(int n, int no_fringes)
 		for ( i=1; i<SINC_LUT_ELEMENTS; i++ ) {
 			double x, val;
 			x = (double)i/SINC_LUT_ELEMENTS;
-			if ( no_fringes && (x > 1.0/n) && (1.0-x > 1.0/n) ) {
+			if ( (flat || no_fringes) && (x > 1.0/n) && (1.0-x > 1.0/n) ) {
 				val = 0.0;
+			} else if ( flat ) {
+				val = n;
 			} else {
 				val = fabs(sin(M_PI*n*x)/sin(M_PI*x));
 			}
@@ -716,7 +718,8 @@ struct sample *generate_twocolour(struct image *image)
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
                      const unsigned char *flags, UnitCell *cell,
-                     GradientMethod m, const SymOpList *sym, int no_fringes)
+                     GradientMethod m, const SymOpList *sym,
+                     int no_fringes, int flat)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -728,9 +731,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	lut_a = get_sinc_lut(na, no_fringes);
-	lut_b = get_sinc_lut(nb, no_fringes);
-	lut_c = get_sinc_lut(nc, no_fringes);
+	lut_a = get_sinc_lut(na, no_fringes, flat);
+	lut_b = get_sinc_lut(nb, no_fringes, flat);
+	lut_c = get_sinc_lut(nc, no_fringes, flat);
 
 	for ( i=0; i<image->nsamples; i++ ) {
 
