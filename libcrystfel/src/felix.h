@@ -47,6 +47,7 @@ struct felix_options
 	double test_fraction;
 	double sigma;
 	double domega;
+	double max_internal_angle;
 };
 
 extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,

@@ -60,8 +60,6 @@
 
 
 #define FELIX_VERBOSE 0
-#define MAX_MEAN_IA 0.25
-#define MIN_NGV 15
 #define MIN_NGV_UNIQUE 10
 
 
@@ -90,6 +88,7 @@ struct felix_private
 	float sigma_omega;      /* related to "uncertainties" */
 	int n_sigmas;
 	int force4frustums;
+	float max_internal_angle;
 
 	/*Felix v0.3 options*/
 	int orispace_frustum;
@@ -209,7 +208,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 
 		/* Poor indexing criterion for Felix v0.3 */
 
-		if ( mean_ia > MAX_MEAN_IA || ngv < MIN_NGV ){
+		if ( mean_ia > gp->max_internal_angle ){
 			crystal_set_user_flag(cr, 1);
 		}
 
@@ -661,6 +660,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	gp->maxtime = 120.0;
 	gp->tthrange_min = deg2rad(0.0);
 	gp->tthrange_max = deg2rad(30.0);
+	gp->max_internal_angle = 0.25;
 
 	if ( opts->ttmin > 0.0 ) {
 		gp->tthrange_min = opts->ttmin;
@@ -690,6 +690,9 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	}
 	if (opts->domega > 0.0 ) {
 		gp->domega = opts -> domega;
+	}
+	if (opts->max_internal_angle > 0){
+		gp->max_internal_angle = opts->max_internal_angle;
 	}
 
 	return (IndexingPrivate *)gp;
