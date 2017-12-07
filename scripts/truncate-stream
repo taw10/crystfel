@@ -114,7 +114,11 @@ if not (opt.ifn and opt.ofn):
     print("You need at least --input and --output")
     exit(1)
 
-f = open(opt.ifn, 'r')
+if opt.ifn == "-":
+    f = sys.stdin
+else:
+    f = open(opt.ifn, 'r')
+
 g = open(opt.ofn, 'w')
 start_after = opt.start
 stop_after = opt.stop
