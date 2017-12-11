@@ -191,6 +191,14 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 	int r;
 	double cov11;
 	double sumsq;
+	int n_esd1 = 0;
+	int n_esd2 = 0;
+	int n_ih1 = 0;
+	int n_ih2 = 0;
+	int n_nan1 = 0;
+	int n_nan2 = 0;
+	int n_inf1 = 0;
+	int n_inf2 = 0;
 
 	x = malloc(max_n*sizeof(double));
 	w = malloc(max_n*sizeof(double));
@@ -221,12 +229,16 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 		esd1 = get_esd_intensity(refl1);
 		esd2 = get_esd_intensity(refl2);
 
-		if ( Ih1 <= 3.0*esd1 ) continue;
-		if ( Ih2 <= 3.0*esd2 ) continue;
-		if ( (Ih1 <= 0.0) || (Ih2 <= 0.0) ) continue;
+		/* Problem cases in approximate descending order of severity */
+		if ( isnan(Ih1) ) { n_nan1++; continue; }
+		if ( isinf(Ih1) ) { n_inf1++; continue; }
+		if ( isnan(Ih2) ) { n_nan2++; continue; }
+		if ( isinf(Ih2) ) { n_inf2++; continue; }
+		if ( Ih1 <= 0.0 ) { n_ih1++; continue; }
+		if ( Ih2 <= 0.0 ) { n_ih2++; continue; }
+		if ( Ih1 <= 3.0*esd1 ) { n_esd1++;  continue; }
+		if ( Ih2 <= 3.0*esd2 ) { n_esd2++; continue; }
 		if ( get_redundancy(refl1) < 2 ) continue;
-		if ( isnan(Ih1) || isinf(Ih1) ) continue;
-		if ( isnan(Ih2) || isinf(Ih2) ) continue;
 
 		if ( n == max_n ) {
 			max_n *= 2;
@@ -248,6 +260,14 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 
 	if ( n < 2 ) {
 		ERROR("Not enough reflections for scaling (had %i, but %i remain)\n", nb, n);
+		if ( n_esd1 ) ERROR("%i reference reflection esd\n", n_esd1);
+		if ( n_esd2 ) ERROR("%i subject reflection esd\n", n_esd2);
+		if ( n_ih1 ) ERROR("%i reference reflection intensity\n", n_ih1);
+		if ( n_ih2 ) ERROR("%i subject reflection intensity\n", n_ih2);
+		if ( n_nan1 ) ERROR("%i reference reflection nan\n", n_nan1);
+		if ( n_nan2 ) ERROR("%i subject reflection nan\n", n_nan2);
+		if ( n_inf1 ) ERROR("%i reference reflection inf\n", n_inf1);
+		if ( n_inf2 ) ERROR("%i subject reflection inf\n", n_inf2);
 		return 1;
 	}
 
