@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <gsl/gsl_fit.h>
+#include <assert.h>
 
 #include "version.h"
 #include "utils.h"
@@ -313,6 +314,9 @@ static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
 		E += 1.35*get_sfac('N', s);
 		E += 1.50*get_sfac('O', s);
 		E += 8.00*get_sfac('H', s);
+
+		if ( bin == nbins ) bin = nbins-1;
+		assert(bin < nbins);
 
 		plot_i[bin] += intensity / (e*E);
 		plot_n[bin]++;
