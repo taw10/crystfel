@@ -50,7 +50,7 @@
 
 
 /* Minimum partiality of a reflection for it to be merged */
-#define MIN_PART_MERGE (0.05)
+#define MIN_PART_MERGE (0.3)
 
 
 struct merge_queue_args

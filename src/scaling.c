@@ -238,12 +238,12 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G,
 		if ( isinf(Ih1) ) { n_inf1++; continue; }
 		if ( isnan(Ih2) ) { n_nan2++; continue; }
 		if ( isinf(Ih2) ) { n_inf2++; continue; }
-		if ( get_partiality(refl2) < 0.1 ) { n_part++; continue; }
-		if ( Ih1 <= 0.0 ) { n_ih1++; continue; }
+		if ( get_partiality(refl2) < 0.3 ) { n_part++; continue; }
+		//if ( Ih1 <= 0.0 ) { n_ih1++; continue; }
 		if ( Ih2 <= 0.0 ) { n_ih2++; continue; }
-		if ( Ih1 <= 3.0*esd1 ) { n_esd1++;  continue; }
+		//if ( Ih1 <= 3.0*esd1 ) { n_esd1++;  continue; }
 		if ( Ih2 <= 3.0*esd2 ) { n_esd2++; continue; }
-		if ( get_redundancy(refl1) < 2 ) continue;
+		//if ( get_redundancy(refl1) < 2 ) continue;
 
 		if ( n == max_n ) {
 			max_n *= 2;
