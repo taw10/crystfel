@@ -199,6 +199,8 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 	int n_nan2 = 0;
 	int n_inf1 = 0;
 	int n_inf2 = 0;
+	int n_part = 0;
+	int n_nom = 0;
 
 	x = malloc(max_n*sizeof(double));
 	w = malloc(max_n*sizeof(double));
@@ -221,6 +223,7 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 		get_indices(refl2, &h, &k, &l);
 		refl1 = find_refl(list1, h, k, l);
 		if ( refl1 == NULL ) {
+			n_nom++;
 			continue;
 		}
 
@@ -234,6 +237,7 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 		if ( isinf(Ih1) ) { n_inf1++; continue; }
 		if ( isnan(Ih2) ) { n_nan2++; continue; }
 		if ( isinf(Ih2) ) { n_inf2++; continue; }
+		if ( get_partiality(refl2) < 0.1 ) { n_part++; continue; }
 		if ( Ih1 <= 0.0 ) { n_ih1++; continue; }
 		if ( Ih2 <= 0.0 ) { n_ih2++; continue; }
 		if ( Ih1 <= 3.0*esd1 ) { n_esd1++;  continue; }
@@ -268,6 +272,8 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 		if ( n_nan2 ) ERROR("%i subject reflection nan\n", n_nan2);
 		if ( n_inf1 ) ERROR("%i reference reflection inf\n", n_inf1);
 		if ( n_inf2 ) ERROR("%i subject reflection inf\n", n_inf2);
+		if ( n_part ) ERROR("%i subject reflection partiality\n", n_part);
+		if ( n_nom ) ERROR("%i no match in reference list\n", n_nom);
 		return 1;
 	}
 
