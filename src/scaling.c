@@ -209,18 +209,18 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 	}
 
 	int nb = 0;
-	for ( refl1 = first_refl_const(list1, &iter);
-	      refl1 != NULL;
-	      refl1 = next_refl_const(refl1, iter) )
+	for ( refl2 = first_refl_const(list2, &iter);
+	      refl2 != NULL;
+	      refl2 = next_refl_const(refl2, iter) )
 	{
 		signed int h, k, l;
 		double Ih1, Ih2;
 		double esd1, esd2;
 		nb++;
 
-		get_indices(refl1, &h, &k, &l);
-		refl2 = find_refl(list2, h, k, l);
-		if ( refl2 == NULL ) {
+		get_indices(refl2, &h, &k, &l);
+		refl1 = find_refl(list1, h, k, l);
+		if ( refl1 == NULL ) {
 			continue;
 		}
 
