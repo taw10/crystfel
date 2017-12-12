@@ -429,6 +429,11 @@ Do not record peak search results in the stream.  You won't be able to check tha
 .PD
 Do not record integrated reflections in the stream.  The resulting output won't be usable for merging, but will be a lot smaller.  This option might be useful if you're only interested in things like unit cell parameters and orientations.
 
+.PD 0
+.IP \fB--serial-offset=\fIn\fR
+.PD
+Start the serial numbers in the stream at \fIn\fR instead of 1.  Use this if you are splitting an indexing job up into several smaller ones, so that the streams can be concatenated into a single one with consistent numbering.  This is important if you use \fBwhirligig\fR.
+
 .SH HISTORICAL OPTIONS
 
 .PD 0

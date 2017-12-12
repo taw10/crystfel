@@ -71,6 +71,6 @@ struct sb_shm
 
 extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                            int config_basename, FILE *fh,  Stream *stream,
-                           const char *tempdir);
+                           const char *tempdir, int serial_offset);
 
 #endif /* IM_SANDBOX_H */

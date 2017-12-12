@@ -174,6 +174,7 @@ static void show_help(const char *s)
 "     --copy-hdf5-field=<f> Copy the value of HDF5 field <f> into the stream\n"
 "     --no-peaks-in-stream  Do not record peak search results in the stream\n"
 "     --no-refls-in-stream  Do not record integrated reflections in the stream\n"
+"     --serial-offset       Start the serial numbers in the stream here\n"
 "\nHistorical options:\n\n"
 "     --no-sat-corr         Don't correct values of saturated peaks\n"
 );
@@ -233,6 +234,7 @@ int main(int argc, char *argv[])
 	int if_peaks = 0;
 	int if_multi = 1;
 	int if_retry = 1;
+	int serial_offset = 1;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -386,6 +388,7 @@ int main(int argc, char *argv[])
 	        {"felix-num-voxels",       1, NULL,           41},
 	        {"felix-test-fraction",    1, NULL,           42},
 	        {"felix-sigma",            1, NULL,           43},
+	        {"serial-offset",          1, NULL,           44},
 
 		{0, 0, NULL, 0}
 	};
@@ -684,6 +687,14 @@ int main(int argc, char *argv[])
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.sigma) != 1 )
 			{
 				ERROR("Invalid value for --felix-sigma\n");
+				return 1;
+			}
+			break;
+
+			case 44:
+			if ( sscanf(optarg, "%i", &serial_offset) != 1 )
+			{
+				ERROR("Invalid value for --serial-offset\n");
 				return 1;
 			}
 			break;
@@ -1002,7 +1013,7 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               st, tempdir);
+	               st, tempdir, serial_offset);
 
 	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);

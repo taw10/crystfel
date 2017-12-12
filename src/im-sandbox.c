@@ -831,7 +831,7 @@ static void try_status(struct sandbox *sb, time_t tNow)
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh,
-                    Stream *stream, const char *tempdir)
+                    Stream *stream, const char *tempdir, int serial_offset)
 {
 	int i;
 	struct sandbox *sb;
@@ -860,7 +860,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->t_last_stats = get_monotonic_seconds();
 	sb->n_proc = n_proc;
 	sb->iargs = iargs;
-	sb->serial = 1;
+	sb->serial = serial_offset;
 
 	sb->fds = NULL;
 	sb->fhs = NULL;
