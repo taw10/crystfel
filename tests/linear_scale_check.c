@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 		set_partiality(refl2, 1.0);
 	}
 
-	r = linear_scale(list1, list2, &G);
+	r = linear_scale(list1, list2, &G, 1);
 	STATUS("Scaling result: %i, G = %f\n", r, G);
 
 	return fail;

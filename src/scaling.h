@@ -41,7 +41,8 @@
 extern double log_residual(Crystal *cr, const RefList *full, int free,
                            int *pn_used, const char *filename);
 
-extern int linear_scale(const RefList *list1, const RefList *list2, double *G);
+extern int linear_scale(const RefList *list1, const RefList *list2, double *G,
+                        int complain_loudly);
 
 extern void scale_all_to_reference(Crystal **crystals, int n_crystals,
                                    RefList *reference, int nthreads);

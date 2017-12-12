@@ -141,7 +141,7 @@ static void scale_crystal(void *task, int id)
 	double G;
 
 	/* Simple iterative algorithm */
-	r = linear_scale(pargs->full, crystal_get_reflections(pargs->crystal), &G);
+	r = linear_scale(pargs->full, crystal_get_reflections(pargs->crystal), &G, 1);
 	if ( r == 0 ) {
 		crystal_set_osf(pargs->crystal, G);
 	} /* else don't change it */
@@ -178,7 +178,8 @@ static void done_crystal(void *vqargs, void *task)
 
 
 /* Calculates G, by which list2 should be multiplied to fit list1 */
-int linear_scale(const RefList *list1, const RefList *list2, double *G)
+int linear_scale(const RefList *list1, const RefList *list2, double *G,
+                 int complain_loudly)
 {
 	const Reflection *refl1;
 	const Reflection *refl2;
@@ -263,17 +264,20 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 	}
 
 	if ( n < 2 ) {
-		ERROR("Not enough reflections for scaling (had %i, but %i remain)\n", nb, n);
-		if ( n_esd1 ) ERROR("%i reference reflection esd\n", n_esd1);
-		if ( n_esd2 ) ERROR("%i subject reflection esd\n", n_esd2);
-		if ( n_ih1 ) ERROR("%i reference reflection intensity\n", n_ih1);
-		if ( n_ih2 ) ERROR("%i subject reflection intensity\n", n_ih2);
-		if ( n_nan1 ) ERROR("%i reference reflection nan\n", n_nan1);
-		if ( n_nan2 ) ERROR("%i subject reflection nan\n", n_nan2);
-		if ( n_inf1 ) ERROR("%i reference reflection inf\n", n_inf1);
-		if ( n_inf2 ) ERROR("%i subject reflection inf\n", n_inf2);
-		if ( n_part ) ERROR("%i subject reflection partiality\n", n_part);
-		if ( n_nom ) ERROR("%i no match in reference list\n", n_nom);
+		if ( complain_loudly ) {
+			ERROR("Not enough reflections for scaling (had %i, but %i remain)\n", nb, n);
+			if ( n_esd1 ) ERROR("%i reference reflection esd\n", n_esd1);
+			if ( n_esd2 ) ERROR("%i subject reflection esd\n", n_esd2);
+			if ( n_ih1 ) ERROR("%i reference reflection intensity\n", n_ih1);
+			if ( n_ih2 ) ERROR("%i subject reflection intensity\n", n_ih2);
+			if ( n_nan1 ) ERROR("%i reference reflection nan\n", n_nan1);
+			if ( n_nan2 ) ERROR("%i subject reflection nan\n", n_nan2);
+			if ( n_inf1 ) ERROR("%i reference reflection inf\n", n_inf1);
+			if ( n_inf2 ) ERROR("%i subject reflection inf\n", n_inf2);
+			if ( n_part ) ERROR("%i subject reflection partiality\n", n_part);
+			if ( n_nom ) ERROR("%i no match in reference list\n", n_nom);
+		}
+		*G = 1.0;
 		return 1;
 	}
 
@@ -285,14 +289,18 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 	}
 
 	if ( isnan(*G) ) {
-		ERROR("Scaling gave NaN (%i pairs)\n", n);
-		*G = 1.0;
-		if ( n < 10 ) {
-			int i;
-			for ( i=0; i<n; i++ ) {
-				STATUS("%i %e %e %e\n", i, x[i], y[i], w[n]);
+
+		if ( complain_loudly ) {
+			ERROR("Scaling gave NaN (%i pairs)\n", n);
+			if ( n < 10 ) {
+				int i;
+				for ( i=0; i<n; i++ ) {
+					STATUS("%i %e %e %e\n", i, x[i], y[i], w[n]);
+					}
 			}
 		}
+
+		*G = 1.0;
 		return 1;
 	}
 

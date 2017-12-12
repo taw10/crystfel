@@ -81,7 +81,7 @@ const char *str_prflag(enum prflag flag)
 
 
 double residual(Crystal *cr, const RefList *full, int free,
-                int *pn_used, const char *filename)
+                int *pn_used, const char *filename, int complain)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -92,7 +92,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	double B = crystal_get_Bfac(cr);
 	UnitCell *cell = crystal_get_cell(cr);
 
-	if ( linear_scale(full, crystal_get_reflections(cr), &G) ) {
+	if ( linear_scale(full, crystal_get_reflections(cr), &G, complain) ) {
 		return INFINITY;
 	}
 
@@ -308,12 +308,12 @@ static double residual_f(const gsl_vector *v, void *pp)
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
 
-	res = residual(cr, pv->full, 0, NULL, NULL);
+	res = residual(cr, pv->full, 0, NULL, NULL, 0);
 
 	if ( isnan(res) ) {
 		ERROR("NaN residual\n");
 		ERROR("G=%e, B=%e\n", crystal_get_osf(cr), crystal_get_Bfac(cr));
-		residual(cr, pv->full, 0, NULL, "nan-residual.dat");
+		residual(cr, pv->full, 0, NULL, "nan-residual.dat", 1);
 		abort();
 	}
 
@@ -385,8 +385,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	double G;
 	double residual_start, residual_free_start;
 
-	residual_start = residual(cr, full, 0, NULL, NULL);
-	residual_free_start = residual(cr, full, 1, NULL, NULL);
+	residual_start = residual(cr, full, 0, NULL, NULL, 1);
+	residual_free_start = residual(cr, full, 1, NULL, NULL, 1);
 
 	if ( verbose ) {
 		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
@@ -458,7 +458,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	apply_parameters(min->x, initial, rv, cr);
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
-	r = linear_scale(full, crystal_get_reflections(cr), &G);
+	r = linear_scale(full, crystal_get_reflections(cr), &G, 1);
 	if ( r == 0 ) {
 		crystal_set_osf(cr, G);
 	} else {
@@ -467,8 +467,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	if ( verbose ) {
 		STATUS("PR final: dev = %10.5e, free dev = %10.5e\n",
-		       residual(cr, full, 0, NULL, NULL),
-		       residual(cr, full, 1, NULL, NULL));
+		       residual(cr, full, 0, NULL, NULL, 1),
+		       residual(cr, full, 1, NULL, NULL, 1));
 	}
 
 	gsl_multimin_fminimizer_free(min);

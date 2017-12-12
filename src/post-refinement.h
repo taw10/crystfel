@@ -64,6 +64,6 @@ extern double gradient(Crystal *cr, int k, Reflection *refl,
                        PartialityModel pmodel);
 
 extern double residual(Crystal *cr, const RefList *full, int free,
-                       int *pn_used, const char *filename);
+                       int *pn_used, const char *filename, int complain);
 
 #endif	/* POST_REFINEMENT_H */

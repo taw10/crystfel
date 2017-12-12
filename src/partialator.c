@@ -749,8 +749,8 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 
 		if ( crystal_get_user_flag(crystals[i]) ) continue;
 
-		r = residual(crystals[i], full, 0, NULL, NULL);
-		free_r = residual(crystals[i], full, 1, NULL, NULL);
+		r = residual(crystals[i], full, 0, NULL, NULL, 1);
+		free_r = residual(crystals[i], full, 1, NULL, NULL, 1);
 		log_r = log_residual(crystals[i], full, 0, NULL, NULL);
 		free_log_r = log_residual(crystals[i], full, 1, NULL, NULL);
 
