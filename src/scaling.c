@@ -287,6 +287,12 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 	if ( isnan(*G) ) {
 		ERROR("Scaling gave NaN (%i pairs)\n", n);
 		*G = 1.0;
+		if ( n < 10 ) {
+			int i;
+			for ( i=0; i<n; i++ ) {
+				STATUS("%i %e %e %e\n", i, x[i], y[i], w[n]);
+			}
+		}
 		return 1;
 	}
 
