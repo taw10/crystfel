@@ -524,6 +524,7 @@ static double do_integral(double q2, double zl, double R,
 	FILE *fh = NULL;
 
 	assert(R*R < q2);
+	assert(R > 0.0);
 
 	/* Range over which P is different from zero */
 	k0 = (R*R - q2)/(2.0*(zl+R));
