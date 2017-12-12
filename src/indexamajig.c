@@ -174,7 +174,7 @@ static void show_help(const char *s)
 "     --copy-hdf5-field=<f> Copy the value of HDF5 field <f> into the stream\n"
 "     --no-peaks-in-stream  Do not record peak search results in the stream\n"
 "     --no-refls-in-stream  Do not record integrated reflections in the stream\n"
-"     --serial-offset       Start the serial numbers in the stream here\n"
+"     --serial-start        Start the serial numbers in the stream here\n"
 "\nHistorical options:\n\n"
 "     --no-sat-corr         Don't correct values of saturated peaks\n"
 );
@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
 	int if_peaks = 0;
 	int if_multi = 1;
 	int if_retry = 1;
-	int serial_offset = 1;
+	int serial_start = 1;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -692,9 +692,9 @@ int main(int argc, char *argv[])
 			break;
 
 			case 44:
-			if ( sscanf(optarg, "%i", &serial_offset) != 1 )
+			if ( sscanf(optarg, "%i", &serial_start) != 1 )
 			{
-				ERROR("Invalid value for --serial-offset\n");
+				ERROR("Invalid value for --serial-start\n");
 				return 1;
 			}
 			break;
@@ -1013,7 +1013,7 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               st, tempdir, serial_offset);
+	               st, tempdir, serial_start);
 
 	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);
