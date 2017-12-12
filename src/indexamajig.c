@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
 	        {"felix-num-voxels",       1, NULL,           41},
 	        {"felix-test-fraction",    1, NULL,           42},
 	        {"felix-sigma",            1, NULL,           43},
-	        {"serial-offset",          1, NULL,           44},
+	        {"serial-start",           1, NULL,           44},
 
 		{0, 0, NULL, 0}
 	};
