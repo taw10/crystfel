@@ -50,7 +50,11 @@ for FILE in split-events-${RUN}.lst*; do
     # Job name
     NAME=`echo $FILE | sed -e "s/split-events-${RUN}.lst/${RUN}-/"`
 
-    echo "$NAME: $FILE  --->  $STREAM"
+    # Job number
+    NUMBER=${NAME##$RUN-}
+    POS=`expr $NUMBER \* $SPLIT + 1`
+
+    echo "$NAME (serial start $POS): $FILE  --->  $STREAM"
 
     SLURMFILE="${NAME}.sh"
 
@@ -74,7 +78,7 @@ for FILE in split-events-${RUN}.lst*; do
     echo "#source /path/to/crystfel/setup.sh" >> $SLURMFILE  # Set up environment here (again) if necessary
     echo >> $SLURMFILE
 
-    command="indexamajig -i $FILE -o $STREAMDIR/$STREAM"
+    command="indexamajig -i $FILE -o $STREAMDIR/$STREAM --serial-start=$POS"
     command="$command -j \`nproc\` -g $GEOM"
     #command="$command --peaks=zaef"  # Indexing parameters here
 
