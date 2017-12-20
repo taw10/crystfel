@@ -215,6 +215,7 @@ struct rf_priv {
 	const RefList *full;
 	enum gparam *rv;
 	int verbose;
+	int serial;
 	const gsl_vector *initial;
 };
 
@@ -368,7 +369,7 @@ static int check_angle_shifts(gsl_vector *cur, gsl_vector *initial,
 
 
 static void do_pr_refine(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel, int verbose)
+                         PartialityModel pmodel, int verbose, int serial)
 {
 	int i;
 	gsl_multimin_fminimizer *min;
@@ -402,7 +403,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	residual_f_priv.cr = cr;
 	residual_f_priv.full = full;
 	residual_f_priv.rv = rv;
-	residual_f_priv.verbose = 1;
+	residual_f_priv.verbose = verbose;
+	residual_f_priv.serial = serial;
 	f.f = residual_f;
 	f.n = n_params;
 	f.params = &residual_f_priv;
@@ -479,14 +481,13 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 
 static struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel)
+                               PartialityModel pmodel, int verbose, int serial)
 {
-	int verbose = 0;
 	struct prdata prdata;
 
 	prdata.refined = 0;
 
-	do_pr_refine(cr, full, pmodel, verbose);
+	do_pr_refine(cr, full, pmodel, verbose, serial);
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
@@ -501,7 +502,9 @@ struct refine_args
 	RefList *full;
 	Crystal *crystal;
 	PartialityModel pmodel;
+	int serial;
 	struct prdata prdata;
+	int verbose;
 };
 
 
@@ -520,7 +523,7 @@ static void refine_image(void *task, int id)
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
 
-	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel);
+	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel, pargs->verbose, pargs->serial);
 }
 
 
@@ -533,6 +536,7 @@ static void *get_image(void *vqargs)
 	memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
 
 	task->crystal = qargs->crystals[qargs->n_started];
+	task->serial = qargs->n_started;
 
 	qargs->n_started++;
 
@@ -552,7 +556,7 @@ static void done_image(void *vqargs, void *task)
 
 
 void refine_all(Crystal **crystals, int n_crystals,
-                RefList *full, int nthreads, PartialityModel pmodel)
+                RefList *full, int nthreads, PartialityModel pmodel, int verbose)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -561,6 +565,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.crystal = NULL;
 	task_defaults.pmodel = pmodel;
 	task_defaults.prdata.refined = 0;
+	task_defaults.verbose = verbose;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;

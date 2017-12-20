@@ -57,7 +57,8 @@ enum prflag
 extern const char *str_prflag(enum prflag flag);
 
 extern void refine_all(Crystal **crystals, int n_crystals,
-                       RefList *full, int nthreads, PartialityModel pmodel);
+                       RefList *full, int nthreads, PartialityModel pmodel,
+                       int verbose);
 
 /* Exported so it can be poked by tests/pr_p_gradient_check */
 extern double gradient(Crystal *cr, int k, Reflection *refl,

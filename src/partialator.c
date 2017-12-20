@@ -1246,7 +1246,7 @@ int main(int argc, char *argv[])
 		STATUS("Scaling and refinement cycle %i of %i\n", i+1, n_iter);
 
 		if ( !no_pr ) {
-			refine_all(crystals, n_crystals, full, nthreads, pmodel);
+			refine_all(crystals, n_crystals, full, nthreads, pmodel, 0);
 		} else if ( !no_scale ) {
 			scale_all_to_reference(crystals, n_crystals, full, nthreads);
 		}
