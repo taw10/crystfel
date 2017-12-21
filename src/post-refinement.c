@@ -114,7 +114,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 		if ( match == NULL ) continue;
 		I_full = get_intensity(match);
 
-		if ( get_redundancy(match) < 1 ) continue; /* FIXME: 2 */
+		if ( get_redundancy(match) < 2 ) continue;
 
 		p = get_partiality(refl);
 		//if ( p < 0.2 ) continue;
