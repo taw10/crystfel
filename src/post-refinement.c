@@ -93,7 +93,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	UnitCell *cell = crystal_get_cell(cr);
 
 	if ( linear_scale(full, crystal_get_reflections(cr), &G, complain) ) {
-		return INFINITY;
+		return GSL_NAN;
 	}
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
@@ -290,7 +290,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 	int i;
 
 	for ( i=0; i<v->size; i++ ) {
-		if ( gsl_vector_get(v, i) > 100.0 ) return INFINITY;
+		if ( gsl_vector_get(v, i) > 100.0 ) return GSL_NAN;
 	}
 
 	cr = crystal_copy(pv->cr);
@@ -300,7 +300,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 
 	if ( crystal_get_profile_radius(cr) <= 0.0 ) {
 		crystal_free(cr);
-		return INFINITY;
+		return GSL_NAN;
 	}
 
 	list = copy_reflist(crystal_get_reflections(cr));
@@ -310,13 +310,6 @@ static double residual_f(const gsl_vector *v, void *pp)
 	calculate_partialities(cr, PMODEL_XSPHERE);
 
 	res = residual(cr, pv->full, 0, NULL, NULL, 0);
-
-	if ( isnan(res) ) {
-		ERROR("NaN residual\n");
-		ERROR("G=%e, B=%e\n", crystal_get_osf(cr), crystal_get_Bfac(cr));
-		residual(cr, pv->full, 0, NULL, "nan-residual.dat", 1);
-		abort();
-	}
 
 	cell_free(crystal_get_cell(cr));
 	reflist_free(crystal_get_reflections(cr));
