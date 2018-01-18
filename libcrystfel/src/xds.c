@@ -679,9 +679,8 @@ const char *xds_probe(UnitCell *cell)
 
 	for ( l=0; l<10; l++ ) {
 		char *pos;
-		if ( fgets(line, 1024, fh) == NULL ) {
-			ERROR("Failed to probe for XDS\n");
-		} else {
+		if ( fgets(line, 1024, fh) != NULL ) {
+			STATUS("got %s\n", line);
 			pos = strstr(line, "** XDS **");
 			if ( pos != NULL ) {
 				ok = 1;

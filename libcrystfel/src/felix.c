@@ -737,7 +737,7 @@ const char *felix_probe(UnitCell *cell)
 
 	fh = fdopen(pty, "r");
 	if ( fgets(line, 1024, fh) == NULL ) {
-		ERROR("Failed to probe for Felix\n");
+		ok = 0;
 	} else {
 		if ( strncmp(line, "Felix", 5) == 0 ) {
 			ok = 1;

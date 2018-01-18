@@ -896,9 +896,7 @@ const char *mosflm_probe(UnitCell *cell)
 
 	for ( l=0; l<10; l++ ) {
 		char *pos;
-		if ( fgets(line, 1024, fh) == NULL ) {
-			ERROR("Failed to probe for Mosflm\n");
-		} else {
+		if ( fgets(line, 1024, fh) != NULL ) {
 			pos = strstr(line, "Mosflm version ");
 			if ( pos != NULL ) {
 				char *vers = pos+15;

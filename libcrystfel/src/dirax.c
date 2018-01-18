@@ -660,9 +660,7 @@ const char *dirax_probe(UnitCell *cell)
 	}
 
 	fh = fdopen(pty, "r");
-	if ( fgets(line, 1024, fh) == NULL ) {
-		ERROR("Failed to probe for DirAx\n");
-	} else {
+	if ( fgets(line, 1024, fh) != NULL ) {
 		if ( strncmp(line, "dirax", 5) == 0 ) {
 			ok = 1;
 		}
