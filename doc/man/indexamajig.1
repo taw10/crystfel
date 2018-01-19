@@ -409,6 +409,11 @@ Show detailed information about reflection integration when \fIcondition\fR is m
 .PD
 When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  If \fBrescut\fR is not used, this option has no effect.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--push-res=0\fR, but note that the default integration method does \fInot\fR include \fBrescut\fR, so no per-pattern resolution cutoff is used.  Note that you can also apply this cutoff at the merging stage using \fBprocess_hkl --push-res\fR.
 
+.PD 0
+.IP \fB--overpredict\fR
+.PD
+Over-predict reflections.  This is needed to provide a buffer zone when using post-refinement, but makes it difficult to judge the accuracy of the predictions because there are so many reflections.  It will also reduce the quality of the merged data if you merge without partiality estimation.
+
 .SH OUTPUT OPTIONS
 
 .PD 0

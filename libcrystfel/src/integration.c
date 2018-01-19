@@ -1651,12 +1651,12 @@ static void integrate_rings(IntegrationMethod meth,
 }
 
 
-void integrate_all_4(struct image *image, IntegrationMethod meth,
+void integrate_all_5(struct image *image, IntegrationMethod meth,
                      PartialityModel pmodel, double push_res,
                      double ir_inn, double ir_mid, double ir_out,
                      IntDiag int_diag,
                      signed int idh, signed int idk, signed int idl,
-                     pthread_mutex_t *term_lock)
+                     pthread_mutex_t *term_lock, int overpredict)
 {
 	int i;
 	int *masks[image->det->n_panels];
@@ -1668,6 +1668,12 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 
 		RefList *list;
 		double res;
+		double saved_R = crystal_get_profile_radius(image->crystals[i]);
+
+		if ( overpredict ) {
+			crystal_set_profile_radius(image->crystals[i],
+			                           saved_R * 5);
+		}
 
 		res = estimate_resolution(crystal_get_cell(image->crystals[i]),
 		                          image->features);
@@ -1675,6 +1681,10 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 
 		list = predict_to_res(image->crystals[i], res+push_res);
 		crystal_set_reflections(image->crystals[i], list);
+
+		if ( overpredict ) {
+			crystal_set_profile_radius(image->crystals[i], saved_R);
+		}
 
 	}
 
@@ -1718,6 +1728,18 @@ void integrate_all_4(struct image *image, IntegrationMethod meth,
 	for ( i=0; i<image->det->n_panels; i++ ) {
 		free(masks[i]);
 	}
+}
+
+
+void integrate_all_4(struct image *image, IntegrationMethod meth,
+                     PartialityModel pmodel, double push_res,
+                     double ir_inn, double ir_mid, double ir_out,
+                     IntDiag int_diag,
+                     signed int idh, signed int idk, signed int idl,
+                     pthread_mutex_t *term_lock)
+{
+	integrate_all_5(image, meth, pmodel, 0.0, ir_inn, ir_mid, ir_out,
+	                int_diag, idh, idk, idl, 0, 0);
 }
 
 

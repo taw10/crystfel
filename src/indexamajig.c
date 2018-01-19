@@ -174,6 +174,7 @@ static void show_help(const char *s)
 "     --int-radius=<r>      Set the integration radii.  Default: 4,5,7.\n"
 "     --int-diag=<cond>     Show debugging information about reflections\n"
 "     --push-res=<n>        Integrate higher than apparent resolution cutoff\n"
+"     --overpredict         Over-predict reflections (for post-refinement)\n"
 "\nOutput options:\n\n"
 "     --no-non-hits-in-stream\n"
 "                           Do not include non-hit frames in the stream\n"
@@ -281,6 +282,7 @@ int main(int argc, char *argv[])
 	iargs.int_diag = INTDIAG_NONE;
 	iargs.copyme = new_imagefile_field_list();
 	iargs.min_peaks = 0;
+	iargs.overpredict = 0;
 	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
 		return 1;
@@ -343,6 +345,7 @@ int main(int argc, char *argv[])
 		{"check-peaks",        0, &if_peaks,                 1},
 		{"no-retry",           0, &if_retry,                 0},
 		{"no-multi",           0, &if_multi,                 0},
+		{"overpredict",        0, &iargs.overpredict,        1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},

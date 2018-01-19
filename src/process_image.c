@@ -301,12 +301,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	/* Integrate! */
 	time_accounts_set(taccs, TACC_INTEGRATION);
 	sb_shared->pings[cookie]++;
-	integrate_all_4(&image, iargs->int_meth, PMODEL_SCSPHERE,
+	integrate_all_5(&image, iargs->int_meth, PMODEL_SCSPHERE,
 	                iargs->push_res,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
 	                iargs->int_diag, iargs->int_diag_h,
 	                iargs->int_diag_k, iargs->int_diag_l,
-	                &sb_shared->term_lock);
+	                &sb_shared->term_lock, iargs->overpredict);
 
 streamwrite:
 	time_accounts_set(taccs, TACC_WRITESTREAM);
