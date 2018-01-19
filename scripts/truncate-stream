@@ -58,6 +58,7 @@ def count_crystals(f, g, start_after, stop_after):
                 for line in chunk_so_far:
                     g.write(line)
                 chunk_so_far.clear()
+                chunk_so_far.append(fline)
 
         if fline.find("End crystal") != -1:
             n_crystals_seen += 1
