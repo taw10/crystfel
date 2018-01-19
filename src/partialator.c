@@ -989,7 +989,7 @@ int main(int argc, char *argv[])
 
 	if ( (pmodel == PMODEL_UNITY) && !no_pr ) {
 		no_pr = 1;
-		STATUS("Not going to refine the unity model.\n");
+		STATUS("Setting --no-pr because we are not modelling partialities (--model=unity).\n");
 	}
 
 	/* Read the custom split list (if applicable) */
