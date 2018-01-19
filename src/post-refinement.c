@@ -122,7 +122,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 		corr = G * exp(B*res*res) * get_lorentz(refl);
 		int1 = get_intensity(refl) * corr;
 		int2 = p*I_full;
-		w = 1.0;
+		w = p;
 
 		num += fabs(int1 - int2) * w;
 		den += fabs(int1 + int2) * w/2.0;
