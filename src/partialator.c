@@ -1069,6 +1069,10 @@ int main(int argc, char *argv[])
 	if ( rfile != NULL ) {
 		RefList *rread;
 		rread = read_reflections(rfile);
+		if ( rread == NULL ) {
+			ERROR("Failed to read reference reflections\n");
+			return 1;
+		}
 		reference = asymmetric_indices(rread, sym);
 		reflist_free(rread);
 		ERROR("WARNING: Using an external reference.\n");
