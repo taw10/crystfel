@@ -199,8 +199,8 @@ static double get_scale(enum gparam p)
 {
 	switch ( p ) {
 
-		case GPARAM_ANG1 : return deg2rad(0.01);
-		case GPARAM_ANG2 : return deg2rad(0.01);
+		case GPARAM_ANG1 : return deg2rad(0.05);
+		case GPARAM_ANG2 : return deg2rad(0.05);
 		case GPARAM_R : return 0.0005e9;
 		case GPARAM_WAVELENGTH : return 0.001e-10;
 
