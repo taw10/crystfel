@@ -1204,6 +1204,7 @@ int main(int argc, char *argv[])
 	close_stream(st);
 
 	/* Fill in image pointers */
+	STATUS("Initial partiality calculation...\n");
 	for ( i=0; i<n_images; i++ ) {
 		int j;
 		for ( j=0; j<images[i].n_crystals; j++ ) {
@@ -1223,7 +1224,7 @@ int main(int argc, char *argv[])
 	if (csplit != NULL) check_csplit(crystals, n_crystals, csplit);
 
 	/* Make a first pass at cutting out crap */
-	STATUS("Checking patterns.\n");
+	STATUS("Early rejection...\n");
 	//early_rejection(crystals, n_crystals);
 
 	/* Create reference data set if we don't already have one */
@@ -1235,6 +1236,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Scale everything to the reference */
+	STATUS("Initial scaling...\n");
 	if ( !no_scale ) {
 		scale_all_to_reference(crystals, n_crystals, full, nthreads);
 	}
