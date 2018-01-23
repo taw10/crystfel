@@ -679,12 +679,14 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 	      refl = next_refl(refl, iter) )
 	{
 		double corr, Ipart, Ifull, pobs, pcalc;
-		double res, esd;
+		double res;
 		signed int h, k, l;
 		Reflection *match;
 
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
+
+		/* FIXME Free-flagged reflections only */
 
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
@@ -692,7 +694,6 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 		corr = G * exp(B*res*res) * get_lorentz(refl);
 		Ipart = get_intensity(refl) * corr;
 		Ifull = get_intensity(match);
-		esd = get_esd_intensity(match);
 		pobs = Ipart / Ifull;
 		pcalc = get_partiality(refl);
 
