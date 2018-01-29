@@ -141,7 +141,7 @@ static void scale_crystal(void *task, int id)
 	double G;
 
 	/* Simple iterative algorithm */
-	r = linear_scale(pargs->full, crystal_get_reflections(pargs->crystal), &G, 1);
+	r = linear_scale(pargs->full, crystal_get_reflections(pargs->crystal), &G, 0);
 	if ( r == 0 ) {
 		crystal_set_osf(pargs->crystal, G);
 	} else {

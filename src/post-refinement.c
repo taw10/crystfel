@@ -383,8 +383,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	double G;
 	double residual_start, residual_free_start;
 
-	residual_start = residual(cr, full, 0, NULL, NULL, 1);
-	residual_free_start = residual(cr, full, 1, NULL, NULL, 1);
+	residual_start = residual(cr, full, 0, NULL, NULL, 0);
+	residual_free_start = residual(cr, full, 1, NULL, NULL, 0);
 
 	if ( verbose ) {
 		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
