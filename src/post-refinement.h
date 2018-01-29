@@ -51,6 +51,7 @@ enum prflag
 	PRFLAG_EARLY = 18,
 	PRFLAG_CC = 19,
 	PRFLAG_BIGB = 20,
+	PRFLAG_SCALEBAD = 21,
 };
 
 

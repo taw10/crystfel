@@ -144,7 +144,9 @@ static void scale_crystal(void *task, int id)
 	r = linear_scale(pargs->full, crystal_get_reflections(pargs->crystal), &G, 1);
 	if ( r == 0 ) {
 		crystal_set_osf(pargs->crystal, G);
-	} /* else don't change it */
+	} else {
+		crystal_set_user_flag(pargs->crystal, PRFLAG_SCALEBAD);
+	}
 }
 
 

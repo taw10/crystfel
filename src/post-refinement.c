@@ -74,6 +74,9 @@ const char *str_prflag(enum prflag flag)
 		case PRFLAG_BIGB :
 		return "B too big";
 
+		case PRFLAG_SCALEBAD :
+		return "bad scaling";
+
 		default :
 		return "Unknown flag";
 	}
