@@ -366,7 +366,8 @@ static int check_angle_shifts(gsl_vector *cur, gsl_vector *initial,
 
 
 static void do_pr_refine(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel, int verbose, int serial)
+                         PartialityModel pmodel, int verbose, int serial,
+                         int cycle)
 {
 	int i;
 	gsl_multimin_fminimizer *min;
@@ -382,6 +383,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int r;
 	double G;
 	double residual_start, residual_free_start;
+	const int write_logs = 1;
+	FILE *fh = NULL;
 
 	residual_start = residual(cr, full, 0, NULL, NULL, 0);
 	residual_free_start = residual(cr, full, 1, NULL, NULL, 0);
@@ -436,6 +439,23 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		       res, size);
 	}
 
+	if ( write_logs ) {
+		char fn[64];
+		snprintf(fn, 63, "pr-logs/crystal%i-cycle%i.log", serial, cycle);
+		fh = fopen(fn, "w");
+		if ( fh != NULL ) {
+			fprintf(fh, "iteration  RtoReference  CCtoReference  nref  "
+			            "ang1     ang2    radius    wavelength");
+			double res = residual_f(min->x, &residual_f_priv);
+			fprintf(fh, "%5i %10.8f  %10.8f  %5i  %10.8f %10.8f  %e  %e\n",
+			        n_iter, res, 0.0, 0,
+			        rad2deg(get_actual_val(min->x, initial, rv, 0)),
+			        rad2deg(get_actual_val(min->x, initial, rv, 1)),
+			        get_actual_val(min->x, initial, rv, 2),
+			        get_actual_val(min->x, initial, rv, 3)*1e10);
+		}
+	}
+
 	do {
 		n_iter++;
 
@@ -455,6 +475,15 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 			       get_actual_val(min->x, initial, rv, 2),
 			       get_actual_val(min->x, initial, rv, 3)*1e10,
 			       res, size);
+		}
+
+		if ( fh != NULL ) {
+			fprintf(fh, "%5i %10.8f  %10.8f  %5i  %10.8f %10.8f  %e  %e\n",
+			        n_iter, res, 0.0, 0,
+			        rad2deg(get_actual_val(min->x, initial, rv, 0)),
+			        rad2deg(get_actual_val(min->x, initial, rv, 1)),
+			        get_actual_val(min->x, initial, rv, 2),
+			        get_actual_val(min->x, initial, rv, 3)*1e10);
 		}
 
 		status = gsl_multimin_test_size(min->size, 0.005);
@@ -512,13 +541,14 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 
 static struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel, int verbose, int serial)
+                               PartialityModel pmodel, int verbose, int serial,
+                               int cycle)
 {
 	struct prdata prdata;
 
 	prdata.refined = 0;
 
-	do_pr_refine(cr, full, pmodel, verbose, serial);
+	do_pr_refine(cr, full, pmodel, verbose, serial, cycle);
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
@@ -536,6 +566,7 @@ struct refine_args
 	int serial;
 	struct prdata prdata;
 	int verbose;
+	int cycle;
 };
 
 
@@ -554,7 +585,8 @@ static void refine_image(void *task, int id)
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
 
-	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel, pargs->verbose, pargs->serial);
+	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel,
+	                          pargs->verbose, pargs->serial, pargs->cycle);
 }
 
 
@@ -587,7 +619,8 @@ static void done_image(void *vqargs, void *task)
 
 
 void refine_all(Crystal **crystals, int n_crystals,
-                RefList *full, int nthreads, PartialityModel pmodel, int verbose)
+                RefList *full, int nthreads, PartialityModel pmodel,
+                int verbose, int cycle)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -597,6 +630,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.pmodel = pmodel;
 	task_defaults.prdata.refined = 0;
 	task_defaults.verbose = verbose;
+	task_defaults.cycle = cycle;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
