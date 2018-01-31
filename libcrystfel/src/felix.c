@@ -60,7 +60,6 @@
 
 
 #define FELIX_VERBOSE 0
-#define MIN_NGV_UNIQUE 10
 
 
 /* Global private data, prepared once */
@@ -80,7 +79,7 @@ struct felix_private
 	float omegarange_max;
 	int min_measurements;   /* related to "cuts" */
 	float min_completeness; /* related to "cuts" */
-	float min_uniqueness;   /* related to "cuts" */
+	float max_uniqueness;   /* related to "cuts" */
 	int n_voxels;           /* related to "frustsumsize" */
 	float test_fraction;    /* related to "frustsumsize" */
 	float sigma_tth;        /* related to "uncertainties" */
@@ -391,7 +390,7 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 	fprintf(fh, "omegarange %f %f\n", gp->omegarange_min, gp->omegarange_max);
 	fprintf(fh, "filespecs %s %s\n", gveFilename, logFilename);
 	fprintf(fh, "cuts %i %f %f\n", gp->min_measurements, gp->min_completeness,
-			gp->min_uniqueness);
+			gp->max_uniqueness);
 	fprintf(fh, "frustumsize %i %f\n", gp->n_voxels,
 			gp->test_fraction);
 	fprintf(fh, "uncertainties %f %f %f\n", gp->sigma_tth,
@@ -647,7 +646,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	gp->omegarange_max = 1.0;
 	gp->min_measurements = 15;
 	gp->min_completeness = 0.001;
-	gp->min_uniqueness = 0.5;
+	gp->max_uniqueness = 0.5;
 	gp->test_fraction = 0.75;
 	gp->sigma_tth = 0.2;
 	gp->sigma_eta = 0.2;
@@ -674,8 +673,8 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( opts->min_completeness > 0.0 ) {
 		gp->min_completeness = opts->min_completeness;
 	}
-	if ( opts->min_uniqueness > 0.0 ) {
-		gp->min_uniqueness = opts->min_uniqueness;
+	if ( opts->max_uniqueness > 0.0 ) {
+		gp->max_uniqueness = opts->max_uniqueness;
 	}
 	if ( opts->n_voxels > 0 ) {
 		gp->n_voxels = opts->n_voxels;

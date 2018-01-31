@@ -42,7 +42,7 @@ struct felix_options
 	double ttmax;  /* radians */
 	int min_measurements;
 	double min_completeness;
-	double min_uniqueness;
+	double max_uniqueness;
 	int n_voxels;
 	double test_fraction;
 	double sigma;

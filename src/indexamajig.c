@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
 	iargs.felix_opts.ttmax = -1.0;
 	iargs.felix_opts.min_measurements = 0;
 	iargs.felix_opts.min_completeness = -1.0;
-	iargs.felix_opts.min_uniqueness = -1.0;
+	iargs.felix_opts.max_uniqueness = -1.0;
 	iargs.felix_opts.n_voxels = 0;
 	iargs.felix_opts.test_fraction = -1.0;
 	iargs.felix_opts.sigma = -1.0;
@@ -386,7 +386,7 @@ int main(int argc, char *argv[])
 	        {"felix-tthrange-max",     1, NULL,           37},
 	        {"felix-min-measurements", 1, NULL,           38},
 	        {"felix-min-completeness", 1, NULL,           39},
-	        {"felix-min-uniqueness",   1, NULL,           40},
+	        {"felix-max-uniqueness",   1, NULL,           40},
 	        {"felix-num-voxels",       1, NULL,           41},
 	        {"felix-test-fraction",    1, NULL,           42},
 	        {"felix-sigma",            1, NULL,           43},
@@ -664,9 +664,9 @@ int main(int argc, char *argv[])
 			break;
 
 			case 40:
-			if ( sscanf(optarg, "%lf", &iargs.felix_opts.min_uniqueness) != 1 )
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.max_uniqueness) != 1 )
 			{
-				ERROR("Invalid value for --felix-min-uniqueness\n");
+				ERROR("Invalid value for --felix-max-uniqueness\n");
 				return 1;
 			}
 			break;
