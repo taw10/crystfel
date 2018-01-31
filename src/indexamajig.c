@@ -139,24 +139,31 @@ static void show_help(const char *s)
 "     --taketwo-trace-tolerance\n"
 "                           Rotation matrix equivalence tolerance (in degrees)\n"
 "\n"
-"     --felix-tthrange-min  Minimum 2theta to consider for indexing (degrees)\n"
-"                            Default: 0\n"
-"     --felix-tthrange-max  Maximum 2theta to consider for indexing (degrees)\n"
-"                            Default: 30\n"
-"     --felix-min-measurements\n"
-"                           How many Rodrigue lines cross in the first search\n"
-"                            Default: 15\n"
+"	  --felix-domega        Degree range of omega (moscaicity) to consider.\n"
+"							Default: 2\n"
+"     --felix-fraction-max-visits\n"
+"							Cutoff for minimum fraction of the max visits.\n"
+"							Default: 0.75\n"
+"     --felix-max-internal-angle\n"
+"                           Cutoff for maximum internal angle between observed\n"
+"							spots and predicted spots. Default: 0.25"
+"     --felix-max-uniqueness\n"
+"                           Cutoff for maximum fraction of found spots which\n"
+"                            can belong to other crystallites.  Default: 0.5\n"
 "     --felix-min-completeness\n"
-"                           Fraction of projected spots found in the pattern\n"
-"                            Default: 0.001\n"
-"     --felix-min-uniqueness\n"
-"                           Fraction of found spots which can belong to other\n"
-"                            crystallites.  Default: 0.5\n"
+"                           Cutoff for minimum fraction of projected spots\n"
+"							found in the pattern. Default: 0.001\n"
+"     --felix-min-visits\n"
+"                           Cutoff for minimum number of voxel visits.\n"
+"                            Default: 15\n"
 "     --felix-num-voxels    Number of voxels for Rodrigues space search\n"
 "                            Default: 100\n"
-"     --felix-test-fraction Fraction of space to test.  Default: 0.75\n"
 "     --felix-sigma         The sigma of the 2theta, eta and omega angles.\n"
 "                            Default: 0.2\n"
+"     --felix-tthrange-max  Maximum 2theta to consider for indexing (degrees)\n"
+"                            Default: 30\n"
+"     --felix-tthrange-min  Minimum 2theta to consider for indexing (degrees)\n"
+"                            Default: 0\n"
 "\nIntegration options:\n\n"
 "     --integration=<meth>  Integration method (rings,prof2d)-(cen,nocen)\n"
 "                            Default: rings-nocen\n"
@@ -292,11 +299,11 @@ int main(int argc, char *argv[])
 	iargs.taketwo_opts.trace_tol = -1.0;
 	iargs.felix_opts.ttmin = -1.0;
 	iargs.felix_opts.ttmax = -1.0;
-	iargs.felix_opts.min_measurements = 0;
+	iargs.felix_opts.min_visits = 0;
 	iargs.felix_opts.min_completeness = -1.0;
 	iargs.felix_opts.max_uniqueness = -1.0;
 	iargs.felix_opts.n_voxels = 0;
-	iargs.felix_opts.test_fraction = -1.0;
+	iargs.felix_opts.fraction_max_visits = -1.0;
 	iargs.felix_opts.sigma = -1.0;
 	iargs.felix_opts.domega = -1.0;
 	iargs.felix_opts.max_internal_angle = -1.0;
@@ -384,15 +391,15 @@ int main(int argc, char *argv[])
 	        {"taketwo-trace-tol",        1, NULL,         35}, /* compat */
 	        {"felix-tthrange-min",     1, NULL,           36},
 	        {"felix-tthrange-max",     1, NULL,           37},
-	        {"felix-min-measurements", 1, NULL,           38},
+	        {"felix-min-visits",        1, NULL,           38},
 	        {"felix-min-completeness", 1, NULL,           39},
 	        {"felix-max-uniqueness",   1, NULL,           40},
 	        {"felix-num-voxels",       1, NULL,           41},
-	        {"felix-test-fraction",    1, NULL,           42},
+	        {"felix-fraction-max-visits",    1, NULL,           42},
 	        {"felix-sigma",            1, NULL,           43},
 	        {"serial-start",           1, NULL,           44},
 	        {"felix-domega",           1, NULL,           45},
-	        {"felix-max-inter-angle",   1, NULL,          46},
+	        {"felix-max-internal-angle",   1, NULL,      46},
 
 		{0, 0, NULL, 0}
 	};
@@ -648,9 +655,9 @@ int main(int argc, char *argv[])
 			break;
 
 			case 38:
-			if ( sscanf(optarg, "%i", &iargs.felix_opts.min_measurements) != 1 )
+			if ( sscanf(optarg, "%i", &iargs.felix_opts.min_visits) != 1 )
 			{
-				ERROR("Invalid value for --felix-min-measurements\n");
+				ERROR("Invalid value for --felix-min-visits\n");
 				return 1;
 			}
 			break;
@@ -680,9 +687,9 @@ int main(int argc, char *argv[])
 			break;
 
 			case 42:
-			if ( sscanf(optarg, "%lf", &iargs.felix_opts.test_fraction) != 1 )
+			if ( sscanf(optarg, "%lf", &iargs.felix_opts.fraction_max_visits) != 1 )
 			{
-				ERROR("Invalid value for --felix-test-fraction\n");
+				ERROR("Invalid value for --felix-fraction-max-visits\n");
 				return 1;
 			}
 			break;
@@ -714,7 +721,7 @@ int main(int argc, char *argv[])
 			case 46:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.max_internal_angle) != 1 )
 			{
-				ERROR("Invalid value for --felix-max-inter-angle\n");
+				ERROR("Invalid value for --felix-max-internal-angle\n");
 				return 1;
 			}
 			break;

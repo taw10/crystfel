@@ -40,11 +40,11 @@ struct felix_options
 {
 	double ttmin;  /* radians */
 	double ttmax;  /* radians */
-	int min_measurements;
+	int min_visits;
 	double min_completeness;
 	double max_uniqueness;
 	int n_voxels;
-	double test_fraction;
+	double fraction_max_visits;
 	double sigma;
 	double domega;
 	double max_internal_angle;

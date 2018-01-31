@@ -77,11 +77,11 @@ struct felix_private
 	float domega;
 	float omegarange_min;
 	float omegarange_max;
-	int min_measurements;   /* related to "cuts" */
+	int min_visits;   /* related to "cuts" */
 	float min_completeness; /* related to "cuts" */
 	float max_uniqueness;   /* related to "cuts" */
 	int n_voxels;           /* related to "frustsumsize" */
-	float test_fraction;    /* related to "frustsumsize" */
+	float fraction_max_visits;    /* related to "frustsumsize" */
 	float sigma_tth;        /* related to "uncertainties" */
 	float sigma_eta;        /* related to "uncertainties" */
 	float sigma_omega;      /* related to "uncertainties" */
@@ -389,10 +389,10 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 	fprintf(fh, "domega %f\n", gp->domega);
 	fprintf(fh, "omegarange %f %f\n", gp->omegarange_min, gp->omegarange_max);
 	fprintf(fh, "filespecs %s %s\n", gveFilename, logFilename);
-	fprintf(fh, "cuts %i %f %f\n", gp->min_measurements, gp->min_completeness,
+	fprintf(fh, "cuts %i %f %f\n", gp->min_visits, gp->min_completeness,
 			gp->max_uniqueness);
 	fprintf(fh, "frustumsize %i %f\n", gp->n_voxels,
-			gp->test_fraction);
+			gp->fraction_max_visits);
 	fprintf(fh, "uncertainties %f %f %f\n", gp->sigma_tth,
 			gp->sigma_eta, gp->sigma_omega);
 	fprintf(fh, "nsigmas %i\n", gp->n_sigmas);
@@ -644,10 +644,10 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	gp->domega = 2;
 	gp->omegarange_min = -1.0;
 	gp->omegarange_max = 1.0;
-	gp->min_measurements = 15;
+	gp->min_visits = 15;
 	gp->min_completeness = 0.001;
 	gp->max_uniqueness = 0.5;
-	gp->test_fraction = 0.75;
+	gp->fraction_max_visits = 0.75;
 	gp->sigma_tth = 0.2;
 	gp->sigma_eta = 0.2;
 	gp->sigma_omega = 0.2;
@@ -667,8 +667,8 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( opts->ttmax > 0.0 ) {
 		gp->tthrange_max = opts->ttmax;
 	}
-	if ( opts->min_measurements > 0 ) {
-		gp->min_measurements = opts->min_measurements;
+	if ( opts->min_visits > 0 ) {
+		gp->min_visits = opts->min_visits;
 	}
 	if ( opts->min_completeness > 0.0 ) {
 		gp->min_completeness = opts->min_completeness;
@@ -679,8 +679,8 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( opts->n_voxels > 0 ) {
 		gp->n_voxels = opts->n_voxels;
 	}
-	if ( opts->test_fraction > 0.0 ) {
-		gp->test_fraction = opts->test_fraction;
+	if ( opts->fraction_max_visits > 0.0 ) {
+		gp->fraction_max_visits = opts->fraction_max_visits;
 	}
 	if ( opts->sigma > 0.0 ) {
 		gp->sigma_tth = opts->sigma;
