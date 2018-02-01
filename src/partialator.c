@@ -849,7 +849,6 @@ int main(int argc, char *argv[])
 	SymOpList *sym;
 	int nthreads = 1;
 	int i;
-	struct image *images;
 	int n_iter = 10;
 	RefList *full;
 	int n_images = 0;
@@ -1119,7 +1118,6 @@ int main(int argc, char *argv[])
 	n_images = 0;
 	n_crystals = 0;
 	n_crystals_seen = 0;
-	images = NULL;
 	crystals = NULL;
 	if ( sparams_fn != NULL ) {
 		char line[1024];
@@ -1143,35 +1141,27 @@ int main(int argc, char *argv[])
 
 		RefList *as;
 		int i;
-		struct image *images_new;
-		struct image *cur;
+		struct image cur;
 
-		images_new = realloc(images, (n_images+1)*sizeof(struct image));
-		if ( images_new == NULL ) {
-			ERROR("Failed to allocate memory for image list.\n");
-			return 1;
-		}
-		images = images_new;
-		cur = &images[n_images];
-
-		cur->div = NAN;
-		cur->bw = NAN;
-		cur->det = NULL;
-		if ( read_chunk_2(st, cur, STREAM_READ_REFLECTIONS
-		                           | STREAM_READ_UNITCELL) != 0 ) {
+		cur.div = NAN;
+		cur.bw = NAN;
+		cur.det = NULL;
+		if ( read_chunk_2(st, &cur, STREAM_READ_REFLECTIONS
+		                            | STREAM_READ_UNITCELL) != 0 ) {
 			break;
 		}
 
-		if ( isnan(cur->div) || isnan(cur->bw) ) {
+		if ( isnan(cur.div) || isnan(cur.bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
 
-		for ( i=0; i<cur->n_crystals; i++ ) {
+		for ( i=0; i<cur.n_crystals; i++ ) {
 
 			Crystal *cr;
 			Crystal **crystals_new;
 			RefList *cr_refl;
+			struct image *image;
 
 			n_crystals_seen++;
 			if ( n_crystals_seen <= start_after ) continue;
@@ -1184,11 +1174,19 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			crystals = crystals_new;
-			crystals[n_crystals] = cur->crystals[i];
+			crystals[n_crystals] = cur.crystals[i];
 			cr = crystals[n_crystals];
 
-			/* Image pointer will change due to later reallocs */
-			crystal_set_image(cr, NULL);
+			image = malloc(sizeof(struct image));
+			if ( image == NULL ) {
+				ERROR("Failed to allocatea memory for image.\n");
+				return 1;
+			}
+
+			crystal_set_image(cr, image);
+			*image = cur;
+			image->n_crystals = 1;
+			image->crystals = &crystals[n_crystals];
 
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
@@ -1198,7 +1196,7 @@ int main(int argc, char *argv[])
 			if ( polarisation ) {
 				polarisation_correction(cr_refl,
 						        crystal_get_cell(cr),
-						        cur);
+						        image);
 			}
 
 			if ( !no_free ) select_free_reflections(cr_refl, rng);
@@ -1234,22 +1232,11 @@ int main(int argc, char *argv[])
 
 	close_stream(st);
 
-	/* Fill in image pointers */
 	STATUS("Initial partiality calculation...\n");
-	for ( i=0; i<n_images; i++ ) {
-		int j;
-		for ( j=0; j<images[i].n_crystals; j++ ) {
-
-			Crystal *cryst;
-
-			cryst = images[i].crystals[j];
-			crystal_set_image(cryst, &images[i]);
-
-			/* Now it's safe to do the following */
-			update_predictions(cryst);
-			calculate_partialities(cryst, pmodel);
-
-		}
+	for ( i=0; i<n_crystals; i++ ) {
+		Crystal *cr = crystals[i];
+		update_predictions(cr);
+		calculate_partialities(cr, pmodel);
 	}
 
 	if (csplit != NULL) check_csplit(crystals, n_crystals, csplit);
@@ -1384,10 +1371,6 @@ int main(int argc, char *argv[])
 	free(sym);
 	free(outfile);
 	free(crystals);
-	for ( i=0; i<n_images; i++ ) {
-		free(images[i].filename);
-	}
-	free(images);
 	free(infile);
 
 	return 0;
