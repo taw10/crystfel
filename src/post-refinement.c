@@ -289,6 +289,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 	RefList *list;
 	struct image im;
 	Crystal *cr;
+	UnitCell *cell;
 	double res;
 	int i;
 
@@ -297,6 +298,9 @@ static double residual_f(const gsl_vector *v, void *pp)
 	}
 
 	cr = crystal_copy(pv->cr);
+	cell = cell_new_from_cell(crystal_get_cell(cr));
+	if ( cell == NULL ) return GSL_NAN;
+	crystal_set_cell(cr, cell);
 	im = *crystal_get_image(cr);
 	crystal_set_image(cr, &im);
 	apply_parameters(v, pv->initial, pv->rv, cr);
