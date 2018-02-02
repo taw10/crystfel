@@ -381,6 +381,110 @@ static int check_angle_shifts(gsl_vector *cur, gsl_vector *initial,
 }
 
 
+static RefList *reindex_reflections(RefList *input, SymOpList *amb,
+                                    SymOpList *sym)
+{
+	RefList *n;
+	Reflection *refl;
+	RefListIterator *iter;
+
+	n = reflist_new();
+
+	for ( refl = first_refl(input, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		Reflection *rn;
+
+		get_indices(refl, &h, &k, &l);
+		get_equiv(amb, NULL, 0, h, k, l, &h, &k, &l);
+		get_asymm(sym, h, k, l, &h, &k, &l);
+		rn = add_refl(n, h, k, l);
+		copy_data(rn, refl);
+
+		get_symmetric_indices(rn, &h, &k, &l);
+		get_equiv(amb, NULL, 0, h, k, l, &h, &k, &l);
+		set_symmetric_indices(rn, h, k, l);
+	}
+
+	return n;
+}
+
+
+static void reindex_cell(UnitCell *cell, SymOpList *amb)
+{
+	signed int h, k, l;
+	struct rvec na, nb, nc;
+	struct rvec as, bs, cs;
+
+	cell_get_reciprocal(cell, &as.u, &as.v, &as.w,
+	                          &bs.u, &bs.v, &bs.w,
+	                          &cs.u, &cs.v, &cs.w);
+
+	get_equiv(amb, NULL, 0, 1, 0, 0, &h, &k, &l);
+	na.u = as.u*h + bs.u*k + cs.u*l;
+	na.v = as.v*h + bs.v*k + cs.v*l;
+	na.w = as.w*h + bs.w*k + cs.w*l;
+
+	get_equiv(amb, NULL, 0, 0, 1, 0, &h, &k, &l);
+	nb.u = as.u*h + bs.u*k + cs.u*l;
+	nb.v = as.v*h + bs.v*k + cs.v*l;
+	nb.w = as.w*h + bs.w*k + cs.w*l;
+
+	get_equiv(amb, NULL, 0, 0, 0, 1, &h, &k, &l);
+	nc.u = as.u*h + bs.u*k + cs.u*l;
+	nc.v = as.v*h + bs.v*k + cs.v*l;
+	nc.w = as.w*h + bs.w*k + cs.w*l;
+
+	cell_set_reciprocal(cell, na.u, na.v, na.w,
+	                          nb.u, nb.v, nb.w,
+	                          nc.u, nc.v, nc.w);
+}
+
+
+void try_reindex(Crystal *crin, const RefList *full)
+{
+	RefList *list;
+	Crystal *cr;
+	UnitCell *cell;
+	SymOpList *amb;
+	SymOpList *sym;
+	double residual_original, residual_flipped;
+
+	amb = parse_symmetry_operations("k,h,-l");
+	sym = get_pointgroup("m-3");
+
+	residual_original = residual(crin, full, 0, NULL, NULL, 0);
+
+	cr = crystal_copy(crin);
+
+	cell = cell_new_from_cell(crystal_get_cell(crin));
+	if ( cell == NULL ) return;
+	reindex_cell(cell, amb);
+	crystal_set_cell(cr, cell);
+
+	list = reindex_reflections(crystal_get_reflections(crin), amb, sym);
+	crystal_set_reflections(cr, list);
+
+	update_predictions(cr);
+	calculate_partialities(cr, PMODEL_XSPHERE);
+
+	residual_flipped = residual(cr, full, 0, NULL, NULL, 1);
+
+	if ( residual_flipped < residual_original ) {
+		crystal_set_cell(crin, cell);
+		crystal_set_reflections(crin, list);
+	} else {
+		cell_free(crystal_get_cell(cr));
+		reflist_free(crystal_get_reflections(cr));
+		crystal_free(cr);
+	}
+
+	free_symoplist(amb);
+}
+
+
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int verbose, int serial,
                          int cycle)
@@ -401,6 +505,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	double residual_start, residual_free_start;
 	const int write_logs = 1;
 	FILE *fh = NULL;
+
+	try_reindex(cr, full);
 
 	residual_start = residual(cr, full, 0, NULL, NULL, 0);
 	residual_free_start = residual(cr, full, 1, NULL, NULL, 0);
