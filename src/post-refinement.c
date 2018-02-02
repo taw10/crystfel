@@ -503,7 +503,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int r;
 	double G;
 	double residual_start, residual_free_start;
-	const int write_logs = 1;
+	int write_logs = 1;
 	FILE *fh = NULL;
 
 	try_reindex(cr, full);
@@ -515,6 +515,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
 		       residual_start, residual_free_start);
 	}
+
+	if ( serial % 20 ) write_logs = 0;
 
 	/* The parameters to be refined */
 	rv[n_params++] = GPARAM_ANG1;
