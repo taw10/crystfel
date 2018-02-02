@@ -195,6 +195,18 @@ static UnitCell *rotate_cell_xy(const UnitCell *cell, double ang1, double ang2)
 }
 
 
+static const char *get_label(enum gparam p)
+{
+	switch ( p ) {
+		case GPARAM_ANG1 : return "First angle";
+		case GPARAM_ANG2 : return "Second angle";
+		case GPARAM_R : return "Profile radius";
+		case GPARAM_WAVELENGTH : return "Wavelength";
+		default : return "unknown";
+	}
+}
+
+
 /* We set all the step sizes to 1, then scale them.
  * This way, the size of the simplex stays meaningful and we possibly also
  *  avoid some roundoff errors */
@@ -444,7 +456,44 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	}
 
 	if ( write_logs ) {
+
 		char fn[64];
+		const enum gparam par1 = GPARAM_ANG1;
+		const enum gparam par2 = GPARAM_WAVELENGTH;
+
+		snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%i.dat", serial, cycle);
+		fh = fopen(fn, "w");
+		if ( fh != NULL ) {
+			double v1, v2;
+			fprintf(fh, "%e %e %s\n",
+			        -5.0*get_scale(par1)+get_initial_param(cr, par1),
+			         5.0*get_scale(par1)+get_initial_param(cr, par1),
+			        get_label(par1));
+			fprintf(fh, "%e %e %s\n",
+			        -5.0*get_scale(par2)+get_initial_param(cr, par2),
+			         5.0*get_scale(par2)+get_initial_param(cr, par2),
+			        get_label(par2));
+			for ( v2=-5.0; v2<=5.0; v2+=0.2 ) {
+				int first=1;
+				for ( v1=-5.0; v1<=5.0; v1+=0.2 ) {
+					double res;
+					gsl_vector_set(min->x, 0, v1);
+					gsl_vector_set(min->x, 3, v2);
+					res = residual_f(min->x, &residual_f_priv);
+					if ( !first ) fprintf(fh, " ");
+					first = 0;
+					fprintf(fh, "%e", res);
+				}
+				fprintf(fh, "\n");
+			}
+		}
+		fclose(fh);
+		for ( i=0; i<n_params; i++ ) {
+			gsl_vector_set(initial, i, get_initial_param(cr, rv[i]));
+			gsl_vector_set(vals, i, 0.0);
+			gsl_vector_set(step, i, 1.0);
+		}
+
 		snprintf(fn, 63, "pr-logs/crystal%i-cycle%i.log", serial, cycle);
 		fh = fopen(fn, "w");
 		if ( fh != NULL ) {
@@ -458,6 +507,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 			        get_actual_val(min->x, initial, rv, 2),
 			        get_actual_val(min->x, initial, rv, 3)*1e10);
 		}
+
 	}
 
 	do {
