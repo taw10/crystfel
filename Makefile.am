@@ -184,7 +184,8 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/detector-shift scripts/turbo-index-lsf \
               scripts/gaincal-to-saturation-map scripts/move-entire-detector \
               scripts/split-by-mask scripts/turbo-index-slurm \
-              scripts/sum-peaks scripts/peakogram-stream scripts/eiger-badmap
+              scripts/sum-peaks scripts/peakogram-stream scripts/eiger-badmap \
+              scripts/sum-hdf5-files
 
 EXTRA_DIST += $(script_DATA)
 

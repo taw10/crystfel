@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+import numpy as np
+import h5py
+import sys
+
+dfh = h5py.File("darkcal_jungfrau_13_05_1428.h5", "r")
+darkcal = dfh["/data/data"].value
+dfh.close
+
+sum = np.zeros((512,1024), dtype=float)
+f = open(sys.argv[1], 'r')
+
+while True:
+
+    fline = f.readline()
+    if not fline:
+        break
+    fn = fline.rstrip("\r\n")
+    filename = fn.split()[0]
+    ev = int(fn.split()[1].lstrip("/"))
+
+    fh = h5py.File(filename, 'r')
+    dset = fh["/entry/instrument/detector/data"][ev,:,:].astype(np.float)
+    dset -= darkcal
+    sum = np.add(sum, dset)
+    fh.close()
+    print("Summed '{}' '{}'".format(filename,ev))
+
+f.close()
+fh = h5py.File('summed.h5', 'w')
+fh.create_dataset('/data', data=sum)
+fh.close()
+
