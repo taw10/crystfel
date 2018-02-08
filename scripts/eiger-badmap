@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Generate bad pixel map for EIGER detector from a native HDF5 file
+#
+# Copyright © 2017 Deutsches Elektronen-Synchrotron DESY,
+#                  a research centre of the Helmholtz Association.
+#
+# Author:
+#    2017 Thomas White <taw@physics.org>
+
+import numpy as np
+import h5py
+import sys
+
+fh = h5py.File(sys.argv[1], 'r')
+frame = fh['/entry/data/data_000001'][0]
+fh.close()
+
+if len(frame.shape) != 2:
+    print("Input frame is not 2D!")
+    sys.exit(1)
+
+print("Size of mask: "+str(frame.shape[0])+" by "+str(frame.shape[1])+" pixels")
+
+mask = np.zeros_like(frame)
+mask[frame > 65535] = 1
+
+fh = h5py.File('eiger_badmap.h5', 'w')
+fh.create_dataset('/data/data', data=mask)
+fh.close()
+
