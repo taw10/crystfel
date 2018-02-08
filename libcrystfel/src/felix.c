@@ -687,10 +687,10 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 		gp->sigma_eta = opts->sigma;
 		gp->sigma_omega = opts->sigma;
 	}
-	if (opts->domega > 0.0 ) {
-		gp->domega = opts -> domega;
+	if ( opts->domega > 0.0 ) {
+		gp->domega = opts->domega;
 	}
-	if (opts->max_internal_angle > 0){
+	if ( opts->max_internal_angle > 0 ) {
 		gp->max_internal_angle = opts->max_internal_angle;
 	}
 

@@ -375,31 +375,31 @@ int main(int argc, char *argv[])
 		{"fix-bandwidth",      1, NULL,               23},
 		{"fix-divergence",     1, NULL,               24},
 		{"felix-options",      1, NULL,               25},
-	        {"min-pix-count",      1, NULL,               26},
-	        {"max-pix-count",      1, NULL,               27},
-	        {"local-bg-radius",    1, NULL,               28},
-	        {"min-res",            1, NULL,               29},
-	        {"max-res",            1, NULL,               30},
-	        {"min-peaks",          1, NULL,               31},
-	        {"taketwo-member-threshold", 1, NULL,         32},
-	        {"taketwo-member-thresh",    1, NULL,         32}, /* compat */
-	        {"taketwo-len-tolerance",    1, NULL,         33},
-	        {"taketwo-len-tol",          1, NULL,         33}, /* compat */
-	        {"taketwo-angle-tolerance",  1, NULL,         34},
-	        {"taketwo-angle-tol",        1, NULL,         34}, /* compat */
-	        {"taketwo-trace-tolerance",  1, NULL,         35},
-	        {"taketwo-trace-tol",        1, NULL,         35}, /* compat */
-	        {"felix-tthrange-min",     1, NULL,           36},
-	        {"felix-tthrange-max",     1, NULL,           37},
-	        {"felix-min-visits",        1, NULL,           38},
-	        {"felix-min-completeness", 1, NULL,           39},
-	        {"felix-max-uniqueness",   1, NULL,           40},
-	        {"felix-num-voxels",       1, NULL,           41},
-	        {"felix-fraction-max-visits",    1, NULL,           42},
-	        {"felix-sigma",            1, NULL,           43},
-	        {"serial-start",           1, NULL,           44},
-	        {"felix-domega",           1, NULL,           45},
-	        {"felix-max-internal-angle",   1, NULL,      46},
+		{"min-pix-count",      1, NULL,               26},
+		{"max-pix-count",      1, NULL,               27},
+		{"local-bg-radius",    1, NULL,               28},
+		{"min-res",            1, NULL,               29},
+		{"max-res",            1, NULL,               30},
+		{"min-peaks",          1, NULL,               31},
+		{"taketwo-member-threshold", 1, NULL,         32},
+		{"taketwo-member-thresh",    1, NULL,         32}, /* compat */
+		{"taketwo-len-tolerance",    1, NULL,         33},
+		{"taketwo-len-tol",          1, NULL,         33}, /* compat */
+		{"taketwo-angle-tolerance",  1, NULL,         34},
+		{"taketwo-angle-tol",        1, NULL,         34}, /* compat */
+		{"taketwo-trace-tolerance",  1, NULL,         35},
+		{"taketwo-trace-tol",        1, NULL,         35}, /* compat */
+		{"felix-tthrange-min",       1, NULL,         36},
+		{"felix-tthrange-max",       1, NULL,         37},
+		{"felix-min-visits",         1, NULL,         38},
+		{"felix-min-completeness",   1, NULL,         39},
+		{"felix-max-uniqueness",     1, NULL,         40},
+		{"felix-num-voxels",         1, NULL,         41},
+		{"felix-fraction-max-visits",1, NULL,         42},
+		{"felix-sigma",              1, NULL,         43},
+		{"serial-start",             1, NULL,         44},
+		{"felix-domega",             1, NULL,         45},
+		{"felix-max-internal-angle", 1, NULL,         46},
 
 		{0, 0, NULL, 0}
 	};
@@ -709,7 +709,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			break;
-			
+
 			case 45:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.domega) != 1 )
 			{
