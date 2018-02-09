@@ -228,7 +228,7 @@ static double get_scale(enum gparam p)
 struct rf_priv {
 	const Crystal *cr;
 	const RefList *full;
-	enum gparam *rv;
+	enum gparam rv[32];
 	int verbose;
 	int serial;
 	gsl_vector *initial;
@@ -236,6 +236,9 @@ struct rf_priv {
 	/* For freeing later */
 	gsl_vector *vals;
 	gsl_vector *step;
+
+	/* So that it stays around until the end of minimisation */
+	gsl_multimin_function f;
 };
 
 
@@ -564,47 +567,41 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 
 static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full,
                                                 int verbose, int serial,
-                                                struct rf_priv *residual_f_priv)
+                                                struct rf_priv *priv)
 {
 	gsl_multimin_fminimizer *min;
-	enum gparam rv[32];
 	int n_params = 0;
-	gsl_multimin_function f;
-	gsl_vector *initial;
-	gsl_vector *vals;
-	gsl_vector *step;
 	int i;
 
 	/* The parameters to be refined */
-	rv[n_params++] = GPARAM_ANG1;
-	rv[n_params++] = GPARAM_ANG2;
-	rv[n_params++] = GPARAM_R;
-	rv[n_params++] = GPARAM_WAVELENGTH;
-	rv[n_params] = GPARAM_EOL;  /* End of list */
+	priv->rv[n_params++] = GPARAM_ANG1;
+	priv->rv[n_params++] = GPARAM_ANG2;
+	priv->rv[n_params++] = GPARAM_R;
+	priv->rv[n_params++] = GPARAM_WAVELENGTH;
+	priv->rv[n_params] = GPARAM_EOL;  /* End of list */
 
-	residual_f_priv->cr = cr;
-	residual_f_priv->full = full;
-	residual_f_priv->rv = rv;
-	residual_f_priv->verbose = verbose;
-	residual_f_priv->serial = serial;
-	f.f = residual_f;
-	f.n = n_params;
-	f.params = residual_f_priv;
+	priv->cr = cr;
+	priv->full = full;
+	priv->verbose = verbose;
+	priv->serial = serial;
 
-	initial = gsl_vector_alloc(n_params);
-	vals = gsl_vector_alloc(n_params);
-	step = gsl_vector_alloc(n_params);
+	priv->f.f = residual_f;
+	priv->f.n = n_params;
+	priv->f.params = priv;
+
+	priv->initial = gsl_vector_alloc(n_params);
+	priv->vals = gsl_vector_alloc(n_params);
+	priv->step = gsl_vector_alloc(n_params);
 
 	for ( i=0; i<n_params; i++ ) {
-		gsl_vector_set(initial, i, get_initial_param(cr, rv[i]));
-		gsl_vector_set(vals, i, 0.0);
-		gsl_vector_set(step, i, 1.0);
+		gsl_vector_set(priv->initial, i, get_initial_param(cr, priv->rv[i]));
+		gsl_vector_set(priv->vals, i, 0.0);
+		gsl_vector_set(priv->step, i, 1.0);
 	}
 
-	residual_f_priv->initial = initial;
 	min = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2,
 	                                    n_params);
-	gsl_multimin_fminimizer_set(min, &f, vals, step);
+	gsl_multimin_fminimizer_set(min, &priv->f, priv->vals, priv->step);
 
 	return min;
 }
