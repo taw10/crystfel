@@ -562,62 +562,6 @@ static void write_specgraph(const RefList *full, Crystal *crystal, signed int in
 }
 
 
-static void write_gridscan(int serial, Crystal *cr, int cycle,
-                           gsl_multimin_fminimizer *min,
-                           struct rf_priv *residual_f_priv)
-{
-	FILE *fh;
-	char fn[64];
-	char ins[5];
-	const enum gparam par1 = GPARAM_ANG1;
-	const enum gparam par2 = GPARAM_WAVELENGTH;
-	gsl_vector *initial_vals;
-
-	initial_vals = gsl_vector_alloc(min->x->size);
-	if ( initial_vals == NULL ) return;
-	gsl_vector_memcpy(initial_vals, min->x);
-
-	if ( cycle >= 0 ) {
-		snprintf(ins, 4, "%i", cycle);
-	} else {
-		ins[0] = 'F';
-		ins[1] = '\0';
-	}
-
-	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%s.dat", serial, ins);
-	fh = fopen(fn, "w");
-	if ( fh != NULL ) {
-		double v1, v2;
-		fprintf(fh, "%e %e %s\n",
-		        -5.0*get_scale(par1)+get_initial_param(cr, par1),
-		         5.0*get_scale(par1)+get_initial_param(cr, par1),
-		        get_label(par1));
-		fprintf(fh, "%e %e %s\n",
-		        -5.0*get_scale(par2)+get_initial_param(cr, par2),
-		         5.0*get_scale(par2)+get_initial_param(cr, par2),
-		        get_label(par2));
-		for ( v2=-5.0; v2<=5.0; v2+=0.2 ) {
-			int first=1;
-			for ( v1=-5.0; v1<=5.0; v1+=0.2 ) {
-				double res;
-				gsl_vector_set(min->x, 0, v1);
-				gsl_vector_set(min->x, 3, v2);
-				res = residual_f(min->x, residual_f_priv);
-				if ( !first ) fprintf(fh, " ");
-				first = 0;
-				fprintf(fh, "%e", res);
-			}
-			fprintf(fh, "\n");
-		}
-	}
-	fclose(fh);
-
-	/* Set parameters back to start */
-	gsl_vector_memcpy(min->x, initial_vals);
-	gsl_vector_free(initial_vals);
-}
-
-
 static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full,
                                                 int verbose, int serial,
                                                 struct rf_priv *residual_f_priv)
@@ -663,6 +607,61 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 	gsl_multimin_fminimizer_set(min, &f, vals, step);
 
 	return min;
+}
+
+
+static void write_gridscan(Crystal *cr, const RefList *full,
+                           int cycle, int serial)
+{
+	FILE *fh;
+	char fn[64];
+	char ins[5];
+	const enum gparam par1 = GPARAM_ANG1;
+	const enum gparam par2 = GPARAM_WAVELENGTH;
+	gsl_multimin_fminimizer *min;
+	struct rf_priv priv;
+
+	min = setup_minimiser(cr, full, 0, serial, &priv);
+
+	if ( cycle >= 0 ) {
+		snprintf(ins, 4, "%i", cycle);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
+	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%s.dat", serial, ins);
+	fh = fopen(fn, "w");
+	if ( fh != NULL ) {
+		double v1, v2;
+		fprintf(fh, "%e %e %s\n",
+		        -5.0*get_scale(par1)+get_initial_param(cr, par1),
+		         5.0*get_scale(par1)+get_initial_param(cr, par1),
+		        get_label(par1));
+		fprintf(fh, "%e %e %s\n",
+		        -5.0*get_scale(par2)+get_initial_param(cr, par2),
+		         5.0*get_scale(par2)+get_initial_param(cr, par2),
+		        get_label(par2));
+		for ( v2=-5.0; v2<=5.0; v2+=0.2 ) {
+			int first=1;
+			for ( v1=-5.0; v1<=5.0; v1+=0.2 ) {
+				double res;
+				gsl_vector_set(min->x, 0, v1);
+				gsl_vector_set(min->x, 3, v2);
+				res = residual_f(min->x, &priv);
+				if ( !first ) fprintf(fh, " ");
+				first = 0;
+				fprintf(fh, "%e", res);
+			}
+			fprintf(fh, "\n");
+		}
+	}
+	fclose(fh);
+
+	gsl_multimin_fminimizer_free(min);
+	gsl_vector_free(priv.initial);
+	gsl_vector_free(priv.vals);
+	gsl_vector_free(priv.step);
 }
 
 
@@ -713,7 +712,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 		char fn[64];
 
-		write_gridscan(serial, cr, cycle, min, &priv);
+		write_gridscan(cr, full, cycle, serial);
 
 		snprintf(fn, 63, "-crystal%i", serial);
 		write_specgraph(full, cr, cycle, fn);
