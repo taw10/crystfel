@@ -568,6 +568,7 @@ static void write_gridscan(int serial, Crystal *cr, int cycle,
 {
 	FILE *fh;
 	char fn[64];
+	char ins[5];
 	const enum gparam par1 = GPARAM_ANG1;
 	const enum gparam par2 = GPARAM_WAVELENGTH;
 	gsl_vector *initial_vals;
@@ -576,7 +577,14 @@ static void write_gridscan(int serial, Crystal *cr, int cycle,
 	if ( initial_vals == NULL ) return;
 	gsl_vector_memcpy(initial_vals, min->x);
 
-	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%i.dat", serial, cycle);
+	if ( cycle >= 0 ) {
+		snprintf(ins, 4, "%i", cycle);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
+	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%s.dat", serial, ins);
 	fh = fopen(fn, "w");
 	if ( fh != NULL ) {
 		double v1, v2;
