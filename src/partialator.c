@@ -650,8 +650,8 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 		Ipart = get_intensity(refl) * corr;
 		pobs = Ipart / get_intensity(match);
 
-		fprintf(fh, "%5i %4i %4i %4i %e %8.3f %8.3f %s\n",
-		        fr, h, k, l, 2*res, pcalc, pobs, ins);
+		fprintf(fh, "%5i %4i %4i %4i %e %e %8.3f %8.3f %s\n",
+		        fr, h, k, l, 2*res, Ipart, pcalc, pobs, ins);
 
 	}
 }
@@ -678,7 +678,7 @@ static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
 	}
 
 	if ( iter == 0 ) {
-		fprintf(fh, "  Crystal    h    k    l  1/d(m)     pcalc   pobs   iteration\n");
+		fprintf(fh, "  Crystal    h    k    l  1/d(m)   Ipart    pcalc   pobs   iteration\n");
 	}
 
 	for ( i=0; i<n_crystals; i++ ) {
