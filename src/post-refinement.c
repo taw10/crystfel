@@ -330,6 +330,12 @@ static double residual_f(const gsl_vector *v, void *pp)
 		return GSL_NAN;
 	}
 
+	if ( im.lambda <= 0.0 ) {
+		crystal_free(cr);
+		if ( pv->verbose ) STATUS("lambda < 0\n");
+		return GSL_NAN;
+	}
+
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(cr, list);
 
