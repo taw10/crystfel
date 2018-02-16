@@ -613,18 +613,29 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 }
 
 
-void write_gridscan(Crystal *cr, const RefList *full,
-                    signed int cycle, int serial)
+static void write_grid(Crystal *cr, const RefList *full,
+                       signed int cycle, int serial,
+                       const enum gparam par1, const enum gparam par2,
+                       const char *name)
 {
 	FILE *fh;
 	char fn[64];
 	char ins[5];
-	const enum gparam par1 = GPARAM_ANG1;
-	const enum gparam par2 = GPARAM_WAVELENGTH;
 	gsl_multimin_fminimizer *min;
 	struct rf_priv priv;
+	int idx1, idx2;
+	int i;
 
 	min = setup_minimiser(cr, full, 0, serial, &priv);
+
+	idx1 = 99;
+	idx2 = 99;
+	for ( i=0; i<priv.f.n; i++ ) {
+		if ( priv.rv[i] == par1 ) idx1 = i;
+		if ( priv.rv[i] == par2 ) idx2 = i;
+	}
+	assert(idx1 != 99);
+	assert(idx2 != 99);
 
 	if ( cycle >= 0 ) {
 		snprintf(ins, 4, "%i", cycle);
@@ -633,7 +644,8 @@ void write_gridscan(Crystal *cr, const RefList *full,
 		ins[1] = '\0';
 	}
 
-	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%s.dat", serial, ins);
+	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%s-%s.dat",
+	         serial, ins, name);
 	fh = fopen(fn, "w");
 	if ( fh != NULL ) {
 		double v1, v2;
@@ -649,8 +661,8 @@ void write_gridscan(Crystal *cr, const RefList *full,
 			int first=1;
 			for ( v1=-5.0; v1<=5.0; v1+=0.2 ) {
 				double res;
-				gsl_vector_set(min->x, 0, v1);
-				gsl_vector_set(min->x, 3, v2);
+				gsl_vector_set(min->x, idx1, v1);
+				gsl_vector_set(min->x, idx2, v2);
 				res = residual_f(min->x, &priv);
 				if ( !first ) fprintf(fh, " ");
 				first = 0;
@@ -665,6 +677,18 @@ void write_gridscan(Crystal *cr, const RefList *full,
 	gsl_vector_free(priv.initial);
 	gsl_vector_free(priv.vals);
 	gsl_vector_free(priv.step);
+}
+
+
+void write_gridscan(Crystal *cr, const RefList *full,
+                    signed int cycle, int serial)
+{
+	write_grid(cr, full, cycle, serial,
+	           GPARAM_ANG1, GPARAM_ANG2, "ang1-ang2");
+	write_grid(cr, full, cycle, serial,
+	           GPARAM_ANG1, GPARAM_WAVELENGTH, "ang1-wave");
+	write_grid(cr, full, cycle, serial,
+	           GPARAM_R, GPARAM_WAVELENGTH, "R-wave");
 }
 
 
