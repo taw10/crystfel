@@ -657,9 +657,9 @@ static void write_grid(Crystal *cr, const RefList *full,
 		        -5.0*get_scale(par2)+get_initial_param(cr, par2),
 		         5.0*get_scale(par2)+get_initial_param(cr, par2),
 		        get_label(par2));
-		for ( v2=-5.0; v2<=5.0; v2+=0.2 ) {
+		for ( v2=-5.0; v2<=5.0; v2+=0.5 ) {
 			int first=1;
-			for ( v1=-5.0; v1<=5.0; v1+=0.2 ) {
+			for ( v1=-5.0; v1<=5.0; v1+=0.5 ) {
 				double res;
 				gsl_vector_set(min->x, idx1, v1);
 				gsl_vector_set(min->x, idx2, v2);
