@@ -198,10 +198,10 @@ static UnitCell *rotate_cell_xy(const UnitCell *cell, double ang1, double ang2)
 static const char *get_label(enum gparam p)
 {
 	switch ( p ) {
-		case GPARAM_ANG1 : return "First angle";
-		case GPARAM_ANG2 : return "Second angle";
-		case GPARAM_R : return "Profile radius";
-		case GPARAM_WAVELENGTH : return "Wavelength";
+		case GPARAM_ANG1 : return "First angle (radians)";
+		case GPARAM_ANG2 : return "Second angle (radians)";
+		case GPARAM_R : return "Profile radius (m^-1)";
+		case GPARAM_WAVELENGTH : return "Wavelength (Angstroms)";
 		default : return "unknown";
 	}
 }
