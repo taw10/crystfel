@@ -253,7 +253,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 	/* Calculate the limiting wavelengths, lambda0 and lambda1
 	 * = 1/k0 and 1/k1 respectively */
-	R = crystal_get_profile_radius(cryst);
+	R = fabs(crystal_get_profile_radius(cryst));
 	top = R*R - xl*xl - yl*yl - zl*zl;
 	k0 = top/(2.0*(zl+R));
 	khalf = (- xl*xl - yl*yl - zl*zl) / (2.0*zl);
@@ -671,7 +671,7 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 	                          &bsx, &bsy, &bsz,
 	                          &csx, &csy, &csz);
 
-	r0 = crystal_get_profile_radius(cryst);
+	r0 = fabs(crystal_get_profile_radius(cryst));
 	m = crystal_get_mosaicity(cryst);
 	lambda = image->lambda;
 	sig = image->bw * lambda;

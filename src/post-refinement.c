@@ -324,12 +324,6 @@ static double residual_f(const gsl_vector *v, void *pp)
 	crystal_set_image(cr, &im);
 	apply_parameters(v, pv->initial, pv->rv, cr);
 
-	if ( crystal_get_profile_radius(cr) <= 0.0 ) {
-		crystal_free(cr);
-		if ( pv->verbose ) STATUS("R < 0\n");
-		return GSL_NAN;
-	}
-
 	if ( im.lambda <= 0.0 ) {
 		crystal_free(cr);
 		if ( pv->verbose ) STATUS("lambda < 0\n");
