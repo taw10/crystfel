@@ -674,7 +674,7 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 	r0 = fabs(crystal_get_profile_radius(cryst));
 	m = crystal_get_mosaicity(cryst);
 	lambda = image->lambda;
-	sig = image->bw * lambda;
+	sig = image->bw * lambda / 2.0;
 
 	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
 	      refl != NULL;
