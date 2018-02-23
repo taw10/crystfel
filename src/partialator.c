@@ -327,7 +327,9 @@ static void show_help(const char *s)
 "      --no-free              Disable cross-validation (testing only).\n"
 "      --custom-split         List of files for custom dataset splitting.\n"
 "      --max-rel-B            Maximum allowable relative |B| factor.\n"
-"      --no-logs              Do not write extensive log files.\n");
+"      --no-logs              Do not write extensive log files.\n"
+"  -w <pg>                    Apparent point group for resolving ambiguities.\n"
+"      --operator=<op>        Indexing ambiguity operator for resolving.\n");
 }
 
 
@@ -820,6 +822,8 @@ int main(int argc, char *argv[])
 	char *outfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
+	SymOpList *amb;
+	SymOpList *w_sym;
 	int nthreads = 1;
 	int i;
 	int n_iter = 10;
@@ -852,6 +856,8 @@ int main(int argc, char *argv[])
 	char *rfile = NULL;
 	RefList *reference = NULL;
 	int no_logs = 0;
+	char *w_sym_str = NULL;
+	char *operator = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -875,6 +881,7 @@ int main(int argc, char *argv[])
 		{"max-rel-B",          1, NULL,                7},
 		{"max-rel-b",          1, NULL,                7}, /* compat */
 		{"reference",          1, NULL,                8}, /* ssshhh! */
+		{"operator",           1, NULL,                9},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-pr",              0, &no_pr,              1},
@@ -896,7 +903,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:j:m:",
+	while ((c = getopt_long(argc, argv, "hi:o:g:b:y:n:j:m:w:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -955,6 +962,10 @@ int main(int argc, char *argv[])
 			pmodel_str = strdup(optarg);
 			break;
 
+			case 'w' :
+			w_sym_str = strdup(optarg);
+			break;
+
 			case 2 :
 			errno = 0;
 			min_measurements = strtod(optarg, &rval);
@@ -1005,6 +1016,10 @@ int main(int argc, char *argv[])
 			rfile = strdup(optarg);
 			break;
 
+			case 9 :
+			operator = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -1043,6 +1058,44 @@ int main(int argc, char *argv[])
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
 	if ( sym == NULL ) return 1;
+
+	if ( (w_sym_str != NULL) && (operator != NULL) ) {
+		ERROR("Specify the apparent symmetry (-w) or the operator, "
+		      "not both.\n");
+		return 1;
+	}
+
+	if ( w_sym_str == NULL ) {
+		w_sym = NULL;
+		amb = NULL;
+	} else {
+		pointgroup_warning(w_sym_str);
+		w_sym = get_pointgroup(w_sym_str);
+		free(w_sym_str);
+		if ( w_sym == NULL ) return 1;
+		amb = get_ambiguities(w_sym, sym);
+		if ( amb == NULL ) {
+			ERROR("Couldn't find ambiguity operator.\n");
+			ERROR("Check that your values for -y and -w are "
+			      "correct.\n");
+			return 1;
+		}
+
+	}
+
+	if ( operator ) {
+		amb = parse_symmetry_operations(operator);
+		if ( amb == NULL ) return 1;
+		set_symmetry_name(amb, "Ambiguity");
+	}
+
+	if ( amb != NULL ) {
+		STATUS("Indexing ambiguity resolution enabled.  "
+		       "The ambiguity operation(s) are:\n");
+		describe_symmetry(amb);
+		/* In contrast to ambigator, partialator can deal with multiple
+		 * ambiguities at once */
+	}
 
 	if ( pmodel_str != NULL ) {
 		if ( strcmp(pmodel_str, "unity") == 0 ) {
@@ -1264,7 +1317,7 @@ int main(int argc, char *argv[])
 
 		if ( !no_pr ) {
 			refine_all(crystals, n_crystals, full, nthreads, pmodel,
-			           0, i+1, no_logs);
+			           0, i+1, no_logs, sym, amb);
 		} else if ( !no_scale ) {
 			scale_all_to_reference(crystals, n_crystals, full, nthreads);
 		}
@@ -1357,7 +1410,7 @@ int main(int argc, char *argv[])
 		crystal_free(crystals[i]);
 	}
 	reflist_free(full);
-	free(sym);
+	free_symoplist(sym);
 	free(outfile);
 	free(crystals);
 	free(infile);

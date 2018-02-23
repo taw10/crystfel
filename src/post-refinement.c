@@ -389,7 +389,7 @@ static int check_angle_shifts(gsl_vector *cur, const gsl_vector *initial,
 
 
 static RefList *reindex_reflections(RefList *input, SymOpList *amb,
-                                    SymOpList *sym)
+                                    SymOpList *sym, int idx)
 {
 	RefList *n;
 	Reflection *refl;
@@ -405,13 +405,13 @@ static RefList *reindex_reflections(RefList *input, SymOpList *amb,
 		Reflection *rn;
 
 		get_indices(refl, &h, &k, &l);
-		get_equiv(amb, NULL, 0, h, k, l, &h, &k, &l);
+		get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
 		get_asymm(sym, h, k, l, &h, &k, &l);
 		rn = add_refl(n, h, k, l);
 		copy_data(rn, refl);
 
 		get_symmetric_indices(rn, &h, &k, &l);
-		get_equiv(amb, NULL, 0, h, k, l, &h, &k, &l);
+		get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
 		set_symmetric_indices(rn, h, k, l);
 	}
 
@@ -419,7 +419,7 @@ static RefList *reindex_reflections(RefList *input, SymOpList *amb,
 }
 
 
-static void reindex_cell(UnitCell *cell, SymOpList *amb)
+static void reindex_cell(UnitCell *cell, SymOpList *amb, int idx)
 {
 	signed int h, k, l;
 	struct rvec na, nb, nc;
@@ -429,17 +429,17 @@ static void reindex_cell(UnitCell *cell, SymOpList *amb)
 	                          &bs.u, &bs.v, &bs.w,
 	                          &cs.u, &cs.v, &cs.w);
 
-	get_equiv(amb, NULL, 0, 1, 0, 0, &h, &k, &l);
+	get_equiv(amb, NULL, idx, 1, 0, 0, &h, &k, &l);
 	na.u = as.u*h + bs.u*k + cs.u*l;
 	na.v = as.v*h + bs.v*k + cs.v*l;
 	na.w = as.w*h + bs.w*k + cs.w*l;
 
-	get_equiv(amb, NULL, 0, 0, 1, 0, &h, &k, &l);
+	get_equiv(amb, NULL, idx, 0, 1, 0, &h, &k, &l);
 	nb.u = as.u*h + bs.u*k + cs.u*l;
 	nb.v = as.v*h + bs.v*k + cs.v*l;
 	nb.w = as.w*h + bs.w*k + cs.w*l;
 
-	get_equiv(amb, NULL, 0, 0, 0, 1, &h, &k, &l);
+	get_equiv(amb, NULL, idx, 0, 0, 1, &h, &k, &l);
 	nc.u = as.u*h + bs.u*k + cs.u*l;
 	nc.v = as.v*h + bs.v*k + cs.v*l;
 	nc.w = as.w*h + bs.w*k + cs.w*l;
@@ -450,45 +450,50 @@ static void reindex_cell(UnitCell *cell, SymOpList *amb)
 }
 
 
-void try_reindex(Crystal *crin, const RefList *full)
+void try_reindex(Crystal *crin, const RefList *full,
+                 SymOpList *sym, SymOpList *amb)
 {
 	RefList *list;
 	Crystal *cr;
 	UnitCell *cell;
-	SymOpList *amb;
-	SymOpList *sym;
 	double residual_original, residual_flipped;
+	int idx, n;
 
-	amb = parse_symmetry_operations("k,h,-l");
-	sym = get_pointgroup("m-3");
+	if ( sym == NULL || amb == NULL ) return;
 
 	residual_original = residual(crin, full, 0, NULL, NULL, 0);
 
 	cr = crystal_copy(crin);
 
-	cell = cell_new_from_cell(crystal_get_cell(crin));
-	if ( cell == NULL ) return;
-	reindex_cell(cell, amb);
-	crystal_set_cell(cr, cell);
+	n = num_equivs(amb, NULL);
 
-	list = reindex_reflections(crystal_get_reflections(crin), amb, sym);
-	crystal_set_reflections(cr, list);
+	for ( idx=0; idx<n; idx++ ) {
 
-	update_predictions(cr);
-	calculate_partialities(cr, PMODEL_XSPHERE);
+		cell = cell_new_from_cell(crystal_get_cell(crin));
+		if ( cell == NULL ) return;
+		reindex_cell(cell, amb, idx);
+		crystal_set_cell(cr, cell);
 
-	residual_flipped = residual(cr, full, 0, NULL, NULL, 1);
+		list = reindex_reflections(crystal_get_reflections(crin),
+		                           amb, sym, idx);
+		crystal_set_reflections(cr, list);
 
-	if ( residual_flipped < residual_original ) {
-		crystal_set_cell(crin, cell);
-		crystal_set_reflections(crin, list);
-	} else {
-		cell_free(crystal_get_cell(cr));
-		reflist_free(crystal_get_reflections(cr));
-		crystal_free(cr);
+		update_predictions(cr);
+		calculate_partialities(cr, PMODEL_XSPHERE);
+
+		residual_flipped = residual(cr, full, 0, NULL, NULL, 1);
+
+		if ( residual_flipped < residual_original ) {
+			crystal_set_cell(crin, cell);
+			crystal_set_reflections(crin, list);
+			residual_original = residual_flipped;
+		} else {
+			cell_free(crystal_get_cell(cr));
+			reflist_free(crystal_get_reflections(cr));
+		}
 	}
 
-	free_symoplist(amb);
+	crystal_free(cr);
 }
 
 
@@ -686,7 +691,8 @@ void write_gridscan(Crystal *cr, const RefList *full,
 
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int verbose, int serial,
-                         int cycle, int write_logs)
+                         int cycle, int write_logs,
+                         SymOpList *sym, SymOpList *amb)
 {
 	gsl_multimin_fminimizer *min;
 	struct rf_priv priv;
@@ -697,7 +703,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	double residual_start, residual_free_start;
 	FILE *fh = NULL;
 
-	try_reindex(cr, full);
+	try_reindex(cr, full, sym, amb);
 
 	residual_start = residual(cr, full, 0, NULL, NULL, 0);
 	residual_free_start = residual(cr, full, 1, NULL, NULL, 0);
@@ -858,24 +864,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 }
 
 
-static struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel, int verbose, int serial,
-                               int cycle, int write_logs)
-{
-	struct prdata prdata;
-
-	prdata.refined = 0;
-
-	do_pr_refine(cr, full, pmodel, verbose, serial, cycle, write_logs);
-
-	if ( crystal_get_user_flag(cr) == 0 ) {
-		prdata.refined = 1;
-	}
-
-	return prdata;
-}
-
-
 struct refine_args
 {
 	RefList *full;
@@ -886,6 +874,8 @@ struct refine_args
 	int verbose;
 	int cycle;
 	int no_logs;
+	SymOpList *sym;
+	SymOpList *amb;
 };
 
 
@@ -906,9 +896,15 @@ static void refine_image(void *task, int id)
 	int write_logs = 0;
 
 	write_logs = !pargs->no_logs && (pargs->serial % 20 == 0);
-	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel,
-	                          pargs->verbose, pargs->serial, pargs->cycle,
-	                          write_logs);
+	pargs->prdata.refined = 0;
+
+	do_pr_refine(cr, pargs->full, pargs->pmodel, pargs->verbose,
+	             pargs->serial, pargs->cycle, write_logs,
+	             pargs->sym, pargs->amb);
+
+	if ( crystal_get_user_flag(cr) == 0 ) {
+		pargs->prdata.refined = 1;
+	}
 }
 
 
@@ -942,7 +938,8 @@ static void done_image(void *vqargs, void *task)
 
 void refine_all(Crystal **crystals, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
-                int verbose, int cycle, int no_logs)
+                int verbose, int cycle, int no_logs,
+                SymOpList *sym, SymOpList *amb)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -954,6 +951,8 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.verbose = verbose;
 	task_defaults.cycle = cycle;
 	task_defaults.no_logs = no_logs;
+	task_defaults.sym = sym;
+	task_defaults.amb = amb;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
