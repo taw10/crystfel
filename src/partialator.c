@@ -1252,8 +1252,8 @@ int main(int argc, char *argv[])
 	/* Check rejection and write figures of merit */
 	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
-	write_pgraph(full, crystals, n_crystals, 0, "");
 	if ( !no_pr && !no_logs ) {
+		write_pgraph(full, crystals, n_crystals, 0, "");
 		write_logs_parallel(crystals, n_crystals, full, 0, nthreads);
 	}
 
@@ -1279,7 +1279,10 @@ int main(int argc, char *argv[])
 
 		check_rejection(crystals, n_crystals, full, max_B);
 		show_all_residuals(crystals, n_crystals, full);
-		write_pgraph(full, crystals, n_crystals, i+1, "");
+
+		if ( !no_logs ) {
+			write_pgraph(full, crystals, n_crystals, i+1, "");
+		}
 
 		if ( output_everycycle ) {
 
@@ -1324,8 +1327,8 @@ int main(int argc, char *argv[])
 
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full);
-	write_pgraph(full, crystals, n_crystals, -1, "");
 	if ( !no_pr && !no_logs ) {
+		write_pgraph(full, crystals, n_crystals, -1, "");
 		write_logs_parallel(crystals, n_crystals, full, -1, nthreads);
 	}
 
