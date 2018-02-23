@@ -216,7 +216,7 @@ struct image {
 	/* Per-shot radiation values */
 	double                  lambda;        /* Wavelength in m */
 	double                  div;           /* Divergence in radians */
-	double                  bw;            /* Bandwidth as a fraction */
+	double                  bw;            /* FWHM bandwidth as a fraction */
 
 	/* Detected peaks */
 	long long               num_peaks;
