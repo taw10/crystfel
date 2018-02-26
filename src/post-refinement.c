@@ -330,6 +330,13 @@ static double residual_f(const gsl_vector *v, void *pp)
 		return GSL_NAN;
 	}
 
+	/* Can happen with grid scans and certain --force-radius values */
+	if ( fabs(crystal_get_profile_radius(cr)) < 0.0000001e9 ) {
+		crystal_free(cr);
+		if ( pv->verbose ) STATUS("radius very small\n");
+		return GSL_NAN;
+	}
+
 	if ( im.lambda <= 0.0 ) {
 		crystal_free(cr);
 		if ( pv->verbose ) STATUS("lambda < 0\n");

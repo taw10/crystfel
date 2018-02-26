@@ -329,7 +329,9 @@ static void show_help(const char *s)
 "      --max-rel-B            Maximum allowable relative |B| factor.\n"
 "      --no-logs              Do not write extensive log files.\n"
 "  -w <pg>                    Apparent point group for resolving ambiguities.\n"
-"      --operator=<op>        Indexing ambiguity operator for resolving.\n");
+"      --operator=<op>        Indexing ambiguity operator for resolving.\n"
+"      --force-bandwidth=<n>  Set all bandwidths to <n> (fraction).\n"
+"      --force-radius=<n>     Set all profile radii to <n> nm^-1.\n");
 }
 
 
@@ -858,6 +860,8 @@ int main(int argc, char *argv[])
 	int no_logs = 0;
 	char *w_sym_str = NULL;
 	char *operator = NULL;
+	double force_bandwidth = -1.0;
+	double force_radius = -1.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -882,6 +886,8 @@ int main(int argc, char *argv[])
 		{"max-rel-b",          1, NULL,                7}, /* compat */
 		{"reference",          1, NULL,                8}, /* ssshhh! */
 		{"operator",           1, NULL,                9},
+		{"force-bandwidth",    1, NULL,               10},
+		{"force-radius",       1, NULL,               11},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-pr",              0, &no_pr,              1},
@@ -1018,6 +1024,25 @@ int main(int argc, char *argv[])
 
 			case 9 :
 			operator = strdup(optarg);
+			break;
+
+			case 10 :
+			errno = 0;
+			force_bandwidth = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --force-bandwidth.\n");
+				return 1;
+			}
+			break;
+
+			case 11 :
+			errno = 0;
+			force_radius = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --force-radius.\n");
+				return 1;
+			}
+			force_radius *= 1e9;
 			break;
 
 			case 0 :
@@ -1278,6 +1303,12 @@ int main(int argc, char *argv[])
 	STATUS("Initial partiality calculation...\n");
 	for ( i=0; i<n_crystals; i++ ) {
 		Crystal *cr = crystals[i];
+		if ( force_bandwidth > 0.0 ) {
+			crystal_get_image(cr)->bw = force_bandwidth;
+		}
+		if ( force_radius > 0.0 ) {
+			crystal_set_profile_radius(cr, force_radius);
+		}
 		update_predictions(cr);
 		calculate_partialities(cr, pmodel);
 	}
