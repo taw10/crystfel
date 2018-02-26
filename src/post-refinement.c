@@ -652,13 +652,15 @@ static void write_grid(Crystal *cr, const RefList *full,
 	fh = fopen(fn, "w");
 	if ( fh != NULL ) {
 		double v1, v2;
-		fprintf(fh, "%e %e %s\n",
+		fprintf(fh, "%e %e %e %s\n",
 		        -5.0*get_scale(par1)+get_initial_param(cr, par1),
 		         5.0*get_scale(par1)+get_initial_param(cr, par1),
-		        get_label(par1));
-		fprintf(fh, "%e %e %s\n",
+		         get_initial_param(cr, par1),
+		         get_label(par1));
+		fprintf(fh, "%e %e %e %s\n",
 		        -5.0*get_scale(par2)+get_initial_param(cr, par2),
 		         5.0*get_scale(par2)+get_initial_param(cr, par2),
+		         get_initial_param(cr, par2),
 		        get_label(par2));
 		for ( v2=-5.0; v2<=5.0; v2+=0.25 ) {
 			int first=1;
