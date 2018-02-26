@@ -324,6 +324,12 @@ static double residual_f(const gsl_vector *v, void *pp)
 	crystal_set_image(cr, &im);
 	apply_parameters(v, pv->initial, pv->rv, cr);
 
+	if ( fabs(crystal_get_profile_radius(cr)) > 5e9 ) {
+		crystal_free(cr);
+		if ( pv->verbose ) STATUS("radius > 5e9\n");
+		return GSL_NAN;
+	}
+
 	if ( im.lambda <= 0.0 ) {
 		crystal_free(cr);
 		if ( pv->verbose ) STATUS("lambda < 0\n");
@@ -855,6 +861,10 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	if ( write_logs ) {
 		write_gridscan(cr, full, cycle, serial);
 		write_specgraph(cr, full, cycle, serial);
+	}
+
+	if ( crystal_get_profile_radius(cr) > 5e9 ) {
+		ERROR("Very large radius: crystal %i\n", serial);
 	}
 
 	gsl_multimin_fminimizer_free(min);
