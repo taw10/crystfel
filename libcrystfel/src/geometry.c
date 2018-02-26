@@ -706,13 +706,7 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 	        set_partiality(refl, total/norm);
 		set_lorentz(refl, 1.0);
 
-		if ( total > 2.0*norm ) {
-			/* Error! */
-			STATUS("total > 2*norm!\n");
-			do_integral(q2, zl, R, lambda, sig, NULL);
-			do_integral(q2, -0.5*q2*lambda, R, lambda, sig, NULL);
-			abort();
-		}
+		assert(total <= 2.0*norm);
 
 	}
 }
