@@ -155,25 +155,16 @@ If you prefer, you can specify the ambiguity operator by specifying the apparent
 
 The available partiality models are:
 
-.IP \fBscsphere\fR
+.IP \fBxsphere\fR
 .PD
 The volume of intersection between a sphere centered on each reciprocal lattice
 point and the part of reciprocal space excited by the Ewald sphere taking into
 account the finite bandwidth and convergence angle.  A "source coverage factor"
 is included to take into account the spectral brightness of the effective
-source for the reflection.
+source for the reflection.  The X-ray spectrum is modelled as a super-Gaussian
+with exponent 1.5, and the overlap integral is evaluated numerically.
 
-This model is similar to that described in Acta Cryst. D69 (2013) p1231-1240,
-and in Phil. Trans. Roy. Soc. B 369 (2014) 20130330, except that the "Lorentz
-factor" described there is no longer treated as a separate factor.
-
-
-.IP \fBscgaussian\fR
-.PD
-As \fBscsphere\fR, except that the shape of the scattering density centered on
-each reciprocal lattice point is taken to be a 3D Gaussian distribution instead
-of a sphere.  The standard deviation of the distribution will be the profile
-radius (determined by indexamajig) divided by 2.6.
+This model is the same as that described in Acta Cryst. D71 (2015) p1400.
 
 .IP \fBunity\fR
 .PD
