@@ -300,6 +300,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 
 	if ( crystal_get_profile_radius(cr) <= 0.0 ) {
 		crystal_free(cr);
+		if ( pv->verbose ) STATUS("R < 0\n");
 		return GSL_NAN;
 	}
 
@@ -417,6 +418,21 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	                                    n_params);
 	gsl_multimin_fminimizer_set(min, &f, vals, step);
 
+	if ( verbose ) {
+		double res = residual_f(min->x, &residual_f_priv);
+		double size = gsl_multimin_fminimizer_size(min);
+		STATUS("At start: %f %f %f %f ----> %f %f %e %f residual = %e size %f\n",
+		       gsl_vector_get(min->x, 0),
+		       gsl_vector_get(min->x, 1),
+		       gsl_vector_get(min->x, 2),
+		       gsl_vector_get(min->x, 3),
+		       rad2deg(get_actual_val(min->x, initial, rv, 0)),
+		       rad2deg(get_actual_val(min->x, initial, rv, 1)),
+		       get_actual_val(min->x, initial, rv, 2),
+		       get_actual_val(min->x, initial, rv, 3)*1e10,
+		       res, size);
+	}
+
 	do {
 		n_iter++;
 
@@ -433,7 +449,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 			       gsl_vector_get(min->x, 3),
 			       rad2deg(get_actual_val(min->x, initial, rv, 0)),
 			       rad2deg(get_actual_val(min->x, initial, rv, 1)),
-			       get_actual_val(min->x, initial, rv, 2)/1e9,
+			       get_actual_val(min->x, initial, rv, 2),
 			       get_actual_val(min->x, initial, rv, 3)*1e10,
 			       res, size);
 		}
@@ -449,21 +465,40 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	if ( check_angle_shifts(min->x, initial, rv, n_params, &residual_f_priv) ) return;
 
+	if ( verbose ) {
+
+		double res = residual_f(min->x, &residual_f_priv);
+		double size = gsl_multimin_fminimizer_size(min);
+		STATUS("At end: %f %f %f %f ----> %f %f %e %f residual = %e size %f\n",
+		       gsl_vector_get(min->x, 0),
+		       gsl_vector_get(min->x, 1),
+		       gsl_vector_get(min->x, 2),
+		       gsl_vector_get(min->x, 3),
+		       rad2deg(get_actual_val(min->x, initial, rv, 0)),
+		       rad2deg(get_actual_val(min->x, initial, rv, 1)),
+		       get_actual_val(min->x, initial, rv, 2),
+		       get_actual_val(min->x, initial, rv, 3)*1e10,
+		       res, size);
+
+	}
+
 	/* Apply the final shifts */
 	apply_parameters(min->x, initial, rv, cr);
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
-	r = linear_scale(full, crystal_get_reflections(cr), &G, 1);
+	r = linear_scale(full, crystal_get_reflections(cr), &G, 0);
 	if ( r == 0 ) {
 		crystal_set_osf(cr, G);
-	} else {
-		fprintf(stderr, "Scaling failure after refinement.\n");
 	}
 
 	if ( verbose ) {
+
+		STATUS("After applying final shifts:\n");
 		STATUS("PR final: dev = %10.5e, free dev = %10.5e\n",
-		       residual(cr, full, 0, NULL, NULL, 1),
-		       residual(cr, full, 1, NULL, NULL, 1));
+		       residual(cr, full, 0, NULL, NULL, 0),
+		       residual(cr, full, 1, NULL, NULL, 0));
+		STATUS("Final R = %e m^-1\n", crystal_get_profile_radius(cr));
+
 	}
 
 	gsl_multimin_fminimizer_free(min);
