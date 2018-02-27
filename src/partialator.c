@@ -788,6 +788,7 @@ static void write_logs(void *vp, int cookie)
 	struct log_args *args = vp;
 	write_specgraph(args->cr, args->full, args->iter, args->cnum);
 	write_gridscan(args->cr, args->full, args->iter, args->cnum);
+	write_test_logs(args->cr, args->full, args->iter, args->cnum);
 }
 
 

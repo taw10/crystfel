@@ -510,6 +510,57 @@ void try_reindex(Crystal *crin, const RefList *full,
 }
 
 
+void write_test_logs(Crystal *crystal, const RefList *full,
+                     signed int cycle, int serial)
+{
+	FILE *fh;
+	struct image *image = crystal_get_image(crystal);
+	char tmp[256];
+	char ins[5];
+
+	snprintf(tmp, 256, "pr-logs/parameters-crystal%i.dat", serial);
+
+	if ( cycle == 0 ) {
+		fh = fopen(tmp, "w");
+	} else {
+		fh = fopen(tmp, "a");
+	}
+
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", tmp);
+		return;
+	}
+
+	if ( cycle == 0 ) {
+		fprintf(fh, "Image: %s %s\n",
+		        image->filename, get_event_string(image->event));
+	}
+
+	if ( cycle >= 0 ) {
+		snprintf(ins, 4, "%i", cycle);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
+	fprintf(fh, "%s rlp_size = %e\n", ins, crystal_get_profile_radius(crystal)/1e10);
+	fprintf(fh, "%s mosaicity = %e\n", ins, crystal_get_mosaicity(crystal));
+	fprintf(fh, "%s wavelength = %f A\n", ins, image->lambda*1e10);
+	fprintf(fh, "%s bandwidth = %f\n", ins, image->bw);
+	fprintf(fh, "%s my scale factor = %e\n", ins, crystal_get_osf(crystal));
+
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	cell_get_reciprocal(crystal_get_cell(crystal), &asx, &asy, &asz,
+	                                               &bsx, &bsy, &bsz,
+	                                               &csx, &csy, &csz);
+	fprintf(fh, "%s %f, %f, %f, %f, %f, %f, %f, %f, %f\n", ins,
+	        asx/1e10, bsx/1e10, csx/1e10,
+	        asy/1e10, bsy/1e10, csy/1e10,
+	        asz/1e10, bsz/1e10, csz/1e10);
+	fclose(fh);
+}
+
+
 void write_specgraph(Crystal *crystal, const RefList *full,
                      signed int cycle, int serial)
 {
@@ -870,6 +921,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	if ( write_logs ) {
 		write_gridscan(cr, full, cycle, serial);
 		write_specgraph(cr, full, cycle, serial);
+		write_test_logs(cr, full, cycle, serial);
 	}
 
 	if ( crystal_get_profile_radius(cr) > 5e9 ) {
