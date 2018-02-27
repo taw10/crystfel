@@ -48,184 +48,6 @@
 #include "scaling.h"
 
 
-/* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (10)
-
-
-/* Apply the given shift to the 'k'th parameter of 'image'. */
-static void apply_shift(Crystal *cr, int k, double shift)
-{
-	double t;
-
-	switch ( k ) {
-
-		case GPARAM_BFAC :
-		t = crystal_get_Bfac(cr);
-		t += shift;
-		crystal_set_Bfac(cr, t);
-		break;
-
-		case GPARAM_OSF :
-		t = -log(crystal_get_osf(cr));
-		t += shift;
-		crystal_set_osf(cr, exp(-t));
-		break;
-
-		default :
-		ERROR("No shift defined for parameter %i\n", k);
-		abort();
-
-	}
-}
-
-
-/* Perform one cycle of scaling of 'cr' against 'full' */
-static double scale_iterate(Crystal *cr, const RefList *full,
-                            PartialityModel pmodel, int *nr)
-{
-	gsl_matrix *M;
-	gsl_vector *v;
-	gsl_vector *shifts;
-	int param;
-	Reflection *refl;
-	RefListIterator *iter;
-	RefList *reflections;
-	double max_shift;
-	int nref = 0;
-	int num_params = 0;
-	enum gparam rv[32];
-	double G, B;
-
-	*nr = 0;
-
-	rv[num_params++] = GPARAM_OSF;
-	rv[num_params++] = GPARAM_BFAC;
-
-	M = gsl_matrix_calloc(num_params, num_params);
-	v = gsl_vector_calloc(num_params);
-
-	reflections = crystal_get_reflections(cr);
-	G = crystal_get_osf(cr);
-	B = crystal_get_Bfac(cr);
-
-	/* Scaling terms */
-	for ( refl = first_refl(reflections, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int ha, ka, la;
-		double I_full, delta_I, esd;
-		double w;
-		double I_partial;
-		int k;
-		double p, L, s;
-		double fx;
-		Reflection *match;
-		double gradients[num_params];
-
-		/* If reflection is free-flagged, don't use it here */
-		if ( get_flag(refl) ) continue;
-
-		/* Find the full version */
-		get_indices(refl, &ha, &ka, &la);
-		match = find_refl(full, ha, ka, la);
-		if ( match == NULL ) continue;
-
-		/* Merged intensitty */
-		I_full = get_intensity(match);
-
-		/* Actual measurement of this reflection from this pattern */
-		I_partial = get_intensity(refl);
-		esd = get_esd_intensity(refl);
-		p = get_partiality(refl);
-
-		/* Scale only using strong reflections */
-		if ( I_partial <= 3.0*esd ) continue; /* Also because of log */
-		if ( get_redundancy(match) < 2 ) continue;
-		if ( I_full <= 0 ) continue;  /* Because log */
-		if ( p <= 0.0 ) continue; /* Because of log */
-
-		L = get_lorentz(refl);
-		s = resolution(crystal_get_cell(cr), ha, ka, la);
-
-		/* Calculate the weight for this reflection */
-		w = 1.0;
-
-		/* Calculate all gradients for this reflection */
-		for ( k=0; k<num_params; k++ ) {
-
-			if ( rv[k] == GPARAM_OSF ) {
-				gradients[k] = 1.0;
-			} else if ( rv[k] == GPARAM_BFAC ) {
-				gradients[k] = -s*s;
-			} else {
-				ERROR("Unrecognised scaling gradient.\n");
-				abort();
-			}
-		}
-
-		for ( k=0; k<num_params; k++ ) {
-
-			int g;
-			double v_c, v_curr;
-
-			for ( g=0; g<num_params; g++ ) {
-
-				double M_c, M_curr;
-
-				/* Matrix is symmetric */
-				if ( g > k ) continue;
-
-				M_c = w * gradients[g] * gradients[k];
-
-				M_curr = gsl_matrix_get(M, k, g);
-				gsl_matrix_set(M, k, g, M_curr + M_c);
-				gsl_matrix_set(M, g, k, M_curr + M_c);
-
-			}
-
-			fx = -log(G) + log(p) - log(L) - B*s*s + log(I_full);
-			delta_I = log(I_partial) - fx;
-			v_c = w * delta_I * gradients[k];
-			v_curr = gsl_vector_get(v, k);
-			gsl_vector_set(v, k, v_curr + v_c);
-
-		}
-
-		nref++;
-	}
-
-	*nr = nref;
-
-	if ( nref < num_params ) {
-		crystal_set_user_flag(cr, PRFLAG_FEWREFL);
-		gsl_matrix_free(M);
-		gsl_vector_free(v);
-		return 0.0;
-	}
-
-	max_shift = 0.0;
-	shifts = solve_svd(v, M, NULL, 0);
-	if ( shifts != NULL ) {
-
-		for ( param=0; param<num_params; param++ ) {
-			double shift = gsl_vector_get(shifts, param);
-			apply_shift(cr, rv[param], shift);
-			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
-		}
-
-	} else {
-		crystal_set_user_flag(cr, PRFLAG_SOLVEFAIL);
-	}
-
-	gsl_matrix_free(M);
-	gsl_vector_free(v);
-	gsl_vector_free(shifts);
-
-	return max_shift;
-}
-
-
 double log_residual(Crystal *cr, const RefList *full, int free,
                     int *pn_used, const char *filename)
 {
@@ -292,32 +114,6 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 }
 
 
-static void do_scale_refine(Crystal *cr, const RefList *full,
-                            PartialityModel pmodel, int *nr)
-{
-	int i, done;
-	double old_dev;
-
-	old_dev = log_residual(cr, full, 0, NULL, NULL);
-
-	i = 0;
-	done = 0;
-	do {
-
-		double dev;
-
-		scale_iterate(cr, full, pmodel, nr);
-
-		dev = log_residual(cr, full, 0, 0, NULL);
-		if ( fabs(dev - old_dev) < dev*0.01 ) done = 1;
-
-		i++;
-		old_dev = dev;
-
-	} while ( i < MAX_CYCLES && !done );
-}
-
-
 struct scale_args
 {
 	RefList *full;
@@ -341,8 +137,14 @@ struct queue_args
 static void scale_crystal(void *task, int id)
 {
 	struct scale_args *pargs = task;
-	do_scale_refine(pargs->crystal, pargs->full, pargs->pmodel,
-	                &pargs->n_reflections);
+	int r;
+	double G;
+
+	/* Simple iterative algorithm */
+	r = linear_scale(pargs->full, crystal_get_reflections(pargs->crystal), &G);
+	if ( r == 0 ) {
+		crystal_set_osf(pargs->crystal, G);
+	} /* else don't change it */
 }
 
 
@@ -372,91 +174,6 @@ static void done_crystal(void *vqargs, void *task)
 
 	progress_bar(qa->n_done, qa->n_crystals, "Scaling");
 	free(task);
-}
-
-
-static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
-                          int *ninc)
-{
-	int i;
-	double total = 0.0;
-	int n = 0;
-
-	for ( i=0; i<n_crystals; i++ ) {
-
-		double r;
-		if ( crystal_get_user_flag(crystals[i]) ) continue;
-		r = log_residual(crystals[i], full, 0, NULL, NULL);
-		if ( isnan(r) ) continue;
-		total += r;
-		n++;
-
-	}
-
-	if ( ninc != NULL ) *ninc = n;
-	return total;
-}
-
-
-/* Perform iterative scaling, all the way to convergence */
-void scale_all(Crystal **crystals, int n_crystals, int nthreads,
-               PartialityModel pmodel)
-{
-	struct scale_args task_defaults;
-	struct queue_args qargs;
-	double old_res, new_res;
-	int niter = 0;
-
-	task_defaults.crystal = NULL;
-	task_defaults.pmodel = pmodel;
-
-	qargs.task_defaults = task_defaults;
-	qargs.n_crystals = n_crystals;
-	qargs.crystals = crystals;
-
-	/* Don't have threads which are doing nothing */
-	if ( n_crystals < nthreads ) nthreads = n_crystals;
-
-	new_res = INFINITY;
-	do {
-		RefList *full;
-		int ninc;
-		double bef_res;
-
-		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         pmodel, 2, INFINITY, 0);
-		old_res = new_res;
-		bef_res = total_log_r(crystals, n_crystals, full, NULL);
-
-		qargs.task_defaults.full = full;
-		qargs.n_started = 0;
-		qargs.n_done = 0;
-		qargs.n_reflections = 0;
-		run_threads(nthreads, scale_crystal, get_crystal, done_crystal,
-		            &qargs, n_crystals, 0, 0, 0);
-		STATUS("%lli reflections went into the scaling.\n",
-		       qargs.n_reflections);
-
-		new_res = total_log_r(crystals, n_crystals, full, &ninc);
-		STATUS("Log residual went from %e to %e, %i crystals\n",
-		       bef_res, new_res, ninc);
-
-		int i;
-		double meanB = 0.0;
-		for ( i=0; i<n_crystals; i++ ) {
-			meanB += crystal_get_Bfac(crystals[i]);
-		}
-		meanB /= n_crystals;
-		STATUS("Mean B = %e\n", meanB);
-
-		reflist_free(full);
-		niter++;
-
-	} while ( (fabs(new_res-old_res) >= 0.01*old_res) && (niter < 10) );
-
-	if ( niter == 10 ) {
-		ERROR("Too many iterations - giving up!\n");
-	}
 }
 
 
@@ -490,6 +207,7 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 	{
 		signed int h, k, l;
 		double Ih1, Ih2;
+		double esd1, esd2;
 		nb++;
 
 		get_indices(refl1, &h, &k, &l);
@@ -500,8 +218,13 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 
 		Ih1 = get_intensity(refl1);
 		Ih2 = get_intensity(refl2);
+		esd1 = get_esd_intensity(refl1);
+		esd2 = get_esd_intensity(refl2);
 
+		if ( Ih1 <= 3.0*esd1 ) continue;
+		if ( Ih2 <= 3.0*esd2 ) continue;
 		if ( (Ih1 <= 0.0) || (Ih2 <= 0.0) ) continue;
+		if ( get_redundancy(refl1) < 2 ) continue;
 		if ( isnan(Ih1) || isinf(Ih1) ) continue;
 		if ( isnan(Ih2) || isinf(Ih2) ) continue;
 
@@ -537,7 +260,7 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 
 	if ( isnan(*G) ) {
 		ERROR("Scaling gave NaN (%i pairs)\n", n);
-		abort();
+		*G = 1.0;
 		return 1;
 	}
 
@@ -550,25 +273,24 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 
 
 void scale_all_to_reference(Crystal **crystals, int n_crystals,
-                            RefList *reference)
+                            RefList *reference, int nthreads)
 {
-	int i;
+	struct scale_args task_defaults;
+	struct queue_args qargs;
 
-	for ( i=0; i<n_crystals; i++ ) {
-		double G;
-		if ( linear_scale(reference,
-		                  crystal_get_reflections(crystals[i]),
-		                  &G) == 0 )
-		{
-			if ( isnan(G) ) {
-				ERROR("NaN scaling factor for crystal %i\n", i);
-			}
-			crystal_set_osf(crystals[i], G);
-			crystal_set_Bfac(crystals[i], 0.0);
-		} else {
-			ERROR("Scaling failed for crystal %i\n", i);
-		}
-		progress_bar(i, n_crystals, "Scaling to reference");
-	}
-	progress_bar(n_crystals, n_crystals, "Scaling to reference");
+	task_defaults.crystal = NULL;
+
+	qargs.task_defaults = task_defaults;
+	qargs.n_crystals = n_crystals;
+	qargs.crystals = crystals;
+
+	/* Don't have threads which are doing nothing */
+	if ( n_crystals < nthreads ) nthreads = n_crystals;
+
+	qargs.task_defaults.full = reference;
+	qargs.n_started = 0;
+	qargs.n_done = 0;
+	qargs.n_reflections = 0;
+	run_threads(nthreads, scale_crystal, get_crystal, done_crystal,
+	            &qargs, n_crystals, 0, 0, 0);
 }

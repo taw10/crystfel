@@ -381,6 +381,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int n_params = 0;
 	int n_iter = 0;
 	int status;
+	int r;
+	double G;
 	double residual_start, residual_free_start;
 
 	residual_start = residual(cr, full, 0, NULL, NULL);
@@ -456,6 +458,12 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	apply_parameters(min->x, initial, rv, cr);
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
+	r = linear_scale(full, crystal_get_reflections(cr), &G);
+	if ( r == 0 ) {
+		crystal_set_osf(cr, G);
+	} else {
+		fprintf(stderr, "Scaling failure after refinement.\n");
+	}
 
 	if ( verbose ) {
 		STATUS("PR final: dev = %10.5e, free dev = %10.5e\n",
