@@ -489,8 +489,8 @@ void try_reindex(Crystal *crin, const RefList *full)
 }
 
 
-static void write_specgraph(const RefList *full, Crystal *crystal, signed int in,
-                            const char *suff)
+void write_specgraph(Crystal *crystal, const RefList *full,
+                     signed int cycle, int serial)
 {
 	FILE *fh;
 	char tmp[256];
@@ -502,9 +502,9 @@ static void write_specgraph(const RefList *full, Crystal *crystal, signed int in
 	struct image *image = crystal_get_image(crystal);
 	char ins[5];
 
-	snprintf(tmp, 256, "pr-logs/specgraph%s.dat", suff);
+	snprintf(tmp, 256, "pr-logs/specgraph-crystal%i.dat", serial);
 
-	if ( in == 0 ) {
+	if ( cycle == 0 ) {
 		fh = fopen(tmp, "w");
 	} else {
 		fh = fopen(tmp, "a");
@@ -515,7 +515,7 @@ static void write_specgraph(const RefList *full, Crystal *crystal, signed int in
 		return;
 	}
 
-	if ( in == 0 ) {
+	if ( cycle == 0 ) {
 		fprintf(fh, "Image: %s %s\n",
 		        image->filename, get_event_string(image->event));
 		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration\n");
@@ -523,8 +523,8 @@ static void write_specgraph(const RefList *full, Crystal *crystal, signed int in
 
 	cell = crystal_get_cell(crystal);
 
-	if ( in >= 0 ) {
-		snprintf(ins, 4, "%i", in);
+	if ( cycle >= 0 ) {
+		snprintf(ins, 4, "%i", cycle);
 	} else {
 		ins[0] = 'F';
 		ins[1] = '\0';
@@ -610,8 +610,8 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 }
 
 
-static void write_gridscan(Crystal *cr, const RefList *full,
-                           int cycle, int serial)
+void write_gridscan(Crystal *cr, const RefList *full,
+                    signed int cycle, int serial)
 {
 	FILE *fh;
 	char fn[64];
@@ -713,9 +713,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		char fn[64];
 
 		write_gridscan(cr, full, cycle, serial);
-
-		snprintf(fn, 63, "-crystal%i", serial);
-		write_specgraph(full, cr, cycle, fn);
+		write_specgraph(cr, full, cycle, serial);
 
 		snprintf(fn, 63, "pr-logs/crystal%i-cycle%i.log", serial, cycle);
 		fh = fopen(fn, "w");

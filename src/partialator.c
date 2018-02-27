@@ -1262,7 +1262,9 @@ int main(int argc, char *argv[])
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full);
 	write_pgraph(full, crystals, n_crystals, -1, "");
-	STATUS("Final profile radius: %e\n", crystal_get_profile_radius(crystals[0]));
+	for ( i=0; i<n_crystals; i+=20 ) {
+		write_specgraph(crystals[i], full, -1, i);
+	}
 
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);
