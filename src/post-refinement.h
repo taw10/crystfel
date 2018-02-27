@@ -59,7 +59,7 @@ extern const char *str_prflag(enum prflag flag);
 
 extern void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
-                       int verbose, int cycle);
+                       int verbose, int cycle, int no_logs);
 
 extern void write_gridscan(Crystal *cr, const RefList *full,
                            int cycle, int serial);

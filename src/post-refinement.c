@@ -3,11 +3,11 @@
  *
  * Post refinement
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -545,8 +545,6 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
 
-		/* FIXME Free-flagged reflections only? */
-
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
 
@@ -688,7 +686,7 @@ void write_gridscan(Crystal *cr, const RefList *full,
 
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int verbose, int serial,
-                         int cycle)
+                         int cycle, int write_logs)
 {
 	gsl_multimin_fminimizer *min;
 	struct rf_priv priv;
@@ -697,7 +695,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	int r;
 	double G;
 	double residual_start, residual_free_start;
-	int write_logs = 1;
 	FILE *fh = NULL;
 
 	try_reindex(cr, full);
@@ -709,8 +706,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
 		       residual_start, residual_free_start);
 	}
-
-	if ( serial % 20 ) write_logs = 0;
 
 	min = setup_minimiser(cr, full, verbose, serial, &priv);
 
@@ -865,13 +860,13 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 static struct prdata pr_refine(Crystal *cr, const RefList *full,
                                PartialityModel pmodel, int verbose, int serial,
-                               int cycle)
+                               int cycle, int write_logs)
 {
 	struct prdata prdata;
 
 	prdata.refined = 0;
 
-	do_pr_refine(cr, full, pmodel, verbose, serial, cycle);
+	do_pr_refine(cr, full, pmodel, verbose, serial, cycle, write_logs);
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		prdata.refined = 1;
@@ -890,6 +885,7 @@ struct refine_args
 	struct prdata prdata;
 	int verbose;
 	int cycle;
+	int no_logs;
 };
 
 
@@ -907,9 +903,12 @@ static void refine_image(void *task, int id)
 {
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
+	int write_logs = 0;
 
+	write_logs = !pargs->no_logs && (pargs->serial % 20 == 0);
 	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel,
-	                          pargs->verbose, pargs->serial, pargs->cycle);
+	                          pargs->verbose, pargs->serial, pargs->cycle,
+	                          write_logs);
 }
 
 
@@ -943,7 +942,7 @@ static void done_image(void *vqargs, void *task)
 
 void refine_all(Crystal **crystals, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
-                int verbose, int cycle)
+                int verbose, int cycle, int no_logs)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -954,6 +953,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.prdata.refined = 0;
 	task_defaults.verbose = verbose;
 	task_defaults.cycle = cycle;
+	task_defaults.no_logs = no_logs;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;

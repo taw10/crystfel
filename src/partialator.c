@@ -40,6 +40,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <gsl/gsl_errno.h>
+#include <sys/stat.h>
 
 #include <image.h>
 #include <utils.h>
@@ -325,7 +326,8 @@ static void show_help(const char *s)
 "  -j <n>                     Run <n> analyses in parallel.\n"
 "      --no-free              Disable cross-validation (testing only).\n"
 "      --custom-split         List of files for custom dataset splitting.\n"
-"      --max-rel-B            Maximum allowable relative |B| factor.\n");
+"      --max-rel-B            Maximum allowable relative |B| factor.\n"
+"      --no-logs              Do not write extensive log files.\n");
 }
 
 
@@ -738,35 +740,6 @@ static void show_all_residuals(Crystal **crystals, int n_crystals,
 }
 
 
-static void dump_parameters(const char *filename, Crystal **crystals,
-                            int n_crystals)
-{
-	FILE *fh;
-	fh = fopen(filename, "w");
-	if ( fh == NULL ) {
-		ERROR("Couldn't open partialator.params!\n");
-	} else {
-		fprintf(fh, "  cr        OSF       relB         div"
-		            " flag                      filename  event\n");
-		int i;
-		for ( i=0; i<n_crystals; i++ ) {
-			struct image *img;
-                        char *evt_str;
-			img = crystal_get_image(crystals[i]);
-                        evt_str = get_event_string(img->event);
-			fprintf(fh, "%4i %10.5f %10.2f %8.5e %-25s %s %s\n",
-			        i, crystal_get_osf(crystals[i]),
-			        crystal_get_Bfac(crystals[i])*1e20,
-			        crystal_get_image(crystals[i])->div,
-			        str_prflag(crystal_get_user_flag(crystals[i])),
-			        img->filename, evt_str);
-                        free(evt_str);
-		}
-		fclose(fh);
-	}
-}
-
-
 struct log_qargs
 {
 	int iter;
@@ -878,6 +851,7 @@ int main(int argc, char *argv[])
 	double max_B = 1e-18;
 	char *rfile = NULL;
 	RefList *reference = NULL;
+	int no_logs = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -910,6 +884,7 @@ int main(int argc, char *argv[])
 		{"polarization",       0, &polarisation,       1}, /* compat */
 		{"no-free",            0, &no_free,            1},
 		{"output-every-cycle", 0, &output_everycycle,  1},
+		{"no-logs",            0, &no_logs,            1},
 
 		{0, 0, NULL, 0}
 	};
@@ -1084,7 +1059,22 @@ int main(int argc, char *argv[])
 
 	if ( (pmodel == PMODEL_UNITY) && !no_pr ) {
 		no_pr = 1;
-		STATUS("Setting --no-pr because we are not modelling partialities (--model=unity).\n");
+		STATUS("Setting --no-pr because we are not modelling "
+		       "partialities (--model=unity).\n");
+	}
+
+	if ( !no_logs ) {
+		int r = mkdir("pr-logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		if ( r ) {
+			if ( errno == EEXIST ) {
+				ERROR("A folder called 'pr-logs' exists in the "
+				      "working directory.\n");
+				ERROR("Please delete or move it first.\n");
+			} else {
+				ERROR("Failed to create pr-logs folder.\n");
+			}
+			return 1;
+		}
 	}
 
 	/* Read the custom split list (if applicable) */
@@ -1263,7 +1253,9 @@ int main(int argc, char *argv[])
 	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
 	write_pgraph(full, crystals, n_crystals, 0, "");
-	if ( !no_pr ) write_logs_parallel(crystals, n_crystals, full, 0, nthreads);
+	if ( !no_pr && !no_logs ) {
+		write_logs_parallel(crystals, n_crystals, full, 0, nthreads);
+	}
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -1271,7 +1263,8 @@ int main(int argc, char *argv[])
 		STATUS("Scaling and refinement cycle %i of %i\n", i+1, n_iter);
 
 		if ( !no_pr ) {
-			refine_all(crystals, n_crystals, full, nthreads, pmodel, 0, i+1);
+			refine_all(crystals, n_crystals, full, nthreads, pmodel,
+			           0, i+1, no_logs);
 		} else if ( !no_scale ) {
 			scale_all_to_reference(crystals, n_crystals, full, nthreads);
 		}
@@ -1313,10 +1306,6 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			/* Dump parameters */
-			snprintf(tmp, 1024, "iter%.2d_partialator.params", i+1);
-			dump_parameters(tmp, crystals, n_crystals);
-
 		}
 	}
 
@@ -1336,7 +1325,9 @@ int main(int argc, char *argv[])
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full);
 	write_pgraph(full, crystals, n_crystals, -1, "");
-	if ( !no_pr ) write_logs_parallel(crystals, n_crystals, full, -1, nthreads);
+	if ( !no_pr && !no_logs ) {
+		write_logs_parallel(crystals, n_crystals, full, -1, nthreads);
+	}
 
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);
@@ -1355,9 +1346,6 @@ int main(int argc, char *argv[])
 			                   sym, nthreads, outfile);
 		}
 	}
-
-	/* Dump parameters */
-	dump_parameters("partialator.params", crystals, n_crystals);
 
 	/* Clean up */
 	gsl_rng_free(rng);

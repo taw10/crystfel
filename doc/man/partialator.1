@@ -132,6 +132,11 @@ Reject crystals if the absolute values of their relative Debye-Waller ("B") fact
 .PD
 Write out the per-crystal parameters and reflection lists after every cycle of refinement, instead of only at the end.  The intermediate reflection lists and parameter filenames will be prefixed with \fBiter\fIN\fB_\fR (note the trailing underscore), where \fIN\fR is the iteration number.  If you use \fB--custom-split\fR, intermediate results will also be output for each custom dataset.
 
+.PD 0
+.IP \fB--no-logs\fR
+.PD
+Do not write the extensive log files needed for plotting contour maps and spectrum graphs.  This makes the process a lot faster, but you probably do want these logs to check that post-refinement is working reasonably.
+
 .SH PARTIALITY MODELS
 
 The available partiality models are:
