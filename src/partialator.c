@@ -604,7 +604,7 @@ static void select_free_reflections(RefList *list, gsl_rng *rng)
 
 
 static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
-                            int fr, int inum)
+                            int fr, signed int inum)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -657,7 +657,8 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 }
 
 
-static void write_specgraph(RefList *full, Crystal *crystal, int in)
+static void write_specgraph(RefList *full, Crystal *crystal, signed int in,
+                            const char *suff)
 {
 	FILE *fh;
 	char tmp[256];
@@ -730,7 +731,7 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 
 
 static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
-                         int iter, const char *suff)
+                         signed int iter, const char *suff)
 {
 	FILE *fh;
 	char tmp[256];
@@ -1348,8 +1349,8 @@ int main(int argc, char *argv[])
 
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full);
-	write_pgraph(full, crystals, n_crystals, n_iter+1, "");
-	write_specgraph(full, crystals[0], n_iter+1, "");
+	write_pgraph(full, crystals, n_crystals, -1, "");
+	write_specgraph(full, crystals[0], -1, "");
 	STATUS("Final profile radius: %e\n", crystal_get_profile_radius(crystals[0]));
 
 	/* Output results */
