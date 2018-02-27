@@ -485,6 +485,79 @@ void try_reindex(Crystal *crin, const RefList *full)
 }
 
 
+static void write_specgraph(const RefList *full, Crystal *crystal, signed int in,
+                            const char *suff)
+{
+	FILE *fh;
+	char tmp[256];
+	Reflection *refl;
+	RefListIterator *iter;
+	double G = crystal_get_osf(crystal);
+	double B = crystal_get_Bfac(crystal);
+	UnitCell *cell;
+	struct image *image = crystal_get_image(crystal);
+	char ins[5];
+
+	snprintf(tmp, 256, "pr-logs/specgraph%s.dat", suff);
+
+	if ( in == 0 ) {
+		fh = fopen(tmp, "w");
+	} else {
+		fh = fopen(tmp, "a");
+	}
+
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", tmp);
+		return;
+	}
+
+	if ( in == 0 ) {
+		fprintf(fh, "Image: %s %s\n",
+		        image->filename, get_event_string(image->event));
+		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration\n");
+	}
+
+	cell = crystal_get_cell(crystal);
+
+	if ( in >= 0 ) {
+		snprintf(ins, 4, "%i", in);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
+	for ( refl = first_refl(crystal_get_reflections(crystal), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double corr, Ipart, Ifull, pobs, pcalc;
+		double res;
+		signed int h, k, l;
+		Reflection *match;
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+
+		/* FIXME Free-flagged reflections only? */
+
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
+
+		corr = G * exp(B*res*res) * get_lorentz(refl);
+		Ipart = get_intensity(refl) * corr;
+		Ifull = get_intensity(match);
+		pobs = Ipart / Ifull;
+		pcalc = get_partiality(refl);
+
+		fprintf(fh, "%e   %e   %f   %f   %s\n", get_khalf(refl), 2.0*res,
+		                                           pcalc, pobs, ins);
+
+	}
+
+	fclose(fh);
+}
+
+
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int verbose, int serial,
                          int cycle)
@@ -568,6 +641,9 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		char fn[64];
 		const enum gparam par1 = GPARAM_ANG1;
 		const enum gparam par2 = GPARAM_WAVELENGTH;
+
+		snprintf(fn, 63, "-crystal%i", serial);
+		write_specgraph(full, cr, cycle, fn);
 
 		snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%i.dat", serial, cycle);
 		fh = fopen(fn, "w");
