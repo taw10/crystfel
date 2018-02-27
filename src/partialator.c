@@ -668,7 +668,7 @@ static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
 	char tmp[256];
 	int i;
 
-	snprintf(tmp, 256, "pgraph%s.dat", suff);
+	snprintf(tmp, 256, "pr-logs/pgraph%s.dat", suff);
 
 	if ( iter == 0 ) {
 		fh = fopen(tmp, "w");
