@@ -767,6 +767,79 @@ static void dump_parameters(const char *filename, Crystal **crystals,
 }
 
 
+struct log_qargs
+{
+	int iter;
+	int next;
+	Crystal **crystals;
+	int n_crystals;
+	RefList *full;
+};
+
+
+struct log_args
+{
+	Crystal *cr;
+	RefList *full;
+	int iter;
+	int cnum;
+};
+
+
+static void *get_log_task(void *vp)
+{
+	struct log_qargs *qargs = vp;
+	struct log_args *task;
+
+	if ( qargs->next >= qargs->n_crystals ) return NULL;
+
+	task = malloc(sizeof(struct log_args));
+	if ( task == NULL ) return NULL;
+
+	task->cr = qargs->crystals[qargs->next];
+	task->full = qargs->full;
+	task->iter = qargs->iter;
+	task->cnum = qargs->next;
+
+	qargs->next += 20;
+	return task;
+}
+
+
+static void write_logs(void *vp, int cookie)
+{
+	struct log_args *args = vp;
+	write_specgraph(args->cr, args->full, args->iter, args->cnum);
+	write_gridscan(args->cr, args->full, args->iter, args->cnum);
+}
+
+
+static void done_log(void *qargs, void *vp)
+{
+	struct log_args *task = vp;
+	free(task);
+}
+
+
+static void write_logs_parallel(Crystal **crystals, int n_crystals,
+                                RefList *full, int iter, int n_threads)
+{
+	struct log_qargs qargs;
+
+
+	qargs.iter = iter;
+	qargs.next = 0;
+	qargs.full = full;
+	qargs.crystals = crystals;
+	qargs.n_crystals = n_crystals;
+
+	STATUS("Writing logs...\n");
+	run_threads(n_threads, write_logs, get_log_task, done_log, &qargs,
+	            n_crystals/20, 0, 0, 0);
+	STATUS("Done.\n");
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -1190,6 +1263,7 @@ int main(int argc, char *argv[])
 	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
 	write_pgraph(full, crystals, n_crystals, 0, "");
+	write_logs_parallel(crystals, n_crystals, full, 0, nthreads);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -1262,9 +1336,7 @@ int main(int argc, char *argv[])
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full);
 	write_pgraph(full, crystals, n_crystals, -1, "");
-	for ( i=0; i<n_crystals; i+=20 ) {
-		write_specgraph(crystals[i], full, -1, i);
-	}
+	write_logs_parallel(crystals, n_crystals, full, -1, nthreads);
 
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);

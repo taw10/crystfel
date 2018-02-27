@@ -709,9 +709,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 		char fn[64];
 
-		write_gridscan(cr, full, cycle, serial);
-		write_specgraph(cr, full, cycle, serial);
-
 		snprintf(fn, 63, "pr-logs/crystal%i-cycle%i.log", serial, cycle);
 		fh = fopen(fn, "w");
 		if ( fh != NULL ) {
@@ -828,6 +825,11 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	} else {
 		ERROR("Bad refinement: crystal %i\n", serial);
+	}
+
+	if ( write_logs ) {
+		write_gridscan(cr, full, cycle, serial);
+		write_specgraph(cr, full, cycle, serial);
 	}
 
 	gsl_multimin_fminimizer_free(min);
