@@ -604,13 +604,22 @@ static void select_free_reflections(RefList *list, gsl_rng *rng)
 
 
 static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
-                            int fr)
+                            int fr, int inum)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	double G = crystal_get_osf(cr);
 	double B = crystal_get_Bfac(cr);
 	UnitCell *cell = crystal_get_cell(cr);
+	char ins[5];
+
+	if ( inum >= 0 ) {
+		snprintf(ins, 4, "%i", inum);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
@@ -641,8 +650,8 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 		Ipart = get_intensity(refl) * corr;
 		pobs = Ipart / get_intensity(match);
 
-		fprintf(fh, "%5i %4i %4i %4i %8.4f %8.3f %8.3f\n",
-		        fr, h, k, l, 2*res/1e9, pcalc, pobs);
+		fprintf(fh, "%5i %4i %4i %4i %e %8.3f %8.3f %s\n",
+		        fr, h, k, l, 2*res, pcalc, pobs, ins);
 
 	}
 }
@@ -658,21 +667,35 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 	double B = crystal_get_Bfac(crystal);
 	UnitCell *cell;
 	struct image *image = crystal_get_image(crystal);
+	char ins[5];
 
-	snprintf(tmp, 256, "specgraph-iter%i.dat", in);
+	snprintf(tmp, 256, "specgraph%s.dat", suff);
 
-	fh = fopen(tmp, "w");
+	if ( in == 0 ) {
+		fh = fopen(tmp, "w");
+	} else {
+		fh = fopen(tmp, "a");
+	}
+
 	if ( fh == NULL ) {
 		ERROR("Failed to open '%s'\n", tmp);
 		return;
 	}
 
-	fprintf(fh, "Image: %s %s\n",
-	        image->filename, get_event_string(image->event));
-
-	fprintf(fh, "khalf/m   pcalc    pobs\n");
+	if ( in == 0 ) {
+		fprintf(fh, "Image: %s %s\n",
+		        image->filename, get_event_string(image->event));
+		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration\n");
+	}
 
 	cell = crystal_get_cell(crystal);
+
+	if ( in >= 0 ) {
+		snprintf(ins, 4, "%i", in);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
 
 	for ( refl = first_refl(crystal_get_reflections(crystal), &iter);
 	      refl != NULL;
@@ -686,7 +709,7 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
 
-		/* FIXME Free-flagged reflections only */
+		/* FIXME Free-flagged reflections only? */
 
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
@@ -697,7 +720,8 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 		pobs = Ipart / Ifull;
 		pcalc = get_partiality(refl);
 
-		fprintf(fh, "%e   %f   %f\n", get_khalf(refl), pcalc, pobs);
+		fprintf(fh, "%e   %e   %f   %f   %s\n", get_khalf(refl), 2.0*res,
+		                                           pcalc, pobs, ins);
 
 	}
 
@@ -706,30 +730,36 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 
 
 static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
-                         int iter)
+                         int iter, const char *suff)
 {
 	FILE *fh;
 	char tmp[256];
 	int i;
 
-	snprintf(tmp, 256, "pgraph-iter%i.dat", iter);
+	snprintf(tmp, 256, "pgraph%s.dat", suff);
 
-	fh = fopen(tmp, "w");
+	if ( iter == 0 ) {
+		fh = fopen(tmp, "w");
+	} else {
+		fh = fopen(tmp, "a");
+	}
+
 	if ( fh == NULL ) {
 		ERROR("Failed to open '%s'\n", tmp);
 		return;
 	}
 
-	fprintf(fh, "   fr    h    k    l  1/d(nm)     pcalc   pobs\n");
+	if ( iter == 0 ) {
+		fprintf(fh, "  Crystal    h    k    l  1/d(m)     pcalc   pobs   iteration\n");
+	}
 
 	for ( i=0; i<n_crystals; i++ ) {
 		if ( crystal_get_user_flag(crystals[i]) != 0 ) continue;
 		write_to_pgraph(fh, crystal_get_reflections(crystals[i]), full,
-		                crystals[i], i);
+		                crystals[i], i, iter);
 	}
 
 	fclose(fh);
-
 }
 
 
@@ -1244,8 +1274,8 @@ int main(int argc, char *argv[])
 	/* Check rejection and write figures of merit */
 	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
-	write_pgraph(full, crystals, n_crystals, 0);
-	write_specgraph(full, crystals[0], 0);
+	write_pgraph(full, crystals, n_crystals, 0, "");
+	write_specgraph(full, crystals[0], 0, "");
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -1268,8 +1298,8 @@ int main(int argc, char *argv[])
 
 		check_rejection(crystals, n_crystals, full, max_B);
 		show_all_residuals(crystals, n_crystals, full);
-		write_pgraph(full, crystals, n_crystals, i+1);
-		write_specgraph(full, crystals[0], i+1);
+		write_pgraph(full, crystals, n_crystals, i+1, "");
+		write_specgraph(full, crystals[0], i+1, "");
 
 		if ( output_everycycle ) {
 
@@ -1318,8 +1348,8 @@ int main(int argc, char *argv[])
 
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full);
-	write_pgraph(full, crystals, n_crystals, n_iter+1);
-	write_specgraph(full, crystals[0], n_iter+1);
+	write_pgraph(full, crystals, n_crystals, n_iter+1, "");
+	write_specgraph(full, crystals[0], n_iter+1, "");
 	STATUS("Final profile radius: %e\n", crystal_get_profile_radius(crystals[0]));
 
 	/* Output results */
