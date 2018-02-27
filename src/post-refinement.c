@@ -521,7 +521,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	if ( cycle == 0 ) {
 		fprintf(fh, "Image: %s %s\n",
 		        image->filename, get_event_string(image->event));
-		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration\n");
+		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration  h  k  l\n");
 	}
 
 	cell = crystal_get_cell(crystal);
@@ -556,8 +556,8 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 		pobs = Ipart / Ifull;
 		pcalc = get_partiality(refl);
 
-		fprintf(fh, "%e   %e   %f   %f   %s\n", get_khalf(refl), 2.0*res,
-		                                           pcalc, pobs, ins);
+		fprintf(fh, "%e   %e   %f   %f   %s  %4i %4i %4i\n",
+		        get_khalf(refl), 2.0*res, pcalc, pobs, ins, h, k, l);
 
 	}
 
