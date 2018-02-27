@@ -92,6 +92,10 @@ double residual(Crystal *cr, const RefList *full, int free,
 	double B = crystal_get_Bfac(cr);
 	UnitCell *cell = crystal_get_cell(cr);
 
+	if ( linear_scale(crystal_get_reflections(cr), full, &G) ) {
+		return INFINITY;
+	}
+
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
@@ -120,10 +124,9 @@ double residual(Crystal *cr, const RefList *full, int free,
 		int2 = p*I_full;
 		w = 1.0;
 
-		if ( int1 + int2 < 0.0 ) continue;
 
 		num += fabs(int1 - int2) * w;
-		den += (int1 + int2) * w/2.0;
+		den += fabs(int1 + int2) * w/2.0;
 
 		n_used++;
 
@@ -295,7 +298,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 	crystal_set_image(cr, &im);
 	apply_parameters(v, pv->initial, pv->rv, cr);
 
-	if ( crystal_get_profile_radius(cr) < 0.0 ) {
+	if ( crystal_get_profile_radius(cr) <= 0.0 ) {
 		crystal_free(cr);
 		return INFINITY;
 	}
@@ -439,7 +442,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 			       res, size);
 		}
 
-		status = gsl_multimin_test_size(min->size, 0.1);
+		status = gsl_multimin_test_size(min->size, 0.005);
 
 	} while ( status == GSL_CONTINUE && n_iter < 1000 );
 

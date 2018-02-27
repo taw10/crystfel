@@ -1236,6 +1236,13 @@ int main(int argc, char *argv[])
 
 		STATUS("Scaling and refinement cycle %i of %i\n", i+1, n_iter);
 
+		if ( !no_pr ) {
+
+			r = (reference != NULL) ? reference : full;
+			refine_all(crystals, n_crystals, r, nthreads, pmodel);
+
+		}
+
 		if ( !no_scale ) {
 
 			if ( reference == NULL ) {
@@ -1255,18 +1262,6 @@ int main(int argc, char *argv[])
 				                       reference);
 
 			}
-		}
-
-		if ( !no_pr ) {
-
-			r = (reference != NULL) ? reference : full;
-			refine_all(crystals, n_crystals, r, nthreads, pmodel);
-
-			reflist_free(full);
-			full = merge_intensities(crystals, n_crystals, nthreads,
-			                         pmodel, min_measurements,
-			                         push_res, 1);
-
 		}
 
 		check_rejection(crystals, n_crystals, full, max_B);
