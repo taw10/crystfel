@@ -623,6 +623,9 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 
 		if ( !get_flag(refl) ) continue;  /* Not free-flagged */
 
+		/* Strong reflections only */
+		if ( get_intensity(refl) < 3.0*get_esd_intensity(refl) ) continue;
+
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
 		if ( 2.0*res > crystal_get_resolution_limit(cr) ) continue;

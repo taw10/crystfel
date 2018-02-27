@@ -118,12 +118,14 @@ double residual(Crystal *cr, const RefList *full, int free,
 		if ( get_redundancy(match) < 2 ) continue;
 
 		p = get_partiality(refl);
-		L = get_lorentz(refl);
+		//if ( p < 0.2 ) continue;
+
 		I_partial = get_intensity(refl);
 		esd = get_esd_intensity(refl);
-		s = resolution(crystal_get_cell(cr), h, k, l);
+		//if ( I_partial < 3.0*esd ) continue;
 
-		if ( I_partial < 3.0*esd ) continue;
+		L = get_lorentz(refl);
+		s = resolution(crystal_get_cell(cr), h, k, l);
 
 		fx = exp(G)*p*exp(-B*s*s)*I_full/L;
 		dc = I_partial - fx;
