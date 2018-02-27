@@ -515,9 +515,9 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 			}
 		}
 
-		x[n] = Ih2;
+		x[n] = Ih2 / get_partiality(refl2);
 		y[n] = Ih1;
-		w[n] = get_partiality(refl1);
+		w[n] = get_partiality(refl2);
 		n++;
 
 	}
@@ -531,6 +531,12 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G)
 
 	if ( r ) {
 		ERROR("Scaling failed.\n");
+		return 1;
+	}
+
+	if ( isnan(*G) ) {
+		ERROR("Scaling gave NaN (%i pairs)\n", n);
+		abort();
 		return 1;
 	}
 

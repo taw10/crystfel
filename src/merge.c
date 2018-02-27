@@ -189,7 +189,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		}
 
 		/* Total (multiplicative) correction factor */
-		corr = (1.0/G) * exp(B*res*res) * get_lorentz(refl)
+		corr = G * exp(B*res*res) * get_lorentz(refl)
 		        / get_partiality(refl);
 		if ( isnan(corr) ) {
 			ERROR("NaN corr:\n");

@@ -92,7 +92,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	double B = crystal_get_Bfac(cr);
 	UnitCell *cell = crystal_get_cell(cr);
 
-	if ( linear_scale(crystal_get_reflections(cr), full, &G) ) {
+	if ( linear_scale(full, crystal_get_reflections(cr), &G) ) {
 		return INFINITY;
 	}
 

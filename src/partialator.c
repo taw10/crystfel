@@ -637,7 +637,7 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 		pcalc = get_partiality(refl);
 
 		/* Observed partiality */
-		corr = (1.0/G) * exp(B*res*res) * get_lorentz(refl);
+		corr = G * exp(B*res*res) * get_lorentz(refl);
 		Ipart = get_intensity(refl) * corr;
 		pobs = Ipart / get_intensity(match);
 
@@ -689,7 +689,7 @@ static void write_specgraph(RefList *full, Crystal *crystal, int in)
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
 
-		corr = (1.0/G) * exp(B*res*res) * get_lorentz(refl);
+		corr = G * exp(B*res*res) * get_lorentz(refl);
 		Ipart = get_intensity(refl) * corr;
 		Ifull = get_intensity(match);
 		esd = get_esd_intensity(match);
@@ -847,7 +847,6 @@ int main(int argc, char *argv[])
 	double max_B = 1e-18;
 	char *rfile = NULL;
 	RefList *reference = NULL;
-	RefList *r;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1223,13 +1222,22 @@ int main(int argc, char *argv[])
 	//early_rejection(crystals, n_crystals);
 
 	/* Initial rejection, figures of merit etc */
-	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
-	                         min_measurements, push_res, 1);
+	if ( reference == NULL ) {
+		scale_all(crystals, n_crystals, nthreads, pmodel);
+		full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
+		                         min_measurements, push_res, 1);
+	} else {
+		full = reference;
+	}
 	check_rejection(crystals, n_crystals, full, max_B);
-	r = (reference != NULL) ? reference : full;
-	show_all_residuals(crystals, n_crystals, r);
-	write_pgraph(r, crystals, n_crystals, 0);
-	write_specgraph(r, crystals[0], 0);
+
+	if ( !no_scale ) {
+		scale_all_to_reference(crystals, n_crystals, full);
+	}
+
+	show_all_residuals(crystals, n_crystals, full);
+	write_pgraph(full, crystals, n_crystals, 0);
+	write_specgraph(full, crystals[0], 0);
 
 	/* Iterate */
 	for ( i=0; i<n_iter; i++ ) {
@@ -1237,10 +1245,7 @@ int main(int argc, char *argv[])
 		STATUS("Scaling and refinement cycle %i of %i\n", i+1, n_iter);
 
 		if ( !no_pr ) {
-
-			r = (reference != NULL) ? reference : full;
-			refine_all(crystals, n_crystals, r, nthreads, pmodel);
-
+			refine_all(crystals, n_crystals, full, nthreads, pmodel);
 		}
 
 		if ( !no_scale ) {
@@ -1248,8 +1253,6 @@ int main(int argc, char *argv[])
 			if ( reference == NULL ) {
 
 				/* No reference -> XSCALE-like algorithm */
-				scale_all(crystals, n_crystals, nthreads, pmodel);
-				reflist_free(full);
 				full = merge_intensities(crystals, n_crystals,
 				                         nthreads, pmodel,
 				                         min_measurements,
@@ -1258,21 +1261,27 @@ int main(int argc, char *argv[])
 			} else {
 
 				/* Reference -> Ginn-style linear algorithm */
-				scale_all_to_reference(crystals, n_crystals,
-				                       reference);
+				if ( !no_scale ) {
+					scale_all_to_reference(crystals, n_crystals,
+					                       reference);
+				}
 
 			}
 		}
 
 		check_rejection(crystals, n_crystals, full, max_B);
-		reflist_free(full);
-		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         pmodel, min_measurements,
-		                         push_res, 1);
-		r = (reference != NULL) ? reference : full;
-		show_all_residuals(crystals, n_crystals, r);
-		write_pgraph(r, crystals, n_crystals, i+1);
-		write_specgraph(r, crystals[0], i+1);
+
+		if ( reference == NULL ) {
+			scale_all(crystals, n_crystals, nthreads, pmodel);
+			reflist_free(full);
+			full = merge_intensities(crystals, n_crystals, nthreads,
+			                         pmodel, min_measurements,
+			                         push_res, 1);
+		} /* else full still equals reference */
+
+		show_all_residuals(crystals, n_crystals, full);
+		write_pgraph(full, crystals, n_crystals, i+1);
+		write_specgraph(full, crystals[0], i+1);
 
 		if ( output_everycycle ) {
 
@@ -1306,12 +1315,32 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
-	                         min_measurements, push_res, 1);
-	r = (reference != NULL) ? reference : full;
-	show_all_residuals(crystals, n_crystals, r);
-	write_pgraph(r, crystals, n_crystals, n_iter+1);
-	write_specgraph(r, crystals[0], n_iter+1);
+
+	if ( reference == NULL ) {
+		scale_all(crystals, n_crystals, nthreads, pmodel);
+		reflist_free(full);
+		full = merge_intensities(crystals, n_crystals, nthreads,
+		                         pmodel, min_measurements,
+		                         push_res, 1);
+	} /* else full still equals reference */
+	if ( !no_scale ) {
+		scale_all_to_reference(crystals, n_crystals, full);
+	}
+	show_all_residuals(crystals, n_crystals, full);
+	write_pgraph(full, crystals, n_crystals, n_iter+1);
+	write_specgraph(full, crystals[0], n_iter+1);
+	//STATUS("Final profile radius: %e\n", crystal_get_profile_radius(crystals[0]));
+
+	/* If we've been using a reference up to now, it's time to actually
+	 * scale and merge the final version */
+	if ( reference != NULL ) {
+		STATUS("Starting final reference-free merge\n");
+		scale_all_to_reference(crystals, n_crystals, reference);
+		STATUS("Scaling done\n");
+		full = merge_intensities(crystals, n_crystals, nthreads,
+		                         pmodel, min_measurements, push_res, 1);
+		STATUS("Done\n");
+	} /* else we just did it */
 
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);
