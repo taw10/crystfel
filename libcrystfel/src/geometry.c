@@ -535,8 +535,8 @@ static double do_integral(double q2, double zl, double R,
 	if ( k1 < 0.0 ) k1 = +INFINITY;
 
 	/* Range over which E is significantly different from zero */
-	kmin = 1.0 / (lambda + 5.0*sig);
-	kmax = 1.0 / (lambda - 5.0*sig);
+	kmin = 1.0 / (lambda + 3.0*sig);
+	kmax = 1.0 / (lambda - 3.0*sig);
 
 	/* Calculate range over which E*P is different from zero */
 	if ( k0 < k1 ) {
