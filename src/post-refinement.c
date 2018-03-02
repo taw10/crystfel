@@ -617,6 +617,9 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
 
+		/* Don't calculate pobs if reference reflection is weak */
+		if ( fabs(get_intensity(match)) / get_esd_intensity(match) < 3.0 ) continue;
+
 		corr = G * exp(B*res*res) * get_lorentz(refl);
 		Ipart = get_intensity(refl) * corr;
 		Ifull = get_intensity(match);

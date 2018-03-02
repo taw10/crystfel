@@ -648,6 +648,9 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
 
+		/* Don't calculate pobs if reference reflection is weak */
+		if ( fabs(get_intensity(match)) / get_esd_intensity(match) < 3.0 ) continue;
+
 		/* Calculated partiality */
 		pcalc = get_partiality(refl);
 
