@@ -1325,6 +1325,8 @@ int main(int argc, char *argv[])
 
 	/* Create reference data set if we don't already have one */
 	if ( reference == NULL ) {
+		STATUS("Initial scaling...\n");
+		scale_all(crystals, n_crystals, nthreads);
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1);
 	} else {
@@ -1332,7 +1334,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Scale everything to the reference */
-	STATUS("Initial scaling...\n");
+	STATUS("Initial scaling to reference...\n");
 	if ( !no_scale ) {
 		scale_all_to_reference(crystals, n_crystals, full, nthreads);
 	}
@@ -1360,6 +1362,7 @@ int main(int argc, char *argv[])
 		/* Create new reference if needed */
 		if ( reference == NULL ) {
 			reflist_free(full);
+			scale_all(crystals, n_crystals, nthreads);
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         min_measurements,
 			                         push_res, 1);
@@ -1404,6 +1407,7 @@ int main(int argc, char *argv[])
 	STATUS("Final merge...\n");
 	if ( reference == NULL ) {
 		reflist_free(full);
+		scale_all(crystals, n_crystals, nthreads);
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements,
 		                         push_res, 1);
