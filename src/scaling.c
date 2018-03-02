@@ -389,8 +389,7 @@ static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
 
 
 /* Perform iterative scaling, all the way to convergence */
-void scale_all(Crystal **crystals, int n_crystals, int nthreads,
-               PartialityModel pmodel)
+void scale_all(Crystal **crystals, int n_crystals, int nthreads)
 {
 	struct scale_args task_defaults;
 	struct queue_args qargs;
@@ -413,7 +412,7 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads,
 		double bef_res;
 
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         pmodel, 2, INFINITY, 0);
+		                         2, INFINITY, 0);
 		old_res = new_res;
 		bef_res = total_log_r(crystals, n_crystals, full, NULL);
 

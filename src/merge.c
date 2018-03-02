@@ -59,7 +59,6 @@ struct merge_queue_args
 	pthread_rwlock_t full_lock;
 	Crystal **crystals;
 	int n_started;
-	PartialityModel pmodel;
 	double push_res;
 	int use_weak;
 	long long int n_reflections;
@@ -228,7 +227,7 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 
 
 RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
-                           PartialityModel pmodel, int min_meas,
+                           int min_meas,
                            double push_res, int use_weak)
 {
 	RefList *full;
@@ -244,7 +243,6 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	qargs.full = full;
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
-	qargs.pmodel = pmodel;
 	qargs.push_res = push_res;
 	qargs.use_weak = use_weak;
 	qargs.n_reflections = 0;

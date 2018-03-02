@@ -191,7 +191,7 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 	}
 	snprintf(tmp, 1024, "%s1", outfile);
 	split = merge_intensities(crystals1, n_crystals1, nthreads,
-		                  pmodel, min_measurements, push_res, 1);
+		                  min_measurements, push_res, 1);
 
 	if ( split == NULL ) {
 		ERROR("Not enough crystals for two way split!\n");
@@ -203,7 +203,7 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
 	split = merge_intensities(crystals2, n_crystals2, nthreads,
-		                  pmodel, min_measurements, push_res, 1);
+		                  min_measurements, push_res, 1);
 	STATUS("and %s\n", tmp);
 	write_reflist_2(tmp, split, sym);
 	reflist_free(split);
@@ -290,7 +290,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	STATUS("Writing dataset '%s' to %s (%i crystals)\n",
 	       csplit->dataset_names[dsn], tmp, n_crystalsn);
 	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
-		                  pmodel, min_measurements, push_res, 1);
+		                  min_measurements, push_res, 1);
 	write_reflist_2(tmp, split, sym);
 	reflist_free(split);
 
@@ -1325,7 +1325,7 @@ int main(int argc, char *argv[])
 
 	/* Create reference data set if we don't already have one */
 	if ( reference == NULL ) {
-		full = merge_intensities(crystals, n_crystals, nthreads, pmodel,
+		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1);
 	} else {
 		full = reference;
@@ -1361,7 +1361,7 @@ int main(int argc, char *argv[])
 		if ( reference == NULL ) {
 			reflist_free(full);
 			full = merge_intensities(crystals, n_crystals, nthreads,
-			                         pmodel, min_measurements,
+			                         min_measurements,
 			                         push_res, 1);
 		} /* else full still equals reference */
 
@@ -1405,12 +1405,12 @@ int main(int argc, char *argv[])
 	if ( reference == NULL ) {
 		reflist_free(full);
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         pmodel, min_measurements,
+		                         min_measurements,
 		                         push_res, 1);
 	} else {
 		scale_all_to_reference(crystals, n_crystals, reference, nthreads);
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         pmodel, min_measurements, push_res, 1);
+		                         min_measurements, push_res, 1);
 	}
 
 	/* Write final figures of merit (no rejection any more) */

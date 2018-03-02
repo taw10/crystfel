@@ -40,7 +40,6 @@
 #include "geometry.h"
 
 extern RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
-                                  PartialityModel pmodel, int min_meas,
-                                  double push_res, int use_weak);
+                                  int min_meas, double push_res, int use_weak);
 
 #endif	/* MERGE */
