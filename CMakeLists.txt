@@ -91,7 +91,7 @@ endif(HAVE_OPENCL)
 
 add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
 target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(pattern_sim ${COMMON_LIBRARIES}) 
+target_link_libraries(pattern_sim ${COMMON_LIBRARIES})
 
 if(HAVE_OPENCL)
 	target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
@@ -334,7 +334,7 @@ set(WHIRLIGIG_SOURCES
 	)
 
 add_executable(whirligig ${WHIRLIGIG_SOURCES})
-target_include_directories(whirligig PRIVATE ${COMMON_INCLUDES}) 
+target_include_directories(whirligig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(whirligig ${COMMON_LIBRARIES})
 
 
