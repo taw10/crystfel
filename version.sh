@@ -16,10 +16,15 @@ if [ $? -eq 0 ]; then
   fi
 fi
 sed 's/\$e\$/'${CRYSTFEL_GIT_COMMIT}'/g' version1.tmp > version2.tmp
-diff version.h version2.tmp > /dev/null
-if [ $? -ne 0 ]; then
+if [ -f version.h ]; then
+  diff version.h version2.tmp > /dev/null
+  if [ $? -ne 0 ]; then
+    mv version2.tmp version.h
+    rm version1.tmp
+  else
+    rm version1.tmp version2.tmp
+  fi
+else
   mv version2.tmp version.h
   rm version1.tmp
-else
-  rm version1.tmp version2.tmp
 fi
