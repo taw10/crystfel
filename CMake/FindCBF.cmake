@@ -1,7 +1,7 @@
 # - Find CBF
 # Find the native CBF includes and library
 #
-#  CBF_INCLUDES    - where to find fftw3.h
+#  CBF_INCLUDES    - where to find cbf.h
 #  CBF_LIBRARIES   - List of libraries when using CBF.
 #  CBF_FOUND       - True if CBF found.
 
