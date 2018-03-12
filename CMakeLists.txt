@@ -304,21 +304,21 @@ target_link_libraries(ambigator ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
 # Build Target
-# geoptimizer
+# geoptimiser
 
 if (CAIRO_FOUND AND GTK2_FOUND AND TIFF_FOUND)
-	set(GEOPTIMIZER_SOURCES
+	set(GEOPTIMISER_SOURCES
 		src/geoptimiser.c
 		src/hdfsee-render.c
 		)
 
-	add_executable(geoptimizer ${GEOPTIMIZER_SOURCES})
-	target_include_directories(geoptimizer PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS} ${GTK2_INCLUDE_DIRS})
-	target_link_libraries(geoptimizer ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES} ${GTK2_LIBRARIES} ${TIFF_LIBRARIES})
+	add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
+	target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS} ${GTK2_INCLUDE_DIRS})
+	target_link_libraries(geoptimiser ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES} ${GTK2_LIBRARIES} ${TIFF_LIBRARIES})
 
 	install(
 		TARGETS
-		geoptimizer
+		geoptimiser
 
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
@@ -327,7 +327,7 @@ endif (CAIRO_FOUND AND GTK2_FOUND AND TIFF_FOUND)
 
 # ----------------------------------------------------------------------
 # Build Target
-# geoptimizer
+# whirligig
 
 set(WHIRLIGIG_SOURCES
 	src/whirligig.c
