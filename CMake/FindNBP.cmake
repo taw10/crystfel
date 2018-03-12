@@ -22,5 +22,3 @@ find_library (NBP_LIBRARIES numericalBraggPrediction
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (NBP DEFAULT_MSG NBP_LIBRARIES NBP_INCLUDES)
-
-mark_as_advanced (NBP_LIBRARIES NBP_INCLUDES)

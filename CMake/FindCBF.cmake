@@ -18,5 +18,3 @@ find_library (CBF_LIBRARIES NAMES cbf)
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (CBF DEFAULT_MSG CBF_LIBRARIES CBF_INCLUDES)
-
-mark_as_advanced (CBF_LIBRARIES CBF_INCLUDES)

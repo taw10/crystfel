@@ -22,5 +22,3 @@ find_library (PINKINDEXER_LIBRARIES pinkIndexer
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (PINKINDEXER DEFAULT_MSG PINKINDEXER_LIBRARIES PINKINDEXER_INCLUDES)
-
-mark_as_advanced (PINKINDEXER_LIBRARIES PINKINDEXER_INCLUDES)

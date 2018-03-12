@@ -22,5 +22,3 @@ find_library (XGANDALF_LIBRARIES xgandalf
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (XGANDALF DEFAULT_MSG XGANDALF_LIBRARIES XGANDALF_INCLUDES)
-
-mark_as_advanced (XGANDALF_LIBRARIES XGANDALF_INCLUDES)

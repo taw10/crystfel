@@ -18,5 +18,3 @@ find_library (FFTW_LIBRARIES NAMES fftw3)
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (FFTW DEFAULT_MSG FFTW_LIBRARIES FFTW_INCLUDES)
-
-mark_as_advanced (FFTW_LIBRARIES FFTW_INCLUDES)

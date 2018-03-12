@@ -23,5 +23,3 @@ find_library (FDIP_LIBRARIES fastDiffractionImageProcessing
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (FDIP DEFAULT_MSG FDIP_LIBRARIES FDIP_INCLUDES)
-
-mark_as_advanced (FDIP_LIBRARIES FDIP_INCLUDES)
