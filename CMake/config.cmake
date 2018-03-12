@@ -20,4 +20,5 @@ endif(OpenCL_FOUND)
 
 check_library_exists(rt clock_gettime "time.h" HAVE_CLOCK_GETTIME)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake.in ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
+configure_file(config.h.cmake.in config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
