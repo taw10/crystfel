@@ -49,9 +49,6 @@ set(COMMON_LIBRARIES
 	)
 
 
-# Add the libcrystfel target
-add_subdirectory(libcrystfel)
-
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
@@ -78,6 +75,9 @@ check_library_exists(rt clock_gettime "time.h" HAVE_CLOCK_GETTIME)
 
 configure_file(config.h.cmake.in config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# Add the libcrystfel target
+add_subdirectory(libcrystfel)
 
 # ----------------------------------------------------------------------
 # Build Target
