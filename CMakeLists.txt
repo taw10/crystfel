@@ -24,6 +24,7 @@ find_package(FDIP)
 find_package(OpenCL)
 
 include(config)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_definitions(-DHAVE_CONFIG_H -DDATADIR=\"${CMAKE_INSTALL_FULL_DATADIR}\")
