@@ -23,7 +23,6 @@ find_package(NBP)
 find_package(FDIP)
 find_package(OpenCL)
 
-include(config)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -52,13 +51,11 @@ set(COMMON_LIBRARIES
 
 # Add the libcrystfel target
 add_subdirectory(libcrystfel)
-add_custom_target(
-	versionh
-	BYPRODUCTS ${CMAKE_SOURCE_DIR}/version.h
-	COMMAND ${CMAKE_SOURCE_DIR}/version.sh ${CMAKE_SOURCE_DIR}
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	)
-add_dependencies(libcrystfel versionh)
+
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+
+include(config)
 
 # ----------------------------------------------------------------------
 # Build Target

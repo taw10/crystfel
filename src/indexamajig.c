@@ -49,7 +49,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "version.h"
 #include "utils.h"
 #include "hdf5-file.h"
 #include "index.h"

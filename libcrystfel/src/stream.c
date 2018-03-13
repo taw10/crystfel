@@ -44,7 +44,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "version.h"
 #include "cell.h"
 #include "cell-utils.h"
 #include "utils.h"

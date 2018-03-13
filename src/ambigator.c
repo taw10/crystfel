@@ -44,7 +44,6 @@
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_randist.h>
 
-#include "version.h"
 #include <image.h>
 #include <utils.h>
 #include <symmetry.h>

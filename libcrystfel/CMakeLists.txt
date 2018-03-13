@@ -41,7 +41,6 @@ if(HAVE_FFTW)
 endif(HAVE_FFTW)
 
 set(LIBCRYSTFEL_HEADER
-	../version.h
 	src/hdf5-file.h
 	src/reflist.h
 	src/symmetry.h

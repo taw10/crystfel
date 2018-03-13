@@ -53,7 +53,6 @@
 
 #include "detector.h"
 #include "stream.h"
-#include "version.h"
 #include "crystal.h"
 #include "image.h"
 #include "utils.h"

@@ -37,7 +37,6 @@
 #include <gtk/gtk.h>
 #include <getopt.h>
 
-#include "version.h"
 #include "dw-hdfsee.h"
 #include "utils.h"
 #include "render.h"

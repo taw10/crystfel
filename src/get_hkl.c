@@ -38,7 +38,6 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "version.h"
 #include "utils.h"
 #include "reflist-utils.h"
 #include "symmetry.h"

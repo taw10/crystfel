@@ -45,7 +45,6 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 
-#include "version.h"
 #include "utils.h"
 #include "symmetry.h"
 #include "render.h"

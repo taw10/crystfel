@@ -27,10 +27,13 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
-
 
 #include "reflist.h"
 #include "cell.h"
@@ -38,7 +41,6 @@
 #include "utils.h"
 #include "reflist-utils.h"
 #include "symmetry.h"
-#include "version.h"
 
 
 /**
