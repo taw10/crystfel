@@ -3,6 +3,8 @@
 #cmakedefine HAVE_CPU_AFFINITY
 #cmakedefine HAVE_FFTW
 #cmakedefine HAVE_GTK
+#cmakedefine HAVE_GDKPIXBUF
+#cmakedefine HAVE_GDK
 #cmakedefine HAVE_OPENCL
 #cmakedefine HAVE_CL_CL_H
 #cmakedefine HAVE_TIFF
@@ -20,7 +22,6 @@
 /* Implement us .... */
 #undef HAVE_CURSES
 #undef HAVE_CURSES_COLOR
-#undef HAVE_SAVE_TO_PNG
 
 #define PACKAGE_VERSION "0.6.3"
 

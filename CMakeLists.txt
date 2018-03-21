@@ -13,6 +13,8 @@ find_package(HDF5 REQUIRED COMPONENTS C)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
 find_package(GTK2 2.0.0 COMPONENTS gtk)
+find_package(GdkPixbuf2)
+find_package(GDK)
 find_package(FFTW)
 find_package(CBF)
 find_package(TIFF)
@@ -63,6 +65,8 @@ set(HAVE_XGANDALF ${XGANDALF_FOUND})
 set(HAVE_FDIP ${FDIP_FOUND})
 set(HAVE_OPENCL ${OpenCL_FOUND})
 set(HAVE_CBFLIB ${CBF_FOUND})
+set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
+set(HAVE_GDK ${GDK_FOUND})
 
 check_include_file(fcntl.h HAVE_FCNTL_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
@@ -147,11 +151,12 @@ if(BUILD_HDFSEE AND GTK2_FOUND AND TIFF_FOUND)
 	add_executable(hdfsee ${HDFSEE_SOURCES})
 	target_include_directories(hdfsee PRIVATE
 		${COMMON_INCLUDES}
+		${TIFF_INCLUDE_DIRS}
 		${GTK2_INCLUDE_DIRS}
 		)
 	target_link_libraries(hdfsee
 		${COMMON_LIBRARIES}
-		TIFF::TIFF
+		${TIFF_LIBRARIES}
 		${GTK2_LIBRARIES}
 		)
 	set_target_properties(hdfsee PROPERTIES
@@ -332,24 +337,36 @@ target_link_libraries(ambigator ${COMMON_LIBRARIES})
 # Build Target
 # geoptimiser
 
-if (CAIRO_FOUND AND GTK2_FOUND AND TIFF_FOUND)
-	set(GEOPTIMISER_SOURCES
-		src/geoptimiser.c
-		src/hdfsee-render.c
-		)
+set(GEOPTIMISER_SOURCES src/geoptimiser.c src/hdfsee-render.c)
+add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
+target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
 
-	add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
-	target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS} ${GTK2_INCLUDE_DIRS})
-	target_link_libraries(geoptimiser ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES} ${GTK2_LIBRARIES} ${TIFF_LIBRARIES})
+# Add features one by one so that #ifdef HAVE_XX//#include XX.h always works
+# If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
+if (CAIRO_FOUND)
+  target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
+  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
+endif (CAIRO_FOUND)
 
-	install(
-		TARGETS
-		geoptimiser
+if (GDKPIXBUF_FOUND)
+  target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
+  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
+endif (GDKPIXBUF_FOUND)
 
-		RUNTIME DESTINATION bin
-		LIBRARY DESTINATION lib
-	    )
-endif (CAIRO_FOUND AND GTK2_FOUND AND TIFF_FOUND)
+if (GDK_FOUND)
+  target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
+  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
+endif (GDK_FOUND)
+
+if (TIFF_FOUND)
+  target_include_directories(geoptimiser PRIVATE ${TIFF_INCLUDE_DIRS})
+  target_link_libraries(geoptimiser ${TIFF_LIBRARIES})
+endif (TIFF_FOUND)
+
+install (TARGETS geoptimiser
+         RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib)
 
 # ----------------------------------------------------------------------
 # Build Target
