@@ -1,63 +1,20 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
-
-/* Define to 1 if Cairo is available */
 #cmakedefine HAVE_CAIRO
-
-/* Define to 1 if clock_gettime is available. */
 #cmakedefine HAVE_CLOCK_GETTIME
-
-/* Define to 1 if sched_setaffinity is available. */
-#undef HAVE_CPU_AFFINITY
-
-/* Define to 1 if a SysV or X/Open compatible Curses library is present */
-#undef HAVE_CURSES
-
-/* Define to 1 if library supports color (enhanced functions) */
-#undef HAVE_CURSES_COLOR
-
-/* Define to 1 if FFTW is available */
+#cmakedefine HAVE_CPU_AFFINITY
 #cmakedefine HAVE_FFTW
-
-/* Define to 1 if GTK and GDK are available */
 #cmakedefine HAVE_GTK
-
-/* Define to 1 if OpenCL is available */
 #cmakedefine HAVE_OPENCL
-
-/* Define to 1 if CL/cl.h should be used */
 #cmakedefine HAVE_CL_CL_H
-
-/* Define to 1 if libTIFF is available */
 #cmakedefine HAVE_TIFF
-
-/* Define to 1 if libxgandalf is available */
 #cmakedefine HAVE_XGANDALF
-
-/* Define to 1 if libfastDiffractionImageProcessing is available */
 #cmakedefine HAVE_FDIP
-
-/* Define to 1 if libcbf is available */
 #cmakedefine HAVE_CBFLIB
 
-/* Name of package */
-#define PACKAGE "crystfel"
+/* Implement us .... */
+#undef HAVE_CURSES
+#undef HAVE_CURSES_COLOR
+#undef HAVE_SAVE_TO_PNG
 
-/* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "taw@physics.org"
-
-/* Define to the full name of this package. */
-#define PACKAGE_NAME "crystfel"
-
-/* Define to the full name and version of this package. */
-#define PACKAGE_STRING "crystfel 0.6.2"
-
-/* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "crystfel"
-
-/* Define to the home page for this package. */
-#define PACKAGE_URL ""
-
-/* Define to the version of this package. */
 #define PACKAGE_VERSION "0.6.3"
 
 #define CRYSTFEL_VERSIONSTRING "+@GIT_SHA1@"
