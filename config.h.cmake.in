@@ -8,7 +8,14 @@
 #cmakedefine HAVE_TIFF
 #cmakedefine HAVE_XGANDALF
 #cmakedefine HAVE_FDIP
+
+/* We avoid adding the full path to cbf.h, because CBFlib unhelpfully installs
+ * some conflicting HDF5 headers which we want to keep out of the include path.
+ * Unfortunately, sometimes CBFlib installs cbf/cbf.h, other times cbflib/cbf.h.
+ * These defines tell whether we have CBFlib at all, and if so, what to #include */
 #cmakedefine HAVE_CBFLIB
+#cmakedefine HAVE_CBF_CBF_H
+#cmakedefine HAVE_CBFLIB_CBF_H
 
 /* Implement us .... */
 #undef HAVE_CURSES
