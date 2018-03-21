@@ -71,7 +71,13 @@ if(OpenCL_FOUND)
 	check_include_file(CL/cl.h HAVE_CL_CL_H "-I${OpenCL_INCLUDE_DIRS}")
 endif(OpenCL_FOUND)
 
-check_library_exists(rt clock_gettime "time.h" HAVE_CLOCK_GETTIME)
+# Check for nice clock function
+check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
+
+# Check for CPU affinity functions (Linux-specific)
+set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+check_symbol_exists(sched_setaffinity "sched.h" HAVE_CPU_AFFINITY)
+unset(CMAKE_REQUIRED_DEFINITIONS)
 
 configure_file(config.h.cmake.in config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
