@@ -3,9 +3,6 @@ project(crystfel)
 
 include(GNUInstallDirs)
 
-option(BUILD_HDFSEE "Build hdfsee" ON)
-option(BUILD_EXPLORER "Build the cell_explorer" ON)
-
 # Set CMAKE_MODULE_PATH to assist cmake in finding our own package definitions
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 
@@ -136,7 +133,7 @@ set_target_properties(pattern_sim PROPERTIES
 # Build Target
 # hdfsee
 
-if(BUILD_HDFSEE AND GTK2_FOUND AND TIFF_FOUND)
+if(GTK2_FOUND AND TIFF_FOUND)
 
 	set(HDFSEE_SOURCES
 		src/hdfsee.c
@@ -172,13 +169,13 @@ if(BUILD_HDFSEE AND GTK2_FOUND AND TIFF_FOUND)
 		RESOURCE DESTINATION share/crystfel
 	    )
 
-endif(BUILD_HDFSEE AND GTK2_FOUND AND TIFF_FOUND)
+endif(GTK2_FOUND AND TIFF_FOUND)
 
 # ----------------------------------------------------------------------
 # Build Target
 # cell_explorer
 
-if(BUILD_EXPLORER AND GTK2_FOUND)
+if (GTK2_FOUND)
 
 	set(CELL_EXPLORER_SOURCES
 		src/cell_explorer.c
@@ -197,7 +194,7 @@ if(BUILD_EXPLORER AND GTK2_FOUND)
 		LIBRARY DESTINATION lib
 	    )
 
-endif(BUILD_EXPLORER AND GTK2_FOUND)
+endif(GTK2_FOUND)
 
 # ----------------------------------------------------------------------
 # Build Target
