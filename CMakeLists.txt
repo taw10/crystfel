@@ -133,43 +133,28 @@ set_target_properties(pattern_sim PROPERTIES
 # Build Target
 # hdfsee
 
-if(GTK2_FOUND AND TIFF_FOUND)
+if (GTK2_FOUND)
 
-	set(HDFSEE_SOURCES
-		src/hdfsee.c
-		src/dw-hdfsee.c
-		src/hdfsee-render.c
-		)
+  set(HDFSEE_SOURCES src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c)
+  set(HDFSEE_RESOURCE_FILES data/hdfsee.ui)
+  add_executable(hdfsee ${HDFSEE_SOURCES})
 
-	set(HDFSEE_RESOURCE_FILES
-		data/hdfsee.ui
-		)
+  target_include_directories(hdfsee PRIVATE ${COMMON_INCLUDES} ${GTK2_INCLUDE_DIRS})
+  target_link_libraries(hdfsee ${COMMON_LIBRARIES} ${GTK2_LIBRARIES})
 
-	add_executable(hdfsee ${HDFSEE_SOURCES})
-	target_include_directories(hdfsee PRIVATE
-		${COMMON_INCLUDES}
-		${TIFF_INCLUDE_DIRS}
-		${GTK2_INCLUDE_DIRS}
-		)
-	target_link_libraries(hdfsee
-		${COMMON_LIBRARIES}
-		${TIFF_LIBRARIES}
-		${GTK2_LIBRARIES}
-		)
-	set_target_properties(hdfsee PROPERTIES
-		RESOURCE "${HDFSEE_RESOURCE_FILES}"
-		)
+  if (TIFF_FOUND)
+    target_include_directories(hdfsee PRIVATE ${TIFF_INCLUDE_DIRS})
+    target_link_libraries(hdfsee ${TIFF_LIBRARIES})
+  endif (TIFF_FOUND)
 
-	install(
-		TARGETS
-		hdfsee
+  set_target_properties(hdfsee PROPERTIES RESOURCE "${HDFSEE_RESOURCE_FILES}")
 
-		RUNTIME DESTINATION bin
-		LIBRARY DESTINATION lib
-		RESOURCE DESTINATION share/crystfel
-	    )
+  install (TARGETS hdfsee
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           RESOURCE DESTINATION share/crystfel)
 
-endif(GTK2_FOUND AND TIFF_FOUND)
+endif (GTK2_FOUND)
 
 # ----------------------------------------------------------------------
 # Build Target
