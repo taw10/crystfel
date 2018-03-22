@@ -70,9 +70,10 @@ target_link_libraries(transformation_check ${COMMON_LIBRARIES})
 add_test(transformation_check transformation_check)
 
 if (HAVE_OPENCL)
-  add_executable(gpu_sim_check gpu_sim_check.c ../src/diffraction.c ../src/diffraction-gpu.c)
-  target_include_directories(gpu_sim_check PRIVATE ${COMMON_INCLUDES})
-  target_link_libraries(gpu_sim_check ${COMMON_LIBRARIES})
+  add_executable(gpu_sim_check gpu_sim_check.c ../src/diffraction.c
+                 ../src/diffraction-gpu.c ../src/cl-utils.c)
+  target_include_directories(gpu_sim_check PRIVATE ${COMMON_INCLUDES} ${OpenCL_INCLUDE_DIRS})
+  target_link_libraries(gpu_sim_check ${COMMON_LIBRARIES} ${OpenCL_LIBRARIES})
   add_test(gpu_sim_check gpu_sim_check)
 endif (HAVE_OPENCL)
 

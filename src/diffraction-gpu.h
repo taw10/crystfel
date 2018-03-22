@@ -38,7 +38,7 @@
 
 struct gpu_context;
 
-#if HAVE_OPENCL
+#ifdef HAVE_OPENCL
 
 extern int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
                                int na, int nb, int nc, UnitCell *ucell,
