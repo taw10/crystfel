@@ -36,17 +36,8 @@ endif("${isSystemDir}" STREQUAL "-1")
 
 # Common include directories and libraries
 
-set(COMMON_INCLUDES
-	${HDF5_INCLUDE_DIRS}
-	)
-
-set(COMMON_LIBRARIES
-	libcrystfel
-	${HDF5_C_LIBRARIES}
-	Threads::Threads
-	GSL::gsl
-	)
-
+set(COMMON_INCLUDES ${HDF5_INCLUDE_DIRS})
+set(COMMON_LIBRARIES libcrystfel ${HDF5_C_LIBRARIES} Threads::Threads GSL::gsl)
 
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
@@ -68,9 +59,10 @@ set(HAVE_GDK ${GDK_FOUND})
 check_include_file(fcntl.h HAVE_FCNTL_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
-if(OpenCL_FOUND)
-	check_include_file(CL/cl.h HAVE_CL_CL_H "-I${OpenCL_INCLUDE_DIRS}")
-endif(OpenCL_FOUND)
+
+if (OpenCL_FOUND)
+  check_include_file(CL/cl.h HAVE_CL_CL_H "-I${OpenCL_INCLUDE_DIRS}")
+endif (OpenCL_FOUND)
 
 # Check for nice clock function
 check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
@@ -90,8 +82,7 @@ add_subdirectory(libcrystfel)
 # Build Target
 # partial_sim
 
-set(PARTIAL_SIM_SOURCES
-	src/partial_sim.c)
+set(PARTIAL_SIM_SOURCES src/partial_sim.c)
 
 add_executable(partial_sim ${PARTIAL_SIM_SOURCES})
 target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
@@ -101,19 +92,11 @@ target_link_libraries(partial_sim ${COMMON_LIBRARIES})
 # Build Target
 # pattern_sim
 
-set(PATTERN_SIM_SOURCES
-	src/pattern_sim.c
-	src/diffraction.c
-	)
+set(PATTERN_SIM_SOURCES src/pattern_sim.c src/diffraction.c)
 
 if(HAVE_OPENCL)
-	set(PATTERN_SIM_OPENCL_SOURCES
-		src/cl-utils.c
-		src/diffraction-gpu.c
-		)
-	set(PATTERN_SIM_RESOURCE_FILES
-		data/diffraction.cl
-		)
+  set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
+  set(PATTERN_SIM_RESOURCE_FILES data/diffraction.cl)
 endif(HAVE_OPENCL)
 
 add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
@@ -121,13 +104,12 @@ target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(pattern_sim ${COMMON_LIBRARIES})
 
 if(HAVE_OPENCL)
-	target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
-	target_link_libraries(pattern_sim ${OpenCL_LIBRARIES})
+  target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
+  target_link_libraries(pattern_sim ${OpenCL_LIBRARIES})
 endif(HAVE_OPENCL)
 
 set_target_properties(pattern_sim PROPERTIES
-	RESOURCE "${PATTERN_SIM_RESOURCE_FILES}"
-	)
+                      RESOURCE "${PATTERN_SIM_RESOURCE_FILES}")
 
 # ----------------------------------------------------------------------
 # Build Target
@@ -162,24 +144,17 @@ endif (GTK2_FOUND)
 
 if (GTK2_FOUND)
 
-	set(CELL_EXPLORER_SOURCES
-		src/cell_explorer.c
-		src/multihistogram.c
-		)
+  set(CELL_EXPLORER_SOURCES src/cell_explorer.c src/multihistogram.c)
 
-	add_executable(cell_explorer ${CELL_EXPLORER_SOURCES})
-	target_include_directories(cell_explorer PRIVATE ${COMMON_INCLUDES} ${GTK2_INCLUDE_DIRS})
-	target_link_libraries(cell_explorer ${COMMON_LIBRARIES} ${GTK2_LIBRARIES})
+  add_executable(cell_explorer ${CELL_EXPLORER_SOURCES})
+  target_include_directories(cell_explorer PRIVATE ${COMMON_INCLUDES} ${GTK2_INCLUDE_DIRS})
+  target_link_libraries(cell_explorer ${COMMON_LIBRARIES} ${GTK2_LIBRARIES})
 
-	install(
-		TARGETS
-		cell_explorer
+  install (TARGETS cell_explorer
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib)
 
-		RUNTIME DESTINATION bin
-		LIBRARY DESTINATION lib
-	    )
-
-endif(GTK2_FOUND)
+endif (GTK2_FOUND)
 
 # ----------------------------------------------------------------------
 # Build Target
@@ -203,10 +178,7 @@ endif (CAIRO_FOUND)
 # Build Target
 # process_hkl
 
-set(PROCESS_HKL_SOURCES
-	src/process_hkl.c
-	)
-
+set(PROCESS_HKL_SOURCES src/process_hkl.c)
 add_executable(process_hkl ${PROCESS_HKL_SOURCES})
 target_include_directories(process_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(process_hkl ${COMMON_LIBRARIES})
@@ -215,10 +187,7 @@ target_link_libraries(process_hkl ${COMMON_LIBRARIES})
 # Build Target
 # list_events
 
-set(LIST_EVENTS_SOURCES
-	src/list_events.c
-	)
-
+set(LIST_EVENTS_SOURCES src/list_events.c)
 add_executable(list_events ${LIST_EVENTS_SOURCES})
 target_include_directories(list_events PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(list_events ${COMMON_LIBRARIES})
@@ -227,12 +196,8 @@ target_link_libraries(list_events ${COMMON_LIBRARIES})
 # Build Target
 # indexamajig
 
-set(INDEXAMAJIG_SOURCES
-	src/indexamajig.c
-	src/im-sandbox.c
-	src/process_image.c
-	src/time-accounts.c
-	)
+set(INDEXAMAJIG_SOURCES src/indexamajig.c src/im-sandbox.c src/process_image.c
+                        src/time-accounts.c)
 
 add_executable(indexamajig ${INDEXAMAJIG_SOURCES})
 target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
@@ -242,10 +207,7 @@ target_link_libraries(indexamajig ${COMMON_LIBRARIES})
 # Build Target
 # get_hkl
 
-set(GET_HKL_SOURCES
-	src/get_hkl.c
-	)
-
+set(GET_HKL_SOURCES src/get_hkl.c)
 add_executable(get_hkl ${GET_HKL_SOURCES})
 target_include_directories(get_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(get_hkl ${COMMON_LIBRARIES})
@@ -254,10 +216,7 @@ target_link_libraries(get_hkl ${COMMON_LIBRARIES})
 # Build Target
 # compare_hkl
 
-set(COMPARE_HKL_SOURCES
-	src/compare_hkl.c
-	)
-
+set(COMPARE_HKL_SOURCES src/compare_hkl.c)
 add_executable(compare_hkl ${COMPARE_HKL_SOURCES})
 target_include_directories(compare_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(compare_hkl ${COMMON_LIBRARIES})
@@ -266,10 +225,7 @@ target_link_libraries(compare_hkl ${COMMON_LIBRARIES})
 # Build Target
 # check_hkl
 
-set(CHECK_HKL_SOURCES
-	src/check_hkl.c
-	)
-
+set(CHECK_HKL_SOURCES src/check_hkl.c)
 add_executable(check_hkl ${CHECK_HKL_SOURCES})
 target_include_directories(check_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(check_hkl ${COMMON_LIBRARIES})
@@ -278,14 +234,8 @@ target_link_libraries(check_hkl ${COMMON_LIBRARIES})
 # Build Target
 # partialator
 
-set(PARTIALATOR_SOURCES
-	src/partialator.c
-	src/post-refinement.c
-	src/merge.c
-	src/rejection.c
-	src/scaling.c
-	)
-
+set(PARTIALATOR_SOURCES src/partialator.c src/post-refinement.c src/merge.c
+                        src/rejection.c src/scaling.c)
 add_executable(partialator ${PARTIALATOR_SOURCES})
 target_include_directories(partialator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partialator ${COMMON_LIBRARIES})
@@ -294,10 +244,7 @@ target_link_libraries(partialator ${COMMON_LIBRARIES})
 # Build Target
 # ambigator
 
-set(AMBIGATOR_SOURCES
-	src/ambigator.c
-	)
-
+set(AMBIGATOR_SOURCES src/ambigator.c)
 add_executable(ambigator ${AMBIGATOR_SOURCES})
 target_include_directories(ambigator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ambigator ${COMMON_LIBRARIES})
@@ -333,27 +280,20 @@ if (TIFF_FOUND)
   target_link_libraries(geoptimiser ${TIFF_LIBRARIES})
 endif (TIFF_FOUND)
 
-install (TARGETS geoptimiser
-         RUNTIME DESTINATION bin
-         LIBRARY DESTINATION lib)
-
 # ----------------------------------------------------------------------
 # Build Target
 # whirligig
 
-set(WHIRLIGIG_SOURCES
-	src/whirligig.c
-	)
-
+set(WHIRLIGIG_SOURCES src/whirligig.c)
 add_executable(whirligig ${WHIRLIGIG_SOURCES})
 target_include_directories(whirligig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(whirligig ${COMMON_LIBRARIES})
 
 
+# ----------------------------------------------------------------------
 # install targets
 
-install(
-	TARGETS
+install(TARGETS
 	partial_sim
 	pattern_sim
 	process_hkl
@@ -365,6 +305,8 @@ install(
 	partialator
 	ambigator
 	whirligig
+	geoptimiser
+	# hdfsee, cell_explorer, render_hkl only if dependencies are satisfied
 
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
