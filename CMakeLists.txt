@@ -185,32 +185,19 @@ endif(GTK2_FOUND)
 # Build Target
 # render_hkl
 
-if(CAIRO_FOUND AND GTK2_FOUND)
+if (CAIRO_FOUND)
 
-	set(RENDER_HKL_SOURCES
-		src/render_hkl.c
-		)
+  set(RENDER_HKL_SOURCES src/render_hkl.c)
+  add_executable(render_hkl ${RENDER_HKL_SOURCES})
 
-	add_executable(render_hkl ${RENDER_HKL_SOURCES})
-	target_include_directories(render_hkl PRIVATE
-		${COMMON_INCLUDES}
-		${GTK2_INCLUDE_DIRS}
-		${CAIRO_INCLUDE_DIRS}
-		)
-	target_link_libraries(render_hkl
-		${COMMON_LIBRARIES}
-		${GTK2_LIBRARIES}
-		${CAIRO_LIBRARIES}
-		)
+  target_include_directories(render_hkl PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS})
+  target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES})
 
-	install(
-		TARGETS
-		render_hkl
+  install (TARGETS render_hkl
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib)
 
-		RUNTIME DESTINATION bin
-		LIBRARY DESTINATION lib
-	    )
-endif(CAIRO_FOUND AND GTK2_FOUND)
+endif (CAIRO_FOUND)
 
 # ----------------------------------------------------------------------
 # Build Target
