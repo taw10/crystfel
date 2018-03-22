@@ -111,6 +111,11 @@ if (CBF_FOUND)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${CBF_LIBRARIES})
 endif (CBF_FOUND)
 
+if (CURSES_FOUND)
+  target_include_directories(${PROJECT_NAME} PRIVATE ${CURSES_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${CURSES_LIBRARIES})
+endif (CURSES_FOUND)
+
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
 install (TARGETS libcrystfel

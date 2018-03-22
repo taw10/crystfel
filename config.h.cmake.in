@@ -10,6 +10,7 @@
 #cmakedefine HAVE_TIFF
 #cmakedefine HAVE_XGANDALF
 #cmakedefine HAVE_FDIP
+#cmakedefine HAVE_CURSES
 
 /* We avoid adding the full path to cbf.h, because CBFlib unhelpfully installs
  * some conflicting HDF5 headers which we want to keep out of the include path.
@@ -18,10 +19,6 @@
 #cmakedefine HAVE_CBFLIB
 #cmakedefine HAVE_CBF_CBF_H
 #cmakedefine HAVE_CBFLIB_CBF_H
-
-/* Implement us .... */
-#undef HAVE_CURSES
-#undef HAVE_CURSES_COLOR
 
 #define PACKAGE_VERSION "0.6.3"
 

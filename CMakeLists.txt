@@ -21,6 +21,7 @@ find_package(PINKINDEXER)
 find_package(NBP)
 find_package(FDIP)
 find_package(OpenCL)
+find_package(Curses)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 
@@ -55,6 +56,7 @@ set(HAVE_OPENCL ${OpenCL_FOUND})
 set(HAVE_CBFLIB ${CBF_FOUND})
 set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
 set(HAVE_GDK ${GDK_FOUND})
+set(HAVE_CURSES ${CURSES_FOUND})
 
 check_include_file(fcntl.h HAVE_FCNTL_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
