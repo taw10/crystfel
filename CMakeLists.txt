@@ -80,6 +80,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # Add the libcrystfel target
 add_subdirectory(libcrystfel)
 
+# Add tests
+enable_testing()
+add_subdirectory(tests)
+
 # ----------------------------------------------------------------------
 # Build Target
 # partial_sim
