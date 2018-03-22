@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.6)
-project(crystfel)
+project(crystfel VERSION 0.6.3 LANGUAGES C)
 
 include(GNUInstallDirs)
 
@@ -42,6 +42,7 @@ set(COMMON_LIBRARIES libcrystfel ${HDF5_C_LIBRARIES} Threads::Threads GSL::gsl)
 
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+string(SUBSTRING ${GIT_SHA1} 0 8 GIT_SHA1)
 
 include(CheckIncludeFile)
 include(CheckLibraryExists)
@@ -57,6 +58,8 @@ set(HAVE_CBFLIB ${CBF_FOUND})
 set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
 set(HAVE_GDK ${GDK_FOUND})
 set(HAVE_CURSES ${CURSES_FOUND})
+
+set(PACKAGE_VERSION ${PROJECT_VERSION})
 
 check_include_file(fcntl.h HAVE_FCNTL_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
