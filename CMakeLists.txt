@@ -92,6 +92,10 @@ configure_file(libcrystfel/crystfel.pc.in crystfel.pc)
 install(FILES ${CMAKE_BINARY_DIR}/crystfel.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
+# Install scripts
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
+        DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
 # API docs
 find_package(GtkDoc 1.25)
 if (GTKDOC_FOUND)
