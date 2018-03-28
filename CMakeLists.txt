@@ -87,6 +87,11 @@ add_subdirectory(libcrystfel)
 enable_testing()
 add_subdirectory(tests)
 
+# crystfel.pc
+configure_file(libcrystfel/crystfel.pc.in crystfel.pc)
+install(FILES ${CMAKE_BINARY_DIR}/crystfel.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
 # API docs
 find_package(GtkDoc 1.25)
 if (GTKDOC_FOUND)
