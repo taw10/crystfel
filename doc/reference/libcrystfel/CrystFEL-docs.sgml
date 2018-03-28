@@ -33,7 +33,7 @@
 
   <chapter>
     <title>Unit cells</title>
-        <xi:include href="xml/unitcell.xml"/>
+        <xi:include href="xml/cell.xml"/>
         <xi:include href="xml/cell-utils.xml"/>
   </chapter>
 
@@ -59,7 +59,7 @@
 
   <chapter>
     <title>Image filters</title>
-        <xi:include href="xml/filter.xml"/>
+        <xi:include href="xml/filters.xml"/>
   </chapter>
 
   <chapter>
@@ -79,7 +79,7 @@
 
   <chapter>
     <title>Indexing</title>
-        <xi:include href="xml/indexing.xml"><xi:fallback /></xi:include>
+        <xi:include href="xml/index.xml"><xi:fallback /></xi:include>
   </chapter>
 
   <chapter>
@@ -119,7 +119,6 @@
 
   <chapter>
     <title>Miscellaneous</title>
-        <xi:include href="xml/quaternion.xml"/>
         <xi:include href="xml/histogram.xml"/>
         <xi:include href="xml/utils.xml"/>
   </chapter>

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -x
+DOC_MODULE=CrystFEL
+
+mkdir docs
+cd docs
+gtkdoc-scan --module=${DOC_MODULE} ../../libcrystfel/src/*.h
+gtkdoc-mkdb --module=${DOC_MODULE} --output-format=xml --source-dir=../../libcrystfel/src
+mkdir html
+cd html
+gtkdoc-mkhtml ${DOC_MODULE} ../CrystFEL-docs.sgml
+cd ..
+gtkdoc-fixxref --module=${DOC_MODULE} --module-dir=html
