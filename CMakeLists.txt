@@ -103,7 +103,7 @@ if (GTKDOC_FOUND)
                  docs/xml/gtkdocentities.ent)
   configure_file(doc/reference/libcrystfel/CrystFEL-docs.sgml
                  docs/CrystFEL-docs.sgml COPYONLY)
-  add_custom_target(documentation VERBATIM COMMAND
+  add_custom_target(documentation ALL VERBATIM COMMAND
                     ${CMAKE_SOURCE_DIR}/doc/reference/libcrystfel/build-docs)
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs/html
           DESTINATION ${CMAKE_INSTALL_DOCDIR})
