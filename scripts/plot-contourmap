@@ -1,0 +1,153 @@
+#!/usr/bin/env python
+
+import numpy as np
+import matplotlib
+import matplotlib.cm as cm
+import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
+import sys
+import fnmatch
+import os
+from matplotlib.widgets import RadioButtons,Button
+
+im=None
+cnt=None
+centre_marker=None
+
+def next_click(w):
+    global crystal
+    crystal += 20
+    print("Crystal %i" % crystal)
+    update_graph()
+
+
+def prev_click(w):
+    global crystal
+    crystal -= 20
+    print("Crystal %i" % crystal)
+    update_graph()
+
+
+def iteration_click(label):
+    global cycle
+    cycle = label.split(" ")[1].split("\n")[0]
+    update_graph()
+
+
+def variable_click(label):
+    global varpair
+    varpair = label
+    update_graph()
+
+
+def update_graph():
+
+    global im, cnt, centre_marker
+
+    filename="pr-logs/grid-crystal%i-cycle%s-%s.dat" % (crystal,cycle,varpair)
+    print filename
+
+    with open(filename, "r") as f:
+
+        l = f.readline().split(None,3)
+
+        min1 = float(l[0])
+        max1 = float(l[1])
+        cur1 = float(l[2])
+        label1 = l[3]
+
+        l = f.readline().split(None,3)
+        min2 = float(l[0])
+        max2 = float(l[1])
+        cur2 = float(l[2])
+        label2 = l[3]
+
+    extent = (min1, max1, min2, max2)
+    Z = np.loadtxt(fname=filename, ndmin=2, delimiter=" ", skiprows=2)
+
+    ax.set_xlim([min1,max1])
+    ax.set_ylim([min2,max2])
+
+    if not im:
+        im = ax.imshow(Z, interpolation='none', origin='lower',
+                        cmap=cm.gray, extent=extent, aspect='auto')
+        im.autoscale()
+    else:
+        im.set_data(Z)
+        im.set_extent(extent)
+        im.autoscale()
+
+    levels = np.arange(0.0, 1.6, 0.1)
+
+    if cnt:
+        for coll in cnt.collections:
+            coll.remove()
+
+    cnt = ax.contour(Z, levels, origin='lower', linewidths=1, extent=extent)
+
+    ax.set_title(filename)
+    ax.set_xlabel(label1)
+    ax.set_ylabel(label2)
+    plt.flag()
+
+    if centre_marker:
+        centre_marker.remove()
+    centre_marker, = plt.plot(cur1, cur2, 'bH', color='r')
+
+    fig.canvas.draw()
+
+fig = plt.figure(figsize=(10,5))
+fig.subplots_adjust(left=0.05, bottom=0.05, right=0.70, top=0.95)
+
+# Find out what there is to plot
+crystals = []
+cycles = []
+varpairs = []
+for file in os.listdir("pr-logs"):
+    if not fnmatch.fnmatch(file, "grid-*.dat"):
+        continue
+    sp = file.rstrip(".dat").split("-")
+    crystals.append(int(sp[1].lstrip("crystal")))
+    cycles.append(sp[2].lstrip("cycle"))
+    varpairs.append(sp[3]+"-"+sp[4])
+
+crystals = sorted(set(crystals))
+cycles = sorted(set(cycles))
+varpairs = sorted(set(varpairs))
+
+crystal = crystals[0]
+cycle = cycles[0]
+varpair = varpairs[0]
+
+# Iteration selector
+ax = plt.axes([0.75, 0.55, 0.2, 0.40], facecolor="lightgoldenrodyellow")
+iterations = ["Iteration "+str(f) for f in cycles]
+if iterations[0] != "Iteration 0":
+    print("Whoops, couldn't find iteration 0!")
+    sys.exit(1)
+iterations[0] = "Iteration 0\n(initial scaling only)"
+if iterations[len(iterations)-1] != "Iteration F":
+    print("Whoops, couldn't find final iteration!")
+else:
+    iterations[len(iterations)-1] = "Iteration F\n(after final merge)"
+iteration = RadioButtons(ax, iterations)
+iteration.on_clicked(iteration_click)
+
+# Variable selector
+ax = plt.axes([0.75, 0.20, 0.2, 0.30], facecolor="lightgoldenrodyellow")
+variable = RadioButtons(ax, varpairs)
+variable.on_clicked(variable_click)
+
+# Crystal selector
+ax = plt.axes([0.75, 0.08, 0.20, 0.06])
+crystal_prev = Button(ax, "Previous crystal")
+crystal_prev.on_clicked(prev_click)
+ax = plt.axes([0.75, 0.01, 0.20, 0.06])
+crystal_next = Button(ax, "Next crystal")
+crystal_next.on_clicked(next_click)
+
+ax = plt.axes([0.1, 0.1, 0.6, 0.8])
+update_graph()
+plt.colorbar(im, shrink=0.8)
+
+plt.show()

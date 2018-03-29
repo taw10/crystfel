@@ -246,7 +246,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	if ( iargs->fix_bandwidth >= 0.0 ) {
 		image.bw = iargs->fix_bandwidth;
 	} else {
-		image.bw = 0.00000001;
+		image.bw = 0.0013;
 	}
 
 	if ( image_feature_count(image.features) < iargs->min_peaks ) {
@@ -301,7 +301,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	/* Integrate! */
 	time_accounts_set(taccs, TACC_INTEGRATION);
 	sb_shared->pings[cookie]++;
-	integrate_all_5(&image, iargs->int_meth, PMODEL_SCSPHERE,
+	integrate_all_5(&image, iargs->int_meth, PMODEL_XSPHERE,
 	                iargs->push_res,
 	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
 	                iargs->int_diag, iargs->int_diag_h,

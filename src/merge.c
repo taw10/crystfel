@@ -50,7 +50,7 @@
 
 
 /* Minimum partiality of a reflection for it to be merged */
-#define MIN_PART_MERGE (0.05)
+#define MIN_PART_MERGE (0.3)
 
 
 struct merge_queue_args
@@ -59,7 +59,6 @@ struct merge_queue_args
 	pthread_rwlock_t full_lock;
 	Crystal **crystals;
 	int n_started;
-	PartialityModel pmodel;
 	double push_res;
 	int use_weak;
 	long long int n_reflections;
@@ -159,7 +158,6 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double mean, sumweight, M2, temp, delta, R;
 		double corr, res, w;
-		//double esd;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
@@ -189,7 +187,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		}
 
 		/* Total (multiplicative) correction factor */
-		corr = exp(-G) * exp(B*res*res) * get_lorentz(refl)
+		corr = G * exp(B*res*res) * get_lorentz(refl)
 		        / get_partiality(refl);
 		if ( isnan(corr) ) {
 			ERROR("NaN corr:\n");
@@ -200,8 +198,8 @@ static void run_merge_job(void *vwargs, int cookie)
 			continue;
 		}
 
-		//esd = get_esd_intensity(refl) * corr;
-		w = 1.0;
+		/* Reflections count less the more they have to be scaled up */
+		w = 1.0 / corr;
 
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
@@ -229,7 +227,7 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 
 
 RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
-                           PartialityModel pmodel, int min_meas,
+                           int min_meas,
                            double push_res, int use_weak)
 {
 	RefList *full;
@@ -245,7 +243,6 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	qargs.full = full;
 	qargs.n_started = 0;
 	qargs.crystals = crystals;
-	qargs.pmodel = pmodel;
 	qargs.push_res = push_res;
 	qargs.use_weak = use_weak;
 	qargs.n_reflections = 0;

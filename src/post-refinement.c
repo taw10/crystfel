@@ -3,11 +3,11 @@
  *
  * Post refinement
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -33,11 +33,8 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_linalg.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_blas.h>
+#include <gsl/gsl_multimin.h>
+#include <gsl/gsl_fit.h>
 
 #include "image.h"
 #include "post-refinement.h"
@@ -46,15 +43,13 @@
 #include "geometry.h"
 #include "cell.h"
 #include "cell-utils.h"
+#include "reflist-utils.h"
+#include "scaling.h"
 
-
-/* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (10)
 
 struct prdata
 {
 	int refined;
-	int n_filtered;
 };
 
 const char *str_prflag(enum prflag flag)
@@ -79,468 +74,45 @@ const char *str_prflag(enum prflag flag)
 		case PRFLAG_BIGB :
 		return "B too big";
 
+		case PRFLAG_SCALEBAD :
+		return "bad scaling";
+
 		default :
 		return "Unknown flag";
 	}
 }
 
 
-/* Returns dp(gauss)/dr at "r" */
-static double gaussian_fraction_gradient(double r, double R)
-{
-	const double ng = 2.6;
-	const double sig = R/ng;
-
-	/* If the Ewald sphere isn't within the profile, the gradient is zero */
-	if ( r < -R ) return 0.0;
-	if ( r > +R ) return 0.0;
-
-	return exp(-pow(r/sig, 2.0)/2.0) / (sig*sqrt(2.0*M_PI));
-}
-
-
-/* Returns dp(sph)/dr at "r" */
-static double sphere_fraction_gradient(double r, double pr)
-{
-	double q, dpdq, dqdr;
-
-	/* If the Ewald sphere isn't within the profile, the gradient is zero */
-	if ( r < -pr ) return 0.0;
-	if ( r > +pr ) return 0.0;
-
-	q = (r + pr)/(2.0*pr);
-	dpdq = 6.0*(q - q*q);
-	dqdr = 1.0 / (2.0*pr);
-	return dpdq * dqdr;
-}
-
-
-/* Returns dp/dr at "r" */
-static double partiality_gradient(double r, double pr,
-                                  PartialityModel pmodel,
-                                  double rlow, double rhigh)
-{
-	double A, D;
-
-	D = rlow - rhigh;
-
-	switch ( pmodel ) {
-
-		default:
-		case PMODEL_UNITY:
-		return 0.0;
-
-		case PMODEL_SCSPHERE:
-		A = sphere_fraction_gradient(r, pr)/D;
-		return 4.0*pr*A/3.0;
-
-		case PMODEL_SCGAUSSIAN:
-		A = gaussian_fraction_gradient(r, pr)/D;
-		return 4.0*pr*A/3.0;
-
-	}
-}
-
-
-static double sphere_fraction_rgradient(double r, double R)
-{
-	/* If the Ewald sphere isn't within the profile, the gradient is zero */
-	if ( r < -R ) return 0.0;
-	if ( r > +R ) return 0.0;
-
-	return -(3.0*r/(4.0*R*R)) * (1.0 - r*r/(R*R));
-}
-
-
-static double gaussian_fraction_rgradient(double r, double R)
-{
-	const double ng = 2.6;
-	const double sig = R/ng;
-
-	/* If the Ewald sphere isn't within the profile, the gradient is zero */
-	if ( r < -R ) return 0.0;
-	if ( r > +R ) return 0.0;
-
-	return -(ng*r/(sqrt(2.0*M_PI)*R*R))*exp(-r*r/(2.0*sig*sig));
-}
-
-
-static double volume_fraction_rgradient(double r, double pr,
-                                       PartialityModel pmodel)
-{
-	switch ( pmodel )
-	{
-		case PMODEL_UNITY :
-		return 1.0;
-
-		case PMODEL_SCSPHERE :
-		return sphere_fraction_rgradient(r, pr);
-
-		case PMODEL_SCGAUSSIAN :
-		return gaussian_fraction_rgradient(r, pr);
-
-		default :
-		ERROR("No pmodel in volume_fraction_rgradient!\n");
-		return 1.0;
-	}
-}
-
-
-static double volume_fraction(double rlow, double rhigh, double pr,
-                              PartialityModel pmodel)
-{
-	switch ( pmodel )
-	{
-		case PMODEL_UNITY :
-		return 1.0;
-
-		case PMODEL_SCSPHERE :
-		return sphere_fraction(rlow, rhigh, pr);
-
-		case PMODEL_SCGAUSSIAN :
-		return gaussian_fraction(rlow, rhigh, pr);
-
-		default :
-		ERROR("No pmodel in volume_fraction!\n");
-		return 1.0;
-	}
-}
-
-
-/* Return the gradient of "fx" wrt parameter 'k' given the current
- * status of the crystal. */
-double gradient(Crystal *cr, int k, Reflection *refl, PartialityModel pmodel)
-{
-	double glow, ghigh;
-	double rlow, rhigh, p;
-	struct image *image = crystal_get_image(cr);
-	double R = crystal_get_profile_radius(cr);
-	double gr;
-
-	get_partial(refl, &rlow, &rhigh, &p);
-
-	if ( k == GPARAM_R ) {
-
-		double Rglow, Rghigh;
-		double D, psph;
-
-		D = rlow - rhigh;
-		psph = volume_fraction(rlow, rhigh, R, pmodel);
-
-		Rglow = volume_fraction_rgradient(rlow, R, pmodel);
-		Rghigh = volume_fraction_rgradient(rhigh, R, pmodel);
-
-		gr = 4.0*psph/(3.0*D) + (4.0*R/(3.0*D))*(Rglow - Rghigh);
-		return gr;
-
-	}
-
-	/* Calculate the gradient of partiality wrt excitation error. */
-	glow = partiality_gradient(rlow, R, pmodel, rlow, rhigh);
-	ghigh = partiality_gradient(rhigh, R, pmodel, rlow, rhigh);
-
-	if ( k == GPARAM_DIV ) {
-
-		double D, psph, ds;
-		signed int hs, ks, ls;
-
-		D = rlow - rhigh;
-		psph = volume_fraction(rlow, rhigh, R, pmodel);
-		get_symmetric_indices(refl, &hs, &ks, &ls);
-		ds = 2.0 * resolution(crystal_get_cell(cr), hs, ks, ls);
-
-		gr = (ds/2.0)*(glow+ghigh) - 4.0*R*psph*ds/(3.0*D*D);
-		return gr;
-
-	}
-
-	gr = r_gradient(crystal_get_cell(cr), k, refl, image) * (glow-ghigh);
-	return gr;
-}
-
-
-static void apply_cell_shift(UnitCell *cell, int k, double shift)
-{
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double as, bs, cs;
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	as = modulus(asx, asy, asz);
-	bs = modulus(bsx, bsy, bsz);
-	cs = modulus(csx, csy, csz);
-
-	/* Forbid any step which looks too large */
-	switch ( k )
-	{
-		case GPARAM_ASX :
-		case GPARAM_ASY :
-		case GPARAM_ASZ :
-		if ( fabs(shift) > 0.1*as ) return;
-		break;
-
-		case GPARAM_BSX :
-		case GPARAM_BSY :
-		case GPARAM_BSZ :
-		if ( fabs(shift) > 0.1*bs ) return;
-		break;
-
-		case GPARAM_CSX :
-		case GPARAM_CSY :
-		case GPARAM_CSZ :
-		if ( fabs(shift) > 0.1*cs ) return;
-		break;
-	}
-
-	switch ( k )
-	{
-		case GPARAM_ASX :  asx += shift;  break;
-		case GPARAM_ASY :  asy += shift;  break;
-		case GPARAM_ASZ :  asz += shift;  break;
-		case GPARAM_BSX :  bsx += shift;  break;
-		case GPARAM_BSY :  bsy += shift;  break;
-		case GPARAM_BSZ :  bsz += shift;  break;
-		case GPARAM_CSX :  csx += shift;  break;
-		case GPARAM_CSY :  csy += shift;  break;
-		case GPARAM_CSZ :  csz += shift;  break;
-	}
-
-	cell_set_reciprocal(cell, asx, asy, asz,
-	                          bsx, bsy, bsz,
-	                          csx, csy, csz);
-}
-
-
-/* Apply the given shift to the 'k'th parameter of 'image'. */
-static void apply_shift(Crystal *cr, int k, double shift)
-{
-	double t;
-	struct image *image = crystal_get_image(cr);
-
-	switch ( k ) {
-
-		case GPARAM_DIV :
-		if ( shift > 0.1*image->div ) return;
-		image->div += shift;
-		if ( image->div < 0.0 ) image->div = 0.0;
-		break;
-
-		case GPARAM_R :
-		t = crystal_get_profile_radius(cr);
-		if ( shift > 0.1*t ) return;
-		t += shift;
-		crystal_set_profile_radius(cr, t);
-		break;
-
-		case GPARAM_ASX :
-		case GPARAM_ASY :
-		case GPARAM_ASZ :
-		case GPARAM_BSX :
-		case GPARAM_BSY :
-		case GPARAM_BSZ :
-		case GPARAM_CSX :
-		case GPARAM_CSY :
-		case GPARAM_CSZ :
-		apply_cell_shift(crystal_get_cell(cr), k, shift);
-		break;
-
-		default :
-		ERROR("No shift defined for parameter %i\n", k);
-		abort();
-
-	}
-}
-
-
-/* Perform one cycle of post refinement on 'image' against 'full' */
-static double pr_iterate(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel,
-                         int *n_filtered, int verbose)
-{
-	gsl_matrix *M;
-	gsl_vector *v;
-	gsl_vector *shifts;
-	int param;
-	Reflection *refl;
-	RefListIterator *iter;
-	RefList *reflections;
-	double max_shift;
-	int nref = 0;
-	int num_params = 0;
-	enum gparam rv[32];
-	double G, B;
-
-	if ( n_filtered != NULL ) *n_filtered = 0;
-
-	rv[num_params++] = GPARAM_ASX;
-	rv[num_params++] = GPARAM_ASY;
-	rv[num_params++] = GPARAM_ASZ;
-	rv[num_params++] = GPARAM_BSX;
-	rv[num_params++] = GPARAM_BSY;
-	rv[num_params++] = GPARAM_BSZ;
-	rv[num_params++] = GPARAM_CSX;
-	rv[num_params++] = GPARAM_CSY;
-	rv[num_params++] = GPARAM_CSZ;
-//	rv[num_params++] = GPARAM_R;
-//	rv[num_params++] = GPARAM_DIV;
-
-	M = gsl_matrix_calloc(num_params, num_params);
-	v = gsl_vector_calloc(num_params);
-
-	reflections = crystal_get_reflections(cr);
-	G = crystal_get_osf(cr);
-	B = crystal_get_Bfac(cr);
-
-	/* Post-refinement terms */
-	for ( refl = first_refl(reflections, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int ha, ka, la;
-		double I_full, delta_I, esd;
-		double w;
-		double I_partial;
-		int k;
-		double p, L, s;
-		double fx;
-		Reflection *match;
-		double gradients[num_params];
-
-		if ( get_flag(refl) ) continue;
-
-		get_indices(refl, &ha, &ka, &la);
-		match = find_refl(full, ha, ka, la);
-		if ( match == NULL ) continue;
-		I_full = get_intensity(match);
-
-		if ( get_redundancy(match) < 2 ) continue;
-
-		p = get_partiality(refl);
-		L = get_lorentz(refl);
-		I_partial = get_intensity(refl);
-		esd = get_esd_intensity(refl);
-		s = resolution(crystal_get_cell(cr), ha, ka, la);
-
-		if ( I_partial < 3.0*esd ) continue;
-
-		/* Calculate the weight for this reflection */
-		w = (s/1e9)*(s/1e9) / (esd*esd);
-
-		/* Calculate all gradients for this reflection */
-		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = gradient(cr, rv[k], refl, pmodel);
-			gradients[k] *= exp(G)*exp(-B*s*s)*I_full/L;
-		}
-
-		for ( k=0; k<num_params; k++ ) {
-
-			int g;
-			double v_c, v_curr;
-
-			for ( g=0; g<num_params; g++ ) {
-
-				double M_c, M_curr;
-
-				/* Matrix is symmetric */
-				if ( g > k ) continue;
-
-				M_c = w * gradients[g] * gradients[k];
-
-				M_curr = gsl_matrix_get(M, k, g);
-				gsl_matrix_set(M, k, g, M_curr + M_c);
-				gsl_matrix_set(M, g, k, M_curr + M_c);
-
-			}
-
-			fx = exp(G)*p*exp(-B*s*s)*I_full/L;
-			delta_I = I_partial - fx;
-			v_c = w * delta_I * gradients[k];
-			v_curr = gsl_vector_get(v, k);
-			gsl_vector_set(v, k, v_curr + v_c);
-
-		}
-
-		nref++;
-	}
-	if ( verbose ) {
-		//STATUS("The original equation:\n");
-		//show_matrix_eqn(M, v);
-		STATUS("%i reflections went into the equations.\n", nref);
-	}
-
-	if ( nref < num_params ) {
-		crystal_set_user_flag(cr, PRFLAG_FEWREFL);
-		gsl_matrix_free(M);
-		gsl_vector_free(v);
-		return 0.0;
-	}
-
-	max_shift = 0.0;
-	shifts = solve_svd(v, M, n_filtered, 0);
-	if ( shifts != NULL ) {
-
-		for ( param=0; param<num_params; param++ ) {
-			double shift = gsl_vector_get(shifts, param);
-			if ( verbose ) STATUS("Shift %i: %e\n", param, shift);
-			if ( isnan(shift) ) {
-				//ERROR("NaN shift parameter %i (image ser %i), "
-				//       "%i reflections.\n", rv[param],
-				//       crystal_get_image(cr)->serial,
-				//       nref);
-			} else {
-				apply_shift(cr, rv[param], shift);
-			}
-			if ( fabs(shift) > max_shift ) max_shift = fabs(shift);
-		}
-
-	} else {
-		crystal_set_user_flag(cr, PRFLAG_SOLVEFAIL);
-	}
-
-	gsl_matrix_free(M);
-	gsl_vector_free(v);
-	gsl_vector_free(shifts);
-
-	return max_shift;
-}
-
-
 double residual(Crystal *cr, const RefList *full, int free,
-                int *pn_used, const char *filename)
+                int *pn_used, const char *filename, int complain)
 {
-	double dev = 0.0;
-	double G, B;
 	Reflection *refl;
 	RefListIterator *iter;
-	FILE *fh = NULL;
 	int n_used = 0;
+	double num = 0.0;
+	double den = 0.0;
+	double G = crystal_get_osf(cr);
+	double B = crystal_get_Bfac(cr);
+	UnitCell *cell = crystal_get_cell(cr);
 
-	if ( filename != NULL ) {
-		fh = fopen(filename, "a");
-		if ( fh == NULL ) {
-			ERROR("Failed to open '%s'\n", filename);
-		}
+	if ( linear_scale(full, crystal_get_reflections(cr), &G, complain) ) {
+		return GSL_NAN;
 	}
-
-	G = crystal_get_osf(cr);
-	B = crystal_get_Bfac(cr);
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double p, L, s, w;
+		double p, w, corr, res;
 		signed int h, k, l;
 		Reflection *match;
-		double esd, I_full, I_partial;
-		double fx, dc;
+		double I_full;
+		double int1, int2;
 
 		if ( free && !get_flag(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
 		match = find_refl(full, h, k, l);
 		if ( match == NULL ) continue;
 		I_full = get_intensity(match);
@@ -548,156 +120,821 @@ double residual(Crystal *cr, const RefList *full, int free,
 		if ( get_redundancy(match) < 2 ) continue;
 
 		p = get_partiality(refl);
-		L = get_lorentz(refl);
-		I_partial = get_intensity(refl);
-		esd = get_esd_intensity(refl);
-		s = resolution(crystal_get_cell(cr), h, k, l);
+		//if ( p < 0.2 ) continue;
 
-		if ( I_partial < 3.0*esd ) continue;
+		corr = G * exp(B*res*res) * get_lorentz(refl);
+		int1 = get_intensity(refl) * corr;
+		int2 = p*I_full;
+		w = p;
 
-		fx = exp(G)*p*exp(-B*s*s)*I_full/L;
-		dc = I_partial - fx;
-		w = (s/1e9)*(s/1e9)/(esd*esd);
-		dev += w*dc*dc;
+		num += fabs(int1 - int2) * w;
+		den += fabs(int1 + int2) * w/2.0;
+
 		n_used++;
 
-		if ( fh != NULL ) {
-			fprintf(fh, "%4i %4i %4i %e %e\n",
-			        h, k, l, s, dev);
-		}
 	}
 
-	if ( fh != NULL ) fclose(fh);
-
 	if ( pn_used != NULL ) *pn_used = n_used;
-	return dev;
+	return num/(den*sqrt(2));
 }
 
 
-static void write_residual_graph(Crystal *cr, const RefList *full)
+static UnitCell *rotate_cell_xy(const UnitCell *cell, double ang1, double ang2)
 {
-	int i;
+	UnitCell *o;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	double a;
-	double step;
-	double orig_asx;
-	FILE *fh;
+	double xnew, ynew, znew;
+
+	o = cell_new_from_cell(cell);
+
+	cell_get_reciprocal(o, &asx, &asy, &asz,
+	                       &bsx, &bsy, &bsz,
+	                       &csx, &csy, &csz);
+
+	/* "a" around x */
+	xnew = asx;
+	ynew = asy*cos(ang1) + asz*sin(ang1);
+	znew = -asy*sin(ang1) + asz*cos(ang1);
+	asx = xnew;  asy = ynew;  asz = znew;
+
+	/* "b" around x */
+	xnew = bsx;
+	ynew = bsy*cos(ang1) + bsz*sin(ang1);
+	znew = -bsy*sin(ang1) + bsz*cos(ang1);
+	bsx = xnew;  bsy = ynew;  bsz = znew;
+
+	/* "c" around x */
+	xnew = csx;
+	ynew = csy*cos(ang1) + csz*sin(ang1);
+	znew = -csy*sin(ang1) + csz*cos(ang1);
+	csx = xnew;  csy = ynew;  csz = znew;
+
+	/* "a" around y */
+	xnew = asx*cos(ang2) + asz*sin(ang2);
+	ynew = asy;
+	znew = -asx*sin(ang2) + asz*cos(ang2);
+	asx = xnew;  asy = ynew;  asz = znew;
+
+	/* "b" around y */
+	xnew = bsx*cos(ang2) + bsz*sin(ang2);
+	ynew = bsy;
+	znew = -bsx*sin(ang2) + bsz*cos(ang2);
+	bsx = xnew;  bsy = ynew;  bsz = znew;
+
+	/* "c" around y */
+	xnew = csx*cos(ang2) + csz*sin(ang2);
+	ynew = csy;
+	znew = -csx*sin(ang2) + csz*cos(ang2);
+	csx = xnew;  csy = ynew;  csz = znew;
+
+	cell_set_reciprocal(o, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+
+	return o;
+}
+
+
+static const char *get_label(enum gparam p)
+{
+	switch ( p ) {
+		case GPARAM_ANG1 : return "First angle (radians)";
+		case GPARAM_ANG2 : return "Second angle (radians)";
+		case GPARAM_R : return "Profile radius (m^-1)";
+		case GPARAM_WAVELENGTH : return "Wavelength (Angstroms)";
+		default : return "unknown";
+	}
+}
+
+
+/* We set all the step sizes to 1, then scale them.
+ * This way, the size of the simplex stays meaningful and we possibly also
+ *  avoid some roundoff errors */
+static double get_scale(enum gparam p)
+{
+	switch ( p ) {
+
+		case GPARAM_ANG1 : return deg2rad(0.05);
+		case GPARAM_ANG2 : return deg2rad(0.05);
+		case GPARAM_R : return 0.0005e9;
+		case GPARAM_WAVELENGTH : return 0.001e-10;
+
+		default : return 0.0;
+
+	}
+}
+
+
+struct rf_priv {
+	const Crystal *cr;
+	const RefList *full;
+	enum gparam rv[32];
+	int verbose;
+	int serial;
+	gsl_vector *initial;
+
+	/* For freeing later */
+	gsl_vector *vals;
+	gsl_vector *step;
+
+	/* So that it stays around until the end of minimisation */
+	gsl_multimin_function f;
+};
+
+
+static double get_actual_val(const gsl_vector *v, const gsl_vector *initial,
+                             enum gparam *rv, int i)
+{
+	return gsl_vector_get(v, i) * get_scale(rv[i])
+	             + gsl_vector_get(initial, i);
+}
+
+
+static void apply_parameters(const gsl_vector *v, const gsl_vector *initial,
+                             enum gparam *rv, Crystal *cr)
+{
+	int i;
+	double ang1, ang2, R, lambda;
 	UnitCell *cell;
 
-	cell = crystal_get_cell(cr);
+	/* Default parameters if not used in refinement */
+	ang1 = 0.0;
+	ang2 = 0.0;
+	R = crystal_get_profile_radius(cr);
+	lambda = crystal_get_image(cr)->lambda;
 
-	fh = fopen("residual-plot.dat", "w");
+	for ( i=0; i<v->size; i++ ) {
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	a = modulus(asx, asy, asz);
-	orig_asx = asx;
+		double val;
 
-	step = a/100.0;
+		val = get_actual_val(v, initial, rv, i);
 
-	for ( i=-50; i<=50; i++ ) {
+		switch ( rv[i] ) {
 
-		double res;
-		int n;
-		asx = orig_asx + (i*step);
-		cell_set_reciprocal(cell, asx, asy, asz,
-		                          bsx, bsy, bsz,
-		                          csx, csy, csz);
-		update_predictions(cr);
-		calculate_partialities(cr, PMODEL_SCSPHERE);
-		res = residual(cr, full, 0, &n, NULL);
-		fprintf(fh, "%i %e %e %i\n", i, asx, res, n);
+			case GPARAM_ANG1 :
+			ang1 = val;
+			break;
+
+			case GPARAM_ANG2 :
+			ang2 = val;
+			break;
+
+			case GPARAM_R :
+			R = val;
+			break;
+
+			case GPARAM_WAVELENGTH :
+			lambda = val;
+			break;
+
+			default :
+			ERROR("Don't understand parameter %i\n", rv[i]);
+			break;
+
+		}
 	}
 
-	cell_set_reciprocal(cell, orig_asx, asy, asz,
-	                          bsx, bsy, bsz,
-	                          csx, csy, csz);
+	cell = rotate_cell_xy(crystal_get_cell_const(cr), ang1, ang2);
+	crystal_set_cell(cr, cell);
+
+	crystal_set_profile_radius(cr, R);
+	crystal_get_image(cr)->lambda = lambda;
+}
+
+
+static double residual_f(const gsl_vector *v, void *pp)
+{
+	struct rf_priv *pv = pp;
+	RefList *list;
+	struct image im;
+	Crystal *cr;
+	UnitCell *cell;
+	double res;
+	int i;
+
+	for ( i=0; i<v->size; i++ ) {
+		if ( gsl_vector_get(v, i) > 100.0 ) return GSL_NAN;
+	}
+
+	cr = crystal_copy(pv->cr);
+	cell = cell_new_from_cell(crystal_get_cell(cr));
+	if ( cell == NULL ) return GSL_NAN;
+	crystal_set_cell(cr, cell);
+	im = *crystal_get_image(cr);
+	crystal_set_image(cr, &im);
+	apply_parameters(v, pv->initial, pv->rv, cr);
+
+	if ( fabs(crystal_get_profile_radius(cr)) > 5e9 ) {
+		crystal_free(cr);
+		if ( pv->verbose ) STATUS("radius > 5e9\n");
+		return GSL_NAN;
+	}
+
+	/* Can happen with grid scans and certain --force-radius values */
+	if ( fabs(crystal_get_profile_radius(cr)) < 0.0000001e9 ) {
+		crystal_free(cr);
+		if ( pv->verbose ) STATUS("radius very small\n");
+		return GSL_NAN;
+	}
+
+	if ( im.lambda <= 0.0 ) {
+		crystal_free(cr);
+		if ( pv->verbose ) STATUS("lambda < 0\n");
+		return GSL_NAN;
+	}
+
+	list = copy_reflist(crystal_get_reflections(cr));
+	crystal_set_reflections(cr, list);
+
 	update_predictions(cr);
-	calculate_partialities(cr, PMODEL_SCSPHERE);
+	calculate_partialities(cr, PMODEL_XSPHERE);
+
+	res = residual(cr, pv->full, 0, NULL, NULL, 0);
+
+	cell_free(crystal_get_cell(cr));
+	reflist_free(crystal_get_reflections(cr));
+	crystal_free(cr);
+
+	return res;
+}
+
+
+static double get_initial_param(Crystal *cr, enum gparam p)
+{
+	switch ( p ) {
+
+		case GPARAM_ANG1 : return 0.0;
+		case GPARAM_ANG2 : return 0.0;
+		case GPARAM_R : return crystal_get_profile_radius(cr);
+		case GPARAM_WAVELENGTH : return crystal_get_image(cr)->lambda;
+
+		default: return 0.0;
+
+	}
+}
+
+
+static int check_angle_shifts(gsl_vector *cur, const gsl_vector *initial,
+                              enum gparam *rv, struct rf_priv *residual_f_priv)
+{
+	int i = 0;
+	double ang = 0.0;
+
+	while ( rv[i] != GPARAM_EOL ) {
+		if ( (rv[i] == GPARAM_ANG1) || (rv[i] == GPARAM_ANG2) ) {
+			ang += fabs(get_actual_val(cur, initial, rv, i));
+		}
+		rv++;
+	}
+
+	if ( rad2deg(ang) > 5.0 ) {
+		ERROR("More than 5 degrees total rotation!\n");
+		residual_f_priv->verbose = 1;
+		double res = residual_f(cur, residual_f_priv);
+		STATUS("residual after rotation = %e\n", res);
+		residual_f_priv->verbose = 2;
+		res = residual_f(initial, residual_f_priv);
+		STATUS("residual before rotation = %e\n", res);
+		return 1;
+	}
+	return 0;
+}
+
+
+static RefList *reindex_reflections(RefList *input, SymOpList *amb,
+                                    SymOpList *sym, int idx)
+{
+	RefList *n;
+	Reflection *refl;
+	RefListIterator *iter;
+
+	n = reflist_new();
+
+	for ( refl = first_refl(input, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		Reflection *rn;
+
+		get_indices(refl, &h, &k, &l);
+		get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
+		get_asymm(sym, h, k, l, &h, &k, &l);
+		rn = add_refl(n, h, k, l);
+		copy_data(rn, refl);
+
+		get_symmetric_indices(rn, &h, &k, &l);
+		get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
+		set_symmetric_indices(rn, h, k, l);
+	}
+
+	return n;
+}
+
+
+static void reindex_cell(UnitCell *cell, SymOpList *amb, int idx)
+{
+	signed int h, k, l;
+	struct rvec na, nb, nc;
+	struct rvec as, bs, cs;
+
+	cell_get_reciprocal(cell, &as.u, &as.v, &as.w,
+	                          &bs.u, &bs.v, &bs.w,
+	                          &cs.u, &cs.v, &cs.w);
+
+	get_equiv(amb, NULL, idx, 1, 0, 0, &h, &k, &l);
+	na.u = as.u*h + bs.u*k + cs.u*l;
+	na.v = as.v*h + bs.v*k + cs.v*l;
+	na.w = as.w*h + bs.w*k + cs.w*l;
+
+	get_equiv(amb, NULL, idx, 0, 1, 0, &h, &k, &l);
+	nb.u = as.u*h + bs.u*k + cs.u*l;
+	nb.v = as.v*h + bs.v*k + cs.v*l;
+	nb.w = as.w*h + bs.w*k + cs.w*l;
+
+	get_equiv(amb, NULL, idx, 0, 0, 1, &h, &k, &l);
+	nc.u = as.u*h + bs.u*k + cs.u*l;
+	nc.v = as.v*h + bs.v*k + cs.v*l;
+	nc.w = as.w*h + bs.w*k + cs.w*l;
+
+	cell_set_reciprocal(cell, na.u, na.v, na.w,
+	                          nb.u, nb.v, nb.w,
+	                          nc.u, nc.v, nc.w);
+}
+
+
+void try_reindex(Crystal *crin, const RefList *full,
+                 SymOpList *sym, SymOpList *amb)
+{
+	RefList *list;
+	Crystal *cr;
+	UnitCell *cell;
+	double residual_original, residual_flipped;
+	int idx, n;
+
+	if ( sym == NULL || amb == NULL ) return;
+
+	residual_original = residual(crin, full, 0, NULL, NULL, 0);
+
+	cr = crystal_copy(crin);
+
+	n = num_equivs(amb, NULL);
+
+	for ( idx=0; idx<n; idx++ ) {
+
+		cell = cell_new_from_cell(crystal_get_cell(crin));
+		if ( cell == NULL ) return;
+		reindex_cell(cell, amb, idx);
+		crystal_set_cell(cr, cell);
+
+		list = reindex_reflections(crystal_get_reflections(crin),
+		                           amb, sym, idx);
+		crystal_set_reflections(cr, list);
+
+		update_predictions(cr);
+		calculate_partialities(cr, PMODEL_XSPHERE);
+
+		residual_flipped = residual(cr, full, 0, NULL, NULL, 1);
+
+		if ( residual_flipped < residual_original ) {
+			crystal_set_cell(crin, cell);
+			crystal_set_reflections(crin, list);
+			residual_original = residual_flipped;
+		} else {
+			cell_free(crystal_get_cell(cr));
+			reflist_free(crystal_get_reflections(cr));
+		}
+	}
+
+	crystal_free(cr);
+}
+
+
+void write_test_logs(Crystal *crystal, const RefList *full,
+                     signed int cycle, int serial)
+{
+	FILE *fh;
+	struct image *image = crystal_get_image(crystal);
+	char tmp[256];
+	char ins[5];
+
+	snprintf(tmp, 256, "pr-logs/parameters-crystal%i.dat", serial);
+
+	if ( cycle == 0 ) {
+		fh = fopen(tmp, "w");
+	} else {
+		fh = fopen(tmp, "a");
+	}
+
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", tmp);
+		return;
+	}
+
+	if ( cycle == 0 ) {
+		fprintf(fh, "Image: %s %s\n",
+		        image->filename, get_event_string(image->event));
+	}
+
+	if ( cycle >= 0 ) {
+		snprintf(ins, 4, "%i", cycle);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
+	fprintf(fh, "%s rlp_size = %e\n", ins, crystal_get_profile_radius(crystal)/1e10);
+	fprintf(fh, "%s mosaicity = %e\n", ins, crystal_get_mosaicity(crystal));
+	fprintf(fh, "%s wavelength = %f A\n", ins, image->lambda*1e10);
+	fprintf(fh, "%s bandwidth = %f\n", ins, image->bw);
+	fprintf(fh, "%s my scale factor = %e\n", ins, crystal_get_osf(crystal));
+
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	cell_get_reciprocal(crystal_get_cell(crystal), &asx, &asy, &asz,
+	                                               &bsx, &bsy, &bsz,
+	                                               &csx, &csy, &csz);
+	fprintf(fh, "%s %f, %f, %f, %f, %f, %f, %f, %f, %f\n", ins,
+	        asx/1e10, bsx/1e10, csx/1e10,
+	        asy/1e10, bsy/1e10, csy/1e10,
+	        asz/1e10, bsz/1e10, csz/1e10);
 	fclose(fh);
 }
 
 
-static void do_pr_refine(Crystal *cr, const RefList *full,
-                         PartialityModel pmodel, int verbose)
+void write_specgraph(Crystal *crystal, const RefList *full,
+                     signed int cycle, int serial)
 {
-	int i, done;
-	double old_dev;
-	UnitCell *cell = crystal_get_cell(cr);
+	FILE *fh;
+	char tmp[256];
+	Reflection *refl;
+	RefListIterator *iter;
+	double G = crystal_get_osf(crystal);
+	double B = crystal_get_Bfac(crystal);
+	UnitCell *cell;
+	struct image *image = crystal_get_image(crystal);
+	char ins[5];
 
-	old_dev = residual(cr, full, 0, 0, NULL);
+	snprintf(tmp, 256, "pr-logs/specgraph-crystal%i.dat", serial);
 
-	if ( verbose ) {
-		double asx, asy, asz;
-		double bsx, bsy, bsz;
-		double csx, csy, csz;
-		cell_get_reciprocal(cell, &asx, &asy, &asz,
-		                          &bsx, &bsy, &bsz,
-		                          &csx, &csy, &csz);
-		STATUS("Initial asx = %e\n", asx);
-		STATUS("PR initial  dev =  %10.5e, free dev = %10.5e\n",
-		       old_dev, residual(cr, full, 1, NULL, NULL));
+	if ( cycle == 0 ) {
+		fh = fopen(tmp, "w");
+	} else {
+		fh = fopen(tmp, "a");
 	}
 
-	i = 0;
-	done = 0;
-	do {
-
-		double dev;
-
-		pr_iterate(cr, full, pmodel, NULL, verbose);
-
-		update_predictions(cr);
-		calculate_partialities(cr, pmodel);
-
-		dev = residual(cr, full, 0, 0, NULL);
-		if ( fabs(dev - old_dev) < dev*0.0001 ) done = 1;
-
-		if ( verbose ) {
-			STATUS("PR iter %2i: dev = %10.5e, free dev = %10.5e\n",
-			       i+1, dev, residual(cr, full, 1, NULL, NULL));
-		}
-
-		i++;
-		old_dev = dev;
-
-	} while ( i < 30 && !done );
-
-	if ( verbose ) {
-		double asx, asy, asz;
-		double bsx, bsy, bsz;
-		double csx, csy, csz;
-		cell_get_reciprocal(cell, &asx, &asy, &asz,
-		                          &bsx, &bsy, &bsz,
-		                          &csx, &csy, &csz);
-		STATUS("Final asx = %e\n", asx);
+	if ( fh == NULL ) {
+		ERROR("Failed to open '%s'\n", tmp);
+		return;
 	}
+
+	if ( cycle == 0 ) {
+		fprintf(fh, "Image: %s %s\n",
+		        image->filename, get_event_string(image->event));
+		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration  h  k  l\n");
+	}
+
+	cell = crystal_get_cell(crystal);
+
+	if ( cycle >= 0 ) {
+		snprintf(ins, 4, "%i", cycle);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
+	for ( refl = first_refl(crystal_get_reflections(crystal), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double corr, Ipart, Ifull, pobs, pcalc;
+		double res;
+		signed int h, k, l;
+		Reflection *match;
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
+
+		/* Don't calculate pobs if reference reflection is weak */
+		if ( fabs(get_intensity(match)) / get_esd_intensity(match) < 3.0 ) continue;
+
+		corr = G * exp(B*res*res) * get_lorentz(refl);
+		Ipart = get_intensity(refl) * corr;
+		Ifull = get_intensity(match);
+		pobs = Ipart / Ifull;
+		pcalc = get_partiality(refl);
+
+		fprintf(fh, "%e   %e   %f   %f   %s  %4i %4i %4i\n",
+		        get_khalf(refl), 2.0*res, pcalc, pobs, ins, h, k, l);
+
+	}
+
+	fclose(fh);
 }
 
 
-static struct prdata pr_refine(Crystal *cr, const RefList *full,
-                               PartialityModel pmodel)
+static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full,
+                                                int verbose, int serial,
+                                                struct rf_priv *priv)
 {
-	int verbose = 0;
-	struct prdata prdata;
+	gsl_multimin_fminimizer *min;
+	int n_params = 0;
+	int i;
 
-	prdata.refined = 0;
-	prdata.n_filtered = 0;
+	/* The parameters to be refined */
+	priv->rv[n_params++] = GPARAM_ANG1;
+	priv->rv[n_params++] = GPARAM_ANG2;
+	priv->rv[n_params++] = GPARAM_R;
+	priv->rv[n_params++] = GPARAM_WAVELENGTH;
+	priv->rv[n_params] = GPARAM_EOL;  /* End of list */
+
+	priv->cr = cr;
+	priv->full = full;
+	priv->verbose = verbose;
+	priv->serial = serial;
+
+	priv->f.f = residual_f;
+	priv->f.n = n_params;
+	priv->f.params = priv;
+
+	priv->initial = gsl_vector_alloc(n_params);
+	priv->vals = gsl_vector_alloc(n_params);
+	priv->step = gsl_vector_alloc(n_params);
+
+	for ( i=0; i<n_params; i++ ) {
+		gsl_vector_set(priv->initial, i, get_initial_param(cr, priv->rv[i]));
+		gsl_vector_set(priv->vals, i, 0.0);
+		gsl_vector_set(priv->step, i, 1.0);
+	}
+
+	min = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2,
+	                                    n_params);
+	gsl_multimin_fminimizer_set(min, &priv->f, priv->vals, priv->step);
+
+	return min;
+}
+
+
+static void write_grid(Crystal *cr, const RefList *full,
+                       signed int cycle, int serial,
+                       const enum gparam par1, const enum gparam par2,
+                       const char *name)
+{
+	FILE *fh;
+	char fn[64];
+	char ins[5];
+	gsl_multimin_fminimizer *min;
+	struct rf_priv priv;
+	int idx1, idx2;
+	int i;
+
+	min = setup_minimiser(cr, full, 0, serial, &priv);
+
+	idx1 = 99;
+	idx2 = 99;
+	for ( i=0; i<priv.f.n; i++ ) {
+		if ( priv.rv[i] == par1 ) idx1 = i;
+		if ( priv.rv[i] == par2 ) idx2 = i;
+	}
+	assert(idx1 != 99);
+	assert(idx2 != 99);
+
+	if ( cycle >= 0 ) {
+		snprintf(ins, 4, "%i", cycle);
+	} else {
+		ins[0] = 'F';
+		ins[1] = '\0';
+	}
+
+	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%s-%s.dat",
+	         serial, ins, name);
+	fh = fopen(fn, "w");
+	if ( fh != NULL ) {
+		double v1, v2;
+		fprintf(fh, "%e %e %e %s\n",
+		        -5.0*get_scale(par1)+get_initial_param(cr, par1),
+		         5.0*get_scale(par1)+get_initial_param(cr, par1),
+		         get_initial_param(cr, par1),
+		         get_label(par1));
+		fprintf(fh, "%e %e %e %s\n",
+		        -5.0*get_scale(par2)+get_initial_param(cr, par2),
+		         5.0*get_scale(par2)+get_initial_param(cr, par2),
+		         get_initial_param(cr, par2),
+		        get_label(par2));
+		for ( v2=-5.0; v2<=5.0; v2+=0.25 ) {
+			int first=1;
+			for ( v1=-5.0; v1<=5.0; v1+=0.25 ) {
+				double res;
+				gsl_vector_set(min->x, idx1, v1);
+				gsl_vector_set(min->x, idx2, v2);
+				res = residual_f(min->x, &priv);
+				if ( !first ) fprintf(fh, " ");
+				first = 0;
+				fprintf(fh, "%e", res);
+			}
+			fprintf(fh, "\n");
+		}
+	}
+	fclose(fh);
+
+	gsl_multimin_fminimizer_free(min);
+	gsl_vector_free(priv.initial);
+	gsl_vector_free(priv.vals);
+	gsl_vector_free(priv.step);
+}
+
+
+void write_gridscan(Crystal *cr, const RefList *full,
+                    signed int cycle, int serial)
+{
+	write_grid(cr, full, cycle, serial,
+	           GPARAM_ANG1, GPARAM_ANG2, "ang1-ang2");
+	write_grid(cr, full, cycle, serial,
+	           GPARAM_ANG1, GPARAM_WAVELENGTH, "ang1-wave");
+	write_grid(cr, full, cycle, serial,
+	           GPARAM_R, GPARAM_WAVELENGTH, "R-wave");
+}
+
+
+static void do_pr_refine(Crystal *cr, const RefList *full,
+                         PartialityModel pmodel, int verbose, int serial,
+                         int cycle, int write_logs,
+                         SymOpList *sym, SymOpList *amb)
+{
+	gsl_multimin_fminimizer *min;
+	struct rf_priv priv;
+	int n_iter = 0;
+	int status;
+	int r;
+	double G;
+	double residual_start, residual_free_start;
+	FILE *fh = NULL;
+
+	try_reindex(cr, full, sym, amb);
+
+	residual_start = residual(cr, full, 0, NULL, NULL, 0);
+	residual_free_start = residual(cr, full, 1, NULL, NULL, 0);
 
 	if ( verbose ) {
-		write_residual_graph(cr, full);
+		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
+		       residual_start, residual_free_start);
 	}
 
-	do_pr_refine(cr, full, pmodel, verbose);
+	min = setup_minimiser(cr, full, verbose, serial, &priv);
 
-	if ( crystal_get_user_flag(cr) == 0 ) {
-		prdata.refined = 1;
+	if ( verbose ) {
+		double res = residual_f(min->x, &priv);
+		double size = gsl_multimin_fminimizer_size(min);
+		STATUS("At start: %f %f %f %f ----> %f %f %e %f residual = %e size %f\n",
+		       gsl_vector_get(min->x, 0),
+		       gsl_vector_get(min->x, 1),
+		       gsl_vector_get(min->x, 2),
+		       gsl_vector_get(min->x, 3),
+		       rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 0)),
+		       rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 1)),
+		       get_actual_val(min->x, priv.initial, priv.rv, 2),
+		       get_actual_val(min->x, priv.initial, priv.rv, 3)*1e10,
+		       res, size);
 	}
 
-	return prdata;
+	if ( write_logs ) {
+
+		char fn[64];
+
+		snprintf(fn, 63, "pr-logs/crystal%i-cycle%i.log", serial, cycle);
+		fh = fopen(fn, "w");
+		if ( fh != NULL ) {
+			fprintf(fh, "iteration  RtoReference  CCtoReference  nref  "
+			            "ang1     ang2    radius    wavelength");
+			double res = residual_f(min->x, &priv);
+			fprintf(fh, "%5i %10.8f  %10.8f  %5i  %10.8f %10.8f  %e  %e\n",
+			        n_iter, res, 0.0, 0,
+			        rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 0)),
+			        rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 1)),
+			        get_actual_val(min->x, priv.initial, priv.rv, 2),
+			        get_actual_val(min->x, priv.initial, priv.rv, 3)*1e10);
+		}
+
+	}
+
+	do {
+		double res;
+
+		n_iter++;
+
+		status = gsl_multimin_fminimizer_iterate(min);
+		if ( status ) break;
+
+		res = residual_f(min->x, &priv);
+		if ( isnan(res) ) {
+			status = GSL_ENOPROG;
+			break;
+		}
+
+		if ( verbose ) {
+			double res = residual_f(min->x, &priv);
+			double size = gsl_multimin_fminimizer_size(min);
+			STATUS("%f %f %f %f ----> %f %f %e %f residual = %e size %f\n",
+			       gsl_vector_get(min->x, 0),
+			       gsl_vector_get(min->x, 1),
+			       gsl_vector_get(min->x, 2),
+			       gsl_vector_get(min->x, 3),
+			       rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 0)),
+			       rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 1)),
+			       get_actual_val(min->x, priv.initial, priv.rv, 2),
+			       get_actual_val(min->x, priv.initial, priv.rv, 3)*1e10,
+			       res, size);
+		}
+
+		if ( fh != NULL ) {
+			fprintf(fh, "%5i %10.8f  %10.8f  %5i  %10.8f %10.8f  %e  %e\n",
+			        n_iter, res, 0.0, 0,
+			        rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 0)),
+			        rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 1)),
+			        get_actual_val(min->x, priv.initial, priv.rv, 2),
+			        get_actual_val(min->x, priv.initial, priv.rv, 3)*1e10);
+		}
+
+		status = gsl_multimin_test_size(min->size, 0.005);
+
+	} while ( status == GSL_CONTINUE && n_iter < 1000 );
+
+	if ( verbose ) {
+		STATUS("Done with refinement after %i iter\n", n_iter);
+		STATUS("status = %i (%s)\n", status, gsl_strerror(status));
+	}
+
+	if ( status == GSL_SUCCESS ) {
+
+		if ( check_angle_shifts(min->x, priv.initial, priv.rv, &priv) ) return;
+
+		if ( verbose ) {
+
+			double res = residual_f(min->x, &priv);
+			double size = gsl_multimin_fminimizer_size(min);
+			STATUS("At end: %f %f %f %f ----> %f %f %e %f residual = %e size %f\n",
+			       gsl_vector_get(min->x, 0),
+			       gsl_vector_get(min->x, 1),
+			       gsl_vector_get(min->x, 2),
+			       gsl_vector_get(min->x, 3),
+			       rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 0)),
+			       rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 1)),
+			       get_actual_val(min->x, priv.initial, priv.rv, 2),
+			       get_actual_val(min->x, priv.initial, priv.rv, 3)*1e10,
+			       res, size);
+
+		}
+
+		if ( fh != NULL ) {
+			double res = residual_f(min->x, &priv);
+			fprintf(fh, "%5i %10.8f  %10.8f  %5i  %10.8f %10.8f  %e  %e\n",
+			        n_iter, res, 0.0, 0,
+			        rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 0)),
+			        rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 1)),
+			        get_actual_val(min->x, priv.initial, priv.rv, 2),
+			        get_actual_val(min->x, priv.initial, priv.rv, 3)*1e10);
+			fclose(fh);
+		}
+
+		/* Apply the final shifts */
+		apply_parameters(min->x, priv.initial, priv.rv, cr);
+		update_predictions(cr);
+		calculate_partialities(cr, PMODEL_XSPHERE);
+		r = linear_scale(full, crystal_get_reflections(cr), &G, 0);
+		if ( r == 0 ) {
+			crystal_set_osf(cr, G);
+		}
+
+		if ( verbose ) {
+
+			STATUS("After applying final shifts:\n");
+			STATUS("PR final: dev = %10.5e, free dev = %10.5e\n",
+			       residual(cr, full, 0, NULL, NULL, 0),
+			       residual(cr, full, 1, NULL, NULL, 0));
+			STATUS("Final R = %e m^-1\n", crystal_get_profile_radius(cr));
+
+		}
+
+	} else {
+		ERROR("Bad refinement: crystal %i\n", serial);
+	}
+
+	if ( write_logs ) {
+		write_gridscan(cr, full, cycle, serial);
+		write_specgraph(cr, full, cycle, serial);
+		write_test_logs(cr, full, cycle, serial);
+	}
+
+	if ( crystal_get_profile_radius(cr) > 5e9 ) {
+		ERROR("Very large radius: crystal %i\n", serial);
+	}
+
+	gsl_multimin_fminimizer_free(min);
+	gsl_vector_free(priv.initial);
+	gsl_vector_free(priv.vals);
+	gsl_vector_free(priv.step);
 }
 
 
@@ -706,7 +943,13 @@ struct refine_args
 	RefList *full;
 	Crystal *crystal;
 	PartialityModel pmodel;
+	int serial;
 	struct prdata prdata;
+	int verbose;
+	int cycle;
+	int no_logs;
+	SymOpList *sym;
+	SymOpList *amb;
 };
 
 
@@ -724,8 +967,18 @@ static void refine_image(void *task, int id)
 {
 	struct refine_args *pargs = task;
 	Crystal *cr = pargs->crystal;
+	int write_logs = 0;
 
-	pargs->prdata = pr_refine(cr, pargs->full, pargs->pmodel);
+	write_logs = !pargs->no_logs && (pargs->serial % 20 == 0);
+	pargs->prdata.refined = 0;
+
+	do_pr_refine(cr, pargs->full, pargs->pmodel, pargs->verbose,
+	             pargs->serial, pargs->cycle, write_logs,
+	             pargs->sym, pargs->amb);
+
+	if ( crystal_get_user_flag(cr) == 0 ) {
+		pargs->prdata.refined = 1;
+	}
 }
 
 
@@ -738,6 +991,7 @@ static void *get_image(void *vqargs)
 	memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
 
 	task->crystal = qargs->crystals[qargs->n_started];
+	task->serial = qargs->n_started;
 
 	qargs->n_started++;
 
@@ -757,7 +1011,9 @@ static void done_image(void *vqargs, void *task)
 
 
 void refine_all(Crystal **crystals, int n_crystals,
-                RefList *full, int nthreads, PartialityModel pmodel)
+                RefList *full, int nthreads, PartialityModel pmodel,
+                int verbose, int cycle, int no_logs,
+                SymOpList *sym, SymOpList *amb)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -766,7 +1022,11 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.crystal = NULL;
 	task_defaults.pmodel = pmodel;
 	task_defaults.prdata.refined = 0;
-	task_defaults.prdata.n_filtered = 0;
+	task_defaults.verbose = verbose;
+	task_defaults.cycle = cycle;
+	task_defaults.no_logs = no_logs;
+	task_defaults.sym = sym;
+	task_defaults.amb = amb;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;

@@ -3,11 +3,11 @@
  *
  * Scaling
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -41,7 +41,12 @@
 extern double log_residual(Crystal *cr, const RefList *full, int free,
                            int *pn_used, const char *filename);
 
-extern void scale_all(Crystal **crystals, int n_crystals, int nthreads,
-                      PartialityModel pmodel);
+extern int linear_scale(const RefList *list1, const RefList *list2, double *G,
+                        int complain_loudly);
+
+extern void scale_all(Crystal **crystals, int n_crystals, int nthreads);
+
+extern void scale_all_to_reference(Crystal **crystals, int n_crystals,
+                                   RefList *reference, int nthreads);
 
 #endif	/* SCALING_H */

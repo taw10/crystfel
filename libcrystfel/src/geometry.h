@@ -3,7 +3,7 @@
  *
  * Geometry of diffraction
  *
- * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
@@ -47,8 +47,7 @@ extern "C" {
 /**
  * PartialityModel:
  * @PMODEL_UNITY : Set all all partialities and Lorentz factors to 1.
- * @PMODEL_SCSPHERE : Sphere model with source coverage factor included
- * @PMODEL_SCGAUSSIAN : Gaussian model with source coverage factor included
+ * @PMODEL_XSPHERE : Flat sphere model with super-Gaussian spectrum
  * @PMODEL_RANDOM : Randomly assigned partialities
  *
  * A %PartialityModel describes a geometrical model which can be used to
@@ -57,8 +56,7 @@ extern "C" {
 typedef enum {
 
 	PMODEL_UNITY,
-	PMODEL_SCSPHERE,
-	PMODEL_SCGAUSSIAN,
+	PMODEL_XSPHERE,
 	PMODEL_RANDOM,
 
 } PartialityModel;
@@ -80,8 +78,13 @@ enum gparam {
 	GPARAM_DETX,
 	GPARAM_DETY,
 	GPARAM_CLEN,
-	GPARAM_OSF,
-	GPARAM_BFAC
+	GPARAM_OSF,   /* Linear scale factor */
+	GPARAM_BFAC,  /* D-W scale factor */
+	GPARAM_ANG1,  /* Out of plane rotation angles of crystal */
+	GPARAM_ANG2,
+	GPARAM_WAVELENGTH,
+
+	GPARAM_EOL    /* End of list */
 };
 
 
@@ -99,9 +102,9 @@ extern double sphere_fraction(double rlow, double rhigh, double pr);
 extern double gaussian_fraction(double rlow, double rhigh, double pr);
 
 extern double x_gradient(int param, Reflection *refl, UnitCell *cell,
-                         struct panel *p, double lambda);
+                         struct panel *p);
 extern double y_gradient(int param, Reflection *refl, UnitCell *cell,
-                         struct panel *p, double lambda);
+                         struct panel *p);
 
 #ifdef __cplusplus
 }

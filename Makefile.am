@@ -8,25 +8,25 @@ bin_PROGRAMS = src/pattern_sim src/process_hkl src/get_hkl src/indexamajig \
                src/ambigator src/geoptimiser src/whirligig src/list_events
 
 noinst_PROGRAMS = tests/list_check tests/integration_check \
-                  tests/pr_p_gradient_check tests/symmetry_check \
+                  tests/symmetry_check \
                   tests/centering_check tests/transformation_check \
                   tests/cell_check tests/ring_check \
                   tests/prof2d_check tests/ambi_check \
-		  tests/prediction_gradient_check
+		  tests/prediction_gradient_check \
+                  tests/linear_scale_check
 
 MERGE_CHECKS = tests/first_merge_check tests/second_merge_check \
                tests/third_merge_check tests/fourth_merge_check
 
 PARTIAL_CHECKS = tests/partialator_merge_check_1 \
                  tests/partialator_merge_check_2 \
-                 tests/partialator_merge_check_3 \
-                 tests/pr_p_gradient_check
+                 tests/partialator_merge_check_3
 
 TESTS = tests/list_check $(MERGE_CHECKS) $(PARTIAL_CHECKS) \
         tests/integration_check \
         tests/symmetry_check tests/centering_check tests/transformation_check \
         tests/cell_check tests/ring_check tests/prof2d_check tests/ambi_check \
-        tests/prediction_gradient_check
+        tests/prediction_gradient_check tests/linear_scale_check
 
 EXTRA_DIST += $(MERGE_CHECKS) $(PARTIAL_CHECKS)
 EXTRA_DIST += relnotes-0.6.3 announcement-0.6.3
@@ -113,9 +113,6 @@ tests_symmetry_check_SOURCES = tests/symmetry_check.c
 
 tests_ambi_check_SOURCES = tests/ambi_check.c
 
-tests_pr_p_gradient_check_SOURCES = tests/pr_p_gradient_check.c \
-                                  src/post-refinement.c
-
 tests_prediction_gradient_check_SOURCES = tests/prediction_gradient_check.c
 
 tests_centering_check_SOURCES = tests/centering_check.c
@@ -125,6 +122,9 @@ tests_transformation_check_SOURCES = tests/transformation_check.c
 tests_ring_check_SOURCES = tests/ring_check.c
 
 tests_cell_check_SOURCES = tests/cell_check.c
+
+tests_linear_scale_check_SOURCES = tests/linear_scale_check.c src/scaling.c \
+				   src/merge.c
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
 
@@ -185,7 +185,7 @@ script_DATA = scripts/alternate-stream scripts/cell-please \
               scripts/gaincal-to-saturation-map scripts/move-entire-detector \
               scripts/split-by-mask scripts/turbo-index-slurm \
               scripts/sum-peaks scripts/peakogram-stream scripts/eiger-badmap \
-              scripts/sum-hdf5-files
+              scripts/sum-hdf5-files scripts/plot-pr scripts/plot-contourmap
 
 EXTRA_DIST += $(script_DATA)
 

@@ -67,10 +67,11 @@ struct _refldata {
 	signed int ls;
 
 	/* Partiality and related geometrical stuff */
-	double rlow;  /* Low excitation error */
-	double rhigh;  /* High excitation error */
-	double p;   /* Partiality */
-	double L;   /* Lorentz factor */
+	double khalf; /* Wavenumber of middle of reflection */
+	double kpred; /* Wavenumber for prediction */
+	double exerr; /* Excitation error */
+	double p;     /* Partiality */
+	double L;     /* Lorentz factor */
 
 	/* Location in image */
 	double fs;
@@ -422,22 +423,43 @@ double get_intensity(const Reflection *refl)
 
 
 /**
- * get_partial:
+ * get_khalf
  * @refl: A %Reflection
- * @rlow: Location at which to store the "low" excitation error
- * @rhigh: Location at which to store the "high" excitation error
- * @p: Location at which to store the partiality
  *
- * This function is used during post refinement (in conjunction with
- * set_partial()) to get access to the details of the partiality calculation.
+ * Returns: the wavenumber at the centre of the reflection
  *
  **/
-void get_partial(const Reflection *refl, double *rlow, double *rhigh,
-                 double *p)
+double get_khalf(const Reflection *refl)
 {
-	*rlow = refl->data.rlow;
-	*rhigh = refl->data.rhigh;
-	*p = get_partiality(refl);
+	return refl->data.khalf;
+}
+
+
+
+
+/**
+ * get_kpred:
+ * @refl: A %Reflection
+ *
+ * Returns: the wavenumber which should be used for prediction of this reflection
+ *
+ **/
+double get_kpred(const Reflection *refl)
+{
+	return refl->data.kpred;
+}
+
+
+/**
+ * get_exerr:
+ * @refl: A %Reflection
+ *
+ * Returns: the excitation error (in m^-1) for this reflection
+ *
+ **/
+double get_exerr(const Reflection *refl)
+{
+	return refl->data.exerr;
 }
 
 
@@ -612,23 +634,43 @@ void set_panel(Reflection *refl, struct panel *p)
 	refl->data.panel = p;
 }
 
+/**
+ * set_khalf:
+ * @refl: A %Reflection
+ * @khalf: The wavenumber at which the reflection should be predicted
+ *
+ * Sets the wavenumber at the centre of the reflection.
+ **/
+void set_khalf(Reflection *refl, double khalf)
+{
+	refl->data.khalf = khalf;
+}
+
+
 
 /**
- * set_partial:
+ * set_kpred:
  * @refl: A %Reflection
- * @rlow: The "low" excitation error
- * @rhigh: The "high" excitation error
- * @p: The partiality
+ * @kpred: The wavenumber at which the reflection should be predicted
  *
- * This function is used during post refinement (in conjunction with
- * get_partial()) to get access to the details of the partiality calculation.
+ * Sets the wavenumber at which the reflection should be predicted.
+ * Used by predict_to_res() and update_predictions()
+ **/
+void set_kpred(Reflection *refl, double kpred)
+{
+	refl->data.kpred = kpred;
+}
+
+
+/**
+ * set_exerr:
+ * @refl: A %Reflection
+ * @exerr: The excitation error for the reflection
  *
  **/
-void set_partial(Reflection *refl, double rlow, double rhigh, double p)
+void set_exerr(Reflection *refl, double exerr)
 {
-	refl->data.rlow = rlow;
-	refl->data.rhigh = rhigh;
-	refl->data.p = p;
+	refl->data.exerr = exerr;
 }
 
 

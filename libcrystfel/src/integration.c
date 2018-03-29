@@ -1760,7 +1760,7 @@ void integrate_all_2(struct image *image, IntegrationMethod meth,
                      IntDiag int_diag,
                      signed int idh, signed int idk, signed int idl)
 {
-	integrate_all_3(image, meth, PMODEL_SCSPHERE, 0.0,
+	integrate_all_3(image, meth, PMODEL_XSPHERE, 0.0,
 	                ir_inn, ir_mid, ir_out,
 	                int_diag, idh, idk, idl);
 }

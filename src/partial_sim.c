@@ -386,7 +386,7 @@ static void run_job(void *vwargs, int cookie)
 
 	reflections = predict_to_res(cr, largest_q(&wargs->image));
 	crystal_set_reflections(cr, reflections);
-	calculate_partialities(cr, PMODEL_SCSPHERE);
+	calculate_partialities(cr, PMODEL_XSPHERE);
 
 	for ( i=0; i<NBINS; i++ ) {
 		wargs->n_ref[i] = 0;
@@ -862,7 +862,7 @@ int main(int argc, char *argv[])
 		STATUS("                     Background: none (no image "
 		       "output)\n");
 	}
-	STATUS("               Partiality model: scsphere (hardcoded)\n");
+	STATUS("               Partiality model: xsphere (hardcoded)\n");
 	STATUS("       Noise standard deviation: %.2f detector units\n",
 	       noise_stddev);
 	if ( random_intensities ) {
@@ -874,6 +874,7 @@ int main(int argc, char *argv[])
 		       input_file, sym_str);
 	}
 	STATUS("   Max error in cell components: %.2f %%\n", cnoise);
+	STATUS("Scale factor standard deviation: %.2f\n", osf_stddev);
 
 	if ( random_intensities ) {
 		full = reflist_new();

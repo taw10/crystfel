@@ -3,11 +3,11 @@
  *
  * Fast reflection/peak list
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2016 Thomas White <taw@physics.org>
+ *   2011-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -87,6 +87,9 @@ extern Reflection *next_found_refl(Reflection *refl);
 extern void get_detector_pos(const Reflection *refl, double *fs, double *ss);
 extern struct panel *get_panel(const Reflection *refl);
 extern double get_partiality(const Reflection *refl);
+extern double get_khalf(const Reflection *refl);
+extern double get_kpred(const Reflection *refl);
+extern double get_exerr(const Reflection *refl);
 extern double get_lorentz(const Reflection *refl);
 extern void get_indices(const Reflection *refl,
                         signed int *h, signed int *k, signed int *l);
@@ -94,8 +97,6 @@ extern void get_symmetric_indices(const Reflection *refl,
                                   signed int *hs, signed int *ks,
                                   signed int *ls);
 extern double get_intensity(const Reflection *refl);
-extern void get_partial(const Reflection *refl, double *rlow, double *rhigh,
-                        double *p);
 extern int get_redundancy(const Reflection *refl);
 extern double get_temp1(const Reflection *refl);
 extern double get_temp2(const Reflection *refl);
@@ -109,7 +110,9 @@ extern int get_flag(const Reflection *refl);
 extern void copy_data(Reflection *to, const Reflection *from);
 extern void set_detector_pos(Reflection *refl, double fs, double ss);
 extern void set_panel(Reflection *refl, struct panel *p);
-extern void set_partial(Reflection *refl, double rlow, double rhigh, double p);
+extern void set_kpred(Reflection *refl, double kpred);
+extern void set_khalf(Reflection *refl, double khalf);
+extern void set_exerr(Reflection *refl, double exerr);
 extern void set_partiality(Reflection *refl, double p);
 extern void set_lorentz(Reflection *refl, double L);
 extern void set_intensity(Reflection *refl, double intensity);

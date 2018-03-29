@@ -1,7 +1,7 @@
 .\"
 .\" partialator man page
 .\"
-.\" Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -132,29 +132,45 @@ Reject crystals if the absolute values of their relative Debye-Waller ("B") fact
 .PD
 Write out the per-crystal parameters and reflection lists after every cycle of refinement, instead of only at the end.  The intermediate reflection lists and parameter filenames will be prefixed with \fBiter\fIN\fB_\fR (note the trailing underscore), where \fIN\fR is the iteration number.  If you use \fB--custom-split\fR, intermediate results will also be output for each custom dataset.
 
+.PD 0
+.IP \fB--no-logs\fR
+.PD
+Do not write the extensive log files needed for plotting contour maps and spectrum graphs.  This makes the process a lot faster, but you probably do want these logs to check that post-refinement is working reasonably.
+
+.PD 0
+.IP "\fB-w\fR \fIpg\fR"
+.PD
+Set the apparent symmetry of the crystals.  The ambiguity operator will be determined by comparing this to the actual symmetry.
+.IP
+If you prefer (or the scenario demands it), you can specify the ambiguity operator directly using \fB--operator\fR.
+
+.PD 0
+.IP \fB--operator=\fR\fIop\fR
+.PD
+Specify the indexing ambiguity operator.  Example: \fB--operator=k,h,-l\fR.
+.IP
+If you prefer, you can specify the ambiguity operator by specifying the apparent symmetry using \fB-w\fR.
+
+.PD 0
+.IP \fB--force-bandwidth=\fIbw\fR
+.IP \fB--force-radius=\fIR\fR
+.PD
+Set the X-ray bandwidth or initial profile radius for all crystals before proceeding.  Bandwidth is given as a fraction, i.e. \fB--force-bandwidth=0.0013\fR means 0.13 percent (approximate FWHM).  Radius is given in  nm^-1.
+
 .SH PARTIALITY MODELS
 
 The available partiality models are:
 
-.IP \fBscsphere\fR
+.IP \fBxsphere\fR
 .PD
 The volume of intersection between a sphere centered on each reciprocal lattice
 point and the part of reciprocal space excited by the Ewald sphere taking into
 account the finite bandwidth and convergence angle.  A "source coverage factor"
 is included to take into account the spectral brightness of the effective
-source for the reflection.
+source for the reflection.  The X-ray spectrum is modelled as a super-Gaussian
+with exponent 1.5, and the overlap integral is evaluated numerically.
 
-This model is similar to that described in Acta Cryst. D69 (2013) p1231-1240,
-and in Phil. Trans. Roy. Soc. B 369 (2014) 20130330, except that the "Lorentz
-factor" described there is no longer treated as a separate factor.
-
-
-.IP \fBscgaussian\fR
-.PD
-As \fBscsphere\fR, except that the shape of the scattering density centered on
-each reciprocal lattice point is taken to be a 3D Gaussian distribution instead
-of a sphere.  The standard deviation of the distribution will be the profile
-radius (determined by indexamajig) divided by 2.6.
+This model is the same as that described in Acta Cryst. D71 (2015) p1400.
 
 .IP \fBunity\fR
 .PD
@@ -216,7 +232,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 partialator, and this manual, are part of CrystFEL.
 .P

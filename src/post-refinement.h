@@ -3,11 +3,11 @@
  *
  * Post refinement
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -41,6 +41,7 @@
 #include "utils.h"
 #include "crystal.h"
 #include "geometry.h"
+#include "symmetry.h"
 
 
 enum prflag
@@ -51,19 +52,31 @@ enum prflag
 	PRFLAG_EARLY = 18,
 	PRFLAG_CC = 19,
 	PRFLAG_BIGB = 20,
+	PRFLAG_SCALEBAD = 21,
 };
 
 
 extern const char *str_prflag(enum prflag flag);
 
 extern void refine_all(Crystal **crystals, int n_crystals,
-                       RefList *full, int nthreads, PartialityModel pmodel);
+                       RefList *full, int nthreads, PartialityModel pmodel,
+                       int verbose, int cycle, int no_logs,
+                       SymOpList *sym, SymOpList *amb);
+
+extern void write_gridscan(Crystal *cr, const RefList *full,
+                           int cycle, int serial);
+
+extern void write_specgraph(Crystal *crystal, const RefList *full,
+                            signed int cycle, int serial);
 
 /* Exported so it can be poked by tests/pr_p_gradient_check */
 extern double gradient(Crystal *cr, int k, Reflection *refl,
                        PartialityModel pmodel);
 
 extern double residual(Crystal *cr, const RefList *full, int free,
-                       int *pn_used, const char *filename);
+                       int *pn_used, const char *filename, int complain);
+
+extern void write_test_logs(Crystal *crystal, const RefList *full,
+                            signed int cycle, int serial);
 
 #endif	/* POST_REFINEMENT_H */
