@@ -246,7 +246,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	if ( iargs->fix_bandwidth >= 0.0 ) {
 		image.bw = iargs->fix_bandwidth;
 	} else {
-		image.bw = 0.0013;
+		image.bw = 0.00000001;
 	}
 
 	if ( image_feature_count(image.features) < iargs->min_peaks ) {
