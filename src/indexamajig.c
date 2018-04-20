@@ -124,11 +124,11 @@ static void show_help(const char *s)
 "     --no-check-cell       Don't check lattice parameters against input cell\n"
 "     --no-cell-combinations\n"
 "                           Don't use axis combinations when checking cell\n"
-"     --no-multi            Don't repeat indexing to index multiple hits\n"
+"     --multi               Repeat indexing to index multiple hits\n"
 "     --no-retry            Don't repeat indexing to increase indexing rate\n"
 "     --no-refine           Skip the prediction refinement step\n"
-"     --check-peaks         Check that most of the peaks can be accounted for\n"
-"                            by the indexing solution\n"
+"     --no-check-peaks      Don't check that most of the peaks can be accounted\n"
+"                            for by the indexing solution\n"
 "\n"
 "     --taketwo-member-threshold\n"
 "                           Minimum number of members in network\n"
@@ -239,8 +239,8 @@ int main(int argc, char *argv[])
 	int if_refine = 1;
 	int if_nocomb = 0;
 	int if_nocheck = 0;
-	int if_peaks = 0;
-	int if_multi = 1;
+	int if_peaks = 1;
+	int if_multi = 0;
 	int if_retry = 1;
 	int serial_start = 1;
 
@@ -343,8 +343,11 @@ int main(int argc, char *argv[])
 		{"no-check-cell",      0, &if_nocheck,               1},
 		{"no-cell-check",      0, &if_nocheck,               1},
 		{"check-peaks",        0, &if_peaks,                 1},
+		{"no-check-peaks",     0, &if_peaks,                 0},
 		{"no-retry",           0, &if_retry,                 0},
+		{"retry",              0, &if_retry,                 1},
 		{"no-multi",           0, &if_multi,                 0},
+		{"multi",              0, &if_multi,                 1},
 		{"overpredict",        0, &iargs.overpredict,        1},
 
 		/* Long-only options which don't actually do anything */

@@ -316,9 +316,9 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 			ERROR("To disable prediction refinement ('norefine'), use --no-refine.\n");
 			ERROR("To check cell axes only ('axes'), use --no-cell-combinations.\n");
 			ERROR("To disable all unit cell checks ('raw'), use --no-check-cell.\n");
+			ERROR("To disable peak alignment check ('bad'), use --no-check-peaks.\n");
 			ERROR("To disable indexing retry ('noretry'), use --no-retry.\n");
-			ERROR("Multi-lattice indexing ('multi') is now the default: "
-			      "use --no-multi to disable it.\n");
+			ERROR("To enable multi-lattice indexing by 'delete and retry', use --multi\n");
 			ERROR("------------------\n");
 			free(methods);
 			return NULL;
