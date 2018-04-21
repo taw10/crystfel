@@ -1110,7 +1110,8 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 			*max_members = member_num;
 		}
 
-		for (int n = 0; n < member_num; n++)
+		int n;
+		for (n = 0; n < member_num; n++)
 		{
 			STATUS("*");
 		}
