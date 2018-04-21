@@ -118,15 +118,22 @@
 struct SpotVec
 {
 	struct rvec obsvec;
-	struct rvec *matches;
+	struct TheoryVec *matches;
 	int match_num;
-	struct rvec *asym_matches;
-	int asym_match_num;
 	double distance;
 	struct rvec *her_rlp;
 	struct rvec *his_rlp;
 };
 
+/**
+ * theoryvec
+ */
+
+struct TheoryVec
+{
+	struct rvec vec;
+	int asym;
+};
 
 struct taketwo_private
 {
@@ -639,8 +646,8 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
         for ( i=0; i<her_obs->match_num; i++ ) {
         for ( j=0; j<his_obs->match_num; j++ ) {
 
-                struct rvec *her_match = &her_obs->matches[i];
-                struct rvec *his_match = &his_obs->matches[j];
+                struct rvec *her_match = &her_obs->matches[i].vec;
+                struct rvec *his_match = &his_obs->matches[j].vec;
 
                 double theory_angle = rvec_angle(*her_match,
                                                  *his_match);
@@ -739,8 +746,8 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 
 			struct rvec i_obsvec = i_vec.obsvec;
 			struct rvec j_obsvec = j_vec.obsvec;
-			struct rvec i_cellvec = i_vec.matches[match_members[i]];
-			struct rvec j_cellvec = j_vec.matches[match_members[j]];
+			struct rvec i_cellvec = i_vec.matches[match_members[i]].vec;
+			struct rvec j_cellvec = j_vec.matches[match_members[j]].vec;
 
 			rotations[count] = generate_rot_mat(i_obsvec, j_obsvec,
 							    i_cellvec, j_cellvec,
@@ -806,8 +813,8 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 
 		struct rvec i_obsvec = her_obs->obsvec;
 		struct rvec j_obsvec = his_obs->obsvec;
-		struct rvec i_cellvec = her_obs->matches[her_match];
-		struct rvec j_cellvec = his_obs->matches[his_match];
+		struct rvec i_cellvec = her_obs->matches[her_match].vec;
+		struct rvec j_cellvec = his_obs->matches[his_match].vec;
 
 		gsl_matrix *mat = generate_rot_mat(i_obsvec, j_obsvec,
 		                                   i_cellvec, j_cellvec, cell);
@@ -885,18 +892,21 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 
 			struct SpotVec *me = &obs_vecs[i];
 			struct SpotVec *you = &obs_vecs[obs_members[j]];
-			struct rvec you_cell = you->matches[match_members[j]];
+			struct rvec you_cell = you->matches[match_members[j]].vec;
 
 			struct rvec me_obs = me->obsvec;
 			struct rvec you_obs = you->obsvec;
 
 			int one_is_okay = 0;
 
+			/* Loop through all possible theoretical vector
+			* matches for the newcomer.. */
+
 			for ( k=0; k<me->match_num; k++ ) {
 
 				gsl_matrix *test_rot;
 
-				struct rvec me_cell = me->matches[k];
+				struct rvec me_cell = me->matches[k].vec;
 
 				test_rot = generate_rot_mat(me_obs,
 					    you_obs, me_cell, you_cell,
@@ -1058,8 +1068,8 @@ static int start_seed(int i, int j, int i_match, int j_match,
 
 	rot_mat = generate_rot_mat(obs_vecs[i].obsvec,
 				   obs_vecs[j].obsvec,
-				   obs_vecs[i].matches[i_match],
-				   obs_vecs[j].matches[j_match],
+				   obs_vecs[i].matches[i_match].vec,
+				   obs_vecs[j].matches[j_match].vec,
 				   cell);
 
 	/* Try to expand this rotation matrix to a larger network */
@@ -1256,10 +1266,9 @@ static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 	return 1;
 }
 
-
 struct sortme
 {
-	struct rvec v;
+	struct TheoryVec v;
 	double dist;
 };
 
@@ -1271,9 +1280,9 @@ static int sort_func(const void *av, const void *bv)
 }
 
 
-static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
+static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_count,
 				  struct SpotVec *obs_vecs, int obs_vec_count,
-				  int is_asymmetric, struct TakeTwoCell *cell)
+				  struct TakeTwoCell *cell)
 {
 	int i, j;
 
@@ -1284,7 +1293,7 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 
 		for ( j=0; j<cell_vec_count; j++ ) {
 			/* get distance for unit cell vector */
-			double cell_length = rvec_length(cell_vecs[j]);
+			double cell_length = rvec_length(cell_vecs[j].vec);
 			double obs_length = obs_vecs[i].distance;
 
 			/* check if this matches the observed length */
@@ -1307,20 +1316,15 @@ static int match_obs_to_cell_vecs(struct rvec *cell_vecs, int cell_vec_count,
 
 		/* Pointers to relevant things */
 
-		struct rvec **match_array;
+		struct TheoryVec **match_array;
 		int *match_count;
 
-		if (!is_asymmetric) {
-			match_array = &(obs_vecs[i].matches);
-			match_count = &(obs_vecs[i].match_num);
-		} else {
-			match_array = &(obs_vecs[i].asym_matches);
-			match_count = &(obs_vecs[i].asym_match_num);
-		}
+		match_array = &(obs_vecs[i].matches);
+		match_count = &(obs_vecs[i].match_num);
 
 		/* Sort in order to get most agreeable matches first */
 		qsort(for_sort, count, sizeof(struct sortme), sort_func);
-		*match_array = malloc(count*sizeof(struct rvec));
+		*match_array = malloc(count*sizeof(struct TheoryVec));
 		*match_count = count;
 		for ( j=0; j<count; j++ ) {
 			(*match_array)[j] = for_sort[j].v;
@@ -1395,9 +1399,8 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 }
 
 
-static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
-				struct rvec **asym_vecs, int *vec_count,
-				int *asym_vec_count)
+static int gen_theoretical_vecs(UnitCell *cell, struct TheoryVec **cell_vecs,
+				int *vec_count)
 {
 	double a, b, c, alpha, beta, gamma;
 	int h_max, k_max, l_max;
@@ -1421,7 +1424,6 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 	int h, k, l;
 	int _h, _k, _l;
 	int count = 0;
-	int asym_count = 0;
 
 	for ( h=-h_max; h<=+h_max; h++ ) {
 	for ( k=-k_max; k<=+k_max; k++ ) {
@@ -1437,49 +1439,36 @@ static int gen_theoretical_vecs(UnitCell *cell, struct rvec **cell_vecs,
 
 		if (h == _h && k == _k && l == _l) {
 			asymmetric = 1;
-			asym_count++;
 		}
 
 		cell_vec.u = h*asx + k*bsx + l*csx;
 		cell_vec.v = h*asy + k*bsy + l*csy;
 		cell_vec.w = h*asz + k*bsz + l*csz;
 
+		struct TheoryVec theory;
+		theory.vec = cell_vec;
+		theory.asym = asymmetric;
+
 		/* add this to our array - which may require expanding */
 		count++;
 
-		struct rvec *temp_cell_vecs;
-		temp_cell_vecs = realloc(*cell_vecs, count*sizeof(struct rvec));
-		struct rvec *temp_asym_vecs = NULL;
-
-		if (asymmetric) {
-			temp_asym_vecs = realloc(*asym_vecs,
-			                         count*sizeof(struct rvec));
-		}
+		struct TheoryVec *temp_cell_vecs;
+		temp_cell_vecs = realloc(*cell_vecs,
+		                         count*sizeof(struct TheoryVec));
 
 		if ( temp_cell_vecs == NULL ) {
 			return 0;
-		} else if (asymmetric && temp_asym_vecs == NULL) {
-			return 0;
 		} else {
 			*cell_vecs = temp_cell_vecs;
-			(*cell_vecs)[count - 1] = cell_vec;
-
-			if (!asymmetric) {
-				continue;
-			}
-
-			*asym_vecs = temp_asym_vecs;
-			(*asym_vecs)[asym_count - 1] = cell_vec;
+			(*cell_vecs)[count - 1] = theory;
 		}
 	}
 	}
 	}
 
 	*vec_count = count;
-	*asym_vec_count = asym_count;
 
 	free_symoplist(rawList);
-
 
 	return 1;
 }
@@ -1495,7 +1484,6 @@ static void cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
 	int i;
 	for ( i=0; i<obs_vec_count; i++ ) {
 		free(obs_vecs[i].matches);
-		free(obs_vecs[i].asym_matches);
 	}
 
 	free(obs_vecs);
@@ -1532,9 +1520,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
                              struct rvec *rlps, int rlp_count)
 {
 	int cell_vec_count = 0;
-	int asym_vec_count = 0;
-	struct rvec *cell_vecs = NULL;
-	struct rvec *asym_vecs = NULL;
+	struct TheoryVec *theory_vecs = NULL;
 	UnitCell *result;
 	int obs_vec_count = 0;
 	struct SpotVec *obs_vecs = NULL;
@@ -1552,8 +1538,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 
 	success = generate_rotation_sym_ops(&ttCell);
 
-	success = gen_theoretical_vecs(cell, &cell_vecs, &asym_vecs,
-	                               &cell_vec_count, &asym_vec_count);
+	success = gen_theoretical_vecs(cell, &theory_vecs, &cell_vec_count);
 	if ( !success ) return NULL;
 
 	success = gen_observed_vecs(rlps, rlp_count, &obs_vecs, &obs_vec_count);
@@ -1586,14 +1571,10 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 		ttCell.trace_tol = sqrt(4.0*(1.0-cos(opts->trace_tol)));
 	}
 
-	success = match_obs_to_cell_vecs(asym_vecs, asym_vec_count,
-					 obs_vecs, obs_vec_count, 1, &ttCell);
+	success = match_obs_to_cell_vecs(theory_vecs, cell_vec_count,
+					 obs_vecs, obs_vec_count, &ttCell);
 
-	success = match_obs_to_cell_vecs(cell_vecs, cell_vec_count,
-					 obs_vecs, obs_vec_count, 0, &ttCell);
-
-	free(cell_vecs);
-	free(asym_vecs);
+	free(theory_vecs);
 
 	if ( !success ) return NULL;
 
