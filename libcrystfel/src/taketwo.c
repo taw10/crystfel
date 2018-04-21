@@ -645,7 +645,7 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 
 static int obs_vecs_match_angles(struct SpotVec *her_obs,
                                  struct SpotVec *his_obs,
-                                 struct Seed *seeds, int *match_count,
+                                 struct Seed **seeds, int *match_count,
                                  struct TakeTwoCell *cell)
 {
 	int i, j;
@@ -734,12 +734,12 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
 			(*seeds)[*match_count].obs1 = her_obs;
 			(*seeds)[*match_count].obs2 = his_obs;
+			(*seeds)[*match_count].idx1 = i;
 			(*seeds)[*match_count].idx2 = j;
 			(*seeds)[*match_count].score = score;
 
                         (*match_count)++;
                 }
-        }
         }
 
         return (*match_count > 0);
@@ -829,10 +829,8 @@ gsl_matrix *rot_mat_from_indices(struct SpotVec *her_obs, struct SpotVec *his_ob
 	return mat;
 }
 
-static int weed_duplicate_matches(struct SpotVec *her_obs,
-                                   struct SpotVec *his_obs,
-                                   int **her_match_idxs, int **his_match_idxs,
-                                   int *match_count, struct TakeTwoCell *cell)
+static int weed_duplicate_matches(struct Seed **seeds,
+                                  int *match_count, struct TakeTwoCell *cell)
 {
 	int num_occupied = 0;
 	gsl_matrix **old_mats = calloc(*match_count, sizeof(gsl_matrix *));
@@ -849,11 +847,11 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 	/* First we weed out duplicates with previous solutions */
 
 	for (i = *match_count - 1; i >= 0; i--) {
-		int her_match = (*her_match_idxs)[i];
-		int his_match = (*his_match_idxs)[i];
+		int her_match = (*seeds)[i].idx1;
+		int his_match = (*seeds)[i].idx2;
 
 		gsl_matrix *mat;
-		mat = rot_mat_from_indices(her_obs, his_obs,
+		mat = rot_mat_from_indices((*seeds)[i].obs1, (*seeds)[i].obs2,
 		                           her_match, his_match, cell);
 
 		if (mat == NULL)
@@ -869,8 +867,8 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 			/* Found a duplicate with a previous solution */
 			if (sim)
 			{
-				(*her_match_idxs)[i] = -1;
-				(*his_match_idxs)[i] = -1;
+				(*seeds)[i].idx1 = -1;
+				(*seeds)[i].idx2 = -1;
 				break;
 			}
 		}
@@ -881,11 +879,11 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 	/* Now we weed out the self-duplicates from the remaining batch */
 
 	for (i = *match_count - 1; i >= 0; i--) {
-		int her_match = (*her_match_idxs)[i];
-		int his_match = (*his_match_idxs)[i];
+		int her_match = (*seeds)[i].idx1;
+		int his_match = (*seeds)[i].idx2;
 
 		gsl_matrix *mat;
-		mat = rot_mat_from_indices(her_obs, his_obs,
+		mat = rot_mat_from_indices((*seeds)[i].obs1, (*seeds)[i].obs2,
 		                           her_match, his_match, cell);
 
 		int found = 0;
@@ -895,8 +893,8 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 			    symm_rot_mats_are_similar(old_mats[j], mat, cell))
 			{
 				// we have found a duplicate, so flag as bad.
-				(*her_match_idxs)[i] = -1;
-				(*his_match_idxs)[i] = -1;
+				(*seeds)[i].idx1 = -1;
+				(*seeds)[i].idx2 = -1;
 				found = 1;
 
 				duplicates++;
@@ -1195,28 +1193,37 @@ static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
 			obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
 			                      &seeds, &seed_num, cell);
 
+			if (seed_num == 0)
+			{
+				/* Nothing to clean up here */
+				continue;
+			}
+
 			/* Weed out the duplicate seeds (from symmetric
 			 * reflection pairs)
 			 */
-			weed_duplicate_matches(&seeds, &matches, cell);
+			weed_duplicate_matches(&seeds, &seed_num, cell);
 
 			/* We have seeds! Pass each of them through the seed-starter  */
 			/* If a seed has the highest achieved membership, make note...*/
 			int k;
-			for ( k=0; k<matches; k++ ) {
-				if (i_idx[k] < 0 || j_idx[k] < 0) {
+			for ( k=0; k<seed_num; k++ ) {
+				int seed_idx1 = seeds[k].idx1;
+				int seed_idx2 = seeds[k].idx2;
+
+				if (seed_idx1 < 0 || seed_idx2 < 0) {
 					continue;
 				}
 
 				int max_members = 0;
 
 				int success = start_seed(i, j,
-							 i_idx[k], j_idx[k],
+							 seed_idx1, seed_idx2,
 							 rotation, &max_members,
 							 cell);
 
 				if (success) {
-					free(i_idx); free(j_idx);
+					free(seeds);
 					gsl_matrix_free(best_rotation);
 					return success;
 				} else {
@@ -1232,8 +1239,7 @@ static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
 				}
 			}
 
-			free(i_idx);
-			free(j_idx);
+			free(seeds);
 		}
 	} /* yes this } is meant to be here */
 
