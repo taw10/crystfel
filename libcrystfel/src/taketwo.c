@@ -186,7 +186,7 @@ struct TakeTwoCell
 
 
 /* Maximum distance between two rlp sizes to consider info for indexing */
-#define MAX_RECIP_DISTANCE (0.15*1e10)
+#define MAX_RECIP_DISTANCE (0.12*1e10)
 
 /* Tolerance for two lengths in reciprocal space to be considered the same */
 #define RECIP_TOLERANCE (0.0010*1e10)
