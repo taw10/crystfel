@@ -28,6 +28,67 @@
  *
  */
 
+/**
+ * \class TakeTwo
+ * Code outline.
+ * --- Get ready for calculation ---
+ * Pre-calculate symmertry operations (generate_rotation_symops())
+ * Pre-calculate theoretical vectors from unit cell dimensions
+ * (gen_theoretical_vecs())
+ * Generate observed vectors from data (gen_observed_vecs())
+ * Match observed vectors to theoretical vectors (match_obs_to_cell_vecs())
+ *
+ * --- Business bit ---
+ * Find starting seeds (find_seed()):
+ *   - Loop through pairs of observed vectors
+ *   - If they share a spot, find matching pairs of theoretical vectors
+ *   - Remove all duplicate matches due to symmetry operations
+ *   - For the remainder, loop through the matches and extend the seeds
+ *   (start_seed()).
+ *   - If it returns a membership greater than the highest member threshold,
+ *   return the matrix to CrystFEL.
+ *
+ * Extending a seed (start_seed()):
+ *   - Generate a rotation matrix which matches the chosen start seed.
+ *   - Loop through all observed vectors starting from 0.
+ *   - Find another vector to add to the network, if available
+ *   (find_next_index()).
+ *   - If the index is not available, then give up if there were too many dead
+ *   ends. Otherwise, remove the last member and pretend like that didn't
+ *   happen, so it won't happen again.
+ *   - Add the vector to increment the membership list.
+ *   - If the membership number exceeds the maximum, tidy up the solution and
+ *   return a success.
+ *   - If the membership does not, then resume the loop and search for the
+ *   next vector.
+ *
+ * Finding the next member (find_next_index()):
+ *   - Go through the observed vectors, starting from the last index + 1 to
+ *   explore only the "new" vectors.
+ *   - If the vector does not share a spot with the current array of vectors,
+ *   then skip it.
+ *   - We must loop through all the current vectors in the network, and see if
+ *   they match the newcomer for a given matching theoretical vector.
+ *   - We only accept a match if the rotation matrix matches the seed matrix
+ *   for a single matching theoretical vector.
+ *   - If it does match, we can return a success.
+ *
+ * Tidying the solution (finish_solution()):
+ *   - This chooses the most common rotation matrix of the bunch to choose to
+ *   send to CrystFEL. But this should probably take the average instead,
+ *   which is very possible.
+ *
+ * Clean up the mess (cleanup_taketwo_obs_vecs())
+ */
+
+/**
+ * Helen's to-do list
+ * -
+ *
+ *
+ * - Improve the final solution
+ */
+
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <float.h>
@@ -73,24 +134,30 @@ struct taketwo_private
 	UnitCell       *cell;
 };
 
-// These rotation symmetry operators
+/**
+ * Internal structure which gets passed the various functions looking after
+ * the indexing bits and bobs. */
 struct TakeTwoCell
 {
-	UnitCell       *cell;
+	UnitCell       *cell; /**< Contains unit cell dimensions */
 	gsl_matrix     **rotSymOps;
 	unsigned int   numOps;
-	struct SpotVec **obs_vecs; // Pointer to an array
+	struct SpotVec **obs_vecs;
 	int obs_vec_count;
 
 	/* Options */
 	int member_thresh;
-	double len_tol;   /* In reciprocal metres */
-	double angle_tol; /* In radians */
-	double trace_tol; /* Contains sqrt(4*(1-cos(angle))) */
+	double len_tol;   /**< In reciprocal metres */
+	double angle_tol; /**< In radians */
+	double trace_tol; /**< Contains sqrt(4*(1-cos(angle))) */
 
+	/**< Temporary memory always allocated for calculations */
 	gsl_matrix *twiz1Tmp;
+	/**< Temporary memory always allocated for calculations */
 	gsl_matrix *twiz2Tmp;
+	/**< Temporary memory always allocated for calculations */
 	gsl_vector *vec1Tmp;
+	/**< Temporary memory always allocated for calculations */
 	gsl_vector *vec2Tmp;
 };
 
@@ -844,6 +911,11 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 				if (ok) {
 					one_is_okay = 1;
 
+					/* We are only happy if the vector
+					* matches for only one kind of
+					* theoretical vector. We don't want to
+					* accept mixtures of theoretical vector
+					* matches. */
 					if (matched >= 0 && k == matched) {
 						*match_found = k;
 					} else if (matched < 0) {
@@ -1314,9 +1386,7 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 		}
 	}
 
-	/* Sort such that the shortest and least error-prone distances
-	   are searched first.
-	 */
+	/* Sort such that the shortest distances are searched first. */
 	qsort(*obs_vecs, count, sizeof(struct SpotVec), compare_spot_vecs);
 
 	*obs_vec_count = count;
