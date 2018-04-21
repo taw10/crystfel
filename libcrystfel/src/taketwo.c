@@ -142,8 +142,8 @@ struct TheoryVec
 
 struct Seed
 {
-	struct SpotVec *obs1;
-	struct SpotVec *obs2;
+	int obs1;
+	int obs2;
 	int idx1;
 	int idx2;
 	double score;
@@ -163,9 +163,13 @@ struct TakeTwoCell
 	UnitCell       *cell; /**< Contains unit cell dimensions */
 	gsl_matrix     **rotSymOps;
 	unsigned int   numOps;
+
 	gsl_matrix     **prevSols; /**< Previous solutions to be ignored */
 	unsigned int   numPrevs; /**< Previous solution count */
-	struct SpotVec **obs_vecs;
+
+	struct SpotVec *obs_vecs;
+	struct Seed *seeds;
+	int seed_count;
 	int obs_vec_count;
 
 	/* Options */
@@ -643,12 +647,14 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 }
 
 
-static int obs_vecs_match_angles(struct SpotVec *her_obs,
-                                 struct SpotVec *his_obs,
+static int obs_vecs_match_angles(int her, int his,
                                  struct Seed **seeds, int *match_count,
                                  struct TakeTwoCell *cell)
 {
-	int i, j;
+	struct SpotVec *obs_vecs = cell->obs_vecs;
+	struct SpotVec *her_obs = &obs_vecs[her];
+	struct SpotVec *his_obs = &obs_vecs[his];
+
 	*match_count = 0;
 
 	double min_angle = deg2rad(2.5);
@@ -659,9 +665,16 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
 	/* calculate angle between all potential theoretical vectors */
 
+	int i, j;
 	for ( i=0; i<her_obs->match_num; i++ ) {
 		for ( j=0; j<his_obs->match_num; j++ ) {
 			double score = 0;
+
+			if (her_obs->matches[i].asym == 0 &&
+			    his_obs->matches[j].asym == 0)
+			{
+				continue;
+			}
 
 			struct rvec *her_match = &her_obs->matches[i].vec;
 			struct rvec *his_match = &his_obs->matches[j].vec;
@@ -674,14 +687,15 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 			double angle_diff = fabs(theory_angle - obs_angle);
 
 			/* within basic tolerance? */
-			if ( angle_diff > cell->angle_tol ) {
+			if ( angle_diff != angle_diff ||
+			     angle_diff > cell->angle_tol ) {
 				continue;
 			}
 
-			double her_dist = rvec_length(*her_match);
-			double his_dist = rvec_length(*his_match);
-
-			score += (her_dist + his_dist) * angle_diff;
+			double add = angle_diff;
+			if (add == add) {
+				score += add;
+			}
 
 			/* If the angles are too close to 0
 			or 180, one axis ill-determined */
@@ -697,7 +711,6 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 			struct rvec obs_diff = diff_vec(his_obs->obsvec,
 			                                her_obs->obsvec);
 
-			double obs_diff_dist = rvec_length(obs_diff);
 			theory_angle = rvec_angle(*her_match,
 			                          theory_diff);
 			obs_angle = rvec_angle(her_obs->obsvec, obs_diff);
@@ -707,7 +720,10 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 				continue;
 			}
 
-			score += (obs_diff_dist + her_dist) * angle_diff;
+			add = angle_diff;
+			if (add == add) {
+				score += add;
+			}
 
 			theory_angle = rvec_angle(*his_match,
 			                          theory_diff);
@@ -717,7 +733,10 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 				continue;
 			}
 
-			score += (obs_diff_dist + his_dist) * angle_diff;
+			add = angle_diff;
+			if (add == add) {
+				score += add;
+			}
 
 			/* we add a new seed to the array */
 			size_t new_size = (*match_count + 1);
@@ -732,11 +751,11 @@ static int obs_vecs_match_angles(struct SpotVec *her_obs,
 
 			(*seeds) = tmp_seeds;
 
-			(*seeds)[*match_count].obs1 = her_obs;
-			(*seeds)[*match_count].obs2 = his_obs;
+			(*seeds)[*match_count].obs1 = her;
+			(*seeds)[*match_count].obs2 = his;
 			(*seeds)[*match_count].idx1 = i;
 			(*seeds)[*match_count].idx2 = j;
-			(*seeds)[*match_count].score = score;
+			(*seeds)[*match_count].score = score * 1000;
 
                         (*match_count)++;
                 }
@@ -814,10 +833,13 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	return 1;
 }
 
-gsl_matrix *rot_mat_from_indices(struct SpotVec *her_obs, struct SpotVec *his_obs,
+gsl_matrix *rot_mat_from_indices(int her, int his,
                                  int her_match, int his_match,
                                  struct TakeTwoCell *cell)
 {
+	struct SpotVec *obs_vecs = cell->obs_vecs;
+	struct SpotVec *her_obs = &obs_vecs[her];
+	struct SpotVec *his_obs = &obs_vecs[his];
 	struct rvec i_obsvec = her_obs->obsvec;
 	struct rvec j_obsvec = his_obs->obsvec;
 	struct rvec i_cellvec = her_obs->matches[her_match].vec;
@@ -926,7 +948,7 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 				  int *match_members, int start, int member_num,
 				  int *match_found, struct TakeTwoCell *cell)
 {
-	struct SpotVec *obs_vecs = *(cell->obs_vecs);
+	struct SpotVec *obs_vecs = cell->obs_vecs;
 	int obs_vec_count = cell->obs_vec_count;
 	gsl_matrix *sub = gsl_matrix_calloc(3, 3);
 	gsl_matrix *mul = gsl_matrix_calloc(3, 3);
@@ -1032,7 +1054,8 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 			int match_idx1, int match_idx2, int *max_members,
 			struct TakeTwoCell *cell)
 {
-	struct SpotVec *obs_vecs = *(cell->obs_vecs);
+
+	struct SpotVec *obs_vecs = cell->obs_vecs;
 	int obs_vec_count = cell->obs_vec_count;
 	int *obs_members;
 	int *match_members;
@@ -1098,9 +1121,6 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 			continue;
 		}
 
-		/* we have elongated membership - so reset dead_ends counter */
-	//	dead_ends = 0;
-
 		obs_members[member_num] = next_index;
 		match_members[member_num] = match_found;
 
@@ -1136,7 +1156,8 @@ static int start_seed(int i, int j, int i_match, int j_match,
 		      gsl_matrix **rotation, int *max_members,
 		      struct TakeTwoCell *cell)
 {
-	struct SpotVec *obs_vecs = *(cell->obs_vecs);
+	STATUS("Start seed\n");
+	struct SpotVec *obs_vecs = cell->obs_vecs;
 
 	gsl_matrix *rot_mat;
 
@@ -1157,21 +1178,25 @@ static int start_seed(int i, int j, int i_match, int j_match,
 	return success;
 }
 
-static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
+static int sort_seed_by_score(const void *av, const void *bv)
 {
-	struct SpotVec *obs_vecs = *(cell->obs_vecs);
+	struct Seed *a = (struct Seed *)av;
+	struct Seed *b = (struct Seed *)bv;
+	return a->score > b->score;
+}
+
+
+static int find_seeds(struct TakeTwoCell *cell)
+{
+	struct SpotVec *obs_vecs = cell->obs_vecs;
 	int obs_vec_count = cell->obs_vec_count;
-
-	/* META: Maximum achieved maximum network membership */
-	int max_max_members = 0;
-	gsl_matrix *best_rotation = NULL;
-
-//	unsigned long start_time = time(NULL);
 
 	/* loop round pairs of vectors to try and find a suitable
 	 * seed to start building a self-consistent network of vectors
 	 */
 	int i, j;
+
+	STATUS("Total vectors: %i\n", obs_vec_count);
 
 	for ( i=0; i<obs_vec_count; i++ ) {
 		for ( j=0; j<i; j++ ) {
@@ -1191,7 +1216,7 @@ static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
 			struct Seed *seeds = NULL;
 
 			/* Check to see if any angles match from the cell vectors */
-			obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
+			obs_vecs_match_angles(i, j,
 			                      &seeds, &seed_num, cell);
 
 			if (seed_num == 0)
@@ -1201,68 +1226,83 @@ static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
 			}
 
 			/* Weed out the duplicate seeds (from symmetric
-			 * reflection pairs)
-			 */
+			 * reflection pairs) */
 			weed_duplicate_matches(&seeds, &seed_num, cell);
 
-			/* We have seeds! Pass each of them through the seed-starter  */
-			/* If a seed has the highest achieved membership, make note...*/
-			int k;
-			for ( k=0; k<seed_num; k++ ) {
-				int seed_idx1 = seeds[k].idx1;
-				int seed_idx2 = seeds[k].idx2;
+			/* Add all the new seeds to the full list */
 
-				if (seed_idx1 < 0 || seed_idx2 < 0) {
+			size_t new_size = cell->seed_count + seed_num;
+			new_size *= sizeof(struct Seed);
+
+			struct Seed *tmp = realloc(cell->seeds, new_size);
+
+			if (tmp == NULL) {
+				apologise();
+			}
+
+			cell->seeds = tmp;
+
+			for (int i = 0; i < seed_num; i++)
+			{
+				if (seeds[i].idx1 < 0 || seeds[i].idx2 < 0)
+				{
 					continue;
 				}
 
-				int max_members = 0;
-
-				int success = start_seed(i, j,
-							 seed_idx1, seed_idx2,
-							 rotation, &max_members,
-							 cell);
-
-				if (success) {
-					free(seeds);
-					gsl_matrix_free(best_rotation);
-					return success;
-				} else {
-					if (max_members > max_max_members) {
-						max_max_members = max_members;
-						gsl_matrix_free(best_rotation);
-						best_rotation = *rotation;
-						*rotation = NULL;
-					} else {
-						gsl_matrix_free(*rotation);
-						*rotation = NULL;
-					}
-				}
+				cell->seeds[cell->seed_count] = seeds[i];
+				cell->seed_count++;
 			}
-
-			free(seeds);
 		}
-	} /* yes this } is meant to be here */
-
-	*rotation = best_rotation;
-
-	if (best_rotation != NULL)
-	{
-		int num = cell->numPrevs + 1;
-		gsl_matrix **tmp = malloc(sizeof(gsl_matrix *) * num);
-
-		if (tmp) {
-			cell->prevSols = tmp;
-		} else {
-			return 0;
-		}
-
-		cell->prevSols[num - 1] = best_rotation;
-		cell->numPrevs = num;
 	}
 
-	return (best_rotation != NULL);
+	qsort(cell->seeds, cell->seed_count, sizeof(struct Seed), sort_seed_by_score);
+
+	for (int i = 0; i < 10; i++)
+	{
+		struct Seed seed = cell->seeds[i];
+		STATUS("%i %i %i %i %.3f\n", seed.idx1, seed.idx2,
+		       seed.obs1, seed.obs2, seed.score);
+	}
+
+	return 1;
 }
+
+static int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
+{
+	struct Seed *seeds = cell->seeds;
+	int seed_num = cell->seed_count;
+
+	/* We have seeds! Pass each of them through the seed-starter  */
+	/* If a seed has the highest achieved membership, make note...*/
+	int k;
+	for ( k=0; k<seed_num; k++ ) {
+		int seed_idx1 = seeds[k].idx1;
+		int seed_idx2 = seeds[k].idx2;
+
+		if (seed_idx1 < 0 || seed_idx2 < 0) {
+			continue;
+		}
+
+		int max_members = 0;
+
+		int seed_obs1 = seeds[k].obs1;
+		int seed_obs2 = seeds[k].obs2;
+
+		int success = start_seed(seed_obs1, seed_obs2,
+		                         seed_idx1, seed_idx2,
+		rotation, &max_members,
+		cell);
+
+		if (success) {
+			free(seeds);
+			return success;
+		}
+	}
+
+	free(seeds);
+	return 0;
+}
+
 
 static void set_gsl_matrix(gsl_matrix *mat, double asx, double asy, double asz,
                            double bsx, double bsy, double bsz,
@@ -1362,7 +1402,7 @@ struct sortme
 	double dist;
 };
 
-static int sort_func(const void *av, const void *bv)
+static int sort_theory_distances(const void *av, const void *bv)
 {
 	struct sortme *a = (struct sortme *)av;
 	struct sortme *b = (struct sortme *)bv;
@@ -1371,9 +1411,10 @@ static int sort_func(const void *av, const void *bv)
 
 
 static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_count,
-				  struct SpotVec *obs_vecs, int obs_vec_count,
 				  struct TakeTwoCell *cell)
 {
+	struct SpotVec *obs_vecs = cell->obs_vecs;
+	int obs_vec_count = cell->obs_vec_count;
 	int i, j;
 
 	for ( i=0; i<obs_vec_count; i++ ) {
@@ -1413,7 +1454,7 @@ static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_coun
 		match_count = &(obs_vecs[i].match_num);
 
 		/* Sort in order to get most agreeable matches first */
-		qsort(for_sort, count, sizeof(struct sortme), sort_func);
+		qsort(for_sort, count, sizeof(struct sortme), sort_theory_distances);
 		*match_array = malloc(count*sizeof(struct TheoryVec));
 		*match_count = count;
 		for ( j=0; j<count; j++ ) {
@@ -1434,7 +1475,7 @@ static int compare_spot_vecs(const void *av, const void *bv)
 }
 
 static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
-			     struct SpotVec **obs_vecs, int *obs_vec_count)
+			     struct TakeTwoCell *cell)
 {
 	int i, j;
 	int count = 0;
@@ -1444,7 +1485,6 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 
 	for ( i=0; i<rlp_count-1 && count < MAX_OBS_VECTORS; i++ ) {
 		for ( j=i+1; j<rlp_count; j++ ) {
-
 
 			/* calculate difference vector between rlps */
 			struct rvec diff = diff_vec(rlps[i], rlps[j]);
@@ -1457,13 +1497,13 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 			count++;
 
 			struct SpotVec *temp_obs_vecs;
-			temp_obs_vecs = realloc(*obs_vecs,
+			temp_obs_vecs = realloc(cell->obs_vecs,
 						count*sizeof(struct SpotVec));
 
 			if ( temp_obs_vecs == NULL ) {
 				return 0;
 			} else {
-				*obs_vecs = temp_obs_vecs;
+				cell->obs_vecs = temp_obs_vecs;
 
 				/* initialise all SpotVec struct members */
 
@@ -1475,15 +1515,16 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 				spot_vec.her_rlp = &rlps[i];
 				spot_vec.his_rlp = &rlps[j];
 
-				(*obs_vecs)[count - 1] = spot_vec;
+				cell->obs_vecs[count - 1] = spot_vec;
 			}
 		}
 	}
 
 	/* Sort such that the shortest distances are searched first. */
-	qsort(*obs_vecs, count, sizeof(struct SpotVec), compare_spot_vecs);
+	qsort(cell->obs_vecs, count, sizeof(struct SpotVec), compare_spot_vecs);
 
-	*obs_vec_count = count;
+	cell->obs_vec_count = count;
+	STATUS("Generated observed vectors.\n");
 
 	return 1;
 }
@@ -1586,6 +1627,9 @@ static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
 		gsl_matrix_free(ttCell->rotSymOps[i]);
 	}
 
+	cleanup_taketwo_obs_vecs(ttCell->obs_vecs,
+	                         ttCell->obs_vec_count);
+
 	free(ttCell->vec1Tmp);
 	free(ttCell->vec2Tmp);
 	free(ttCell->twiz1Tmp);
@@ -1612,14 +1656,16 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	int cell_vec_count = 0;
 	struct TheoryVec *theory_vecs = NULL;
 	UnitCell *result;
-	int obs_vec_count = 0;
-	struct SpotVec *obs_vecs = NULL;
 	int success = 0;
 	gsl_matrix *solution = NULL;
 
+	/* Initialise TakeTwoCell */
 	struct TakeTwoCell ttCell;
 	ttCell.cell = cell;
+	ttCell.seeds = NULL;
+	ttCell.seed_count = 0;
 	ttCell.rotSymOps = NULL;
+	ttCell.obs_vecs = NULL;
 	ttCell.prevSols = NULL;
 	ttCell.twiz1Tmp = gsl_matrix_calloc(3, 3);
 	ttCell.twiz2Tmp = gsl_matrix_calloc(3, 3);
@@ -1627,17 +1673,15 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	ttCell.vec2Tmp = gsl_vector_calloc(3);
 	ttCell.numOps = 0;
 	ttCell.numPrevs = 0;
+	ttCell.obs_vec_count = 0;
 
 	success = generate_rotation_sym_ops(&ttCell);
 
 	success = gen_theoretical_vecs(cell, &theory_vecs, &cell_vec_count);
 	if ( !success ) return NULL;
 
-	success = gen_observed_vecs(rlps, rlp_count, &obs_vecs, &obs_vec_count);
+	success = gen_observed_vecs(rlps, rlp_count, &ttCell);
 	if ( !success ) return NULL;
-
-	ttCell.obs_vecs = &obs_vecs;
-	ttCell.obs_vec_count = obs_vec_count;
 
 	if ( opts->member_thresh < 0 ) {
 		ttCell.member_thresh = NETWORK_MEMBER_THRESHOLD;
@@ -1664,21 +1708,23 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	}
 
 	success = match_obs_to_cell_vecs(theory_vecs, cell_vec_count,
-					 obs_vecs, obs_vec_count, &ttCell);
+					 &ttCell);
 
 	free(theory_vecs);
 
 	if ( !success ) return NULL;
 
-	find_seed(&solution, &ttCell);
+	STATUS("Find seeds\n");
+	find_seeds(&ttCell);
+	start_seeds(&solution, &ttCell);
 
 	if ( solution == NULL ) {
-		cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 		return NULL;
 	}
 
+	STATUS("Returning something.\n");
+
 	result = transform_cell_gsl(cell, solution);
-	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
 	gsl_matrix_free(solution);
 	cleanup_taketwo_cell(&ttCell);
 
