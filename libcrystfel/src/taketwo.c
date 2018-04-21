@@ -135,6 +135,20 @@ struct TheoryVec
 	int asym;
 };
 
+
+/**
+ * seed
+ */
+
+struct Seed
+{
+	struct SpotVec *obs1;
+	struct SpotVec *obs2;
+	int idx1;
+	int idx2;
+	double score;
+};
+
 struct taketwo_private
 {
 	IndexingMethod indm;
@@ -631,89 +645,97 @@ static int obs_shares_spot_w_array(struct SpotVec *obs_vecs, int test_idx,
 
 static int obs_vecs_match_angles(struct SpotVec *her_obs,
                                  struct SpotVec *his_obs,
-                                 int **her_match_idxs, int **his_match_idxs,
-                                 int *match_count, struct TakeTwoCell *cell)
+                                 struct Seed *seeds, int *match_count,
+                                 struct TakeTwoCell *cell)
 {
-        int i, j;
-        *match_count = 0;
+	int i, j;
+	*match_count = 0;
 
-        double min_angle = deg2rad(2.5);
-        double max_angle = deg2rad(187.5);
+	double min_angle = deg2rad(2.5);
+	double max_angle = deg2rad(187.5);
 
-        /* calculate angle between observed vectors */
-        double obs_angle = rvec_angle(her_obs->obsvec, his_obs->obsvec);
+	/* calculate angle between observed vectors */
+	double obs_angle = rvec_angle(her_obs->obsvec, his_obs->obsvec);
 
-        /* calculate angle between all potential theoretical vectors */
+	/* calculate angle between all potential theoretical vectors */
 
-        for ( i=0; i<her_obs->match_num; i++ ) {
-        for ( j=0; j<his_obs->match_num; j++ ) {
+	for ( i=0; i<her_obs->match_num; i++ ) {
+		for ( j=0; j<his_obs->match_num; j++ ) {
+			double score = 0;
 
-                struct rvec *her_match = &her_obs->matches[i].vec;
-                struct rvec *his_match = &his_obs->matches[j].vec;
+			struct rvec *her_match = &her_obs->matches[i].vec;
+			struct rvec *his_match = &his_obs->matches[j].vec;
 
-                double theory_angle = rvec_angle(*her_match,
-                                                 *his_match);
+			double theory_angle = rvec_angle(*her_match,
+			                                 *his_match);
 
-                /* is this angle a match? */
+			/* is this angle a match? */
 
-                double angle_diff = fabs(theory_angle - obs_angle);
+			double angle_diff = fabs(theory_angle - obs_angle);
 
-                if ( angle_diff < cell->angle_tol ) {
+			/* within basic tolerance? */
+			if ( angle_diff > cell->angle_tol ) {
+				continue;
+			}
 
-                        // in the case of a brief check only
-                        if (!her_match_idxs || !his_match_idxs) {
-                                return 1;
-                        }
+			double her_dist = rvec_length(*her_match);
+			double his_dist = rvec_length(*his_match);
 
-                        /* If the angles are too close to 0
-                           or 180, one axis ill-determined */
-                        if (theory_angle < min_angle ||
-                            theory_angle > max_angle) {
-                                continue;
-                        }
+			score += (her_dist + his_dist) * angle_diff;
 
-                        // check the third vector
+			/* If the angles are too close to 0
+			or 180, one axis ill-determined */
+			if (theory_angle < min_angle ||
+			    theory_angle > max_angle) {
+				continue;
+			}
 
-                        struct rvec theory_diff = diff_vec(*his_match, *her_match);
-                        struct rvec obs_diff = diff_vec(his_obs->obsvec,
-                                                  her_obs->obsvec);
+			/* check that third vector adequately completes
+			*  triangle */
 
-                        theory_angle = rvec_angle(*her_match,
-                                                 theory_diff);
-                        obs_angle = rvec_angle(her_obs->obsvec, obs_diff);
+			struct rvec theory_diff = diff_vec(*his_match, *her_match);
+			struct rvec obs_diff = diff_vec(his_obs->obsvec,
+			                                her_obs->obsvec);
 
-                        if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
-                                continue;
-                        }
+			double obs_diff_dist = rvec_length(obs_diff);
+			theory_angle = rvec_angle(*her_match,
+			                          theory_diff);
+			obs_angle = rvec_angle(her_obs->obsvec, obs_diff);
+			angle_diff = fabs(obs_angle - theory_angle);
 
-                        theory_angle = rvec_angle(*his_match,
-                                                 theory_diff);
-                        obs_angle = rvec_angle(his_obs->obsvec, obs_diff);
+			if (angle_diff > ANGLE_TOLERANCE) {
+				continue;
+			}
 
-                        if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
-                                continue;
-                        }
+			score += (obs_diff_dist + her_dist) * angle_diff;
 
-                        size_t new_size = (*match_count + 1) *
-                        sizeof(int);
-                        if (her_match_idxs && his_match_idxs)
-                        {
-                                /* Reallocate the array to fit in another match */
-                                int *temp_hers;
-                                int *temp_his;
-                                temp_hers = realloc(*her_match_idxs, new_size);
-                                temp_his = realloc(*his_match_idxs, new_size);
+			theory_angle = rvec_angle(*his_match,
+			                          theory_diff);
+			obs_angle = rvec_angle(his_obs->obsvec, obs_diff);
 
-                                if ( temp_hers == NULL || temp_his == NULL ) {
-                                        apologise();
-                                }
+			if (fabs(obs_angle - theory_angle) > ANGLE_TOLERANCE) {
+				continue;
+			}
 
-                                (*her_match_idxs) = temp_hers;
-                                (*his_match_idxs) = temp_his;
+			score += (obs_diff_dist + his_dist) * angle_diff;
 
-                                (*her_match_idxs)[*match_count] = i;
-                                (*his_match_idxs)[*match_count] = j;
-                        }
+			/* we add a new seed to the array */
+			size_t new_size = (*match_count + 1);
+			new_size *= sizeof(struct Seed);
+
+			/* Reallocate the array to fit in another match */
+			struct Seed *tmp_seeds = realloc(*seeds, new_size);
+
+			if ( tmp_seeds == NULL ) {
+				apologise();
+			}
+
+			(*seeds) = tmp_seeds;
+
+			(*seeds)[*match_count].obs1 = her_obs;
+			(*seeds)[*match_count].obs2 = his_obs;
+			(*seeds)[*match_count].idx2 = j;
+			(*seeds)[*match_count].score = score;
 
                         (*match_count)++;
                 }
@@ -1160,25 +1182,17 @@ static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
 			/* cell vector index matches stored in i, j and total
 			 * number stored in int matches.
 			 */
-			int *i_idx = 0;
-			int *j_idx = 0;
-			int matches;
+			int seed_num = 0;
+			struct Seed *seeds = NULL;
 
 			/* Check to see if any angles match from the cell vectors */
 			obs_vecs_match_angles(&obs_vecs[i], &obs_vecs[j],
-					      &i_idx, &j_idx, &matches, cell);
-			if ( matches == 0 ) {
-				free(i_idx);
-				free(j_idx);
-				continue;
-			}
+			                      &seeds, &seed_num, cell);
 
 			/* Weed out the duplicate seeds (from symmetric
 			 * reflection pairs)
 			 */
-
-			weed_duplicate_matches(&obs_vecs[i], &obs_vecs[j],
-					       &i_idx, &j_idx, &matches, cell);
+			weed_duplicate_matches(&seeds, &matches, cell);
 
 			/* We have seeds! Pass each of them through the seed-starter  */
 			/* If a seed has the highest achieved membership, make note...*/
