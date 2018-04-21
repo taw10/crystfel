@@ -149,6 +149,8 @@ struct TakeTwoCell
 	UnitCell       *cell; /**< Contains unit cell dimensions */
 	gsl_matrix     **rotSymOps;
 	unsigned int   numOps;
+	gsl_matrix     **prevSols; /**< Previous solutions to be ignored */
+	unsigned int   numPrevs; /**< Previous solution count */
 	struct SpotVec **obs_vecs;
 	int obs_vec_count;
 
@@ -790,6 +792,21 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	return 1;
 }
 
+gsl_matrix *rot_mat_from_indices(struct SpotVec *her_obs, struct SpotVec *his_obs,
+                                 int her_match, int his_match,
+                                 struct TakeTwoCell *cell)
+{
+	struct rvec i_obsvec = her_obs->obsvec;
+	struct rvec j_obsvec = his_obs->obsvec;
+	struct rvec i_cellvec = her_obs->matches[her_match].vec;
+	struct rvec j_cellvec = his_obs->matches[his_match].vec;
+
+	gsl_matrix *mat = generate_rot_mat(i_obsvec, j_obsvec,
+	                                   i_cellvec, j_cellvec, cell);
+
+	return mat;
+}
+
 static int weed_duplicate_matches(struct SpotVec *her_obs,
                                    struct SpotVec *his_obs,
                                    int **her_match_idxs, int **his_match_idxs,
@@ -807,17 +824,47 @@ static int weed_duplicate_matches(struct SpotVec *her_obs,
 	signed int i, j;
 	int duplicates = 0;
 
+	/* First we weed out duplicates with previous solutions */
+
 	for (i = *match_count - 1; i >= 0; i--) {
 		int her_match = (*her_match_idxs)[i];
 		int his_match = (*his_match_idxs)[i];
 
-		struct rvec i_obsvec = her_obs->obsvec;
-		struct rvec j_obsvec = his_obs->obsvec;
-		struct rvec i_cellvec = her_obs->matches[her_match].vec;
-		struct rvec j_cellvec = his_obs->matches[his_match].vec;
+		gsl_matrix *mat;
+		mat = rot_mat_from_indices(her_obs, his_obs,
+		                           her_match, his_match, cell);
 
-		gsl_matrix *mat = generate_rot_mat(i_obsvec, j_obsvec,
-		                                   i_cellvec, j_cellvec, cell);
+		if (mat == NULL)
+		{
+			continue;
+		}
+
+		for (j = 0; j < cell->numPrevs; j++)
+		{
+			int sim = symm_rot_mats_are_similar(cell->prevSols[j],
+			                                    mat, cell);
+
+			/* Found a duplicate with a previous solution */
+			if (sim)
+			{
+				(*her_match_idxs)[i] = -1;
+				(*his_match_idxs)[i] = -1;
+				break;
+			}
+		}
+
+		gsl_matrix_free(mat);
+	}
+
+	/* Now we weed out the self-duplicates from the remaining batch */
+
+	for (i = *match_count - 1; i >= 0; i--) {
+		int her_match = (*her_match_idxs)[i];
+		int his_match = (*his_match_idxs)[i];
+
+		gsl_matrix *mat;
+		mat = rot_mat_from_indices(her_obs, his_obs,
+		                           her_match, his_match, cell);
 
 		int found = 0;
 
@@ -1171,6 +1218,22 @@ static int find_seed(gsl_matrix **rotation, struct TakeTwoCell *cell)
 	} /* yes this } is meant to be here */
 
 	*rotation = best_rotation;
+
+	if (best_rotation != NULL)
+	{
+		int num = cell->numPrevs + 1;
+		gsl_matrix **tmp = malloc(sizeof(gsl_matrix *) * num);
+
+		if (tmp) {
+			cell->prevSols = tmp;
+		} else {
+			return 0;
+		}
+
+		cell->prevSols[num - 1] = best_rotation;
+		cell->numPrevs = num;
+	}
+
 	return (best_rotation != NULL);
 }
 
@@ -1530,11 +1593,13 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	struct TakeTwoCell ttCell;
 	ttCell.cell = cell;
 	ttCell.rotSymOps = NULL;
+	ttCell.prevSols = NULL;
 	ttCell.twiz1Tmp = gsl_matrix_calloc(3, 3);
 	ttCell.twiz2Tmp = gsl_matrix_calloc(3, 3);
 	ttCell.vec1Tmp = gsl_vector_calloc(3);
 	ttCell.vec2Tmp = gsl_vector_calloc(3);
 	ttCell.numOps = 0;
+	ttCell.numPrevs = 0;
 
 	success = generate_rotation_sym_ops(&ttCell);
 
@@ -1586,8 +1651,8 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	}
 
 	result = transform_cell_gsl(cell, solution);
-	gsl_matrix_free(solution);
 	cleanup_taketwo_obs_vecs(obs_vecs, obs_vec_count);
+	gsl_matrix_free(solution);
 	cleanup_taketwo_cell(&ttCell);
 
 	return result;
