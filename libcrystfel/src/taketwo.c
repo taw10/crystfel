@@ -39,7 +39,9 @@
  * Match observed vectors to theoretical vectors (match_obs_to_cell_vecs())
  *
  * --- Business bit ---
- * Find starting seeds (find_seed()):
+ * ... n.b. rearranging to find all seeds in advance.
+ *
+ * Find starting seeds (find_seeds()):
  *   - Loop through pairs of observed vectors
  *   - If they share a spot, find matching pairs of theoretical vectors
  *   - Remove all duplicate matches due to symmetry operations
