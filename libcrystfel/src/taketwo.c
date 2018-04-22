@@ -1144,12 +1144,14 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 			*max_members = member_num;
 		}
 
+		/*
 		int n;
 		for (n = 0; n < member_num; n++)
 		{
 			STATUS("*");
 		}
 		STATUS("\n");
+		*/
 
 		/* If member_num is high enough, we want to return a yes */
 		if ( member_num > cell->member_thresh ) break;
@@ -1170,7 +1172,6 @@ static int start_seed(int i, int j, int i_match, int j_match,
 		      gsl_matrix **rotation, int *max_members,
 		      struct TakeTwoCell *cell)
 {
-	STATUS("Start seed\n");
 	struct SpotVec *obs_vecs = cell->obs_vecs;
 
 	gsl_matrix *rot_mat;
@@ -1209,8 +1210,6 @@ static int find_seeds(struct TakeTwoCell *cell)
 	 * seed to start building a self-consistent network of vectors
 	 */
 	int i, j;
-
-	STATUS("Total vectors: %i\n", obs_vec_count);
 
 	for ( i=0; i<obs_vec_count; i++ ) {
 		for ( j=0; j<i; j++ ) {
@@ -1270,13 +1269,6 @@ static int find_seeds(struct TakeTwoCell *cell)
 	}
 
 	qsort(cell->seeds, cell->seed_count, sizeof(struct Seed), sort_seed_by_score);
-
-	for (int i = 0; i < 10; i++)
-	{
-		struct Seed seed = cell->seeds[i];
-		STATUS("%i %i %i %i %.3f\n", seed.idx1, seed.idx2,
-		       seed.obs1, seed.obs2, seed.score);
-	}
 
 	return 1;
 }
@@ -1538,7 +1530,6 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 	qsort(cell->obs_vecs, count, sizeof(struct SpotVec), compare_spot_vecs);
 
 	cell->obs_vec_count = count;
-	STATUS("Generated observed vectors.\n");
 
 	return 1;
 }
@@ -1728,15 +1719,12 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 
 	if ( !success ) return NULL;
 
-	STATUS("Find seeds\n");
 	find_seeds(&ttCell);
 	start_seeds(&solution, &ttCell);
 
 	if ( solution == NULL ) {
 		return NULL;
 	}
-
-	STATUS("Returning something.\n");
 
 	result = transform_cell_gsl(cell, solution);
 	gsl_matrix_free(solution);
