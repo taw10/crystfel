@@ -120,6 +120,7 @@ struct SpotVec
 	struct rvec obsvec;
 	struct TheoryVec *matches;
 	int match_num;
+	int in_network;
 	double distance;
 	struct rvec *her_rlp;
 	struct rvec *his_rlp;
@@ -957,6 +958,12 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 
 	for ( i=start; i<obs_vec_count; i++ ) {
 
+		/* If we've considered this vector before, ignore it */
+		if (obs_vecs[i].in_network == 1)
+		{
+			continue;
+		}
+
 		/* first we check for a shared spot - harshest condition */
 		int shared = obs_shares_spot_w_array(obs_vecs, i, obs_members,
 						     member_num);
@@ -1060,6 +1067,13 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 	int *obs_members;
 	int *match_members;
 
+	/* Clear the in_network status of all vectors to start */
+	int i;
+	for (i = 0; i < obs_vec_count; i++)
+	{
+		obs_vecs[i].in_network = 0;
+	}
+
 	/* indices of members of the self-consistent network of vectors */
 	obs_members = malloc((cell->member_thresh+3)*sizeof(int));
 	match_members = malloc((cell->member_thresh+3)*sizeof(int));
@@ -1095,7 +1109,7 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 
 		signed int next_index = find_next_index(rot, obs_members,
 							match_members,
-							start, member_num,
+							0, member_num,
 							&match_found, cell);
 
 		if ( member_num < 2 ) {
@@ -1114,13 +1128,13 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 
 			/* We have not had too many dead ends. Try removing
 			 the last member and continue. */
-			start = obs_members[member_num - 1] + 1;
 			member_num--;
 			dead_ends++;
 
 			continue;
 		}
 
+		obs_vecs[next_index].in_network = 1;
 		obs_members[member_num] = next_index;
 		match_members[member_num] = match_found;
 
