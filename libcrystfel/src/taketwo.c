@@ -1308,7 +1308,7 @@ static int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 	}
 
 	free(seeds);
-	return 0;
+	return (rotation != NULL);
 }
 
 
