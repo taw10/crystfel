@@ -673,12 +673,6 @@ static int obs_vecs_match_angles(int her, int his,
 		for ( j=0; j<his_obs->match_num; j++ ) {
 			double score = 0;
 
-			if (her_obs->matches[i].asym == 0 &&
-			    his_obs->matches[j].asym == 0)
-			{
-				continue;
-			}
-
 			struct rvec *her_match = &her_obs->matches[i].vec;
 			struct rvec *his_match = &his_obs->matches[j].vec;
 
@@ -1214,14 +1208,21 @@ static int find_seeds(struct TakeTwoCell *cell)
 	int i, j;
 
 	for ( i=0; i<obs_vec_count; i++ ) {
+
 		for ( j=0; j<i; j++ ) {
+
+			/** Only check distances which are accumulatively less than
+ * 			the limit */
+			if (obs_vecs[j].distance + obs_vecs[i].distance >
+			    MAX_RECIP_DISTANCE) {
+				continue;
+			}
 
 			/** Check to see if there is a shared spot - opportunity
 			 * for optimisation by generating a look-up table
 			 * by spot instead of by vector.
 			 */
 			int shared = obs_vecs_share_spot(&obs_vecs[i], &obs_vecs[j]);
-
 			if ( !shared ) continue;
 
 			/* cell vector index matches stored in i, j and total
@@ -1271,6 +1272,10 @@ static int find_seeds(struct TakeTwoCell *cell)
 	}
 
 	qsort(cell->seeds, cell->seed_count, sizeof(struct Seed), sort_seed_by_score);
+
+	if (cell->seed_count > 1000) {
+		cell->seed_count = 1000;
+	}
 
 	return 1;
 }
