@@ -65,6 +65,7 @@ struct _stream
 
 	int major_version;
 	int minor_version;
+	char *audit_info;
 
 	long long int ln;
 
@@ -1335,6 +1336,64 @@ void write_stream_header(FILE *ofh, int argc, char *argv[])
 }
 
 
+char *stream_audit_info(Stream *st)
+{
+	if ( st->audit_info == NULL ) return NULL;
+	return strdup(st->audit_info);
+}
+
+
+static void read_audit_lines(Stream *st)
+{
+	int done = 0;
+	size_t len = 0;
+	int first = 1;
+
+	st->audit_info = malloc(4096);
+	if ( st->audit_info == NULL ) {
+		ERROR("Failed to allocate memory for audit information\n");
+		return;
+	}
+
+	/* Read lines from stream until one of them starts with "-----",
+	 * then rewind to the start of that line */
+	do {
+
+		char line[1024];
+		char *rval;
+		long pos;
+
+		pos = ftell(st->fh);
+
+		rval = fgets(line, 1023, st->fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to read stream audit info.\n");
+			close_stream(st);
+			return;
+		}
+
+		if ( strncmp(line, "-----", 5) == 0 ) {
+			fseek(st->fh, pos, SEEK_SET);
+			done = 1;
+		} else {
+			chomp(line);
+			len += strlen(line);
+			if ( len > 4090 ) {
+				ERROR("Too much audit information.\n");
+				return;
+			} else {
+				if ( !first ) {
+					strcat(st->audit_info, "\n");
+				}
+				first = 0;
+				strcat(st->audit_info, line);
+			}
+		}
+
+	} while  ( !done );
+}
+
+
 Stream *open_stream_for_read(const char *filename)
 {
 	Stream *st;
@@ -1342,6 +1401,7 @@ Stream *open_stream_for_read(const char *filename)
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
+	st->audit_info = NULL;
 
 	if ( strcmp(filename, "-") == 0 ) {
 		st->fh = stdin;
@@ -1384,6 +1444,8 @@ Stream *open_stream_for_read(const char *filename)
 
 	st->ln = 1;
 
+	read_audit_lines(st);
+
 	return st;
 }
 
@@ -1409,6 +1471,7 @@ Stream *open_stream_fd_for_write(int fd)
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
+	st->audit_info = NULL;
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
@@ -1459,6 +1522,7 @@ Stream *open_stream_for_write_3(const char *filename,
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
+	st->audit_info = NULL;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1511,6 +1575,7 @@ Stream *open_stream_for_write_2(const char *filename,
 	st = malloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
+	st->audit_info = NULL;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1577,6 +1642,7 @@ int get_stream_fd(Stream *st)
 
 void close_stream(Stream *st)
 {
+	free(st->audit_info);
 	fclose(st->fh);
 	free(st);
 }

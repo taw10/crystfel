@@ -3,11 +3,11 @@
  *
  * Stream tools
  *
- * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
  *
@@ -121,6 +121,7 @@ extern void write_command(Stream *st, int argc, char *argv[]);
 extern void write_geometry_file(Stream *st, const char *geom_filename);
 extern int rewind_stream(Stream *st);
 extern int is_stream(const char *filename);
+extern char *stream_audit_info(Stream *st);
 
 #ifdef __cplusplus
 }
