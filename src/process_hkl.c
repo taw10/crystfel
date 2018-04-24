@@ -520,6 +520,7 @@ int main(int argc, char *argv[])
 	double push_res = +INFINITY;
 	double min_cc = -INFINITY;
 	int twopass = 0;
+	char *audit_info;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -823,10 +824,13 @@ int main(int argc, char *argv[])
 		               hist_nbins);
 	}
 
-	reflist_add_command_and_version(model, argc, argv);
-	write_reflist_2(output, model, sym);
-
+	audit_info = stream_audit_info(st);
 	close_stream(st);
+
+	reflist_add_command_and_version(model, argc, argv);
+	reflist_add_notes(model, "Audit information from stream:");
+	reflist_add_notes(model, audit_info);
+	write_reflist_2(output, model, sym);
 
 	free_symoplist(sym);
 	reflist_free(model);
