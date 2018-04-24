@@ -866,6 +866,7 @@ int main(int argc, char *argv[])
 	char *operator = NULL;
 	double force_bandwidth = -1.0;
 	double force_radius = -1.0;
+	char *audit_info;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1301,7 +1302,7 @@ int main(int argc, char *argv[])
 	display_progress(n_images, n_crystals);
 	fprintf(stderr, "\n");
 	if ( sparams_fh != NULL ) fclose(sparams_fh);
-
+	audit_info = stream_audit_info(st);
 	close_stream(st);
 
 	STATUS("Initial partiality calculation...\n");
@@ -1427,6 +1428,8 @@ int main(int argc, char *argv[])
 	/* Output results */
 	STATUS("Writing overall results to %s\n", outfile);
 	reflist_add_command_and_version(full, argc, argv);
+	reflist_add_notes(full, "Audit information from stream:");
+	reflist_add_notes(full, audit_info);
 	write_reflist_2(outfile, full, sym);
 
 	/* Output split results */
