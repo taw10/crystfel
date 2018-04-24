@@ -215,10 +215,7 @@ static int read_cell(struct image *image, struct xds_private *xp)
 	UnitCell *cell;
 
 	fh = fopen("IDXREF.LP", "r");
-	if ( fh == NULL ) {
-		ERROR("Couldn't open 'IDXREF.LP'\n");
-		return 0;
-	}
+	if ( fh == NULL ) return 0; /* Not indexable */
 
 	do {
 		rval = fgets(line, 1023, fh);
