@@ -32,6 +32,7 @@
 #include <config.h>
 #endif
 
+#include <float.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -399,8 +400,8 @@ static void compute_radial_stats(float *rthreshold,
 		if ( rcount[ri] == 0 ) {
 			roffset[ri] = 0;
 			rsigma[ri] = 0;
-			rthreshold[ri] = 1e9;
-			lthreshold[ri] = -1e9;
+			rthreshold[ri] = FLT_MAX;
+			lthreshold[ri] = FLT_MIN;
 		} else {
 			this_offset = roffset[ri] / rcount[ri];
 			this_sigma = rsigma[ri] / rcount[ri] - (this_offset * this_offset);
