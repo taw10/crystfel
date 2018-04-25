@@ -675,7 +675,8 @@ static void reindex_reflections(FILE *fh, FILE *ofh, int assignment,
 /* This is nasty, but means the output includes absolutely everything in the
  * input, even stuff ignored by read_chunk() */
 static void write_reindexed_stream(const char *infile, const char *outfile,
-                                   int *assignments, SymOpList *amb)
+                                   int *assignments, SymOpList *amb,
+                                   int argc, char *argv[])
 {
 	FILE *fh;
 	FILE *ofh;
@@ -684,6 +685,7 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 	int have_as = 0;
 	int have_bs = 0;
 	int have_cs = 0;
+	int done = 0;
 
 	fh = fopen(infile, "r");
 	if ( fh == NULL ) {
@@ -696,6 +698,38 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 		ERROR("Failed to open '%s'\n", outfile);
 		return;
 	}
+
+	/* Copy the header */
+	do {
+
+		char line[1024];
+		char *rval;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to read stream audit info.\n");
+			return;
+		}
+
+		if ( strncmp(line, "-----", 5) == 0 ) {
+
+			done = 1;
+
+			/* Add our own header */
+			fprintf(ofh, "Re-indexed by ambigator "CRYSTFEL_VERSIONSTRING"\n");
+			if ( argc > 0 ) {
+				for ( i=0; i<argc; i++ ) {
+					if ( i > 0 ) fprintf(ofh, " ");
+					fprintf(ofh, "%s", argv[i]);
+				}
+				fprintf(ofh, "\n");
+			}
+
+		}
+
+		fputs(line, ofh);
+
+	} while  ( !done );
 
 	i = 0;
 	do {
@@ -1360,7 +1394,8 @@ int main(int argc, char *argv[])
 	       n_dif);
 
 	if ( (outfile != NULL) && (amb != NULL) ) {
-		write_reindexed_stream(infile, outfile, assignments, amb);
+		write_reindexed_stream(infile, outfile, assignments, amb,
+		                       argc, argv);
 	} else if ( outfile != NULL ) {
 		ERROR("Can only write stream with known ambiguity operator.\n");
 		ERROR("Try again with -w or --operator.\n");
