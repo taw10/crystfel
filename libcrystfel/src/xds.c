@@ -54,7 +54,8 @@
 #include "cell-utils.h"
 
 
-#define XDS_VERBOSE 0
+/* Fake pixel size and camera length, both in metres */
+#define FAKE_PIXEL_SIZE (70e-6)
 #define FAKE_CLEN (0.1)
 
 
@@ -66,142 +67,7 @@ struct xds_private
 };
 
 
-struct xds_data {
-
-	/* Low-level stuff */
-	int                     pty;
-	pid_t                   pid;
-	char                    *rbuffer;
-	int                     rbufpos;
-	int                     rbuflen;
-
-	/* High-level stuff */
-	int			step;
-	int			finished_ok;
-	UnitCell		*target_cell;
-};
-
-static void xds_parseline(const char *line, struct image *image,
-                             struct xds_data *xds)
-{
-#if XDS_VERBOSE
-	char *copy;
-	int i;
-
-	copy = strdup(line);
-	for ( i=0; i<strlen(copy); i++ ) {
-		if ( copy[i] == '\r' ) copy[i]='r';
-		if ( copy[i] == '\n' ) copy[i]='\0';
-	}
-	STATUS("XDS: %s\n", copy);
-	free(copy);
-#endif
-}
-
-
-static int xds_readable(struct image *image, struct xds_data *xds)
-{
-	int rval;
-	int no_string = 0;
-
-	rval = read(xds->pty, xds->rbuffer+xds->rbufpos,
-	            xds->rbuflen-xds->rbufpos);
-	if ( (rval == -1) || (rval == 0) ) return 1;
-
-	xds->rbufpos += rval;
-	assert(xds->rbufpos <= xds->rbuflen);
-
-	while ( (!no_string) && (xds->rbufpos > 0) ) {
-
-		int i;
-		int block_ready = 0;
-
-		/* See if there's a full line in the buffer yet */
-		for ( i=0; i<xds->rbufpos-1; i++ ) {
-			/* Means the last value looked at is rbufpos-2 */
-
-			if ( (xds->rbuffer[i] == '\r')
-			  && (xds->rbuffer[i+1] == '\n') ) {
-				block_ready = 1;
-				break;
-			}
-
-		}
-
-		if ( block_ready ) {
-
-			unsigned int new_rbuflen;
-			unsigned int endbit_length;
-			char *block_buffer = NULL;
-
-			block_buffer = malloc(i+1);
-			memcpy(block_buffer, xds->rbuffer, i);
-			block_buffer[i] = '\0';
-
-			if ( block_buffer[0] == '\r' ) {
-				memmove(block_buffer, block_buffer+1, i);
-			}
-
-			xds_parseline(block_buffer, image, xds);
-			free(block_buffer);
-			endbit_length = i+2;
-
-			/* Now the block's been parsed, it should be
-			 * forgotten about */
-			memmove(xds->rbuffer,
-			        xds->rbuffer + endbit_length,
-			        xds->rbuflen - endbit_length);
-
-			/* Subtract the number of bytes removed */
-			xds->rbufpos = xds->rbufpos
-			                       - endbit_length;
-			new_rbuflen = xds->rbuflen - endbit_length;
-			if ( new_rbuflen == 0 ) new_rbuflen = 256;
-			xds->rbuffer = realloc(xds->rbuffer,
-			                               new_rbuflen);
-			xds->rbuflen = new_rbuflen;
-
-		} else {
-
-			if ( xds->rbufpos==xds->rbuflen ) {
-
-				/* More buffer space is needed */
-				xds->rbuffer = realloc(
-				                    xds->rbuffer,
-				                    xds->rbuflen + 256);
-				xds->rbuflen = xds->rbuflen + 256;
-				/* The new space gets used at the next
-				 * read, shortly... */
-
-			}
-			no_string = 1;
-
-		}
-
-	}
-
-	return 0;
-}
-
-
-static int check_cell(struct xds_private *xp, struct image *image,
-                      UnitCell *cell)
-{
-	Crystal *cr;
-
-	cr = crystal_new();
-	if ( cr == NULL ) {
-		ERROR("Failed to allocate crystal.\n");
-		return 0;
-	}
-	crystal_set_cell(cr, cell);
-	image_add_crystal(image, cr);
-
-	return 1;
-}
-
-
-static int read_cell(struct image *image, struct xds_private *xp)
+static int read_cell(struct image *image)
 {
 	FILE * fh;
 	float axstar, aystar, azstar;
@@ -213,6 +79,7 @@ static int read_cell(struct image *image, struct xds_private *xp)
 	char *rval, line[1024];
 	int r;
 	UnitCell *cell;
+	Crystal *cr;
 
 	fh = fopen("IDXREF.LP", "r");
 	if ( fh == NULL ) return 0; /* Not indexable */
@@ -292,9 +159,16 @@ static int read_cell(struct image *image, struct xds_private *xp)
 	                    axstar*10e9, aystar*10e9, azstar*10e9,
 	                    bxstar*10e9, bystar*10e9, bzstar*10e9,
 	                   -cxstar*10e9, -cystar*10e9, -czstar*10e9);
-	r = check_cell(xp, image, cell);
 
-	return r;
+	cr = crystal_new();
+	if ( cr == NULL ) {
+		ERROR("Failed to allocate crystal.\n");
+		return 0;
+	}
+	crystal_set_cell(cr, cell);
+	image_add_crystal(image, cr);
+
+	return 1;
 }
 
 
@@ -330,8 +204,8 @@ static void write_spot(struct image *image)
 		x = tan(ttx)*FAKE_CLEN;
 		y = tan(tty)*FAKE_CLEN;
 
-		x = (x / 70e-6) + 1500;
-		y = (y / 70e-6) + 1500;
+		x = (x / FAKE_PIXEL_SIZE) + 1500;
+		y = (y / FAKE_PIXEL_SIZE) + 1500;
 
 		fprintf(fh, "%10.2f %10.2f %10.2f %10.0f.\n",
 		        x, y, 0.5, f->intensity);
@@ -458,8 +332,8 @@ static int write_inp(struct image *image, struct xds_private *xp)
 
 	fprintf(fh, "NX= 3000\n");
 	fprintf(fh, "NY= 3000\n");
-	fprintf(fh, "QX= 0.07\n");
-	fprintf(fh, "QY= 0.07\n");
+	fprintf(fh, "QX= %f\n", FAKE_PIXEL_SIZE*1e3);  /* Pixel size in mm */
+	fprintf(fh, "QY= %f\n", FAKE_PIXEL_SIZE*1e3);  /* Pixel size in mm */
 	fprintf(fh, "INDEX_ORIGIN=0 0 0\n");
 	fprintf(fh, "DIRECTION_OF_DETECTOR_X-AXIS=1 0 0\n");
 	fprintf(fh, "DIRECTION_OF_DETECTOR_Y-AXIS=0 1 0\n");
@@ -482,46 +356,33 @@ static int write_inp(struct image *image, struct xds_private *xp)
 
 int run_xds(struct image *image, void *priv)
 {
-	unsigned int opts;
 	int status;
 	int rval;
 	int n;
-	struct xds_data *xds;
+	pid_t pid;
+	int pty;
 	struct xds_private *xp = (struct xds_private *)priv;
-
-	xds = malloc(sizeof(struct xds_data));
-	if ( xds == NULL ) {
-		ERROR("Couldn't allocate memory for xds data.\n");
-		return 0;
-	}
-
-	xds->target_cell = xp->cell;
 
 	if ( write_inp(image, xp) ) {
 		ERROR("Failed to write XDS.INP file for XDS.\n");
-		free(xds);
 		return 0;
 	}
 
 	n = image_feature_count(image->features);
-	if ( n < 25 ) {
-		free(xds);
-		return 0;
-	}
+	if ( n < 25 ) return 0;
 
 	write_spot(image);
 
 	/* Delete any old indexing result which may exist */
 	remove("IDXREF.LP");
 
-	xds->pid = forkpty(&xds->pty, NULL, NULL, NULL);
+	pid = forkpty(&pty, NULL, NULL, NULL);
 
-	if ( xds->pid == -1 ) {
+	if ( pid == -1 ) {
 		ERROR("Failed to fork for XDS\n");
-		free(xds);
 		return 0;
 	}
-	if ( xds->pid == 0 ) {
+	if ( pid == 0 ) {
 
 		/* Child process: invoke XDS */
 		struct termios t;
@@ -536,66 +397,10 @@ int run_xds(struct image *image, void *priv)
 		_exit(0);
 
 	}
+	waitpid(pid, &status, 0);
 
-	xds->rbuffer = malloc(256);
-	xds->rbuflen = 256;
-	xds->rbufpos = 0;
-
-	/* Set non-blocking */
-	opts = fcntl(xds->pty, F_GETFL);
-	fcntl(xds->pty, F_SETFL, opts | O_NONBLOCK);
-
-	//xds->step = 1;	/* This starts the "initialisation" procedure */
-	xds->finished_ok = 0;
-
-	do {
-
-		fd_set fds;
-		struct timeval tv;
-		int sval;
-
-		FD_ZERO(&fds);
-		FD_SET(xds->pty, &fds);
-
-		tv.tv_sec = 30;
-		tv.tv_usec = 0;
-
-		sval = select(xds->pty+1, &fds, NULL, NULL, &tv);
-
-		if ( sval == -1 ) {
-
-			const int err = errno;
-
-			switch ( err ) {
-
-				case EINTR:
-				STATUS("Restarting select()\n");
-				rval = 0;
-				break;
-
-				default:
-				ERROR("select() failed: %s\n", strerror(err));
-				rval = 1;
-				break;
-
-			}
-
-		} else if ( sval != 0 ) {
-			rval = xds_readable(image, xds);
-		} else {
-			ERROR("No response from XDS..\n");
-			rval = 1;
-		}
-
-	} while ( !rval );
-
-	close(xds->pty);
-	free(xds->rbuffer);
-	waitpid(xds->pid, &status, 0);
-
-	rval = read_cell(image, xp);
-
-	free(xds);
+	close(pty);
+	rval = read_cell(image);
 
 	return rval;
 }
