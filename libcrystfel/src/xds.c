@@ -3,12 +3,12 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *        2013 Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
@@ -233,30 +233,41 @@ static int read_cell(struct image *image, struct xds_private *xp)
 		fclose(fh);
 		return 0;
 	}
+
+	/* Get first vector */
 	rval = fgets(line, 1023, fh);
 	if ( rval == NULL ) {
 		fclose(fh);
 		return 0;
 	}
-
+	if ( line[4] != '1' ) {
+		ERROR("No first vector from XDS.\n");
+		return 0;
+	}
 	memcpy(asx, line+7, 10);    asx[10] = '\0';
 	memcpy(asy, line+17, 10);   asy[10] = '\0';
 	memcpy(asz, line+27, 10);   asz[10] = '\0';
 
+	/* Get second vector */
 	rval = fgets(line, 1023, fh);
 	if ( rval == NULL ) {
 		fclose(fh);
 		return 0;
 	}
-
+	if ( line[4] != '2' ) {
+		ERROR("No second vector from XDS.\n");
+		return 0;
+	}
 	memcpy(bsx, line+7, 10);    bsx[10] = '\0';
 	memcpy(bsy, line+17, 10);   bsy[10] = '\0';
 	memcpy(bsz, line+27, 10);   bsz[10] = '\0';
 
+	/* Get third vector */
 	rval = fgets(line, 1023, fh);
 	fclose(fh);
 	if ( rval == NULL ) return 0;
-
+	if ( line[4] != '3' ) return 0; /* No error message this time
+	                                 * - happens a lot */
 	memcpy(csx, line+7, 10);    csx[10] = '\0';
 	memcpy(csy, line+17, 10);   csy[10] = '\0';
 	memcpy(csz, line+27, 10);   csz[10] = '\0';
