@@ -1066,6 +1066,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 
 	for ( i=0 ; i<rstats->n_rad_bins ; i++) {
 		rstats->rthreshold[i] = 1e9;
+		rstats->lthreshold[i] = -1e9;
 	}
 
 	for ( it_counter=0 ; it_counter<iterations ; it_counter++ ) {
