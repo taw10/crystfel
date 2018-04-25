@@ -363,13 +363,15 @@ static void fill_radial_bins(float *data,
 	int curr_r;
 	float value;
 
-	for ( iss = 0; iss<h ; iss++ ) {
-		for ( ifs = 0; ifs<w ; ifs++ ) {
+	for ( iss=0; iss<h; iss++ ) {
+		for ( ifs=0; ifs<w; ifs++ ) {
 			pidx = iss * w + ifs;
 			if ( mask[pidx] != 0 ) {
 				curr_r = (int)rint(r_map[pidx]);
 				value = data[pidx];
-				if ( value < rthreshold[curr_r ] && value>lthreshold[curr_r]) {
+				if ( value < rthreshold[curr_r]
+				  && value > lthreshold[curr_r] )
+				{
 					roffset[curr_r] += value;
 					rsigma[curr_r] += (value * value);
 					rcount[curr_r] += 1;
