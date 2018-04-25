@@ -382,7 +382,7 @@ static int cell_invert(double ax, double ay, double az,
 		return 1;
 	}
 	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert matrix\n");
+		ERROR("Couldn't invert cell matrix:\n");
 		gsl_matrix_free(m);
 		gsl_permutation_free(perm);
 		return 1;
@@ -655,7 +655,7 @@ UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
 		return NULL;
 	}
 	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert matrix\n");
+		ERROR("Couldn't invert transformation matrix\n");
 		gsl_permutation_free(perm);
 		return NULL;
 	}
