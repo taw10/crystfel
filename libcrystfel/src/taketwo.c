@@ -32,7 +32,7 @@
  * \class TakeTwo
  * Code outline.
  * --- Get ready for calculation ---
- * Pre-calculate symmertry operations (generate_rotation_symops())
+ * Pre-calculate symmetry operations (generate_rotation_symops())
  * Pre-calculate theoretical vectors from unit cell dimensions
  * (gen_theoretical_vecs())
  * Generate observed vectors from data (gen_observed_vecs())
