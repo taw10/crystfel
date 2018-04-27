@@ -156,6 +156,12 @@ struct taketwo_private
 {
 	IndexingMethod indm;
 	UnitCell       *cell;
+	int   serial_num; /* -1 if unassigned */
+	unsigned int attempts;
+
+	gsl_matrix     **prevSols; /**< Previous solutions to be ignored */
+	unsigned int   numPrevs; /**< Previous solution count */
+
 };
 
 /**
@@ -166,9 +172,6 @@ struct TakeTwoCell
 	UnitCell       *cell; /**< Contains unit cell dimensions */
 	gsl_matrix     **rotSymOps;
 	unsigned int   numOps;
-
-	gsl_matrix     **prevSols; /**< Previous solutions to be ignored */
-	unsigned int   numPrevs; /**< Previous solution count */
 
 	struct SpotVec *obs_vecs;
 	struct Seed *seeds;
@@ -861,39 +864,8 @@ static int weed_duplicate_matches(struct Seed **seeds,
 	}
 
 	signed int i, j;
+
 	int duplicates = 0;
-
-	/* First we weed out duplicates with previous solutions */
-
-	for (i = *match_count - 1; i >= 0; i--) {
-		int her_match = (*seeds)[i].idx1;
-		int his_match = (*seeds)[i].idx2;
-
-		gsl_matrix *mat;
-		mat = rot_mat_from_indices((*seeds)[i].obs1, (*seeds)[i].obs2,
-		                           her_match, his_match, cell);
-
-		if (mat == NULL)
-		{
-			continue;
-		}
-
-		for (j = 0; j < cell->numPrevs; j++)
-		{
-			int sim = symm_rot_mats_are_similar(cell->prevSols[j],
-			                                    mat, cell);
-
-			/* Found a duplicate with a previous solution */
-			if (sim)
-			{
-				(*seeds)[i].idx1 = -1;
-				(*seeds)[i].idx2 = -1;
-				break;
-			}
-		}
-
-		gsl_matrix_free(mat);
-	}
 
 	/* Now we weed out the self-duplicates from the remaining batch */
 
@@ -1196,8 +1168,51 @@ static int sort_seed_by_score(const void *av, const void *bv)
 	return a->score > b->score;
 }
 
+static void remove_old_solutions(struct TakeTwoCell *cell,
+                                 struct taketwo_private *tp)
+{
+	int duplicates = 0;
+	struct Seed *seeds = cell->seeds;
+	unsigned int total = cell->seed_count;
 
-static int find_seeds(struct TakeTwoCell *cell)
+	/* First we remove duplicates with previous solutions */
+
+	int i, j;
+	for (i = total - 1; i >= 0; i--) {
+		int her_match = seeds[i].idx1;
+		int his_match = seeds[i].idx2;
+
+		gsl_matrix *mat;
+		mat = rot_mat_from_indices(seeds[i].obs1, seeds[i].obs2,
+		                           her_match, his_match, cell);
+
+		if (mat == NULL)
+		{
+			continue;
+		}
+
+		for (j = 0; j < tp->numPrevs; j++)
+		{
+			int sim = symm_rot_mats_are_similar(tp->prevSols[j],
+			                                    mat, cell);
+
+			/* Found a duplicate with a previous solution */
+			if (sim)
+			{
+				seeds[i].idx1 = -1;
+				seeds[i].idx2 = -1;
+				duplicates++;
+				break;
+			}
+		}
+
+		gsl_matrix_free(mat);
+	}
+
+	STATUS("Removing %i duplicates due to prev solutions.\n", duplicates);
+}
+
+static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 {
 	struct SpotVec *obs_vecs = cell->obs_vecs;
 	int obs_vec_count = cell->obs_vec_count;
@@ -1663,7 +1678,8 @@ static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
  * successful.
  **/
 static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
-                             struct rvec *rlps, int rlp_count)
+                             struct rvec *rlps, int rlp_count,
+                             struct taketwo_private *tp)
 {
 	int cell_vec_count = 0;
 	struct TheoryVec *theory_vecs = NULL;
@@ -1678,13 +1694,11 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	ttCell.seed_count = 0;
 	ttCell.rotSymOps = NULL;
 	ttCell.obs_vecs = NULL;
-	ttCell.prevSols = NULL;
 	ttCell.twiz1Tmp = gsl_matrix_calloc(3, 3);
 	ttCell.twiz2Tmp = gsl_matrix_calloc(3, 3);
 	ttCell.vec1Tmp = gsl_vector_calloc(3);
 	ttCell.vec2Tmp = gsl_vector_calloc(3);
 	ttCell.numOps = 0;
-	ttCell.numPrevs = 0;
 	ttCell.obs_vec_count = 0;
 
 	success = generate_rotation_sym_ops(&ttCell);
@@ -1726,20 +1740,62 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 
 	if ( !success ) return NULL;
 
-	find_seeds(&ttCell);
+	find_seeds(&ttCell, tp);
+//	remove_old_solutions(&ttCell, tp);
 	start_seeds(&solution, &ttCell);
 
 	if ( solution == NULL ) {
 		return NULL;
 	}
 
+	for (int i = 0; i < tp->numPrevs; i++)
+	{
+		gsl_matrix *sol = tp->prevSols[i];
+
+		int sim = symm_rot_mats_are_similar(sol, solution, &ttCell);
+		if (sim)
+		{
+//			STATUS("Warning! Returning previous solution.\n");
+		}
+	}
+
+	int new_size = (tp->numPrevs + 1) * sizeof(gsl_matrix *);
+	gsl_matrix **tmp = realloc(tp->prevSols, new_size);
+
+	if (!tmp) {
+		apologise();
+	}
+
+	tp->prevSols = tmp;
+
+	tp->prevSols[tp->numPrevs] = solution;
+	tp->numPrevs++;
+
 	result = transform_cell_gsl(cell, solution);
-	gsl_matrix_free(solution);
 	cleanup_taketwo_cell(&ttCell);
 
 	return result;
 }
 
+/* Cleans up the per-image information for taketwo */
+
+static void partial_taketwo_cleanup(struct taketwo_private *tp)
+{
+	if (tp->prevSols != NULL)
+	{
+		for (int i = 0; i < tp->numPrevs; i++)
+		{
+			gsl_matrix_free(tp->prevSols[i]);
+		}
+
+		free(tp->prevSols);
+	}
+
+	tp->attempts = 0;
+	tp->numPrevs = 0;
+	tp->prevSols = NULL;
+
+}
 
 /* CrystFEL interface hooks */
 
@@ -1752,6 +1808,24 @@ int taketwo_index(struct image *image, const struct taketwo_options *opts,
 	int n_rlps = 0;
 	int i;
 	struct taketwo_private *tp = (struct taketwo_private *)priv;
+
+	/* Check serial number against previous for solution tracking */
+	int this_serial = image->serial;
+
+	if (tp->serial_num == this_serial)
+	{
+		tp->attempts++;
+	}
+	else
+	{
+		partial_taketwo_cleanup(tp);
+		tp->serial_num = this_serial;
+	}
+
+	/*
+	STATUS("Indexing %i with %i attempts, %i crystals\n", this_serial, tp->attempts,
+	       image->n_crystals);
+	*/
 
 	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
@@ -1766,7 +1840,7 @@ int taketwo_index(struct image *image, const struct taketwo_options *opts,
 	rlps[n_rlps].v = 0.0;
 	rlps[n_rlps++].w = 0.0;
 
-	cell = run_taketwo(tp->cell, opts, rlps, n_rlps);
+	cell = run_taketwo(tp->cell, opts, rlps, n_rlps, tp);
 	free(rlps);
 	if ( cell == NULL ) return 0;
 
@@ -1829,14 +1903,19 @@ void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell)
 
 	tp->cell = cell;
 	tp->indm = *indm;
+	tp->serial_num = -1;
+	tp->attempts = 0;
+	tp->prevSols = NULL;
+	tp->numPrevs = 0;
 
 	return tp;
 }
 
-
 void taketwo_cleanup(IndexingPrivate *pp)
 {
 	struct taketwo_private *tp = (struct taketwo_private *)pp;
+
+	partial_taketwo_cleanup(tp);
 	free(tp);
 }
 
