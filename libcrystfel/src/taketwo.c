@@ -1262,7 +1262,7 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 	 */
 	int i, j;
 
-	for ( i=0; i<obs_vec_count; i++ ) {
+	for ( i=1; i<obs_vec_count; i++ ) {
 
 		for ( j=0; j<i; j++ ) {
 
