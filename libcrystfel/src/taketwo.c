@@ -245,6 +245,15 @@ static struct rvec new_rvec(double new_u, double new_v, double new_w)
 	return new_rvector;
 }
 
+static struct rvec rvec_add_rvec(struct rvec first, struct rvec second)
+{
+	struct rvec diff = new_rvec(second.u + first.u,
+				    second.v + first.v,
+				    second.w + first.w);
+
+	return diff;
+}
+
 
 static struct rvec diff_vec(struct rvec from, struct rvec to)
 {
