@@ -714,6 +714,9 @@ static int obs_vecs_match_angles(int her, int his,
 			struct rvec *her_match = &her_obs->matches[i].vec;
 			struct rvec *his_match = &his_obs->matches[j].vec;
 
+			double her_dist = rvec_length(*her_match);
+			double his_dist = rvec_length(*his_match);
+
 			double theory_angle = rvec_angle(*her_match,
 			                                 *his_match);
 
@@ -729,7 +732,7 @@ static int obs_vecs_match_angles(int her, int his,
 
 			double add = angle_diff;
 			if (add == add) {
-				score += add;
+				score += add * her_dist * his_dist;
 			}
 
 			/* If the angles are too close to 0
@@ -751,13 +754,15 @@ static int obs_vecs_match_angles(int her, int his,
 			obs_angle = rvec_angle(her_obs->obsvec, obs_diff);
 			angle_diff = fabs(obs_angle - theory_angle);
 
+			double diff_dist = rvec_length(obs_diff);
+
 			if (angle_diff > ANGLE_TOLERANCE) {
 				continue;
 			}
 
 			add = angle_diff;
 			if (add == add) {
-				score += add;
+				score += add * her_dist * diff_dist;
 			}
 
 			theory_angle = rvec_angle(*his_match,
@@ -770,7 +775,7 @@ static int obs_vecs_match_angles(int her, int his,
 
 			add = angle_diff;
 			if (add == add) {
-				score += add;
+				score += add * his_dist * diff_dist;
 			}
 
 			/* we add a new seed to the array */
