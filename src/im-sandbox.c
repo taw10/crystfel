@@ -196,7 +196,7 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 			line = tmp;
 		}
 
-		scan_check = sscanf(line, "%s %s", filename_buf, event_buf );
+		scan_check = sscanf(line, "%s %s", filename_buf, event_buf);
 
 		len = strlen(prefix)+strlen(filename_buf)+1;
 
