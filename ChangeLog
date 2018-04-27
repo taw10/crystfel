@@ -1,3 +1,25 @@
+Changes in this development version
+-----------------------------------
+
+- indexamajig: Auto-detection of indexing methods was added.
+- indexamajig: New options system - removes confusing "comb","bad","retry" etc.
+- Most programs now use the symmetry in the reflection files, allowing "-y"
+- Ginn partiality model was added.
+- partialator: Switch to gradient-free minimiser.
+- process_hkl, partialator and ambigator now include the audit information from
+  the stream in their output files.
+- pattern_sim: Write orientation and lattice basis vectors into HDF5 file.
+- hdfsee: Add event ID and peaks/preds/rings to exported image filenames.
+  options to be omitted.
+- indexamajig --serial-start was added (useful when using turbo-index).
+- indexamajig --overpredict was added (useful for partiality
+  modelling/post-refinement)
+- pattern_sim --flat was added (new reflection profile option)
+- cell_explorer: Show number of matching cells on terminal.
+- Felix options were simplified.
+- scripts/sum-hdf5-files and eiger-badmap were added
+
+
 CrystFEL version 0.6.3, 24th July 2017
 --------------------------------------
 
