@@ -406,6 +406,32 @@ static void closest_rot_mat(struct rvec vec1, struct rvec vec2,
 	rotation_around_axis(axis, bestAngle, twizzle);
 }
 
+static double matrix_angle(gsl_matrix *m)
+{
+	double a = gsl_matrix_get(m, 0, 0);
+	double b = gsl_matrix_get(m, 1, 1);
+	double c = gsl_matrix_get(m, 2, 2);
+
+	double cos_t = (a + b + c - 1) / 2;
+	double theta = acos(cos_t);
+
+	return theta;
+}
+
+static struct rvec matrix_axis(gsl_matrix *a)
+{
+	double ang = matrix_angle(a);
+	double cos_t = cos(ang);
+	double p = gsl_matrix_get(a, 0, 0);
+	double q = gsl_matrix_get(a, 1, 1);
+	double r = gsl_matrix_get(a, 2, 2);
+	double x = sqrt((p - cos_t) / (1 - cos_t));
+	double y = sqrt((q - cos_t) / (1 - cos_t));
+	double z = sqrt((r - cos_t) / (1 - cos_t));
+
+	struct rvec v = new_rvec(x, y, z);
+	return v;
+}
 
 static double matrix_trace(gsl_matrix *a)
 {
