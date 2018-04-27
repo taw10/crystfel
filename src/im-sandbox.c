@@ -261,9 +261,15 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 				struct event *ev_to_add;
 
 				ev_to_add = get_event_from_event_string(event_buf);
-				append_event_to_event_list(ev_list, ev_to_add);
-				free_event(ev_to_add);
-				event_index = 0;
+				if ( ev_to_add == NULL ) {
+					ERROR("Bad event descriptor: '%s'\n",
+					      event_buf);
+				} else {
+					append_event_to_event_list(ev_list,
+					                           ev_to_add);
+					free_event(ev_to_add);
+					event_index = 0;
+				}
 
 			}
 
