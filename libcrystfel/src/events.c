@@ -150,6 +150,8 @@ struct event *copy_event(struct event *ev)
 	struct event *new_ev;
 	int pi, di;
 
+	if ( ev == NULL ) return NULL;
+
 	if ( ev->dim_length == 0 && ev->path_length == 0) {
 
 		new_ev = initialize_event();
@@ -251,6 +253,8 @@ int find_event(struct event *ev, struct event_list *el)
 void free_event(struct event *ev)
 {
 	int pi;
+
+	if ( ev == NULL ) return;
 
 	if ( ev->path_length != 0 ) {
 		for ( pi=0; pi<ev->path_length; pi++ ) {
