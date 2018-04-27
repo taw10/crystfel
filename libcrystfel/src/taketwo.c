@@ -1323,14 +1323,20 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 				cell->seeds[cell->seed_count] = seeds[i];
 				cell->seed_count++;
 			}
+
+			if (cell->seed_count > 1000) {
+				break;
+			}
 		}
+
+		if (cell->seed_count > 1000) {
+			break;
+		}
+
 	}
 
 	qsort(cell->seeds, cell->seed_count, sizeof(struct Seed), sort_seed_by_score);
 
-	if (cell->seed_count > 1000) {
-		cell->seed_count = 1000;
-	}
 
 	return 1;
 }
