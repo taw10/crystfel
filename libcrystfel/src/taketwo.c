@@ -122,6 +122,7 @@ struct SpotVec
 	struct rvec obsvec;
 	struct TheoryVec *matches;
 	int match_num;
+	int assignment;
 	int in_network;
 	double distance;
 	struct rvec *her_rlp;
@@ -184,6 +185,13 @@ struct TakeTwoCell
 	double angle_tol; /**< In radians */
 	double trace_tol; /**< Contains sqrt(4*(1-cos(angle))) */
 
+	/** A given solution to refine */
+	gsl_matrix *solution;
+
+	double x_ang; /**< Rotations in radians to apply to x axis of solution */
+	double y_ang; /**< Rotations in radians to apply to y axis of solution */
+	double z_ang; /**< Rotations in radians to apply to z axis of solution */
+
 	/**< Temporary memory always allocated for calculations */
 	gsl_matrix *twiz1Tmp;
 	/**< Temporary memory always allocated for calculations */
@@ -216,6 +224,12 @@ struct TakeTwoCell
 
 /* Tolerance for rot_mats_are_similar */
 #define TRACE_TOLERANCE (deg2rad(3.0))
+
+/* Initial step size for refinement of solutions */
+#define ANGLE_STEP_SIZE (deg2rad(0.2))
+
+/* Final required step size for refinement of solutions */
+#define ANGLE_CONVERGE_SIZE (deg2rad(0.01))
 
 /* TODO: Multiple lattices */
 
@@ -349,6 +363,35 @@ static void rotation_around_axis(struct rvec c, double th,
 	gsl_matrix_set(res, 2, 2, cos(th) + c.w*c.w*omc);
 }
 
+/** Rotate GSL matrix by three angles along x, y and z axes */
+static void rotate_gsl_by_angles(gsl_matrix *sol, double x, double y,
+                                 double z, gsl_matrix *result)
+{
+	gsl_matrix *x_rot = gsl_matrix_alloc(3, 3);
+	gsl_matrix *y_rot = gsl_matrix_alloc(3, 3);
+	gsl_matrix *z_rot = gsl_matrix_alloc(3, 3);
+	gsl_matrix *xy_rot = gsl_matrix_alloc(3, 3);
+	gsl_matrix *xyz_rot = gsl_matrix_alloc(3, 3);
+
+	struct rvec x_axis = new_rvec(1, 0, 0);
+	struct rvec y_axis = new_rvec(1, 0, 0);
+	struct rvec z_axis = new_rvec(1, 0, 0);
+
+	rotation_around_axis(x_axis, x, x_rot);
+	rotation_around_axis(y_axis, y, y_rot);
+	rotation_around_axis(z_axis, z, z_rot);
+
+	/* Collapse the rotations in x and y onto z */
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, x_rot,
+	               y_rot, 0.0, xy_rot);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xy_rot,
+	               z_rot, 0.0, xyz_rot);
+
+	/* Apply the whole rotation offset to the solution */
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xyz_rot,
+	               sol, 0.0, result);
+}
+
 
 /* Rotate vector (vec1) around axis (axis) by angle theta. Find value of
  * theta for which the angle between (vec1) and (vec2) is minimised. */
@@ -406,6 +449,7 @@ static void closest_rot_mat(struct rvec vec1, struct rvec vec2,
 	rotation_around_axis(axis, bestAngle, twizzle);
 }
 
+/*
 static double matrix_angle(gsl_matrix *m)
 {
 	double a = gsl_matrix_get(m, 0, 0);
@@ -432,6 +476,7 @@ static struct rvec matrix_axis(gsl_matrix *a)
 	struct rvec v = new_rvec(x, y, z);
 	return v;
 }
+*/
 
 static double matrix_trace(gsl_matrix *a)
 {
@@ -1249,7 +1294,7 @@ static void remove_old_solutions(struct TakeTwoCell *cell,
 		gsl_matrix_free(mat);
 	}
 
-	STATUS("Removing %i duplicates due to prev solutions.\n", duplicates);
+//	STATUS("Removing %i duplicates due to prev solutions.\n", duplicates);
 }
 
 static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
@@ -1323,16 +1368,7 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 				cell->seeds[cell->seed_count] = seeds[i];
 				cell->seed_count++;
 			}
-
-			if (cell->seed_count > 1000) {
-				break;
-			}
 		}
-
-		if (cell->seed_count > 1000) {
-			break;
-		}
-
 	}
 
 	qsort(cell->seeds, cell->seed_count, sizeof(struct Seed), sort_seed_by_score);
@@ -1483,6 +1519,182 @@ static int sort_theory_distances(const void *av, const void *bv)
 	return a->dist > b->dist;
 }
 
+static double obs_to_sol_score(struct TakeTwoCell *ttCell)
+{
+	double total = 0;
+	int count = 0;
+	int i;
+	gsl_matrix *solution = ttCell->solution;
+	gsl_matrix *full_rot = gsl_matrix_alloc(3, 3);
+	rotate_gsl_by_angles(solution, ttCell->x_ang, ttCell->y_ang,
+	                     ttCell->z_ang, full_rot);
+
+	for (i = 0; i < ttCell->obs_vec_count; i++)
+	{
+		struct rvec *obs = &ttCell->obs_vecs[i].obsvec;
+		rvec_to_gsl(ttCell->vec1Tmp, *obs);
+
+		/* Rotate all the observed vectors by the modified soln */
+		/* ttCell->vec2Tmp = 1.0 * full_rot * ttCell->vec1Tmp */
+		gsl_blas_dgemv(CblasTrans, 1.0, full_rot, ttCell->vec1Tmp,
+		               0.0, ttCell->vec2Tmp);
+		struct rvec rotated = gsl_to_rvec(ttCell->vec2Tmp);
+
+		int j = ttCell->obs_vecs[i].assignment;
+
+		if (j < 0) continue;
+
+		struct rvec *match = &ttCell->obs_vecs[i].matches[j].vec;
+		struct rvec diff = diff_vec(rotated, *match);
+
+		double length = rvec_length(diff);
+
+		double addition = exp(-(1 / RECIP_TOLERANCE) * length);
+		total += addition;
+		count++;
+	}
+
+	total /= (double)-count;
+
+	gsl_matrix_free(full_rot);
+
+	return total;
+}
+
+/* At the moment this is just going to do a step search of 3x3x3 until
+ * the angles are sufficiently tiny */
+static void refine_solution(struct TakeTwoCell *ttCell)
+{
+	int i, j, k;
+	const int total = 3 * 3 * 3;
+	const int middle = (total - 1) / 2;
+
+	struct rvec steps[total];
+	double start = obs_to_sol_score(ttCell);
+	const int max_tries = 100;
+
+	int count = 0;
+	double size = ANGLE_STEP_SIZE;
+
+	/* First we create our combinations of steps */
+	for (i = -1; i <= 1; i++) {
+	for (j = -1; j <= 1; j++) {
+	for (k = -1; k <= 1; k++) {
+		struct rvec vec = new_rvec(i, j, k);
+		steps[count] = vec;
+		count++;
+	}
+	}
+	}
+
+	struct rvec current = new_rvec(ttCell->x_ang, ttCell->y_ang,
+	                               ttCell->z_ang);
+
+	double best = start;
+	count = 0;
+
+	while (size > ANGLE_CONVERGE_SIZE && count < max_tries)
+	{
+		struct rvec sized[total];
+
+		int best_num = middle;
+		for (i = 0; i < total; i++)
+		{
+			struct rvec sized_step = steps[i];
+			sized_step.u *= size;
+			sized_step.v *= size;
+			sized_step.w *= size;
+
+			struct rvec new_angles = rvec_add_rvec(current,
+			                                       sized_step);
+
+			sized[i] = new_angles;
+
+			ttCell->x_ang = sized[i].u;
+			ttCell->y_ang = sized[i].v;
+			ttCell->z_ang = sized[i].w;
+
+			double score = obs_to_sol_score(ttCell);
+
+			if (score < best)
+			{
+				best = score;
+				best_num = i;
+			}
+		}
+
+		if (best_num == middle)
+		{
+			size /= 2;
+		}
+
+		current = sized[best_num];
+		count++;
+	}
+
+	ttCell->x_ang = current.u;
+	ttCell->y_ang = current.v;
+	ttCell->z_ang = current.w;
+
+	double end = obs_to_sol_score(ttCell);
+
+	ttCell->x_ang = 0;
+	ttCell->y_ang = 0;
+	ttCell->z_ang = 0;
+
+	gsl_matrix *tmp = gsl_matrix_alloc(3, 3);
+	rotate_gsl_by_angles(ttCell->solution, current.u,
+	                     current.v, current.w, tmp);
+	gsl_matrix_free(ttCell->solution);
+	ttCell->solution = tmp;
+}
+
+static void match_all_obs_to_sol(struct TakeTwoCell *ttCell)
+{
+	int i, j;
+	double total = 0;
+	int count = 0;
+	gsl_matrix *solution = ttCell->solution;
+
+	for (i = 0; i < ttCell->obs_vec_count; i++)
+	{
+		struct rvec *obs = &ttCell->obs_vecs[i].obsvec;
+		rvec_to_gsl(ttCell->vec1Tmp, *obs);
+
+		/* ttCell->vec2Tmp = 1.0 * solution * ttCell->vec1Tmp */
+		gsl_blas_dgemv(CblasTrans, 1.0, solution, ttCell->vec1Tmp,
+		               0.0, ttCell->vec2Tmp);
+		struct rvec rotated = gsl_to_rvec(ttCell->vec2Tmp);
+
+		double smallest = FLT_MAX;
+		int assigned = -1;
+
+		for (j = 0; j < ttCell->obs_vecs[i].match_num; j++)
+		{
+			struct rvec *match = &ttCell->obs_vecs[i].matches[j].vec;
+			struct rvec diff = diff_vec(rotated, *match);
+
+			double length = rvec_length(diff);
+			if (length < smallest)
+			{
+				smallest = length;
+				assigned = j;
+			}
+		}
+
+		ttCell->obs_vecs[i].assignment = assigned;
+
+		if (smallest != FLT_MAX)
+		{
+			double addition = exp(-(1 / RECIP_TOLERANCE) * smallest);
+			total += addition;
+			count++;
+
+		}
+	}
+
+	total /= (double)count;
+}
 
 static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_count,
 				  struct TakeTwoCell *cell)
@@ -1585,6 +1797,7 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 				spot_vec.obsvec = diff;
 				spot_vec.distance = sqrt(sqlength);
 				spot_vec.matches = NULL;
+				spot_vec.assignment = -1;
 				spot_vec.match_num = 0;
 				spot_vec.her_rlp = &rlps[i];
 				spot_vec.his_rlp = &rlps[j];
@@ -1746,6 +1959,10 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	ttCell.vec2Tmp = gsl_vector_calloc(3);
 	ttCell.numOps = 0;
 	ttCell.obs_vec_count = 0;
+	ttCell.solution = NULL;
+	ttCell.x_ang = 0;
+	ttCell.y_ang = 0;
+	ttCell.z_ang = 0;
 
 	success = generate_rotation_sym_ops(&ttCell);
 
@@ -1787,14 +2004,20 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	if ( !success ) return NULL;
 
 	find_seeds(&ttCell, tp);
-//	remove_old_solutions(&ttCell, tp);
+	remove_old_solutions(&ttCell, tp);
 	start_seeds(&solution, &ttCell);
 
 	if ( solution == NULL ) {
 		return NULL;
 	}
 
-	for (int i = 0; i < tp->numPrevs; i++)
+	ttCell.solution = solution;
+	match_all_obs_to_sol(&ttCell);
+	refine_solution(&ttCell);
+	solution = ttCell.solution;
+
+	int i;
+	for (i = 0; i < tp->numPrevs; i++)
 	{
 		gsl_matrix *sol = tp->prevSols[i];
 
