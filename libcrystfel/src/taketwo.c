@@ -226,7 +226,7 @@ struct TakeTwoCell
 #define TRACE_TOLERANCE (deg2rad(3.0))
 
 /* Initial step size for refinement of solutions */
-#define ANGLE_STEP_SIZE (deg2rad(0.2))
+#define ANGLE_STEP_SIZE (deg2rad(0.5))
 
 /* Final required step size for refinement of solutions */
 #define ANGLE_CONVERGE_SIZE (deg2rad(0.01))
