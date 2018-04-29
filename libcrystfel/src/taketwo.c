@@ -679,9 +679,6 @@ static gsl_matrix *generate_rot_mat(struct rvec obs1, struct rvec obs2,
 	gsl_matrix *fullMat;
 	rvec_to_gsl(cell->vec1Tmp, cell2);
 
-//	gsl_vector *cell2v = rvec_to_gsl(cell2);
-//	gsl_vector *cell2vr = gsl_vector_calloc(3);
-
 	normalise_rvec(&obs1);
 	normalise_rvec(&obs2);
 	normalise_rvec(&cell1);
