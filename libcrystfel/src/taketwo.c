@@ -1085,12 +1085,6 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 
 
 		if (all_ok) {
-
-			for ( j=0; j<member_num; j++ ) {
-			//	STATUS("%i ", obs_members[j]);
-			}
-			//STATUS("%i\n", i);
-
 			return i;
 		}
 	}
