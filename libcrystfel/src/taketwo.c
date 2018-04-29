@@ -1023,17 +1023,6 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 
 		if ( !shared ) continue;
 
-		int skip = 0;
-		for ( j=0; j<member_num && skip == 0; j++ ) {
-			if (i == obs_members[j]) {
-				skip = 1;
-			}
-		}
-
-		if (skip) {
-			continue;
-		}
-
 		int all_ok = 1;
 		int matched = -1;
 
