@@ -396,6 +396,12 @@ static void rotate_gsl_by_angles(gsl_matrix *sol, double x, double y,
 	/* Apply the whole rotation offset to the solution */
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xyz_rot,
 	               sol, 0.0, result);
+
+	gsl_matrix_free(x_rot);
+	gsl_matrix_free(y_rot);
+	gsl_matrix_free(z_rot);
+	gsl_matrix_free(xy_rot);
+	gsl_matrix_free(xyz_rot);
 }
 
 
