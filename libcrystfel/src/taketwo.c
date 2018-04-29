@@ -1681,7 +1681,6 @@ static int sort_theory_distances(const void *av, const void *bv)
 	return a->dist > b->dist;
 }
 
-
 static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_count,
 				  struct TakeTwoCell *cell)
 {
