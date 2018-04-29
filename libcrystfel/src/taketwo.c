@@ -1031,7 +1031,8 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 
 			struct SpotVec *me = &obs_vecs[i];
 			struct SpotVec *you = &obs_vecs[obs_members[j]];
-			struct rvec you_cell = you->matches[match_members[j]].vec;
+			struct rvec you_cell;
+			you_cell = you->matches[match_members[j]].vec;
 
 			struct rvec me_obs = me->obsvec;
 			struct rvec you_obs = you->obsvec;
