@@ -212,6 +212,9 @@ struct TakeTwoCell
 /* Threshold for network members to consider a potential solution */
 #define NETWORK_MEMBER_THRESHOLD (20)
 
+/* Minimum for network members to consider a potential solution */
+#define MINIMUM_MEMBER_THRESHOLD (5)
+
 /* Maximum dead ends for a single branch extension during indexing */
 #define MAX_DEAD_ENDS (10)
 
@@ -1314,7 +1317,6 @@ static unsigned int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 	match_members[0] = match_idx1;
 	match_members[1] = match_idx2;
 	int member_num = 2;
-	*max_members = 2;
 
 	/* counter for dead ends which must not exceed MAX_DEAD_ENDS
 	 * before it is reset in an additional branch */
@@ -1367,19 +1369,6 @@ static unsigned int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 
 		member_num++;
 
-		if (member_num > *max_members) {
-			*max_members = member_num;
-		}
-
-		/*
-		int n;
-		for (n = 0; n < member_num; n++)
-		{
-			STATUS("*");
-		}
-		STATUS("\n");
-		*/
-
 		/* If member_num is high enough, we want to return a yes */
 		if ( member_num > cell->member_thresh ) break;
 
@@ -1391,13 +1380,12 @@ static unsigned int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 	free(obs_members);
 	free(match_members);
 
-	return ( member_num > cell->member_thresh );
+	return ( member_num );
 }
 
 
-static int start_seed(int i, int j, int i_match, int j_match,
-		      gsl_matrix **rotation, int *max_members,
-		      struct TakeTwoCell *cell)
+static unsigned int start_seed(int i, int j, int i_match, int j_match,
+                               gsl_matrix **rotation, struct TakeTwoCell *cell)
 {
 	struct SpotVec *obs_vecs = cell->obs_vecs;
 
@@ -1411,13 +1399,13 @@ static int start_seed(int i, int j, int i_match, int j_match,
 
 	/* Try to expand this rotation matrix to a larger network */
 
-	int success = grow_network(rot_mat, i, j, i_match, j_match, max_members,
-				   cell);
+	int member_num = grow_network(rot_mat, i, j, i_match, j_match,
+	                              cell);
 
 	/* return this matrix and if it was immediately successful */
 	*rotation = rot_mat;
 
-	return success;
+	return member_num;
 }
 
 static int sort_seed_by_score(const void *av, const void *bv)
@@ -1555,6 +1543,7 @@ static int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 {
 	struct Seed *seeds = cell->seeds;
 	int seed_num = cell->seed_count;
+	int member_num = 0;
 
 	/* We have seeds! Pass each of them through the seed-starter  */
 	/* If a seed has the highest achieved membership, make note...*/
@@ -1567,24 +1556,21 @@ static int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 			continue;
 		}
 
-		int max_members = 0;
-
 		int seed_obs1 = seeds[k].obs1;
 		int seed_obs2 = seeds[k].obs2;
 
-		int success = start_seed(seed_obs1, seed_obs2,
-		                         seed_idx1, seed_idx2,
-		rotation, &max_members,
-		cell);
+		member_num = start_seed(seed_obs1, seed_obs2, seed_idx1,
+		                        seed_idx2, rotation, cell);
 
-		if (success) {
+		if (member_num >= NETWORK_MEMBER_THRESHOLD) {
 			free(seeds);
-			return success;
+			return 1;
 		}
 	}
 
 	free(seeds);
-	return (rotation != NULL);
+
+	return (member_num > MINIMUM_MEMBER_THRESHOLD && rotation != NULL);
 }
 
 
