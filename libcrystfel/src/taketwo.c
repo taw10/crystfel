@@ -1037,6 +1037,7 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 		int all_ok = 1;
 		int matched = -1;
 
+		/* Check all existing members are happy to let in the newcomer */
 		for ( j=0; j<member_num && all_ok; j++ ) {
 
 			struct SpotVec *me = &obs_vecs[i];
@@ -1187,6 +1188,7 @@ static int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 			continue;
 		}
 
+		/* Elongation of the network was successful */
 		obs_vecs[next_index].in_network = 1;
 		obs_members[member_num] = next_index;
 		match_members[member_num] = match_found;
@@ -1311,8 +1313,8 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 
 		for ( j=0; j<i; j++ ) {
 
-			/** Only check distances which are accumulatively less than
- * 			the limit */
+			/** Only check distances which are accumulatively less
+			* than the limit */
 			if (obs_vecs[j].distance + obs_vecs[i].distance >
 			    MAX_RECIP_DISTANCE) {
 				continue;
@@ -1331,9 +1333,9 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 			int seed_num = 0;
 			struct Seed *seeds = NULL;
 
-			/* Check to see if any angles match from the cell vectors */
-			obs_vecs_match_angles(i, j,
-			                      &seeds, &seed_num, cell);
+			/* Check to see if any angles match from the cell
+			 * vectors */
+			obs_vecs_match_angles(i, j, &seeds, &seed_num, cell);
 
 			if (seed_num == 0)
 			{
@@ -1908,6 +1910,8 @@ static void cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
 
 static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
 {
+	/* n.b. solutions in ttCell are taken care of in the
+	* partial taketwo cleanup. */
 	int i;
 	for ( i=0; i<ttCell->numOps; i++ ) {
 		gsl_matrix_free(ttCell->rotSymOps[i]);
@@ -2003,6 +2007,8 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 
 	if ( !success ) return NULL;
 
+	/* Find all the seeds, then take each one and extend them, returning
+	* a solution if it exceeds the NETWORK_MEMBER_THRESHOLD. */
 	find_seeds(&ttCell, tp);
 	remove_old_solutions(&ttCell, tp);
 	start_seeds(&solution, &ttCell);
@@ -2011,8 +2017,8 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 		return NULL;
 	}
 
+	/* If we have a solution, refine against vectors in the entire image */
 	ttCell.solution = solution;
-	match_all_obs_to_sol(&ttCell);
 	refine_solution(&ttCell);
 	solution = ttCell.solution;
 
