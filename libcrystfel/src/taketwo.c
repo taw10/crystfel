@@ -1484,7 +1484,8 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 			 * for optimisation by generating a look-up table
 			 * by spot instead of by vector.
 			 */
-			int shared = obs_vecs_share_spot(&obs_vecs[i], &obs_vecs[j]);
+			int shared = obs_vecs_share_spot(&obs_vecs[i],
+			                                 &obs_vecs[j]);
 			if ( !shared ) continue;
 
 			/* cell vector index matches stored in i, j and total
@@ -1533,7 +1534,8 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 		}
 	}
 
-	qsort(cell->seeds, cell->seed_count, sizeof(struct Seed), sort_seed_by_score);
+	qsort(cell->seeds, cell->seed_count, sizeof(struct Seed),
+	      sort_seed_by_score);
 
 
 	return 1;
