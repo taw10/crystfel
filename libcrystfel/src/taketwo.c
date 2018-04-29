@@ -157,8 +157,11 @@ struct taketwo_private
 {
 	IndexingMethod indm;
 	UnitCell       *cell;
-	int   serial_num; /* -1 if unassigned */
-	unsigned int attempts;
+	int   serial_num; /**< Serial of last image, -1 if unassigned */
+	unsigned int attempts; /**< Attempts at indexing current image */
+
+	struct TheoryVec *theory_vecs; /**< Theoretical vectors for given unit cell */
+	unsigned int vec_count; /**< Number of theoretical vectors */
 
 	gsl_matrix     **prevSols; /**< Previous solutions to be ignored */
 	unsigned int   numPrevs; /**< Previous solution count */
@@ -1802,7 +1805,7 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 
 
 static int gen_theoretical_vecs(UnitCell *cell, struct TheoryVec **cell_vecs,
-				int *vec_count)
+				unsigned int *vec_count)
 {
 	double a, b, c, alpha, beta, gamma;
 	int h_max, k_max, l_max;
@@ -1927,8 +1930,6 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
                              struct rvec *rlps, int rlp_count,
                              struct taketwo_private *tp)
 {
-	int cell_vec_count = 0;
-	struct TheoryVec *theory_vecs = NULL;
 	UnitCell *result;
 	int success = 0;
 	gsl_matrix *solution = NULL;
@@ -1953,7 +1954,6 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 
 	success = generate_rotation_sym_ops(&ttCell);
 
-	success = gen_theoretical_vecs(cell, &theory_vecs, &cell_vec_count);
 	if ( !success ) return NULL;
 
 	success = gen_observed_vecs(rlps, rlp_count, &ttCell);
@@ -1983,10 +1983,8 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 		ttCell.trace_tol = sqrt(4.0*(1.0-cos(opts->trace_tol)));
 	}
 
-	success = match_obs_to_cell_vecs(theory_vecs, cell_vec_count,
+	success = match_obs_to_cell_vecs(tp->theory_vecs, tp->vec_count,
 					 &ttCell);
-
-	free(theory_vecs);
 
 	if ( !success ) return NULL;
 
@@ -2005,18 +2003,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	refine_solution(&ttCell);
 	solution = ttCell.solution;
 
-	int i;
-	for (i = 0; i < tp->numPrevs; i++)
-	{
-		gsl_matrix *sol = tp->prevSols[i];
-
-		int sim = symm_rot_mats_are_similar(sol, solution, &ttCell);
-		if (sim)
-		{
-//			STATUS("Warning! Returning previous solution.\n");
-		}
-	}
-
+	/* Add the current solution to the previous solutions list */
 	int new_size = (tp->numPrevs + 1) * sizeof(gsl_matrix *);
 	gsl_matrix **tmp = realloc(tp->prevSols, new_size);
 
@@ -2029,6 +2016,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	tp->prevSols[tp->numPrevs] = solution;
 	tp->numPrevs++;
 
+	/* Prepare the solution for CrystFEL friendliness */
 	result = transform_cell_gsl(cell, solution);
 	cleanup_taketwo_cell(&ttCell);
 
@@ -2165,6 +2153,10 @@ void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell)
 	tp->attempts = 0;
 	tp->prevSols = NULL;
 	tp->numPrevs = 0;
+	tp->vec_count = 0;
+	tp->theory_vecs = NULL;
+
+	gen_theoretical_vecs(cell, &tp->theory_vecs, &tp->vec_count);
 
 	return tp;
 }
@@ -2174,6 +2166,8 @@ void taketwo_cleanup(IndexingPrivate *pp)
 	struct taketwo_private *tp = (struct taketwo_private *)pp;
 
 	partial_taketwo_cleanup(tp);
+	free(tp->theory_vecs);
+
 	free(tp);
 }
 
