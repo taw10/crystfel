@@ -1480,9 +1480,9 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 		for ( j=0; j<i; j++ ) {
 
 			/** Only check distances which are accumulatively less
-			* than the limit */
+			* than the limit if we can easily generate seeds */
 			if (obs_vecs[j].distance + obs_vecs[i].distance >
-			    MAX_RECIP_DISTANCE) {
+			    MAX_RECIP_DISTANCE && cell->seed_count > 100) {
 				continue;
 			}
 
