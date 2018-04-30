@@ -1547,11 +1547,13 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 	return 1;
 }
 
-static int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
+static unsigned int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 {
 	struct Seed *seeds = cell->seeds;
 	int seed_num = cell->seed_count;
 	int member_num = 0;
+	int max_members = 0;
+	gsl_matrix *rot = NULL;
 
 	/* We have seeds! Pass each of them through the seed-starter  */
 	/* If a seed has the highest achieved membership, make note...*/
@@ -1568,17 +1570,23 @@ static int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 		int seed_obs2 = seeds[k].obs2;
 
 		member_num = start_seed(seed_obs1, seed_obs2, seed_idx1,
-		                        seed_idx2, rotation, cell);
+		                        seed_idx2, &rot, cell);
+
+		if (member_num > max_members)
+		{
+			*rotation = rot;
+			max_members = member_num;
+		}
 
 		if (member_num >= NETWORK_MEMBER_THRESHOLD) {
 			free(seeds);
-			return 1;
+			return max_members;
 		}
 	}
 
 	free(seeds);
 
-	return (member_num > MINIMUM_MEMBER_THRESHOLD && rotation != NULL);
+	return max_members;
 }
 
 
