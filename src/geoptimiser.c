@@ -1088,20 +1088,23 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 
 			/* Calculate corner adjustment
 			 * NB All panels follow the first one */
-			if ( ip > 0 && connected->rigid_groups[di]->n_panels == 2 && !gparams->no_cspad ) {
+			if ( ip > 0 ) {
 
 				struct panel *p0;
-				double delta_x, delta_y, delta;
+				double dx_old, dy_old, dx_new, dy_new;
 
 				p0 = connected->rigid_groups[di]->panels[0];
 
-				delta_x = p->cnx - p0->cnx / cs;
-				delta_y = p->cny - p0->cny / cs;
+				dx_old = p->cnx - p0->cnx / cs;
+				dy_old = p->cny - p0->cny / cs;
 
-				delta = sqrt(delta_x*delta_x + delta_y*delta_y);
+				dx_new = dx_old*cos(conn_data[di].cang)-
+				         dy_old*sin(conn_data[di].cang);
+				dy_new = dx_old*sin(conn_data[di].cang)+
+				         dy_old*cos(conn_data[di].cang);
 
-				new_cnx = p0->cnx + delta*p0->fsx;
-				new_cny = p0->cny + delta*p0->fsy;
+				new_cnx = p0->cnx + dx_new;
+				new_cny = p0->cny + dy_new;
 
 			} else {
 
