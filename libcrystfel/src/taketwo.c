@@ -158,13 +158,15 @@ struct taketwo_private
 	IndexingMethod indm;
 	UnitCell       *cell;
 	int   serial_num; /**< Serial of last image, -1 if unassigned */
-	unsigned int attempts; /**< Attempts at indexing current image */
+	unsigned int xtal_num; /**< last number of crystals recorded */
 
 	struct TheoryVec *theory_vecs; /**< Theoretical vectors for given unit cell */
 	unsigned int vec_count; /**< Number of theoretical vectors */
 
 	gsl_matrix     **prevSols; /**< Previous solutions to be ignored */
 	unsigned int   numPrevs; /**< Previous solution count */
+	double *prevScores; /**< previous solution scores */
+	unsigned int *membership; /**< previous solution was success or failure */
 
 };
 
@@ -2003,7 +2005,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	* a solution if it exceeds the NETWORK_MEMBER_THRESHOLD. */
 	find_seeds(&ttCell, tp);
 	remove_old_solutions(&ttCell, tp);
-	start_seeds(&solution, &ttCell);
+	unsigned int members = start_seeds(&solution, &ttCell);
 
 	if ( solution == NULL ) {
 		return NULL;
@@ -2013,18 +2015,28 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	ttCell.solution = solution;
 	refine_solution(&ttCell);
 	solution = ttCell.solution;
+	double score = obs_to_sol_score(&ttCell);
 
 	/* Add the current solution to the previous solutions list */
 	int new_size = (tp->numPrevs + 1) * sizeof(gsl_matrix *);
 	gsl_matrix **tmp = realloc(tp->prevSols, new_size);
+	double *tmpScores = realloc(tp->prevScores,
+	                            (tp->numPrevs + 1) * sizeof(double));
+	unsigned int *tmpSuccesses;
+	tmpSuccesses = realloc(tp->membership,
+	                       (tp->numPrevs + 1) * sizeof(unsigned int));
 
 	if (!tmp) {
 		apologise();
 	}
 
 	tp->prevSols = tmp;
+	tp->prevScores = tmpScores;
+	tp->membership = tmpSuccesses;
 
 	tp->prevSols[tp->numPrevs] = solution;
+	tp->prevScores[tp->numPrevs] = score;
+	tp->membership[tp->numPrevs] = members;
 	tp->numPrevs++;
 
 	/* Prepare the solution for CrystFEL friendliness */
@@ -2048,7 +2060,11 @@ static void partial_taketwo_cleanup(struct taketwo_private *tp)
 		free(tp->prevSols);
 	}
 
-	tp->attempts = 0;
+	free(tp->prevScores);
+	free(tp->membership);
+	tp->prevScores = NULL;
+	tp->membership = NULL;
+	tp->xtal_num = 0;
 	tp->numPrevs = 0;
 	tp->prevSols = NULL;
 
@@ -2071,12 +2087,22 @@ int taketwo_index(struct image *image, const struct taketwo_options *opts,
 
 	if (tp->serial_num == this_serial)
 	{
-		tp->attempts++;
+		tp->xtal_num = image->n_crystals;
 	}
 	else
 	{
+		/*
+		for (i = 0; i < tp->numPrevs; i++)
+		{
+			STATUS("score, %i, %.5f, %i\n",
+			       this_serial, tp->prevScores[i],
+			       tp->membership[i]);
+		}
+		*/
+
 		partial_taketwo_cleanup(tp);
 		tp->serial_num = this_serial;
+		tp->xtal_num = image->n_crystals;
 	}
 
 	/*
@@ -2161,9 +2187,11 @@ void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell)
 	tp->cell = cell;
 	tp->indm = *indm;
 	tp->serial_num = -1;
-	tp->attempts = 0;
+	tp->xtal_num = 0;
 	tp->prevSols = NULL;
 	tp->numPrevs = 0;
+	tp->prevScores = NULL;
+	tp->membership = NULL;
 	tp->vec_count = 0;
 	tp->theory_vecs = NULL;
 
