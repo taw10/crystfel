@@ -106,6 +106,7 @@ struct geoptimiser_params
 	char *outfile;
 	char *geometry_filename;
 	int min_num_peaks_per_pix;
+	int max_num_peaks_per_pix;
 	int min_num_pix_per_conn_group;
 	int only_best_distance;
 	int nostretch;
@@ -806,11 +807,13 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 
 
 static int compute_avg_pix_displ(struct gpanel *gp, int idx,
-                                 int num_peaks_per_pixel)
+                                 int num_peaks_per_pixel,
+                                 int max_peaks_per_pixel)
 {
 	int ret;
 
-	if ( gp->num_pix_displ[idx] >= num_peaks_per_pixel ) {
+	if ( gp->num_pix_displ[idx] >= num_peaks_per_pixel &&
+	     gp->num_pix_displ[idx] < max_peaks_per_pixel ) {
 
 		ret = fill_avg_pixel_displ(gp, idx);
 		if ( ret != 0 ) return ret;
@@ -831,7 +834,8 @@ static int compute_avg_pix_displ(struct gpanel *gp, int idx,
 static int compute_avg_displacements(struct detector *det,
                                      struct rg_collection *connected,
                                      struct connected_data *conn_data,
-                                     struct gpanel *gpanels)
+                                     struct gpanel *gpanels,
+                                     struct geoptimiser_params *gparams)
 {
 	int di, ip, ifs, iss;
 	int pix_index, ret;
@@ -854,7 +858,8 @@ static int compute_avg_displacements(struct detector *det,
 				pix_index = ifs+p->w*iss;
 
 				ret = compute_avg_pix_displ(gp, pix_index,
-				             conn_data[di].num_peaks_per_pixel);
+				            conn_data[di].num_peaks_per_pixel,
+				            gparams->max_num_peaks_per_pix);
 
 				if ( ret != 0 ) return ret;
 
@@ -2152,6 +2157,14 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	                               avg_cell);
 	if ( clen_to_use < 0.0 ) return 1;
 
+	if ( gparams->max_num_peaks_per_pix == 0 && n_images > 100 ) {
+		gparams->max_num_peaks_per_pix = n_images / 10;
+	} else if ( gparams->max_num_peaks_per_pix == 0 ) {
+		gparams->max_num_peaks_per_pix = n_images;
+	}
+	STATUS("Maximum number of measurements for a pixel to be included in "
+	       "the refinement: %i\n", gparams->max_num_peaks_per_pix);
+
 	gpanels = calloc(det->n_panels, sizeof(struct gpanel));
 	if ( gpanels == NULL ) {
 		ERROR("Failed to allocate panels.\n");
@@ -2194,7 +2207,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 
 	adjust_min_peaks_per_conn(connected, gpanels, det, gparams, conn_data);
 
-	if ( compute_avg_displacements(det, connected, conn_data, gpanels) ) {
+	if ( compute_avg_displacements(det, connected, conn_data, gpanels, gparams) ) {
 		free(conn_data);
 		free(images);
 		return 1;
@@ -2337,6 +2350,7 @@ int main(int argc, char *argv[])
 	gparams->infile = NULL;
 	gparams->geometry_filename = NULL;
 	gparams->min_num_peaks_per_pix = 3;
+	gparams->max_num_peaks_per_pix = 0;
 	gparams->min_num_pix_per_conn_group = 100;
 	gparams->only_best_distance = 0;
 	gparams->enforce_cspad_layout = 0;
