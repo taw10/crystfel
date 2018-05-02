@@ -43,9 +43,6 @@ enum ScaleFlags
 	SCALE_NO_B,  /* Don't use Debye-Waller part */
 };
 
-extern double log_residual(Crystal *cr, const RefList *full, int free,
-                           int *pn_used, const char *filename);
-
 extern int scale_one(const RefList *list1, const RefList *list2, int flags,
                      double *G, double *B);
 

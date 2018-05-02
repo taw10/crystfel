@@ -42,4 +42,10 @@
 extern RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
                                   int min_meas, double push_res, int use_weak);
 
+extern double residual(Crystal *cr, const RefList *full, int free,
+                       int *pn_used, const char *filename);
+
+extern double log_residual(Crystal *cr, const RefList *full, int free,
+                           int *pn_used, const char *filename);
+
 #endif	/* MERGE */

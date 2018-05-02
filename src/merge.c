@@ -282,3 +282,121 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	reflist_free(full);
 	return full2;
 }
+
+
+double residual(Crystal *cr, const RefList *full, int free,
+                int *pn_used, const char *filename)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	int n_used = 0;
+	double num = 0.0;
+	double den = 0.0;
+	double G = crystal_get_osf(cr);
+	double B = crystal_get_Bfac(cr);
+	UnitCell *cell = crystal_get_cell(cr);
+
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double p, w, corr, res;
+		signed int h, k, l;
+		Reflection *match;
+		double I_full;
+		double int1, int2;
+
+		if ( free && !get_flag(refl) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		res = resolution(cell, h, k, l);
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
+		I_full = get_intensity(match);
+
+		if ( get_redundancy(match) < 2 ) continue;
+
+		p = get_partiality(refl);
+		//if ( p < 0.2 ) continue;
+
+		corr = G * exp(B*res*res) * get_lorentz(refl);
+		int1 = get_intensity(refl) * corr;
+		int2 = p*I_full;
+		w = p;
+
+		num += fabs(int1 - int2) * w;
+		den += fabs(int1 + int2) * w/2.0;
+
+		n_used++;
+
+	}
+
+	if ( pn_used != NULL ) *pn_used = n_used;
+	return num/(den*sqrt(2));
+}
+
+
+double log_residual(Crystal *cr, const RefList *full, int free,
+                    int *pn_used, const char *filename)
+{
+	double dev = 0.0;
+	double G, B;
+	Reflection *refl;
+	RefListIterator *iter;
+	int n_used = 0;
+	FILE *fh = NULL;
+
+	G = crystal_get_osf(cr);
+	B = crystal_get_Bfac(cr);
+	if ( filename != NULL ) {
+		fh = fopen(filename, "a");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", filename);
+		}
+	}
+
+	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		double p, L, s, w;
+		signed int h, k, l;
+		Reflection *match;
+		double esd, I_full, I_partial;
+		double fx, dc;
+
+		if ( free && !get_flag(refl) ) continue;
+
+		get_indices(refl, &h, &k, &l);
+		match = find_refl(full, h, k, l);
+		if ( match == NULL ) continue;
+
+		p = get_partiality(refl);
+		L = get_lorentz(refl);
+		I_partial = get_intensity(refl);
+		I_full = get_intensity(match);
+		esd = get_esd_intensity(refl);
+		s = resolution(crystal_get_cell(cr), h, k, l);
+
+		if ( I_partial <= 3.0*esd ) continue; /* Also because of log */
+		if ( get_redundancy(match) < 2 ) continue;
+		if ( I_full <= 0 ) continue;  /* Because log */
+		if ( p <= 0.0 ) continue; /* Because of log */
+
+		fx = -log(G) + log(p) - log(L) - B*s*s + log(I_full);
+		dc = log(I_partial) - fx;
+		w = 1.0;
+		dev += w*dc*dc;
+
+		if ( fh != NULL ) {
+			fprintf(fh, "%4i %4i %4i %e %e\n",
+			        h, k, l, s, dev);
+		}
+
+	}
+
+	if ( fh != NULL ) fclose(fh);
+
+	if ( pn_used != NULL ) *pn_used = n_used;
+	return dev;
+}
