@@ -448,22 +448,6 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads)
 }
 
 
-static void scale_crystal_linear(void *task, int id)
-{
-	struct scale_args *pargs = task;
-	int r;
-	double G;
-
-	/* Simple iterative algorithm */
-	r = linear_scale(pargs->full, crystal_get_reflections(pargs->crystal), &G, 0);
-	if ( r == 0 ) {
-		crystal_set_osf(pargs->crystal, G);
-	} else {
-		crystal_set_user_flag(pargs->crystal, PRFLAG_SCALEBAD);
-	}
-}
-
-
 /* Calculates G, by which list2 should be multiplied to fit list1 */
 int linear_scale(const RefList *list1, const RefList *list2, double *G,
                  int complain_loudly)
@@ -598,26 +582,3 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G,
 	return 0;
 }
 
-
-void scale_all_to_reference(Crystal **crystals, int n_crystals,
-                            RefList *reference, int nthreads)
-{
-	struct scale_args task_defaults;
-	struct queue_args qargs;
-
-	task_defaults.crystal = NULL;
-
-	qargs.task_defaults = task_defaults;
-	qargs.n_crystals = n_crystals;
-	qargs.crystals = crystals;
-
-	/* Don't have threads which are doing nothing */
-	if ( n_crystals < nthreads ) nthreads = n_crystals;
-
-	qargs.task_defaults.full = reference;
-	qargs.n_started = 0;
-	qargs.n_done = 0;
-	qargs.n_reflections = 0;
-	run_threads(nthreads, scale_crystal_linear, get_crystal, done_crystal,
-	            &qargs, n_crystals, 0, 0, 0);
-}

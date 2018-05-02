@@ -1334,12 +1334,6 @@ int main(int argc, char *argv[])
 		full = reference;
 	}
 
-	/* Scale everything to the reference */
-	STATUS("Initial scaling to reference...\n");
-	if ( !no_scale ) {
-		scale_all_to_reference(crystals, n_crystals, full, nthreads);
-	}
-
 	/* Check rejection and write figures of merit */
 	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
@@ -1356,14 +1350,14 @@ int main(int argc, char *argv[])
 		if ( !no_pr ) {
 			refine_all(crystals, n_crystals, full, nthreads, pmodel,
 			           0, i+1, no_logs, sym, amb);
-		} else if ( !no_scale ) {
-			scale_all_to_reference(crystals, n_crystals, full, nthreads);
 		}
 
 		/* Create new reference if needed */
 		if ( reference == NULL ) {
 			reflist_free(full);
-			scale_all(crystals, n_crystals, nthreads);
+			if ( !no_scale ) {
+				scale_all(crystals, n_crystals, nthreads);
+			}
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         min_measurements,
 			                         push_res, 1);
@@ -1408,12 +1402,13 @@ int main(int argc, char *argv[])
 	STATUS("Final merge...\n");
 	if ( reference == NULL ) {
 		reflist_free(full);
-		scale_all(crystals, n_crystals, nthreads);
+		if ( !no_scale ) {
+			scale_all(crystals, n_crystals, nthreads);
+		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements,
 		                         push_res, 1);
 	} else {
-		scale_all_to_reference(crystals, n_crystals, reference, nthreads);
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1);
 	}

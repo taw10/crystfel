@@ -46,7 +46,4 @@ extern int linear_scale(const RefList *list1, const RefList *list2, double *G,
 
 extern void scale_all(Crystal **crystals, int n_crystals, int nthreads);
 
-extern void scale_all_to_reference(Crystal **crystals, int n_crystals,
-                                   RefList *reference, int nthreads);
-
 #endif	/* SCALING_H */
