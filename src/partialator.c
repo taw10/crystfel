@@ -317,6 +317,7 @@ static void show_help(const char *s)
 "      --stop-after=<n>       Stop after merging <n> crystals.\n"
 "  -n, --iterations=<n>       Run <n> cycles of scaling and post-refinement.\n"
 "      --no-scale             Disable scale factor (G, B) refinement.\n"
+"      --no-Bscale            Disable B factor scaling.\n"
 "      --no-pr                Disable orientation/physics refinement.\n"
 "  -m, --model=<model>        Specify partiality model.\n"
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
@@ -717,6 +718,7 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 
 		if ( crystal_get_user_flag(crystals[i]) ) continue;
 
+		/* Scaling should have been done right before calling this */
 		r = residual(crystals[i], full, 0, NULL, NULL);
 		free_r = residual(crystals[i], full, 1, NULL, NULL);
 		log_r = log_residual(crystals[i], full, 0, NULL, NULL);
@@ -754,6 +756,7 @@ struct log_qargs
 	Crystal **crystals;
 	int n_crystals;
 	RefList *full;
+	int scaleflags;
 };
 
 
@@ -761,6 +764,7 @@ struct log_args
 {
 	Crystal *cr;
 	RefList *full;
+	int scaleflags;
 	int iter;
 	int cnum;
 };
@@ -780,6 +784,7 @@ static void *get_log_task(void *vp)
 	task->full = qargs->full;
 	task->iter = qargs->iter;
 	task->cnum = qargs->next;
+	task->scaleflags = qargs->scaleflags;
 
 	qargs->next += 20;
 	return task;
@@ -790,7 +795,8 @@ static void write_logs(void *vp, int cookie)
 {
 	struct log_args *args = vp;
 	write_specgraph(args->cr, args->full, args->iter, args->cnum);
-	write_gridscan(args->cr, args->full, args->iter, args->cnum);
+	write_gridscan(args->cr, args->full, args->iter, args->cnum,
+	               args->scaleflags);
 	write_test_logs(args->cr, args->full, args->iter, args->cnum);
 }
 
@@ -803,16 +809,17 @@ static void done_log(void *qargs, void *vp)
 
 
 static void write_logs_parallel(Crystal **crystals, int n_crystals,
-                                RefList *full, int iter, int n_threads)
+                                RefList *full, int iter, int n_threads,
+                                int scaleflags)
 {
 	struct log_qargs qargs;
-
 
 	qargs.iter = iter;
 	qargs.next = 0;
 	qargs.full = full;
 	qargs.crystals = crystals;
 	qargs.n_crystals = n_crystals;
+	qargs.scaleflags = scaleflags;
 
 	STATUS("Writing logs...\n");
 	run_threads(n_threads, write_logs, get_log_task, done_log, &qargs,
@@ -839,6 +846,7 @@ int main(int argc, char *argv[])
 	int n_crystals_seen = 0;
 	char cmdline[1024];
 	int no_scale = 0;
+	int no_Bscale = 0;
 	int no_pr = 0;
 	Stream *st;
 	Crystal **crystals;
@@ -867,6 +875,7 @@ int main(int argc, char *argv[])
 	double force_bandwidth = -1.0;
 	double force_radius = -1.0;
 	char *audit_info;
+	int scaleflags = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -895,6 +904,7 @@ int main(int argc, char *argv[])
 		{"force-radius",       1, NULL,               11},
 
 		{"no-scale",           0, &no_scale,           1},
+		{"no-Bscale",          0, &no_Bscale,          1},
 		{"no-pr",              0, &no_pr,              1},
 		{"no-polarisation",    0, &polarisation,       0},
 		{"no-polarization",    0, &polarisation,       0}, /* compat */
@@ -1146,6 +1156,10 @@ int main(int argc, char *argv[])
 		       "partialities (--model=unity).\n");
 	}
 
+	if ( no_Bscale ) {
+		scaleflags |= SCALE_NO_B;
+	}
+
 	if ( !no_logs ) {
 		int r = mkdir("pr-logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if ( r ) {
@@ -1327,7 +1341,7 @@ int main(int argc, char *argv[])
 	/* Create reference data set if we don't already have one */
 	if ( reference == NULL ) {
 		STATUS("Initial scaling...\n");
-		scale_all(crystals, n_crystals, nthreads);
+		scale_all(crystals, n_crystals, nthreads, scaleflags);
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1);
 	} else {
@@ -1339,7 +1353,8 @@ int main(int argc, char *argv[])
 	show_all_residuals(crystals, n_crystals, full);
 	if ( !no_pr && !no_logs ) {
 		write_pgraph(full, crystals, n_crystals, 0, "");
-		write_logs_parallel(crystals, n_crystals, full, 0, nthreads);
+		write_logs_parallel(crystals, n_crystals, full, 0, nthreads,
+		                    scaleflags);
 	}
 
 	/* Iterate */
@@ -1349,14 +1364,15 @@ int main(int argc, char *argv[])
 
 		if ( !no_pr ) {
 			refine_all(crystals, n_crystals, full, nthreads, pmodel,
-			           0, i+1, no_logs, sym, amb);
+			           0, i+1, no_logs, sym, amb, scaleflags);
 		}
 
 		/* Create new reference if needed */
 		if ( reference == NULL ) {
 			reflist_free(full);
 			if ( !no_scale ) {
-				scale_all(crystals, n_crystals, nthreads);
+				scale_all(crystals, n_crystals, nthreads,
+				          scaleflags);
 			}
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         min_measurements,
@@ -1403,7 +1419,7 @@ int main(int argc, char *argv[])
 	if ( reference == NULL ) {
 		reflist_free(full);
 		if ( !no_scale ) {
-			scale_all(crystals, n_crystals, nthreads);
+			scale_all(crystals, n_crystals, nthreads, scaleflags);
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements,
@@ -1417,7 +1433,8 @@ int main(int argc, char *argv[])
 	show_all_residuals(crystals, n_crystals, full);
 	if ( !no_pr && !no_logs ) {
 		write_pgraph(full, crystals, n_crystals, -1, "");
-		write_logs_parallel(crystals, n_crystals, full, -1, nthreads);
+		write_logs_parallel(crystals, n_crystals, full, -1, nthreads,
+		                    scaleflags);
 	}
 
 	/* Output results */

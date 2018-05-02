@@ -3,11 +3,11 @@
  *
  * Scaling
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -38,12 +38,20 @@
 #include "crystal.h"
 #include "geometry.h"
 
+enum ScaleFlags
+{
+	SCALE_NO_B,  /* Don't use Debye-Waller part */
+};
+
 extern double log_residual(Crystal *cr, const RefList *full, int free,
                            int *pn_used, const char *filename);
 
-extern int linear_scale(const RefList *list1, const RefList *list2, double *G,
-                        int complain_loudly);
+extern int scale_one(const RefList *list1, const RefList *list2, int flags,
+                     double *G, double *B);
 
-extern void scale_all(Crystal **crystals, int n_crystals, int nthreads);
+extern int scale_one_crystal(Crystal *cr, const RefList *list2, int flags);
+
+extern void scale_all(Crystal **crystals, int n_crystals, int nthreads,
+                      int flags);
 
 #endif	/* SCALING_H */

@@ -389,7 +389,7 @@ static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
 
 
 /* Perform iterative scaling, all the way to convergence */
-void scale_all(Crystal **crystals, int n_crystals, int nthreads)
+void scale_all(Crystal **crystals, int n_crystals, int nthreads, int no_Bscale)
 {
 	struct scale_args task_defaults;
 	struct queue_args qargs;
@@ -448,10 +448,11 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads)
 }
 
 
-/* Calculates G, by which list2 should be multiplied to fit list1 */
-int linear_scale(const RefList *list1, const RefList *list2, double *G,
-                 int complain_loudly)
+/* Calculates G and B, by which list2 should be multiplied to fit list1 */
+int scale_one(const RefList *list1, const RefList *list2, int flags,
+              double *G, double *B)
 {
+	int complain_loudly = 0;
 	const Reflection *refl1;
 	const Reflection *refl2;
 	RefListIterator *iter;
@@ -473,6 +474,8 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G,
 	int n_inf2 = 0;
 	int n_part = 0;
 	int n_nom = 0;
+
+	*B = 0.0;  /* FIXME */
 
 	x = malloc(max_n*sizeof(double));
 	w = malloc(max_n*sizeof(double));
@@ -556,6 +559,7 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G,
 
 	if ( r ) {
 		ERROR("Scaling failed.\n");
+		*G = 1.0;
 		return 1;
 	}
 
@@ -567,7 +571,7 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G,
 				int i;
 				for ( i=0; i<n; i++ ) {
 					STATUS("%i %e %e %e\n", i, x[i], y[i], w[n]);
-					}
+				}
 			}
 		}
 
@@ -582,3 +586,16 @@ int linear_scale(const RefList *list1, const RefList *list2, double *G,
 	return 0;
 }
 
+
+int scale_one_crystal(Crystal *cr, const RefList *list2, int flags)
+{
+	double G, B;
+	int r;
+
+	r = scale_one(crystal_get_reflections(cr), list2, flags, &G, &B);
+	if ( r ) return r;
+
+	crystal_set_osf(cr, G);
+	crystal_set_Bfac(cr, B);
+	return 0;
+}

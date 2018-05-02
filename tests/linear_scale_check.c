@@ -3,11 +3,11 @@
  *
  * Check that linear scaling works
  *
- * Copyright © 2017 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2017-2018 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2017 Thomas White <taw@physics.org>
+ *   2017-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	gsl_rng *rng;
 	RefList *list1;
 	RefList *list2;
-	double G;
+	double G, B;
 	int r;
 
 	list1 = reflist_new();
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 		set_partiality(refl2, 1.0);
 	}
 
-	r = linear_scale(list1, list2, &G, 1);
+	r = scale_one(list1, list2, SCALE_NO_B, &G, &B);
 	STATUS("Scaling result: %i, G = %f\n", r, G);
 
 	return fail;

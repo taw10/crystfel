@@ -95,10 +95,6 @@ double residual(Crystal *cr, const RefList *full, int free,
 	double B = crystal_get_Bfac(cr);
 	UnitCell *cell = crystal_get_cell(cr);
 
-	if ( linear_scale(full, crystal_get_reflections(cr), &G, complain) ) {
-		return GSL_NAN;
-	}
-
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
@@ -232,6 +228,7 @@ struct rf_priv {
 	int verbose;
 	int serial;
 	gsl_vector *initial;
+	int scaleflags;
 
 	/* For freeing later */
 	gsl_vector *vals;
@@ -349,6 +346,11 @@ static double residual_f(const gsl_vector *v, void *pp)
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
 
+	if ( scale_one_crystal(cr, pv->full, pv->scaleflags) ) {
+		crystal_free(cr);
+		if ( pv->verbose ) STATUS("Bad scaling\n");
+		return GSL_NAN;
+	}
 	res = residual(cr, pv->full, 0, NULL, NULL);
 
 	cell_free(crystal_get_cell(cr));
@@ -463,8 +465,8 @@ static void reindex_cell(UnitCell *cell, SymOpList *amb, int idx)
 }
 
 
-void try_reindex(Crystal *crin, const RefList *full,
-                 SymOpList *sym, SymOpList *amb)
+static void try_reindex(Crystal *crin, const RefList *full,
+                        SymOpList *sym, SymOpList *amb, int scaleflags)
 {
 	RefList *list;
 	Crystal *cr;
@@ -474,6 +476,7 @@ void try_reindex(Crystal *crin, const RefList *full,
 
 	if ( sym == NULL || amb == NULL ) return;
 
+	if ( scale_one_crystal(crin, full, scaleflags) ) return;
 	residual_original = residual(crin, full, 0, NULL, NULL);
 
 	cr = crystal_copy(crin);
@@ -494,6 +497,7 @@ void try_reindex(Crystal *crin, const RefList *full,
 		update_predictions(cr);
 		calculate_partialities(cr, PMODEL_XSPHERE);
 
+		if ( scale_one_crystal(cr, full, scaleflags) ) return;
 		residual_flipped = residual(cr, full, 0, NULL, NULL);
 
 		if ( residual_flipped < residual_original ) {
@@ -637,6 +641,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 
 static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full,
                                                 int verbose, int serial,
+                                                int scaleflags,
                                                 struct rf_priv *priv)
 {
 	gsl_multimin_fminimizer *min;
@@ -654,6 +659,7 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 	priv->full = full;
 	priv->verbose = verbose;
 	priv->serial = serial;
+	priv->scaleflags = scaleflags;
 
 	priv->f.f = residual_f;
 	priv->f.n = n_params;
@@ -678,7 +684,7 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 
 
 static void write_grid(Crystal *cr, const RefList *full,
-                       signed int cycle, int serial,
+                       signed int cycle, int serial, int scaleflags,
                        const enum gparam par1, const enum gparam par2,
                        const char *name)
 {
@@ -690,7 +696,7 @@ static void write_grid(Crystal *cr, const RefList *full,
 	int idx1, idx2;
 	int i;
 
-	min = setup_minimiser(cr, full, 0, serial, &priv);
+	min = setup_minimiser(cr, full, 0, serial, scaleflags, &priv);
 
 	idx1 = 99;
 	idx2 = 99;
@@ -747,13 +753,13 @@ static void write_grid(Crystal *cr, const RefList *full,
 
 
 void write_gridscan(Crystal *cr, const RefList *full,
-                    signed int cycle, int serial)
+                    signed int cycle, int serial, int scaleflags)
 {
-	write_grid(cr, full, cycle, serial,
+	write_grid(cr, full, cycle, serial, scaleflags,
 	           GPARAM_ANG1, GPARAM_ANG2, "ang1-ang2");
-	write_grid(cr, full, cycle, serial,
+	write_grid(cr, full, cycle, serial, scaleflags,
 	           GPARAM_ANG1, GPARAM_WAVELENGTH, "ang1-wave");
-	write_grid(cr, full, cycle, serial,
+	write_grid(cr, full, cycle, serial, scaleflags,
 	           GPARAM_R, GPARAM_WAVELENGTH, "R-wave");
 }
 
@@ -761,19 +767,21 @@ void write_gridscan(Crystal *cr, const RefList *full,
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int verbose, int serial,
                          int cycle, int write_logs,
-                         SymOpList *sym, SymOpList *amb)
+                         SymOpList *sym, SymOpList *amb, int scaleflags)
 {
 	gsl_multimin_fminimizer *min;
 	struct rf_priv priv;
 	int n_iter = 0;
 	int status;
-	int r;
-	double G;
 	double residual_start, residual_free_start;
 	FILE *fh = NULL;
 
-	try_reindex(cr, full, sym, amb);
+	try_reindex(cr, full, sym, amb, scaleflags);
 
+	if ( scale_one_crystal(cr, full, scaleflags) ) {
+		ERROR("Bad scaling at start of refinement.\n");
+		return;
+	}
 	residual_start = residual(cr, full, 0, NULL, NULL);
 	residual_free_start = residual(cr, full, 1, NULL, NULL);
 
@@ -782,7 +790,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		       residual_start, residual_free_start);
 	}
 
-	min = setup_minimiser(cr, full, verbose, serial, &priv);
+	min = setup_minimiser(cr, full, verbose, serial, scaleflags, &priv);
 
 	if ( verbose ) {
 		double res = residual_f(min->x, &priv);
@@ -902,10 +910,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		apply_parameters(min->x, priv.initial, priv.rv, cr);
 		update_predictions(cr);
 		calculate_partialities(cr, PMODEL_XSPHERE);
-		r = linear_scale(full, crystal_get_reflections(cr), &G, 0);
-		if ( r == 0 ) {
-			crystal_set_osf(cr, G);
-		}
+		scale_one_crystal(cr, full, scaleflags);
 
 		if ( verbose ) {
 
@@ -922,7 +927,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	}
 
 	if ( write_logs ) {
-		write_gridscan(cr, full, cycle, serial);
+		write_gridscan(cr, full, cycle, serial, scaleflags);
 		write_specgraph(cr, full, cycle, serial);
 		write_test_logs(cr, full, cycle, serial);
 	}
@@ -950,6 +955,7 @@ struct refine_args
 	int no_logs;
 	SymOpList *sym;
 	SymOpList *amb;
+	int scaleflags;
 };
 
 
@@ -974,7 +980,7 @@ static void refine_image(void *task, int id)
 
 	do_pr_refine(cr, pargs->full, pargs->pmodel, pargs->verbose,
 	             pargs->serial, pargs->cycle, write_logs,
-	             pargs->sym, pargs->amb);
+	             pargs->sym, pargs->amb, pargs->scaleflags);
 
 	if ( crystal_get_user_flag(cr) == 0 ) {
 		pargs->prdata.refined = 1;
@@ -1013,7 +1019,7 @@ static void done_image(void *vqargs, void *task)
 void refine_all(Crystal **crystals, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
                 int verbose, int cycle, int no_logs,
-                SymOpList *sym, SymOpList *amb)
+                SymOpList *sym, SymOpList *amb, int scaleflags)
 {
 	struct refine_args task_defaults;
 	struct queue_args qargs;
@@ -1027,6 +1033,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.no_logs = no_logs;
 	task_defaults.sym = sym;
 	task_defaults.amb = amb;
+	task_defaults.scaleflags = scaleflags;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;
