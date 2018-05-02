@@ -1321,7 +1321,7 @@ int main(int argc, char *argv[])
 	if (csplit != NULL) check_csplit(crystals, n_crystals, csplit);
 
 	/* Make a first pass at cutting out crap */
-	STATUS("Early rejection...\n");
+	//STATUS("Early rejection...\n");
 	//early_rejection(crystals, n_crystals);
 
 	/* Create reference data set if we don't already have one */
