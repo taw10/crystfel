@@ -74,7 +74,7 @@ extern double gradient(Crystal *cr, int k, Reflection *refl,
                        PartialityModel pmodel);
 
 extern double residual(Crystal *cr, const RefList *full, int free,
-                       int *pn_used, const char *filename, int complain);
+                       int *pn_used, const char *filename);
 
 extern void write_test_logs(Crystal *crystal, const RefList *full,
                             signed int cycle, int serial);

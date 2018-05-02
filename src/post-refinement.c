@@ -84,7 +84,7 @@ const char *str_prflag(enum prflag flag)
 
 
 double residual(Crystal *cr, const RefList *full, int free,
-                int *pn_used, const char *filename, int complain)
+                int *pn_used, const char *filename)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -349,7 +349,7 @@ static double residual_f(const gsl_vector *v, void *pp)
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
 
-	res = residual(cr, pv->full, 0, NULL, NULL, 0);
+	res = residual(cr, pv->full, 0, NULL, NULL);
 
 	cell_free(crystal_get_cell(cr));
 	reflist_free(crystal_get_reflections(cr));
@@ -474,7 +474,7 @@ void try_reindex(Crystal *crin, const RefList *full,
 
 	if ( sym == NULL || amb == NULL ) return;
 
-	residual_original = residual(crin, full, 0, NULL, NULL, 0);
+	residual_original = residual(crin, full, 0, NULL, NULL);
 
 	cr = crystal_copy(crin);
 
@@ -494,7 +494,7 @@ void try_reindex(Crystal *crin, const RefList *full,
 		update_predictions(cr);
 		calculate_partialities(cr, PMODEL_XSPHERE);
 
-		residual_flipped = residual(cr, full, 0, NULL, NULL, 1);
+		residual_flipped = residual(cr, full, 0, NULL, NULL);
 
 		if ( residual_flipped < residual_original ) {
 			crystal_set_cell(crin, cell);
@@ -774,8 +774,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	try_reindex(cr, full, sym, amb);
 
-	residual_start = residual(cr, full, 0, NULL, NULL, 0);
-	residual_free_start = residual(cr, full, 1, NULL, NULL, 0);
+	residual_start = residual(cr, full, 0, NULL, NULL);
+	residual_free_start = residual(cr, full, 1, NULL, NULL);
 
 	if ( verbose ) {
 		STATUS("\nPR initial: dev = %10.5e, free dev = %10.5e\n",
@@ -911,8 +911,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 			STATUS("After applying final shifts:\n");
 			STATUS("PR final: dev = %10.5e, free dev = %10.5e\n",
-			       residual(cr, full, 0, NULL, NULL, 0),
-			       residual(cr, full, 1, NULL, NULL, 0));
+			       residual(cr, full, 0, NULL, NULL),
+			       residual(cr, full, 1, NULL, NULL));
 			STATUS("Final R = %e m^-1\n", crystal_get_profile_radius(cr));
 
 		}
