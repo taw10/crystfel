@@ -52,6 +52,7 @@ struct scale_args
 {
 	RefList *full;
 	Crystal *crystal;
+	int flags;
 };
 
 
@@ -78,7 +79,7 @@ static void scale_crystal(void *task, int id)
 	do {
 
 		double dev;
-		scale_one_crystal(pargs->crystal, pargs->full, 0);
+		scale_one_crystal(pargs->crystal, pargs->full, pargs->flags);
 		dev = log_residual(pargs->crystal, pargs->full, 0, 0, NULL);
 		if ( fabs(dev - old_dev) < dev*0.01 ) done = 1;
 
@@ -136,7 +137,7 @@ static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
 
 
 /* Perform iterative scaling, all the way to convergence */
-void scale_all(Crystal **crystals, int n_crystals, int nthreads, int no_Bscale)
+void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 {
 	struct scale_args task_defaults;
 	struct queue_args qargs;
@@ -144,6 +145,7 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads, int no_Bscale)
 	int niter = 0;
 
 	task_defaults.crystal = NULL;
+	task_defaults.flags = scaleflags;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_crystals = n_crystals;
