@@ -727,7 +727,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	try_reindex(cr, full, sym, amb, scaleflags);
 
-	if ( scale_one_crystal(cr, full, scaleflags) ) {
+	if ( scale_one_crystal(cr, full, scaleflags | SCALE_VERBOSE_ERRORS) ) {
 		ERROR("Bad scaling at start of refinement.\n");
 		return;
 	}

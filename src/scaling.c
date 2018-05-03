@@ -198,7 +198,6 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 /* Calculates G and B, by which cr's reflections should be multiplied to fit reference */
 int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 {
-	int complain_loudly = 0;
 	const Reflection *reflS;
 	RefListIterator *iter;
 	int max_n = 256;
@@ -289,7 +288,7 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 	}
 
 	if ( n < 2 ) {
-		if ( complain_loudly ) {
+		if ( flags & SCALE_VERBOSE_ERRORS ) {
 			ERROR("Not enough reflections for scaling (had %i, but %i remain)\n", nb, n);
 			if ( n_esdR ) ERROR("%i reference reflection esd\n", n_esdR);
 			if ( n_esdS ) ERROR("%i subject reflection esd\n", n_esdS);
@@ -320,7 +319,7 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 
 	if ( isnan(G) ) {
 
-		if ( complain_loudly ) {
+		if ( flags & SCALE_VERBOSE_ERRORS ) {
 			ERROR("Scaling gave NaN (%i pairs)\n", n);
 			if ( n < 10 ) {
 				int i;
