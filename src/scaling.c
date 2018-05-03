@@ -39,6 +39,7 @@
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_fit.h>
+#include <gsl/gsl_statistics_double.h>
 
 #include "merge.h"
 #include "post-refinement.h"
@@ -304,7 +305,13 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 		return 1;
 	}
 
-	r = gsl_fit_wlinear(x, 1, w, 1, y, 1, n, &G, &B, &cov00, &cov01, &cov11, &chisq);
+	if ( flags & SCALE_NO_B ) {
+		G = gsl_stats_wmean(w, 1, y, 1, n);
+		B = 0.0;
+		r = 0;
+	} else {
+		r = gsl_fit_wlinear(x, 1, w, 1, y, 1, n, &G, &B, &cov00, &cov01, &cov11, &chisq);
+	}
 
 	if ( r ) {
 		ERROR("Scaling failed.\n");
