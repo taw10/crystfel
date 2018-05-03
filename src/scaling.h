@@ -40,13 +40,11 @@
 
 enum ScaleFlags
 {
-	SCALE_NO_B,  /* Don't use Debye-Waller part */
+	SCALE_NONE = 0,
+	SCALE_NO_B = 1<<0,  /* Don't use Debye-Waller part */
 };
 
-extern int scale_one(const RefList *list1, const RefList *list2, int flags,
-                     double *G, double *B);
-
-extern int scale_one_crystal(Crystal *cr, const RefList *list2, int flags);
+extern int scale_one_crystal(Crystal *cr, const RefList *reference, int flags);
 
 extern void scale_all(Crystal **crystals, int n_crystals, int nthreads,
                       int flags);
