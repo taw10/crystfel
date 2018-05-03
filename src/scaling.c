@@ -217,6 +217,7 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 	int n_infR = 0;
 	int n_part = 0;
 	int n_nom = 0;
+	int n_red = 0;
 	RefList *listS = crystal_get_reflections(cr);
 	UnitCell *cell = crystal_get_cell(cr);
 	double G, B;
@@ -268,6 +269,8 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 		if ( pS < 0.3 ) { n_part++; continue; }
 		if ( IhS <= 0.0 ) { n_ihS++; continue; }
 		if ( IhS <= 3.0*esdS ) { n_esdS++; continue; }
+		if ( IhR <= 0.0 ) { n_ihR++; continue; }
+		if ( get_redundancy(reflR) < 2 ) { n_red++; continue; }
 
 		if ( n == max_n ) {
 			max_n *= 2;
@@ -293,6 +296,7 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 			if ( n_esdR ) ERROR("%i reference reflection esd\n", n_esdR);
 			if ( n_esdS ) ERROR("%i subject reflection esd\n", n_esdS);
 			if ( n_ihR ) ERROR("%i reference reflection intensity\n", n_ihR);
+			if ( n_red ) ERROR("%i reference reflection redundancy\n", n_red);
 			if ( n_ihS ) ERROR("%i subject reflection intensity\n", n_ihS);
 			if ( n_nanR ) ERROR("%i reference reflection nan\n", n_nanR);
 			if ( n_nanS ) ERROR("%i subject reflection nan\n", n_nanS);
