@@ -99,6 +99,9 @@ extern Stream *open_stream_for_write_2(const char *filename,
 extern Stream *open_stream_for_write_3(const char *filename,
                                 const char* geom_filename, UnitCell *cell,
                                 int argc, char *argv[]);
+extern Stream *open_stream_for_write_4(const char *filename,
+                                const char *geom_filename, UnitCell *cell,
+                                int argc, char *argv[], const char *indm_str);
 extern Stream *open_stream_fd_for_write(int fd);
 extern int get_stream_fd(Stream *st);
 extern void close_stream(Stream *st);

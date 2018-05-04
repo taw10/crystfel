@@ -959,15 +959,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	/* Open output stream */
-	st = open_stream_for_write_3(outfile, geom_filename, iargs.cell,
-	                             argc, argv);
-	if ( st == NULL ) {
-		ERROR("Failed to open stream '%s'\n", outfile);
-		return 1;
-	}
-	free(outfile);
-
 	if ( indm_str == NULL ) {
 
 		STATUS("No indexing methods specified.  I will try to ");
@@ -1039,9 +1030,18 @@ int main(int argc, char *argv[])
 			ERROR("Failed to set up indexing system\n");
 			return 1;
 		}
-		free(indm_str);
 
 	}
+
+	/* Open output stream */
+	st = open_stream_for_write_4(outfile, geom_filename, iargs.cell,
+	                             argc, argv, indm_str);
+	if ( st == NULL ) {
+		ERROR("Failed to open stream '%s'\n", outfile);
+		return 1;
+	}
+	free(outfile);
+	free(indm_str);
 
 	gsl_set_error_handler_off();
 

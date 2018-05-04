@@ -1499,12 +1499,13 @@ static void write_cell_to_stream(Stream *st, UnitCell *cell)
 
 
 /**
- * open_stream_for_write_3
+ * open_stream_for_write_4
  * @filename: Filename of new stream
  * @geom_filename: The geometry filename to copy
  * @cell: A %UnitCell to write into the stream
  * @argc: The number of arguments to the program
  * @argv: The arguments to the program
+ * @indm_str: The list of indexing methods
  *
  * Creates a new stream with name @filename, and adds the stream format
  * and version header, plus a verbatim copy of the geometry file and the unit
@@ -1512,9 +1513,9 @@ static void write_cell_to_stream(Stream *st, UnitCell *cell)
  *
  * Returns: a %Stream, or NULL on failure.
  */
-Stream *open_stream_for_write_3(const char *filename,
+Stream *open_stream_for_write_4(const char *filename,
                                 const char *geom_filename, UnitCell *cell,
-                                int argc, char *argv[])
+                                int argc, char *argv[], const char *indm_str)
 
 {
 	Stream *st;
@@ -1542,6 +1543,10 @@ Stream *open_stream_for_write_3(const char *filename,
 	if ( (argc > 0) && (argv != NULL) ) {
 		write_command(st, argc, argv);
 	}
+
+	if ( indm_str != NULL ) {
+		fprintf(st->fh, "Indexing methods selected: %s\n", indm_str);
+	}
 	if ( geom_filename != NULL ) {
 		write_geometry_file(st, geom_filename);
 	}
@@ -1550,6 +1555,15 @@ Stream *open_stream_for_write_3(const char *filename,
 	}
 
 	return st;
+}
+
+
+Stream *open_stream_for_write_3(const char *filename,
+                                const char *geom_filename, UnitCell *cell,
+                                int argc, char *argv[])
+{
+	return open_stream_for_write_4(filename, geom_filename, cell,
+	                               argc, argv, NULL);
 }
 
 
