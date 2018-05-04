@@ -85,9 +85,11 @@ static void show_help(const char *s)
 "      --no-error-maps                          Do not generate error map PNGs.\n"
 "  -x, --min-num-peaks-per-pixel=<num>          Minimum number of peaks per pixel.\n"
 "	                                         Default: 3. \n"
+"  -z, --max-num-peaks-per-pixel=<num>          Maximum number of peaks per pixel.\n"
+"	                                         Default is num_patterns / 10. \n"
 "  -p, --min-num-pixels-per-conn-group=<num>    Minimum number of useful pixels per\n"
 "                                                connected group.\n"
-"                         f                       Default: 100.\n"
+"                                                Default: 100.\n"
 "  -l, --most-freq-clen                         Use only the most frequent camera\n"
 "                                                length.\n"
 "  -s, --individual-dist-offset                 Use a distance offset for each panel.\n"
@@ -96,7 +98,7 @@ static void show_help(const char *s)
 "                                                Default: distance offset is optimized\n"
 "  -m  --max-peak-dist=<num>                    Maximum distance between predicted and\n"
 "                                                detected peaks (in pixels)\n"
-"                                                 Default: half of minimal inter-Bragg distance\n"
+"                                                Default: half of minimal inter-Bragg distance\n"
 );
 }
 
@@ -838,9 +840,10 @@ static int compute_avg_displacements(struct detector *det,
                                      struct geoptimiser_params *gparams)
 {
 	int di, ip, ifs, iss;
-	int pix_index, ret;
+	int pix_index, ret, max_peaks;
 	struct panel *p;
 
+	max_peaks = 0;
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
 
 		for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
@@ -856,6 +859,8 @@ static int compute_avg_displacements(struct detector *det,
 			for ( ifs=0; ifs<p->w; ifs++ ) {
 
 				pix_index = ifs+p->w*iss;
+				if ( max_peaks < gp->num_pix_displ[pix_index] )
+					max_peaks = gp->num_pix_displ[pix_index];
 
 				ret = compute_avg_pix_displ(gp, pix_index,
 				            conn_data[di].num_peaks_per_pixel,
@@ -868,6 +873,7 @@ static int compute_avg_displacements(struct detector *det,
 		}
 
 	}
+	STATUS("Maximum peaks per pixel is: %d\n", max_peaks);
 	return 0;
 }
 
@@ -2374,6 +2380,7 @@ int main(int argc, char *argv[])
 	{"quadrants",                        1, NULL,               'q'},
 	{"connected",                        1, NULL,               'c'},
 	{"min-num-peaks-per-pixel",          1, NULL,               'x'},
+	{"max-num-peaks-per-pixel",          0, NULL,               'z'},
 	{"min-num-pixels-per-conn-group",    1, NULL,               'p'},
 	{"most-few-clen",                    0, NULL,               'l'},
 	{"max-peak-dist",                    1, NULL,               'm'},
@@ -2393,7 +2400,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "ho:i:g:q:c:o:x:p:lsm:",
+	while ((c = getopt_long(argc, argv, "ho:i:g:q:c:o:x:z:p:lsm:",
 	                       longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -2436,6 +2443,10 @@ int main(int argc, char *argv[])
 
 			case 'x' :
 			gparams->min_num_peaks_per_pix = atoi(optarg);
+			break;
+
+			case 'z' :
+			gparams->max_num_peaks_per_pix = atoi(optarg);
 			break;
 
 			case 'p' :
