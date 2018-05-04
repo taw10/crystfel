@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
 		set_intensity(refl2, intens*2.0);
 		set_partiality(refl2, 1.0);
 		set_lorentz(refl2, 1.0);
+		set_redundancy(refl2, 2);
 	}
 
 	cr = crystal_new();
