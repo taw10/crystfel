@@ -855,6 +855,8 @@ int main(int argc, char *argv[])
 	if ( have_push_res && !(iargs.int_meth & INTEGRATION_RESCUT) ) {
 		ERROR("WARNING: You used --push-res, but not -rescut, "
 		      "therefore --push-res will have no effect.\n");
+		ERROR("WARNING: Add --integration=rings-rescut or "
+		      "--integration=prof2d-rescut.\n");
 	}
 
 	/* Parse unit cell tolerance */
