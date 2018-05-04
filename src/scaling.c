@@ -70,24 +70,7 @@ struct queue_args
 static void scale_crystal(void *task, int id)
 {
 	struct scale_args *pargs = task;
-	int i, done;
-	double old_dev;
-
-	old_dev = log_residual(pargs->crystal, pargs->full, 0, NULL, NULL);
-
-	i = 0;
-	done = 0;
-	do {
-
-		double dev;
-		scale_one_crystal(pargs->crystal, pargs->full, pargs->flags);
-		dev = log_residual(pargs->crystal, pargs->full, 0, 0, NULL);
-		if ( fabs(dev - old_dev) < dev*0.01 ) done = 1;
-
-		i++;
-		old_dev = dev;
-
-	} while ( i < 10 && !done );
+	scale_one_crystal(pargs->crystal, pargs->full, pargs->flags);
 }
 
 
