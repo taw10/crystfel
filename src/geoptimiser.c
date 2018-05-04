@@ -2019,6 +2019,87 @@ int check_and_enforce_cspad_dist(struct geoptimiser_params *gparams,
 		}
 
 	}
+	return num_errors_found;
+}
+
+
+int check_and_enforce_agipd_dist(struct geoptimiser_params *gparams,
+				 struct detector *det)
+{
+	int np = 0;
+	int npp = 0;
+	int num_errors_found = 0;
+
+	double dist_to_check = 66.0;
+	double tol = 0.1;
+
+	for ( np=0; np<det->n_panels; np = np+8 ) {
+
+		double dist2;
+                double cnx2, cny2;
+
+		struct panel *ep = &det->panels[np];
+
+		for ( npp=0; npp<8; npp++ ) {
+
+			struct panel *op = &det->panels[np+npp];
+
+	                cnx2 = ep->cnx + npp*dist_to_check*ep->ssx;
+	                cny2 = ep->cny + npp*dist_to_check*ep->ssy;
+
+			dist2 = (( cnx2 - op->cnx )*( cnx2 - op->cnx ) +
+			         ( cny2 - op->cny )*( cny2 - op->cny ));
+
+			if ( dist2 > (tol*tol)) {
+
+				num_errors_found += 1;
+
+				STATUS("Warning: distance between panels %s and %s "
+				       "is outside acceptable margins (Corners are "
+	                               "more than 0.2 pixels away: %3.2f).\n", ep->name,
+				       op->name, sqrt(dist2));
+
+				if ( gparams->enforce_cspad_layout ) {
+
+					double new_op_cx, new_op_cy;
+
+					new_op_cx = ep->cnx + ep->ssx*npp*dist_to_check;
+					new_op_cy = ep->cny + ep->ssy*npp*dist_to_check;
+
+					op->cnx = new_op_cx;
+					op->cny = new_op_cy;
+
+					STATUS("Enforcing distance....\n");
+				}
+
+			}
+
+			if ( ep->fsx != op->fsx || ep->ssx != op->ssx ||
+			     ep->fsy != op->fsy || ep->ssx != op->ssx ) {
+
+				num_errors_found += 1;
+
+				STATUS("Warning: relative orientation between panels "
+				       "%s and %s is incorrect.\n", ep->name, op->name);
+
+				if ( gparams->enforce_cspad_layout ) {
+
+					STATUS("Enforcing relative orientation....\n");
+
+					op->fsx = ep->fsx;
+					op->ssx = ep->ssx;
+					op->fsy = ep->fsy;
+					op->ssy = ep->ssy;
+
+					op->xfs = ep->xfs;
+					op->xss = ep->xss;
+					op->yfs = ep->yfs;
+					op->yss = ep->yss;
+				}
+
+			}
+		}
+	}
         return num_errors_found;
 }
 
@@ -2216,6 +2297,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	       "accurate estimation of position/orientation: %i\n",
 	       gparams->min_num_pix_per_conn_group);
 
+	/* CS-PAD */
 	if ( (det->n_panels == 64) && !gparams->no_cspad ) {
 
 		int num_errors = 0;
@@ -2255,6 +2337,51 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 			      "Geometry optimization cannot continue.\n"
 			      "Please rerun the program with the "
 			      "--enforce-cspad-layout option.\n");
+			return 1;
+		}
+	}
+
+	/* AGIPD */
+	if ( (det->n_panels == 128) && det->panels[0].res > 4999 &&
+              det->panels[0].res < 5001 && !gparams->no_cspad ) {
+
+		int num_errors = 0;
+
+		STATUS("It looks like the detector is an AGIPD. "
+		       "Checking relative distance and orientation of "
+		       "connected ASICS.\n");
+		STATUS("If the detector is not an AGIPD , please rerun the "
+		       "program with the --no-agipd option.\n");
+
+		STATUS("Enforcing AGIPD layout...\n");
+		num_errors = check_and_enforce_agipd_dist(gparams, det);
+
+		if ( gparams->enforce_cspad_layout ) {
+
+			int geom_wr;
+
+			STATUS("Saving geometry with enforced AGIPD layout.\n"
+			       "Please restart geometry optimization using the "
+			       "optimized geometry from this run as input "
+			       "geometry file.\n");
+			geom_wr = write_detector_geometry_2(
+			                        gparams->geometry_filename,
+			                        gparams->outfile, det,
+			                        gparams->command_line, 1);
+			if ( geom_wr != 0 ) {
+				ERROR("Error in writing output geometry file.\n");
+				return 1;
+			}
+			STATUS("All done!\n");
+			return 0;
+		}
+
+		if ( !gparams->enforce_cspad_layout && num_errors > 0 ) {
+			ERROR("Relative distance and orientation of connected "
+			      "ASICS do not respect the AGIPD layout.\n"
+			      "Geometry optimization cannot continue.\n"
+			      "Please rerun the program with the "
+			      "--enforce-agipd-layout option.\n");
 			return 1;
 		}
 	}
@@ -2537,7 +2664,9 @@ int main(int argc, char *argv[])
 	{"no-error-maps",                    0, &gparams->error_maps,           0},
 	{"stretch-map",                      0, &gparams->stretch_map,          1},
 	{"enforce-cspad-layout",             0, &gparams->enforce_cspad_layout, 1},
+	{"enforce-agipd-layout",             0, &gparams->enforce_cspad_layout, 1},
 	{"no-cspad",                         0, &gparams->no_cspad,             1},
+	{"no-agipd",                         0, &gparams->no_cspad,             1},
 
 	/* Long-only options with arguments */
 	{"min-num-peaks-per-panel",          1, NULL,                          11},
