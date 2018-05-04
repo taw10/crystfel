@@ -83,6 +83,7 @@ static void show_help(const char *s)
 "  -c, --connected=<rg_coll>                    Rigid group collection for connected\n"
 "                                                ASICs.\n"
 "      --no-error-maps                          Do not generate error map PNGs.\n"
+"      --stretch-map                            Generate stretch map PNG (panels distance).\n"
 "  -x, --min-num-peaks-per-pixel=<num>          Minimum number of peaks per pixel.\n"
 "	                                         Default: 3. \n"
 "  -z, --max-num-peaks-per-pixel=<num>          Maximum number of peaks per pixel.\n"
@@ -96,6 +97,8 @@ static void show_help(const char *s)
 "                                                Default: whole-detector offset.\n"
 "      --no-stretch                             Do not optimize distance offset.\n"
 "                                                Default: distance offset is optimized\n"
+"      --no-rotation                            Do not optimize rotation of connectedd groups.\n"
+"                                                Default: rotation is optimized\n"
 "  -m  --max-peak-dist=<num>                    Maximum distance between predicted and\n"
 "                                                detected peaks (in pixels)\n"
 "                                                Default: half of minimal inter-Bragg distance\n"
@@ -112,8 +115,10 @@ struct geoptimiser_params
 	int min_num_pix_per_conn_group;
 	int only_best_distance;
 	int nostretch;
+	int norotation;
 	int individual_coffset;
 	int error_maps;
+	int stretch_map;
 	int enforce_cspad_layout;
 	int no_cspad;
 	double max_peak_dist;
@@ -1589,6 +1594,16 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 		free(stretches);
 	}
 
+
+	if ( gparams->norotation ) {
+		STATUS("However, rotation will not be optimized, so the "
+		       "rotation angle has been set to 0\n");
+		for ( di=0; di<connected->n_rigid_groups; di++ ) {
+			conn_data[di].cang = 0.0;
+		}
+
+	}
+
 	stretch_cf = 1.0;
 
 	printf("Computing overall stretch coefficient.\n");
@@ -1786,6 +1801,107 @@ static int save_data_to_png(char *filename, struct detector *det,
 
 		}
 		}
+	}
+
+	get_pixel_extents(im.det, &rect.min_x, &rect.min_y, &rect.max_x,
+	                  &rect.max_y);
+
+	if (rect.min_x > 0.0) rect.min_x = 0.0;
+	if (rect.max_x < 0.0) rect.max_x = 0.0;
+	if (rect.min_y > 0.0) rect.min_y = 0.0;
+	if (rect.max_y < 0.0) rect.max_y = 0.0;
+
+	rect.width = rect.max_x - rect.min_x;
+	rect.height = rect.max_y - rect.min_y;
+
+	/* Add a thin border */
+	rect.width += 2.0;
+	rect.height += 2.0;
+	surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, rect.width + 20,
+	                                  rect.height);
+
+	draw_detector(surf, &im, rect);
+
+	col_scale = render_get_colour_scale(20, rect.height, SCALE_GEOPTIMISER);
+
+	cr = cairo_create(surf);
+	cairo_identity_matrix(cr);
+	cairo_translate(cr, rect.width, 0.0);
+	cairo_rectangle(cr, 0.0, 0.0, 20.0, rect.height);
+	gdk_cairo_set_source_pixbuf(cr, col_scale, 0.0, 0.0);
+	cairo_fill(cr);
+	cairo_destroy(cr);
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		free(im.dp[i]);
+	}
+	free(im.dp);
+
+	r = cairo_surface_write_to_png(surf, filename);
+	if ( r != CAIRO_STATUS_SUCCESS ) return 1;
+
+	return 0;
+}
+
+
+static int save_stretch_to_png(char *filename, struct detector *det,
+                               struct rg_collection *connected,
+                               struct connected_data *conn_data)
+
+{
+	struct image im;
+	int i, di, ip;
+	float min_str, max_str;
+	struct rectangle rect;
+	GdkPixbuf *col_scale;
+	cairo_t *cr;
+
+	cairo_status_t r;
+	cairo_surface_t *surf;
+
+	im.det = det;
+	im.bad = NULL;
+	im.dp = malloc(det->n_panels*sizeof(float *));
+	if ( im.dp == NULL ) {
+		ERROR("Failed to allocate data\n");
+		return 1;
+	}
+
+	min_str = 10000;
+	max_str = 0;
+	for ( di=0; di<connected->n_rigid_groups; di++ ) {
+		if (conn_data[di].cstr > max_str) max_str = conn_data[di].cstr;
+		if (conn_data[di].cstr < min_str) min_str = conn_data[di].cstr;
+	}
+
+        i = 0;
+	for ( di=0; di<connected->n_rigid_groups; di++ ) {
+	for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
+
+		int fs, ss;
+		float val;
+		struct panel *p;
+
+		p = connected->rigid_groups[di]->panels[ip];
+
+		im.dp[i] = calloc(p->w * p->h, sizeof(float));
+		if ( im.dp[i] == NULL ) {
+			ERROR("Failed to allocate data\n");
+			return 1;
+		}
+
+		val = (conn_data[di].cstr - min_str) / (max_str - min_str);
+		val *= 10.0; /* render_panels sets this as max */
+
+		for ( ss=0; ss<p->h; ss++ ) {
+			for ( fs=0; fs<p->w; fs++ ) {
+
+				im.dp[i][fs+p->w*ss] = val;
+
+			}
+		}
+		i++;
+	}
 	}
 
 	get_pixel_extents(im.det, &rect.min_x, &rect.min_y, &rect.max_x,
@@ -2253,25 +2369,53 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 
 	}
 
-	stretch_coeff = compute_rotation_and_stretch(connected, conn_data,
-	                                             det, gpanels,
+	if ( !gparams->nostretch || !gparams->norotation ) {
+
+		stretch_coeff = compute_rotation_and_stretch(connected,
+	                                             conn_data, det, gpanels,
                                                      dist_coeff_for_rot_str,
                                                      gparams);
-	if ( stretch_coeff < 0.0 ) {
-		free(conn_data);
-		return 1;
-	}
+		if ( stretch_coeff < 0.0 ) {
+			free(conn_data);
+			return 1;
+		}
 
-	ret = compute_rot_stretch_for_empty_panels(quadrants, connected,
-	                        gparams->min_num_pix_per_conn_group, conn_data);
-	if ( ret ) {
-		free(conn_data);
-		return 1;
-	}
+		ret = compute_rot_stretch_for_empty_panels(quadrants, connected,
+		                        gparams->min_num_pix_per_conn_group,
+		                        conn_data);
+		if ( ret ) {
+			free(conn_data);
+			return 1;
+		}
 
-	correct_rotation_and_stretch(connected, det, gpanels, conn_data,
-	                             clen_to_use, stretch_coeff,
-	                             gparams);
+		if ( gparams->stretch_map ) {
+
+#ifdef HAVE_SAVE_TO_PNG
+
+			STATUS("Saving stretch map - for out-of-plane rotations.\n");
+
+			ret = save_stretch_to_png("stretch_co.png", det,
+			                          connected, conn_data);
+
+			if ( ret ) {
+				ERROR("Error while writing data to file.\n");
+				free(conn_data);
+				return 1;
+			}
+
+#else /* HAVE_SAVE_TO_PNG */
+
+			STATUS("ERROR: geoptimiser was compiled without GTK and "
+			       "cairo support.\n Stretch map will not be saved.\n");
+
+#endif /* HAVE_SAVE_TO_PNG */
+
+		}
+
+		correct_rotation_and_stretch(connected, det, gpanels,
+		                             conn_data, clen_to_use,
+		                             stretch_coeff, gparams);
+	}
 
 	ret = compute_shift(connected, conn_data, det, gparams, gpanels);
 	if ( ret != 0 ) {
@@ -2364,9 +2508,11 @@ int main(int argc, char *argv[])
 	gparams->only_best_distance = 0;
 	gparams->enforce_cspad_layout = 0;
 	gparams->nostretch = 0;
+	gparams->norotation = 0;
 	gparams->individual_coffset = 0;
 	gparams->no_cspad = 0;
 	gparams->error_maps = 1;
+	gparams->stretch_map = 0;
 	gparams->max_peak_dist = 0.0;
 
 	const struct option longopts[] = {
@@ -2388,7 +2534,9 @@ int main(int argc, char *argv[])
 
 	/* Long-only options with no arguments */
 	{"no-stretch",                       0, &gparams->nostretch,            1},
+	{"no-rotation",                      0, &gparams->norotation,           1},
 	{"no-error-maps",                    0, &gparams->error_maps,           0},
+	{"stretch-map",                      0, &gparams->stretch_map,          1},
 	{"enforce-cspad-layout",             0, &gparams->enforce_cspad_layout, 1},
 	{"no-cspad",                         0, &gparams->no_cspad,             1},
 
