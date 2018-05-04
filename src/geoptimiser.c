@@ -1594,14 +1594,12 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 		free(stretches);
 	}
 
-
 	if ( gparams->norotation ) {
 		STATUS("However, rotation will not be optimized, so the "
 		       "rotation angle has been set to 0\n");
 		for ( di=0; di<connected->n_rigid_groups; di++ ) {
 			conn_data[di].cang = 0.0;
 		}
-
 	}
 
 	stretch_cf = 1.0;
@@ -1669,7 +1667,8 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 #ifdef HAVE_SAVE_TO_PNG
 
 static void draw_panel(struct image *image, cairo_t *cr,
-                       cairo_matrix_t *basic_m, GdkPixbuf **pixbufs, int i) {
+                       cairo_matrix_t *basic_m, GdkPixbuf **pixbufs, int i)
+{
 	struct panel p = image->det->panels[i];
 	int w = gdk_pixbuf_get_width(pixbufs[i]);
 	int h = gdk_pixbuf_get_height(pixbufs[i]);
@@ -2194,9 +2193,9 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	double avg_res;
 	double clen_to_use;
 
-	// for angles and stretch calculation use
-	// only pixels which are distco*size_panel
-	// away
+	/* for angles and stretch calculation use
+	 * only pixels which are distco*size_panel
+	 * away */
 	double dist_coeff_for_rot_str = 0.2;
 	double total_error;
 
