@@ -500,12 +500,18 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 	switch ( mosflm->step )
 	{
 		case 1 :
+		/* Backwards-compatible workaround for different Mosflm behaviour
+		 * in version 7.2.2 */
+		mosflm_sendline("DETECTOR ADSC\n", mosflm);
+		break;
+
+		case 2 :
 		mosflm_sendline("DETECTOR ROTATION HORIZONTAL"
 		                " ANTICLOCKWISE ORIGIN LL FAST HORIZONTAL"
 		                " RECTANGULAR\n", mosflm);
 		break;
 
-		case 2 :
+		case 3 :
 		if ( (mosflm->mp->indm & INDEXING_USE_LATTICE_TYPE)
 		  && (mosflm->mp->template != NULL) )
 		{
@@ -527,32 +533,32 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		}
 		break;
 
-		case 3 :
+		case 4 :
 		snprintf(tmp, 255, "DISTANCE %f\n", FAKE_CLEN*1e3);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 4 :
+		case 5 :
 		mosflm_sendline("BEAM 0.0 0.0\n", mosflm);
 		break;
 
-		case 5 :
+		case 6 :
 		wavelength = image->lambda*1e10;
 		snprintf(tmp, 255, "WAVELENGTH %10.5f\n", wavelength);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 6 :
+		case 7 :
 		snprintf(tmp, 255, "NEWMAT %s\n", mosflm->newmatfile);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 7 :
+		case 8 :
 		snprintf(tmp, 255, "IMAGE %s phi 0 0\n", mosflm->imagefile);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 8 :
+		case 9 :
 		if ( mosflm->mp->indm & INDEXING_USE_CELL_PARAMETERS ) {
 			cell_get_parameters(mosflm->mp->template,
 			                    &a, &b, &c, &alpha, &beta, &gamma);
@@ -572,7 +578,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		mosflm_sendline(tmp, mosflm);
 		break;
 
-		case 9 :
+		case 10 :
 		mosflm_sendline("GO\n", mosflm);
 		mosflm->finished_ok = 1;
 		break;
