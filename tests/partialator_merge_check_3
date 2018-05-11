@@ -51,7 +51,7 @@ EOF
 src/partialator -i partialator_merge_check_3.stream \
                 -o partialator_merge_check_3.hkl  \
                 --model=unity --iterations=1 -y 4 --no-polarisation \
-                --no-free
+                --no-free --no-logs
 
 sed -n '/End\ of\ reflections/q;p' partialator_merge_check_3.hkl > temp.hkl
 mv temp.hkl partialator_merge_check_3.hkl
