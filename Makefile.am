@@ -13,7 +13,7 @@ noinst_PROGRAMS = tests/list_check tests/integration_check \
                   tests/cell_check tests/ring_check \
                   tests/prof2d_check tests/ambi_check \
 		  tests/prediction_gradient_check \
-                  tests/linear_scale_check
+                  tests/scaling_check
 
 MERGE_CHECKS = tests/first_merge_check tests/second_merge_check \
                tests/third_merge_check tests/fourth_merge_check
@@ -26,7 +26,7 @@ TESTS = tests/list_check $(MERGE_CHECKS) $(PARTIAL_CHECKS) \
         tests/integration_check \
         tests/symmetry_check tests/centering_check tests/transformation_check \
         tests/cell_check tests/ring_check tests/prof2d_check tests/ambi_check \
-        tests/prediction_gradient_check tests/linear_scale_check
+        tests/prediction_gradient_check tests/scaling_check
 
 EXTRA_DIST += $(MERGE_CHECKS) $(PARTIAL_CHECKS)
 EXTRA_DIST += relnotes-0.6.3 announcement-0.6.3
@@ -123,7 +123,7 @@ tests_ring_check_SOURCES = tests/ring_check.c
 
 tests_cell_check_SOURCES = tests/cell_check.c
 
-tests_linear_scale_check_SOURCES = tests/linear_scale_check.c src/scaling.c \
+tests_scaling_check_SOURCES = tests/scaling_check.c src/scaling.c \
 				   src/merge.c
 
 INCLUDES = -I$(top_srcdir)/libcrystfel/src -I$(top_srcdir)/data
