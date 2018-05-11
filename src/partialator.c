@@ -1340,8 +1340,10 @@ int main(int argc, char *argv[])
 
 	/* Create reference data set if we don't already have one */
 	if ( reference == NULL ) {
-		STATUS("Initial scaling...\n");
-		scale_all(crystals, n_crystals, nthreads, scaleflags);
+		if ( !no_scale ) {
+			STATUS("Initial scaling...\n");
+			scale_all(crystals, n_crystals, nthreads, scaleflags);
+		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1);
 	} else {
