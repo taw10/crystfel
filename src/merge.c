@@ -187,7 +187,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		}
 
 		/* Total (multiplicative) correction factor */
-		corr = G * exp(B*res*res) * get_lorentz(refl)
+		corr = 1.0/G * exp(B*res*res) * get_lorentz(refl)
 		        / get_partiality(refl);
 		if ( isnan(corr) ) {
 			ERROR("NaN corr:\n");
@@ -319,7 +319,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 		p = get_partiality(refl);
 		//if ( p < 0.2 ) continue;
 
-		corr = G * exp(B*res*res) * get_lorentz(refl);
+		corr = get_lorentz(refl) / (G * exp(-B*res*res));
 		int1 = get_intensity(refl) * corr;
 		int2 = p*I_full;
 		w = p;
@@ -363,7 +363,7 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 		signed int h, k, l;
 		Reflection *match;
 		double esd, I_full, I_partial;
-		double fx, dc;
+		double fx;
 
 		if ( free && !get_flag(refl) ) continue;
 
@@ -383,10 +383,9 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 		if ( I_full <= 0 ) continue;  /* Because log */
 		if ( p <= 0.0 ) continue; /* Because of log */
 
-		fx = -log(G) + log(p) - log(L) - B*s*s + log(I_full);
-		dc = log(I_partial) - fx;
+		fx = log(G) - B*s*s + log(p) + log(I_full) - log(I_partial) - log(L);
 		w = 1.0;
-		dev += w*dc*dc;
+		dev += w*fx*fx;
 
 		if ( fh != NULL ) {
 			fprintf(fh, "%4i %4i %4i %e %e\n",

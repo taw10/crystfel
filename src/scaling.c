@@ -267,7 +267,7 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 		}
 
 		x[n] = s*s;
-		y[n] = log(IhR) - log(pS) + log(LS) - log(IhS);
+		y[n] = log(LS) + log(IhS) -log(pS) - log(IhR);
 		w[n] = pS;
 		n++;
 
@@ -329,7 +329,7 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 	}
 
 	crystal_set_osf(cr, exp(G));
-	crystal_set_Bfac(cr, B);
+	crystal_set_Bfac(cr, -B);
 
 	free(x);
 	free(y);
