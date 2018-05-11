@@ -288,6 +288,9 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 			if ( n_part ) ERROR("%i subject reflection partiality\n", n_part);
 			if ( n_nom ) ERROR("%i no match in reference list\n", n_nom);
 		}
+		free(x);
+		free(y);
+		free(w);
 		return 1;
 	}
 
@@ -301,6 +304,9 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 
 	if ( r ) {
 		ERROR("Scaling failed.\n");
+		free(x);
+		free(y);
+		free(w);
 		return 1;
 	}
 
@@ -316,6 +322,9 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 			}
 		}
 
+		free(x);
+		free(y);
+		free(w);
 		return 1;
 	}
 
