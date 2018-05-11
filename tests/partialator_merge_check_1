@@ -46,9 +46,8 @@ src/partialator -i partialator_merge_check_1.stream \
                 -o partialator_merge_check_1.hkl  \
                 --model=unity --iterations=0 --no-scale --no-polarisation
 
-ex -c '/End of reflections/
-.,$d
-x' partialator_merge_check_1.hkl
+sed -n '/End of reflections/q;p' partialator_merge_check_1.hkl > temp.hkl
+mv temp.hkl partialator_merge_check_1.hkl
 diff partialator_merge_check_1.hkl partialator_merge_check_1_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1

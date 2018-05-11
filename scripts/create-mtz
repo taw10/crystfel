@@ -22,10 +22,7 @@ if [ -e $OUTFILE ]; then
 	fi
 fi
 
-ex -c '/End of reflections/
-.,$d
-w create-mtz.temp.hkl
-q!' $1
+sed -n '/End\ of\ reflections/q;p' $1 > create-mtz.temp.hkl
 
 echo "Running 'f2mtz'..."
 f2mtz HKLIN create-mtz.temp.hkl HKLOUT $OUTFILE > out.html << EOF
