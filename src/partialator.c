@@ -1164,13 +1164,12 @@ int main(int argc, char *argv[])
 		int r = mkdir("pr-logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if ( r ) {
 			if ( errno == EEXIST ) {
-				ERROR("A folder called 'pr-logs' exists in the "
-				      "working directory.\n");
-				ERROR("Please delete or move it first.\n");
+				ERROR("WARNING: pr-logs folder already exists. "
+				      "Beware of mixing old and new log files!\n");
 			} else {
 				ERROR("Failed to create pr-logs folder.\n");
+				return 1;
 			}
-			return 1;
 		}
 	}
 
