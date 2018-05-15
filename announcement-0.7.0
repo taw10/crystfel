@@ -1,0 +1,37 @@
+Dear CrystFEL users and interested crystallographers,
+
+CrystFEL version 0.7.0 has been released.
+
+This version adds several exciting new features while greatly simplifying the
+user experience.  The most interesting changes are:
+
+- New options system for indexamajig, removing most of the profusion of indexing
+  method flags "comb", "bad", "retry" and so on.  Indexamajig can also now
+  automatically determine which indexing methods can be used if you don't tell
+  it which ones to use.  In addition, the options for the Felix indexing method
+  have been simplified.
+
+- The spectrum-based partiality model and numerical post-refinement algorithm
+  from Ginn et al. [Acta D71 2015 p1400] has been incorporated.
+
+- The symmetry of the merged reflection list is now automatically tracked through
+  the subsequent data processing stages, so you no longer need to give the "-y"
+  option to compare_hkl, check_hkl and other programs.
+
+See the release notes for more discussion of these improvements, and the
+ChangeLog for full details of the other improvements.
+
+Thanks for all of your past and future feedback and contributions, and
+your continued use of CrystFEL.  As ever, please contact me directly if
+you would prefer to be unsubscribed from this mailing list.
+
+CrystFEL website:
+https://www.desy.de/~twhite/crystfel
+
+Release notes for version 0.7.0:
+https://www.desy.de/~twhite/crystfel/relnotes-0.7.0
+
+CrystFEL tutorial:
+https://www.desy.de/~twhite/crystfel/tutorial
+
+Tom

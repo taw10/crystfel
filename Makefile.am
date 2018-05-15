@@ -29,7 +29,7 @@ TESTS = tests/list_check $(MERGE_CHECKS) $(PARTIAL_CHECKS) \
         tests/prediction_gradient_check tests/scaling_check
 
 EXTRA_DIST += $(MERGE_CHECKS) $(PARTIAL_CHECKS)
-EXTRA_DIST += relnotes-0.6.3 announcement-0.6.3
+EXTRA_DIST += relnotes-0.7.0 announcement-0.7.0
 
 if BUILD_HDFSEE
 bin_PROGRAMS += src/hdfsee

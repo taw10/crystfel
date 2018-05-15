@@ -1,21 +1,22 @@
-Changes in this development version
------------------------------------
+CrystFEL  version 0.7.0, 17th May 2018
+--------------------------------------
 
-- indexamajig: Auto-detection of indexing methods was added.
+- indexamajig: Auto-detection of indexing methods
 - indexamajig: New options system - removes confusing "comb","bad","retry" etc.
 - Most programs now use the symmetry in the reflection files, allowing "-y"
+  options to be omitted.
 - Ginn partiality model was added.
 - partialator: Switch to gradient-free minimiser.
+- geoptimiser: Fixes for rotation and new features for AGIPD.
+- Speed and accuracy improvements for TakeTwo indexing (Helen Ginn).
 - process_hkl, partialator and ambigator now include the audit information from
   the stream in their output files.
 - pattern_sim: Write orientation and lattice basis vectors into HDF5 file.
 - hdfsee: Add event ID and peaks/preds/rings to exported image filenames.
-  options to be omitted.
 - indexamajig --serial-start was added (useful when using turbo-index).
-- indexamajig --overpredict was added (useful for partiality
-  modelling/post-refinement)
+- indexamajig --overpredict was added (needed for post-refinement)
 - pattern_sim --flat was added (new reflection profile option)
-- cell_explorer: Show number of matching cells on terminal.
+- cell_explorer: Now shows the number of matching cells on terminal.
 - Felix options were simplified.
 - scripts/sum-hdf5-files and eiger-badmap were added
 

@@ -1,0 +1,176 @@
+CrystFEL - Data processing for serial crystallography
+-----------------------------------------------------
+
+Release notes for version 0.7.0
+
+Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+                      a research centre of the Helmholtz Association.
+
+Authors:
+  Thomas White <taw@physics.org>
+  Richard Kirian <rkirian@asu.edu>
+  Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+  Andrew Aquila <andrew.aquila@cfel.de>
+  Andrew Martin <andrew.martin@desy.de>
+  Lorenzo Galli <lorenzo.galli@desy.de>
+  Chun Hong Yoon <chun.hong.yoon@desy.de>
+  Karol Nass <karol.nass@desy.de>
+  Nadia Zatsepin <nadia.zatsepin@asu.edu>
+  Anton Barty <anton.barty@desy.de>
+  Cornelius Gati <cornelius.gati@desy.de>
+  Fedor Chervinskii <fedor.chervinskii@gmail.com>
+  Alexandra Tolstikova <alexandra.tolstikova@desy.de>
+  Wolfgang Brehm <wolfgang.brehm@gmail.com>
+  Valerio Mariani <valerio.mariani@desy.de>
+  Parker de Waal <Parker.deWaal@vai.org>
+  Takanori Nakane <nakane.t@gmail.com>
+  Keitaro Yamashita <k.yamashita@spring8.or.jp>
+  Oleksandr Yefanov <oleksandr.yefanov@cfel.de>
+  Steve Aplin <steve.aplin@desy.de>
+  Helen Ginn <helen@strubi.ox.ac.uk>
+  Thomas Grant <tgrant@hwi.buffalo.edu>
+  Mamoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
+
+CrystFEL is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Overview
+--------
+
+The most important new features in this version of CrystFEL are:
+
+- New options system for indexamajig, removing most of the profusion of indexing
+  method flags "comb", "bad", "retry" and so on.  Indexamajig can also now
+  automatically determine which indexing methods can be used if you don't tell
+  it which ones to use.  In addition, the options for the Felix indexing method
+  have now been greatly simplified.
+
+- The spectrum-based partiality model and numerical post-refinement algorithm
+  from Ginn et al [Acta D71 2015 p1400] was incorporated.
+
+- The symmetry of the merged reflection list is now tracked through automatically,
+  so you no longer need to give the "-y" option to compare_hkl and check_hkl.
+
+These changes have sections below.  In addition, there were many bug fixes and
+other improvements.  See the "ChangeLog" or the changes page on the CrystFEL
+website for details.
+
+
+New indexamajig options system
+------------------------------
+
+The new version of indexamajig will automatically determine which indexing
+methods to use based on the prior information (e.g. if a target unit cell was
+provided) and which indexing programs are available on the computer.  To enable
+the automatic determination, simply omit any "--indexing=" option to indexamajig.
+Of course, you can override the automatic choice by specifying --indexing, just
+as it worked before.
+
+To options for finer control of the indexing process, which in previous versions
+were enabled or disabled by adding flags to the indexing methods
+(e.g. "mosflm-noretry"), now apply to all indexing methods at once and are
+selected using new options, listed below.
+
+The indexing method should contain only the method itself and prior information
+modifiers ('cell' or 'latt').  This simplifies things greatly by removing the
+very long indexing method descriptions ("mosflm-raw-latt-noretry-refine-nomulti"
+and so on).
+
+- To disable prediction refinement ('norefine'), use --no-refine.
+- To check cell axes only ('axes'), use --no-cell-combinations.
+- To disable all unit cell checks ('raw'), use --no-check-cell.
+- To disable peak alignment check ('bad'), use --no-check-peaks.
+- To disable indexing retry ('noretry'), use --no-retry.
+- To enable multi-lattice indexing by 'delete and retry', use --multi.
+
+
+Spectrum-based partiality model and post-refinement
+---------------------------------------------------
+
+This version includes an implementation of the spectrum-based partiality model
+described by Ginn et al., Acta D71 2015 p1400 and associated numerical post-
+refinement algorithm.  To use it, use "partialator --model=xsphere".  The old
+models (scsphere and scgaussian) have been removed.  You will probably need to
+experiment with changing the bandwidth and reflection radius, using
+--force-bandwidth and --force-radius.  Add --no-pr to disable post-refinement,
+while still using the partiality estimates.  To use post-refinement, omit --no-pr,
+but you should also run indexamajig with "--overpredict".  You may also need to
+disable B factor scaling in partialator with "--no-Bscale".
+
+If you use post-refinement, the new scripts "plot-pr" and "plot-contourmap" can
+be used to visualise the distributions of partialities and the contour maps of
+residual against parameters such as crystal rotation angle.  The data for these
+graphs is in the "pr-logs" folder which will be created by partialator.
+
+Partiality modelling and post-refinement should still be considered experimental
+when applied to real data.  The success of post-refinement depends on many
+factors, and only has a chance of working if there are no other problems with
+the dataset (e.g. inaccurate detector geometry).  Further improvements should
+appear in future versions.
+
+
+Automatic tracking of reflection list symmetry
+----------------------------------------------
+
+The point group symmetry used for merging a reflection list has been stored in
+the reflection file (.hkl) for a long time.  However, version 0.7.0 of CrystFEL
+uses the stored symmetry when performing tasks such as calculating figures of
+merit using check_hkl.  You can simply omit the "-y" options which were needed
+previously.  Of course, you can override the symmetry by specifying -y as before.
+
+
+API changes
+-----------
+
+The following changes have been made to the libcrystfel API.
+
+New functions:
+	- asdf_probe() and _probe for all other indexing methods.
+	- compare_cells()
+	- crystal_get_cell_const()
+	- crystal_get_profile_radius()
+	- predict_to_res()
+	- calculate_partialities()
+	- update_predictions()
+	- is_cbf_file()
+	- get_indm_from_string_2()
+	- detect_indexing_methods()
+	- integrate_all_5()
+	- read_reflections_2()
+	- {get,set}_{khalf,kpred,exerr}()
+	- first_refl_const(), next_refl_const()
+	- open_stream_for_write_4()
+	- stream_has_old_indexers()
+	- stream_audit_info()
+
+Removed functions:
+	- find_intersections()
+	- find_intersections_to_res()
+	- update_partilities()
+	- write_reflections_to_file()
+	- read_reflections_from_file()
+	- {get,sh}_partial()
+
+Changed function prototypes:
+	- asdf_prepare() and _prepare for all other indexing methods.
+	- cell_new_from_cell() (input UnitCell is now const)
+	- crystal_copy() (input Crystal is now const)
+	- x_gradient(), y_gradient()
+	- remove_flagged_crystals() (now returns number of crystals removed)
+	- setup_indexing()
+
+Changed structure/enum definitions:
+	- PartialityModel: removed PMODEL_SCSPHERE and PMODEL_SCGAUSSIAN,
+	  added PMODEL_XSPHERE
+	- gparam: added GPARAM_ANG1, GPARAM_ANG2, GPARAM_WAVELENGTH, GPARAM_EOL
+	- Added IndexingFlags
