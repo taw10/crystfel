@@ -89,7 +89,7 @@ You can add one or more of the following to the above indexing methods, to contr
 
 .IP \fB-latt\fR
 .PD
-Provide the Bravais lattice type (e.g. the knowledge that the lattice tetragonal primitive), as prior information to the indexing engine.
+Provide the Bravais lattice type (e.g. the knowledge that the lattice is tetragonal primitive), as prior information to the indexing engine.
 
 .IP \fB-nolatt\fR
 .PD
@@ -101,7 +101,7 @@ Provide your unit cell parameters as prior information to the indexing engine.
 
 .IP \fB-nocell\fR
 .PD
-The opposite of \fB-cell\fR: do not use unit cell parameters as prior information for the core indexing algorithm.
+The opposite of \fB-cell\fR: do not provide unit cell parameters as prior information to the indexing engine.
 
 .PP
 Example: \fB--indexing=mosflm-cell-latt\fR means to use Mosflm for indexing, and provide it with unit cell parameters and Bravais lattice type information.
@@ -112,7 +112,7 @@ The default indexing method is 'none', which means no indexing will be done.  Th
 .PP
 You do not need to explicitly specify anything more than the indexing method itself (e.g. \fBmosflm\fR or \fBasdf\fR).  The default behaviour for all indexing methods is to make the maximum possible use of prior information such as the lattice type and cell parameters.  If you do not provide this information, for example if you do not give any unit cell file or if the unit cell file does not contain cell parameters (only lattice type information), the indexing methods you give will be modified accordingly.  If you only specify the indexing methods themselves, in most cases \fBindexamajig\fR will do what you want and intuitively expect!  However, the options are available if you need finer control.
 
-If you don't know what to give for this option, try \fB--indexing=asdf,dirax,mosflm,xds,taketwo\fR.
+If you don't know what to give for this option, leave it out completely.  Indexamajig will then automatically select indexing methods based on the programs available on your computer.
 
 The indexing results from the indexing engine will be put through a number of refinement and checking stages.  See the options \fB--no-check-cell, --no-cell-combinations, --no-multi, --no-retry\fR and \fB--no-refine\fR below for more details.
 
@@ -305,7 +305,7 @@ With this option with \fB--peaks=hdf5\fR, the peaks will additionally be checked
 .PD 0
 .IP \fB--indexing=\fR\fImethod\fR
 .PD
-Index the patterns using \fImethod\fR.  See the section titled \fBINDEXING METHODS\fR (above) for more information.  The default is \fB--indexing=none\fR.
+Index the patterns using \fImethod\fR.  See the section titled \fBINDEXING METHODS\fR (above) for more information.  The default is to automatically detect which indexing methods to use.
 
 .PD 0
 .IP "\fB-p\fR \fIunitcell.cell\fR"
@@ -332,9 +332,9 @@ Do not check the cell parameters against the reference unit cell (given with \fB
 When checking the cell parameters against the reference cell (see \fB-p\fR), do not make combinations of the axes of the candidate cell (such as \fBa'\fR=2\fBa\fR+\fBb\fR) to make it fit.  Usually this reduces the success rate, but is necessary if one of the cell parameters is close to a multiple of the others.  \fRThis happens for tetragonal lysozyme\fB.
 
 .PD 0
-.IP \fB--no-multi
+.IP \fB--multi
 .PD
-Disable multi-lattice indexing.  This refers to the "subtract and retry" method, where after a successful indexing attempt the spots accounted for by the indexing solution are removed before trying to index again in the hope of finding a second lattice.  This doesn't have anything to do with the multi-lattice indexing algorithms such as Felix.
+Enable the "subtract and retry" method, where after a successful indexing attempt the spots accounted for by the indexing solution are removed before trying to index again in the hope of finding a second lattice.  This doesn't have anything to do with the multi-lattice indexing algorithms such as Felix.
 
 .PD 0
 .IP \fB--no-retry

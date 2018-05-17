@@ -155,7 +155,7 @@ If you prefer, you can specify the ambiguity operator by specifying the apparent
 .IP \fB--force-bandwidth=\fIbw\fR
 .IP \fB--force-radius=\fIR\fR
 .PD
-Set the X-ray bandwidth or initial profile radius for all crystals before proceeding.  Bandwidth is given as a fraction, i.e. \fB--force-bandwidth=0.0013\fR means 0.13 percent (approximate FWHM).  Radius is given in  nm^-1.
+Set the X-ray bandwidth or initial profile radius for all crystals before proceeding, overriding the values from the stream.  Bandwidth is given as a fraction, i.e. \fB--force-bandwidth=0.0013\fR means 0.13 percent (approximate FWHM).  Radius is given in  nm^-1.
 
 .SH PARTIALITY MODELS
 
@@ -190,15 +190,15 @@ partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=uni
 
 .IP "Merging with partialities, but without post-refinement and without scaling:"
 .PD
-partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scsphere --iterations=0\fR
+partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=xsphere --iterations=0\fR
 
 .IP "Merging with partialities, with scaling but without post-refinement:"
 .PD
-partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scsphere --iterations=1 --no-pr\fR
+partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=xsphere --iterations=1 --no-pr\fR
 
 .IP "Merging with partialities, post-refinement and scaling:"
 .PD
-partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scsphere --iterations=1\fR
+partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=xsphere --iterations=1\fR
 .IP
 (Use a higher number of iterations to increase the accuracy of scaling and post-refinement, but at a cost of more CPU time and possibly more rejected crystals)
 
@@ -206,11 +206,9 @@ partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scs
 .PD
 This would be a strange thing to want to do, however:
 .IP
-partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=scsphere --iterations=1 --no-scale\fR
+partialator -i \fImy.stream \fR-o \fImy.hkl\fR -y \fImypointgroup \fB--model=xsphere --iterations=1 --no-scale\fR
 .IP
 (Use a higher number of iterations to increase the accuracy of post-refinement, but at a cost of more CPU time and possibly more rejected crystals)
-.PP
-\fBscguassian\fR could be substituted for \fBscsphere\fR in the above examples to use the Gaussian partiality model instead of the spherical one.
 
 .SH CUSTOM DATASET SPLITTING
 When performing a time-resolved experiment (for example), it is preferable to ensure that the data for all time points has been processed identically.  Rather than processing each time point independently with separate runs of partialator, it is better to process them all together and do the splitting into time points just before the final output.  Consider, for example, the case of simple scaling (without a B factor): when merging independently, the resulting datasets would probably end up with different overall scaling factors.  When comparing the results, you would need to take this difference into account.  In practice, most programs can do that job easily, but what about if a B factor is included?  And what if partialities are included - how unique is the solution?
