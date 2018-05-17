@@ -41,7 +41,10 @@ Symmetry: 1
    1    0    0     150.00        -      35.36       2
 EOF
 
-src/process_hkl -i first_merge_check.stream -o first_merge_check.hkl --no-polarisation
+process_hkl -i first_merge_check.stream -o first_merge_check.hkl --no-polarisation
+if [ $? -ne 0]; then
+	exit 1;
+fi
 ex -c '/End of reflections/
 .,$d
 x' first_merge_check.hkl

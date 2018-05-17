@@ -42,10 +42,13 @@ Symmetry: 1
    1    0    0     150.00        -      35.36       2
 EOF
 
-src/partialator -i partialator_merge_check_1.stream \
+partialator -i partialator_merge_check_1.stream \
                 -o partialator_merge_check_1.hkl  \
                 --model=unity --iterations=0 --no-scale --no-polarisation \
                 --no-logs
+if [ $? -ne 0 ]; then
+	exit 1
+fi
 
 sed -n '/End of reflections/q;p' partialator_merge_check_1.hkl > temp.hkl
 mv temp.hkl partialator_merge_check_1.hkl

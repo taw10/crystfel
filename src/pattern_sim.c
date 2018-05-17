@@ -42,7 +42,6 @@
 #include <getopt.h>
 #include <hdf5.h>
 
-#include "version.h"
 #include "image.h"
 #include "diffraction.h"
 #include "diffraction-gpu.h"

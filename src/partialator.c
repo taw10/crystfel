@@ -54,7 +54,6 @@
 #include <cell.h>
 #include <cell-utils.h>
 
-#include "version.h"
 #include "scaling.h"
 #include "post-refinement.h"
 #include "merge.h"

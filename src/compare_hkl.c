@@ -43,7 +43,6 @@
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_fit.h>
 
-#include "version.h"
 #include "utils.h"
 #include "statistics.h"
 #include "symmetry.h"

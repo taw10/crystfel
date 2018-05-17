@@ -1653,7 +1653,8 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 				 "Therefore, it can't be saved as TIFF.");
 				r = 0;
 			} else {
-				r = render_tiff_fp(dw, dw->image, file);
+				r = render_tiff_fp(dw->image, file, dw->min_x,
+				                   dw->max_x, dw->min_y, dw->max_y);
 			}
 		} else if ( type == 2 ) {
 			if ( !single_panel_data_source(dw->image->det, NULL) ) {
@@ -1662,8 +1663,10 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 				 "Therefore, it can't be saved as TIFF.");
 				r = 0;
 			} else {
-				r = render_tiff_int16(dw, dw->image, file,
-				                      dw->boostint);
+				r = render_tiff_int16(dw->image, file,
+				                      dw->boostint, dw->min_x,
+				                      dw->max_x, dw->min_y,
+				                      dw->max_y);
 			}
 		} else if ( type == 3 ) {
 			if ( !single_panel_data_source(dw->image->det, NULL) ) {

@@ -33,12 +33,8 @@
 #include <config.h>
 #endif
 
-
-#ifdef HAVE_GTK
-
+#ifdef HAVE_GDKPIXBUF
 #include <gdk-pixbuf/gdk-pixbuf.h>
-
-#include "dw-hdfsee.h"
 
 extern GdkPixbuf **render_panels(struct image *image,
                                  int binning, int scale, double boost,
@@ -46,12 +42,12 @@ extern GdkPixbuf **render_panels(struct image *image,
 
 extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
 
-extern int render_tiff_fp(DisplayWindow *dw, struct image *image,
-                          const char *filename);
-extern int render_tiff_int16(DisplayWindow *dw, struct image *image,
-                             const char *filename, double boost);
+#endif /* HAVE_GDKPIXBUF */
 
-#endif /* HAVE_GTK */
+extern int render_tiff_fp(struct image *image, const char *filename, int min_x,
+                          int max_x, int min_y, int max_y);
 
+extern int render_tiff_int16(struct image *image, const char *filename, double boost,
+                             int min_x, int max_x, int min_y, int max_y);
 
 #endif	/* HDFSEE_RENDER_H */

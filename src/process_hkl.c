@@ -43,7 +43,6 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "version.h"
 #include "utils.h"
 #include "statistics.h"
 #include "reflist-utils.h"

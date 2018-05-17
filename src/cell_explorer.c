@@ -40,7 +40,6 @@
 #include <gdk/gdkkeysyms.h>
 #include <gsl/gsl_multifit_nlin.h>
 
-#include "version.h"
 #include "stream.h"
 #include "image.h"
 #include "utils.h"

@@ -29,6 +29,7 @@ Authors:
   Steve Aplin <steve.aplin@desy.de>
   Oleksandr Yefanov <oleksandr.yefanov@desy.de>
   Helen Ginn  <helen@strubi.ox.ac.uk>
+  Nicolas Riebesel <nicolas.riebesel@tuhh.de>
 
 CrystFEL is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
@@ -119,22 +120,13 @@ documentation created using GTK-Doc.
 Installation
 ------------
 
-See the "INSTALL" file for the generic instructions on how to use the build
-system.  In short, it's the usual:
-
-$ ./configure
+$ mkdir build
+$ cd build
+$ cmake ..
 $ make
-$ make check
 $ sudo make install
 
-If you have libraries installed in strange places, you might want to do
-something similar to one of these instead of the first step:
-
-$ ./configure --with-opencl
-$ ./configure --with-hdf5=/some/strange/location
-$ ./configure --with-libtiff=/some/strange/location
-$ ./configure --with-gsl=/some/strange/location
-$ ./configure --disable-gtk
+You can skip the first two steps (mkdir/cd), but it's not recommended.
 
 At a minimum, you will need the HDF5 library (version 1.8.0 or later) and the
 GNU Scientific Library (GSL).  For a full installation, you will also need
@@ -143,34 +135,10 @@ distribution's package manager.  Be sure to install the development files for
 each package, which will have a name like "gtk+-2.0-dev" or "gtk+-2.0-devel",
 depending on which distribution you use.
 
-If you're compiling on Mac OS X, where GTK, libPNG and libTIFF seem to be much
-harder to come by, disable lots of things:
-
-$ ./configure --disable-gtk --disable-png --disable-libtiff
-
 If you get an error mentioning fftw3 and telling you to recompile with -fPIC,
 then your version of FFTW3 is not compiled in a suitable way.  You'll need to
 install it again (from source) adding "--enable-shared" to its ./configure
 command line.
-
-If you are installing from Git, the following extra things apply:
-
-- You must run "./autogen.sh" to generate "configure" and other files before
-  proceeding as detailed above.
-
-- If you have an old version of Automake (less than 1.10), or an old version of
-  Autoconf (less than 2.60), you'll need to add the following line near the top
-  of Makefile.am:
-
-  docdir = ${datadir}/doc/${PACKAGE}
-
-- If your Automake version is less than 1.11, you'll need to comment out the
-  reference to AM_SILENT_RULES in configure.ac, like this:
-
-  dnl AM_SILENT_RULES([yes])
-
-- You will not be able to use the "--enable-gtk-doc" option to configure unless
-  you have at least version 1.9 of gtk-doc installed.
 
 
 Funding acknowledgements

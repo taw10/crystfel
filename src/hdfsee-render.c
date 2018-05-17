@@ -30,14 +30,15 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_GTK
-
-#include <gdk-pixbuf/gdk-pixbuf.h>
-
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
 #include <assert.h>
+
+
+#ifdef HAVE_GDKPIXBUF
+#include <gdk-pixbuf/gdk-pixbuf.h>
+#endif
 
 #ifdef HAVE_TIFF
 #include <tiffio.h>
@@ -45,8 +46,6 @@
 
 #include <render.h>
 #include <image.h>
-
-#include "dw-hdfsee.h"
 
 static float *get_binned_panel(struct image *image, int binning,
                                int pi, double *max, int *pw, int *ph)
@@ -106,6 +105,8 @@ static float *get_binned_panel(struct image *image, int binning,
 	return data;
 }
 
+
+#ifdef HAVE_GDKPIXBUF
 
 /* NB This function is shared between render_get_image() and
  * render_get_colour_scale() */
@@ -260,17 +261,15 @@ GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
 					w, h, w*3, render_free_data, NULL);
 }
 
+#endif /* HAVE_GDKPIXBUF */
 
-int render_tiff_fp(DisplayWindow *dw, struct image *image, const char *filename)
+int render_tiff_fp(struct image *image, const char *filename, int min_x, int max_x,
+                   int min_y, int max_y)
 {
 #ifdef HAVE_TIFF
 	TIFF *th;
 	int16_t *line;
 	int x, y;
-	int min_x = (int)dw->min_x;
-	int max_x = (int)dw->max_x;
-	int min_y = (int)dw->min_y;
-	int max_y = (int)dw->max_y;
 	int width = max_x - min_x;
 	int height = max_y - min_y;
 	float *buf;
@@ -331,24 +330,20 @@ int render_tiff_fp(DisplayWindow *dw, struct image *image, const char *filename)
 
 	TIFFClose(th);
 	free(buf);
-#else
+#else /* HAVE_TIFF */
 	STATUS("No TIFF support.\n");
-#endif
+#endif /* HAVE_TIFF */
 	return 0;
 }
 
 
-int render_tiff_int16(DisplayWindow *dw, struct image *image,
-                      const char *filename, double boost)
+int render_tiff_int16(struct image *image, const char *filename, double boost,
+                      int min_x, int max_x, int min_y, int max_y)
 {
 #ifdef HAVE_TIFF
 	TIFF *th;
 	int16_t *line;
 	int x, y;
-	int min_x = (int)dw->min_x;
-	int max_x = (int)dw->max_x;
-	int min_y = (int)dw->min_y;
-	int max_y = (int)dw->max_y;
 	int width = max_x - min_x;
 	int height = max_y - min_y;
 	int16_t *buf;
@@ -417,10 +412,8 @@ int render_tiff_int16(DisplayWindow *dw, struct image *image,
 
 	TIFFClose(th);
 	free(buf);
-#else
+#else /* HAVE_TIFF */
 	STATUS("No TIFF support.\n");
-#endif
+#endif /* HAVE_TIFF */
 	return 0;
 }
-
-#endif /* HAVE_GTK */

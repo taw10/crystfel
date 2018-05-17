@@ -25,7 +25,10 @@ Symmetry: 1
    h    k    l          I    phase   sigma(I)   nmeas
 EOF
 
-src/process_hkl -i fourth_merge_check.stream -o fourth_merge_check.hkl --no-polarisation
+process_hkl -i fourth_merge_check.stream -o fourth_merge_check.hkl --no-polarisation
+if [ $? -ne 0 ]; then
+	exit 1;
+fi
 ex -c '/End of reflections/
 .,$d
 x' fourth_merge_check.hkl

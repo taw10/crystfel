@@ -1,0 +1,31 @@
+#cmakedefine HAVE_CAIRO
+#cmakedefine HAVE_CLOCK_GETTIME
+#cmakedefine HAVE_CPU_AFFINITY
+#cmakedefine HAVE_FFTW
+#cmakedefine HAVE_GTK
+#cmakedefine HAVE_GDKPIXBUF
+#cmakedefine HAVE_GDK
+#cmakedefine HAVE_OPENCL
+#cmakedefine HAVE_CL_CL_H
+#cmakedefine HAVE_TIFF
+#cmakedefine HAVE_XGANDALF
+#cmakedefine HAVE_FDIP
+#cmakedefine HAVE_CURSES
+
+/* We avoid adding the full path to cbf.h, because CBFlib unhelpfully installs
+ * some conflicting HDF5 headers which we want to keep out of the include path.
+ * Unfortunately, sometimes CBFlib installs cbf/cbf.h, other times cbflib/cbf.h.
+ * These defines tell whether we have CBFlib at all, and if so, what to #include */
+#cmakedefine HAVE_CBFLIB
+#cmakedefine HAVE_CBF_CBF_H
+#cmakedefine HAVE_CBFLIB_CBF_H
+
+#define PACKAGE_VERSION "${PROJECT_VERSION}"
+
+#define CRYSTFEL_VERSIONSTRING "${PROJECT_VERSION}+${GIT_SHA1}"
+
+#define CRYSTFEL_BOILERPLATE "License GPLv3+: GNU GPL version 3 or later"\
+     " <http://gnu.org/licenses/gpl.html>.\n"\
+     "This is free software: you are free to change and redistribute it.\n"\
+     "There is NO WARRANTY, to the extent permitted by law.\n\n"\
+     "Written by Thomas White and others."

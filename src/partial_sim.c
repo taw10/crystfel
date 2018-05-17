@@ -42,7 +42,6 @@
 #include <pthread.h>
 #include <gsl/gsl_rng.h>
 
-#include "version.h"
 #include "image.h"
 #include "utils.h"
 #include "reflist-utils.h"

@@ -43,7 +43,6 @@
 #include <utils.h>
 #include <stream.h>
 
-#include "version.h"
 #include "cell-utils.h"
 #include "integer_matrix.h"
 #include "reflist.h"

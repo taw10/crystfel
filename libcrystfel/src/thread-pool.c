@@ -30,6 +30,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_CPU_AFFINITY
+#define _GNU_SOURCE
+#include <sched.h>
+#endif
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -38,11 +42,6 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <assert.h>
-
-#ifdef HAVE_CPU_AFFINITY
-#include <sched.h>
-#endif
-
 
 #include "utils.h"
 

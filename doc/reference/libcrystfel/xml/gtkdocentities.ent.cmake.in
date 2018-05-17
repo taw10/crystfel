@@ -1,0 +1,8 @@
+<!ENTITY package "libcrystfel">
+<!ENTITY package_bugreport "taw@physics.org">
+<!ENTITY package_name "libcrystfel">
+<!ENTITY package_string "crystfel ${PROJECT_VERSION}+${GIT_SHA1}">
+<!ENTITY package_tarname "libcrystfel">
+<!ENTITY package_url "https://www.desy.de/~twhite/crystfel">
+<!ENTITY package_version "${PROJECT_VERSION}+${GIT_SHA1}">
+

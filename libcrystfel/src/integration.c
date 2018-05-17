@@ -39,7 +39,7 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
 
-#ifdef HAVE_CURSES_COLOR
+#ifdef HAVE_CURSES
 #include <ncurses.h>
 #endif
 
@@ -177,7 +177,7 @@ static float boxi(struct intcontext *ic, struct peak_box *bx, int p, int q)
 }
 
 
-#ifdef HAVE_CURSES_COLOR
+#ifdef HAVE_CURSES
 static void colour_on(enum boxmask_val b)
 {
 	switch ( b ) {
@@ -225,7 +225,7 @@ static void colour_off(enum boxmask_val b)
 #endif
 
 
-#ifdef HAVE_CURSES_COLOR
+#ifdef HAVE_CURSES
 static void show_reference_profile(struct intcontext *ic, int i)
 {
 	int q;
@@ -254,7 +254,7 @@ static void show_reference_profile(struct intcontext *ic, int i)
 static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
                           pthread_mutex_t *term_lock)
 {
-#ifdef HAVE_CURSES_COLOR
+#ifdef HAVE_CURSES
 	int q;
 	signed int h, k, l;
 	double fs, ss;

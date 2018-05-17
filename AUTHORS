@@ -103,3 +103,6 @@ Contributors
 
 * Helen Ginn  <helen@strubi.ox.ac.uk>
   TakeTwo indexing algorithm
+
+* Nicolas Riebesel <nicolas.riebesel@tuhh.de>
+  CMake build system

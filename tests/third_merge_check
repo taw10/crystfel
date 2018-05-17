@@ -56,7 +56,10 @@ Symmetry: 1
    1    0    0     133.33        -      27.22       3
 EOF
 
-src/process_hkl -i third_merge_check.stream -o third_merge_check.hkl --no-polarisation
+process_hkl -i third_merge_check.stream -o third_merge_check.hkl --no-polarisation
+if [ $? -ne 0 ]; then
+	exit 1;
+fi
 ex -c '/End of reflections/
 .,$d
 x' third_merge_check.hkl
