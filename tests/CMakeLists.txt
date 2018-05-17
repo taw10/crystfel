@@ -49,11 +49,6 @@ if (CURSES_FOUND)
 endif (CURSES_FOUND)
 add_test(prof2d_check prof2d_check)
 
-add_executable(pr_p_gradient_check pr_p_gradient_check.c ../src/post-refinement.c)
-target_include_directories(pr_p_gradient_check PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(pr_p_gradient_check ${COMMON_LIBRARIES})
-add_test(pr_p_gradient_check pr_p_gradient_check)
-
 add_executable(ring_check ring_check.c)
 target_include_directories(ring_check PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ring_check ${COMMON_LIBRARIES})
