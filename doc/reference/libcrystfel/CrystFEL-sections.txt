@@ -15,7 +15,9 @@ add_refl
 add_refl_to_list
 <SUBSECTION>
 first_refl
+first_refl_const
 next_refl
+next_refl_const
 <SUBSECTION>
 find_refl
 next_found_refl
@@ -24,7 +26,6 @@ get_detector_pos
 get_panel
 get_partiality
 get_lorentz
-get_partial
 get_indices
 get_symmetric_indices
 get_intensity
@@ -36,12 +37,14 @@ get_peak
 get_temp1
 get_temp2
 get_flag
+get_exerr
+get_khalf
+get_kpred
 <SUBSECTION>
 set_detector_pos
 set_panel
 set_partiality
 set_lorentz
-set_partial
 set_intensity
 set_redundancy
 set_esd_intensity
@@ -52,6 +55,9 @@ set_symmetric_indices
 set_temp1
 set_temp2
 set_flag
+set_exerr
+set_khalf
+set_kpred
 <SUBSECTION>
 copy_data
 num_reflections
@@ -130,6 +136,7 @@ rotate_cell
 cell_print
 resolution
 match_cell
+compare_cells
 match_cell_ab
 cell_is_sensible
 validate_cell
@@ -143,6 +150,7 @@ load_cell_from_file
 write_cell
 lattice_from_str
 cell_get_volume
+transform_cell_gsl
 </SECTION>
 
 <SECTION>
@@ -228,6 +236,7 @@ imagefile_get_type
 imagefile_open
 imagefile_read
 imagefile_read_simple
+is_cbf_file
 <SUBSECTION>
 new_imagefile_field_list
 add_imagefile_field
@@ -276,34 +285,48 @@ stat_scale_intensity
 <FILE>indexing</FILE>
 IndexingMethod
 IndexingPrivate
+IndexingFlags
 INDEXING_DEFAULTS_DIRAX
 INDEXING_DEFAULTS_MOSFLM
 INDEXING_DEFAULTS_XDS
 INDEXING_DEFAULTS_ASDF
 INDEXING_DEFAULTS_FELIX
+INDEXING_DEFAULTS_TAKETWO
 INDEXING_METHOD_MASK
-INDEXING_CONTROL_FLAGS
+detect_indexing_methods
 setup_indexing
 cleanup_indexing
 get_indm_from_string
+get_indm_from_string_2
 index_pattern
 index_pattern_2
 indexer_str
+dirax_probe
 dirax_prepare
 run_dirax
 dirax_cleanup
+mosflm_probe
 mosflm_prepare
 run_mosflm
 mosflm_cleanup
+xds_probe
 xds_prepare
 run_xds
 xds_cleanup
+asdf_probe
 asdf_prepare
 run_asdf
 asdf_cleanup
+felix_options
+felix_probe
 felix_prepare
 felix_index
 felix_cleanup
+taketwo_options
+taketwo_probe
+taketwo_prepare
+taketwo_index
+taketwo_cleanup
 </SECTION>
 
 <SECTION>
@@ -470,6 +493,7 @@ crystal_copy
 crystal_free
 <SUBSECTION>
 crystal_get_cell
+crystal_get_cell_const
 crystal_get_image
 crystal_get_mosaicity
 crystal_get_num_saturated_reflections
@@ -502,9 +526,9 @@ crystal_set_det_shift
 <FILE>geometry</FILE>
 PartialityModel
 gparam
-find_intersections
-find_intersections_to_res
-update_partialities
+predict_to_res
+update_predictions
+calculate_partialities
 polarisation_correction
 sphere_fraction
 gaussian_fraction
@@ -547,6 +571,7 @@ integrate_all
 integrate_all_2
 integrate_all_3
 integrate_all_4
+integrate_all_5
 integration_method
 </SECTION>
 
@@ -571,6 +596,7 @@ open_stream_for_read
 open_stream_for_write
 open_stream_for_write_2
 open_stream_for_write_3
+open_stream_for_write_4
 get_stream_fd
 close_stream
 read_chunk
@@ -582,6 +608,8 @@ is_stream
 write_command
 write_geometry_file
 stuff_from_stream
+stream_audit_info
+stream_has_old_indexers
 </SECTION>
 
 <SECTION>
