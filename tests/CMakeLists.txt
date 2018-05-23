@@ -51,7 +51,11 @@ add_test(prof2d_check prof2d_check)
 
 add_executable(ring_check ring_check.c)
 target_include_directories(ring_check PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(ring_check ${COMMON_LIBRARIES})
+target_link_libraries(ring_check PRIVATE ${COMMON_LIBRARIES})
+if (FDIP_FOUND)
+  target_include_directories(ring_check PRIVATE ${FDIP_INCLUDES})
+  target_link_libraries(ring_check PRIVATE ${FDIP_LIBRARIES})
+endif (FDIP_FOUND)
 add_test(ring_check ring_check)
 
 add_executable(symmetry_check symmetry_check.c)
