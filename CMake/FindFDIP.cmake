@@ -10,16 +10,16 @@ if (FDIP_INCLUDES)
   set (FDIP_FIND_QUIETLY TRUE)
 endif (FDIP_INCLUDES)
 
-find_path (FDIP_INCLUDES streakFinder.h
+find_path (FDIP_INCLUDES fastDiffractionImageProcessing/streakFinder.h
            PATHS
-		   ${CMAKE_INSTALL_PREFIX}/include
-           PATH_SUFFIXES fastDiffractionImageProcessing)
+           ${CMAKE_INSTALL_PREFIX}/include)
 
 find_library (FDIP_LIBRARIES fastDiffractionImageProcessing
               PATHS
-		      ${CMAKE_INSTALL_PREFIX}/lib)
+              ${CMAKE_INSTALL_PREFIX}/lib)
 
 # handle the QUIETLY and REQUIRED arguments and set FDIP_FOUND to TRUE if
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
+set(FDIP_INCLUDES ${FDIP_INCLUDES};${FDIP_INCLUDES}/fastDiffractionImageProcessing)
 find_package_handle_standard_args (FDIP DEFAULT_MSG FDIP_LIBRARIES FDIP_INCLUDES)
