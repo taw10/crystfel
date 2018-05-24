@@ -572,8 +572,8 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
 
 #ifdef HAVE_FDIP
 
-int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
-                             float sig_fac_peak_pix, float sig_fac_whole_peak,
+int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
+                             float min_snr_peak_pix, float min_snr_whole_peak,
                              float min_sig, float min_peak_over_neighbour,
                              int window_radius)
 {
@@ -591,9 +591,9 @@ int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
 	image->num_peaks = 0;
 	image->num_saturated_peaks = 0;
 
-	accuracy_consts.sigmaFactorBiggestPixel = sig_fac_biggest_pix;
-	accuracy_consts.sigmaFactorPeakPixel = sig_fac_peak_pix;
-	accuracy_consts.sigmaFactorWholePeak = sig_fac_whole_peak;
+	accuracy_consts.minSNR_biggestPixel = min_snr_biggest_pix;
+	accuracy_consts.minSNR_peakPixel = min_snr_peak_pix;
+	accuracy_consts.minSNR_wholePeak = min_snr_whole_peak;
 	accuracy_consts.minimumSigma = min_sig;
 	accuracy_consts.minimumPeakOversizeOverNeighbours = min_peak_over_neighbour;
 	accuracy_consts.windowRadius = window_radius;
@@ -659,8 +659,8 @@ int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
 
 #else
 
-int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
-                             float sig_fac_peak_pix, float sig_fac_whole_peak,
+int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
+                             float min_snr_peak_pix, float min_snr_whole_peak,
                              float min_sig, float min_peak_over_neighbour,
                              int window_radius)
 {

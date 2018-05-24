@@ -112,9 +112,9 @@ static void show_help(const char *s)
 "                            (peakfinder8 only) Default: 1200\n"
 "     --window-radius=<n>          (peakFinder9 only) defines the radius in which the "
 "                                  local background is estimated\n"
-"     --sig-fac-biggest-pix=<n>    (peakFinder9 only) min snr of the biggest pixel in "
+"     --min-snr-biggest-pix=<n>    (peakFinder9 only) min snr of the biggest pixel in "
 "                                  the peak\n"
-"     --sig-fac-peak-pix=<n>       (peakFinder9 only) min snr of a peak pixel\n"
+"     --min-snr-peak-pix=<n>       (peakFinder9 only) min snr of a peak pixel\n"
 "     --min-sig=<n>                (peakFinder9 only) minimum standard deviation of "
 "                                 the background\n"
 "     --min-peak-over-neighbour=<n>    (peakFinder9 only) just for speed. Biggest pixel"
@@ -270,9 +270,9 @@ int main(int argc, char *argv[])
 	iargs.min_res = 0;
 	iargs.max_res = 1200;
 	iargs.local_bg_radius = 3;
-	iargs.sig_fac_biggest_pix = 7.0;    /* peak finder 9  */
-	iargs.sig_fac_peak_pix = 6.0;
-	iargs.sig_fac_whole_peak = 9.0;
+	iargs.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
+	iargs.min_snr_peak_pix = 6.0;
+	iargs.min_snr_whole_peak = 9.0;
 	iargs.min_sig = 11.0;
 	iargs.min_peak_over_neighbour = -INFINITY;
 	iargs.window_radius = 3;
@@ -421,8 +421,8 @@ int main(int argc, char *argv[])
 		{"serial-start",             1, NULL,        344},
 		{"felix-domega",             1, NULL,        345},
 		{"felix-max-internal-angle", 1, NULL,        346},
-		{"sig-fac-biggest-pix"              ,1, NULL,347},
-		{"sig-fac-peak-pix"                 ,1, NULL,348},
+		{"min-snr-biggest-pix"              ,1, NULL,347},
+		{"min-snr-peak-pix"                 ,1, NULL,348},
 		{"min-sig"                          ,1, NULL,349},
 		{"min-peak-over-neighbour"          ,1, NULL,350},
 		{"window-radius"                    ,1, NULL,351},
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
 
 			case 311 :
 			iargs.min_snr = strtof(optarg, NULL);
-			iargs.sig_fac_whole_peak = iargs.min_snr;
+			iargs.min_snr_whole_peak = iargs.min_snr;
 			break;
 
 			case 313 :
@@ -754,11 +754,11 @@ int main(int argc, char *argv[])
 			break;
 
 			case 347:
-			iargs.sig_fac_biggest_pix = strtof(optarg, NULL);
+			iargs.min_snr_biggest_pix = strtof(optarg, NULL);
 			break;
 
 			case 348:
-			iargs.sig_fac_peak_pix = strtof(optarg, NULL);
+			iargs.min_snr_peak_pix = strtof(optarg, NULL);
 			break;
 
 			case 349:

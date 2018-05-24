@@ -85,9 +85,9 @@ struct index_args
 	int max_pix_count;
 	int local_bg_radius;
 	int min_peaks;
-	float sig_fac_biggest_pix;
-	float sig_fac_peak_pix;
-	float sig_fac_whole_peak;
+	float min_snr_biggest_pix;
+	float min_snr_peak_pix;
+	float min_snr_whole_peak;
 	float min_sig;
 	float min_peak_over_neighbour;
 	int window_radius;

@@ -225,9 +225,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 		case PEAK_PEAKFINDER9:
 		if ( search_peaks_peakfinder9(&image,
-		                              iargs->sig_fac_biggest_pix,
-		                              iargs->sig_fac_peak_pix,
-		                              iargs->sig_fac_whole_peak,
+		                              iargs->min_snr_biggest_pix,
+		                              iargs->min_snr_peak_pix,
+		                              iargs->min_snr_whole_peak,
 		                              iargs->min_sig,
 		                              iargs->min_peak_over_neighbour,
 		                              iargs->window_radius) )
