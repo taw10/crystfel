@@ -100,7 +100,7 @@ static void show_help(const char *s)
 "     --min-gradient=<n>    Minimum squared gradient\n"
 "                            (zaef only) Default: 100,000\n"
 "     --min-snr=<n>         Minimum signal/noise ratio for peaks\n"
-"                            (zaef,pekafinder8, pekafinder9 only) Default: 5\n"
+"                            (zaef,peakfinder8, peakfinder9 only) Default: 5\n"
 "     --min-pix-count=<n>   Minimum number of pixels per peak\n"
 "                            (peakfinder8 only) Default: 2\n"
 "     --max-pix-count=<n>   Maximum number of pixels per peak\n"
