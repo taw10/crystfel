@@ -56,10 +56,12 @@ extern int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
                                     int local_bg_radius, int min_res,
                                     int max_res, int use_saturated);
 
-extern int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
-        float sig_fac_peak_pix, float sig_fac_whole_peak, float min_sig,
-        float min_peak_over_neighbour, int window_radius);
-
+extern int search_peaks_peakfinder9(struct image *image,
+                                    float sig_fac_biggest_pix,
+                                    float sig_fac_peak_pix,
+                                    float sig_fac_whole_peak, float min_sig,
+                                    float min_peak_over_neighbour,
+                                    int window_radius);
 
 extern int peak_sanity_check(struct image *image, Crystal **crystals,
                              int n_cryst);
