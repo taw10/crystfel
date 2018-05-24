@@ -49,7 +49,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <float.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -223,7 +222,6 @@ static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copym
 int main(int argc, char *argv[])
 {
 	int c;
-	unsigned int tmp_enum;
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
