@@ -90,7 +90,6 @@ struct index_args
 	float min_snr_whole_peak;
 	float min_sig;
 	float min_peak_over_neighbour;
-	int window_radius;
 	struct imagefile_field_list *copyme;
 	int integrate_saturated;
 	int use_saturated;

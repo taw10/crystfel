@@ -105,13 +105,11 @@ static void show_help(const char *s)
 "     --max-pix-count=<n>   Maximum number of pixels per peak\n"
 "                            (peakfinder8 only) Default: 200\n"
 "     --local-bg-radius=<n> Radius (pixels) for local background estimation\n"
-"                            (peakfinder8 only) Default: 3\n"
+"                            (peakfinder8, peakfinder9 only) Default: 3\n"
 "     --min-res=<n>         Minimum resolution for peak search (in pixels)\n"
 "                            (peakfinder8 only) Default: 0\n"
 "     --max-res=<n>         Maximum resolution for peak search (in pixels)\n"
 "                            (peakfinder8 only) Default: 1200\n"
-"     --window-radius=<n>          (peakFinder9 only) defines the radius in which the "
-"                                  local background is estimated\n"
 "     --min-snr-biggest-pix=<n>    (peakFinder9 only) min snr of the biggest pixel in "
 "                                  the peak\n"
 "     --min-snr-peak-pix=<n>       (peakFinder9 only) min snr of a peak pixel\n"
@@ -275,7 +273,6 @@ int main(int argc, char *argv[])
 	iargs.min_snr_whole_peak = 9.0;
 	iargs.min_sig = 11.0;
 	iargs.min_peak_over_neighbour = -INFINITY;
-	iargs.window_radius = 3;
 	iargs.check_hdf5_snr = 0;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
@@ -425,7 +422,6 @@ int main(int argc, char *argv[])
 		{"min-snr-peak-pix"                 ,1, NULL,348},
 		{"min-sig"                          ,1, NULL,349},
 		{"min-peak-over-neighbour"          ,1, NULL,350},
-		{"window-radius"                    ,1, NULL,351},
 
 		{0, 0, NULL, 0}
 	};
@@ -768,9 +764,6 @@ int main(int argc, char *argv[])
 			case 350:
 			iargs.min_peak_over_neighbour = strtof(optarg, NULL);
 			break;
-
-			case 351:
-			iargs.window_radius = atoi(optarg);
 
 			case 0 :
 			break;

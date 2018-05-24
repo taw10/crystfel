@@ -230,7 +230,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->min_snr_whole_peak,
 		                              iargs->min_sig,
 		                              iargs->min_peak_over_neighbour,
-		                              iargs->window_radius) )
+		                              iargs->local_bg_radius) )
 		{
 			if ( image.event != NULL ) {
 				ERROR("Failed to find peaks in image %s"
