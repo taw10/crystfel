@@ -665,7 +665,7 @@ int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
                              int window_radius)
 {
 	ERROR("This copy of CrystFEL was compiled without peakfinder9 support.\n");
-	return 0;
+	return 1;
 }
 
 #endif // HAVE_FDIP

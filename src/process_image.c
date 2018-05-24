@@ -232,8 +232,14 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->min_peak_over_neighbour,
 		                              iargs->window_radius) )
 		{
-			ERROR("Couldn't get enough memory to perform "
-			      "peakFinder9.\n");
+			if ( image.event != NULL ) {
+				ERROR("Failed to find peaks in image %s"
+				      "(event %s).\n", image.filename,
+				      get_event_string(image.event));
+			} else {
+				ERROR("Failed to find peaks in image %s.",
+				      image.filename);
+			}
 		}
 		break;
 
