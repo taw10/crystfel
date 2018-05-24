@@ -141,7 +141,7 @@ static void check_hung_workers(struct sandbox *sb)
 		}
 
 		if ( tnow - sb->last_response[i] > 240 ) {
-			STATUS("Worker %i did not respond for 240 seconds - "
+			STATUS("Worker %i did not respond for 4 minutes - "
 			       "sending it SIGKILL.\n", i);
 			kill(sb->pids[i], SIGKILL);
 			stamp_response(sb, i);
