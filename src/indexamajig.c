@@ -270,7 +270,6 @@ int main(int argc, char *argv[])
 	iargs.local_bg_radius = 3;
 	iargs.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
 	iargs.min_snr_peak_pix = 6.0;
-	iargs.min_snr_whole_peak = 9.0;
 	iargs.min_sig = 11.0;
 	iargs.min_peak_over_neighbour = -INFINITY;
 	iargs.check_hdf5_snr = 0;
@@ -521,7 +520,6 @@ int main(int argc, char *argv[])
 
 			case 311 :
 			iargs.min_snr = strtof(optarg, NULL);
-			iargs.min_snr_whole_peak = iargs.min_snr;
 			break;
 
 			case 313 :

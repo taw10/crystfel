@@ -87,7 +87,6 @@ struct index_args
 	int min_peaks;
 	float min_snr_biggest_pix;
 	float min_snr_peak_pix;
-	float min_snr_whole_peak;
 	float min_sig;
 	float min_peak_over_neighbour;
 	struct imagefile_field_list *copyme;
