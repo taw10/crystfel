@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -62,6 +62,8 @@ struct sb_shm
 	int no_more;
 	char last_ev[MAX_NUM_WORKERS][MAX_EV_LEN];
 	int pings[MAX_NUM_WORKERS];
+	time_t time_last_start[MAX_NUM_WORKERS];
+	int warned_long_running[MAX_NUM_WORKERS];
 
 	pthread_mutex_t totals_lock;
 	int n_processed;

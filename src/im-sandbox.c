@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
@@ -145,6 +145,16 @@ static void check_hung_workers(struct sandbox *sb)
 			       "sending it SIGKILL.\n", i);
 			kill(sb->pids[i], SIGKILL);
 			stamp_response(sb, i);
+		}
+
+		if ( tnow - sb->shared->time_last_start[i] > 600 ) {
+			if ( !sb->shared->warned_long_running[i] ) {
+				STATUS("Worker %i has been working on one "
+				       "frame for more than 10 minutes.\n", i);
+				STATUS("Event ID is: %s\n",
+				       sb->shared->last_ev[i]);
+				sb->shared->warned_long_running[i] = 1;
+			}
 		}
 
 	}
@@ -378,6 +388,7 @@ static void run_work(const struct index_args *iargs, Stream *st,
 
 		}
 
+		sb->shared->time_last_start[cookie] = get_monotonic_seconds();
 		process_image(iargs, &pargs, st, cookie, tmpdir, ser,
 		              sb->shared, taccs);
 
@@ -558,6 +569,8 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 	sb->shared->pings[slot] = 0;
 	sb->last_ping[slot] = 0;
+	sb->shared->time_last_start[slot] = get_monotonic_seconds();
+	sb->shared->warned_long_running[slot] = 0;
 
 	p = fork();
 	if ( p == -1 ) {
