@@ -46,6 +46,12 @@
 #include <pthread.h>
 #include <fenv.h>
 
+#ifdef HAVE_FDIP
+#include "fastDiffractionImageProcessing/adaptions/crystfel/peakFinder9.h"
+#include "fastDiffractionImageProcessing/adaptions/crystfel/mask.h"
+#include "fastDiffractionImageProcessing/peakList.h"
+#endif
+
 #include "image.h"
 #include "utils.h"
 #include "peaks.h"
@@ -564,15 +570,7 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
 }
 
 
-//#define HAVE_FDIP
 #ifdef HAVE_FDIP
-
-#include "fastDiffractionImageProcessing/adaptions/crystfel/peakFinder9.h"
-#include "fastDiffractionImageProcessing/adaptions/crystfel/mask.h"
-#include "fastDiffractionImageProcessing/peakList.h"
-
-#include "fastDiffractionImageProcessing/peakFinder9.h" //debug, only for eclipse
-#include "fastDiffractionImageProcessing/detectorRawFormat.h" //debug, only for eclipse
 
 int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
                              float sig_fac_peak_pix, float sig_fac_whole_peak,
