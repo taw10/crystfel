@@ -223,6 +223,19 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		}
 		break;
 
+		case PEAK_PEAKFINDER9:
+		if ( search_peaks_peakfinder9(&image,
+		    iargs->sig_fac_biggest_pix,
+		    iargs->sig_fac_peak_pix,
+		    iargs->sig_fac_whole_peak, iargs->min_sig,
+		    iargs->min_peak_over_neighbour,
+		    iargs->window_radius) )
+		{
+			ERROR("Couldn't get enough memory to perform "
+			      "peakFinder9.\n");
+		}
+		break;
+
 	}
 
 	restore_image_data(image.dp, image.det, prefilter);

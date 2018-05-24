@@ -14,6 +14,7 @@
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
  *   2017      Valerio Mariani <valerio.mariani@desy.de>
+ *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -48,6 +49,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <float.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -84,7 +86,7 @@ static void show_help(const char *s)
 "     --profile             Show timing data for performance monitoring\n"
 "     --temp-dir=<path>     Put the temporary folder under <path>\n"
 "\nPeak search options:\n\n"
-"     --peaks=<method>      Peak search method (zaef,peakfinder8,hdf5,cxi)\n"
+"     --peaks=<method>      Peak search method (zaef,peakfinder8,peakfinder9,hdf5,cxi)\n"
 "                            Default: zaef\n"
 "     --peak-radius=<r>     Integration radii for peak search\n"
 "     --min-peaks=<n>       Minimum number of peaks for indexing\n"
@@ -98,7 +100,7 @@ static void show_help(const char *s)
 "     --min-gradient=<n>    Minimum squared gradient\n"
 "                            (zaef only) Default: 100,000\n"
 "     --min-snr=<n>         Minimum signal/noise ratio for peaks\n"
-"                            (zaef,pekafinder8 only) Default: 5\n"
+"                            (zaef,pekafinder8, pekafinder9 only) Default: 5\n"
 "     --min-pix-count=<n>   Minimum number of pixels per peak\n"
 "                            (peakfinder8 only) Default: 2\n"
 "     --max-pix-count=<n>   Maximum number of pixels per peak\n"
@@ -109,6 +111,15 @@ static void show_help(const char *s)
 "                            (peakfinder8 only) Default: 0\n"
 "     --max-res=<n>         Maximum resolution for peak search (in pixels)\n"
 "                            (peakfinder8 only) Default: 1200\n"
+"    --window-radius=<n>          (peakFinder9 only) defines the radius in which the "
+"                                 local background is estimated\n"
+"    --sig-fac-biggest-pix=<n>    (peakFinder9 only) min snr of the biggest pixel in "
+"                                 the peak\n"
+"    --sig-fac-peak-pix=<n>       (peakFinder9 only) min snr of a peak pixel\n"
+"    --min-sig=<n>                (peakFinder9 only) minimum standard deviation of "
+"                                 the background\n"
+"    --min-peak-over-neighbour=<n>    (peakFinder9 only) just for speed. Biggest pixel"
+"                                     in peak must be n higher than this.\n"
 "     --no-use-saturated    Reject saturated peaks\n"
 "     --no-revalidate       Don't re-integrate and check HDF5 peaks\n"
 "     --no-half-pixel-shift\n"
@@ -212,6 +223,7 @@ static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copym
 int main(int argc, char *argv[])
 {
 	int c;
+	unsigned int tmp_enum;
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
@@ -260,6 +272,12 @@ int main(int argc, char *argv[])
 	iargs.min_res = 0;
 	iargs.max_res = 1200;
 	iargs.local_bg_radius = 3;
+	iargs.sig_fac_biggest_pix = 7.0;    /* peak finder 9  */
+	iargs.sig_fac_peak_pix = 6.0;
+	iargs.sig_fac_whole_peak = 9.0;
+	iargs.min_sig = 11.0;
+	iargs.min_peak_over_neighbour = -INFINITY;
+	iargs.window_radius = 3;
 	iargs.check_hdf5_snr = 0;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
@@ -405,6 +423,11 @@ int main(int argc, char *argv[])
 		{"serial-start",             1, NULL,         44},
 		{"felix-domega",             1, NULL,         45},
 		{"felix-max-internal-angle", 1, NULL,         46},
+		{"sig-fac-biggest-pix"              ,1, NULL, 47},
+		{"sig-fac-peak-pix"                 ,1, NULL, 48},
+		{"min-sig"                          ,1, NULL, 49},
+		{"min-peak-over-neighbour"          ,1, NULL, 50},
+		{"window-radius"                    ,1, NULL, 51},
 
 		{0, 0, NULL, 0}
 	};
@@ -504,6 +527,7 @@ int main(int argc, char *argv[])
 
 			case 11 :
 			iargs.min_snr = strtof(optarg, NULL);
+			iargs.sig_fac_whole_peak = iargs.min_snr;
 			break;
 
 			case 13 :
@@ -731,6 +755,25 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 47:
+			iargs.sig_fac_biggest_pix = strtof(optarg, NULL);
+			break;
+
+			case 48:
+			iargs.sig_fac_peak_pix = strtof(optarg, NULL);
+			break;
+
+			case 49:
+			iargs.min_sig = strtof(optarg, NULL);
+			break;
+
+			case 50:
+			iargs.min_peak_over_neighbour = strtof(optarg, NULL);
+			break;
+
+			case 51:
+			iargs.window_radius = atoi(optarg);
+
 			case 0 :
 			break;
 
@@ -789,6 +832,8 @@ int main(int argc, char *argv[])
 		iargs.peaks = PEAK_HDF5;
 	} else if ( strcmp(speaks, "cxi") == 0 ) {
 		iargs.peaks = PEAK_CXI;
+	} else if ( strcmp(speaks, "peakfinder9") == 0 ) {
+		iargs.peaks = PEAK_PEAKFINDER9;
 	} else {
 		ERROR("Unrecognised peak detection method '%s'\n", speaks);
 		return 1;

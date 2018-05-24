@@ -51,6 +51,8 @@ If you use \fB--peaks=zaef\fR, indexamajig will use a simple gradient search aft
 
 If you instead use \fB--peaks=peakfinder8\fR, indexamajig will use the "peakfinder8" peak finding algorithm describerd in Barty et al. (2014). Pixels above a radius-dependent intensity threshold are considered as candidate peaks (although the user sets an absolute minimum threshold for candidate peaks). Peaks are then only accepted if their signal to noise level over the local background is sufficiently high. Peaks can include multiple pixels and the user can reject a peak if it includes too many or too few. The distance of a peak from the center of the detector can also be used as a filtering criterion. Note that the peakfinder8 will not report more than 2048 peaks for each panel: any additional peak is ignored.
 
+If you instead use \fB--peaks=peakfinder9\fR, indexamajig will user the "peakfinder9" peak finding algorithm described in the master thesis "Real-time image analysis and data compression in high throughput X-ray diffraction experiments" by Gevorkov. Other than peakFinder8, peakFinder9 uses local background estimation based on border pixels in a specified radius (\fB--window-radius\fR). For being fast and precise, a hierarchy of conditions is used. First condition is only useful for speed consideration, it demands that a pixel that is the biggest pixel in a peak must be larger than every border pixel by a constant value (\fB--min-peak-over-neighbour\fR). Second condition ensures, that the pixel passing the previous condition is the highest pixel in the peak. It assumes, that peaks rise monotonically towards the biggest pixel. Third condition ensures, that the biggest pixel in the peak is significantly over the noise level (\fB--sig-fac-biggest-pix\fR) by computing the local statistics from the border pixels in a specified radius. Fourth condition sums up all pixels belonging to the peak (\fB--sig-fac-peak-pix\fR) and demands that the whole peak must be significantly over the noise level (\fB--min-snr\fR). Only if all conditions are passed, the peak is accepted.
+
 You can suppress peak detection altogether for a panel in the geometry file by specifying the "no_index" value for the panel as non-zero.
 
 
@@ -254,7 +256,33 @@ Set the square of the gradient threshold for peak detection using \fB--peaks=zae
 .PD 0
 .IP \fB--min-snr=\fR\fIsnr\fR
 .PD
-Set the minimum I/sigma(I) for peak detection when using \fB--peaks=zaef\fR or \fB--peaks=peakfinder8\fR.  The default is \fB--min-snr=5\fR.
+
+Set the minimum I/sigma(I) for peak detection when using \fB--peaks=zaef\fR, \fB--peaks=peakfinder8\fR or \fB--peaks=peakfinder9\fR.  The default is \fB--min-snr=5\fR for \fB--peaks=zaef\fR and \fB--peaks=peakfinder8\fR, \fB--min-snr=9\fR for \fB--peaks=peakfinder9\fR.
+
+.PD 0
+.IP \fB--window-radius=<n>\fR
+.PD
+(peakFinder9 only) defines the radius in which the local background is estimated. Should be > max radius of peak. Default is 3.
+
+.PD 0
+.IP \fB--sig-fac-biggest-pix=<n>\fR
+.PD
+(peakFinder9 only) min snr of the biggest pixel in the peak, given as a factor of the standard deviation. Default is 7.0.
+
+.PD 0
+.IP \fB--sig-fac-peak-pix=<n>\fR
+.PD
+(peakFinder9 only) min snr of a peak pixel, given as a factor of the standard deviation. Should be smaller or equal to sig_fac_biggest_pix. Default is 6.0.
+
+.PD 0
+.IP \fB--min-sig=<n>\fR
+.PD
+(peakFinder9 only) minimum standard deviation of the background. Prevents finding of peaks in erroneous or highly shadowed unmasked regions. Default is 11.0.
+
+.PD 0
+.IP \fB--min-peak-over-neighbour=<n>\fR
+.PD
+(peakFinder9 only) just for speed. Biggest pixel must be n higher than the pixels in window_radius distance to be a candidate for the biggest pixel in a peak. Should be chosen as a small positive number, a few times smaller than the weakest expected peak. Can be set to -INFINITY to turn of speedup and search with max precision! Default is -INFINITY.
 
 .PD 0
 .IP \fB--min-pix-count=\fR\fIcnt\fR

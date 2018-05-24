@@ -9,6 +9,7 @@
  * Authors:
  *   2010-2016 Thomas White <taw@physics.org>
  *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
+ *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -44,7 +45,8 @@ struct index_args;
 
 
 enum {
-        PEAK_PEAKFINDER8,
+	PEAK_PEAKFINDER9,
+	PEAK_PEAKFINDER8,
 	PEAK_ZAEF,
 	PEAK_HDF5,
 	PEAK_CXI,
@@ -83,6 +85,12 @@ struct index_args
 	int max_pix_count;
 	int local_bg_radius;
 	int min_peaks;
+	float sig_fac_biggest_pix;
+	float sig_fac_peak_pix;
+	float sig_fac_whole_peak;
+	float min_sig;
+	float min_peak_over_neighbour;
+	int window_radius;
 	struct imagefile_field_list *copyme;
 	int integrate_saturated;
 	int use_saturated;

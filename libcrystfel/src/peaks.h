@@ -9,6 +9,7 @@
  * Authors:
  *   2010-2015 Thomas White <taw@physics.org>
  *   2017      Valerio Mariani <valerio.mariani@desy.de>
+ *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -54,6 +55,11 @@ extern int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
                                     int mix_pix_count, int max_pix_count,
                                     int local_bg_radius, int min_res,
                                     int max_res, int use_saturated);
+
+extern int search_peaks_peakfinder9(struct image *image, float sig_fac_biggest_pix,
+        float sig_fac_peak_pix, float sig_fac_whole_peak, float min_sig,
+        float min_peak_over_neighbour, int window_radius);
+
 
 extern int peak_sanity_check(struct image *image, Crystal **crystals,
                              int n_cryst);
