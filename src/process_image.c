@@ -201,7 +201,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		             iargs->use_saturated);
 		break;
 
-	        case PEAK_PEAKFINDER8:
+		case PEAK_PEAKFINDER8:
 		if ( search_peaks_peakfinder8(&image, 2048,
 		                               iargs->threshold,
 		                               iargs->min_snr,
