@@ -97,17 +97,22 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
         DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
 # API docs
-find_package(GtkDoc 1.25)
-if (GTKDOC_FOUND)
-  configure_file(doc/reference/libcrystfel/xml/gtkdocentities.ent.cmake.in
-                 docs/xml/gtkdocentities.ent)
-  configure_file(doc/reference/libcrystfel/CrystFEL-docs.sgml
-                 docs/CrystFEL-docs.sgml COPYONLY)
-  add_custom_target(documentation ALL VERBATIM COMMAND
-                    ${CMAKE_SOURCE_DIR}/doc/reference/libcrystfel/build-docs)
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs/html
-          DESTINATION ${CMAKE_INSTALL_DOCDIR})
-endif (GTKDOC_FOUND)
+option(BUILD_API_DOCS "Build API documentation" OFF)
+if (BUILD_API_DOCS)
+  find_package(GtkDoc 1.25)
+  if (GTKDOC_FOUND)
+    configure_file(doc/reference/libcrystfel/xml/gtkdocentities.ent.cmake.in
+                   docs/xml/gtkdocentities.ent)
+    configure_file(doc/reference/libcrystfel/CrystFEL-docs.sgml
+                   docs/CrystFEL-docs.sgml COPYONLY)
+    add_custom_target(documentation ALL VERBATIM COMMAND
+                      ${CMAKE_SOURCE_DIR}/doc/reference/libcrystfel/build-docs)
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs/html
+            DESTINATION ${CMAKE_INSTALL_DOCDIR})
+  else (GTKDOC_FOUND)
+    message(SEND_ERROR "gtk-doc not found")
+  endif (GTKDOC_FOUND)
+endif (BUILD_API_DOCS)
 
 # ----------------------------------------------------------------------
 # Build Target
