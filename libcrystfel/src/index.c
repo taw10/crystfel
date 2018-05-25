@@ -474,8 +474,6 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 
 		}
 
-		n++;
-
 	}
 
 	free(ipriv->methods);
