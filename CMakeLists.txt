@@ -111,7 +111,6 @@ if (BUILD_API_DOCS)
 endif (BUILD_API_DOCS)
 
 # ----------------------------------------------------------------------
-# Build Target
 # partial_sim
 
 set(PARTIAL_SIM_SOURCES src/partial_sim.c)
@@ -121,7 +120,6 @@ target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partial_sim ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # pattern_sim
 
 set(PATTERN_SIM_SOURCES src/pattern_sim.c src/diffraction.c)
@@ -144,7 +142,6 @@ set_target_properties(pattern_sim PROPERTIES
                       RESOURCE "${PATTERN_SIM_RESOURCE_FILES}")
 
 # ----------------------------------------------------------------------
-# Build Target
 # hdfsee
 
 if (GTK2_FOUND)
@@ -171,7 +168,6 @@ if (GTK2_FOUND)
 endif (GTK2_FOUND)
 
 # ----------------------------------------------------------------------
-# Build Target
 # cell_explorer
 
 if (GTK2_FOUND)
@@ -189,7 +185,6 @@ if (GTK2_FOUND)
 endif (GTK2_FOUND)
 
 # ----------------------------------------------------------------------
-# Build Target
 # render_hkl
 
 if (CAIRO_FOUND)
@@ -207,7 +202,6 @@ if (CAIRO_FOUND)
 endif (CAIRO_FOUND)
 
 # ----------------------------------------------------------------------
-# Build Target
 # process_hkl
 
 set(PROCESS_HKL_SOURCES src/process_hkl.c)
@@ -216,7 +210,6 @@ target_include_directories(process_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(process_hkl ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # list_events
 
 set(LIST_EVENTS_SOURCES src/list_events.c)
@@ -225,7 +218,6 @@ target_include_directories(list_events PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(list_events ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # indexamajig
 
 set(INDEXAMAJIG_SOURCES src/indexamajig.c src/im-sandbox.c src/process_image.c
@@ -236,7 +228,6 @@ target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(indexamajig ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # get_hkl
 
 set(GET_HKL_SOURCES src/get_hkl.c)
@@ -245,7 +236,6 @@ target_include_directories(get_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(get_hkl ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # compare_hkl
 
 set(COMPARE_HKL_SOURCES src/compare_hkl.c)
@@ -254,7 +244,6 @@ target_include_directories(compare_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(compare_hkl ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # check_hkl
 
 set(CHECK_HKL_SOURCES src/check_hkl.c)
@@ -263,7 +252,6 @@ target_include_directories(check_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(check_hkl ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # partialator
 
 set(PARTIALATOR_SOURCES src/partialator.c src/post-refinement.c src/merge.c
@@ -273,7 +261,6 @@ target_include_directories(partialator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partialator ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # ambigator
 
 set(AMBIGATOR_SOURCES src/ambigator.c)
@@ -282,7 +269,6 @@ target_include_directories(ambigator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ambigator ${COMMON_LIBRARIES})
 
 # ----------------------------------------------------------------------
-# Build Target
 # geoptimiser
 
 set(GEOPTIMISER_SOURCES src/geoptimiser.c src/hdfsee-render.c)
@@ -313,7 +299,6 @@ if (TIFF_FOUND)
 endif (TIFF_FOUND)
 
 # ----------------------------------------------------------------------
-# Build Target
 # whirligig
 
 set(WHIRLIGIG_SOURCES src/whirligig.c)
@@ -323,7 +308,7 @@ target_link_libraries(whirligig ${COMMON_LIBRARIES})
 
 
 # ----------------------------------------------------------------------
-# install targets
+# Install targets
 
 install(TARGETS
 	partial_sim
