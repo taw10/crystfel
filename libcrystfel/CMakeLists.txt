@@ -76,44 +76,46 @@ add_library(${PROJECT_NAME} SHARED
 	${LIBCRYSTFEL_FFTW_SOURCES}
         ${LIBCRYSTFEL_HEADERS})
 
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH 1)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC util ${HDF5_C_LIBRARIES})
 
 if (XGANDALF_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${XGANDALF_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${XGANDALF_LIBRARIES})
 endif (XGANDALF_FOUND)
 
 if (FDIP_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${FDIP_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${FDIP_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${FDIP_LIBRARIES})
 endif (FDIP_FOUND)
 
 if (PINKINDEXER_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${PINKINDEXER_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${PINKINDEXER_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${PINKINDEXER_LIBRARIES})
 endif (PINKINDEXER_FOUND)
 
 if (NBP_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${NBP_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${NBP_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${NBP_LIBRARIES})
 endif (NBP_FOUND)
 
 if (FFTW_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${FFTW_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${FFTW_LIBRARIES})
 endif (FFTW_FOUND)
 
 if (CBF_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${CBF_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CBF_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${CBF_LIBRARIES})
 endif (CBF_FOUND)
 
 if (CURSES_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${CURSES_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CURSES_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${CURSES_LIBRARIES})
 endif (CURSES_FOUND)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)

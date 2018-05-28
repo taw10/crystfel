@@ -32,8 +32,9 @@ set(CMAKE_C_STANDARD 99)
 # Make programs work without LD_LIBRARY_PATH when installed to a non system directory
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
-   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib:${CMAKE_INSTALL_RPATH}")
 endif("${isSystemDir}" STREQUAL "-1")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH 1)
 
 # Common include directories and libraries
 
