@@ -78,6 +78,9 @@ add_library(${PROJECT_NAME} SHARED
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH 1)
 
+set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${CRYSTFEL_API_VERSION})
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${CRYSTFEL_VERSION})
+
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})

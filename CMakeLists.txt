@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
-project(crystfel VERSION 0.7.0 LANGUAGES C)
+set(CRYSTFEL_VERSION 0.7.0)
+set(CRYSTFEL_API_VERSION 10)
+project(crystfel VERSION ${CRYSTFEL_VERSION} LANGUAGES C)
 
 include(GNUInstallDirs)
 
