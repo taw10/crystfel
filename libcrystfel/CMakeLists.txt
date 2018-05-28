@@ -121,5 +121,9 @@ endif (CURSES_FOUND)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
 install (TARGETS libcrystfel
-         RUNTIME DESTINATION bin
-         LIBRARY DESTINATION lib)
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+# crystfel.pc
+configure_file(crystfel.pc.in crystfel.pc)
+install(FILES ${CMAKE_BINARY_DIR}/libcrystfel/crystfel.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

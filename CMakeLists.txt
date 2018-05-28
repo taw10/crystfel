@@ -30,9 +30,9 @@ add_definitions(-DHAVE_CONFIG_H -DDATADIR=\"${CMAKE_INSTALL_FULL_DATADIR}\")
 set(CMAKE_C_STANDARD 99)
 
 # Make programs work without LD_LIBRARY_PATH when installed to a non system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_LIBDIR}" isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
-  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib:${CMAKE_INSTALL_RPATH}")
+  list(INSERT CMAKE_INSTALL_RPATH 0 ${CMAKE_INSTALL_FULL_LIBDIR})
 endif("${isSystemDir}" STREQUAL "-1")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH 1)
 
@@ -87,11 +87,6 @@ add_subdirectory(libcrystfel)
 # Add tests
 enable_testing()
 add_subdirectory(tests)
-
-# crystfel.pc
-configure_file(libcrystfel/crystfel.pc.in crystfel.pc)
-install(FILES ${CMAKE_BINARY_DIR}/crystfel.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # Install scripts
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
@@ -345,8 +340,7 @@ install(TARGETS
 	geoptimiser
 	# hdfsee, cell_explorer, render_hkl only if dependencies are satisfied
 
-	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	RESOURCE DESTINATION share/crystfel
 )
 
