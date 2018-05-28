@@ -29,13 +29,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_definitions(-DHAVE_CONFIG_H -DDATADIR=\"${CMAKE_INSTALL_FULL_DATADIR}\")
 set(CMAKE_C_STANDARD 99)
 
-# Make programs work without LD_LIBRARY_PATH when installed to a non system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_LIBDIR}" isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-  list(INSERT CMAKE_INSTALL_RPATH 0 ${CMAKE_INSTALL_FULL_LIBDIR})
-endif("${isSystemDir}" STREQUAL "-1")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH 1)
-
 # Common include directories and libraries
 
 set(COMMON_INCLUDES ${HDF5_INCLUDE_DIRS})
@@ -114,10 +107,10 @@ endif (BUILD_API_DOCS)
 # partial_sim
 
 set(PARTIAL_SIM_SOURCES src/partial_sim.c)
-
 add_executable(partial_sim ${PARTIAL_SIM_SOURCES})
 target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partial_sim ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
 
 # ----------------------------------------------------------------------
 # pattern_sim
@@ -141,6 +134,8 @@ endif(HAVE_OPENCL)
 set_target_properties(pattern_sim PROPERTIES
                       RESOURCE "${PATTERN_SIM_RESOURCE_FILES}")
 
+list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
+
 # ----------------------------------------------------------------------
 # hdfsee
 
@@ -160,10 +155,7 @@ if (GTK2_FOUND)
 
   set_target_properties(hdfsee PROPERTIES RESOURCE "${HDFSEE_RESOURCE_FILES}")
 
-  install (TARGETS hdfsee
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib
-           RESOURCE DESTINATION share/crystfel)
+  list(APPEND CRYSTFEL_EXECUTABLES hdfsee)
 
 endif (GTK2_FOUND)
 
@@ -178,9 +170,7 @@ if (GTK2_FOUND)
   target_include_directories(cell_explorer PRIVATE ${COMMON_INCLUDES} ${GTK2_INCLUDE_DIRS})
   target_link_libraries(cell_explorer ${COMMON_LIBRARIES} ${GTK2_LIBRARIES})
 
-  install (TARGETS cell_explorer
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib)
+  list(APPEND CRYSTFEL_EXECUTABLES cell_explorer)
 
 endif (GTK2_FOUND)
 
@@ -195,9 +185,7 @@ if (CAIRO_FOUND)
   target_include_directories(render_hkl PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS})
   target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES})
 
-  install (TARGETS render_hkl
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib)
+  list(APPEND CRYSTFEL_EXECUTABLES render_hkl)
 
 endif (CAIRO_FOUND)
 
@@ -208,6 +196,7 @@ set(PROCESS_HKL_SOURCES src/process_hkl.c)
 add_executable(process_hkl ${PROCESS_HKL_SOURCES})
 target_include_directories(process_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(process_hkl ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES process_hkl)
 
 # ----------------------------------------------------------------------
 # list_events
@@ -216,6 +205,7 @@ set(LIST_EVENTS_SOURCES src/list_events.c)
 add_executable(list_events ${LIST_EVENTS_SOURCES})
 target_include_directories(list_events PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(list_events ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES list_events)
 
 # ----------------------------------------------------------------------
 # indexamajig
@@ -226,6 +216,7 @@ set(INDEXAMAJIG_SOURCES src/indexamajig.c src/im-sandbox.c src/process_image.c
 add_executable(indexamajig ${INDEXAMAJIG_SOURCES})
 target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(indexamajig ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES indexamajig)
 
 # ----------------------------------------------------------------------
 # get_hkl
@@ -234,6 +225,7 @@ set(GET_HKL_SOURCES src/get_hkl.c)
 add_executable(get_hkl ${GET_HKL_SOURCES})
 target_include_directories(get_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(get_hkl ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES get_hkl)
 
 # ----------------------------------------------------------------------
 # compare_hkl
@@ -242,6 +234,7 @@ set(COMPARE_HKL_SOURCES src/compare_hkl.c)
 add_executable(compare_hkl ${COMPARE_HKL_SOURCES})
 target_include_directories(compare_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(compare_hkl ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES compare_hkl)
 
 # ----------------------------------------------------------------------
 # check_hkl
@@ -250,6 +243,7 @@ set(CHECK_HKL_SOURCES src/check_hkl.c)
 add_executable(check_hkl ${CHECK_HKL_SOURCES})
 target_include_directories(check_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(check_hkl ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES check_hkl)
 
 # ----------------------------------------------------------------------
 # partialator
@@ -259,6 +253,7 @@ set(PARTIALATOR_SOURCES src/partialator.c src/post-refinement.c src/merge.c
 add_executable(partialator ${PARTIALATOR_SOURCES})
 target_include_directories(partialator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partialator ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES partialator)
 
 # ----------------------------------------------------------------------
 # ambigator
@@ -267,6 +262,7 @@ set(AMBIGATOR_SOURCES src/ambigator.c)
 add_executable(ambigator ${AMBIGATOR_SOURCES})
 target_include_directories(ambigator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ambigator ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 
 # ----------------------------------------------------------------------
 # geoptimiser
@@ -275,6 +271,7 @@ set(GEOPTIMISER_SOURCES src/geoptimiser.c src/hdfsee-render.c)
 add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
 target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
 
 # Add features one by one so that #ifdef HAVE_XX//#include XX.h always works
 # If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
@@ -305,29 +302,24 @@ set(WHIRLIGIG_SOURCES src/whirligig.c)
 add_executable(whirligig ${WHIRLIGIG_SOURCES})
 target_include_directories(whirligig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(whirligig ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES whirligig)
 
 
 # ----------------------------------------------------------------------
 # Install targets
 
-install(TARGETS
-	partial_sim
-	pattern_sim
-	process_hkl
-	list_events
-	indexamajig
-	get_hkl
-	compare_hkl
-	check_hkl
-	partialator
-	ambigator
-	whirligig
-	geoptimiser
-	# hdfsee, cell_explorer, render_hkl only if dependencies are satisfied
+set_target_properties(${CRYSTFEL_EXECUTABLES}
+                      PROPERTIES INSTALL_RPATH_USE_LINK_PATH 1)
 
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_LIBDIR}" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+  set_target_properties(${CRYSTFEL_EXECUTABLES}
+                        PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR};${CMAKE_INSTALL_RPATH}")
+endif("${isSystemDir}" STREQUAL "-1")
+
+install(TARGETS ${CRYSTFEL_EXECUTABLES}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-	RESOURCE DESTINATION share/crystfel
-)
+	RESOURCE DESTINATION share/crystfel)
 
 install(FILES
         doc/man/ambigator.1
