@@ -14,16 +14,9 @@ find_package(GSL REQUIRED)
 find_package(GTK2 2.0.0 COMPONENTS gtk)
 find_package(GdkPixbuf2)
 find_package(GDK)
-find_package(FFTW)
-find_package(CBF)
 find_package(TIFF)
 find_package(Cairo)
-find_package(XGANDALF)
-find_package(PINKINDEXER)
-find_package(NBP)
-find_package(FDIP)
 find_package(OpenCL)
-find_package(Curses)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 
@@ -46,14 +39,9 @@ include(CheckLibraryExists)
 set(HAVE_CAIRO ${CAIRO_FOUND})
 set(HAVE_TIFF ${TIFF_FOUND})
 set(HAVE_GTK ${GTK2_FOUND})
-set(HAVE_FFTW ${FFTW_FOUND})
-set(HAVE_XGANDALF ${XGANDALF_FOUND})
-set(HAVE_FDIP ${FDIP_FOUND})
 set(HAVE_OPENCL ${OpenCL_FOUND})
-set(HAVE_CBFLIB ${CBF_FOUND})
 set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
 set(HAVE_GDK ${GDK_FOUND})
-set(HAVE_CURSES ${CURSES_FOUND})
 
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 
@@ -68,16 +56,11 @@ endif (OpenCL_FOUND)
 # Check for nice clock function
 check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
 
-# Check for CPU affinity functions (Linux-specific)
-set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
-check_symbol_exists(sched_setaffinity "sched.h" HAVE_CPU_AFFINITY)
-unset(CMAKE_REQUIRED_DEFINITIONS)
+# Add the libcrystfel target
+add_subdirectory(libcrystfel)
 
 configure_file(config.h.cmake.in config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-# Add the libcrystfel target
-add_subdirectory(libcrystfel)
 
 # Add tests
 enable_testing()

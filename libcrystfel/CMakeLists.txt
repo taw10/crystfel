@@ -1,4 +1,28 @@
-project(libcrystfel)
+project(libcrystfel VERSION ${CRYSTFEL_VERSION} LANGUAGES C)
+
+find_package(Curses)
+find_package(FFTW)
+find_package(CBF)
+find_package(XGANDALF)
+find_package(PINKINDEXER)
+find_package(NBP)
+find_package(FDIP)
+
+set(HAVE_CURSES ${CURSES_FOUND})
+set(HAVE_FFTW ${FFTW_FOUND})
+set(HAVE_XGANDALF ${XGANDALF_FOUND})
+set(HAVE_FDIP ${FDIP_FOUND})
+set(HAVE_CBFLIB ${CBF_FOUND})
+
+# Check for CPU affinity functions (Linux-specific)
+set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+check_symbol_exists(sched_setaffinity "sched.h" HAVE_CPU_AFFINITY)
+unset(CMAKE_REQUIRED_DEFINITIONS)
+
+# Check for nice clock function
+check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
+
+configure_file(config.h.cmake.in config.h)
 
 set(LIBCRYSTFEL_SOURCES
     src/reflist.c
@@ -83,6 +107,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${CRYSTFEL_VERSION})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+add_definitions(-DHAVE_CONFIG_H)
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC util ${HDF5_C_LIBRARIES})
 

@@ -1,0 +1,19 @@
+/* config.h for libcrystfel */
+
+#cmakedefine HAVE_CLOCK_GETTIME
+#cmakedefine HAVE_CPU_AFFINITY
+#cmakedefine HAVE_FFTW
+#cmakedefine HAVE_CL_CL_H
+#cmakedefine HAVE_XGANDALF
+#cmakedefine HAVE_FDIP
+#cmakedefine HAVE_CURSES
+
+/* We avoid adding the full path to cbf.h, because CBFlib unhelpfully installs
+ * some conflicting HDF5 headers which we want to keep out of the include path.
+ * Unfortunately, sometimes CBFlib installs cbf/cbf.h, other times cbflib/cbf.h.
+ * These defines tell whether we have CBFlib at all, and if so, what to #include */
+#cmakedefine HAVE_CBFLIB
+#cmakedefine HAVE_CBF_CBF_H
+#cmakedefine HAVE_CBFLIB_CBF_H
+
+#define CRYSTFEL_VERSIONSTRING "${PROJECT_VERSION}+${GIT_SHA1}"
