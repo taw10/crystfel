@@ -981,6 +981,7 @@ static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
 	char *pg_type;
 	SymOpList *pg;
 	IntegerMatrix *t;
+	char *new_name;
 
 	if ( strncmp(sym+s, "ua", 2) == 0 ) {
 		ua = sym[s+2];
@@ -1036,6 +1037,16 @@ static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
 
 	transform_ops(pg, t);
 	intmat_free(t);
+
+	new_name = malloc(64);
+	if ( new_name == NULL ) {
+		ERROR("Couldn't allocate space for PG name\n");
+		return NULL;
+	}
+
+	snprintf(new_name, 64, "%s_ua%c", pg->name, ua);
+	free(pg->name);
+	pg->name = new_name;
 
 	return pg;
 }
