@@ -27,7 +27,7 @@ set(CMAKE_C_STANDARD 99)
 # Common include directories and libraries
 
 set(COMMON_INCLUDES ${HDF5_INCLUDE_DIRS})
-set(COMMON_LIBRARIES libcrystfel ${HDF5_C_LIBRARIES} Threads::Threads GSL::gsl)
+set(COMMON_LIBRARIES libcrystfel m GSL::gsl Threads::Threads)
 
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
@@ -109,7 +109,7 @@ endif(HAVE_OPENCL)
 
 add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
 target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(pattern_sim ${COMMON_LIBRARIES})
+target_link_libraries(pattern_sim ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 
 if(HAVE_OPENCL)
   target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
@@ -246,7 +246,7 @@ list(APPEND CRYSTFEL_EXECUTABLES partialator)
 set(AMBIGATOR_SOURCES src/ambigator.c)
 add_executable(ambigator ${AMBIGATOR_SOURCES})
 target_include_directories(ambigator PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(ambigator ${COMMON_LIBRARIES})
+target_link_libraries(ambigator ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 
 # ----------------------------------------------------------------------
