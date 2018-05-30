@@ -111,7 +111,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_CONFIG_H)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} Threads::Threads GSL::gsl m)
 
 if (XGANDALF_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDES})
