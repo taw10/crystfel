@@ -6,6 +6,6 @@ includedir=${CMAKE_INSTALL_FULL_INCLUDEDIR}
 Name: CrystFEL
 Description: Useful routines for crystallography using a free-electron laser
 Version: ${PROJECT_VERSION}+${GIT_SHA1}
-Cflags: -I${CMAKE_INSTALL_FULL_INCLUDEDIR} -pthread
+Cflags: -I${CMAKE_INSTALL_FULL_INCLUDEDIR}
 Libs: -L${CMAKE_INSTALL_FULL_LIBDIR} -lcrystfel
 Requires.private: gsl
