@@ -3,7 +3,7 @@
  *
  * Peak search and other image analysis
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
@@ -13,6 +13,7 @@
  *   2011      Andrew Martin <andrew.martin@desy.de>
  *   2011      Richard Kirian
  *   2017      Valerio Mariani <valerio.mariani@desy.de>
+ *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -44,6 +45,12 @@
 #include <gsl/gsl_statistics_int.h>
 #include <pthread.h>
 #include <fenv.h>
+
+#ifdef HAVE_FDIP
+#include "fastDiffractionImageProcessing/adaptions/crystfel/peakFinder9.h"
+#include "fastDiffractionImageProcessing/adaptions/crystfel/mask.h"
+#include "fastDiffractionImageProcessing/peakList.h"
+#endif
 
 #include "image.h"
 #include "utils.h"
@@ -561,6 +568,107 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
 	                   local_bg_radius, min_res,
 	                   max_res, use_saturated);
 }
+
+
+#ifdef HAVE_FDIP
+
+int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
+                             float min_snr_peak_pix, float min_snr_whole_peak,
+                             float min_sig, float min_peak_over_neighbour,
+                             int window_radius)
+{
+	peakFinder9_accuracyConstants_t accuracy_consts;
+	peakList_t peakList;
+	long NpeaksMax = 10000; //more peaks per panel should not appear
+	float *data_copy = NULL;
+	float *data_copy_new;
+	int panel_number;
+
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+	image->num_peaks = 0;
+	image->num_saturated_peaks = 0;
+
+	accuracy_consts.minSNR_biggestPixel = min_snr_biggest_pix;
+	accuracy_consts.minSNR_peakPixel = min_snr_peak_pix;
+	accuracy_consts.minSNR_wholePeak = min_snr_whole_peak;
+	accuracy_consts.minimumSigma = min_sig;
+	accuracy_consts.minimumPeakOversizeOverNeighbours = min_peak_over_neighbour;
+	accuracy_consts.windowRadius = window_radius;
+
+	if ( allocatePeakList(&peakList, NpeaksMax) ) return 1;
+
+	for ( panel_number=0; panel_number<image->det->n_panels; panel_number++ ) {
+
+		int w, h;
+		int peak_number;
+		detectorRawFormat_t det_size_one_panel;
+
+		if ( image->det->panels[panel_number].no_index ) continue;
+
+		w = image->det->panels[panel_number].w;
+		h = image->det->panels[panel_number].h;
+
+		det_size_one_panel.asic_nx = w;
+		det_size_one_panel.asic_ny = h;
+		det_size_one_panel.nasics_x = 1;
+		det_size_one_panel.nasics_y = 1;
+		det_size_one_panel.pix_nx = w;
+		det_size_one_panel.pix_ny = h;
+		det_size_one_panel.pix_nn = w * h;
+
+		data_copy_new = realloc(data_copy, w*h*sizeof(*data_copy));
+		if ( data_copy_new == NULL ) {
+			if ( data_copy != NULL ) {
+				free(data_copy);
+			}
+			freePeakList(peakList);
+			return 1;
+		} else {
+			data_copy = data_copy_new;
+		}
+
+		mergeMaskAndDataIntoDataCopy(image->dp[panel_number], data_copy,
+		                             image->bad[panel_number],
+		                             &det_size_one_panel);
+
+		peakList.peakCount = 0;
+		image->num_peaks += peakFinder9_onePanel_noSlab(data_copy,
+		                                                &accuracy_consts,
+		                                                &det_size_one_panel,
+		                                                &peakList);
+
+		for ( peak_number=0; peak_number<peakList.peakCount; peak_number++) {
+			image_add_feature(image->features,
+			                  peakList.centerOfMass_rawX[peak_number],
+			                  peakList.centerOfMass_rawY[peak_number],
+			                  &image->det->panels[panel_number],
+			                  image,
+			                  peakList.totalIntensity[peak_number],
+			                  NULL);
+		}
+
+	}
+
+	freePeakList(peakList);
+	free(data_copy);
+	return 0;
+}
+
+#else
+
+int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
+                             float min_snr_peak_pix, float min_snr_whole_peak,
+                             float min_sig, float min_peak_over_neighbour,
+                             int window_radius)
+{
+	ERROR("This copy of CrystFEL was compiled without peakfinder9 support.\n");
+	return 1;
+}
+
+#endif // HAVE_FDIP
 
 
 int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)

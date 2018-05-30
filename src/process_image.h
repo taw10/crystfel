@@ -3,12 +3,13 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2010-2016 Thomas White <taw@physics.org>
  *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
+ *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -44,7 +45,8 @@ struct index_args;
 
 
 enum {
-        PEAK_PEAKFINDER8,
+	PEAK_PEAKFINDER9,
+	PEAK_PEAKFINDER8,
 	PEAK_ZAEF,
 	PEAK_HDF5,
 	PEAK_CXI,
@@ -83,6 +85,10 @@ struct index_args
 	int max_pix_count;
 	int local_bg_radius;
 	int min_peaks;
+	float min_snr_biggest_pix;
+	float min_snr_peak_pix;
+	float min_sig;
+	float min_peak_over_neighbour;
 	struct imagefile_field_list *copyme;
 	int integrate_saturated;
 	int use_saturated;

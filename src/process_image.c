@@ -3,7 +3,7 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
@@ -201,7 +201,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		             iargs->use_saturated);
 		break;
 
-	        case PEAK_PEAKFINDER8:
+		case PEAK_PEAKFINDER8:
 		if ( search_peaks_peakfinder8(&image, 2048,
 		                               iargs->threshold,
 		                               iargs->min_snr,
@@ -220,6 +220,26 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 				      image.filename);
 			}
 
+		}
+		break;
+
+		case PEAK_PEAKFINDER9:
+		if ( search_peaks_peakfinder9(&image,
+		                              iargs->min_snr_biggest_pix,
+		                              iargs->min_snr_peak_pix,
+		                              iargs->min_snr,
+		                              iargs->min_sig,
+		                              iargs->min_peak_over_neighbour,
+		                              iargs->local_bg_radius) )
+		{
+			if ( image.event != NULL ) {
+				ERROR("Failed to find peaks in image %s"
+				      "(event %s).\n", image.filename,
+				      get_event_string(image.event));
+			} else {
+				ERROR("Failed to find peaks in image %s.",
+				      image.filename);
+			}
 		}
 		break;
 

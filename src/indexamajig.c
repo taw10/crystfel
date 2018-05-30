@@ -3,7 +3,7 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
@@ -14,6 +14,7 @@
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
  *   2017      Valerio Mariani <valerio.mariani@desy.de>
+ *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -84,7 +85,7 @@ static void show_help(const char *s)
 "     --profile             Show timing data for performance monitoring\n"
 "     --temp-dir=<path>     Put the temporary folder under <path>\n"
 "\nPeak search options:\n\n"
-"     --peaks=<method>      Peak search method (zaef,peakfinder8,hdf5,cxi)\n"
+"     --peaks=<method>      Peak search method (zaef,peakfinder8,peakfinder9,hdf5,cxi)\n"
 "                            Default: zaef\n"
 "     --peak-radius=<r>     Integration radii for peak search\n"
 "     --min-peaks=<n>       Minimum number of peaks for indexing\n"
@@ -98,17 +99,24 @@ static void show_help(const char *s)
 "     --min-gradient=<n>    Minimum squared gradient\n"
 "                            (zaef only) Default: 100,000\n"
 "     --min-snr=<n>         Minimum signal/noise ratio for peaks\n"
-"                            (zaef,pekafinder8 only) Default: 5\n"
+"                            (zaef,peakfinder8, peakfinder9 only) Default: 5\n"
 "     --min-pix-count=<n>   Minimum number of pixels per peak\n"
 "                            (peakfinder8 only) Default: 2\n"
 "     --max-pix-count=<n>   Maximum number of pixels per peak\n"
 "                            (peakfinder8 only) Default: 200\n"
 "     --local-bg-radius=<n> Radius (pixels) for local background estimation\n"
-"                            (peakfinder8 only) Default: 3\n"
+"                            (peakfinder8, peakfinder9 only) Default: 3\n"
 "     --min-res=<n>         Minimum resolution for peak search (in pixels)\n"
 "                            (peakfinder8 only) Default: 0\n"
 "     --max-res=<n>         Maximum resolution for peak search (in pixels)\n"
 "                            (peakfinder8 only) Default: 1200\n"
+"     --min-snr-biggest-pix=<n>    (peakFinder9 only) min snr of the biggest pixel in "
+"                                  the peak\n"
+"     --min-snr-peak-pix=<n>       (peakFinder9 only) min snr of a peak pixel\n"
+"     --min-sig=<n>                (peakFinder9 only) minimum standard deviation of "
+"                                 the background\n"
+"     --min-peak-over-neighbour=<n>    (peakFinder9 only) just for speed. Biggest pixel"
+"                                     in peak must be n higher than this.\n"
 "     --no-use-saturated    Reject saturated peaks\n"
 "     --no-revalidate       Don't re-integrate and check HDF5 peaks\n"
 "     --no-half-pixel-shift\n"
@@ -260,6 +268,10 @@ int main(int argc, char *argv[])
 	iargs.min_res = 0;
 	iargs.max_res = 1200;
 	iargs.local_bg_radius = 3;
+	iargs.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
+	iargs.min_snr_peak_pix = 6.0;
+	iargs.min_sig = 11.0;
+	iargs.min_peak_over_neighbour = -INFINITY;
 	iargs.check_hdf5_snr = 0;
 	iargs.det = NULL;
 	iargs.peaks = PEAK_ZAEF;
@@ -356,55 +368,59 @@ int main(int argc, char *argv[])
 		{"use-saturated",      0, &iargs.use_saturated,      1},
 
 		/* Long-only options with arguments */
-		{"peaks",              1, NULL,                2},
-		{"cell-reduction",     1, NULL,                3},
-		{"min-gradient",       1, NULL,                4},
-		{"record",             1, NULL,                5},
-		{"cpus",               1, NULL,                6},
-		{"cpugroup",           1, NULL,                7},
-		{"cpuoffset",          1, NULL,                8},
-		{"hdf5-peaks",         1, NULL,                9},
-		{"copy-hdf5-field",    1, NULL,               10},
-		{"min-snr",            1, NULL,               11},
-		{"tolerance",          1, NULL,               13},
-		{"int-radius",         1, NULL,               14},
-		{"median-filter",      1, NULL,               15},
-		{"integration",        1, NULL,               16},
-		{"temp-dir",           1, NULL,               17},
-		{"int-diag",           1, NULL,               18},
-		{"push-res",           1, NULL,               19},
-		{"res-push",           1, NULL,               19}, /* compat */
-		{"peak-radius",        1, NULL,               20},
-		{"highres",            1, NULL,               21},
-		{"fix-profile-radius", 1, NULL,               22},
-		{"fix-bandwidth",      1, NULL,               23},
-		{"fix-divergence",     1, NULL,               24},
-		{"felix-options",      1, NULL,               25},
-		{"min-pix-count",      1, NULL,               26},
-		{"max-pix-count",      1, NULL,               27},
-		{"local-bg-radius",    1, NULL,               28},
-		{"min-res",            1, NULL,               29},
-		{"max-res",            1, NULL,               30},
-		{"min-peaks",          1, NULL,               31},
-		{"taketwo-member-threshold", 1, NULL,         32},
-		{"taketwo-member-thresh",    1, NULL,         32}, /* compat */
-		{"taketwo-len-tolerance",    1, NULL,         33},
-		{"taketwo-len-tol",          1, NULL,         33}, /* compat */
-		{"taketwo-angle-tolerance",  1, NULL,         34},
-		{"taketwo-angle-tol",        1, NULL,         34}, /* compat */
-		{"taketwo-trace-tolerance",  1, NULL,         35},
-		{"taketwo-trace-tol",        1, NULL,         35}, /* compat */
-		{"felix-tthrange-min",       1, NULL,         36},
-		{"felix-tthrange-max",       1, NULL,         37},
-		{"felix-min-visits",         1, NULL,         38},
-		{"felix-min-completeness",   1, NULL,         39},
-		{"felix-max-uniqueness",     1, NULL,         40},
-		{"felix-num-voxels",         1, NULL,         41},
-		{"felix-fraction-max-visits",1, NULL,         42},
-		{"felix-sigma",              1, NULL,         43},
-		{"serial-start",             1, NULL,         44},
-		{"felix-domega",             1, NULL,         45},
-		{"felix-max-internal-angle", 1, NULL,         46},
+		{"peaks",              1, NULL,              302},
+		{"cell-reduction",     1, NULL,              303},
+		{"min-gradient",       1, NULL,              304},
+		{"record",             1, NULL,              305},
+		{"cpus",               1, NULL,              306},
+		{"cpugroup",           1, NULL,              307},
+		{"cpuoffset",          1, NULL,              308},
+		{"hdf5-peaks",         1, NULL,              309},
+		{"copy-hdf5-field",    1, NULL,              310},
+		{"min-snr",            1, NULL,              311},
+		{"tolerance",          1, NULL,              313},
+		{"int-radius",         1, NULL,              314},
+		{"median-filter",      1, NULL,              315},
+		{"integration",        1, NULL,              316},
+		{"temp-dir",           1, NULL,              317},
+		{"int-diag",           1, NULL,              318},
+		{"push-res",           1, NULL,              319},
+		{"res-push",           1, NULL,              319}, /* compat */
+		{"peak-radius",        1, NULL,              320},
+		{"highres",            1, NULL,              321},
+		{"fix-profile-radius", 1, NULL,              322},
+		{"fix-bandwidth",      1, NULL,              323},
+		{"fix-divergence",     1, NULL,              324},
+		{"felix-options",      1, NULL,              325},
+		{"min-pix-count",      1, NULL,              326},
+		{"max-pix-count",      1, NULL,              327},
+		{"local-bg-radius",    1, NULL,              328},
+		{"min-res",            1, NULL,              329},
+		{"max-res",            1, NULL,              330},
+		{"min-peaks",          1, NULL,              331},
+		{"taketwo-member-threshold", 1, NULL,        332},
+		{"taketwo-member-thresh",    1, NULL,        332}, /* compat */
+		{"taketwo-len-tolerance",    1, NULL,        333},
+		{"taketwo-len-tol",          1, NULL,        333}, /* compat */
+		{"taketwo-angle-tolerance",  1, NULL,        334},
+		{"taketwo-angle-tol",        1, NULL,        334}, /* compat */
+		{"taketwo-trace-tolerance",  1, NULL,        335},
+		{"taketwo-trace-tol",        1, NULL,        335}, /* compat */
+		{"felix-tthrange-min",       1, NULL,        336},
+		{"felix-tthrange-max",       1, NULL,        337},
+		{"felix-min-visits",         1, NULL,        338},
+		{"felix-min-completeness",   1, NULL,        339},
+		{"felix-max-uniqueness",     1, NULL,        340},
+		{"felix-num-voxels",         1, NULL,        341},
+		{"felix-fraction-max-visits",1, NULL,        342},
+		{"felix-sigma",              1, NULL,        343},
+		{"serial-start",             1, NULL,        344},
+		{"felix-domega",             1, NULL,        345},
+		{"felix-max-internal-angle", 1, NULL,        346},
+		{"min-snr-biggest-pix"              ,1, NULL,347},
+		{"min-snr-peak-pix"                 ,1, NULL,348},
+		{"min-sig"                          ,1, NULL,349},
+		{"min-peak-over-neighbour"          ,1, NULL,350},
 
 		{0, 0, NULL, 0}
 	};
@@ -462,11 +478,11 @@ int main(int argc, char *argv[])
 			iargs.threshold = strtof(optarg, NULL);
 			break;
 
-			case 2 :
+			case 302 :
 			speaks = strdup(optarg);
 			break;
 
-			case 3 :
+			case 303 :
 			ERROR("The option '--cell-reduction' is no longer "
 			      "used.\n"
 			      "The complete indexing behaviour is now "
@@ -475,62 +491,62 @@ int main(int argc, char *argv[])
 			      "available methods.\n");
 			return 1;
 
-			case 4 :
+			case 304 :
 			iargs.min_gradient = strtof(optarg, NULL);
 			break;
 
-			case 5 :
+			case 305 :
 			ERROR("The option '--record' is no longer used.\n"
 			      "Use '--no-peaks-in-stream' and"
 			      "'--no-refls-in-stream' if you need to control"
 			      "the contents of the stream.\n");
 			return 1;
 
-			case 6 :
-			case 7 :
-			case 8 :
+			case 306 :
+			case 307 :
+			case 308 :
 			ERROR("The options --cpus, --cpugroup and --cpuoffset"
 			      " are no longer used by indexamajig.\n");
 			break;
 
-			case 9 :
+			case 309 :
 			free(command_line_peak_path);
 			command_line_peak_path = strdup(optarg);
 			break;
 
-			case 10 :
+			case 310 :
 			add_imagefile_field(iargs.copyme, optarg);
 			break;
 
-			case 11 :
+			case 311 :
 			iargs.min_snr = strtof(optarg, NULL);
 			break;
 
-			case 13 :
+			case 313 :
 			toler = strdup(optarg);
 			break;
 
-			case 14 :
+			case 314 :
 			intrad = strdup(optarg);
 			break;
 
-			case 15 :
+			case 315 :
 			iargs.median_filter = atoi(optarg);
 			break;
 
-			case 16 :
+			case 316 :
 			int_str = strdup(optarg);
 			break;
 
-			case 17 :
+			case 317 :
 			tempdir = strdup(optarg);
 			break;
 
-			case 18 :
+			case 318 :
 			int_diag = strdup(optarg);
 			break;
 
-			case 19 :
+			case 319 :
 			if ( sscanf(optarg, "%f", &iargs.push_res) != 1 ) {
 				ERROR("Invalid value for --push-res\n");
 				return 1;
@@ -539,11 +555,11 @@ int main(int argc, char *argv[])
 			have_push_res = 1;
 			break;
 
-			case 20 :
+			case 320 :
 			pkrad = strdup(optarg);
 			break;
 
-			case 21 :
+			case 321 :
 			if ( sscanf(optarg, "%f", &iargs.highres) != 1 ) {
 				ERROR("Invalid value for --highres\n");
 				return 1;
@@ -552,7 +568,7 @@ int main(int argc, char *argv[])
 			iargs.highres = 1.0 / (iargs.highres/1e10);
 			break;
 
-			case 22 :
+			case 322 :
 			if ( sscanf(optarg, "%f", &iargs.fix_profile_r) != 1 ) {
 				ERROR("Invalid value for "
 				      "--fix-profile-radius\n");
@@ -560,50 +576,50 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 23 :
+			case 323 :
 			if ( sscanf(optarg, "%f", &iargs.fix_bandwidth) != 1 ) {
 				ERROR("Invalid value for --fix-bandwidth\n");
 				return 1;
 			}
 			break;
 
-			case 24 :
+			case 324 :
 			if ( sscanf(optarg, "%f", &iargs.fix_divergence) != 1 ) {
 				ERROR("Invalid value for --fix-divergence\n");
 				return 1;
 			}
 			break;
 
-			case 25 :
+			case 325 :
 			ERROR("--felix-options is no longer used.\n");
 			ERROR("See --help for the new Felix options.\n");
 			return 1;
 
-		        case 26:
+			case 326:
 			iargs.min_pix_count = atoi(optarg);
 			break;
 
-		        case 27:
+			case 327:
 			iargs.max_pix_count = atoi(optarg);
 			break;
 
-		        case 28:
+			case 328:
 			iargs.local_bg_radius = atoi(optarg);
 			break;
 
-		        case 29:
+			case 329:
 			iargs.min_res = atoi(optarg);
 			break;
 
-		        case 30:
+			case 330:
 			iargs.max_res = atoi(optarg);
 			break;
 
-			case 31:
+			case 331:
 			iargs.min_peaks = atoi(optarg);
 			break;
 
-			case 32:
+			case 332:
 			if ( sscanf(optarg, "%i", &iargs.taketwo_opts.member_thresh) != 1 )
 			{
 				ERROR("Invalid value for --taketwo-member-threshold\n");
@@ -611,7 +627,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 33:
+			case 333:
 			if ( sscanf(optarg, "%lf", &iargs.taketwo_opts.len_tol) != 1 )
 			{
 				ERROR("Invalid value for --taketwo-len-tolerance\n");
@@ -621,7 +637,7 @@ int main(int argc, char *argv[])
 			iargs.taketwo_opts.len_tol *= 1e10;
 			break;
 
-			case 34:
+			case 334:
 			if ( sscanf(optarg, "%lf", &iargs.taketwo_opts.angle_tol) != 1 )
 			{
 				ERROR("Invalid value for --taketwo-angle-tolerance\n");
@@ -631,7 +647,7 @@ int main(int argc, char *argv[])
 			iargs.taketwo_opts.angle_tol = deg2rad(iargs.taketwo_opts.angle_tol);
 			break;
 
-			case 35:
+			case 335:
 			if ( sscanf(optarg, "%lf", &iargs.taketwo_opts.trace_tol) != 1 )
 			{
 				ERROR("Invalid value for --taketwo-trace-tolerance\n");
@@ -641,7 +657,7 @@ int main(int argc, char *argv[])
 			iargs.taketwo_opts.trace_tol = deg2rad(iargs.taketwo_opts.trace_tol);
 			break;
 
-			case 36:
+			case 336:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.ttmin) != 1 )
 			{
 				ERROR("Invalid value for --felix-tthrange-min\n");
@@ -650,7 +666,7 @@ int main(int argc, char *argv[])
 			iargs.felix_opts.ttmin = deg2rad(iargs.felix_opts.ttmin);
 			break;
 
-			case 37:
+			case 337:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.ttmax) != 1 )
 			{
 				ERROR("Invalid value for --felix-tthrange-max\n");
@@ -659,7 +675,7 @@ int main(int argc, char *argv[])
 			iargs.felix_opts.ttmax = deg2rad(iargs.felix_opts.ttmax);
 			break;
 
-			case 38:
+			case 338:
 			if ( sscanf(optarg, "%i", &iargs.felix_opts.min_visits) != 1 )
 			{
 				ERROR("Invalid value for --felix-min-visits\n");
@@ -667,7 +683,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 39:
+			case 339:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.min_completeness) != 1 )
 			{
 				ERROR("Invalid value for --felix-min-completeness\n");
@@ -675,7 +691,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 40:
+			case 340:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.max_uniqueness) != 1 )
 			{
 				ERROR("Invalid value for --felix-max-uniqueness\n");
@@ -683,7 +699,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 41:
+			case 341:
 			if ( sscanf(optarg, "%i", &iargs.felix_opts.n_voxels) != 1 )
 			{
 				ERROR("Invalid value for --felix-num-voxels\n");
@@ -691,7 +707,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 42:
+			case 342:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.fraction_max_visits) != 1 )
 			{
 				ERROR("Invalid value for --felix-fraction-max-visits\n");
@@ -699,7 +715,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 43:
+			case 343:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.sigma) != 1 )
 			{
 				ERROR("Invalid value for --felix-sigma\n");
@@ -707,7 +723,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 44:
+			case 344:
 			if ( sscanf(optarg, "%i", &serial_start) != 1 )
 			{
 				ERROR("Invalid value for --serial-start\n");
@@ -715,7 +731,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 45:
+			case 345:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.domega) != 1 )
 			{
 				ERROR("Invalid value for --felix-domega\n");
@@ -723,12 +739,28 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 46:
+			case 346:
 			if ( sscanf(optarg, "%lf", &iargs.felix_opts.max_internal_angle) != 1 )
 			{
 				ERROR("Invalid value for --felix-max-internal-angle\n");
 				return 1;
 			}
+			break;
+
+			case 347:
+			iargs.min_snr_biggest_pix = strtof(optarg, NULL);
+			break;
+
+			case 348:
+			iargs.min_snr_peak_pix = strtof(optarg, NULL);
+			break;
+
+			case 349:
+			iargs.min_sig = strtof(optarg, NULL);
+			break;
+
+			case 350:
+			iargs.min_peak_over_neighbour = strtof(optarg, NULL);
 			break;
 
 			case 0 :
@@ -789,6 +821,8 @@ int main(int argc, char *argv[])
 		iargs.peaks = PEAK_HDF5;
 	} else if ( strcmp(speaks, "cxi") == 0 ) {
 		iargs.peaks = PEAK_CXI;
+	} else if ( strcmp(speaks, "peakfinder9") == 0 ) {
+		iargs.peaks = PEAK_PEAKFINDER9;
 	} else {
 		ERROR("Unrecognised peak detection method '%s'\n", speaks);
 		return 1;
