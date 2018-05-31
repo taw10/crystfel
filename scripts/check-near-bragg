@@ -2,6 +2,7 @@
 
 use strict;
 use File::Basename;
+use File::stat;
 
 my $skip = 0;
 
@@ -16,6 +17,9 @@ if ( !($args eq "") ) {
 
 open(FH, $ARGV[0]);
 open(TMP, "> list.tmp");
+
+my $statbuf = stat($ARGV[0]);
+my $stream_mtime = $statbuf->mtime;
 
 my $in_image = 0;
 my $line;
@@ -66,6 +70,12 @@ while ( $line = <FH> ) {
 
 		$n_seen++;
 		if ( $n_seen > $skip ) {
+
+			my $statbuf = stat($filename);
+			my $image_mtime = $statbuf->mtime;
+			if ( $image_mtime > $stream_mtime ) {
+				printf(STDERR "WARNING: Image file is newer than stream\n");
+			}
 
 			printf(STDERR "Viewing %s%s\n", $filename, $evr);
 			system("hdfsee ".$filename.$ev.
