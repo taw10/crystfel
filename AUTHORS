@@ -51,7 +51,7 @@ Contributors
   General bug finding and fixing
 
 * Anton Barty <anton.barty@desy.de>
-  Median filter
+  Median filter, peakfinder8
 
 * Cornelius Gati <cornelius.gati@cfel.de>
   XDS auto-indexing
@@ -106,3 +106,6 @@ Contributors
 
 * Nicolas Riebesel <nicolas.riebesel@tuhh.de>
   CMake build system
+
+* Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
+  peakfinder9
