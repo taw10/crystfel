@@ -873,8 +873,8 @@ static void process_panel(int asic_size_fs, int asic_size_ss, int num_pix_fs,
 					// Remember that curr_idx = curr_fs + curr_ss*num_pix_fs
 					curr_fs = curr_idx % num_pix_fs;
 					curr_ss = curr_idx / num_pix_fs;
-					sum_com_fs += curr_i * ((float)curr_fs);
-					sum_com_ss += curr_i * ((float)curr_ss);
+					sum_com_fs += curr_i_raw * ((float)curr_fs);
+					sum_com_ss += curr_i_raw * ((float)curr_ss);
 
 					if ( curr_i_raw > pk_max_i_raw ) pk_max_i_raw = curr_i_raw;
 					if ( curr_i > peak_max_i ) peak_max_i = curr_i;
@@ -882,10 +882,10 @@ static void process_panel(int asic_size_fs, int asic_size_ss, int num_pix_fs,
 
 
 				// This CAN happen! Better to skip...
-				if ( fabs(peak_tot_i) < 1e-10 ) continue;
+				if ( fabs(pk_tot_i_raw) < 1e-10 ) continue;
 
-				peak_com_fs = sum_com_fs / fabs(peak_tot_i);
-				peak_com_ss = sum_com_ss / fabs(peak_tot_i);
+				peak_com_fs = sum_com_fs / fabs(pk_tot_i_raw);
+				peak_com_ss = sum_com_ss / fabs(pk_tot_i_raw);
 
 				// Calculate signal-to-noise and apply SNR criteria
 				if ( fabs(local_sigma) > 1e-10 ) {
