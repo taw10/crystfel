@@ -1,4 +1,4 @@
-project(libcrystfel VERSION ${CRYSTFEL_VERSION} LANGUAGES C)
+project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
 find_package(FFTW)

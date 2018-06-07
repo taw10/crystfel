@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
-set(CRYSTFEL_VERSION 0.7.0)
+set(CRYSTFEL_SHORT_VERSION 0.7.0)
+set(CRYSTFEL_VERSION ${CRYSTFEL_SHORT_VERSION})
 set(CRYSTFEL_API_VERSION 10)
 project(crystfel VERSION ${CRYSTFEL_VERSION} LANGUAGES C)
 
@@ -29,9 +30,22 @@ set(CMAKE_C_STANDARD 99)
 set(COMMON_INCLUDES ${HDF5_INCLUDE_DIRS})
 set(COMMON_LIBRARIES libcrystfel m GSL::gsl Threads::Threads)
 
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-string(SUBSTRING ${GIT_SHA1} 0 8 GIT_SHA1)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+  # If this is a Git checkout, add the revision ID
+  message(STATUS "This is a Git checkout: adding revision ID to version number")
+  include(GetGitRevisionDescription)
+  get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+  string(SUBSTRING ${GIT_SHA1} 0 8 GIT_SHA1)
+  set(CRYSTFEL_VERSION "${CRYSTFEL_VERSION}+${GIT_SHA1}")
+else ()
+  if (DEFINED CRYSTFEL_SNAPSHOT_ID)
+    message(STATUS "This is a packaged snapshot: adding snapshot ID to version number")
+    set(CRYSTFEL_VERSION ${CRYSTFEL_VERSION}+${CRYSTFEL_SNAPSHOT_ID})
+  else ()
+    message(STATUS "This is a packaged release version")
+  endif ()
+
+endif ()
 
 include(CheckIncludeFile)
 include(CheckLibraryExists)

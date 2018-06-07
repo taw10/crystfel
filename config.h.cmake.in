@@ -8,9 +8,9 @@
 #cmakedefine HAVE_OPENCL
 #cmakedefine HAVE_CLOCK_GETTIME
 
-#define PACKAGE_VERSION "${PROJECT_VERSION}"
+#define PACKAGE_VERSION "${CRYSTFEL_VERSION}"
 
-#define CRYSTFEL_VERSIONSTRING "${PROJECT_VERSION}+${GIT_SHA1}"
+#define CRYSTFEL_VERSIONSTRING "${CRYSTFEL_VERSION}"
 
 #define CRYSTFEL_BOILERPLATE "License GPLv3+: GNU GPL version 3 or later"\
      " <http://gnu.org/licenses/gpl.html>.\n"\
