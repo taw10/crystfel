@@ -2610,7 +2610,7 @@ static void calibmode_press(DisplayWindow *dw, GdkEventButton *event)
 	int x,y;
 	double dfs, dss;
 	int fs, ss, revmap_return_value;
-	char statusbar_string[80];
+	char statusbar_string[256];
 	guint cc;
 	struct panel *p;
 
@@ -2629,9 +2629,9 @@ static void calibmode_press(DisplayWindow *dw, GdkEventButton *event)
 	if ( revmap_return_value == 0 ) {
 		fs = dfs;
 		ss = dss;
-		if ( snprintf(statusbar_string, 80,
+		if ( snprintf(statusbar_string, 256,
 		              "Last clicked position: x: %i, y: %i, fs: %u, ss: %u,"
-		              " (panel %s)", x, y, fs, ss, p->name) != 0 )
+		              " (panel %s)", x, y, fs, ss, p->name) >= 256 )
 		{
 			ERROR("Panel name is too long for status bar.\n");
 		}
