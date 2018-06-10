@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2017 Thomas White <taw@physics.org>
+ *   2009-2018 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -221,6 +221,8 @@ struct image {
 	/* Detected peaks */
 	long long               num_peaks;
 	long long               num_saturated_peaks;
+	double                  peak_resolution;  /* Estimate of resolution
+	                                           * based on peaks only */
 	ImageFeatureList        *features;
 
 };

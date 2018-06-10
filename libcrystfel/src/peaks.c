@@ -796,3 +796,49 @@ void validate_peaks(struct image *image, double min_snr,
 	image->num_saturated_peaks = n_sat;
 	image->num_peaks = image_feature_count(flist);
 }
+
+
+static int compare_double(const void *av, const void *bv)
+{
+	double a = *(double *)av;
+	double b = *(double *)bv;
+	if ( a > b ) return 1;
+	if ( a < b ) return -1;
+	return 0;
+}
+
+
+double estimate_peak_resolution(ImageFeatureList *peaks, double lambda)
+{
+	int i, n, j;
+	double *rns;
+	double max_res;
+
+	n = image_feature_count(peaks);
+	rns = malloc(n*sizeof(double));
+	if ( rns == NULL ) return -1.0;
+
+	/* Get resolution values for all peaks */
+	j = 0;
+	for ( i=0; i<n; i++ ) {
+
+		struct imagefeature *f;
+		struct rvec r;
+
+		f = image_get_feature(peaks, i);
+		if ( f == NULL ) continue;
+
+		r = get_q_for_panel(f->p, f->fs, f->ss, NULL, 1.0/lambda);
+		rns[j++] = modulus(r.u, r.v, r.w);
+
+	}
+
+	/* Slightly horrible outlier removal */
+	qsort(rns, j, sizeof(double), compare_double);
+	n = j/50;
+	if ( n < 2 ) n = 2;
+	max_res = rns[(j-1)-n];
+
+	free(rns);
+	return max_res;
+}

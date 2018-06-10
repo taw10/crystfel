@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *   2017      Valerio Mariani <valerio.mariani@desy.de>
  *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
@@ -69,6 +69,8 @@ extern int peak_sanity_check(struct image *image, Crystal **crystals,
 extern void validate_peaks(struct image *image, double min_snr,
                            int ir_inn, int ir_mid, int ir_out,
                            int use_saturated, int check_snr);
+
+extern double estimate_peak_resolution(ImageFeatureList *peaks, double lambda);
 
 #ifdef __cplusplus
 }

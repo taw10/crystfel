@@ -881,6 +881,8 @@ int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
 
 	fprintf(st->fh, "num_peaks = %lli\n", i->num_peaks);
 	fprintf(st->fh, "num_saturated_peaks = %lli\n", i->num_saturated_peaks);
+	fprintf(st->fh, "peak_resolution = %f nm^-1 or %f A\n",
+	        i->peak_resolution/1e9, 1e10/i->peak_resolution);
 	if ( include_peaks ) {
 		if ( AT_LEAST_VERSION(st, 2, 3) ) {
 			ret = write_peaks_2_3(i, st->fh);
