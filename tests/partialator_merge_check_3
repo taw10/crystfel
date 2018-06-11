@@ -56,8 +56,8 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-sed -n '/End\ of\ reflections/q;p' partialator_merge_check_3.hkl > temp.hkl
-mv temp.hkl partialator_merge_check_3.hkl
+sed -n '/End\ of\ reflections/q;p' partialator_merge_check_3.hkl > temp3.hkl
+mv temp3.hkl partialator_merge_check_3.hkl
 diff partialator_merge_check_3.hkl partialator_merge_check_3_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
