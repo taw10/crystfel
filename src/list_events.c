@@ -177,7 +177,8 @@ int main(int argc, char *argv[])
 			if ( evlist == NULL ) {
 				ERROR("Failed to read %s\n", filename);
 				hdfile_close(hdfile);
-				continue;
+				ERROR("Aborting creation of event list.\n");
+				return 1;
 			}
 
 			for ( i=0; i<evlist->num_events; i++ ) {
