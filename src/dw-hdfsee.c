@@ -720,6 +720,7 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 	GtkWidget *table;
 	GtkWidget *label;
 	char tmp[64];
+	double minx, maxx, miny, maxy;
 
 	if ( dw->binning_dialog != NULL ) {
 		return 0;
@@ -751,14 +752,16 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(table), FALSE, FALSE, 0);
 
-	label = gtk_label_new("Smaller numbers mean larger images on screen");
+	label = gtk_label_new("Smaller binning factors mean larger images on screen");
 	gtk_label_set_markup(GTK_LABEL(label),
 			"<span style=\"italic\" weight=\"light\">"
-			"Smaller numbers mean larger images on screen</span>");
+			"Smaller binning factors mean larger images on screen</span>");
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
 				  1, 3, 1, 2);
 
-	snprintf(tmp, 63, "Raw image size: (unknown)");
+
+	get_pixel_extents(dw->image->det, &minx, &miny, &maxx, &maxy);
+	snprintf(tmp, 63, "Image size at binning 1: about %.0f x %.0f pixels", maxx-minx, maxy-miny);
 	label = gtk_label_new(tmp);
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(label),
 				  1, 3, 2, 3);
