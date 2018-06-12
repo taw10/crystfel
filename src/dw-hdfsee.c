@@ -2540,9 +2540,9 @@ static GtkWidget *displaywindow_createhdfmenus(struct hdfile *hdfile,
 
 
 struct newev {
-    DisplayWindow *dw;
-    GtkWidget *widget;
-    int new_ev;
+	DisplayWindow *dw;
+	GtkWidget *widget;
+	int new_ev;
 };
 
 
