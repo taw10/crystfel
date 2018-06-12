@@ -904,6 +904,14 @@ static void process_panel(int asic_size_fs, int asic_size_ss, int num_pix_fs,
 				// different!
 				if (peak_max_i < background_max_i - local_offset) continue;
 
+				if ( peak_com_fs < aifs*asic_size_fs
+				  || peak_com_fs > (aifs+1)*asic_size_fs-1
+				  || peak_com_ss < aiss*asic_size_ss
+				  || peak_com_ss > (aiss+1)*asic_size_ss-1)
+				{
+					continue;
+				}
+
 				// This is a peak? If so, add info to peak list
 				if ( num_pix_in_peak >= min_pix_count
 				  && num_pix_in_peak <= max_pix_count ) {
