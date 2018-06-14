@@ -546,7 +546,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double UNUSED residual(struct reflpeak *rps, int n, struct detector *det)
+static double residual(struct reflpeak *rps, int n, struct detector *det)
 {
 	int i;
 	double res = 0.0;
