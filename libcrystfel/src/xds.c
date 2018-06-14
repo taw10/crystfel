@@ -36,7 +36,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <pty.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -44,6 +43,13 @@
 #include <assert.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+
+#ifdef HAVE_FORKPTY_PTY_H
+#include <pty.h>
+#endif
+#ifdef HAVE_FORKPTY_UTIL_H
+#include <util.h>
+#endif
 
 #include "xds.h"
 #include "cell.h"

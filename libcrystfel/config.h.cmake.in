@@ -16,4 +16,7 @@
 #cmakedefine HAVE_CBF_CBF_H
 #cmakedefine HAVE_CBFLIB_CBF_H
 
+#cmakedefine HAVE_FORKPTY_PTY_H
+#cmakedefine HAVE_FORKPTY_UTIL_H
+
 #define CRYSTFEL_VERSIONSTRING "${CRYSTFEL_VERSION}"

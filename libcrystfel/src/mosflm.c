@@ -62,7 +62,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <pty.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -70,6 +69,13 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <errno.h>
+
+#ifdef HAVE_FORKPTY_PTY_H
+#include <pty.h>
+#endif
+#ifdef HAVE_FORKPTY_UTIL_H
+#include <util.h>
+#endif
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>

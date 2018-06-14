@@ -22,6 +22,15 @@ unset(CMAKE_REQUIRED_DEFINITIONS)
 # Check for nice clock function
 check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
 
+# Find out where forkpty() is declared
+set(CMAKE_REQUIRED_LIBRARIES "-lutil")
+check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
+check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL_H)
+unset(CMAKE_REQUIRED_LIBRARIES)
+if ( NOT(HAVE_FORKPTY_PTY_H OR HAVE_FORKPTY_UTIL_H) )
+  message(FATAL_ERROR "Couldn't find forkpty()")
+endif()
+
 configure_file(config.h.cmake.in config.h)
 
 set(LIBCRYSTFEL_SOURCES
