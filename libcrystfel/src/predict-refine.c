@@ -556,21 +556,18 @@ static double UNUSED residual(struct reflpeak *rps, int n, struct detector *det)
 	for ( i=0; i<n; i++ ) {
 		r += EXC_WEIGHT * rps[i].Ih * pow(r_dev(&rps[i]), 2.0);
 	}
-	printf("%e ", r);
 	res += r;
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
 		r += pow(x_dev(&rps[i], det), 2.0);
 	}
-	printf("%e ", r);
 	res += r;
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
 		r += pow(y_dev(&rps[i], det), 2.0);
 	}
-	printf("%e\n", r);
 	res += r;
 
 	return res;
@@ -600,6 +597,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 	double total_x = 0.0;
 	double total_y = 0.0;
 	double total_z = 0.0;
+	char tmp[256];
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -640,6 +638,10 @@ int refine_prediction(struct image *image, Crystal *cr)
 		//       residual(rps, n, image->det));
 	}
 	//STATUS("Final residual = %e\n", residual(rps, n, image->det));
+
+	snprintf(tmp, 255, "predict_refine/final_residual = %e",
+	         residual(rps, n, image->det));
+	crystal_add_notes(cr, tmp);
 
 	crystal_set_det_shift(cr, total_x, total_y);
 
