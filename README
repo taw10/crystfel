@@ -48,17 +48,14 @@ CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
 Thank you for reading the documentation. :-)
 
 CrystFEL is a suite of programs for processing (and simulating) Bragg
-diffraction data acquired with a free electron laser.  Some of the particular
+diffraction data from "serial crystallography" experiments, often (but not
+always) performed using an X-ray Free-Electron Laser.  Some of the particular
 characteristics of such data which call for a specialised software suite are:
 
 - The sliced, rather than integrated, measurement of intensity data.  Many, if
-   not all reflections are partially integrated.  Unique correction factors are
-   needed.
+   not all reflections are partially integrated.
 
-- The crystals are small, leading to significant Fourier truncation effects on
-   the detector.
-
-- Many patterns (>10,000) are required - high throughput is needed.
+- Many patterns (thousands) are required - high throughput is needed.
 
 - The crystal orientations in each pattern are random and uncorrelated, meaning
    that:
@@ -127,14 +124,12 @@ $ cmake ..
 $ make
 $ sudo make install
 
-You can skip the first two steps (mkdir/cd), but it's not recommended.
-
 At a minimum, you will need the HDF5 library (version 1.8.0 or later) and the
 GNU Scientific Library (GSL).  For a full installation, you will also need
-libTIFF, libPNG, Cairo and GTK2.  All of these should be installed from your
-distribution's package manager.  Be sure to install the development files for
-each package, which will have a name like "gtk+-2.0-dev" or "gtk+-2.0-devel",
-depending on which distribution you use.
+libTIFF, libPNG, Cairo, FFTW3, CBFLib and GTK2.  All of these should be
+installed from your distribution's package manager.  Be sure to install the
+development files for each package, which will have a name like "gtk+-2.0-dev"
+or "gtk+-2.0-devel", depending on which distribution you use.
 
 If you get an error mentioning fftw3 and telling you to recompile with -fPIC,
 then your version of FFTW3 is not compiled in a suitable way.  You'll need to
