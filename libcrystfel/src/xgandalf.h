@@ -27,9 +27,10 @@ struct xgandalf_options {
 int run_xgandalf(struct image *image, void *ipriv);
 
 void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
-		struct xgandalf_options *xgandalf_opts);
+                       struct xgandalf_options *xgandalf_opts);
 
 void xgandalf_cleanup(void *pp);
+
 const char *xgandalf_probe(UnitCell *cell);
 
 
