@@ -24,13 +24,13 @@ struct xgandalf_options {
 #include <stddef.h>
 #include "index.h"
 
-int run_xgandalf(struct image *image, void *ipriv);
+extern int run_xgandalf(struct image *image, void *ipriv);
 
-void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
-                       struct xgandalf_options *xgandalf_opts);
+extern void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
+                              struct xgandalf_options *xgandalf_opts);
 
-void xgandalf_cleanup(void *pp);
+extern void xgandalf_cleanup(void *pp);
+extern const char *xgandalf_probe(UnitCell *cell);
 
-const char *xgandalf_probe(UnitCell *cell);
 
 #endif /* LIBCRYSTFEL_SRC_XGANDALF_H */
