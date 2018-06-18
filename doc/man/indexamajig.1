@@ -86,6 +86,10 @@ Invoke XDS, and use its REFIDX procedure to attempt to index the pattern.
 .PD
 Use the TakeTwo algorithm.  See Ginn et al., Acta Cryst. (2016). D72, 956-965.
 
+.IP \fBxgandalf\fR
+.PD
+Invoke XGANDALF - eXtended GrAdient Descent Algorithm for Lattice Finding. Xgandalf must be installed in order to be able to use it.
+
 .PP
 You can add one or more of the following to the above indexing methods, to control what information should be provided to them.  Note that indexamajig performs a series of checks on the indexing results, including checking that the result is consistent with the target unit cell parameters.  To get completely "raw" indexing, you need to disable these checks (see below) \fBand\fR not provide prior information.
 
@@ -396,6 +400,26 @@ The defaults are: \fB--taketwo-member-threshold=20\fR, \fB--taketwo-len-tolernac
 .IP \fB--felix-tthrange-min=\fIn\fR
 .PD 0
 These set low-level parameters for the Felix indexing algorithm.
+
+.PD 0
+.IP \fB--xgandalf-sampling-pitch-selector=\fIn\fR
+.IP \fB--xgandalf-grad-desc-iterations-selector=\fIn\fR
+.IP \fB--xgandalf-tolerance=\fIn\fR
+.IP \fB--xgandalf-no-deviation-from-provided-cell\fR
+.IP \fB--xgandalf-max-lattice-vector-length=\fIn\fR
+.IP \fB--xgandalf-min-lattice-vector-length=\fIn\fR
+.PD
+These set low-level parameters for the XGANDALF indexing algorithm.
+.IP
+\fB--xgandalf-sampling-pitch-selector\fR selects how dense the reciprocal space is sampled. [0-4]: extremelyLoose to extremelyDense. [5-7]: standardWithSeondaryMillerIndices to extremelyDenseWithSeondaryMillerIndices. Default is 6 (denseWithSeondaryMillerIndices).
+.IP
+\fB--xgandalf-grad-desc-iterations-selector\fR  selects how many gradient descent iterations are performed. [0-5]: veryFew to extremelyMany. Default is 4 (manyMany).
+.IP
+\fB--xgandalf-tolerance\fR relative tolerance of the lattice vectors. Default is 0.02.
+.IP
+\fB--xgandalf-no-deviation-from-provided-cell\fR if a prior unit cell was provided, and this flag is set, the found unit cell will have exactly the same size as the provided one.
+.IP
+\fB--xgandalf-min-lattice-vector-length\fR and \fB--xgandalf-min-lattice-vector-length\fR minimum and maximum possible lattice vector lengths (unit is A). Used for fitting without prior lattice as starting point for gradient descent, so the final minimum lattice vector length can be smaller/highier as min/max. Note: This is valid for the uncentered cell, i.e. the P-cell! Default is 30A and 250A respectively.
 
 .SH INTEGRATION OPTIONS
 .PD 0

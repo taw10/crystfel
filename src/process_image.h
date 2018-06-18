@@ -41,6 +41,7 @@ struct index_args;
 #include "im-sandbox.h"
 #include "time-accounts.h"
 #include "taketwo.h"
+#include "xgandalf.h"
 #include "felix.h"
 
 
@@ -109,6 +110,7 @@ struct index_args
 	int overpredict;
 	int profile;  /* Whether or not to do wall clock profiling */
 	struct taketwo_options taketwo_opts;
+    struct xgandalf_options xgandalf_opts;
 	struct felix_options felix_opts;
 };
 
