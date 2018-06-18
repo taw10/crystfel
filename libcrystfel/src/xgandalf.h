@@ -5,8 +5,8 @@
  *      Author: gevorkov
  */
 
-#ifndef LIBCRYSTFEL_SRC_XGANDALF_H_
-#define LIBCRYSTFEL_SRC_XGANDALF_H_
+#ifndef LIBCRYSTFEL_SRC_XGANDALF_H
+#define LIBCRYSTFEL_SRC_XGANDALF_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -33,5 +33,4 @@ void xgandalf_cleanup(void *pp);
 
 const char *xgandalf_probe(UnitCell *cell);
 
-
-#endif /* LIBCRYSTFEL_SRC_XGANDALF_H_ */
+#endif /* LIBCRYSTFEL_SRC_XGANDALF_H */
