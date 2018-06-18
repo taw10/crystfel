@@ -251,7 +251,6 @@ static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copym
 int main(int argc, char *argv[])
 {
 	int c;
-	unsigned int tmp_enum;
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
@@ -814,21 +813,19 @@ int main(int argc, char *argv[])
 			break;
 
 			case 351:
-			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.sampling_pitch) != 1)
 			{
 				ERROR("Invalid value for --xgandalf-sampling-pitch-selector\n");
 				return 1;
 			}
-			iargs.xgandalf_opts.sampling_pitch = tmp_enum;
 			break;
 
 			case 352:
-			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.grad_desc_iteration_selector) != 1)
 			{
 				ERROR("Invalid value for --xgandalf-grad-desc-iterations-selector\n");
 				return 1;
 			}
-			iargs.xgandalf_opts.grad_desc_iteration_selector = tmp_enum;
 			break;
 
 			case 353:
