@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
 	iargs.taketwo_opts.angle_tol = -1.0;
 	iargs.taketwo_opts.trace_tol = -1.0;
 	iargs.xgandalf_opts.sampling_pitch = 6;
-	iargs.xgandalf_opts.grad_desc_iteration_selector = 4;
+	iargs.xgandalf_opts.grad_desc_iterations = 4;
 	iargs.xgandalf_opts.tolerance = 0.02;
 	iargs.xgandalf_opts.no_deviation_from_provided_cell = 0;
 	iargs.xgandalf_opts.minLatticeVectorLength_A = 30;
@@ -815,15 +815,15 @@ int main(int argc, char *argv[])
 			case 351:
 			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.sampling_pitch) != 1)
 			{
-				ERROR("Invalid value for --xgandalf-sampling-pitch-selector\n");
+				ERROR("Invalid value for --xgandalf-sampling-pitch\n");
 				return 1;
 			}
 			break;
 
 			case 352:
-			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.grad_desc_iteration_selector) != 1)
+			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.grad_desc_iterations) != 1)
 			{
-				ERROR("Invalid value for --xgandalf-grad-desc-iterations-selector\n");
+				ERROR("Invalid value for --xgandalf-grad-desc-iterations\n");
 				return 1;
 			}
 			break;

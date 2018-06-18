@@ -14,7 +14,7 @@
 
 struct xgandalf_options {
 	unsigned int sampling_pitch;
-	unsigned int grad_desc_iteration_selector;
+	unsigned int grad_desc_iterations;
 	float tolerance;
 	unsigned int no_deviation_from_provided_cell;
 	float minLatticeVectorLength_A;

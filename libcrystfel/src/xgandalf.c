@@ -124,7 +124,7 @@ void *xgandalf_prepare(IndexingMethod *indm,
 	float tolerance = xgandalf_opts->tolerance;
 	samplingPitch_t samplingPitch = xgandalf_opts->sampling_pitch;
 	gradientDescentIterationsCount_t gradientDescentIterationsCount =
-	                                xgandalf_opts->grad_desc_iteration_selector;
+	                                xgandalf_opts->grad_desc_iterations;
 
 	if (*indm & INDEXING_USE_CELL_PARAMETERS) {
 		xgandalf_private_data->cellTemplate = cell;
