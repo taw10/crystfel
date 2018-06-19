@@ -13,11 +13,12 @@ find_package(HDF5 REQUIRED COMPONENTS C)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
 find_package(GTK2 2.0.0 COMPONENTS gtk)
-find_package(GdkPixbuf2)
-find_package(GDK)
 find_package(TIFF)
-find_package(Cairo)
 find_package(OpenCL)
+find_package(PkgConfig REQUIRED)
+pkg_search_module(CAIRO cairo)
+pkg_search_module(GDK gdk-2.0)
+pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 
@@ -182,7 +183,7 @@ if (CAIRO_FOUND)
   add_executable(render_hkl ${RENDER_HKL_SOURCES})
 
   target_include_directories(render_hkl PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS})
-  target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES})
+  target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LDFLAGS})
 
   list(APPEND CRYSTFEL_EXECUTABLES render_hkl)
 
@@ -276,17 +277,17 @@ list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
 # If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
 if (CAIRO_FOUND)
   target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
+  target_link_libraries(geoptimiser ${CAIRO_LDFLAGS})
 endif (CAIRO_FOUND)
 
 if (GDKPIXBUF_FOUND)
   target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
+  target_link_libraries(geoptimiser ${GDKPIXBUF_LDFLAGS})
 endif (GDKPIXBUF_FOUND)
 
 if (GDK_FOUND)
   target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
+  target_link_libraries(geoptimiser ${GDK_LDFLAGS})
 endif (GDK_FOUND)
 
 if (TIFF_FOUND)

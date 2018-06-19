@@ -1,12 +1,12 @@
 project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
-find_package(FFTW)
 find_package(CBF)
 find_package(XGANDALF)
 find_package(PINKINDEXER)
 find_package(NBP)
 find_package(FDIP)
+pkg_search_module(FFTW fftw3)
 
 set(HAVE_CURSES ${CURSES_FOUND})
 set(HAVE_FFTW ${FFTW_FOUND})
@@ -148,7 +148,7 @@ endif (NBP_FOUND)
 
 if (FFTW_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${FFTW_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LDFLAGS})
 endif (FFTW_FOUND)
 
 if (CBF_FOUND)
