@@ -147,7 +147,7 @@ if (NBP_FOUND)
 endif (NBP_FOUND)
 
 if (FFTW_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${FFTW_INCLUDES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${FFTW_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LDFLAGS})
 endif (FFTW_FOUND)
 
