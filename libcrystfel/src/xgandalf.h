@@ -33,6 +33,8 @@
 #include <config.h>
 #endif
 
+#include <stddef.h>
+
 struct xgandalf_options {
 	unsigned int sampling_pitch;
 	unsigned int grad_desc_iterations;
@@ -42,7 +44,6 @@ struct xgandalf_options {
 	float maxLatticeVectorLength_A;
 };
 
-#include <stddef.h>
 #include "index.h"
 
 extern int run_xgandalf(struct image *image, void *ipriv);

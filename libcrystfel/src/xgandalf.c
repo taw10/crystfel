@@ -60,6 +60,7 @@ struct xgandalf_private_data {
 static void reduceCell(UnitCell* cell);
 static void makeRightHanded(UnitCell* cell);
 
+
 int run_xgandalf(struct image *image, void *ipriv)
 {
 	struct xgandalf_private_data *xgandalf_private_data =
@@ -130,9 +131,9 @@ int run_xgandalf(struct image *image, void *ipriv)
 	return goodLatticesCount;
 }
 
-void *xgandalf_prepare(IndexingMethod *indm,
-	                   UnitCell *cell,
-	                   struct xgandalf_options *xgandalf_opts)
+
+void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
+                       struct xgandalf_options *xgandalf_opts)
 {
 	struct xgandalf_private_data *xgandalf_private_data =
 	                              malloc(sizeof(struct xgandalf_private_data));
@@ -146,6 +147,7 @@ void *xgandalf_prepare(IndexingMethod *indm,
 	                                xgandalf_opts->grad_desc_iterations;
 
 	if (*indm & INDEXING_USE_CELL_PARAMETERS) {
+
 		xgandalf_private_data->cellTemplate = cell;
 
 		UnitCell* primitiveCell = uncenter_cell(cell, NULL);
@@ -175,39 +177,35 @@ void *xgandalf_prepare(IndexingMethod *indm,
 		        .ax = ax * 1e10, .ay = ay * 1e10, .az = az * 1e10,
 		        .bx = bx * 1e10, .by = by * 1e10, .bz = bz * 1e10,
 		        .cx = cx * 1e10, .cy = cy * 1e10, .cz = cz * 1e10 };
-		xgandalf_private_data->sampleRealLatticeReduced_A =
-		                                             sampleRealLatticeReduced_A;
+		xgandalf_private_data->sampleRealLatticeReduced_A = sampleRealLatticeReduced_A;
 
 		ExperimentSettings *experimentSettings =
 				ExperimentSettings_new(FAKE_BEAM_ENERGY,
-		                               FAKE_DETECTOR_DISTANCE,
-		                               FAKE_DETECTOR_RADIUS,
-		                               FAKE_DIVERGENCE_ANGLE_DEG,
-		                               FAKE_NON_MONOCHROMATICITY,
-		                               sampleReciprocalLattice_1_per_A,
-		                               tolerance,
-		                               FAKE_REFLECTION_RADIUS);
+				                       FAKE_DETECTOR_DISTANCE,
+				                       FAKE_DETECTOR_RADIUS,
+				                       FAKE_DIVERGENCE_ANGLE_DEG,
+				                       FAKE_NON_MONOCHROMATICITY,
+				                       sampleReciprocalLattice_1_per_A,
+				                       tolerance,
+				                       FAKE_REFLECTION_RADIUS);
 
 		xgandalf_private_data->indexer = IndexerPlain_new(experimentSettings);
 		IndexerPlain_setSamplingPitch(xgandalf_private_data->indexer,
 		                              samplingPitch);
-		IndexerPlain_setGradientDescentIterationsCount(
-		                                        xgandalf_private_data->indexer,
-		                                        gradientDescentIterationsCount);
+		IndexerPlain_setGradientDescentIterationsCount(xgandalf_private_data->indexer,
+		                                               gradientDescentIterationsCount);
 
 		if (xgandalf_opts->no_deviation_from_provided_cell) {
-			IndexerPlain_setRefineWithExactLattice(
-			                                     xgandalf_private_data->indexer,
-			                                     1);
+			IndexerPlain_setRefineWithExactLattice(xgandalf_private_data->indexer, 1);
 		}
 
 		ExperimentSettings_delete(experimentSettings);
 		cell_free(primitiveCell);
-	}
-	else {
+
+	} else {
+
 		Lattice_t sampleRealLatticeReduced_A = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		xgandalf_private_data->sampleRealLatticeReduced_A =
-		                                             sampleRealLatticeReduced_A;
+		xgandalf_private_data->sampleRealLatticeReduced_A = sampleRealLatticeReduced_A;
 
 		ExperimentSettings *experimentSettings =
 		   ExperimentSettings_new_nolatt(FAKE_BEAM_ENERGY,
@@ -222,28 +220,27 @@ void *xgandalf_prepare(IndexingMethod *indm,
 		xgandalf_private_data->indexer = IndexerPlain_new(experimentSettings);
 		IndexerPlain_setSamplingPitch(xgandalf_private_data->indexer,
 		                              samplingPitch);
-		IndexerPlain_setGradientDescentIterationsCount(
-		                                       xgandalf_private_data->indexer,
-		                                       gradientDescentIterationsCount);
+		IndexerPlain_setGradientDescentIterationsCount(xgandalf_private_data->indexer,
+		                                               gradientDescentIterationsCount);
 
 		ExperimentSettings_delete(experimentSettings);
 	}
 
 	/* Flags that XGANDALF knows about */
-	*indm &= INDEXING_METHOD_MASK
-	        | INDEXING_USE_CELL_PARAMETERS;
+	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_CELL_PARAMETERS;
 
 	return xgandalf_private_data;
 }
 
+
 void xgandalf_cleanup(void *pp)
 {
-	struct xgandalf_private_data *xgandalf_private_data =
-			                                 (struct xgandalf_private_data*) pp;
+	struct xgandalf_private_data *xgandalf_private_data = pp;
 
 	freeReciprocalPeaks(xgandalf_private_data->reciprocalPeaks_1_per_A);
 	IndexerPlain_delete(xgandalf_private_data->indexer);
 }
+
 
 static void reduceCell(UnitCell *cell)
 {
@@ -261,19 +258,21 @@ static void reduceCell(UnitCell *cell)
 	makeRightHanded(cell);
 }
 
+
 static void makeRightHanded(UnitCell *cell)
 {
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	if (!right_handed(cell)) {
+	if ( !right_handed(cell) ) {
 		cell_set_cartesian(cell, -ax, -ay, -az, -bx, -by, -bz, -cx, -cy, -cz);
 	}
 }
 
+
 const char *xgandalf_probe(UnitCell *cell)
 {
-    return "xgandalf";
+	return "xgandalf";
 }
 
 #else
@@ -284,21 +283,24 @@ int run_xgandalf(struct image *image, void *ipriv)
 	return 0;
 }
 
+
 void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
-		struct xgandalf_options *xgandalf_opts)
+                       struct xgandalf_options *xgandalf_opts)
 {
 	ERROR("This copy of CrystFEL was compiled without XGANDALF support.\n");
 	ERROR("To use XGANDALF indexing, recompile with XGANDALF.\n");
 	return NULL;
 }
 
+
 void xgandalf_cleanup(void *pp)
 {
 }
 
+
 const char *xgandalf_probe(UnitCell *cell)
 {
-    return NULL;
+	return NULL;
 }
 
 #endif // HAVE_XGANDALF
