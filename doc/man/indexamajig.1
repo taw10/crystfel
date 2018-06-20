@@ -402,8 +402,8 @@ The defaults are: \fB--taketwo-member-threshold=20\fR, \fB--taketwo-len-tolernac
 These set low-level parameters for the Felix indexing algorithm.
 
 .PD 0
-.IP \fB--xgandalf-sampling-pitch-selector=\fIn\fR
-.IP \fB--xgandalf-grad-desc-iterations-selector=\fIn\fR
+.IP \fB--xgandalf-sampling-pitch=\fIn\fR
+.IP \fB--xgandalf-grad-desc-iterations=\fIn\fR
 .IP \fB--xgandalf-tolerance=\fIn\fR
 .IP \fB--xgandalf-no-deviation-from-provided-cell\fR
 .IP \fB--xgandalf-max-lattice-vector-length=\fIn\fR
@@ -411,9 +411,9 @@ These set low-level parameters for the Felix indexing algorithm.
 .PD
 These set low-level parameters for the XGANDALF indexing algorithm.
 .IP
-\fB--xgandalf-sampling-pitch-selector\fR selects how dense the reciprocal space is sampled. [0-4]: extremelyLoose to extremelyDense. [5-7]: standardWithSeondaryMillerIndices to extremelyDenseWithSeondaryMillerIndices. Default is 6 (denseWithSeondaryMillerIndices).
+\fB--xgandalf-sampling-pitch\fR selects how dense the reciprocal space is sampled. [0-4]: extremelyLoose to extremelyDense. [5-7]: standardWithSeondaryMillerIndices to extremelyDenseWithSeondaryMillerIndices. Default is 6 (denseWithSeondaryMillerIndices).
 .IP
-\fB--xgandalf-grad-desc-iterations-selector\fR  selects how many gradient descent iterations are performed. [0-5]: veryFew to extremelyMany. Default is 4 (manyMany).
+\fB--xgandalf-grad-desc-iterations\fR  selects how many gradient descent iterations are performed. [0-5]: veryFew to extremelyMany. Default is 4 (manyMany).
 .IP
 \fB--xgandalf-tolerance\fR relative tolerance of the lattice vectors. Default is 0.02.
 .IP
