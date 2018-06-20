@@ -93,7 +93,7 @@ int run_xgandalf(struct image *image, void *ipriv)
 		makeRightHanded(uc);
 
 		if (validate_cell(uc)) {
-			printf("problem with returned cell!\n");
+			STATUS("Problem with returned cell!\n");
 		}
 
 		Crystal *cr = crystal_new();
@@ -113,8 +113,6 @@ void *xgandalf_prepare(IndexingMethod *indm,
 	                   UnitCell *cell,
 	                   struct xgandalf_options *xgandalf_opts)
 {
-	printf("preparing xgandalf\n");
-
 	struct xgandalf_private_data *xgandalf_private_data =
 	                              malloc(sizeof(struct xgandalf_private_data));
 	allocReciprocalPeaks(&(xgandalf_private_data->reciprocalPeaks_1_per_A));
@@ -131,9 +129,6 @@ void *xgandalf_prepare(IndexingMethod *indm,
 
 		UnitCell* primitiveCell = uncenter_cell(cell, NULL);
 		reduceCell(primitiveCell);
-
-		printf("reduced cell:\n");
-		cell_print(primitiveCell);
 
 		double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 		int ret = cell_get_reciprocal(primitiveCell, &asx, &asy, &asz,
