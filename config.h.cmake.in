@@ -6,6 +6,7 @@
 #cmakedefine HAVE_TIFF
 #cmakedefine HAVE_CAIRO
 #cmakedefine HAVE_OPENCL
+#cmakedefine HAVE_CL_CL_H
 #cmakedefine HAVE_CLOCK_GETTIME
 
 #define PACKAGE_VERSION "${CRYSTFEL_VERSION}"

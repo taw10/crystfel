@@ -3,7 +3,6 @@
 #cmakedefine HAVE_CLOCK_GETTIME
 #cmakedefine HAVE_CPU_AFFINITY
 #cmakedefine HAVE_FFTW
-#cmakedefine HAVE_CL_CL_H
 #cmakedefine HAVE_XGANDALF
 #cmakedefine HAVE_FDIP
 #cmakedefine HAVE_CURSES

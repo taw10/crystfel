@@ -38,7 +38,11 @@
 #include <string.h>
 #include <complex.h>
 
+#ifdef HAVE_CL_CL_H
 #include <CL/cl.h>
+#else
+#include <cl.h>
+#endif
 
 #include "image.h"
 #include "utils.h"

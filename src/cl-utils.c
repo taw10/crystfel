@@ -34,7 +34,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef HAVE_CL_CL_H
 #include <CL/cl.h>
+#else
+#include <cl.h>
+#endif
 
 #include "utils.h"
 
