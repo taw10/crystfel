@@ -18,7 +18,11 @@ if ( !($args eq "") ) {
 open(FH, $ARGV[0]);
 open(TMP, "> list.tmp");
 
-my $statbuf = stat($ARGV[0]);
+my $statbuf = stat($file);
+if ( not $statbuf ) {
+	printf("Couldn't stat stream. Check the filename.\n");
+	exit;
+}
 my $stream_mtime = $statbuf->mtime;
 
 my $in_image = 0;
