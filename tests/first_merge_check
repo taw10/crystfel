@@ -42,7 +42,7 @@ Symmetry: 1
 EOF
 
 process_hkl -i first_merge_check.stream -o first_merge_check.hkl --no-polarisation
-if [ $? -ne 0]; then
+if [ $? -ne 0 ]; then
 	exit 1;
 fi
 ex -c '/End of reflections/
