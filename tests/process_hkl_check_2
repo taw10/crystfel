@@ -2,7 +2,7 @@
 
 PROCESS_HKL=$1
 
-cat > first_merge_check.stream << EOF
+cat > process_hkl_check_2.stream << EOF
 CrystFEL stream format 2.1
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
 ----- Begin chunk -----
@@ -30,28 +30,28 @@ bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
 cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
 Reflections measured after indexing
   h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0     200.00        -       0.00       1  938.0  629.0
+ -1   0   0     200.00        -       0.00       1  938.0  629.0
 End of reflections
 --- End crystal
 ----- End chunk -----
 EOF
 
-cat > first_merge_check_ans.hkl << EOF
+cat > process_hkl_check_2_ans.hkl << EOF
 CrystFEL reflection list version 2.0
-Symmetry: 1
+Symmetry: -1
    h    k    l          I    phase   sigma(I)   nmeas
    1    0    0     150.00        -      35.36       2
 EOF
 
-$PROCESS_HKL -i first_merge_check.stream -o first_merge_check.hkl --no-polarisation
+$PROCESS_HKL -y -1 -i process_hkl_check_2.stream -o process_hkl_check_2.hkl --no-polarisation
 if [ $? -ne 0 ]; then
 	exit 1;
 fi
-sed -n '/End of reflections/q;p' first_merge_check.hkl > tempF.hkl
-mv tempF.hkl first_merge_check.hkl
-diff first_merge_check.hkl first_merge_check_ans.hkl
+sed -n '/End of reflections/q;p' process_hkl_check_2.hkl > tempS.hkl
+mv tempS.hkl process_hkl_check_2.hkl
+diff process_hkl_check_2.hkl process_hkl_check_2_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
 fi
-rm -f first_merge_check.stream first_merge_check.hkl first_merge_check_ans.hkl
+rm -f process_hkl_check_2.stream process_hkl_check_2.hkl process_hkl_check_2_ans.hkl
 exit 0

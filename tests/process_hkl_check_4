@@ -2,7 +2,7 @@
 
 PROCESS_HKL=$1
 
-cat > fourth_merge_check.stream << EOF
+cat > process_hkl_check_4.stream << EOF
 CrystFEL stream format 2.1
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
 ----- Begin chunk -----
@@ -21,21 +21,21 @@ End of reflections
 ----- End chunk -----
 EOF
 
-cat > fourth_merge_check_ans.hkl << EOF
+cat > process_hkl_check_4_ans.hkl << EOF
 CrystFEL reflection list version 2.0
 Symmetry: 1
    h    k    l          I    phase   sigma(I)   nmeas
 EOF
 
-$PROCESS_HKL -i fourth_merge_check.stream -o fourth_merge_check.hkl --no-polarisation
+$PROCESS_HKL -i process_hkl_check_4.stream -o process_hkl_check_4.hkl --no-polarisation
 if [ $? -ne 0 ]; then
 	exit 1;
 fi
-sed -n '/End of reflections/q;p' fourth_merge_check.hkl > tempf.hkl
-mv tempf.hkl fourth_merge_check.hkl
-diff fourth_merge_check.hkl fourth_merge_check_ans.hkl
+sed -n '/End of reflections/q;p' process_hkl_check_4.hkl > tempf.hkl
+mv tempf.hkl process_hkl_check_4.hkl
+diff process_hkl_check_4.hkl process_hkl_check_4_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
 fi
-rm -f fourth_merge_check.stream fourth_merge_check.hkl fourth_merge_check_ans.hkl
+rm -f process_hkl_check_4.stream process_hkl_check_4.hkl process_hkl_check_4_ans.hkl
 exit 0

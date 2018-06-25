@@ -1,11 +1,11 @@
-add_test(NAME first_merge_check
-         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/first_merge_check $<TARGET_FILE:process_hkl>)
-add_test(NAME second_merge_check
-         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/second_merge_check $<TARGET_FILE:process_hkl>)
-add_test(NAME third_merge_check
-         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/third_merge_check $<TARGET_FILE:process_hkl>)
-add_test(NAME fourth_merge_check
-         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/fourth_merge_check $<TARGET_FILE:process_hkl>)
+add_test(NAME process_hkl_check_1
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/process_hkl_check_1 $<TARGET_FILE:process_hkl>)
+add_test(NAME process_hkl_check_2
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/process_hkl_check_2 $<TARGET_FILE:process_hkl>)
+add_test(NAME process_hkl_check_3
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/process_hkl_check_3 $<TARGET_FILE:process_hkl>)
+add_test(NAME process_hkl_check_4
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/process_hkl_check_4 $<TARGET_FILE:process_hkl>)
 add_test(NAME partialator_merge_check_1
          COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/partialator_merge_check_1 $<TARGET_FILE:partialator>)
 add_test(NAME partialator_merge_check_2
