@@ -1,5 +1,7 @@
 #!/bin/sh
 
+PARTIALATOR=$1
+
 cat > partialator_merge_check_1.stream << EOF
 CrystFEL stream format 2.1
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
@@ -42,10 +44,10 @@ Symmetry: 1
    1    0    0     150.00        -      35.36       2
 EOF
 
-partialator -i partialator_merge_check_1.stream \
-                -o partialator_merge_check_1.hkl  \
-                --model=unity --iterations=0 --no-scale --no-polarisation \
-                --no-logs --no-free
+$PARTIALATOR -i partialator_merge_check_1.stream \
+             -o partialator_merge_check_1.hkl  \
+             --model=unity --iterations=0 --no-scale --no-polarisation \
+             --no-logs --no-free
 if [ $? -ne 0 ]; then
 	exit 1
 fi

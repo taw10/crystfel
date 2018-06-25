@@ -1,5 +1,7 @@
 #!/bin/sh
 
+PROCESS_HKL=$1
+
 cat > fourth_merge_check.stream << EOF
 CrystFEL stream format 2.1
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
@@ -25,7 +27,7 @@ Symmetry: 1
    h    k    l          I    phase   sigma(I)   nmeas
 EOF
 
-process_hkl -i fourth_merge_check.stream -o fourth_merge_check.hkl --no-polarisation
+$PROCESS_HKL -i fourth_merge_check.stream -o fourth_merge_check.hkl --no-polarisation
 if [ $? -ne 0 ]; then
 	exit 1;
 fi

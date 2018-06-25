@@ -1,10 +1,17 @@
-add_test(first_merge_check ${CMAKE_CURRENT_SOURCE_DIR}/first_merge_check)
-add_test(second_merge_check ${CMAKE_CURRENT_SOURCE_DIR}/second_merge_check)
-add_test(third_merge_check ${CMAKE_CURRENT_SOURCE_DIR}/third_merge_check)
-add_test(fourth_merge_check ${CMAKE_CURRENT_SOURCE_DIR}/fourth_merge_check)
-add_test(partialator_merge_check_1 ${CMAKE_CURRENT_SOURCE_DIR}/partialator_merge_check_1)
-add_test(partialator_merge_check_2 ${CMAKE_CURRENT_SOURCE_DIR}/partialator_merge_check_2)
-add_test(partialator_merge_check_3 ${CMAKE_CURRENT_SOURCE_DIR}/partialator_merge_check_3)
+add_test(NAME first_merge_check
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/first_merge_check $<TARGET_FILE:process_hkl>)
+add_test(NAME second_merge_check
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/second_merge_check $<TARGET_FILE:process_hkl>)
+add_test(NAME third_merge_check
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/third_merge_check $<TARGET_FILE:process_hkl>)
+add_test(NAME fourth_merge_check
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/fourth_merge_check $<TARGET_FILE:process_hkl>)
+add_test(NAME partialator_merge_check_1
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/partialator_merge_check_1 $<TARGET_FILE:partialator>)
+add_test(NAME partialator_merge_check_2
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/partialator_merge_check_2 $<TARGET_FILE:partialator>)
+add_test(NAME partialator_merge_check_3
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/partialator_merge_check_3 $<TARGET_FILE:partialator>)
 
 add_executable(ambi_check ambi_check.c)
 target_include_directories(ambi_check PRIVATE ${COMMON_INCLUDES})
