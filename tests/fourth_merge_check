@@ -29,9 +29,8 @@ process_hkl -i fourth_merge_check.stream -o fourth_merge_check.hkl --no-polarisa
 if [ $? -ne 0 ]; then
 	exit 1;
 fi
-ex -c '/End of reflections/
-.,$d
-x' fourth_merge_check.hkl
+sed -n '/End of reflections/q;p' fourth_merge_check.hkl > tempf.hkl
+mv tempf.hkl fourth_merge_check.hkl
 diff fourth_merge_check.hkl fourth_merge_check_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1

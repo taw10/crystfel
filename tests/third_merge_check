@@ -60,9 +60,8 @@ process_hkl -i third_merge_check.stream -o third_merge_check.hkl --no-polarisati
 if [ $? -ne 0 ]; then
 	exit 1;
 fi
-ex -c '/End of reflections/
-.,$d
-x' third_merge_check.hkl
+sed -n '/End of reflections/q;p' third_merge_check.hkl > tempT.hkl
+mv tempT.hkl third_merge_check.hkl
 diff third_merge_check.hkl third_merge_check_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1

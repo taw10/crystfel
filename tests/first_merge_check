@@ -45,9 +45,8 @@ process_hkl -i first_merge_check.stream -o first_merge_check.hkl --no-polarisati
 if [ $? -ne 0 ]; then
 	exit 1;
 fi
-ex -c '/End of reflections/
-.,$d
-x' first_merge_check.hkl
+sed -n '/End of reflections/q;p' first_merge_check.hkl > tempF.hkl
+mv tempF.hkl first_merge_check.hkl
 diff first_merge_check.hkl first_merge_check_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1

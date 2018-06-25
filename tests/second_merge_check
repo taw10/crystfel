@@ -45,9 +45,8 @@ process_hkl -y -1 -i second_merge_check.stream -o second_merge_check.hkl --no-po
 if [ $? -ne 0 ]; then
 	exit 1;
 fi
-ex -c '/End of reflections/
-.,$d
-x' second_merge_check.hkl
+sed -n '/End of reflections/q;p' second_merge_check.hkl > tempS.hkl
+mv tempS.hkl second_merge_check.hkl
 diff second_merge_check.hkl second_merge_check_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
