@@ -3,11 +3,11 @@
  *
  * OpenCL utility functions
  *
- * Copyright © 2012-2014 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -223,29 +223,22 @@ static void show_build_log(cl_program prog, cl_device_id dev)
 }
 
 
-cl_program load_program(const char *filename, cl_context ctx,
-                        cl_device_id dev, cl_int *err, const char *extra_cflags,
-                        const char *insert_stuff)
+cl_program load_program_from_string(const char *source_in, size_t len,
+                                    cl_context ctx, cl_device_id dev,
+                                    cl_int *err, const char *extra_cflags,
+                                    const char *insert_stuff)
 {
-	FILE *fh;
 	cl_program prog;
-	char *source;
-	size_t len;
 	cl_int r;
 	char cflags[1024] = "";
 	char *insert_pos;
 	size_t il;
+	char *source;
 
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) {
-		ERROR("Couldn't open '%s'\n", filename);
-		*err = CL_INVALID_PROGRAM;
-		return 0;
-	}
-	source = malloc(16384);
+	/* Copy the code because we need to zero-terminate it */
+	source = malloc(len+1);
 	if ( source == NULL ) return 0;
-	len = fread(source, 1, 16383, fh);
-	fclose(fh);
+	memcpy(source, source_in, len);
 	source[len] = '\0';
 
 	if ( insert_stuff != NULL ) {
@@ -276,13 +269,12 @@ cl_program load_program(const char *filename, cl_context ctx,
 	}
 
 	cflags[0] = '\0';
-	strncat(cflags, "-I"DATADIR"/crystfel/ ", 1023-strlen(cflags));
 	strncat(cflags, "-cl-no-signed-zeros ", 1023-strlen(cflags));
 	strncat(cflags, extra_cflags, 1023-strlen(cflags));
 
 	r = clBuildProgram(prog, 0, NULL, cflags, NULL, NULL);
 	if ( r != CL_SUCCESS ) {
-		ERROR("Couldn't build program '%s'\n", filename);
+		ERROR("Couldn't build program\n");
 		show_build_log(prog, dev);
 		*err = r;
 		return 0;
@@ -291,4 +283,28 @@ cl_program load_program(const char *filename, cl_context ctx,
 	free(source);
 	*err = CL_SUCCESS;
 	return prog;
+}
+
+
+cl_program load_program(const char *filename, cl_context ctx,
+                        cl_device_id dev, cl_int *err, const char *extra_cflags,
+                        const char *insert_stuff)
+{
+	FILE *fh;
+	char *source;
+	size_t len;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open '%s'\n", filename);
+		*err = CL_INVALID_PROGRAM;
+		return 0;
+	}
+	source = malloc(16384);
+	if ( source == NULL ) return 0;
+	len = fread(source, 1, 16383, fh);
+	fclose(fh);
+
+	return load_program_from_string(source, len, ctx, dev,err, extra_cflags,
+	                                insert_stuff);
 }

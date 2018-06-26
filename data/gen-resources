@@ -1,0 +1,20 @@
+#!/bin/sh
+
+function gen_resource()
+{
+	INFILE=$1
+	OUTFILE=$2
+
+	echo "/*" > $OUTFILE
+	echo " * This file was generated from $INFILE" >> $OUTFILE
+	echo " * using the following command:" >> $OUTFILE
+	echo " * xxd -i $INFILE $OUTFILE" >> $OUTFILE
+	echo " *" >> $OUTFILE
+	echo " * If you have 'xxd' installed, you can run the script" >> $OUTFILE
+	echo " * data/gen-resources to re-create this file." >> $OUTFILE
+	echo " */" >> $OUTFILE
+	echo >> $OUTFILE
+	xxd -i $INFILE >> $OUTFILE
+}
+
+gen_resource data/diffraction.cl src/diffraction.cl.h

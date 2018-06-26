@@ -23,7 +23,7 @@ pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-add_definitions(-DHAVE_CONFIG_H -DDATADIR=\"${CMAKE_INSTALL_FULL_DATADIR}\")
+add_definitions(-DHAVE_CONFIG_H)
 set(CMAKE_C_STANDARD 99)
 
 # Common include directories and libraries
@@ -120,7 +120,6 @@ set(PATTERN_SIM_SOURCES src/pattern_sim.c src/diffraction.c)
 
 if(HAVE_OPENCL)
   set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
-  set(PATTERN_SIM_RESOURCE_FILES data/diffraction.cl)
 endif(HAVE_OPENCL)
 
 add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
@@ -132,9 +131,6 @@ if(HAVE_OPENCL)
   target_link_libraries(pattern_sim ${OpenCL_LIBRARIES})
 endif(HAVE_OPENCL)
 
-set_target_properties(pattern_sim PROPERTIES
-                      RESOURCE "${PATTERN_SIM_RESOURCE_FILES}")
-
 list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
 
 # ----------------------------------------------------------------------
@@ -143,7 +139,6 @@ list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
 if (GTK2_FOUND)
 
   set(HDFSEE_SOURCES src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c)
-  set(HDFSEE_RESOURCE_FILES data/hdfsee.ui)
   add_executable(hdfsee ${HDFSEE_SOURCES})
 
   target_include_directories(hdfsee PRIVATE ${COMMON_INCLUDES} ${GTK2_INCLUDE_DIRS})
@@ -153,8 +148,6 @@ if (GTK2_FOUND)
     target_include_directories(hdfsee PRIVATE ${TIFF_INCLUDE_DIRS})
     target_link_libraries(hdfsee ${TIFF_LIBRARIES})
   endif (TIFF_FOUND)
-
-  set_target_properties(hdfsee PROPERTIES RESOURCE "${HDFSEE_RESOURCE_FILES}")
 
   list(APPEND CRYSTFEL_EXECUTABLES hdfsee)
 
@@ -319,8 +312,7 @@ if("${isSystemDir}" STREQUAL "-1")
 endif("${isSystemDir}" STREQUAL "-1")
 
 install(TARGETS ${CRYSTFEL_EXECUTABLES}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-	RESOURCE DESTINATION share/crystfel)
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES
         doc/man/ambigator.1

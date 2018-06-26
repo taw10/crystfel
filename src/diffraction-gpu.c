@@ -51,6 +51,7 @@
 #include "cl-utils.h"
 #include "pattern_sim.h"
 
+#include "diffraction.cl.h"
 
 #define SINC_LUT_ELEMENTS (4096)
 
@@ -530,8 +531,9 @@ struct gpu_context *setup_gpu(int no_sfac,
 	}
 	free(flags_ptr);
 
-	gctx->prog = load_program(DATADIR"/crystfel/diffraction.cl", gctx->ctx,
-	                          dev, &err, cflags, insert_stuff);
+	gctx->prog = load_program_from_string(data_diffraction_cl,
+	                                      data_diffraction_cl_len, gctx->ctx,
+	                                      dev, &err, cflags, insert_stuff);
 	if ( err != CL_SUCCESS ) {
 		free(gctx);
 		return NULL;

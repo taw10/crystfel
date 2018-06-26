@@ -3,12 +3,12 @@
  *
  * Quick yet non-crappy HDF viewer
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2018 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2014      Takanori Nakane
  *   2012      Richard Kirian
@@ -2295,6 +2295,53 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
                                      int colscale)
 {
 	GError *error = NULL;
+
+	const char *ui="<ui>"
+	   "<menubar name=\"displaywindow\">"
+	   "<menu name=\"file\" action=\"FileAction\">"
+	   "<menuitem name=\"save\" action=\"SaveAction\" />"
+	   "<separator />"
+	   "<menuitem name=\"close\" action=\"CloseAction\" />"
+	   "</menu>"
+	   "<menu name=\"view\" action=\"ViewAction\">"
+	   "<menuitem name=\"images\" action=\"ImagesAction\" />"
+	   "<separator />"
+	   "<menuitem name=\"binning\" action=\"BinningAction\" />"
+	   "<menuitem name=\"boostint\" action=\"BoostIntAction\" />"
+	   "<menuitem name=\"rings\" action=\"RingsAction\" />"
+	   "<menuitem name=\"showpeaks\" action=\"ShowPeaksAction\" />"
+	   "<menuitem name=\"ringradius\" action=\"RingRadiusAction\" />"
+	   "<separator />"
+	   "<menuitem name=\"col\" action=\"ColAction\" />"
+	   "<menuitem name=\"monoscale\" action=\"MonoAction\" />"
+	   "<menuitem name=\"invmonoscale\" action=\"InvMonoAction\" />"
+	   "<separator />"
+	   "<menuitem name=\"colscale\" action=\"ColScaleAction\" />"
+	   "</menu>"
+	   "<menu name=\"tools\" action=\"ToolsAction\">"
+	   "<menuitem name=\"calibmode\" action=\"CalibModeAction\" />"
+	   "<menuitem name=\"numbers\" action=\"NumbersAction\" />"
+	   "<menuitem name=\"peaks\" action=\"PeaksAction\" />"
+	   "</menu>"
+	   "<menu name=\"calibration\" action=\"CalibrationAction\">"
+	   "<menuitem name=\"calibrationprevious\" action=\"CalibPreviousAction\" />"
+	   "<menuitem name=\"calibrationnext\" action=\"CalibNextAction\" />"
+	   "<menuitem name=\"switchcalibmode\" action=\"SwitchCalibModeAction\" />"
+	   "<menuitem name=\"focus\" action=\"ToggleFocusAction\" />"
+	   "<menuitem name=\"savegeometry\" action=\"SaveGeometryAction\" />"
+	   "</menu>"
+	   "<menu name=\"events\" action=\"EventsAction\">"
+	   "<menuitem name=\"eventprevious\" action=\"EventPreviousAction\" />"
+	   "<menuitem name=\"eventnext\" action=\"EventNextAction\" />"
+	   "<menuitem name=\"gotoevent\" action=\"GotoEventAction\" />"
+	   "<menuitem name=\"randomevent\" action=\"RandomEventAction\" />"
+	   "</menu>"
+	   "<menu name=\"help\" action=\"HelpAction\">"
+	   "<menuitem name=\"about\" action=\"AboutAction\" />"
+	   "</menu>"
+	   "</menubar>"
+	   "</ui>";
+
 	GtkActionEntry entries[] = {
 
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
@@ -2382,8 +2429,7 @@ static void displaywindow_addmenubar(DisplayWindow *dw, GtkWidget *vbox,
 	gtk_ui_manager_insert_action_group(dw->ui, dw->action_group, 0);
 	g_signal_connect(dw->ui, "add_widget",
 			 G_CALLBACK(displaywindow_addui_callback), vbox);
-	if ( gtk_ui_manager_add_ui_from_file(dw->ui,
-	     DATADIR"/crystfel/hdfsee.ui", &error) == 0 ) {
+	if ( gtk_ui_manager_add_ui_from_string(dw->ui, ui, -1, &error) == 0 ) {
 		fprintf(stderr, "Error loading message window menu bar: %s\n",
 			error->message);
 		return;
