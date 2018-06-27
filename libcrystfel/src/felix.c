@@ -613,14 +613,14 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 {
 	struct felix_private *gp;
 
-	if ( felix_probe(cell) == NULL ) {
-		ERROR("Felix does not appear to run properly.\n");
-		ERROR("Please check your Felix installation.\n");
+	if ( !cell_has_parameters(cell) ) {
+		ERROR("Felix needs a unit cell.\n");
 		return NULL;
 	}
 
-	if ( !cell_has_parameters(cell) ) {
-		ERROR("Felix needs a unit cell.\n");
+	if ( felix_probe(cell) == NULL ) {
+		ERROR("Felix does not appear to run properly.\n");
+		ERROR("Please check your Felix installation.\n");
 		return NULL;
 	}
 
