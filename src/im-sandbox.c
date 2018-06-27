@@ -623,7 +623,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 				exit(1);
 			}
 
-			r = mkdir(tmp, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			r = mkdir(tmp, S_IRWXU);
 			if ( r ) {
 				ERROR("Failed to create temporary folder: %s\n",
 				strerror(errno));
@@ -935,7 +935,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			return;
 		}
 
-		r = mkdir(sb->tmpdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		r = mkdir(sb->tmpdir, S_IRWXU);
 		if ( r ) {
 			ERROR("Failed to create temporary folder: %s\n",
 			      strerror(errno));
