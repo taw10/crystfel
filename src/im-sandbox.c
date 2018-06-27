@@ -848,6 +848,49 @@ static void try_status(struct sandbox *sb, time_t tNow)
 }
 
 
+static void delete_temporary_folder(const char *tmpdir, int n_proc)
+{
+	int slot;
+	size_t len;
+	char *workerdir;
+	char *path;
+
+	/* List of files which it's safe to delete */
+	char *files[] = {"gmon.out", "mosflm.lp", "SUMMARY", "XDS.INP",
+	                 "xfel_001.img", "xfel_001.spt", "xfel.drx",
+	                 "xfel.felix", "xfel.gve", "xfel.ini", "xfel.log"};
+
+	/* Number of items in the above list */
+	int n_files = 11;
+
+	if ( n_proc > 99999 ) return;  /* Paranoia */
+
+	len = strlen(tmpdir);
+	workerdir = calloc(len+32, 1);
+	path = calloc(len+64, 1);
+	if ( (workerdir == NULL) || (path == NULL) ) return;
+
+	for ( slot=0; slot<n_proc; slot++ ) {
+
+		struct stat s;
+		int i;
+
+		snprintf(workerdir, 63, "%s/worker.%i", tmpdir, slot);
+		if ( stat(workerdir, &s) == -1 ) continue;
+
+		for ( i=0; i<n_files; i++ ) {
+			snprintf(path, 127, "%s/%s", workerdir, files[i]);
+			unlink(path);
+		}
+
+		rmdir(workerdir);
+
+	}
+
+	rmdir(tmpdir);
+}
+
+
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh,
                     Stream *stream, const char *tempdir, int serial_start)
@@ -1065,13 +1108,15 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->running);
 	free(sb->last_response);
 	free(sb->pids);
-	free(sb->tmpdir);
 
 	STATUS("Final: %i images processed, %i had crystals (%.1f%%),"
 	       " %i crystals overall.\n",
 	       sb->shared->n_processed, sb->shared->n_hadcrystals,
 	       100.0 * sb->shared->n_hadcrystals / sb->shared->n_processed,
 	       sb->shared->n_crystals);
+
+	delete_temporary_folder(sb->tmpdir, n_proc);
+	free(sb->tmpdir);
 
 	munmap(sb->shared, sizeof(struct sb_shm));
 	free(sb);
