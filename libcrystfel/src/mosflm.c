@@ -724,13 +724,13 @@ int run_mosflm(struct image *image, void *ipriv)
 		return 0;
 	}
 
-	snprintf(mosflm->imagefile, 127, "xfel-%i_001.img", image->id);
+	snprintf(mosflm->imagefile, 127, "xfel_001.img");
 	write_img(image, mosflm->imagefile); /* Dummy image */
 
-	snprintf(mosflm->sptfile, 127, "xfel-%i_001.spt", image->id);
+	snprintf(mosflm->sptfile, 127, "xfel_001.spt");
 	write_spt(image, mosflm->sptfile);
 
-	snprintf(mosflm->newmatfile, 127, "xfel-%i.newmat", image->id);
+	snprintf(mosflm->newmatfile, 127, "xfel.newmat");
 	remove(mosflm->newmatfile);
 
 	mosflm->pid = forkpty(&mosflm->pty, NULL, NULL, NULL);

@@ -328,7 +328,7 @@ static void write_gve(struct image *image, struct felix_private *gp)
 	int i;
 	char filename[1024];
 	double a, b, c, al, be, ga;
-	snprintf(filename, 1023, "xfel-%i.gve", image->id);
+	snprintf(filename, 1023, "xfel.gve");
 	fh = fopen(filename, "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file '%s'\n", filename);
@@ -371,9 +371,9 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 	filename = malloc(1024);
 	if ( filename == NULL ) return NULL;
 
-	snprintf(filename, 1023, "xfel-%i.ini", image->id);
-	snprintf(gveFilename, 1023, "xfel-%i.gve", image->id);
-	snprintf(logFilename, 1023, "xfel-%i.log", image->id);
+	snprintf(filename, 1023, "xfel.ini");
+	snprintf(gveFilename, 1023, "xfel.gve");
+	snprintf(logFilename, 1023, "xfel.log");
 
 	fh = fopen(filename, "w");
 	if ( !fh ) {
@@ -457,7 +457,7 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 
 	felix->gp = gp;
 
-	snprintf(gff_filename, 1023, "xfel-%i.felix", image->id);
+	snprintf(gff_filename, 1023, "xfel.felix");
 	remove(gff_filename);
 
 	felix->pid = forkpty(&felix->pty, NULL, NULL, NULL);

@@ -277,7 +277,7 @@ static void dirax_send_next(struct image *image, struct dirax_data *dirax)
 		break;
 
 		case 2 :
-		snprintf(tmp, 31, "read xfel-%i.drx\n", image->id);
+		snprintf(tmp, 31, "read xfel.drx\n");
 		dirax_sendline(tmp, dirax);
 		break;
 
@@ -476,7 +476,7 @@ static void write_drx(struct image *image)
 	int i;
 	char filename[1024];
 
-	snprintf(filename, 1023, "xfel-%i.drx", image->id);
+	snprintf(filename, 1023, "xfel.drx");
 
 	fh = fopen(filename, "w");
 	if ( !fh ) {
