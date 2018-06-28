@@ -15,7 +15,9 @@ if ( !($args eq "") ) {
         printf("Using default arguments for hdfsee: %s\n", $args);
 }
 
-open(FH, $ARGV[0]);
+my $file = $ARGV[0];
+
+open(FH, $file);
 open(TMP, "> list.tmp");
 
 my $statbuf = stat($file);
