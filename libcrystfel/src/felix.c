@@ -3,12 +3,12 @@
  *
  * Invoke Felix for multi-crystal autoindexing.
  *
- * Copyright © 2015-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2015-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2015 Thomas White <taw@physics.org>
- *   2015 Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2015-2018 Thomas White <taw@physics.org>
+ *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -38,6 +38,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <assert.h>
 #include <fcntl.h>
@@ -713,6 +714,20 @@ void felix_cleanup(IndexingPrivate *pp)
 }
 
 
+static int file_exists(const char *filename)
+{
+	struct stat s;
+
+	if ( stat(filename, &s) != 0 ) {
+		if ( errno == ENOENT ) return 0;
+		ERROR("Failed to check for %s.\n", filename);
+		exit(1);
+	}
+
+	return 1;
+}
+
+
 const char *felix_probe(UnitCell *cell)
 {
 	pid_t pid;
@@ -724,6 +739,15 @@ const char *felix_probe(UnitCell *cell)
 
 	if ( !cell_has_parameters(cell) ) {
 		return NULL;
+	}
+
+	/* Felix will write gmon.out when we test it, which we are
+	 * are going to delete afterwards.  Better check the file doesn't exist
+	 * first, in case it was important. */
+	if ( file_exists("gmon.out") ) {
+		ERROR("Please move or delete gmon.out from the working "
+		      "directory first.\n");
+		exit(1);
 	}
 
 	pid = forkpty(&pty, NULL, NULL, NULL);
@@ -757,6 +781,8 @@ const char *felix_probe(UnitCell *cell)
 	fclose(fh);
 	close(pty);
 	waitpid(pid, &status, 0);
+
+	unlink("gmon.out");
 
 	if ( ok ) return "felix";
 	return NULL;
