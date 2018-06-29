@@ -110,13 +110,16 @@ static void show_help(const char *s)
 "                            (peakfinder8 only) Default: 0\n"
 "     --max-res=<n>         Maximum resolution for peak search (in pixels)\n"
 "                            (peakfinder8 only) Default: 1200\n"
-"     --min-snr-biggest-pix=<n>    (peakFinder9 only) min snr of the biggest pixel in "
-"                                  the peak\n"
-"     --min-snr-peak-pix=<n>       (peakFinder9 only) min snr of a peak pixel\n"
-"     --min-sig=<n>                (peakFinder9 only) minimum standard deviation of "
-"                                 the background\n"
-"     --min-peak-over-neighbour=<n>    (peakFinder9 only) just for speed. Biggest pixel"
-"                                     in peak must be n higher than this.\n"
+"     --min-snr-biggest-pix=<n>\n"
+"                           Minimum snr of the biggest pixel in the peak\n"
+"                            (peakfinder9 only)\n"
+"     --min-snr-peak-pix=<n>\n"
+"                           Minimum snr of a peak pixel (peakfinder9 only)\n"
+"     --min-sig=<n>         Minimum standard deviation of the background\n"
+"                            (peakfinder9 only)\n"
+"     --min-peak-over-neighbour=<n>\n"
+"                           Just for speed. Biggest pixel in peak must be n\n"
+"                            higher than this (peakfinder9 only).\n"
 "     --no-use-saturated    Reject saturated peaks\n"
 "     --no-revalidate       Don't re-integrate and check HDF5 peaks\n"
 "     --no-half-pixel-shift\n"
@@ -171,6 +174,26 @@ static void show_help(const char *s)
 "                            Default: 30\n"
 "     --felix-tthrange-min  Minimum 2theta to consider for indexing (degrees)\n"
 "                            Default: 0\n"
+"\n"
+"     --xgandalf-sampling-pitch\n"
+"                           Sampling pitch: 0 (loosest) to 4 (most dense)\n"
+"                            or with secondary Miller indices: 5 (loosest) to\n"
+"                            7 (most dense).  Default: 6\n"
+"     --xgandalf-grad-desc-iterations\n"
+"                           Gradient descent iterations: 0 (few) to 5 (many)\n"
+"                            Default: 4\n"
+"     --xgandalf-tolerance  Relative tolerance of the lattice vectors.\n"
+"                            Default is 0.02\n"
+"     --xgandalf-no-deviation-from-provided-cell\n"
+"                           Force the fitted cell to have the same lattice\n"
+"                            parameters as the provided one\n"
+"     --xgandalf-min-lattice-vector-length\n"
+"                           Minimum possible lattice vector length in A.\n"
+"                            Default: 30 A\n"
+"     --xgandalf-max-lattice-vector-length\n"
+"                           Maximum possible lattice vector length in A.\n"
+"                            Default: 250 A\n"
+"\n"
 "\nIntegration options:\n\n"
 "     --integration=<meth>  Integration method (rings,prof2d)-(cen,nocen)\n"
 "                            Default: rings-nocen\n"
@@ -310,6 +333,12 @@ int main(int argc, char *argv[])
 	iargs.taketwo_opts.len_tol = -1.0;
 	iargs.taketwo_opts.angle_tol = -1.0;
 	iargs.taketwo_opts.trace_tol = -1.0;
+	iargs.xgandalf_opts.sampling_pitch = 6;
+	iargs.xgandalf_opts.grad_desc_iterations = 4;
+	iargs.xgandalf_opts.tolerance = 0.02;
+	iargs.xgandalf_opts.no_deviation_from_provided_cell = 0;
+	iargs.xgandalf_opts.minLatticeVectorLength_A = 30;
+	iargs.xgandalf_opts.maxLatticeVectorLength_A = 250;
 	iargs.felix_opts.ttmin = -1.0;
 	iargs.felix_opts.ttmax = -1.0;
 	iargs.felix_opts.min_visits = 0;
@@ -417,10 +446,22 @@ int main(int argc, char *argv[])
 		{"serial-start",             1, NULL,        344},
 		{"felix-domega",             1, NULL,        345},
 		{"felix-max-internal-angle", 1, NULL,        346},
-		{"min-snr-biggest-pix"              ,1, NULL,347},
-		{"min-snr-peak-pix"                 ,1, NULL,348},
-		{"min-sig"                          ,1, NULL,349},
-		{"min-peak-over-neighbour"          ,1, NULL,350},
+		{"min-snr-biggest-pix",      1, NULL,        347},
+		{"min-snr-peak-pix",         1, NULL,        348},
+		{"min-sig",                  1, NULL,        349},
+		{"min-peak-over-neighbour",  1, NULL,        350},
+		{"xgandalf-sampling-pitch",                  1, NULL, 351},
+		{"xgandalf-sps",                             1, NULL, 351},
+		{"xgandalf-grad-desc-iterations",            1, NULL, 352},
+		{"xgandalf-gdis",                            1, NULL, 352},
+		{"xgandalf-tolerance",                       1, NULL, 353},
+		{"xgandalf-tol",                             1, NULL, 353},
+		{"xgandalf-no-deviation-from-provided-cell", 0, NULL, 354},
+		{"xgandalf-ndfpc",                           0, NULL, 354},
+		{"xgandalf-min-lattice-vector-length",       1, NULL, 355},
+		{"xgandalf-min-lvl",                         1, NULL, 355},
+		{"xgandalf-max-lattice-vector-length",       1, NULL, 356},
+		{"xgandalf-max-lvl",                         1, NULL, 356},
 
 		{0, 0, NULL, 0}
 	};
@@ -763,6 +804,55 @@ int main(int argc, char *argv[])
 			iargs.min_peak_over_neighbour = strtof(optarg, NULL);
 			break;
 
+			case 351:
+			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.sampling_pitch) != 1)
+			{
+				ERROR("Invalid value for --xgandalf-sampling-pitch\n");
+				return 1;
+			}
+			break;
+
+			case 352:
+			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.grad_desc_iterations) != 1)
+			{
+				ERROR("Invalid value for --xgandalf-grad-desc-iterations\n");
+				return 1;
+			}
+			break;
+
+			case 353:
+			if (sscanf(optarg, "%f", &iargs.xgandalf_opts.tolerance) != 1)
+			{
+				ERROR("Invalid value for --xgandalf-tolerance\n");
+				return 1;
+			}
+			break;
+
+			case 354:
+				iargs.xgandalf_opts.no_deviation_from_provided_cell = 1;
+			break;
+
+			case 355:
+			if (sscanf(optarg, "%f",
+					&iargs.xgandalf_opts.minLatticeVectorLength_A) != 1)
+			{
+				ERROR("Invalid value for "
+						"--xgandalf-min-lattice-vector-length\n");
+				return 1;
+			}
+			break;
+
+			case 356:
+			if (sscanf(optarg, "%f",
+					&iargs.xgandalf_opts.maxLatticeVectorLength_A) != 1)
+			{
+				ERROR("Invalid value for "
+						"--xgandalf-max-lattice-vector-length\n");
+				return 1;
+			}
+			break;
+
+
 			case 0 :
 			break;
 
@@ -1060,6 +1150,7 @@ int main(int argc, char *argv[])
 		iargs.ipriv = setup_indexing(indm_str, iargs.cell, iargs.det,
 		                             iargs.tols, flags,
 		                             &iargs.taketwo_opts,
+		                             &iargs.xgandalf_opts,
 		                             &iargs.felix_opts);
 		if ( iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");

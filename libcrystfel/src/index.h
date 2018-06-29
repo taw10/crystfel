@@ -56,6 +56,8 @@
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE \
                                      | INDEXING_USE_CELL_PARAMETERS)
 
+#define INDEXING_DEFAULTS_XGANDALF (INDEXING_XGANDALF | INDEXING_USE_CELL_PARAMETERS)
+
 /**
  * IndexingMethod:
  * @INDEXING_NONE: No indexing to be performed
@@ -67,6 +69,7 @@
  * @INDEXING_DEBUG: Results injector for debugging
  * @INDEXING_ASDF: Use in-built "asdf" indexer
  * @INDEXING_TAKETWO: Use in-built "taketwo" indexer
+ * @INDEXING_XGANDALF: Invoke XGANDALF
  * @INDEXING_ERROR: Special value for unrecognised indexing engine name
  * @INDEXING_USE_LATTICE_TYPE: Use lattice type and centering information to
  *   guide the indexing process.
@@ -90,6 +93,7 @@ typedef enum {
 	INDEXING_DEBUG = 7,
 	INDEXING_ASDF = 8,
 	INDEXING_TAKETWO = 9,
+	INDEXING_XGANDALF = 10,
 
 	INDEXING_ERROR = 255,  /* Unrecognised indexing engine */
 
@@ -136,6 +140,7 @@ extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 #include "cell.h"
 #include "image.h"
 #include "taketwo.h"
+#include "xgandalf.h"
 #include "felix.h"
 
 
@@ -143,6 +148,7 @@ extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct detector *det, float *ltl,
                                        IndexingFlags flags,
                                        struct taketwo_options *ttopts,
+                                       struct xgandalf_options *xgandalf_opts,
                                        struct felix_options *felix_opts);
 
 extern char *detect_indexing_methods(UnitCell *cell);
