@@ -12,15 +12,15 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 find_package(HDF5 REQUIRED COMPONENTS C)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
-find_package(GTK2 2.0.0 COMPONENTS gtk)
 find_package(TIFF)
 find_package(OpenCL)
 find_package(PkgConfig)
+pkg_search_module(GTK gtk+-3.0)
 pkg_search_module(CAIRO cairo)
 pkg_search_module(GDK gdk-2.0)
 pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always -Wno-deprecated-declarations")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_definitions(-DHAVE_CONFIG_H)
@@ -53,7 +53,7 @@ include(CheckLibraryExists)
 
 set(HAVE_CAIRO ${CAIRO_FOUND})
 set(HAVE_TIFF ${TIFF_FOUND})
-set(HAVE_GTK ${GTK2_FOUND})
+set(HAVE_GTK ${GTK_FOUND})
 set(HAVE_OPENCL ${OpenCL_FOUND})
 set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
 set(HAVE_GDK ${GDK_FOUND})
@@ -136,13 +136,13 @@ list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
 # ----------------------------------------------------------------------
 # hdfsee
 
-if (GTK2_FOUND)
+if (GTK_FOUND)
 
   set(HDFSEE_SOURCES src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c)
   add_executable(hdfsee ${HDFSEE_SOURCES})
 
-  target_include_directories(hdfsee PRIVATE ${COMMON_INCLUDES} ${GTK2_INCLUDE_DIRS})
-  target_link_libraries(hdfsee ${COMMON_LIBRARIES} ${GTK2_LIBRARIES})
+  target_include_directories(hdfsee PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
+  target_link_libraries(hdfsee ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
 
   if (TIFF_FOUND)
     target_include_directories(hdfsee PRIVATE ${TIFF_INCLUDE_DIRS})
@@ -151,22 +151,22 @@ if (GTK2_FOUND)
 
   list(APPEND CRYSTFEL_EXECUTABLES hdfsee)
 
-endif (GTK2_FOUND)
+endif (GTK_FOUND)
 
 # ----------------------------------------------------------------------
 # cell_explorer
 
-if (GTK2_FOUND)
+if (GTK_FOUND)
 
   set(CELL_EXPLORER_SOURCES src/cell_explorer.c src/multihistogram.c)
 
   add_executable(cell_explorer ${CELL_EXPLORER_SOURCES})
-  target_include_directories(cell_explorer PRIVATE ${COMMON_INCLUDES} ${GTK2_INCLUDE_DIRS})
-  target_link_libraries(cell_explorer ${COMMON_LIBRARIES} ${GTK2_LIBRARIES})
+  target_include_directories(cell_explorer PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
+  target_link_libraries(cell_explorer ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
 
   list(APPEND CRYSTFEL_EXECUTABLES cell_explorer)
 
-endif (GTK2_FOUND)
+endif (GTK_FOUND)
 
 # ----------------------------------------------------------------------
 # render_hkl

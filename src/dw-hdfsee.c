@@ -41,7 +41,7 @@
 #include <string.h>
 #include <cairo.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#include <gdk/gdkkeysyms.h>
+#include <gdk/gdkkeysyms-compat.h>
 #include <assert.h>
 
 #include "dw-hdfsee.h"
@@ -531,7 +531,8 @@ static void redraw_window(DisplayWindow *dw)
 	                                      width, dw->height);
 	draw_stuff(dw->surf, dw);
 
-	gdk_window_invalidate_rect(dw->drawingarea->window, NULL, FALSE);
+	gdk_window_invalidate_rect(gtk_widget_get_window(dw->drawingarea),
+	                           NULL, FALSE);
 }
 
 
@@ -617,7 +618,7 @@ static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
 {
 	cairo_t *cr;
 
-	cr = gdk_cairo_create(da->window);
+	cr = gdk_cairo_create(gtk_widget_get_window(da));
 
 	cairo_set_source_surface(cr, dw->surf, 0.0, 0.0);
 	cairo_rectangle(cr, event->area.x, event->area.y,
@@ -721,6 +722,7 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 	GtkWidget *label;
 	char tmp[64];
 	double minx, maxx, miny, maxy;
+	GtkWidget *dvbox;
 
 	if ( dw->binning_dialog != NULL ) {
 		return 0;
@@ -741,10 +743,10 @@ static gint displaywindow_set_binning(GtkWidget *widget, DisplayWindow *dw)
 					GTK_STOCK_OK, GTK_RESPONSE_OK,
 					NULL);
 
+	dvbox = gtk_dialog_get_content_area((GTK_DIALOG(bd->window)));
 	vbox = gtk_vbox_new(FALSE, 0);
 	hbox = gtk_hbox_new(TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(bd->window)->vbox),
-			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(dvbox), GTK_WIDGET(hbox), FALSE, FALSE, 7);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
 
 	table = gtk_table_new(3, 2, FALSE);
@@ -850,6 +852,7 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 	GtkWidget *table;
 	GtkWidget *label;
 	char tmp[64];
+	GtkWidget *dvbox;
 
 	if ( dw->boostint_dialog != NULL ) {
 		return 0;
@@ -869,10 +872,10 @@ static gint displaywindow_set_boostint(GtkWidget *widget, DisplayWindow *dw)
 					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
 					GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
 
+	dvbox = gtk_dialog_get_content_area(GTK_DIALOG(bd->window));
 	vbox = gtk_vbox_new(FALSE, 0);
 	hbox = gtk_hbox_new(TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(bd->window)->vbox),
-			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(dvbox), GTK_WIDGET(hbox), FALSE, FALSE, 7);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
 
 	table = gtk_table_new(3, 2, FALSE);
@@ -1043,6 +1046,7 @@ static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 	GtkWidget *hbox;
 	GtkWidget *table;
 	GtkWidget *label;
+	GtkWidget *dvbox;
 	char tmp[1024];
 
 	if ( dw->event_dialog != NULL ) {
@@ -1063,10 +1067,10 @@ static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
 					GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
 
+	dvbox = gtk_dialog_get_content_area(GTK_DIALOG(ed->window));
 	vbox = gtk_vbox_new(FALSE, 0);
 	hbox = gtk_hbox_new(TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(ed->window)->vbox),
-			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(dvbox), GTK_WIDGET(hbox), FALSE, FALSE, 7);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
 
 	table = gtk_table_new(3, 2, FALSE);
@@ -1159,6 +1163,7 @@ static gint displaywindow_set_ringradius(GtkWidget *widget, DisplayWindow *dw)
 	GtkWidget *hbox;
 	GtkWidget *table;
 	GtkWidget *label;
+	GtkWidget *dvbox;
 	char tmp[64];
 
 	if ( dw->ringradius_dialog != NULL ) {
@@ -1179,10 +1184,10 @@ static gint displaywindow_set_ringradius(GtkWidget *widget, DisplayWindow *dw)
 					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
 					GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
 
+	dvbox = gtk_dialog_get_content_area(GTK_DIALOG(rd->window));
 	vbox = gtk_vbox_new(FALSE, 0);
 	hbox = gtk_hbox_new(TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(rd->window)->vbox),
-			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(dvbox), GTK_WIDGET(hbox), FALSE, FALSE, 7);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
 
 	table = gtk_table_new(3, 2, FALSE);
@@ -1414,7 +1419,7 @@ static gint displaywindow_about(GtkWidget *widget, DisplayWindow *dw)
 	gtk_window_set_transient_for(GTK_WINDOW(window),
 				     GTK_WINDOW(dw->window));
 
-	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(window), "hdfsee");
+	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(window), "hdfsee");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), PACKAGE_VERSION);
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
 	         "© 2012-2015 Deutsches Elektronen-Synchrotron DESY,"
@@ -1542,7 +1547,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 	w =  gtk_ui_manager_get_widget(dw->ui,
 	                               "/ui/displaywindow/tools/calibmode");
 	if ( dw->simple ) {
-		gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w), 0);
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 0);
 		return 0;
 	}
 
@@ -1550,8 +1555,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 		dw->rg_coll = dw->image->det->rigid_group_collections[0];
 		if (dw->rg_coll == NULL) {
 			ERROR("Cannot find asuitable rigid group collection.\n");
-			gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w),
-	                                              0);
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 0);
 			return 0;
 		}
 	} else {
@@ -1560,8 +1564,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 		if (dw->rg_coll == NULL) {
 			ERROR("Cannot find rigid group collection: %s\n",
 			      dw->rg_coll_name);
-			gtk_check_menu_item_set_state(GTK_CHECK_MENU_ITEM(w),
-			                              0);
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 0);
 			return 0;
 		}
 	}
@@ -1807,18 +1810,18 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 
 	hbox = gtk_hbox_new(FALSE, 0);
 	gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(d), hbox);
-	cb = gtk_combo_box_new_text();
+	cb = gtk_combo_box_text_new();
 	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(cb), TRUE, TRUE, 5);
 	l = gtk_label_new("Save as type:");
 	gtk_box_pack_end(GTK_BOX(hbox), GTK_WIDGET(l), FALSE, FALSE, 5);
 
-	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cb),
 	       "PNG (colour)");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cb),
 	       "TIFF (floating point)");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cb),
 	       "TIFF (16 bit signed integer)");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(cb),
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cb),
 	       "ADSC (16 bit unsigned integer)");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
 
@@ -1885,6 +1888,7 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 	GtkWidget *hbox2;
 	GtkWidget *table;
 	GtkWidget *label;
+	GtkWidget *dvbox;
 	unsigned int x, y;
 
 	if ( dw->numbers_window != NULL ) {
@@ -1905,10 +1909,10 @@ static gint displaywindow_show_numbers(GtkWidget *widget, DisplayWindow *dw)
 					GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE,
 					NULL);
 
+	dvbox = gtk_dialog_get_content_area(GTK_DIALOG(nw->window));
 	vbox = gtk_vbox_new(FALSE, 0);
 	hbox = gtk_hbox_new(TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(nw->window)->vbox),
-			   GTK_WIDGET(hbox), FALSE, FALSE, 7);
+	gtk_box_pack_start(GTK_BOX(dvbox), GTK_WIDGET(hbox), FALSE, FALSE, 7);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), FALSE, FALSE, 5);
 
 	table = gtk_table_new(17, 17, FALSE);
@@ -2624,7 +2628,7 @@ static gint displaywindow_release(GtkWidget *widget, GdkEventButton *event,
 {
 	if ( (event->type == GDK_BUTTON_RELEASE) && (event->button == 1) ) {
 
-		g_signal_handler_disconnect(GTK_OBJECT(dw->drawingarea),
+		g_signal_handler_disconnect(G_OBJECT(dw->drawingarea),
 		                            dw->motion_callback);
 		dw->motion_callback = 0;
 
@@ -2699,7 +2703,7 @@ static gint displaywindow_press(GtkWidget *widget, GdkEventButton *event,
 	if ( (event->type == GDK_BUTTON_PRESS) && (event->button == 1) ) {
 
 		dw->motion_callback = g_signal_connect(
-		                               GTK_OBJECT(dw->drawingarea),
+		                               G_OBJECT(dw->drawingarea),
 		                               "motion-notify-event",
 		                               G_CALLBACK(displaywindow_motion),
 		                               dw);
@@ -3132,7 +3136,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	                                      dw->drawingarea);
 	gtk_box_pack_start(GTK_BOX(vbox), dw->scrollarea, TRUE, TRUE, 0);
 
-	g_signal_connect(GTK_OBJECT(dw->drawingarea), "expose-event",
+	g_signal_connect(G_OBJECT(dw->drawingarea), "expose-event",
 			 G_CALLBACK(displaywindow_expose), dw);
 
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), TRUE);
@@ -3162,11 +3166,11 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 
 	gtk_widget_grab_focus(dw->drawingarea);
 
-	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-press-event",
+	g_signal_connect(G_OBJECT(dw->drawingarea), "button-press-event",
 	                 G_CALLBACK(displaywindow_press), dw);
-	g_signal_connect(GTK_OBJECT(dw->drawingarea), "button-release-event",
+	g_signal_connect(G_OBJECT(dw->drawingarea), "button-release-event",
 	                 G_CALLBACK(displaywindow_release), dw);
-	g_signal_connect(GTK_OBJECT(dw->drawingarea), "key-press-event",
+	g_signal_connect(G_OBJECT(dw->drawingarea), "key-press-event",
 	                 G_CALLBACK(displaywindow_keypress), dw);
 
 	if ( dw->simple ) {

@@ -109,7 +109,7 @@ void hdfsee_window_closed(DisplayWindow *dw)
 
 	main_n_windows--;
 
-	if ( main_n_windows == 0 ) gtk_exit(0);
+	if ( main_n_windows == 0 ) gtk_main_quit();
 
 }
 

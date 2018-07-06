@@ -37,7 +37,7 @@
 #include <string.h>
 #include <gtk/gtk.h>
 #include <math.h>
-#include <gdk/gdkkeysyms.h>
+#include <gdk/gdkkeysyms-compat.h>
 #include <gsl/gsl_multifit_nlin.h>
 
 #include "stream.h"
@@ -325,11 +325,13 @@ static gboolean draw_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
 	int *data_p, *data_a, *data_b, *data_c, *data_i, *data_f;
 	int *data_r, *data_h, *data_excl;
 	int start, stop;
+	GtkAllocation allocation;
 
-	cr = gdk_cairo_create(da->window);
+	cr = gdk_cairo_create(gtk_widget_get_window(da));
 
-	width = da->allocation.width;
-	height = da->allocation.height;
+	gtk_widget_get_allocation(da, &allocation);
+	width = allocation.width;
+	height = allocation.height;
 	b->width = width;  /* Store for later use when dragging */
 
 	/* Overall background */
@@ -510,11 +512,13 @@ static gint keyclick_sig(GtkWidget *widget, GdkEventButton *event,
                          CellWindow *w)
 {
 	int width, cat;
+	GtkAllocation alloc;
 
 	/* Ignore extra events for double click */
 	if ( event->type != GDK_BUTTON_PRESS ) return FALSE;
 
-	width = widget->allocation.width;
+	gtk_widget_get_allocation(widget, &alloc);
+	width = alloc.width;
 
 	cat = 8*event->x / width;
 
@@ -539,11 +543,13 @@ static gboolean keydraw_sig(GtkWidget *da, GdkEventExpose *event, CellWindow *w)
 	int width, height;
 	cairo_t *cr;
 	double x;
+	GtkAllocation allocation;
 
-	cr = gdk_cairo_create(da->window);
+	cr = gdk_cairo_create(gtk_widget_get_window(da));
 
-	width = da->allocation.width;
-	height = da->allocation.height;
+	gtk_widget_get_allocation(da, &allocation);
+	width = allocation.width;
+	height = allocation.height;
 
 	/* Overall background */
 	cairo_rectangle(cr, 0.0, 0.0, width, height);
@@ -1205,7 +1211,7 @@ static gint about_sig(GtkWidget *widget, CellWindow *w)
 	window = gtk_about_dialog_new();
 	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(w->window));
 
-	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(window),
+	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(window),
 	        "Unit Cell Explorer");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), "0.0.1");
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
@@ -1336,8 +1342,11 @@ static gint motion_sig(GtkWidget *da, GdkEventMotion *event, HistoBox *h)
 
 	gtk_widget_queue_draw(h->da);
 
-	if ( event->is_hint ) gdk_window_get_pointer(da->window,
-	                                             NULL, NULL, NULL);
+	if ( event->is_hint ) {
+		gdk_window_get_pointer(gtk_widget_get_window(da),
+		                       NULL, NULL, NULL);
+	}
+
 	return TRUE;
 }
 
