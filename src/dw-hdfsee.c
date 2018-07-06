@@ -613,20 +613,20 @@ static void displaywindow_update(DisplayWindow *dw)
 }
 
 
+static gboolean displaywindow_draw(GtkWidget *da, cairo_t *cr, DisplayWindow *dw)
+{
+	cairo_set_source_surface(cr, dw->surf, 0.0, 0.0);
+	cairo_paint(cr);
+}
+
+
 static gboolean displaywindow_expose(GtkWidget *da, GdkEventExpose *event,
                                      DisplayWindow *dw)
 {
 	cairo_t *cr;
-
 	cr = gdk_cairo_create(gtk_widget_get_window(da));
-
-	cairo_set_source_surface(cr, dw->surf, 0.0, 0.0);
-	cairo_rectangle(cr, event->area.x, event->area.y,
-	                event->area.width, event->area.height);
-	cairo_fill(cr);
-
+	displaywindow_draw(da, cr, dw);
 	cairo_destroy(cr);
-
 	return FALSE;
 }
 
@@ -3136,8 +3136,13 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	                                      dw->drawingarea);
 	gtk_box_pack_start(GTK_BOX(vbox), dw->scrollarea, TRUE, TRUE, 0);
 
-	g_signal_connect(G_OBJECT(dw->drawingarea), "expose-event",
-			 G_CALLBACK(displaywindow_expose), dw);
+	if ( g_signal_lookup("draw", GTK_TYPE_DRAWING_AREA) ) {
+		g_signal_connect(G_OBJECT(dw->drawingarea), "draw",
+		                 G_CALLBACK(displaywindow_draw), dw);
+	} else {
+		g_signal_connect(G_OBJECT(dw->drawingarea), "expose-event",
+		                 G_CALLBACK(displaywindow_expose), dw);
+	}
 
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), TRUE);
 	gtk_widget_show_all(dw->window);

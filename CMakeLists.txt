@@ -15,12 +15,43 @@ find_package(GSL REQUIRED)
 find_package(TIFF)
 find_package(OpenCL)
 find_package(PkgConfig)
+
 pkg_search_module(GTK gtk+-3.0)
+if (NOT GTK_FOUND)
+
+  # No GTK3.  Try GTK2?
+  pkg_search_module(GTK gtk+-2.0)
+  if (GTK_FOUND)
+    message(STATUS "Using GTK 2")
+    pkg_search_module(GDK gdk-2.0)
+  endif ()
+
+else ()
+
+  message(STATUS "Using GTK 3")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations")
+  pkg_search_module(GDK gdk-3.0)
+
+endif ()
+
+# If no version of GTK was found, try for GDK
+if (NOT GTK_FOUND)
+  message(STATUS "Looking separately for GDK")
+  pkg_search_module(GDK gdk-3.0)
+  if (NOT GDK_FOUND)
+    pkg_search_module(GDK gdk-2.0)
+    if (GDK_FOUND)
+      message(STATUS "Using GDK 2")
+    endif()
+  else ()
+    message(STATUS "Using GDK 3")
+  endif()
+endif()
+
 pkg_search_module(CAIRO cairo)
-pkg_search_module(GDK gdk-2.0)
 pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always -Wno-deprecated-declarations")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_definitions(-DHAVE_CONFIG_H)

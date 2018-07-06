@@ -315,19 +315,16 @@ static void draw_label(cairo_t *cr, HistoBox *b, int width, int height)
 }
 
 
-static gboolean draw_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
+static gboolean draw_sig(GtkWidget *da, cairo_t *cr, HistoBox *b)
 {
 	int width, height;
 	int i, max;
 	double h_height;
-	cairo_t *cr;
 	double gstep;
 	int *data_p, *data_a, *data_b, *data_c, *data_i, *data_f;
 	int *data_r, *data_h, *data_excl;
 	int start, stop;
 	GtkAllocation allocation;
-
-	cr = gdk_cairo_create(gtk_widget_get_window(da));
 
 	gtk_widget_get_allocation(da, &allocation);
 	width = allocation.width;
@@ -480,8 +477,16 @@ static gboolean draw_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
 	draw_axis(cr, b, width, height);
 	draw_label(cr, b, width, height);
 
-	cairo_destroy(cr);
+	return FALSE;
+}
 
+
+static gboolean expose_sig(GtkWidget *da, GdkEventExpose *event, HistoBox *b)
+{
+	cairo_t *cr;
+	cr = gdk_cairo_create(gtk_widget_get_window(da));
+	draw_sig(da, cr, b);
+	cairo_destroy(cr);
 	return FALSE;
 }
 
@@ -538,14 +543,11 @@ static gint keyclick_sig(GtkWidget *widget, GdkEventButton *event,
 
 
 
-static gboolean keydraw_sig(GtkWidget *da, GdkEventExpose *event, CellWindow *w)
+static gboolean keydraw_sig(GtkWidget *da, cairo_t *cr, CellWindow *w)
 {
 	int width, height;
-	cairo_t *cr;
 	double x;
 	GtkAllocation allocation;
-
-	cr = gdk_cairo_create(gtk_widget_get_window(da));
 
 	gtk_widget_get_allocation(da, &allocation);
 	width = allocation.width;
@@ -604,6 +606,17 @@ static gboolean keydraw_sig(GtkWidget *da, GdkEventExpose *event, CellWindow *w)
 	cairo_fill(cr);
 	centered_text(cr, x, height, "R");
 
+	return FALSE;
+}
+
+
+static gboolean keyexpose_sig(GtkWidget *da, GdkEventExpose *event,
+                              CellWindow *w)
+{
+	cairo_t *cr;
+	cr = gdk_cairo_create(gtk_widget_get_window(da));
+	keydraw_sig(da, cr, w);
+	cairo_destroy(cr);
 	return FALSE;
 }
 
@@ -1428,8 +1441,14 @@ static HistoBox *histobox_new(CellWindow *w, const char *units, const char *n)
 	                      | GDK_SCROLL_MASK
 	                      | GDK_KEY_PRESS_MASK);
 
-	g_signal_connect(G_OBJECT(h->da), "expose_event", G_CALLBACK(draw_sig),
-	                 h);
+	if ( g_signal_lookup("draw", GTK_TYPE_DRAWING_AREA) ) {
+		g_signal_connect(G_OBJECT(h->da), "draw",
+		                 G_CALLBACK(draw_sig), h);
+	} else {
+		g_signal_connect(G_OBJECT(h->da), "expose-event",
+		                 G_CALLBACK(expose_sig), h);
+	}
+
 	g_signal_connect(G_OBJECT(h->da), "button-press-event",
 	                 G_CALLBACK(press_sig), h);
 	g_signal_connect(G_OBJECT(h->da), "button-release-event",
@@ -1475,8 +1494,15 @@ static void indexing_method_list(CellWindow *w, GtkWidget *vbox)
 	key = gtk_drawing_area_new();
 	gtk_box_pack_end(GTK_BOX(w->indmlist), key, FALSE, FALSE, 5.0);
 	gtk_widget_add_events(GTK_WIDGET(key), GDK_BUTTON_PRESS_MASK);
-	g_signal_connect(G_OBJECT(key), "expose_event", G_CALLBACK(keydraw_sig),
-	                 w);
+
+	if ( g_signal_lookup("draw", GTK_TYPE_DRAWING_AREA) ) {
+		g_signal_connect(G_OBJECT(key), "draw",
+		                 G_CALLBACK(keydraw_sig), w);
+	} else {
+		g_signal_connect(G_OBJECT(key), "expose-event",
+		                 G_CALLBACK(keyexpose_sig), w);
+	}
+
 	g_signal_connect(G_OBJECT(key), "configure-event",
 	                 G_CALLBACK(keyconf_sig), w);
 	g_signal_connect(G_OBJECT(key), "button-press-event",
