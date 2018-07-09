@@ -835,6 +835,9 @@ int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
 	indexer = indexer_str(i->indexed_by);
 	fprintf(st->fh, "indexed_by = %s\n", indexer);
 	free(indexer);
+	if ( i->indexed_by != INDEXING_NONE ) {
+		fprintf(st->fh, "n_indexing_tries = %i\n", i->n_indexing_tries);
+	}
 
 	fprintf(st->fh, "photon_energy_eV = %f\n",
 	        J_to_eV(ph_lambda_to_en(i->lambda)));

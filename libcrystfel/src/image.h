@@ -148,6 +148,7 @@ struct beam_params
  *   @crystals: Array of crystals in the image
  *   @n_crystals: The number of crystals in the image
  *   @indexed_by: Indexing method which indexed this pattern
+ *   @n_indexing_tries: Number of times the indexer was tried before indexing
  *   @det: Detector structure
  *   @beam: Beam parameters structure
  *   @filename: Filename for the image file
@@ -193,6 +194,7 @@ struct image {
 	Crystal                 **crystals;
 	int                     n_crystals;
 	IndexingMethod          indexed_by;
+	int                     n_indexing_tries;
 
 	struct detector         *det;
 	struct beam_params      *beam;  /* The nominal beam parameters */

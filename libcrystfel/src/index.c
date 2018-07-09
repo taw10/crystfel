@@ -851,7 +851,10 @@ void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
 
 		/* Stop now if the pattern is indexed (don't try again for more
 		 * crystals with a different indexing method) */
-		if ( success ) break;
+		if ( success ) {
+			image->n_indexing_tries = ntry;
+			break;
+		}
 
 	}
 
