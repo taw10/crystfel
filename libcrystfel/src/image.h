@@ -169,7 +169,7 @@ struct beam_params
  *   @avg_clen: Mean of camera length values for all panels
  *   @spectrum: Spectrum information
  *   @nsamples: Number of spectrum samples
- *   @spectrum_size: SIze of spectrum array
+ *   @spectrum_size: Size of spectrum array
  *
  * The field <structfield>data</structfield> contains the raw image data, if it
  * is currently available.  The data might be available throughout the
