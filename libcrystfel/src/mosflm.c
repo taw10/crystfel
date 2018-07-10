@@ -875,20 +875,6 @@ static void chop_word(char *s)
 }
 
 
-static int file_exists(const char *filename)
-{
-	struct stat s;
-
-	if ( stat(filename, &s) != 0 ) {
-		if ( errno == ENOENT ) return 0;
-		ERROR("Failed to check for %s.\n", filename);
-		exit(1);
-	}
-
-	return 1;
-}
-
-
 const char *mosflm_probe(UnitCell *cell)
 {
 	pid_t pid;
@@ -898,15 +884,6 @@ const char *mosflm_probe(UnitCell *cell)
 	char line[1024];
 	int ok = 0;
 	int l;
-
-	/* Mosflm will write mosflm.lp and SUMMARY when we test it, which we are
-	 * are going to delete afterwards.  Better check they don't exist first,
-	 * in case they were important. */
-	if ( file_exists("mosflm.lp") || file_exists("SUMMARY") ) {
-		ERROR("Please move or delete mosflm.lp and SUMMARY from the "
-		      "working directory first.\n");
-		exit(1);
-	}
 
 	pid = forkpty(&pty, NULL, NULL, NULL);
 	if ( pid == -1 ) {
@@ -946,9 +923,6 @@ const char *mosflm_probe(UnitCell *cell)
 	fclose(fh);
 	close(pty);
 	waitpid(pid, &status, 0);
-
-	unlink("mosflm.lp");
-	unlink("SUMMARY");
 
 	if ( !ok ) return NULL;
 

@@ -869,6 +869,11 @@ static void delete_temporary_folder(const char *tmpdir, int n_proc)
 	path = calloc(len+64, 1);
 	if ( (workerdir == NULL) || (path == NULL) ) return;
 
+	snprintf(path, 127, "%s/mosflm.lp", tmpdir);
+	unlink(path);
+	snprintf(path, 127, "%s/SUMMARY", tmpdir);
+	unlink(path);
+
 	for ( slot=0; slot<n_proc; slot++ ) {
 
 		struct stat s;
