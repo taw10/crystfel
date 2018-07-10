@@ -857,10 +857,11 @@ static void delete_temporary_folder(const char *tmpdir, int n_proc)
 	/* List of files which it's safe to delete */
 	char *files[] = {"gmon.out", "mosflm.lp", "SUMMARY", "XDS.INP",
 	                 "xfel_001.img", "xfel_001.spt", "xfel.drx",
-	                 "xfel.felix", "xfel.gve", "xfel.ini", "xfel.log"};
+	                 "xfel.felix", "xfel.gve", "xfel.ini", "xfel.log",
+	                 "IDXREF.LP", "SPOT.XDS", "xfel.newmat", "XPARM.XDS"};
 
 	/* Number of items in the above list */
-	int n_files = 11;
+	int n_files = 15;
 
 	if ( n_proc > 99999 ) return;  /* Paranoia */
 
