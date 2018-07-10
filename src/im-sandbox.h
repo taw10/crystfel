@@ -71,6 +71,8 @@ struct sb_shm
 	int n_crystals;
 };
 
+extern char *create_tempdir(const char *temp_location);
+
 extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                            int config_basename, FILE *fh,  Stream *stream,
                            const char *tempdir, int serial_start);

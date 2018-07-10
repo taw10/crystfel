@@ -90,7 +90,7 @@ struct sandbox
 	struct sb_shm *shared;
 	sem_t *queue_sem;
 
-	char *tmpdir;
+	const char *tmpdir;
 
 	/* Final output */
 	Stream *stream;
@@ -638,7 +638,6 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		}
 		free(sb->fhs);
 		free(sb->fds);
-		free(sb->tmpdir);
 		free(sb->running);
 		/* Not freed because it's not worth passing them down just for
 		 * this purpose: event list file handle,
@@ -883,17 +882,62 @@ static void delete_temporary_folder(const char *tmpdir, int n_proc)
 			unlink(path);
 		}
 
-		rmdir(workerdir);
+		if ( rmdir(workerdir) ) {
+			ERROR("Failed to delete worker temporary folder: %s\n",
+			      strerror(errno));
+		}
 
 	}
 
-	rmdir(tmpdir);
+	if ( rmdir(tmpdir) ) {
+		ERROR("Failed to delete temporary folder: %s\n", strerror(errno));
+	}
+}
+
+
+char *create_tempdir(const char *temp_location)
+{
+	char *tmpdir;
+	size_t ll;
+	struct stat s;
+
+	if ( temp_location == NULL ) {
+		temp_location = "";
+	}
+
+	ll = 64+strlen(temp_location);
+	tmpdir = malloc(ll);
+	if ( tmpdir == NULL ) {
+		ERROR("Failed to allocate temporary directory name\n");
+		return NULL;
+	}
+	snprintf(tmpdir, ll, "%s/indexamajig.%i", temp_location, getpid());
+
+	if ( stat(tmpdir, &s) == -1 ) {
+
+		int r;
+
+		if ( errno != ENOENT ) {
+			ERROR("Failed to stat temporary folder.\n");
+			return NULL;
+		}
+
+		r = mkdir(tmpdir, S_IRWXU);
+		if ( r ) {
+			ERROR("Failed to create temporary folder: %s\n",
+			      strerror(errno));
+			return NULL;
+		}
+
+	}
+
+	return tmpdir;
 }
 
 
 void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                     int config_basename, FILE *fh,
-                    Stream *stream, const char *tempdir, int serial_start)
+                    Stream *stream, const char *tmpdir, int serial_start)
 {
 	int i;
 	struct sandbox *sb;
@@ -923,6 +967,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->n_proc = n_proc;
 	sb->iargs = iargs;
 	sb->serial = serial_start;
+	sb->tmpdir = tmpdir;
 
 	sb->fds = NULL;
 	sb->fhs = NULL;
@@ -955,36 +1000,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	{
 		ERROR("Couldn't allocate memory for PIDs.\n");
 		return;
-	}
-
-	if ( tempdir == NULL ) {
-		tempdir = "";
-	}
-
-	ll = 64+strlen(tempdir);
-	sb->tmpdir = malloc(ll);
-	if ( sb->tmpdir == NULL ) {
-		ERROR("Failed to allocate temporary directory name\n");
-		return;
-	}
-	snprintf(sb->tmpdir, ll, "%s/indexamajig.%i", tempdir, getpid());
-
-	if ( stat(sb->tmpdir, &s) == -1 ) {
-
-		int r;
-
-		if ( errno != ENOENT ) {
-			ERROR("Failed to stat temporary folder.\n");
-			return;
-		}
-
-		r = mkdir(sb->tmpdir, S_IRWXU);
-		if ( r ) {
-			ERROR("Failed to create temporary folder: %s\n",
-			      strerror(errno));
-			return;
-		}
-
 	}
 
 	/* Fill the queue */
@@ -1116,7 +1131,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	       sb->shared->n_crystals);
 
 	delete_temporary_folder(sb->tmpdir, n_proc);
-	free(sb->tmpdir);
 
 	munmap(sb->shared, sizeof(struct sb_shm));
 	free(sb);

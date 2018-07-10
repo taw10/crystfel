@@ -260,7 +260,10 @@ int main(int argc, char *argv[])
 	char *intrad = NULL;
 	char *pkrad = NULL;
 	char *int_str = NULL;
-	char *tempdir = NULL;
+	char *temp_location = NULL;  /* e.g. /tmp */
+	char *tmpdir;  /* e.g. /tmp/indexamajig.12345 */
+	char *rn;  /* e.g. /home/taw/indexing */
+	int r;
 	char *int_diag = NULL;
 	char *geom_filename = NULL;
 	struct beam_params beam;
@@ -580,7 +583,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 317 :
-			tempdir = strdup(optarg);
+			temp_location = strdup(optarg);
 			break;
 
 			case 318 :
@@ -881,8 +884,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( tempdir == NULL ) {
-		tempdir = strdup(".");
+	if ( temp_location == NULL ) {
+		temp_location = strdup(".");
 	}
 
 	/* Open input */
@@ -1084,13 +1087,29 @@ int main(int argc, char *argv[])
 
 	}
 
+	tmpdir = create_tempdir(temp_location);
+	if ( tmpdir == NULL ) return 1;
+
+	/* Change into temporary folder, temporarily, to control the crap
+	 * dropped by indexing programs during setup */
+	rn = getcwd(NULL, 0);
+	r = chdir(tmpdir);
+	if ( r ) {
+		ERROR("Failed to chdir to temporary folder: %s\n",
+		      strerror(errno));
+		return 1;
+	}
+
 	if ( indm_str == NULL ) {
+
+		char *rn;
 
 		STATUS("No indexing methods specified.  I will try to ");
 		STATUS("automatically detect the available methods.\n");
 		STATUS("To disable auto-detection of indexing methods, specify ");
 		STATUS("which methods to use with --indexing=<methods>.\n");
 		STATUS("Use --indexing=none to disable indexing and integration.\n");
+
 		indm_str = detect_indexing_methods(iargs.cell);
 
 	}
@@ -1159,6 +1178,16 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* Change back to where we were before.  Sandbox code will create
+	 * worker subdirs inside the temporary folder, and process_image will
+	 * change into them. */
+	r = chdir(rn);
+	if ( r ) {
+		ERROR("Failed to chdir: %s\n", strerror(errno));
+		return 1;
+	}
+	free(rn);
+
 	/* Open output stream */
 	st = open_stream_for_write_4(outfile, geom_filename, iargs.cell,
 	                             argc, argv, indm_str);
@@ -1172,13 +1201,14 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               st, tempdir, serial_start);
+	               st, tmpdir, serial_start);
 
 	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);
 	free(iargs.beam->photon_energy_from);
 	free(prefix);
-	free(tempdir);
+	free(temp_location);
+	free(tmpdir);
 	free_detector_geometry(iargs.det);
 	free(iargs.hdf5_peak_path);
 	close_stream(st);
