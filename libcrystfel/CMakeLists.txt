@@ -164,9 +164,11 @@ if (CURSES_FOUND)
 endif (CURSES_FOUND)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${LIBCRYSTFEL_HEADERS}")
 
-install (TARGETS libcrystfel
-         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS libcrystfel
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/crystfel
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # crystfel.pc
 configure_file(crystfel.pc.in crystfel.pc)
