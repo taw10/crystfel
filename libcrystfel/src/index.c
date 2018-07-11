@@ -671,7 +671,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 			if ( compare_cells(crystal_get_cell(cr),
 			                   crystal_get_cell(that_cr),
-			                   0.1, deg2rad(5.0), NULL) )
+			                   0.1, deg2rad(0.5), NULL) )
 			{
 				crystal_set_user_flag(cr, 1);
 			}
