@@ -1181,8 +1181,8 @@ static int write_cell_to_file(UnitCell *cell, const char *filename)
 static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 {
 	GtkWidget *d;
-	gchar *output_filename;
 	UnitCell *cell;
+	gint r;
 
 	cell = get_cell(w);
 	if ( cell == NULL ) return FALSE;
@@ -1195,19 +1195,19 @@ static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 	                                NULL);
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d),
 	                                               TRUE);
+	r = gtk_dialog_run(GTK_DIALOG(d));
+	if ( r == GTK_RESPONSE_ACCEPT ) {
 
-	if ( gtk_dialog_run(GTK_DIALOG(d)) == GTK_RESPONSE_CANCEL ) {
-		gtk_widget_destroy(d);
-		return FALSE;
+		gchar *output_filename;
+
+		output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+		if ( write_cell_to_file(cell, output_filename) ) {
+			error_box(w, "Failed to save unit cell");
+		}
+		g_free(output_filename);
+
 	}
-	output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
-
-	if ( write_cell_to_file(cell, output_filename) ) {
-		error_box(w, "Failed to save unit cell");
-	}
-
 	gtk_widget_destroy(d);
-	g_free(output_filename);
 	return FALSE;
 }
 
