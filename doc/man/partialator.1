@@ -98,6 +98,11 @@ Disable the polarisation correction.
 Include reflections only if their peak values were less than \fIn\fR.  That means, \fIn\fR is the saturation value of the detector.  The default is infinity, i.e. no cutoff.
 
 .PD 0
+.IP \fB--min-res=\fR\fIn\fR
+.PD
+Merge crystals only if they diffract to beyond \fIn\fR Angstroms resolution.  The default is infinity, i.e. all crystals are included.  The resolution is taken from the diffraction_resolution_limit line in the stream.
+
+.PD 0
 .IP \fB--min-measurements=\fR\fIn\fR
 .PD
 Include a reflection in the output only if it appears at least least \fIn\fR times.  The default is \fB--min-measurements=2\fR.

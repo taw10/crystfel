@@ -322,6 +322,7 @@ static void show_help(const char *s)
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
 "      --max-adu=<n>          Saturation value of detector.\n"
+"      --min-res=<n>          Merge only crystals which diffract above <n> A.\n"
 "      --push-res=<n>         Merge higher than apparent resolution cutoff.\n"
 "  -j <n>                     Run <n> analyses in parallel.\n"
 "      --no-free              Disable cross-validation (testing only).\n"
@@ -875,6 +876,7 @@ int main(int argc, char *argv[])
 	double force_radius = -1.0;
 	char *audit_info;
 	int scaleflags = 0;
+	double min_res = 0.0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -901,6 +903,7 @@ int main(int argc, char *argv[])
 		{"operator",           1, NULL,                9},
 		{"force-bandwidth",    1, NULL,               10},
 		{"force-radius",       1, NULL,               11},
+		{"min-res",            1, NULL,               12},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-Bscale",          0, &no_Bscale,          1},
@@ -1057,6 +1060,16 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			force_radius *= 1e9;
+			break;
+
+			case 12  :
+			errno = 0;
+			min_res = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --min-res.\n");
+				return 1;
+			}
+			min_res = 1e10/min_res;
 			break;
 
 			case 0 :
@@ -1250,6 +1263,8 @@ int main(int argc, char *argv[])
 
 			n_crystals_seen++;
 			if ( n_crystals_seen <= start_after ) continue;
+
+			if ( crystal_get_resolution_limit(cur.crystals[i]) < min_res ) continue;
 
 			crystals_new = realloc(crystals,
 			                      (n_crystals+1)*sizeof(Crystal *));
