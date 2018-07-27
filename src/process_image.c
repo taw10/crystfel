@@ -317,7 +317,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	if ( iargs->fix_profile_r < 0.0 ) {
 		for ( i=0; i<image.n_crystals; i++ ) {
-			refine_radius(image.crystals[i], &image);
+			if ( refine_radius(image.crystals[i], &image) ) {
+				ERROR("WARNING: Radius determination failed\n");
+			}
 		}
 	}
 

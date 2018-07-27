@@ -319,7 +319,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 }
 
 
-void refine_radius(Crystal *cr, struct image *image)
+int refine_radius(Crystal *cr, struct image *image)
 {
 	int n, n_acc;
 	struct reflpeak *rps;
@@ -328,13 +328,13 @@ void refine_radius(Crystal *cr, struct image *image)
 	/* Maximum possible size */
 	rps = malloc(image_feature_count(image->features)
 	                  * sizeof(struct reflpeak));
-	if ( rps == NULL ) return;
+	if ( rps == NULL ) return 1;
 
 	reflist = reflist_new();
 	n_acc = pair_peaks(image, cr, reflist, rps);
 	if ( n_acc < 3 ) {
 		free(rps);
-		return;
+		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
 	update_predictions(cr);
@@ -347,6 +347,8 @@ void refine_radius(Crystal *cr, struct image *image)
 
 	reflist_free(reflist);
 	free(rps);
+
+	return 0;
 }
 
 

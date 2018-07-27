@@ -39,7 +39,7 @@
 struct image;
 
 extern int refine_prediction(struct image *image, Crystal *cr);
-extern void refine_radius(Crystal *cr, struct image *image);
+extern int refine_radius(Crystal *cr, struct image *image);
 
 
 #endif	/* PREDICT_REFINE_H */
