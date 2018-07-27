@@ -703,9 +703,11 @@ static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
 
 static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
                           double *presidual, double *pfree_residual,
-                          double *plog_residual, double *pfree_log_residual)
+                          double *plog_residual, double *pfree_log_residual,
+                          int *pn_used)
 {
 	int i;
+	int n_used = 0;
 
 	*presidual = 0.0;
 	*pfree_residual = 0.0;
@@ -731,7 +733,11 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 		*pfree_residual += free_r;
 		*plog_residual += log_r;
 		*pfree_log_residual += free_log_r;
+
+		n_used++;
 	}
+
+	*pn_used = n_used;
 }
 
 
@@ -739,13 +745,15 @@ static void show_all_residuals(Crystal **crystals, int n_crystals,
                                RefList *full)
 {
 	double dev, free_dev, log_dev, free_log_dev;
+	int n;
 
 	all_residuals(crystals, n_crystals, full,
-	              &dev, &free_dev, &log_dev, &free_log_dev);
+	              &dev, &free_dev, &log_dev, &free_log_dev, &n);
 	STATUS("Residuals:"
 	       "  linear          linear free     log             log free\n");
 	STATUS("         ");
-	STATUS("%15e %15e %15e %15e\n", dev, free_dev, log_dev, free_log_dev);
+	STATUS("%15e %15e %15e %15e    (%i crystals)\n",
+	       dev, free_dev, log_dev, free_log_dev, n);
 }
 
 
