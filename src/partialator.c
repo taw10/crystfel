@@ -708,6 +708,10 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 {
 	int i;
 	int n_used = 0;
+	int n_nan_linear = 0;
+	int n_nan_linear_free = 0;
+	int n_nan_log = 0;
+	int n_nan_log_free = 0;
 
 	*presidual = 0.0;
 	*pfree_residual = 0.0;
@@ -726,6 +730,11 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 		log_r = log_residual(crystals[i], full, 0, NULL, NULL);
 		free_log_r = log_residual(crystals[i], full, 1, NULL, NULL);
 
+		if ( isnan(r) ) n_nan_linear++;
+		if ( isnan(free_r) ) n_nan_linear_free++;
+		if ( isnan(log_r) ) n_nan_log++;
+		if ( isnan(free_log_r) ) n_nan_log_free++;
+
 		if ( isnan(r) || isnan(free_r)
 		  || isnan(log_r) || isnan(free_log_r) ) continue;
 
@@ -735,6 +744,23 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 		*pfree_log_residual += free_log_r;
 
 		n_used++;
+	}
+
+	if ( n_nan_linear ) {
+		ERROR("WARNING: %i crystals had NaN linear residuals\n",
+		      n_nan_linear);
+	}
+	if ( n_nan_linear_free ) {
+		ERROR("WARNING: %i crystals had NaN linear free residuals\n",
+		      n_nan_linear_free);
+	}
+	if ( n_nan_log ) {
+		ERROR("WARNING: %i crystals had NaN log residuals\n",
+		      n_nan_log);
+	}
+	if ( n_nan_log_free ) {
+		ERROR("WARNING: %i crystals had NaN log free residuals\n",
+		      n_nan_log_free);
 	}
 
 	*pn_used = n_used;
