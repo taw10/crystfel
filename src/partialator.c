@@ -1366,7 +1366,7 @@ int main(int argc, char *argv[])
 	/* Check rejection and write figures of merit */
 	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
-	if ( !no_pr && !no_logs ) {
+	if ( !(no_logs || (no_pr && pmodel == PMODEL_UNITY)) ) {
 		write_pgraph(full, crystals, n_crystals, 0, "");
 		write_logs_parallel(crystals, n_crystals, full, 0, nthreads,
 		                    scaleflags);
