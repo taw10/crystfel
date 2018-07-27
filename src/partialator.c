@@ -877,6 +877,7 @@ int main(int argc, char *argv[])
 	char *audit_info;
 	int scaleflags = 0;
 	double min_res = 0.0;
+	int do_write_logs = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1172,7 +1173,14 @@ int main(int argc, char *argv[])
 		scaleflags |= SCALE_NO_B;
 	}
 
-	if ( !no_logs ) {
+	/* Decide whether or not to create stuff in the pr-logs folder */
+	if ( !(no_logs || (no_pr && pmodel == PMODEL_UNITY)) ) {
+		do_write_logs = 1;
+	} else {
+		do_write_logs = 0;
+	}
+
+	if ( do_write_logs ) {
 		int r = mkdir("pr-logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if ( r ) {
 			if ( errno == EEXIST ) {
@@ -1182,6 +1190,12 @@ int main(int argc, char *argv[])
 				ERROR("Failed to create pr-logs folder.\n");
 				return 1;
 			}
+		}
+	} else {
+		struct stat s;
+		if ( stat("pr-logs", &s) != -1 ) {
+			ERROR("WARNING: pr-logs folder exists, but I will not "
+			      "write anything in it with these settings.\n");
 		}
 	}
 
@@ -1366,7 +1380,8 @@ int main(int argc, char *argv[])
 	/* Check rejection and write figures of merit */
 	check_rejection(crystals, n_crystals, full, max_B);
 	show_all_residuals(crystals, n_crystals, full);
-	if ( !(no_logs || (no_pr && pmodel == PMODEL_UNITY)) ) {
+
+	if ( do_write_logs ) {
 		write_pgraph(full, crystals, n_crystals, 0, "");
 		write_logs_parallel(crystals, n_crystals, full, 0, nthreads,
 		                    scaleflags);
@@ -1397,7 +1412,7 @@ int main(int argc, char *argv[])
 		check_rejection(crystals, n_crystals, full, max_B);
 		show_all_residuals(crystals, n_crystals, full);
 
-		if ( !no_logs ) {
+		if ( do_write_logs ) {
 			write_pgraph(full, crystals, n_crystals, i+1, "");
 		}
 
@@ -1446,7 +1461,7 @@ int main(int argc, char *argv[])
 
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full);
-	if ( !no_pr && !no_logs ) {
+	if ( do_write_logs ) {
 		write_pgraph(full, crystals, n_crystals, -1, "");
 		write_logs_parallel(crystals, n_crystals, full, -1, nthreads,
 		                    scaleflags);
