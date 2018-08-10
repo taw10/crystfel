@@ -40,6 +40,7 @@ endif ()
 
 # If no version of GTK was found, try for GDK
 if (NOT GTK_FOUND)
+  message(STATUS "GTK not found. hdfsee and cell_explorer will not be compiled")
   message(STATUS "Looking separately for GDK")
   pkg_search_module(GDK gdk-3.0)
   if (NOT GDK_FOUND)
