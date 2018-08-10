@@ -16,6 +16,10 @@ find_package(TIFF)
 find_package(OpenCL)
 find_package(PkgConfig)
 
+pkg_check_modules (GLIB REQUIRED glib-2.0)
+include_directories (${GLIB_INCLUDE_DIRS})
+link_directories (${GLIB_LIBRARY_DIRS})
+
 pkg_search_module(GTK gtk+-3.0)
 if (NOT GTK_FOUND)
 
