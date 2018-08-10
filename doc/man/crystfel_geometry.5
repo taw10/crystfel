@@ -28,10 +28,6 @@ through.  The coordinates are specified inclusively, meaning that a minimum of 0
 and a maximum of 9 results in a width of ten pixels.  Counting begins from zero.
 All pixels in the image must be assigned to a panel - gaps are not permitted.
 .PP
-In the current version, panels are assumed to be perpendicular to the incident
-beam and to have their edges parallel.  Within these limitations, any geometry
-can be constructed.
-
 The job of the geometry file is to establish a relationship an array
 of pixel values in the HDF5 file, defined in terms only of the "fast scan" and
 "slow scan" directions, and the laboratory coordinate system defined as follows:
@@ -166,7 +162,7 @@ The camera length offset (in metres) for this panel.  This number will be added 
 .IP \fBfs\fR
 .IP \fBss\fR
 .PD
-For this panel, the fast and slow scan directions correspond to the given directions in the lab coordinate system described above, measured in pixels.  Example: "panel0/fs = 0.5x+0.5y-0.0001z".  Including a component in the z direction means that the panel normal is not parallel to the X-ray beam.
+For this panel, the fast and slow scan directions correspond to the given directions in the lab coordinate system described above, measured in pixels.  Example: "panel0/fs = 0.5x+0.5y-0.0001z".  Including a component in the z direction means that the panel normal is not perpendicular to the X-ray beam.
 
 .PD 0
 .IP \fBcorner_x\fR
