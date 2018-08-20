@@ -649,6 +649,7 @@ void set_panel(Reflection *refl, struct panel *p)
 	refl->data.panel = p;
 }
 
+
 /**
  * set_khalf:
  * @refl: A %Reflection
@@ -660,7 +661,6 @@ void set_khalf(Reflection *refl, double khalf)
 {
 	refl->data.khalf = khalf;
 }
-
 
 
 /**
