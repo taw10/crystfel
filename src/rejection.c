@@ -216,8 +216,7 @@ static struct contribs *lookup_contribs(struct contributionlist *clist,
 }
 
 
-static double calculate_cchalf(Crystal **crystals, int n,
-                               struct contributionlist *clist, Crystal *exclude)
+static double calculate_cchalf(struct contributionlist *clist, Crystal *exclude)
 {
 	int i;
 	double all_sum_mean = 0.0;
@@ -272,11 +271,18 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 {
 	struct contributionlist *clist;
 	double cchalf;
+	int i;
 
 	clist = find_all_contributions(crystals, n, full);
 
-	cchalf = calculate_cchalf(crystals, n, clist, NULL);
+	cchalf = calculate_cchalf(clist, NULL);
 	STATUS("Overall CChalf = %f\n", cchalf);
+
+	for ( i=0; i<n; i++ ) {
+		double cchalfi;
+		cchalfi = calculate_cchalf(clist, crystals[i]);
+		STATUS("DeltaCChalf_%i = %e\n", i, cchalfi - cchalf);
+	}
 
 	free_contributions(clist);
 }
