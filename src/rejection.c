@@ -220,66 +220,63 @@ static double calculate_cchalf(Crystal **crystals, int n,
                                struct contributionlist *clist, Crystal *exclude)
 {
 	int i;
-	double acc_var = 0.0;
-	double acc_mean = 0.0;
-	int acc_n = 0;
-	double sigE, sigy;
+	double all_sum_mean = 0.0;
+	double all_sumsq_mean = 0.0;
+	double all_sum_var = 0.0;
+	double sig2E, sig2Y;
 
-	for ( i=0; i<n; i++ ) {
+	/* Iterate over all reflections */
+	for ( i=0; i<clist->n; i++ ) {
 
-		Crystal *cr = crystals[i];
-		RefList *list = crystal_get_reflections(cr);
-		Reflection *refl;
-		RefListIterator *iter;
+		struct contribs *c;
+		int j;
+		double refl_sum = 0.0;
+		double refl_sumsq = 0.0;
+		double refl_mean, refl_var;
 
-		if ( cr == exclude ) continue;
+		c = &clist->contribs[i];
 
-		for ( refl = first_refl(list, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			signed int h, k, l;
-			struct contribs *c;
-			int j;
+		for ( j=0; j<c->n_contrib; j++ ) {
 
-			get_indices(refl, &h, &k, &l);
-			c = lookup_contribs(clist, h, k, l);
-			assert(c != NULL);
-			for ( j=0; j<c->n_contrib; j++ ) {
+			double Ii;
 
-				Reflection *reflc;
-				double Ii;
-
-				if ( c->contrib_crystals[j] == exclude ) {
-					continue;
-				}
-
-				reflc = c->contribs[j];
-
-				/* FIXME: Apply corrections */
-				Ii = get_intensity(reflc);
-				acc_mean += Ii;
-				acc_var += Ii * Ii;
-				acc_n++;
+			if ( c->contrib_crystals[j] == exclude ) {
+				continue;
 			}
+
+			/* FIXME: Apply corrections */
+			Ii = get_intensity(c->contribs[j]);
+
+			refl_sum += Ii;
+			refl_sumsq += Ii * Ii;
 
 		}
 
+		refl_mean = refl_sum / c->n_contrib;
+		refl_var = refl_sumsq - refl_sum*refl_sum;
+
+		all_sum_mean += refl_mean;
+		all_sumsq_mean += refl_mean*refl_mean;
+		all_sum_var += refl_var;
+
 	}
 
+	sig2E = all_sum_var / clist->n;
+	sig2Y = all_sumsq_mean - all_sum_mean*all_sum_mean;
 
-	return 0.0;  /* FIXME */
+	return (sig2Y - 0.5*sig2E) / (sig2Y + 0.5*sig2E);
 }
 
 
 static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 {
 	struct contributionlist *clist;
+	double cchalf;
 
 	clist = find_all_contributions(crystals, n, full);
 
-	STATUS("Overall CChalf = %f\n",
-	       calculate_cchalf(crystals, n, clist, NULL));
+	cchalf = calculate_cchalf(crystals, n, clist, NULL);
+	STATUS("Overall CChalf = %f\n", cchalf);
 
 	free_contributions(clist);
 }
