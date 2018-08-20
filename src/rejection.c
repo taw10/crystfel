@@ -94,146 +94,29 @@ void early_rejection(Crystal **crystals, int n)
 }
 
 
-struct contribs
-{
-	int          serial;  /* h,k,l */
-	int          n_contrib;
-	int          max_contrib;
-	Reflection **contribs;
-	Crystal    **contrib_crystals;
-};
-
-
-struct contributionlist
-{
-	struct contribs *contribs;
-	int n;  /* Number of reflections */
-};
-
-
-static int alloc_contribs(struct contribs *c)
-{
-	c->contribs = realloc(c->contribs, c->max_contrib*sizeof(Reflection *));
-	c->contrib_crystals = realloc(c->contrib_crystals,
-	                              c->max_contrib*sizeof(Crystal *));
-	if ( c->contribs == NULL ) return 1;
-	if ( c->contrib_crystals == NULL ) return 1;
-	return 0;
-}
-
-
-static void free_contributions(struct contributionlist *clist)
-{
-	int i;
-	for ( i=0; i<clist->n; i++ ) {
-		free(clist->contribs[i].contribs);
-		free(clist->contribs[i].contrib_crystals);
-	}
-	free(clist->contribs);
-	free(clist);
-}
-
-
-static struct contributionlist *find_all_contributions(Crystal **crystals,
-                                                       int n, RefList *full)
+static double calculate_cchalf(RefList *full, Crystal *exclude)
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	struct contributionlist *clist;
-	int nc = 0;
-
-	clist = malloc(sizeof(struct contributionlist));
-	if ( clist == NULL ) return NULL;
-
-	clist->n = num_reflections(full);
-	clist->contribs = malloc(clist->n*sizeof(struct contribs));
-	if ( clist->contribs == NULL ) {
-		free(clist);
-		return NULL;
-	}
-
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		int i;
-		signed int h, k, l;
-		struct contribs *c;
-
-		get_indices(refl, &h, &k, &l);
-		c = &clist->contribs[nc++];
-
-		c->serial = SERIAL(h, k, l);
-		c->n_contrib = 0;
-		c->max_contrib = 32;
-		c->contribs = NULL;
-		c->contrib_crystals = NULL;
-		if ( alloc_contribs(c) ) return NULL;
-
-		/* Find all versions of this reflection */
-		for ( i=0; i<n; i++ ) {
-
-			Reflection *refl2;
-			RefList *list2 = crystal_get_reflections(crystals[i]);
-			refl2 = find_refl(list2, h, k, l);
-
-			if ( refl2 == NULL ) continue;
-			do {
-				c->contribs[c->n_contrib] = refl2;
-				c->contrib_crystals[c->n_contrib] = crystals[i];
-				c->n_contrib++;
-
-				if ( c->n_contrib == c->max_contrib ) {
-					c->max_contrib += 64;
-					if ( alloc_contribs(c) ) return NULL;
-				}
-
-				refl2 = next_found_refl(refl2);
-
-			} while ( refl2 != NULL );
-		}
-
-		progress_bar(nc, clist->n, "Collecting contributions");
-	}
-
-	return clist;
-}
-
-
-static struct contribs *lookup_contribs(struct contributionlist *clist,
-                                        signed int h, signed int k, signed int l)
-{
-	int i, serial;
-
-	serial = SERIAL(h, k, l);
-
-	for ( i=0; i<clist->n; i++ ) {
-		if ( clist->contribs[i].serial == serial ) {
-			return &clist->contribs[i];
-		}
-	}
-	return NULL;
-}
-
-
-static double calculate_cchalf(struct contributionlist *clist, Crystal *exclude)
-{
-	int i;
 	double all_sum_mean = 0.0;
 	double all_sumsq_mean = 0.0;
 	double all_sum_var = 0.0;
 	double sig2E, sig2Y;
+	int n = 0;
 
 	/* Iterate over all reflections */
-	for ( i=0; i<clist->n; i++ ) {
-
-		struct contribs *c;
+	for ( refl = first_refl(full, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		struct reflection_contributions *c;
 		int j;
 		double refl_sum = 0.0;
 		double refl_sumsq = 0.0;
 		double refl_mean, refl_var;
 
-		c = &clist->contribs[i];
+		c = get_contributions(refl);
+		assert(c != NULL);
 
 		for ( j=0; j<c->n_contrib; j++ ) {
 
@@ -257,10 +140,11 @@ static double calculate_cchalf(struct contributionlist *clist, Crystal *exclude)
 		all_sum_mean += refl_mean;
 		all_sumsq_mean += refl_mean*refl_mean;
 		all_sum_var += refl_var;
+		n++;
 
 	}
 
-	sig2E = all_sum_var / clist->n;
+	sig2E = all_sum_var / n;
 	sig2Y = all_sumsq_mean - all_sum_mean*all_sum_mean;
 
 	return (sig2Y - 0.5*sig2E) / (sig2Y + 0.5*sig2E);
@@ -269,22 +153,17 @@ static double calculate_cchalf(struct contributionlist *clist, Crystal *exclude)
 
 static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 {
-	struct contributionlist *clist;
 	double cchalf;
 	int i;
 
-	clist = find_all_contributions(crystals, n, full);
-
-	cchalf = calculate_cchalf(clist, NULL);
+	cchalf = calculate_cchalf(full, NULL);
 	STATUS("Overall CChalf = %f\n", cchalf);
 
 	for ( i=0; i<n; i++ ) {
 		double cchalfi;
-		cchalfi = calculate_cchalf(clist, crystals[i]);
+		cchalfi = calculate_cchalf(full, crystals[i]);
 		STATUS("DeltaCChalf_%i = %e\n", i, cchalfi - cchalf);
 	}
-
-	free_contributions(clist);
 }
 
 
