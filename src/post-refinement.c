@@ -70,7 +70,7 @@ const char *str_prflag(enum prflag flag)
 		return "early rejection";
 
 		case PRFLAG_CC :
-		return "low CC";
+		return "negative delta CC½";
 
 		case PRFLAG_BIGB :
 		return "B too big";

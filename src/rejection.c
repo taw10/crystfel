@@ -94,74 +94,194 @@ void early_rejection(Crystal **crystals, int n)
 }
 
 
-static void check_cc(Crystal *cr, RefList *full)
+struct contribs
 {
-	RefList *list = crystal_get_reflections(cr);
-	Reflection *refl;
-	RefListIterator *iter;
-	double G = crystal_get_osf(cr);
-	double B = crystal_get_Bfac(cr);
-	UnitCell *cell = crystal_get_cell(cr);
-	double *vec1, *vec2;
-	int n, i;
-	double cc;
+	int          serial;  /* h,k,l */
+	int          n_contrib;
+	int          max_contrib;
+	Reflection **contribs;
+	Crystal    **contrib_crystals;
+};
 
-	n = num_reflections(list);
-	vec1 = malloc(n*sizeof(double));
-	vec2 = malloc(n*sizeof(double));
-	if ( (vec1 == NULL) || (vec2 == NULL) ) {
-		ERROR("Not enough memory to check CCs\n");
-		return;
-	}
 
-	i = 0;
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double pobs, pcalc;
-		double res, corr, Ipart;
-		Reflection *match;
+struct contributionlist
+{
+	struct contribs *contribs;
+	int n;  /* Number of reflections */
+};
 
-		if ( !get_flag(refl) ) continue;  /* Not free-flagged */
 
-		get_indices(refl, &h, &k, &l);
-		res = resolution(cell, h, k, l);
-		if ( 2.0*res > crystal_get_resolution_limit(cr) ) continue;
-
-		match = find_refl(full, h, k, l);
-		if ( match == NULL ) continue;
-
-		/* Calculated partiality */
-		pcalc = get_partiality(refl);
-
-		/* Observed partiality */
-		corr = G * exp(B*res*res) * get_lorentz(refl);
-		Ipart = get_intensity(refl) * corr;
-		pobs = Ipart / get_intensity(match);
-
-		vec1[i] = pobs;
-		vec2[i] = pcalc;
-		i++;
-	}
-
-	cc = gsl_stats_correlation(vec1, 1, vec2, 1, i);
-	//printf("%f\n", cc);
-	if ( cc < 0.5 ) crystal_set_user_flag(cr, PRFLAG_CC);
-
-	free(vec1);
-	free(vec2);
+static int alloc_contribs(struct contribs *c)
+{
+	c->contribs = realloc(c->contribs, c->max_contrib*sizeof(Reflection *));
+	c->contrib_crystals = realloc(c->contrib_crystals,
+	                              c->max_contrib*sizeof(Crystal *));
+	if ( c->contribs == NULL ) return 1;
+	if ( c->contrib_crystals == NULL ) return 1;
+	return 0;
 }
 
 
-static UNUSED void check_ccs(Crystal **crystals, int n_crystals, RefList *full)
+static void free_contributions(struct contributionlist *clist)
 {
 	int i;
-
-	for ( i=0; i<n_crystals; i++ ) {
-		check_cc(crystals[i], full);
+	for ( i=0; i<clist->n; i++ ) {
+		free(clist->contribs[i].contribs);
+		free(clist->contribs[i].contrib_crystals);
 	}
+	free(clist->contribs);
+	free(clist);
+}
+
+
+static struct contributionlist *find_all_contributions(Crystal **crystals,
+                                                       int n, RefList *full)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	struct contributionlist *clist;
+	int nc = 0;
+
+	clist = malloc(sizeof(struct contributionlist));
+	if ( clist == NULL ) return NULL;
+
+	clist->n = num_reflections(full);
+	clist->contribs = malloc(clist->n*sizeof(struct contribs));
+	if ( clist->contribs == NULL ) {
+		free(clist);
+		return NULL;
+	}
+
+	for ( refl = first_refl(full, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		int i;
+		signed int h, k, l;
+		struct contribs *c;
+
+		get_indices(refl, &h, &k, &l);
+		c = &clist->contribs[nc++];
+
+		c->serial = SERIAL(h, k, l);
+		c->n_contrib = 0;
+		c->max_contrib = 32;
+		c->contribs = NULL;
+		c->contrib_crystals = NULL;
+		if ( alloc_contribs(c) ) return NULL;
+
+		/* Find all versions of this reflection */
+		for ( i=0; i<n; i++ ) {
+
+			Reflection *refl2;
+			RefList *list2 = crystal_get_reflections(crystals[i]);
+			refl2 = find_refl(list2, h, k, l);
+
+			if ( refl2 == NULL ) continue;
+			do {
+				c->contribs[c->n_contrib] = refl2;
+				c->contrib_crystals[c->n_contrib] = crystals[i];
+				c->n_contrib++;
+
+				if ( c->n_contrib == c->max_contrib ) {
+					c->max_contrib += 64;
+					if ( alloc_contribs(c) ) return NULL;
+				}
+
+				refl2 = next_found_refl(refl2);
+
+			} while ( refl2 != NULL );
+		}
+
+		progress_bar(nc, clist->n, "Collecting contributions");
+	}
+
+	return clist;
+}
+
+
+static struct contribs *lookup_contribs(struct contributionlist *clist,
+                                        signed int h, signed int k, signed int l)
+{
+	int i, serial;
+
+	serial = SERIAL(h, k, l);
+
+	for ( i=0; i<clist->n; i++ ) {
+		if ( clist->contribs[i].serial == serial ) {
+			return &clist->contribs[i];
+		}
+	}
+	return NULL;
+}
+
+
+static double calculate_cchalf(Crystal **crystals, int n,
+                               struct contributionlist *clist, Crystal *exclude)
+{
+	int i;
+	double acc_var = 0.0;
+	double acc_mean = 0.0;
+	int acc_n = 0;
+	double sigE, sigy;
+
+	for ( i=0; i<n; i++ ) {
+
+		Crystal *cr = crystals[i];
+		RefList *list = crystal_get_reflections(cr);
+		Reflection *refl;
+		RefListIterator *iter;
+
+		if ( cr == exclude ) continue;
+
+		for ( refl = first_refl(list, &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			struct contribs *c;
+			int j;
+
+			get_indices(refl, &h, &k, &l);
+			c = lookup_contribs(clist, h, k, l);
+			assert(c != NULL);
+			for ( j=0; j<c->n_contrib; j++ ) {
+
+				Reflection *reflc;
+				double Ii;
+
+				if ( c->contrib_crystals[j] == exclude ) {
+					continue;
+				}
+
+				reflc = c->contribs[j];
+
+				/* FIXME: Apply corrections */
+				Ii = get_intensity(reflc);
+				acc_mean += Ii;
+				acc_var += Ii * Ii;
+				acc_n++;
+			}
+
+		}
+
+	}
+
+
+	return 0.0;  /* FIXME */
+}
+
+
+static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
+{
+	struct contributionlist *clist;
+
+	clist = find_all_contributions(crystals, n, full);
+
+	STATUS("Overall CChalf = %f\n",
+	       calculate_cchalf(crystals, n, clist, NULL));
+
+	free_contributions(clist);
 }
 
 
@@ -197,9 +317,8 @@ void check_rejection(Crystal **crystals, int n, RefList *full, double max_B)
 	int i;
 	int n_acc = 0;
 
-	/* Check according to CCs FIXME: Disabled */
-	//if ( full != NULL ) check_ccs(crystals, n, full);
-
+	/* Check according to delta CC½ */
+	if ( full != NULL ) check_deltacchalf(crystals, n, full);
 
 	for ( i=0; i<n; i++ ) {
 		if ( fabs(crystal_get_Bfac(crystals[i])) > max_B ) {
