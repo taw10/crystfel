@@ -94,9 +94,10 @@ void early_rejection(Crystal **crystals, int n)
 }
 
 
-static double calculate_cchalf(RefList *full, Crystal *exclude)
+static double calculate_cchalf(RefList *template, RefList *full,
+                               Crystal *exclude)
 {
-	Reflection *refl;
+	Reflection *trefl;
 	RefListIterator *iter;
 	double all_sum_mean = 0.0;
 	double all_sumsq_mean = 0.0;
@@ -105,15 +106,21 @@ static double calculate_cchalf(RefList *full, Crystal *exclude)
 	int n = 0;
 
 	/* Iterate over all reflections */
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
+	for ( trefl = first_refl(template, &iter);
+	      trefl != NULL;
+	      trefl = next_refl(trefl, iter) )
 	{
 		struct reflection_contributions *c;
 		int j;
 		double refl_sum = 0.0;
 		double refl_sumsq = 0.0;
 		double refl_mean, refl_var;
+		signed int h, k, l;
+		Reflection *refl;
+
+		get_indices(trefl, &h, &k, &l);
+		refl = find_refl(full, h, k, l);
+		if ( refl == NULL ) continue;
 
 		c = get_contributions(refl);
 		assert(c != NULL);
@@ -156,12 +163,14 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	double cchalf;
 	int i;
 
-	cchalf = calculate_cchalf(full, NULL);
 	STATUS("Overall CChalf = %f\n", cchalf);
 
 	for ( i=0; i<n; i++ ) {
-		double cchalfi;
-		cchalfi = calculate_cchalf(full, crystals[i]);
+		double cchalf, cchalfi;
+		cchalf = calculate_cchalf(crystal_get_reflections(crystals[i]),
+		                          full, NULL);
+		cchalfi = calculate_cchalf(crystal_get_reflections(crystals[i]),
+		                           full, crystals[i]);
 		STATUS("DeltaCChalf_%i = %e\n", i, cchalfi - cchalf);
 	}
 }
