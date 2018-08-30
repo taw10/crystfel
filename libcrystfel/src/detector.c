@@ -1429,6 +1429,8 @@ struct detector *get_detector_geometry_2(const char *filename,
 			if ( det->panels[i].dim_structure->dims[di] ==
 			                                   HYSL_UNDEFINED  ) {
 				dim_dim_reject = 1;
+				ERROR("Dimension %i for panel %s is undefined.\n",
+				      di, det->panels[i].name);
 			}
 			if ( det->panels[i].dim_structure->dims[di] ==
 			                                   HYSL_PLACEHOLDER  ) {
@@ -1446,18 +1448,23 @@ struct detector *get_detector_geometry_2(const char *filename,
 		}
 
 		if ( found_ss != 1 ) {
-			ERROR("Only one slow scan dim coordinate is allowed\n");
+			ERROR("Exactly one slow scan dim coordinate is needed "
+			      "(found %i for panel %s)\n", found_ss,
+			      det->panels[i].name);
 			dim_dim_reject = 1;
 		}
 
 		if ( found_fs != 1 ) {
-			ERROR("Only one fast scan dim coordinate is allowed\n");
+			ERROR("Exactly one fast scan dim coordinate is needed "
+			      "(found %i for panel %s)\n", found_fs,
+			      det->panels[i].name);
 			dim_dim_reject = 1;
 		}
 
 		if ( panel_dim_dim > 1 ) {
 			ERROR("Maximum one placeholder dim coordinate is "
-			      "allowed\n");
+			      "allowed (found %i for panel %s)\n",
+			      panel_dim_dim, det->panels[i].name);
 			dim_dim_reject = 1;
 		}
 
