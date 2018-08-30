@@ -165,6 +165,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	double cchalf;
 	int i;
 
+	cchalf = calculate_cchalf(full, full, NULL);
 	STATUS("Overall CChalf = %f\n", cchalf);
 
 	for ( i=0; i<n; i++ ) {
