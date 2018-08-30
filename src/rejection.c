@@ -116,6 +116,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		double refl_sumsq = 0.0;
 		double refl_mean, refl_var;
 		signed int h, k, l;
+		double bcorr;
 		Reflection *refl;
 
 		get_indices(trefl, &h, &k, &l);
@@ -142,7 +143,8 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		}
 
 		refl_mean = refl_sum / c->n_contrib;
-		refl_var = refl_sumsq - refl_sum*refl_sum;
+		bcorr = c->n_contrib / (c->n_contrib - 1);
+		refl_var = (refl_sumsq - refl_sum*refl_sum)*bcorr;
 
 		all_sum_mean += refl_mean;
 		all_sumsq_mean += refl_mean*refl_mean;
@@ -152,7 +154,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 	}
 
 	sig2E = all_sum_var / n;
-	sig2Y = all_sumsq_mean - all_sum_mean*all_sum_mean;
+	sig2Y = (all_sumsq_mean - all_sum_mean*all_sum_mean)*n/(n-1);
 
 	return (sig2Y - 0.5*sig2E) / (sig2Y + 0.5*sig2E);
 }
