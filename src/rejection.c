@@ -104,6 +104,9 @@ static double calculate_cchalf(RefList *template, RefList *full,
 	double all_sum_var = 0.0;
 	double sig2E, sig2Y;
 	int n = 0;
+	signed int oh = 0;
+	signed int ok = 0;
+	signed int ol = 0;
 
 	/* Iterate over all reflections */
 	for ( trefl = first_refl(template, &iter);
@@ -120,6 +123,13 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		Reflection *refl;
 
 		get_indices(trefl, &h, &k, &l);
+
+		/* next_refl() will iterate over multiple copies of the same
+		 * unique reflection, but we are only interested in seeing each
+		 * unique reflection once. */
+		if ( (h==oh) && (k==ok) && (l==ol) ) continue;
+		oh = h;  ok = k;  ol = l;
+
 		refl = find_refl(full, h, k, l);
 		if ( refl == NULL ) continue;
 
