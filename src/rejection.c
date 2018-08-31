@@ -119,7 +119,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		double refl_sumsq = 0.0;
 		double refl_mean, refl_var;
 		signed int h, k, l;
-		double bcorr;
+		int nc = 0;
 		Reflection *refl;
 
 		get_indices(trefl, &h, &k, &l);
