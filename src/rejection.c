@@ -102,7 +102,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 	double all_sum_mean = 0.0;
 	double all_sumsq_mean = 0.0;
 	double all_sum_var = 0.0;
-	double sig2E, sig2Y;
+	double hsig2E, sig2Y;
 	int n = 0;
 	signed int oh = 0;
 	signed int ok = 0;
@@ -149,12 +149,15 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 			refl_sum += Ii;
 			refl_sumsq += Ii * Ii;
+			nc++;
 
 		}
 
-		refl_mean = refl_sum / c->n_contrib;
-		bcorr = c->n_contrib / (c->n_contrib - 1);
-		refl_var = (refl_sumsq - refl_sum*refl_sum)*bcorr;
+		if ( nc < 2 ) continue;
+
+		refl_mean = refl_sum / nc;
+		refl_var = (refl_sumsq/nc - refl_mean*refl_mean);
+		refl_var *= nc/(nc-1.0);
 
 		all_sum_mean += refl_mean;
 		all_sumsq_mean += refl_mean*refl_mean;
@@ -163,13 +166,14 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 	}
 
-	sig2E = all_sum_var / n;
-	sig2Y = (all_sumsq_mean - all_sum_mean*all_sum_mean)*n/(n-1);
+	hsig2E = all_sum_var / n;
+	sig2Y = (all_sumsq_mean/n - all_sum_mean*all_sum_mean/(n*n));
+	sig2Y *= n/(n-1.0);
 
 	if ( pnref != NULL ) {
 		*pnref = n;
 	}
-	return (sig2Y - 0.5*sig2E) / (sig2Y + 0.5*sig2E);
+	return (sig2Y - hsig2E) / (sig2Y + hsig2E);
 }
 
 
