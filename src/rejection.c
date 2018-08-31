@@ -95,7 +95,7 @@ void early_rejection(Crystal **crystals, int n)
 
 
 static double calculate_cchalf(RefList *template, RefList *full,
-                               Crystal *exclude)
+                               Crystal *exclude, int *pnref)
 {
 	Reflection *trefl;
 	RefListIterator *iter;
@@ -156,6 +156,9 @@ static double calculate_cchalf(RefList *template, RefList *full,
 	sig2E = all_sum_var / n;
 	sig2Y = (all_sumsq_mean - all_sum_mean*all_sum_mean)*n/(n-1);
 
+	if ( pnref != NULL ) {
+		*pnref = n;
+	}
 	return (sig2Y - 0.5*sig2E) / (sig2Y + 0.5*sig2E);
 }
 
@@ -164,17 +167,22 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 {
 	double cchalf;
 	int i;
+	int nref;
 
-	cchalf = calculate_cchalf(full, full, NULL);
-	STATUS("Overall CChalf = %f\n", cchalf);
+	cchalf = calculate_cchalf(full, full, NULL, &nref);
+	STATUS("Overall CChalf = %f (%i reflections)\n", cchalf*100.0, nref);
 
 	for ( i=0; i<n; i++ ) {
 		double cchalf, cchalfi;
-		cchalf = calculate_cchalf(crystal_get_reflections(crystals[i]),
-		                          full, NULL);
-		cchalfi = calculate_cchalf(crystal_get_reflections(crystals[i]),
-		                           full, crystals[i]);
-		STATUS("DeltaCChalf_%i = %e\n", i, cchalfi - cchalf);
+		RefList *template = crystal_get_reflections(crystals[i]);
+		//RefList *template = full;
+		cchalf = calculate_cchalf(template, full, NULL, NULL);
+		cchalfi = calculate_cchalf(template, full, crystals[i], &nref);
+		STATUS("Frame %i:\n", i);
+		STATUS("   With = %f\n", cchalf*100.0);
+		STATUS("Without = %f\n", cchalfi*100.0);
+		STATUS("Delta = %f\n", cchalf - cchalfi);
+		STATUS("nref = %i\n", nref);
 	}
 }
 
