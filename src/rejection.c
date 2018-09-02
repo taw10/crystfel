@@ -99,14 +99,17 @@ static double calculate_cchalf(RefList *template, RefList *full,
 {
 	Reflection *trefl;
 	RefListIterator *iter;
-	double all_sum_mean = 0.0;
-	double all_sumsq_mean = 0.0;
-	double all_sum_var = 0.0;
 	double hsig2E, sig2Y;
 	int n = 0;
 	signed int oh = 0;
 	signed int ok = 0;
 	signed int ol = 0;
+	double wSum = 0.0;
+	double wSum2 = 0.0;
+	double mean = 0.0;
+	double S = 0.0;
+	double all_sum_var = 0.0;
+	long int total_contribs = 0;
 
 	/* Iterate over all reflections */
 	for ( trefl = first_refl(template, &iter);
@@ -115,8 +118,8 @@ static double calculate_cchalf(RefList *template, RefList *full,
 	{
 		struct reflection_contributions *c;
 		int j;
-		double refl_sum = 0.0;
-		double refl_sumsq = 0.0;
+		double refl_sum;
+		double refl_sumsq;
 		double refl_mean, refl_var;
 		signed int h, k, l;
 		int nc = 0;
@@ -136,6 +139,8 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		c = get_contributions(refl);
 		assert(c != NULL);
 
+		/* Mean of contributions */
+		refl_sum = 0.0;
 		for ( j=0; j<c->n_contrib; j++ ) {
 
 			double Ii;
@@ -148,7 +153,6 @@ static double calculate_cchalf(RefList *template, RefList *full,
 			Ii = get_intensity(c->contribs[j]);
 
 			refl_sum += Ii;
-			refl_sumsq += Ii * Ii;
 			nc++;
 
 		}
@@ -156,19 +160,41 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		if ( nc < 2 ) continue;
 
 		refl_mean = refl_sum / nc;
-		refl_var = (refl_sumsq/nc - refl_mean*refl_mean);
-		refl_var *= nc/(nc-1.0);
 
-		all_sum_mean += refl_mean;
-		all_sumsq_mean += refl_mean*refl_mean;
+		/* Variance of contributions */
+		refl_sumsq = 0.0;
+		for ( j=0; j<c->n_contrib; j++ ) {
+
+			double Ii;
+
+			if ( c->contrib_crystals[j] == exclude ) {
+				continue;
+			}
+
+			/* FIXME: Apply corrections */
+			Ii = get_intensity(c->contribs[j]);
+
+			refl_sumsq += (Ii-refl_mean)*(Ii-refl_mean);
+			/* (nc already summed above) */
+
+		}
+
+		refl_var = refl_sumsq/(nc-1.0);
 		all_sum_var += refl_var;
 		n++;
+		total_contribs += nc;
+
+		double w = 1.0;
+		wSum += w;
+		wSum2 += w*w;
+		double meanOld = mean;
+		mean = meanOld + (w/wSum) * (refl_mean - meanOld);
+		S += w * (refl_mean - meanOld) * (refl_mean - mean);
 
 	}
 
 	hsig2E = all_sum_var / n;
-	sig2Y = (all_sumsq_mean/n - all_sum_mean*all_sum_mean/(n*n));
-	sig2Y *= n/(n-1.0);
+	sig2Y = S / (wSum - 1.0);
 
 	if ( pnref != NULL ) {
 		*pnref = n;
