@@ -317,7 +317,7 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 			Reflection *r2;
 
 			get_indices(refl, &h, &k, &l);
-			r2 =  add_refl(full2, h, k, l);
+			r2 = add_refl(full2, h, k, l);
 			copy_data(r2, refl);
 		}
 	}
