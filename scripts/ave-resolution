@@ -14,7 +14,11 @@ import sys
 import numpy
 import matplotlib.pyplot as plt
 
-f = open(sys.argv[1])
+if sys.argv[1] == '-':
+    f = sys.stdin
+else:
+    f = open(sys.argv[1])
+
 a = []
 
 while True:
