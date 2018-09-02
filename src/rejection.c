@@ -218,11 +218,11 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		//RefList *template = full;
 		cchalf = calculate_cchalf(template, full, NULL, NULL);
 		cchalfi = calculate_cchalf(template, full, crystals[i], &nref);
-		STATUS("Frame %i:\n", i);
-		STATUS("   With = %f\n", cchalf*100.0);
-		STATUS("Without = %f\n", cchalfi*100.0);
-		STATUS("Delta = %f\n", cchalf - cchalfi);
-		STATUS("nref = %i\n", nref);
+		STATUS("Frame %i:", i);
+		STATUS("   With = %f  ", cchalf*100.0);
+		STATUS("Without = %f", cchalfi*100.0);
+		STATUS("  Delta = %f  ", cchalf - cchalfi);
+		STATUS("(nref = %i)\n", nref);
 	}
 }
 
