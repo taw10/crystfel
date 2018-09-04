@@ -139,6 +139,8 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		c = get_contributions(refl);
 		assert(c != NULL);
 
+		STATUS("reflection %4i %4i %4i\n", h, k, l);
+
 		/* Mean of contributions */
 		refl_sum = 0.0;
 		for ( j=0; j<c->n_contrib; j++ ) {
@@ -152,14 +154,15 @@ static double calculate_cchalf(RefList *template, RefList *full,
 			/* FIXME: Apply corrections */
 			Ii = get_intensity(c->contribs[j]);
 
+			STATUS("contrib %f  (crystal %p)\n", Ii, c->contrib_crystals[j]);
 			refl_sum += Ii;
 			nc++;
 
 		}
 
 		if ( nc < 2 ) continue;
-
 		refl_mean = refl_sum / nc;
+		STATUS("       refl_mean = %f\n", refl_mean);
 
 		/* Variance of contributions */
 		refl_sumsq = 0.0;
@@ -180,6 +183,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		}
 
 		refl_var = refl_sumsq/(nc-1.0);
+		STATUS("        refl_var = %f\n", refl_var);
 		all_sum_var += refl_var;
 		n++;
 		total_contribs += nc;
@@ -194,7 +198,10 @@ static double calculate_cchalf(RefList *template, RefList *full,
 	}
 
 	hsig2E = all_sum_var / n;
+	STATUS("mean of reflection variances = %f = 0.5*sig2E\n", hsig2E);
 	sig2Y = S / (wSum - 1.0);
+	STATUS("variance of reflection means = %f = sig2Y\n", sig2Y);
+	STATUS("%lli total contribs\n", hsig2E, sig2Y, total_contribs);
 
 	if ( pnref != NULL ) {
 		*pnref = n;
