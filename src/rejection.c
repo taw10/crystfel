@@ -221,7 +221,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		STATUS("Frame %i:", i);
 		STATUS("   With = %f  ", cchalf*100.0);
 		STATUS("Without = %f", cchalfi*100.0);
-		STATUS("  Delta = %f  ", cchalf - cchalfi);
+		STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
 		STATUS("(nref = %i)\n", nref);
 	}
 }
