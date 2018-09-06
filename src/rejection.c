@@ -99,7 +99,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 {
 	Reflection *trefl;
 	RefListIterator *iter;
-	double hsig2E, sig2Y;
+	double sig2E, sig2Y;
 	int n = 0;
 	signed int oh = 0;
 	signed int ok = 0;
@@ -138,7 +138,6 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 		c = get_contributions(refl);
 		assert(c != NULL);
-
 
 		/* Mean of contributions */
 		refl_sum = 0.0;
@@ -195,13 +194,13 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 	}
 
-	hsig2E = all_sum_var / n;
+	sig2E = all_sum_var / n;
 	sig2Y = S / (wSum - 1.0);
 
 	if ( pnref != NULL ) {
 		*pnref = n;
 	}
-	return (sig2Y - hsig2E) / (sig2Y + hsig2E);
+	return (sig2Y - 0.5*sig2E) / (sig2Y + 0.5*sig2E);
 }
 
 
@@ -217,7 +216,6 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	for ( i=0; i<n; i++ ) {
 		double cchalf, cchalfi;
 		RefList *template = crystal_get_reflections(crystals[i]);
-		//RefList *template = full;
 		cchalf = calculate_cchalf(template, full, NULL, NULL);
 		cchalfi = calculate_cchalf(template, full, crystals[i], &nref);
 		STATUS("Frame %i:", i);
