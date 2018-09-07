@@ -3,11 +3,11 @@
  *
  * Crystal rejection for scaling
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -254,13 +254,16 @@ static void show_duds(Crystal **crystals, int n_crystals)
 }
 
 
-void check_rejection(Crystal **crystals, int n, RefList *full, double max_B)
+void check_rejection(Crystal **crystals, int n, RefList *full, double max_B,
+                     int no_deltacchalf)
 {
 	int i;
 	int n_acc = 0;
 
 	/* Check according to delta CC½ */
-	if ( full != NULL ) check_deltacchalf(crystals, n, full);
+	if ( !no_deltacchalf && (full != NULL) ) {
+		 check_deltacchalf(crystals, n, full);
+	}
 
 	for ( i=0; i<n; i++ ) {
 		if ( fabs(crystal_get_Bfac(crystals[i])) > max_B ) {

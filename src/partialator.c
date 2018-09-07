@@ -318,6 +318,7 @@ static void show_help(const char *s)
 "      --no-scale             Disable scale factor (G, B) refinement.\n"
 "      --no-Bscale            Disable B factor scaling.\n"
 "      --no-pr                Disable orientation/physics refinement.\n"
+"      --no-deltacchalf       Disable rejection based on deltaCChalf.\n"
 "  -m, --model=<model>        Specify partiality model.\n"
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
@@ -912,6 +913,7 @@ int main(int argc, char *argv[])
 	int scaleflags = 0;
 	double min_res = 0.0;
 	int do_write_logs = 0;
+	int no_deltacchalf = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -950,6 +952,7 @@ int main(int argc, char *argv[])
 		{"no-free",            0, &no_free,            1},
 		{"output-every-cycle", 0, &output_everycycle,  1},
 		{"no-logs",            0, &no_logs,            1},
+		{"no-deltacchalf",     0, &no_deltacchalf,     1},
 
 		{0, 0, NULL, 0}
 	};
@@ -1412,7 +1415,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Check rejection and write figures of merit */
-	check_rejection(crystals, n_crystals, full, max_B);
+	check_rejection(crystals, n_crystals, full, max_B, no_deltacchalf);
 	show_all_residuals(crystals, n_crystals, full);
 
 	if ( do_write_logs ) {
@@ -1443,7 +1446,7 @@ int main(int argc, char *argv[])
 			                         push_res, 1);
 		} /* else full still equals reference */
 
-		check_rejection(crystals, n_crystals, full, max_B);
+		check_rejection(crystals, n_crystals, full, max_B, no_deltacchalf);
 		show_all_residuals(crystals, n_crystals, full);
 
 		if ( do_write_logs ) {
