@@ -209,9 +209,17 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	double cchalf;
 	int i;
 	int nref;
+	double *vals;
+	double mean, sd;
 
 	cchalf = calculate_cchalf(full, full, NULL, &nref);
 	STATUS("Overall CChalf = %f (%i reflections)\n", cchalf*100.0, nref);
+
+	vals = malloc(n*sizeof(double));
+	if ( vals == NULL ) {
+		ERROR("Not enough memory for deltaCChalf check\n");
+		return;
+	}
 
 	for ( i=0; i<n; i++ ) {
 		double cchalf, cchalfi;
@@ -223,7 +231,20 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		STATUS("Without = %f", cchalfi*100.0);
 		STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
 		STATUS("(nref = %i)\n", nref);
+		vals[i] = cchalf - cchalfi;
 	}
+
+	mean = gsl_stats_mean(vals, 1, n);
+	sd = gsl_stats_sd_m(vals, 1, n, mean);
+	STATUS("deltaCChalf = %f ± %f %%\n", mean*100.0, sd*100.0);
+
+	for ( i=0; i<n; i++ ) {
+		if ( vals[i] < mean-2.0*sd ) {
+			crystal_set_user_flag(crystals[i], PRFLAG_DELTACCHALF);
+		}
+	}
+
+	free(vals);
 }
 
 
