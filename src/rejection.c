@@ -3,11 +3,11 @@
  *
  * Crystal rejection for scaling
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -94,74 +94,174 @@ void early_rejection(Crystal **crystals, int n)
 }
 
 
-static void check_cc(Crystal *cr, RefList *full)
+static double calculate_cchalf(RefList *template, RefList *full,
+                               Crystal *exclude, int *pnref)
 {
-	RefList *list = crystal_get_reflections(cr);
-	Reflection *refl;
+	Reflection *trefl;
 	RefListIterator *iter;
-	double G = crystal_get_osf(cr);
-	double B = crystal_get_Bfac(cr);
-	UnitCell *cell = crystal_get_cell(cr);
-	double *vec1, *vec2;
-	int n, i;
-	double cc;
+	double sig2E, sig2Y;
+	int n = 0;
+	signed int oh = 0;
+	signed int ok = 0;
+	signed int ol = 0;
+	double wSum = 0.0;
+	double wSum2 = 0.0;
+	double mean = 0.0;
+	double S = 0.0;
+	double all_sum_var = 0.0;
+	long int total_contribs = 0;
 
-	n = num_reflections(list);
-	vec1 = malloc(n*sizeof(double));
-	vec2 = malloc(n*sizeof(double));
-	if ( (vec1 == NULL) || (vec2 == NULL) ) {
-		ERROR("Not enough memory to check CCs\n");
-		return;
-	}
-
-	i = 0;
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
+	/* Iterate over all reflections */
+	for ( trefl = first_refl(template, &iter);
+	      trefl != NULL;
+	      trefl = next_refl(trefl, iter) )
 	{
+		struct reflection_contributions *c;
+		int j;
+		double refl_sum;
+		double refl_sumsq;
+		double refl_mean, refl_var;
 		signed int h, k, l;
-		double pobs, pcalc;
-		double res, corr, Ipart;
-		Reflection *match;
+		int nc = 0;
+		Reflection *refl;
+		double res;
 
-		if ( !get_flag(refl) ) continue;  /* Not free-flagged */
+		get_indices(trefl, &h, &k, &l);
 
-		get_indices(refl, &h, &k, &l);
-		res = resolution(cell, h, k, l);
-		if ( 2.0*res > crystal_get_resolution_limit(cr) ) continue;
+		/* next_refl() will iterate over multiple copies of the same
+		 * unique reflection, but we are only interested in seeing each
+		 * unique reflection once. */
+		if ( (h==oh) && (k==ok) && (l==ol) ) continue;
+		oh = h;  ok = k;  ol = l;
 
-		match = find_refl(full, h, k, l);
-		if ( match == NULL ) continue;
+		refl = find_refl(full, h, k, l);
+		if ( refl == NULL ) continue;
 
-		/* Calculated partiality */
-		pcalc = get_partiality(refl);
+		c = get_contributions(refl);
+		assert(c != NULL);
 
-		/* Observed partiality */
-		corr = G * exp(B*res*res) * get_lorentz(refl);
-		Ipart = get_intensity(refl) * corr;
-		pobs = Ipart / get_intensity(match);
+		/* Calculate the resolution just once, using the cell from the
+		 * first crystal to contribute, otherwise it takes too long */
+		res = resolution(crystal_get_cell(c->contrib_crystals[0]),
+		                 h, k, l);
 
-		vec1[i] = pobs;
-		vec2[i] = pcalc;
-		i++;
+		/* Mean of contributions */
+		refl_sum = 0.0;
+		for ( j=0; j<c->n_contrib; j++ ) {
+
+			double Ii, G, B;
+
+			if ( c->contrib_crystals[j] == exclude ) {
+				continue;
+			}
+
+			G = crystal_get_osf(c->contrib_crystals[j]);
+			B = crystal_get_Bfac(c->contrib_crystals[j]);
+			Ii = get_intensity(c->contribs[j]);
+
+			/* Total (multiplicative) correction factor */
+			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(c->contribs[j])
+			          / get_partiality(c->contribs[j]);
+
+			refl_sum += Ii;
+			nc++;
+
+		}
+
+		if ( nc < 2 ) continue;
+		refl_mean = refl_sum / nc;
+
+		/* Variance of contributions */
+		refl_sumsq = 0.0;
+		for ( j=0; j<c->n_contrib; j++ ) {
+
+			double Ii, G, B;
+
+			if ( c->contrib_crystals[j] == exclude ) {
+				continue;
+			}
+
+			G = crystal_get_osf(c->contrib_crystals[j]);
+			B = crystal_get_Bfac(c->contrib_crystals[j]);
+			Ii = get_intensity(c->contribs[j]);
+
+			/* Total (multiplicative) correction factor */
+			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(c->contribs[j])
+			          / get_partiality(c->contribs[j]);
+
+			refl_sumsq += (Ii-refl_mean)*(Ii-refl_mean);
+			/* (nc already summed above) */
+
+		}
+
+		refl_var = refl_sumsq/(nc-1.0);
+		refl_var /= (nc/2.0);
+
+		all_sum_var += refl_var;
+		n++;
+		total_contribs += nc;
+
+		double w = 1.0;
+		wSum += w;
+		wSum2 += w*w;
+		double meanOld = mean;
+		mean = meanOld + (w/wSum) * (refl_mean - meanOld);
+		S += w * (refl_mean - meanOld) * (refl_mean - mean);
+
 	}
 
-	cc = gsl_stats_correlation(vec1, 1, vec2, 1, i);
-	//printf("%f\n", cc);
-	if ( cc < 0.5 ) crystal_set_user_flag(cr, PRFLAG_CC);
+	sig2E = all_sum_var / n;
+	sig2Y = S / (wSum - 1.0);
 
-	free(vec1);
-	free(vec2);
+	if ( pnref != NULL ) {
+		*pnref = n;
+	}
+	return (sig2Y - 0.5*sig2E) / (sig2Y + 0.5*sig2E);
 }
 
 
-static UNUSED void check_ccs(Crystal **crystals, int n_crystals, RefList *full)
+static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 {
+	double cchalf;
 	int i;
+	int nref;
+	double *vals;
+	double mean, sd;
 
-	for ( i=0; i<n_crystals; i++ ) {
-		check_cc(crystals[i], full);
+	cchalf = calculate_cchalf(full, full, NULL, &nref);
+	STATUS("Overall CChalf = %f %% (%i reflections)\n", cchalf*100.0, nref);
+
+	vals = malloc(n*sizeof(double));
+	if ( vals == NULL ) {
+		ERROR("Not enough memory for deltaCChalf check\n");
+		return;
 	}
+
+	for ( i=0; i<n; i++ ) {
+		double cchalf, cchalfi;
+		RefList *template = crystal_get_reflections(crystals[i]);
+		cchalf = calculate_cchalf(template, full, NULL, NULL);
+		cchalfi = calculate_cchalf(template, full, crystals[i], &nref);
+		//STATUS("Frame %i:", i);
+		//STATUS("   With = %f  ", cchalf*100.0);
+		//STATUS("Without = %f", cchalfi*100.0);
+		//STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
+		//STATUS("(nref = %i)\n", nref);
+		vals[i] = cchalf - cchalfi;
+		progress_bar(i, n-1, "Calculating deltaCChalf");
+	}
+
+	mean = gsl_stats_mean(vals, 1, n);
+	sd = gsl_stats_sd_m(vals, 1, n, mean);
+	STATUS("deltaCChalf = %f ± %f %%\n", mean*100.0, sd*100.0);
+
+	for ( i=0; i<n; i++ ) {
+		if ( vals[i] < mean-2.0*sd ) {
+			crystal_set_user_flag(crystals[i], PRFLAG_DELTACCHALF);
+		}
+	}
+
+	free(vals);
 }
 
 
@@ -192,14 +292,16 @@ static void show_duds(Crystal **crystals, int n_crystals)
 }
 
 
-void check_rejection(Crystal **crystals, int n, RefList *full, double max_B)
+void check_rejection(Crystal **crystals, int n, RefList *full, double max_B,
+                     int no_deltacchalf)
 {
 	int i;
 	int n_acc = 0;
 
-	/* Check according to CCs FIXME: Disabled */
-	//if ( full != NULL ) check_ccs(crystals, n, full);
-
+	/* Check according to delta CC½ */
+	if ( !no_deltacchalf && (full != NULL) ) {
+		 check_deltacchalf(crystals, n, full);
+	}
 
 	for ( i=0; i<n; i++ ) {
 		if ( fabs(crystal_get_Bfac(crystals[i])) > max_B ) {

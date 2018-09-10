@@ -3,11 +3,11 @@
  *
  * Fast reflection/peak list
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2016 Thomas White <taw@physics.org>
+ *   2011-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -99,6 +99,9 @@ struct _refldata {
 	/* Peak height and mean background */
 	double peak;
 	double mean_bg;
+
+	/* Contributions */
+	struct reflection_contributions *contribs;
 
 	/* User-specified temporary values */
 	double temp1;
@@ -587,6 +590,18 @@ int get_flag(const Reflection *refl)
 }
 
 
+/**
+ * get_contributions:
+ * @refl: A %Reflection
+ *
+ * Returns: the reflection's contribution list
+ *
+ **/
+struct reflection_contributions *get_contributions(const Reflection *refl)
+{
+	return refl->data.contribs;
+}
+
 /********************************** Setters ***********************************/
 
 /**
@@ -634,6 +649,7 @@ void set_panel(Reflection *refl, struct panel *p)
 	refl->data.panel = p;
 }
 
+
 /**
  * set_khalf:
  * @refl: A %Reflection
@@ -645,7 +661,6 @@ void set_khalf(Reflection *refl, double khalf)
 {
 	refl->data.khalf = khalf;
 }
-
 
 
 /**
@@ -845,6 +860,21 @@ void set_temp2(Reflection *refl, double temp)
 void set_flag(Reflection *refl, int flag)
 {
 	refl->data.flag = flag;
+}
+
+
+/**
+ * set_contributions:
+ * @refl: A %Reflection
+ * @contribs: Pointer to the contribution list
+ *
+ * Note that the pointer will be stored, not the contents of the structure.
+ *
+ **/
+void set_contributions(Reflection *refl,
+                       struct reflection_contributions *contribs)
+{
+	refl->data.contribs = contribs;
 }
 
 

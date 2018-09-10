@@ -199,12 +199,14 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 
 	STATUS("Writing two-way split to %s ", tmp);
 	write_reflist_2(tmp, split, sym);
+	free_contribs(split);
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
 	split = merge_intensities(crystals2, n_crystals2, nthreads,
 		                  min_measurements, push_res, 1);
 	STATUS("and %s\n", tmp);
 	write_reflist_2(tmp, split, sym);
+	free_contribs(split);
 	reflist_free(split);
 }
 
@@ -291,6 +293,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
 		                  min_measurements, push_res, 1);
 	write_reflist_2(tmp, split, sym);
+	free_contribs(split);
 	reflist_free(split);
 
 	write_split(crystalsn, n_crystalsn, tmp, nthreads, pmodel,
@@ -318,6 +321,7 @@ static void show_help(const char *s)
 "      --no-scale             Disable scale factor (G, B) refinement.\n"
 "      --no-Bscale            Disable B factor scaling.\n"
 "      --no-pr                Disable orientation/physics refinement.\n"
+"      --no-deltacchalf       Disable rejection based on deltaCChalf.\n"
 "  -m, --model=<model>        Specify partiality model.\n"
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
@@ -912,6 +916,7 @@ int main(int argc, char *argv[])
 	int scaleflags = 0;
 	double min_res = 0.0;
 	int do_write_logs = 0;
+	int no_deltacchalf = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -950,6 +955,7 @@ int main(int argc, char *argv[])
 		{"no-free",            0, &no_free,            1},
 		{"output-every-cycle", 0, &output_everycycle,  1},
 		{"no-logs",            0, &no_logs,            1},
+		{"no-deltacchalf",     0, &no_deltacchalf,     1},
 
 		{0, 0, NULL, 0}
 	};
@@ -1412,7 +1418,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Check rejection and write figures of merit */
-	check_rejection(crystals, n_crystals, full, max_B);
+	check_rejection(crystals, n_crystals, full, max_B, no_deltacchalf);
 	show_all_residuals(crystals, n_crystals, full);
 
 	if ( do_write_logs ) {
@@ -1433,6 +1439,7 @@ int main(int argc, char *argv[])
 
 		/* Create new reference if needed */
 		if ( reference == NULL ) {
+			free_contribs(full);
 			reflist_free(full);
 			if ( !no_scale ) {
 				scale_all(crystals, n_crystals, nthreads,
@@ -1443,7 +1450,7 @@ int main(int argc, char *argv[])
 			                         push_res, 1);
 		} /* else full still equals reference */
 
-		check_rejection(crystals, n_crystals, full, max_B);
+		check_rejection(crystals, n_crystals, full, max_B, no_deltacchalf);
 		show_all_residuals(crystals, n_crystals, full);
 
 		if ( do_write_logs ) {
@@ -1481,6 +1488,7 @@ int main(int argc, char *argv[])
 	/* Final merge */
 	STATUS("Final merge...\n");
 	if ( reference == NULL ) {
+		free_contribs(full);
 		reflist_free(full);
 		if ( !no_scale ) {
 			scale_all(crystals, n_crystals, nthreads, scaleflags);
@@ -1527,6 +1535,7 @@ int main(int argc, char *argv[])
 		reflist_free(crystal_get_reflections(crystals[i]));
 		crystal_free(crystals[i]);
 	}
+	free_contribs(full);
 	reflist_free(full);
 	free_symoplist(sym);
 	free(outfile);

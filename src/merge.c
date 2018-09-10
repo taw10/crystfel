@@ -3,11 +3,11 @@
  *
  * Parallel weighted merging of intensities
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -46,6 +46,7 @@
 #include "cell.h"
 #include "utils.h"
 #include "reflist.h"
+#include "reflist-utils.h"
 #include "cell-utils.h"
 
 
@@ -88,6 +89,17 @@ static void *create_merge_job(void *vqargs)
 }
 
 
+static int alloc_contribs(struct reflection_contributions *c)
+{
+	c->contribs = realloc(c->contribs, c->max_contrib*sizeof(Reflection *));
+	c->contrib_crystals = realloc(c->contrib_crystals,
+	                              c->max_contrib*sizeof(Crystal *));
+	if ( c->contribs == NULL ) return 1;
+	if ( c->contrib_crystals == NULL ) return 1;
+	return 0;
+}
+
+
 /* Find reflection hkl in 'list', creating it if it's not there, under
  * protection of 'lock' and returning a locked reflection */
 static Reflection *get_locked_reflection(RefList *list, pthread_rwlock_t *lock,
@@ -108,12 +120,31 @@ static Reflection *get_locked_reflection(RefList *list, pthread_rwlock_t *lock,
 		 * So, we must check again */
 		f = find_refl(list, h, k, l);
 		if ( f == NULL ) {
+
+			struct reflection_contributions *c;
+
 			f = add_refl(list, h, k, l);
 			lock_reflection(f);
 			pthread_rwlock_unlock(lock);
 			set_intensity(f, 0.0);
 			set_temp1(f, 0.0);
 			set_temp2(f, 0.0);
+
+			c = malloc(sizeof(struct reflection_contributions));
+			if ( c != NULL ) {
+				c->n_contrib = 0;
+				c->max_contrib = 32;
+				c->contribs = NULL;
+				c->contrib_crystals = NULL;
+				if ( alloc_contribs(c) ) {
+					set_contributions(f, NULL);
+				} else {
+					set_contributions(f, c);
+				}
+			} else {
+				set_contributions(f, NULL);
+			}
+
 		} else {
 			/* Someone else created it */
 			lock_reflection(f);
@@ -158,6 +189,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double mean, sumweight, M2, temp, delta, R;
 		double corr, res, w;
+		struct reflection_contributions *c;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
@@ -209,6 +241,18 @@ static void run_merge_job(void *vwargs, int cookie)
 		set_temp2(f, M2 + sumweight * delta * R);
 		set_temp1(f, temp);
 		set_redundancy(f, get_redundancy(f)+1);
+
+		/* Record this contribution */
+		c = get_contributions(f);
+		if ( c != NULL ) {
+			c->contribs[c->n_contrib] = refl;
+			c->contrib_crystals[c->n_contrib++] = cr;
+			if ( c->n_contrib == c->max_contrib ) {
+				c->max_contrib += 64;
+				alloc_contribs(c);
+			}
+		} /* else, too bad! */
+
 		unlock_reflection(f);
 
 		wargs->n_reflections++;
@@ -274,8 +318,18 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 			Reflection *r2;
 
 			get_indices(refl, &h, &k, &l);
-			r2 =  add_refl(full2, h, k, l);
+			r2 = add_refl(full2, h, k, l);
 			copy_data(r2, refl);
+
+		} else {
+
+			/* We do not need the contribution list any more */
+			struct reflection_contributions *c;
+			c = get_contributions(refl);
+			free(c->contribs);
+			free(c->contrib_crystals);
+			free(c);
+
 		}
 	}
 

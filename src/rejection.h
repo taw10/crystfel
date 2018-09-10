@@ -3,11 +3,11 @@
  *
  * Crystal rejection for scaling
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -39,6 +39,6 @@
 
 extern void early_rejection(Crystal **crystals, int n);
 extern void check_rejection(Crystal **crystals, int n, RefList *full,
-                            double max_B);
+                            double max_B, int no_deltacchalf);
 
 #endif	/* REJECTION_H */
