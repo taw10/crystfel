@@ -1358,6 +1358,7 @@ static void read_audit_lines(Stream *st)
 		ERROR("Failed to allocate memory for audit information\n");
 		return;
 	}
+	st->audit_info[0] = '\0';
 
 	/* Read lines from stream until one of them starts with "-----",
 	 * then rewind to the start of that line */
