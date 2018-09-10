@@ -244,9 +244,19 @@ static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copym
 static struct spectrum *read_spectrum_fromfile(char *fn)
 {
 	FILE *f;
-	f = fopen(fn, "r");
+	struct spectrum *s;
+	int i;
+	double k, w;
+	double w_sum = 0;
 
-	struct spectrum *s = malloc(sizeof(struct spectrum));
+	f = fopen(fn, "r");
+	if ( f == NULL ) {
+		ERROR("Couldn't open '%s'\n", fn);
+		return NULL;
+	}
+
+	s = malloc(sizeof(struct spectrum));
+	if ( s == NULL ) return NULL;
 
 	if ( fscanf(f, "%d", &s->n) == EOF ) {
 		return NULL;
@@ -268,15 +278,14 @@ static struct spectrum *read_spectrum_fromfile(char *fn)
 		return NULL;
 	}
 
-	int i;
-	double k, w;
-	double w_sum = 0;
-	for ( i = 0; i < s->n; i++ ) {
-		if (fscanf(f, "%lf %lf", &k, &w) != EOF) {
+	for ( i=0; i<s->n; i++ ) {
+		if ( fscanf(f, "%lf %lf", &k, &w) != EOF ) {
 			s->ks[i] = ph_eV_to_k(k);
 			s->weights[i] = w;
 			w_sum += w;
-		} else break;
+		} else {
+			break;
+		}
 	}
 
 	if ( i < s->n - 1 ) {
@@ -284,7 +293,7 @@ static struct spectrum *read_spectrum_fromfile(char *fn)
 		return NULL;
 	}
 
-	for ( i = 0; i < s->n; i++ ) {
+	for ( i=0; i<s->n; i++ ) {
 		s->weights[i] /= w_sum;
 	}
 

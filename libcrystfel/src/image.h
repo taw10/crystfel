@@ -224,7 +224,8 @@ struct image {
 
 	struct spectrum *spectrum; /* Beam spectrum for pink beam data */
 
-	// These only used in pattern_sim, to be changed to struct spectrum from above later...
+	/* FIXME: These are only used in pattern_sim, which should be changed to
+	 * use the "struct spectrum" from above later */
 	struct sample           *spectrum0;
 	int                     nsamples; /* Number of wavelengths */
 	int                     spectrum_size;  /* Size of "spectrum" */
