@@ -124,6 +124,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		signed int h, k, l;
 		int nc = 0;
 		Reflection *refl;
+		double res;
 
 		get_indices(trefl, &h, &k, &l);
 
@@ -139,18 +140,28 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		c = get_contributions(refl);
 		assert(c != NULL);
 
+		/* Calculate the resolution just once, using the cell from the
+		 * first crystal to contribute, otherwise it takes too long */
+		res = resolution(crystal_get_cell(c->contrib_crystals[0]),
+		                 h, k, l);
+
 		/* Mean of contributions */
 		refl_sum = 0.0;
 		for ( j=0; j<c->n_contrib; j++ ) {
 
-			double Ii;
+			double Ii, G, B;
 
 			if ( c->contrib_crystals[j] == exclude ) {
 				continue;
 			}
 
-			/* FIXME: Apply corrections */
+			G = crystal_get_osf(c->contrib_crystals[j]);
+			B = crystal_get_Bfac(c->contrib_crystals[j]);
 			Ii = get_intensity(c->contribs[j]);
+
+			/* Total (multiplicative) correction factor */
+			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(c->contribs[j])
+			          / get_partiality(c->contribs[j]);
 
 			refl_sum += Ii;
 			nc++;
@@ -164,14 +175,19 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		refl_sumsq = 0.0;
 		for ( j=0; j<c->n_contrib; j++ ) {
 
-			double Ii;
+			double Ii, G, B;
 
 			if ( c->contrib_crystals[j] == exclude ) {
 				continue;
 			}
 
-			/* FIXME: Apply corrections */
+			G = crystal_get_osf(c->contrib_crystals[j]);
+			B = crystal_get_Bfac(c->contrib_crystals[j]);
 			Ii = get_intensity(c->contribs[j]);
+
+			/* Total (multiplicative) correction factor */
+			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(c->contribs[j])
+			          / get_partiality(c->contribs[j]);
 
 			refl_sumsq += (Ii-refl_mean)*(Ii-refl_mean);
 			/* (nc already summed above) */
@@ -226,12 +242,13 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		RefList *template = crystal_get_reflections(crystals[i]);
 		cchalf = calculate_cchalf(template, full, NULL, NULL);
 		cchalfi = calculate_cchalf(template, full, crystals[i], &nref);
-		STATUS("Frame %i:", i);
-		STATUS("   With = %f  ", cchalf*100.0);
-		STATUS("Without = %f", cchalfi*100.0);
-		STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
-		STATUS("(nref = %i)\n", nref);
+		//STATUS("Frame %i:", i);
+		//STATUS("   With = %f  ", cchalf*100.0);
+		//STATUS("Without = %f", cchalfi*100.0);
+		//STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
+		//STATUS("(nref = %i)\n", nref);
 		vals[i] = cchalf - cchalfi;
+		progress_bar(i, n-1, "Calculating deltaCChalf");
 	}
 
 	mean = gsl_stats_mean(vals, 1, n);
