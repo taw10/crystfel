@@ -46,6 +46,7 @@
 #include "cell.h"
 #include "cell-utils.h"
 #include "scaling.h"
+#include "reflist-utils.h"
 
 
 struct scale_args
@@ -166,6 +167,7 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 		meanB /= n_crystals;
 		STATUS("Mean B = %e\n", meanB);
 
+		free_contribs(full);
 		reflist_free(full);
 		niter++;
 

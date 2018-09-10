@@ -3,11 +3,11 @@
  *
  * Utilities to complement the core reflist.c
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2017 Thomas White <taw@physics.org>
+ *   2011-2018 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -68,6 +68,8 @@ extern RefList *res_cutoff(RefList *list, UnitCell *cell,
                            double min, double max);
 
 extern RefList *copy_reflist(RefList *list);
+
+extern void free_contribs(RefList *list);
 
 extern void reflist_add_command_and_version(RefList *list,
                                             int argcv, char *argv[]);

@@ -3,11 +3,11 @@
  *
  * Utilities to complement the core reflist.c
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2017 Thomas White <taw@physics.org>
+ *   2011-2018 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -645,6 +645,30 @@ RefList *copy_reflist(RefList *list)
 	}
 
 	return new;
+}
+
+
+/**
+ * free_contribs:
+ * @list: A %RefList
+ *
+ * Goes through @list and frees all the reflection contribution structures.
+ **/
+void free_contribs(RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		struct reflection_contributions *c;
+		c = get_contributions(refl);
+		free(c->contribs);
+		free(c->contrib_crystals);
+		free(c);
+	}
 }
 
 

@@ -3,11 +3,11 @@
  *
  * Parallel weighted merging of intensities
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2015 Thomas White <taw@physics.org>
+ *   2010-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -46,6 +46,7 @@
 #include "cell.h"
 #include "utils.h"
 #include "reflist.h"
+#include "reflist-utils.h"
 #include "cell-utils.h"
 
 
@@ -319,6 +320,16 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 			get_indices(refl, &h, &k, &l);
 			r2 = add_refl(full2, h, k, l);
 			copy_data(r2, refl);
+
+		} else {
+
+			/* We do not need the contribution list any more */
+			struct reflection_contributions *c;
+			c = get_contributions(refl);
+			free(c->contribs);
+			free(c->contrib_crystals);
+			free(c);
+
 		}
 	}
 
