@@ -229,7 +229,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	double mean, sd;
 
 	cchalf = calculate_cchalf(full, full, NULL, &nref);
-	STATUS("Overall CChalf = %f (%i reflections)\n", cchalf*100.0, nref);
+	STATUS("Overall CChalf = %f %% (%i reflections)\n", cchalf*100.0, nref);
 
 	vals = malloc(n*sizeof(double));
 	if ( vals == NULL ) {
