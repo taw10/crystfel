@@ -617,6 +617,7 @@ static gboolean displaywindow_draw(GtkWidget *da, cairo_t *cr, DisplayWindow *dw
 {
 	cairo_set_source_surface(cr, dw->surf, 0.0, 0.0);
 	cairo_paint(cr);
+	return FALSE;
 }
 
 
