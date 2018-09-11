@@ -70,11 +70,11 @@ typedef struct _reflection Reflection;
  **/
 typedef struct _reflistiterator RefListIterator;
 
+#include "crystal.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct _crystal Crystal;
 
 /* Structure representing the contributions to a merged reflection */
 struct reflection_contributions

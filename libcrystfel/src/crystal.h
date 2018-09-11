@@ -36,7 +36,6 @@
 
 
 #include "cell.h"
-#include "reflist.h"
 
 
 /**
@@ -46,6 +45,8 @@
  * to read and write its contents.
  **/
 typedef struct _crystal Crystal;
+
+#include "reflist.h"
 
 #ifdef __cplusplus
 extern "C" {
