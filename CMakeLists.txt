@@ -52,6 +52,7 @@ if (NOT GTK_FOUND)
     message(STATUS "Using GDK 3")
   endif()
 endif()
+link_directories(${GTK_LIBRARY_DIRS})
 
 pkg_search_module(CAIRO cairo)
 pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
