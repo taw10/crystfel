@@ -101,9 +101,16 @@ check_include_file(fcntl.h HAVE_FCNTL_H)
 check_include_file(stdlib.h HAVE_STDLIB_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 
-# If we supposedly have OpenCL, check if the header is actually "CL/cl.h"
+# Workarounds for weird OpenCL quirks..
 if (OpenCL_FOUND)
+
+  # If include path ends with "OpenCL.framework", add the missing "/Headers"
+  string(REGEX REPLACE "OpenCL.framework$" "OpenCL.framework/Headers"
+         OpenCL_INCLUDE_DIRS ${OpenCL_INCLUDE_DIRS})
+
+  # Check if the header is actually "CL/cl.h"
   check_include_file(CL/cl.h HAVE_CL_CL_H "-I${OpenCL_INCLUDE_DIRS}")
+
 endif (OpenCL_FOUND)
 
 # Check for nice clock function
