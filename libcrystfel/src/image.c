@@ -439,7 +439,7 @@ static char *cbf_strerr(int e)
 }
 
 
-static int unpack_panels(struct image *image, signed int *data, int data_width,
+static int unpack_panels(struct image *image, float *data, int data_width,
                          int data_height)
 {
 	int pi;
@@ -587,6 +587,38 @@ static void cbf_fill_in_clen(struct detector *det, struct imagefile *f)
 }
 
 
+static float *convert_sint32_float(int32_t *data, int w, int h)
+{
+	float *df;
+	long int i;
+
+	df = malloc(sizeof(float)*w*h);
+	if ( df == NULL ) return NULL;
+
+	for ( i=0; i<w*h; i++ ) {
+		df[i] = data[i];
+	}
+
+	return df;
+}
+
+
+static float *convert_sint16_float(int16_t *data, int w, int h)
+{
+	float *df;
+	long int i;
+
+	df = malloc(sizeof(float)*w*h);
+	if ( df == NULL ) return NULL;
+
+	for ( i=0; i<w*h; i++ ) {
+		df[i] = data[i];
+	}
+
+	return df;
+}
+
+
 static int read_cbf(struct imagefile *f, struct image *image)
 {
 	cbf_handle cbfh;
@@ -596,7 +628,8 @@ static int read_cbf(struct imagefile *f, struct image *image)
 	int binary_id, minelement, maxelement, elsigned, elunsigned;
 	size_t elsize, elements, elread, dimfast, dimmid, dimslow, padding;
 	const char *byteorder;
-	signed int *data;
+	void *data;
+	float *dataf;
 
 	if ( image->det == NULL ) {
 		ERROR("read_cbf() needs a geometry\n");
@@ -655,9 +688,15 @@ static int read_cbf(struct imagefile *f, struct image *image)
 		return 1;
 	}
 
-	if ( elsize != 4 ) {
+	if ( (elsize != 4) && (elsize != 2) ) {
 		STATUS("Don't know what to do with element size %i\n",
 		       (int)elsize);
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
+	if ( !elsigned ) {
+		STATUS("Don't know what to do with unsigned data (yet)\n");
 		cbf_free_handle(cbfh);
 		return 1;
 	}
@@ -685,8 +724,16 @@ static int read_cbf(struct imagefile *f, struct image *image)
 		return 1;
 	}
 
-	unpack_panels(image, data, dimfast, dimmid);
+	if ( elsize == 4 ) {
+		dataf = convert_sint32_float(data, dimfast, dimmid);
+	}
+	if ( elsize == 2 ) {
+		dataf = convert_sint16_float(data, dimfast, dimmid);
+	}
+
+	unpack_panels(image, dataf, dimfast, dimmid);
 	free(data);
+	free(dataf);
 
 	if ( image->beam != NULL ) {
 		cbf_fill_in_beam_parameters(image->beam, f, image);
@@ -704,22 +751,6 @@ static int read_cbf(struct imagefile *f, struct image *image)
 }
 
 
-static float *convert_float(signed int *data, int w, int h)
-{
-	float *df;
-	long int i;
-
-	df = malloc(sizeof(float)*w*h);
-	if ( df == NULL ) return NULL;
-
-	for ( i=0; i<w*h; i++ ) {
-		df[i] = data[i];
-	}
-
-	return df;
-}
-
-
 static int read_cbf_simple(struct imagefile *f, struct image *image)
 {
 	cbf_handle cbfh;
@@ -729,7 +760,7 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 	int binary_id, minelement, maxelement, elsigned, elunsigned;
 	size_t elsize, elements, elread, dimfast, dimmid, dimslow, padding;
 	const char *byteorder;
-	signed int *data;
+	void *data;
 
 	if ( cbf_make_handle(&cbfh) ) {
 		ERROR("Failed to allocate CBF handle\n");
@@ -783,15 +814,21 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 		return 1;
 	}
 
-	if ( elsize != 4 ) {
+	if ( (elsize != 4) && (elsize != 2) ) {
 		STATUS("Don't know what to do with element size %i\n",
 		       (int)elsize);
 		cbf_free_handle(cbfh);
 		return 1;
 	}
 
+	if ( !elsigned ) {
+		STATUS("Don't know what to do with unsigned data (yet)\n");
+		cbf_free_handle(cbfh);
+		return 1;
+	}
+
 	if ( strcmp(byteorder, "little_endian") != 0 ) {
-		STATUS("Don't know what to do with non-little-endian datan\n");
+		STATUS("Don't know what to do with non-little-endian data\n");
 		cbf_free_handle(cbfh);
 		return 1;
 	}
@@ -819,7 +856,15 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 		ERROR("Failed to allocate dp array\n");
 		return 1;
 	}
-	image->dp[0] = convert_float(data, dimfast, dimmid);
+
+	if ( elsize == 4 ) {
+		image->dp[0] = convert_sint32_float(data, dimfast, dimmid);
+	}
+	if ( elsize == 2 ) {
+		image->dp[0] = convert_sint16_float(data, dimfast, dimmid);
+	}
+	free(data);
+
 	if ( image->dp[0] == NULL ) {
 		ERROR("Failed to allocate dp array\n");
 		return 1;
