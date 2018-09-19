@@ -948,6 +948,11 @@ struct imagefile *imagefile_open(const char *filename)
 
 		f->type = IMAGEFILE_CBF;
 
+	} else {
+
+		ERROR("Unrecognised file type: %s\n", filename);
+		return NULL;
+
 	}
 
 	f->filename = strdup(filename);
