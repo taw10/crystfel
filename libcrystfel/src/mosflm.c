@@ -570,18 +570,20 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 			cell_get_parameters(mosflm->mp->template,
 			                    &a, &b, &c, &alpha, &beta, &gamma);
 			cen = cell_get_centering(mosflm->mp->template);
+			/* Old MOSFLM simply ignores CELL and CENTERING subkeywords.
+			 * So this doesn't do any harm.
+			 * TODO: but still better to show WARNING if MOSFLM is old. */
+			snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 "
+			         "MAXCELL 1000 REFINE "
+			         "CELL %.1f %.1f %.1f %.1f %.1f %.1f "
+			         "CENTERING %c\n",
+			         mosflm->sptfile, a*1e10, b*1e10, c*1e10,
+			         rad2deg(alpha), rad2deg(beta), rad2deg(gamma),
+			         cen);
                 } else {
-			cen = 'P';
-			a = 0; /* Disables prior-cell algorithm in MOSFLM */
+			snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 "
+			         "MAXCELL 1000 REFINE\n", mosflm->sptfile);
 		}
-		/* Old MOSFLM simply ignores CELL and CENTERING subkeywords.
-		 * So this doesn't do any harm.
-		 * TODO: but still better to show WARNING if MOSFLM is old. */
-		snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 MAXCELL 1000 "
-		         "REFINE "
-		         "CELL %.1f %.1f %.1f %.1f %.1f %.1f CENTERING %c\n",
-			 mosflm->sptfile, a*1e10, b*1e10, c*1e10,
-			 rad2deg(alpha), rad2deg(beta), rad2deg(gamma), cen);
 		mosflm_sendline(tmp, mosflm);
 		break;
 
