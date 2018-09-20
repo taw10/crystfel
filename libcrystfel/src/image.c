@@ -51,9 +51,6 @@
 #include "hdf5-file.h"
 #include "detector.h"
 
-/* Maximum size of uncompressed CBF file in gzip format */
-#define GZIP_BUFFER_SIZE (16*1024*1024)
-
 /**
  * SECTION:image
  * @short_description: Data structure representing an image
@@ -647,7 +644,9 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 	} else if ( f->type == IMAGEFILE_CBFGZ ) {
 
 		gzFile gzfh;
-		size_t len;
+		size_t len, len_read;
+		const size_t bufinc = 8*1024*1024;  /* Allocate buffer in 8Mb chunks */
+		size_t bufsz = bufinc;
 
 		gzfh = gzopen(f->filename, "rb");
 		if ( gzfh == NULL ) return NULL;
@@ -655,11 +654,23 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 		/* Set larger buffer size for hopefully faster uncompression */
 		gzbuffer(gzfh, 128*1024);
 
-		buf = malloc(GZIP_BUFFER_SIZE);
+		buf = malloc(bufsz);
 		if ( buf == NULL ) return NULL;
 
-		len = gzread(gzfh, buf, GZIP_BUFFER_SIZE);
-		if ( len == -1 ) return NULL;
+		len = 0;
+		do {
+
+			len_read = gzread(gzfh, buf+len, bufinc);
+			if ( len_read == -1 ) return NULL;
+			len += len_read;
+
+			if ( len_read == bufinc ) {
+				bufsz += bufinc;
+				buf = realloc(buf, bufsz);
+				if ( buf == NULL ) return NULL;
+			}
+
+		} while ( len_read == bufinc );
 
 		fh = fmemopen(buf, len, "rb");
 		if ( fh == NULL ) return NULL;
