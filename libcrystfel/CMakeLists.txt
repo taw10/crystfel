@@ -6,6 +6,7 @@ find_package(XGANDALF)
 find_package(PINKINDEXER)
 find_package(NBP)
 find_package(FDIP)
+find_package(ZLIB REQUIRED)
 pkg_search_module(FFTW fftw3)
 
 set(HAVE_CURSES ${CURSES_FOUND})
@@ -125,8 +126,9 @@ target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_CONFIG_H)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} Threads::Threads GSL::gsl m)
+target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} ${ZLIB_LIBRARIES}
+                      Threads::Threads GSL::gsl m)
 
 if (XGANDALF_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDES})

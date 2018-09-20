@@ -34,6 +34,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <hdf5.h>
+#include <zlib.h>
 
 #ifdef HAVE_CBFLIB
 #ifdef HAVE_CBFLIB_CBF_H
@@ -49,6 +50,9 @@
 #include "events.h"
 #include "hdf5-file.h"
 #include "detector.h"
+
+/* Maximum size of uncompressed CBF file in gzip format */
+#define GZIP_BUFFER_SIZE (16*1024*1024)
 
 /**
  * SECTION:image
@@ -630,18 +634,49 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 	const char *byteorder;
 	void *data;
 	float *dataf;
+	void *buf = NULL;
+
+	if ( f->type == IMAGEFILE_CBF ) {
+
+		fh = fopen(f->filename, "rb");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", f->filename);
+			return NULL;
+		}
+
+	} else if ( f->type == IMAGEFILE_CBFGZ ) {
+
+		gzFile gzfh;
+		size_t len;
+
+		gzfh = gzopen(f->filename, "rb");
+		if ( gzfh == NULL ) return NULL;
+
+		/* Set larger buffer size for hopefully faster uncompression */
+		gzbuffer(gzfh, 128*1024);
+
+		buf = malloc(GZIP_BUFFER_SIZE);
+		if ( buf == NULL ) return NULL;
+
+		len = gzread(gzfh, buf, GZIP_BUFFER_SIZE);
+		if ( len == -1 ) return NULL;
+
+		fh = fmemopen(buf, len, "rb");
+		if ( fh == NULL ) return NULL;
+
+		gzclose_r(gzfh);
+
+	} else {
+		/* Don't know how we ended up here */
+		return NULL;
+	}
 
 	if ( cbf_make_handle(&cbfh) ) {
 		ERROR("Failed to allocate CBF handle\n");
 		return NULL;
 	}
 
-	fh = fopen(f->filename, "rb");
-	if ( fh == NULL ) {
-		ERROR("Failed to open '%s'\n", f->filename);
-		return NULL;
-	}
-	/* CBFlib calls fclose(fh) when it's ready */
+	/* CBFlib will call fclose(fh) when it's ready */
 
 	if ( cbf_read_widefile(cbfh, fh, 0) ) {
 		ERROR("Failed to read CBF file '%s'\n", f->filename);
@@ -727,6 +762,8 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 	}
 	free(data);
 
+	free(buf);  /* Might be NULL */
+
 	*w = dimfast;
 	*h = dimmid;
 	*pcbfh = cbfh;
@@ -801,6 +838,7 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 	return 0;
 }
 
+
 #else /* HAVE_CBFLIB */
 
 static int read_cbf_simple(struct imagefile *f, struct image *image)
@@ -842,6 +880,24 @@ signed int is_cbf_file(const char *filename)
 }
 
 
+signed int is_cbfgz_file(const char *filename)
+{
+	gzFile gzfh;
+	char line[1024];
+
+	gzfh = gzopen(filename, "rb");
+	if ( gzfh == NULL ) return -1;
+	if ( gzgets(gzfh, line, 1024) == NULL ) return -1;
+	gzclose_r(gzfh);
+
+	if ( strstr(line, "CBF") == NULL ) {
+		return 0;
+	}
+
+	return 1;
+}
+
+
 struct imagefile *imagefile_open(const char *filename)
 {
 	struct imagefile *f;
@@ -864,6 +920,10 @@ struct imagefile *imagefile_open(const char *filename)
 
 		f->type = IMAGEFILE_CBF;
 
+	} else if ( is_cbfgz_file(filename) ) {
+
+		f->type = IMAGEFILE_CBFGZ;
+
 	} else {
 
 		ERROR("Unrecognised file type: %s\n", filename);
@@ -883,6 +943,8 @@ int imagefile_read(struct imagefile *f, struct image *image,
 		return hdf5_read2(f->hdfile, image, event, 0);
 	} else if ( f->type == IMAGEFILE_CBF ) {
 		return read_cbf(f, image);
+	} else if ( f->type == IMAGEFILE_CBFGZ ) {
+		return read_cbf(f, image);
 	} else {
 		ERROR("Unknown file type %i\n", f->type);
 		return 1;
@@ -897,6 +959,8 @@ int imagefile_read_simple(struct imagefile *f, struct image *image)
 	if ( f->type == IMAGEFILE_HDF5 ) {
 		return hdf5_read(f->hdfile, image, NULL, 0);
 	} else if ( f->type == IMAGEFILE_CBF ) {
+		return read_cbf_simple(f, image);
+	} else if ( f->type == IMAGEFILE_CBFGZ ) {
 		return read_cbf_simple(f, image);
 	} else {
 		ERROR("Unknown file type %i\n", f->type);

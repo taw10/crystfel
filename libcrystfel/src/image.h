@@ -116,7 +116,8 @@ struct imagefeature {
 enum imagefile_type
 {
 	IMAGEFILE_HDF5,
-	IMAGEFILE_CBF
+	IMAGEFILE_CBF,
+	IMAGEFILE_CBFGZ
 };
 
 
