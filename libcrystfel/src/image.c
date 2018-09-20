@@ -896,8 +896,11 @@ int imagefile_read_simple(struct imagefile *f, struct image *image)
 {
 	if ( f->type == IMAGEFILE_HDF5 ) {
 		return hdf5_read(f->hdfile, image, NULL, 0);
-	} else {
+	} else if ( f->type == IMAGEFILE_CBF ) {
 		return read_cbf_simple(f, image);
+	} else {
+		ERROR("Unknown file type %i\n", f->type);
+		return 1;
 	}
 }
 
