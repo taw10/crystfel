@@ -916,7 +916,8 @@ static double compute_error(struct rg_collection *connected,
 				pix_index = ifs+p->w*iss;
 
 				if ( gp->num_pix_displ[pix_index]
-				       >= conn_data[di].num_peaks_per_pixel )
+				       >= conn_data[di].num_peaks_per_pixel &&
+				       gp->avg_displ_abs[pix_index] > -9999.0 )
 				{
 					double cer;
 
