@@ -1,0 +1,306 @@
+/*
+ * cell_tool.c
+ *
+ * Unit cell tool
+ *
+ * Copyright © 2018 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2012-2018 Thomas White <taw@physics.org>
+ *
+ * This file is part of CrystFEL.
+ *
+ * CrystFEL is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * CrystFEL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <assert.h>
+
+#include "cell.h"
+#include "cell-utils.h"
+#include "reflist-utils.h"
+#include "reflist.h"
+
+
+static void show_help(const char *s)
+{
+	printf("Syntax: %s [options]\n\n", s);
+	printf(
+"Unit cell manipulation tool.\n"
+"\n"
+" -h, --help                 Display this help message.\n"
+" -p, --pdb=<file>           Get unit cell from <file> (PDB or CrystFEL format).\n"
+"\n"
+"  Actions:\n"
+"     --find-ambi            Find indexing ambiguities for the cell.\n"
+"     --uncenter             Calculate a primitive cell.\n"
+"     --rings                Calculate powder ring positions.\n"
+"     --compare-cell <file>  Compare unit cell with cell from <file>.\n"
+"\n"
+" -y <pointgroup>            Real point group of the structure.\n"
+"     --tolerance=<tol>      Set the tolerances for cell reduction.\n"
+"                             Default: 5,5,5,1.5.\n"
+);
+}
+
+
+static int cells_are_similar(UnitCell *cell1, UnitCell *cell2, float *tols)
+{
+	double a1, b1, c1, al1, be1, ga1;
+	double a2, b2, c2, al2, be2, ga2;
+	UnitCellTransformation *tfn1, *tfn2;
+	UnitCell *pcell1, *pcell2;
+
+	/* Compare primitive cells, not centered */
+	pcell1 = uncenter_cell(cell1, &tfn1);
+	pcell2 = uncenter_cell(cell2, &tfn2);
+
+	cell_get_parameters(pcell1, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(pcell2, &a2, &b2, &c2, &al2, &be2, &ga2);
+
+	cell_free(pcell1);
+	cell_free(pcell2);
+
+	if ( !within_tolerance(a1, a2, tols[0]) ) return 0;
+	if ( !within_tolerance(b1, b2, tols[1]) ) return 0;
+	if ( !within_tolerance(c1, c2, tols[2]) ) return 0;
+	if ( !within_tolerance(al1, al2, tols[3]) ) return 0;
+	if ( !within_tolerance(be1, be2, tols[3]) ) return 0;
+	if ( !within_tolerance(ga1, ga2, tols[3]) ) return 0;
+
+	return 1;
+}
+
+
+static int find_ambi(UnitCell *cell, SymOpList *sym, float *tols)
+{
+	SymOpList *amb;
+	SymOpList *ops;
+	signed int i[9];
+	const int maxorder = 3;
+
+	ops = get_pointgroup("1");
+	if ( ops == NULL ) return 1;
+	set_symmetry_name(ops, "Observed");
+
+	STATUS("Looking for ambiguities up to 3x each lattice length.\n");
+	STATUS("This will take about 30 seconds.  Please wait...\n");
+
+	for ( i[0]=-maxorder; i[0]<=+maxorder; i[0]++ ) {
+	for ( i[1]=-maxorder; i[1]<=+maxorder; i[1]++ ) {
+	for ( i[2]=-maxorder; i[2]<=+maxorder; i[2]++ ) {
+	for ( i[3]=-maxorder; i[3]<=+maxorder; i[3]++ ) {
+	for ( i[4]=-maxorder; i[4]<=+maxorder; i[4]++ ) {
+	for ( i[5]=-maxorder; i[5]<=+maxorder; i[5]++ ) {
+	for ( i[6]=-maxorder; i[6]<=+maxorder; i[6]++ ) {
+	for ( i[7]=-maxorder; i[7]<=+maxorder; i[7]++ ) {
+	for ( i[8]=-maxorder; i[8]<=+maxorder; i[8]++ ) {
+
+		UnitCellTransformation *tfn;
+		UnitCell *nc;
+		IntegerMatrix *m;
+		int j, k;
+		int l = 0;
+
+		m = intmat_new(3, 3);
+		for ( j=0; j<3; j++ ) {
+		for ( k=0; k<3; k++ ) {
+			intmat_set(m, j, k, i[l++]);
+		}
+		}
+
+		if ( intmat_det(m) != +1 ) continue;
+
+		tfn = tfn_from_intmat(m);
+		nc = cell_transform(cell, tfn);
+
+		if ( cells_are_similar(cell, nc, tols) ) {
+			if ( !intmat_is_identity(m) ) add_symop(ops, m);
+			STATUS("-----------------------------------------------"
+			       "-------------------------------------------\n");
+			cell_print(nc);
+			intmat_print(m);
+		} else {
+			intmat_free(m);
+		}
+
+		tfn_free(tfn);
+		cell_free(nc);
+
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+
+	STATUS("Observed symmetry operations:\n");
+	describe_symmetry(ops);
+
+	amb = get_ambiguities(ops, sym);
+	if ( amb == NULL ) {
+		STATUS("No ambiguities (or error calculating them)\n");
+	} else {
+		STATUS("Ambiguity operations:\n");
+		describe_symmetry(amb);
+		free_symoplist(amb);
+	}
+
+	free_symoplist(ops);
+
+	return 0;
+}
+
+
+enum {
+	CT_NOTHING,
+	CT_FINDAMBI,
+	CT_UNCENTER,
+	CT_RINGS,
+	CT_COMPARE,
+	CT_CHOICES,
+};
+
+
+int main(int argc, char *argv[])
+{
+	int c;
+	char *cell_file = NULL;
+	UnitCell *cell;
+	char *toler = NULL;
+	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* a,b,c,angles (%,%,%,deg) */
+	char *sym_str = NULL;
+	SymOpList *sym;
+	int mode = CT_NOTHING;
+	char *comparecell = NULL;
+
+	/* Long options */
+	const struct option longopts[] = {
+		{"help",               0, NULL,               'h'},
+		{"pdb",                1, NULL,               'p'},
+		{"tolerance",          1, NULL,                2},
+
+		/* Modes of operation */
+		{"find-ambi",          0, &mode,               CT_FINDAMBI},
+		{"uncenter",           0, &mode,               CT_UNCENTER},
+		{"uncentre",           0, &mode,               CT_UNCENTER},
+		{"rings",              0, &mode,               CT_RINGS},
+		{"compare-cell",       1, NULL,                3},
+		{"highres",            1, NULL,                5},
+
+		{0, 0, NULL, 0}
+	};
+
+	/* Short options */
+	while ((c = getopt_long(argc, argv, "hp:y:",
+	                        longopts, NULL)) != -1) {
+
+		switch (c) {
+
+			case 'h' :
+			show_help(argv[0]);
+			return 0;
+
+			case 'p' :
+			cell_file = strdup(optarg);
+			break;
+
+			case 'y' :
+			sym_str = strdup(optarg);
+			break;
+
+			case 2 :
+			toler = strdup(optarg);
+			break;
+
+			case 3 :
+			comparecell = strdup(optarg);
+			mode = CT_COMPARE;
+			break;
+
+			case 0 :
+			break;
+
+			default :
+			return 1;
+
+		}
+
+	}
+
+	if ( cell_file == NULL ) {
+		ERROR("You must give a filename for the unit cell PDB file.\n");
+		return 1;
+	}
+	cell = load_cell_from_file(cell_file);
+	if ( cell == NULL ) {
+		ERROR("Failed to load cell from '%s'\n", cell_file);
+		return 1;
+	}
+	free(cell_file);
+
+	if ( toler != NULL ) {
+		int ttt;
+		ttt = sscanf(toler, "%f,%f,%f,%f",
+		             &tols[0], &tols[1], &tols[2], &tols[3] );
+		if ( ttt != 4 ) {
+			ERROR("Invalid parameters for '--tolerance'\n");
+			return 1;
+		}
+		free(toler);
+	}
+
+	STATUS("Input unit cell:\n");
+	cell_print(cell);
+
+	if ( validate_cell(cell) ) {
+		ERROR("Cell is invalid.\n");
+		return 1;
+	}
+
+	if ( sym_str == NULL ) {
+		ERROR("Please specify the point group of the structure.\n");
+		return 1;
+	}
+
+	sym = get_pointgroup(sym_str);
+	if ( sym == NULL ) return 1;
+	free(sym_str);
+
+	if ( mode == CT_NOTHING ) {
+		ERROR("Please specify mode of operation (see --help)\n");
+		return 1;
+	}
+
+	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, tols);
+
+	/* FIXME: Everything else */
+	ERROR("Sorry, this mode of operation is not yet implemented.\n");
+	return 1;
+}

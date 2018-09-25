@@ -360,6 +360,15 @@ target_link_libraries(make_pixelmap ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES make_pixelmap)
 
 # ----------------------------------------------------------------------
+# cell_tool
+
+set(CELL_TOOL_SOURCES src/cell_tool.c)
+add_executable(cell_tool ${CELL_TOOL_SOURCES})
+target_include_directories(cell_tool PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(cell_tool ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES cell_tool)
+
+# ----------------------------------------------------------------------
 # Install targets
 
 set_target_properties(${CRYSTFEL_EXECUTABLES}
@@ -391,6 +400,7 @@ install(FILES
 	doc/man/render_hkl.1
 	doc/man/whirligig.1
 	doc/man/make_pixelmap.1
+	doc/man/cell_tool.1
 	DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
 )
 
