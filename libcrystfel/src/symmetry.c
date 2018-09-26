@@ -36,6 +36,7 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include "symmetry.h"
 #include "utils.h"
@@ -1656,19 +1657,45 @@ static IntegerMatrix *parse_symmetry_operation(const char *s)
 
 		int c;
 		size_t cl;
-		int sign = +1;
-		int nh = 0;
-		int nk = 0;
-		int nl = 0;
+		signed int nh = 0;
+		signed int nk = 0;
+		signed int nl = 0;
+		signed int mult = 1;
+		int ndigit = 0;
+		signed int sign = +1;
 
+		/* We have one expression something like "-2h+k" */
 		cl = strlen(els[i]);
-
 		for ( c=0; c<cl; c++ ) {
-			if ( els[i][c] == '-' ) sign = -1;
-			if ( els[i][c] == '+' ) sign = +1;
-			if ( els[i][c] == 'h' ) nh += sign;
-			if ( els[i][c] == 'k' ) nk += sign;
-			if ( els[i][c] == 'l' ) nl += sign;
+
+			if ( els[i][c] == '-' ) sign *= -1;
+			if ( els[i][c] == 'h' ) {
+				nh = mult*sign;
+				mult = 1;
+				ndigit = 0;
+				sign = +1;
+			}
+			if ( els[i][c] == 'k' ) {
+				nk = mult*sign;
+				mult = 1;
+				ndigit = 0;
+				sign = +1;
+			}
+			if ( els[i][c] == 'l' ) {
+				nl = mult*sign;
+				mult = 1;
+				ndigit = 0;
+				sign = +1;
+			}
+			if ( isdigit(els[i][c]) ) {
+				if ( ndigit > 0 ) {
+					mult *= 10;
+					mult += els[i][c] - '0';
+				} else {
+					mult *= els[i][c] - '0';
+				}
+				ndigit++;
+			}
 		}
 
 		intmat_set(m, i, 0, nh);
