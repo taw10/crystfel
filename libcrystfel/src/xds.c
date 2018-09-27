@@ -74,24 +74,25 @@ struct xds_private
 
 
 /* Essentially the reverse of spacegroup_for_lattice(), below */
-static int convert_spacegroup_number(int spg, LatticeType *lt, char *cen)
+static int convert_spacegroup_number(int spg, LatticeType *lt, char *cen,
+                                     char *ua)
 {
 	switch ( spg ) {
 
-		case 1:   *lt = L_TRICLINIC;    *cen = 'P';   return 0;
-		case 3:   *lt = L_MONOCLINIC;   *cen = 'P';   return 0;
-		case 5:   *lt = L_MONOCLINIC;   *cen = 'C';   return 0;
-		case 16:  *lt = L_ORTHORHOMBIC; *cen = 'P';   return 0;
-		case 21:  *lt = L_ORTHORHOMBIC; *cen = 'C';   return 0;
-		case 22:  *lt = L_ORTHORHOMBIC; *cen = 'F';   return 0;
-		case 23:  *lt = L_ORTHORHOMBIC; *cen = 'I';   return 0;
-		case 75:  *lt = L_TETRAGONAL;   *cen = 'P';   return 0;
-		case 79:  *lt = L_TETRAGONAL;   *cen = 'I';   return 0;
-		case 143: *lt = L_HEXAGONAL;    *cen = 'P';   return 0;
-		case 146: *lt = L_HEXAGONAL;    *cen = 'H';   return 0;
-		case 195: *lt = L_CUBIC;        *cen = 'P';   return 0;
-		case 196: *lt = L_CUBIC;        *cen = 'F';   return 0;
-		case 197: *lt = L_CUBIC;        *cen = 'I';   return 0;
+		case 1:   *lt = L_TRICLINIC;    *cen = 'P';  *ua = '*'; return 0;
+		case 3:   *lt = L_MONOCLINIC;   *cen = 'P';  *ua = 'b'; return 0;
+		case 5:   *lt = L_MONOCLINIC;   *cen = 'C';  *ua = 'b'; return 0;
+		case 16:  *lt = L_ORTHORHOMBIC; *cen = 'P';  *ua = '*'; return 0;
+		case 21:  *lt = L_ORTHORHOMBIC; *cen = 'C';  *ua = '*'; return 0;
+		case 22:  *lt = L_ORTHORHOMBIC; *cen = 'F';  *ua = '*'; return 0;
+		case 23:  *lt = L_ORTHORHOMBIC; *cen = 'I';  *ua = '*'; return 0;
+		case 75:  *lt = L_TETRAGONAL;   *cen = 'P';  *ua = 'c'; return 0;
+		case 79:  *lt = L_TETRAGONAL;   *cen = 'I';  *ua = 'c'; return 0;
+		case 143: *lt = L_HEXAGONAL;    *cen = 'P';  *ua = 'c'; return 0;
+		case 146: *lt = L_HEXAGONAL;    *cen = 'H';  *ua = 'c'; return 0;
+		case 195: *lt = L_CUBIC;        *cen = 'P';  *ua = '*'; return 0;
+		case 196: *lt = L_CUBIC;        *cen = 'F';  *ua = '*'; return 0;
+		case 197: *lt = L_CUBIC;        *cen = 'I';  *ua = '*'; return 0;
 		default: return 1;
 
 	}
@@ -108,7 +109,7 @@ static int read_cell(struct image *image)
 	char *rval, line[1024];
 	UnitCell *cell;
 	LatticeType latticetype;
-	char centering;
+	char centering, ua;
 	Crystal *cr;
 
 	fh = fopen("IDXREF.LP", "r");
@@ -174,12 +175,13 @@ static int read_cell(struct image *image)
 	                    ax*1e-10,  ay*1e-10,  az*1e-10,
 	                    bx*1e-10,  by*1e-10,  bz*1e-10,
 	                   -cx*1e-10, -cy*1e-10, -cz*1e-10);
-	if ( convert_spacegroup_number(spg, &latticetype, &centering) ) {
+	if ( convert_spacegroup_number(spg, &latticetype, &centering, &ua) ) {
 		ERROR("Failed to convert XDS space group number (%i)\n", spg);
 		return 0;
 	}
 	cell_set_lattice_type(cell, latticetype);
 	cell_set_centering(cell, centering);
+	cell_set_unique_axis(cell, ua);
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
