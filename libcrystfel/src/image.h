@@ -157,6 +157,7 @@ struct beam_params
 
 /**
  * image:
+ *   @hit: Non-zero if the frame was determined to be a "hit"
  *   @crystals: Array of crystals in the image
  *   @n_crystals: The number of crystals in the image
  *   @indexed_by: Indexing method which indexed this pattern
@@ -203,6 +204,7 @@ struct image {
 	int                     **bad;   /* Bad pixels by panel */
 	float                   **sat;   /* Per-pixel saturation values */
 
+	int                     hit;
 	Crystal                 **crystals;
 	int                     n_crystals;
 	IndexingMethod          indexed_by;

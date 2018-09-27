@@ -832,6 +832,7 @@ int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
 
 	fprintf(st->fh, "Image serial number: %i\n", i->serial);
 
+	fprintf(st->fh, "hit = %i\n", i->hit);
 	indexer = indexer_str(i->indexed_by);
 	fprintf(st->fh, "indexed_by = %s\n", indexer);
 	free(indexer);

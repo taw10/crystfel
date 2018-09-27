@@ -285,6 +285,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			return;
 		}
 		free(rn);
+		image.hit = 0;
 
 		if ( iargs->stream_nonhits ) {
 			goto streamwrite;
@@ -292,6 +293,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			goto out;
 		}
 	}
+	image.hit = 1;
 
 	/* Index the pattern */
 	time_accounts_set(taccs, TACC_INDEXING);
