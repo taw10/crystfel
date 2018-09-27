@@ -106,6 +106,11 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, float *tols)
 	if ( ops == NULL ) return 1;
 	set_symmetry_name(ops, "Observed");
 
+	if ( sym == NULL ) {
+		ERROR("Please specify the point group of the structure.\n");
+		return 1;
+	}
+
 	STATUS("Looking for ambiguities up to 3x each lattice length.\n");
 	STATUS("This will take about 30 seconds.  Please wait...\n");
 
@@ -178,6 +183,23 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, float *tols)
 }
 
 
+static int uncenter(UnitCell *cell)
+{
+	UnitCell *cnew;
+	UnitCellTransformation *trans;
+
+	cnew = uncenter_cell(cell, &trans);
+
+	STATUS("------------------> The primitive unit cell:\n");
+	cell_print(cnew);
+
+	STATUS("------------------> The decentering transformation:\n");
+	tfn_print(trans);
+
+	return 0;
+}
+
+
 enum {
 	CT_NOTHING,
 	CT_FINDAMBI,
@@ -196,7 +218,7 @@ int main(int argc, char *argv[])
 	char *toler = NULL;
 	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* a,b,c,angles (%,%,%,deg) */
 	char *sym_str = NULL;
-	SymOpList *sym;
+	SymOpList *sym = NULL;
 	int mode = CT_NOTHING;
 	char *comparecell = NULL;
 
@@ -276,7 +298,7 @@ int main(int argc, char *argv[])
 		free(toler);
 	}
 
-	STATUS("Input unit cell:\n");
+	STATUS("------------------> The input unit cell:\n");
 	cell_print(cell);
 
 	if ( validate_cell(cell) ) {
@@ -284,14 +306,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( sym_str == NULL ) {
-		ERROR("Please specify the point group of the structure.\n");
-		return 1;
+	if ( sym_str != NULL ) {
+		sym = get_pointgroup(sym_str);
+		if ( sym == NULL ) return 1;
+		free(sym_str);
 	}
-
-	sym = get_pointgroup(sym_str);
-	if ( sym == NULL ) return 1;
-	free(sym_str);
 
 	if ( mode == CT_NOTHING ) {
 		ERROR("Please specify mode of operation (see --help)\n");
@@ -299,6 +318,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, tols);
+	if ( mode == CT_UNCENTER ) return uncenter(cell);
 
 	/* FIXME: Everything else */
 	ERROR("Sorry, this mode of operation is not yet implemented.\n");
