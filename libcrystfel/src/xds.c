@@ -73,18 +73,42 @@ struct xds_private
 };
 
 
+/* Essentially the reverse of spacegroup_for_lattice(), below */
+static int convert_spacegroup_number(int spg, LatticeType *lt, char *cen)
+{
+	switch ( spg ) {
+
+		case 1:   *lt = L_TRICLINIC;    *cen = 'P';   return 0;
+		case 3:   *lt = L_MONOCLINIC;   *cen = 'P';   return 0;
+		case 5:   *lt = L_MONOCLINIC;   *cen = 'C';   return 0;
+		case 16:  *lt = L_ORTHORHOMBIC; *cen = 'P';   return 0;
+		case 21:  *lt = L_ORTHORHOMBIC; *cen = 'C';   return 0;
+		case 22:  *lt = L_ORTHORHOMBIC; *cen = 'F';   return 0;
+		case 23:  *lt = L_ORTHORHOMBIC; *cen = 'I';   return 0;
+		case 75:  *lt = L_TETRAGONAL;   *cen = 'P';   return 0;
+		case 79:  *lt = L_TETRAGONAL;   *cen = 'I';   return 0;
+		case 143: *lt = L_HEXAGONAL;    *cen = 'P';   return 0;
+		case 146: *lt = L_HEXAGONAL;    *cen = 'H';   return 0;
+		case 195: *lt = L_CUBIC;        *cen = 'P';   return 0;
+		case 196: *lt = L_CUBIC;        *cen = 'F';   return 0;
+		case 197: *lt = L_CUBIC;        *cen = 'I';   return 0;
+		default: return 1;
+
+	}
+}
+
+
 static int read_cell(struct image *image)
 {
 	FILE * fh;
-	float axstar, aystar, azstar;
-	float bxstar, bystar, bzstar;
-	float cxstar, cystar, czstar;
-	char asx[11], asy[11], asz[11];
-	char bsx[11], bsy[11], bsz[11];
-	char csx[11], csy[11], csz[11];
+	float ax, ay, az;
+	float bx, by, bz;
+	float cx, cy, cz;
+	int spg;
 	char *rval, line[1024];
-	int r;
 	UnitCell *cell;
+	LatticeType latticetype;
+	char centering;
 	Crystal *cr;
 
 	fh = fopen("IDXREF.LP", "r");
@@ -97,74 +121,65 @@ static int read_cell(struct image *image)
 			return 0;
 		}
 
-	} while ( strcmp(line, "   #  COORDINATES OF REC. BASIS VECTOR"
-	                       "    LENGTH   1/LENGTH\n") != 0 );
+	} while ( strcmp(line, " ***** DIFFRACTION PARAMETERS USED AT START OF "
+	                       "INTEGRATION *****\n") != 0 );
 
-	/* Free line after chunk */
+	/* Find and read space group number */
+	do {
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) {
+			fclose(fh);
+			return 0;
+		}
+	} while ( strncmp(line, " SPACE GROUP NUMBER ", 20) != 0 );
+	sscanf(line+20, "%i\n", &spg);
+
+	/* Find and read a */
+	do {
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) {
+			fclose(fh);
+			return 0;
+		}
+	} while ( strncmp(line, " COORDINATES OF UNIT CELL A-AXIS ", 33) != 0 );
+	if ( sscanf(line+33, "%f %f %f\n", &ax, &ay, &az) < 3 ) {
+		fclose(fh);
+		return 0;
+	}
+
+	/* Read b */
 	rval = fgets(line, 1023, fh);
 	if ( rval == NULL ) {
 		fclose(fh);
 		return 0;
 	}
+	if ( sscanf(line+33, "%f %f %f\n", &bx, &by, &bz) < 3 ) {
+		fclose(fh);
+		return 0;
+	}
 
-	/* Get first vector */
+	/* Read c */
 	rval = fgets(line, 1023, fh);
 	if ( rval == NULL ) {
 		fclose(fh);
 		return 0;
 	}
-	if ( line[4] != '1' ) {
-		ERROR("No first vector from XDS.\n");
-		return 0;
-	}
-	memcpy(asx, line+7, 10);    asx[10] = '\0';
-	memcpy(asy, line+17, 10);   asy[10] = '\0';
-	memcpy(asz, line+27, 10);   asz[10] = '\0';
-
-	/* Get second vector */
-	rval = fgets(line, 1023, fh);
-	if ( rval == NULL ) {
+	if ( sscanf(line+33, "%f %f %f\n", &cx, &cy, &cz) < 3 ) {
 		fclose(fh);
-		return 0;
-	}
-	if ( line[4] != '2' ) {
-		ERROR("No second vector from XDS.\n");
-		return 0;
-	}
-	memcpy(bsx, line+7, 10);    bsx[10] = '\0';
-	memcpy(bsy, line+17, 10);   bsy[10] = '\0';
-	memcpy(bsz, line+27, 10);   bsz[10] = '\0';
-
-	/* Get third vector */
-	rval = fgets(line, 1023, fh);
-	fclose(fh);
-	if ( rval == NULL ) return 0;
-	if ( line[4] != '3' ) return 0; /* No error message this time
-	                                 * - happens a lot */
-	memcpy(csx, line+7, 10);    csx[10] = '\0';
-	memcpy(csy, line+17, 10);   csy[10] = '\0';
-	memcpy(csz, line+27, 10);   csz[10] = '\0';
-
-	r =  sscanf(asx, "%f", &cxstar);
-	r += sscanf(asy, "%f", &cystar);
-	r += sscanf(asz, "%f", &czstar);
-	r += sscanf(bsx, "%f", &bxstar);
-	r += sscanf(bsy, "%f", &bystar);
-	r += sscanf(bsz, "%f", &bzstar);
-	r += sscanf(csx, "%f", &axstar);
-	r += sscanf(csy, "%f", &aystar);
-	r += sscanf(csz, "%f", &azstar);
-
-	if ( r != 9 ) {
-		STATUS("Fewer than 9 parameters found in NEWMAT file.\n");
 		return 0;
 	}
 
 	cell = cell_new();
-	cell_set_reciprocal(cell,
-	                    axstar*10e9, aystar*10e9, azstar*10e9,
-	                    bxstar*10e9, bystar*10e9, bzstar*10e9,
-	                   -cxstar*10e9, -cystar*10e9, -czstar*10e9);
+	cell_set_cartesian(cell,
+	                    ax*1e-10,  ay*1e-10,  az*1e-10,
+	                    bx*1e-10,  by*1e-10,  bz*1e-10,
+	                   -cx*1e-10, -cy*1e-10, -cz*1e-10);
+	if ( convert_spacegroup_number(spg, &latticetype, &centering) ) {
+		ERROR("Failed to convert XDS space group number (%i)\n", spg);
+		return 0;
+	}
+	cell_set_lattice_type(cell, latticetype);
+	cell_set_centering(cell, centering);
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
@@ -252,7 +267,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		if ( centering == 'P' ) {
 			g = "16";
 		} else if ( centering == 'C' ) {
-			g = "20";
+			g = "21";
 		} else if ( centering == 'F' ) {
 			g = "22";
 		} else if ( centering == 'I' ) {
@@ -268,15 +283,16 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		}
 		break;
 
+		/* Unfortunately, XDS only does "hexagonal H" */
 		case L_RHOMBOHEDRAL :
-		if ( centering == 'R' ) {
-			g = "146";
-		}
-		break;
+		return NULL;
 
 		case L_HEXAGONAL :
 		if ( centering == 'P' ) {
-			g = "168";
+			g = "143";
+		}
+		if ( centering == 'H' ) {
+			g = "146";
 		}
 		break;
 
