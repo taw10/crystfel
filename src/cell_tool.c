@@ -53,6 +53,7 @@ static void show_help(const char *s)
 "\n"
 " -h, --help                 Display this help message.\n"
 " -p, --pdb=<file>           Get unit cell from <file> (PDB or CrystFEL format).\n"
+" -o <file>                  Output unit cell file.\n"
 "\n"
 "  Actions:\n"
 "     --find-ambi            Find indexing ambiguities for the cell.\n"
@@ -183,7 +184,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, float *tols)
 }
 
 
-static int uncenter(UnitCell *cell)
+static int uncenter(UnitCell *cell, const char *out_file)
 {
 	UnitCell *cnew;
 	UnitCellTransformation *trans;
@@ -195,6 +196,16 @@ static int uncenter(UnitCell *cell)
 
 	STATUS("------------------> The decentering transformation:\n");
 	tfn_print(trans);
+
+	if ( out_file != NULL ) {
+		FILE *fh = fopen(out_file, "w");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", out_file);
+			return 1;
+		}
+		write_cell(cnew, fh);
+		fclose(fh);
+	}
 
 	return 0;
 }
@@ -221,12 +232,14 @@ int main(int argc, char *argv[])
 	SymOpList *sym = NULL;
 	int mode = CT_NOTHING;
 	char *comparecell = NULL;
+	char *out_file = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
 		{"pdb",                1, NULL,               'p'},
 		{"tolerance",          1, NULL,                2},
+		{"output",             1, NULL,               'o'},
 
 		/* Modes of operation */
 		{"find-ambi",          0, &mode,               CT_FINDAMBI},
@@ -240,7 +253,7 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hp:y:",
+	while ((c = getopt_long(argc, argv, "hp:y:o:",
 	                        longopts, NULL)) != -1) {
 
 		switch (c) {
@@ -251,6 +264,10 @@ int main(int argc, char *argv[])
 
 			case 'p' :
 			cell_file = strdup(optarg);
+			break;
+
+			case 'o' :
+			out_file = strdup(optarg);
 			break;
 
 			case 'y' :
@@ -318,7 +335,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, tols);
-	if ( mode == CT_UNCENTER ) return uncenter(cell);
+	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
 
 	/* FIXME: Everything else */
 	ERROR("Sorry, this mode of operation is not yet implemented.\n");
