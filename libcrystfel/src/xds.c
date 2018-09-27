@@ -365,7 +365,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "DETECTOR= CSPAD\n");
 	fprintf(fh, "MINIMUM_VALID_PIXEL_VALUE= 1\n");
 	fprintf(fh, "OVERLOAD= 200000000\n");
-	fprintf(fh, "INDEX_ERROR= 0.05\n");
+	fprintf(fh, "INDEX_ERROR= 0.2\n");
 	//fprintf(fh, "INDEX_QUALITY= 0.5\n");
 	fprintf(fh, "REFINE(IDXREF)= CELL ORIENTATION\n");
 	//fprintf(fh, "MINIMUM_NUMBER_OF_PIXELS_IN_A_SPOT= 1\n");
