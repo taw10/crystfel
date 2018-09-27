@@ -235,13 +235,15 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 	switch ( latt )
 	{
 		case L_TRICLINIC :
-		g = "1";
+		if ( centering == 'P' ) {
+			g = "1";
+		}
 		break;
 
 		case L_MONOCLINIC :
 		if ( centering == 'P' )	{
 			g = "3";
-		} else {
+		} else if ( centering == 'C' ) {
 			g = "5";
 		}
 		break;
@@ -253,7 +255,7 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 			g = "20";
 		} else if ( centering == 'F' ) {
 			g = "22";
-		} else {
+		} else if ( centering == 'I' ) {
 			g = "23";
 		}
 		break;
@@ -261,21 +263,21 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 		case L_TETRAGONAL :
 		if ( centering == 'P' ) {
 			g = "75";
-		} else {
+		} else if ( centering == 'I' ) {
 			g = "79";
 		}
 		break;
 
 		case L_RHOMBOHEDRAL :
-		if ( centering == 'P' ) {
-			g = "143";
-		} else {
+		if ( centering == 'R' ) {
 			g = "146";
 		}
 		break;
 
 		case L_HEXAGONAL :
-		g = "168";
+		if ( centering == 'P' ) {
+			g = "168";
+		}
 		break;
 
 		case L_CUBIC :
@@ -283,12 +285,11 @@ static const char *spacegroup_for_lattice(UnitCell *cell)
 			g = "195";
 		} else if ( centering == 'F' ) {
 			g = "196";
-		} else {
+		} else if ( centering == 'I' ) {
 			g = "197";
 		}
 		break;
 	}
-	assert(g != NULL);
 
 	return g;
 }
@@ -439,6 +440,11 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell)
 	{
 		ERROR("Invalid XDS options (-cell-nolatt): "
 		      "try xds-nolatt-nocell.\n");
+		return NULL;
+	}
+
+	if ( (cell != NULL) && (spacegroup_for_lattice(cell) == NULL) ) {
+		ERROR("Don't know how to ask XDS for your cell.\n");
 		return NULL;
 	}
 
