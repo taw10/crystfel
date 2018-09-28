@@ -846,7 +846,7 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell)
 	*indm &= INDEXING_METHOD_MASK
 	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
 
-	if ( (cell_get_centering(cell) == 'I')
+	if ( (cell != NULL) && (cell_get_centering(cell) == 'I')
 	  && (cell_get_lattice_type(cell) == L_MONOCLINIC) )
 	{
 		ERROR("WARNING: Mosflm always gives the monoclinic C cell in "
