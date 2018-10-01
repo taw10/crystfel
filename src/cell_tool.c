@@ -96,6 +96,115 @@ static int cells_are_similar(UnitCell *cell1, UnitCell *cell2, float *tols)
 }
 
 
+struct sortmerefl {
+	signed int h;
+	signed int k;
+	signed int l;
+	double resolution;
+	int multi;
+};
+
+
+static int cmpres(const void *av, const void *bv)
+{
+	const struct sortmerefl *a = av;
+	const struct sortmerefl *b = bv;
+	return a->resolution > b->resolution;
+}
+
+
+static int all_rings(UnitCell *cell, SymOpList *sym)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	int hmax, kmax, lmax;
+	double mres;
+	signed int h, k, l;
+	RefList *list;
+	int i, n;
+	RefListIterator *iter;
+	Reflection *refl;
+	struct sortmerefl *sortus;
+	double highres = 2.0;  /* Angstroms */
+
+	mres = 1.0/(highres*1e-10);
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	hmax = mres * modulus(ax, ay, az);
+	kmax = mres * modulus(bx, by, bz);
+	lmax = mres * modulus(cx, cy, cz);
+	list = reflist_new();
+	for ( h=-hmax; h<=hmax; h++ ) {
+	for ( k=-kmax; k<=kmax; k++ ) {
+	for ( l=-lmax; l<=lmax; l++ ) {
+
+		signed int ha, ka, la;
+
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
+		if ( 2.0*resolution(cell, h, k, l) > mres ) continue;
+
+		if ( sym != NULL ) {
+
+			Reflection *refl;
+
+			get_asymm(sym, h, k, l, &ha, &ka, &la);
+			refl = find_refl(list, ha, ka, la);
+			if ( refl == NULL ) {
+				refl = add_refl(list, ha, ka, la);
+				set_redundancy(refl, 1);
+			} else {
+				set_redundancy(refl, get_redundancy(refl)+1);
+			}
+
+		} else {
+			Reflection *refl;
+			refl = add_refl(list, h, k, l);
+			set_redundancy(refl, 1);
+		}
+
+	}
+	}
+	}
+
+	n = num_reflections(list);
+	sortus = malloc(n*sizeof(struct sortmerefl));
+
+	i = 0;
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+
+		get_indices(refl, &h, &k, &l);
+
+		sortus[i].h = h;
+		sortus[i].k = k;
+		sortus[i].l = l;
+		sortus[i].resolution = 2.0*resolution(cell, h, k, l);  /* one over d */
+		sortus[i].multi = get_redundancy(refl);
+		i++;
+
+	}
+
+	qsort(sortus, n, sizeof(struct sortmerefl), cmpres);
+
+	STATUS("\nAll powder rings up to %f Ångstrøms.\n", highres);
+	STATUS("Note that screw axis or glide plane absences are not "
+	       "omitted from this list.\n");
+	STATUS("\n   d (Å)   1/d (m^-1)    h    k    l    multiplicity\n");
+	STATUS("------------------------------------------------------\n");
+	for ( i=0; i<n; i++ ) {
+		printf("%10.3f %10.3e %4i %4i %4i    m = %i\n",
+		       1e10/sortus[i].resolution, sortus[i].resolution,
+		       sortus[i].h, sortus[i].k, sortus[i].l,
+		       sortus[i].multi);
+	}
+
+	return 0;
+}
+
+
 static int find_ambi(UnitCell *cell, SymOpList *sym, float *tols)
 {
 	SymOpList *amb;
@@ -336,6 +445,7 @@ int main(int argc, char *argv[])
 
 	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, tols);
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
+	if ( mode == CT_RINGS ) return all_rings(cell, sym);
 
 	/* FIXME: Everything else */
 	ERROR("Sorry, this mode of operation is not yet implemented.\n");
