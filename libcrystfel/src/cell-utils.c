@@ -1703,8 +1703,8 @@ static double moduli_check(double ax, double ay, double az,
 }
 
 
-static int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
-                             const double ltl, const double atl)
+int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
+                      const double ltl, const double atl)
 {
 	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
 	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;

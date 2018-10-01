@@ -62,37 +62,12 @@ static void show_help(const char *s)
 "     --compare-cell <file>  Compare unit cell with cell from <file>.\n"
 "\n"
 " -y <pointgroup>            Real point group of the structure.\n"
-"     --tolerance=<tol>      Set the tolerances for cell reduction.\n"
-"                             Default: 5,5,5,1.5.\n"
+"     --tolerance=<tol>      Set the tolerances for cell comparison.\n"
+"                             Default: 5,1.5 (axis percentage, angle deg).\n"
 );
 }
 
 
-static int cells_are_similar(UnitCell *cell1, UnitCell *cell2, float *tols)
-{
-	double a1, b1, c1, al1, be1, ga1;
-	double a2, b2, c2, al2, be2, ga2;
-	UnitCellTransformation *tfn1, *tfn2;
-	UnitCell *pcell1, *pcell2;
-
-	/* Compare primitive cells, not centered */
-	pcell1 = uncenter_cell(cell1, &tfn1);
-	pcell2 = uncenter_cell(cell2, &tfn2);
-
-	cell_get_parameters(pcell1, &a1, &b1, &c1, &al1, &be1, &ga1);
-	cell_get_parameters(pcell2, &a2, &b2, &c2, &al2, &be2, &ga2);
-
-	cell_free(pcell1);
-	cell_free(pcell2);
-
-	if ( !within_tolerance(a1, a2, tols[0]) ) return 0;
-	if ( !within_tolerance(b1, b2, tols[1]) ) return 0;
-	if ( !within_tolerance(c1, c2, tols[2]) ) return 0;
-	if ( !within_tolerance(al1, al2, tols[3]) ) return 0;
-	if ( !within_tolerance(be1, be2, tols[3]) ) return 0;
-	if ( !within_tolerance(ga1, ga2, tols[3]) ) return 0;
-
-	return 1;
 }
 
 
@@ -205,7 +180,7 @@ static int all_rings(UnitCell *cell, SymOpList *sym)
 }
 
 
-static int find_ambi(UnitCell *cell, SymOpList *sym, float *tols)
+static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 {
 	SymOpList *amb;
 	SymOpList *ops;
@@ -252,7 +227,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, float *tols)
 		tfn = tfn_from_intmat(m);
 		nc = cell_transform(cell, tfn);
 
-		if ( cells_are_similar(cell, nc, tols) ) {
+		if ( cells_are_similar(cell, nc, ltl, atl) ) {
 			if ( !intmat_is_identity(m) ) add_symop(ops, m);
 			STATUS("-----------------------------------------------"
 			       "-------------------------------------------\n");
@@ -336,7 +311,8 @@ int main(int argc, char *argv[])
 	char *cell_file = NULL;
 	UnitCell *cell;
 	char *toler = NULL;
-	float tols[4] = {5.0, 5.0, 5.0, 1.5}; /* a,b,c,angles (%,%,%,deg) */
+	double ltl = 5.0/100.0;
+	double atl = deg2rad(1.5);
 	char *sym_str = NULL;
 	SymOpList *sym = NULL;
 	int mode = CT_NOTHING;
@@ -414,13 +390,12 @@ int main(int argc, char *argv[])
 	free(cell_file);
 
 	if ( toler != NULL ) {
-		int ttt;
-		ttt = sscanf(toler, "%f,%f,%f,%f",
-		             &tols[0], &tols[1], &tols[2], &tols[3] );
-		if ( ttt != 4 ) {
-			ERROR("Invalid parameters for '--tolerance'\n");
+		if ( sscanf(toler, "%f,%f", &ltl, &atl) != 2 ) {
+			ERROR("Invalid parameters for --tolerance\n");
 			return 1;
 		}
+		ltl /= 100.0;  /* Percent to fraction */
+		atl = deg2rad(atl);
 		free(toler);
 	}
 
@@ -443,7 +418,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, tols);
+	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, ltl, atl);
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
 	if ( mode == CT_RINGS ) return all_rings(cell, sym);
 

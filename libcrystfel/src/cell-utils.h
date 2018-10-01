@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2013,2014,2017 Thomas White <taw@physics.org>
- *   2012                 Lorenzo Galli
+ *   2009-2018 Thomas White <taw@physics.org>
+ *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -52,6 +52,9 @@ extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
 extern UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m);
 
 extern void cell_print(UnitCell *cell);
+
+extern int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
+                             const double ltl, const double atl);
 
 extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
                             const float *ltl, int reduce);
