@@ -196,7 +196,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 		return 1;
 	}
 
-	STATUS("Looking for ambiguities up to 3x each lattice length.\n");
+	STATUS("Looking for ambiguities up to %ix each lattice length.\n", maxorder);
 	STATUS("This will take about 30 seconds.  Please wait...\n");
 
 	for ( i[0]=-maxorder; i[0]<=+maxorder; i[0]++ ) {
