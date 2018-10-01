@@ -311,8 +311,8 @@ int main(int argc, char *argv[])
 	char *cell_file = NULL;
 	UnitCell *cell;
 	char *toler = NULL;
-	double ltl = 5.0/100.0;
-	double atl = deg2rad(1.5);
+	float ltl = 5.0/100.0;
+	float atl = deg2rad(1.5);
 	char *sym_str = NULL;
 	SymOpList *sym = NULL;
 	int mode = CT_NOTHING;
