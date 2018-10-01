@@ -68,6 +68,82 @@ static void show_help(const char *s)
 }
 
 
+static int comparecells(UnitCell *cell, const char *comparecell,
+                        double ltl, double atl)
+{
+	signed int i[9];
+	const int maxorder = 2;
+	UnitCell *cell2;
+
+	STATUS("Comparing with: %s\n", comparecell);
+
+	cell2 = load_cell_from_file(comparecell);
+	if ( cell2 == NULL ) {
+		ERROR("Failed to load unit cell from '%s'\n", comparecell);
+		return 1;
+	}
+	if ( validate_cell(cell2) ) {
+		ERROR("Comparison cell is invalid.\n");
+		return 1;
+	}
+	STATUS("------------------> The reference unit cell:\n");
+	cell_print(cell2);
+
+	STATUS("Comparing cells up to %ix each lattice length.\n", maxorder);
+	STATUS("Reciprocal axis length tolerance %f %%\n", ltl*100.0);
+	STATUS("Reciprocal angle tolerance %f degrees\n", rad2deg(atl));
+	STATUS("This will take about 30 seconds.  Please wait...\n");
+
+	for ( i[0]=-maxorder; i[0]<=+maxorder; i[0]++ ) {
+	for ( i[1]=-maxorder; i[1]<=+maxorder; i[1]++ ) {
+	for ( i[2]=-maxorder; i[2]<=+maxorder; i[2]++ ) {
+	for ( i[3]=-maxorder; i[3]<=+maxorder; i[3]++ ) {
+	for ( i[4]=-maxorder; i[4]<=+maxorder; i[4]++ ) {
+	for ( i[5]=-maxorder; i[5]<=+maxorder; i[5]++ ) {
+	for ( i[6]=-maxorder; i[6]<=+maxorder; i[6]++ ) {
+	for ( i[7]=-maxorder; i[7]<=+maxorder; i[7]++ ) {
+	for ( i[8]=-maxorder; i[8]<=+maxorder; i[8]++ ) {
+
+		UnitCellTransformation *tfn;
+		UnitCell *nc;
+		IntegerMatrix *m;
+		int j, k;
+		int l = 0;
+
+		m = intmat_new(3, 3);
+		for ( j=0; j<3; j++ ) {
+		for ( k=0; k<3; k++ ) {
+			intmat_set(m, j, k, i[l++]);
+		}
+		}
+
+		if ( intmat_det(m) < 1 ) continue;
+
+		tfn = tfn_from_intmat(m);
+		nc = cell_transform(cell, tfn);
+
+		if ( cells_are_similar(cell2, nc, ltl, atl) ) {
+			STATUS("-----------------------------------------------"
+			       "-------------------------------------------\n");
+			cell_print(nc);
+			intmat_print(m);
+		}
+
+		intmat_free(m);
+		tfn_free(tfn);
+		cell_free(nc);
+
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+
+	return 0;
 }
 
 
@@ -436,6 +512,7 @@ int main(int argc, char *argv[])
 	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, ltl, atl);
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
 	if ( mode == CT_RINGS ) return all_rings(cell, sym);
+	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell, ltl, atl);
 
 	/* FIXME: Everything else */
 	ERROR("Sorry, this mode of operation is not yet implemented.\n");
