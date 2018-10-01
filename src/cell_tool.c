@@ -378,10 +378,25 @@ int main(int argc, char *argv[])
 
 	}
 
+	/* If there's a parameter left over, we assume it's the unit cell */
+	if ( (argc > optind) && (cell_file == NULL) ) {
+		cell_file = strdup(argv[optind++]);
+	}
+
+	/* If there's STILL a parameter left over, complain*/
+	if ( argc > optind ) {
+		ERROR("Excess command-line arguments:\n");
+		do {
+			ERROR("'%s'\n", argv[optind++]);
+		} while ( argc > optind );
+		return 1;
+	}
+
 	if ( cell_file == NULL ) {
 		ERROR("You must give a filename for the unit cell PDB file.\n");
 		return 1;
 	}
+	STATUS("Input unit cell: %s\n", cell_file);
 	cell = load_cell_from_file(cell_file);
 	if ( cell == NULL ) {
 		ERROR("Failed to load cell from '%s'\n", cell_file);
