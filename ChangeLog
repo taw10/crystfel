@@ -1,4 +1,25 @@
-CrystFEL  version 0.7.0, 17th May 2018
+Changes in this development version up to commit 019220ed
+---------------------------------------------------------
+
+- Switch to CMake build system
+- indexamajig: Warn if a frame takes more than 10 minutes to process
+- Add support for peakfinder9
+- Add support for XGANDALF indexer
+- check_{peak_detection,near_bragg}: Warn if stream is older than image
+- Some fixes for peakfinder8
+- indexamajig: Clean up temporary folders on clean exit
+- Use GTK3 if available
+- partialator: Add deltaCChalf rejection test
+- turbo-index-lsf: Match turbo-index-slurm as closely as possible
+- sum-peaks: Accept "-" for stdin
+- Handle 16bpp and gzipped CBF files
+- Multiple fixes for XDS indexer interface
+- Fix for indexing centered cells with Mosflm without prior cell parameters
+- Handle numbers (e.g. "k-2h") in symmetry operator specifications (e.g.
+  ambigator)
+
+
+CrystFEL version 0.7.0, 17th May 2018
 --------------------------------------
 
 - indexamajig: Auto-detection of indexing methods
