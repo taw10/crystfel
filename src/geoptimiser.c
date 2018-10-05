@@ -674,7 +674,8 @@ static int add_distance_to_list(struct gpanel *gp,
 }
 
 
-static int count_pixels_with_min_peaks(struct gpanel *gp, int min_num_peaks)
+static int count_pixels_with_min_peaks(struct gpanel *gp, int min_num_peaks,
+                                       int max_num_peaks)
 {
 	int pixel_count = 0;
 	int ifs, iss;
@@ -683,7 +684,8 @@ static int count_pixels_with_min_peaks(struct gpanel *gp, int min_num_peaks)
 	for ( ifs=0; ifs<gp->p->w; ifs++ ) {
 
 		int idx = ifs+gp->p->w*iss;
-		if ( gp->num_pix_displ[idx] >= min_num_peaks ) {
+		if ( gp->num_pix_displ[idx] >= min_num_peaks &&
+		     gp->num_pix_displ[idx] < max_num_peaks) {
 			pixel_count += 1;
 		}
 
@@ -722,7 +724,7 @@ static void adjust_min_peaks_per_conn(struct rg_collection *connected,
 				gp = &gpanels[panel_number(det, p)];
 
 				pix_count = count_pixels_with_min_peaks(gp,
-				                                 min_num_peaks);
+				   min_num_peaks, gparams->max_num_peaks_per_pix);
 
 				di_count += pix_count;
 
@@ -829,6 +831,7 @@ static int compute_avg_pix_displ(struct gpanel *gp, int idx,
 
 	} else {
 
+		gp->num_pix_displ[idx] = -1;
 		gp->avg_displ_x[idx] = -10000.0;
 		gp->avg_displ_y[idx] = -10000.0;
 		gp->avg_displ_abs[idx] = -10000.0;
@@ -1305,7 +1308,8 @@ static int compute_shift_for_empty_panels(struct rg_collection *quadrants,
 	       "number of measurements.\n");
 
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
-		if ( conn_data[di].n_peaks_in_conn >= min_pix ) {
+		if ( conn_data[di].n_peaks_in_conn >= min_pix &&
+		     conn_data[di].sh_x > -9999.0 ) {
 			aver_x[conn_data[di].num_quad] += conn_data[di].sh_x;
 			aver_y[conn_data[di].num_quad] += conn_data[di].sh_y;
 			n[conn_data[di].num_quad]++;
