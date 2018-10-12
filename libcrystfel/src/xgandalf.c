@@ -45,7 +45,9 @@ struct xgandalf_private_data {
 
 	IndexingMethod indm;
 	UnitCell *cellTemplate;
-	Lattice_t sampleRealLatticeReduced_A;   //same as cellTemplate
+	Lattice_t sampleRealLattice_A;   //same as cellTemplate
+	UnitCellTransformation *uncenteringTransformation;
+	LatticeTransform_t latticeReductionTransform;
 };
 
 #define FAKE_DETECTOR_DISTANCE (0.1)
@@ -57,16 +59,14 @@ struct xgandalf_private_data {
 
 #define MAX_ASSEMBLED_LATTICES_COUNT (10)
 
-static void reduceCell(UnitCell* cell);
+static void reduceCell(UnitCell* cell, LatticeTransform_t* appliedReductionTransform);
+static void restoreCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform);
 static void makeRightHanded(UnitCell* cell);
-
 
 int run_xgandalf(struct image *image, void *ipriv)
 {
-	struct xgandalf_private_data *xgandalf_private_data =
-	                                      (struct xgandalf_private_data*) ipriv;
-	reciprocalPeaks_1_per_A_t *reciprocalPeaks_1_per_A =
-	                          &(xgandalf_private_data->reciprocalPeaks_1_per_A);
+	struct xgandalf_private_data *xgandalf_private_data = (struct xgandalf_private_data*) ipriv;
+	reciprocalPeaks_1_per_A_t *reciprocalPeaks_1_per_A = &(xgandalf_private_data->reciprocalPeaks_1_per_A);
 
 	int peakCountMax = image_feature_count(image->features);
 	reciprocalPeaks_1_per_A->peakCount = 0;
@@ -77,12 +77,9 @@ int run_xgandalf(struct image *image, void *ipriv)
 			continue;
 		}
 
-		reciprocalPeaks_1_per_A->coordinates_x[reciprocalPeaks_1_per_A->peakCount]
-		                                                        = f->rx * 1e-10;
-		reciprocalPeaks_1_per_A->coordinates_y[reciprocalPeaks_1_per_A->peakCount]
-		                                                        = f->ry * 1e-10;
-		reciprocalPeaks_1_per_A->coordinates_z[reciprocalPeaks_1_per_A->peakCount]
-		                                                        = f->rz * 1e-10;
+		reciprocalPeaks_1_per_A->coordinates_x[reciprocalPeaks_1_per_A->peakCount] = f->rx * 1e-10;
+		reciprocalPeaks_1_per_A->coordinates_y[reciprocalPeaks_1_per_A->peakCount] = f->ry * 1e-10;
+		reciprocalPeaks_1_per_A->coordinates_z[reciprocalPeaks_1_per_A->peakCount] = f->rz * 1e-10;
 		reciprocalPeaks_1_per_A->peakCount++;
 	}
 
@@ -101,8 +98,8 @@ int run_xgandalf(struct image *image, void *ipriv)
 
 	int goodLatticesCount = assembledLatticesCount;
 	for (int i = 0; i < assembledLatticesCount && i < 1; i++) {
-		reorderLattice(&(xgandalf_private_data->sampleRealLatticeReduced_A),
-		               &assembledLattices[i]);
+		reorderLattice(&(xgandalf_private_data->sampleRealLattice_A),
+		                 &assembledLattices[i]);
 
 		UnitCell *uc;
 		uc = cell_new();
@@ -113,6 +110,18 @@ int run_xgandalf(struct image *image, void *ipriv)
 		                       l->bx * 1e-10, l->by * 1e-10, l->bz * 1e-10,
 		                       l->cx * 1e-10, l->cy * 1e-10, l->cz * 1e-10);
 		makeRightHanded(uc);
+
+		if(xgandalf_private_data->cellTemplate != NULL){
+			restoreCell(uc, &xgandalf_private_data->latticeReductionTransform);
+
+			UnitCell *new_cell_trans = cell_transform_inverse(uc, xgandalf_private_data->uncenteringTransformation);
+			cell_free(uc);
+			uc = new_cell_trans;
+
+			cell_set_lattice_type(new_cell_trans, cell_get_lattice_type(xgandalf_private_data->cellTemplate));
+			cell_set_centering(new_cell_trans, cell_get_centering(xgandalf_private_data->cellTemplate));
+			cell_set_unique_axis(new_cell_trans, cell_get_unique_axis(xgandalf_private_data->cellTemplate));
+		}
 
 		if (validate_cell(uc)) {
 			STATUS("Problem with returned cell!\n");
@@ -131,27 +140,28 @@ int run_xgandalf(struct image *image, void *ipriv)
 	return goodLatticesCount;
 }
 
-
 void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
                        struct xgandalf_options *xgandalf_opts)
 {
-	struct xgandalf_private_data *xgandalf_private_data =
-	                              malloc(sizeof(struct xgandalf_private_data));
+	struct xgandalf_private_data *xgandalf_private_data = malloc(sizeof(struct xgandalf_private_data));
 	allocReciprocalPeaks(&(xgandalf_private_data->reciprocalPeaks_1_per_A));
 	xgandalf_private_data->indm = *indm;
 	xgandalf_private_data->cellTemplate = NULL;
 
 	float tolerance = xgandalf_opts->tolerance;
 	samplingPitch_t samplingPitch = xgandalf_opts->sampling_pitch;
-	gradientDescentIterationsCount_t gradientDescentIterationsCount =
-	                                xgandalf_opts->grad_desc_iterations;
+	gradientDescentIterationsCount_t gradientDescentIterationsCount = xgandalf_opts->grad_desc_iterations;
 
 	if (*indm & INDEXING_USE_CELL_PARAMETERS) {
 
 		xgandalf_private_data->cellTemplate = cell;
 
-		UnitCell* primitiveCell = uncenter_cell(cell, NULL);
-		reduceCell(primitiveCell);
+		UnitCell* primitiveCell = uncenter_cell(cell, &xgandalf_private_data->uncenteringTransformation);
+
+		UnitCell *uc = cell_new_from_cell(primitiveCell);
+		reduceCell(primitiveCell, &xgandalf_private_data->latticeReductionTransform);
+
+		cell_free(uc);
 
 		double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 		int ret = cell_get_reciprocal(primitiveCell, &asx, &asy, &asz,
@@ -173,11 +183,11 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 		if (ret != 0) {
 			ERROR("cell_get_cartesian did not finish properly!");
 		}
-		Lattice_t sampleRealLatticeReduced_A = {
+		Lattice_t sampleRealLattice_A = {
 		        .ax = ax * 1e10, .ay = ay * 1e10, .az = az * 1e10,
 		        .bx = bx * 1e10, .by = by * 1e10, .bz = bz * 1e10,
 		        .cx = cx * 1e10, .cy = cy * 1e10, .cz = cz * 1e10 };
-		xgandalf_private_data->sampleRealLatticeReduced_A = sampleRealLatticeReduced_A;
+		xgandalf_private_data->sampleRealLattice_A = sampleRealLattice_A;
 
 		ExperimentSettings *experimentSettings =
 				ExperimentSettings_new(FAKE_BEAM_ENERGY,
@@ -204,8 +214,8 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	} else {
 
-		Lattice_t sampleRealLatticeReduced_A = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		xgandalf_private_data->sampleRealLatticeReduced_A = sampleRealLatticeReduced_A;
+		Lattice_t sampleRealLattice_A = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		xgandalf_private_data->sampleRealLattice_A = sampleRealLattice_A;
 
 		ExperimentSettings *experimentSettings =
 		   ExperimentSettings_new_nolatt(FAKE_BEAM_ENERGY,
@@ -239,17 +249,17 @@ void xgandalf_cleanup(void *pp)
 
 	freeReciprocalPeaks(xgandalf_private_data->reciprocalPeaks_1_per_A);
 	IndexerPlain_delete(xgandalf_private_data->indexer);
+	tfn_free(xgandalf_private_data->uncenteringTransformation);
 }
 
-
-static void reduceCell(UnitCell *cell)
+static void reduceCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
 {
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
 	Lattice_t l = { ax, ay, az, bx, by, bz, cx, cy, cz };
 
-	reduceLattice(&l);
+	reduceLattice(&l, appliedReductionTransform);
 
 	cell_set_cartesian(cell, l.ax, l.ay, l.az,
 	                         l.bx, l.by, l.bz,
@@ -258,6 +268,22 @@ static void reduceCell(UnitCell *cell)
 	makeRightHanded(cell);
 }
 
+static void restoreCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
+{
+
+	double ax, ay, az, bx, by, bz, cx, cy, cz;
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	Lattice_t l = { ax, ay, az, bx, by, bz, cx, cy, cz };
+
+	restoreLattice(&l, appliedReductionTransform);
+
+	cell_set_cartesian(cell, l.ax, l.ay, l.az,
+	        l.bx, l.by, l.bz,
+	        l.cx, l.cy, l.cz);
+
+	makeRightHanded(cell);
+}
 
 static void makeRightHanded(UnitCell *cell)
 {
