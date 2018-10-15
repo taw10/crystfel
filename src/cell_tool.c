@@ -68,6 +68,34 @@ static void show_help(const char *s)
 }
 
 
+static int cells_the_same(UnitCell *cell1, UnitCell *cell2, float ltl, float atl)
+{
+	double a1, b1, c1, al1, be1, ga1;
+	double a2, b2, c2, al2, be2, ga2;
+	UnitCellTransformation *tfn1, *tfn2;
+	UnitCell *pcell1, *pcell2;
+
+	/* Compare primitive cells, not centered */
+	pcell1 = uncenter_cell(cell1, &tfn1);
+	pcell2 = uncenter_cell(cell2, &tfn2);
+
+	cell_get_parameters(pcell1, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(pcell2, &a2, &b2, &c2, &al2, &be2, &ga2);
+
+	cell_free(pcell1);
+	cell_free(pcell2);
+
+	if ( !within_tolerance(a1, a2, ltl) ) return 0;
+	if ( !within_tolerance(b1, b2, ltl) ) return 0;
+	if ( !within_tolerance(c1, c2, ltl) ) return 0;
+	if ( !within_tolerance(al1, al2, atl) ) return 0;
+	if ( !within_tolerance(be1, be2, atl) ) return 0;
+	if ( !within_tolerance(ga1, ga2, atl) ) return 0;
+
+	return 1;
+}
+
+
 static int comparecells(UnitCell *cell, const char *comparecell,
                         double ltl, double atl)
 {
@@ -122,7 +150,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 		tfn = tfn_from_intmat(m);
 		nc = cell_transform(cell, tfn);
 
-		if ( cells_are_similar(cell2, nc, ltl, atl) ) {
+		if ( cells_the_same(cell2, nc, ltl, atl) ) {
 			STATUS("-----------------------------------------------"
 			       "-------------------------------------------\n");
 			cell_print(nc);
@@ -303,7 +331,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 		tfn = tfn_from_intmat(m);
 		nc = cell_transform(cell, tfn);
 
-		if ( cells_are_similar(cell, nc, ltl, atl) ) {
+		if ( cells_the_same(cell, nc, ltl, atl) ) {
 			if ( !intmat_is_identity(m) ) add_symop(ops, m);
 			STATUS("-----------------------------------------------"
 			       "-------------------------------------------\n");
