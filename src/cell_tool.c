@@ -88,9 +88,9 @@ static int cells_the_same(UnitCell *cell1, UnitCell *cell2, float ltl, float atl
 	if ( !within_tolerance(a1, a2, ltl) ) return 0;
 	if ( !within_tolerance(b1, b2, ltl) ) return 0;
 	if ( !within_tolerance(c1, c2, ltl) ) return 0;
-	if ( !within_tolerance(al1, al2, atl) ) return 0;
-	if ( !within_tolerance(be1, be2, atl) ) return 0;
-	if ( !within_tolerance(ga1, ga2, atl) ) return 0;
+	if ( fabs(al1-al2) > atl ) return 0;
+	if ( fabs(be1-be2) > atl ) return 0;
+	if ( fabs(ga1-ga2) > atl ) return 0;
 
 	return 1;
 }
