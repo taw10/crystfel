@@ -509,6 +509,16 @@ int main(int argc, char *argv[])
 	free(cell_file);
 
 	if ( toler != NULL ) {
+		int i;
+		int ncomma = 0;
+		size_t l = strlen(toler);
+		for ( i=0; i<l; i++ ) if ( toler[i] == ',' ) ncomma++;
+		if ( ncomma != 1 ) {
+			ERROR("Invalid parameters for --tolerance.  "
+			      "Should be: --tolerance=lengthtol,angtol "
+			      "(percent,degrees)\n");
+			return 1;
+		}
 		if ( sscanf(toler, "%f,%f", &ltl, &atl) != 2 ) {
 			ERROR("Invalid parameters for --tolerance\n");
 			return 1;
