@@ -527,7 +527,7 @@ int main(int argc, char *argv[])
 		{"xgandalf-min-lvl",                         1, NULL, 355},
 		{"xgandalf-max-lattice-vector-length",       1, NULL, 356},
 		{"xgandalf-max-lvl",                         1, NULL, 356},
-	        {"spectrum-file",            1, NULL,        357},
+	        {"spectrum-file",                            1, NULL, 357},
 
 		{0, 0, NULL, 0}
 	};
@@ -918,7 +918,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 
-			case 367:
+			case 357:
 			spectrum_fn = strdup(optarg);
 			break;
 
