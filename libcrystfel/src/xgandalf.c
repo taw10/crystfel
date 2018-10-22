@@ -147,6 +147,7 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 	allocReciprocalPeaks(&(xgandalf_private_data->reciprocalPeaks_1_per_A));
 	xgandalf_private_data->indm = *indm;
 	xgandalf_private_data->cellTemplate = NULL;
+	xgandalf_private_data->uncenteringTransformation = NULL;
 
 	float tolerance = xgandalf_opts->tolerance;
 	samplingPitch_t samplingPitch = xgandalf_opts->sampling_pitch;
@@ -249,7 +250,9 @@ void xgandalf_cleanup(void *pp)
 
 	freeReciprocalPeaks(xgandalf_private_data->reciprocalPeaks_1_per_A);
 	IndexerPlain_delete(xgandalf_private_data->indexer);
-	tfn_free(xgandalf_private_data->uncenteringTransformation);
+	if(xgandalf_private_data->uncenteringTransformation != NULL){
+		tfn_free(xgandalf_private_data->uncenteringTransformation);
+	}
 }
 
 static void reduceCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
