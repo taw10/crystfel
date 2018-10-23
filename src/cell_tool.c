@@ -73,17 +73,13 @@ static int cells_the_same(UnitCell *cell1, UnitCell *cell2, float ltl, float atl
 	double a1, b1, c1, al1, be1, ga1;
 	double a2, b2, c2, al2, be2, ga2;
 	UnitCellTransformation *tfn1, *tfn2;
-	UnitCell *pcell1, *pcell2;
 
-	/* Compare primitive cells, not centered */
-	pcell1 = uncenter_cell(cell1, &tfn1);
-	pcell2 = uncenter_cell(cell2, &tfn2);
+	/* Centering must match: we don't arbitrarte primitive vs centered,
+	 * different cell choices etc */
+	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
 
-	cell_get_parameters(pcell1, &a1, &b1, &c1, &al1, &be1, &ga1);
-	cell_get_parameters(pcell2, &a2, &b2, &c2, &al2, &be2, &ga2);
-
-	cell_free(pcell1);
-	cell_free(pcell2);
+	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
 
 	if ( !within_tolerance(a1, a2, ltl) ) return 0;
 	if ( !within_tolerance(b1, b2, ltl) ) return 0;
