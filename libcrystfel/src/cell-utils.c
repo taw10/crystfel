@@ -1694,6 +1694,48 @@ double cell_get_volume(UnitCell *cell)
 }
 
 
+/**
+ * compare_cell_parameters:
+ * @a: A %UnitCell
+ * @b: Another %UnitCell
+ * @ltl: Maximum allowable fractional difference in axis lengths
+ * @atl: Maximum allowable difference in reciprocal angles (in radians)
+ *
+ * Compare the two unit cells.  If the real space parameters match to within
+ * fractional difference @ltl, and the inter-axial angles match within @atl,
+ * and the centering matches, this function returns 1.  Otherwise 0.
+ *
+ * This function considers the cell parameters and centering, but ignores the
+ * orientation of the cell.  If you want to compare the orientation as well,
+ * use compare_cell_parameters_and_orientation() instead.
+ *
+ * Returns: non-zero if the cells match.
+ *
+ */
+int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
+                            float ltl, float atl)
+{
+	double a1, b1, c1, al1, be1, ga1;
+	double a2, b2, c2, al2, be2, ga2;
+
+	/* Centering must match: we don't arbitrarte primitive vs centered,
+	 * different cell choices etc */
+	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
+
+	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
+
+	if ( !within_tolerance(a1, a2, ltl) ) return 0;
+	if ( !within_tolerance(b1, b2, ltl) ) return 0;
+	if ( !within_tolerance(c1, c2, ltl) ) return 0;
+	if ( fabs(al1-al2) > atl ) return 0;
+	if ( fabs(be1-be2) > atl ) return 0;
+	if ( fabs(ga1-ga2) > atl ) return 0;
+
+	return 1;
+}
+
+
 static double moduli_check(double ax, double ay, double az,
                            double bx, double by, double bz)
 {
@@ -1703,28 +1745,42 @@ static double moduli_check(double ax, double ay, double az,
 }
 
 
-static int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
-                             const double ltl, const double atl)
+/**
+ * compare_cell_parameters_and_orientation:
+ * @a: A %UnitCell
+ * @b: Another %UnitCell
+ * @ltl: Maximum allowable fractional difference in reciprocal axis lengths
+ * @atl: Maximum allowable difference in reciprocal angles (in radians)
+ *
+ * Compare the two unit cells.  If the axes match in length (to within
+ * fractional difference @ltl) and the axes are aligned to within @atl radians,
+ * this function returns non-zero.
+ *
+ * This function compares the orientation of the cell as well as the parameters.
+ * If you just want to see if the parameters are the same, use
+ * compare_cell_parameters() instead.
+ *
+ * The cells @a and @b must have the same centering.  Otherwise, this function
+ * always returns zero.
+ *
+ * Returns: non-zero if the cells match.
+ *
+ */
+int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
+                                            const double ltl, const double atl)
 {
 	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
 	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
-	UnitCell *pcell1, *pcell2;
 
-	/* Compare primitive cells, not centered */
-	pcell1 = uncenter_cell(cell1, NULL);
-	pcell2 = uncenter_cell(cell2, NULL);
+	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
 
-	cell_get_reciprocal(pcell1, &asx1, &asy1, &asz1,
-	                            &bsx1, &bsy1, &bsz1,
-	                            &csx1, &csy1, &csz1);
+	cell_get_cartesian(cell1, &asx1, &asy1, &asz1,
+	                          &bsx1, &bsy1, &bsz1,
+	                          &csx1, &csy1, &csz1);
 
-	cell_get_reciprocal(pcell2, &asx2, &asy2, &asz2,
-	                            &bsx2, &bsy2, &bsz2,
-	                            &csx2, &csy2, &csz2);
-
-
-	cell_free(pcell1);
-	cell_free(pcell2);
+	cell_get_cartesian(cell2, &asx2, &asy2, &asz2,
+	                          &bsx2, &bsy2, &bsz2,
+	                          &csx2, &csy2, &csz2);
 
 	if ( angle_between(asx1, asy1, asz1, asx2, asy2, asz2) > atl ) return 0;
 	if ( angle_between(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
@@ -1738,27 +1794,37 @@ static int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
 }
 
 
-
 /**
- * compare_cells:
+ * compare_reindexed_cell_parameters_and_orientation:
  * @a: A %UnitCell
  * @b: Another %UnitCell
  * @ltl: Maximum allowable fractional difference in reciprocal axis lengths
  * @atl: Maximum allowable difference in reciprocal angles (in radians)
  * @pmb: Place to store pointer to matrix
  *
- * Compare the two units cells.  If they agree to within @ltl and @atl, using
- *  any change of axes, returns non-zero and stores the transformation to map @b
- *  onto @a.
+ * Compare the two unit cells.  If, using any permutation of the axes, the
+ * axes can be made to match in length (to within fractional difference @ltl)
+ * and the axes aligned to within @atl radians, this function returns non-zero
+ * and stores the transformation to map @b onto @a.
+ *
+ * Note that the orientations of the cells must match, not just the parameters.
+ * The comparison is done after reindexing using
+ * compare_cell_parameters_and_orientation().
+ *
+ * The cells @a and @b must have the same centering.  Otherwise, this function
+ * always returns zero.
  *
  * Returns: non-zero if the cells match.
  *
  */
-int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
-                  IntegerMatrix **pmb)
+int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
+                                                      double ltl, double atl,
+                                                      IntegerMatrix **pmb)
 {
 	IntegerMatrix *m;
 	int i[9];
+
+	if ( cell_get_centering(a) != cell_get_centering(b) ) return 0;
 
 	m = intmat_new(3, 3);
 
@@ -1786,7 +1852,7 @@ int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
 		tfn = tfn_from_intmat(m);
 		nc = cell_transform(b, tfn);
 
-		if ( cells_are_similar(a, nc, ltl, atl) ) {
+		if ( compare_cell_parameters_and_orientation(a, nc, ltl, atl) ) {
 			if ( pmb != NULL ) *pmb = m;
 			tfn_free(tfn);
 			cell_free(nc);

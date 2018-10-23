@@ -309,9 +309,9 @@ static IntegerMatrix *try_all(struct window *win, int n1, int n2,
 	for ( i=0; i<i1->n_crystals; i++ ) {
 	for ( j=0; j<i2->n_crystals; j++ ) {
 
-		if ( compare_cells(crystal_get_cell(i1->crystals[i]),
-		                   crystal_get_cell(i2->crystals[j]),
-		                   0.1, deg2rad(5.0), &m) )
+		if ( compare_reindexed_cell_parameters_and_orientation(crystal_get_cell(i1->crystals[i]),
+		                                                       crystal_get_cell(i2->crystals[j]),
+		                                                       0.1, deg2rad(5.0), &m) )
 		{
 			if ( !crystal_used(win, n1, i)
 			  && !crystal_used(win, n2, j) )
@@ -377,9 +377,10 @@ static int try_join(struct window *win, int sn)
 	for ( j=0; j<win->img[win->join_ptr].n_crystals; j++ ) {
 		Crystal *cr2;
 		cr2 = win->img[win->join_ptr].crystals[j];
-		if ( compare_cells(ref, crystal_get_cell(cr2),
-		                   0.1, deg2rad(5.0),
-		                   &win->mat[sn][win->join_ptr]) ) {
+		if ( compare_reindexed_cell_parameters_and_orientation(ref, crystal_get_cell(cr2),
+		                                                       0.1, deg2rad(5.0),
+		                                                       &win->mat[sn][win->join_ptr]) )
+		{
 			win->ser[sn][win->join_ptr] = j;
 			cell_free(ref);
 			return 1;
