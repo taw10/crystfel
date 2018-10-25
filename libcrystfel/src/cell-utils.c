@@ -361,157 +361,114 @@ int bravais_lattice(UnitCell *cell)
 }
 
 
-static UnitCellTransformation *uncentering_transformation(UnitCell *in,
-                                                          char *new_centering,
-                                                          LatticeType *new_latt)
+/* Given a centered cell @in, return the integer transformation matrix which
+ * turns a primitive cell into @in. Set new_centering and new_latt to the
+ * centering and lattice type of the primitive cell (usually aP, sometimes rR,
+ * rarely mP) */
+static IntegerMatrix *centering_transformation(UnitCell *in,
+                                               char *new_centering,
+                                               LatticeType *new_latt,
+                                               char *new_ua)
 {
-	UnitCellTransformation *t;
-	const double OT = 1.0/3.0;
-	const double TT = 2.0/3.0;
-	const double H = 0.5;
 	LatticeType lt;
 	char ua, cen;
+	IntegerMatrix *t = NULL;
 
 	lt = cell_get_lattice_type(in);
 	ua = cell_get_unique_axis(in);
 	cen = cell_get_centering(in);
 
-	t = tfn_identity();
-	if ( t == NULL ) return NULL;
-
-	if ( ua == 'a' ) {
-		tfn_combine(t, tfn_vector(0,1,0),
-		               tfn_vector(0,0,1),
-		               tfn_vector(1,0,0));
-		if ( lt == L_MONOCLINIC ) {
-			assert(cen != 'A');
-			switch ( cen ) {
-				case 'B' : cen = 'A'; break;
-				case 'C' : cen = 'B'; break;
-				case 'I' : cen = 'I'; break;
-			}
-		}
-	}
-
-	if ( ua == 'b' ) {
-		tfn_combine(t, tfn_vector(0,0,1),
-		               tfn_vector(1,0,0),
-		               tfn_vector(0,1,0));
-		if ( lt == L_MONOCLINIC ) {
-			assert(cen != 'B');
-			switch ( cen ) {
-				case 'C' : cen = 'A'; break;
-				case 'A' : cen = 'B'; break;
-				case 'I' : cen = 'I'; break;
-			}
-		}
-	}
-
-	switch ( cen ) {
-
-		case 'P' :
+	if ( (cen=='P') || (cen=='R') ) {
+		*new_centering = cen;
 		*new_latt = lt;
-		*new_centering = 'P';
-		break;
-
-		case 'R' :
-		*new_latt = L_RHOMBOHEDRAL;
-		*new_centering = 'R';
-		break;
-
-		case 'I' :
-		tfn_combine(t, tfn_vector(-H,H,H),
-		               tfn_vector(H,-H,H),
-		               tfn_vector(H,H,-H));
-		if ( lt == L_CUBIC ) {
-			*new_latt = L_RHOMBOHEDRAL;
-			*new_centering = 'R';
-		} else {
-			/* Tetragonal or orthorhombic */
-			*new_latt = L_TRICLINIC;
-			*new_centering = 'P';
-		}
-		break;
-
-		case 'F' :
-		tfn_combine(t, tfn_vector(0,H,H),
-		               tfn_vector(H,0,H),
-		               tfn_vector(H,H,0));
-		if ( lt == L_CUBIC ) {
-			*new_latt = L_RHOMBOHEDRAL;
-			*new_centering = 'R';
-		} else {
-			assert(lt == L_ORTHORHOMBIC);
-			*new_latt = L_TRICLINIC;
-			*new_centering = 'P';
-		}
-		break;
-
-		case 'A' :
-		tfn_combine(t, tfn_vector( 1, 0, 0),
-		               tfn_vector( 0, H, H),
-		               tfn_vector( 0,-H, H));
-		if ( lt == L_ORTHORHOMBIC ) {
-			*new_latt = L_MONOCLINIC;
-		} else {
-			*new_latt = L_TRICLINIC;
-		}
-		*new_centering = 'P';
-		break;
-
-		case 'B' :
-		tfn_combine(t, tfn_vector( H, 0, H),
-		               tfn_vector( 0, 1, 0),
-		               tfn_vector(-H, 0, H));
-		if ( lt == L_ORTHORHOMBIC ) {
-			*new_latt = L_MONOCLINIC;
-		} else {
-			*new_latt = L_TRICLINIC;
-		}
-		*new_centering = 'P';
-		break;
-
-		case 'C' :
-		tfn_combine(t, tfn_vector( H, H, 0),
-		               tfn_vector(-H, H, 0),
-		               tfn_vector( 0, 0, 1));
-		if ( lt == L_ORTHORHOMBIC ) {
-			*new_latt = L_MONOCLINIC;
-		} else {
-			*new_latt = L_TRICLINIC;
-		}
-		*new_centering = 'P';
-		break;
-
-		case 'H' :
-		/* Obverse setting */
-		tfn_combine(t, tfn_vector(TT,OT,OT),
-		               tfn_vector(-OT,OT,OT),
-		               tfn_vector(-OT,-TT,OT));
-		assert(lt == L_HEXAGONAL);
-		*new_latt = L_RHOMBOHEDRAL;
-		*new_centering = 'R';
-		break;
-
-		default :
-		ERROR("Invalid centering '%c'\n", cell_get_centering(in));
-		return NULL;
-
+		*new_ua = ua;
+		t = intmat_identity(3);
 	}
 
-	/* Reverse the axis permutation, but only if this was not an H->R
-	 * transformation */
-	if ( !((cen=='H') && (*new_latt == L_RHOMBOHEDRAL)) ) {
-		if ( ua == 'a' ) {
-			tfn_combine(t, tfn_vector(0,0,1),
-				       tfn_vector(1,0,0),
-				       tfn_vector(0,1,0));
+	if ( cen == 'I' ) {
+		t = intmat_create_3x3(0, 1, 1,
+		                      1, 0, 1,
+		                      1, 1, 0);
+		if ( lt == L_CUBIC ) {
+			*new_latt = L_RHOMBOHEDRAL;
+			*new_centering = 'R';
+			*new_ua = '*';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
 		}
+	}
 
-		if ( ua == 'b' ) {
-			tfn_combine(t, tfn_vector(0,1,0),
-				       tfn_vector(0,0,1),
-				       tfn_vector(1,0,0));
+	if ( cen == 'F' ) {
+		t = intmat_create_3x3(-1,  1,  1,
+		                       1, -1,  1,
+		                       1,  1, -1);
+		if ( lt == L_CUBIC ) {
+			*new_latt = L_RHOMBOHEDRAL;
+			*new_centering = 'R';
+			*new_ua = '*';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
+		}
+	}
+
+	if ( (lt == L_HEXAGONAL) && (cen == 'H') && (ua == 'c') ) {
+		/* Obverse setting */
+		t = intmat_create_3x3(1, -1,  0,
+		                      0,  1, -1,
+		                      1,  1,  1);
+		assert(lt == L_HEXAGONAL);
+		assert(ua == 'c');
+		*new_latt = L_RHOMBOHEDRAL;
+		*new_centering = 'R';
+		*new_ua = '*';
+	}
+
+	if ( cen == 'A' ) {
+		t = intmat_create_3x3(1,  0,  0,
+		                      0,  1, -1,
+		                      0,  1,  1);
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+			*new_centering = 'P';
+			*new_ua = 'a';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
+		}
+	}
+
+	if ( cen == 'B' ) {
+		t = intmat_create_3x3(1,  0, -1,
+		                      0,  1,  0,
+		                      1,  0,  1);
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+			*new_centering = 'P';
+			*new_ua = 'b';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
+		}
+	}
+
+	if ( cen == 'C' ) {
+		t = intmat_create_3x3(1, -1,  0,
+		                      1,  1,  0,
+		                      0,  0,  1);
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+			*new_centering = 'P';
+			*new_ua = 'c';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
 		}
 	}
 
@@ -532,32 +489,28 @@ static UnitCellTransformation *uncentering_transformation(UnitCell *in,
  * setting.
  *
  */
-UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
+UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **t)
 {
-	UnitCellTransformation *tt;
+	IntegerMatrix *tt;
 	char new_centering;
 	LatticeType new_latt;
+	char new_ua;
 	UnitCell *out;
 
-	if ( !bravais_lattice(in) ) {
-		ERROR("Cannot uncenter: not a Bravais lattice.\n");
-		cell_print(in);
-		return NULL;
-	}
-
-	tt = uncentering_transformation(in, &new_centering, &new_latt);
+	tt = centering_transformation(in, &new_centering, &new_latt, &new_ua);
 	if ( tt == NULL ) return NULL;
 
-	out = cell_transform(in, tt);
+	out = cell_transform_inverse(in, tt);
 	if ( out == NULL ) return NULL;
 
 	cell_set_lattice_type(out, new_latt);
 	cell_set_centering(out, new_centering);
+	cell_set_unique_axis(out, new_ua);
 
 	if ( t != NULL ) {
 		*t = tt;
 	} else {
-		tfn_free(tt);
+		intmat_free(tt);
 	}
 
 	return out;
@@ -621,11 +574,11 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	float angtol = deg2rad(tols[3]);
 	UnitCell *cell;
 	UnitCell *template;
-	UnitCellTransformation *uncentering;
+	IntegerMatrix *centering;
 	UnitCell *new_cell_trans;
 
 	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &uncentering);
+	template = uncenter_cell(template_in, &centering);
 	if ( template == NULL ) return NULL;
 
 	/* The candidate cell is also uncentered, because it might be centered
@@ -639,7 +592,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 		ERROR("Couldn't get reciprocal cell for template.\n");
 		cell_free(template);
 		cell_free(cell);
-		tfn_free(uncentering);
+		intmat_free(centering);
 		return NULL;
 	}
 
@@ -661,7 +614,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 		ERROR("Couldn't get reciprocal cell.\n");
 		cell_free(template);
 		cell_free(cell);
-		tfn_free(uncentering);
+		intmat_free(centering);
 		return NULL;
 	}
 
@@ -823,7 +776,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	/* Reverse the de-centering transformation */
 	if ( new_cell != NULL ) {
 
-		new_cell_trans = cell_transform_inverse(new_cell, uncentering);
+		new_cell_trans = cell_transform(new_cell, centering);
 		cell_free(new_cell);
 		cell_set_lattice_type(new_cell_trans,
 		                      cell_get_lattice_type(template_in));
@@ -833,13 +786,13 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 		                     cell_get_unique_axis(template_in));
 
 		cell_free(template);
-		tfn_free(uncentering);
+		intmat_free(centering);
 
 		return new_cell_trans;
 
 	} else {
 		cell_free(template);
-		tfn_free(uncentering);
+		intmat_free(centering);
 		return NULL;
 	}
 }
@@ -862,7 +815,7 @@ UnitCell *match_cell_ab(UnitCell *cell_in, UnitCell *template_in)
 	int have_real_c;
 	UnitCell *cell;
 	UnitCell *template;
-	UnitCellTransformation *to_given_cell;
+	IntegerMatrix *to_given_cell;
 	UnitCell *new_cell;
 	UnitCell *new_cell_trans;
 
@@ -1455,49 +1408,6 @@ void cell_fudge_gslcblas()
 }
 
 
-UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m)
-{
-	gsl_matrix *c;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	gsl_matrix *res;
-	UnitCell *out;
-
-	cell_get_reciprocal(in, &asx, &asy, &asz, &bsx, &bsy,
-	                        &bsz, &csx, &csy, &csz);
-
-	c = gsl_matrix_alloc(3, 3);
-	gsl_matrix_set(c, 0, 0, asx);
-	gsl_matrix_set(c, 1, 0, asy);
-	gsl_matrix_set(c, 2, 0, asz);
-	gsl_matrix_set(c, 0, 1, bsx);
-	gsl_matrix_set(c, 1, 1, bsy);
-	gsl_matrix_set(c, 2, 1, bsz);
-	gsl_matrix_set(c, 0, 2, csx);
-	gsl_matrix_set(c, 1, 2, csy);
-	gsl_matrix_set(c, 2, 2, csz);
-
-	res = gsl_matrix_calloc(3, 3);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
-
-	out = cell_new_from_cell(in);
-	cell_set_reciprocal(out, gsl_matrix_get(res, 0, 0),
-	                         gsl_matrix_get(res, 1, 0),
-	                         gsl_matrix_get(res, 2, 0),
-	                         gsl_matrix_get(res, 0, 1),
-	                         gsl_matrix_get(res, 1, 1),
-	                         gsl_matrix_get(res, 2, 1),
-	                         gsl_matrix_get(res, 0, 2),
-	                         gsl_matrix_get(res, 1, 2),
-	                         gsl_matrix_get(res, 2, 2));
-
-	gsl_matrix_free(res);
-	gsl_matrix_free(c);
-	return out;
-}
-
-
 /**
  * rotate_cell:
  * @in: A %UnitCell to rotate
@@ -1658,7 +1568,7 @@ int forbidden_reflection(UnitCell *cell,
 	cen = cell_get_centering(cell);
 
 	/* Reflection conditions here must match the transformation matrices
-	 * in uncentering_transformation().  tests/centering_check verifies
+	 * in centering_transformation().  tests/centering_check verifies
 	 * this (amongst other things). */
 
 	if ( cen == 'P' ) return 0;
@@ -1850,7 +1760,6 @@ int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
 	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
 	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
 
-		UnitCellTransformation *tfn;
 		UnitCell *nc;
 		int j, k;
 		int l = 0;
@@ -1861,17 +1770,14 @@ int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
 
 		if ( intmat_det(m) != +1 ) continue;
 
-		tfn = tfn_from_intmat(m);
-		nc = cell_transform(b, tfn);
+		nc = cell_transform(b, m);
 
 		if ( compare_cell_parameters_and_orientation(a, nc, ltl, atl) ) {
 			if ( pmb != NULL ) *pmb = m;
-			tfn_free(tfn);
 			cell_free(nc);
 			return 1;
 		}
 
-		tfn_free(tfn);
 		cell_free(nc);
 
 	}

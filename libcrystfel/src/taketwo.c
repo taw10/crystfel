@@ -98,6 +98,7 @@
 #include <assert.h>
 #include <time.h>
 
+#include "cell.h"
 #include "cell-utils.h"
 #include "index.h"
 #include "taketwo.h"
@@ -2058,7 +2059,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	tp->numPrevs++;
 
 	/* Prepare the solution for CrystFEL friendliness */
-	result = transform_cell_gsl(cell, solution);
+	result = cell_transform_gsl_reciprocal(cell, solution);
 	cleanup_taketwo_cell(&ttCell);
 
 	return result;

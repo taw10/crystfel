@@ -61,7 +61,7 @@ static int check_centering(double a, double b, double c,
 {
 	UnitCell *cell, *cref;
 	UnitCell *n;
-	UnitCellTransformation *t;
+	IntegerMatrix *t;
 	int fail = 0;
 	int i;
 	double asx, asy, asz;
@@ -88,12 +88,17 @@ static int check_centering(double a, double b, double c,
 	check_cell(cell, "Input");
 	n = uncenter_cell(cell, &t);
 	if ( n != NULL ) {
-		STATUS("Transformation was:\n");
-		tfn_print(t);
+		STATUS("The back transformation is:\n");
+		intmat_print(t);
 		if ( check_cell(n, "Output") ) fail = 1;
-		if ( !fail ) cell_print(n);
+		if ( intmat_is_identity(t) && ((cen=='P') || (cen=='R')) ) {
+			STATUS("Identity, as expected.\n");
+		} else {
+			cell_print(n);
+		}
 	} else {
-		fail = 1;
+		STATUS("*************  Could not uncenter.\n");
+		return 1;
 	}
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
@@ -298,10 +303,6 @@ int main(int argc, char *argv[])
 	/* Hexagonal H (PDB-speak for rhombohedral) */
 	fail += check_centering(20e-10, 20e-10, 40e-10, 90.0, 90.0, 120.0,
 	                        L_HEXAGONAL, 'H', 'c', rng);
-
-	/* Cubic P */
-	fail += check_centering(30e-10, 30e-10, 30e-10, 90.0, 90.0, 90.0,
-	                        L_CUBIC, 'P', '*', rng);
 
 	/* Cubic I */
 	fail += check_centering(30e-10, 30e-10, 30e-10, 90.0, 90.0, 90.0,

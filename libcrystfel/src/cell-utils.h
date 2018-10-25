@@ -49,7 +49,6 @@ extern double resolution(UnitCell *cell,
 extern UnitCell *cell_rotate(UnitCell *in, struct quaternion quat);
 extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
                              double rot);
-extern UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m);
 
 extern void cell_print(UnitCell *cell);
 extern void cell_print_full(UnitCell *cell);
@@ -67,7 +66,7 @@ extern int cell_is_sensible(UnitCell *cell);
 
 extern int validate_cell(UnitCell *cell);
 
-extern UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t);
+extern UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **m);
 
 extern int bravais_lattice(UnitCell *cell);
 

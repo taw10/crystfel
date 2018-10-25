@@ -342,6 +342,9 @@ static IntegerMatrix *intmat_cofactors(const IntegerMatrix *m)
  *
  * Calculates the inverse of @m.  Inefficiently.
  *
+ * Works only if the inverse of the matrix is also an integer matrix,
+ * i.e. if the determinant of @m is +/- 1.
+ *
  * Returns: the inverse of @m, or NULL on error.
  **/
 IntegerMatrix *intmat_inverse(const IntegerMatrix *m)
@@ -531,4 +534,40 @@ IntegerMatrix *intmat_identity(int size)
 	}
 
 	return m;
+}
+
+
+/**
+ * intmat_set_all_3x3
+ * @m: An %IntegerMatrix
+ *
+ * Returns: an identity %IntegerMatrix with side length @size, or NULL on error.
+ *
+ */
+void intmat_set_all_3x3(IntegerMatrix *m,
+                        signed int m11, signed int m12, signed int m13,
+                        signed int m21, signed int m22, signed int m23,
+                        signed int m31, signed int m32, signed int m33)
+{
+	intmat_set(m, 0, 0, m11);
+	intmat_set(m, 0, 1, m12);
+	intmat_set(m, 0, 2, m13);
+
+	intmat_set(m, 1, 0, m21);
+	intmat_set(m, 1, 1, m22);
+	intmat_set(m, 1, 2, m23);
+
+	intmat_set(m, 2, 0, m31);
+	intmat_set(m, 2, 1, m32);
+	intmat_set(m, 2, 2, m33);
+}
+
+
+IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
+                                 signed int m21, signed int m22, signed int m23,
+                                 signed int m31, signed int m32, signed int m33)
+{
+	IntegerMatrix *t = intmat_new(3, 3);
+	intmat_set_all_3x3(t, m11, m12, m13, m21, m22, m23, m31, m32, m33);
+	return t;
 }

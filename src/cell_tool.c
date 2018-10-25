@@ -105,7 +105,6 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	for ( i[7]=-maxorder; i[7]<=+maxorder; i[7]++ ) {
 	for ( i[8]=-maxorder; i[8]<=+maxorder; i[8]++ ) {
 
-		UnitCellTransformation *tfn;
 		UnitCell *nc;
 		IntegerMatrix *m;
 		int j, k;
@@ -120,8 +119,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 
 		if ( intmat_det(m) < 1 ) continue;
 
-		tfn = tfn_from_intmat(m);
-		nc = cell_transform(cell, tfn);
+		nc = cell_transform(cell, m);
 
 		if ( compare_cell_parameters(cell2, nc, ltl, atl) ) {
 			STATUS("-----------------------------------------------"
@@ -131,7 +129,6 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 		}
 
 		intmat_free(m);
-		tfn_free(tfn);
 		cell_free(nc);
 
 	}
@@ -283,7 +280,6 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 	for ( i[7]=-maxorder; i[7]<=+maxorder; i[7]++ ) {
 	for ( i[8]=-maxorder; i[8]<=+maxorder; i[8]++ ) {
 
-		UnitCellTransformation *tfn;
 		UnitCell *nc;
 		IntegerMatrix *m;
 		int j, k;
@@ -298,8 +294,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 
 		if ( intmat_det(m) != +1 ) continue;
 
-		tfn = tfn_from_intmat(m);
-		nc = cell_transform(cell, tfn);
+		nc = cell_transform(cell, m);
 
 		if ( compare_cell_parameters(cell, nc, ltl, atl) ) {
 			if ( !intmat_is_identity(m) ) add_symop(ops, m);
@@ -311,7 +306,6 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 			intmat_free(m);
 		}
 
-		tfn_free(tfn);
 		cell_free(nc);
 
 	}
@@ -345,15 +339,15 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 static int uncenter(UnitCell *cell, const char *out_file)
 {
 	UnitCell *cnew;
-	UnitCellTransformation *trans;
+	IntegerMatrix *m;
 
-	cnew = uncenter_cell(cell, &trans);
+	cnew = uncenter_cell(cell, &m);
 
 	STATUS("------------------> The primitive unit cell:\n");
 	cell_print(cnew);
 
-	STATUS("------------------> The decentering transformation:\n");
-	tfn_print(trans);
+	STATUS("------------------> The centering transformation:\n");
+	intmat_print(m);
 
 	if ( out_file != NULL ) {
 		FILE *fh = fopen(out_file, "w");

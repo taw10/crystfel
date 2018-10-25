@@ -45,6 +45,7 @@
 #include "cell.h"
 #include "utils.h"
 #include "image.h"
+#include "integer_matrix.h"
 
 
 /**
@@ -600,70 +601,88 @@ const char *cell_rep(UnitCell *cell)
 }
 
 
-struct _unitcelltransformation
+UnitCell *cell_transform_gsl_direct(UnitCell *in, gsl_matrix *m)
 {
-	gsl_matrix *m;
-};
+	gsl_matrix *c;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	gsl_matrix *res;
+	UnitCell *out;
+
+	cell_get_cartesian(in, &asx, &asy, &asz, &bsx, &bsy,
+	                       &bsz, &csx, &csy, &csz);
+
+	c = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(c, 0, 0, asx);
+	gsl_matrix_set(c, 0, 1, asy);
+	gsl_matrix_set(c, 0, 2, asz);
+	gsl_matrix_set(c, 1, 0, bsx);
+	gsl_matrix_set(c, 1, 1, bsy);
+	gsl_matrix_set(c, 1, 2, bsz);
+	gsl_matrix_set(c, 2, 0, csx);
+	gsl_matrix_set(c, 2, 1, csy);
+	gsl_matrix_set(c, 2, 2, csz);
+
+	res = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
+
+	out = cell_new_from_cell(in);
+	cell_set_cartesian(out, gsl_matrix_get(res, 0, 0),
+	                        gsl_matrix_get(res, 0, 1),
+	                        gsl_matrix_get(res, 0, 2),
+	                        gsl_matrix_get(res, 1, 0),
+	                        gsl_matrix_get(res, 1, 1),
+	                        gsl_matrix_get(res, 1, 2),
+	                        gsl_matrix_get(res, 2, 0),
+	                        gsl_matrix_get(res, 2, 1),
+	                        gsl_matrix_get(res, 2, 2));
+
+	gsl_matrix_free(res);
+	gsl_matrix_free(c);
+	return out;
+}
 
 
-/**
- * tfn_inverse:
- * @t: A %UnitCellTransformation.
- *
- * Calculates the inverse of @t.  That is, if you apply cell_transform() to a
- * %UnitCell using @t, and then apply cell_transform() to the result using
- * tfn_inverse(@t) instead of @t, you will recover the same lattice vectors
- * (but note that the lattice type, centering and unique axis information will
- * be lost).
- *
- * Returns: The inverse of @t.
- *
- */
-UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
+UnitCell *cell_transform_gsl_reciprocal(UnitCell *in, gsl_matrix *m)
 {
-	int s;
-	gsl_matrix *m;
-	gsl_matrix *inv;
-	gsl_permutation *perm;
-	UnitCellTransformation *out;
+	gsl_matrix *c;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	gsl_matrix *res;
+	UnitCell *out;
 
-	m = gsl_matrix_alloc(3, 3);
-	if ( m == NULL ) return NULL;
+	cell_get_reciprocal(in, &asx, &asy, &asz, &bsx, &bsy,
+	                        &bsz, &csx, &csy, &csz);
 
-	out = tfn_identity();
-	if ( out == NULL ) {
-		gsl_matrix_free(m);
-		return NULL;
-	}
+	c = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(c, 0, 0, asx);
+	gsl_matrix_set(c, 0, 1, asy);
+	gsl_matrix_set(c, 0, 2, asz);
+	gsl_matrix_set(c, 1, 0, bsx);
+	gsl_matrix_set(c, 1, 1, bsy);
+	gsl_matrix_set(c, 1, 2, bsz);
+	gsl_matrix_set(c, 2, 0, csx);
+	gsl_matrix_set(c, 2, 1, csy);
+	gsl_matrix_set(c, 2, 2, csz);
 
-	gsl_matrix_memcpy(m, t->m);
+	res = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
 
-	perm = gsl_permutation_alloc(m->size1);
-	if ( perm == NULL ) {
-		ERROR("Couldn't allocate permutation\n");
-		return NULL;
-	}
-	inv = gsl_matrix_alloc(m->size1, m->size2);
-	if ( inv == NULL ) {
-		ERROR("Couldn't allocate inverse\n");
-		gsl_permutation_free(perm);
-		return NULL;
-	}
-	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
-		ERROR("Couldn't decompose matrix\n");
-		gsl_permutation_free(perm);
-		return NULL;
-	}
-	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert transformation matrix\n");
-		gsl_permutation_free(perm);
-		return NULL;
-	}
-	gsl_permutation_free(perm);
+	out = cell_new_from_cell(in);
+	cell_set_reciprocal(out, gsl_matrix_get(res, 0, 0),
+	                         gsl_matrix_get(res, 0, 1),
+	                         gsl_matrix_get(res, 0, 2),
+	                         gsl_matrix_get(res, 1, 0),
+	                         gsl_matrix_get(res, 1, 1),
+	                         gsl_matrix_get(res, 1, 2),
+	                         gsl_matrix_get(res, 2, 0),
+	                         gsl_matrix_get(res, 2, 1),
+	                         gsl_matrix_get(res, 2, 2));
 
-	gsl_matrix_free(out->m);
-	gsl_matrix_free(m);
-	out->m = inv;
+	gsl_matrix_free(res);
+	gsl_matrix_free(c);
 	return out;
 }
 
@@ -671,63 +690,40 @@ UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
 /**
  * cell_transform:
  * @cell: A %UnitCell.
- * @t: A %UnitCellTransformation.
+ * @t: An %IntegerMatrix.
  *
- * Applies @t to @cell.  Note that the lattice type, centering and unique axis
- * information will not be preserved.
+ * Applies @t to @cell.
  *
  * Returns: Transformed copy of @cell.
  *
  */
-UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
+UnitCell *cell_transform(UnitCell *cell, IntegerMatrix *m)
 {
 	UnitCell *out;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	gsl_matrix *m;
-	gsl_matrix *a;
+	gsl_matrix *tm;
 
-	if ( t == NULL ) return NULL;
+	if ( m == NULL ) return NULL;
 
-	out = cell_new_from_cell(cell);
-	if ( out == NULL ) return NULL;
-
-	if ( cell_get_cartesian(out, &ax, &ay, &az,
-	                             &bx, &by, &bz,
-	                             &cx, &cy, &cz) ) return NULL;
-
-	m = gsl_matrix_alloc(3,3);
-	a = gsl_matrix_calloc(3,3);
-	if ( (m == NULL) || (a == NULL) ) {
-		cell_free(out);
+	tm = gsl_matrix_alloc(3,3);
+	if ( tm == NULL ) {
 		return NULL;
 	}
 
-	gsl_matrix_set(m, 0, 0, ax);
-	gsl_matrix_set(m, 0, 1, ay);
-	gsl_matrix_set(m, 0, 2, az);
-	gsl_matrix_set(m, 1, 0, bx);
-	gsl_matrix_set(m, 1, 1, by);
-	gsl_matrix_set(m, 1, 2, bz);
-	gsl_matrix_set(m, 2, 0, cx);
-	gsl_matrix_set(m, 2, 1, cy);
-	gsl_matrix_set(m, 2, 2, cz);
+	gsl_matrix_set(tm, 0, 0, intmat_get(m, 0, 0));
+	gsl_matrix_set(tm, 0, 1, intmat_get(m, 0, 1));
+	gsl_matrix_set(tm, 0, 2, intmat_get(m, 0, 2));
+	gsl_matrix_set(tm, 1, 0, intmat_get(m, 1, 0));
+	gsl_matrix_set(tm, 1, 1, intmat_get(m, 1, 1));
+	gsl_matrix_set(tm, 1, 2, intmat_get(m, 1, 2));
+	gsl_matrix_set(tm, 2, 0, intmat_get(m, 2, 0));
+	gsl_matrix_set(tm, 2, 1, intmat_get(m, 2, 1));
+	gsl_matrix_set(tm, 2, 2, intmat_get(m, 2, 2));
 
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, t->m, m, 0.0, a);
+	out = cell_transform_gsl_direct(cell, tm);
 
-	cell_set_cartesian(out, gsl_matrix_get(a, 0, 0),
-	                        gsl_matrix_get(a, 0, 1),
-	                        gsl_matrix_get(a, 0, 2),
-	                        gsl_matrix_get(a, 1, 0),
-	                        gsl_matrix_get(a, 1, 1),
-	                        gsl_matrix_get(a, 1, 2),
-	                        gsl_matrix_get(a, 2, 0),
-	                        gsl_matrix_get(a, 2, 1),
-	                        gsl_matrix_get(a, 2, 2));
+	/* FIXME: Update centering, unique axis, lattice type */
 
-	gsl_matrix_free(a);
-	gsl_matrix_free(m);
+	gsl_matrix_free(tm);
 
 	return out;
 }
@@ -736,197 +732,67 @@ UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
 /**
  * cell_transform_inverse:
  * @cell: A %UnitCell.
- * @t: A %UnitCellTransformation.
+ * @m: An %IntegerMatrix
  *
- * Applies the inverse of @t to @cell.
+ * Applies the inverse of @m to @cell.
  *
  * Returns: Transformed copy of @cell.
  *
  */
-UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
+UnitCell *cell_transform_inverse(UnitCell *cell, IntegerMatrix *m)
 {
-	UnitCellTransformation *inv;
 	UnitCell *out;
+	gsl_matrix *tm;
+	gsl_matrix *inv;
+	gsl_permutation *perm;
+	int s;
 
-	inv = tfn_inverse(t);
-	out = cell_transform(cell, inv);
-	tfn_free(inv);
-	return out;
-}
+	if ( m == NULL ) return NULL;
 
-
-/**
- * tfn_identity:
- *
- * Returns: A %UnitCellTransformation corresponding to an identity operation.
- *
- */
-UnitCellTransformation *tfn_identity()
-{
-	UnitCellTransformation *tfn;
-
-	tfn = calloc(1, sizeof(UnitCellTransformation));
-	if ( tfn == NULL ) return NULL;
-
-	tfn->m = gsl_matrix_alloc(3, 3);
-	if ( tfn->m == NULL ) {
-		free(tfn);
+	tm = gsl_matrix_alloc(3,3);
+	if ( tm == NULL ) {
 		return NULL;
 	}
 
-	gsl_matrix_set_identity(tfn->m);
+	gsl_matrix_set(tm, 0, 0, intmat_get(m, 0, 0));
+	gsl_matrix_set(tm, 0, 1, intmat_get(m, 0, 1));
+	gsl_matrix_set(tm, 0, 2, intmat_get(m, 0, 2));
+	gsl_matrix_set(tm, 1, 0, intmat_get(m, 1, 0));
+	gsl_matrix_set(tm, 1, 1, intmat_get(m, 1, 1));
+	gsl_matrix_set(tm, 1, 2, intmat_get(m, 1, 2));
+	gsl_matrix_set(tm, 2, 0, intmat_get(m, 2, 0));
+	gsl_matrix_set(tm, 2, 1, intmat_get(m, 2, 1));
+	gsl_matrix_set(tm, 2, 2, intmat_get(m, 2, 2));
 
-	return tfn;
-}
-
-
-
-/**
- * tfn_from_intmat:
- * @m: An %IntegerMatrix
- *
- * Returns: A %UnitCellTransformation corresponding to @m.
- *
- */
-UnitCellTransformation *tfn_from_intmat(IntegerMatrix *m)
-{
-	UnitCellTransformation *tfn;
-	int i, j;
-
-	tfn = tfn_identity();
-	if ( tfn == NULL ) return NULL;
-
-	for ( i=0; i<3; i++ ) {
-	for ( j=0; j<3; j++ ) {
-		gsl_matrix_set(tfn->m, i, j, intmat_get(m, i, j));
-	}
-	}
-
-	return tfn;
-}
-
-
-/**
- * tfn_combine:
- * @t: A %UnitCellTransformation
- * @na: Pointer to three doubles representing naa, nab, nac
- * @nb: Pointer to three doubles representing nba, nbb, nbc
- * @nc: Pointer to three doubles representing nca, ncb, ncc
- *
- * Updates @t such that it represents its previous transformation followed by
- * a new transformation, corresponding to letting a = naa*a + nab*b + nac*c.
- * Likewise, a = nba*a + nbb*b + nbc*c and c = nca*a + ncb*b + ncc*c.
- *
- */
-void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
-{
-	gsl_matrix *a;
-	gsl_matrix *n;
-
-	n = gsl_matrix_alloc(3, 3);
-	a = gsl_matrix_calloc(3, 3);
-	if ( (n == NULL) || (a == NULL) ) {
-		return;
-	}
-	gsl_matrix_set(n, 0, 0, na[0]);
-	gsl_matrix_set(n, 0, 1, na[1]);
-	gsl_matrix_set(n, 0, 2, na[2]);
-	gsl_matrix_set(n, 1, 0, nb[0]);
-	gsl_matrix_set(n, 1, 1, nb[1]);
-	gsl_matrix_set(n, 1, 2, nb[2]);
-	gsl_matrix_set(n, 2, 0, nc[0]);
-	gsl_matrix_set(n, 2, 1, nc[1]);
-	gsl_matrix_set(n, 2, 2, nc[2]);
-
-	free(na);
-	free(nb);
-	free(nc);
-
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, n, t->m, 0.0, a);
-
-	gsl_matrix_free(t->m);
-	t->m = a;
-	gsl_matrix_free(n);
-}
-
-
-/**
- * tfn_vector:
- * @a: Amount of "a" to include in new vector
- * @b: Amount of "b" to include in new vector
- * @c: Amount of "c" to include in new vector
- *
- * This is a convenience function to use when sending vectors to tfn_combine():
- *	tfn_combine(tfn, tfn_vector(1,0,0),
- *	                 tfn_vector(0,2,0),
- *	                 tfn_vector(0,0,1));
- *
- */
-double *tfn_vector(double a, double b, double c)
-{
-	double *vec = malloc(3*sizeof(double));
-	if ( vec == NULL ) return NULL;
-	vec[0] = a;  vec[1] = b;  vec[2] = c;
-	return vec;
-}
-
-
-/**
- * tfn_print:
- * @t: A %UnitCellTransformation
- *
- * Prints information about @t to stderr.
- *
- */
-void tfn_print(UnitCellTransformation *t)
-{
-	gsl_permutation *perm;
-	gsl_matrix *lu;
-	int s;
-
-	STATUS("New a = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 0, 0),
-	                                         gsl_matrix_get(t->m, 0, 1),
-	                                         gsl_matrix_get(t->m, 0, 2));
-	STATUS("New b = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 1, 0),
-	                                         gsl_matrix_get(t->m, 1, 1),
-	                                         gsl_matrix_get(t->m, 1, 2));
-	STATUS("New c = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 2, 0),
-	                                         gsl_matrix_get(t->m, 2, 1),
-	                                         gsl_matrix_get(t->m, 2, 2));
-	lu = gsl_matrix_alloc(3, 3);
-	if ( lu == NULL ) {
-		ERROR("Couldn't allocate LU decomposition.\n");
-		return;
-	}
-
-	gsl_matrix_memcpy(lu, t->m);
-
-	perm = gsl_permutation_alloc(t->m->size1);
+	perm = gsl_permutation_alloc(3);
 	if ( perm == NULL ) {
-		ERROR("Couldn't allocate permutation.\n");
-		gsl_matrix_free(lu);
-		return;
+		ERROR("Couldn't allocate permutation\n");
+		return NULL;
 	}
-	if ( gsl_linalg_LU_decomp(lu, perm, &s) ) {
-		ERROR("LU decomposition failed.\n");
+	inv = gsl_matrix_alloc(3, 3);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
 		gsl_permutation_free(perm);
-		gsl_matrix_free(lu);
-		return;
+		return NULL;
 	}
+	if ( gsl_linalg_LU_decomp(tm, perm, &s) ) {
+		ERROR("Couldn't decompose matrix\n");
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+	if ( gsl_linalg_LU_invert(tm, perm, inv)  ) {
+		ERROR("Couldn't invert transformation matrix\n");
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+	gsl_permutation_free(perm);
 
-	STATUS("Transformation determinant = %.2f\n", gsl_linalg_LU_det(lu, s));
-}
+	out = cell_transform_gsl_direct(cell, inv);
 
+	/* FIXME: Update centering, unique axis, lattice type */
 
-/**
- * tfn_free:
- * @t: A %UnitCellTransformation
- *
- * Frees all resources associated with @t.
- *
- */
-void tfn_free(UnitCellTransformation *t)
-{
-	gsl_matrix_free(t->m);
-	free(t);
+	gsl_matrix_free(tm);
+	gsl_matrix_free(inv);
+
+	return out;
 }

@@ -91,14 +91,6 @@ typedef enum
 typedef struct _unitcell UnitCell;
 
 
-/**
- * UnitCellTransformation:
- *
- * This opaque data structure represents a tranformation of a unit cell, such
- * as a rotation or a centering operation.
- **/
-typedef struct _unitcelltransformation UnitCellTransformation;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -156,18 +148,10 @@ extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
 
 extern const char *cell_rep(UnitCell *cell);
 
-extern UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t);
-extern UnitCell *cell_transform_inverse(UnitCell *cell,
-                                        UnitCellTransformation *t);
-
-extern UnitCellTransformation *tfn_identity(void);
-extern UnitCellTransformation *tfn_from_intmat(IntegerMatrix *m);
-extern void tfn_combine(UnitCellTransformation *t,
-                        double *na, double *nb, double *nc);
-extern void tfn_print(UnitCellTransformation *t);
-extern UnitCellTransformation *tfn_inverse(UnitCellTransformation *t);
-extern double *tfn_vector(double a, double b, double c);
-extern void tfn_free(UnitCellTransformation *t);
+extern UnitCell *cell_transform_gsl_direct(UnitCell *in, gsl_matrix *m);
+extern UnitCell *cell_transform_gsl_reciprocal(UnitCell *in, gsl_matrix *m);
+extern UnitCell *cell_transform(UnitCell *cell, IntegerMatrix *m);
+extern UnitCell *cell_transform_inverse(UnitCell *cell, IntegerMatrix *m);
 
 #ifdef __cplusplus
 }

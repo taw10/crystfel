@@ -46,7 +46,7 @@ struct xgandalf_private_data {
 	IndexingMethod indm;
 	UnitCell *cellTemplate;
 	Lattice_t sampleRealLattice_A;   //same as cellTemplate
-	UnitCellTransformation *uncenteringTransformation;
+	IntegerMatrix *centeringTransformation;
 	LatticeTransform_t latticeReductionTransform;
 };
 
@@ -114,7 +114,7 @@ int run_xgandalf(struct image *image, void *ipriv)
 		if(xgandalf_private_data->cellTemplate != NULL){
 			restoreCell(uc, &xgandalf_private_data->latticeReductionTransform);
 
-			UnitCell *new_cell_trans = cell_transform_inverse(uc, xgandalf_private_data->uncenteringTransformation);
+			UnitCell *new_cell_trans = cell_transform(uc, xgandalf_private_data->centeringTransformation);
 			cell_free(uc);
 			uc = new_cell_trans;
 
@@ -147,7 +147,7 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 	allocReciprocalPeaks(&(xgandalf_private_data->reciprocalPeaks_1_per_A));
 	xgandalf_private_data->indm = *indm;
 	xgandalf_private_data->cellTemplate = NULL;
-	xgandalf_private_data->uncenteringTransformation = NULL;
+	xgandalf_private_data->centeringTransformation = NULL;
 
 	float tolerance = xgandalf_opts->tolerance;
 	samplingPitch_t samplingPitch = xgandalf_opts->sampling_pitch;
@@ -157,7 +157,7 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 
 		xgandalf_private_data->cellTemplate = cell;
 
-		UnitCell* primitiveCell = uncenter_cell(cell, &xgandalf_private_data->uncenteringTransformation);
+		UnitCell* primitiveCell = uncenter_cell(cell, &xgandalf_private_data->centeringTransformation);
 
 		UnitCell *uc = cell_new_from_cell(primitiveCell);
 		reduceCell(primitiveCell, &xgandalf_private_data->latticeReductionTransform);
@@ -250,8 +250,8 @@ void xgandalf_cleanup(void *pp)
 
 	freeReciprocalPeaks(xgandalf_private_data->reciprocalPeaks_1_per_A);
 	IndexerPlain_delete(xgandalf_private_data->indexer);
-	if(xgandalf_private_data->uncenteringTransformation != NULL){
-		tfn_free(xgandalf_private_data->uncenteringTransformation);
+	if(xgandalf_private_data->centeringTransformation != NULL){
+		intmat_free(xgandalf_private_data->centeringTransformation);
 	}
 	free(xgandalf_private_data);
 }
