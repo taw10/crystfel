@@ -90,7 +90,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	cell_print(cell2);
 
 	STATUS("Comparing cells up to %ix each lattice length.\n", maxorder);
-	STATUS("Reciprocal axis length tolerance %f %%\n", ltl*100.0);
+	STATUS("Reciprocal axis length tolerance %f %%\n", ltl);
 	STATUS("Reciprocal angle tolerance %f degrees\n", rad2deg(atl));
 	STATUS("This will take about 30 seconds.  Please wait...\n");
 
@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
 	char *cell_file = NULL;
 	UnitCell *cell;
 	char *toler = NULL;
-	float ltl = 5.0/100.0;
+	float ltl = 5.0;  /* in percent */
 	float atl = deg2rad(1.5);
 	char *sym_str = NULL;
 	SymOpList *sym = NULL;
@@ -495,7 +495,7 @@ int main(int argc, char *argv[])
 			ERROR("Invalid parameters for --tolerance\n");
 			return 1;
 		}
-		ltl /= 100.0;  /* Percent to fraction */
+		/* ltl stays in percent */
 		atl = deg2rad(atl);
 		free(toler);
 	}
