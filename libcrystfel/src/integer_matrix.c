@@ -35,7 +35,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "rational.h"
 #include "integer_matrix.h"
+#include "utils.h"
 
 
 /**
@@ -95,7 +97,7 @@ IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
  *
  * Returns: a newly allocated copy of @m, or NULL on error/
  **/
-IntegerMatrix *intmat_copy(IntegerMatrix *m)
+IntegerMatrix *intmat_copy(const IntegerMatrix *m)
 {
 	IntegerMatrix *p;
 	int i, j;
@@ -124,6 +126,19 @@ void intmat_free(IntegerMatrix *m)
 	if ( m == NULL ) return;
 	free(m->v);
 	free(m);
+}
+
+
+void intmat_size(const IntegerMatrix *m, unsigned int *rows, unsigned int *cols)
+{
+	if ( m == NULL ) {
+		*rows = 0;
+		*cols = 0;
+		return;
+	}
+
+	*rows = m->rows;
+	*cols = m->cols;
 }
 
 
@@ -159,6 +174,96 @@ signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
 	assert(i < m->rows);
 	assert(j < m->cols);
 	return m->v[j + m->cols*i];
+}
+
+
+/* intmat_intvec_mult:
+ * @m: An %IntegerMatrix
+ * @vec: An array of floats
+ * @ans: An array of floats in which to store the result
+ *
+ * Multiplies the matrix @m by the vector @vec.  The size of @vec must equal the
+ * number of columns in @m, and the size of the result equals the number of rows
+ * in @m.
+ *
+ * Returns: non-zero on error
+ **/
+int intmat_floatvec_mult(const IntegerMatrix *m, const float *vec, float *ans)
+{
+	unsigned int i;
+
+	for ( i=0; i<m->rows; i++ ) {
+
+		unsigned int j;
+
+		ans[i] = 0.0;
+		for ( j=0; j<m->cols; j++ ) {
+			ans[i] += intmat_get(m, i, j) * vec[j];
+		}
+
+	}
+
+	return 0;
+}
+
+
+/* intmat_rationalvec_mult:
+ * @m: An %IntegerMatrix
+ * @vec: An array of %Rational
+ * @ans: An array of %Rational in which to store the result
+ *
+ * Multiplies the matrix @m by the vector @vec.  The size of @vec must equal the
+ * number of columns in @m, and the size of the result equals the number of rows
+ * in @m.
+ *
+ * Returns: non-zero on error
+ **/
+int intmat_rationalvec_mult(const IntegerMatrix *m, const Rational *vec,
+                            Rational *ans)
+{
+	unsigned int i;
+
+
+	for ( i=0; i<m->rows; i++ ) {
+
+		unsigned int j;
+
+		ans[i] = rtnl_zero();
+		for ( j=0; j<m->cols; j++ ) {
+			Rational t;
+			t = rtnl_mul(vec[j], rtnl(intmat_get(m, i, j), 1));
+			ans[i] = rtnl_add(ans[i], t);
+		}
+
+	}
+
+	return 0;
+}
+
+
+/* intmat_solve_rational:
+ * @m: An %IntegerMatrix
+ * @vec: An array of %Rational
+ * @ans: An array of %Rational in which to store the result
+ *
+ * Solves the matrix equation m*ans = vec, where @ans and @vec are
+ * vectors of %Rational.
+ *
+ * This is just a convenience function which creates a %RationalMatrix out of
+ * @m and then calls rtnl_mtx_solve().
+ *
+ * Returns: non-zero on error
+ **/
+int intmat_solve_rational(const IntegerMatrix *m, const Rational *vec,
+                          Rational *ans)
+{
+	RationalMatrix *rm;
+	int r;
+
+	rm = rtnl_mtx_from_intmat(m);
+	r = rtnl_mtx_solve(rm, vec, ans);
+	rtnl_mtx_free(rm);
+	return r;
 }
 
 

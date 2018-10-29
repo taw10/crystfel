@@ -62,6 +62,7 @@ set(LIBCRYSTFEL_SOURCES
     src/peakfinder8.c
     src/taketwo.c
     src/xgandalf.c
+    src/rational.c
 )
 
 if (HAVE_FFTW)
@@ -101,6 +102,7 @@ set(LIBCRYSTFEL_HEADERS
     src/peakfinder8.h
     src/taketwo.h
     src/xgandalf.h
+    src/rational.h
 )
 
 add_library(${PROJECT_NAME} SHARED

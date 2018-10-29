@@ -40,17 +40,22 @@
  **/
 typedef struct _integermatrix IntegerMatrix;
 
+#include "rational.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Alloc/dealloc */
 extern IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols);
-extern IntegerMatrix *intmat_copy(IntegerMatrix *m);
+extern IntegerMatrix *intmat_copy(const IntegerMatrix *m);
 extern IntegerMatrix *intmat_identity(int size);
 extern void intmat_free(IntegerMatrix *m);
 
 /* Get/set */
+extern void intmat_size(const IntegerMatrix *m, unsigned int *rows,
+                        unsigned int *cols);
+
 extern void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j,
                        signed int v);
 extern signed int intmat_get(const IntegerMatrix *m,
@@ -65,13 +70,20 @@ extern IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed i
                                         signed int m21, signed int m22, signed int m23,
                                         signed int m31, signed int m32, signed int m33);
 
-/* Matrix-(int)vector multiplication */
+/* Matrix-vector multiplication */
+extern int intmat_floatvec_mult(const IntegerMatrix *m, const float *vec,
+                                float *ans);
 extern signed int *intmat_intvec_mult(const IntegerMatrix *m,
                                       const signed int *vec);
+extern int intmat_rationalvec_mult(const IntegerMatrix *m, const Rational *vec,
+                                   Rational *ans);
 
 /* Matrix-matrix multiplication */
 extern IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
                                          const IntegerMatrix *b);
+
+extern int intmat_solve_rational(const IntegerMatrix *m, const Rational *vec,
+                                 Rational *ans);
 
 /* Inverse */
 extern IntegerMatrix *intmat_inverse(const IntegerMatrix *m);
