@@ -298,35 +298,35 @@ static struct radial_stats* allocate_radial_stats(int num_rad_bins)
 
 	rstats->rthreshold = (float *)malloc(num_rad_bins*sizeof(float));
 	if ( rstats->rthreshold == NULL ) {
-		free(rstats);
 		free(rstats->roffset);
+		free(rstats);
 		return NULL;
 	}
 
 	rstats->lthreshold = (float *)malloc(num_rad_bins*sizeof(float));
 	if ( rstats->lthreshold == NULL ) {
-		free(rstats);
 		free(rstats->rthreshold);
 		free(rstats->roffset);
+		free(rstats);
 		return NULL;
 	}
 
 	rstats->rsigma = (float *)malloc(num_rad_bins*sizeof(float));
 	if ( rstats->rsigma == NULL ) {
-		free(rstats);
 		free(rstats->roffset);
 		free(rstats->rthreshold);
 		free(rstats->lthreshold);
+		free(rstats);
 		return NULL;
 	}
 
 	rstats->rcount = (int *)malloc(num_rad_bins*sizeof(int));
 	if ( rstats->rcount == NULL ) {
-		free(rstats);
 		free(rstats->roffset);
 		free(rstats->rthreshold);
 		free(rstats->lthreshold);
 		free(rstats->rsigma);
+		free(rstats);
 		return NULL;
 	}
 
@@ -434,8 +434,8 @@ struct peakfinder_peak_data *allocate_peak_data(int max_num_peaks)
 
 	pkdata->npix = (int *)malloc(max_num_peaks*sizeof(int));
 	if ( pkdata->npix == NULL ) {
-		free(pkdata);
 		free(pkdata->npix);
+		free(pkdata);
 		return NULL;
 	}
 
