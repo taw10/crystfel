@@ -1438,6 +1438,8 @@ int main(int argc, char *argv[])
 
 	list1 = asymmetric_indices(list1_raw, sym);
 	list2 = asymmetric_indices(list2_raw, sym);
+	reflist_free(list1_raw);
+	reflist_free(list2_raw);
 
 	/* Select reflections to be used */
 	ncom = 0;
@@ -1521,12 +1523,58 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
-		  || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) )
+		refl1_acc = add_refl(list1_acc, h, k, l);
+		copy_data(refl1_acc, refl1);
+		set_intensity(refl1_acc, val1);
+
+		refl2_acc = add_refl(list2_acc, h, k, l);
+		copy_data(refl2_acc, refl2);
+		set_intensity(refl2_acc, val2);
+
+		if ( val1 > max_I ) max_I = val1;
+		if ( val1 < min_I ) min_I = val1;
+
+		ncom++;
+
+	}
+
+	reflist_free(list1);
+	reflist_free(list2);
+
+	/* For anomalous figures of merit, we additionally require that we have
+	 * all the Bijvoet pairs after the above rejection tests */
+	if ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
+	  || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) )
+	{
+		list1 = list1_acc;
+		list2 = list2_acc;
+		list1_acc = reflist_new();
+		list2_acc = reflist_new();
+
+		min_I = +INFINITY;
+		max_I = -INFINITY;
+		ncom = 0;
+
+		for ( refl1 = first_refl(list1, &iter);
+		      refl1 != NULL;
+		      refl1 = next_refl(refl1, iter) )
 		{
 			Reflection *refl1_bij = NULL;
 			Reflection *refl2_bij = NULL;
+			signed int h, k, l;
 			signed int hb, kb, lb;
+			Reflection *refl1_acc;
+			Reflection *refl2_acc;
+			Reflection *refl2;
+			double val1, val2;
+
+			get_indices(refl1, &h, &k, &l);
+
+			refl2 = find_refl(list2, h, k, l);
+			assert(refl2 != NULL);
+
+			val1 = get_intensity(refl1);
+			val2 = get_intensity(refl2);
 
 			if ( is_centric(h, k, l, sym) ) {
 				ncen++;
@@ -1549,21 +1597,20 @@ int main(int argc, char *argv[])
 				nbij++;
 				continue;
 			}
+
+			refl1_acc = add_refl(list1_acc, h, k, l);
+			copy_data(refl1_acc, refl1);
+			set_intensity(refl1_acc, val1);
+
+			refl2_acc = add_refl(list2_acc, h, k, l);
+			copy_data(refl2_acc, refl2);
+			set_intensity(refl2_acc, val2);
+
+			if ( val1 > max_I ) max_I = val1;
+			if ( val1 < min_I ) min_I = val1;
+
+			ncom++;
 		}
-
-		refl1_acc = add_refl(list1_acc, h, k, l);
-		copy_data(refl1_acc, refl1);
-		set_intensity(refl1_acc, val1);
-
-		refl2_acc = add_refl(list2_acc, h, k, l);
-		copy_data(refl2_acc, refl2);
-		set_intensity(refl2_acc, val2);
-
-		if ( val1 > max_I ) max_I = val1;
-		if ( val1 < min_I ) min_I = val1;
-
-		ncom++;
-
 	}
 
 	gsl_set_error_handler_off();
@@ -1610,11 +1657,6 @@ int main(int argc, char *argv[])
 	STATUS("Accepted resolution range: %f to %f nm^-1"
 	       " (%.2f to %.2f Angstroms).\n",
 	       rmin/1e9, rmax/1e9, 1e10/rmin, 1e10/rmax);
-
-	reflist_free(list1_raw);
-	reflist_free(list2_raw);
-	reflist_free(list1);
-	reflist_free(list2);
 
 	if ( rmin_fix >= 0.0 ) {
 		rmin = rmin_fix;
