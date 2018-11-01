@@ -40,7 +40,8 @@ extern MultiHistogram *multihistogram_new();
 extern void multihistogram_free(MultiHistogram *hi);
 
 extern void multihistogram_delete_all_values(MultiHistogram *hi);
-extern void multihistogram_add_value(MultiHistogram *hi, double val, int cat);
+extern void multihistogram_add_value(MultiHistogram *hi, double val,
+                                     unsigned int cat);
 
 extern void multihistogram_set_min(MultiHistogram *hi, double min);
 extern void multihistogram_set_max(MultiHistogram *hi, double max);

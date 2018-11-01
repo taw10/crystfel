@@ -189,6 +189,12 @@ static void set_col(cairo_t *cr, CellWindow *w, int cat)
 
 static gboolean destroy_sig(GtkWidget *da, CellWindow *w)
 {
+	multihistogram_free(w->hist_a->h);
+	multihistogram_free(w->hist_b->h);
+	multihistogram_free(w->hist_c->h);
+	multihistogram_free(w->hist_al->h);
+	multihistogram_free(w->hist_be->h);
+	multihistogram_free(w->hist_ga->h);
 	gtk_main_quit();
 	return FALSE;
 }
@@ -666,7 +672,7 @@ static void scan_cells(CellWindow *w)
 	for ( i=0; i<n_cells; i++ ) {
 
 		double a, b, c, al, be, ga;
-		int cat, j;
+		unsigned int cat, j;
 		int ignore = 0;
 
 		for ( j=0; j<w->n_unique_indms; j++ ) {
@@ -706,7 +712,7 @@ static void scan_cells(CellWindow *w)
 		     check_exclude(w->hist_be, be) ||
 		     check_exclude(w->hist_ga, ga) )
 		{
-			cat = 1<<CAT_EXCLUDE;
+			cat = (unsigned)1<<CAT_EXCLUDE;
 			n_excl++;
 		}
 

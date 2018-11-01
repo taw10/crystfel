@@ -93,7 +93,7 @@ void multihistogram_free(MultiHistogram *hi)
 }
 
 
-void multihistogram_add_value(MultiHistogram *hi, double val, int cat)
+void multihistogram_add_value(MultiHistogram *hi, double val, unsigned int cat)
 {
 	int i, j;
 
@@ -104,7 +104,7 @@ void multihistogram_add_value(MultiHistogram *hi, double val, int cat)
 	if ( j >= hi->n_bins ) j = hi->n_bins - 1;
 
 	for ( i=0; i<32; i++ ) {
-		if ( cat & 1<<i ) hi->bins[i][j]++;
+		if ( cat & (unsigned)1<<i ) hi->bins[i][j]++;
 	}
 }
 
