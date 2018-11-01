@@ -606,7 +606,11 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	}
 
 	/* Stop a really difficult to debug situation in its tracks */
-	assert(image->n_crystals - n_before == r);
+	if ( image->n_crystals - n_before != r ) {
+		ERROR("Whoops, indexer didn't return the right number "
+		      "of crystals!\n");
+		exit(1);
+	}
 
 	/* For all the crystals found this time ... */
 	for ( i=0; i<r; i++ ) {

@@ -208,7 +208,10 @@ int right_handed(UnitCell *cell)
 
 	rh_direct = aCb_dot_c > 0.0;
 
-	assert(rh_reciprocal == rh_direct);
+	if ( rh_reciprocal != rh_direct ) {
+		ERROR("Whoops, reciprocal and real space handedness are "
+		      "not the same!\n");
+	}
 
 	return rh_direct;
 }
