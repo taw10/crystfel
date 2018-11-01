@@ -767,10 +767,15 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 
 	if ( elsize == 4 ) {
 		dataf = convert_sint32_float(data, dimfast, dimmid);
-	}
-	if ( elsize == 2 ) {
+	} else if ( elsize == 2 ) {
 		dataf = convert_sint16_float(data, dimfast, dimmid);
+	} else {
+		ERROR("Don't know how to convert element size %i\n",
+		      (int)elsize);
+		cbf_free_handle(cbfh);
+		return NULL;
 	}
+
 	free(data);
 
 	free(buf);  /* Might be NULL */
