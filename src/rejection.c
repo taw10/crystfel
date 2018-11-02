@@ -293,12 +293,8 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 
 	for ( i=0; i<n; i++ ) {
 		double cchalf, cchalfi;
-		nref = 0;
 		RefList *template = crystal_get_reflections(crystals[i]);
 		cchalf = calculate_cchalf(template, full, NULL, &nref);
-		if ( i == 86 ) {
-			nref = 666;
-		}
 		cchalfi = calculate_cchalf(template, full, crystals[i], &nref);
 		//STATUS("Frame %i:", i);
 		//STATUS("   With = %f  ", cchalf*100.0);
