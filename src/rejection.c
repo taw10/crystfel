@@ -218,9 +218,11 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		res = resolution(crystal_get_cell(c->contrib_crystals[0]),
 		                 h, k, l);
 
-		/* Remove contribution(s) from the excluded crystal */
-		if ( exclude != NULL ) {
-			refl = find_refl(crystal_get_reflections(exclude), h, k, l);
+		/* Remove contribution(s) from the excluded crystal.
+		 * If the crystal is marked as bad, we should not remove it
+		 * because it did not contribute in the first place.  */
+		if ( exclude != NULL && !crystal_get_user_flag(exclude) ) {
+			exrefl = find_refl(crystal_get_reflections(exclude), h, k, l);
 		} else {
 			exrefl = NULL;
 		}
