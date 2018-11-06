@@ -192,6 +192,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		double res;
 		struct reflection_contributions *c;
 		Reflection *refl;
+		Reflection *exrefl;
 
 		/* The values we need are stored in the "full" list, not the
 		 * template list */
@@ -221,20 +222,20 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		if ( exclude != NULL ) {
 			refl = find_refl(crystal_get_reflections(exclude), h, k, l);
 		} else {
-			refl = NULL;
+			exrefl = NULL;
 		}
 
-		while ( refl != NULL ) {
+		while ( exrefl != NULL ) {
 
 			double G, B;
-			double Ii = get_intensity(refl);
+			double Ii = get_intensity(exrefl);
 
 			G = crystal_get_osf(exclude);
 			B = crystal_get_Bfac(exclude);
 
 			/* Total (multiplicative) correction factor */
-			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(refl)
-			          / get_partiality(refl);
+			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(exrefl)
+			          / get_partiality(exrefl);
 
 			/* Remove contribution of this reflection */
 			Ex -= Ii - K;
@@ -242,7 +243,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 			n_removed++;
 
-			refl = next_found_refl(refl);
+			exrefl = next_found_refl(exrefl);
 		}
 
 		if ( c->n_contrib - n_removed < 2 ) continue;
