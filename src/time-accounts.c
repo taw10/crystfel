@@ -173,8 +173,8 @@ static const char *taccname(enum timeaccount acc)
 		case TACC_ENDCHECK : return "Checking end";
 		case TACC_WAKEUP : return "Waking up workers";
 		case TACC_WAITPID : return "Waiting on workers";
-		case TACC_HDF5OPEN : return "Opening HDF5 file";
-		case TACC_HDF5READ : return "Reading HDF5 file";
+		case TACC_HDF5OPEN : return "Opening image file";
+		case TACC_HDF5READ : return "Reading image file";
 		case TACC_FILTER : return "Image filters";
 		case TACC_RESRANGE : return "Resolution range";
 		case TACC_PEAKSEARCH : return "Peak search";

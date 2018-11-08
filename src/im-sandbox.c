@@ -1083,8 +1083,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	} while ( !allDone );
 
-	if ( iargs->profile ) time_accounts_print(taccs);
-
 	fclose(fh);
 
 	/* Indicate to the workers that we are finished, and wake them up one
