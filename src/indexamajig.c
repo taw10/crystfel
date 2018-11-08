@@ -1181,8 +1181,6 @@ int main(int argc, char *argv[])
 
 	if ( indm_str == NULL ) {
 
-		char *rn;
-
 		STATUS("No indexing methods specified.  I will try to ");
 		STATUS("automatically detect the available methods.\n");
 		STATUS("To disable auto-detection of indexing methods, specify ");
