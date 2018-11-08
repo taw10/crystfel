@@ -20,6 +20,8 @@ pkg_check_modules (GLIB glib-2.0)
 include_directories (${GLIB_INCLUDE_DIRS})
 link_directories (${GLIB_LIBRARY_DIRS})
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+
 pkg_search_module(GTK gtk+-3.0)
 if (NOT GTK_FOUND)
 
