@@ -2535,7 +2535,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 
 		if ( gparams->stretch_map ) {
 
-#ifdef HAVE_SAVE_TO_PNG
+#ifdef CAN_SAVE_TO_PNG
 
 			STATUS("Saving stretch map - for out-of-plane rotations.\n");
 
@@ -2548,12 +2548,12 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 				return 1;
 			}
 
-#else /* HAVE_SAVE_TO_PNG */
+#else /* CAN_SAVE_TO_PNG */
 
 			STATUS("ERROR: geoptimiser was compiled without GTK and "
 			       "cairo support.\n Stretch map will not be saved.\n");
 
-#endif /* HAVE_SAVE_TO_PNG */
+#endif /* CAN_SAVE_TO_PNG */
 
 		}
 
@@ -2822,7 +2822,7 @@ int main(int argc, char *argv[])
 		strcat(command_line, buffer);
 	}
 
-#ifdef HAVE_SAVE_TO_PNG
+#ifdef CAN_SAVE_TO_PNG
 #if !GLIB_CHECK_VERSION(2,36,0)
 	g_type_init();
 #endif
