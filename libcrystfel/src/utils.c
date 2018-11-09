@@ -287,7 +287,7 @@ void chomp(char *s)
 {
 	size_t i;
 
-	if ( !s ) return;
+	if ( s == NULL ) return;
 
 	for ( i=0; i<strlen(s); i++ ) {
 		if ( (s[i] == '\n') || (s[i] == '\r') ) {
