@@ -295,7 +295,7 @@ static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
 	fne = malloc(sizeof(struct filename_plus_event));
 	fne->filename = strdup(filename);
 
-	if ( det->path_dim !=0  || det->dim_dim !=0 ) {
+	if ( multi_event_geometry(gpctx->det) ) {
 		fne->ev = copy_event(ev_list->events[event_index]);
 		if ( event_index != ev_list->num_events-1 ) {
 			event_index += 1;

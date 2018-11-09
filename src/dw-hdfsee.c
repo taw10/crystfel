@@ -3012,8 +3012,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 		dw->multi_event = 0;
 	}
 
-	if ( dw->image->det != NULL && ( dw->image->det->path_dim != 0 ||
-	                                 dw->image->det->dim_dim != 0  ))
+	if ( multi_event_geometry(dw->image->det) )
 	{
 		struct hdfile *hdfile;
 

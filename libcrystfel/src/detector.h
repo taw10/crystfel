@@ -305,6 +305,8 @@ struct rg_collection *find_rigid_group_collection_by_name(struct detector *det,
 
 extern int detector_has_clen_references(struct detector *det);
 
+extern int multi_event_geometry(struct detector *det);
+
 #ifdef __cplusplus
 }
 #endif

@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( (det->path_dim == 0) && (det->dim_dim == 0) ) {
+	if ( !multi_event_geometry(det) ) {
 		ERROR("This does not look like a multi-event geometry file.\n");
 		ERROR("Are you sure you need to use list_events instead of "
 		      "just 'find' or 'ls'?\n");

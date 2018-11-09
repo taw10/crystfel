@@ -2301,3 +2301,9 @@ int single_panel_data_source(struct detector *det, const char *element)
 
 	return 1;
 }
+
+
+int multi_event_geometry(struct detector *det)
+{
+	return (det->path_dim != 0) || (det->dim_dim != 0);
+}
