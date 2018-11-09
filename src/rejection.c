@@ -94,7 +94,7 @@ void early_rejection(Crystal **crystals, int n)
 }
 
 
-static double calculate_refl_mean_var(RefList *full)
+static void calculate_refl_mean_var(RefList *full)
 {
 	Reflection *refl;
 	RefListIterator *iter;
