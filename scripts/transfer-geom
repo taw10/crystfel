@@ -1,0 +1,91 @@
+#!/usr/bin/python3
+
+import sys
+
+corner_x = dict()
+corner_y = dict()
+fs = dict()
+ss = dict()
+coffset = dict()
+
+# Go through "ingeom" and find all corner_{x,y}/fs/ss/coffset lines
+with open(sys.argv[1]) as ingeom:
+    while True:
+        line = ingeom.readline()
+        if not line:
+            break
+        line = line.rstrip("\r\n")
+        slash = line.find("/")
+        if slash != -1:
+            panel = line[0:slash]
+        else:
+            panel = None
+        if line.find("/corner_x") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            corner_x[panel] = line.split(" = ")[1]
+        if line.find("/corner_y") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            corner_y[panel] = line.split(" = ")[1]
+        if line.find("/fs") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            fs[panel] = line.split(" = ")[1]
+        if line.find("/ss") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            ss[panel] = line.split(" = ")[1]
+        if line.find("/coffset") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            coffset[panel] = line.split(" = ")[1]
+
+# Go through "template", and replace all corner_{x,y}/fs/ss lines from memory
+out = open(sys.argv[3], "w")
+with open(sys.argv[2]) as template:
+    while True:
+        line = template.readline()
+        if not line:
+            break
+        line = line.rstrip("\r\n")
+        slash = line.find("/")
+        if slash != -1:
+            panel = line[0:slash]
+        else:
+            panel = None
+        if line.find("/corner_x") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            out.write("%s/corner_x = %s\n" % (panel, corner_x[panel]))
+        elif line.find("/corner_y") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            out.write("%s/corner_y = %s\n" % (panel, corner_y[panel]))
+        elif line.find("/fs") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            out.write("%s/fs = %s\n" % (panel, fs[panel]))
+        elif line.find("/ss") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            out.write("%s/ss = %s\n" % (panel, ss[panel]))
+        elif line.find("/coffset") != -1:
+            if not panel:
+                print("No panel for line: %s\n" % line)
+                sys.exit(1)
+            out.write("%s/coffset = %s\n" % (panel, coffset[panel]))
+        else:
+            out.write("%s\n" % line)
+
+out.close()
+

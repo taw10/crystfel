@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Find multiple crystal hits
+#
+# Copyright © 2017 Deutsches Elektronen-Synchrotron DESY,
+#                  a research centre of the Helmholtz Association.
+#
+# Author:
+#    2017 Thomas White <taw@physics.org>
+#
+
+import sys
+from collections import deque
+
+f = open(sys.argv[1], 'r')
+n_crystals = 0
+crystal = deque()
+in_crystal = 0
+while True:
+
+    fline = f.readline()
+    if not fline:
+        break
+
+    fline = fline.rstrip("\r\n")
+
+    if fline.find("Image filename") != -1:
+        filename = fline
+
+    if fline.find("Event") != -1:
+        event = fline
+
+    if fline.find("End chunk") != -1:
+        if n_crystals > 1:
+            print("\nFilename: "+filename)
+            print("Event: "+event)
+            for line in crystal:
+                print(line)
+
+    if fline.find("Begin chunk") != -1:
+        n_crystals = 0
+        filename = ""
+        event = ""
+        crystal.clear()
+
+    if fline.find("Begin crystal") != -1:
+        n_crystals += 1
+
+    if fline.find("Cell param") != -1:
+        in_crystal = 1
+
+    if in_crystal:
+        crystal.append(fline)
+
+    if fline.find("unique_axis") != -1:
+        in_crystal = 0
+
