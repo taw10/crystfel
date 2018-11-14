@@ -63,6 +63,7 @@ struct merge_queue_args
 	double push_res;
 	int use_weak;
 	long long int n_reflections;
+	int ln_merge;
 };
 
 
@@ -168,6 +169,7 @@ static void run_merge_job(void *vwargs, int cookie)
 	Crystal *cr = wargs->crystal;
 	RefList *full = wargs->qargs->full;
 	double push_res = wargs->qargs->push_res;
+	int ln_merge = wargs->qargs->ln_merge;
 	Reflection *refl;
 	RefListIterator *iter;
 	double G, B;
@@ -193,7 +195,7 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
 
-		if ( !wargs->qargs->use_weak ) {
+		if ( !wargs->qargs->use_weak || ln_merge ) {
 
 			if (get_intensity(refl) < 3.0*get_esd_intensity(refl)) {
 				continue;
@@ -235,7 +237,8 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
-		delta = get_intensity(refl)*corr - mean;
+		if (ln_merge) delta = log(get_intensity(refl)*corr) - mean;
+		else delta = get_intensity(refl)*corr - mean;
 		R = delta * w / temp;
 		set_intensity(f, mean + R);
 		set_temp2(f, M2 + sumweight * delta * R);
@@ -272,7 +275,7 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 
 RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
                            int min_meas,
-                           double push_res, int use_weak)
+                           double push_res, int use_weak, int ln_merge)
 {
 	RefList *full;
 	RefList *full2;
@@ -290,6 +293,7 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	qargs.push_res = push_res;
 	qargs.use_weak = use_weak;
 	qargs.n_reflections = 0;
+	qargs.ln_merge = ln_merge;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -305,10 +309,23 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
+
+		/* Correct for averaging log of intensities*/
+		if (ln_merge){
+			double ln_I, ln_temp2;
+
+			ln_temp2 = get_temp2(refl);
+			set_temp2(refl, exp(ln_temp2));
+
+			ln_I = get_intensity(refl);
+			set_intensity(refl, exp(ln_I));
+		}
+
 		double var;
 		int red;
 
 		red = get_redundancy(refl);
+		//TODO is this still correct for log averaging?
 		var = get_temp2(refl) / get_temp1(refl);
 		set_esd_intensity(refl, sqrt(var)/sqrt(red));
 
