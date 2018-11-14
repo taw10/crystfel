@@ -2649,8 +2649,10 @@ static int check_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
 
 	} else if ( panel_path_dim != *global_path_dim ) {
 
-		ERROR("Data blocks paths for panels must have the same number"
-		      " of placeholders\n");
+		ERROR("All panels must have the same number of frames\n");
+		ERROR("Panel %s has %i frames in one dimension, but the first "
+		      "panel has %i.\n",
+		      p->name, panel_path_dim, *global_path_dim);
 		free(size);
 		free(max_size);
 		return 1;
