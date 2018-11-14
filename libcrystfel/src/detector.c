@@ -956,10 +956,25 @@ static int parse_field_for_panel(struct panel *panel, const char *key,
 			reject = 1;
 		}
 	} else if ( strncmp(key, "dim", 3) == 0) {
-		if  ( panel->dim_structure == NULL ) {
-			panel->dim_structure = initialize_dim_structure();
+		int dim_entry;
+		char *endptr;
+		if ( key[3] != '\0' ) {
+			if  ( panel->dim_structure == NULL ) {
+				panel->dim_structure = initialize_dim_structure();
+			}
+			dim_entry = strtoul(key+3, &endptr, 10);
+			if ( endptr[0] != '\0' ) {
+				ERROR("Invalid dimension number %s\n", key+3);
+			} else {
+				if ( set_dim_structure_entry(panel->dim_structure,
+				                        dim_entry, val) )
+				{
+					ERROR("Failed to set dim structure entry\n");
+				}
+			}
+		} else {
+			ERROR("'dim' must be followed by a number, e.g. 'dim0'\n");
 		}
-		set_dim_structure_entry(panel->dim_structure, key, val);
 	} else {
 		ERROR("Unrecognised field '%s'\n", key);
 	}

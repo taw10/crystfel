@@ -98,8 +98,7 @@ extern void free_event_list(struct event_list *el);
 extern struct dim_structure *initialize_dim_structure(void);
 extern struct dim_structure *default_dim_structure(void);
 extern int set_dim_structure_entry(struct dim_structure *hsd,
-                                   const char *string_dim,
-                                   const char *val_string);
+                                   int dim_entry, const char *val_string);
 extern void free_dim_structure_entry(struct dim_structure *hsd);
 extern void free_dim_structure(struct dim_structure *hsd);
 

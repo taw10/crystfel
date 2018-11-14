@@ -646,8 +646,8 @@ struct dim_structure *default_dim_structure()
 
 	hsd = initialize_dim_structure();
 
-	set_dim_structure_entry(hsd, "dim0", "ss");
-	set_dim_structure_entry(hsd, "dim1", "fs");
+	set_dim_structure_entry(hsd, 0, "ss");
+	set_dim_structure_entry(hsd, 1, "fs");
 
 	return hsd;
 }
@@ -675,37 +675,28 @@ static int parse_dim_structure_val(const char *val)
 }
 
 
-int set_dim_structure_entry(struct dim_structure *hsd, const char *string_dim,
+int set_dim_structure_entry(struct dim_structure *hsd, int dim_entry,
                             const char *val_string)
 {
-	int dim_entry;
-
-	dim_entry = atoi(string_dim+3)+1;
-
-	if ( dim_entry > hsd->num_dims ) {
+	/* "dims" array needs element with zero index */
+	if ( dim_entry >= hsd->num_dims ) {
 
 		int di;
 
-		int *new_dims = malloc(dim_entry*sizeof(int));
-		if ( new_dims == NULL ) return 0;
+		int *new_dims = realloc(hsd->dims, (dim_entry+1)*sizeof(int));
+		if ( new_dims == NULL ) return 1;
 
-		for ( di=0; di<dim_entry; di++ ) {
+		/* Initialise the elements just allocated */
+		for ( di=hsd->num_dims; di<=dim_entry; di++ ) {
 			new_dims[di] = HYSL_UNDEFINED;
 		}
 
-		for ( di=0; di<hsd->num_dims; di++ ) {
-			new_dims[di] = hsd->dims[di];
-		}
-
-		new_dims[dim_entry-1] = parse_dim_structure_val(val_string);
-		free(hsd->dims);
 		hsd->dims = new_dims;
-		hsd->num_dims = dim_entry;
-
-		return 1;
+		hsd->num_dims = dim_entry+1;
 
 	}
 
 	hsd->dims[dim_entry] = parse_dim_structure_val(val_string);
-	return 1;
+
+	return 0;
 }
