@@ -947,8 +947,6 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 {
 	int i;
 	struct sandbox *sb;
-	size_t ll;
-	struct stat s;
 	char semname_q[64];
 	struct sigaction sa;
 	int r;
