@@ -158,6 +158,9 @@ extern void index_pattern(struct image *image, IndexingPrivate *ipriv);
 extern void index_pattern_2(struct image *image, IndexingPrivate *ipriv,
                             int *ping);
 
+extern void index_pattern_3(struct image *image, IndexingPrivate *ipriv,
+                            int *ping, char *last_task);
+
 extern void cleanup_indexing(IndexingPrivate *ipriv);
 
 #ifdef __cplusplus

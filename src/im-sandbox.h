@@ -49,6 +49,10 @@ struct sb_shm;
 /* Maximum length of an event ID including serial number */
 #define MAX_EV_LEN (1024)
 
+/* Maximum length of a task ID, e.g. indexing:xgandalf.
+ * NB If changing this, also update the value in index.c */
+#define MAX_TASK_LEN (32)
+
 /* Maximum number of workers */
 #define MAX_NUM_WORKERS (1024)
 
@@ -61,6 +65,7 @@ struct sb_shm
 	char queue[QUEUE_SIZE][MAX_EV_LEN];
 	int no_more;
 	char last_ev[MAX_NUM_WORKERS][MAX_EV_LEN];
+	char last_task[MAX_NUM_WORKERS][MAX_TASK_LEN];
 	int pings[MAX_NUM_WORKERS];
 	time_t time_last_start[MAX_NUM_WORKERS];
 	int warned_long_running[MAX_NUM_WORKERS];
@@ -72,6 +77,8 @@ struct sb_shm
 };
 
 extern char *create_tempdir(const char *temp_location);
+
+extern void set_last_task(char *lt, const char *task);
 
 extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                            int config_basename, FILE *fh,  Stream *stream,

@@ -81,6 +81,20 @@ static const char *onoff(int a)
 	return "off";
 }
 
+/* Definition and function definition duplicated here (from im-sandbox.{c,h})
+ * because libcrystfel code cannot depend on core CrystFEL programs.
+ *
+ * Must match the value and definition in im-sandbox.h
+ */
+#define MAX_TASK_LEN (32)
+
+static void set_last_task(char *lt, const char *task)
+{
+	if ( lt == NULL ) return;
+	assert(strlen(task) < MAX_TASK_LEN-1);
+	strcpy(lt, task);
+}
+
 
 static void show_indexing_flags(IndexingFlags flags)
 {
@@ -556,7 +570,7 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 
 /* Return non-zero for "success" */
 static int try_indexer(struct image *image, IndexingMethod indm,
-                       IndexingPrivate *ipriv, void *mpriv)
+                       IndexingPrivate *ipriv, void *mpriv, char *last_task)
 {
 	int i, r;
 	int n_bad = 0;
@@ -568,34 +582,42 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		return 0;
 
 		case INDEXING_DIRAX :
+		set_last_task(last_task, "indexing:dirax");
 		r = run_dirax(image, mpriv);
 		break;
 
 		case INDEXING_ASDF :
+		set_last_task(last_task, "indexing:asdf");
 		r = run_asdf(image, mpriv);
 		break;
 
 		case INDEXING_MOSFLM :
+		set_last_task(last_task, "indexing:mosflm");
 		r = run_mosflm(image, mpriv);
 		break;
 
 		case INDEXING_XDS :
+		set_last_task(last_task, "indexing:xds");
 		r = run_xds(image, mpriv);
 		break;
 
 		case INDEXING_DEBUG :
+		set_last_task(last_task, "indexing:debug");
 		r = debug_index(image);
 		break;
 
 		case INDEXING_FELIX :
+		set_last_task(last_task, "indexing:felix");
 		r = felix_index(image, mpriv);
 		break;
 
 		case INDEXING_TAKETWO :
+		set_last_task(last_task, "indexing:taketwo");
 		r = taketwo_index(image, ipriv->ttopts, mpriv);
 		break;
 
 		case INDEXING_XGANDALF :
+		set_last_task(last_task, "indexing:xgandalf");
 		r = run_xgandalf(image, mpriv);
 		break;
 
@@ -604,6 +626,8 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		return 0;
 
 	}
+
+	set_last_task(last_task, "indexing:finalisation");
 
 	/* Stop a really difficult to debug situation in its tracks */
 	if ( image->n_crystals - n_before != r ) {
@@ -812,11 +836,18 @@ static int finished_retry(IndexingMethod indm, IndexingFlags flags,
 
 void index_pattern(struct image *image, IndexingPrivate *ipriv)
 {
-	index_pattern_2(image, ipriv, NULL);
+	index_pattern_3(image, ipriv, NULL, NULL);
 }
 
 
 void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
+{
+	index_pattern_3(image, ipriv, ping, NULL);
+}
+
+
+void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
+                     char *last_task)
 {
 	int n = 0;
 	ImageFeatureList *orig;
@@ -841,7 +872,8 @@ void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
 		do {
 
 			r = try_indexer(image, ipriv->methods[n],
-			                ipriv, ipriv->engine_private[n]);
+			                ipriv, ipriv->engine_private[n],
+			                last_task);
 			success += r;
 			ntry++;
 			done = finished_retry(ipriv->methods[n], ipriv->flags,

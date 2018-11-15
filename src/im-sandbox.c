@@ -153,6 +153,8 @@ static void check_hung_workers(struct sandbox *sb)
 				       "frame for more than 10 minutes.\n", i);
 				STATUS("Event ID is: %s\n",
 				       sb->shared->last_ev[i]);
+				STATUS("Task ID is: %s\n",
+				       sb->shared->last_task[i]);
 				sb->shared->warned_long_running[i] = 1;
 			}
 		}
@@ -321,6 +323,14 @@ static void shuffle_events(struct sb_shm *sb_shared)
 }
 
 
+void set_last_task(char *lt, const char *task)
+{
+	if ( lt == NULL ) return;
+	assert(strlen(task) < MAX_TASK_LEN-1);
+	strcpy(lt, task);
+}
+
+
 static void run_work(const struct index_args *iargs, Stream *st,
                      int cookie, const char *tmpdir, struct sandbox *sb)
 {
@@ -338,12 +348,14 @@ static void run_work(const struct index_args *iargs, Stream *st,
 
 		/* Wait until an event is ready */
 		time_accounts_set(taccs, TACC_EVENTWAIT);
+		set_last_task(sb->shared->last_task[cookie], "wait_event");
 		if ( sem_wait(sb->queue_sem) != 0 ) {
 			ERROR("Failed to wait on queue semaphore: %s\n",
 			      strerror(errno));
 		}
 
 		/* Get the event from the queue */
+		set_last_task(sb->shared->last_task[cookie], "read_queue");
 		pthread_mutex_lock(&sb->shared->queue_lock);
 		if ( sb->shared->no_more ) {
 			pthread_mutex_unlock(&sb->shared->queue_lock);
@@ -390,7 +402,7 @@ static void run_work(const struct index_args *iargs, Stream *st,
 
 		sb->shared->time_last_start[cookie] = get_monotonic_seconds();
 		process_image(iargs, &pargs, st, cookie, tmpdir, ser,
-		              sb->shared, taccs);
+		              sb->shared, taccs, sb->shared->last_task[cookie]);
 
 		free_filename_plus_event(pargs.filename_p_e);
 
@@ -705,6 +717,8 @@ static void handle_zombie(struct sandbox *sb, int respawn)
 				       i, WTERMSIG(status));
 				STATUS("Event ID was: %s\n",
 				       sb->shared->last_ev[i]);
+				STATUS("Task ID was: %s\n",
+				       sb->shared->last_task[i]);
 				if ( respawn ) start_worker_process(sb, i);
 			}
 

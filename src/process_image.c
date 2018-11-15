@@ -99,7 +99,8 @@ static void restore_image_data(float **dp, struct detector *det, float **bu)
 
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir,
-                   int serial, struct sb_shm *sb_shared, TimeAccounts *taccs)
+                   int serial, struct sb_shm *sb_shared, TimeAccounts *taccs,
+                   char *last_task)
 {
 	int check;
 	struct imagefile *imfile;
@@ -124,6 +125,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.indexed_by = INDEXING_NONE;
 
 	time_accounts_set(taccs, TACC_HDF5OPEN);
+	set_last_task(last_task, "open file");
 	sb_shared->pings[cookie]++;
 	imfile = imagefile_open(image.filename);
 	if ( imfile == NULL ) {
@@ -132,6 +134,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	time_accounts_set(taccs, TACC_HDF5READ);
+	set_last_task(last_task, "read file");
 	sb_shared->pings[cookie]++;
 	check = imagefile_read(imfile, &image, image.event);
 	if ( check ) {
@@ -140,6 +143,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Take snapshot of image before applying horrible noise filters */
 	time_accounts_set(taccs, TACC_FILTER);
+	set_last_task(last_task, "image filter");
 	sb_shared->pings[cookie]++;
 	prefilter = backup_image_data(image.dp, image.det);
 
@@ -152,6 +156,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	time_accounts_set(taccs, TACC_RESRANGE);
+	set_last_task(last_task, "resolution range");
 	sb_shared->pings[cookie]++;
 	mark_resolution_range_as_bad(&image, iargs->highres, +INFINITY);
 
@@ -162,6 +167,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		struct hdfile *hdfile;
 
 		case PEAK_HDF5:
+		set_last_task(last_task, "peaksearch:hdf5");
 		hdfile = imagefile_get_hdfile(imfile);
 		if ( (hdfile == NULL)
 		  || (get_peaks_2(&image, hdfile, iargs->hdf5_peak_path,
@@ -178,6 +184,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_CXI:
+		set_last_task(last_task, "peaksearch:cxi");
 		hdfile = imagefile_get_hdfile(imfile);
 		if ( (hdfile == NULL)
 		 ||  (get_peaks_cxi_2(&image, hdfile, iargs->hdf5_peak_path,
@@ -195,6 +202,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_ZAEF:
+		set_last_task(last_task, "peaksearch:zaef");
 		search_peaks(&image, iargs->threshold,
 		             iargs->min_gradient, iargs->min_snr,
 		             iargs->pk_inn, iargs->pk_mid, iargs->pk_out,
@@ -202,6 +210,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_PEAKFINDER8:
+		set_last_task(last_task, "peaksearch:pf8");
 		if ( search_peaks_peakfinder8(&image, 2048,
 		                               iargs->threshold,
 		                               iargs->min_snr,
@@ -224,6 +233,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_PEAKFINDER9:
+		set_last_task(last_task, "peaksearch:pf9");
 		if ( search_peaks_peakfinder9(&image,
 		                              iargs->min_snr_biggest_pix,
 		                              iargs->min_snr_peak_pix,
@@ -297,7 +307,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Index the pattern */
 	time_accounts_set(taccs, TACC_INDEXING);
-	index_pattern_2(&image, iargs->ipriv, &sb_shared->pings[cookie]);
+	set_last_task(last_task, "indexing");
+	index_pattern_3(&image, iargs->ipriv, &sb_shared->pings[cookie],
+	                last_task);
 
 	r = chdir(rn);
 	if ( r ) {
@@ -309,6 +321,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Set beam/crystal parameters */
 	time_accounts_set(taccs, TACC_PREDPARAMS);
+	set_last_task(last_task, "prediction params");
 	if ( iargs->fix_profile_r >= 0.0 ) {
 		for ( i=0; i<image.n_crystals; i++ ) {
 			crystal_set_profile_radius(image.crystals[i],
@@ -332,6 +345,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Integrate! */
 	time_accounts_set(taccs, TACC_INTEGRATION);
+	set_last_task(last_task, "integration");
 	sb_shared->pings[cookie]++;
 	integrate_all_5(&image, iargs->int_meth, PMODEL_XSPHERE,
 	                iargs->push_res,
@@ -342,6 +356,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 streamwrite:
 	time_accounts_set(taccs, TACC_WRITESTREAM);
+	set_last_task(last_task, "stream write");
 	sb_shared->pings[cookie]++;
 	ret = write_chunk(st, &image, imfile,
 	                  iargs->stream_peaks, iargs->stream_refls,
@@ -363,6 +378,7 @@ streamwrite:
 out:
 	/* Count crystals which are still good */
 	time_accounts_set(taccs, TACC_TOTALS);
+	set_last_task(last_task, "process_image finalisation");
 	sb_shared->pings[cookie]++;
 	pthread_mutex_lock(&sb_shared->totals_lock);
 	any_crystals = 0;
