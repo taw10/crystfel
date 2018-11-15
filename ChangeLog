@@ -1,19 +1,23 @@
-Changes in this development version up to commit 019220ed
+Changes in this development version up to commit 6c18490d
 ---------------------------------------------------------
 
-- Switch to CMake build system
-- indexamajig: Warn if a frame takes more than 10 minutes to process
+- partialator: Add deltaCChalf rejection test
 - Add support for peakfinder9
 - Add support for XGANDALF indexer
+- Switch to CMake build system
+- Handle 16bpp and gzipped CBF files
+- indexamajig: Clean up temporary folders on clean exit
+- indexamajig: Name and shame slow processing stages
+- Add scripts/euxfel-train-analysis, find-multiples and transfer-geom
+- indexamajig: Warn if a frame takes more than 10 minutes to process
 - check_{peak_detection,near_bragg}: Warn if stream is older than image
 - Some fixes for peakfinder8
-- indexamajig: Clean up temporary folders on clean exit
 - Use GTK3 if available
-- partialator: Add deltaCChalf rejection test
 - turbo-index-lsf: Match turbo-index-slurm as closely as possible
 - sum-peaks: Accept "-" for stdin
-- Handle 16bpp and gzipped CBF files
 - Multiple fixes for XDS indexer interface
+- geoptimiser: Fix calculation of displacement error
+- compare_hkl: Fix an edge case in calculation of anomalous figures of merit
 - Fix for indexing centered cells with Mosflm without prior cell parameters
 - Handle numbers (e.g. "k-2h") in symmetry operator specifications (e.g.
   ambigator)
