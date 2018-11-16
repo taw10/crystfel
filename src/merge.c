@@ -230,7 +230,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		}
 
 		/* Reflections count less the more they have to be scaled up */
-		w = 1.0;
+		w = get_partiality(refl);
 
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
