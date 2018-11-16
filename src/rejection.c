@@ -95,7 +95,7 @@ void early_rejection(Crystal **crystals, int n)
 }
 
 
-static void calculate_refl_mean_var(RefList *full)
+static int calculate_refl_mean_var(RefList *full)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -129,7 +129,7 @@ static void calculate_refl_mean_var(RefList *full)
 		K = get_intensity(refl);
 
 		c = get_contributions(refl);
-		assert(c != NULL);
+		if ( c == NULL ) return 1;
 
 		/* Calculate the resolution just once, using the cell from the
 		 * first crystal to contribute, otherwise it takes too long */
@@ -160,6 +160,7 @@ static void calculate_refl_mean_var(RefList *full)
 		set_temp2(refl, Ex2);
 	}
 
+	return 0;
 }
 
 
@@ -289,7 +290,11 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	int nref = 0;
 	int nnan = 0;
 
-	calculate_refl_mean_var(full);
+	if ( calculate_refl_mean_var(full) ) {
+		STATUS("No reflection contributions for deltaCChalf "
+		       "calculation (using reference reflections?)\n");
+		return;
+	}
 
 	cchalf = calculate_cchalf(full, full, NULL, &nref);
 	STATUS("Overall CChalf = %f %% (%i reflections)\n", cchalf*100.0, nref);
