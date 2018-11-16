@@ -48,10 +48,7 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "cell-utils.h"
-
-
-/* Minimum partiality of a reflection for it to be merged */
-#define MIN_PART_MERGE (0.3)
+#include "merge.h"
 
 
 struct merge_queue_args

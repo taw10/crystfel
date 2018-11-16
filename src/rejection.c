@@ -40,6 +40,7 @@
 #include "rejection.h"
 #include "cell-utils.h"
 #include "post-refinement.h"
+#include "merge.h"
 
 
 static double mean_intensity(RefList *list)
@@ -235,15 +236,19 @@ static double calculate_cchalf(RefList *template, RefList *full,
 			G = crystal_get_osf(exclude);
 			B = crystal_get_Bfac(exclude);
 
-			/* Total (multiplicative) correction factor */
-			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(exrefl)
-			          / get_partiality(exrefl);
+			if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
 
-			/* Remove contribution of this reflection */
-			Ex -= Ii - K;
-			Ex2 -= (Ii - K)*(Ii - K);
+				/* Total (multiplicative) correction factor */
+				Ii *= 1.0/G * exp(B*res*res) * get_lorentz(exrefl)
+				          / get_partiality(exrefl);
 
-			n_removed++;
+				/* Remove contribution of this reflection */
+				Ex -= Ii - K;
+				Ex2 -= (Ii - K)*(Ii - K);
+
+				n_removed++;
+
+			}
 
 			exrefl = next_found_refl(exrefl);
 		}
@@ -282,6 +287,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	double *vals;
 	double mean, sd;
 	int nref = 0;
+	int nnan = 0;
 
 	calculate_refl_mean_var(full);
 
@@ -305,7 +311,15 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		//STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
 		//STATUS("(nref = %i)\n", nref);
 		vals[i] = cchalf - cchalfi;
+		if ( isnan(vals[i]) || isinf(vals[i]) ) {
+			vals[i] = 0.0;
+			nnan++;
+		}
 		progress_bar(i, n-1, "Calculating deltaCChalf");
+	}
+	if ( nnan > 0 ) {
+		STATUS("WARNING: %i NaN or inf deltaCChalf values were "
+		       "replaced with zero\n", nnan);
 	}
 
 	mean = gsl_stats_mean(vals, 1, n);
@@ -313,7 +327,9 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	STATUS("deltaCChalf = %f ± %f %%\n", mean*100.0, sd*100.0);
 
 	for ( i=0; i<n; i++ ) {
-		if ( (vals[i]<0.0) && (vals[i] < mean-2.0*sd) ) {
+		if ( isnan(vals[i]) || isinf(vals[i])
+		  || ((vals[i]<0.0) && (vals[i] < mean-2.0*sd)) )
+		{
 			crystal_set_user_flag(crystals[i], PRFLAG_DELTACCHALF);
 		}
 	}

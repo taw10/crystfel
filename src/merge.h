@@ -39,6 +39,10 @@
 #include "reflist.h"
 #include "geometry.h"
 
+/* Minimum partiality of a reflection for it to be merged */
+#define MIN_PART_MERGE (0.3)
+
+
 extern RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
                                   int min_meas, double push_res, int use_weak,
                                   int ln_merge);
