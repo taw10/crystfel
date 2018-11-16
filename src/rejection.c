@@ -313,7 +313,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	STATUS("deltaCChalf = %f ± %f %%\n", mean*100.0, sd*100.0);
 
 	for ( i=0; i<n; i++ ) {
-		if ( vals[i] < mean-2.0*sd ) {
+		if ( (vals[i]<0.0) && (vals[i] < mean-2.0*sd) ) {
 			crystal_set_user_flag(crystals[i], PRFLAG_DELTACCHALF);
 		}
 	}
