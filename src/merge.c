@@ -454,6 +454,7 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 		fx = log(G) - B*s*s + log(p) + log(I_full) - log(I_partial) - log(L);
 		w = 1.0;
 		dev += w*fx*fx;
+		n_used++;
 
 		if ( fh != NULL ) {
 			fprintf(fh, "%4i %4i %4i %e %e\n",
