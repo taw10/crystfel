@@ -548,7 +548,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double residual(struct reflpeak *rps, int n, struct detector *det)
+static double pred_residual(struct reflpeak *rps, int n, struct detector *det)
 {
 	int i;
 	double res = 0.0;
@@ -629,7 +629,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 		rps[i].Ih = rps[i].peak->intensity / max_I;
 	}
 
-	//STATUS("Initial residual = %e\n", residual(rps, n, image->det));
+	//STATUS("Initial residual = %e\n", pred_residual(rps, n, image->det));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
@@ -637,12 +637,12 @@ int refine_prediction(struct image *image, Crystal *cr)
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y, &total_z) ) return 1;
 		//STATUS("Residual after %i = %e\n", i,
-		//       residual(rps, n, image->det));
+		//       pred_residual(rps, n, image->det));
 	}
-	//STATUS("Final residual = %e\n", residual(rps, n, image->det));
+	//STATUS("Final residual = %e\n", pred_residual(rps, n, image->det));
 
 	snprintf(tmp, 255, "predict_refine/final_residual = %e",
-	         residual(rps, n, image->det));
+	         pred_residual(rps, n, image->det));
 	crystal_add_notes(cr, tmp);
 
 	crystal_set_det_shift(cr, total_x, total_y);
