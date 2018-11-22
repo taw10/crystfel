@@ -289,6 +289,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	double mean, sd;
 	int nref = 0;
 	int nnan = 0;
+	int nnon = 0;
 
 	if ( calculate_refl_mean_var(full) ) {
 		STATUS("No reflection contributions for deltaCChalf "
@@ -315,12 +316,21 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		//STATUS("Without = %f", cchalfi*100.0);
 		//STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
 		//STATUS("(nref = %i)\n", nref);
-		vals[i] = cchalf - cchalfi;
-		if ( isnan(vals[i]) || isinf(vals[i]) ) {
+		if ( nref == 0 ) {
 			vals[i] = 0.0;
-			nnan++;
+			nnon++;
+		} else {
+			vals[i] = cchalf - cchalfi;
+			if ( isnan(vals[i]) || isinf(vals[i]) ) {
+				vals[i] = 0.0;
+				nnan++;
+			}
 		}
 		progress_bar(i, n-1, "Calculating deltaCChalf");
+	}
+	if ( nnon > 0 ) {
+		STATUS("WARNING: %i patterns had no reflections in deltaCChalf "
+		       "calculation (I set deltaCChalf=zero for them)\n", nnon);
 	}
 	if ( nnan > 0 ) {
 		STATUS("WARNING: %i NaN or inf deltaCChalf values were "

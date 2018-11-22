@@ -716,6 +716,10 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 	int n_nan_linear_free = 0;
 	int n_nan_log = 0;
 	int n_nan_log_free = 0;
+	int n_non_linear = 0;
+	int n_non_linear_free = 0;
+	int n_non_log = 0;
+	int n_non_log_free = 0;
 
 	*presidual = 0.0;
 	*pfree_residual = 0.0;
@@ -725,19 +729,35 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 	for ( i=0; i<n_crystals; i++ ) {
 
 		double r, free_r, log_r, free_log_r;
+		int n;
 
 		if ( crystal_get_user_flag(crystals[i]) ) continue;
 
 		/* Scaling should have been done right before calling this */
-		r = residual(crystals[i], full, 0, NULL, NULL);
-		free_r = residual(crystals[i], full, 1, NULL, NULL);
-		log_r = log_residual(crystals[i], full, 0, NULL, NULL);
-		free_log_r = log_residual(crystals[i], full, 1, NULL, NULL);
-
-		if ( isnan(r) ) n_nan_linear++;
-		if ( isnan(free_r) ) n_nan_linear_free++;
-		if ( isnan(log_r) ) n_nan_log++;
-		if ( isnan(free_log_r) ) n_nan_log_free++;
+		r = residual(crystals[i], full, 0, &n, NULL);
+		if ( n == 0 ) {
+			n_non_linear++;
+		} else if ( isnan(r) ) {
+			n_nan_linear++;
+		}
+		free_r = residual(crystals[i], full, 1, &n, NULL);
+		if ( n == 0 ) {
+			n_non_linear_free++;
+		} else if ( isnan(free_r) ) {
+			n_nan_linear_free++;
+		}
+		log_r = log_residual(crystals[i], full, 0, &n, NULL);
+		if ( n == 0 ) {
+			n_non_log++;
+		} else if ( isnan(log_r) ) {
+			n_nan_log++;
+		}
+		free_log_r = log_residual(crystals[i], full, 1, &n, NULL);
+		if ( n == 0 ) {
+			n_non_log_free++;
+		} else if ( isnan(free_log_r) ) {
+			n_nan_log_free++;
+		}
 
 		if ( isnan(r) || isnan(free_r)
 		  || isnan(log_r) || isnan(free_log_r) ) continue;
@@ -748,6 +768,23 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 		*pfree_log_residual += free_log_r;
 
 		n_used++;
+	}
+
+	if ( n_non_linear ) {
+		ERROR("WARNING: %i crystals had no reflections in linear "
+		      "residual calculation\n", n_non_linear);
+	}
+	if ( n_non_linear_free ) {
+		ERROR("WARNING: %i crystals had no reflections in linear free "
+		      "residual calculation\n", n_non_linear_free);
+	}
+	if ( n_non_log ) {
+		ERROR("WARNING: %i crystals had no reflections in log "
+		      "residual calculation\n", n_non_log);
+	}
+	if ( n_non_log_free ) {
+		ERROR("WARNING: %i crystals had no reflections in log free "
+		      "residual calculation\n", n_non_log_free);
 	}
 
 	if ( n_nan_linear ) {
