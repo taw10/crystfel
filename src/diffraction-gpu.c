@@ -531,7 +531,7 @@ struct gpu_context *setup_gpu(int no_sfac,
 	}
 	free(flags_ptr);
 
-	gctx->prog = load_program_from_string(data_diffraction_cl,
+	gctx->prog = load_program_from_string((char *)data_diffraction_cl,
 	                                      data_diffraction_cl_len, gctx->ctx,
 	                                      dev, &err, cflags, insert_stuff);
 	if ( err != CL_SUCCESS ) {
