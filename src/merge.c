@@ -368,7 +368,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double p, w, corr, res;
+		double w, corr, res;
 		signed int h, k, l;
 		Reflection *match;
 		double I_full;
@@ -384,13 +384,10 @@ double residual(Crystal *cr, const RefList *full, int free,
 
 		if ( get_redundancy(match) < 2 ) continue;
 
-		p = get_partiality(refl);
-		//if ( p < 0.2 ) continue;
-
 		corr = get_lorentz(refl) / (G * exp(-B*res*res));
 		int1 = get_intensity(refl) * corr;
-		int2 = p*I_full;
-		w = p;
+		int2 = get_partiality(refl)*I_full;
+		w = 1.0;
 
 		num += fabs(int1 - int2) * w;
 		den += fabs(int1 + int2) * w/2.0;
