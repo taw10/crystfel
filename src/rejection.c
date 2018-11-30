@@ -143,11 +143,7 @@ static int calculate_refl_mean_var(RefList *full)
 
 			G = crystal_get_osf(c->contrib_crystals[j]);
 			B = crystal_get_Bfac(c->contrib_crystals[j]);
-			Ii = get_intensity(c->contribs[j]);
-
-			/* Total (multiplicative) correction factor */
-			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(c->contribs[j])
-			          / get_partiality(c->contribs[j]);
+			Ii = correct_reflection(c->contribs[j], G, B, res);
 
 			Ex += Ii - K;
 			Ex2 += (Ii - K) * (Ii - K);
@@ -232,16 +228,13 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		while ( exrefl != NULL ) {
 
 			double G, B;
-			double Ii = get_intensity(exrefl);
 
 			G = crystal_get_osf(exclude);
 			B = crystal_get_Bfac(exclude);
 
 			if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
 
-				/* Total (multiplicative) correction factor */
-				Ii *= 1.0/G * exp(B*res*res) * get_lorentz(exrefl)
-				          / get_partiality(exrefl);
+				double Ii = correct_reflection(exrefl, G, B, res);
 
 				/* Remove contribution of this reflection */
 				Ex -= Ii - K;

@@ -47,6 +47,12 @@ extern RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
                                   int min_meas, double push_res, int use_weak,
                                   int ln_merge);
 
+extern double correct_reflection_nopart(Reflection *refl, double osf,
+                                        double Bfac, double res);
+
+extern double correct_reflection(Reflection *refl, double osf, double Bfac,
+                                 double res);
+
 extern double residual(Crystal *cr, const RefList *full, int free,
                        int *pn_used, const char *filename);
 

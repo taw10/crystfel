@@ -638,7 +638,7 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 	{
 		signed int h, k, l;
 		double pobs, pcalc;
-		double res, corr, Ipart;
+		double res, Ipart;
 		Reflection *match;
 
 		if ( !get_flag(refl) ) continue;  /* Not free-flagged */
@@ -660,8 +660,7 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 		pcalc = get_partiality(refl);
 
 		/* Observed partiality */
-		corr = G * exp(B*res*res) * get_lorentz(refl);
-		Ipart = get_intensity(refl) * corr;
+		Ipart = correct_reflection_nopart(refl, G, B, res);
 		pobs = Ipart / get_intensity(match);
 
 		fprintf(fh, "%5i %4i %4i %4i %e %e %8.3f %8.3f %s\n",

@@ -187,7 +187,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		Reflection *f;
 		signed int h, k, l;
 		double mean, sumweight, M2, temp, delta, R;
-		double corr, res, w;
+		double res, w;
 		struct reflection_contributions *c;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
@@ -217,25 +217,16 @@ static void run_merge_job(void *vwargs, int cookie)
 			continue;
 		}
 
-		/* Total (multiplicative) correction factor */
-		corr = 1.0/G * exp(B*res*res) * get_lorentz(refl)
-		        / get_partiality(refl);
-		if ( isnan(corr) ) {
-			ERROR("NaN corr:\n");
-			ERROR("G = %f, B = %e\n", G, B);
-			ERROR("res = %e\n", res);
-			ERROR("p = %f\n", get_partiality(refl));
-			unlock_reflection(f);
-			continue;
-		}
-
 		/* Reflections count less the more they have to be scaled up */
 		w = get_partiality(refl);
 
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
-		if (ln_merge) delta = log(get_intensity(refl)*corr) - mean;
-		else delta = get_intensity(refl)*corr - mean;
+		if ( ln_merge ) {
+			delta = log(correct_reflection(refl, G, B, res)) - mean;
+		} else {
+			delta = correct_reflection(refl, G,  B, res) - mean;
+		}
 		R = delta * w / temp;
 		set_intensity(f, mean + R);
 		set_temp2(f, M2 + sumweight * delta * R);
@@ -352,6 +343,25 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 }
 
 
+/* Correct intensity in pattern for scaling and Lorentz factors,
+ *  but not partiality nor polarisation */
+double correct_reflection_nopart(Reflection *refl, double osf, double Bfac,
+                                 double res)
+{
+	double corr = osf * exp(-Bfac*res*res);
+	return (get_intensity(refl) / corr) / get_lorentz(refl);
+}
+
+
+/* Correct intensity in pattern for scaling, partiality and Lorentz factors,
+ *  but not polarisation */
+double correct_reflection(Reflection *refl, double osf, double Bfac, double res)
+{
+	double Ipart = correct_reflection_nopart(refl, osf, Bfac, res);
+	return Ipart / get_partiality(refl);
+}
+
+
 double residual(Crystal *cr, const RefList *full, int free,
                 int *pn_used, const char *filename)
 {
@@ -368,7 +378,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double w, corr, res;
+		double w, res;
 		signed int h, k, l;
 		Reflection *match;
 		double I_full;
@@ -384,8 +394,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 
 		if ( get_redundancy(match) < 2 ) continue;
 
-		corr = get_lorentz(refl) / (G * exp(-B*res*res));
-		int1 = get_intensity(refl) * corr;
+		int1 = correct_reflection_nopart(refl, G, B, res);
 		int2 = get_partiality(refl)*I_full;
 		w = 1.0;
 
