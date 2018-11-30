@@ -143,11 +143,7 @@ static int calculate_refl_mean_var(RefList *full)
 
 			G = crystal_get_osf(c->contrib_crystals[j]);
 			B = crystal_get_Bfac(c->contrib_crystals[j]);
-			Ii = get_intensity(c->contribs[j]);
-
-			/* Total (multiplicative) correction factor */
-			Ii *= 1.0/G * exp(B*res*res) * get_lorentz(c->contribs[j])
-			          / get_partiality(c->contribs[j]);
+			Ii = correct_reflection(c->contribs[j], G, B, res);
 
 			Ex += Ii - K;
 			Ex2 += (Ii - K) * (Ii - K);
@@ -232,16 +228,13 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		while ( exrefl != NULL ) {
 
 			double G, B;
-			double Ii = get_intensity(exrefl);
 
 			G = crystal_get_osf(exclude);
 			B = crystal_get_Bfac(exclude);
 
 			if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
 
-				/* Total (multiplicative) correction factor */
-				Ii *= 1.0/G * exp(B*res*res) * get_lorentz(exrefl)
-				          / get_partiality(exrefl);
+				double Ii = correct_reflection(exrefl, G, B, res);
 
 				/* Remove contribution of this reflection */
 				Ex -= Ii - K;
@@ -289,6 +282,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 	double mean, sd;
 	int nref = 0;
 	int nnan = 0;
+	int nnon = 0;
 
 	if ( calculate_refl_mean_var(full) ) {
 		STATUS("No reflection contributions for deltaCChalf "
@@ -315,12 +309,21 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		//STATUS("Without = %f", cchalfi*100.0);
 		//STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
 		//STATUS("(nref = %i)\n", nref);
-		vals[i] = cchalf - cchalfi;
-		if ( isnan(vals[i]) || isinf(vals[i]) ) {
+		if ( nref == 0 ) {
 			vals[i] = 0.0;
-			nnan++;
+			nnon++;
+		} else {
+			vals[i] = cchalf - cchalfi;
+			if ( isnan(vals[i]) || isinf(vals[i]) ) {
+				vals[i] = 0.0;
+				nnan++;
+			}
 		}
 		progress_bar(i, n-1, "Calculating deltaCChalf");
+	}
+	if ( nnon > 0 ) {
+		STATUS("WARNING: %i patterns had no reflections in deltaCChalf "
+		       "calculation (I set deltaCChalf=zero for them)\n", nnon);
 	}
 	if ( nnan > 0 ) {
 		STATUS("WARNING: %i NaN or inf deltaCChalf values were "

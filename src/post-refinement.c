@@ -559,7 +559,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		double corr, Ipart, Ifull, pobs, pcalc;
+		double Ipart, Ifull, pobs, pcalc;
 		double res;
 		signed int h, k, l;
 		Reflection *match;
@@ -573,8 +573,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 		/* Don't calculate pobs if reference reflection is weak */
 		if ( fabs(get_intensity(match)) / get_esd_intensity(match) < 3.0 ) continue;
 
-		corr = G * exp(B*res*res) * get_lorentz(refl);
-		Ipart = get_intensity(refl) * corr;
+		Ipart = correct_reflection_nopart(refl, G, B, res);
 		Ifull = get_intensity(match);
 		pobs = Ipart / Ifull;
 		pcalc = get_partiality(refl);
