@@ -3,11 +3,11 @@
  *
  * Simple profiling according to wall clock time
  *
- * Copyright © 2016 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2016-2018 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *  2016 Thomas White <taw@physics.org>
+ *  2016-2018 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -173,6 +173,7 @@ static const char *taccname(enum timeaccount acc)
 		case TACC_ENDCHECK : return "Checking end";
 		case TACC_WAKEUP : return "Waking up workers";
 		case TACC_WAITPID : return "Waiting on workers";
+		case TACC_WAITFILE : return "Waiting for image file";
 		case TACC_HDF5OPEN : return "Opening image file";
 		case TACC_HDF5READ : return "Reading image file";
 		case TACC_FILTER : return "Image filters";

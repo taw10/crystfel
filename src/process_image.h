@@ -113,6 +113,7 @@ struct index_args
 	struct xgandalf_options xgandalf_opts;
 	struct felix_options felix_opts;
 	struct spectrum *spectrum;
+	signed int wait_for_file; /* -1 means wait forever */
 };
 
 

@@ -215,6 +215,11 @@ Display timing data for performance monitoring.
 .PD
 Put the temporary folder under \fIpath\fR.
 
+.PD 0
+.IP \fB--wait-for-file=\fIn\fR
+.PD
+Wait at most \fIn\fR seconds for each image file in the input list to be created before trying to process it.  This is useful for some automated processing pipelines.  It obviously only really works for single-frame files.  If a file exists but is not readable when this option is set non-zero, a second attempt will be made after ten seconds.  This is to allow to incompletely written files.  A value of -1 means to wait forever.  The default value is \fB--wait-for-file=0\fR.
+
 .SH PEAK SEARCH OPTIONS
 .PD 0
 .IP \fB--peaks=\fR\fImethod\fR

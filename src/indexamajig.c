@@ -85,6 +85,7 @@ static void show_help(const char *s)
 "     --highres=<n>         Absolute resolution cutoff in Angstroms\n"
 "     --profile             Show timing data for performance monitoring\n"
 "     --temp-dir=<path>     Put the temporary folder under <path>\n"
+"     --wait-for-file=<n>   Time to wait for each file before processing\n"
 "\nPeak search options:\n\n"
 "     --peaks=<method>      Peak search method (zaef,peakfinder8,peakfinder9,hdf5,cxi)\n"
 "                            Default: zaef\n"
@@ -382,6 +383,7 @@ int main(int argc, char *argv[])
 	iargs.copyme = new_imagefile_field_list();
 	iargs.min_peaks = 0;
 	iargs.overpredict = 0;
+	iargs.wait_for_file = 0;
 	if ( iargs.copyme == NULL ) {
 		ERROR("Couldn't allocate HDF5 field list.\n");
 		return 1;
@@ -528,6 +530,7 @@ int main(int argc, char *argv[])
 		{"xgandalf-max-lattice-vector-length",       1, NULL, 356},
 		{"xgandalf-max-lvl",                         1, NULL, 356},
 	        {"spectrum-file",                            1, NULL, 357},
+		{"wait-for-file",            1, NULL,        358},
 
 		{0, 0, NULL, 0}
 	};
@@ -920,6 +923,14 @@ int main(int argc, char *argv[])
 
 			case 357:
 			spectrum_fn = strdup(optarg);
+			break;
+
+			case 358:
+			if (sscanf(optarg, "%d", &iargs.wait_for_file) != 1)
+			{
+				ERROR("Invalid value for --wait-for-file\n");
+				return 1;
+			}
 			break;
 
 			case 0 :

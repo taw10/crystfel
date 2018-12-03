@@ -37,6 +37,7 @@
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_sort.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -102,7 +103,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    int serial, struct sb_shm *sb_shared, TimeAccounts *taccs,
                    char *last_task)
 {
-	int check;
 	struct imagefile *imfile;
 	struct image image;
 	int i;
@@ -111,6 +111,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	char *rn;
 	float **prefilter;
 	int any_crystals;
+	int wait_message_done = 0;
+	int read_retry_done = 0;
+	signed int file_wait_time = iargs->wait_for_file;
 
 	image.features = NULL;
 	image.copyme = iargs->copyme;
@@ -124,22 +127,81 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.serial = serial;
 	image.indexed_by = INDEXING_NONE;
 
+	time_accounts_set(taccs, TACC_WAITFILE);
+	set_last_task(last_task, "wait for file");
+
+	do {
+
+		struct stat statbuf;
+
+		sb_shared->pings[cookie]++;
+		r = stat(image.filename, &statbuf);
+		if ( r ) {
+
+			if ( (iargs->wait_for_file != 0)
+			  && (file_wait_time != 0) )
+			{
+
+				if ( !wait_message_done ) {
+					STATUS("Waiting for '%s'\n",
+					       image.filename);
+					wait_message_done = 1;
+				}
+
+				sleep(1);
+				if ( iargs->wait_for_file != -1 ) {
+					file_wait_time--;
+				}
+				continue;
+
+			}
+
+			ERROR("File %s not found\n", image.filename);
+			return;
+		}
+
+	} while ( r );
+
 	time_accounts_set(taccs, TACC_HDF5OPEN);
 	set_last_task(last_task, "open file");
 	sb_shared->pings[cookie]++;
-	imfile = imagefile_open(image.filename);
-	if ( imfile == NULL ) {
-		ERROR("Couldn't open file: %s\n", image.filename);
-		return;
-	}
 
-	time_accounts_set(taccs, TACC_HDF5READ);
-	set_last_task(last_task, "read file");
-	sb_shared->pings[cookie]++;
-	check = imagefile_read(imfile, &image, image.event);
-	if ( check ) {
-		return;
-	}
+	do {
+		imfile = imagefile_open(image.filename);
+		if ( imfile == NULL ) {
+			if ( iargs->wait_for_file && !read_retry_done ) {
+				read_retry_done = 1;
+				r = 1;
+				STATUS("File '%s' exists but could not be opened."
+				       "  Trying again after 10 seconds.\n",
+				       image.filename);
+				sleep(10);
+				continue;
+			}
+			ERROR("Couldn't open file: %s\n", image.filename);
+			return;
+		}
+
+		time_accounts_set(taccs, TACC_HDF5READ);
+		set_last_task(last_task, "read file");
+		sb_shared->pings[cookie]++;
+
+		r = imagefile_read(imfile, &image, image.event);
+		if ( r ) {
+			if ( iargs->wait_for_file && !read_retry_done ) {
+				read_retry_done = 1;
+				imagefile_close(imfile);
+				STATUS("File '%s' exists but could not be read."
+				       "  Trying again after 10 seconds.\n",
+				       image.filename);
+				sleep(10);
+				continue;
+			}
+			ERROR("Couldn't open file: %s\n", image.filename);
+			return;
+		}
+
+	} while ( r );
 
 	/* Take snapshot of image before applying horrible noise filters */
 	time_accounts_set(taccs, TACC_FILTER);
