@@ -122,55 +122,55 @@ struct rg_collection
  */
 struct panel
 {
-        char     name[1024];  /* Name for this panel */
+	char     name[1024];  /* Name for this panel */
 
-        double   cnx;       /* Location of corner (min_fs,min_ss) in pixels */
-        double   cny;
-        double   coffset;
-        double   clen;     /* Camera length in metres */
-        char    *clen_from;
-        char    *mask;
-        char    *mask_file;
+	double   cnx;       /* Location of corner (min_fs,min_ss) in pixels */
+	double   cny;
+	double   coffset;
+	double   clen;     /* Camera length in metres */
+	char    *clen_from;
+	char    *mask;
+	char    *mask_file;
 	char    *satmap;
 	char    *satmap_file;
-        double   res;      /* Resolution in pixels per metre */
-        char     badrow;   /* 'x' or 'y' */
-        int      no_index; /* Don't index peaks in this panel if non-zero */
-        double   adu_per_photon;   /* Number of ADU per photon */
-        double   max_adu;  /* Treat pixel as unreliable if higher than this */
-        char    *data;
+	double   res;      /* Resolution in pixels per metre */
+	char     badrow;   /* 'x' or 'y' */
+	int      no_index; /* Don't index peaks in this panel if non-zero */
+	double   adu_per_photon;   /* Number of ADU per photon */
+	double   max_adu;  /* Treat pixel as unreliable if higher than this */
+	char    *data;
 
-        double   adu_per_eV;   /* Number of ADU per eV */
+	double   adu_per_eV;   /* Number of ADU per eV */
 
-        struct dim_structure *dim_structure;
+	struct dim_structure *dim_structure;
 
-        double fsx;
-        double fsy;
-        double fsz;
-        double ssx;
-        double ssy;
-        double ssz;
+	double fsx;
+	double fsy;
+	double fsz;
+	double ssx;
+	double ssy;
+	double ssz;
 
-        double rail_x;
-        double rail_y;
-        double rail_z;
-        double clen_for_centering;
+	double rail_x;
+	double rail_y;
+	double rail_z;
+	double clen_for_centering;
 
-        double xfs;
-        double yfs;
-        double xss;
-        double yss;
+	double xfs;
+	double yfs;
+	double xss;
+	double yss;
 
-        /* Position of the panel in the data block in the file.  The panels may
-         * get moved around when the file is loaded (see hdf5_read2()),
-         * especially if the panels come from different HDF5 elements. */
-        int orig_min_fs;
-        int orig_max_fs;
-        int orig_min_ss;
-        int orig_max_ss;
+	/* Position of the panel in the data block in the file.  The panels may
+	* get moved around when the file is loaded (see hdf5_read2()),
+	* especially if the panels come from different HDF5 elements. */
+	int orig_min_fs;
+	int orig_max_fs;
+	int orig_min_ss;
+	int orig_max_ss;
 
-        int w;  /* Width, calculated as max_fs-min_fs+1 */
-        int h;  /* Height, calculated as max_ss-min_ss+1 */
+	int w;  /* Width, calculated as max_fs-min_fs+1 */
+	int h;  /* Height, calculated as max_ss-min_ss+1 */
 };
 
 
