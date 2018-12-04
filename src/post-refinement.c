@@ -851,7 +851,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 			        rad2deg(get_actual_val(min->x, priv.initial, priv.rv, 1)),
 			        get_actual_val(min->x, priv.initial, priv.rv, 2),
 			        get_actual_val(min->x, priv.initial, priv.rv, 3)*1e10);
-			fclose(fh);
 		}
 
 		/* Apply the final shifts */
@@ -882,6 +881,10 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	if ( crystal_get_profile_radius(cr) > 5e9 ) {
 		ERROR("Very large radius: crystal %i\n", serial);
+	}
+
+	if ( fh != NULL ) {
+		fclose(fh);
 	}
 
 	gsl_multimin_fminimizer_free(min);
