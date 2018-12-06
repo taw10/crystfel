@@ -42,7 +42,7 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "crystfel/detector.h"
+#include "detector.h"
 
 
 static void show_help(const char *s)
