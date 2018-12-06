@@ -344,6 +344,14 @@ target_include_directories(whirligig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(whirligig ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES whirligig)
 
+# ----------------------------------------------------------------------
+# make_pixelmap
+
+set(MAKE_PIXELMAP_SOURCES src/make_pixelmap.c)
+add_executable(make_pixelmap ${MAKE_PIXELMAP_SOURCES})
+target_include_directories(make_pixelmap PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(make_pixelmap ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES make_pixelmap)
 
 # ----------------------------------------------------------------------
 # Install targets
@@ -376,6 +384,7 @@ install(FILES
 	doc/man/process_hkl.1
 	doc/man/render_hkl.1
 	doc/man/whirligig.1
+	doc/man/make_pixelmap.1
 	DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
 )
 

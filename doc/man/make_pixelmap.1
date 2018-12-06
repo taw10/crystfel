@@ -1,0 +1,63 @@
+.\"
+.\" make_pixelmap man page
+.\"
+.\" Copyright © 2015-2018 Deutsches Elektronen-Synchrotron DESY,
+.\"                       a research centre of the Helmholtz Association.
+.\"
+.\" Part of CrystFEL - crystallography with a FEL
+.\"
+
+.TH MAKE_PIXELMAP 1
+.SH NAME
+make_pixelmap \- create pixelmap from CrystFEL geometry file
+.SH SYNOPSIS
+.PP
+\fBmake_pixelmap \fR[options] \fIinput.geom
+.PP
+\fBmake_pixelmap --help\fI
+
+.SH DESCRIPTION
+\fBmake_pixelmap\fR takes a CrystFEL geometry file as input, and produces an HDF5 "pixel map" as used by Cheetah and OnDA.  The HDF5 file will contain three arrays, "/x", "/y" and "/z", containing the x, y and z coordinates for each pixel, respectively, in metres, in real space.  The file will also contain "/res" and "/coffset", containing the resolution of the detector (one over the pixel size in metres) and the default coffset value for the detector (or that for the first panel, if there is no default value set).
+.P
+\fBmake_pixelmap\fR currently assumes that the file layout is "slabby", i.e. all of the image data appears in one "slab", with the fs and ss coordinates of each pixel being unique across the entire detector.
+.P
+With \fB--badmap\fR, make_pixelmap will instead write a map of bad pixels according to the bad regions specified in the geometry file.
+
+.SH OPTIONS
+
+.IP \fB--badmap
+.PD
+Create a bad pixel mask instead of a pixel geometry map.  The values to use for good and bad pixels in this map are given by \fB--good-pixel\fR and \fB--bad-pixel\fR respectively.  Note that CrystFEL also has other ways of specifying bad regions, e.g. by providing a separate mask.  This program is only concerned with the regions specified using "bad_" in the geometry file.
+
+.PD 0
+.IP \fB--good-pixel=\fIn
+.IP \fB--bad-pixel=\fIn
+.PD
+Specify the values to use in the mask for good and bad pixels, respectively.  The defaults are \fB--good-pixel=1\fR and \fB--bad-pixel=0\fR.
+
+.PD 0
+.IP "\fB-o \fIoutput.h5\fR"
+.IP \fB--output=\fIoutput.h5\fR
+.PD
+Set the output filename.  The default is \fB--output=pixelmap.h5\fR.
+
+.SH AUTHOR
+This page was written by Thomas White.
+
+.SH REPORTING BUGS
+Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+
+.SH COPYRIGHT AND DISCLAIMER
+Copyright © 2015-2018 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+.P
+make_pixelmap, and this manual, are part of CrystFEL.
+.P
+CrystFEL is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.P
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+.P
+You should have received a copy of the GNU General Public License along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+.SH SEE ALSO
+.BR crystfel (7),
+.BR crystfel_geometry (5)

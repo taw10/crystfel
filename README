@@ -31,6 +31,7 @@ Authors:
   Helen Ginn  <helen@strubi.ox.ac.uk>
   Nicolas Riebesel <nicolas.riebesel@tuhh.de>
   Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
+  Omri Mor <omor1@asu.edu>
 
 CrystFEL is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
@@ -100,7 +101,9 @@ In addition, there is also:
 
 	- render_hkl, for turning reflection lists into pretty graphics.
 
-	- list_events, for creating event lists from multi-event files
+	- list_events, for creating event lists from multi-event files.
+
+	- make_pixelmap, for creating pixel maps for Cheetah, OnDA etc.
 
 There is also a folder full of scripts for achieving many related tasks.
 
