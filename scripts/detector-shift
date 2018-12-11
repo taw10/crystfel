@@ -3,12 +3,13 @@
 #
 # Determine mean detector shift based on prediction refinement results
 #
-# Copyright © 2015-2017 Deutsches Elektronen-Synchrotron DESY,
+# Copyright © 2015-2018 Deutsches Elektronen-Synchrotron DESY,
 #                       a research centre of the Helmholtz Association.
 #
 # Author:
-#    2015-2017 Thomas White <taw@physics.org>
+#    2015-2018 Thomas White <taw@physics.org>
 #    2016      Mamoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
+#    2018      Chun Hong Yoon
 #
 
 import sys
@@ -59,6 +60,42 @@ f.close()
 mean_x = sum(x_shifts) / len(x_shifts)
 mean_y = sum(y_shifts) / len(y_shifts)
 print('Mean shifts: dx = {:.2} mm,  dy = {:.2} mm'.format(mean_x,mean_y))
+print('Shifts will be applied to geometry file when you close the graph window')
+print('Click anywhere on the graph to override the detector shift')
+
+def plotNewCentre(x, y):
+    circle1 = plt.Circle((x,y),.1,color='r',fill=False)
+    fig.gca().add_artist(circle1)
+    plt.plot(x, y, 'b8', color='m')
+    plt.grid(True)
+
+def onclick(event):
+    print('New shifts: dx = {:.2} mm,  dy = {:.2} mm'.format(event.xdata, event.ydata))
+    print('Shifts will be applied to geometry file when you close the graph window')
+    mean_x = event.xdata
+    mean_y = event.ydata
+    plotNewCentre(mean_x, mean_y)
+
+nbins = 200
+H, xedges, yedges = np.histogram2d(x_shifts,y_shifts,bins=nbins)
+H = np.rot90(H)
+H = np.flipud(H)
+Hmasked = np.ma.masked_where(H==0,H)
+
+# Plot 2D histogram using pcolor
+plt.ion()
+fig2 = plt.figure()
+cid = fig2.canvas.mpl_connect('button_press_event', onclick)
+plt.pcolormesh(xedges,yedges,Hmasked)
+plt.title('Detector shifts according to prediction refinement')
+plt.xlabel('x shift / mm')
+plt.ylabel('y shift / mm')
+plt.plot(0, 0, 'bH', color='c')
+fig = plt.gcf()
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Counts')
+plotNewCentre(mean_x, mean_y)
+plt.show(block=True)
 
 # Apply shifts to geometry
 if have_geom:
@@ -123,26 +160,4 @@ if have_geom:
 
     g.close()
     h.close()
-
-nbins = 200
-H, xedges, yedges = np.histogram2d(x_shifts,y_shifts,bins=nbins)
-H = np.rot90(H)
-H = np.flipud(H)
-Hmasked = np.ma.masked_where(H==0,H)
-
-# Plot 2D histogram using pcolor
-fig2 = plt.figure()
-plt.pcolormesh(xedges,yedges,Hmasked)
-plt.title('Detector shifts according to prediction refinement')
-plt.xlabel('x shift / mm')
-plt.ylabel('y shift / mm')
-circle1 = plt.Circle((mean_x,mean_y),.1,color='r',fill=False)
-fig = plt.gcf()
-fig.gca().add_artist(circle1)
-cbar = plt.colorbar()
-cbar.ax.set_ylabel('Counts')
-plt.plot(0, 0, 'bH', color='c')
-plt.plot(mean_x, mean_y, 'b8', color='m')
-plt.grid(True)
-plt.show()
 
