@@ -257,7 +257,7 @@ list(APPEND CRYSTFEL_EXECUTABLES list_events)
 # indexamajig
 
 set(INDEXAMAJIG_SOURCES src/indexamajig.c src/im-sandbox.c src/process_image.c
-                        src/time-accounts.c)
+                        src/time-accounts.c src/zmq.c)
 
 add_executable(indexamajig ${INDEXAMAJIG_SOURCES})
 target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
