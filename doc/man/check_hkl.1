@@ -70,6 +70,8 @@ Perform an L-test for twinning.  The shell file will contain the values of |L|, 
 .IP \fB--wilson\fR
 .PD
 Calculate a Wilson plot.  The shell file will contain the values of s^2 and ln(<I>/eE) (and also the shell number and d in Angstroms for your convenience).  The B factor will be calculated using data above 3.2 A resolution and displayed on the terminal.
+.IP
+Note that the atoms/species in the unit cell need to be known in order to calculate a Wilson plot.  The average stoichiometry of protein will be used by check_hkl.  This means that the results will be inaccurate for non-protein samples.
 
 .PD 0
 .IP \fB--ignore-negs\fR
