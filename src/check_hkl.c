@@ -95,6 +95,11 @@ static int add_ltest(RefList *list, double i1, int *bins, int nbins,
 
 	i2 = get_intensity(refl);
 	L = (i1-i2) / (i1+i2);
+	if ( isnan(L) ) {
+		/* This happens with --zero-negs and two negative intensities,
+		 * because L=(0-0)/(0+0) */
+		return 0;
+	}
 
 	bin = fabs(L)/step;
 	if ( (bin < 0) || (isnan(L)) ) {
