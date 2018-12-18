@@ -1,26 +1,31 @@
-Changes in this development version up to commit 6c18490d
+Changes in this development version up to commit f23f5815
 ---------------------------------------------------------
 
-- partialator: Add deltaCChalf rejection test
 - Add support for peakfinder9
 - Add support for XGANDALF indexer
 - Switch to CMake build system
 - Handle 16bpp and gzipped CBF files
+- Introduce make_pixelmap as a core CrystFEL program
+- indexamajig: Add --wait-for-file
 - indexamajig: Clean up temporary folders on clean exit
 - indexamajig: Name and shame slow processing stages
-- Add scripts/euxfel-train-analysis, find-multiples and transfer-geom
 - indexamajig: Warn if a frame takes more than 10 minutes to process
+- Multiple fixes for XDS indexer interface
+- Fix for indexing centered cells with Mosflm without prior cell parameters
+- partialator: Fixes and improvements to post-refinement
+- partialator: Add deltaCChalf rejection test
+- Add scripts: euxfel-train-analysis, find-multiples and transfer-geom
+- detector-shift: Click to choose different center
 - check_{peak_detection,near_bragg}: Warn if stream is older than image
 - Some fixes for peakfinder8
-- Use GTK3 if available
 - turbo-index-lsf: Match turbo-index-slurm as closely as possible
 - sum-peaks: Accept "-" for stdin
-- Multiple fixes for XDS indexer interface
 - geoptimiser: Fix calculation of displacement error
+- check_hkl: Avoid NaN result for L-test with --zero-negs
 - compare_hkl: Fix an edge case in calculation of anomalous figures of merit
-- Fix for indexing centered cells with Mosflm without prior cell parameters
 - Handle numbers (e.g. "k-2h") in symmetry operator specifications (e.g.
   ambigator)
+- Use GTK3 if available
 
 
 CrystFEL version 0.7.0, 17th May 2018
