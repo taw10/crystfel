@@ -548,6 +548,19 @@ char *safe_basename(const char *in)
 }
 
 
+void strip_extension(char *bfn)
+{
+	size_t r = strlen(bfn)-1;
+	while ( r > 0 ) {
+		if ( bfn[r] == '.') {
+			bfn[r] = '\0';
+			return;
+		}
+		r--;
+	}
+}
+
+
 /* Force the linker to bring in CBLAS to make GSL happy */
 void utils_fudge_gslcblas()
 {

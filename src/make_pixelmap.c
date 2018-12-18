@@ -53,7 +53,7 @@ static void show_help(const char *s)
 "\n"
 " -h, --help                Display this help message.\n"
 "\n"
-" -o, --output=<filename>   Output filename.  Default: pixelmap.h5.\n"
+" -o, --output=<filename>   Output filename.  Default: <input>.h5.\n"
 "     --badmap              Generate bad pixel map instead of geometry\n"
 "     --good-pixel=<n>      Value for good pixels in bad map.  Default 1.\n"
 "     --bad-pixel=<n>       Value for bad pixels in bad map.  Default 0.\n"
@@ -240,7 +240,11 @@ int main(int argc, char *argv[])
 	input_file = strdup(argv[optind++]);
 
 	if ( output_file == NULL ) {
-		output_file = strdup("pixelmap.h5");
+		size_t len = strlen(input_file);
+		output_file = malloc(len+4);
+		strncpy(output_file, input_file, len-1);
+		strip_extension(output_file);
+		strcat(output_file, ".h5");
 	}
 
 	/* Load geometry */

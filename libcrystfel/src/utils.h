@@ -218,6 +218,7 @@ extern pthread_mutex_t stderr_lock;
 
 extern char *check_prefix(char *prefix);
 extern char *safe_basename(const char *in);
+extern void strip_extension(char *bfn);
 
 
 /* ------------------------------ Useful stuff ------------------------------ */

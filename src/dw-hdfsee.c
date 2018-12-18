@@ -1703,19 +1703,6 @@ static gint displaywindow_save_response(GtkWidget *d, gint response,
 }
 
 
-static void strip_extension(char *bfn)
-{
-	size_t r = strlen(bfn)-1;
-	while ( r > 0 ) {
-		if ( bfn[r] == '.') {
-			bfn[r] = '\0';
-			return;
-		}
-		r--;
-	}
-}
-
-
 static void move_back_one(char *a)
 {
 	int i;
