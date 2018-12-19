@@ -134,10 +134,28 @@ installed from your distribution's package manager.  Be sure to install the
 development files for each package, which will have a name like "gtk+-2.0-dev"
 or "gtk+-2.0-devel", depending on which distribution you use.
 
+If external libraries have been installed in non-standard locations, you can set
+the path like this, for example for Xgandalf:
+cmake -DXGANDALF_INCLUDES=/path/to/xgandalf/include \
+      -DXGANDALF_LIBRARIES=/path/to/xgandalf/lib/libxgandalf.so
+
+The path to HDF5 can be set similarly:
+cmake -DHDF5_ROOT=/path/to/hdf5 (... /include, /lib etc)
+
+Or for CBF, use one of:
+-DCBF_CBF_INCLUDES=/path/to/cbflib/include  (... /cbf/cbf.h)
+-DCBFLIB_CBF_INCLUDES=/path/to/cbflib/include  (... /cbflib/cbf.h)
+and:
+-DCBF_LIBRARIES=/path/to/libcbf.so
+
+To install CrystFEL in a custom location, use:
+-DCMAKE_INSTALL_PREFIX=/path/for/crystfel/installation
+
 If you get an error mentioning fftw3 and telling you to recompile with -fPIC,
 then your version of FFTW3 is not compiled in a suitable way.  You'll need to
 install it again (from source) adding "--enable-shared" to its ./configure
 command line.
+
 
 
 Funding acknowledgements
