@@ -59,7 +59,11 @@ link_directories(${GTK_LIBRARY_DIRS})
 pkg_search_module(CAIRO cairo)
 pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+include(CheckCCompilerFlag)
+check_c_compiler_flag("-fdiagnostics-color=always" HAVE_DIAG_COLOR)
+if (HAVE_DIAG_COLOR)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+endif (HAVE_DIAG_COLOR)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_definitions(-DHAVE_CONFIG_H)
