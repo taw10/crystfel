@@ -675,7 +675,7 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 		fh = fmemopen(buf, len, "rb");
 		if ( fh == NULL ) return NULL;
 
-		gzclose_r(gzfh);
+		gzclose(gzfh);
 
 	} else {
 		/* Don't know how we ended up here */
@@ -904,7 +904,7 @@ signed int is_cbfgz_file(const char *filename)
 	gzfh = gzopen(filename, "rb");
 	if ( gzfh == NULL ) return -1;
 	if ( gzgets(gzfh, line, 1024) == NULL ) return -1;
-	gzclose_r(gzfh);
+	gzclose(gzfh);
 
 	if ( strstr(line, "CBF") == NULL ) {
 		return 0;
