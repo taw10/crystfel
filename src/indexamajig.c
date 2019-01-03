@@ -1288,8 +1288,8 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
-	create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	               st, tmpdir, serial_start);
+	r = create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
+	                   st, tmpdir, serial_start);
 
 	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);
@@ -1302,5 +1302,9 @@ int main(int argc, char *argv[])
 	close_stream(st);
 	cleanup_indexing(iargs.ipriv);
 
-	return 0;
+	if ( r ) {
+		return 0;
+	} else {
+		return 1;  /* No patterns processed */
+	}
 }

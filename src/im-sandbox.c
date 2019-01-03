@@ -955,9 +955,11 @@ char *create_tempdir(const char *temp_location)
 }
 
 
-void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
-                    int config_basename, FILE *fh,
-                    Stream *stream, const char *tmpdir, int serial_start)
+/* Returns the number of frames processed (not necessarily indexed).
+ * If the return value is zero, something is probably wrong. */
+int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
+                   int config_basename, FILE *fh,
+                   Stream *stream, const char *tmpdir, int serial_start)
 {
 	int i;
 	struct sandbox *sb;
@@ -977,7 +979,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb = calloc(1, sizeof(struct sandbox));
 	if ( sb == NULL ) {
 		ERROR("Couldn't allocate memory for sandbox.\n");
-		return;
+		return 0;
 	}
 
 	sb->n_processed_last_stats = 0;
@@ -994,7 +996,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	if ( setup_shm(sb) ) {
 		ERROR("Failed to set up SHM.\n");
 		free(sb);
-		return;
+		return 0;
 	}
 
 	sb->shared->n_processed = 0;
@@ -1007,7 +1009,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	                         S_IRUSR | S_IWUSR, 0);
 	if ( sb->queue_sem == SEM_FAILED ) {
 		ERROR("Failed to create semaphore: %s\n", strerror(errno));
-		return;
+		return 0;
 	}
 
 	sb->pids = calloc(n_proc, sizeof(pid_t));
@@ -1017,7 +1019,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	  || (sb->last_response == NULL) )
 	{
 		ERROR("Couldn't allocate memory for PIDs.\n");
-		return;
+		return 0;
 	}
 
 	/* Fill the queue */
@@ -1039,7 +1041,7 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	r = sigaction(SIGCHLD, &sa, NULL);
 	if ( r == -1 ) {
 	        ERROR("Failed to set signal handler!\n");
-	        return;
+	        return 0;
 	}
 
 	/* Set up signal handler to clean up semaphore on exit */
@@ -1049,12 +1051,12 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	r = sigaction(SIGINT, &sa, NULL);
 	if ( r == -1 ) {
 	        ERROR("Failed to set signal handler!\n");
-	        return;
+	        return 0;
 	}
 	r = sigaction(SIGQUIT, &sa, NULL);
 	if ( r == -1 ) {
 	        ERROR("Failed to set signal handler!\n");
-	        return;
+	        return 0;
 	}
 
 	taccs = time_accounts_init();
@@ -1145,9 +1147,12 @@ void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	       sb->shared->n_processed, sb->shared->n_hadcrystals,
 	       100.0 * sb->shared->n_hadcrystals / sb->shared->n_processed,
 	       sb->shared->n_crystals);
+	r = sb->shared->n_processed;
 
 	delete_temporary_folder(sb->tmpdir, n_proc);
 
 	munmap(sb->shared, sizeof(struct sb_shm));
 	free(sb);
+
+	return r;
 }

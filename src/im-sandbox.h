@@ -80,8 +80,8 @@ extern char *create_tempdir(const char *temp_location);
 
 extern void set_last_task(char *lt, const char *task);
 
-extern void create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
-                           int config_basename, FILE *fh,  Stream *stream,
-                           const char *tempdir, int serial_start);
+extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
+                          int config_basename, FILE *fh,  Stream *stream,
+                          const char *tempdir, int serial_start);
 
 #endif /* IM_SANDBOX_H */
