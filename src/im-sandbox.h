@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2018 Thomas White <taw@physics.org>
+ *   2010-2019 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -83,6 +83,7 @@ extern void set_last_task(char *lt, const char *task);
 
 extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           int config_basename, FILE *fh,  Stream *stream,
-                          const char *tempdir, int serial_start);
+                          const char *tempdir, int serial_start,
+                          const char *zmq_address);
 
 #endif /* IM_SANDBOX_H */

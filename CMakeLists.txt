@@ -24,6 +24,20 @@ link_directories (${GLIB_LIBRARY_DIRS})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
+pkg_search_module(MSGPACK msgpack)
+if (MSGPACK_FOUND)
+  message(STATUS "Found Messagepack")
+else ()
+  message(STATUS "MessagePack not found.")
+endif ()
+
+pkg_search_module(ZMQ libzmq)
+if (ZMQ_FOUND)
+  message(STATUS "Found ZMQ")
+else ()
+  message(STATUS "ZMQ not found.")
+endif ()
+
 pkg_search_module(GTK gtk+-3.0)
 if (NOT GTK_FOUND)
 
@@ -257,12 +271,22 @@ list(APPEND CRYSTFEL_EXECUTABLES list_events)
 # indexamajig
 
 set(INDEXAMAJIG_SOURCES src/indexamajig.c src/im-sandbox.c src/process_image.c
-                        src/time-accounts.c src/zmq.c)
+                        src/time-accounts.c)
+
+if ( ZMQ_FOUND AND MSGPACK_FOUND )
+  list(APPEND INDEXAMAJIG_SOURCES src/im-zmq.c)
+endif ()
 
 add_executable(indexamajig ${INDEXAMAJIG_SOURCES})
 target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(indexamajig ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES indexamajig)
+
+if ( ZMQ_FOUND AND MSGPACK_FOUND )
+  target_include_directories(indexamajig PRIVATE ${ZMQ_INCLUDE_DIR} ${MSGPACK_INCLUDE_DIR})
+  target_link_libraries(indexamajig ${ZMQ_LIBRARIES} ${MSGPACK_LIBRARIES})
+endif ()
+
 
 # ----------------------------------------------------------------------
 # get_hkl

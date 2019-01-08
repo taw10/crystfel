@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2019 Thomas White <taw@physics.org>
  *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
  *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
@@ -36,6 +36,8 @@
 #endif
 
 struct index_args;
+
+#include <msgpack.h>
 
 #include "integration.h"
 #include "im-sandbox.h"
@@ -122,6 +124,7 @@ struct pattern_args
 {
 	/* "Input" */
 	struct filename_plus_event *filename_p_e;
+	msgpack_object *msgpack_obj;
 };
 
 

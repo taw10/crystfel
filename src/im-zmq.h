@@ -3,13 +3,13 @@
  *
  * ZMQ data interface
  *
- * Copyright © 2017-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2017-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2018 Thomas White <taw@physics.org>
- *   2014 Valerio Mariani
- *   2017 Stijna de Graaf
+ *   2018-2019 Thomas White <taw@physics.org>
+ *   2014      Valerio Mariani
+ *   2017      Stijn de Graaf
  *
  * This file is part of CrystFEL.
  *
@@ -40,9 +40,18 @@
 
 #include "image.h"
 
+extern struct im_zmq *im_zmq_connect(const char *zmq_address);
+
+extern msgpack_object *im_zmq_fetch(struct im_zmq *z);
+
+extern void im_zmq_clean(struct im_zmq *z);
+
+extern void im_zmq_shutdown(struct im_zmq *z);
+
 extern int get_peaks_onda(msgpack_object *obj, struct image *image,
                           int half_pixel_shift);
 
 extern int obj_read(msgpack_object *obj, struct image *image);
+
 
 #endif /* CRYSTFEL_ZMQ_H */

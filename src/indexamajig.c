@@ -86,6 +86,7 @@ static void show_help(const char *s)
 "     --profile             Show timing data for performance monitoring\n"
 "     --temp-dir=<path>     Put the temporary folder under <path>\n"
 "     --wait-for-file=<n>   Time to wait for each file before processing\n"
+"     --zmq-msgpack         Receive data in MessagePack format over ZMQ\n"
 "\nPeak search options:\n\n"
 "     --peaks=<method>      Peak search method (zaef,peakfinder8,peakfinder9,hdf5,cxi)\n"
 "                            Default: zaef\n"
@@ -340,6 +341,8 @@ int main(int argc, char *argv[])
 	int if_retry = 1;
 	int serial_start = 1;
 	char *spectrum_fn = NULL;
+	int zmq = 0;
+	char *zmq_address = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -457,6 +460,7 @@ int main(int argc, char *argv[])
 		{"no-multi",           0, &if_multi,                 0},
 		{"multi",              0, &if_multi,                 1},
 		{"overpredict",        0, &iargs.overpredict,        1},
+		{"zmq-msgpack",        0, &zmq,                      1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
@@ -1297,8 +1301,22 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
+	if ( zmq ) {
+		char line[1024];
+		char *rval;
+		rval = fgets(line, 1024, fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to read ZMQ server/port from input.\n");
+			return 1;
+		}
+		chomp(line);
+		zmq_address = strdup(line);
+		/* In future, read multiple addresses and hand them out
+		 * evenly to workers */
+	}
+
 	r = create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	                   st, tmpdir, serial_start);
+	                   st, tmpdir, serial_start, zmq_address);
 
 	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);

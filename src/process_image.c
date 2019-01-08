@@ -3,12 +3,13 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2019 Thomas White <taw@physics.org>
  *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
+ *   2017      Stijn de Graaf
  *
  * This file is part of CrystFEL.
  *
@@ -38,6 +39,7 @@
 #include <gsl/gsl_sort.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <msgpack.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
