@@ -120,14 +120,19 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.features = NULL;
 	image.copyme = iargs->copyme;
 	image.id = cookie;
-	image.filename = pargs->filename_p_e->filename;
-	image.event = pargs->filename_p_e->ev;
 	image.beam = iargs->beam;
 	image.det = copy_geom(iargs->det);
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.serial = serial;
 	image.indexed_by = INDEXING_NONE;
+
+	if ( pargs->filename_p_e != NULL ) {
+		image.filename = pargs->filename_p_e->filename;
+		image.event = pargs->filename_p_e->ev;
+	} else if ( pargs->msgpack_obj != NULL ) {
+		STATUS("Msgpack!\n");
+	}
 
 	time_accounts_set(taccs, TACC_WAITFILE);
 	set_last_task(last_task, "wait for file");
