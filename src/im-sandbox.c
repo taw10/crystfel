@@ -366,8 +366,8 @@ void set_last_task(char *lt, const char *task)
 }
 
 
-static void run_work(const struct index_args *iargs, Stream *st,
-                     int cookie, const char *tmpdir, struct sandbox *sb)
+static int run_work(const struct index_args *iargs, Stream *st,
+                    int cookie, const char *tmpdir, struct sandbox *sb)
 {
 	int allDone = 0;
 	TimeAccounts *taccs;
@@ -378,7 +378,7 @@ static void run_work(const struct index_args *iargs, Stream *st,
 		zmqstuff = im_zmq_connect(sb->zmq_address);
 		if ( zmqstuff == NULL ) {
 			ERROR("ZMQ setup failed.\n");
-			return;
+			return 1;
 		}
 	}
 
@@ -478,6 +478,7 @@ static void run_work(const struct index_args *iargs, Stream *st,
 	cell_free(iargs->cell);
 	if ( iargs->profile ) time_accounts_print(taccs);
 	time_accounts_free(taccs);
+	return 0;
 }
 
 
@@ -721,7 +722,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		 */
 
 		st = open_stream_fd_for_write(stream_pipe[1]);
-		run_work(sb->iargs, st, slot, tmp, sb);
+		r = run_work(sb->iargs, st, slot, tmp, sb);
 		close_stream(st);
 
 		free(tmp);
@@ -731,7 +732,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 		free(sb);
 
-		exit(0);
+		exit(r);
 
 	}
 
@@ -1152,6 +1153,10 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	taccs = time_accounts_init();
 
+	if ( sb->zmq ) {
+		allDone = 1;
+	}
+
 	do {
 
 		/* Check for stream output from workers */
@@ -1189,7 +1194,11 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	/* Indicate to the workers that we are finished, and wake them up one
 	 * last time */
 	time_accounts_set(taccs, TACC_WAKEUP);
-	STATUS("Waiting for the last patterns to be processed...\n");
+	if ( sb->zmq ) {
+		STATUS("Waiting for patterns to process...\n");
+	} else {
+		STATUS("Waiting for the last patterns to be processed...\n");
+	}
 	pthread_mutex_lock(&sb->shared->queue_lock);
 	sb->shared->no_more = 1;
 	pthread_mutex_unlock(&sb->shared->queue_lock);
