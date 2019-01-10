@@ -136,7 +136,7 @@ void im_zmq_shutdown(struct im_zmq *z)
 }
 
 /**
- * get_peaks_onda:
+ * get_peaks_msgpack:
  * @obj: A %msgpack_object containing data in OnDA format
  * @image: An %image structure
  * @half_pixel_shift: Non-zero if 0.5 should be added to all peak coordinates
@@ -158,8 +158,8 @@ void im_zmq_shutdown(struct im_zmq *z)
  * Returns: non-zero on error, zero otherwise.
  *
  */
-int get_peaks_onda(msgpack_object *obj, struct image *image,
-                   int half_pixel_shift)
+int get_peaks_msgpack(msgpack_object *obj, struct image *image,
+                      int half_pixel_shift)
 {
 
 	int num_peaks;
@@ -273,7 +273,7 @@ static void onda_fill_in_beam_parameters(struct beam_params *beam,
  *        ...
  * }
  */
-int obj_read(msgpack_object *obj, struct image *image)
+int unpack_msgpack_data(msgpack_object *obj, struct image *image)
 {
 
 	uint16_t *flags = NULL;

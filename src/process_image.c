@@ -39,7 +39,6 @@
 #include <gsl/gsl_sort.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <msgpack.h>
 
 #include "utils.h"
 #include "hdf5-file.h"
@@ -56,6 +55,7 @@
 #include "predict-refine.h"
 #include "im-sandbox.h"
 #include "time-accounts.h"
+#include "im-zmq.h"
 
 
 static float **backup_image_data(float **dp, struct detector *det)
@@ -100,6 +100,96 @@ static void restore_image_data(float **dp, struct detector *det, float **bu)
 }
 
 
+static int file_wait_open_read(struct sb_shm *sb_shared, struct image *image,
+                               TimeAccounts *taccs, char *last_task,
+                               signed int wait_for_file, int cookie,
+                               struct imagefile **pimfile)
+{
+	signed int file_wait_time = wait_for_file;
+	int wait_message_done = 0;
+	int read_retry_done = 0;
+	int r;
+	struct imagefile *imfile;
+
+	time_accounts_set(taccs, TACC_WAITFILE);
+	set_last_task(last_task, "wait for file");
+
+	do {
+
+		struct stat statbuf;
+
+		sb_shared->pings[cookie]++;
+		r = stat(image->filename, &statbuf);
+		if ( r ) {
+
+			if ( (wait_for_file != 0) && (file_wait_time != 0) ) {
+
+				if ( !wait_message_done ) {
+					STATUS("Waiting for '%s'\n",
+					       image->filename);
+					wait_message_done = 1;
+				}
+
+				sleep(1);
+				if ( wait_for_file != -1 ) {
+					file_wait_time--;
+				}
+				continue;
+
+			}
+
+			ERROR("File %s not found\n", image->filename);
+			return 1;
+		}
+
+	} while ( r );
+
+	time_accounts_set(taccs, TACC_HDF5OPEN);
+	set_last_task(last_task, "open file");
+	sb_shared->pings[cookie]++;
+
+	do {
+		imfile = imagefile_open(image->filename);
+		if ( imfile == NULL ) {
+			if ( wait_for_file && !read_retry_done ) {
+				read_retry_done = 1;
+				r = 1;
+				STATUS("File '%s' exists but could not be opened."
+				       "  Trying again after 10 seconds.\n",
+				       image->filename);
+				sleep(10);
+				continue;
+			}
+			ERROR("Couldn't open file: %s\n", image->filename);
+			return 1;
+		}
+
+		time_accounts_set(taccs, TACC_HDF5READ);
+		set_last_task(last_task, "read file");
+		sb_shared->pings[cookie]++;
+
+		r = imagefile_read(imfile, image, image->event);
+		if ( r ) {
+			if ( wait_for_file && !read_retry_done ) {
+				read_retry_done = 1;
+				imagefile_close(imfile);
+				STATUS("File '%s' exists but could not be read."
+				       "  Trying again after 10 seconds.\n",
+				       image->filename);
+				sleep(10);
+				continue;
+			}
+			ERROR("Couldn't open file: %s\n", image->filename);
+			return 1;
+		}
+
+	} while ( r );
+
+	*pimfile = imfile;
+	return 0;
+}
+
+
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir,
                    int serial, struct sb_shm *sb_shared, TimeAccounts *taccs,
@@ -113,9 +203,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	char *rn;
 	float **prefilter;
 	int any_crystals;
-	int wait_message_done = 0;
-	int read_retry_done = 0;
-	signed int file_wait_time = iargs->wait_for_file;
 
 	image.features = NULL;
 	image.copyme = iargs->copyme;
@@ -130,85 +217,13 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	if ( pargs->filename_p_e != NULL ) {
 		image.filename = pargs->filename_p_e->filename;
 		image.event = pargs->filename_p_e->ev;
+		if ( file_wait_open_read(sb_shared, &image, taccs, last_task,
+		                         iargs->wait_for_file, cookie,
+		                         &imfile) ) return;
 	} else if ( pargs->msgpack_obj != NULL ) {
 		STATUS("Msgpack!\n");
+		if ( unpack_msgpack_data(pargs->msgpack_obj, &image) ) return;
 	}
-
-	time_accounts_set(taccs, TACC_WAITFILE);
-	set_last_task(last_task, "wait for file");
-
-	do {
-
-		struct stat statbuf;
-
-		sb_shared->pings[cookie]++;
-		r = stat(image.filename, &statbuf);
-		if ( r ) {
-
-			if ( (iargs->wait_for_file != 0)
-			  && (file_wait_time != 0) )
-			{
-
-				if ( !wait_message_done ) {
-					STATUS("Waiting for '%s'\n",
-					       image.filename);
-					wait_message_done = 1;
-				}
-
-				sleep(1);
-				if ( iargs->wait_for_file != -1 ) {
-					file_wait_time--;
-				}
-				continue;
-
-			}
-
-			ERROR("File %s not found\n", image.filename);
-			return;
-		}
-
-	} while ( r );
-
-	time_accounts_set(taccs, TACC_HDF5OPEN);
-	set_last_task(last_task, "open file");
-	sb_shared->pings[cookie]++;
-
-	do {
-		imfile = imagefile_open(image.filename);
-		if ( imfile == NULL ) {
-			if ( iargs->wait_for_file && !read_retry_done ) {
-				read_retry_done = 1;
-				r = 1;
-				STATUS("File '%s' exists but could not be opened."
-				       "  Trying again after 10 seconds.\n",
-				       image.filename);
-				sleep(10);
-				continue;
-			}
-			ERROR("Couldn't open file: %s\n", image.filename);
-			return;
-		}
-
-		time_accounts_set(taccs, TACC_HDF5READ);
-		set_last_task(last_task, "read file");
-		sb_shared->pings[cookie]++;
-
-		r = imagefile_read(imfile, &image, image.event);
-		if ( r ) {
-			if ( iargs->wait_for_file && !read_retry_done ) {
-				read_retry_done = 1;
-				imagefile_close(imfile);
-				STATUS("File '%s' exists but could not be read."
-				       "  Trying again after 10 seconds.\n",
-				       image.filename);
-				sleep(10);
-				continue;
-			}
-			ERROR("Couldn't open file: %s\n", image.filename);
-			return;
-		}
-
-	} while ( r );
 
 	/* Take snapshot of image before applying horrible noise filters */
 	time_accounts_set(taccs, TACC_FILTER);
@@ -320,6 +335,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 				      image.filename);
 			}
 		}
+		break;
+
+		case PEAK_MSGPACK:
+		get_peaks_msgpack(pargs->msgpack_obj, &image,
+		                  iargs->half_pixel_shift);
 		break;
 
 	}

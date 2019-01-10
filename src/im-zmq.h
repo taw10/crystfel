@@ -48,10 +48,10 @@ extern void im_zmq_clean(struct im_zmq *z);
 
 extern void im_zmq_shutdown(struct im_zmq *z);
 
-extern int get_peaks_onda(msgpack_object *obj, struct image *image,
-                          int half_pixel_shift);
+extern int get_peaks_msgpack(msgpack_object *obj, struct image *image,
+                             int half_pixel_shift);
 
-extern int obj_read(msgpack_object *obj, struct image *image);
+extern int unpack_msgpack_data(msgpack_object *obj, struct image *image);
 
 
 #endif /* CRYSTFEL_ZMQ_H */
