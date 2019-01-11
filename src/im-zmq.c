@@ -140,8 +140,12 @@ static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
 {
 	int i;
 
+	if ( obj == NULL ) return NULL;
+	if ( obj->type != MSGPACK_OBJECT_MAP ) return NULL;
+
 	for ( i=0; i<obj->via.map.size; i++ ) {
 		const char *kstr;
+		assert(obj->via.map.ptr[i].key.type == MSGPACK_OBJECT_STR);
 		kstr = obj->via.map.ptr[i].key.via.str.ptr;
 		if ( strcmp(kstr, key) == 0 ) {
 			return &obj->via.map.ptr[i].val;
@@ -180,9 +184,10 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 
 	int num_peaks;
 	int pk;
-	int entry;
-	char *key_str;
-	msgpack_object map_val, peak_list;
+	msgpack_object *peak_list;
+	msgpack_object *peak_x;
+	msgpack_object *peak_y;
+	msgpack_object *peak_i;
 	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
 
 	if ( obj == NULL ) {
@@ -190,20 +195,20 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 		return 1;
 	}
 
-	/* Iterate over key-value pairs in msgpack_object
-	 * Object has structure:
-	 * 	{"peak_list": [[peak_x], [peak_y], [peak_i]],"key2":val2,...}
+	/* Object has structure:
+	 *   {
+	 *    "peak_list": [[peak_x], [peak_y], [peak_i]]
+	 *    "key2":val2,
+	 *    ...
+	 *   }
 	 */
-	for ( entry=0; entry<obj->via.map.size; entry++ ) {
-		key_str = (char *)obj->via.map.ptr[entry].key.via.str.ptr;
-		/* Check if key matches "peak_list" */
-		if ( strncmp(key_str, "peak_list", 9) == 0 ) {
-			map_val = obj->via.map.ptr[entry].val;
-			/* Length of peak_x array gives number of peaks */
-			num_peaks = map_val.via.array.ptr[0].via.array.size;
-			peak_list = map_val;
-		}
-	}
+	peak_list = find_msgpack_kv(obj, "peak_list");
+	peak_x = &peak_list->via.array.ptr[0];
+	peak_y = &peak_list->via.array.ptr[1];
+	peak_i = &peak_list->via.array.ptr[2];
+
+	/* Length of peak_x  array gives number of peaks */
+	num_peaks = peak_x->via.array.size;
 
 	if ( image->features != NULL ) {
 		image_feature_list_free(image->features);
@@ -218,9 +223,9 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 
 		/* Retrieve data from peak_list and apply half_pixel_shift,
 		 * if appropriate */
-		fs = peak_list.via.array.ptr[0].via.array.ptr[pk].via.f64 + peak_offset;
-		ss = peak_list.via.array.ptr[1].via.array.ptr[pk].via.f64 + peak_offset;
-		val = peak_list.via.array.ptr[2].via.array.ptr[pk].via.f64;
+		fs = peak_x->via.array.ptr[pk].via.f64 + peak_offset;
+		ss = peak_y->via.array.ptr[pk].via.f64 + peak_offset;
+		val = peak_i->via.array.ptr[pk].via.f64;
 
 		p = find_orig_panel(image->det, fs, ss);
 		if ( p == NULL ) continue;
@@ -237,43 +242,30 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 }
 
 
-static void onda_fill_in_clen(struct detector *det)
+static void im_zmq_fill_in_clen(struct detector *det)
 {
-    int i = 0;
-
-    for ( i=0; i<det->n_panels; i++) {
-
-        struct panel *p = &det->panels[i];
-
-        if ( p->clen_from != NULL ) {
-
-            ERROR("Can't get clen from OnDA yet.\n");
-        }
-
-        adjust_centering_for_rail(p);
-
-    }
+	int i = 0;
+	for ( i=0; i<det->n_panels; i++) {
+		struct panel *p = &det->panels[i];
+		if ( p->clen_from != NULL ) {
+			ERROR("Can't get clen over ZMQ yet.\n");
+		}
+		adjust_centering_for_rail(p);
+	}
 }
 
 
-/* Equivalent to fill_in_beam_parameters but without reference to imagefiles */
-static void onda_fill_in_beam_parameters(struct beam_params *beam,
-                                         struct image *image)
+static void im_zmq_fill_in_beam_parameters(struct beam_params *beam,
+                                           struct image *image)
 {
-    double eV;
-
-    if (beam->photon_energy_from == NULL ) {
-
-        /* Explicit value given */
-        eV = beam->photon_energy;
-
-    } else {
-
-        ERROR("Can't get photon energy from OnDA yet.\n");
-        eV = 0.0;
-
-    }
-
+	double eV;
+	if ( beam->photon_energy_from == NULL ) {
+		/* Explicit value given */
+		eV = beam->photon_energy;
+	} else {
+		ERROR("Can't get photon energy over ZMQ yet.\n");
+		eV = 0.0;
+	}
 	image->lambda = ph_en_to_lambda(eV_to_J(eV))*beam->photon_energy_scale;
 }
 
@@ -302,18 +294,56 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image)
 	int data_width, data_height;
 	double *data;
 	msgpack_object *corr_data_obj;
-	msgpack_object *shape;
+	msgpack_object *data_obj;
+	msgpack_object *shape_obj;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available.\n");
 		return 1;
 	}
 
+	if ( obj == NULL ) {
+		ERROR("No MessagePack object!\n");
+		return 1;
+	}
+
 	corr_data_obj = find_msgpack_kv(obj, "corr_data");
-	data = (double *)find_msgpack_kv(corr_data_obj, "data")->via.bin.ptr;
-	shape = find_msgpack_kv(corr_data_obj, "shape");
-	data_height = shape->via.array.ptr[0].via.i64;
-	data_width = shape->via.array.ptr[1].via.i64;
+	if ( corr_data_obj == NULL ) {
+		ERROR("No corr_data MessagePack object found.\n");
+		return 1;
+	}
+
+	data_obj = find_msgpack_kv(corr_data_obj, "data");
+	if ( data_obj == NULL ) {
+		ERROR("No data MessagePack object found inside corr_data.\n");
+		return 1;
+	}
+	if ( data_obj->type != MSGPACK_OBJECT_BIN ) {
+		ERROR("corr_data.data isn't a binary object.\n");
+		return 1;
+	}
+	data = (double *)data_obj->via.bin.ptr;
+
+	shape_obj = find_msgpack_kv(corr_data_obj, "shape");
+	if ( shape_obj == NULL ) {
+		ERROR("No shape MessagePack object found inside corr_data.\n");
+		return 1;
+	}
+	if ( shape_obj->type != MSGPACK_OBJECT_ARRAY ) {
+		ERROR("corr_data.shape isn't an array object.\n");
+		return 1;
+	}
+	if ( shape_obj->via.array.size != 2 ) {
+		ERROR("corr_data.shape is wrong size (%i, should be 2)\n",
+		      shape_obj->via.array.size);
+		return 1;
+	}
+	if ( shape_obj->via.array.ptr[0].type != MSGPACK_OBJECT_POSITIVE_INTEGER ) {
+		ERROR("corr_data.shape contains wrong type of element.\n");
+		return 1;
+	}
+	data_height = shape_obj->via.array.ptr[0].via.i64;
+	data_width = shape_obj->via.array.ptr[1].via.i64;
 
 	image->dp = malloc(image->det->n_panels*sizeof(float *));
 	image->bad = malloc(image->det->n_panels*sizeof(int *));
@@ -332,14 +362,15 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image)
 		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
 		image->bad[pi] = malloc(p->w*p->h*sizeof(int));
 		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
-		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL) || (image->sat[pi] == NULL) )
+		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
+		  || (image->sat[pi] == NULL) )
 		{
 			ERROR("Failed to allocate panel\n");
 			return 1;
 		}
 
 		if ( (p->orig_min_fs + p->w > data_width)
-		    || (p->orig_min_ss + p->h > data_height) )
+		  || (p->orig_min_ss + p->h > data_height) )
 		{
 			ERROR("Panel %s is outside range of data provided\n",
 			      p->name);
@@ -390,13 +421,13 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image)
 	}
 
 	if ( image->beam != NULL ) {
-		onda_fill_in_beam_parameters(image->beam, image);
+		im_zmq_fill_in_beam_parameters(image->beam, image);
 		if ( image->lambda > 1000 ) {
 			ERROR("Warning: Missing or nonsensical wavelength "
 			      "(%e m).\n", image->lambda);
 		}
 	}
-	onda_fill_in_clen(image->det);
+	im_zmq_fill_in_clen(image->det);
 	fill_in_adu(image);
 
 	return 0;
