@@ -9,7 +9,7 @@
  * Authors:
  *   2018 Thomas White <taw@physics.org>
  *   2014 Valerio Mariani
- *   2017 Stijna de Graaf
+ *   2017 Stijn de Graaf
  *
  * This file is part of CrystFEL.
  *
