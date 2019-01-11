@@ -135,6 +135,22 @@ void im_zmq_shutdown(struct im_zmq *z)
 	zmq_ctx_destroy(z->ctx);
 }
 
+
+static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
+{
+	int i;
+
+	for ( i=0; i<obj->via.map.size; i++ ) {
+		const char *kstr;
+		kstr = obj->via.map.ptr[i].key.via.str.ptr;
+		if ( strcmp(kstr, key) == 0 ) {
+			return &obj->via.map.ptr[i].val;
+		}
+	}
+	return NULL;
+}
+
+
 /**
  * get_peaks_msgpack:
  * @obj: A %msgpack_object containing data in OnDA format
@@ -164,22 +180,26 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 
 	int num_peaks;
 	int pk;
-	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
-
 	int entry;
 	char *key_str;
 	msgpack_object map_val, peak_list;
+	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
 
-	/* iterate over key-value pairs in msgpack_object
-	 * object has structure:
+	if ( obj == NULL ) {
+		ERROR("No MessagePack object to get peaks from.\n");
+		return 1;
+	}
+
+	/* Iterate over key-value pairs in msgpack_object
+	 * Object has structure:
 	 * 	{"peak_list": [[peak_x], [peak_y], [peak_i]],"key2":val2,...}
 	 */
-	for ( entry = 0; entry < obj->via.map.size; entry++ ) {
+	for ( entry=0; entry<obj->via.map.size; entry++ ) {
 		key_str = (char *)obj->via.map.ptr[entry].key.via.str.ptr;
-		/* check if key matches "peak_list" */
-		if (strncmp(key_str, "peak_list", 9) == 0) {
+		/* Check if key matches "peak_list" */
+		if ( strncmp(key_str, "peak_list", 9) == 0 ) {
 			map_val = obj->via.map.ptr[entry].val;
-			/* length of peak_x array gives number of peaks */
+			/* Length of peak_x array gives number of peaks */
 			num_peaks = map_val.via.array.ptr[0].via.array.size;
 			peak_list = map_val;
 		}
@@ -191,12 +211,12 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 	image->features = image_feature_list_new();
 	image->num_peaks = num_peaks;
 
-	for ( pk = 0; pk<num_peaks; pk++ ) {
+	for ( pk=0; pk<num_peaks; pk++ ) {
 
 		float fs, ss, val;
 		struct panel *p;
 
-		/* retrieve data from peak_list and apply half_pixel_shift,
+		/* Retrieve data from peak_list and apply half_pixel_shift,
 		 * if appropriate */
 		fs = peak_list.via.array.ptr[0].via.array.ptr[pk].via.f64 + peak_offset;
 		ss = peak_list.via.array.ptr[1].via.array.ptr[pk].via.f64 + peak_offset;
@@ -258,15 +278,15 @@ static void onda_fill_in_beam_parameters(struct beam_params *beam,
 }
 
 
-/* Unpacks the raw panel data from a msgpack_object, appliespanel geometry,
+/* Unpacks the raw panel data from a msgpack_object, applies panel geometry,
  * and stores the resulting data in an image struct. Object has structure
  * {
- *	 "corr_data":
+ * "corr_data":
  *   {
- *	     "data": binary_data,
- *       "shape": [data_height, data_width],
- *             ...
- *             ...
+ *     "data": binary_data,
+ *     "shape": [data_height, data_width],
+ *           ...
+ *           ...
  *   },
  *   "key2": val2,
  *        ...
@@ -279,124 +299,105 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image)
 	uint16_t *flags = NULL;
 	float *sat = NULL;
 	int pi;
-	int entry, sub_entry;
 	int data_width, data_height;
 	double *data;
-	char *key_str;
-	msgpack_object map_val;
-
-	// Iterate over key-value pairs in msgpack_object
-	for ( entry=0; entry<obj->via.map.size; entry++ ) {
-		key_str = (char *)obj->via.map.ptr[entry].key.via.str.ptr;
-		// Check for key is "corr_data"
-		if ( strncmp(key_str, "corr_data", 9) == 0 ) {
-			map_val = obj->via.map.ptr[entry].val;
-			// Iterate over key-value pairs in inner map
-			for ( sub_entry=0; sub_entry<map_val.via.map.size; sub_entry++ ) {
-				key_str = (char *)map_val.via.map.ptr[sub_entry].key.via.str.ptr;
-				// Check for key is "data"
-				if ( strncmp(key_str, "data", 4) == 0 ) {
-					data = (double *)map_val.via.map.ptr[sub_entry].val.via.bin.ptr;
-				// Check for key is "shape"
-				} else if ( strncmp(key_str, "shape", 5) == 0 ) {
-					data_height = map_val.via.map.ptr[sub_entry].val.via.array.ptr[0].via.i64;
-					data_width = map_val.via.map.ptr[sub_entry].val.via.array.ptr[1].via.i64;
-				}
-			}
-		}
-	}
+	msgpack_object *corr_data_obj;
+	msgpack_object *shape;
 
 	if ( image->det == NULL ) {
 		ERROR("Geometry not available.\n");
 		return 1;
 	}
 
+	corr_data_obj = find_msgpack_kv(obj, "corr_data");
+	data = (double *)find_msgpack_kv(corr_data_obj, "data")->via.bin.ptr;
+	shape = find_msgpack_kv(corr_data_obj, "shape");
+	data_height = shape->via.array.ptr[0].via.i64;
+	data_width = shape->via.array.ptr[1].via.i64;
+
 	image->dp = malloc(image->det->n_panels*sizeof(float *));
-    image->bad = malloc(image->det->n_panels*sizeof(int *));
-    image->sat = malloc(image->det->n_panels*sizeof(float *));
-    if ( (image->dp == NULL) || (image->bad == NULL) || (image->sat == NULL) ) {
-        ERROR("Failed to allocate data arrays.\n");
-        return 1;
-    }
+	image->bad = malloc(image->det->n_panels*sizeof(int *));
+	image->sat = malloc(image->det->n_panels*sizeof(float *));
+	if ( (image->dp == NULL) || (image->bad == NULL) || (image->sat == NULL) ) {
+		ERROR("Failed to allocate data arrays.\n");
+		return 1;
+	}
 
-    for ( pi=0; pi<image->det->n_panels; pi++ ) {
+	for ( pi=0; pi<image->det->n_panels; pi++ ) {
 
-        struct panel *p;
-        int fs, ss;
+		struct panel *p;
+		int fs, ss;
 
-        p = &image->det->panels[pi];
-        image->dp[pi] = malloc(p->w*p->h*sizeof(float));
-        image->bad[pi] = malloc(p->w*p->h*sizeof(int));
-        image->sat[pi] = malloc(p->w*p->h*sizeof(float));
-        if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL) || (image->sat[pi] == NULL) )
-        {
-            ERROR("Failed to allocate panel\n");
-            return 1;
-        }
+		p = &image->det->panels[pi];
+		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
+		image->bad[pi] = malloc(p->w*p->h*sizeof(int));
+		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
+		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL) || (image->sat[pi] == NULL) )
+		{
+			ERROR("Failed to allocate panel\n");
+			return 1;
+		}
 
-        if ( (p->orig_min_fs + p->w > data_width)
-            || (p->orig_min_ss + p->h > data_height) )
-        {
-            ERROR("Panel %s is outside range of data provided\n",
-                  p->name);
-            return 1;
-        }
+		if ( (p->orig_min_fs + p->w > data_width)
+		    || (p->orig_min_ss + p->h > data_height) )
+		{
+			ERROR("Panel %s is outside range of data provided\n",
+			      p->name);
+			return 1;
+		}
 
-        for ( ss=0; ss<p->h; ss++) {
-        for ( fs=0; fs<p->w; fs++) {
+		for ( ss=0; ss<p->h; ss++) {
+		for ( fs=0; fs<p->w; fs++) {
 
-            int idx;
-            int cfs, css;
-            int bad = 0;
+			int idx;
+			int cfs, css;
+			int bad = 0;
 
-            cfs = fs+p->orig_min_fs;
-            css = ss+p->orig_min_ss;
-            idx = cfs + css*data_width;
+			cfs = fs+p->orig_min_fs;
+			css = ss+p->orig_min_ss;
+			idx = cfs + css*data_width;
 
-            image->dp[pi][fs+p->w*ss] = data[idx];
+			image->dp[pi][fs+p->w*ss] = data[idx];
 
-            if ( sat != NULL ) {
-                image->sat[pi][fs+p->w*ss] = sat[idx];
-            } else {
-                image->sat[pi][fs+p->w*ss] = INFINITY;
-            }
+			if ( sat != NULL ) {
+				image->sat[pi][fs+p->w*ss] = sat[idx];
+			} else {
+				image->sat[pi][fs+p->w*ss] = INFINITY;
+			}
 
-            if ( p->no_index ) bad = 1;
+			if ( p->no_index ) bad = 1;
 
-            if ( in_bad_region(image->det, p, cfs, css) ) {
-                bad = 1;
-            }
+			if ( in_bad_region(image->det, p, cfs, css) ) {
+				bad = 1;
+			}
 
-            if ( flags != NULL ) {
+			if ( flags != NULL ) {
 
-                int f;
+				int f;
 
-                f = flags[idx];
+				f = flags[idx];
 
-                if ( (f & image->det->mask_good)
-                    != image->det->mask_good ) bad = 1;
+				if ( (f & image->det->mask_good)
+				    != image->det->mask_good ) bad = 1;
 
-                if ( f & image->det->mask_bad ) bad = 1;
+				if ( f & image->det->mask_bad ) bad = 1;
 
-            }
-            image->bad[pi][fs+p->w*ss] = bad;
-        }
-        }
+			}
+			image->bad[pi][fs+p->w*ss] = bad;
+		}
+		}
 
-    }
+	}
 
-    // might need to do some freeing of memory for msgpack object here
+	if ( image->beam != NULL ) {
+		onda_fill_in_beam_parameters(image->beam, image);
+		if ( image->lambda > 1000 ) {
+			ERROR("Warning: Missing or nonsensical wavelength "
+			      "(%e m).\n", image->lambda);
+		}
+	}
+	onda_fill_in_clen(image->det);
+	fill_in_adu(image);
 
-    if ( image->beam != NULL ) {
-        onda_fill_in_beam_parameters(image->beam, image);
-        if ( image->lambda > 1000 ) {
-            ERROR("Warning: Missing or nonsensical wavelength "
-                  "(%e m).\n",
-                  image->lambda);
-        }
-    }
-    onda_fill_in_clen(image->det);
-    fill_in_adu(image);
-
-    return 0;
+	return 0;
 }
