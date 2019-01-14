@@ -20,9 +20,6 @@ set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
 check_symbol_exists(sched_setaffinity "sched.h" HAVE_CPU_AFFINITY)
 unset(CMAKE_REQUIRED_DEFINITIONS)
 
-# Check for nice clock function
-check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
-
 # Find out where forkpty() is declared
 set(CMAKE_REQUIRED_LIBRARIES "-lutil")
 check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
