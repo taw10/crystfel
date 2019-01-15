@@ -36,22 +36,40 @@
 #include <config.h>
 #endif
 
-#include <msgpack.h>
-
 #include "image.h"
 
-extern struct im_zmq *im_zmq_connect(const char *zmq_address);
+#if defined(HAVE_MSGPACK) && defined(HAVE_ZMQ)
 
-extern msgpack_object *im_zmq_fetch(struct im_zmq *z);
+#include <msgpack.h>
+
+extern struct im_zmq *im_zmq_connect(const char *zmq_address);
 
 extern void im_zmq_clean(struct im_zmq *z);
 
 extern void im_zmq_shutdown(struct im_zmq *z);
+
+extern msgpack_object *im_zmq_fetch(struct im_zmq *z);
 
 extern int get_peaks_msgpack(msgpack_object *obj, struct image *image,
                              int half_pixel_shift);
 
 extern int unpack_msgpack_data(msgpack_object *obj, struct image *image);
 
+#else /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
+
+static UNUSED struct im_zmq *im_zmq_connect(const char *zmq_address) { return NULL; }
+
+static UNUSED void im_zmq_clean(struct im_zmq *z) { return; }
+
+static UNUSED void im_zmq_shutdown(struct im_zmq *z) { return; }
+
+static UNUSED void *im_zmq_fetch(struct im_zmq *z) { return NULL; }
+
+static UNUSED int get_peaks_msgpack(void *obj, struct image *image,
+                             int half_pixel_shift) { return 0; }
+
+static UNUSED int unpack_msgpack_data(void *obj, struct image *image) { return 1; }
+
+#endif /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
 
 #endif /* CRYSTFEL_ZMQ_H */

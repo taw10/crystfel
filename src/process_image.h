@@ -37,7 +37,9 @@
 
 struct index_args;
 
+#ifdef HAVE_MSGPACK
 #include <msgpack.h>
+#endif
 
 #include "integration.h"
 #include "im-sandbox.h"
@@ -125,7 +127,11 @@ struct pattern_args
 {
 	/* "Input" */
 	struct filename_plus_event *filename_p_e;
+#ifdef HAVE_MSGPACK
 	msgpack_object *msgpack_obj;
+#else
+	void *msgpack_obj;
+#endif
 };
 
 
