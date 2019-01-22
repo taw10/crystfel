@@ -349,8 +349,9 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 			free(methods);
 			return NULL;
 		}
-
+		free(method_strings[i]);
 	}
+	free(method_strings);
 
 	/* No cell parameters -> no cell checking, no prior cell */
 	if ( !cell_has_parameters(cell) ) {

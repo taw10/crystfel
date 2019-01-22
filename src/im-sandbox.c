@@ -912,6 +912,9 @@ static void delete_temporary_folder(const char *tmpdir, int n_proc)
 	if ( rmdir(tmpdir) ) {
 		ERROR("Failed to delete temporary folder: %s\n", strerror(errno));
 	}
+
+	free(workerdir);
+	free(path);
 }
 
 
