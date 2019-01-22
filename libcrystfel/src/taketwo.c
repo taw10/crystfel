@@ -516,10 +516,8 @@ static char *add_ua(const char *inp, char ua)
 static char *get_chiral_holohedry(UnitCell *cell)
 {
 	LatticeType lattice = cell_get_lattice_type(cell);
-	char *pg = malloc(64);
+	char *pg;
 	char *pgout = 0;
-
-	if ( pg == NULL ) return NULL;
 
 	switch (lattice)
 	{
@@ -1096,12 +1094,15 @@ static signed int find_next_index(gsl_matrix *rot, int *obs_members,
 
 
 		if (all_ok) {
+			gsl_matrix_free(sub);
+			gsl_matrix_free(mul);
 			return i;
 		}
 	}
 
 	/* give up. */
-
+	gsl_matrix_free(sub);
+	gsl_matrix_free(mul);
 	return -1;
 }
 
@@ -1539,6 +1540,8 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 				cell->seeds[cell->seed_count] = seeds[i];
 				cell->seed_count++;
 			}
+
+			free(seeds);
 		}
 	}
 
@@ -1576,8 +1579,14 @@ static unsigned int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 
 		if (member_num > max_members)
 		{
+			if ( *rotation != NULL ) {
+				/* Free previous best */
+				gsl_matrix_free(*rotation);
+			}
 			*rotation = rot;
 			max_members = member_num;
+		} else {
+			gsl_matrix_free(rot);
 		}
 
 		if (member_num >= NETWORK_MEMBER_THRESHOLD) {
@@ -1915,15 +1924,15 @@ static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
 	for ( i=0; i<ttCell->numOps; i++ ) {
 		gsl_matrix_free(ttCell->rotSymOps[i]);
 	}
+	free(ttCell->rotSymOps);
 
 	cleanup_taketwo_obs_vecs(ttCell->obs_vecs,
 	                         ttCell->obs_vec_count);
 
-	free(ttCell->vec1Tmp);
-	free(ttCell->vec2Tmp);
-	free(ttCell->twiz1Tmp);
-	free(ttCell->twiz2Tmp);
-	free(ttCell->rotSymOps);
+	gsl_vector_free(ttCell->vec1Tmp);
+	gsl_vector_free(ttCell->vec2Tmp);
+	gsl_matrix_free(ttCell->twiz1Tmp);
+	gsl_matrix_free(ttCell->twiz2Tmp);
 }
 
 
@@ -1966,11 +1975,16 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	ttCell.z_ang = 0;
 
 	success = generate_rotation_sym_ops(&ttCell);
-
-	if ( !success ) return NULL;
+	if ( !success ) {
+		cleanup_taketwo_cell(&ttCell);
+		return NULL;
+	}
 
 	success = gen_observed_vecs(rlps, rlp_count, &ttCell);
-	if ( !success ) return NULL;
+	if ( !success ) {
+		cleanup_taketwo_cell(&ttCell);
+		return NULL;
+	}
 
 	if ( opts->member_thresh < 0 ) {
 		ttCell.member_thresh = NETWORK_MEMBER_THRESHOLD;
@@ -1999,7 +2013,10 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	success = match_obs_to_cell_vecs(tp->theory_vecs, tp->vec_count,
 					 &ttCell);
 
-	if ( !success ) return NULL;
+	if ( !success ) {
+		cleanup_taketwo_cell(&ttCell);
+		return NULL;
+	}
 
 	/* Find all the seeds, then take each one and extend them, returning
 	* a solution if it exceeds the NETWORK_MEMBER_THRESHOLD. */
@@ -2008,6 +2025,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	unsigned int members = start_seeds(&solution, &ttCell);
 
 	if ( solution == NULL ) {
+		cleanup_taketwo_cell(&ttCell);
 		return NULL;
 	}
 
