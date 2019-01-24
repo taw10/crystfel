@@ -2619,6 +2619,7 @@ static int check_dims(struct hdfile *hdfile, struct panel *p, struct event *ev,
 
 	dh = H5Dopen2(hdfile->fh, full_panel_path, H5P_DEFAULT);
 	if ( dh < 0 ) {
+		ERROR("Error opening '%s'\n", full_panel_path);
 		ERROR("Failed to enumerate events.  "
 		      "Check your geometry file.\n");
 		return 1;
