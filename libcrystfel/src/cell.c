@@ -97,6 +97,20 @@ struct _unitcell {
 	char         unique_axis;
 };
 
+typedef enum {
+	CMASK_P = 1<<0,
+	CMASK_A = 1<<1,
+	CMASK_B = 1<<2,
+	CMASK_C = 1<<3,
+	CMASK_I = 1<<4,
+	CMASK_F = 1<<5,
+	CMASK_H = 1<<6,
+	CMASK_R = 1<<7
+} CenteringMask;
+
+#define CMASK_ALL (CMASK_P | CMASK_A | CMASK_B | CMASK_C | CMASK_I \
+                     | CMASK_F | CMASK_H | CMASK_R)
+
 
 /************************** Setters and Constructors **************************/
 
@@ -688,28 +702,167 @@ UnitCell *cell_transform_gsl_reciprocal(UnitCell *in, gsl_matrix *m)
 }
 
 
-static char determine_centering(IntegerMatrix *m, char cen)
+static int centering_has_point(char cen, Rational *p)
 {
-	Rational c[3];
+	/* First, put the point into the range 0..1 */
+	while ( rtnl_cmp(p[0], rtnl_zero()) < 0 ) p[0] = rtnl_add(p[0], rtnl(1, 1));
+	while ( rtnl_cmp(p[1], rtnl_zero()) < 0 ) p[1] = rtnl_add(p[1], rtnl(1, 1));
+	while ( rtnl_cmp(p[2], rtnl_zero()) < 0 ) p[2] = rtnl_add(p[2], rtnl(1, 1));
+	while ( rtnl_cmp(p[0], rtnl(1, 1)) >= 0 ) p[0] = rtnl_sub(p[0], rtnl(1, 1));
+	while ( rtnl_cmp(p[1], rtnl(1, 1)) >= 0 ) p[1] = rtnl_sub(p[1], rtnl(1, 1));
+	while ( rtnl_cmp(p[2], rtnl(1, 1)) >= 0 ) p[2] = rtnl_sub(p[2], rtnl(1, 1));
+
+	/* 0,0,0 is present in all centerings */
+	if ( (rtnl_cmp(p[0], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[1], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[2], rtnl_zero()) == 0) ) return 1;
+
+	/* Only I has 1/2 , 1/2, 1/2 */
+	if ( (rtnl_cmp(p[0], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,2)) == 0)
+	  && (cen == 'I') ) return 1;
+
+	/* A or F has 0 , 1/2, 1/2 */
+	if ( (rtnl_cmp(p[0], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,2)) == 0)
+	  && ((cen == 'A') || (cen == 'F')) ) return 1;
+
+	/* B or F has 1/2 , 0 , 1/2 */
+	if ( (rtnl_cmp(p[0], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[1], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,2)) == 0)
+	  && ((cen == 'B') || (cen == 'F')) ) return 1;
+
+	/* C or F has 1/2 , 1/2 , 0 */
+	if ( (rtnl_cmp(p[0], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[2], rtnl_zero()) == 0)
+	  && ((cen == 'C') || (cen == 'F')) ) return 1;
+
+	/* H has 2/3 , 1/3 , 1/3 */
+	if ( (rtnl_cmp(p[0], rtnl(2,3)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,3)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,3)) == 0)
+	  && (cen == 'H') ) return 1;
+
+	/* H has 1/3 , 2/3 , 2/3 */
+	if ( (rtnl_cmp(p[0], rtnl(1,3)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(2,3)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(2,3)) == 0)
+	  && (cen == 'H') ) return 1;
+
+	return 0;
+}
+
+
+static void maybe_eliminate(CenteringMask c, CenteringMask *cmask, Rational *nc,
+                            char cen)
+{
+	/* Skip test if this centering isn't even a candidate */
+	if ( !(*cmask & c) ) return;
+
+	if ( !centering_has_point(cen, nc) ) {
+		*cmask |= c;
+		*cmask ^= c;
+	}
+}
+
+
+/* Check if the point x,y,z in the original cell matches any lattice point
+ * in the transformed cell */
+static void check_point_fwd(RationalMatrix *m, CenteringMask *cmask,
+                            Rational x, Rational y, Rational z)
+{
+	Rational c[3] = {x, y, z};
 	Rational nc[3];
 
-	c[0] = rtnl(1, 2);
-	c[1] = rtnl(1, 2);
-	c[2] = rtnl_zero();
-	intmat_rationalvec_mult(m, c, nc);
-	STATUS("%s,%s,%s  ->  %s,%s,%s\n",
-	       rtnl_format(c[0]), rtnl_format(c[1]), rtnl_format(c[2]),
-	       rtnl_format(nc[0]), rtnl_format(nc[1]), rtnl_format(nc[2]));
+	/* Transform the lattice point */
+	rtnl_mtx_solve(m, c, nc);
 
-	c[0] = rtnl_zero();
-	c[1] = rtnl_zero();
-	c[2] = rtnl_zero();
-	intmat_solve_rational(m, nc, c);
-	STATUS("%s,%s,%s  <-  %s,%s,%s\n",
-	       rtnl_format(c[0]), rtnl_format(c[1]), rtnl_format(c[2]),
-	       rtnl_format(nc[0]), rtnl_format(nc[1]), rtnl_format(nc[2]));
+	/* Eliminate any centerings which don't include the transformed point */
+	maybe_eliminate(CMASK_P, cmask, nc, 'P');
+	maybe_eliminate(CMASK_R, cmask, nc, 'R');
+	maybe_eliminate(CMASK_A, cmask, nc, 'A');
+	maybe_eliminate(CMASK_B, cmask, nc, 'B');
+	maybe_eliminate(CMASK_C, cmask, nc, 'C');
+	maybe_eliminate(CMASK_I, cmask, nc, 'I');
+	maybe_eliminate(CMASK_F, cmask, nc, 'F');
+	maybe_eliminate(CMASK_H, cmask, nc, 'H');
+}
 
-	return 'A';
+
+/* Check if the point x,y,z in the transformed cell matches any lattice point
+ * in the original cell.  If not, eliminate "exclude" from "*mask". */
+static void check_point_bwd(RationalMatrix *m, CenteringMask *mask,
+                            char cen, CenteringMask exclude,
+                            Rational x, Rational y, Rational z)
+{
+	Rational nc[3];
+	Rational c[3] = {x, y, z};
+
+	rtnl_mtx_mult(m, c, nc);
+
+	if ( !centering_has_point(cen, nc) ) {
+		*mask |= exclude;
+		*mask ^= exclude;  /* Unset bits */
+	}
+}
+
+
+static char cmask_decode(CenteringMask mask)
+{
+	char res[32];
+
+	res[0] = '\0';
+
+	if ( mask & CMASK_H ) strcat(res, "H");
+	if ( mask & CMASK_F ) strcat(res, "F");
+	if ( mask & CMASK_I ) strcat(res, "I");
+	if ( mask & CMASK_A ) strcat(res, "A");
+	if ( mask & CMASK_B ) strcat(res, "B");
+	if ( mask & CMASK_C ) strcat(res, "C");
+	if ( mask & CMASK_P ) strcat(res, "P");
+	if ( mask & CMASK_R ) strcat(res, "R");
+
+	STATUS("possible centerings: %s\n", res);
+	return res[0];
+}
+
+
+static char determine_centering(RationalMatrix *m, char cen)
+{
+	CenteringMask cmask = CMASK_ALL;
+
+	/* Check whether the current centering can provide all the lattice
+	 * points for the transformed cell.  Eliminate any centerings for which
+	 * it can't. */
+	check_point_bwd(m, &cmask, cen, CMASK_A | CMASK_F, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+	check_point_bwd(m, &cmask, cen, CMASK_B | CMASK_F, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+	check_point_bwd(m, &cmask, cen, CMASK_C | CMASK_F, rtnl(1,2), rtnl(1,2), rtnl_zero());
+	check_point_bwd(m, &cmask, cen, CMASK_I, rtnl(1,2), rtnl(1,2), rtnl(1,2));
+	check_point_bwd(m, &cmask, cen, CMASK_H, rtnl(2,3), rtnl(1,3), rtnl(1,3));
+	check_point_bwd(m, &cmask, cen, CMASK_H, rtnl(1,3), rtnl(2,3), rtnl(2,3));
+
+	/* Check whether the current centering's lattice points will all
+	 * coincide with lattice points in the new centering.  Eliminate any
+	 * centerings for which they don't (they give "excess lattice points"). */
+	switch ( cen ) {
+
+		case 'P' :
+		case 'R' :
+		break;
+
+		case 'C' :
+		check_point_fwd(m, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
+		break;
+
+		/* FIXME: Everything else */
+
+	}
+
+	return cmask_decode(cmask);
 }
 
 
