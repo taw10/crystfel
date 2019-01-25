@@ -1369,7 +1369,7 @@ int main(int argc, char *argv[])
 
 			image = malloc(sizeof(struct image));
 			if ( image == NULL ) {
-				ERROR("Failed to allocatea memory for image.\n");
+				ERROR("Failed to allocate memory for image.\n");
 				return 1;
 			}
 
