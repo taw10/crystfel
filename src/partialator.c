@@ -1237,6 +1237,7 @@ int main(int argc, char *argv[])
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;
 		}
+		free(pmodel_str);
 	}
 
 	if ( (pmodel == PMODEL_UNITY) && !no_pr ) {
@@ -1377,6 +1378,7 @@ int main(int argc, char *argv[])
 			*image = cur;
 			image->n_crystals = 1;
 			image->crystals = &crystals[n_crystals];
+			free(cur.crystals);
 
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
@@ -1420,6 +1422,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n");
 	if ( sparams_fh != NULL ) fclose(sparams_fh);
 	audit_info = stream_audit_info(st);
+	free(audit_info);
 	close_stream(st);
 
 	STATUS("Initial partiality calculation...\n");
@@ -1568,7 +1571,12 @@ int main(int argc, char *argv[])
 	/* Clean up */
 	gsl_rng_free(rng);
 	for ( i=0; i<n_crystals; i++ ) {
+		struct image *image = crystal_get_image(crystals[i]);
 		reflist_free(crystal_get_reflections(crystals[i]));
+		free_stuff_from_stream(image->stuff_from_stream);
+		free(image->filename);
+		free(image);
+		cell_free(crystal_get_cell(crystals[i]));
 		crystal_free(crystals[i]);
 	}
 	free_contribs(full);

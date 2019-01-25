@@ -233,6 +233,7 @@ void reflist_free(RefList *list)
 	if ( list->head != NULL ) {
 		recursive_free(list->head);
 	} /* else empty list */
+	if ( list->notes != NULL ) free(list->notes);
 	free(list);
 }
 

@@ -84,17 +84,14 @@ const char *str_prflag(enum prflag flag)
 }
 
 
-static UnitCell *rotate_cell_xy(const UnitCell *cell, double ang1, double ang2)
+static void rotate_cell_xy(UnitCell *cell, double ang1, double ang2)
 {
-	UnitCell *o;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
 	double xnew, ynew, znew;
 
-	o = cell_new_from_cell(cell);
-
-	cell_get_reciprocal(o, &asx, &asy, &asz,
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                       &bsx, &bsy, &bsz,
 	                       &csx, &csy, &csz);
 
@@ -134,9 +131,7 @@ static UnitCell *rotate_cell_xy(const UnitCell *cell, double ang1, double ang2)
 	znew = -csx*sin(ang2) + csz*cos(ang2);
 	csx = xnew;  csy = ynew;  csz = znew;
 
-	cell_set_reciprocal(o, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
-
-	return o;
+	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 }
 
 
@@ -201,7 +196,6 @@ static void apply_parameters(const gsl_vector *v, const gsl_vector *initial,
 {
 	int i;
 	double ang1, ang2, R, lambda;
-	UnitCell *cell;
 
 	/* Default parameters if not used in refinement */
 	ang1 = 0.0;
@@ -240,9 +234,7 @@ static void apply_parameters(const gsl_vector *v, const gsl_vector *initial,
 		}
 	}
 
-	cell = rotate_cell_xy(crystal_get_cell_const(cr), ang1, ang2);
-	crystal_set_cell(cr, cell);
-
+	rotate_cell_xy(crystal_get_cell(cr), ang1, ang2);
 	crystal_set_profile_radius(cr, R);
 	crystal_get_image(cr)->lambda = lambda;
 }
@@ -254,7 +246,6 @@ static double residual_f(const gsl_vector *v, void *pp)
 	RefList *list;
 	struct image im;
 	Crystal *cr;
-	UnitCell *cell;
 	double res;
 	int i;
 
@@ -263,14 +254,14 @@ static double residual_f(const gsl_vector *v, void *pp)
 	}
 
 	cr = crystal_copy(pv->cr);
-	cell = cell_new_from_cell(crystal_get_cell(cr));
-	if ( cell == NULL ) return GSL_NAN;
-	crystal_set_cell(cr, cell);
 	im = *crystal_get_image(cr);
 	crystal_set_image(cr, &im);
+	crystal_set_cell(cr, cell_new_from_cell(crystal_get_cell(cr)));
+
 	apply_parameters(v, pv->initial, pv->rv, cr);
 
 	if ( fabs(crystal_get_profile_radius(cr)) > 5e9 ) {
+		cell_free(crystal_get_cell(cr));
 		crystal_free(cr);
 		if ( pv->verbose ) STATUS("radius > 5e9\n");
 		return GSL_NAN;
@@ -278,12 +269,14 @@ static double residual_f(const gsl_vector *v, void *pp)
 
 	/* Can happen with grid scans and certain --force-radius values */
 	if ( fabs(crystal_get_profile_radius(cr)) < 0.0000001e9 ) {
+		cell_free(crystal_get_cell(cr));
 		crystal_free(cr);
 		if ( pv->verbose ) STATUS("radius very small\n");
 		return GSL_NAN;
 	}
 
 	if ( im.lambda <= 0.0 ) {
+		cell_free(crystal_get_cell(cr));
 		crystal_free(cr);
 		if ( pv->verbose ) STATUS("lambda < 0\n");
 		return GSL_NAN;
@@ -296,6 +289,8 @@ static double residual_f(const gsl_vector *v, void *pp)
 	calculate_partialities(cr, PMODEL_XSPHERE);
 
 	if ( scale_one_crystal(cr, pv->full, pv->scaleflags) ) {
+		cell_free(crystal_get_cell(cr));
+		reflist_free(crystal_get_reflections(cr));
 		crystal_free(cr);
 		if ( pv->verbose ) STATUS("Bad scaling\n");
 		return GSL_NAN;

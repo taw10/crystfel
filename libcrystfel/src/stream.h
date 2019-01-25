@@ -106,6 +106,8 @@ extern Stream *open_stream_fd_for_write(int fd);
 extern int get_stream_fd(Stream *st);
 extern void close_stream(Stream *st);
 
+extern void free_stuff_from_stream(struct stuff_from_stream *sfs);
+
 extern int read_chunk(Stream *st, struct image *image);
 extern int read_chunk_2(Stream *st, struct image *image,
                            StreamReadFlags srf);

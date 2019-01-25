@@ -1131,6 +1131,18 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 }
 
 
+void free_stuff_from_stream(struct stuff_from_stream *sfs)
+{
+	int i;
+	if ( sfs == NULL ) return;
+	for ( i=0; i<sfs->n_fields; i++ ) {
+		free(sfs->fields[i]);
+	}
+	free(sfs->fields);
+	free(sfs);
+}
+
+
 static int read_and_store_field(struct image *image, const char *line)
 {
 	char **new_fields;
