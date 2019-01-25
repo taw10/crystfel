@@ -31,7 +31,6 @@
 #endif
 
 #ifdef HAVE_CPU_AFFINITY
-#define _GNU_SOURCE
 #include <sched.h>
 #endif
 
