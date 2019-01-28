@@ -589,7 +589,7 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 {
 	gsl_multimin_fminimizer *min;
 	int n_params = 0;
-	int i;
+	int i, r;
 
 	/* The parameters to be refined */
 	priv->rv[n_params++] = GPARAM_ANG1;
@@ -622,11 +622,19 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 	                                    n_params);
 	if ( min == NULL ) {
 		ERROR("Failed to allocate minimiser\n");
+		gsl_vector_free(priv->vals);
+		gsl_vector_free(priv->step);
+		gsl_vector_free(priv->initial);
 		return NULL;
 	}
 
-	if ( gsl_multimin_fminimizer_set(min, &priv->f, priv->vals, priv->step) ) {
-		ERROR("Failed to set up minimiser\n");
+	r = gsl_multimin_fminimizer_set(min, &priv->f, priv->vals, priv->step);
+	if ( r != 0 ) {
+		gsl_multimin_fminimizer_free(min);
+		gsl_vector_free(priv->vals);
+		gsl_vector_free(priv->step);
+		gsl_vector_free(priv->initial);
+		ERROR("Failed to set up minimiser: %s\n", gsl_strerror(r));
 		return NULL;
 	}
 
