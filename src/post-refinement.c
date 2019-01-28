@@ -620,7 +620,15 @@ static gsl_multimin_fminimizer *setup_minimiser(Crystal *cr, const RefList *full
 
 	min = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2,
 	                                    n_params);
-	gsl_multimin_fminimizer_set(min, &priv->f, priv->vals, priv->step);
+	if ( min == NULL ) {
+		ERROR("Failed to allocate minimiser\n");
+		return NULL;
+	}
+
+	if ( gsl_multimin_fminimizer_set(min, &priv->f, priv->vals, priv->step) ) {
+		ERROR("Failed to set up minimiser\n");
+		return NULL;
+	}
 
 	return min;
 }
@@ -734,6 +742,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	}
 
 	min = setup_minimiser(cr, full, verbose, serial, scaleflags, &priv);
+	if ( min == NULL ) return;
 
 	if ( verbose ) {
 		double res = residual_f(min->x, &priv);
