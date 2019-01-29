@@ -30,10 +30,6 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_CPU_AFFINITY
-#include <sched.h>
-#endif
-
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,55 +55,6 @@
  * the individual programs.
  */
 
-/* ------------------------------ CPU affinity ------------------------------ */
-
-#ifdef HAVE_CPU_AFFINITY
-
-static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
-{
-	cpu_set_t c;
-	int group;
-	int n_cpu_groups;
-	int i;
-
-	if ( cpu_num == 0 ) return;
-
-	CPU_ZERO(&c);
-
-	/* Work out which group this thread belongs to */
-	group = (n / cpu_groupsize) + cpu_offset;
-
-	/* Work out which CPUs should be used for this group */
-	n_cpu_groups = cpu_num / cpu_groupsize;
-	group = group % n_cpu_groups;
-
-	/* Set flags */
-	for ( i=0; i<cpu_groupsize; i++ ) {
-
-		int cpu = cpu_groupsize*group + i;
-
-		CPU_SET(cpu, &c);
-
-	}
-
-	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
-
-		/* Cannot use ERROR() just yet */
-		fprintf(stderr, "%i: Failed to set CPU affinity.\n", n);
-
-	}
-}
-
-#else /* HAVE_CPU_AFFINITY */
-
-static void set_affinity(int n, int cpu_num, int cpu_groupsize, int cpu_offset)
-{
-	/* Do absolutely nothing */
-}
-
-#endif /* HAVE_CPU_AFFINITY */
-
-
 /* --------------------------- Status label stuff --------------------------- */
 
 static int use_status_labels = 0;
@@ -119,9 +66,6 @@ struct worker_args
 	struct task_queue_range *tqr;
 	struct task_queue *tq;
 	int id;
-	int cpu_num;
-	int cpu_groupsize;
-	int cpu_offset;
 };
 
 
@@ -158,8 +102,6 @@ static void *task_worker(void *pargsv)
 	struct worker_args *w = pargsv;
 	struct task_queue *q = w->tq;
 	int *cookie;
-
-	set_affinity(w->id, w->cpu_num, w->cpu_groupsize, w->cpu_offset);
 
 	cookie = malloc(sizeof(int));
 	*cookie = w->id;
@@ -216,9 +158,9 @@ static void *task_worker(void *pargsv)
  * @final: The function which will be called to clean up after a task
  * @queue_args: A pointer to any data required to determine the next task
  * @max: Stop calling get_task after starting this number of jobs
- * @cpu_num: The number of CPUs in the system
- * @cpu_groupsize: The group size into which the CPUs are grouped
- * @cpu_offset: The CPU group number at which to start pinning threads
+ * @cpu_num: Ignored
+ * @cpu_groupsize: Ignored
+ * @cpu_offset: Ignored
  *
  * 'get_task' will be called every time a worker is idle.  It returns either
  * NULL, indicating that no further work is available, or a pointer which will
@@ -271,9 +213,6 @@ int run_threads(int n_threads, TPWorkFunc work,
 		w->tq = &q;
 		w->tqr = NULL;
 		w->id = i;
-		w->cpu_num = cpu_num;
-		w->cpu_groupsize = cpu_groupsize;
-		w->cpu_offset = cpu_offset;
 
 		if ( pthread_create(&workers[i], NULL, task_worker, w) ) {
 			/* Not ERROR() here */

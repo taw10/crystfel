@@ -15,11 +15,6 @@ set(HAVE_XGANDALF ${XGANDALF_FOUND})
 set(HAVE_FDIP ${FDIP_FOUND})
 set(HAVE_CBFLIB ${CBF_FOUND})
 
-# Check for CPU affinity functions (Linux-specific)
-set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
-check_symbol_exists(sched_setaffinity "sched.h" HAVE_CPU_AFFINITY)
-unset(CMAKE_REQUIRED_DEFINITIONS)
-
 # Find out where forkpty() is declared
 set(CMAKE_REQUIRED_LIBRARIES "-lutil")
 check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
