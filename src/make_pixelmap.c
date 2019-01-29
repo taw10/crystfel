@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 	if ( output_file == NULL ) {
 		size_t len = strlen(input_file);
 		output_file = malloc(len+4);
-		strncpy(output_file, input_file, len-1);
+		strcpy(output_file, input_file);
 		strip_extension(output_file);
 		strcat(output_file, ".h5");
 	}

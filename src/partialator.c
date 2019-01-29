@@ -622,10 +622,10 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 	double G = crystal_get_osf(cr);
 	double B = crystal_get_Bfac(cr);
 	UnitCell *cell = crystal_get_cell(cr);
-	char ins[5];
+	char ins[16];
 
 	if ( inum >= 0 ) {
-		snprintf(ins, 4, "%i", inum);
+		snprintf(ins, 12, "%i", inum);
 	} else {
 		ins[0] = 'F';
 		ins[1] = '\0';

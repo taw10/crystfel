@@ -2300,11 +2300,11 @@ char **hdfile_read_group(struct hdfile *f, int *n, const char *parent,
 
 		H5Lget_name_by_idx(gh, ".", H5_INDEX_NAME, H5_ITER_NATIVE,
 		                   i, buf, 255, H5P_DEFAULT);
-		res[i] = malloc(256);
+		res[i] = malloc(512);
 		if ( strlen(parent) > 1 ) {
-			snprintf(res[i], 255, "%s/%s", parent, buf);
+			snprintf(res[i], 511, "%s/%s", parent, buf);
 		} else {
-			snprintf(res[i], 255, "%s%s", parent, buf);
+			snprintf(res[i], 511, "%s%s", parent, buf);
 		} /* ick */
 
 		is_image[i] = 0;
@@ -2389,8 +2389,8 @@ int check_path_existence(hid_t fh, const char *path)
 	char *start = path_copy;
 	char *sep = NULL;
 
-	strncpy(buffer, "\0",1);
-	strncpy(buffer_full_path, "\0", 1);
+	buffer[0] = '\0';
+	buffer_full_path[0] = '\0';
 
 	if ( strcmp(path_copy, "/" ) == 0 ) {
 		return 1;
@@ -2416,7 +2416,7 @@ int check_path_existence(hid_t fh, const char *path)
 			}
 
 			strncpy(buffer, start, sep-start);
-			buffer[sep-start]='\0';
+			buffer[sep-start] = '\0';
 			strcat(buffer_full_path, buffer);
 
 			check = H5Lexists(fh, buffer_full_path, H5P_DEFAULT);
@@ -2440,7 +2440,7 @@ int check_path_existence(hid_t fh, const char *path)
 
 		} else {
 
-			strncpy(buffer, start, strlen(start)+1);
+			strcpy(buffer, start);
 			strcat(buffer_full_path, buffer);
 
 			check = H5Lexists(fh, buffer_full_path, H5P_DEFAULT);

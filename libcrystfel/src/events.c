@@ -314,9 +314,9 @@ char *get_event_string(struct event *ev)
 			}
 
 			ret_string=new_ret_string;
-			strncpy(&ret_string[ret_string_len],"/", 1);
-			strncpy(&ret_string[ret_string_len+1],ev->path_entries[pi],
-			        strlen(ev->path_entries[pi]));
+			ret_string[ret_string_len] = '/';
+			strcpy(&ret_string[ret_string_len+1],
+			       ev->path_entries[pi]);
 
 			ret_string_len += 1+strlen(ev->path_entries[pi]);
 
@@ -330,7 +330,7 @@ char *get_event_string(struct event *ev)
 
 		ret_string = new_ret_string;
 
-		strncpy(&ret_string[ret_string_len], "/", 1);
+		ret_string[ret_string_len] = '/';
 		ret_string_len += 1;
 
 	} else {
@@ -357,9 +357,8 @@ char *get_event_string(struct event *ev)
 
 			ret_string = new_ret_string;
 
-			strncpy(&ret_string[ret_string_len],"/", 1);
-			strncpy(&ret_string[ret_string_len+1], num_buf,
-			        strlen(num_buf));
+			ret_string[ret_string_len] = '/';
+			strcpy(&ret_string[ret_string_len+1], num_buf);
 			ret_string_len += 1+strlen(num_buf);
 
 		}
@@ -374,7 +373,7 @@ char *get_event_string(struct event *ev)
 
 		ret_string = new_ret_string;
 
-		strncpy(&ret_string[ret_string_len], "/", 1);
+		ret_string[ret_string_len] = '/';
 		ret_string_len += 1;
 
 	}

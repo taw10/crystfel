@@ -648,7 +648,7 @@ static void write_grid(Crystal *cr, const RefList *full,
                        const char *name)
 {
 	FILE *fh;
-	char fn[64];
+	char fn[16];
 	char ins[5];
 	gsl_multimin_fminimizer *min;
 	struct rf_priv priv;
@@ -667,7 +667,7 @@ static void write_grid(Crystal *cr, const RefList *full,
 	assert(idx2 != 99);
 
 	if ( cycle >= 0 ) {
-		snprintf(ins, 4, "%i", cycle);
+		snprintf(ins, 12, "%i", cycle);
 	} else {
 		ins[0] = 'F';
 		ins[1] = '\0';
