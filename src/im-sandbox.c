@@ -249,7 +249,6 @@ static struct filename_plus_event *get_pattern(struct get_pattern_ctx *gpctx)
 		fne = malloc(sizeof(struct filename_plus_event));
 		if ( fne == NULL ) return NULL;
 		fne->filename = read_prefixed_filename(gpctx, NULL);
-		STATUS("Got '%s'\n", fne->filename);
 		if ( fne->filename == NULL ) {
 			free(fne);
 			return NULL;
