@@ -2216,6 +2216,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			case H5T_FLOAT :
 			r = hdfile_get_value(f, subst_name, ev, &buf_f,
 			                     H5T_NATIVE_DOUBLE);
+			free(subst_name);
 			if ( r == 0 ) {
 				tmp = malloc(256);
 				if ( tmp == NULL ) {
@@ -2233,6 +2234,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			case H5T_INTEGER :
 			r = hdfile_get_value(f, subst_name, ev, &buf_i,
 			                     H5T_NATIVE_INT);
+			free(subst_name);
 			if ( r == 0 ) {
 				tmp = malloc(256);
 				if ( tmp == NULL ) {
@@ -2250,6 +2252,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 
 			default :
 			ERROR("Don't know what to do!\n");
+			free(subst_name);
 			return NULL;
 		}
 

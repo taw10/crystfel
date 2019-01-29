@@ -253,6 +253,7 @@ void xgandalf_cleanup(void *pp)
 	if(xgandalf_private_data->uncenteringTransformation != NULL){
 		tfn_free(xgandalf_private_data->uncenteringTransformation);
 	}
+	free(xgandalf_private_data);
 }
 
 static void reduceCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
