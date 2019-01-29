@@ -2019,7 +2019,7 @@ static void numbers_update(DisplayWindow *dw)
 
 	if ( found && (dw->image->features != NULL) ) {
 
-		char text[64];
+		char text[1024+32+16];
 
 		f = image_feature_closest(dw->image->features, ffs, fss, fp,
 		                          &dmin, &imin);
@@ -2030,20 +2030,21 @@ static void numbers_update(DisplayWindow *dw)
 		}
 
 		strcat(text, " (panel ");
-		strncat(text, fp->name, 20);
+		strncat(text, fp->name, 1024);
 		strcat(text, ")");
 
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
 
 	} else if ( fp != NULL ) {
 
-		char text[64];
+		char text[1024+16];
 
 		text[0] = '\0';
 		strcat(text, "Panel ");
-		strncat(text, fp->name, 20);
+		strncat(text, fp->name, 1024);
 
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), text);
+
 	} else {
 		gtk_label_set_text(GTK_LABEL(dw->numbers_window->feat), "-");
 	}
