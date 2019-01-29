@@ -96,6 +96,17 @@ struct sandbox
 	Stream *stream;
 };
 
+struct get_pattern_ctx
+{
+	FILE *fh;
+	int use_basename;
+	struct detector *det;
+	const char *prefix;
+	char *filename;
+	struct event_list *events;
+	int event_index;
+};
+
 
 #ifdef HAVE_CLOCK_GETTIME
 
@@ -163,151 +174,175 @@ static void check_hung_workers(struct sandbox *sb)
 }
 
 
-static struct filename_plus_event *get_pattern(FILE *fh, int config_basename,
-                                               struct detector *det,
-                                               const char *prefix)
+static char *read_prefixed_filename(struct get_pattern_ctx *gpctx, char **event)
 {
-	char *line = NULL;
-	size_t len;
-	struct filename_plus_event *fne;
-	struct hdfile *hdfile;
-	char filename_buf[2014];
-	char event_buf[2014];
+	char* line;
 
-	static char *filename = NULL;
-	static struct event_list *ev_list = NULL;
-	static int event_index = -1;
+	if ( event != NULL ) *event = NULL;
 
-	line = malloc(1024*sizeof(char));
+	line = malloc(1024);
+	if ( line == NULL ) return NULL;
 
-	while ( event_index == -1 ) {
-
-		int scan_check;
-
-		do {
-
-			/* Get the next filename */
-			char *rval;
-
-			rval = fgets(line, 1023, fh);
-			if ( rval == NULL ) {
-				free(line);
-				free(filename);
-				filename = NULL;
-				return NULL;
+	do {
+		if ( fgets(line, 1023, gpctx->fh) == NULL )
+		{
+			if ( !feof(gpctx->fh) ) {
+				ERROR("Input file read error.\n");
 			}
-
-			chomp(line);
-
-		} while ( strlen(line) == 0 );
-
-		if ( config_basename ) {
-			char *tmp;
-			tmp = safe_basename(line);
-			free(line);
-			line = tmp;
+			return NULL;
 		}
+		chomp(line);
 
-		scan_check = sscanf(line, "%s %s", filename_buf, event_buf);
+	} while ( line[0] == '\0' );
 
-		len = strlen(prefix)+strlen(filename_buf)+1;
-
-		/* Round the length of the buffer, to keep Valgrind quiet when
-		 * it gets given to write() a bit later on */
-		len += 4 - (len % 4);
-
-		if ( filename == NULL ) {
-			filename = malloc(len);
-		} else {
-			char *new_filename;
-			new_filename = realloc(filename, len*sizeof(char));
-			if ( filename == NULL ) {
-				return NULL;
+	/* Chop off event ID if requested */
+	if ( event != NULL ) {
+		size_t n = strlen(line);
+		while ( line[n] != ' ' && n > 2 ) n--;
+		if ( n != 2 ) {
+			/* Event descriptor must contain "//".
+			* If it doesn't, assume the filename just contains a
+			* space. */
+			if ( strstr(&line[n], "//") != NULL ) {
+				line[n] = '\0';
+				*event = strdup(&line[n]);
 			}
-			filename = new_filename;
-		}
-
-		snprintf(filename, 1023, "%s%s", prefix, filename_buf);
-
-		if ( det->path_dim != 0  || det->dim_dim != 0 ) {
-
-			if ( is_cbf_file(filename) == 1 ) {
-				ERROR("Your geometry file is for a multi-event "
-				      "format, but this file is in CBF format.\n");
-				ERROR("Your geometry file probably needs to be "
-				      "changed.\n");
-				return NULL;
-			}
-
-			ev_list = initialize_event_list();
-
-			if ( scan_check == 1 ) {
-
-				hdfile = hdfile_open(filename);
-				if ( hdfile == NULL ) {
-					ERROR("Failed to open %s\n", filename);
-					free(line);
-					return NULL;
-				}
-
-				if ( ev_list != NULL ) {
-					free_event_list(ev_list);
-				}
-
-				ev_list = fill_event_list(hdfile, det);
-				if ( ev_list == NULL ) {
-					ERROR("Failed to get event list.\n");
-					return NULL;
-				}
-
-				if ( ev_list->num_events == 0 ) {
-					event_index = -1;
-				} else {
-					event_index = 0;
-				}
-
-				hdfile_close(hdfile);
-
-			} else {
-
-				struct event *ev_to_add;
-
-				ev_to_add = get_event_from_event_string(event_buf);
-				if ( ev_to_add == NULL ) {
-					ERROR("Bad event descriptor: '%s'\n",
-					      event_buf);
-				} else {
-					append_event_to_event_list(ev_list,
-					                           ev_to_add);
-					free_event(ev_to_add);
-					event_index = 0;
-				}
-
-			}
-
-		} else {
-
-			event_index = 0;
-
-		}
+		} /* else no spaces at all */
 	}
 
-	fne = malloc(sizeof(struct filename_plus_event));
-	fne->filename = strdup(filename);
+	if ( gpctx->use_basename ) {
+		char *tmp;
+		tmp = safe_basename(line);
+		free(line);
+		line = tmp;
+	}
 
-	if ( multi_event_geometry(gpctx->det) ) {
-		fne->ev = copy_event(ev_list->events[event_index]);
-		if ( event_index != ev_list->num_events-1 ) {
-			event_index += 1;
-		} else {
-			event_index = -1;
+	/* Add prefix */
+	if ( gpctx->prefix != NULL ) {
+		char *tmp;
+		size_t len = strlen(line) + strlen(gpctx->prefix) + 1;
+		tmp = malloc(len);
+		if ( tmp == NULL ) {
+			ERROR("Couldn't allocate memory for filename\n");
+			return NULL;
 		}
-	} else {
+		strcpy(tmp, gpctx->prefix);
+		strcat(tmp, line);
+		free(line);
+		line = tmp;
+	}
+
+	return line;
+}
+
+
+static struct filename_plus_event *get_pattern(struct get_pattern_ctx *gpctx)
+{
+	char *filename;
+	char *evstr;
+
+	/* If single-event geometry, just return next filename */
+	if ( !multi_event_geometry(gpctx->det) )
+	{
+		struct filename_plus_event *fne;
+		fne = malloc(sizeof(struct filename_plus_event));
+		if ( fne == NULL ) return NULL;
+		fne->filename = read_prefixed_filename(gpctx, NULL);
+		STATUS("Got '%s'\n", fne->filename);
+		if ( fne->filename == NULL ) {
+			free(fne);
+			return NULL;
+		}
 		fne->ev = NULL;
-		event_index = -1;
+		return fne;
 	}
 
-	free(line);
+	/* Ok, multi-event geometry.  Is an event available already? */
+	if ( (gpctx->events != NULL)
+	  && (gpctx->event_index < gpctx->events->num_events) )
+	{
+		struct filename_plus_event *fne;
+		fne = malloc(sizeof(struct filename_plus_event));
+		fne->filename = strdup(gpctx->filename);
+		fne->ev = copy_event(gpctx->events->events[gpctx->event_index++]);
+
+		return fne;
+	}
+
+	/* No events in list.  Time to top it up */
+	filename = read_prefixed_filename(gpctx, &evstr);
+
+	/* Nothing left in file -> we're done */
+	if ( filename == NULL ) return NULL;
+
+	/* Muppet check */
+	if ( is_cbf_file(filename) == 1 ) {
+		ERROR("Your geometry file is for a multi-event format, but "
+		      "this file is in CBF format.\n");
+		ERROR("Your geometry file probably needs to be changed.\n");
+		return NULL;
+	}
+
+	/* Does the line from the input file contain an event ID? */
+	if ( evstr != NULL ) {
+
+		/* Make an event list with only one item */
+		struct event *ev = get_event_from_event_string(evstr);
+		if ( ev == NULL ) {
+			ERROR("Bad event descriptor: '%s'\n", evstr);
+		} else {
+			free_event_list(gpctx->events);
+			gpctx->events = initialize_event_list();
+			append_event_to_event_list(gpctx->events, ev);
+			free_event(ev);
+		}
+
+	} else {
+
+		/* Enumerate all the events in the file */
+		struct hdfile *hdfile;
+
+		hdfile = hdfile_open(filename);
+		if ( hdfile == NULL ) {
+			ERROR("Failed to open %s\n", filename);
+			return NULL;
+		}
+
+		if ( gpctx->events != NULL ) {
+			free_event_list(gpctx->events);
+		}
+
+		gpctx->events = fill_event_list(hdfile, gpctx->det);
+		if ( gpctx->events == NULL ) {
+			ERROR("Failed to get event list.\n");
+			return NULL;
+		}
+
+		hdfile_close(hdfile);
+
+	}
+
+	/* If the filename has changed, return NULL now.  The next caller will
+	 * receive the event(s) just added */
+	if ( gpctx->filename != NULL ) {
+
+		if ( strcmp(filename, gpctx->filename) != 0 ) {
+			free(gpctx->filename);
+			gpctx->filename = filename;
+			return NULL;
+		} else {
+			free(filename);  /* gpctx->filename will be used */
+		}
+
+	} else {
+		/* First filename */
+		gpctx->filename = filename;
+	}
+
+	struct filename_plus_event *fne;
+	fne = malloc(sizeof(struct filename_plus_event));
+	fne->filename = strdup(gpctx->filename);
+	fne->ev = copy_event(gpctx->events->events[gpctx->event_index++]);
 	return fne;
 }
 
@@ -779,15 +814,14 @@ static char *maybe_get_event_string(struct event *ev)
 
 
 /* Assumes the caller is already holding queue_lock! */
-static int fill_queue(FILE *fh, int config_basename, struct detector *det,
-                      const char *prefix, struct sandbox *sb)
+static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 {
 	while ( sb->shared->n_events < QUEUE_SIZE ) {
 
 		struct filename_plus_event *ne;
 		char ev_string[MAX_EV_LEN];
 
-		ne = get_pattern(fh, config_basename, det, prefix);
+		ne = get_pattern(gpctx);
 		if ( ne == NULL ) return 1; /* No more */
 
 		memset(ev_string, 0, MAX_EV_LEN);
@@ -972,6 +1006,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	int no_more = 0;
 	int allDone = 0;
 	TimeAccounts *taccs;
+	struct get_pattern_ctx gpctx;
 
 	if ( n_proc > MAX_NUM_WORKERS ) {
 		ERROR("Number of workers (%i) is too large.  Using %i\n",
@@ -995,6 +1030,14 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->fds = NULL;
 	sb->fhs = NULL;
 	sb->stream = stream;
+
+	gpctx.fh = fh;
+	gpctx.use_basename = config_basename;
+	gpctx.det = iargs->det;
+	gpctx.prefix = prefix;
+	gpctx.filename = NULL;
+	gpctx.events = NULL;
+	gpctx.event_index = 0;
 
 	if ( setup_shm(sb) ) {
 		ERROR("Failed to set up SHM.\n");
@@ -1028,7 +1071,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	/* Fill the queue */
 	pthread_mutex_lock(&sb->shared->queue_lock);
 	sb->shared->n_events = 0;
-	fill_queue(fh, config_basename, iargs->det, prefix, sb);
+	fill_queue(&gpctx, sb);
 	sb->shared->no_more = 0;
 	pthread_mutex_unlock(&sb->shared->queue_lock);
 
@@ -1082,8 +1125,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		time_accounts_set(taccs, TACC_QUEUETOPUP);
 		pthread_mutex_lock(&sb->shared->queue_lock);
 		if ( !no_more && (sb->shared->n_events < QUEUE_SIZE/2) ) {
-			if ( fill_queue(fh, config_basename, iargs->det,
-			                prefix, sb) ) no_more = 1;
+			if ( fill_queue(&gpctx, sb) ) no_more = 1;
 		}
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 
