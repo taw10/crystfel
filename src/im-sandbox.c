@@ -206,7 +206,7 @@ static char *read_prefixed_filename(struct get_pattern_ctx *gpctx, char **event)
 			* space. */
 			if ( strstr(&line[n], "//") != NULL ) {
 				line[n] = '\0';
-				*event = strdup(&line[n]);
+				*event = strdup(&line[n+1]);
 			}
 		} /* else no spaces at all */
 	}
