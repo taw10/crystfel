@@ -415,7 +415,7 @@ static void run_work(const struct index_args *iargs, Stream *st,
 		pargs.filename_p_e = initialize_filename_plus_event();
 		pargs.filename_p_e->filename = strdup(filename);
 
-		if ( strcmp(event_str, "/") != 0 ) {
+		if ( strcmp(event_str, "(none)") != 0 ) {
 
 			ev = get_event_from_event_string(event_str);
 			if ( ev == NULL ) {
@@ -801,29 +801,20 @@ static int setup_shm(struct sandbox *sb)
 }
 
 
-static char *maybe_get_event_string(struct event *ev)
-{
-	if ( ev == NULL ) return "/";
-	return get_event_string(ev);
-}
-
-
 /* Assumes the caller is already holding queue_lock! */
 static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 {
 	while ( sb->shared->n_events < QUEUE_SIZE ) {
 
 		struct filename_plus_event *ne;
-		char ev_string[MAX_EV_LEN];
 
 		ne = get_pattern(gpctx);
 		if ( ne == NULL ) return 1; /* No more */
 
-		memset(ev_string, 0, MAX_EV_LEN);
-		snprintf(ev_string, MAX_EV_LEN, "%s %s %i", ne->filename,
-		         maybe_get_event_string(ne->ev), sb->serial++);
-		memcpy(sb->shared->queue[sb->shared->n_events++], ev_string,
-		       MAX_EV_LEN);
+		memset(sb->shared->queue[sb->shared->n_events], 0, MAX_EV_LEN);
+		snprintf(sb->shared->queue[sb->shared->n_events++], MAX_EV_LEN,
+		         "%s %s %i", ne->filename, get_event_string(ne->ev),
+		         sb->serial++);
 		sem_post(sb->queue_sem);
 		free_filename_plus_event(ne);
 
