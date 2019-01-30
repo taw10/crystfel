@@ -297,13 +297,13 @@ char *get_event_string(struct event *ev)
 
 	if ( ev == NULL ) return strdup("(none)");
 
-	ev_len = 0;
+	ev_len = 1; /* Zero terminator */
 	for ( i=0; i<ev->path_length; i++ ) {
 		ev_len += strlen(ev->path_entries[i]);
-		ev_len += 1;
+		ev_len += 1;  /* Slash afterwards */
 	}
-	ev_len += 16*ev->dim_length;
-	ev_len += 2;
+	ev_len += 16*ev->dim_length; /* Max length of number plus slash */
+	ev_len += 2; /* Double slash in middle */
 
 	evstr = malloc(ev_len);
 	if ( evstr == NULL ) return NULL;
@@ -318,7 +318,7 @@ char *get_event_string(struct event *ev)
 
 	for ( i=0; i<ev->dim_length; i++ ) {
 		char num_buf[16];
-		sprintf(num_buf, "%i", ev->dim_entries[i]);
+		snprintf(num_buf, 16, "%i", ev->dim_entries[i]);
 		if ( i > 0 ) strcat(evstr, "/");
 		strcat(evstr, num_buf);
 	}
