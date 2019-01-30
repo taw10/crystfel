@@ -4,6 +4,8 @@ set(CRYSTFEL_VERSION ${CRYSTFEL_SHORT_VERSION})
 set(CRYSTFEL_API_VERSION 11)
 project(crystfel VERSION ${CRYSTFEL_VERSION} LANGUAGES C)
 
+cmake_policy(SET CMP0074 NEW)
+
 include(GNUInstallDirs)
 
 # Set CMAKE_MODULE_PATH to assist cmake in finding our own package definitions
