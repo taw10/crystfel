@@ -291,104 +291,39 @@ void free_filename_plus_event(struct filename_plus_event *fpe)
 
 char *get_event_string(struct event *ev)
 {
-	char *ret_string;
-	char *new_ret_string;
-	int ret_string_len;
+	char *evstr;
+	int i;
+	size_t ev_len;
 
 	if ( ev == NULL ) return strdup("(none)");
 
-	if ( ev->path_length != 0 ) {
+	ev_len = 0;
+	for ( i=0; i<ev->path_length; i++ ) {
+		ev_len += strlen(ev->path_entries[i]);
+		ev_len += 1;
+	}
+	ev_len += 16*ev->dim_length;
+	ev_len += 2;
 
-		int pi;
+	evstr = malloc(ev_len);
+	if ( evstr == NULL ) return NULL;
+	evstr[0] = '\0';
 
-		ret_string = strdup(ev->path_entries[0]);
-		ret_string_len = strlen(ret_string);
-
-		for ( pi=1; pi<ev->path_length; pi++ ) {
-
-			new_ret_string = realloc(ret_string,
-			         (ret_string_len+1+strlen(ev->path_entries[pi]))
-			          * sizeof(char));
-			if ( new_ret_string == NULL ) {
-				return NULL;
-			}
-
-			ret_string=new_ret_string;
-			ret_string[ret_string_len] = '/';
-			strcpy(&ret_string[ret_string_len+1],
-			       ev->path_entries[pi]);
-
-			ret_string_len += 1+strlen(ev->path_entries[pi]);
-
-		}
-
-		new_ret_string = realloc(ret_string,
-                             (1+ret_string_len)*sizeof(char));
-		if ( new_ret_string == NULL ) {
-			return NULL;
-		}
-
-		ret_string = new_ret_string;
-
-		ret_string[ret_string_len] = '/';
-		ret_string_len += 1;
-
-	} else {
-
-		ret_string = strdup("/");
-		ret_string_len = 1;
-
+	for ( i=0; i<ev->path_length; i++ ) {
+		if ( i > 0 ) strcat(evstr, "/");
+		strcat(evstr, ev->path_entries[i]);
 	}
 
-	if ( ev->dim_length !=0 ) {
+	strcat(evstr, "//");
 
-		char num_buf[64];
-		int di;
-
-		for ( di=0; di<ev->dim_length; di++ ) {
-			sprintf(num_buf, "%i", ev->dim_entries[di]);
-
-			new_ret_string = realloc(ret_string,
-			                         (ret_string_len+1+strlen(num_buf))
-			                         *sizeof(char));
-			if ( new_ret_string == NULL ) {
-				return NULL;
-			}
-
-			ret_string = new_ret_string;
-
-			ret_string[ret_string_len] = '/';
-			strcpy(&ret_string[ret_string_len+1], num_buf);
-			ret_string_len += 1+strlen(num_buf);
-
-		}
-
-	} else {
-
-		new_ret_string = realloc(ret_string,
-		                         (1+ret_string_len)*sizeof(char));
-		if ( new_ret_string == NULL ) {
-			return NULL;
-		}
-
-		ret_string = new_ret_string;
-
-		ret_string[ret_string_len] = '/';
-		ret_string_len += 1;
-
+	for ( i=0; i<ev->dim_length; i++ ) {
+		char num_buf[16];
+		sprintf(num_buf, "%i", ev->dim_entries[i]);
+		if ( i > 0 ) strcat(evstr, "/");
+		strcat(evstr, num_buf);
 	}
 
-	new_ret_string = realloc(ret_string,
-	                         (1+ret_string_len)*sizeof(char));
-	if ( new_ret_string == NULL ) {
-		return NULL;
-	}
-
-	ret_string = new_ret_string;
-
-	strncpy(&ret_string[ret_string_len], "\0", 1);
-
-	return ret_string;
+	return evstr;
 }
 
 
