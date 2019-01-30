@@ -283,24 +283,29 @@ static struct filename_plus_event *get_pattern(struct get_pattern_ctx *gpctx)
 		return NULL;
 	}
 
-	/* Does the line from the input file contain an event ID? */
+	/* Does the line from the input file contain an event ID?
+	 * If so, just parse it and sent it straight back. */
 	if ( evstr != NULL ) {
 
 		/* Make an event list with only one item */
 		struct event *ev = get_event_from_event_string(evstr);
 		if ( ev == NULL ) {
 			ERROR("Bad event descriptor: '%s'\n", evstr);
+			return NULL;
 		} else {
-			free_event_list(gpctx->events);
-			gpctx->events = initialize_event_list();
-			append_event_to_event_list(gpctx->events, ev);
-			free_event(ev);
+			struct filename_plus_event *fne;
+			fne = malloc(sizeof(struct filename_plus_event));
+			fne->filename = filename;
+			fne->ev = ev;
+			return fne;
 		}
 
 	} else {
 
-		/* Enumerate all the events in the file */
+		/* Enumerate all the events in the file and then send the
+		 * first one back */
 		struct hdfile *hdfile;
+		struct filename_plus_event *fne;
 
 		hdfile = hdfile_open(filename);
 		if ( hdfile == NULL ) {
@@ -320,30 +325,19 @@ static struct filename_plus_event *get_pattern(struct get_pattern_ctx *gpctx)
 
 		hdfile_close(hdfile);
 
-	}
-
-	/* If the filename has changed, return NULL now.  The next caller will
-	 * receive the event(s) just added */
-	if ( gpctx->filename != NULL ) {
-
-		if ( strcmp(filename, gpctx->filename) != 0 ) {
+		/* Save filename for next time */
+		if ( gpctx->filename != NULL ) {
 			free(gpctx->filename);
-			gpctx->filename = filename;
-			return NULL;
-		} else {
-			free(filename);  /* gpctx->filename will be used */
 		}
-
-	} else {
-		/* First filename */
 		gpctx->filename = filename;
-	}
 
-	struct filename_plus_event *fne;
-	fne = malloc(sizeof(struct filename_plus_event));
-	fne->filename = strdup(gpctx->filename);
-	fne->ev = copy_event(gpctx->events->events[gpctx->event_index++]);
-	return fne;
+		gpctx->event_index = 0;
+		fne = malloc(sizeof(struct filename_plus_event));
+		fne->filename = strdup(gpctx->filename);
+		fne->ev = copy_event(gpctx->events->events[gpctx->event_index++]);
+		return fne;
+
+	}
 }
 
 
