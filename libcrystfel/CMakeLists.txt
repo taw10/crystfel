@@ -113,7 +113,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH 1)
 set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${CRYSTFEL_API_VERSION})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${CRYSTFEL_SHORT_VERSION})
 
+# Suppress extra "lib" in front of "libcrystfel"
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+
 target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(-DHAVE_CONFIG_H)
