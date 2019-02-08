@@ -83,7 +83,7 @@ def update_graph():
         for coll in cnt.collections:
             coll.remove()
 
-    cnt = ax.contour(Z, levels, origin='lower', linewidths=1, extent=extent)
+    cnt = ax.contour(Z, levels, origin='lower', linewidths=1, alpha=1, extent=extent, cmap=plt.cm.Greens)
 
     ax.set_title(filename)
     ax.set_xlabel(label1)
