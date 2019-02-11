@@ -7,6 +7,8 @@ find_package(PINKINDEXER)
 find_package(NBP)
 find_package(FDIP)
 find_package(ZLIB REQUIRED)
+find_package(FLEX REQUIRED)
+find_package(BISON REQUIRED)
 pkg_search_module(FFTW fftw3)
 
 set(HAVE_CURSES ${CURSES_FOUND})
@@ -29,6 +31,12 @@ else()
 endif()
 
 configure_file(config.h.cmake.in config.h)
+
+bison_target(symopp src/symop.y ${CMAKE_CURRENT_BINARY_DIR}/symop-parse.c COMPILE_FLAGS --report=all)
+flex_target(symopl src/symop.l ${CMAKE_CURRENT_BINARY_DIR}/symop-lex.c
+	DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/symop-lex.h)
+add_flex_bison_dependency(symopl symopp)
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 set(LIBCRYSTFEL_SOURCES
     src/reflist.c
@@ -63,6 +71,8 @@ set(LIBCRYSTFEL_SOURCES
     src/taketwo.c
     src/xgandalf.c
     src/rational.c
+    ${BISON_symopp_OUTPUTS}
+    ${FLEX_symopl_OUTPUTS}
 )
 
 if (HAVE_FFTW)

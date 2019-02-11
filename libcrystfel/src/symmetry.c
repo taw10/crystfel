@@ -41,6 +41,8 @@
 #include "symmetry.h"
 #include "utils.h"
 #include "integer_matrix.h"
+#include "symop-parse.h"
+#include "symop-lex.h"
 
 
 /**
@@ -1713,28 +1715,25 @@ static IntegerMatrix *parse_symmetry_operation(const char *s)
 
 SymOpList *parse_symmetry_operations(const char *s)
 {
-	SymOpList *sol;
-	char **ops;
-	int n, i;
+	YY_BUFFER_STATE b;
+	RationalMatrix *m;
+	int r;
 
-	sol = new_symoplist();
-	if ( sol == NULL ) return NULL;
+	m = rtnl_mtx_new(3, 3);
+	b = symop_scan_string(s);
+	r = symopparse(m);
+	symop_delete_buffer(b);
 
-	n = assplode(s, ";:", &ops, ASSPLODE_NONE);
-	for ( i=0; i<n; i++ ) {
-		IntegerMatrix *m;
-		m = parse_symmetry_operation(ops[i]);
-		if ( m != NULL ) {
-			add_symop(sol, m);
-		} else {
-			ERROR("Invalid symmetry operation '%s'\n", ops[i]);
-			/* Try the next one */
-		}
-		free(ops[i]);
+	if ( r ) {
+		ERROR("Failed to parse '%s'\n", s);
+		rtnl_mtx_free(m);
+		return NULL;
 	}
-	free(ops);
 
-	return sol;
+	STATUS("Parsed OK\n");
+	rtnl_mtx_print(m);
+
+	return NULL;
 }
 
 
