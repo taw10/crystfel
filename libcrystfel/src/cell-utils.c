@@ -500,7 +500,7 @@ UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **t)
 	tt = centering_transformation(in, &new_centering, &new_latt, &new_ua);
 	if ( tt == NULL ) return NULL;
 
-	out = cell_transform_inverse(in, tt);
+	out = cell_transform_intmat_inverse(in, tt);
 	if ( out == NULL ) return NULL;
 
 	cell_set_lattice_type(out, new_latt);
@@ -776,7 +776,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	/* Reverse the de-centering transformation */
 	if ( new_cell != NULL ) {
 
-		new_cell_trans = cell_transform(new_cell, centering);
+		new_cell_trans = cell_transform_intmat(new_cell, centering);
 		cell_free(new_cell);
 		cell_set_lattice_type(new_cell_trans,
 		                      cell_get_lattice_type(template_in));
@@ -905,7 +905,7 @@ UnitCell *match_cell_ab(UnitCell *cell_in, UnitCell *template_in)
 	new_cell = cell_new_from_direct_axes(real_a, real_b, real_c);
 
 	 /* Reverse the de-centering transformation */
-	new_cell_trans = cell_transform_inverse(new_cell, to_given_cell);
+	new_cell_trans = cell_transform_intmat_inverse(new_cell, to_given_cell);
 	cell_free(new_cell);
 	cell_set_lattice_type(new_cell, cell_get_lattice_type(template_in));
 	cell_set_centering(new_cell, cell_get_centering(template_in));
@@ -1770,7 +1770,7 @@ int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
 
 		if ( intmat_det(m) != +1 ) continue;
 
-		nc = cell_transform(b, m);
+		nc = cell_transform_intmat(b, m);
 
 		if ( compare_cell_parameters_and_orientation(a, nc, ltl, atl) ) {
 			if ( pmb != NULL ) *pmb = m;

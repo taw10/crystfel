@@ -369,7 +369,7 @@ static int try_join(struct window *win, int sn)
 	/* Get the appropriately transformed cell from the last crystal in this
 	 * series */
 	cr = win->img[sp].crystals[win->ser[sn][sp]];
-	ref = cell_transform(crystal_get_cell(cr), win->mat[sn][sp]);
+	ref = cell_transform_intmat(crystal_get_cell(cr), win->mat[sn][sp]);
 
 	for ( j=0; j<win->img[win->join_ptr].n_crystals; j++ ) {
 		Crystal *cr2;

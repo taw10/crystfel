@@ -119,7 +119,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 
 		if ( intmat_det(m) < 1 ) continue;
 
-		nc = cell_transform(cell, m);
+		nc = cell_transform_intmat(cell, m);
 
 		if ( compare_cell_parameters(cell2, nc, ltl, atl) ) {
 			STATUS("-----------------------------------------------"
@@ -294,7 +294,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 
 		if ( intmat_det(m) != +1 ) continue;
 
-		nc = cell_transform(cell, m);
+		nc = cell_transform_intmat(cell, m);
 
 		if ( compare_cell_parameters(cell, nc, ltl, atl) ) {
 			if ( !intmat_is_identity(m) ) add_symop(ops, m);

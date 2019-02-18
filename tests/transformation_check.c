@@ -176,11 +176,11 @@ static int check_transformation(UnitCell *cell, IntegerMatrix *tfn,
 
 	STATUS("-----------------------\n");
 	if ( ct == NULL ) {
-		cnew = cell_transform(cell, tfn);
+		cnew = cell_transform_intmat(cell, tfn);
 	} else {
 		cnew = ct;
 	}
-	cback = cell_transform_inverse(cnew, tfn);
+	cback = cell_transform_intmat_inverse(cnew, tfn);
 
 	STATUS("----> Before transformation:\n");
 	cell_print(cell);
@@ -257,7 +257,7 @@ static int check_identity(UnitCell *cell, IntegerMatrix *tfn)
 
 	STATUS("-----------------------\n");
 
-	cnew = cell_transform(cell, tfn);
+	cnew = cell_transform_intmat(cell, tfn);
 
 	STATUS("----> Before identity transformation:\n");
 	cell_print(cell);

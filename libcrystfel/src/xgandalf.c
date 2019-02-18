@@ -114,7 +114,7 @@ int run_xgandalf(struct image *image, void *ipriv)
 		if(xgandalf_private_data->cellTemplate != NULL){
 			restoreCell(uc, &xgandalf_private_data->latticeReductionTransform);
 
-			UnitCell *new_cell_trans = cell_transform(uc, xgandalf_private_data->centeringTransformation);
+			UnitCell *new_cell_trans = cell_transform_intmat(uc, xgandalf_private_data->centeringTransformation);
 			cell_free(uc);
 			uc = new_cell_trans;
 

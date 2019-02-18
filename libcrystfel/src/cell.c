@@ -688,16 +688,16 @@ UnitCell *cell_transform_gsl_reciprocal(UnitCell *in, gsl_matrix *m)
 
 
 /**
- * cell_transform:
+ * cell_transform_rational:
  * @cell: A %UnitCell.
- * @t: An %IntegerMatrix.
+ * @t: A %RationalMatrix.
  *
  * Applies @t to @cell.
  *
  * Returns: Transformed copy of @cell.
  *
  */
-UnitCell *cell_transform(UnitCell *cell, IntegerMatrix *m)
+UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 {
 	UnitCell *out;
 	gsl_matrix *tm;
@@ -709,15 +709,15 @@ UnitCell *cell_transform(UnitCell *cell, IntegerMatrix *m)
 		return NULL;
 	}
 
-	gsl_matrix_set(tm, 0, 0, intmat_get(m, 0, 0));
-	gsl_matrix_set(tm, 0, 1, intmat_get(m, 0, 1));
-	gsl_matrix_set(tm, 0, 2, intmat_get(m, 0, 2));
-	gsl_matrix_set(tm, 1, 0, intmat_get(m, 1, 0));
-	gsl_matrix_set(tm, 1, 1, intmat_get(m, 1, 1));
-	gsl_matrix_set(tm, 1, 2, intmat_get(m, 1, 2));
-	gsl_matrix_set(tm, 2, 0, intmat_get(m, 2, 0));
-	gsl_matrix_set(tm, 2, 1, intmat_get(m, 2, 1));
-	gsl_matrix_set(tm, 2, 2, intmat_get(m, 2, 2));
+	gsl_matrix_set(tm, 0, 0, rtnl_as_double(rtnl_mtx_get(m, 0, 0)));
+	gsl_matrix_set(tm, 0, 1, rtnl_as_double(rtnl_mtx_get(m, 0, 1)));
+	gsl_matrix_set(tm, 0, 2, rtnl_as_double(rtnl_mtx_get(m, 0, 2)));
+	gsl_matrix_set(tm, 1, 0, rtnl_as_double(rtnl_mtx_get(m, 1, 0)));
+	gsl_matrix_set(tm, 1, 1, rtnl_as_double(rtnl_mtx_get(m, 1, 1)));
+	gsl_matrix_set(tm, 1, 2, rtnl_as_double(rtnl_mtx_get(m, 1, 2)));
+	gsl_matrix_set(tm, 2, 0, rtnl_as_double(rtnl_mtx_get(m, 2, 0)));
+	gsl_matrix_set(tm, 2, 1, rtnl_as_double(rtnl_mtx_get(m, 2, 1)));
+	gsl_matrix_set(tm, 2, 2, rtnl_as_double(rtnl_mtx_get(m, 2, 2)));
 
 	out = cell_transform_gsl_direct(cell, tm);
 
@@ -730,16 +730,36 @@ UnitCell *cell_transform(UnitCell *cell, IntegerMatrix *m)
 
 
 /**
- * cell_transform_inverse:
+ * cell_transform_intmat:
  * @cell: A %UnitCell.
- * @m: An %IntegerMatrix
+ * @t: An %IntegerMatrix.
+ *
+ * Applies @t to @cell.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform_intmat(UnitCell *cell, IntegerMatrix *m)
+{
+	UnitCell *ans;
+	RationalMatrix *mtx = rtnl_mtx_from_intmat(m);
+	ans = cell_transform_rational(cell, mtx);
+	rtnl_mtx_free(mtx);
+	return ans;
+}
+
+
+/**
+ * cell_transform_rational_inverse:
+ * @cell: A %UnitCell.
+ * @m: A %RationalMatrix
  *
  * Applies the inverse of @m to @cell.
  *
  * Returns: Transformed copy of @cell.
  *
  */
-UnitCell *cell_transform_inverse(UnitCell *cell, IntegerMatrix *m)
+UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m)
 {
 	UnitCell *out;
 	gsl_matrix *tm;
@@ -754,15 +774,15 @@ UnitCell *cell_transform_inverse(UnitCell *cell, IntegerMatrix *m)
 		return NULL;
 	}
 
-	gsl_matrix_set(tm, 0, 0, intmat_get(m, 0, 0));
-	gsl_matrix_set(tm, 0, 1, intmat_get(m, 0, 1));
-	gsl_matrix_set(tm, 0, 2, intmat_get(m, 0, 2));
-	gsl_matrix_set(tm, 1, 0, intmat_get(m, 1, 0));
-	gsl_matrix_set(tm, 1, 1, intmat_get(m, 1, 1));
-	gsl_matrix_set(tm, 1, 2, intmat_get(m, 1, 2));
-	gsl_matrix_set(tm, 2, 0, intmat_get(m, 2, 0));
-	gsl_matrix_set(tm, 2, 1, intmat_get(m, 2, 1));
-	gsl_matrix_set(tm, 2, 2, intmat_get(m, 2, 2));
+	gsl_matrix_set(tm, 0, 0, rtnl_as_double(rtnl_mtx_get(m, 0, 0)));
+	gsl_matrix_set(tm, 0, 1, rtnl_as_double(rtnl_mtx_get(m, 0, 1)));
+	gsl_matrix_set(tm, 0, 2, rtnl_as_double(rtnl_mtx_get(m, 0, 2)));
+	gsl_matrix_set(tm, 1, 0, rtnl_as_double(rtnl_mtx_get(m, 1, 0)));
+	gsl_matrix_set(tm, 1, 1, rtnl_as_double(rtnl_mtx_get(m, 1, 1)));
+	gsl_matrix_set(tm, 1, 2, rtnl_as_double(rtnl_mtx_get(m, 1, 2)));
+	gsl_matrix_set(tm, 2, 0, rtnl_as_double(rtnl_mtx_get(m, 2, 0)));
+	gsl_matrix_set(tm, 2, 1, rtnl_as_double(rtnl_mtx_get(m, 2, 1)));
+	gsl_matrix_set(tm, 2, 2, rtnl_as_double(rtnl_mtx_get(m, 2, 2)));
 
 	perm = gsl_permutation_alloc(3);
 	if ( perm == NULL ) {
@@ -795,4 +815,24 @@ UnitCell *cell_transform_inverse(UnitCell *cell, IntegerMatrix *m)
 	gsl_matrix_free(inv);
 
 	return out;
+}
+
+
+/**
+ * cell_transform_intmat_inverse:
+ * @cell: A %UnitCell.
+ * @m: An %IntegerMatrix
+ *
+ * Applies the inverse of @m to @cell.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform_intmat_inverse(UnitCell *cell, IntegerMatrix *m)
+{
+	UnitCell *ans;
+	RationalMatrix *mtx = rtnl_mtx_from_intmat(m);
+	ans = cell_transform_rational_inverse(cell, mtx);
+	rtnl_mtx_free(mtx);
+	return ans;
 }
