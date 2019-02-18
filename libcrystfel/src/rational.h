@@ -83,9 +83,12 @@ extern Rational rtnl_mtx_get(const RationalMatrix *m, int i, int j);
 extern void rtnl_mtx_set(const RationalMatrix *m, int i, int j, Rational v);
 extern RationalMatrix *rtnl_mtx_from_intmat(const IntegerMatrix *m);
 extern void rtnl_mtx_free(RationalMatrix *mtx);
+extern void rtnl_mtx_mult(const RationalMatrix *m, const Rational *vec,
+                          Rational *ans);
 extern int rtnl_mtx_solve(const RationalMatrix *m, const Rational *vec,
                           Rational *ans);
 extern void rtnl_mtx_print(const RationalMatrix *m);
+extern Rational rtnl_mtx_det(const RationalMatrix *m);
 
 #ifdef __cplusplus
 }

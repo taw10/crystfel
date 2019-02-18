@@ -470,3 +470,94 @@ void rtnl_mtx_print(const RationalMatrix *m)
 		fprintf(stderr, "]\n");
 	}
 }
+
+
+void rtnl_mtx_mult(const RationalMatrix *m, const Rational *vec, Rational *ans)
+{
+	int i, j;
+
+	for ( i=0; i<m->rows; i++ ) {
+		ans[i] = rtnl_zero();
+		for ( j=0; j<m->cols; j++ ) {
+			Rational add;
+			add = rtnl_mul(rtnl_mtx_get(m, i, j), vec[j]);
+			ans[i] = rtnl_add(ans[i], add);
+		}
+	}
+}
+
+
+static RationalMatrix *delete_row_and_column(const RationalMatrix *m,
+                                             unsigned int di, unsigned int dj)
+{
+	RationalMatrix *n;
+	unsigned int i, j;
+
+	n = rtnl_mtx_new(m->rows-1, m->cols-1);
+	if ( n == NULL ) return NULL;
+
+	for ( i=0; i<n->rows; i++ ) {
+	for ( j=0; j<n->cols; j++ ) {
+
+		Rational val;
+		unsigned int gi, gj;
+
+		gi = (i>=di) ? i+1 : i;
+		gj = (j>=dj) ? j+1 : j;
+		val = rtnl_mtx_get(m, gi, gj);
+		rtnl_mtx_set(n, i, j, val);
+
+	}
+	}
+
+	return n;
+}
+
+
+static Rational cofactor(const RationalMatrix *m,
+                         unsigned int i, unsigned int j)
+{
+	RationalMatrix *n;
+	Rational t, C;
+
+	n = delete_row_and_column(m, i, j);
+	if ( n == NULL ) {
+		fprintf(stderr, "Failed to allocate matrix.\n");
+		return rtnl_zero();
+	}
+
+	/* -1 if odd, +1 if even */
+	t = (i+j) & 0x1 ? rtnl(-1, 1) : rtnl(1, 1);
+
+	C = rtnl_mul(t, rtnl_mtx_det(n));
+	rtnl_mtx_free(n);
+
+	return C;
+}
+
+
+
+Rational rtnl_mtx_det(const RationalMatrix *m)
+{
+	unsigned int i, j;
+	Rational det;
+
+	assert(m->rows == m->cols);  /* Otherwise determinant doesn't exist */
+
+	if ( m->rows == 2 ) {
+		Rational a, b;
+		a = rtnl_mul(rtnl_mtx_get(m, 0, 0), rtnl_mtx_get(m, 1, 1));
+		b = rtnl_mul(rtnl_mtx_get(m, 0, 1), rtnl_mtx_get(m, 1, 0));
+		return rtnl_sub(a, b);
+	}
+
+	i = 0;  /* Fixed */
+	det = rtnl_zero();
+	for ( j=0; j<m->cols; j++ ) {
+		Rational a;
+		a = rtnl_mul(rtnl_mtx_get(m, i, j), cofactor(m, i, j));
+		det = rtnl_add(det, a);
+	}
+
+	return det;
+}
