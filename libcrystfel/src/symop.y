@@ -70,10 +70,13 @@
 %type <r> fraction
 
 %{
-static int try_add_symop(SymOpList *list, RationalMatrix *m)
+static int try_add_symop(SymOpList *list, RationalMatrix *m, int complain)
 {
 	if ( list == NULL ) {
-		yyerror(m, list, "Must be a single symmetry operation");
+		/* Only complain if this isn't the only operation provided */
+		if ( complain ) {
+			yyerror(m, list, "Must be a single symmetry operation");
+		}
 		return 1;
 	} else {
 		IntegerMatrix *im;
@@ -92,8 +95,8 @@ static int try_add_symop(SymOpList *list, RationalMatrix *m)
 %%
 
 symoplist:
-  symop                       { if ( try_add_symop(list, m) ) YYERROR; }
-| symoplist SEMICOLON symop   { if ( try_add_symop(list, m) ) YYERROR; }
+  symop                       { try_add_symop(list, m, 0); }
+| symoplist SEMICOLON symop   { if ( try_add_symop(list, m, 1) ) YYERROR; }
 ;
 
 symop:
