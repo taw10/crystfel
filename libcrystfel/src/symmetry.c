@@ -3,12 +3,12 @@
  *
  * Symmetry
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014,2016 Thomas White <taw@physics.org>
- *   2014           Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2010-2019 Thomas White <taw@physics.org>
+ *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -1638,82 +1638,8 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 }
 
 
-static IntegerMatrix *parse_symmetry_operation(const char *s)
-{
-	IntegerMatrix *m;
-	char **els;
-	int n, i;
-
-
-	n = assplode(s, ",", &els, ASSPLODE_NONE);
-	if ( n != 3 ) {
-		for ( i=0; i<n; i++ ) free(els[i]);
-		free(els);
-		return NULL;
-	}
-
-	m = intmat_new(3, 3);
-	if ( m == NULL ) return NULL;
-
-	for ( i=0; i<n; i++ ) {
-
-		int c;
-		size_t cl;
-		signed int nh = 0;
-		signed int nk = 0;
-		signed int nl = 0;
-		signed int mult = 1;
-		int ndigit = 0;
-		signed int sign = +1;
-
-		/* We have one expression something like "-2h+k" */
-		cl = strlen(els[i]);
-		for ( c=0; c<cl; c++ ) {
-
-			if ( els[i][c] == '-' ) sign *= -1;
-			if ( els[i][c] == 'h' ) {
-				nh = mult*sign;
-				mult = 1;
-				ndigit = 0;
-				sign = +1;
-			}
-			if ( els[i][c] == 'k' ) {
-				nk = mult*sign;
-				mult = 1;
-				ndigit = 0;
-				sign = +1;
-			}
-			if ( els[i][c] == 'l' ) {
-				nl = mult*sign;
-				mult = 1;
-				ndigit = 0;
-				sign = +1;
-			}
-			if ( isdigit(els[i][c]) ) {
-				if ( ndigit > 0 ) {
-					mult *= 10;
-					mult += els[i][c] - '0';
-				} else {
-					mult *= els[i][c] - '0';
-				}
-				ndigit++;
-			}
-		}
-
-		intmat_set(m, i, 0, nh);
-		intmat_set(m, i, 1, nk);
-		intmat_set(m, i, 2, nl);
-
-		free(els[i]);
-
-	}
-	free(els);
-
-	return m;
-}
-
-
-SymOpList *parse_symmetry_operations(const char *s)
+/* Parse a single symmetry operation, e.g. 'h,-2k,(h+l)/3' */
+RationalMatrix *parse_symmetry_operation(const char *s)
 {
 	YY_BUFFER_STATE b;
 	RationalMatrix *m;
@@ -1721,7 +1647,7 @@ SymOpList *parse_symmetry_operations(const char *s)
 
 	m = rtnl_mtx_new(3, 3);
 	b = symop_scan_string(s);
-	r = symopparse(m);
+	r = symopparse(m, NULL);
 	symop_delete_buffer(b);
 
 	if ( r ) {
@@ -1730,10 +1656,58 @@ SymOpList *parse_symmetry_operations(const char *s)
 		return NULL;
 	}
 
-	STATUS("Parsed OK\n");
-	rtnl_mtx_print(m);
+	return m;
+}
 
-	return NULL;
+
+/**
+ * parse_cell_transformation
+ * @s: Textual representation of cell transformation
+ *
+ * Parses @s, for example 'a,(b+a)/2,c', and returns the corresponding
+ * %RationalMatrix.
+ *
+ * Returns: A %RationalMatrix describing the transformation, or NULL on error.
+ *
+ */
+RationalMatrix *parse_cell_transformation(const char *s)
+{
+	return parse_symmetry_operation(s);
+}
+
+
+/**
+ * parse_symmetry_operations
+ * @s: Textual representation of a list of symmetry operations
+ *
+ * Parses @s, for example 'h,k,l;k,h,-l', and returns the corresponding
+ * %SymOpList
+ *
+ * Returns: A %SymOpList, or NULL on error.
+ *
+ */
+SymOpList *parse_symmetry_operations(const char *s)
+{
+	YY_BUFFER_STATE b;
+	RationalMatrix *m;
+	SymOpList *list;
+	int r;
+
+	m = rtnl_mtx_new(3, 3); /* Scratch space for parser */
+	list = new_symoplist(); /* The result we want */
+
+	b = symop_scan_string(s);
+	r = symopparse(m, list);
+	symop_delete_buffer(b);
+	rtnl_mtx_free(m);
+
+	if ( r ) {
+		ERROR("Failed to parse '%s'\n", s);
+		free_symoplist(list);
+		return NULL;
+	}
+
+	return list;
 }
 
 

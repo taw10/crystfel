@@ -326,6 +326,31 @@ RationalMatrix *rtnl_mtx_from_intmat(const IntegerMatrix *m)
 }
 
 
+IntegerMatrix *intmat_from_rtnl_mtx(const RationalMatrix *m)
+{
+	IntegerMatrix *n;
+	int i, j;
+
+	n = intmat_new(m->rows, m->cols);
+	if ( n == NULL ) return NULL;
+
+	for ( i=0; i<m->rows; i++ ) {
+		for ( j=0; j<m->cols; j++ ) {
+			Rational v = rtnl_mtx_get(m, i, j);
+			squish(&v);
+			if ( v.den != 1 ) {
+				ERROR("Rational matrix can't be converted to integers\n");
+				intmat_free(n);
+				return NULL;
+			}
+			intmat_set(n, i, j, v.num);
+		}
+	}
+
+	return n;
+}
+
+
 void rtnl_mtx_free(RationalMatrix *mtx)
 {
 	if ( mtx == NULL ) return;

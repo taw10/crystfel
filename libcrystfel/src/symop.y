@@ -30,15 +30,20 @@
   #include <stdio.h>
 
   #include "rational.h"
+  #include "symmetry.h"
 
   extern int symoplex();
-  extern int symopparse(RationalMatrix *m);
-  void symoperror(RationalMatrix *m, const char *s);
+  extern int symopparse(RationalMatrix *m, SymOpList *list);
+  void symoperror(RationalMatrix *m, SymOpList *list, const char *s);
 %}
 
 %define api.prefix {symop}
 
-%parse-param {RationalMatrix *m}
+%parse-param {RationalMatrix *m} {SymOpList *list}
+
+%code requires {
+  #include "symmetry.h"
+}
 
 %union {
   RationalMatrix *m;  /* Full rational matrix */
@@ -47,6 +52,7 @@
   int n;              /* Just a number */
 }
 
+%token SEMICOLON
 %token COMMA
 %token NUMBER
 %token OPENB CLOSEB
@@ -63,7 +69,32 @@
 %type <n> NUMBER
 %type <r> fraction
 
+%{
+static int try_add_symop(SymOpList *list, RationalMatrix *m)
+{
+	if ( list == NULL ) {
+		yyerror(m, list, "Must be a single symmetry operation");
+		return 1;
+	} else {
+		IntegerMatrix *im;
+		im = intmat_from_rtnl_mtx(m);
+		if ( im == NULL ) {
+			yyerror(m, list, "Symmetry operations must all be integer");
+			return 1;
+		} else {
+			add_symop(list, im);
+		}
+	}
+	return 0;
+}
+%}
+
 %%
+
+symoplist:
+  symop                       { if ( try_add_symop(list, m) ) YYERROR; }
+| symoplist SEMICOLON symop   { if ( try_add_symop(list, m) ) YYERROR; }
+;
 
 symop:
   axexpr COMMA axexpr COMMA axexpr { rtnl_mtx_set(m, 0, 0, $1[0]);
@@ -101,6 +132,6 @@ fraction:
 
 %%
 
-void symoperror(RationalMatrix *m, const char *s) {
-	printf("Error\n");
+void symoperror(RationalMatrix *m, SymOpList *list, const char *s) {
+	printf("Error: %s\n", s);
 }

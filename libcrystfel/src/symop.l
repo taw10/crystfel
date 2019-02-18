@@ -47,5 +47,6 @@
 [clz]      { return L; }
 [(]        { return OPENB; }
 [)]        { return CLOSEB; }
+[;]        { return SEMICOLON; }
 
 %%
