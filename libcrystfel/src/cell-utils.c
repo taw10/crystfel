@@ -219,11 +219,6 @@ int right_handed(UnitCell *cell)
 
 void cell_print(UnitCell *cell)
 {
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double a, b, c, alpha, beta, gamma;
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
 	LatticeType lt;
 	char cen;
 
@@ -251,12 +246,31 @@ void cell_print(UnitCell *cell)
 	}
 
 	if ( cell_has_parameters(cell) ) {
+
+		double a, b, c, alpha, beta, gamma;
 		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
 		STATUS("a      b      c            alpha   beta  gamma\n");
 		STATUS("%6.2f %6.2f %6.2f A    %6.2f %6.2f %6.2f deg\n",
 		       a*1e10, b*1e10, c*1e10,
 		       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
+	} else {
+		STATUS("Unit cell parameters are not specified.\n");
+	}
+}
+
+
+void cell_print_full(UnitCell *cell)
+{
+
+	cell_print(cell);
+
+	if ( cell_has_parameters(cell) ) {
+
+		double asx, asy, asz;
+		double bsx, bsy, bsz;
+		double csx, csy, csz;
+		double ax, ay, az, bx, by, bz, cx, cy, cz;
 
 		cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -283,8 +297,6 @@ void cell_print(UnitCell *cell)
 
 		STATUS("Cell representation is %s.\n", cell_rep(cell));
 
-	} else {
-		STATUS("Unit cell parameters are not specified.\n");
 	}
 }
 

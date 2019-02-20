@@ -52,6 +52,7 @@ extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
 extern UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m);
 
 extern void cell_print(UnitCell *cell);
+extern void cell_print_full(UnitCell *cell);
 
 extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
                             const float *ltl, int reduce);
