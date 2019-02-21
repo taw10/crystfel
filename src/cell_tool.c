@@ -329,6 +329,30 @@ static int uncenter(UnitCell *cell, const char *out_file)
 }
 
 
+static int transform(UnitCell *cell, const char *trans_str)
+{
+	RationalMatrix *trans;
+	UnitCell *nc;
+
+	trans = parse_cell_transformation(trans_str);
+	if ( trans == NULL ) {
+		ERROR("Invalid cell transformation '%s'\n", trans_str);
+		return 1;
+	}
+
+	nc = cell_transform_rational(cell, trans);
+
+	STATUS("------------------> The transformation matrix:\n");
+	rtnl_mtx_print(trans);
+	STATUS("Determinant = %s\n", rtnl_format(rtnl_mtx_det(trans)));
+
+	STATUS("------------------> The transformed unit cell:\n");
+	cell_print(nc);
+
+	return 0;
+}
+
+
 enum {
 	CT_NOTHING,
 	CT_FINDAMBI,
@@ -336,6 +360,7 @@ enum {
 	CT_RINGS,
 	CT_COMPARE,
 	CT_CHOICES,
+	CT_TRANSFORM,
 };
 
 
@@ -354,6 +379,7 @@ int main(int argc, char *argv[])
 	char *out_file = NULL;
 	float highres;
 	double rmax = 1/(2.0e-10);
+	char *trans_str = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -368,6 +394,8 @@ int main(int argc, char *argv[])
 		{"uncentre",           0, &mode,               CT_UNCENTER},
 		{"rings",              0, &mode,               CT_RINGS},
 		{"compare-cell",       1, NULL,                3},
+		{"cell-choices",       0, &mode,               CT_CHOICES},
+		{"transform",          1, NULL,                4},
 		{"highres",            1, NULL,                5},
 
 		{0, 0, NULL, 0}
@@ -402,6 +430,11 @@ int main(int argc, char *argv[])
 			case 3 :
 			comparecell = strdup(optarg);
 			mode = CT_COMPARE;
+			break;
+
+			case 4 :
+			trans_str = strdup(optarg);
+			mode = CT_TRANSFORM;
 			break;
 
 			case 5 :
@@ -491,6 +524,7 @@ int main(int argc, char *argv[])
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
 	if ( mode == CT_RINGS ) return all_rings(cell, sym, rmax);
 	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell, ltl, atl);
+	if ( mode == CT_TRANSFORM ) return transform(cell, trans_str);
 
 	/* FIXME: Everything else */
 	ERROR("Sorry, this mode of operation is not yet implemented.\n");
