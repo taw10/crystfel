@@ -64,6 +64,7 @@ static void show_help(const char *s)
 " -y <pointgroup>            Real point group of the structure.\n"
 "     --tolerance=<tol>      Set the tolerances for cell comparison.\n"
 "                             Default: 5,1.5 (axis percentage, angle deg).\n"
+"     --highres=n            Resolution limit (Angstroms) for --rings\n"
 );
 }
 
@@ -164,22 +165,19 @@ static int cmpres(const void *av, const void *bv)
 }
 
 
-static int all_rings(UnitCell *cell, SymOpList *sym)
+static int all_rings(UnitCell *cell, SymOpList *sym, double mres)
 {
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
 	int hmax, kmax, lmax;
-	double mres;
 	signed int h, k, l;
 	RefList *list;
 	int i, n;
 	RefListIterator *iter;
 	Reflection *refl;
 	struct sortmerefl *sortus;
-	double highres = 2.0;  /* Angstroms */
 
-	mres = 1.0/(highres*1e-10);
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 	hmax = mres * modulus(ax, ay, az);
 	kmax = mres * modulus(bx, by, bz);
@@ -240,7 +238,7 @@ static int all_rings(UnitCell *cell, SymOpList *sym)
 
 	qsort(sortus, n, sizeof(struct sortmerefl), cmpres);
 
-	STATUS("\nAll powder rings up to %f Ångstrøms.\n", highres);
+	STATUS("\nAll powder rings up to %f Ångstrøms.\n", 1e+10/mres);
 	STATUS("Note that screw axis or glide plane absences are not "
 	       "omitted from this list.\n");
 	STATUS("\n   d (Å)   1/d (m^-1)    h    k    l    multiplicity\n");
@@ -394,6 +392,8 @@ int main(int argc, char *argv[])
 	int mode = CT_NOTHING;
 	char *comparecell = NULL;
 	char *out_file = NULL;
+	float highres;
+	double rmax = 1/(2.0e-10);
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -442,6 +442,14 @@ int main(int argc, char *argv[])
 			case 3 :
 			comparecell = strdup(optarg);
 			mode = CT_COMPARE;
+			break;
+
+			case 5 :
+			if ( sscanf(optarg, "%e", &highres) != 1 ) {
+				ERROR("Invalid value for --highres\n");
+				return 1;
+			}
+			rmax = 1.0 / (highres/1e10);
 			break;
 
 			case 0 :
@@ -521,7 +529,7 @@ int main(int argc, char *argv[])
 
 	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, ltl, atl);
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
-	if ( mode == CT_RINGS ) return all_rings(cell, sym);
+	if ( mode == CT_RINGS ) return all_rings(cell, sym, rmax);
 	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell, ltl, atl);
 
 	/* FIXME: Everything else */
