@@ -46,6 +46,7 @@
 #include "utils.h"
 #include "image.h"
 #include "integer_matrix.h"
+#include "rational.h"
 
 
 /**
@@ -687,6 +688,31 @@ UnitCell *cell_transform_gsl_reciprocal(UnitCell *in, gsl_matrix *m)
 }
 
 
+static char determine_centering(IntegerMatrix *m, char cen)
+{
+	Rational c[3];
+	Rational nc[3];
+
+	c[0] = rtnl(1, 2);
+	c[1] = rtnl(1, 2);
+	c[2] = rtnl_zero();
+	intmat_rationalvec_mult(m, c, nc);
+	STATUS("%s,%s,%s  ->  %s,%s,%s\n",
+	       rtnl_format(c[0]), rtnl_format(c[1]), rtnl_format(c[2]),
+	       rtnl_format(nc[0]), rtnl_format(nc[1]), rtnl_format(nc[2]));
+
+	c[0] = rtnl_zero();
+	c[1] = rtnl_zero();
+	c[2] = rtnl_zero();
+	intmat_solve_rational(m, nc, c);
+	STATUS("%s,%s,%s  <-  %s,%s,%s\n",
+	       rtnl_format(c[0]), rtnl_format(c[1]), rtnl_format(c[2]),
+	       rtnl_format(nc[0]), rtnl_format(nc[1]), rtnl_format(nc[2]));
+
+	return 'A';
+}
+
+
 /**
  * cell_transform_rational:
  * @cell: A %UnitCell.
@@ -701,6 +727,7 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 {
 	UnitCell *out;
 	gsl_matrix *tm;
+	char ncen;
 
 	if ( m == NULL ) return NULL;
 
@@ -720,10 +747,16 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 	gsl_matrix_set(tm, 2, 2, rtnl_as_double(rtnl_mtx_get(m, 2, 2)));
 
 	out = cell_transform_gsl_direct(cell, tm);
-
-	/* FIXME: Update centering, unique axis, lattice type */
-
 	gsl_matrix_free(tm);
+
+	ncen = determine_centering(m, cell_get_centering(cell));
+	if ( ncen == '*' ) {
+		cell_free(out);
+		return NULL;
+	}
+	cell_set_centering(out, ncen);
+
+	/* FIXME: Update unique axis, lattice type */
 
 	return out;
 }
