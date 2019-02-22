@@ -60,6 +60,7 @@ static void show_help(const char *s)
 "     --uncenter             Calculate a primitive cell.\n"
 "     --rings                Calculate powder ring positions.\n"
 "     --compare-cell <file>  Compare unit cell with cell from <file>.\n"
+"     --cell-choices         Calculate all three cell choices for monoclinic C cell.\n"
 "\n"
 " -y <pointgroup>            Real point group of the structure.\n"
 "     --tolerance=<tol>      Set the tolerances for cell comparison.\n"
@@ -353,6 +354,25 @@ static int transform(UnitCell *cell, const char *trans_str)
 }
 
 
+static int cell_choices(UnitCell *cell)
+{
+	if ( cell_get_lattice_type(cell) != L_MONOCLINIC ) {
+		ERROR("Cell must be monoclinic to use --cell-choices\n");
+		return 1;
+	}
+
+	if ( cell_get_unique_axis(cell) == 'b' ) {
+		transform(cell, "-a-c,b,a");
+		transform(cell, "c,b,-a-c");
+	} else {
+		ERROR("Sorry, --cell-choices only supports unique axis b.\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+
 enum {
 	CT_NOTHING,
 	CT_FINDAMBI,
@@ -525,8 +545,7 @@ int main(int argc, char *argv[])
 	if ( mode == CT_RINGS ) return all_rings(cell, sym, rmax);
 	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell, ltl, atl);
 	if ( mode == CT_TRANSFORM ) return transform(cell, trans_str);
+	if ( mode == CT_CHOICES ) return cell_choices(cell);
 
-	/* FIXME: Everything else */
-	ERROR("Sorry, this mode of operation is not yet implemented.\n");
 	return 1;
 }
