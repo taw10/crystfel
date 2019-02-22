@@ -263,8 +263,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 	set_symmetry_name(ops, "Observed");
 
 	if ( sym == NULL ) {
-		ERROR("Please specify the point group of the structure.\n");
-		return 1;
+		sym = get_pointgroup("1");
 	}
 
 	STATUS("Looking for ambiguities up to %ix each lattice length.\n", maxorder);
