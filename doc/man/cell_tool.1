@@ -51,7 +51,7 @@ The program will compare the two cells, and report if \fImy_structure.cell\fR ca
 .PP
 The tolerance \fItols\fR is given as lengthtol,angtol, in percent and degrees respectively, which will be applied to the real-space unit cell axis lengths and angles.
 .PP
-Note that the comparison is quite limited in the current version.   The transformation matrix applied to \fImy_structure.cell\fR is restricted to positive integer (or zero) components, so if \fImy_structure.cell\fR is smaller than the reference, you might need to try swapping the arguments.  Even then, it might miss a relationship if one axis is needs to be (say) half the length while another needs to be double.  The centering is also ignored.
+Note that the comparison ignores the centering of the cell.  That means that
 
 .SH FINDING INDEXING AMBIGUITIES
 .PP

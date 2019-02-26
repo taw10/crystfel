@@ -73,8 +73,10 @@ static int comparecells(UnitCell *cell, const char *comparecell,
                         double ltl, double atl)
 {
 	signed int i[9];
+	int b[9];
 	const int maxorder = 2;
 	UnitCell *cell2;
+	RationalMatrix *m;
 
 	STATUS("Comparing with: %s\n", comparecell);
 
@@ -95,6 +97,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	STATUS("Reciprocal angle tolerance %f degrees\n", rad2deg(atl));
 	STATUS("This will take about 30 seconds.  Please wait...\n");
 
+	m = rtnl_mtx_new(3, 3);
 	for ( i[0]=-maxorder; i[0]<=+maxorder; i[0]++ ) {
 	for ( i[1]=-maxorder; i[1]<=+maxorder; i[1]++ ) {
 	for ( i[2]=-maxorder; i[2]<=+maxorder; i[2]++ ) {
@@ -104,31 +107,40 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	for ( i[6]=-maxorder; i[6]<=+maxorder; i[6]++ ) {
 	for ( i[7]=-maxorder; i[7]<=+maxorder; i[7]++ ) {
 	for ( i[8]=-maxorder; i[8]<=+maxorder; i[8]++ ) {
+	for ( b[0]=0; b[0]<=1; b[0]++ ) {
+	for ( b[1]=0; b[1]<=1; b[1]++ ) {
+	for ( b[2]=0; b[2]<=1; b[2]++ ) {
+	for ( b[3]=0; b[3]<=1; b[3]++ ) {
+	for ( b[4]=0; b[4]<=1; b[4]++ ) {
+	for ( b[5]=0; b[5]<=1; b[5]++ ) {
+	for ( b[6]=0; b[6]<=1; b[6]++ ) {
+	for ( b[7]=0; b[7]<=1; b[7]++ ) {
+	for ( b[8]=0; b[8]<=1; b[8]++ ) {
 
 		UnitCell *nc;
-		IntegerMatrix *m;
 		int j, k;
 		int l = 0;
 
-		m = intmat_new(3, 3);
 		for ( j=0; j<3; j++ ) {
 		for ( k=0; k<3; k++ ) {
-			intmat_set(m, j, k, i[l++]);
+			if ( b[l] || i[l]==1 || i[l]==-1 ) {
+				rtnl_mtx_set(m, j, k, rtnl(i[l], 1));
+			} else {
+				rtnl_mtx_set(m, j, k, rtnl(1, i[l]));
+			}
+			l++;
 		}
 		}
 
-		if ( intmat_det(m) < 1 ) continue;
-
-		nc = cell_transform_intmat(cell, m);
+		nc = cell_transform_rational(cell, m);
 
 		if ( compare_cell_parameters(cell2, nc, ltl, atl) ) {
 			STATUS("-----------------------------------------------"
 			       "-------------------------------------------\n");
 			cell_print(nc);
-			intmat_print(m);
+			rtnl_mtx_print(m);
 		}
 
-		intmat_free(m);
 		cell_free(nc);
 
 	}
@@ -140,6 +152,16 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	}
 	}
 	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	rtnl_mtx_free(m);
 
 	return 0;
 }
