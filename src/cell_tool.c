@@ -400,8 +400,8 @@ int main(int argc, char *argv[])
 	char *cell_file = NULL;
 	UnitCell *cell;
 	char *toler = NULL;
-	float ltl = 5.0;  /* in percent */
-	float atl = deg2rad(1.5);
+	float ltl = 0.05;         /* fraction */
+	float atl = deg2rad(1.5); /* radians */
 	char *sym_str = NULL;
 	SymOpList *sym = NULL;
 	int mode = CT_NOTHING;
@@ -518,7 +518,7 @@ int main(int argc, char *argv[])
 			ERROR("Invalid parameters for --tolerance\n");
 			return 1;
 		}
-		/* ltl stays in percent */
+		ltl /= 100.0;  /* percent to fraction */
 		atl = deg2rad(atl);
 		free(toler);
 	}

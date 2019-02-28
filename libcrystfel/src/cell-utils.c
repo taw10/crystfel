@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012,2014-2017 Thomas White <taw@physics.org>
- *   2012                Lorenzo Galli
+ *   2009-2019 Thomas White <taw@physics.org>
+ *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -1647,9 +1647,9 @@ int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
 	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
 	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
 
-	if ( !within_tolerance(a1, a2, ltl) ) return 0;
-	if ( !within_tolerance(b1, b2, ltl) ) return 0;
-	if ( !within_tolerance(c1, c2, ltl) ) return 0;
+	if ( !within_tolerance(a1, a2, ltl*100.0) ) return 0;
+	if ( !within_tolerance(b1, b2, ltl*100.0) ) return 0;
+	if ( !within_tolerance(c1, c2, ltl*100.0) ) return 0;
 	if ( fabs(al1-al2) > atl ) return 0;
 	if ( fabs(be1-be2) > atl ) return 0;
 	if ( fabs(ga1-ga2) > atl ) return 0;
