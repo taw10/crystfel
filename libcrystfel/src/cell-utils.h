@@ -95,6 +95,10 @@ extern int compare_reindexed_cell_parameters_and_orientation(UnitCell *a,
                                                              double atl,
                                                              IntegerMatrix **pmb);
 
+extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                             double ltl, double atl,
+                                             RationalMatrix **pmb);
+
 #ifdef __cplusplus
 }
 #endif

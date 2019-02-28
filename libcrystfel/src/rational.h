@@ -77,6 +77,10 @@ extern Rational rtnl_abs(Rational a);
 
 extern char *rtnl_format(Rational rt);
 
+extern Rational *rtnl_list(signed int num_min, signed int num_max,
+                           signed int den_min, signed int den_max,
+                           int *pn);
+
 extern RationalMatrix *rtnl_mtx_new(unsigned int rows, unsigned int cols);
 extern RationalMatrix *rtnl_mtx_copy(const RationalMatrix *m);
 extern Rational rtnl_mtx_get(const RationalMatrix *m, int i, int j);

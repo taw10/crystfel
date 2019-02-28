@@ -1793,3 +1793,233 @@ int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
 	intmat_free(m);
 	return 0;
 }
+
+
+struct cand
+{
+	Rational abc[3];
+	double fom;
+};
+
+
+static int cmpcand(const void *av, const void *bv)
+{
+	const struct cand *a = av;
+	const struct cand *b = bv;
+	return a->fom > b->fom;
+}
+
+
+static Rational *find_candidates(double len, double *a, double *b, double *c,
+                                 double ltl, int *pncand)
+{
+	Rational *r;
+	struct cand *cands;
+	const int max_cand = 1024;
+	int ncand = 0;
+	Rational *rat;
+	int nrat;
+	int nrej = 0;
+	int ia, ib, ic;
+	int i;
+
+	cands = malloc(max_cand * sizeof(struct cand));
+	if ( cands == NULL ) return NULL;
+
+	rat = rtnl_list(0, 4, -4, 4, &nrat);
+	if ( rat == NULL ) return NULL;
+
+	for ( ia=0; ia<nrat; ia++ ) {
+	for ( ib=0; ib<nrat; ib++ ) {
+	for ( ic=0; ic<nrat; ic++ ) {
+		double vec[3];
+		double abc[3];
+		double veclen;
+		abc[0] = rtnl_as_double(rat[ia]);
+		abc[1] = rtnl_as_double(rat[ib]);
+		abc[2] = rtnl_as_double(rat[ic]);
+		vec[0] = a[0]*abc[0] + b[0]*abc[1] + c[0]*abc[2];
+		vec[1] = a[1]*abc[0] + b[1]*abc[1] + c[1]*abc[2];
+		vec[2] = a[2]*abc[0] + b[2]*abc[1] + c[2]*abc[2];
+		veclen = modulus(vec[0], vec[1], vec[2]);
+		if ( within_tolerance(len, veclen, ltl*100.0) ) {
+			if ( ncand == max_cand ) {
+				nrej++;
+			} else {
+				cands[ncand].abc[0] = rat[ia];
+				cands[ncand].abc[1] = rat[ib];
+				cands[ncand].abc[2] = rat[ic];
+				cands[ncand].fom = fabs(veclen - len);
+				ncand++;
+			}
+		}
+	}
+	}
+	}
+
+	if ( nrej ) {
+		ERROR("WARNING: Too many vector candidates (%i rejected)\n", nrej);
+	}
+
+	/* Sort by difference from reference vector length */
+	qsort(cands, ncand, sizeof(struct cand), cmpcand);
+
+	r = malloc(ncand * 3 * sizeof(Rational));
+	if ( r == 0 ) return NULL;
+
+	for ( i=0; i<ncand; i++ ) {
+		r[3*i+0] = cands[i].abc[0];
+		r[3*i+1] = cands[i].abc[1];
+		r[3*i+2] = cands[i].abc[2];
+	}
+	free(cands);
+
+	*pncand = ncand;
+	return r;
+}
+
+
+/**
+ * compare_reindexed_cell_parameters:
+ * @cell_in: A %UnitCell
+ * @reference_in: Another %UnitCell
+ * @ltl: Maximum allowable fractional difference in direct-space axis lengths
+ * @atl: Maximum allowable difference in direct-space angles (in radians)
+ * @pmb: Place to store pointer to matrix
+ *
+ * Compare the @cell_in with @reference_in.  If @cell is a derivative lattice
+ * of @reference, within fractional axis length difference @ltl and absolute angle
+ * difference @atl (in radians), this function returns non-zero and stores the
+ * transformation which needs to be applied to @cell_in at @pmb.
+ *
+ * Only the cell parameters will be compared.  The relative orientations are
+ * irrelevant.
+ *
+ * Returns: non-zero if the cells match, zero for no match or error.
+ *
+ */
+int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
+                                      double ltl, double atl,
+                                      RationalMatrix **pmb)
+{
+	UnitCell *cell;
+	UnitCell *reference;
+	IntegerMatrix *centering_reference;
+	IntegerMatrix *centering_cell;
+	RationalMatrix *m;
+	double a, b, c, al, be, ga;
+	double av[3], bv[3], cv[3];
+	Rational *cand_a;
+	Rational *cand_b;
+	Rational *cand_c;
+	int ncand_a, ncand_b, ncand_c;
+	int i;
+	int ia, ib;
+
+	/* Actually compare against primitive version of reference */
+	reference = uncenter_cell(reference_in, &centering_reference);
+	if ( reference == NULL ) return 0;
+
+	/* Actually compare primitive version of cell */
+	cell = uncenter_cell(cell_in, &centering_cell);
+	if ( cell == NULL ) return 0;
+
+	/* Get target parameters */
+	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
+	cell_get_cartesian(cell, &av[0], &av[1], &av[2],
+	                         &bv[0], &bv[1], &bv[2],
+	                         &cv[0], &cv[1], &cv[2]);
+
+	/* Find vectors in 'cell' with lengths close to a, b and c */
+	cand_a = find_candidates(a, av, bv, cv, ltl, &ncand_a);
+	cand_b = find_candidates(b, av, bv, cv, ltl, &ncand_b);
+	cand_c = find_candidates(c, av, bv, cv, ltl, &ncand_c);
+
+	STATUS("Candidates for a: %i\n", ncand_a);
+	for ( i=0; i<10; i++ ) {
+		STATUS("%s %s %s\n", rtnl_format(cand_a[3*i+0]),
+		                     rtnl_format(cand_a[3*i+1]),
+		                     rtnl_format(cand_a[3*i+2]));
+	}
+	STATUS("Candidates for b: %i\n", ncand_b);
+	for ( i=0; i<10; i++ ) {
+		STATUS("%s %s %s\n", rtnl_format(cand_b[3*i+0]),
+		                     rtnl_format(cand_b[3*i+1]),
+		                     rtnl_format(cand_b[3*i+2]));
+	}
+	STATUS("Candidates for c: %i\n", ncand_c);
+	for ( i=0; i<10; i++ ) {
+		STATUS("%s %s %s\n", rtnl_format(cand_c[3*i+0]),
+		                     rtnl_format(cand_c[3*i+1]),
+		                     rtnl_format(cand_c[3*i+2]));
+	}
+
+	m = rtnl_mtx_new(3, 3);
+	for ( ia=0; ia<ncand_a; ia++ ) {
+		for ( ib=0; ib<ncand_b; ib++ ) {
+
+			UnitCell *test;
+			double at, bt, ct, alt, bet, gat;
+			int ic = 0;
+
+			/* Form the matrix using the first candidate for c */
+			rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
+			rtnl_mtx_set(m, 0, 1, cand_a[3*ia+1]);
+			rtnl_mtx_set(m, 0, 2, cand_a[3*ia+2]);
+			rtnl_mtx_set(m, 1, 0, cand_b[3*ib+0]);
+			rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
+			rtnl_mtx_set(m, 1, 2, cand_b[3*ib+2]);
+			rtnl_mtx_set(m, 2, 0, cand_c[3*ic+0]);
+			rtnl_mtx_set(m, 2, 1, cand_c[3*ic+1]);
+			rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
+
+			/* Check angle between a and b */
+			test = cell_transform_rational(cell, m);
+			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
+			cell_free(test);
+			if ( fabs(gat - ga) > atl ) continue;
+
+			/* Gamma OK, now look for place for c axis */
+			for ( ic=0; ic<ncand_c; ic++ ) {
+
+				UnitCell *test2;
+
+				rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
+				rtnl_mtx_set(m, 0, 1, cand_a[3*ia+1]);
+				rtnl_mtx_set(m, 0, 2, cand_a[3*ia+2]);
+				rtnl_mtx_set(m, 1, 0, cand_b[3*ib+0]);
+				rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
+				rtnl_mtx_set(m, 1, 2, cand_b[3*ib+2]);
+				rtnl_mtx_set(m, 2, 0, cand_c[3*ic+0]);
+				rtnl_mtx_set(m, 2, 1, cand_c[3*ic+1]);
+				rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
+
+				if ( rtnl_cmp(rtnl_mtx_det(m),rtnl_zero()) == 0 ) continue;
+
+				test = cell_transform_rational(cell, m);
+				cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
+				if ( !right_handed(test) ) {
+					cell_free(test);
+					continue;
+				}
+				if ( fabs(alt - al) > atl ) {
+					cell_free(test);
+					continue;
+				}
+				if ( fabs(bet - be) > atl ) {
+					cell_free(test);
+					continue;
+				}
+				rtnl_mtx_print(m);
+				test2 = cell_transform_intmat(test, centering_reference);
+				cell_print(test2);
+				cell_free(test);
+				cell_free(test2);
+
+			}
+		}
+	}
+
+	*pmb = m;
+	return 1;
+}

@@ -226,6 +226,39 @@ char *rtnl_format(Rational rt)
 }
 
 
+Rational *rtnl_list(signed int num_min, signed int num_max,
+                    signed int den_min, signed int den_max,
+                    int *pn)
+{
+	signed int num, den;
+	Rational *list;
+	int n = 0;
+
+	list = malloc((1+num_max-num_min)*(1+den_max-den_min)*sizeof(Rational));
+	if ( list == NULL ) return NULL;
+
+	for ( num=num_min; num<=num_max; num++ ) {
+		for ( den=den_min; den<=den_max; den++ ) {
+
+			Rational r = rtnl(num, den);
+
+			/* Denominator zero? */
+			if ( den == 0 ) continue;
+
+			/* Same as last entry? */
+			if ( (n>0) && (rtnl_cmp(list[n-1], r)==0) ) continue;
+
+			/* Can be reduced? */
+			if ( gcd(num, den) != 1 ) continue;
+
+			list[n++] = r;
+		}
+	}
+	*pn = n;
+	return list;
+}
+
+
 /**
  * SECTION:rational_matrix
  * @short_description: Rational matrices
