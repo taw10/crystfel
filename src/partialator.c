@@ -1345,6 +1345,9 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
+		free_stuff_from_stream(cur.stuff_from_stream);
+		cur.stuff_from_stream = NULL;
+
 		for ( i=0; i<cur.n_crystals; i++ ) {
 
 			Crystal *cr;
@@ -1378,7 +1381,8 @@ int main(int argc, char *argv[])
 			*image = cur;
 			image->n_crystals = 1;
 			image->crystals = &crystals[n_crystals];
-			free(cur.crystals);
+
+			image->filename = strdup(image->filename);
 
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
@@ -1408,6 +1412,8 @@ int main(int argc, char *argv[])
 			if ( n_crystals == stop_after ) break;
 
 		}
+		free(cur.crystals);
+		free(cur.filename);
 
 		n_images++;
 
@@ -1575,7 +1581,6 @@ int main(int argc, char *argv[])
 	for ( i=0; i<n_crystals; i++ ) {
 		struct image *image = crystal_get_image(crystals[i]);
 		reflist_free(crystal_get_reflections(crystals[i]));
-		free_stuff_from_stream(image->stuff_from_stream);
 		free(image->filename);
 		free(image);
 		cell_free(crystal_get_cell(crystals[i]));
