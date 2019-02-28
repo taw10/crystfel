@@ -131,6 +131,7 @@ Crystal *crystal_copy(const Crystal *cryst)
 	if ( c == NULL ) return NULL;
 
 	memcpy(c, cryst, sizeof(Crystal));
+	if ( c->notes != NULL ) c->notes = strdup(c->notes);
 
 	return c;
 }
