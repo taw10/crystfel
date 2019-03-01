@@ -480,8 +480,9 @@ void write_test_logs(Crystal *crystal, const RefList *full,
 	}
 
 	if ( cycle == 0 ) {
-		fprintf(fh, "Image: %s %s\n",
-		        image->filename, get_event_string(image->event));
+		char *evstr = get_event_string(image->event);
+		fprintf(fh, "Image: %s %s\n", image->filename, evstr);
+		free(evstr);
 	}
 
 	if ( cycle >= 0 ) {
@@ -536,9 +537,10 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	}
 
 	if ( cycle == 0 ) {
-		fprintf(fh, "Image: %s %s\n",
-		        image->filename, get_event_string(image->event));
+		char *evstr = get_event_string(image->event);
+		fprintf(fh, "Image: %s %s\n", image->filename, evstr);
 		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration  h  k  l\n");
+		free(evstr);
 	}
 
 	cell = crystal_get_cell(crystal);
