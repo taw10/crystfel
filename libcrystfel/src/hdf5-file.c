@@ -1901,8 +1901,11 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 
 		if ( p->mask != NULL ) {
 			int *flags = malloc(p->w*p->h*sizeof(int));
-			load_mask(f, ev, p, flags, f_offset, f_count, hsd);
-			image->bad[pi] = make_badmask(flags, p, image->det);
+			if ( !load_mask(f, ev, p, flags, f_offset, f_count, hsd) ) {
+				image->bad[pi] = make_badmask(flags, p, image->det);
+			} else {
+				image->bad[pi] = make_badmask(NULL, p, image->det);
+			}
 			free(flags);
 		} else {
 			image->bad[pi] = make_badmask(NULL, p, image->det);
