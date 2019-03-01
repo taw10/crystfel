@@ -656,6 +656,7 @@ static void write_grid(Crystal *cr, const RefList *full,
 	int i;
 
 	min = setup_minimiser(cr, full, 0, serial, scaleflags, &priv);
+	if ( min == NULL ) return;
 
 	idx1 = 99;
 	idx2 = 99;
