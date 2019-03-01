@@ -464,7 +464,7 @@ void write_test_logs(Crystal *crystal, const RefList *full,
 	FILE *fh;
 	struct image *image = crystal_get_image(crystal);
 	char tmp[256];
-	char ins[5];
+	char ins[16];
 
 	snprintf(tmp, 256, "pr-logs/parameters-crystal%i.dat", serial);
 
@@ -485,7 +485,7 @@ void write_test_logs(Crystal *crystal, const RefList *full,
 	}
 
 	if ( cycle >= 0 ) {
-		snprintf(ins, 4, "%i", cycle);
+		snprintf(ins, 16, "%i", cycle);
 	} else {
 		ins[0] = 'F';
 		ins[1] = '\0';
@@ -520,7 +520,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	double B = crystal_get_Bfac(crystal);
 	UnitCell *cell;
 	struct image *image = crystal_get_image(crystal);
-	char ins[5];
+	char ins[16];
 
 	snprintf(tmp, 256, "pr-logs/specgraph-crystal%i.dat", serial);
 
@@ -544,7 +544,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	cell = crystal_get_cell(crystal);
 
 	if ( cycle >= 0 ) {
-		snprintf(ins, 4, "%i", cycle);
+		snprintf(ins, 16, "%i", cycle);
 	} else {
 		ins[0] = 'F';
 		ins[1] = '\0';
@@ -648,8 +648,8 @@ static void write_grid(Crystal *cr, const RefList *full,
                        const char *name)
 {
 	FILE *fh;
-	char fn[16];
-	char ins[5];
+	char fn[64];
+	char ins[16];
 	gsl_multimin_fminimizer *min;
 	struct rf_priv priv;
 	int idx1, idx2;
@@ -667,13 +667,13 @@ static void write_grid(Crystal *cr, const RefList *full,
 	assert(idx2 != 99);
 
 	if ( cycle >= 0 ) {
-		snprintf(ins, 12, "%i", cycle);
+		snprintf(ins, 16, "%i", cycle);
 	} else {
 		ins[0] = 'F';
 		ins[1] = '\0';
 	}
 
-	snprintf(fn, 63, "pr-logs/grid-crystal%i-cycle%s-%s.dat",
+	snprintf(fn, 64, "pr-logs/grid-crystal%i-cycle%s-%s.dat",
 	         serial, ins, name);
 	fh = fopen(fn, "w");
 	if ( fh != NULL ) {
