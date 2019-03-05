@@ -292,6 +292,7 @@ struct _rationalmatrix
 RationalMatrix *rtnl_mtx_new(unsigned int rows, unsigned int cols)
 {
 	RationalMatrix *m;
+	int i;
 
 	m = malloc(sizeof(RationalMatrix));
 	if ( m == NULL ) return NULL;
@@ -305,6 +306,21 @@ RationalMatrix *rtnl_mtx_new(unsigned int rows, unsigned int cols)
 	m->rows = rows;
 	m->cols = cols;
 
+	for ( i=0; i<m->rows*m->cols; i++ ) {
+		m->v[i] = rtnl_zero();
+	}
+
+	return m;
+}
+
+
+RationalMatrix *rtnl_mtx_identity(int rows)
+{
+	int i;
+	RationalMatrix *m = rtnl_mtx_new(rows, rows);
+	for ( i=0; i<rows; i++ ) {
+		rtnl_mtx_set(m, i, i, rtnl(1,1));
+	}
 	return m;
 }
 
