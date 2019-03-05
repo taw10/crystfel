@@ -125,6 +125,11 @@ while ( $line = <FH> ) {
 		if ( $n_seen > $skip ) {
 
 			my $statbuf = stat($filename);
+			if ( not $statbuf ) {
+				printf("Couldn't stat image file '%s' - does it exist?\n",
+				       $filename);
+				exit;
+			}
 			my $image_mtime = $statbuf->mtime;
 			if ( $image_mtime > $stream_mtime ) {
 				printf(STDERR "WARNING: Image file is newer than stream\n");
