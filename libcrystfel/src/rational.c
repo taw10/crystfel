@@ -546,6 +546,31 @@ void rtnl_mtx_print(const RationalMatrix *m)
 }
 
 
+void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
+                      RationalMatrix *ans)
+{
+	int i, j;
+
+	assert(ans->cols == A->cols);
+	assert(ans->rows == B->rows);
+	assert(A->cols == B->rows);
+
+	for ( i=0; i<ans->rows; i++ ) {
+		for ( j=0; j<ans->cols; j++ ) {
+			int k;
+			Rational sum = rtnl_zero();
+			for ( k=0; k<A->rows; k++ ) {
+				Rational add;
+				add = rtnl_mul(rtnl_mtx_get(A, i, k),
+				               rtnl_mtx_get(B, k, j));
+				sum = rtnl_add(sum, add);
+			}
+			rtnl_mtx_set(ans, i, j, sum);
+		}
+	}
+}
+
+
 void rtnl_mtx_mult(const RationalMatrix *m, const Rational *vec, Rational *ans)
 {
 	int i, j;

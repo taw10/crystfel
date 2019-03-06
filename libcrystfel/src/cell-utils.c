@@ -361,18 +361,45 @@ int bravais_lattice(UnitCell *cell)
 }
 
 
+static RationalMatrix *create_rtnl_mtx(signed int a1, signed int a2,
+                                       signed int b1, signed int b2,
+                                       signed int c1, signed int c2,
+                                       signed int d1, signed int d2,
+                                       signed int e1, signed int e2,
+                                       signed int f1, signed int f2,
+                                       signed int g1, signed int g2,
+                                       signed int h1, signed int h2,
+                                       signed int i1, signed int i2)
+{
+	RationalMatrix *m = rtnl_mtx_new(3, 3);
+	if ( m == NULL ) return NULL;
+	rtnl_mtx_set(m, 0, 0, rtnl(a1, a2));
+	rtnl_mtx_set(m, 0, 1, rtnl(b1, b2));
+	rtnl_mtx_set(m, 0, 2, rtnl(c1, c2));
+	rtnl_mtx_set(m, 1, 0, rtnl(d1, d2));
+	rtnl_mtx_set(m, 1, 1, rtnl(e1, e2));
+	rtnl_mtx_set(m, 1, 2, rtnl(f1, f2));
+	rtnl_mtx_set(m, 2, 0, rtnl(g1, g2));
+	rtnl_mtx_set(m, 2, 1, rtnl(h1, h2));
+	rtnl_mtx_set(m, 2, 2, rtnl(i1, h2));
+	return m;
+}
+
+
 /* Given a centered cell @in, return the integer transformation matrix which
  * turns a primitive cell into @in. Set new_centering and new_latt to the
  * centering and lattice type of the primitive cell (usually aP, sometimes rR,
- * rarely mP) */
+ * rarely mP).  Store the inverse matrix at pCi */
 static IntegerMatrix *centering_transformation(UnitCell *in,
                                                char *new_centering,
                                                LatticeType *new_latt,
-                                               char *new_ua)
+                                               char *new_ua,
+                                               RationalMatrix **pCi)
 {
 	LatticeType lt;
 	char ua, cen;
-	IntegerMatrix *t = NULL;
+	IntegerMatrix *C = NULL;
+	RationalMatrix *Ci = NULL;
 
 	lt = cell_get_lattice_type(in);
 	ua = cell_get_unique_axis(in);
@@ -382,13 +409,17 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 		*new_centering = cen;
 		*new_latt = lt;
 		*new_ua = ua;
-		t = intmat_identity(3);
+		C = intmat_identity(3);
+		Ci = rtnl_mtx_identity(3);
 	}
 
 	if ( cen == 'I' ) {
-		t = intmat_create_3x3(0, 1, 1,
+		C = intmat_create_3x3(0, 1, 1,
 		                      1, 0, 1,
 		                      1, 1, 0);
+		Ci = create_rtnl_mtx(-1,2,  1,2,  1,2,
+		                      1,2, -1,2,  1,2,
+		                      1,2,  1,2, -1,2);
 		if ( lt == L_CUBIC ) {
 			*new_latt = L_RHOMBOHEDRAL;
 			*new_centering = 'R';
@@ -401,9 +432,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	}
 
 	if ( cen == 'F' ) {
-		t = intmat_create_3x3(-1,  1,  1,
+		C = intmat_create_3x3(-1,  1,  1,
 		                       1, -1,  1,
 		                       1,  1, -1);
+		Ci = create_rtnl_mtx( 0,1,  1,2,  1,2,
+		                      1,2,  0,1,  1,2,
+		                      1,2,  1,2,  0,1);
 		if ( lt == L_CUBIC ) {
 			*new_latt = L_RHOMBOHEDRAL;
 			*new_centering = 'R';
@@ -417,9 +451,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 
 	if ( (lt == L_HEXAGONAL) && (cen == 'H') && (ua == 'c') ) {
 		/* Obverse setting */
-		t = intmat_create_3x3(1, -1,  0,
+		C = intmat_create_3x3(1, -1,  0,
 		                      0,  1, -1,
 		                      1,  1,  1);
+		Ci = create_rtnl_mtx( 2,3,  1,3,  1,3,
+		                     -1,3,  1,3,  1,3,
+		                     -1,3, -2,3,  1,3);
 		assert(lt == L_HEXAGONAL);
 		assert(ua == 'c');
 		*new_latt = L_RHOMBOHEDRAL;
@@ -428,9 +465,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	}
 
 	if ( cen == 'A' ) {
-		t = intmat_create_3x3(1,  0,  0,
-		                      0,  1, -1,
-		                      0,  1,  1);
+		C = intmat_create_3x3(0,  0, -1,
+		                      1,  1,  0,
+		                      1, -1,  0);
+		Ci = create_rtnl_mtx( 0,1,  1,2,  1,2,
+		                      0,1,  1,2, -1,2,
+		                     -1,1,  0,1,  0,1);
 		if ( lt == L_ORTHORHOMBIC ) {
 			*new_latt = L_MONOCLINIC;
 			*new_centering = 'P';
@@ -443,9 +483,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	}
 
 	if ( cen == 'B' ) {
-		t = intmat_create_3x3(1,  0, -1,
-		                      0,  1,  0,
-		                      1,  0,  1);
+		C = intmat_create_3x3(1,  1,  0,
+		                      0,  0,  1,
+		                      1, -1,  0);
+		Ci = create_rtnl_mtx( 1,2,  0,1,  1,2,
+		                      1,2,  0,1, -1,2,
+		                      0,1,  1,1,  0,1);
 		if ( lt == L_ORTHORHOMBIC ) {
 			*new_latt = L_MONOCLINIC;
 			*new_centering = 'P';
@@ -458,9 +501,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	}
 
 	if ( cen == 'C' ) {
-		t = intmat_create_3x3(1, -1,  0,
+		C = intmat_create_3x3(1, -1,  0,
 		                      1,  1,  0,
 		                      0,  0,  1);
+		Ci = create_rtnl_mtx( 1,2,  1,2,  0,1,
+		                     -1,2,  1,2,  0,1,
+		                      0,1,  0,1,  1,1);
 		if ( lt == L_ORTHORHOMBIC ) {
 			*new_latt = L_MONOCLINIC;
 			*new_centering = 'P';
@@ -472,45 +518,57 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 		}
 	}
 
-	return t;
+	*pCi = Ci;
+	return C;
 }
 
 
 /**
  * uncenter_cell:
  * @in: A %UnitCell
- * @t: Location at which to store the transformation which was used.
+ * @C: Location at which to store the centering transformation
+ * @Ci: Location at which to store the inverse centering transformation
  *
- * Turns any cell into a primitive one, e.g. for comparison purposes.  The
- * transformation which was used is stored at @t, which can be NULL if the
- * transformation is not required.
+ * Turns any cell into a primitive one, e.g. for comparison purposes.
  *
- * Returns: a primitive version of @in in a conventional (unique axis c)
- * setting.
+ * The transformation which was used is stored at @Ci. The centering
+ * transformation, which is the transformation you should apply if you want to
+ * get back the original cell, will be stored at @C.  Either or both of these
+ * can be NULL if you don't need that information.
+ *
+ * Returns: a primitive version of @in.
  *
  */
-UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **t)
+UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **pC, RationalMatrix **pCi)
 {
-	IntegerMatrix *tt;
+	IntegerMatrix *C;
+	RationalMatrix *Ci;
 	char new_centering;
 	LatticeType new_latt;
 	char new_ua;
 	UnitCell *out;
 
-	tt = centering_transformation(in, &new_centering, &new_latt, &new_ua);
-	if ( tt == NULL ) return NULL;
+	C = centering_transformation(in, &new_centering, &new_latt,
+	                             &new_ua, &Ci);
+	if ( C == NULL ) return NULL;
 
-	out = cell_transform_intmat_inverse(in, tt);
+	out = cell_transform_rational(in, Ci);
 	if ( out == NULL ) return NULL;
 
 	cell_set_lattice_type(out, new_latt);
 	cell_set_centering(out, new_centering);
 	cell_set_unique_axis(out, new_ua);
 
-	if ( t != NULL ) {
-		*t = tt;
+	if ( pC != NULL ) {
+		*pC = C;
 	} else {
-		intmat_free(tt);
+		intmat_free(C);
+	}
+
+	if ( pCi != NULL ) {
+		*pCi = Ci;
+	} else {
+		rtnl_mtx_free(Ci);
 	}
 
 	return out;
@@ -578,12 +636,12 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	UnitCell *new_cell_trans;
 
 	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &centering);
+	template = uncenter_cell(template_in, &centering, NULL);
 	if ( template == NULL ) return NULL;
 
 	/* The candidate cell is also uncentered, because it might be centered
 	 * if it came from (e.g.) MOSFLM */
-	cell = uncenter_cell(cell_in, NULL);
+	cell = uncenter_cell(cell_in, NULL, NULL);
 	if ( cell == NULL ) return NULL;
 
 	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
@@ -820,11 +878,11 @@ UnitCell *match_cell_ab(UnitCell *cell_in, UnitCell *template_in)
 	UnitCell *new_cell_trans;
 
 	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &to_given_cell);
+	template = uncenter_cell(template_in, &to_given_cell, NULL);
 
 	/* The candidate cell is also uncentered, because it might be centered
 	 * if it came from (e.g.) MOSFLM */
-	cell = uncenter_cell(cell_in, NULL);
+	cell = uncenter_cell(cell_in, NULL, NULL);
 
 	/* Get the lengths to match */
 	if ( cell_get_cartesian(template, &ax, &ay, &az,
@@ -1904,8 +1962,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 {
 	UnitCell *cell;
 	UnitCell *reference;
-	IntegerMatrix *centering_reference;
-	IntegerMatrix *centering_cell;
+	IntegerMatrix *CBint;
+	RationalMatrix *CiA;
+	RationalMatrix *CB;
 	RationalMatrix *m;
 	double a, b, c, al, be, ga;
 	double av[3], bv[3], cv[3];
@@ -1915,13 +1974,18 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	int ncand_a, ncand_b, ncand_c;
 	int i;
 	int ia, ib;
+	RationalMatrix *MCiA;
+	RationalMatrix *CBMCiA;
+	int ret = 0;
 
 	/* Actually compare against primitive version of reference */
-	reference = uncenter_cell(reference_in, &centering_reference);
+	reference = uncenter_cell(reference_in, &CBint, NULL);
 	if ( reference == NULL ) return 0;
+	CB = rtnl_mtx_from_intmat(CBint);
+	intmat_free(CBint);
 
 	/* Actually compare primitive version of cell */
-	cell = uncenter_cell(cell_in, &centering_cell);
+	cell = uncenter_cell(cell_in, NULL, &CiA);
 	if ( cell == NULL ) return 0;
 
 	/* Get target parameters */
@@ -1955,6 +2019,8 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	}
 
 	m = rtnl_mtx_new(3, 3);
+	MCiA = rtnl_mtx_new(3, 3);
+	CBMCiA = rtnl_mtx_new(3, 3);
 	for ( ia=0; ia<ncand_a; ia++ ) {
 		for ( ib=0; ib<ncand_b; ib++ ) {
 
@@ -1982,8 +2048,6 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			/* Gamma OK, now look for place for c axis */
 			for ( ic=0; ic<ncand_c; ic++ ) {
 
-				UnitCell *test2;
-
 				rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
 				rtnl_mtx_set(m, 0, 1, cand_a[3*ia+1]);
 				rtnl_mtx_set(m, 0, 2, cand_a[3*ia+2]);
@@ -2010,16 +2074,19 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 					cell_free(test);
 					continue;
 				}
-				rtnl_mtx_print(m);
-				test2 = cell_transform_intmat(test, centering_reference);
-				cell_print(test2);
+
+				/* m is a rational matrix which turns Ap into Bp
+				 * We need to return CB.M.CiA, which turns A into B */
+				rtnl_mtx_mtxmult(m, CiA, MCiA);
+				rtnl_mtx_mtxmult(CB, MCiA, CBMCiA);
+				*pmb = CBMCiA;
+				ret = 1;
+
 				cell_free(test);
-				cell_free(test2);
 
 			}
 		}
 	}
 
-	*pmb = m;
-	return 1;
+	return ret;
 }

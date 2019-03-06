@@ -224,25 +224,50 @@ static int check_transformation(UnitCell *cell, IntegerMatrix *tfn,
 static int check_uncentering(UnitCell *cell)
 {
 	UnitCell *ct;
-	IntegerMatrix *tr;
+	IntegerMatrix *C;
+	RationalMatrix *Ci;
+	UnitCell *cback;
+	double a[9], b[9];
+	int i;
 	int fail = 0;
 
 	STATUS("-----------------------\n");
 
 	STATUS("----> Before transformation:\n");
-	cell_print(cell);
+	cell_print_full(cell);
 
-	ct = uncenter_cell(cell, &tr);
+	ct = uncenter_cell(cell, &C, &Ci);
 	if ( ct == NULL ) return 1;
 
 	STATUS("----> The primitive unit cell:\n");
 	cell_print(ct);
 
 	STATUS("----> The matrix to put the centering back:\n");
-	intmat_print(tr);
+	intmat_print(C);
 
-	fail = check_same_reflections(cell, ct);
+	STATUS("----> The recovered centered cell:\n");
+	cback = cell_transform_intmat(ct, C);
+	cell_print(cback);
+
+	cell_get_cartesian(cell, &a[0], &a[1], &a[2],
+	                         &a[3], &a[4], &a[5],
+	                         &a[6], &a[7], &a[8]);
+	cell_get_cartesian(cback, &b[0], &b[1], &b[2],
+	                          &b[3], &b[4], &b[5],
+	                          &b[6], &b[7], &b[8]);
+	for ( i=0; i<9; i++ ) {
+		if ( fabs(a[i] - b[i]) > 1e-12 ) {
+			fail = 1;
+		}
+	}
+
+	if ( fail ) {
+		ERROR("Original cell not recovered after back transformation\n");
+	}
+
+	fail += check_same_reflections(cell, ct);
 	cell_free(ct);
+	cell_free(cback);
 
 	return fail;
 }

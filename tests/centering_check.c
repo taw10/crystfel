@@ -61,7 +61,8 @@ static int check_centering(double a, double b, double c,
 {
 	UnitCell *cell, *cref;
 	UnitCell *n;
-	IntegerMatrix *t;
+	IntegerMatrix *C;
+	RationalMatrix *Ci;
 	int fail = 0;
 	int i;
 	double asx, asy, asz;
@@ -86,12 +87,12 @@ static int check_centering(double a, double b, double c,
 	cell_free(cref);
 
 	check_cell(cell, "Input");
-	n = uncenter_cell(cell, &t);
+	n = uncenter_cell(cell, &C, &Ci);
 	if ( n != NULL ) {
 		STATUS("The back transformation is:\n");
-		intmat_print(t);
+		intmat_print(C);
 		if ( check_cell(n, "Output") ) fail = 1;
-		if ( intmat_is_identity(t) && ((cen=='P') || (cen=='R')) ) {
+		if ( intmat_is_identity(C) && ((cen=='P') || (cen=='R')) ) {
 			STATUS("Identity, as expected.\n");
 		} else {
 			cell_print(n);

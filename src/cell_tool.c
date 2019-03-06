@@ -92,7 +92,14 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 		STATUS("No relationship found between lattices.\n");
 		return 0;
 	} else {
+		UnitCell *trans;
 		STATUS("Relationship found:\n");
+		rtnl_mtx_print(m);
+		STATUS("Transformed version of input unit cell:\n");
+		trans = cell_transform_rational(cell, m);
+		cell_print(trans);
+		cell_free(trans);
+
 	}
 
 	rtnl_mtx_free(m);
@@ -294,15 +301,19 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 static int uncenter(UnitCell *cell, const char *out_file)
 {
 	UnitCell *cnew;
-	IntegerMatrix *m;
+	IntegerMatrix *C;
+	RationalMatrix *Ci;
 
-	cnew = uncenter_cell(cell, &m);
+	cnew = uncenter_cell(cell, &C, &Ci);
 
 	STATUS("------------------> The primitive unit cell:\n");
 	cell_print(cnew);
 
 	STATUS("------------------> The centering transformation:\n");
-	intmat_print(m);
+	intmat_print(C);
+
+	STATUS("------------------> The un-centering transformation:\n");
+	rtnl_mtx_print(Ci);
 
 	if ( out_file != NULL ) {
 		FILE *fh = fopen(out_file, "w");

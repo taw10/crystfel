@@ -157,7 +157,7 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 
 		xgandalf_private_data->cellTemplate = cell;
 
-		UnitCell* primitiveCell = uncenter_cell(cell, &xgandalf_private_data->centeringTransformation);
+		UnitCell* primitiveCell = uncenter_cell(cell, &xgandalf_private_data->centeringTransformation, NULL);
 
 		UnitCell *uc = cell_new_from_cell(primitiveCell);
 		reduceCell(primitiveCell, &xgandalf_private_data->latticeReductionTransform);
