@@ -1972,11 +1972,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	Rational *cand_b;
 	Rational *cand_c;
 	int ncand_a, ncand_b, ncand_c;
-	int i;
 	int ia, ib;
 	RationalMatrix *MCiA;
 	RationalMatrix *CBMCiA;
-	int ret = 0;
 
 	/* Actually compare against primitive version of reference */
 	reference = uncenter_cell(reference_in, &CBint, NULL);
@@ -1998,25 +1996,6 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	cand_a = find_candidates(a, av, bv, cv, ltl, &ncand_a);
 	cand_b = find_candidates(b, av, bv, cv, ltl, &ncand_b);
 	cand_c = find_candidates(c, av, bv, cv, ltl, &ncand_c);
-
-	STATUS("Candidates for a: %i\n", ncand_a);
-	for ( i=0; i<10; i++ ) {
-		STATUS("%s %s %s\n", rtnl_format(cand_a[3*i+0]),
-		                     rtnl_format(cand_a[3*i+1]),
-		                     rtnl_format(cand_a[3*i+2]));
-	}
-	STATUS("Candidates for b: %i\n", ncand_b);
-	for ( i=0; i<10; i++ ) {
-		STATUS("%s %s %s\n", rtnl_format(cand_b[3*i+0]),
-		                     rtnl_format(cand_b[3*i+1]),
-		                     rtnl_format(cand_b[3*i+2]));
-	}
-	STATUS("Candidates for c: %i\n", ncand_c);
-	for ( i=0; i<10; i++ ) {
-		STATUS("%s %s %s\n", rtnl_format(cand_c[3*i+0]),
-		                     rtnl_format(cand_c[3*i+1]),
-		                     rtnl_format(cand_c[3*i+2]));
-	}
 
 	m = rtnl_mtx_new(3, 3);
 	MCiA = rtnl_mtx_new(3, 3);
@@ -2080,13 +2059,24 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 				rtnl_mtx_mtxmult(m, CiA, MCiA);
 				rtnl_mtx_mtxmult(CB, MCiA, CBMCiA);
 				*pmb = CBMCiA;
-				ret = 1;
-
 				cell_free(test);
+				rtnl_mtx_free(m);
+				rtnl_mtx_free(MCiA);
+				/* Not CBMCiA because we are returning it */
+				free(cand_a);
+				free(cand_b);
+				free(cand_c);
+				return 1;
 
 			}
 		}
 	}
 
-	return ret;
+	rtnl_mtx_free(m);
+	rtnl_mtx_free(MCiA);
+	rtnl_mtx_free(CBMCiA);
+	free(cand_a);
+	free(cand_b);
+	free(cand_c);
+	return 0;
 }
