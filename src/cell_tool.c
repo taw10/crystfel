@@ -61,6 +61,7 @@ static void show_help(const char *s)
 "     --rings                Calculate powder ring positions.\n"
 "     --compare-cell <file>  Compare unit cell with cell from <file>.\n"
 "     --cell-choices         Calculate all three cell choices for monoclinic C cell.\n"
+"     --transform=<op>       Transform unit cell.\n"
 "\n"
 " -y <pointgroup>            Real point group of the structure.\n"
 "     --tolerance=<tol>      Set the tolerances for cell comparison.\n"

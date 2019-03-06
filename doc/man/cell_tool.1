@@ -20,6 +20,8 @@ cell_tool \- manipulate unit cells
 .PP
 \fBcell_tool --compare-cell \fIreference.cell \fImy_structure.cell \fR[\fB--tolerance=\fItols\fR]
 .PP
+\fBcell_tool --transform=\fIop\fR \fImy_structure.cell
+.PP
 \fBcell_tool --help\fI
 
 .SH DESCRIPTION
@@ -50,8 +52,12 @@ There are an infinite number of primitive unit cell for any lattice.  This progr
 The program will compare the two cells, and report if \fImy_structure.cell\fR can be made to look similar to \fIreference.cell\fR applying any transformation matrix.
 .PP
 The tolerance \fItols\fR is given as lengthtol,angtol, in percent and degrees respectively, which will be applied to the real-space unit cell axis lengths and angles.
+
+.SH TRANSFORMING A UNIT CELL
 .PP
-Note that the comparison ignores the centering of the cell.  That means that
+\fBcell_tool --transform=\fIop\fR \fImy_structure.cell
+.PP
+The program will transform the unit cell according to \fIop\fR.  Example: \fB--transform=b,c,a\fR means to permute the axes such that the new \fIa\fR axis matches the old \fIb\fR axis, and so on.
 
 .SH FINDING INDEXING AMBIGUITIES
 .PP
