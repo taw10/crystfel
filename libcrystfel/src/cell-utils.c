@@ -1884,7 +1884,7 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 	cands = malloc(max_cand * sizeof(struct cand));
 	if ( cands == NULL ) return NULL;
 
-	rat = rtnl_list(0, 4, -4, 4, &nrat);
+	rat = rtnl_list(-5, 5, 1, 4, &nrat);
 	if ( rat == NULL ) return NULL;
 
 	for ( ia=0; ia<nrat; ia++ ) {
@@ -1978,6 +1978,13 @@ static double g6_distance(double a1, double b1, double c1,
  * of @reference, within fractional axis length difference @ltl and absolute angle
  * difference @atl (in radians), this function returns non-zero and stores the
  * transformation which needs to be applied to @cell_in at @pmb.
+ *
+ * Note that the tolerances will be applied to the primitive unit cell.  If
+ * the reference cell is centered, a primitive unit cell will first be calculated.
+ *
+ * Subject to the tolerances, this function will find the transformation which
+ * gives the best match to the reference cell, using the Euclidian norm in
+ * G6 [see e.g. Andrews and Bernstein, Acta Cryst. A44 (1988) p1009].
  *
  * Only the cell parameters will be compared.  The relative orientations are
  * irrelevant.
@@ -2111,7 +2118,6 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	}
 
 	/* Solution found */
-	STATUS("minimum norm = %e\n", min_dist);
 	rtnl_mtx_mtxmult(CB, MCiA, CBMCiA);
 	rtnl_mtx_free(MCiA);
 	*pmb = CBMCiA;
