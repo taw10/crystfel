@@ -1937,6 +1937,35 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 }
 
 
+static void g6_components(double *g6, double a, double b, double c,
+                                      double al, double be, double ga)
+{
+	g6[0] = a*a;
+	g6[1] = b*b;
+	g6[2] = c*c;
+	g6[3] = 2.0*b*c*cos(al);
+	g6[4] = 2.0*a*c*cos(be);
+	g6[5] = 2.0*a*b*cos(ga);
+}
+
+
+static double g6_distance(double a1, double b1, double c1,
+                          double al1, double be1, double ga1,
+                          double a2, double b2, double c2,
+                          double al2, double be2, double ga2)
+{
+	double g1[6], g2[6];
+	int i;
+	double total = 0.0;
+	g6_components(g1, a1, b1, c1, al1, be1, ga1);
+	g6_components(g2, a2, b2, c2, al2, be2, ga2);
+	for ( i=0; i<6; i++ ) {
+		total += (g1[i]-g2[i])*(g1[i]-g2[i]);
+	}
+	return sqrt(total);
+}
+
+
 /**
  * compare_reindexed_cell_parameters:
  * @cell_in: A %UnitCell
@@ -1975,6 +2004,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	int ia, ib;
 	RationalMatrix *MCiA;
 	RationalMatrix *CBMCiA;
+	double min_dist = +INFINITY;
 
 	/* Actually compare against primitive version of reference */
 	reference = uncenter_cell(reference_in, &CBint, NULL);
@@ -2005,6 +2035,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 
 			UnitCell *test;
 			double at, bt, ct, alt, bet, gat;
+			double dist;
 			int ic = 0;
 
 			/* Form the matrix using the first candidate for c */
@@ -2054,29 +2085,35 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 					continue;
 				}
 
-				/* m is a rational matrix which turns Ap into Bp
-				 * We need to return CB.M.CiA, which turns A into B */
-				rtnl_mtx_mtxmult(m, CiA, MCiA);
-				rtnl_mtx_mtxmult(CB, MCiA, CBMCiA);
-				*pmb = CBMCiA;
+				dist = g6_distance(at, bt, ct, alt, bet, gat,
+				                   a, b, c, al, be, ga);
+				if ( dist < min_dist ) {
+					min_dist = dist;
+					rtnl_mtx_mtxmult(m, CiA, MCiA);
+				}
+
 				cell_free(test);
-				rtnl_mtx_free(m);
-				rtnl_mtx_free(MCiA);
-				/* Not CBMCiA because we are returning it */
-				free(cand_a);
-				free(cand_b);
-				free(cand_c);
-				return 1;
 
 			}
 		}
 	}
 
 	rtnl_mtx_free(m);
-	rtnl_mtx_free(MCiA);
-	rtnl_mtx_free(CBMCiA);
 	free(cand_a);
 	free(cand_b);
 	free(cand_c);
-	return 0;
+
+	if ( isinf(min_dist) ) {
+		rtnl_mtx_free(CBMCiA);
+		rtnl_mtx_free(MCiA);
+		*pmb = NULL;
+		return 0;
+	}
+
+	/* Solution found */
+	STATUS("minimum norm = %e\n", min_dist);
+	rtnl_mtx_mtxmult(CB, MCiA, CBMCiA);
+	rtnl_mtx_free(MCiA);
+	*pmb = CBMCiA;
+	return 1;
 }
