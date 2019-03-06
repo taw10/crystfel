@@ -826,7 +826,7 @@ static char cmask_decode(CenteringMask mask)
 	if ( mask & CMASK_P ) strcat(res, "P");
 	if ( mask & CMASK_R ) strcat(res, "R");
 
-	STATUS("possible centerings: %s\n", res);
+	if ( strlen(res) == 0 ) return '?';
 	return res[0];
 }
 
@@ -854,11 +854,32 @@ static char determine_centering(RationalMatrix *m, char cen)
 		case 'R' :
 		break;
 
+		case 'A' :
+		check_point_fwd(m, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+		break;
+
+		case 'B' :
+		check_point_fwd(m, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+		break;
+
 		case 'C' :
 		check_point_fwd(m, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
 		break;
 
-		/* FIXME: Everything else */
+		case 'I' :
+		check_point_fwd(m, &cmask, rtnl(1,2), rtnl(1,2), rtnl(1,2));
+		break;
+
+		case 'F' :
+		check_point_fwd(m, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+		check_point_fwd(m, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+		check_point_fwd(m, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
+		break;
+
+		case 'H' :
+		check_point_fwd(m, &cmask, rtnl(2,3), rtnl(1,3), rtnl(1,3));
+		check_point_fwd(m, &cmask, rtnl(1,3), rtnl(2,3), rtnl(2,3));
+		break;
 
 	}
 
@@ -872,6 +893,14 @@ static char determine_centering(RationalMatrix *m, char cen)
  * @t: A %RationalMatrix.
  *
  * Applies @t to @cell.
+ *
+ * This function will determine the centering of the resulting unit cell,
+ * producing '?' if any lattice points cannot be accounted for.  Note that if
+ * there are 'excess' lattice points in the transformed cell, the centering
+ * will still be '?' even if the lattice points for another centering are
+ * all present.
+ *
+ * The lattice type will be set to triclinic, and the unique axis to '?'.
  *
  * Returns: Transformed copy of @cell.
  *
@@ -903,13 +932,11 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 	gsl_matrix_free(tm);
 
 	ncen = determine_centering(m, cell_get_centering(cell));
-	if ( ncen == '*' ) {
-		cell_free(out);
-		return NULL;
-	}
 	cell_set_centering(out, ncen);
 
 	/* FIXME: Update unique axis, lattice type */
+	cell_set_lattice_type(out, L_TRICLINIC);
+	cell_set_unique_axis(out, '?');
 
 	return out;
 }
@@ -921,6 +948,10 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
  * @t: An %IntegerMatrix.
  *
  * Applies @t to @cell.
+ *
+ * This is just a convenience function which turns @m into a %RationalMatrix
+ * and then calls cell_transform_rational().  See the documentation for that
+ * function for some important information.
  *
  * Returns: Transformed copy of @cell.
  *
