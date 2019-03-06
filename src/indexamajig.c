@@ -98,7 +98,8 @@ static void show_help(const char *s)
 "     --filter-noise        Apply noise filter to image data\n"
 "     --threshold=<n>       Threshold for peak detection\n"
 "                            (zaef,peakfinder8 only) Default: 800\n"
-"     --min-gradient=<n>    Minimum squared gradient\n"
+"     --min-squared-gradient=<n>\n"
+"                           Minimum squared gradient\n"
 "                            (zaef only) Default: 100,000\n"
 "     --min-snr=<n>         Minimum signal/noise ratio for peaks\n"
 "                            (zaef,peakfinder8, peakfinder9 only) Default: 5\n"
@@ -350,7 +351,7 @@ int main(int argc, char *argv[])
 	iargs.tols[2] = 5.0;
 	iargs.tols[3] = 1.5;
 	iargs.threshold = 800.0;
-	iargs.min_gradient = 100000.0;
+	iargs.min_sq_gradient = 100000.0;
 	iargs.min_snr = 5.0;
 	iargs.min_pix_count = 2;
 	iargs.max_pix_count = 200;
@@ -531,6 +532,8 @@ int main(int argc, char *argv[])
 		{"xgandalf-max-lvl",                         1, NULL, 356},
 	        {"spectrum-file",                            1, NULL, 357},
 		{"wait-for-file",            1, NULL,        358},
+		{"min-squared-gradient",1,NULL,              359},
+		{"min-sq-gradient",    1, NULL,              359}, /* compat */
 
 		{0, 0, NULL, 0}
 	};
@@ -602,7 +605,9 @@ int main(int argc, char *argv[])
 			return 1;
 
 			case 304 :
-			iargs.min_gradient = strtof(optarg, NULL);
+			iargs.min_sq_gradient = strtof(optarg, NULL);
+			ERROR("Recommend using --min-squared-gradient instead "
+			      "of --min-gradient.\n");
 			break;
 
 			case 305 :
@@ -931,6 +936,10 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --wait-for-file\n");
 				return 1;
 			}
+			break;
+
+			case 359 :
+			iargs.min_sq_gradient = strtof(optarg, NULL);
 			break;
 
 			case 0 :

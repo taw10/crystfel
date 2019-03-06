@@ -63,7 +63,7 @@ struct index_args
 	int median_filter;
 	int satcorr;
 	float threshold;
-	float min_gradient;
+	float min_sq_gradient;
 	float min_snr;
 	int check_hdf5_snr;
 	struct detector *det;

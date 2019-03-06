@@ -345,7 +345,7 @@ static int integrate_peak(struct image *image,
 
 
 static void search_peaks_in_panel(struct image *image, float threshold,
-                                  float min_gradient, float min_snr, int pn,
+                                  float min_sq_gradient, float min_snr, int pn,
                                   double ir_inn, double ir_mid, double ir_out,
                                   int use_saturated)
 {
@@ -402,10 +402,10 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		dxs = ((dx1*dx1) + (dx2*dx2)) / 2;
 		dys = ((dy1*dy1) + (dy2*dy2)) / 2;
 
-		/* Calculate overall gradient */
+		/* Calculate overall (squared) gradient */
 		grad = dxs + dys;
 
-		if ( grad < min_gradient ) continue;
+		if ( grad < min_sq_gradient ) continue;
 
 		mask_fs = fs;
 		mask_ss = ss;
@@ -525,7 +525,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 }
 
 
-void search_peaks(struct image *image, float threshold, float min_gradient,
+void search_peaks(struct image *image, float threshold, float min_sq_gradient,
                   float min_snr, double ir_inn, double ir_mid,
                   double ir_out, int use_saturated)
 {
@@ -542,7 +542,7 @@ void search_peaks(struct image *image, float threshold, float min_gradient,
 
 		if ( image->det->panels[i].no_index ) continue;
 
-		search_peaks_in_panel(image, threshold, min_gradient,
+		search_peaks_in_panel(image, threshold, min_sq_gradient,
 		                      min_snr, i, ir_inn, ir_mid, ir_out,
 		                      use_saturated);
 
