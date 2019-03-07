@@ -69,7 +69,7 @@
 struct sandbox
 {
 	int n_processed_last_stats;
-	int t_last_stats;
+	time_t t_last_stats;
 
 	struct index_args *iargs;
 
@@ -852,27 +852,43 @@ static void check_signals(struct sandbox *sb, const char *semname_q,
 }
 
 
-static void try_status(struct sandbox *sb, time_t tNow)
+static void try_status(struct sandbox *sb, int final)
 {
 	int r;
 	int n_proc_this;
-	double indexable;
+	time_t tNow;
+	time_t time_this;
+	const char *finalstr;
+	char persec[64];
+
+	tNow = get_monotonic_seconds();
+	time_this = tNow - sb->t_last_stats;
+	if ( !final && (time_this < 5) ) return;
+
+	n_proc_this = sb->shared->n_processed - sb->n_processed_last_stats;
 
 	r = pthread_mutex_trylock(&sb->shared->term_lock);
 	if ( r ) return; /* No lock -> don't bother */
 
-	n_proc_this = sb->shared->n_processed
-	              - sb->n_processed_last_stats;
-	indexable = (sb->shared->n_processed == 0) ? 0 :
-	            100.0 * sb->shared->n_hadcrystals
-	              / sb->shared->n_processed;
-
-	STATUS("%4i indexable out of %4i processed (%4.1f%%), "
-	       "%4i crystals so far. "
-	       "%4i images processed since the last message.\n",
+	finalstr = final ? "Final: " : "";
+	if ( final ) {
+		finalstr = "Final: ";
+		persec[0] = '\0';
+	} else {
+		finalstr = "";
+		snprintf(persec, 64, ", %.1f images/sec",
+		         (double)n_proc_this/time_this);
+	}
+	STATUS("%s%i images processed, %i hits (%.1f%%), "
+	       "%i indexable (%.1f%% of hits, %.1f%% overall), "
+	       "%i crystals%s.\n",
+	       finalstr, sb->shared->n_processed,
+	       sb->shared->n_hits,
+	       100.0 * sb->shared->n_hits / sb->shared->n_processed,
 	       sb->shared->n_hadcrystals,
-	       sb->shared->n_processed, indexable,
-	       sb->shared->n_crystals, n_proc_this);
+	       100.0 * sb->shared->n_hadcrystals / sb->shared->n_hits,
+	       100.0 * sb->shared->n_hadcrystals / sb->shared->n_processed,
+	       sb->shared->n_crystals, persec);
 
 	sb->n_processed_last_stats = sb->shared->n_processed;
 	sb->t_last_stats = tNow;
@@ -1031,6 +1047,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	sb->shared->n_processed = 0;
+	sb->shared->n_hits = 0;
 	sb->shared->n_hadcrystals = 0;
 	sb->shared->n_crystals = 0;
 
@@ -1093,8 +1110,6 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	do {
 
-		time_t tNow;
-
 		/* Check for stream output from workers */
 		try_read(sb, taccs);
 
@@ -1115,8 +1130,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		/* Update progress */
 		time_accounts_set(taccs, TACC_STATUS);
-		tNow = get_monotonic_seconds();
-		if ( tNow > sb->t_last_stats+5 ) try_status(sb, tNow);
+		try_status(sb, 0);
 
 		/* Have all the events been swallowed? */
 		time_accounts_set(taccs, TACC_ENDCHECK);
@@ -1151,6 +1165,9 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 			check_hung_workers(sb);
 
+			time_accounts_set(taccs, TACC_STATUS);
+			try_status(sb, 0);
+
 			time_accounts_set(taccs, TACC_WAITPID);
 		}
 		/* If this worker died and got waited by the zombie handler,
@@ -1171,11 +1188,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->last_response);
 	free(sb->pids);
 
-	STATUS("Final: %i images processed, %i had crystals (%.1f%%),"
-	       " %i crystals overall.\n",
-	       sb->shared->n_processed, sb->shared->n_hadcrystals,
-	       100.0 * sb->shared->n_hadcrystals / sb->shared->n_processed,
-	       sb->shared->n_crystals);
+	try_status(sb, 1);
 	r = sb->shared->n_processed;
 
 	delete_temporary_folder(sb->tmpdir, n_proc);

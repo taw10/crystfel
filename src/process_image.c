@@ -451,6 +451,7 @@ out:
 		}
 	}
 	sb_shared->n_processed++;
+	sb_shared->n_hits += image.hit;
 	sb_shared->n_hadcrystals += any_crystals;
 	pthread_mutex_unlock(&sb_shared->totals_lock);
 

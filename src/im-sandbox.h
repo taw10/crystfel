@@ -72,6 +72,7 @@ struct sb_shm
 
 	pthread_mutex_t totals_lock;
 	int n_processed;
+	int n_hits;
 	int n_hadcrystals;
 	int n_crystals;
 };
