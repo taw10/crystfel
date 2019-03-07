@@ -1109,7 +1109,6 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		time_accounts_set(taccs, TACC_QUEUETOPUP);
 		pthread_mutex_lock(&sb->shared->queue_lock);
 		if ( !sb->shared->no_more && (sb->shared->n_events < QUEUE_SIZE/2) ) {
-			STATUS("filling: %i %i\n", sb->shared->no_more, sb->shared->n_events);
 			if ( fill_queue(&gpctx, sb) ) sb->shared->no_more = 1;
 		}
 		pthread_mutex_unlock(&sb->shared->queue_lock);
