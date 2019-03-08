@@ -214,12 +214,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.serial = serial;
 	image.indexed_by = INDEXING_NONE;
 
+	image.filename = pargs->filename_p_e->filename;
+	image.event = pargs->filename_p_e->ev;
 	if ( pargs->msgpack_obj != NULL ) {
 		STATUS("Msgpack!\n");
 		if ( unpack_msgpack_data(pargs->msgpack_obj, &image) ) return;
-	} else if ( pargs->filename_p_e != NULL ) {
-		image.filename = pargs->filename_p_e->filename;
-		image.event = pargs->filename_p_e->ev;
+	} else {
 		if ( file_wait_open_read(sb_shared, &image, taccs, last_task,
 		                         iargs->wait_for_file, cookie,
 		                         &imfile) ) return;
@@ -500,5 +500,5 @@ out:
 
 	image_feature_list_free(image.features);
 	free_detector_geometry(image.det);
-	imagefile_close(imfile);
+	if ( imfile != NULL ) imagefile_close(imfile);
 }

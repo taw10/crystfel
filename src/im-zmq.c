@@ -145,9 +145,11 @@ static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
 
 	for ( i=0; i<obj->via.map.size; i++ ) {
 		const char *kstr;
+		size_t klen;
 		assert(obj->via.map.ptr[i].key.type == MSGPACK_OBJECT_STR);
 		kstr = obj->via.map.ptr[i].key.via.str.ptr;
-		if ( strcmp(kstr, key) == 0 ) {
+		klen = obj->via.map.ptr[i].key.via.str.size;
+		if ( strncmp(kstr, key, klen) == 0 ) {
 			return &obj->via.map.ptr[i].val;
 		}
 	}
@@ -318,11 +320,11 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image)
 		ERROR("No data MessagePack object found inside corr_data.\n");
 		return 1;
 	}
-	if ( data_obj->type != MSGPACK_OBJECT_BIN ) {
+	if ( data_obj->type != MSGPACK_OBJECT_STR ) {
 		ERROR("corr_data.data isn't a binary object.\n");
 		return 1;
 	}
-	data = (double *)data_obj->via.bin.ptr;
+	data = (double *)data_obj->via.str.ptr;
 
 	shape_obj = find_msgpack_kv(corr_data_obj, "shape");
 	if ( shape_obj == NULL ) {

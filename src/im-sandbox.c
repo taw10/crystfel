@@ -453,7 +453,10 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		} else {
 
 			pargs.msgpack_obj = im_zmq_fetch(zmqstuff);
-			pargs.filename_p_e = NULL;
+			pargs.filename_p_e = initialize_filename_plus_event();
+			pargs.filename_p_e->filename = strdup("(from ZMQ)");
+			pargs.filename_p_e->ev = NULL;
+			ser = 0;  /* FIXME */
 
 		}
 
