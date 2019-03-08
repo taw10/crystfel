@@ -371,7 +371,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 {
 	int allDone = 0;
 	TimeAccounts *taccs;
-	struct im_zmq *zmqstuff;
+	struct im_zmq *zmqstuff = NULL;
 
 	/* Connect via ZMQ */
 	if ( sb->zmq ) {
@@ -453,6 +453,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		} else {
 
 			pargs.msgpack_obj = im_zmq_fetch(zmqstuff);
+			pargs.filename_p_e = NULL;
 
 		}
 

@@ -195,7 +195,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    int serial, struct sb_shm *sb_shared, TimeAccounts *taccs,
                    char *last_task)
 {
-	struct imagefile *imfile;
+	struct imagefile *imfile = NULL;
 	struct image image;
 	int i;
 	int r;
@@ -214,15 +214,15 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.serial = serial;
 	image.indexed_by = INDEXING_NONE;
 
-	if ( pargs->filename_p_e != NULL ) {
+	if ( pargs->msgpack_obj != NULL ) {
+		STATUS("Msgpack!\n");
+		if ( unpack_msgpack_data(pargs->msgpack_obj, &image) ) return;
+	} else if ( pargs->filename_p_e != NULL ) {
 		image.filename = pargs->filename_p_e->filename;
 		image.event = pargs->filename_p_e->ev;
 		if ( file_wait_open_read(sb_shared, &image, taccs, last_task,
 		                         iargs->wait_for_file, cookie,
 		                         &imfile) ) return;
-	} else if ( pargs->msgpack_obj != NULL ) {
-		STATUS("Msgpack!\n");
-		if ( unpack_msgpack_data(pargs->msgpack_obj, &image) ) return;
 	}
 
 	/* Take snapshot of image before applying horrible noise filters */
