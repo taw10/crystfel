@@ -381,7 +381,7 @@ static RationalMatrix *create_rtnl_mtx(signed int a1, signed int a2,
 	rtnl_mtx_set(m, 1, 2, rtnl(f1, f2));
 	rtnl_mtx_set(m, 2, 0, rtnl(g1, g2));
 	rtnl_mtx_set(m, 2, 1, rtnl(h1, h2));
-	rtnl_mtx_set(m, 2, 2, rtnl(i1, h2));
+	rtnl_mtx_set(m, 2, 2, rtnl(i1, i2));
 	return m;
 }
 
