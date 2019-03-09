@@ -147,7 +147,8 @@ static int check_same_reflections(UnitCell *cell, UnitCell *cnew)
 	if ( compare_rvecs(vecs, na, tvecs, nb)
 	    || compare_rvecs(tvecs, nb, vecs, na) )
 	{
-		ERROR("******* Transformed cell didn't predict the same reflections\n");
+		ERROR("********************************************** ");
+		ERROR("Transformed cell didn't predict the same reflections\n");
 		//printf("---\n");
 		//for ( i=0; i<na; i++ ) {
 		//	printf("%e %e %e\n", vecs[i].u, vecs[i].v, vecs[i].w);
@@ -167,7 +168,7 @@ static int check_same_reflections(UnitCell *cell, UnitCell *cnew)
 
 
 static int check_transformation(UnitCell *cell, IntegerMatrix *tfn,
-                                int pred_test, UnitCell *ct)
+                                int pred_test)
 {
 	UnitCell *cnew, *cback;
 	double a[9], b[9];
@@ -175,11 +176,7 @@ static int check_transformation(UnitCell *cell, IntegerMatrix *tfn,
 	int fail = 0;
 
 	STATUS("-----------------------\n");
-	if ( ct == NULL ) {
-		cnew = cell_transform_intmat(cell, tfn);
-	} else {
-		cnew = ct;
-	}
+	cnew = cell_transform_intmat(cell, tfn);
 	cback = cell_transform_intmat_inverse(cnew, tfn);
 
 	STATUS("----> Before transformation:\n");
@@ -188,6 +185,8 @@ static int check_transformation(UnitCell *cell, IntegerMatrix *tfn,
 	intmat_print(tfn);
 	STATUS("----> After transformation:\n");
 	cell_print(cnew);
+	STATUS("----> After back transformation:\n");
+	cell_print(cback);
 
 	if ( pred_test ) {
 		check_same_reflections(cell, cnew);
@@ -210,7 +209,8 @@ static int check_transformation(UnitCell *cell, IntegerMatrix *tfn,
 	}
 
 	if ( fail ) {
-		ERROR("******* Original cell not recovered after transformation:\n");
+		ERROR("********************************************** ");
+		ERROR("Original cell not recovered after transformation:\n");
 		STATUS("----> After transformation and transformation back:\n");
 		cell_print(cback);
 	} else {
@@ -262,6 +262,7 @@ static int check_uncentering(UnitCell *cell)
 	}
 
 	if ( fail ) {
+		ERROR("********************************************** ");
 		ERROR("Original cell not recovered after back transformation\n");
 	}
 
@@ -305,6 +306,7 @@ static int check_identity(UnitCell *cell, IntegerMatrix *tfn)
 	}
 
 	if ( fail ) {
+		ERROR("********************************************** ");
 		ERROR("Original cell not recovered after identity transformation:\n");
 		cell_print(cell);
 		intmat_print(tfn);
@@ -342,28 +344,28 @@ int main(int argc, char *argv[])
 	intmat_set_all_3x3(tfn, 0,1,0,
 	                        0,0,1,
 	                        1,0,0);
-	fail += check_transformation(cell, tfn, 1, NULL);
+	fail += check_transformation(cell, tfn, 1);
 
 	/* Doubling of cell in one direction */
 	if ( tfn == NULL ) return 1;
 	intmat_set_all_3x3(tfn, 2,0,0,
 	                        0,1,0,
 	                        0,0,1);
-	fail += check_transformation(cell, tfn, 0, NULL);
+	fail += check_transformation(cell, tfn, 0);
 
 	/* Shearing */
 	if ( tfn == NULL ) return 1;
 	intmat_set_all_3x3(tfn, 1,1,0,
 	                        0,1,0,
 	                        0,0,1);
-	fail += check_transformation(cell, tfn, 1, NULL);
+	fail += check_transformation(cell, tfn, 1);
 
 	/* Crazy */
 	if ( tfn == NULL ) return 1;
 	intmat_set_all_3x3(tfn, 1,1,0,
 	                        0,1,0,
 	                        0,1,1);
-	fail += check_transformation(cell, tfn, 0, NULL);
+	fail += check_transformation(cell, tfn, 0);
 
 	/* Identity in two parts */
 	part1 = intmat_identity(3);
