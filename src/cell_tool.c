@@ -95,12 +95,16 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 		return 0;
 	} else {
 		UnitCell *trans;
-		STATUS("Relationship found:\n");
+		STATUS("Relationship found.  To become similar to the reference"
+		       " cell, the input cell should be transformed by:\n");
 		rtnl_mtx_print(m);
 		STATUS("Transformed version of input unit cell:\n");
 		trans = cell_transform_rational(cell, m);
 		cell_print(trans);
 		cell_free(trans);
+		STATUS("NB transformed cell might not really be triclinic, "
+		       "it's just that I don't (yet) know how to work out what "
+		       "it is.\n");
 
 	}
 
@@ -350,6 +354,9 @@ static int transform(UnitCell *cell, const char *trans_str)
 
 	STATUS("------------------> The transformed unit cell:\n");
 	cell_print(nc);
+	STATUS("NB transformed cell might not really be triclinic, "
+	       "it's just that I don't (yet) know how to work out what "
+	       "it is.\n");
 
 	return 0;
 }
