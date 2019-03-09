@@ -551,8 +551,8 @@ void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
 {
 	int i, j;
 
-	assert(ans->cols == A->cols);
-	assert(ans->rows == B->rows);
+	assert(ans->cols == B->cols);
+	assert(ans->rows == A->rows);
 	assert(A->cols == B->rows);
 
 	for ( i=0; i<ans->rows; i++ ) {

@@ -405,6 +405,10 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	ua = cell_get_unique_axis(in);
 	cen = cell_get_centering(in);
 
+	/* Write the matrices exactly as they appear in ITA Table 5.1.3.1.
+	 * C is "P", and Ci is "Q=P^-1".  Vice-versa if the transformation
+	 * should go the opposite way to what's written in the first column. */
+
 	if ( (cen=='P') || (cen=='R') ) {
 		*new_centering = cen;
 		*new_latt = lt;
@@ -451,12 +455,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 
 	if ( (lt == L_HEXAGONAL) && (cen == 'H') && (ua == 'c') ) {
 		/* Obverse setting */
-		C = intmat_create_3x3(1, -1,  0,
-		                      0,  1, -1,
-		                      1,  1,  1);
-		Ci = create_rtnl_mtx( 2,3,  1,3,  1,3,
-		                     -1,3,  1,3,  1,3,
-		                     -1,3, -2,3,  1,3);
+		C = intmat_create_3x3( 1,  0,  1,
+		                      -1,  1,  1,
+		                       0, -1,  1);
+		Ci = create_rtnl_mtx( 2,3, -1,3, -1,3,
+		                      1,3,  1,3, -2,3,
+		                      1,3,  1,3,  1,3);
 		assert(lt == L_HEXAGONAL);
 		assert(ua == 'c');
 		*new_latt = L_RHOMBOHEDRAL;
@@ -465,12 +469,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	}
 
 	if ( cen == 'A' ) {
-		C = intmat_create_3x3(0,  0, -1,
-		                      1,  1,  0,
-		                      1, -1,  0);
-		Ci = create_rtnl_mtx( 0,1,  1,2,  1,2,
+		C = intmat_create_3x3( 1,  0,  0,
+		                       0,  1,  1,
+		                       0, -1,  1);
+		Ci = create_rtnl_mtx( 1,1,  0,1,  0,1,
 		                      0,1,  1,2, -1,2,
-		                     -1,1,  0,1,  0,1);
+		                      0,1,  1,2,  1,2);
 		if ( lt == L_ORTHORHOMBIC ) {
 			*new_latt = L_MONOCLINIC;
 			*new_centering = 'P';
@@ -483,12 +487,12 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	}
 
 	if ( cen == 'B' ) {
-		C = intmat_create_3x3(1,  1,  0,
-		                      0,  0,  1,
-		                      1, -1,  0);
-		Ci = create_rtnl_mtx( 1,2,  0,1,  1,2,
-		                      1,2,  0,1, -1,2,
-		                      0,1,  1,1,  0,1);
+		C = intmat_create_3x3( 1,  0,  1,
+		                       0,  1,  0,
+		                      -1,  0,  1);
+		Ci = create_rtnl_mtx( 1,2,  0,1, -1,2,
+		                      0,1,  1,1,  0,1,
+		                      1,2,  0,1,  1,2);
 		if ( lt == L_ORTHORHOMBIC ) {
 			*new_latt = L_MONOCLINIC;
 			*new_centering = 'P';
@@ -501,11 +505,11 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	}
 
 	if ( cen == 'C' ) {
-		C = intmat_create_3x3(1, -1,  0,
-		                      1,  1,  0,
-		                      0,  0,  1);
-		Ci = create_rtnl_mtx( 1,2,  1,2,  0,1,
-		                     -1,2,  1,2,  0,1,
+		C = intmat_create_3x3( 1,  1,  0,
+		                      -1,  1,  0,
+		                       0,  0,  1);
+		Ci = create_rtnl_mtx( 1,2, -1,2,  0,1,
+		                      1,2,  1,2,  0,1,
 		                      0,1,  0,1,  1,1);
 		if ( lt == L_ORTHORHOMBIC ) {
 			*new_latt = L_MONOCLINIC;
@@ -2047,13 +2051,13 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 
 			/* Form the matrix using the first candidate for c */
 			rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
-			rtnl_mtx_set(m, 0, 1, cand_a[3*ia+1]);
-			rtnl_mtx_set(m, 0, 2, cand_a[3*ia+2]);
-			rtnl_mtx_set(m, 1, 0, cand_b[3*ib+0]);
+			rtnl_mtx_set(m, 1, 0, cand_a[3*ia+1]);
+			rtnl_mtx_set(m, 2, 0, cand_a[3*ia+2]);
+			rtnl_mtx_set(m, 0, 1, cand_b[3*ib+0]);
 			rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
-			rtnl_mtx_set(m, 1, 2, cand_b[3*ib+2]);
-			rtnl_mtx_set(m, 2, 0, cand_c[3*ic+0]);
-			rtnl_mtx_set(m, 2, 1, cand_c[3*ic+1]);
+			rtnl_mtx_set(m, 2, 1, cand_b[3*ib+2]);
+			rtnl_mtx_set(m, 0, 2, cand_c[3*ic+0]);
+			rtnl_mtx_set(m, 1, 2, cand_c[3*ic+1]);
 			rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
 
 			/* Check angle between a and b */
@@ -2066,13 +2070,13 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			for ( ic=0; ic<ncand_c; ic++ ) {
 
 				rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
-				rtnl_mtx_set(m, 0, 1, cand_a[3*ia+1]);
-				rtnl_mtx_set(m, 0, 2, cand_a[3*ia+2]);
-				rtnl_mtx_set(m, 1, 0, cand_b[3*ib+0]);
+				rtnl_mtx_set(m, 1, 0, cand_a[3*ia+1]);
+				rtnl_mtx_set(m, 2, 0, cand_a[3*ia+2]);
+				rtnl_mtx_set(m, 0, 1, cand_b[3*ib+0]);
 				rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
-				rtnl_mtx_set(m, 1, 2, cand_b[3*ib+2]);
-				rtnl_mtx_set(m, 2, 0, cand_c[3*ic+0]);
-				rtnl_mtx_set(m, 2, 1, cand_c[3*ic+1]);
+				rtnl_mtx_set(m, 2, 1, cand_b[3*ib+2]);
+				rtnl_mtx_set(m, 0, 2, cand_c[3*ic+0]);
+				rtnl_mtx_set(m, 1, 2, cand_c[3*ic+1]);
 				rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
 
 				if ( rtnl_cmp(rtnl_mtx_det(m),rtnl_zero()) == 0 ) continue;

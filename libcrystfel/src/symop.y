@@ -101,13 +101,13 @@ symoplist:
 
 symop:
   axexpr COMMA axexpr COMMA axexpr { rtnl_mtx_set(m, 0, 0, $1[0]);
-                                     rtnl_mtx_set(m, 0, 1, $1[1]);
-                                     rtnl_mtx_set(m, 0, 2, $1[2]);
-                                     rtnl_mtx_set(m, 1, 0, $3[0]);
+                                     rtnl_mtx_set(m, 1, 0, $1[1]);
+                                     rtnl_mtx_set(m, 2, 0, $1[2]);
+                                     rtnl_mtx_set(m, 0, 1, $3[0]);
                                      rtnl_mtx_set(m, 1, 1, $3[1]);
-                                     rtnl_mtx_set(m, 1, 2, $3[2]);
-                                     rtnl_mtx_set(m, 2, 0, $5[0]);
-                                     rtnl_mtx_set(m, 2, 1, $5[1]);
+                                     rtnl_mtx_set(m, 2, 1, $3[2]);
+                                     rtnl_mtx_set(m, 0, 2, $5[0]);
+                                     rtnl_mtx_set(m, 1, 2, $5[1]);
                                      rtnl_mtx_set(m, 2, 2, $5[2]);
                                    }
 ;

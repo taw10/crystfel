@@ -341,9 +341,9 @@ int main(int argc, char *argv[])
 
 	/* Permutation of axes */
 	if ( tfn == NULL ) return 1;
-	intmat_set_all_3x3(tfn, 0,1,0,
-	                        0,0,1,
-	                        1,0,0);
+	intmat_set_all_3x3(tfn, 0,0,1,
+	                        1,0,0,
+	                        0,1,0);
 	fail += check_transformation(cell, tfn, 1);
 
 	/* Doubling of cell in one direction */
@@ -355,28 +355,28 @@ int main(int argc, char *argv[])
 
 	/* Shearing */
 	if ( tfn == NULL ) return 1;
-	intmat_set_all_3x3(tfn, 1,1,0,
-	                        0,1,0,
+	intmat_set_all_3x3(tfn, 1,0,0,
+	                        1,1,0,
 	                        0,0,1);
 	fail += check_transformation(cell, tfn, 1);
 
 	/* Crazy */
 	if ( tfn == NULL ) return 1;
-	intmat_set_all_3x3(tfn, 1,1,0,
-	                        0,1,0,
-	                        0,1,1);
+	intmat_set_all_3x3(tfn, 1,0,0,
+	                        1,1,1,
+	                        0,0,1);
 	fail += check_transformation(cell, tfn, 0);
 
 	/* Identity in two parts */
 	part1 = intmat_identity(3);
 	part2 = intmat_identity(3);
 	if ( tfn == NULL ) return 1;
-	intmat_set_all_3x3(part1, 0,0,1,
-	                        0,1,0,
-	                        -1,0,0);
-	intmat_set_all_3x3(part2,  0,0,-1,
-	                         0,1,0,
-	                         1,0,0);
+	intmat_set_all_3x3(part1, 0,0,-1,
+	                          0,1,0,
+	                          1,0,0);
+	intmat_set_all_3x3(part2,  0,0,1,
+	                           0,1,0,
+	                          -1,0,0);
 	tfn = intmat_intmat_mult(part1, part2);
 	fail += check_identity(cell, tfn);
 	intmat_free(part1);

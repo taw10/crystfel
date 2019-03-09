@@ -276,23 +276,26 @@ int intmat_solve_rational(const IntegerMatrix *m, const Rational *vec,
  * number of columns in @m, and the size of the result equals the number of rows
  * in @m.
  *
+ * The multiplication looks like this:
+ *    (a1, a2, a3) = (vec1, vec2, vec3) m
+ * Therefore matching the notation in ITA chapter 5.1.
+ *
  * Returns: a newly allocated array of signed integers containing the answer,
  * or NULL on error.
  **/
 signed int *intmat_intvec_mult(const IntegerMatrix *m, const signed int *vec)
 {
 	signed int *ans;
-	unsigned int i;
+	unsigned int j;
 
 	ans = malloc(m->rows * sizeof(signed int));
 	if ( ans == NULL ) return NULL;
 
-	for ( i=0; i<m->rows; i++ ) {
+	for ( j=0; j<m->cols; j++ ) {
 
-		unsigned int j;
-
-		ans[i] = 0;
-		for ( j=0; j<m->cols; j++ ) {
+		unsigned int i;
+		ans[j] = 0;
+		for ( i=0; i<m->rows; i++ ) {
 			ans[i] += intmat_get(m, i, j) * vec[j];
 		}
 

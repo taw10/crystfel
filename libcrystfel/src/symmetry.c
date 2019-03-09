@@ -197,9 +197,9 @@ static void add_symop_v(SymOpList *ops,
 	m = intmat_new(3, 3);
 	assert(m != NULL);
 
-	for ( i=0; i<3; i++ ) intmat_set(m, 0, i, h[i]);
-	for ( i=0; i<3; i++ ) intmat_set(m, 1, i, k[i]);
-	for ( i=0; i<3; i++ ) intmat_set(m, 2, i, l[i]);
+	for ( i=0; i<3; i++ ) intmat_set(m, i, 0, h[i]);
+	for ( i=0; i<3; i++ ) intmat_set(m, i, 1, k[i]);
+	for ( i=0; i<3; i++ ) intmat_set(m, i, 2, l[i]);
 
 	free(h);
 	free(k);
