@@ -910,6 +910,7 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 	UnitCell *out;
 	gsl_matrix *tm;
 	char ncen;
+	int i, j;
 
 	if ( m == NULL ) return NULL;
 
@@ -918,15 +919,12 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 		return NULL;
 	}
 
-	gsl_matrix_set(tm, 0, 0, rtnl_as_double(rtnl_mtx_get(m, 0, 0)));
-	gsl_matrix_set(tm, 0, 1, rtnl_as_double(rtnl_mtx_get(m, 0, 1)));
-	gsl_matrix_set(tm, 0, 2, rtnl_as_double(rtnl_mtx_get(m, 0, 2)));
-	gsl_matrix_set(tm, 1, 0, rtnl_as_double(rtnl_mtx_get(m, 1, 0)));
-	gsl_matrix_set(tm, 1, 1, rtnl_as_double(rtnl_mtx_get(m, 1, 1)));
-	gsl_matrix_set(tm, 1, 2, rtnl_as_double(rtnl_mtx_get(m, 1, 2)));
-	gsl_matrix_set(tm, 2, 0, rtnl_as_double(rtnl_mtx_get(m, 2, 0)));
-	gsl_matrix_set(tm, 2, 1, rtnl_as_double(rtnl_mtx_get(m, 2, 1)));
-	gsl_matrix_set(tm, 2, 2, rtnl_as_double(rtnl_mtx_get(m, 2, 2)));
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			gsl_matrix_set(tm, i, j,
+			               rtnl_as_double(rtnl_mtx_get(m, i, j)));
+		}
+	}
 
 	out = cell_transform_gsl_direct(cell, tm);
 	gsl_matrix_free(tm);
@@ -983,6 +981,7 @@ UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m)
 	gsl_matrix *inv;
 	gsl_permutation *perm;
 	int s;
+	int i, j;
 
 	if ( m == NULL ) return NULL;
 
@@ -991,15 +990,12 @@ UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m)
 		return NULL;
 	}
 
-	gsl_matrix_set(tm, 0, 0, rtnl_as_double(rtnl_mtx_get(m, 0, 0)));
-	gsl_matrix_set(tm, 0, 1, rtnl_as_double(rtnl_mtx_get(m, 0, 1)));
-	gsl_matrix_set(tm, 0, 2, rtnl_as_double(rtnl_mtx_get(m, 0, 2)));
-	gsl_matrix_set(tm, 1, 0, rtnl_as_double(rtnl_mtx_get(m, 1, 0)));
-	gsl_matrix_set(tm, 1, 1, rtnl_as_double(rtnl_mtx_get(m, 1, 1)));
-	gsl_matrix_set(tm, 1, 2, rtnl_as_double(rtnl_mtx_get(m, 1, 2)));
-	gsl_matrix_set(tm, 2, 0, rtnl_as_double(rtnl_mtx_get(m, 2, 0)));
-	gsl_matrix_set(tm, 2, 1, rtnl_as_double(rtnl_mtx_get(m, 2, 1)));
-	gsl_matrix_set(tm, 2, 2, rtnl_as_double(rtnl_mtx_get(m, 2, 2)));
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			gsl_matrix_set(tm, i, j,
+			               rtnl_as_double(rtnl_mtx_get(m, i, j)));
+		}
+	}
 
 	perm = gsl_permutation_alloc(3);
 	if ( perm == NULL ) {

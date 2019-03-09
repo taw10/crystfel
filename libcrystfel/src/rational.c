@@ -367,7 +367,7 @@ RationalMatrix *rtnl_mtx_from_intmat(const IntegerMatrix *m)
 
 	for ( i=0; i<rows; i++ ) {
 		for ( j=0; j<cols; j++ ) {
-			n->v[j+cols*i] = rtnl(intmat_get(m, i, j), 1);
+			rtnl_mtx_set(n, i, j, rtnl(intmat_get(m, i, j), 1));
 		}
 	}
 
@@ -537,7 +537,7 @@ void rtnl_mtx_print(const RationalMatrix *m)
 
 		fprintf(stderr, "[ ");
 		for ( j=0; j<m->cols; j++ ) {
-			char *v = rtnl_format(m->v[j+m->cols*i]);
+			char *v = rtnl_format(rtnl_mtx_get(m, i, j));
 			fprintf(stderr, "%4s ", v);
 			free(v);
 		}
