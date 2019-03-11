@@ -2059,7 +2059,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	tp->numPrevs++;
 
 	/* Prepare the solution for CrystFEL friendliness */
-	result = cell_transform_gsl_reciprocal(cell, solution);
+	result = cell_transform_gsl_direct(cell, solution);
 	cleanup_taketwo_cell(&ttCell);
 
 	return result;

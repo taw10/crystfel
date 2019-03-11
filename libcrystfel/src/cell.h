@@ -149,7 +149,6 @@ extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
 extern const char *cell_rep(UnitCell *cell);
 
 extern UnitCell *cell_transform_gsl_direct(UnitCell *in, gsl_matrix *m);
-extern UnitCell *cell_transform_gsl_reciprocal(UnitCell *in, gsl_matrix *m);
 
 extern UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m);
 extern UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m);
