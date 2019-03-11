@@ -1573,7 +1573,8 @@ static unsigned int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 }
 
 
-static void set_gsl_matrix(gsl_matrix *mat, double asx, double asy, double asz,
+static void set_gsl_matrix(gsl_matrix *mat,
+                           double asx, double asy, double asz,
                            double bsx, double bsy, double bsz,
                            double csx, double csy, double csz)
 {
@@ -1602,15 +1603,23 @@ static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 
 	gsl_matrix *recip = gsl_matrix_alloc(3, 3);
 	gsl_matrix *cart = gsl_matrix_alloc(3, 3);
-	cell_get_reciprocal(ttCell->cell, &asx, &asy, &asz, &bsx, &bsy,
-						&bsz, &csx, &csy, &csz);
 
-	set_gsl_matrix(recip, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+	cell_get_reciprocal(ttCell->cell, &asx, &asy, &asz,
+	                                  &bsx, &bsy, &bsz,
+	                                  &csx, &csy, &csz);
 
-	cell_get_cartesian(ttCell->cell, &asx, &asy, &asz, &bsx, &bsy,
-						&bsz, &csx, &csy, &csz);
+	set_gsl_matrix(recip, asx, asy, asz,
+	                      asx, bsy, bsz,
+	                      csx, csy, csz);
 
-	set_gsl_matrix(cart, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+	cell_get_cartesian(ttCell->cell, &asx, &asy, &asz,
+	                                 &bsx, &bsy, &bsz,
+	                                 &csx, &csy, &csz);
+
+	set_gsl_matrix(cart, asx, bsx, csx,
+	                     asy, bsy, csy,
+	                     asz, bsz, csz);
+
 
 	int i, j, k;
 	int numOps = num_equivs(rawList, NULL);
