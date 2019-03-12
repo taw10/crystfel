@@ -183,7 +183,7 @@ signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
  * @ans: An array of %Rational in which to store the result
  *
  * Solves the matrix equation m*ans = vec, where @ans and @vec are
- * vectors of %Rational.
+ * column vectors of %Rational numbers.
  *
  * This is just a convenience function which creates a %RationalMatrix out of
  * @m and then calls rtnl_mtx_solve().
@@ -204,35 +204,38 @@ int intmat_solve_rational(const IntegerMatrix *m, const Rational *vec,
 
 
 /**
- * intmat_intvec_mult:
- * @m: An %IntegerMatrix
- * @vec: An array of signed integers
+ * transform_indices:
+ * @P: An %IntegerMatrix
+ * @hkl: An array of signed integers
  *
- * Multiplies the matrix @m by the vector @vec.  The size of @vec must equal the
- * number of columns in @m, and the size of the result equals the number of rows
- * in @m.
+ * Apply transformation matrix P to a set of reciprocal space Miller indices.
+ *
+ * In other words:
+ * Multiplies the matrix @P by the row vector @hkl.  The size of @vec must equal
+ * the number of columns in @P, and the size of the result equals the number of
+ * rows in @P.
  *
  * The multiplication looks like this:
- *    (a1, a2, a3) = (vec1, vec2, vec3) m
+ *    (a1, a2, a3) = (hkl1, hkl2, hkl3) P
  * Therefore matching the notation in ITA chapter 5.1.
  *
  * Returns: a newly allocated array of signed integers containing the answer,
  * or NULL on error.
  **/
-signed int *intmat_intvec_mult(const IntegerMatrix *m, const signed int *vec)
+signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
 {
 	signed int *ans;
 	unsigned int j;
 
-	ans = malloc(m->rows * sizeof(signed int));
+	ans = malloc(P->rows * sizeof(signed int));
 	if ( ans == NULL ) return NULL;
 
-	for ( j=0; j<m->cols; j++ ) {
+	for ( j=0; j<P->cols; j++ ) {
 
 		unsigned int i;
 		ans[j] = 0;
-		for ( i=0; i<m->rows; i++ ) {
-			ans[i] += intmat_get(m, i, j) * vec[j];
+		for ( i=0; i<P->rows; i++ ) {
+			ans[i] += intmat_get(P, i, j) * hkl[j];
 		}
 
 	}

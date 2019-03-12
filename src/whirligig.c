@@ -84,7 +84,7 @@ static void do_op(const IntegerMatrix *op,
 
 	v[0] = h;  v[1] = k;  v[2] = l;
 
-	ans = intmat_intvec_mult(op, v);
+	ans = transform_indices(op, v);
 	assert(ans != NULL);
 
 	*he = ans[0];  *ke = ans[1];  *le = ans[2];

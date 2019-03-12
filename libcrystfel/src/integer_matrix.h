@@ -71,8 +71,7 @@ extern IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed i
                                         signed int m31, signed int m32, signed int m33);
 
 /* Matrix-vector multiplication */
-extern signed int *intmat_intvec_mult(const IntegerMatrix *m,
-                                      const signed int *vec);
+extern signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl);
 
 /* Matrix-matrix multiplication */
 extern IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
