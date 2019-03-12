@@ -71,12 +71,8 @@ extern IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed i
                                         signed int m31, signed int m32, signed int m33);
 
 /* Matrix-vector multiplication */
-extern int intmat_floatvec_mult(const IntegerMatrix *m, const float *vec,
-                                float *ans);
 extern signed int *intmat_intvec_mult(const IntegerMatrix *m,
                                       const signed int *vec);
-extern int intmat_rationalvec_mult(const IntegerMatrix *m, const Rational *vec,
-                                   Rational *ans);
 
 /* Matrix-matrix multiplication */
 extern IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
