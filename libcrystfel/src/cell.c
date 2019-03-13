@@ -729,14 +729,14 @@ static void maybe_eliminate(CenteringMask c, CenteringMask *cmask, Rational *nc,
 
 /* Check if the point x,y,z in the original cell matches any lattice point
  * in the transformed cell */
-static void check_point_fwd(RationalMatrix *m, CenteringMask *cmask,
+static void check_point_fwd(RationalMatrix *P, CenteringMask *cmask,
                             Rational x, Rational y, Rational z)
 {
 	Rational c[3] = {x, y, z};
 	Rational nc[3];
 
 	/* Transform the lattice point */
-	transform_fractional_coords_rtnl(m, c, nc);
+	transform_fractional_coords_rtnl(P, c, nc);
 
 	/* Eliminate any centerings which don't include the transformed point */
 	maybe_eliminate(CMASK_P, cmask, nc, 'P');
@@ -752,14 +752,14 @@ static void check_point_fwd(RationalMatrix *m, CenteringMask *cmask,
 
 /* Check if the point x,y,z in the transformed cell matches any lattice point
  * in the original cell.  If not, eliminate "exclude" from "*mask". */
-static void check_point_bwd(RationalMatrix *m, CenteringMask *mask,
+static void check_point_bwd(RationalMatrix *P, CenteringMask *mask,
                             char cen, CenteringMask exclude,
                             Rational x, Rational y, Rational z)
 {
 	Rational nc[3];
 	Rational c[3] = {x, y, z};
 
-	transform_fractional_coords_rtnl_inverse(m, c, nc);
+	transform_fractional_coords_rtnl_inverse(P, c, nc);
 
 	if ( !centering_has_point(cen, nc) ) {
 		*mask |= exclude;
@@ -788,19 +788,19 @@ static char cmask_decode(CenteringMask mask)
 }
 
 
-static char determine_centering(RationalMatrix *m, char cen)
+static char determine_centering(RationalMatrix *P, char cen)
 {
 	CenteringMask cmask = CMASK_ALL;
 
 	/* Check whether the current centering can provide all the lattice
 	 * points for the transformed cell.  Eliminate any centerings for which
 	 * it can't. */
-	check_point_bwd(m, &cmask, cen, CMASK_A | CMASK_F, rtnl_zero(), rtnl(1,2), rtnl(1,2));
-	check_point_bwd(m, &cmask, cen, CMASK_B | CMASK_F, rtnl(1,2), rtnl_zero(), rtnl(1,2));
-	check_point_bwd(m, &cmask, cen, CMASK_C | CMASK_F, rtnl(1,2), rtnl(1,2), rtnl_zero());
-	check_point_bwd(m, &cmask, cen, CMASK_I, rtnl(1,2), rtnl(1,2), rtnl(1,2));
-	check_point_bwd(m, &cmask, cen, CMASK_H, rtnl(2,3), rtnl(1,3), rtnl(1,3));
-	check_point_bwd(m, &cmask, cen, CMASK_H, rtnl(1,3), rtnl(2,3), rtnl(2,3));
+	check_point_bwd(P, &cmask, cen, CMASK_A | CMASK_F, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+	check_point_bwd(P, &cmask, cen, CMASK_B | CMASK_F, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+	check_point_bwd(P, &cmask, cen, CMASK_C | CMASK_F, rtnl(1,2), rtnl(1,2), rtnl_zero());
+	check_point_bwd(P, &cmask, cen, CMASK_I, rtnl(1,2), rtnl(1,2), rtnl(1,2));
+	check_point_bwd(P, &cmask, cen, CMASK_H, rtnl(2,3), rtnl(1,3), rtnl(1,3));
+	check_point_bwd(P, &cmask, cen, CMASK_H, rtnl(1,3), rtnl(2,3), rtnl(2,3));
 
 	/* Check whether the current centering's lattice points will all
 	 * coincide with lattice points in the new centering.  Eliminate any
@@ -812,30 +812,30 @@ static char determine_centering(RationalMatrix *m, char cen)
 		break;
 
 		case 'A' :
-		check_point_fwd(m, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+		check_point_fwd(P, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
 		break;
 
 		case 'B' :
-		check_point_fwd(m, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
 		break;
 
 		case 'C' :
-		check_point_fwd(m, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
 		break;
 
 		case 'I' :
-		check_point_fwd(m, &cmask, rtnl(1,2), rtnl(1,2), rtnl(1,2));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl(1,2));
 		break;
 
 		case 'F' :
-		check_point_fwd(m, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
-		check_point_fwd(m, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
-		check_point_fwd(m, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
+		check_point_fwd(P, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
 		break;
 
 		case 'H' :
-		check_point_fwd(m, &cmask, rtnl(2,3), rtnl(1,3), rtnl(1,3));
-		check_point_fwd(m, &cmask, rtnl(1,3), rtnl(2,3), rtnl(2,3));
+		check_point_fwd(P, &cmask, rtnl(2,3), rtnl(1,3), rtnl(1,3));
+		check_point_fwd(P, &cmask, rtnl(1,3), rtnl(2,3), rtnl(2,3));
 		break;
 
 	}

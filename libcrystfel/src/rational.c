@@ -409,7 +409,7 @@ void rtnl_mtx_free(RationalMatrix *mtx)
 
 
 /* rtnl_mtx_solve:
- * @m: A %RationalMatrix
+ * @P: A %RationalMatrix
  * @vec: An array of %Rational
  * @ans: An array of %Rational in which to store the result
  *
@@ -422,9 +422,13 @@ void rtnl_mtx_free(RationalMatrix *mtx)
  * of rows in @m must equal the length of @vec, but note that there is no way
  * for this function to check that this is the case.
  *
+ * Given that P is transformation of the unit cell axes (see ITA chapter 5.1),
+ * this function calculates the fractional coordinates of a point in the
+ * transformed axes, given its fractional coordinates in the original axes.
+ *
  * Returns: non-zero on error
  **/
-int transform_fractional_coords_rtnl(const RationalMatrix *m,
+int transform_fractional_coords_rtnl(const RationalMatrix *P,
                                      const Rational *ivec, Rational *ans)
 {
 	RationalMatrix *cm;
@@ -432,28 +436,28 @@ int transform_fractional_coords_rtnl(const RationalMatrix *m,
 	int h, k;
 	int i;
 
-	if ( m->rows != m->cols ) return 1;
+	if ( P->rows != P->cols ) return 1;
 
 	/* Copy the matrix and vector because the calculation will
 	 * be done in-place */
-	cm = rtnl_mtx_copy(m);
+	cm = rtnl_mtx_copy(P);
 	if ( cm == NULL ) return 1;
 
-	vec = malloc(m->rows*sizeof(Rational));
+	vec = malloc(cm->rows*sizeof(Rational));
 	if ( vec == NULL ) return 1;
-	for ( h=0; h<m->rows; h++ ) vec[h] = ivec[h];
+	for ( h=0; h<cm->rows; h++ ) vec[h] = ivec[h];
 
 	/* Gaussian elimination with partial pivoting */
 	h = 0;
 	k = 0;
-	while ( h<=m->rows && k<=m->cols ) {
+	while ( h<=cm->rows && k<=cm->cols ) {
 
 		int prow = 0;
 		Rational pval = rtnl_zero();
 		Rational t;
 
 		/* Find the row with the largest value in column k */
-		for ( i=h; i<m->rows; i++ ) {
+		for ( i=h; i<cm->rows; i++ ) {
 			if ( rtnl_cmp(rtnl_abs(rtnl_mtx_get(cm, i, k)), pval) > 0 ) {
 				pval = rtnl_abs(rtnl_mtx_get(cm, i, k));
 				prow = i;
@@ -466,7 +470,7 @@ int transform_fractional_coords_rtnl(const RationalMatrix *m,
 		}
 
 		/* Swap 'prow' with row h */
-		for ( i=0; i<m->cols; i++ ) {
+		for ( i=0; i<cm->cols; i++ ) {
 			t = rtnl_mtx_get(cm, h, i);
 			rtnl_mtx_set(cm, h, i, rtnl_mtx_get(cm, prow, i));
 			rtnl_mtx_set(cm, prow, i, t);
@@ -476,7 +480,7 @@ int transform_fractional_coords_rtnl(const RationalMatrix *m,
 		vec[h] = t;
 
 		/* Divide and subtract rows below */
-		for ( i=h+1; i<m->rows; i++ ) {
+		for ( i=h+1; i<cm->rows; i++ ) {
 
 			int j;
 			Rational dval;
@@ -484,7 +488,7 @@ int transform_fractional_coords_rtnl(const RationalMatrix *m,
 			dval = rtnl_div(rtnl_mtx_get(cm, i, k),
 			                rtnl_mtx_get(cm, h, k));
 
-			for ( j=0; j<m->cols; j++ ) {
+			for ( j=0; j<cm->cols; j++ ) {
 				Rational t = rtnl_mtx_get(cm, i, j);
 				Rational p = rtnl_mul(dval, rtnl_mtx_get(cm, h, j));
 				t = rtnl_sub(t, p);
@@ -504,10 +508,10 @@ int transform_fractional_coords_rtnl(const RationalMatrix *m,
 	}
 
 	/* Back-substitution */
-	for ( i=m->rows-1; i>=0; i-- ) {
+	for ( i=cm->rows-1; i>=0; i-- ) {
 		int j;
 		Rational sum = rtnl_zero();
-		for ( j=i+1; j<m->cols; j++ ) {
+		for ( j=i+1; j<cm->cols; j++ ) {
 			Rational av;
 			av = rtnl_mul(rtnl_mtx_get(cm, i, j), ans[j]);
 			sum = rtnl_add(sum, av);
@@ -572,17 +576,23 @@ void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
 }
 
 
-void transform_fractional_coords_rtnl_inverse(const RationalMatrix *m,
+/* Given a "P-matrix" (see ITA chapter 5.1), calculate the fractional
+ * coordinates of point "vec" in the original axes, given its fractional
+ * coordinates in the transformed axes.
+ * To transform in the opposite direction, we would multiply by Q = P^-1.
+ * Therefore, this direction is the "easy way" and needs just a matrix
+ * multiplication. */
+void transform_fractional_coords_rtnl_inverse(const RationalMatrix *P,
                                               const Rational *vec,
                                               Rational *ans)
 {
 	int i, j;
 
-	for ( i=0; i<m->rows; i++ ) {
+	for ( i=0; i<P->rows; i++ ) {
 		ans[i] = rtnl_zero();
-		for ( j=0; j<m->cols; j++ ) {
+		for ( j=0; j<P->cols; j++ ) {
 			Rational add;
-			add = rtnl_mul(rtnl_mtx_get(m, i, j), vec[j]);
+			add = rtnl_mul(rtnl_mtx_get(P, i, j), vec[j]);
 			ans[i] = rtnl_add(ans[i], add);
 		}
 	}
