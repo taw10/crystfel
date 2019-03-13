@@ -91,10 +91,12 @@ extern IntegerMatrix *intmat_from_rtnl_mtx(const RationalMatrix *m);
 extern void rtnl_mtx_free(RationalMatrix *mtx);
 extern void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
                              RationalMatrix *ans);
-extern void rtnl_mtx_mult(const RationalMatrix *m, const Rational *vec,
-                          Rational *ans);
-extern int rtnl_mtx_solve(const RationalMatrix *m, const Rational *vec,
-                          Rational *ans);
+extern int transform_fractional_coords_rtnl(const RationalMatrix *P,
+                                            const Rational *ivec,
+                                            Rational *ans);
+extern void transform_fractional_coords_rtnl_inverse(const RationalMatrix *P,
+                                                     const Rational *vec,
+                                                     Rational *ans);
 extern void rtnl_mtx_print(const RationalMatrix *m);
 extern Rational rtnl_mtx_det(const RationalMatrix *m);
 

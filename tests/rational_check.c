@@ -146,7 +146,7 @@ static int test_rational_matrix(gsl_rng *rng)
 		gans = solve_svd(gvec, gm, &filt, 0);
 	} while ( (gans==NULL) || (filt!=0) || (isnan(gsl_vector_get(gans,0))) );
 
-	rtnl_mtx_solve(rm, rvec, rans);
+	transform_fractional_coords_rtnl(rm, rvec, rans);
 
 	for ( i=0; i<size; i++ ) {
 		if ( fabs(rtnl_as_double(rans[i]) - gsl_vector_get(gans, i) > 0.001) )

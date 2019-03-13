@@ -424,7 +424,8 @@ void rtnl_mtx_free(RationalMatrix *mtx)
  *
  * Returns: non-zero on error
  **/
-int rtnl_mtx_solve(const RationalMatrix *m, const Rational *ivec, Rational *ans)
+int transform_fractional_coords_rtnl(const RationalMatrix *m,
+                                     const Rational *ivec, Rational *ans)
 {
 	RationalMatrix *cm;
 	Rational *vec;
@@ -571,8 +572,9 @@ void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
 }
 
 
-/* Calculate ans = m.vec, where 'ans' and 'vec' are column vectors */
-void rtnl_mtx_mult(const RationalMatrix *m, const Rational *vec, Rational *ans)
+void transform_fractional_coords_rtnl_inverse(const RationalMatrix *m,
+                                              const Rational *vec,
+                                              Rational *ans)
 {
 	int i, j;
 

@@ -736,7 +736,7 @@ static void check_point_fwd(RationalMatrix *m, CenteringMask *cmask,
 	Rational nc[3];
 
 	/* Transform the lattice point */
-	rtnl_mtx_solve(m, c, nc);
+	transform_fractional_coords_rtnl(m, c, nc);
 
 	/* Eliminate any centerings which don't include the transformed point */
 	maybe_eliminate(CMASK_P, cmask, nc, 'P');
@@ -759,7 +759,7 @@ static void check_point_bwd(RationalMatrix *m, CenteringMask *mask,
 	Rational nc[3];
 	Rational c[3] = {x, y, z};
 
-	rtnl_mtx_mult(m, c, nc);
+	transform_fractional_coords_rtnl_inverse(m, c, nc);
 
 	if ( !centering_has_point(cen, nc) ) {
 		*mask |= exclude;
