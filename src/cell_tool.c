@@ -335,7 +335,8 @@ static int uncenter(UnitCell *cell, const char *out_file)
 }
 
 
-static int transform(UnitCell *cell, const char *trans_str)
+static int transform(UnitCell *cell, const char *trans_str,
+                     const char *out_file)
 {
 	RationalMatrix *trans;
 	UnitCell *nc;
@@ -358,6 +359,16 @@ static int transform(UnitCell *cell, const char *trans_str)
 	       "it's just that I don't (yet) know how to work out what "
 	       "it is.\n");
 
+	if ( out_file != NULL ) {
+		FILE *fh = fopen(out_file, "w");
+		if ( fh == NULL ) {
+			ERROR("Failed to open '%s'\n", out_file);
+			return 1;
+		}
+		write_cell(nc, fh);
+		fclose(fh);
+	}
+
 	return 0;
 }
 
@@ -370,8 +381,8 @@ static int cell_choices(UnitCell *cell)
 	}
 
 	if ( cell_get_unique_axis(cell) == 'b' ) {
-		transform(cell, "-a-c,b,a");
-		transform(cell, "c,b,-a-c");
+		transform(cell, "-a-c,b,a", NULL);
+		transform(cell, "c,b,-a-c", NULL);
 	} else {
 		ERROR("Sorry, --cell-choices only supports unique axis b.\n");
 		return 1;
@@ -552,7 +563,7 @@ int main(int argc, char *argv[])
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
 	if ( mode == CT_RINGS ) return all_rings(cell, sym, rmax);
 	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell, ltl, atl);
-	if ( mode == CT_TRANSFORM ) return transform(cell, trans_str);
+	if ( mode == CT_TRANSFORM ) return transform(cell, trans_str, out_file);
 	if ( mode == CT_CHOICES ) return cell_choices(cell);
 
 	return 1;
