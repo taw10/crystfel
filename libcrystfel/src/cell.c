@@ -876,8 +876,12 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 	gsl_matrix *tm;
 	char ncen;
 	int i, j;
+	Rational det;
 
 	if ( m == NULL ) return NULL;
+
+	det = rtnl_mtx_det(m);
+	if ( rtnl_cmp(det, rtnl_zero()) == 0 ) return NULL;
 
 	tm = gsl_matrix_alloc(3,3);
 	if ( tm == NULL ) {
