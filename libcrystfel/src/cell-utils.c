@@ -1570,7 +1570,9 @@ int cell_is_sensible(UnitCell *cell)
  * lattice is a conventional Bravais lattice.
  * Warnings are printied if any of the checks are failed.
  *
- * Returns: true if cell is invalid.
+ * Returns: zero if the cell is fine, 1 if it is unconventional but otherwise
+ *  OK (e.g. left-handed or not a Bravais lattice), and 2 if there is a serious
+ *  problem such as the parameters being physically impossible.
  *
  */
 int validate_cell(UnitCell *cell)
@@ -1580,7 +1582,7 @@ int validate_cell(UnitCell *cell)
 
 	if ( cell_has_parameters(cell) && !cell_is_sensible(cell) ) {
 		ERROR("WARNING: Unit cell parameters are not sensible.\n");
-		err = 1;
+		err = 2;
 	}
 
 	if ( !bravais_lattice(cell) ) {
@@ -1604,7 +1606,7 @@ int validate_cell(UnitCell *cell)
 		  || ((cen == 'C') && (ua == 'c')) ) {
 			ERROR("WARNING: A, B or C centering matches unique"
 			      " axis.\n");
-			err = 1;
+			err = 2;
 		}
 	}
 
