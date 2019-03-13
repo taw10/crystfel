@@ -801,6 +801,7 @@ static char determine_centering(RationalMatrix *P, char cen)
 	check_point_bwd(P, &cmask, cen, CMASK_I, rtnl(1,2), rtnl(1,2), rtnl(1,2));
 	check_point_bwd(P, &cmask, cen, CMASK_H, rtnl(2,3), rtnl(1,3), rtnl(1,3));
 	check_point_bwd(P, &cmask, cen, CMASK_H, rtnl(1,3), rtnl(2,3), rtnl(2,3));
+	check_point_bwd(P, &cmask, cen, CMASK_ALL, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 
 	/* Check whether the current centering's lattice points will all
 	 * coincide with lattice points in the new centering.  Eliminate any
@@ -809,31 +810,38 @@ static char determine_centering(RationalMatrix *P, char cen)
 
 		case 'P' :
 		case 'R' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 		break;
 
 		case 'A' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 		check_point_fwd(P, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
 		break;
 
 		case 'B' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 		check_point_fwd(P, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
 		break;
 
 		case 'C' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
 		break;
 
 		case 'I' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl(1,2));
 		break;
 
 		case 'F' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 		check_point_fwd(P, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
 		check_point_fwd(P, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
 		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
 		break;
 
 		case 'H' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
 		check_point_fwd(P, &cmask, rtnl(2,3), rtnl(1,3), rtnl(1,3));
 		check_point_fwd(P, &cmask, rtnl(1,3), rtnl(2,3), rtnl(2,3));
 		break;
