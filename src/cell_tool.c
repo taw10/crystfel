@@ -339,6 +339,7 @@ static int transform(UnitCell *cell, const char *trans_str,
                      const char *out_file)
 {
 	RationalMatrix *trans;
+	Rational det;
 	UnitCell *nc;
 
 	trans = parse_cell_transformation(trans_str);
@@ -351,7 +352,12 @@ static int transform(UnitCell *cell, const char *trans_str,
 
 	STATUS("------------------> The transformation matrix:\n");
 	rtnl_mtx_print(trans);
-	STATUS("Determinant = %s\n", rtnl_format(rtnl_mtx_det(trans)));
+	det = rtnl_mtx_det(trans);
+	STATUS("Determinant = %s\n", rtnl_format(det));
+	if ( rtnl_cmp(det, rtnl_zero()) == 0 ) {
+		ERROR("Singular transformation matrix - cannot transform.\n");
+		return 1;
+	}
 
 	STATUS("------------------> The transformed unit cell:\n");
 	cell_print(nc);
