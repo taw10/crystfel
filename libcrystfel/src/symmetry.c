@@ -371,13 +371,13 @@ static void expand_ops(SymOpList *s)
 /* Transform all the operations in a SymOpList by a given matrix.
  * The matrix must have a determinant of +/- 1 (otherwise its inverse would
  * not also be an integer matrix). */
-static void transform_ops(SymOpList *s, IntegerMatrix *t)
+static void transform_ops(SymOpList *s, IntegerMatrix *P)
 {
 	int n, i;
-	IntegerMatrix *inv;
+	IntegerMatrix *Pi;
 	signed int det;
 
-	det = intmat_det(t);
+	det = intmat_det(P);
 	if ( det == -1 ) {
 		ERROR("WARNING: mirrored SymOpList.\n");
 	} else if ( det != 1 ) {
@@ -385,8 +385,8 @@ static void transform_ops(SymOpList *s, IntegerMatrix *t)
 		return;
 	}
 
-	inv = intmat_inverse(t);
-	if ( inv == NULL ) {
+	Pi = intmat_inverse(P);
+	if ( Pi == NULL ) {
 		ERROR("Failed to invert matrix.\n");
 		return;
 	}
@@ -396,13 +396,13 @@ static void transform_ops(SymOpList *s, IntegerMatrix *t)
 
 		IntegerMatrix *r, *f;
 
-		r = intmat_intmat_mult(s->ops[i], t);
+		r = intmat_intmat_mult(P, s->ops[i]);
 		if ( r == NULL ) {
 			ERROR("Matrix multiplication failed.\n");
 			return;
 		}
 
-		f = intmat_intmat_mult(inv, r);
+		f = intmat_intmat_mult(r, Pi);
 		if ( f == NULL ) {
 			ERROR("Matrix multiplication failed.\n");
 			return;
@@ -415,7 +415,7 @@ static void transform_ops(SymOpList *s, IntegerMatrix *t)
 
 	}
 
-	intmat_free(inv);
+	intmat_free(Pi);
 }
 
 
@@ -1014,14 +1014,14 @@ static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
 
 		case 'a' :
 		intmat_set(t, 0, 2, 1);
-		intmat_set(t, 1, 1, 1);
-		intmat_set(t, 2, 0, -1);
+		intmat_set(t, 1, 0, 1);
+		intmat_set(t, 2, 1, 1);
 		break;
 
 		case 'b' :
-		intmat_set(t, 0, 0, 1);
+		intmat_set(t, 0, 1, 1);
 		intmat_set(t, 1, 2, 1);
-		intmat_set(t, 2, 1, -1);
+		intmat_set(t, 2, 0, 1);
 
 		break;
 
