@@ -82,7 +82,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 		ERROR("Failed to load unit cell from '%s'\n", comparecell);
 		return 1;
 	}
-	if ( validate_cell(cell2) ) {
+	if ( validate_cell(cell2) > 1 ) {
 		ERROR("Comparison cell is invalid.\n");
 		return 1;
 	}
@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
 	STATUS("------------------> The input unit cell:\n");
 	cell_print(cell);
 
-	if ( validate_cell(cell) ) {
+	if ( validate_cell(cell) > 1 ) {
 		ERROR("Cell is invalid.\n");
 		return 1;
 	}
