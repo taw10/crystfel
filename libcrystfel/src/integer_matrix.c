@@ -177,32 +177,6 @@ signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
 }
 
 
-/* intmat_solve_rational:
- * @m: An %IntegerMatrix
- * @vec: An array of %Rational
- * @ans: An array of %Rational in which to store the result
- *
- * Solves the matrix equation m*ans = vec, where @ans and @vec are
- * column vectors of %Rational numbers.
- *
- * This is just a convenience function which creates a %RationalMatrix out of
- * @m and then calls rtnl_mtx_solve().
- *
- * Returns: non-zero on error
- **/
-int intmat_solve_rational(const IntegerMatrix *m, const Rational *vec,
-                          Rational *ans)
-{
-	RationalMatrix *rm;
-	int r;
-
-	rm = rtnl_mtx_from_intmat(m);
-	r = rtnl_mtx_solve(rm, vec, ans);
-	rtnl_mtx_free(rm);
-	return r;
-}
-
-
 /**
  * transform_indices:
  * @P: An %IntegerMatrix

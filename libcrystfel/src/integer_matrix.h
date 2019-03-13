@@ -77,9 +77,6 @@ extern signed int *transform_indices(const IntegerMatrix *P, const signed int *h
 extern IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
                                          const IntegerMatrix *b);
 
-extern int intmat_solve_rational(const IntegerMatrix *m, const Rational *vec,
-                                 Rational *ans);
-
 /* Inverse */
 extern IntegerMatrix *intmat_inverse(const IntegerMatrix *m);
 
