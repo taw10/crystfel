@@ -1157,10 +1157,6 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	taccs = time_accounts_init();
 
-	if ( sb->zmq ) {
-		allDone = 1;
-	}
-
 	do {
 
 		/* Check for stream output from workers */
@@ -1198,11 +1194,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	/* Indicate to the workers that we are finished, and wake them up one
 	 * last time */
 	time_accounts_set(taccs, TACC_WAKEUP);
-	if ( sb->zmq ) {
-		STATUS("Waiting to receive patterns over ZMQ...\n");
-	} else {
-		STATUS("Waiting for the last patterns to be processed...\n");
-	}
+	STATUS("Waiting for the last patterns to be processed...\n");
 	pthread_mutex_lock(&sb->shared->queue_lock);
 	sb->shared->no_more = 1;
 	pthread_mutex_unlock(&sb->shared->queue_lock);
