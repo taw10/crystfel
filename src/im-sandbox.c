@@ -1199,7 +1199,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	 * last time */
 	time_accounts_set(taccs, TACC_WAKEUP);
 	if ( sb->zmq ) {
-		STATUS("Waiting for patterns to process...\n");
+		STATUS("Waiting to receive patterns over ZMQ...\n");
 	} else {
 		STATUS("Waiting for the last patterns to be processed...\n");
 	}
