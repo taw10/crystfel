@@ -217,7 +217,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.filename = pargs->filename_p_e->filename;
 	image.event = pargs->filename_p_e->ev;
 	if ( pargs->msgpack_obj != NULL ) {
-		if ( unpack_msgpack_data(pargs->msgpack_obj, &image) ) return;
+		if ( unpack_msgpack_data(pargs->msgpack_obj, &image,
+		                         iargs->no_image_data) ) return;
 	} else {
 		if ( file_wait_open_read(sb_shared, &image, taccs, last_task,
 		                         iargs->wait_for_file, cookie,

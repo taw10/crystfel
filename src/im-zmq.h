@@ -53,7 +53,8 @@ extern msgpack_object *im_zmq_fetch(struct im_zmq *z);
 extern int get_peaks_msgpack(msgpack_object *obj, struct image *image,
                              int half_pixel_shift);
 
-extern int unpack_msgpack_data(msgpack_object *obj, struct image *image);
+extern int unpack_msgpack_data(msgpack_object *obj, struct image *image,
+                               int no_image_data);
 
 #else /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
 
@@ -68,7 +69,8 @@ static UNUSED void *im_zmq_fetch(struct im_zmq *z) { return NULL; }
 static UNUSED int get_peaks_msgpack(void *obj, struct image *image,
                              int half_pixel_shift) { return 0; }
 
-static UNUSED int unpack_msgpack_data(void *obj, struct image *image) { return 1; }
+static UNUSED int unpack_msgpack_data(void *obj, struct image *image,
+                                      int no_image_data) { return 1; }
 
 #endif /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
 

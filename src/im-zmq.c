@@ -272,80 +272,12 @@ static void im_zmq_fill_in_beam_parameters(struct beam_params *beam,
 }
 
 
-/* Unpacks the raw panel data from a msgpack_object, applies panel geometry,
- * and stores the resulting data in an image struct. Object has structure
- * {
- * "corr_data":
- *   {
- *     "data": binary_data,
- *     "shape": [data_height, data_width],
- *           ...
- *           ...
- *   },
- *   "key2": val2,
- *        ...
- *        ...
- * }
- */
-int unpack_msgpack_data(msgpack_object *obj, struct image *image)
+static int unpack_slab(struct image *image, double *data,
+                       int data_width, int data_height)
 {
-
 	uint16_t *flags = NULL;
 	float *sat = NULL;
 	int pi;
-	int data_width, data_height;
-	double *data;
-	msgpack_object *corr_data_obj;
-	msgpack_object *data_obj;
-	msgpack_object *shape_obj;
-
-	if ( image->det == NULL ) {
-		ERROR("Geometry not available.\n");
-		return 1;
-	}
-
-	if ( obj == NULL ) {
-		ERROR("No MessagePack object!\n");
-		return 1;
-	}
-
-	corr_data_obj = find_msgpack_kv(obj, "corr_data");
-	if ( corr_data_obj == NULL ) {
-		ERROR("No corr_data MessagePack object found.\n");
-		return 1;
-	}
-
-	data_obj = find_msgpack_kv(corr_data_obj, "data");
-	if ( data_obj == NULL ) {
-		ERROR("No data MessagePack object found inside corr_data.\n");
-		return 1;
-	}
-	if ( data_obj->type != MSGPACK_OBJECT_STR ) {
-		ERROR("corr_data.data isn't a binary object.\n");
-		return 1;
-	}
-	data = (double *)data_obj->via.str.ptr;
-
-	shape_obj = find_msgpack_kv(corr_data_obj, "shape");
-	if ( shape_obj == NULL ) {
-		ERROR("No shape MessagePack object found inside corr_data.\n");
-		return 1;
-	}
-	if ( shape_obj->type != MSGPACK_OBJECT_ARRAY ) {
-		ERROR("corr_data.shape isn't an array object.\n");
-		return 1;
-	}
-	if ( shape_obj->via.array.size != 2 ) {
-		ERROR("corr_data.shape is wrong size (%i, should be 2)\n",
-		      shape_obj->via.array.size);
-		return 1;
-	}
-	if ( shape_obj->via.array.ptr[0].type != MSGPACK_OBJECT_POSITIVE_INTEGER ) {
-		ERROR("corr_data.shape contains wrong type of element.\n");
-		return 1;
-	}
-	data_height = shape_obj->via.array.ptr[0].via.i64;
-	data_width = shape_obj->via.array.ptr[1].via.i64;
 
 	image->dp = malloc(image->det->n_panels*sizeof(float *));
 	image->bad = malloc(image->det->n_panels*sizeof(int *));
@@ -420,6 +352,125 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image)
 		}
 		}
 
+	}
+
+	return 0;
+}
+
+
+static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
+{
+	msgpack_object *corr_data_obj;
+	msgpack_object *data_obj;
+	msgpack_object *shape_obj;
+	double *data;
+
+	corr_data_obj = find_msgpack_kv(obj, "corr_data");
+	if ( corr_data_obj == NULL ) {
+		ERROR("No corr_data MessagePack object found.\n");
+		return NULL;
+	}
+
+	data_obj = find_msgpack_kv(corr_data_obj, "data");
+	if ( data_obj == NULL ) {
+		ERROR("No data MessagePack object found inside corr_data.\n");
+		return NULL;
+	}
+	if ( data_obj->type != MSGPACK_OBJECT_STR ) {
+		ERROR("corr_data.data isn't a binary object.\n");
+		return NULL;
+	}
+	data = (double *)data_obj->via.str.ptr;
+
+	shape_obj = find_msgpack_kv(corr_data_obj, "shape");
+	if ( shape_obj == NULL ) {
+		ERROR("No shape MessagePack object found inside corr_data.\n");
+		return NULL;
+	}
+	if ( shape_obj->type != MSGPACK_OBJECT_ARRAY ) {
+		ERROR("corr_data.shape isn't an array object.\n");
+		return NULL;
+	}
+	if ( shape_obj->via.array.size != 2 ) {
+		ERROR("corr_data.shape is wrong size (%i, should be 2)\n",
+		      shape_obj->via.array.size);
+		return NULL;
+	}
+	if ( shape_obj->via.array.ptr[0].type != MSGPACK_OBJECT_POSITIVE_INTEGER ) {
+		ERROR("corr_data.shape contains wrong type of element.\n");
+		return NULL;
+	}
+	*height = shape_obj->via.array.ptr[0].via.i64;
+	*width = shape_obj->via.array.ptr[1].via.i64;
+	return data;
+}
+
+
+static double *zero_array(struct detector *det)
+{
+	int max_fs = 0;
+	int max_ss = 0;
+	int pi;
+	double *data;
+
+	for ( pi=0; pi<det->n_panels; pi++ ) {
+		if ( det->panels[pi].orig_max_fs > max_fs ) {
+			max_fs = det->panels[pi].orig_max_fs;
+		}
+		if ( det->panels[pi].orig_max_ss > max_ss ) {
+			max_ss = det->panels[pi].orig_max_ss;
+		}
+	}
+
+	data = calloc((max_fs+1)*(max_ss+1), sizeof(double));
+	return data;
+}
+
+
+/* Unpacks the raw panel data from a msgpack_object, applies panel geometry,
+ * and stores the resulting data in an image struct. Object has structure
+ * {
+ * "corr_data":
+ *   {
+ *     "data": binary_data,
+ *     "shape": [data_height, data_width],
+ *           ...
+ *           ...
+ *   },
+ *   "key2": val2,
+ *        ...
+ *        ...
+ * }
+ */
+int unpack_msgpack_data(msgpack_object *obj, struct image *image,
+                        int no_image_data)
+{
+	int data_width, data_height;
+	double *data;
+
+	if ( image->det == NULL ) {
+		ERROR("Geometry not available.\n");
+		return 1;
+	}
+
+	if ( obj == NULL ) {
+		ERROR("No MessagePack object!\n");
+		return 1;
+	}
+
+	if ( !no_image_data ) {
+		data = find_msgpack_data(obj, &data_width, &data_height);
+		if ( data == NULL ) {
+			ERROR("No image data in MessagePack object.\n");
+			return 1;
+		}
+	} else {
+		data = zero_array(image->det);
+	}
+
+	if ( unpack_slab(image, data, data_width, data_height) ) {
+		ERROR("Failed to unpack data slab.\n");
+		return 1;
 	}
 
 	if ( image->beam != NULL ) {

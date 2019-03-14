@@ -400,6 +400,7 @@ int main(int argc, char *argv[])
 	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
 	iargs.profile = 0;
+	iargs.no_image_data = 0;
 	iargs.taketwo_opts.member_thresh = -1;
 	iargs.taketwo_opts.len_tol = -1.0;
 	iargs.taketwo_opts.angle_tol = -1.0;
@@ -461,6 +462,7 @@ int main(int argc, char *argv[])
 		{"multi",              0, &if_multi,                 1},
 		{"overpredict",        0, &iargs.overpredict,        1},
 		{"zmq-msgpack",        0, &zmq,                      1},
+		{"no-image-data",      0, &iargs.no_image_data,      1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
