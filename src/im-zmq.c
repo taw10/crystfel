@@ -406,7 +406,7 @@ static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
 }
 
 
-static double *zero_array(struct detector *det)
+static double *zero_array(struct detector *det, int *dw, int *dh)
 {
 	int max_fs = 0;
 	int max_ss = 0;
@@ -423,6 +423,8 @@ static double *zero_array(struct detector *det)
 	}
 
 	data = calloc((max_fs+1)*(max_ss+1), sizeof(double));
+	*dw = max_fs+1;
+	*dh = max_ss+1;
 	return data;
 }
 
@@ -465,7 +467,7 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image,
 			return 1;
 		}
 	} else {
-		data = zero_array(image->det);
+		data = zero_array(image->det, &data_width, &data_height);
 	}
 
 	if ( unpack_slab(image, data, data_width, data_height) ) {
