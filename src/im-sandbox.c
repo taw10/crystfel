@@ -449,6 +449,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 				pargs.filename_p_e->ev = NULL;
 
 			}
+			pargs.msgpack_obj = NULL;
 
 		} else {
 
