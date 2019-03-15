@@ -217,6 +217,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image.filename = pargs->filename_p_e->filename;
 	image.event = pargs->filename_p_e->ev;
 	if ( pargs->msgpack_obj != NULL ) {
+		set_last_task(last_task, "unpacking messagepack object");
 		if ( unpack_msgpack_data(pargs->msgpack_obj, &image,
 		                         iargs->no_image_data) ) return;
 	} else {
@@ -501,4 +502,5 @@ out:
 	image_feature_list_free(image.features);
 	free_detector_geometry(image.det);
 	if ( imfile != NULL ) imagefile_close(imfile);
+	set_last_task(last_task, "sandbox");
 }
