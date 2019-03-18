@@ -934,6 +934,11 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 	float **old_dp = dw->image->dp;
 	int **old_bad = dw->image->bad;
 
+	if ( dw->image->det != NULL ) {
+		free_detector_geometry(dw->image->det);
+	}
+
+	dw->image->det = copy_geom(dw->original_geom);
 	fail = imagefile_read(dw->imagefile, dw->image,
 	                      dw->ev_list->events[new_event]);
 	if ( fail ) {
@@ -2994,7 +2999,8 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 		dw->rg_coll_name = NULL;
 	}
 
-	dw->image->det = det_geom;
+	dw->original_geom = det_geom;
+	dw->image->det = copy_geom(det_geom);
 	dw->image->beam = beam;
 	dw->image->lambda = 0.0;
 	dw->image->filename = filename;

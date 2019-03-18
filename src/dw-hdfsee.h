@@ -96,6 +96,7 @@ typedef struct {
 	GdkPixbuf	**pixbufs;
 	gulong		motion_callback;
 	cairo_surface_t *surf;
+	struct detector *original_geom;
 
 	int             not_ready_yet;
 
