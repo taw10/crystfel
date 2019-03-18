@@ -2874,7 +2874,8 @@ static gint displaywindow_keypress(GtkWidget *widget, GdkEventKey *event,
 			case GDK_Right:
 			case GDK_KP_Right:
 			calibmode_right(dw);
-			redraw_window(dw); break;
+			redraw_window(dw);
+			break;
 
 			case GDK_KP_Add:
 			calibmode_next(NULL, dw);
