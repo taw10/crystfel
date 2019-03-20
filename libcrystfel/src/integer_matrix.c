@@ -35,7 +35,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "rational.h"
 #include "integer_matrix.h"
+#include "utils.h"
 
 
 /**
@@ -95,7 +97,7 @@ IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
  *
  * Returns: a newly allocated copy of @m, or NULL on error/
  **/
-IntegerMatrix *intmat_copy(IntegerMatrix *m)
+IntegerMatrix *intmat_copy(const IntegerMatrix *m)
 {
 	IntegerMatrix *p;
 	int i, j;
@@ -124,6 +126,19 @@ void intmat_free(IntegerMatrix *m)
 	if ( m == NULL ) return;
 	free(m->v);
 	free(m);
+}
+
+
+void intmat_size(const IntegerMatrix *m, unsigned int *rows, unsigned int *cols)
+{
+	if ( m == NULL ) {
+		*rows = 0;
+		*cols = 0;
+		return;
+	}
+
+	*rows = m->rows;
+	*cols = m->cols;
 }
 
 
@@ -163,32 +178,38 @@ signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
 
 
 /**
- * intmat_intvec_mult:
- * @m: An %IntegerMatrix
- * @vec: An array of signed integers
+ * transform_indices:
+ * @P: An %IntegerMatrix
+ * @hkl: An array of signed integers
  *
- * Multiplies the matrix @m by the vector @vec.  The size of @vec must equal the
- * number of columns in @m, and the size of the result equals the number of rows
- * in @m.
+ * Apply transformation matrix P to a set of reciprocal space Miller indices.
+ *
+ * In other words:
+ * Multiplies the matrix @P by the row vector @hkl.  The size of @vec must equal
+ * the number of columns in @P, and the size of the result equals the number of
+ * rows in @P.
+ *
+ * The multiplication looks like this:
+ *    (a1, a2, a3) = (hkl1, hkl2, hkl3) P
+ * Therefore matching the notation in ITA chapter 5.1.
  *
  * Returns: a newly allocated array of signed integers containing the answer,
  * or NULL on error.
  **/
-signed int *intmat_intvec_mult(const IntegerMatrix *m, const signed int *vec)
+signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
 {
 	signed int *ans;
-	unsigned int i;
+	unsigned int j;
 
-	ans = malloc(m->rows * sizeof(signed int));
+	ans = malloc(P->rows * sizeof(signed int));
 	if ( ans == NULL ) return NULL;
 
-	for ( i=0; i<m->rows; i++ ) {
+	for ( j=0; j<P->cols; j++ ) {
 
-		unsigned int j;
-
-		ans[i] = 0;
-		for ( j=0; j<m->cols; j++ ) {
-			ans[i] += intmat_get(m, i, j) * vec[j];
+		unsigned int i;
+		ans[j] = 0;
+		for ( i=0; i<P->rows; i++ ) {
+			ans[i] += intmat_get(P, i, j) * hkl[j];
 		}
 
 	}
@@ -341,6 +362,9 @@ static IntegerMatrix *intmat_cofactors(const IntegerMatrix *m)
  * @m: An %IntegerMatrix
  *
  * Calculates the inverse of @m.  Inefficiently.
+ *
+ * Works only if the inverse of the matrix is also an integer matrix,
+ * i.e. if the determinant of @m is +/- 1.
  *
  * Returns: the inverse of @m, or NULL on error.
  **/
@@ -531,4 +555,40 @@ IntegerMatrix *intmat_identity(int size)
 	}
 
 	return m;
+}
+
+
+/**
+ * intmat_set_all_3x3
+ * @m: An %IntegerMatrix
+ *
+ * Returns: an identity %IntegerMatrix with side length @size, or NULL on error.
+ *
+ */
+void intmat_set_all_3x3(IntegerMatrix *m,
+                        signed int m11, signed int m12, signed int m13,
+                        signed int m21, signed int m22, signed int m23,
+                        signed int m31, signed int m32, signed int m33)
+{
+	intmat_set(m, 0, 0, m11);
+	intmat_set(m, 0, 1, m12);
+	intmat_set(m, 0, 2, m13);
+
+	intmat_set(m, 1, 0, m21);
+	intmat_set(m, 1, 1, m22);
+	intmat_set(m, 1, 2, m23);
+
+	intmat_set(m, 2, 0, m31);
+	intmat_set(m, 2, 1, m32);
+	intmat_set(m, 2, 2, m33);
+}
+
+
+IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
+                                 signed int m21, signed int m22, signed int m23,
+                                 signed int m31, signed int m32, signed int m33)
+{
+	IntegerMatrix *t = intmat_new(3, 3);
+	intmat_set_all_3x3(t, m11, m12, m13, m21, m22, m23, m31, m32, m33);
+	return t;
 }

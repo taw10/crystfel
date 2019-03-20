@@ -83,3 +83,7 @@ if (HAVE_OPENCL)
   add_test(gpu_sim_check gpu_sim_check)
 endif (HAVE_OPENCL)
 
+add_executable(rational_check rational_check.c)
+target_include_directories(rational_check PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(rational_check ${COMMON_LIBRARIES})
+add_test(rational_check rational_check)

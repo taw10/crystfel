@@ -580,6 +580,10 @@ int main(int argc, char *argv[])
 	if ( reindex_str != NULL ) {
 		reindex = parse_symmetry_operations(reindex_str);
 		if ( reindex == NULL ) return 1;
+		if ( num_equivs(reindex, NULL) != 1 ) {
+			ERROR("Please provide only ONE reindexing operation\n");
+			return 1;
+		}
 		set_symmetry_name(reindex, "Reindex");
 	}
 

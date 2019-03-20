@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2013,2014,2017 Thomas White <taw@physics.org>
- *   2012                 Lorenzo Galli
+ *   2009-2018 Thomas White <taw@physics.org>
+ *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -49,9 +49,9 @@ extern double resolution(UnitCell *cell,
 extern UnitCell *cell_rotate(UnitCell *in, struct quaternion quat);
 extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
                              double rot);
-extern UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m);
 
 extern void cell_print(UnitCell *cell);
+extern void cell_print_full(UnitCell *cell);
 
 extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
                             const float *ltl, int reduce);
@@ -66,7 +66,8 @@ extern int cell_is_sensible(UnitCell *cell);
 
 extern int validate_cell(UnitCell *cell);
 
-extern UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t);
+extern UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **pC,
+                               RationalMatrix **pCi);
 
 extern int bravais_lattice(UnitCell *cell);
 
@@ -80,8 +81,24 @@ extern int forbidden_reflection(UnitCell *cell,
 
 extern double cell_get_volume(UnitCell *cell);
 
-extern int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
-                         IntegerMatrix **pmb);
+extern int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
+                                   float ltl, float atl);
+
+
+extern int compare_cell_parameters_and_orientation(UnitCell *cell1,
+                                                   UnitCell *cell2,
+                                                   const double ltl,
+                                                   const double atl);
+
+extern int compare_reindexed_cell_parameters_and_orientation(UnitCell *a,
+                                                             UnitCell *b,
+                                                             double ltl,
+                                                             double atl,
+                                                             IntegerMatrix **pmb);
+
+extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                             double ltl, double atl,
+                                             RationalMatrix **pmb);
 
 #ifdef __cplusplus
 }

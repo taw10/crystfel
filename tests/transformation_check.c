@@ -37,6 +37,7 @@
 
 #include <cell.h>
 #include <cell-utils.h>
+#include <symmetry.h>
 
 
 #define MAX_REFLS (10*1024)
@@ -134,52 +135,61 @@ static int compare_rvecs(struct rvec *a, int na, struct rvec *b, int nb)
 }
 
 
-static int check_transformation(UnitCell *cell, UnitCellTransformation *tfn,
-                                int pred_test, UnitCell *ct)
+static int check_same_reflections(UnitCell *cell, UnitCell *cnew)
 {
-	UnitCell *cnew, *cback;
-	UnitCellTransformation *inv;
-	double a[9], b[9];
-	int i;
-	int fail = 0;
 	struct rvec *vecs;
 	struct rvec *tvecs;
 	int na, nb;
 
-	STATUS("-----------------------\n");
-	if ( ct == NULL ) {
-		cnew = cell_transform(cell, tfn);
+	/* Check that the two cells predict the same reflections */
+	vecs = all_refls(cell, 1e9, &na);
+	tvecs = all_refls(cnew, 1e9, &nb);
+	if ( compare_rvecs(vecs, na, tvecs, nb)
+	    || compare_rvecs(tvecs, nb, vecs, na) )
+	{
+		ERROR("********************************************** ");
+		ERROR("Transformed cell didn't predict the same reflections\n");
+		//printf("---\n");
+		//for ( i=0; i<na; i++ ) {
+		//	printf("%e %e %e\n", vecs[i].u, vecs[i].v, vecs[i].w);
+		//}
+		//printf("---\n");
+		//for ( i=0; i<nb; i++ ) {
+		//	printf("%e %e %e\n", tvecs[i].u, tvecs[i].v, tvecs[i].w);
+		//}
+		return 1;
 	} else {
-		cnew = ct;
+		STATUS("The cells predict the same reflections.\n");
 	}
-	cback = cell_transform_inverse(cnew, tfn);
+	free(vecs);
+	free(tvecs);
+	return 0;
+}
 
+
+static int check_transformation(UnitCell *cell, IntegerMatrix *tfn,
+                                int pred_test)
+{
+	UnitCell *cnew, *cback;
+	double a[9], b[9];
+	int i;
+	int fail = 0;
+
+	STATUS("-----------------------\n");
+	cnew = cell_transform_intmat(cell, tfn);
+	cback = cell_transform_intmat_inverse(cnew, tfn);
+
+	STATUS("----> Before transformation:\n");
 	cell_print(cell);
-	tfn_print(tfn);
+	STATUS("----> The transformation matrix:\n");
+	intmat_print(tfn);
+	STATUS("----> After transformation:\n");
 	cell_print(cnew);
+	STATUS("----> After back transformation:\n");
+	cell_print(cback);
 
 	if ( pred_test ) {
-		/* Check that the two cells predict the same reflections */
-		vecs = all_refls(cell, 1e9, &na);
-		tvecs = all_refls(cnew, 1e9, &nb);
-		if ( compare_rvecs(vecs, na, tvecs, nb)
-		  || compare_rvecs(tvecs, nb, vecs, na) )
-		{
-			ERROR("Transformed cell didn't predict the same reflections\n");
-			//printf("---\n");
-			//for ( i=0; i<na; i++ ) {
-			//	printf("%e %e %e\n", vecs[i].u, vecs[i].v, vecs[i].w);
-			//}
-			//printf("---\n");
-			//for ( i=0; i<nb; i++ ) {
-			//	printf("%e %e %e\n", tvecs[i].u, tvecs[i].v, tvecs[i].w);
-			//}
-			return 1;
-		} else {
-			STATUS("The cells predict the same reflections.\n");
-		}
-		free(vecs);
-		free(tvecs);
+		check_same_reflections(cell, cnew);
 	} else {
 		STATUS("Cells not expected to predict the same reflections.\n");
 	}
@@ -193,18 +203,18 @@ static int check_transformation(UnitCell *cell, UnitCellTransformation *tfn,
 	                          &b[6], &b[7], &b[8]);
 	for ( i=0; i<9; i++ ) {
 		if ( !tolerance(a[i], b[i]) ) {
+			//STATUS("%e %e\n", a[i], b[i]);
 			fail = 1;
-			STATUS("%e %e\n", a[i], b[i]);
 		}
 	}
 
 	if ( fail ) {
+		ERROR("********************************************** ");
 		ERROR("Original cell not recovered after transformation:\n");
-		cell_print(cell);
-		tfn_print(tfn);
-		inv = tfn_inverse(tfn);
-		tfn_print(inv);
+		STATUS("----> After transformation and transformation back:\n");
 		cell_print(cback);
+	} else {
+		STATUS("The original cell was recovered after inverse transform.\n");
 	}
 
 	return fail;
@@ -214,21 +224,73 @@ static int check_transformation(UnitCell *cell, UnitCellTransformation *tfn,
 static int check_uncentering(UnitCell *cell)
 {
 	UnitCell *ct;
-	UnitCellTransformation *tr;
+	IntegerMatrix *C;
+	RationalMatrix *Ci;
+	UnitCell *cback;
+	double a[9], b[9];
+	int i;
+	int fail = 0;
 
-	ct = uncenter_cell(cell, &tr);
-	return check_transformation(cell, tr, 1, ct);
+	STATUS("-----------------------\n");
+
+	STATUS("----> Before transformation:\n");
+	cell_print_full(cell);
+
+	ct = uncenter_cell(cell, &C, &Ci);
+	if ( ct == NULL ) return 1;
+
+	STATUS("----> The primitive unit cell:\n");
+	cell_print(ct);
+
+	STATUS("----> The matrix to put the centering back:\n");
+	intmat_print(C);
+
+	STATUS("----> The recovered centered cell:\n");
+	cback = cell_transform_intmat(ct, C);
+	cell_print(cback);
+
+	cell_get_cartesian(cell, &a[0], &a[1], &a[2],
+	                         &a[3], &a[4], &a[5],
+	                         &a[6], &a[7], &a[8]);
+	cell_get_cartesian(cback, &b[0], &b[1], &b[2],
+	                          &b[3], &b[4], &b[5],
+	                          &b[6], &b[7], &b[8]);
+	for ( i=0; i<9; i++ ) {
+		if ( fabs(a[i] - b[i]) > 1e-12 ) {
+			fail = 1;
+		}
+	}
+
+	if ( fail ) {
+		ERROR("********************************************** ");
+		ERROR("Original cell not recovered after back transformation\n");
+	}
+
+	fail += check_same_reflections(cell, ct);
+	cell_free(ct);
+	cell_free(cback);
+
+	return fail;
 }
 
 
-static int check_identity(UnitCell *cell, UnitCellTransformation *tfn)
+static int check_identity(UnitCell *cell, IntegerMatrix *tfn)
 {
 	UnitCell *cnew;
 	double a[9], b[9];
 	int i;
 	int fail = 0;
 
-	cnew = cell_transform(cell, tfn);
+	STATUS("-----------------------\n");
+
+	cnew = cell_transform_intmat(cell, tfn);
+
+	STATUS("----> Before identity transformation:\n");
+	cell_print(cell);
+	STATUS("----> The identity transformation matrix:\n");
+	intmat_print(tfn);
+	STATUS("----> After identity transformation:\n");
+	cell_print(cnew);
 
 	cell_get_cartesian(cell, &a[0], &a[1], &a[2],
 	                         &a[3], &a[4], &a[5],
@@ -239,14 +301,15 @@ static int check_identity(UnitCell *cell, UnitCellTransformation *tfn)
 	for ( i=0; i<9; i++ ) {
 		if ( !within_tolerance(a[i], b[i], 0.1) ) {
 			fail = 1;
-			STATUS("%e %e\n", a[i], b[i]);
+			//STATUS("%e %e\n", a[i], b[i]);
 		}
 	}
 
 	if ( fail ) {
-		ERROR("Original cell not recovered after transformation:\n");
+		ERROR("********************************************** ");
+		ERROR("Original cell not recovered after identity transformation:\n");
 		cell_print(cell);
-		tfn_print(tfn);
+		intmat_print(tfn);
 		cell_print(cnew);
 	}
 
@@ -258,7 +321,8 @@ int main(int argc, char *argv[])
 {
 	int fail = 0;
 	UnitCell *cell, *cref;
-	UnitCellTransformation *tfn;
+	IntegerMatrix *tfn;
+	IntegerMatrix *part1, *part2;
 	gsl_rng *rng;
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
@@ -273,53 +337,52 @@ int main(int argc, char *argv[])
 	if ( cell == NULL ) return 1;
 	cell_free(cref);
 
+	tfn = intmat_identity(3);
+
 	/* Permutation of axes */
-	tfn = tfn_identity();
 	if ( tfn == NULL ) return 1;
-	tfn_combine(tfn, tfn_vector(0,1,0),
-	                 tfn_vector(0,0,1),
-	                 tfn_vector(1,0,0));
-	fail += check_transformation(cell, tfn, 1, NULL);
-	tfn_free(tfn);
+	intmat_set_all_3x3(tfn, 0,0,1,
+	                        1,0,0,
+	                        0,1,0);
+	fail += check_transformation(cell, tfn, 1);
 
 	/* Doubling of cell in one direction */
-	tfn = tfn_identity();
 	if ( tfn == NULL ) return 1;
-	tfn_combine(tfn, tfn_vector(2,0,0),
-	                 tfn_vector(0,1,0),
-	                 tfn_vector(0,0,1));
-	fail += check_transformation(cell, tfn, 0, NULL);
-	tfn_free(tfn);
+	intmat_set_all_3x3(tfn, 2,0,0,
+	                        0,1,0,
+	                        0,0,1);
+	fail += check_transformation(cell, tfn, 0);
 
-	/* Diagonal supercell */
-	tfn = tfn_identity();
+	/* Shearing */
 	if ( tfn == NULL ) return 1;
-	tfn_combine(tfn, tfn_vector(1,1,0),
-	                 tfn_vector(0,1,0),
-	                 tfn_vector(0,0,1));
-	fail += check_transformation(cell, tfn, 1, NULL);
-	tfn_free(tfn);
+	intmat_set_all_3x3(tfn, 1,0,0,
+	                        1,1,0,
+	                        0,0,1);
+	fail += check_transformation(cell, tfn, 1);
 
 	/* Crazy */
-	tfn = tfn_identity();
 	if ( tfn == NULL ) return 1;
-	tfn_combine(tfn, tfn_vector(1,1,0),
-	                 tfn_vector(0,1,0),
-	                 tfn_vector(0,1,1));
-	fail += check_transformation(cell, tfn, 0, NULL);
-	tfn_free(tfn);
+	intmat_set_all_3x3(tfn, 1,0,0,
+	                        1,1,1,
+	                        0,0,1);
+	fail += check_transformation(cell, tfn, 0);
 
 	/* Identity in two parts */
-	tfn = tfn_identity();
+	part1 = intmat_identity(3);
+	part2 = intmat_identity(3);
 	if ( tfn == NULL ) return 1;
-	tfn_combine(tfn, tfn_vector(0,0,1),
-	                 tfn_vector(0,1,0),
-	                 tfn_vector(-1,0,0));
-	tfn_combine(tfn,  tfn_vector(0,0,-1),
-	                  tfn_vector(0,1,0),
-	                  tfn_vector(1,0,0));
+	intmat_set_all_3x3(part1, 0,0,-1,
+	                          0,1,0,
+	                          1,0,0);
+	intmat_set_all_3x3(part2,  0,0,1,
+	                           0,1,0,
+	                          -1,0,0);
+	tfn = intmat_intmat_mult(part1, part2);
 	fail += check_identity(cell, tfn);
-	tfn_free(tfn);
+	intmat_free(part1);
+	intmat_free(part2);
+
+	intmat_free(tfn);
 
 	/* Check some uncentering transformations */
 	cref = cell_new_from_parameters(50e-10, 50e-10, 50e-10,

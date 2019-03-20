@@ -45,6 +45,8 @@
 #include "cell.h"
 #include "utils.h"
 #include "image.h"
+#include "integer_matrix.h"
+#include "rational.h"
 
 
 /**
@@ -94,6 +96,20 @@ struct _unitcell {
 	char         centering;
 	char         unique_axis;
 };
+
+typedef enum {
+	CMASK_P = 1<<0,
+	CMASK_A = 1<<1,
+	CMASK_B = 1<<2,
+	CMASK_C = 1<<3,
+	CMASK_I = 1<<4,
+	CMASK_F = 1<<5,
+	CMASK_H = 1<<6,
+	CMASK_R = 1<<7
+} CenteringMask;
+
+#define CMASK_ALL (CMASK_P | CMASK_A | CMASK_B | CMASK_C | CMASK_I \
+                     | CMASK_F | CMASK_H | CMASK_R)
 
 
 /************************** Setters and Constructors **************************/
@@ -352,13 +368,13 @@ static int cell_invert(double ax, double ay, double az,
 		return 1;
 	}
 	gsl_matrix_set(m, 0, 0, ax);
-	gsl_matrix_set(m, 0, 1, bx);
-	gsl_matrix_set(m, 0, 2, cx);
 	gsl_matrix_set(m, 1, 0, ay);
-	gsl_matrix_set(m, 1, 1, by);
-	gsl_matrix_set(m, 1, 2, cy);
 	gsl_matrix_set(m, 2, 0, az);
+	gsl_matrix_set(m, 0, 1, bx);
+	gsl_matrix_set(m, 1, 1, by);
 	gsl_matrix_set(m, 2, 1, bz);
+	gsl_matrix_set(m, 0, 2, cx);
+	gsl_matrix_set(m, 1, 2, cy);
 	gsl_matrix_set(m, 2, 2, cz);
 
 	/* Invert */
@@ -394,13 +410,13 @@ static int cell_invert(double ax, double ay, double az,
 	gsl_matrix_transpose(inv);
 
 	*asx = gsl_matrix_get(inv, 0, 0);
-	*bsx = gsl_matrix_get(inv, 0, 1);
-	*csx = gsl_matrix_get(inv, 0, 2);
 	*asy = gsl_matrix_get(inv, 1, 0);
-	*bsy = gsl_matrix_get(inv, 1, 1);
-	*csy = gsl_matrix_get(inv, 1, 2);
 	*asz = gsl_matrix_get(inv, 2, 0);
+	*bsx = gsl_matrix_get(inv, 0, 1);
+	*bsy = gsl_matrix_get(inv, 1, 1);
 	*bsz = gsl_matrix_get(inv, 2, 1);
+	*csx = gsl_matrix_get(inv, 0, 2);
+	*csy = gsl_matrix_get(inv, 1, 2);
 	*csz = gsl_matrix_get(inv, 2, 2);
 
 	gsl_matrix_free(inv);
@@ -600,333 +616,405 @@ const char *cell_rep(UnitCell *cell)
 }
 
 
-struct _unitcelltransformation
+UnitCell *cell_transform_gsl_direct(UnitCell *in, gsl_matrix *m)
 {
-	gsl_matrix *m;
-};
+	gsl_matrix *c;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	gsl_matrix *res;
+	UnitCell *out;
+
+	cell_get_cartesian(in, &asx, &asy, &asz, &bsx, &bsy,
+	                       &bsz, &csx, &csy, &csz);
+
+	c = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(c, 0, 0, asx);
+	gsl_matrix_set(c, 1, 0, asy);
+	gsl_matrix_set(c, 2, 0, asz);
+	gsl_matrix_set(c, 0, 1, bsx);
+	gsl_matrix_set(c, 1, 1, bsy);
+	gsl_matrix_set(c, 2, 1, bsz);
+	gsl_matrix_set(c, 0, 2, csx);
+	gsl_matrix_set(c, 1, 2, csy);
+	gsl_matrix_set(c, 2, 2, csz);
+
+	res = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, c, m, 0.0, res);
+
+	out = cell_new_from_cell(in);
+	cell_set_cartesian(out, gsl_matrix_get(res, 0, 0),
+	                        gsl_matrix_get(res, 1, 0),
+	                        gsl_matrix_get(res, 2, 0),
+	                        gsl_matrix_get(res, 0, 1),
+	                        gsl_matrix_get(res, 1, 1),
+	                        gsl_matrix_get(res, 2, 1),
+	                        gsl_matrix_get(res, 0, 2),
+	                        gsl_matrix_get(res, 1, 2),
+	                        gsl_matrix_get(res, 2, 2));
+
+	gsl_matrix_free(res);
+	gsl_matrix_free(c);
+	return out;
+}
+
+
+static int centering_has_point(char cen, Rational *p)
+{
+	/* First, put the point into the range 0..1 */
+	while ( rtnl_cmp(p[0], rtnl_zero()) < 0 ) p[0] = rtnl_add(p[0], rtnl(1, 1));
+	while ( rtnl_cmp(p[1], rtnl_zero()) < 0 ) p[1] = rtnl_add(p[1], rtnl(1, 1));
+	while ( rtnl_cmp(p[2], rtnl_zero()) < 0 ) p[2] = rtnl_add(p[2], rtnl(1, 1));
+	while ( rtnl_cmp(p[0], rtnl(1, 1)) >= 0 ) p[0] = rtnl_sub(p[0], rtnl(1, 1));
+	while ( rtnl_cmp(p[1], rtnl(1, 1)) >= 0 ) p[1] = rtnl_sub(p[1], rtnl(1, 1));
+	while ( rtnl_cmp(p[2], rtnl(1, 1)) >= 0 ) p[2] = rtnl_sub(p[2], rtnl(1, 1));
+
+	/* 0,0,0 is present in all centerings */
+	if ( (rtnl_cmp(p[0], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[1], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[2], rtnl_zero()) == 0) ) return 1;
+
+	/* Only I has 1/2 , 1/2, 1/2 */
+	if ( (rtnl_cmp(p[0], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,2)) == 0)
+	  && (cen == 'I') ) return 1;
+
+	/* A or F has 0 , 1/2, 1/2 */
+	if ( (rtnl_cmp(p[0], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,2)) == 0)
+	  && ((cen == 'A') || (cen == 'F')) ) return 1;
+
+	/* B or F has 1/2 , 0 , 1/2 */
+	if ( (rtnl_cmp(p[0], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[1], rtnl_zero()) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,2)) == 0)
+	  && ((cen == 'B') || (cen == 'F')) ) return 1;
+
+	/* C or F has 1/2 , 1/2 , 0 */
+	if ( (rtnl_cmp(p[0], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,2)) == 0)
+	  && (rtnl_cmp(p[2], rtnl_zero()) == 0)
+	  && ((cen == 'C') || (cen == 'F')) ) return 1;
+
+	/* H has 2/3 , 1/3 , 1/3 */
+	if ( (rtnl_cmp(p[0], rtnl(2,3)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(1,3)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(1,3)) == 0)
+	  && (cen == 'H') ) return 1;
+
+	/* H has 1/3 , 2/3 , 2/3 */
+	if ( (rtnl_cmp(p[0], rtnl(1,3)) == 0)
+	  && (rtnl_cmp(p[1], rtnl(2,3)) == 0)
+	  && (rtnl_cmp(p[2], rtnl(2,3)) == 0)
+	  && (cen == 'H') ) return 1;
+
+	return 0;
+}
+
+
+static void maybe_eliminate(CenteringMask c, CenteringMask *cmask, Rational *nc,
+                            char cen)
+{
+	/* Skip test if this centering isn't even a candidate */
+	if ( !(*cmask & c) ) return;
+
+	if ( !centering_has_point(cen, nc) ) {
+		*cmask |= c;
+		*cmask ^= c;
+	}
+}
+
+
+/* Check if the point x,y,z in the original cell matches any lattice point
+ * in the transformed cell */
+static void check_point_fwd(RationalMatrix *P, CenteringMask *cmask,
+                            Rational x, Rational y, Rational z)
+{
+	Rational c[3] = {x, y, z};
+	Rational nc[3];
+
+	/* Transform the lattice point */
+	transform_fractional_coords_rtnl(P, c, nc);
+
+	/* Eliminate any centerings which don't include the transformed point */
+	maybe_eliminate(CMASK_P, cmask, nc, 'P');
+	maybe_eliminate(CMASK_R, cmask, nc, 'R');
+	maybe_eliminate(CMASK_A, cmask, nc, 'A');
+	maybe_eliminate(CMASK_B, cmask, nc, 'B');
+	maybe_eliminate(CMASK_C, cmask, nc, 'C');
+	maybe_eliminate(CMASK_I, cmask, nc, 'I');
+	maybe_eliminate(CMASK_F, cmask, nc, 'F');
+	maybe_eliminate(CMASK_H, cmask, nc, 'H');
+}
+
+
+/* Check if the point x,y,z in the transformed cell matches any lattice point
+ * in the original cell.  If not, eliminate "exclude" from "*mask". */
+static void check_point_bwd(RationalMatrix *P, CenteringMask *mask,
+                            char cen, CenteringMask exclude,
+                            Rational x, Rational y, Rational z)
+{
+	Rational nc[3];
+	Rational c[3] = {x, y, z};
+
+	transform_fractional_coords_rtnl_inverse(P, c, nc);
+
+	if ( !centering_has_point(cen, nc) ) {
+		*mask |= exclude;
+		*mask ^= exclude;  /* Unset bits */
+	}
+}
+
+
+static char cmask_decode(CenteringMask mask)
+{
+	char res[32];
+
+	res[0] = '\0';
+
+	if ( mask & CMASK_H ) strcat(res, "H");
+	if ( mask & CMASK_F ) strcat(res, "F");
+	if ( mask & CMASK_I ) strcat(res, "I");
+	if ( mask & CMASK_A ) strcat(res, "A");
+	if ( mask & CMASK_B ) strcat(res, "B");
+	if ( mask & CMASK_C ) strcat(res, "C");
+	if ( mask & CMASK_P ) strcat(res, "P");
+	if ( mask & CMASK_R ) strcat(res, "R");
+
+	if ( strlen(res) == 0 ) return '?';
+	return res[0];
+}
+
+
+static char determine_centering(RationalMatrix *P, char cen)
+{
+	CenteringMask cmask = CMASK_ALL;
+
+	/* Check whether the current centering can provide all the lattice
+	 * points for the transformed cell.  Eliminate any centerings for which
+	 * it can't. */
+	check_point_bwd(P, &cmask, cen, CMASK_A | CMASK_F, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+	check_point_bwd(P, &cmask, cen, CMASK_B | CMASK_F, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+	check_point_bwd(P, &cmask, cen, CMASK_C | CMASK_F, rtnl(1,2), rtnl(1,2), rtnl_zero());
+	check_point_bwd(P, &cmask, cen, CMASK_I, rtnl(1,2), rtnl(1,2), rtnl(1,2));
+	check_point_bwd(P, &cmask, cen, CMASK_H, rtnl(2,3), rtnl(1,3), rtnl(1,3));
+	check_point_bwd(P, &cmask, cen, CMASK_H, rtnl(1,3), rtnl(2,3), rtnl(2,3));
+	check_point_bwd(P, &cmask, cen, CMASK_ALL, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+
+	/* Check whether the current centering's lattice points will all
+	 * coincide with lattice points in the new centering.  Eliminate any
+	 * centerings for which they don't (they give "excess lattice points"). */
+	switch ( cen ) {
+
+		case 'P' :
+		case 'R' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+		break;
+
+		case 'A' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+		check_point_fwd(P, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+		break;
+
+		case 'B' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+		break;
+
+		case 'C' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
+		break;
+
+		case 'I' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl(1,2));
+		break;
+
+		case 'F' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+		check_point_fwd(P, &cmask, rtnl_zero(), rtnl(1,2), rtnl(1,2));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl_zero(), rtnl(1,2));
+		check_point_fwd(P, &cmask, rtnl(1,2), rtnl(1,2), rtnl_zero());
+		break;
+
+		case 'H' :
+		check_point_fwd(P, &cmask, rtnl(1,1), rtnl(1,1), rtnl(1,1));
+		check_point_fwd(P, &cmask, rtnl(2,3), rtnl(1,3), rtnl(1,3));
+		check_point_fwd(P, &cmask, rtnl(1,3), rtnl(2,3), rtnl(2,3));
+		break;
+
+	}
+
+	return cmask_decode(cmask);
+}
 
 
 /**
- * tfn_inverse:
- * @t: A %UnitCellTransformation.
+ * cell_transform_rational:
+ * @cell: A %UnitCell.
+ * @t: A %RationalMatrix.
  *
- * Calculates the inverse of @t.  That is, if you apply cell_transform() to a
- * %UnitCell using @t, and then apply cell_transform() to the result using
- * tfn_inverse(@t) instead of @t, you will recover the same lattice vectors
- * (but note that the lattice type, centering and unique axis information will
- * be lost).
+ * Applies @t to @cell.
  *
- * Returns: The inverse of @t.
+ * This function will determine the centering of the resulting unit cell,
+ * producing '?' if any lattice points cannot be accounted for.  Note that if
+ * there are 'excess' lattice points in the transformed cell, the centering
+ * will still be '?' even if the lattice points for another centering are
+ * all present.
+ *
+ * The lattice type will be set to triclinic, and the unique axis to '?'.
+ *
+ * Returns: Transformed copy of @cell.
  *
  */
-UnitCellTransformation *tfn_inverse(UnitCellTransformation *t)
+UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 {
-	int s;
-	gsl_matrix *m;
-	gsl_matrix *inv;
-	gsl_permutation *perm;
-	UnitCellTransformation *out;
+	UnitCell *out;
+	gsl_matrix *tm;
+	char ncen;
+	int i, j;
+	Rational det;
 
-	m = gsl_matrix_alloc(3, 3);
 	if ( m == NULL ) return NULL;
 
-	out = tfn_identity();
-	if ( out == NULL ) {
-		gsl_matrix_free(m);
+	det = rtnl_mtx_det(m);
+	if ( rtnl_cmp(det, rtnl_zero()) == 0 ) return NULL;
+
+	tm = gsl_matrix_alloc(3,3);
+	if ( tm == NULL ) {
 		return NULL;
 	}
 
-	gsl_matrix_memcpy(m, t->m);
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			gsl_matrix_set(tm, i, j,
+			               rtnl_as_double(rtnl_mtx_get(m, i, j)));
+		}
+	}
 
-	perm = gsl_permutation_alloc(m->size1);
+	out = cell_transform_gsl_direct(cell, tm);
+	gsl_matrix_free(tm);
+
+	ncen = determine_centering(m, cell_get_centering(cell));
+	cell_set_centering(out, ncen);
+
+	/* FIXME: Update unique axis, lattice type */
+	cell_set_lattice_type(out, L_TRICLINIC);
+	cell_set_unique_axis(out, '?');
+
+	return out;
+}
+
+
+/**
+ * cell_transform_intmat:
+ * @cell: A %UnitCell.
+ * @t: An %IntegerMatrix.
+ *
+ * Applies @t to @cell.
+ *
+ * This is just a convenience function which turns @m into a %RationalMatrix
+ * and then calls cell_transform_rational().  See the documentation for that
+ * function for some important information.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform_intmat(UnitCell *cell, IntegerMatrix *m)
+{
+	UnitCell *ans;
+	RationalMatrix *mtx = rtnl_mtx_from_intmat(m);
+	ans = cell_transform_rational(cell, mtx);
+	rtnl_mtx_free(mtx);
+	return ans;
+}
+
+
+/**
+ * cell_transform_rational_inverse:
+ * @cell: A %UnitCell.
+ * @m: A %RationalMatrix
+ *
+ * Applies the inverse of @m to @cell.
+ *
+ * Returns: Transformed copy of @cell.
+ *
+ */
+UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m)
+{
+	UnitCell *out;
+	gsl_matrix *tm;
+	gsl_matrix *inv;
+	gsl_permutation *perm;
+	int s;
+	int i, j;
+
+	if ( m == NULL ) return NULL;
+
+	tm = gsl_matrix_alloc(3,3);
+	if ( tm == NULL ) {
+		return NULL;
+	}
+
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			gsl_matrix_set(tm, i, j,
+			               rtnl_as_double(rtnl_mtx_get(m, i, j)));
+		}
+	}
+
+	perm = gsl_permutation_alloc(3);
 	if ( perm == NULL ) {
 		ERROR("Couldn't allocate permutation\n");
 		return NULL;
 	}
-	inv = gsl_matrix_alloc(m->size1, m->size2);
+	inv = gsl_matrix_alloc(3, 3);
 	if ( inv == NULL ) {
 		ERROR("Couldn't allocate inverse\n");
 		gsl_permutation_free(perm);
 		return NULL;
 	}
-	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+	if ( gsl_linalg_LU_decomp(tm, perm, &s) ) {
 		ERROR("Couldn't decompose matrix\n");
 		gsl_permutation_free(perm);
 		return NULL;
 	}
-	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+	if ( gsl_linalg_LU_invert(tm, perm, inv)  ) {
 		ERROR("Couldn't invert transformation matrix\n");
 		gsl_permutation_free(perm);
 		return NULL;
 	}
 	gsl_permutation_free(perm);
 
-	gsl_matrix_free(out->m);
-	gsl_matrix_free(m);
-	out->m = inv;
+	out = cell_transform_gsl_direct(cell, inv);
+
+	/* FIXME: Update centering, unique axis, lattice type */
+
+	gsl_matrix_free(tm);
+	gsl_matrix_free(inv);
+
 	return out;
 }
 
 
 /**
- * cell_transform:
+ * cell_transform_intmat_inverse:
  * @cell: A %UnitCell.
- * @t: A %UnitCellTransformation.
- *
- * Applies @t to @cell.  Note that the lattice type, centering and unique axis
- * information will not be preserved.
- *
- * Returns: Transformed copy of @cell.
- *
- */
-UnitCell *cell_transform(UnitCell *cell, UnitCellTransformation *t)
-{
-	UnitCell *out;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	gsl_matrix *m;
-	gsl_matrix *a;
-
-	if ( t == NULL ) return NULL;
-
-	out = cell_new_from_cell(cell);
-	if ( out == NULL ) return NULL;
-
-	if ( cell_get_cartesian(out, &ax, &ay, &az,
-	                             &bx, &by, &bz,
-	                             &cx, &cy, &cz) ) return NULL;
-
-	m = gsl_matrix_alloc(3,3);
-	a = gsl_matrix_calloc(3,3);
-	if ( (m == NULL) || (a == NULL) ) {
-		cell_free(out);
-		return NULL;
-	}
-
-	gsl_matrix_set(m, 0, 0, ax);
-	gsl_matrix_set(m, 0, 1, ay);
-	gsl_matrix_set(m, 0, 2, az);
-	gsl_matrix_set(m, 1, 0, bx);
-	gsl_matrix_set(m, 1, 1, by);
-	gsl_matrix_set(m, 1, 2, bz);
-	gsl_matrix_set(m, 2, 0, cx);
-	gsl_matrix_set(m, 2, 1, cy);
-	gsl_matrix_set(m, 2, 2, cz);
-
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, t->m, m, 0.0, a);
-
-	cell_set_cartesian(out, gsl_matrix_get(a, 0, 0),
-	                        gsl_matrix_get(a, 0, 1),
-	                        gsl_matrix_get(a, 0, 2),
-	                        gsl_matrix_get(a, 1, 0),
-	                        gsl_matrix_get(a, 1, 1),
-	                        gsl_matrix_get(a, 1, 2),
-	                        gsl_matrix_get(a, 2, 0),
-	                        gsl_matrix_get(a, 2, 1),
-	                        gsl_matrix_get(a, 2, 2));
-
-	gsl_matrix_free(a);
-	gsl_matrix_free(m);
-
-	return out;
-}
-
-
-/**
- * cell_transform_inverse:
- * @cell: A %UnitCell.
- * @t: A %UnitCellTransformation.
- *
- * Applies the inverse of @t to @cell.
- *
- * Returns: Transformed copy of @cell.
- *
- */
-UnitCell *cell_transform_inverse(UnitCell *cell, UnitCellTransformation *t)
-{
-	UnitCellTransformation *inv;
-	UnitCell *out;
-
-	inv = tfn_inverse(t);
-	out = cell_transform(cell, inv);
-	tfn_free(inv);
-	return out;
-}
-
-
-/**
- * tfn_identity:
- *
- * Returns: A %UnitCellTransformation corresponding to an identity operation.
- *
- */
-UnitCellTransformation *tfn_identity()
-{
-	UnitCellTransformation *tfn;
-
-	tfn = calloc(1, sizeof(UnitCellTransformation));
-	if ( tfn == NULL ) return NULL;
-
-	tfn->m = gsl_matrix_alloc(3, 3);
-	if ( tfn->m == NULL ) {
-		free(tfn);
-		return NULL;
-	}
-
-	gsl_matrix_set_identity(tfn->m);
-
-	return tfn;
-}
-
-
-
-/**
- * tfn_from_intmat:
  * @m: An %IntegerMatrix
  *
- * Returns: A %UnitCellTransformation corresponding to @m.
+ * Applies the inverse of @m to @cell.
+ *
+ * Returns: Transformed copy of @cell.
  *
  */
-UnitCellTransformation *tfn_from_intmat(IntegerMatrix *m)
+UnitCell *cell_transform_intmat_inverse(UnitCell *cell, IntegerMatrix *m)
 {
-	UnitCellTransformation *tfn;
-	int i, j;
-
-	tfn = tfn_identity();
-	if ( tfn == NULL ) return NULL;
-
-	for ( i=0; i<3; i++ ) {
-	for ( j=0; j<3; j++ ) {
-		gsl_matrix_set(tfn->m, i, j, intmat_get(m, i, j));
-	}
-	}
-
-	return tfn;
-}
-
-
-/**
- * tfn_combine:
- * @t: A %UnitCellTransformation
- * @na: Pointer to three doubles representing naa, nab, nac
- * @nb: Pointer to three doubles representing nba, nbb, nbc
- * @nc: Pointer to three doubles representing nca, ncb, ncc
- *
- * Updates @t such that it represents its previous transformation followed by
- * a new transformation, corresponding to letting a = naa*a + nab*b + nac*c.
- * Likewise, a = nba*a + nbb*b + nbc*c and c = nca*a + ncb*b + ncc*c.
- *
- */
-void tfn_combine(UnitCellTransformation *t, double *na, double *nb, double *nc)
-{
-	gsl_matrix *a;
-	gsl_matrix *n;
-
-	n = gsl_matrix_alloc(3, 3);
-	a = gsl_matrix_calloc(3, 3);
-	if ( (n == NULL) || (a == NULL) ) {
-		return;
-	}
-	gsl_matrix_set(n, 0, 0, na[0]);
-	gsl_matrix_set(n, 0, 1, na[1]);
-	gsl_matrix_set(n, 0, 2, na[2]);
-	gsl_matrix_set(n, 1, 0, nb[0]);
-	gsl_matrix_set(n, 1, 1, nb[1]);
-	gsl_matrix_set(n, 1, 2, nb[2]);
-	gsl_matrix_set(n, 2, 0, nc[0]);
-	gsl_matrix_set(n, 2, 1, nc[1]);
-	gsl_matrix_set(n, 2, 2, nc[2]);
-
-	free(na);
-	free(nb);
-	free(nc);
-
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, n, t->m, 0.0, a);
-
-	gsl_matrix_free(t->m);
-	t->m = a;
-	gsl_matrix_free(n);
-}
-
-
-/**
- * tfn_vector:
- * @a: Amount of "a" to include in new vector
- * @b: Amount of "b" to include in new vector
- * @c: Amount of "c" to include in new vector
- *
- * This is a convenience function to use when sending vectors to tfn_combine():
- *	tfn_combine(tfn, tfn_vector(1,0,0),
- *	                 tfn_vector(0,2,0),
- *	                 tfn_vector(0,0,1));
- *
- */
-double *tfn_vector(double a, double b, double c)
-{
-	double *vec = malloc(3*sizeof(double));
-	if ( vec == NULL ) return NULL;
-	vec[0] = a;  vec[1] = b;  vec[2] = c;
-	return vec;
-}
-
-
-/**
- * tfn_print:
- * @t: A %UnitCellTransformation
- *
- * Prints information about @t to stderr.
- *
- */
-void tfn_print(UnitCellTransformation *t)
-{
-	gsl_permutation *perm;
-	gsl_matrix *lu;
-	int s;
-
-	STATUS("New a = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 0, 0),
-	                                         gsl_matrix_get(t->m, 0, 1),
-	                                         gsl_matrix_get(t->m, 0, 2));
-	STATUS("New b = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 1, 0),
-	                                         gsl_matrix_get(t->m, 1, 1),
-	                                         gsl_matrix_get(t->m, 1, 2));
-	STATUS("New c = %+.2fa %+.2fb %+.2fc\n", gsl_matrix_get(t->m, 2, 0),
-	                                         gsl_matrix_get(t->m, 2, 1),
-	                                         gsl_matrix_get(t->m, 2, 2));
-	lu = gsl_matrix_alloc(3, 3);
-	if ( lu == NULL ) {
-		ERROR("Couldn't allocate LU decomposition.\n");
-		return;
-	}
-
-	gsl_matrix_memcpy(lu, t->m);
-
-	perm = gsl_permutation_alloc(t->m->size1);
-	if ( perm == NULL ) {
-		ERROR("Couldn't allocate permutation.\n");
-		gsl_matrix_free(lu);
-		return;
-	}
-	if ( gsl_linalg_LU_decomp(lu, perm, &s) ) {
-		ERROR("LU decomposition failed.\n");
-		gsl_permutation_free(perm);
-		gsl_matrix_free(lu);
-		return;
-	}
-
-	STATUS("Transformation determinant = %.2f\n", gsl_linalg_LU_det(lu, s));
-}
-
-
-/**
- * tfn_free:
- * @t: A %UnitCellTransformation
- *
- * Frees all resources associated with @t.
- *
- */
-void tfn_free(UnitCellTransformation *t)
-{
-	gsl_matrix_free(t->m);
-	free(t);
+	UnitCell *ans;
+	RationalMatrix *mtx = rtnl_mtx_from_intmat(m);
+	ans = cell_transform_rational_inverse(cell, mtx);
+	rtnl_mtx_free(mtx);
+	return ans;
 }

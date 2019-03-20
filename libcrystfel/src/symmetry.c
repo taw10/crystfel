@@ -3,12 +3,12 @@
  *
  * Symmetry
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014,2016 Thomas White <taw@physics.org>
- *   2014           Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2010-2019 Thomas White <taw@physics.org>
+ *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -41,6 +41,8 @@
 #include "symmetry.h"
 #include "utils.h"
 #include "integer_matrix.h"
+#include "symop-parse.h"
+#include "symop-lex.h"
 
 
 /**
@@ -195,9 +197,9 @@ static void add_symop_v(SymOpList *ops,
 	m = intmat_new(3, 3);
 	assert(m != NULL);
 
-	for ( i=0; i<3; i++ ) intmat_set(m, 0, i, h[i]);
-	for ( i=0; i<3; i++ ) intmat_set(m, 1, i, k[i]);
-	for ( i=0; i<3; i++ ) intmat_set(m, 2, i, l[i]);
+	for ( i=0; i<3; i++ ) intmat_set(m, i, 0, h[i]);
+	for ( i=0; i<3; i++ ) intmat_set(m, i, 1, k[i]);
+	for ( i=0; i<3; i++ ) intmat_set(m, i, 2, l[i]);
 
 	free(h);
 	free(k);
@@ -369,13 +371,13 @@ static void expand_ops(SymOpList *s)
 /* Transform all the operations in a SymOpList by a given matrix.
  * The matrix must have a determinant of +/- 1 (otherwise its inverse would
  * not also be an integer matrix). */
-static void transform_ops(SymOpList *s, IntegerMatrix *t)
+static void transform_ops(SymOpList *s, IntegerMatrix *P)
 {
 	int n, i;
-	IntegerMatrix *inv;
+	IntegerMatrix *Pi;
 	signed int det;
 
-	det = intmat_det(t);
+	det = intmat_det(P);
 	if ( det == -1 ) {
 		ERROR("WARNING: mirrored SymOpList.\n");
 	} else if ( det != 1 ) {
@@ -383,8 +385,8 @@ static void transform_ops(SymOpList *s, IntegerMatrix *t)
 		return;
 	}
 
-	inv = intmat_inverse(t);
-	if ( inv == NULL ) {
+	Pi = intmat_inverse(P);
+	if ( Pi == NULL ) {
 		ERROR("Failed to invert matrix.\n");
 		return;
 	}
@@ -394,13 +396,13 @@ static void transform_ops(SymOpList *s, IntegerMatrix *t)
 
 		IntegerMatrix *r, *f;
 
-		r = intmat_intmat_mult(s->ops[i], t);
+		r = intmat_intmat_mult(P, s->ops[i]);
 		if ( r == NULL ) {
 			ERROR("Matrix multiplication failed.\n");
 			return;
 		}
 
-		f = intmat_intmat_mult(inv, r);
+		f = intmat_intmat_mult(r, Pi);
 		if ( f == NULL ) {
 			ERROR("Matrix multiplication failed.\n");
 			return;
@@ -413,7 +415,7 @@ static void transform_ops(SymOpList *s, IntegerMatrix *t)
 
 	}
 
-	intmat_free(inv);
+	intmat_free(Pi);
 }
 
 
@@ -1012,14 +1014,14 @@ static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
 
 		case 'a' :
 		intmat_set(t, 0, 2, 1);
-		intmat_set(t, 1, 1, 1);
-		intmat_set(t, 2, 0, -1);
+		intmat_set(t, 1, 0, 1);
+		intmat_set(t, 2, 1, 1);
 		break;
 
 		case 'b' :
-		intmat_set(t, 0, 0, 1);
+		intmat_set(t, 0, 1, 1);
 		intmat_set(t, 1, 2, 1);
-		intmat_set(t, 2, 1, -1);
+		intmat_set(t, 2, 0, 1);
 
 		break;
 
@@ -1124,7 +1126,7 @@ static void do_op(const IntegerMatrix *op,
 
 	v[0] = h;  v[1] = k;  v[2] = l;
 
-	ans = intmat_intvec_mult(op, v);
+	ans = transform_indices(op, v);
 	assert(ans != NULL);
 
 	*he = ans[0];  *ke = ans[1];  *le = ans[2];
@@ -1636,105 +1638,76 @@ SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 }
 
 
-static IntegerMatrix *parse_symmetry_operation(const char *s)
+/* Parse a single symmetry operation, e.g. 'h,-2k,(h+l)/3' */
+RationalMatrix *parse_symmetry_operation(const char *s)
 {
-	IntegerMatrix *m;
-	char **els;
-	int n, i;
+	YY_BUFFER_STATE b;
+	RationalMatrix *m;
+	int r;
 
+	m = rtnl_mtx_new(3, 3);
+	b = symop_scan_string(s);
+	r = symopparse(m, NULL);
+	symop_delete_buffer(b);
 
-	n = assplode(s, ",", &els, ASSPLODE_NONE);
-	if ( n != 3 ) {
-		for ( i=0; i<n; i++ ) free(els[i]);
-		free(els);
+	if ( r ) {
+		ERROR("Failed to parse '%s'\n", s);
+		rtnl_mtx_free(m);
 		return NULL;
 	}
-
-	m = intmat_new(3, 3);
-	if ( m == NULL ) return NULL;
-
-	for ( i=0; i<n; i++ ) {
-
-		int c;
-		size_t cl;
-		signed int nh = 0;
-		signed int nk = 0;
-		signed int nl = 0;
-		signed int mult = 1;
-		int ndigit = 0;
-		signed int sign = +1;
-
-		/* We have one expression something like "-2h+k" */
-		cl = strlen(els[i]);
-		for ( c=0; c<cl; c++ ) {
-
-			if ( els[i][c] == '-' ) sign *= -1;
-			if ( els[i][c] == 'h' ) {
-				nh = mult*sign;
-				mult = 1;
-				ndigit = 0;
-				sign = +1;
-			}
-			if ( els[i][c] == 'k' ) {
-				nk = mult*sign;
-				mult = 1;
-				ndigit = 0;
-				sign = +1;
-			}
-			if ( els[i][c] == 'l' ) {
-				nl = mult*sign;
-				mult = 1;
-				ndigit = 0;
-				sign = +1;
-			}
-			if ( isdigit(els[i][c]) ) {
-				if ( ndigit > 0 ) {
-					mult *= 10;
-					mult += els[i][c] - '0';
-				} else {
-					mult *= els[i][c] - '0';
-				}
-				ndigit++;
-			}
-		}
-
-		intmat_set(m, i, 0, nh);
-		intmat_set(m, i, 1, nk);
-		intmat_set(m, i, 2, nl);
-
-		free(els[i]);
-
-	}
-	free(els);
 
 	return m;
 }
 
 
+/**
+ * parse_cell_transformation
+ * @s: Textual representation of cell transformation
+ *
+ * Parses @s, for example 'a,(b+a)/2,c', and returns the corresponding
+ * %RationalMatrix.
+ *
+ * Returns: A %RationalMatrix describing the transformation, or NULL on error.
+ *
+ */
+RationalMatrix *parse_cell_transformation(const char *s)
+{
+	return parse_symmetry_operation(s);
+}
+
+
+/**
+ * parse_symmetry_operations
+ * @s: Textual representation of a list of symmetry operations
+ *
+ * Parses @s, for example 'h,k,l;k,h,-l', and returns the corresponding
+ * %SymOpList
+ *
+ * Returns: A %SymOpList, or NULL on error.
+ *
+ */
 SymOpList *parse_symmetry_operations(const char *s)
 {
-	SymOpList *sol;
-	char **ops;
-	int n, i;
+	YY_BUFFER_STATE b;
+	RationalMatrix *m;
+	SymOpList *list;
+	int r;
 
-	sol = new_symoplist();
-	if ( sol == NULL ) return NULL;
+	m = rtnl_mtx_new(3, 3); /* Scratch space for parser */
+	list = new_symoplist(); /* The result we want */
 
-	n = assplode(s, ";:", &ops, ASSPLODE_NONE);
-	for ( i=0; i<n; i++ ) {
-		IntegerMatrix *m;
-		m = parse_symmetry_operation(ops[i]);
-		if ( m != NULL ) {
-			add_symop(sol, m);
-		} else {
-			ERROR("Invalid symmetry operation '%s'\n", ops[i]);
-			/* Try the next one */
-		}
-		free(ops[i]);
+	b = symop_scan_string(s);
+	r = symopparse(m, list);
+	symop_delete_buffer(b);
+	rtnl_mtx_free(m);
+
+	if ( r ) {
+		ERROR("Failed to parse '%s'\n", s);
+		free_symoplist(list);
+		return NULL;
 	}
-	free(ops);
 
-	return sol;
+	return list;
 }
 
 

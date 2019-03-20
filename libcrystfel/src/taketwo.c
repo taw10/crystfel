@@ -98,6 +98,7 @@
 #include <assert.h>
 #include <time.h>
 
+#include "cell.h"
 #include "cell-utils.h"
 #include "index.h"
 #include "taketwo.h"
@@ -355,6 +356,54 @@ static void show_rvec(struct rvec r2)
  * functions called under the core functions, still specialised (Level 3)
  * ------------------------------------------------------------------------*/
 
+/* cell_transform_gsl_direct() doesn't do quite what we want here.
+ * The matrix m should be post-multiplied by a matrix of real or reciprocal
+ * basis vectors (it doesn't matter which because it's just a rotation).
+ * M contains the basis vectors written in columns:  M' = mM */
+static UnitCell *cell_post_smiley_face(UnitCell *in, gsl_matrix *m)
+{
+	gsl_matrix *c;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	gsl_matrix *res;
+	UnitCell *out;
+
+	cell_get_cartesian(in, &asx, &asy, &asz,
+	                       &bsx, &bsy, &bsz,
+	                       &csx, &csy, &csz);
+
+	c = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(c, 0, 0, asx);
+	gsl_matrix_set(c, 1, 0, asy);
+	gsl_matrix_set(c, 2, 0, asz);
+	gsl_matrix_set(c, 0, 1, bsx);
+	gsl_matrix_set(c, 1, 1, bsy);
+	gsl_matrix_set(c, 2, 1, bsz);
+	gsl_matrix_set(c, 0, 2, csx);
+	gsl_matrix_set(c, 1, 2, csy);
+	gsl_matrix_set(c, 2, 2, csz);
+
+	res = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
+
+	out = cell_new_from_cell(in);
+	cell_set_cartesian(out, gsl_matrix_get(res, 0, 0),
+	                        gsl_matrix_get(res, 1, 0),
+	                        gsl_matrix_get(res, 2, 0),
+	                        gsl_matrix_get(res, 0, 1),
+	                        gsl_matrix_get(res, 1, 1),
+	                        gsl_matrix_get(res, 2, 1),
+	                        gsl_matrix_get(res, 0, 2),
+	                        gsl_matrix_get(res, 1, 2),
+	                        gsl_matrix_get(res, 2, 2));
+
+	gsl_matrix_free(res);
+	gsl_matrix_free(c);
+	return out;
+}
+
+
 static void rotation_around_axis(struct rvec c, double th,
 				 gsl_matrix *res)
 {
@@ -462,35 +511,6 @@ static void closest_rot_mat(struct rvec vec1, struct rvec vec2,
 	 * theta around "axis", but do assign it to twizzle. */
 	rotation_around_axis(axis, bestAngle, twizzle);
 }
-
-/*
-static double matrix_angle(gsl_matrix *m)
-{
-	double a = gsl_matrix_get(m, 0, 0);
-	double b = gsl_matrix_get(m, 1, 1);
-	double c = gsl_matrix_get(m, 2, 2);
-
-	double cos_t = (a + b + c - 1) / 2;
-	double theta = acos(cos_t);
-
-	return theta;
-}
-
-static struct rvec matrix_axis(gsl_matrix *a)
-{
-	double ang = matrix_angle(a);
-	double cos_t = cos(ang);
-	double p = gsl_matrix_get(a, 0, 0);
-	double q = gsl_matrix_get(a, 1, 1);
-	double r = gsl_matrix_get(a, 2, 2);
-	double x = sqrt((p - cos_t) / (1 - cos_t));
-	double y = sqrt((q - cos_t) / (1 - cos_t));
-	double z = sqrt((r - cos_t) / (1 - cos_t));
-
-	struct rvec v = new_rvec(x, y, z);
-	return v;
-}
-*/
 
 static double matrix_trace(gsl_matrix *a)
 {
@@ -1601,7 +1621,8 @@ static unsigned int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 }
 
 
-static void set_gsl_matrix(gsl_matrix *mat, double asx, double asy, double asz,
+static void set_gsl_matrix(gsl_matrix *mat,
+                           double asx, double asy, double asz,
                            double bsx, double bsy, double bsz,
                            double csx, double csy, double csz)
 {
@@ -1630,15 +1651,23 @@ static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 
 	gsl_matrix *recip = gsl_matrix_alloc(3, 3);
 	gsl_matrix *cart = gsl_matrix_alloc(3, 3);
-	cell_get_reciprocal(ttCell->cell, &asx, &asy, &asz, &bsx, &bsy,
-						&bsz, &csx, &csy, &csz);
 
-	set_gsl_matrix(recip, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+	cell_get_reciprocal(ttCell->cell, &asx, &asy, &asz,
+	                                  &bsx, &bsy, &bsz,
+	                                  &csx, &csy, &csz);
 
-	cell_get_cartesian(ttCell->cell, &asx, &asy, &asz, &bsx, &bsy,
-						&bsz, &csx, &csy, &csz);
+	set_gsl_matrix(recip, asx, asy, asz,
+	                      asx, bsy, bsz,
+	                      csx, csy, csz);
 
-	set_gsl_matrix(cart, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+	cell_get_cartesian(ttCell->cell, &asx, &asy, &asz,
+	                                 &bsx, &bsy, &bsz,
+	                                 &csx, &csy, &csz);
+
+	set_gsl_matrix(cart, asx, bsx, csx,
+	                     asy, bsy, csy,
+	                     asz, bsz, csz);
+
 
 	int i, j, k;
 	int numOps = num_equivs(rawList, NULL);
@@ -2058,7 +2087,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	tp->numPrevs++;
 
 	/* Prepare the solution for CrystFEL friendliness */
-	result = transform_cell_gsl(cell, solution);
+	result = cell_post_smiley_face(cell, solution);
 	cleanup_taketwo_cell(&ttCell);
 
 	return result;

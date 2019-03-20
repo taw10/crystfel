@@ -40,25 +40,38 @@
  **/
 typedef struct _integermatrix IntegerMatrix;
 
+#include "rational.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Alloc/dealloc */
 extern IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols);
-extern IntegerMatrix *intmat_copy(IntegerMatrix *m);
+extern IntegerMatrix *intmat_copy(const IntegerMatrix *m);
 extern IntegerMatrix *intmat_identity(int size);
 extern void intmat_free(IntegerMatrix *m);
 
 /* Get/set */
+extern void intmat_size(const IntegerMatrix *m, unsigned int *rows,
+                        unsigned int *cols);
+
 extern void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j,
                        signed int v);
 extern signed int intmat_get(const IntegerMatrix *m,
                              unsigned int i, unsigned int j);
 
-/* Matrix-(int)vector multiplication */
-extern signed int *intmat_intvec_mult(const IntegerMatrix *m,
-                                      const signed int *vec);
+extern void intmat_set_all_3x3(IntegerMatrix *m,
+                               signed int m11, signed int m12, signed int m13,
+                               signed int m21, signed int m22, signed int m23,
+                               signed int m31, signed int m32, signed int m33);
+
+extern IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
+                                        signed int m21, signed int m22, signed int m23,
+                                        signed int m31, signed int m32, signed int m33);
+
+/* Matrix-vector multiplication */
+extern signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl);
 
 /* Matrix-matrix multiplication */
 extern IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,

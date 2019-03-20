@@ -3,12 +3,12 @@
  *
  * Symmetry
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014,2016 Thomas White <taw@physics.org>
- *   2014           Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2010-2019 Thomas White <taw@physics.org>
+ *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -36,6 +36,7 @@
 
 
 #include "integer_matrix.h"
+#include "rational.h"
 
 /**
  * SymOpList
@@ -93,7 +94,9 @@ extern int is_centric(signed int h, signed int k, signed int l,
 extern void pointgroup_warning(const char *sym);
 
 extern void add_symop(SymOpList *ops, IntegerMatrix *m);
+extern RationalMatrix *parse_symmetry_operation(const char *s);
 extern SymOpList *parse_symmetry_operations(const char *s);
+extern RationalMatrix *parse_cell_transformation(const char *s);
 extern char *get_matrix_name(const IntegerMatrix *m, int row);
 
 #ifdef __cplusplus

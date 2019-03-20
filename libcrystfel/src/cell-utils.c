@@ -3,13 +3,13 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012,2014-2017 Thomas White <taw@physics.org>
- *   2012                Lorenzo Galli
+ *   2009-2019 Thomas White <taw@physics.org>
+ *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *
@@ -219,11 +219,6 @@ int right_handed(UnitCell *cell)
 
 void cell_print(UnitCell *cell)
 {
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double a, b, c, alpha, beta, gamma;
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
 	LatticeType lt;
 	char cen;
 
@@ -251,12 +246,31 @@ void cell_print(UnitCell *cell)
 	}
 
 	if ( cell_has_parameters(cell) ) {
+
+		double a, b, c, alpha, beta, gamma;
 		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 
 		STATUS("a      b      c            alpha   beta  gamma\n");
 		STATUS("%6.2f %6.2f %6.2f A    %6.2f %6.2f %6.2f deg\n",
 		       a*1e10, b*1e10, c*1e10,
 		       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
+	} else {
+		STATUS("Unit cell parameters are not specified.\n");
+	}
+}
+
+
+void cell_print_full(UnitCell *cell)
+{
+
+	cell_print(cell);
+
+	if ( cell_has_parameters(cell) ) {
+
+		double asx, asy, asz;
+		double bsx, bsy, bsz;
+		double csx, csy, csz;
+		double ax, ay, az, bx, by, bz, cx, cy, cz;
 
 		cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -283,8 +297,6 @@ void cell_print(UnitCell *cell)
 
 		STATUS("Cell representation is %s.\n", cell_rep(cell));
 
-	} else {
-		STATUS("Unit cell parameters are not specified.\n");
 	}
 }
 
@@ -349,203 +361,218 @@ int bravais_lattice(UnitCell *cell)
 }
 
 
-static UnitCellTransformation *uncentering_transformation(UnitCell *in,
-                                                          char *new_centering,
-                                                          LatticeType *new_latt)
+static RationalMatrix *create_rtnl_mtx(signed int a1, signed int a2,
+                                       signed int b1, signed int b2,
+                                       signed int c1, signed int c2,
+                                       signed int d1, signed int d2,
+                                       signed int e1, signed int e2,
+                                       signed int f1, signed int f2,
+                                       signed int g1, signed int g2,
+                                       signed int h1, signed int h2,
+                                       signed int i1, signed int i2)
 {
-	UnitCellTransformation *t;
-	const double OT = 1.0/3.0;
-	const double TT = 2.0/3.0;
-	const double H = 0.5;
+	RationalMatrix *m = rtnl_mtx_new(3, 3);
+	if ( m == NULL ) return NULL;
+	rtnl_mtx_set(m, 0, 0, rtnl(a1, a2));
+	rtnl_mtx_set(m, 0, 1, rtnl(b1, b2));
+	rtnl_mtx_set(m, 0, 2, rtnl(c1, c2));
+	rtnl_mtx_set(m, 1, 0, rtnl(d1, d2));
+	rtnl_mtx_set(m, 1, 1, rtnl(e1, e2));
+	rtnl_mtx_set(m, 1, 2, rtnl(f1, f2));
+	rtnl_mtx_set(m, 2, 0, rtnl(g1, g2));
+	rtnl_mtx_set(m, 2, 1, rtnl(h1, h2));
+	rtnl_mtx_set(m, 2, 2, rtnl(i1, i2));
+	return m;
+}
+
+
+/* Given a centered cell @in, return the integer transformation matrix which
+ * turns a primitive cell into @in. Set new_centering and new_latt to the
+ * centering and lattice type of the primitive cell (usually aP, sometimes rR,
+ * rarely mP).  Store the inverse matrix at pCi */
+static IntegerMatrix *centering_transformation(UnitCell *in,
+                                               char *new_centering,
+                                               LatticeType *new_latt,
+                                               char *new_ua,
+                                               RationalMatrix **pCi)
+{
 	LatticeType lt;
 	char ua, cen;
+	IntegerMatrix *C = NULL;
+	RationalMatrix *Ci = NULL;
 
 	lt = cell_get_lattice_type(in);
 	ua = cell_get_unique_axis(in);
 	cen = cell_get_centering(in);
 
-	t = tfn_identity();
-	if ( t == NULL ) return NULL;
+	/* Write the matrices exactly as they appear in ITA Table 5.1.3.1.
+	 * C is "P", and Ci is "Q=P^-1".  Vice-versa if the transformation
+	 * should go the opposite way to what's written in the first column. */
 
-	if ( ua == 'a' ) {
-		tfn_combine(t, tfn_vector(0,1,0),
-		               tfn_vector(0,0,1),
-		               tfn_vector(1,0,0));
-		if ( lt == L_MONOCLINIC ) {
-			assert(cen != 'A');
-			switch ( cen ) {
-				case 'B' : cen = 'A'; break;
-				case 'C' : cen = 'B'; break;
-				case 'I' : cen = 'I'; break;
-			}
-		}
-	}
-
-	if ( ua == 'b' ) {
-		tfn_combine(t, tfn_vector(0,0,1),
-		               tfn_vector(1,0,0),
-		               tfn_vector(0,1,0));
-		if ( lt == L_MONOCLINIC ) {
-			assert(cen != 'B');
-			switch ( cen ) {
-				case 'C' : cen = 'A'; break;
-				case 'A' : cen = 'B'; break;
-				case 'I' : cen = 'I'; break;
-			}
-		}
-	}
-
-	switch ( cen ) {
-
-		case 'P' :
+	if ( (cen=='P') || (cen=='R') ) {
+		*new_centering = cen;
 		*new_latt = lt;
-		*new_centering = 'P';
-		break;
+		*new_ua = ua;
+		C = intmat_identity(3);
+		Ci = rtnl_mtx_identity(3);
+	}
 
-		case 'R' :
-		*new_latt = L_RHOMBOHEDRAL;
-		*new_centering = 'R';
-		break;
-
-		case 'I' :
-		tfn_combine(t, tfn_vector(-H,H,H),
-		               tfn_vector(H,-H,H),
-		               tfn_vector(H,H,-H));
+	if ( cen == 'I' ) {
+		C = intmat_create_3x3(0, 1, 1,
+		                      1, 0, 1,
+		                      1, 1, 0);
+		Ci = create_rtnl_mtx(-1,2,  1,2,  1,2,
+		                      1,2, -1,2,  1,2,
+		                      1,2,  1,2, -1,2);
 		if ( lt == L_CUBIC ) {
 			*new_latt = L_RHOMBOHEDRAL;
 			*new_centering = 'R';
+			*new_ua = '*';
 		} else {
-			/* Tetragonal or orthorhombic */
 			*new_latt = L_TRICLINIC;
 			*new_centering = 'P';
+			*new_ua = '*';
 		}
-		break;
+	}
 
-		case 'F' :
-		tfn_combine(t, tfn_vector(0,H,H),
-		               tfn_vector(H,0,H),
-		               tfn_vector(H,H,0));
+	if ( cen == 'F' ) {
+		C = intmat_create_3x3(-1,  1,  1,
+		                       1, -1,  1,
+		                       1,  1, -1);
+		Ci = create_rtnl_mtx( 0,1,  1,2,  1,2,
+		                      1,2,  0,1,  1,2,
+		                      1,2,  1,2,  0,1);
 		if ( lt == L_CUBIC ) {
 			*new_latt = L_RHOMBOHEDRAL;
 			*new_centering = 'R';
+			*new_ua = '*';
 		} else {
-			assert(lt == L_ORTHORHOMBIC);
 			*new_latt = L_TRICLINIC;
 			*new_centering = 'P';
+			*new_ua = '*';
 		}
-		break;
+	}
 
-		case 'A' :
-		tfn_combine(t, tfn_vector( 1, 0, 0),
-		               tfn_vector( 0, H, H),
-		               tfn_vector( 0,-H, H));
-		if ( lt == L_ORTHORHOMBIC ) {
-			*new_latt = L_MONOCLINIC;
-		} else {
-			*new_latt = L_TRICLINIC;
-		}
-		*new_centering = 'P';
-		break;
-
-		case 'B' :
-		tfn_combine(t, tfn_vector( H, 0, H),
-		               tfn_vector( 0, 1, 0),
-		               tfn_vector(-H, 0, H));
-		if ( lt == L_ORTHORHOMBIC ) {
-			*new_latt = L_MONOCLINIC;
-		} else {
-			*new_latt = L_TRICLINIC;
-		}
-		*new_centering = 'P';
-		break;
-
-		case 'C' :
-		tfn_combine(t, tfn_vector( H, H, 0),
-		               tfn_vector(-H, H, 0),
-		               tfn_vector( 0, 0, 1));
-		if ( lt == L_ORTHORHOMBIC ) {
-			*new_latt = L_MONOCLINIC;
-		} else {
-			*new_latt = L_TRICLINIC;
-		}
-		*new_centering = 'P';
-		break;
-
-		case 'H' :
+	if ( (lt == L_HEXAGONAL) && (cen == 'H') && (ua == 'c') ) {
 		/* Obverse setting */
-		tfn_combine(t, tfn_vector(TT,OT,OT),
-		               tfn_vector(-OT,OT,OT),
-		               tfn_vector(-OT,-TT,OT));
+		C = intmat_create_3x3( 1,  0,  1,
+		                      -1,  1,  1,
+		                       0, -1,  1);
+		Ci = create_rtnl_mtx( 2,3, -1,3, -1,3,
+		                      1,3,  1,3, -2,3,
+		                      1,3,  1,3,  1,3);
 		assert(lt == L_HEXAGONAL);
+		assert(ua == 'c');
 		*new_latt = L_RHOMBOHEDRAL;
 		*new_centering = 'R';
-		break;
-
-		default :
-		ERROR("Invalid centering '%c'\n", cell_get_centering(in));
-		return NULL;
-
+		*new_ua = '*';
 	}
 
-	/* Reverse the axis permutation, but only if this was not an H->R
-	 * transformation */
-	if ( !((cen=='H') && (*new_latt == L_RHOMBOHEDRAL)) ) {
-		if ( ua == 'a' ) {
-			tfn_combine(t, tfn_vector(0,0,1),
-				       tfn_vector(1,0,0),
-				       tfn_vector(0,1,0));
-		}
-
-		if ( ua == 'b' ) {
-			tfn_combine(t, tfn_vector(0,1,0),
-				       tfn_vector(0,0,1),
-				       tfn_vector(1,0,0));
+	if ( cen == 'A' ) {
+		C = intmat_create_3x3( 1,  0,  0,
+		                       0,  1,  1,
+		                       0, -1,  1);
+		Ci = create_rtnl_mtx( 1,1,  0,1,  0,1,
+		                      0,1,  1,2, -1,2,
+		                      0,1,  1,2,  1,2);
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+			*new_centering = 'P';
+			*new_ua = 'a';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
 		}
 	}
 
-	return t;
+	if ( cen == 'B' ) {
+		C = intmat_create_3x3( 1,  0,  1,
+		                       0,  1,  0,
+		                      -1,  0,  1);
+		Ci = create_rtnl_mtx( 1,2,  0,1, -1,2,
+		                      0,1,  1,1,  0,1,
+		                      1,2,  0,1,  1,2);
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+			*new_centering = 'P';
+			*new_ua = 'b';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
+		}
+	}
+
+	if ( cen == 'C' ) {
+		C = intmat_create_3x3( 1,  1,  0,
+		                      -1,  1,  0,
+		                       0,  0,  1);
+		Ci = create_rtnl_mtx( 1,2, -1,2,  0,1,
+		                      1,2,  1,2,  0,1,
+		                      0,1,  0,1,  1,1);
+		if ( lt == L_ORTHORHOMBIC ) {
+			*new_latt = L_MONOCLINIC;
+			*new_centering = 'P';
+			*new_ua = 'c';
+		} else {
+			*new_latt = L_TRICLINIC;
+			*new_centering = 'P';
+			*new_ua = '*';
+		}
+	}
+
+	*pCi = Ci;
+	return C;
 }
 
 
 /**
  * uncenter_cell:
  * @in: A %UnitCell
- * @t: Location at which to store the transformation which was used.
+ * @C: Location at which to store the centering transformation
+ * @Ci: Location at which to store the inverse centering transformation
  *
- * Turns any cell into a primitive one, e.g. for comparison purposes.  The
- * transformation which was used is stored at @t, which can be NULL if the
- * transformation is not required.
+ * Turns any cell into a primitive one, e.g. for comparison purposes.
  *
- * Returns: a primitive version of @in in a conventional (unique axis c)
- * setting.
+ * The transformation which was used is stored at @Ci. The centering
+ * transformation, which is the transformation you should apply if you want to
+ * get back the original cell, will be stored at @C.  Either or both of these
+ * can be NULL if you don't need that information.
+ *
+ * Returns: a primitive version of @in.
  *
  */
-UnitCell *uncenter_cell(UnitCell *in, UnitCellTransformation **t)
+UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **pC, RationalMatrix **pCi)
 {
-	UnitCellTransformation *tt;
+	IntegerMatrix *C;
+	RationalMatrix *Ci;
 	char new_centering;
 	LatticeType new_latt;
+	char new_ua;
 	UnitCell *out;
 
-	if ( !bravais_lattice(in) ) {
-		ERROR("Cannot uncenter: not a Bravais lattice.\n");
-		cell_print(in);
-		return NULL;
-	}
+	C = centering_transformation(in, &new_centering, &new_latt,
+	                             &new_ua, &Ci);
+	if ( C == NULL ) return NULL;
 
-	tt = uncentering_transformation(in, &new_centering, &new_latt);
-	if ( tt == NULL ) return NULL;
-
-	out = cell_transform(in, tt);
+	out = cell_transform_rational(in, Ci);
 	if ( out == NULL ) return NULL;
 
 	cell_set_lattice_type(out, new_latt);
 	cell_set_centering(out, new_centering);
+	cell_set_unique_axis(out, new_ua);
 
-	if ( t != NULL ) {
-		*t = tt;
+	if ( pC != NULL ) {
+		*pC = C;
 	} else {
-		tfn_free(tt);
+		intmat_free(C);
+	}
+
+	if ( pCi != NULL ) {
+		*pCi = Ci;
+	} else {
+		rtnl_mtx_free(Ci);
 	}
 
 	return out;
@@ -609,16 +636,16 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	float angtol = deg2rad(tols[3]);
 	UnitCell *cell;
 	UnitCell *template;
-	UnitCellTransformation *uncentering;
+	IntegerMatrix *centering;
 	UnitCell *new_cell_trans;
 
 	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &uncentering);
+	template = uncenter_cell(template_in, &centering, NULL);
 	if ( template == NULL ) return NULL;
 
 	/* The candidate cell is also uncentered, because it might be centered
 	 * if it came from (e.g.) MOSFLM */
-	cell = uncenter_cell(cell_in, NULL);
+	cell = uncenter_cell(cell_in, NULL, NULL);
 	if ( cell == NULL ) return NULL;
 
 	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
@@ -627,7 +654,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 		ERROR("Couldn't get reciprocal cell for template.\n");
 		cell_free(template);
 		cell_free(cell);
-		tfn_free(uncentering);
+		intmat_free(centering);
 		return NULL;
 	}
 
@@ -649,7 +676,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 		ERROR("Couldn't get reciprocal cell.\n");
 		cell_free(template);
 		cell_free(cell);
-		tfn_free(uncentering);
+		intmat_free(centering);
 		return NULL;
 	}
 
@@ -811,7 +838,7 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 	/* Reverse the de-centering transformation */
 	if ( new_cell != NULL ) {
 
-		new_cell_trans = cell_transform_inverse(new_cell, uncentering);
+		new_cell_trans = cell_transform_intmat(new_cell, centering);
 		cell_free(new_cell);
 		cell_set_lattice_type(new_cell_trans,
 		                      cell_get_lattice_type(template_in));
@@ -821,13 +848,13 @@ UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
 		                     cell_get_unique_axis(template_in));
 
 		cell_free(template);
-		tfn_free(uncentering);
+		intmat_free(centering);
 
 		return new_cell_trans;
 
 	} else {
 		cell_free(template);
-		tfn_free(uncentering);
+		intmat_free(centering);
 		return NULL;
 	}
 }
@@ -850,16 +877,16 @@ UnitCell *match_cell_ab(UnitCell *cell_in, UnitCell *template_in)
 	int have_real_c;
 	UnitCell *cell;
 	UnitCell *template;
-	UnitCellTransformation *to_given_cell;
+	IntegerMatrix *to_given_cell;
 	UnitCell *new_cell;
 	UnitCell *new_cell_trans;
 
 	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &to_given_cell);
+	template = uncenter_cell(template_in, &to_given_cell, NULL);
 
 	/* The candidate cell is also uncentered, because it might be centered
 	 * if it came from (e.g.) MOSFLM */
-	cell = uncenter_cell(cell_in, NULL);
+	cell = uncenter_cell(cell_in, NULL, NULL);
 
 	/* Get the lengths to match */
 	if ( cell_get_cartesian(template, &ax, &ay, &az,
@@ -940,7 +967,7 @@ UnitCell *match_cell_ab(UnitCell *cell_in, UnitCell *template_in)
 	new_cell = cell_new_from_direct_axes(real_a, real_b, real_c);
 
 	 /* Reverse the de-centering transformation */
-	new_cell_trans = cell_transform_inverse(new_cell, to_given_cell);
+	new_cell_trans = cell_transform_intmat_inverse(new_cell, to_given_cell);
 	cell_free(new_cell);
 	cell_set_lattice_type(new_cell, cell_get_lattice_type(template_in));
 	cell_set_centering(new_cell, cell_get_centering(template_in));
@@ -1443,49 +1470,6 @@ void cell_fudge_gslcblas()
 }
 
 
-UnitCell *transform_cell_gsl(UnitCell *in, gsl_matrix *m)
-{
-	gsl_matrix *c;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	gsl_matrix *res;
-	UnitCell *out;
-
-	cell_get_reciprocal(in, &asx, &asy, &asz, &bsx, &bsy,
-	                        &bsz, &csx, &csy, &csz);
-
-	c = gsl_matrix_alloc(3, 3);
-	gsl_matrix_set(c, 0, 0, asx);
-	gsl_matrix_set(c, 1, 0, asy);
-	gsl_matrix_set(c, 2, 0, asz);
-	gsl_matrix_set(c, 0, 1, bsx);
-	gsl_matrix_set(c, 1, 1, bsy);
-	gsl_matrix_set(c, 2, 1, bsz);
-	gsl_matrix_set(c, 0, 2, csx);
-	gsl_matrix_set(c, 1, 2, csy);
-	gsl_matrix_set(c, 2, 2, csz);
-
-	res = gsl_matrix_calloc(3, 3);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
-
-	out = cell_new_from_cell(in);
-	cell_set_reciprocal(out, gsl_matrix_get(res, 0, 0),
-	                         gsl_matrix_get(res, 1, 0),
-	                         gsl_matrix_get(res, 2, 0),
-	                         gsl_matrix_get(res, 0, 1),
-	                         gsl_matrix_get(res, 1, 1),
-	                         gsl_matrix_get(res, 2, 1),
-	                         gsl_matrix_get(res, 0, 2),
-	                         gsl_matrix_get(res, 1, 2),
-	                         gsl_matrix_get(res, 2, 2));
-
-	gsl_matrix_free(res);
-	gsl_matrix_free(c);
-	return out;
-}
-
-
 /**
  * rotate_cell:
  * @in: A %UnitCell to rotate
@@ -1586,7 +1570,9 @@ int cell_is_sensible(UnitCell *cell)
  * lattice is a conventional Bravais lattice.
  * Warnings are printied if any of the checks are failed.
  *
- * Returns: true if cell is invalid.
+ * Returns: zero if the cell is fine, 1 if it is unconventional but otherwise
+ *  OK (e.g. left-handed or not a Bravais lattice), and 2 if there is a serious
+ *  problem such as the parameters being physically impossible.
  *
  */
 int validate_cell(UnitCell *cell)
@@ -1596,7 +1582,7 @@ int validate_cell(UnitCell *cell)
 
 	if ( cell_has_parameters(cell) && !cell_is_sensible(cell) ) {
 		ERROR("WARNING: Unit cell parameters are not sensible.\n");
-		err = 1;
+		err = 2;
 	}
 
 	if ( !bravais_lattice(cell) ) {
@@ -1620,7 +1606,7 @@ int validate_cell(UnitCell *cell)
 		  || ((cen == 'C') && (ua == 'c')) ) {
 			ERROR("WARNING: A, B or C centering matches unique"
 			      " axis.\n");
-			err = 1;
+			err = 2;
 		}
 	}
 
@@ -1646,7 +1632,7 @@ int forbidden_reflection(UnitCell *cell,
 	cen = cell_get_centering(cell);
 
 	/* Reflection conditions here must match the transformation matrices
-	 * in uncentering_transformation().  tests/centering_check verifies
+	 * in centering_transformation().  tests/centering_check verifies
 	 * this (amongst other things). */
 
 	if ( cen == 'P' ) return 0;
@@ -1694,6 +1680,48 @@ double cell_get_volume(UnitCell *cell)
 }
 
 
+/**
+ * compare_cell_parameters:
+ * @a: A %UnitCell
+ * @b: Another %UnitCell
+ * @ltl: Maximum allowable fractional difference in axis lengths
+ * @atl: Maximum allowable difference in reciprocal angles (in radians)
+ *
+ * Compare the two unit cells.  If the real space parameters match to within
+ * fractional difference @ltl, and the inter-axial angles match within @atl,
+ * and the centering matches, this function returns 1.  Otherwise 0.
+ *
+ * This function considers the cell parameters and centering, but ignores the
+ * orientation of the cell.  If you want to compare the orientation as well,
+ * use compare_cell_parameters_and_orientation() instead.
+ *
+ * Returns: non-zero if the cells match.
+ *
+ */
+int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
+                            float ltl, float atl)
+{
+	double a1, b1, c1, al1, be1, ga1;
+	double a2, b2, c2, al2, be2, ga2;
+
+	/* Centering must match: we don't arbitrarte primitive vs centered,
+	 * different cell choices etc */
+	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
+
+	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
+
+	if ( !within_tolerance(a1, a2, ltl*100.0) ) return 0;
+	if ( !within_tolerance(b1, b2, ltl*100.0) ) return 0;
+	if ( !within_tolerance(c1, c2, ltl*100.0) ) return 0;
+	if ( fabs(al1-al2) > atl ) return 0;
+	if ( fabs(be1-be2) > atl ) return 0;
+	if ( fabs(ga1-ga2) > atl ) return 0;
+
+	return 1;
+}
+
+
 static double moduli_check(double ax, double ay, double az,
                            double bx, double by, double bz)
 {
@@ -1703,28 +1731,42 @@ static double moduli_check(double ax, double ay, double az,
 }
 
 
-static int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
-                             const double ltl, const double atl)
+/**
+ * compare_cell_parameters_and_orientation:
+ * @a: A %UnitCell
+ * @b: Another %UnitCell
+ * @ltl: Maximum allowable fractional difference in reciprocal axis lengths
+ * @atl: Maximum allowable difference in reciprocal angles (in radians)
+ *
+ * Compare the two unit cells.  If the axes match in length (to within
+ * fractional difference @ltl) and the axes are aligned to within @atl radians,
+ * this function returns non-zero.
+ *
+ * This function compares the orientation of the cell as well as the parameters.
+ * If you just want to see if the parameters are the same, use
+ * compare_cell_parameters() instead.
+ *
+ * The cells @a and @b must have the same centering.  Otherwise, this function
+ * always returns zero.
+ *
+ * Returns: non-zero if the cells match.
+ *
+ */
+int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
+                                            const double ltl, const double atl)
 {
 	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
 	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
-	UnitCell *pcell1, *pcell2;
 
-	/* Compare primitive cells, not centered */
-	pcell1 = uncenter_cell(cell1, NULL);
-	pcell2 = uncenter_cell(cell2, NULL);
+	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
 
-	cell_get_reciprocal(pcell1, &asx1, &asy1, &asz1,
-	                            &bsx1, &bsy1, &bsz1,
-	                            &csx1, &csy1, &csz1);
+	cell_get_cartesian(cell1, &asx1, &asy1, &asz1,
+	                          &bsx1, &bsy1, &bsz1,
+	                          &csx1, &csy1, &csz1);
 
-	cell_get_reciprocal(pcell2, &asx2, &asy2, &asz2,
-	                            &bsx2, &bsy2, &bsz2,
-	                            &csx2, &csy2, &csz2);
-
-
-	cell_free(pcell1);
-	cell_free(pcell2);
+	cell_get_cartesian(cell2, &asx2, &asy2, &asz2,
+	                          &bsx2, &bsy2, &bsz2,
+	                          &csx2, &csy2, &csz2);
 
 	if ( angle_between(asx1, asy1, asz1, asx2, asy2, asz2) > atl ) return 0;
 	if ( angle_between(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
@@ -1738,27 +1780,37 @@ static int cells_are_similar(UnitCell *cell1, UnitCell *cell2,
 }
 
 
-
 /**
- * compare_cells:
+ * compare_reindexed_cell_parameters_and_orientation:
  * @a: A %UnitCell
  * @b: Another %UnitCell
  * @ltl: Maximum allowable fractional difference in reciprocal axis lengths
  * @atl: Maximum allowable difference in reciprocal angles (in radians)
  * @pmb: Place to store pointer to matrix
  *
- * Compare the two units cells.  If they agree to within @ltl and @atl, using
- *  any change of axes, returns non-zero and stores the transformation to map @b
- *  onto @a.
+ * Compare the two unit cells.  If, using any permutation of the axes, the
+ * axes can be made to match in length (to within fractional difference @ltl)
+ * and the axes aligned to within @atl radians, this function returns non-zero
+ * and stores the transformation to map @b onto @a.
+ *
+ * Note that the orientations of the cells must match, not just the parameters.
+ * The comparison is done after reindexing using
+ * compare_cell_parameters_and_orientation().
+ *
+ * The cells @a and @b must have the same centering.  Otherwise, this function
+ * always returns zero.
  *
  * Returns: non-zero if the cells match.
  *
  */
-int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
-                  IntegerMatrix **pmb)
+int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
+                                                      double ltl, double atl,
+                                                      IntegerMatrix **pmb)
 {
 	IntegerMatrix *m;
 	int i[9];
+
+	if ( cell_get_centering(a) != cell_get_centering(b) ) return 0;
 
 	m = intmat_new(3, 3);
 
@@ -1772,7 +1824,6 @@ int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
 	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
 	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
 
-		UnitCellTransformation *tfn;
 		UnitCell *nc;
 		int j, k;
 		int l = 0;
@@ -1783,17 +1834,14 @@ int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
 
 		if ( intmat_det(m) != +1 ) continue;
 
-		tfn = tfn_from_intmat(m);
-		nc = cell_transform(b, tfn);
+		nc = cell_transform_intmat(b, m);
 
-		if ( cells_are_similar(a, nc, ltl, atl) ) {
+		if ( compare_cell_parameters_and_orientation(a, nc, ltl, atl) ) {
 			if ( pmb != NULL ) *pmb = m;
-			tfn_free(tfn);
 			cell_free(nc);
 			return 1;
 		}
 
-		tfn_free(tfn);
 		cell_free(nc);
 
 	}
@@ -1808,4 +1856,276 @@ int compare_cells(UnitCell *a, UnitCell *b, double ltl, double atl,
 
 	intmat_free(m);
 	return 0;
+}
+
+
+struct cand
+{
+	Rational abc[3];
+	double fom;
+};
+
+
+static int cmpcand(const void *av, const void *bv)
+{
+	const struct cand *a = av;
+	const struct cand *b = bv;
+	return a->fom > b->fom;
+}
+
+
+static Rational *find_candidates(double len, double *a, double *b, double *c,
+                                 double ltl, int *pncand)
+{
+	Rational *r;
+	struct cand *cands;
+	const int max_cand = 1024;
+	int ncand = 0;
+	Rational *rat;
+	int nrat;
+	int nrej = 0;
+	int ia, ib, ic;
+	int i;
+
+	cands = malloc(max_cand * sizeof(struct cand));
+	if ( cands == NULL ) return NULL;
+
+	rat = rtnl_list(-5, 5, 1, 4, &nrat);
+	if ( rat == NULL ) return NULL;
+
+	for ( ia=0; ia<nrat; ia++ ) {
+	for ( ib=0; ib<nrat; ib++ ) {
+	for ( ic=0; ic<nrat; ic++ ) {
+		double vec[3];
+		double abc[3];
+		double veclen;
+		abc[0] = rtnl_as_double(rat[ia]);
+		abc[1] = rtnl_as_double(rat[ib]);
+		abc[2] = rtnl_as_double(rat[ic]);
+		vec[0] = a[0]*abc[0] + b[0]*abc[1] + c[0]*abc[2];
+		vec[1] = a[1]*abc[0] + b[1]*abc[1] + c[1]*abc[2];
+		vec[2] = a[2]*abc[0] + b[2]*abc[1] + c[2]*abc[2];
+		veclen = modulus(vec[0], vec[1], vec[2]);
+		if ( within_tolerance(len, veclen, ltl*100.0) ) {
+			if ( ncand == max_cand ) {
+				nrej++;
+			} else {
+				cands[ncand].abc[0] = rat[ia];
+				cands[ncand].abc[1] = rat[ib];
+				cands[ncand].abc[2] = rat[ic];
+				cands[ncand].fom = fabs(veclen - len);
+				ncand++;
+			}
+		}
+	}
+	}
+	}
+
+	if ( nrej ) {
+		ERROR("WARNING: Too many vector candidates (%i rejected)\n", nrej);
+	}
+
+	/* Sort by difference from reference vector length */
+	qsort(cands, ncand, sizeof(struct cand), cmpcand);
+
+	r = malloc(ncand * 3 * sizeof(Rational));
+	if ( r == 0 ) return NULL;
+
+	for ( i=0; i<ncand; i++ ) {
+		r[3*i+0] = cands[i].abc[0];
+		r[3*i+1] = cands[i].abc[1];
+		r[3*i+2] = cands[i].abc[2];
+	}
+	free(cands);
+
+	*pncand = ncand;
+	return r;
+}
+
+
+static void g6_components(double *g6, double a, double b, double c,
+                                      double al, double be, double ga)
+{
+	g6[0] = a*a;
+	g6[1] = b*b;
+	g6[2] = c*c;
+	g6[3] = 2.0*b*c*cos(al);
+	g6[4] = 2.0*a*c*cos(be);
+	g6[5] = 2.0*a*b*cos(ga);
+}
+
+
+static double g6_distance(double a1, double b1, double c1,
+                          double al1, double be1, double ga1,
+                          double a2, double b2, double c2,
+                          double al2, double be2, double ga2)
+{
+	double g1[6], g2[6];
+	int i;
+	double total = 0.0;
+	g6_components(g1, a1, b1, c1, al1, be1, ga1);
+	g6_components(g2, a2, b2, c2, al2, be2, ga2);
+	for ( i=0; i<6; i++ ) {
+		total += (g1[i]-g2[i])*(g1[i]-g2[i]);
+	}
+	return sqrt(total);
+}
+
+
+/**
+ * compare_reindexed_cell_parameters:
+ * @cell_in: A %UnitCell
+ * @reference_in: Another %UnitCell
+ * @ltl: Maximum allowable fractional difference in direct-space axis lengths
+ * @atl: Maximum allowable difference in direct-space angles (in radians)
+ * @pmb: Place to store pointer to matrix
+ *
+ * Compare the @cell_in with @reference_in.  If @cell is a derivative lattice
+ * of @reference, within fractional axis length difference @ltl and absolute angle
+ * difference @atl (in radians), this function returns non-zero and stores the
+ * transformation which needs to be applied to @cell_in at @pmb.
+ *
+ * Note that the tolerances will be applied to the primitive unit cell.  If
+ * the reference cell is centered, a primitive unit cell will first be calculated.
+ *
+ * Subject to the tolerances, this function will find the transformation which
+ * gives the best match to the reference cell, using the Euclidian norm in
+ * G6 [see e.g. Andrews and Bernstein, Acta Cryst. A44 (1988) p1009].
+ *
+ * Only the cell parameters will be compared.  The relative orientations are
+ * irrelevant.
+ *
+ * Returns: non-zero if the cells match, zero for no match or error.
+ *
+ */
+int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
+                                      double ltl, double atl,
+                                      RationalMatrix **pmb)
+{
+	UnitCell *cell;
+	UnitCell *reference;
+	IntegerMatrix *CBint;
+	RationalMatrix *CiA;
+	RationalMatrix *CB;
+	RationalMatrix *m;
+	double a, b, c, al, be, ga;
+	double av[3], bv[3], cv[3];
+	Rational *cand_a;
+	Rational *cand_b;
+	Rational *cand_c;
+	int ncand_a, ncand_b, ncand_c;
+	int ia, ib;
+	RationalMatrix *MCiA;
+	RationalMatrix *CBMCiA;
+	double min_dist = +INFINITY;
+
+	/* Actually compare against primitive version of reference */
+	reference = uncenter_cell(reference_in, &CBint, NULL);
+	if ( reference == NULL ) return 0;
+	CB = rtnl_mtx_from_intmat(CBint);
+	intmat_free(CBint);
+
+	/* Actually compare primitive version of cell */
+	cell = uncenter_cell(cell_in, NULL, &CiA);
+	if ( cell == NULL ) return 0;
+
+	/* Get target parameters */
+	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
+	cell_get_cartesian(cell, &av[0], &av[1], &av[2],
+	                         &bv[0], &bv[1], &bv[2],
+	                         &cv[0], &cv[1], &cv[2]);
+
+	/* Find vectors in 'cell' with lengths close to a, b and c */
+	cand_a = find_candidates(a, av, bv, cv, ltl, &ncand_a);
+	cand_b = find_candidates(b, av, bv, cv, ltl, &ncand_b);
+	cand_c = find_candidates(c, av, bv, cv, ltl, &ncand_c);
+
+	m = rtnl_mtx_new(3, 3);
+	MCiA = rtnl_mtx_new(3, 3);
+	CBMCiA = rtnl_mtx_new(3, 3);
+	for ( ia=0; ia<ncand_a; ia++ ) {
+		for ( ib=0; ib<ncand_b; ib++ ) {
+
+			UnitCell *test;
+			double at, bt, ct, alt, bet, gat;
+			double dist;
+			int ic = 0;
+
+			/* Form the matrix using the first candidate for c */
+			rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
+			rtnl_mtx_set(m, 1, 0, cand_a[3*ia+1]);
+			rtnl_mtx_set(m, 2, 0, cand_a[3*ia+2]);
+			rtnl_mtx_set(m, 0, 1, cand_b[3*ib+0]);
+			rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
+			rtnl_mtx_set(m, 2, 1, cand_b[3*ib+2]);
+			rtnl_mtx_set(m, 0, 2, cand_c[3*ic+0]);
+			rtnl_mtx_set(m, 1, 2, cand_c[3*ic+1]);
+			rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
+
+			/* Check angle between a and b */
+			test = cell_transform_rational(cell, m);
+			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
+			cell_free(test);
+			if ( fabs(gat - ga) > atl ) continue;
+
+			/* Gamma OK, now look for place for c axis */
+			for ( ic=0; ic<ncand_c; ic++ ) {
+
+				rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
+				rtnl_mtx_set(m, 1, 0, cand_a[3*ia+1]);
+				rtnl_mtx_set(m, 2, 0, cand_a[3*ia+2]);
+				rtnl_mtx_set(m, 0, 1, cand_b[3*ib+0]);
+				rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
+				rtnl_mtx_set(m, 2, 1, cand_b[3*ib+2]);
+				rtnl_mtx_set(m, 0, 2, cand_c[3*ic+0]);
+				rtnl_mtx_set(m, 1, 2, cand_c[3*ic+1]);
+				rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
+
+				if ( rtnl_cmp(rtnl_mtx_det(m),rtnl_zero()) == 0 ) continue;
+
+				test = cell_transform_rational(cell, m);
+				cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
+				if ( !right_handed(test) ) {
+					cell_free(test);
+					continue;
+				}
+				if ( fabs(alt - al) > atl ) {
+					cell_free(test);
+					continue;
+				}
+				if ( fabs(bet - be) > atl ) {
+					cell_free(test);
+					continue;
+				}
+
+				dist = g6_distance(at, bt, ct, alt, bet, gat,
+				                   a, b, c, al, be, ga);
+				if ( dist < min_dist ) {
+					min_dist = dist;
+					rtnl_mtx_mtxmult(m, CiA, MCiA);
+				}
+
+				cell_free(test);
+
+			}
+		}
+	}
+
+	rtnl_mtx_free(m);
+	free(cand_a);
+	free(cand_b);
+	free(cand_c);
+
+	if ( isinf(min_dist) ) {
+		rtnl_mtx_free(CBMCiA);
+		rtnl_mtx_free(MCiA);
+		*pmb = NULL;
+		return 0;
+	}
+
+	/* Solution found */
+	rtnl_mtx_mtxmult(CB, MCiA, CBMCiA);
+	rtnl_mtx_free(MCiA);
+	*pmb = CBMCiA;
+	return 1;
 }
