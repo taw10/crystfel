@@ -209,7 +209,7 @@ signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
 		unsigned int i;
 		ans[j] = 0;
 		for ( i=0; i<P->rows; i++ ) {
-			ans[i] += intmat_get(P, i, j) * hkl[j];
+			ans[j] += intmat_get(P, i, j) * hkl[i];
 		}
 
 	}

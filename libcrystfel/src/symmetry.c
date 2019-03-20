@@ -1722,7 +1722,7 @@ static void add_chars(char *t, const char *s, int max_len)
 }
 
 
-char *get_matrix_name(const IntegerMatrix *m, int row)
+char *get_matrix_name(const IntegerMatrix *m, int col)
 {
 	char *text;
 	const int max_len = 9;
@@ -1736,7 +1736,7 @@ char *get_matrix_name(const IntegerMatrix *m, int row)
 
 		signed int v;
 
-		v = intmat_get(m, row, i);
+		v = intmat_get(m, i, col);
 
 		if ( v == 0 ) continue;
 
