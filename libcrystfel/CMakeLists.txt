@@ -1,7 +1,6 @@
 project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
-find_package(CBF)
 find_package(XGANDALF)
 find_package(PINKINDEXER)
 find_package(NBP)
@@ -15,7 +14,6 @@ set(HAVE_CURSES ${CURSES_FOUND})
 set(HAVE_FFTW ${FFTW_FOUND})
 set(HAVE_XGANDALF ${XGANDALF_FOUND})
 set(HAVE_FDIP ${FDIP_FOUND})
-set(HAVE_CBFLIB ${CBF_FOUND})
 
 # Find out where forkpty() is declared
 set(CMAKE_REQUIRED_LIBRARIES "-lutil")
@@ -160,11 +158,6 @@ if (FFTW_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${FFTW_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LDFLAGS})
 endif (FFTW_FOUND)
-
-if (CBF_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${CBF_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CBF_LIBRARIES})
-endif (CBF_FOUND)
 
 if (CURSES_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${CURSES_INCLUDE_DIRS})

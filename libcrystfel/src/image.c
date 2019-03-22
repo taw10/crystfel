@@ -36,15 +36,6 @@
 #include <hdf5.h>
 #include <zlib.h>
 
-#ifdef HAVE_CBFLIB
-#ifdef HAVE_CBFLIB_CBF_H
-#include <cbflib/cbf.h>
-#endif
-#ifdef HAVE_CBF_CBF_H
-#include <cbf/cbf.h>
-#endif
-#endif
-
 #include "image.h"
 #include "utils.h"
 #include "events.h"
@@ -406,40 +397,6 @@ void add_imagefile_field(struct imagefile_field_list *copyme, const char *name)
 
 /******************************* CBF files ************************************/
 
-#ifdef HAVE_CBFLIB
-
-static char *cbf_strerr(int e)
-{
-	char *err;
-
-	err = malloc(1024);
-	if ( err == NULL ) return NULL;
-
-	err[0] = '\0';
-
-	/* NB Sum of lengths of all strings must be less than 1024 */
-	if ( e & CBF_FORMAT ) strcat(err, "Invalid format");
-	if ( e & CBF_ALLOC ) strcat(err, "Memory allocation failed");
-	if ( e & CBF_ARGUMENT ) strcat(err, "Invalid argument");
-	if ( e & CBF_ASCII ) strcat(err, "Value is ASCII");
-	if ( e & CBF_BINARY ) strcat(err, "Value is binary");
-	if ( e & CBF_BITCOUNT ) strcat(err, "Wrong number of bits");
-	if ( e & CBF_ENDOFDATA ) strcat(err, "End of data");
-	if ( e & CBF_FILECLOSE ) strcat(err, "File close error");
-	if ( e & CBF_FILEOPEN ) strcat(err, "File open error");
-	if ( e & CBF_FILEREAD ) strcat(err, "File read error");
-	if ( e & CBF_FILETELL ) strcat(err, "File tell error");
-	if ( e & CBF_FILEWRITE ) strcat(err, "File write error");
-	if ( e & CBF_IDENTICAL ) strcat(err, "Name already exists");
-	if ( e & CBF_NOTFOUND ) strcat(err, "Not found");
-	if ( e & CBF_OVERFLOW ) strcat(err, "Overflow");
-	if ( e & CBF_UNDEFINED ) strcat(err, "Number undefined");
-	if ( e & CBF_NOTIMPLEMENTED ) strcat(err, "Not implemented");
-
-	return err;
-}
-
-
 static int unpack_panels(struct image *image, float *data, int data_width,
                          int data_height)
 {
@@ -684,103 +641,6 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 		return NULL;
 	}
 
-	if ( cbf_make_handle(&cbfh) ) {
-		ERROR("Failed to allocate CBF handle\n");
-		return NULL;
-	}
-
-	/* CBFlib will call fclose(fh) when it's ready */
-
-	if ( cbf_read_widefile(cbfh, fh, 0) ) {
-		ERROR("Failed to read CBF file '%s'\n", f->filename);
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	/* Select row 0 in data column inside array_data */
-	cbf_find_category(cbfh, "array_data");
-	cbf_find_column(cbfh, "data");
-	cbf_select_row(cbfh, 0);
-
-	/* Get parameters for array read */
-	r = cbf_get_integerarrayparameters_wdims(cbfh, &compression, &binary_id,
-	                                         &elsize, &elsigned, &elunsigned,
-	                                         &elements,
-	                                         &minelement, &maxelement,
-	                                         &byteorder,
-	                                         &dimfast, &dimmid, &dimslow,
-	                                         &padding);
-	if ( r ) {
-		char *err = cbf_strerr(r);
-		ERROR("Failed to read CBF array parameters: %s\n", err);
-		free(err);
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	if ( dimslow != 0 ) {
-		ERROR("CBF data array is 3D - don't know what to do with it\n");
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	if ( dimfast*dimmid*elsize > 10e9 ) {
-		ERROR("CBF data is far too big (%i x %i x %i bytes).\n",
-		      (int)dimfast, (int)dimmid, (int)elsize);
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	if ( (elsize != 4) && (elsize != 2) ) {
-		STATUS("Don't know what to do with element size %i\n",
-		       (int)elsize);
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	if ( !elsigned ) {
-		STATUS("Don't know what to do with unsigned data (yet)\n");
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	if ( strcmp(byteorder, "little_endian") != 0 ) {
-		STATUS("Don't know what to do with non-little-endian datan\n");
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	data = malloc(elsize*dimfast*dimmid);
-	if ( data == NULL ) {
-		ERROR("Failed to allocate memory for CBF data\n");
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	r = cbf_get_integerarray(cbfh, &binary_id, data, elsize, 1,
-	                         elsize*dimfast*dimmid, &elread);
-	if ( r ) {
-		char *err = cbf_strerr(r);
-		ERROR("Failed to read CBF array: %s\n", err);
-		free(err);
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	if ( elsize == 4 ) {
-		dataf = convert_sint32_float(data, dimfast, dimmid);
-	} else if ( elsize == 2 ) {
-		dataf = convert_sint16_float(data, dimfast, dimmid);
-	} else {
-		ERROR("Don't know how to convert element size %i\n",
-		      (int)elsize);
-		cbf_free_handle(cbfh);
-		return NULL;
-	}
-
-	free(data);
-
-	free(buf);  /* Might be NULL */
 
 	*w = dimfast;
 	*h = dimmid;
@@ -855,25 +715,6 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 	cbf_free_handle(cbfh);
 	return 0;
 }
-
-
-#else /* HAVE_CBFLIB */
-
-static int read_cbf_simple(struct imagefile *f, struct image *image)
-{
-	ERROR("This version of CrystFEL was compiled without CBF support.\n");
-	return 1;
-}
-
-
-static int read_cbf(struct imagefile *f, struct image *image)
-{
-	ERROR("This version of CrystFEL was compiled without CBF support.\n");
-	return 1;
-}
-
-
-#endif /* HAVE_CBFLIB */
 
 
 /****************************** Image files ***********************************/
