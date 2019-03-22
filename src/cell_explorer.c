@@ -976,6 +976,92 @@ static gint fit_sig(GtkWidget *widget, CellWindow *w)
 }
 
 
+static void write_vals(FILE *fh, MultiHistogram *h, int nbin, char *cen, int cat)
+{
+	int *data;
+	int i;
+	fprintf(fh, "%s: ", cen);
+	data = multihistogram_get_data(h, cat);
+	for ( i=0; i<nbin; i++ ) {
+		fprintf(fh, "%i%s", data[i], (i==nbin-1) ? "\n" : ",");
+	}
+}
+
+
+static void write_multihistogram(FILE *fh, char *s, char *unit, HistoBox *h)
+{
+	fprintf(fh, "# %s.  Range %f to %f %s.  %i bins\n",
+	        s, h->min, h->max, unit, h->n);
+	if ( h->have_fit ) {
+		fprintf(fh, "# Fitted curve: y = A.exp(-(x-B)^2/C^2, where "
+		            "A = %f,  B = %f,  C = %f\n",
+		            h->fit_a, h->fit_b, h->fit_c);
+
+	}
+	write_vals(fh, h->h, h->n, "P", CAT_P);
+	write_vals(fh, h->h, h->n, "A", CAT_A);
+	write_vals(fh, h->h, h->n, "B", CAT_B);
+	write_vals(fh, h->h, h->n, "C", CAT_C);
+	write_vals(fh, h->h, h->n, "I", CAT_I);
+	write_vals(fh, h->h, h->n, "F", CAT_F);
+	write_vals(fh, h->h, h->n, "R", CAT_R);
+	write_vals(fh, h->h, h->n, "H", CAT_H);
+	write_vals(fh, h->h, h->n, "Excluded", CAT_EXCLUDE);
+}
+
+
+static int write_histogram_data(CellWindow *w, const char *filename)
+{
+	FILE *fh;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+
+	fprintf(fh, "# Unit cell histogram data\n");
+	fprintf(fh, "# NB All data is included, not just what was visible in the "
+	            "cell_explorer window.\n");
+
+	write_multihistogram(fh, "a axis length", "Angstrom", w->hist_a);
+	write_multihistogram(fh, "b axis length", "Angstrom", w->hist_b);
+	write_multihistogram(fh, "c axis length", "Angstrom", w->hist_c);
+	write_multihistogram(fh, "alpha angle", "degrees", w->hist_al);
+	write_multihistogram(fh, "beta angle", "degrees", w->hist_be);
+	write_multihistogram(fh, "gamma angle", "degrees", w->hist_ga);
+	fclose(fh);
+	return 0;
+}
+
+
+static gint savedata_sig(GtkWidget *widget, CellWindow *w)
+{
+	GtkWidget *d;
+	gint r;
+
+	d = gtk_file_chooser_dialog_new("Save Histogram Data",
+	                                GTK_WINDOW(w->window),
+	                                GTK_FILE_CHOOSER_ACTION_SAVE,
+	                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                        GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+	                                NULL);
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d),
+	                                               TRUE);
+	r = gtk_dialog_run(GTK_DIALOG(d));
+	if ( r == GTK_RESPONSE_ACCEPT ) {
+
+		gchar *output_filename;
+
+		output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
+		if ( write_histogram_data(w, output_filename) ) {
+			error_box(w, "Failed to save histogram data");
+		}
+		g_free(output_filename);
+
+	}
+	gtk_widget_destroy(d);
+	return FALSE;
+}
+
+
 static int ninety(double a)
 {
 	if ( fabs(rad2deg(a) - 90.0) < 0.3 ) return 1;
@@ -1258,6 +1344,7 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 	const char *ui = "<ui> <menubar name=\"cellwindow\">"
 		"<menu name=\"file\" action=\"FileAction\">"
 		"	<menuitem name=\"savecell\" action=\"SaveCellAction\" />"
+		"	<menuitem name=\"savedata\" action=\"SaveDataAction\" />"
 		"	<menuitem name=\"quit\" action=\"QuitAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
@@ -1273,6 +1360,8 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
 		{ "SaveCellAction", GTK_STOCK_SAVE, "_Create unit cell file",
 			NULL, NULL, G_CALLBACK(savecell_sig) },
+		{ "SaveDataAction", GTK_STOCK_SAVE, "_Save histogram data",
+			NULL, NULL, G_CALLBACK(savedata_sig) },
 		{ "QuitAction", GTK_STOCK_QUIT, "_Quit", NULL, NULL,
 			G_CALLBACK(quit_sig) },
 
