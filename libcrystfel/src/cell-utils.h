@@ -97,7 +97,7 @@ extern int compare_reindexed_cell_parameters_and_orientation(UnitCell *a,
                                                              IntegerMatrix **pmb);
 
 extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                             double ltl, double atl,
+                                             double ltl, double atl, int csl,
                                              RationalMatrix **pmb);
 
 #ifdef __cplusplus

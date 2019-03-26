@@ -1875,7 +1875,7 @@ static int cmpcand(const void *av, const void *bv)
 
 
 static Rational *find_candidates(double len, double *a, double *b, double *c,
-                                 double ltl, int *pncand)
+                                 double ltl, int csl, int *pncand)
 {
 	Rational *r;
 	struct cand *cands;
@@ -1890,7 +1890,7 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 	cands = malloc(max_cand * sizeof(struct cand));
 	if ( cands == NULL ) return NULL;
 
-	rat = rtnl_list(-5, 5, 1, 4, &nrat);
+	rat = rtnl_list(-5, 5, 1, csl ? 4 : 1, &nrat);
 	if ( rat == NULL ) return NULL;
 
 	for ( ia=0; ia<nrat; ia++ ) {
@@ -1999,7 +1999,7 @@ static double g6_distance(double a1, double b1, double c1,
  *
  */
 int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
-                                      double ltl, double atl,
+                                      double ltl, double atl, int csl,
                                       RationalMatrix **pmb)
 {
 	UnitCell *cell;
@@ -2036,9 +2036,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	                         &cv[0], &cv[1], &cv[2]);
 
 	/* Find vectors in 'cell' with lengths close to a, b and c */
-	cand_a = find_candidates(a, av, bv, cv, ltl, &ncand_a);
-	cand_b = find_candidates(b, av, bv, cv, ltl, &ncand_b);
-	cand_c = find_candidates(c, av, bv, cv, ltl, &ncand_c);
+	cand_a = find_candidates(a, av, bv, cv, ltl, csl, &ncand_a);
+	cand_b = find_candidates(b, av, bv, cv, ltl, csl, &ncand_b);
+	cand_c = find_candidates(c, av, bv, cv, ltl, csl, &ncand_c);
 
 	if ( (ncand_a==0) || (ncand_b==0) || (ncand_c==0) ) {
 		*pmb = NULL;

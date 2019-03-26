@@ -67,12 +67,13 @@ static void show_help(const char *s)
 "     --tolerance=<tol>      Set the tolerances for cell comparison.\n"
 "                             Default: 5,1.5 (axis percentage, angle deg).\n"
 "     --highres=n            Resolution limit (Angstroms) for --rings\n"
+"     --csl                  Allow --compare to find coincidence site lattice relationships.\n"
 );
 }
 
 
 static int comparecells(UnitCell *cell, const char *comparecell,
-                        double ltl, double atl)
+                        double ltl, double atl, int csl)
 {
 	UnitCell *cell2;
 	RationalMatrix *m;
@@ -90,7 +91,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	cell_print(cell2);
 
 	STATUS("------------------> The comparison results:\n");
-	if ( !compare_reindexed_cell_parameters(cell, cell2, ltl, atl, &m) ) {
+	if ( !compare_reindexed_cell_parameters(cell, cell2, ltl, atl, csl, &m) ) {
 		STATUS("No relationship found between lattices.\n");
 		return 0;
 	} else {
@@ -425,6 +426,7 @@ int main(int argc, char *argv[])
 	float highres;
 	double rmax = 1/(2.0e-10);
 	char *trans_str = NULL;
+	int csl = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -440,8 +442,10 @@ int main(int argc, char *argv[])
 		{"rings",              0, &mode,               CT_RINGS},
 		{"compare-cell",       1, NULL,                3},
 		{"cell-choices",       0, &mode,               CT_CHOICES},
+
 		{"transform",          1, NULL,                4},
 		{"highres",            1, NULL,                5},
+		{"csl",                0, &csl,                1},
 
 		{0, 0, NULL, 0}
 	};
@@ -568,7 +572,8 @@ int main(int argc, char *argv[])
 	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, ltl, atl);
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
 	if ( mode == CT_RINGS ) return all_rings(cell, sym, rmax);
-	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell, ltl, atl);
+	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell,
+	                                              ltl, atl, csl);
 	if ( mode == CT_TRANSFORM ) return transform(cell, trans_str, out_file);
 	if ( mode == CT_CHOICES ) return cell_choices(cell);
 
