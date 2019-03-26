@@ -2007,7 +2007,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	IntegerMatrix *CBint;
 	RationalMatrix *CiA;
 	RationalMatrix *CB;
-	RationalMatrix *m;
+	RationalMatrix *M;
 	double a, b, c, al, be, ga;
 	double av[3], bv[3], cv[3];
 	Rational *cand_a;
@@ -2015,8 +2015,8 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	Rational *cand_c;
 	int ncand_a, ncand_b, ncand_c;
 	int ia, ib;
-	RationalMatrix *MCiA;
-	RationalMatrix *CBMCiA;
+	RationalMatrix *MCB;
+	RationalMatrix *CiAMCB;
 	double min_dist = +INFINITY;
 
 	/* Actually compare against primitive version of reference */
@@ -2040,9 +2040,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	cand_b = find_candidates(b, av, bv, cv, ltl, &ncand_b);
 	cand_c = find_candidates(c, av, bv, cv, ltl, &ncand_c);
 
-	m = rtnl_mtx_new(3, 3);
-	MCiA = rtnl_mtx_new(3, 3);
-	CBMCiA = rtnl_mtx_new(3, 3);
+	M = rtnl_mtx_new(3, 3);
+	MCB = rtnl_mtx_new(3, 3);
+	CiAMCB = rtnl_mtx_new(3, 3);
 	for ( ia=0; ia<ncand_a; ia++ ) {
 		for ( ib=0; ib<ncand_b; ib++ ) {
 
@@ -2052,18 +2052,18 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			int ic = 0;
 
 			/* Form the matrix using the first candidate for c */
-			rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
-			rtnl_mtx_set(m, 1, 0, cand_a[3*ia+1]);
-			rtnl_mtx_set(m, 2, 0, cand_a[3*ia+2]);
-			rtnl_mtx_set(m, 0, 1, cand_b[3*ib+0]);
-			rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
-			rtnl_mtx_set(m, 2, 1, cand_b[3*ib+2]);
-			rtnl_mtx_set(m, 0, 2, cand_c[3*ic+0]);
-			rtnl_mtx_set(m, 1, 2, cand_c[3*ic+1]);
-			rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
+			rtnl_mtx_set(M, 0, 0, cand_a[3*ia+0]);
+			rtnl_mtx_set(M, 1, 0, cand_a[3*ia+1]);
+			rtnl_mtx_set(M, 2, 0, cand_a[3*ia+2]);
+			rtnl_mtx_set(M, 0, 1, cand_b[3*ib+0]);
+			rtnl_mtx_set(M, 1, 1, cand_b[3*ib+1]);
+			rtnl_mtx_set(M, 2, 1, cand_b[3*ib+2]);
+			rtnl_mtx_set(M, 0, 2, cand_c[3*ic+0]);
+			rtnl_mtx_set(M, 1, 2, cand_c[3*ic+1]);
+			rtnl_mtx_set(M, 2, 2, cand_c[3*ic+2]);
 
 			/* Check angle between a and b */
-			test = cell_transform_rational(cell, m);
+			test = cell_transform_rational(cell, M);
 			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
 			cell_free(test);
 			if ( fabs(gat - ga) > atl ) continue;
@@ -2071,19 +2071,19 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			/* Gamma OK, now look for place for c axis */
 			for ( ic=0; ic<ncand_c; ic++ ) {
 
-				rtnl_mtx_set(m, 0, 0, cand_a[3*ia+0]);
-				rtnl_mtx_set(m, 1, 0, cand_a[3*ia+1]);
-				rtnl_mtx_set(m, 2, 0, cand_a[3*ia+2]);
-				rtnl_mtx_set(m, 0, 1, cand_b[3*ib+0]);
-				rtnl_mtx_set(m, 1, 1, cand_b[3*ib+1]);
-				rtnl_mtx_set(m, 2, 1, cand_b[3*ib+2]);
-				rtnl_mtx_set(m, 0, 2, cand_c[3*ic+0]);
-				rtnl_mtx_set(m, 1, 2, cand_c[3*ic+1]);
-				rtnl_mtx_set(m, 2, 2, cand_c[3*ic+2]);
+				rtnl_mtx_set(M, 0, 0, cand_a[3*ia+0]);
+				rtnl_mtx_set(M, 1, 0, cand_a[3*ia+1]);
+				rtnl_mtx_set(M, 2, 0, cand_a[3*ia+2]);
+				rtnl_mtx_set(M, 0, 1, cand_b[3*ib+0]);
+				rtnl_mtx_set(M, 1, 1, cand_b[3*ib+1]);
+				rtnl_mtx_set(M, 2, 1, cand_b[3*ib+2]);
+				rtnl_mtx_set(M, 0, 2, cand_c[3*ic+0]);
+				rtnl_mtx_set(M, 1, 2, cand_c[3*ic+1]);
+				rtnl_mtx_set(M, 2, 2, cand_c[3*ic+2]);
 
-				if ( rtnl_cmp(rtnl_mtx_det(m),rtnl_zero()) == 0 ) continue;
+				if ( rtnl_cmp(rtnl_mtx_det(M),rtnl_zero()) == 0 ) continue;
 
-				test = cell_transform_rational(cell, m);
+				test = cell_transform_rational(cell, M);
 				cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
 				if ( !right_handed(test) ) {
 					cell_free(test);
@@ -2102,7 +2102,8 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 				                   a, b, c, al, be, ga);
 				if ( dist < min_dist ) {
 					min_dist = dist;
-					rtnl_mtx_mtxmult(m, CiA, MCiA);
+					rtnl_mtx_mtxmult(M, CB, MCB);
+					rtnl_mtx_mtxmult(CiA, MCB, CiAMCB);
 				}
 
 				cell_free(test);
@@ -2111,21 +2112,19 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 		}
 	}
 
-	rtnl_mtx_free(m);
+	rtnl_mtx_free(M);
+	rtnl_mtx_free(MCB);
 	free(cand_a);
 	free(cand_b);
 	free(cand_c);
 
 	if ( isinf(min_dist) ) {
-		rtnl_mtx_free(CBMCiA);
-		rtnl_mtx_free(MCiA);
+		rtnl_mtx_free(CiAMCB);
 		*pmb = NULL;
 		return 0;
 	}
 
 	/* Solution found */
-	rtnl_mtx_mtxmult(CB, MCiA, CBMCiA);
-	rtnl_mtx_free(MCiA);
-	*pmb = CBMCiA;
+	*pmb = CiAMCB;
 	return 1;
 }
