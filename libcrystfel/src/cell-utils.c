@@ -2040,6 +2040,15 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	cand_b = find_candidates(b, av, bv, cv, ltl, &ncand_b);
 	cand_c = find_candidates(c, av, bv, cv, ltl, &ncand_c);
 
+	if ( (ncand_a==0) || (ncand_b==0) || (ncand_c==0) ) {
+		*pmb = NULL;
+		cell_free(cell);
+		cell_free(reference);
+		rtnl_mtx_free(CB);
+		rtnl_mtx_free(CiA);
+		return 0;
+	}
+
 	M = rtnl_mtx_new(3, 3);
 	MCB = rtnl_mtx_new(3, 3);
 	CiAMCB = rtnl_mtx_new(3, 3);
