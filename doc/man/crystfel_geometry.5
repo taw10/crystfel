@@ -99,6 +99,9 @@ the axis encoding the slow scan index
 .IP fs
 .PD
 the axis encodes the fast scan index
+.IP \fInumber\fR
+.PD
+the index in this dimension should be fixed at \fInumber\fR.
 .RE
 .IP
 CrystFEL assumes that the data block defined by the 'data' property has a dimensionality equal to the axis with the highest value of \fIn\fR defined by the 'dim' property, and requires the user to provide information about each of the axes in the data block. When no 'dim' property is defined in the geometry file, CrystFEL assumes the data block to be 2-dimensional, with the two axes encoding slow scan and fast scan information respectively.
@@ -107,15 +110,18 @@ Note that this does indeed mean that you can assign the fast scan coordinates to
 
 Example:
 .RS
+.PD 0
 .IP
 dim0 = %
 .IP
 dim1 = ss
 .IP
 dim2 = fs
+.IP
+dim3 = 4
 .RE
 .IP
-The above snippet specifies that the data block is 3-dimensional. The first axis represents the event number, the second the slow scan panel coordinate, and the third the fast scan panel coordinate.
+The above snippet specifies that the data block is 3-dimensional. The first axis represents the event number, the second the slow scan panel coordinate, the third the fast scan panel coordinate, and the index in the final axis is always 4.
 
 .PD 0
 .IP \fBmin_fs\fR
