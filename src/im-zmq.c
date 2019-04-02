@@ -336,6 +336,8 @@ static int unpack_slab(struct image *image, double *data,
 				bad = 1;
 			}
 
+			if ( isnan(data[idx]) || isinf(data[idx]) ) bad = 1;
+
 			if ( flags != NULL ) {
 
 				int f;
