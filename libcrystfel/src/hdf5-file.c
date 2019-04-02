@@ -1149,7 +1149,8 @@ static void debodge_saturation(struct hdfile *f, struct image *image)
 }
 
 
-static int *make_badmask(int *flags, struct panel *p, struct detector *det)
+static int *make_badmask(int *flags, struct detector *det, float *data,
+                         struct panel *p)
 {
 	int *badmap;
 	int fs, ss;
@@ -1184,12 +1185,16 @@ static int *make_badmask(int *flags, struct panel *p, struct detector *det)
 
 			int f = flags[fs+p->w*ss];
 			int bad = badmap[fs+p->w*ss];
+			float val = data[fs+p->w*ss];
 
 			/* Bad if it's missing any of the "good" bits */
 			if ( (f & det->mask_good) != det->mask_good ) bad = 1;
 
 			/* Bad if it has any of the "bad" bits. */
 			if ( f & det->mask_bad ) bad = 1;
+
+			/* Bad if pixel value is NaN or inf */
+			if ( isnan(val) || isinf(val) ) bad = 1;
 
 			badmap[fs+p->w*ss] = bad;
 
@@ -1902,13 +1907,16 @@ int hdf5_read2(struct hdfile *f, struct image *image, struct event *ev,
 		if ( p->mask != NULL ) {
 			int *flags = malloc(p->w*p->h*sizeof(int));
 			if ( !load_mask(f, ev, p, flags, f_offset, f_count, hsd) ) {
-				image->bad[pi] = make_badmask(flags, p, image->det);
+				image->bad[pi] = make_badmask(flags, image->det,
+				                              image->dp[pi], p);
 			} else {
-				image->bad[pi] = make_badmask(NULL, p, image->det);
+				image->bad[pi] = make_badmask(NULL, image->det,
+				                              image->dp[pi], p);
 			}
 			free(flags);
 		} else {
-			image->bad[pi] = make_badmask(NULL, p, image->det);
+			image->bad[pi] = make_badmask(NULL, image->det,
+			                              image->dp[pi], p);
 		}
 
 		if ( p->satmap != NULL ) {

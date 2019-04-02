@@ -521,6 +521,8 @@ static int unpack_panels(struct image *image, float *data, int data_width,
 				bad = 1;
 			}
 
+			if ( isnan(data[idx]) || isinf(data[idx]) ) bad = 1;
+
 			if ( flags != NULL ) {
 
 				int f;
