@@ -705,7 +705,7 @@ static void scan_cells(CellWindow *w)
 
 			default :
 			ERROR("Unknown centering '%c'\n",
-			      cell_get_centering(cells[i]);
+			      cell_get_centering(cells[i]));
 			continue;
 		}
 
