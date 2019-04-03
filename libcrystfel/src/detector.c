@@ -1740,6 +1740,8 @@ struct detector *copy_geom(const struct detector *in)
 	struct detector *out;
 	int i;
 
+	if ( in == NULL ) return NULL;
+
 	out = malloc(sizeof(struct detector));
 	memcpy(out, in, sizeof(struct detector));
 
