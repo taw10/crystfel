@@ -702,7 +702,11 @@ static void scan_cells(CellWindow *w)
 			case 'F' : cat = 1<<CAT_F; break;
 			case 'H' : cat = 1<<CAT_H; break;
 			case 'R' : cat = 1<<CAT_R; break;
-			default : abort();
+
+			default :
+			ERROR("Unknown centering '%c'\n",
+			      cell_get_centering(cells[i]);
+			continue;
 		}
 
 		if ( check_exclude(w->hist_a, a) ||
