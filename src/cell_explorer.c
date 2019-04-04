@@ -1274,14 +1274,266 @@ static int write_cell_to_file(UnitCell *cell, const char *filename)
 }
 
 
+static char *cell_string(UnitCell *cell)
+{
+	LatticeType lt;
+	char cen;
+	double a, b, c, alpha, beta, gamma;
+	char *str;
+	size_t len;
+
+	lt = cell_get_lattice_type(cell);
+	cen = cell_get_centering(cell);
+
+	str = malloc(256);
+	if ( str == NULL ) return NULL;
+
+	len = snprintf(str, 32, "Unit cell: %s %c, ", str_lattice(lt), cen);
+
+	if ( (lt==L_MONOCLINIC) || (lt==L_TETRAGONAL) || ( lt==L_HEXAGONAL) ) {
+		len += snprintf(str+len, 32, "unique axis %c, ",
+		                cell_get_unique_axis(cell));
+	}
+
+	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
+
+	snprintf(str+len, 128,
+	         "a=%.2f Å, b=%.2f Å, c=%.2f Å, α=%.2f° β=%.2f° γ=%.2f°",
+	         a*1e10, b*1e10, c*1e10,
+	         rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
+
+	return str;
+}
+
+
+struct save_cell_data
+{
+	GtkWidget *label;
+	UnitCell *orig_cell;
+	UnitCell *enforced_cell;
+};
+
+
+static UnitCell *enforce_cell(UnitCell *orig, const char *t)
+{
+	UnitCell *cell = cell_new_from_cell(orig);
+	double a, b, c, alpha, beta, gamma;
+
+	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
+
+	if ( (t[0] == 'o') || (t[0] == 't') || (t[0] == 'c') ) {
+		alpha = deg2rad(90.0);
+		beta = deg2rad(90.0);
+		gamma = deg2rad(90.0);
+	}
+
+	if ( (t[0] == 'm') || (t[0] == 'h') ) {
+		if ( t[1] == 'a' ) {
+			beta = deg2rad(90.0);
+			gamma = deg2rad(90.0);
+		}
+		if ( t[1] == 'b' ) {
+			alpha = deg2rad(90.0);
+			gamma = deg2rad(90.0);
+		}
+		if ( t[1] == 'c' ) {
+			alpha = deg2rad(90.0);
+			beta = deg2rad(90.0);
+		}
+	}
+
+	if ( t[0] == 'h' ) {
+		if ( t[1] == 'a' ) {
+			double av = (b+c)/2.0;
+			alpha = deg2rad(120.0);
+			b = av;  c = av;
+		}
+		if ( t[1] == 'b' ) {
+			double av = (a+c)/2.0;
+			beta = deg2rad(120.0);
+			a = av;  c = av;
+		}
+		if ( t[1] == 'c' ) {
+			double av = (a+b)/2.0;
+			gamma = deg2rad(120.0);
+			a = av;  b = av;
+		}
+	}
+
+	if ( t[0] == 't' ) {
+		if ( t[1] == 'a' ) {
+			double av = (b+c)/2.0;
+			b = av;  c = av;
+		}
+		if ( t[1] == 'b' ) {
+			double av = (a+c)/2.0;
+			a = av;  c = av;
+		}
+		if ( t[1] == 'c' ) {
+			double av = (a+b)/2.0;
+			a = av;  b = av;
+		}
+	}
+
+	if ( t[0] == 'r' ) {
+		double av = (alpha+beta+gamma)/3.0;
+		alpha = av;  beta = av;  gamma = av;
+	}
+
+	if ( (t[0] == 'c') && (t[0] == 'r') ) {
+		double av = (a+b+c)/3.0;
+		a = av;  b = av;  c = av;
+	}
+
+	cell_set_parameters(cell, a, b, c, alpha, beta, gamma);
+
+	switch ( t[0] ) {
+
+		case 'a':
+		cell_set_lattice_type(cell, L_TRICLINIC);
+		break;
+
+		case 'h':
+		cell_set_lattice_type(cell, L_HEXAGONAL);
+		break;
+
+		case 'o':
+		cell_set_lattice_type(cell, L_ORTHORHOMBIC);
+		break;
+
+		case 't':
+		cell_set_lattice_type(cell, L_TETRAGONAL);
+		break;
+
+		case 'c':
+		cell_set_lattice_type(cell, L_CUBIC);
+		break;
+
+		case 'r':
+		cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
+		break;
+
+		case 'm':
+		cell_set_lattice_type(cell, L_MONOCLINIC);
+		break;
+
+	}
+	cell_set_unique_axis(cell, t[1]);
+
+	return cell;
+}
+
+
+static void savecell_changed(GtkComboBox *widget, gpointer data)
+{
+	struct save_cell_data *scd = data;
+	char *cell_str;
+	cell_free(scd->enforced_cell);
+	scd->enforced_cell = enforce_cell(scd->orig_cell,
+	                                  gtk_combo_box_get_active_id(widget));
+	cell_str = cell_string(scd->enforced_cell);
+	if ( cell_str != NULL ) {
+		gtk_label_set_text(GTK_LABEL(scd->label), cell_str);
+	} else {
+		gtk_label_set_text(GTK_LABEL(scd->label), "error");
+	}
+	free(cell_str);
+}
+
+
+static void add_lattice_type_options(GtkWidget *cb, UnitCell *cell)
+{
+	LatticeType lt;
+	char ua;
+	char tmp1[256];
+	char tmp2[256];
+
+	lt = cell_get_lattice_type(cell);
+	ua = cell_get_unique_axis(cell);
+
+	switch ( lt ) {
+
+		case L_HEXAGONAL :
+		tmp1[0] = 'h'; tmp1[1] = ua; tmp1[2] = '\0';
+		snprintf(tmp2, 255, "Hexagonal, unique axis %c", ua);
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
+		tmp1[0] = 'm'; tmp1[1] = ua; tmp1[2] = '\0';
+		snprintf(tmp2, 255, "Monoclinic, unique axis %c", ua);
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
+		                          "Triclinic");
+		break;
+
+		case L_RHOMBOHEDRAL :
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "r*",
+		                          "Rhombohedral");
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
+		                          "Triclinic");
+		break;
+
+		/* Fall through */
+		case L_CUBIC :
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "c*",
+		                          "Cubic");
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "r*",
+		                          "Rhombohedral");
+		/* Fall through */
+
+		case L_TETRAGONAL :
+		if ( ua != '*' ) {
+			tmp1[0] = 't'; tmp1[1] = ua; tmp1[2] = '\0';
+			snprintf(tmp2, 255, "Tetragonal, unique axis %c", ua);
+			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
+		} else {
+			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "ta",
+			                          "Tetragonal, unique axis a");
+			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "tb",
+			                          "Tetragonal, unique axis b");
+			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "tc",
+			                          "Tetragonal, unique axis c");
+		}
+		/* Fall through */
+
+		case L_ORTHORHOMBIC :
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "o*",
+		                          "Orthorhombic");
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "ma",
+		                          "Monoclinic, unique axis a");
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "mb",
+		                          "Monoclinic, unique axis b");
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "mc",
+		                          "Monoclinic, unique axis c");
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
+		                          "Triclinic");
+		break;
+
+		case L_MONOCLINIC :
+		tmp1[0] = 'm'; tmp1[1] = ua; tmp1[2] = '\0';
+		snprintf(tmp2, 255, "Monoclinic, unique axis %c", ua);
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
+		/* Fall through */
+
+		case L_TRICLINIC :
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
+		                          "Triclinic");
+		break;
+
+	}
+}
+
+
 static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 {
 	GtkWidget *d;
-	UnitCell *cell;
 	gint r;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *label;
+	GtkWidget *cb;
+	struct save_cell_data scd;
 
-	cell = get_cell(w);
-	if ( cell == NULL ) return FALSE;
+	scd.orig_cell = get_cell(w);
+	if ( scd.orig_cell == NULL ) return FALSE;
 
 	d = gtk_file_chooser_dialog_new("Save Unit Cell File",
 	                                GTK_WINDOW(w->window),
@@ -1291,13 +1543,31 @@ static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 	                                NULL);
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d),
 	                                               TRUE);
+
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Enforce lattice type:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	cb = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(cb), FALSE, FALSE, 0);
+	scd.label = gtk_label_new("");
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(scd.label), TRUE, FALSE, 0);
+	gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(d), GTK_WIDGET(vbox));
+	gtk_widget_show_all(vbox);
+
+	add_lattice_type_options(cb, scd.orig_cell);
+
+	g_signal_connect(G_OBJECT(cb), "changed", G_CALLBACK(savecell_changed), &scd);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
+
 	r = gtk_dialog_run(GTK_DIALOG(d));
 	if ( r == GTK_RESPONSE_ACCEPT ) {
 
 		gchar *output_filename;
 
 		output_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(d));
-		if ( write_cell_to_file(cell, output_filename) ) {
+		if ( write_cell_to_file(scd.enforced_cell, output_filename) ) {
 			error_box(w, "Failed to save unit cell");
 		}
 		g_free(output_filename);
