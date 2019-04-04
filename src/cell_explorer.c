@@ -1364,7 +1364,7 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
 		{ "SaveCellAction", GTK_STOCK_SAVE, "_Create unit cell file",
 			NULL, NULL, G_CALLBACK(savecell_sig) },
-		{ "SaveDataAction", GTK_STOCK_SAVE, "_Save histogram data",
+		{ "SaveDataAction", NULL, "_Save histogram data",
 			NULL, NULL, G_CALLBACK(savedata_sig) },
 		{ "QuitAction", GTK_STOCK_QUIT, "_Quit", NULL, NULL,
 			G_CALLBACK(quit_sig) },
