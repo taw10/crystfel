@@ -2093,6 +2093,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 				if ( rtnl_cmp(rtnl_mtx_det(M),rtnl_zero()) == 0 ) continue;
 
 				test = cell_transform_rational(cell, M);
+
+				if ( !csl && (cell_get_centering(test) != 'P') ) continue;
+
 				cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
 				if ( !right_handed(test) ) {
 					cell_free(test);
