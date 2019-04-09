@@ -1533,6 +1533,7 @@ static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 	struct save_cell_data scd;
 
 	scd.orig_cell = get_cell(w);
+	scd.enforced_cell = NULL;
 	if ( scd.orig_cell == NULL ) return FALSE;
 
 	d = gtk_file_chooser_dialog_new("Save Unit Cell File",
