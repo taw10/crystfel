@@ -519,36 +519,6 @@ static gboolean keyconf_sig(GtkWidget *key, GdkEventConfigure *event,
 }
 
 
-static gint keyclick_sig(GtkWidget *widget, GdkEventButton *event,
-                         CellWindow *w)
-{
-	int width, cat;
-	GtkAllocation alloc;
-
-	/* Ignore extra events for double click */
-	if ( event->type != GDK_BUTTON_PRESS ) return FALSE;
-
-	gtk_widget_get_allocation(widget, &alloc);
-	width = alloc.width;
-
-	cat = 8*event->x / width;
-
-	if ( cat == 0 ) {
-		/* Special handling for P so that it doesn't go
-		 * black->black->grey */
-		w->cols_on[cat] = (w->cols_on[cat]+1) % 2;
-	} else {
-		w->cols_on[cat] = (w->cols_on[cat]+1) % 3;
-	}
-
-	gtk_widget_queue_draw(widget);
-	redraw_all(w);
-
-	return TRUE;
-}
-
-
-
 static gboolean keydraw_sig(GtkWidget *da, cairo_t *cr, CellWindow *w)
 {
 	int width, height;
@@ -694,14 +664,14 @@ static void scan_cells(CellWindow *w)
 		al = rad2deg(al);  be = rad2deg(be);  ga = rad2deg(ga);
 
 		switch ( cell_get_centering(cells[i]) ) {
-			case 'P' : cat = 1<<CAT_P; break;
-			case 'A' : cat = 1<<CAT_A; break;
-			case 'B' : cat = 1<<CAT_B; break;
-			case 'C' : cat = 1<<CAT_C; break;
-			case 'I' : cat = 1<<CAT_I; break;
-			case 'F' : cat = 1<<CAT_F; break;
-			case 'H' : cat = 1<<CAT_H; break;
-			case 'R' : cat = 1<<CAT_R; break;
+			case 'P' : cat = CAT_P; break;
+			case 'A' : cat = CAT_A; break;
+			case 'B' : cat = CAT_B; break;
+			case 'C' : cat = CAT_C; break;
+			case 'I' : cat = CAT_I; break;
+			case 'F' : cat = CAT_F; break;
+			case 'H' : cat = CAT_H; break;
+			case 'R' : cat = CAT_R; break;
 
 			default :
 			ERROR("Unknown centering '%c'\n",
@@ -716,20 +686,54 @@ static void scan_cells(CellWindow *w)
 		     check_exclude(w->hist_be, be) ||
 		     check_exclude(w->hist_ga, ga) )
 		{
-			cat = (unsigned)1<<CAT_EXCLUDE;
+			cat = CAT_EXCLUDE;
+			n_excl++;
+		} else if ( w->cols_on[cat] == 0 ) {
+			cat = CAT_EXCLUDE;
 			n_excl++;
 		}
 
-		multihistogram_add_value(w->hist_a->h, a, cat);
-		multihistogram_add_value(w->hist_b->h, b, cat);
-		multihistogram_add_value(w->hist_c->h, c, cat);
-		multihistogram_add_value(w->hist_al->h, al, cat);
-		multihistogram_add_value(w->hist_be->h, be, cat);
-		multihistogram_add_value(w->hist_ga->h, ga, cat);
+		multihistogram_add_value(w->hist_a->h, a, 1<<cat);
+		multihistogram_add_value(w->hist_b->h, b, 1<<cat);
+		multihistogram_add_value(w->hist_c->h, c, 1<<cat);
+		multihistogram_add_value(w->hist_al->h, al, 1<<cat);
+		multihistogram_add_value(w->hist_be->h, be, 1<<cat);
+		multihistogram_add_value(w->hist_ga->h, ga, 1<<cat);
 
 	}
 
 	STATUS("Selected %i of %i cells\n", n_cells-n_excl, n_cells);
+}
+
+
+static gint keyclick_sig(GtkWidget *widget, GdkEventButton *event,
+                         CellWindow *w)
+{
+	int width, cat;
+	GtkAllocation alloc;
+
+	/* Ignore extra events for double click */
+	if ( event->type != GDK_BUTTON_PRESS ) return FALSE;
+
+	gtk_widget_get_allocation(widget, &alloc);
+	width = alloc.width;
+
+	cat = 8*event->x / width;
+
+	if ( cat == 0 ) {
+		/* Special handling for P so that it doesn't go
+		 * black->black->grey */
+		w->cols_on[cat] = (w->cols_on[cat]+1) % 2;
+	} else {
+		w->cols_on[cat] = (w->cols_on[cat]+1) % 3;
+	}
+
+	scan_cells(w);
+	redraw_all(w);
+
+	gtk_widget_queue_draw(widget);
+
+	return TRUE;
 }
 
 
