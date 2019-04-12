@@ -21,13 +21,14 @@ op.add_argument('--output', dest='ofn', metavar='output.geom',
               help="Output geometry file")
 
 op.add_argument('--pixels', action='store_true', dest='px',
-              help="Indicates that the shifts are in pixel units")
+              help="Indicates that the x and y shifts are in pixel units.  "
+                   "The z shift is always in millimeters")
 
 op.add_argument('--mm', action='store_false', dest='px',
               help="Indicates that the shifts are in millimeters (this is the default)")
 
 op.add_argument('--beam', action='store_true', dest='beam',
-              help="Shift the X-ray beam rather than the detector")
+              help="Shift the X-ray beam rather than the detector (reverses x and y shifts)")
 
 op.add_argument('--detector', action='store_false', dest='beam',
               help="Shift the detector rather than the X-ray beam.  This is the default.")
@@ -40,6 +41,9 @@ op.add_argument('xshift', type=float, metavar='XXX',
 
 op.add_argument('yshift', type=float, metavar='YYY',
                help="The shift in the y direction")
+
+op.add_argument('zshift', type=float, metavar='ZZZ',
+               help="The shift in the z direction")
 
 args = op.parse_args()
 
@@ -59,7 +63,7 @@ else:
     bm = 'detector'
 
 print('Input filename {}\nOutput filename {}'.format(args.ifn,out))
-print('Shifting {} by {},{} {}'.format(bm, args.xshift, args.yshift, units))
+print('Shifting {} by {},{},{} {}'.format(bm, args.xshift, args.yshift, args.zshift, units))
 
 if args.beam:
     args.xshift = -args.xshift
@@ -68,12 +72,17 @@ if args.beam:
 f = open(args.ifn, 'r')
 h = open(out, 'w')
 panel_resolutions = {}
+panels = []
+panels_have_coffset = []
 
 prog1 = re.compile("^\s*res\s+=\s+([0-9\.]+)\s")
 prog2 = re.compile("^\s*(.*)\/res\s+=\s+([0-9\.]+)\s")
 prog3 = re.compile("^\s*(.*)\/corner_x\s+=\s+([0-9\.\-]+)\s")
 prog4 = re.compile("^\s*(.*)\/corner_y\s+=\s+([0-9\.\-]+)\s")
+prog5 = re.compile("^\s*(.*)\/coffset\s+=\s+([0-9\.\-]+)\s")
+prog6 = re.compile("^\s*coffset\s+=\s+([0-9\.]+)\s")
 default_res = 0
+default_coffset = None
 while True:
 
     fline = f.readline()
@@ -84,6 +93,12 @@ while True:
     if match:
         default_res = float(match.group(1))
         h.write(fline)
+        continue
+
+    match = prog6.match(fline)
+    if match:
+        default_coffset = float(match.group(1))
+        h.write("coffset = %f\n" % (default_coffset+args.zshift))
         continue
 
     match = prog2.match(fline)
@@ -98,6 +113,14 @@ while True:
     match = prog3.match(fline)
     if match:
         panel = match.group(1)
+        if panel not in panels:
+            panels.append(panel)
+
+            # If we have a default coffset, this panel has a coffset
+            # (which has already been adjusted)
+            if default_coffset is not None:
+                panels_have_coffset.append(panel)
+
         panel_cnx = float(match.group(2))
         if panel in panel_resolutions:
             res = panel_resolutions[panel]
@@ -127,7 +150,19 @@ while True:
             h.write('%s/corner_y = %f\n' % (panel,panel_cny+(args.yshift*res*1e-3)))
         continue
 
+    match = prog5.match(fline)
+    if match:
+        panel = match.group(1)
+        panel_coffset = float(match.group(2))
+        h.write('%s/coffset = %f\n' % (panel,panel_coffset+args.zshift*1e-3))
+        panels_have_coffset.append(panel)
+        continue
+
     h.write(fline)
+
+h.write("\n")
+for p in [n for n in panels if n not in panels_have_coffset]:
+    h.write("%s/coffset = %f\n" % (p, args.zshift*1e-3))
 
 f.close()
 h.close()
