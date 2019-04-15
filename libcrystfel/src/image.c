@@ -547,50 +547,85 @@ static void cbf_fill_in_clen(struct detector *det, struct imagefile *f)
 }
 
 
-static float *convert_sint32_float(int32_t *data, int w, int h)
+static void add_out(float val, float *data_out, int nmemb_out,
+                    int *outpos, int *nrej)
 {
-	float *df;
-	long int i;
-
-	df = malloc(sizeof(float)*w*h);
-	if ( df == NULL ) return NULL;
-
-	for ( i=0; i<w*h; i++ ) {
-		df[i] = data[i];
+	if ( *outpos < nmemb_out ) {
+		data_out[(*outpos)++] = val;
+	} else {
+		(*nrej)++;
 	}
-
-	return df;
 }
 
 
-static float *convert_sint16_float(int16_t *data, int w, int h)
+static void decode_cbf_byte_offset(float *data_out, int nmemb_out,
+                                   const int8_t *data_in, const size_t n)
 {
-	float *df;
-	long int i;
+	int inpos = 0;
+	int outpos = 0;
+	int nrej = 0;
+	float val = 0.0;
 
-	df = malloc(sizeof(float)*w*h);
-	if ( df == NULL ) return NULL;
+	while ( inpos < n ) {
 
-	for ( i=0; i<w*h; i++ ) {
-		df[i] = data[i];
+		int64_t delta = data_in[inpos++];
+
+		if ( (delta >= -127) && (delta <= 127) ) {
+			val += delta;
+			add_out(val, data_out, nmemb_out, &outpos, &nrej);
+			continue;
+		}
+
+		delta = *(int16_t *)(data_in+inpos);
+		inpos += 2;
+
+		if ( (delta >= -32767) && (delta <= 32767) ) {
+			val += delta;
+			add_out(val, data_out, nmemb_out, &outpos, &nrej);
+			continue;
+		}
+
+		delta = *(int32_t *)(data_in+inpos);
+		inpos += 4;
+
+		if ( (delta >= -2147483647) && (delta <= 2147483647) ) {
+			val += delta;
+			add_out(val, data_out, nmemb_out, &outpos, &nrej);
+			continue;
+		}
+
+		delta = *(int64_t *)(data_in+inpos);
+		inpos += 8;
+		val += delta;
+		add_out(val, data_out, nmemb_out, &outpos, &nrej);
+
 	}
 
-	return df;
+	if ( nrej > 0 ) {
+		STATUS("%i elements rejected\n", nrej);
+	}
 }
 
 
-static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcbfh)
+static int binary_start(char *data)
 {
-	cbf_handle cbfh;
+	char *datac = data;
+	if ( (datac[0] == (char)0x0c) && (datac[1] == (char)0x1a)
+	  && (datac[2] == (char)0x04) && (datac[3] == (char)0xd5) ) return 1;
+	return 0;
+}
+
+
+static float *read_cbf_data(struct imagefile *f, int *w, int *h)
+{
 	FILE *fh;
-	int r;
-	unsigned int compression;
-	int binary_id, minelement, maxelement, elsigned, elunsigned;
-	size_t elsize, elements, elread, dimfast, dimmid, dimslow, padding;
-	const char *byteorder;
-	void *data;
-	float *dataf;
 	void *buf = NULL;
+	char *rval;
+	size_t data_compressed_len = 0;
+	float *data_out = NULL;
+
+	*w = 0;
+	*h = 0;
 
 	if ( f->type == IMAGEFILE_CBF ) {
 
@@ -641,11 +676,101 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h, cbf_handle *pcb
 		return NULL;
 	}
 
+	/* .... read data .... */
+	do {
 
-	*w = dimfast;
-	*h = dimmid;
-	*pcbfh = cbfh;
-	return dataf;
+		char line[1024];
+		long line_start;
+
+		line_start = ftell(fh);
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
+		chomp(line);
+
+		if ( strncmp(line, "X-Binary-Size: ", 15) == 0 ) {
+			data_compressed_len = atoi(line+15);
+		}
+
+		if ( strncmp(line, "X-Binary-Size-Fastest-Dimension: ", 33) == 0 ) {
+			*w = atoi(line+33);
+		}
+
+		if ( strncmp(line, "X-Binary-Size-Second-Dimension: ", 32) == 0 ) {
+			*h = atoi(line+32);
+		}
+
+		if ( strncmp(line, "X-Binary-Element-Type: ", 23) == 0 ) {
+			STATUS("binary type: %s\n", line+23);
+		}
+
+		if ( binary_start(line) ) {
+
+			size_t len_read;
+			int nmemb_exp;
+			int8_t *data_compressed;
+
+			if ( data_compressed_len == 0 ) {
+				ERROR("Found CBF data before X-Binary-Size!\n");
+				free(buf);
+				fclose(fh);
+				return NULL;
+			}
+
+			if ( (*w == 0) || (*h == 0) ) {
+				ERROR("Found CBF data before dimensions!\n");
+				free(buf);
+				fclose(fh);
+				return NULL;
+			}
+
+			if ( data_compressed_len > 100*1024*1024 ) {
+				ERROR("Stated CBF data size too big\n");
+				free(buf);
+				fclose(fh);
+				return NULL;
+			}
+
+			data_compressed = malloc(data_compressed_len);
+			if ( data_compressed == NULL ) {
+				ERROR("Failed to allocate memory for CBF data\n");
+				free(buf);
+				fclose(fh);
+				return NULL;
+			}
+
+			fseek(fh, line_start+4, SEEK_SET);
+			len_read = fread(data_compressed, 1, data_compressed_len, fh);
+			if ( len_read < data_compressed_len ) {
+				ERROR("Couldn't read entire CBF data\n");
+				free(buf);
+				free(data_compressed);
+				fclose(fh);
+				return NULL;
+			}
+
+			nmemb_exp = (*w) * (*h);
+			data_out = malloc(nmemb_exp*sizeof(float));
+			if ( data_out == NULL ) {
+				ERROR("Failed to allocate memory for CBF data\n");
+				free(buf);
+				free(data_compressed);
+				fclose(fh);
+				return NULL;
+			}
+
+			decode_cbf_byte_offset(data_out, nmemb_exp,
+			                       data_compressed,
+			                       data_compressed_len);
+
+			free(data_compressed);
+
+		}
+
+	} while ( rval != NULL );
+
+	free(buf);  /* might be NULL */
+
+	return data_out;
 }
 
 
@@ -653,9 +778,8 @@ static int read_cbf(struct imagefile *f, struct image *image)
 {
 	float *data;
 	int w, h;
-	cbf_handle cbfh;
 
-	data = read_cbf_data(f, &w, &h, &cbfh);
+	data = read_cbf_data(f, &w, &h);
 	if ( data == NULL ) {
 		ERROR("Failed to read CBF data\n");
 		return 1;
@@ -675,7 +799,6 @@ static int read_cbf(struct imagefile *f, struct image *image)
 	cbf_fill_in_clen(image->det, f);
 	fill_in_adu(image);
 
-	cbf_free_handle(cbfh);
 	return 0;
 }
 
@@ -684,9 +807,8 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 {
 	float *data;
 	int w, h;
-	cbf_handle cbfh;
 
-	data = read_cbf_data(f, &w, &h, &cbfh);
+	data = read_cbf_data(f, &w, &h);
 	if ( data == NULL ) {
 		ERROR("Failed to read CBF data\n");
 		return 1;
@@ -712,7 +834,6 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 	cbf_fill_in_clen(image->det, f);
 	fill_in_adu(image);
 
-	cbf_free_handle(cbfh);
 	return 0;
 }
 
