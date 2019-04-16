@@ -129,7 +129,7 @@ $ sudo make install
 
 At a minimum, you will need the HDF5 library (version 1.8.0 or later) and the
 GNU Scientific Library (GSL).  For a full installation, you will also need
-libTIFF, libPNG, Cairo, FFTW3, CBFLib and GTK2.  All of these should be
+libTIFF, libPNG, Cairo, FFTW3 and GTK2.  All of these should be
 installed from your distribution's package manager.  Be sure to install the
 development files for each package, which will have a name like "gtk+-2.0-dev"
 or "gtk+-2.0-devel", depending on which distribution you use.
@@ -141,12 +141,6 @@ cmake -DXGANDALF_INCLUDES=/path/to/xgandalf/include \
 
 The path to HDF5 can be set similarly:
 cmake -DHDF5_ROOT=/path/to/hdf5 (... /include, /lib etc)
-
-Or for CBF, use one of:
--DCBF_CBF_INCLUDES=/path/to/cbflib/include  (... /cbf/cbf.h)
--DCBFLIB_CBF_INCLUDES=/path/to/cbflib/include  (... /cbflib/cbf.h)
-and:
--DCBF_LIBRARIES=/path/to/libcbf.so
 
 To install CrystFEL in a custom location, use:
 -DCMAKE_INSTALL_PREFIX=/path/for/crystfel/installation
