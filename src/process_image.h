@@ -46,7 +46,7 @@ struct index_args;
 #include "time-accounts.h"
 #include "taketwo.h"
 #include "xgandalf.h"
-#include "../libcrystfel/src/pinkindexer.h"
+#include "pinkindexer.h"
 #include "felix.h"
 
 
