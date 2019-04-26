@@ -1143,7 +1143,7 @@ int main(int argc, char *argv[])
 	}
 	add_geom_beam_stuff_to_field_list(iargs.copyme, iargs.det, iargs.beam);
 	iargs.pinkIndexer_opts.beamEnergy = iargs.beam->photon_energy;
-	iargs.pinkIndexer_opts.beamBandwidth = iargs.beam->photon_energy_bandwidth;
+	iargs.pinkIndexer_opts.beamBandwidth = 0.01;
 	iargs.pinkIndexer_opts.detectorDistance = iargs.det->panels[0].clen;
 	if(iargs.det->panels[0].clen_from != NULL){
 		iargs.pinkIndexer_opts.detectorDistance = 0;
