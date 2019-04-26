@@ -118,7 +118,7 @@ struct index_args
 	int profile;  /* Whether or not to do wall clock profiling */
 	struct taketwo_options taketwo_opts;
 	struct xgandalf_options xgandalf_opts;
-    struct pinkIndexer_options pinkIndexer_opts;
+	struct pinkIndexer_options pinkIndexer_opts;
 	struct felix_options felix_opts;
 	Spectrum *spectrum;
 	signed int wait_for_file; /* -1 means wait forever */

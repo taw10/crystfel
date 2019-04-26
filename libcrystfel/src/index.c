@@ -504,8 +504,8 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 			break;
 
 			case INDEXING_PINKINDEXER :
-            pinkIndexer_cleanup(ipriv->engine_private[n]);
-            break;
+			pinkIndexer_cleanup(ipriv->engine_private[n]);
+			break;
 
 			default :
 			ERROR("Don't know how to clean up indexing method %i\n",
