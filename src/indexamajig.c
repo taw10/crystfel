@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
 	iargs.pinkIndexer_opts.angle_resolution = 2;
 	iargs.pinkIndexer_opts.refinement_type = 1;
 	iargs.pinkIndexer_opts.tolerance = 0.06;
-	iargs.pinkIndexer_opts.maxResolutionForIndexing_1_per_A = FLT_MAX;
+	iargs.pinkIndexer_opts.maxResolutionForIndexing_1_per_A = +INFINITY;
 	iargs.pinkIndexer_opts.thread_count = 1;
 	iargs.pinkIndexer_opts.multi = 0;
 	iargs.pinkIndexer_opts.no_check_indexed = 0;
