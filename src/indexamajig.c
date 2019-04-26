@@ -204,6 +204,32 @@ static void show_help(const char *s)
 "                           All peaks are used for refinement.\n"
 "                            Default: 250\n"
 "\n"
+"     --pinkIndexer-considered-peaks-count  Considered peaks count selector \n"
+"                                           [0-4] (veryFew to manyMany)\n"
+"                                           Default is 4 (manyMany)\n"
+"     --pinkIndexer-angle-resolution     Angle resolution selector \n"
+"                                        [0-4] (extremelyLoose to extremelyDense)\n"
+"                                        Default is 2 (normal)\n"
+"     --pinkIndexer-refinement-type    Refinement type \n"
+"                                      Default is 1\n"
+"               0 = none\n"
+"               1 = fixedLatticeParameters\n"
+"               2 = variableLatticeParameters\n"
+"               3 = firstFixedThenVariableLatticeParameters\n"
+"               4 = firstFixedThenVariableLatticeParametersMultiSeed\n"
+"               5 = firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed\n"
+"     --pinkIndexer-tolerance  Relative tolerance of the lattice vectors.\n"
+"                              Default is 0.06\n"
+"     --pinkIndexer-reflection-radius  radius of the reflections in reciprocal space in 1/A.\n"
+"                              Default is 2%% of a*.\n"
+"                              Should be chosen ~0.002 for electrons.\n"
+"     --pinkIndexer-max-resolution-for-indexing   Measured in 1/A\n"
+"     --pinkIndexer-multi    Use pinkIndexers own multi indexing.\n"
+"     --pinkIndexer-thread-count  thread count for internal parallelization \n"
+"                                 Default is 1\n"
+"     --pinkIndexer-no-check-indexed   Leave the check whether a pattern is indexed completely to CrystFEL\n"
+"									   useful for monochromatic and tweaking."
+"\n"
 "\nIntegration options:\n\n"
 "     --integration=<meth>  Integration method (rings,prof2d)-(cen,nocen)\n"
 "                            Default: rings-nocen\n"
@@ -253,6 +279,7 @@ static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copym
 int main(int argc, char *argv[])
 {
 	int c;
+	unsigned int tmp_enum;
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
@@ -360,6 +387,16 @@ int main(int argc, char *argv[])
 	iargs.xgandalf_opts.minLatticeVectorLength_A = 30;
 	iargs.xgandalf_opts.maxLatticeVectorLength_A = 250;
 	iargs.xgandalf_opts.maxPeaksForIndexing = 250;
+	iargs.pinkIndexer_opts.considered_peaks_count = 4;
+	iargs.pinkIndexer_opts.angle_resolution = 2;
+	iargs.pinkIndexer_opts.refinement_type = 1;
+	iargs.pinkIndexer_opts.tolerance = 0.06;
+	iargs.pinkIndexer_opts.maxResolutionForIndexing_1_per_A = FLT_MAX;
+	iargs.pinkIndexer_opts.thread_count = 1;
+	iargs.pinkIndexer_opts.multi = 0;
+	iargs.pinkIndexer_opts.no_check_indexed = 0;
+	iargs.pinkIndexer_opts.min_peaks = 2;
+	iargs.pinkIndexer_opts.reflectionRadius = -1;
 	iargs.felix_opts.ttmin = -1.0;
 	iargs.felix_opts.ttmax = -1.0;
 	iargs.felix_opts.min_visits = 0;
@@ -491,6 +528,21 @@ int main(int argc, char *argv[])
 		{"min-sq-gradient",    1, NULL,              359}, /* compat */
 		{"xgandalf-fast-execution",                  0, NULL, 360},
 		{"xgandalf-max-peaks",                       1, NULL, 361},
+		{"pinkIndexer-considered-peaks-count",       1, NULL, 362},
+		{"pinkIndexer-cpc",                          1, NULL, 362},
+		{"pinkIndexer-angle-resolution",             1, NULL, 363},
+		{"pinkIndexer-ar",                           1, NULL, 363},
+		{"pinkIndexer-refinement-type",              1, NULL, 364},
+		{"pinkIndexer-rt",                           1, NULL, 364},
+		{"pinkIndexer-thread-count",                 1, NULL, 365},
+		{"pinkIndexer-tc",                           1, NULL, 365},
+		{"pinkIndexer-max-resolution-for-indexing",  1, NULL, 366},
+		{"pinkIndexer-mrfi",                         1, NULL, 366},
+		{"pinkIndexer-tolerance",                    1, NULL, 367},
+		{"pinkIndexer-tol",                          1, NULL, 367},
+		{"pinkIndexer-multi",                        0, NULL, 368},
+		{"pinkIndexer-no-check-indexed",             0, NULL, 369},
+		{"pinkIndexer-reflection-radius",            1, NULL, 370},
 
 		{0, 0, NULL, 0}
 	};
@@ -689,6 +741,7 @@ int main(int argc, char *argv[])
 
 			case 331:
 			iargs.min_peaks = atoi(optarg);
+			iargs.pinkIndexer_opts.min_peaks = iargs.min_peaks;
 			break;
 
 			case 332:
@@ -922,6 +975,74 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 362:
+			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			{
+				ERROR("Invalid value for "
+						"--pinkIndexer-considered-peaks-count\n");
+				return 1;
+			}
+			iargs.pinkIndexer_opts.considered_peaks_count = tmp_enum;
+			break;
+
+			case 363:
+			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			{
+				ERROR("Invalid value for --pinkIndexer-angle-resolution \n");
+				return 1;
+			}
+			iargs.pinkIndexer_opts.angle_resolution = tmp_enum;
+			break;
+
+			case 364:
+			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			{
+				ERROR("Invalid value for --pinkIndexer-refinement-type \n");
+				return 1;
+			}
+			iargs.pinkIndexer_opts.refinement_type = tmp_enum;
+			break;
+
+			case 365:
+			if (sscanf(optarg, "%d", &iargs.pinkIndexer_opts.thread_count) != 1)
+			{
+				ERROR("Invalid value for --pinkIndexer-thread-count \n");
+				return 1;
+			}
+			break;
+
+			case 366:
+			if (sscanf(optarg, "%f", &iargs.pinkIndexer_opts.maxResolutionForIndexing_1_per_A) != 1)
+			{
+				ERROR("Invalid value for --pinkIndexer-max-resolution-for-indexing \n");
+				return 1;
+			}
+			break;
+
+			case 367:
+			if (sscanf(optarg, "%f", &iargs.pinkIndexer_opts.tolerance)	!= 1)
+			{
+				ERROR("Invalid value for --pinkIndexer-tolerance \n");
+				return 1;
+			}
+			break;
+
+			case 368:
+				iargs.pinkIndexer_opts.multi = 1;
+			break;
+
+			case 369:
+				iargs.pinkIndexer_opts.no_check_indexed = 1;
+			break;
+
+			case 370:
+			if (sscanf(optarg, "%f", &iargs.pinkIndexer_opts.reflectionRadius)	!= 1)
+			{
+				ERROR("Invalid value for --pinkIndexer-reflection-radius \n");
+				return 1;
+			}
+			break;
+
 			case 0 :
 			break;
 
@@ -1021,6 +1142,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	add_geom_beam_stuff_to_field_list(iargs.copyme, iargs.det, iargs.beam);
+	iargs.pinkIndexer_opts.beamEnergy = iargs.beam->photon_energy;
+	iargs.pinkIndexer_opts.beamBandwidth = iargs.beam->photon_energy_bandwidth;
+	iargs.pinkIndexer_opts.detectorDistance = iargs.det->panels[0].clen;
+	if(iargs.det->panels[0].clen_from != NULL){
+		iargs.pinkIndexer_opts.detectorDistance = 0;
+	}
 
 	/* If no peak path from geometry file, use these (but see later) */
 	if ( iargs.hdf5_peak_path == NULL ) {
@@ -1263,6 +1390,7 @@ int main(int argc, char *argv[])
 		                             iargs.tols, flags,
 		                             &iargs.taketwo_opts,
 		                             &iargs.xgandalf_opts,
+		                             &iargs.pinkIndexer_opts,
 		                             &iargs.felix_opts);
 		if ( iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");

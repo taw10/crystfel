@@ -90,6 +90,11 @@ Use the TakeTwo algorithm.  See Ginn et al., Acta Cryst. (2016). D72, 956-965.
 .PD
 Invoke XGANDALF - eXtended GrAdieNt Descent Algorithm for Lattice Finding. Xgandalf must be installed in order to be able to use it.
 
+.IP \fBpinkIndexer\fR
+.PD
+Invoke pinkIndexer. pinkIndexer must be installed in order to be able to use it. The geometry file should contain the value photon_energy_bandwidth, which sets the bandwidth as (delta energy)/(mean energy).
+
+
 .PP
 You can add one or more of the following to the above indexing methods, to control what information should be provided to them.  Note that indexamajig performs a series of checks on the indexing results, including checking that the result is consistent with the target unit cell parameters.  To get completely "raw" indexing, you need to disable these checks (see below) \fBand\fR not provide prior information.
 
@@ -436,6 +441,38 @@ These set low-level parameters for the XGANDALF indexing algorithm.
 \fB--xgandalf-max-peaks\fR maximum number of peaks used for indexing. For refinement all peaks are used. Peaks are selected by increasing radius. Limits the maximum execution time for patterns with a huge amount of peaks - either real ones or false positives. Default is 250.
 .IP
 \fB--xgandalf-fast-execution\fR Shortcut to set --xgandalf-sampling-pitch=2 --xgandalf-grad-desc-iterations=3
+
+.PD 0
+.IP \fB--pinkIndexer-considered-peaks-count=\fIn\fR
+.IP \fB--pinkIndexer-angle-resolution=\fIn\fR
+.IP \fB--pinkIndexer-refinement-type=\fIn\fR
+.IP \fB--pinkIndexer-tolerance=\fIn\fR
+.IP \fB--pinkIndexer-reflection-radius=\fIn\fR
+.IP \fB--pinkIndexer-max-resolution-for-indexing=\fIn\fR
+.IP \fB--pinkIndexer-multi=\fIn\fR
+.IP \fB--pinkIndexer-thread-count=\fIn\fR
+.IP \fB--pinkIndexer-no-check-indexed=\fIn\fR
+
+.PD
+These set low-level parameters for the XGANDALF indexing algorithm.
+.IP
+\fB--pinkIndexer-considered-peaks-count\fR selects how many peaks are considered for indexing. [0-4] (veryFew to manyMany). Default is 4 (manyMany).
+.IP
+\fB--pinkIndexer-angle-resolution\fR selects how dense the orientation angles of the sample lattice are sampled. [0-4] (extremelyLoose to extremelyDense). Default is 2 (normal).
+.IP
+\fB--pinkIndexer-refinement-type\fR selects the refinement type. 0 = none, 1 = fixedLatticeParameters, 2 = variableLatticeParameters, 3 = firstFixedThenVariableLatticeParameters, 4 = firstFixedThenVariableLatticeParametersMultiSeed, 5 = firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed.
+.IP
+\fB--pinkIndexer-tolerance\fR selects the tolerance of the pinkIndexer (relative tolerance of the lattice vectors). Default is 0.06. For bad geometrys or cell parameters use a high tolerance. For a well known geometry and cell use a small tolerance. Only important for refinement and indexed/not indexed identificaton. Too small tolerance will lead to refining to only a fraction of the peaks and possibly discarding of correctly indexed images. Too high tolerance will lead to bad fitting in presence of multiples or noise and can mark wrongly-indexed patterns as indexed.
+.IP
+\fB--pinkIndexer-reflection-radius\fR sets radius of the reflections in reciprocal space in 1/A. Default is 2%% of a* (which works quiet well for X-rays). Should be chosen much bigger for electrons (~0.002).
+.IP
+\fB--pinkIndexer-max-resolution-for-indexing\fR sets the maximum resolition in 1/A used for indexing. Peaks at high resolution don't add much information, but they add a lot of computation time. Default is infinity. Does not influence the refinement.
+.IP
+\fB--pinkIndexer-multi\fR Use pinkIndexers own multi indexing. Should be combined with the --no-multi flag.
+.IP
+\fB--pinkIndexer-thread-count\fR sets the thread count for internal parallelization. Default is 1. Very useful for small datasets (e.g. for screening). Internal parallelization does not significantly increase the amount of RAM needed, whereas CrystFELs parallelization does. For HPCs typically a mixture of both parallelizations leads to best results.
+.IP
+\fB--pinkIndexer-no-check-indexed\fR Leave the check whether a pattern is indexed completely to CrystFEL. Useful for monochromatic (since CrystFELs prediction model is smarter than the one of pinkIndexer) or in combnation with --no-check-peaks for geometry optimization. This flag is meant to eventually disappear, when the full pink pipeline is implemented.
 
 .SH INTEGRATION OPTIONS
 .PD 0

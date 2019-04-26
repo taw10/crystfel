@@ -14,6 +14,7 @@ pkg_search_module(FFTW fftw3)
 set(HAVE_CURSES ${CURSES_FOUND})
 set(HAVE_FFTW ${FFTW_FOUND})
 set(HAVE_XGANDALF ${XGANDALF_FOUND})
+set(HAVE_PINKINDEXER ${PINKINDEXER_FOUND})
 set(HAVE_FDIP ${FDIP_FOUND})
 
 # Find out where forkpty() is declared
@@ -67,6 +68,7 @@ set(LIBCRYSTFEL_SOURCES
     src/peakfinder8.c
     src/taketwo.c
     src/xgandalf.c
+    src/pinkindexer.c
     src/rational.c
     src/spectrum.c
     ${BISON_symopp_OUTPUTS}
@@ -108,6 +110,7 @@ set(LIBCRYSTFEL_HEADERS
     src/peakfinder8.h
     src/taketwo.h
     src/xgandalf.h
+    src/pinkindexer.h
     src/rational.h
     src/spectrum.h
 )

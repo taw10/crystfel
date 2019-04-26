@@ -58,6 +58,7 @@
 #include "predict-refine.h"
 #include "taketwo.h"
 #include "xgandalf.h"
+#include "pinkindexer.h"
 
 
 /** \file index.h */
@@ -71,6 +72,7 @@ struct _indexingprivate
 
 	struct taketwo_options *ttopts;
 	struct xgandalf_options *xgandalf_opts;
+	struct pinkIndexer_options *pinkIndexer_opts;
 
 	int n_methods;
 	IndexingMethod *methods;
@@ -195,6 +197,10 @@ static char *base_indexer_str(IndexingMethod indm)
 		strcpy(str, "xgandalf");
 		break;
 
+		case INDEXING_PINKINDEXER:
+		strcpy(str, "pinkIndexer");
+		break;
+
 		case INDEXING_SIMULATION :
 		strcpy(str, "simulation");
 		break;
@@ -233,6 +239,7 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             struct xgandalf_options *xgandalf_opts,
+                            struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts)
 {
 	char *str;
@@ -277,6 +284,10 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		priv = xgandalf_prepare(m, cell, xgandalf_opts);
 		break;
 
+		case INDEXING_PINKINDEXER :
+		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts);
+		break;
+
 		default :
 		ERROR("Don't know how to prepare indexing method %i\n", *m);
 		break;
@@ -309,6 +320,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 IndexingFlags flags,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
+                                struct pinkIndexer_options *pinkIndexer_opts,
                                 struct felix_options *felix_opts)
 {
 	int i, n;
@@ -403,7 +415,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int j;
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
-		                                          xgandalf_opts,
+		                                          xgandalf_opts, pinkIndexer_opts,
 		                                          felix_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
@@ -430,6 +442,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 	ipriv->ttopts = ttopts;
 	ipriv->xgandalf_opts = xgandalf_opts;
+	ipriv->pinkIndexer_opts = pinkIndexer_opts;
 
 	STATUS("List of indexing methods:\n");
 	for ( i=0; i<n; i++ ) {
@@ -489,6 +502,10 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 			case INDEXING_XGANDALF :
 			xgandalf_cleanup(ipriv->engine_private[n]);
 			break;
+
+			case INDEXING_PINKINDEXER :
+            pinkIndexer_cleanup(ipriv->engine_private[n]);
+            break;
 
 			default :
 			ERROR("Don't know how to clean up indexing method %i\n",
@@ -599,6 +616,10 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		case INDEXING_TAKETWO :
 		set_last_task(last_task, "indexing:taketwo");
 		r = taketwo_index(image, ipriv->ttopts, mpriv);
+		break;
+
+		case INDEXING_PINKINDEXER :
+		r = run_pinkIndexer(image, mpriv);
 		break;
 
 		case INDEXING_XGANDALF :
@@ -999,6 +1020,11 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 			method = INDEXING_DEFAULTS_XGANDALF;
 			have_method = 1;
 
+		} else if ( strcmp(bits[i], "pinkIndexer") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_PINKINDEXER;
+			have_method = 1;
+
 		} else if ( strcmp(bits[i], "none") == 0) {
 			if ( have_method ) return warn_method(str);
 			method = INDEXING_NONE;
@@ -1097,9 +1123,10 @@ char *detect_indexing_methods(UnitCell *cell)
 	do_probe(asdf_probe, cell, methods);
 	do_probe(xds_probe, cell, methods);
 	do_probe(xgandalf_probe, cell, methods);
-	/* Don't automatically use TakeTwo or Felix (yet) */
+	/* Don't automatically use TakeTwo, Felix or PinkIndexer (yet) */
 	//do_probe(taketwo_probe, cell, methods);
 	//do_probe(felix_probe, cell, methods);
+	//do_probe(pinkIndexer_probe, cell, methods);
 
 	if ( strlen(methods) == 0 ) {
 		free(methods);
