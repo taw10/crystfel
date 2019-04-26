@@ -279,7 +279,6 @@ static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copym
 int main(int argc, char *argv[])
 {
 	int c;
-	unsigned int tmp_enum;
 	char *filename = NULL;
 	char *outfile = NULL;
 	FILE *fh;
@@ -940,7 +939,7 @@ int main(int argc, char *argv[])
 			           &iargs.xgandalf_opts.maxLatticeVectorLength_A) != 1)
 			{
 				ERROR("Invalid value for "
-						"--xgandalf-max-lattice-vector-length\n");
+				      "--xgandalf-max-lattice-vector-length\n");
 				return 1;
 			}
 			break;
@@ -976,69 +975,79 @@ int main(int argc, char *argv[])
 			break;
 
 			case 362:
-			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			if (sscanf(optarg, "%u",
+			           &iargs.pinkIndexer_opts.considered_peaks_count) != 1)
 			{
 				ERROR("Invalid value for "
-						"--pinkIndexer-considered-peaks-count\n");
+				      "--pinkIndexer-considered-peaks-count\n");
 				return 1;
 			}
-			iargs.pinkIndexer_opts.considered_peaks_count = tmp_enum;
 			break;
 
 			case 363:
-			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			if (sscanf(optarg, "%u",
+			           &iargs.pinkIndexer_opts.angle_resolution) != 1)
 			{
-				ERROR("Invalid value for --pinkIndexer-angle-resolution \n");
+				ERROR("Invalid value for "
+				      "--pinkIndexer-angle-resolution\n");
 				return 1;
 			}
-			iargs.pinkIndexer_opts.angle_resolution = tmp_enum;
 			break;
 
 			case 364:
-			if (sscanf(optarg, "%u", &tmp_enum) != 1)
+			if (sscanf(optarg, "%u",
+			           &iargs.pinkIndexer_opts.refinement_type) != 1)
 			{
-				ERROR("Invalid value for --pinkIndexer-refinement-type \n");
+				ERROR("Invalid value for "
+				      "--pinkIndexer-refinement-type\n");
 				return 1;
 			}
-			iargs.pinkIndexer_opts.refinement_type = tmp_enum;
 			break;
 
 			case 365:
-			if (sscanf(optarg, "%d", &iargs.pinkIndexer_opts.thread_count) != 1)
+			if (sscanf(optarg, "%d",
+			           &iargs.pinkIndexer_opts.thread_count) != 1)
 			{
-				ERROR("Invalid value for --pinkIndexer-thread-count \n");
+				ERROR("Invalid value for "
+				      "--pinkIndexer-thread-count\n");
 				return 1;
 			}
 			break;
 
 			case 366:
-			if (sscanf(optarg, "%f", &iargs.pinkIndexer_opts.maxResolutionForIndexing_1_per_A) != 1)
+			if (sscanf(optarg, "%f",
+			           &iargs.pinkIndexer_opts.maxResolutionForIndexing_1_per_A) != 1)
 			{
-				ERROR("Invalid value for --pinkIndexer-max-resolution-for-indexing \n");
+				ERROR("Invalid value for "
+				      "--pinkIndexer-max-resolution-for-indexing\n");
 				return 1;
 			}
 			break;
 
 			case 367:
-			if (sscanf(optarg, "%f", &iargs.pinkIndexer_opts.tolerance)	!= 1)
+			if (sscanf(optarg, "%f",
+			           &iargs.pinkIndexer_opts.tolerance) != 1)
 			{
-				ERROR("Invalid value for --pinkIndexer-tolerance \n");
+				ERROR("Invalid value for "
+				      "--pinkIndexer-tolerance\n");
 				return 1;
 			}
 			break;
 
 			case 368:
-				iargs.pinkIndexer_opts.multi = 1;
+			iargs.pinkIndexer_opts.multi = 1;
 			break;
 
 			case 369:
-				iargs.pinkIndexer_opts.no_check_indexed = 1;
+			iargs.pinkIndexer_opts.no_check_indexed = 1;
 			break;
 
 			case 370:
-			if (sscanf(optarg, "%f", &iargs.pinkIndexer_opts.reflectionRadius)	!= 1)
+			if (sscanf(optarg, "%f",
+			           &iargs.pinkIndexer_opts.reflectionRadius) != 1)
 			{
-				ERROR("Invalid value for --pinkIndexer-reflection-radius \n");
+				ERROR("Invalid value for "
+				      "--pinkIndexer-reflection-radius\n");
 				return 1;
 			}
 			break;
