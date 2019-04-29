@@ -1021,7 +1021,9 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 			method = INDEXING_DEFAULTS_XGANDALF;
 			have_method = 1;
 
-		} else if ( strcmp(bits[i], "pinkIndexer") == 0) {
+		} else if ( (strcmp(bits[i], "pinkIndexer") == 0)
+		         || (strcmp(bits[i], "pinkindexer") == 0) )
+		{
 			if ( have_method ) return warn_method(str);
 			method = INDEXING_DEFAULTS_PINKINDEXER;
 			have_method = 1;
