@@ -99,14 +99,10 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 
 	do {
 		int peakCount = reciprocalPeaks_1_per_A->peakCount;
-		printf("\ntotal peaks count %i\n", peakCount);
 		int matchedPeaksCount = PinkIndexer_indexPattern(pinkIndexer_private_data->pinkIndexer,
 		        &(indexedLattice[indexed]), center_shift[indexed], reciprocalPeaks_1_per_A, intensities,
 		        maxRefinementDisbalance,
 		        pinkIndexer_private_data->threadCount);
-
-		printf("center shift = %f %f", center_shift[indexed][0], center_shift[indexed][1]);
-		printf("\nmatchedPeaksCount %i from %i\n", matchedPeaksCount, peakCount);
 
 		if ((matchedPeaksCount >= 25 && matchedPeaksCount >= peakCount * 0.30)
 		        || matchedPeaksCount >= peakCount * 0.4
@@ -121,23 +117,19 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 			cell_set_reciprocal(uc, l->ay * 1e10, l->az * 1e10, l->ax * 1e10,
 			        l->by * 1e10, l->bz * 1e10, l->bx * 1e10,
 			        l->cy * 1e10, l->cz * 1e10, l->cx * 1e10);
-			printf("before restoration\n");
-			cell_print(uc);
 
 			restoreReciprocalCell(uc, &pinkIndexer_private_data->latticeReductionTransform);
 
 			UnitCell *new_cell_trans = cell_transform_intmat(uc, pinkIndexer_private_data->centeringTransformation);
 			cell_free(uc);
 			uc = new_cell_trans;
-			printf("after restoration\n");
-			cell_print(uc);
 
 			cell_set_lattice_type(new_cell_trans, cell_get_lattice_type(pinkIndexer_private_data->cellTemplate));
 			cell_set_centering(new_cell_trans, cell_get_centering(pinkIndexer_private_data->cellTemplate));
 			cell_set_unique_axis(new_cell_trans, cell_get_unique_axis(pinkIndexer_private_data->cellTemplate));
 
 			if (validate_cell(uc)) {
-				printf("pinkIndexer: problem with returned cell!\n");
+				ERROR("pinkIndexer: problem with returned cell!\n");
 			}
 
 			Crystal * cr = crystal_new();
@@ -151,30 +143,27 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 			image_add_crystal(image, cr);
 			indexed++;
 
-			printf("crystal %i in image added\n", indexed);
-		}
-		else {
+		} else {
 			break;
 		}
 	} while (pinkIndexer_private_data->multi
 	        && indexed <= MAX_MULTI_LATTICE_COUNT
 	        && reciprocalPeaks_1_per_A->peakCount >= pinkIndexer_private_data->min_peaks);
 
-	printf("\n\nfound %i crystals in image\n", indexed);
 	return indexed;
 }
 
 void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
         struct pinkIndexer_options *pinkIndexer_opts)
 {
-	printf("preparing pink indexer\n");
-
 	if (pinkIndexer_opts->beamEnergy == 0.0 || pinkIndexer_opts->detectorDistance <= 0) {
-		ERROR("ERROR!!!!!! photon_energy and photon_energy_bandwidth must be defined as constants "
-				"in the geometry file for the pinkIndexer!!!!!!");
+		ERROR("For pinkIndexer, the photon_energy and "
+		      "photon_energy_bandwidth must be defined as constants in "
+		      "the geometry file\n");
+		return NULL;
 	}
 	if (pinkIndexer_opts->beamBandwidth == 0.0) {
-		printf("using default bandwidth of 0.01 for pinkIndexer!");
+		STATUS("Using default bandwidth of 0.01 for pinkIndexer\n");
 		pinkIndexer_opts->beamBandwidth = 0.01;
 	}
 	if (pinkIndexer_opts->detectorDistance == 0.0 && pinkIndexer_opts->refinement_type ==
@@ -196,9 +185,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	//reduceCell(primitiveCell, &pinkIndexer_private_data->latticeReductionTransform);
 	reduceReciprocalCell(primitiveCell, &pinkIndexer_private_data->latticeReductionTransform);
-
-	printf("reduced cell:\n");
-	cell_print(primitiveCell);
 
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 	int ret = cell_get_reciprocal(primitiveCell, &asx, &asy, &asz, &bsx, &bsy, &bsz, &csx, &csy, &csz);
@@ -339,8 +325,6 @@ static void update_detector(struct detector *det, double xoffs, double yoffs)
 
 void pinkIndexer_cleanup(void *pp)
 {
-	printf("cleaning up pink indexer\n");
-
 	struct pinkIndexer_private_data* pinkIndexer_private_data = (struct pinkIndexer_private_data*) pp;
 
 	freeReciprocalPeaks(pinkIndexer_private_data->reciprocalPeaks_1_per_A);
