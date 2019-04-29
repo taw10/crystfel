@@ -156,10 +156,9 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
         struct pinkIndexer_options *pinkIndexer_opts)
 {
-	if (pinkIndexer_opts->beamEnergy == 0.0 || pinkIndexer_opts->detectorDistance <= 0) {
-		ERROR("For pinkIndexer, the photon_energy and "
-		      "photon_energy_bandwidth must be defined as constants in "
-		      "the geometry file\n");
+	if (pinkIndexer_opts->beamEnergy == 0.0) {
+		ERROR("For pinkIndexer, the photon_energy must be defined as a "
+		      "constant in the geometry file\n");
 		return NULL;
 	}
 	if (pinkIndexer_opts->beamBandwidth == 0.0) {
@@ -169,6 +168,10 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	if (pinkIndexer_opts->detectorDistance == 0.0 && pinkIndexer_opts->refinement_type ==
 	        REFINEMENT_TYPE_firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed) {
 		ERROR("Using center refinement makes it necessary to have the detector distance fixed in the geometry file!");
+	}
+
+	if(pinkIndexer_opts->detectorDistance <= 0.0){
+		pinkIndexer_opts->detectorDistance = 0.25; //fake value
 	}
 
 	struct pinkIndexer_private_data* pinkIndexer_private_data = malloc(sizeof(struct pinkIndexer_private_data));
