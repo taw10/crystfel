@@ -619,6 +619,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		break;
 
 		case INDEXING_PINKINDEXER :
+		set_last_task(last_task, "indexing:pinkindexer");
 		r = run_pinkIndexer(image, mpriv);
 		break;
 
