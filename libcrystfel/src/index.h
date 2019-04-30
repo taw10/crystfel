@@ -153,7 +153,8 @@ extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 #include "felix.h"
 
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
-                                       struct detector *det, float *ltl,
+                                       struct detector *det,
+                                       struct beam_params *beam, float *ltl,
                                        IndexingFlags flags,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,

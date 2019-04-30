@@ -154,24 +154,17 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 }
 
 void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
-        struct pinkIndexer_options *pinkIndexer_opts)
+                          struct pinkIndexer_options *pinkIndexer_opts,
+                          struct detector *det, struct beam_params *beam)
 {
-	if (pinkIndexer_opts->beamEnergy == 0.0) {
+	if ( beam->photon_energy_from != NULL ) {
 		ERROR("For pinkIndexer, the photon_energy must be defined as a "
 		      "constant in the geometry file\n");
 		return NULL;
 	}
-	if (pinkIndexer_opts->beamBandwidth == 0.0) {
-		STATUS("Using default bandwidth of 0.01 for pinkIndexer\n");
-		pinkIndexer_opts->beamBandwidth = 0.01;
-	}
-	if (pinkIndexer_opts->detectorDistance == 0.0 && pinkIndexer_opts->refinement_type ==
+	if ( (det->panels[0].clen_from != NULL) && pinkIndexer_opts->refinement_type ==
 	        REFINEMENT_TYPE_firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed) {
 		ERROR("Using center refinement makes it necessary to have the detector distance fixed in the geometry file!");
-	}
-
-	if(pinkIndexer_opts->detectorDistance <= 0.0){
-		pinkIndexer_opts->detectorDistance = 0.25; //fake value
 	}
 
 	struct pinkIndexer_private_data* pinkIndexer_private_data = malloc(sizeof(struct pinkIndexer_private_data));
@@ -199,9 +192,15 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	        .bx = bsz * 1e-10, .by = bsx * 1e-10, .bz = bsy * 1e-10,
 	        .cx = csz * 1e-10, .cy = csx * 1e-10, .cz = csy * 1e-10 };
 
-	float detectorDistance_m = pinkIndexer_opts->detectorDistance;
-	float beamEenergy_eV = pinkIndexer_opts->beamEnergy;
-	float nonMonochromaticity = pinkIndexer_opts->beamBandwidth;
+	float detectorDistance_m;
+	if ( det->panels[0].clen_from != NULL ) {
+		detectorDistance_m =  0.25;  /* fake value */
+	} else {
+		detectorDistance_m = det->panels[0].clen + det->panels[0].coffset;
+	}
+
+	float beamEenergy_eV = beam->photon_energy;
+	float nonMonochromaticity = beam->bandwidth;
 	float reflectionRadius_1_per_A;
 	if (pinkIndexer_opts->reflectionRadius < 0) {
 		reflectionRadius_1_per_A = 0.02
@@ -350,7 +349,8 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 }
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
-		struct pinkIndexer_options *pinkIndexer_opts)
+		struct pinkIndexer_options *pinkIndexer_opts,
+		struct detector *det, struct beam_params *beam)
 {
 	ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
 	ERROR("To use PINKINDEXER indexing, recompile with PINKINDEXER.\n");

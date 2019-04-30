@@ -238,6 +238,7 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
+                            struct detector *det, struct beam_params *beam,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts)
@@ -285,7 +286,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_PINKINDEXER :
-		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts);
+		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
+		                           det, beam);
 		break;
 
 		default :
@@ -316,8 +318,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
-                                struct detector *det, float *tols,
-                                IndexingFlags flags,
+                                struct detector *det, struct beam_params *beam,
+                                float *tols, IndexingFlags flags,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
                                 struct pinkIndexer_options *pinkIndexer_opts,
@@ -415,7 +417,9 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int j;
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
-		                                          xgandalf_opts, pinkIndexer_opts,
+		                                          det, beam,
+		                                          xgandalf_opts,
+		                                          pinkIndexer_opts,
 		                                          felix_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;

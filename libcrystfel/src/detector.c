@@ -1070,6 +1070,19 @@ static void parse_toplevel(struct detector *det, struct beam_params *beam,
 			}
 		}
 
+	} else if ( strcmp(key, "photon_energy_bandwidth") == 0 ) {
+		if ( beam != NULL ) {
+			double v;
+			char *end;
+			v = strtod(val, &end);
+			if ( (val[0] != '\0') && (end[0] == '\0') ) {
+				beam->bandwidth = v;
+			} else {
+				ERROR("Invalid value for "
+				      "photon_energy_bandwidth\n");
+			}
+		}
+
 	} else if ( strcmp(key, "photon_energy_scale") == 0 ) {
 		if ( beam != NULL ) {
 			beam->photon_energy_scale = atof(val);
@@ -1202,6 +1215,7 @@ struct detector *get_detector_geometry_from_string(const char *string,
 		beam->photon_energy = 0.0;
 		beam->photon_energy_from = NULL;
 		beam->photon_energy_scale = 1.0;
+		beam->bandwidth = 0.0;
 	}
 
 	det->n_panels = 0;

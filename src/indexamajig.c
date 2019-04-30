@@ -1048,6 +1048,8 @@ int main(int argc, char *argv[])
 				      "--pinkIndexer-reflection-radius\n");
 				return 1;
 			}
+			/* A^-1 to m^-1 */
+			iargs.pinkIndexer_opts.reflectionRadius /= 1e10;
 			break;
 
 			case 0 :
@@ -1149,12 +1151,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	add_geom_beam_stuff_to_field_list(iargs.copyme, iargs.det, iargs.beam);
-	iargs.pinkIndexer_opts.beamEnergy = iargs.beam->photon_energy;
-	iargs.pinkIndexer_opts.beamBandwidth = 0.01;
-	iargs.pinkIndexer_opts.detectorDistance = iargs.det->panels[0].clen;
-	if(iargs.det->panels[0].clen_from != NULL){
-		iargs.pinkIndexer_opts.detectorDistance = 0;
-	}
 
 	/* If no peak path from geometry file, use these (but see later) */
 	if ( iargs.hdf5_peak_path == NULL ) {
@@ -1394,7 +1390,7 @@ int main(int argc, char *argv[])
 		}
 
 		iargs.ipriv = setup_indexing(indm_str, iargs.cell, iargs.det,
-		                             iargs.tols, flags,
+		                             iargs.beam, iargs.tols, flags,
 		                             &iargs.taketwo_opts,
 		                             &iargs.xgandalf_opts,
 		                             &iargs.pinkIndexer_opts,

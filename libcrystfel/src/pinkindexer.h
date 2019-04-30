@@ -42,14 +42,8 @@ struct pinkIndexer_options {
 	int multi;
 	int thread_count;
 	int min_peaks;
-
 	int no_check_indexed;
-
-	float beamEnergy; //in eV
-	float beamBandwidth; //(delta lambda)/lambda
-	float detectorDistance; //in m
-
-	float reflectionRadius; //in 1/A
+	float reflectionRadius; /* In m^-1 */
 };
 
 #include <stddef.h>
@@ -58,7 +52,8 @@ struct pinkIndexer_options {
 extern int run_pinkIndexer(struct image *image, void *ipriv);
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
-        struct pinkIndexer_options *pinkIndexer_opts);
+                                 struct pinkIndexer_options *pinkIndexer_opts,
+                                 struct detector *det, struct beam_params *beam);
 
 extern void pinkIndexer_cleanup(void *pp);
 
