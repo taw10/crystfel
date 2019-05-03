@@ -58,6 +58,13 @@
 #include "stream.h"
 
 
+enum spectrum_type {
+	SPECTRUM_TOPHAT,    /**< A top hat distribution */
+	SPECTRUM_SASE,      /**< A simulated SASE spectrum */
+	SPECTRUM_TWOCOLOUR, /**< A spectrum containing two peaks */
+	SPECTRUM_FROMFILE   /**< An arbitrary spectrum read from a file */
+};
+
 static void show_help(const char *s)
 {
 	printf("Syntax: %s [options]\n\n", s);
@@ -370,7 +377,7 @@ int main(int argc, char *argv[])
 	char *spectrum_str = NULL;
 	char *spectrum_fn = NULL;
 	GradientMethod grad;
-	SpectrumType spectrum_type;
+	enum spectrum_type spectrum_type;
 	int ndone = 0;    /* Number of simulations done (images or not) */
 	int number = 1;   /* Number used for filename of image */
 	int n_images = 1; /* Generate one image by default */

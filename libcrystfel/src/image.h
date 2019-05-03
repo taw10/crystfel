@@ -55,22 +55,6 @@ struct imagefile_field_list;
 #include "index.h"
 #include "events.h"
 
-/**
- * SpectrumType:
- * @SPECTRUM_TOPHAT: A top hat distribution of wavelengths
- * @SPECTRUM_SASE: A simulated SASE spectrum
- * @SPECTRUM_TWOCOLOUR: A spectrum containing two peaks
- * @SPECTRUM_FROMFILE: An arbitrary spectrum read from input file
- *
- * A %SpectrumType represents a type of X-ray energy spectrum to use for
- * generating simulated data.
- **/
-typedef enum {
-	SPECTRUM_TOPHAT,
-	SPECTRUM_SASE,
-	SPECTRUM_TWOCOLOUR,
-	SPECTRUM_FROMFILE
-} SpectrumType;
 
 
 /**
