@@ -2,7 +2,8 @@
 
 Version
 =======
-This documentation is for libcrystfel from CrystFEL 0.8.0.
+This documentation is for libcrystfel from CrystFEL ${CRYSTFEL_VERSION}, API
+revision ${CRYSTFEL_API_VERSION}.
 
 Abstract
 ========
