@@ -41,7 +41,6 @@
 #include <assert.h>
 
 #include "utils.h"
-#include "statistics.h"
 #include "symmetry.h"
 #include "reflist.h"
 #include "reflist-utils.h"

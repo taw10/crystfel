@@ -44,7 +44,6 @@
 #include <gsl/gsl_fit.h>
 
 #include "utils.h"
-#include "statistics.h"
 #include "symmetry.h"
 #include "reflist-utils.h"
 #include "cell-utils.h"

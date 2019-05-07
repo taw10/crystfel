@@ -44,7 +44,6 @@
 #include <getopt.h>
 
 #include "utils.h"
-#include "statistics.h"
 #include "reflist-utils.h"
 #include "symmetry.h"
 #include "stream.h"

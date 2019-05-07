@@ -47,7 +47,6 @@ set(LIBCRYSTFEL_SOURCES
     src/hdf5-file.c
     src/geometry.c
     src/peakfinder8.c
-    src/statistics.c
     src/symmetry.c
     src/stream.c
     src/peaks.c
@@ -85,7 +84,6 @@ set(LIBCRYSTFEL_HEADERS
     src/cell.h
     src/reflist-utils.h
     src/thread-pool.h
-    src/statistics.h
     src/utils.h
     src/detector.h
     src/geometry.h

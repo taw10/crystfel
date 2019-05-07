@@ -35,7 +35,6 @@ API documentation
    * \ref peaks.h "Main peak search functions"
    * \ref peakfinder8.h "The peakfinder8 algorithm"
 * \ref filters.h "Image (noise) filters"
-* \ref statistics.h "R-values and other statistics"
 * \ref symmetry.h "Point group symmetry"
 * Mathematical constructions:
    * \ref integer_matrix.h "Integer matrices"
