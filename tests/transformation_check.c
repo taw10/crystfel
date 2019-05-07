@@ -42,6 +42,25 @@
 
 #define MAX_REFLS (10*1024)
 
+static void intmat_set_all_3x3(IntegerMatrix *m,
+                               signed int m11, signed int m12, signed int m13,
+                               signed int m21, signed int m22, signed int m23,
+                               signed int m31, signed int m32, signed int m33)
+{
+	intmat_set(m, 0, 0, m11);
+	intmat_set(m, 0, 1, m12);
+	intmat_set(m, 0, 2, m13);
+
+	intmat_set(m, 1, 0, m21);
+	intmat_set(m, 1, 1, m22);
+	intmat_set(m, 1, 2, m23);
+
+	intmat_set(m, 2, 0, m31);
+	intmat_set(m, 2, 1, m32);
+	intmat_set(m, 2, 2, m33);
+}
+
+
 static struct rvec *all_refls(UnitCell *cell, double max_r, int *n)
 {
 	double asx, asy, asz;

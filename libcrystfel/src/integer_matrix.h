@@ -61,11 +61,6 @@ extern void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j,
 extern signed int intmat_get(const IntegerMatrix *m,
                              unsigned int i, unsigned int j);
 
-extern void intmat_set_all_3x3(IntegerMatrix *m,
-                               signed int m11, signed int m12, signed int m13,
-                               signed int m21, signed int m22, signed int m23,
-                               signed int m31, signed int m32, signed int m33);
-
 extern IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
                                         signed int m21, signed int m22, signed int m23,
                                         signed int m31, signed int m32, signed int m33);

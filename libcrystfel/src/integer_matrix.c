@@ -565,11 +565,13 @@ IntegerMatrix *intmat_identity(int size)
  * Returns: an identity %IntegerMatrix with side length @size, or NULL on error.
  *
  */
-void intmat_set_all_3x3(IntegerMatrix *m,
-                        signed int m11, signed int m12, signed int m13,
-                        signed int m21, signed int m22, signed int m23,
-                        signed int m31, signed int m32, signed int m33)
+IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
+                                 signed int m21, signed int m22, signed int m23,
+                                 signed int m31, signed int m32, signed int m33)
 {
+	IntegerMatrix *m = intmat_new(3, 3);
+	if ( m == NULL ) return NULL;
+
 	intmat_set(m, 0, 0, m11);
 	intmat_set(m, 0, 1, m12);
 	intmat_set(m, 0, 2, m13);
@@ -581,14 +583,5 @@ void intmat_set_all_3x3(IntegerMatrix *m,
 	intmat_set(m, 2, 0, m31);
 	intmat_set(m, 2, 1, m32);
 	intmat_set(m, 2, 2, m33);
-}
-
-
-IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
-                                 signed int m21, signed int m22, signed int m23,
-                                 signed int m31, signed int m32, signed int m33)
-{
-	IntegerMatrix *t = intmat_new(3, 3);
-	intmat_set_all_3x3(t, m11, m12, m13, m21, m22, m23, m31, m32, m33);
-	return t;
+	return m;
 }
