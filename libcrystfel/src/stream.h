@@ -35,6 +35,10 @@
 #include <config.h>
 #endif
 
+/**
+ * \file stream.h
+ * Stream functions (for indexing results)
+ */
 
 struct image;
 struct hdfile;
@@ -56,27 +60,31 @@ struct imagefile;
 /* REFLECTION_END_MARKER is over in reflist-utils.h because it is also
  * used to terminate a standalone list of reflections */
 
+/**
+ * An opaque structure representing a stream being read or written
+ */
 typedef struct _stream Stream;
 
 /**
- * StreamReadFlags:
- * @STREAM_READ_UNITCELL: Read the unit cell
- * @STREAM_READ_REFLECTIONS: Read the integrated reflections
- * @STREAM_READ_PEAKS: Read the peak search results
- * @STREAM_READ_CRYSTALS: Read the general information about crystals
- *
  * A bitfield of things that can be read from a stream.  Use this (and
- * read_chunk_2()) to read the stream faster if you don't need the entire
+ * \ref read_chunk_2) to read the stream faster if you don't need the entire
  * contents of the stream.
  *
- * Using either or both of @STREAM_READ_REFLECTIONS and @STREAM_READ_UNITCELL
- * implies @STREAM_READ_CRYSTALS.
+ * Using either or both of \p STREAM_READ_REFLECTIONS and \p STREAM_READ_UNITCELL
+ * implies \p STREAM_READ_CRYSTALS.
  **/
 typedef enum {
 
+	/** Read the unit cell */
 	STREAM_READ_UNITCELL = 1,
+
+	/** Read the integrated reflections */
 	STREAM_READ_REFLECTIONS = 2,
+
+	/** Read the peak search results */
 	STREAM_READ_PEAKS = 4,
+
+	/** Read the general information about crystals */
 	STREAM_READ_CRYSTALS = 8,
 
 } StreamReadFlags;

@@ -37,6 +37,11 @@
 extern "C" {
 #endif
 
+/**
+ * \file histogram.h
+ * Quick histogram functions
+ */
+
 typedef struct _histogram Histogram;
 
 extern Histogram *histogram_init();

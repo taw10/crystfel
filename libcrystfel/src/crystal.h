@@ -37,10 +37,12 @@
 
 #include "cell.h"
 
+/**
+ * \file crystal.h
+ * Data structure representing a crystal
+ */
 
 /**
- * Crystal:
- *
  * This data structure is opaque.  You must use the available accessor functions
  * to read and write its contents.
  **/

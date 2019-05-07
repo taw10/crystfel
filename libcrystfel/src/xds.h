@@ -42,6 +42,11 @@
 extern "C" {
 #endif
 
+/**
+ * \file xds.h
+ * XDS indexer interface
+ */
+
 extern int run_xds(struct image *image, void *ipriv);
 
 extern void *xds_prepare(IndexingMethod *indm, UnitCell *cell);

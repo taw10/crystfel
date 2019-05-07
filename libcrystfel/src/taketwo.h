@@ -34,6 +34,8 @@
 #include "cell.h"
 #include "index.h"
 
+/** \file taketwo.h */
+
 struct taketwo_options
 {
 	int member_thresh;

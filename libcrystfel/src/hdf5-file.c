@@ -43,19 +43,7 @@
 #include "hdf5-file.h"
 #include "utils.h"
 
-
-/**
- * SECTION:hdf5-file
- * @short_description: HDF5 file handling
- * @title: HDF5 file handling
- * @section_id:
- * @see_also:
- * @include: "hdf5-file.h"
- * @Image:
- *
- * Routines for accessing HDF5 files.
- **/
-
+/** \file hdf5-file.h */
 
 struct hdf5_write_location {
 
@@ -333,19 +321,18 @@ static float *read_hdf5_data(struct hdfile *f, char *path, int line)
 
 
 /**
- * get_peaks_cxi_2:
- * @image: An %image structure
- * @f: An %hdfile structure
- * @p: The HDF5 path to the peak data
- * @fpe: A %filename_plus_event structure specifying the event
- * @half_pixel_shift: Non-zero if 0.5 should be added to all peak coordinates
+ * \param image: An \ref image structure
+ * \param f: An \ref hdfile structure
+ * \param p: The HDF5 path to the peak data
+ * \param fpe: A \ref filename_plus_event structure specifying the event
+ * \param half_pixel_shift: Non-zero if 0.5 should be added to all peak coordinates
  *
  * Get peaks from HDF5, in "CXI format" (as in "CXIDB").  The data should be in
- * a set of arrays under @p.  The number of peaks should be in a 1D array at
- * @p/nPeaks. The fast-scan and slow-scan coordinates should be in 2D arrays at
- * @p/peakXPosRaw and @p/peakYPosRaw respectively (sorry about the naming).  The
+ * a set of arrays under \p p.  The number of peaks should be in a 1D array at
+ * \p p/nPeaks. The fast-scan and slow-scan coordinates should be in 2D arrays at
+ * \p p/peakXPosRaw and \p p/peakYPosRaw respectively (sorry about the naming).  The
  * first dimension of these arrays should be the event number (as given by
- * @fpe).  The intensities are expected to be at @p/peakTotalIntensity in a
+ * \p fpe).  The intensities are expected to be at \p p/peakTotalIntensity in a
  * similar 2D array.
  *
  * CrystFEL considers all peak locations to be distances from the corner of the
@@ -353,9 +340,9 @@ static float *read_hdf5_data(struct hdfile *f, char *path, int line)
  * geometry (see 'man crystfel_geometry').  The software which generates the
  * CXI files, including Cheetah, may instead consider the peak locations to be
  * pixel indices in the data array.  In this case, the peak coordinates should
- * have 0.5 added to them.  This will be done if @half_pixel_shift is non-zero.
+ * have 0.5 added to them.  This will be done if \p half_pixel_shift is non-zero.
  *
- * Returns: non-zero on error, zero otherwise.
+ * \returns Non-zero on error, zero otherwise.
  *
  */
 int get_peaks_cxi_2(struct image *image, struct hdfile *f, const char *p,
@@ -438,18 +425,17 @@ int get_peaks_cxi_2(struct image *image, struct hdfile *f, const char *p,
 
 
 /**
- * get_peaks_cxi:
- * @image: An %image structure
- * @f: An %hdfile structure
- * @p: The HDF5 path to the peak data
- * @fpe: A %filename_plus_event structure specifying the event
+ * \param image: An \ref image structure
+ * \param f: An \ref hdfile structure
+ * \param p: The HDF5 path to the peak data
+ * \param fpe: A \ref filename_plus_event structure specifying the event
  *
  * This is a wrapper function to preserve API compatibility with older CrystFEL
- * versions.  Use get_peaks_cxi_2() instead.
+ * versions.  Use \ref get_peaks_cxi_2 instead.
  *
- * This function is equivalent to get_peaks_cxi_2(@image, @f, @p, @fpe, 1).
+ * This function is equivalent to get_peaks_cxi_2(\p image, \p f, \p p, \p fpe, 1).
  *
- * Returns: non-zero on error, zero otherwise.
+ * \returns Non-zero on error, zero otherwise.
  *
  */
 int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
@@ -460,13 +446,12 @@ int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
 
 
 /**
- * get_peaks_2:
- * @image: An %image structure
- * @f: An %hdfile structure
- * @p: The HDF5 path to the peak data
- * @half_pixel_shift: Non-zero if 0.5 should be added to all peak coordinates
+ * \param image: An \ref image structure
+ * \param f: An \ref hdfile structure
+ * \param p: The HDF5 path to the peak data
+ * \param half_pixel_shift: Non-zero if 0.5 should be added to all peak coordinates
  *
- * Get peaks from HDF5.  The peak list should be located at @p in the HDF5 file,
+ * Get peaks from HDF5.  The peak list should be located at \p p in the HDF5 file,
  * a 2D array where the first dimension equals the number of peaks and second
  * dimension is three.  The first two columns contain the fast scan and slow
  * scan coordinates, respectively, of the peaks.  The third column contains the
@@ -477,9 +462,9 @@ int get_peaks_cxi(struct image *image, struct hdfile *f, const char *p,
  * geometry (see 'man crystfel_geometry').  The software which generates the
  * CXI files, including Cheetah, may instead consider the peak locations to be
  * pixel indices in the data array.  In this case, the peak coordinates should
- * have 0.5 added to them.  This will be done if @half_pixel_shift is non-zero.
+ * have 0.5 added to them.  This will be done if \p half_pixel_shift is non-zero.
  *
- * Returns: non-zero on error, zero otherwise.
+ * \returns Non-zero on error, zero otherwise.
  *
  */
 int get_peaks_2(struct image *image, struct hdfile *f, const char *p,
@@ -592,17 +577,16 @@ int get_peaks_2(struct image *image, struct hdfile *f, const char *p,
 
 
 /**
- * get_peaks:
- * @image: An %image structure
- * @f: An %hdfile structure
- * @p: The HDF5 path to the peak data
+ * \param image: An \ref image structure
+ * \param f: An \ref hdfile structure
+ * \param p: The HDF5 path to the peak data
  *
  * This is a wrapper function to preserve API compatibility with older CrystFEL
- * versions.  Use get_peaks_2() instead.
+ * versions.  Use \ref get_peaks_2 instead.
  *
- * This function is equivalent to get_peaks_2(@image, @f, @p, 1).
+ * This function is equivalent to \ref get_peaks_2(\p image, \p f, \p p, 1).
  *
- * Returns: non-zero on error, zero otherwise.
+ * \returns Non-zero on error, zero otherwise.
  *
  */
 int get_peaks(struct image *image, struct hdfile *f, const char *p)

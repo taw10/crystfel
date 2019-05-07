@@ -41,6 +41,11 @@
 extern "C" {
 #endif
 
+/**
+ * \file mosflm.h
+ * MOSFLM indexer interface
+ */
+
 extern int run_mosflm(struct image *image, void *ipriv);
 
 extern void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell);

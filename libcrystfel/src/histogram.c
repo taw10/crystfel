@@ -38,6 +38,8 @@
 
 #include "histogram.h"
 
+/** \file histogram.h */
+
 struct _histogram
 {
 	int n_vals;

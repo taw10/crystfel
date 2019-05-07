@@ -29,19 +29,22 @@
  */
 
 /**
- * \class TakeTwo
- * Code outline.
- * --- Get ready for calculation ---
- * Pre-calculate symmetry operations (generate_rotation_symops())
- * Pre-calculate theoretical vectors from unit cell dimensions
+ * \file taketwo.h
+
+ * ## Code outline
+
+ * ### Get ready for calculation
+ * * Pre-calculate symmetry operations (generate_rotation_symops())
+ * * Pre-calculate theoretical vectors from unit cell dimensions
  * (gen_theoretical_vecs())
- * Generate observed vectors from data (gen_observed_vecs())
- * Match observed vectors to theoretical vectors (match_obs_to_cell_vecs())
+ * * Generate observed vectors from data (gen_observed_vecs())
+ * * Match observed vectors to theoretical vectors (match_obs_to_cell_vecs())
  *
- * --- Business bit ---
+ * ### Business bit
+ *
  * ... n.b. rearranging to find all seeds in advance.
  *
- * Find starting seeds (find_seeds()):
+ * * Find starting seeds (find_seeds()):
  *   - Loop through pairs of observed vectors
  *   - If they share a spot, find matching pairs of theoretical vectors
  *   - Remove all duplicate matches due to symmetry operations
@@ -50,7 +53,7 @@
  *   - If it returns a membership greater than the highest member threshold,
  *   return the matrix to CrystFEL.
  *
- * Extending a seed (start_seed()):
+ * * Extending a seed (start_seed()):
  *   - Generate a rotation matrix which matches the chosen start seed.
  *   - Loop through all observed vectors starting from 0.
  *   - Find another vector to add to the network, if available
@@ -64,7 +67,7 @@
  *   - If the membership does not, then resume the loop and search for the
  *   next vector.
  *
- * Finding the next member (find_next_index()):
+ * * Finding the next member (find_next_index()):
  *   - Go through the observed vectors, starting from the last index + 1 to
  *   explore only the "new" vectors.
  *   - If the vector does not share a spot with the current array of vectors,
@@ -75,20 +78,12 @@
  *   for a single matching theoretical vector.
  *   - If it does match, we can return a success.
  *
- * Tidying the solution (finish_solution()):
+ * * Tidying the solution (finish_solution()):
  *   - This chooses the most common rotation matrix of the bunch to choose to
  *   send to CrystFEL. But this should probably take the average instead,
  *   which is very possible.
  *
- * Clean up the mess (cleanup_taketwo_obs_vecs())
- */
-
-/**
- * Helen's to-do list
- * -
- *
- *
- * - Improve the final solution
+ * * Clean up the mess (cleanup_taketwo_obs_vecs())
  */
 
 #include <gsl/gsl_matrix.h>
@@ -106,13 +101,12 @@
 #include "symmetry.h"
 
 /**
- * spotvec
- * @obsvec: an observed vector between two spots
- * @matches: array of matching theoretical vectors from unit cell
- * @match_num: number of matches
- * @distance: length of obsvec (do I need this?)
- * @her_rlp: pointer to first rlp position for difference vec
- * @his_rlp: pointer to second rlp position for difference vec
+ * \param obsvec an observed vector between two spots
+ * \param matches array of matching theoretical vectors from unit cell
+ * \param match_num number of matches
+ * \param distance length of obsvec (do I need this?)
+ * \param her_rlp pointer to first rlp position for difference vec
+ * \param his_rlp pointer to second rlp position for difference vec
  *
  * Structure representing 3D vector between two potential Bragg peaks
  * in reciprocal space, and an array of potential matching theoretical

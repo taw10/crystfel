@@ -42,20 +42,7 @@
 #include "hdf5-file.h"
 #include "detector.h"
 
-/**
- * SECTION:image
- * @short_description: Data structure representing an image
- * @title: Image
- * @section_id:
- * @see_also:
- * @include: "image.h"
- * @Image:
- *
- * The <structname>image</structname> structure represents an image, usually one
- * frame from a large series of diffraction patterns, which might be from the
- * same or different crystals.
- */
-
+/** \file image.h */
 
 struct imagefile
 {

@@ -47,15 +47,7 @@
 
 
 /**
- * SECTION:cell-utils
- * @short_description: Unit cell utilities
- * @title: Unit cell utilities
- * @section_id:
- * @see_also:
- * @include: "cell-utils.h"
- * @Image:
- *
- * There are some utility functions associated with the core %UnitCell.
+ * \file cell-utils.h
  **/
 
 
@@ -64,13 +56,12 @@
 
 
 /**
- * cell_rotate:
- * @in: A %UnitCell to rotate
- * @quat: A %quaternion
+ * \param in: A UnitCell to rotate
+ * \param quat: A quaternion
  *
- * Rotate a %UnitCell using a %quaternion.
+ * Rotate a UnitCell using a quaternion.
  *
- * Returns: a newly allocated rotated copy of @in.
+ * \returns a newly allocated rotated copy of \p in.
  *
  */
 UnitCell *cell_rotate(UnitCell *in, struct quaternion quat)
@@ -386,8 +377,8 @@ static RationalMatrix *create_rtnl_mtx(signed int a1, signed int a2,
 }
 
 
-/* Given a centered cell @in, return the integer transformation matrix which
- * turns a primitive cell into @in. Set new_centering and new_latt to the
+/* Given a centered cell "in", return the integer transformation matrix which
+ * turns a primitive cell into "in". Set new_centering and new_latt to the
  * centering and lattice type of the primitive cell (usually aP, sometimes rR,
  * rarely mP).  Store the inverse matrix at pCi */
 static IntegerMatrix *centering_transformation(UnitCell *in,
@@ -528,19 +519,18 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 
 
 /**
- * uncenter_cell:
- * @in: A %UnitCell
- * @C: Location at which to store the centering transformation
- * @Ci: Location at which to store the inverse centering transformation
+ * \param in: A %UnitCell
+ * \param pC: Location at which to store the centering transformation
+ * \param pCi: Location at which to store the inverse centering transformation
  *
  * Turns any cell into a primitive one, e.g. for comparison purposes.
  *
- * The transformation which was used is stored at @Ci. The centering
+ * The transformation which was used is stored at \p Ci. The centering
  * transformation, which is the transformation you should apply if you want to
- * get back the original cell, will be stored at @C.  Either or both of these
+ * get back the original cell, will be stored at \p C.  Either or both of these
  * can be NULL if you don't need that information.
  *
- * Returns: a primitive version of @in.
+ * \returns a primitive version of \p in.
  *
  */
 UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **pC, RationalMatrix **pCi)
@@ -1126,12 +1116,11 @@ static void determine_lattice(UnitCell *cell,
 
 
 /**
- * load_cell_from_pdb:
- * @filename: The filename from which to load the cell
+ * \param filename: The filename from which to load the cell
  *
  * Loads a unit cell from the CRYST1 line of a PDB file.
  *
- * Returns: a newly allocated %UnitCell.
+ * \returns a newly allocated %UnitCell.
  *
  */
 UnitCell *load_cell_from_pdb(const char *filename)
@@ -1266,11 +1255,10 @@ static int get_angle_rad(char **bits, int nbits, double *pl)
 }
 
 /**
- * write_cell:
- * @cell: a %UnitCell
- * @fh: a file handle
+ * \param cell: a %UnitCell
+ * \param fh: a file handle
  *
- * Writes @cell to @fh, in CrystFEL unit cell file format
+ * Writes \p cell to \p fh, in CrystFEL unit cell file format
  *
  */
 void write_cell(UnitCell *cell, FILE *fh)
@@ -1302,12 +1290,11 @@ void write_cell(UnitCell *cell, FILE *fh)
 
 
 /**
- * load_cell_from_file:
- * @filename: The filename from which to load the cell
+ * \param filename: The filename from which to load the cell
  *
  * Loads a unit cell from a file of any type (PDB or CrystFEL format)
  *
- * Returns: a newly allocated %UnitCell.
+ * \returns a newly allocated %UnitCell.
  *
  */
 UnitCell *load_cell_from_file(const char *filename)
@@ -1471,15 +1458,14 @@ void cell_fudge_gslcblas()
 
 
 /**
- * rotate_cell:
- * @in: A %UnitCell to rotate
- * @omega: Euler angle about +z
- * @phi: Euler angle about +x
- * @rot: Euler angle about new +z
+ * \param in: A %UnitCell to rotate
+ * \param omega: Euler angle about +z
+ * \param phi: Euler angle about +x
+ * \param rot: Euler angle about new +z
  *
  * Rotate a %UnitCell using Euler angles
  *
- * Returns: a newly allocated rotated copy of @in.
+ * \returns a newly allocated rotated copy of \p in.
  *
  */
 UnitCell *rotate_cell(UnitCell *in, double omega, double phi, double rot)
@@ -1563,14 +1549,13 @@ int cell_is_sensible(UnitCell *cell)
 
 
 /**
- * validate_cell:
- * @cell: A %UnitCell to validate
+ * \param cell: A %UnitCell to validate
  *
- * Perform some checks for crystallographic validity @cell, such as that the
+ * Perform some checks for crystallographic validity \p cell, such as that the
  * lattice is a conventional Bravais lattice.
  * Warnings are printied if any of the checks are failed.
  *
- * Returns: zero if the cell is fine, 1 if it is unconventional but otherwise
+ * \returns zero if the cell is fine, 1 if it is unconventional but otherwise
  *  OK (e.g. left-handed or not a Bravais lattice), and 2 if there is a serious
  *  problem such as the parameters being physically impossible.
  *
@@ -1615,13 +1600,12 @@ int validate_cell(UnitCell *cell)
 
 
 /**
- * forbidden_reflection:
- * @cell: A %UnitCell
- * @h: h index to check
- * @k: k index to check
- * @l: l index to check
+ * \param cell: A %UnitCell
+ * \param h: h index to check
+ * \param k: k index to check
+ * \param l: l index to check
  *
- * Returns: true if this reflection is forbidden.
+ * \returns true if this reflection is forbidden.
  *
  */
 int forbidden_reflection(UnitCell *cell,
@@ -1652,7 +1636,9 @@ int forbidden_reflection(UnitCell *cell,
 }
 
 
-/* Returns cell volume in A^3 */
+/**
+ * \returns cell volume in A^3
+ */
 double cell_get_volume(UnitCell *cell)
 {
 	double asx, asy, asz;
@@ -1681,21 +1667,20 @@ double cell_get_volume(UnitCell *cell)
 
 
 /**
- * compare_cell_parameters:
- * @a: A %UnitCell
- * @b: Another %UnitCell
- * @ltl: Maximum allowable fractional difference in axis lengths
- * @atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param cell1: A UnitCell
+ * \param cell2: Another UnitCell
+ * \param ltl: Maximum allowable fractional difference in axis lengths
+ * \param atl: Maximum allowable difference in reciprocal angles (in radians)
  *
  * Compare the two unit cells.  If the real space parameters match to within
- * fractional difference @ltl, and the inter-axial angles match within @atl,
+ * fractional difference \p ltl, and the inter-axial angles match within \p atl,
  * and the centering matches, this function returns 1.  Otherwise 0.
  *
  * This function considers the cell parameters and centering, but ignores the
  * orientation of the cell.  If you want to compare the orientation as well,
  * use compare_cell_parameters_and_orientation() instead.
  *
- * Returns: non-zero if the cells match.
+ * \returns non-zero if the cells match.
  *
  */
 int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
@@ -1732,24 +1717,23 @@ static double moduli_check(double ax, double ay, double az,
 
 
 /**
- * compare_cell_parameters_and_orientation:
- * @a: A %UnitCell
- * @b: Another %UnitCell
- * @ltl: Maximum allowable fractional difference in reciprocal axis lengths
- * @atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param cell1: A UnitCell
+ * \param cell2: Another UnitCell
+ * \param ltl: Maximum allowable fractional difference in reciprocal axis lengths
+ * \param atl: Maximum allowable difference in reciprocal angles (in radians)
  *
  * Compare the two unit cells.  If the axes match in length (to within
- * fractional difference @ltl) and the axes are aligned to within @atl radians,
+ * fractional difference \p ltl) and the axes are aligned to within \p atl radians,
  * this function returns non-zero.
  *
  * This function compares the orientation of the cell as well as the parameters.
  * If you just want to see if the parameters are the same, use
  * compare_cell_parameters() instead.
  *
- * The cells @a and @b must have the same centering.  Otherwise, this function
+ * The cells \p a and \p b must have the same centering.  Otherwise, this function
  * always returns zero.
  *
- * Returns: non-zero if the cells match.
+ * \returns non-zero if the cells match.
  *
  */
 int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
@@ -1781,26 +1765,25 @@ int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
 
 
 /**
- * compare_reindexed_cell_parameters_and_orientation:
- * @a: A %UnitCell
- * @b: Another %UnitCell
- * @ltl: Maximum allowable fractional difference in reciprocal axis lengths
- * @atl: Maximum allowable difference in reciprocal angles (in radians)
- * @pmb: Place to store pointer to matrix
+ * \param a: A UnitCell
+ * \param b: Another UnitCell
+ * \param ltl: Maximum allowable fractional difference in reciprocal axis lengths
+ * \param atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param pmb: Place to store pointer to matrix
  *
  * Compare the two unit cells.  If, using any permutation of the axes, the
- * axes can be made to match in length (to within fractional difference @ltl)
- * and the axes aligned to within @atl radians, this function returns non-zero
- * and stores the transformation to map @b onto @a.
+ * axes can be made to match in length (to within fractional difference \p ltl)
+ * and the axes aligned to within \p atl radians, this function returns non-zero
+ * and stores the transformation to map \p b onto \p a.
  *
  * Note that the orientations of the cells must match, not just the parameters.
  * The comparison is done after reindexing using
  * compare_cell_parameters_and_orientation().
  *
- * The cells @a and @b must have the same centering.  Otherwise, this function
+ * The cells \p a and \p b must have the same centering.  Otherwise, this function
  * always returns zero.
  *
- * Returns: non-zero if the cells match.
+ * \returns non-zero if the cells match.
  *
  */
 int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
@@ -1973,17 +1956,17 @@ static double g6_distance(double a1, double b1, double c1,
 
 
 /**
- * compare_reindexed_cell_parameters:
- * @cell_in: A %UnitCell
- * @reference_in: Another %UnitCell
- * @ltl: Maximum allowable fractional difference in direct-space axis lengths
- * @atl: Maximum allowable difference in direct-space angles (in radians)
- * @pmb: Place to store pointer to matrix
+ * \param cell_in: A UnitCell
+ * \param reference_in: Another UnitCell
+ * \param ltl: Maximum allowable fractional difference in direct-space axis lengths
+ * \param atl: Maximum allowable difference in direct-space angles (in radians)
+ * \param csl: Non-zero to look for coincidence site lattice relationships
+ * \param pmb: Place to store pointer to matrix
  *
- * Compare the @cell_in with @reference_in.  If @cell is a derivative lattice
- * of @reference, within fractional axis length difference @ltl and absolute angle
- * difference @atl (in radians), this function returns non-zero and stores the
- * transformation which needs to be applied to @cell_in at @pmb.
+ * Compare the \p cell_in with \p reference_in.  If \p cell is a derivative lattice
+ * of \p reference, within fractional axis length difference \p ltl and absolute angle
+ * difference \p atl (in radians), this function returns non-zero and stores the
+ * transformation which needs to be applied to \p cell_in at \p pmb.
  *
  * Note that the tolerances will be applied to the primitive unit cell.  If
  * the reference cell is centered, a primitive unit cell will first be calculated.
@@ -1995,7 +1978,12 @@ static double g6_distance(double a1, double b1, double c1,
  * Only the cell parameters will be compared.  The relative orientations are
  * irrelevant.
  *
- * Returns: non-zero if the cells match, zero for no match or error.
+ * If \p csl is zero, the lattices must be derivatives of one another.  If
+ * non-zero, a coincidence site lattice relationship will be searched for,
+ * meaning that the lattice points of the transformed version of \p cell_in
+ * might not coincide with lattice points of \p reference_in.
+ *
+ * \returns non-zero if the cells match, zero for no match or error.
  *
  */
 int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,

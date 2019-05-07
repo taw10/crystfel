@@ -46,25 +46,13 @@
 #include "utils.h"
 #include "image.h"
 
+/** \file utils.h */
 
 /**
- * SECTION:utils
- * @short_description: Miscellaneous utilities
- * @title: Utilities
- * @section_id:
- * @see_also:
- * @include: "utils.h"
- * @Image:
+ * \param M A matrix
+ * \param v A vector
  *
- * Wibble
- */
-
-/**
- * show_matrix_eqn:
- * @M: A matrix
- * @v: A vector
- *
- * Displays a matrix equation of the form @M.a = @v.
+ * Displays a matrix equation of the form \p M.a = \p v.
  **/
 void show_matrix_eqn(gsl_matrix *M, gsl_vector *v)
 {
@@ -91,8 +79,7 @@ void show_matrix_eqn(gsl_matrix *M, gsl_vector *v)
 
 
 /**
- * show_matrix:
- * @M: A matrix
+ * \param M A matrix
  *
  * Displays a matrix.
  **/
@@ -155,11 +142,10 @@ static int check_eigen(gsl_vector *e_val, int verbose)
 
 
 /**
- * solve_svd:
- * @v: a gsl_vector
- * @M: a gsl_matrix
- * @n_filt: pointer to store the number of filtered eigenvalues
- * @verbose: flag for verbosity on the terminal
+ * \param v a gsl_vector
+ * \param M a gsl_matrix
+ * \param pn_filt pointer to store the number of filtered eigenvalues
+ * \param verbose flag for verbosity on the terminal
  *
  * Solves the matrix equation M.x = v, returning x.
  * Performs rescaling and eigenvalue filtering.
@@ -412,7 +398,8 @@ static int assplode_extract(char ***pbits, int n, size_t n_captured,
 }
 
 
-/* Split the string 'a' using 'delims' as a zero-terminated list of
+/**
+ * Split the string 'a' using 'delims' as a zero-terminated list of
  *  deliminators.
  * Store each segment in bits[0...n] where n is the number of segments and is
  *  the return value.  pbits = &bits
@@ -569,26 +556,11 @@ void utils_fudge_gslcblas()
 
 
 /**
- * SECTION:quaternion
- * @short_description: Simple quaternion handling
- * @title: Quaternion
- * @section_id:
- * @see_also:
- * @include: "utils.h"
- * @Image:
- *
- * There is a simple quaternion structure in CrystFEL.  At the moment, it is
- * only used when simulating patterns, as an argument to cell_rotate() to
- * orient the unit cell.
- */
-
-/**
- * quaternion_modulus:
- * @q: A %quaternion
+ * \param q A \ref quaternion
  *
  * If a quaternion represents a pure rotation, its modulus should be unity.
  *
- * Returns: the modulus of the given quaternion.
+ * \returns The modulus of the given quaternion.
  **/
 double quaternion_modulus(struct quaternion q)
 {
@@ -597,12 +569,11 @@ double quaternion_modulus(struct quaternion q)
 
 
 /**
- * normalise_quaternion:
- * @q: A %quaternion
+ * \param q A \ref quaternion
  *
  * Rescales the quaternion such that its modulus is unity.
  *
- * Returns: the normalised version of @q
+ * \returns The normalised version of \p q
  **/
 struct quaternion normalise_quaternion(struct quaternion q)
 {
@@ -621,10 +592,9 @@ struct quaternion normalise_quaternion(struct quaternion q)
 
 
 /**
- * random_quaternion:
- * @rng: A GSL random number generator to use
+ * \param rng A GSL random number generator to use
  *
- * Returns: a randomly generated, normalised, quaternion.
+ * \returns A randomly generated, normalised, quaternion.
  **/
 struct quaternion random_quaternion(gsl_rng *rng)
 {
@@ -641,8 +611,7 @@ struct quaternion random_quaternion(gsl_rng *rng)
 
 
 /**
- * quaternion_valid:
- * @q: A %quaternion
+ * \param q A \ref quaternion
  *
  * Checks if the given quaternion is normalised.
  *
@@ -650,7 +619,7 @@ struct quaternion random_quaternion(gsl_rng *rng)
  * <code>(modulus > 0.999) && (modulus < 1.001)</code>, and so should not be
  * relied upon to spot anything other than the most obvious input error.
  *
- * Returns: 1 if the quaternion is normalised, 0 if not.
+ * \returns 1 if the quaternion is normalised, 0 if not.
  **/
 int quaternion_valid(struct quaternion q)
 {
@@ -667,13 +636,12 @@ int quaternion_valid(struct quaternion q)
 
 
 /**
- * quat_rot
- * @q: A vector (in the form of a "struct rvec")
- * @z: A %quaternion
+ * \param q A vector (in the form of an \ref rvec struct)
+ * \param z A \ref quaternion
  *
  * Rotates a vector according to a quaternion.
  *
- * Returns: A rotated version of @p.
+ * \returns a rotated version of \p p.
  **/
 struct rvec quat_rot(struct rvec q, struct quaternion z)
 {

@@ -41,6 +41,11 @@
 extern "C" {
 #endif
 
+/**
+ * \file asdf.h
+ * The ASDF indexing algorithm.
+ */
+
 #ifdef HAVE_FFTW
 
 extern int run_asdf(struct image *image, void *ipriv);

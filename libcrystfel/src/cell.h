@@ -41,32 +41,24 @@
 #include "integer_matrix.h"
 
 /**
- * rvec:
- * @u: x component (in reciprocal space)
- * @v: y component (in reciprocal space)
- * @w: z component (in reciprocal space)
- *
+ * \file cell.h
+ * Unit cell structure
+ */
+
+/**
  * Structure representing a 3D vector in reciprocal space.
+ *
  * Note: Heavily abused to serve as a real space vector as well.
  **/
 struct rvec
 {
-	double   u;
-	double   v;
-	double   w;
+	double   u;  /**< x component (in reciprocal space) */
+	double   v;  /**< y component (in reciprocal space) */
+	double   w;  /**< z component (in reciprocal space) */
 };
 
 
 /**
- * LatticeType:
- * @L_TRICLINIC: Triclinic lattice
- * @L_MONOCLINIC: Monoclinic lattice
- * @L_ORTHORHOMBIC: Orthorhombic lattice
- * @L_TETRAGONAL: Tetragonal lattice
- * @L_RHOMBOHEDRAL: Rhombohedral lattice
- * @L_HEXAGONAL: Hexagonal lattice
- * @L_CUBIC: Cubic lattice
- *
  * An enumeration of the possible lattice types: triclinic, monoclinic,
  * orthorhombic, tetragonal, rhombohedral, hexagonal and cubic.
  **/
@@ -83,7 +75,7 @@ typedef enum
 
 
 /**
- * UnitCell:
+ * Opaque data structure representing a unit cell.
  *
  * This data structure is opaque.  You must use the available accessor functions
  * to read and write its contents.

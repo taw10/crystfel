@@ -42,6 +42,7 @@
 #include "filters.h"
 #include "utils.h"
 
+/** \file render.h */
 
 static void render_rgb(double val, double max,
                        double *rp, double *gp, double *bp)

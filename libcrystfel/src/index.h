@@ -38,6 +38,11 @@
 #include <config.h>
 #endif
 
+/**
+ * \file index.h
+ * The indexing subsystem
+ */
+
 
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX)
 
@@ -59,62 +64,64 @@
 #define INDEXING_DEFAULTS_XGANDALF (INDEXING_XGANDALF | INDEXING_USE_CELL_PARAMETERS)
 
 /**
- * IndexingMethod:
- * @INDEXING_NONE: No indexing to be performed
- * @INDEXING_DIRAX: Invoke DirAx
- * @INDEXING_MOSFLM: Invoke MOSFLM
- * @INDEXING_FELIX: Invoke Felix
- * @INDEXING_XDS: Invoke XDS
- * @INDEXING_SIMULATION: Dummy value
- * @INDEXING_DEBUG: Results injector for debugging
- * @INDEXING_ASDF: Use in-built "asdf" indexer
- * @INDEXING_TAKETWO: Use in-built "taketwo" indexer
- * @INDEXING_XGANDALF: Invoke XGANDALF
- * @INDEXING_ERROR: Special value for unrecognised indexing engine name
- * @INDEXING_USE_LATTICE_TYPE: Use lattice type and centering information to
- *   guide the indexing process.
- * @INDEXING_USE_CELL_PARAMETERS: Use the unit cell parameters to guide the
- *   indexing process.
- *
- * An enumeration of all the available indexing methods.  The dummy value
- * @INDEXING_SIMULATION is used by partial_sim to indicate that no indexing was
- * performed, and that the indexing results are just from simulation.
+ * An enumeration of all the available indexing methods.
  **/
 typedef enum {
 
-	INDEXING_NONE   = 0,
+	INDEXING_NONE   = 0,      /**< No indexing to be performed */
 
-	/* The core indexing methods themselves */
-	INDEXING_DIRAX  = 1,
-	INDEXING_MOSFLM = 2,
-	INDEXING_FELIX = 4,
-	INDEXING_XDS = 5,
-	INDEXING_SIMULATION = 6,
-	INDEXING_DEBUG = 7,
-	INDEXING_ASDF = 8,
-	INDEXING_TAKETWO = 9,
-	INDEXING_XGANDALF = 10,
+	INDEXING_DIRAX  = 1,      /**< Invoke DirAx program */
+	INDEXING_MOSFLM = 2,      /**< Invoke MOSFLM program */
+	INDEXING_FELIX = 4,       /**< Invoke Felix program */
+	INDEXING_XDS = 5,         /**< Invoke XDS program (NB not nXDS) */
+	INDEXING_SIMULATION = 6,  /**< Dummy value for simulated data */
+	INDEXING_DEBUG = 7,       /**< Results injector for debugging */
+	INDEXING_ASDF = 8,        /**< Use built-in ASDF algorithm */
+	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
+	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
 
-	INDEXING_ERROR = 255,  /* Unrecognised indexing engine */
+	INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
+	                           *   engine */
 
-	/* Bits at the top of the IndexingMethod are flags which modify the
-	 * behaviour of the indexer. */
+	/** \name Bits which can be set to modify the behaviour of the above
+	 *  indexing methods */
+	/**@{*/
+	/** Use lattice type and centering information */
 	INDEXING_USE_LATTICE_TYPE        = 2048,
+
+	/** Use the cell parameters themselves */
 	INDEXING_USE_CELL_PARAMETERS     = 4096,
+	/**@}*/
+
 
 } IndexingMethod;
 
-/* This defines the bits in "IndexingMethod" which are used to represent the
+/** This defines the bits in "IndexingMethod" which are used to represent the
  * core of the indexing method */
 #define INDEXING_METHOD_MASK (0xff)
 
+/**
+ * Flags affecting how the indexing system processes the results from the
+ * indexing engine
+ */
 typedef enum {
 
+	/** Retry indexing if it doesn't work */
 	INDEXING_RETRY = 1,
+
+	/** Attempt to index remaining peaks to find more lattices */
 	INDEXING_MULTI = 2,
+
+	/** Refine the indexing solution */
 	INDEXING_REFINE = 4,
+
+	/** Check the unit cell, including derivative lattices */
 	INDEXING_CHECK_CELL_COMBINATIONS = 8,
+
+	/** Check the unit cell, only permuting axes if necessary */
 	INDEXING_CHECK_CELL_AXES = 16,
+
+	/** Check that the peaks agree with the indexing solution */
 	INDEXING_CHECK_PEAKS = 32,
 
 } IndexingFlags;
@@ -124,8 +131,6 @@ extern "C" {
 #endif
 
 /**
- * IndexingPrivate:
- *
  * This is an opaque data structure containing information needed by the
  * indexing system.
  **/

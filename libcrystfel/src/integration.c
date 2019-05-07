@@ -54,6 +54,9 @@
 #include "integration.h"
 
 
+/** \file integration.h */
+
+
 enum boxmask_val
 {
 	BM_IG,  /* "Soft" ignore */

@@ -8,6 +8,7 @@ find_package(FDIP)
 find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
+find_package(Doxygen)
 pkg_search_module(FFTW fftw3)
 
 set(HAVE_CURSES ${CURSES_FOUND})
@@ -112,6 +113,14 @@ set(LIBCRYSTFEL_HEADERS
     src/xgandalf.h
     src/rational.h
 )
+
+configure_file(${PROJECT_SOURCE_DIR}/doc/index.md index.md)
+set(DOXYGEN_SHOW_INCLUDE_FILES NO)
+set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
+set(DOXYGEN_PREDEFINED HAVE_FFTW)
+doxygen_add_docs(api-docs ${PROJECT_SOURCE_DIR}/src
+                 ${CMAKE_CURRENT_BINARY_DIR}/index.md
+                 ${PROJECT_SOURCE_DIR}/doc/coding.md)
 
 add_library(${PROJECT_NAME} SHARED
 	${LIBCRYSTFEL_SOURCES}

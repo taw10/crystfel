@@ -45,24 +45,26 @@ extern "C" {
 #endif
 
 /**
- * PartialityModel:
- * @PMODEL_UNITY : Set all all partialities and Lorentz factors to 1.
- * @PMODEL_XSPHERE : Flat sphere model with super-Gaussian spectrum
- * @PMODEL_RANDOM : Randomly assigned partialities
+ * \file geometry.h
+ * Geometry of diffraction
  *
- * A %PartialityModel describes a geometrical model which can be used to
+ * This contains the prediction and partiality calculation functions.
+ */
+
+/**
+ * A PartialityModel describes a geometrical model which can be used to
  * calculate spot partialities and Lorentz correction factors.
  **/
 typedef enum {
 
-	PMODEL_UNITY,
-	PMODEL_XSPHERE,
-	PMODEL_RANDOM,
+	PMODEL_UNITY,   /**< Set all partialities and Lorentz factors to 1. */
+	PMODEL_XSPHERE, /**< Flat sphere model with super-Gaussian spectrum */
+	PMODEL_RANDOM,  /**< Randomly assigned partialities */
 
 } PartialityModel;
 
 
-/* Enumeration of parameters which may want to be refined */
+/** Enumeration of parameters which may want to be refined */
 enum gparam {
 	GPARAM_ASX,
 	GPARAM_ASY,

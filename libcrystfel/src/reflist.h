@@ -38,11 +38,26 @@
 #define GET_K(serial) ((((serial) & 0x000ffc00)>>10)-512)
 #define GET_L(serial) (((serial) & 0x000003ff)-512)
 
+/**
+ * \file reflist.h
+ * The fast reflection list stores reflections in an RB-tree indexed
+ * by the Miller indices h, k and l.  Any reflection can be found in a
+ * length of time which scales logarithmically with the number of reflections in
+ * the list.
+ *
+ * A RefList can contain any number of reflections, and can store more than
+ * one reflection with a given set of indices, for example when two distinct
+ * reflections are to be stored according to their asymmetric indices.
+ *
+ * There are getters and setters which can be used to get and set values for an
+ * individual reflection.  The reflection list does not calculate any values,
+ * only stores what it was given earlier.  As such, you will need to carefully
+ * examine which fields your prior processing steps have filled in.
+ */
+
 
 /**
- * RefList:
- *
- * A %RefList represents a list of Bragg reflections.
+ * A RefList represents a list of Bragg reflections.
  *
  * This data structure is opaque.  You must use the available accessor functions
  * to read and write its contents.
@@ -51,9 +66,7 @@
 typedef struct _reflist RefList;
 
 /**
- * Reflection:
- *
- * A %Reflection represents a single Bragg reflection.
+ * A Reflection represents a single Bragg reflection.
  *
  * This data structure is opaque.  You must use the available accessor functions
  * to read and write its contents.
@@ -62,10 +75,8 @@ typedef struct _reflist RefList;
 typedef struct _reflection Reflection;
 
 /**
- * RefListIterator:
- *
- * A %RefListIterator is an opaque data type used when iterating over a
- * %RefList.
+ * A RefListIterator is an opaque data type used when iterating over a
+ * RefList.
  *
  **/
 typedef struct _reflistiterator RefListIterator;
@@ -85,8 +96,9 @@ struct reflection_contributions
 	Crystal    **contrib_crystals;
 };
 
-/* Creation/deletion */
 extern RefList *reflist_new(void);
+
+
 extern void reflist_free(RefList *list);
 extern Reflection *reflection_new(signed int h, signed int k, signed int l);
 extern void reflection_free(Reflection *refl);

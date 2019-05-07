@@ -34,9 +34,12 @@
 #endif
 
 /**
- * IntegerMatrix
- *
- * The IntegerMatrix is an opaque data structure representing an integer matrix.
+ * \file integer_matrix.h
+ * Matrix type containing only integers
+ */
+
+/**
+ * The \p IntegerMatrix is an opaque data structure representing an integer matrix.
  **/
 typedef struct _integermatrix IntegerMatrix;
 

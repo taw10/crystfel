@@ -45,18 +45,7 @@
 #include "symop-lex.h"
 
 
-/**
- * SECTION:symmetry
- * @short_description: Point symmetry handling
- * @title: Symmetry
- * @section_id:
- * @see_also:
- * @include: "symmetry.h"
- * @Image:
- *
- * Routines to handle point symmetry.
- */
-
+/** \file symmetry.h */
 
 struct _symoplist
 {
@@ -84,9 +73,9 @@ static void alloc_ops(SymOpList *ops)
 
 /**
  * new_symopmask:
- * @list: A %SymOpList
+ * \param list A \ref SymOpList
  *
- * Returns: a new %SymOpMask, which you can use when filtering out special
+ * \returns A new \ref SymOpMask, which you can use when filtering out special
  * reflections.
  **/
 SymOpMask *new_symopmask(const SymOpList *list)
@@ -129,10 +118,9 @@ static SymOpList *new_symoplist()
 
 
 /**
- * free_symoplist:
- * @ops: A %SymOpList to free
+ * \param ops A \ref SymOpList to free
  *
- * Frees a %SymOpList and all associated resources.
+ * Frees a \ref SymOpList and all associated resources.
  **/
 void free_symoplist(SymOpList *ops)
 {
@@ -148,10 +136,9 @@ void free_symoplist(SymOpList *ops)
 }
 
 /**
- * free_symopmask:
- * @m: A %SymOpMask to free
+ * \param m A \ref SymOpMask to free
  *
- * Frees a %SymOpMask and all associated resources.
+ * Frees a \ref SymOpMask and all associated resources.
  **/
 void free_symopmask(SymOpMask *m)
 {
@@ -170,11 +157,10 @@ static int num_ops(const SymOpList *ops)
 
 
 /**
- * add_symop:
- * @ops: A %SymOpList
- * @m: An %IntegerMatrix
+ * \param ops A \ref SymOpList
+ * \param m An \ref IntegerMatrix
  *
- * Adds @m to @ops.
+ * Adds \p m to \p ops.
  **/
 void add_symop(SymOpList *ops, IntegerMatrix *m)
 {
@@ -210,10 +196,9 @@ static void add_symop_v(SymOpList *ops,
 
 
 /**
- * get_symop:
- * @ops: A %SymOpList
- * @m: A %SymOpMask
- * @idx: Index of the operation to get
+ * \param ops A \ref SymOpList
+ * \param m A \ref SymOpMask
+ * \param idx Index of the operation to get
  *
  * This function returns a pointer to an integer matrix specifying a symmetry
  * operation contained in the symmetry operator list, and identified by the
@@ -270,13 +255,12 @@ static signed int *v(signed int h, signed int k, signed int i, signed int l)
 
 
 /**
- * num_equivs:
- * @ops: A %SymOpList
- * @m: A %SymOpMask, which has been shown to special_position()
+ * \param ops A \ref SymOpList
+ * \param m A \ref SymOpMask, which has been shown to \ref special_position
  *
- * Returns: the number of equivalent reflections for a general reflection
+ * \returns The number of equivalent reflections for a general reflection
  * in point group "ops", which were not flagged by your call to
- * special_position().
+ * \ref special_position.
  **/
 int num_equivs(const SymOpList *ops, const SymOpMask *m)
 {
@@ -1056,10 +1040,9 @@ static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
 
 
 /**
- * get_pointgroup:
- * @sym: A string representation of a point group
+ * \param sym A string representation of a point group
  *
- * This function parses @sym and returns the corresponding %SymOpList.
+ * This function parses \p sym and returns the corresponding \ref SymOpList.
  * In the string representation of the point group, use a preceding minus sign
  * for any character which would have a "bar".  Trigonal groups must be suffixed
  * with either "_H" or "_R" for a hexagonal or rhombohedral lattice
@@ -1135,26 +1118,25 @@ static void do_op(const IntegerMatrix *op,
 
 
 /**
- * get_equiv:
- * @ops: A %SymOpList
- * @m: A %SymOpMask, which has been shown to special_position()
- * @idx: Index of the operation to use
- * @h: index of reflection
- * @k: index of reflection
- * @l: index of reflection
- * @he: location to store h index of equivalent reflection
- * @ke: location to store k index of equivalent reflection
- * @le: location to store l index of equivalent reflection
+ * \param ops A \ref SymOpList
+ * \param m A \ref SymOpMask, which has been shown to \ref special_position
+ * \param idx Index of the operation to use
+ * \param h index of reflection
+ * \param k index of reflection
+ * \param l index of reflection
+ * \param he location to store h index of equivalent reflection
+ * \param ke location to store k index of equivalent reflection
+ * \param le location to store l index of equivalent reflection
  *
- * This function applies the @idx-th symmetry operation from @ops to the
- * reflection @h, @k, @l, and stores the result at @he, @ke and @le.
+ * This function applies the \p idx-th symmetry operation from \p ops to the
+ * reflection \p h, \p k, \p l, and stores the result at \p he, \p ke and \p le.
  *
  * Call this function multiple times with idx=0 .. num_equivs(ops, m) to get all
  * of the equivalent reflections in turn.
  *
  * If you don't mind that the same equivalent might appear twice, simply let
- * @m = NULL.  Otherwise, call new_symopmask() and then special_position() to
- * set up a %SymOpMask appropriately.
+ * \p m = NULL.  Otherwise, call \ref new_symopmask and then
+ * \ref special_position to set up a \ref SymOpMask appropriately.
  **/
 void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                signed int h, signed int k, signed int l,
@@ -1168,16 +1150,14 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
 
 
 /**
- * special_position:
- * @ops: A %SymOpList, usually corresponding to a point group
- * @m: A %SymOpMask created with new_symopmask()
- * @h: index of a reflection
- * @k: index of a reflection
- * @l: index of a reflection
+ * \param ops A \ref SymOpList, usually corresponding to a point group
+ * \param m A \ref SymOpMask created with \ref new_symopmask
+ * \param h index of a reflection
+ * \param k index of a reflection
+ * \param l index of a reflection
  *
- * This function sets up @m to contain information about which operations in
- * @ops map the reflection @h, @k, @l onto itself.
- *
+ * This function sets up \p m to contain information about which operations in
+ * \p ops map the reflection \p h, \p k, \p l onto itself.
  **/
 void special_position(const SymOpList *ops, SymOpMask *m,
                       signed int h, signed int k, signed int l)
@@ -1233,15 +1213,14 @@ static int any_negative(signed int h, signed int k, signed int l)
 
 
 /**
- * is_centric:
- * @h: h index
- * @k: k index
- * @l: l index
- * @ops: A %SymOpList
+ * \param h h index
+ * \param k k index
+ * \param l l index
+ * \param ops A \ref SymOpList
  *
  * A reflection is centric if it is related by symmetry to its Friedel partner.
  *
- * Returns: true if @h @k @l is centric in @ops.
+ * \returns True if \p h \p k \p l is centric in \p ops.
  *
  **/
 int is_centric(signed int h, signed int k, signed int l, const SymOpList *ops)
@@ -1261,24 +1240,23 @@ int is_centric(signed int h, signed int k, signed int l, const SymOpList *ops)
 
 
 /**
- * get_asymm:
- * @ops: A %SymOpList, usually corresponding to a point group
- * @h: index of a reflection
- * @k: index of a reflection
- * @l: index of a reflection
- * @hp: location for asymmetric index of reflection
- * @kp: location for asymmetric index of reflection
- * @lp: location for asymmetric index of reflection
+ * \param ops A \ref SymOpList, usually corresponding to a point group
+ * \param h index of a reflection
+ * \param k index of a reflection
+ * \param l index of a reflection
+ * \param hp location for asymmetric index of reflection
+ * \param kp location for asymmetric index of reflection
+ * \param lp location for asymmetric index of reflection
  *
- * This function determines the asymmetric version of the reflection @h, @k, @l
- * in symmetry group @ops, and puts the result in @hp, @kp, @lp.
+ * This function determines the asymmetric version of the reflection \p h, \p k, \p l
+ * in symmetry group \p ops, and puts the result in \p hp, \p kp, \p lp.
  *
  * This is a relatively expensive operation because of its generality.
  * Therefore, if you know you'll need to make repeated use of the asymmetric
- * indices, consider creating a new %RefList indexed according to the asymmetric
- * indices themselves with asymmetric_indices().  If you do that, you'll still
+ * indices, consider creating a new \ref RefList indexed according to the asymmetric
+ * indices themselves with \ref asymmetric_indices.  If you do that, you'll still
  * be able to get the original versions of the indices with
- * get_symmetric_indices().
+ * \ref get_symmetric_indices.
  *
  **/
 void get_asymm(const SymOpList *ops,
@@ -1338,10 +1316,9 @@ void get_asymm(const SymOpList *ops,
 
 
 /**
- * is_centrosymmetric:
- * @s: A %SymOpList
+ * \param s A \ref SymOpList
  *
- * Returns: non-zero if @s contains an inversion operation
+ * \returns Non-zero if \p s contains an inversion operation
  */
 int is_centrosymmetric(const SymOpList *s)
 {
@@ -1374,11 +1351,10 @@ static int check_mult(const IntegerMatrix *ans,
 
 
 /**
- * is_subgroup:
- * @source: A %SymOpList
- * @target: Another %SymOpList, which might be a subgroup of @source.
+ * \param source A \ref SymOpList
+ * \param target Another \ref SymOpList, which might be a subgroup of \p source.
  *
- * Returns: non-zero if every operation in @target is also in @source.
+ * \returns Non-zero if every operation in \p target is also in \p source.
  **/
 int is_subgroup(const SymOpList *source, const SymOpList *target)
 {
@@ -1529,19 +1505,18 @@ static SymOpList *flack_reorder(const SymOpList *source)
 
 
 /**
- * get_ambiguities:
- * @source: The "source" symmetry, a %SymOpList
- * @target: The "target" symmetry, a %SymOpList
+ * \param source The "source" symmetry, a \ref SymOpList
+ * \param target The "target" symmetry, a \ref SymOpList
 
- * Calculates twinning laws.  Returns a %SymOpList containing the twinning
- * operators, which are the symmetry operations which can be added to @target
- * to generate @source.  Only rotations are allowable - no mirrors nor
+ * Calculates twinning laws.  Returns a \ref SymOpList containing the twinning
+ * operators, which are the symmetry operations which can be added to \p target
+ * to generate \p source.  Only rotations are allowable - no mirrors nor
  * inversions.
- * To count the number of possibilities, use num_equivs() on the result.
+ * To count the number of possibilities, use \ref num_equivs on the result.
  *
  * The algorithm used is "Algorithm A" from Flack (1987), Acta Cryst A43 p564.
  *
- * Returns: A %SymOpList containing the twinning operators, or NULL if the
+ * \returns a \ref SymOpList containing the twinning operators, or NULL if the
  * source symmetry cannot be generated from that target symmetry without using
  * mirror or inversion operations.
  */
@@ -1661,13 +1636,12 @@ RationalMatrix *parse_symmetry_operation(const char *s)
 
 
 /**
- * parse_cell_transformation
- * @s: Textual representation of cell transformation
+ * \param s Textual representation of cell transformation
  *
- * Parses @s, for example 'a,(b+a)/2,c', and returns the corresponding
- * %RationalMatrix.
+ * Parses \p s, for example 'a,(b+a)/2,c', and returns the corresponding
+ * \ref RationalMatrix.
  *
- * Returns: A %RationalMatrix describing the transformation, or NULL on error.
+ * \returns a \ref RationalMatrix describing the transformation, or NULL on error.
  *
  */
 RationalMatrix *parse_cell_transformation(const char *s)
@@ -1677,13 +1651,12 @@ RationalMatrix *parse_cell_transformation(const char *s)
 
 
 /**
- * parse_symmetry_operations
- * @s: Textual representation of a list of symmetry operations
+ * \param s Textual representation of a list of symmetry operations
  *
- * Parses @s, for example 'h,k,l;k,h,-l', and returns the corresponding
- * %SymOpList
+ * Parses \p s, for example 'h,k,l;k,h,-l', and returns the corresponding
+ * \ref SymOpList
  *
- * Returns: A %SymOpList, or NULL on error.
+ * \returns a \ref SymOpList, or NULL on error.
  *
  */
 SymOpList *parse_symmetry_operations(const char *s)
@@ -1789,8 +1762,7 @@ static char *name_equiv(const IntegerMatrix *op)
 
 
 /**
- * describe_symmetry:
- * @s: A %SymOpList
+ * \param s A \ref SymOpList
  *
  * Writes the name and a list of operations to stderr.
  */
@@ -1833,10 +1805,9 @@ void describe_symmetry(const SymOpList *s)
 
 
 /**
- * symmetry_name:
- * @ops: A %SymOpList
+ * \param ops A \ref SymOpList
  *
- * Returns: a text description of @ops.
+ * \returns A text description of \p ops.
  */
 const char *symmetry_name(const SymOpList *ops)
 {
@@ -1845,12 +1816,11 @@ const char *symmetry_name(const SymOpList *ops)
 
 
 /**
- * set_symmetry_name:
- * @ops: A %SymOpList
- * @name: New name for the %SymOpList
+ * \param ops A \ref SymOpList
+ * \param name New name for the \ref SymOpList
  *
- * Sets the text description of @ops to @name.  See symmetry_name().
- * @name will be copied, so you can safely free it after calling this function,
+ * Sets the text description of \p ops to \p name.  See \ref symmetry_name.
+ * \p name will be copied, so you can safely free it after calling this function,
  * if that's otherwise appropriate.
  */
 void set_symmetry_name(SymOpList *ops, const char *name)

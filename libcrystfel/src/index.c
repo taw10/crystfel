@@ -60,6 +60,9 @@
 #include "xgandalf.h"
 
 
+/** \file index.h */
+
+
 struct _indexingprivate
 {
 	IndexingFlags flags;

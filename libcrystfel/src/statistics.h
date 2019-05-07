@@ -39,6 +39,11 @@ extern "C" {
 
 #include "reflist.h"
 
+/**
+ * \file statistics.h
+ * Intensity statistic calculations
+ */
+
 extern double stat_scale_intensity(RefList *list1, RefList *list2);
 
 extern double stat_r1_zero(RefList *list1, RefList *list2,

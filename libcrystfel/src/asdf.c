@@ -51,6 +51,9 @@
 #include "cell-utils.h"
 #include "asdf.h"
 
+/**
+ * \file asdf.h
+ */
 
 struct fftw_vars {
 	int N;
@@ -1162,6 +1165,9 @@ int run_asdf(struct image *image, void *ipriv)
 }
 
 
+/**
+ * Prepare the ASDF indexing algorithm
+ */
 void *asdf_prepare(IndexingMethod *indm, UnitCell *cell)
 {
 	struct asdf_private *dp;

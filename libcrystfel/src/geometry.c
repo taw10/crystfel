@@ -47,6 +47,7 @@
 #include "symmetry.h"
 #include "geometry.h"
 
+/** \file geometry.h */
 
 static int locate_peak_on_panel(double x, double y, double z, double k,
                                 struct panel *p,
@@ -380,6 +381,15 @@ double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 }
 
 
+/**
+ * \param cryst: A \ref Crystal
+ * \param max_res: Maximum resolution to predict to (m^-1)
+ *
+ * Calculates reflection positions for \p crys, up to maximum 1/d value
+ * \p max_res
+ *
+ * \returns A list of predicted reflections
+ */
 RefList *predict_to_res(Crystal *cryst, double max_res)
 {
 	double ax, ay, az;
@@ -713,16 +723,15 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 
 
 /**
- * calculate_partialities:
- * @cryst: A %Crystal
- * @pmodel: A %PartialityModel
+ * \param cryst A \ref Crystal
+ * \param pmodel A \ref PartialityModel
  *
- * Calculates the partialities for the reflections in @cryst, given the current
+ * Calculates the partialities for the reflections in \p cryst, given the current
  * crystal and image parameters.  The crystal's image and reflection lists
- * must be set.  The specified %PartialityModel will be used.
+ * must be set.  The specified \ref PartialityModel will be used.
  *
  * You must not have changed the crystal or image parameters since you last
- * called predict_to_res() or update_predictions(), because this function
+ * called \ref predict_to_res or \ref update_predictions, because this function
  * relies on the limiting wavelength values calculated by those functions.
  */
 void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
@@ -750,15 +759,14 @@ void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
 
 
 /**
- * update_predictions:
- * @cryst: A %Crystal
+ * \param cryst A \ref Crystal
  *
  * Updates the predicted reflections (positions and excitation errors, but not
- * the actual partialities) of @cryst's reflections according to
+ * the actual partialities) of \p cryst's reflections according to
  * the current state of the crystal (e.g. its unit cell parameters).
  *
- * If you need to update the partialities as well, call calculate_partialities()
- * afterwards.
+ * If you need to update the partialities as well, call
+ * \ref calculate_partialities afterwards.
  */
 void update_predictions(Crystal *cryst)
 {

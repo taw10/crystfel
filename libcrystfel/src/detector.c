@@ -45,17 +45,8 @@
 
 
 /**
- * SECTION:detector
- * @short_description: Detector geometry
- * @title: Detector
- * @section_id:
- * @see_also:
- * @include: "detector.h"
- * @Image:
- *
- * This structure represents the detector geometry
+ * \file detector.h
  */
-
 
 
 struct rg_definition {
@@ -2213,13 +2204,12 @@ int write_detector_geometry(const char *geometry_filename,
 
 
 /**
- * mark_resolution_range_as_bad:
- * @image: An image structure
- * @min: Minimum value of 1/d to be marked as bad
- * @max: Maximum value of 1/d to be marked as bad
+ * \param image An image structure
+ * \param min Minimum value of 1/d to be marked as bad
+ * \param max Maximum value of 1/d to be marked as bad
  *
- * Flags, in the bad pixel mask for @image, every pixel whose resolution is
- * between @min and @max.
+ * Flags, in the bad pixel mask for \p image, every pixel whose resolution is
+ * between \p min and \p max.
  *
  */
 
@@ -2266,14 +2256,12 @@ static int safe_strcmp(const char *a, const char *b)
 
 
 /**
- * single_panel_data_source:
- * @det: A detector structure
- * @element: If manually selected by the user, the HDF5 element being used.
+ * \param det A detector structure
+ * \param element If manually selected by the user, the HDF5 element being used.
  * Otherwise NULL.
  *
- * Returns: non-zero if the combination of @det and @element mean that all the
+ * \returns Non-zero if the combination of \p det and \p element mean that all the
  * data comes from a single block.
- *
  */
 int single_panel_data_source(struct detector *det, const char *element)
 {

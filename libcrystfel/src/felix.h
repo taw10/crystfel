@@ -36,6 +36,11 @@
 
 #include "cell.h"
 
+/**
+ * \file felix.h
+ * Felix indexer interface
+ */
+
 struct felix_options
 {
 	double ttmin;  /* radians */

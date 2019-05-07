@@ -36,15 +36,7 @@
 
 
 /**
- * SECTION:crystal
- * @short_description: Crystal
- * @title: Crystal
- * @section_id:
- * @see_also:
- * @include: "crystal.h"
- * @Image:
- *
- * This structure represents a single crystal.
+ * \file crystal.h
  */
 
 
@@ -84,11 +76,9 @@ struct _crystal
 
 
 /**
- * crystal_new:
+ * Create a new \ref Crystal.
  *
- * Create a new %Crystal.
- *
- * Returns: the new unit cell, or NULL on failure.
+ * \returns The new unit cell, or NULL on failure.
  *
  */
 Crystal *crystal_new()
@@ -113,14 +103,13 @@ Crystal *crystal_new()
 
 
 /**
- * crystal_copy:
- * @cryst: A %Crystal to copy.
+ * \param cryst: A \ref Crystal to copy.
  *
- * Creates a new %Crystal which is a copy of @cryst.  The copy is a "shallow
+ * Creates a new \ref Crystal which is a copy of \p cryst.  The copy is a "shallow
  * copy", which means that copies are NOT made of the data structures which
- * @cryst contains references to, for example its %RefList.
+ * \p cryst contains references to, for example its \ref RefList.
  *
- * Returns: a (shallow) copy of @cryst, or NULL on failure.
+ * \returns A (shallow) copy of \p cryst, or NULL on failure.
  *
  */
 Crystal *crystal_copy(const Crystal *cryst)
@@ -138,10 +127,9 @@ Crystal *crystal_copy(const Crystal *cryst)
 
 
 /**
- * crystal_free:
- * @cryst: A %Crystal to free.
+ * \param cryst: A \ref Crystal to free.
  *
- * Frees a %Crystal, and all internal resources concerning that crystal.
+ * Frees a \ref Crystal, and all internal resources concerning that crystal.
  *
  */
 void crystal_free(Crystal *cryst)
