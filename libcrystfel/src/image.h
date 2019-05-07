@@ -87,8 +87,6 @@ struct imagefeature {
 	/** @} */
 
 	const char                      *name;  /**< Text name, e.g. "5,3,-1" */
-
-	int                             valid;  /**< \private */
 };
 
 

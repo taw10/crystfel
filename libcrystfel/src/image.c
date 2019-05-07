@@ -54,8 +54,9 @@ struct imagefile
 
 struct _imagefeaturelist
 {
-	struct imagefeature	*features;
-	int			n_features;
+	struct imagefeature *features;
+	int                  max_features;
+	int                  n_features;
 };
 
 
@@ -64,12 +65,12 @@ void image_add_feature(ImageFeatureList *flist, double fs, double ss,
                        struct image *parent, double intensity, const char *name)
 {
 	if ( flist->features ) {
-		flist->features = realloc(flist->features,
-		                    (flist->n_features+1)
-		                    *sizeof(struct imagefeature));
-	} else {
-		assert(flist->n_features == 0);
-		flist->features = malloc(sizeof(struct imagefeature));
+		struct imagefeature *nf;
+		int nmf = flist->max_features + 128;
+		nf = realloc(flist->features, nmf*sizeof(struct imagefeature));
+		if ( nf == NULL ) return;
+		flist->features = nf;
+		flist->max_features = nmf;
 	}
 
 	flist->features[flist->n_features].fs = fs;
@@ -78,10 +79,8 @@ void image_add_feature(ImageFeatureList *flist, double fs, double ss,
 	flist->features[flist->n_features].intensity = intensity;
 	flist->features[flist->n_features].parent = parent;
 	flist->features[flist->n_features].name = name;
-	flist->features[flist->n_features].valid = 1;
 
 	flist->n_features++;
-
 }
 
 
@@ -92,6 +91,7 @@ ImageFeatureList *image_feature_list_new()
 	flist = malloc(sizeof(ImageFeatureList));
 
 	flist->n_features = 0;
+	flist->max_features = 0;
 	flist->features = NULL;
 
 	return flist;
@@ -107,8 +107,9 @@ static int comp(const void *a, const void *b)
 }
 
 
-/* Strongest first.  Returned list is guaranteed not to have any holes
- * (feature->valid = 0) */
+/**
+ * Strongest first.
+ */
 ImageFeatureList *sort_peaks(ImageFeatureList *flist)
 {
 	ImageFeatureList *n = image_feature_list_new();
@@ -140,7 +141,6 @@ ImageFeatureList *sort_peaks(ImageFeatureList *flist)
 void image_feature_list_free(ImageFeatureList *flist)
 {
 	if ( !flist ) return;
-
 	if ( flist->features ) free(flist->features);
 	free(flist);
 }
@@ -237,15 +237,15 @@ struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx)
 	if ( flist == NULL ) return NULL;
 	if ( idx >= flist->n_features ) return NULL;
 
-	if ( flist->features[idx].valid == 0 ) return NULL;
-
 	return &flist->features[idx];
 }
 
 
 void image_remove_feature(ImageFeatureList *flist, int idx)
 {
-	flist->features[idx].valid = 0;
+	memmove(&flist->features[idx], &flist->features[idx+1],
+	        (flist->n_features-idx-1)*sizeof(struct imagefeature));
+	flist->n_features--;
 }
 
 
