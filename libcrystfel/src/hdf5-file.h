@@ -52,6 +52,11 @@ struct copy_hdf5_field;
 extern "C" {
 #endif
 
+/**
+ * \file hdf5-file.h
+ * HDF5 abstraction layer
+ */
+
 extern int hdf5_write(const char *filename, const void *data,
                       int width, int height, int type);
 

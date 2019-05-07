@@ -39,6 +39,9 @@
 extern "C" {
 #endif
 
+/** \file dirax.h
+ * DirAx indexer interface
+ */
 extern int run_dirax(struct image *image, void *ipriv);
 
 extern void *dirax_prepare(IndexingMethod *indm, UnitCell *cell);

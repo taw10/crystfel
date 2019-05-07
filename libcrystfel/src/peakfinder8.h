@@ -37,6 +37,11 @@
 extern "C" {
 #endif
 
+/**
+ * \file peakfinder8.h
+ * The "peakfinder8" peak search algorithm, originally implemented in Cheetah
+ */
+
 extern int peakfinder8(struct image *img, int max_n_peaks,
                        float threshold, float min_snr,
                        int mix_pix_count, int max_pix_count,

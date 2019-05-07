@@ -42,6 +42,9 @@
 #include "cell-utils.h"
 
 
+/** \file predict-refine.h */
+
+
 /* Maximum number of iterations of NLSq to do for each image per macrocycle. */
 #define MAX_CYCLES (10)
 

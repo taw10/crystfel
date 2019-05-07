@@ -53,6 +53,11 @@ struct event;
 extern "C" {
 #endif
 
+/**
+ * \file detector.h
+ * Detector geometry structure and related functions.
+ */
+
 
 struct rigid_group
 {
@@ -80,97 +85,110 @@ struct rg_collection
 
 
 /**
- * panel:
- *  @name: Text name for the panel (fixed length array)
- *  @cnx: Location of corner, in pixels, x coordinate
- *  @cny: Location of corner, in pixels, y coordinate
- *  @coffset: The offset to be applied from @clen (which may come from elsewhere)
- *  @clen: The distance from the interaction point to the corner of the first pixel
- *  @clen_from: Location to get @clen from, e.g. from HDF5 file
- *  @mask: Location of mask data
- *  @mask_file: Filename for mask data
- *  @satmap: Location of per-pixel saturation map
- *  @satmap_file: Filename for saturation map
- *  @res: Resolution of panel in pixels per metre
- *  @badrow: Readout direction (for filtering out clusters of peaks)
- *  @no_index: Non-zero if panel is entirely "bad"
- *  @adu_per_photon: Number of detector intensity units per photon
- *  @adu_per_eV: Number of detector intensity units per eV of photon energy
- *  @max_adu: Saturation value
- *  @dim_structure: Dimension structure
- *  @fsx: Real-space x-direction of data fast-scan direction
- *  @fsy: Real-space y-direction of data fast-scan direction
- *  @fsz: Real-space z-direction of data fast-scan direction
- *  @ssx: Real-space x-direction of data slow-scan direction
- *  @ssy: Real-space y-direction of data slow-scan direction
- *  @ssz: Real-space z-direction of data slow-scan direction
- *  @rail_x: x direction of camera length "rail"
- *  @rail_y: y direction of camera length "rail"
- *  @rail_z: z direction of camera length "rail"
- *  @clen_for_centering: Value of clen (without coffset) at which beam is centered
- *  @xfs: Data fast-scan direction of real-space x-direction
- *  @yfs: Data fast-scan direction of real-space y-direction
- *  @xss: Data slow-scan direction of real-space x-direction
- *  @yss: Data slow-scan direction of real-space y-direction
- *  @orig_min_fs: Minimum fs coordinate of data in file
- *  @orig_max_fs: Maximum fs coordinate of data in file
- *  @orig_min_ss: Minimum ss coordinate of data in file (inclusive)
- *  @orig_max_ss: Maximum ss coordinate of data in file (inclusive)
- *  @data: Location of data in file
- *  @w: Width of panel
- *  @h: Height of panel
+ * Represents one panel of a detector
  */
 struct panel
 {
-	char     name[1024];  /* Name for this panel */
+	/** Text name for panel (fixed length array) */
+	char     name[1024];
 
-	double   cnx;       /* Location of corner (min_fs,min_ss) in pixels */
+	/** \name Location of corner in units of the pixel size of this panel */
+	/**@{*/
+	double   cnx;
 	double   cny;
+	/**@}*/
+
+	/** The offset to be applied from \ref clen */
 	double   coffset;
-	double   clen;     /* Camera length in metres */
+
+	/** The distance from the interaction point to the corner of the
+	 * first pixel */
+	double   clen;
+
+	/** Location to get \ref clen from, e.g. from HDF5 file */
 	char    *clen_from;
+
+	/** Location of mask data */
 	char    *mask;
+
+	/** Filename for mask data */
 	char    *mask_file;
+
+	/** Location of per-pixel saturation map */
 	char    *satmap;
+
+	/** Filename for saturation map */
 	char    *satmap_file;
-	double   res;      /* Resolution in pixels per metre */
-	char     badrow;   /* 'x' or 'y' */
-	int      no_index; /* Don't index peaks in this panel if non-zero */
-	double   adu_per_photon;   /* Number of ADU per photon */
-	double   max_adu;  /* Treat pixel as unreliable if higher than this */
+
+	/** Resolution in pixels per metre  */
+	double   res;
+
+	/** Readout direction (for filtering out clusters of peaks)
+	  * ('x' or 'y') */
+	char     badrow;
+
+	/** Non-zero if panel should be considered entirely bad */
+	int      no_index;
+
+	/** Number of detector intensity units per photon */
+	double   adu_per_photon;
+
+	/** Treat pixel as unreliable if higher than this */
+	double   max_adu;
+
+	/** Location of data in file */
 	char    *data;
 
-	double   adu_per_eV;   /* Number of ADU per eV */
+	/** Number of detector intensity units per eV of photon energy */
+	double   adu_per_eV;
 
+	/** Dimension structure */
 	struct dim_structure *dim_structure;
 
+	/** \name Transformation matrix from pixel coordinates to lab frame */
+	/*@{*/
 	double fsx;
 	double fsy;
 	double fsz;
 	double ssx;
 	double ssy;
 	double ssz;
+	/*@}*/
 
+	/** \name Rail direction */
+	/*@{*/
 	double rail_x;
 	double rail_y;
 	double rail_z;
+	/*@}*/
+
+	/* Value of clen (without coffset) at which beam is centered */
 	double clen_for_centering;
 
+	/** \name Inverse of 2D part of transformation matrix */
+	/*@{*/
 	double xfs;
 	double yfs;
 	double xss;
 	double yss;
+	/*@}*/
 
-	/* Position of the panel in the data block in the file.  The panels may
-	* get moved around when the file is loaded (see hdf5_read2()),
-	* especially if the panels come from different HDF5 elements. */
+	/** \name Position of the panel in the data block in the file.
+	 * The panels may get moved around when the file is loaded (see
+	 * hdf5_read2()), especially if the panels come from different HDF5
+	 * elements. */
+	/*@{*/
 	int orig_min_fs;
 	int orig_max_fs;
 	int orig_min_ss;
 	int orig_max_ss;
+	/*@}*/
 
-	int w;  /* Width, calculated as max_fs-min_fs+1 */
-	int h;  /* Height, calculated as max_ss-min_ss+1 */
+	/** Width, calculated as max_fs-min_fs+1 */
+	int w;
+
+	/*** Height, calculated as max_ss-min_ss+1 */
+	int h;
 };
 
 

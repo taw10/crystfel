@@ -50,15 +50,7 @@
 
 
 /**
- * SECTION:unitcell
- * @short_description: Unit cell
- * @title: UnitCell
- * @section_id:
- * @see_also:
- * @include: "cell.h"
- * @Image:
- *
- * This structure represents a unit cell.
+ * \file cell.h
  */
 
 
@@ -116,11 +108,9 @@ typedef enum {
 
 
 /**
- * cell_new:
+ * Create a new UnitCell.
  *
- * Create a new %UnitCell.
- *
- * Returns: the new unit cell, or NULL on failure.
+ * \returns the new unit cell, or NULL on failure.
  *
  */
 UnitCell *cell_new()
@@ -149,8 +139,7 @@ UnitCell *cell_new()
 
 
 /**
- * cell_free:
- * @cell: A %UnitCell to free.
+ * \param cell: A %UnitCell to free.
  *
  * Frees a %UnitCell, and all internal resources concerning that cell.
  *
@@ -163,10 +152,9 @@ void cell_free(UnitCell *cell)
 
 
 /**
- * cell_has_parameters:
- * @cell: A %UnitCell
+ * \param cell: A %UnitCell
  *
- * Returns: True if @cell has its parameters specified.
+ * \returns True if cell has its parameters specified.
  *
  */
 int cell_has_parameters(UnitCell *cell)
@@ -853,11 +841,10 @@ static char determine_centering(RationalMatrix *P, char cen)
 
 
 /**
- * cell_transform_rational:
- * @cell: A %UnitCell.
- * @t: A %RationalMatrix.
+ * \param cell: A %UnitCell.
+ * \param m: A %RationalMatrix.
  *
- * Applies @t to @cell.
+ * Applies \p m to \p cell.
  *
  * This function will determine the centering of the resulting unit cell,
  * producing '?' if any lattice points cannot be accounted for.  Note that if
@@ -867,7 +854,7 @@ static char determine_centering(RationalMatrix *P, char cen)
  *
  * The lattice type will be set to triclinic, and the unique axis to '?'.
  *
- * Returns: Transformed copy of @cell.
+ * \returns Transformed copy of \p cell.
  *
  */
 UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
@@ -910,17 +897,16 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 
 
 /**
- * cell_transform_intmat:
- * @cell: A %UnitCell.
- * @t: An %IntegerMatrix.
+ * \param cell: A %UnitCell.
+ * \param m: An %IntegerMatrix.
  *
- * Applies @t to @cell.
+ * Applies \p m to \p cell.
  *
- * This is just a convenience function which turns @m into a %RationalMatrix
+ * This is just a convenience function which turns \p m into a %RationalMatrix
  * and then calls cell_transform_rational().  See the documentation for that
  * function for some important information.
  *
- * Returns: Transformed copy of @cell.
+ * \returns Transformed copy of \p cell.
  *
  */
 UnitCell *cell_transform_intmat(UnitCell *cell, IntegerMatrix *m)
@@ -934,13 +920,12 @@ UnitCell *cell_transform_intmat(UnitCell *cell, IntegerMatrix *m)
 
 
 /**
- * cell_transform_rational_inverse:
- * @cell: A %UnitCell.
- * @m: A %RationalMatrix
+ * \param cell: A %UnitCell.
+ * \param m: A %RationalMatrix
  *
- * Applies the inverse of @m to @cell.
+ * Applies the inverse of \p m to \p cell.
  *
- * Returns: Transformed copy of @cell.
+ * \returns Transformed copy of \p cell.
  *
  */
 UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m)
@@ -1001,13 +986,12 @@ UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m)
 
 
 /**
- * cell_transform_intmat_inverse:
- * @cell: A %UnitCell.
- * @m: An %IntegerMatrix
+ * \param cell: A %UnitCell.
+ * \param m: An %IntegerMatrix
  *
- * Applies the inverse of @m to @cell.
+ * Applies the inverse of \p m to \p cell.
  *
- * Returns: Transformed copy of @cell.
+ * \returns Transformed copy of \p cell.
  *
  */
 UnitCell *cell_transform_intmat_inverse(UnitCell *cell, IntegerMatrix *m)

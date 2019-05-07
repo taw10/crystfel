@@ -34,30 +34,7 @@
 #include "reflist.h"
 #include "utils.h"
 
-/**
- * SECTION:reflist
- * @short_description: The fast reflection list
- * @title: RefList
- * @section_id:
- * @see_also:
- * @include: "reflist.h"
- * @Image:
- *
- * The fast reflection list stores reflections in an RB-tree indexed
- * by the Miller indices h, k and l.  Any reflection can be found in a
- * length of time which scales logarithmically with the number of reflections in
- * the list.
- *
- * A RefList can contain any number of reflections, and can store more than
- * one reflection with a given set of indices, for example when two distinct
- * reflections are to be stored according to their asymmetric indices.
- *
- * There are getters and setters which can be used to get and set values for an
- * individual reflection.  The reflection list does not calculate any values,
- * only stores what it was given earlier.  As such, you will need to carefully
- * examine which fields your prior processing steps have filled in.
- */
-
+/** \file reflist.h */
 
 struct _refldata {
 
@@ -160,11 +137,9 @@ static Reflection *new_node(unsigned int serial)
 
 
 /**
- * reflist_new:
- *
  * Creates a new reflection list.
  *
- * Returns: the new reflection list, or NULL on error.
+ * \returns the new reflection list, or NULL on error.
  */
 RefList *reflist_new()
 {
@@ -181,10 +156,9 @@ RefList *reflist_new()
 
 
 /**
- * reflection_new:
- * @h: The h index of the new reflection
- * @k: The k index of the new reflection
- * @l: The l index of the new reflection
+ * \param h The h index of the new reflection
+ * \param k The k index of the new reflection
+ * \param l The l index of the new reflection
  *
  * Creates a new individual reflection.  You'll probably want to use
  * add_refl_to_list() at some later point.
@@ -196,8 +170,7 @@ Reflection *reflection_new(signed int h, signed int k, signed int l)
 
 
 /**
- * reflection_free:
- * @refl: The reflection to free.
+ * \param refl: The reflection to free.
  *
  * Destroys an individual reflection.
  */
@@ -222,8 +195,7 @@ static void recursive_free(Reflection *refl)
 
 
 /**
- * reflist_free:
- * @list: The reflection list to free.
+ * \param list: The reflection list to free.
  *
  * Destroys a reflection list.
  */
@@ -241,18 +213,17 @@ void reflist_free(RefList *list)
 /********************************** Search ************************************/
 
 /**
- * find_refl:
- * @list: The reflection list to search in
- * @h: The 'h' index to search for
- * @k: The 'k' index to search for
- * @l: The 'l' index to search for
+ * \param list: The reflection list to search in
+ * \param h: The 'h' index to search for
+ * \param k: The 'k' index to search for
+ * \param l: The 'l' index to search for
  *
  * This function finds the first reflection in 'list' with the given indices.
  *
  * Since a %RefList can contain multiple reflections with the same indices, you
  * may need to use next_found_refl() to get the other reflections.
  *
- * Returns: The found reflection, or NULL if no reflection with the given
+ * \returns The found reflection, or NULL if no reflection with the given
  * indices could be found.
  **/
 Reflection *find_refl(const RefList *list,
@@ -302,13 +273,12 @@ Reflection *find_refl(const RefList *list,
 
 
 /**
- * next_found_refl:
- * @refl: A reflection returned by find_refl() or next_found_refl()
+ * \param refl: A reflection returned by find_refl() or next_found_refl()
  *
- * This function returns the next reflection in @refl's list with the same
+ * This function returns the next reflection in \p refl's list with the same
  * indices.
  *
- * Returns: The found reflection, or NULL if there are no more reflections with
+ * \returns The found reflection, or NULL if there are no more reflections with
  * the same indices.
  **/
 Reflection *next_found_refl(Reflection *refl)
@@ -323,10 +293,9 @@ Reflection *next_found_refl(Reflection *refl)
 
 
 /**
- * get_detector_pos:
- * @refl: A %Reflection
- * @fs: Location at which to store the fast scan offset of the reflection
- * @ss: Location at which to store the slow scan offset of the reflection
+ * \param refl: Reflection
+ * \param fs: Location at which to store the fast scan offset of the reflection
+ * \param ss: Location at which to store the slow scan offset of the reflection
  *
  **/
 void get_detector_pos(const Reflection *refl, double *fs, double *ss)
@@ -337,10 +306,9 @@ void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 
 
 /**
- * get_panel:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the panel which the reflection appears on
+ * \returns the panel which the reflection appears on
  *
  **/
 struct panel *get_panel(const Reflection *refl)
@@ -350,11 +318,10 @@ struct panel *get_panel(const Reflection *refl)
 
 
 /**
- * get_indices:
- * @refl: A %Reflection
- * @h: Location at which to store the 'h' index of the reflection
- * @k: Location at which to store the 'k' index of the reflection
- * @l: Location at which to store the 'l' index of the reflection
+ * \param refl: Reflection
+ * \param h: Location at which to store the 'h' index of the reflection
+ * \param k: Location at which to store the 'k' index of the reflection
+ * \param l: Location at which to store the 'l' index of the reflection
  *
  **/
 void get_indices(const Reflection *refl,
@@ -367,11 +334,10 @@ void get_indices(const Reflection *refl,
 
 
 /**
- * get_symmetric_indices:
- * @refl: A %Reflection
- * @hs: Location at which to store the 'h' index of the reflection
- * @ks: Location at which to store the 'k' index of the reflection
- * @ls: Location at which to store the 'l' index of the reflection
+ * \param refl: Reflection
+ * \param hs: Location at which to store the 'h' index of the reflection
+ * \param ks: Location at which to store the 'k' index of the reflection
+ * \param ls: Location at which to store the 'l' index of the reflection
  *
  * This function gives the symmetric indices, that is, the "real" indices before
  * squashing down to the asymmetric reciprocal unit.  This may be useful if the
@@ -390,10 +356,9 @@ void get_symmetric_indices(const Reflection *refl,
 
 
 /**
- * get_partiality:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: The partiality of the reflection.  See get_lorentz().
+ * \returns The partiality of the reflection.  See get_lorentz().
  **/
 double get_partiality(const Reflection *refl)
 {
@@ -402,10 +367,9 @@ double get_partiality(const Reflection *refl)
 
 
 /**
- * get_lorentz:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: The Lorentz factor for the reflection.  To "scale up" a partial
+ * \returns The Lorentz factor for the reflection.  To "scale up" a partial
  * reflection, divide by this multiplied by the partiality.
  **/
 double get_lorentz(const Reflection *refl)
@@ -415,10 +379,9 @@ double get_lorentz(const Reflection *refl)
 
 
 /**
- * get_intensity:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: The intensity of the reflection.
+ * \returns The intensity of the reflection.
  **/
 double get_intensity(const Reflection *refl)
 {
@@ -428,9 +391,9 @@ double get_intensity(const Reflection *refl)
 
 /**
  * get_khalf
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the wavenumber at the centre of the reflection
+ * \returns the wavenumber at the centre of the reflection
  *
  **/
 double get_khalf(const Reflection *refl)
@@ -442,10 +405,9 @@ double get_khalf(const Reflection *refl)
 
 
 /**
- * get_kpred:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the wavenumber which should be used for prediction of this reflection
+ * \returns the wavenumber which should be used for prediction of this reflection
  *
  **/
 double get_kpred(const Reflection *refl)
@@ -455,10 +417,9 @@ double get_kpred(const Reflection *refl)
 
 
 /**
- * get_exerr:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the excitation error (in m^-1) for this reflection
+ * \returns the excitation error (in m^-1) for this reflection
  *
  **/
 double get_exerr(const Reflection *refl)
@@ -468,8 +429,7 @@ double get_exerr(const Reflection *refl)
 
 
 /**
- * get_redundancy:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
  * The redundancy of the reflection is the number of measurements that have been
  * made of it.  Note that a redundancy of zero may have a special meaning, such
@@ -478,7 +438,7 @@ double get_exerr(const Reflection *refl)
  * copies of the reflection in the list.  The total number of reflection
  * measurements should always be the sum of the redundancies in the entire list.
  *
- * Returns: the number of measurements of this reflection.
+ * \returns the number of measurements of this reflection.
  *
  **/
 int get_redundancy(const Reflection *refl)
@@ -488,10 +448,9 @@ int get_redundancy(const Reflection *refl)
 
 
 /**
- * get_esd_intensity:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the standard error in the intensity measurement (as returned by
+ * \returns the standard error in the intensity measurement (as returned by
  * get_intensity()) for this reflection.
  *
  **/
@@ -502,11 +461,10 @@ double get_esd_intensity(const Reflection *refl)
 
 
 /**
- * get_phase:
- * @refl: A %Reflection
- * @have_phase: Place to store a non-zero value if the phase is set, or NULL.
+ * \param refl: Reflection
+ * \param have_phase: Place to store a non-zero value if the phase is set, or NULL.
  *
- * Returns: the phase for this reflection.
+ * \returns the phase for this reflection.
  *
  **/
 double get_phase(const Reflection *refl, int *have_phase)
@@ -517,10 +475,9 @@ double get_phase(const Reflection *refl, int *have_phase)
 
 
 /**
- * get_peak:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the peak height (value of the highest pixel, before background
+ * \returns the peak height (value of the highest pixel, before background
  * subtraction) for this reflection.
  *
  **/
@@ -531,10 +488,9 @@ double get_peak(const Reflection *refl)
 
 
 /**
- * get_mean_bg:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the mean background level for this reflection.
+ * \returns the mean background level for this reflection.
  *
  **/
 double get_mean_bg(const Reflection *refl)
@@ -544,13 +500,12 @@ double get_mean_bg(const Reflection *refl)
 
 
 /**
- * get_temp1:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
  * The temporary values can be used according to the needs of the calling
  * program.
  *
- * Returns: the first temporary value for this reflection.
+ * \returns the first temporary value for this reflection.
  *
  **/
 double get_temp1(const Reflection *refl)
@@ -560,13 +515,12 @@ double get_temp1(const Reflection *refl)
 
 
 /**
- * get_temp2:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
  * The temporary values can be used according to the needs of the calling
  * program.
  *
- * Returns: the second temporary value for this reflection.
+ * \returns the second temporary value for this reflection.
  *
  **/
 double get_temp2(const Reflection *refl)
@@ -576,13 +530,12 @@ double get_temp2(const Reflection *refl)
 
 
 /**
- * get_flag:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
  * The integer flag value can be used according to the needs of the calling
  * program.
  *
- * Returns: the flag for this reflection.
+ * \returns the flag for this reflection.
  *
  **/
 int get_flag(const Reflection *refl)
@@ -592,10 +545,9 @@ int get_flag(const Reflection *refl)
 
 
 /**
- * get_contributions:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
- * Returns: the reflection's contribution list
+ * \returns the reflection's contribution list
  *
  **/
 struct reflection_contributions *get_contributions(const Reflection *refl)
@@ -606,9 +558,8 @@ struct reflection_contributions *get_contributions(const Reflection *refl)
 /********************************** Setters ***********************************/
 
 /**
- * copy_data:
- * @to: %Reflection to copy data into
- * @from: %Reflection to copy data from
+ * \param to: %Reflection to copy data into
+ * \param from: %Reflection to copy data from
  *
  * This function is used to copy the data (which is everything listed above in
  * the list of getters and setters, apart from the indices themselves) from one
@@ -624,10 +575,9 @@ void copy_data(Reflection *to, const Reflection *from)
 
 
 /**
- * set_detector_pos:
- * @refl: A %Reflection
- * @fs: The fast scan offset of the reflection
- * @ss: The slow scan offset of the reflection
+ * \param refl: Reflection
+ * \param fs: The fast scan offset of the reflection
+ * \param ss: The slow scan offset of the reflection
  *
  **/
 void set_detector_pos(Reflection *refl, double fs, double ss)
@@ -638,9 +588,8 @@ void set_detector_pos(Reflection *refl, double fs, double ss)
 
 
 /**
- * set_panel:
- * @refl: A %Reflection
- * @p: Pointer to the panel structure on which the reflection appears
+ * \param refl: Reflection
+ * \param p: Pointer to the panel structure on which the reflection appears
  *
  * Note that the pointer will be stored, not the contents of the structure.
  *
@@ -652,9 +601,8 @@ void set_panel(Reflection *refl, struct panel *p)
 
 
 /**
- * set_khalf:
- * @refl: A %Reflection
- * @khalf: The wavenumber at which the reflection should be predicted
+ * \param refl: Reflection
+ * \param khalf: The wavenumber at which the reflection should be predicted
  *
  * Sets the wavenumber at the centre of the reflection.
  **/
@@ -665,9 +613,8 @@ void set_khalf(Reflection *refl, double khalf)
 
 
 /**
- * set_kpred:
- * @refl: A %Reflection
- * @kpred: The wavenumber at which the reflection should be predicted
+ * \param refl: Reflection
+ * \param kpred: The wavenumber at which the reflection should be predicted
  *
  * Sets the wavenumber at which the reflection should be predicted.
  * Used by predict_to_res() and update_predictions()
@@ -679,9 +626,8 @@ void set_kpred(Reflection *refl, double kpred)
 
 
 /**
- * set_exerr:
- * @refl: A %Reflection
- * @exerr: The excitation error for the reflection
+ * \param refl: Reflection
+ * \param exerr: The excitation error for the reflection
  *
  **/
 void set_exerr(Reflection *refl, double exerr)
@@ -691,9 +637,8 @@ void set_exerr(Reflection *refl, double exerr)
 
 
 /**
- * set_intensity:
- * @refl: A %Reflection
- * @p: The partiality for the reflection.
+ * \param refl: Reflection
+ * \param p: The partiality for the reflection.
  *
  * Set the partiality for the reflection.  See set_lorentz().
  **/
@@ -703,9 +648,8 @@ void set_partiality(Reflection *refl, double p)
 }
 
 /**
- * set_lorentz:
- * @refl: A %Reflection
- * @L: The Lorentz factor for the reflection.
+ * \param refl: Reflection
+ * \param L: The Lorentz factor for the reflection.
  *
  * Set the Lorentz factor for the reflection.  To "scale up" a partial
  * reflection, divide by this multiplied by the partiality.
@@ -717,9 +661,8 @@ void set_lorentz(Reflection *refl, double L)
 
 
 /**
- * set_intensity:
- * @refl: A %Reflection
- * @intensity: The intensity for the reflection.
+ * \param refl: Reflection
+ * \param intensity: The intensity for the reflection.
  *
  * Set the intensity for the reflection.
  **/
@@ -730,9 +673,8 @@ void set_intensity(Reflection *refl, double intensity)
 
 
 /**
- * set_redundancy:
- * @refl: A %Reflection
- * @red: New redundancy for the reflection
+ * \param refl: Reflection
+ * \param red: New redundancy for the reflection
  *
  * The redundancy of the reflection is the number of measurements that have been
  * made of it.  Note that a redundancy of zero may have a special meaning, such
@@ -749,9 +691,8 @@ void set_redundancy(Reflection *refl, int red)
 
 
 /**
- * set_esd_intensity:
- * @refl: A %Reflection
- * @esd: New standard error for this reflection's intensity measurement
+ * \param refl: Reflection
+ * \param esd: New standard error for this reflection's intensity measurement
  *
  **/
 void set_esd_intensity(Reflection *refl, double esd)
@@ -761,9 +702,8 @@ void set_esd_intensity(Reflection *refl, double esd)
 
 
 /**
- * set_phase:
- * @refl: A %Reflection
- * @phase: New phase for the reflection
+ * \param refl: Reflection
+ * \param phase: New phase for the reflection
  *
  **/
 void set_phase(Reflection *refl, double phase)
@@ -774,9 +714,8 @@ void set_phase(Reflection *refl, double phase)
 
 
 /**
- * set_peak:
- * @refl: A %Reflection
- * @peak: New peak height for the reflection
+ * \param refl: Reflection
+ * \param peak: New peak height for the reflection
  *
  **/
 void set_peak(Reflection *refl, double peak)
@@ -786,9 +725,8 @@ void set_peak(Reflection *refl, double peak)
 
 
 /**
- * set_mean_bg:
- * @refl: A %Reflection
- * @mean_bg: New peak height for the reflection
+ * \param refl: Reflection
+ * \param mean_bg: New peak height for the reflection
  *
  **/
 void set_mean_bg(Reflection *refl, double mean_bg)
@@ -798,11 +736,10 @@ void set_mean_bg(Reflection *refl, double mean_bg)
 
 
 /**
- * set_symmetric_indices:
- * @refl: A %Reflection
- * @hs: The 'h' index of the reflection
- * @ks: The 'k' index of the reflection
- * @ls: The 'l' index of the reflection
+ * \param refl: Reflection
+ * \param hs: The 'h' index of the reflection
+ * \param ks: The 'k' index of the reflection
+ * \param ls: The 'l' index of the reflection
  *
  * This function gives the symmetric indices, that is, the "real" indices before
  * squashing down to the asymmetric reciprocal unit.  This may be useful if the
@@ -820,9 +757,8 @@ void set_symmetric_indices(Reflection *refl,
 
 
 /**
- * set_temp1
- * @refl: A %Reflection
- * @temp: New temporary value for the reflection
+ * \param refl: A \ref Reflection
+ * \param temp: New temporary value for the reflection
  *
  * The temporary values can be used according to the needs of the calling
  * program.
@@ -835,9 +771,8 @@ void set_temp1(Reflection *refl, double temp)
 
 
 /**
- * set_temp2
- * @refl: A %Reflection
- * @temp: New temporary value for the reflection
+ * \param refl: A \ref Reflection
+ * \param temp: New temporary value for the reflection
  *
  * The temporary values can be used according to the needs of the calling
  * program.
@@ -850,11 +785,10 @@ void set_temp2(Reflection *refl, double temp)
 
 
 /**
- * set_flag
- * @refl: A %Reflection
- * @flag: New flag value
+ * \param refl: A \ref Reflection
+ * \param flag: New flag value
  *
- * @flag is an integer value which can be used according to the needs of the
+ * \param flag is an integer value which can be used according to the needs of the
  * calling program.
  *
  **/
@@ -865,9 +799,8 @@ void set_flag(Reflection *refl, int flag)
 
 
 /**
- * set_contributions:
- * @refl: A %Reflection
- * @contribs: Pointer to the contribution list
+ * \param refl: Reflection
+ * \param contribs: Pointer to the contribution list
  *
  * Note that the pointer will be stored, not the contents of the structure.
  *
@@ -973,17 +906,16 @@ static void add_to_list(RefList *list, Reflection *new,
 
 
 /**
- * add_refl
- * @list: A %RefList
- * @h: The 'h' index of the reflection
- * @k: The 'k' index of the reflection
- * @l: The 'l' index of the reflection
+ * \param list: A %RefList
+ * \param h: The 'h' index of the reflection
+ * \param k: The 'k' index of the reflection
+ * \param l: The 'l' index of the reflection
  *
- * Adds a new reflection to @list.  Note that the implementation allows there to
+ * Adds a new reflection to \p list.  Note that the implementation allows there to
  * be multiple reflections with the same indices in the list, so this function
  * should succeed even if the given indices already feature in the list.
  *
- * Returns: The newly created reflection, or NULL on failure.
+ * \returns The newly created reflection, or NULL on failure.
  *
  **/
 Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
@@ -1004,11 +936,10 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 
 
 /**
- * add_refl_to_list
- * @refl: A %Reflection
- * @list: A %RefList
+ * \param refl: Reflection
+ * \param list: A %RefList
  *
- * Adds a @refl to @list.
+ * Adds \p refl to \p list.
  *
  **/
 void add_refl_to_list(Reflection *refl, RefList *list)
@@ -1034,15 +965,14 @@ struct _reflistiterator {
 
 
 /**
- * first_refl:
- * @list: A %RefList to iterate over
- * @piter: Address at which to store a %RefListIterator
+ * \param list: A %RefList to iterate over
+ * \param piter: Address at which to store a %RefListIterator
  *
  * This function sets up the state required for iteration over the entire list,
  * and then returns the first reflection in the list.  An iterator object will
  * be created and its address stored at the location given in piter.
  *
- * Returns: the first reflection in the list.
+ * \returns the first reflection in the list.
  *
  **/
 Reflection *first_refl(RefList *list, RefListIterator **piter)
@@ -1089,14 +1019,13 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 
 
 /**
- * first_refl_const:
- * @list: A %RefList to iterate over
- * @piter: Address at which to store a %RefListIterator
+ * \param list: A %RefList to iterate over
+ * \param piter: Address at which to store a %RefListIterator
  *
  * As first_refl(), except returns a const %Reflection.
  * Use this when you don't need to modify any of the reflections.
  *
- * Returns: the first reflection in the list.
+ * \returns the first reflection in the list.
  *
  **/
 const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
@@ -1143,14 +1072,13 @@ const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
 
 
 /**
- * next_refl:
- * @refl: A reflection
- * @iter: A %RefListIterator
+ * \param refl: A reflection
+ * \param iter: A %RefListIterator
  *
  * This function looks up the next reflection in the list that was given earlier
  * to first_refl().
  *
- * Returns: the next reflection in the list, or NULL if no more.
+ * \returns the next reflection in the list, or NULL if no more.
  *
  **/
 Reflection *next_refl(Reflection *refl, RefListIterator *iter)
@@ -1197,14 +1125,13 @@ Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 
 
 /**
- * next_refl_const:
- * @refl: A reflection
- * @iter: A %RefListIterator
+ * \param refl: A reflection
+ * \param iter: A %RefListIterator
  *
  * As next_refl(), except returns a const %Reflection.
  * Use this when you don't need to modify any of the reflections.
  *
- * Returns: the next reflection in the list, or NULL if no more.
+ * \returns the next reflection in the list, or NULL if no more.
  *
  **/
 const Reflection *next_refl_const(const Reflection *refl, RefListIterator *iter)
@@ -1286,10 +1213,9 @@ static int recursive_count(Reflection *refl)
 
 
 /**
- * num_reflections:
- * @list: A %RefList
+ * \param list: A %RefList
  *
- * Returns: the number of reflections in @list.
+ * \returns the number of reflections in \p list.
  *
  **/
 int num_reflections(RefList *list)
@@ -1299,13 +1225,12 @@ int num_reflections(RefList *list)
 
 
 /**
- * tree_depth:
- * @list: A %RefList
+ * \param list: A %RefList
  *
  * If the depth of the tree is more than about 20, access to the list will be
  * slow.  This should never happen.
  *
- * Returns: the depth of the RB-tree used internally to represent @list.
+ * \returns the depth of the RB-tree used internally to represent \p list.
  *
  **/
 int tree_depth(RefList *list)
@@ -1315,8 +1240,7 @@ int tree_depth(RefList *list)
 
 
 /**
- * lock_reflection:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
  * Acquires a lock on the reflection.
  */
@@ -1327,8 +1251,7 @@ void lock_reflection(Reflection *refl)
 
 
 /**
- * unlock_reflection:
- * @refl: A %Reflection
+ * \param refl: Reflection
  *
  * Releases a lock on the reflection.
  */
@@ -1346,10 +1269,9 @@ static void reflist_set_notes(RefList *reflist, const char *notes)
 
 
 /**
- * reflist_get_notes:
- * @reflist: A %RefList
+ * \param reflist: Reflection list
  *
- * Returns the notes field for @reflist, or NULL if there are no notes.
+ * \returns the notes field for \p reflist, or NULL if there are no notes.
  * See reflist_add_notes() for more details.
  */
 const char *reflist_get_notes(RefList *reflist)
@@ -1359,11 +1281,10 @@ const char *reflist_get_notes(RefList *reflist)
 
 
 /**
- * reflist_add_notes:
- * @reflist: A %RefList
- * @notes_add: Notes to add
+ * \param reflist: Reflection list
+ * \param notes_add: Notes to add
  *
- * Appends the string @notes_add to the notes field for @reflist.  The notes
+ * Appends the string \p notes_add to the notes field for \p reflist.  The notes
  * will be stored in the reflection list file by, e.g.,
  * write_reflist(), and are meant to be for humans to read.
  * Possible uses include making a record of the command line arguments used to

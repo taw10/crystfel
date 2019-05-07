@@ -39,6 +39,8 @@
 #include "peakfinder8.h"
 
 
+/** \file peakfinder8.h */
+
 // CrystFEL-only block 1
 struct radius_maps
 {
@@ -1003,6 +1005,20 @@ static int peakfinder8_base(float *roffset, float *rthreshold,
 }
 
 
+/**
+ * \param img An \ref image structure
+ * \param max_n_peaks The maximum number of peaks to be searched for
+ * \param threshold The image threshold value, in detector units
+ * \param min_snr The minimum signal to noise ratio for a peak
+ * \param min_pix_count The minimum number of pixels in a peak
+ * \param max_pix_count The maximum number of pixels in a peak
+ * \param local_bg_radius The averaging radius for background calculation
+ * \param min_res The minimum number of pixels out from the center
+ * \param max_res The maximum number of pixels out from the center
+ * \param use_saturated Whether saturated peaks should be considered
+ *
+ * Runs the peakfinder8 peak search algorithm
+ */
 int peakfinder8(struct image *img, int max_n_peaks,
                 float threshold, float min_snr,
                 int min_pix_count, int max_pix_count,

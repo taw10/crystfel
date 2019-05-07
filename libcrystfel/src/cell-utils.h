@@ -43,6 +43,12 @@
 extern "C" {
 #endif
 
+/**
+ * \file cell-utils.h
+ * Unit cell utility functions.
+ **/
+
+
 extern double resolution(UnitCell *cell,
                          signed int h, signed int k, signed int l);
 

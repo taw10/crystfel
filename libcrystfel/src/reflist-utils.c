@@ -43,19 +43,18 @@
 #include "symmetry.h"
 
 
+/** \file reflist-utils.h
+ */
+
+
 /**
- * SECTION:reflist-utils
- * @short_description: Reflection list utilities
- * @title: RefList utilities
- * @section_id:
- * @see_also:
- * @include: "reflist-utils.h"
- * @Image:
+ * Checks that the symmetry of \p list is indeed \p sym.
  *
- * There are some utility functions associated with the core %RefList.
- **/
-
-
+ * \param list A list of reflections
+ * \param sym Symmetry of the reflection list
+ *
+ * \returns 0 if the symmetry is correct, otherwise 1
+ */
 int check_list_symmetry(RefList *list, const SymOpList *sym)
 {
 	Reflection *refl;
@@ -155,7 +154,7 @@ int find_equiv_in_list(RefList *list, signed int h, signed int k,
 }
 
 
-/**
+/*
  * Write the actual reflections to the file, no headers etc.
  * Reflections which have a redundancy of zero will not be written.
  * The resulting list can be read back with read_reflections_from_file().
@@ -202,19 +201,18 @@ static void write_reflections_to_file(FILE *fh, RefList *list)
 
 
 /**
- * write_reflist_2:
- * @filename: Filename
- * @list: The reflection list to write
- * @sym: A %SymOpList describing the symmetry of the list
- *
- * This function writes the contents of @list to @file,
+ * This function writes the contents of list to file,
  *
  * Reflections which have a redundancy of zero will not be written.
  *
  * The resulting list can be read back with read_reflections_from_file() or
  * read_reflections().
  *
- * Returns: zero on success, non-zero on failure.
+ * \param filename Filename
+ * \param list The reflection list to write
+ * \param sym A %SymOpList describing the symmetry of the list
+ *
+ * \returns zero on success, non-zero on failure.
  **/
 int write_reflist_2(const char *filename, RefList *list, SymOpList *sym)
 {
@@ -255,23 +253,22 @@ int write_reflist_2(const char *filename, RefList *list, SymOpList *sym)
 
 
 /**
- * write_reflist:
- * @filename: Filename
- * @list: The reflection list to write
- *
- * This function writes the contents of @list to @file,
+ * This function writes the contents of list to file,
  *
  * Reflections which have a redundancy of zero will not be written.
  *
  * The resulting list can be read back with read_reflections_from_file() or
  * read_reflections().
  *
- * This is a convenience function which simply opens @filename and then calls
+ * This is a convenience function which simply opens filename and then calls
  * write_reflections_to_file.
  *
- * Deprecated: use write_reflist_2() instead.
+ * \deprecated Use write_reflist_2() instead.
  *
- * Returns: zero on success, non-zero on failure.
+ * \param filename Filename
+ * \param list The reflection list to write
+ *
+ * \returns Zero on success, non-zero on failure.
  **/
 int write_reflist(const char *filename, RefList *list)
 {
@@ -422,8 +419,8 @@ static RefList *read_reflections_from_file(FILE *fh, char **sym)
 
 /**
  * read_reflections_2:
- * @filename: Filename to read from
- * @sym: Pointer to a "char *" at which to store the symmetry
+ * \param filename: Filename to read from
+ * \param sym: Pointer to a "char *" at which to store the symmetry
  *
  * This function reads a reflection list from a file, including the
  * symmetry from the header (e.g. "Symmetry: 4/mmm").
@@ -456,7 +453,7 @@ RefList *read_reflections_2(const char *filename, char **sym)
 
 /**
  * read_reflections:
- * @filename: Filename to read from
+ * \param filename: Filename to read from
  *
  * This function reads a reflection list from a file.
  *
@@ -470,11 +467,11 @@ RefList *read_reflections(const char *filename)
 
 /**
  * asymmetric_indices:
- * @in: A %RefList
- * @sym: A %SymOpList
+ * \param in: A %RefList
+ * \param sym: A %SymOpList
  *
- * This function creates a newly allocated copy of @in, but indexed using the
- * asymmetric indices according to @sym instead of the original indices.  The
+ * This function creates a newly allocated copy of in, but indexed using the
+ * asymmetric indices according to sym instead of the original indices.  The
  * original indices are stored and can be retrieved using
  * get_symmetric_indices() if required.
  *
@@ -515,10 +512,10 @@ RefList *asymmetric_indices(RefList *in, const SymOpList *sym)
 
 /**
  * resolution_limits:
- * @list: A %RefList
- * @cell: A %UnitCell
- * @rmin: Place to store the minimum 1/d value
- * @rmax: Place to store the maximum 1/d value
+ * \param list: A %RefList
+ * \param cell: A %UnitCell
+ * \param rmin: Place to store the minimum 1/d value
+ * \param rmax: Place to store the maximum 1/d value
  *
  * This function calculates the minimum and maximum values of 1/d, where
  * 2dsin(theta) = wavelength.  The answers are in m^-1.
@@ -550,9 +547,9 @@ void resolution_limits(RefList *list, UnitCell *cell,
 
 /**
  * max_intensity:
- * @list: A %RefList
+ * \param list: A %RefList
  *
- * Returns: The maximum intensity in @list.
+ * Returns: The maximum intensity in \p list.
  **/
 double max_intensity(RefList *list)
 {
@@ -576,12 +573,12 @@ double max_intensity(RefList *list)
 
 /**
  * res_cutoff:
- * @list: A %RefList
- * @cell: A %UnitCell with which to calculate 1/d values for @list
- * @min: Minimum acceptable value of 1/d
- * @max: Maximum acceptable value of 1/d
+ * \param list: A %RefList
+ * \param cell: A %UnitCell with which to calculate 1/d values for \p list
+ * \param min: Minimum acceptable value of 1/d
+ * \param max: Maximum acceptable value of 1/d
  *
- * Applies a resolution cutoff to @list, returning the new version and freeing
+ * Applies a resolution cutoff to \p list, returning the new version and freeing
  * the old version.
  *
  * Returns: A new %RefList with resolution cutoff applied
@@ -619,7 +616,7 @@ RefList *res_cutoff(RefList *list, UnitCell *cell, double min, double max)
 
 /**
  * copy_reflist:
- * @list: A %RefList
+ * \param list: A %RefList
  *
  * Returns: A copy of %RefList.
  **/
@@ -650,9 +647,9 @@ RefList *copy_reflist(RefList *list)
 
 /**
  * free_contribs:
- * @list: A %RefList
+ * \param list: A %RefList
  *
- * Goes through @list and frees all the reflection contribution structures.
+ * Goes through \p list and frees all the reflection contribution structures.
  **/
 void free_contribs(RefList *list)
 {

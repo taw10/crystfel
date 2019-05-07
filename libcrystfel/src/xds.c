@@ -59,6 +59,7 @@
 #include "detector.h"
 #include "cell-utils.h"
 
+/** \file xds.h */
 
 /* Fake pixel size and camera length, both in metres */
 #define FAKE_PIXEL_SIZE (70e-6)

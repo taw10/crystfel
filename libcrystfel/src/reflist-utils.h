@@ -31,8 +31,10 @@
 #include <config.h>
 #endif
 
+/** @cond */
 #ifndef REFLIST_UTILS_H
 #define REFLIST_UTILS_H
+/** @endcond */
 
 #include "image.h"
 #include "reflist.h"
@@ -43,8 +45,15 @@
 extern "C" {
 #endif
 
-#define REFLECTION_END_MARKER "End of reflections"
+/** \file reflist-utils.h
+ *
+ * Reflection list utility functions.
+ */
 
+/** @cond
+ * Used in stream.c as well, but not part of the API */
+#define REFLECTION_END_MARKER "End of reflections"
+/** @endcond */
 
 extern int write_reflist(const char *filename, RefList *list);
 extern int write_reflist_2(const char *filename, RefList *list, SymOpList *sym);
@@ -78,4 +87,6 @@ extern void reflist_add_command_and_version(RefList *list,
 }
 #endif
 
+/** @cond */
 #endif	/* REFLIST_UTILS_H */
+/** @endcond */

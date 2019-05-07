@@ -41,19 +41,7 @@
 #include "utils.h"
 
 
-/**
- * SECTION:thread-pool
- * @short_description: The thread pool
- * @title: The thread pool
- * @section_id:
- * @see_also:
- * @include: "thread-pool.h"
- * @Image:
- *
- * The thread pool helps when running many tasks in parallel.  It takes care of
- * starting and stopping threads, and presents a relatively simple interface to
- * the individual programs.
- */
+/** \file thread-pool.h */
 
 /* --------------------------- Status label stuff --------------------------- */
 
@@ -151,32 +139,31 @@ static void *task_worker(void *pargsv)
 
 
 /**
- * run_threads:
- * @n_threads: The number of threads to run in parallel
- * @work: The function to be called to do the work
- * @get_task: The function which will determine the next unassigned task
- * @final: The function which will be called to clean up after a task
- * @queue_args: A pointer to any data required to determine the next task
- * @max: Stop calling get_task after starting this number of jobs
- * @cpu_num: Ignored
- * @cpu_groupsize: Ignored
- * @cpu_offset: Ignored
+ * \param n_threads The number of threads to run in parallel
+ * \param work The function to be called to do the work
+ * \param get_task The function which will determine the next unassigned task
+ * \param final The function which will be called to clean up after a task
+ * \param queue_args A pointer to any data required to determine the next task
+ * \param max Stop calling get_task after starting this number of jobs
+ * \param cpu_num Ignored
+ * \param cpu_groupsize Ignored
+ * \param cpu_offset Ignored
  *
- * 'get_task' will be called every time a worker is idle.  It returns either
+ * \p get_task will be called every time a worker is idle.  It returns either
  * NULL, indicating that no further work is available, or a pointer which will
- * be passed to 'work'.
+ * be passed to \p work.
  *
- * 'final' will be called once per image, and will be given both queue_args
+ * \p final will be called once per image, and will be given both queue_args
  * and the last task pointer.
  *
- * 'get_task' and 'final' will be called only under lock, and so do NOT need to
+ * \p get_task and \p final will be called only under lock, and so do NOT need to
  * be re-entrant or otherwise thread safe.  'work', of course, needs to be
  * thread safe.
  *
- * Work will stop after 'max' tasks have been processed whether get_task
- * returned NULL or not.  If "max" is zero, all tasks will be processed.
+ * Work will stop after \p max tasks have been processed whether get_task
+ * returned NULL or not.  If \p max is zero, all tasks will be processed.
  *
- * Returns: The number of tasks completed.
+ * \returns The number of tasks completed.
  **/
 int run_threads(int n_threads, TPWorkFunc work,
                 TPGetTaskFunc get_task, TPFinalFunc final,

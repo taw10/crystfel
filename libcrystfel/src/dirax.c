@@ -56,6 +56,8 @@
 #include "cell-utils.h"
 
 
+/** \file dirax.h */
+
 #define DIRAX_VERBOSE 0
 
 #define MAX_DIRAX_CELL_CANDIDATES (5)

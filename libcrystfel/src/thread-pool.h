@@ -43,41 +43,39 @@ extern "C" {
 extern pthread_mutex_t stderr_lock;
 extern signed int get_status_label(void);
 
+/**
+ * \file thread-pool.h
+ * Thread pool.
+ */
 
 /**
- * TPGetTaskFunc:
- * @qargs: The queue_args pointer which was given to run_threads().
- * Returns: A pointer which will be passed to the worker function.
+ * \p qargs: The queue_args pointer which was given to run_threads().
+ * \returns a pointer which will be passed to the worker function.
  *
  * This function is called, non-reentrantly, to get a new work item to give to
  * your work function.  The stuff you need to generate the new work item should
- * have been stored in @qargs which was passed to run_threads().
- *
+ * have been stored in \p qargs which was passed to \ref run_threads.
  **/
 typedef void *(*TPGetTaskFunc)(void *qargs);
 
 
 /**
- * TPWorkFunc:
- * @work: The queue_args pointer which was given to run_threads().
- * @cookie: A small integral number which is guaranteed to be unique among all
+ * \param work The queue_args pointer which was given to \ref run_threads.
+ * \param cookie A small integral number which is guaranteed to be unique among all
  * currently running threads.
  *
  * This function is called, reentrantly, for each work item.
- *
  **/
 typedef void (*TPWorkFunc)(void *work, int cookie);
 
 
 /**
- * TPFinalFunc:
- * @qargs: The queue_args pointer which was given to run_threads().
- * @work: The pointer which was returned by your get_task function.
+ * \param qargs The queue_args pointer which was given to \ref run_threads.
+ * \param work The pointer which was returned by your get_task function.
  *
  * This function is called, non-reentrantly, after each work item has been
- * completed.  A typical use might be to update some counters inside @qargs
- * according to fields withing @work which were filled by your 'work' function.
- *
+ * completed.  A typical use might be to update some counters inside \p qargs
+ * according to fields withing \p work which were filled by your 'work' function.
  **/
 typedef void (*TPFinalFunc)(void *qargs, void *work);
 

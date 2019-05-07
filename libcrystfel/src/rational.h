@@ -34,8 +34,11 @@
 #endif
 
 /**
- * Rational
- *
+ * \file rational.h
+ * %Rational numbers (including rational matrices)
+ */
+
+/**
  * The Rational is an opaque-ish data structure representing a rational number.
  *
  * "Opaque-ish" means that the structure isn't technically opaque, allowing you
@@ -50,8 +53,6 @@ typedef struct {
 
 
 /**
- * RationalMatrix
- *
  * The RationalMatrix is an opaque data structure representing a matrix of
  * rational numbers.
  **/

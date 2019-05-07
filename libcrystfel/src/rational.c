@@ -40,19 +40,7 @@
 #include "integer_matrix.h"
 #include "utils.h"
 
-
-/**
- * SECTION:rational
- * @short_description: Rational numbers
- * @title: Rational numbers
- * @section_id:
- * @see_also:
- * @include: "rational.h"
- * @Image:
- *
- * A rational number library
- */
-
+/** \file rational.h */
 
 /* Eucliden algorithm for finding greatest common divisor */
 static signed int gcd(signed int a, signed int b)
@@ -206,12 +194,11 @@ Rational rtnl_abs(Rational a)
 
 
 /**
- * rtnl_format
- * @rt: A %Rational
+ * \param rt A \ref Rational
  *
- * Formats @rt as a string
+ * Formats \p rt as a string
  *
- * Returns: a string which should be freed by the caller
+ * \returns A string which should be freed by the caller
  */
 char *rtnl_format(Rational rt)
 {
@@ -259,19 +246,6 @@ Rational *rtnl_list(signed int num_min, signed int num_max,
 }
 
 
-/**
- * SECTION:rational_matrix
- * @short_description: Rational matrices
- * @title: Rational matrices
- * @section_id:
- * @see_also:
- * @include: "rational.h"
- * @Image:
- *
- * A rational matrix library
- */
-
-
 struct _rationalmatrix
 {
 	unsigned int rows;
@@ -281,13 +255,12 @@ struct _rationalmatrix
 
 
 /**
- * rtnl_mtx_new:
- * @rows: Number of rows that the new matrix is to have
- * @cols: Number of columns that the new matrix is to have
+ * \param rows Number of rows that the new matrix is to have
+ * \param cols Number of columns that the new matrix is to have
  *
- * Allocates a new %RationalMatrix with all elements set to zero.
+ * Allocates a new \ref RationalMatrix with all elements set to zero.
  *
- * Returns: a new %RationalMatrix, or NULL on error.
+ * \returns A new \ref RationalMatrix, or NULL on error.
  **/
 RationalMatrix *rtnl_mtx_new(unsigned int rows, unsigned int cols)
 {
@@ -528,10 +501,9 @@ int transform_fractional_coords_rtnl(const RationalMatrix *P,
 
 
 /**
- * rtnl_mtx_print
- * @m: A %RationalMatrix
+ * \param m A \ref RationalMatrix
  *
- * Prints @m to stderr.
+ * Prints \p m to stderr.
  *
  */
 void rtnl_mtx_print(const RationalMatrix *m)

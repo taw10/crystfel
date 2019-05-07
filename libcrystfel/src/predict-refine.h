@@ -38,6 +38,11 @@
 
 struct image;
 
+/**
+ * \file predict-refine.h
+ * Prediction refinement: refinement of indexing solutions before integration.
+ */
+
 extern int refine_prediction(struct image *image, Crystal *cr);
 extern int refine_radius(Crystal *cr, struct image *image);
 

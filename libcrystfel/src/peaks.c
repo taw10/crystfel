@@ -62,6 +62,7 @@
 #include "geometry.h"
 #include "peakfinder8.h"
 
+/** \file peaks.h */
 
 static int cull_peaks_in_panel(struct image *image, struct panel *p)
 {

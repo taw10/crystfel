@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/** \file events.h */
 
 struct event *initialize_event()
 {
@@ -229,11 +230,10 @@ static int events_equal(struct event *ev1, struct event *ev2)
 
 
 /**
- * find_event:
- * @ev: An event structure
- * @el: An event list
+ * \param ev: An event structure
+ * \param el: An event list
  *
- * Returns: the indexing into @el of the event matching @ev, of el->num_events
+ * \returns The indexing into \p el of the event matching \p ev, of el->num_events
  * if no such event is found.
  **/
 int find_event(struct event *ev, struct event_list *el)

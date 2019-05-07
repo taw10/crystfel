@@ -33,6 +33,10 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+/**
+ * \file render.h
+ * Colour scale for rendering
+ */
 
 enum {
 	SCALE_COLOUR,

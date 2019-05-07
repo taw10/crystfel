@@ -46,6 +46,11 @@
 #include "thread-pool.h"
 
 
+/**
+ * \file utils.h
+ * Miscellaneous utility functions
+ */
+
 /* -------------------------- Fundamental constants  ------------------------ */
 
 /* Electron charge in C */
@@ -75,13 +80,11 @@ extern size_t notrail(char *s);
 extern void chomp(char *s);
 
 /**
- * AssplodeFlag:
- * @ASSPLODE_NONE: Nothing
- * @ASSPLODE_DUPS: Don't merge deliminators
+ * Controls the behaviour of \ref assplode.
  **/
 typedef enum {
-	ASSPLODE_NONE	= 0,
-	ASSPLODE_DUPS	= 1<<0
+	ASSPLODE_NONE	= 0,    /**< Nothing */
+	ASSPLODE_DUPS	= 1<<0  /**< Don't merge deliminators */
 } AssplodeFlag;
 extern int assplode(const char *a, const char *delims, char ***pbits,
                     AssplodeFlag flags);
@@ -237,14 +240,7 @@ extern void strip_extension(char *bfn);
 /* ------------------------------ Quaternions ------------------------------- */
 
 /**
- * quaternion:
- *  @w: component
- *  @x: component
- *  @y: component
- *  @z: component
- *
  * A structure representing a quaternion.
- *
  **/
 struct quaternion;
 

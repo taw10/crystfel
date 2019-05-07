@@ -55,57 +55,53 @@ struct imagefile_field_list;
 #include "index.h"
 #include "events.h"
 
-
-
 /**
- * imagefeature:
- *  @parent: Image this feature belongs to
- *  @fs: Fast scan coordinate
- *  @ss: Slow scan coordinate
- *  @p: Pointer to panel
- *  @intensity: Intensity of peak
- *  @rx: Reciprocal x coordinate in m^-1
- *  @ry: Reciprocal y coordinate in m^-1
- *  @rz: Reciprocal z coordinate in m^-1
- *  @name: Text name for feature
+ * \file image.h
  *
- *  Represents a peak in an image.
- *
- *  Note carefully that the @fs and @ss coordinates are the distances, measured
- *  in pixels, from the corner of the panel.  They are NOT pixel indices.
- *  If the peak is in the middle of the first pixel, its coordinates would be
- *  0.5,0.5.
+ * Information about images
  */
+
+/** Represents a peak in an image. */
 struct imagefeature {
 
-	struct image                    *parent;
+	struct image                    *parent;   /**< Pointer to image */
+
+	/** \name Coordinates on panel (fast scan, slow scan)
+	 *  Note carefully that these are the distances, measured in pixels,
+	 *  from the corner of the panel.  They are NOT pixel indices.
+	 *  If the peak is in the middle of the first pixel, its coordinates would be
+	 *  0.5,0.5. */
+	/**@{*/
 	double                          fs;
 	double                          ss;
-	struct panel                    *p;
-	double                          intensity;
+	/**@}*/
 
-	/* Reciprocal space coordinates (m^-1 of course) of this feature */
+	struct panel                    *p;         /**< Pointer to panel */
+	double                          intensity;  /**< Intensity */
+
+	/** \name Reciprocal space coordinates (m^-1) of this feature */
+	/** @{ */
 	double                          rx;
 	double                          ry;
 	double                          rz;
+	/** @} */
 
-	const char                      *name;
+	const char                      *name;  /**< Text name, e.g. "5,3,-1" */
 
-	/*< private >*/
-	int                             valid;
+	int                             valid;  /**< \private */
 };
 
 
-/* An enum representing the image file formats we can handle */
+/** An enum representing the image file formats we can handle */
 enum imagefile_type
 {
-	IMAGEFILE_HDF5,
-	IMAGEFILE_CBF,
-	IMAGEFILE_CBFGZ
+	IMAGEFILE_HDF5,   /**< HDF5 file (single or multiple frames per file) */
+	IMAGEFILE_CBF,    /**< CBF file */
+	IMAGEFILE_CBFGZ   /**< gzipped CBF file, i.e. "file.cbf.gz" */
 };
 
 
-/* An opaque type representing a list of image features */
+/** An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
 
 
@@ -117,116 +113,106 @@ struct spectrum
 };
 
 
-/* Structure describing a wavelength sample from a spectrum */
+/** Structure describing a wavelength sample from a spectrum.
+ * \deprecated Use struct spectrum instead. */
 struct sample
 {
-	double k; /* 1/m */
-	double weight;
+	double k;         /**< Wavevector in m^-1 */
+	double weight;    /**< Relative weight */
 };
 
 
-/**
- * beam_params:
- *  @photon_energy: eV per photon
- *  @photon_energy_from: HDF5 dataset name
- *  @photon_energy_scale: Scale factor for photon energy, if it comes from HDF5
- */
 struct beam_params
 {
-	double photon_energy;
-	char  *photon_energy_from;
-	double photon_energy_scale;
+	double photon_energy;       /**< eV per photon */
+	char  *photon_energy_from;  /**< HDF5 dataset name */
+	double photon_energy_scale; /**< Scale factor for photon energy, if it
+	                             *   comes from an image header */
 };
 
 
-/**
- * image:
- *   @hit: Non-zero if the frame was determined to be a "hit"
- *   @crystals: Array of crystals in the image
- *   @n_crystals: The number of crystals in the image
- *   @indexed_by: Indexing method which indexed this pattern
- *   @n_indexing_tries: Number of times the indexer was tried before indexing
- *   @det: Detector structure
- *   @beam: Beam parameters structure
- *   @filename: Filename for the image file
- *   @copyme: Fields to copy from the image file to the stream
- *   @id: ID number of the thread handling this image
- *   @serial: Serial number for this image
- *   @lambda: Wavelength
- *   @div: Divergence
- *   @bw: Bandwidth
- *   @num_peaks: The number of peaks
- *   @num_saturated_peaks: The number of saturated peaks
- *   @features: The peaks found in the image
- *   @dp: The image data, by panel
- *   @bad: The bad pixel mask, array by panel
- *   @sat: The per-pixel saturation mask, array by panel
- *   @event: Event ID for the image
- *   @stuff_from_stream: Items read back from the stream
- *   @avg_clen: Mean of camera length values for all panels
- *   @spectrum: Spectrum information
- *   @nsamples: Number of spectrum samples
- *   @spectrum_size: Size of spectrum array
- *
- * The field <structfield>data</structfield> contains the raw image data, if it
- * is currently available.  The data might be available throughout the
- * processing of an experimental pattern, but it might not be available when
- * simulating, scaling or merging patterns.
- *
- * <structfield>crystals</structfield> is an array of %Crystal directly
- * returned by the low-level indexing system. <structfield>n_crystals</structfield>
- * is the number of crystals which were found in the image.
- *
- * <structfield>copyme</structfield> represents a list of fields in the image
- * file (e.g. HDF5 fields or CBF headers) to copy to the output stream.
- **/
-struct image;
+struct image
+{
+	/** The image data, by panel */
+	float                   **dp;
 
-struct image {
+	/** The bad pixel mask, by panel */
+	int                     **bad;
 
-	float                   **dp;    /* Data in panel */
-	int                     **bad;   /* Bad pixels by panel */
-	float                   **sat;   /* Per-pixel saturation values */
+	/** The per-pixel saturation values, by panel */
+	float                   **sat;
 
+	/** Non-zero if the frame was determined to be a "hit" */
 	int                     hit;
+
+	/**Array of crystals in the image */
 	Crystal                 **crystals;
+
+	/** The number of crystals in the image (size of \p crystals) */
 	int                     n_crystals;
+
+	/** Indexing method which indexed this pattern */
 	IndexingMethod          indexed_by;
+
+	/** Number of times the indexer was tried before succeeding */
 	int                     n_indexing_tries;
 
+	/** The detector structure */
 	struct detector         *det;
-	struct beam_params      *beam;  /* The nominal beam parameters */
+
+	/** The nominal beam parameters (or where to get them) */
+	struct beam_params      *beam;
+
+	/** \name The filename and event ID for the image
+	 * @{ */
 	char                    *filename;
 	struct event            *event;
+	/** @} */
+
+	/** A list of image file headers to copy to the stream */
 	const struct imagefile_field_list *copyme;
+
+	/** A list of metadata read from the stream */
 	struct stuff_from_stream *stuff_from_stream;
 
-	double                  avg_clen;  /* Average camera length extracted
-	                                    * from stuff_from_stream */
+	/** Mean of the camera length values for all panels */
+	double                  avg_clen;
 
-	int                     id;   /* ID number of the thread
-	                               * handling this image */
-	int                     serial;  /* Monotonically ascending serial
-	                                  * number for this image */
+	/** ID number of the worker processing handling this image */
+	int                     id;
 
-	struct spectrum *spectrum; /* Beam spectrum for pink beam data */
+	/** Monotonically increasing serial number for this image */
+	int                     serial;
 
-	/* FIXME: These are only used in pattern_sim, which should be changed to
-	 * use the "struct spectrum" from above later */
+	/** Spectrum information (new format) */
+	struct spectrum *spectrum;
+
+	/** \name Spectrum information (old format)
+	 * @{
+	 * Array of samples, number of samples, and size of the array (may be
+	 * larger than nsamples) */
 	struct sample           *spectrum0;
-	int                     nsamples; /* Number of wavelengths */
-	int                     spectrum_size;  /* Size of "spectrum" */
+	int                     nsamples;
+	int                     spectrum_size;
+	/** @} */
 
-	/* Per-shot radiation values */
-	double                  lambda;        /* Wavelength in m */
-	double                  div;           /* Divergence in radians */
-	double                  bw;            /* FWHM bandwidth as a fraction */
+	/** Wavelength of the incident radiation, in metres */
+	double                  lambda;
 
-	/* Detected peaks */
+	/** Convergence angle of the incident ration, in radians (full angle) */
+	double                  div;
+
+	/** Full-width half-maximum bandwidth as a fraction, applied to wavelength */
+	double                  bw;
+
+	/** \name Numbers of peaks.  To be deleted.
+	 * @{ */
 	long long               num_peaks;
 	long long               num_saturated_peaks;
-	double                  peak_resolution;  /* Estimate of resolution
-	                                           * based on peaks only */
+	double                  peak_resolution;
+	/** @} */
+
+	/** List of peaks found in the image */
 	ImageFeatureList        *features;
 
 };

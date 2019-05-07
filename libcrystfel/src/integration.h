@@ -36,30 +36,39 @@
 #include "geometry.h"
 
 /**
- * IntDiag:
- * @INTDIAG_NONE: Never show diagnostics
- * @INTDIAG_RANDOM: Show diagnostics for a randomly selected 1% of reflections
- * @INTDIAG_ALL: Show diagnostics for all reflections
- * @INTDIAG_INDICES: Show diagnostics when the Miller indices of the reflection
- *   are the ones specified
- * @INTDIAG_NEGATIVE: Show diagnostics when the measured intensity is less than
- *   minus three times its estimated error.
- * @INTDIAG_IMPLAUSIBLE: Show diagnostics when the measured intensity is les
- *   than minus five times its estimated error.
- * @INTDIAG_STRONG: Show diagnostics when the measured intensity is more than
- *   three times its estimated error.
- *
- * An %IntDiag describes the condition under which the integration subsystem
+ * \file integration.h
+ * Integration of reflections
+ */
+
+/**
+ * An IntDiag describes the condition under which the integration subsystem
  * should display diagnostic information to the user.
  **/
 typedef enum {
 
+	/** Never show diagnostics */
 	INTDIAG_NONE,
+
+	/** Show diagnostics for a randomly selected 1% of reflections */
 	INTDIAG_RANDOM,
+
+	/** Show diagnostics for all reflections */
 	INTDIAG_ALL,
+
+	/** Show diagnostics when the Miller indices of the reflection are the
+	 * ones specified */
 	INTDIAG_INDICES,
+
+	/** Show diagnostics when the measured intensity is less than minus
+	 * three times its estimated error. */
 	INTDIAG_NEGATIVE,
+
+	/** Show diagnostics when the measured intensity is less than minus five
+	 * times its estimated error. */
 	INTDIAG_IMPLAUSIBLE,
+
+	/** Show diagnostics when the measured intensity is more than three
+	 * times its estimated error. */
 	INTDIAG_STRONG
 
 } IntDiag;
@@ -68,36 +77,37 @@ typedef enum {
 #define INTEGRATION_DEFAULTS_PROF2D (INTEGRATION_PROF2D | INTEGRATION_CENTER)
 
 /**
- * IntegrationMethod:
- * @INTEGRATION_NONE: No integration at all
- * @INTEGRATION_RINGS: Summation of pixel values inside ring, minus background
- * @INTEGRATION_PROF2D: Two dimensional profile fitting
- * @INTEGRATION_SATURATED: Integrate saturated reflections
- * @INTEGRATION_CENTER: Center the peak in the box prior to integration
- * @INTEGRATION_RESCUT: Stop integrating at the diffraction limit of the crystal
- * @INTEGRATION_GRADIENTBG: Fit a gradient to the background
- *
- * An enumeration of all the available integration methods.
- **/
+ * An enumeration of all the available integration methods.  The first items
+ * are the actual integration methods.  The later ones are flags which can be
+ * ORed with the method to affect its behaviour.
+ */
 typedef enum {
 
+	/** No integration at all */
 	INTEGRATION_NONE   = 0,
 
-	/* The core integration methods themselves */
+	/** Summation of pixel values inside ring, minus background */
 	INTEGRATION_RINGS  = 1,
+
+	/** Two dimensional profile fitting */
 	INTEGRATION_PROF2D = 2,
 
-	/* Bits at the top of the IntegrationMethod are flags which modify the
-	 * behaviour of the integration. */
+	/** Integrate saturated reflections */
 	INTEGRATION_SATURATED = 256,
+
+	/** Center the peak in the box prior to integration */
 	INTEGRATION_CENTER = 512,
+
+	/** Stop integrating at the diffraction limit of the crystal */
 	INTEGRATION_RESCUT = 1024,
+
+	/** Fit a gradient to the background */
 	INTEGRATION_GRADIENTBG = 2048,
 
 } IntegrationMethod;
 
-/* This defines the bits in "IntegrationMethod" which are used to represent the
- * core of the integration method */
+/** This defines the bits in \ref IntegrationMethod which are used to represent the
+ * core of the integration method. */
 #define INTEGRATION_METHOD_MASK (0xff)
 
 #ifdef __cplusplus

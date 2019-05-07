@@ -39,6 +39,8 @@
 #include "xgandalf/adaptions/crystfel/ExperimentSettings.h"
 #include "xgandalf/adaptions/crystfel/IndexerPlain.h"
 
+/** \file xgandalf.h */
+
 struct xgandalf_private_data {
 	IndexerPlain *indexer;
 	reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;

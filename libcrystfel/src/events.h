@@ -33,6 +33,11 @@
 #ifndef EVENTS_H
 #define EVENTS_H
 
+/**
+ * \file events.h
+ * Event description structures
+ */
+
 struct event
 {
 	char **path_entries;
@@ -53,7 +58,7 @@ struct filename_plus_event
 	struct event *ev;
 };
 
-enum
+enum dimension_id
 {
 	HYSL_UNDEFINED = -99,
 	HYSL_PLACEHOLDER = -98,

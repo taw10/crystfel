@@ -40,17 +40,7 @@
 #include "utils.h"
 
 
-/**
- * SECTION:integer_matrix
- * @short_description: Integer matrices
- * @title: Integer matrices
- * @section_id:
- * @see_also:
- * @include: "integer_matrix.h"
- * @Image:
- *
- * An integer matrix library
- */
+/** \file integer_matrix.h */
 
 
 struct _integermatrix
@@ -63,13 +53,12 @@ struct _integermatrix
 
 
 /**
- * intmat_new:
- * @rows: Number of rows that the new matrix is to have
- * @cols: Number of columns that the new matrix is to have
+ * \param rows Number of rows that the new matrix is to have
+ * \param cols Number of columns that the new matrix is to have
  *
- * Allocates a new %IntegerMatrix with all elements set to zero.
+ * Allocates a new \ref IntegerMatrix with all elements set to zero.
  *
- * Returns: a new %IntegerMatrix, or NULL on error.
+ * \returns A new \ref IntegerMatrix, or NULL on error.
  **/
 IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
 {
@@ -92,10 +81,9 @@ IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
 
 
 /**
- * intmat_copy:
- * @m: An %IntegerMatrix
+ * \param m An \ref IntegerMatrix
  *
- * Returns: a newly allocated copy of @m, or NULL on error/
+ * \returns A newly allocated copy of \p m, or NULL on error
  **/
 IntegerMatrix *intmat_copy(const IntegerMatrix *m)
 {
@@ -116,10 +104,9 @@ IntegerMatrix *intmat_copy(const IntegerMatrix *m)
 
 
 /**
- * intmat_free:
- * @m: An %IntegerMatrix
+ * \param m An \ref IntegerMatrix
  *
- * Frees @m, unless @m is NULL in which case nothing is done.
+ * Frees \p m, unless \p m is NULL in which case nothing is done.
  **/
 void intmat_free(IntegerMatrix *m)
 {
@@ -129,6 +116,13 @@ void intmat_free(IntegerMatrix *m)
 }
 
 
+/**
+ * \param m An \ref IntegerMatrix
+ * \param rows Location to store number of rows
+ * \param cols Location to store number of columns
+ *
+ * Sets \p rows and \p cols to the size of \p m.
+ */
 void intmat_size(const IntegerMatrix *m, unsigned int *rows, unsigned int *cols)
 {
 	if ( m == NULL ) {
@@ -143,13 +137,12 @@ void intmat_size(const IntegerMatrix *m, unsigned int *rows, unsigned int *cols)
 
 
 /**
- * intmat_set:
- * @m: An %IntegerMatrix
- * @i: row number to set
- * @j: column number to set
- * @v: value to set to
+ * \param m An \ref IntegerMatrix
+ * \param i row number to set
+ * \param j column number to set
+ * \param v value to set to
  *
- * Sets the @i,@j element of @m to @v.
+ * Sets the \p i,\p j element of \p m to \p v.
  **/
 void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j, signed int v)
 {
@@ -160,14 +153,13 @@ void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j, signed int v)
 
 
 /**
- * intmat_get:
- * @m: An %IntegerMatrix
- * @i: column number to set
- * @j: row number to set
+ * \param m An \ref IntegerMatrix
+ * \param i column number to set
+ * \param j row number to set
  *
- * Gets the @i,@j element of @m.
+ * Gets the \p i,\p j element of \p m.
  *
- * Returns: the @i,@j element of @m.
+ * \returns The \p i,\p j element of \p m.
  **/
 signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
 {
@@ -178,22 +170,21 @@ signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
 
 
 /**
- * transform_indices:
- * @P: An %IntegerMatrix
- * @hkl: An array of signed integers
+ * \param P An \ref IntegerMatrix
+ * \param hkl An array of signed integers
  *
  * Apply transformation matrix P to a set of reciprocal space Miller indices.
  *
  * In other words:
- * Multiplies the matrix @P by the row vector @hkl.  The size of @vec must equal
- * the number of columns in @P, and the size of the result equals the number of
- * rows in @P.
+ * Multiplies the matrix \p P by the row vector \p hkl.  The size of \p vec must equal
+ * the number of columns in \p P, and the size of the result equals the number of
+ * rows in \p P.
  *
  * The multiplication looks like this:
  *    (a1, a2, a3) = (hkl1, hkl2, hkl3) P
  * Therefore matching the notation in ITA chapter 5.1.
  *
- * Returns: a newly allocated array of signed integers containing the answer,
+ * \returns A newly allocated array of signed integers containing the answer,
  * or NULL on error.
  **/
 signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
@@ -219,13 +210,12 @@ signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
 
 
 /**
- * intmat_intmat_mult:
- * @a: An %IntegerMatrix
- * @b: An %IntegerMatrix
+ * \param a An \ref IntegerMatrix
+ * \param b An \ref IntegerMatrix
  *
- * Multiplies the matrix @a by the matrix @b.
+ * Multiplies the matrix \p a by the matrix \p b.
  *
- * Returns: a newly allocated %IntegerMatrix containing the answer, or NULL on
+ * \returns A newly allocated \ref IntegerMatrix containing the answer, or NULL on
  * error.
  **/
 IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
@@ -307,12 +297,11 @@ static signed int cofactor(const IntegerMatrix *m,
 
 
 /**
- * intmat_det:
- * @m: An %IntegerMatrix
+ * \param m An \ref IntegerMatrix
  *
- * Calculates the determinant of @m.  Inefficiently.
+ * Calculates the determinant of \p m.  Inefficiently.
  *
- * Returns: the determinant of @m.
+ * \returns The determinant of \p m.
  **/
 signed int intmat_det(const IntegerMatrix *m)
 {
@@ -358,15 +347,14 @@ static IntegerMatrix *intmat_cofactors(const IntegerMatrix *m)
 
 
 /**
- * intmat_inverse:
- * @m: An %IntegerMatrix
+ * \param m An \ref IntegerMatrix
  *
- * Calculates the inverse of @m.  Inefficiently.
+ * Calculates the inverse of \p m.  Inefficiently.
  *
  * Works only if the inverse of the matrix is also an integer matrix,
- * i.e. if the determinant of @m is +/- 1.
+ * i.e. if the determinant of \p m is +/- 1.
  *
- * Returns: the inverse of @m, or NULL on error.
+ * \returns The inverse of \p m, or NULL on error.
  **/
 IntegerMatrix *intmat_inverse(const IntegerMatrix *m)
 {
@@ -409,10 +397,9 @@ IntegerMatrix *intmat_inverse(const IntegerMatrix *m)
 
 
 /**
- * intmat_print
- * @m: An %IntegerMatrix
+ * \param m An \ref IntegerMatrix
  *
- * Prints @m to stderr.
+ * Prints \param m to stderr.
  *
  */
 void intmat_print(const IntegerMatrix *m)
@@ -431,10 +418,9 @@ void intmat_print(const IntegerMatrix *m)
 
 
 /**
- * intmat_is_identity
- * @m: An %IntegerMatrix
+ * \param m An \ref IntegerMatrix
  *
- * Returns: true if @m is an identity matrix.
+ * \returns True if \p m is an identity matrix.
  *
  */
 int intmat_is_identity(const IntegerMatrix *m)
@@ -464,10 +450,9 @@ int intmat_is_identity(const IntegerMatrix *m)
 
 
 /**
- * intmat_is_inversion
- * @m: An %IntegerMatrix
+ * \param m An \ref IntegerMatrix
  *
- * Returns: true if @m = -I, where I is an identity matrix.
+ * \returns True if \p m = -I, where I is an identity matrix.
  *
  */
 int intmat_is_inversion(const IntegerMatrix *m)
@@ -497,11 +482,10 @@ int intmat_is_inversion(const IntegerMatrix *m)
 
 
 /**
- * intmat_equals
- * @a: An %IntegerMatrix
- * @b: An %IntegerMatrix
+ * \param a An \ref IntegerMatrix
+ * \param b An \ref IntegerMatrix
  *
- * Returns: true if @a = @b.
+ * \returns True if \p a = \p b.
  *
  */
 int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b)
@@ -528,10 +512,9 @@ int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b)
 
 
 /**
- * intmat_identity
- * @size: The size of the (square) matrix
+ * \param size The size of the (square) matrix
  *
- * Returns: an identity %IntegerMatrix with side length @size, or NULL on error.
+ * \returns An identity \ref IntegerMatrix with side length \p size, or NULL on error.
  *
  */
 IntegerMatrix *intmat_identity(int size)
@@ -559,11 +542,17 @@ IntegerMatrix *intmat_identity(int size)
 
 
 /**
- * intmat_set_all_3x3
- * @m: An %IntegerMatrix
+ * \param m11 Matrix element
+ * \param m12 Matrix element
+ * \param m13 Matrix element
+ * \param m21 Matrix element
+ * \param m22 Matrix element
+ * \param m23 Matrix element
+ * \param m31 Matrix element
+ * \param m32 Matrix element
+ * \param m33 Matrix element
  *
- * Returns: an identity %IntegerMatrix with side length @size, or NULL on error.
- *
+ * \returns A newly allocated 3x3 \ref IntegerMatrix with the given values.
  */
 IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
                                  signed int m21, signed int m22, signed int m23,

@@ -32,6 +32,8 @@
 #endif
 
 
+/** \file felix.h */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>

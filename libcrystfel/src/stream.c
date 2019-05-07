@@ -52,6 +52,8 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 
+/** \file stream.h */
+
 #define LATEST_MAJOR_VERSION (2)
 #define LATEST_MINOR_VERSION (3)
 
@@ -816,6 +818,18 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 }
 
 
+/**
+ * \param st A \ref Stream
+ * \param i An \ref image structure
+ * \param imfile A \ref imagefile structure
+ * \param include_peaks Whether to include peak search results in stream
+ * \param include_reflections Whether to include integration results in stream
+ * \param ev A \ref event strucutre
+ *
+ * Writes a new chunk to \p st.
+ *
+ * \returns non-zero on error.
+ */
 int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
                 int include_peaks, int include_reflections, struct event *ev)
 {
@@ -1180,7 +1194,9 @@ static int read_and_store_field(struct image *image, const char *line)
 }
 
 
-/* Read the next chunk from a stream and fill in 'image' */
+/**
+ * Read the next chunk from a stream and fill in 'image'
+ */
 int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 {
 	char line[1024];
@@ -1332,6 +1348,15 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 }
 
 
+
+/**
+ * \param st A \ref Stream
+ * \param image An \ref image structure to be filled
+ *
+ * Reads a chunk from \p st, placing the information in \p image.
+ *
+ * \returns non-zero on error.
+ */
 int read_chunk(Stream *st, struct image *image)
 {
 	return read_chunk_2(st, image, STREAM_READ_UNITCELL
@@ -1469,18 +1494,17 @@ Stream *open_stream_for_read(const char *filename)
 
 
 /**
- * open_stream_fd_for_write
- * @fd: File descriptor (e.g. from open()) to use for stream data.
+ * \param fd File descriptor (e.g. from open()) to use for stream data.
  *
- * Creates a new %Stream from @fd, so that stream data can be written to @fd
- * using write_chunk().
+ * Creates a new \ref Stream from \p fd, so that stream data can be written to \p fd
+ * using \ref write_chunk.
  *
- * In contrast to open_stream_for_write(), this function does not write any of
+ * In contrast to \ref open_stream_for_write, this function does not write any of
  * the usual headers.  This function is mostly for use when multiple substreams
  * need to be multiplexed into a single master stream.  The master would be
- * opened using open_stream_for_write(), and the substreams using this function.
+ * opened using \ref open_stream_for_write, and the substreams using this function.
  *
- * Returns: a %Stream, or NULL on failure.
+ * \returns A \ref Stream, or NULL on failure.
  */
 Stream *open_stream_fd_for_write(int fd)
 {
@@ -1517,19 +1541,18 @@ static void write_cell_to_stream(Stream *st, UnitCell *cell)
 
 
 /**
- * open_stream_for_write_4
- * @filename: Filename of new stream
- * @geom_filename: The geometry filename to copy
- * @cell: A %UnitCell to write into the stream
- * @argc: The number of arguments to the program
- * @argv: The arguments to the program
- * @indm_str: The list of indexing methods
+ * \param filename Filename of new stream
+ * \param geom_filename The geometry filename to copy
+ * \param cell A \ref UnitCell to write into the stream
+ * \param argc The number of arguments to the program
+ * \param argv The arguments to the program
+ * \param indm_str The list of indexing methods
  *
- * Creates a new stream with name @filename, and adds the stream format
+ * Creates a new stream with name \p filename, and adds the stream format
  * and version header, plus a verbatim copy of the geometry file and the unit
  * cell in CrystFEL format.
  *
- * Returns: a %Stream, or NULL on failure.
+ * \returns A \ref Stream, or NULL on failure.
  */
 Stream *open_stream_for_write_4(const char *filename,
                                 const char *geom_filename, UnitCell *cell,
@@ -1586,16 +1609,15 @@ Stream *open_stream_for_write_3(const char *filename,
 
 
 /**
- * open_stream_for_write_2
- * @filename: Filename of new stream
- * @geom_filename: The geometry filename to copy
- * @argc: The number of arguments to the program
- * @argv: The arguments to the program
+ * \param filename Filename of new stream
+ * \param geom_filename The geometry filename to copy
+ * \param argc The number of arguments to the program
+ * \param argv The arguments to the program
  *
- * Creates a new stream with name @filename, and adds the stream format
+ * Creates a new stream with name \p filename, and adds the stream format
  * and version header, plus a verbatim copy of the geometry file
  *
- * Returns: a %Stream, or NULL on failure.
+ * \returns A \ref Stream, or NULL on failure.
  */
 Stream *open_stream_for_write_2(const char *filename,
                                 const char *geom_filename, int argc,
@@ -1636,16 +1658,15 @@ Stream *open_stream_for_write_2(const char *filename,
 
 
 /**
- * open_stream_for_write
- * @filename: Filename of new stream
+ * \param filename Filename of new stream
  *
- * Creates a new stream with name @filename, and adds the stream format
+ * Creates a new stream with name \p filename, and adds the stream format
  * and version headers.
  *
- * You may want to follow this with a call to write_command() to record the
+ * You may want to follow this with a call to \ref write_command to record the
  * command line.
  *
- * Returns: a %Stream, or NULL on failure.
+ * \returns A \ref Stream, or NULL on failure.
  */
 Stream *open_stream_for_write(const char *filename)
 {
@@ -1654,17 +1675,16 @@ Stream *open_stream_for_write(const char *filename)
 
 
 /**
- * get_stream_fd
- * @st: A %Stream
+ * \param st A \ref Stream
  *
- * This function gets the integer file descriptor for @st, a bit like fileno().
+ * This function gets the integer file descriptor for \p st, a bit like fileno().
  *
- * This is useful in conjunction with open_stream_fd_for_write(), to get the
+ * This is useful in conjunction with \ref open_stream_fd_for_write, to get the
  * underlying file descriptor to which the multiplexed stream data should be
  * written.  In this case, the only other operations you should ever do (or have
- * done) on @st are open_stream_for_write() and close_stream().
+ * done) on \p st are \ref open_stream_for_write and \ref close_stream.
  *
- * Returns: an integer file descriptor
+ * \returns An integer file descriptor
  */
 int get_stream_fd(Stream *st)
 {
@@ -1672,6 +1692,11 @@ int get_stream_fd(Stream *st)
 }
 
 
+/**
+ * \param st A \ref Stream
+ *
+ * Closes the stream
+ */
 void close_stream(Stream *st)
 {
 	free(st->audit_info);
@@ -1702,14 +1727,13 @@ int is_stream(const char *filename)
 
 
 /**
- * write_command
- * @st: A %Stream
- * @argc: number of arguments
- * @argv: command-line arguments
+ * \param st A \ref Stream
+ * \param argc number of arguments
+ * \param argv command-line arguments
  *
- * Writes the command line to @st.  @argc and @argv should be exactly as were
+ * Writes the command line to \p st.  \p argc and \p argv should be exactly as were
  * given to main().  This should usually be called immediately after
- * open_stream_for_write().
+ * ref open_stream_for_write.
  */
 void write_command(Stream *st, int argc, char *argv[])
 {
@@ -1727,12 +1751,11 @@ void write_command(Stream *st, int argc, char *argv[])
 
 
 /**
- * write_geometry_file
- * @st: A %Stream
- * @geom_filename: geomtry file name
+ * \param st A \ref Stream
+ * \param geom_filename geomtry file name
  *
- * Writes the content of the geometry file to @st. This should usually be
- * called immediately after write_command().
+ * Writes the content of the geometry file to \p st. This should usually be
+ * called immediately after \ref write_command.
  */
 void write_geometry_file(Stream *st, const char *geom_filename) {
 
@@ -1770,16 +1793,15 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 
 
 /**
- * rewind_stream:
- * @st: A %Stream
+ * \param st A \ref Stream
  *
- * Attempts to set the file pointer for @st to the start of the stream, so that
- * later calls to read_chunk() will repeat the sequence of chunks from the
+ * Attempts to set the file pointer for \p st to the start of the stream, so that
+ * later calls to \ref read_chunk will repeat the sequence of chunks from the
  * start.
  *
  * Programs must not assume that this operation always succeeds!
  *
- * Returns: non-zero if the stream could not be rewound.
+ * \returns Non-zero if the stream could not be rewound.
  */
 int rewind_stream(Stream *st)
 {

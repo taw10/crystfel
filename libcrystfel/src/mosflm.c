@@ -90,6 +90,7 @@
 #include "peaks.h"
 #include "cell-utils.h"
 
+/** \file mosflm.h */
 
 #define MOSFLM_VERBOSE 0
 #define FAKE_CLEN (0.1)

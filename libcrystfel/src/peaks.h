@@ -44,6 +44,11 @@
 extern "C" {
 #endif
 
+/**
+ * \file peaks.h
+ * Peak search functions
+ */
+
 extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
 
 extern void search_peaks(struct image *image, float threshold,

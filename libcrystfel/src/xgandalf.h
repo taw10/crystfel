@@ -35,6 +35,11 @@
 
 #include <stddef.h>
 
+/**
+ * \file xgandalf.h
+ * XGANDALF indexer interface
+ */
+
 struct xgandalf_options {
 	unsigned int sampling_pitch;
 	unsigned int grad_desc_iterations;

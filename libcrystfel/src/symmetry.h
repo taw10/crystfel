@@ -39,8 +39,11 @@
 #include "rational.h"
 
 /**
- * SymOpList
- *
+ * \file symmetry.h
+ * Point group symmetry
+ */
+
+/**
  * The SymOpList is an opaque data structure containing a list of point symmetry
  * operations.  It could represent an point group or a list of indexing
  * ambiguities (twin laws), or similar.
@@ -48,11 +51,9 @@
 typedef struct _symoplist SymOpList;
 
 /**
- * SymOpMask
- *
  * The SymOpMask is an opaque data structure containing a list of flags
- * associated with point symmetry operations in a specific %SymOpList.  It is
- * used to filter the operations in the %SymOpList to avoid duplicating
+ * associated with point symmetry operations in a specific \ref SymOpList.  It is
+ * used to filter the operations in the \ref SymOpList to avoid duplicating
  * equivalent reflections when the reflection is somehow special (e.g. 'hk0').
  **/
 typedef struct _symopmask SymOpMask;

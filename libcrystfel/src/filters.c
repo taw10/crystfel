@@ -41,6 +41,7 @@
 
 #include "image.h"
 
+/** \file filters.h */
 
 static void filter_noise_in_panel(float *data, int width, int height)
 {
