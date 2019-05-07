@@ -161,10 +161,7 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 
 		UnitCell* primitiveCell = uncenter_cell(cell, &xgandalf_private_data->centeringTransformation, NULL);
 
-		UnitCell *uc = cell_new_from_cell(primitiveCell);
 		reduceCell(primitiveCell, &xgandalf_private_data->latticeReductionTransform);
-
-		cell_free(uc);
 
 		double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 		int ret = cell_get_reciprocal(primitiveCell, &asx, &asy, &asz,
