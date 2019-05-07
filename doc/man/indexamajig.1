@@ -413,6 +413,8 @@ These set low-level parameters for the Felix indexing algorithm.
 .IP \fB--xgandalf-no-deviation-from-provided-cell\fR
 .IP \fB--xgandalf-max-lattice-vector-length=\fIn\fR
 .IP \fB--xgandalf-min-lattice-vector-length=\fIn\fR
+.IP \fB--xgandalf-max-peaks\fR
+.IP \fB--xgandalf-fast-execution\fR
 .PD
 These set low-level parameters for the XGANDALF indexing algorithm.
 .IP
@@ -425,6 +427,10 @@ These set low-level parameters for the XGANDALF indexing algorithm.
 \fB--xgandalf-no-deviation-from-provided-cell\fR if a prior unit cell was provided, and this flag is set, the found unit cell will have exactly the same size as the provided one.
 .IP
 \fB--xgandalf-min-lattice-vector-length\fR and \fB--xgandalf-min-lattice-vector-length\fR minimum and maximum possible lattice vector lengths (unit is A). Used for fitting without prior lattice as starting point for gradient descent, so the final minimum lattice vector length can be smaller/highier as min/max. Note: This is valid for the uncentered cell, i.e. the P-cell! Default is 30A and 250A respectively.
+.IP
+\fB--xgandalf-max-peaks\fR maximum number of peaks used for indexing. For refinement all peaks are used. Peaks are selected by increasing radius. Limits the maximum execution time for patterns with a huge amount of peaks - either real ones or false positives. Default is 250.
+.IP
+\fB--xgandalf-fast-execution\fR Shortcut to set --xgandalf-sampling-pitch=2 --xgandalf-grad-desc-iterations=3
 
 .SH INTEGRATION OPTIONS
 .PD 0

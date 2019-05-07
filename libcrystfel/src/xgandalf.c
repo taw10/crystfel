@@ -203,10 +203,6 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 				                       FAKE_REFLECTION_RADIUS);
 
 		xgandalf_private_data->indexer = IndexerPlain_new(experimentSettings);
-		IndexerPlain_setSamplingPitch(xgandalf_private_data->indexer,
-		                              samplingPitch);
-		IndexerPlain_setGradientDescentIterationsCount(xgandalf_private_data->indexer,
-		                                               gradientDescentIterationsCount);
 
 		if (xgandalf_opts->no_deviation_from_provided_cell) {
 			IndexerPlain_setRefineWithExactLattice(xgandalf_private_data->indexer, 1);
@@ -231,13 +227,16 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 		                                 FAKE_REFLECTION_RADIUS);
 
 		xgandalf_private_data->indexer = IndexerPlain_new(experimentSettings);
-		IndexerPlain_setSamplingPitch(xgandalf_private_data->indexer,
-		                              samplingPitch);
-		IndexerPlain_setGradientDescentIterationsCount(xgandalf_private_data->indexer,
-		                                               gradientDescentIterationsCount);
 
 		ExperimentSettings_delete(experimentSettings);
 	}
+
+	IndexerPlain_setSamplingPitch(xgandalf_private_data->indexer,
+	        samplingPitch);
+	IndexerPlain_setGradientDescentIterationsCount(xgandalf_private_data->indexer,
+	        gradientDescentIterationsCount);
+	IndexerPlain_setMaxPeaksToUseForIndexing(xgandalf_private_data->indexer,
+			xgandalf_opts->maxPeaksForIndexing);
 
 	/* Flags that XGANDALF knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_CELL_PARAMETERS;

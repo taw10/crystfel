@@ -185,6 +185,9 @@ static void show_help(const char *s)
 "     --xgandalf-grad-desc-iterations\n"
 "                           Gradient descent iterations: 0 (few) to 5 (many)\n"
 "                            Default: 4\n"
+"     --xgandalf-fast-execution       Shortcut to set\n"
+"                                     --xgandalf-sampling-pitch=2\n"
+"                                     --xgandalf-grad-desc-iterations=3\n"
 "     --xgandalf-tolerance  Relative tolerance of the lattice vectors.\n"
 "                            Default is 0.02\n"
 "     --xgandalf-no-deviation-from-provided-cell\n"
@@ -196,6 +199,10 @@ static void show_help(const char *s)
 "     --xgandalf-max-lattice-vector-length\n"
 "                           Maximum possible lattice vector length in A.\n"
 "                            Default: 250 A\n"
+"     --xgandalf-max-peaks\n"
+"                           Maximum number of peaks used for indexing.\n"
+"                           All peaks are used for refinement.\n"
+"                            Default: 250\n"
 "\n"
 "\nIntegration options:\n\n"
 "     --integration=<meth>  Integration method (rings,prof2d)-(cen,nocen)\n"
@@ -407,6 +414,7 @@ int main(int argc, char *argv[])
 	iargs.xgandalf_opts.no_deviation_from_provided_cell = 0;
 	iargs.xgandalf_opts.minLatticeVectorLength_A = 30;
 	iargs.xgandalf_opts.maxLatticeVectorLength_A = 250;
+	iargs.xgandalf_opts.maxPeaksForIndexing = 250;
 	iargs.felix_opts.ttmin = -1.0;
 	iargs.felix_opts.ttmax = -1.0;
 	iargs.felix_opts.min_visits = 0;
@@ -534,6 +542,8 @@ int main(int argc, char *argv[])
 		{"wait-for-file",            1, NULL,        358},
 		{"min-squared-gradient",1,NULL,              359},
 		{"min-sq-gradient",    1, NULL,              359}, /* compat */
+		{"xgandalf-fast-execution",                  0, NULL, 360},
+		{"xgandalf-max-peaks",                       1, NULL, 361},
 
 		{0, 0, NULL, 0}
 	};
@@ -940,6 +950,21 @@ int main(int argc, char *argv[])
 
 			case 359 :
 			iargs.min_sq_gradient = strtof(optarg, NULL);
+			break;
+
+			case 360:
+				iargs.xgandalf_opts.sampling_pitch = 2;
+				iargs.xgandalf_opts.grad_desc_iterations = 3;
+			break;
+
+			case 361:
+			if (sscanf(optarg, "%i",
+					&iargs.xgandalf_opts.maxPeaksForIndexing) != 1)
+			{
+				ERROR("Invalid value for "
+						"--xgandalf-max-peaks\n");
+				return 1;
+			}
 			break;
 
 			case 0 :

@@ -47,6 +47,7 @@ struct xgandalf_options {
 	unsigned int no_deviation_from_provided_cell;
 	float minLatticeVectorLength_A;
 	float maxLatticeVectorLength_A;
+	int maxPeaksForIndexing;
 };
 
 #include "index.h"
