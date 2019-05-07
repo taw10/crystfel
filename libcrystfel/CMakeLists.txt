@@ -114,13 +114,15 @@ set(LIBCRYSTFEL_HEADERS
     src/rational.h
 )
 
-configure_file(${PROJECT_SOURCE_DIR}/doc/index.md index.md)
-set(DOXYGEN_SHOW_INCLUDE_FILES NO)
-set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
-set(DOXYGEN_PREDEFINED HAVE_FFTW)
-doxygen_add_docs(api-docs ${PROJECT_SOURCE_DIR}/src
-                 ${CMAKE_CURRENT_BINARY_DIR}/index.md
-                 ${PROJECT_SOURCE_DIR}/doc/coding.md)
+if (DOXYGEN_FOUND)
+  configure_file(${PROJECT_SOURCE_DIR}/doc/index.md index.md)
+  set(DOXYGEN_SHOW_INCLUDE_FILES NO)
+  set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
+  set(DOXYGEN_PREDEFINED HAVE_FFTW)
+  doxygen_add_docs(api-docs ${PROJECT_SOURCE_DIR}/src
+                   ${CMAKE_CURRENT_BINARY_DIR}/index.md
+                   ${PROJECT_SOURCE_DIR}/doc/coding.md)
+endif (DOXYGEN_FOUND)
 
 add_library(${PROJECT_NAME} SHARED
 	${LIBCRYSTFEL_SOURCES}
