@@ -528,6 +528,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		add_refl(counted, hs, ks, ls);
 
 		possible[bin]++;
+		possible_tot++;
 
 	}
 	}
@@ -620,9 +621,14 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 	}
 
-	STATUS("overall <snr> = %f\n", snr_total/(double)nrefl);
+	STATUS("Overall values within specified resolution range:\n");
 	STATUS("%li measurements in total.\n", nmeastot);
 	STATUS("%li reflections in total.\n", nrefl);
+	STATUS("%li reflections possible.\n", possible_tot);
+	STATUS("Overall <snr> = %f\n", snr_total/(double)nrefl);
+	STATUS("Overall redundancy = %f measurements/unique reflection\n",
+	       nmeastot/(double)nrefl);
+	STATUS("Overall completeness = %f %%\n", 100.0*nrefl/(double)possible_tot);
 
 	if ( nout ) {
 		STATUS("WARNING; %li reflections outside resolution range.\n",
