@@ -841,8 +841,6 @@ int main(int argc, char *argv[])
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.indexed_by = INDEXING_SIMULATION;
-	image.num_peaks = 0;
-	image.num_saturated_peaks = 0;
 	image.spectrum_size = 0;
 	image.spectrum0 = NULL;
 	image.serial = 0;

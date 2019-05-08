@@ -897,8 +897,7 @@ int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
 
 	}
 
-	fprintf(st->fh, "num_peaks = %lli\n", i->num_peaks);
-	fprintf(st->fh, "num_saturated_peaks = %lli\n", i->num_saturated_peaks);
+	fprintf(st->fh, "num_peaks = %i\n", image_feature_count(i->features));
 	fprintf(st->fh, "peak_resolution = %f nm^-1 or %f A\n",
 	        i->peak_resolution/1e9, 1e10/i->peak_resolution);
 	if ( include_peaks ) {
@@ -1218,7 +1217,6 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 	}
 
 	do {
-		long long num_peaks;
 		int ser;
 		float div, bw;
 
@@ -1261,10 +1259,6 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 
 		if ( sscanf(line, "beam_bandwidth = %f", &bw) == 1 ) {
 			image->bw = bw;
-		}
-
-		if ( sscanf(line, "num_peaks = %lld", &num_peaks) == 1 ) {
-			image->num_peaks = num_peaks;
 		}
 
 		if ( sscanf(line, "Image serial number: %i", &ser) == 1 ) {

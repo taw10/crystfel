@@ -1196,9 +1196,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 
 			p = &img->det->panels[pi];
 
-			img->num_peaks += 1;
 			if ( pkdata->max_i[pki] > p->max_adu ) {
-				img->num_saturated_peaks++;
 				if ( !use_saturated ) {
 					continue;
 				}

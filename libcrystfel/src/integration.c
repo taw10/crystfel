@@ -1355,7 +1355,6 @@ static void integrate_prof2d(IntegrationMethod meth,
 	UnitCell *cell;
 	struct intcontext ic;
 	int i;
-	int n_saturated = 0;
 
 	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
@@ -1397,8 +1396,6 @@ static void integrate_prof2d(IntegrationMethod meth,
 	}
 
 	free_intcontext(&ic);
-
-	image->num_saturated_peaks = n_saturated;
 }
 
 

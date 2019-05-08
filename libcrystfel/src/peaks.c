@@ -485,12 +485,9 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 			continue;
 		}
 
-		if ( saturated ) {
-			image->num_saturated_peaks++;
-			if ( !use_saturated ) {
-				nrej_sat++;
-				continue;
-			}
+		if ( saturated && !use_saturated ) {
+			nrej_sat++;
+			continue;
 		}
 
 		/* Add using "better" coordinates */
@@ -509,8 +506,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		       "detector geometry file.\n");
 		ncull = 0;
 	}
-
-	image->num_peaks += nacc;
 
 	//STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
 	//       "%i failed integration, %i with SNR < %g, %i badrow culled, "
@@ -536,8 +531,6 @@ void search_peaks(struct image *image, float threshold, float min_sq_gradient,
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
-	image->num_peaks = 0;
-	image->num_saturated_peaks = 0;
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
 
@@ -577,8 +570,6 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
-	image->num_peaks = 0;
-	image->num_saturated_peaks = 0;
 
 	return peakfinder8(image, max_n_peaks, threshold, min_snr,
 	                   min_pix_count, max_pix_count,
@@ -810,8 +801,6 @@ void validate_peaks(struct image *image, double min_snr,
 	//       n, image_feature_count(flist), n_wtf, n_int, n_snr, n_sat);
 	image_feature_list_free(image->features);
 	image->features = flist;
-	image->num_saturated_peaks = n_sat;
-	image->num_peaks = image_feature_count(flist);
 }
 
 

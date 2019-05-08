@@ -203,12 +203,8 @@ struct image
 	/** Full-width half-maximum bandwidth as a fraction, applied to wavelength */
 	double                  bw;
 
-	/** \name Numbers of peaks.  To be deleted.
-	 * @{ */
-	long long               num_peaks;
-	long long               num_saturated_peaks;
+	/** Resolution estimate based on peaks */
 	double                  peak_resolution;
-	/** @} */
 
 	/** List of peaks found in the image */
 	ImageFeatureList        *features;
