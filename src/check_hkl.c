@@ -389,10 +389,10 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
                         double rmin_fix, double rmax_fix, int nshells,
 			const char *shell_file)
 {
-	int *possible;
-	unsigned int *measurements;
-	unsigned int *measured;
-	unsigned int *snr_measured;
+	unsigned long *possible;
+	unsigned long *measurements;
+	unsigned long *measured;
+	unsigned long *snr_measured;
 	double total_vol, vol_per_shell;
 	double *rmins;
 	double *rmaxs;
@@ -404,10 +404,11 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	int i;
 	FILE *fh;
 	double snr_total = 0;
-	int nrefl = 0;
-	int nmeastot = 0;
-	int nout = 0;
-	int nsilly = 0;
+	unsigned long nrefl = 0;
+	unsigned long nmeastot = 0;
+	unsigned long nout = 0;
+	unsigned long possible_tot = 0;
+	unsigned long nsilly = 0;
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *counted;
@@ -416,10 +417,10 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	double bx, by, bz;
 	double cx, cy, cz;
 
-	possible = malloc(nshells*sizeof(int));
-	measurements = malloc(nshells*sizeof(unsigned int));
-	measured = malloc(nshells*sizeof(unsigned int));
-	snr_measured = malloc(nshells*sizeof(unsigned int));
+	possible = malloc(nshells*sizeof(unsigned long));
+	measurements = malloc(nshells*sizeof(unsigned long));
+	measured = malloc(nshells*sizeof(unsigned long));
+	snr_measured = malloc(nshells*sizeof(unsigned long));
 	if ( (possible == NULL) || (measurements == NULL)
 	  || (measured == NULL) || (snr_measured == NULL) ) {
 		ERROR("Couldn't allocate memory.\n");
@@ -618,17 +619,18 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		var[bin] += pow(val-mean[bin], 2.0);
 
 	}
+
 	STATUS("overall <snr> = %f\n", snr_total/(double)nrefl);
-	STATUS("%i measurements in total.\n", nmeastot);
-	STATUS("%i reflections in total.\n", nrefl);
+	STATUS("%li measurements in total.\n", nmeastot);
+	STATUS("%li reflections in total.\n", nrefl);
 
 	if ( nout ) {
-		STATUS("WARNING; %i reflections outside resolution range.\n",
+		STATUS("WARNING; %li reflections outside resolution range.\n",
 		       nout);
 	}
 
 	if ( nsilly ) {
-		STATUS("WARNING; %i reflections had infinite or invalid values"
+		STATUS("WARNING; %li reflections had infinite or invalid values"
 		       " of I/sigma(I).\n", nsilly);
 	}
 
@@ -639,7 +641,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 
 		double cen;
 		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
-		fprintf(fh, "%10.3f %8i %8i %6.2f %10i %5.1f"
+		fprintf(fh, "%10.3f %8li %8li %6.2f %10li %5.1f"
 		            " %5.2f %10.2f %10.2f %8.2f  %10.3f %10.3f\n",
 		        cen*1.0e-9,
 		        measured[i],
