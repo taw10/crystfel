@@ -801,7 +801,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 338:
-			if ( sscanf(optarg, "%i", &iargs.felix_opts.min_visits) != 1 )
+			if ( sscanf(optarg, "%i",
+			            &iargs.felix_opts.min_visits) != 1 )
 			{
 				ERROR("Invalid value for --felix-min-visits\n");
 				return 1;
@@ -809,7 +810,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 339:
-			if ( sscanf(optarg, "%lf", &iargs.felix_opts.min_completeness) != 1 )
+			if ( sscanf(optarg, "%lf",
+			            &iargs.felix_opts.min_completeness) != 1 )
 			{
 				ERROR("Invalid value for --felix-min-completeness\n");
 				return 1;
@@ -817,7 +819,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 340:
-			if ( sscanf(optarg, "%lf", &iargs.felix_opts.max_uniqueness) != 1 )
+			if ( sscanf(optarg, "%lf",
+			            &iargs.felix_opts.max_uniqueness) != 1 )
 			{
 				ERROR("Invalid value for --felix-max-uniqueness\n");
 				return 1;
@@ -825,7 +828,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 341:
-			if ( sscanf(optarg, "%i", &iargs.felix_opts.n_voxels) != 1 )
+			if ( sscanf(optarg, "%i",
+			            &iargs.felix_opts.n_voxels) != 1 )
 			{
 				ERROR("Invalid value for --felix-num-voxels\n");
 				return 1;
@@ -833,7 +837,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 342:
-			if ( sscanf(optarg, "%lf", &iargs.felix_opts.fraction_max_visits) != 1 )
+			if ( sscanf(optarg, "%lf",
+			            &iargs.felix_opts.fraction_max_visits) != 1 )
 			{
 				ERROR("Invalid value for --felix-fraction-max-visits\n");
 				return 1;
@@ -841,7 +846,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 343:
-			if ( sscanf(optarg, "%lf", &iargs.felix_opts.sigma) != 1 )
+			if ( sscanf(optarg, "%lf",
+			            &iargs.felix_opts.sigma) != 1 )
 			{
 				ERROR("Invalid value for --felix-sigma\n");
 				return 1;
@@ -889,7 +895,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 351:
-			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.sampling_pitch) != 1)
+			if (sscanf(optarg, "%u",
+			           &iargs.xgandalf_opts.sampling_pitch) != 1)
 			{
 				ERROR("Invalid value for --xgandalf-sampling-pitch\n");
 				return 1;
@@ -897,7 +904,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 352:
-			if (sscanf(optarg, "%u", &iargs.xgandalf_opts.grad_desc_iterations) != 1)
+			if (sscanf(optarg, "%u",
+			           &iargs.xgandalf_opts.grad_desc_iterations) != 1)
 			{
 				ERROR("Invalid value for --xgandalf-grad-desc-iterations\n");
 				return 1;
@@ -905,7 +913,8 @@ int main(int argc, char *argv[])
 			break;
 
 			case 353:
-			if (sscanf(optarg, "%f", &iargs.xgandalf_opts.tolerance) != 1)
+			if (sscanf(optarg, "%f",
+			           &iargs.xgandalf_opts.tolerance) != 1)
 			{
 				ERROR("Invalid value for --xgandalf-tolerance\n");
 				return 1;
@@ -913,12 +922,12 @@ int main(int argc, char *argv[])
 			break;
 
 			case 354:
-				iargs.xgandalf_opts.no_deviation_from_provided_cell = 1;
+			iargs.xgandalf_opts.no_deviation_from_provided_cell = 1;
 			break;
 
 			case 355:
 			if (sscanf(optarg, "%f",
-					&iargs.xgandalf_opts.minLatticeVectorLength_A) != 1)
+			           &iargs.xgandalf_opts.minLatticeVectorLength_A) != 1)
 			{
 				ERROR("Invalid value for "
 						"--xgandalf-min-lattice-vector-length\n");
@@ -928,7 +937,7 @@ int main(int argc, char *argv[])
 
 			case 356:
 			if (sscanf(optarg, "%f",
-					&iargs.xgandalf_opts.maxLatticeVectorLength_A) != 1)
+			           &iargs.xgandalf_opts.maxLatticeVectorLength_A) != 1)
 			{
 				ERROR("Invalid value for "
 						"--xgandalf-max-lattice-vector-length\n");
@@ -953,16 +962,15 @@ int main(int argc, char *argv[])
 			break;
 
 			case 360:
-				iargs.xgandalf_opts.sampling_pitch = 2;
-				iargs.xgandalf_opts.grad_desc_iterations = 3;
+			iargs.xgandalf_opts.sampling_pitch = 2;
+			iargs.xgandalf_opts.grad_desc_iterations = 3;
 			break;
 
 			case 361:
 			if (sscanf(optarg, "%i",
-					&iargs.xgandalf_opts.maxPeaksForIndexing) != 1)
+			           &iargs.xgandalf_opts.maxPeaksForIndexing) != 1)
 			{
-				ERROR("Invalid value for "
-						"--xgandalf-max-peaks\n");
+				ERROR("Invalid value for --xgandalf-max-peaks\n");
 				return 1;
 			}
 			break;
