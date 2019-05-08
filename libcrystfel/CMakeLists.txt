@@ -62,7 +62,6 @@ set(LIBCRYSTFEL_SOURCES
     src/xds.c
     src/integration.c
     src/predict-refine.c
-    src/histogram.c
     src/events.c
     src/felix.c
     src/peakfinder8.c
@@ -102,7 +101,6 @@ set(LIBCRYSTFEL_HEADERS
     src/xds.h
     src/predict-refine.h
     src/integration.h
-    src/histogram.h
     src/events.h
     src/asdf.h
     src/felix.h

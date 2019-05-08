@@ -36,7 +36,8 @@
 
 #include <image.h>
 #include <utils.h>
-#include <histogram.h>
+
+#include "histogram.h"
 
 #include "../libcrystfel/src/integration.c"
 

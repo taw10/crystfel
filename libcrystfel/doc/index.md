@@ -39,7 +39,6 @@ API documentation
 * Mathematical constructions:
    * \ref integer_matrix.h "Integer matrices"
    * \ref rational.h "Rational numbers (including rational matrices)"
-   * \ref histogram.h "Simple histogram"
 * \ref index.h "Top-level indexing system"
    * \ref xgandalf.h "XGANDALF indexer interface"
    * \ref xds.h "XDS indexer inderface"
