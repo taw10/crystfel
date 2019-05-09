@@ -24,11 +24,11 @@ For example:
 
     int function(int a, int b)
     {
-            int p;  /* <--- Tab character used to indent code inside function */
+    <-tab-->int p;  /* <--- Tab character used to indent code inside function */
             char *str;
 
-            do_something(a, "A long string which takes up a lot of space",
-                         str, &p);   /* <--- spaces used to align with bracket */
+    <-tab-->do_something(a, "A long string which takes up a lot of space",
+    <-tab-->.............str, &p);   /* <--- spaces used to align with bracket */
     }
 
 **Rationale:** Using tab characters makes it easy to align code correctly,
@@ -43,15 +43,33 @@ breaks at ugly positions, such as straight after an *opening* bracket.  The
 absolute maximum allowable line length is 120 columns, with no exceptions
 whatsoever.
 
+For example, this is preferred because it fits into 80 columns (just!):
+
+    very_long_variable_name = very_long_function_name(even_longer_long_variablename,
+                                                      var2, var3);
+
+However, if the variable names are even longer, then the following is preferred,
+even though it goes over 80 columns:
+
+    very_very_long_variable_name = very_long_function_name(even_longer_long_variablename,
+                                                           var2, var3);
+
+This is preferred over the following type of thing, which is just plain ugly:
+
+    very_very_long_variable_name = very_long_function_name(
+                                                   even_longer_long_variablename,
+                                                           var2, var3);
+
+However, see the point below regarding variable names.
+
 **Rationale:** Aside from ensuring it's always possible to display two parts of
 the code side-by-side with a reasonable font size, this is not really about how
 the code looks.  Rather, it is to discourage excessive levels of nesting and
 encourage smaller, more easily understood functions.  I don't think I've yet
 seen any examples of code where the intelligibility could not be improved while
-simultaneously reducing the number of levels of indentation, except where very
-long variable or function names had been used.  Hence the next point:
+simultaneously reducing the number of levels of indentation.
 
-### Variable and function names
+### Variable, function and type names
 
 Shorter variable and function names, with explanatory comments, are preferred
 over long variable names:
@@ -63,10 +81,17 @@ Preferred:
     /* The wavelength in Angstrom units */
     double wl;
 
+***Rationale:*** Shorter variable names make it easier to see the overall
+logical or mathematical structure.
+
 "Snake case" is preferred over "camel case":
 
     int model_option;   /* <--- Preferred */
     int modelOption;    /* <--- Discouraged */
+
+Capitalisation is used for complex type names:
+
+    UnitCell *cell;
 
 ### Nested loops
 
@@ -91,47 +116,87 @@ of the "for" statements and also between each of the final closing braces.
 with more than three levels not at all uncommon.  Any reasonable limit on code
 width would be overshot by indenting each level separately.
 
+### Comments
+
+C-style comments are preferred over C++-style, even for one-line comments:
+
+    /* Preferred type of comment */
+
+    // Discouraged type of comment
+
+***Rationale:***  CrystFEL is written in C, not C++.
+
+Multi-line comments should have stars down one side:
+
+    /* This is a multiple-line comment.
+     * Here is the second line of the comment */
+
+It's also acceptable to put the closing slash on its own line:
+
+    /* Here is another multiple-line comment.
+     * Here is the second line of the comment
+     */
+
 ### Bracket positions
 
-Brackets and so on should go like this:
+The opening brace of a function should be on its own line:
 
-    /* Multiple line comments have stars
-     * down one side */
     void somefunction(int someparam)
     {
-            /* Single line comments use this style (not //) */
-            if ( a < b ) {      /* <--- Opening brace on same line as 'if' */
+            /* Here is the body of the function */
+    }
+
+The opening brace of an if statement should be on the same line as the 'if',
+unless the condition is very long, especially if it spans multiple lines:
+
+            if ( a < b ) {
                     do_something(a);
-            } else {            /* <---  'else's are 'cuddled' */
+            } else {
                     do_other_something(a);
             }
 
-            if ( some && very && long && condition && that && spans
-                 && two && lines )
-            {     /* <--- Opening brace on a line by itself acceptable in this case */
+            if ( a_very_long_condition == structure->wibble.value
+              && other_very_long_condition )
+            {
                     do_something_completely_different(someparam);
             }
-    }
 
-    /* Comments use proper capitalisation to make things look neat */
+***Rationale:*** This keeps the appearance of 'if' statements compact instead of
+spread out, while allowing some visual separation between long conditions and
+the conditional code.
 
-'struct' blocks can have the braces like functions or 'if' statements.  Usually
-the former looks nicer if the struct is large.
+### Space around parantheses
 
 Parentheses should have spaces after them in 'if' statements, but not in
 function calls. Function arguments should have spaces after the comma.  There
 should be no space between the function name and the opening bracket.  That
 means:
 
-    if ( something ) {
+    if ( something < 3 ) {
             do_something(a, b, c);
+    }
+
+or:
+
+    if ( h>3 && k<3 && l==-1 ) {
+            do_something(h, k, l);
     }
 
 instead of:
 
-    if (something) {
+    if (something<3) {
             do_something (a,b,c);
     }
+
+***Rationale:*** I find this guideline helps to encourage good grouping of
+logical statements.  Some flexibility is allowed here, though.
+
+### Whitespace
+
+No trailing whitespace at all, even in empty lines.
+
+***Rationale:*** Invisible characters do nothing other than generate VCS
+conflicts.
 
 ### Cleverness
 
