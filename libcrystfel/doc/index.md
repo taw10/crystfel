@@ -49,6 +49,7 @@ API documentation
    * \ref felix.h "Felix indexer interface"
 * \ref predict-refine.h "Prediction refinement"
 * \ref integration.h "Integration of reflections"
+* \ref datatemplate.h "Contents of geometry files"
 * \ref detector.h "Detector geometry descriptions"
 * \ref spectrum.h "Radiation spectrum object"
 * \ref hdf5-file.h "HDF5 file interface"

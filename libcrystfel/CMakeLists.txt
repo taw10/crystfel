@@ -75,6 +75,7 @@ set(LIBCRYSTFEL_SOURCES
     src/pinkindexer.c
     src/rational.c
     src/spectrum.c
+    src/datatemplate.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
 )
@@ -117,6 +118,7 @@ set(LIBCRYSTFEL_HEADERS
     src/pinkindexer.h
     src/rational.h
     src/spectrum.h
+    src/datatemplate.h
 )
 
 if (DOXYGEN_FOUND)
