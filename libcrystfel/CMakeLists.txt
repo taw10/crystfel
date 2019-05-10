@@ -68,6 +68,7 @@ set(LIBCRYSTFEL_SOURCES
     src/taketwo.c
     src/xgandalf.c
     src/rational.c
+    src/spectrum.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
 )
@@ -108,6 +109,7 @@ set(LIBCRYSTFEL_HEADERS
     src/taketwo.h
     src/xgandalf.h
     src/rational.h
+    src/spectrum.h
 )
 
 if (DOXYGEN_FOUND)

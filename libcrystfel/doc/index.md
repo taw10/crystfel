@@ -50,6 +50,7 @@ API documentation
 * \ref predict-refine.h "Prediction refinement"
 * \ref integration.h "Integration of reflections"
 * \ref detector.h "Detector geometry descriptions"
+* \ref spectrum.h "Radiation spectrum object"
 * \ref hdf5-file.h "HDF5 file interface"
 * \ref stream.h "Stream format for indexing/integration results"
 * \ref render.h "Miscellaneous rendering functions (colour scale)"
