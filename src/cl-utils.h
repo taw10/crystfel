@@ -3,11 +3,11 @@
  *
  * OpenCL utility functions
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2018 Thomas White <taw@physics.org>
+ *   2010-2019 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -34,6 +34,13 @@
 #endif
 
 
+#ifdef HAVE_CL_CL_H
+#include <CL/cl.h>
+#else
+#include <cl.h>
+#endif
+
+extern int have_gpu_device(void);
 extern const char *clError(cl_int err);
 extern cl_device_id get_cl_dev(cl_context ctx, int n);
 extern cl_program load_program_from_string(const char *source_in, size_t len,

@@ -3,11 +3,11 @@
  *
  * OpenCL utility functions
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2018 Thomas White <taw@physics.org>
+ *   2010-2019 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -41,6 +41,40 @@
 #endif
 
 #include "utils.h"
+
+
+/* Return 1 if a GPU device is present, 0 if not, 2 on error. */
+int have_gpu_device()
+{
+	cl_uint nplat;
+	cl_platform_id platforms[8];
+	cl_context_properties prop[3];
+	cl_int err;
+	int i;
+
+	err = clGetPlatformIDs(8, platforms, &nplat);
+	if ( err != CL_SUCCESS ) return 2;
+	if ( nplat == 0 ) return 0;
+
+	/* Find a GPU platform in the list */
+	for ( i=0; i<nplat; i++ ) {
+
+		prop[0] = CL_CONTEXT_PLATFORM;
+		prop[1] = (cl_context_properties)platforms[i];
+		prop[2] = 0;
+
+		clCreateContextFromType(prop, CL_DEVICE_TYPE_GPU,
+		                        NULL, NULL, &err);
+
+		if ( err != CL_SUCCESS ) {
+			if ( err != CL_DEVICE_NOT_FOUND ) return 2;
+		} else {
+			return 1;
+		}
+	}
+
+	return 0;
+}
 
 
 const char *clError(cl_int err)

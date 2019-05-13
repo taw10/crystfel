@@ -3,11 +3,11 @@
  *
  * Check that GPU simulation agrees with CPU version
  *
- * Copyright © 2012-2015 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2015 Thomas White <taw@physics.org>
+ *   2012-2019 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -42,6 +42,7 @@
 
 #include "../src/diffraction.h"
 #include "../src/diffraction-gpu.h"
+#include "../src/cl-utils.h"
 #include <detector.h>
 #include <utils.h>
 #include <symmetry.h>
@@ -89,6 +90,11 @@ int main(int argc, char *argv[])
 	double gpu_time, cpu_time;
 	SymOpList *sym;
 	gsl_rng *rng;
+
+	if ( have_gpu_device() == 0 ) {
+		ERROR("No GPU device found - skipping test.\n");
+		return 0;
+	}
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
