@@ -48,8 +48,8 @@ extern cl_program load_program_from_string(const char *source_in, size_t len,
                                            cl_int *err, const char *extra_cflags,
                                            const char *insert_stuff);
 extern cl_program load_program(const char *filename, cl_context ctx,
-                        cl_device_id dev, cl_int *err,
-                        const char *extra_cflags, const char *insert_stuff);
+                               cl_device_id dev, cl_int *err,
+                               const char *extra_cflags, const char *insert_stuff);
 
 
 #endif	/* CLUTILS_H */
