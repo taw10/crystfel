@@ -61,24 +61,23 @@ struct gaussian
 extern "C" {
 #endif
 
+/* Alloc/free */
 extern Spectrum *spectrum_new(void);
-
 extern void spectrum_free(Spectrum *s);
+extern Spectrum *spectrum_load(const char *filename);
 
-extern int spectrum_get_num_gaussians(Spectrum *s, double tol);
-
-extern struct gaussian spectrum_get_gaussian(Spectrum *s, int n);
-
-extern double spectrum_get_density_at_k(Spectrum *s, double k);
-
-extern void spectrum_get_range(Spectrum *s, double tol,
-                               double *kmin, double *kmax);
-
+/* Representation as Gaussians */
 extern void spectrum_set_gaussians(Spectrum *s, struct gaussian *gs,
                                    int n_gauss);
+extern int spectrum_get_num_gaussians(Spectrum *s);
+extern struct gaussian spectrum_get_gaussian(Spectrum *s, int n);
 
+/* Representation as histogram */
 extern void spectrum_set_histogram(Spectrum *s, double *kcens, double *heights,
                                    int nbins);
+extern void spectrum_get_range(Spectrum *s, double *kmin, double *kmax);
+extern double spectrum_get_density_at_k(Spectrum *s, double k);
+
 
 #ifdef __cplusplus
 }

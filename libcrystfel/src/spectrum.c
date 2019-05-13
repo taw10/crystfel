@@ -81,12 +81,11 @@ void spectrum_free(Spectrum *s)
 
 /**
  * \param s A \ref Spectrum
- * \param tol Fraction of spectrum required
  *
- * \returns The number of Gaussians needed to represent at least \p tol
- * fraction of the total intensity in the spectrum.
+ * \returns The number of Gaussians in the spectrum, or zero if \p s is not
+ * currently represented as Gaussians.
  */
-int spectrum_get_num_gaussians(Spectrum *s, double tol)
+int spectrum_get_num_gaussians(Spectrum *s)
 {
 	return 0;
 }
@@ -96,11 +95,11 @@ int spectrum_get_num_gaussians(Spectrum *s, double tol)
  * \param s A \ref Spectrum
  * \param n The index number of the required Gaussian
  *
- * Returns The \p n-th Gaussian to represent the spectrum.  The Gaussians are
+ * Returns The \p n-th Gaussian in the spectrum.  The Gaussians are
  * returned in descending order of integrated intensity, indexed from zero.
  *
- * If \p n is greater than or equal to the number of Gaussians needed to account
- * for 100% of the spectrum, the returned Gaussian will have zero height.
+ * If \p n is greater than or equal to the number of Gaussians in the spectrum,
+ * the returned Gaussian will have zero height.
  *
  * \returns The \p n-th Gaussian.
  */
@@ -118,9 +117,10 @@ struct gaussian spectrum_get_gaussian(Spectrum *s, int n)
  * \param s A \ref Spectrum
  * \param k A wavenumber (in 1/metres)
  *
- * Returns the spectral density at wavenumber \p k.
- * To calculate the "amount of intensity" from this, you'll need to multiply
- * the value by a small width of k.
+ * Retrieves the spectral density at wavenumber \p k.
+ * This is a sample from a probability density function, so to calculate the
+ * "amount of intensity" from this, you'll need to multiply the value by a
+ * small width of k.
  *
  * \returns The density at \p k.
  */
@@ -132,13 +132,14 @@ double spectrum_get_density_at_k(Spectrum *s, double k)
 
 /**
  * \param s A \ref Spectrum
- * \param tol Fraction of spectrum required
  * \param kmin Location to store minimum k value
  * \param kmax Location to store maximum k value
  *
- * Returns the range of k values needed to capture \p tol of the spectrum.
+ * Sets \p kmin and \p kmax to the range of k values in the spectrum.  If the
+ * spectrum is represented as Gaussians, the range returned will be enough to
+ * contain at least 5 sigmas of all the Gaussians.
  */
-void spectrum_get_range(Spectrum *s, double tol, double *kmin, double *kmax)
+void spectrum_get_range(Spectrum *s, double *kmin, double *kmax)
 {
 }
 
@@ -148,7 +149,7 @@ void spectrum_get_range(Spectrum *s, double tol, double *kmin, double *kmax)
  * \param gs Pointer to array of \ref gaussian structures
  * \param n_gauss Number of Gaussians in \p gs
  *
- * Sets the spectrum in terms of a number of Gaussians.
+ * Sets the spectrum in terms of a sum of Gaussians.
  */
 void spectrum_set_gaussians(Spectrum *s, struct gaussian *gs, int n_gauss)
 {
@@ -167,4 +168,17 @@ void spectrum_set_gaussians(Spectrum *s, struct gaussian *gs, int n_gauss)
 void spectrum_set_histogram(Spectrum *s, double *kcens, double *heights,
                             int nbins)
 {
+}
+
+
+/**
+ * \param filename Filename for the input file
+ *
+ * Loads the spectrum from \s filename.
+ *
+ * \returns A newly allocated \ref Spectrum, or NULL on error.
+ */
+Spectrum *spectrum_load(const char *filename)
+{
+	return NULL;
 }
