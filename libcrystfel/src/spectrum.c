@@ -48,6 +48,15 @@ enum spectrumrep
 struct _spectrum
 {
 	enum spectrumrep rep;
+
+	/* Gaussian representation */
+	struct gaussian *gaussians;
+	int n_gaussians;
+
+	/* Histogram representation */
+	double *k;
+	double *pdf;
+	int n_samples;
 };
 
 
@@ -64,6 +73,15 @@ Spectrum *spectrum_new()
 	s = malloc(sizeof(Spectrum));
 	if ( s == NULL ) return NULL;
 
+	s->rep = SPEC_GAUSSIANS;
+
+	s->gaussians = NULL;
+	s->n_gaussians = 0;
+
+	s->k = NULL;
+	s->pdf = NULL;
+	s->n_samples = 0;
+
 	return s;
 }
 
@@ -75,6 +93,10 @@ Spectrum *spectrum_new()
  */
 void spectrum_free(Spectrum *s)
 {
+	if ( s == NULL ) return;
+	free(s->gaussians);
+	free(s->k);
+	free(s->pdf);
 	free(s);
 }
 
@@ -87,6 +109,7 @@ void spectrum_free(Spectrum *s)
  */
 int spectrum_get_num_gaussians(Spectrum *s)
 {
+	if ( s->rep == SPEC_GAUSSIANS ) return s->n_gaussians;
 	return 0;
 }
 
@@ -99,16 +122,21 @@ int spectrum_get_num_gaussians(Spectrum *s)
  * returned in descending order of integrated intensity, indexed from zero.
  *
  * If \p n is greater than or equal to the number of Gaussians in the spectrum,
- * the returned Gaussian will have zero height.
+ * or if the spectrum is not represented as Gaussians, the returned Gaussian
+ * will have zero height.
  *
  * \returns The \p n-th Gaussian.
  */
 struct gaussian spectrum_get_gaussian(Spectrum *s, int n)
 {
 	struct gaussian g;
-	g.kcen = 0.0;
-	g.sigma = 0.0;
-	g.height = 0.0;
+	if ( (s->rep != SPEC_GAUSSIANS) || (n >= s->n_gaussians) ) {
+		g.kcen = 0.0;
+		g.sigma = 0.0;
+		g.height = 0.0;
+	} else {
+		g = s->gaussians[n];
+	}
 	return g;
 }
 
@@ -130,6 +158,52 @@ double spectrum_get_density_at_k(Spectrum *s, double k)
 }
 
 
+static double smallest(double *vals, int n_vals)
+{
+	int i;
+	double v = +INFINITY;
+	for ( i=0; i<n_vals; i++ ) {
+		if ( vals[i] < v ) v = vals[i];
+	}
+	return v;
+}
+
+
+static double largest(double *vals, int n_vals)
+{
+	int i;
+	double v = -INFINITY;
+	for ( i=0; i<n_vals; i++ ) {
+		if ( vals[i] > v ) v = vals[i];
+	}
+	return v;
+}
+
+
+static double gauss_low(struct gaussian *gauss, int n_gauss)
+{
+	int i;
+	double v = +INFINITY;
+	for ( i=0; i<n_gauss; i++ ) {
+		double gv = gauss[i].kcen - 5.0*gauss[i].sigma;
+		if ( gv > v ) v = gv;
+	}
+	return v;
+}
+
+
+static double gauss_high(struct gaussian *gauss, int n_gauss)
+{
+	int i;
+	double v = -INFINITY;
+	for ( i=0; i<n_gauss; i++ ) {
+		double gv = gauss[i].kcen + 5.0*gauss[i].sigma;
+		if ( gv > v ) v = gv;
+	}
+	return v;
+}
+
+
 /**
  * \param s A \ref Spectrum
  * \param kmin Location to store minimum k value
@@ -141,6 +215,14 @@ double spectrum_get_density_at_k(Spectrum *s, double k)
  */
 void spectrum_get_range(Spectrum *s, double *kmin, double *kmax)
 {
+	if ( s->rep == SPEC_HISTOGRAM ) {
+		*kmin = smallest(s->k, s->n_samples);
+		*kmax = largest(s->k, s->n_samples);
+	} else {
+		assert(s->rep == SPEC_GAUSSIANS);
+		*kmin = gauss_low(s->gaussians, s->n_gaussians);
+		*kmax = gauss_high(s->gaussians, s->n_gaussians);
+	}
 }
 
 
