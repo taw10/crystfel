@@ -240,6 +240,8 @@ static double gauss_high(struct gaussian *gauss, int n_gauss)
  * Sets \p kmin and \p kmax to the range of k values in the spectrum.  If the
  * spectrum is represented as Gaussians, the range returned will be enough to
  * contain at least 5 sigmas of all the Gaussians.
+ *
+ * The values will be returned in units of 1/m.
  */
 void spectrum_get_range(Spectrum *s, double *kmin, double *kmax)
 {
@@ -333,7 +335,7 @@ static void normalise_histogram(double *k, double *pdf, int n)
 
 /**
  * \param s A \ref Spectrum
- * \param kvals Pointer to array of k values
+ * \param kvals Pointer to array of k values (in 1/m);
  * \param heights Pointer to array of spectral density samples
  * \param n Number of samples
  *
@@ -406,7 +408,8 @@ static int read_esrf_spectrum(FILE *fh, Spectrum *s)
 /**
  * \param filename Filename for the input file
  *
- * Loads the spectrum from \s filename.
+ * Loads the spectrum from \s filename.  Currently, only the ESRF spectrum file
+ * format is supported.
  *
  * \returns A newly allocated \ref Spectrum, or NULL on error.
  */

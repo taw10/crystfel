@@ -51,9 +51,9 @@ typedef struct _spectrum Spectrum;
  */
 struct gaussian
 {
-	double kcen;
-	double sigma;
-	double height;
+	double kcen;    /**< k value at centre of Gaussian (in 1/m) */
+	double sigma;   /**< Standard deviation of Gaussian (in 1/m) */
+	double height;  /**< Height of Gaussian (arbitrary units) */
 };
 
 
