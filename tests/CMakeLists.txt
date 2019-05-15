@@ -87,3 +87,8 @@ add_executable(rational_check rational_check.c)
 target_include_directories(rational_check PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(rational_check ${COMMON_LIBRARIES})
 add_test(rational_check rational_check)
+
+add_executable(spectrum_check spectrum_check.c)
+target_include_directories(spectrum_check PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(spectrum_check ${COMMON_LIBRARIES})
+add_test(spectrum_check spectrum_check)
