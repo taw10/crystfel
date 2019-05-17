@@ -72,9 +72,9 @@ extern void spectrum_set_gaussians(Spectrum *s, struct gaussian *gs,
 extern int spectrum_get_num_gaussians(Spectrum *s);
 extern struct gaussian spectrum_get_gaussian(Spectrum *s, int n);
 
-/* Representation as histogram */
-extern void spectrum_set_histogram(Spectrum *s, double *kcens, double *heights,
-                                   int nbins);
+/* Representation as PDF */
+extern void spectrum_set_pdf(Spectrum *s, double *kcens, double *heights,
+                             int nbins);
 extern void spectrum_get_range(Spectrum *s, double *kmin, double *kmax);
 extern double spectrum_get_density_at_k(Spectrum *s, double k);
 

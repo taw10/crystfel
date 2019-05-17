@@ -313,7 +313,7 @@ void spectrum_set_gaussians(Spectrum *s, struct gaussian *gs, int n_gauss)
 
 
 /* Samples must already have been sorted */
-static void normalise_histogram(double *k, double *pdf, int n)
+static void normalise_pdf(double *k, double *pdf, int n)
 {
 	int i;
 	double total_area = 0.0;
@@ -325,7 +325,7 @@ static void normalise_histogram(double *k, double *pdf, int n)
 		old_pdf = pdf[i];
 	}
 
-	printf("total area under histogram = %f\n", total_area);
+	printf("total area under PDF = %f\n", total_area);
 
 	for ( i=0; i<n; i++ ) {
 		pdf[i] /= total_area;
@@ -348,8 +348,7 @@ static void normalise_histogram(double *k, double *pdf, int n)
  * The input arrays will be copied, so you can safely free them after calling
  * this function.
  */
-void spectrum_set_histogram(Spectrum *s, double *kvals, double *heights,
-                            int n)
+void spectrum_set_pdf(Spectrum *s, double *kvals, double *heights, int n)
 {
 	/* Free old contents (if any - may be NULL) */
 	free(s->gaussians);
@@ -368,7 +367,7 @@ void spectrum_set_histogram(Spectrum *s, double *kvals, double *heights,
 	s->rep = SPEC_HISTOGRAM;
 
 	gsl_sort2(s->k, 1, s->pdf, 1, n);
-	normalise_histogram(s->k, s->pdf, s->n_samples);
+	normalise_pdf(s->k, s->pdf, s->n_samples);
 }
 
 
@@ -397,7 +396,7 @@ static int read_esrf_spectrum(FILE *fh, Spectrum *s)
 
 	}
 
-	spectrum_set_histogram(s, k, samp, n_bins);
+	spectrum_set_pdf(s, k, samp, n_bins);
 	free(k);
 	free(samp);
 
