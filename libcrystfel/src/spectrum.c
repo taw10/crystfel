@@ -451,3 +451,88 @@ Spectrum *spectrum_load(const char *filename)
 	fclose(fh);
 	return s;
 }
+
+
+/**
+ * \param wavelength Wavelength in metres
+ * \param bandwidth Bandwidth as a fraction
+ *
+ * Generates a top-hat spectrum centered on 'wavelength', where the width of the
+ * flat top is bandwidth/wavelength
+ *
+ * \returns A newly-allocated \ref Spectrum, or NULL on error.
+ */
+Spectrum *spectrum_generate_tophat(double wavelength, double bandwidth)
+{
+	Spectrum *s;
+	double kvals[2];
+	double samp[2];
+	double kcen;
+
+	s = spectrum_new();
+	if ( s == NULL ) return NULL;
+
+	kcen = 1.0/wavelength;
+	kvals[0] = kcen - kcen*bandwidth/2.0;
+	kvals[1] = kcen + kcen*bandwidth/2.0;
+	samp[0] = 1.0;
+	samp[1] = 1.0;
+	spectrum_set_pdf(s, kvals, samp, 2);
+	return s;
+}
+
+
+/**
+ * \param wavelength Wavelength in metres
+ * \param bandwidth Bandwidth as a fraction
+ *
+ * Generates a Gaussian spectrum centered on 'wavelength', where the standard
+ * deviation of the Gaussian is bandwidth/wavelength
+ *
+ * \returns A newly-allocated \ref Spectrum, or NULL on error.
+ */
+Spectrum *spectrum_generate_gaussian(double wavelength, double bandwidth)
+{
+	Spectrum *s;
+	struct gaussian g;
+
+	s = spectrum_new();
+	if ( s == NULL ) return NULL;
+
+	g.kcen = 1.0/wavelength;
+	g.sigma = bandwidth/wavelength;
+	g.height = 1;
+	spectrum_set_gaussians(s, &g, 1);
+
+	return s;
+}
+
+
+/**
+ * \param wavelength Wavelength in metres
+ * \param bandwidth Bandwidth as a fraction
+ *
+ * Generates a top-hat spectrum centered on 'wavelength', where the width of the
+ * flat top is bandwidth/wavelength
+ *
+ * \returns A newly-allocated \ref Spectrum, or NULL on error.
+ */
+Spectrum *spectrum_generate_sase(double wavelength, double bandwidth,
+                                 double spike_width, gsl_rng *rng)
+{
+}
+
+
+/**
+ * \param wavelength Wavelength in metres
+ * \param bandwidth Bandwidth as a fraction
+ *
+ * Generates a top-hat spectrum centered on 'wavelength', where the width of the
+ * flat top is bandwidth/wavelength
+ *
+ * \returns A newly-allocated \ref Spectrum, or NULL on error.
+ */
+Spectrum *spectrum_generate_twocolour(double wavelength, double bandwidth,
+                                      double separation)
+{
+}

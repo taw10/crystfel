@@ -163,21 +163,19 @@ int main(int argc, char *argv[])
 	gpu_image.det = det;
 	cpu_image.beam = NULL;
 	gpu_image.beam = NULL;
-	cpu_image.spectrum0 = NULL;
-	gpu_image.spectrum0 = NULL;
 
 	cpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
 	gpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
 	cpu_image.bw = 1.0 / 100.0;
 	gpu_image.bw = 1.0 / 100.0;
 
-	cpu_image.nsamples = 10;
-	gpu_image.nsamples = 10;
-	cpu_image.spectrum0 = generate_tophat(&cpu_image);
-	gpu_image.spectrum0 = generate_tophat(&gpu_image);
+	cpu_image.spectrum = spectrum_generate_tophat(cpu_image.lambda,
+	                                              cpu_image.bw);
+	gpu_image.spectrum = spectrum_generate_tophat(gpu_image.lambda,
+	                                              gpu_image.bw);
 
 	start = get_hires_seconds();
-	if ( get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell, 0, 0) ) {
+	if ( get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell, 0, 0, 10) ) {
 		return 1;
 	}
 	end = get_hires_seconds();
@@ -201,7 +199,7 @@ int main(int argc, char *argv[])
 
 	start = get_hires_seconds();
 	get_diffraction(&cpu_image, 8, 8, 8, NULL, NULL, NULL, cell,
-	                GRADIENT_MOSAIC, sym, 0, 0);
+	                GRADIENT_MOSAIC, sym, 0, 0, 10);
 	end = get_hires_seconds();
 	cpu_time = end - start;
 

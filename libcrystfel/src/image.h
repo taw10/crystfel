@@ -3,11 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2018 Thomas White <taw@physics.org>
+ *   2009-2019 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -54,6 +54,7 @@ struct imagefile_field_list;
 #include "crystal.h"
 #include "index.h"
 #include "events.h"
+#include "spectrum.h"
 
 /**
  * \file image.h
@@ -101,23 +102,6 @@ enum imagefile_type
 
 /** An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
-
-
-struct spectrum
-{
-	int n;
-	double *ks; /* 1/m */
-	double *weights;
-};
-
-
-/** Structure describing a wavelength sample from a spectrum.
- * \deprecated Use struct spectrum instead. */
-struct sample
-{
-	double k;         /**< Wavevector in m^-1 */
-	double weight;    /**< Relative weight */
-};
 
 
 struct beam_params
@@ -182,17 +166,8 @@ struct image
 	/** Monotonically increasing serial number for this image */
 	int                     serial;
 
-	/** Spectrum information (new format) */
-	struct spectrum *spectrum;
-
-	/** \name Spectrum information (old format)
-	 * @{
-	 * Array of samples, number of samples, and size of the array (may be
-	 * larger than nsamples) */
-	struct sample           *spectrum0;
-	int                     nsamples;
-	int                     spectrum_size;
-	/** @} */
+	/** Spectrum information */
+	Spectrum               *spectrum;
 
 	/** Wavelength of the incident radiation, in metres */
 	double                  lambda;

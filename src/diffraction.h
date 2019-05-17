@@ -52,7 +52,7 @@ extern void get_diffraction(struct image *image, int na, int nb, int nc,
                             const double *intensities, const double *phases,
                             const unsigned char *flags, UnitCell *cell,
                             GradientMethod m, const SymOpList *sym,
-                            int no_fringes, int flat);
+                            int no_fringes, int flat, int n_samples);
 
 extern struct sample *generate_tophat(struct image *image);
 

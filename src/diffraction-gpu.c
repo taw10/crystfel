@@ -283,7 +283,7 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 
 int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
                         int na, int nb, int nc, UnitCell *ucell,
-                        int no_fringes, int flat)
+                        int no_fringes, int flat, int n_samples)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -294,6 +294,8 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	int n_neg = 0;
 	int n_nan = 0;
 	int i;
+	double kmin, kmax, step;
+	double tot = 0.0;
 
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
@@ -338,23 +340,25 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 		}
 	}
 
-	double tot = 0.0;
-	for ( i=0; i<image->nsamples; i++ ) {
+	spectrum_get_range(image->spectrum, &kmin, &kmax);
+	step = (kmax-kmin)/n_samples;
+	for ( i=0; i<=n_samples; i++ ) {
 
-		printf("%.3f eV, weight = %.5f\n",
-		       ph_lambda_to_eV(1.0/image->spectrum0[i].k),
-		       image->spectrum0[i].weight);
+		double k = kmin + i*step;
+		double prob;
 
-		err = do_panels(gctx, image, image->spectrum0[i].k,
-		                image->spectrum0[i].weight,
-		                &n_inf, &n_neg, &n_nan);
+		/* Probability = p.d.f. times step width */
+		prob = step * spectrum_get_density_at_k(image->spectrum, k);
 
+		STATUS("Wavelength: %e m, weight = %.5f\n", 1.0/k, prob);
+
+		err = do_panels(gctx, image, k, prob, &n_inf, &n_neg, &n_nan);
 		if ( err ) return 1;
 
-		tot += image->spectrum0[i].weight;
+		tot += prob;
 
 	}
-	printf("total weight = %f\n", tot);
+	STATUS("Total weight = %f\n", tot);
 
 	if ( n_neg + n_inf + n_nan ) {
 		ERROR("WARNING: The GPU calculation produced %i negative"

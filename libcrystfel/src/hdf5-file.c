@@ -901,29 +901,32 @@ static void write_photon_energy(hid_t fh, double eV, const char *ph_en_loc)
 }
 
 
-static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
-                           int nsamples)
+static void write_spectrum(hid_t fh, Spectrum *s)
 {
 	herr_t r;
 	double *arr;
 	int i;
-	hsize_t size1d[1];
 	hid_t sh, dh, ph;
+	double kmin, kmax, step;
+	const hsize_t n = 1024;
 
 	ph = H5Pcreate(H5P_LINK_CREATE);
 	H5Pset_create_intermediate_group(ph, 1);
 
-	arr = malloc(spectrum_size*sizeof(double));
+	arr = malloc(n*sizeof(double));
 	if ( arr == NULL ) {
 		ERROR("Failed to allocate memory for spectrum.\n");
 		return;
 	}
-	for ( i=0; i<spectrum_size; i++ ) {
-		arr[i] = 1.0e10/spectrum[i].k;
+
+	/* Save the wavelength values */
+	spectrum_get_range(s, &kmin, &kmax);
+	step = (kmax-kmin)/n;
+	for ( i=0; i<n; i++ ) {
+		arr[i] = 1.0e10/(kmin+i*step);
 	}
 
-	size1d[0] = spectrum_size;
-	sh = H5Screate_simple(1, size1d, NULL);
+	sh = H5Screate_simple(1, &n, NULL);
 
 	dh = H5Dcreate2(fh, "/spectrum/wavelengths_A", H5T_NATIVE_DOUBLE,
 	                sh, ph, H5S_ALL, H5P_DEFAULT);
@@ -939,46 +942,27 @@ static void write_spectrum(hid_t fh, struct sample *spectrum, int spectrum_size,
 	}
 	H5Dclose(dh);
 
-	for ( i=0; i<spectrum_size; i++ ) {
-		arr[i] = spectrum[i].weight;
+	/* Save the probability density values */
+	for ( i=0; i<n; i++ ) {
+		arr[i] = spectrum_get_density_at_k(s, kmin+i*step);
 	}
 
-	dh = H5Dcreate2(fh, "/spectrum/weights", H5T_NATIVE_DOUBLE, sh,
+	dh = H5Dcreate2(fh, "/spectrum/pdf", H5T_NATIVE_DOUBLE, sh,
 		        H5P_DEFAULT, H5S_ALL, H5P_DEFAULT);
 	if ( dh < 0 ) {
-		ERROR("Failed to create dataset for spectrum weights.\n");
+		ERROR("Failed to create dataset for spectrum p.d.f.\n");
 		return;
 	}
 	r = H5Dwrite(dh, H5T_NATIVE_DOUBLE, H5S_ALL,
 		     H5S_ALL, H5P_DEFAULT, arr);
 	if ( r < 0 ) {
-		ERROR("Failed to write spectrum weights.\n");
-		return;
-	}
-
-	H5Dclose(dh);
-	free(arr);
-
-	size1d[0] = 1;
-	sh = H5Screate_simple(1, size1d, NULL);
-
-	dh = H5Dcreate2(fh, "/spectrum/number_of_samples", H5T_NATIVE_INT, sh,
-		        ph, H5S_ALL, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		ERROR("Failed to create dataset for number of spectrum "
-		      "samples.\n");
-		return;
-	}
-
-	r = H5Dwrite(dh, H5T_NATIVE_INT, H5S_ALL,
-		     H5S_ALL, H5P_DEFAULT, &nsamples);
-	if ( r < 0 ) {
-		ERROR("Failed to write number of spectrum samples.\n");
+		ERROR("Failed to write spectrum p.d.f.\n");
 		return;
 	}
 
 	H5Dclose(dh);
 	H5Pclose(ph);
+	free(arr);
 }
 
 
@@ -1025,10 +1009,8 @@ int hdf5_write_image(const char *filename, const struct image *image,
 
 	write_photon_energy(fh, ph_lambda_to_eV(image->lambda), ph_en_loc);
 
-	if ( image->spectrum0 != NULL && image->spectrum_size > 0 ) {
-
-		write_spectrum(fh, image->spectrum0, image->spectrum_size,
-		              image->nsamples);
+	if ( image->spectrum != NULL ) {
+		write_spectrum(fh, image->spectrum);
 	}
 
 	H5Fclose(fh);

@@ -443,317 +443,11 @@ static void diffraction_at_k(struct image *image, const double *intensities,
 }
 
 
-static void normalise_sampled_spectrum(struct sample *spec, int n, int nsamp)
-{
-	int i;
-	double total_w = 0.0;
-	double samp_w = 0.0;
-
-	for ( i=0; i<n; i++ ) {
-		total_w += spec[i].weight;
-	}
-	STATUS("%i energies in spectrum, %i samples requested.\n", n, nsamp);
-
-	for ( i=0; i<nsamp; i++ ) {
-		samp_w += spec[i].weight;
-	}
-
-	if ( samp_w < 0.8 * total_w ) {
-		ERROR("WARNING: Only %.1f %% of the calculated spectrum "
-		      "intensity was sampled.\n", 100.0 * samp_w / total_w);
-		ERROR("I've increased the weighting of the sampled points to "
-		      "keep the final intensity constant, but the spectrum "
-		      "might be very far from accurate.  Consider increasing "
-		      "the number of spectrum samples.\n");
-	} else {
-		STATUS("%.1f %% of calculated spectrum intensity sampled.\n",
-		       100.0 * samp_w / total_w);
-		STATUS("Normalised to keep total intensity constant.\n");
-	}
-
-	for ( i=0; i<n; i++ ) {
-		spec[i].weight /= samp_w;
-	}
-}
-
-
-static int compare_samples(const void *a, const void *b)
-{
-	struct sample *sample1 = (struct sample *)a;
-	struct sample *sample2 = (struct sample *)b;
-	if ( sample1->weight < sample2->weight ) {
-		return 1;
-	}
-	return -1;
-}
-
-
-static struct sample *get_gaussian_spectrum(double eV_cen, double eV_step,
-                                            double sigma, int spec_size,
-                                            double eV_start)
-{
-	struct sample *spectrum;
-	int i;
-	double eV;
-
-	spectrum = malloc(spec_size * sizeof(struct sample));
-	if ( spectrum == NULL ) return NULL;
-
-	if (eV_start == 0) { /* eV starts at 3 sigma below the mean*/
-		eV = eV_cen - (spec_size/2)*eV_step;
-	} else {
-		eV = eV_start;
-	}
-
-	for ( i=0; i<spec_size; i++ ) {
-
-		spectrum[i].k = 1.0/ph_eV_to_lambda(eV);
-		spectrum[i].weight = exp(-(pow(eV - eV_cen, 2.0)
-		                         / (2.0*sigma*sigma)));
-		eV += eV_step;
-	}
-
-	return spectrum;
-}
-
-
-static int add_sase_noise(struct sample *spectrum, int nsteps, gsl_rng *rng)
-{
-	struct sample *noise;
-	int i, j;
-	double *gaussianNoise;
-	int shiftLim = 5;
-	double noise_mean = 0.0;
-	double noise_sigma = 1.0;
-
-	if ( shiftLim > nsteps ) shiftLim = nsteps;
-
-	noise = malloc(nsteps * sizeof(struct sample));
-	if ( noise == NULL ) return 1;
-
-	gaussianNoise = malloc(3 * nsteps * sizeof(double));
-	if ( gaussianNoise == NULL ) {
-		free(noise);
-		return 1;
-	}
-
-	/* Generate Gaussian noise of length of spectrum
-	 * (replicate on both ends for circshift below) */
-	for ( i=0; i<nsteps; i++) {
-
-		noise[i].weight = 0.0;
-
-		/* Gaussian noise with mean = 0, std = 1 */
-		gaussianNoise[i] = gaussian_noise(rng, noise_mean, noise_sigma);
-		gaussianNoise[i+nsteps] = gaussianNoise[i];
-		gaussianNoise[i+2*nsteps] = gaussianNoise[i];
-	}
-
-	/* Sum Gaussian noise by circshifting by +/- shiftLim */
-	for ( i=nsteps; i<2*nsteps; i++ ) {
-		for ( j=-shiftLim; j<=shiftLim; j++ ) {
-			noise[i-nsteps].weight += gaussianNoise[i+j];
-		}
-	}
-
-	/* Normalize the number of circshift sum */
-	for ( i=0; i<nsteps; i++) {
-		noise[i].weight = noise[i].weight/(2*shiftLim+1);
-	}
-
-	/* Noise amplitude should have a 2 x Gaussian distribution */
-	for ( i=0; i<nsteps; i++ ) {
-		noise[i].weight = 2.0 * spectrum[i].weight * noise[i].weight;
-	}
-
-	/* Add noise to spectrum */
-	for ( i=0; i<nsteps; i++ ) {
-
-		spectrum[i].weight += noise[i].weight;
-
-		/* The final spectrum can not be negative */
-		if ( spectrum[i].weight < 0.0 ) spectrum[i].weight = 0.0;
-
-	}
-
-	return 0;
-}
-
-
-struct sample *generate_tophat(struct image *image)
-{
-	struct sample *spectrum;
-	int i;
-	double k, k_step;
-
-	double halfwidth = image->bw * image->lambda / 2.0;  /* m */
-	double mink = 1.0/(image->lambda + halfwidth);
-	double maxk = 1.0/(image->lambda - halfwidth);
-
-	spectrum = malloc(image->nsamples * sizeof(struct sample));
-	if ( spectrum == NULL ) return NULL;
-
-	k = mink;
-	k_step = (maxk-mink)/(image->nsamples-1);
-	for ( i=0; i<image->nsamples; i++ ) {
-		spectrum[i].k = k;
-		spectrum[i].weight = 1.0/(double)image->nsamples;
-		k += k_step;
-	}
-
-	image->spectrum_size = image->nsamples;
-	/* No need to call normalise_sampled_spectrum() in this case */
-
-	return spectrum;
-}
-
-
-struct sample *generate_spectrum_fromfile(struct image *image,
-					  char *spectrum_fn)
-{
-	struct sample *spectrum;
-	int i;
-	double k, w;
-	double w_sum = 0;
-
-	spectrum = malloc(image->nsamples * sizeof(struct sample));
-	if ( spectrum == NULL ) return NULL;
-
-	FILE *f;
-	f = fopen(spectrum_fn, "r");
-
-	int nsamples = 0;
-	for ( i=0; i<image->nsamples; i++ ) {
-		if (fscanf(f, "%lf %lf", &k, &w) != EOF) {
-			spectrum[i].k = ph_eV_to_k(k);
-			spectrum[i].weight = w;
-			w_sum += w;
-			nsamples += 1;
-		} else break;
-	}
-
-	for ( i=0; i<nsamples; i++ ) {
-		spectrum[i].weight /= w_sum;
-	}
-
-	image->spectrum_size = nsamples;
-
-	return spectrum;
-}
-
-
-struct sample *generate_SASE(struct image *image, gsl_rng *rng)
-{
-	struct sample *spectrum;
-	const int spec_size = 1024;
-	double eV_cen;  /* Central photon energy for this spectrum */
-	const double jitter_sigma_eV = 8.0;
-
-	/* Central wavelength jitters with Gaussian distribution */
-	eV_cen = gaussian_noise(rng, ph_lambda_to_eV(image->lambda),
-	                        jitter_sigma_eV);
-
-	/* Convert FWHM to standard deviation.  Note that bandwidth is taken
-	 * here to be "delta E over E" (E = photon energy), not the bandwidth in
-	 * terms of wavelength (as it is everywhere else), but the difference
-	 * should be very small */
-	double sigma = (image->bw*eV_cen) / (2.0*sqrt(2.0*log(2.0)));
-
-	/* The spectrum will be calculated to a resolution which spreads six
-	 * sigmas of the original (no SASE noise) Gaussian pulse over spec_size
-	 * points */
-	double eV_step = 6.0*sigma/(spec_size-1);
-
-	spectrum = get_gaussian_spectrum(eV_cen, eV_step, sigma, spec_size,0);
-
-	/* Add SASE-type noise to Gaussian spectrum */
-	add_sase_noise(spectrum, spec_size, rng);
-
-	/* Sort samples in spectrum by weight.  Diffraction calculation will
-	 * take the requested number, starting from the brightest */
-	qsort(spectrum, spec_size, sizeof(struct sample), compare_samples);
-
-	normalise_sampled_spectrum(spectrum, spec_size, image->nsamples);
-
-	image->spectrum_size = spec_size;
-	return spectrum;
-}
-
-
-struct sample *generate_twocolour(struct image *image)
-{
-	struct sample *spectrum;
-	struct sample *spectrum1;
-	struct sample *spectrum2;
-	int i;
-	double eV_cen1;  /* Central photon energy for first colour */
-	double eV_cen2;  /* Central photon energy for second colour */
-	double eV_cen;  /* Central photon energy for this spectrum */
-	const int spec_size = 1024;
-
-	eV_cen = ph_lambda_to_eV(image->lambda);
-
-	/* Convert FWHM to standard deviation.  Note that bandwidth is taken
-	 * here to be "delta E over E" (E = photon energy), not the bandwidth in
-	 * terms of wavelength (as it is everywhere else), but the difference
-	 * should be very small */
-	double halfwidth = eV_cen*image->bw/2.0; /* eV */
-
-	eV_cen1 = eV_cen - halfwidth;
-	eV_cen2 = eV_cen + halfwidth;
-
-	/* Hard-code sigma to be 1/5 of bandwidth */
-	double sigma = eV_cen*image->bw/5.0; /* eV */
-
-	/* The spectrum will be calculated to a resolution which spreads six
-	* sigmas of the original (no SASE noise) Gaussian pulse over spec_size
-	* points */
-	double eV_start = eV_cen1 - 3*sigma;
-	double eV_end = eV_cen2 + 3*sigma;
-	double eV_step = (eV_end - eV_start)/(spec_size-1);
-
-	spectrum1 = get_gaussian_spectrum(eV_cen1, eV_step, sigma, spec_size,
-	                                  eV_start);
-	spectrum2 = get_gaussian_spectrum(eV_cen2, eV_step, sigma, spec_size,
-	                                  eV_start);
-
-	spectrum = malloc(spec_size * sizeof(struct sample));
-	if ( spectrum == NULL ) return NULL;
-
-	for ( i=0; i<spec_size; i++ ) {
-		spectrum[i].weight = spectrum1[i].weight + spectrum2[i].weight;
-		spectrum[i].k = spectrum1[i].k;
-		if ( spectrum2[i].k != spectrum1[i].k ) {
-			printf("%e %e\n", spectrum1[i].k, spectrum2[i].k);
-		}
-	}
-
-	/* Normalise intensity (before taking restricted number of samples) */
-	double total_weight = 0.0;
-	for ( i=0; i<spec_size; i++ ) {
-		total_weight += spectrum[i].weight;
-	}
-
-	for ( i=0; i<spec_size; i++ ) {
-		spectrum[i].weight /= total_weight;
-	}
-
-	/* Sort samples in spectrum by weight.  Diffraction calculation will
-	* take the requested number, starting from the brightest */
-	qsort(spectrum, spec_size, sizeof(struct sample), compare_samples);
-
-	normalise_sampled_spectrum(spectrum, spec_size, image->nsamples);
-
-	image->spectrum_size = spec_size;
-	return spectrum;
-}
-
-
 void get_diffraction(struct image *image, int na, int nb, int nc,
                      const double *intensities, const double *phases,
                      const unsigned char *flags, UnitCell *cell,
                      GradientMethod m, const SymOpList *sym,
-                     int no_fringes, int flat)
+                     int no_fringes, int flat, int n_samples)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -762,6 +456,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	double *lut_b;
 	double *lut_c;
 	int i;
+	double kmin, kmax, step;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -769,17 +464,23 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	lut_b = get_sinc_lut(nb, no_fringes, flat);
 	lut_c = get_sinc_lut(nc, no_fringes, flat);
 
-	for ( i=0; i<image->nsamples; i++ ) {
+	spectrum_get_range(image->spectrum, &kmin, &kmax);
+	step = (kmax-kmin)/(n_samples+1);
+	STATUS("%i samples\n", n_samples);
+	for ( i=1; i<=n_samples; i++ ) {
 
-		printf("%.1f eV, weight = %.5f\n",
-		       ph_lambda_to_eV(1.0/image->spectrum0[i].k),
-		       image->spectrum0[i].weight);
+		double k = kmin + i*step;
+		double prob;
+
+		/* Probability = p.d.f. times step width */
+		prob = step * spectrum_get_density_at_k(image->spectrum, k);
+
+		STATUS("Wavelength: %e m, weight = %.5f\n", 1.0/k, prob);
 
 		diffraction_at_k(image, intensities, phases,
-		                flags, cell, m, sym, image->spectrum0[i].k,
+		                flags, cell, m, sym, k,
 		                ax, ay, az, bx, by, bz, cx, cy, cz,
-		                lut_a, lut_b, lut_c, image->spectrum0[i].weight);
-
+		                lut_a, lut_b, lut_c, prob);
 
 	}
 

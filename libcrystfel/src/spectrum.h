@@ -33,6 +33,7 @@
 #include <config.h>
 #endif
 
+#include <gsl/gsl_rng.h>
 
 /**
  * \file spectrum.h
@@ -78,6 +79,13 @@ extern void spectrum_set_pdf(Spectrum *s, double *kcens, double *heights,
 extern void spectrum_get_range(Spectrum *s, double *kmin, double *kmax);
 extern double spectrum_get_density_at_k(Spectrum *s, double k);
 
+/* Generation of spectra */
+extern Spectrum *spectrum_generate_tophat(double wavelength, double bandwidth);
+extern Spectrum *spectrum_generate_gaussian(double wavelength, double bandwidth);
+extern Spectrum *spectrum_generate_sase(double wavelength, double bandwidth,
+                                        double spike_width, gsl_rng *rng);
+extern Spectrum *spectrum_generate_twocolour(double wavelength, double bandwidth,
+                                             double separation);
 
 #ifdef __cplusplus
 }

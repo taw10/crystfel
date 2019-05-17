@@ -60,6 +60,7 @@
 
 enum spectrum_type {
 	SPECTRUM_TOPHAT,    /**< A top hat distribution */
+	SPECTRUM_GAUSSIAN,  /**< A Gaussian distribution */
 	SPECTRUM_SASE,      /**< A simulated SASE spectrum */
 	SPECTRUM_TWOCOLOUR, /**< A spectrum containing two peaks */
 	SPECTRUM_FROMFILE   /**< An arbitrary spectrum read from a file */
@@ -102,7 +103,12 @@ static void show_help(const char *s)
 "     --template=<file>     Take orientations from stream <file>.\n"
 "     --no-fringes          Exclude the side maxima of Bragg peaks.\n"
 "     --flat                Make Bragg peaks flat.\n"
-"     --beam-bandwidth      Beam bandwidth as a fraction. Default 1%%.\n"
+"     --beam-bandwidth      Beam bandwidth (standard deviation of wavelength as\n"
+"                            a fraction of wavelenth).  Default 0.001 (1%%)\n"
+"     --sase-spike-width    SASE spike width (standard deviation in m^-1)\n"
+"                            Default 2e6 m^-1\n"
+"     --twocol-separation   Separation between peaks in two-colour mode in m^-1\n"
+"                            Default 8e6 m^-1\n"
 "     --photon-energy       Photon energy in eV.  Default 9000.\n"
 "     --nphotons            Number of photons per X-ray pulse.  Default 1e12.\n"
 "     --beam-radius         Radius of beam in metres (default 1e-6).\n"
@@ -401,6 +407,8 @@ int main(int argc, char *argv[])
 	double beam_radius = 1e-6;  /* metres */
 	double bandwidth = 0.01;
 	double photon_energy = 9000.0;
+	double sase_spike_width = 2e6;  /* m^-1 */
+	double twocol_sep = 8e6;  /* m^-1 */
 	struct beam_params beam;
 	int i;
 
@@ -438,6 +446,8 @@ int main(int argc, char *argv[])
 		{"nphotons",           1, NULL,               10},
 		{"beam-radius",        1, NULL,               11},
 		{"spectrum-file",      1, NULL,               12},
+		{"sase-spike-width",   1, NULL,               13},
+		{"twocol-separation",  1, NULL,               14},
 
 		{0, 0, NULL, 0}
 	};
@@ -603,6 +613,30 @@ int main(int argc, char *argv[])
 			spectrum_fn = strdup(optarg);
 			break;
 
+			case 13 :
+			sase_spike_width = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid SASE spike width.\n");
+				return 1;
+			}
+			if ( beam_radius < 0.0 ) {
+				ERROR("SASE spike width must be positive.\n");
+				return 1;
+			}
+			break;
+
+			case 14 :
+			twocol_sep = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid two colour separation.\n");
+				return 1;
+			}
+			if ( beam_radius < 0.0 ) {
+				ERROR("Two-colour separation must be positive.\n");
+				return 1;
+			}
+			break;
+
 			case 0 :
 			break;
 
@@ -700,6 +734,8 @@ int main(int argc, char *argv[])
 		spectrum_type = SPECTRUM_TOPHAT;
 	} else if ( strcasecmp(spectrum_str, "tophat") == 0) {
 		spectrum_type = SPECTRUM_TOPHAT;
+	} else if ( strcasecmp(spectrum_str, "gaussian") == 0) {
+		spectrum_type = SPECTRUM_GAUSSIAN;
 	} else if ( strcasecmp(spectrum_str, "sase") == 0) {
 		spectrum_type = SPECTRUM_SASE;
 	} else if ( strcasecmp(spectrum_str, "twocolour") == 0 ||
@@ -789,7 +825,6 @@ int main(int argc, char *argv[])
 
 	image.lambda = ph_en_to_lambda(eV_to_J(photon_energy));
 	image.bw = bandwidth;
-	image.nsamples = nsamples;
 
 	/* Initialise stuff */
 	image.filename = NULL;
@@ -826,7 +861,7 @@ int main(int argc, char *argv[])
 	powder.det = image.det;
 	powder.beam = NULL;
 	powder.lambda = 0.0;
-	powder.spectrum0 = NULL;
+	powder.spectrum = NULL;
 	powder.dp = malloc(image.det->n_panels*sizeof(float *));
 	if ( powder.dp == NULL ) {
 		ERROR("Failed to allocate powder data\n");
@@ -858,6 +893,11 @@ int main(int argc, char *argv[])
 		case SPECTRUM_TOPHAT:
 		STATUS("                 X-ray spectrum: top hat, "
 		       "width %.5f %%\n", image.bw*100.0);
+		break;
+
+		case SPECTRUM_GAUSSIAN:
+		STATUS("                 X-ray spectrum: Gaussian, "
+		       "bandwidth %.5f %%\n", image.bw*100.0);
 		break;
 
 		case SPECTRUM_SASE:
@@ -985,20 +1025,31 @@ int main(int argc, char *argv[])
 		switch ( spectrum_type ) {
 
 			case SPECTRUM_TOPHAT :
-			image.spectrum0 = generate_tophat(&image);
+			image.spectrum = spectrum_generate_tophat(image.lambda,
+			                                          image.bw);
 			break;
 
+			case SPECTRUM_GAUSSIAN :
+			image.spectrum = spectrum_generate_gaussian(image.lambda,
+			                                            image.bw);
+			break;
+
+
 			case SPECTRUM_SASE :
-			image.spectrum0 = generate_SASE(&image, rng);
+			image.spectrum = spectrum_generate_sase(image.lambda,
+			                                        image.bw,
+			                                        sase_spike_width,
+			                                        rng);
 			break;
 
                         case SPECTRUM_TWOCOLOUR :
-                        image.spectrum0 = generate_twocolour(&image);
+                        image.spectrum = spectrum_generate_twocolour(image.lambda,
+                                                                     image.bw,
+                                                                     twocol_sep);
                         break;
 
                         case SPECTRUM_FROMFILE :
-                        image.spectrum0 = generate_spectrum_fromfile(&image,
-								   spectrum_fn);
+                        image.spectrum = spectrum_load(spectrum_fn);
                         break;
 
 		}
@@ -1016,11 +1067,13 @@ int main(int argc, char *argv[])
 				                 gpu_dev);
 			}
 			err = get_diffraction_gpu(gctx, &image, na, nb, nc,
-			                          cell, no_fringes, flat);
+			                          cell, no_fringes, flat,
+			                          nsamples);
 
 		} else {
 			get_diffraction(&image, na, nb, nc, intensities, phases,
-			                flags, cell, grad, sym, no_fringes, flat);
+			                flags, cell, grad, sym, no_fringes, flat,
+			                nsamples);
 		}
 		if ( err ) {
 			ERROR("Diffraction calculation failed.\n");
