@@ -457,6 +457,7 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 	double *lut_c;
 	int i;
 	double kmin, kmax, step;
+	double norm = 0.0;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
@@ -466,14 +467,20 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 
 	spectrum_get_range(image->spectrum, &kmin, &kmax);
 	step = (kmax-kmin)/(n_samples+1);
-	STATUS("%i samples\n", n_samples);
+
+	/* Determine normalisation factor such that weights add up to 1 after
+	 * sampling (bins must have constant width) */
+	for ( i=1; i<=n_samples; i++ ) {
+		double k = kmin + i*step;
+		norm += spectrum_get_density_at_k(image->spectrum, k);
+	}
 	for ( i=1; i<=n_samples; i++ ) {
 
 		double k = kmin + i*step;
 		double prob;
 
 		/* Probability = p.d.f. times step width */
-		prob = step * spectrum_get_density_at_k(image->spectrum, k);
+		prob = spectrum_get_density_at_k(image->spectrum, k)/norm;
 
 		STATUS("Wavelength: %e m, weight = %.5f\n", 1.0/k, prob);
 

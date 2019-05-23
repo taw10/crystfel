@@ -294,8 +294,7 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	int n_neg = 0;
 	int n_nan = 0;
 	int i;
-	double kmin, kmax, step;
-	double tot = 0.0;
+	double kmin, kmax, step, norm;
 
 	if ( gctx == NULL ) {
 		ERROR("GPU setup failed.\n");
@@ -341,24 +340,28 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	}
 
 	spectrum_get_range(image->spectrum, &kmin, &kmax);
-	step = (kmax-kmin)/n_samples;
-	for ( i=0; i<=n_samples; i++ ) {
+	step = (kmax-kmin)/(n_samples+1);
+
+	/* Determine normalisation factor such that weights add up to 1 after
+	 * sampling (bins must have constant width) */
+	for ( i=1; i<=n_samples; i++ ) {
+		double k = kmin + i*step;
+		norm += spectrum_get_density_at_k(image->spectrum, k);
+	}
+	for ( i=1; i<=n_samples; i++ ) {
 
 		double k = kmin + i*step;
 		double prob;
 
 		/* Probability = p.d.f. times step width */
-		prob = step * spectrum_get_density_at_k(image->spectrum, k);
+		prob = spectrum_get_density_at_k(image->spectrum, k)/norm;
 
 		STATUS("Wavelength: %e m, weight = %.5f\n", 1.0/k, prob);
 
 		err = do_panels(gctx, image, k, prob, &n_inf, &n_neg, &n_nan);
 		if ( err ) return 1;
 
-		tot += prob;
-
 	}
-	STATUS("Total weight = %f\n", tot);
 
 	if ( n_neg + n_inf + n_nan ) {
 		ERROR("WARNING: The GPU calculation produced %i negative"
