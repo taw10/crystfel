@@ -325,8 +325,6 @@ static void normalise_pdf(double *k, double *pdf, int n)
 		old_pdf = pdf[i];
 	}
 
-	printf("total area under PDF = %f\n", total_area);
-
 	for ( i=0; i<n; i++ ) {
 		pdf[i] /= total_area;
 	}
