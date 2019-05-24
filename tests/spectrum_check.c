@@ -91,8 +91,21 @@ int main(int argc, char *argv[])
 	r += check_integral(s, 100);
 	spectrum_free(s);
 
-	s = spectrum_generate_sase(ph_eV_to_k(9000), 0.01, 0.0005, rng);
+	s = spectrum_generate_sase(ph_eV_to_lambda(9000), 0.01, 0.0001, rng);
+	r += check_integral(s, 100);
 	plot_spectrum(s);
+	spectrum_free(s);
+
+	s = spectrum_generate_gaussian(ph_eV_to_lambda(9000), 0.01);
+	r += check_integral(s, 100);
+	spectrum_free(s);
+
+	s = spectrum_generate_tophat(ph_eV_to_lambda(9000), 0.01);
+	r += check_integral(s, 100);
+	spectrum_free(s);
+
+	s = spectrum_generate_twocolour(ph_eV_to_lambda(9000), 0.001, ph_eV_to_k(100));
+	r += check_integral(s, 100);
 	spectrum_free(s);
 
 	gsl_rng_free(rng);

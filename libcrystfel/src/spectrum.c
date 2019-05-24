@@ -535,9 +535,9 @@ Spectrum *spectrum_generate_sase(double wavelength, double bandwidth,
 	if ( s == NULL ) return NULL;
 
 	for ( i=0; i<15; i++ ) {
-		g[0].kcen = 1.0/wavelength + (gsl_rng_uniform_pos(rng)-0.5) * bandwidth/wavelength;
-		g[0].sigma = spike_width/wavelength;
-		g[0].height = 1;
+		g[i].kcen = 1.0/wavelength + (gsl_rng_uniform_pos(rng)-0.5) * bandwidth/wavelength;
+		g[i].sigma = spike_width/wavelength;
+		g[i].height = gsl_rng_uniform(rng);
 	}
 
 	spectrum_set_gaussians(s, g, 15);
