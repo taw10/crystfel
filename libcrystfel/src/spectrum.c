@@ -485,7 +485,8 @@ Spectrum *spectrum_generate_tophat(double wavelength, double bandwidth)
  * \param bandwidth Bandwidth as a fraction
  *
  * Generates a Gaussian spectrum centered on 'wavelength', where the standard
- * deviation of the Gaussian is bandwidth/wavelength
+ * deviation of the Gaussian is bandwidth divided by wavelength (bandwidth
+ * fraction times k value).
  *
  * \returns A newly-allocated \ref Spectrum, or NULL on error.
  */
@@ -508,29 +509,72 @@ Spectrum *spectrum_generate_gaussian(double wavelength, double bandwidth)
 
 /**
  * \param wavelength Wavelength in metres
- * \param bandwidth Bandwidth as a fraction
+ * \param bandwidth Bandwidth as a fraction of wavelength
+ * \param spike_width The width of the SASE spikes, as a fraction of wavelength
+ * \param rng A GSL random number generator
  *
- * Generates a top-hat spectrum centered on 'wavelength', where the width of the
- * flat top is bandwidth/wavelength
+ * Generates a SASE spectrum centered on 'wavelength', with 15 spikes of width
+ * spike_width divided by wavelength (i.e. spike_width times k value).  The
+ * spikes will be distributed within a width of k values of bandwidth divided
+ * by wavelength (bandwidth times k-value).
+ *
+ * Note that CrystFEL is not an undulator simulation program.  This function
+ * just simulates a rough idea of the kind of spiky spectrum resulting from the
+ * SASE process.
  *
  * \returns A newly-allocated \ref Spectrum, or NULL on error.
  */
 Spectrum *spectrum_generate_sase(double wavelength, double bandwidth,
                                  double spike_width, gsl_rng *rng)
 {
+	int i;
+	Spectrum *s;
+	struct gaussian g[15];
+
+	s = spectrum_new();
+	if ( s == NULL ) return NULL;
+
+	for ( i=0; i<15; i++ ) {
+		g[0].kcen = 1.0/wavelength + (gsl_rng_uniform_pos(rng)-0.5) * bandwidth/wavelength;
+		g[0].sigma = spike_width/wavelength;
+		g[0].height = 1;
+	}
+
+	spectrum_set_gaussians(s, g, 15);
+
+	return s;
 }
 
 
 /**
  * \param wavelength Wavelength in metres
- * \param bandwidth Bandwidth as a fraction
+ * \param bandwidth Bandwidth as a fraction of wavelength
+ * \param separation Separation between peak centres, in m^-1
  *
- * Generates a top-hat spectrum centered on 'wavelength', where the width of the
- * flat top is bandwidth/wavelength
+ * Generates a two-colour spectrum with Gaussian peaks centered at wavenumbers
+ * 1/wavelength ± separation/2.  Each peak will have a standard deviation of
+ * bandwidth divided by wavelength (bandwidth fraction times k value).
  *
  * \returns A newly-allocated \ref Spectrum, or NULL on error.
  */
 Spectrum *spectrum_generate_twocolour(double wavelength, double bandwidth,
                                       double separation)
 {
+	Spectrum *s;
+	struct gaussian g[2];
+
+	s = spectrum_new();
+	if ( s == NULL ) return NULL;
+
+	g[0].kcen = 1.0/wavelength - separation/2.0;
+	g[0].sigma = bandwidth/wavelength;
+	g[0].height = 1;
+
+	g[1].kcen = 1.0/wavelength + separation/2.0;
+	g[1].sigma = bandwidth/wavelength;
+	g[1].height = 1;
+
+	spectrum_set_gaussians(s, g, 2);
+
+	return s;
 }

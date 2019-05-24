@@ -59,11 +59,29 @@ static int check_integral(Spectrum *s, int nsamp)
 }
 
 
+static void plot_spectrum(Spectrum *s)
+{
+	double min, max, step;
+	int i;
+	const int nsamp = 100;
+
+	spectrum_get_range(s, &min, &max);
+	step = (max-min)/nsamp;
+	for ( i=0; i<=nsamp; i++ ) {
+		double x = min+i*step;
+		double y = spectrum_get_density_at_k(s, x);
+		printf("%e %e\n", x, y);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	Spectrum *s;
 	struct gaussian gauss;
+	gsl_rng *rng;
 	int r = 0;
+
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 	s = spectrum_new();
 	gauss.kcen = ph_eV_to_k(9000);
@@ -72,6 +90,12 @@ int main(int argc, char *argv[])
 	spectrum_set_gaussians(s, &gauss, 1);
 	r += check_integral(s, 100);
 	spectrum_free(s);
+
+	s = spectrum_generate_sase(ph_eV_to_k(9000), 0.01, 0.0005, rng);
+	plot_spectrum(s);
+	spectrum_free(s);
+
+	gsl_rng_free(rng);
 
 	return r;
 }
