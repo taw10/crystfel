@@ -1549,8 +1549,8 @@ static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(d),
 	                                               TRUE);
 
-	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	vbox = gtk_vbox_new(FALSE, 8);
+	hbox = gtk_hbox_new(FALSE, 8);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
 	label = gtk_label_new("Enforce lattice type:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
