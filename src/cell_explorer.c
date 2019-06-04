@@ -39,6 +39,7 @@
 #include <math.h>
 #include <gdk/gdkkeysyms-compat.h>
 #include <gsl/gsl_multifit_nlin.h>
+#include <assert.h>
 
 #include "stream.h"
 #include "image.h"
@@ -1315,6 +1316,9 @@ struct save_cell_data
 	GtkWidget *label;
 	UnitCell *orig_cell;
 	UnitCell *enforced_cell;
+	GtkWidget *combobox;
+	char *combo_ids[32];  /* Workaround for GTK < 3 */
+	int n_ids;
 };
 
 
@@ -1432,9 +1436,18 @@ static void savecell_changed(GtkComboBox *widget, gpointer data)
 {
 	struct save_cell_data *scd = data;
 	char *cell_str;
+	int active_n;
+
+	active_n = gtk_combo_box_get_active(widget);
+	if ( (active_n >= scd->n_ids) || (active_n < 0) ) {
+		ERROR("Combobox active index invalid\n");
+		return;
+	}
+
 	cell_free(scd->enforced_cell);
 	scd->enforced_cell = enforce_cell(scd->orig_cell,
-	                                  gtk_combo_box_get_active_id(widget));
+	                                  scd->combo_ids[active_n]);
+
 	cell_str = cell_string(scd->enforced_cell);
 	if ( cell_str != NULL ) {
 		gtk_label_set_text(GTK_LABEL(scd->label), cell_str);
@@ -1445,7 +1458,16 @@ static void savecell_changed(GtkComboBox *widget, gpointer data)
 }
 
 
-static void add_lattice_type_options(GtkWidget *cb, UnitCell *cell)
+static void add_lto(struct save_cell_data *scd, const char *label,
+                    const char *text)
+{
+	assert(scd->n_ids < 32);
+	scd->combo_ids[scd->n_ids++] = strdup(label);
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(scd->combobox), text);
+}
+
+
+static void add_lattice_type_options(struct save_cell_data *scd, UnitCell *cell)
 {
 	LatticeType lt;
 	char ua;
@@ -1460,66 +1482,52 @@ static void add_lattice_type_options(GtkWidget *cb, UnitCell *cell)
 		case L_HEXAGONAL :
 		tmp1[0] = 'h'; tmp1[1] = ua; tmp1[2] = '\0';
 		snprintf(tmp2, 255, "Hexagonal, unique axis %c", ua);
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
+		add_lto(scd, tmp1, tmp2);
 		tmp1[0] = 'm'; tmp1[1] = ua; tmp1[2] = '\0';
 		snprintf(tmp2, 255, "Monoclinic, unique axis %c", ua);
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
-		                          "Triclinic");
+		add_lto(scd, tmp1, tmp2);
+		add_lto(scd, "a*", "Triclinic");
 		break;
 
 		case L_RHOMBOHEDRAL :
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "r*",
-		                          "Rhombohedral");
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
-		                          "Triclinic");
+		add_lto(scd, "r*", "Rhombohedral");
+		add_lto(scd, "a*", "Triclinic");
 		break;
 
 		/* Fall through */
 		case L_CUBIC :
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "c*",
-		                          "Cubic");
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "r*",
-		                          "Rhombohedral");
+		add_lto(scd, "c*", "Cubic");
+		add_lto(scd, "r*", "Rhombohedral");
 		/* Fall through */
 
 		case L_TETRAGONAL :
 		if ( ua != '*' ) {
 			tmp1[0] = 't'; tmp1[1] = ua; tmp1[2] = '\0';
 			snprintf(tmp2, 255, "Tetragonal, unique axis %c", ua);
-			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
+			add_lto(scd, tmp1, tmp2);
 		} else {
-			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "ta",
-			                          "Tetragonal, unique axis a");
-			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "tb",
-			                          "Tetragonal, unique axis b");
-			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "tc",
-			                          "Tetragonal, unique axis c");
+			add_lto(scd, "ta", "Tetragonal, unique axis a");
+			add_lto(scd, "tb", "Tetragonal, unique axis b");
+			add_lto(scd, "tc", "Tetragonal, unique axis c");
 		}
 		/* Fall through */
 
 		case L_ORTHORHOMBIC :
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "o*",
-		                          "Orthorhombic");
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "ma",
-		                          "Monoclinic, unique axis a");
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "mb",
-		                          "Monoclinic, unique axis b");
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "mc",
-		                          "Monoclinic, unique axis c");
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
-		                          "Triclinic");
+		add_lto(scd, "o*", "Orthorhombic");
+		add_lto(scd, "ma", "Monoclinic, unique axis a");
+		add_lto(scd, "mb", "Monoclinic, unique axis b");
+		add_lto(scd, "mc", "Monoclinic, unique axis c");
+		add_lto(scd, "a*", "Triclinic");
 		break;
 
 		case L_MONOCLINIC :
 		tmp1[0] = 'm'; tmp1[1] = ua; tmp1[2] = '\0';
 		snprintf(tmp2, 255, "Monoclinic, unique axis %c", ua);
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), tmp1, tmp2);
+		add_lto(scd, tmp1, tmp2);
 		/* Fall through */
 
 		case L_TRICLINIC :
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(cb), "a*",
-		                          "Triclinic");
+		add_lto(scd, "a*", "Triclinic");
 		break;
 
 	}
@@ -1535,6 +1543,7 @@ static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 	GtkWidget *label;
 	GtkWidget *cb;
 	struct save_cell_data scd;
+	int i;
 
 	scd.orig_cell = get_cell(w);
 	scd.enforced_cell = NULL;
@@ -1561,7 +1570,9 @@ static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 	gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(d), GTK_WIDGET(vbox));
 	gtk_widget_show_all(vbox);
 
-	add_lattice_type_options(cb, scd.orig_cell);
+	scd.combobox = cb;
+	scd.n_ids = 0;
+	add_lattice_type_options(&scd, scd.orig_cell);
 
 	g_signal_connect(G_OBJECT(cb), "changed", G_CALLBACK(savecell_changed), &scd);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(cb), 0);
@@ -1579,6 +1590,7 @@ static gint savecell_sig(GtkWidget *widget, CellWindow *w)
 
 	}
 	gtk_widget_destroy(d);
+	for ( i=0; i<scd.n_ids; i++ ) free(scd.combo_ids[i]);
 	return FALSE;
 }
 
