@@ -348,6 +348,9 @@ static void normalise_pdf(double *k, double *pdf, int n)
  */
 void spectrum_set_pdf(Spectrum *s, double *kvals, double *heights, int n)
 {
+	size_t *perm;
+	int i;
+
 	/* Free old contents (if any - may be NULL) */
 	free(s->gaussians);
 	free(s->k);
@@ -359,12 +362,20 @@ void spectrum_set_pdf(Spectrum *s, double *kvals, double *heights, int n)
 	s->pdf = malloc(n * sizeof(double));
 	if ( s->pdf == NULL ) return;
 
-	memcpy(s->k, kvals, n*sizeof(double));
-	memcpy(s->pdf, heights, n*sizeof(double));
+	perm = malloc(n * sizeof(size_t));
+	if ( perm == NULL ) return;
+
+	gsl_sort_index(perm, kvals, 1, n);
+
+	for ( i=0; i<n; i++ ) {
+		s->k[i] = kvals[perm[i]];
+		s->pdf[i] = heights[perm[i]];
+	}
+	free(perm);
+
 	s->n_samples = n;
 	s->rep = SPEC_HISTOGRAM;
 
-	gsl_sort2(s->k, 1, s->pdf, 1, n);
 	normalise_pdf(s->k, s->pdf, s->n_samples);
 }
 
