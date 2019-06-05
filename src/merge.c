@@ -101,7 +101,7 @@ static int alloc_contribs(struct reflection_contributions *c)
 /* Find reflection hkl in 'list', creating it if it's not there, under
  * protection of 'lock' and returning a locked reflection */
 static Reflection *get_locked_reflection(RefList *list, pthread_rwlock_t *lock,
-                                      signed int h, signed int k, signed  int l)
+                                         signed int h, signed int k, signed  int l)
 {
 	Reflection *f;
 
@@ -297,9 +297,12 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
+		double var;
+		int red;
 
 		/* Correct for averaging log of intensities*/
-		if (ln_merge){
+		if ( ln_merge ) {
+
 			double ln_I, ln_temp2;
 
 			ln_temp2 = get_temp2(refl);
@@ -307,13 +310,10 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 
 			ln_I = get_intensity(refl);
 			set_intensity(refl, exp(ln_I));
+
 		}
 
-		double var;
-		int red;
-
 		red = get_redundancy(refl);
-		//TODO is this still correct for log averaging?
 		var = get_temp2(refl) / get_temp1(refl);
 		set_esd_intensity(refl, sqrt(var)/sqrt(red));
 
