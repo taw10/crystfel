@@ -218,7 +218,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		}
 
 		/* Reflections count less the more they have to be scaled up */
-		w = get_partiality(refl);
+		w = get_partiality(refl) / correct_reflection_nopart(1.0, refl, G, B, res);
 
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
@@ -396,8 +396,11 @@ double residual(Crystal *cr, const RefList *full, int free,
 		if ( get_redundancy(match) < 2 ) continue;
 
 		int1 = correct_reflection_nopart(get_intensity(refl), refl, G, B, res);
-		int2 = get_partiality(refl)*I_full;
-		w = 1.0;
+		int2 = get_partiality(refl) * I_full;
+		w = 1.0 / correct_reflection_nopart(1.0, refl, G, B, res);
+		if ( isnan(w) ) {
+			w = 0.0;
+		}
 
 		num += fabs(int1 - int2) * w;
 		den += fabs(int1 + int2) * w/2.0;
