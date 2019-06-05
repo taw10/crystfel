@@ -3,11 +3,11 @@
  *
  * Crystal rejection for scaling
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2018 Thomas White <taw@physics.org>
+ *   2010-2019 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -274,15 +274,98 @@ static double calculate_cchalf(RefList *template, RefList *full,
 }
 
 
-static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
+struct deltacchalf_queue_args
+{
+	RefList *full;
+	Crystal **crystals;
+	int n_crystals;
+	int n_done;
+	int n_started;
+	int n_non;
+	int n_nan;
+	double *vals;
+};
+
+
+struct deltacchalf_worker_args
+{
+	RefList *full;
+	Crystal *crystal;
+	int crystal_number;
+	int non;
+	int nan;
+	double deltaCChalf;
+};
+
+
+static void *create_deltacchalf_job(void *vqargs)
+{
+	struct deltacchalf_worker_args *wargs;
+	struct deltacchalf_queue_args *qargs = vqargs;
+
+	wargs = malloc(sizeof(struct deltacchalf_worker_args));
+
+	wargs->full = qargs->full;
+	wargs->crystal = qargs->crystals[qargs->n_started];
+	wargs->crystal_number = qargs->n_started;
+	wargs->non = 0;
+	wargs->nan = 0;
+
+	qargs->n_started++;
+
+	return wargs;
+}
+
+
+static void run_deltacchalf_job(void *vwargs, int cookie)
+{
+	double cchalf, cchalfi;
+	struct deltacchalf_worker_args *wargs = vwargs;
+	int nref = 0;
+	RefList *template = crystal_get_reflections(wargs->crystal);
+	cchalf = calculate_cchalf(template, wargs->full, NULL, &nref);
+	cchalfi = calculate_cchalf(template, wargs->full, wargs->crystal, &nref);
+	//STATUS("Frame %i:", i);
+	//STATUS("   With = %f  ", cchalf*100.0);
+	//STATUS("Without = %f", cchalfi*100.0);
+	//STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
+	//STATUS("(nref = %i)\n", nref);
+	if ( nref == 0 ) {
+		wargs->deltaCChalf = 0.0;
+		wargs->non = 1;
+	} else {
+		wargs->deltaCChalf = cchalf - cchalfi;
+		if ( isnan(wargs->deltaCChalf) || isinf(wargs->deltaCChalf) ) {
+			wargs->deltaCChalf = 0.0;
+			wargs->nan = 1;
+		}
+	}
+}
+
+
+static void finalise_deltacchalf_job(void *vqargs, void *vwargs)
+{
+	struct deltacchalf_queue_args *qargs = vqargs;
+	struct deltacchalf_worker_args *wargs = vwargs;
+	qargs->n_done++;
+	if ( wargs->nan ) qargs->n_nan++;
+	if ( wargs->non ) qargs->n_non++;
+	qargs->vals[wargs->crystal_number] = wargs->deltaCChalf;
+	progress_bar(qargs->n_done, qargs->n_crystals,
+	             "Calculating deltaCChalf");
+	free(vwargs);
+}
+
+
+static void check_deltacchalf(Crystal **crystals, int n, RefList *full,
+                              int n_threads)
 {
 	double cchalf;
 	int i;
 	double *vals;
 	double mean, sd;
 	int nref = 0;
-	int nnan = 0;
-	int nnon = 0;
+	struct deltacchalf_queue_args qargs;
 
 	if ( calculate_refl_mean_var(full) ) {
 		STATUS("No reflection contributions for deltaCChalf "
@@ -299,35 +382,25 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full)
 		return;
 	}
 
-	for ( i=0; i<n; i++ ) {
-		double cchalf, cchalfi;
-		RefList *template = crystal_get_reflections(crystals[i]);
-		cchalf = calculate_cchalf(template, full, NULL, &nref);
-		cchalfi = calculate_cchalf(template, full, crystals[i], &nref);
-		//STATUS("Frame %i:", i);
-		//STATUS("   With = %f  ", cchalf*100.0);
-		//STATUS("Without = %f", cchalfi*100.0);
-		//STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
-		//STATUS("(nref = %i)\n", nref);
-		if ( nref == 0 ) {
-			vals[i] = 0.0;
-			nnon++;
-		} else {
-			vals[i] = cchalf - cchalfi;
-			if ( isnan(vals[i]) || isinf(vals[i]) ) {
-				vals[i] = 0.0;
-				nnan++;
-			}
-		}
-		progress_bar(i, n-1, "Calculating deltaCChalf");
-	}
-	if ( nnon > 0 ) {
+	qargs.full = full;
+	qargs.crystals = crystals;
+	qargs.n_started = 0;
+	qargs.n_crystals = n;
+	qargs.n_done = 0;
+	qargs.n_nan = 0;
+	qargs.n_non = 0;
+	qargs.vals = vals;
+	run_threads(n_threads, run_deltacchalf_job, create_deltacchalf_job,
+	            finalise_deltacchalf_job, &qargs, n, 0, 0, 0);
+
+	if ( qargs.n_non > 0 ) {
 		STATUS("WARNING: %i patterns had no reflections in deltaCChalf "
-		       "calculation (I set deltaCChalf=zero for them)\n", nnon);
+		       "calculation (I set deltaCChalf=zero for them)\n",
+		       qargs.n_non);
 	}
-	if ( nnan > 0 ) {
+	if ( qargs.n_nan > 0 ) {
 		STATUS("WARNING: %i NaN or inf deltaCChalf values were "
-		       "replaced with zero\n", nnan);
+		       "replaced with zero\n", qargs.n_nan);
 	}
 
 	mean = gsl_stats_mean(vals, 1, n);
@@ -374,14 +447,14 @@ static void show_duds(Crystal **crystals, int n_crystals)
 
 
 void check_rejection(Crystal **crystals, int n, RefList *full, double max_B,
-                     int no_deltacchalf)
+                     int no_deltacchalf, int n_threads)
 {
 	int i;
 	int n_acc = 0;
 
 	/* Check according to delta CC½ */
 	if ( !no_deltacchalf && (full != NULL) ) {
-		 check_deltacchalf(crystals, n, full);
+		 check_deltacchalf(crystals, n, full, n_threads);
 	}
 
 	for ( i=0; i<n; i++ ) {

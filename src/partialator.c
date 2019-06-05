@@ -1462,7 +1462,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Check rejection and write figures of merit */
-	check_rejection(crystals, n_crystals, full, max_B, no_deltacchalf);
+	check_rejection(crystals, n_crystals, full, max_B, no_deltacchalf,
+	                nthreads);
 	show_all_residuals(crystals, n_crystals, full);
 
 	if ( do_write_logs ) {
@@ -1494,7 +1495,8 @@ int main(int argc, char *argv[])
 			                         push_res, 1, 0);
 		} /* else full still equals reference */
 
-		check_rejection(crystals, n_crystals, full, max_B, no_deltacchalf);
+		check_rejection(crystals, n_crystals, full, max_B,
+		                no_deltacchalf, nthreads);
 		show_all_residuals(crystals, n_crystals, full);
 
 		if ( do_write_logs ) {
