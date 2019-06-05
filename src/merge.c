@@ -223,9 +223,9 @@ static void run_merge_job(void *vwargs, int cookie)
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
 		if ( ln_merge ) {
-			delta = log(correct_reflection(refl, G, B, res)) - mean;
+			delta = log(correct_reflection(get_intensity(refl), refl, G, B, res)) - mean;
 		} else {
-			delta = correct_reflection(refl, G,  B, res) - mean;
+			delta = correct_reflection(get_intensity(refl), refl, G,  B, res) - mean;
 		}
 		R = delta * w / temp;
 		set_intensity(f, mean + R);
@@ -343,21 +343,22 @@ RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
 }
 
 
-/* Correct intensity in pattern for scaling and Lorentz factors,
- *  but not partiality nor polarisation */
-double correct_reflection_nopart(Reflection *refl, double osf, double Bfac,
-                                 double res)
+/* Correct 'val' (probably an intensity from one pattern, maybe an e.s.d.)
+ * for scaling and Lorentz factors but not partiality nor polarisation */
+double correct_reflection_nopart(double val, Reflection *refl, double osf,
+                                 double Bfac, double res)
 {
 	double corr = osf * exp(-Bfac*res*res);
-	return (get_intensity(refl) / corr) / get_lorentz(refl);
+	return (val / corr) / get_lorentz(refl);
 }
 
 
-/* Correct intensity in pattern for scaling, partiality and Lorentz factors,
- *  but not polarisation */
-double correct_reflection(Reflection *refl, double osf, double Bfac, double res)
+/* Correct 'val' (probably an intensity from one pattern, maybe an e.s.d.)
+ * for scaling, partiality and Lorentz factors but not polarisation */
+double correct_reflection(double val, Reflection *refl, double osf, double Bfac,
+                          double res)
 {
-	double Ipart = correct_reflection_nopart(refl, osf, Bfac, res);
+	double Ipart = correct_reflection_nopart(val, refl, osf, Bfac, res);
 	return Ipart / get_partiality(refl);
 }
 
@@ -394,7 +395,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 
 		if ( get_redundancy(match) < 2 ) continue;
 
-		int1 = correct_reflection_nopart(refl, G, B, res);
+		int1 = correct_reflection_nopart(get_intensity(refl), refl, G, B, res);
 		int2 = get_partiality(refl)*I_full;
 		w = 1.0;
 

@@ -143,7 +143,7 @@ static int calculate_refl_mean_var(RefList *full)
 
 			G = crystal_get_osf(c->contrib_crystals[j]);
 			B = crystal_get_Bfac(c->contrib_crystals[j]);
-			Ii = correct_reflection(c->contribs[j], G, B, res);
+			Ii = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
 
 			Ex += Ii - K;
 			Ex2 += (Ii - K) * (Ii - K);
@@ -234,7 +234,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 			if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
 
-				double Ii = correct_reflection(exrefl, G, B, res);
+				double Ii = correct_reflection(get_intensity(exrefl), exrefl, G, B, res);
 
 				/* Remove contribution of this reflection */
 				Ex -= Ii - K;

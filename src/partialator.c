@@ -661,7 +661,7 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 		pcalc = get_partiality(refl);
 
 		/* Observed partiality */
-		Ipart = correct_reflection_nopart(refl, G, B, res);
+		Ipart = correct_reflection_nopart(get_intensity(refl), refl, G, B, res);
 		pobs = Ipart / get_intensity(match);
 
 		fprintf(fh, "%5i %4i %4i %4i %e %e %8.3f %8.3f %s\n",

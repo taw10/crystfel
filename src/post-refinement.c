@@ -570,7 +570,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 		/* Don't calculate pobs if reference reflection is weak */
 		if ( fabs(get_intensity(match)) / get_esd_intensity(match) < 3.0 ) continue;
 
-		Ipart = correct_reflection_nopart(refl, G, B, res);
+		Ipart = correct_reflection_nopart(get_intensity(refl), refl, G, B, res);
 		Ifull = get_intensity(match);
 		pobs = Ipart / Ifull;
 		pcalc = get_partiality(refl);
