@@ -64,7 +64,7 @@ void image_add_feature(ImageFeatureList *flist, double fs, double ss,
                        struct panel *p,
                        struct image *parent, double intensity, const char *name)
 {
-	if ( flist->features ) {
+	if ( flist->n_features == flist->max_features ) {
 		struct imagefeature *nf;
 		int nmf = flist->max_features + 128;
 		nf = realloc(flist->features, nmf*sizeof(struct imagefeature));
