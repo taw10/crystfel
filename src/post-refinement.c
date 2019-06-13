@@ -561,6 +561,9 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 		signed int h, k, l;
 		Reflection *match;
 
+		/* Strong reflections only */
+		if ( get_intensity(refl) < 3.0*get_esd_intensity(refl) ) continue;
+
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
 
