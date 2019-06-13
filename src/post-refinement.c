@@ -885,7 +885,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		}
 
 	} else {
-		ERROR("Bad refinement: crystal %i\n", serial);
+		ERROR("Bad refinement: crystal %i (%s) after %i iterations\n",
+		      serial, gsl_strerror(status), n_iter);
 	}
 
 	if ( write_logs ) {
