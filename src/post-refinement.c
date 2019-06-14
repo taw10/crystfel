@@ -778,7 +778,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		fh = fopen(fn, "w");
 		if ( fh != NULL ) {
 			fprintf(fh, "iteration  RtoReference  CCtoReference  nref  "
-			            "ang1     ang2    radius    wavelength");
+			            "ang1     ang2    radius    wavelength\n");
 			double res = residual_f(min->x, &priv);
 			fprintf(fh, "%5i %10.8f  %10.8f  %5i  %10.8f %10.8f  %e  %e\n",
 			        n_iter, res, 0.0, 0,
