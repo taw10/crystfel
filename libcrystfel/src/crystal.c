@@ -191,6 +191,12 @@ struct image *crystal_get_image(Crystal *cryst)
 }
 
 
+const struct image *crystal_get_image_const(const Crystal *cryst)
+{
+	return cryst->image;
+}
+
+
 double crystal_get_osf(Crystal *cryst)
 {
 	return cryst->osf;

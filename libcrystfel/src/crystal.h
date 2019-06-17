@@ -69,6 +69,7 @@ extern int crystal_get_user_flag(Crystal *cryst);
 extern double crystal_get_osf(Crystal *cryst);
 extern double crystal_get_Bfac(Crystal *cryst);
 extern struct image *crystal_get_image(Crystal *cryst);
+extern const struct image *crystal_get_image_const(const Crystal *cryst);
 extern double crystal_get_mosaicity(Crystal *cryst);
 extern const char *crystal_get_notes(Crystal *cryst);
 extern void crystal_get_det_shift(Crystal *cryst,

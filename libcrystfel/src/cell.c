@@ -293,10 +293,10 @@ void cell_set_unique_axis(UnitCell *cell, char unique_axis)
 
 /************************* Getter helper functions ****************************/
 
-static int cell_crystallographic_to_cartesian(UnitCell *cell,
-                                             double *ax, double *ay, double *az,
-                                             double *bx, double *by, double *bz,
-                                             double *cx, double *cy, double *cz)
+static int cell_crystallographic_to_cartesian(const UnitCell *cell,
+                                              double *ax, double *ay, double *az,
+                                              double *bx, double *by, double *bz,
+                                              double *cx, double *cy, double *cz)
 {
 	double tmp, V, cosalphastar, cstar;
 
@@ -415,7 +415,7 @@ static int cell_invert(double ax, double ay, double az,
 
 /********************************** Getters ***********************************/
 
-int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
+int cell_get_parameters(const UnitCell *cell, double *a, double *b, double *c,
                         double *alpha, double *beta, double *gamma)
 {
 	double ax, ay, az, bx, by, bz, cx, cy, cz;
@@ -478,7 +478,7 @@ int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
 }
 
 
-int cell_get_cartesian(UnitCell *cell,
+int cell_get_cartesian(const UnitCell *cell,
                        double *ax, double *ay, double *az,
                        double *bx, double *by, double *bz,
                        double *cx, double *cy, double *cz)
@@ -519,7 +519,7 @@ int cell_get_cartesian(UnitCell *cell,
 }
 
 
-int cell_get_reciprocal(UnitCell *cell,
+int cell_get_reciprocal(const UnitCell *cell,
                         double *asx, double *asy, double *asz,
                         double *bsx, double *bsy, double *bsz,
                         double *csx, double *csy, double *csz)

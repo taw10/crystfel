@@ -111,15 +111,15 @@ extern void cell_set_cartesian(UnitCell *cell,
 extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 				double alpha, double beta, double gamma);
 
-extern int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
+extern int cell_get_parameters(const UnitCell *cell, double *a, double *b, double *c,
                                double *alpha, double *beta, double *gamma);
 
-extern int cell_get_cartesian(UnitCell *cell,
+extern int cell_get_cartesian(const UnitCell *cell,
                               double *ax, double *ay, double *az,
                               double *bx, double *by, double *bz,
                               double *cx, double *cy, double *cz);
 
-extern int cell_get_reciprocal(UnitCell *cell,
+extern int cell_get_reciprocal(const UnitCell *cell,
                                double *asx, double *asy, double *asz,
                                double *bsx, double *bsy, double *bsz,
                                double *csx, double *csy, double *csz);
