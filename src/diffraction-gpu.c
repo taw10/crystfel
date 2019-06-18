@@ -344,6 +344,7 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 
 	/* Determine normalisation factor such that weights add up to 1 after
 	 * sampling (bins must have constant width) */
+	norm = 0.0;
 	for ( i=1; i<=n_samples; i++ ) {
 		double k = kmin + i*step;
 		norm += spectrum_get_density_at_k(image->spectrum, k);
