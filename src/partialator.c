@@ -833,6 +833,7 @@ struct log_qargs
 	int n_crystals;
 	RefList *full;
 	int scaleflags;
+	int n_done;
 };
 
 
@@ -877,9 +878,12 @@ static void write_logs(void *vp, int cookie)
 }
 
 
-static void done_log(void *qargs, void *vp)
+static void done_log(void *vqargs, void *vp)
 {
 	struct log_args *task = vp;
+	struct log_qargs *qargs = vqargs;
+	qargs->n_done++;
+	progress_bar(qargs->n_done, qargs->n_crystals/20, "Writing logs/grid scans");
 	free(task);
 }
 
@@ -894,13 +898,12 @@ static void write_logs_parallel(Crystal **crystals, int n_crystals,
 	qargs.next = 0;
 	qargs.full = full;
 	qargs.crystals = crystals;
+	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.scaleflags = scaleflags;
 
-	STATUS("Writing logs...\n");
 	run_threads(n_threads, write_logs, get_log_task, done_log, &qargs,
 	            n_crystals/20, 0, 0, 0);
-	STATUS("Done.\n");
 }
 
 
