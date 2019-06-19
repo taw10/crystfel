@@ -1500,7 +1500,7 @@ int main(int argc, char *argv[])
 
 		if ( !no_pr ) {
 			refine_all(crystals, n_crystals, full, nthreads, pmodel,
-			           0, i+1, no_logs, sym, amb, scaleflags);
+			           i+1, no_logs, sym, amb, scaleflags);
 		}
 
 		/* Create new reference if needed */
