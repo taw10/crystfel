@@ -44,7 +44,7 @@ def update_graph():
 
     global im, cnt, centre_marker
 
-    filename="pr-logs/grid-crystal%i-cycle%s-%s.dat" % (crystal,cycle,varpair)
+    filename="%s/grid-crystal%i-cycle%s-%s.dat" % (folder,crystal,cycle,varpair)
     print filename
 
     with open(filename, "r") as f:
@@ -99,11 +99,18 @@ def update_graph():
 fig = plt.figure(figsize=(10,5))
 fig.subplots_adjust(left=0.05, bottom=0.05, right=0.70, top=0.95)
 
+if len(sys.argv) == 2:
+    folder = sys.argv[1]
+else:
+    folder = "pr-logs"
+
+print("Using folder '%s'" % folder)
+
 # Find out what there is to plot
 crystals = []
 cycles = []
 varpairs = []
-for file in os.listdir("pr-logs"):
+for file in os.listdir(folder):
     if not fnmatch.fnmatch(file, "grid-*.dat"):
         continue
     sp = file.rstrip(".dat").split("-")
