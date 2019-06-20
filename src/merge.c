@@ -402,8 +402,8 @@ double residual(Crystal *cr, const RefList *full, int free,
 			w = 0.0;
 		}
 
-		num += fabs(int1 - int2) * w;
-		den += fabs(int1 + int2) * w/2.0;
+		num += w*fabs(int1 - int2)/((int1+int2)/2.0);
+		den += w;
 
 		n_used++;
 
