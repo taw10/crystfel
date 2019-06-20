@@ -336,7 +336,8 @@ static void show_help(const char *s)
 "  -w <pg>                    Apparent point group for resolving ambiguities.\n"
 "      --operator=<op>        Indexing ambiguity operator for resolving.\n"
 "      --force-bandwidth=<n>  Set all bandwidths to <n> (fraction).\n"
-"      --force-radius=<n>     Set all profile radii to <n> nm^-1.\n");
+"      --force-radius=<n>     Set all profile radii to <n> nm^-1.\n"
+"      --force-lambda=<n>     Set all wavelengths to <n> A.\n");
 }
 
 
@@ -953,6 +954,7 @@ int main(int argc, char *argv[])
 	char *operator = NULL;
 	double force_bandwidth = -1.0;
 	double force_radius = -1.0;
+	double force_lambda = -1.0;
 	char *audit_info;
 	int scaleflags = 0;
 	double min_res = 0.0;
@@ -985,6 +987,7 @@ int main(int argc, char *argv[])
 		{"force-bandwidth",    1, NULL,               10},
 		{"force-radius",       1, NULL,               11},
 		{"min-res",            1, NULL,               12},
+		{"force-lambda",       1, NULL,               13},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-Bscale",          0, &no_Bscale,          1},
@@ -1153,6 +1156,17 @@ int main(int argc, char *argv[])
 			}
 			min_res = 1e10/min_res;
 			break;
+
+			case 13 :
+			errno = 0;
+			force_lambda = strtod(optarg, &rval);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --force-lambda.\n");
+				return 1;
+			}
+			force_lambda *= 1e-10;
+			break;
+
 
 			case 0 :
 			break;
@@ -1443,6 +1457,9 @@ int main(int argc, char *argv[])
 		}
 		if ( force_radius > 0.0 ) {
 			crystal_set_profile_radius(cr, force_radius);
+		}
+		if ( force_lambda > 0.0 ) {
+			crystal_get_image(cr)->lambda = force_lambda;
 		}
 		update_predictions(cr);
 		calculate_partialities(cr, pmodel);
