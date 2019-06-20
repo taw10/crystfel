@@ -384,7 +384,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 		double I_full;
 		double int1, int2;
 
-		if ( free && !get_flag(refl) ) continue;
+		if ( free != get_flag(refl) ) continue;
 
 		get_indices(refl, &h, &k, &l);
 		res = resolution(cell, h, k, l);
