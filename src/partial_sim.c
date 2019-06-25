@@ -844,6 +844,10 @@ int main(int argc, char *argv[])
 	image.spectrum = NULL;
 	image.serial = 0;
 	image.event = NULL;
+	image.hit = 0;
+	image.n_indexing_tries = 1;
+	image.features = NULL;
+	image.peak_resolution = 0.0;
 
 	STATUS("Simulation parameters:\n");
 	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
