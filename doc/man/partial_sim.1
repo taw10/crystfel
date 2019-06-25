@@ -148,6 +148,12 @@ Set the central photon energy, in eV, for the incident beam.  The default is \fB
 .IP \fB--really-random\fR
 .PD
 Seed the random number generator using the kernel random number generator (/dev/urandom).  This means that truly random (although not "cryptographically random") numbers will be used for the orientation and crystal size, instead of the same sequence being used for each new run.
+
+.IP "\fB--template-stream=\fImy.stream\fR"
+.PD
+Get the crystal cell parameters, orientations and the reflections to calculate from \fImy.stream\fR.  This allows you to re-calculate partial intensities using new beam parameters.  There must only be one crystal per chunk in the template.  If more than one thread is used (see \fB-j\fR), note that there is no guarantee that the order of crystals in the output stream will match that of \fImy.stream\fR.
+
+
 .SH AUTHOR
 This page was written by Thomas White.
 

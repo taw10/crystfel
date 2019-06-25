@@ -90,7 +90,8 @@ static void calculate_partials(Crystal *cr,
                                pthread_rwlock_t *full_lock,
                                unsigned long int *n_ref, double *p_hist,
                                double *p_max, double max_q, double full_stddev,
-                               double noise_stddev, gsl_rng *rng)
+                               double noise_stddev, gsl_rng *rng,
+                               UnitCell *template_cell, RefList *template_reflist)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -303,6 +304,7 @@ struct queue_args
 
 	Stream *stream;
 	gsl_rng **rngs;
+	Stream *template_stream;
 };
 
 
@@ -311,6 +313,9 @@ struct worker_args
 	struct queue_args *qargs;
 	Crystal *crystal;
 	struct image image;
+
+	UnitCell *template_cell;
+	RefList *template_reflist;
 
 	/* Histogram for this image */
 	double p_hist[NBINS];
@@ -334,6 +339,36 @@ static void *create_job(void *vqargs)
 	wargs->qargs = qargs;
 	wargs->image = *qargs->template_image;
 
+	if ( qargs->template_stream != NULL ) {
+
+		struct image im;
+		int r;
+
+		im.det = wargs->image.det;
+		r = read_chunk_2(qargs->template_stream, &im,
+		                 STREAM_READ_UNITCELL | STREAM_READ_REFLECTIONS);
+		if ( r ) {
+			ERROR("Failed to read template chunk!\n");
+			return NULL;
+		}
+		if ( im.n_crystals != 1 ) {
+			ERROR("Template stream must have exactly one crystal "
+			      "per frame.\n");
+			return NULL;
+		}
+
+		wargs->template_cell = crystal_get_cell(im.crystals[0]);
+		wargs->template_reflist = crystal_get_reflections(im.crystals[0]);
+
+		crystal_free(im.crystals[0]);
+		free(im.filename);
+		free_event(im.event);
+
+	} else {
+		wargs->template_cell = NULL;
+		wargs->template_reflist = NULL;
+	}
+
 	qargs->n_started++;
 	wargs->n = qargs->n_started;
 
@@ -343,12 +378,10 @@ static void *create_job(void *vqargs)
 
 static void run_job(void *vwargs, int cookie)
 {
-	struct quaternion orientation;
 	struct worker_args *wargs = vwargs;
 	struct queue_args *qargs = wargs->qargs;
 	int i;
 	Crystal *cr;
-	RefList *reflections;
 	double osf;
 
 	cr = crystal_new();
@@ -367,9 +400,14 @@ static void run_job(void *vwargs, int cookie)
 	crystal_set_mosaicity(cr, 0.0);
 	crystal_set_profile_radius(cr, qargs->profile_radius);
 
-	/* Set up a random orientation */
-	orientation = random_quaternion(qargs->rngs[cookie]);
-	crystal_set_cell(cr, cell_rotate(qargs->cell, orientation));
+	if ( wargs->template_cell == NULL ) {
+		/* Set up a random orientation */
+		struct quaternion orientation;
+		orientation = random_quaternion(qargs->rngs[cookie]);
+		crystal_set_cell(cr, cell_rotate(qargs->cell, orientation));
+	} else {
+		crystal_set_cell(cr, wargs->template_cell);
+	}
 
 	wargs->image.filename = malloc(256);
 	if ( wargs->image.filename == NULL ) {
@@ -383,9 +421,16 @@ static void run_job(void *vwargs, int cookie)
 		snprintf(wargs->image.filename, 255, "dummy.h5");
 	}
 
-	reflections = predict_to_res(cr, largest_q(&wargs->image));
-	crystal_set_reflections(cr, reflections);
-	calculate_partialities(cr, PMODEL_XSPHERE);
+	if ( wargs->template_reflist == NULL ) {
+		RefList *reflections;
+		reflections = predict_to_res(cr, largest_q(&wargs->image));
+		crystal_set_reflections(cr, reflections);
+		calculate_partialities(cr, PMODEL_XSPHERE);
+	} else {
+		crystal_set_reflections(cr, wargs->template_reflist);
+		update_predictions(cr);
+		calculate_partialities(cr, PMODEL_XSPHERE);
+	}
 
 	for ( i=0; i<NBINS; i++ ) {
 		wargs->n_ref[i] = 0;
@@ -398,10 +443,11 @@ static void run_job(void *vwargs, int cookie)
 	                   &qargs->full_lock,
 	                   wargs->n_ref, wargs->p_hist, wargs->p_max,
 	                   qargs->max_q, qargs->full_stddev,
-	                   qargs->noise_stddev, qargs->rngs[cookie]);
+	                   qargs->noise_stddev, qargs->rngs[cookie],
+	                   wargs->template_cell, wargs->template_reflist);
 
 	if ( qargs->image_prefix != NULL ) {
-		draw_and_write_image(&wargs->image, reflections,
+		draw_and_write_image(&wargs->image, crystal_get_reflections(cr),
 		                     qargs->rngs[cookie], qargs->background);
 	}
 
@@ -489,6 +535,8 @@ int main(int argc, char *argv[])
 	gsl_rng *rng_for_seeds;
 	int config_random = 0;
 	char *image_prefix = NULL;
+	Stream *template_stream = NULL;
+	char *template = NULL;
 
 	/* Default simulation parameters */
 	double divergence = 0.001;
@@ -524,6 +572,7 @@ int main(int argc, char *argv[])
 		{"beam-bandwidth",     1, NULL,                9},
 		{"profile-radius",     1, NULL,               10},
 		{"photon-energy",      1, NULL,               11},
+		{"template-stream",    1, NULL,               12},
 
 		{"really-random",      0, &config_random,      1},
 
@@ -698,6 +747,10 @@ int main(int argc, char *argv[])
 			}
 			break;
 
+			case 12 :
+			template = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -830,6 +883,14 @@ int main(int argc, char *argv[])
 	}
 	free(output_file);
 
+	if ( template != NULL ) {
+		template_stream = open_stream_for_read(template);
+		if ( template_stream == NULL ) {
+			ERROR("Couldn't open template stream '%s'\n", template);
+			return 1;
+		}
+	}
+
 	image.det = det;
 	image.beam = &beam;
 
@@ -875,6 +936,10 @@ int main(int argc, char *argv[])
 	}
 	STATUS("   Max error in cell components: %.2f %%\n", cnoise);
 	STATUS("Scale factor standard deviation: %.2f\n", osf_stddev);
+	if ( template_stream != NULL ) {
+		STATUS("Crystal orientations and reflections to use from %s\n",
+		       template);
+	}
 
 	if ( random_intensities ) {
 		full = reflist_new();
@@ -898,6 +963,7 @@ int main(int argc, char *argv[])
 	qargs.max_q = largest_q(&image);
 	qargs.image_prefix = image_prefix;
 	qargs.profile_radius = profile_radius;
+	qargs.template_stream = template_stream;
 
 	qargs.rngs = malloc(n_threads * sizeof(gsl_rng *));
 	if ( qargs.rngs == NULL ) {
