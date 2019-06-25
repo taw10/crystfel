@@ -350,6 +350,7 @@ static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
 			set_peak(refl, pk);
 			set_mean_bg(refl, bg);
 			set_redundancy(refl, 1);
+			set_symmetric_indices(refl, h, k, l);
 		}
 
 	} while ( rval != NULL );
@@ -431,6 +432,7 @@ static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
 			}
 			set_esd_intensity(refl, sigma);
 			set_redundancy(refl, cts);
+			set_symmetric_indices(refl, h, k, l);
 
 			ph = strtod(phs, &v);
 			if ( v != phs ) set_phase(refl, deg2rad(ph));
@@ -509,6 +511,7 @@ static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
 			set_redundancy(refl, 1);
 			set_peak(refl, pk);
 			set_mean_bg(refl, bg);
+			set_symmetric_indices(refl, h, k, l);
 
 		}
 
