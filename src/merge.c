@@ -383,7 +383,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 		signed int h, k, l;
 		Reflection *match;
 		double I_full;
-		double int1, int2;
+		double int1, pobs, pcalc;
 
 		if ( free != get_flag(refl) ) continue;
 
@@ -396,13 +396,18 @@ double residual(Crystal *cr, const RefList *full, int free,
 		if ( get_redundancy(match) < 2 ) continue;
 
 		int1 = correct_reflection_nopart(get_intensity(refl), refl, G, B, res);
-		int2 = get_partiality(refl) * I_full;
+		pobs = int1 / I_full;
+		if ( pobs > 1.0 ) pobs = 1.0;
+		if ( pobs < 0.0 ) pobs = 0.0;
+
+		pcalc = get_partiality(refl);
+
 		w = 1.0 / correct_reflection_nopart(1.0, refl, G, B, res);
 		if ( isnan(w) ) {
 			w = 0.0;
 		}
 
-		num += w*fabs(int1 - int2)/((int1+int2)/2.0);
+		num += w*fabs(pobs-pcalc);
 		den += w;
 
 		n_used++;
@@ -410,7 +415,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	}
 
 	if ( pn_used != NULL ) *pn_used = n_used;
-	return num/(den*sqrt(2));
+	return num/den;
 }
 
 
