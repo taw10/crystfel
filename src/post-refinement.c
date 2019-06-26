@@ -188,10 +188,6 @@ static double calc_residual(struct rf_priv *pv, struct rf_alteration alter,
 	update_predictions(pv->cr_tgt);
 	calculate_partialities(pv->cr_tgt, PMODEL_XSPHERE);
 
-	if ( scale_one_crystal(pv->cr_tgt, pv->full, pv->scaleflags) ) {
-		//STATUS("Bad scaling\n");
-		return NAN;
-	}
 
 	return residual(pv->cr_tgt, pv->full, free, NULL, NULL);
 }
