@@ -1,0 +1,868 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1cm
+\topmargin 1cm
+\rightmargin 1cm
+\bottommargin 1cm
+\headsep 0cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation skip
+\defskip smallskip
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle empty
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+vskip -3em
+\end_layout
+
+\end_inset
+
+CrystFEL matrix notation conventions
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+vskip -4em
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+thispagestyle{empty}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+CrystFEL's UnitCell structure doesn't expose its contents as a matrix, only
+ as named components (
+\begin_inset Formula $a_{x}^{*}$
+\end_inset
+
+,
+\begin_inset Formula $c_{y}$
+\end_inset
+
+ an so on).
+ However, the arrangement of the transformation matrices given to functions
+ such as cell_transform_rational() are important.
+ This document aims to make the conventions explicit.
+ The notation used in CrystFEL follows that used in the International Tables
+ for Crystallography, volume A, chapter 5.1 (
+\begin_inset Quotes eld
+\end_inset
+
+Transformations of the coordinate system (unit-cell transformations)
+\begin_inset Quotes erd
+\end_inset
+
+) and 11.1 (
+\begin_inset Quotes eld
+\end_inset
+
+Point coordinates, symmetry operations and their symbols
+\begin_inset Quotes erd
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+cell_transform_gsl_direct
+\emph default
+,
+\emph on
+cell_transform_rational
+\emph default
+ and
+\emph on
+cell_transform_intmat
+\emph default
+ all do what is written in equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:cell_transform"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ These functions all take a
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrix.
+ The
+\begin_inset Quotes eld
+\end_inset
+
+intmat
+\begin_inset Quotes erd
+\end_inset
+
+ and
+\begin_inset Quotes eld
+\end_inset
+
+rational
+\begin_inset Quotes erd
+\end_inset
+
+ versions will additionally determine the centering of the resulting unit
+ cell (and hopefully eventually the lattice type and unique axis).
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+transform_indices
+\emph default
+ does what is written in equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:indices"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ It takes a vector of (reciprocal space) Miller indices and a
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrix.
+\end_layout
+
+\begin_layout Itemize
+A SymOpList is essentially a list of
+\begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
+\end_inset
+
+ matrices, which, as shown below, behave like
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrices.
+\end_layout
+
+\begin_layout Itemize
+transform_fractional_coords_rtnl takes a
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrix and a column vector of fractional coordinates, calculates the
+\begin_inset Formula $\boldsymbol{\hat{Q}}$
+\end_inset
+
+ matrix and evaluates equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:fractional-coord-transform-basis-change"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ (NB
+\series bold
+not
+\series default
+ equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:fractional-coord-transform-symmetry"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+
+\emph on
+Implementation detail:
+\emph default
+it actually solves a matrix-vector equation rather than going all the way
+ to the inverted matrix.
+\end_layout
+
+\begin_layout Itemize
+transform_fractional_coords_rtnl_inverse takes a
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrix and a column vector of fractional coordinates
+\begin_inset Formula $\boldsymbol{v}$
+\end_inset
+
+, and does the reverse of transform_fractional_coords_rtnl.
+ That means it just has to evaluate
+\begin_inset Formula $\boldsymbol{\hat{P}}\boldsymbol{v}$
+\end_inset
+
+.
+ This looks like equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:fractional-coord-transform-symmetry"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection*
+Matrices of unit cell components
+\end_layout
+
+\begin_layout Standard
+When matrix calculations are performed in CrystFEL, which is usually only
+ inside certain libcrystfel functions, basis vectors
+\begin_inset Formula $(\boldsymbol{a},\boldsymbol{b},\boldsymbol{c})$
+\end_inset
+
+ are written as the columns of the matrix.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\[
+\boldsymbol{\hat{M}}=\left(\begin{array}{ccc}
+a_{x} & b_{x} & c_{x}\\
+a_{y} & b_{y} & c_{y}\\
+a_{z} & b_{z} & c_{z}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Reciprocal basis vectors are written as the rows of the matrix.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\[
+\boldsymbol{\hat{R}}=\left(\begin{array}{ccc}
+a_{x}^{*} & a_{y}^{*} & a_{z}^{*}\\
+b_{x}^{*} & b_{y}^{*} & b_{z}^{*}\\
+c_{x}^{*} & c_{y}^{*} & c_{z}^{*}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Real and reciprocal spaces are sometimes said to be
+\begin_inset Quotes eld
+\end_inset
+
+inverse transposes of each other
+\begin_inset Quotes erd
+\end_inset
+
+.
+ The components of the two matrices are already transposed with respect
+ to one another (one has vectors in columns, the other in rows).
+ Therefore
+\begin_inset Formula $\boldsymbol{\hat{M}}=\boldsymbol{\hat{R}}^{-1}$
+\end_inset
+
+ and
+\begin_inset Formula $\boldsymbol{\hat{R}}=\boldsymbol{\hat{M}}^{-1}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection*
+Transformation of unit cell basis
+\end_layout
+
+\begin_layout Standard
+Given a transformation matrix
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ which means
+\begin_inset Formula $\boldsymbol{a}^{\prime}=\boldsymbol{a}-\boldsymbol{b}$
+\end_inset
+
+,
+\begin_inset Formula $\boldsymbol{b}^{\prime}=\boldsymbol{b}$
+\end_inset
+
+,
+\begin_inset Formula $\boldsymbol{c}^{\prime}=\boldsymbol{c}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\begin{equation}
+\boldsymbol{\hat{M}}^{\prime}=\boldsymbol{\hat{M}}\boldsymbol{\hat{P}}=\left(\begin{array}{ccc}
+a_{x} & b_{x} & c_{x}\\
+a_{y} & b_{y} & c_{y}\\
+a_{z} & b_{z} & c_{z}
+\end{array}\right)\left(\begin{array}{ccc}
+1 & 0 & 0\\
+\bar{1} & 1 & 0\\
+0 & 0 & 1
+\end{array}\right)\label{eq:cell_transform}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that the
+\begin_inset Quotes eld
+\end_inset
+
+amount of old a,b,c to make new a
+\begin_inset Quotes erd
+\end_inset
+
+ is found in the first column of the
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrix, and so on.
+\end_layout
+
+\begin_layout Subsection*
+Transformation of reciprocal basis
+\end_layout
+
+\begin_layout Standard
+With the same transformation as before (
+\begin_inset Formula $\boldsymbol{a}^{\prime}=\boldsymbol{a}-\boldsymbol{b}$
+\end_inset
+
+,
+\begin_inset Formula $\boldsymbol{b}^{\prime}=\boldsymbol{b}$
+\end_inset
+
+,
+\begin_inset Formula $\boldsymbol{c}^{\prime}=\boldsymbol{c}$
+\end_inset
+
+), the reciprocal basis transforms as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\[
+\boldsymbol{\hat{R}}^{\prime}=\left(\begin{array}{ccc}
+a_{x}^{*} & a_{y}^{*} & a_{z}^{*}\\
+b_{x}^{*} & b_{y}^{*} & b_{z}^{*}\\
+c_{x}^{*} & c_{y}^{*} & c_{z}^{*}
+\end{array}\right)^{\prime}=\boldsymbol{\hat{P}}^{-1}\boldsymbol{\hat{R}}=\boldsymbol{\hat{Q}}\boldsymbol{\hat{R}}=\left(\begin{array}{ccc}
+1 & 0 & 0\\
+\bar{1} & 1 & 0\\
+0 & 0 & 1
+\end{array}\right)^{-1}\left(\begin{array}{ccc}
+a_{x}^{*} & a_{y}^{*} & a_{z}^{*}\\
+b_{x}^{*} & b_{y}^{*} & b_{z}^{*}\\
+c_{x}^{*} & c_{y}^{*} & c_{z}^{*}
+\end{array}\right)=\left(\begin{array}{ccc}
+1 & 0 & 0\\
+1 & 1 & 0\\
+0 & 0 & 1
+\end{array}\right)\left(\begin{array}{ccc}
+a_{x}^{*} & a_{y}^{*} & a_{z}^{*}\\
+b_{x}^{*} & b_{y}^{*} & b_{z}^{*}\\
+c_{x}^{*} & c_{y}^{*} & c_{z}^{*}
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Miller indices (reciprocal space) under transformation of unit cell basis
+ (real-space)
+\end_layout
+
+\begin_layout Standard
+From ITA chapter 5.1, this is how the reflections would be re-labelled if
+ the axes were changed.
+ See later for how to apply symmetry operations.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\begin{equation}
+\left(h^{\prime},k^{\prime},l^{\prime}\right)=\left(h^{\prime},k^{\prime},l^{\prime}\right)\boldsymbol{\hat{P}}=\left(h,k,l\right)\left(\begin{array}{ccc}
+1 & 0 & 0\\
+\bar{1} & 1 & 0\\
+0 & 0 & 1
+\end{array}\right)=(h-k,k,l)\label{eq:indices}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Fractional coordinates under transformation of unit cell basis
+\end_layout
+
+\begin_layout Standard
+Where u, v and w are fractional coordinates, i.e.
+ the cartesian coordinates are:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\[
+\boldsymbol{\hat{M}}\left(\begin{array}{c}
+u\\
+v\\
+w
+\end{array}\right)=\left(\begin{array}{ccc}
+a_{x} & b_{x} & c_{x}\\
+a_{y} & b_{y} & c_{y}\\
+a_{z} & b_{z} & c_{z}
+\end{array}\right)\left(\begin{array}{c}
+u\\
+v\\
+w
+\end{array}\right)
+\]
+
+\end_inset
+
+From ITA chapter 5.1, the new coordinates are:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\begin{equation}
+\left(\begin{array}{c}
+u^{\prime}\\
+v^{\prime}\\
+w^{\prime}
+\end{array}\right)=\boldsymbol{\hat{P}}^{-1}\left(\begin{array}{c}
+u\\
+v\\
+w
+\end{array}\right)=\boldsymbol{\hat{Q}}\left(\begin{array}{c}
+u\\
+v\\
+w
+\end{array}\right)\label{eq:fractional-coord-transform-basis-change}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Symmetry operations acting on fractional coordinates
+\end_layout
+
+\begin_layout Standard
+Following ITA chapter 11.1, the following matrix represents the symmetry
+ operation written as
+\begin_inset Formula $-y,x,z$
+\end_inset
+
+, where for this time only, x,y and z are fractional coordinates:
+\begin_inset Formula
+\begin{equation}
+\boldsymbol{\hat{W}}=\left(\begin{array}{ccc}
+0 & \bar{1} & 0\\
+1 & 0 & 0\\
+0 & 0 & 1
+\end{array}\right)\label{eq:wmatrix}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It transforms the fractional coordinates as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\begin{equation}
+\left(\begin{array}{c}
+u^{\prime}\\
+v^{\prime}\\
+w^{\prime}
+\end{array}\right)=\boldsymbol{\hat{W}}\left(\begin{array}{c}
+u\\
+v\\
+w
+\end{array}\right)=\left(\begin{array}{ccc}
+0 & \bar{1} & 0\\
+1 & 0 & 0\\
+0 & 0 & 1
+\end{array}\right)\left(\begin{array}{c}
+u\\
+v\\
+w
+\end{array}\right)\label{eq:fractional-coord-transform-symmetry}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note also that we're ignoring the translational part of the symmetry operation
+ (there isn't one in this case).
+\end_layout
+
+\begin_layout Standard
+Note that
+\begin_inset Formula $\boldsymbol{\hat{W}}$
+\end_inset
+
+ behaves like
+\begin_inset Formula $\boldsymbol{\hat{P}}^{-1}$
+\end_inset
+
+ above.
+ CrystFEL's
+\begin_inset Quotes eld
+\end_inset
+
+SymOpList
+\begin_inset Quotes erd
+\end_inset
+
+ structure contains IntegerMatrix objects representing
+\begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
+\end_inset
+
+ matrices, also known as
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrices.
+\end_layout
+
+\begin_layout Subsection*
+Symmetry operations acting on Miller indices (reciprocal space)
+\end_layout
+
+\begin_layout Standard
+Since
+\begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
+\end_inset
+
+ matrices are just
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrices, simply change the
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ into
+\begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
+\end_inset
+
+ in equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:indices"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\begin{equation}
+\left(h^{\prime},k^{\prime},l^{\prime}\right)=\left(h,k,l\right)\boldsymbol{\hat{W}}^{-1}=\left(h^{\prime},k^{\prime},l^{\prime}\right)\left(\begin{array}{ccc}
+0 & 1 & 0\\
+\bar{1} & 0 & 0\\
+0 & 0 & 1
+\end{array}\right)=(\bar{k},h,l)\label{eq:symmetry}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this case, the symmetry operation is a rotation, so the matrix inverse
+ is just the same as a matrix transpose.
+ However, don't get confused: the matrix appearing here is the inverse of
+ the one appearing in equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:wmatrix"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Note that the
+\begin_inset Quotes eld
+\end_inset
+
+amount of old h, k and l to make new h
+\begin_inset Quotes erd
+\end_inset
+
+ is found in the first column of the
+\begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
+\end_inset
+
+ matrix, and so on.
+\end_layout
+
+\begin_layout Subsection*
+Transforming symmetry operations
+\end_layout
+
+\begin_layout Standard
+Given a
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ matrix which transforms the unit cell as written in equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:cell_transform"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, and a
+\begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
+\end_inset
+
+ matrix representing a symmetry operation, we seek to apply the symmetry
+ operation to the cell as it would appear after applying the transformation.
+ For example, let
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ permute the cell axes, turning a
+\begin_inset Quotes eld
+\end_inset
+
+unique axis b
+\begin_inset Quotes erd
+\end_inset
+
+ cell into a
+\begin_inset Quotes eld
+\end_inset
+
+unique axis c
+\begin_inset Quotes erd
+\end_inset
+
+ one, and let
+\begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
+\end_inset
+
+ represent a twofold rotation around the c axis:
+\end_layout
+
+\begin_layout Standard
+To transform a set of Miller indices
+\begin_inset Formula $(h,k,l)$
+\end_inset
+
+, first use
+\begin_inset Formula $\boldsymbol{\hat{P}}$
+\end_inset
+
+ to get the indices referred to the
+\begin_inset Quotes eld
+\end_inset
+
+unique axis c
+\begin_inset Quotes erd
+\end_inset
+
+ setting using equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:indices"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, then apply the symmetry operation using equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:symmetry"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, and finally transform back to the original cell using equation
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:indices"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ and the inverse matrix:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula
+\[
+(h^{\prime},k^{\prime},l^{\prime})=(h,k,l)\boldsymbol{\hat{P}}\boldsymbol{\hat{W}}^{-1}\boldsymbol{\hat{P}}^{-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The combined matrix
+\begin_inset Formula $\boldsymbol{\hat{P}}\boldsymbol{\hat{W}}^{-1}\boldsymbol{\hat{P}}^{-1}$
+\end_inset
+
+ represents a twofold rotation symmetry operation along the b axis instead
+ of c.
+\end_layout
+
+\end_body
+\end_document
