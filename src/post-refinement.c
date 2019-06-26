@@ -467,8 +467,8 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 	fh = fopen(fn, "w");
 	if ( fh != NULL ) {
 		double v1, v2;
-		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "ang1/rad");
-		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "ang2/rad");
+		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_x/rad");
+		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_y/rad");
 		for ( v2=-5.0e-3; v2<=5.0e-3; v2+=0.25e-3 ) {
 			int first=1;
 			for ( v1=-5.0e-3; v1<=5.0e-3; v1+=0.25e-3 ) {
@@ -609,11 +609,11 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		snprintf(fn, 63, "pr-logs/crystal%i-cycle%i.log", serial, cycle);
 		fh = fopen(fn, "w");
 		if ( fh != NULL ) {
-			fprintf(fh, "iter  FoM        FreeFoM     ang1       "
-			            "ang2        radius        wavelength\n");
+			fprintf(fh, "iter  FoM        FreeFoM     rotx/rad   "
+			            "roty/rad    radius/m      wavelength/m\n");
 			fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
 			        n_iter, fom, freefom,
-			        rad2deg(alter.rot_x), rad2deg(alter.rot_y),
+			        alter.rot_x, alter.rot_y,
 			        crystal_get_profile_radius(cr)+alter.delta_R,
 			        crystal_get_image(cr)->lambda+alter.delta_wave);
 		}
@@ -631,7 +631,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		if ( fh != NULL ) {
 			fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
 			        n_iter, fom, freefom,
-			        rad2deg(alter.rot_x), rad2deg(alter.rot_y),
+			        alter.rot_x, alter.rot_y,
 			        crystal_get_profile_radius(cr)+alter.delta_R,
 			        crystal_get_image(cr)->lambda+alter.delta_wave);
 		}
