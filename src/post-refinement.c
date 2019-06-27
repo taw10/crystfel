@@ -176,7 +176,7 @@ static double calc_residual(struct rf_priv *pv, struct rf_alteration alter,
 
 	/* Can happen with grid scans and certain --force-radius values */
 	if ( fabs(crystal_get_profile_radius(pv->cr_tgt)) < 0.0000001e9 ) {
-		STATUS("radius very small\n");
+		//STATUS("radius very small\n");
 		return NAN;
 	}
 
