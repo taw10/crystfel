@@ -561,6 +561,68 @@ void write_gridscan(Crystal *cr, const RefList *full,
 }
 
 
+static int refine_loop(struct rf_alteration *cur, struct rf_alteration *dirns,
+                       int n_dirns, struct rf_priv *priv, int *total_iter,
+                       FILE *fh)
+{
+	int n_iter = 0;
+	int best;
+
+	do {
+
+		struct rf_alteration trials[n_dirns+1];
+		double lowest_fom = INFINITY;
+		double freefom;
+		int i;
+
+		best = 0;
+
+		trials[0] = *cur;
+		for ( i=0; i<n_dirns; i++ ) {
+			trials[i+1] = *cur;
+			trials[i+1].rot_x += dirns[i].rot_x;
+			trials[i+1].rot_y += dirns[i].rot_y;
+			trials[i+1].delta_R += dirns[i].delta_R;
+			trials[i+1].delta_wave += dirns[i].delta_wave;
+		}
+
+		for ( i=0; i<n_dirns+1; i++ ) {
+			double nfom = calc_residual(priv, trials[i], 0);
+			if ( nfom < lowest_fom ) {
+				best = i;
+				lowest_fom = nfom;
+			}
+		}
+
+		*cur = trials[best];
+
+		n_iter++;
+		(*total_iter)++;
+
+		freefom = calc_residual(priv, *cur, 1);
+		if ( fh != NULL ) {
+			fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
+			        *total_iter, lowest_fom, freefom,
+			        cur->rot_x, cur->rot_y,
+			        crystal_get_profile_radius(priv->cr)+cur->delta_R,
+			        crystal_get_image_const(priv->cr)->lambda+cur->delta_wave);
+		}
+
+	} while ( (best != 0) && (n_iter < 10) );
+
+	return 0;
+}
+
+
+static void zero_alter(struct rf_alteration *alter)
+{
+	alter->rot_x = 0.0;
+	alter->rot_y = 0.0;
+	alter->delta_R = 0.0;
+	alter->delta_wave = 0.0;
+}
+
+
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int serial,
                          int cycle, int write_logs,
@@ -569,7 +631,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	struct rf_priv priv;
 	struct rf_alteration alter;
 	int n_iter = 0;
-	int status = 0;
 	double fom, freefom;
 	RefList *list;
 	FILE *fh = NULL;
@@ -582,10 +643,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 		return;
 	}
 
-	alter.rot_x = 0.0;
-	alter.rot_y = 0.0;
-	alter.delta_R = 0.0;
-	alter.delta_wave = 0.0;
+	zero_alter(&alter);
 
 	priv.cr = cr;
 	priv.full = full;
@@ -620,36 +678,29 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	}
 
-	do {
-		n_iter++;
+	/* Refine orientation */
+	struct rf_alteration dirns[4];
+	zero_alter(&dirns[0]);  dirns[0].rot_x += 0.1e-3;
+	zero_alter(&dirns[1]);  dirns[1].rot_x -= 0.1e-3;
+	zero_alter(&dirns[2]);  dirns[2].rot_y += 0.1e-3;
+	zero_alter(&dirns[3]);  dirns[3].rot_y -= 0.1e-3;
+	refine_loop(&alter, dirns, 4, &priv, &n_iter, fh);
 
-		/* FIXME: Actually minimise */
+	/* Refine profile radius */
+	zero_alter(&dirns[0]);  dirns[0].delta_R += 1e5;
+	zero_alter(&dirns[1]);  dirns[1].delta_R -= 1e5;
+	refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
 
-		fom = calc_residual(&priv, alter, 0);
-		freefom = calc_residual(&priv, alter, 1);
+	/* Refine wavelength */
+	zero_alter(&dirns[0]);  dirns[0].delta_wave += 2.0e-14;
+	zero_alter(&dirns[1]);  dirns[1].delta_wave -= 2.0e-14;
+	refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
 
-		if ( fh != NULL ) {
-			fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
-			        n_iter, fom, freefom,
-			        alter.rot_x, alter.rot_y,
-			        crystal_get_profile_radius(cr)+alter.delta_R,
-			        crystal_get_image(cr)->lambda+alter.delta_wave);
-		}
-
-	} while ( n_iter < 10 );  /* FIXME: Termination criteria */
-
-	if ( status == 0 ) {
-
-		/* Apply the final shifts */
-		apply_parameters(cr, cr, alter);
-		update_predictions(cr);
-		calculate_partialities(cr, PMODEL_XSPHERE);
-		scale_one_crystal(cr, full, scaleflags);
-
-	} else {
-		ERROR("Bad refinement: crystal %i after %i iterations\n",
-		      serial, n_iter);
-	}
+	/* Apply the final shifts */
+	apply_parameters(cr, cr, alter);
+	update_predictions(cr);
+	calculate_partialities(cr, PMODEL_XSPHERE);
+	scale_one_crystal(cr, full, scaleflags);
 
 	if ( write_logs ) {
 		write_gridscan(cr, full, cycle, serial, scaleflags);
