@@ -469,9 +469,9 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 		double v1, v2;
 		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_x/rad");
 		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_y/rad");
-		for ( v2=-5.0e-3; v2<=5.0e-3; v2+=0.25e-3 ) {
+		for ( v2=-5.0e-3; v2<=5.1e-3; v2+=0.25e-3 ) {
 			int first=1;
-			for ( v1=-5.0e-3; v1<=5.0e-3; v1+=0.25e-3 ) {
+			for ( v1=-5.0e-3; v1<=5.1e-3; v1+=0.25e-3 ) {
 				double res;
 				struct rf_alteration alter;
 				alter.rot_x = v1;
@@ -529,9 +529,9 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 		double v1, v2;
 		fprintf(fh, "%e %e %e %s\n", -4e-13, 4e-13, 0.0, "wavelength change/m");
 		fprintf(fh, "%e %e %e %s\n", -2e6, 2e6, 0.0, "radius change/m^-1");
-		for ( v2=-2e6; v2<=2e6; v2+=40000 ) {
+		for ( v2=-2e6; v2<=2.001e6; v2+=100000 ) {
 			int first=1;
-			for ( v1=-4e-13; v1<=4e-13; v1+=8e-15 ) {
+			for ( v1=-4e-13; v1<=4.001e-13; v1+=2e-14 ) {
 				double res;
 				struct rf_alteration alter;
 				alter.rot_x = 0.0;
