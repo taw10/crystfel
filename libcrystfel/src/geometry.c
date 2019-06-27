@@ -522,7 +522,7 @@ static void set_random_partialities(Crystal *cryst)
 
 
 static double do_integral(double q2, double zl, double R,
-                          double lambda, double sig, char *verbose)
+                          Spectrum *spectrum, char *verbose)
 {
 	int i;
 	double kmin, kmax, kstart, kfinis;
@@ -530,7 +530,6 @@ static double do_integral(double q2, double zl, double R,
 	double total = 0.0;
 	double k0, k1;
 	const int SAMPLES = 50;  /* Number of samples for integration */
-	const double N = 1.5;  /* Pointiness of spectrum */
 	FILE *fh = NULL;
 
 	assert(R*R < q2);
@@ -545,8 +544,7 @@ static double do_integral(double q2, double zl, double R,
 	if ( k1 < 0.0 ) k1 = +INFINITY;
 
 	/* Range over which E is significantly different from zero */
-	kmin = 1.0 / (lambda + 3.0*sig);
-	kmax = 1.0 / (lambda - 3.0*sig);
+	spectrum_get_range(spectrum, &kmin, &kmax);
 
 	/* Calculate range over which E*P is different from zero */
 	if ( k0 < k1 ) {
@@ -592,9 +590,6 @@ static double do_integral(double q2, double zl, double R,
 		snprintf(fn, 63, "partial%s.graph", verbose);
 		fh = fopen(fn, "w");
 		fprintf(fh, "  n    p      wavelength   E           P\n");
-		STATUS("Nominal k = %e m^-1\n", 1.0/lambda);
-		STATUS(" (wavelength %e m)\n", lambda);
-		STATUS("Bandwidth %e m\n", sig);
 		STATUS("k1/2 = %e m^-1\n", -q2/(2.0*zl));
 		STATUS(" (wavelength %e m)\n", 1.0/(-q2/(2.0*zl)));
 		STATUS("Reflection k goes from %e to %e m^-1\n", k1, k0);
@@ -607,7 +602,7 @@ static double do_integral(double q2, double zl, double R,
 
 	for ( i=0; i<SAMPLES; i++ ) {
 
-		double p, kp, lrel;
+		double p, kp;
 		double E, P;
 
 		kp = kstart + i*inc;
@@ -615,9 +610,7 @@ static double do_integral(double q2, double zl, double R,
 		p = pref + 0.5 - kp/(2.0*R);
 
 		/* Spectral energy term */
-		lrel = fabs(1.0/kp - lambda);
-		E = exp(-0.5 * pow(lrel / sig, N));
-		E /= sqrt(2.0 * M_PI * sig);
+		E = spectrum_get_density_at_k(spectrum, kp);
 
 		/* RLP profile term */
 		P = 4.0*p * (1.0 - p);
@@ -633,9 +626,6 @@ static double do_integral(double q2, double zl, double R,
 
 	if ( isnan(total) ) {
 		ERROR("NaN total!\n");
-		STATUS("Nominal k = %e m^-1\n", 1.0/lambda);
-		STATUS(" (wavelength %e m)\n", lambda);
-		STATUS("Bandwidth %e m\n", sig);
 		STATUS("k1/2 = %e m^-1\n", -q2/(2.0*zl));
 		STATUS(" (wavelength %e m)\n", 1.0/(-q2/(2.0*zl)));
 		STATUS("Reflection k goes from %e to %e m^-1\n", k1, k0);
@@ -655,7 +645,7 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
-	double r0, m, lambda, sig;
+	double r0, m;
 	struct image *image;
 	UnitCell *cell;
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
@@ -683,8 +673,6 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 
 	r0 = fabs(crystal_get_profile_radius(cryst));
 	m = crystal_get_mosaicity(cryst);
-	lambda = image->lambda;
-	sig = image->bw * lambda / 2.0;
 
 	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
 	      refl != NULL;
@@ -710,8 +698,9 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 		//snprintf(tmp, 255, "-%i,%i,%i", h, k, l);
 		char *tmp = NULL;
 
-		total = do_integral(q2, zl, R, lambda, sig, tmp);
-		norm = do_integral(q2, -0.5*q2*lambda, R, lambda, sig, NULL);
+		total = do_integral(q2, zl, R, image->spectrum, tmp);
+		norm = do_integral(q2, -0.5*q2*image->lambda, R,
+		                   image->spectrum, NULL);
 
 	        set_partiality(refl, total/norm);
 		set_lorentz(refl, 1.0);

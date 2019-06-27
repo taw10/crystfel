@@ -570,8 +570,11 @@ static void skip_to_end(FILE *fh)
 }
 
 
-static int set_initial_params(Crystal *cr, FILE *fh)
+static int set_initial_params(Crystal *cr, FILE *fh, double force_bandwidth,
+                              double force_radius, double force_lambda)
 {
+	struct image *image = crystal_get_image(cr);
+
 	if ( fh != NULL ) {
 
 		int err;
@@ -595,6 +598,17 @@ static int set_initial_params(Crystal *cr, FILE *fh)
 		crystal_set_Bfac(cr, 0.0);
 
 	}
+
+	if ( force_bandwidth > 0.0 ) {
+		image->bw = force_bandwidth;
+	}
+	if ( force_radius > 0.0 ) {
+		crystal_set_profile_radius(cr, force_radius);
+	}
+	if ( force_lambda > 0.0 ) {
+		image->lambda = force_lambda;
+	}
+	image->spectrum = spectrum_generate_gaussian(image->lambda, image->bw);
 
 	return 0;
 }
@@ -1420,7 +1434,9 @@ int main(int argc, char *argv[])
 			crystal_set_user_flag(cr, PRFLAG_OK);
 			reflist_free(cr_refl);
 
-			if ( set_initial_params(cr, sparams_fh) ) {
+			if ( set_initial_params(cr, sparams_fh, force_bandwidth,
+			                        force_radius, force_lambda) )
+			{
 				ERROR("Failed to set initial parameters\n");
 				return 1;
 			}
@@ -1451,15 +1467,6 @@ int main(int argc, char *argv[])
 	STATUS("Initial partiality calculation...\n");
 	for ( i=0; i<n_crystals; i++ ) {
 		Crystal *cr = crystals[i];
-		if ( force_bandwidth > 0.0 ) {
-			crystal_get_image(cr)->bw = force_bandwidth;
-		}
-		if ( force_radius > 0.0 ) {
-			crystal_set_profile_radius(cr, force_radius);
-		}
-		if ( force_lambda > 0.0 ) {
-			crystal_get_image(cr)->lambda = force_lambda;
-		}
 		update_predictions(cr);
 		calculate_partialities(cr, pmodel);
 	}

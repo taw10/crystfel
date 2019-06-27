@@ -153,14 +153,22 @@ static void apply_parameters(const Crystal *cr_orig, Crystal *cr_tgt,
                              struct rf_alteration alter)
 {
 	double R, lambda;
+	struct gaussian g;
+	struct image *image;
 
+	image = crystal_get_image(cr_tgt);
 	R = crystal_get_profile_radius(cr_orig);
 	lambda = crystal_get_image_const(cr_orig)->lambda;
 
 	rotate_cell_xy(crystal_get_cell_const(cr_orig), crystal_get_cell(cr_tgt),
 	               alter.rot_x, alter.rot_y);
 	crystal_set_profile_radius(cr_tgt, R+alter.delta_R);
-	crystal_get_image(cr_tgt)->lambda = lambda+alter.delta_wave;
+	image->lambda = lambda+alter.delta_wave;
+
+	g.kcen = 1.0/image->lambda;
+	g.sigma = image->bw/image->lambda;
+	g.height = 1;
+	spectrum_set_gaussians(image->spectrum, &g, 1);
 }
 
 
@@ -442,6 +450,7 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 	struct rf_priv priv;
 	RefList *list;
 	UnitCell *cell;
+	Spectrum *spectrum;
 
 	priv.cr = cr;
 	priv.full = full;
@@ -449,6 +458,8 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 	priv.scaleflags = scaleflags;
 	priv.cr_tgt = crystal_copy(cr);
 	priv.image_tgt = *crystal_get_image(cr);
+	spectrum = spectrum_new();
+	priv.image_tgt.spectrum = spectrum;
 	crystal_set_image(priv.cr_tgt, &priv.image_tgt);
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(priv.cr_tgt, list);
@@ -490,6 +501,7 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 
 	reflist_free(crystal_get_reflections(priv.cr_tgt));
 	crystal_free(priv.cr_tgt);
+	spectrum_free(spectrum);
 }
 
 
@@ -502,6 +514,7 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 	struct rf_priv priv;
 	RefList *list;
 	UnitCell *cell;
+	Spectrum *spectrum;
 
 	priv.cr = cr;
 	priv.full = full;
@@ -509,6 +522,8 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 	priv.scaleflags = scaleflags;
 	priv.cr_tgt = crystal_copy(cr);
 	priv.image_tgt = *crystal_get_image(cr);
+	spectrum = spectrum_new();
+	priv.image_tgt.spectrum = spectrum;
 	crystal_set_image(priv.cr_tgt, &priv.image_tgt);
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(priv.cr_tgt, list);
@@ -550,6 +565,7 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 
 	reflist_free(crystal_get_reflections(priv.cr_tgt));
 	crystal_free(priv.cr_tgt);
+	spectrum_free(spectrum);
 }
 
 
@@ -635,6 +651,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	RefList *list;
 	FILE *fh = NULL;
 	UnitCell *cell;
+	Spectrum *spectrum;
 
 	try_reindex(cr, full, sym, amb, scaleflags);
 
@@ -651,6 +668,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	priv.scaleflags = scaleflags;
 	priv.cr_tgt = crystal_copy(cr);
 	priv.image_tgt = *crystal_get_image(cr);
+	spectrum = spectrum_new();
+	priv.image_tgt.spectrum = spectrum;
 	crystal_set_image(priv.cr_tgt, &priv.image_tgt);
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(priv.cr_tgt, list);
@@ -718,6 +737,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	reflist_free(crystal_get_reflections(priv.cr_tgt));
 	crystal_free(priv.cr_tgt);
+	spectrum_free(spectrum);
 }
 
 
