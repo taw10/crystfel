@@ -95,14 +95,14 @@ def read_spectrum(filename):
 def next_click(w):
     global specgraph, crystal
     crystal += 20
-    specgraph = read_spectrum("pr-logs/specgraph-crystal%i.dat" % crystal)
+    specgraph = read_spectrum("%s/specgraph-crystal%i.dat" % (folder,crystal))
     update_graph()
 
 
 def prev_click(w):
     global specgraph, crystal
     crystal -= 20
-    specgraph = read_spectrum("pr-logs/specgraph-crystal%i.dat" % crystal)
+    specgraph = read_spectrum("%s/specgraph-crystal%i.dat" % (folder,crystal))
     update_graph()
 
 
@@ -116,8 +116,15 @@ def set_sensible_axes(w):
 # Read the pgraph file
 pgraph = []
 
+if len(sys.argv) == 2:
+    folder = sys.argv[1]
+else:
+    folder = "pr-logs"
+
+print("Using folder '%s'" % folder)
+
 try:
-    fh = open("pr-logs/pgraph.dat", 'r')
+    fh = open("%s/pgraph.dat" % folder, 'r')
 except IOError:
     print("Failed to read "+filename)
     raise IOError
@@ -137,7 +144,7 @@ while True:
 
 
 # Read the spectrum file
-specgraph = read_spectrum("pr-logs/specgraph-crystal%i.dat" % crystal)
+specgraph = read_spectrum("%s/specgraph-crystal%i.dat" % (folder,crystal))
 
 fig = plt.figure(figsize=(15,6))
 fig.subplots_adjust(left=0.05, right=0.65)
