@@ -897,12 +897,12 @@ int main(int argc, char *argv[])
 	image.lambda = ph_en_to_lambda(eV_to_J(photon_energy));
 	image.div = divergence;
 	image.bw = bandwidth;
+	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 	image.filename = "dummy.h5";
 	image.copyme = NULL;
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.indexed_by = INDEXING_SIMULATION;
-	image.spectrum = NULL;
 	image.serial = 0;
 	image.event = NULL;
 	image.hit = 0;
