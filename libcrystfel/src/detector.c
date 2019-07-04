@@ -37,6 +37,7 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 #include "image.h"
 #include "utils.h"
@@ -1170,6 +1171,7 @@ static void find_min_max_d(struct detector *det)
 	}
 }
 
+
 struct detector *get_detector_geometry(const char *filename,
                                        struct beam_params *beam)
 {
@@ -1177,14 +1179,13 @@ struct detector *get_detector_geometry(const char *filename,
 }
 
 
-struct detector *get_detector_geometry_2(const char *filename,
-                                         struct beam_params *beam,
-                                         char **hdf5_peak_path)
+struct detector *get_detector_geometry_from_string(const char *string,
+                                                   struct beam_params *beam,
+                                                   char **hdf5_peak_path)
 {
-	FILE *fh;
 	struct detector *det;
-	char *rval;
 	char **bits;
+	int done = 0;
 	int i;
 	int rgi, rgci;
 	int reject = 0;
@@ -1197,14 +1198,8 @@ struct detector *get_detector_geometry_2(const char *filename,
 	int n_rg_definitions = 0;
 	int n_rgc_definitions = 0;
 
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) return NULL;
-
 	det = calloc(1, sizeof(struct detector));
-	if ( det == NULL ) {
-		fclose(fh);
-		return NULL;
-	}
+	if ( det == NULL ) return NULL;
 
 	if ( beam != NULL ) {
 		beam->photon_energy = 0.0;
@@ -1262,14 +1257,21 @@ struct detector *get_detector_geometry_2(const char *filename,
 
 		int n1, n2;
 		char **path;
-		char line[1024];
+		char *line;
 		struct badregion *badregion = NULL;
 		struct panel *panel = NULL;
 		char wholeval[1024];
 
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) break;
-		chomp(line);
+		const char *nl = strchr(string, '\n');
+		if ( nl != NULL ) {
+			size_t len = nl - string;
+			line = strndup(string, nl-string);
+			line[len] = '\0';
+			string += len+1;
+		} else {
+			line = strdup(string);
+			done = 1;
+		}
 
 		if ( line[0] == ';' ) continue;
 
@@ -1336,11 +1338,10 @@ struct detector *get_detector_geometry_2(const char *filename,
 		free(bits);
 		free(path);
 
-	} while ( rval != NULL );
+	} while ( !done );
 
 	if ( det->n_panels == -1 ) {
 		ERROR("No panel descriptions in geometry file.\n");
-		fclose(fh);
 		free(det);
 		return NULL;
 	}
@@ -1702,8 +1703,63 @@ struct detector *get_detector_geometry_2(const char *filename,
 
 	if ( reject ) return NULL;
 
+	return det;
+}
+
+
+char *load_entire_file(const char *filename)
+{
+	struct stat statbuf;
+	int r;
+	char *contents;
+	FILE *fh;
+
+	r = stat(filename, &statbuf);
+	if ( r != 0 ) {
+		ERROR("File '%s' not found\n", filename);
+		return NULL;
+	}
+
+	contents = malloc(statbuf.st_size);
+	if ( contents == NULL ) {
+		ERROR("Failed to allocate memory for file\n");
+		return NULL;
+	}
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to open file '%s'\n", filename);
+		free(contents);
+		return NULL;
+	}
+
+	if ( fread(contents, 1, statbuf.st_size, fh) != statbuf.st_size ) {
+		ERROR("Failed to read file '%s'\n", filename);
+		free(contents);
+		return NULL;
+	}
+
 	fclose(fh);
 
+	return contents;
+}
+
+
+struct detector *get_detector_geometry_2(const char *filename,
+                                         struct beam_params *beam,
+                                         char **hdf5_peak_path)
+{
+	char *contents;
+	struct detector *det;
+
+	contents = load_entire_file(filename);
+	if ( contents == NULL ) {
+		ERROR("Failed to load geometry file '%s'\n", filename);
+		return NULL;
+	}
+
+	det = get_detector_geometry_from_string(contents, beam, hdf5_peak_path);
+	free(contents);
 	return det;
 }
 

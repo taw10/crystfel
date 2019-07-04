@@ -272,7 +272,11 @@ extern struct detector *get_detector_geometry(const char *filename,
 
 extern struct detector *get_detector_geometry_2(const char *filename,
                                                 struct beam_params *beam,
-						char **hdf5_peak_path);
+                                                char **hdf5_peak_path);
+
+extern struct detector *get_detector_geometry_from_string(const char *string,
+                                                          struct beam_params *beam,
+                                                          char **hdf5_peak_path);
 
 extern void free_detector_geometry(struct detector *det);
 
