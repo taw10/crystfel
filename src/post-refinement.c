@@ -655,11 +655,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 	try_reindex(cr, full, sym, amb, scaleflags);
 
-	if ( scale_one_crystal(cr, full, scaleflags | SCALE_VERBOSE_ERRORS) ) {
-		ERROR("Bad scaling at start of refinement.\n");
-		return;
-	}
-
 	zero_alter(&alter);
 
 	priv.cr = cr;
@@ -719,7 +714,6 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	apply_parameters(cr, cr, alter);
 	update_predictions(cr);
 	calculate_partialities(cr, PMODEL_XSPHERE);
-	scale_one_crystal(cr, full, scaleflags);
 
 	if ( write_logs ) {
 		write_gridscan(cr, full, cycle, serial, scaleflags);
