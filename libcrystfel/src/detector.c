@@ -1718,7 +1718,7 @@ char *load_entire_file(const char *filename)
 		return NULL;
 	}
 
-	contents = malloc(statbuf.st_size);
+	contents = malloc(statbuf.st_size+1);
 	if ( contents == NULL ) {
 		ERROR("Failed to allocate memory for file\n");
 		return NULL;
@@ -1736,6 +1736,7 @@ char *load_entire_file(const char *filename)
 		free(contents);
 		return NULL;
 	}
+	contents[statbuf.st_size] = '\0';
 
 	fclose(fh);
 
