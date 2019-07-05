@@ -67,6 +67,7 @@ struct _stream
 	int major_version;
 	int minor_version;
 	char *audit_info;
+	char *geometry_file;
 
 	long long int ln;
 
@@ -1382,6 +1383,12 @@ char *stream_audit_info(Stream *st)
 }
 
 
+char *stream_geometry_file(Stream *st)
+{
+	return st->geometry_file;
+}
+
+
 static void read_audit_lines(Stream *st)
 {
 	int done = 0;
@@ -1434,6 +1441,63 @@ static void read_audit_lines(Stream *st)
 }
 
 
+static void read_geometry_file(Stream *st)
+{
+	int done = 0;
+	size_t len = 0;
+	int started = 0;
+	const size_t max_geom_len = 16*1024;
+
+	st->geometry_file = malloc(max_geom_len);
+	if ( st->geometry_file == NULL ) {
+		ERROR("Failed to allocate memory for audit information\n");
+		return;
+	}
+	st->geometry_file[0] = '\0';
+
+	do {
+
+		char line[1024];
+		char *rval;
+
+		rval = fgets(line, 1023, st->fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to read stream geometry file.\n");
+			close_stream(st);
+			free(st->geometry_file);
+			st->geometry_file = NULL;
+			return;
+		}
+
+		if ( strcmp(line, GEOM_START_MARKER"\n") == 0 ) {
+			started = 1;
+			continue;
+		}
+
+		if ( (strcmp(line, CHUNK_START_MARKER"\n") == 0)
+		  || (strcmp(line, GEOM_END_MARKER"\n") == 0) )
+		{
+			done = 1;
+			continue;
+		}
+
+		if ( !started ) continue;
+
+		len += strlen(line);
+		if ( len > max_geom_len-1 ) {
+			ERROR("Stream's geometry file is too long (%li > %i).\n",
+			      (long)len, (int)max_geom_len);
+			free(st->geometry_file);
+			st->geometry_file = NULL;
+			return;
+		} else {
+			strcat(st->geometry_file, line);
+		}
+
+	} while  ( !done );
+}
+
+
 Stream *open_stream_for_read(const char *filename)
 {
 	Stream *st;
@@ -1442,6 +1506,7 @@ Stream *open_stream_for_read(const char *filename)
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
 	st->audit_info = NULL;
+	st->geometry_file = NULL;
 
 	if ( strcmp(filename, "-") == 0 ) {
 		st->fh = stdin;
@@ -1485,6 +1550,7 @@ Stream *open_stream_for_read(const char *filename)
 	st->ln = 1;
 
 	read_audit_lines(st);
+	read_geometry_file(st);
 
 	return st;
 }
@@ -1511,6 +1577,7 @@ Stream *open_stream_fd_for_write(int fd)
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
 	st->audit_info = NULL;
+	st->geometry_file = NULL;
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
@@ -1562,6 +1629,7 @@ Stream *open_stream_for_write_4(const char *filename,
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
 	st->audit_info = NULL;
+	st->geometry_file = NULL;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1627,6 +1695,7 @@ Stream *open_stream_for_write_2(const char *filename,
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
 	st->audit_info = NULL;
+	st->geometry_file = NULL;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1697,6 +1766,7 @@ int get_stream_fd(Stream *st)
 void close_stream(Stream *st)
 {
 	free(st->audit_info);
+	free(st->geometry_file);
 	fclose(st->fh);
 	free(st);
 }

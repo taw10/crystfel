@@ -135,6 +135,7 @@ extern void write_geometry_file(Stream *st, const char *geom_filename);
 extern int rewind_stream(Stream *st);
 extern int is_stream(const char *filename);
 extern char *stream_audit_info(Stream *st);
+extern char *stream_geometry_file(Stream *st);
 
 #ifdef __cplusplus
 }
