@@ -3,12 +3,12 @@
  *
  * Detector properties
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2016 Thomas White <taw@physics.org>
+ *   2009-2019 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *   2011      Andrew Aquila
