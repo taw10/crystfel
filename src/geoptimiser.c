@@ -3,13 +3,13 @@
  *
  * Refine detector geometry
  *
- * Copyright © 2014-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2014-2015 Oleksandr Yefanov
  *   2014-2015 Valerio Mariani
- *   2014-2016 Thomas White <taw@physics.org>
+ *   2014-2019 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -77,13 +77,11 @@ static void show_help(const char *s)
 "\n"
 "      --version                                Print CrystFEL version number and\n"
 "                                                exit.\n"
-"  -i, --input=<filename>                       Specify stream file to be used for \n"
-"                                                geometry optimization.\n"
-"  -g. --geometry=<file>                        Get detector geometry from file.\n"
-"  -o, --output=<filename>                      Output stream.\n"
+"  -i, --input=<filename>                       Input stream\n"
+"  -g. --geometry=<file>                        Input geometry file (if omitted: from stream).\n"
+"  -o, --output=<filename>                      Output geometry file.\n"
 "  -q, --quadrants=<rg_coll>                    Rigid group collection for quadrants.\n"
-"  -c, --connected=<rg_coll>                    Rigid group collection for connected\n"
-"                                                ASICs.\n"
+"  -c, --connected=<rg_coll>                    Rigid group collection for connected ASICs.\n"
 "      --no-error-maps                          Do not generate error map PNGs.\n"
 "      --stretch-map                            Generate stretch map PNG (panels distance).\n"
 "  -x, --min-num-peaks-per-pixel=<num>          Minimum number of peaks per pixel.\n"
@@ -109,9 +107,7 @@ static void show_help(const char *s)
 
 struct geoptimiser_params
 {
-	char *infile;
 	char *outfile;
-	char *geometry_filename;
 	int min_num_peaks_per_pix;
 	int max_num_peaks_per_pix;
 	int min_num_pix_per_conn_group;
@@ -248,10 +244,9 @@ static double get_average_clen(struct image *image)
 }
 
 
-static struct image *read_patterns_from_stream(const char *infile,
+static struct image *read_patterns_from_stream(Stream *st,
                                                struct detector *det, int *n)
 {
-	Stream *st;
 	struct image *images;
 	int n_chunks = 0;
 	int max_images = 1024;
@@ -260,13 +255,6 @@ static struct image *read_patterns_from_stream(const char *infile,
 	images = malloc(max_images * sizeof(struct image));
 	if ( images == NULL ) {
 		ERROR("Failed to allocate memory for images.\n");
-		return NULL;
-	}
-
-	st = open_stream_for_read(infile);
-	if ( st == NULL ) {
-		ERROR("Failed to open input stream '%s'\n", infile);
-		free(images);
 		return NULL;
 	}
 
@@ -313,11 +301,10 @@ static struct image *read_patterns_from_stream(const char *infile,
 
 	} while ( 1 );
 
-	close_stream(st);
 	*n = n_images;
 
-	STATUS("Found %i indexed patterns in file %s (from a total of %i).\n",
-	       n_images, infile, n_chunks);
+	STATUS("Found %i indexed patterns in stream (from a total of %i).\n",
+	       n_images, n_chunks);
 
 	return images;
 }
@@ -2288,7 +2275,7 @@ void recompute_avg_displ(struct rg_collection *connected,
 }
 
 
-int optimize_geometry(struct geoptimiser_params *gparams,
+int optimize_geometry(struct geoptimiser_params *gparams, Stream *st,
                       struct detector *det,
                       struct rg_collection *quadrants,
                       struct rg_collection *connected)
@@ -2314,6 +2301,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	int n_images = 0;
 	UnitCell *avg_cell;
 	struct gpanel *gpanels;
+	const char *geometry_data = stream_geometry_file(st);
 
 	STATUS("Maximum distance between peaks: %0.1f pixels.\n",
 	       gparams->max_peak_dist);
@@ -2346,10 +2334,9 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 			       "Please restart geometry optimization using the "
 			       "optimized geometry from this run as input "
 			       "geometry file.\n");
-			geom_wr = write_detector_geometry_2(
-			                        gparams->geometry_filename,
-			                        gparams->outfile, det,
-			                        gparams->command_line, 1);
+			geom_wr = write_detector_geometry_3(geometry_data,
+			                                    gparams->outfile, det,
+			                                    gparams->command_line, 1);
 			if ( geom_wr != 0 ) {
 				ERROR("Error in writing output geometry file.\n");
 				return 1;
@@ -2391,10 +2378,9 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 			       "Please restart geometry optimization using the "
 			       "optimized geometry from this run as input "
 			       "geometry file.\n");
-			geom_wr = write_detector_geometry_2(
-			                        gparams->geometry_filename,
-			                        gparams->outfile, det,
-			                        gparams->command_line, 1);
+			geom_wr = write_detector_geometry_3(geometry_data,
+			                                    gparams->outfile, det,
+			                                    gparams->command_line, 1);
 			if ( geom_wr != 0 ) {
 				ERROR("Error in writing output geometry file.\n");
 				return 1;
@@ -2413,7 +2399,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 		}
 	}
 
-	images = read_patterns_from_stream(gparams->infile, det, &n_images);
+	images = read_patterns_from_stream(st, det, &n_images);
 	if ( (n_images < 1) || (images == NULL) ) {
 		ERROR("Error reading stream file\n");
 		return 1;
@@ -2603,7 +2589,7 @@ int optimize_geometry(struct geoptimiser_params *gparams,
 	STATUS("Detector-wide error after correction: RMSD = %0.4f pixels.\n",
 	       total_error);
 
-	write_ret = write_detector_geometry_2(gparams->geometry_filename,
+	write_ret = write_detector_geometry_3(geometry_data,
 	                                      gparams->outfile, det,
 	                                      gparams->command_line, 1);
 	if ( write_ret != 0 ) {
@@ -2632,21 +2618,20 @@ int main(int argc, char *argv[])
 	int ret_val;
 	char buffer[256];
 	char command_line[1024];
-
+	char *infile = NULL;
 	char *quadrant_coll_name = NULL;
 	char *connected_coll_name = NULL;
-
+	Stream *st;
 	struct geoptimiser_params *gparams;
 	struct detector *det = NULL;
 	struct rg_collection *quadrants;
 	struct rg_collection *connected;
 	struct beam_params beam;
+	char *geometry_filename = NULL;
 
 	gparams = malloc(sizeof(struct geoptimiser_params));
 
 	gparams->outfile = NULL;
-	gparams->infile = NULL;
-	gparams->geometry_filename = NULL;
 	gparams->min_num_peaks_per_pix = 3;
 	gparams->max_num_peaks_per_pix = 0;
 	gparams->min_num_pix_per_conn_group = 100;
@@ -2714,18 +2699,11 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'i' :
-			gparams->infile = strdup(optarg);
+			infile = strdup(optarg);
 			break;
 
 			case 'g' :
-			gparams->geometry_filename = strdup(optarg);
-			det = get_detector_geometry(gparams->geometry_filename,
-			                            &beam);
-			if ( det == NULL ) {
-				ERROR("Failed to read detector geometry from "
-				      "'%s'\n", optarg);
-				return 1;
-			}
+			geometry_filename = strdup(optarg);
 			break;
 
 			case 'q' :
@@ -2772,12 +2750,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if ( gparams->geometry_filename == NULL ) {
-		ERROR("You must provide a geometry to optimize.\n");
-		return 1;
-	}
-
-	if ( gparams->infile == NULL ) {
+	if ( infile == NULL ) {
 		ERROR("You must provide an input stream file.\n");
 		return 1;
 	}
@@ -2799,7 +2772,43 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	strcpy(command_line, "\0");
+	command_line[0] = '\0';
+	for ( i=0; i<argc; i++ ) {
+		if ( i > 0 ) strcat(command_line, " ");
+		strcpy(buffer, argv[i]);
+		strcat(command_line, buffer);
+	}
+
+#ifdef CAN_SAVE_TO_PNG
+#if !GLIB_CHECK_VERSION(2,36,0)
+	g_type_init();
+#endif
+#endif
+
+	st = open_stream_for_read(infile);
+	if ( st == NULL ) {
+		ERROR("Failed to open input stream '%s'\n", infile);
+		return 1;
+	}
+
+	if ( geometry_filename == NULL ) {
+		const char *stgeom = stream_geometry_file(st);
+		if ( stgeom != NULL ) {
+			det = get_detector_geometry_from_string(stgeom, &beam, NULL);
+		} else {
+			ERROR("No input geometry file given, and no geometry "
+			      "found in stream.\n");
+			return 1;
+		}
+	} else {
+		det = get_detector_geometry(geometry_filename, &beam);
+		free(geometry_filename);
+	}
+
+	if ( det == NULL ) {
+		ERROR("Failed to read initial detector geometry.\n");
+		return 1;
+	}
 
 	quadrants = find_rigid_group_collection_by_name(det, quadrant_coll_name);
 	if ( quadrants == NULL ) {
@@ -2816,19 +2825,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	for ( i=0; i<argc; i++ ) {
-		if ( i > 0 ) strcat(command_line, " ");
-		strcpy(buffer, argv[i]);
-		strcat(command_line, buffer);
-	}
+	ret_val = optimize_geometry(gparams, st, det, quadrants, connected);
 
-#ifdef CAN_SAVE_TO_PNG
-#if !GLIB_CHECK_VERSION(2,36,0)
-	g_type_init();
-#endif
-#endif
-
-	ret_val = optimize_geometry(gparams, det, quadrants, connected);
+	close_stream(st);
 
 	return ret_val;
 }
