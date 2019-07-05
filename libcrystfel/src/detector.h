@@ -312,6 +312,12 @@ extern int write_detector_geometry_2(const char *geometry_filename,
                                      const char *additional_comment,
                                      int write_panel_coffset);
 
+extern int write_detector_geometry_3(const char *geometry_data,
+                                     const char *output_filename,
+                                     struct detector *det,
+                                     const char *additional_comment,
+                                     int write_panel_coffset);
+
 extern int write_detector_geometry(const char *geometry_filename,
                                    const char *output_filename,
                                    struct detector *det);

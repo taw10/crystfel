@@ -258,8 +258,6 @@ static void build_output_line(const char *line, char *new_line,
 			break;
 		}
 	}
-	if ( w == strlen(line) ) strcat(new_line, "\n");
-
 	for ( i=0; i<n_bits; i++) free(bits[i]);
 	free(bits);
 }
@@ -1989,7 +1987,7 @@ static void check_extents(struct panel p, double *min_x, double *min_y,
 }
 
 
-static void process_panel_fields(const struct panel *p, char *line,
+static void rewrite_panel_fields(const struct panel *p, char *line,
                                  FILE *fh, char **bits,
                                  int write_panel_coffset)
 {
@@ -2009,6 +2007,7 @@ static void process_panel_fields(const struct panel *p, char *line,
 		build_output_line(line, new_line,
 		                  string_to_write);
 		fputs(new_line, fh);
+		fputs("\n", fh);
 		return;
 
 	} else if ( strstr(bits[1], "ss") != NULL &&
@@ -2020,6 +2019,7 @@ static void process_panel_fields(const struct panel *p, char *line,
 		build_output_line(line, new_line,
 		                  string_to_write);
 		fputs(new_line, fh);
+		fputs("\n", fh);
 		return;
 
 	} else if ( strstr(bits[1], "corner_x") != NULL) {
@@ -2029,6 +2029,7 @@ static void process_panel_fields(const struct panel *p, char *line,
 		build_output_line(line, new_line,
 		                  string_to_write);
 		fputs(new_line, fh);
+		fputs("\n", fh);
 		return;
 
 	} else if ( strstr(bits[1], "corner_y") != NULL) {
@@ -2038,6 +2039,7 @@ static void process_panel_fields(const struct panel *p, char *line,
 		build_output_line(line, new_line,
 		                  string_to_write);
 		fputs(new_line, fh);
+		fputs("\n", fh);
 		return;
 
 	} else if ( strstr(bits[1], "coffset") != NULL) {
@@ -2046,11 +2048,13 @@ static void process_panel_fields(const struct panel *p, char *line,
 			return;
 		} else {
 			fputs(line, fh);
+		fputs("\n", fh);
 			return;
 		}
 
 	} else {
 		fputs(line, fh);
+		fputs("\n", fh);
 	}
 }
 
@@ -2122,64 +2126,17 @@ void get_pixel_extents(struct detector *det,
 }
 
 
-static char **file_to_lines(const char *fn)
-{
-	char **lines;
-	FILE *fh;
-	int i = 0;
-	int max_lines = 64;
-
-	fh = fopen(fn, "r");
-	if ( fh == NULL ) return NULL;
-
-	lines = malloc(max_lines*sizeof(char *));
-	if ( lines == NULL ) return NULL;
-
-	do {
-		char line[2048];
-		char *rval;
-		rval = fgets(line, 2048, fh);
-		if ( rval == NULL ) break;
-		lines[i++] = strdup(line);
-
-		/* Allow one space so the terminator always fits */
-		if ( i == max_lines-1 ) {
-			max_lines += 64;
-			lines = realloc(lines, max_lines*sizeof(char *));
-			if ( lines == NULL ) return NULL;
-		}
-	} while ( 1 );
-
-	lines[i++] = NULL;
-	return lines;
-}
-
-
-static void free_lines(char **lines)
-{
-	int i = 0;
-	while ( lines[i] != NULL ) {
-		free(lines[i++]);
-	};
-	free(lines);
-}
-
-
-int write_detector_geometry_2(const char *geometry_filename,
+int write_detector_geometry_3(const char *geometry_data,
                               const char *output_filename, struct detector *det,
                               const char *additional_comment,
                               int write_panel_coffset)
 {
 	FILE *fh;
-	char **lines;
-	int lno = 0;
+	int done = 0;
 
-	if ( geometry_filename == NULL ) return 2;
+	if ( geometry_data == NULL ) return 2;
 	if ( output_filename == NULL ) return 2;
 	if ( det->n_panels < 1 ) return 3;
-
-	lines = file_to_lines(geometry_filename);
-	if ( lines == NULL ) return 1;
 
 	fh = fopen(output_filename, "w");
 	if ( fh == NULL ) return 1;
@@ -2195,42 +2152,51 @@ int write_detector_geometry_2(const char *geometry_filename,
 		      "end of the file\n", fh);
 	}
 
-	lno = 0;
-	while ( lines[lno] != NULL) {
+	do {
 
 		int n_bits;
 		char **bits;
 		int i;
 		struct panel *p;
+		char *line;
+		const char *nl;
 
-		n_bits = assplode(lines[lno], "/=", &bits, ASSPLODE_NONE);
+		/* Get the next line */
+		nl = strchr(geometry_data, '\n');
+		if ( nl != NULL ) {
+			size_t len = nl - geometry_data;
+			line = strndup(geometry_data, nl-geometry_data);
+			line[len] = '\0';
+			geometry_data += len+1;
+		} else {
+			/* Last line might now have newline at end */
+			line = strdup(geometry_data);
+			done = 1;
+		}
+
+		n_bits = assplode(line, "/=", &bits, ASSPLODE_NONE);
 
 		if ( n_bits != 3 ) {
-			if ( strstr(bits[0], "coffset" ) != NULL &&
-			     write_panel_coffset ) {
-				lno++;
-				continue;
-			} else {
-				fputs(lines[lno], fh);
-			}
+			if ( write_panel_coffset && (bits != NULL)
+			    && (strstr(bits[0], "coffset" ) != NULL) ) continue;
+			fputs(line, fh);
+			fputs("\n", fh);
 		} else {
 
 			p = find_panel_by_name(det, bits[0]);
 
 			if ( p != NULL ) {
-				process_panel_fields(p, lines[lno], fh, bits,
+				rewrite_panel_fields(p, line, fh, bits,
 						     write_panel_coffset);
-
 			} else {
-				fputs(lines[lno], fh);
+				fputs(line, fh);
+				fputs("\n", fh);
 			}
 		}
 
 		for ( i=0; i<n_bits; i++ ) free(bits[i]);
 
-		lno++;
-
-	};
+	} while ( !done );
 
 	if ( write_panel_coffset ) {
 
@@ -2244,10 +2210,21 @@ int write_detector_geometry_2(const char *geometry_filename,
 		}
 	}
 
-	fclose(fh);
-	free_lines(lines);
-
 	return 0;
+}
+
+
+int write_detector_geometry_2(const char *geometry_filename,
+                              const char *output_filename, struct detector *det,
+                              const char *additional_comment,
+                              int write_panel_coffset)
+{
+	int r;
+	char *geometry_data = load_entire_file(geometry_filename);
+	r = write_detector_geometry_3(geometry_data, output_filename, det,
+	                              additional_comment, write_panel_coffset);
+	free(geometry_data);
+	return r;
 }
 
 
