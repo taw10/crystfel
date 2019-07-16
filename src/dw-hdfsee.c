@@ -53,6 +53,7 @@
 #include "filters.h"
 #include "events.h"
 
+static int displaywindow_update_menus(DisplayWindow *dw, const char *selectme);
 
 static void displaywindow_error(DisplayWindow *dw, const char *message)
 {
@@ -316,6 +317,7 @@ static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
 	cairo_set_line_width(cr, 1.0/dw->binning);
 	cairo_stroke(cr);
 }
+
 
 static struct rigid_group *find_corresponding_rigid_group(DisplayWindow *dw,
                                                           struct panel *p) {
@@ -951,6 +953,7 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 	dw->curr_event = new_event;
 
 	do_filters(dw);
+	displaywindow_update_menus(dw, NULL);
 	displaywindow_update(dw);
 
 	bn = safe_basename(dw->image->filename);
@@ -2535,15 +2538,13 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 		} else {
 
 			char *tmp;
+			struct event *ev = NULL;
 
-			item = gtk_menu_item_new_with_label(names[i]);
-
-			if ( hdfile_is_scalar(hdfile, names[i], 0) ) {
-				tmp = hdfile_get_string_value(hdfile, names[i],
-				                              NULL);
-			} else {
-				tmp = NULL;
+			if ( dw->multi_event ) {
+				ev = dw->ev_list->events[dw->curr_event];
 			}
+			item = gtk_menu_item_new_with_label(names[i]);
+			tmp = hdfile_get_string_value(hdfile, names[i], ev);
 			if ( tmp != NULL ) {
 
 				GtkWidget *ss;
@@ -2945,7 +2946,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	DisplayWindow *dw;
 	GtkWidget *vbox;
 	int check;
-	GtkWidget *w;
 	char title[1024];
 
 	dw = calloc(1, sizeof(DisplayWindow));
@@ -3143,14 +3143,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), TRUE);
 	gtk_widget_show_all(dw->window);
 
-	w = gtk_ui_manager_get_widget(dw->ui,
-	                   "/ui/displaywindow/view/images");
-
-	if ( !dw->simple ) {
-		gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	}
-
-	if ( dw->simple || dw->multi_event == 0) {
+	if ( !dw->multi_event ) {
 		set_events_menu_sensitivity(dw, FALSE);
 	}
 
@@ -3174,9 +3167,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	g_signal_connect(G_OBJECT(dw->drawingarea), "key-press-event",
 	                 G_CALLBACK(displaywindow_keypress), dw);
 
-	if ( dw->simple ) {
-		displaywindow_update_menus(dw, element);
-	}
+	displaywindow_update_menus(dw, element);
 
 	dw->not_ready_yet = 0;
 
