@@ -2952,9 +2952,12 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	DisplayWindow *dw;
 	GtkWidget *vbox;
 	int check;
+	FILE *fh;
+	unsigned long int seed;
 
 	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
+
 	dw->pixbufs = NULL;
 	dw->peaktype = 0;
 	dw->binning_dialog = NULL;
@@ -2986,8 +2989,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->ev_list = NULL;
 	dw->ev = NULL;
 	dw->rng = *gsl_rng_alloc(gsl_rng_mt19937);
-	FILE *fh;
-	unsigned long int seed;
 
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
