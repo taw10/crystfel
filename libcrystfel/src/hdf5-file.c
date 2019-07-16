@@ -2094,8 +2094,14 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			size = H5Tget_size(type);
 			tmp = malloc(size+1);
 
-			sh = H5Screate(H5S_SCALAR);
+			sh = H5Dget_space(dh);
+			if ( H5Sget_simple_extent_ndims(sh) ) {
+				H5Tclose(type);
+				free(subst_name);
+				return strdup("[non-scalar string]");
+			}
 
+			sh = H5Screate(H5S_SCALAR);
 			r = H5Dread(dh, type, sh, H5S_ALL, H5P_DEFAULT, tmp);
 			H5Sclose(sh);
 			if ( r < 0 ) {
