@@ -2518,8 +2518,12 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
                                             dw, rgp, selectme);
 			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
 
-		} else if ( is_image[i] ) {
-
+		/* No changing image if we're using multiple events,
+		 * or if we have a geometry file (already saying where to
+		 * find the data. */
+		} else if ( is_image[i] && (dw->ev == NULL)
+		        && (dw->original_geom == NULL) )
+		{
 			struct newhdf *nh;
 
 			item = gtk_radio_menu_item_new_with_label(*rgp,
