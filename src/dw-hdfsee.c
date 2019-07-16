@@ -924,12 +924,24 @@ static void do_filters(DisplayWindow *dw)
 }
 
 
+static void update_titlebar(DisplayWindow *dw)
+{
+	char title[1024];
+	char *bn = safe_basename(dw->image->filename);
+	if ( dw->ev != NULL ) {
+		snprintf(title, 1024, "%s - event: %s - hdfsee", bn, get_event_string(dw->ev));
+	} else {
+		snprintf(title, 1024, "%s - hdfsee", bn);
+	}
+	gtk_window_set_title(GTK_WINDOW(dw->window), title);
+	free(bn);
+}
+
+
 static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 {
 	int fail;
 	int i;
-	char title[1024];
-	char *bn;
 
 	if ( dw->not_ready_yet ) return 0;
 
@@ -951,16 +963,12 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 	}
 
 	dw->curr_event = new_event;
+	update_titlebar(dw);
 
 	do_filters(dw);
 	displaywindow_update_menus(dw, NULL);
 	displaywindow_update(dw);
 
-	bn = safe_basename(dw->image->filename);
-	sprintf(title, "%s - event: %s - hdfsee", bn,
-	        get_event_string(dw->ev_list->events[dw->curr_event]));
-	gtk_window_set_title(GTK_WINDOW(dw->window), title);
-	free(bn);
 
 	for (i = 0; i < dw->image->det->n_panels; i++) {
 		free(old_dp[i]);
@@ -1093,8 +1101,7 @@ static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 				  1, 2, 3, 4);
 
 	ed->entry = gtk_entry_new();
-	snprintf(tmp, 1023, "%s",
-	         get_event_string(dw->ev_list->events[dw->curr_event]));
+	snprintf(tmp, 1023, "%s", get_event_string(dw->ev));
 	gtk_entry_set_text(GTK_ENTRY(ed->entry), tmp);
 	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(ed->entry),
 				  2, 3, 3, 4);
@@ -2946,7 +2953,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	DisplayWindow *dw;
 	GtkWidget *vbox;
 	int check;
-	char title[1024];
 
 	dw = calloc(1, sizeof(DisplayWindow));
 	if ( dw == NULL ) return NULL;
@@ -3103,16 +3109,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	}
 
 	dw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	char *bn = safe_basename(filename);
-	if ( dw->multi_event == 0 ) {
-		sprintf(title, "%s - hdfsee", bn);
-	} else {
-		sprintf(title, "%s - event: %s - hdfsee", bn,
-		        get_event_string(dw->ev_list->events[dw->curr_event]));
-	}
-
-	free(bn);
-	gtk_window_set_title(GTK_WINDOW(dw->window), title);
+	update_titlebar(dw);
 
 	g_signal_connect(G_OBJECT(dw->window), "destroy",
 			 G_CALLBACK(displaywindow_closed), dw);
