@@ -142,9 +142,8 @@ typedef struct {
 	int		scale;
 	GdkPixbuf	*col_scale;
 
-	int                multi_event;
 	struct event_list  *ev_list;
-	int                curr_event;
+	struct event    *ev;
 
 	gsl_rng          rng;
 

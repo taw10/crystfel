@@ -962,7 +962,7 @@ static gint displaywindow_newevent(DisplayWindow *dw, int new_event)
 		return 1;
 	}
 
-	dw->curr_event = new_event;
+	dw->ev = dw->ev_list->events[new_event];
 	update_titlebar(dw);
 
 	do_filters(dw);
@@ -1766,9 +1766,8 @@ static gint displaywindow_save(GtkWidget *widget, DisplayWindow *dw)
 			const char *pk;
 			const char *rings;
 
-			if ( dw->multi_event ) {
-				struct event *ev = dw->ev_list->events[dw->curr_event];
-				evs = get_event_string(ev);
+			if ( dw->ev != NULL ) {
+				evs = get_event_string(dw->ev);
 				substitute_slashes(evs);
 			} else {
 				evs = strdup("");
@@ -2275,12 +2274,14 @@ static void calibmode_prev(GtkWidget *widget, DisplayWindow *dw)
 
 static void event_next(GtkWidget *widget, DisplayWindow *dw)
 {
-	int new_event;
+	int new_event, curr_event;
 
-	if ( dw->curr_event == dw->ev_list->num_events-1 ) {
+	curr_event = find_event(dw->ev, dw->ev_list);
+
+	if ( curr_event >= dw->ev_list->num_events-1 ) {
 		new_event = 0;
 	} else {
-		new_event = dw->curr_event+1;
+		new_event = curr_event+1;
 	}
 	displaywindow_newevent(dw, new_event);
 }
@@ -2288,12 +2289,14 @@ static void event_next(GtkWidget *widget, DisplayWindow *dw)
 
 static void event_prev(GtkWidget *widget, DisplayWindow *dw)
 {
-	int new_event;
+	int new_event, curr_event;
 
-	if ( dw->curr_event == 0 ) {
+	curr_event = find_event(dw->ev, dw->ev_list);
+
+	if ( curr_event == 0 ) {
 		new_event = dw->ev_list->num_events-1;
 	} else {
-		new_event = dw->curr_event-1;
+		new_event = curr_event-1;
 	}
 	displaywindow_newevent(dw, new_event);
 }
@@ -2545,13 +2548,9 @@ static GtkWidget *displaywindow_addhdfgroup(struct hdfile *hdfile,
 		} else {
 
 			char *tmp;
-			struct event *ev = NULL;
 
-			if ( dw->multi_event ) {
-				ev = dw->ev_list->events[dw->curr_event];
-			}
 			item = gtk_menu_item_new_with_label(names[i]);
-			tmp = hdfile_get_string_value(hdfile, names[i], ev);
+			tmp = hdfile_get_string_value(hdfile, names[i], dw->ev);
 			if ( tmp != NULL ) {
 
 				GtkWidget *ss;
@@ -2984,11 +2983,12 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->calib_mode_curr_p = NULL;
 	dw->calib_mode_show_focus = 1;
 	dw->statusbar = NULL;
-	dw->multi_event = 0;
 	dw->ev_list = NULL;
+	dw->ev = NULL;
 	dw->rng = *gsl_rng_alloc(gsl_rng_mt19937);
 	FILE *fh;
 	unsigned long int seed;
+
 	fh = fopen("/dev/urandom", "r");
 	fread(&seed, sizeof(seed), 1, fh);
 	fclose(fh);
@@ -3021,7 +3021,14 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 
 	if ( dw->image->det != NULL && element != NULL ) {
 		impose_twod_geometry(dw, element);
-		dw->multi_event = 0;
+	}
+
+	if ( element != NULL ) {
+		if ( imagefile_get_type(dw->imagefile) != IMAGEFILE_HDF5 ) {
+			ERROR("Can only use -e/--image with HDF5 files\n");
+			return NULL;
+		}
+		hdfile_set_image(imagefile_get_hdfile(dw->imagefile), element);
 	}
 
 	if ( (dw->image->det != NULL)
@@ -3034,8 +3041,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 			return NULL;
 		}
 		hdfile = imagefile_get_hdfile(dw->imagefile);
-
-		dw->multi_event = 1;
 
 		dw->ev_list = fill_event_list(hdfile, dw->image->det);
 
@@ -3052,44 +3057,34 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 			free(dw->geom_filename);
 			free(dw);
 			return NULL;
-		} else {
-			dw->curr_event = 0;
 		}
 
-	}
-
-	if ( dw->image->det != NULL ) {
-
-		if ( dw->multi_event ) {
-			struct event *ev;
-			if ( event != NULL ) {
-				ev = get_event_from_event_string(event);
-				dw->curr_event = find_event(ev, dw->ev_list);
-				if ( dw->curr_event == dw->ev_list->num_events)
-				{
-					ERROR("Invalid event\n");
-					return NULL;
-				}
-			} else {
-				dw->curr_event = 0;
-				ev = dw->ev_list->events[dw->curr_event];
-			}
-			check = imagefile_read(dw->imagefile, dw->image, ev);
-		} else {
-			check = imagefile_read(dw->imagefile, dw->image, NULL);
-		}
-
-	} else {
-		if ( element != NULL ) {
-			if ( imagefile_get_type(dw->imagefile) != IMAGEFILE_HDF5 ) {
-				ERROR("-e/--image requiest an HDF5 file\n");
+		if ( event != NULL ) {
+			int curr_event;
+			dw->ev = get_event_from_event_string(event);
+			curr_event = find_event(dw->ev, dw->ev_list);
+			if ( curr_event == dw->ev_list->num_events ) {
+				ERROR("Invalid event\n");
 				return NULL;
 			}
-			hdfile_set_image(imagefile_get_hdfile(dw->imagefile),
-			                 element);
+		} else {
+			dw->ev = dw->ev_list->events[0];
 		}
-		check =	imagefile_read_simple(dw->imagefile, dw->image);
+
+		check = imagefile_read(dw->imagefile, dw->image, dw->ev);
+
+	} else {
+
+		dw->ev = NULL;
+
+		if ( dw->image->det == NULL ) {
+			check =	imagefile_read_simple(dw->imagefile, dw->image);
+		} else {
+			check = imagefile_read(dw->imagefile, dw->image, dw->ev);
+		}
+
 	}
+
 	if ( check ) {
 		ERROR("Couldn't load file\n");
 		imagefile_close(dw->imagefile);
@@ -3138,7 +3133,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	gtk_window_set_resizable(GTK_WINDOW(dw->window), TRUE);
 	gtk_widget_show_all(dw->window);
 
-	if ( !dw->multi_event ) {
+	if ( dw->ev_list == NULL ) {
 		set_events_menu_sensitivity(dw, FALSE);
 	}
 
