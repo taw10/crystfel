@@ -1179,7 +1179,7 @@ int hdfile_get_value(struct hdfile *f, const char *name, struct event *ev,
 	hsize_t m_offset[1];
 	hsize_t m_count[1];
 	hsize_t msdims[1];
-	hsize_t size[3];
+	hsize_t size[64];
 	herr_t r;
 	herr_t check;
 	int check_pe;
@@ -1215,7 +1215,8 @@ int hdfile_get_value(struct hdfile *f, const char *name, struct event *ev,
 	 * arrays with all dimensions 1, as well as zero-d arrays. */
 	sh = H5Dget_space(dh);
 	ndims = H5Sget_simple_extent_ndims(sh);
-	if ( ndims > 3 ) {
+	if ( ndims > 64 ) {
+		ERROR("Too many dimensions for hdfile_get_value\n");
 		H5Tclose(type);
 		H5Dclose(dh);
 		return 1;
