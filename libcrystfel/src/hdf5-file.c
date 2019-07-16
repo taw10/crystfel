@@ -2138,7 +2138,6 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 				snprintf(tmp, 255, "%f", buf_f);
 				return tmp;
 			} else {
-				ERROR("Failed to read value\n");
 				return NULL;
 			}
 			break;
@@ -2157,7 +2156,6 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 				return tmp;
 
 			} else {
-				ERROR("Failed to read value\n");
 				return NULL;
 			}
 			break;
