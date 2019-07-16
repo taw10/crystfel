@@ -100,8 +100,6 @@ typedef struct {
 
 	int             not_ready_yet;
 
-	int             simple;
-
 	struct imagefile *imagefile;
 	struct image	 *image;
 	int             peaktype;

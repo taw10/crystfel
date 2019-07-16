@@ -1555,7 +1555,7 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 
 	w =  gtk_ui_manager_get_widget(dw->ui,
 	                               "/ui/displaywindow/tools/calibmode");
-	if ( dw->simple ) {
+	if ( dw->geom_filename == NULL ) {
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 0);
 		return 0;
 	}
@@ -2959,7 +2959,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	dw->boostint = 1;
 	dw->motion_callback = 0;
 	dw->numbers_window = NULL;
-	dw->simple = 0;
 	dw->image = NULL;
 	dw->show_rings = show_rings;
 	dw->show_peaks = 0;
@@ -3084,7 +3083,6 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 			                 element);
 		}
 		check =	imagefile_read_simple(dw->imagefile, dw->image);
-		dw->simple = 1;
 	}
 	if ( check ) {
 		ERROR("Couldn't load file\n");
