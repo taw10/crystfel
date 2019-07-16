@@ -1166,53 +1166,8 @@ static int *make_badmask(int *flags, struct detector *det, float *data,
 }
 
 
-static int get_scalar_value(struct hdfile *f, const char *name, void *val,
-                            hid_t memtype)
-{
-	hid_t dh;
-	hid_t type;
-	hid_t class;
-	herr_t r;
-	int check;
-
-	if ( !hdfile_is_scalar(f, name, 1) ) return 1;
-
-	check = check_path_existence(f->fh, name);
-	if ( check == 0 ) {
-		ERROR("No such float field '%s'\n", name);
-		return 1;
-	}
-
-	dh = H5Dopen2(f->fh, name, H5P_DEFAULT);
-
-	type = H5Dget_type(dh);
-	class = H5Tget_class(type);
-
-	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
-		ERROR("Not a floating point or integer value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-
-	r = H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-	            H5P_DEFAULT, val);
-	if ( r < 0 )  {
-		ERROR("Couldn't read value.\n");
-		H5Tclose(type);
-		H5Dclose(dh);
-		return 1;
-	}
-
-	H5Tclose(type);
-	H5Dclose(dh);
-
-	return 0;
-}
-
-
-static int get_ev_based_value(struct hdfile *f, const char *name,
-                              struct event *ev, void *val, hid_t memtype)
+int hdfile_get_value(struct hdfile *f, const char *name, struct event *ev,
+                     void *val, hid_t memtype)
 {
 	hid_t dh;
 	hid_t type;
@@ -1233,7 +1188,7 @@ static int get_ev_based_value(struct hdfile *f, const char *name,
 	int i;
 	char *subst_name = NULL;
 
-	if ( ev->path_length != 0 ) {
+	if ( (ev != NULL) && (ev->path_length != 0) ) {
 		subst_name = retrieve_full_path(ev, name);
 	} else {
 		subst_name = strdup(name);
@@ -1272,29 +1227,26 @@ static int get_ev_based_value(struct hdfile *f, const char *name,
 	msdims[0] = 1;
 	ms = H5Screate_simple(1,msdims,NULL);
 
-	/* Check that the size in all dimensions is 1 */
-	/* or that one of the dimensions has the same */
-	/* size as the hyperplane events              */
+	/* Check that the size in all dimensions is 1
+	 * or that one of the dimensions has the same
+	 * size as the hyperplane events */
 
 	dim_flag = 0;
 
 	for ( i=0; i<ndims; i++ ) {
-		if ( size[i] != 1 ) {
-			if ( i == 0 && size[i] > ev->dim_entries[0] ) {
-				dim_flag = 1;
-			} else {
-				H5Tclose(type);
-				H5Dclose(dh);
-				return 1;
-			}
+		if ( size[i] == 1 ) continue;
+		if ( ( i==0 ) && (ev != NULL) && (size[i] > ev->dim_entries[0]) ) {
+			dim_flag = 1;
+		} else {
+			H5Tclose(type);
+			H5Dclose(dh);
+			return 1;
 		}
 	}
 
-	if ( dim_flag == 0  ) {
+	if ( dim_flag == 0 ) {
 
-		r = H5Dread(dh, memtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, val);
-
-		if ( r < 0 )  {
+		if ( H5Dread(dh, memtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, val) < 0 ) {
 			ERROR("Couldn't read value.\n");
 			H5Tclose(type);
 			H5Dclose(dh);
@@ -1350,17 +1302,6 @@ static int get_ev_based_value(struct hdfile *f, const char *name,
 	free(subst_name);
 
 	return 0;
-}
-
-
-int hdfile_get_value(struct hdfile *f, const char *name,
-                     struct event *ev, void *val, hid_t memtype)
-{
-	if ( ev == NULL ) {
-		return get_scalar_value(f, name, val, memtype);
-	} else {
-		return get_ev_based_value(f, name, ev, val, memtype);
-	}
 }
 
 
