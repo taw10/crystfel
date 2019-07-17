@@ -711,6 +711,67 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 }
 
 
+static void ewald_offset_partialities(Crystal *cryst)
+{
+	RefList *list;
+	Reflection *refl;
+	RefListIterator *iter;
+	double r0, m;
+	struct image *image;
+	UnitCell *cell;
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+
+	list = crystal_get_reflections(cryst);
+	if ( list == NULL ) {
+		ERROR("No reflections for partiality calculation!\n");
+		return;
+	}
+
+	image = crystal_get_image(cryst);
+	if ( image == NULL ) {
+		ERROR("No image for partiality calculation!\n");
+		return;
+	}
+
+	cell = crystal_get_cell(cryst);
+	if ( cell == NULL ) {
+		ERROR("No unit cell for partiality calculation!\n");
+		return;
+	}
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+
+	r0 = fabs(crystal_get_profile_radius(cryst));
+	m = crystal_get_mosaicity(cryst);
+
+	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double xl, yl, zl;
+		double q2, R, t;
+
+		get_symmetric_indices(refl, &h, &k, &l);
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		/* Radius of rlp profile */
+		q2 = xl*xl + yl*yl + zl*zl;
+		R = r0 + m * sqrt(q2);
+
+		/* Excitation error */
+		t = get_exerr(refl);
+
+	        set_partiality(refl, exp(-(t*t)/(R*R)));
+		set_lorentz(refl, 1.0);
+
+	}
+}
+
+
 /**
  * \param cryst A \ref Crystal
  * \param pmodel A \ref PartialityModel
@@ -733,6 +794,10 @@ void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
 
 		case PMODEL_XSPHERE :
 		ginn_spectrum_partialities(cryst);
+		break;
+
+		case PMODEL_OFFSET :
+		ewald_offset_partialities(cryst);
 		break;
 
 		case PMODEL_RANDOM :

@@ -1267,6 +1267,8 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_UNITY;
 		} else if ( strcmp(pmodel_str, "xsphere") == 0 ) {
 			pmodel = PMODEL_XSPHERE;
+		} else if ( strcmp(pmodel_str, "offset") == 0 ) {
+			pmodel = PMODEL_OFFSET;
 		} else if ( strcmp(pmodel_str, "random") == 0 ) {
 			pmodel = PMODEL_RANDOM;
 		} else {

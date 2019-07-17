@@ -59,6 +59,7 @@ typedef enum {
 
 	PMODEL_UNITY,   /**< Set all partialities and Lorentz factors to 1. */
 	PMODEL_XSPHERE, /**< Flat sphere model with super-Gaussian spectrum */
+	PMODEL_OFFSET,  /**< Ewald offset model for monochromatic beam */
 	PMODEL_RANDOM,  /**< Randomly assigned partialities */
 
 } PartialityModel;
