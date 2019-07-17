@@ -60,6 +60,7 @@ struct rf_priv
 	const RefList *full;
 	int serial;
 	int scaleflags;
+	PartialityModel pmodel;
 
 	Crystal *cr_tgt;        /**< Crystal to use for testing modifications */
 	struct image image_tgt; /**< Image structure to go with cr_tgt */
@@ -194,7 +195,7 @@ static double calc_residual(struct rf_priv *pv, struct rf_alteration alter,
 	}
 
 	update_predictions(pv->cr_tgt);
-	calculate_partialities(pv->cr_tgt, PMODEL_XSPHERE);
+	calculate_partialities(pv->cr_tgt, pv->pmodel);
 
 
 	return residual(pv->cr_tgt, pv->full, free, NULL, NULL);
@@ -264,7 +265,8 @@ static void reindex_cell(UnitCell *cell, SymOpList *amb, int idx)
 
 
 static void try_reindex(Crystal *crin, const RefList *full,
-                        SymOpList *sym, SymOpList *amb, int scaleflags)
+                        SymOpList *sym, SymOpList *amb, int scaleflags,
+                        PartialityModel pmodel)
 {
 	RefList *list;
 	Crystal *cr;
@@ -293,7 +295,7 @@ static void try_reindex(Crystal *crin, const RefList *full,
 		crystal_set_reflections(cr, list);
 
 		update_predictions(cr);
-		calculate_partialities(cr, PMODEL_XSPHERE);
+		calculate_partialities(cr, pmodel);
 
 		if ( scale_one_crystal(cr, full, scaleflags) ) return;
 		residual_flipped = residual(cr, full, 0, NULL, NULL);
@@ -442,7 +444,8 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 
 
 static void write_angle_grid(Crystal *cr, const RefList *full,
-                             signed int cycle, int serial, int scaleflags)
+                             signed int cycle, int serial, int scaleflags,
+                             PartialityModel pmodel)
 {
 	FILE *fh;
 	char fn[64];
@@ -456,6 +459,7 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 	priv.full = full;
 	priv.serial = serial;
 	priv.scaleflags = scaleflags;
+	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
 	priv.image_tgt = *crystal_get_image(cr);
 	spectrum = spectrum_new();
@@ -506,7 +510,8 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 
 
 static void write_radius_grid(Crystal *cr, const RefList *full,
-                              signed int cycle, int serial, int scaleflags)
+                              signed int cycle, int serial, int scaleflags,
+                              PartialityModel pmodel)
 {
 	FILE *fh;
 	char fn[64];
@@ -520,6 +525,7 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 	priv.full = full;
 	priv.serial = serial;
 	priv.scaleflags = scaleflags;
+	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
 	priv.image_tgt = *crystal_get_image(cr);
 	spectrum = spectrum_new();
@@ -570,10 +576,11 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 
 
 void write_gridscan(Crystal *cr, const RefList *full,
-                    signed int cycle, int serial, int scaleflags)
+                    signed int cycle, int serial, int scaleflags,
+                    PartialityModel pmodel)
 {
-	write_angle_grid(cr, full, cycle, serial, scaleflags);
-	write_radius_grid(cr, full, cycle, serial, scaleflags);
+	write_angle_grid(cr, full, cycle, serial, scaleflags, pmodel);
+	write_radius_grid(cr, full, cycle, serial, scaleflags, pmodel);
 }
 
 
@@ -653,7 +660,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	UnitCell *cell;
 	Spectrum *spectrum;
 
-	try_reindex(cr, full, sym, amb, scaleflags);
+	try_reindex(cr, full, sym, amb, scaleflags, pmodel);
 
 	zero_alter(&alter);
 
@@ -661,6 +668,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	priv.full = full;
 	priv.serial = serial;
 	priv.scaleflags = scaleflags;
+	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
 	priv.image_tgt = *crystal_get_image(cr);
 	spectrum = spectrum_new();
@@ -713,10 +721,10 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	/* Apply the final shifts */
 	apply_parameters(cr, cr, alter);
 	update_predictions(cr);
-	calculate_partialities(cr, PMODEL_XSPHERE);
+	calculate_partialities(cr, pmodel);
 
 	if ( write_logs ) {
-		write_gridscan(cr, full, cycle, serial, scaleflags);
+		write_gridscan(cr, full, cycle, serial, scaleflags, pmodel);
 		write_specgraph(cr, full, cycle, serial);
 		write_test_logs(cr, full, cycle, serial);
 	}

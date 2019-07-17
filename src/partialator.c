@@ -847,6 +847,7 @@ struct log_qargs
 	int n_crystals;
 	RefList *full;
 	int scaleflags;
+	PartialityModel pmodel;
 	int n_done;
 };
 
@@ -856,6 +857,7 @@ struct log_args
 	Crystal *cr;
 	RefList *full;
 	int scaleflags;
+	PartialityModel pmodel;
 	int iter;
 	int cnum;
 };
@@ -876,6 +878,7 @@ static void *get_log_task(void *vp)
 	task->iter = qargs->iter;
 	task->cnum = qargs->next;
 	task->scaleflags = qargs->scaleflags;
+	task->pmodel = qargs->pmodel;
 
 	qargs->next += 20;
 	return task;
@@ -887,7 +890,7 @@ static void write_logs(void *vp, int cookie)
 	struct log_args *args = vp;
 	write_specgraph(args->cr, args->full, args->iter, args->cnum);
 	write_gridscan(args->cr, args->full, args->iter, args->cnum,
-	               args->scaleflags);
+	               args->scaleflags, args->pmodel);
 	write_test_logs(args->cr, args->full, args->iter, args->cnum);
 }
 
@@ -904,7 +907,7 @@ static void done_log(void *vqargs, void *vp)
 
 static void write_logs_parallel(Crystal **crystals, int n_crystals,
                                 RefList *full, int iter, int n_threads,
-                                int scaleflags)
+                                int scaleflags, PartialityModel pmodel)
 {
 	struct log_qargs qargs;
 
@@ -915,6 +918,7 @@ static void write_logs_parallel(Crystal **crystals, int n_crystals,
 	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.scaleflags = scaleflags;
+	qargs.pmodel = pmodel;
 
 	run_threads(n_threads, write_logs, get_log_task, done_log, &qargs,
 	            n_crystals/20, 0, 0, 0);
@@ -1497,7 +1501,7 @@ int main(int argc, char *argv[])
 	if ( do_write_logs ) {
 		write_pgraph(full, crystals, n_crystals, 0, "");
 		write_logs_parallel(crystals, n_crystals, full, 0, nthreads,
-		                    scaleflags);
+		                    scaleflags, pmodel);
 	}
 
 	/* Iterate */
@@ -1580,7 +1584,7 @@ int main(int argc, char *argv[])
 	if ( do_write_logs ) {
 		write_pgraph(full, crystals, n_crystals, -1, "");
 		write_logs_parallel(crystals, n_crystals, full, -1, nthreads,
-		                    scaleflags);
+		                    scaleflags, pmodel);
 	}
 
 	/* Output results */

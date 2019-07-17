@@ -64,7 +64,8 @@ extern void refine_all(Crystal **crystals, int n_crystals,
                        SymOpList *sym, SymOpList *amb, int scaleflags);
 
 extern void write_gridscan(Crystal *cr, const RefList *full,
-                           int cycle, int serial, int scaleflags);
+                           int cycle, int serial, int scaleflags,
+                           PartialityModel model);
 
 extern void write_specgraph(Crystal *crystal, const RefList *full,
                             signed int cycle, int serial);
