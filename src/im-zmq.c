@@ -216,7 +216,6 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
-	image->num_peaks = num_peaks;
 
 	for ( pk=0; pk<num_peaks; pk++ ) {
 
