@@ -1178,6 +1178,8 @@ enum imagefile_type imagefile_get_type(struct imagefile *f)
 
 struct hdfile *imagefile_get_hdfile(struct imagefile *f)
 {
+	if ( f == NULL ) return NULL;
+
 	if ( f->type != IMAGEFILE_HDF5 ) {
 		ERROR("Not an HDF5 file!\n");
 		return NULL;

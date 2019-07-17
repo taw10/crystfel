@@ -220,6 +220,16 @@ Put the temporary folder under \fIpath\fR.
 .PD
 Wait at most \fIn\fR seconds for each image file in the input list to be created before trying to process it.  This is useful for some automated processing pipelines.  It obviously only really works for single-frame files.  If a file exists but is not readable when this option is set non-zero, a second attempt will be made after ten seconds.  This is to allow for incompletely written files.  A value of -1 means to wait forever.  The default value is \fB--wait-for-file=0\fR.
 
+.PD 0
+.IP \fB--zmq-msgpack\fR
+.PD
+Receive data as MessagePack objects over ZeroMQ.  The input "file list", given with \fB--input\fR or \fB-i\fR, should contain a socket URL suitable for passing to zmq_connect(), such as "tcp://127.0.0.1:12322".  At the moment, only one URL can be given, but this may change in future.
+
+.IP \fB--no-image-data\fR
+.PD
+Do not load the actual image data (or bad pixel masks), only the metadata.  This allows you to check if patterns can be indexed, without high data bandwidth requirements.  Obviously, any feature requiring the image data, especially peak search procedures and integration, cannot be used in this case.  At the moment, this option only works when \fB--zmq-msgpack\fR is also used.  You will probably want to use \fB--peaks=msgpack\fR.
+
+
 .SH PEAK SEARCH OPTIONS
 .PD 0
 .IP \fB--peaks=\fR\fImethod\fR

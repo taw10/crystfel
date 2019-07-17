@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2019 Thomas White <taw@physics.org>
  *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
  *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
@@ -37,6 +37,10 @@
 
 struct index_args;
 
+#ifdef HAVE_MSGPACK
+#include <msgpack.h>
+#endif
+
 #include "integration.h"
 #include "im-sandbox.h"
 #include "time-accounts.h"
@@ -51,6 +55,7 @@ enum {
 	PEAK_ZAEF,
 	PEAK_HDF5,
 	PEAK_CXI,
+	PEAK_MSGPACK,
 };
 
 
@@ -114,6 +119,7 @@ struct index_args
 	struct felix_options felix_opts;
 	Spectrum *spectrum;
 	signed int wait_for_file; /* -1 means wait forever */
+	int no_image_data;
 };
 
 
@@ -122,6 +128,11 @@ struct pattern_args
 {
 	/* "Input" */
 	struct filename_plus_event *filename_p_e;
+#ifdef HAVE_MSGPACK
+	msgpack_object *msgpack_obj;
+#else
+	void *msgpack_obj;
+#endif
 };
 
 

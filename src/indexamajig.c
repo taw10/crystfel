@@ -86,9 +86,11 @@ static void show_help(const char *s)
 "     --profile             Show timing data for performance monitoring\n"
 "     --temp-dir=<path>     Put the temporary folder under <path>\n"
 "     --wait-for-file=<n>   Time to wait for each file before processing\n"
+"     --zmq-msgpack         Receive data in MessagePack format over ZMQ\n"
+"     --no-image-data       Do not load image data (from ZMQ)\n"
 "\nPeak search options:\n\n"
-"     --peaks=<method>      Peak search method (zaef,peakfinder8,peakfinder9,hdf5,cxi)\n"
-"                            Default: zaef\n"
+"     --peaks=<method>      Peak search method.  Default: zaef\n"
+"                            (zaef,peakfinder8,peakfinder9,hdf5,cxi,msgpack)\n"
 "     --peak-radius=<r>     Integration radii for peak search\n"
 "     --min-peaks=<n>       Minimum number of peaks for indexing\n"
 "     --hdf5-peaks=<p>      Find peaks table in HDF5 file here\n"
@@ -287,6 +289,8 @@ int main(int argc, char *argv[])
 	int if_retry = 1;
 	int serial_start = 1;
 	char *spectrum_fn = NULL;
+	int zmq = 0;
+	char *zmq_address = NULL;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -344,6 +348,7 @@ int main(int argc, char *argv[])
 	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
 	iargs.profile = 0;
+	iargs.no_image_data = 0;
 	iargs.taketwo_opts.member_thresh = -1;
 	iargs.taketwo_opts.len_tol = -1.0;
 	iargs.taketwo_opts.angle_tol = -1.0;
@@ -405,6 +410,8 @@ int main(int argc, char *argv[])
 		{"no-multi",           0, &if_multi,                 0},
 		{"multi",              0, &if_multi,                 1},
 		{"overpredict",        0, &iargs.overpredict,        1},
+		{"zmq-msgpack",        0, &zmq,                      1},
+		{"no-image-data",      0, &iargs.no_image_data,      1},
 
 		/* Long-only options which don't actually do anything */
 		{"no-sat-corr",        0, &iargs.satcorr,            0},
@@ -975,6 +982,8 @@ int main(int argc, char *argv[])
 		iargs.peaks = PEAK_CXI;
 	} else if ( strcmp(speaks, "peakfinder9") == 0 ) {
 		iargs.peaks = PEAK_PEAKFINDER9;
+	} else if ( strcmp(speaks, "msgpack") == 0 ) {
+		iargs.peaks = PEAK_MSGPACK;
 	} else {
 		ERROR("Unrecognised peak detection method '%s'\n", speaks);
 		return 1;
@@ -1269,8 +1278,22 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
+	if ( zmq ) {
+		char line[1024];
+		char *rval;
+		rval = fgets(line, 1024, fh);
+		if ( rval == NULL ) {
+			ERROR("Failed to read ZMQ server/port from input.\n");
+			return 1;
+		}
+		chomp(line);
+		zmq_address = strdup(line);
+		/* In future, read multiple addresses and hand them out
+		 * evenly to workers */
+	}
+
 	r = create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	                   st, tmpdir, serial_start);
+	                   st, tmpdir, serial_start, zmq_address);
 
 	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);
