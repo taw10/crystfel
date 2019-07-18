@@ -733,7 +733,9 @@ int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
 	}
 
 	/* 0 means failed test, 1 means passed test */
-	return ((double)n_sane / n_feat) >= 0.5;
+	return (n_sane > 70)
+	    || ((n_sane > 25) && (n_sane > 0.3*n_feat))
+	    || (n_sane > 0.4*n_feat);
 }
 
 
