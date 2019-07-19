@@ -596,8 +596,6 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
-	image->num_peaks = 0;
-	image->num_saturated_peaks = 0;
 
 	accuracy_consts.minSNR_biggestPixel = min_snr_biggest_pix;
 	accuracy_consts.minSNR_peakPixel = min_snr_peak_pix;
@@ -643,10 +641,8 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 		                             &det_size_one_panel);
 
 		peakList.peakCount = 0;
-		image->num_peaks += peakFinder9_onePanel_noSlab(data_copy,
-		                                                &accuracy_consts,
-		                                                &det_size_one_panel,
-		                                                &peakList);
+		peakFinder9_onePanel_noSlab(data_copy, &accuracy_consts,
+		                            &det_size_one_panel, &peakList);
 
 		for ( peak_number=0; peak_number<peakList.peakCount; peak_number++) {
 			image_add_feature(image->features,
