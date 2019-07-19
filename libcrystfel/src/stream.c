@@ -1446,7 +1446,7 @@ static void read_geometry_file(Stream *st)
 	int done = 0;
 	size_t len = 0;
 	int started = 0;
-	const size_t max_geom_len = 16*1024;
+	const size_t max_geom_len = 64*1024;
 
 	st->geometry_file = malloc(max_geom_len);
 	if ( st->geometry_file == NULL ) {
