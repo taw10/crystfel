@@ -29,6 +29,8 @@ If the ambiguity operator is known (or, equivalently, the actual and apparent sy
 
 The default behaviour is to compare each crystal to every other crystal.  This leads to a computational complexity proportional to the square of the number of crystals.  If the number of crystals is large, the number of comparisons can be limited without compromising the algorithm much.  In this case, the crystals to correlate against will be selected randomly.
 
+By default, the reflections will be compared and correlated in three resolution bins: up to 10, 10-2.5 and about 2.5 Angstrom.  You can override this by using \fB--highres\fR and \fB--lowres\fR, in which case only one resolution bin will be used for all reflections.
+
 
 .SH OPTIONS
 .PD 0

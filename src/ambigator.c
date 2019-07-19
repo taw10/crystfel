@@ -84,18 +84,21 @@ static void show_help(const char *s)
 struct flist
 {
 	int n;
+	int n_groups;
 
 	unsigned int *s;
+	unsigned int *group;
 	float *i;
 
 	unsigned int *s_reidx;
+	unsigned int *group_reidx;
 	float *i_reidx;
 };
 
 
 static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
                                      UnitCell *cell, double rmin, double rmax,
-                                     SymOpList *amb)
+                                     SymOpList *amb, int auto_res)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -114,6 +117,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 		signed int ha, ka, la;
 		Reflection *cr;
 		double res;
+		int group = 0;
 
 		get_indices(refl, &h, &k, &l);
 
@@ -123,6 +127,15 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			res = 2.0*resolution(cell, h, k, l);
 			if ( res < rmin ) continue;
 			if ( res > rmax ) continue;
+			if ( auto_res ) {
+				if ( res < 1e9 ) {
+					group = 0; /* inf <= res < 10 Å */
+				} else if ( (res>2e9) && (res<4e9) ) {
+					group = 1; /* 5 < res < 2.5 Å */
+				} else if ( res > 4e9 ) {
+					group = 2; /* 2.5 < res < 0 Å */
+				} else continue;  /* NB gap in ranges */
+			}
 		}
 
 		get_asymm(sym, h, k, l, &ha, &ka, &la);
@@ -154,6 +167,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			set_intensity(cr, (r*i + get_intensity(refl))/(r+1));
 			set_redundancy(cr, r+1);
 		}
+		set_flag(cr, group);
 	}
 
 	f = malloc(sizeof(struct flist));
@@ -162,13 +176,22 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 		return NULL;
 	}
 
+	if ( auto_res ) {
+		f->n_groups = 3;
+	} else {
+		f->n_groups = 1;
+	}
+
 	n = num_reflections(asym);
 	f->s = malloc(n*sizeof(unsigned int));
 	f->s_reidx = malloc(n*sizeof(unsigned int));
 	f->i = malloc(n*sizeof(float));
 	f->i_reidx = malloc(n*sizeof(float));
+	f->group = malloc(n*sizeof(unsigned int));
+	f->group_reidx = malloc(n*sizeof(unsigned int));
 	if ( (f->s == NULL) || (f->i == NULL)
-	   || (f->s_reidx == NULL) || (f->i_reidx == NULL) ) {
+	   || (f->s_reidx == NULL) || (f->i_reidx == NULL)
+	   || (f->group_reidx == NULL) || (f->group == NULL) ) {
 		ERROR("Failed to allocate flist\n");
 		return NULL;
 	}
@@ -182,6 +205,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 
 		get_indices(refl, &h, &k, &l);
 		f->s[f->n] = SERIAL(h, k, l);
+		f->group[f->n] = get_flag(refl);
 
 		f->i[f->n] = get_intensity(refl);
 		f->n++;
@@ -222,8 +246,10 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			signed int h, k, l;
 			get_indices(refl, &h, &k, &l);
 			f->s_reidx[n] = SERIAL(h, k, l);
+			f->group_reidx[n] = get_flag(refl);
 			f->i_reidx[n++] = get_intensity(refl);
 		}
+		assert(f->n == n);
 
 		reflist_free(reidx);
 	}
@@ -234,7 +260,8 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 }
 
 
-static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
+static float corr_group(struct flist *a, struct flist *b, int *pn, int a_reidx,
+                        int group)
 {
 	float s_xy = 0.0;
 	float s_x = 0.0;
@@ -248,13 +275,16 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 	int done = 0;
 	unsigned int *sa;
 	float *ia;
+	unsigned int *ga;
 
 	if ( a_reidx ) {
 		sa = a->s_reidx;
 		ia = a->i_reidx;
+		ga = a->group_reidx;
 	} else {
 		sa = a->s;
 		ia = a->i;
+		ga = a->group;
 	}
 
 	if ( (a->n == 0) || (b->n == 0) ) {
@@ -282,17 +312,22 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 
 		if ( sa[ap] == b->s[bp] ) {
 
-			float aint, bint;
+			if ( ga[ap] == group ) {
 
-			aint = ia[ap];
-			bint = b->i[bp];
+				float aint, bint;
 
-			s_xy += aint*bint;
-			s_x += aint;
-			s_y += bint;
-			s_x2 += aint*aint;
-			s_y2 += bint*bint;
-			n++;
+				aint = ia[ap];
+				bint = b->i[bp];
+
+				s_xy += aint*bint;
+				s_x += aint;
+				s_y += bint;
+				s_x2 += aint*aint;
+				s_y2 += bint*bint;
+				n++;
+
+			}
+
 
 			if ( ++ap == a->n ) break;
 			if ( ++bp == b->n ) break;
@@ -308,6 +343,20 @@ static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
 	if ( (t1 <= 0.0) || (t2 <= 0.0) ) return 0.0;
 
 	return (s_xy - s_x*s_y/n) / sqrt(t1*t2);
+}
+
+
+static float corr(struct flist *a, struct flist *b, int *pn, int a_reidx)
+{
+	int i;
+	double total = 0.0;
+
+	for ( i=0; i<a->n_groups; i++ ) {
+		double v = corr_group(a, b, pn, a_reidx, i);
+		/* NaN means no reflections in this range for this pair */
+		if ( !isnan(v) ) total += v;
+	}
+	return total/a->n_groups;
 }
 
 
@@ -1008,6 +1057,7 @@ int main(int argc, char *argv[])
 	int config_random = 0;
 	char *operator = NULL;
 	char *corr_matrix_fn = NULL;
+	int auto_res = 1;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1076,6 +1126,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			rmax = 1.0 / (highres/1e10);
+			auto_res = 0;
 			break;
 
 			case 3 :
@@ -1084,6 +1135,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			rmin = 1.0 / (lowres/1e10);
+			auto_res = 0;
 			break;
 
 			case 4 :
@@ -1242,7 +1294,7 @@ int main(int argc, char *argv[])
 			crystals[n_crystals] = asymm_and_merge(list, s_sym,
 			                                       cell,
 			                                       rmin, rmax,
-			                                       amb);
+			                                       amb, auto_res);
 			if ( crystals[n_crystals] == NULL ) {
 				ERROR("asymm_and_merge failed!\n");
 				return 1;
