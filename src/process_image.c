@@ -375,6 +375,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	/* Set beam spectrum for pink beam data */
 	if ( iargs->spectrum != NULL ) {
 		image.spectrum = iargs->spectrum;
+	} else {
+		image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 	}
 
 	if ( image_feature_count(image.features) < iargs->min_peaks ) {
