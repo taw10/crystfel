@@ -1719,8 +1719,8 @@ static double moduli_check(double ax, double ay, double az,
 /**
  * \param cell1: A UnitCell
  * \param cell2: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in reciprocal axis lengths
- * \param atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param ltl: Maximum allowable fractional difference in axis lengths
+ * \param atl: Maximum allowable difference in angles (in radians)
  *
  * Compare the two unit cells.  If the axes match in length (to within
  * fractional difference \p ltl) and the axes are aligned to within \p atl radians,
@@ -1739,26 +1739,26 @@ static double moduli_check(double ax, double ay, double az,
 int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
                                             const double ltl, const double atl)
 {
-	double asx1, asy1, asz1, bsx1, bsy1, bsz1, csx1, csy1, csz1;
-	double asx2, asy2, asz2, bsx2, bsy2, bsz2, csx2, csy2, csz2;
+	double ax1, ay1, az1, bx1, by1, bz1, cx1, cy1, cz1;
+	double ax2, ay2, az2, bx2, by2, bz2, cx2, cy2, cz2;
 
 	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
 
-	cell_get_cartesian(cell1, &asx1, &asy1, &asz1,
-	                          &bsx1, &bsy1, &bsz1,
-	                          &csx1, &csy1, &csz1);
+	cell_get_cartesian(cell1, &ax1, &ay1, &az1,
+	                          &bx1, &by1, &bz1,
+	                          &cx1, &cy1, &cz1);
 
-	cell_get_cartesian(cell2, &asx2, &asy2, &asz2,
-	                          &bsx2, &bsy2, &bsz2,
-	                          &csx2, &csy2, &csz2);
+	cell_get_cartesian(cell2, &ax2, &ay2, &az2,
+	                          &bx2, &by2, &bz2,
+	                          &cx2, &cy2, &cz2);
 
-	if ( angle_between(asx1, asy1, asz1, asx2, asy2, asz2) > atl ) return 0;
-	if ( angle_between(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > atl ) return 0;
-	if ( angle_between(csx1, csy1, csz1, csx2, csy2, csz2) > atl ) return 0;
+	if ( angle_between(ax1, ay1, az1, ax2, ay2, az2) > atl ) return 0;
+	if ( angle_between(bx1, by1, bz1, bx2, by2, bz2) > atl ) return 0;
+	if ( angle_between(cx1, cy1, cz1, cx2, cy2, cz2) > atl ) return 0;
 
-	if ( moduli_check(asx1, asy1, asz1, asx2, asy2, asz2) > ltl ) return 0;
-	if ( moduli_check(bsx1, bsy1, bsz1, bsx2, bsy2, bsz2) > ltl ) return 0;
-	if ( moduli_check(csx1, csy1, csz1, csx2, csy2, csz2) > ltl ) return 0;
+	if ( moduli_check(ax1, ay1, az1, ax2, ay2, az2) > ltl ) return 0;
+	if ( moduli_check(bx1, by1, bz1, bx2, by2, bz2) > ltl ) return 0;
+	if ( moduli_check(cx1, cy1, cz1, cx2, cy2, cz2) > ltl ) return 0;
 
 	return 1;
 }
