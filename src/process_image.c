@@ -492,6 +492,11 @@ out:
 	}
 	free(image.crystals);
 
+	/* Free spectrum only if we generated it for this image */
+	if ( iargs->spectrum == NULL ) {
+		spectrum_free(image.spectrum);
+	}
+
 	for ( i=0; i<image.det->n_panels; i++ ) {
 		free(image.dp[i]);
 		free(image.bad[i]);
