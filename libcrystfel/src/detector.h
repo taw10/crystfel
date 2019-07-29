@@ -64,15 +64,6 @@ struct rigid_group
 	char *name;
 	struct panel **panels;
 	int n_panels;
-
-	/* Updates to panel position calculated during integration */
-	double d_fsx;
-	double d_ssx;
-	double d_cnx;
-	double d_fsy;
-	double d_ssy;
-	double d_cny;
-	int have_deltas;
 };
 
 
