@@ -1780,6 +1780,16 @@ void free_detector_geometry(struct detector *det)
 }
 
 
+static int rg_number(const struct detector *det, const struct rigid_group *rg)
+{
+	int i;
+	for ( i=0; i<det->n_rigid_groups; i++ ) {
+		if ( det->rigid_groups[i] == rg ) return i;
+	}
+	return det->n_rigid_groups;
+}
+
+
 struct detector *copy_geom(const struct detector *in)
 {
 	struct detector *out;
@@ -1796,16 +1806,18 @@ struct detector *copy_geom(const struct detector *in)
 	out->bad = malloc(out->n_bad * sizeof(struct badregion));
 	memcpy(out->bad, in->bad, out->n_bad * sizeof(struct badregion));
 
-	out->n_rigid_groups = 0;
-	out->rigid_groups = NULL;
-	out->n_rg_collections = 0;
-	out->rigid_group_collections = NULL;
+	/* Copy all fields */
+	*out = *in;
 
+	/* Copy the panels */
 	for ( i=0; i<out->n_panels; i++ ) {
 
 		struct panel *p;
 
+		/* Copy all fields */
 		p = &out->panels[i];
+
+		/* Now fix up everything involving pointers... */
 
 		if ( p->clen_from != NULL ) {
 			/* Make a copy of the clen_from fields unique to this
@@ -1837,24 +1849,6 @@ struct detector *copy_geom(const struct detector *in)
 
 		}
 
-	}
-
-	for ( i=0; i<in->n_panels; i++ ) {
-
-		int rgi;
-
-		for ( rgi=0; rgi<in->n_rigid_groups; rgi++ ) {
-
-			if ( panel_is_in_rigid_group(in->rigid_groups[rgi],
-			                             &in->panels[i]) )
-			{
-				struct rigid_group *g;
-				g = find_or_add_rg(out,
-				                   in->rigid_groups[rgi]->name);
-				add_to_rigid_group(g, &out->panels[i]);
-			}
-		}
-
 		if ( &in->panels[i] == in->furthest_out_panel ) {
 			out->furthest_out_panel = &out->panels[i];
 		}
@@ -1862,27 +1856,67 @@ struct detector *copy_geom(const struct detector *in)
 			out->furthest_in_panel = &out->panels[i];
 		}
 
+	}
+
+	/* Copy all the rigid groups */
+	out->rigid_groups = malloc(out->n_rigid_groups*sizeof(struct rigid_group));
+	if ( out->rigid_groups == NULL ) return NULL;
+	for ( i=0; i<out->n_rigid_groups; i++ ) {
+
+		struct rigid_group *inrg;
+		struct rigid_group *rg;
+		int j;
+
+		rg = malloc(sizeof(struct rigid_group));
+		if ( rg == NULL ) return NULL;
+
+		out->rigid_groups[i] = rg;
+
+		inrg = in->rigid_groups[i];
+
+		rg->name = strdup(inrg->name);
+		if ( rg->name == NULL ) return NULL;
+
+		rg->n_panels = inrg->n_panels;
+		rg->panels = malloc(inrg->n_panels*sizeof(struct panel *));
+		if ( rg->panels == NULL ) return NULL;
+
+		for ( j=0; j<rg->n_panels; j++ ) {
+			int k = panel_number(in, inrg->panels[j]);
+			rg->panels[j] = &out->panels[k];
+		}
 
 	}
 
-	for ( i=0; i<in->n_rigid_groups; i++ ) {
+	/* Copy all the rigid group collections */
+	out->rigid_group_collections = malloc(out->n_rg_collections*sizeof(struct rg_collection));
+	if ( out->rigid_group_collections == NULL ) return NULL;
+	for ( i=0; i<out->n_rg_collections; i++ ) {
 
-		int rgci;
+		struct rg_collection *inrgc;
+		struct rg_collection *rgc;
+		int j;
 
-		for ( rgci=0; rgci<in->n_rg_collections; rgci++ ) {
+		rgc = malloc(sizeof(struct rg_collection));
+		if ( rgc == NULL ) return NULL;
 
-			const char *n = in->rigid_group_collections[rgci]->name;
+		out->rigid_group_collections[i] = rgc;
 
-			if ( rigid_group_is_in_collection(
-			                      in->rigid_group_collections[rgci],
-			                      in->rigid_groups[i]) )
-			{
-				struct rg_collection *rgcoll;
-				rgcoll = find_or_add_rg_coll(out, n);
-				add_to_rigid_group_coll(rgcoll,
-				                        out->rigid_groups[i]);
-			}
+		inrgc = in->rigid_group_collections[i];
+
+		rgc->name = strdup(inrgc->name);
+		if ( rgc->name == NULL ) return NULL;
+
+		rgc->n_rigid_groups = inrgc->n_rigid_groups;
+		rgc->rigid_groups = malloc(rgc->n_rigid_groups*sizeof(struct rg_collection));
+		if ( rgc->rigid_groups == NULL ) return NULL;
+
+		for ( j=0; j<rgc->n_rigid_groups; j++ ) {
+			int k = rg_number(in, inrgc->rigid_groups[j]);
+			if ( k == in->n_rigid_groups ) return NULL;
+			rgc->rigid_groups[j] = out->rigid_groups[k];
 		}
+
 	}
 
 	return out;
