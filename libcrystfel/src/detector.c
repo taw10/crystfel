@@ -506,7 +506,7 @@ struct panel *find_orig_panel(struct detector *det, double fs, double ss)
 }
 
 
-int panel_number(struct detector *det, struct panel *p)
+int panel_number(const struct detector *det, const struct panel *p)
 {
 	int pn;
 

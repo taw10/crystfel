@@ -256,7 +256,7 @@ extern struct panel *find_orig_panel(struct detector *det,
 extern signed int find_orig_panel_number(struct detector *det,
                                          double fs, double ss);
 
-extern int panel_number(struct detector *det, struct panel *p);
+extern int panel_number(const struct detector *det, const struct panel *p);
 
 extern struct detector *get_detector_geometry(const char *filename,
                                               struct beam_params *beam);
