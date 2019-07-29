@@ -319,14 +319,14 @@ static void show_simple_ring(cairo_t *cr, DisplayWindow *dw,
 }
 
 
+/* Return the rigid group for this panel */
 static struct rigid_group *find_corresponding_rigid_group(DisplayWindow *dw,
-                                                          struct panel *p) {
-
+                                                          struct panel *p)
+{
 	int gi;
 
-	for (gi=0; gi<dw->rg_coll->n_rigid_groups; gi++) {
-		if (panel_is_in_rigid_group(dw->rg_coll->rigid_groups[gi],
-		    p)) {
+	for ( gi=0; gi<dw->rg_coll->n_rigid_groups; gi++ ) {
+		if ( panel_is_in_rigid_group(dw->rg_coll->rigid_groups[gi], p) ) {
 			return dw->rg_coll->rigid_groups[gi];
 		}
 	}
@@ -353,9 +353,8 @@ static void maybe_draw_focus(DisplayWindow *dw, cairo_t *cr, int i,
 		break;
 
 		case CALIBMODE_GROUPS:
-		rg = find_corresponding_rigid_group(dw,
-		                                    &dw->image->det->panels[i]);
-		if (rg == dw->calib_mode_curr_rg) {
+		rg = find_corresponding_rigid_group(dw, &dw->image->det->panels[i]);
+		if ( rg == dw->calib_mode_curr_rg ) {
 			draw_calib_focus_rectangle(cr, basic_m, dw, i);
 			cairo_stroke(cr);
 		}
@@ -1055,7 +1054,7 @@ static gint displaywindow_set_newevent_response_ac(GtkWidget *widget,
 }
 
 
-/* Create a window to ask the user for a new intensity boost factor */
+/* Create a window to ask the user for a new event ID to show */
 static gint displaywindow_set_newevent(GtkWidget *widget, DisplayWindow *dw)
 {
 	EventDialog *ed;
@@ -1560,24 +1559,23 @@ static gint displaywindow_set_calibmode(GtkWidget *d, DisplayWindow *dw)
 	GtkWidget *w, *vbox;
 	int val;
 
-	w =  gtk_ui_manager_get_widget(dw->ui,
-	                               "/ui/displaywindow/tools/calibmode");
+	w =  gtk_ui_manager_get_widget(dw->ui, "/ui/displaywindow/tools/calibmode");
 	if ( dw->geom_filename == NULL ) {
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 0);
 		return 0;
 	}
 
-	if (dw->rg_coll_name == NULL) {
+	if ( dw->rg_coll_name == NULL ) {
 		dw->rg_coll = dw->image->det->rigid_group_collections[0];
-		if (dw->rg_coll == NULL) {
-			ERROR("Cannot find asuitable rigid group collection.\n");
+		if ( dw->rg_coll == NULL ) {
+			ERROR("Cannot find a suitable rigid group collection.\n");
 			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 0);
 			return 0;
 		}
 	} else {
 		dw->rg_coll = find_rigid_group_collection_by_name(dw->image->det,
-		              dw->rg_coll_name);
-		if (dw->rg_coll == NULL) {
+		                                                  dw->rg_coll_name);
+		if ( dw->rg_coll == NULL ) {
 			ERROR("Cannot find rigid group collection: %s\n",
 			      dw->rg_coll_name);
 			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 0);
@@ -3004,7 +3002,7 @@ DisplayWindow *displaywindow_open(char *filename, char *geom_filename,
 	} else {
 		dw->geom_filename = NULL;
 	}
-	if (rgcoll_name != NULL) {
+	if ( rgcoll_name != NULL ) {
 		dw->rg_coll_name = strdup(rgcoll_name);
 	} else {
 		dw->rg_coll_name = NULL;

@@ -211,14 +211,14 @@ struct detector
 	struct badregion *bad;
 	int               n_bad;
 
-	unsigned int       mask_bad;
-	unsigned int       mask_good;
+	unsigned int      mask_bad;
+	unsigned int      mask_good;
 
 	struct rigid_group **rigid_groups;
-	int                n_rigid_groups;
+	int                  n_rigid_groups;
 
 	struct rg_collection **rigid_group_collections;
-	int               	 n_rg_collections;
+	int                    n_rg_collections;
 
 	/* Location of the pixel furthest away from the beam position, which
 	 * will have the largest value of 2theta regardless of camera length
