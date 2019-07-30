@@ -73,6 +73,11 @@ struct _stream
 
 	int old_indexers;  /* True if the stream reader encountered a deprecated
 	                    * indexing method */
+
+	int in_chunk;  /* True if a chunk start marker has been "accidentally"
+	                * encountered, so read_chunk() should assume a chunk is
+	                * already in progress instead of looking for another
+	                * marker */
 };
 
 
@@ -910,6 +915,14 @@ static int find_start_of_chunk(Stream *st)
 	char *rval = NULL;
 	char line[1024];
 
+	/* Perhaps read_geometry() encountered a chunk start marker instead of a
+	 * geometry file.  In that case, we're already in a chunk, so this is
+	 * easy. */
+	if ( st->in_chunk ) {
+		st->in_chunk = 0;
+		return 0;
+	}
+
 	do {
 
 		rval = fgets(line, 1023, st->fh);
@@ -1452,10 +1465,14 @@ static void read_geometry_file(Stream *st)
 			continue;
 		}
 
-		if ( (strcmp(line, CHUNK_START_MARKER"\n") == 0)
-		  || (strcmp(line, GEOM_END_MARKER"\n") == 0) )
-		{
+		if ( strcmp(line, GEOM_END_MARKER"\n") == 0 ) {
 			done = 1;
+			continue;
+		}
+
+		if ( strcmp(line, CHUNK_START_MARKER"\n") == 0 ) {
+			done = 1;
+			st->in_chunk = 1;
 			continue;
 		}
 
@@ -1485,6 +1502,7 @@ Stream *open_stream_for_read(const char *filename)
 	st->old_indexers = 0;
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
+	st->in_chunk = 0;
 
 	if ( strcmp(filename, "-") == 0 ) {
 		st->fh = stdin;
@@ -1556,6 +1574,7 @@ Stream *open_stream_fd_for_write(int fd)
 	st->old_indexers = 0;
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
+	st->in_chunk = 0;
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
@@ -1608,6 +1627,7 @@ Stream *open_stream_for_write_4(const char *filename,
 	st->old_indexers = 0;
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
+	st->in_chunk = 0;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1674,6 +1694,7 @@ Stream *open_stream_for_write_2(const char *filename,
 	st->old_indexers = 0;
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
+	st->in_chunk = 0;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
