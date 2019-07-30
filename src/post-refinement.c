@@ -168,7 +168,7 @@ static void apply_parameters(const Crystal *cr_orig, Crystal *cr_tgt,
 
 	g.kcen = 1.0/image->lambda;
 	g.sigma = image->bw/image->lambda;
-	g.height = 1;
+	g.area = 1;
 	spectrum_set_gaussians(image->spectrum, &g, 1);
 }
 

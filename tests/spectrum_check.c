@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 	s = spectrum_new();
 	gauss.kcen = ph_eV_to_k(9000);
 	gauss.sigma = ph_eV_to_k(100);
-	gauss.height = 1.0;
+	gauss.area = 1.0;
 	spectrum_set_gaussians(s, &gauss, 1);
 	r += check_integral(s, 100);
 	spectrum_free(s);

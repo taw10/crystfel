@@ -126,7 +126,7 @@ int spectrum_get_num_gaussians(Spectrum *s)
  *
  * If \p n is greater than or equal to the number of Gaussians in the spectrum,
  * or if the spectrum is not represented as Gaussians, the returned Gaussian
- * will have zero height.
+ * will have zero area.
  *
  * \returns The \p n-th Gaussian.
  */
@@ -136,7 +136,7 @@ struct gaussian spectrum_get_gaussian(Spectrum *s, int n)
 	if ( (s->rep != SPEC_GAUSSIANS) || (n >= s->n_gaussians) ) {
 		g.kcen = 0.0;
 		g.sigma = 0.0;
-		g.height = 0.0;
+		g.area = 0.0;
 	} else {
 		g = s->gaussians[n];
 	}
@@ -174,10 +174,10 @@ double spectrum_get_density_at_k(Spectrum *s, double k)
 		double total = 0.0;
 		int i;
 		for ( i=0; i<s->n_gaussians; i++ ) {
-			double a = s->gaussians[i].height;
+			double a = s->gaussians[i].area;
 			double b = s->gaussians[i].kcen;
 			double c = s->gaussians[i].sigma;
-			total += a*exp(-(k-b)*(k-b)/(2.0*c*c));
+			total += a*exp(-(k-b)*(k-b)/(2.0*c*c)) / (c*sqrt(2.0*M_PI));
 		}
 		return total;
 	}
@@ -260,8 +260,7 @@ static signed int cmp_gauss(const void *va, const void *vb)
 {
 	const struct gaussian *a = va;
 	const struct gaussian *b = vb;
-	/* Integral of Gaussian = height * std deviation */
-	if ( a->height * a->sigma > b->height * b->sigma ) return +1;
+	if ( a->area > b->area ) return +1;
 	return -1;
 }
 
@@ -271,11 +270,10 @@ static void normalise_gaussians(struct gaussian *gauss, int n_gauss)
 	int i;
 	double total_area = 0.0;
 	for ( i=0; i<n_gauss; i++ ) {
-		total_area += gauss[i].height * gauss[i].sigma;
+		total_area += gauss[i].area;
 	}
-	total_area *= sqrt(2.0 * M_PI);
 	for ( i=0; i<n_gauss; i++ ) {
-		gauss[i].height /= total_area;
+		gauss[i].area /= total_area;
 	}
 }
 
@@ -511,7 +509,7 @@ Spectrum *spectrum_generate_gaussian(double wavelength, double bandwidth)
 
 	g.kcen = 1.0/wavelength;
 	g.sigma = bandwidth/wavelength;
-	g.height = 1;
+	g.area = 1;
 	spectrum_set_gaussians(s, &g, 1);
 
 	return s;
@@ -548,7 +546,7 @@ Spectrum *spectrum_generate_sase(double wavelength, double bandwidth,
 	for ( i=0; i<15; i++ ) {
 		g[i].kcen = 1.0/wavelength + (gsl_rng_uniform_pos(rng)-0.5) * bandwidth/wavelength;
 		g[i].sigma = spike_width/wavelength;
-		g[i].height = gsl_rng_uniform(rng);
+		g[i].area = gsl_rng_uniform(rng);
 	}
 
 	spectrum_set_gaussians(s, g, 15);
@@ -579,11 +577,11 @@ Spectrum *spectrum_generate_twocolour(double wavelength, double bandwidth,
 
 	g[0].kcen = 1.0/wavelength - separation/2.0;
 	g[0].sigma = bandwidth/wavelength;
-	g[0].height = 1;
+	g[0].area = 1;
 
 	g[1].kcen = 1.0/wavelength + separation/2.0;
 	g[1].sigma = bandwidth/wavelength;
-	g[1].height = 1;
+	g[1].area = 1;
 
 	spectrum_set_gaussians(s, g, 2);
 
