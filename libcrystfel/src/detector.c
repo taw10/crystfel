@@ -1800,14 +1800,14 @@ struct detector *copy_geom(const struct detector *in)
 	out = malloc(sizeof(struct detector));
 	memcpy(out, in, sizeof(struct detector));
 
+	/* Copy all fields */
+	*out = *in;
+
 	out->panels = malloc(out->n_panels * sizeof(struct panel));
 	memcpy(out->panels, in->panels, out->n_panels * sizeof(struct panel));
 
 	out->bad = malloc(out->n_bad * sizeof(struct badregion));
 	memcpy(out->bad, in->bad, out->n_bad * sizeof(struct badregion));
-
-	/* Copy all fields */
-	*out = *in;
 
 	/* Copy the panels */
 	for ( i=0; i<out->n_panels; i++ ) {
