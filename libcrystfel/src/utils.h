@@ -35,6 +35,7 @@
 
 #include <math.h>
 #include <complex.h>
+#include <float.h>
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -268,7 +269,25 @@ static inline struct quaternion invalid_quaternion(void)
 	return quat;
 }
 
-
+/* function to compute mean and variance stably
+ * \param x value
+ * \param w weight
+ * \param sumw pointer to accumulator variable for the sum of weights
+ * \param mean pointer to online mean value
+ * \param M2 pointer to online variance times sumw
+ */
+static inline void mean_variance(const double x,
+                                 const double w,
+                                 double* sumw, double* mean, double* M2)
+{
+	if (w<DBL_MIN) return;
+	const double temp  = w + *sumw;
+	const double delta = x - *mean;
+	const double R     = delta * w / temp;
+	*mean += R;
+	*M2   += *sumw*delta*R;
+	*sumw  = temp;
+}
 
 #ifdef __cplusplus
 }
