@@ -440,7 +440,7 @@ static int draw_stuff(cairo_surface_t *surf, DisplayWindow *dw)
 			          0.6, 1.0, 0.6);
 			show_ring(cr, dw, 1.0e-10, "1A", &basic_m,
 			          0.8, 1.0, 0.8);
-			show_ring(cr, dw, 1.0e-10, "0.5A", &basic_m,
+			show_ring(cr, dw, 0.5e-10, "0.5A", &basic_m,
 			          1.0, 1.0, 1.0);
 		} else {
 			int i;
