@@ -337,6 +337,7 @@ int refine_radius(Crystal *cr, struct image *image)
 	n_acc = pair_peaks(image, cr, reflist, rps);
 	if ( n_acc < 3 ) {
 		free(rps);
+		reflist_free(reflist);
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
