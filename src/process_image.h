@@ -74,7 +74,7 @@ struct index_args
 	struct detector *det;
 	IndexingPrivate *ipriv;
 	int peaks;                /* Peak detection method */
-	float tols[4];
+	float tols[6];
 	struct beam_params *beam;
 	char *hdf5_peak_path;
 	int half_pixel_shift;

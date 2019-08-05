@@ -67,7 +67,7 @@ struct _indexingprivate
 {
 	IndexingFlags flags;
 	UnitCell *target_cell;
-	float tolerance[4];
+	double tolerance[6];
 
 	struct taketwo_options *ttopts;
 	struct xgandalf_options *xgandalf_opts;
@@ -315,7 +315,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
-                                struct detector *det, float *ltl,
+                                struct detector *det, float *tols,
                                 IndexingFlags flags,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
@@ -439,7 +439,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	} else {
 		ipriv->target_cell = NULL;
 	}
-	for ( i=0; i<4; i++ ) ipriv->tolerance[i] = ltl[i];
+	for ( i=0; i<6; i++ ) ipriv->tolerance[i] = tols[i];
 
 	ipriv->ttopts = ttopts;
 	ipriv->xgandalf_opts = xgandalf_opts;
