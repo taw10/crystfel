@@ -1671,12 +1671,11 @@ double cell_get_volume(UnitCell *cell)
 /**
  * \param cell1: A UnitCell
  * \param cell2: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in axis lengths
- * \param atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  *
  * Compare the two unit cells.  If the real space parameters match to within
- * fractional difference \p ltl, and the inter-axial angles match within \p atl,
- * and the centering matches, this function returns 1.  Otherwise 0.
+ * the specified tolerances, and the centering matches, this function returns 1.
+ * Otherwise 0.
  *
  * This function considers the cell parameters and centering, but ignores the
  * orientation of the cell.  If you want to compare the orientation as well,
@@ -1685,8 +1684,7 @@ double cell_get_volume(UnitCell *cell)
  * \returns non-zero if the cells match.
  *
  */
-int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
-                            float ltl, float atl)
+int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2, double *tolerance)
 {
 	double a1, b1, c1, al1, be1, ga1;
 	double a2, b2, c2, al2, be2, ga2;
@@ -1698,12 +1696,12 @@ int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
 	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
 	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
 
-	if ( !within_tolerance(a1, a2, ltl*100.0) ) return 0;
-	if ( !within_tolerance(b1, b2, ltl*100.0) ) return 0;
-	if ( !within_tolerance(c1, c2, ltl*100.0) ) return 0;
-	if ( fabs(al1-al2) > atl ) return 0;
-	if ( fabs(be1-be2) > atl ) return 0;
-	if ( fabs(ga1-ga2) > atl ) return 0;
+	if ( !within_tolerance(a1, a2, tolerance[0]*100.0) ) return 0;
+	if ( !within_tolerance(b1, b2, tolerance[1]*100.0) ) return 0;
+	if ( !within_tolerance(c1, c2, tolerance[2]*100.0) ) return 0;
+	if ( fabs(al1-al2) > tolerance[3] ) return 0;
+	if ( fabs(be1-be2) > tolerance[4] ) return 0;
+	if ( fabs(ga1-ga2) > tolerance[5] ) return 0;
 
 	return 1;
 }
@@ -1960,15 +1958,15 @@ static double g6_distance(double a1, double b1, double c1,
 /**
  * \param cell_in: A UnitCell
  * \param reference_in: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in direct-space axis lengths
- * \param atl: Maximum allowable difference in direct-space angles (in radians)
+ * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  * \param csl: Non-zero to look for coincidence site lattice relationships
  * \param pmb: Place to store pointer to matrix
  *
  * Compare the \p cell_in with \p reference_in.  If \p cell is a derivative lattice
- * of \p reference, within fractional axis length difference \p ltl and absolute angle
- * difference \p atl (in radians), this function returns non-zero and stores the
- * transformation which needs to be applied to \p cell_in at \p pmb.
+ * of \p reference, within fractional axis length differences \p tolerance[0..2]
+ * and absolute angle difference \p atl[3..5] (in radians), this function returns
+ * non-zero and stores the transformation which needs to be applied to
+ * \p cell_in at \p pmb.
  *
  * Note that the tolerances will be applied to the primitive unit cell.  If
  * the reference cell is centered, a primitive unit cell will first be calculated.
@@ -1989,7 +1987,7 @@ static double g6_distance(double a1, double b1, double c1,
  *
  */
 int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
-                                      double ltl, double atl, int csl,
+                                      double *tolerance, int csl,
                                       RationalMatrix **pmb)
 {
 	UnitCell *cell;
@@ -2026,9 +2024,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	                         &cv[0], &cv[1], &cv[2]);
 
 	/* Find vectors in 'cell' with lengths close to a, b and c */
-	cand_a = find_candidates(a, av, bv, cv, ltl, csl, &ncand_a);
-	cand_b = find_candidates(b, av, bv, cv, ltl, csl, &ncand_b);
-	cand_c = find_candidates(c, av, bv, cv, ltl, csl, &ncand_c);
+	cand_a = find_candidates(a, av, bv, cv, tolerance[0], csl, &ncand_a);
+	cand_b = find_candidates(b, av, bv, cv, tolerance[1], csl, &ncand_b);
+	cand_c = find_candidates(c, av, bv, cv, tolerance[2], csl, &ncand_c);
 
 	if ( (ncand_a==0) || (ncand_b==0) || (ncand_c==0) ) {
 		*pmb = NULL;
@@ -2065,7 +2063,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			test = cell_transform_rational(cell, M);
 			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
 			cell_free(test);
-			if ( fabs(gat - ga) > atl ) continue;
+			if ( fabs(gat - ga) > tolerance[5] ) continue;
 
 			/* Gamma OK, now look for place for c axis */
 			for ( ic=0; ic<ncand_c; ic++ ) {
@@ -2091,11 +2089,11 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 					cell_free(test);
 					continue;
 				}
-				if ( fabs(alt - al) > atl ) {
+				if ( fabs(alt - al) > tolerance[3] ) {
 					cell_free(test);
 					continue;
 				}
-				if ( fabs(bet - be) > atl ) {
+				if ( fabs(bet - be) > tolerance[4] ) {
 					cell_free(test);
 					continue;
 				}

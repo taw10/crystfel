@@ -88,7 +88,7 @@ extern int forbidden_reflection(UnitCell *cell,
 extern double cell_get_volume(UnitCell *cell);
 
 extern int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
-                                   float ltl, float atl);
+                                   double *tolerance);
 
 
 extern int compare_cell_parameters_and_orientation(UnitCell *cell1,
@@ -103,7 +103,7 @@ extern int compare_reindexed_cell_parameters_and_orientation(UnitCell *a,
                                                              IntegerMatrix **pmb);
 
 extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                             double ltl, double atl, int csl,
+                                             double *tolerance, int csl,
                                              RationalMatrix **pmb);
 
 #ifdef __cplusplus

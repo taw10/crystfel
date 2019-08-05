@@ -77,6 +77,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 {
 	UnitCell *cell2;
 	RationalMatrix *m;
+	double tolerance[6];
 
 	cell2 = load_cell_from_file(comparecell);
 	if ( cell2 == NULL ) {
@@ -90,8 +91,15 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	STATUS("------------------> The reference unit cell:\n");
 	cell_print(cell2);
 
+	tolerance[0] = ltl;
+	tolerance[1] = ltl;
+	tolerance[2] = ltl;
+	tolerance[3] = atl;
+	tolerance[4] = atl;
+	tolerance[5] = atl;
+
 	STATUS("------------------> The comparison results:\n");
-	if ( !compare_reindexed_cell_parameters(cell, cell2, ltl, atl, csl, &m) ) {
+	if ( !compare_reindexed_cell_parameters(cell, cell2, tolerance, csl, &m) ) {
 		STATUS("No relationship found between lattices.\n");
 		return 0;
 	} else {
@@ -227,6 +235,14 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 	SymOpList *ops;
 	signed int i[9];
 	const int maxorder = 3;
+	double tolerance[6];
+
+	tolerance[0] = ltl;
+	tolerance[1] = ltl;
+	tolerance[2] = ltl;
+	tolerance[3] = atl;
+	tolerance[4] = atl;
+	tolerance[5] = atl;
 
 	ops = get_pointgroup("1");
 	if ( ops == NULL ) return 1;
@@ -265,7 +281,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 
 		nc = cell_transform_intmat(cell, m);
 
-		if ( compare_cell_parameters(cell, nc, ltl, atl) ) {
+		if ( compare_cell_parameters(cell, nc, tolerance) ) {
 			if ( !intmat_is_identity(m) ) add_symop(ops, m);
 			STATUS("-----------------------------------------------"
 			       "-------------------------------------------\n");
