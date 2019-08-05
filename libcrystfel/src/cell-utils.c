@@ -2128,3 +2128,97 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	*pmb = CiAMCB;
 	return 1;
 }
+
+
+/**
+ * \param cell_in: A UnitCell
+ * \param reference_in: Another UnitCell
+ * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
+ * \param pmb: Place to store pointer to matrix
+ *
+ * Compare \p cell_in with \p reference_in.  If they are the same,
+ * within \p tolerance, taking into account possible permutations of the axes,
+ * this function returns non-zero and stores the transformation which needs to
+ * be applied to \p cell_in at \p pmb.
+ *
+ * Subject to the tolerances, this function will find the transformation which
+ * gives the best match to the reference cell, using the Euclidian norm in
+ * G6 [see e.g. Andrews and Bernstein, Acta Cryst. A44 (1988) p1009].
+ *
+ * Only the cell parameters will be compared.  The relative orientations are
+ * irrelevant.
+ *
+ * \returns non-zero if the cells match, zero for no match or error.
+ *
+ */
+int compare_permuted_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                     double *tolerance, IntegerMatrix **pmb)
+{
+	IntegerMatrix *m;
+	signed int i[9];
+	double a, b, c, al, be, ga;
+	double min_dist = +INFINITY;
+
+	m = intmat_new(3, 3);
+	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
+	*pmb = NULL;
+
+	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
+	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
+	for ( i[2]=-1; i[2]<=+1; i[2]++ ) {
+	for ( i[3]=-1; i[3]<=+1; i[3]++ ) {
+	for ( i[4]=-1; i[4]<=+1; i[4]++ ) {
+	for ( i[5]=-1; i[5]<=+1; i[5]++ ) {
+	for ( i[6]=-1; i[6]<=+1; i[6]++ ) {
+	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
+	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
+
+		UnitCell *test;
+		int j, k;
+		int l = 0;
+
+		for ( j=0; j<3; j++ )
+			for ( k=0; k<3; k++ )
+				intmat_set(m, j, k, i[l++]);
+
+		if ( intmat_det(m) != +1 ) continue;
+
+		test = cell_transform_intmat(cell, m);
+
+		if ( compare_cell_parameters(reference, test, tolerance) ) {
+
+			double at, bt, ct, alt, bet, gat;
+			double dist;
+
+			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
+			dist = g6_distance(at, bt, ct, alt, bet, gat,
+			                   a, b, c, al, be, ga);
+			if ( dist < min_dist ) {
+				min_dist = dist;
+				intmat_free(*pmb);
+				*pmb = intmat_copy(m);
+			}
+
+		}
+
+		cell_free(test);
+
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+
+	intmat_free(m);
+
+	if ( isinf(min_dist) ) {
+		return 0;
+	}
+
+	/* Solution found */
+	return 1;
+}

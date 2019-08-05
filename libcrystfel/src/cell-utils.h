@@ -106,6 +106,8 @@ extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference
                                              double *tolerance, int csl,
                                              RationalMatrix **pmb);
 
+extern int compare_permuted_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                            double *tolerance, IntegerMatrix **pmb);
 #ifdef __cplusplus
 }
 #endif
