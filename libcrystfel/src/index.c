@@ -543,32 +543,39 @@ void map_all_peaks(struct image *image)
 
 
 static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
-                      float *tolerance)
+                      double *tolerance)
 {
-	if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
-	  || (flags & INDEXING_CHECK_CELL_AXES) )
+	UnitCell *out;
+	IntegerMatrix *im;
+	RationalMatrix *rm;
+
+	/* Check at all? */
+	if ( ! ((flags & INDEXING_CHECK_CELL_COMBINATIONS)
+	         || (flags & INDEXING_CHECK_CELL_AXES)) ) return 0;
+
+	if ( compare_permuted_cell_parameters(crystal_get_cell(cr), target,
+	                                      tolerance, &im) )
 	{
-		UnitCell *out;
-		int reduce;
-
-		if ( flags & INDEXING_CHECK_CELL_COMBINATIONS )
-		{
-			reduce = 1;
-		} else {
-			reduce = 0;
-		}
-
-		out = match_cell(crystal_get_cell(cr),
-		                 target, 0, tolerance, reduce);
-
-		if ( out == NULL ) {
-			return 1;
-		}
-
+		out = cell_transform_intmat(crystal_get_cell(cr), im);
 		cell_free(crystal_get_cell(cr));
 		crystal_set_cell(cr, out);
+		intmat_free(im);
+		return 0;
 	}
-	return 0;
+
+	if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS )
+	  && compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
+	                                       tolerance, 0, &rm) )
+	{
+		out = cell_transform_rational(crystal_get_cell(cr), rm);
+		cell_free(crystal_get_cell(cr));
+		crystal_set_cell(cr, out);
+		rtnl_mtx_free(rm);
+		return 0;
+	}
+
+	return 1;
+
 }
 
 
