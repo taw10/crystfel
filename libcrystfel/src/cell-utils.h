@@ -59,11 +59,6 @@ extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
 extern void cell_print(UnitCell *cell);
 extern void cell_print_full(UnitCell *cell);
 
-extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
-                            const float *ltl, int reduce);
-
-extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
-
 extern UnitCell *load_cell_from_pdb(const char *filename);
 extern UnitCell *load_cell_from_file(const char *filename);
 extern void write_cell(UnitCell *cell, FILE *fh);

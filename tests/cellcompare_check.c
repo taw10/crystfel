@@ -217,7 +217,7 @@ static void yaro_test()
 	UnitCell *cell;
 	UnitCell *reference;
 	UnitCell *cmatch;
-	float tols[] = {5, 5, 5, 1.5};
+	//float tols[] = {5, 5, 5, 1.5};
 	double dtols[] = {0.05, 0.05, 0.05, deg2rad(5.0), deg2rad(5.0), deg2rad(5.0)};
 
 	cell = cell_new_from_parameters(63.24e-10, 63.94e-10, 64.61e-10,
@@ -236,10 +236,10 @@ static void yaro_test()
 	cell_print(cell);
 	STATUS("The reference:\n");
 	cell_print(reference);
-	cmatch = match_cell(cell, reference, 0, tols, 1);
-	STATUS("The match:\n");
-	cell_print(cmatch);
-	cell_free(cmatch);
+	//cmatch = match_cell(cell, reference, 0, tols, 1);
+	//STATUS("The match:\n");
+	//cell_print(cmatch);
+	//cell_free(cmatch);
 
 	RationalMatrix *m = NULL;
 	cmatch = compare_reindexed_cell_parameters(cell, reference, dtols, &m);
