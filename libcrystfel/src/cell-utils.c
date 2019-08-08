@@ -1811,12 +1811,14 @@ int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
 		UnitCell *nc;
 		int j, k;
 		int l = 0;
+		signed int det;
 
 		for ( j=0; j<3; j++ )
 			for ( k=0; k<3; k++ )
 				intmat_set(m, j, k, i[l++]);
 
-		if ( intmat_det(m) != +1 ) continue;
+		det = intmat_det(m);
+		if ( (det != +1) && (det != -1) ) continue;
 
 		nc = cell_transform_intmat(cell, m);
 
@@ -2179,12 +2181,14 @@ int compare_permuted_cell_parameters(UnitCell *cell, UnitCell *reference,
 		UnitCell *test;
 		int j, k;
 		int l = 0;
+		signed int det;
 
 		for ( j=0; j<3; j++ )
 			for ( k=0; k<3; k++ )
 				intmat_set(m, j, k, i[l++]);
 
-		if ( intmat_det(m) != +1 ) continue;
+		det = intmat_det(m);
+		if ( (det != +1) && (det != -1) ) continue;
 
 		test = cell_transform_intmat(cell, m);
 
