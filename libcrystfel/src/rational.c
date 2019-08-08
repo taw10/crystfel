@@ -510,6 +510,11 @@ void rtnl_mtx_print(const RationalMatrix *m)
 {
 	unsigned int i, j;
 
+	if ( m == NULL ) {
+		fprintf(stderr, "(NULL matrix)\n");
+		return;
+	}
+
 	for ( i=0; i<m->rows; i++ ) {
 
 		fprintf(stderr, "[ ");

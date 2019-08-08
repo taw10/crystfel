@@ -406,6 +406,11 @@ void intmat_print(const IntegerMatrix *m)
 {
 	unsigned int i, j;
 
+	if ( m == NULL ) {
+		fprintf(stderr, "(NULL matrix)\n");
+		return;
+	}
+
 	for ( i=0; i<m->rows; i++ ) {
 
 		fprintf(stderr, "[ ");
