@@ -53,17 +53,27 @@ static void complain(UnitCell *cell, UnitCell *cref, const char *t, const char *
 
 static RationalMatrix *random_reindexing(gsl_rng *rng)
 {
-	int i;
+	int i, j;
 	RationalMatrix *tr;
-	int v[] = {0, 1, 2};
 
 	tr = rtnl_mtx_new(3, 3);
 	if ( tr == NULL ) return NULL;
 
-	gsl_ran_shuffle(rng, v, 3, sizeof(int));
-	for ( i=0; i<3; i++ ) {
-		rtnl_mtx_set(tr, i, v[i], rtnl(1, 1));
-	}
+	do {
+		for ( i=0; i<3; i++ ) {
+			for ( j=0; j<3; j++ ) {
+				/* 0..8 inclusive -> -4..4 inclusive */
+				signed int a = gsl_rng_uniform_int(rng, 9) - 4;
+				signed int b = gsl_rng_uniform_int(rng, 9) - 4;
+				if ( b == 0 ) {
+					a = 0;
+					b = 1;
+				}
+				rtnl_mtx_set(tr, i, j, rtnl(a, b));
+			}
+		}
+
+	} while ( rtnl_cmp(rtnl_mtx_det(tr), rtnl_zero()) == 0 );
 
 	return tr;
 }
@@ -271,8 +281,14 @@ int main(int argc, char *argv[])
 
 		RationalMatrix *tr;
 
-		tr = random_reindexing(rng);
-		cell = cell_transform_rational(cref, tr);
+		cell = NULL;
+		tr = NULL;
+		do {
+			cell_free(cell);
+			rtnl_mtx_free(tr);
+			tr = random_reindexing(rng);
+			cell = cell_transform_rational(cref, tr);
+		} while ( cell_get_centering(cell) == '?' );
 
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
 		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
@@ -294,8 +310,14 @@ int main(int argc, char *argv[])
 		cell2 = cell_rotate(cref, random_quaternion(rng));
 		if ( cell2 == NULL ) return 1;
 
-		tr = random_reindexing(rng);
-		cell = cell_transform_rational(cell2, tr);
+		cell = NULL;
+		tr = NULL;
+		do {
+			cell_free(cell);
+			rtnl_mtx_free(tr);
+			tr = random_reindexing(rng);
+			cell = cell_transform_rational(cell2, tr);
+		} while ( cell_get_centering(cell) == '?' );
 		cell_free(cell2);
 
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
