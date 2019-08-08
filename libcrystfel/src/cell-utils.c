@@ -1669,8 +1669,8 @@ double cell_get_volume(UnitCell *cell)
 
 
 /**
- * \param cell1: A UnitCell
- * \param cell2: Another UnitCell
+ * \param cell: A UnitCell
+ * \param reference: Another UnitCell
  * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  *
  * Compare the two unit cells.  If the real space parameters match to within
@@ -1684,17 +1684,17 @@ double cell_get_volume(UnitCell *cell)
  * \returns non-zero if the cells match.
  *
  */
-int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2, double *tolerance)
+int compare_cell_parameters(UnitCell *cell, UnitCell *reference, double *tolerance)
 {
 	double a1, b1, c1, al1, be1, ga1;
 	double a2, b2, c2, al2, be2, ga2;
 
 	/* Centering must match: we don't arbitrarte primitive vs centered,
 	 * different cell choices etc */
-	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
+	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
 
-	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
-	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
+	cell_get_parameters(cell, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(reference, &a2, &b2, &c2, &al2, &be2, &ga2);
 
 	if ( !within_tolerance(a1, a2, tolerance[0]*100.0) ) return 0;
 	if ( !within_tolerance(b1, b2, tolerance[1]*100.0) ) return 0;
@@ -1717,8 +1717,8 @@ static double moduli_check(double ax, double ay, double az,
 
 
 /**
- * \param cell1: A UnitCell
- * \param cell2: Another UnitCell
+ * \param cell: A UnitCell
+ * \param reference: Another UnitCell
  * \param ltl: Maximum allowable fractional difference in axis lengths
  * \param atl: Maximum allowable difference in angles (in radians)
  *
@@ -1730,27 +1730,27 @@ static double moduli_check(double ax, double ay, double az,
  * If you just want to see if the parameters are the same, use
  * compare_cell_parameters() instead.
  *
- * The cells \p a and \p b must have the same centering.  Otherwise, this function
- * always returns zero.
+ * \p cell and \p reference must have the same centering.  Otherwise, this
+ * function always returns zero.
  *
  * \returns non-zero if the cells match.
  *
  */
-int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
+int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
                                             const double ltl, const double atl)
 {
 	double ax1, ay1, az1, bx1, by1, bz1, cx1, cy1, cz1;
 	double ax2, ay2, az2, bx2, by2, bz2, cx2, cy2, cz2;
 
-	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
+	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
 
-	cell_get_cartesian(cell1, &ax1, &ay1, &az1,
-	                          &bx1, &by1, &bz1,
-	                          &cx1, &cy1, &cz1);
+	cell_get_cartesian(cell, &ax1, &ay1, &az1,
+	                         &bx1, &by1, &bz1,
+	                         &cx1, &cy1, &cz1);
 
-	cell_get_cartesian(cell2, &ax2, &ay2, &az2,
-	                          &bx2, &by2, &bz2,
-	                          &cx2, &cy2, &cz2);
+	cell_get_cartesian(reference, &ax2, &ay2, &az2,
+	                              &bx2, &by2, &bz2,
+	                              &cx2, &cy2, &cz2);
 
 	if ( angle_between(ax1, ay1, az1, ax2, ay2, az2) > atl ) return 0;
 	if ( angle_between(bx1, by1, bz1, bx2, by2, bz2) > atl ) return 0;
@@ -1765,8 +1765,8 @@ int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
 
 
 /**
- * \param a: A UnitCell
- * \param b: Another UnitCell
+ * \param cell: A UnitCell
+ * \param reference: Another UnitCell
  * \param ltl: Maximum allowable fractional difference in reciprocal axis lengths
  * \param atl: Maximum allowable difference in reciprocal angles (in radians)
  * \param pmb: Place to store pointer to matrix
@@ -1774,26 +1774,27 @@ int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
  * Compare the two unit cells.  If, using any permutation of the axes, the
  * axes can be made to match in length (to within fractional difference \p ltl)
  * and the axes aligned to within \p atl radians, this function returns non-zero
- * and stores the transformation to map \p b onto \p a.
+ * and stores the transformation which must be applied to \p cell at \p pmb.
  *
  * Note that the orientations of the cells must match, not just the parameters.
  * The comparison is done after reindexing using
  * compare_cell_parameters_and_orientation().
  *
- * The cells \p a and \p b must have the same centering.  Otherwise, this function
- * always returns zero.
+ * \p cell and \p reference must have the same centering.  Otherwise, this
+ * function always returns zero.
  *
  * \returns non-zero if the cells match.
  *
  */
-int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
-                                                      double ltl, double atl,
-                                                      IntegerMatrix **pmb)
+int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
+                                                     UnitCell *reference,
+                                                     double ltl, double atl,
+                                                     IntegerMatrix **pmb)
 {
 	IntegerMatrix *m;
 	int i[9];
 
-	if ( cell_get_centering(a) != cell_get_centering(b) ) return 0;
+	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
 
 	m = intmat_new(3, 3);
 
@@ -1817,9 +1818,11 @@ int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
 
 		if ( intmat_det(m) != +1 ) continue;
 
-		nc = cell_transform_intmat(b, m);
+		nc = cell_transform_intmat(cell, m);
 
-		if ( compare_cell_parameters_and_orientation(a, nc, ltl, atl) ) {
+		if ( compare_cell_parameters_and_orientation(nc, reference,
+		                                             ltl, atl) )
+		{
 			if ( pmb != NULL ) *pmb = m;
 			cell_free(nc);
 			return 1;

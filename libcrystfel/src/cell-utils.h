@@ -87,27 +87,27 @@ extern int forbidden_reflection(UnitCell *cell,
 
 extern double cell_get_volume(UnitCell *cell);
 
-extern int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
+extern int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
                                    double *tolerance);
 
+extern int compare_permuted_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                            double *tolerance, IntegerMatrix **pmb);
 
-extern int compare_cell_parameters_and_orientation(UnitCell *cell1,
-                                                   UnitCell *cell2,
+extern int compare_cell_parameters_and_orientation(UnitCell *cell,
+                                                   UnitCell *reference,
                                                    const double ltl,
                                                    const double atl);
 
-extern int compare_reindexed_cell_parameters_and_orientation(UnitCell *a,
-                                                             UnitCell *b,
-                                                             double ltl,
-                                                             double atl,
-                                                             IntegerMatrix **pmb);
+extern int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
+                                                            UnitCell *reference,
+                                                            double ltl,
+                                                            double atl,
+                                                            IntegerMatrix **pmb);
 
 extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
                                              double *tolerance, int csl,
                                              RationalMatrix **pmb);
 
-extern int compare_permuted_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                            double *tolerance, IntegerMatrix **pmb);
 #ifdef __cplusplus
 }
 #endif

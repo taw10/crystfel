@@ -542,6 +542,7 @@ void map_all_peaks(struct image *image)
 }
 
 
+/* Return 0 for cell OK, 1 for cell incorrect */
 static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
                       double *tolerance)
 {
@@ -708,9 +709,9 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 			/* Don't do similarity check against bad crystals */
 			if ( crystal_get_user_flag(that_cr) ) continue;
 
-			if ( compare_reindexed_cell_parameters_and_orientation(crystal_get_cell(cr),
-			                                                       crystal_get_cell(that_cr),
-			                                                       0.1, deg2rad(0.5), NULL) )
+			if ( compare_permuted_cell_parameters_and_orientation(crystal_get_cell(cr),
+			                                                      crystal_get_cell(that_cr),
+			                                                      0.1, deg2rad(0.5), NULL) )
 			{
 				crystal_set_user_flag(cr, 1);
 			}
