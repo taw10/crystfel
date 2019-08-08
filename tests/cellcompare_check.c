@@ -41,16 +41,9 @@
 #include <utils.h>
 
 
-static double moduli_check(double ax, double ay, double az,
-                           double bx, double by, double bz)
+static void complain(UnitCell *cell, UnitCell *cref, const char *t, const char *c)
 {
-	double ma = modulus(ax, ay, az);
-	double mb = modulus(bx, by, bz);
-	return fabs(ma-mb)/ma;
-}
-static void complain(UnitCell *cell, UnitCell *cref, const char *t)
-{
-	STATUS("These cells should %s be the same:\n", t);
+	STATUS("These cells should %sbe the same%s:\n", t, c);
 	STATUS("Transformed: ----------------------------\n");
 	cell_print_full(cell);
 	STATUS("Original: ---------------------------\n");
@@ -94,39 +87,106 @@ static IntegerMatrix *random_permutation(gsl_rng *rng)
 }
 
 
-int compare_cell_parameters_and_orientation2(UnitCell *cell1, UnitCell *cell2,
-                                            const double ltl, const double atl)
+static int check_ccp(UnitCell *cell, UnitCell *cref, double *tols,
+                     int should_match)
 {
-	double ax1, ay1, az1, bx1, by1, bz1, cx1, cy1, cz1;
-	double ax2, ay2, az2, bx2, by2, bz2, cx2, cy2, cz2;
+	const char *a;
+	const char *b;
 
-	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
+	a = should_match ? "" : "NOT ";
+	b = " with compare_cell_parameters";
 
-	cell_get_cartesian(cell1, &ax1, &ay1, &az1,
-	                          &bx1, &by1, &bz1,
-	                          &cx1, &cy1, &cz1);
+	if ( compare_cell_parameters(cell, cref, tols) != should_match )
+	{
+		complain(cell, cref, a, b);
+		return 1;
+	}
+	return 0;
+}
 
-	cell_get_cartesian(cell2, &ax2, &ay2, &az2,
-	                          &bx2, &by2, &bz2,
-	                          &cx2, &cy2, &cz2);
 
-	cell_print_full(cell1);
-	cell_print_full(cell2);
+static int check_cpcp(UnitCell *cell, UnitCell *cref, double *tols,
+                      int should_match)
+{
+	IntegerMatrix *m = NULL;
+	const char *a;
+	const char *b;
 
-	STATUS("%f\n", rad2deg(atl));
-	STATUS("%f\n", rad2deg(angle_between(ax1, ay1, az1, ax2, ay2, az2)));
-	STATUS("%f\n", rad2deg(angle_between(bx1, by1, bz1, bx2, by2, bz2)));
-	STATUS("%f\n", rad2deg(angle_between(cx1, cy1, cz1, cx2, cy2, cz2)));
+	a = should_match ? "" : "NOT ";
+	b = " with compare_permuted_cell_parameters";
 
-	if ( angle_between(ax1, ay1, az1, ax2, ay2, az2) > atl ) return 0;
-	if ( angle_between(bx1, by1, bz1, bx2, by2, bz2) > atl ) return 0;
-	if ( angle_between(cx1, cy1, cz1, cx2, cy2, cz2) > atl ) return 0;
+	if ( compare_permuted_cell_parameters(cell, cref, tols, &m) != should_match )
+	{
+		complain(cell, cref, a, b);
+		STATUS("Matrix was:\n");
+		intmat_print(m);
+		intmat_free(m);
+		return 1;
+	}
+	intmat_free(m);
+	return 0;
+}
 
-	if ( moduli_check(ax1, ay1, az1, ax2, ay2, az2) > ltl ) return 0;
-	if ( moduli_check(bx1, by1, bz1, bx2, by2, bz2) > ltl ) return 0;
-	if ( moduli_check(cx1, cy1, cz1, cx2, cy2, cz2) > ltl ) return 0;
 
-	return 1;
+static int check_ccpao(UnitCell *cell, UnitCell *cref, double *tols,
+                       int should_match)
+{
+	const char *a;
+	const char *b;
+
+	a = should_match ? "" : "NOT ";
+	b = " with compare_cell_parameters_and_orientation";
+
+	if ( compare_cell_parameters_and_orientation(cell, cref,
+	                                             tols[0], tols[3]) != should_match )
+	{
+		complain(cell, cref, a, b);
+		return 1;
+	}
+	return 0;
+}
+
+
+static int check_cpcpao(UnitCell *cell, UnitCell *cref, double *tols,
+                        int should_match)
+{
+	IntegerMatrix *m = NULL;
+	const char *a;
+	const char *b;
+
+	a = should_match ? "" : "NOT ";
+	b = " with compare_permuted_cell_parameters_and_orientation";
+
+	if ( compare_permuted_cell_parameters_and_orientation(cell, cref,
+	                                                      tols[0], tols[3], &m) != should_match )
+	{
+		complain(cell, cref, a, b);
+		intmat_free(m);
+		return 1;
+	}
+	intmat_free(m);
+	return 0;
+}
+
+
+static int check_crcp(UnitCell *cell, UnitCell *cref, double *tols,
+                      int should_match)
+{
+	RationalMatrix *m = NULL;
+	const char *a;
+	const char *b;
+
+	a = should_match ? "" : "NOT ";
+	b = " with compare_reindexed_cell_parameters";
+
+	if ( compare_reindexed_cell_parameters(cell, cref, tols, 0, &m) != should_match )
+	{
+		complain(cell, cref, a, b);
+		rtnl_mtx_free(m);
+		return 1;
+	}
+	rtnl_mtx_free(m);
+	return 0;
 }
 
 
@@ -149,18 +209,16 @@ int main(int argc, char *argv[])
 	/* Just rotate cell */
 	STATUS("Testing plain rotation...\n");
 	for ( i=0; i<100; i++ ) {
+
 		cell = cell_rotate(cref, random_quaternion(rng));
 		if ( cell == NULL ) return 1;
-		if ( !compare_cell_parameters(cell, cref, tols) ) {
-			complain(cell, cref, "");
-			return 1;
-		}
-		if ( compare_cell_parameters_and_orientation(cell, cref,
-		                                             tols[0], tols[3]) )
-		{
-			complain(cell, cref, "NOT");
-			return 1;
-		}
+
+		if ( check_ccp(cell, cref, tols, 1) ) return 1;
+		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
+		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
+		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
+		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+
 		cell_free(cell);
 	}
 
@@ -168,99 +226,86 @@ int main(int argc, char *argv[])
 	STATUS("Testing axis permutation...\n");
 	for ( i=0; i<100; i++ ) {
 
-		IntegerMatrix *m;
 		IntegerMatrix *tr;
 
 		tr = random_permutation(rng);
 		cell = cell_transform_intmat(cref, tr);
 
-		if ( !compare_permuted_cell_parameters_and_orientation(cell, cref,
-		                                                       tols[0], tols[3], &m) )
-		{
-			complain(cell, cref, "");
-			return 1;
-		}
-
-		if ( compare_cell_parameters(cell, cref, tols)
-		  && !intmat_is_identity(tr) )
-		{
-			complain(cell, cref, "NOT");
-			return 1;
-		}
+		if ( check_ccp(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
+		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
+		if ( check_ccpao(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
+		if ( check_cpcpao(cell, cref, tols, 1) ) return 1;
+		if ( check_crcp(cell, cref, tols, 1) ) return 1;
 
 		cell_free(cell);
 		intmat_free(tr);
-		intmat_free(m);
 	}
 
 	/* Rotate cell and permute axes */
 	STATUS("Testing rotation with axis permutation...\n");
 	for ( i=0; i<100; i++ ) {
 
-		IntegerMatrix *m;
 		IntegerMatrix *tr;
 		UnitCell *cell2;
 
-		cell = cell_rotate(cref, random_quaternion(rng));
-		if ( cell == NULL ) return 1;
+		cell2 = cell_rotate(cref, random_quaternion(rng));
+		if ( cell2 == NULL ) return 1;
 
 		tr = random_permutation(rng);
-		cell2 = cell_transform_intmat(cell, tr);
+		cell = cell_transform_intmat(cell2, tr);
+		cell_free(cell2);
 
-		if ( !compare_permuted_cell_parameters(cell2, cref, tols, &m) ) {
-			complain(cell2, cref, "");
-			return 1;
-		}
-
-		if ( compare_permuted_cell_parameters_and_orientation(cell2, cref,
-		                                                      tols[0], tols[3], &m) )
-		{
-			UnitCell *cc;
-			complain(cell2, cref, "NOT, with just permutation,");
-			STATUS("Matrix was (det=%i):\n", intmat_det(m));
-			intmat_print(m);
-			STATUS("Transformed version of cref:\n");
-			cc = cell_transform_intmat(cref, m);
-			cell_print_full(cc);
-			cell_free(cc);
-			return 1;
-		}
-
-		if ( compare_cell_parameters_and_orientation(cell2, cref,
-		                                             tols[0], tols[3]) )
-		{
-			complain(cell2, cref, "NOT, without any change,");
-			return 1;
-		}
+		if ( check_ccp(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
+		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
+		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
+		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
+		if ( check_crcp(cell, cref, tols, 1) ) return 1;
 
 		cell_free(cell);
-		cell_free(cell2);
 		intmat_free(tr);
-		intmat_free(m);
+	}
+
+	/* Reindex */
+	STATUS("Testing reindexing...\n");
+	for ( i=0; i<100; i++ ) {
+
+		RationalMatrix *tr;
+
+		tr = random_reindexing(rng);
+		cell = cell_transform_rational(cref, tr);
+
+		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
+		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
+		if ( check_ccpao(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
+		if ( check_cpcpao(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
+		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+
+		cell_free(cell);
+		rtnl_mtx_free(tr);
 	}
 
 	/* Reindex and rotate */
-	STATUS("Testing rotation with reindexing...\n");
+	STATUS("Testing reindexing with rotation...\n");
 	for ( i=0; i<100; i++ ) {
 
-		RationalMatrix *m;
 		RationalMatrix *tr;
 		UnitCell *cell2;
 
-		cell = cell_rotate(cref, random_quaternion(rng));
-		if ( cell == NULL ) return 1;
+		cell2 = cell_rotate(cref, random_quaternion(rng));
+		if ( cell2 == NULL ) return 1;
 
 		tr = random_reindexing(rng);
-		cell2 = cell_transform_rational(cell, tr);
-		cell_free(cell);
-
-		if ( !compare_reindexed_cell_parameters(cell2, cref, tols, 0, &m) ) {
-			complain(cell2, cref, "");
-			return 1;
-		}
+		cell = cell_transform_rational(cell2, tr);
 		cell_free(cell2);
+
+		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
+		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
+		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
+		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
+		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+
+		cell_free(cell);
 		rtnl_mtx_free(tr);
-		rtnl_mtx_free(m);
 	}
 
 	/* NB There's no compare_reindexed_cell_parameters_and_orientation */
