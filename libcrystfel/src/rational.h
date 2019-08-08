@@ -100,6 +100,8 @@ extern void transform_fractional_coords_rtnl_inverse(const RationalMatrix *P,
                                                      Rational *ans);
 extern void rtnl_mtx_print(const RationalMatrix *m);
 extern Rational rtnl_mtx_det(const RationalMatrix *m);
+extern int rtnl_mtx_is_identity(const RationalMatrix *m);
+extern int rtnl_mtx_is_perm(const RationalMatrix *m);
 
 #ifdef __cplusplus
 }

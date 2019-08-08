@@ -650,3 +650,59 @@ Rational rtnl_mtx_det(const RationalMatrix *m)
 
 	return det;
 }
+
+
+int rtnl_mtx_is_identity(const RationalMatrix *m)
+{
+	int i, j;
+
+	if ( m->rows != m->cols ) return 0;
+
+	for ( i=0; i<m->rows; i++ ) {
+	for ( j=0; j<m->cols; j++ ) {
+
+		Rational v;
+
+		v = rtnl_mtx_get(m, i, j);
+
+		if ( i == j ) {
+			if ( rtnl_cmp(v, rtnl(1,1)) != 0 ) return 0;
+		} else {
+			if ( rtnl_cmp(v, rtnl_zero()) != 0 ) return 0;
+		}
+
+	}
+	}
+
+	return 1;
+}
+
+
+int rtnl_mtx_is_perm(const RationalMatrix *m)
+{
+	Rational det;
+	int i, j;
+
+	/* Must be square */
+	if ( m->rows != m->cols ) return 0;
+
+	/* Determinant must be +1 or -1 */
+	det = rtnl_mtx_det(m);
+	if ( (rtnl_cmp(det, rtnl(1,1)) != 0)
+	  && (rtnl_cmp(det, rtnl(-1,1)) != 0) ) return 0;
+
+	/* All components must be +1, -1 or 0 */
+	for ( i=0; i<m->rows; i++ ) {
+	for ( j=0; j<m->cols; j++ ) {
+
+		Rational v = rtnl_mtx_get(m, i, j);
+
+		if ( (rtnl_cmp(v, rtnl(1,1)) != 0)
+		  && (rtnl_cmp(v, rtnl(-1,1)) != 0)
+		  && (rtnl_cmp(v, rtnl_zero()) != 0) ) return 0;
+
+	}
+	}
+
+	return 1;
+}
