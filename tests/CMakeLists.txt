@@ -92,3 +92,8 @@ add_executable(spectrum_check spectrum_check.c)
 target_include_directories(spectrum_check PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(spectrum_check ${COMMON_LIBRARIES})
 add_test(spectrum_check spectrum_check)
+
+add_executable(cellcompare_check cellcompare_check.c)
+target_include_directories(cellcompare_check PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(cellcompare_check ${COMMON_LIBRARIES})
+add_test(cellcompare_check cellcompare_check)
