@@ -236,7 +236,7 @@ Rational *rtnl_list(signed int num_min, signed int num_max,
 			if ( (n>0) && (rtnl_cmp(list[n-1], r)==0) ) continue;
 
 			/* Can be reduced? */
-			if ( gcd(num, den) != 1 ) continue;
+			if ( abs(gcd(num, den)) != 1 ) continue;
 
 			list[n++] = r;
 		}
