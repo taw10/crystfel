@@ -42,7 +42,7 @@
 
 /** \file rational.h */
 
-/* Eucliden algorithm for finding greatest common divisor */
+/* Euclidean algorithm for finding greatest common divisor */
 static signed int gcd(signed int a, signed int b)
 {
 	while ( b != 0 ) {
