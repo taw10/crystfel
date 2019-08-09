@@ -219,6 +219,7 @@ int main(int argc, char *argv[])
 	                                deg2rad(67.0),
 	                                deg2rad(70.0),
 	                                deg2rad(77.0));
+	cell_set_centering(cref, 'P');
 	if ( cref == NULL ) return 1;
 
 	/* Just rotate cell */
