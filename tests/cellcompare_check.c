@@ -62,9 +62,10 @@ static RationalMatrix *random_reindexing(gsl_rng *rng)
 	do {
 		for ( i=0; i<3; i++ ) {
 			for ( j=0; j<3; j++ ) {
-				/* 0..8 inclusive -> -4..4 inclusive */
-				signed int a = gsl_rng_uniform_int(rng, 9) - 4;
-				signed int b = gsl_rng_uniform_int(rng, 9) - 4;
+				/* 0..6 inclusive -> -3..3 inclusive */
+				signed int a = gsl_rng_uniform_int(rng, 7) - 3;
+				/* 0..2 inclusive */
+				signed int b = gsl_rng_uniform_int(rng, 3);
 				if ( b == 0 ) {
 					a = 0;
 					b = 1;
