@@ -180,7 +180,7 @@ static int check_cpcpao(UnitCell *cell, UnitCell *cref, double *tols,
 
 
 static int check_crcp(UnitCell *cell, UnitCell *cref, double *tols,
-                      int should_match)
+                      RationalMatrix *tr, int should_match)
 {
 	RationalMatrix *m = NULL;
 	const char *a;
@@ -189,9 +189,14 @@ static int check_crcp(UnitCell *cell, UnitCell *cref, double *tols,
 	a = should_match ? "" : "NOT ";
 	b = " with compare_reindexed_cell_parameters";
 
-	if ( compare_reindexed_cell_parameters(cell, cref, tols, 0, &m) != should_match )
+	if ( compare_reindexed_cell_parameters(cref, cell, tols, 1, &m) != should_match )
 	{
 		complain(cell, cref, a, b);
+		STATUS("The transformation matrix to create the cell was:\n");
+		rtnl_mtx_print(tr);
+		STATUS("Cell comparison says do this to the reference to "
+		       "create the cell:\n");
+		rtnl_mtx_print(m);
 		rtnl_mtx_free(m);
 		return 1;
 	}
@@ -227,7 +232,7 @@ int main(int argc, char *argv[])
 		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
-		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
 	}
@@ -245,7 +250,7 @@ int main(int argc, char *argv[])
 		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
 		if ( check_ccpao(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 1) ) return 1;
-		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
 		intmat_free(tr);
@@ -269,7 +274,7 @@ int main(int argc, char *argv[])
 		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
-		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
 		intmat_free(tr);
@@ -294,7 +299,7 @@ int main(int argc, char *argv[])
 		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
-		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+		if ( check_crcp(cell, cref, tols, tr, 1) ) return 1;
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
@@ -324,7 +329,7 @@ int main(int argc, char *argv[])
 		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
-		if ( check_crcp(cell, cref, tols, 1) ) return 1;
+		if ( check_crcp(cell, cref, tols, tr, 1) ) return 1;
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
