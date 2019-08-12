@@ -295,7 +295,11 @@ int main(int argc, char *argv[])
 			rtnl_mtx_free(tr);
 			tr = random_reindexing(rng);
 			cell = cell_transform_rational(cref, tr);
-		} while ( cell_get_centering(cell) == '?' );
+		} while ( (cell_get_centering(cell) == '?')
+		       || (cell_get_centering(cell) == 'H' ) );
+		/* H centering is no good because it needs a unique axis to
+		 * be specified in order for uncentering in c_r_c_p to work.
+		 * cell_transform_rational doesn't set the unique axis (yet?) */
 
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
 		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
@@ -324,7 +328,8 @@ int main(int argc, char *argv[])
 			rtnl_mtx_free(tr);
 			tr = random_reindexing(rng);
 			cell = cell_transform_rational(cell2, tr);
-		} while ( cell_get_centering(cell) == '?' );
+		} while ( (cell_get_centering(cell) == '?')
+		       || (cell_get_centering(cell) == 'H' ) );  /* See above */
 		cell_free(cell2);
 
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
