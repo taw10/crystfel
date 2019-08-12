@@ -224,7 +224,6 @@ int main(int argc, char *argv[])
 	if ( cref == NULL ) return 1;
 
 	/* Just rotate cell */
-	STATUS("Testing plain rotation...\n");
 	for ( i=0; i<100; i++ ) {
 
 		cell = cell_rotate(cref, random_quaternion(rng));
@@ -237,10 +236,10 @@ int main(int argc, char *argv[])
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
+		progress_bar(i+1, 100, "Plain rotation");
 	}
 
 	/* Permute axes but don't rotate */
-	STATUS("Testing axis permutation...\n");
 	for ( i=0; i<100; i++ ) {
 
 		IntegerMatrix *tr;
@@ -256,10 +255,10 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		intmat_free(tr);
+		progress_bar(i+1, 100, "Axis permutation");
 	}
 
 	/* Rotate cell and permute axes */
-	STATUS("Testing rotation with axis permutation...\n");
 	for ( i=0; i<100; i++ ) {
 
 		IntegerMatrix *tr;
@@ -280,10 +279,10 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		intmat_free(tr);
+		progress_bar(i+1, 100, "Rotation with axis permutation");
 	}
 
 	/* Reindex */
-	STATUS("Testing reindexing...\n");
 	for ( i=0; i<100; i++ ) {
 
 		RationalMatrix *tr;
@@ -309,10 +308,10 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
+		progress_bar(i+1, 100, "Reindexing");
 	}
 
 	/* Reindex and rotate */
-	STATUS("Testing reindexing with rotation...\n");
 	for ( i=0; i<100; i++ ) {
 
 		RationalMatrix *tr;
@@ -340,6 +339,7 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
+		progress_bar(i+1, 100, "Reindexing with rotation");
 	}
 
 	/* NB There's no compare_reindexed_cell_parameters_and_orientation */
