@@ -213,6 +213,11 @@ void cell_print(UnitCell *cell)
 	LatticeType lt;
 	char cen;
 
+	if ( cell == NULL ) {
+		STATUS("(NULL cell)\n");
+		return;
+	}
+
 	lt = cell_get_lattice_type(cell);
 	cen = cell_get_centering(cell);
 
@@ -253,8 +258,8 @@ void cell_print(UnitCell *cell)
 
 void cell_print_full(UnitCell *cell)
 {
-
 	cell_print(cell);
+	if ( cell == NULL ) return;
 
 	if ( cell_has_parameters(cell) ) {
 
