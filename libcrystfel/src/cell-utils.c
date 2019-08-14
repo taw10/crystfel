@@ -1637,32 +1637,29 @@ int forbidden_reflection(UnitCell *cell,
 
 
 /**
- * \returns cell volume in A^3
+ * \returns cell volume in m^3
  */
 double cell_get_volume(UnitCell *cell)
 {
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
 	struct rvec aCb;
-	double rec_volume;
 
-	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                               &bsx, &bsy, &bsz,
-	                               &csx, &csy, &csz) ) {
+	if ( cell_get_cartesian(cell, &ax, &ay, &az,
+	                              &bx, &by, &bz,
+	                              &cx, &cy, &cz) ) {
 		ERROR("Couldn't get reciprocal cell.\n");
 		return 0;
 	}
 
 	/* "a" cross "b" */
-	aCb.u = asy*bsz - asz*bsy;
-	aCb.v = - (asx*bsz - asz*bsx);
-	aCb.w = asx*bsy - asy*bsx;
+	aCb.u = ay*bz - az*by;
+	aCb.v = - (ax*bz - az*bx);
+	aCb.w = ax*by - ay*bx;
 
 	/* "a cross b" dot "c" */
-	rec_volume = (aCb.u*csx + aCb.v*csy + aCb.w*csz)/1e30;
-
-	return 1/rec_volume;
+	return (aCb.u*cx + aCb.v*cy + aCb.w*cz);
 }
 
 
