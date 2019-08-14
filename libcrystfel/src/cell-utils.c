@@ -2132,6 +2132,209 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 }
 
 
+/* Criteria from Grosse-Kunstleve et al., Acta Cryst A60 (2004) p1-6 */
+#define GT(x,y) (y < x-eps)
+#define LT(x,y) (x < y-eps)
+#define EQ(x,y) !(GT(x,y) || LT(x,y))
+
+
+static void do_R5(IntegerMatrix *R, double *g, double eps)
+{
+	signed int s = GT(g[3], 0.0)  ? 1 : -1;
+	intmat_set(R, 0, 0, 1);
+	intmat_set(R, 1, 1, 1);
+	intmat_set(R, 2, 2, 1);
+	intmat_set(R, 1, 2, -s);
+	g[2] = g[1] + g[2] -s*g[3];
+	g[3] = -2*s*g[1] + g[3];
+	g[4] = g[4] - s*g[5];
+	STATUS("R5\n");
+}
+
+
+static void do_R6(IntegerMatrix *R, double *g, double eps)
+{
+	signed int s = GT(g[4], 0.0)  ? 1 : -1;
+	intmat_set(R, 0, 0, 1);
+	intmat_set(R, 1, 1, 1);
+	intmat_set(R, 2, 2, 1);
+	intmat_set(R, 0, 2, -s);
+	g[2] = g[0] + g[2] -s*g[4];
+	g[3] = g[3] - s*g[5];
+	g[4] = -2*s*g[0] + g[4];
+	STATUS("R6\n");
+}
+
+
+static void do_R7(IntegerMatrix *R, double *g, double eps)
+{
+	signed int s = GT(g[5], 0.0)  ? 1 : -1;
+	intmat_set(R, 0, 0, 1);
+	intmat_set(R, 1, 1, 1);
+	intmat_set(R, 2, 2, 1);
+	intmat_set(R, 0, 1, -s);
+	g[1] = g[0] + g[1] -s*g[5];
+	g[3] = g[3] - s*g[4];
+	g[5] = -2*s*g[0] + g[5];
+	STATUS("R7\n");
+}
+
+
+static void do_R8(IntegerMatrix *R, double *g, double eps)
+{
+	intmat_set(R, 0, 0, 1);
+	intmat_set(R, 1, 1, 1);
+	intmat_set(R, 2, 2, 1);
+	intmat_set(R, 1, 2, 1);
+	g[2] = g[0]+g[1]+g[2]+g[3]+g[4]+g[5];
+	g[3] = 2.0*g[1] + g[3] + g[5];
+	g[4] = 2.0*g[0] + g[4] + g[5];
+	STATUS("R8\n");
+}
+
+
+IntegerMatrix *reduce_g6(double *g, double eps)
+{
+	IntegerMatrix *T;
+	int finished = 0;
+
+	T = intmat_identity(3);
+	STATUS("eps = %e\n", eps);
+
+	do {
+
+		IntegerMatrix *tmp;
+		IntegerMatrix *M;
+		IntegerMatrix *R;
+
+		M = intmat_new(3, 3);
+		R = intmat_new(3, 3);
+
+		int did_something;
+		do {
+
+			did_something = 0;
+
+			if ( GT(g[0], g[1]) || (EQ(g[0], g[1]) && GT(g[3], g[4])) ) {
+
+				/* Swap a and b */
+				double temp;
+				temp = g[0]; g[0] = g[1];  g[1] = temp;
+				temp = g[3]; g[3] = g[4];  g[4] = temp;
+				intmat_set(M, 1, 0, -1);
+				intmat_set(M, 0, 1, -1);
+				intmat_set(M, 2, 2, -1);
+				STATUS("SP1\n");
+				did_something = 1;
+
+			} else if ( GT(g[1], g[2])
+				|| (EQ(g[1], g[2]) && GT(g[4], g[5])) ) {
+
+				/* Swap b and c */
+				double temp;
+				temp = g[1]; g[1] = g[2];  g[2] = temp;
+				temp = g[4]; g[4] = g[5];  g[5] = temp;
+				intmat_set(M, 0, 0, -1);
+				intmat_set(M, 1, 2, -1);
+				intmat_set(M, 2, 1, -1);
+				STATUS("SP2\n");
+				did_something = 1;
+
+			}
+
+		} while ( did_something );
+
+		if ( GT(g[3]*g[4]*g[5], 0.0) ) {
+
+			intmat_set(M, 0, 0, GT(g[3], 0.0) ? 1 : -1);
+			intmat_set(M, 1, 1, GT(g[4], 0.0) ? 1 : -1);
+			intmat_set(M, 2, 2, GT(g[5], 0.0) ? 1 : -1);
+			g[3] = fabs(g[3]);
+			g[4] = fabs(g[4]);
+			g[5] = fabs(g[5]);
+			STATUS("SP3\n");
+
+		} else {
+
+			int r, c;
+			int have_rc = 0;
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			if ( GT(g[3], 0.0) ) {
+				intmat_set(M, 0, 0, -1);
+			} else if ( !LT(g[3], 0.0) ) {
+				r = 0;  c = 0;
+				have_rc = 1;
+			}
+			if ( GT(g[4], 0.0) ) {
+				intmat_set(M, 1, 1, -1);
+			} else if ( !LT(g[3], 0.0) ) {
+				r = 1;  c = 1;
+				have_rc = 1;
+			}
+			if ( GT(g[5], 0.0) ) {
+				intmat_set(M, 2, 2, -1);
+			} else if ( !LT(g[3], 0.0) ) {
+				r = 2;  c = 2;
+				have_rc = 1;
+			}
+			if ( LT(g[3]*g[4]*g[5], 0.0) ) {
+				assert(have_rc);
+				if ( have_rc ) {
+					intmat_set(M, r, c, -1);
+				} else {
+					ERROR("Don't have r,c!\n");
+					abort();
+				}
+			}
+			g[3] = -fabs(g[3]);
+			g[4] = -fabs(g[4]);
+			g[5] = -fabs(g[5]);
+			STATUS("SP4\n");
+
+		}
+
+		STATUS("G6: %f %f %f %f %f %f\n", g[0], g[1], g[2], g[3], g[4], g[5]);
+
+		if ( GT(fabs(g[3]), g[1]) ) {
+			do_R5(R, g, eps);
+		} else if ( GT(fabs(g[5]), g[0]) ) {
+			do_R6(R, g, eps);
+		} else if ( GT(fabs(g[6]), g[0]) ) {
+			do_R7(R, g, eps);
+		} else if ( LT(g[0]+g[1]+g[2]+g[3]+g[4]+g[5], 0.0) ) {
+			do_R8(R, g, eps);
+		} else if ( (EQ(g[1], g[3]) && LT(2.0*g[4], g[4]))
+		         || (EQ(g[1], -g[3]) && LT(g[5], 0.0) ) ) {
+			do_R5(R, g, eps);
+		} else if ( (EQ(g[0], g[4]) && LT(2.0*g[3], g[5]))
+		         || (EQ(g[0], -g[4]) && LT(g[5], 0.0) ) ) {
+			do_R6(R, g, eps);
+		} else if ( (EQ(g[0], g[5]) && LT(2.0*g[3], g[4]))
+		         || (EQ(g[0], -g[5]) && LT(g[6], 0.0) ) ) {
+			do_R7(R, g, eps);
+		} else if ( EQ(g[0]+g[1]+g[2]+g[3]+g[4]+g[5], 0.0)
+		         && GT(2.0*g[0] + 2.0*g[4] + g[5], 0.0) ) {
+			do_R8(R, g, eps);
+		} else {
+			finished = 1;
+			R = intmat_identity(3);
+			STATUS("Done.\n");
+		}
+
+		STATUS("G6: %f %f %f %f %f %f\n", g[0], g[1], g[2], g[3], g[4], g[5]);
+		tmp = intmat_intmat_mult(T, M);
+		intmat_free(T);
+		T = intmat_intmat_mult(tmp, R);
+		intmat_free(tmp);
+
+	} while ( !finished );
+
+	return T;
+}
+
+
 /**
  * \param cell_in: A UnitCell
  * \param reference_in: Another UnitCell
