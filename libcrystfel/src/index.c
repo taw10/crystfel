@@ -547,26 +547,13 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
                       double *tolerance)
 {
 	UnitCell *out;
-	IntegerMatrix *im;
 	RationalMatrix *rm;
 
 	/* Check at all? */
 	if ( ! ((flags & INDEXING_CHECK_CELL_COMBINATIONS)
 	         || (flags & INDEXING_CHECK_CELL_AXES)) ) return 0;
 
-	if ( compare_permuted_cell_parameters(crystal_get_cell(cr), target,
-	                                      tolerance, &im) )
-	{
-		out = cell_transform_intmat(crystal_get_cell(cr), im);
-		cell_free(crystal_get_cell(cr));
-		crystal_set_cell(cr, out);
-		intmat_free(im);
-		return 0;
-	}
-
-	if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS )
-	  && compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
-	                                       tolerance, 0, &rm) )
+	if ( compare_lattices(crystal_get_cell(cr), target, tolerance, &rm) )
 	{
 		out = cell_transform_rational(crystal_get_cell(cr), rm);
 		cell_free(crystal_get_cell(cr));
@@ -576,7 +563,6 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	}
 
 	return 1;
-
 }
 
 

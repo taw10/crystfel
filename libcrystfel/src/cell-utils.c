@@ -2341,10 +2341,9 @@ IntegerMatrix *reduce_g6(double *g, double eps)
  * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  * \param pmb: Place to store pointer to matrix
  *
- * Compare \p cell_in with \p reference_in.  If they are the same,
- * within \p tolerance, taking into account possible permutations of the axes,
- * this function returns non-zero and stores the transformation which needs to
- * be applied to \p cell_in at \p pmb.
+ * Compare the \p cell_in with \p reference_in.  If they represent the same
+ * lattice, this function returns non-zero and stores the transformation which
+ * needs to be applied to \p cell_in at \p pmb.
  *
  * Subject to the tolerances, this function will find the transformation which
  * gives the best match to the reference cell, using the Euclidian norm in
@@ -2356,76 +2355,44 @@ IntegerMatrix *reduce_g6(double *g, double eps)
  * \returns non-zero if the cells match, zero for no match or error.
  *
  */
-int compare_permuted_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                     double *tolerance, IntegerMatrix **pmb)
+int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
+                     double *tolerance, RationalMatrix **pmb)
 {
-	IntegerMatrix *m;
-	signed int i[9];
-	double a, b, c, al, be, ga;
-	double min_dist = +INFINITY;
+	UnitCell *cell;
+	UnitCell *reference;
+	IntegerMatrix *CBint;
+	RationalMatrix *CiA;
+	RationalMatrix *CB;
+	IntegerMatrix *Mcell;
+	IntegerMatrix *Mref;
+	double eps;
+	double G6cell[6];
+	double G6ref[6];
 
-	m = intmat_new(3, 3);
-	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
-	*pmb = NULL;
+	/* Un-center both cells */
+	reference = uncenter_cell(reference_in, &CBint, NULL);
+	if ( reference == NULL ) return 0;
+	CB = rtnl_mtx_from_intmat(CBint);
+	intmat_free(CBint);
 
-	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
-	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
-	for ( i[2]=-1; i[2]<=+1; i[2]++ ) {
-	for ( i[3]=-1; i[3]<=+1; i[3]++ ) {
-	for ( i[4]=-1; i[4]<=+1; i[4]++ ) {
-	for ( i[5]=-1; i[5]<=+1; i[5]++ ) {
-	for ( i[6]=-1; i[6]<=+1; i[6]++ ) {
-	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
-	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
+	cell = uncenter_cell(cell_in, NULL, &CiA);
+	if ( cell == NULL ) return 0;
 
-		UnitCell *test;
-		int j, k;
-		int l = 0;
-		signed int det;
+	/* Calculate G6 components for both */
+	g6_components(G6cell, cell);
+	g6_components(G6ref, reference);
 
-		for ( j=0; j<3; j++ )
-			for ( k=0; k<3; k++ )
-				intmat_set(m, j, k, i[l++]);
+	/* Convert both to reduced basis (stably) */
+	eps = pow(cell_get_volume(cell), 1.0/3.0) * 1e-5;
+	Mcell = reduce_g6(G6cell, eps);
+	eps = pow(cell_get_volume(reference), 1.0/3.0) * 1e-5;
+	Mref = reduce_g6(G6ref, eps);
 
-		det = intmat_det(m);
-		if ( (det != +1) && (det != -1) ) continue;
+	/* Compare cells (including nearby ones, possibly permuting
+	 * axes if close to equality) */
 
-		test = cell_transform_intmat(cell, m);
-
-		if ( compare_cell_parameters(reference, test, tolerance) ) {
-
-			double at, bt, ct, alt, bet, gat;
-			double dist;
-
-			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
-			dist = g6_distance(at, bt, ct, alt, bet, gat,
-			                   a, b, c, al, be, ga);
-			if ( dist < min_dist ) {
-				min_dist = dist;
-				intmat_free(*pmb);
-				*pmb = intmat_copy(m);
-			}
-
-		}
-
-		cell_free(test);
-
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-	}
-
-	intmat_free(m);
-
-	if ( isinf(min_dist) ) {
-		return 0;
-	}
-
-	/* Solution found */
-	return 1;
+	intmat_free(Mcell);
+	intmat_free(Mref);
+	cell_free(reference);
+	cell_free(cell);
 }

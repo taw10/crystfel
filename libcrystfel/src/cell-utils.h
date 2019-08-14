@@ -90,9 +90,6 @@ extern double cell_get_volume(UnitCell *cell);
 extern int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
                                    double *tolerance);
 
-extern int compare_permuted_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                            double *tolerance, IntegerMatrix **pmb);
-
 extern int compare_cell_parameters_and_orientation(UnitCell *cell,
                                                    UnitCell *reference,
                                                    const double ltl,
@@ -107,6 +104,9 @@ extern int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
 extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
                                              double *tolerance, int csl,
                                              RationalMatrix **pmb);
+
+extern int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
+                            double *tolerance, RationalMatrix **pmb);
 
 #ifdef __cplusplus
 }

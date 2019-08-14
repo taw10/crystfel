@@ -116,29 +116,6 @@ static int check_ccp(UnitCell *cell, UnitCell *cref, double *tols,
 }
 
 
-static int check_cpcp(UnitCell *cell, UnitCell *cref, double *tols,
-                      int should_match)
-{
-	IntegerMatrix *m = NULL;
-	const char *a;
-	const char *b;
-
-	a = should_match ? "" : "NOT ";
-	b = " with compare_permuted_cell_parameters";
-
-	if ( compare_permuted_cell_parameters(cell, cref, tols, &m) != should_match )
-	{
-		complain(cell, cref, a, b);
-		STATUS("Matrix was:\n");
-		intmat_print(m);
-		intmat_free(m);
-		return 1;
-	}
-	intmat_free(m);
-	return 0;
-}
-
-
 static int check_ccpao(UnitCell *cell, UnitCell *cref, double *tols,
                        int should_match)
 {
@@ -206,6 +183,33 @@ static int check_crcp(UnitCell *cell, UnitCell *cref, double *tols,
 }
 
 
+static void yaro_test()
+{
+	UnitCell *cell;
+	UnitCell *reference;
+	UnitCell *cmatch;
+	float tols[] = {5, 5, 5, 1.5};
+
+	cell = cell_new_from_parameters(64.24e-10, 63.94e-10, 64.61e-10,
+	                                deg2rad(89.98), deg2rad(89.82), deg2rad(119.87));
+	cell_set_unique_axis(cell, 'c');
+	cell_set_lattice_type(cell, L_HEXAGONAL);
+
+	reference = cell_new_from_parameters(64.7e-10, 64.7e-10, 65.2e-10,
+	                                     deg2rad(90.0), deg2rad(90.0), deg2rad(120.0));
+	cell_set_unique_axis(reference, 'c');
+	cell_set_lattice_type(reference, L_HEXAGONAL);
+
+	cell_print(cell);
+	cell_print(reference);
+	cmatch = match_cell(cell, reference, 0, tols, 1);
+	cell_print(cmatch);
+}
+
+
+extern IntegerMatrix *reduce_g6(double *g, double eps);
+extern void g6_components(double *g6, UnitCell *cell);
+
 int main(int argc, char *argv[])
 {
 	UnitCell *cell, *cref;
@@ -216,12 +220,28 @@ int main(int argc, char *argv[])
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-	cref = cell_new_from_parameters(50e-10, 55e-10, 70e-10,
-	                                deg2rad(67.0),
-	                                deg2rad(70.0),
-	                                deg2rad(77.0));
+	yaro_test();
+
+	cref = cell_new_from_parameters(3e-0, 5.196e-0, 2e-0,
+	                                deg2rad(103.9166666),
+	                                deg2rad(109.4666666),
+	                                deg2rad(134.8833333));
 	cell_set_centering(cref, 'P');
 	if ( cref == NULL ) return 1;
+
+	STATUS("The test cell:\n");
+	cell_print(cref);
+	double g[6];
+	g6_components(g, cref);
+	STATUS("G6: %e %e %e %e %e %e\n", g[0], g[1], g[2], g[3], g[4], g[5]);
+	double eps = pow(cell_get_volume(cref), 1.0/3.0) * 1e-5;
+	//eps = 1e-27;
+	IntegerMatrix *M = reduce_g6(g, eps);
+	STATUS("The transformation to reduce:\n");
+	intmat_print(M);
+	STATUS("The reduced cell:\n");
+	cell = cell_transform_intmat(cref, M);
+	cell_print(cell);
 
 	/* Just rotate cell */
 	for ( i=0; i<100; i++ ) {
@@ -230,7 +250,6 @@ int main(int argc, char *argv[])
 		if ( cell == NULL ) return 1;
 
 		if ( check_ccp(cell, cref, tols, 1) ) return 1;
-		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
@@ -248,7 +267,6 @@ int main(int argc, char *argv[])
 		cell = cell_transform_intmat(cref, tr);
 
 		if ( check_ccp(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
-		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
 		if ( check_ccpao(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 1) ) return 1;
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
@@ -272,7 +290,6 @@ int main(int argc, char *argv[])
 		cell_free(cell2);
 
 		if ( check_ccp(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
-		if ( check_cpcp(cell, cref, tols, 1) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
@@ -301,7 +318,6 @@ int main(int argc, char *argv[])
 		 * cell_transform_rational doesn't set the unique axis (yet?) */
 
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
-		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
 		if ( check_crcp(cell, cref, tols, tr, 1) ) return 1;
@@ -332,7 +348,6 @@ int main(int argc, char *argv[])
 		cell_free(cell2);
 
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
-		if ( check_cpcp(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
 		if ( check_crcp(cell, cref, tols, tr, 1) ) return 1;
