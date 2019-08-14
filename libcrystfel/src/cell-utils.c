@@ -1931,9 +1931,10 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 }
 
 
-static void g6_components(double *g6, double a, double b, double c,
-                                      double al, double be, double ga)
+void g6_components(double *g6, UnitCell *cell)
 {
+	double a, b, c, al, be, ga;
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 	g6[0] = a*a;
 	g6[1] = b*b;
 	g6[2] = c*c;
@@ -1943,16 +1944,13 @@ static void g6_components(double *g6, double a, double b, double c,
 }
 
 
-static double g6_distance(double a1, double b1, double c1,
-                          double al1, double be1, double ga1,
-                          double a2, double b2, double c2,
-                          double al2, double be2, double ga2)
+static double g6_distance(UnitCell *cell1, UnitCell *cell2)
 {
 	double g1[6], g2[6];
 	int i;
 	double total = 0.0;
-	g6_components(g1, a1, b1, c1, al1, be1, ga1);
-	g6_components(g2, a2, b2, c2, al2, be2, ga2);
+	g6_components(g1, cell1);
+	g6_components(g2, cell2);
 	for ( i=0; i<6; i++ ) {
 		total += (g1[i]-g2[i])*(g1[i]-g2[i]);
 	}
@@ -2103,8 +2101,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 					continue;
 				}
 
-				dist = g6_distance(at, bt, ct, alt, bet, gat,
-				                   a, b, c, al, be, ga);
+				dist = g6_distance(test, reference);
 				if ( dist < min_dist ) {
 					min_dist = dist;
 					rtnl_mtx_mtxmult(M, CB, MCB);
