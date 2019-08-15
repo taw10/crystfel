@@ -579,6 +579,21 @@ LatticeType cell_get_lattice_type(UnitCell *cell)
 }
 
 
+struct g6 cell_get_G6(UnitCell *cell)
+{
+	double a, b, c, al, be, ga;
+	struct g6 g;
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	g.A = a*a;
+	g.B = b*b;
+	g.C = c*c;
+	g.D = 2.0*b*c*cos(al);
+	g.E = 2.0*a*c*cos(be);
+	g.F = 2.0*a*b*cos(ga);
+	return g;
+}
+
+
 char cell_get_unique_axis(UnitCell *cell)
 {
 	return cell->unique_axis;
