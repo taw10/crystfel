@@ -245,7 +245,7 @@ if (CAIRO_FOUND)
   add_executable(render_hkl ${RENDER_HKL_SOURCES})
 
   target_include_directories(render_hkl PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS})
-  target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LDFLAGS})
+  target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES})
 
   list(APPEND CRYSTFEL_EXECUTABLES render_hkl)
 
@@ -349,17 +349,17 @@ list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
 # If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
 if (CAIRO_FOUND)
   target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${CAIRO_LDFLAGS})
+  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
 endif (CAIRO_FOUND)
 
 if (GDKPIXBUF_FOUND)
   target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDKPIXBUF_LDFLAGS})
+  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
 endif (GDKPIXBUF_FOUND)
 
 if (GDK_FOUND)
   target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDK_LDFLAGS})
+  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
 endif (GDK_FOUND)
 
 if (TIFF_FOUND)
