@@ -207,8 +207,7 @@ static void yaro_test()
 }
 
 
-extern IntegerMatrix *reduce_g6(double *g, double eps);
-extern void g6_components(double *g6, UnitCell *cell);
+extern IntegerMatrix *reduce_g6(struct g6 g, double eps);
 
 int main(int argc, char *argv[])
 {
@@ -222,7 +221,7 @@ int main(int argc, char *argv[])
 
 	yaro_test();
 
-	cref = cell_new_from_parameters(3e-0, 5.196e-0, 2e-0,
+	cref = cell_new_from_parameters(3e-10, 5.196e-10, 2e-10,
 	                                deg2rad(103.9166666),
 	                                deg2rad(109.4666666),
 	                                deg2rad(134.8833333));
@@ -231,11 +230,13 @@ int main(int argc, char *argv[])
 
 	STATUS("The test cell:\n");
 	cell_print(cref);
-	double g[6];
-	g6_components(g, cref);
-	STATUS("G6: %e %e %e %e %e %e\n", g[0], g[1], g[2], g[3], g[4], g[5]);
+	struct g6 g;
+	g = cell_get_G6(cref);
 	double eps = pow(cell_get_volume(cref), 1.0/3.0) * 1e-5;
-	//eps = 1e-27;
+	eps = eps*eps;
+	//eps *= 100;
+	//g.A = 9.0e-20;  g.B = 27.0e-20;  g.C = 4.0e-20;
+	//g.D = -5.0e-20;  g.E = -4.0e-20;  g.F = -22.0e-20;
 	IntegerMatrix *M = reduce_g6(g, eps);
 	STATUS("The transformation to reduce:\n");
 	intmat_print(M);

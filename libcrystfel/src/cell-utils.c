@@ -1931,29 +1931,18 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 }
 
 
-void g6_components(double *g6, UnitCell *cell)
-{
-	double a, b, c, al, be, ga;
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	g6[0] = a*a;
-	g6[1] = b*b;
-	g6[2] = c*c;
-	g6[3] = 2.0*b*c*cos(al);
-	g6[4] = 2.0*a*c*cos(be);
-	g6[5] = 2.0*a*b*cos(ga);
-}
-
-
 static double g6_distance(UnitCell *cell1, UnitCell *cell2)
 {
-	double g1[6], g2[6];
-	int i;
+	struct g6 g1, g2;
 	double total = 0.0;
-	g6_components(g1, cell1);
-	g6_components(g2, cell2);
-	for ( i=0; i<6; i++ ) {
-		total += (g1[i]-g2[i])*(g1[i]-g2[i]);
-	}
+	g1 = cell_get_G6(cell1);
+	g2 = cell_get_G6(cell2);
+	total += (g1.A-g2.A)*(g1.A-g2.A);
+	total += (g1.B-g2.B)*(g1.B-g2.B);
+	total += (g1.C-g2.C)*(g1.C-g2.C);
+	total += (g1.D-g2.D)*(g1.D-g2.D);
+	total += (g1.E-g2.E)*(g1.E-g2.E);
+	total += (g1.F-g2.F)*(g1.F-g2.F);
 	return sqrt(total);
 }
 
@@ -2133,204 +2122,296 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 
 
 /* Criteria from Grosse-Kunstleve et al., Acta Cryst A60 (2004) p1-6 */
-#define GT(x,y) (y < x-eps)
-#define LT(x,y) (x < y-eps)
+#define GT(x,y) (y < x - eps)
+#define LT(x,y) GT(y,x)
 #define EQ(x,y) !(GT(x,y) || LT(x,y))
+#define LTE(x,y) !(GT(x,y))
 
 
-static void do_R5(IntegerMatrix *R, double *g, double eps)
+static int in_standard_presentation(struct g6 g, double eps)
 {
-	signed int s = GT(g[3], 0.0)  ? 1 : -1;
-	intmat_set(R, 0, 0, 1);
-	intmat_set(R, 1, 1, 1);
-	intmat_set(R, 2, 2, 1);
-	intmat_set(R, 1, 2, -s);
-	g[2] = g[1] + g[2] -s*g[3];
-	g[3] = -2*s*g[1] + g[3];
-	g[4] = g[4] - s*g[5];
-	STATUS("R5\n");
+	if ( GT(g.A, g.B) ) return 0;
+	if ( GT(g.B, g.C) ) return 0;
+
+	if ( EQ(g.A, g.B) && GT(fabs(g.D), fabs(g.E)) ) return 0;
+	if ( EQ(g.B, g.C) && GT(fabs(g.E), fabs(g.F)) ) return 0;
+
+	if ( ( GT(g.D, 0.0) && GT(g.E, 0.0) && GT(g.F, 0.0) )
+	  || ( !GT(g.D, 0.0) && !GT(g.E, 0.0) && !GT(g.F, 0.0) ) ) return 1;
+
+	return 0;
 }
 
 
-static void do_R6(IntegerMatrix *R, double *g, double eps)
+static int is_burger(struct g6 g, double eps)
 {
-	signed int s = GT(g[4], 0.0)  ? 1 : -1;
-	intmat_set(R, 0, 0, 1);
-	intmat_set(R, 1, 1, 1);
-	intmat_set(R, 2, 2, 1);
-	intmat_set(R, 0, 2, -s);
-	g[2] = g[0] + g[2] -s*g[4];
-	g[3] = g[3] - s*g[5];
-	g[4] = -2*s*g[0] + g[4];
-	STATUS("R6\n");
+	if ( !in_standard_presentation(g, eps) ) return 0;
+	if ( GT(fabs(g.D), g.B) ) return 0;
+	if ( GT(fabs(g.E), g.A) ) return 0;
+	if ( GT(fabs(g.F), g.A) ) return 0;
+	if ( LT(g.D + g.E + g.F + g.A + g.B, 0.0) ) return 0;
+	return 1;
 }
 
 
-static void do_R7(IntegerMatrix *R, double *g, double eps)
+static int is_niggli(struct g6 g, double eps)
 {
-	signed int s = GT(g[5], 0.0)  ? 1 : -1;
-	intmat_set(R, 0, 0, 1);
-	intmat_set(R, 1, 1, 1);
-	intmat_set(R, 2, 2, 1);
-	intmat_set(R, 0, 1, -s);
-	g[1] = g[0] + g[1] -s*g[5];
-	g[3] = g[3] - s*g[4];
-	g[5] = -2*s*g[0] + g[5];
-	STATUS("R7\n");
+	if ( !is_burger(g, eps) ) return 0;
+
+	if ( EQ(g.D, g.B) && GT(g.F, 2.0*g.E) ) return 0;
+	if ( EQ(g.E, g.A) && GT(g.F, 2.0*g.D) ) return 0;
+	if ( EQ(g.F, g.A) && GT(g.E, 2.0*g.D) ) return 0;
+
+	if ( EQ(g.D, -g.B) && !EQ(g.F, 0.0) ) return 0;
+	if ( EQ(g.E, -g.A) && !EQ(g.F, 0.0) ) return 0;
+	if ( EQ(g.F, -g.A) && !EQ(g.E, 0.0) ) return 0;
+
+	if ( EQ(g.D + g.E + g.F + g.A + g.B, 0.0)
+	  && GT(2.0*(g.A + g.E)+g.F, 0.0) ) return 0;
+
+	return 1;
 }
 
 
-static void do_R8(IntegerMatrix *R, double *g, double eps)
+static void debug_lattice(struct g6 g, double eps)
 {
-	intmat_set(R, 0, 0, 1);
-	intmat_set(R, 1, 1, 1);
-	intmat_set(R, 2, 2, 1);
-	intmat_set(R, 1, 2, 1);
-	g[2] = g[0]+g[1]+g[2]+g[3]+g[4]+g[5];
-	g[3] = 2.0*g[1] + g[3] + g[5];
-	g[4] = 2.0*g[0] + g[4] + g[5];
-	STATUS("R8\n");
+	STATUS("%e %e %e %e %e %e",
+	       g.A/1e-0, g.B/1e-0, g.C/1e-0,
+	       g.D/1e-0, g.E/1e-0, g.F/1e-0);
+	if ( is_burger(g, eps) ) STATUS(" B");
+	if ( is_niggli(g, eps) ) STATUS(" N");
+	STATUS("\n");
 }
 
 
-IntegerMatrix *reduce_g6(double *g, double eps)
+static signed int eps_sign(double v, double eps)
+{
+	return GT(v, 0.0) ? +1 : -1;
+}
+
+
+static void mult_in_place(IntegerMatrix *T, IntegerMatrix *M)
+{
+	int i, j;
+	IntegerMatrix *tmp = intmat_intmat_mult(T, M);
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			intmat_set(T, i, j, intmat_get(tmp, i, j));
+		}
+	}
+	intmat_free(tmp);
+}
+
+
+/* NB The G6 components are passed by value, not reference.
+ * It's the caller's reponsibility to apply the matrix to the cell and
+ * re-calculate the G6 vector, if required. */
+IntegerMatrix *reduce_g6(struct g6 g, double eps)
 {
 	IntegerMatrix *T;
-	int finished = 0;
+	IntegerMatrix *M;
+	int finished;
 
-	T = intmat_identity(3);
 	STATUS("eps = %e\n", eps);
+	T = intmat_identity(3);
+	M = intmat_new(3, 3);
 
 	do {
 
-		IntegerMatrix *tmp;
-		IntegerMatrix *M;
-		IntegerMatrix *R;
+		int done_s1s2;
 
-		M = intmat_new(3, 3);
-		R = intmat_new(3, 3);
-
-		int did_something;
 		do {
+			done_s1s2 = 1;
 
-			did_something = 0;
+			debug_lattice(g, eps);
 
-			if ( GT(g[0], g[1]) || (EQ(g[0], g[1]) && GT(g[3], g[4])) ) {
-
+			if ( GT(g.A, g.B)
+			  || (EQ(g.A, g.B) && GT(fabs(g.D), fabs(g.E))) )
+			{
 				/* Swap a and b */
 				double temp;
-				temp = g[0]; g[0] = g[1];  g[1] = temp;
-				temp = g[3]; g[3] = g[4];  g[4] = temp;
+				temp = g.A; g.A = g.B;  g.B = temp;
+				temp = g.D; g.D = g.E;  g.E = temp;
+
+				intmat_zero(M);
 				intmat_set(M, 1, 0, -1);
 				intmat_set(M, 0, 1, -1);
 				intmat_set(M, 2, 2, -1);
-				STATUS("SP1\n");
-				did_something = 1;
+				mult_in_place(T, M);
 
-			} else if ( GT(g[1], g[2])
-				|| (EQ(g[1], g[2]) && GT(g[4], g[5])) ) {
+				STATUS("step 1\n");
 
+			} else if ( GT(g.B, g.C)
+				|| (EQ(g.B, g.C) && GT(fabs(g.E), fabs(g.F))) )
+			{
 				/* Swap b and c */
 				double temp;
-				temp = g[1]; g[1] = g[2];  g[2] = temp;
-				temp = g[4]; g[4] = g[5];  g[5] = temp;
+				temp = g.B; g.B = g.C;  g.C = temp;
+				temp = g.E; g.E = g.F;  g.F = temp;
+
+				intmat_zero(M);
 				intmat_set(M, 0, 0, -1);
 				intmat_set(M, 1, 2, -1);
 				intmat_set(M, 2, 1, -1);
-				STATUS("SP2\n");
-				did_something = 1;
+				mult_in_place(T, M);
 
+				STATUS("step 2\n");
+				done_s1s2 = 0;
 			}
 
-		} while ( did_something );
+		} while ( !done_s1s2 );
 
-		if ( GT(g[3]*g[4]*g[5], 0.0) ) {
+		finished = 0;
 
-			intmat_set(M, 0, 0, GT(g[3], 0.0) ? 1 : -1);
-			intmat_set(M, 1, 1, GT(g[4], 0.0) ? 1 : -1);
-			intmat_set(M, 2, 2, GT(g[5], 0.0) ? 1 : -1);
-			g[3] = fabs(g[3]);
-			g[4] = fabs(g[4]);
-			g[5] = fabs(g[5]);
-			STATUS("SP3\n");
+		debug_lattice(g, eps);
 
-		} else {
+		/* K-G paper says g3*g4*g3, which I assume is a misprint */
+		if ( eps_sign(g.D, eps) * eps_sign(g.E, eps) * eps_sign(g.F, eps) > 0 ) {
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, GT(g.D, 0.0) ? 1 : -1);
+			intmat_set(M, 1, 1, GT(g.E, 0.0) ? 1 : -1);
+			intmat_set(M, 2, 2, GT(g.F, 0.0) ? 1 : -1);
+			mult_in_place(T, M);
+
+			g.D = fabs(g.D);
+			g.E = fabs(g.E);
+			g.F = fabs(g.F);
+
+			STATUS("step 3\n");
+
+		} else  {
 
 			int r, c;
 			int have_rc = 0;
+
+			intmat_zero(M);
 			intmat_set(M, 0, 0, 1);
 			intmat_set(M, 1, 1, 1);
 			intmat_set(M, 2, 2, 1);
-			if ( GT(g[3], 0.0) ) {
+
+			if ( GT(g.D, 0.0) ) {
 				intmat_set(M, 0, 0, -1);
-			} else if ( !LT(g[3], 0.0) ) {
+			} else if ( !LT(g.D, 0.0) ) {
 				r = 0;  c = 0;
 				have_rc = 1;
 			}
-			if ( GT(g[4], 0.0) ) {
+			if ( GT(g.E, 0.0) ) {
 				intmat_set(M, 1, 1, -1);
-			} else if ( !LT(g[3], 0.0) ) {
+			} else if ( !LT(g.D, 0.0) ) {
 				r = 1;  c = 1;
 				have_rc = 1;
-			}
-			if ( GT(g[5], 0.0) ) {
+				}
+			if ( GT(g.F, 0.0) ) {
 				intmat_set(M, 2, 2, -1);
-			} else if ( !LT(g[3], 0.0) ) {
+			} else if ( !LT(g.D, 0.0) ) {
 				r = 2;  c = 2;
 				have_rc = 1;
 			}
-			if ( LT(g[3]*g[4]*g[5], 0.0) ) {
+			if ( LT(g.D*g.E*g.F, 0.0) ) {
 				assert(have_rc);
 				if ( have_rc ) {
 					intmat_set(M, r, c, -1);
 				} else {
 					ERROR("Don't have r,c!\n");
-					abort();
+					//abort();
 				}
 			}
-			g[3] = -fabs(g[3]);
-			g[4] = -fabs(g[4]);
-			g[5] = -fabs(g[5]);
-			STATUS("SP4\n");
+			mult_in_place(T, M);
+
+			g.D = -fabs(g.D);
+			g.E = -fabs(g.E);
+			g.F = -fabs(g.F);
+
+			STATUS("step 4\n");
 
 		}
 
-		STATUS("G6: %f %f %f %f %f %f\n", g[0], g[1], g[2], g[3], g[4], g[5]);
+		debug_lattice(g, eps);
 
-		if ( GT(fabs(g[3]), g[1]) ) {
-			do_R5(R, g, eps);
-		} else if ( GT(fabs(g[5]), g[0]) ) {
-			do_R6(R, g, eps);
-		} else if ( GT(fabs(g[6]), g[0]) ) {
-			do_R7(R, g, eps);
-		} else if ( LT(g[0]+g[1]+g[2]+g[3]+g[4]+g[5], 0.0) ) {
-			do_R8(R, g, eps);
-		} else if ( (EQ(g[1], g[3]) && LT(2.0*g[4], g[4]))
-		         || (EQ(g[1], -g[3]) && LT(g[5], 0.0) ) ) {
-			do_R5(R, g, eps);
-		} else if ( (EQ(g[0], g[4]) && LT(2.0*g[3], g[5]))
-		         || (EQ(g[0], -g[4]) && LT(g[5], 0.0) ) ) {
-			do_R6(R, g, eps);
-		} else if ( (EQ(g[0], g[5]) && LT(2.0*g[3], g[4]))
-		         || (EQ(g[0], -g[5]) && LT(g[6], 0.0) ) ) {
-			do_R7(R, g, eps);
-		} else if ( EQ(g[0]+g[1]+g[2]+g[3]+g[4]+g[5], 0.0)
-		         && GT(2.0*g[0] + 2.0*g[4] + g[5], 0.0) ) {
-			do_R8(R, g, eps);
+		if ( GT(fabs(g.D), g.B)
+		  || (EQ(g.B, g.D) && LT(2.0*g.E, g.F))
+		  || (EQ(g.B, -g.D) && LT(g.F, 0.0)) )
+		{
+			signed int s = g.D > 0.0  ? 1 : -1;
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 1, 2, -s);
+			mult_in_place(T, M);
+
+			g.C = g.B + g.C -s*g.D;
+			g.D = -2*s*g.B + g.D;
+			g.E = g.E - s*g.F;
+
+			STATUS("R5\n");
+
+		} else if ( GT(fabs(g.E), g.A)
+		         || (EQ(g.A, g.E) && LT(2.0*g.D, g.F))
+		         || (EQ(g.A, -g.E) && LT(g.F, 0.0)) )
+		{
+			signed int s = g.E > 0.0  ? 1 : -1;
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 0, 2, -s);
+			mult_in_place(T, M);
+
+			g.C = g.A + g.C -s*g.E;
+			g.D = g.D - s*g.F;
+			g.E = -2*s*g.A + g.E;
+
+			STATUS("R6\n");
+
+		} else if ( GT(fabs(g.F), g.A)
+		         || (EQ(g.A, g.F) && LT(2.0*g.D, g.E))
+		         || (EQ(g.A, -g.F) && LT(g.E, 0.0)) )
+		{
+			signed int s = g.F > 0.0  ? 1 : -1;
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 0, 1, -s);
+			mult_in_place(T, M);
+
+			g.B = g.A + g.B -s*g.F;
+			g.D = g.D - s*g.E;
+			g.F = -2*s*g.A + g.F;
+
+			STATUS("R7\n");
+
+		} else if ( LT(g.A+g.B+g.C+g.D+g.E+g.F, 0.0)
+		         || ( (EQ(g.A+g.B+g.C+g.D+g.E+g.F, 0.0)
+		               && GT(2.0*g.A + 2.0*g.E + g.F, 0.0)) ) )
+		{
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 1, 2, 1);
+			mult_in_place(T, M);
+
+			g.C = g.A+g.B+g.C+g.D+g.E+g.F;
+			g.D = 2.0*g.B + g.D + g.F;
+			g.E = 2.0*g.A + g.E + g.F;
+
+			STATUS("R8\n");
+
 		} else {
 			finished = 1;
-			R = intmat_identity(3);
-			STATUS("Done.\n");
 		}
-
-		STATUS("G6: %f %f %f %f %f %f\n", g[0], g[1], g[2], g[3], g[4], g[5]);
-		tmp = intmat_intmat_mult(T, M);
-		intmat_free(T);
-		T = intmat_intmat_mult(tmp, R);
-		intmat_free(tmp);
 
 	} while ( !finished );
 
+	debug_lattice(g, eps);
+
+	intmat_free(M);
 	return T;
 }
 
@@ -2366,8 +2447,8 @@ int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
 	IntegerMatrix *Mcell;
 	IntegerMatrix *Mref;
 	double eps;
-	double G6cell[6];
-	double G6ref[6];
+	struct g6 g6cell;
+	struct g6 g6ref;
 
 	/* Un-center both cells */
 	reference = uncenter_cell(reference_in, &CBint, NULL);
@@ -2379,14 +2460,14 @@ int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
 	if ( cell == NULL ) return 0;
 
 	/* Calculate G6 components for both */
-	g6_components(G6cell, cell);
-	g6_components(G6ref, reference);
+	g6cell = cell_get_G6(cell);
+	g6ref = cell_get_G6(reference);
 
 	/* Convert both to reduced basis (stably) */
 	eps = pow(cell_get_volume(cell), 1.0/3.0) * 1e-5;
-	Mcell = reduce_g6(G6cell, eps);
+	Mcell = reduce_g6(g6cell, eps);
 	eps = pow(cell_get_volume(reference), 1.0/3.0) * 1e-5;
-	Mref = reduce_g6(G6ref, eps);
+	Mref = reduce_g6(g6ref, eps);
 
 	/* Compare cells (including nearby ones, possibly permuting
 	 * axes if close to equality) */
