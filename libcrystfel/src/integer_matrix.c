@@ -247,6 +247,12 @@ IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
 }
 
 
+void intmat_zero(IntegerMatrix *m)
+{
+	memset(m->v, 0, m->rows*m->cols*sizeof(signed int));
+}
+
+
 static IntegerMatrix *delete_row_and_column(const IntegerMatrix *m,
                                             unsigned int di, unsigned int dj)
 {
