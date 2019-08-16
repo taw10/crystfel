@@ -2203,16 +2203,28 @@ static void mult_in_place(IntegerMatrix *T, IntegerMatrix *M)
 }
 
 
+/* Cell volume from G6 components */
+static double g6_volume(struct g6 g)
+{
+	return sqrt(g.A*g.B*g.C
+	       - 0.25*(g.A*g.D*g.D + g.B*g.E*g.E + g.C*g.F*g.F - g.D*g.E*g.F));
+}
+
+
 /* NB The G6 components are passed by value, not reference.
  * It's the caller's reponsibility to apply the matrix to the cell and
  * re-calculate the G6 vector, if required. */
-IntegerMatrix *reduce_g6(struct g6 g, double eps)
+IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 {
 	IntegerMatrix *T;
 	IntegerMatrix *M;
 	int finished;
+	double eps;
 
+	eps = pow(g6_volume(g), 1.0/3.0) * epsrel;
+	eps = eps*eps;
 	STATUS("eps = %e\n", eps);
+
 	T = intmat_identity(3);
 	M = intmat_new(3, 3);
 
@@ -2464,10 +2476,8 @@ int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
 	g6ref = cell_get_G6(reference);
 
 	/* Convert both to reduced basis (stably) */
-	eps = pow(cell_get_volume(cell), 1.0/3.0) * 1e-5;
-	Mcell = reduce_g6(g6cell, eps);
-	eps = pow(cell_get_volume(reference), 1.0/3.0) * 1e-5;
-	Mref = reduce_g6(g6ref, eps);
+	Mcell = reduce_g6(g6cell, 1e-5);
+	Mref = reduce_g6(g6ref, 1e-5);
 
 	/* Compare cells (including nearby ones, possibly permuting
 	 * axes if close to equality) */
