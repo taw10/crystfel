@@ -2358,7 +2358,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = -2*s*g.B + g.D;
 			g.E = g.E - s*g.F;
 
-			STATUS("R5\n");
+			STATUS("step 5\n");
 
 		} else if ( GT(fabs(g.E), g.A)
 		         || (EQ(g.A, g.E) && LT(2.0*g.D, g.F))
@@ -2377,7 +2377,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = g.D - s*g.F;
 			g.E = -2*s*g.A + g.E;
 
-			STATUS("R6\n");
+			STATUS("step 6\n");
 
 		} else if ( GT(fabs(g.F), g.A)
 		         || (EQ(g.A, g.F) && LT(2.0*g.D, g.E))
@@ -2396,7 +2396,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = g.D - s*g.E;
 			g.F = -2*s*g.A + g.F;
 
-			STATUS("R7\n");
+			STATUS("step 7\n");
 
 		} else if ( LT(g.A+g.B+g.C+g.D+g.E+g.F, 0.0)
 		         || ( (EQ(g.A+g.B+g.C+g.D+g.E+g.F, 0.0)
@@ -2413,7 +2413,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = 2.0*g.B + g.D + g.F;
 			g.E = 2.0*g.A + g.E + g.F;
 
-			STATUS("R8\n");
+			STATUS("step 8\n");
 
 		} else {
 			finished = 1;
@@ -2422,6 +2422,9 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 	} while ( !finished );
 
 	debug_lattice(g, eps);
+
+	assert(is_burger(g, eps));
+	assert(is_niggli(g, eps));
 
 	intmat_free(M);
 	return T;
@@ -2458,7 +2461,6 @@ int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
 	RationalMatrix *CB;
 	IntegerMatrix *Mcell;
 	IntegerMatrix *Mref;
-	double eps;
 	struct g6 g6cell;
 	struct g6 g6ref;
 
@@ -2481,6 +2483,7 @@ int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
 
 	/* Compare cells (including nearby ones, possibly permuting
 	 * axes if close to equality) */
+	STATUS("Reduced cell:\n");
 
 	intmat_free(Mcell);
 	intmat_free(Mref);
