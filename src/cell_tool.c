@@ -99,7 +99,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	tolerance[5] = atl;
 
 	STATUS("------------------> The comparison results:\n");
-	if ( !compare_reindexed_cell_parameters(cell, cell2, tolerance, csl, &m) ) {
+	if ( !compare_derivative_cell_parameters(cell, cell2, tolerance, csl, &m) ) {
 		STATUS("No relationship found between lattices.\n");
 		return 0;
 	} else {

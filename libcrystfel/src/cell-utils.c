@@ -1671,7 +1671,7 @@ double cell_get_volume(UnitCell *cell)
 /**
  * \param cell: A UnitCell
  * \param reference: Another UnitCell
- * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
+ * \param tols: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  *
  * Compare the two unit cells.  If the real space parameters match to within
  * the specified tolerances, and the centering matches, this function returns 1.
@@ -1684,7 +1684,8 @@ double cell_get_volume(UnitCell *cell)
  * \returns non-zero if the cells match.
  *
  */
-int compare_cell_parameters(UnitCell *cell, UnitCell *reference, double *tolerance)
+int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
+                            const double *tols)
 {
 	double a1, b1, c1, al1, be1, ga1;
 	double a2, b2, c2, al2, be2, ga2;
@@ -1696,12 +1697,12 @@ int compare_cell_parameters(UnitCell *cell, UnitCell *reference, double *toleran
 	cell_get_parameters(cell, &a1, &b1, &c1, &al1, &be1, &ga1);
 	cell_get_parameters(reference, &a2, &b2, &c2, &al2, &be2, &ga2);
 
-	if ( !within_tolerance(a1, a2, tolerance[0]*100.0) ) return 0;
-	if ( !within_tolerance(b1, b2, tolerance[1]*100.0) ) return 0;
-	if ( !within_tolerance(c1, c2, tolerance[2]*100.0) ) return 0;
-	if ( fabs(al1-al2) > tolerance[3] ) return 0;
-	if ( fabs(be1-be2) > tolerance[4] ) return 0;
-	if ( fabs(ga1-ga2) > tolerance[5] ) return 0;
+	if ( !within_tolerance(a1, a2, tols[0]*100.0) ) return 0;
+	if ( !within_tolerance(b1, b2, tols[1]*100.0) ) return 0;
+	if ( !within_tolerance(c1, c2, tols[2]*100.0) ) return 0;
+	if ( fabs(al1-al2) > tols[3] ) return 0;
+	if ( fabs(be1-be2) > tols[4] ) return 0;
+	if ( fabs(ga1-ga2) > tols[5] ) return 0;
 
 	return 1;
 }
@@ -1719,16 +1720,21 @@ static double moduli_check(double ax, double ay, double az,
 /**
  * \param cell: A UnitCell
  * \param reference: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in axis lengths
- * \param atl: Maximum allowable difference in angles (in radians)
+ * \param tols: Pointer to six tolerance values (see below)
  *
  * Compare the two unit cells.  If the axes match in length (to within
- * fractional difference \p ltl) and the axes are aligned to within \p atl radians,
- * this function returns non-zero.
+ * the specified tolerances), this function returns non-zero.
  *
  * This function compares the orientation of the cell as well as the parameters.
  * If you just want to see if the parameters are the same, use
  * compare_cell_parameters() instead.
+ *
+ * The comparison is done by checking that the lengths of the unit cell axes are
+ * the same between the two cells, and that the axes have similar directions in
+ * 3D space.  The first three tolerance values are the maximum allowable fractional
+ * differences between the a,b,c axis lengths (respectively) of the two cells.
+ * The last three tolerance values are the maximum allowable angles, in radians,
+ * between the directions of the a,b,c axes of the two cells.
  *
  * \p cell and \p reference must have the same centering.  Otherwise, this
  * function always returns zero.
@@ -1737,7 +1743,7 @@ static double moduli_check(double ax, double ay, double az,
  *
  */
 int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
-                                            const double ltl, const double atl)
+                                            const double *tols)
 {
 	double ax1, ay1, az1, bx1, by1, bz1, cx1, cy1, cz1;
 	double ax2, ay2, az2, bx2, by2, bz2, cx2, cy2, cz2;
@@ -1752,13 +1758,13 @@ int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
 	                              &bx2, &by2, &bz2,
 	                              &cx2, &cy2, &cz2);
 
-	if ( angle_between(ax1, ay1, az1, ax2, ay2, az2) > atl ) return 0;
-	if ( angle_between(bx1, by1, bz1, bx2, by2, bz2) > atl ) return 0;
-	if ( angle_between(cx1, cy1, cz1, cx2, cy2, cz2) > atl ) return 0;
+	if ( angle_between(ax1, ay1, az1, ax2, ay2, az2) > tols[3] ) return 0;
+	if ( angle_between(bx1, by1, bz1, bx2, by2, bz2) > tols[4] ) return 0;
+	if ( angle_between(cx1, cy1, cz1, cx2, cy2, cz2) > tols[5] ) return 0;
 
-	if ( moduli_check(ax1, ay1, az1, ax2, ay2, az2) > ltl ) return 0;
-	if ( moduli_check(bx1, by1, bz1, bx2, by2, bz2) > ltl ) return 0;
-	if ( moduli_check(cx1, cy1, cz1, cx2, cy2, cz2) > ltl ) return 0;
+	if ( moduli_check(ax1, ay1, az1, ax2, ay2, az2) > tols[0] ) return 0;
+	if ( moduli_check(bx1, by1, bz1, bx2, by2, bz2) > tols[1] ) return 0;
+	if ( moduli_check(cx1, cy1, cz1, cx2, cy2, cz2) > tols[2] ) return 0;
 
 	return 1;
 }
@@ -1767,18 +1773,23 @@ int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
 /**
  * \param cell: A UnitCell
  * \param reference: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in reciprocal axis lengths
- * \param atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param tols: Pointer to six tolerance values (see below)
  * \param pmb: Place to store pointer to matrix
  *
  * Compare the two unit cells.  If, using any permutation of the axes, the
- * axes can be made to match in length (to within fractional difference \p ltl)
- * and the axes aligned to within \p atl radians, this function returns non-zero
- * and stores the transformation which must be applied to \p cell at \p pmb.
+ * axes can be made to match in length and the axes aligned in space, this
+ * function returns non-zero and stores the transformation which must be applied
+ * to \p cell at \p pmb.
+ *
+ * A "permutation" means a transformation represented by a matrix with all
+ * elements equal to +1, 0 or -1, having determinant +1 or -1.  That means that
+ * this function will find the relationship between a left-handed and a right-
+ * handed basis.
  *
  * Note that the orientations of the cells must match, not just the parameters.
  * The comparison is done after reindexing using
- * compare_cell_parameters_and_orientation().
+ * compare_cell_parameters_and_orientation().  See that function for more
+ * details.
  *
  * \p cell and \p reference must have the same centering.  Otherwise, this
  * function always returns zero.
@@ -1788,7 +1799,7 @@ int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
  */
 int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
                                                      UnitCell *reference,
-                                                     double ltl, double atl,
+                                                     const double *tols,
                                                      IntegerMatrix **pmb)
 {
 	IntegerMatrix *m;
@@ -1823,7 +1834,7 @@ int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
 		nc = cell_transform_intmat(cell, m);
 
 		if ( compare_cell_parameters_and_orientation(nc, reference,
-		                                             ltl, atl) )
+		                                             tols) )
 		{
 			if ( pmb != NULL ) *pmb = m;
 			cell_free(nc);
@@ -1950,13 +1961,13 @@ static double g6_distance(UnitCell *cell1, UnitCell *cell2)
 /**
  * \param cell_in: A UnitCell
  * \param reference_in: Another UnitCell
- * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
+ * \param tols: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  * \param csl: Non-zero to look for coincidence site lattice relationships
  * \param pmb: Place to store pointer to matrix
  *
  * Compare the \p cell_in with \p reference_in.  If \p cell is a derivative lattice
- * of \p reference, within fractional axis length differences \p tolerance[0..2]
- * and absolute angle difference \p atl[3..5] (in radians), this function returns
+ * of \p reference, within fractional axis length differences \p tols[0..2]
+ * and absolute angle difference \p tols[3..5] (in radians), this function returns
  * non-zero and stores the transformation which needs to be applied to
  * \p cell_in at \p pmb.
  *
@@ -1975,12 +1986,16 @@ static double g6_distance(UnitCell *cell1, UnitCell *cell2)
  * meaning that the lattice points of the transformed version of \p cell_in
  * might not coincide with lattice points of \p reference_in.
  *
+ * This function is used by CrystFEL's cell_tool program to find non-obvious
+ * relationships between crystal lattices.  For most routine comparisons, this
+ * function is probably not the one you need!
+ *
  * \returns non-zero if the cells match, zero for no match or error.
  *
  */
-int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
-                                      double *tolerance, int csl,
-                                      RationalMatrix **pmb)
+int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
+                                       const double *tols, int csl,
+                                       RationalMatrix **pmb)
 {
 	UnitCell *cell;
 	UnitCell *reference;
@@ -2016,9 +2031,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	                         &cv[0], &cv[1], &cv[2]);
 
 	/* Find vectors in 'cell' with lengths close to a, b and c */
-	cand_a = find_candidates(a, av, bv, cv, tolerance[0], csl, &ncand_a);
-	cand_b = find_candidates(b, av, bv, cv, tolerance[1], csl, &ncand_b);
-	cand_c = find_candidates(c, av, bv, cv, tolerance[2], csl, &ncand_c);
+	cand_a = find_candidates(a, av, bv, cv, tols[0], csl, &ncand_a);
+	cand_b = find_candidates(b, av, bv, cv, tols[1], csl, &ncand_b);
+	cand_c = find_candidates(c, av, bv, cv, tols[2], csl, &ncand_c);
 
 	if ( (ncand_a==0) || (ncand_b==0) || (ncand_c==0) ) {
 		*pmb = NULL;
@@ -2055,7 +2070,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			test = cell_transform_rational(cell, M);
 			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
 			cell_free(test);
-			if ( fabs(gat - ga) > tolerance[5] ) continue;
+			if ( fabs(gat - ga) > tols[5] ) continue;
 
 			/* Gamma OK, now look for place for c axis */
 			for ( ic=0; ic<ncand_c; ic++ ) {
@@ -2081,11 +2096,11 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 					cell_free(test);
 					continue;
 				}
-				if ( fabs(alt - al) > tolerance[3] ) {
+				if ( fabs(alt - al) > tols[3] ) {
 					cell_free(test);
 					continue;
 				}
-				if ( fabs(bet - be) > tolerance[4] ) {
+				if ( fabs(bet - be) > tols[4] ) {
 					cell_free(test);
 					continue;
 				}
@@ -2434,25 +2449,30 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 /**
  * \param cell_in: A UnitCell
  * \param reference_in: Another UnitCell
- * \param tolerance: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
- * \param pmb: Place to store pointer to matrix
+ * \param tols: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
+ * \param pmb: Place to store pointer to matrix, or NULL if not needed
  *
  * Compare the \p cell_in with \p reference_in.  If they represent the same
- * lattice, this function returns non-zero and stores the transformation which
- * needs to be applied to \p cell_in at \p pmb.
+ * lattice, this function returns a copy of \p cell_in transformed to look
+ * similar to \p reference_in.  Otherwise, it returns NULL.
  *
- * Subject to the tolerances, this function will find the transformation which
- * gives the best match to the reference cell, using the Euclidian norm in
- * G6 [see e.g. Andrews and Bernstein, Acta Cryst. A44 (1988) p1009].
+ * If \pmb is non-NULL, the transformation which needs to be applied to
+ * \p cell_in will be stored there.
  *
  * Only the cell parameters will be compared.  The relative orientations are
- * irrelevant.
+ * irrelevant.  The tolerances will be applied to the transformed copy of
+ * \p cell_in.
  *
- * \returns non-zero if the cells match, zero for no match or error.
+ * This is the right function to use for deciding if an indexing solution
+ * matches a reference cell or not.
+ *
+ * \returns A newly allocated UnitCell, or NULL.
  *
  */
-int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
-                     double *tolerance, RationalMatrix **pmb)
+UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
+                                            UnitCell *reference_in,
+                                            const double *tols,
+                                            RationalMatrix **pmb)
 {
 	UnitCell *cell;
 	UnitCell *reference;

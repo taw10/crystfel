@@ -553,7 +553,8 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	if ( ! ((flags & INDEXING_CHECK_CELL_COMBINATIONS)
 	         || (flags & INDEXING_CHECK_CELL_AXES)) ) return 0;
 
-	if ( compare_lattices(crystal_get_cell(cr), target, tolerance, &rm) )
+	if ( compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
+	                                       tolerance, &rm) )
 	{
 		out = cell_transform_rational(crystal_get_cell(cr), rm);
 		cell_free(crystal_get_cell(cr));
@@ -691,13 +692,17 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		for ( j=0; j<this_crystal; j++ ) {
 
 			Crystal *that_cr = image->crystals[j];
+			const double tols[] = {0.1, 0.1, 0.1,
+			                       deg2rad(5.0),
+			                       deg2rad(5.0),
+			                       deg2rad(5.0)};
 
 			/* Don't do similarity check against bad crystals */
 			if ( crystal_get_user_flag(that_cr) ) continue;
 
 			if ( compare_permuted_cell_parameters_and_orientation(crystal_get_cell(cr),
 			                                                      crystal_get_cell(that_cr),
-			                                                      0.1, deg2rad(0.5), NULL) )
+			                                                      tols, NULL) )
 			{
 				crystal_set_user_flag(cr, 1);
 			}

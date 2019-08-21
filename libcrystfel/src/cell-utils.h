@@ -88,25 +88,25 @@ extern int forbidden_reflection(UnitCell *cell,
 extern double cell_get_volume(UnitCell *cell);
 
 extern int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                   double *tolerance);
+                                   const double *tols);
 
 extern int compare_cell_parameters_and_orientation(UnitCell *cell,
                                                    UnitCell *reference,
-                                                   const double ltl,
-                                                   const double atl);
+                                                   const double *tols);
 
 extern int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
                                                             UnitCell *reference,
-                                                            double ltl,
-                                                            double atl,
+                                                            const double *tols,
                                                             IntegerMatrix **pmb);
 
-extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                             double *tolerance, int csl,
-                                             RationalMatrix **pmb);
+extern int compare_derivative_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                              const double *tols, int csl,
+                                              RationalMatrix **pmb);
 
-extern int compare_lattices(UnitCell *cell_in, UnitCell *reference_in,
-                            double *tolerance, RationalMatrix **pmb);
+extern UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
+                                                   UnitCell *reference_in,
+                                                   const double *tols,
+                                                   RationalMatrix **pmb);
 
 #ifdef __cplusplus
 }

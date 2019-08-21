@@ -126,7 +126,7 @@ static int check_ccpao(UnitCell *cell, UnitCell *cref, double *tols,
 	b = " with compare_cell_parameters_and_orientation";
 
 	if ( compare_cell_parameters_and_orientation(cell, cref,
-	                                             tols[0], tols[3]) != should_match )
+	                                             tols) != should_match )
 	{
 		complain(cell, cref, a, b);
 		return 1;
@@ -145,8 +145,8 @@ static int check_cpcpao(UnitCell *cell, UnitCell *cref, double *tols,
 	a = should_match ? "" : "NOT ";
 	b = " with compare_permuted_cell_parameters_and_orientation";
 
-	if ( compare_permuted_cell_parameters_and_orientation(cell, cref,
-	                                                      tols[0], tols[3], &m) != should_match )
+	if ( compare_permuted_cell_parameters_and_orientation(cell, cref, tols, &m)
+	                        != should_match )
 	{
 		complain(cell, cref, a, b);
 		intmat_free(m);
@@ -157,7 +157,7 @@ static int check_cpcpao(UnitCell *cell, UnitCell *cref, double *tols,
 }
 
 
-static int check_crcp(UnitCell *cell, UnitCell *cref, double *tols,
+static int check_cdcp(UnitCell *cell, UnitCell *cref, double *tols,
                       RationalMatrix *tr, int should_match)
 {
 	RationalMatrix *m = NULL;
@@ -165,9 +165,38 @@ static int check_crcp(UnitCell *cell, UnitCell *cref, double *tols,
 	const char *b;
 
 	a = should_match ? "" : "NOT ";
+	b = " with compare_derivative_cell_parameters";
+
+	if ( compare_derivative_cell_parameters(cref, cell, tols, 1, &m) != should_match )
+	{
+		complain(cell, cref, a, b);
+		STATUS("The transformation matrix to create the cell was:\n");
+		rtnl_mtx_print(tr);
+		STATUS("Cell comparison says do this to the reference to "
+		       "create the cell:\n");
+		rtnl_mtx_print(m);
+		rtnl_mtx_free(m);
+		return 1;
+	}
+	rtnl_mtx_free(m);
+	return 0;
+}
+
+
+static int check_crcp(UnitCell *cell, UnitCell *cref, double *tols,
+                      RationalMatrix *tr, int should_match)
+{
+	RationalMatrix *m = NULL;
+	const char *a;
+	const char *b;
+	UnitCell *match;
+
+	a = should_match ? "" : "NOT ";
 	b = " with compare_reindexed_cell_parameters";
 
-	if ( compare_reindexed_cell_parameters(cref, cell, tols, 1, &m) != should_match )
+	match = compare_reindexed_cell_parameters(cell, cref, tols, &m);
+
+	if ( (match != NULL) != should_match )
 	{
 		complain(cell, cref, a, b);
 		STATUS("The transformation matrix to create the cell was:\n");
@@ -250,6 +279,7 @@ int main(int argc, char *argv[])
 		if ( check_ccp(cell, cref, tols, 1) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
+		if ( check_cdcp(cell, cref, tols, NULL, 1) ) return 1;
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
@@ -267,6 +297,7 @@ int main(int argc, char *argv[])
 		if ( check_ccp(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 1) ) return 1;
+		if ( check_cdcp(cell, cref, tols, NULL, 1) ) return 1;
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
@@ -290,6 +321,7 @@ int main(int argc, char *argv[])
 		if ( check_ccp(cell, cref, tols, intmat_is_identity(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
+		if ( check_cdcp(cell, cref, tols, NULL, 1) ) return 1;
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
@@ -318,7 +350,8 @@ int main(int argc, char *argv[])
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, rtnl_mtx_is_perm(tr)) ) return 1;
-		if ( check_crcp(cell, cref, tols, tr, 1) ) return 1;
+		if ( check_cdcp(cell, cref, tols, tr, 1) ) return 1;
+		/* check_crcp: Sometimes yes, hard to tell */
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
@@ -348,7 +381,8 @@ int main(int argc, char *argv[])
 		if ( check_ccp(cell, cref, tols, rtnl_mtx_is_identity(tr)) ) return 1;
 		if ( check_ccpao(cell, cref, tols, 0) ) return 1;
 		if ( check_cpcpao(cell, cref, tols, 0) ) return 1;
-		if ( check_crcp(cell, cref, tols, tr, 1) ) return 1;
+		if ( check_cdcp(cell, cref, tols, tr, 1) ) return 1;
+		/* check_crcp: Sometimes yes, hard to tell */
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
