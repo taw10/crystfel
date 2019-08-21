@@ -2482,18 +2482,21 @@ static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
 	double a, b, c, al, be, ga;
 	double min_dist = +INFINITY;
 	IntegerMatrix *best_m = NULL;
-	RationalMatrix *RBCB;
-	RationalMatrix *rRB;
+	RationalMatrix *RiBCB;
+	RationalMatrix *rRiB;
 	RationalMatrix *rCB;
+	IntegerMatrix *RiB;
 
 	m = intmat_new(3, 3);
 	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
 
-	RBCB = rtnl_mtx_new(3, 3);
-	rRB = rtnl_mtx_from_intmat(RB);
+	RiBCB = rtnl_mtx_new(3, 3);
+	RiB = intmat_inverse(RB);
+	rRiB = rtnl_mtx_from_intmat(RiB);
 	rCB = rtnl_mtx_from_intmat(CB);
-	rtnl_mtx_mtxmult(rRB, rCB, RBCB);
-	rtnl_mtx_free(rRB);
+	rtnl_mtx_mtxmult(rRiB, rCB, RiBCB);
+	intmat_free(RiB);
+	rtnl_mtx_free(rRiB);
 	rtnl_mtx_free(rCB);
 
 	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
@@ -2520,7 +2523,7 @@ static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
 		if ( det != +1 ) continue;
 
 		tmp = cell_transform_intmat(cell, m);
-		nc = cell_transform_rational(tmp, RBCB);
+		nc = cell_transform_rational(tmp, RiBCB);
 		cell_free(tmp);
 
 		if ( compare_cell_parameters(nc, reference, tols) ) {
@@ -2544,7 +2547,7 @@ static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
 	}
 	}
 	intmat_free(m);
-	rtnl_mtx_free(RBCB);
+	rtnl_mtx_free(RiBCB);
 
 	return best_m;
 }
@@ -2631,37 +2634,34 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 	P = check_permutations(cell_reduced, reference_in, RB, CB, tols);
 	if ( P != NULL ) {
 
-		match = cell_transform_intmat(cell_reduced, P);
+		//STATUS("The best permutation matrix:\n");
+		//intmat_print(P);
 
+		/* Calculate combined matrix: CB.RiB.RA.CiA */
+		RationalMatrix *rRA = rtnl_mtx_from_intmat(RA);
+		RationalMatrix *rP = rtnl_mtx_from_intmat(P);
+		IntegerMatrix *RiB = intmat_inverse(RB);
+		RationalMatrix *rRiB = rtnl_mtx_from_intmat(RiB);
+		RationalMatrix *rCB = rtnl_mtx_from_intmat(CB);
+		RationalMatrix *comb = rtnl_mtx_identity(3);
+
+		rtnl_mult_in_place(comb, CiA);
+		rtnl_mult_in_place(comb, rRA);
+		rtnl_mult_in_place(comb, rP);
+		rtnl_mult_in_place(comb, rRiB);
+		rtnl_mult_in_place(comb, rCB);
+
+		rtnl_mtx_free(rRA);
+		rtnl_mtx_free(rP);
+		intmat_free(RiB);
+		rtnl_mtx_free(rRiB);
+		rtnl_mtx_free(rCB);
+
+		match = cell_transform_rational(cell_in, comb);
 		//STATUS("Original cell transformed to look like reference:\n");
 		//cell_print(match);
 
-		/* Match found.  Combined matrix requested? */
-		if ( pmb != NULL ) {
-
-			/* Calculate combined matrix: CB.RiB.RA.CiA */
-			RationalMatrix *rRA = rtnl_mtx_from_intmat(RA);
-			RationalMatrix *rP = rtnl_mtx_from_intmat(P);
-			IntegerMatrix *RiB = intmat_inverse(RB);
-			RationalMatrix *rRiB = rtnl_mtx_from_intmat(RiB);
-			RationalMatrix *rCB = rtnl_mtx_from_intmat(CB);
-			RationalMatrix *comb = rtnl_mtx_identity(3);
-
-			rtnl_mult_in_place(comb, CiA);
-			rtnl_mult_in_place(comb, rRA);
-			rtnl_mult_in_place(comb, rP);
-			rtnl_mult_in_place(comb, rRiB);
-			rtnl_mult_in_place(comb, rCB);
-
-			rtnl_mtx_free(rRA);
-			rtnl_mtx_free(rP);
-			intmat_free(RiB);
-			rtnl_mtx_free(rRiB);
-			rtnl_mtx_free(rCB);
-
-			*pmb = comb;
-
-		}
+		if ( pmb != NULL ) *pmb = comb;
 
 	} else {
 		match = NULL;
