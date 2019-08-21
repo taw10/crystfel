@@ -2169,7 +2169,7 @@ static int is_burger(struct g6 g, double eps)
 }
 
 
-static int is_niggli(struct g6 g, double eps)
+static int UNUSED is_niggli(struct g6 g, double eps)
 {
 	if ( !is_burger(g, eps) ) return 0;
 
@@ -2188,20 +2188,27 @@ static int is_niggli(struct g6 g, double eps)
 }
 
 
-static void debug_lattice(struct g6 g, double eps)
+static signed int eps_sign(double v, double eps)
 {
-	STATUS("%e %e %e %e %e %e",
+	return GT(v, 0.0) ? +1 : -1;
+}
+
+
+static void debug_lattice(struct g6 g, double eps, int step)
+{
+#if 0
+	STATUS("After step %i:  %e %e %e %e %e %e --", step,
 	       g.A/1e-0, g.B/1e-0, g.C/1e-0,
 	       g.D/1e-0, g.E/1e-0, g.F/1e-0);
 	if ( is_burger(g, eps) ) STATUS(" B");
 	if ( is_niggli(g, eps) ) STATUS(" N");
+	if ( eps_sign(g.D, eps)*eps_sign(g.E, eps)*eps_sign(g.F, eps) > 0 ) {
+		STATUS(" I");
+	} else {
+		STATUS(" II");
+	}
 	STATUS("\n");
-}
-
-
-static signed int eps_sign(double v, double eps)
-{
-	return GT(v, 0.0) ? +1 : -1;
+#endif
 }
 
 
@@ -2215,6 +2222,23 @@ static void mult_in_place(IntegerMatrix *T, IntegerMatrix *M)
 		}
 	}
 	intmat_free(tmp);
+}
+
+
+/* Replace the elements of T with those of T*M */
+static void rtnl_mult_in_place(RationalMatrix *T, RationalMatrix *M)
+{
+	int i, j;
+	RationalMatrix *tmp;
+
+	tmp = rtnl_mtx_new(3, 3);
+	rtnl_mtx_mtxmult(T, M, tmp);
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			rtnl_mtx_set(T, i, j, rtnl_mtx_get(tmp, i, j));
+		}
+	}
+	rtnl_mtx_free(tmp);
 }
 
 
@@ -2238,10 +2262,11 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 
 	eps = pow(g6_volume(g), 1.0/3.0) * epsrel;
 	eps = eps*eps;
-	STATUS("eps = %e\n", eps);
 
 	T = intmat_identity(3);
 	M = intmat_new(3, 3);
+
+	debug_lattice(g, eps, 0);
 
 	do {
 
@@ -2249,8 +2274,6 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 
 		do {
 			done_s1s2 = 1;
-
-			debug_lattice(g, eps);
 
 			if ( GT(g.A, g.B)
 			  || (EQ(g.A, g.B) && GT(fabs(g.D), fabs(g.E))) )
@@ -2266,7 +2289,8 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 				intmat_set(M, 2, 2, -1);
 				mult_in_place(T, M);
 
-				STATUS("step 1\n");
+				debug_lattice(g, eps, 1);
+
 
 			} else if ( GT(g.B, g.C)
 				|| (EQ(g.B, g.C) && GT(fabs(g.E), fabs(g.F))) )
@@ -2282,7 +2306,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 				intmat_set(M, 2, 1, -1);
 				mult_in_place(T, M);
 
-				STATUS("step 2\n");
+				debug_lattice(g, eps, 2);
 				done_s1s2 = 0;
 			}
 
@@ -2290,71 +2314,61 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 
 		finished = 0;
 
-		debug_lattice(g, eps);
-
 		/* K-G paper says g3*g4*g3, which I assume is a misprint */
 		if ( eps_sign(g.D, eps) * eps_sign(g.E, eps) * eps_sign(g.F, eps) > 0 ) {
 
 			intmat_zero(M);
-			intmat_set(M, 0, 0, GT(g.D, 0.0) ? 1 : -1);
-			intmat_set(M, 1, 1, GT(g.E, 0.0) ? 1 : -1);
-			intmat_set(M, 2, 2, GT(g.F, 0.0) ? 1 : -1);
+			intmat_set(M, 0, 0, LT(g.D, 0.0) ? -1 : 1);
+			intmat_set(M, 1, 1, LT(g.E, 0.0) ? -1 : 1);
+			intmat_set(M, 2, 2, LT(g.F, 0.0) ? -1 : 1);
 			mult_in_place(T, M);
 
 			g.D = fabs(g.D);
 			g.E = fabs(g.E);
 			g.F = fabs(g.F);
 
-			STATUS("step 3\n");
+			debug_lattice(g, eps, 3);
 
 		} else  {
 
-			int r, c;
-			int have_rc = 0;
-
-			intmat_zero(M);
-			intmat_set(M, 0, 0, 1);
-			intmat_set(M, 1, 1, 1);
-			intmat_set(M, 2, 2, 1);
+			int z = 4;
+			signed int ijk[3] = { 1, 1, 1 };
 
 			if ( GT(g.D, 0.0) ) {
-				intmat_set(M, 0, 0, -1);
+				ijk[0] = -1;
 			} else if ( !LT(g.D, 0.0) ) {
-				r = 0;  c = 0;
-				have_rc = 1;
+				z = 0;
 			}
 			if ( GT(g.E, 0.0) ) {
-				intmat_set(M, 1, 1, -1);
+				ijk[1] = -1;
 			} else if ( !LT(g.D, 0.0) ) {
-				r = 1;  c = 1;
-				have_rc = 1;
-				}
+				z = 1;
+			}
 			if ( GT(g.F, 0.0) ) {
-				intmat_set(M, 2, 2, -1);
+				ijk[2] = -1;
 			} else if ( !LT(g.D, 0.0) ) {
-				r = 2;  c = 2;
-				have_rc = 1;
+				z = 2;
 			}
-			if ( LT(g.D*g.E*g.F, 0.0) ) {
-				assert(have_rc);
-				if ( have_rc ) {
-					intmat_set(M, r, c, -1);
-				} else {
-					ERROR("Don't have r,c!\n");
-					//abort();
+			if ( ijk[0]*ijk[1]*ijk[2] < 0 ) {
+				if ( z == 4 ) {
+					ERROR("No element in reduction step 4");
+					abort();
 				}
+				ijk[z] = -1;
 			}
+			intmat_zero(M);
+			intmat_set(M, 0, 0, ijk[0]);
+			intmat_set(M, 1, 1, ijk[1]);
+			intmat_set(M, 2, 2, ijk[2]);
 			mult_in_place(T, M);
 
 			g.D = -fabs(g.D);
 			g.E = -fabs(g.E);
 			g.F = -fabs(g.F);
 
-			STATUS("step 4\n");
+			debug_lattice(g, eps, 4);
 
 		}
-
-		debug_lattice(g, eps);
 
 		if ( GT(fabs(g.D), g.B)
 		  || (EQ(g.B, g.D) && LT(2.0*g.E, g.F))
@@ -2373,7 +2387,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = -2*s*g.B + g.D;
 			g.E = g.E - s*g.F;
 
-			STATUS("step 5\n");
+			debug_lattice(g, eps, 5);
 
 		} else if ( GT(fabs(g.E), g.A)
 		         || (EQ(g.A, g.E) && LT(2.0*g.D, g.F))
@@ -2392,7 +2406,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = g.D - s*g.F;
 			g.E = -2*s*g.A + g.E;
 
-			STATUS("step 6\n");
+			debug_lattice(g, eps, 6);
 
 		} else if ( GT(fabs(g.F), g.A)
 		         || (EQ(g.A, g.F) && LT(2.0*g.D, g.E))
@@ -2411,10 +2425,10 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = g.D - s*g.E;
 			g.F = -2*s*g.A + g.F;
 
-			STATUS("step 7\n");
+			debug_lattice(g, eps, 7);
 
-		} else if ( LT(g.A+g.B+g.C+g.D+g.E+g.F, 0.0)
-		         || ( (EQ(g.A+g.B+g.C+g.D+g.E+g.F, 0.0)
+		} else if ( LT(g.A+g.B+g.D+g.E+g.F, 0.0)  /* not g.C */
+		         || ( (EQ(g.A+g.B+g.D+g.E+g.F, 0.0)
 		               && GT(2.0*g.A + 2.0*g.E + g.F, 0.0)) ) )
 		{
 			intmat_zero(M);
@@ -2428,7 +2442,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			g.D = 2.0*g.B + g.D + g.F;
 			g.E = 2.0*g.A + g.E + g.F;
 
-			STATUS("step 8\n");
+			debug_lattice(g, eps, 8);
 
 		} else {
 			finished = 1;
@@ -2436,13 +2450,103 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 
 	} while ( !finished );
 
-	debug_lattice(g, eps);
+	debug_lattice(g, eps, 99);
 
 	assert(is_burger(g, eps));
 	assert(is_niggli(g, eps));
 
 	intmat_free(M);
 	return T;
+}
+
+
+static double cell_diff(UnitCell *cell, double a, double b, double c,
+                        double al, double be, double ga)
+{
+	double ta, tb, tc, tal, tbe, tga;
+	double diff = 0.0;
+	cell_get_parameters(cell, &ta, &tb, &tc, &tal, &tbe, &tga);
+	diff += fabs(a - ta);
+	diff += fabs(b - tb);
+	diff += fabs(c - tc);
+	return diff;
+}
+
+
+static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
+                                         IntegerMatrix *RB, IntegerMatrix *CB,
+                                         const double *tols)
+{
+	IntegerMatrix *m;
+	int i[9];
+	double a, b, c, al, be, ga;
+	double min_dist = +INFINITY;
+	IntegerMatrix *best_m = NULL;
+	RationalMatrix *RBCB;
+	RationalMatrix *rRB;
+	RationalMatrix *rCB;
+
+	m = intmat_new(3, 3);
+	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
+
+	RBCB = rtnl_mtx_new(3, 3);
+	rRB = rtnl_mtx_from_intmat(RB);
+	rCB = rtnl_mtx_from_intmat(CB);
+	rtnl_mtx_mtxmult(rRB, rCB, RBCB);
+	rtnl_mtx_free(rRB);
+	rtnl_mtx_free(rCB);
+
+	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
+	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
+	for ( i[2]=-1; i[2]<=+1; i[2]++ ) {
+	for ( i[3]=-1; i[3]<=+1; i[3]++ ) {
+	for ( i[4]=-1; i[4]<=+1; i[4]++ ) {
+	for ( i[5]=-1; i[5]<=+1; i[5]++ ) {
+	for ( i[6]=-1; i[6]<=+1; i[6]++ ) {
+	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
+	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
+
+		UnitCell *nc;
+		int j, k;
+		int l = 0;
+		signed int det;
+		UnitCell *tmp;
+
+		for ( j=0; j<3; j++ )
+			for ( k=0; k<3; k++ )
+				intmat_set(m, j, k, i[l++]);
+
+		det = intmat_det(m);
+		if ( det != +1 ) continue;
+
+		tmp = cell_transform_intmat(cell, m);
+		nc = cell_transform_rational(tmp, RBCB);
+		cell_free(tmp);
+
+		if ( compare_cell_parameters(nc, reference, tols) ) {
+			double dist = cell_diff(nc, a, b, c, al, be, ga);
+			if ( dist < min_dist ) {
+				intmat_free(best_m);
+				min_dist = dist;
+				best_m = intmat_copy(m);
+			}
+		}
+
+		cell_free(nc);
+
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	intmat_free(m);
+	rtnl_mtx_free(RBCB);
+
+	return best_m;
 }
 
 
@@ -2461,7 +2565,9 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
  *
  * Only the cell parameters will be compared.  The relative orientations are
  * irrelevant.  The tolerances will be applied to the transformed copy of
- * \p cell_in.
+ * \p cell_in, i.e. the version of the input cell which looks similar to
+ * \p reference_in.  Subject to the tolerances, the cell will be chosen which
+ * has the lowest total absolute error in unit cell axis lengths.
  *
  * This is the right function to use for deciding if an indexing solution
  * matches a reference cell or not.
@@ -2476,37 +2582,98 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 {
 	UnitCell *cell;
 	UnitCell *reference;
-	IntegerMatrix *CBint;
+	IntegerMatrix *CB;
 	RationalMatrix *CiA;
-	RationalMatrix *CB;
-	IntegerMatrix *Mcell;
-	IntegerMatrix *Mref;
+	IntegerMatrix *RA;
+	IntegerMatrix *RB;
+	IntegerMatrix *P;
+	UnitCell *cell_reduced;
+	UnitCell *reference_reduced;
+	UnitCell *match;
 	struct g6 g6cell;
 	struct g6 g6ref;
 
+	//STATUS("The input cell:\n");
+	//cell_print(cell_in);
+
+	//STATUS("The reference cell:\n");
+	//cell_print(reference_in);
+
 	/* Un-center both cells */
-	reference = uncenter_cell(reference_in, &CBint, NULL);
-	if ( reference == NULL ) return 0;
-	CB = rtnl_mtx_from_intmat(CBint);
-	intmat_free(CBint);
+	reference = uncenter_cell(reference_in, &CB, NULL);
+	if ( reference == NULL ) return NULL;
 
 	cell = uncenter_cell(cell_in, NULL, &CiA);
-	if ( cell == NULL ) return 0;
+	if ( cell == NULL ) return NULL;
 
 	/* Calculate G6 components for both */
 	g6cell = cell_get_G6(cell);
 	g6ref = cell_get_G6(reference);
 
 	/* Convert both to reduced basis (stably) */
-	Mcell = reduce_g6(g6cell, 1e-5);
-	Mref = reduce_g6(g6ref, 1e-5);
+	RA = reduce_g6(g6cell, 1e-5);
+	//STATUS("------------------------------------------\n");
+	RB = reduce_g6(g6ref, 1e-5);
 
-	/* Compare cells (including nearby ones, possibly permuting
-	 * axes if close to equality) */
-	STATUS("Reduced cell:\n");
+	cell_reduced = cell_transform_intmat(cell, RA);
 
-	intmat_free(Mcell);
-	intmat_free(Mref);
+	//STATUS("Reduced cell:\n");
+	//cell_print(cell_reduced);
+	//STATUS("Reduced reference:\n");
+	reference_reduced = cell_transform_intmat(reference, RB);
+	//cell_print(reference_reduced);
+
+	/* The primitive (non-reduced) cells are no longer needed */
 	cell_free(reference);
 	cell_free(cell);
+
+	/* Within tolerance? */
+	P = check_permutations(cell_reduced, reference_in, RB, CB, tols);
+	if ( P != NULL ) {
+
+		match = cell_transform_intmat(cell_reduced, P);
+
+		//STATUS("Original cell transformed to look like reference:\n");
+		//cell_print(match);
+
+		/* Match found.  Combined matrix requested? */
+		if ( pmb != NULL ) {
+
+			/* Calculate combined matrix: CB.RiB.RA.CiA */
+			RationalMatrix *rRA = rtnl_mtx_from_intmat(RA);
+			RationalMatrix *rP = rtnl_mtx_from_intmat(P);
+			IntegerMatrix *RiB = intmat_inverse(RB);
+			RationalMatrix *rRiB = rtnl_mtx_from_intmat(RiB);
+			RationalMatrix *rCB = rtnl_mtx_from_intmat(CB);
+			RationalMatrix *comb = rtnl_mtx_identity(3);
+
+			rtnl_mult_in_place(comb, CiA);
+			rtnl_mult_in_place(comb, rRA);
+			rtnl_mult_in_place(comb, rP);
+			rtnl_mult_in_place(comb, rRiB);
+			rtnl_mult_in_place(comb, rCB);
+
+			rtnl_mtx_free(rRA);
+			rtnl_mtx_free(rP);
+			intmat_free(RiB);
+			rtnl_mtx_free(rRiB);
+			rtnl_mtx_free(rCB);
+
+			*pmb = comb;
+
+		}
+
+	} else {
+		match = NULL;
+	}
+
+	rtnl_mtx_free(CiA);
+	intmat_free(RA);
+	intmat_free(RB);
+	intmat_free(CB);
+	intmat_free(P);
+	cell_free(reference_reduced);
+	cell_free(cell_reduced);
+
+	return match;
 }

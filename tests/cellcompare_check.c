@@ -218,21 +218,40 @@ static void yaro_test()
 	UnitCell *reference;
 	UnitCell *cmatch;
 	float tols[] = {5, 5, 5, 1.5};
+	double dtols[] = {0.05, 0.05, 0.05, deg2rad(5.0), deg2rad(5.0), deg2rad(5.0)};
 
-	cell = cell_new_from_parameters(64.24e-10, 63.94e-10, 64.61e-10,
+	cell = cell_new_from_parameters(63.24e-10, 63.94e-10, 64.61e-10,
 	                                deg2rad(89.98), deg2rad(89.82), deg2rad(119.87));
 	cell_set_unique_axis(cell, 'c');
 	cell_set_lattice_type(cell, L_HEXAGONAL);
+	cell_set_centering(cell, 'P');
 
 	reference = cell_new_from_parameters(64.7e-10, 64.7e-10, 65.2e-10,
 	                                     deg2rad(90.0), deg2rad(90.0), deg2rad(120.0));
 	cell_set_unique_axis(reference, 'c');
 	cell_set_lattice_type(reference, L_HEXAGONAL);
+	cell_set_centering(reference, 'P');
 
+	STATUS("The cell:\n");
 	cell_print(cell);
+	STATUS("The reference:\n");
 	cell_print(reference);
 	cmatch = match_cell(cell, reference, 0, tols, 1);
+	STATUS("The match:\n");
 	cell_print(cmatch);
+	cell_free(cmatch);
+
+	RationalMatrix *m = NULL;
+	cmatch = compare_reindexed_cell_parameters(cell, reference, dtols, &m);
+	STATUS("The new match:\n")
+	cell_print(cmatch);
+	STATUS("The matrix:\n");
+	rtnl_mtx_print(m);
+	cell_free(cmatch);
+	rtnl_mtx_free(m);
+
+	cell_free(cell);
+	cell_free(reference);
 }
 
 
@@ -256,19 +275,6 @@ int main(int argc, char *argv[])
 	                                deg2rad(134.8833333));
 	cell_set_centering(cref, 'P');
 	if ( cref == NULL ) return 1;
-
-	STATUS("The test cell:\n");
-	cell_print(cref);
-	struct g6 g;
-	g = cell_get_G6(cref);
-	g.A = 9.0e-20;  g.B = 27.0e-20;  g.C = 4.0e-20;
-	g.D = -5.0e-20;  g.E = -4.0e-20;  g.F = -22.0e-20;
-	IntegerMatrix *M = reduce_g6(g, 1e-5);
-	STATUS("The transformation to reduce:\n");
-	intmat_print(M);
-	STATUS("The reduced cell:\n");
-	cell = cell_transform_intmat(cref, M);
-	cell_print(cell);
 
 	/* Just rotate cell */
 	for ( i=0; i<100; i++ ) {
@@ -390,8 +396,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* NB There's no compare_reindexed_cell_parameters_and_orientation */
-
-	/* Test using vectors */
 
 	cell_free(cref);
 	gsl_rng_free(rng);
