@@ -262,6 +262,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell, *cref;
 	gsl_rng *rng;
 	int i;
+	const int ntrial = 100;
 	double tols[] = { 0.01, 0.01, 0.01,
 	                  deg2rad(1.0), deg2rad(1.0), deg2rad(1.0) };
 
@@ -277,7 +278,7 @@ int main(int argc, char *argv[])
 	if ( cref == NULL ) return 1;
 
 	/* Just rotate cell */
-	for ( i=0; i<100; i++ ) {
+	for ( i=0; i<ntrial; i++ ) {
 
 		cell = cell_rotate(cref, random_quaternion(rng));
 		if ( cell == NULL ) return 1;
@@ -289,11 +290,11 @@ int main(int argc, char *argv[])
 		if ( check_crcp(cell, cref, tols, NULL, 1) ) return 1;
 
 		cell_free(cell);
-		progress_bar(i+1, 100, "Plain rotation");
+		progress_bar(i+1, ntrial, "Plain rotation");
 	}
 
 	/* Permute axes but don't rotate */
-	for ( i=0; i<100; i++ ) {
+	for ( i=0; i<ntrial; i++ ) {
 
 		IntegerMatrix *tr;
 
@@ -308,11 +309,11 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		intmat_free(tr);
-		progress_bar(i+1, 100, "Axis permutation");
+		progress_bar(i+1, ntrial, "Axis permutation");
 	}
 
 	/* Rotate cell and permute axes */
-	for ( i=0; i<100; i++ ) {
+	for ( i=0; i<ntrial; i++ ) {
 
 		IntegerMatrix *tr;
 		UnitCell *cell2;
@@ -332,11 +333,11 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		intmat_free(tr);
-		progress_bar(i+1, 100, "Rotation with axis permutation");
+		progress_bar(i+1, ntrial, "Rotation with axis permutation");
 	}
 
 	/* Reindex */
-	for ( i=0; i<100; i++ ) {
+	for ( i=0; i<ntrial; i++ ) {
 
 		RationalMatrix *tr;
 
@@ -361,11 +362,11 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
-		progress_bar(i+1, 100, "Reindexing");
+		progress_bar(i+1, ntrial, "Reindexing");
 	}
 
 	/* Reindex and rotate */
-	for ( i=0; i<100; i++ ) {
+	for ( i=0; i<ntrial; i++ ) {
 
 		RationalMatrix *tr;
 		UnitCell *cell2;
@@ -392,7 +393,7 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
-		progress_bar(i+1, 100, "Reindexing with rotation");
+		progress_bar(i+1, ntrial, "Reindexing with rotation");
 	}
 
 	/* NB There's no compare_reindexed_cell_parameters_and_orientation */
