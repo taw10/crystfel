@@ -51,7 +51,7 @@ static void complain(UnitCell *cell, UnitCell *cref, const char *t, const char *
 }
 
 
-static RationalMatrix *random_reindexing(gsl_rng *rng)
+static RationalMatrix *random_derivative(gsl_rng *rng)
 {
 	int i, j;
 	RationalMatrix *tr;
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell, *cref;
 	gsl_rng *rng;
 	int i;
-	const int ntrial = 100;
+	const int ntrial = 10;
 	double tols[] = { 0.01, 0.01, 0.01,
 	                  deg2rad(1.0), deg2rad(1.0), deg2rad(1.0) };
 
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 		progress_bar(i+1, ntrial, "Rotation with axis permutation");
 	}
 
-	/* Reindex */
+	/* Derivative lattice */
 	for ( i=0; i<ntrial; i++ ) {
 
 		RationalMatrix *tr;
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 		do {
 			cell_free(cell);
 			rtnl_mtx_free(tr);
-			tr = random_reindexing(rng);
+			tr = random_derivative(rng);
 			cell = cell_transform_rational(cref, tr);
 		} while ( (cell_get_centering(cell) == '?')
 		       || (cell_get_centering(cell) == 'H' ) );
@@ -362,10 +362,10 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
-		progress_bar(i+1, ntrial, "Reindexing");
+		progress_bar(i+1, ntrial, "Derivative lattice");
 	}
 
-	/* Reindex and rotate */
+	/* Derivative lattice and rotate */
 	for ( i=0; i<ntrial; i++ ) {
 
 		RationalMatrix *tr;
@@ -379,7 +379,7 @@ int main(int argc, char *argv[])
 		do {
 			cell_free(cell);
 			rtnl_mtx_free(tr);
-			tr = random_reindexing(rng);
+			tr = random_derivative(rng);
 			cell = cell_transform_rational(cell2, tr);
 		} while ( (cell_get_centering(cell) == '?')
 		       || (cell_get_centering(cell) == 'H' ) );  /* See above */
@@ -393,10 +393,8 @@ int main(int argc, char *argv[])
 
 		cell_free(cell);
 		rtnl_mtx_free(tr);
-		progress_bar(i+1, ntrial, "Reindexing with rotation");
+		progress_bar(i+1, ntrial, "Derivative lattice with rotation");
 	}
-
-	/* NB There's no compare_reindexed_cell_parameters_and_orientation */
 
 	cell_free(cref);
 	gsl_rng_free(rng);
