@@ -238,13 +238,15 @@ static double random_partiality(signed int h, signed int k, signed int l,
 	return p;
 }
 
+
 static inline double safe_khalf(const double xl,
                                 const double yl,
                                 const double zl)
 {
-	if (zl>0) return 0.0/0.0;
+	if ( zl > 0.0 ) return 0.0/0.0;
 	return -(xl*xl+yl*yl+zl*zl) / (2.0*zl);
 }
+
 
 static Reflection *check_reflection(struct image *image, Crystal *cryst,
                                     signed int h, signed int k, signed int l,
@@ -253,73 +255,118 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 {
 	Reflection *refl;
 	double R;
-	double knom=0, khalf=0, kpred=0;
+	int i, n;
+	double knom, khalf;
 	double dcs, exerr;
-	double partiality = 0, mean_kpred=0, M2_kpred=0;
-	double sumw_k = 0, mean_k = 0, M2_k=0;
-	struct gaussian g;
-	/* this arbitrary value is there to mimic previous behavoir */
+	double partiality, mean_kpred, M2_kpred;
+	double sumw_k, mean_k, M2_k;
+
+	/* This arbitrary value is there to mimic previous behaviour */
 	const double min_partiality = exp(-0.5*1.7*1.7);
 
 	/* Don't predict 000 */
 	if ( (updateme == NULL) && (abs(h)+abs(k)+abs(l) == 0) ) return NULL;
 
 	R = fabs(crystal_get_profile_radius(cryst));
-	assert(spectrum_get_num_gaussians(image->spectrum));
-	for ( int i = 0 ; i!=spectrum_get_num_gaussians(image->spectrum) ; ++i ) {
+	n = spectrum_get_num_gaussians(image->spectrum);
+	assert(n > 0);
+
+	partiality = 0.0;
+	mean_kpred = 0.0;
+	M2_kpred = 0.0;
+	sumw_k = 0.0;
+	mean_k = 0.0;
+	M2_k = 0.0;
+	for ( i=0; i<n; i++ ) {
+
+		struct gaussian g;
+		double kpred;
+		double exerr2, x, y, z, norm;
+		double sigma_proj, w0, w1;
+		double sigma2, exponent, overlap_integral;
+
 		g = spectrum_get_gaussian(image->spectrum, i);
 
-		double exerr2 = 0;
-		/* project lattice point onto ewald sphere */
-	        double x = xl, y = yl, z = zl + g.kcen;
-		double norm = 1.0/sqrt(x*x+y*y+z*z);
-		x*=norm; y*=norm; z*=norm;
-		z-=1;
-		/* width of ewald sphere in the direction of the projection */
-		const double sigma_proj = sqrt(x*x+y*y+z*z)*g.sigma;
-		mean_variance(g.kcen,g.area,&sumw_k,&mean_k,&M2_k);
-		M2_k+=g.area*g.sigma*g.sigma;
-		const double w0 = 1.0/(R*R);
-		const double w1 = 1.0/(sigma_proj*sigma_proj);
-		x*=g.kcen;y*=g.kcen;z*=g.kcen;
-		/* three because the general case fails in extreme cases */
-		if        ( w0 / w1 <= DBL_MIN ) { /* "Laue" corner case */
+		/* Project lattice point onto Ewald sphere */
+	        x = xl;
+		y = yl;
+		z = zl + g.kcen;
+		norm = 1.0/sqrt(x*x+y*y+z*z);
+		x *= norm;
+		y *= norm;
+		z *= norm;
+		z -= 1.0;
+
+		/* Width of Ewald sphere in the direction of the projection */
+		sigma_proj = sqrt(x*x+y*y+z*z)*g.sigma;
+
+		mean_variance(g.kcen, g.area, &sumw_k, &mean_k, &M2_k);
+		M2_k += g.area * g.sigma * g.sigma;
+		w0 = 1.0/(R*R);
+		w1 = 1.0/(sigma_proj*sigma_proj);
+
+		x *= g.kcen;
+		y *= g.kcen;
+		z *= g.kcen;
+
+		/* Three because the general case fails in extreme cases */
+		if ( w0 / w1 <= DBL_MIN ) {
+
+			/* 'Laue' corner case */
 			kpred = g.kcen;
-			exerr2 = g.kcen - safe_khalf(xl,yl,zl);
-			exerr2*= exerr2;
-		} else if ( w1 / w0 <= DBL_MIN ) { /* monochromatic corner case */
+			exerr2 = g.kcen - safe_khalf(xl, yl, zl);
+			exerr2 *= exerr2;
+
+		} else if ( w1 / w0 <= DBL_MIN ) {
+
+			/* 'Monochromatic' corner case */
 			kpred = safe_khalf(xl,yl,zl);
 			exerr2 = g.kcen - kpred;
 			exerr2*= exerr2;
-		} else {                          /* general case */
-			/* closest point on ewald sphere */
-			const double zlp0 = zl>0?zl:0; /* project zl to 0, bit of a hack... */
+
+		} else {
+
+			/* General case */
+
+			/* Closest point on Ewald sphere.
+			 * Project zl to 0, bit of a hack... */
+			const double zlp0 = zl>0?zl:0;
 			exerr2 = (x-xl)*(x-xl) + (y-yl)*(y-yl) + (z-zl)*(z-zl);
-			/* weighted average between projected lattice point and ewald sphere */
+
+			/* Weighted average between projected lattice point
+			 * and Ewald sphere */
 			x = ( xl  *w0 + x*w1 ) / ( w0 + w1 );
 			y = ( yl  *w0 + y*w1 ) / ( w0 + w1 );
 			z = ( zlp0*w0 + z*w1 ) / ( w0 + w1 );
 			kpred = safe_khalf(x,y,z);
+
 		}
-		const double sigma2    = R*R + sigma_proj*sigma_proj;
-		const double exponent = - 0.5 * exerr2 / sigma2;
-		const double overlap_integral = exponent < -700.0 ? 0.0 :
-		                                exp( exponent )
-		                              * sqrt( 2 * M_PI * R * R )
-		                              / sqrt( 2 * M_PI * sigma2 );
-		mean_variance(kpred,g.area*overlap_integral,&partiality,&mean_kpred,&M2_kpred);
+		sigma2 = R*R + sigma_proj*sigma_proj;
+		exponent = - 0.5 * exerr2 / sigma2;
+		if ( exponent > -700.0 ) {
+			overlap_integral = exp(exponent) * sqrt(2*M_PI*R*R) / sqrt(2*M_PI*sigma2);
+		} else {
+			exponent = 0.0;
+		}
+
+		mean_variance(kpred, g.area*overlap_integral,
+		              &partiality, &mean_kpred, &M2_kpred);
+
 	}
-	partiality *= sqrt( ( R*R + M2_k/sumw_k) / ( R*R ) ); /* reverting the lorentz factor */
+
+	/* Revert the 'Lorentz' factor */
+	partiality *= sqrt( ( R*R + M2_k/sumw_k) / ( R*R ) );
+
 	if ( (updateme == NULL) && ( partiality < min_partiality ) ) return NULL;
 
-	kpred = mean_kpred;
 	/* Calculate excitation error */
 	knom = 1.0/image->lambda;
 	dcs = distance3d(0.0, 0.0, -knom, xl, yl, zl);
 	exerr = 1.0/image->lambda - dcs;  /* Loss of precision */
-	/* to estimate excitation error from partiality but loosing sign */
-	/* that seems to be a problem */
-	/* exerr = R * sqrt( - 2 * log( partiality ) ) ; */
+
+	/* Could also estimate excitation error like this, but it loses the sign
+	 * (which is needed elsewhere):
+	 * exerr = R * sqrt(-2*log(partiality)); */
 
 	if ( updateme == NULL ) {
 		refl = reflection_new(h, k, l);
@@ -333,7 +380,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	if ( (image->det != NULL) && (updateme != NULL) ) {
 
 		double fs, ss;
-		locate_peak_on_panel(xl, yl, zl, kpred,
+		locate_peak_on_panel(xl, yl, zl, mean_kpred,
 		                     get_panel(updateme), &fs, &ss);
 		set_detector_pos(refl, fs, ss);
 
@@ -345,7 +392,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 		double fs, ss;        /* Position on detector */
 		signed int p;         /* Panel number */
-		p = locate_peak(xl, yl, zl, kpred,
+		p = locate_peak(xl, yl, zl, mean_kpred,
 		                image->det, &fs, &ss);
 		if ( p == -1 ) {
 			reflection_free(refl);
@@ -357,7 +404,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	}
 
 	khalf = (- xl*xl - yl*yl - zl*zl) / (2.0*zl);
-	set_kpred(refl, kpred);
+	set_kpred(refl, mean_kpred);
 	set_khalf(refl, khalf);
 	set_exerr(refl, exerr);
 	set_lorentz(refl, 1.0);
