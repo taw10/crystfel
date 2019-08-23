@@ -1893,9 +1893,10 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 
 				debug_lattice(g, eps, 1);
 
+			}
 
-			} else if ( GT(g.B, g.C)
-				|| (EQ(g.B, g.C) && GT(fabs(g.E), fabs(g.F))) )
+			if ( GT(g.B, g.C)
+			  || (EQ(g.B, g.C) && GT(fabs(g.E), fabs(g.F))) )
 			{
 				/* Swap b and c */
 				double temp;
@@ -1909,6 +1910,8 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 				mult_in_place(T, M);
 
 				debug_lattice(g, eps, 2);
+
+				/* ..."and go to 1." */
 				done_s1s2 = 0;
 			}
 
