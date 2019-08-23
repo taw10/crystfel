@@ -812,34 +812,36 @@ static int compare_double(const void *av, const void *bv)
 
 double estimate_peak_resolution(ImageFeatureList *peaks, double lambda)
 {
-	int i, n, j;
+	int i, npk, ncut;
 	double *rns;
 	double max_res;
 
-	n = image_feature_count(peaks);
-	rns = malloc(n*sizeof(double));
+	npk = image_feature_count(peaks);
+
+	/* No peaks -> no resolution! */
+	if ( npk == 0 ) return 0.0;
+
+	rns = malloc(npk*sizeof(double));
 	if ( rns == NULL ) return -1.0;
 
 	/* Get resolution values for all peaks */
-	j = 0;
-	for ( i=0; i<n; i++ ) {
+	for ( i=0; i<npk; i++ ) {
 
 		struct imagefeature *f;
 		struct rvec r;
 
 		f = image_get_feature(peaks, i);
-		if ( f == NULL ) continue;
 
 		r = get_q_for_panel(f->p, f->fs, f->ss, NULL, 1.0/lambda);
-		rns[j++] = modulus(r.u, r.v, r.w);
+		rns[i] = modulus(r.u, r.v, r.w);
 
 	}
 
 	/* Slightly horrible outlier removal */
-	qsort(rns, j, sizeof(double), compare_double);
-	n = j/50;
-	if ( n < 2 ) n = 2;
-	max_res = rns[(j-1)-n];
+	qsort(rns, npk, sizeof(double), compare_double);
+	ncut = npk/50;
+	if ( ncut < 2 ) ncut = 0;
+	max_res = rns[(npk-1)-ncut];
 
 	free(rns);
 	return max_res;
