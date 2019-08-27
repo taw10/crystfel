@@ -98,6 +98,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	tolerance[5] = atl;
 
 	STATUS("------------------> Reindexed (strictly the same lattice):\n");
+	STATUS("Tolerances applied directly to the unit cells\n");
 	if ( !compare_reindexed_cell_parameters(cell, cell2, tolerance, &m) ) {
 		STATUS("No relationship found between lattices.\n");
 	} else {
@@ -117,6 +118,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 
 	STATUS("------------------> Derivative lattice  "
 	       "(strictly the same lattice):\n");
+	STATUS("Tolerances applied to primitive versions of the unit cells\n");
 	if ( !compare_derivative_cell_parameters(cell, cell2, tolerance, 0, &m) ) {
 		STATUS("No relationship found between lattices.\n");
 	} else {
@@ -136,6 +138,7 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 
 	STATUS("------------------> Coincidence site lattice "
 	       "(not strictly the same lattice):\n");
+	STATUS("Tolerances applied to primitive versions of the unit cells\n");
 	if ( !compare_derivative_cell_parameters(cell, cell2, tolerance, 1, &m) ) {
 		STATUS("No relationship found between lattices.\n");
 		return 0;
