@@ -2059,31 +2059,32 @@ static double cell_diff(UnitCell *cell, double a, double b, double c,
 }
 
 
-static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
-                                         IntegerMatrix *RB, IntegerMatrix *CB,
+static int random_int(int max)
+{
+	int r;
+	int limit = RAND_MAX;
+	while ( limit % max ) limit--;
+	do {
+		r = rand();
+	} while ( r > limit );
+	return rand() % max;
+}
+
+
+static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *reference,
+                                         RationalMatrix *CiARA, IntegerMatrix *RiBCB,
                                          const double *tols)
 {
 	IntegerMatrix *m;
 	int i[9];
 	double a, b, c, al, be, ga;
 	double min_dist = +INFINITY;
-	IntegerMatrix *best_m = NULL;
-	RationalMatrix *RiBCB;
-	RationalMatrix *rRiB;
-	RationalMatrix *rCB;
-	IntegerMatrix *RiB;
+	int s, sel;
+	IntegerMatrix *best_m[5] = {NULL, NULL, NULL, NULL, NULL};
+	int n_best = 0;
 
 	m = intmat_new(3, 3);
 	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
-
-	RiBCB = rtnl_mtx_new(3, 3);
-	RiB = intmat_inverse(RB);
-	rRiB = rtnl_mtx_from_intmat(RiB);
-	rCB = rtnl_mtx_from_intmat(CB);
-	rtnl_mtx_mtxmult(rRiB, rCB, RiBCB);
-	intmat_free(RiB);
-	rtnl_mtx_free(rRiB);
-	rtnl_mtx_free(rCB);
 
 	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
 	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
@@ -2108,16 +2109,34 @@ static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
 		det = intmat_det(m);
 		if ( det != +1 ) continue;
 
-		tmp = cell_transform_intmat(cell, m);
-		nc = cell_transform_rational(tmp, RiBCB);
+		tmp = cell_transform_intmat(cell_reduced, m);
+		nc = cell_transform_intmat(tmp, RiBCB);
 		cell_free(tmp);
 
 		if ( compare_cell_parameters(nc, reference, tols) ) {
 			double dist = cell_diff(nc, a, b, c, al, be, ga);
 			if ( dist < min_dist ) {
-				intmat_free(best_m);
+
+				/* If the new solution is significantly better,
+				 * dump all the previous ones */
+				for ( s=0; s<n_best; s++ ) {
+					intmat_free(best_m[s]);
+				}
 				min_dist = dist;
-				best_m = intmat_copy(m);
+				best_m[0] = intmat_copy(m);
+				n_best = 1;
+
+			} else if ( dist == min_dist ) {
+
+				if ( n_best == 5 ) {
+					ERROR("WARNING: Too many equivalent "
+					      "reindexed lattices\n");
+				} else {
+					/* If the new solution is the same as the
+					* previous one, add it to the list */
+					best_m[n_best++] = intmat_copy(m);
+				}
+
 			}
 		}
 
@@ -2132,10 +2151,46 @@ static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
 	}
 	}
 	}
-	intmat_free(m);
-	rtnl_mtx_free(RiBCB);
 
-	return best_m;
+	if ( n_best == 0 ) return NULL;
+
+	sel = n_best;
+	if ( n_best == 1 ) {
+
+		/* If there's one solution, choose that one, of course */
+		sel = 0;
+
+	} else {
+
+		/* If one of the solutions results in an identity applied to the
+		 * original cell, choose that one */
+
+		for ( s=0; s<n_best; s++ ) {
+			RationalMatrix *tmp;
+			RationalMatrix *comb;
+			tmp = rtnlmtx_times_intmat(CiARA, best_m[s]);
+			comb = rtnlmtx_times_intmat(tmp, RiBCB);
+			if ( rtnl_mtx_is_identity(comb) ) {
+				sel = s;
+			}
+			rtnl_mtx_free(tmp);
+			rtnl_mtx_free(comb);
+		}
+
+	}
+
+	/* Still undecided?  Choose randomly, to avoid weird distributions
+	 * in the cell parameters */
+	if ( sel == n_best ) {
+		sel = random_int(n_best);
+	}
+
+	/* Free all the others */
+	for ( s=0; s<n_best; s++ ) {
+		if ( s != sel ) intmat_free(best_m[s]);
+	}
+
+	return best_m[sel];
 }
 
 
@@ -2158,6 +2213,12 @@ static IntegerMatrix *check_permutations(UnitCell *cell, UnitCell *reference,
  * \p reference_in.  Subject to the tolerances, the cell will be chosen which
  * has the lowest total absolute error in unit cell axis lengths.
  *
+ * There will usually be several transformation matrices which produce exactly
+ * the same total absolute error.  If one of the matrices is an identity, that
+ * one will be used.  Otherwise, the matrix will be selected at random from the
+ * possibilities.  This avoids skewed distributions of unit cell parameters,
+ * e.g. the angles always being greater than 90 degrees.
+ *
  * This is the right function to use for deciding if an indexing solution
  * matches a reference cell or not.
  *
@@ -2175,7 +2236,10 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 	RationalMatrix *CiA;
 	IntegerMatrix *RA;
 	IntegerMatrix *RB;
+	IntegerMatrix *RiB;
 	IntegerMatrix *P;
+	RationalMatrix *CiARA;
+	IntegerMatrix *RiBCB;
 	UnitCell *cell_reduced;
 	UnitCell *reference_reduced;
 	UnitCell *match;
@@ -2217,23 +2281,23 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 	cell_free(cell);
 
 	/* Within tolerance? */
-	P = check_permutations(cell_reduced, reference_in, RB, CB, tols);
+	RiB = intmat_inverse(RB);
+	RiBCB = intmat_times_intmat(RiB, CB);
+	intmat_free(RiB);
+	CiARA = rtnlmtx_times_intmat(CiA, RA);
+	P = check_permutations(cell_reduced, reference_in, CiARA, RiBCB, tols);
 	if ( P != NULL ) {
+
+		RationalMatrix *tmp;
+		RationalMatrix *comb;
 
 		//STATUS("The best permutation matrix:\n");
 		//intmat_print(P);
 
-		/* Calculate combined matrix: CB.RiB.RA.CiA */
-		IntegerMatrix *RiB = intmat_inverse(RB);
-		RationalMatrix *comb = rtnl_mtx_identity(3);
-
-		rtnl_mult_in_place(comb, CiA);
-		rtnl_int_mult_in_place(comb, RA);
-		rtnl_int_mult_in_place(comb, P);
-		rtnl_int_mult_in_place(comb, RiB);
-		rtnl_int_mult_in_place(comb, CB);
-
-		intmat_free(RiB);
+		/* Calculate combined matrix: CB.RiB.P.RA.CiA */
+		tmp = rtnlmtx_times_intmat(CiARA, P);
+		comb = rtnlmtx_times_intmat(tmp, RiBCB);
+		rtnl_mtx_free(tmp);
 
 		match = cell_transform_rational(cell_in, comb);
 		//STATUS("Original cell transformed to look like reference:\n");
