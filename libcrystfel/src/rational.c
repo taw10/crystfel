@@ -553,6 +553,29 @@ void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
 }
 
 
+void rtnl_mtx_intmatmult(const RationalMatrix *A, const IntegerMatrix *B,
+                         RationalMatrix *ans)
+{
+	int i, j;
+
+	assert(ans->rows == A->rows);
+
+	for ( i=0; i<ans->rows; i++ ) {
+		for ( j=0; j<ans->cols; j++ ) {
+			int k;
+			Rational sum = rtnl_zero();
+			for ( k=0; k<A->rows; k++ ) {
+				Rational add;
+				add = rtnl_mul(rtnl_mtx_get(A, i, k),
+				               rtnl(intmat_get(B, k, j), 1));
+				sum = rtnl_add(sum, add);
+			}
+			rtnl_mtx_set(ans, i, j, sum);
+		}
+	}
+}
+
+
 /* Given a "P-matrix" (see ITA chapter 5.1), calculate the fractional
  * coordinates of point "vec" in the original axes, given its fractional
  * coordinates in the transformed axes.

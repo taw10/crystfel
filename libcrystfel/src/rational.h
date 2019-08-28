@@ -92,6 +92,8 @@ extern IntegerMatrix *intmat_from_rtnl_mtx(const RationalMatrix *m);
 extern void rtnl_mtx_free(RationalMatrix *mtx);
 extern void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
                              RationalMatrix *ans);
+extern void rtnl_mtx_intmatmult(const RationalMatrix *A, const IntegerMatrix *B,
+                                RationalMatrix *ans);
 extern int transform_fractional_coords_rtnl(const RationalMatrix *P,
                                             const Rational *ivec,
                                             Rational *ans);

@@ -1844,6 +1844,23 @@ static void rtnl_mult_in_place(RationalMatrix *T, RationalMatrix *M)
 }
 
 
+/* Replace the elements of T with those of T*M */
+static void rtnl_int_mult_in_place(RationalMatrix *T, IntegerMatrix *M)
+{
+	int i, j;
+	RationalMatrix *tmp;
+
+	tmp = rtnl_mtx_new(3, 3);
+	rtnl_mtx_intmatmult(T, M, tmp);
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			rtnl_mtx_set(T, i, j, rtnl_mtx_get(tmp, i, j));
+		}
+	}
+	rtnl_mtx_free(tmp);
+}
+
+
 /* Cell volume from G6 components */
 static double g6_volume(struct g6 g)
 {
@@ -2243,24 +2260,16 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 		//intmat_print(P);
 
 		/* Calculate combined matrix: CB.RiB.RA.CiA */
-		RationalMatrix *rRA = rtnl_mtx_from_intmat(RA);
-		RationalMatrix *rP = rtnl_mtx_from_intmat(P);
 		IntegerMatrix *RiB = intmat_inverse(RB);
-		RationalMatrix *rRiB = rtnl_mtx_from_intmat(RiB);
-		RationalMatrix *rCB = rtnl_mtx_from_intmat(CB);
 		RationalMatrix *comb = rtnl_mtx_identity(3);
 
 		rtnl_mult_in_place(comb, CiA);
-		rtnl_mult_in_place(comb, rRA);
-		rtnl_mult_in_place(comb, rP);
-		rtnl_mult_in_place(comb, rRiB);
-		rtnl_mult_in_place(comb, rCB);
+		rtnl_int_mult_in_place(comb, RA);
+		rtnl_int_mult_in_place(comb, P);
+		rtnl_int_mult_in_place(comb, RiB);
+		rtnl_int_mult_in_place(comb, CB);
 
-		rtnl_mtx_free(rRA);
-		rtnl_mtx_free(rP);
 		intmat_free(RiB);
-		rtnl_mtx_free(rRiB);
-		rtnl_mtx_free(rCB);
 
 		match = cell_transform_rational(cell_in, comb);
 		//STATUS("Original cell transformed to look like reference:\n");
