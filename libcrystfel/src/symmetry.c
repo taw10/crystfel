@@ -326,7 +326,7 @@ static void expand_ops(SymOpList *s)
 				int k, nk;
 				int found;
 
-				m = intmat_intmat_mult(opi, opj);
+				m = intmat_times_intmat(opi, opj);
 				assert(m != NULL);
 
 				nk = num_ops(s);
@@ -380,13 +380,13 @@ static void transform_ops(SymOpList *s, IntegerMatrix *P)
 
 		IntegerMatrix *r, *f;
 
-		r = intmat_intmat_mult(P, s->ops[i]);
+		r = intmat_times_intmat(P, s->ops[i]);
 		if ( r == NULL ) {
 			ERROR("Matrix multiplication failed.\n");
 			return;
 		}
 
-		f = intmat_intmat_mult(r, Pi);
+		f = intmat_times_intmat(r, Pi);
 		if ( f == NULL ) {
 			ERROR("Matrix multiplication failed.\n");
 			return;
@@ -1340,7 +1340,7 @@ static int check_mult(const IntegerMatrix *ans,
 	int val;
 	IntegerMatrix *m;
 
-	m = intmat_intmat_mult(a, b);
+	m = intmat_times_intmat(a, b);
 	assert(m != NULL);
 
 	val = intmat_equals(ans, m);
@@ -1403,7 +1403,7 @@ static int order(const IntegerMatrix *m)
 
 		IntegerMatrix *anew;
 
-		anew = intmat_intmat_mult(m, a);
+		anew = intmat_times_intmat(m, a);
 		assert(anew != NULL);
 		intmat_free(a);
 		a = anew;

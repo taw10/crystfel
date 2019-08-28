@@ -1612,7 +1612,6 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 	Rational *cand_c;
 	int ncand_a, ncand_b, ncand_c;
 	int ia, ib;
-	RationalMatrix *MCB;
 	RationalMatrix *CiAMCB;
 	double min_dist = +INFINITY;
 
@@ -1647,8 +1646,6 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 	}
 
 	M = rtnl_mtx_new(3, 3);
-	MCB = rtnl_mtx_new(3, 3);
-	CiAMCB = rtnl_mtx_new(3, 3);
 	for ( ia=0; ia<ncand_a; ia++ ) {
 		for ( ib=0; ib<ncand_b; ib++ ) {
 
@@ -1656,6 +1653,7 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 			double at, bt, ct, alt, bet, gat;
 			double dist;
 			int ic = 0;
+			RationalMatrix *MCB;
 
 			/* Form the matrix using the first candidate for c */
 			rtnl_mtx_set(M, 0, 0, cand_a[3*ia+0]);
@@ -1710,8 +1708,9 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 				dist = g6_distance(test, reference);
 				if ( dist < min_dist ) {
 					min_dist = dist;
-					rtnl_mtx_mtxmult(M, CB, MCB);
-					rtnl_mtx_mtxmult(CiA, MCB, CiAMCB);
+					MCB = rtnlmtx_times_rtnlmtx(M, CB);
+					CiAMCB = rtnlmtx_times_rtnlmtx(CiA, MCB);
+					rtnl_mtx_free(MCB);
 				}
 
 				cell_free(test);
@@ -1721,7 +1720,6 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 	}
 
 	rtnl_mtx_free(M);
-	rtnl_mtx_free(MCB);
 	free(cand_a);
 	free(cand_b);
 	free(cand_c);
@@ -1817,47 +1815,13 @@ static void debug_lattice(struct g6 g, double eps, int step)
 static void mult_in_place(IntegerMatrix *T, IntegerMatrix *M)
 {
 	int i, j;
-	IntegerMatrix *tmp = intmat_intmat_mult(T, M);
+	IntegerMatrix *tmp = intmat_times_intmat(T, M);
 	for ( i=0; i<3; i++ ) {
 		for ( j=0; j<3; j++ ) {
 			intmat_set(T, i, j, intmat_get(tmp, i, j));
 		}
 	}
 	intmat_free(tmp);
-}
-
-
-/* Replace the elements of T with those of T*M */
-static void rtnl_mult_in_place(RationalMatrix *T, RationalMatrix *M)
-{
-	int i, j;
-	RationalMatrix *tmp;
-
-	tmp = rtnl_mtx_new(3, 3);
-	rtnl_mtx_mtxmult(T, M, tmp);
-	for ( i=0; i<3; i++ ) {
-		for ( j=0; j<3; j++ ) {
-			rtnl_mtx_set(T, i, j, rtnl_mtx_get(tmp, i, j));
-		}
-	}
-	rtnl_mtx_free(tmp);
-}
-
-
-/* Replace the elements of T with those of T*M */
-static void rtnl_int_mult_in_place(RationalMatrix *T, IntegerMatrix *M)
-{
-	int i, j;
-	RationalMatrix *tmp;
-
-	tmp = rtnl_mtx_new(3, 3);
-	rtnl_mtx_intmatmult(T, M, tmp);
-	for ( i=0; i<3; i++ ) {
-		for ( j=0; j<3; j++ ) {
-			rtnl_mtx_set(T, i, j, rtnl_mtx_get(tmp, i, j));
-		}
-	}
-	rtnl_mtx_free(tmp);
 }
 
 

@@ -528,37 +528,18 @@ void rtnl_mtx_print(const RationalMatrix *m)
 }
 
 
-void rtnl_mtx_mtxmult(const RationalMatrix *A, const RationalMatrix *B,
-                      RationalMatrix *ans)
+RationalMatrix *rtnlmtx_times_intmat(const RationalMatrix *A,
+                                     const IntegerMatrix *B)
 {
 	int i, j;
+	RationalMatrix *ans;
+	unsigned int B_rows, B_cols;
 
-	assert(ans->cols == B->cols);
-	assert(ans->rows == A->rows);
-	assert(A->cols == B->rows);
+	intmat_size(B, &B_rows, &B_cols);
+	assert(A->cols == B_rows);
 
-	for ( i=0; i<ans->rows; i++ ) {
-		for ( j=0; j<ans->cols; j++ ) {
-			int k;
-			Rational sum = rtnl_zero();
-			for ( k=0; k<A->rows; k++ ) {
-				Rational add;
-				add = rtnl_mul(rtnl_mtx_get(A, i, k),
-				               rtnl_mtx_get(B, k, j));
-				sum = rtnl_add(sum, add);
-			}
-			rtnl_mtx_set(ans, i, j, sum);
-		}
-	}
-}
-
-
-void rtnl_mtx_intmatmult(const RationalMatrix *A, const IntegerMatrix *B,
-                         RationalMatrix *ans)
-{
-	int i, j;
-
-	assert(ans->rows == A->rows);
+	ans = rtnl_mtx_new(A->rows, B_cols);
+	if ( ans == NULL ) return NULL;
 
 	for ( i=0; i<ans->rows; i++ ) {
 		for ( j=0; j<ans->cols; j++ ) {
@@ -573,6 +554,66 @@ void rtnl_mtx_intmatmult(const RationalMatrix *A, const IntegerMatrix *B,
 			rtnl_mtx_set(ans, i, j, sum);
 		}
 	}
+
+	return ans;
+}
+
+
+RationalMatrix *rtnlmtx_times_rtnlmtx(const RationalMatrix *A,
+                                      const RationalMatrix *B)
+{
+	int i, j;
+	RationalMatrix *ans;
+
+	assert(A->cols == B->rows);
+
+	ans = rtnl_mtx_new(A->rows, B->cols);
+	if ( ans == NULL ) return NULL;
+
+	for ( i=0; i<ans->rows; i++ ) {
+		for ( j=0; j<ans->cols; j++ ) {
+			int k;
+			Rational sum = rtnl_zero();
+			for ( k=0; k<A->rows; k++ ) {
+				Rational add;
+				add = rtnl_mul(rtnl_mtx_get(A, i, k),
+				               rtnl_mtx_get(B, k, j));
+				sum = rtnl_add(sum, add);
+			}
+			rtnl_mtx_set(ans, i, j, sum);
+		}
+	}
+
+	return ans;
+}
+
+
+RationalMatrix *intmat_times_rtnlmtx(const IntegerMatrix *A, const RationalMatrix *B)
+{
+	int i, j;
+	RationalMatrix *ans;
+	unsigned int A_rows, A_cols;
+
+	intmat_size(A, &A_rows, &A_cols);
+
+	ans = rtnl_mtx_new(A_rows, B->cols);
+	if ( ans == NULL ) return NULL;
+
+	for ( i=0; i<ans->rows; i++ ) {
+		for ( j=0; j<ans->cols; j++ ) {
+			int k;
+			Rational sum = rtnl_zero();
+			for ( k=0; k<A_rows; k++ ) {
+				Rational add;
+				add = rtnl_mul(rtnl(intmat_get(A, i, k), 1),
+				               rtnl_mtx_get(B, k, j));
+				sum = rtnl_add(sum, add);
+			}
+			rtnl_mtx_set(ans, i, j, sum);
+		}
+	}
+
+	return ans;
 }
 
 
