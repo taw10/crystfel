@@ -67,16 +67,16 @@ static void show_help(const char *s)
 "     --tolerance=<tol>      Set the tolerances for cell comparison.\n"
 "                             Default: 5,1.5 (axis percentage, angle deg).\n"
 "     --highres=n            Resolution limit (Angstroms) for --rings\n"
-"     --csl                  Allow --compare to find coincidence site lattice relationships.\n"
 );
 }
 
 
 static int comparecells(UnitCell *cell, const char *comparecell,
-                        double ltl, double atl, int csl)
+                        double ltl, double atl)
 {
 	UnitCell *cell2;
 	RationalMatrix *m;
+	double tolerance[6];
 
 	cell2 = load_cell_from_file(comparecell);
 	if ( cell2 == NULL ) {
@@ -90,10 +90,17 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 	STATUS("------------------> The reference unit cell:\n");
 	cell_print(cell2);
 
-	STATUS("------------------> The comparison results:\n");
-	if ( !compare_reindexed_cell_parameters(cell, cell2, ltl, atl, csl, &m) ) {
+	tolerance[0] = ltl;
+	tolerance[1] = ltl;
+	tolerance[2] = ltl;
+	tolerance[3] = atl;
+	tolerance[4] = atl;
+	tolerance[5] = atl;
+
+	STATUS("------------------> Reindexed (strictly the same lattice):\n");
+	STATUS("Tolerances applied directly to the unit cells\n");
+	if ( !compare_reindexed_cell_parameters(cell, cell2, tolerance, &m) ) {
 		STATUS("No relationship found between lattices.\n");
-		return 0;
 	} else {
 		UnitCell *trans;
 		STATUS("Relationship found.  To become similar to the reference"
@@ -109,7 +116,46 @@ static int comparecells(UnitCell *cell, const char *comparecell,
 
 	}
 
-	rtnl_mtx_free(m);
+	STATUS("------------------> Derivative lattice  "
+	       "(strictly the same lattice):\n");
+	STATUS("Tolerances applied to primitive versions of the unit cells\n");
+	if ( !compare_derivative_cell_parameters(cell, cell2, tolerance, 0, &m) ) {
+		STATUS("No relationship found between lattices.\n");
+	} else {
+		UnitCell *trans;
+		STATUS("Relationship found.  To become similar to the reference"
+		       " cell, the input cell should be transformed by:\n");
+		rtnl_mtx_print(m);
+		STATUS("Transformed version of input unit cell:\n");
+		trans = cell_transform_rational(cell, m);
+		cell_print(trans);
+		cell_free(trans);
+		STATUS("NB transformed cell might not really be triclinic, "
+		       "it's just that I don't (yet) know how to work out what "
+		       "it is.\n");
+		rtnl_mtx_free(m);
+	}
+
+	STATUS("------------------> Coincidence site lattice "
+	       "(not strictly the same lattice):\n");
+	STATUS("Tolerances applied to primitive versions of the unit cells\n");
+	if ( !compare_derivative_cell_parameters(cell, cell2, tolerance, 1, &m) ) {
+		STATUS("No relationship found between lattices.\n");
+		return 0;
+	} else {
+		UnitCell *trans;
+		STATUS("Relationship found.  To become similar to the reference"
+		       " cell, the input cell should be transformed by:\n");
+		rtnl_mtx_print(m);
+		STATUS("Transformed version of input unit cell:\n");
+		trans = cell_transform_rational(cell, m);
+		cell_print(trans);
+		cell_free(trans);
+		STATUS("NB transformed cell might not really be triclinic, "
+		       "it's just that I don't (yet) know how to work out what "
+		       "it is.\n");
+		rtnl_mtx_free(m);
+	}
 
 	return 0;
 }
@@ -227,6 +273,14 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 	SymOpList *ops;
 	signed int i[9];
 	const int maxorder = 3;
+	double tolerance[6];
+
+	tolerance[0] = ltl;
+	tolerance[1] = ltl;
+	tolerance[2] = ltl;
+	tolerance[3] = atl;
+	tolerance[4] = atl;
+	tolerance[5] = atl;
 
 	ops = get_pointgroup("1");
 	if ( ops == NULL ) return 1;
@@ -265,7 +319,7 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 
 		nc = cell_transform_intmat(cell, m);
 
-		if ( compare_cell_parameters(cell, nc, ltl, atl) ) {
+		if ( compare_cell_parameters(cell, nc, tolerance) ) {
 			if ( !intmat_is_identity(m) ) add_symop(ops, m);
 			STATUS("-----------------------------------------------"
 			       "-------------------------------------------\n");
@@ -426,7 +480,6 @@ int main(int argc, char *argv[])
 	float highres;
 	double rmax = 1/(2.0e-10);
 	char *trans_str = NULL;
-	int csl = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -445,7 +498,6 @@ int main(int argc, char *argv[])
 
 		{"transform",          1, NULL,                4},
 		{"highres",            1, NULL,                5},
-		{"csl",                0, &csl,                1},
 
 		{0, 0, NULL, 0}
 	};
@@ -572,8 +624,7 @@ int main(int argc, char *argv[])
 	if ( mode == CT_FINDAMBI ) return find_ambi(cell, sym, ltl, atl);
 	if ( mode == CT_UNCENTER ) return uncenter(cell, out_file);
 	if ( mode == CT_RINGS ) return all_rings(cell, sym, rmax);
-	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell,
-	                                              ltl, atl, csl);
+	if ( mode == CT_COMPARE ) return comparecells(cell, comparecell, ltl, atl);
 	if ( mode == CT_TRANSFORM ) return transform(cell, trans_str, out_file);
 	if ( mode == CT_CHOICES ) return cell_choices(cell);
 

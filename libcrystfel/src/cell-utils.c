@@ -574,404 +574,6 @@ UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **pC, RationalMatrix **pCi)
 }
 
 
-#define MAX_CAND (1024)
-
-static int right_handed_vec(struct rvec a, struct rvec b, struct rvec c)
-{
-	struct rvec aCb;
-	double aCb_dot_c;
-
-	/* "a" cross "b" */
-	aCb.u = a.v*b.w - a.w*b.v;
-	aCb.v = - (a.u*b.w - a.w*b.u);
-	aCb.w = a.u*b.v - a.v*b.u;
-
-	/* "a cross b" dot "c" */
-	aCb_dot_c = aCb.u*c.u + aCb.v*c.v + aCb.w*c.w;
-
-	if ( aCb_dot_c > 0.0 ) return 1;
-	return 0;
-}
-
-
-struct cvec {
-	struct rvec vec;
-	float na;
-	float nb;
-	float nc;
-	float fom;
-};
-
-
-static int same_vector(struct cvec a, struct cvec b)
-{
-	if ( a.na != b.na ) return 0;
-	if ( a.nb != b.nb ) return 0;
-	if ( a.nc != b.nc ) return 0;
-	return 1;
-}
-
-
-/* Attempt to make 'cell' fit into 'template' somehow */
-UnitCell *match_cell(UnitCell *cell_in, UnitCell *template_in, int verbose,
-                     const float *tols, int reduce)
-{
-	signed int n1l, n2l, n3l;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	int i, j;
-	double lengths[3];
-	double angles[3];
-	struct cvec *cand[3];
-	UnitCell *new_cell = NULL;
-	float best_fom = +999999999.9; /* Large number.. */
-	int ncand[3] = {0,0,0};
-	signed int ilow, ihigh;
-	float angtol = deg2rad(tols[3]);
-	UnitCell *cell;
-	UnitCell *template;
-	IntegerMatrix *centering;
-	UnitCell *new_cell_trans;
-
-	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &centering, NULL);
-	if ( template == NULL ) return NULL;
-
-	/* The candidate cell is also uncentered, because it might be centered
-	 * if it came from (e.g.) MOSFLM */
-	cell = uncenter_cell(cell_in, NULL, NULL);
-	if ( cell == NULL ) return NULL;
-
-	if ( cell_get_reciprocal(template, &asx, &asy, &asz,
-	                         &bsx, &bsy, &bsz,
-	                         &csx, &csy, &csz) ) {
-		ERROR("Couldn't get reciprocal cell for template.\n");
-		cell_free(template);
-		cell_free(cell);
-		intmat_free(centering);
-		return NULL;
-	}
-
-	lengths[0] = modulus(asx, asy, asz);
-	lengths[1] = modulus(bsx, bsy, bsz);
-	lengths[2] = modulus(csx, csy, csz);
-
-	angles[0] = angle_between(bsx, bsy, bsz, csx, csy, csz);
-	angles[1] = angle_between(asx, asy, asz, csx, csy, csz);
-	angles[2] = angle_between(asx, asy, asz, bsx, bsy, bsz);
-
-	cand[0] = malloc(MAX_CAND*sizeof(struct cvec));
-	cand[1] = malloc(MAX_CAND*sizeof(struct cvec));
-	cand[2] = malloc(MAX_CAND*sizeof(struct cvec));
-
-	if ( cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                         &bsx, &bsy, &bsz,
-	                         &csx, &csy, &csz) ) {
-		ERROR("Couldn't get reciprocal cell.\n");
-		cell_free(template);
-		cell_free(cell);
-		intmat_free(centering);
-		return NULL;
-	}
-
-	if ( reduce ) {
-		ilow = -2;  ihigh = 4;
-	} else {
-		ilow = 0;  ihigh = 1;
-	}
-
-	/* Negative values mean 1/n, positive means n, zero means zero */
-	for ( n1l=ilow; n1l<=ihigh; n1l++ ) {
-	for ( n2l=ilow; n2l<=ihigh; n2l++ ) {
-	for ( n3l=ilow; n3l<=ihigh; n3l++ ) {
-
-		float n1, n2, n3;
-		signed int b1, b2, b3;
-
-		n1 = (n1l>=0) ? (n1l) : (1.0/n1l);
-		n2 = (n2l>=0) ? (n2l) : (1.0/n2l);
-		n3 = (n3l>=0) ? (n3l) : (1.0/n3l);
-
-		if ( !reduce ) {
-			if ( n1l + n2l + n3l > 1 ) continue;
-		}
-
-		/* 'bit' values can be +1 or -1 */
-		for ( b1=-1; b1<=1; b1+=2 ) {
-		for ( b2=-1; b2<=1; b2+=2 ) {
-		for ( b3=-1; b3<=1; b3+=2 ) {
-
-			double tx, ty, tz;
-			double tlen;
-			int i;
-
-			n1 *= b1;  n2 *= b2;  n3 *= b3;
-
-			tx = n1*asx + n2*bsx + n3*csx;
-			ty = n1*asy + n2*bsy + n3*csy;
-			tz = n1*asz + n2*bsz + n3*csz;
-			tlen = modulus(tx, ty, tz);
-
-			/* Test modulus for agreement with moduli of template */
-			for ( i=0; i<3; i++ ) {
-
-				if ( !within_tolerance(lengths[i], tlen,
-				                       tols[i]) )
-				{
-					continue;
-				}
-
-				if ( ncand[i] == MAX_CAND ) {
-					ERROR("Too many cell candidates - ");
-					ERROR("consider tightening the unit ");
-					ERROR("cell tolerances.\n");
-				} else {
-
-					double fom;
-
-					fom = fabs(lengths[i] - tlen);
-
-					cand[i][ncand[i]].vec.u = tx;
-					cand[i][ncand[i]].vec.v = ty;
-					cand[i][ncand[i]].vec.w = tz;
-					cand[i][ncand[i]].na = n1;
-					cand[i][ncand[i]].nb = n2;
-					cand[i][ncand[i]].nc = n3;
-					cand[i][ncand[i]].fom = fom;
-
-					ncand[i]++;
-
-				}
-			}
-
-		}
-		}
-		}
-
-	}
-	}
-	}
-
-	if ( verbose ) {
-		STATUS("Candidates: %i %i %i\n", ncand[0], ncand[1], ncand[2]);
-	}
-
-	for ( i=0; i<ncand[0]; i++ ) {
-	for ( j=0; j<ncand[1]; j++ ) {
-
-		double ang;
-		int k;
-		float fom1;
-
-		if ( same_vector(cand[0][i], cand[1][j]) ) continue;
-
-		/* Measure the angle between the ith candidate for axis 0
-		 * and the jth candidate for axis 1 */
-		ang = angle_between(cand[0][i].vec.u, cand[0][i].vec.v,
-		                    cand[0][i].vec.w, cand[1][j].vec.u,
-		                    cand[1][j].vec.v, cand[1][j].vec.w);
-
-		/* Angle between axes 0 and 1 should be angle 2 */
-		if ( fabs(ang - angles[2]) > angtol ) continue;
-
-		fom1 = fabs(ang - angles[2]);
-
-		for ( k=0; k<ncand[2]; k++ ) {
-
-			float fom2, fom3;
-
-			if ( same_vector(cand[1][j], cand[2][k]) ) continue;
-
-			/* Measure the angle between the current candidate for
-			 * axis 0 and the kth candidate for axis 2 */
-			ang = angle_between(cand[0][i].vec.u, cand[0][i].vec.v,
-			                    cand[0][i].vec.w, cand[2][k].vec.u,
-			                    cand[2][k].vec.v, cand[2][k].vec.w);
-
-			/* ... it should be angle 1 ... */
-			if ( fabs(ang - angles[1]) > angtol ) continue;
-
-			fom2 = fom1 + fabs(ang - angles[1]);
-
-			/* Finally, the angle between the current candidate for
-			 * axis 1 and the kth candidate for axis 2 */
-			ang = angle_between(cand[1][j].vec.u, cand[1][j].vec.v,
-			                    cand[1][j].vec.w, cand[2][k].vec.u,
-			                    cand[2][k].vec.v, cand[2][k].vec.w);
-
-			/* ... it should be angle 0 ... */
-			if ( fabs(ang - angles[0]) > angtol ) continue;
-
-			/* Unit cell must be right-handed */
-			if ( !right_handed_vec(cand[0][i].vec, cand[1][j].vec,
-			                       cand[2][k].vec) ) continue;
-
-			fom3 = fom2 + fabs(ang - angles[0]);
-			fom3 += LWEIGHT * (cand[0][i].fom + cand[1][j].fom
-			                   + cand[2][k].fom);
-
-			if ( fom3 < best_fom ) {
-				if ( new_cell != NULL ) free(new_cell);
-				new_cell = cell_new_from_reciprocal_axes(
-				                 cand[0][i].vec, cand[1][j].vec,
-			                         cand[2][k].vec);
-				best_fom = fom3;
-			}
-
-		}
-
-	}
-	}
-
-	free(cand[0]);
-	free(cand[1]);
-	free(cand[2]);
-
-	cell_free(cell);
-
-	/* Reverse the de-centering transformation */
-	if ( new_cell != NULL ) {
-
-		new_cell_trans = cell_transform_intmat(new_cell, centering);
-		cell_free(new_cell);
-		cell_set_lattice_type(new_cell_trans,
-		                      cell_get_lattice_type(template_in));
-		cell_set_centering(new_cell_trans,
-		                   cell_get_centering(template_in));
-		cell_set_unique_axis(new_cell_trans,
-		                     cell_get_unique_axis(template_in));
-
-		cell_free(template);
-		intmat_free(centering);
-
-		return new_cell_trans;
-
-	} else {
-		cell_free(template);
-		intmat_free(centering);
-		return NULL;
-	}
-}
-
-
-UnitCell *match_cell_ab(UnitCell *cell_in, UnitCell *template_in)
-{
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	int i;
-	double lengths[3];
-	int used[3];
-	struct rvec real_a, real_b, real_c;
-	struct rvec params[3];
-	double alen, blen;
-	float ltl = 5.0;     /* percent */
-	int have_real_a;
-	int have_real_b;
-	int have_real_c;
-	UnitCell *cell;
-	UnitCell *template;
-	IntegerMatrix *to_given_cell;
-	UnitCell *new_cell;
-	UnitCell *new_cell_trans;
-
-	/* "Un-center" the template unit cell to make the comparison easier */
-	template = uncenter_cell(template_in, &to_given_cell, NULL);
-
-	/* The candidate cell is also uncentered, because it might be centered
-	 * if it came from (e.g.) MOSFLM */
-	cell = uncenter_cell(cell_in, NULL, NULL);
-
-	/* Get the lengths to match */
-	if ( cell_get_cartesian(template, &ax, &ay, &az,
-	                                  &bx, &by, &bz,
-	                                  &cx, &cy, &cz) )
-	{
-		ERROR("Couldn't get cell for template.\n");
-		return NULL;
-	}
-	alen = modulus(ax, ay, az);
-	blen = modulus(bx, by, bz);
-
-	/* Get the lengths from the cell and turn them into anonymous vectors */
-	if ( cell_get_cartesian(cell, &ax, &ay, &az,
-	                              &bx, &by, &bz,
-	                              &cx, &cy, &cz) )
-	{
-		ERROR("Couldn't get cell.\n");
-		return NULL;
-	}
-	lengths[0] = modulus(ax, ay, az);
-	lengths[1] = modulus(bx, by, bz);
-	lengths[2] = modulus(cx, cy, cz);
-	used[0] = 0;  used[1] = 0;  used[2] = 0;
-	params[0].u = ax;  params[0].v = ay;  params[0].w = az;
-	params[1].u = bx;  params[1].v = by;  params[1].w = bz;
-	params[2].u = cx;  params[2].v = cy;  params[2].w = cz;
-
-	real_a.u = 0.0;  real_a.v = 0.0;  real_a.w = 0.0;
-	real_b.u = 0.0;  real_b.v = 0.0;  real_b.w = 0.0;
-	real_c.u = 0.0;  real_c.v = 0.0;  real_c.w = 0.0;
-
-	/* Check each vector against a and b */
-	have_real_a = 0;
-	have_real_b = 0;
-	for ( i=0; i<3; i++ ) {
-		if ( within_tolerance(lengths[i], alen, ltl)
-		     && !used[i] && !have_real_a )
-		{
-			used[i] = 1;
-			memcpy(&real_a, &params[i], sizeof(struct rvec));
-			have_real_a = 1;
-		}
-		if ( within_tolerance(lengths[i], blen, ltl)
-		     && !used[i] && !have_real_b )
-		{
-			used[i] = 1;
-			memcpy(&real_b, &params[i], sizeof(struct rvec));
-			have_real_b = 1;
-		}
-	}
-
-	/* Have we matched both a and b? */
-	if ( !(have_real_a && have_real_b) ) return NULL;
-
-	/* "c" is "the other one" */
-	have_real_c = 0;
-	for ( i=0; i<3; i++ ) {
-		if ( !used[i] ) {
-			memcpy(&real_c, &params[i], sizeof(struct rvec));
-			have_real_c = 1;
-		}
-	}
-
-	if ( !have_real_c ) {
-		ERROR("Huh?  Couldn't find the third vector.\n");
-		ERROR("Matches: %i %i %i\n", used[0], used[1], used[2]);
-		return NULL;
-	}
-
-	/* Flip c if not right-handed */
-	if ( !right_handed_vec(real_a, real_b, real_c) ) {
-		real_c.u = -real_c.u;
-		real_c.v = -real_c.v;
-		real_c.w = -real_c.w;
-	}
-
-	new_cell = cell_new_from_direct_axes(real_a, real_b, real_c);
-
-	 /* Reverse the de-centering transformation */
-	new_cell_trans = cell_transform_intmat_inverse(new_cell, to_given_cell);
-	cell_free(new_cell);
-	cell_set_lattice_type(new_cell, cell_get_lattice_type(template_in));
-	cell_set_centering(new_cell, cell_get_centering(template_in));
-	cell_set_unique_axis(new_cell, cell_get_unique_axis(template_in));
-
-	return new_cell_trans;
-}
-
-
 /* Return sin(theta)/lambda = 1/2d.  Multiply by two if you want 1/d */
 double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 {
@@ -1669,14 +1271,13 @@ double cell_get_volume(UnitCell *cell)
 
 
 /**
- * \param cell1: A UnitCell
- * \param cell2: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in axis lengths
- * \param atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param cell: A UnitCell
+ * \param reference: Another UnitCell
+ * \param tols: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  *
  * Compare the two unit cells.  If the real space parameters match to within
- * fractional difference \p ltl, and the inter-axial angles match within \p atl,
- * and the centering matches, this function returns 1.  Otherwise 0.
+ * the specified tolerances, and the centering matches, this function returns 1.
+ * Otherwise 0.
  *
  * This function considers the cell parameters and centering, but ignores the
  * orientation of the cell.  If you want to compare the orientation as well,
@@ -1685,25 +1286,25 @@ double cell_get_volume(UnitCell *cell)
  * \returns non-zero if the cells match.
  *
  */
-int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
-                            float ltl, float atl)
+int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
+                            const double *tols)
 {
 	double a1, b1, c1, al1, be1, ga1;
 	double a2, b2, c2, al2, be2, ga2;
 
 	/* Centering must match: we don't arbitrarte primitive vs centered,
 	 * different cell choices etc */
-	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
+	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
 
-	cell_get_parameters(cell1, &a1, &b1, &c1, &al1, &be1, &ga1);
-	cell_get_parameters(cell2, &a2, &b2, &c2, &al2, &be2, &ga2);
+	cell_get_parameters(cell, &a1, &b1, &c1, &al1, &be1, &ga1);
+	cell_get_parameters(reference, &a2, &b2, &c2, &al2, &be2, &ga2);
 
-	if ( !within_tolerance(a1, a2, ltl*100.0) ) return 0;
-	if ( !within_tolerance(b1, b2, ltl*100.0) ) return 0;
-	if ( !within_tolerance(c1, c2, ltl*100.0) ) return 0;
-	if ( fabs(al1-al2) > atl ) return 0;
-	if ( fabs(be1-be2) > atl ) return 0;
-	if ( fabs(ga1-ga2) > atl ) return 0;
+	if ( !within_tolerance(a1, a2, tols[0]*100.0) ) return 0;
+	if ( !within_tolerance(b1, b2, tols[1]*100.0) ) return 0;
+	if ( !within_tolerance(c1, c2, tols[2]*100.0) ) return 0;
+	if ( fabs(al1-al2) > tols[3] ) return 0;
+	if ( fabs(be1-be2) > tols[4] ) return 0;
+	if ( fabs(ga1-ga2) > tols[5] ) return 0;
 
 	return 1;
 }
@@ -1719,83 +1320,94 @@ static double moduli_check(double ax, double ay, double az,
 
 
 /**
- * \param cell1: A UnitCell
- * \param cell2: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in axis lengths
- * \param atl: Maximum allowable difference in angles (in radians)
+ * \param cell: A UnitCell
+ * \param reference: Another UnitCell
+ * \param tols: Pointer to six tolerance values (see below)
  *
  * Compare the two unit cells.  If the axes match in length (to within
- * fractional difference \p ltl) and the axes are aligned to within \p atl radians,
- * this function returns non-zero.
+ * the specified tolerances), this function returns non-zero.
  *
  * This function compares the orientation of the cell as well as the parameters.
  * If you just want to see if the parameters are the same, use
  * compare_cell_parameters() instead.
  *
- * The cells \p a and \p b must have the same centering.  Otherwise, this function
- * always returns zero.
+ * The comparison is done by checking that the lengths of the unit cell axes are
+ * the same between the two cells, and that the axes have similar directions in
+ * 3D space.  The first three tolerance values are the maximum allowable fractional
+ * differences between the a,b,c axis lengths (respectively) of the two cells.
+ * The last three tolerance values are the maximum allowable angles, in radians,
+ * between the directions of the a,b,c axes of the two cells.
+ *
+ * \p cell and \p reference must have the same centering.  Otherwise, this
+ * function always returns zero.
  *
  * \returns non-zero if the cells match.
  *
  */
-int compare_cell_parameters_and_orientation(UnitCell *cell1, UnitCell *cell2,
-                                            const double ltl, const double atl)
+int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
+                                            const double *tols)
 {
 	double ax1, ay1, az1, bx1, by1, bz1, cx1, cy1, cz1;
 	double ax2, ay2, az2, bx2, by2, bz2, cx2, cy2, cz2;
 
-	if ( cell_get_centering(cell1) != cell_get_centering(cell2) ) return 0;
+	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
 
-	cell_get_cartesian(cell1, &ax1, &ay1, &az1,
-	                          &bx1, &by1, &bz1,
-	                          &cx1, &cy1, &cz1);
+	cell_get_cartesian(cell, &ax1, &ay1, &az1,
+	                         &bx1, &by1, &bz1,
+	                         &cx1, &cy1, &cz1);
 
-	cell_get_cartesian(cell2, &ax2, &ay2, &az2,
-	                          &bx2, &by2, &bz2,
-	                          &cx2, &cy2, &cz2);
+	cell_get_cartesian(reference, &ax2, &ay2, &az2,
+	                              &bx2, &by2, &bz2,
+	                              &cx2, &cy2, &cz2);
 
-	if ( angle_between(ax1, ay1, az1, ax2, ay2, az2) > atl ) return 0;
-	if ( angle_between(bx1, by1, bz1, bx2, by2, bz2) > atl ) return 0;
-	if ( angle_between(cx1, cy1, cz1, cx2, cy2, cz2) > atl ) return 0;
+	if ( angle_between(ax1, ay1, az1, ax2, ay2, az2) > tols[3] ) return 0;
+	if ( angle_between(bx1, by1, bz1, bx2, by2, bz2) > tols[4] ) return 0;
+	if ( angle_between(cx1, cy1, cz1, cx2, cy2, cz2) > tols[5] ) return 0;
 
-	if ( moduli_check(ax1, ay1, az1, ax2, ay2, az2) > ltl ) return 0;
-	if ( moduli_check(bx1, by1, bz1, bx2, by2, bz2) > ltl ) return 0;
-	if ( moduli_check(cx1, cy1, cz1, cx2, cy2, cz2) > ltl ) return 0;
+	if ( moduli_check(ax1, ay1, az1, ax2, ay2, az2) > tols[0] ) return 0;
+	if ( moduli_check(bx1, by1, bz1, bx2, by2, bz2) > tols[1] ) return 0;
+	if ( moduli_check(cx1, cy1, cz1, cx2, cy2, cz2) > tols[2] ) return 0;
 
 	return 1;
 }
 
 
 /**
- * \param a: A UnitCell
- * \param b: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in reciprocal axis lengths
- * \param atl: Maximum allowable difference in reciprocal angles (in radians)
+ * \param cell: A UnitCell
+ * \param reference: Another UnitCell
+ * \param tols: Pointer to six tolerance values (see below)
  * \param pmb: Place to store pointer to matrix
  *
  * Compare the two unit cells.  If, using any permutation of the axes, the
- * axes can be made to match in length (to within fractional difference \p ltl)
- * and the axes aligned to within \p atl radians, this function returns non-zero
- * and stores the transformation to map \p b onto \p a.
+ * axes can be made to match in length and the axes aligned in space, this
+ * function returns non-zero and stores the transformation which must be applied
+ * to \p cell at \p pmb.
+ *
+ * A "permutation" means a transformation represented by a matrix with all
+ * elements equal to +1, 0 or -1, having determinant +1 or -1.  That means that
+ * this function will find the relationship between a left-handed and a right-
+ * handed basis.
  *
  * Note that the orientations of the cells must match, not just the parameters.
  * The comparison is done after reindexing using
- * compare_cell_parameters_and_orientation().
+ * compare_cell_parameters_and_orientation().  See that function for more
+ * details.
  *
- * The cells \p a and \p b must have the same centering.  Otherwise, this function
- * always returns zero.
+ * \p cell and \p reference must have the same centering.  Otherwise, this
+ * function always returns zero.
  *
  * \returns non-zero if the cells match.
  *
  */
-int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
-                                                      double ltl, double atl,
-                                                      IntegerMatrix **pmb)
+int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
+                                                     UnitCell *reference,
+                                                     const double *tols,
+                                                     IntegerMatrix **pmb)
 {
 	IntegerMatrix *m;
 	int i[9];
 
-	if ( cell_get_centering(a) != cell_get_centering(b) ) return 0;
+	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
 
 	m = intmat_new(3, 3);
 
@@ -1812,16 +1424,20 @@ int compare_reindexed_cell_parameters_and_orientation(UnitCell *a, UnitCell *b,
 		UnitCell *nc;
 		int j, k;
 		int l = 0;
+		signed int det;
 
 		for ( j=0; j<3; j++ )
 			for ( k=0; k<3; k++ )
 				intmat_set(m, j, k, i[l++]);
 
-		if ( intmat_det(m) != +1 ) continue;
+		det = intmat_det(m);
+		if ( (det != +1) && (det != -1) ) continue;
 
-		nc = cell_transform_intmat(b, m);
+		nc = cell_transform_intmat(cell, m);
 
-		if ( compare_cell_parameters_and_orientation(a, nc, ltl, atl) ) {
+		if ( compare_cell_parameters_and_orientation(nc, reference,
+		                                             tols) )
+		{
 			if ( pmb != NULL ) *pmb = m;
 			cell_free(nc);
 			return 1;
@@ -1928,31 +1544,18 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 }
 
 
-static void g6_components(double *g6, double a, double b, double c,
-                                      double al, double be, double ga)
+static double g6_distance(UnitCell *cell1, UnitCell *cell2)
 {
-	g6[0] = a*a;
-	g6[1] = b*b;
-	g6[2] = c*c;
-	g6[3] = 2.0*b*c*cos(al);
-	g6[4] = 2.0*a*c*cos(be);
-	g6[5] = 2.0*a*b*cos(ga);
-}
-
-
-static double g6_distance(double a1, double b1, double c1,
-                          double al1, double be1, double ga1,
-                          double a2, double b2, double c2,
-                          double al2, double be2, double ga2)
-{
-	double g1[6], g2[6];
-	int i;
+	struct g6 g1, g2;
 	double total = 0.0;
-	g6_components(g1, a1, b1, c1, al1, be1, ga1);
-	g6_components(g2, a2, b2, c2, al2, be2, ga2);
-	for ( i=0; i<6; i++ ) {
-		total += (g1[i]-g2[i])*(g1[i]-g2[i]);
-	}
+	g1 = cell_get_G6(cell1);
+	g2 = cell_get_G6(cell2);
+	total += (g1.A-g2.A)*(g1.A-g2.A);
+	total += (g1.B-g2.B)*(g1.B-g2.B);
+	total += (g1.C-g2.C)*(g1.C-g2.C);
+	total += (g1.D-g2.D)*(g1.D-g2.D);
+	total += (g1.E-g2.E)*(g1.E-g2.E);
+	total += (g1.F-g2.F)*(g1.F-g2.F);
 	return sqrt(total);
 }
 
@@ -1960,15 +1563,15 @@ static double g6_distance(double a1, double b1, double c1,
 /**
  * \param cell_in: A UnitCell
  * \param reference_in: Another UnitCell
- * \param ltl: Maximum allowable fractional difference in direct-space axis lengths
- * \param atl: Maximum allowable difference in direct-space angles (in radians)
+ * \param tols: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
  * \param csl: Non-zero to look for coincidence site lattice relationships
  * \param pmb: Place to store pointer to matrix
  *
  * Compare the \p cell_in with \p reference_in.  If \p cell is a derivative lattice
- * of \p reference, within fractional axis length difference \p ltl and absolute angle
- * difference \p atl (in radians), this function returns non-zero and stores the
- * transformation which needs to be applied to \p cell_in at \p pmb.
+ * of \p reference, within fractional axis length differences \p tols[0..2]
+ * and absolute angle difference \p tols[3..5] (in radians), this function returns
+ * non-zero and stores the transformation which needs to be applied to
+ * \p cell_in at \p pmb.
  *
  * Note that the tolerances will be applied to the primitive unit cell.  If
  * the reference cell is centered, a primitive unit cell will first be calculated.
@@ -1985,12 +1588,16 @@ static double g6_distance(double a1, double b1, double c1,
  * meaning that the lattice points of the transformed version of \p cell_in
  * might not coincide with lattice points of \p reference_in.
  *
+ * This function is used by CrystFEL's cell_tool program to find non-obvious
+ * relationships between crystal lattices.  For most routine comparisons, this
+ * function is probably not the one you need!
+ *
  * \returns non-zero if the cells match, zero for no match or error.
  *
  */
-int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
-                                      double ltl, double atl, int csl,
-                                      RationalMatrix **pmb)
+int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
+                                       const double *tols, int csl,
+                                       RationalMatrix **pmb)
 {
 	UnitCell *cell;
 	UnitCell *reference;
@@ -2005,7 +1612,6 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	Rational *cand_c;
 	int ncand_a, ncand_b, ncand_c;
 	int ia, ib;
-	RationalMatrix *MCB;
 	RationalMatrix *CiAMCB;
 	double min_dist = +INFINITY;
 
@@ -2026,9 +1632,9 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	                         &cv[0], &cv[1], &cv[2]);
 
 	/* Find vectors in 'cell' with lengths close to a, b and c */
-	cand_a = find_candidates(a, av, bv, cv, ltl, csl, &ncand_a);
-	cand_b = find_candidates(b, av, bv, cv, ltl, csl, &ncand_b);
-	cand_c = find_candidates(c, av, bv, cv, ltl, csl, &ncand_c);
+	cand_a = find_candidates(a, av, bv, cv, tols[0], csl, &ncand_a);
+	cand_b = find_candidates(b, av, bv, cv, tols[1], csl, &ncand_b);
+	cand_c = find_candidates(c, av, bv, cv, tols[2], csl, &ncand_c);
 
 	if ( (ncand_a==0) || (ncand_b==0) || (ncand_c==0) ) {
 		*pmb = NULL;
@@ -2040,8 +1646,6 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	}
 
 	M = rtnl_mtx_new(3, 3);
-	MCB = rtnl_mtx_new(3, 3);
-	CiAMCB = rtnl_mtx_new(3, 3);
 	for ( ia=0; ia<ncand_a; ia++ ) {
 		for ( ib=0; ib<ncand_b; ib++ ) {
 
@@ -2049,6 +1653,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			double at, bt, ct, alt, bet, gat;
 			double dist;
 			int ic = 0;
+			RationalMatrix *MCB;
 
 			/* Form the matrix using the first candidate for c */
 			rtnl_mtx_set(M, 0, 0, cand_a[3*ia+0]);
@@ -2065,7 +1670,7 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 			test = cell_transform_rational(cell, M);
 			cell_get_parameters(test, &at, &bt, &ct, &alt, &bet, &gat);
 			cell_free(test);
-			if ( fabs(gat - ga) > atl ) continue;
+			if ( fabs(gat - ga) > tols[5] ) continue;
 
 			/* Gamma OK, now look for place for c axis */
 			for ( ic=0; ic<ncand_c; ic++ ) {
@@ -2091,21 +1696,21 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 					cell_free(test);
 					continue;
 				}
-				if ( fabs(alt - al) > atl ) {
+				if ( fabs(alt - al) > tols[3] ) {
 					cell_free(test);
 					continue;
 				}
-				if ( fabs(bet - be) > atl ) {
+				if ( fabs(bet - be) > tols[4] ) {
 					cell_free(test);
 					continue;
 				}
 
-				dist = g6_distance(at, bt, ct, alt, bet, gat,
-				                   a, b, c, al, be, ga);
+				dist = g6_distance(test, reference);
 				if ( dist < min_dist ) {
 					min_dist = dist;
-					rtnl_mtx_mtxmult(M, CB, MCB);
-					rtnl_mtx_mtxmult(CiA, MCB, CiAMCB);
+					MCB = rtnlmtx_times_rtnlmtx(M, CB);
+					CiAMCB = rtnlmtx_times_rtnlmtx(CiA, MCB);
+					rtnl_mtx_free(MCB);
 				}
 
 				cell_free(test);
@@ -2115,7 +1720,6 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	}
 
 	rtnl_mtx_free(M);
-	rtnl_mtx_free(MCB);
 	free(cand_a);
 	free(cand_b);
 	free(cand_c);
@@ -2129,4 +1733,589 @@ int compare_reindexed_cell_parameters(UnitCell *cell_in, UnitCell *reference_in,
 	/* Solution found */
 	*pmb = CiAMCB;
 	return 1;
+}
+
+
+/* Criteria from Grosse-Kunstleve et al., Acta Cryst A60 (2004) p1-6 */
+#define GT(x,y) (y < x - eps)
+#define LT(x,y) GT(y,x)
+#define EQ(x,y) !(GT(x,y) || LT(x,y))
+#define LTE(x,y) !(GT(x,y))
+
+
+static int in_standard_presentation(struct g6 g, double eps)
+{
+	if ( GT(g.A, g.B) ) return 0;
+	if ( GT(g.B, g.C) ) return 0;
+
+	if ( EQ(g.A, g.B) && GT(fabs(g.D), fabs(g.E)) ) return 0;
+	if ( EQ(g.B, g.C) && GT(fabs(g.E), fabs(g.F)) ) return 0;
+
+	if ( ( GT(g.D, 0.0) && GT(g.E, 0.0) && GT(g.F, 0.0) )
+	  || ( !GT(g.D, 0.0) && !GT(g.E, 0.0) && !GT(g.F, 0.0) ) ) return 1;
+
+	return 0;
+}
+
+
+static int is_burger(struct g6 g, double eps)
+{
+	if ( !in_standard_presentation(g, eps) ) return 0;
+	if ( GT(fabs(g.D), g.B) ) return 0;
+	if ( GT(fabs(g.E), g.A) ) return 0;
+	if ( GT(fabs(g.F), g.A) ) return 0;
+	if ( LT(g.D + g.E + g.F + g.A + g.B, 0.0) ) return 0;
+	return 1;
+}
+
+
+static int UNUSED is_niggli(struct g6 g, double eps)
+{
+	if ( !is_burger(g, eps) ) return 0;
+
+	if ( EQ(g.D, g.B) && GT(g.F, 2.0*g.E) ) return 0;
+	if ( EQ(g.E, g.A) && GT(g.F, 2.0*g.D) ) return 0;
+	if ( EQ(g.F, g.A) && GT(g.E, 2.0*g.D) ) return 0;
+
+	if ( EQ(g.D, -g.B) && !EQ(g.F, 0.0) ) return 0;
+	if ( EQ(g.E, -g.A) && !EQ(g.F, 0.0) ) return 0;
+	if ( EQ(g.F, -g.A) && !EQ(g.E, 0.0) ) return 0;
+
+	if ( EQ(g.D + g.E + g.F + g.A + g.B, 0.0)
+	  && GT(2.0*(g.A + g.E)+g.F, 0.0) ) return 0;
+
+	return 1;
+}
+
+
+static signed int eps_sign(double v, double eps)
+{
+	return GT(v, 0.0) ? +1 : -1;
+}
+
+
+static void debug_lattice(struct g6 g, double eps, int step)
+{
+#if 0
+	STATUS("After step %i:  %e %e %e %e %e %e --", step,
+	       g.A/1e-0, g.B/1e-0, g.C/1e-0,
+	       g.D/1e-0, g.E/1e-0, g.F/1e-0);
+	if ( is_burger(g, eps) ) STATUS(" B");
+	if ( is_niggli(g, eps) ) STATUS(" N");
+	if ( eps_sign(g.D, eps)*eps_sign(g.E, eps)*eps_sign(g.F, eps) > 0 ) {
+		STATUS(" I");
+	} else {
+		STATUS(" II");
+	}
+	STATUS("\n");
+#endif
+}
+
+
+static void mult_in_place(IntegerMatrix *T, IntegerMatrix *M)
+{
+	int i, j;
+	IntegerMatrix *tmp = intmat_times_intmat(T, M);
+	for ( i=0; i<3; i++ ) {
+		for ( j=0; j<3; j++ ) {
+			intmat_set(T, i, j, intmat_get(tmp, i, j));
+		}
+	}
+	intmat_free(tmp);
+}
+
+
+/* Cell volume from G6 components */
+static double g6_volume(struct g6 g)
+{
+	return sqrt(g.A*g.B*g.C
+	       - 0.25*(g.A*g.D*g.D + g.B*g.E*g.E + g.C*g.F*g.F - g.D*g.E*g.F));
+}
+
+
+/* NB The G6 components are passed by value, not reference.
+ * It's the caller's reponsibility to apply the matrix to the cell and
+ * re-calculate the G6 vector, if required. */
+IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
+{
+	IntegerMatrix *T;
+	IntegerMatrix *M;
+	int finished;
+	double eps;
+
+	eps = pow(g6_volume(g), 1.0/3.0) * epsrel;
+	eps = eps*eps;
+
+	T = intmat_identity(3);
+	M = intmat_new(3, 3);
+
+	debug_lattice(g, eps, 0);
+
+	do {
+
+		int done_s1s2;
+
+		do {
+			done_s1s2 = 1;
+
+			if ( GT(g.A, g.B)
+			  || (EQ(g.A, g.B) && GT(fabs(g.D), fabs(g.E))) )
+			{
+				/* Swap a and b */
+				double temp;
+				temp = g.A; g.A = g.B;  g.B = temp;
+				temp = g.D; g.D = g.E;  g.E = temp;
+
+				intmat_zero(M);
+				intmat_set(M, 1, 0, -1);
+				intmat_set(M, 0, 1, -1);
+				intmat_set(M, 2, 2, -1);
+				mult_in_place(T, M);
+
+				debug_lattice(g, eps, 1);
+
+			}
+
+			if ( GT(g.B, g.C)
+			  || (EQ(g.B, g.C) && GT(fabs(g.E), fabs(g.F))) )
+			{
+				/* Swap b and c */
+				double temp;
+				temp = g.B; g.B = g.C;  g.C = temp;
+				temp = g.E; g.E = g.F;  g.F = temp;
+
+				intmat_zero(M);
+				intmat_set(M, 0, 0, -1);
+				intmat_set(M, 1, 2, -1);
+				intmat_set(M, 2, 1, -1);
+				mult_in_place(T, M);
+
+				debug_lattice(g, eps, 2);
+
+				/* ..."and go to 1." */
+				done_s1s2 = 0;
+			}
+
+		} while ( !done_s1s2 );
+
+		finished = 0;
+
+		/* K-G paper says g3*g4*g3, which I assume is a misprint */
+		if ( eps_sign(g.D, eps) * eps_sign(g.E, eps) * eps_sign(g.F, eps) > 0 ) {
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, LT(g.D, 0.0) ? -1 : 1);
+			intmat_set(M, 1, 1, LT(g.E, 0.0) ? -1 : 1);
+			intmat_set(M, 2, 2, LT(g.F, 0.0) ? -1 : 1);
+			mult_in_place(T, M);
+
+			g.D = fabs(g.D);
+			g.E = fabs(g.E);
+			g.F = fabs(g.F);
+
+			debug_lattice(g, eps, 3);
+
+		} else  {
+
+			int z = 4;
+			signed int ijk[3] = { 1, 1, 1 };
+
+			if ( GT(g.D, 0.0) ) {
+				ijk[0] = -1;
+			} else if ( !LT(g.D, 0.0) ) {
+				z = 0;
+			}
+			if ( GT(g.E, 0.0) ) {
+				ijk[1] = -1;
+			} else if ( !LT(g.D, 0.0) ) {
+				z = 1;
+			}
+			if ( GT(g.F, 0.0) ) {
+				ijk[2] = -1;
+			} else if ( !LT(g.D, 0.0) ) {
+				z = 2;
+			}
+			if ( ijk[0]*ijk[1]*ijk[2] < 0 ) {
+				if ( z == 4 ) {
+					ERROR("No element in reduction step 4");
+					abort();
+				}
+				ijk[z] = -1;
+			}
+			intmat_zero(M);
+			intmat_set(M, 0, 0, ijk[0]);
+			intmat_set(M, 1, 1, ijk[1]);
+			intmat_set(M, 2, 2, ijk[2]);
+			mult_in_place(T, M);
+
+			g.D = -fabs(g.D);
+			g.E = -fabs(g.E);
+			g.F = -fabs(g.F);
+
+			debug_lattice(g, eps, 4);
+
+		}
+
+		if ( GT(fabs(g.D), g.B)
+		  || (EQ(g.B, g.D) && LT(2.0*g.E, g.F))
+		  || (EQ(g.B, -g.D) && LT(g.F, 0.0)) )
+		{
+			signed int s = g.D > 0.0  ? 1 : -1;
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 1, 2, -s);
+			mult_in_place(T, M);
+
+			g.C = g.B + g.C -s*g.D;
+			g.D = -2*s*g.B + g.D;
+			g.E = g.E - s*g.F;
+
+			debug_lattice(g, eps, 5);
+
+		} else if ( GT(fabs(g.E), g.A)
+		         || (EQ(g.A, g.E) && LT(2.0*g.D, g.F))
+		         || (EQ(g.A, -g.E) && LT(g.F, 0.0)) )
+		{
+			signed int s = g.E > 0.0  ? 1 : -1;
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 0, 2, -s);
+			mult_in_place(T, M);
+
+			g.C = g.A + g.C -s*g.E;
+			g.D = g.D - s*g.F;
+			g.E = -2*s*g.A + g.E;
+
+			debug_lattice(g, eps, 6);
+
+		} else if ( GT(fabs(g.F), g.A)
+		         || (EQ(g.A, g.F) && LT(2.0*g.D, g.E))
+		         || (EQ(g.A, -g.F) && LT(g.E, 0.0)) )
+		{
+			signed int s = g.F > 0.0  ? 1 : -1;
+
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 0, 1, -s);
+			mult_in_place(T, M);
+
+			g.B = g.A + g.B -s*g.F;
+			g.D = g.D - s*g.E;
+			g.F = -2*s*g.A + g.F;
+
+			debug_lattice(g, eps, 7);
+
+		} else if ( LT(g.A+g.B+g.D+g.E+g.F, 0.0)  /* not g.C */
+		         || ( (EQ(g.A+g.B+g.D+g.E+g.F, 0.0)
+		               && GT(2.0*g.A + 2.0*g.E + g.F, 0.0)) ) )
+		{
+			intmat_zero(M);
+			intmat_set(M, 0, 0, 1);
+			intmat_set(M, 1, 1, 1);
+			intmat_set(M, 2, 2, 1);
+			intmat_set(M, 1, 2, 1);
+			mult_in_place(T, M);
+
+			g.C = g.A+g.B+g.C+g.D+g.E+g.F;
+			g.D = 2.0*g.B + g.D + g.F;
+			g.E = 2.0*g.A + g.E + g.F;
+
+			debug_lattice(g, eps, 8);
+
+		} else {
+			finished = 1;
+		}
+
+	} while ( !finished );
+
+	debug_lattice(g, eps, 99);
+
+	assert(is_burger(g, eps));
+	assert(is_niggli(g, eps));
+
+	intmat_free(M);
+	return T;
+}
+
+
+static double cell_diff(UnitCell *cell, double a, double b, double c,
+                        double al, double be, double ga)
+{
+	double ta, tb, tc, tal, tbe, tga;
+	double diff = 0.0;
+	cell_get_parameters(cell, &ta, &tb, &tc, &tal, &tbe, &tga);
+	diff += fabs(a - ta);
+	diff += fabs(b - tb);
+	diff += fabs(c - tc);
+	return diff;
+}
+
+
+static int random_int(int max)
+{
+	int r;
+	int limit = RAND_MAX;
+	while ( limit % max ) limit--;
+	do {
+		r = rand();
+	} while ( r > limit );
+	return rand() % max;
+}
+
+
+static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *reference,
+                                         RationalMatrix *CiARA, IntegerMatrix *RiBCB,
+                                         const double *tols)
+{
+	IntegerMatrix *m;
+	int i[9];
+	double a, b, c, al, be, ga;
+	double min_dist = +INFINITY;
+	int s, sel;
+	IntegerMatrix *best_m[5] = {NULL, NULL, NULL, NULL, NULL};
+	int n_best = 0;
+
+	m = intmat_new(3, 3);
+	cell_get_parameters(reference, &a, &b, &c, &al, &be, &ga);
+
+	for ( i[0]=-1; i[0]<=+1; i[0]++ ) {
+	for ( i[1]=-1; i[1]<=+1; i[1]++ ) {
+	for ( i[2]=-1; i[2]<=+1; i[2]++ ) {
+	for ( i[3]=-1; i[3]<=+1; i[3]++ ) {
+	for ( i[4]=-1; i[4]<=+1; i[4]++ ) {
+	for ( i[5]=-1; i[5]<=+1; i[5]++ ) {
+	for ( i[6]=-1; i[6]<=+1; i[6]++ ) {
+	for ( i[7]=-1; i[7]<=+1; i[7]++ ) {
+	for ( i[8]=-1; i[8]<=+1; i[8]++ ) {
+
+		UnitCell *nc;
+		int j, k;
+		int l = 0;
+		signed int det;
+		UnitCell *tmp;
+
+		for ( j=0; j<3; j++ )
+			for ( k=0; k<3; k++ )
+				intmat_set(m, j, k, i[l++]);
+
+		det = intmat_det(m);
+		if ( det != +1 ) continue;
+
+		tmp = cell_transform_intmat(cell_reduced, m);
+		nc = cell_transform_intmat(tmp, RiBCB);
+		cell_free(tmp);
+
+		if ( compare_cell_parameters(nc, reference, tols) ) {
+			double dist = cell_diff(nc, a, b, c, al, be, ga);
+			if ( dist < min_dist ) {
+
+				/* If the new solution is significantly better,
+				 * dump all the previous ones */
+				for ( s=0; s<n_best; s++ ) {
+					intmat_free(best_m[s]);
+				}
+				min_dist = dist;
+				best_m[0] = intmat_copy(m);
+				n_best = 1;
+
+			} else if ( dist == min_dist ) {
+
+				if ( n_best == 5 ) {
+					ERROR("WARNING: Too many equivalent "
+					      "reindexed lattices\n");
+				} else {
+					/* If the new solution is the same as the
+					* previous one, add it to the list */
+					best_m[n_best++] = intmat_copy(m);
+				}
+
+			}
+		}
+
+		cell_free(nc);
+
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+	}
+
+	if ( n_best == 0 ) return NULL;
+
+	sel = n_best;
+	if ( n_best == 1 ) {
+
+		/* If there's one solution, choose that one, of course */
+		sel = 0;
+
+	} else {
+
+		/* If one of the solutions results in an identity applied to the
+		 * original cell, choose that one */
+
+		for ( s=0; s<n_best; s++ ) {
+			RationalMatrix *tmp;
+			RationalMatrix *comb;
+			tmp = rtnlmtx_times_intmat(CiARA, best_m[s]);
+			comb = rtnlmtx_times_intmat(tmp, RiBCB);
+			if ( rtnl_mtx_is_identity(comb) ) {
+				sel = s;
+			}
+			rtnl_mtx_free(tmp);
+			rtnl_mtx_free(comb);
+		}
+
+	}
+
+	/* Still undecided?  Choose randomly, to avoid weird distributions
+	 * in the cell parameters */
+	if ( sel == n_best ) {
+		sel = random_int(n_best);
+	}
+
+	/* Free all the others */
+	for ( s=0; s<n_best; s++ ) {
+		if ( s != sel ) intmat_free(best_m[s]);
+	}
+
+	return best_m[sel];
+}
+
+
+/**
+ * \param cell_in: A UnitCell
+ * \param reference_in: Another UnitCell
+ * \param tols: Pointer to tolerances for a,b,c (fractional), al,be,ga (radians)
+ * \param pmb: Place to store pointer to matrix, or NULL if not needed
+ *
+ * Compare the \p cell_in with \p reference_in.  If they represent the same
+ * lattice, this function returns a copy of \p cell_in transformed to look
+ * similar to \p reference_in.  Otherwise, it returns NULL.
+ *
+ * If \pmb is non-NULL, the transformation which needs to be applied to
+ * \p cell_in will be stored there.
+ *
+ * Only the cell parameters will be compared.  The relative orientations are
+ * irrelevant.  The tolerances will be applied to the transformed copy of
+ * \p cell_in, i.e. the version of the input cell which looks similar to
+ * \p reference_in.  Subject to the tolerances, the cell will be chosen which
+ * has the lowest total absolute error in unit cell axis lengths.
+ *
+ * There will usually be several transformation matrices which produce exactly
+ * the same total absolute error.  If one of the matrices is an identity, that
+ * one will be used.  Otherwise, the matrix will be selected at random from the
+ * possibilities.  This avoids skewed distributions of unit cell parameters,
+ * e.g. the angles always being greater than 90 degrees.
+ *
+ * This is the right function to use for deciding if an indexing solution
+ * matches a reference cell or not.
+ *
+ * \returns A newly allocated UnitCell, or NULL.
+ *
+ */
+UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
+                                            UnitCell *reference_in,
+                                            const double *tols,
+                                            RationalMatrix **pmb)
+{
+	UnitCell *cell;
+	UnitCell *reference;
+	IntegerMatrix *CB;
+	RationalMatrix *CiA;
+	IntegerMatrix *RA;
+	IntegerMatrix *RB;
+	IntegerMatrix *RiB;
+	IntegerMatrix *P;
+	RationalMatrix *CiARA;
+	IntegerMatrix *RiBCB;
+	UnitCell *cell_reduced;
+	UnitCell *reference_reduced;
+	UnitCell *match;
+	struct g6 g6cell;
+	struct g6 g6ref;
+
+	//STATUS("The input cell:\n");
+	//cell_print(cell_in);
+
+	//STATUS("The reference cell:\n");
+	//cell_print(reference_in);
+
+	/* Un-center both cells */
+	reference = uncenter_cell(reference_in, &CB, NULL);
+	if ( reference == NULL ) return NULL;
+
+	cell = uncenter_cell(cell_in, NULL, &CiA);
+	if ( cell == NULL ) return NULL;
+
+	/* Calculate G6 components for both */
+	g6cell = cell_get_G6(cell);
+	g6ref = cell_get_G6(reference);
+
+	/* Convert both to reduced basis (stably) */
+	RA = reduce_g6(g6cell, 1e-5);
+	//STATUS("------------------------------------------\n");
+	RB = reduce_g6(g6ref, 1e-5);
+
+	cell_reduced = cell_transform_intmat(cell, RA);
+
+	//STATUS("Reduced cell:\n");
+	//cell_print(cell_reduced);
+	//STATUS("Reduced reference:\n");
+	reference_reduced = cell_transform_intmat(reference, RB);
+	//cell_print(reference_reduced);
+
+	/* The primitive (non-reduced) cells are no longer needed */
+	cell_free(reference);
+	cell_free(cell);
+
+	/* Within tolerance? */
+	RiB = intmat_inverse(RB);
+	RiBCB = intmat_times_intmat(RiB, CB);
+	intmat_free(RiB);
+	CiARA = rtnlmtx_times_intmat(CiA, RA);
+	P = check_permutations(cell_reduced, reference_in, CiARA, RiBCB, tols);
+	if ( P != NULL ) {
+
+		RationalMatrix *tmp;
+		RationalMatrix *comb;
+
+		//STATUS("The best permutation matrix:\n");
+		//intmat_print(P);
+
+		/* Calculate combined matrix: CB.RiB.P.RA.CiA */
+		tmp = rtnlmtx_times_intmat(CiARA, P);
+		comb = rtnlmtx_times_intmat(tmp, RiBCB);
+		rtnl_mtx_free(tmp);
+
+		match = cell_transform_rational(cell_in, comb);
+		//STATUS("Original cell transformed to look like reference:\n");
+		//cell_print(match);
+
+		if ( pmb != NULL ) *pmb = comb;
+
+	} else {
+		match = NULL;
+	}
+
+	rtnl_mtx_free(CiA);
+	intmat_free(RA);
+	intmat_free(RB);
+	intmat_free(CB);
+	intmat_free(P);
+	cell_free(reference_reduced);
+	cell_free(cell_reduced);
+
+	return match;
 }

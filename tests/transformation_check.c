@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
 	intmat_set_all_3x3(part2,  0,0,1,
 	                           0,1,0,
 	                          -1,0,0);
-	tfn = intmat_intmat_mult(part1, part2);
+	tfn = intmat_times_intmat(part1, part2);
 	fail += check_identity(cell, tfn);
 	intmat_free(part1);
 	intmat_free(part2);

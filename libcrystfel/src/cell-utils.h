@@ -59,11 +59,6 @@ extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
 extern void cell_print(UnitCell *cell);
 extern void cell_print_full(UnitCell *cell);
 
-extern UnitCell *match_cell(UnitCell *cell, UnitCell *tempcell, int verbose,
-                            const float *ltl, int reduce);
-
-extern UnitCell *match_cell_ab(UnitCell *cell, UnitCell *tempcell);
-
 extern UnitCell *load_cell_from_pdb(const char *filename);
 extern UnitCell *load_cell_from_file(const char *filename);
 extern void write_cell(UnitCell *cell, FILE *fh);
@@ -87,24 +82,26 @@ extern int forbidden_reflection(UnitCell *cell,
 
 extern double cell_get_volume(UnitCell *cell);
 
-extern int compare_cell_parameters(UnitCell *cell1, UnitCell *cell2,
-                                   float ltl, float atl);
+extern int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                   const double *tols);
 
+extern int compare_cell_parameters_and_orientation(UnitCell *cell,
+                                                   UnitCell *reference,
+                                                   const double *tols);
 
-extern int compare_cell_parameters_and_orientation(UnitCell *cell1,
-                                                   UnitCell *cell2,
-                                                   const double ltl,
-                                                   const double atl);
+extern int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
+                                                            UnitCell *reference,
+                                                            const double *tols,
+                                                            IntegerMatrix **pmb);
 
-extern int compare_reindexed_cell_parameters_and_orientation(UnitCell *a,
-                                                             UnitCell *b,
-                                                             double ltl,
-                                                             double atl,
-                                                             IntegerMatrix **pmb);
+extern int compare_derivative_cell_parameters(UnitCell *cell, UnitCell *reference,
+                                              const double *tols, int csl,
+                                              RationalMatrix **pmb);
 
-extern int compare_reindexed_cell_parameters(UnitCell *cell, UnitCell *reference,
-                                             double ltl, double atl, int csl,
-                                             RationalMatrix **pmb);
+extern UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
+                                                   UnitCell *reference_in,
+                                                   const double *tols,
+                                                   RationalMatrix **pmb);
 
 #ifdef __cplusplus
 }

@@ -132,6 +132,18 @@ extern void cell_set_reciprocal(UnitCell *cell,
 extern LatticeType cell_get_lattice_type(UnitCell *cell);
 extern void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type);
 
+struct g6
+{
+	double A;
+	double B;
+	double C;
+	double D;
+	double E;
+	double F;
+};
+
+extern struct g6 cell_get_G6(UnitCell *cell);
+
 extern char cell_get_centering(UnitCell *cell);
 extern void cell_set_centering(UnitCell *cell, char centering);
 

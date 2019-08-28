@@ -67,7 +67,7 @@ struct _indexingprivate
 {
 	IndexingFlags flags;
 	UnitCell *target_cell;
-	float tolerance[4];
+	double tolerance[6];
 
 	struct taketwo_options *ttopts;
 	struct xgandalf_options *xgandalf_opts;
@@ -315,7 +315,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
-                                struct detector *det, float *ltl,
+                                struct detector *det, float *tols,
                                 IndexingFlags flags,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
@@ -439,7 +439,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	} else {
 		ipriv->target_cell = NULL;
 	}
-	for ( i=0; i<4; i++ ) ipriv->tolerance[i] = ltl[i];
+	for ( i=0; i<6; i++ ) ipriv->tolerance[i] = tols[i];
 
 	ipriv->ttopts = ttopts;
 	ipriv->xgandalf_opts = xgandalf_opts;
@@ -542,33 +542,28 @@ void map_all_peaks(struct image *image)
 }
 
 
+/* Return 0 for cell OK, 1 for cell incorrect */
 static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
-                      float *tolerance)
+                      double *tolerance)
 {
-	if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
-	  || (flags & INDEXING_CHECK_CELL_AXES) )
+	UnitCell *out;
+	RationalMatrix *rm;
+
+	/* Check at all? */
+	if ( ! ((flags & INDEXING_CHECK_CELL_COMBINATIONS)
+	         || (flags & INDEXING_CHECK_CELL_AXES)) ) return 0;
+
+	if ( compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
+	                                       tolerance, &rm) )
 	{
-		UnitCell *out;
-		int reduce;
-
-		if ( flags & INDEXING_CHECK_CELL_COMBINATIONS )
-		{
-			reduce = 1;
-		} else {
-			reduce = 0;
-		}
-
-		out = match_cell(crystal_get_cell(cr),
-		                 target, 0, tolerance, reduce);
-
-		if ( out == NULL ) {
-			return 1;
-		}
-
+		out = cell_transform_rational(crystal_get_cell(cr), rm);
 		cell_free(crystal_get_cell(cr));
 		crystal_set_cell(cr, out);
+		rtnl_mtx_free(rm);
+		return 0;
 	}
-	return 0;
+
+	return 1;
 }
 
 
@@ -697,13 +692,17 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		for ( j=0; j<this_crystal; j++ ) {
 
 			Crystal *that_cr = image->crystals[j];
+			const double tols[] = {0.1, 0.1, 0.1,
+			                       deg2rad(5.0),
+			                       deg2rad(5.0),
+			                       deg2rad(5.0)};
 
 			/* Don't do similarity check against bad crystals */
 			if ( crystal_get_user_flag(that_cr) ) continue;
 
-			if ( compare_reindexed_cell_parameters_and_orientation(crystal_get_cell(cr),
-			                                                       crystal_get_cell(that_cr),
-			                                                       0.1, deg2rad(0.5), NULL) )
+			if ( compare_permuted_cell_parameters_and_orientation(crystal_get_cell(cr),
+			                                                      crystal_get_cell(that_cr),
+			                                                      tols, NULL) )
 			{
 				crystal_set_user_flag(cr, 1);
 			}

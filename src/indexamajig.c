@@ -135,7 +135,7 @@ static void show_help(const char *s)
 " -p, --pdb=<file>          Unit cell file (PDB or CrystFEL unit cell format)\n"
 "                             Default: 'molecule.pdb'\n"
 "     --tolerance=<tol>     Tolerances for cell comparison\n"
-"                              Default: 5,5,5,1.5\n"
+"                              Default: 5,5,5,1.5,1.5,1.5\n"
 "     --no-check-cell       Don't check lattice parameters against input cell\n"
 "     --no-cell-combinations\n"
 "                           Don't use axis combinations when checking cell\n"
@@ -297,10 +297,12 @@ int main(int argc, char *argv[])
 	iargs.noisefilter = 0;
 	iargs.median_filter = 0;
 	iargs.satcorr = 1;
-	iargs.tols[0] = 5.0;
-	iargs.tols[1] = 5.0;
-	iargs.tols[2] = 5.0;
+	iargs.tols[0] = 0.05;
+	iargs.tols[1] = 0.05;
+	iargs.tols[2] = 0.05;
 	iargs.tols[3] = 1.5;
+	iargs.tols[4] = 1.5;
+	iargs.tols[5] = 1.5;
 	iargs.threshold = 800.0;
 	iargs.min_sq_gradient = 100000.0;
 	iargs.min_snr = 5.0;
@@ -1056,14 +1058,29 @@ int main(int argc, char *argv[])
 	/* Parse unit cell tolerance */
 	if ( toler != NULL ) {
 		int ttt;
-		ttt = sscanf(toler, "%f,%f,%f,%f",
-		             &iargs.tols[0], &iargs.tols[1],
-		             &iargs.tols[2], &iargs.tols[3]);
-		if ( ttt != 4 ) {
-			ERROR("Invalid parameters for '--tolerance'\n");
-			return 1;
+		ttt = sscanf(toler, "%f,%f,%f,%f,%f,%f",
+		             &iargs.tols[0], &iargs.tols[1], &iargs.tols[2],
+		             &iargs.tols[3], &iargs.tols[4], &iargs.tols[5]);
+		if ( ttt != 6 ) {
+			ttt = sscanf(toler, "%f,%f,%f,%f",
+			             &iargs.tols[0], &iargs.tols[1],
+			             &iargs.tols[2], &iargs.tols[3]);
+			if ( ttt != 4 ) {
+				ERROR("Invalid parameters for '--tolerance'\n");
+				return 1;
+			}
+			iargs.tols[4] = iargs.tols[3];
+			iargs.tols[5] = iargs.tols[3];
 		}
 		free(toler);
+
+		/* Percent to fraction */
+		iargs.tols[0] /= 100.0;
+		iargs.tols[1] /= 100.0;
+		iargs.tols[2] /= 100.0;
+		iargs.tols[3] = deg2rad(iargs.tols[3]);
+		iargs.tols[4] = deg2rad(iargs.tols[4]);
+		iargs.tols[5] = deg2rad(iargs.tols[5]);
 	}
 
 	/* Parse integration radii */

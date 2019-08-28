@@ -218,8 +218,8 @@ signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
  * \returns A newly allocated \ref IntegerMatrix containing the answer, or NULL on
  * error.
  **/
-IntegerMatrix *intmat_intmat_mult(const IntegerMatrix *a,
-                                  const IntegerMatrix *b)
+IntegerMatrix *intmat_times_intmat(const IntegerMatrix *a,
+                                   const IntegerMatrix *b)
 {
 	unsigned int i, j;
 	IntegerMatrix *ans;
