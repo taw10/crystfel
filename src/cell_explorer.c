@@ -2040,6 +2040,9 @@ int main(int argc, char *argv[])
 			}
 
 			w.cells[w.n_cells] = crystal_get_cell(cr);
+			if ( !right_handed(w.cells[w.n_cells]) ) {
+				ERROR("WARNING: Left-handed cell encountered\n");
+			}
 			w.indms[w.n_cells] = cur.indexed_by;
 			w.n_cells++;
 
