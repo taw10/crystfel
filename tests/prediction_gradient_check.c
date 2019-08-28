@@ -418,6 +418,7 @@ int main(int argc, char *argv[])
 	image.div = 1e-3;
 	image.bw = 0.01;
 	image.filename = malloc(256);
+	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 
 	cr = crystal_new();
 	if ( cr == NULL ) {

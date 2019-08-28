@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
 	image.lambda = ph_eV_to_lambda(9000.0);
 	image.bw = 0.000001;
 	image.div = 0.0;
+	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 
 	image.det = calloc(1, sizeof(struct detector));
 	image.det->n_panels = 1;
