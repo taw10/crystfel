@@ -2294,7 +2294,7 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 		//STATUS("The best permutation matrix:\n");
 		//intmat_print(P);
 
-		/* Calculate combined matrix: CB.RiB.P.RA.CiA */
+		/* Calculate combined matrix: CiA.RA.P.RiB.CB */
 		tmp = rtnlmtx_times_intmat(CiARA, P);
 		comb = rtnlmtx_times_intmat(tmp, RiBCB);
 		rtnl_mtx_free(tmp);
