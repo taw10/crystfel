@@ -132,8 +132,8 @@ struct mosflm_data {
 
 };
 
-static int check_cell(struct mosflm_private *mp, struct image *image,
-                      UnitCell *cell)
+static int check_mosflm_cell(struct mosflm_private *mp, struct image *image,
+                             UnitCell *cell)
 {
 	Crystal *cr;
 
@@ -319,7 +319,7 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 	//STATUS("My cell:\n");
 	//cell_print(cell);
 
-	if ( check_cell(mosflm->mp, image, cell) ) {
+	if ( check_mosflm_cell(mosflm->mp, image, cell) ) {
 		mosflm->success = 1;
 		mosflm->done = 1;
 	}
