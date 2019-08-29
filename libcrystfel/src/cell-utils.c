@@ -2080,7 +2080,7 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
 	double a, b, c, al, be, ga;
 	double min_dist = +INFINITY;
 	int s, sel;
-	IntegerMatrix *best_m[5] = {NULL, NULL, NULL, NULL, NULL};
+	IntegerMatrix *best_m[24];
 	int n_best = 0;
 
 	m = intmat_new(3, 3);
@@ -2128,7 +2128,7 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
 
 			} else if ( dist == min_dist ) {
 
-				if ( n_best == 5 ) {
+				if ( n_best == 24 ) {
 					ERROR("WARNING: Too many equivalent "
 					      "reindexed lattices\n");
 				} else {
