@@ -137,8 +137,6 @@ static void show_help(const char *s)
 "     --tolerance=<tol>     Tolerances for cell comparison\n"
 "                              Default: 5,5,5,1.5,1.5,1.5\n"
 "     --no-check-cell       Don't check lattice parameters against input cell\n"
-"     --no-cell-combinations\n"
-"                           Don't use axis combinations when checking cell\n"
 "     --multi               Repeat indexing to index multiple hits\n"
 "     --no-retry            Don't repeat indexing to increase indexing rate\n"
 "     --no-refine           Skip the prediction refinement step\n"
@@ -282,7 +280,7 @@ int main(int argc, char *argv[])
 	int have_push_res = 0;
 	char *command_line_peak_path = NULL;
 	int if_refine = 1;
-	int if_nocomb = 0;
+	int if_nocomb_unused = 0;
 	int if_nocheck = 0;
 	int if_peaks = 1;
 	int if_multi = 0;
@@ -402,7 +400,7 @@ int main(int argc, char *argv[])
 		{"profile",            0, &iargs.profile,            1},
 		{"no-half-pixel-shift",0, &iargs.half_pixel_shift,   0},
 		{"no-refine",          0, &if_refine,                0},
-		{"no-cell-combinations",0,&if_nocomb,                1},
+		{"no-cell-combinations",0,&if_nocomb_unused,         1},
 		{"no-check-cell",      0, &if_nocheck,               1},
 		{"no-cell-check",      0, &if_nocheck,               1},
 		{"check-peaks",        0, &if_peaks,                 1},
@@ -938,6 +936,11 @@ int main(int argc, char *argv[])
 
 	}
 
+	if ( if_nocomb_unused ) {
+		ERROR("WARNING: --no-cell-combinations is no longer used, "
+		      "and has been ignored.\n");
+	}
+
 	/* Check for minimal information */
 	if ( filename == NULL ) {
 		ERROR("You need to provide the input filename (use -i)\n");
@@ -1237,15 +1240,8 @@ int main(int argc, char *argv[])
 			STATUS("No reference unit cell provided.\n");
 		}
 
-		if ( if_nocomb ) {
-			flags |= INDEXING_CHECK_CELL_AXES;
-		} else {
-			flags |= INDEXING_CHECK_CELL_COMBINATIONS;
-		}
-
-		if ( if_nocheck ) {
-			flags &= ~INDEXING_CHECK_CELL_AXES;
-			flags &= ~INDEXING_CHECK_CELL_COMBINATIONS;
+		if ( !if_nocheck ) {
+			flags &= INDEXING_CHECK_CELL;
 		}
 
 		if ( if_refine ) {

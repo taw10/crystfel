@@ -120,7 +120,7 @@ You do not need to explicitly specify anything more than the indexing method its
 
 If you don't know what to give for this option, leave it out completely.  Indexamajig will then automatically select indexing methods based on the programs available on your computer.
 
-The indexing results from the indexing engine will be put through a number of refinement and checking stages.  See the options \fB--no-check-cell, --no-cell-combinations, --no-multi, --no-retry\fR and \fB--no-refine\fR below for more details.
+The indexing results from the indexing engine will be put through a number of refinement and checking stages.  See the options \fB--no-check-cell, --no-multi, --no-retry\fR and \fB--no-refine\fR below for more details.
 
 .SH PEAK INTEGRATION
 If the pattern could be successfully indexed, peaks will be predicted in the pattern and their intensities measured.  You have a choice of integration methods, and you specify the method using \fB--integration\fR.  Choose from:
@@ -366,11 +366,6 @@ The default is \fB--tolerance=5,5,5,1.5\fR.
 .IP \fB--no-check-cell
 .PD
 Do not check the cell parameters against the reference unit cell (given with \fB-p\fR).  If you've used older versions of CrystFEL, this replaces putting "-raw" in the indexing method.
-
-.PD 0
-.IP \fB--no-cell-combinations
-.PD
-When checking the cell parameters against the reference cell (see \fB-p\fR), do not make combinations of the axes of the candidate cell (such as \fBa'\fR=2\fBa\fR+\fBb\fR) to make it fit.  Usually this reduces the success rate, but is necessary if one of the cell parameters is close to a multiple of the others.  \fRThis happens for tetragonal lysozyme\fB.
 
 .PD 0
 .IP \fB--multi

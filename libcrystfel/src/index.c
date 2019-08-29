@@ -101,19 +101,9 @@ static void set_last_task(char *lt, const char *task)
 
 static void show_indexing_flags(IndexingFlags flags)
 {
-	char check[64];
-
-	assert( !((flags & INDEXING_CHECK_CELL_COMBINATIONS)
-	       && (flags & INDEXING_CHECK_CELL_AXES)) );
 	STATUS("Indexing parameters:\n");
-	strcpy(check, onoff(flags & (INDEXING_CHECK_CELL_COMBINATIONS | INDEXING_CHECK_CELL_AXES)));
-	if ( flags & INDEXING_CHECK_CELL_AXES ) {
-		strcat(check, " (axis permutations only)");
-	}
-	if ( flags & INDEXING_CHECK_CELL_COMBINATIONS ) {
-		strcat(check, " (axis combinations)");
-	}
-	STATUS("                  Check unit cell parameters: %s\n", check);
+	STATUS("                  Check unit cell parameters: %s\n",
+	       onoff(flags & INDEXING_CHECK_CELL));
 	STATUS("                        Check peak alignment: %s\n",
 	       onoff(flags & INDEXING_CHECK_PEAKS));
 	STATUS("                   Refine indexing solutions: %s\n",
@@ -361,14 +351,11 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 		int warn = 0;
 
-		if ( (flags & INDEXING_CHECK_CELL_COMBINATIONS)
-		  || (flags & INDEXING_CHECK_CELL_AXES) )
-		{
+		if ( flags & INDEXING_CHECK_CELL ) {
 			ERROR("WARNING: Forcing --no-check-cell because "
 			      "reference unit cell parameters were not "
 			      "given.\n");
-			flags &= ~INDEXING_CHECK_CELL_COMBINATIONS;
-			flags &= ~INDEXING_CHECK_CELL_AXES;
+			flags &= ~INDEXING_CHECK_CELL;
 		}
 
 		for ( i=0; i<n; i++ ) {
@@ -550,8 +537,7 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	RationalMatrix *rm;
 
 	/* Check at all? */
-	if ( ! ((flags & INDEXING_CHECK_CELL_COMBINATIONS)
-	         || (flags & INDEXING_CHECK_CELL_AXES)) ) return 0;
+	if ( !(flags & INDEXING_CHECK_CELL) ) return 0;
 
 	if ( compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
 	                                       tolerance, &rm) )
@@ -647,9 +633,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_image(cr, image);
 		crystal_set_profile_radius(cr, 0.02e9);
 		crystal_set_mosaicity(cr, 0.0);
-
-		assert( !((ipriv->flags & INDEXING_CHECK_CELL_COMBINATIONS)
-		      && (ipriv->flags & INDEXING_CHECK_CELL_AXES)) );
 
 		/* Pre-refinement unit cell check if requested */
 		if ( check_cell(ipriv->flags, cr, ipriv->target_cell,

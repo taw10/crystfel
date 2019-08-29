@@ -115,14 +115,14 @@ typedef enum {
 	/** Refine the indexing solution */
 	INDEXING_REFINE = 4,
 
-	/** Check the unit cell, including derivative lattices */
-	INDEXING_CHECK_CELL_COMBINATIONS = 8,
-
-	/** Check the unit cell, only permuting axes if necessary */
-	INDEXING_CHECK_CELL_AXES = 16,
+	/* 8, 16 reserved (formerly INDEXING_CHECK_CELL_COMBINATIONS and
+	 * INDEXING_CHECK_CELL_AXES respectively) */
 
 	/** Check that the peaks agree with the indexing solution */
 	INDEXING_CHECK_PEAKS = 32,
+
+	/** Check that the unit cell agrees with the target cell */
+	INDEXING_CHECK_CELL = 32,
 
 } IndexingFlags;
 
