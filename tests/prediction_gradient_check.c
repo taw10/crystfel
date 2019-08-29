@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
 
 	image.lambda = ph_en_to_lambda(eV_to_J(8000.0));
 	image.div = 1e-3;
-	image.bw = 0.01;
+	image.bw = 0.00001;
 	image.filename = malloc(256);
 	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 
