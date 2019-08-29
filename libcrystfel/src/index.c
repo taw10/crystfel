@@ -652,8 +652,9 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		}
 
 		/* After refinement unit cell check if requested */
-		if ( check_cell(ipriv->flags, cr, ipriv->target_cell,
-		                ipriv->tolerance) )
+		if ( (ipriv->flags & INDEXING_CHECK_CELL)
+		  && !compare_cell_parameters(crystal_get_cell(cr), ipriv->target_cell,
+		                              ipriv->tolerance) )
 		{
 			crystal_set_user_flag(cr, 1);
 			continue;
