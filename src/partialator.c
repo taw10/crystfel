@@ -325,6 +325,7 @@ static void show_help(const char *s)
 "  -m, --model=<model>        Specify partiality model.\n"
 "      --min-measurements=<n> Minimum number of measurements to require.\n"
 "      --no-polarisation      Disable polarisation correction.\n"
+"      --polarisation=<p>     Specify type of polarisation correction.\n"
 "      --max-adu=<n>          Saturation value of detector.\n"
 "      --min-res=<n>          Merge only crystals which diffract above <n> A.\n"
 "      --push-res=<n>         Merge higher than apparent resolution cutoff.\n"
@@ -951,7 +952,7 @@ int main(int argc, char *argv[])
 	PartialityModel pmodel = PMODEL_XSPHERE;
 	int min_measurements = 2;
 	char *rval;
-	int polarisation = 1;
+	struct polarisation polarisation = {.fraction = 1.0, .angle= 0.0};
 	int start_after = 0;
 	int stop_after = 0;
 	double max_adu = +INFINITY;
@@ -1005,14 +1006,14 @@ int main(int argc, char *argv[])
 		{"force-radius",       1, NULL,               11},
 		{"min-res",            1, NULL,               12},
 		{"force-lambda",       1, NULL,               13},
+		{"polarisation",       1, NULL,               14},
+		{"polarization",       1, NULL,               14}, /* compat */
+		{"no-polarisation",    0, NULL,               15},
+		{"no-polarization",    0, NULL,               15}, /* compat */
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-Bscale",          0, &no_Bscale,          1},
 		{"no-pr",              0, &no_pr,              1},
-		{"no-polarisation",    0, &polarisation,       0},
-		{"no-polarization",    0, &polarisation,       0}, /* compat */
-		{"polarisation",       0, &polarisation,       1},
-		{"polarization",       0, &polarisation,       1}, /* compat */
 		{"no-free",            0, &no_free,            1},
 		{"output-every-cycle", 0, &output_everycycle,  1},
 		{"no-logs",            0, &no_logs,            1},
@@ -1184,6 +1185,13 @@ int main(int argc, char *argv[])
 			force_lambda *= 1e-10;
 			break;
 
+			case 14 :
+			polarisation = parse_polarisation(optarg);
+			break;
+
+			case 15 :
+			polarisation.fraction = 0.5;
+			break;
 
 			case 0 :
 			break;
@@ -1427,11 +1435,8 @@ int main(int argc, char *argv[])
 
 			cr_refl = apply_max_adu(cr_refl, max_adu);
 
-			if ( polarisation ) {
-				polarisation_correction(cr_refl,
-						        crystal_get_cell(cr),
-						        image);
-			}
+			polarisation_correction(cr_refl, crystal_get_cell(cr),
+			                        image->lambda, polarisation);
 
 			if ( !no_free ) select_free_reflections(cr_refl, rng);
 

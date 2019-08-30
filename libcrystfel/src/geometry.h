@@ -91,6 +91,17 @@ enum gparam {
 };
 
 
+/**
+ * This structure represents the polarisation of the incident radiation
+ */
+struct polarisation
+{
+	double fraction;   /**< Polarisation fraction (0 to 1) */
+	double angle;      /**< Angle of electron beam, radians, clockwise from
+	                    * horizontal when looking along beam */
+};
+
+
 extern RefList *predict_to_res(Crystal *cryst, double max_res);
 
 extern void calculate_partialities(Crystal *cryst, PartialityModel pmodel);
@@ -98,8 +109,9 @@ extern void calculate_partialities(Crystal *cryst, PartialityModel pmodel);
 extern double r_gradient(UnitCell *cell, int k, Reflection *refl,
                          struct image *image);
 extern void update_predictions(Crystal *cryst);
-extern void polarisation_correction(RefList *list, UnitCell *cell,
-                                    struct image *image);
+extern struct polarisation parse_polarisation(const char *text);
+extern void polarisation_correction(RefList *list, UnitCell *cell, double lambda,
+                                    struct polarisation p);
 
 extern double sphere_fraction(double rlow, double rhigh, double pr);
 extern double gaussian_fraction(double rlow, double rhigh, double pr);

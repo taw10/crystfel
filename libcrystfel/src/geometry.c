@@ -36,6 +36,8 @@
 #include <fenv.h>
 #include <gsl/gsl_sf_erf.h>
 #include <gsl/gsl_linalg.h>
+#include <ctype.h>
+#include <math.h>
 
 #include "utils.h"
 #include "cell.h"
@@ -952,7 +954,72 @@ void update_predictions(Crystal *cryst)
 }
 
 
-void polarisation_correction(RefList *list, UnitCell *cell, struct image *image)
+struct polarisation parse_polarisation(const char *text)
+{
+	struct polarisation p;
+	char angle[14];
+	char deg[14];
+	char frac[14];
+	int i, n;
+
+	if ( strlen(text) > 13 ) goto err;
+
+	if ( strcmp(text, "none") == 0 ) {
+		p.fraction = 0.5;
+		p.angle = 0.0;
+		return p;
+	}
+
+	p.fraction = 1.0;
+
+	i = 0;
+	n = 0;
+	while ( isdigit(text[i]) ) {
+		angle[n++] = text[i++];
+	}
+	angle[n] = '\0';
+
+	n = 0;
+	while ( isalpha(text[i]) ) {
+		deg[n++] = text[i++];
+	}
+	deg[n] = '\0';
+
+	n = 0;
+	while ( isdigit(text[i]) ) {
+		frac[n++] = text[i++];
+	}
+	frac[n] = '\0';
+
+	if ( text[i] != '\0' ) goto err;
+
+	if ( frac[0] != '\0' ) {
+		int nfrac = atoi(frac);
+		if ( nfrac > 100 ) goto err;
+		if ( nfrac < 0 ) goto err;
+		p.fraction = nfrac / 100.0;
+	}
+
+	if ( strcmp(deg, "deg") == 0 ) {
+		p.angle = deg2rad(atoi(angle));
+	} else {
+		if ( angle[0] != '\0' ) goto err;
+		if ( strncmp(deg, "horiz", 5) == 0 ) p.angle = 0.0;
+		if ( strncmp(deg, "vert", 4) == 0 ) p.angle = M_PI_2;
+	}
+
+	return p;
+
+err:
+	ERROR("Invalid polarisation '%s'\n", text);
+	p.fraction = 0.5;
+	p.angle = 0.0;
+	return p;
+}
+
+
+void polarisation_correction(RefList *list, UnitCell *cell, double lambda,
+                             struct polarisation p)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -970,16 +1037,23 @@ void polarisation_correction(RefList *list, UnitCell *cell, struct image *image)
 	{
 		double pol;
 		double intensity;
-		double xl, yl;
+		double xl, yl, zl;
+		double phi, tt, kpred;
 		signed int h, k, l;
-		const double P = 1.0;  /* degree of polarisation */
+		const double P = p.fraction;  /* degree of polarisation */
 
 		get_indices(refl, &h, &k, &l);
 
-		xl = (h*asx + k*bsx + l*csx)*image->lambda;
-		yl = (h*asy + k*bsy + l*csy)*image->lambda;
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
 
-		pol = P*(1.0 - xl*xl) + (1.0-P)*(1.0 - yl*yl);
+		kpred = get_kpred(refl);
+		tt = angle_between(0.0, 0.0, 1.0, xl, yl, zl+kpred);
+		phi = atan2(yl, xl) - p.angle;
+
+		pol =         P*(1.0 - cos(phi)*cos(phi)*sin(tt)*sin(tt))
+		     +  (1.0-P)*(1.0 - sin(phi)*sin(phi)*sin(tt)*sin(tt));
 
 		intensity = get_intensity(refl);
 		set_intensity(refl, intensity / pol);

@@ -93,9 +93,16 @@ Specify the partiality model.  See the list below for possible choices.
 Run \fIn\fR analyses in parallel.
 
 .PD 0
+.IP \fB--polarisation=\fItype\fR
+.PD
+Specify the polarisation of the incident radiation.  \fItype\fR can be \fBhoriz\fR, \fBvert\fR or \fBnone\fR to indicate 100% polarisation of the electric field in the horizontal plane, vertical plane or completely unpolarised radiation respectively.  Alternatively, \fItype\fR can be a direction followed by a percentage polarisation fraction.  For example, \fB45deg90\fR means that 90% of the radiation is polarised with its electric field in a direction 45 degrees from horizontal, and \fB10deg100\fR means that all the radiation is polarised at 10 degrees from horizontal.  The angle is specified clockwise from horizontal as viewed along the beam direction, i.e. as shown by \fBhdfsee\fR.  The beam is unpolarised when the fraction is 50% (equal parts of the radiation have their electric field in the specified plane).  If the polarisation fraction is 100%, it can be omitted.  For example \fB10deg\fR or \fBhoriz\fR.
+
+The default is \fB--polarisation=horiz\fR.
+
+.PD 0
 .IP \fB--no-polarisation\fR
 .PD
-Disable the polarisation correction.
+Synonym for \fB--polarisation=none\fR.
 
 .PD 0
 .IP \fB--max-adu=\fR\fIn\fR

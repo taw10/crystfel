@@ -80,7 +80,8 @@ static void show_help(const char *s)
 "                             model.\n"
 "      --even-only           Merge even numbered crystals only\n"
 "      --odd-only            Merge odd numbered crystals only\n"
-"      --no-polarisation     Disable polarisation correction.\n"
+"      --no-polarisation      Disable polarisation correction.\n"
+"      --polarisation=<p>     Specify type of polarisation correction.\n"
 "      --min-measurements=<n> Require at least <n> measurements before a\n"
 "                             reflection appears in the output.  Default: 2\n"
 "      --min-snr=<n>         Require individual intensity measurements to\n"
@@ -258,7 +259,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
                          RefList *reference, const SymOpList *sym,
                          double **hist_vals, signed int hist_h,
                          signed int hist_k, signed int hist_l, int *hist_n,
-                         int config_nopolar, double min_snr, double max_adu,
+                         struct polarisation p, double min_snr, double max_adu,
                          double push_res, double min_cc, int do_scale,
                          FILE *stat)
 {
@@ -270,9 +271,8 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	new_refl = crystal_get_reflections(cr);
 
 	/* First, correct for polarisation */
-	if ( !config_nopolar ) {
-		polarisation_correction(new_refl, crystal_get_cell(cr), image);
-	}
+	polarisation_correction(new_refl, crystal_get_cell(cr),
+	                        image->lambda, p);
 
 	if ( reference != NULL ) {
 		if ( do_scale ) {
@@ -385,7 +385,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
                      const SymOpList *sym,
                      double **hist_vals, signed int hist_h,
                      signed int hist_k, signed int hist_l,
-                     int *hist_i, int config_nopolar, int min_measurements,
+                     int *hist_i, struct polarisation p, int min_measurements,
                      double min_snr, double max_adu,
                      int start_after, int stop_after, double min_res,
                      double push_res, double min_cc, int do_scale, int flag_even_odd, char *stat_output)
@@ -435,7 +435,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 				r = merge_crystal(model, &image, cr, reference,
 				                  sym, hist_vals,
 						  hist_h, hist_k, hist_l,
-				                  hist_i, config_nopolar,
+				                  hist_i, p,
 						  min_snr, max_adu, push_res,
 						  min_cc, do_scale, stat);
 				if ( r == 0 ) n_crystals_used++;
@@ -506,7 +506,7 @@ int main(int argc, char *argv[])
 	int hist_i;
 	int space_for_hist = 0;
 	char *histo_params = NULL;
-	int config_nopolar = 0;
+	struct polarisation polarisation = {.fraction = 1.0, .angle= 0.0};
 	char *rval;
 	int min_measurements = 2;
 	int r;
@@ -530,8 +530,6 @@ int main(int argc, char *argv[])
 		{"scale",              0, &config_scale,       1},
 		{"even-only",          0, &config_evenonly,    1},
 		{"odd-only",           0, &config_oddonly,     1},
-		{"no-polarisation",    0, &config_nopolar,     1},
-		{"no-polarization",    0, &config_nopolar,     1},
 		{"symmetry",           1, NULL,               'y'},
 		{"histogram",          1, NULL,               'g'},
 		{"hist-parameters",    1, NULL,               'z'},
@@ -544,6 +542,10 @@ int main(int argc, char *argv[])
 		{"version",            0, NULL,                7},
 		{"min-cc",             1, NULL,                8},
 		{"stat",               1, NULL,                9},
+		{"polarisation",       1, NULL,               10},
+		{"polarization",       1, NULL,               10}, /* compat */
+		{"no-polarisation",    0, NULL,               11},
+		{"no-polarization",    0, NULL,               11}, /* compat */
 		{0, 0, NULL, 0}
 	};
 
@@ -671,6 +673,14 @@ int main(int argc, char *argv[])
 			twopass = 1;
 			break;
 
+			case 10 :
+			polarisation = parse_polarisation(optarg);
+			break;
+
+			case 11 :
+			polarisation.fraction = 0.5;
+			break;
+
 			case 0 :
 			break;
 
@@ -760,7 +770,7 @@ int main(int argc, char *argv[])
 
 	hist_i = 0;
 	r = merge_all(st, model, NULL, sym, &hist_vals, hist_h, hist_k, hist_l,
-	              &hist_i, config_nopolar, min_measurements, min_snr,
+	              &hist_i, polarisation, min_measurements, min_snr,
 	              max_adu, start_after, stop_after, min_res, push_res,
 	              min_cc, config_scale, flag_even_odd, stat_output);
 	fprintf(stderr, "\n");
@@ -795,7 +805,7 @@ int main(int argc, char *argv[])
 
 			r = merge_all(st, model, reference, sym, &hist_vals,
 			              hist_h, hist_k, hist_l, &hist_i,
-				      config_nopolar, min_measurements, min_snr,
+				      polarisation, min_measurements, min_snr,
 				      max_adu, start_after, stop_after, min_res,
 				      push_res, min_cc, config_scale,
 				      flag_even_odd, stat_output);
