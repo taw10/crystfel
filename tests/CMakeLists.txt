@@ -97,3 +97,7 @@ add_executable(cellcompare_check cellcompare_check.c)
 target_include_directories(cellcompare_check PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(cellcompare_check ${COMMON_LIBRARIES})
 add_test(cellcompare_check cellcompare_check)
+
+add_executable(polarisation_check polarisation_check.c)
+target_include_directories(polarisation_check PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(polarisation_check ${COMMON_LIBRARIES})
