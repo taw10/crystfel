@@ -110,7 +110,7 @@ extern double r_gradient(UnitCell *cell, int k, Reflection *refl,
                          struct image *image);
 extern void update_predictions(Crystal *cryst);
 extern struct polarisation parse_polarisation(const char *text);
-extern void polarisation_correction(RefList *list, UnitCell *cell, double lambda,
+extern void polarisation_correction(RefList *list, UnitCell *cell,
                                     struct polarisation p);
 
 extern double sphere_fraction(double rlow, double rhigh, double pr);

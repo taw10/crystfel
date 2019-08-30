@@ -1436,7 +1436,7 @@ int main(int argc, char *argv[])
 			cr_refl = apply_max_adu(cr_refl, max_adu);
 
 			polarisation_correction(cr_refl, crystal_get_cell(cr),
-			                        image->lambda, polarisation);
+			                        polarisation);
 
 			if ( !no_free ) select_free_reflections(cr_refl, rng);
 

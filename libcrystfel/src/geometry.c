@@ -1018,7 +1018,7 @@ err:
 }
 
 
-void polarisation_correction(RefList *list, UnitCell *cell, double lambda,
+void polarisation_correction(RefList *list, UnitCell *cell,
                              struct polarisation p)
 {
 	Reflection *refl;

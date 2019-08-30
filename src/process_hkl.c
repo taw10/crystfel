@@ -271,8 +271,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	new_refl = crystal_get_reflections(cr);
 
 	/* First, correct for polarisation */
-	polarisation_correction(new_refl, crystal_get_cell(cr),
-	                        image->lambda, p);
+	polarisation_correction(new_refl, crystal_get_cell(cr), p);
 
 	if ( reference != NULL ) {
 		if ( do_scale ) {
