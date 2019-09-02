@@ -73,6 +73,12 @@ struct sandbox
 	int n_processed_last_stats;
 	time_t t_last_stats;
 
+	/* Processing timeout in seconds.  After this long without responding
+	 * to a ping, the worker will be killed.  After 3 times this long
+	 * working on one image, even with ping responses, a warning will be
+	 * shown to the user. */
+	int timeout;
+
 	struct index_args *iargs;
 
 	/* Worker processes */
@@ -157,17 +163,18 @@ static void check_hung_workers(struct sandbox *sb)
 			stamp_response(sb, i);
 		}
 
-		if ( tnow - sb->last_response[i] > 240 ) {
-			STATUS("Worker %i did not respond for 4 minutes - "
-			       "sending it SIGKILL.\n", i);
+		if ( tnow - sb->last_response[i] > sb->timeout ) {
+			STATUS("Worker %i did not respond for %i seconds - "
+			       "sending it SIGKILL.\n", i, sb->timeout);
 			kill(sb->pids[i], SIGKILL);
 			stamp_response(sb, i);
 		}
 
-		if ( tnow - sb->shared->time_last_start[i] > 600 ) {
+		if ( tnow - sb->shared->time_last_start[i] > sb->timeout*3 ) {
 			if ( !sb->shared->warned_long_running[i] ) {
 				STATUS("Worker %i has been working on one "
-				       "frame for more than 10 minutes.\n", i);
+				       "frame for more than %i seconds (just "
+				       "for info).\n", i, sb->timeout);
 				STATUS("Event ID is: %s\n",
 				       sb->shared->last_ev[i]);
 				STATUS("Task ID is: %s\n",
@@ -1044,7 +1051,7 @@ char *create_tempdir(const char *temp_location)
 int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    int config_basename, FILE *fh,
                    Stream *stream, const char *tmpdir, int serial_start,
-                   const char *zmq_address)
+                   const char *zmq_address, int timeout)
 {
 	int i;
 	struct sandbox *sb;
@@ -1073,6 +1080,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->iargs = iargs;
 	sb->serial = serial_start;
 	sb->tmpdir = tmpdir;
+	sb->timeout = timeout;
 	if ( zmq_address != NULL ) {
 		sb->zmq = 1;
 		sb->zmq_address = zmq_address;

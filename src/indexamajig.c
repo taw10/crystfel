@@ -313,6 +313,7 @@ int main(int argc, char *argv[])
 	char *spectrum_fn = NULL;
 	int zmq = 0;
 	char *zmq_address = NULL;
+	int timeout = 240;
 
 	/* Defaults */
 	iargs.cell = NULL;
@@ -1363,6 +1364,8 @@ int main(int argc, char *argv[])
 
 	} else {
 
+		int i, n;
+		const IndexingMethod *methods;
 		IndexingFlags flags = 0;
 
 		if ( iargs.cell != NULL ) {
@@ -1398,6 +1401,15 @@ int main(int argc, char *argv[])
 		if ( iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");
 			return 1;
+		}
+
+		methods = indexing_methods(iargs.ipriv, &n);
+		for ( i=0; i<n; i++ ) {
+			if ( methods[i] & INDEXING_PINKINDEXER ) {
+				/* Extend timeout if using pinkIndexer */
+				timeout = 3000;
+				break;
+			}
 		}
 
 	}
@@ -1439,7 +1451,7 @@ int main(int argc, char *argv[])
 	}
 
 	r = create_sandbox(&iargs, n_proc, prefix, config_basename, fh,
-	                   st, tmpdir, serial_start, zmq_address);
+	                   st, tmpdir, serial_start, zmq_address, timeout);
 
 	free_imagefile_field_list(iargs.copyme);
 	cell_free(iargs.cell);
