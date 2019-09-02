@@ -1270,12 +1270,16 @@ struct detector *get_detector_geometry_from_string(const char *string,
 			done = 1;
 		}
 
-		if ( line[0] == ';' ) continue;
+		if ( line[0] == ';' ) {
+			free(line);
+			continue;
+		}
 
 		n1 = assplode(line, " \t", &bits, ASSPLODE_NONE);
 		if ( n1 < 3 ) {
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
+			free(line);
 			continue;
 		}
 
@@ -1289,6 +1293,7 @@ struct detector *get_detector_geometry_from_string(const char *string,
 		if ( bits[1][0] != '=' ) {
 			for ( i=0; i<n1; i++ ) free(bits[i]);
 			free(bits);
+			free(line);
 			continue;
 		}
 
@@ -1303,6 +1308,7 @@ struct detector *get_detector_geometry_from_string(const char *string,
 			free(bits);
 			for ( i=0; i<n2; i++ ) free(path[i]);
 			free(path);
+			free(line);
 			continue;
 		}
 
@@ -1334,6 +1340,7 @@ struct detector *get_detector_geometry_from_string(const char *string,
 		for ( i=0; i<n2; i++ ) free(path[i]);
 		free(bits);
 		free(path);
+		free(line);
 
 	} while ( !done );
 
