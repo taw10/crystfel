@@ -347,7 +347,6 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 			ERROR("The indexing method should contain only the method itself and ");
 			ERROR("prior information modifiers ('cell' or 'latt')\n");
 			ERROR("To disable prediction refinement ('norefine'), use --no-refine.\n");
-			ERROR("To check cell axes only ('axes'), use --no-cell-combinations.\n");
 			ERROR("To disable all unit cell checks ('raw'), use --no-check-cell.\n");
 			ERROR("To disable peak alignment check ('bad'), use --no-check-peaks.\n");
 			ERROR("To disable indexing retry ('noretry'), use --no-retry.\n");
