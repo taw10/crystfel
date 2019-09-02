@@ -161,6 +161,8 @@ extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct pinkIndexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts);
 
+extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);
+
 extern char *detect_indexing_methods(UnitCell *cell);
 
 extern void index_pattern(struct image *image, IndexingPrivate *ipriv);

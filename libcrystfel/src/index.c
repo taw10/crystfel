@@ -461,6 +461,12 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 }
 
 
+const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n)
+{
+	return p->methods;
+}
+
+
 void cleanup_indexing(IndexingPrivate *ipriv)
 {
 	int n;
