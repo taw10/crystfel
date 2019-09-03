@@ -850,14 +850,16 @@ static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 	while ( sb->shared->n_events < QUEUE_SIZE ) {
 
 		struct filename_plus_event *ne;
+		char *evstr;
 
 		ne = get_pattern(gpctx);
 		if ( ne == NULL ) return 1; /* No more */
 
 		memset(sb->shared->queue[sb->shared->n_events], 0, MAX_EV_LEN);
+		evstr = get_event_string(ne->ev),
 		snprintf(sb->shared->queue[sb->shared->n_events++], MAX_EV_LEN,
-		         "%s %s %i", ne->filename, get_event_string(ne->ev),
-		         sb->serial++);
+		         "%s %s %i", ne->filename, evstr, sb->serial++);
+		free(evstr);
 		sem_post(sb->queue_sem);
 		free_filename_plus_event(ne);
 
