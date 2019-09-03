@@ -2152,6 +2152,8 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
 	}
 	}
 
+	intmat_free(m);
+
 	if ( n_best == 0 ) return NULL;
 
 	sel = n_best;
@@ -2309,7 +2311,9 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 		match = NULL;
 	}
 
+	rtnl_mtx_free(CiARA);
 	rtnl_mtx_free(CiA);
+	intmat_free(RiBCB);
 	intmat_free(RA);
 	intmat_free(RB);
 	intmat_free(CB);

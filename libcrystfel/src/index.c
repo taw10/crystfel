@@ -539,10 +539,10 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	/* Check at all? */
 	if ( !(flags & INDEXING_CHECK_CELL) ) return 0;
 
-	if ( compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
-	                                       tolerance, &rm) )
-	{
-		out = cell_transform_rational(crystal_get_cell(cr), rm);
+	out = compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
+	                                       tolerance, &rm);
+
+	if ( out != NULL ) {
 		cell_free(crystal_get_cell(cr));
 		crystal_set_cell(cr, out);
 		rtnl_mtx_free(rm);
