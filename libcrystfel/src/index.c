@@ -423,6 +423,29 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
+		if ( methods[i] & INDEXING_PINKINDEXER ) {
+			if ( n > 1 ) {
+				ERROR("WARNING: Using PinkIndexer at the same "
+				      "time as other indexers is not "
+				      "recommended.\n");
+			}
+
+			if ( flags & INDEXING_CHECK_PEAKS ) {
+				ERROR("WARNING: Setting --no-check-peaks "
+				      "because PinkIndexer is in use.\n");
+			}
+			flags |= INDEXING_CHECK_PEAKS;
+			flags ^= INDEXING_CHECK_PEAKS;
+
+			if ( flags & INDEXING_REFINE ) {
+				ERROR("WARNING: Setting --no-refine because "
+				      "PinkIndexer is in use.\n");
+			}
+			flags |= INDEXING_REFINE;
+			flags ^= INDEXING_REFINE;
+		}
+
+
 		for ( j=0; j<i; j++ ) {
 			if ( methods[i] == methods[j] ) {
 				ERROR("Duplicate indexing method.\n");
