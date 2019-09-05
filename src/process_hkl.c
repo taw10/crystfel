@@ -255,6 +255,20 @@ static double *check_hist_size(int n, double *hist_vals)
 }
 
 
+static void apply_kpred(double k, RefList *list)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+
+	for ( refl = first_refl(list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		set_kpred(refl, k);
+	}
+}
+
+
 static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
                          RefList *reference, const SymOpList *sym,
                          double **hist_vals, signed int hist_h,
@@ -271,6 +285,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	new_refl = crystal_get_reflections(cr);
 
 	/* First, correct for polarisation */
+	apply_kpred(1.0/image->lambda, new_refl);
 	polarisation_correction(new_refl, crystal_get_cell(cr), p);
 
 	if ( reference != NULL ) {
