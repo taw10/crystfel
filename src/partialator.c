@@ -1437,9 +1437,6 @@ int main(int argc, char *argv[])
 
 			cr_refl = apply_max_adu(cr_refl, max_adu);
 
-			polarisation_correction(cr_refl, crystal_get_cell(cr),
-			                        polarisation);
-
 			if ( !no_free ) select_free_reflections(cr_refl, rng);
 
 			as = asymmetric_indices(cr_refl, sym);
@@ -1479,8 +1476,14 @@ int main(int argc, char *argv[])
 
 	STATUS("Initial partiality calculation...\n");
 	for ( i=0; i<n_crystals; i++ ) {
+
 		Crystal *cr = crystals[i];
 		update_predictions(cr);
+
+		/* Polarisation correction requires kpred values */
+		polarisation_correction(crystal_get_reflections(cr),
+		                        crystal_get_cell(cr), polarisation);
+
 		calculate_partialities(cr, pmodel);
 	}
 
