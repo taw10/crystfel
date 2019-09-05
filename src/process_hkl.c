@@ -505,7 +505,9 @@ int main(int argc, char *argv[])
 	int hist_i;
 	int space_for_hist = 0;
 	char *histo_params = NULL;
-	struct polarisation polarisation = {.fraction = 1.0, .angle= 0.0};
+	struct polarisation polarisation = {.fraction = 1.0,
+	                                    .angle = 0.0,
+	                                    .disable = 0};
 	char *rval;
 	int min_measurements = 2;
 	int r;
@@ -677,7 +679,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 11 :
-			polarisation.fraction = 0.5;
+			polarisation = parse_polarisation("none");
 			break;
 
 			case 0 :

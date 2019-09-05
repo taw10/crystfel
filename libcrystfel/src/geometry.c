@@ -967,10 +967,12 @@ struct polarisation parse_polarisation(const char *text)
 	if ( strcmp(text, "none") == 0 ) {
 		p.fraction = 0.5;
 		p.angle = 0.0;
+		p.disable = 1;
 		return p;
 	}
 
 	p.fraction = 1.0;
+	p.disable = 0;
 
 	i = 0;
 	n = 0;
@@ -1026,6 +1028,10 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+
+	if ( p.disable ) {
+		return;
+	}
 
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,

@@ -952,7 +952,9 @@ int main(int argc, char *argv[])
 	PartialityModel pmodel = PMODEL_XSPHERE;
 	int min_measurements = 2;
 	char *rval;
-	struct polarisation polarisation = {.fraction = 1.0, .angle= 0.0};
+	struct polarisation polarisation = {.fraction = 1.0,
+	                                    .angle = 0.0,
+	                                    .disable = 0};
 	int start_after = 0;
 	int stop_after = 0;
 	double max_adu = +INFINITY;
@@ -1190,7 +1192,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 15 :
-			polarisation.fraction = 0.5;
+			polarisation = parse_polarisation("none");
 			break;
 
 			case 0 :

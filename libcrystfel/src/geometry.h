@@ -97,8 +97,12 @@ enum gparam {
 struct polarisation
 {
 	double fraction;   /**< Polarisation fraction (0 to 1) */
+
 	double angle;      /**< Angle of electron beam, radians, clockwise from
 	                    * horizontal when looking along beam */
+
+	int disable;       /**< If set, don't even correct for the polarisation
+	                    * of the diffracted beam (1 - 0.5sin^2(2theta)) */
 };
 
 
