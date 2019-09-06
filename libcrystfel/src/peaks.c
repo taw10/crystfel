@@ -675,7 +675,20 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 #endif // HAVE_FDIP
 
 
-int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
+/**
+ * \param image An \ref image structure
+ * \param crystals Pointer to array of pointers to crystals
+ * \param n_cryst The number of crystals
+ * \param multi_mode Whether the thresholds should be set for multi-lattice indexing
+ *
+ * Checks whether the peaks in \p image appear to be explained by the crystals
+ * provided.
+ *
+ * Returns 1 if the peaks appear to be well-explained by the crystals.
+ * Otherwise, if the indexing solutions appear to be "bad", returns 0.
+ */
+int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
+                        int multi_mode)
 {
 	int n_feat = 0;
 	int n_sane = 0;
@@ -733,9 +746,23 @@ int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
 	}
 
 	/* 0 means failed test, 1 means passed test */
-	return (n_sane > 70)
-	    || ((n_sane > 25) && (n_sane > 0.3*n_feat))
-	    || (n_sane > 0.4*n_feat);
+
+	if ( multi_mode ) {
+		return (n_sane > 70)
+		    || ((n_sane > 25) && (n_sane > 0.3*n_feat))
+		    || (n_sane > 0.4*n_feat);
+	} else {
+		return ((double)n_sane / n_feat) >= 0.5;
+	}
+}
+
+
+/**
+ * Deprecated: use indexing_peak_check instead
+ */
+int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
+{
+	return indexing_peak_check(image, crystals, n_cryst, 1);
 }
 
 

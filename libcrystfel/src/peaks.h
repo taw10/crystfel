@@ -68,6 +68,9 @@ extern int search_peaks_peakfinder9(struct image *image,
                                     float min_peak_over_neighbour,
                                     int window_radius);
 
+extern int indexing_peak_check(struct image *image, Crystal **crystals,
+                               int n_cryst, int multi_mode);
+
 extern int peak_sanity_check(struct image *image, Crystal **crystals,
                              int n_cryst);
 

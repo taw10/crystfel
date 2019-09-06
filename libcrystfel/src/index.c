@@ -663,7 +663,8 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		/* Peak alignment check if requested */
 		if ( ipriv->flags & INDEXING_CHECK_PEAKS )
 		{
-			if ( !peak_sanity_check(image, &cr, 1) ) {
+			int mm = ipriv->flags & INDEXING_MULTI;
+			if ( !indexing_peak_check(image, &cr, 1, mm) ) {
 				crystal_set_user_flag(cr, 1);
 				continue;
 			}
