@@ -68,7 +68,6 @@ for FILE in split-events-${RUN}.lst*; do
     #echo "#SBATCH --nice=100" >> $SLURMFILE
     echo >> $SLURMFILE
 
-    echo "#SBATCH --workdir   $PWD" >> $SLURMFILE
     echo "#SBATCH --job-name  $NAME" >> $SLURMFILE
     echo "#SBATCH --output    $NAME-%N-%j.out" >> $SLURMFILE
     echo "#SBATCH --error     $NAME-%N-%j.err" >> $SLURMFILE
