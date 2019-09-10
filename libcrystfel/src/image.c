@@ -112,9 +112,12 @@ static int comp(const void *a, const void *b)
  */
 ImageFeatureList *sort_peaks(ImageFeatureList *flist)
 {
-	ImageFeatureList *n = image_feature_list_new();
+	ImageFeatureList *n;
 	int nf, i;
 
+	if ( flist == NULL ) return NULL;
+
+	n = image_feature_list_new();
 	if ( n == NULL ) return NULL;
 
 	n->features = malloc(flist->n_features*sizeof(struct imagefeature));
