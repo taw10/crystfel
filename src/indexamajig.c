@@ -232,8 +232,7 @@ static void show_help(const char *s)
 "     --integration=<meth>  Integration method (rings,prof2d)-(cen,nocen)\n"
 "                            Default: rings-nocen\n"
 "     --fix-profile-radius  Fix the reciprocal space profile radius for spot\n"
-"                            prediction (default: automatically determine\n"
-"     --fix-bandwidth       Set the bandwidth for spot prediction\n"
+"                            prediction (default: automatically determine)\n"
 "     --fix-divergence      Set the divergence (full angle) for spot prediction\n"
 "     --int-radius=<r>      Set the integration radii.  Default: 4,5,7.\n"
 "     --int-diag=<cond>     Show debugging information about reflections\n"
@@ -370,7 +369,6 @@ int main(int argc, char *argv[])
 	iargs.push_res = 0.0;
 	iargs.highres = +INFINITY;
 	iargs.fix_profile_r = -1.0;
-	iargs.fix_bandwidth = -1.0;
 	iargs.fix_divergence = -1.0;
 	iargs.profile = 0;
 	iargs.no_image_data = 0;
@@ -699,11 +697,9 @@ int main(int argc, char *argv[])
 			break;
 
 			case 323 :
-			if ( sscanf(optarg, "%f", &iargs.fix_bandwidth) != 1 ) {
-				ERROR("Invalid value for --fix-bandwidth\n");
-				return 1;
-			}
-			break;
+			ERROR("Option --fix-bandwidth is no longer used.\n");
+			ERROR("Set the bandwidth in the geometry file instead.\n");
+			return 1;
 
 			case 324 :
 			if ( sscanf(optarg, "%f", &iargs.fix_divergence) != 1 ) {
