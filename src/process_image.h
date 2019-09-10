@@ -56,6 +56,7 @@ enum {
 	PEAK_HDF5,
 	PEAK_CXI,
 	PEAK_MSGPACK,
+	PEAK_NONE,
 };
 
 

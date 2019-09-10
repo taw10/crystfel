@@ -343,6 +343,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                  iargs->half_pixel_shift);
 		break;
 
+		case PEAK_NONE:
+		break;
+
 	}
 
 	image.peak_resolution = estimate_peak_resolution(image.features,

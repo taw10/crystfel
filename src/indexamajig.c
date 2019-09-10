@@ -989,6 +989,8 @@ int main(int argc, char *argv[])
 		iargs.peaks = PEAK_PEAKFINDER9;
 	} else if ( strcmp(speaks, "msgpack") == 0 ) {
 		iargs.peaks = PEAK_MSGPACK;
+	} else if ( strcmp(speaks, "none") == 0 ) {
+		iargs.peaks = PEAK_NONE;
 	} else {
 		ERROR("Unrecognised peak detection method '%s'\n", speaks);
 		return 1;
