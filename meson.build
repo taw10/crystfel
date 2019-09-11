@@ -1,0 +1,313 @@
+# Meson file for CrystFEL
+project('crystfel', 'c',
+        version : '0.8.0',
+        license : 'GPL3+',
+        default_options : ['buildtype=debugoptimized'])
+
+add_project_arguments('-DHAVE_CONFIG_H', language : 'c')
+
+# FIXME: Possibly Git SHA1
+conf_data = configuration_data()
+conf_data.set('CRYSTFEL_VERSION',  meson.project_version())
+
+# Mandatory dependencies
+cc = meson.get_compiler('c')
+mdep = cc.find_library('m', required : true)
+gsldep = dependency('gsl', required : true)
+zlibdep = dependency('zlib', required : true)
+pthreaddep = dependency('threads', required : true)
+
+# HDF5 >= 1.8.21 and >= 1.10.2 has a pkg-config file:
+hdf5dep = dependency('hdf5', language : 'c', required : false)
+
+# Otherwise, try finding it ourselves:
+if not hdf5dep.found()
+  hdf5dep = cc.find_library('hdf5', required : false)
+endif
+
+if not hdf5dep.found()
+  error('Couldn\'t find HDF5')
+endif
+
+# "Optional" dependencies
+fftwdep = dependency('fftw3', required : false)
+if fftwdep.found()
+  conf_data.set10('HAVE_FFTW', 1)
+endif
+
+tiffdep = dependency('libtiff-4', required : false)
+if tiffdep.found()
+  conf_data.set10('HAVE_TIFF', 1)
+endif
+
+gtkdep = dependency('gtk+-3.0', required : false)
+if not gtkdep.found()
+  gtkdep = dependency('gtk+-2.0', required : false)
+else
+  add_project_arguments('-Wno-deprecated-declarations', language : 'c')
+endif
+
+if gtkdep.found()
+  conf_data.set10('HAVE_GTK', 1)
+endif
+
+gdkdep = dependency('gdk-3.0', required : false)
+if not gdkdep.found()
+  gdkdep = dependency('gdk-2.0', required : false)
+endif
+if gdkdep.found()
+  conf_data.set10('HAVE_GDK', 1)
+endif
+
+gdkpixbufdep = dependency('gdk-pixbuf-2.0', required : false)
+if gdkpixbufdep.found()
+  conf_data.set10('HAVE_GDKPIXBUF', 1)
+endif
+
+cairodep = dependency('cairo', required : false)
+if cairodep.found()
+  conf_data.set10('HAVE_CAIRO', 1)
+endif
+
+opencldep = dependency('OpenCL', required : false)
+if opencldep.found()
+  conf_data.set10('HAVE_OPENCL', 1)
+endif
+if cc.has_header('CL/cl.h')
+  conf_data.set10('HAVE_CL_CL_H', 1)
+endif
+
+zmqdep = dependency('libzmq', required : false)
+if zmqdep.found()
+  conf_data.set10('HAVE_ZMQ', 1)
+endif
+
+msgpackdep = dependency('msgpack', required : false)
+if msgpackdep.found()
+  conf_data.set10('HAVE_MSGPACK', 1)
+endif
+
+if cc.has_function('clock_gettime', prefix : '#include <time.h>')
+  conf_data.set10('HAVE_CLOCK_GETTIME', 1)
+endif
+
+# FIXME: Curses, Xgandalf, pinkindexer, FDIP
+
+
+# libcrystfel
+libcrystfel_includes = include_directories('libcrystfel/src')
+
+# Find forkpty()
+utildep = cc.find_library('util', required : true)
+if cc.has_function('forkpty', dependencies : utildep, prefix : '#include <pty.h>')
+  add_project_arguments('-DHAVE_FORKPTY_PTY_H', language : 'c')
+elif cc.has_function('forkpty', dependencies : utildep, prefix : '#include <util.h>')
+  add_project_arguments('-DHAVE_FORKPTY_UTIL_H', language : 'c')
+else
+  error('Couldn\'t find forkpty()')
+endif
+
+
+
+# Symmetry operation parser Flex/Bison stuff
+flex = find_program('flex')
+bison = find_program('bison')
+
+flex_gen = generator(flex,
+                     output : ['@BASENAME@-lex.c', '@BASENAME@-lex.h'],
+                     arguments : ['--outfile=@OUTPUT0@',
+                                  '--header-file=@OUTPUT1@',
+                                  '@INPUT@'])
+
+bison_gen = generator(bison,
+                      output : ['@BASENAME@-parse.c', '@BASENAME@-parse.h'],
+                      arguments : ['--output=@OUTPUT0@',
+                                   '--defines=@OUTPUT1@',
+                                   '--report=all',
+                                   '@INPUT@'])
+
+symop_parse_ch = bison_gen.process('libcrystfel/src/symop.y')
+symop_lex_ch = flex_gen.process('libcrystfel/src/symop.l')
+
+
+libcrystfel_sources = ['libcrystfel/src/image.c',
+                       'libcrystfel/src/render.c',
+                       'libcrystfel/src/cell.c',
+                       'libcrystfel/src/index.c',
+                       'libcrystfel/src/spectrum.c',
+                       'libcrystfel/src/cell-utils.c',
+                       'libcrystfel/src/integer_matrix.c',
+                       'libcrystfel/src/stream.c',
+                       'libcrystfel/src/crystal.c',
+                       'libcrystfel/src/integration.c',
+                       'libcrystfel/src/symmetry.c',
+                       'libcrystfel/src/detector.c',
+                       'libcrystfel/src/mosflm.c',
+                       'libcrystfel/src/taketwo.c',
+                       'libcrystfel/src/dirax.c',
+                       'libcrystfel/src/peakfinder8.c',
+                       'libcrystfel/src/thread-pool.c',
+                       'libcrystfel/src/events.c',
+                       'libcrystfel/src/peaks.c',
+                       'libcrystfel/src/utils.c',
+                       'libcrystfel/src/felix.c',
+                       'libcrystfel/src/predict-refine.c',
+                       'libcrystfel/src/xds.c',
+                       'libcrystfel/src/filters.c',
+                       'libcrystfel/src/rational.c',
+                       'libcrystfel/src/xgandalf.c',
+                       'libcrystfel/src/geometry.c',
+                       'libcrystfel/src/reflist.c',
+                       'libcrystfel/src/hdf5-file.c',
+                       'libcrystfel/src/reflist-utils.c',
+                       symop_lex_ch,
+                       symop_parse_ch,
+                      ]
+
+if fftwdep.found()
+  libcrystfel_sources += 'libcrystfel/src/asdf.c'
+endif
+
+configure_file(input : 'config.h.in',
+               output : 'config.h',
+               configuration : conf_data)
+conf_inc = include_directories('.')
+
+libcrystfel = library('crystfel', libcrystfel_sources,
+                   include_directories : [libcrystfel_includes, conf_inc],
+                   dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
+                                   hdf5dep, pthreaddep],
+                   install : true)
+
+libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
+                                    link_with : libcrystfel)
+
+
+# cell_tool
+executable('cell_tool',
+           ['src/cell_tool.c'],
+           dependencies : [mdep, libcrystfeldep],
+           install : true)
+
+# partial_sim
+executable('partial_sim',
+           ['src/partial_sim.c'],
+           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
+           install : true)
+
+# process_hkl
+executable('process_hkl',
+           ['src/process_hkl.c'],
+           dependencies : [mdep, libcrystfeldep],
+           install : true)
+
+# list_events
+executable('list_events',
+           ['src/list_events.c'],
+           dependencies : [mdep, libcrystfeldep],
+           install : true)
+
+# get_hkl
+executable('get_hkl',
+           ['src/get_hkl.c'],
+           dependencies : [mdep, libcrystfeldep, gsldep],
+           install : true)
+
+# compare_hkl
+executable('compare_hkl',
+           ['src/compare_hkl.c'],
+           dependencies : [mdep, libcrystfeldep, gsldep],
+           install : true)
+
+# check_hkl
+executable('check_hkl',
+           ['src/check_hkl.c'],
+           dependencies : [mdep, libcrystfeldep, gsldep],
+           install : true)
+
+# partialator
+executable('partialator',
+           ['src/partialator.c',
+            'src/post-refinement.c',
+            'src/merge.c',
+            'src/rejection.c',
+            'src/scaling.c'],
+           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
+           install : true)
+
+# ambigator
+executable('ambigator',
+           ['src/ambigator.c'],
+           dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep],
+           install : true)
+
+# whirligig
+executable('whirligig',
+           ['src/whirligig.c'],
+           dependencies : [mdep, libcrystfeldep],
+           install : true)
+
+# indexamajig
+indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
+                       'src/process_image.c', 'src/time-accounts.c']
+if zmqdep.found() and msgpackdep.found()
+  indexamajig_sources += ['src/im-zmq.c']
+endif
+
+executable('indexamajig', indexamajig_sources,
+           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep, zmqdep,
+                           msgpackdep],
+           install : true)
+
+# make_pixelmap
+executable('make_pixelmap',
+           ['src/make_pixelmap.c'],
+           dependencies : [mdep, libcrystfeldep, hdf5dep],
+           install : true)
+
+# geoptimiser
+executable('geoptimiser',
+           ['src/geoptimiser.c', 'src/hdfsee-render.c'],
+           dependencies : [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep,
+                           tiffdep],
+           install : true)
+
+# hdfsee
+if gtkdep.found()
+  executable('hdfsee',
+             ['src/hdfsee.c', 'src/dw-hdfsee.c', 'src/hdfsee-render.c'],
+             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep, gdkpixbufdep,
+                             tiffdep],
+             install : true)
+endif
+
+# render_hkl
+executable('render_hkl',
+           ['src/render_hkl.c'],
+           dependencies : [mdep, libcrystfeldep, cairodep, gsldep],
+           install : true)
+
+# cell_explorer
+if gtkdep.found()
+  executable('cell_explorer',
+             ['src/cell_explorer.c', 'src/multihistogram.c'],
+             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep],
+             install : true)
+endif
+
+# pattern_sim
+pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c']
+if opencldep.found()
+  pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
+endif
+executable('pattern_sim', pattern_sim_sources,
+           dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
+           install : true)
+
+# FIXME: Install manual pages
+
+# FIXME: API documents (Doxygen)
+
+# FIXME: Tests
+
+# FIXME: pkgconfig file
