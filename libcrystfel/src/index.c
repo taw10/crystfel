@@ -423,7 +423,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
-		if ( methods[i] & INDEXING_PINKINDEXER ) {
+		if ( (methods[i] & INDEXING_METHOD_MASK) == INDEXING_PINKINDEXER ) {
 			if ( n > 1 ) {
 				ERROR("WARNING: Using PinkIndexer at the same "
 				      "time as other indexers is not "
