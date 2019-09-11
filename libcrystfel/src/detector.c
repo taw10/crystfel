@@ -1215,7 +1215,7 @@ struct detector *get_detector_geometry_from_string(const char *string,
 		beam->photon_energy = 0.0;
 		beam->photon_energy_from = NULL;
 		beam->photon_energy_scale = 1.0;
-		beam->bandwidth = 0.0;
+		beam->bandwidth = 0.00000001;
 	}
 
 	det->n_panels = 0;
