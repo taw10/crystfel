@@ -332,7 +332,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 			/* Closest point on Ewald sphere.
 			 * Project zl to 0, bit of a hack... */
-			const double zlp0 = zl>0?zl:0;
+			const double zlp0 = zl<0?zl:0;
 			exerr2 = (x-xl)*(x-xl) + (y-yl)*(y-yl) + (z-zl)*(z-zl);
 
 			/* Weighted average between projected lattice point
