@@ -348,7 +348,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		if ( exponent > -700.0 ) {
 			overlap_integral = exp(exponent) * sqrt(2*M_PI*R*R) / sqrt(2*M_PI*sigma2);
 		} else {
-			exponent = 0.0;
+			overlap_integral = 0.0;
 		}
 
 		mean_variance(kpred, g.area*overlap_integral,
