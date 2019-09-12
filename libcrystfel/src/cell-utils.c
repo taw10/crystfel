@@ -1612,7 +1612,7 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 	Rational *cand_c;
 	int ncand_a, ncand_b, ncand_c;
 	int ia, ib;
-	RationalMatrix *CiAMCB;
+	RationalMatrix *CiAMCB = NULL;
 	double min_dist = +INFINITY;
 
 	/* Actually compare against primitive version of reference */
@@ -1724,8 +1724,7 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 	free(cand_b);
 	free(cand_c);
 
-	if ( isinf(min_dist) ) {
-		rtnl_mtx_free(CiAMCB);
+	if ( CiAMCB == NULL ) {
 		*pmb = NULL;
 		return 0;
 	}
