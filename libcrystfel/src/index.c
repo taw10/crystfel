@@ -543,6 +543,7 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	                                       tolerance, &rm);
 
 	if ( out != NULL ) {
+		/* Replace crystal's cell with new one */
 		cell_free(crystal_get_cell(cr));
 		crystal_set_cell(cr, out);
 		rtnl_mtx_free(rm);

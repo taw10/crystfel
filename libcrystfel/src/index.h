@@ -122,7 +122,7 @@ typedef enum {
 	INDEXING_CHECK_PEAKS = 32,
 
 	/** Check that the unit cell agrees with the target cell */
-	INDEXING_CHECK_CELL = 32,
+	INDEXING_CHECK_CELL = 64,
 
 } IndexingFlags;
 

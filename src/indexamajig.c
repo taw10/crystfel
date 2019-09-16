@@ -1243,7 +1243,7 @@ int main(int argc, char *argv[])
 		}
 
 		if ( !if_nocheck ) {
-			flags &= INDEXING_CHECK_CELL;
+			flags |= INDEXING_CHECK_CELL;
 		}
 
 		if ( if_refine ) {
