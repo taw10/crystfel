@@ -1399,9 +1399,9 @@ static void integrate_prof2d(IntegrationMethod meth,
 }
 
 
-static void integrate_rings_once(Reflection *refl, struct image *image,
-                                 struct intcontext *ic, UnitCell *cell,
-                                 pthread_mutex_t *term_lock)
+static int integrate_rings_once(Reflection *refl, struct image *image,
+                                struct intcontext *ic, UnitCell *cell,
+                                pthread_mutex_t *term_lock)
 {
 	double pfs, pss;
 	struct peak_box *bx;
@@ -1423,7 +1423,7 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	pn = panel_number(image->det, p);
 	if ( pn == image->det->n_panels ) {
 		ERROR("Couldn't find panel %p\n", p);
-		return;
+		return 1;
 	}
 
 	/* Explicit truncation of digits after the decimal point.
@@ -1458,14 +1458,14 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	}
 	if ( r ) {
 		delete_box(ic, bx);
-		return;
+		return 1;
 	}
 
 	if ( saturated ) {
 		ic->n_saturated++;
 		if ( !(ic->meth & INTEGRATION_SATURATED) ) {
 			delete_box(ic, bx);
-			return;
+			return 1;
 		}
 	}
 
@@ -1509,7 +1509,10 @@ static void integrate_rings_once(Reflection *refl, struct image *image,
 	if ( intensity < -5.0*sigma ) {
 		ic->n_implausible++;
 		set_redundancy(refl, 0);
+		return 1;
 	}
+
+	return 0;
 }
 
 
@@ -1612,6 +1615,7 @@ static void integrate_rings(IntegrationMethod meth,
 	RefListIterator *iter;
 	UnitCell *cell;
 	struct intcontext ic;
+	int n_rej = 0;
 
 	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
@@ -1641,10 +1645,15 @@ static void integrate_rings(IntegrationMethod meth,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		integrate_rings_once(refl, image, &ic, cell, term_lock);
+		n_rej += integrate_rings_once(refl, image, &ic, cell, term_lock);
 	}
 
 	free_intcontext(&ic);
+
+	if ( n_rej > 0 ) {
+		ERROR("WARNING: %i reflections could not be integrated\n",
+		      n_rej);
+	}
 
 	crystal_set_num_saturated_reflections(cr, ic.n_saturated);
 	crystal_set_num_implausible_reflections(cr, ic.n_implausible);
