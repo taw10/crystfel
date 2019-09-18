@@ -1,3 +1,23 @@
+Changes in this development version
+-----------------------------------
+
+- Introduce cell_tool
+- Handle CBF files natively, not via CBFlib
+- Add Spectrum API
+- Improvements to unit cell comparison logic
+- indexamajig: Removed --no-cell-combinations
+- indexamajig: Add --zmq-msgpack
+- indexamajig: Allow individual tolerances for all six parameters
+- indexamajig: Return non-zero exit status if no patterns were processed
+- indexamajig: Rename --min-gradient to --min-squared-gradient
+- indexamajig: Status message updates
+- cell_explorer: Allow enforcement of Bravais lattice type
+- ambigator: Use pre-defined resolution bins if limits not given
+- partialator: Many stability improvements to post-refinement
+- partialator: Add --model=offset for monochromatic synchrotron data
+- partialator/process_hkl: Allow arbitrary polarisation direction and degree
+
+
 CrystFEL version 0.8.0, 19th December 2018
 ------------------------------------------
 
