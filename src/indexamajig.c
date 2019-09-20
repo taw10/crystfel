@@ -571,6 +571,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			ERROR("Invalid value for --serial-start\n");
 			return EINVAL;
 		}
+		break;
 
 		default :
 		return ARGP_ERR_UNKNOWN;
