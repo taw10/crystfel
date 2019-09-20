@@ -28,18 +28,31 @@
 
 #include "xgandalf.h"
 
-#ifdef HAVE_XGANDALF
 #include <stdlib.h>
 
 #include "utils.h"
 #include "cell-utils.h"
 #include "peaks.h"
 
+#ifdef HAVE_XGANDALF
 #include "xgandalf/adaptions/crystfel/Lattice.h"
 #include "xgandalf/adaptions/crystfel/ExperimentSettings.h"
 #include "xgandalf/adaptions/crystfel/IndexerPlain.h"
+#endif
 
 /** \file xgandalf.h */
+
+struct xgandalf_options {
+	unsigned int sampling_pitch;
+	unsigned int grad_desc_iterations;
+	float tolerance;
+	unsigned int no_deviation_from_provided_cell;
+	float minLatticeVectorLength_A;
+	float maxLatticeVectorLength_A;
+	int maxPeaksForIndexing;
+};
+
+#ifdef HAVE_XGANDALF
 
 struct xgandalf_private_data {
 	IndexerPlain *indexer;
@@ -332,3 +345,147 @@ const char *xgandalf_probe(UnitCell *cell)
 }
 
 #endif // HAVE_XGANDALF
+
+static void show_help()
+{
+	printf("Parameters for the TakeTwo indexing algorithm:\n"
+"     --xgandalf-sampling-pitch\n"
+"                           Sampling pitch: 0 (loosest) to 4 (most dense)\n"
+"                            or with secondary Miller indices: 5 (loosest) to\n"
+"                            7 (most dense).  Default: 6\n"
+"     --xgandalf-grad-desc-iterations\n"
+"                           Gradient descent iterations: 0 (few) to 5 (many)\n"
+"                            Default: 4\n"
+"     --xgandalf-fast-execution       Shortcut to set\n"
+"                                     --xgandalf-sampling-pitch=2\n"
+"                                     --xgandalf-grad-desc-iterations=3\n"
+"     --xgandalf-tolerance  Relative tolerance of the lattice vectors.\n"
+"                            Default is 0.02\n"
+"     --xgandalf-no-deviation-from-provided-cell\n"
+"                           Force the fitted cell to have the same lattice\n"
+"                            parameters as the provided one\n"
+"     --xgandalf-min-lattice-vector-length\n"
+"                           Minimum possible lattice vector length in A.\n"
+"                            Default: 30 A\n"
+"     --xgandalf-max-lattice-vector-length\n"
+"                           Maximum possible lattice vector length in A.\n"
+"                            Default: 250 A\n"
+"     --xgandalf-max-peaks\n"
+"                           Maximum number of peaks used for indexing.\n"
+"                           All peaks are used for refinement.\n"
+"                            Default: 250\n"
+);
+}
+
+
+static error_t parse_arg(int key, char *arg, struct argp_state *state)
+{
+	struct xgandalf_options **opts_ptr = state->input;
+
+	switch ( key ) {
+
+		case ARGP_KEY_INIT :
+		*opts_ptr = malloc(sizeof(struct xgandalf_options));
+		if ( *opts_ptr == NULL ) return ENOMEM;
+		(*opts_ptr)->sampling_pitch = 6;
+		(*opts_ptr)->grad_desc_iterations = 4;
+		(*opts_ptr)->tolerance = 0.02;
+		(*opts_ptr)->no_deviation_from_provided_cell = 0;
+		(*opts_ptr)->minLatticeVectorLength_A = 30;
+		(*opts_ptr)->maxLatticeVectorLength_A = 250;
+		(*opts_ptr)->maxPeaksForIndexing = 250;
+		break;
+
+		case 1 :
+		show_help();
+		return EINVAL;
+
+		case 2 :
+		if (sscanf(arg, "%u", &(*opts_ptr)->sampling_pitch) != 1) {
+			ERROR("Invalid value for --xgandalf-sampling-pitch\n");
+			return EINVAL;
+		}
+		break;
+
+		case 3 :
+		if (sscanf(arg, "%u", &(*opts_ptr)->grad_desc_iterations) != 1) {
+			ERROR("Invalid value for --xgandalf-grad-desc-iterations\n");
+			return EINVAL;
+		}
+		break;
+
+		case 4 :
+		if (sscanf(arg, "%f", &(*opts_ptr)->tolerance) != 1) {
+			ERROR("Invalid value for --xgandalf-tolerance\n");
+			return EINVAL;
+		}
+		break;
+
+		case 5 :
+		(*opts_ptr)->no_deviation_from_provided_cell = 1;
+		break;
+
+		case 6 :
+		if (sscanf(arg, "%f", &(*opts_ptr)->minLatticeVectorLength_A) != 1) {
+			ERROR("Invalid value for --xgandalf-min-lattice-vector-length\n");
+			return EINVAL;
+		}
+		break;
+
+		case 7 :
+		if (sscanf(arg, "%f", &(*opts_ptr)->maxLatticeVectorLength_A) != 1) {
+			ERROR("Invalid value for --xgandalf-max-lattice-vector-length\n");
+			return EINVAL;
+		}
+		break;
+
+		case 8 :
+		(*opts_ptr)->sampling_pitch = 2;
+		(*opts_ptr)->grad_desc_iterations = 3;
+		break;
+
+		case 9 :
+		if (sscanf(arg, "%i", &(*opts_ptr)->maxPeaksForIndexing) != 1) {
+			ERROR("Invalid value for --xgandalf-max-peaks\n");
+			return EINVAL;
+		}
+		break;
+
+	}
+
+	return 0;
+}
+
+
+static struct argp_option options[] = {
+
+	{"help-xgandalf", 1, NULL, OPTION_NO_USAGE,
+	 "Show options for XGANDALF indexing algorithm", 99},
+
+	{"xgandalf-sampling-pitch", 2, "pitch", OPTION_HIDDEN, NULL},
+	{"xgandalf-sps", 2, "pitch", OPTION_HIDDEN, NULL},
+
+	{"xgandalf-grad-desc-iterations", 3, "n", OPTION_HIDDEN, NULL},
+	{"xgandalf-gdis", 3, "n", OPTION_HIDDEN, NULL},
+
+	{"xgandalf-tolerance", 4, "t", OPTION_HIDDEN, NULL},
+	{"xgandalf-tol", 4, "t", OPTION_HIDDEN, NULL},
+
+	{"xgandalf-no-deviation-from-provided-cell", 5, NULL, OPTION_HIDDEN, NULL},
+	{"xgandalf-ndfpc", 5, NULL, OPTION_HIDDEN, NULL},
+
+	{"xgandalf-min-lattice-vector-length", 6, "len", OPTION_HIDDEN, NULL},
+	{"xgandalf-min-lvl", 6, "len", OPTION_HIDDEN, NULL},
+
+	{"xgandalf-max-lattice-vector-length", 7, "len", OPTION_HIDDEN, NULL},
+	{"xgandalf-max-lvl", 7, "len", OPTION_HIDDEN, NULL},
+
+	{"xgandalf-fast-execution", 8, NULL, OPTION_HIDDEN, NULL},
+
+	{"xgandalf-max-peaks", 9, "n", OPTION_HIDDEN, NULL},
+
+	{0}
+};
+
+
+struct argp xgandalf_argp = { options, parse_arg, NULL, NULL, NULL, NULL, NULL };

@@ -31,19 +31,15 @@
 #ifndef TAKETWO_H
 #define TAKETWO_H
 
+#include <argp.h>
+
 #include "cell.h"
 #include "index.h"
 
 /** \file taketwo.h */
 
-struct taketwo_options
-{
-	int member_thresh;
-	double len_tol;
-	double angle_tol;
-	double trace_tol;
-};
-
+typedef struct taketwo_options TakeTwoOptions;
+extern struct argp taketwo_argp;
 
 extern void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell);
 extern const char *taketwo_probe(UnitCell *cell);

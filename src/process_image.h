@@ -44,9 +44,6 @@ struct index_args;
 #include "integration.h"
 #include "im-sandbox.h"
 #include "time-accounts.h"
-#include "taketwo.h"
-#include "xgandalf.h"
-#include "felix.h"
 
 
 enum {
@@ -67,7 +64,6 @@ struct index_args
 	int cmfilter;
 	int noisefilter;
 	int median_filter;
-	int satcorr;
 	float threshold;
 	float min_sq_gradient;
 	float min_snr;
@@ -115,9 +111,6 @@ struct index_args
 	float fix_divergence;
 	int overpredict;
 	int profile;  /* Whether or not to do wall clock profiling */
-	struct taketwo_options taketwo_opts;
-	struct xgandalf_options xgandalf_opts;
-	struct felix_options felix_opts;
 	Spectrum *spectrum;
 	signed int wait_for_file; /* -1 means wait forever */
 	int no_image_data;

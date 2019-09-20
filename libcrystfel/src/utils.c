@@ -469,6 +469,8 @@ char *check_prefix(char *prefix)
 	char *new;
 	size_t len;
 
+	if ( prefix[0] == '\0' ) return prefix;
+
 	/* Is "prefix" a directory? */
 	r = stat(prefix, &statbuf);
 	if ( r != 0 ) {

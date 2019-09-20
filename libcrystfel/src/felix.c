@@ -70,6 +70,21 @@
 #define FELIX_VERBOSE 0
 
 
+struct felix_options
+{
+	double ttmin;  /* radians */
+	double ttmax;  /* radians */
+	int min_visits;
+	double min_completeness;
+	double max_uniqueness;
+	int n_voxels;
+	double fraction_max_visits;
+	double sigma;
+	double domega;
+	double max_internal_angle;
+};
+
+
 /* Global private data, prepared once */
 struct felix_private
 {
@@ -789,3 +804,164 @@ const char *felix_probe(UnitCell *cell)
 	if ( ok ) return "felix";
 	return NULL;
 }
+
+
+static void show_help()
+{
+	printf("Parameters for the Felix indexing algorithm:\n"
+"     --felix-domega        Degree range of omega (moscaicity) to consider.\n"
+"                            Default: 2\n"
+"     --felix-fraction-max-visits\n"
+"                           Cutoff for minimum fraction of the max visits.\n"
+"                            Default: 0.75\n"
+"     --felix-max-internal-angle\n"
+"                           Cutoff for maximum internal angle between observed\n"
+"                            spots and predicted spots. Default: 0.25\n"
+"     --felix-max-uniqueness\n"
+"                           Cutoff for maximum fraction of found spots which\n"
+"                            can belong to other crystallites.  Default: 0.5\n"
+"     --felix-min-completeness\n"
+"                           Cutoff for minimum fraction of projected spots\n"
+"                            found in the pattern. Default: 0.001\n"
+"     --felix-min-visits\n"
+"                           Cutoff for minimum number of voxel visits.\n"
+"                            Default: 15\n"
+"     --felix-num-voxels    Number of voxels for Rodrigues space search\n"
+"                            Default: 100\n"
+"     --felix-sigma         The sigma of the 2theta, eta and omega angles.\n"
+"                            Default: 0.2\n"
+"     --felix-tthrange-max  Maximum 2theta to consider for indexing (degrees)\n"
+"                            Default: 30\n"
+"     --felix-tthrange-min  Minimum 2theta to consider for indexing (degrees)\n"
+"                            Default: 0\n"
+);
+}
+
+
+static error_t parse_arg(int key, char *arg, struct argp_state *state)
+{
+	struct felix_options **opts_ptr = state->input;
+	float tmp;
+
+	switch ( key ) {
+
+		case ARGP_KEY_INIT :
+		*opts_ptr = malloc(sizeof(struct felix_options));
+		if ( *opts_ptr == NULL ) return ENOMEM;
+		(*opts_ptr)->ttmin = -1.0;
+		(*opts_ptr)->ttmax = -1.0;
+		(*opts_ptr)->min_visits = 0;
+		(*opts_ptr)->min_completeness = -1.0;
+		(*opts_ptr)->max_uniqueness = -1.0;
+		(*opts_ptr)->n_voxels = 0;
+		(*opts_ptr)->fraction_max_visits = -1.0;
+		(*opts_ptr)->sigma = -1.0;
+		(*opts_ptr)->domega = -1.0;
+		(*opts_ptr)->max_internal_angle = -1.0;
+		break;
+
+		case 1 :
+		show_help();
+		return EINVAL;
+
+		case 2 :
+		if ( sscanf(arg, "%f", &tmp) != 1 ) {
+			ERROR("Invalid value for --felix-tthrange-min\n");
+			return EINVAL;
+		}
+		(*opts_ptr)->ttmin = deg2rad(tmp);
+		break;
+
+		case 3 :
+		if ( sscanf(arg, "%f", &tmp) != 1 ) {
+			ERROR("Invalid value for --felix-tthrange-max\n");
+			return EINVAL;
+		}
+		(*opts_ptr)->ttmax = deg2rad(tmp);
+		break;
+
+		case 4 :
+		if ( sscanf(arg, "%d", &(*opts_ptr)->min_visits) != 1 ) {
+			ERROR("Invalid value for --felix-min-visits\n");
+			return EINVAL;
+		}
+		break;
+
+		case 5 :
+		if ( sscanf(arg, "%lf", &(*opts_ptr)->min_completeness) != 1 ) {
+			ERROR("Invalid value for --felix-min-completeness\n");
+			return EINVAL;
+		}
+		break;
+
+		case 6 :
+		if ( sscanf(arg, "%lf", &(*opts_ptr)->max_uniqueness) != 1 ) {
+			ERROR("Invalid value for --felix-max-uniqueness\n");
+			return EINVAL;
+		}
+		break;
+
+		case 7 :
+		if ( sscanf(arg, "%d", &(*opts_ptr)->n_voxels) != 1 ) {
+			ERROR("Invalid value for --felix-num-voxels\n");
+			return EINVAL;
+		}
+		break;
+
+		case 8 :
+		if ( sscanf(arg, "%lf", &(*opts_ptr)->fraction_max_visits) != 1 ) {
+			ERROR("Invalid value for --felix-fraction-max-visits\n");
+			return EINVAL;
+		}
+		break;
+
+		case 9 :
+		if ( sscanf(arg, "%lf", &(*opts_ptr)->sigma) != 1 ) {
+			ERROR("Invalid value for --felix-sigma\n");
+			return EINVAL;
+		}
+		break;
+
+		case 10 :
+		if ( sscanf(arg, "%lf", &(*opts_ptr)->domega) != 1 ) {
+			ERROR("Invalid value for --felix-domega\n");
+			return EINVAL;
+		}
+		break;
+
+		case 11 :
+		if ( sscanf(arg, "%lf", &(*opts_ptr)->max_internal_angle) != 1 ) {
+			ERROR("Invalid value for --felix-max-internal-angle\n");
+			return EINVAL;
+		}
+		break;
+
+		default :
+		return ARGP_ERR_UNKNOWN;
+
+	}
+
+	return 0;
+}
+
+
+static struct argp_option options[] = {
+
+	{"help-felix", 1, NULL, OPTION_NO_USAGE,
+	 "Show options for Felix indexing algorithm", 99},
+	{"felix-tthrange-min", 2, "2theta", OPTION_HIDDEN, NULL},
+	{"felix-tthrange-max", 3, "2theta", OPTION_HIDDEN, NULL},
+	{"felix-min-visits", 4, "n", OPTION_HIDDEN, NULL},
+	{"felix-min-completeness", 5, "frac", OPTION_HIDDEN, NULL},
+	{"felix-max-uniqueness", 6, "n", OPTION_HIDDEN, NULL},
+	{"felix-num-voxels", 7, "n", OPTION_HIDDEN, NULL},
+	{"felix-fraction-max-visits", 8, "n", OPTION_HIDDEN, NULL},
+	{"felix-sigma", 9, "n", OPTION_HIDDEN, NULL},
+	{"felix-domega", 10, "n", OPTION_HIDDEN, NULL},
+	{"felix-max-internal-angle", 11, "ang", OPTION_HIDDEN, NULL},
+
+	{0}
+};
+
+
+struct argp felix_argp = { options, parse_arg, NULL, NULL, NULL, NULL, NULL };

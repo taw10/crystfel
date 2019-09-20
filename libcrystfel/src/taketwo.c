@@ -100,6 +100,14 @@
 #include "peaks.h"
 #include "symmetry.h"
 
+struct taketwo_options
+{
+	int member_thresh;
+	double len_tol;
+	double angle_tol;
+	double trace_tol;
+};
+
 /**
  * \param obsvec an observed vector between two spots
  * \param matches array of matching theoretical vectors from unit cell
@@ -2241,6 +2249,7 @@ void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell)
 	return tp;
 }
 
+
 void taketwo_cleanup(IndexingPrivate *pp)
 {
 	struct taketwo_private *tp = (struct taketwo_private *)pp;
@@ -2257,3 +2266,98 @@ const char *taketwo_probe(UnitCell *cell)
 	if ( cell_has_parameters(cell) ) return "taketwo";
 	return NULL;
 }
+
+
+static void show_help()
+{
+	printf("Parameters for the TakeTwo indexing algorithm:\n"
+"     --taketwo-member-threshold\n"
+"                           Minimum number of members in network\n"
+"     --taketwo-len-tolerance\n"
+"                           Reciprocal space length tolerance (1/A)\n"
+"     --taketwo-angle-tolerance\n"
+"                           Reciprocal space angle tolerance (in degrees)\n"
+"     --taketwo-trace-tolerance\n"
+"                           Rotation matrix equivalence tolerance (in degrees)\n"
+);
+}
+
+
+static error_t parse_arg(int key, char *arg, struct argp_state *state)
+{
+	struct taketwo_options **opts_ptr = state->input;
+	float tmp;
+
+	switch ( key ) {
+
+		case ARGP_KEY_INIT :
+		*opts_ptr = malloc(sizeof(struct taketwo_options));
+		if ( *opts_ptr == NULL ) return ENOMEM;
+		(*opts_ptr)->member_thresh = -1.0;
+		(*opts_ptr)->len_tol = -1.0;
+		(*opts_ptr)->angle_tol = -1.0;
+		(*opts_ptr)->trace_tol = -1.0;
+		break;
+
+		case 1 :
+		show_help();
+		return EINVAL;
+
+		case 2 :
+		if ( sscanf(arg, "%i", &(*opts_ptr)->member_thresh) != 1 )
+		{
+			ERROR("Invalid value for --taketwo-member-threshold\n");
+			return EINVAL;
+		}
+		break;
+
+		case 3 :
+		if ( sscanf(arg, "%f", &tmp) != 1 )
+		{
+			ERROR("Invalid value for --taketwo-len-tol\n");
+			return EINVAL;
+		}
+		(*opts_ptr)->len_tol = tmp * 1e10;  /* Convert to m^-1 */
+		break;
+
+		case 4 :
+		if ( sscanf(arg, "%f", &tmp) != 1 )
+		{
+			ERROR("Invalid value for --taketwo-angle-tol\n");
+			return EINVAL;
+		}
+		(*opts_ptr)->angle_tol = deg2rad(tmp);
+		break;
+
+		case 5 :
+		if ( sscanf(arg, "%f", &tmp) != 1 )
+		{
+			ERROR("Invalid value for --taketwo-trace-tol\n");
+			return EINVAL;
+		}
+		(*opts_ptr)->trace_tol = deg2rad(tmp);
+		break;
+
+		default :
+		return ARGP_ERR_UNKNOWN;
+
+	}
+
+	return 0;
+}
+
+
+static struct argp_option options[] = {
+
+	{"help-taketwo", 1, NULL, OPTION_NO_USAGE,
+	 "Show options for TakeTwo indexing algorithm", 99},
+
+	{"taketwo-member-threshold", 2, "n", OPTION_HIDDEN, NULL},
+	{"taketwo-len-tolerance", 3, "one_over_A", OPTION_HIDDEN, NULL},
+	{"taketwo-angle-tolerance", 4, "deg", OPTION_HIDDEN, NULL},
+	{"taketwo-trace-tolerance", 5, "deg", OPTION_HIDDEN, NULL},
+	{0}
+};
+
+
+struct argp taketwo_argp = { options, parse_arg, NULL, NULL, NULL, NULL, NULL };

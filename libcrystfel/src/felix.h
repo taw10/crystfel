@@ -34,6 +34,8 @@
 #include <config.h>
 #endif
 
+#include <argp.h>
+
 #include "cell.h"
 
 /**
@@ -41,19 +43,8 @@
  * Felix indexer interface
  */
 
-struct felix_options
-{
-	double ttmin;  /* radians */
-	double ttmax;  /* radians */
-	int min_visits;
-	double min_completeness;
-	double max_uniqueness;
-	int n_voxels;
-	double fraction_max_visits;
-	double sigma;
-	double domega;
-	double max_internal_angle;
-};
+typedef struct felix_options FelixOptions;
+extern struct argp felix_argp;
 
 extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
                            struct felix_options *opts);
