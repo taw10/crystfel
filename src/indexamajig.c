@@ -723,6 +723,7 @@ int main(int argc, char *argv[])
 		        "(zaef only, default 800)"},
 		{"min-squared-gradient", 307, "n", OPTION_NO_USAGE, "Minimum squared gradient "
 		        "(zaef only, default 100000)"},
+		{"min-gradient", 307, "n", OPTION_ALIAS | OPTION_HIDDEN, NULL},
 		{"min-snr", 308, "n", OPTION_NO_USAGE, "Minimum signal/noise ratio for peaks "
 		        "(zaef,peakfinder8,peakfinder9 only, default 5)"},
 		{"min-pix-count", 309, "n", OPTION_NO_USAGE, "Minimum number of pixels per peak "
