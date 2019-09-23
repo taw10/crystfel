@@ -1670,8 +1670,6 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 	int i;
 	int *masks[image->det->n_panels];
 
-	if ( !(meth & INTEGRATION_RESCUT) ) push_res = +INFINITY;
-
 	/* Predict all reflections */
 	for ( i=0; i<image->n_crystals; i++ ) {
 
@@ -1818,10 +1816,16 @@ IntegrationMethod integration_method(const char *str, int *err)
 			meth &= ~INTEGRATION_CENTER;
 
 		} else if ( strcmp(methods[i], "rescut") == 0 ) {
-			meth |= INTEGRATION_RESCUT;
+			ERROR("'rescut'/'norescut' in integration method is no "
+			      "longer used.  Set --push-res instead.\n");
+			if ( err != NULL ) *err = 1;
+			return INTEGRATION_NONE;
 
 		} else if ( strcmp(methods[i], "norescut") == 0 ) {
-			meth &= ~INTEGRATION_RESCUT;
+			ERROR("'rescut'/'norescut' in integration method is no "
+			      "longer used.  Set --push-res instead.\n");
+			if ( err != NULL ) *err = 1;
+			return INTEGRATION_NONE;
 
 		} else if ( strcmp(methods[i], "grad") == 0 ) {
 			meth |= INTEGRATION_GRADIENTBG;

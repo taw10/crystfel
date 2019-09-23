@@ -98,8 +98,7 @@ typedef enum {
 	/** Center the peak in the box prior to integration */
 	INTEGRATION_CENTER = 512,
 
-	/** Stop integrating at the diffraction limit of the crystal */
-	INTEGRATION_RESCUT = 1024,
+	/* 1024 was INTEGRATION_RESCUT, which is no longer used */
 
 	/** Fit a gradient to the background */
 	INTEGRATION_GRADIENTBG = 2048,

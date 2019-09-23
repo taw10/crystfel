@@ -149,10 +149,6 @@ Center the peak boxes iteratively on the actual peak locations.  The opposite is
 .PD
 Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.  The opposite is \fB-nosat\fR, which is the default for all integration methods.
 
-.IP \fB-rescut\fR
-.PD
-Normally, reflections are integrated all the way to the edge of the detector, even if the crystal diffracts to a lower resolution.  With this option, integration will be performed up to the apparent diffraction limit of the crystal.  You can use \fB--push-res\fR (see below) to integrate to a slightly higher or lower resolution.  The resolution limit is determined by comparing the peaks found by the peak search to the indexing results, so good peak detection is essential when using this option (as it is always).  The opposite is \fB-norescut\fR, which is the default.
-
 .IP \fB-grad\fR
 .PD
 Fit the background around the reflection using gradients in two dimensions.  This was the default until version 0.6.1.  Without the option (or with its opposite, \fB-nograd\fR, which is the default), the background will be considered to have the same value across the entire integration box.
@@ -505,7 +501,7 @@ Show detailed information about reflection integration when \fIcondition\fR is m
 .PD 0
 .IP \fB--push-res=\fIn\fR
 .PD
-When \fBrescut\fR is in the integration method, integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  If \fBrescut\fR is not used, this option has no effect.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--push-res=0\fR, but note that the default integration method does \fInot\fR include \fBrescut\fR, so no per-pattern resolution cutoff is used.  Note that you can also apply this cutoff at the merging stage using \fBprocess_hkl --push-res\fR.
+Integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each individual crystal.  \fIn\fR can be negative to integrate \fIlower\fR than the apparent resolution limit.  The default is \fB--push-res=infinity\fR, which means that no cutoff is applied.  Note that you can also apply this cutoff at the merging stage using \fBprocess_hkl/partialator --push-res\fR, which is usually better: reflections which are thrown away at the integration stage cannot be brought back later.  However, applying a resolution cutoff during integration will make the stream file significantly smaller and faster to merge.
 
 .PD 0
 .IP \fB--overpredict\fR

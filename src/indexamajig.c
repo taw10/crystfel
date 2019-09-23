@@ -676,7 +676,7 @@ int main(int argc, char *argv[])
 	}
 	args.iargs.ipriv = NULL;  /* No default */
 	args.iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
-	args.iargs.push_res = -1.0;
+	args.iargs.push_res = +INFINITY;
 	args.iargs.highres = +INFINITY;
 	args.iargs.fix_profile_r = -1.0;
 	args.iargs.fix_divergence = -1.0;
@@ -882,19 +882,6 @@ int main(int argc, char *argv[])
 	if ( args.command_line_peak_path != NULL ) {
 		free(args.iargs.hdf5_peak_path);
 		args.iargs.hdf5_peak_path = args.command_line_peak_path;
-	}
-
-	/* Check for push-res without rescut */
-	if ( args.iargs.push_res > 0.0 ) {
-		if ( !(args.iargs.int_meth & INTEGRATION_RESCUT) ) {
-			ERROR("WARNING: You used --push-res, but not -rescut, "
-			      "therefore --push-res will have no effect.\n");
-			ERROR("WARNING: Add --integration=rings-rescut or "
-			      "--integration=prof2d-rescut.\n");
-		}
-	} else {
-		/* Set default value */
-		args.iargs.push_res = 0.0;
 	}
 
 	/* If no integration radii were given, apply the defaults */
