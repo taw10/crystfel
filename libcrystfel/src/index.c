@@ -70,10 +70,6 @@ struct _indexingprivate
 	UnitCell *target_cell;
 	double tolerance[6];
 
-	struct taketwo_options *ttopts;
-	struct xgandalf_options *xgandalf_opts;
-	struct pinkIndexer_options *pinkIndexer_opts;
-
 	int n_methods;
 	IndexingMethod *methods;
 	void **engine_private;
@@ -241,7 +237,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             struct detector *det, struct beam_params *beam,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
-                            struct felix_options *felix_opts)
+                            struct felix_options *felix_opts,
+                            struct taketwo_options *taketwo_opts)
 {
 	char *str;
 	IndexingMethod in = *m;
@@ -278,7 +275,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_TAKETWO :
-		priv = taketwo_prepare(m, cell);
+		priv = taketwo_prepare(m, taketwo_opts, cell);
 		break;
 
 		case INDEXING_XGANDALF :
@@ -419,7 +416,8 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		                                          det, beam,
 		                                          xgandalf_opts,
 		                                          pinkIndexer_opts,
-		                                          felix_opts);
+		                                          felix_opts,
+		                                          ttopts);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
@@ -465,10 +463,6 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		ipriv->target_cell = NULL;
 	}
 	for ( i=0; i<6; i++ ) ipriv->tolerance[i] = tols[i];
-
-	ipriv->ttopts = ttopts;
-	ipriv->xgandalf_opts = xgandalf_opts;
-	ipriv->pinkIndexer_opts = pinkIndexer_opts;
 
 	STATUS("List of indexing methods:\n");
 	for ( i=0; i<n; i++ ) {
@@ -649,7 +643,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_TAKETWO :
 		set_last_task(last_task, "indexing:taketwo");
-		r = taketwo_index(image, ipriv->ttopts, mpriv);
+		r = taketwo_index(image, mpriv);
 		break;
 
 		case INDEXING_PINKINDEXER :

@@ -159,6 +159,7 @@ struct Seed
 struct taketwo_private
 {
 	IndexingMethod indm;
+	struct taketwo_options *opts;
 	UnitCell       *cell;
 	int   serial_num; /**< Serial of last image, -1 if unassigned */
 	unsigned int xtal_num; /**< last number of crystals recorded */
@@ -2121,8 +2122,7 @@ static void partial_taketwo_cleanup(struct taketwo_private *tp)
 
 /* CrystFEL interface hooks */
 
-int taketwo_index(struct image *image, const struct taketwo_options *opts,
-                  void *priv)
+int taketwo_index(struct image *image, void *priv)
 {
 	Crystal *cr;
 	UnitCell *cell;
@@ -2172,7 +2172,7 @@ int taketwo_index(struct image *image, const struct taketwo_options *opts,
 	rlps[n_rlps].v = 0.0;
 	rlps[n_rlps++].w = 0.0;
 
-	cell = run_taketwo(tp->cell, opts, rlps, n_rlps, tp);
+	cell = run_taketwo(tp->cell, tp->opts, rlps, n_rlps, tp);
 	free(rlps);
 	if ( cell == NULL ) return 0;
 
@@ -2190,7 +2190,8 @@ int taketwo_index(struct image *image, const struct taketwo_options *opts,
 }
 
 
-void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell)
+void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
+                      UnitCell *cell)
 {
 	struct taketwo_private *tp;
 

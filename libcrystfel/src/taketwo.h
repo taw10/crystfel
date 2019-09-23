@@ -41,10 +41,10 @@
 typedef struct taketwo_options TakeTwoOptions;
 extern struct argp taketwo_argp;
 
-extern void *taketwo_prepare(IndexingMethod *indm, UnitCell *cell);
+extern void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
+                             UnitCell *cell);
 extern const char *taketwo_probe(UnitCell *cell);
-extern int taketwo_index(struct image *image,
-                         const struct taketwo_options *opts, void *priv);
+extern int taketwo_index(struct image *image, void *priv);
 extern void taketwo_cleanup(IndexingPrivate *pp);
 
 #endif /* TAKETWO_H */
