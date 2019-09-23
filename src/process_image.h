@@ -110,7 +110,6 @@ struct index_args
 	float fix_bandwidth;
 	float fix_divergence;
 	int overpredict;
-	int profile;  /* Whether or not to do wall clock profiling */
 	Spectrum *spectrum;
 	signed int wait_for_file; /* -1 means wait forever */
 	int no_image_data;

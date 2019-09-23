@@ -81,6 +81,7 @@ struct sandbox
 	int *running;
 	time_t *last_response;
 	int last_ping[MAX_NUM_WORKERS];
+	int profile;  /* Whether to do wall-clock time profiling */
 
 	/* Streams to read from (NB not the same indices as the above) */
 	int n_read;
@@ -481,7 +482,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	free(iargs->hdf5_peak_path);
 	free_imagefile_field_list(iargs->copyme);
 	cell_free(iargs->cell);
-	if ( iargs->profile ) time_accounts_print(taccs);
+	if ( sb->profile ) time_accounts_print(taccs);
 	time_accounts_free(taccs);
 	return 0;
 }
@@ -1044,7 +1045,7 @@ char *create_tempdir(const char *temp_location)
 int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    int config_basename, FILE *fh,
                    Stream *stream, const char *tmpdir, int serial_start,
-                   const char *zmq_address)
+                   const char *zmq_address, int profile)
 {
 	int i;
 	struct sandbox *sb;
@@ -1073,6 +1074,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->iargs = iargs;
 	sb->serial = serial_start;
 	sb->tmpdir = tmpdir;
+	sb->profile = profile;
 	if ( zmq_address != NULL ) {
 		sb->zmq = 1;
 		sb->zmq_address = zmq_address;
@@ -1226,7 +1228,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		 * waitpid() returns -1 and the loop still exits. */
 	}
 
-	if ( iargs->profile ) time_accounts_print(taccs);
+	if ( profile ) time_accounts_print(taccs);
 	time_accounts_free(taccs);
 
 	sem_unlink(semname_q);

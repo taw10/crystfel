@@ -112,6 +112,7 @@ struct indexamajig_arguments
 	int if_peaks;
 	int if_multi;
 	int if_retry;
+	int profile;  /* Whether to do wall-clock time profiling */
 
 	TakeTwoOptions **taketwo_opts_ptr;
 	FelixOptions **felix_opts_ptr;
@@ -185,7 +186,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 204 :
-		args->iargs.profile = 1;
+		args->profile = 1;
 		break;
 
 		case 205 :
@@ -615,6 +616,7 @@ int main(int argc, char *argv[])
 	args.if_multi = 0;
 	args.if_retry = 1;
 	args.if_checkcell = 1;
+	args.profile = 0;
 	args.taketwo_opts_ptr = &taketwo_opts;
 	args.felix_opts_ptr = &felix_opts;
 	args.xgandalf_opts_ptr = &xgandalf_opts;
@@ -675,7 +677,6 @@ int main(int argc, char *argv[])
 	args.iargs.fix_profile_r = -1.0;
 	args.iargs.fix_bandwidth = -1.0;
 	args.iargs.fix_divergence = -1.0;
-	args.iargs.profile = 0;
 	args.iargs.no_image_data = 0;
 
 	argp_program_version_hook = show_version;
@@ -1054,7 +1055,8 @@ int main(int argc, char *argv[])
 	}
 
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
-	                   fh, st, tmpdir, args.serial_start, zmq_address);
+	                   fh, st, tmpdir, args.serial_start, zmq_address,
+	                   args.profile);
 
 	free_imagefile_field_list(args.iargs.copyme);
 	cell_free(args.iargs.cell);
