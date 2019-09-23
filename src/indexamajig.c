@@ -117,6 +117,7 @@ struct indexamajig_arguments
 	TakeTwoOptions **taketwo_opts_ptr;
 	FelixOptions **felix_opts_ptr;
 	XGandalfOptions **xgandalf_opts_ptr;
+	PinkIndexerOptions **pinkindexer_opts_ptr;
 };
 
 
@@ -139,6 +140,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		state->child_inputs[0] = args->taketwo_opts_ptr;
 		state->child_inputs[1] = args->felix_opts_ptr;
 		state->child_inputs[2] = args->xgandalf_opts_ptr;
+		state->child_inputs[3] = args->pinkindexer_opts_ptr;
 		break;
 
 		case 'h' :
@@ -255,6 +257,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			ERROR("Invalid value for --min-peaks\n");
 			return EINVAL;
 		}
+		(*(args->pinkindexer_opts_ptr))->min_peaks = args->iargs.min_peaks;
 		break;
 
 		case 304 :
@@ -479,10 +482,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 503 :
-		if ( sscanf(arg, "%f", &args->iargs.fix_bandwidth) != 1 ) {
-			ERROR("Invalid value for --fix-bandwidth\n");
-			return EINVAL;
-		}
+		ERROR("The option --fix-bandwidth is no longer used.\n");
+		ERROR("Set the bandwidth in the geometry file instead.\n");
 		break;
 
 		case 504 :
@@ -593,9 +594,11 @@ int main(int argc, char *argv[])
 	int r;
 	struct beam_params beam;
 	char *zmq_address = NULL;
+	int timeout = 240;
 	TakeTwoOptions *taketwo_opts = NULL;
 	FelixOptions *felix_opts = NULL;
 	XGandalfOptions *xgandalf_opts = NULL;
+	PinkIndexerOptions *pinkindexer_opts = NULL;
 
 	/* Defaults for "top level" arguments */
 	args.filename = NULL;
@@ -620,6 +623,7 @@ int main(int argc, char *argv[])
 	args.taketwo_opts_ptr = &taketwo_opts;
 	args.felix_opts_ptr = &felix_opts;
 	args.xgandalf_opts_ptr = &xgandalf_opts;
+	args.pinkindexer_opts_ptr = &pinkindexer_opts;
 
 	/* Defaults for process_image arguments */
 	args.iargs.cell = NULL;
@@ -675,7 +679,6 @@ int main(int argc, char *argv[])
 	args.iargs.push_res = -1.0;
 	args.iargs.highres = +INFINITY;
 	args.iargs.fix_profile_r = -1.0;
-	args.iargs.fix_bandwidth = -1.0;
 	args.iargs.fix_divergence = -1.0;
 	args.iargs.no_image_data = 0;
 
@@ -809,6 +812,7 @@ int main(int argc, char *argv[])
 		{&taketwo_argp, 0, NULL, -2},
 		{&felix_argp, 0, NULL, -2},
 		{&xgandalf_argp, 0, NULL, -2},
+		{&pinkIndexer_argp, 0, NULL, -2},
 		{0}
 	};
 
@@ -979,6 +983,8 @@ int main(int argc, char *argv[])
 
 	} else {
 
+		int i, n;
+		const IndexingMethod *methods;
 		IndexingFlags flags = 0;
 
 		if ( args.iargs.cell != NULL ) {
@@ -1005,14 +1011,24 @@ int main(int argc, char *argv[])
 		}
 
 		args.iargs.ipriv = setup_indexing(args.indm_str, args.iargs.cell,
-		                                  args.iargs.det,
+		                                  args.iargs.det, args.iargs.beam,
 		                                  args.iargs.tols, flags,
 		                                  taketwo_opts,
 		                                  xgandalf_opts,
+		                                  pinkindexer_opts,
 		                                  felix_opts);
 		if ( args.iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");
 			return 1;
+		}
+
+		methods = indexing_methods(args.iargs.ipriv, &n);
+		for ( i=0; i<n; i++ ) {
+			if ( methods[i] & INDEXING_PINKINDEXER ) {
+				/* Extend timeout if using pinkIndexer */
+				timeout = 3000;
+				break;
+			}
 		}
 
 	}
@@ -1056,7 +1072,7 @@ int main(int argc, char *argv[])
 
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
 	                   fh, st, tmpdir, args.serial_start, zmq_address,
-	                   args.profile);
+	                   timeout, args.profile);
 
 	free_imagefile_field_list(args.iargs.copyme);
 	cell_free(args.iargs.cell);

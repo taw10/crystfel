@@ -226,6 +226,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                         &imfile) ) return;
 	}
 
+	image.bw = iargs->beam->bandwidth;
+
 	/* Take snapshot of image before applying horrible noise filters */
 	time_accounts_set(taccs, TACC_FILTER);
 	set_last_task(last_task, "image filter");
@@ -369,17 +371,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	} else {
 		image.div = 0.0;
 	}
-	if ( iargs->fix_bandwidth >= 0.0 ) {
-		image.bw = iargs->fix_bandwidth;
-	} else {
-		image.bw = 0.00000001;
-	}
-
-	/* Set beam spectrum for pink beam data */
+	/* Set beam spectrum */
 	if ( iargs->spectrum != NULL ) {
 		image.spectrum = iargs->spectrum;
 	} else {
-		image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
+		image.spectrum = spectrum_generate_gaussian(image.lambda,
+		                                            image.bw);
 	}
 
 	if ( image_feature_count(image.features) < iargs->min_peaks ) {

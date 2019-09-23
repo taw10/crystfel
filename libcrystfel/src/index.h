@@ -63,6 +63,8 @@
 
 #define INDEXING_DEFAULTS_XGANDALF (INDEXING_XGANDALF | INDEXING_USE_CELL_PARAMETERS)
 
+#define INDEXING_DEFAULTS_PINKINDEXER (INDEXING_PINKINDEXER | INDEXING_USE_CELL_PARAMETERS)
+
 /**
  * An enumeration of all the available indexing methods.
  **/
@@ -79,6 +81,7 @@ typedef enum {
 	INDEXING_ASDF = 8,        /**< Use built-in ASDF algorithm */
 	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
+	INDEXING_PINKINDEXER = 11,/**< Use PinkIndexer (via optional library) */
 
 	INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
 	                           *   engine */
@@ -146,15 +149,19 @@ extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 #include "image.h"
 #include "taketwo.h"
 #include "xgandalf.h"
+#include "pinkindexer.h"
 #include "felix.h"
 
-
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
-                                       struct detector *det, float *ltl,
+                                       struct detector *det,
+                                       struct beam_params *beam, float *ltl,
                                        IndexingFlags flags,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,
+                                       struct pinkIndexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts);
+
+extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);
 
 extern char *detect_indexing_methods(UnitCell *cell);
 

@@ -107,7 +107,6 @@ struct index_args
 	float push_res;
 	float highres;
 	float fix_profile_r;
-	float fix_bandwidth;
 	float fix_divergence;
 	int overpredict;
 	Spectrum *spectrum;

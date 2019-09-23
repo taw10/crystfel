@@ -110,6 +110,8 @@ struct beam_params
 	char  *photon_energy_from;  /**< HDF5 dataset name */
 	double photon_energy_scale; /**< Scale factor for photon energy, if it
 	                             *   comes from an image header */
+	double bandwidth;           /**< FWHM bandwidth as a fraction of
+	                             *   wavelength */
 };
 
 
