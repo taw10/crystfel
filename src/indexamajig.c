@@ -818,7 +818,7 @@ int main(int argc, char *argv[])
 
 	static struct argp argp = { options, parse_arg, NULL, doc,
 	                            argp_children, NULL, NULL };
-	argp_parse(&argp, argc, argv, 0, NULL, &args);
+	if ( argp_parse(&argp, argc, argv, 0, NULL, &args) ) return 1;
 
 	/* Check for minimal information */
 	if ( args.filename == NULL ) {
