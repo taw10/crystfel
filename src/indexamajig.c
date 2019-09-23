@@ -618,6 +618,7 @@ int main(int argc, char *argv[])
 	args.if_peaks = 1;
 	args.if_multi = 0;
 	args.if_retry = 1;
+	args.if_refine = 1;
 	args.if_checkcell = 1;
 	args.profile = 0;
 	args.taketwo_opts_ptr = &taketwo_opts;
