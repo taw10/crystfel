@@ -1,19 +1,29 @@
 Changes in this development version
 -----------------------------------
 
-- Introduce cell_tool
+- Introduction of cell_tool
+- Addition of PinkIndexer interface
 - Handle CBF files natively, not via CBFlib
 - Add Spectrum API
-- Improvements to unit cell comparison logic
+- New symmetry operation/cell transformation parser
+- New unit cell comparison algorithm based on Niggli reduction
+- New prediction calculation which works for electrons and wide bandwidth
 - indexamajig: Removed --no-cell-combinations
+- indexamajig: Improvements to indexing result check ("--check-peaks"),
+  improving results with multi-lattice indexing
 - indexamajig: Add --zmq-msgpack
 - indexamajig: Allow individual tolerances for all six parameters
 - indexamajig: Return non-zero exit status if no patterns were processed
 - indexamajig: Rename --min-gradient to --min-squared-gradient
 - indexamajig: Status message updates
+- indexamajig: Bandwidth now specified in geometry file (not --fix-bandwidth)
+- indexamajig: Individual tolerances for each cell parameter
+- indexamajig: Remove 'rescut' integration flag
 - cell_explorer: Allow enforcement of Bravais lattice type
 - ambigator: Use pre-defined resolution bins if limits not given
+- geoptimiser: Use geometry from stream
 - partialator: Many stability improvements to post-refinement
+- partialator: Parallelise deltaCChalf calculation
 - partialator: Add --model=offset for monochromatic synchrotron data
 - partialator/process_hkl: Allow arbitrary polarisation direction and degree
 
