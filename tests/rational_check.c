@@ -149,7 +149,7 @@ static int test_rational_matrix(gsl_rng *rng)
 	transform_fractional_coords_rtnl(rm, rvec, rans);
 
 	for ( i=0; i<size; i++ ) {
-		if ( fabs(rtnl_as_double(rans[i]) - gsl_vector_get(gans, i) > 0.001) )
+		if ( fabs(rtnl_as_double(rans[i]) - gsl_vector_get(gans, i)) > 0.001 )
 		{
 			STATUS("%25s %10f %10f\n", rtnl_format(rans[i]),
 			                           rtnl_as_double(rans[i]),
