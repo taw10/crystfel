@@ -587,10 +587,21 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	                                       tolerance, &rm);
 
 	if ( out != NULL ) {
+
 		/* Replace crystal's cell with new one */
 		cell_free(crystal_get_cell(cr));
 		crystal_set_cell(cr, out);
 		rtnl_mtx_free(rm);
+
+		/* Copy the target cell's lattice type and unique axis
+		 * onto the crystal's cell.  The cell from compare_r_c_p doesn't
+		 * (yet) have the right values, because cell_transform_rational
+		 * don't know how to determine them.  The cell should be close
+		 * to the target, of course, so this is less bad than leaving
+		 * the lattice type as triclinic. */
+		cell_set_lattice_type(out, cell_get_lattice_type(target));
+		cell_set_unique_axis(out, cell_get_unique_axis(target));
+
 		return 0;
 	}
 
