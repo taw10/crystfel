@@ -75,6 +75,7 @@ struct sb_shm
 	int n_hits;
 	int n_hadcrystals;
 	int n_crystals;
+	int should_shutdown;
 };
 
 extern char *create_tempdir(const char *temp_location);

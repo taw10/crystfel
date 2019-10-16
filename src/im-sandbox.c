@@ -414,8 +414,12 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			/* Get the event from the queue */
 			set_last_task(sb->shared->last_task[cookie], "read_queue");
 			pthread_mutex_lock(&sb->shared->queue_lock);
-			if ( (sb->shared->n_events==0) && (sb->shared->no_more) ) {
-				/* Queue is empty and no more coming, so exit */
+			if ( ((sb->shared->n_events==0) && (sb->shared->no_more))
+			   || (sb->shared->should_shutdown) )
+			{
+				/* Queue is empty and no more are coming,
+				 * or another process has initiated a shutdown.
+				 * Either way, it's time to get out of here. */
 				pthread_mutex_unlock(&sb->shared->queue_lock);
 				allDone = 1;
 				continue;
@@ -1112,6 +1116,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->shared->n_hits = 0;
 	sb->shared->n_hadcrystals = 0;
 	sb->shared->n_crystals = 0;
+	sb->shared->should_shutdown = 0;
 
 	/* Set up semaphore to control work queue */
 	snprintf(semname_q, 64, "indexamajig-q%i", getpid());
@@ -1198,6 +1203,12 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		time_accounts_set(taccs, TACC_ENDCHECK);
 		pthread_mutex_lock(&sb->shared->queue_lock);
 		if ( sb->shared->no_more && (sb->shared->n_events == 0) ) allDone = 1;
+		if ( sb->shared->should_shutdown ) {
+			/* Worker process requested immediate shutdown */
+			allDone = 1;
+			sb->shared->n_events = 0;
+			sb->shared->no_more = 1;
+		}
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 
 	} while ( !allDone );
@@ -1251,7 +1262,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->pids);
 
 	try_status(sb, 1);
-	r = sb->shared->n_processed;
+	r = (sb->shared->n_processed == 0);
+	if ( sb->shared->should_shutdown ) r = 1;
 
 	delete_temporary_folder(sb->tmpdir, n_proc);
 

@@ -223,7 +223,15 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	} else {
 		if ( file_wait_open_read(sb_shared, &image, taccs, last_task,
 		                         iargs->wait_for_file, cookie,
-		                         &imfile) ) return;
+		                         &imfile) )
+		{
+			if ( iargs->wait_for_file != 0 ) {
+				pthread_mutex_lock(&sb_shared->totals_lock);
+				sb_shared->should_shutdown = 1;
+				pthread_mutex_unlock(&sb_shared->totals_lock);
+			}
+			return;
+		}
 	}
 
 	image.bw = iargs->beam->bandwidth;

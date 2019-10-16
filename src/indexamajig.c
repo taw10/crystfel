@@ -1073,9 +1073,5 @@ int main(int argc, char *argv[])
 	close_stream(st);
 	cleanup_indexing(args.iargs.ipriv);
 
-	if ( r ) {
-		return 0;
-	} else {
-		return 1;  /* No patterns processed */
-	}
+	return r;
 }
