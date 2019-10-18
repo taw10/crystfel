@@ -1012,7 +1012,7 @@ int main(int argc, char *argv[])
 
 		methods = indexing_methods(args.iargs.ipriv, &n);
 		for ( i=0; i<n; i++ ) {
-			if ( methods[i] & INDEXING_PINKINDEXER ) {
+			if ( (methods[i] & INDEXING_METHOD_MASK) == INDEXING_PINKINDEXER ) {
 				/* Extend timeout if using pinkIndexer */
 				timeout = 3000;
 				break;
