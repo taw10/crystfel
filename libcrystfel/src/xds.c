@@ -173,9 +173,9 @@ static int read_cell(struct image *image)
 
 	cell = cell_new();
 	cell_set_cartesian(cell,
-	                    ax*1e-10,  ay*1e-10,  az*1e-10,
-	                    bx*1e-10,  by*1e-10,  bz*1e-10,
-	                   -cx*1e-10, -cy*1e-10, -cz*1e-10);
+	                   -ax*1e-10, -ay*1e-10, -az*1e-10,
+	                   -bx*1e-10, -by*1e-10, -bz*1e-10,
+	                    cx*1e-10,  cy*1e-10,  cz*1e-10);
 	if ( convert_spacegroup_number(spg, &latticetype, &centering, &ua) ) {
 		ERROR("Failed to convert XDS space group number (%i)\n", spg);
 		return 0;
