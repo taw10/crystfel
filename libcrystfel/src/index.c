@@ -592,6 +592,7 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 		cell_free(crystal_get_cell(cr));
 		crystal_set_cell(cr, out);
 		rtnl_mtx_free(rm);
+		if ( !right_handed(out) ) STATUS("WARNING: left handed\n");
 
 		/* Copy the target cell's lattice type and unique axis
 		 * onto the crystal's cell.  The cell from compare_r_c_p doesn't

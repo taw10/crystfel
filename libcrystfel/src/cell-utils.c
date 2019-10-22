@@ -1842,6 +1842,9 @@ static void mult_in_place(IntegerMatrix *T, IntegerMatrix *M)
 {
 	int i, j;
 	IntegerMatrix *tmp = intmat_times_intmat(T, M);
+	assert(intmat_det(M) == 1);
+	assert(intmat_det(T) == 1);
+	assert(intmat_det(tmp) == 1);
 	for ( i=0; i<3; i++ ) {
 		for ( j=0; j<3; j++ ) {
 			intmat_set(T, i, j, intmat_get(tmp, i, j));
@@ -1934,6 +1937,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			intmat_set(M, 2, 2, LT(g.F, 0.0) ? -1 : 1);
 			mult_in_place(T, M);
 
+			assert(intmat_det(M) == 1);
 			g.D = fabs(g.D);
 			g.E = fabs(g.E);
 			g.F = fabs(g.F);
