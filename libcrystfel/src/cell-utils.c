@@ -1787,9 +1787,36 @@ static int UNUSED is_niggli(struct g6 g, double eps)
 }
 
 
-static signed int eps_sign(double v, double eps)
+static int DEF_positive(struct g6 g, double eps)
 {
-	return GT(v, 0.0) ? +1 : -1;
+	int n_zero = 0;
+	int n_positive = 0;
+
+	if ( LT(0.0, g.D) ) {
+		n_positive++;
+	} else {
+		if ( !LT(g.D, 0.0) ) {
+			n_zero++;
+		}
+	}
+
+	if ( LT(0.0, g.E) ) {
+		n_positive++;
+	} else {
+		if ( !LT(g.E, 0.0) ) {
+			n_zero++;
+		}
+	}
+
+	if ( LT(0.0, g.F) ) {
+		n_positive++;
+	} else {
+		if ( !LT(g.F, 0.0) ) {
+			n_zero++;
+		}
+	}
+
+	return (n_positive==3) || ((n_zero==0) && (n_positive==1));
 }
 
 
@@ -1899,8 +1926,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 
 		finished = 0;
 
-		/* K-G paper says g3*g4*g3, which I assume is a misprint */
-		if ( eps_sign(g.D, eps) * eps_sign(g.E, eps) * eps_sign(g.F, eps) > 0 ) {
+		if ( DEF_positive(g, eps) ) {
 
 			intmat_zero(M);
 			intmat_set(M, 0, 0, LT(g.D, 0.0) ? -1 : 1);
