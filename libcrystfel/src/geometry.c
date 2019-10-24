@@ -1042,7 +1042,7 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 	      refl = next_refl(refl, iter) )
 	{
 		double pol;
-		double intensity;
+		double intensity, sigma;
 		double xl, yl, zl;
 		double phi, tt, kpred;
 		signed int h, k, l;
@@ -1062,7 +1062,9 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 		     +  (1.0-P)*(1.0 - sin(phi)*sin(phi)*sin(tt)*sin(tt));
 
 		intensity = get_intensity(refl);
+		sigma = get_esd_intensity(refl);
 		set_intensity(refl, intensity / pol);
+		set_esd_intensity(refl, sigma / pol);
 	}
 }
 
