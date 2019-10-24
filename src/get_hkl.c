@@ -84,6 +84,8 @@ static void show_help(const char *s)
 "You can restrict which reflections are written out:\n"
 "  -t, --template=<filename>  Only include reflections mentioned in file.\n"
 "      --cutoff-angstroms=<n> Only include reflections with d < n Angstroms.\n"
+"      --highres=<n>          Synonym for --cutoff-angstroms.\n"
+"      --lowres=<n>           Only include reflections with d > n Angstroms.\n"
 "\n"
 "You might sometimes need to do this:\n"
 "      --multiplicity         Multiply intensities by the number of\n"
@@ -404,6 +406,37 @@ static RefList *trim_centrics(RefList *in, const SymOpList *sym)
 }
 
 
+static RefList *apply_resolution_cutoff(RefList *input, double lowres,
+                                        double highres, UnitCell *cell)
+{
+	RefList *n;
+	Reflection *refl;
+	RefListIterator *iter;
+
+	n = reflist_new();
+	copy_notes(n, input);
+
+	for ( refl = first_refl(input, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double res;
+		get_indices(refl, &h, &k, &l);
+		res = 2.0 * resolution(cell, h, k, l);
+		if ( (res < 1e10/highres) && (res > 1e10/lowres) ) {
+			Reflection *a;
+			a = add_refl(n, h, k, l);
+			copy_data(a, refl);
+		}
+	}
+
+	cell_free(cell);
+	reflist_free(input);
+	return n;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -425,14 +458,15 @@ int main(int argc, char *argv[])
 	RefList *input;
 	double adu_per_photon = 0.0;
 	int have_adu_per_photon = 0;
-	int have_cutoff_iso = 0;
 	int have_cutoff_aniso = 0;
 	char *cutoff_str = NULL;
-	double cutiso = 0.0;
 	float cutn1, cutn2, cutn3;
 	char *cellfile = NULL;
 	char *reindex_str = NULL;
 	SymOpList *reindex = NULL;
+	float lowres = 0.0;
+	double highres = INFINITY;
+	UnitCell *cell = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -452,7 +486,9 @@ int main(int argc, char *argv[])
 		{"no-need-all-parts",  0, &config_nap,         0},
 		{"adu-per-photon",     1, NULL,                2},
 		{"cutoff-angstroms",   1, NULL,                3},
+		{"highres",            1, NULL,                3},
 		{"reindex",            1, NULL,                4},
+		{"lowres",             1, NULL,                6},
 		{0, 0, NULL, 0}
 	};
 
@@ -512,6 +548,13 @@ int main(int argc, char *argv[])
 			reindex_str = strdup(optarg);
 			break;
 
+			case 6 :
+			if (sscanf(optarg, "%f", &lowres) != 1) {
+				ERROR("Invalid value for --lowres\n");
+				return 1;
+			}
+			break;
+
 			case 0 :
 			break;
 
@@ -538,18 +581,19 @@ int main(int argc, char *argv[])
 			/* Convert Angstroms -> m */
 			cutn1 /= 1e10;  cutn2 /= 1e10;  cutn3 /= 1e10;
 
+			/* Set isotropic cutoff to the largest */
+			highres = biggest(cutn1, biggest(cutn2, cutn3));
+
 		} else {
 
 			char *rval;
 
 			errno = 0;
-			cutiso = strtod(cutoff_str, &rval);
+			highres = strtod(cutoff_str, &rval);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid value for --cutoff-angstroms.\n");
 				return 1;
 			}
-
-			have_cutoff_iso = 1;
 
 		}
 		free(cutoff_str);
@@ -729,16 +773,11 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( have_cutoff_iso ) {
-
-		RefList *n;
-		Reflection *refl;
-		RefListIterator *iter;
-		UnitCell *cell;
+	if ( (highres < INFINITY) || have_cutoff_aniso || (lowres > 0.0) ) {
 
 		if ( cellfile == NULL ) {
 			ERROR("You must provide a unit cell when using "
-			      "--cutoff-angstroms.\n");
+			      "--cutoff-angstroms, --highres or --lowres.\n");
 			return 1;
 		}
 
@@ -749,53 +788,19 @@ int main(int argc, char *argv[])
 		}
 		free(cellfile);
 
-		n = reflist_new();
-		copy_notes(n, input);
-
-		for ( refl = first_refl(input, &iter);
-		      refl != NULL;
-		      refl = next_refl(refl, iter) )
-		{
-			signed int h, k, l;
-			double res;
-			get_indices(refl, &h, &k, &l);
-			res = 2.0 * resolution(cell, h, k, l);
-			if ( res < 1e10 / cutiso ) {
-				Reflection *a;
-				a = add_refl(n, h, k, l);
-				copy_data(a, refl);
-			}
-		}
-
-		cell_free(cell);
-		reflist_free(input);
-		input = n;
-
 	}
+
+	input = apply_resolution_cutoff(input, lowres, highres, cell);
 
 	if ( have_cutoff_aniso ) {
 
 		RefList *n;
 		Reflection *refl;
 		RefListIterator *iter;
-		UnitCell *cell;
 		double asx, asy, asz;
 		double bsx, bsy, bsz;
 		double csx, csy, csz;
 		double as, bs, cs;
-
-		if ( cellfile == NULL ) {
-			ERROR("You must provide a unit cell when using "
-			      "--cutoff-angstroms.\n");
-			return 1;
-		}
-
-		cell = load_cell_from_file(cellfile);
-		if ( cell == NULL ) {
-			ERROR("Failed to load cell from '%s'\n", cellfile);
-			return 1;
-		}
-		free(cellfile);
 
 		cell_get_reciprocal(cell, &asx, &asy, &asz,
 				          &bsx, &bsy, &bsz,

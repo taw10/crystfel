@@ -79,9 +79,12 @@ The intensities of the reflections will be multiplied by their symmetric multipl
 .PD 0
 .IP \fB--cutoff-angstroms=\fR\fIn\fR
 .IP \fB--cutoff-angstroms=\fR\fIn1,n2,n3\fR
+.IP \fB--highres=\fR\fIn\fR
+.IP \fB--lowres=\fR\fIn\fR
 .PD
 In the first form, reflections with d (=lamba/2*sin(theta)) < \fIn\fR will be removed.
 In the second form, anisotropic truncation will be performed with separate resolution limits \fIn1\fR, \fIn2\fR and \fIn3\fR along a*, b* and c* respectively.  You must also specify \fB-p\fR or \fB--pdb\fR.
+The option \fB--lowres\fR will remove reflections with d > \fIn\fR.  \fB--highres\fR is a synonym for \fB--cutoff-angstroms\fR.
 
 .SH REINDEXING REFLECTIONS
 .PD 0
