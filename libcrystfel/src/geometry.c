@@ -1048,7 +1048,7 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 		signed int h, k, l;
 		const double P = p.fraction;  /* degree of polarisation */
 
-		get_indices(refl, &h, &k, &l);
+		get_symmetric_indices(refl, &h, &k, &l);
 
 		xl = h*asx + k*bsx + l*csx;
 		yl = h*asy + k*bsy + l*csy;
