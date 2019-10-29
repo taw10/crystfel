@@ -47,6 +47,8 @@ struct pinkIndexer_options {
 	int min_peaks;
 	int no_check_indexed;
 	float reflectionRadius; /* In m^-1 */
+	float overridenPhotonEnergy;
+	float overridenBandwidth;
 };
 
 #include <stddef.h>

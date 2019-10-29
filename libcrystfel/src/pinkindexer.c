@@ -157,9 +157,9 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
                           struct detector *det, struct beam_params *beam)
 {
-	if ( beam->photon_energy_from != NULL ) {
+	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->overridenPhotonEnergy > 0) {
 		ERROR("For pinkIndexer, the photon_energy must be defined as a "
-		      "constant in the geometry file\n");
+		      "constant in the geometry file or a parameter\n");
 		return NULL;
 	}
 	if ( (det->panels[0].clen_from != NULL) && pinkIndexer_opts->refinement_type ==
@@ -201,13 +201,20 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	float beamEenergy_eV = beam->photon_energy;
 	float nonMonochromaticity = beam->bandwidth;
+	if(pinkIndexer_opts->overridenPhotonEnergy > 0){
+		beamEenergy_eV = pinkIndexer_opts->overridenPhotonEnergy;
+	}
+	if(pinkIndexer_opts->overridenBandwidth >= 0){
+		nonMonochromaticity = pinkIndexer_opts->overridenBandwidth;
+	}
+
 	float reflectionRadius_1_per_A;
 	if (pinkIndexer_opts->reflectionRadius < 0) {
 		reflectionRadius_1_per_A = 0.02
 		        * sqrt(lattice.ax * lattice.ax + lattice.ay * lattice.ay + lattice.az * lattice.az);
 	}
 	else {
-		reflectionRadius_1_per_A = pinkIndexer_opts->reflectionRadius;
+		reflectionRadius_1_per_A = pinkIndexer_opts->reflectionRadius * 1e10;  /* m^-1 to A^-1*/
 	}
 
 	float divergenceAngle_deg = 0.01; //fake
@@ -370,7 +377,8 @@ const char *pinkIndexer_probe(UnitCell *cell)
 
 static void show_help()
 {
-	printf("Parameters for the PinkIndexer indexing algorithm:\n"
+	printf(
+"Parameters for the PinkIndexer indexing algorithm:\n"
 "     --pinkIndexer-considered-peaks-count\n"
 "                           Considered peaks count, 0 (fewest) to 4 (most)\n"
 "                            Default: 4\n"
@@ -395,7 +403,11 @@ static void show_help()
 "     --pinkIndexer-no-check-indexed\n"
 "                           Disable internal check for correct indexing\n"
 "                            solutions\n"
-);
+"     --pinkIndexer-override-photon-energy\n"
+"                           Mean wavelength in A to use for indexing.\n"
+"     --pinkIndexer-override-bandwidth\n"
+"                           Bandwidth in (delta lambda)/(lambda) to use for indexing.\n"
+	);
 }
 
 
@@ -419,6 +431,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		(*opts_ptr)->no_check_indexed = 0;
 		(*opts_ptr)->min_peaks = 2;
 		(*opts_ptr)->reflectionRadius = -1;
+		(*opts_ptr)->overridenPhotonEnergy = -1;
+		(*opts_ptr)->overridenBandwidth = -1;
 		break;
 
 		case 1 :
@@ -493,6 +507,21 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		(*opts_ptr)->reflectionRadius = tmp / 1e10; /* A^-1 to m^-1 */
 		break;
 
+		case 11 :
+		if (sscanf(arg, "%f", &(*opts_ptr)->overridenPhotonEnergy) != 1)
+		{
+			ERROR("Invalid value for --pinkIndexer-override-photon-energy\n");
+			return EINVAL;
+		}
+		break;
+
+		case 12 :
+		if (sscanf(arg, "%f", &(*opts_ptr)->overridenBandwidth) != 1)
+		{
+			ERROR("Invalid value for --pinkIndexer-override-bandwidth\n");
+			return EINVAL;
+		}
+		break;
 	}
 
 	return 0;
@@ -527,6 +556,10 @@ static struct argp_option options[] = {
 	{"pinkIndexer-no-check-indexed", 9, NULL, OPTION_HIDDEN, NULL},
 
 	{"pinkIndexer-reflection-radius", 10, "r", OPTION_HIDDEN, NULL},
+
+	{"pinkIndexer-override-photon-energy", 11, "overriddenPhotonEnergy", OPTION_HIDDEN, NULL},
+
+	{"pinkIndexer-override-bandwidth", 12, "overridenBandwidth", OPTION_HIDDEN, NULL},
 
 	{0}
 };
