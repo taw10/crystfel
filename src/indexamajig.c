@@ -741,7 +741,7 @@ int main(int argc, char *argv[])
 		        "search (peakfinder8 only, default 0)"},
 		{"max-res", 313, "n", OPTION_NO_USAGE, "Maximum resoultion (pixels) for peak "
 		        "search (peakfinder8 only, default 1200)"},
-		{"min-snr-biggest-peak", 314, "n", OPTION_NO_USAGE, "Minimum SNR of the biggest "
+		{"min-snr-biggest-pix", 314, "n", OPTION_NO_USAGE, "Minimum SNR of the biggest "
 		        "pixel in the peak (peakfinder9 only)"},
 		{"min-snr-peak-pix", 315, "n", OPTION_NO_USAGE, "Minimum SNR of peak pixel "
 		        "(peakfinder9 only)"},
