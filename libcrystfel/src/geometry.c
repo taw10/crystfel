@@ -290,17 +290,16 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		g = spectrum_get_gaussian(image->spectrum, i);
 
 		/* Project lattice point onto Ewald sphere */
-	        x = xl;
+		x = xl;
 		y = yl;
 		z = zl + g.kcen;
 		norm = 1.0/sqrt(x*x+y*y+z*z);
 		x *= norm;
 		y *= norm;
 		z *= norm;
-		z -= 1.0;
 
 		/* Width of Ewald sphere in the direction of the projection */
-		sigma_proj = sqrt(x*x+y*y+z*z)*g.sigma;
+		sigma_proj = (1-z)*g.sigma;
 
 		mean_variance(g.kcen, g.area, &sumw_k, &mean_k, &M2_k);
 		M2_k += g.area * g.sigma * g.sigma;
@@ -310,6 +309,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		x *= g.kcen;
 		y *= g.kcen;
 		z *= g.kcen;
+		z -= g.kcen;
 
 		/* Three because the general case fails in extreme cases */
 		if ( w0 / w1 <= DBL_MIN ) {
