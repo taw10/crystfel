@@ -200,7 +200,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	}
 
 	float beamEenergy_eV = beam->photon_energy;
-	float nonMonochromaticity = beam->bandwidth;
+	float nonMonochromaticity = beam->bandwidth*5;
 	if(pinkIndexer_opts->overridenPhotonEnergy > 0){
 		beamEenergy_eV = pinkIndexer_opts->overridenPhotonEnergy;
 	}
