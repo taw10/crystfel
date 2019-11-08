@@ -8,6 +8,6 @@ with open(sys.argv[1]) as f:
         s = f.readline()
     s = f.readline()
     while "End geometry file" not in  s:
-        print(s.rstrip("\r\n")),
+        print(s.rstrip("\r\n")+"\n"),
         s = f.readline()
 
