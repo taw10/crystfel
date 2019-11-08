@@ -404,16 +404,21 @@ static void show_help()
 "                           Disable internal check for correct indexing\n"
 "                            solutions\n"
 "     --pinkIndexer-override-photon-energy\n"
-"                           Mean wavelength in A to use for indexing.\n"
+"                           Mean energy in eV to use for indexing.\n"
 "     --pinkIndexer-override-bandwidth\n"
-"                           Bandwidth in (delta lambda)/(lambda) to use for indexing.\n"
+"                           Bandwidth in (delta energy)/(mean energy) to use for indexing.\n"
+"     --pinkIndexer-override-visible-energy-range=n1-n2\n"
+"                           Overrides photon energy and bandwidth according to a range of \n"
+"                           energies that have high enough intensity to produce \"visible\" \n"
+"                           Bragg spots on the detector.\n"
+"                           Lower and higher range are separated by a minus sign (no whitespace).\n"
 	);
 }
 
 
 static error_t parse_arg(int key, char *arg, struct argp_state *state)
 {
-	float tmp;
+	float tmp, tmp2;
 	struct pinkIndexer_options **opts_ptr = state->input;
 
 	switch ( key ) {
@@ -522,6 +527,18 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			return EINVAL;
 		}
 		break;
+		case 13 :
+		if (sscanf(arg, "%f-%f", &tmp, &tmp2) != 2)
+		{
+			ERROR("Invalid value for --pinkIndexer-override-visible-energy-range\n");
+			return EINVAL;
+		}
+		(*opts_ptr)->overridenPhotonEnergy = (tmp + tmp2)/2;
+		(*opts_ptr)->overridenBandwidth = (tmp2 - tmp)/(*opts_ptr)->overridenPhotonEnergy;
+		if((*opts_ptr)->overridenBandwidth < 0){
+			(*opts_ptr)->overridenBandwidth *= -1;
+		}
+		break;
 	}
 
 	return 0;
@@ -560,6 +577,8 @@ static struct argp_option options[] = {
 	{"pinkIndexer-override-photon-energy", 11, "overriddenPhotonEnergy", OPTION_HIDDEN, NULL},
 
 	{"pinkIndexer-override-bandwidth", 12, "overridenBandwidth", OPTION_HIDDEN, NULL},
+
+	{"pinkIndexer-override-visible-energy-range", 13, "overridenVisibleEnergyRange", OPTION_HIDDEN, NULL},
 
 	{0}
 };
