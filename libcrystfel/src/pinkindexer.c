@@ -165,6 +165,11 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( (det->panels[0].clen_from != NULL) && pinkIndexer_opts->refinement_type ==
 	        REFINEMENT_TYPE_firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed) {
 		ERROR("Using center refinement makes it necessary to have the detector distance fixed in the geometry file!");
+		return NULL;
+	}
+	if(cell == NULL){
+		ERROR("Pink indexer needs a unit cell file to be specified!")
+		return NULL;
 	}
 
 	struct pinkIndexer_private_data* pinkIndexer_private_data = malloc(sizeof(struct pinkIndexer_private_data));
