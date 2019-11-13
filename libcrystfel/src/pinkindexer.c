@@ -579,9 +579,9 @@ static struct argp_option options[] = {
 
 	{"pinkIndexer-reflection-radius", 10, "r", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-override-photon-energy", 11, "overriddenPhotonEnergy", OPTION_HIDDEN, NULL},
+	{"pinkIndexer-override-photon-energy", 11, "ev", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-override-bandwidth", 12, "overridenBandwidth", OPTION_HIDDEN, NULL},
+	{"pinkIndexer-override-bandwidth", 12, "bw", OPTION_HIDDEN, NULL},
 
 	{"pinkIndexer-override-visible-energy-range", 13, "overridenVisibleEnergyRange", OPTION_HIDDEN, NULL},
 
