@@ -157,7 +157,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
                           struct detector *det, struct beam_params *beam)
 {
-	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->overridenPhotonEnergy > 0) {
+	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->customPhotonEnergy > 0) {
 		ERROR("For pinkIndexer, the photon_energy must be defined as a "
 		      "constant in the geometry file or a parameter\n");
 		return NULL;
@@ -206,11 +206,11 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 
 	float beamEenergy_eV = beam->photon_energy;
 	float nonMonochromaticity = beam->bandwidth*5;
-	if(pinkIndexer_opts->overridenPhotonEnergy > 0){
-		beamEenergy_eV = pinkIndexer_opts->overridenPhotonEnergy;
+	if(pinkIndexer_opts->customPhotonEnergy > 0){
+		beamEenergy_eV = pinkIndexer_opts->customPhotonEnergy;
 	}
-	if(pinkIndexer_opts->overridenBandwidth >= 0){
-		nonMonochromaticity = pinkIndexer_opts->overridenBandwidth;
+	if(pinkIndexer_opts->customBandwidth >= 0){
+		nonMonochromaticity = pinkIndexer_opts->customBandwidth;
 	}
 
 	float reflectionRadius_1_per_A;
@@ -441,8 +441,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		(*opts_ptr)->no_check_indexed = 0;
 		(*opts_ptr)->min_peaks = 2;
 		(*opts_ptr)->reflectionRadius = -1;
-		(*opts_ptr)->overridenPhotonEnergy = -1;
-		(*opts_ptr)->overridenBandwidth = -1;
+		(*opts_ptr)->customPhotonEnergy = -1;
+		(*opts_ptr)->customBandwidth = -1;
 		break;
 
 		case 1 :
@@ -518,7 +518,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 11 :
-		if (sscanf(arg, "%f", &(*opts_ptr)->overridenPhotonEnergy) != 1)
+		if (sscanf(arg, "%f", &(*opts_ptr)->customPhotonEnergy) != 1)
 		{
 			ERROR("Invalid value for --pinkIndexer-override-photon-energy\n");
 			return EINVAL;
@@ -526,7 +526,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 12 :
-		if (sscanf(arg, "%f", &(*opts_ptr)->overridenBandwidth) != 1)
+		if (sscanf(arg, "%f", &(*opts_ptr)->customBandwidth) != 1)
 		{
 			ERROR("Invalid value for --pinkIndexer-override-bandwidth\n");
 			return EINVAL;
@@ -538,10 +538,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			ERROR("Invalid value for --pinkIndexer-override-visible-energy-range\n");
 			return EINVAL;
 		}
-		(*opts_ptr)->overridenPhotonEnergy = (tmp + tmp2)/2;
-		(*opts_ptr)->overridenBandwidth = (tmp2 - tmp)/(*opts_ptr)->overridenPhotonEnergy;
-		if((*opts_ptr)->overridenBandwidth < 0){
-			(*opts_ptr)->overridenBandwidth *= -1;
+		(*opts_ptr)->customPhotonEnergy = (tmp + tmp2)/2;
+		(*opts_ptr)->customBandwidth = (tmp2 - tmp)/(*opts_ptr)->customPhotonEnergy;
+		if((*opts_ptr)->customBandwidth < 0){
+			(*opts_ptr)->customBandwidth *= -1;
 		}
 		break;
 	}
