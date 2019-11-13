@@ -701,6 +701,7 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 		struct rvec q;
 		double h,k,l,hd,kd,ld;
 		int j;
+		int ok = 0;
 
 		/* Assume all image "features" are genuine peaks */
 		f = image_get_feature(image->features, i);
@@ -736,12 +737,13 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 			  && (fabs(k - kd) < min_dist)
 			  && (fabs(l - ld) < min_dist) )
 			{
-				n_sane++;
-				continue;
+				ok = 1;
+				break;  /* Don't need to check other crystals */
 			}
 
 		}
 
+		n_sane += ok;
 
 	}
 
