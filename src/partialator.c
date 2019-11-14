@@ -1281,6 +1281,8 @@ int main(int argc, char *argv[])
 			pmodel = PMODEL_OFFSET;
 		} else if ( strcmp(pmodel_str, "random") == 0 ) {
 			pmodel = PMODEL_RANDOM;
+		} else if ( strcmp(pmodel_str, "ggpm") == 0 ) {
+			pmodel = PMODEL_GGPM;
 		} else {
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;

@@ -61,6 +61,7 @@ typedef enum {
 	PMODEL_XSPHERE, /**< Flat sphere model with super-Gaussian spectrum */
 	PMODEL_OFFSET,  /**< Ewald offset model for monochromatic beam */
 	PMODEL_RANDOM,  /**< Randomly assigned partialities */
+	PMODEL_GGPM     /**< Generalised gaussian prediction model */
 
 } PartialityModel;
 

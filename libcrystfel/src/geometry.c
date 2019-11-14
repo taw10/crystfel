@@ -412,6 +412,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	set_lorentz(refl, 1.0);
 	set_symmetric_indices(refl, h, k, l);
 	set_redundancy(refl, 1);
+	set_partiality(refl, partiality);
 
 	return refl;
 }
@@ -901,6 +902,11 @@ void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
 
 		case PMODEL_RANDOM :
 		set_random_partialities(cryst);
+		break;
+
+		case PMODEL_GGPM :
+		/* Do nothing, because this is the model used for prediction,
+		 * so the partialities have been set by check_reflection */
 		break;
 
 		default :
