@@ -406,6 +406,7 @@ static RefList *trim_centrics(RefList *in, const SymOpList *sym)
 }
 
 
+/* lowres and highres are 1/d values in m^-1 */
 static RefList *apply_resolution_cutoff(RefList *input, double lowres,
                                         double highres, UnitCell *cell)
 {
@@ -424,14 +425,13 @@ static RefList *apply_resolution_cutoff(RefList *input, double lowres,
 		double res;
 		get_indices(refl, &h, &k, &l);
 		res = 2.0 * resolution(cell, h, k, l);
-		if ( (res < 1e10/highres) && (res > 1e10/lowres) ) {
+		if ( (res < highres) && (res > lowres) ) {
 			Reflection *a;
 			a = add_refl(n, h, k, l);
 			copy_data(a, refl);
 		}
 	}
 
-	cell_free(cell);
 	reflist_free(input);
 	return n;
 }
@@ -464,8 +464,8 @@ int main(int argc, char *argv[])
 	char *cellfile = NULL;
 	char *reindex_str = NULL;
 	SymOpList *reindex = NULL;
-	float lowres = 0.0;
-	double highres = INFINITY;
+	float lowres = 0.0;        /* 1/d value */
+	double highres = INFINITY;  /* 1/d value */
 	UnitCell *cell = NULL;
 
 	/* Long options */
@@ -553,6 +553,8 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --lowres\n");
 				return 1;
 			}
+			lowres /= 1e10;  /* Angstroms -> m */
+			lowres = 1.0/lowres;  /* m -> m^-1 */
 			break;
 
 			case 0 :
@@ -581,6 +583,11 @@ int main(int argc, char *argv[])
 			/* Convert Angstroms -> m */
 			cutn1 /= 1e10;  cutn2 /= 1e10;  cutn3 /= 1e10;
 
+			/* Convert m -> m^-1 */
+			cutn1 = 1.0/cutn1;
+			cutn2 = 1.0/cutn2;
+			cutn3 = 1.0/cutn3;
+
 			/* Set isotropic cutoff to the largest */
 			highres = biggest(cutn1, biggest(cutn2, cutn3));
 
@@ -589,7 +596,13 @@ int main(int argc, char *argv[])
 			char *rval;
 
 			errno = 0;
+			/* highres is in m */
 			highres = strtod(cutoff_str, &rval);
+
+			/* Convert Angstroms -> m -> m^-1 */
+			highres /= 1e10;
+			highres = 1.0/highres;
+
 			if ( *rval != '\0' ) {
 				ERROR("Invalid value for --cutoff-angstroms.\n");
 				return 1;
@@ -655,8 +668,7 @@ int main(int argc, char *argv[])
 		mero = NULL;
 	}
 
-	if ( (expand != NULL) || (holo != NULL) || config_trimc
-	  || config_multi ) {
+	if ( (expand != NULL) || (holo != NULL) || config_trimc || config_multi ) {
 		if ( mero == NULL ) {
 			ERROR("You must specify the point group with -y.\n");
 		}
@@ -821,9 +833,9 @@ int main(int argc, char *argv[])
 
 			get_indices(refl, &h, &k, &l);
 
-			sum  = pow(h*as*cutn1, 2.0);
-			sum += pow(k*bs*cutn2, 2.0);
-			sum += pow(l*cs*cutn3, 2.0);
+			sum  = pow(h*as/cutn1, 2.0);
+			sum += pow(k*bs/cutn2, 2.0);
+			sum += pow(l*cs/cutn3, 2.0);
 
 			if ( sum < 1.0 ) {
 				Reflection *a;
