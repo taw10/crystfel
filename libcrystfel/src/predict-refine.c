@@ -250,6 +250,9 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		k = lrint(kd);
 		l = lrint(ld);
 
+		/* Don't pair with 000, because that can cause trouble later */
+		if ( (h==0) && (k==0) && (l==0) ) continue;
+
 		refl = reflection_new(h, k, l);
 		if ( refl == NULL ) {
 			ERROR("Failed to create reflection\n");
