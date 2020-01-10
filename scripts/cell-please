@@ -1,6 +1,0 @@
-#!/bin/sh
-
-echo "Do not use cell-please any more.  Use the Unit Cell Explorer, which has many useful features."
-echo
-echo -n "$ cell_explorer "
-echo $@
