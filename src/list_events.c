@@ -3,8 +3,8 @@
  *
  * Generate event lists
  *
- * Copyright © 2015 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2015-2020 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2015 Thomas White <taw@physics.org>

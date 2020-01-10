@@ -3,7 +3,7 @@
  *
  * Detector properties
  *
- * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *

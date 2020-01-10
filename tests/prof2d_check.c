@@ -3,7 +3,7 @@
  *
  * Check 2D profile fitting
  *
- * Copyright © 2013-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

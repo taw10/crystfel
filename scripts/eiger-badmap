@@ -3,8 +3,8 @@
 #
 # Generate bad pixel map for EIGER detector from a native HDF5 file
 #
-# Copyright © 2017 Deutsches Elektronen-Synchrotron DESY,
-#                  a research centre of the Helmholtz Association.
+# Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
+#                       a research centre of the Helmholtz Association.
 #
 # Author:
 #    2017 Thomas White <taw@physics.org>

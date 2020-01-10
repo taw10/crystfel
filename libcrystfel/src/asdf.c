@@ -4,7 +4,7 @@
  * Alexandra's Superior Direction Finder, or
  * Algorithm Similar to DirAx, FFT-based
  *
- * Copyright © 2014-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

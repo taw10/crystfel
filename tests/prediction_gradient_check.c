@@ -3,7 +3,7 @@
  *
  * Check partiality gradients for prediction refinement
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

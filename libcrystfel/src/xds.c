@@ -3,7 +3,7 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *

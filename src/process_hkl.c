@@ -3,7 +3,7 @@
  *
  * Assemble and process FEL Bragg intensities
  *
- * Copyright © 2012-2016 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *

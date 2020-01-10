@@ -3,8 +3,8 @@
  *
  * Simulate diffraction patterns from small crystals
  *
- * Copyright © 2012 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2011-2012 Thomas White <taw@physics.org>

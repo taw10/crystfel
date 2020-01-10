@@ -3,7 +3,7 @@
  *
  * ZMQ data interface
  *
- * Copyright © 2017-2019 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

@@ -3,7 +3,7 @@
  *
  * Unit test for the reflection list module
  *
- * Copyright © 2012-2013 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

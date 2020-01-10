@@ -3,7 +3,7 @@
  *
  * Interface to XGANDALF indexer
  *
- * Copyright © 2017-2018 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

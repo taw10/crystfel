@@ -3,7 +3,7 @@
  *
  * Invoke the DPS auto-indexing algorithm through MOSFLM
  *
- * Copyright © 2012-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  *

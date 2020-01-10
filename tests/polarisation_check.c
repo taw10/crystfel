@@ -3,8 +3,8 @@
  *
  * Check polarisation correction
  *
- * Copyright © 2019 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2019-2020 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2019 Thomas White <taw@physics.org>

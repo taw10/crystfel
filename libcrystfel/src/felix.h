@@ -3,7 +3,7 @@
  *
  * Invoke Felix for multi-crystal autoindexing
  *
- * Copyright © 2013-2017 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

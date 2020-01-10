@@ -3,7 +3,7 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2019 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
