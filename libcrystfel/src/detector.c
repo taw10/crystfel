@@ -1189,7 +1189,7 @@ struct detector *get_detector_geometry(const char *filename,
 }
 
 
-struct detector *get_detector_geometry_from_string(const char *string,
+struct detector *get_detector_geometry_from_string(const char *string_in,
                                                    struct beam_params *beam,
                                                    char **hdf5_peak_path)
 {
@@ -1207,6 +1207,9 @@ struct detector *get_detector_geometry_from_string(const char *string,
 	struct rgc_definition **rgc_defl = NULL;
 	int n_rg_definitions = 0;
 	int n_rgc_definitions = 0;
+	char *string;
+	char *string_orig;
+	size_t len;
 
 	det = calloc(1, sizeof(struct detector));
 	if ( det == NULL ) return NULL;
@@ -1263,6 +1266,16 @@ struct detector *get_detector_geometry_from_string(const char *string,
 	det->defaults.data = NULL;
 	det->defaults.dim_structure = NULL;
 	strncpy(det->defaults.name, "", 1023);
+
+	string = strdup(string_in);
+	if ( string == NULL ) return NULL;
+	len = strlen(string);
+	for ( i=0; i<len; i++ ) {
+		if ( string_in[i] == '\r' ) string[i] = '\n';
+	}
+
+	/* Because 'string' will get modified */
+	string_orig = string;
 
 	do {
 
@@ -1718,6 +1731,7 @@ struct detector *get_detector_geometry_from_string(const char *string,
 	}
 
 	find_min_max_d(det);
+	free(string_orig);
 
 	if ( reject ) return NULL;
 
