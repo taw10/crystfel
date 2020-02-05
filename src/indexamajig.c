@@ -213,6 +213,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 		case 209 :
 		args->spectrum_fn = strdup(arg);
+		ERROR("WARNING: Prediction using arbitrary spectrum does not "
+		      "yet work in a useful way.\n");
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -715,7 +717,8 @@ int main(int argc, char *argv[])
 		{"zmq-msgpack", 207, NULL, OPTION_NO_USAGE, "Receive data in MessagePack format "
 		        "over ZMQ"},
 		{"no-image-data", 208, NULL, OPTION_NO_USAGE, "Do not load image data (from ZMQ)"},
-		{"spectrum-file", 209, "fn", OPTION_NO_USAGE, "File containing radiation spectrum"},
+		{"spectrum-file", 209, "fn", OPTION_NO_USAGE | OPTION_HIDDEN,
+		       "File containing radiation spectrum"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
