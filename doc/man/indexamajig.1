@@ -469,9 +469,9 @@ These set low-level parameters for the PinkIndexer indexing algorithm.
 .IP
 \fB--pinkIndexer-multi\fR Use pinkIndexers own multi indexing. Should be combined with the --no-multi flag.
 .IP
-\fB--pinkIndexer-thread-count\fR sets the thread count for internal parallelization. Default is 1. Very useful for small datasets (e.g. for screening). Internal parallelization does not significantly increase the amount of RAM needed, whereas CrystFELs parallelization does. For HPCs typically a mixture of both parallelizations leads to best results.
+\fB--pinkIndexer-thread-count\fR sets the thread count for internal parallelization. Default is 1. Very useful for small datasets (e.g. for screening). Internal parallelization does not significantly increase the amount of RAM needed, whereas CrystFEL's parallelization does. For HPCs typically a mixture of both parallelizations leads to best results.
 .IP
-\fB--pinkIndexer-no-check-indexed\fR Leave the check whether a pattern is indexed completely to CrystFEL. Useful for monochromatic (since CrystFELs prediction model is smarter than the one of pinkIndexer) or in combnation with --no-check-peaks for geometry optimization. This flag is meant to eventually disappear, when the full pink pipeline is implemented.
+\fB--pinkIndexer-no-check-indexed\fR Leave the check whether a pattern is indexed completely to CrystFEL. Useful for monochromatic (since CrystFEL's prediction model is smarter than the one of pinkIndexer) or in combnation with --no-check-peaks for geometry optimization. This flag is meant to eventually disappear, when the full pink pipeline is implemented.
 .IP
 \fB--pinkIndexer-override-photon-energy=\fIn\fR Overrides the bandwidth in (delta energy)/(mean energy) to use for indexing (which usually is difined in the geometry file). Should be used together with \fB--pinkIndexer-override-bandwidth=\fIn\fR
 .IP

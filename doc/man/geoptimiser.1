@@ -27,10 +27,7 @@ For a complete description of the optimization algorithm, see the following pape
 O. Yefanov, V. Mariani, C. Gati, T. A. White, H. N. Chapman, and A. Barty. "Accurate determination of segmented X-ray detector geometry". Optics Express 23 (2015) 28459. doi:10.1364/OE.23.028459.
 
 .PP
-For minimal basic use, you need to provide a stream file with diffraction patterns, a geometry file to optimize, a filename for the output optimized geometry, and the name of two rigid group collections defined in the geometry file: one describing which panels in the detector are physically connected (and hence whose geometry should be optimized as if they were a single panel), and one to describe which panels are attached to the same underlying support (whose position and orientation are likely to be correlated).
-
-.PP
-If you leave out the \fB-g\fR option, the geometry file from the stream's audit information will be used.  This is usually what you want.
+For minimal basic use, you need to provide a stream file with diffraction patterns, a filename for the output optimized geometry, and the name of two rigid group collections defined in the geometry file: one describing which panels in the detector are physically connected (and hence whose geometry should be optimized as if they were a single panel), and one to describe which panels are attached to the same underlying support (whose position and orientation are likely to be correlated).
 
 .PP
 See \fBman crystfel_geometry\fR for information on how to create a file describing the detector geometry, and guidelines to define the required rigid groups and rigid groups collections.
