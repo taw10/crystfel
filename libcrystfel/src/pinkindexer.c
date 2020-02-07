@@ -222,6 +222,10 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 		reflectionRadius_1_per_A = pinkIndexer_opts->reflectionRadius * 1e10;  /* m^-1 to A^-1*/
 	}
 
+	if(beamEenergy_eV > 75000 && nonMonochromaticity < 0.02 && reflectionRadius_1_per_A < 0.0005){
+		STATUS("Trying to index electron diffraction? It might be helpful to set a higher reflection radius (see documentation for --pinkIndexer-reflection-radius)")
+	}
+
 	float divergenceAngle_deg = 0.01; //fake
 
 	float tolerance = pinkIndexer_opts->tolerance;
