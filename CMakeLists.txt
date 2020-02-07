@@ -61,7 +61,7 @@ endif ()
 
 # If no version of GTK was found, try for GDK
 if (NOT GTK_FOUND)
-  message(STATUS "GTK not found. hdfsee and cell_explorer will not be compiled")
+  message(STATUS "GTK not found. cell_explorer will not be compiled")
   message(STATUS "Looking separately for GDK")
   pkg_search_module(GDK gdk-3.0)
   if (NOT GDK_FOUND)
@@ -192,26 +192,6 @@ if(HAVE_OPENCL)
 endif(HAVE_OPENCL)
 
 list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
-
-# ----------------------------------------------------------------------
-# hdfsee
-
-if (GTK_FOUND)
-
-  set(HDFSEE_SOURCES src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c)
-  add_executable(hdfsee ${HDFSEE_SOURCES})
-
-  target_include_directories(hdfsee PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
-  target_link_libraries(hdfsee ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
-
-  if (TIFF_FOUND)
-    target_include_directories(hdfsee PRIVATE ${TIFF_INCLUDE_DIRS})
-    target_link_libraries(hdfsee ${TIFF_LIBRARIES})
-  endif (TIFF_FOUND)
-
-  list(APPEND CRYSTFEL_EXECUTABLES hdfsee)
-
-endif (GTK_FOUND)
 
 # ----------------------------------------------------------------------
 # cell_explorer
@@ -408,7 +388,6 @@ install(FILES
 	doc/man/compare_hkl.1
 	doc/man/geoptimiser.1
 	doc/man/get_hkl.1
-	doc/man/hdfsee.1
 	doc/man/indexamajig.1
 	doc/man/list_events.1
 	doc/man/partialator.1
