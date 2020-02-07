@@ -157,9 +157,9 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
                           struct detector *det, struct beam_params *beam)
 {
-	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->customPhotonEnergy > 0) {
+	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->customPhotonEnergy <= 0) {
 		ERROR("For pinkIndexer, the photon_energy must be defined as a "
-		      "constant in the geometry file or a parameter\n");
+		      "constant in the geometry file or as a parameter (see --pinkIndexer-override-photon-energy)\n");
 		return NULL;
 	}
 	if ( (det->panels[0].clen_from != NULL) && pinkIndexer_opts->refinement_type ==
