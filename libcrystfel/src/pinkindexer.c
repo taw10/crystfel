@@ -157,9 +157,9 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
                           struct detector *det, struct beam_params *beam)
 {
-	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->customPhotonEnergy > 0) {
+	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->customPhotonEnergy <= 0) {
 		ERROR("For pinkIndexer, the photon_energy must be defined as a "
-		      "constant in the geometry file or a parameter\n");
+		      "constant in the geometry file or as a parameter (see --pinkIndexer-override-photon-energy)\n");
 		return NULL;
 	}
 	if ( (det->panels[0].clen_from != NULL) && pinkIndexer_opts->refinement_type ==
@@ -220,6 +220,10 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	}
 	else {
 		reflectionRadius_1_per_A = pinkIndexer_opts->reflectionRadius * 1e10;  /* m^-1 to A^-1*/
+	}
+
+	if(beamEenergy_eV > 75000 && nonMonochromaticity < 0.02 && reflectionRadius_1_per_A < 0.0005){
+		STATUS("Trying to index electron diffraction? It might be helpful to set a higher reflection radius (see documentation for --pinkIndexer-reflection-radius)")
 	}
 
 	float divergenceAngle_deg = 0.01; //fake

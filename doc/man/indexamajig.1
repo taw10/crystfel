@@ -448,8 +448,8 @@ These set low-level parameters for the XGANDALF indexing algorithm.
 .IP \fB--pinkIndexer-multi=\fIn\fR
 .IP \fB--pinkIndexer-thread-count=\fIn\fR
 .IP \fB--pinkIndexer-no-check-indexed=\fIn\fR
-.IP \fB--pinkIndexer-override-photon-energy=\fIn\fR
 .IP \fB--pinkIndexer-override-bandwidth=\fIn\fR
+.IP \fB--pinkIndexer-override-photon-energy=\fIn\fR
 .IP \fB--pinkIndexer-override-visible-energy-range=\fImin-max\fR
 
 .PD
@@ -473,9 +473,9 @@ These set low-level parameters for the PinkIndexer indexing algorithm.
 .IP
 \fB--pinkIndexer-no-check-indexed\fR Leave the check whether a pattern is indexed completely to CrystFEL. Useful for monochromatic (since CrystFEL's prediction model is smarter than the one of pinkIndexer) or in combnation with --no-check-peaks for geometry optimization. This flag is meant to eventually disappear, when the full pink pipeline is implemented.
 .IP
-\fB--pinkIndexer-override-photon-energy=\fIn\fR Overrides the bandwidth in (delta energy)/(mean energy) to use for indexing (which usually is difined in the geometry file). Should be used together with \fB--pinkIndexer-override-bandwidth=\fIn\fR
+\fB--pinkIndexer-override-bandwidth=\fIn\fR Overrides the bandwidth in (delta energy)/(mean energy) to use for indexing (which usually is defined in the geometry file). Should be used together with \fB--pinkIndexer-override-photon-energy=\fIn\fR. Note: this option sets the borders for the spectrum, whereas the option in the geometry file sets the standard deviation for a Gaussian that fits the spectrum. Internally, the standard deviation is multiplied by 5 to compute the hard borders of the spectrum. I.e., photon_energy_bandwith = 0.005 in the geometry file equals --pinkIndexer-override-bandwidth=0.025. For monochromatic experiments usually --pinkIndexer-override-bandwidth=0.02 is sufficiently large. If in doubt, use --pinkIndexer-override-visible-energy-range.
 .IP
-\fB--pinkIndexer-override-bandwidth=\fIn\fR Overrides the mean energy in eV to use for indexing (which usually is difined in the geometry file). Should be used together with \fB--pinkIndexer-override-bandwidth=\fIn\fR
+\fB--pinkIndexer-override-photon-energy=\fIn\fR Overrides the mean energy in eV to use for indexing (which usually is defined in the geometry file). Should be used together with \fB--pinkIndexer-override-bandwidth=\fIn\fR
 .IP
 \fB--pinkIndexer-override-visible-energy-range=\fImin-max\fR Overrides photon energy and bandwidth according to a range of energies that have high enough intensity to produce visible Bragg spots on the detector. min and max range borders are separated by a minus sign (no whitespace).
 
