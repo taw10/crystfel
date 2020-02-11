@@ -1,7 +1,6 @@
 /* config.h for libcrystfel */
 
 #cmakedefine HAVE_CLOCK_GETTIME
-#cmakedefine HAVE_CPU_AFFINITY
 #cmakedefine HAVE_FFTW
 #cmakedefine HAVE_XGANDALF
 #cmakedefine HAVE_NBP
