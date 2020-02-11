@@ -635,9 +635,9 @@ int main(int argc, char *argv[])
 	args.iargs.tols[0] = 0.05;
 	args.iargs.tols[1] = 0.05;
 	args.iargs.tols[2] = 0.05;
-	args.iargs.tols[3] = 1.5;
-	args.iargs.tols[4] = 1.5;
-	args.iargs.tols[5] = 1.5;
+	args.iargs.tols[3] = deg2rad(1.5);
+	args.iargs.tols[4] = deg2rad(1.5);
+	args.iargs.tols[5] = deg2rad(1.5);
 	args.iargs.threshold = 800.0;
 	args.iargs.min_sq_gradient = 100000.0;
 	args.iargs.min_snr = 5.0;
