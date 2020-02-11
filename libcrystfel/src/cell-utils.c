@@ -1292,7 +1292,7 @@ int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
 	double a1, b1, c1, al1, be1, ga1;
 	double a2, b2, c2, al2, be2, ga2;
 
-	/* Centering must match: we don't arbitrarte primitive vs centered,
+	/* Centering must match: we don't arbitrate primitive vs centered,
 	 * different cell choices etc */
 	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
 
