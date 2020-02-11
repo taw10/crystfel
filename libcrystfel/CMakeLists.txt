@@ -16,6 +16,11 @@ set(HAVE_XGANDALF ${XGANDALF_FOUND})
 set(HAVE_PINKINDEXER ${PINKINDEXER_FOUND})
 set(HAVE_FDIP ${FDIP_FOUND})
 
+# Recent enough version of zlib?
+set(CMAKE_REQUIRED_LIBRARIES "-lz")
+check_symbol_exists(gzbuffer "zlib.h" HAVE_GZBUFFER)
+unset(CMAKE_REQUIRED_LIBRARIES)
+
 # Find out where forkpty() is declared
 set(CMAKE_REQUIRED_LIBRARIES "-lutil")
 check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)

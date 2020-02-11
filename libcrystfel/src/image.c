@@ -787,8 +787,10 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h)
 		gzfh = gzopen(f->filename, "rb");
 		if ( gzfh == NULL ) return NULL;
 
+		#ifdef HAVE_GZBUFFER
 		/* Set larger buffer size for hopefully faster uncompression */
 		gzbuffer(gzfh, 128*1024);
+		#endif
 
 		buf = malloc(bufsz);
 		if ( buf == NULL ) return NULL;
