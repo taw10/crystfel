@@ -367,6 +367,21 @@ target_link_libraries(cell_tool ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES cell_tool)
 
 # ----------------------------------------------------------------------
+# crystfel (main graphical user interface)
+
+if (GTK_FOUND)
+
+  set(CRYSTFEL_GUI_SOURCES src/crystfel_gui.c src/crystfelimageview.c)
+
+  add_executable(crystfel ${CRYSTFEL_GUI_SOURCES})
+  target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
+  target_link_libraries(crystfel ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
+
+  list(APPEND CRYSTFEL_EXECUTABLES crystfel)
+
+endif (GTK_FOUND)
+
+# ----------------------------------------------------------------------
 # Install targets
 
 set_target_properties(${CRYSTFEL_EXECUTABLES}
