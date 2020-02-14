@@ -1,7 +1,7 @@
 /*
- * detector.h
+ * detgeom.h
  *
- * Detector properties
+ * Detector geometry structure
  *
  * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
@@ -34,17 +34,14 @@
 #include <config.h>
 #endif
 
-#ifndef DETECTOR_H
-#define DETECTOR_H
+#ifndef DETGEOM_H
+#define DETGEOM_H
 
 struct rigid_group;
 struct rg_collection;
 struct detector;
 struct panel;
 struct badregion;
-struct beam_params;
-struct hdfile;
-struct event;
 
 #include "hdf5-file.h"
 #include "image.h"
@@ -54,7 +51,7 @@ extern "C" {
 #endif
 
 /**
- * \file detector.h
+ * \file detgeom.h
  * Detector geometry structure and related functions.
  */
 
@@ -155,12 +152,6 @@ struct detector
 	struct panel     *panels;
 	int               n_panels;
 
-	struct badregion *bad;
-	int               n_bad;
-
-	unsigned int      mask_bad;
-	unsigned int      mask_good;
-
 	struct rigid_group **rigid_groups;
 	int                  n_rigid_groups;
 
@@ -186,12 +177,6 @@ extern struct rvec get_q_for_panel(struct panel *p, double fs, double ss,
 
 extern double get_tt(struct image *image, double xs, double ys, int *err);
 
-extern int in_bad_region(struct detector *det, struct panel *p,
-                         double fs, double ss);
-
-extern void record_image(struct image *image, int do_poisson, double background,
-                         gsl_rng *rng, double beam_radius, double nphotons);
-
 extern struct panel *find_orig_panel(struct detector *det,
                                      double fs, double ss);
 
@@ -213,22 +198,15 @@ extern struct detector *get_detector_geometry_from_string(const char *string,
 
 extern void free_detector_geometry(struct detector *det);
 
-extern struct detector *simple_geometry(const struct image *image, int w, int h);
-
 extern void get_pixel_extents(struct detector *det,
                               double *min_x, double *min_y,
                               double *max_x, double *max_y);
-
-extern void fill_in_adu(struct image *image);
-extern void adjust_centering_for_rail(struct panel *p);
 
 extern int panel_is_in_rigid_group(const struct rigid_group *rg,
                                    struct panel *p);
 
 extern int rigid_group_is_in_collection(struct rg_collection *c,
                                         struct rigid_group *rg);
-
-extern struct detector *copy_geom(const struct detector *in);
 
 extern int reverse_2d_mapping(double x, double y, struct detector *det,
                               struct panel **pp, double *pfs, double *pss);
@@ -258,18 +236,11 @@ extern int write_detector_geometry(const char *geometry_filename,
 extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);
 
-
-extern int single_panel_data_source(struct detector *det, const char *element);
-
 struct rg_collection *find_rigid_group_collection_by_name(struct detector *det,
                                                           const char *name);
-
-extern int detector_has_clen_references(struct detector *det);
-
-extern int multi_event_geometry(struct detector *det);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* DETECTOR_H */
+#endif	/* DETGEOM_H */
