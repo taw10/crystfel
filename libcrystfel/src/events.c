@@ -336,6 +336,8 @@ struct event *get_event_from_event_string(const char *ev_string)
 	char *sep;
 	char *start;
 
+	if ( ev_string == NULL ) return NULL;
+
 	ev_sep = strstr(ev_string, "//");
 	if ( ev_sep == NULL ) return NULL;
 
