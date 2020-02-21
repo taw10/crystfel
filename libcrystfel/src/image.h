@@ -55,6 +55,7 @@ struct imagefile_field_list;
 #include "index.h"
 #include "events.h"
 #include "spectrum.h"
+#include "datatemplate.h"
 
 /**
  * \file image.h
@@ -145,12 +146,13 @@ struct image
 	struct detector         *det;
 
 	/** The nominal beam parameters (or where to get them) */
-	struct beam_params      *beam;
+	struct beam_params      *beam;  /* FIXME: Deprecated */
 
 	/** \name The filename and event ID for the image
 	 * @{ */
 	char                    *filename;
-	struct event            *event;
+	struct event            *event;  /* FIXME: Deprecated */
+	char                    *ev;
 	/** @} */
 
 	/** A list of image file headers to copy to the stream */
@@ -223,7 +225,7 @@ extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern int remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
 
-/* Image files */
+/* Image files (old API) */
 extern struct imagefile *imagefile_open(const char *filename);
 extern int imagefile_read(struct imagefile *f, struct image *image,
                           struct event *event);
@@ -235,6 +237,13 @@ extern void imagefile_copy_fields(struct imagefile *f,
                                   FILE *fh, struct event *ev);
 extern void imagefile_close(struct imagefile *f);
 extern signed int is_cbf_file(const char *filename);
+
+
+/* New API */
+extern struct image *image_read(DataTemplate *dtempl, const char *filename,
+                                const char *event);
+extern void image_free(struct image *image);
+
 
 /* Field lists */
 extern struct imagefile_field_list *new_imagefile_field_list(void);

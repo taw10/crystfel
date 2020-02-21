@@ -42,6 +42,9 @@
 #include "hdf5-file.h"
 #include "detector.h"
 
+#include "datatemplate.h"
+#include "datatemplate_priv.h"
+
 /** \file image.h */
 
 struct imagefile
@@ -1235,4 +1238,347 @@ void imagefile_close(struct imagefile *f)
 	}
 	free(f->filename);
 	free(f);
+}
+
+
+/************************** New API (DataTemplate) ****************************/
+
+static struct image *image_new()
+{
+	struct image *image;
+
+	image = malloc(sizeof(struct image));
+	if ( image == NULL ) return NULL;
+
+	image->dp = NULL;
+	image->bad = NULL;
+	image->sat = NULL;
+	image->hit = 0;
+	image->crystals = NULL;
+	image->n_crystals = 0;
+	image->indexed_by = INDEXING_NONE;
+	image->det = NULL;
+	image->filename = NULL;
+	image->ev = NULL;
+	image->copyme = NULL;
+	image->stuff_from_stream = NULL;
+	image->avg_clen = -1.0;
+	image->id = 0;
+	image->serial = 0;
+	image->spectrum = NULL;
+	image->lambda = -1.0;
+	image->div = -1.0;
+	image->bw = -1.0;
+	image->peak_resolution = -1.0;
+	image->features = NULL;
+
+	/* Deprecated stuff */
+	image->beam = NULL;
+	image->event = NULL;
+
+	return image;
+}
+
+
+static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
+                                     const char *event)
+{
+	struct image *image;
+	struct event *ev;
+	hid_t fh;
+	herr_t r;
+	int pi;
+	int i;
+
+	if ( access(filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n", filename);
+		return NULL;
+	}
+
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't open file: %s\n", filename);
+		return NULL;
+	}
+
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	ev = get_event_from_event_string(event);
+	if ( (ev == NULL) && (event != NULL) ) {
+		ERROR("Invalid event identifier '%s'\n", event);
+		H5Fclose(fh);
+		free(image);
+		return NULL;
+	}
+
+	image->dp = malloc(dtempl->n_panels*sizeof(float *));
+	image->bad = malloc(dtempl->n_panels*sizeof(int *));
+	image->sat = malloc(dtempl->n_panels*sizeof(float *));
+	if ( (image->dp==NULL) || (image->bad==NULL) || (image->sat==NULL) ) {
+		ERROR("Failed to allocate data arrays.\n");
+		free_event(ev);
+		H5Fclose(fh);
+		free(image);
+		return NULL;
+	}
+
+	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+
+		hsize_t *f_offset, *f_count;
+		hid_t dh;
+		int hsi;
+		herr_t check;
+		hid_t dataspace, memspace;
+		struct panel_template *p;
+		hsize_t dims[2];
+		char *panel_full_path;
+
+		p = &dtempl->panels[pi];
+
+		panel_full_path = retrieve_full_path(ev, p->data);
+
+		if ( !check_path_existence(fh, panel_full_path) ) {
+			ERROR("Cannot find data for panel %s (%s)\n",
+			      p->name, panel_full_path);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
+			free_event(ev);
+			H5Fclose(fh);
+			free(image);
+			return NULL;
+		}
+
+		dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
+		if ( dh < 0 ) {
+			ERROR("Cannot open data for panel %s (%s)\n",
+			      p->name, panel_full_path);
+			free(panel_full_path);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
+			free_event(ev);
+			H5Fclose(fh);
+			free(image);
+			return NULL;
+		}
+
+		free(panel_full_path);
+
+		/* Determine where to read the data from in the file */
+		f_offset = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
+		f_count = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
+		if ( (f_offset == NULL) || (f_count == NULL ) ) {
+			ERROR("Failed to allocate offset or count.\n");
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
+			free_event(ev);
+			H5Fclose(fh);
+			free(image);
+			return NULL;
+		}
+		for ( hsi=0; hsi<p->dim_structure->num_dims; hsi++ ) {
+
+			if ( p->dim_structure->dims[hsi] == HYSL_FS ) {
+				f_offset[hsi] = p->orig_min_fs;
+				f_count[hsi] = p->orig_max_fs - p->orig_min_fs+1;
+			} else if ( p->dim_structure->dims[hsi] == HYSL_SS ) {
+				f_offset[hsi] = p->orig_min_ss;
+				f_count[hsi] = p->orig_max_ss - p->orig_min_ss+1;
+			} else if (p->dim_structure->dims[hsi] == HYSL_PLACEHOLDER ) {
+				f_offset[hsi] = ev->dim_entries[0];
+				f_count[hsi] = 1;
+			} else {
+				f_offset[hsi] = p->dim_structure->dims[hsi];
+				f_count[hsi] = 1;
+			}
+
+		}
+
+		/* Set up dataspace for file */
+		dataspace = H5Dget_space(dh);
+		check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+		                            f_offset, NULL, f_count, NULL);
+		if ( check < 0 ) {
+			ERROR("Error selecting file dataspace for panel %s\n",
+			      p->name);
+			free(f_offset);
+			free(f_count);
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
+			free_event(ev);
+			H5Fclose(fh);
+			free(image);
+			return NULL;
+		}
+
+		dims[0] = p->orig_max_ss - p->orig_min_ss + 1;
+		dims[1] = p->orig_max_fs - p->orig_min_fs + 1;
+		memspace = H5Screate_simple(2, dims, NULL);
+
+		image->dp[pi] = malloc(dims[0]*dims[1]*sizeof(float));
+		image->sat[pi] = malloc(dims[0]*dims[1]*sizeof(float));
+		if ( (image->dp[pi] == NULL) || (image->sat[pi] == NULL) ) {
+			ERROR("Failed to allocate panel %s\n", p->name);
+			free(f_offset);
+			free(f_count);
+			for ( i=0; i<=pi; i++ ) {
+				free(image->dp[i]);
+				free(image->sat[i]);
+			}
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
+			free_event(ev);
+			H5Fclose(fh);
+			free(image);
+			return NULL;
+		}
+		for ( i=0; i<dims[0]*dims[1]; i++ ) image->sat[pi][i] = INFINITY;
+
+		r = H5Dread(dh, H5T_NATIVE_FLOAT, memspace, dataspace,
+		            H5P_DEFAULT, image->dp[pi]);
+		if ( r < 0 ) {
+			ERROR("Couldn't read data for panel %s\n",
+			      p->name);
+			free(f_offset);
+			free(f_count);
+			for ( i=0; i<=pi; i++ ) {
+				free(image->dp[i]);
+				free(image->sat[i]);
+			}
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
+			free_event(ev);
+			H5Fclose(fh);
+			free(image);
+			return NULL;
+		}
+
+		H5Dclose(dh);
+		H5Sclose(dataspace);
+		free(f_offset);
+		free(f_count);
+
+	}
+
+	free_event(ev);
+	H5Fclose(fh);
+
+	#if 0
+	/* FIXME: Fill in crap */
+	hdfile_fill_in_clen(image->det, f, ev);
+
+	if ( image->beam != NULL ) {
+
+		hdfile_fill_in_beam_parameters(image->beam, f, ev, image);
+
+		if ( (image->lambda > 1.0) || (image->lambda < 1e-20) ) {
+
+			ERROR("WARNING: Nonsensical wavelength (%e m) value "
+			      "for file: %s, event: %s.\n",
+			      image->lambda, image->filename,
+			      get_event_string(image->event));
+		}
+
+	}
+
+	fill_in_adu(image);
+	#endif
+
+	return image;
+}
+
+
+#if 0
+static struct image *read_mask_hdf5(DataTemplate *dtempl, const char *filename,
+                                    const char *event)
+{
+		if ( p->mask != NULL ) {
+			int *flags = malloc(dims[0]*dims[1]*sizeof(int));
+			if ( !load_mask(f, ev, p, flags, f_offset, f_count, p->dim_structure) ) {
+				image->bad[pi] = make_badmask(flags, image->det,
+				                              image->dp[pi], p);
+			} else {
+				image->bad[pi] = make_badmask(NULL, image->det,
+				                              image->dp[pi], p);
+			}
+			free(flags);
+		} else {
+			image->bad[pi] = make_badmask(NULL, image->det,
+			                              image->dp[pi], p);
+		}
+
+		if ( p->satmap != NULL ) {
+			if ( load_satmap(f, ev, p, f_offset, f_count, p->dim_structure,
+			                 image->sat[pi]) )
+			{
+				ERROR("Failed to load sat map for panel %s\n",
+				      p->name);
+			}
+		}
+}
+#endif
+
+
+struct image *image_read_cbf(DataTemplate *dtempl, const char *filename,
+                             const char *event)
+{
+	return NULL;
+}
+
+
+struct image *image_read_gzcbf(DataTemplate *dtempl, const char *filename,
+                               const char *event)
+{
+	return NULL;
+}
+
+
+struct image *image_read(DataTemplate *dtempl, const char *filename,
+                         const char *event)
+{
+	struct image *image;
+
+
+	printf("loading '%s'\n", filename);
+	if ( H5Fis_hdf5(filename) > 0 ) {
+		image = image_read_hdf5(dtempl, filename, event);
+
+	} else if ( is_cbf_file(filename) > 0 ) {
+		image = image_read_cbf(dtempl, filename, event);
+
+	} else if ( is_cbfgz_file(filename) ) {
+		image = image_read_gzcbf(dtempl, filename, event);
+
+	} else {
+		ERROR("Unrecognised file type: %s\n", filename);
+		return NULL;
+	}
+
+	if ( image == NULL ) return NULL;
+
+	/* FIXME: Load mask */
+	/* FIXME: Load saturation map */
+
+	return image;
+}
+
+
+void image_free(struct image *image)
+{
+	if ( image == NULL ) return;
+	image_feature_list_free(image->features);
+	free_all_crystals(image);
+	free(image->filename);
+	free(image->ev);
+	free(image);
 }
