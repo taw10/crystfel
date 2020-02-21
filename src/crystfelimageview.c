@@ -37,6 +37,8 @@
 #include <gtk/gtk.h>
 #include <glib-object.h>
 
+#include <utils.h>
+
 #include "crystfelimageview.h"
 
 
@@ -266,6 +268,8 @@ GtkWidget *crystfel_image_view_new()
 	iv->h = 100;
 	iv->x_scroll_pos = 0;
 	iv->y_scroll_pos = 0;
+	iv->filename = NULL;
+	iv->event = NULL;
 
 	gtk_widget_set_size_request(GTK_WIDGET(iv), iv->w, iv->h);
 
@@ -295,4 +299,37 @@ GtkWidget *crystfel_image_view_new()
 	gtk_widget_show(GTK_WIDGET(iv));
 
 	return GTK_WIDGET(iv);
+}
+
+
+static int reload_image(CrystFELImageView *iv)
+{
+	if ( iv->dtempl == NULL ) return 0;
+	if ( iv->filename == NULL ) return 0;
+	image_free(iv->image);
+	iv->image = image_read(iv->dtempl, iv->filename, iv->event);
+	printf("loaded %p\n", iv->image);
+	return 0;
+}
+
+
+int crystfel_image_view_set_datatemplate(CrystFELImageView *iv,
+                                         DataTemplate *dtempl)
+{
+	iv->dtempl = dtempl;
+	printf("have %p\n", dtempl);
+	return reload_image(iv);
+}
+
+
+int crystfel_image_view_set_image(CrystFELImageView *iv,
+                                  const char *filename,
+                                  const char *event)
+{
+	free(iv->filename);
+	free(iv->event);
+	iv->filename = safe_strdup(filename);
+	iv->event = safe_strdup(event);
+	printf("have '%s'\n", iv->filename);
+	return reload_image(iv);
 }

@@ -33,6 +33,9 @@
 #include <config.h>
 #endif
 
+#include <image.h>
+#include <datatemplate.h>
+
 #define CRYSTFEL_TYPE_IMAGE_VIEW (crystfel_image_view_get_type())
 
 #define CRYSTFEL_IMAGE_VIEW(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), \
@@ -67,6 +70,11 @@ struct _crystfelimageview
 	GtkAdjustment       *vadj;
 	double               x_scroll_pos;
 	double               y_scroll_pos;
+
+	DataTemplate        *dtempl;
+	char                *filename;
+	char                *event;
+	struct image        *image;
 };
 
 struct _crystfelimageviewclass
@@ -80,5 +88,11 @@ typedef struct _crystfelimageviewclass CrystFELImageViewClass;
 extern GType crystfel_image_view_get_type(void);
 extern GtkWidget *crystfel_image_view_new(void);
 
+extern int crystfel_image_view_set_datatemplate(CrystFELImageView *iv,
+                                                DataTemplate *dtempl);
+
+extern int crystfel_image_view_set_image(CrystFELImageView *iv,
+                                         const char *filename,
+                                         const char *event);
 
 #endif	/* CRYSTFELIMAGEVIEW_H */

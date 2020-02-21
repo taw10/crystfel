@@ -39,6 +39,8 @@
 #include <gdk/gdkkeysyms-compat.h>
 #include <assert.h>
 
+#include <datatemplate.h>
+
 #include "crystfelimageview.h"
 
 
@@ -197,6 +199,7 @@ int main(int argc, char *argv[])
 	GtkWidget *hpaned;
 	GtkWidget *scroll;
 	GtkWidget *frame;
+	DataTemplate *dtempl;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -252,6 +255,8 @@ int main(int argc, char *argv[])
 	gtk_paned_pack1(GTK_PANED(vpaned), hpaned, TRUE, TRUE);
 
 	proj.imageview = crystfel_image_view_new();
+
+	/* CrystFELImage into main area */
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
@@ -261,18 +266,23 @@ int main(int argc, char *argv[])
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(scroll));
 	gtk_paned_pack2(GTK_PANED(hpaned), GTK_WIDGET(frame), TRUE, TRUE);
 
+	/* Icon region at left */
 	proj.icons = gtk_drawing_area_new();
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(proj.icons));
 	gtk_paned_pack1(GTK_PANED(hpaned), GTK_WIDGET(frame), FALSE, FALSE);
 
+	/* Report (text) region at bottom */
 	proj.report = gtk_text_view_new();
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(proj.report));
 	gtk_paned_pack2(GTK_PANED(vpaned), GTK_WIDGET(frame), FALSE, FALSE);
 
+	gtk_window_set_default_size(GTK_WINDOW(proj.window), 1024, 768);
+	gtk_paned_set_position(GTK_PANED(hpaned), 172);
+	gtk_paned_set_position(GTK_PANED(vpaned), 600);
 	gtk_widget_show_all(proj.window);
 	gtk_main();
 
