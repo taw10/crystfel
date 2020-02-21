@@ -1739,45 +1739,6 @@ struct detector *get_detector_geometry_from_string(const char *string_in,
 }
 
 
-char *load_entire_file(const char *filename)
-{
-	struct stat statbuf;
-	int r;
-	char *contents;
-	FILE *fh;
-
-	r = stat(filename, &statbuf);
-	if ( r != 0 ) {
-		ERROR("File '%s' not found\n", filename);
-		return NULL;
-	}
-
-	contents = malloc(statbuf.st_size+1);
-	if ( contents == NULL ) {
-		ERROR("Failed to allocate memory for file\n");
-		return NULL;
-	}
-
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) {
-		ERROR("Failed to open file '%s'\n", filename);
-		free(contents);
-		return NULL;
-	}
-
-	if ( fread(contents, 1, statbuf.st_size, fh) != statbuf.st_size ) {
-		ERROR("Failed to read file '%s'\n", filename);
-		free(contents);
-		return NULL;
-	}
-	contents[statbuf.st_size] = '\0';
-
-	fclose(fh);
-
-	return contents;
-}
-
-
 struct detector *get_detector_geometry_2(const char *filename,
                                          struct beam_params *beam,
                                          char **hdf5_peak_path)
