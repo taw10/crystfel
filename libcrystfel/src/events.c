@@ -403,7 +403,6 @@ struct event *get_event_from_event_string(const char *ev_string)
 
 	}
 
-
 	return ev;
 }
 
@@ -527,7 +526,7 @@ char *retrieve_full_path(struct event *ev, const char *data)
 	char *pholder;
 
 	return_value = strdup(data);
-	pholder = strstr(return_value,"%");
+	pholder = strstr(return_value, "%");
 	ei = 0;
 
 	while ( pholder != NULL ) {
