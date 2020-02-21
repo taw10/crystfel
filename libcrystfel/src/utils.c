@@ -503,6 +503,13 @@ char *check_prefix(char *prefix)
 }
 
 
+char *safe_strdup(const char *in)
+{
+	if ( in == NULL ) return NULL;
+	return strdup(in);
+}
+
+
 char *safe_basename(const char *in)
 {
 	int i;
