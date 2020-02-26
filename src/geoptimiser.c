@@ -60,8 +60,7 @@
 #include "image.h"
 #include "utils.h"
 #include "render.h"
-
-#include "hdfsee-render.h"
+#include "colscale.h"
 
 struct imagefeature;
 

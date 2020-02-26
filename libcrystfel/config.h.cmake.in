@@ -8,6 +8,7 @@
 #cmakedefine HAVE_FDIP
 #cmakedefine HAVE_CURSES
 #cmakedefine HAVE_GZBUFFER
+#cmakedefine HAVE_GDKPIXBUF
 
 #cmakedefine HAVE_FORKPTY_PTY_H
 #cmakedefine HAVE_FORKPTY_UTIL_H

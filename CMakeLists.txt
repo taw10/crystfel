@@ -311,7 +311,7 @@ list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 # ----------------------------------------------------------------------
 # geoptimiser
 
-set(GEOPTIMISER_SOURCES src/geoptimiser.c src/hdfsee-render.c)
+set(GEOPTIMISER_SOURCES src/geoptimiser.c)
 add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
 target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(geoptimiser ${COMMON_LIBRARIES})

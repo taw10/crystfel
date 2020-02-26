@@ -1,13 +1,13 @@
 /*
- * hdfsee-render.h
+ * colscale.h
  *
- * Rendering bits for hdfsee
+ * Colour scales
  *
  * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2015 Thomas White <taw@physics.org>
+ *   2009-2012 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -26,28 +26,37 @@
  *
  */
 
-#ifndef HDFSEE_RENDER_H
-#define HDFSEE_RENDER_H
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_GDKPIXBUF
-#include <gdk-pixbuf/gdk-pixbuf.h>
+#ifndef COLSCALE_H
+#define COLSCALE_H
 
-extern GdkPixbuf **render_panels(struct image *image,
-                                 int binning, int scale, double boost,
-                                 int *n_pixbufs);
+/**
+ * \file colscale.h
+ * Colour scales for rendering
+ */
 
-extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
+enum {
+	SCALE_COLOUR,
+	SCALE_MONO,
+	SCALE_INVMONO,
+	SCALE_RATIO,
+	SCALE_GEOPTIMISER
+};
 
-#endif /* HAVE_GDKPIXBUF */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern int render_tiff_fp(struct image *image, const char *filename, int min_x,
-                          int max_x, int min_y, int max_y);
+/* Colour scale lookup */
+extern void render_scale(double val, double max, int scale,
+                         double *rp, double *gp, double *bp);
 
-extern int render_tiff_int16(struct image *image, const char *filename, double boost,
-                             int min_x, int max_x, int min_y, int max_y);
 
-#endif	/* HDFSEE_RENDER_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif	/* COLSCALE_H */

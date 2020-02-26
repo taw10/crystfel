@@ -39,6 +39,7 @@
 
 #include "reflist.h"
 #include "crystal.h"
+#include "image.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,7 +1,7 @@
 /*
  * render.h
  *
- * Render a high dynamic range buffer in some sensible way
+ * Render image data to GdkPixbufs
  *
  * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
@@ -33,27 +33,26 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include "image.h"
+
 /**
  * \file render.h
- * Colour scale for rendering
+ * Render image data to GdkPixbufs
  */
-
-enum {
-	SCALE_COLOUR,
-	SCALE_MONO,
-	SCALE_INVMONO,
-	SCALE_RATIO,
-	SCALE_GEOPTIMISER
-};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Colour scale lookup */
-extern void render_scale(double val, double max, int scale,
-                         double *rp, double *gp, double *bp);
+#ifdef HAVE_GDKPIXBUF
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
+extern GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale);
+
+extern GdkPixbuf **render_panels(struct image *image,
+                                 int binning, int scale, double boost,
+                                 int *n_pixbufs);
+#endif  /* HAVE_GDKPIXBUF */
 
 #ifdef __cplusplus
 }

@@ -47,7 +47,7 @@
 
 #include "utils.h"
 #include "symmetry.h"
-#include "render.h"
+#include "colscale.h"
 #include "render_hkl.h"
 #include "reflist.h"
 #include "reflist-utils.h"

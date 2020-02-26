@@ -76,6 +76,7 @@ set(LIBCRYSTFEL_SOURCES
     src/rational.c
     src/spectrum.c
     src/datatemplate.c
+    src/colscale.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
 )
@@ -119,6 +120,7 @@ set(LIBCRYSTFEL_HEADERS
     src/rational.h
     src/spectrum.h
     src/datatemplate.h
+    src/colscale.h
 )
 
 if (DOXYGEN_FOUND)
@@ -176,6 +178,11 @@ if (CURSES_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${CURSES_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${CURSES_LIBRARIES})
 endif (CURSES_FOUND)
+
+if (GDKPIXBUF_FOUND)
+  target_include_directories(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_LIBRARIES})
+endif (GDKPIXBUF_FOUND)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${LIBCRYSTFEL_HEADERS}")
