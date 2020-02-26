@@ -142,8 +142,11 @@ struct image
 	/** Number of times the indexer was tried before succeeding */
 	int                     n_indexing_tries;
 
-	/** The detector structure */
-	struct detector         *det;
+	/** The detector structure
+	 * @{ */
+	struct detgeom          *detgeom;
+	struct detector         *det;   /* FIXME: Deprecated */
+	/** @} */
 
 	/** The nominal beam parameters (or where to get them) */
 	struct beam_params      *beam;  /* FIXME: Deprecated */

@@ -41,6 +41,7 @@
 #include "events.h"
 #include "hdf5-file.h"
 #include "detector.h"
+#include "detgeom.h"
 
 #include "datatemplate.h"
 #include "datatemplate_priv.h"
@@ -1257,7 +1258,7 @@ static struct image *image_new()
 	image->crystals = NULL;
 	image->n_crystals = 0;
 	image->indexed_by = INDEXING_NONE;
-	image->det = NULL;
+	image->detgeom = NULL;
 	image->filename = NULL;
 	image->ev = NULL;
 	image->copyme = NULL;
@@ -1275,6 +1276,7 @@ static struct image *image_new()
 	/* Deprecated stuff */
 	image->beam = NULL;
 	image->event = NULL;
+	image->det = NULL;
 
 	return image;
 }
@@ -1473,26 +1475,8 @@ static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
 	free_event(ev);
 	H5Fclose(fh);
 
-	#if 0
-	/* FIXME: Fill in crap */
-	hdfile_fill_in_clen(image->det, f, ev);
-
-	if ( image->beam != NULL ) {
-
-		hdfile_fill_in_beam_parameters(image->beam, f, ev, image);
-
-		if ( (image->lambda > 1.0) || (image->lambda < 1e-20) ) {
-
-			ERROR("WARNING: Nonsensical wavelength (%e m) value "
-			      "for file: %s, event: %s.\n",
-			      image->lambda, image->filename,
-			      get_event_string(image->event));
-		}
-
-	}
-
-	fill_in_adu(image);
-	#endif
+	image->filename = strdup(filename);
+	image->ev = safe_strdup(event);
 
 	return image;
 }
@@ -1543,13 +1527,239 @@ struct image *image_read_gzcbf(DataTemplate *dtempl, const char *filename,
 }
 
 
+static double get_value_hdf5(const char *name, const char *filename,
+                             const char *event)
+{
+	hid_t dh;
+	hid_t type;
+	hid_t class;
+	hid_t sh;
+	hid_t ms;
+	hsize_t *f_offset = NULL;
+	hsize_t *f_count = NULL;
+	hsize_t m_offset[1];
+	hsize_t m_count[1];
+	hsize_t msdims[1];
+	hsize_t size[64];
+	herr_t r;
+	herr_t check;
+	int check_pe;
+	int dim_flag;
+	int ndims;
+	int i;
+	char *subst_name = NULL;
+	struct event *ev;
+	hid_t fh;
+	double val;
+
+	if ( access(filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n", filename);
+		return NAN;
+	}
+
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't open file: %s\n", filename);
+		return NAN;
+	}
+	ev = get_event_from_event_string(event);
+	if ( (ev == NULL) && (event != NULL) ) {
+		ERROR("Invalid event identifier '%s'\n", event);
+		H5Fclose(fh);
+		return NAN;
+	}
+
+	subst_name = retrieve_full_path(ev, name);
+
+	check_pe = check_path_existence(fh, subst_name);
+	if ( check_pe == 0 ) {
+		ERROR("No such event-based numeric field '%s'\n", subst_name);
+		return NAN;
+	}
+
+	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
+	type = H5Dget_type(dh);
+	class = H5Tget_class(type);
+
+	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
+		ERROR("Not a floating point or integer value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return NAN;
+	}
+
+	/* Get the dimensionality.  We have to cope with scalars expressed as
+	 * arrays with all dimensions 1, as well as zero-d arrays. */
+	sh = H5Dget_space(dh);
+	ndims = H5Sget_simple_extent_ndims(sh);
+	if ( ndims > 64 ) {
+		ERROR("Too many dimensions for numeric value\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return NAN;
+	}
+	H5Sget_simple_extent_dims(sh, size, NULL);
+
+	m_offset[0] = 0;
+	m_count[0] = 1;
+	msdims[0] = 1;
+	ms = H5Screate_simple(1,msdims,NULL);
+
+	/* Check that the size in all dimensions is 1
+	 * or that one of the dimensions has the same
+	 * size as the hyperplane events */
+
+	dim_flag = 0;
+
+	for ( i=0; i<ndims; i++ ) {
+		if ( size[i] == 1 ) continue;
+		if ( ( i==0 ) && (ev != NULL) && (size[i] > ev->dim_entries[0]) ) {
+			dim_flag = 1;
+		} else {
+			H5Tclose(type);
+			H5Dclose(dh);
+			return NAN;
+		}
+	}
+
+	if ( dim_flag == 0 ) {
+
+		if ( H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+		             H5P_DEFAULT, &val) < 0 )
+		{
+			ERROR("Couldn't read value.\n");
+			H5Tclose(type);
+			H5Dclose(dh);
+			return NAN;
+		}
+
+	} else {
+
+		f_offset = malloc(ndims*sizeof(hsize_t));
+		f_count = malloc(ndims*sizeof(hsize_t));
+
+		for ( i=0; i<ndims; i++ ) {
+
+			if ( i == 0 ) {
+				f_offset[i] = ev->dim_entries[0];
+				f_count[i] = 1;
+			} else {
+				f_offset[i] = 0;
+				f_count[i] = 0;
+			}
+
+		}
+
+		check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
+		                            f_offset, NULL, f_count, NULL);
+		if ( check <0 ) {
+			ERROR("Error selecting dataspace for float value");
+			free(f_offset);
+			free(f_count);
+			return NAN;
+		}
+
+		ms = H5Screate_simple(1,msdims,NULL);
+		check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
+		                            m_offset, NULL, m_count, NULL);
+		if ( check < 0 ) {
+			ERROR("Error selecting memory dataspace for float value");
+			free(f_offset);
+			free(f_count);
+			return NAN;
+		}
+
+		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
+		if ( r < 0 )  {
+			ERROR("Couldn't read value.\n");
+			H5Tclose(type);
+			H5Dclose(dh);
+			return NAN;
+		}
+
+	}
+
+	free_event(ev);
+	free(subst_name);
+	H5Fclose(fh);
+
+	return val;
+}
+
+
+static double get_value(struct image *image, const char *from)
+{
+	double val;
+	char *rval;
+
+	val = strtod(from, &rval);
+	if ( *rval == '\0' ) return val;
+
+	if ( H5Fis_hdf5(image->filename) > 0 ) {
+		return get_value_hdf5(from, image->filename, image->ev);
+
+	} else if ( is_cbf_file(image->filename) > 0 ) {
+		return NAN;
+
+	} else if ( is_cbfgz_file(image->filename) ) {
+		return NAN;
+
+	} else {
+		ERROR("Unrecognised file type: %s\n", image->filename);
+		return NAN;
+	}
+}
+
+
+static void create_detgeom(struct image *image, DataTemplate *dtempl)
+{
+	struct detgeom *detgeom;
+	int i;
+
+	detgeom = malloc(sizeof(struct detgeom));
+	if ( detgeom == NULL ) return;
+
+	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
+	if ( detgeom->panels == NULL ) return;
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		detgeom->panels[i].name = safe_strdup(dtempl->panels[i].name);
+
+		detgeom->panels[i].cnx = dtempl->panels[i].cnx;
+		detgeom->panels[i].cny = dtempl->panels[i].cny;
+		detgeom->panels[i].cnz = get_value(image, dtempl->panels[i].cnz_from)
+		                                + dtempl->panels[i].cnz_offset;
+
+		detgeom->panels[i].pixel_pitch = dtempl->panels[i].pixel_pitch;
+		detgeom->panels[i].max_adu = dtempl->panels[i].max_adu;
+		detgeom->panels[i].adu_per_photon = 1.0;  /* FIXME ! */
+
+		detgeom->panels[i].w = dtempl->panels[i].orig_max_fs
+		                        - dtempl->panels[i].orig_min_fs + 1;
+		detgeom->panels[i].h = dtempl->panels[i].orig_max_ss
+		                        - dtempl->panels[i].orig_min_ss + 1;
+
+		detgeom->panels[i].fsx = dtempl->panels[i].fsx;
+		detgeom->panels[i].fsy = dtempl->panels[i].fsy;
+		detgeom->panels[i].fsz = dtempl->panels[i].fsz;
+		detgeom->panels[i].ssx = dtempl->panels[i].ssx;
+		detgeom->panels[i].ssy = dtempl->panels[i].ssy;
+		detgeom->panels[i].ssz = dtempl->panels[i].ssz;
+
+	}
+
+	image->lambda = get_value(image, dtempl->wavelength_from);
+	image->detgeom = detgeom;
+	/* FIXME: spectrum */
+}
+
+
 struct image *image_read(DataTemplate *dtempl, const char *filename,
                          const char *event)
 {
 	struct image *image;
 
-
-	printf("loading '%s'\n", filename);
 	if ( H5Fis_hdf5(filename) > 0 ) {
 		image = image_read_hdf5(dtempl, filename, event);
 
@@ -1568,6 +1778,8 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 
 	/* FIXME: Load mask */
 	/* FIXME: Load saturation map */
+
+	create_detgeom(image, dtempl);
 
 	return image;
 }
