@@ -1727,6 +1727,8 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
 	if ( detgeom->panels == NULL ) return;
 
+	detgeom->n_panels = dtempl->n_panels;
+
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
 		detgeom->panels[i].name = safe_strdup(dtempl->panels[i].name);
