@@ -1427,13 +1427,18 @@ static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
 
 		image->dp[pi] = malloc(dims[0]*dims[1]*sizeof(float));
 		image->sat[pi] = malloc(dims[0]*dims[1]*sizeof(float));
-		if ( (image->dp[pi] == NULL) || (image->sat[pi] == NULL) ) {
+		image->bad[pi] = calloc(dims[0]*dims[1], sizeof(int));
+		if ( (image->dp[pi] == NULL)
+		  || (image->sat[pi] == NULL)
+		  || (image->bad[pi] == NULL) )
+		{
 			ERROR("Failed to allocate panel %s\n", p->name);
 			free(f_offset);
 			free(f_count);
 			for ( i=0; i<=pi; i++ ) {
 				free(image->dp[i]);
 				free(image->sat[i]);
+				free(image->bad[i]);
 			}
 			free(image->dp);
 			free(image->bad);
