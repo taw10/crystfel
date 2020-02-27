@@ -43,6 +43,8 @@
 #include "render.h"
 #include "peaks.h"
 #include "colscale.h"
+#include "detgeom.h"
+#include "detector.h"
 
 /** \file render.h */
 
@@ -52,11 +54,22 @@ static float *get_binned_panel(struct image *image, int binning,
 	float *data;
 	int x, y;
 	int w, h;
-	struct panel *p = &image->det->panels[pi];
+	int p_w, p_h;
+
+	/* Use new API if possible */
+	if ( image->detgeom != NULL ) {
+		struct detgeom_panel *p = &image->detgeom->panels[pi];
+		p_w = p->w;
+		p_h = p->h;
+	} else {
+		struct panel *p = &image->det->panels[pi];
+		p_w = p->w;
+		p_h = p->h;
+	}
 
 	/* Some pixels might get discarded */
-	w = p->w / binning;
-	h = p->h / binning;
+	w = p_w / binning;
+	h = p_h / binning;
 	*pw = w;
 	*ph = h;
 
@@ -80,11 +93,11 @@ static float *get_binned_panel(struct image *image, int binning,
 
 			fs = binning*x+xb;
 			ss = binning*y+yb;
-			v = image->dp[pi][fs+ss*p->w];
+			v = image->dp[pi][fs+ss*p_w];
 			total += v;
 
 			if ( (image->bad != NULL)
-			  && (image->bad[pi][fs+ss*p->w]) ) bad = 1;
+			  && (image->bad[pi][fs+ss*p_w]) ) bad = 1;
 
 		}
 		}
@@ -169,11 +182,18 @@ GdkPixbuf **render_panels(struct image *image,
                           int *n_pixbufs)
 {
 	int i;
-	int np = image->det->n_panels;
+	int np;
 	GdkPixbuf **pixbufs;
 	float **hdrs;
 	double max;
 	int *ws, *hs;
+
+	/* Use new API if possible */
+	if ( image->detgeom != NULL ) {
+		np = image->detgeom->n_panels;
+	} else {
+		np = image->det->n_panels;
+	}
 
 	hdrs = calloc(np, sizeof(float *));
 	ws = calloc(np, sizeof(int));
@@ -202,11 +222,8 @@ GdkPixbuf **render_panels(struct image *image,
 	}
 
 	for ( i=0; i<np; i++ ) {
-
 		pixbufs[i] = render_panel(hdrs[i], scale, max, ws[i], hs[i]);
-
 		free(hdrs[i]);
-
 	}
 
 	free(hdrs);
