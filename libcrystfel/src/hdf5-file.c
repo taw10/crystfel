@@ -1236,7 +1236,9 @@ int hdfile_get_value(struct hdfile *f, const char *name, struct event *ev,
 
 	for ( i=0; i<ndims; i++ ) {
 		if ( size[i] == 1 ) continue;
-		if ( ( i==0 ) && (ev != NULL) && (size[i] > ev->dim_entries[0]) ) {
+		if ( ( i==0 ) && (ev != NULL) && (ev->dim_length > 0)
+		  && (size[i] > ev->dim_entries[0]) )
+		{
 			dim_flag = 1;
 		} else {
 			H5Tclose(type);
