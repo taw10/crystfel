@@ -179,10 +179,15 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv, int i)
 
 	gdk_cairo_set_source_pixbuf(cr, iv->pixbufs[i], 0.0, 0.0);
 	patt = cairo_get_source(cr);
-	cairo_pattern_set_filter(patt, CAIRO_FILTER_NEAREST);
-	cairo_matrix_init_identity(&m);
+
+	cairo_pattern_get_matrix(patt, &m);
+	cairo_matrix_scale(&m, 1.0/p.pixel_pitch, 1.0/p.pixel_pitch);
 	cairo_pattern_set_matrix(patt, &m);
+
+	cairo_pattern_set_filter(patt, CAIRO_FILTER_NEAREST);
+
 	cairo_rectangle(cr, 0.0, 0.0, p.w*p.pixel_pitch, p.h*p.pixel_pitch);
+	cairo_fill(cr);
 }
 
 
@@ -204,10 +209,6 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 		for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
 			cairo_save(cr);
 			draw_panel_rectangle(cr, iv, i);
-			cairo_fill_preserve(cr);
-			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-			cairo_set_line_width(cr, 0.0002);
-			cairo_stroke(cr);
 			cairo_restore(cr);
 		}
 	}
