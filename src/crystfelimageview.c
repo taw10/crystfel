@@ -489,7 +489,6 @@ int crystfel_image_view_set_datatemplate(CrystFELImageView *iv,
                                          DataTemplate *dtempl)
 {
 	iv->dtempl = dtempl;
-	printf("have %p\n", dtempl);
 	return reload_image(iv);
 }
 
@@ -502,6 +501,5 @@ int crystfel_image_view_set_image(CrystFELImageView *iv,
 	free(iv->event);
 	iv->filename = safe_strdup(filename);
 	iv->event = safe_strdup(event);
-	printf("have '%s'\n", iv->filename);
 	return reload_image(iv);
 }
