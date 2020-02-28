@@ -33,6 +33,8 @@
 #include <config.h>
 #endif
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #include <image.h>
 #include <datatemplate.h>
 
@@ -60,21 +62,28 @@ struct _crystfelimageview
 	/*< private >*/
 	GtkIMContext        *im_context;
 
-	int                  w;   /* Surface size in pixels */
-	int                  h;
+	/* Detector size in metres */
+	double               detector_w;
+	double               detector_h;
 
 	/* Redraw/scroll stuff */
 	GtkScrollablePolicy  hpol;
 	GtkScrollablePolicy  vpol;
 	GtkAdjustment       *hadj;
 	GtkAdjustment       *vadj;
-	double               x_scroll_pos;
-	double               y_scroll_pos;
+	double               visible_width;
+	double               visible_height;
+	double               zoom;
+	double               drag_start_x;
+	double               drag_start_y;
+	double               drag_start_sp_x;
+	double               drag_start_sp_y;
 
 	DataTemplate        *dtempl;
 	char                *filename;
 	char                *event;
 	struct image        *image;
+	GdkPixbuf          **pixbufs;
 };
 
 struct _crystfelimageviewclass
