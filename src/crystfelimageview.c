@@ -109,23 +109,40 @@ static void configure_scroll_adjustments(CrystFELImageView *iv)
 static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
                        CrystFELImageView *iv)
 {
+	double zoom_scale;
+	int claim = FALSE;
+
 	if ( event->direction == GDK_SCROLL_UP ) {
-		double offs;
-		offs = (iv->visible_width/iv->zoom)*(1.0/1.1 - 1.0);
-		iv->zoom *= 1.1;
-		gtk_adjustment_set_value(iv->hadj,
-		                         gtk_adjustment_get_value(iv->hadj)-offs);
-		configure_scroll_adjustments(iv);
-		redraw(iv);
-		return TRUE;
+		zoom_scale = 1.1;
+		claim = TRUE;
 	}
 	if ( event->direction == GDK_SCROLL_DOWN ) {
-		iv->zoom *= 0.9;
-		configure_scroll_adjustments(iv);
-		redraw(iv);
-		return TRUE;
+		zoom_scale = 0.9;
+		claim = TRUE;
 	}
-	return FALSE;
+
+	if ( claim ) {
+
+		double shift_x, shift_y;
+		double scr_x, scr_y;
+
+		scr_x = gtk_adjustment_get_value(iv->hadj);
+		scr_y = gtk_adjustment_get_value(iv->vadj);
+
+		shift_x = event->x*((1.0/(zoom_scale*iv->zoom))-(1.0/iv->zoom));
+		shift_y = event->y*((1.0/(zoom_scale*iv->zoom))-(1.0/iv->zoom));
+		iv->zoom *= zoom_scale;
+
+		configure_scroll_adjustments(iv);
+
+		gtk_adjustment_set_value(iv->hadj, scr_x - shift_x);
+		gtk_adjustment_set_value(iv->vadj, scr_y - shift_y);
+
+		redraw(iv);
+
+	}
+
+	return claim;
 }
 
 
@@ -200,8 +217,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	cairo_paint(cr);
 
 	cairo_scale(cr, iv->zoom, iv->zoom);
-	cairo_scale(cr, 1.0, -1.0);
 	cairo_translate(cr, iv->offs_x, iv->offs_y);
+	cairo_scale(cr, 1.0, -1.0);
 	cairo_translate(cr, -gtk_adjustment_get_value(iv->hadj),
 	                     gtk_adjustment_get_value(iv->vadj));
 
@@ -485,7 +502,7 @@ static int reload_image(CrystFELImageView *iv)
 	iv->detector_w += border;
 	iv->detector_h += border;
 	iv->offs_x = -min_x + border/2.0;
-	iv->offs_y = -max_y - border/2.0;
+	iv->offs_y = max_y + border/2.0;
 	iv->zoom = 1.0/iv->image->detgeom->panels[0].pixel_pitch;
 	configure_scroll_adjustments(iv);
 
