@@ -231,18 +231,6 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 		}
 	}
 
-	cairo_new_path(cr);
-	cairo_move_to(cr, 0.0, 0.0);
-	cairo_line_to(cr, 0.1, 0.0);
-	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_set_line_width(cr, 0.001);
-	cairo_stroke(cr);
-	cairo_move_to(cr, 0.0, 0.0);
-	cairo_line_to(cr, 0.0, 0.1);
-	cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-	cairo_set_line_width(cr, 0.001);
-	cairo_stroke(cr);
-
 	cairo_restore(cr);
 	return FALSE;
 }
