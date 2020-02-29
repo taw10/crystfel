@@ -367,9 +367,9 @@ GtkWidget *crystfel_image_view_new()
 	iv = g_object_new(CRYSTFEL_TYPE_IMAGE_VIEW, NULL);
 
 	/* All values initially meaningless */
-	iv->detector_w = NAN;
-	iv->detector_h = NAN;
-	iv->zoom = NAN;
+	iv->detector_w = 1.0;
+	iv->detector_h = 1.0;
+	iv->zoom = 1.0;
 	iv->filename = NULL;
 	iv->event = NULL;
 
