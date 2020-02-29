@@ -483,7 +483,6 @@ static int reload_image(CrystFELImageView *iv)
 	}
 
 	detgeom_pixel_extents(iv->image->detgeom, &min_x, &min_y, &max_x, &max_y);
-	STATUS("Extents: %f %f %f %f\n", min_x, min_y, max_x, max_y);
 	iv->detector_w = max_x - min_x;
 	iv->detector_h = max_y - min_y;
 	border = iv->detector_w * 0.1;
