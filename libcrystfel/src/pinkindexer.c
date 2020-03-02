@@ -55,6 +55,8 @@ struct pinkIndexer_private_data {
 
 	int no_check_indexed;
 
+	float maxRefinementDisbalance;
+
 	IntegerMatrix *centeringTransformation;
 	LatticeTransform_t latticeReductionTransform;
 };
@@ -95,15 +97,24 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 	Lattice_t indexedLattice[MAX_MULTI_LATTICE_COUNT];
 	float center_shift[MAX_MULTI_LATTICE_COUNT][2];
 
-	float maxRefinementDisbalance = 0.4;
+
 
 	do {
 		int peakCount = reciprocalPeaks_1_per_A->peakCount;
 		int matchedPeaksCount = PinkIndexer_indexPattern(pinkIndexer_private_data->pinkIndexer,
 		        &(indexedLattice[indexed]), center_shift[indexed], reciprocalPeaks_1_per_A, intensities,
-		        maxRefinementDisbalance,
+		        pinkIndexer_private_data->maxRefinementDisbalance,
 		        pinkIndexer_private_data->threadCount);
 
+		if(matchedPeaksCount == -1){
+			STATUS("WARNING: Indexing solution was rejected due to too large disbalance of the refinement."
+			        "If you see this message often, check the documentation for the parameter "
+			        "--pinkIndexer-max-refinement-disbalance\n");
+
+			matchedPeaksCount = 0;
+		}
+
+		printf("matchedPeaksCount %d from %d\n",matchedPeaksCount,peakCount);
 		if ((matchedPeaksCount >= 25 && matchedPeaksCount >= peakCount * 0.30)
 		        || matchedPeaksCount >= peakCount * 0.4
 		        || matchedPeaksCount >= 70
@@ -181,6 +192,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	pinkIndexer_private_data->multi = pinkIndexer_opts->multi;
 	pinkIndexer_private_data->min_peaks = pinkIndexer_opts->min_peaks;
 	pinkIndexer_private_data->no_check_indexed = pinkIndexer_opts->no_check_indexed;
+	pinkIndexer_private_data->maxRefinementDisbalance = pinkIndexer_opts->maxRefinementDisbalance;
 
 	UnitCell* primitiveCell = uncenter_cell(cell, &pinkIndexer_private_data->centeringTransformation, NULL);
 
@@ -412,6 +424,9 @@ static void show_help()
 "     --pinkIndexer-no-check-indexed\n"
 "                           Disable internal check for correct indexing\n"
 "                            solutions\n"
+"     --pinkIndexer-max-refinement-disbalance=n\n"
+"                           Maximum disbalance after refinement:\n"
+"                            0 (no disbalance) to 2 (extreme disbalance), default 0.4\n"
 "     --pinkIndexer-override-photon-energy=ev\n"
 "                           Mean energy in eV to use for indexing.\n"
 "     --pinkIndexer-override-bandwidth=n\n"
@@ -447,6 +462,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		(*opts_ptr)->reflectionRadius = -1;
 		(*opts_ptr)->customPhotonEnergy = -1;
 		(*opts_ptr)->customBandwidth = -1;
+		(*opts_ptr)->maxRefinementDisbalance = 0.4;
 		break;
 
 		case 1 :
@@ -548,6 +564,12 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			(*opts_ptr)->customBandwidth *= -1;
 		}
 		break;
+		case 14 :
+		if (sscanf(arg, "%f", &(*opts_ptr)->maxRefinementDisbalance) != 1)
+		{
+			ERROR("Invalid value for --pinkIndexer-max-refinement-disbalance\n");
+			return EINVAL;
+		}
 	}
 
 	return 0;
@@ -588,6 +610,8 @@ static struct argp_option options[] = {
 	{"pinkIndexer-override-bandwidth", 12, "bw", OPTION_HIDDEN, NULL},
 
 	{"pinkIndexer-override-visible-energy-range", 13, "overridenVisibleEnergyRange", OPTION_HIDDEN, NULL},
+
+	{"pinkIndexer-max-refinement-disbalance", 14, "maxDisbalance", OPTION_HIDDEN, NULL},
 
 	{0}
 };

@@ -49,6 +49,7 @@ struct pinkIndexer_options {
 	float reflectionRadius; /* In m^-1 */
 	float customPhotonEnergy;
 	float customBandwidth;
+	float maxRefinementDisbalance;
 };
 
 #include <stddef.h>
