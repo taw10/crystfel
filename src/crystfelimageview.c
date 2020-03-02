@@ -369,7 +369,7 @@ GtkWidget *crystfel_image_view_new()
 	/* All values initially meaningless */
 	iv->detector_w = 1.0;
 	iv->detector_h = 1.0;
-	iv->zoom = 1.0;
+	iv->zoom = -1.0;
 	iv->filename = NULL;
 	iv->event = NULL;
 	iv->image = NULL;
@@ -491,9 +491,12 @@ static int reload_image(CrystFELImageView *iv)
 	border = iv->detector_w * 0.1;
 	iv->detector_w += border;
 	iv->detector_h += border;
-	iv->offs_x = -min_x + border/2.0;
-	iv->offs_y = max_y + border/2.0;
-	iv->zoom = 1.0/iv->image->detgeom->panels[0].pixel_pitch;
+	if ( iv->zoom < 0.0 ) {
+		/* Set initial values */
+		iv->offs_x = -min_x + border/2.0;
+		iv->offs_y = max_y + border/2.0;
+		iv->zoom = 1.0/iv->image->detgeom->panels[0].pixel_pitch;
+	}
 	configure_scroll_adjustments(iv);
 
 	return 0;
