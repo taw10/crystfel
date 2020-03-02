@@ -1794,10 +1794,31 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 
 void image_free(struct image *image)
 {
+	int i, np;
+
 	if ( image == NULL ) return;
 	image_feature_list_free(image->features);
 	free_all_crystals(image);
 	free(image->filename);
 	free(image->ev);
+
+	if ( image->detgeom != NULL ) {
+		np = image->detgeom->n_panels;
+	} else if ( image->det != NULL ) {
+		np = image->det->n_panels;
+	} else {
+		np = 0;
+	}
+
+	for ( i=0; i<np; i++ ) {
+		free(image->dp[i]);
+		free(image->sat[i]);
+		free(image->bad[i]);
+	}
+
+	free(image->dp);
+	free(image->sat);
+	free(image->bad);
+
 	free(image);
 }
