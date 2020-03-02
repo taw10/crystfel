@@ -94,6 +94,30 @@ static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static gint first_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	return FALSE;
+}
+
+
+static gint prev_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	return FALSE;
+}
+
+
+static gint next_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	return FALSE;
+}
+
+
+static gint last_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	return FALSE;
+}
+
+
 static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *window;
@@ -183,6 +207,9 @@ int main(int argc, char *argv[])
 	GtkWidget *hpaned;
 	GtkWidget *scroll;
 	GtkWidget *frame;
+	GtkWidget *main_vbox;
+	GtkWidget *toolbar;
+	GtkWidget *button;
 	DataTemplate *dtempl;
 
 	/* Long options */
@@ -240,14 +267,49 @@ int main(int argc, char *argv[])
 
 	proj.imageview = crystfel_image_view_new();
 
-	/* CrystFELImage into main area */
+	/* FIXME: Testing stuff */
+	dtempl = data_template_new_from_file("5HT2b-Liu-2013.geom");
+	crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj.imageview),
+	                                     dtempl);
+	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj.imageview),
+	                              "/home/taw/experiments/5HT2B/cxidb-21-run0135/"
+	                              "data1/LCLS_2013_Mar23_r0135_015658_9b79.h5",
+	                              NULL);
+
+	toolbar = gtk_hbox_new(FALSE, 0.0);
+
+	/* First */
+	button = gtk_button_new_from_icon_name("go-first", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(first_frame_sig), &proj);
+
+	/* Prev */
+	button = gtk_button_new_from_icon_name("go-previous", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(prev_frame_sig), &proj);
+
+	/* Next */
+	button = gtk_button_new_from_icon_name("go-next", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(next_frame_sig), &proj);
+
+	/* Last */
+	button = gtk_button_new_from_icon_name("go-last", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(last_frame_sig), &proj);
+
+	main_vbox = gtk_vbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(main_vbox), toolbar, FALSE, FALSE, 0.0);
+
+	/* Main area stuff (toolbar and imageview) at right */
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
 	                               GTK_POLICY_ALWAYS, GTK_POLICY_ALWAYS);
 	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(proj.imageview));
-	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(scroll));
+	gtk_box_pack_start(GTK_BOX(main_vbox), scroll, TRUE, TRUE, 0.0);
+	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(main_vbox));
 	gtk_paned_pack2(GTK_PANED(hpaned), GTK_WIDGET(frame), TRUE, TRUE);
 
 	/* Icon region at left */
