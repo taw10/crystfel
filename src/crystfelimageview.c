@@ -372,6 +372,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->zoom = 1.0;
 	iv->filename = NULL;
 	iv->event = NULL;
+	iv->image = NULL;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -465,12 +466,14 @@ static int reload_image(CrystFELImageView *iv)
 
 	/* Free old stuff */
 	if ( iv->image != NULL ) {
-		image_free(iv->image);
-		if ( iv->image->detgeom != NULL ) {
-			for ( i=0; iv->image->detgeom->n_panels; iv++ ) {
-				gdk_pixbuf_unref(iv->pixbufs[i]);
+		if ( (iv->image->detgeom != NULL) && (iv->pixbufs != NULL) ) {
+			for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
+				if ( iv->pixbufs[i] != NULL ) {
+					gdk_pixbuf_unref(iv->pixbufs[i]);
+				}
 			}
 		}
+		image_free(iv->image);
 	}
 
 	iv->image = image_read(iv->dtempl, iv->filename, iv->event);

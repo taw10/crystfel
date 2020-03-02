@@ -67,6 +67,11 @@ struct crystfelproject {
 	GtkWidget *icons;      /* Drawing area for task icons */
 	GtkWidget *report;     /* Text view at the bottom for messages */
 
+	int cur_frame;
+
+	int n_frames;
+	char **filenames;
+	char **events;
 };
 
 
@@ -94,26 +99,45 @@ static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static void update_imageview(struct crystfelproject *proj)
+{
+	if ( proj->n_frames == 0 ) return;
+	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                              proj->filenames[proj->cur_frame],
+	                              proj->events[proj->cur_frame]);
+}
+
+
 static gint first_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
+	proj->cur_frame = 0;
+	update_imageview(proj);
 	return FALSE;
 }
 
 
 static gint prev_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
+	if ( proj->cur_frame == 0 ) return FALSE;
+	proj->cur_frame--;
+	update_imageview(proj);
 	return FALSE;
 }
 
 
 static gint next_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
+	if ( proj->cur_frame == proj->n_frames - 1 ) return FALSE;
+	proj->cur_frame++;
+	update_imageview(proj);
 	return FALSE;
 }
 
 
 static gint last_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
+	proj->cur_frame = proj->n_frames - 1;
+	update_imageview(proj);
 	return FALSE;
 }
 
@@ -198,6 +222,48 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 }
 
 
+static void load_image_list(struct crystfelproject *proj, const char *filename)
+{
+	int done = 0;
+	int max_frames = 0;
+	FILE *fh = fopen(filename, "r");
+
+	proj->filenames = NULL;
+	proj->events = NULL;
+	proj->n_frames = 0;
+
+	do {
+		char line[1024];
+		if ( fgets(line, 1024, fh) != NULL ) {
+
+			if ( proj->n_frames == max_frames ) {
+				proj->filenames = realloc(proj->filenames,
+				                          (max_frames+1024)*sizeof(char *));
+				proj->events = realloc(proj->events,
+				                       (max_frames+1024)*sizeof(char *));
+				if ( (proj->filenames == NULL)
+				  || (proj->events == NULL) )
+				{
+					ERROR("Failed to allocate while "
+					      "loading image list\n");
+					proj->n_frames = 0;
+					return;
+				}
+				max_frames += 1024;
+			}
+
+			chomp(line);
+			proj->filenames[proj->n_frames] = strdup(line);
+			proj->events[proj->n_frames] = NULL;
+			proj->n_frames++;
+
+		} else {
+			done = 1;
+		}
+	} while ( !done );
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -250,6 +316,8 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
+	load_image_list(&proj, "files.lst");
+
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
 	g_signal_connect(G_OBJECT(proj.window), "destroy", G_CALLBACK(destroy_sig),
@@ -271,10 +339,9 @@ int main(int argc, char *argv[])
 	dtempl = data_template_new_from_file("5HT2b-Liu-2013.geom");
 	crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj.imageview),
 	                                     dtempl);
-	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj.imageview),
-	                              "/home/taw/experiments/5HT2B/cxidb-21-run0135/"
-	                              "data1/LCLS_2013_Mar23_r0135_015658_9b79.h5",
-	                              NULL);
+
+	proj.cur_frame = 0;
+	update_imageview(&proj);
 
 	toolbar = gtk_hbox_new(FALSE, 0.0);
 
