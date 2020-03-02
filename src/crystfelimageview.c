@@ -75,8 +75,28 @@ static void redraw(CrystFELImageView *iv)
 }
 
 
+static void cleanup_image(CrystFELImageView *iv)
+{
+	int i;
+
+	if ( iv->image != NULL ) {
+		if ( (iv->image->detgeom != NULL) && (iv->pixbufs != NULL) ) {
+			for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
+				if ( iv->pixbufs[i] != NULL ) {
+					gdk_pixbuf_unref(iv->pixbufs[i]);
+				}
+			}
+		}
+		image_free(iv->image);
+	}
+}
+
+
 static gint destroy_sig(GtkWidget *window, CrystFELImageView *iv)
 {
+	cleanup_image(iv);
+	free(iv->filename);
+	free(iv->event);
 	return FALSE;
 }
 
@@ -456,7 +476,6 @@ static void detgeom_pixel_extents(struct detgeom *det,
 
 static int reload_image(CrystFELImageView *iv)
 {
-	int i;
 	int n_pb;
 	double min_x, min_y, max_x, max_y;
 	double border;
@@ -464,17 +483,7 @@ static int reload_image(CrystFELImageView *iv)
 	if ( iv->dtempl == NULL ) return 0;
 	if ( iv->filename == NULL ) return 0;
 
-	/* Free old stuff */
-	if ( iv->image != NULL ) {
-		if ( (iv->image->detgeom != NULL) && (iv->pixbufs != NULL) ) {
-			for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
-				if ( iv->pixbufs[i] != NULL ) {
-					gdk_pixbuf_unref(iv->pixbufs[i]);
-				}
-			}
-		}
-		image_free(iv->image);
-	}
+	cleanup_image(iv);
 
 	iv->image = image_read(iv->dtempl, iv->filename, iv->event);
 	if ( iv->image == NULL ) return 1;
