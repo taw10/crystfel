@@ -508,6 +508,8 @@ static int reload_image(CrystFELImageView *iv)
 	}
 	configure_scroll_adjustments(iv);
 
+	redraw(iv);
+
 	return 0;
 }
 
