@@ -264,6 +264,44 @@ static void load_image_list(struct crystfelproject *proj, const char *filename)
 }
 
 
+static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
+                       GCallback callback, struct crystfelproject *proj)
+{
+	GtkWidget *button;
+	GtkWidget *image;
+
+	button = gtk_button_new_with_label(label);
+	g_object_set(G_OBJECT(button), "image-position", GTK_POS_TOP, NULL);
+	image = gtk_image_new_from_icon_name(imagen, GTK_ICON_SIZE_DIALOG);
+	g_object_set(G_OBJECT(button), "image", image, NULL);
+	g_object_set(G_OBJECT(button), "always-show-image", TRUE, NULL);
+	gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(button), FALSE, FALSE, 4);
+
+	if ( callback != NULL ) {
+		g_signal_connect(G_OBJECT(button), "clicked",
+		                 G_CALLBACK(callback), proj);
+	}
+}
+
+
+static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
+{
+	add_button(vbox, "Find data", "folder-pictures",
+	           G_CALLBACK(NULL), proj);
+	add_button(vbox, "Peak detection", "edit-find",
+	           G_CALLBACK(NULL), proj);
+	add_button(vbox, "Determine unit cell", "document-page-setup",
+	           G_CALLBACK(NULL), proj);
+	add_button(vbox, "Index and integrate", "system-run",
+	           G_CALLBACK(NULL), proj);
+	add_button(vbox, "Merge", "applications-science",
+	           G_CALLBACK(NULL), proj);
+	add_button(vbox, "Figures of merit", "trophy-gold",
+	           G_CALLBACK(NULL), proj);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -380,11 +418,17 @@ int main(int argc, char *argv[])
 	gtk_paned_pack2(GTK_PANED(hpaned), GTK_WIDGET(frame), TRUE, TRUE);
 
 	/* Icon region at left */
-	proj.icons = gtk_drawing_area_new();
+	proj.icons = gtk_vbox_new(FALSE, 0.0);
+	scroll = gtk_scrolled_window_new(NULL, NULL);
+	gtk_container_set_border_width(GTK_CONTAINER(proj.icons), 16);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
+	                               GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
-	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(proj.icons));
+	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(scroll));
+	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(proj.icons));
 	gtk_paned_pack1(GTK_PANED(hpaned), GTK_WIDGET(frame), FALSE, FALSE);
+	add_task_buttons(proj.icons, &proj);
 
 	/* Report (text) region at bottom */
 	proj.report = gtk_text_view_new();
