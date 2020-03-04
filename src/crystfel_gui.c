@@ -69,9 +69,16 @@ struct crystfelproject {
 
 	int cur_frame;
 
+	char *geom_filename;
+
 	int n_frames;
+	int max_frames;
 	char **filenames;
 	char **events;
+
+	GtkWidget *file_chooser;  /* Data location in "Find data" window */
+	GtkWidget *geom_chooser;  /* Data location in "Find data" window */
+	GtkWidget *type_combo;    /* Search pattern in "Find data" window */
 };
 
 
@@ -92,13 +99,190 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 }
 
 
+static void update_imageview(struct crystfelproject *proj)
+{
+	if ( proj->n_frames == 0 ) return;
+	STATUS("Have %i frames\n", proj->n_frames);
+	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                              proj->filenames[proj->cur_frame],
+	                              proj->events[proj->cur_frame]);
+}
+
+
+enum match_type_id
+	{
+	 MATCH_EVERYTHING,
+	 MATCH_CHEETAH_LCLS_H5,
+	 MATCH_CHEETAH_CXI,
+	 MATCH_CBF,
+	 MATCH_CBFGZ,
+	};
+
+
+static int match_filename(const char *fn, enum match_type_id mt)
+{
+	const char *ext = NULL;
+	size_t r = strlen(fn)-1;
+
+	while ( r > 0 ) {
+		if ( fn[r] == '.' ) {
+			ext = fn+r;
+			break;
+		}
+		r--;
+	}
+
+	if ( mt == MATCH_EVERYTHING ) return 1;
+
+	if ( ext == NULL ) return 0;
+	if ( mt == MATCH_CHEETAH_LCLS_H5 ) {
+		return ((strcmp(ext, ".h5")==0)
+		        && (strncmp(fn, "LCLS", 4)==0));
+	}
+	if ( mt == MATCH_CHEETAH_CXI ) return strcmp(ext, ".cxi")==0;
+	if ( mt == MATCH_CBF ) return strcmp(ext, ".cbf")==0;
+	if ( mt == MATCH_CBFGZ  ) return strcmp(ext, ".cbfgz")==0;
+
+	return 0;
+}
+
+
+static void add_file_proj(struct crystfelproject *proj,
+                          const char *filename)
+{
+	if ( proj->n_frames == proj->max_frames ) {
+		int n_max = proj->max_frames + 1024;
+		char **n_filenames;
+		char **n_events;
+		n_filenames = realloc(proj->filenames,
+		                      n_max*sizeof(char *));
+		n_events = realloc(proj->events,
+		                   n_max*sizeof(char *));
+		if ( (n_filenames == NULL) || (n_events == NULL) ) {
+			ERROR("Failed to allocate new filename\n");
+			return;
+		}
+		proj->max_frames = n_max;
+		proj->filenames = n_filenames;
+		proj->events = n_events;
+	}
+
+	proj->filenames[proj->n_frames] = strdup(filename);
+	proj->events[proj->n_frames] = NULL;
+	proj->n_frames++;
+}
+
+
+static void add_files(struct crystfelproject *proj, GFile *folder,
+                      enum match_type_id type)
+{
+	GFileEnumerator *fenum;
+	GFileInfo *finfo;
+	GError *error = NULL;
+
+	fenum = g_file_enumerate_children(folder, "standard::name,standard::type",
+	                                  G_FILE_QUERY_INFO_NONE,
+	                                  NULL, &error);
+
+	do {
+
+		GFile *file;
+
+		finfo = g_file_enumerator_next_file(fenum, NULL, &error);
+
+		if ( error != NULL ) {
+			STATUS("Error!\n");
+			g_object_unref(fenum);
+			return;
+		}
+
+		if ( finfo == NULL ) continue;
+
+		file = g_file_get_child(folder, g_file_info_get_name(finfo));
+
+		if ( g_file_info_get_file_type(finfo) == G_FILE_TYPE_DIRECTORY ) {
+
+			add_files(proj, file, type);
+
+		} else {
+
+			char *bn = g_file_get_basename(file);
+			if ( match_filename(bn, type) ) {
+				add_file_proj(proj,
+				              g_file_get_path(file));
+			}
+
+		}
+
+		g_object_unref(finfo);
+
+	} while ( finfo != NULL );
+
+	g_object_unref(fenum);
+}
+
+
+static enum match_type_id decode_matchtype(const char *type_id)
+{
+	if ( strcmp(type_id, "everything") == 0 ) return MATCH_EVERYTHING;
+	if ( strcmp(type_id, "lcls-cheetah-hdf5") == 0 ) return MATCH_CHEETAH_LCLS_H5;
+	if ( strcmp(type_id, "cheetah-cxi") == 0 ) return MATCH_CHEETAH_CXI;
+	if ( strcmp(type_id, "cbf") == 0 ) return MATCH_CBF;
+	if ( strcmp(type_id, "cbfgz") == 0 ) return MATCH_CBFGZ;
+	ERROR("Unknown match type id '%s'\n", type_id);
+	return MATCH_EVERYTHING;
+}
+
+
 static void finddata_response_sig(GtkWidget *dialog, gint resp,
                                   struct crystfelproject *proj)
 {
+	GFile *top;
+	DataTemplate *dtempl;
+	char *geom_filename;
+	const char *type_id;
+	int i;
+
 	if ( (resp==GTK_RESPONSE_DELETE_EVENT) || (resp==GTK_RESPONSE_CANCEL) ) {
 		gtk_widget_destroy(dialog);
+		proj->file_chooser = NULL;
+		proj->geom_chooser = NULL;
 		return;
 	}
+
+	geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(proj->geom_chooser));
+	if ( geom_filename == NULL ) return;
+	dtempl = data_template_new_from_file(geom_filename);
+	if ( dtempl == NULL ) return;
+	proj->geom_filename = geom_filename;
+	crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                     dtempl);
+
+	top = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(proj->file_chooser));
+	if ( top == NULL ) return;
+
+	/* Totally clean up the old list */
+	for ( i=0; i<proj->n_frames; i++ ) {
+		free(proj->filenames[i]);
+		free(proj->events[i]);
+	}
+	free(proj->filenames);
+	free(proj->events);
+	proj->n_frames = 0;
+	proj->max_frames = 0;
+	proj->filenames = NULL;
+	proj->events = NULL;
+
+	type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->type_combo));
+	add_files(proj, top, decode_matchtype(type_id));
+
+	proj->cur_frame = 0;
+	update_imageview(proj);
+
+	proj->file_chooser = NULL;
+	proj->geom_chooser = NULL;
+	g_object_unref(top);
+	gtk_widget_destroy(dialog);
 }
 
 
@@ -111,6 +295,8 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *label;
 	GtkWidget *chooser;
 	GtkWidget *combo;
+
+	if ( proj->file_chooser != NULL ) return FALSE;
 
 	dialog = gtk_dialog_new_with_buttons("Find data files",
 	                                     GTK_WINDOW(proj->window),
@@ -131,6 +317,7 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	chooser = gtk_file_chooser_button_new("Select a folder",
 	                                      GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(chooser), TRUE, TRUE, 2.0);
+	proj->file_chooser = chooser;
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
@@ -142,14 +329,15 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "everything",
 	                "All files in folder and subfolders");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "lcls-cheetah-hdf5",
-	                "LCLS, individual files from Cheetah ('LCLS*.h5')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "lcls-cheetah-cxi",
+	                "Individual LCLS files from Cheetah ('LCLS*.h5')");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cheetah-cxi",
 	                "Multi-event CXI files from Cheetah ('*.cxi')");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cbf",
 	                "Individual CBF files ('*.cbf')");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cbfgz",
 	                "Individual gzipped CBF files ('*.cbf.gz')");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+	proj->type_combo = combo;
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
@@ -159,6 +347,7 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	chooser = gtk_file_chooser_button_new("Select geometry file",
 	                                      GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(chooser), TRUE, TRUE, 2.0);
+	proj->geom_chooser = chooser;
 
 	g_signal_connect(dialog, "response",
 	                 G_CALLBACK(finddata_response_sig), proj);
@@ -173,15 +362,6 @@ static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	gtk_main_quit();
 	return FALSE;
-}
-
-
-static void update_imageview(struct crystfelproject *proj)
-{
-	if ( proj->n_frames == 0 ) return;
-	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                              proj->filenames[proj->cur_frame],
-	                              proj->events[proj->cur_frame]);
 }
 
 
@@ -299,48 +479,6 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 }
 
 
-static void load_image_list(struct crystfelproject *proj, const char *filename)
-{
-	int done = 0;
-	int max_frames = 0;
-	FILE *fh = fopen(filename, "r");
-
-	proj->filenames = NULL;
-	proj->events = NULL;
-	proj->n_frames = 0;
-
-	do {
-		char line[1024];
-		if ( fgets(line, 1024, fh) != NULL ) {
-
-			if ( proj->n_frames == max_frames ) {
-				proj->filenames = realloc(proj->filenames,
-				                          (max_frames+1024)*sizeof(char *));
-				proj->events = realloc(proj->events,
-				                       (max_frames+1024)*sizeof(char *));
-				if ( (proj->filenames == NULL)
-				  || (proj->events == NULL) )
-				{
-					ERROR("Failed to allocate while "
-					      "loading image list\n");
-					proj->n_frames = 0;
-					return;
-				}
-				max_frames += 1024;
-			}
-
-			chomp(line);
-			proj->filenames[proj->n_frames] = strdup(line);
-			proj->events[proj->n_frames] = NULL;
-			proj->n_frames++;
-
-		} else {
-			done = 1;
-		}
-	} while ( !done );
-}
-
-
 static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
                        GCallback callback, struct crystfelproject *proj)
 {
@@ -391,7 +529,6 @@ int main(int argc, char *argv[])
 	GtkWidget *main_vbox;
 	GtkWidget *toolbar;
 	GtkWidget *button;
-	DataTemplate *dtempl;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -431,7 +568,13 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	load_image_list(&proj, "files.lst");
+	proj.file_chooser = NULL;
+	proj.geom_chooser = NULL;
+	proj.geom_filename = NULL;
+	proj.n_frames = 0;
+	proj.max_frames = 0;
+	proj.filenames = NULL;
+	proj.events = NULL;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
@@ -449,11 +592,6 @@ int main(int argc, char *argv[])
 	gtk_paned_pack1(GTK_PANED(vpaned), hpaned, TRUE, TRUE);
 
 	proj.imageview = crystfel_image_view_new();
-
-	/* FIXME: Testing stuff */
-	dtempl = data_template_new_from_file("5HT2b-Liu-2013.geom");
-	crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj.imageview),
-	                                     dtempl);
 
 	proj.cur_frame = 0;
 	update_imageview(&proj);
