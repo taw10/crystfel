@@ -40,6 +40,7 @@
 #include <assert.h>
 
 #include <datatemplate.h>
+#include <peaks.h>
 
 #include "crystfelimageview.h"
 
@@ -56,6 +57,31 @@ static void show_help(const char *s)
 );
 }
 
+
+struct peak_params {
+	float threshold;
+	float min_sq_gradient;
+	float min_snr;
+	int use_saturated;
+	int half_pixel_shift;
+	float pk_inn;
+	float pk_mid;
+	float pk_out;
+	float ir_inn;
+	float ir_mid;
+	float ir_out;
+	int min_res;
+	int max_res;
+	int max_n_peaks;
+	int min_pix_count;
+	int max_pix_count;
+	int local_bg_radius;
+	int min_peaks;
+	float min_snr_biggest_pix;
+	float min_snr_peak_pix;
+	float min_sig;
+	float min_peak_over_neighbour;
+};
 
 struct crystfelproject {
 
@@ -77,9 +103,15 @@ struct crystfelproject {
 	char **filenames;
 	char **events;
 
+	struct peak_params peak_search_params;
+
 	GtkWidget *file_chooser;  /* Data location in "Find data" window */
 	GtkWidget *geom_chooser;  /* Data location in "Find data" window */
 	GtkWidget *type_combo;    /* Search pattern in "Find data" window */
+
+	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */
+	GtkWidget *peak_params;   /* Peak search parameter widgets */
+	struct peak_params original_params;
 };
 
 
@@ -97,6 +129,27 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 	if ( GTK_IS_TOOLBAR(widget) ) {
 		gtk_toolbar_set_show_arrow(GTK_TOOLBAR(widget), TRUE);
 	}
+}
+
+
+static void update_peaks(struct crystfelproject *proj)
+{
+	struct image *image;
+
+	if ( proj->n_frames == 0 ) return;
+
+	image = crystfel_image_view_get_image_struct(CRYSTFEL_IMAGE_VIEW(proj->imageview));
+
+	search_peaks(image, proj->peak_search_params.threshold,
+	             proj->peak_search_params.min_sq_gradient,
+	             proj->peak_search_params.min_snr,
+	             proj->peak_search_params.pk_inn,
+	             proj->peak_search_params.pk_mid,
+	             proj->peak_search_params.pk_out,
+	             proj->peak_search_params.use_saturated);
+
+	crystfel_image_view_set_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                              image->features);
 }
 
 
@@ -289,6 +342,134 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 	proj->geom_chooser = NULL;
 	g_object_unref(top);
 	gtk_widget_destroy(dialog);
+}
+
+
+static void peaksearch_threshold_sig(GtkWidget *entry,
+                                     struct crystfelproject *proj)
+{
+	const char *text;
+	float val;
+
+	text = gtk_entry_get_text(GTK_ENTRY(entry));
+	if (sscanf(text, "%f", &val) != 1) {
+		ERROR("Invalid value\n");
+		return;
+	}
+
+	proj->peak_search_params.threshold = val;
+	update_peaks(proj);
+}
+
+
+static void peaksearch_algo_changed(GtkWidget *combo,
+                                    struct crystfelproject *proj)
+{
+	GtkWidget *hbox;
+	GtkWidget *label;
+	GtkWidget *entry;
+
+	if ( proj->peak_params != NULL ) {
+		gtk_container_remove(GTK_CONTAINER(proj->peak_vbox),
+		                     proj->peak_params);
+		proj->peak_params = NULL;
+	}
+
+	proj->peak_params = gtk_vbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(proj->peak_vbox),
+	                   GTK_WIDGET(proj->peak_params),
+	                   FALSE, FALSE, 8.0);
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(proj->peak_params),
+	                   GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+	label = gtk_label_new("Threshold:");
+	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 2.0);
+	entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   TRUE, TRUE, 2.0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(peaksearch_threshold_sig), proj);
+
+	gtk_widget_show_all(proj->peak_vbox);
+}
+
+
+static void peaksearch_response_sig(GtkWidget *dialog, gint resp,
+                                    struct crystfelproject *proj)
+{
+
+	if ( (resp == GTK_RESPONSE_DELETE_EVENT)
+	  || (resp == GTK_RESPONSE_CANCEL) )
+	{
+		proj->peak_search_params = proj->original_params;
+	}
+
+	gtk_widget_destroy(dialog);
+	proj->peak_vbox = NULL;
+	proj->peak_params = NULL;
+}
+
+
+static gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	GtkWidget *dialog;
+	GtkWidget *content_area;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *label;
+	GtkWidget *combo;
+
+	if ( proj->peak_params != NULL ) return FALSE;
+
+	/* Take a copy of the original parameters, for reverting */
+	proj->original_params = proj->peak_search_params;
+
+	dialog = gtk_dialog_new_with_buttons("Peak search",
+	                                     GTK_WINDOW(proj->window),
+	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                     "Discard changes", GTK_RESPONSE_CANCEL,
+	                                     "Confirm", GTK_RESPONSE_ACCEPT,
+	                                     NULL);
+
+	g_signal_connect(G_OBJECT(dialog), "response",
+	                 G_CALLBACK(peaksearch_response_sig), proj);
+
+	vbox = gtk_vbox_new(FALSE, 0.0);
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
+	proj->peak_vbox = vbox;
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+	label = gtk_label_new("Peak search algorithm");
+	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
+	combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo), TRUE, TRUE, 2.0);
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "zaef",
+	                "Zaefferer gradient search (zaef)");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cxi",
+	                "Get list from CXI file");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "hdf5",
+	                "Get list from HDF5 file");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "peakfinder8",
+	                "Radial background estimation (peakfinder8)");
+	#ifdef HAVE_FDIP
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "peakfinder9",
+	                "Local background estimation (peakfinder9)");
+	#endif
+	g_signal_connect(G_OBJECT(combo), "changed",
+	                 G_CALLBACK(peaksearch_algo_changed), proj);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+	proj->type_combo = combo;
+
+	gtk_widget_show_all(dialog);
+
+	return FALSE;
 }
 
 
@@ -511,7 +692,7 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	add_button(vbox, "Find data", "folder-pictures",
 	           G_CALLBACK(finddata_sig), proj);
 	add_button(vbox, "Peak detection", "edit-find",
-	           G_CALLBACK(NULL), proj);
+	           G_CALLBACK(peaksearch_sig), proj);
 	add_button(vbox, "Determine unit cell", "document-page-setup",
 	           G_CALLBACK(NULL), proj);
 	add_button(vbox, "Index and integrate", "system-run",
@@ -581,6 +762,8 @@ int main(int argc, char *argv[])
 	proj.max_frames = 0;
 	proj.filenames = NULL;
 	proj.events = NULL;
+	proj.peak_params = NULL;
+	proj.peak_search_params.threshold = 800.0;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
