@@ -140,6 +140,8 @@ static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
 		zoom_scale = 0.9;
 		claim = TRUE;
 	}
+	if ( event->direction == GDK_SCROLL_LEFT ) return TRUE;
+	if ( event->direction == GDK_SCROLL_RIGHT ) return TRUE;
 
 	if ( claim ) {
 
