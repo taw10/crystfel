@@ -534,3 +534,15 @@ int crystfel_image_view_set_image(CrystFELImageView *iv,
 	iv->event = safe_strdup(event);
 	return reload_image(iv);
 }
+
+
+struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv)
+{
+	return iv->image;
+}
+
+
+void crystfel_image_view_set_peaks(CrystFELImageView *iv,
+                                   ImageFeatureList *peaks)
+{
+}

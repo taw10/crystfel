@@ -106,4 +106,9 @@ extern int crystfel_image_view_set_image(CrystFELImageView *iv,
                                          const char *filename,
                                          const char *event);
 
+extern struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv);
+
+extern void crystfel_image_view_set_peaks(CrystFELImageView *iv,
+                                          ImageFeatureList *peaks);
+
 #endif	/* CRYSTFELIMAGEVIEW_H */
