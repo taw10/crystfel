@@ -495,6 +495,7 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	vbox = gtk_vbox_new(FALSE, 0.0);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
