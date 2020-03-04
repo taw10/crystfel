@@ -66,6 +66,7 @@ struct crystfelproject {
 	GtkWidget *imageview;
 	GtkWidget *icons;      /* Drawing area for task icons */
 	GtkWidget *report;     /* Text view at the bottom for messages */
+	GtkWidget *image_info;
 
 	int cur_frame;
 
@@ -101,8 +102,13 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 
 static void update_imageview(struct crystfelproject *proj)
 {
+	char tmp[1024];
 	if ( proj->n_frames == 0 ) return;
-	STATUS("Have %i frames\n", proj->n_frames);
+
+	snprintf(tmp, 1023, "%s (frame %i of %i)",
+	         proj->filenames[proj->cur_frame],
+	         proj->cur_frame, proj->n_frames);
+	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->filenames[proj->cur_frame],
 	                              proj->events[proj->cur_frame]);
@@ -617,6 +623,12 @@ int main(int argc, char *argv[])
 	button = gtk_button_new_from_icon_name("go-last", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(last_frame_sig), &proj);
+
+	proj.image_info = gtk_label_new("Ready to load images");
+	gtk_label_set_selectable(GTK_LABEL(proj.image_info), TRUE);
+	gtk_label_set_ellipsize(GTK_LABEL(proj.image_info),
+	                        PANGO_ELLIPSIZE_START);
+	gtk_box_pack_end(GTK_BOX(toolbar), proj.image_info, TRUE, TRUE, 0.0);
 
 	main_vbox = gtk_vbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(main_vbox), toolbar, FALSE, FALSE, 0.0);
