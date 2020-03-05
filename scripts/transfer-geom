@@ -83,7 +83,8 @@ with open(sys.argv[2]) as template:
             if not panel:
                 print("No panel for line: %s\n" % line)
                 sys.exit(1)
-            out.write("%s/coffset = %s\n" % (panel, coffset[panel]))
+            if panel in coffset:
+                out.write("%s/coffset = %s\n" % (panel, coffset[panel]))
         else:
             out.write("%s\n" % line)
 
