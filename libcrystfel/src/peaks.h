@@ -79,7 +79,9 @@ extern void validate_peaks(struct image *image, double min_snr,
                            int ir_inn, int ir_mid, int ir_out,
                            int use_saturated, int check_snr);
 
-extern double estimate_peak_resolution(ImageFeatureList *peaks, double lambda);
+extern double estimate_peak_resolution(ImageFeatureList *peaks,
+                                       double lambda,
+                                       struct detector *det);
 
 #ifdef __cplusplus
 }

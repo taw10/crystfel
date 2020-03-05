@@ -267,11 +267,11 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		 * in how far away it is from the peak location.
 		 * The predicted position and excitation errors will be
 		 * filled in by update_predictions(). */
-		set_panel(refl, f->p);
+		set_panel(refl, &image->det->panels[f->pn]);
 
 		rps[n].refl = refl;
 		rps[n].peak = f;
-		rps[n].panel = f->p;
+		rps[n].panel = &image->det->panels[f->pn];
 		n++;
 
 	}

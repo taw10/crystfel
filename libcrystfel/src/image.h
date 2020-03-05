@@ -78,7 +78,7 @@ struct imagefeature {
 	double                          ss;
 	/**@}*/
 
-	struct panel                    *p;         /**< Pointer to panel */
+	int                             pn;         /**< Panel number */
 	double                          intensity;  /**< Intensity */
 
 	/** \name Reciprocal space coordinates (m^-1) of this feature */
@@ -203,7 +203,7 @@ extern ImageFeatureList *image_feature_list_new(void);
 extern void image_feature_list_free(ImageFeatureList *flist);
 
 extern void image_add_feature(ImageFeatureList *flist, double x, double y,
-                              struct panel *p,
+                              int pn,
                               struct image *parent, double intensity,
                               const char *name);
 
@@ -211,7 +211,7 @@ extern void image_remove_feature(ImageFeatureList *flist, int idx);
 
 extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   double fs, double ss,
-                                                  struct panel *p,
+                                                  int pn,
                                                   double *d, int *idx);
 
 extern Reflection *image_reflection_closest(RefList *rlist,

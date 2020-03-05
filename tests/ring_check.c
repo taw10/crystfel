@@ -67,7 +67,7 @@ static void third_integration_check(struct image *image, int n_trials,
 		}
 		}
 
-		r = integrate_peak(image, 64, 64, &image->det->panels[0],
+		r = integrate_peak(image, 64, 64, 0,
 		                   &fsp, &ssp, &intensity, &sigma,
 		                   10.0, 15.0, 17.0, NULL);
 
@@ -129,7 +129,7 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		}
 		}
 
-		r = integrate_peak(image, 64, 64, &image->det->panels[0],
+		r = integrate_peak(image, 64, 64, 0,
 		                   &fsp, &ssp, &intensity, &sigma,
 		                   10.0, 15.0, 17.0, NULL);
 
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 	image.crystals = NULL;
 
 	/* First check: no intensity -> no peak, or very low intensity */
-	r = integrate_peak(&image, 64, 64, &image.det->panels[0],
+	r = integrate_peak(&image, 64, 64, 0,
 	                   &fsp, &ssp, &intensity, &sigma,
 	                   10.0, 15.0, 17.0, NULL);
 	STATUS("  First check: integrate_peak() returned %i", r);
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
 	}
 	}
 
-	r = integrate_peak(&image, 64, 64, &image.det->panels[0],
+	r = integrate_peak(&image, 64, 64, 0,
 	                   &fsp, &ssp, &intensity, &sigma,
 	                   10.0, 15.0, 17.0, NULL);
 	if ( r ) {
@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
 	}
 	}
 
-	r = integrate_peak(&image, 64, 64, &image.det->panels[0],
+	r = integrate_peak(&image, 64, 64, 0,
 	                   &fsp, &ssp, &intensity, &sigma,
 	                   10.0, 15.0, 17.0, NULL);
 	if ( r ) {

@@ -565,7 +565,8 @@ void map_all_peaks(struct image *image)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q_for_panel(f->p, f->fs, f->ss,
+		r = get_q_for_panel(&image->det->panels[f->pn],
+		                    f->fs, f->ss,
 		                    NULL, 1.0/image->lambda);
 		f->rx = r.u;  f->ry = r.v;  f->rz = r.w;
 
@@ -819,7 +820,8 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 		nspots++;
 
 		/* Reciprocal space position of found peak */
-		q = get_q_for_panel(f->p, f->fs, f->ss,
+		q = get_q_for_panel(&image->det->panels[f->pn],
+		                    f->fs, f->ss,
 		                    NULL, 1.0/image->lambda);
 
 		/* Decimal and fractional Miller indices of nearest

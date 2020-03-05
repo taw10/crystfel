@@ -359,7 +359,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	image.peak_resolution = estimate_peak_resolution(image.features,
-	                                                 image.lambda);
+	                                                 image.lambda,
+	                                                 image.det);
 
 	restore_image_data(image.dp, image.det, prefilter);
 

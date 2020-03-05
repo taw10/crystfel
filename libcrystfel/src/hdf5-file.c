@@ -400,6 +400,7 @@ int get_peaks_cxi_2(struct image *image, struct hdfile *f, const char *p,
 
 		float fs, ss, val;
 		struct panel *p;
+		int pn;
 
 		fs = buf_x[pk] + peak_offset;
 		ss = buf_y[pk] + peak_offset;
@@ -413,7 +414,10 @@ int get_peaks_cxi_2(struct image *image, struct hdfile *f, const char *p,
 		fs = fs - p->orig_min_fs;
 		ss = ss - p->orig_min_ss;
 
-		image_add_feature(image->features, fs, ss, p, image, val, NULL);
+		pn = panel_number(image->det, p);
+
+		image_add_feature(image->features, fs, ss, pn,
+		                  image, val, NULL);
 
 	}
 
@@ -543,6 +547,7 @@ int get_peaks_2(struct image *image, struct hdfile *f, const char *p,
 
 		float fs, ss, val;
 		struct panel *p;
+		int pn;
 
 		fs = buf[tw*i+0] + peak_offset;
 		ss = buf[tw*i+1] + peak_offset;
@@ -556,8 +561,10 @@ int get_peaks_2(struct image *image, struct hdfile *f, const char *p,
 		fs = fs - p->orig_min_fs;
 		ss = ss - p->orig_min_ss;
 
-		image_add_feature(image->features, fs, ss, p, image, val,
-		                  NULL);
+		pn = panel_number(image->det, p);
+
+		image_add_feature(image->features, fs, ss, pn,
+		                  image, val, NULL);
 
 	}
 

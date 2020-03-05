@@ -219,7 +219,7 @@ int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
 static int integrate_peak(struct image *image,
-                          int p_cfs, int p_css, struct panel *p,
+                          int p_cfs, int p_css, int pn,
                           double *pfs, double *pss,
                           double *intensity, double *sigma,
                           double ir_inn, double ir_mid, double ir_out,
@@ -236,21 +236,17 @@ static int integrate_peak(struct image *image,
 	double bg_tot_sq = 0.0;
 	double var;
 	double aduph;
-	int pn;
+	struct detgeom_panel *p;
 
 	if ( saturated != NULL ) *saturated = 0;
+
+	p = &image->detgeom->panels[pn];
 
 	aduph = p->adu_per_photon;
 
 	lim_sq = pow(ir_inn, 2.0);
 	mid_lim_sq = pow(ir_mid, 2.0);
 	out_lim_sq = pow(ir_out, 2.0);
-
-	pn = panel_number(image->det, p);
-	if ( pn == image->det->n_panels ) {
-		ERROR("Couldn't find panel %p\n", p);
-		return 20;
-	}
 
 	/* Estimate the background */
 	for ( dss=-ir_out; dss<=+ir_out; dss++ ) {
@@ -456,7 +452,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		assert(mask_ss >= 0);
 
 		/* Centroid peak and get better coordinates. */
-		r = integrate_peak(image, mask_fs, mask_ss, p,
+		r = integrate_peak(image, mask_fs, mask_ss, pn,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, &saturated);
 
@@ -479,7 +475,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(image->features, f_fs, f_ss, p, &d, &idx);
+		image_feature_closest(image->features, f_fs, f_ss, pn,
+		                      &d, &idx);
 		if ( d < 2.0*ir_inn ) {
 			nrej_pro++;
 			continue;
@@ -491,7 +488,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(image->features, f_fs, f_ss, p,
+		image_add_feature(image->features, f_fs, f_ss, pn,
 		                  image, intensity, NULL);
 		nacc++;
 
@@ -648,8 +645,7 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 			image_add_feature(image->features,
 			                  peakList.centerOfMass_rawX[peak_number],
 			                  peakList.centerOfMass_rawY[peak_number],
-			                  &image->det->panels[panel_number],
-			                  image,
+			                  panel_number, image,
 			                  peakList.totalIntensity[peak_number],
 			                  NULL);
 		}
@@ -709,7 +705,8 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 		n_feat++;
 
 		/* Reciprocal space position of found peak */
-		q = get_q_for_panel(f->p, f->fs, f->ss,
+		q = get_q_for_panel(&image->det->panels[f->pn],
+		                    f->fs, f->ss,
 		                    NULL, 1.0/image->lambda);
 
 		for ( j=0; j<n_cryst; j++ ) {
@@ -797,7 +794,7 @@ void validate_peaks(struct image *image, double min_snr,
 			continue;
 		}
 
-		r = integrate_peak(image, f->fs, f->ss, f->p,
+		r = integrate_peak(image, f->fs, f->ss, f->pn,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, &saturated);
 		if ( r ) {
@@ -818,8 +815,8 @@ void validate_peaks(struct image *image, double min_snr,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(flist, f->fs, f->ss, f->p, image, intensity,
-		                  NULL);
+		image_add_feature(flist, f->fs, f->ss, f->pn, image,
+		                  intensity, NULL);
 
 	}
 
@@ -841,7 +838,8 @@ static int compare_double(const void *av, const void *bv)
 }
 
 
-double estimate_peak_resolution(ImageFeatureList *peaks, double lambda)
+double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
+                                struct detector *det)
 {
 	int i, npk, ncut;
 	double *rns;
@@ -863,7 +861,8 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda)
 
 		f = image_get_feature(peaks, i);
 
-		r = get_q_for_panel(f->p, f->fs, f->ss, NULL, 1.0/lambda);
+		r = get_q_for_panel(&det->panels[f->pn],
+		                    f->fs, f->ss, NULL, 1.0/lambda);
 		rns[i] = modulus(r.u, r.v, r.w);
 
 	}

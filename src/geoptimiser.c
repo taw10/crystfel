@@ -768,7 +768,8 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 			imfe = image_get_feature(flist, fi);
 			if ( imfe == NULL ) continue;
 
-			compute_x_y(imfe->fs, imfe->ss, imfe->p, &fx, &fy);
+			compute_x_y(imfe->fs, imfe->ss,
+			            &det->panels[imfe->pn], &fx, &fy);
 
 			/* Find the closest reflection (from all crystals) */
 			refl = find_closest_reflection(&images[cp], fx, fy,
@@ -779,7 +780,7 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 
 				struct gpanel *gp;
 				int r;
-				gp = &gpanels[panel_number(det, imfe->p)];
+				gp = &gpanels[imfe->pn];
 
 				r = add_distance_to_list(gp, imfe, refl, fx, fy,
 				                         det_shift);

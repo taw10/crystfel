@@ -1205,9 +1205,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 			image_add_feature(img->features,
 			                  pkdata->com_fs[pki]+0.5,
 			                  pkdata->com_ss[pki]+0.5,
-			                  p,
-			                  img,
-			                  pkdata->tot_i[pki],
+			                  pi, img, pkdata->tot_i[pki],
 			                  NULL);
 		}
 	}

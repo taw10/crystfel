@@ -65,7 +65,7 @@ struct _imagefeaturelist
 
 
 void image_add_feature(ImageFeatureList *flist, double fs, double ss,
-                       struct panel *p,
+                       int pn,
                        struct image *parent, double intensity, const char *name)
 {
 	if ( flist->n_features == flist->max_features ) {
@@ -79,7 +79,7 @@ void image_add_feature(ImageFeatureList *flist, double fs, double ss,
 
 	flist->features[flist->n_features].fs = fs;
 	flist->features[flist->n_features].ss = ss;
-	flist->features[flist->n_features].p = p;
+	flist->features[flist->n_features].pn = pn;
 	flist->features[flist->n_features].intensity = intensity;
 	flist->features[flist->n_features].parent = parent;
 	flist->features[flist->n_features].name = name;
@@ -155,7 +155,7 @@ void image_feature_list_free(ImageFeatureList *flist)
 
 struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                            double fs, double ss,
-                                           struct panel *p, double *d, int *idx)
+                                           int pn, double *d, int *idx)
 {
 	int i;
 	double dmin = +HUGE_VAL;
@@ -165,7 +165,7 @@ struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 
 		double ds;
 
-		if ( p != flist->features[i].p ) continue;
+		if ( pn != flist->features[i].pn ) continue;
 
 		ds = distance(flist->features[i].fs, flist->features[i].ss,
 		              fs, ss);

@@ -99,7 +99,6 @@ static int read_peaks(Stream *st, struct image *image)
 		char line[1024];
 		float x, y, d, intensity;
 		int r;
-		struct panel *p = NULL;
 		float add_x, add_y;
 
 		rval = fgets(line, 1023, st->fh);
@@ -121,6 +120,8 @@ static int read_peaks(Stream *st, struct image *image)
 
 			if ( image->det != NULL ) {
 
+				int pn;
+				struct panel *p = NULL;
 				p = find_orig_panel(image->det, x, y);
 				if ( p == NULL ) {
 					ERROR("Panel not found\n");
@@ -129,14 +130,15 @@ static int read_peaks(Stream *st, struct image *image)
 
 				add_x = x-p->orig_min_fs;
 				add_y = y-p->orig_min_ss;
+				pn = panel_number(image->det, p);
 
 				image_add_feature(image->features, add_x, add_y,
-				                  p, image, intensity, NULL);
+				                  pn, image, intensity, NULL);
 
 			} else {
 
 				image_add_feature(image->features, x, y,
-				                  p, image, intensity, NULL);
+				                  0, image, intensity, NULL);
 			}
 		}
 
@@ -160,7 +162,6 @@ static int read_peaks_2_3(Stream *st, struct image *image)
 		char pn[32];
 		float x, y, d, intensity;
 		int r;
-		struct panel *p = NULL;
 		float add_x, add_y;
 
 		rval = fgets(line, 1023, st->fh);
@@ -181,6 +182,8 @@ static int read_peaks_2_3(Stream *st, struct image *image)
 
 		if ( r == 5 ) {
 
+			int pnum;
+			struct panel *p;
 			p = find_panel_by_name(image->det, pn);
 			if ( p == NULL ) {
 				ERROR("Panel not found: %s\n", pn);
@@ -190,7 +193,10 @@ static int read_peaks_2_3(Stream *st, struct image *image)
 			add_x = x-p->orig_min_fs;
 			add_y = y-p->orig_min_ss;
 
-			image_add_feature(image->features, add_x, add_y, p,
+			pnum = panel_number(image->det, p);
+
+			image_add_feature(image->features,
+			                  add_x, add_y, pnum,
 			                  image, intensity, NULL);
 
 		}
@@ -218,7 +224,8 @@ static int write_peaks(struct image *image, FILE *ofh)
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q_for_panel(f->p, f->fs, f->ss,
+		r = get_q_for_panel(&image->det->panels[f->pn],
+		                    f->fs, f->ss,
 		                    NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
@@ -268,21 +275,24 @@ static int write_peaks_2_3(struct image *image, FILE *ofh)
 		struct rvec r;
 		double q;
 		double write_fs, write_ss;
+		struct panel *p;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q_for_panel(f->p, f->fs, f->ss,
+		p = &image->det->panels[f->pn];
+		r = get_q_for_panel(p, f->fs, f->ss,
 		                    NULL, 1.0/image->lambda);
 		q = modulus(r.u, r.v, r.w);
 
 		/* Convert coordinates to match arrangement of panels in HDF5
 		 * file */
-		write_fs = f->fs + f->p->orig_min_fs;
-		write_ss = f->ss + f->p->orig_min_ss;
+		write_fs = f->fs + p->orig_min_fs;
+		write_ss = f->ss + p->orig_min_ss;
 
 		fprintf(ofh, "%7.2f %7.2f %10.2f  %10.2f   %s\n",
-		        write_fs, write_ss, q/1.0e9, f->intensity, f->p->name);
+		        write_fs, write_ss, q/1.0e9, f->intensity,
+		        p->name);
 
 	}
 
