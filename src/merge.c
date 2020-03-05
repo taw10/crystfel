@@ -191,10 +191,11 @@ static void run_merge_job(void *vwargs, int cookie)
 		struct reflection_contributions *c;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
+		if ( isnan(get_esd_intensity(refl)) ) continue;
 
 		if ( !wargs->qargs->use_weak || ln_merge ) {
 
-			if (get_intensity(refl) < 3.0*get_esd_intensity(refl)) {
+			if (get_intensity(refl) < 3.0*fabs(get_esd_intensity(refl))) {
 				continue;
 			}
 
