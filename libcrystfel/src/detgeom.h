@@ -94,18 +94,6 @@ struct detgeom
 {
 	struct detgeom_panel *panels;
 	int                   n_panels;
-
-	/* Location of the pixel furthest away from the beam position, which
-	 * will have the largest value of 2theta regardless of camera length
-	 * and wavelength */
-	struct panel      *furthest_out_panel;
-	double             furthest_out_fs;
-	double             furthest_out_ss;
-
-	/* As above, but for the smallest 2theta */
-	struct panel      *furthest_in_panel;
-	double             furthest_in_fs;
-	double             furthest_in_ss;
 };
 
 #ifdef __cplusplus
