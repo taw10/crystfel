@@ -86,6 +86,9 @@ struct _crystfelimageview
 	char                *event;
 	struct image        *image;
 	GdkPixbuf          **pixbufs;
+
+	int                  num_peaklists;
+	ImageFeatureList   **peaklists;
 };
 
 struct _crystfelimageviewclass
@@ -109,6 +112,7 @@ extern int crystfel_image_view_set_image(CrystFELImageView *iv,
 extern struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv);
 
 extern void crystfel_image_view_set_peaks(CrystFELImageView *iv,
-                                          ImageFeatureList *peaks);
+                                          ImageFeatureList *peaks,
+                                          int list_num);
 
 #endif	/* CRYSTFELIMAGEVIEW_H */

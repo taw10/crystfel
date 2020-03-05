@@ -149,7 +149,7 @@ static void update_peaks(struct crystfelproject *proj)
 	             proj->peak_search_params.use_saturated);
 
 	crystfel_image_view_set_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                              image->features);
+	                              image->features, 0);
 }
 
 
@@ -557,6 +557,7 @@ static gint first_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	proj->cur_frame = 0;
 	update_imageview(proj);
+	update_peaks(proj);
 	return FALSE;
 }
 
@@ -566,6 +567,7 @@ static gint prev_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 	if ( proj->cur_frame == 0 ) return FALSE;
 	proj->cur_frame--;
 	update_imageview(proj);
+	update_peaks(proj);
 	return FALSE;
 }
 
@@ -575,6 +577,7 @@ static gint next_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 	if ( proj->cur_frame == proj->n_frames - 1 ) return FALSE;
 	proj->cur_frame++;
 	update_imageview(proj);
+	update_peaks(proj);
 	return FALSE;
 }
 
@@ -583,6 +586,7 @@ static gint last_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	proj->cur_frame = proj->n_frames - 1;
 	update_imageview(proj);
+	update_peaks(proj);
 	return FALSE;
 }
 
@@ -765,6 +769,12 @@ int main(int argc, char *argv[])
 	proj.events = NULL;
 	proj.peak_params = NULL;
 	proj.peak_search_params.threshold = 800.0;
+	proj.peak_search_params.min_sq_gradient = 100000;
+	proj.peak_search_params.min_snr = 5.0;
+	proj.peak_search_params.pk_inn = 3.0;
+	proj.peak_search_params.pk_mid = 4.0;
+	proj.peak_search_params.pk_out = 5.0;
+	proj.peak_search_params.use_saturated = 1;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");

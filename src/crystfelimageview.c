@@ -230,8 +230,40 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv, int i)
 }
 
 
+static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
+                       ImageFeatureList *pks)
+{
+	int i, n_pks;
+	double bs, lw;
+
+	bs = 5.0;
+	lw = 1.0;
+	cairo_device_to_user_distance(cr, &bs, &lw);
+	bs = fabs(bs);
+	lw = fabs(lw);
+
+	n_pks = image_feature_count(pks);
+	for ( i=0; i<n_pks; i++ ) {
+		const struct imagefeature *f;
+		struct detgeom_panel *p;
+		double x, y;
+		f = image_get_feature_const(pks, i);
+		if ( f == NULL ) continue;
+		p = &iv->image->detgeom->panels[f->pn];
+		x = p->pixel_pitch*(p->cnx + p->fsx*f->fs + p->ssx*f->ss);
+		y = p->pixel_pitch*(p->cny + p->fsy*f->fs + p->ssy*f->ss);
+		cairo_rectangle(cr, x-bs, y-bs, 2*bs, 2*bs);
+		cairo_set_line_width(cr, lw);
+		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+		cairo_stroke(cr);
+	}
+}
+
+
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 {
+	int i;
+
 	cairo_save(cr);
 
 	/* Overall background (light grey) */
@@ -250,6 +282,12 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 			cairo_save(cr);
 			draw_panel_rectangle(cr, iv, i);
 			cairo_restore(cr);
+		}
+	}
+
+	for ( i=0; i<iv->num_peaklists; i++ ){
+		if ( iv->peaklists[i] != NULL ) {
+			draw_peaks(cr, iv , iv->peaklists[i]);
 		}
 	}
 
@@ -395,6 +433,8 @@ GtkWidget *crystfel_image_view_new()
 	iv->filename = NULL;
 	iv->event = NULL;
 	iv->image = NULL;
+	iv->num_peaklists = 0;
+	iv->peaklists = NULL;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -543,6 +583,25 @@ struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv)
 
 
 void crystfel_image_view_set_peaks(CrystFELImageView *iv,
-                                   ImageFeatureList *peaks)
+                                   ImageFeatureList *peaks,
+                                   int list_num)
 {
+	int i;
+	if ( list_num >= iv->num_peaklists ) {
+		ImageFeatureList **n_fl;
+		n_fl = realloc(iv->peaklists,
+		               (list_num+1)*sizeof(ImageFeatureList*));
+		if ( n_fl == NULL ) return;
+		for ( i=iv->num_peaklists; i<list_num+1; i++ ) {
+			n_fl[i] = NULL;
+		}
+		iv->peaklists = n_fl;
+		iv->num_peaklists = list_num+1;
+	}
+	if ( iv->peaklists[list_num] != NULL ) {
+		image_feature_list_free(iv->peaklists[list_num]);
+	}
+	iv->peaklists[list_num] = image_feature_list_copy(peaks);
+
+	redraw(iv);
 }
