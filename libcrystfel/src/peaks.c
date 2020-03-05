@@ -64,93 +64,6 @@
 
 /** \file peaks.h */
 
-static int cull_peaks_in_panel(struct image *image, struct panel *p)
-{
-	int i, n;
-	int nelim = 0;
-
-	n = image_feature_count(image->features);
-
-	for ( i=0; i<n; i++ ) {
-
-		struct imagefeature *f;
-		int j, ncol;
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		if ( f->p != p ) continue;
-
-		/* How many peaks are in the same column? */
-		ncol = 0;
-		for ( j=0; j<n; j++ ) {
-
-			struct imagefeature *g;
-
-			if ( i==j ) continue;
-
-			g = image_get_feature(image->features, j);
-			if ( g == NULL ) continue;
-
-			if ( p->badrow == 'f' ) {
-				if ( fabs(f->ss - g->ss) < 2.0 ) ncol++;
-			} else if ( p->badrow == 's' ) {
-				if ( fabs(f->fs - g->fs) < 2.0 ) ncol++;
-			} /* else do nothing */
-
-		}
-
-		/* More than three? */
-		if ( ncol <= 3 ) continue;
-
-		/* Yes?  Delete them all... */
-		for ( j=0; j<n; j++ ) {
-			struct imagefeature *g;
-			g = image_get_feature(image->features, j);
-			if ( g == NULL ) continue;
-			if ( p->badrow == 'f' ) {
-				if ( fabs(f->ss - g->ss) < 2.0 ) {
-					image_remove_feature(image->features,
-					                     j);
-					nelim++;
-				}
-			} else if ( p->badrow == 's' ) {
-				if ( fabs(f->fs - g->ss) < 2.0 ) {
-					image_remove_feature(image->features,
-					                     j);
-					nelim++;
-				}
-			} else {
-				ERROR("Invalid badrow direction.\n");
-				abort();
-			}
-
-		}
-
-	}
-
-	return nelim;
-}
-
-
-/* Post-processing of the peak list to remove noise */
-static int cull_peaks(struct image *image)
-{
-	int nelim = 0;
-	struct panel *p;
-	int i;
-
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		p = &image->det->panels[i];
-		if ( p->badrow != '-' ) {
-			nelim += cull_peaks_in_panel(image, p);
-		}
-	}
-
-	return nelim;
-}
-
-
 static void add_crystal_to_mask(struct image *image, struct panel *p,
                                 double ir_inn, int *mask, Crystal *cr)
 {
@@ -362,7 +275,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_snr = 0;
 	int nrej_sat = 0;
 	int nacc = 0;
-	int ncull;
 
 	p = &image->det->panels[pn];
 	data = image->dp[pn];
@@ -495,26 +407,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	}
 	}
 
-	if ( image->det != NULL ) {
-		ncull = cull_peaks(image);
-		nacc -= ncull;
-	} else {
-		STATUS("Not culling peaks because I don't have a "
-		       "detector geometry file.\n");
-		ncull = 0;
-	}
-
 	//STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
 	//       "%i failed integration, %i with SNR < %g, %i badrow culled, "
 	//        "%i saturated.\n",
 	//       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_fail,
-	//       nrej_snr, min_snr, ncull, nrej_sat);
+	//       nrej_snr, min_snr, nrej_sat);
 
-	if ( ncull != 0 ) {
-		STATUS("WARNING: %i peaks were badrow culled.  This feature"
-		       " should not usually be used.\nConsider setting"
-		       " badrow=- in the geometry file.\n", ncull);
-	}
 }
 
 
