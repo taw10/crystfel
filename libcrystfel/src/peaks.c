@@ -55,7 +55,7 @@
 #include "image.h"
 #include "utils.h"
 #include "peaks.h"
-#include "detector.h"
+#include "detgeom.h"
 #include "filters.h"
 #include "reflist-utils.h"
 #include "cell-utils.h"
@@ -261,7 +261,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 {
 	int fs, ss, stride;
 	float *data;
-	struct panel *p;
+	struct detgeom_panel *p;
 	double d;
 	int idx;
 	double f_fs = 0.0;
@@ -276,7 +276,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_sat = 0;
 	int nacc = 0;
 
-	p = &image->det->panels[pn];
+	p = &image->detgeom->panels[pn];
 	data = image->dp[pn];
 	stride = p->w;
 
@@ -427,9 +427,7 @@ void search_peaks(struct image *image, float threshold, float min_sq_gradient,
 	}
 	image->features = image_feature_list_new();
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
-
-		if ( image->det->panels[i].no_index ) continue;
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 
 		search_peaks_in_panel(image, threshold, min_sq_gradient,
 		                      min_snr, i, ir_inn, ir_mid, ir_out,
@@ -501,16 +499,14 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 
 	if ( allocatePeakList(&peakList, NpeaksMax) ) return 1;
 
-	for ( panel_number=0; panel_number<image->det->n_panels; panel_number++ ) {
+	for ( panel_number=0; panel_number<image->detgeom->n_panels; panel_number++ ) {
 
 		int w, h;
 		int peak_number;
 		detectorRawFormat_t det_size_one_panel;
 
-		if ( image->det->panels[panel_number].no_index ) continue;
-
-		w = image->det->panels[panel_number].w;
-		h = image->det->panels[panel_number].h;
+		w = image->detgeom->panels[panel_number].w;
+		h = image->detgeom->panels[panel_number].h;
 
 		det_size_one_panel.asic_nx = w;
 		det_size_one_panel.asic_ny = h;
