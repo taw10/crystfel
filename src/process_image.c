@@ -56,6 +56,7 @@
 #include "im-sandbox.h"
 #include "time-accounts.h"
 #include "im-zmq.h"
+#include "detgeom.h"
 
 
 static float **backup_image_data(float **dp, struct detector *det)
@@ -190,6 +191,41 @@ static int file_wait_open_read(struct sb_shm *sb_shared, struct image *image,
 }
 
 
+static struct detgeom *detgeom_from_olddet(struct detector *det)
+{
+	struct detgeom *dg;
+	int i;
+
+	dg = malloc(sizeof(struct detgeom));
+	if ( dg == NULL ) return NULL;
+
+	dg->panels = malloc(det->n_panels*sizeof(struct detgeom_panel));
+	if ( dg->panels == NULL ) return NULL;
+
+	dg->n_panels = det->n_panels;
+
+	for ( i=0; i<det->n_panels; i++ ) {
+		dg->panels[i].name = strdup(det->panels[i].name);
+		dg->panels[i].cnx = det->panels[i].cnx;
+		dg->panels[i].cny = det->panels[i].cny;
+		dg->panels[i].cnz = det->panels[i].clen;
+		dg->panels[i].pixel_pitch = 1.0/det->panels[i].res;
+		dg->panels[i].adu_per_photon = det->panels[i].adu_per_photon;
+		dg->panels[i].max_adu = det->panels[i].max_adu;
+		dg->panels[i].fsx = det->panels[i].fsx;
+		dg->panels[i].fsy = det->panels[i].fsy;
+		dg->panels[i].fsz = det->panels[i].fsz;
+		dg->panels[i].ssx = det->panels[i].ssx;
+		dg->panels[i].ssy = det->panels[i].ssy;
+		dg->panels[i].ssz = det->panels[i].ssz;
+		dg->panels[i].w = det->panels[i].w;
+		dg->panels[i].h = det->panels[i].h;
+	}
+
+	return dg;
+}
+
+
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir,
                    int serial, struct sb_shm *sb_shared, TimeAccounts *taccs,
@@ -233,6 +269,10 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			return;
 		}
 	}
+
+	/* Create detgeom structure after loading image,
+	 * so we get the "filled in" clen values, etc. */
+	image.detgeom = detgeom_from_olddet(iargs->det);
 
 	image.bw = iargs->beam->bandwidth;
 
