@@ -111,10 +111,7 @@ static int comp(const void *a, const void *b)
 }
 
 
-/**
- * Strongest first.
- */
-ImageFeatureList *sort_peaks(ImageFeatureList *flist)
+ImageFeatureList *image_feature_list_copy(const ImageFeatureList *flist)
 {
 	ImageFeatureList *n;
 	int nf, i;
@@ -132,15 +129,25 @@ ImageFeatureList *sort_peaks(ImageFeatureList *flist)
 
 	nf = 0;
 	for ( i=0; i<flist->n_features; i++ ) {
-		struct imagefeature *f;
-		f = image_get_feature(flist, i);
+		const struct imagefeature *f;
+		f = image_get_feature_const(flist, i);
 		if ( f == NULL ) continue;
 		n->features[nf++] = flist->features[i];
 	}
 	n->n_features = nf;
 
-	qsort(n->features, nf, sizeof(struct imagefeature), comp);
+	return n;
+}
 
+
+/**
+ * Strongest first.
+ */
+ImageFeatureList *sort_peaks(ImageFeatureList *flist)
+{
+	ImageFeatureList *n = image_feature_list_copy(flist);
+	qsort(n->features, image_feature_count(n),
+	      sizeof(struct imagefeature), comp);
 	return n;
 }
 
@@ -235,6 +242,17 @@ int image_feature_count(ImageFeatureList *flist)
 {
 	if ( flist == NULL ) return 0;
 	return flist->n_features;
+}
+
+
+const struct imagefeature *image_get_feature_const(const ImageFeatureList *flist,
+                                                   int idx)
+{
+	/* Sanity check */
+	if ( flist == NULL ) return NULL;
+	if ( idx >= flist->n_features ) return NULL;
+
+	return &flist->features[idx];
 }
 
 

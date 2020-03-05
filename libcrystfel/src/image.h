@@ -222,7 +222,10 @@ extern Reflection *image_reflection_closest(RefList *rlist,
 
 extern int image_feature_count(ImageFeatureList *flist);
 extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
+extern const struct imagefeature *image_get_feature_const(const ImageFeatureList *flist,
+                                                          int idx);
 extern ImageFeatureList *sort_peaks(ImageFeatureList *flist);
+extern ImageFeatureList *image_feature_list_copy(const ImageFeatureList *flist);
 
 extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern int remove_flagged_crystals(struct image *image);
