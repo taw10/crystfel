@@ -45,7 +45,6 @@ def update_graph():
     global im, cnt, centre_marker
 
     filename="%s/grid-crystal%i-cycle%s-%s.dat" % (folder,crystal,cycle,varpair)
-    print filename
 
     with open(filename, "r") as f:
 
