@@ -139,6 +139,7 @@ static void update_peaks(struct crystfelproject *proj)
 	if ( proj->n_frames == 0 ) return;
 
 	image = crystfel_image_view_get_image_struct(CRYSTFEL_IMAGE_VIEW(proj->imageview));
+	if ( image == NULL ) return;
 
 	search_peaks(image, proj->peak_search_params.threshold,
 	             proj->peak_search_params.min_sq_gradient,
