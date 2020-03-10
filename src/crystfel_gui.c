@@ -182,12 +182,17 @@ enum match_type_id
 static int match_filename(const char *fn, enum match_type_id mt)
 {
 	const char *ext = NULL;
+	const char *ext2 = NULL;
 	size_t r = strlen(fn)-1;
 
 	while ( r > 0 ) {
 		if ( fn[r] == '.' ) {
-			ext = fn+r;
-			break;
+			if ( ext != NULL ) {
+				ext2 = fn+r;
+				break;
+			} else {
+				ext = fn+r;
+			}
 		}
 		r--;
 	}
@@ -201,7 +206,11 @@ static int match_filename(const char *fn, enum match_type_id mt)
 	}
 	if ( mt == MATCH_CHEETAH_CXI ) return strcmp(ext, ".cxi")==0;
 	if ( mt == MATCH_CBF ) return strcmp(ext, ".cbf")==0;
-	if ( mt == MATCH_CBFGZ  ) return strcmp(ext, ".cbfgz")==0;
+	if ( mt == MATCH_CBFGZ  ) {
+		if ( ext2 != NULL ) {
+			return strcmp(ext2, ".cbf.gz")==0;
+		}
+	}
 
 	return 0;
 }
