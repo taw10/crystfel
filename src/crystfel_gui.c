@@ -161,7 +161,7 @@ static void update_imageview(struct crystfelproject *proj)
 
 	snprintf(tmp, 1023, "%s (frame %i of %i)",
 	         proj->filenames[proj->cur_frame],
-	         proj->cur_frame, proj->n_frames);
+	         proj->cur_frame+1, proj->n_frames);
 	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->filenames[proj->cur_frame],
