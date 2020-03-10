@@ -528,7 +528,10 @@ static int reload_image(CrystFELImageView *iv)
 	cleanup_image(iv);
 
 	iv->image = image_read(iv->dtempl, iv->filename, iv->event);
-	if ( iv->image == NULL ) return 1;
+	if ( iv->image == NULL ) {
+		ERROR("Failed to load image\n");
+		return 1;
+	}
 
 	iv->pixbufs = render_panels(iv->image, 1, SCALE_COLOUR, 5, &n_pb);
 	if ( n_pb != iv->image->detgeom->n_panels ) {
