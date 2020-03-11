@@ -192,8 +192,8 @@ static gint motion_sig(GtkWidget *window, GdkEventMotion *event,
 }
 
 
-static gint resize_sig(GtkWidget *window, GdkRectangle *rec,
-                       CrystFELImageView *iv)
+static gint configure_sig(GtkWidget *window, GdkEventConfigure *rec,
+                          CrystFELImageView *iv)
 {
 	iv->visible_width = rec->width;
 	iv->visible_height = rec->height;
@@ -446,8 +446,8 @@ GtkWidget *crystfel_image_view_new()
 	                 G_CALLBACK(scroll_sig), iv);
 	g_signal_connect(G_OBJECT(iv), "motion-notify-event",
 	                 G_CALLBACK(motion_sig), iv);
-	g_signal_connect(G_OBJECT(iv), "size-allocate",
-	                 G_CALLBACK(resize_sig), iv);
+	g_signal_connect(G_OBJECT(iv), "configure-event",
+	                 G_CALLBACK(configure_sig), iv);
 	g_signal_connect(G_OBJECT(iv), "draw",
 	                 G_CALLBACK(draw_sig), iv);
 
