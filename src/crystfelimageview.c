@@ -202,11 +202,109 @@ static gint configure_sig(GtkWidget *window, GdkEventConfigure *rec,
 }
 
 
-static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv, int i)
+static int clamp(double val, int min, int max)
+{
+	if ( val < min ) return min;
+	if ( val > max ) return max;
+	return val;
+}
+
+
+static void swap(int *a, int *b)
+{
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+
+static void draw_pixel_values(cairo_t *cr,
+                              double imin_fs, double imin_ss,
+                              double imax_fs, double imax_ss,
+                              struct detgeom_panel p, float *dp)
+{
+	int min_fs, max_fs, min_ss, max_ss;
+	int fs, ss;
+	PangoLayout *layout;
+	PangoFontDescription *fontdesc;
+	double w, h;
+
+	min_fs = clamp(imin_fs, 0, p.w-1);
+	min_ss = clamp(imin_ss, 0, p.h-1);
+	max_fs = clamp(imax_fs, 0, p.w-1);
+	max_ss = clamp(imax_ss, 0, p.h-1);
+	if ( min_ss > max_ss ) swap(&min_ss, &max_ss);
+	if ( min_fs > max_fs ) swap(&min_fs, &max_fs);
+
+	layout = pango_cairo_create_layout(cr);
+	fontdesc = pango_font_description_from_string("Sans 10");
+	pango_layout_set_font_description(layout, fontdesc);
+
+	w = 1.0;
+	h = 1.0;
+	cairo_device_to_user_distance(cr, &w, &h);
+
+	for ( fs=min_fs; fs<=max_fs; fs++ ) {
+	for ( ss=min_ss; ss<=max_ss; ss++ ) {
+
+		double x, y;
+		double fsd, ssd;
+		char tmp[64];
+		PangoRectangle rec;
+		double rw, rh;
+
+		fsd = fs + 0.5;
+		ssd = ss + 0.5;
+
+		x = (fsd*p.fsx + ssd*p.ssx + p.cnx)*p.pixel_pitch;
+		y = (fsd*p.fsy + ssd*p.ssy + p.cny)*p.pixel_pitch;
+
+		snprintf(tmp, 63, "%.f", dp[fs+ss*p.w]);
+		pango_layout_set_text(layout, tmp, -1);
+
+		cairo_save(cr);
+
+		cairo_translate(cr, x, y);
+		cairo_scale(cr, w, h);
+		pango_cairo_update_layout(cr, layout);
+		pango_layout_get_extents(layout, NULL, &rec);
+		rw = pango_units_to_double(rec.width);
+		rh = pango_units_to_double(rec.height);
+
+		cairo_rectangle(cr, -rw/2.0, -rh/2.0, rw, rh);
+		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_fill(cr);
+
+		cairo_move_to(cr, -rw/2.0, -rh/2.0);
+		cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+		pango_cairo_show_layout(cr, layout);
+
+		cairo_restore(cr);
+
+	}
+	}
+
+	pango_font_description_free(fontdesc);
+	g_object_unref(layout);
+
+	cairo_arc(cr, p.cnx*p.pixel_pitch, p.cny*p.pixel_pitch, 0.00002,
+	          0, 2.0*M_PI);
+	cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
+	cairo_fill(cr);
+}
+
+
+static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv,
+                                 int i, cairo_matrix_t *gtkmatrix)
 {
 	struct detgeom_panel p = iv->image->detgeom->panels[i];
 	cairo_matrix_t m;
 	cairo_pattern_t *patt;
+	double min_x, min_y, max_x, max_y;
+	double xs, ys, pixel_size_on_screen;
+	int have_pixels = 1;
+
+	cairo_save(cr);
 
 	/* Move to the right location */
 	cairo_translate(cr, p.cnx*p.pixel_pitch, p.cny*p.pixel_pitch);
@@ -226,7 +324,49 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv, int i)
 	cairo_pattern_set_filter(patt, CAIRO_FILTER_NEAREST);
 
 	cairo_rectangle(cr, 0.0, 0.0, p.w*p.pixel_pitch, p.h*p.pixel_pitch);
-	cairo_fill(cr);
+	cairo_fill_preserve(cr);
+	cairo_set_line_width(cr, 0.00001);
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_stroke(cr);
+
+	/* Are any pixels from this panel visible? */
+	min_x = 0.0;
+	min_y = 0.0;
+	max_x = iv->visible_width;
+	max_y = iv->visible_height;
+
+	/* Take into account the transformation which GTK already
+	 * has in effect on the widget (translation from parent
+	 * window's origin). */
+	cairo_matrix_transform_point(gtkmatrix, &min_x, &min_y);
+	cairo_matrix_transform_point(gtkmatrix, &max_x, &max_y);
+	cairo_device_to_user(cr, &min_x, &min_y);
+	cairo_device_to_user(cr, &max_x, &max_y);
+
+	min_x /= p.pixel_pitch;
+	min_y /= p.pixel_pitch;
+	max_x /= p.pixel_pitch;
+	max_y /= p.pixel_pitch;
+	if ( (min_x < 0.0) && (max_x < 0.0) ) have_pixels = 0;
+	if ( (min_y < 0.0) && (max_y < 0.0) ) have_pixels = 0;
+	if ( (min_x > p.w) && (max_x > p.w) ) have_pixels = 0;
+	if ( (min_y > p.h) && (max_y > p.h) ) have_pixels = 0;
+
+	cairo_restore(cr);
+
+	cairo_arc(cr, 0.0, 0.0, 0.006, 0, 2.0*M_PI);
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 0.00001);
+	cairo_stroke(cr);
+
+	xs = p.pixel_pitch;
+	ys = p.pixel_pitch;
+	cairo_user_to_device_distance(cr, &xs, &ys);
+	pixel_size_on_screen = smallest(fabs(xs), fabs(ys));
+	if ( (pixel_size_on_screen > 40.0) && have_pixels ) {
+		draw_pixel_values(cr, min_x, min_y, max_x, max_y, p,
+		                  iv->image->dp[i]);
+	}
 }
 
 
@@ -263,12 +403,16 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 {
 	int i;
+	cairo_matrix_t m;
 
 	cairo_save(cr);
 
 	/* Overall background (light grey) */
 	cairo_set_source_rgb(cr, 0.7, 0.7, 0.7);
 	cairo_paint(cr);
+
+	/* Get the transformation matrix before my transformations */
+	cairo_get_matrix(cr, &m);
 
 	cairo_scale(cr, iv->zoom, iv->zoom);
 	cairo_translate(cr, iv->offs_x, iv->offs_y);
@@ -280,7 +424,7 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 		int i;
 		for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
 			cairo_save(cr);
-			draw_panel_rectangle(cr, iv, i);
+			draw_panel_rectangle(cr, iv, i, &m);
 			cairo_restore(cr);
 		}
 	}
@@ -292,6 +436,7 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	}
 
 	cairo_restore(cr);
+
 	return FALSE;
 }
 
