@@ -212,7 +212,7 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv, int i)
 	cairo_translate(cr, p.cnx*p.pixel_pitch, p.cny*p.pixel_pitch);
 
 	/* Twiddle directions according to matrix */
-	cairo_matrix_init(&m, rint(p.fsx), rint(p.fsy), rint(p.ssx), rint(p.ssy),
+	cairo_matrix_init(&m, p.fsx, p.fsy, p.ssx, p.ssy,
 	                      0.0, 0.0);
 	cairo_transform(cr, &m);
 
