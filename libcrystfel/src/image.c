@@ -777,7 +777,7 @@ static int convert_type(float *data_out, long nmemb_exp,
 }
 
 
-static float *read_cbf_data(struct imagefile *f, int *w, int *h)
+static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 {
 	FILE *fh;
 	void *buf = NULL;
@@ -791,22 +791,22 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h)
 	*w = 0;
 	*h = 0;
 
-	if ( f->type == IMAGEFILE_CBF ) {
+	if ( !gz ) {
 
-		fh = fopen(f->filename, "rb");
+		fh = fopen(filename, "rb");
 		if ( fh == NULL ) {
-			ERROR("Failed to open '%s'\n", f->filename);
+			ERROR("Failed to open '%s'\n", filename);
 			return NULL;
 		}
 
-	} else if ( f->type == IMAGEFILE_CBFGZ ) {
+	} else {
 
 		gzFile gzfh;
 		size_t len, len_read;
 		const size_t bufinc = 8*1024*1024;  /* Allocate buffer in 8Mb chunks */
 		size_t bufsz = bufinc;
 
-		gzfh = gzopen(f->filename, "rb");
+		gzfh = gzopen(filename, "rb");
 		if ( gzfh == NULL ) return NULL;
 
 		#ifdef HAVE_GZBUFFER
@@ -837,9 +837,6 @@ static float *read_cbf_data(struct imagefile *f, int *w, int *h)
 
 		gzclose(gzfh);
 
-	} else {
-		/* Don't know how we ended up here */
-		return NULL;
 	}
 
 	/* This is really horrible, but there are at least three different types
@@ -1026,7 +1023,8 @@ static int read_cbf(struct imagefile *f, struct image *image)
 	float *data;
 	int w, h;
 
-	data = read_cbf_data(f, &w, &h);
+	data = read_cbf_data(f->filename, f->type == IMAGEFILE_CBF,
+	                     &w, &h);
 	if ( data == NULL ) {
 		ERROR("Failed to read CBF data\n");
 		return 1;
@@ -1055,7 +1053,8 @@ static int read_cbf_simple(struct imagefile *f, struct image *image)
 	float *data;
 	int w, h;
 
-	data = read_cbf_data(f, &w, &h);
+	data = read_cbf_data(f->filename, f->type == IMAGEFILE_CBF,
+	                     &w, &h);
 	if ( data == NULL ) {
 		ERROR("Failed to read CBF data\n");
 		return 1;
@@ -1300,6 +1299,106 @@ static struct image *image_new()
 }
 
 
+static int unpack_panels_dtempl(struct image *image,
+                                DataTemplate *dtempl,
+                                float *data,
+                                int data_width, int data_height)
+{
+	int pi;
+
+	/* FIXME: Load these masks from an HDF5 file, if filenames are
+	 * given in the geometry file */
+	uint16_t *flags = NULL;
+	float *sat = NULL;
+
+	image->dp = malloc(dtempl->n_panels * sizeof(float *));
+	image->bad = malloc(dtempl->n_panels * sizeof(int *));
+	image->sat = malloc(dtempl->n_panels * sizeof(float *));
+	if ( (image->dp == NULL) || (image->bad == NULL)
+	  || (image->sat == NULL) )
+	{
+		ERROR("Failed to allocate panels.\n");
+		return 1;
+	}
+
+	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+
+		struct panel_template *p;
+		int fs, ss;
+		int p_w, p_h;
+
+		p = &dtempl->panels[pi];
+		p_w = p->orig_max_fs - p->orig_min_fs + 1;
+		p_h = p->orig_max_ss - p->orig_min_ss + 1;
+		image->dp[pi] = malloc(p_w*p_h*sizeof(float));
+		image->bad[pi] = calloc(p_w*p_h, sizeof(int));
+		image->sat[pi] = malloc(p_w*p_h*sizeof(float));
+		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
+		  || (image->sat[pi] == NULL) )
+		{
+			ERROR("Failed to allocate panel\n");
+			return 1;
+		}
+
+		if ( (p->orig_min_fs + p_w > data_width)
+		  || (p->orig_min_ss + p_h > data_height) )
+		{
+			ERROR("Panel %s is outside range of data in CBF file\n",
+			      p->name);
+			return 1;
+		}
+
+		for ( ss=0; ss<p_h; ss++ ) {
+		for ( fs=0; fs<p_w; fs++ ) {
+
+			int idx;
+			int cfs, css;
+			int bad = 0;
+
+			cfs = fs+p->orig_min_fs;
+			css = ss+p->orig_min_ss;
+			idx = cfs + css*data_width;
+
+			image->dp[pi][fs+p_w*ss] = data[idx];
+
+			if ( sat != NULL ) {
+				image->sat[pi][fs+p_w*ss] = sat[idx];
+			} else {
+				image->sat[pi][fs+p_w*ss] = INFINITY;
+			}
+
+			if ( p->bad ) bad = 1;
+
+			//if ( in_bad_region(image->det, p, cfs, css) ) {
+			//	bad = 1;
+			//}
+
+			if ( isnan(data[idx]) || isinf(data[idx]) ) bad = 1;
+
+			if ( flags != NULL ) {
+
+				int f;
+
+				f = flags[idx];
+
+				/* Bad if it's missing any of the "good" bits */
+				if ( (f & image->det->mask_good)
+				       != image->det->mask_good ) bad = 1;
+
+				/* Bad if it has any of the "bad" bits. */
+				if ( f & image->det->mask_bad ) bad = 1;
+
+			}
+			image->bad[pi][fs+p_w*ss] = bad;
+
+		}
+		}
+
+	}
+
+	return 0;
+}
+
 static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
                                      const char *event)
 {
@@ -1539,7 +1638,35 @@ static struct image *read_mask_hdf5(DataTemplate *dtempl, const char *filename,
 struct image *image_read_cbf(DataTemplate *dtempl, const char *filename,
                              const char *event)
 {
-	return NULL;
+	struct image *image;
+	float *data;
+	int w, h;
+
+	if ( access(filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n", filename);
+		return NULL;
+	}
+
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
+		return NULL;
+	}
+
+	data = read_cbf_data(filename, 0, &w, &h);
+	if ( data == NULL ) {
+		ERROR("Failed to read CBF data\n");
+		return NULL;
+	}
+
+	unpack_panels_dtempl(image, dtempl, data, w, h);
+	free(data);
+
+	//cbf_fill_in_beam_parameters(image->beam, f, image);
+	//cbf_fill_in_clen(image->det, f);
+	//fill_in_adu(image);
+
+	return image;
 }
 
 
