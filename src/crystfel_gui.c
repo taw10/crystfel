@@ -594,10 +594,14 @@ static gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *combo;
+	GtkWidget *w;
 
 	if ( proj->peak_params != NULL ) return FALSE;
 
 	proj->show_peaks = 1;
+
+	w =  gtk_ui_manager_get_widget(proj->ui, "/ui/mainwindow/view/peaks");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 1);
 
 	/* Take a copy of the original parameters, for reverting */
 	proj->original_params = proj->peak_search_params;
@@ -797,13 +801,25 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	update_peaks(proj);
+	return FALSE;
+}
+
+
+
 static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 {
 	GError *error = NULL;
 
-	const char *ui = "<ui> <menubar name=\"cellwindow\">"
+	const char *ui = "<ui> <menubar name=\"mainwindow\">"
 		"<menu name=\"file\" action=\"FileAction\">"
 		"	<menuitem name=\"quit\" action=\"QuitAction\" />"
+		"</menu>"
+		"<menu name=\"view\" action=\"ViewAction\" >"
+		"	<menuitem name=\"peaks\" action=\"PeaksAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
 		"</menu>"
@@ -818,6 +834,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		{ "QuitAction", GTK_STOCK_QUIT, "_Quit", NULL, NULL,
 			G_CALLBACK(quit_sig) },
 
+		{ "ViewAction", NULL, "_View", NULL, NULL, NULL },
+
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
@@ -825,10 +843,17 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 			G_CALLBACK(about_sig) },
 
 	};
-	guint n_entries = G_N_ELEMENTS(entries);
+
+	GtkToggleActionEntry toggles[] = {
+		{ "PeaksAction", NULL, "Peak detection results", NULL, NULL,
+		  G_CALLBACK(show_peaks_sig), FALSE },
+	};
 
 	proj->action_group = gtk_action_group_new("cellwindow");
-	gtk_action_group_add_actions(proj->action_group, entries, n_entries, proj);
+	gtk_action_group_add_actions(proj->action_group, entries,
+	                             G_N_ELEMENTS(entries), proj);
+	gtk_action_group_add_toggle_actions(proj->action_group, toggles,
+	                                    G_N_ELEMENTS(toggles), proj);
 
 	proj->ui = gtk_ui_manager_new();
 	gtk_ui_manager_insert_action_group(proj->ui, proj->action_group, 0);
