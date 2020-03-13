@@ -44,17 +44,7 @@ struct index_args;
 #include "integration.h"
 #include "im-sandbox.h"
 #include "time-accounts.h"
-
-
-enum {
-	PEAK_PEAKFINDER9,
-	PEAK_PEAKFINDER8,
-	PEAK_ZAEF,
-	PEAK_HDF5,
-	PEAK_CXI,
-	PEAK_MSGPACK,
-	PEAK_NONE,
-};
+#include "peaks.h"
 
 
 /* Information about the indexing process which is common to all patterns */
@@ -70,7 +60,7 @@ struct index_args
 	int check_hdf5_snr;
 	struct detector *det;
 	IndexingPrivate *ipriv;
-	int peaks;                /* Peak detection method */
+	enum peak_search_method peaks;
 	float tols[6];
 	struct beam_params *beam;
 	char *hdf5_peak_path;

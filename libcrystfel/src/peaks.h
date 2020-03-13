@@ -50,6 +50,17 @@ extern "C" {
  * Peak search functions
  */
 
+enum peak_search_method {
+	PEAK_PEAKFINDER9,
+	PEAK_PEAKFINDER8,
+	PEAK_ZAEF,
+	PEAK_HDF5,
+	PEAK_CXI,
+	PEAK_MSGPACK,
+	PEAK_NONE,
+};
+
+
 extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
 
 extern void search_peaks(struct image *image, float threshold,

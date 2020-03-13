@@ -59,28 +59,23 @@ static void show_help(const char *s)
 
 
 struct peak_params {
-	float threshold;
-	float min_sq_gradient;
-	float min_snr;
-	int use_saturated;
-	int half_pixel_shift;
+	enum peak_search_method method;
+	float threshold;                /* zaef, pf8 */
+	float min_sq_gradient;          /* zaef */
+	float min_snr;                  /* zaef, pf8 */
+	int min_pix_count;              /* pf8 */
+	int max_pix_count;              /* pf8 */
+	int local_bg_radius;            /* pf8 */
+	int min_res;                    /* pf8 */
+	int max_res;                    /* pf8 */
+	float min_snr_biggest_pix;      /* pf9 */
+	float min_snr_peak_pix;         /* pf9 */
+	float min_sig;                  /* pf9 */
+	float min_peak_over_neighbour;  /* pf9 */
 	float pk_inn;
 	float pk_mid;
 	float pk_out;
-	float ir_inn;
-	float ir_mid;
-	float ir_out;
-	int min_res;
-	int max_res;
-	int max_n_peaks;
-	int min_pix_count;
-	int max_pix_count;
-	int local_bg_radius;
-	int min_peaks;
-	float min_snr_biggest_pix;
-	float min_snr_peak_pix;
-	float min_sig;
-	float min_peak_over_neighbour;
+	int half_pixel_shift;           /* cxi, hdf5 */
 };
 
 struct crystfelproject {
@@ -103,6 +98,7 @@ struct crystfelproject {
 	char **filenames;
 	char **events;
 
+	int show_peaks;
 	struct peak_params peak_search_params;
 
 	GtkWidget *file_chooser;  /* Data location in "Find data" window */
@@ -138,19 +134,50 @@ static void update_peaks(struct crystfelproject *proj)
 
 	if ( proj->n_frames == 0 ) return;
 
-	image = crystfel_image_view_get_image_struct(CRYSTFEL_IMAGE_VIEW(proj->imageview));
-	if ( image == NULL ) return;
+	if ( proj->show_peaks ) {
 
-	search_peaks(image, proj->peak_search_params.threshold,
-	             proj->peak_search_params.min_sq_gradient,
-	             proj->peak_search_params.min_snr,
-	             proj->peak_search_params.pk_inn,
-	             proj->peak_search_params.pk_mid,
-	             proj->peak_search_params.pk_out,
-	             proj->peak_search_params.use_saturated);
+		image = crystfel_image_view_get_image_struct(CRYSTFEL_IMAGE_VIEW(proj->imageview));
+		if ( image == NULL ) return;
 
-	crystfel_image_view_set_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                              image->features, 0);
+		switch ( proj->peak_search_params.method ) {
+
+		case PEAK_ZAEF:
+			search_peaks(image,
+			             proj->peak_search_params.threshold,
+			             proj->peak_search_params.min_sq_gradient,
+			             proj->peak_search_params.min_snr,
+			             proj->peak_search_params.pk_inn,
+			             proj->peak_search_params.pk_mid,
+			             proj->peak_search_params.pk_out,
+			             1);
+			break;
+
+		case PEAK_PEAKFINDER8:
+			STATUS("NB peakfinder8 doesn't get use new API\n");
+			search_peaks_peakfinder8(image, 2048,
+			                         proj->peak_search_params.threshold,
+			                         proj->peak_search_params.min_snr,
+			                         proj->peak_search_params.min_pix_count,
+			                         proj->peak_search_params.max_pix_count,
+			                         proj->peak_search_params.local_bg_radius,
+			                         proj->peak_search_params.min_res,
+			                         proj->peak_search_params.max_res,
+			                         1);
+			break;
+
+		default:
+			ERROR("This peak detection method not implemented!\n");
+			break;
+
+		}
+
+		crystfel_image_view_set_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              image->features, 0);
+
+	} else {
+		crystfel_image_view_set_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              NULL, 0);
+	}
 }
 
 
@@ -355,29 +382,130 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
-static void peaksearch_threshold_sig(GtkWidget *entry,
-                                     struct crystfelproject *proj)
+static int get_val(GtkWidget *entry, float *v)
 {
 	const char *text;
 	float val;
-
 	text = gtk_entry_get_text(GTK_ENTRY(entry));
 	if (sscanf(text, "%f", &val) != 1) {
 		ERROR("Invalid value\n");
-		return;
+		return 1;
 	}
+	*v = val;
+	return 0;
+}
 
+
+static void peaksearch_threshold_sig(GtkWidget *entry,
+                                     struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
 	proj->peak_search_params.threshold = val;
 	update_peaks(proj);
+}
+
+
+static void peaksearch_sqgradient_sig(GtkWidget *entry,
+                                      struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
+	proj->peak_search_params.min_sq_gradient = val;
+	update_peaks(proj);
+}
+
+
+static void peaksearch_snr_sig(GtkWidget *entry,
+                               struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
+	proj->peak_search_params.min_snr = val;
+	update_peaks(proj);
+}
+
+
+static void peaksearch_min_pix_count_sig(GtkWidget *entry,
+                                         struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
+	proj->peak_search_params.min_pix_count = val;
+	update_peaks(proj);
+}
+
+
+static void peaksearch_max_pix_count_sig(GtkWidget *entry,
+                                         struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
+	proj->peak_search_params.max_pix_count = val;
+	update_peaks(proj);
+}
+
+
+static void peaksearch_local_bg_radius_sig(GtkWidget *entry,
+                                           struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
+	proj->peak_search_params.local_bg_radius = val;
+	update_peaks(proj);
+}
+
+
+static void peaksearch_min_res_sig(GtkWidget *entry,
+                                   struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
+	proj->peak_search_params.min_res = val;
+	update_peaks(proj);
+}
+
+
+static void peaksearch_max_res_sig(GtkWidget *entry,
+                                   struct crystfelproject *proj)
+{
+	float val;
+	if ( get_val(entry, &val) ) return;
+	proj->peak_search_params.max_res = val;
+	update_peaks(proj);
+}
+
+
+static void add_param(GtkWidget *params_box, const char *labeltext,
+                      float initial_val, GCallback act_cb,
+                      struct crystfelproject *proj)
+{
+	GtkWidget *hbox;
+	GtkWidget *label;
+	GtkWidget *entry;
+	char tmp[64];
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(params_box),
+	                   GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+	label = gtk_label_new(labeltext);
+	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 2.0);
+	entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   TRUE, TRUE, 2.0);
+	snprintf(tmp, 63, "%.2f", initial_val);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(act_cb), proj);
 }
 
 
 static void peaksearch_algo_changed(GtkWidget *combo,
                                     struct crystfelproject *proj)
 {
-	GtkWidget *hbox;
-	GtkWidget *label;
-	GtkWidget *entry;
+	const char *algo_id;
 
 	if ( proj->peak_params != NULL ) {
 		gtk_container_remove(GTK_CONTAINER(proj->peak_vbox),
@@ -390,20 +518,54 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 	                   GTK_WIDGET(proj->peak_params),
 	                   FALSE, FALSE, 8.0);
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(proj->peak_params),
-	                   GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
-	label = gtk_label_new("Threshold:");
-	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 2.0);
-	entry = gtk_entry_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   TRUE, TRUE, 2.0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(peaksearch_threshold_sig), proj);
+	algo_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo));
+
+	if ( strcmp(algo_id, "zaef") == 0 ) {
+
+		proj->peak_search_params.method = PEAK_ZAEF;
+
+		add_param(proj->peak_params, "Threshold:",
+		          proj->peak_search_params.threshold,
+		          G_CALLBACK(peaksearch_threshold_sig), proj);
+		add_param(proj->peak_params, "Minimum squared gradient:",
+		          proj->peak_search_params.min_sq_gradient,
+		          G_CALLBACK(peaksearch_sqgradient_sig), proj);
+		add_param(proj->peak_params, "Minimum signal/noise ratio:",
+		          proj->peak_search_params.min_snr,
+		          G_CALLBACK(peaksearch_snr_sig), proj);
+
+	} else if ( strcmp(algo_id, "peakfinder8") == 0 ) {
+
+		proj->peak_search_params.method = PEAK_PEAKFINDER8;
+
+		add_param(proj->peak_params, "Threshold:",
+		          proj->peak_search_params.threshold,
+		          G_CALLBACK(peaksearch_threshold_sig), proj);
+		add_param(proj->peak_params, "Minimum signal/noise ratio:",
+		          proj->peak_search_params.min_snr,
+		          G_CALLBACK(peaksearch_snr_sig), proj);
+		add_param(proj->peak_params, "Minimum number of pixels:",
+		          proj->peak_search_params.min_pix_count,
+		          G_CALLBACK(peaksearch_min_pix_count_sig), proj);
+		add_param(proj->peak_params, "Maximum number of pixels:",
+		          proj->peak_search_params.max_pix_count,
+		          G_CALLBACK(peaksearch_max_pix_count_sig), proj);
+		add_param(proj->peak_params, "Local background radius:",
+		          proj->peak_search_params.local_bg_radius,
+		          G_CALLBACK(peaksearch_local_bg_radius_sig), proj);
+		add_param(proj->peak_params, "Minimum resolution (pixels):",
+		          proj->peak_search_params.min_res,
+		          G_CALLBACK(peaksearch_min_res_sig), proj);
+		add_param(proj->peak_params, "Maximum resolution (pixels):",
+		          proj->peak_search_params.max_res,
+		          G_CALLBACK(peaksearch_max_res_sig), proj);
+
+	} /* else no parameters! */
+
+	/* FIXME: Radii */
 
 	gtk_widget_show_all(proj->peak_vbox);
+	update_peaks(proj);
 }
 
 
@@ -415,6 +577,7 @@ static void peaksearch_response_sig(GtkWidget *dialog, gint resp,
 	  || (resp == GTK_RESPONSE_CANCEL) )
 	{
 		proj->peak_search_params = proj->original_params;
+		update_peaks(proj);
 	}
 
 	gtk_widget_destroy(dialog);
@@ -433,6 +596,8 @@ static gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *combo;
 
 	if ( proj->peak_params != NULL ) return FALSE;
+
+	proj->show_peaks = 1;
 
 	/* Take a copy of the original parameters, for reverting */
 	proj->original_params = proj->peak_search_params;
@@ -773,18 +938,26 @@ int main(int argc, char *argv[])
 	proj.file_chooser = NULL;
 	proj.geom_chooser = NULL;
 	proj.geom_filename = NULL;
+	proj.show_peaks = 0;
 	proj.n_frames = 0;
 	proj.max_frames = 0;
 	proj.filenames = NULL;
 	proj.events = NULL;
 	proj.peak_params = NULL;
+	proj.peak_search_params.method = PEAK_ZAEF;
 	proj.peak_search_params.threshold = 800.0;
 	proj.peak_search_params.min_sq_gradient = 100000;
 	proj.peak_search_params.min_snr = 5.0;
+	proj.peak_search_params.local_bg_radius = 3;
+	proj.peak_search_params.min_res = 0;
+	proj.peak_search_params.min_sig = 11.0;
+	proj.peak_search_params.max_res = 1200;
+	proj.peak_search_params.min_pix_count = 2;
+	proj.peak_search_params.max_pix_count = 200;
+	proj.peak_search_params.min_peak_over_neighbour = -INFINITY;
 	proj.peak_search_params.pk_inn = 3.0;
 	proj.peak_search_params.pk_mid = 4.0;
 	proj.peak_search_params.pk_out = 5.0;
-	proj.peak_search_params.use_saturated = 1;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
