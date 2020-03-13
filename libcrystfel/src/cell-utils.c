@@ -406,7 +406,7 @@ static IntegerMatrix *centering_transformation(UnitCell *in,
 	 * should go the opposite way to what's written in the first column. */
 
 	if ( (cen=='P') || (cen=='R') ) {
-		*new_centering = cen;
+		*new_centering = 'P';
 		*new_latt = lt;
 		*new_ua = ua;
 		C = intmat_identity(3);
