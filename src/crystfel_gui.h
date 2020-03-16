@@ -56,7 +56,8 @@ struct peak_params {
 struct crystfelproject;
 
 struct crystfel_backend {
-	int (*run_unitcell)(struct crystfelproject *proj);
+	int (*run_unitcell)(struct crystfelproject *proj,
+	                    const char *algo);
 };
 
 

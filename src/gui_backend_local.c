@@ -29,9 +29,10 @@
 
 #include "crystfel_gui.h"
 
-static int run_unitcell(struct crystfelproject *proj)
+static int run_unitcell(struct crystfelproject *proj,
+                        const char *algo)
 {
-	STATUS("run unit cell!\n");
+	STATUS("run unit cell with '%s'!\n", algo);
 	return 0;
 }
 

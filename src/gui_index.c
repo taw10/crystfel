@@ -48,10 +48,18 @@
 static void unitcell_response_sig(GtkWidget *dialog, gint resp,
                                   struct crystfelproject *proj)
 {
-	gtk_widget_destroy(dialog);
-	if ( resp != GTK_RESPONSE_OK ) return;
+	const char *algo;
 
-	proj->backend->run_unitcell(proj);
+	algo = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->unitcell_combo));
+
+	gtk_widget_destroy(dialog);
+	if ( resp != GTK_RESPONSE_OK ) {
+		proj->unitcell_combo = NULL;
+		return;
+	}
+
+	proj->backend->run_unitcell(proj, algo);
+	proj->unitcell_combo = NULL;
 }
 
 
@@ -63,6 +71,8 @@ gint unitcell_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *combo;
+
+	if ( proj->unitcell_combo != NULL ) return FALSE;
 
 	dialog = gtk_dialog_new_with_buttons("Determine unit cell",
 	                                     GTK_WINDOW(proj->window),
@@ -87,16 +97,21 @@ gint unitcell_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
 	combo = gtk_combo_box_text_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo), TRUE, TRUE, 2.0);
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "mosflm",
-	                "MOSFLM");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "dirax",
-	                "DirAx");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "asdf",
-	                "ASDF");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "xds",
-	                "xds");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "xgandalf",
-	                "XGANDALF");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
+	                          "mosflm-nocell-nolatt",
+	                          "MOSFLM");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
+	                          "dirax",
+	                          "DirAx");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
+	                          "asdf-nocell",
+	                          "ASDF");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
+	                          "xds-nocell-nolatt",
+	                          "xds");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
+	                          "xgandalf-nocell",
+	                          "XGANDALF");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
 	proj->unitcell_combo = combo;
 
