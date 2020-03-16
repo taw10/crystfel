@@ -2041,6 +2041,56 @@ void copy_hdf5_fields(struct hdfile *f, const struct copy_hdf5_field *copyme,
 }
 
 
+static int make_dataspaces(hid_t dh, struct event *ev, hid_t *memspace,
+                           hid_t *filespace)
+{
+	hsize_t *f_offset, *f_count;
+	hsize_t *m_offset, *m_count;
+	hid_t sh, mh;
+	int ndims;
+	int i;
+
+	/* Check that there are at least as many dim entries as dimensions */
+	sh = H5Dget_space(dh);
+	ndims = H5Sget_simple_extent_ndims(sh);
+	if ( ndims > ev->dim_length ) {
+		return 1;
+	}
+
+	/* Now set up arrays of offsets and counts in files and memory */
+	f_offset = malloc(sizeof(hsize_t)*ndims);
+	f_count = malloc(sizeof(hsize_t)*ndims);
+	m_offset = malloc(sizeof(hsize_t)*ndims);
+	m_count = malloc(sizeof(hsize_t)*ndims);
+	if ( (f_offset == NULL) || (f_count == NULL)
+	  || (m_offset == NULL) || (m_count == NULL) ) return 1;
+
+	for ( i=0; i<ev->dim_length; i++ ) {
+		f_offset[i] = ev->dim_entries[i];
+		f_count[i] = 1;
+		m_offset[i] = 0;
+		m_count[i] = 1;
+	}
+
+	if ( H5Sselect_hyperslab(sh, H5S_SELECT_SET,
+	                         f_offset, NULL, f_count, NULL) ) return 1;
+
+	free(f_offset);
+	free(f_count);
+
+	mh = H5Screate_simple(ndims, m_count, NULL);
+	if ( H5Sselect_hyperslab(mh, H5S_SELECT_SET,
+	                         m_offset, NULL, m_count, NULL) ) return 1;
+	free(m_offset);
+	free(m_count);
+
+	*memspace = mh;
+	*filespace = sh;
+
+	return 0;
+}
+
+
 char *hdfile_get_string_value(struct hdfile *f, const char *name,
                               struct event *ev)
 {
@@ -2077,21 +2127,32 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			H5Tclose(type);
 			free(subst_name);
 			return "WTF?";
-		}
+		} else if ( v > 0 ) {
 
-		if ( v && (v>0) ) {
+			hid_t memspace, filespace;
 
-			r = H5Dread(dh, type, H5S_ALL, H5S_ALL,
+			if ( make_dataspaces(dh, ev, &memspace, &filespace) ) {
+				H5Tclose(type);
+				free(subst_name);
+				return strdup("[couldn't make dataspaces]");
+			}
+
+			r = H5Dread(dh, type, memspace, filespace,
 			            H5P_DEFAULT, &tmp);
 			if ( r < 0 ) {
 				H5Tclose(type);
 				free(subst_name);
-				return NULL;
+				return strdup("[couldn't read vlen string]");
 			}
+
+			H5Sclose(memspace);
+			H5Sclose(filespace);
 
 			return tmp;
 
 		} else {
+
+			/* v == 0 */
 
 			size = H5Tget_size(type);
 			tmp = malloc(size+1);
