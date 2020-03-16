@@ -29,6 +29,10 @@
 #ifndef CRYSTFEL_GUI_H
 #define CRYSTFEL_GUI_H
 
+#include <gtk/gtk.h>
+
+#include <peaks.h>
+
 struct peak_params {
 	enum peak_search_method method;
 	float threshold;                /* zaef, pf8 */
@@ -47,6 +51,12 @@ struct peak_params {
 	float pk_mid;
 	float pk_out;
 	int half_pixel_shift;           /* cxi, hdf5 */
+};
+
+struct crystfelproject;
+
+struct crystfel_backend {
+	int (*run_unitcell)(struct crystfelproject *proj);
 };
 
 
@@ -80,6 +90,10 @@ struct crystfelproject {
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */
 	GtkWidget *peak_params;   /* Peak search parameter widgets */
 	struct peak_params original_params;
+
+	GtkWidget *unitcell_combo;
+
+	struct crystfel_backend *backend;
 };
 
 #endif

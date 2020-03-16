@@ -46,6 +46,8 @@
 #include "crystfelimageview.h"
 #include "crystfel_gui.h"
 #include "gui_peaksearch.h"
+#include "gui_index.h"
+#include "gui_backend_local.h"
 
 
 static void show_help(const char *s)
@@ -525,7 +527,7 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	add_button(vbox, "Peak detection", "edit-find",
 	           G_CALLBACK(peaksearch_sig), proj);
 	add_button(vbox, "Determine unit cell", "document-page-setup",
-	           G_CALLBACK(NULL), proj);
+	           G_CALLBACK(unitcell_sig), proj);
 	add_button(vbox, "Index and integrate", "system-run",
 	           G_CALLBACK(NULL), proj);
 	add_button(vbox, "Merge", "applications-science",
@@ -609,6 +611,7 @@ int main(int argc, char *argv[])
 	proj.peak_search_params.pk_inn = 3.0;
 	proj.peak_search_params.pk_mid = 4.0;
 	proj.peak_search_params.pk_out = 5.0;
+	proj.backend = backend_local;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
