@@ -770,3 +770,17 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
 	free(rns);
 	return max_res;
 }
+
+const char *str_peaksearch(enum peak_search_method meth)
+{
+	switch ( meth ) {
+	case PEAK_PEAKFINDER9: return "peakfinder9";
+	case PEAK_PEAKFINDER8: return "peakfinder8";
+	case PEAK_ZAEF: return "zaef";
+	case PEAK_HDF5: return "hdf5";
+	case PEAK_CXI: return "cxi";
+	case PEAK_MSGPACK: return "msgpack";
+	case PEAK_NONE: return "none";
+	default: return "???";
+	}
+}

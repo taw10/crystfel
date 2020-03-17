@@ -60,6 +60,7 @@ enum peak_search_method {
 	PEAK_NONE,
 };
 
+extern const char *str_peaksearch(enum peak_search_method meth);
 
 extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
 
