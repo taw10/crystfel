@@ -366,7 +366,8 @@ gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 	#endif
 	g_signal_connect(G_OBJECT(combo), "changed",
 	                 G_CALLBACK(peaksearch_algo_changed), proj);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo),
+	                            str_peaksearch(proj->peak_search_params.method));
 	proj->type_combo = combo;
 
 	gtk_widget_show_all(dialog);
