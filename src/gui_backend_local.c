@@ -140,6 +140,21 @@ static int run_unitcell(struct crystfelproject *proj,
 		        proj->peak_search_params.min_sq_gradient);
 		add_arg(args, n_args++, "min-snr",
 		        proj->peak_search_params.min_snr);
+	} else if ( proj->peak_search_params.method == PEAK_PEAKFINDER8 ) {
+		add_arg(args, n_args++, "threshold",
+		        proj->peak_search_params.threshold);
+		add_arg(args, n_args++, "min-snr",
+		        proj->peak_search_params.min_snr);
+		add_arg(args, n_args++, "min-pix-count",
+		        proj->peak_search_params.min_pix_count);
+		add_arg(args, n_args++, "max-pix-count",
+		        proj->peak_search_params.max_pix_count);
+		add_arg(args, n_args++, "local-bg-radius",
+		        proj->peak_search_params.local_bg_radius);
+		add_arg(args, n_args++, "min-res",
+		        proj->peak_search_params.min_res);
+		add_arg(args, n_args++, "max-res",
+		        proj->peak_search_params.max_res);
 	}
 
 	args[n_args] = NULL;
