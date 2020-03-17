@@ -71,7 +71,6 @@ void update_peaks(struct crystfelproject *proj)
 			break;
 
 		case PEAK_PEAKFINDER8:
-			STATUS("NB peakfinder8 doesn't yet use new API\n");
 			search_peaks_peakfinder8(image, 2048,
 			                         proj->peak_search_params.threshold,
 			                         proj->peak_search_params.min_snr,
