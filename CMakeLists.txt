@@ -41,6 +41,19 @@ else ()
   message(STATUS "ZMQ not found.")
 endif ()
 
+# Find out where forkpty() is declared
+set(CMAKE_REQUIRED_LIBRARIES "-lutil")
+check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
+check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL_H)
+unset(CMAKE_REQUIRED_LIBRARIES)
+if(HAVE_FORKPTY_PTY_H)
+  message(STATUS "Found forkpty() in pty.h")
+elseif(HAVE_FORKPTY_UTIL_H)
+  message(STATUS "Found forkpty() in util.h")
+else()
+  message(SEND_ERROR "Couldn't find forkpty()")
+endif()
+
 pkg_search_module(GTK gtk+-3.0)
 if (NOT GTK_FOUND)
 
@@ -376,7 +389,7 @@ if (GTK_FOUND)
 
   add_executable(crystfel ${CRYSTFEL_GUI_SOURCES})
   target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
-  target_link_libraries(crystfel ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
+  target_link_libraries(crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES})
 
   list(APPEND CRYSTFEL_EXECUTABLES crystfel)
 

@@ -21,19 +21,6 @@ set(CMAKE_REQUIRED_LIBRARIES "-lz")
 check_symbol_exists(gzbuffer "zlib.h" HAVE_GZBUFFER)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
-# Find out where forkpty() is declared
-set(CMAKE_REQUIRED_LIBRARIES "-lutil")
-check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
-check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL_H)
-unset(CMAKE_REQUIRED_LIBRARIES)
-if(HAVE_FORKPTY_PTY_H)
-  message(STATUS "Found forkpty() in pty.h")
-elseif(HAVE_FORKPTY_UTIL_H)
-  message(STATUS "Found forkpty() in util.h")
-else()
-  message(SEND_ERROR "Couldn't find forkpty()")
-endif()
-
 configure_file(config.h.cmake.in config.h)
 
 bison_target(symopp src/symop.y ${CMAKE_CURRENT_BINARY_DIR}/symop-parse.c COMPILE_FLAGS --report=all)
