@@ -277,7 +277,14 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		          proj->peak_search_params.max_res,
 		          G_CALLBACK(peaksearch_max_res_sig), proj);
 
-	} /* else no parameters! */
+	} else if ( strcmp(algo_id, "hdf5") == 0 ) {
+		proj->peak_search_params.method = PEAK_HDF5;
+
+	} else if ( strcmp(algo_id, "cxi") == 0 ) {
+		proj->peak_search_params.method = PEAK_CXI;
+	} else {
+		ERROR("Unrecognised peak search '%s'\n", algo_id);
+	}
 
 	/* FIXME: Radii */
 
