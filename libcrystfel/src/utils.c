@@ -251,6 +251,57 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 }
 
 
+/* ------------------------------ Message logging ---------------------------- */
+
+/* Lock to keep lines serialised on the terminal */
+pthread_mutex_t stderr_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
+static void log_to_stderr(enum log_msg_type type, const char *msg,
+                          void *vp)
+{
+	int error_print_val = get_status_label();
+	pthread_mutex_lock(&stderr_lock);
+	if ( error_print_val >= 0 ) {
+		fprintf(stderr, "%3i: ", error_print_val);
+	}
+	fprintf(stderr, "%s", msg);
+	pthread_mutex_unlock(&stderr_lock);
+}
+
+
+/* Function to call with ERROR/STATUS messages */
+LogMsgFunc log_msg_func = log_to_stderr;
+void *log_msg_vp = NULL;
+
+
+void set_log_message_func(LogMsgFunc new_log_msg_func, void *vp)
+{
+	log_msg_func = new_log_msg_func;
+	log_msg_vp = vp;
+}
+
+
+void STATUS(const char *format, ...)
+{
+	va_list args;
+	char tmp[1024];
+	vsnprintf(tmp, 1024, format, args);
+	log_msg_func(LOG_MSG_STATUS, tmp, log_msg_vp);
+}
+
+
+void ERROR(const char *format, ...)
+{
+	va_list args;
+	char tmp[1024];
+	vsnprintf(tmp, 1024, format, args);
+	log_msg_func(LOG_MSG_ERROR, tmp, log_msg_vp);
+}
+
+
+/* ------------------------------ Useful functions ---------------------------- */
+
 size_t notrail(char *s)
 {
 	ssize_t i;
@@ -722,47 +773,3 @@ char *load_entire_file(const char *filename)
 }
 
 
-/* ------------------------------ Message logging ---------------------------- */
-
-/* Lock to keep lines serialised on the terminal */
-pthread_mutex_t stderr_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
-static void log_to_stderr(enum log_msg_type type, const char *msg)
-{
-	int error_print_val = get_status_label();
-	pthread_mutex_lock(&stderr_lock);
-	if ( error_print_val >= 0 ) {
-		fprintf(stderr, "%3i: ", error_print_val);
-	}
-	fprintf(stderr, "%s", msg);
-	pthread_mutex_unlock(&stderr_lock);
-}
-
-
-/* Function to call with ERROR/STATUS messages */
-void (*log_msg_func)(enum log_msg_type type, const char *) = log_to_stderr;
-
-
-void set_log_message_func(void (*new_log_msg_func)(enum log_msg_type type, const char *))
-{
-	log_msg_func = new_log_msg_func;
-}
-
-
-void STATUS(const char *format, ...)
-{
-	va_list args;
-	char tmp[1024];
-	vsnprintf(tmp, 1024, format, args);
-	log_msg_func(LOG_MSG_STATUS, tmp);
-}
-
-
-void ERROR(const char *format, ...)
-{
-	va_list args;
-	char tmp[1024];
-	vsnprintf(tmp, 1024, format, args);
-	log_msg_func(LOG_MSG_ERROR, tmp);
-}

@@ -206,7 +206,10 @@ enum log_msg_type {
 extern void STATUS(const char *format, ...);
 extern void ERROR(const char *format, ...);
 
-extern void set_log_message_func(void (*new_log_msg_func)(enum log_msg_type type, const char *));
+typedef void (*LogMsgFunc)(enum log_msg_type type, const char *msg, void *vp);
+
+extern void set_log_message_func(LogMsgFunc new_log_msg_func,
+                                 void *vp);
 
 
 /* ------------------------------ File handling ----------------------------- */
