@@ -49,6 +49,7 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 		STATUS("Read error?\n");
 		return FALSE;
 	}
+	chomp(line);
 	STATUS("Got line '%s'\n", line);
 
 	g_free(line);
