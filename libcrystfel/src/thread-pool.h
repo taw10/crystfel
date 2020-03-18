@@ -40,7 +40,6 @@
 extern "C" {
 #endif
 
-extern pthread_mutex_t stderr_lock;
 extern signed int get_status_label(void);
 
 /**

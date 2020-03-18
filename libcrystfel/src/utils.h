@@ -195,6 +195,7 @@ static inline int within_tolerance(double a, double b, double percent)
 
 /* ------------------------------ Message logging ---------------------------- */
 
+extern pthread_mutex_t stderr_lock;
 
 enum log_msg_type {
                    LOG_MSG_STATUS,
