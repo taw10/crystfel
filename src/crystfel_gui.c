@@ -537,6 +537,12 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 }
 
 
+static void add_gui_message(enum log_msg_type type, const char *msg)
+{
+	printf("message '%s'\n", msg);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -694,6 +700,9 @@ int main(int argc, char *argv[])
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(proj.report));
 	gtk_paned_pack2(GTK_PANED(vpaned), GTK_WIDGET(frame), FALSE, FALSE);
+
+	/* Send messages to report region */
+	set_log_message_func(add_gui_message);
 
 	gtk_window_set_default_size(GTK_WINDOW(proj.window), 1024, 768);
 	gtk_paned_set_position(GTK_PANED(hpaned), 172);

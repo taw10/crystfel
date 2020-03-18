@@ -193,29 +193,19 @@ static inline int within_tolerance(double a, double b, double percent)
 #define ph_eV_to_k(a) ((a)*ELECTRON_CHARGE/PLANCK/C_VACUO)
 
 
-/* ------------------------------ Message macros ---------------------------- */
+/* ------------------------------ Message logging ---------------------------- */
 
-extern pthread_mutex_t stderr_lock;
 
-#define ERROR(...) { \
-                      int error_print_val = get_status_label(); \
-                      pthread_mutex_lock(&stderr_lock); \
-                      if ( error_print_val >= 0 ) { \
-                         fprintf(stderr, "%3i: ", error_print_val); \
-                      } \
-                      fprintf(stderr, __VA_ARGS__); \
-                      pthread_mutex_unlock(&stderr_lock); \
-                   }
+enum log_msg_type {
+                   LOG_MSG_STATUS,
+                   LOG_MSG_ERROR
+};
 
-#define STATUS(...) { \
-                       int status_print_val = get_status_label(); \
-                       pthread_mutex_lock(&stderr_lock); \
-                       if ( status_print_val >= 0 ) { \
-                          fprintf(stderr, "%3i: ", status_print_val); \
-                       } \
-                       fprintf(stderr, __VA_ARGS__); \
-                       pthread_mutex_unlock(&stderr_lock); \
-                    }
+
+extern void STATUS(const char *format, ...);
+extern void ERROR(const char *format, ...);
+
+extern void set_log_message_func(void (*new_log_msg_func)(enum log_msg_type type, const char *));
 
 
 /* ------------------------------ File handling ----------------------------- */
