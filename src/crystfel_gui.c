@@ -546,6 +546,9 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 	buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(proj->report));
 	gtk_text_buffer_get_end_iter(buf, &iter);
 	gtk_text_buffer_insert(buf, &iter, msg, -1);
+	gtk_text_buffer_get_end_iter(buf, &iter);
+	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(proj->report),
+	                             &iter, 0.0, FALSE, 0.0, 0.0);
 }
 
 
