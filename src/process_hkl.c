@@ -774,7 +774,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( config_evenonly && config_oddonly ) {
-		ERROR("Don't specify both --even-only and --odd-only\n")
+		ERROR("Don't specify both --even-only and --odd-only\n");
 		return 1;
 	}
 

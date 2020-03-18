@@ -243,7 +243,7 @@ static void yaro_test()
 
 	RationalMatrix *m = NULL;
 	cmatch = compare_reindexed_cell_parameters(cell, reference, dtols, &m);
-	STATUS("The new match:\n")
+	STATUS("The new match:\n");
 	cell_print(cmatch);
 	STATUS("The matrix:\n");
 	rtnl_mtx_print(m);
