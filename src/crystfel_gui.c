@@ -703,9 +703,15 @@ int main(int argc, char *argv[])
 
 	/* Report (text) region at bottom */
 	proj.report = gtk_text_view_new();
+	gtk_text_view_set_editable(GTK_TEXT_VIEW(proj.report), FALSE);
+	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(proj.report), FALSE);
+	scroll = gtk_scrolled_window_new(NULL, NULL);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
+	                               GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
-	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(proj.report));
+	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(scroll));
+	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(proj.report));
 	gtk_paned_pack2(GTK_PANED(vpaned), GTK_WIDGET(frame), FALSE, FALSE);
 
 	/* Send messages to report region */
