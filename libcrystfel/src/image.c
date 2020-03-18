@@ -1842,6 +1842,8 @@ static double get_value(struct image *image, const char *from)
 	double val;
 	char *rval;
 
+	if ( from == NULL ) return NAN;
+
 	val = strtod(from, &rval);
 	if ( *rval == '\0' ) return val;
 
@@ -1865,6 +1867,11 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 {
 	struct detgeom *detgeom;
 	int i;
+
+	if ( dtempl == NULL ) {
+		ERROR("NULL data template!\n");
+		return;
+	}
 
 	detgeom = malloc(sizeof(struct detgeom));
 	if ( detgeom == NULL ) return;
@@ -1911,6 +1918,11 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
                          const char *event)
 {
 	struct image *image;
+
+	if ( dtempl == NULL ) {
+		ERROR("NULL data template!\n");
+		return NULL;
+	}
 
 	if ( H5Fis_hdf5(filename) > 0 ) {
 		image = image_read_hdf5(dtempl, filename, event);
