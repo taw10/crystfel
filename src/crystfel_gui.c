@@ -609,6 +609,7 @@ int main(int argc, char *argv[])
 	proj.filenames = NULL;
 	proj.events = NULL;
 	proj.peak_params = NULL;
+	proj.unitcell_combo = NULL;
 	proj.peak_search_params.method = PEAK_ZAEF;
 	proj.peak_search_params.threshold = 800.0;
 	proj.peak_search_params.min_sq_gradient = 100000;
