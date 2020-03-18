@@ -540,7 +540,12 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 static void add_gui_message(enum log_msg_type type, const char *msg,
                             void *vp)
 {
-	printf("message '%s'\n", msg);
+	GtkTextBuffer *buf;
+	GtkTextIter iter;
+	struct crystfelproject *proj = vp;
+	buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(proj->report));
+	gtk_text_buffer_get_end_iter(buf, &iter);
+	gtk_text_buffer_insert(buf, &iter, msg, -1);
 }
 
 
