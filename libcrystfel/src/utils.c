@@ -286,7 +286,9 @@ void STATUS(const char *format, ...)
 {
 	va_list args;
 	char tmp[1024];
+	va_start(args, format);
 	vsnprintf(tmp, 1024, format, args);
+	va_end(args);
 	log_msg_func(LOG_MSG_STATUS, tmp, log_msg_vp);
 }
 
@@ -295,7 +297,9 @@ void ERROR(const char *format, ...)
 {
 	va_list args;
 	char tmp[1024];
+	va_start(args, format);
 	vsnprintf(tmp, 1024, format, args);
+	va_end(args);
 	log_msg_func(LOG_MSG_ERROR, tmp, log_msg_vp);
 }
 
