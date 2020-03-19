@@ -1851,10 +1851,67 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 }
 
 
+/* Return non-zero if pixel fs,ss on panel p is in a bad region
+ * as specified in the geometry file (regions only, not including
+ * masks, NaN/inf, no_index etc */
+static int in_bad_region_dtempl(DataTemplate *dtempl,
+                                struct panel_template *p,
+                                double fs, double ss)
+{
+	double rx, ry;
+	double xs, ys;
+	int i;
+
+	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
+	 * to x and y */
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
+
+	rx = xs + p->cnx;
+	ry = ys + p->cny;
+
+	for ( i=0; i<dtempl->n_bad; i++ ) {
+
+		struct dt_badregion *b = &dtempl->bad[i];
+
+		if ( (b->panel != NULL)
+		  && (strcmp(b->panel, p->name) != 0) ) continue;
+
+		if ( b->is_fsss ) {
+
+			int nfs, nss;
+
+			/* fs/ss bad regions are specified according
+			 * to the original coordinates */
+			nfs = fs + p->orig_min_fs;
+			nss = ss + p->orig_min_ss;
+
+			if ( nfs < b->min_fs ) continue;
+			if ( nfs > b->max_fs ) continue;
+			if ( nss < b->min_ss ) continue;
+			if ( nss > b->max_ss ) continue;
+
+		} else {
+
+			if ( rx < b->min_x ) continue;
+			if ( rx > b->max_x ) continue;
+			if ( ry < b->min_y ) continue;
+			if ( ry > b->max_y ) continue;
+
+		}
+
+		return 1;
+	}
+
+	return 0;
+}
+
+
 struct image *image_read(DataTemplate *dtempl, const char *filename,
                          const char *event)
 {
 	struct image *image;
+	int i;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1877,10 +1934,56 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 
 	if ( image == NULL ) return NULL;
 
-	/* FIXME: Load mask */
-	/* FIXME: Load saturation map */
-
 	create_detgeom(image, dtempl);
+
+	image->bad = malloc(dtempl->n_panels * sizeof(int *));
+	if ( image->bad == NULL ) {
+		ERROR("Failed to allocate bad pixel mask\n");
+		return NULL;
+	}
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		const char *mask_fn;
+		int p_w, p_h;
+		struct panel_template *p = &dtempl->panels[i];
+
+		p_w = p->orig_max_fs - p->orig_min_fs + 1;
+		p_h = p->orig_max_ss - p->orig_min_ss + 1;
+
+		image->bad[i] = calloc(p_w*p_h, sizeof(int));
+		if ( image->bad[i] == NULL ) {
+			ERROR("Failed to allocate bad pixel mask\n");
+			return NULL;
+		}
+
+		/* Panel marked as bad? */
+		if ( p->bad ) {
+			/* NB this sets every element to 0x1111,
+			 * but that's OK - value is still 'true'. */
+			memset(image->bad[i], 1, p_w*p_h);
+		}
+
+		/* Add bad regions (skip if panel is bad anyway) */
+		if ( !p->bad ) {
+			int fs, ss;
+			for ( fs=0; fs<p_w; fs++ ) {
+			for ( ss=0; ss<p_h; ss++ ) {
+				if ( in_bad_region_dtempl(dtempl, p, fs, ss)
+				     || isnan(image->dp[i][fs+ss*p_w])
+				     || isinf(image->dp[i][fs+ss*p_w]) )
+				{
+					image->bad[i][fs+ss*p_w] = 1;
+				}
+			}
+			}
+		}
+
+		/* FIXME: Load mask */
+
+	}
+
+	/* FIXME: Load saturation map */
 
 	return image;
 }
