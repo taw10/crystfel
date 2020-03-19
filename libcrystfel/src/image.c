@@ -1786,9 +1786,11 @@ static double get_value(struct image *image, const char *from)
 		return get_value_hdf5(from, image->filename, image->ev);
 
 	} else if ( is_cbf_file(image->filename) > 0 ) {
+		/* FIXME: From headers */
 		return NAN;
 
 	} else if ( is_cbfgz_file(image->filename) ) {
+		/* FIXME: From headers */
 		return NAN;
 
 	} else {
