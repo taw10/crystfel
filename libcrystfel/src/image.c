@@ -1903,9 +1903,9 @@ void image_free(struct image *image)
 	}
 
 	for ( i=0; i<np; i++ ) {
-		free(image->dp[i]);
-		free(image->sat[i]);
-		free(image->bad[i]);
+		if ( image->dp != NULL ) free(image->dp[i]);
+		if ( image->sat != NULL ) free(image->sat[i]);
+		if ( image->bad != NULL ) free(image->bad[i]);
 	}
 
 	free(image->dp);
