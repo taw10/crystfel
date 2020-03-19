@@ -1306,17 +1306,8 @@ static int unpack_panels_dtempl(struct image *image,
 {
 	int pi;
 
-	/* FIXME: Load these masks from an HDF5 file, if filenames are
-	 * given in the geometry file */
-	uint16_t *flags = NULL;
-	float *sat = NULL;
-
 	image->dp = malloc(dtempl->n_panels * sizeof(float *));
-	image->bad = malloc(dtempl->n_panels * sizeof(int *));
-	image->sat = malloc(dtempl->n_panels * sizeof(float *));
-	if ( (image->dp == NULL) || (image->bad == NULL)
-	  || (image->sat == NULL) )
-	{
+	if ( image->dp == NULL ) {
 		ERROR("Failed to allocate panels.\n");
 		return 1;
 	}
@@ -1331,11 +1322,7 @@ static int unpack_panels_dtempl(struct image *image,
 		p_w = p->orig_max_fs - p->orig_min_fs + 1;
 		p_h = p->orig_max_ss - p->orig_min_ss + 1;
 		image->dp[pi] = malloc(p_w*p_h*sizeof(float));
-		image->bad[pi] = calloc(p_w*p_h, sizeof(int));
-		image->sat[pi] = malloc(p_w*p_h*sizeof(float));
-		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
-		  || (image->sat[pi] == NULL) )
-		{
+		if ( image->dp[pi] == NULL ) {
 			ERROR("Failed to allocate panel\n");
 			return 1;
 		}
@@ -1353,43 +1340,12 @@ static int unpack_panels_dtempl(struct image *image,
 
 			int idx;
 			int cfs, css;
-			int bad = 0;
 
 			cfs = fs+p->orig_min_fs;
 			css = ss+p->orig_min_ss;
 			idx = cfs + css*data_width;
 
 			image->dp[pi][fs+p_w*ss] = data[idx];
-
-			if ( sat != NULL ) {
-				image->sat[pi][fs+p_w*ss] = sat[idx];
-			} else {
-				image->sat[pi][fs+p_w*ss] = INFINITY;
-			}
-
-			if ( p->bad ) bad = 1;
-
-			//if ( in_bad_region(image->det, p, cfs, css) ) {
-			//	bad = 1;
-			//}
-
-			if ( isnan(data[idx]) || isinf(data[idx]) ) bad = 1;
-
-			if ( flags != NULL ) {
-
-				int f;
-
-				f = flags[idx];
-
-				/* Bad if it's missing any of the "good" bits */
-				if ( (f & image->det->mask_good)
-				       != image->det->mask_good ) bad = 1;
-
-				/* Bad if it has any of the "bad" bits. */
-				if ( f & image->det->mask_bad ) bad = 1;
-
-			}
-			image->bad[pi][fs+p_w*ss] = bad;
 
 		}
 		}
@@ -1398,6 +1354,7 @@ static int unpack_panels_dtempl(struct image *image,
 
 	return 0;
 }
+
 
 static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
                                      const char *event)
@@ -1436,10 +1393,8 @@ static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
 	}
 
 	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	image->bad = malloc(dtempl->n_panels*sizeof(int *));
-	image->sat = malloc(dtempl->n_panels*sizeof(float *));
-	if ( (image->dp==NULL) || (image->bad==NULL) || (image->sat==NULL) ) {
-		ERROR("Failed to allocate data arrays.\n");
+	if ( image->dp==NULL ) {
+		ERROR("Failed to allocate data array.\n");
 		free_event(ev);
 		H5Fclose(fh);
 		free(image);
@@ -1543,29 +1498,19 @@ static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
 		memspace = H5Screate_simple(2, dims, NULL);
 
 		image->dp[pi] = malloc(dims[0]*dims[1]*sizeof(float));
-		image->sat[pi] = malloc(dims[0]*dims[1]*sizeof(float));
-		image->bad[pi] = calloc(dims[0]*dims[1], sizeof(int));
-		if ( (image->dp[pi] == NULL)
-		  || (image->sat[pi] == NULL)
-		  || (image->bad[pi] == NULL) )
-		{
+		if ( image->dp[pi] == NULL ) {
 			ERROR("Failed to allocate panel %s\n", p->name);
 			free(f_offset);
 			free(f_count);
 			for ( i=0; i<=pi; i++ ) {
 				free(image->dp[i]);
-				free(image->sat[i]);
-				free(image->bad[i]);
 			}
 			free(image->dp);
-			free(image->bad);
-			free(image->sat);
 			free_event(ev);
 			H5Fclose(fh);
 			free(image);
 			return NULL;
 		}
-		for ( i=0; i<dims[0]*dims[1]; i++ ) image->sat[pi][i] = INFINITY;
 
 		r = H5Dread(dh, H5T_NATIVE_FLOAT, memspace, dataspace,
 		            H5P_DEFAULT, image->dp[pi]);
@@ -1576,11 +1521,8 @@ static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
 			free(f_count);
 			for ( i=0; i<=pi; i++ ) {
 				free(image->dp[i]);
-				free(image->sat[i]);
 			}
 			free(image->dp);
-			free(image->bad);
-			free(image->sat);
 			free_event(ev);
 			H5Fclose(fh);
 			free(image);
