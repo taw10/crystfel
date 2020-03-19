@@ -1578,7 +1578,7 @@ static struct image *read_mask_hdf5(DataTemplate *dtempl, const char *filename,
 
 
 struct image *image_read_cbf(DataTemplate *dtempl, const char *filename,
-                             const char *event)
+                             const char *event, int gz)
 {
 	struct image *image;
 	float *data;
@@ -1595,7 +1595,7 @@ struct image *image_read_cbf(DataTemplate *dtempl, const char *filename,
 		return NULL;
 	}
 
-	data = read_cbf_data(filename, 0, &w, &h);
+	data = read_cbf_data(filename, gz, &w, &h);
 	if ( data == NULL ) {
 		ERROR("Failed to read CBF data\n");
 		return NULL;
@@ -1609,13 +1609,6 @@ struct image *image_read_cbf(DataTemplate *dtempl, const char *filename,
 	//fill_in_adu(image);
 
 	return image;
-}
-
-
-struct image *image_read_gzcbf(DataTemplate *dtempl, const char *filename,
-                               const char *event)
-{
-	return NULL;
 }
 
 
@@ -1870,10 +1863,10 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 		image = image_read_hdf5(dtempl, filename, event);
 
 	} else if ( is_cbf_file(filename) > 0 ) {
-		image = image_read_cbf(dtempl, filename, event);
+		image = image_read_cbf(dtempl, filename, event, 0);
 
 	} else if ( is_cbfgz_file(filename) ) {
-		image = image_read_gzcbf(dtempl, filename, event);
+		image = image_read_cbf(dtempl, filename, event, 1);
 
 	} else {
 		ERROR("Unrecognised file type: %s\n", filename);
