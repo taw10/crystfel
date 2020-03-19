@@ -185,5 +185,6 @@ struct _datatemplate
 
 	char                      *hdf5_peak_path;
 
-	struct panel_template      defaults;
+	struct panel_template      defaults;  /* FIXME: Shouldn't be stored */
 };
+
