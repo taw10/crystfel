@@ -1356,188 +1356,179 @@ static int unpack_panels_dtempl(struct image *image,
 }
 
 
-static struct image *image_read_hdf5(DataTemplate *dtempl, const char *filename,
-                                     const char *event)
+static int load_hdf5_hyperslab(struct panel_template *p,
+                               const char *filename,
+                               const char *event,
+                               void **pdata,
+                               hid_t el_type, size_t el_size)
 {
-	struct image *image;
 	struct event *ev;
 	hid_t fh;
 	herr_t r;
-	int pi;
-	int i;
+	hsize_t *f_offset, *f_count;
+	hid_t dh;
+	int hsi;
+	herr_t check;
+	hid_t dataspace, memspace;
+	hsize_t dims[2];
+	char *panel_full_path;
+	void *data;
 
 	if ( access(filename, R_OK) == -1 ) {
-		ERROR("File does not exist or cannot be read: %s\n", filename);
-		return NULL;
+		ERROR("File does not exist or cannot be read: %s\n",
+		      filename);
+		return 1;
 	}
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file: %s\n", filename);
-		return NULL;
-	}
-
-	image = image_new();
-	if ( image == NULL ) {
-		ERROR("Couldn't allocate image structure.\n");
-		H5Fclose(fh);
-		return NULL;
+		return 1;
 	}
 
 	ev = get_event_from_event_string(event);
 	if ( (ev == NULL) && (event != NULL) ) {
 		ERROR("Invalid event identifier '%s'\n", event);
 		H5Fclose(fh);
-		free(image);
+		return 1;
+	}
+
+	panel_full_path = retrieve_full_path(ev, p->data);
+
+	if ( !check_path_existence(fh, panel_full_path) ) {
+		ERROR("Cannot find data for panel %s (%s)\n",
+		      p->name, panel_full_path);
+		free_event(ev);
+		H5Fclose(fh);
+		return 1;
+	}
+
+	dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Cannot open data for panel %s (%s)\n",
+		      p->name, panel_full_path);
+		free(panel_full_path);
+		free_event(ev);
+		H5Fclose(fh);
+		return 1;
+	}
+
+	free(panel_full_path);
+
+	/* Determine where to read the data from in the file */
+	f_offset = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
+	f_count = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
+	if ( (f_offset == NULL) || (f_count == NULL ) ) {
+		ERROR("Failed to allocate offset or count.\n");
+		free_event(ev);
+		H5Fclose(fh);
+		return 1;
+	}
+	for ( hsi=0; hsi<p->dim_structure->num_dims; hsi++ ) {
+
+		if ( p->dim_structure->dims[hsi] == HYSL_FS ) {
+			f_offset[hsi] = p->orig_min_fs;
+			f_count[hsi] = p->orig_max_fs - p->orig_min_fs+1;
+		} else if ( p->dim_structure->dims[hsi] == HYSL_SS ) {
+			f_offset[hsi] = p->orig_min_ss;
+			f_count[hsi] = p->orig_max_ss - p->orig_min_ss+1;
+		} else if (p->dim_structure->dims[hsi] == HYSL_PLACEHOLDER ) {
+			f_offset[hsi] = ev->dim_entries[0];
+			f_count[hsi] = 1;
+		} else {
+			f_offset[hsi] = p->dim_structure->dims[hsi];
+			f_count[hsi] = 1;
+		}
+
+	}
+
+	/* Set up dataspace for file */
+	dataspace = H5Dget_space(dh);
+	check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
+	                            f_offset, NULL, f_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting file dataspace for panel %s\n",
+		      p->name);
+		free(f_offset);
+		free(f_count);
+		free_event(ev);
+		H5Fclose(fh);
+		return 1;
+	}
+
+	dims[0] = p->orig_max_ss - p->orig_min_ss + 1;
+	dims[1] = p->orig_max_fs - p->orig_min_fs + 1;
+	memspace = H5Screate_simple(2, dims, NULL);
+
+	data = malloc(dims[0]*dims[1]*el_size);
+	if ( data == NULL ) {
+		ERROR("Failed to allocate panel %s\n", p->name);
+		free(f_offset);
+		free(f_count);
+		free_event(ev);
+		H5Fclose(fh);
+		return 1;
+	}
+
+	r = H5Dread(dh, el_type, memspace, dataspace,
+	            H5P_DEFAULT, data);
+	if ( r < 0 ) {
+		ERROR("Couldn't read data for panel %s\n",
+		      p->name);
+		free(f_offset);
+		free(f_count);
+		free(data);
+		free_event(ev);
+		H5Fclose(fh);
+		return 1;
+	}
+
+	H5Dclose(dh);
+	H5Sclose(dataspace);
+	free(f_offset);
+	free(f_count);
+	free_event(ev);
+	H5Fclose(fh);
+
+	*pdata = data;
+	return 0;
+}
+
+
+static struct image *image_read_hdf5(DataTemplate *dtempl,
+                                     const char *filename,
+                                     const char *event)
+{
+	struct image *image;
+	int i;
+
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
 		return NULL;
 	}
 
 	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->dp==NULL ) {
+	if ( image->dp == NULL ) {
 		ERROR("Failed to allocate data array.\n");
-		free_event(ev);
-		H5Fclose(fh);
-		free(image);
+		image_free(image);
 		return NULL;
 	}
 
-	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+	/* Set all pointers to NULL for easier clean-up */
+	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
 
-		hsize_t *f_offset, *f_count;
-		hid_t dh;
-		int hsi;
-		herr_t check;
-		hid_t dataspace, memspace;
-		struct panel_template *p;
-		hsize_t dims[2];
-		char *panel_full_path;
-
-		p = &dtempl->panels[pi];
-
-		panel_full_path = retrieve_full_path(ev, p->data);
-
-		if ( !check_path_existence(fh, panel_full_path) ) {
-			ERROR("Cannot find data for panel %s (%s)\n",
-			      p->name, panel_full_path);
-			free(image->dp);
-			free(image->bad);
-			free(image->sat);
-			free_event(ev);
-			H5Fclose(fh);
-			free(image);
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		if ( load_hdf5_hyperslab(&dtempl->panels[i], filename,
+		                         event, &image->dp[i],
+		                         H5T_NATIVE_FLOAT,
+		                         sizeof(float)) )
+		{
+			ERROR("Failed to load panel data\n");
+			image_free(image);
 			return NULL;
 		}
-
-		dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
-		if ( dh < 0 ) {
-			ERROR("Cannot open data for panel %s (%s)\n",
-			      p->name, panel_full_path);
-			free(panel_full_path);
-			free(image->dp);
-			free(image->bad);
-			free(image->sat);
-			free_event(ev);
-			H5Fclose(fh);
-			free(image);
-			return NULL;
-		}
-
-		free(panel_full_path);
-
-		/* Determine where to read the data from in the file */
-		f_offset = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
-		f_count = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
-		if ( (f_offset == NULL) || (f_count == NULL ) ) {
-			ERROR("Failed to allocate offset or count.\n");
-			free(image->dp);
-			free(image->bad);
-			free(image->sat);
-			free_event(ev);
-			H5Fclose(fh);
-			free(image);
-			return NULL;
-		}
-		for ( hsi=0; hsi<p->dim_structure->num_dims; hsi++ ) {
-
-			if ( p->dim_structure->dims[hsi] == HYSL_FS ) {
-				f_offset[hsi] = p->orig_min_fs;
-				f_count[hsi] = p->orig_max_fs - p->orig_min_fs+1;
-			} else if ( p->dim_structure->dims[hsi] == HYSL_SS ) {
-				f_offset[hsi] = p->orig_min_ss;
-				f_count[hsi] = p->orig_max_ss - p->orig_min_ss+1;
-			} else if (p->dim_structure->dims[hsi] == HYSL_PLACEHOLDER ) {
-				f_offset[hsi] = ev->dim_entries[0];
-				f_count[hsi] = 1;
-			} else {
-				f_offset[hsi] = p->dim_structure->dims[hsi];
-				f_count[hsi] = 1;
-			}
-
-		}
-
-		/* Set up dataspace for file */
-		dataspace = H5Dget_space(dh);
-		check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
-		                            f_offset, NULL, f_count, NULL);
-		if ( check < 0 ) {
-			ERROR("Error selecting file dataspace for panel %s\n",
-			      p->name);
-			free(f_offset);
-			free(f_count);
-			free(image->dp);
-			free(image->bad);
-			free(image->sat);
-			free_event(ev);
-			H5Fclose(fh);
-			free(image);
-			return NULL;
-		}
-
-		dims[0] = p->orig_max_ss - p->orig_min_ss + 1;
-		dims[1] = p->orig_max_fs - p->orig_min_fs + 1;
-		memspace = H5Screate_simple(2, dims, NULL);
-
-		image->dp[pi] = malloc(dims[0]*dims[1]*sizeof(float));
-		if ( image->dp[pi] == NULL ) {
-			ERROR("Failed to allocate panel %s\n", p->name);
-			free(f_offset);
-			free(f_count);
-			for ( i=0; i<=pi; i++ ) {
-				free(image->dp[i]);
-			}
-			free(image->dp);
-			free_event(ev);
-			H5Fclose(fh);
-			free(image);
-			return NULL;
-		}
-
-		r = H5Dread(dh, H5T_NATIVE_FLOAT, memspace, dataspace,
-		            H5P_DEFAULT, image->dp[pi]);
-		if ( r < 0 ) {
-			ERROR("Couldn't read data for panel %s\n",
-			      p->name);
-			free(f_offset);
-			free(f_count);
-			for ( i=0; i<=pi; i++ ) {
-				free(image->dp[i]);
-			}
-			free(image->dp);
-			free_event(ev);
-			H5Fclose(fh);
-			free(image);
-			return NULL;
-		}
-
-		H5Dclose(dh);
-		H5Sclose(dataspace);
-		free(f_offset);
-		free(f_count);
-
 	}
-
-	free_event(ev);
-	H5Fclose(fh);
 
 	image->filename = strdup(filename);
 	image->ev = safe_strdup(event);
