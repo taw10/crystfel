@@ -109,23 +109,12 @@ static int match_filename(const char *fn, enum match_type_id mt)
 {
 	const char *ext = NULL;
 	const char *ext2 = NULL;
-	size_t r = strlen(fn)-1;
-
-	while ( r > 0 ) {
-		if ( fn[r] == '.' ) {
-			if ( ext != NULL ) {
-				ext2 = fn+r;
-				break;
-			} else {
-				ext = fn+r;
-			}
-		}
-		r--;
-	}
 
 	if ( mt == MATCH_EVERYTHING ) return 1;
 
+	ext = filename_extension(fn, &ext2);
 	if ( ext == NULL ) return 0;
+
 	if ( mt == MATCH_CHEETAH_LCLS_H5 ) {
 		return ((strcmp(ext, ".h5")==0)
 		        && (strncmp(fn, "LCLS", 4)==0));

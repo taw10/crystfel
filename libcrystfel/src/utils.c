@@ -612,6 +612,29 @@ void strip_extension(char *bfn)
 }
 
 
+const char *filename_extension(const char *fn, const char **pext2)
+{
+	const char *ext = NULL;
+	const char *ext2 = NULL;
+	size_t r = strlen(fn)-1;
+
+	while ( r > 0 ) {
+		if ( fn[r] == '.' ) {
+			if ( ext != NULL ) {
+				ext2 = fn+r;
+				break;
+			} else {
+				ext = fn+r;
+			}
+		}
+		r--;
+	}
+
+	if ( pext2 != NULL ) *pext2 = ext2;
+	return ext;
+}
+
+
 /* Force the linker to bring in CBLAS to make GSL happy */
 void utils_fudge_gslcblas()
 {
