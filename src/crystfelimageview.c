@@ -730,6 +730,12 @@ struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv)
 }
 
 
+const DataTemplate *crystfel_image_view_get_datatemplate(CrystFELImageView *iv)
+{
+	return iv->dtempl;
+}
+
+
 void crystfel_image_view_set_peaks(CrystFELImageView *iv,
                                    ImageFeatureList *peaks,
                                    int list_num)

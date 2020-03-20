@@ -105,6 +105,8 @@ extern GtkWidget *crystfel_image_view_new(void);
 extern int crystfel_image_view_set_datatemplate(CrystFELImageView *iv,
                                                 DataTemplate *dtempl);
 
+extern const DataTemplate *crystfel_image_view_get_datatemplate(CrystFELImageView *iv);
+
 extern int crystfel_image_view_set_image(CrystFELImageView *iv,
                                          const char *filename,
                                          const char *event);
