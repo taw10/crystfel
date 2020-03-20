@@ -53,6 +53,12 @@ extern "C" {
 extern DataTemplate *data_template_new_from_file(const char *filename);
 extern void data_template_free(DataTemplate *dt);
 
+extern signed int data_template_find_panel(const DataTemplate *dt,
+                                           int fs, int ss);
+
+extern void data_template_file_to_panel_coords(const DataTemplate *dt,
+                                               float *pfs, float *pss);
+
 #ifdef __cplusplus
 }
 #endif

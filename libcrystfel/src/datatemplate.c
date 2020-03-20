@@ -1240,3 +1240,33 @@ void data_template_free(DataTemplate *dt)
 	free(dt->bad);
 	free(dt);
 }
+
+
+signed int data_template_find_panel(const DataTemplate *dt,
+                                    int fs, int ss)
+{
+	int p;
+
+	for ( p=0; p<dt->n_panels; p++ ) {
+		if ( (fs >= dt->panels[p].orig_min_fs)
+		  && (fs < dt->panels[p].orig_max_fs+1)
+		  && (ss >= dt->panels[p].orig_min_ss)
+		  && (ss < dt->panels[p].orig_max_ss+1) ) return p;
+	}
+
+	return -1;
+}
+
+
+void data_template_file_to_panel_coords(const DataTemplate *dt,
+                                        float *pfs, float *pss)
+{
+	signed int pn = data_template_find_panel(dt, *pfs, *pss);
+	if ( pn == -1 ) {
+		ERROR("Can't convert coordinates - no panel found\n");
+		return;
+	}
+
+	*pfs = *pfs - dt->panels[pn].orig_min_fs;
+	*pss = *pss - dt->panels[pn].orig_min_ss;
+}
