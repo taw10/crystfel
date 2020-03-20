@@ -1537,35 +1537,50 @@ static struct image *image_read_hdf5(DataTemplate *dtempl,
 }
 
 
-#if 0
-static struct image *read_mask_hdf5(DataTemplate *dtempl, const char *filename,
-                                    const char *event)
+static int load_mask_cbf(struct panel_template *p,
+                         const char *filename, const char *event,
+                         int gz, int *bad, int mask_good, int mask_bad)
 {
-		if ( p->mask != NULL ) {
-			int *flags = malloc(dims[0]*dims[1]*sizeof(int));
-			if ( !load_mask(f, ev, p, flags, f_offset, f_count, p->dim_structure) ) {
-				image->bad[pi] = make_badmask(flags, image->det,
-				                              image->dp[pi], p);
-			} else {
-				image->bad[pi] = make_badmask(NULL, image->det,
-				                              image->dp[pi], p);
-			}
-			free(flags);
-		} else {
-			image->bad[pi] = make_badmask(NULL, image->det,
-			                              image->dp[pi], p);
-		}
-
-		if ( p->satmap != NULL ) {
-			if ( load_satmap(f, ev, p, f_offset, f_count, p->dim_structure,
-			                 image->sat[pi]) )
-			{
-				ERROR("Failed to load sat map for panel %s\n",
-				      p->name);
-			}
-		}
+	ERROR("Mask loading from CBF not yet supported\n");
+	return 1;
 }
-#endif
+
+
+/* Load bad pixels for this panel from given filename/event, and merge
+ * with (already allocated/initialised) mask "bad" */
+static int load_mask_hdf5(struct panel_template *p,
+                          const char *filename, const char *event,
+                          int *bad, int mask_good, int mask_bad)
+{
+	int p_w, p_h;
+	int *mask;
+	long unsigned int j;
+
+	p_w = p->orig_max_fs - p->orig_min_fs + 1;
+	p_h = p->orig_max_ss - p->orig_min_ss + 1;
+
+	if ( load_hdf5_hyperslab(p, filename, event,
+	                         (void *)&mask, H5T_NATIVE_INT,
+	                         sizeof(int)) )
+	{
+		ERROR("Failed to load mask data\n");
+		free(mask);
+		return 1;
+	}
+
+	for ( j=0; j<p_w*p_h; j++ ) {
+
+		/* Bad if it's missing any of the "good" bits */
+		if ( (mask[j] & mask_good) != mask_good ) bad[j] = 1;
+
+		/* Bad if it has any of the "bad" bits. */
+		if ( mask[j] & mask_bad ) bad[j] = 1;
+
+	}
+
+	free(mask);
+	return 0;
+}
 
 
 struct image *image_read_cbf(DataTemplate *dtempl, const char *filename,
@@ -1970,8 +1985,37 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 			}
 		}
 
-		/* FIXME: Load mask */
+		/* Load mask (skip if panel is bad anyway) */
+		if ( (!p->bad) && (p->mask != NULL) ) {
+			if ( p->mask_file == NULL ) {
+				mask_fn = filename;
+			} else {
+				mask_fn = p->mask_file;
+			}
+			if ( H5Fis_hdf5(mask_fn) > 0 ) {
+				load_mask_hdf5(p, mask_fn, event,
+				               image->bad[i],
+				               dtempl->mask_good,
+				               dtempl->mask_bad);
 
+			} else if ( is_cbf_file(filename) > 0 ) {
+				load_mask_cbf(p, mask_fn, event,
+				              0, image->bad[i],
+				              dtempl->mask_good,
+				              dtempl->mask_bad);
+
+			} else if ( is_cbfgz_file(filename) ) {
+				load_mask_cbf(p, mask_fn, event,
+				              1, image->bad[i],
+				              dtempl->mask_good,
+				              dtempl->mask_bad);
+
+			} else {
+				ERROR("Unrecognised mask file type"
+				      " (%s)\n", filename);
+				return NULL;
+			}
+		}
 	}
 
 	/* FIXME: Load saturation map */
