@@ -48,14 +48,20 @@
 
 void update_peaks(struct crystfelproject *proj)
 {
-	struct image *image;
 
 	if ( proj->n_frames == 0 ) return;
 
 	if ( proj->show_peaks ) {
 
+		struct image *image;
+		const DataTemplate *dtempl;
+
 		image = crystfel_image_view_get_image_struct(CRYSTFEL_IMAGE_VIEW(proj->imageview));
 		if ( image == NULL ) return;
+
+		dtempl = crystfel_image_view_get_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview));
+		image_feature_list_free(image->features);
+		image->features = NULL;
 
 		switch ( proj->peak_search_params.method ) {
 
@@ -80,6 +86,14 @@ void update_peaks(struct crystfelproject *proj)
 			                         proj->peak_search_params.min_res,
 			                         proj->peak_search_params.max_res,
 			                         1);
+			break;
+
+		case PEAK_HDF5:
+		case PEAK_CXI:
+			image->features = image_read_peaks(dtempl,
+			                                   image->filename,
+			                                   image->ev,
+			                                   proj->peak_search_params.half_pixel_shift);
 			break;
 
 		default:
@@ -390,10 +404,8 @@ gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo), TRUE, TRUE, 2.0);
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "zaef",
 	                "Zaefferer gradient search (zaef)");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cxi",
-	                "Get list from CXI file");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "hdf5",
-	                "Get list from HDF5 file");
+	                "Use the peak lists in the data files (hdf5/cxi)");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "peakfinder8",
 	                "Radial background estimation (peakfinder8)");
 	#ifdef HAVE_FDIP
