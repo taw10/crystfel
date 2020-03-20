@@ -642,6 +642,9 @@ static void parse_toplevel(DataTemplate *dt,
 		/* Will be expanded when image is loaded */
 		dt->wavelength_from = strdup(val);
 
+	} else if ( strcmp(key, "peak_list") == 0 ) {
+		dt->peak_list = strdup(val);
+
 	} else if ( strcmp(key, "photon_energy_bandwidth") == 0 ) {
 		double v;
 		char *end;
@@ -654,9 +657,6 @@ static void parse_toplevel(DataTemplate *dt,
 
 	} else if ( strcmp(key, "photon_energy_scale") == 0 ) {
 		dt->photon_energy_scale = atof(val);
-
-	} else if ( strcmp(key, "peak_info_location") == 0 ) {
-		dt->hdf5_peak_path = strdup(val);
 
 	} else if (strncmp(key, "rigid_group", 11) == 0
 	        && strncmp(key, "rigid_group_collection", 22) != 0 ) {

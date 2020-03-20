@@ -183,7 +183,7 @@ struct _datatemplate
 	int                        path_dim;
 	int                        dim_dim;
 
-	char                      *hdf5_peak_path;
+	char                      *peak_list;
 
 	struct panel_template      defaults;  /* FIXME: Shouldn't be stored */
 };
