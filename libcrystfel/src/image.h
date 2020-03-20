@@ -66,8 +66,6 @@ struct imagefile_field_list;
 /** Represents a peak in an image. */
 struct imagefeature {
 
-	struct image                    *parent;   /**< Pointer to image */
-
 	/** \name Coordinates on panel (fast scan, slow scan)
 	 *  Note carefully that these are the distances, measured in pixels,
 	 *  from the corner of the panel.  They are NOT pixel indices.
