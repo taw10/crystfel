@@ -525,6 +525,11 @@ char *retrieve_full_path(struct event *ev, const char *data)
 	char *return_value;
 	char *pholder;
 
+	if ( data == NULL ) {
+		ERROR("HDF5 location must not be NULL\n");
+		return NULL;
+	}
+
 	return_value = strdup(data);
 	pholder = strstr(return_value, "%");
 	ei = 0;
