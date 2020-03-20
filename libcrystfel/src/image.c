@@ -2053,3 +2053,185 @@ void image_free(struct image *image)
 
 	free(image);
 }
+
+
+ImageFeatureList *get_peaks_cxi_dtempl(const DataTemplate *dtempl,
+                                        const char *filename,
+                                        const char *event,
+                                        int half_pixel_shift)
+{
+	return NULL;
+}
+
+
+ImageFeatureList *get_peaks_hdf5_dtempl(const DataTemplate *dtempl,
+                                        const char *filename,
+                                        const char *event,
+                                        int half_pixel_shift)
+{
+	hid_t fh, dh, sh;
+	hsize_t size[2];
+	hsize_t max_size[2];
+	int i;
+	float *buf;
+	herr_t r;
+	int tw;
+	struct event *ev;
+	char *subst_name;
+	ImageFeatureList *features;
+	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
+
+	if ( access(filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n",
+		      filename);
+		return NULL;
+	}
+
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't open file: %s\n", filename);
+		return NULL;
+	}
+
+	ev = get_event_from_event_string(event);
+	if ( (ev == NULL) && (event != NULL) ) {
+		ERROR("Invalid event identifier '%s'\n", event);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	subst_name = retrieve_full_path(ev, dtempl->peak_list);
+	free_event(ev);
+	if ( subst_name == NULL ) {
+		ERROR("Invalid peak path %s\n", subst_name);
+		free_event(ev);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	if ( check_path_existence(fh, subst_name) == 0 ) {
+		ERROR("Peak path not found: %s:%s",
+		      filename, subst_name);
+		free(subst_name);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
+	free(subst_name);
+	if ( dh < 0 ) {
+		ERROR("Peak list (%s) not found.\n", subst_name);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	sh = H5Dget_space(dh);
+	if ( sh < 0 ) {
+		ERROR("Couldn't get dataspace for peak list.\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		ERROR("Peak list has the wrong dimensionality (%i).\n",
+		      H5Sget_simple_extent_ndims(sh));
+		H5Sclose(sh);
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, max_size);
+	H5Sclose(sh);
+
+	tw = size[1];
+	if ( (tw != 3) && (tw != 4) ) {
+		ERROR("Peak list has the wrong dimensions.\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	buf = malloc(sizeof(float)*size[0]*size[1]);
+	if ( buf == NULL ) {
+		ERROR("Couldn't reserve memory for the peak list.\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return NULL;
+	}
+	r = H5Dread(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+	            H5P_DEFAULT, buf);
+	if ( r < 0 ) {
+		ERROR("Couldn't read peak list.\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	features = image_feature_list_new();
+	if ( features == NULL ) {
+		ERROR("Failed to allocate peak list\n");
+		H5Dclose(dh);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	for ( i=0; i<size[0]; i++ ) {
+
+		float fs, ss, val;
+		int pn;
+
+		fs = buf[tw*i+0] + peak_offset;
+		ss = buf[tw*i+1] + peak_offset;
+		val = buf[tw*i+2];
+
+		pn = data_template_find_panel(dtempl, fs, ss);
+		if ( pn < -1 ) {
+			ERROR("Peak not in panel!\n");
+			continue;
+		}
+
+		/* Convert coordinates to panel-relative */
+		data_template_file_to_panel_coords(dtempl, &fs, &ss);
+
+		image_add_feature(features, fs, ss, pn,
+		                  NULL, val, NULL);
+
+	}
+
+	free(buf);
+	H5Dclose(dh);
+	H5Fclose(fh);
+
+	return features;
+}
+
+
+ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
+                                   const char *filename,
+                                   const char *event,
+                                   int half_pixel_shift)
+{
+	if ( H5Fis_hdf5(filename) > 0 ) {
+
+		const char *ext;
+		ext = filename_extension(filename, NULL);
+		if ( strcmp(ext, ".cxi") == 0 ) {
+			return get_peaks_cxi_dtempl(dtempl,
+			                            filename,
+			                            event,
+			                            half_pixel_shift);
+
+		} else {
+			return get_peaks_hdf5_dtempl(dtempl,
+			                             filename,
+			                             event,
+			                             half_pixel_shift);
+		}
+
+	} else  {
+		ERROR("Peak lists can only be read from HDF5 files\n");
+		return NULL;
+	}
+}

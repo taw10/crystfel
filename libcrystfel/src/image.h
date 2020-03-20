@@ -248,6 +248,11 @@ extern struct image *image_read(DataTemplate *dtempl, const char *filename,
                                 const char *event);
 extern void image_free(struct image *image);
 
+extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
+                                          const char *filename,
+                                          const char *event,
+                                          int half_pixel_shift);
+
 
 /* Field lists */
 extern struct imagefile_field_list *new_imagefile_field_list(void);
