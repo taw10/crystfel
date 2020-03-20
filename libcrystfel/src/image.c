@@ -154,8 +154,8 @@ ImageFeatureList *sort_peaks(ImageFeatureList *flist)
 
 void image_feature_list_free(ImageFeatureList *flist)
 {
-	if ( !flist ) return;
-	if ( flist->features ) free(flist->features);
+	if ( flist == NULL ) return;
+	free(flist->features);
 	free(flist);
 }
 
