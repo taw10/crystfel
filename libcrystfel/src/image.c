@@ -1520,7 +1520,7 @@ static struct image *image_read_hdf5(DataTemplate *dtempl,
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 		if ( load_hdf5_hyperslab(&dtempl->panels[i], filename,
-		                         event, &image->dp[i],
+		                         event, (void *)&image->dp[i],
 		                         H5T_NATIVE_FLOAT,
 		                         sizeof(float)) )
 		{
