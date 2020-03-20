@@ -192,6 +192,31 @@ static void peaksearch_max_res_sig(GtkWidget *entry,
 }
 
 
+static void peaksearch_half_pixel_sig(GtkWidget *checkbox,
+                                      struct crystfelproject *proj)
+{
+	int val = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
+	proj->peak_search_params.half_pixel_shift = val;
+	update_peaks(proj);
+}
+
+
+static void add_check_param(GtkWidget *params_box, const char *labeltext,
+                            int initial_val, GCallback act_cb,
+                            struct crystfelproject *proj)
+{
+	GtkWidget *checkbox;
+
+	checkbox = gtk_check_button_new_with_label(labeltext);
+	gtk_box_pack_start(GTK_BOX(params_box),
+	                   GTK_WIDGET(checkbox), FALSE, FALSE, 8.0);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox),
+	                             initial_val);
+	g_signal_connect(G_OBJECT(checkbox), "toggled",
+	                 G_CALLBACK(act_cb), proj);
+}
+
+
 static void add_param(GtkWidget *params_box, const char *labeltext,
                       float initial_val, GCallback act_cb,
                       struct crystfelproject *proj)
@@ -277,10 +302,21 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		          G_CALLBACK(peaksearch_max_res_sig), proj);
 
 	} else if ( strcmp(algo_id, "hdf5") == 0 ) {
+
 		proj->peak_search_params.method = PEAK_HDF5;
 
+		add_check_param(proj->peak_params, "Half pixel shift",
+		          proj->peak_search_params.half_pixel_shift,
+		          G_CALLBACK(peaksearch_half_pixel_sig), proj);
+
 	} else if ( strcmp(algo_id, "cxi") == 0 ) {
+
 		proj->peak_search_params.method = PEAK_CXI;
+
+		add_check_param(proj->peak_params, "Half pixel shift",
+		          proj->peak_search_params.half_pixel_shift,
+		          G_CALLBACK(peaksearch_half_pixel_sig), proj);
+
 	} else {
 		ERROR("Unrecognised peak search '%s'\n", algo_id);
 	}
