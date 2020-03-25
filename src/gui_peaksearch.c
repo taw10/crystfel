@@ -112,132 +112,71 @@ void update_peaks(struct crystfelproject *proj)
 }
 
 
-static int get_val(GtkWidget *entry, float *v)
+struct param_callback_vals
+{
+	float *pfval;
+	int *pival;
+	struct crystfelproject *proj;
+};
+
+
+static void check_param_callback(GtkWidget *checkbox,
+                                 struct param_callback_vals *vals)
+{
+	int val = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
+	*(vals->pival) = val;
+	update_peaks(vals->proj);
+}
+
+
+static void int_param_callback(GtkWidget *entry,
+                               struct param_callback_vals *cbvals)
+{
+	const char *text;
+	int val;
+
+	text = gtk_entry_get_text(GTK_ENTRY(entry));
+	if (sscanf(text, "%i", &val) != 1) {
+		ERROR("Invalid value\n");
+		return;
+	}
+
+	*(cbvals->pival) = val;
+	update_peaks(cbvals->proj);
+}
+
+
+static void float_param_callback(GtkWidget *entry,
+                                 struct param_callback_vals *cbvals)
 {
 	const char *text;
 	float val;
+
 	text = gtk_entry_get_text(GTK_ENTRY(entry));
 	if (sscanf(text, "%f", &val) != 1) {
 		ERROR("Invalid value\n");
-		return 1;
+		return;
 	}
-	*v = val;
-	return 0;
+
+	*(cbvals->pfval) = val;
+	update_peaks(cbvals->proj);
 }
 
 
-static void peaksearch_threshold_sig(GtkWidget *entry,
-                                     struct crystfelproject *proj)
+static void free_callback_params(gpointer cbvals,
+                                 GClosure *closure)
 {
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.threshold = val;
-	update_peaks(proj);
+	free(cbvals);
 }
 
 
-static void peaksearch_sqgradient_sig(GtkWidget *entry,
-                                      struct crystfelproject *proj)
-{
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.min_sq_gradient = val;
-	update_peaks(proj);
-}
-
-
-static void peaksearch_snr_sig(GtkWidget *entry,
-                               struct crystfelproject *proj)
-{
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.min_snr = val;
-	update_peaks(proj);
-}
-
-
-static void peaksearch_min_pix_count_sig(GtkWidget *entry,
-                                         struct crystfelproject *proj)
-{
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.min_pix_count = val;
-	update_peaks(proj);
-}
-
-
-static void peaksearch_max_pix_count_sig(GtkWidget *entry,
-                                         struct crystfelproject *proj)
-{
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.max_pix_count = val;
-	update_peaks(proj);
-}
-
-
-static void peaksearch_local_bg_radius_sig(GtkWidget *entry,
-                                           struct crystfelproject *proj)
-{
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.local_bg_radius = val;
-	update_peaks(proj);
-}
-
-
-static void peaksearch_min_res_sig(GtkWidget *entry,
-                                   struct crystfelproject *proj)
-{
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.min_res = val;
-	update_peaks(proj);
-}
-
-
-static void peaksearch_max_res_sig(GtkWidget *entry,
-                                   struct crystfelproject *proj)
-{
-	float val;
-	if ( get_val(entry, &val) ) return;
-	proj->peak_search_params.max_res = val;
-	update_peaks(proj);
-}
-
-
-static void peaksearch_half_pixel_sig(GtkWidget *checkbox,
-                                      struct crystfelproject *proj)
-{
-	int val = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
-	proj->peak_search_params.half_pixel_shift = val;
-	update_peaks(proj);
-}
-
-
-static void add_check_param(GtkWidget *params_box, const char *labeltext,
-                            int initial_val, GCallback act_cb,
-                            struct crystfelproject *proj)
-{
-	GtkWidget *checkbox;
-
-	checkbox = gtk_check_button_new_with_label(labeltext);
-	gtk_box_pack_start(GTK_BOX(params_box),
-	                   GTK_WIDGET(checkbox), FALSE, FALSE, 8.0);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox),
-	                             initial_val);
-	g_signal_connect(G_OBJECT(checkbox), "toggled",
-	                 G_CALLBACK(act_cb), proj);
-}
-
-
-static void add_param(GtkWidget *params_box, const char *labeltext,
-                      float initial_val, GCallback act_cb,
-                      struct crystfelproject *proj)
+static void add_int_param(GtkWidget *params_box, const char *labeltext,
+                          int *pval, struct crystfelproject *proj)
 {
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *entry;
+	struct param_callback_vals *cbvals;
 	char tmp[64];
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
@@ -250,10 +189,79 @@ static void add_param(GtkWidget *params_box, const char *labeltext,
 	entry = gtk_entry_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
 	                   TRUE, TRUE, 2.0);
-	snprintf(tmp, 63, "%.2f", initial_val);
+	snprintf(tmp, 63, "%i", *pval);
 	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(act_cb), proj);
+
+	cbvals = malloc(sizeof(struct param_callback_vals));
+	if ( cbvals != NULL ) {
+		cbvals->proj = proj;
+		cbvals->pival = pval;
+		g_signal_connect_data(G_OBJECT(entry), "activate",
+		                      G_CALLBACK(int_param_callback),
+		                      cbvals, free_callback_params, 0);
+	} else {
+		ERROR("Failed to connect parameter callback\n");
+	}
+}
+
+
+static void add_float_param(GtkWidget *params_box, const char *labeltext,
+                            float *pval, struct crystfelproject *proj)
+{
+	GtkWidget *hbox;
+	GtkWidget *label;
+	GtkWidget *entry;
+	struct param_callback_vals *cbvals;
+	char tmp[64];
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(params_box),
+	                   GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+	label = gtk_label_new(labeltext);
+	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 2.0);
+	entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   TRUE, TRUE, 2.0);
+	snprintf(tmp, 63, "%.2f", *pval);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+
+	cbvals = malloc(sizeof(struct param_callback_vals));
+	if ( cbvals != NULL ) {
+		cbvals->proj = proj;
+		cbvals->pfval = pval;
+		g_signal_connect_data(G_OBJECT(entry), "activate",
+		                      G_CALLBACK(float_param_callback),
+		                      cbvals, free_callback_params, 0);
+	} else {
+		ERROR("Failed to connect parameter callback\n");
+	}
+}
+
+
+static void add_check_param(GtkWidget *params_box, const char *labeltext,
+                            int *pval, struct crystfelproject *proj)
+{
+	GtkWidget *checkbox;
+	struct param_callback_vals *cbvals;
+
+	checkbox = gtk_check_button_new_with_label(labeltext);
+	gtk_box_pack_start(GTK_BOX(params_box),
+	                   GTK_WIDGET(checkbox), FALSE, FALSE, 8.0);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkbox),
+	                             *pval);
+
+	cbvals = malloc(sizeof(struct param_callback_vals));
+	if ( cbvals != NULL ) {
+		cbvals->proj = proj;
+		cbvals->pival = pval;
+		g_signal_connect_data(G_OBJECT(checkbox), "toggled",
+		                      G_CALLBACK(check_param_callback),
+		                      cbvals, free_callback_params, 0);
+	} else {
+		ERROR("Failed to connect parameter callback\n");
+	}
 }
 
 
@@ -279,49 +287,39 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 
 		proj->peak_search_params.method = PEAK_ZAEF;
 
-		add_param(proj->peak_params, "Threshold:",
-		          proj->peak_search_params.threshold,
-		          G_CALLBACK(peaksearch_threshold_sig), proj);
-		add_param(proj->peak_params, "Minimum squared gradient:",
-		          proj->peak_search_params.min_sq_gradient,
-		          G_CALLBACK(peaksearch_sqgradient_sig), proj);
-		add_param(proj->peak_params, "Minimum signal/noise ratio:",
-		          proj->peak_search_params.min_snr,
-		          G_CALLBACK(peaksearch_snr_sig), proj);
+		add_float_param(proj->peak_params, "Threshold:",
+		                &proj->peak_search_params.threshold, proj);
+		add_float_param(proj->peak_params, "Minimum squared gradient:",
+		                &proj->peak_search_params.min_sq_gradient, proj);
+		add_float_param(proj->peak_params, "Minimum signal/noise ratio:",
+		                &proj->peak_search_params.min_snr, proj);
 
 	} else if ( strcmp(algo_id, "peakfinder8") == 0 ) {
 
 		proj->peak_search_params.method = PEAK_PEAKFINDER8;
 
-		add_param(proj->peak_params, "Threshold:",
-		          proj->peak_search_params.threshold,
-		          G_CALLBACK(peaksearch_threshold_sig), proj);
-		add_param(proj->peak_params, "Minimum signal/noise ratio:",
-		          proj->peak_search_params.min_snr,
-		          G_CALLBACK(peaksearch_snr_sig), proj);
-		add_param(proj->peak_params, "Minimum number of pixels:",
-		          proj->peak_search_params.min_pix_count,
-		          G_CALLBACK(peaksearch_min_pix_count_sig), proj);
-		add_param(proj->peak_params, "Maximum number of pixels:",
-		          proj->peak_search_params.max_pix_count,
-		          G_CALLBACK(peaksearch_max_pix_count_sig), proj);
-		add_param(proj->peak_params, "Local background radius:",
-		          proj->peak_search_params.local_bg_radius,
-		          G_CALLBACK(peaksearch_local_bg_radius_sig), proj);
-		add_param(proj->peak_params, "Minimum resolution (pixels):",
-		          proj->peak_search_params.min_res,
-		          G_CALLBACK(peaksearch_min_res_sig), proj);
-		add_param(proj->peak_params, "Maximum resolution (pixels):",
-		          proj->peak_search_params.max_res,
-		          G_CALLBACK(peaksearch_max_res_sig), proj);
+		add_float_param(proj->peak_params, "Threshold:",
+		                &proj->peak_search_params.threshold, proj);
+		add_float_param(proj->peak_params, "Minimum signal/noise ratio:",
+		                &proj->peak_search_params.min_snr, proj);
+		add_int_param(proj->peak_params, "Minimum number of pixels:",
+		              &proj->peak_search_params.min_pix_count, proj);
+		add_int_param(proj->peak_params, "Maximum number of pixels:",
+		              &proj->peak_search_params.max_pix_count, proj);
+		add_int_param(proj->peak_params, "Local background radius:",
+		              &proj->peak_search_params.local_bg_radius, proj);
+		add_int_param(proj->peak_params, "Minimum resolution (pixels):",
+		              &proj->peak_search_params.min_res, proj);
+		add_int_param(proj->peak_params, "Maximum resolution (pixels):",
+		              &proj->peak_search_params.max_res, proj);
 
 	} else if ( strcmp(algo_id, "hdf5") == 0 ) {
 
 		proj->peak_search_params.method = PEAK_HDF5;
 
 		add_check_param(proj->peak_params, "Half pixel shift",
-		          proj->peak_search_params.half_pixel_shift,
-		          G_CALLBACK(peaksearch_half_pixel_sig), proj);
+		                &proj->peak_search_params.half_pixel_shift,
+		                proj);
 
 	} else if ( strcmp(algo_id, "cxi") == 0 ) {
 		ERROR("algo_id should be hdf5, not cxi\n");
