@@ -2055,11 +2055,291 @@ void image_free(struct image *image)
 }
 
 
-ImageFeatureList *get_peaks_cxi_dtempl(const DataTemplate *dtempl,
-                                        const char *filename,
-                                        const char *event,
-                                        int half_pixel_shift)
+static int read_peak_count(hid_t fh, char *path, int line,
+                           int *num_peaks)
 {
+
+	hid_t dh, sh, mh;
+	hsize_t size[1];
+	hsize_t max_size[1];
+	hsize_t offset[1], count[1];
+	hsize_t m_offset[1], m_count[1], dimmh[1];
+	int tw, r;
+
+	dh = H5Dopen2(fh, path, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Data block %s not found.\n", path);
+		return 1;
+	}
+
+	sh = H5Dget_space(dh);
+	if ( sh < 0 ) {
+		H5Dclose(dh);
+		ERROR("Couldn't get dataspace for data.\n");
+		return 1;
+	}
+
+	if ( H5Sget_simple_extent_ndims(sh) != 1 ) {
+		ERROR("Data block %s has the wrong dimensionality (%i).\n",
+		      path, H5Sget_simple_extent_ndims(sh));
+		H5Sclose(sh);
+		H5Dclose(dh);
+		return 1;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, max_size);
+
+	tw = size[0];
+
+	if ( line > tw-1 ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Data block %s does not contain data for required event.\n",
+		      path);
+		return 1;
+	}
+
+	offset[0] = line;
+	count[0] = 1;
+
+	r = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
+	                        offset, NULL, count, NULL);
+	if ( r < 0 ) {
+		ERROR("Error selecting file dataspace "
+		      "for data block %s\n", path);
+		H5Dclose(dh);
+		H5Sclose(sh);
+		return 1;
+	}
+
+	m_offset[0] = 0;
+	m_count[0] = 1;
+	dimmh[0] = 1;
+	mh = H5Screate_simple(1, dimmh, NULL);
+	r = H5Sselect_hyperslab(mh, H5S_SELECT_SET,
+	                        m_offset, NULL, m_count, NULL);
+	if ( r < 0 ) {
+		ERROR("Error selecting memory dataspace "
+		      "for data block %s\n", path);
+		H5Dclose(dh);
+		H5Sclose(sh);
+		H5Sclose(mh);
+		return 1;
+	}
+
+	r = H5Dread(dh, H5T_NATIVE_INT, mh,
+	            sh, H5P_DEFAULT, num_peaks);
+	if ( r < 0 ) {
+		ERROR("Couldn't read data for block %s, line %i\n", path, line);
+		H5Dclose(dh);
+		H5Sclose(sh);
+		H5Sclose(mh);
+		return 1;
+	}
+
+	H5Dclose(dh);
+	H5Sclose(sh);
+	H5Sclose(mh);
+	return 0;
+}
+
+
+
+static float *read_hdf5_data(hid_t fh, char *path, int line)
+{
+
+	hid_t dh, sh, mh;
+	hsize_t size[2];
+	hsize_t max_size[2];
+	hsize_t offset[2], count[2];
+	hsize_t m_offset[2], m_count[2], dimmh[2];
+	float *buf;
+	int tw, r;
+
+	dh = H5Dopen2(fh, path, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Data block (%s) not found.\n", path);
+		return NULL;
+	}
+
+	sh = H5Dget_space(dh);
+	if ( sh < 0 ) {
+		H5Dclose(dh);
+		ERROR("Couldn't get dataspace for data.\n");
+		return NULL;
+	}
+
+	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
+		ERROR("Data block %s has the wrong dimensionality (%i).\n",
+		      path, H5Sget_simple_extent_ndims(sh));
+		H5Sclose(sh);
+		H5Dclose(dh);
+		return NULL;
+	}
+
+	H5Sget_simple_extent_dims(sh, size, max_size);
+
+	tw = size[0];
+	if ( line> tw-1 ) {
+		H5Sclose(sh);
+		H5Dclose(dh);
+		ERROR("Data block %s does not contain data for required event.\n",
+		      path);
+		return NULL;
+	}
+
+	offset[0] = line;
+	offset[1] = 0;
+	count[0] = 1;
+	count[1] = size[1];
+
+	r = H5Sselect_hyperslab(sh, H5S_SELECT_SET, offset, NULL, count, NULL);
+	if ( r < 0 ) {
+	    ERROR("Error selecting file dataspace "
+	          "for data block %s\n", path);
+	    H5Dclose(dh);
+	    H5Sclose(sh);
+	    return NULL;
+	}
+
+	m_offset[0] = 0;
+	m_offset[1] = 0;
+	m_count[0] = 1;
+	m_count[1] = size[1];
+	dimmh[0] = 1;
+	dimmh[1] = size[1];
+
+	mh = H5Screate_simple(2, dimmh, NULL);
+	r = H5Sselect_hyperslab(mh, H5S_SELECT_SET,
+	                        m_offset, NULL, m_count, NULL);
+	if ( r < 0 ) {
+		ERROR("Error selecting memory dataspace "
+		      "for data block %s\n", path);
+		H5Dclose(dh);
+		H5Sclose(sh);
+		H5Sclose(mh);
+		return NULL;
+	}
+
+	buf = malloc(size[1]*sizeof(float));
+	if ( buf == NULL ) return NULL;
+	r = H5Dread(dh, H5T_NATIVE_FLOAT, mh, sh, H5P_DEFAULT, buf);
+	if ( r < 0 ) {
+		ERROR("Couldn't read data for block %s, line %i\n", path, line);
+		H5Dclose(dh);
+		H5Sclose(sh);
+		H5Sclose(mh);
+		return NULL;
+	}
+
+	H5Dclose(dh);
+	H5Sclose(sh);
+	H5Sclose(mh);
+	return buf;
+}
+ImageFeatureList *get_peaks_cxi_dtempl(const DataTemplate *dtempl,
+                                       const char *filename,
+                                       const char *event,
+                                       int half_pixel_shift)
+{
+	ImageFeatureList *features;
+	hid_t fh;
+	char path_n[1024];
+	char path_x[1024];
+	char path_y[1024];
+	char path_i[1024];
+	int r;
+	int pk;
+	struct event *ev;
+	char *subst_name;
+
+	int line = 0;
+	int num_peaks;
+
+	float *buf_x;
+	float *buf_y;
+	float *buf_i;
+
+	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
+
+	if ( access(filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n",
+		      filename);
+		return NULL;
+	}
+
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't open file: %s\n", filename);
+		return NULL;
+	}
+
+	ev = get_event_from_event_string(event);
+	if ( (ev == NULL) && (event != NULL) ) {
+		ERROR("Invalid event identifier '%s'\n", event);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	subst_name = retrieve_full_path(ev, dtempl->peak_list);
+	free_event(ev);
+	if ( subst_name == NULL ) {
+		ERROR("Invalid peak path %s\n", subst_name);
+		free_event(ev);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	if ( check_path_existence(fh, subst_name) == 0 ) {
+		ERROR("Peak path not found: %s:%s",
+		      filename, subst_name);
+		free(subst_name);
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	snprintf(path_n, 1024, "%s/nPeaks", subst_name);
+	snprintf(path_x, 1024, "%s/peakXPosRaw", subst_name);
+	snprintf(path_y, 1024, "%s/peakYPosRaw", subst_name);
+	snprintf(path_i, 1024, "%s/peakTotalIntensity", subst_name);
+
+	r = read_peak_count(fh, path_n, line, &num_peaks);
+	if ( r != 0 ) return NULL;
+
+	buf_x = read_hdf5_data(fh, path_x, line);
+	if ( r != 0 ) return NULL;
+
+	buf_y = read_hdf5_data(fh, path_y, line);
+	if ( r != 0 ) return NULL;
+
+	buf_i = read_hdf5_data(fh, path_i, line);
+	if ( r != 0 ) return NULL;
+
+	features = image_feature_list_new();
+
+	for ( pk=0; pk<num_peaks; pk++ ) {
+
+		float fs, ss, val;
+		int pn;
+
+		fs = buf_x[pk] + peak_offset;
+		ss = buf_y[pk] + peak_offset;
+		val = buf_i[pk];
+
+		pn = data_template_find_panel(dtempl, fs, ss);
+		if ( pn < -1 ) {
+			ERROR("Peak not in panel!\n");
+			continue;
+		}
+
+		/* Convert coordinates to panel-relative */
+		data_template_file_to_panel_coords(dtempl, &fs, &ss);
+
+		image_add_feature(features, fs, ss, pn,
+		                  NULL, val, NULL);
+
+	}
+
 	return NULL;
 }
 
