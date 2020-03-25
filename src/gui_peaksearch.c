@@ -324,12 +324,7 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		          G_CALLBACK(peaksearch_half_pixel_sig), proj);
 
 	} else if ( strcmp(algo_id, "cxi") == 0 ) {
-
-		proj->peak_search_params.method = PEAK_CXI;
-
-		add_check_param(proj->peak_params, "Half pixel shift",
-		          proj->peak_search_params.half_pixel_shift,
-		          G_CALLBACK(peaksearch_half_pixel_sig), proj);
+		ERROR("algo_id should be hdf5, not cxi\n");
 
 	} else {
 		ERROR("Unrecognised peak search '%s'\n", algo_id);
