@@ -273,6 +273,18 @@ static void add_check_param(GtkWidget *params_box, const char *labeltext,
 }
 
 
+static void add_radii(GtkWidget *params_box,
+                      struct crystfelproject *proj)
+{
+	add_float_param(params_box, "Peak radius (inner):",
+	                &proj->peak_search_params.pk_inn, proj);
+	add_float_param(params_box, "Peak radius (middle):",
+	                &proj->peak_search_params.pk_mid, proj);
+	add_float_param(params_box, "Peak radius (outer):",
+	                &proj->peak_search_params.pk_out, proj);
+}
+
+
 static void peaksearch_algo_changed(GtkWidget *combo,
                                     struct crystfelproject *proj)
 {
@@ -301,6 +313,7 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		                &proj->peak_search_params.min_sq_gradient, proj);
 		add_float_param(proj->peak_params, "Minimum signal/noise ratio:",
 		                &proj->peak_search_params.min_snr, proj);
+		add_radii(proj->peak_params, proj);
 
 	} else if ( strcmp(algo_id, "peakfinder8") == 0 ) {
 
@@ -331,6 +344,7 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		add_check_param(proj->peak_params, "Check peaks first",
 		                &proj->peak_search_params.revalidate,
 		                proj);
+		add_radii(proj->peak_params, proj);
 
 	} else if ( strcmp(algo_id, "cxi") == 0 ) {
 		ERROR("algo_id should be hdf5, not cxi\n");
