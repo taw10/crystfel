@@ -51,6 +51,7 @@ struct peak_params {
 	float pk_mid;
 	float pk_out;
 	int half_pixel_shift;           /* cxi, hdf5 */
+	int revalidate;
 };
 
 struct crystfelproject;

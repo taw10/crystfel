@@ -94,6 +94,14 @@ void update_peaks(struct crystfelproject *proj)
 			                                   image->filename,
 			                                   image->ev,
 			                                   proj->peak_search_params.half_pixel_shift);
+			if ( proj->peak_search_params.revalidate ) {
+				validate_peaks(image,
+				               proj->peak_search_params.min_snr,
+				               proj->peak_search_params.pk_inn,
+				               proj->peak_search_params.pk_mid,
+				               proj->peak_search_params.pk_out,
+				               1, 0);
+			}
 			break;
 
 		default:
@@ -319,6 +327,9 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 
 		add_check_param(proj->peak_params, "Half pixel shift",
 		                &proj->peak_search_params.half_pixel_shift,
+		                proj);
+		add_check_param(proj->peak_params, "Check peaks first",
+		                &proj->peak_search_params.revalidate,
 		                proj);
 
 	} else if ( strcmp(algo_id, "cxi") == 0 ) {

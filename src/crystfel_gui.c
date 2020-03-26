@@ -617,6 +617,7 @@ int main(int argc, char *argv[])
 	proj.peak_search_params.pk_mid = 4.0;
 	proj.peak_search_params.pk_out = 5.0;
 	proj.peak_search_params.half_pixel_shift = 1;
+	proj.peak_search_params.revalidate = 1;
 	proj.backend = backend_local;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
