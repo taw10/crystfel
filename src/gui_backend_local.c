@@ -39,6 +39,7 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 	GError *err = NULL;
 	struct crystfelproject *proj = vp;
 	gchar *line;
+	double frac = 0.1;
 
 	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
 	if ( r == G_IO_STATUS_EOF ) {
@@ -51,6 +52,9 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 	}
 	chomp(line);
 	STATUS("Got line '%s'\n", line);
+
+	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(proj->progressbar),
+	                              frac);
 
 	g_free(line);
 

@@ -58,8 +58,13 @@ static void unitcell_response_sig(GtkWidget *dialog, gint resp,
 		return;
 	}
 
-	proj->backend->run_unitcell(proj, algo);
-	proj->unitcell_combo = NULL;
+	if ( proj->backend->run_unitcell(proj, algo) == 0 ) {
+		proj->unitcell_combo = NULL;
+
+		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->progressbar),
+		                          "Indexing (determine unit cell parameters)");
+		gtk_info_bar_set_revealed(GTK_INFO_BAR(proj->info_bar), TRUE);
+	}
 }
 
 

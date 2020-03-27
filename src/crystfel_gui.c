@@ -541,6 +541,19 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 }
 
 
+static void infobar_response_sig(GtkInfoBar *infobar, gint resp,
+                                 gpointer data)
+{
+	struct crystfelproject *proj = data;
+
+	if ( resp == GTK_RESPONSE_CANCEL ) {
+		proj->backend->cancel(proj);
+	}
+
+	gtk_info_bar_set_revealed(GTK_INFO_BAR(proj->info_bar), FALSE);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -553,6 +566,7 @@ int main(int argc, char *argv[])
 	GtkWidget *main_vbox;
 	GtkWidget *toolbar;
 	GtkWidget *button;
+	GtkWidget *bar_area;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -681,6 +695,23 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(main_vbox), scroll, TRUE, TRUE, 0.0);
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(main_vbox));
 	gtk_paned_pack2(GTK_PANED(hpaned), GTK_WIDGET(frame), TRUE, TRUE);
+
+	/* Progress info bar */
+	proj.info_bar = gtk_info_bar_new_with_buttons(GTK_STOCK_CANCEL,
+	                                              GTK_RESPONSE_CANCEL,
+	                                              NULL);
+	gtk_box_pack_end(GTK_BOX(main_vbox), GTK_WIDGET(proj.info_bar),
+	                 FALSE, FALSE, 0.0);
+	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(proj.info_bar));
+	proj.progressbar = gtk_progress_bar_new();
+	gtk_box_pack_start(GTK_BOX(bar_area),
+	                   GTK_WIDGET(proj.progressbar),
+	                   TRUE, TRUE, 0.0);
+	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj.progressbar),
+	                               TRUE);
+	gtk_info_bar_set_revealed(GTK_INFO_BAR(proj.info_bar), FALSE);
+	g_signal_connect(G_OBJECT(proj.info_bar), "response",
+	                 G_CALLBACK(infobar_response_sig), &proj);
 
 	/* Icon region at left */
 	proj.icons = gtk_vbox_new(FALSE, 0.0);

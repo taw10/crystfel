@@ -95,6 +95,9 @@ struct crystfelproject {
 
 	GtkWidget *unitcell_combo;
 
+	GtkWidget *info_bar;
+	GtkWidget *progressbar;
+
 	struct crystfel_backend *backend;
 };
 
