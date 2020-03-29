@@ -633,6 +633,7 @@ int main(int argc, char *argv[])
 	proj.peak_search_params.half_pixel_shift = 1;
 	proj.peak_search_params.revalidate = 1;
 	proj.backend = backend_local;
+	proj.backend_private = NULL;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
@@ -741,6 +742,9 @@ int main(int argc, char *argv[])
 
 	/* Send messages to report region */
 	set_log_message_func(add_gui_message, &proj);
+
+	/* Initialise backend */
+	proj.backend->init(&proj);
 
 	gtk_window_set_default_size(GTK_WINDOW(proj.window), 1024, 768);
 	gtk_paned_set_position(GTK_PANED(hpaned), 172);

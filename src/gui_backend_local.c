@@ -28,8 +28,37 @@
 
 #include <pty.h>
 #include <glib.h>
+#include <sys/wait.h>
 
 #include "crystfel_gui.h"
+
+
+volatile sig_atomic_t at_zombies = 0;
+
+
+struct local_backend_priv
+{
+	pid_t indexamajig_pid;
+};
+
+
+static void check_zombies(struct local_backend_priv *priv)
+{
+	pid_t r;
+	int status;
+
+	if ( !at_zombies ) return;
+
+	r = waitpid(priv->indexamajig_pid, &status, WNOHANG);
+	if ( r == -1 ) {
+		ERROR("waitpid() failed\n");
+	} else {
+		STATUS("indexamajig process exited "
+		       "with status %i\n", status);
+	}
+	priv->indexamajig_pid = 0;
+	at_zombies = 0;
+}
 
 
 static gboolean index_readable(GIOChannel *source, GIOCondition cond,
@@ -38,8 +67,11 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 	GIOStatus r;
 	GError *err = NULL;
 	struct crystfelproject *proj = vp;
+	struct local_backend_priv *priv = proj->backend_private;
 	gchar *line;
 	double frac = 0.1;
+
+	check_zombies(priv);
 
 	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
 	if ( r == G_IO_STATUS_EOF ) {
@@ -108,8 +140,12 @@ static int run_unitcell(struct crystfelproject *proj,
 	char index_str[64];
 	char peaks_str[64];
 	int n_args;
+	struct local_backend_priv *priv = proj->backend_private;
 
-	STATUS("run unit cell with '%s'!\n", algo);
+	if ( at_zombies ) {
+		STATUS("Try again in a moment!\n");
+		return 1;
+	}
 
 	if ( write_file_list(proj) ) {
 		STATUS("Failed to write list\n");
@@ -188,6 +224,7 @@ static int run_unitcell(struct crystfelproject *proj,
 
 	}
 
+	priv->indexamajig_pid = pid;
 	ioch = g_io_channel_unix_new(pty);
 	g_io_add_watch(ioch, G_IO_IN | G_IO_ERR | G_IO_HUP,
 	               index_readable, proj);
@@ -198,9 +235,70 @@ static int run_unitcell(struct crystfelproject *proj,
 }
 
 
+static void cancel(struct crystfelproject *proj)
+{
+	struct local_backend_priv *priv = proj->backend_private;
+
+	if ( priv->indexamajig_pid == 0 ) {
+		ERROR("Indexamajig not running!\n");
+		return;
+	}
+
+	ERROR("Cancelling!!!\n");
+}
+
+
+static void shutdown_backend(struct crystfelproject *proj)
+{
+	struct local_backend_priv *priv = proj->backend_private;
+	free(priv);
+}
+
+
+static void sigchld_handler(int sig, siginfo_t *si, void *uc_v)
+{
+	at_zombies = 1;
+}
+
+
+static void init_backend(struct crystfelproject *proj)
+{
+	struct local_backend_priv *priv;
+	struct sigaction sa;
+	int r;
+
+	priv = malloc(sizeof(struct local_backend_priv));
+	if ( priv == NULL ) {
+		ERROR("Failed to initialise backend\n");
+		return;
+	}
+
+	priv->indexamajig_pid = 0;
+
+	/* Signal handler */
+	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_RESTART;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_sigaction = sigchld_handler;
+	r = sigaction(SIGCHLD, &sa, NULL);
+	if ( r == -1 ) {
+	        ERROR("Failed to set signal handler!\n");
+	        return;
+	}
+
+	/* Callback to check on signals */
+	g_timeout_add_seconds(1, G_SOURCE_FUNC(check_zombies), priv);
+
+	proj->backend_private = priv;
+	STATUS("Local backend initialised.\n");
+}
+
+
 struct crystfel_backend _backend_local =
 	{
+	 .init = init_backend,
+	 .shutdown = shutdown_backend,
 	 .run_unitcell = run_unitcell,
+	 .cancel = cancel,
 	};
 
 struct crystfel_backend *backend_local = &_backend_local;

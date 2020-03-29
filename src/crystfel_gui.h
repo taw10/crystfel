@@ -59,6 +59,9 @@ struct crystfelproject;
 struct crystfel_backend {
 	int (*run_unitcell)(struct crystfelproject *proj,
 	                    const char *algo);
+	void (*cancel)(struct crystfelproject *proj);
+	void (*init)(struct crystfelproject *proj);
+	void (*shutdown)(struct crystfelproject *proj);
 };
 
 
@@ -99,6 +102,7 @@ struct crystfelproject {
 	GtkWidget *progressbar;
 
 	struct crystfel_backend *backend;
+	void *backend_private;
 };
 
 #endif
