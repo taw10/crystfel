@@ -2050,6 +2050,11 @@ static int make_dataspaces(hid_t dh, struct event *ev, hid_t *memspace,
 	int ndims;
 	int i;
 
+	if ( ev == NULL ) {
+		ERROR("Can't make dataspaces: no event ID\n");
+		return 1;
+	}
+
 	/* Check that there are at least as many dim entries as dimensions */
 	sh = H5Dget_space(dh);
 	ndims = H5Sget_simple_extent_ndims(sh);
