@@ -541,19 +541,6 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 }
 
 
-static void infobar_response_sig(GtkInfoBar *infobar, gint resp,
-                                 gpointer data)
-{
-	struct crystfelproject *proj = data;
-
-	if ( resp == GTK_RESPONSE_CANCEL ) {
-		proj->backend->cancel(proj);
-	}
-
-	gtk_info_bar_set_revealed(GTK_INFO_BAR(proj->info_bar), FALSE);
-}
-
-
 int main(int argc, char *argv[])
 {
 	int c;
@@ -566,7 +553,6 @@ int main(int argc, char *argv[])
 	GtkWidget *main_vbox;
 	GtkWidget *toolbar;
 	GtkWidget *button;
-	GtkWidget *bar_area;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -616,6 +602,7 @@ int main(int argc, char *argv[])
 	proj.events = NULL;
 	proj.peak_params = NULL;
 	proj.unitcell_combo = NULL;
+	proj.info_bar = NULL;
 	proj.peak_search_params.method = PEAK_ZAEF;
 	proj.peak_search_params.threshold = 800.0;
 	proj.peak_search_params.min_sq_gradient = 100000;
@@ -696,23 +683,7 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(main_vbox), scroll, TRUE, TRUE, 0.0);
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(main_vbox));
 	gtk_paned_pack2(GTK_PANED(hpaned), GTK_WIDGET(frame), TRUE, TRUE);
-
-	/* Progress info bar */
-	proj.info_bar = gtk_info_bar_new_with_buttons(GTK_STOCK_CANCEL,
-	                                              GTK_RESPONSE_CANCEL,
-	                                              NULL);
-	gtk_box_pack_end(GTK_BOX(main_vbox), GTK_WIDGET(proj.info_bar),
-	                 FALSE, FALSE, 0.0);
-	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(proj.info_bar));
-	proj.progressbar = gtk_progress_bar_new();
-	gtk_box_pack_start(GTK_BOX(bar_area),
-	                   GTK_WIDGET(proj.progressbar),
-	                   TRUE, TRUE, 0.0);
-	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj.progressbar),
-	                               TRUE);
-	gtk_info_bar_set_revealed(GTK_INFO_BAR(proj.info_bar), FALSE);
-	g_signal_connect(G_OBJECT(proj.info_bar), "response",
-	                 G_CALLBACK(infobar_response_sig), &proj);
+	proj.main_vbox = main_vbox;
 
 	/* Icon region at left */
 	proj.icons = gtk_vbox_new(FALSE, 0.0);
@@ -753,4 +724,74 @@ int main(int argc, char *argv[])
 	gtk_main();
 
 	return 0;
+}
+
+
+static void infobar_response_sig(GtkInfoBar *infobar, gint resp,
+                                 gpointer data)
+{
+	struct crystfelproject *proj = data;
+
+	if ( resp == GTK_RESPONSE_CANCEL ) {
+		proj->backend->cancel(proj);
+
+	} else if ( resp == GTK_RESPONSE_OK ) {
+		proj->infobar_callback(proj);
+
+	} else {
+		ERROR("Unrecognised infobar response!\n");
+
+	}
+}
+
+
+void remove_infobar(struct crystfelproject *proj)
+{
+	gtk_widget_destroy(proj->info_bar);
+	proj->info_bar = NULL;
+}
+
+
+GtkWidget *create_infobar(struct crystfelproject *proj, const char *task,
+                          const char *extra_button,
+                          void (*cbfunc)(struct crystfelproject *proj))
+{
+	GtkWidget *info_bar;
+	GtkWidget *bar_area;
+
+	if ( proj->info_bar != NULL ) {
+		STATUS("Can't create info bar - task already running\n");
+		return NULL;
+	}
+
+	/* Progress info bar */
+	info_bar = gtk_info_bar_new_with_buttons(GTK_STOCK_CANCEL,
+	                                         GTK_RESPONSE_CANCEL,
+	                                         extra_button,
+	                                         GTK_RESPONSE_OK,
+	                                         NULL);
+	gtk_box_pack_end(GTK_BOX(proj->main_vbox), GTK_WIDGET(info_bar),
+	                 FALSE, FALSE, 0.0);
+	proj->info_bar = info_bar;
+	proj->infobar_callback = cbfunc;
+
+	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
+
+	/* Create progress bar */
+	proj->progressbar = gtk_progress_bar_new();
+	gtk_box_pack_start(GTK_BOX(bar_area),
+	                   GTK_WIDGET(proj->progressbar),
+	                   TRUE, TRUE, 0.0);
+	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->progressbar),
+	                          task);
+	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj->progressbar),
+	                               TRUE);
+
+	g_signal_connect(G_OBJECT(info_bar), "response",
+	                 G_CALLBACK(infobar_response_sig), proj);
+
+	gtk_widget_show_all(info_bar);
+	gtk_info_bar_set_revealed(GTK_INFO_BAR(info_bar), TRUE);
+
+	return info_bar;
 }

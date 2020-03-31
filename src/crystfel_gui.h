@@ -74,6 +74,7 @@ struct crystfelproject {
 	GtkWidget *imageview;
 	GtkWidget *icons;      /* Drawing area for task icons */
 	GtkWidget *report;     /* Text view at the bottom for messages */
+	GtkWidget *main_vbox;
 	GtkWidget *image_info;
 
 	int cur_frame;
@@ -99,10 +100,17 @@ struct crystfelproject {
 	GtkWidget *unitcell_combo;
 
 	GtkWidget *info_bar;
+	void (*infobar_callback)(struct crystfelproject *proj);
 	GtkWidget *progressbar;
 
 	struct crystfel_backend *backend;
 	void *backend_private;
 };
+
+extern void remove_infobar(struct crystfelproject *proj);
+
+extern GtkWidget *create_infobar(struct crystfelproject *proj, const char *task,
+                                 const char *extra_button,
+                                 void (*cbfunc)(struct crystfelproject *proj));
 
 #endif

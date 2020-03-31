@@ -42,10 +42,11 @@ struct local_backend_priv
 };
 
 
-static void check_zombies(struct local_backend_priv *priv)
+static void check_zombies(struct crystfelproject *proj)
 {
 	pid_t r;
 	int status;
+	struct local_backend_priv *priv = proj->backend_private;
 
 	if ( !at_zombies ) return;
 
@@ -55,6 +56,10 @@ static void check_zombies(struct local_backend_priv *priv)
 	} else {
 		STATUS("indexamajig process exited "
 		       "with status %i\n", status);
+		if ( status != 0 ) {
+			gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->progressbar),
+			                          "Failed");
+		}
 	}
 	priv->indexamajig_pid = 0;
 	at_zombies = 0;
@@ -67,10 +72,9 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 	GIOStatus r;
 	GError *err = NULL;
 	struct crystfelproject *proj = vp;
-	struct local_backend_priv *priv = proj->backend_private;
 	gchar *line;
 
-	check_zombies(priv);
+	check_zombies(proj);
 
 	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
 	if ( r == G_IO_STATUS_EOF ) {
@@ -246,7 +250,7 @@ static void cancel(struct crystfelproject *proj)
 	struct local_backend_priv *priv = proj->backend_private;
 
 	if ( priv->indexamajig_pid == 0 ) {
-		ERROR("Indexamajig not running!\n");
+		remove_infobar(proj);
 		return;
 	}
 
@@ -293,7 +297,7 @@ static void init_backend(struct crystfelproject *proj)
 	}
 
 	/* Callback to check on signals */
-	g_timeout_add_seconds(1, G_SOURCE_FUNC(check_zombies), priv);
+	g_timeout_add_seconds(1, G_SOURCE_FUNC(check_zombies), proj);
 
 	proj->backend_private = priv;
 	STATUS("Local backend initialised.\n");

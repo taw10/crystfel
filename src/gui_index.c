@@ -45,6 +45,12 @@
 #include "crystfel_gui.h"
 #include "crystfelimageview.h"
 
+static void cell_explorer_sig(struct crystfelproject *proj)
+{
+	STATUS("Run cell_explorer\n");
+}
+
+
 static void unitcell_response_sig(GtkWidget *dialog, gint resp,
                                   struct crystfelproject *proj)
 {
@@ -59,14 +65,13 @@ static void unitcell_response_sig(GtkWidget *dialog, gint resp,
 	}
 
 	if ( proj->backend->run_unitcell(proj, algo) == 0 ) {
+
 		proj->unitcell_combo = NULL;
 
-		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->progressbar),
-		                          "Indexing (determine unit cell parameters)");
-		gtk_info_bar_add_button(GTK_INFO_BAR(proj->info_bar),
-		                        "Show cell histograms",
-		                        2);
-		gtk_info_bar_set_revealed(GTK_INFO_BAR(proj->info_bar), TRUE);
+		create_infobar(proj,
+		               "Indexing (determine unit cell parameters)",
+		               "Show cell histograms", cell_explorer_sig);
+
 	}
 }
 
