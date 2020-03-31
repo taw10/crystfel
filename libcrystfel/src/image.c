@@ -2144,7 +2144,6 @@ static int read_peak_count(hid_t fh, char *path, int line,
 }
 
 
-
 static float *read_hdf5_data(hid_t fh, char *path, int line)
 {
 
@@ -2237,6 +2236,8 @@ static float *read_hdf5_data(hid_t fh, char *path, int line)
 	H5Sclose(mh);
 	return buf;
 }
+
+
 ImageFeatureList *get_peaks_cxi_dtempl(const DataTemplate *dtempl,
                                        const char *filename,
                                        const char *event,
