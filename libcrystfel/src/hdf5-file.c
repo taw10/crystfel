@@ -2124,7 +2124,6 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 	if ( class == H5T_STRING ) {
 
 		herr_t r;
-		hid_t sh;
 		htri_t v;
 
 		v = H5Tis_variable_str(type);
@@ -2133,6 +2132,8 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			free(subst_name);
 			return "WTF?";
 		} else if ( v > 0 ) {
+
+			/* Variable length string */
 
 			hid_t memspace, filespace;
 
@@ -2157,21 +2158,21 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 
 		} else {
 
-			/* v == 0 */
+			/* Fixed-length string */
+
+			hid_t memspace, filespace;
+
+			if ( make_dataspaces(dh, ev, &memspace, &filespace) ) {
+				H5Tclose(type);
+				free(subst_name);
+				return strdup("[couldn't make dataspaces]");
+			}
 
 			size = H5Tget_size(type);
 			tmp = malloc(size+1);
 
-			sh = H5Dget_space(dh);
-			if ( H5Sget_simple_extent_ndims(sh) ) {
-				H5Tclose(type);
-				free(subst_name);
-				return strdup("[non-scalar string]");
-			}
-
-			sh = H5Screate(H5S_SCALAR);
-			r = H5Dread(dh, type, sh, H5S_ALL, H5P_DEFAULT, tmp);
-			H5Sclose(sh);
+			r = H5Dread(dh, type, memspace, filespace,
+			            H5P_DEFAULT, tmp);
 			if ( r < 0 ) {
 				free(tmp);
 				free(subst_name);
