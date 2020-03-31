@@ -47,7 +47,19 @@
 
 static void cell_explorer_sig(struct crystfelproject *proj)
 {
-	STATUS("Run cell_explorer\n");
+	GSubprocess *sp;
+	GError *error = NULL;
+
+	sp = g_subprocess_new(G_SUBPROCESS_FLAGS_NONE, &error,
+	                      "cell_explorer", "test.stream", NULL);
+	if ( sp == NULL ) {
+		ERROR("Failed to start cell_explorer: %s\n",
+		      error->message);
+		g_error_free(error);
+		return;
+	}
+
+	STATUS("Starting cell_explorer...\n");
 }
 
 
