@@ -250,7 +250,8 @@ static void cancel(struct crystfelproject *proj)
 		return;
 	}
 
-	ERROR("Cancelling!!!\n");
+	ERROR("Stopping indexamajig.\n");
+	kill(priv->indexamajig_pid, SIGQUIT);
 }
 
 
