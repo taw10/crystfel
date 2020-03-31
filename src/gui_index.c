@@ -63,6 +63,9 @@ static void unitcell_response_sig(GtkWidget *dialog, gint resp,
 
 		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->progressbar),
 		                          "Indexing (determine unit cell parameters)");
+		gtk_info_bar_add_button(GTK_INFO_BAR(proj->info_bar),
+		                        "Show cell histograms",
+		                        2);
 		gtk_info_bar_set_revealed(GTK_INFO_BAR(proj->info_bar), TRUE);
 	}
 }
