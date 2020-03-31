@@ -2231,7 +2231,7 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 			break;
 
 			default :
-			ERROR("Don't know what to do!\n");
+			ERROR("Unrecognised type: %s\n", subst_name);
 			free(subst_name);
 			return NULL;
 		}
