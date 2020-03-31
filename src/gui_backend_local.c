@@ -69,7 +69,6 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 	struct crystfelproject *proj = vp;
 	struct local_backend_priv *priv = proj->backend_private;
 	gchar *line;
-	double frac = 0.1;
 
 	check_zombies(priv);
 
@@ -83,10 +82,17 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 		return FALSE;
 	}
 	chomp(line);
-	STATUS("Got line '%s'\n", line);
 
-	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(proj->progressbar),
-	                              frac);
+	if ( strstr(line, " images processed, ") != NULL ) {
+		double frac;
+		int n_proc;
+		sscanf(line, "%i ", &n_proc);
+		frac = (double)n_proc/proj->n_frames;
+		gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(proj->progressbar),
+		                              frac);
+	} else {
+		STATUS("%s\n", line);
+	}
 
 	g_free(line);
 
