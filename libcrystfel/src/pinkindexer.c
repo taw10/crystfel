@@ -179,7 +179,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 		return NULL;
 	}
 	if(cell == NULL){
-		ERROR("Pink indexer needs a unit cell file to be specified!")
+		ERROR("Pink indexer needs a unit cell file to be specified!");
 		return NULL;
 	}
 
