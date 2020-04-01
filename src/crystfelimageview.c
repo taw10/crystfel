@@ -580,6 +580,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->image = NULL;
 	iv->num_peaklists = 0;
 	iv->peaklists = NULL;
+	iv->brightness = 1.0;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -678,7 +679,8 @@ static int reload_image(CrystFELImageView *iv)
 		return 1;
 	}
 
-	iv->pixbufs = render_panels(iv->image, 1, SCALE_COLOUR, 5, &n_pb);
+	iv->pixbufs = render_panels(iv->image, 1, SCALE_COLOUR,
+	                            iv->brightness, &n_pb);
 	if ( n_pb != iv->image->detgeom->n_panels ) {
 		ERROR("Wrong number of panels returned!\n");
 		return 1;
@@ -758,4 +760,12 @@ void crystfel_image_view_set_peaks(CrystFELImageView *iv,
 	iv->peaklists[list_num] = image_feature_list_copy(peaks);
 
 	redraw(iv);
+}
+
+
+void crystfel_image_view_set_brightness(CrystFELImageView *iv,
+                                        double brightness)
+{
+	iv->brightness = brightness;
+	reload_image(iv);
 }

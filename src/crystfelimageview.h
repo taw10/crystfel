@@ -89,6 +89,8 @@ struct _crystfelimageview
 
 	int                  num_peaklists;
 	ImageFeatureList   **peaklists;
+
+	double               brightness;
 };
 
 struct _crystfelimageviewclass
@@ -116,5 +118,8 @@ extern struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv)
 extern void crystfel_image_view_set_peaks(CrystFELImageView *iv,
                                           ImageFeatureList *peaks,
                                           int list_num);
+
+extern void crystfel_image_view_set_brightness(CrystFELImageView *iv,
+                                               double brightness);
 
 #endif	/* CRYSTFELIMAGEVIEW_H */

@@ -541,6 +541,15 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 }
 
 
+static void brightness_changed_sig(GtkScaleButton *brightness,
+                                   double value,
+                                   struct crystfelproject *proj)
+{
+	crystfel_image_view_set_brightness(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                   value);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -553,6 +562,7 @@ int main(int argc, char *argv[])
 	GtkWidget *main_vbox;
 	GtkWidget *toolbar;
 	GtkWidget *button;
+	GtkWidget *brightness;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -664,6 +674,16 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(last_frame_sig), &proj);
 
+	/* Image view parameters */
+	const gchar *icons[] = {"weather-clear", NULL};
+	brightness = gtk_scale_button_new(GTK_ICON_SIZE_LARGE_TOOLBAR,
+	                                  1.0, 10.0, 1.0, icons);
+	gtk_box_pack_end(GTK_BOX(toolbar), brightness, FALSE, FALSE, 0.0);
+	gtk_scale_button_set_value(GTK_SCALE_BUTTON(brightness), 1.0);
+	g_signal_connect(G_OBJECT(brightness), "value-changed",
+	                 G_CALLBACK(brightness_changed_sig), &proj);
+
+	/* Filename */
 	proj.image_info = gtk_label_new("Ready to load images");
 	gtk_label_set_selectable(GTK_LABEL(proj.image_info), TRUE);
 	gtk_label_set_ellipsize(GTK_LABEL(proj.image_info),
