@@ -59,6 +59,7 @@ struct index_args
 	float min_snr;
 	int check_hdf5_snr;
 	struct detector *det;
+	const DataTemplate *dtempl;
 	IndexingPrivate *ipriv;
 	enum peak_search_method peaks;
 	float tols[6];

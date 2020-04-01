@@ -65,6 +65,7 @@
 #include "taketwo.h"
 #include "im-sandbox.h"
 #include "image.h"
+#include "datatemplate.h"
 
 
 static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copyme,
@@ -861,7 +862,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Load detector geometry */
+	/* Load detector geometry (old API) */
 	args.iargs.det = get_detector_geometry_2(args.geom_filename,
 	                                         args.iargs.beam,
 	                                         &args.iargs.hdf5_peak_path);
@@ -872,6 +873,14 @@ int main(int argc, char *argv[])
 	}
 	add_geom_beam_stuff_to_field_list(args.iargs.copyme, args.iargs.det,
 	                                  args.iargs.beam);
+
+	/* Load data template (new API) */
+	args.iargs.dtempl = data_template_new_from_file(args.geom_filename);
+	if ( args.iargs.dtempl == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'"
+		      " (for new API)\n", args.geom_filename);
+		return 1;
+	}
 
 	/* If no peak path from geometry file, use these (but see later) */
 	if ( args.iargs.hdf5_peak_path == NULL ) {
