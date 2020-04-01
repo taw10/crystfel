@@ -389,8 +389,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_MSGPACK:
-		get_peaks_msgpack(pargs->msgpack_obj, &image,
-		                  iargs->half_pixel_shift);
+		image.features = get_peaks_msgpack(pargs->msgpack_obj,
+		                                   iargs->dtempl,
+		                                   iargs->half_pixel_shift);
 		break;
 
 		case PEAK_NONE:

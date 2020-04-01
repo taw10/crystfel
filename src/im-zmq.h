@@ -50,8 +50,9 @@ extern void im_zmq_shutdown(struct im_zmq *z);
 
 extern msgpack_object *im_zmq_fetch(struct im_zmq *z);
 
-extern int get_peaks_msgpack(msgpack_object *obj, struct image *image,
-                             int half_pixel_shift);
+extern ImageFeatureList *get_peaks_msgpack(msgpack_object *obj,
+                                           const DataTemplate *dtempl,
+                                           int half_pixel_shift);
 
 extern int unpack_msgpack_data(msgpack_object *obj, struct image *image,
                                int no_image_data);

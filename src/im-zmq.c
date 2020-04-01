@@ -45,6 +45,7 @@
 #include "image.h"
 #include "hdf5-file.h"
 #include "utils.h"
+#include "im-zmq.h"
 
 
 struct im_zmq
@@ -180,10 +181,11 @@ static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
  * Returns: non-zero on error, zero otherwise.
  *
  */
-int get_peaks_msgpack(msgpack_object *obj, struct image *image,
-                      int half_pixel_shift)
+ImageFeatureList *get_peaks_msgpack(msgpack_object *obj,
+                                    const DataTemplate *dtempl,
+                                    int half_pixel_shift)
 {
-
+	ImageFeatureList *features;
 	int num_peaks;
 	int pk;
 	msgpack_object *peak_list;
@@ -194,7 +196,7 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 
 	if ( obj == NULL ) {
 		ERROR("No MessagePack object to get peaks from.\n");
-		return 1;
+		return NULL;
 	}
 
 	/* Object has structure:
@@ -212,15 +214,12 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 	/* Length of peak_x  array gives number of peaks */
 	num_peaks = peak_x->via.array.size;
 
-	if ( image->features != NULL ) {
-		image_feature_list_free(image->features);
-	}
-	image->features = image_feature_list_new();
+	features = image_feature_list_new();
 
 	for ( pk=0; pk<num_peaks; pk++ ) {
 
 		float fs, ss, val;
-		struct panel *p;
+		int pn;
 
 		/* Retrieve data from peak_list and apply half_pixel_shift,
 		 * if appropriate */
@@ -228,18 +227,20 @@ int get_peaks_msgpack(msgpack_object *obj, struct image *image,
 		ss = peak_y->via.array.ptr[pk].via.f64 + peak_offset;
 		val = peak_i->via.array.ptr[pk].via.f64;
 
-		p = find_orig_panel(image->det, fs, ss);
-		if ( p == NULL ) continue;
-		if ( p->no_index ) continue;
+		pn = data_template_find_panel(dtempl, fs, ss);
+		if ( pn < -1 ) {
+			ERROR("Peak not in panel!\n");
+			continue;
+		}
 
 		/* Convert coordinates to panel-relative */
-		fs = fs - p->orig_min_fs;
-		ss = ss - p->orig_min_ss;
+		data_template_file_to_panel_coords(dtempl, &fs, &ss);
 
-		image_add_feature(image->features, fs, ss, p, image, val, NULL);
+		image_add_feature(features, fs, ss, pn,
+		                  NULL, val, NULL);
 	}
 
-	return 0;
+	return features;
 }
 
 
