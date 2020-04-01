@@ -18,6 +18,9 @@ find_package(TIFF)
 find_package(OpenCL)
 find_package(PkgConfig)
 
+# Request HDF5 1.10-style API (can't use 1.12-style yet)
+add_definitions(-DH5_USE_110_API)
+
 pkg_check_modules (GLIB glib-2.0)
 include_directories (${GLIB_INCLUDE_DIRS})
 link_directories (${GLIB_LIBRARY_DIRS})
