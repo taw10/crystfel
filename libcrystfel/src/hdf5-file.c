@@ -2096,18 +2096,130 @@ static int make_dataspaces(hid_t dh, struct event *ev, hid_t *memspace,
 }
 
 
+static char *read_vlen_string(hid_t dh, struct event *ev)
+{
+	hid_t memspace, filespace;
+	herr_t r;
+	char *tmp;
+	hid_t type;
+
+	if ( make_dataspaces(dh, ev, &memspace, &filespace) ) {
+		return strdup("[couldn't make dataspaces - variable len]");
+	}
+
+	type = H5Dget_type(dh);
+	r = H5Dread(dh, type, memspace, filespace, H5P_DEFAULT, &tmp);
+	H5Tclose(type);
+	if ( r < 0 ) {
+		return strdup("[couldn't read vlen string]");
+	}
+
+	H5Sclose(memspace);
+	H5Sclose(filespace);
+
+	/* Variable strings are 0-terminated */
+	chomp(tmp);
+	return tmp;
+}
+
+
+static char *read_fixed_string(hid_t dh, struct event *ev)
+{
+	hid_t memspace, filespace;
+	herr_t r;
+	hid_t sh, type;
+	size_t size;
+	char *tmp;
+
+	type = H5Dget_type(dh);
+	size = H5Tget_size(type);
+	tmp = malloc(size+1);
+	if ( tmp == NULL ) {
+		H5Tclose(type);
+		return strdup("[couldn't allocate string]");
+	}
+
+	if ( ev == NULL ) {
+
+		/* Try a simple fixed-length string */
+		sh = H5Dget_space(dh);
+		if ( H5Sget_simple_extent_ndims(sh) ) {
+			H5Tclose(type);
+			return strdup("[non-scalar string]");
+		}
+
+		sh = H5Screate(H5S_SCALAR);
+		r = H5Dread(dh, type, sh, H5S_ALL, H5P_DEFAULT, tmp);
+		H5Sclose(sh);
+		if ( r < 0 ) {
+			free(tmp);
+			H5Tclose(type);
+			return strdup("[couldn't read scalar string]");
+		} else {
+			H5Tclose(type);
+			tmp[size] = '\0';
+			chomp(tmp);
+			return tmp;
+		}
+	}
+
+	if ( make_dataspaces(dh, ev, &memspace, &filespace) ) {
+		H5Tclose(type);
+		return strdup("[couldn't make dataspaces - fixed len]");
+	}
+
+	r = H5Dread(dh, type, memspace, filespace, H5P_DEFAULT, tmp);
+	if ( r < 0 ) {
+		H5Tclose(type);
+		return strdup("[couldn't read string]");
+	}
+
+	H5Tclose(type);
+	H5Sclose(memspace);
+	H5Sclose(filespace);
+
+	tmp[size] = '\0';
+	chomp(tmp);
+	return tmp;
+}
+
+
+static char *read_general_string(hid_t dh, struct event *ev)
+{
+	htri_t v;
+	hid_t type;
+
+	type = H5Dget_type(dh);
+	v = H5Tis_variable_str(type);
+	H5Tclose(type);
+
+	if ( v < 0 ) {
+		return strdup("[unrecognised string type]");
+
+	} else if ( v > 0 ) {
+		/* Variable length string */
+		return read_vlen_string(dh, ev);
+
+	} else {
+		/* Fixed-length string */
+		return read_fixed_string(dh, ev);
+
+	}
+}
+
+
 char *hdfile_get_string_value(struct hdfile *f, const char *name,
                               struct event *ev)
 {
 	hid_t dh;
-	hsize_t size;
 	hid_t type;
 	hid_t class;
 	int buf_i;
 	double buf_f;
-	char *tmp = NULL, *subst_name = NULL;
+	char *tmp = NULL;
+	char *subst_name = NULL;
 
-	if (ev != NULL && ev->path_length != 0 ) {
+	if ( (ev != NULL) && (ev->path_length != 0) ) {
 		subst_name = retrieve_full_path(ev, name);
 	} else {
 		subst_name = strdup(name);
@@ -2116,88 +2228,25 @@ char *hdfile_get_string_value(struct hdfile *f, const char *name,
 	dh = H5Dopen2(f->fh, subst_name, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		free(subst_name);
-		return NULL;
+		return strdup("[couldn't read string]");
 	}
+
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
+	H5Tclose(type);
 
 	if ( class == H5T_STRING ) {
 
-		herr_t r;
-		htri_t v;
-
-		v = H5Tis_variable_str(type);
-		if ( v < 0 ) {
-			H5Tclose(type);
-			free(subst_name);
-			return "WTF?";
-		} else if ( v > 0 ) {
-
-			/* Variable length string */
-
-			hid_t memspace, filespace;
-
-			if ( make_dataspaces(dh, ev, &memspace, &filespace) ) {
-				H5Tclose(type);
-				free(subst_name);
-				return strdup("[couldn't make dataspaces]");
-			}
-
-			r = H5Dread(dh, type, memspace, filespace,
-			            H5P_DEFAULT, &tmp);
-			if ( r < 0 ) {
-				H5Tclose(type);
-				free(subst_name);
-				return strdup("[couldn't read vlen string]");
-			}
-
-			H5Sclose(memspace);
-			H5Sclose(filespace);
-
-			return tmp;
-
-		} else {
-
-			/* Fixed-length string */
-
-			hid_t memspace, filespace;
-
-			if ( make_dataspaces(dh, ev, &memspace, &filespace) ) {
-				H5Tclose(type);
-				free(subst_name);
-				return strdup("[couldn't make dataspaces]");
-			}
-
-			size = H5Tget_size(type);
-			tmp = malloc(size+1);
-
-			r = H5Dread(dh, type, memspace, filespace,
-			            H5P_DEFAULT, tmp);
-			if ( r < 0 ) {
-				free(tmp);
-				free(subst_name);
-				return NULL;
-			} else {
-
-				/* Two possibilities:
-				 *   String is already zero-terminated
-				 *   String is not terminated.
-				 * Make sure things are done properly... */
-				tmp[size] = '\0';
-				chomp(tmp);
-				H5Dclose(dh);
-				free(subst_name);
-				return tmp;
-			}
-
-		}
+		free(subst_name);
+		tmp = read_general_string(dh, ev);
+		H5Dclose(dh);
+		return tmp;
 
 	} else {
 
 		int r;
 
 		H5Dclose(dh);
-		H5Tclose(type);
 
 		switch ( class ) {
 
