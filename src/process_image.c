@@ -395,6 +395,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_NONE:
+		case PEAK_ERROR:
 		break;
 
 	}

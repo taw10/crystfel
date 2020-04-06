@@ -225,21 +225,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 301 :
-		if ( strcmp(arg, "zaef") == 0 ) {
-			args->iargs.peaks = PEAK_ZAEF;
-		} else if ( strcmp(arg, "peakfinder8") == 0 ) {
-			args->iargs.peaks = PEAK_PEAKFINDER8;
-		} else if ( strcmp(arg, "hdf5") == 0 ) {
-			args->iargs.peaks = PEAK_HDF5;
-		} else if ( strcmp(arg, "cxi") == 0 ) {
-			args->iargs.peaks = PEAK_CXI;
-		} else if ( strcmp(arg, "peakfinder9") == 0 ) {
-			args->iargs.peaks = PEAK_PEAKFINDER9;
-		} else if ( strcmp(arg, "msgpack") == 0 ) {
-			args->iargs.peaks = PEAK_MSGPACK;
-		} else if ( strcmp(arg, "none") == 0 ) {
-			args->iargs.peaks = PEAK_NONE;
-		} else {
+		args->iargs.peaks = parse_peaksearch(arg);
+		if ( args->iargs.peaks == PEAK_ERROR ) {
 			ERROR("Unrecognised peak detection method '%s'\n", arg);
 			return EINVAL;
 		}

@@ -58,9 +58,12 @@ enum peak_search_method {
 	PEAK_CXI,
 	PEAK_MSGPACK,
 	PEAK_NONE,
+	PEAK_ERROR
 };
 
 extern const char *str_peaksearch(enum peak_search_method meth);
+
+extern enum peak_search_method parse_peaksearch(const char *arg);
 
 extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
 

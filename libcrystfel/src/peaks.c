@@ -784,3 +784,24 @@ const char *str_peaksearch(enum peak_search_method meth)
 	default: return "???";
 	}
 }
+
+enum peak_search_method parse_peaksearch(const char *arg)
+{
+	if ( strcmp(arg, "zaef") == 0 ) {
+		return PEAK_ZAEF;
+	} else if ( strcmp(arg, "peakfinder8") == 0 ) {
+		return PEAK_PEAKFINDER8;
+	} else if ( strcmp(arg, "hdf5") == 0 ) {
+		return PEAK_HDF5;
+	} else if ( strcmp(arg, "cxi") == 0 ) {
+		return PEAK_CXI;
+	} else if ( strcmp(arg, "peakfinder9") == 0 ) {
+		return PEAK_PEAKFINDER9;
+	} else if ( strcmp(arg, "msgpack") == 0 ) {
+		return PEAK_MSGPACK;
+	} else if ( strcmp(arg, "none") == 0 ) {
+		return PEAK_NONE;
+	}
+
+	return PEAK_ERROR;
+}
