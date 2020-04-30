@@ -33,6 +33,8 @@
 
 #include <peaks.h>
 
+#include "gui_project.h"
+
 struct peak_params {
 	enum peak_search_method method;
 	float threshold;                /* zaef, pf8 */
@@ -80,6 +82,9 @@ struct crystfelproject {
 	int cur_frame;
 
 	char *geom_filename;
+	char *data_top_folder;   /* For convenience only.  Filenames in
+	                          * 'filenames' list should be complete */
+	enum match_type_id data_search_pattern;
 
 	int n_frames;
 	int max_frames;

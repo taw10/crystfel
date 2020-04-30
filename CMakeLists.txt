@@ -385,7 +385,8 @@ list(APPEND CRYSTFEL_EXECUTABLES cell_tool)
 if (GTK_FOUND)
 
   set(CRYSTFEL_GUI_SOURCES src/crystfel_gui.c src/crystfelimageview.c
-      src/gui_peaksearch.c src/gui_index.c src/gui_backend_local.c)
+    src/gui_peaksearch.c src/gui_index.c src/gui_backend_local.c
+    src/gui_project.c)
 
   add_executable(crystfel ${CRYSTFEL_GUI_SOURCES})
   target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
