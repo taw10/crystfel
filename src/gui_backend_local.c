@@ -29,6 +29,7 @@
 #include <pty.h>
 #include <glib.h>
 #include <sys/wait.h>
+#include <gtk/gtk.h>
 
 #include "crystfel_gui.h"
 

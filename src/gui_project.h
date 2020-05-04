@@ -29,6 +29,10 @@
 #ifndef GUI_PROJECT_H
 #define GUI_PROJECT_H
 
+#include <gtk/gtk.h>
+
+#include <peaks.h>
+
 enum match_type_id
 {
 	 MATCH_EVERYTHING,
@@ -38,11 +42,71 @@ enum match_type_id
 	 MATCH_CBFGZ,
 };
 
-struct crystfelproject;
+struct peak_params {
+	enum peak_search_method method;
+	float threshold;                /* zaef, pf8 */
+	float min_sq_gradient;          /* zaef */
+	float min_snr;                  /* zaef, pf8 */
+	int min_pix_count;              /* pf8 */
+	int max_pix_count;              /* pf8 */
+	int local_bg_radius;            /* pf8 */
+	int min_res;                    /* pf8 */
+	int max_res;                    /* pf8 */
+	float min_snr_biggest_pix;      /* pf9 */
+	float min_snr_peak_pix;         /* pf9 */
+	float min_sig;                  /* pf9 */
+	float min_peak_over_neighbour;  /* pf9 */
+	float pk_inn;
+	float pk_mid;
+	float pk_out;
+	int half_pixel_shift;           /* cxi, hdf5 */
+	int revalidate;
+};
 
+struct crystfelproject {
 
-#include "crystfel_gui.h"
+	GtkWidget *window;
+	GtkUIManager *ui;
+	GtkActionGroup *action_group;
 
+	GtkWidget *imageview;
+	GtkWidget *icons;      /* Drawing area for task icons */
+	GtkWidget *report;     /* Text view at the bottom for messages */
+	GtkWidget *main_vbox;
+	GtkWidget *image_info;
+
+	int cur_frame;
+
+	char *geom_filename;
+	char *data_top_folder;   /* For convenience only.  Filenames in
+	                          * 'filenames' list should be complete */
+	enum match_type_id data_search_pattern;
+
+	int n_frames;
+	int max_frames;
+	char **filenames;
+	char **events;
+
+	int show_peaks;
+	struct peak_params peak_search_params;
+
+	GtkWidget *file_chooser;  /* Data location in "Find data" window */
+	GtkWidget *geom_chooser;  /* Data location in "Find data" window */
+	GtkWidget *type_combo;    /* Search pattern in "Find data" window */
+
+	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */
+	GtkWidget *peak_params;   /* Peak search parameter widgets */
+	struct peak_params original_params;
+
+	GtkWidget *unitcell_combo;
+
+	GtkWidget *info_bar;
+	void (*infobar_callback)(struct crystfelproject *proj);
+	GtkWidget *progressbar;
+
+	struct crystfel_backend *backend;
+	void *backend_private;
+};
 
 extern enum match_type_id decode_matchtype(const char *type_id);
 
