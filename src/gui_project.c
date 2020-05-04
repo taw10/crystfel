@@ -89,6 +89,32 @@ enum match_type_id decode_matchtype(const char *type_id)
 }
 
 
+int match_filename(const char *fn, enum match_type_id mt)
+{
+	const char *ext = NULL;
+	const char *ext2 = NULL;
+
+	if ( mt == MATCH_EVERYTHING ) return 1;
+
+	ext = filename_extension(fn, &ext2);
+	if ( ext == NULL ) return 0;
+
+	if ( mt == MATCH_CHEETAH_LCLS_H5 ) {
+		return ((strcmp(ext, ".h5")==0)
+		        && (strncmp(fn, "LCLS", 4)==0));
+	}
+	if ( mt == MATCH_CHEETAH_CXI ) return strcmp(ext, ".cxi")==0;
+	if ( mt == MATCH_CBF ) return strcmp(ext, ".cbf")==0;
+	if ( mt == MATCH_CBFGZ  ) {
+		if ( ext2 != NULL ) {
+			return strcmp(ext2, ".cbf.gz")==0;
+		}
+	}
+
+	return 0;
+}
+
+
 static void handle_var(const char *key, const char *val,
                        struct crystfelproject *proj)
 {

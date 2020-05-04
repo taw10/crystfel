@@ -110,6 +110,8 @@ struct crystfelproject {
 
 extern enum match_type_id decode_matchtype(const char *type_id);
 
+extern int match_filename(const char *fn, enum match_type_id mt);
+
 extern int load_project(struct crystfelproject *proj);
 
 extern void add_file_to_project(struct crystfelproject *proj,
