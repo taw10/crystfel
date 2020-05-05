@@ -382,5 +382,6 @@ int save_project(struct crystfelproject *proj)
 		}
 	}
 
+	proj->unsaved = 0;
 	return 0;
 }

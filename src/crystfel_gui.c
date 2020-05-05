@@ -63,9 +63,37 @@ static void show_help(const char *s)
 );
 }
 
-
-static gboolean destroy_sig(GtkWidget *da, struct crystfelproject *proj)
+static int confirm_exit(struct crystfelproject *proj)
 {
+	int r;
+	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(proj->window),
+	                                           0,
+	                                           GTK_MESSAGE_QUESTION,
+	                                           GTK_BUTTONS_NONE,
+	                                           "Do you want to save the session?");
+	gtk_dialog_add_buttons(GTK_DIALOG(dialog),
+	                       "Save", GTK_RESPONSE_YES,
+	                       "Don't save", GTK_RESPONSE_NO,
+	                       "Cancel", GTK_RESPONSE_CANCEL,
+	                       NULL);
+	r = gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+	if ( r == GTK_RESPONSE_YES ) {
+		save_project(proj);
+		return 1;
+	}
+	if ( r == GTK_RESPONSE_NO ) return 1;
+	return 0;
+}
+
+
+/* Main window destroyed */
+static gboolean delete_event_sig(GtkWidget *da, GdkEvent *event,
+                                 struct crystfelproject *proj)
+{
+	if ( proj->unsaved ) {
+		if ( !confirm_exit(proj) ) return TRUE;
+	}
 	gtk_main_quit();
 	return FALSE;
 }
@@ -180,6 +208,7 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 	type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->type_combo));
 	add_files(proj, top, decode_matchtype(type_id));
 
+	proj->unsaved = 1;
 	proj->cur_frame = 0;
 	update_imageview(proj);
 
@@ -272,9 +301,20 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+/* File->Quit */
 static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
+	if ( proj->unsaved ) {
+		if ( !confirm_exit(proj) ) return TRUE;
+	}
 	gtk_main_quit();
+	return FALSE;
+}
+
+
+static gint save_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	save_project(proj);
 	return FALSE;
 }
 
@@ -362,6 +402,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 
 	const char *ui = "<ui> <menubar name=\"mainwindow\">"
 		"<menu name=\"file\" action=\"FileAction\">"
+		"	<menuitem name=\"save\" action=\"SaveAction\" />"
 		"	<menuitem name=\"quit\" action=\"QuitAction\" />"
 		"</menu>"
 		"<menu name=\"view\" action=\"ViewAction\" >"
@@ -377,6 +418,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 	GtkActionEntry entries[] = {
 
 		{ "FileAction", NULL, "_File", NULL, NULL, NULL },
+		{ "SaveAction", GTK_STOCK_SAVE, "_Save", NULL, NULL,
+			G_CALLBACK(save_sig) },
 		{ "QuitAction", GTK_STOCK_QUIT, "_Quit", NULL, NULL,
 			G_CALLBACK(quit_sig) },
 
@@ -531,6 +574,7 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
+	proj.unsaved = 0;
 	proj.file_chooser = NULL;
 	proj.geom_chooser = NULL;
 	proj.geom_filename = NULL;
@@ -567,7 +611,8 @@ int main(int argc, char *argv[])
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
-	g_signal_connect(G_OBJECT(proj.window), "destroy", G_CALLBACK(destroy_sig),
+	g_signal_connect(G_OBJECT(proj.window), "delete-event",
+	                 G_CALLBACK(delete_event_sig),
 	                 &proj);
 
 	vbox = gtk_vbox_new(FALSE, 0.0);

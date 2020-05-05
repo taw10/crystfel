@@ -75,6 +75,8 @@ struct crystfelproject {
 	GtkWidget *main_vbox;
 	GtkWidget *image_info;
 
+	int unsaved;
+
 	int cur_frame;
 
 	char *geom_filename;

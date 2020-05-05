@@ -150,6 +150,7 @@ static void int_param_callback(GtkWidget *entry,
 	}
 
 	*(cbvals->pival) = val;
+	cbvals->proj->unsaved = 1;
 	update_peaks(cbvals->proj);
 }
 
@@ -167,6 +168,7 @@ static void float_param_callback(GtkWidget *entry,
 	}
 
 	*(cbvals->pfval) = val;
+	cbvals->proj->unsaved = 1;
 	update_peaks(cbvals->proj);
 }
 
@@ -356,6 +358,7 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 	/* FIXME: Radii */
 
 	gtk_widget_show_all(proj->peak_vbox);
+	proj->unsaved = 1;
 	update_peaks(proj);
 }
 
