@@ -307,6 +307,7 @@ static void init_backend(struct crystfelproject *proj)
 
 struct crystfel_backend _backend_local =
 	{
+	 .name = "local",
 	 .init = init_backend,
 	 .shutdown = shutdown_backend,
 	 .run_unitcell = run_unitcell,

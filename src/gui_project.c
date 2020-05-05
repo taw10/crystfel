@@ -77,6 +77,19 @@ static struct crystfel_backend *parse_backend(const char *val)
 }
 
 
+static const char *str_matchtype(enum match_type_id mt)
+{
+	switch ( mt ) {
+	case MATCH_EVERYTHING : return "everything";
+	case MATCH_CHEETAH_LCLS_H5 : return "lcls-cheetah-hdf5";
+	case MATCH_CHEETAH_CXI : return "cheetah-cxi";
+	case MATCH_CBF : return "cbf";
+	case MATCH_CBFGZ : return "cbfgz";
+	}
+	return NULL;
+}
+
+
 enum match_type_id decode_matchtype(const char *type_id)
 {
 	if ( strcmp(type_id, "everything") == 0 ) return MATCH_EVERYTHING;
@@ -301,6 +314,73 @@ int load_project(struct crystfelproject *proj)
 	} while ( rval != NULL );
 
 	fclose(fh);
+
+	return 0;
+}
+
+
+int save_project(struct crystfelproject *proj)
+{
+	int i;
+	FILE *fh;
+
+	fh = fopen("crystfel.project", "w");
+	if ( fh == NULL ) {
+		STATUS("Couldn't save project.\n");
+		return 1;
+	}
+
+	fprintf(fh, "geom %s\n", proj->geom_filename);
+	fprintf(fh, "data_folder %s\n", proj->data_top_folder);
+	fprintf(fh, "search_pattern %s\n",
+	        str_matchtype(proj->data_search_pattern));
+
+	fprintf(fh, "peak_search_params.method %s\n",
+	        str_peaksearch(proj->peak_search_params.method));
+	fprintf(fh, "peak_search_params.threshold %f\n",
+	        proj->peak_search_params.threshold);
+	fprintf(fh, "peak_search_params.min_sq_gradient %f\n",
+	        proj->peak_search_params.min_sq_gradient);
+	fprintf(fh, "peak_search_params.min_snr %f\n",
+	        proj->peak_search_params.min_snr);
+	fprintf(fh, "peak_search_params.min_pix_count %i\n",
+	        proj->peak_search_params.min_pix_count);
+	fprintf(fh, "peak_search_params.max_pix_count %i\n",
+	        proj->peak_search_params.max_pix_count);
+	fprintf(fh, "peak_search_params.local_bg_radius %i\n",
+	        proj->peak_search_params.local_bg_radius);
+	fprintf(fh, "peak_search_params.min_res %i\n",
+	        proj->peak_search_params.min_res);
+	fprintf(fh, "peak_search_params.max_res %i\n",
+	        proj->peak_search_params.max_res);
+	fprintf(fh, "peak_search_params.min_snr_biggest_pix %f\n",
+	        proj->peak_search_params.min_snr_biggest_pix);
+	fprintf(fh, "peak_search_params.min_snr_peak_pix %f\n",
+	        proj->peak_search_params.min_snr_peak_pix);
+	fprintf(fh, "peak_search_params.min_peak_over_neighbour %f\n",
+	        proj->peak_search_params.min_peak_over_neighbour);
+	fprintf(fh, "peak_search_params.pk_inn %f\n",
+	        proj->peak_search_params.pk_inn);
+	fprintf(fh, "peak_search_params.pk_mid %f\n",
+	        proj->peak_search_params.pk_mid);
+	fprintf(fh, "peak_search_params.pk_out %f\n",
+	        proj->peak_search_params.pk_out);
+	fprintf(fh, "peak_search_params.half_pixel_shift %i\n",
+	        proj->peak_search_params.half_pixel_shift);
+	fprintf(fh, "peak_search_params.revalidate %i\n",
+	        proj->peak_search_params.revalidate);
+
+	fprintf(fh, "backend %s\n", proj->backend->name);
+
+	fprintf(fh, "-----\n");
+	for ( i=0; i<proj->n_frames; i++ ) {
+		if ( proj->events[i] != NULL ) {
+			fprintf(fh, "%s %s\n",
+			        proj->filenames[i], proj->events[i]);
+		} else {
+			fprintf(fh, "%s\n", proj->filenames[i]);
+		}
+	}
 
 	return 0;
 }

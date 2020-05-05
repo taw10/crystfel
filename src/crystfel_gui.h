@@ -32,6 +32,7 @@
 #include "gui_project.h"
 
 struct crystfel_backend {
+	const char *name;
 	int (*run_unitcell)(struct crystfelproject *proj,
 	                    const char *algo);
 	void (*cancel)(struct crystfelproject *proj);
