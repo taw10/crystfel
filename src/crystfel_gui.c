@@ -722,6 +722,7 @@ int main(int argc, char *argv[])
 			                                     dtempl);
 		}
 		update_imageview(&proj);
+		update_peaks(&proj);
 	}
 
 	/* Initialise backend */

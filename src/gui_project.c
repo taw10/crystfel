@@ -199,6 +199,10 @@ static void handle_var(const char *key, const char *val,
 		proj->peak_search_params.revalidate = parse_int(val);
 	}
 
+	if ( strcmp(key, "show_peaks") == 0 ) {
+		proj->show_peaks = parse_int(val);
+	}
+
 	if ( strcmp(key, "backend") == 0 ) {
 		proj->backend = parse_backend(val);
 	}
@@ -370,6 +374,7 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "peak_search_params.revalidate %i\n",
 	        proj->peak_search_params.revalidate);
 
+	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "backend %s\n", proj->backend->name);
 
 	fprintf(fh, "-----\n");
