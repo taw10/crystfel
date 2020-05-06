@@ -34,36 +34,21 @@
 #include "crystfel_gui.h"
 
 
-volatile sig_atomic_t at_zombies = 0;
-
-
 struct local_backend_priv
 {
-	pid_t indexamajig_pid;
+	int indexamajig_running;
+	guint indexamajig_watch;
+	GPid indexamajig_pid;
 };
 
 
-static void check_zombies(struct crystfelproject *proj)
+static void watch_indexamajig(GPid pid, gint status, gpointer vp)
 {
-	pid_t r;
-	int status;
+	struct crystfelproject *proj = vp;
 	struct local_backend_priv *priv = proj->backend_private;
-
-	if ( !at_zombies ) return;
-
-	r = waitpid(priv->indexamajig_pid, &status, WNOHANG);
-	if ( r == -1 ) {
-		ERROR("waitpid() failed\n");
-	} else {
-		STATUS("indexamajig process exited "
-		       "with status %i\n", status);
-		if ( status != 0 ) {
-			gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->progressbar),
-			                          "Failed");
-		}
-	}
-	priv->indexamajig_pid = 0;
-	at_zombies = 0;
+	STATUS("Indexamajig exited with status %i\n", status);
+	priv->indexamajig_running = 0;
+	g_spawn_close_pid(priv->indexamajig_pid);
 }
 
 
@@ -73,9 +58,8 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 	GIOStatus r;
 	GError *err = NULL;
 	struct crystfelproject *proj = vp;
+	struct local_backend_priv *priv = proj->backend_private;
 	gchar *line;
-
-	check_zombies(proj);
 
 	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
 	if ( r == G_IO_STATUS_EOF ) {
@@ -83,7 +67,11 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 		return FALSE;
 	}
 	if ( r != G_IO_STATUS_NORMAL ) {
-		STATUS("Read error?\n");
+		if ( priv->indexamajig_pid != 0 ) {
+			STATUS("Read error?\n");
+		} else {
+			STATUS("End of output (indexamajig exited)\n");
+		}
 		return FALSE;
 	}
 	chomp(line);
@@ -144,17 +132,19 @@ static void add_arg(char **args, int pos, const char *label,
 static int run_unitcell(struct crystfelproject *proj,
                         const char *algo)
 {
-	pid_t pid;
-	int pty;
 	GIOChannel *ioch;
 	char *args[64];
 	char index_str[64];
 	char peaks_str[64];
 	int n_args;
+	int i;
+	int r;
+	int ch_stdin, ch_stdout, ch_stderr;
+	GError *error;
 	struct local_backend_priv *priv = proj->backend_private;
 
-	if ( at_zombies ) {
-		STATUS("Try again in a moment!\n");
+	if ( priv->indexamajig_running != 0 ) {
+		STATUS("Indexamajig already running.\n");
 		return 1;
 	}
 
@@ -211,36 +201,31 @@ static int run_unitcell(struct crystfelproject *proj,
 
 	args[n_args] = NULL;
 
-	int i;
 	for ( i=0; i<n_args; i++ ) {
 		STATUS("%s ", args[i]);
 	}
 	STATUS("\n");
 
-	pid = forkpty(&pty, NULL, NULL, NULL);
-	if ( pid == -1 ) return 1;
-
-	if ( pid == 0 ) {
-
-		/* Child process */
-		struct termios t;
-
-		/* Turn echo off */
-		tcgetattr(STDIN_FILENO, &t);
-		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
-		tcsetattr(STDIN_FILENO, TCSANOW, &t);
-
-		execvp("indexamajig", args);
-		_exit(1);
-
+	r = g_spawn_async_with_pipes(NULL, args, NULL,
+	                             G_SPAWN_SEARCH_PATH
+	                           | G_SPAWN_DO_NOT_REAP_CHILD,
+	                             NULL, NULL,
+	                             &priv->indexamajig_pid,
+	                             &ch_stdin, &ch_stdout, &ch_stderr,
+	                             &error);
+	if ( r == FALSE ) {
+		ERROR("Failed to run indexamajig: %s\n",
+		      error->message);
+		return 1;
 	}
+	priv->indexamajig_running = 1;
 
-	priv->indexamajig_pid = pid;
-	ioch = g_io_channel_unix_new(pty);
+	g_child_watch_add(priv->indexamajig_pid,
+	                  watch_indexamajig, proj);
+
+	ioch = g_io_channel_unix_new(ch_stderr);
 	g_io_add_watch(ioch, G_IO_IN | G_IO_ERR | G_IO_HUP,
 	               index_readable, proj);
-
-	/* FIXME: waitpid() on SIGCHLD */
 
 	return 0;
 }
@@ -263,21 +248,16 @@ static void cancel(struct crystfelproject *proj)
 static void shutdown_backend(struct crystfelproject *proj)
 {
 	struct local_backend_priv *priv = proj->backend_private;
+
+	/* FIXME: Shutdown indexamajig child process */
+
 	free(priv);
-}
-
-
-static void sigchld_handler(int sig, siginfo_t *si, void *uc_v)
-{
-	at_zombies = 1;
 }
 
 
 static void init_backend(struct crystfelproject *proj)
 {
 	struct local_backend_priv *priv;
-	struct sigaction sa;
-	int r;
 
 	priv = malloc(sizeof(struct local_backend_priv));
 	if ( priv == NULL ) {
@@ -285,20 +265,7 @@ static void init_backend(struct crystfelproject *proj)
 		return;
 	}
 
-	priv->indexamajig_pid = 0;
-
-	/* Signal handler */
-	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_RESTART;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_sigaction = sigchld_handler;
-	r = sigaction(SIGCHLD, &sa, NULL);
-	if ( r == -1 ) {
-	        ERROR("Failed to set signal handler!\n");
-	        return;
-	}
-
-	/* Callback to check on signals */
-	g_timeout_add_seconds(1, G_SOURCE_FUNC(check_zombies), proj);
+	priv->indexamajig_running = 0;
 
 	proj->backend_private = priv;
 	STATUS("Local backend initialised.\n");
