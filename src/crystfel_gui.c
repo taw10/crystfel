@@ -314,7 +314,11 @@ static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 static gint save_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
-	save_project(proj);
+	if ( save_project(proj) == 0 ) {
+		STATUS("Saved project.\n");
+	} else {
+		ERROR("Could not save project.\n");
+	}
 	return FALSE;
 }
 
