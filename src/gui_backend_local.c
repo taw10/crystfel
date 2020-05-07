@@ -49,6 +49,7 @@ static void watch_indexamajig(GPid pid, gint status, gpointer vp)
 	STATUS("Indexamajig exited with status %i\n", status);
 	priv->indexamajig_running = 0;
 	g_spawn_close_pid(priv->indexamajig_pid);
+	remove_infobar(proj);
 }
 
 
@@ -235,10 +236,7 @@ static void cancel(struct crystfelproject *proj)
 {
 	struct local_backend_priv *priv = proj->backend_private;
 
-	if ( priv->indexamajig_pid == 0 ) {
-		remove_infobar(proj);
-		return;
-	}
+	if ( !priv->indexamajig_running ) return;
 
 	ERROR("Stopping indexamajig.\n");
 	kill(priv->indexamajig_pid, SIGQUIT);
