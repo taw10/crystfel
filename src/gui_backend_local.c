@@ -140,7 +140,7 @@ static int run_unitcell(struct crystfelproject *proj,
 	int n_args;
 	int i;
 	int r;
-	int ch_stdin, ch_stdout, ch_stderr;
+	int ch_stderr;
 	GError *error;
 	struct local_backend_priv *priv = proj->backend_private;
 
@@ -212,7 +212,7 @@ static int run_unitcell(struct crystfelproject *proj,
 	                           | G_SPAWN_DO_NOT_REAP_CHILD,
 	                             NULL, NULL,
 	                             &priv->indexamajig_pid,
-	                             &ch_stdin, &ch_stdout, &ch_stderr,
+	                             NULL, NULL, &ch_stderr,
 	                             &error);
 	if ( r == FALSE ) {
 		ERROR("Failed to run indexamajig: %s\n",
