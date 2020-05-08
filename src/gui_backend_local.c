@@ -238,8 +238,8 @@ static void cancel(struct crystfelproject *proj)
 
 	if ( !priv->indexamajig_running ) return;
 
-	ERROR("Stopping indexamajig.\n");
-	kill(priv->indexamajig_pid, SIGQUIT);
+	ERROR("Stopping indexamajig (pid %i).\n", priv->indexamajig_pid);
+	kill(-priv->indexamajig_pid, SIGINT);
 }
 
 
