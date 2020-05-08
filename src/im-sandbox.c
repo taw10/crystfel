@@ -1079,6 +1079,9 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return 0;
 	}
 
+	setsid();
+	setpgid(0, 0);
+
 	sb->n_processed_last_stats = 0;
 	sb->t_last_stats = get_monotonic_seconds();
 	sb->n_proc = n_proc;
