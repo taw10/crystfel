@@ -11,6 +11,8 @@ use strict;
 my \$line;
 open(FILE, "$2.temp");
 
+printf("CrystFEL reflection list version 2.0\n");
+printf("Symmetry: 1\n");
 printf("   h    k    l          I    phase   sigma(I)   nmeas\n");
 
 while ( \$line = <FILE> ) {
