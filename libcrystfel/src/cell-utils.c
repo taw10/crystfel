@@ -1956,12 +1956,12 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			}
 			if ( GT(g.E, 0.0) ) {
 				ijk[1] = -1;
-			} else if ( !LT(g.D, 0.0) ) {
+			} else if ( !LT(g.E, 0.0) ) {
 				z = 1;
 			}
 			if ( GT(g.F, 0.0) ) {
 				ijk[2] = -1;
-			} else if ( !LT(g.D, 0.0) ) {
+			} else if ( !LT(g.F, 0.0) ) {
 				z = 2;
 			}
 			if ( ijk[0]*ijk[1]*ijk[2] < 0 ) {
