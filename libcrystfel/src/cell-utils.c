@@ -1966,7 +1966,7 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 			}
 			if ( ijk[0]*ijk[1]*ijk[2] < 0 ) {
 				if ( z == 4 ) {
-					ERROR("No element in reduction step 4");
+					ERROR("No element in reduction step 4\n");
 					abort();
 				}
 				ijk[z] = -1;
