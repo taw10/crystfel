@@ -112,10 +112,20 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 static void update_imageview(struct crystfelproject *proj)
 {
 	char tmp[1024];
+	char *ev_str;
+	char *ev_sep;
+
 	if ( proj->n_frames == 0 ) return;
 
-	snprintf(tmp, 1023, "%s (frame %i of %i)",
-	         proj->filenames[proj->cur_frame],
+	if ( proj->events[proj->cur_frame] != NULL ) {
+		ev_str = proj->events[proj->cur_frame];
+		ev_sep = " ";
+	} else {
+		ev_str = "";
+		ev_sep = "";
+	}
+	snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
+	         proj->filenames[proj->cur_frame], ev_sep, ev_str,
 	         proj->cur_frame+1, proj->n_frames);
 	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
