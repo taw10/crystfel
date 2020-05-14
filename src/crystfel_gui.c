@@ -124,8 +124,29 @@ static void update_imageview(struct crystfelproject *proj)
 }
 
 
+static void add_all_events(struct crystfelproject *proj,
+                           const char *filename,
+                           const DataTemplate *dtempl)
+{
+	struct event_list *events;
+	int i;
+
+	events = image_expand_frames(dtempl, filename);
+	if ( events == NULL ) {
+		ERROR("Couldn't expand event list\n");
+		return;
+	}
+
+	for ( i=0; i<events->num_events; i++ ) {
+		add_file_to_project(proj, filename,
+		                    get_event_string(events->events[i]));
+	}
+}
+
+
 static void add_files(struct crystfelproject *proj, GFile *folder,
-                      enum match_type_id type)
+                      enum match_type_id type,
+                      const DataTemplate *dtempl)
 {
 	GFileEnumerator *fenum;
 	GFileInfo *finfo;
@@ -153,16 +174,14 @@ static void add_files(struct crystfelproject *proj, GFile *folder,
 
 		if ( g_file_info_get_file_type(finfo) == G_FILE_TYPE_DIRECTORY ) {
 
-			add_files(proj, file, type);
+			add_files(proj, file, type, dtempl);
 
 		} else {
 
 			char *bn = g_file_get_basename(file);
 			if ( match_filename(bn, type) ) {
-				/* FIXME: Expand events if appropriate */
-				add_file_to_project(proj,
-				                    g_file_get_path(file),
-				                    NULL);
+				add_all_events(proj, g_file_get_path(file),
+				               dtempl);
 			}
 
 		}
@@ -206,7 +225,7 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 	clear_project_files(proj);
 
 	type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->type_combo));
-	add_files(proj, top, decode_matchtype(type_id));
+	add_files(proj, top, decode_matchtype(type_id), dtempl);
 
 	proj->unsaved = 1;
 	proj->cur_frame = 0;
