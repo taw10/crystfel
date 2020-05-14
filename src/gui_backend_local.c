@@ -39,6 +39,8 @@ struct local_backend_priv
 	int indexamajig_running;
 	guint indexamajig_watch;
 	GPid indexamajig_pid;
+	guint child_watch_source;
+	guint index_readable_source;
 };
 
 
@@ -221,12 +223,13 @@ static int run_unitcell(struct crystfelproject *proj,
 	}
 	priv->indexamajig_running = 1;
 
-	g_child_watch_add(priv->indexamajig_pid,
-	                  watch_indexamajig, proj);
+	priv->child_watch_source = g_child_watch_add(priv->indexamajig_pid,
+	                                             watch_indexamajig, proj);
 
 	ioch = g_io_channel_unix_new(ch_stderr);
-	g_io_add_watch(ioch, G_IO_IN | G_IO_ERR | G_IO_HUP,
-	               index_readable, proj);
+	priv->index_readable_source = g_io_add_watch(ioch,
+	                                             G_IO_IN | G_IO_ERR | G_IO_HUP,
+	                                             index_readable, proj);
 
 	return 0;
 }
@@ -247,7 +250,11 @@ static void shutdown_backend(struct crystfelproject *proj)
 {
 	struct local_backend_priv *priv = proj->backend_private;
 
-	/* FIXME: Shutdown indexamajig child process */
+	if ( priv->indexamajig_running ) {
+		g_source_remove(priv->child_watch_source);
+		g_source_remove(priv->index_readable_source);
+		kill(-priv->indexamajig_pid, SIGINT);
+	}
 
 	free(priv);
 }
