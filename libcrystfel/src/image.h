@@ -253,6 +253,8 @@ extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
                                           const char *event,
                                           int half_pixel_shift);
 
+extern struct event_list *image_expand_frames(const DataTemplate *dtempl,
+                                              const char *filename);
 
 /* Field lists */
 extern struct imagefile_field_list *new_imagefile_field_list(void);

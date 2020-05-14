@@ -2516,3 +2516,320 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 		return NULL;
 	}
 }
+
+
+struct parse_params {
+	hid_t fh;
+	int path_dim;
+	const char *path;
+	struct event *curr_event;
+	struct event_list *ev_list;
+	int top_level;
+};
+
+
+static herr_t parse_file_event_structure(hid_t loc_id, char *name,
+                                         const H5L_info_t *info,
+                                         struct parse_params *pp)
+
+{
+	char *substituted_path;
+	char *ph_loc;
+	char *truncated_path;
+	htri_t check;
+	herr_t herrt_iterate, herrt_info;
+	struct H5O_info_t object_info;
+
+	if ( !pp->top_level ) {
+
+		int fail_push;
+
+		fail_push = push_path_entry_to_event(pp->curr_event, name);
+		if ( fail_push ) {
+			return -1;
+		}
+
+		substituted_path = event_path_placeholder_subst(name, pp->path);
+
+	} else {
+		substituted_path = strdup(pp->path);
+	}
+
+	if ( pp->top_level == 1 ) {
+		pp->top_level = 0;
+	}
+
+	truncated_path = strdup(substituted_path);
+	ph_loc = strstr(substituted_path,"%");
+	if ( ph_loc != NULL) {
+		truncated_path[ph_loc-substituted_path] = '\0';
+	}
+
+	herrt_iterate = 0;
+	herrt_info = 0;
+
+	check = check_path_existence(pp->fh, truncated_path);
+	if ( check == 0 ) {
+			pop_path_entry_from_event(pp->curr_event);
+			return 0;
+	} else {
+
+		herrt_info = H5Oget_info_by_name(pp->fh, truncated_path,
+                                         &object_info, H5P_DEFAULT);
+		if ( herrt_info < 0 ) {
+			free(truncated_path);
+			free(substituted_path);
+			return -1;
+		}
+
+		if ( pp->curr_event->path_length == pp->path_dim
+		 &&  object_info.type == H5O_TYPE_DATASET )
+		{
+
+			int fail_append;
+
+			fail_append = append_event_to_event_list(pp->ev_list,
+			                                         pp->curr_event);
+			if ( fail_append ) {
+				free(truncated_path);
+				free(substituted_path);
+				return -1;
+			}
+
+			pop_path_entry_from_event(pp->curr_event);
+			return 0;
+
+		} else {
+
+			pp->path = substituted_path;
+
+			if ( object_info.type == H5O_TYPE_GROUP ) {
+
+				herrt_iterate = H5Literate_by_name(pp->fh,
+				      truncated_path, H5_INDEX_NAME,
+				      H5_ITER_NATIVE, NULL,
+				      (H5L_iterate_t)parse_file_event_structure,
+				      (void *)pp, H5P_DEFAULT);
+			}
+		}
+	}
+
+	pop_path_entry_from_event(pp->curr_event);
+
+	free(truncated_path);
+	free(substituted_path);
+
+	return herrt_iterate;
+}
+
+
+static int fill_paths(hid_t fh, const DataTemplate *dtempl, int pi,
+                      struct event_list *master_el)
+{
+	struct parse_params pparams;
+	struct event *empty_event;
+	struct event_list *panel_ev_list;
+	int ei;
+	int check;
+
+	empty_event = initialize_event();
+	panel_ev_list = initialize_event_list();
+	if ( (empty_event == NULL) || (panel_ev_list == NULL) )
+	{
+		ERROR("Failed to allocate memory for event list.\n");
+		return 1;
+	}
+
+	pparams.path = dtempl->panels[pi].data;
+	pparams.fh = fh;
+	pparams.path_dim = dtempl->path_dim;
+	pparams.curr_event = empty_event;
+	pparams.top_level = 1;
+	pparams.ev_list = panel_ev_list;
+
+	check = parse_file_event_structure(fh, NULL, NULL, &pparams);
+	if ( check < 0 ) {
+		free_event(empty_event);
+		free_event_list(panel_ev_list);
+		return 1;
+	}
+
+	for ( ei=0; ei<panel_ev_list->num_events; ei++ ) {
+
+		int fail_add;
+
+		fail_add = add_non_existing_event_to_event_list(master_el,
+		                                     panel_ev_list->events[ei]);
+		if ( fail_add ) {
+			free_event(empty_event);
+			free_event_list(panel_ev_list);
+			return 1;
+		}
+
+	}
+
+	free_event(empty_event);
+	free_event_list(panel_ev_list);
+
+	return 0;
+}
+
+
+static int check_dims(hid_t fh, struct panel_template *p,
+                      struct event *ev,
+                      struct event_list *events, int *global_path_dim)
+{
+	char *full_panel_path;
+	hid_t dh;
+	hid_t sh;
+	int dims;
+	hsize_t *size;
+	hsize_t *max_size;
+	int hsdi;
+	int panel_path_dim = 0;
+	struct dim_structure *panel_dim_structure;
+
+	/* Get the full path for this panel in this event */
+	full_panel_path = retrieve_full_path(ev, p->data);
+
+	dh = H5Dopen2(fh, full_panel_path, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("Error opening '%s'\n", full_panel_path);
+		ERROR("Failed to enumerate events.  "
+		      "Check your geometry file.\n");
+		return 1;
+	}
+
+	sh = H5Dget_space(dh);
+	dims = H5Sget_simple_extent_ndims(sh);
+	size = malloc(dims*sizeof(hsize_t));
+	max_size = malloc(dims*sizeof(hsize_t));
+	if ( (size==NULL) || (max_size==NULL) ) {
+		ERROR("Failed to allocate memory for dimensions\n");
+		return 1;
+	}
+
+	dims = H5Sget_simple_extent_dims(sh, size, max_size);
+
+	panel_dim_structure = p->dim_structure;
+	for ( hsdi=0; hsdi<panel_dim_structure->num_dims; hsdi++ ) {
+		if ( panel_dim_structure->dims[hsdi] == HYSL_PLACEHOLDER ) {
+			panel_path_dim = size[hsdi];
+			break;
+		}
+	}
+
+	if ( *global_path_dim == -1 ) {
+
+		*global_path_dim = panel_path_dim;
+
+	} else if ( panel_path_dim != *global_path_dim ) {
+
+		ERROR("All panels must have the same number of frames\n");
+		ERROR("Panel %s has %i frames in one dimension, but the first "
+		      "panel has %i.\n",
+		      p->name, panel_path_dim, *global_path_dim);
+		free(size);
+		free(max_size);
+		return 1;
+	}
+
+	H5Sclose(sh);
+	H5Dclose(dh);
+
+	return 0;
+}
+
+
+struct event_list *image_expand_frames(const DataTemplate *dtempl,
+                                       const char *filename)
+{
+	struct event_list *master_el;
+	hid_t fh;
+
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't open file '%s'\n", filename);
+		return NULL;
+	}
+
+	master_el = initialize_event_list();
+	if ( master_el == NULL ) {
+		ERROR("Failed to allocate event list.\n");
+		H5Fclose(fh);
+		return NULL;
+	}
+
+	/* First expand any placeholders in the HDF5 paths */
+	if ( dtempl->path_dim != 0 ) {
+		int pi;
+		for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+			if ( fill_paths(fh, dtempl, pi, master_el) ) {
+				ERROR("Failed to enumerate paths.\n");
+				H5Fclose(fh);
+				return NULL;
+			}
+		}
+	}
+
+	/* Now enumerate the placeholder dimensions */
+	if ( dtempl->dim_dim > 0 ) {
+
+		struct event_list *master_el_with_dims;
+		int evi;
+
+		/* If there were no HDF5 path placeholders, add a dummy event */
+		if ( master_el->num_events == 0 ) {
+			struct event *empty_ev;
+			empty_ev = initialize_event();
+			append_event_to_event_list(master_el, empty_ev);
+			free(empty_ev);
+		}
+
+		master_el_with_dims = initialize_event_list();
+
+		/* For each event so far, expand the dimensions */
+		for ( evi=0; evi<master_el->num_events; evi++ ) {
+
+			int pi;
+			int global_path_dim = -1;
+			int mlwd;
+
+			/* Check the dimensionality of each panel */
+			for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+				if ( check_dims(fh, &dtempl->panels[pi],
+				                master_el->events[evi],
+				                master_el_with_dims,
+				                &global_path_dim) )
+				{
+					ERROR("Failed to enumerate dims.\n");
+					H5Fclose(fh);
+					return NULL;
+				}
+			}
+
+			/* Add this dimensionality to all events */
+			for ( mlwd=0; mlwd<global_path_dim; mlwd++ ) {
+
+				struct event *mlwd_ev;
+
+				mlwd_ev = copy_event(master_el->events[evi]);
+				push_dim_entry_to_event(mlwd_ev, mlwd);
+				append_event_to_event_list(master_el_with_dims,
+				                           mlwd_ev);
+				free_event(mlwd_ev);
+			}
+
+		}
+
+		free_event_list(master_el);
+		H5Fclose(fh);
+		return master_el_with_dims;
+
+	} else {
+
+		H5Fclose(fh);
+		return master_el;
+
+	}
+}
