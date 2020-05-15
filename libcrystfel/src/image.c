@@ -1360,7 +1360,8 @@ static int load_hdf5_hyperslab(struct panel_template *p,
                                const char *event,
                                void **pdata,
                                hid_t el_type, size_t el_size,
-                               int skip_placeholders_ok)
+                               int skip_placeholders_ok,
+                               const char *path_spec)
 {
 	struct event *ev;
 	hid_t fh;
@@ -1395,7 +1396,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		return 1;
 	}
 
-	panel_full_path = retrieve_full_path(ev, p->data);
+	panel_full_path = retrieve_full_path(ev, path_spec);
 
 	if ( !check_path_existence(fh, panel_full_path) ) {
 		ERROR("Cannot find data for panel %s (%s)\n",
@@ -1552,7 +1553,8 @@ static struct image *image_read_hdf5(DataTemplate *dtempl,
 		if ( load_hdf5_hyperslab(&dtempl->panels[i], filename,
 		                         event, (void *)&image->dp[i],
 		                         H5T_NATIVE_FLOAT,
-		                         sizeof(float), 0) )
+		                         sizeof(float), 0,
+		                         dtempl->panels[i].data) )
 		{
 			ERROR("Failed to load panel data\n");
 			image_free(image);
@@ -1591,7 +1593,7 @@ static int load_mask_hdf5(struct panel_template *p,
 
 	if ( load_hdf5_hyperslab(p, filename, event,
 	                         (void *)&mask, H5T_NATIVE_INT,
-	                         sizeof(int), 1) )
+	                         sizeof(int), 1, p->mask) )
 	{
 		ERROR("Failed to load mask data\n");
 		free(mask);
