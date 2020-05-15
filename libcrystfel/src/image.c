@@ -1359,7 +1359,8 @@ static int load_hdf5_hyperslab(struct panel_template *p,
                                const char *filename,
                                const char *event,
                                void **pdata,
-                               hid_t el_type, size_t el_size)
+                               hid_t el_type, size_t el_size,
+                               int skip_placeholders_ok)
 {
 	struct event *ev;
 	hid_t fh;
@@ -1372,6 +1373,8 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	hsize_t dims[2];
 	char *panel_full_path;
 	void *data;
+	int ndims;
+	int skip_placeholders = 0;
 
 	if ( access(filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n",
@@ -1414,7 +1417,35 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 	free(panel_full_path);
 
-	/* Determine where to read the data from in the file */
+	/* Set up dataspace for file
+	 * (determine where to read the data from) */
+	dataspace = H5Dget_space(dh);
+	ndims = H5Sget_simple_extent_ndims(dataspace);
+	if ( ndims < 0 ) {
+		ERROR("Failed to get number of dimensions for panel %s\n",
+		      p->name);
+		free_event(ev);
+		H5Fclose(fh);
+		return 1;
+	}
+
+	if ( ndims != p->dim_structure->num_dims ) {
+		/* Dimensionality doesn't match */
+		int n_nonplaceholder = 0;
+		for ( hsi=0; hsi<p->dim_structure->num_dims; hsi++ ) {
+			if ( p->dim_structure->dims[hsi] != HYSL_PLACEHOLDER ) {
+				n_nonplaceholder++;
+			}
+		}
+
+		/* If the dimensions match after excluding
+		 * placeholders, it's OK - probably a static mask
+		 * in a multi-event file. */
+		if ( ndims == n_nonplaceholder ) {
+			skip_placeholders = 1;
+		}
+	}
+
 	f_offset = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
 	f_count = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
 	if ( (f_offset == NULL) || (f_count == NULL ) ) {
@@ -1432,8 +1463,10 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 			f_offset[hsi] = p->orig_min_ss;
 			f_count[hsi] = p->orig_max_ss - p->orig_min_ss+1;
 		} else if (p->dim_structure->dims[hsi] == HYSL_PLACEHOLDER ) {
-			f_offset[hsi] = ev->dim_entries[0];
-			f_count[hsi] = 1;
+			if ( !skip_placeholders ) {
+				f_offset[hsi] = ev->dim_entries[0];
+				f_count[hsi] = 1;
+			}
 		} else {
 			f_offset[hsi] = p->dim_structure->dims[hsi];
 			f_count[hsi] = 1;
@@ -1441,8 +1474,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 	}
 
-	/* Set up dataspace for file */
-	dataspace = H5Dget_space(dh);
 	check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
 	if ( check < 0 ) {
@@ -1521,7 +1552,7 @@ static struct image *image_read_hdf5(DataTemplate *dtempl,
 		if ( load_hdf5_hyperslab(&dtempl->panels[i], filename,
 		                         event, (void *)&image->dp[i],
 		                         H5T_NATIVE_FLOAT,
-		                         sizeof(float)) )
+		                         sizeof(float), 0) )
 		{
 			ERROR("Failed to load panel data\n");
 			image_free(image);
@@ -1560,7 +1591,7 @@ static int load_mask_hdf5(struct panel_template *p,
 
 	if ( load_hdf5_hyperslab(p, filename, event,
 	                         (void *)&mask, H5T_NATIVE_INT,
-	                         sizeof(int)) )
+	                         sizeof(int), 1) )
 	{
 		ERROR("Failed to load mask data\n");
 		free(mask);
