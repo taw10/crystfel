@@ -2315,11 +2315,17 @@ ImageFeatureList *get_peaks_cxi_dtempl(const DataTemplate *dtempl,
 		return NULL;
 	}
 
+	if ( ev->dim_entries == NULL ) {
+		ERROR("CXI format peak list format selected,"
+		      "but file has no event structure");
+		return NULL;
+	}
+	line = ev->dim_entries[0];
+
 	subst_name = retrieve_full_path(ev, dtempl->peak_list);
 	free_event(ev);
 	if ( subst_name == NULL ) {
 		ERROR("Invalid peak path %s\n", subst_name);
-		free_event(ev);
 		H5Fclose(fh);
 		return NULL;
 	}
@@ -2374,7 +2380,7 @@ ImageFeatureList *get_peaks_cxi_dtempl(const DataTemplate *dtempl,
 
 	}
 
-	return NULL;
+	return features;
 }
 
 
