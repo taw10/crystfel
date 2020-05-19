@@ -221,7 +221,8 @@ static void swap(int *a, int *b)
 static void draw_pixel_values(cairo_t *cr,
                               double imin_fs, double imin_ss,
                               double imax_fs, double imax_ss,
-                              struct detgeom_panel p, float *dp)
+                              struct detgeom_panel p, float *dp,
+                              int *bad)
 {
 	int min_fs, max_fs, min_ss, max_ss;
 	int fs, ss;
@@ -252,6 +253,8 @@ static void draw_pixel_values(cairo_t *cr,
 		char tmp[64];
 		PangoRectangle rec;
 		double rw, rh;
+		const char *b1;
+		const char *b2;
 
 		fsd = fs + 0.5;
 		ssd = ss + 0.5;
@@ -259,7 +262,15 @@ static void draw_pixel_values(cairo_t *cr,
 		x = (fsd*p.fsx + ssd*p.ssx + p.cnx)*p.pixel_pitch;
 		y = (fsd*p.fsy + ssd*p.ssy + p.cny)*p.pixel_pitch;
 
-		snprintf(tmp, 63, "%.f", dp[fs+ss*p.w]);
+		if ( bad[fs+ss*p.w] ) {
+			b1 = "(";
+			b2 = ")";
+		} else {
+			b1 = "";
+			b2 = "";
+		}
+
+		snprintf(tmp, 63, "%s%.f%s", b1, dp[fs+ss*p.w], b2);
 		pango_layout_set_text(layout, tmp, -1);
 
 		cairo_save(cr);
@@ -365,7 +376,7 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv,
 	pixel_size_on_screen = smallest(fabs(xs), fabs(ys));
 	if ( (pixel_size_on_screen > 40.0) && have_pixels ) {
 		draw_pixel_values(cr, min_x, min_y, max_x, max_y, p,
-		                  iv->image->dp[i]);
+		                  iv->image->dp[i], iv->image->bad[i]);
 	}
 }
 
