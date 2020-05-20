@@ -46,12 +46,14 @@ struct event
 	int dim_length;
 };
 
+/* FIXME: Deprecated */
 struct event_list
 {
 	struct event **events;
 	int num_events;
 };
 
+/* FIXME: Deprecated */
 struct filename_plus_event
 {
 	char *filename;

@@ -116,7 +116,7 @@ struct get_pattern_ctx
 	struct detector *det;
 	const char *prefix;
 	char *filename;
-	struct event_list *events;
+	struct event_list *events;  /* FIXME: Deprecated */
 	int event_index;
 };
 
