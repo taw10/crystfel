@@ -70,10 +70,10 @@ struct event_list *initialize_event_list()
 
 struct filename_plus_event *initialize_filename_plus_event()
 {
-
 	struct filename_plus_event *fpe;
 
 	fpe = malloc(sizeof(struct filename_plus_event));
+	if ( fpe == NULL ) return NULL;
 
 	fpe->filename = NULL;
 	fpe->ev = NULL;
