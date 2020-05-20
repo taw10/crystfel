@@ -857,10 +857,7 @@ int write_chunk(Stream *st, struct image *i,
 	fprintf(st->fh, CHUNK_START_MARKER"\n");
 
 	fprintf(st->fh, "Image filename: %s\n", i->filename);
-	if ( i->event != NULL ) {
-		fprintf(st->fh, "Event: %s\n", get_event_string(i->event));
-	}
-
+	fprintf(st->fh, "Event: %s\n", i->ev);
 	fprintf(st->fh, "Image serial number: %i\n", i->serial);
 
 	fprintf(st->fh, "hit = %i\n", i->hit);
@@ -1087,8 +1084,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				ERROR("Filename = %s\n", image->filename);
-				ERROR("Event = %s\n",
-				      get_event_string(image->event));
+				ERROR("Event = %s\n", image->ev);
 				break;
 			}
 
@@ -1200,7 +1196,7 @@ static int read_and_store_field(struct image *image, const char *line)
 /**
  * Read the next chunk from a stream and fill in 'image'
  */
-int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
+int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -1213,7 +1209,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 	image->features = NULL;
 	image->crystals = NULL;
 	image->n_crystals = 0;
-	image->event = NULL;
+	image->ev = NULL;
 	image->stuff_from_stream = NULL;
 
 	if ( (srf & STREAM_READ_REFLECTIONS) || (srf & STREAM_READ_UNITCELL) ) {
@@ -1238,7 +1234,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		}
 
 		if ( strncmp(line, "Event: ", 7) == 0 ) {
-			image->event = get_event_from_event_string(line+7);
+			image->ev = strdup(line+7);
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {

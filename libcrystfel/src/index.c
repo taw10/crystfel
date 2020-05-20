@@ -234,7 +234,7 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
-                            struct detector *det, struct beam_params *beam,
+                            const DataTemplate *dtempl,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
@@ -284,7 +284,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 		case INDEXING_PINKINDEXER :
 		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
-		                           det, beam);
+		                           dtempl);
 		break;
 
 		default :
@@ -413,7 +413,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int j;
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
-		                                          det, beam,
+		                                          dtempl,
 		                                          xgandalf_opts,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,

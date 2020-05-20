@@ -130,7 +130,7 @@ static struct image *file_wait_open_read(const char *filename,
 
 				if ( !wait_message_done ) {
 					STATUS("Waiting for '%s'\n",
-					       image->filename);
+					       filename);
 					wait_message_done = 1;
 				}
 
@@ -194,6 +194,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	if ( pargs->msgpack_obj != NULL ) {
 		set_last_task(last_task, "unpacking messagepack object");
 		image = unpack_msgpack_data(pargs->msgpack_obj,
+		                            iargs->dtempl,
 		                            iargs->no_image_data);
 		if ( image == NULL ) return;
 	} else {

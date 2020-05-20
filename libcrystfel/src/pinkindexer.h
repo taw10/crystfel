@@ -54,12 +54,13 @@ struct pinkIndexer_options {
 
 #include <stddef.h>
 #include "index.h"
+#include "datatemplate.h"
 
 extern int run_pinkIndexer(struct image *image, void *ipriv);
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                                  struct pinkIndexer_options *pinkIndexer_opts,
-                                 struct detector *det, struct beam_params *beam);
+                                 const DataTemplate *dtempl);
 
 extern void pinkIndexer_cleanup(void *pp);
 

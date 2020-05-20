@@ -55,7 +55,7 @@ extern ImageFeatureList *get_peaks_msgpack(msgpack_object *obj,
                                            int half_pixel_shift);
 
 extern struct image *unpack_msgpack_data(msgpack_object *obj,
-                                         DataTemplate *dtempl,
+                                         const DataTemplate *dtempl,
                                          int no_image_data);
 
 #else /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */

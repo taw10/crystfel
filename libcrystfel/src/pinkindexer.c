@@ -166,7 +166,7 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 
 void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
-                          struct detector *det, struct beam_params *beam)
+                          const DataTemplate *dtempl)
 {
 	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->customPhotonEnergy <= 0) {
 		ERROR("For pinkIndexer, the photon_energy must be defined as a "
@@ -378,7 +378,7 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 		struct pinkIndexer_options *pinkIndexer_opts,
-		struct detector *det, struct beam_params *beam)
+		const DataTemplate *dtempl)
 {
 	ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
 	ERROR("To use PINKINDEXER indexing, recompile with PINKINDEXER.\n");

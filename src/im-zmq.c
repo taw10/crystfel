@@ -46,6 +46,7 @@
 #include "hdf5-file.h"
 #include "utils.h"
 #include "im-zmq.h"
+#include "datatemplate_priv.h"
 
 
 struct im_zmq
@@ -408,19 +409,19 @@ static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
 }
 
 
-static double *zero_array(DataTemplate *dtempl, int *dw, int *dh)
+static double *zero_array(const DataTemplate *dtempl, int *dw, int *dh)
 {
 	int max_fs = 0;
 	int max_ss = 0;
 	int pi;
 	double *data;
 
-	for ( pi=0; pi<det->n_panels; pi++ ) {
-		if ( det->panels[pi].orig_max_fs > max_fs ) {
-			max_fs = det->panels[pi].orig_max_fs;
+	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+		if ( dtempl->panels[pi].orig_max_fs > max_fs ) {
+			max_fs = dtempl->panels[pi].orig_max_fs;
 		}
-		if ( det->panels[pi].orig_max_ss > max_ss ) {
-			max_ss = det->panels[pi].orig_max_ss;
+		if ( dtempl->panels[pi].orig_max_ss > max_ss ) {
+			max_ss = dtempl->panels[pi].orig_max_ss;
 		}
 	}
 
@@ -456,25 +457,25 @@ struct image *unpack_msgpack_data(msgpack_object *obj,
 
 	if ( obj == NULL ) {
 		ERROR("No MessagePack object!\n");
-		return 1;
+		return NULL;
 	}
 
 	if ( !no_image_data ) {
 		data = find_msgpack_data(obj, &data_width, &data_height);
 		if ( data == NULL ) {
 			ERROR("No image data in MessagePack object.\n");
-			return 1;
+			return NULL;
 		}
 	} else {
 		data = zero_array(dtempl, &data_width, &data_height);
 	}
 
 	image = image_new();
-	if ( image == NULL ) return 1;
+	if ( image == NULL ) return NULL;
 
 	if ( unpack_slab(image, data, data_width, data_height) ) {
 		ERROR("Failed to unpack data slab.\n");
-		return 1;
+		return NULL;
 	}
 
 	im_zmq_fill_in_beam_parameters(image->beam, image);
@@ -485,5 +486,5 @@ struct image *unpack_msgpack_data(msgpack_object *obj,
 	im_zmq_fill_in_clen(image->det);
 	fill_in_adu(image);
 
-	return 0;
+	return image;
 }
