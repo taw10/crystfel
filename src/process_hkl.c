@@ -300,7 +300,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		if ( scale <= 0.0 ) return 1;
 		if ( stat != NULL ) {
 			fprintf(stat, "%s %s %f %f\n", image->filename,
-			        get_event_string(image->event), scale, cc);
+			        image->ev, scale, cc);
 		}
 
 	} else {

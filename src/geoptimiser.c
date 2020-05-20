@@ -789,7 +789,7 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 					      "(panel %s), image %s %s\n",
 					      imfe->fs, imfe->ss, gp->p->name,
 					      images[cp].filename,
-					      get_event_string(images[cp].event));
+					      images[cp].ev);
 					return r;
 				}
 

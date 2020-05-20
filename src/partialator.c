@@ -254,14 +254,12 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	for ( i=0; i<n_crystals; i++ ) {
 
 		const char *fn;
-		struct event *ev;
 		char *evs;
 		char *id;
 		int dsn_crystal;
 
 		fn = crystal_get_image(crystals[i])->filename;
-		ev = crystal_get_image(crystals[i])->event;
-		evs = get_event_string(ev);
+		evs = crystal_get_image(crystals[i])->ev;
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
@@ -349,14 +347,12 @@ static signed int find_first_crystal(Crystal **crystals, int n_crystals,
 
 	for ( i=0; i<n_crystals; i++ ) {
 		const char *fn;
-		struct event *ev;
 		char *evs;
 		char *id;
 		int dsn_crystal;
 
 		fn = crystal_get_image(crystals[i])->filename;
-		ev = crystal_get_image(crystals[i])->event;
-		evs = get_event_string(ev);
+		evs = crystal_get_image(crystals[i])->ev;
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
@@ -389,14 +385,12 @@ static void check_csplit(Crystal **crystals, int n_crystals,
 	for ( i=0; i<n_crystals; i++ ) {
 
 		const char *fn;
-		struct event *ev;
 		char *evs;
 		char *id;
 		int dsn_crystal;
 
 		fn = crystal_get_image(crystals[i])->filename;
-		ev = crystal_get_image(crystals[i])->event;
-		evs = get_event_string(ev);
+		evs = crystal_get_image(crystals[i])->ev;
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {

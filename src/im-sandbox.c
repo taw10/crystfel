@@ -113,7 +113,7 @@ struct get_pattern_ctx
 {
 	FILE *fh;
 	int use_basename;
-	struct detector *det;
+	const DataTemplate *dtempl;
 	const char *prefix;
 	char *filename;
 	struct event_list *events;  /* FIXME: Deprecated */
@@ -251,107 +251,51 @@ static char *read_prefixed_filename(struct get_pattern_ctx *gpctx, char **event)
 }
 
 
-static struct filename_plus_event *get_pattern(struct get_pattern_ctx *gpctx)
+/* Return 0 for "no more" */
+static int get_pattern(struct get_pattern_ctx *gpctx,
+                       char **pfilename, char **pevent)
 {
 	char *filename;
 	char *evstr;
 
-	/* If single-event geometry, just return next filename */
-	if ( !multi_event_geometry(gpctx->det) )
-	{
-		struct filename_plus_event *fne;
-		fne = malloc(sizeof(struct filename_plus_event));
-		if ( fne == NULL ) return NULL;
-		fne->filename = read_prefixed_filename(gpctx, NULL);
-		if ( fne->filename == NULL ) {
-			free(fne);
-			return NULL;
-		}
-		fne->ev = NULL;
-		return fne;
-	}
-
-	/* Ok, multi-event geometry.  Is an event available already? */
+	/* Is an event available already? */
 	if ( (gpctx->events != NULL)
 	  && (gpctx->event_index < gpctx->events->num_events) )
 	{
-		struct filename_plus_event *fne;
-		fne = malloc(sizeof(struct filename_plus_event));
-		fne->filename = strdup(gpctx->filename);
-		fne->ev = copy_event(gpctx->events->events[gpctx->event_index++]);
-
-		return fne;
+		*pfilename = strdup(gpctx->filename);
+		*pevent = get_event_string(gpctx->events->events[gpctx->event_index++]);
+		return 1;
 	}
 
 	/* No events in list.  Time to top it up */
 	filename = read_prefixed_filename(gpctx, &evstr);
 
 	/* Nothing left in file -> we're done */
-	if ( filename == NULL ) return NULL;
-
-	/* Muppet check */
-	if ( is_cbf_file(filename) == 1 ) {
-		ERROR("Your geometry file is for a multi-event format, but "
-		      "this file is in CBF format.\n");
-		ERROR("Your geometry file probably needs to be changed.\n");
-		return NULL;
-	}
+	if ( filename == NULL ) return 0;
 
 	/* Does the line from the input file contain an event ID?
-	 * If so, just parse it and sent it straight back. */
+	 * If so, just send it straight back. */
 	if ( evstr != NULL ) {
-
-		/* Make an event list with only one item */
-		struct event *ev = get_event_from_event_string(evstr);
-		if ( ev == NULL ) {
-			ERROR("Bad event descriptor: '%s'\n", evstr);
-			return NULL;
-		} else {
-			struct filename_plus_event *fne;
-			fne = malloc(sizeof(struct filename_plus_event));
-			fne->filename = filename;
-			fne->ev = ev;
-			return fne;
-		}
-
-	} else {
-
-		/* Enumerate all the events in the file and then send the
-		 * first one back */
-		struct hdfile *hdfile;
-		struct filename_plus_event *fne;
-
-		hdfile = hdfile_open(filename);
-		if ( hdfile == NULL ) {
-			ERROR("Failed to open %s\n", filename);
-			return NULL;
-		}
-
-		if ( gpctx->events != NULL ) {
-			free_event_list(gpctx->events);
-		}
-
-		gpctx->events = fill_event_list(hdfile, gpctx->det);
-		if ( gpctx->events == NULL ) {
-			ERROR("Failed to get event list.\n");
-			return NULL;
-		}
-
-		hdfile_close(hdfile);
-
-		/* Save filename for next time */
-		if ( gpctx->filename != NULL ) {
-			free(gpctx->filename);
-		}
-		gpctx->filename = filename;
-
-		gpctx->event_index = 0;
-		fne = malloc(sizeof(struct filename_plus_event));
-		fne->filename = strdup(gpctx->filename);
-		fne->ev = copy_event(gpctx->events->events[gpctx->event_index++]);
-		return fne;
-
+		*pfilename = strdup(filename);
+		*pevent = strdup(evstr);
+		return 1;
 	}
+
+	free_event_list(gpctx->events);
+	gpctx->events = image_expand_frames(gpctx->dtempl, filename);
+	if ( gpctx->events == NULL ) {
+		ERROR("Failed to get event list.\n");
+		return 0;
+	}
+
+	/* Save filename for next time */
+	free(gpctx->filename);
+	gpctx->filename = filename;
+
+	gpctx->event_index = 0;
+	*pfilename = strdup(gpctx->filename);
+	*pevent = get_event_string(gpctx->events->events[gpctx->event_index++]);
+	return 1;
 }
 
 
@@ -398,7 +342,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		char filename[MAX_EV_LEN];
 		char event_str[MAX_EV_LEN];
 		int ser;
-		struct event *ev;
 		int r;
 
 		if ( !sb->zmq ) {
@@ -444,31 +387,16 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 			if ( r != 3 ) continue;
 
-			pargs.filename_p_e = initialize_filename_plus_event();
-			pargs.filename_p_e->filename = strdup(filename);
+			pargs.filename = strdup(filename);
+			pargs.event = strdup(event_str);
 
-			if ( strcmp(event_str, "(none)") != 0 ) {
-
-				ev = get_event_from_event_string(event_str);
-				if ( ev == NULL ) {
-					ERROR("Bad event string '%s'\n", event_str);
-					continue;
-				}
-				pargs.filename_p_e->ev = ev;
-
-			} else {
-
-				pargs.filename_p_e->ev = NULL;
-
-			}
 			pargs.msgpack_obj = NULL;
 
 		} else {
 
 			pargs.msgpack_obj = im_zmq_fetch(zmqstuff);
-			pargs.filename_p_e = initialize_filename_plus_event();
-			pargs.filename_p_e->filename = strdup("(from ZMQ)");
-			pargs.filename_p_e->ev = NULL;
+			pargs.filename = strdup("(from ZMQ)");
+			pargs.event = NULL;
 			ser = 0;  /* FIXME */
 
 		}
@@ -477,9 +405,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		process_image(iargs, &pargs, st, cookie, tmpdir, ser,
 		              sb->shared, taccs, sb->shared->last_task[cookie]);
 
-		if ( !sb->zmq ) {
-			free_filename_plus_event(pargs.filename_p_e);
-		} else {
+		if ( sb->zmq ) {
 			im_zmq_clean(zmqstuff);
 		}
 
@@ -489,8 +415,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 	time_accounts_set(taccs, TACC_FINALCLEANUP);
 	cleanup_indexing(iargs->ipriv);
-	free_detector_geometry(iargs->det);
-	free(iargs->hdf5_peak_path);
 	free_imagefile_field_list(iargs->copyme);
 	cell_free(iargs->cell);
 	if ( sb->profile ) time_accounts_print(taccs);
@@ -743,7 +667,6 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		close_stream(st);
 
 		free(tmp);
-		free(sb->iargs->beam->photon_energy_from);
 
 		munmap(sb->shared, sizeof(struct sb_shm));
 
@@ -861,19 +784,15 @@ static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 
 	while ( sb->shared->n_events < QUEUE_SIZE ) {
 
-		struct filename_plus_event *ne;
+		char *filename;
 		char *evstr;
 
-		ne = get_pattern(gpctx);
-		if ( ne == NULL ) return 1; /* No more */
+		if ( !get_pattern(gpctx, &filename, &evstr) ) return 1;
 
 		memset(sb->shared->queue[sb->shared->n_events], 0, MAX_EV_LEN);
-		evstr = get_event_string(ne->ev),
 		snprintf(sb->shared->queue[sb->shared->n_events++], MAX_EV_LEN,
-		         "%s %s %i", ne->filename, evstr, sb->serial++);
-		free(evstr);
+		         "%s %s %i", filename, evstr, sb->serial++);
 		sem_post(sb->queue_sem);
-		free_filename_plus_event(ne);
 
 	}
 	return 0;
@@ -1103,7 +1022,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	gpctx.fh = fh;
 	gpctx.use_basename = config_basename;
-	gpctx.det = iargs->det;
+	gpctx.dtempl = iargs->dtempl;
 	gpctx.prefix = prefix;
 	gpctx.filename = NULL;
 	gpctx.events = NULL;

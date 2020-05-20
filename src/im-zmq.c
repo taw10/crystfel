@@ -408,7 +408,7 @@ static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
 }
 
 
-static double *zero_array(struct detector *det, int *dw, int *dh)
+static double *zero_array(DataTemplate *dtempl, int *dw, int *dh)
 {
 	int max_fs = 0;
 	int max_ss = 0;
@@ -446,16 +446,13 @@ static double *zero_array(struct detector *det, int *dw, int *dh)
  *        ...
  * }
  */
-int unpack_msgpack_data(msgpack_object *obj, struct image *image,
-                        int no_image_data)
+struct image *unpack_msgpack_data(msgpack_object *obj,
+                                  const DataTemplate *dtempl,
+                                  int no_image_data)
 {
+	struct image *image;
 	int data_width, data_height;
 	double *data;
-
-	if ( image->det == NULL ) {
-		ERROR("Geometry not available.\n");
-		return 1;
-	}
 
 	if ( obj == NULL ) {
 		ERROR("No MessagePack object!\n");
@@ -469,20 +466,21 @@ int unpack_msgpack_data(msgpack_object *obj, struct image *image,
 			return 1;
 		}
 	} else {
-		data = zero_array(image->det, &data_width, &data_height);
+		data = zero_array(dtempl, &data_width, &data_height);
 	}
+
+	image = image_new();
+	if ( image == NULL ) return 1;
 
 	if ( unpack_slab(image, data, data_width, data_height) ) {
 		ERROR("Failed to unpack data slab.\n");
 		return 1;
 	}
 
-	if ( image->beam != NULL ) {
-		im_zmq_fill_in_beam_parameters(image->beam, image);
-		if ( image->lambda > 1000 ) {
-			ERROR("Warning: Missing or nonsensical wavelength "
-			      "(%e m).\n", image->lambda);
-		}
+	im_zmq_fill_in_beam_parameters(image->beam, image);
+	if ( image->lambda > 1000 ) {
+		ERROR("Warning: Missing or nonsensical wavelength "
+		      "(%e m).\n", image->lambda);
 	}
 	im_zmq_fill_in_clen(image->det);
 	fill_in_adu(image);

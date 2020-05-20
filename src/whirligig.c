@@ -173,7 +173,7 @@ static void process_series(struct image *images, signed int *ser,
 		Crystal *cr = images[i].crystals[ser[i]];
 		fprintf(fh, "%4i %5i %s %s %i\n", i, images[i].serial,
 		                             images[i].filename,
-		                             get_event_string(images[i].event),
+		                             images[i].ev,
 		                             ser[i]);
 		p[i] = transform_reflections(crystal_get_reflections(cr),
 		                             mat[i]);

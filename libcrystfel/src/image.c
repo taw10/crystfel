@@ -1260,7 +1260,7 @@ void imagefile_close(struct imagefile *f)
 
 /************************** New API (DataTemplate) ****************************/
 
-static struct image *image_new()
+struct image *image_new()
 {
 	struct image *image;
 
@@ -1291,7 +1291,6 @@ static struct image *image_new()
 
 	/* Deprecated stuff */
 	image->beam = NULL;
-	image->event = NULL;
 	image->det = NULL;
 
 	return image;

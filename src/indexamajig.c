@@ -68,27 +68,6 @@
 #include "datatemplate.h"
 
 
-static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copyme,
-                                              struct detector *det,
-                                              struct beam_params *beam)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-
-		struct panel *p = &det->panels[i];
-
-		if ( p->clen_from != NULL ) {
-			add_imagefile_field(copyme, p->clen_from);
-		}
-	}
-
-	if ( beam->photon_energy_from != NULL ) {
-		add_imagefile_field(copyme, beam->photon_energy_from);
-	}
-}
-
-
 struct indexamajig_arguments
 {
 	struct index_args iargs;  /* These are the options that will be
@@ -107,7 +86,6 @@ struct indexamajig_arguments
 	int no_image_data;
 	int serial_start;
 	char *temp_location;
-	char *command_line_peak_path;
 	int if_refine;
 	int if_checkcell;
 	int if_peaks;
@@ -251,8 +229,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 304 :
-		free(args->command_line_peak_path);
-		args->command_line_peak_path = strdup(arg);
+		ERROR("The option --hdf5-peak-path is no longer used.\n");
+		ERROR("Set the peak path in the geometry file.\n");
 		break;
 
 		case 305 :
@@ -582,7 +560,6 @@ int main(int argc, char *argv[])
 	char *tmpdir;  /* e.g. /tmp/indexamajig.12345 */
 	char *rn;  /* e.g. /home/taw/indexing */
 	int r;
-	struct beam_params beam;
 	char *zmq_address = NULL;
 	int timeout = 240;
 	TakeTwoOptions *taketwo_opts = NULL;
@@ -604,7 +581,6 @@ int main(int argc, char *argv[])
 	args.basename = 0;
 	args.zmq = 0;
 	args.serial_start = 1;
-	args.command_line_peak_path = NULL;
 	args.if_peaks = 1;
 	args.if_multi = 0;
 	args.if_retry = 1;
@@ -639,10 +615,8 @@ int main(int argc, char *argv[])
 	args.iargs.min_sig = 11.0;
 	args.iargs.min_peak_over_neighbour = -INFINITY;
 	args.iargs.check_hdf5_snr = 0;
-	args.iargs.det = NULL;
+	args.iargs.dtempl = NULL;
 	args.iargs.peaks = PEAK_ZAEF;
-	args.iargs.beam = &beam;
-	args.iargs.hdf5_peak_path = NULL;
 	args.iargs.half_pixel_shift = 1;
 	args.iargs.copyme = NULL;
 	args.iargs.pk_inn = -1.0;
@@ -849,39 +823,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Load detector geometry (old API) */
-	args.iargs.det = get_detector_geometry_2(args.geom_filename,
-	                                         args.iargs.beam,
-	                                         &args.iargs.hdf5_peak_path);
-	if ( args.iargs.det == NULL ) {
-		ERROR("Failed to read detector geometry from  '%s'\n",
-		      args.geom_filename);
-		return 1;
-	}
-	add_geom_beam_stuff_to_field_list(args.iargs.copyme, args.iargs.det,
-	                                  args.iargs.beam);
-
 	/* Load data template (new API) */
 	args.iargs.dtempl = data_template_new_from_file(args.geom_filename);
 	if ( args.iargs.dtempl == NULL ) {
 		ERROR("Failed to read detector geometry from '%s'"
 		      " (for new API)\n", args.geom_filename);
 		return 1;
-	}
-
-	/* If no peak path from geometry file, use these (but see later) */
-	if ( args.iargs.hdf5_peak_path == NULL ) {
-		if ( args.iargs.peaks == PEAK_HDF5 ) {
-			args.iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
-		} else if ( args.iargs.peaks == PEAK_CXI ) {
-			args.iargs.hdf5_peak_path = strdup("/entry_1/result_1");
-		}
-	}
-
-	/* If an HDF5 peak path was given on the command line, use it */
-	if ( args.command_line_peak_path != NULL ) {
-		free(args.iargs.hdf5_peak_path);
-		args.iargs.hdf5_peak_path = args.command_line_peak_path;
 	}
 
 	/* If no integration radii were given, apply the defaults */
@@ -998,7 +945,7 @@ int main(int argc, char *argv[])
 		}
 
 		args.iargs.ipriv = setup_indexing(args.indm_str, args.iargs.cell,
-		                                  args.iargs.det, args.iargs.beam,
+		                                  args.iargs.dtempl,
 		                                  args.iargs.tols, flags,
 		                                  taketwo_opts,
 		                                  xgandalf_opts,
@@ -1063,12 +1010,10 @@ int main(int argc, char *argv[])
 
 	free_imagefile_field_list(args.iargs.copyme);
 	cell_free(args.iargs.cell);
-	free(args.iargs.beam->photon_energy_from);
 	free(args.prefix);
 	free(args.temp_location);
 	free(tmpdir);
-	free_detector_geometry(args.iargs.det);
-	free(args.iargs.hdf5_peak_path);
+	data_template_free(args.iargs.dtempl);
 	close_stream(st);
 	cleanup_indexing(args.iargs.ipriv);
 

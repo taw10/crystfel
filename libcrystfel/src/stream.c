@@ -840,17 +840,15 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 /**
  * \param st A \ref Stream
  * \param i An \ref image structure
- * \param imfile A \ref imagefile structure
  * \param include_peaks Whether to include peak search results in stream
  * \param include_reflections Whether to include integration results in stream
- * \param ev A \ref event strucutre
  *
  * Writes a new chunk to \p st.
  *
  * \returns non-zero on error.
  */
-int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
-                int include_peaks, int include_reflections, struct event *ev)
+int write_chunk(Stream *st, struct image *i,
+                int include_peaks, int include_reflections)
 {
 	int j;
 	char *indexer;
@@ -879,7 +877,8 @@ int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
 	fprintf(st->fh, "beam_divergence = %.2e rad\n", i->div);
 	fprintf(st->fh, "beam_bandwidth = %.2e (fraction)\n", i->bw);
 
-	imagefile_copy_fields(imfile, i->copyme, st->fh, ev);
+	/* FIXME: Better way of doing this */
+	//imagefile_copy_fields(imfile, i->copyme, st->fh, ev);
 
 	if ( i->det != NULL ) {
 

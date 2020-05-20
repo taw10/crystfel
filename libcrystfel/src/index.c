@@ -315,7 +315,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
-                                struct detector *det, struct beam_params *beam,
+                                const DataTemplate *dtempl,
                                 float *tols, IndexingFlags flags,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,

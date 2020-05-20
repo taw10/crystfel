@@ -362,7 +362,6 @@ static void *create_job(void *vqargs)
 
 		crystal_free(im.crystals[0]);
 		free(im.filename);
-		free_event(im.event);
 
 	} else {
 		wargs->template_cell = NULL;
@@ -465,7 +464,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	int i;
 	int ret;
 
-	ret = write_chunk(qargs->stream, &wargs->image, NULL, 0, 1, NULL);
+	ret = write_chunk(qargs->stream, &wargs->image, 0, 1);
 	if ( ret != 0) {
 		ERROR("WARNING: error writing stream file.\n");
 	}
@@ -899,12 +898,12 @@ int main(int argc, char *argv[])
 	image.bw = bandwidth;
 	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 	image.filename = "dummy.h5";
+	image.ev = "(none)";
 	image.copyme = NULL;
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.indexed_by = INDEXING_SIMULATION;
 	image.serial = 0;
-	image.event = NULL;
 	image.hit = 0;
 	image.n_indexing_tries = 1;
 	image.features = NULL;

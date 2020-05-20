@@ -152,7 +152,6 @@ struct image
 	/** \name The filename and event ID for the image
 	 * @{ */
 	char                    *filename;
-	struct event            *event;  /* FIXME: Deprecated */
 	char                    *ev;
 	/** @} */
 
@@ -244,6 +243,7 @@ extern signed int is_cbf_file(const char *filename);
 
 
 /* New API */
+extern struct image *image_new(void);
 extern struct image *image_read(DataTemplate *dtempl, const char *filename,
                                 const char *event);
 extern void image_free(struct image *image);

@@ -58,13 +58,10 @@ struct index_args
 	float min_sq_gradient;
 	float min_snr;
 	int check_hdf5_snr;
-	struct detector *det;
-	const DataTemplate *dtempl;
+	DataTemplate *dtempl;
 	IndexingPrivate *ipriv;
 	enum peak_search_method peaks;
 	float tols[6];
-	struct beam_params *beam;
-	char *hdf5_peak_path;
 	int half_pixel_shift;
 	float pk_inn;
 	float pk_mid;
@@ -110,7 +107,8 @@ struct index_args
 struct pattern_args
 {
 	/* "Input" */
-	struct filename_plus_event *filename_p_e;
+	char *filename;
+	char *event;
 #ifdef HAVE_MSGPACK
 	msgpack_object *msgpack_obj;
 #else
