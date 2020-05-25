@@ -838,8 +838,7 @@ struct image *image_new()
 	image->detgeom = NULL;
 	image->filename = NULL;
 	image->ev = NULL;
-	image->copyme = NULL;
-	image->stuff_from_stream = NULL;
+	image->copied_headers = NULL;
 	image->avg_clen = -1.0;
 	image->id = 0;
 	image->serial = 0;

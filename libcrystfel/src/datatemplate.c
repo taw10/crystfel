@@ -1270,3 +1270,11 @@ void data_template_file_to_panel_coords(const DataTemplate *dt,
 	*pfs = *pfs - dt->panels[pn].orig_min_fs;
 	*pss = *pss - dt->panels[pn].orig_min_ss;
 }
+
+
+void data_template_add_copy_header(DataTemplate *dt,
+                                   const char *header)
+{
+	/* FIXME: Add "header" to list of things to copy */
+	STATUS("Adding %s\n", header);
+}

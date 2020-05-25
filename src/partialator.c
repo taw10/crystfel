@@ -1389,9 +1389,6 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		free_stuff_from_stream(cur.stuff_from_stream);
-		cur.stuff_from_stream = NULL;
-
 		for ( i=0; i<cur.n_crystals; i++ ) {
 
 			Crystal *cr;

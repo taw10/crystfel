@@ -1144,55 +1144,6 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 }
 
 
-void free_stuff_from_stream(struct stuff_from_stream *sfs)
-{
-	int i;
-	if ( sfs == NULL ) return;
-	for ( i=0; i<sfs->n_fields; i++ ) {
-		free(sfs->fields[i]);
-	}
-	free(sfs->fields);
-	free(sfs);
-}
-
-
-static int read_and_store_field(struct image *image, const char *line)
-{
-	char **new_fields;
-	char *nf;
-
-	if ( image->stuff_from_stream == NULL ) {
-		image->stuff_from_stream =
-		       malloc(sizeof(struct stuff_from_stream));
-		if ( image->stuff_from_stream == NULL) {
-			ERROR("Failed reading entries from stream\n");
-			return 1;
-		}
-		image->stuff_from_stream->fields = NULL;
-		image->stuff_from_stream->n_fields = 0;
-	}
-
-	new_fields = realloc(image->stuff_from_stream->fields,
-			     (1+image->stuff_from_stream->n_fields)*
-			     sizeof(char *));
-	if ( new_fields == NULL ) {
-		ERROR("Failed reading entries from stream\n");
-		return 1;
-	}
-	image->stuff_from_stream->fields = new_fields;
-
-	nf = strdup(line);
-	if ( nf == NULL ) {
-		ERROR("Failed to allocate field from stream\n");
-		return 1;
-	}
-	image->stuff_from_stream->fields[image->stuff_from_stream->n_fields] = nf;
-	image->stuff_from_stream->n_fields++;
-
-	return 0;
-}
-
-
 /**
  * Read the next chunk from a stream and fill in 'image'
  */
@@ -1210,7 +1161,7 @@ int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf)
 	image->crystals = NULL;
 	image->n_crystals = 0;
 	image->ev = NULL;
-	image->stuff_from_stream = NULL;
+	image->copied_headers = NULL;
 
 	if ( (srf & STREAM_READ_REFLECTIONS) || (srf & STREAM_READ_UNITCELL) ) {
 		srf |= STREAM_READ_CRYSTALS;
@@ -1288,17 +1239,6 @@ int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf)
 					p->clen = atof(line+14+k+3);
 				}
 
-			}
-		}
-
-		if ( strstr(line, " = ") != NULL ) {
-
-			int fail;
-
-			fail = read_and_store_field(image, line);
-			if ( fail ) {
-				ERROR("Failed to read fields from stream.\n");
-				return 1;
 			}
 		}
 

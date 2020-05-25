@@ -44,8 +44,6 @@ struct detector;
 struct imagefeature;
 struct sample;
 struct image;
-struct imagefile;
-struct imagefile_field_list;
 
 #include "utils.h"
 #include "cell.h"
@@ -155,11 +153,8 @@ struct image
 	char                    *ev;
 	/** @} */
 
-	/** A list of image file headers to copy to the stream */
-	const struct imagefile_field_list *copyme;
-
 	/** A list of metadata read from the stream */
-	struct stuff_from_stream *stuff_from_stream;
+	char                    *copied_headers;
 
 	/** Mean of the camera length values for all panels */
 	double                  avg_clen;
@@ -235,9 +230,6 @@ extern int imagefile_read(struct imagefile *f, struct image *image,
 extern int imagefile_read_simple(struct imagefile *f, struct image *image);
 extern struct hdfile *imagefile_get_hdfile(struct imagefile *f);
 extern enum imagefile_type imagefile_get_type(struct imagefile *f);
-extern void imagefile_copy_fields(struct imagefile *f,
-                                  const struct imagefile_field_list *copyme,
-                                  FILE *fh, struct event *ev);
 extern void imagefile_close(struct imagefile *f);
 extern signed int is_cbf_file(const char *filename);
 
@@ -255,13 +247,6 @@ extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 
 extern struct event_list *image_expand_frames(const DataTemplate *dtempl,
                                               const char *filename);
-
-/* Field lists */
-extern struct imagefile_field_list *new_imagefile_field_list(void);
-extern void free_imagefile_field_list(struct imagefile_field_list *f);
-
-extern void add_imagefile_field(struct imagefile_field_list *copyme,
-                                const char *name);
 
 #ifdef __cplusplus
 }

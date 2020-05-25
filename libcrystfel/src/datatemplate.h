@@ -59,6 +59,9 @@ extern signed int data_template_find_panel(const DataTemplate *dt,
 extern void data_template_file_to_panel_coords(const DataTemplate *dt,
                                                float *pfs, float *pss);
 
+extern void data_template_add_copy_header(DataTemplate *dt,
+                                          const char *header);
+
 #ifdef __cplusplus
 }
 #endif

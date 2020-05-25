@@ -899,7 +899,7 @@ int main(int argc, char *argv[])
 	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 	image.filename = "dummy.h5";
 	image.ev = "(none)";
-	image.copyme = NULL;
+	image.copied_headers = NULL;
 	image.crystals = NULL;
 	image.n_crystals = 0;
 	image.indexed_by = INDEXING_SIMULATION;

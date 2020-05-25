@@ -92,6 +92,8 @@ struct indexamajig_arguments
 	int if_multi;
 	int if_retry;
 	int profile;  /* Whether to do wall-clock time profiling */
+	char **copy_headers;
+	int n_copy_headers;
 
 	TakeTwoOptions **taketwo_opts_ptr;
 	FelixOptions **felix_opts_ptr;
@@ -104,6 +106,21 @@ static void show_version(FILE *fh, struct argp_state *state)
 {
 	printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
 	printf(CRYSTFEL_BOILERPLATE"\n");
+}
+
+
+static void add_copy_header(struct indexamajig_arguments *args,
+                            const char *header)
+{
+	char **new_copy_headers = realloc(args->copy_headers,
+	                                  (args->n_copy_headers+1)*sizeof(char *));
+	if ( new_copy_headers == NULL ) {
+		ERROR("Failed to add copy header '%s'\n", header);
+		return;
+	}
+
+	args->copy_headers = new_copy_headers;
+	args->copy_headers[args->n_copy_headers++] = strdup(header);
 }
 
 
@@ -525,7 +542,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 602 :
-		add_imagefile_field(args->iargs.copyme, arg);
+		add_copy_header(args, arg);
 		break;
 
 		case 603 :
@@ -587,6 +604,8 @@ int main(int argc, char *argv[])
 	args.if_refine = 1;
 	args.if_checkcell = 1;
 	args.profile = 0;
+	args.copy_headers = NULL;
+	args.n_copy_headers = 0;
 	args.taketwo_opts_ptr = &taketwo_opts;
 	args.felix_opts_ptr = &felix_opts;
 	args.xgandalf_opts_ptr = &xgandalf_opts;
@@ -618,7 +637,6 @@ int main(int argc, char *argv[])
 	args.iargs.dtempl = NULL;
 	args.iargs.peaks = PEAK_ZAEF;
 	args.iargs.half_pixel_shift = 1;
-	args.iargs.copyme = NULL;
 	args.iargs.pk_inn = -1.0;
 	args.iargs.pk_mid = -1.0;
 	args.iargs.pk_out = -1.0;
@@ -634,11 +652,6 @@ int main(int argc, char *argv[])
 	args.iargs.min_peaks = 0;
 	args.iargs.overpredict = 0;
 	args.iargs.wait_for_file = 0;
-	args.iargs.copyme = new_imagefile_field_list();
-	if ( args.iargs.copyme == NULL ) {
-		ERROR("Couldn't allocate HDF5 field list.\n");
-		return 1;
-	}
 	args.iargs.ipriv = NULL;  /* No default */
 	args.iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
 	args.iargs.push_res = +INFINITY;
@@ -759,8 +772,9 @@ int main(int argc, char *argv[])
 		{NULL, 0, 0, OPTION_DOC, "Output options:", 6},
 		{"no-non-hits-in-stream", 601, NULL, OPTION_NO_USAGE, "Don't include non-hits in "
 		        "stream (see --min-peaks)"},
-		{"copy-hdf5-field", 602, "f", OPTION_NO_USAGE, "Put the value of this HDF5 field "
-		        "into the stream"},
+		{"copy-hdf5-field", 602, "f", OPTION_HIDDEN, NULL},
+		{"copy-header", 602, "f", OPTION_NO_USAGE, "Put the value of this image header "
+		        "field into the stream"},
 		{"no-peaks-in-stream", 603, NULL, OPTION_NO_USAGE, "Don't put peak search results "
 		        "in stream"},
 		{"no-refls-in-stream", 604, NULL, OPTION_NO_USAGE, "Don't put integration results "
@@ -829,6 +843,12 @@ int main(int argc, char *argv[])
 		ERROR("Failed to read detector geometry from '%s'"
 		      " (for new API)\n", args.geom_filename);
 		return 1;
+	}
+
+	/* Add any headers we need to copy */
+	for ( r=0; r<args.n_copy_headers; r++ ) {
+		data_template_add_copy_header(args.iargs.dtempl,
+		                              args.copy_headers[r]);
 	}
 
 	/* If no integration radii were given, apply the defaults */
@@ -1008,7 +1028,6 @@ int main(int argc, char *argv[])
 	                   fh, st, tmpdir, args.serial_start, zmq_address,
 	                   timeout, args.profile);
 
-	free_imagefile_field_list(args.iargs.copyme);
 	cell_free(args.iargs.cell);
 	free(args.prefix);
 	free(args.temp_location);

@@ -201,7 +201,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		image = file_wait_open_read(pargs->filename, pargs->event,
 		                            iargs->dtempl,
 		                            sb_shared, taccs, last_task,
-		                            iargs->wait_for_file, cookie);
+		                            iargs->wait_for_file,
+		                            cookie);
 		if ( image == NULL ) {
 			if ( iargs->wait_for_file != 0 ) {
 				pthread_mutex_lock(&sb_shared->totals_lock);
@@ -213,7 +214,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	image->serial = serial;
-	image->copyme = iargs->copyme;
 
 	/* Take snapshot of image before applying horrible noise filters */
 	time_accounts_set(taccs, TACC_FILTER);

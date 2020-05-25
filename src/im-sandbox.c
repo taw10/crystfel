@@ -415,7 +415,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 	time_accounts_set(taccs, TACC_FINALCLEANUP);
 	cleanup_indexing(iargs->ipriv);
-	free_imagefile_field_list(iargs->copyme);
 	cell_free(iargs->cell);
 	if ( sb->profile ) time_accounts_print(taccs);
 	time_accounts_free(taccs);

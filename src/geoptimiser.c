@@ -219,21 +219,22 @@ static Reflection *find_closest_reflection(struct image *image,
 static double get_average_clen(struct image *image)
 {
 	int i;
-	struct stuff_from_stream *stuff = image->stuff_from_stream;
-
-	if ( stuff == NULL ) {
-		ERROR("No 'stuff' from stream!\n");
-		return -1.0;
-	}
-
-	for ( i=0; i<stuff->n_fields; i++ ) {
-
-		if ( strncmp(stuff->fields[i], "average_camera_length = ",
-		             24) == 0 )
-		{
-			return atof(stuff->fields[i]+24);
-		}
-	}
+	// FIXME!
+	//	struct stuff_from_stream *stuff = image->stuff_from_stream;
+	//
+	//	if ( stuff == NULL ) {
+	//		ERROR("No 'stuff' from stream!\n");
+	//		return -1.0;
+	//	}
+	//
+	//	for ( i=0; i<stuff->n_fields; i++ ) {
+	//
+	//		if ( strncmp(stuff->fields[i], "average_camera_length = ",
+	//		             24) == 0 )
+	//		{
+	//			return atof(stuff->fields[i]+24);
+	//		}
+	//	}
 
 	ERROR("Failed to recover average camera length from stream file\n");
 	return -1.0;

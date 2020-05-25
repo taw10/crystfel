@@ -80,7 +80,6 @@ struct index_args
 	float min_snr_peak_pix;
 	float min_sig;
 	float min_peak_over_neighbour;
-	struct imagefile_field_list *copyme;
 	int integrate_saturated;
 	int use_saturated;
 	int no_revalidate;
