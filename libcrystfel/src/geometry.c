@@ -52,7 +52,7 @@
 /** \file geometry.h */
 
 static int locate_peak_on_panel(double x, double y, double z, double k,
-                                struct panel *p,
+                                struct detgeom_panel *p,
                                 double *pfs, double *pss)
 {
 	double ctt, tta, phi;
@@ -85,7 +85,7 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 	gsl_matrix_set(M, 1, 0, p->cny);
 	gsl_matrix_set(M, 1, 1, p->fsy);
 	gsl_matrix_set(M, 1, 2, p->ssy);
-	gsl_matrix_set(M, 2, 0, p->clen*p->res);
+	gsl_matrix_set(M, 2, 0, p->cnz);
 	gsl_matrix_set(M, 2, 1, p->fsz);
 	gsl_matrix_set(M, 2, 2, p->ssz);
 
@@ -113,7 +113,8 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 }
 
 static signed int locate_peak(double x, double y, double z, double k,
-                              struct detector *det, double *pfs, double *pss)
+                              struct detgeom *det,
+                              double *pfs, double *pss)
 {
 	int i;
 
@@ -121,7 +122,7 @@ static signed int locate_peak(double x, double y, double z, double k,
 
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		struct panel *p;
+		struct detgeom_panel *p;
 
 		p = &det->panels[i];
 
@@ -379,29 +380,31 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	/* If we are updating a previous reflection, assume it stays
 	 * on the same panel and calculate the new position even if it's
 	 * fallen off the edge of the panel. */
-	if ( (image->det != NULL) && (updateme != NULL) ) {
+	if ( (image->detgeom != NULL) && (updateme != NULL) ) {
 
 		double fs, ss;
+		assert(get_panel_number(updateme) <= image->detgeom->n_panels);
 		locate_peak_on_panel(xl, yl, zl, mean_kpred,
-		                     get_panel(updateme), &fs, &ss);
+		                     &image->detgeom->panels[get_panel_number(updateme)],
+		                     &fs, &ss);
 		set_detector_pos(refl, fs, ss);
 
 	}
 
-	/* Otherwise, calculate position if we have a detector structure, and
+	/* otherwise, calculate position if we have a detector structure, and
 	 * if we don't then just make do with partiality calculation */
 	if ( (image->det != NULL) && (updateme == NULL) ) {
 
-		double fs, ss;        /* Position on detector */
-		signed int p;         /* Panel number */
+		double fs, ss;        /* position on detector */
+		signed int p;         /* panel number */
 		p = locate_peak(xl, yl, zl, mean_kpred,
-		                image->det, &fs, &ss);
+		                image->detgeom, &fs, &ss);
 		if ( p == -1 ) {
 			reflection_free(refl);
 			return NULL;
 		}
 		set_detector_pos(refl, fs, ss);
-		set_panel(refl, &image->det->panels[p]);
+		set_panel_number(refl, p);
 
 	}
 

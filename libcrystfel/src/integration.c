@@ -52,6 +52,7 @@
 #include "image.h"
 #include "peaks.h"
 #include "integration.h"
+#include "detgeom.h"
 
 
 /** \file integration.h */
@@ -110,7 +111,7 @@ struct peak_box
 	enum boxmask_val *bm;  /* Box mask */
 
 	int pn;           /* Panel number */
-	struct panel *p;  /* The panel itself */
+	struct detgeom_panel *p;  /* The panel itself */
 
 	/* Fitted background parameters */
 	double a;
@@ -273,9 +274,6 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 
 	get_indices(bx->refl, &h, &k, &l);
 	get_detector_pos(bx->refl, &fs, &ss);
-	/* Convert coordinates to match arrangement of panels in HDF5 file */
-	fs = fs + bx->p->orig_min_fs;
-	ss = ss + bx->p->orig_min_ss;
 	printw("Indices %i %i %i\nPanel %s\nPosition fs = %.1f, ss = %.1f\n\n",
 	       h, k, l, bx->p->name, fs, ss);
 
@@ -806,7 +804,7 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		int fs, ss;
 		double hd, kd, ld;
 		signed int h, k, l;
-		struct rvec dv;
+		double dv[3];
 		float lsat;
 
 		fs = bx->cfs + p;
@@ -864,10 +862,11 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 
 		/* Ignore if this pixel is closer to the next reciprocal lattice
 		 * point */
-		dv = get_q_for_panel(bx->p, fs, ss, NULL, ic->k);
-		hd = dv.u * adx + dv.v * ady + dv.w * adz;
-		kd = dv.u * bdx + dv.v * bdy + dv.w * bdz;
-		ld = dv.u * cdx + dv.v * cdy + dv.w * cdz;
+		detgeom_transform_coords(bx->p, fs, ss,
+		                         1.0/ic->k, dv);
+		hd = dv[0] * adx + dv[1] * ady + dv[2] * adz;
+		kd = dv[0] * bdx + dv[1] * bdy + dv[2] * bdz;
+		ld = dv[0] * cdx + dv[1] * cdy + dv[2] * cdz;
 		h = lrint(hd);
 		k = lrint(kd);
 		l = lrint(ld);
@@ -1273,7 +1272,6 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		double pfs, pss;
 		struct peak_box *bx;
 		int pn;
-		struct panel *p;
 		int fid_fs, fid_ss;  /* Center coordinates, rounded,
 		                      * in overall data block */
 		int cfs, css;  /* Corner coordinates */
@@ -1283,12 +1281,7 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		set_redundancy(refl, 0);
 
 		get_detector_pos(refl, &pfs, &pss);
-		p = get_panel(refl);
-		pn = panel_number(ic->image->det, p);
-		if ( pn == ic->image->det->n_panels ) {
-			ERROR("Couldn't find panel %p\n", p);
-			continue;
-		}
+		pn = get_panel_number(refl);
 
 		/* Explicit truncation of digits after the decimal point.
 		 * This is actually the correct thing to do here, not
@@ -1307,7 +1300,7 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		bx->refl = refl;
 		bx->cfs = cfs;
 		bx->css = css;
-		bx->p = p;
+		bx->p = &ic->image->detgeom->panels[pn];
 		bx->pn = pn;
 
 		/* Which reference profile? */
@@ -1406,7 +1399,6 @@ static int integrate_rings_once(Reflection *refl, struct image *image,
 	double pfs, pss;
 	struct peak_box *bx;
 	int pn;
-	struct panel *p;
 	int fid_fs, fid_ss;  /* Center coordinates, rounded,
 	                      * in overall data block */
 	int cfs, css;  /* Corner coordinates */
@@ -1419,12 +1411,7 @@ static int integrate_rings_once(Reflection *refl, struct image *image,
 	set_redundancy(refl, 0);
 
 	get_detector_pos(refl, &pfs, &pss);
-	p = get_panel(refl);
-	pn = panel_number(image->det, p);
-	if ( pn == image->det->n_panels ) {
-		ERROR("Couldn't find panel %p\n", p);
-		return 1;
-	}
+	pn = get_panel_number(refl);
 
 	/* Explicit truncation of digits after the decimal point.
 	 * This is actually the correct thing to do here, not
@@ -1442,7 +1429,7 @@ static int integrate_rings_once(Reflection *refl, struct image *image,
 	bx->refl = refl;
 	bx->cfs = cfs;
 	bx->css = css;
-	bx->p = p;
+	bx->p = &image->detgeom->panels[pn];
 	bx->pn = pn;
 
 	if ( ic->meth & INTEGRATION_CENTER ) {

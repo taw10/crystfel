@@ -53,7 +53,7 @@ struct _refldata {
 	/* Location in image */
 	double fs;
 	double ss;
-	struct panel *panel;
+	int panel_number;
 
 	/* Non-zero if this reflection can be used for scaling */
 	int scalable;
@@ -308,12 +308,13 @@ void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 /**
  * \param refl: Reflection
  *
- * \returns the panel which the reflection appears on
+ * \returns panel number (index in detgeom/DataTemplate structure)
+ *           which the reflection appears on
  *
  **/
-struct panel *get_panel(const Reflection *refl)
+int get_panel_number(const Reflection *refl)
 {
-	return refl->data.panel;
+	return refl->data.panel_number;
 }
 
 
@@ -589,14 +590,13 @@ void set_detector_pos(Reflection *refl, double fs, double ss)
 
 /**
  * \param refl: Reflection
- * \param p: Pointer to the panel structure on which the reflection appears
- *
- * Note that the pointer will be stored, not the contents of the structure.
+ * \param pn: Panel number (index in detgeom/DataTemplate structure) of
+ *      the panel on which the reflection appears.
  *
  **/
-void set_panel(Reflection *refl, struct panel *p)
+void set_panel_number(Reflection *refl, int pn)
 {
-	refl->data.panel = p;
+	refl->data.panel_number = pn;
 }
 
 
