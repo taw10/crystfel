@@ -560,15 +560,17 @@ void map_all_peaks(struct image *image)
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
-		struct rvec r;
+		double r[3];
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q_for_panel(&image->det->panels[f->pn],
-		                    f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
-		f->rx = r.u;  f->ry = r.v;  f->rz = r.w;
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss,
+		                         image->lambda, r);
+		f->rx = r[0];
+		f->ry = r[1];
+		f->rz = r[2];
 
 	}
 }
