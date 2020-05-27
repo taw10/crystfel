@@ -270,6 +270,8 @@ void free_event_list(struct event_list *el)
 {
 	int ei;
 
+	if ( el == NULL ) return;
+
 	for ( ei=0; ei<el->num_events; ei++ ) {
 		free_event(el->events[ei]);
 	}
