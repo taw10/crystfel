@@ -64,7 +64,8 @@
 
 /** \file peaks.h */
 
-static void add_crystal_to_mask(struct image *image, struct panel *p,
+static void add_crystal_to_mask(struct image *image,
+                                struct detgeom_panel *p, int pn,
                                 double ir_inn, int *mask, Crystal *cr)
 {
 	Reflection *refl;
@@ -81,7 +82,7 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 		get_detector_pos(refl, &pk2_fs, &pk2_ss);
 
 		/* Determine if reflection is in the same panel */
-		if ( get_panel(refl) != p ) continue;
+		if ( get_panel_number(refl) != pn ) continue;
 
 		for ( dfs=-ir_inn; dfs<=ir_inn; dfs++ ) {
 		for ( dss=-ir_inn; dss<=ir_inn; dss++ ) {
@@ -110,7 +111,8 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 
 
 /* cfs, css relative to panel origin */
-int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
+int *make_BgMask(struct image *image, struct detgeom_panel *p,
+                 int pn, double ir_inn)
 {
 	int *mask;
 	int i;
@@ -121,7 +123,7 @@ int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 	if ( image->crystals == NULL ) return mask;
 
 	for ( i=0; i<image->n_crystals; i++ ) {
-		add_crystal_to_mask(image, p, ir_inn,
+		add_crystal_to_mask(image, p, pn, ir_inn,
 		                    mask, image->crystals[i]);
 	}
 

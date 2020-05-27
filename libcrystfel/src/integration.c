@@ -1688,7 +1688,8 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 	}
 
 	for ( i=0; i<image->det->n_panels; i++ ) {
-		masks[i] = make_BgMask(image, &image->det->panels[i], ir_inn);
+		masks[i] = make_BgMask(image, &image->detgeom->panels[i],
+		                       i, ir_inn);
 	}
 
 	for ( i=0; i<image->n_crystals; i++ ) {

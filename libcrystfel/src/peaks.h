@@ -66,7 +66,8 @@ extern const char *str_peaksearch(enum peak_search_method meth);
 
 extern enum peak_search_method parse_peaksearch(const char *arg);
 
-extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
+extern int *make_BgMask(struct image *image, struct detgeom_panel *p,
+                        int pn, double ir_inn);
 
 extern void search_peaks(struct image *image, float threshold,
                          float min_gradient, float min_snr, double ir_inn,
