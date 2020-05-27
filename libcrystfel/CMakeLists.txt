@@ -64,6 +64,7 @@ set(LIBCRYSTFEL_SOURCES
     src/spectrum.c
     src/datatemplate.c
     src/colscale.c
+    src/detgeom.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
 )

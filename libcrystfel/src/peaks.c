@@ -733,7 +733,7 @@ static int compare_double(const void *av, const void *bv)
 
 
 double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
-                                struct detector *det)
+                                struct detgeom *det)
 {
 	int i, npk, ncut;
 	double *rns;
@@ -751,13 +751,14 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
 	for ( i=0; i<npk; i++ ) {
 
 		struct imagefeature *f;
-		struct rvec r;
+		double r[3];
 
 		f = image_get_feature(peaks, i);
 
-		r = get_q_for_panel(&det->panels[f->pn],
-		                    f->fs, f->ss, NULL, 1.0/lambda);
-		rns[i] = modulus(r.u, r.v, r.w);
+		detgeom_transform_coords(&det->panels[f->pn],
+		                         f->fs, f->ss,
+		                         lambda, r);
+		rns[i] = modulus(r[0], r[1], r[2]);
 
 	}
 

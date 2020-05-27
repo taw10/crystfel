@@ -40,6 +40,7 @@
 #include "reflist.h"
 #include "crystal.h"
 #include "image.h"
+#include "detgeom.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,7 +97,7 @@ extern void validate_peaks(struct image *image, double min_snr,
 
 extern double estimate_peak_resolution(ImageFeatureList *peaks,
                                        double lambda,
-                                       struct detector *det);
+                                       struct detgeom *det);
 
 #ifdef __cplusplus
 }

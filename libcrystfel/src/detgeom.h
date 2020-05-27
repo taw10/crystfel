@@ -96,6 +96,11 @@ struct detgeom
 	int                   n_panels;
 };
 
+extern void detgeom_transform_coords(struct detgeom_panel *p,
+                                     double fs, double ss,
+                                     double wavelength,
+                                     double *r);
+
 #ifdef __cplusplus
 }
 #endif
