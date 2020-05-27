@@ -206,12 +206,6 @@ extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   int pn,
                                                   double *d, int *idx);
 
-extern Reflection *image_reflection_closest(RefList *rlist,
-                                            double fs, double ss,
-                                            struct panel *p,
-                                            struct detector *det,
-                                            double *d);
-
 extern int image_feature_count(ImageFeatureList *flist);
 extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
 extern const struct imagefeature *image_get_feature_const(const ImageFeatureList *flist,

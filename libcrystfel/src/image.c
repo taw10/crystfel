@@ -186,49 +186,6 @@ struct imagefeature *image_feature_closest(ImageFeatureList *flist,
 }
 
 
-Reflection *image_reflection_closest(RefList *rlist,
-                                     double fs, double ss, struct panel *p,
-                                     struct detector *det,
-                                     double *d)
-{
-
-	double dmin = HUGE_VAL;
-	Reflection *closest = NULL;
-	Reflection *refl;
-	RefListIterator *iter;
-
-	for ( refl = first_refl(rlist, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double ds;
-		struct panel *p2;
-		double rfs, rss;
-
-		get_detector_pos(refl, &rfs, &rss);
-		p2 = get_panel(refl);
-
-		if ( p != p2 ) continue;
-
-		ds = distance(rfs, rss, fs, ss);
-
-		if ( ds < dmin ) {
-			dmin = ds;
-			closest = refl;
-		}
-
-	}
-
-	if ( dmin < +HUGE_VAL ) {
-		*d = dmin;
-		return closest;
-	}
-
-	*d = +INFINITY;
-	return NULL;
-}
-
-
 int image_feature_count(ImageFeatureList *flist)
 {
 	if ( flist == NULL ) return 0;
