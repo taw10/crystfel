@@ -47,20 +47,21 @@ int checkrxy;
 
 
 static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct panel *p)
+                         struct detgeom_panel *p)
 {
 	double xs, ys;
 
 	xs = fs*p->fsx + ss*p->ssx;
 	ys = fs*p->fsy + ss*p->ssy;
 
-	*px = (xs + p->cnx) / p->res;
-	*py = (ys + p->cny) / p->res;
+	*px = (xs + p->cnx) * p->pixel_pitch;
+	*py = (ys + p->cny) * p->pixel_pitch;
 }
 
 
 static void scan(RefList *reflections, RefList *compare,
-                 int *valid, long double *vals[3], int idx)
+                 int *valid, long double *vals[3], int idx,
+                 struct detgeom *det)
 {
 	int i;
 	Reflection *refl;
@@ -74,7 +75,7 @@ static void scan(RefList *reflections, RefList *compare,
 		signed int h, k, l;
 		Reflection *refl2;
 		double fs, ss, xh, yh;
-		struct panel *panel;
+		int pn;
 
 		get_indices(refl, &h, &k, &l);
 		refl2 = find_refl(compare, h, k, l);
@@ -85,8 +86,8 @@ static void scan(RefList *reflections, RefList *compare,
 		}
 
 		get_detector_pos(refl2, &fs, &ss);
-		panel = get_panel(refl2);
-		twod_mapping(fs, ss, &xh, &yh, panel);
+		pn = get_panel_number(refl2);
+		twod_mapping(fs, ss, &xh, &yh, &det->panels[pn]);
 
 		switch ( checkrxy ) {
 
@@ -176,7 +177,8 @@ static Crystal *new_shifted_crystal(Crystal *cr, int refine, double incr_val)
 
 
 static void calc_either_side(Crystal *cr, double incr_val,
-                             int *valid, long double *vals[3], int refine)
+                             int *valid, long double *vals[3],
+                             int refine, struct detgeom *det)
 {
 	RefList *compare;
 	struct image *image = crystal_get_image(cr);
@@ -184,14 +186,14 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 	cr_new = new_shifted_crystal(cr, refine, -incr_val);
 	compare = predict_to_res(cr_new, largest_q(image));
-	scan(crystal_get_reflections(cr), compare, valid, vals, 0);
+	scan(crystal_get_reflections(cr), compare, valid, vals, 0, det);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
 	reflist_free(compare);
 
 	cr_new = new_shifted_crystal(cr, refine, +incr_val);
 	compare = predict_to_res(cr_new, largest_q(image));
-	scan(crystal_get_reflections(cr), compare, valid, vals, 2);
+	scan(crystal_get_reflections(cr), compare, valid, vals, 2, det);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
 	reflist_free(compare);
@@ -200,7 +202,7 @@ static void calc_either_side(Crystal *cr, double incr_val,
 
 static double test_gradients(Crystal *cr, double incr_val, int refine,
                              const char *str, const char *file,
-                             int quiet, int plot)
+                             int quiet, int plot, struct detgeom *det)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -243,9 +245,9 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	}
 	for ( i=0; i<nref; i++ ) valid[i] = 1;
 
-	scan(reflections, reflections, valid, vals, 1);
+	scan(reflections, reflections, valid, vals, 1, det);
 
-	calc_either_side(cr, incr_val, valid, vals, refine);
+	calc_either_side(cr, incr_val, valid, vals, refine, det);
 
 	if ( plot ) {
 		snprintf(tmp, 32, "gradient-test-%s.dat", file);
@@ -296,11 +298,11 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 				if ( checkrxy == 1 ) {
 					cgrad = x_gradient(refine, refl,
 					         crystal_get_cell(cr),
-					         &image->det->panels[0]);
+					         &image->detgeom->panels[0]);
 				} else {
 					cgrad = y_gradient(refine, refl,
 					         crystal_get_cell(cr),
-					         &image->det->panels[0]);
+					         &image->detgeom->panels[0]);
 				}
 			}
 
@@ -409,10 +411,24 @@ int main(int argc, char *argv[])
 
 	}
 
-	image.det = simple_geometry(&image, 1024, 1024);
-	image.det->panels[0].res = 13333.3;
-	image.det->panels[0].clen = 80e-3;
-	image.det->panels[0].coffset = 0.0;
+	image.detgeom = malloc(sizeof(struct detgeom));
+	image.detgeom->n_panels = 1;
+	image.detgeom->panels = malloc(sizeof(struct detgeom_panel));
+	image.detgeom->panels[0].name = "panel";
+	image.detgeom->panels[0].adu_per_photon = 1.0;
+	image.detgeom->panels[0].max_adu = INFINITY;
+	image.detgeom->panels[0].fsx = 1.0;
+	image.detgeom->panels[0].fsy = 0.0;
+	image.detgeom->panels[0].fsz = 0.0;
+	image.detgeom->panels[0].ssx = 0.0;
+	image.detgeom->panels[0].ssy = 1.0;
+	image.detgeom->panels[0].ssz = 0.0;
+	image.detgeom->panels[0].cnx = -500.0;
+	image.detgeom->panels[0].cny = -500.0;
+	image.detgeom->panels[0].cnz = 1000.0; /* pixels */
+	image.detgeom->panels[0].w = 1000;
+	image.detgeom->panels[0].h = 1000;
+	image.detgeom->panels[0].pixel_pitch = 75e-6;
 
 	image.lambda = ph_en_to_lambda(eV_to_J(8000.0));
 	image.div = 1e-3;
@@ -465,15 +481,18 @@ int main(int argc, char *argv[])
 
 			incr_val = incr_frac * ax;
 			val = test_gradients(cr, incr_val, GPARAM_ASX,
-			                     "ax*", "ax", quiet, plot);
+			                     "ax*", "ax", quiet, plot,
+			                     image.detgeom);
 			if ( val < 0.99 ) fail = 1;
 			incr_val = incr_frac * bx;
 			val = test_gradients(cr, incr_val, GPARAM_BSX,
-			                     "bx*", "bx", quiet, plot);
+			                     "bx*", "bx", quiet, plot,
+			                     image.detgeom);
 			if ( val < 0.99 ) fail = 1;
 			incr_val = incr_frac * cx;
 			val = test_gradients(cr, incr_val, GPARAM_CSX,
-			                     "cx*", "cx", quiet, plot);
+			                     "cx*", "cx", quiet, plot,
+			                     image.detgeom);
 			if ( val < 0.99 ) fail = 1;
 
 		}
@@ -482,30 +501,33 @@ int main(int argc, char *argv[])
 
 			incr_val = incr_frac * ay;
 			val = test_gradients(cr, incr_val, GPARAM_ASY,
-			                     "ay*", "ay", quiet, plot);
+			                     "ay*", "ay", quiet, plot,
+			                     image.detgeom);
 			if ( val < 0.99 ) fail = 1;
 			incr_val = incr_frac * by;
 			val = test_gradients(cr, incr_val, GPARAM_BSY,
-			                     "by*", "by", quiet, plot);
+			                     "by*", "by", quiet, plot,
+			                     image.detgeom);
 			if ( val < 0.99 ) fail = 1;
 			incr_val = incr_frac * cy;
 			val = test_gradients(cr, incr_val, GPARAM_CSY,
-			                     "cy*", "cy", quiet, plot);
+			                     "cy*", "cy", quiet, plot,
+			                     image.detgeom);
 			if ( val < 0.99 ) fail = 1;
 
 		}
 
 		incr_val = incr_frac * az;
 		val = test_gradients(cr, incr_val, GPARAM_ASZ, "az*", "az",
-		                     quiet, plot);
+		                     quiet, plot, image.detgeom);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * bz;
 		val = test_gradients(cr, incr_val, GPARAM_BSZ, "bz*", "bz",
-		                     quiet, plot);
+		                     quiet, plot, image.detgeom);
 		if ( val < 0.99 ) fail = 1;
 		incr_val = incr_frac * cz;
 		val = test_gradients(cr, incr_val, GPARAM_CSZ, "cz*", "cz",
-		                     quiet, plot);
+		                     quiet, plot, image.detgeom);
 		if ( val < 0.99 ) fail = 1;
 
 	}

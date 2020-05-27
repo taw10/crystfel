@@ -8,7 +8,7 @@
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2012      Richard Kirian
  *
  * This file is part of CrystFEL.
@@ -39,6 +39,7 @@
 #include "reflist.h"
 #include "cell.h"
 #include "crystal.h"
+#include "detgeom.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,9 +123,9 @@ extern double sphere_fraction(double rlow, double rhigh, double pr);
 extern double gaussian_fraction(double rlow, double rhigh, double pr);
 
 extern double x_gradient(int param, Reflection *refl, UnitCell *cell,
-                         struct panel *p);
+                         struct detgeom_panel *p);
 extern double y_gradient(int param, Reflection *refl, UnitCell *cell,
-                         struct panel *p);
+                         struct detgeom_panel *p);
 
 #ifdef __cplusplus
 }

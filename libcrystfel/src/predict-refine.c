@@ -79,15 +79,15 @@ struct reflpeak {
 
 
 static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct panel *p)
+                         struct detgeom_panel *p)
 {
 	double xs, ys;
 
 	xs = fs*p->fsx + ss*p->ssx;
 	ys = fs*p->fsy + ss*p->ssy;
 
-	*px = (xs + p->cnx) / p->res;
-	*py = (ys + p->cny) / p->res;
+	*px = (xs + p->cnx) * p->pixel_pitch;
+	*py = (ys + p->cny) * p->pixel_pitch;
 }
 
 

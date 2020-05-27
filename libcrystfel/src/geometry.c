@@ -1079,7 +1079,8 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 
 
 /* Returns dx_h/dP, where P = any parameter */
-double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
+double x_gradient(int param, Reflection *refl, UnitCell *cell,
+                  struct detgeom_panel *p)
 {
 	signed int h, k, l;
 	double xl, zl, kpred;
@@ -1096,13 +1097,13 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return h * p->clen / (kpred + zl);
+		return h * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_BSX :
-		return k * p->clen / (kpred + zl);
+		return k * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_CSX :
-		return l * p->clen / (kpred + zl);
+		return l * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_ASY :
 		return 0.0;
@@ -1114,13 +1115,13 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 		return 0.0;
 
 		case GPARAM_ASZ :
-		return -h * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -h * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_BSZ :
-		return -k * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -k * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_CSZ :
-		return -l * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -l * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_DETX :
 		return -1;
@@ -1139,7 +1140,8 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 
 
 /* Returns dy_h/dP, where P = any parameter */
-double y_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
+double y_gradient(int param, Reflection *refl, UnitCell *cell,
+                  struct detgeom_panel *p)
 {
 	signed int h, k, l;
 	double yl, zl, kpred;
@@ -1165,22 +1167,22 @@ double y_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 		return 0.0;
 
 		case GPARAM_ASY :
-		return h * p->clen / (kpred + zl);
+		return h * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_BSY :
-		return k * p->clen / (kpred + zl);
+		return k * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_CSY :
-		return l * p->clen / (kpred + zl);
+		return l * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_ASZ :
-		return -h * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -h * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_BSZ :
-		return -k * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -k * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_CSZ :
-		return -l * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -l * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_DETX :
 		return 0;
