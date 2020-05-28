@@ -180,31 +180,33 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
 # ----------------------------------------------------------------------
 # partial_sim
 
-set(PARTIAL_SIM_SOURCES src/partial_sim.c)
-add_executable(partial_sim ${PARTIAL_SIM_SOURCES})
-target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(partial_sim ${COMMON_LIBRARIES})
-list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
+# FIXME: Restore!
+#set(PARTIAL_SIM_SOURCES src/partial_sim.c)
+#add_executable(partial_sim ${PARTIAL_SIM_SOURCES})
+#target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
+#target_link_libraries(partial_sim ${COMMON_LIBRARIES})
+#list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
 
 # ----------------------------------------------------------------------
 # pattern_sim
 
-set(PATTERN_SIM_SOURCES src/pattern_sim.c src/diffraction.c)
-
-if(HAVE_OPENCL)
-  set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
-endif(HAVE_OPENCL)
-
-add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
-target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(pattern_sim ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
-
-if(HAVE_OPENCL)
-  target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
-  target_link_libraries(pattern_sim ${OpenCL_LIBRARIES})
-endif(HAVE_OPENCL)
-
-list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
+# FIXME: Restore!
+#set(PATTERN_SIM_SOURCES src/pattern_sim.c src/diffraction.c)
+#
+#if(HAVE_OPENCL)
+#  set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
+#endif(HAVE_OPENCL)
+#
+#add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
+#target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
+#target_link_libraries(pattern_sim ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
+#
+#if(HAVE_OPENCL)
+#  target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
+#  target_link_libraries(pattern_sim ${OpenCL_LIBRARIES})
+#endif(HAVE_OPENCL)
+#
+#list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
 
 # ----------------------------------------------------------------------
 # cell_explorer
@@ -324,33 +326,34 @@ list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 # ----------------------------------------------------------------------
 # geoptimiser
 
-set(GEOPTIMISER_SOURCES src/geoptimiser.c)
-add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
-target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
-list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
-
-# Add features one by one so that #ifdef HAVE_XX//#include XX.h always works
-# If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
-if (CAIRO_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
-endif (CAIRO_FOUND)
-
-if (GDKPIXBUF_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
-endif (GDKPIXBUF_FOUND)
-
-if (GDK_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
-endif (GDK_FOUND)
-
-if (TIFF_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${TIFF_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${TIFF_LIBRARIES})
-endif (TIFF_FOUND)
+# FIXME: Restore!
+#set(GEOPTIMISER_SOURCES src/geoptimiser.c)
+#add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
+#target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
+#target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
+#list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
+#
+## Add features one by one so that #ifdef HAVE_XX//#include XX.h always works
+## If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
+#if (CAIRO_FOUND)
+#  target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
+#  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
+#endif (CAIRO_FOUND)
+#
+#if (GDKPIXBUF_FOUND)
+#  target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
+#  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
+#endif (GDKPIXBUF_FOUND)
+#
+#if (GDK_FOUND)
+#  target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
+#  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
+#endif (GDK_FOUND)
+#
+#if (TIFF_FOUND)
+#  target_include_directories(geoptimiser PRIVATE ${TIFF_INCLUDE_DIRS})
+#  target_link_libraries(geoptimiser ${TIFF_LIBRARIES})
+#endif (TIFF_FOUND)
 
 # ----------------------------------------------------------------------
 # whirligig
