@@ -68,15 +68,15 @@ static UNUSED void im_zmq_shutdown(struct im_zmq *z) { return; }
 
 static UNUSED void *im_zmq_fetch(struct im_zmq *z) { return NULL; }
 
-static UNUSED int get_peaks_msgpack(void *obj,
-                                    const DataTemplate *dtempl,
-                                    int half_pixel_shift)
-{ return 0; }
+static UNUSED ImageFeatureList *get_peaks_msgpack(void *obj,
+                                                  const DataTemplate *dtempl,
+                                                  int half_pixel_shift)
+{ return NULL; }
 
 static UNUSED struct image *unpack_msgpack_data(void *obj,
                                                 const DataTemplate *dtempl,
                                                 int no_image_data)
-{ return 1; }
+{ return NULL; }
 
 #endif /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
 
