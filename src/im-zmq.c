@@ -228,17 +228,13 @@ ImageFeatureList *get_peaks_msgpack(msgpack_object *obj,
 		ss = peak_y->via.array.ptr[pk].via.f64 + peak_offset;
 		val = peak_i->via.array.ptr[pk].via.f64;
 
-		pn = data_template_find_panel(dtempl, fs, ss);
-		if ( pn < -1 ) {
-			ERROR("Peak not in panel!\n");
-			continue;
-		}
-
 		/* Convert coordinates to panel-relative */
-		data_template_file_to_panel_coords(dtempl, &fs, &ss);
-
-		image_add_feature(features, fs, ss, pn,
-		                  NULL, val, NULL);
+		if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+			ERROR("Peak not in panel!\n");
+		} else {
+			image_add_feature(features, fs, ss, pn,
+			                  NULL, val, NULL);
+		}
 	}
 
 	return features;

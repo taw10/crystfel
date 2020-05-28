@@ -41,9 +41,8 @@
  */
 
 struct image;
-struct hdfile;
-struct event;
-struct imagefile;
+
+#include "datatemplate.h"
 #include "cell.h"
 
 #define GEOM_START_MARKER "----- Begin geometry file -----"
@@ -116,12 +115,13 @@ extern void close_stream(Stream *st);
 
 extern void free_stuff_from_stream(struct stuff_from_stream *sfs);
 
-extern int read_chunk(Stream *st, struct image *image);
-extern int read_chunk_2(Stream *st, struct image *image,
-                           StreamReadFlags srf);
+extern int read_chunk(Stream *st, struct image *image,
+                      const DataTemplate *dtempl,
+                      StreamReadFlags srf);
 extern int stream_has_old_indexers(Stream *st);
 
 extern int write_chunk(Stream *st, struct image *image,
+                       const DataTemplate *dtempl,
                        int include_peaks, int include_reflections);
 
 extern void write_command(Stream *st, int argc, char *argv[]);

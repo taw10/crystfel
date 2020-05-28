@@ -73,8 +73,8 @@ struct reflpeak {
 	Reflection *refl;
 	struct imagefeature *peak;
 	double Ih;   /* normalised */
-	struct panel *panel;  /* panel the reflection appears on
-                               * (we assume this never changes) */
+	struct detgeom_panel *panel;  /* panel the reflection appears on
+                                       * (we assume this never changes) */
 };
 
 
@@ -122,50 +122,6 @@ static double y_dev(struct reflpeak *rp, struct detector *det)
 }
 
 
-static void UNUSED write_pairs(const char *filename, struct reflpeak *rps,
-                               int n, struct detector *det)
-{
-	int i;
-	FILE *fh;
-
-	fh = fopen(filename, "w");
-	if ( fh == NULL ) {
-		ERROR("Failed to open '%s'\n", filename);
-		return;
-	}
-
-	for ( i=0; i<n; i++ ) {
-
-		double write_fs, write_ss;
-		double fs, ss;
-		struct panel *p;
-		signed int h, k, l;
-
-		fs = rps[i].peak->fs;
-		ss = rps[i].peak->ss;
-		p = rps[i].panel;
-		get_indices(rps[i].refl, &h, &k, &l);
-
-		write_fs = fs + p->orig_min_fs;
-		write_ss = ss + p->orig_min_ss;
-
-		fprintf(fh, "%7.2f %7.2f dev r,x,y: %9f %9f %9f %9f\n",
-		        write_fs, write_ss,
-		        r_dev(&rps[i])/1e9, fabs(r_dev(&rps[i])/1e9),
-		        x_dev(&rps[i], det),
-		        y_dev(&rps[i], det));
-
-		//fprintf(fh, "%4i %4i %4i 0.0 - 0.0 1 %7.2f %7.2f %s\n",
-		//        h, k, l, write_fs, write_ss, p->name);
-
-	}
-
-	fclose(fh);
-
-	STATUS("Wrote %i pairs to %s\n", n, filename);
-}
-
-
 static int cmpd2(const void *av, const void *bv)
 {
 	struct reflpeak *a, *b;
@@ -186,7 +142,6 @@ static int check_outlier_transition(struct reflpeak *rps, int n,
 	if ( n < 3 ) return n;
 
 	qsort(rps, n, sizeof(struct reflpeak), cmpd2);
-	//write_pairs("pairs-before-outlier.lst", rps, n, det);
 
 	for ( i=1; i<n-1; i++ ) {
 
@@ -267,11 +222,11 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		 * in how far away it is from the peak location.
 		 * The predicted position and excitation errors will be
 		 * filled in by update_predictions(). */
-		set_panel(refl, &image->det->panels[f->pn]);
+		set_panel_number(refl, f->pn);
 
 		rps[n].refl = refl;
 		rps[n].peak = f;
-		rps[n].panel = &image->det->panels[f->pn];
+		rps[n].panel = &image->detgeom->panels[f->pn];
 		n++;
 
 	}

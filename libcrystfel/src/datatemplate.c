@@ -3,11 +3,11 @@
  *
  * Data template structure
  *
- * Copyright © 2019 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2019-2020 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2019 Thomas White <taw@physics.org>
+ *   2019-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -1242,8 +1242,8 @@ void data_template_free(DataTemplate *dt)
 }
 
 
-signed int data_template_find_panel(const DataTemplate *dt,
-                                    int fs, int ss)
+static int data_template_find_panel(const DataTemplate *dt,
+                                    int fs, int ss, int *ppn)
 {
 	int p;
 
@@ -1251,24 +1251,47 @@ signed int data_template_find_panel(const DataTemplate *dt,
 		if ( (fs >= dt->panels[p].orig_min_fs)
 		  && (fs < dt->panels[p].orig_max_fs+1)
 		  && (ss >= dt->panels[p].orig_min_ss)
-		  && (ss < dt->panels[p].orig_max_ss+1) ) return p;
+		  && (ss < dt->panels[p].orig_max_ss+1) ) {
+			*ppn = p;
+			return 0;
+		}
 	}
 
-	return -1;
+	return 1;
 }
 
 
-void data_template_file_to_panel_coords(const DataTemplate *dt,
-                                        float *pfs, float *pss)
+int data_template_file_to_panel_coords(const DataTemplate *dt,
+                                       float *pfs, float *pss,
+                                       int *ppn)
 {
-	signed int pn = data_template_find_panel(dt, *pfs, *pss);
-	if ( pn == -1 ) {
-		ERROR("Can't convert coordinates - no panel found\n");
-		return;
+	int pn;
+
+	if ( data_template_find_panel(dt, *pfs, *pss, &pn) ) {
+		return 1;
 	}
 
+	*ppn = pn;
 	*pfs = *pfs - dt->panels[pn].orig_min_fs;
 	*pss = *pss - dt->panels[pn].orig_min_ss;
+	return 0;
+}
+
+
+int data_template_panel_to_file_coords(const DataTemplate *dt,
+                                       int pn, float *pfs, float *pss)
+{
+	if ( pn >= dt->n_panels ) return 1;
+	*pfs = *pfs + dt->panels[pn].orig_min_fs;
+	*pss = *pss + dt->panels[pn].orig_min_ss;
+	return 0;
+}
+
+
+const char *data_template_panel_name(const DataTemplate *dt, int pn)
+{
+	if ( pn >= dt->n_panels ) return NULL;
+	return dt->panels[pn].name;
 }
 
 

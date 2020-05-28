@@ -3,11 +3,11 @@
  *
  * Template for loading data
  *
- * Copyright © 2019 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2019-2020 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2019 Thomas White <taw@physics.org>
+ *   2019-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -53,11 +53,16 @@ extern "C" {
 extern DataTemplate *data_template_new_from_file(const char *filename);
 extern void data_template_free(DataTemplate *dt);
 
-extern signed int data_template_find_panel(const DataTemplate *dt,
-                                           int fs, int ss);
+extern const char *data_template_panel_name(const DataTemplate *dt,
+                                            int pn);
 
-extern void data_template_file_to_panel_coords(const DataTemplate *dt,
-                                               float *pfs, float *pss);
+extern int data_template_file_to_panel_coords(const DataTemplate *dt,
+                                              float *pfs, float *pss,
+                                              int *pn);
+
+extern int data_template_panel_to_file_coords(const DataTemplate *dt,
+                                              int pn,
+                                              float *pfs, float *pss);
 
 extern void data_template_add_copy_header(DataTemplate *dt,
                                           const char *header);

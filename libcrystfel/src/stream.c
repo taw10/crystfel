@@ -51,6 +51,7 @@
 #include "stream.h"
 #include "reflist.h"
 #include "reflist-utils.h"
+#include "datatemplate.h"
 
 /** \file stream.h */
 
@@ -301,7 +302,8 @@ static int write_peaks_2_3(struct image *image, FILE *ofh)
 }
 
 
-static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
+static RefList *read_stream_reflections_2_3(Stream *st,
+                                            const DataTemplate *dtempl)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -342,24 +344,19 @@ static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
 
 		if ( r == 10 ) {
 
-			struct panel *p;
-
 			refl = add_refl(out, h, k, l);
 			if ( refl == NULL ) {
 				ERROR("Failed to add reflection\n");
 				return NULL;
 			}
 			set_intensity(refl, intensity);
-			if ( det != NULL ) {
-				double write_fs, write_ss;
-				p = find_panel_by_name(det,pn);
-				if ( p == NULL ) {
-					ERROR("Couldn't find panel '%s'\n", pn);
+			if ( dtempl != NULL ) {
+				int pn;
+				if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+					ERROR("Failed to convert\n");
 				} else {
-					write_fs = fs - p->orig_min_fs;
-					write_ss = ss - p->orig_min_ss;
-					set_detector_pos(refl, write_fs, write_ss);
-					set_panel(refl, p);
+					set_detector_pos(refl, fs, ss);
+					set_panel_number(refl, pn);
 				}
 			}
 			set_esd_intensity(refl, sigma);
@@ -376,7 +373,8 @@ static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
 }
 
 
-static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
+static RefList *read_stream_reflections_2_1(Stream *st,
+                                            const DataTemplate *dtempl)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -426,19 +424,14 @@ static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
 			}
 			set_intensity(refl, intensity);
 
-			if ( det != NULL ) {
+			if ( dtempl != NULL ) {
 
-				double write_fs, write_ss;
-				struct panel *p;
-
-				p = find_orig_panel(det, fs, ss);
-				if ( p == NULL ) {
-					ERROR("No panel at %.2f,%.2f\n",
-					      fs, ss);
+				int pn;
+				if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+					ERROR("Failed to convert\n");
 				} else {
-					write_fs = fs - p->orig_min_fs;
-					write_ss = ss - p->orig_min_ss;
-					set_detector_pos(refl, write_fs, write_ss);
+					set_detector_pos(refl, fs, ss);
+					set_panel_number(refl, pn);
 				}
 
 			} else {
@@ -462,7 +455,8 @@ static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
 }
 
 
-static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
+static RefList *read_stream_reflections_2_2(Stream *st,
+                                            const DataTemplate *dtempl)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -502,19 +496,17 @@ static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
 			}
 			set_intensity(refl, intensity);
 
-			if ( det != NULL ) {
+			if ( dtempl != NULL ) {
 
-				double write_fs, write_ss;
-				struct panel *p;
+				int pn;
 
-				p = find_orig_panel(det, fs, ss);
-				if ( p == NULL ) {
-					ERROR("No panel at %.2f,%.2f\n",
-					      fs, ss);
+				if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+					ERROR("Failed to convert to "
+					      "panel-relative coordinates: "
+					      "%i,%i\n", fs, ss);
 				} else {
-					write_fs = fs - p->orig_min_fs;
-					write_ss = ss - p->orig_min_ss;
-					set_detector_pos(refl, write_fs, write_ss);
+					set_detector_pos(refl, fs, ss);
+					set_panel_number(refl, pn);
 				}
 
 			} else {
@@ -538,139 +530,8 @@ static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
 }
 
 
-static int write_stream_reflections_2_1(FILE *fh, RefList *list,
-                                        struct image *image)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
-			 " counts  fs/px  ss/px\n");
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-
-		signed int h, k, l;
-		double intensity, esd_i, ph;
-		int red;
-		double fs, ss;
-		char phs[16];
-		int have_phase;
-
-		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		intensity = get_intensity(refl);
-		esd_i = get_esd_intensity(refl);
-		red = get_redundancy(refl);
-		ph = get_phase(refl, &have_phase);
-
-		/* Reflections with redundancy = 0 are not written */
-		if ( red == 0 ) continue;
-
-		if ( have_phase ) {
-			snprintf(phs, 16, "%8.2f", rad2deg(ph));
-		} else {
-			strncpy(phs, "       -", 15);
-		}
-
-		if ( image->det != NULL ) {
-
-			struct panel *p;
-			double write_fs, write_ss;
-
-			p = find_orig_panel(image->det, fs, ss);
-			if ( p == NULL ) {
-				ERROR("Panel not found\n");
-				return 1;
-			}
-
-			/* Convert coordinates to match arrangement of panels
-			 * in HDF5 file */
-			write_fs = fs + p->orig_min_fs;
-			write_ss = ss + p->orig_min_ss;
-
-			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i "
-			            "%6.1f %6.1f\n",
-			             h, k, l, intensity, phs, esd_i, red,
-				     write_fs, write_ss);
-
-		} else {
-
-			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i "
-			            "%6.1f %6.1f\n",
-			            h, k, l, intensity, phs, esd_i, red,
-				    fs, ss);
-
-		}
-	}
-	return 0;
-}
-
-
-static int write_stream_reflections_2_2(FILE *fh, RefList *list,
-                                        struct image *image)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	fprintf(fh, "   h    k    l          I   sigma(I)       "
-	            "peak background  fs/px  ss/px\n");
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-
-		signed int h, k, l;
-		double intensity, esd_i, bg, pk;
-		double fs, ss;
-
-		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		intensity = get_intensity(refl);
-		esd_i = get_esd_intensity(refl);
-		pk = get_peak(refl);
-		bg = get_mean_bg(refl);
-
-		/* Reflections with redundancy = 0 are not written */
-		if ( get_redundancy(refl) == 0 ) continue;
-
-		if ( image->det != NULL ) {
-
-			struct panel *p;
-			double write_fs, write_ss;
-
-			p = find_orig_panel(image->det, fs, ss);
-			if ( p == NULL ) {
-				ERROR("Panel not found\n");
-				return 1;
-			}
-
-			/* Convert coordinates to match arrangement of panels in HDF5
-			 * file */
-			write_fs = fs + p->orig_min_fs;
-			write_ss = ss + p->orig_min_ss;
-
-			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
-			            " %6.1f %6.1f\n",
-			        h, k, l, intensity, esd_i, pk, bg, write_fs,
-			        write_ss);
-
-		} else {
-
-			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
-			            " %6.1f %6.1f\n",
-			        h, k, l, intensity, esd_i, pk, bg, fs, ss);
-		}
-	}
-	return 0;
-}
-
-
-static int write_stream_reflections_2_3(FILE *fh, RefList *list,
-                                        struct image *image)
+static int write_stream_reflections(FILE *fh, RefList *list,
+                                    const DataTemplate *dtempl)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -685,13 +546,14 @@ static int write_stream_reflections_2_3(FILE *fh, RefList *list,
 
 		signed int h, k, l;
 		double intensity, esd_i, pk, bg;
-		double fs, ss;
-		double write_fs, write_ss;
-		struct panel *p;
+		double dfs, dss;
+		float fs, ss;
+		int pn;
 
 		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		p = get_panel(refl);
+		get_detector_pos(refl, &dfs, &dss);
+		fs = dfs;  ss = dss;
+		pn = get_panel_number(refl);
 		intensity = get_intensity(refl);
 		esd_i = get_esd_intensity(refl);
 		pk = get_peak(refl);
@@ -700,14 +562,13 @@ static int write_stream_reflections_2_3(FILE *fh, RefList *list,
 		/* Reflections with redundancy = 0 are not written */
 		if ( get_redundancy(refl) == 0 ) continue;
 
-		write_fs = fs+p->orig_min_fs;
-		write_ss = ss+p->orig_min_ss;
+		data_template_panel_to_file_coords(dtempl, pn,
+		                                   &fs, &ss);
 
-		fprintf(fh,
-                          "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f "
-                          "%6.1f %6.1f %s\n",
-                           h, k, l, intensity, esd_i, pk, bg,
-                           write_fs, write_ss, p->name);
+		fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f "
+		        "%6.1f %6.1f %s\n",
+		        h, k, l, intensity, esd_i, pk, bg,
+		        fs, ss, data_template_panel_name(dtempl, pn));
 
 	}
 	return 0;
@@ -731,7 +592,9 @@ static int num_integrated_reflections(RefList *list)
 }
 
 
-static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
+static int write_crystal(Stream *st, Crystal *cr,
+                         const DataTemplate *dtempl,
+                         int include_reflections)
 {
 	UnitCell *cell;
 	RefList *reflist;
@@ -802,26 +665,9 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 		if ( reflist != NULL ) {
 
-			struct image *image;
-
-			image = crystal_get_image(cr);
-
 			fprintf(st->fh, REFLECTION_START_MARKER"\n");
-			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				ret = write_stream_reflections_2_3(st->fh,
-				                                   reflist,
-				                                   image);
-			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				ret = write_stream_reflections_2_2(st->fh,
-			                                           reflist,
-			                                           image);
-			} else {
-				/* This function writes like a normal reflection
-				 * list was written in stream 2.1 */
-				ret = write_stream_reflections_2_1(st->fh,
-				                                   reflist,
-				                                   image);
-			}
+			ret = write_stream_reflections(st->fh, reflist,
+			                               dtempl);
 			fprintf(st->fh, REFLECTION_END_MARKER"\n");
 
 		} else {
@@ -848,6 +694,7 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
  * \returns non-zero on error.
  */
 int write_chunk(Stream *st, struct image *i,
+                const DataTemplate *dtempl,
                 int include_peaks, int include_reflections)
 {
 	int j;
@@ -903,7 +750,7 @@ int write_chunk(Stream *st, struct image *i,
 
 	for ( j=0; j<i->n_crystals; j++ ) {
 		if ( crystal_get_user_flag(i->crystals[j]) == 0 ) {
-			ret = write_crystal(st, i->crystals[j],
+			ret = write_crystal(st, i->crystals[j], dtempl,
 			                    include_reflections);
 		}
 	}
@@ -945,7 +792,8 @@ static int find_start_of_chunk(Stream *st)
 }
 
 
-static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
+static void read_crystal(Stream *st, struct image *image,
+                         const DataTemplate *dtempl, StreamReadFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -1073,13 +921,13 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			 * after 2.2 */
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
 				reflist = read_stream_reflections_2_3(st,
-                                                      image->det);
+                                                      dtempl);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
 				reflist = read_stream_reflections_2_2(st,
-				          image->det);
+				                                      dtempl);
 			} else {
 				reflist = read_stream_reflections_2_1(st,
-				          image->det);
+				                                      dtempl);
 			}
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
@@ -1147,7 +995,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 /**
  * Read the next chunk from a stream and fill in 'image'
  */
-int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf)
+int read_chunk(Stream *st, struct image *image,
+               const DataTemplate *dtempl, StreamReadFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -1260,7 +1109,7 @@ int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf)
 
 		if ( (srf & STREAM_READ_CRYSTALS)
 		  && (strcmp(line, CRYSTAL_START_MARKER) == 0) ) {
-			read_crystal(st, image, srf);
+			read_crystal(st, image, dtempl, srf);
 		}
 
 		/* A chunk must have at least a filename and a wavelength,
@@ -1279,23 +1128,6 @@ int read_chunk_2(Stream *st, struct image *image, StreamReadFlags srf)
 
 	return 1;  /* Either error or EOF, don't care because we will complain
 	            * on the terminal if it was an error. */
-}
-
-
-
-/**
- * \param st A \ref Stream
- * \param image An \ref image structure to be filled
- *
- * Reads a chunk from \p st, placing the information in \p image.
- *
- * \returns non-zero on error.
- */
-int read_chunk(Stream *st, struct image *image)
-{
-	return read_chunk_2(st, image, STREAM_READ_UNITCELL
-	                               | STREAM_READ_REFLECTIONS
-	                               | STREAM_READ_PEAKS);
 }
 
 

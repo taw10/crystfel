@@ -1882,17 +1882,16 @@ ImageFeatureList *get_peaks_cxi_dtempl(const DataTemplate *dtempl,
 		ss = buf_y[pk] + peak_offset;
 		val = buf_i[pk];
 
-		pn = data_template_find_panel(dtempl, fs, ss);
-		if ( pn < -1 ) {
-			ERROR("Peak not in panel!\n");
-			continue;
+		if ( data_template_file_to_panel_coords(dtempl,
+		                                        &fs, &ss,
+		                                        &pn) )
+		{
+			ERROR("Failed to convert %i,%i to "
+			      "panel-relative coordinates\n", fs, ss);
+		} else {
+			image_add_feature(features, fs, ss, pn,
+			                  NULL, val, NULL);
 		}
-
-		/* Convert coordinates to panel-relative */
-		data_template_file_to_panel_coords(dtempl, &fs, &ss);
-
-		image_add_feature(features, fs, ss, pn,
-		                  NULL, val, NULL);
 
 	}
 
@@ -2022,17 +2021,16 @@ ImageFeatureList *get_peaks_hdf5_dtempl(const DataTemplate *dtempl,
 		ss = buf[tw*i+1] + peak_offset;
 		val = buf[tw*i+2];
 
-		pn = data_template_find_panel(dtempl, fs, ss);
-		if ( pn < -1 ) {
-			ERROR("Peak not in panel!\n");
-			continue;
+		if ( data_template_file_to_panel_coords(dtempl,
+		                                        &fs, &ss,
+		                                        &pn) )
+		{
+			ERROR("Failed to convert %i,%i to "
+			      "panel-relative coordinates\n", fs, ss);
+		} else {
+			image_add_feature(features, fs, ss, pn,
+			                  NULL, val, NULL);
 		}
-
-		/* Convert coordinates to panel-relative */
-		data_template_file_to_panel_coords(dtempl, &fs, &ss);
-
-		image_add_feature(features, fs, ss, pn,
-		                  NULL, val, NULL);
 
 	}
 

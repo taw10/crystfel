@@ -1256,8 +1256,9 @@ int main(int argc, char *argv[])
 
 		cur.det = NULL;
 
-		if ( read_chunk_2(st, &cur, STREAM_READ_UNITCELL
-		                          | STREAM_READ_REFLECTIONS) != 0 ) {
+		if ( read_chunk(st, &cur, NULL,
+		                STREAM_READ_UNITCELL | STREAM_READ_REFLECTIONS) != 0 )
+		{
 			break;
 		}
 
