@@ -1101,7 +1101,7 @@ static int load_mask_hdf5(struct panel_template *p,
                           int *bad, int mask_good, int mask_bad)
 {
 	int p_w, p_h;
-	int *mask;
+	int *mask = NULL;
 	long unsigned int j;
 
 	p_w = p->orig_max_fs - p->orig_min_fs + 1;
