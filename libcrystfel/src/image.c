@@ -890,7 +890,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	hsize_t dims[2];
 	char *panel_full_path;
 	void *data;
-	int ndims;
+	int ndims, dpos;
 	int skip_placeholders = 0;
 
 	if ( access(filename, R_OK) == -1 ) {
@@ -963,30 +963,46 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		}
 	}
 
-	f_offset = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
-	f_count = malloc(p->dim_structure->num_dims*sizeof(hsize_t));
+	f_offset = malloc(ndims*sizeof(hsize_t));
+	f_count = malloc(ndims*sizeof(hsize_t));
 	if ( (f_offset == NULL) || (f_count == NULL ) ) {
 		ERROR("Failed to allocate offset or count.\n");
 		free_event(ev);
 		H5Fclose(fh);
 		return 1;
 	}
+
+	dpos = 0;
 	for ( hsi=0; hsi<p->dim_structure->num_dims; hsi++ ) {
 
-		if ( p->dim_structure->dims[hsi] == HYSL_FS ) {
-			f_offset[hsi] = p->orig_min_fs;
-			f_count[hsi] = p->orig_max_fs - p->orig_min_fs+1;
-		} else if ( p->dim_structure->dims[hsi] == HYSL_SS ) {
-			f_offset[hsi] = p->orig_min_ss;
-			f_count[hsi] = p->orig_max_ss - p->orig_min_ss+1;
-		} else if (p->dim_structure->dims[hsi] == HYSL_PLACEHOLDER ) {
+		switch ( p->dim_structure->dims[hsi] ) {
+
+			case HYSL_FS:
+			f_offset[dpos] = p->orig_min_fs;
+			f_count[dpos] = p->orig_max_fs - p->orig_min_fs+1;
+			dpos++;
+			break;
+
+			case HYSL_SS:
+			f_offset[dpos] = p->orig_min_ss;
+			f_count[dpos] = p->orig_max_ss - p->orig_min_ss+1;
+			dpos++;
+			break;
+
+			case HYSL_PLACEHOLDER:
 			if ( !skip_placeholders ) {
-				f_offset[hsi] = ev->dim_entries[0];
-				f_count[hsi] = 1;
+				f_offset[dpos] = ev->dim_entries[0];
+				f_count[dpos] = 1;
+				dpos++;
 			}
-		} else {
-			f_offset[hsi] = p->dim_structure->dims[hsi];
-			f_count[hsi] = 1;
+			break;
+
+			default:
+			f_offset[dpos] = p->dim_structure->dims[hsi];
+			f_count[dpos] = 1;
+			dpos++;
+			break;
+
 		}
 
 	}
