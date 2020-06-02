@@ -52,6 +52,7 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "datatemplate.h"
+#include "detgeom.h"
 
 /** \file stream.h */
 
@@ -209,61 +210,8 @@ static int read_peaks_2_3(Stream *st, struct image *image)
 }
 
 
-static int write_peaks(struct image *image, FILE *ofh)
-{
-	int i;
-
-	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
-	fprintf(ofh, "  fs/px   ss/px  (1/d)/nm^-1   Intensity\n");
-
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
-
-		struct imagefeature *f;
-		struct rvec r;
-		double q;
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		r = get_q_for_panel(&image->det->panels[f->pn],
-		                    f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
-		q = modulus(r.u, r.v, r.w);
-
-		if ( image->det != NULL ) {
-
-			struct panel *p;
-			double write_fs, write_ss;
-
-			p = find_orig_panel(image->det, f->fs, f->ss);
-			if ( p == NULL ) {
-				ERROR("Panel not found\n");
-				return 1;
-			}
-
-			/* Convert coordinates to match arrangement of panels in
-			 * HDF5 file */
-			write_fs = f->fs + p->orig_min_fs;
-			write_ss = f->ss + p->orig_min_ss;
-
-			fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
-			        write_fs, write_ss, q/1.0e9, f->intensity);
-
-		} else {
-
-			fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
-			        f->fs, f->ss, q/1.0e9, f->intensity);
-
-		}
-
-	}
-
-	fprintf(ofh, PEAK_LIST_END_MARKER"\n");
-	return 0;
-}
-
-
-static int write_peaks_2_3(struct image *image, FILE *ofh)
+static int write_peaks(struct image *image,
+                       const DataTemplate *dtempl, FILE *ofh)
 {
 	int i;
 
@@ -273,27 +221,27 @@ static int write_peaks_2_3(struct image *image, FILE *ofh)
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		struct rvec r;
+		double r[3];
 		double q;
-		double write_fs, write_ss;
-		struct panel *p;
+		float write_fs, write_ss;
+		struct detgeom_panel *p;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		p = &image->det->panels[f->pn];
-		r = get_q_for_panel(p, f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
-		q = modulus(r.u, r.v, r.w);
+		p = &image->detgeom->panels[f->pn];
+		detgeom_transform_coords(p, f->fs, f->ss,
+		                         image->lambda, r);
+		q = modulus(r[0], r[1], r[2]);
 
-		/* Convert coordinates to match arrangement of panels in HDF5
-		 * file */
-		write_fs = f->fs + p->orig_min_fs;
-		write_ss = f->ss + p->orig_min_ss;
+		write_fs = f->fs;
+		write_ss = f->ss;
+		data_template_panel_to_file_coords(dtempl, f->pn,
+		                                   &write_fs, &write_ss);
 
 		fprintf(ofh, "%7.2f %7.2f %10.2f  %10.2f   %s\n",
 		        write_fs, write_ss, q/1.0e9, f->intensity,
-		        p->name);
+		        data_template_panel_name(dtempl, f->pn));
 
 	}
 
@@ -741,11 +689,7 @@ int write_chunk(Stream *st, struct image *i,
 	fprintf(st->fh, "peak_resolution = %f nm^-1 or %f A\n",
 	        i->peak_resolution/1e9, 1e10/i->peak_resolution);
 	if ( include_peaks ) {
-		if ( AT_LEAST_VERSION(st, 2, 3) ) {
-			ret = write_peaks_2_3(i, st->fh);
-		} else {
-			ret = write_peaks(i, st->fh);
-		}
+		ret = write_peaks(i, dtempl, st->fh);
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {

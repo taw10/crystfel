@@ -452,16 +452,8 @@ out:
 		spectrum_free(image->spectrum);
 	}
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		free(image->dp[i]);
-		free(image->bad[i]);
-		free(image->sat[i]);
-	}
-	free(image->dp);
-	free(image->bad);
-	free(image->sat);
+	/* Free image (including detgeom) */
+	image_free(image);
 
-	image_feature_list_free(image->features);
-	free_detector_geometry(image->det);
 	set_last_task(last_task, "sandbox");
 }

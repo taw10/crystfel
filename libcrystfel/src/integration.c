@@ -1660,7 +1660,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
                      pthread_mutex_t *term_lock, int overpredict)
 {
 	int i;
-	int *masks[image->det->n_panels];
+	int *masks[image->detgeom->n_panels];
 
 	/* Predict all reflections */
 	for ( i=0; i<image->n_crystals; i++ ) {
@@ -1687,7 +1687,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 
 	}
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		masks[i] = make_BgMask(image, &image->detgeom->panels[i],
 		                       i, ir_inn);
 	}
@@ -1725,7 +1725,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 
 	}
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		free(masks[i]);
 	}
 }
