@@ -109,6 +109,7 @@ set(LIBCRYSTFEL_HEADERS
     src/spectrum.h
     src/datatemplate.h
     src/colscale.h
+    src/detgeom.h
 )
 
 if (DOXYGEN_FOUND)
