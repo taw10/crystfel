@@ -31,6 +31,7 @@
 #endif
 
 #include <math.h>
+#include <stdlib.h>
 
 #include "detgeom.h"
 
@@ -61,4 +62,17 @@ void detgeom_transform_coords(struct detgeom_panel *p,
 	r[0] = sin(twotheta)*cos(az) / wavelength;
 	r[1] = sin(twotheta)*sin(az) / wavelength;
 	r[2] = (ctt - 1.0) / wavelength;
+}
+
+
+void detgeom_free(struct detgeom *detgeom)
+{
+	int i;
+
+	for ( i=0; i<detgeom->n_panels; i++ ) {
+		free(detgeom->panels[i].name);
+	}
+
+	free(detgeom->panels);
+	free(detgeom);
 }

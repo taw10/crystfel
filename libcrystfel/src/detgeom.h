@@ -53,7 +53,7 @@ extern "C" {
 struct detgeom_panel
 {
 	/** Text name for panel */
-	const char *name;
+	char *name;
 
 	/** \name Location of corner in units of the pixel size of this panel, \
 	 *  measured from the interaction point. */
@@ -100,6 +100,8 @@ extern void detgeom_transform_coords(struct detgeom_panel *p,
                                      double fs, double ss,
                                      double wavelength,
                                      double *r);
+
+extern void detgeom_free(struct detgeom *detgeom);
 
 #ifdef __cplusplus
 }
