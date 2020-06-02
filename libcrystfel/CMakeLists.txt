@@ -65,6 +65,8 @@ set(LIBCRYSTFEL_SOURCES
     src/datatemplate.c
     src/colscale.c
     src/detgeom.c
+    src/image-cbf.c
+    src/image-hdf5.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
 )
