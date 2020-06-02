@@ -26,6 +26,11 @@
  *
  */
 
+/* NB This file is NOT part of the public API, and should NOT
+ * be installed, but rather stays in the libcrystfel source folder. */
+
+#ifndef DATATEMPLATE_PRIV_H
+#define DATATEMPLATE_PRIV_H
 
 enum adu_per_unit
 {
@@ -188,3 +193,4 @@ struct _datatemplate
 	struct panel_template      defaults;  /* FIXME: Shouldn't be stored */
 };
 
+#endif	/* DATATEMPLATE_PRIV_H */
