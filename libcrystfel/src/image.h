@@ -35,19 +35,15 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-struct detector;
-
 #include <stdint.h>
 #include <complex.h>
 #include <sys/types.h>
 
 struct imagefeature;
-struct sample;
 struct image;
 
 #include "utils.h"
 #include "cell.h"
-#include "detector.h"
 #include "reflist.h"
 #include "crystal.h"
 #include "index.h"
@@ -101,17 +97,6 @@ enum imagefile_type
 typedef struct _imagefeaturelist ImageFeatureList;
 
 
-struct beam_params
-{
-	double photon_energy;       /**< eV per photon */
-	char  *photon_energy_from;  /**< HDF5 dataset name */
-	double photon_energy_scale; /**< Scale factor for photon energy, if it
-	                             *   comes from an image header */
-	double bandwidth;           /**< FWHM bandwidth as a fraction of
-	                             *   wavelength */
-};
-
-
 struct image
 {
 	/** The image data, by panel */
@@ -138,14 +123,8 @@ struct image
 	/** Number of times the indexer was tried before succeeding */
 	int                     n_indexing_tries;
 
-	/** The detector structure
-	 * @{ */
+	/** The detector structure */
 	struct detgeom          *detgeom;
-	struct detector         *det;   /* FIXME: Deprecated */
-	/** @} */
-
-	/** The nominal beam parameters (or where to get them) */
-	struct beam_params      *beam;  /* FIXME: Deprecated */
 
 	/** \name The filename and event ID for the image
 	 * @{ */

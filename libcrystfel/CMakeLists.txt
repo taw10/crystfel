@@ -33,7 +33,6 @@ set(LIBCRYSTFEL_SOURCES
     src/reflist.c
     src/utils.c
     src/cell.c
-    src/detector.c
     src/thread-pool.c
     src/image.c
     src/hdf5-file.c
@@ -83,7 +82,6 @@ set(LIBCRYSTFEL_HEADERS
     src/reflist-utils.h
     src/thread-pool.h
     src/utils.h
-    src/detector.h
     src/geometry.h
     src/peakfinder8.h
     src/peaks.h
