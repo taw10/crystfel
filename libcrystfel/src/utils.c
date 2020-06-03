@@ -327,10 +327,12 @@ size_t notrail(char *s)
 void chomp(char *s)
 {
 	size_t i;
+	size_t len;
 
 	if ( s == NULL ) return;
+	len = strlen(s);
 
-	for ( i=0; i<strlen(s); i++ ) {
+	for ( i=0; i<len; i++ ) {
 		if ( (s[i] == '\n') || (s[i] == '\r') ) {
 			s[i] = '\0';
 			return;
