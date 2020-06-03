@@ -286,7 +286,7 @@ static double get_value(struct image *image, const char *from)
 	if ( from == NULL ) return NAN;
 
 	val = strtod(from, &rval);
-	if ( *rval == '\0' ) return val;
+	if ( (*rval == '\0') && (rval != from) ) return val;
 
 	if ( H5Fis_hdf5(image->filename) > 0 ) {
 		return image_hdf5_get_value(from,
@@ -305,6 +305,42 @@ static double get_value(struct image *image, const char *from)
 		ERROR("Unrecognised file type: %s\n", image->filename);
 		return NAN;
 	}
+}
+
+
+static double unit_string_to_unit(const char *str)
+{
+	if ( strcmp(str, "mm") == 0 ) return 1e-3;
+	if ( strcmp(str, "m") == 0 ) return 1.0;
+	ERROR("Invalid length unit '%s'\n", str);
+	return NAN;
+}
+
+
+static double get_length(struct image *image, const char *from)
+{
+	double units;
+	char *sp;
+	char *fromcpy;
+	double val;
+
+	if ( from == NULL ) return NAN;
+
+	fromcpy = strdup(from);
+	if ( fromcpy == NULL ) return NAN;
+
+	sp = strchr(fromcpy, ' ');
+	if ( sp == NULL ) {
+		units = 1.0e-3;
+	} else {
+		units = unit_string_to_unit(sp+1);
+	}
+
+	sp[0] = '\0';
+	val = get_value(image, fromcpy);
+	free(fromcpy);
+
+	return val * units;
 }
 
 
@@ -330,12 +366,18 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 
 		detgeom->panels[i].name = safe_strdup(dtempl->panels[i].name);
 
+		detgeom->panels[i].pixel_pitch = dtempl->panels[i].pixel_pitch;
+
+		/* NB cnx,cny are in pixels, cnz is in m */
 		detgeom->panels[i].cnx = dtempl->panels[i].cnx;
 		detgeom->panels[i].cny = dtempl->panels[i].cny;
-		detgeom->panels[i].cnz = get_value(image, dtempl->panels[i].cnz_from)
-		                                + dtempl->panels[i].cnz_offset;
+		detgeom->panels[i].cnz = get_length(image, dtempl->panels[i].cnz_from);
 
-		detgeom->panels[i].pixel_pitch = dtempl->panels[i].pixel_pitch;
+		/* Apply offset (in m) and then convert cnz from
+		 * m to pixels */
+		detgeom->panels[i].cnz += dtempl->panels[i].cnz_offset;
+		detgeom->panels[i].cnz /= detgeom->panels[i].pixel_pitch;
+
 		detgeom->panels[i].max_adu = dtempl->panels[i].max_adu;
 		detgeom->panels[i].adu_per_photon = 1.0;  /* FIXME ! */
 
