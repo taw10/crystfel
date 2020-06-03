@@ -341,6 +341,8 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 
 		ch = a[i];
 
+		if ( ch == ' ' ) continue;
+
 		if ( (ch == '+') || (ch == '-') ) {
 			if ( idx >= 0 ) bits[idx][istr] = '\0';
 			idx++;
