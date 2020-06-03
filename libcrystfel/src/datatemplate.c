@@ -777,16 +777,14 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 	do {
 
-		int n1, n2;
-		char **path;
 		char *line;
 		struct dt_badregion *badregion = NULL;
 		struct panel_template *panel = NULL;
-		char wholeval[1024];
 
+		/* Copy the next line from the big string */
 		const char *nl = strchr(string, '\n');
 		if ( nl != NULL ) {
-		       size_t len = nl - string;
+			size_t len = nl - string;
 			line = strndup(string, nl-string);
 			line[len] = '\0';
 			string += len+1;
@@ -795,76 +793,84 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			done = 1;
 		}
 
-		if ( line[0] == ';' ) {
+		/* Trim leading spaces */
+		i = 0;
+		char *line_orig = line;
+		while ( (line_orig[i] == ' ')
+		     || (line_orig[i] == '\t') ) i++;
+		line = strdup(line+i);
+		free(line_orig);
+
+		/* Stop at comment symbol */
+		char *comm = strchr(line, ';');
+		if ( comm != NULL ) comm[0] = '\0';
+
+		/* Nothing left? Entire line was commented out,
+		 * and can be silently ignored */
+		if ( line[0] == '\0' ) {
 			free(line);
 			continue;
 		}
 
-		n1 = assplode(line, " \t", &bits, ASSPLODE_NONE);
-		if ( n1 < 3 ) {
-			for ( i=0; i<n1; i++ ) free(bits[i]);
-			free(bits);
+		/* Find the equals sign */
+		char *eq = strchr(line, '=');
+		if ( eq == NULL ) {
+			ERROR("Bad line in geometry file: '%s'\n", line);
 			free(line);
 			continue;
 		}
 
-		/* Stitch the pieces of the "value" back together */
-		wholeval[0] = '\0';  /* Empty string */
-		for ( i=2; i<n1; i++ ) {
-			if ( bits[i][0] == ';' ) break;  /* Stop on comment */
-			strncat(wholeval, bits[i], 1023);
-		}
+		/* Split into two strings */
+		eq[0] = '\0';
+		char *val = eq+1;
 
-		if ( bits[1][0] != '=' ) {
-			for ( i=0; i<n1; i++ ) free(bits[i]);
-			free(bits);
-			free(line);
-			continue;
-		}
+		/* Trim leading and trailing spaces in value */
+		while ( (val[0] == ' ') || (val[0] == '\t') ) val++;
+	        notrail(val);
 
-		n2 = assplode(bits[0], "/\\.", &path, ASSPLODE_NONE);
-		if ( n2 < 2 ) {
+	        /* Trim trailing spaces in key
+	         * (leading spaces already done above) */
+	        notrail(line);
 
-			/* This was a top-level option, not handled above. */
-			parse_toplevel(dt, bits[0], wholeval, &rg_defl,
-			               &rgc_defl, &n_rg_definitions,
+	        /* Find slash after panel name */
+	        char *slash = strchr(line, '/');
+	        if ( slash == NULL ) {
+
+			/* Top-level option */
+			parse_toplevel(dt, line, val,
+			               &rg_defl,
+			               &rgc_defl,
+			               &n_rg_definitions,
 				       &n_rgc_definitions);
-			for ( i=0; i<n1; i++ ) free(bits[i]);
-			free(bits);
-			for ( i=0; i<n2; i++ ) free(path[i]);
-			free(path);
 			free(line);
 			continue;
 		}
 
-		if ( strncmp(path[0], "bad", 3) == 0 ) {
-			badregion = find_bad_region_by_name(dt, path[0]);
+	        slash[0] = '\0';
+	        char *key = slash+1;
+	        /* No space trimming this time - must be "panel/key" */
+
+	        /* Find either panel or bad region */
+		if ( strncmp(line, "bad", 3) == 0 ) {
+			badregion = find_bad_region_by_name(dt, line);
 			if ( badregion == NULL ) {
-				badregion = new_bad_region(dt, path[0]);
+				badregion = new_bad_region(dt, line);
 			}
 		} else {
-			panel = find_panel_by_name(dt, path[0]);
+			panel = find_panel_by_name(dt, line);
 			if ( panel == NULL ) {
-				panel = new_panel(dt, path[0]);
+				panel = new_panel(dt, line);
 			}
 		}
 
 		if ( panel != NULL ) {
-			if ( parse_field_for_panel(panel, path[1],
-			                           wholeval, dt) )
-			{
-				reject = 1;
-			}
+			if ( parse_field_for_panel(panel, key, val,
+			                           dt) ) reject = 1;
 		} else {
-			if ( parse_field_bad(badregion, path[1], wholeval) ) {
-				reject = 1;
-			}
+			if ( parse_field_bad(badregion, key,
+			                     val) ) reject = 1;
 		}
 
-		for ( i=0; i<n1; i++ ) free(bits[i]);
-		for ( i=0; i<n2; i++ ) free(path[i]);
-		free(bits);
-		free(path);
 		free(line);
 
 	} while ( !done );
