@@ -35,7 +35,6 @@ set(LIBCRYSTFEL_SOURCES
     src/cell.c
     src/thread-pool.c
     src/image.c
-    src/hdf5-file.c
     src/geometry.c
     src/peakfinder8.c
     src/symmetry.c
@@ -75,7 +74,6 @@ if (HAVE_FFTW)
 endif (HAVE_FFTW)
 
 set(LIBCRYSTFEL_HEADERS
-    src/hdf5-file.h
     src/reflist.h
     src/symmetry.h
     src/cell.h
