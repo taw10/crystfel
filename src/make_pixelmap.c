@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2018 Thomas White <taw@physics.org>
+ *   2012-2020 Thomas White <taw@physics.org>
  *   2016-2016 Omri Mor <omor1@asu.edu>
  *
  * This file is part of CrystFEL.
@@ -41,8 +41,11 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <assert.h>
+#include <hdf5.h>
 
-#include "detector.h"
+#include "utils.h"
+#include "datatemplate.h"
+#include "detgeom.h"
 
 
 static void show_help(const char *s)
@@ -126,7 +129,7 @@ static void create_scalar(hid_t gh, const char *name, float val)
 
 static void write_pixelmap_hdf5(const char *filename,
                                 float *x, float *y, float *z,
-                                int width, int height, float res, float coffset)
+                                int width, int height, float res)
 {
 	hid_t fh;
 
@@ -141,7 +144,6 @@ static void write_pixelmap_hdf5(const char *filename,
 	create_array(fh, "z", z, H5T_NATIVE_FLOAT, width, height);
 
 	create_scalar(fh, "res", res);
-	create_scalar(fh, "coffset", coffset);
 
 	H5Fclose(fh);
 }
@@ -171,12 +173,12 @@ int main(int argc, char *argv[])
 	int c;
 	char *input_file = NULL;
 	char *output_file = NULL;
-	struct detector *det = NULL;
+	DataTemplate *dtempl;
+	struct detgeom *detgeom;
 	int fs, ss, w, h;
 	float *x, *y, *z;
 	uint16_t *b;
-	int i;
-	float res, coffset;
+	float res;
 	int badmap = 0;
 	int good_pixel_val = 1;
 	int bad_pixel_val = 0;
@@ -248,24 +250,28 @@ int main(int argc, char *argv[])
 	}
 
 	/* Load geometry */
-	det = get_detector_geometry(input_file, NULL);
-	if ( det == NULL ) {
-		ERROR("Failed to read geometry from '%s'\n", input_file);
+	dtempl = data_template_new_from_file(input_file);
+	if ( dtempl == NULL ) {
+		ERROR("Failed to read geometry from '%s'\n",
+		      input_file);
 		return 1;
 	}
 	free(input_file);
 
-	/* Determine max orig fs and ss */
-	w = 0;  h = 0;
-	for ( i=0; i<det->n_panels; i++ ) {
-		if ( det->panels[i].orig_max_fs > w ) {
-			w = det->panels[i].orig_max_fs;
-		}
-		if ( det->panels[i].orig_max_ss > h ) {
-			h = det->panels[i].orig_max_ss;
-		}
+	detgeom = data_template_to_detgeom(dtempl);
+	if ( detgeom == NULL ) {
+		ERROR("Could not make detector structure.\n");
+		ERROR("Geometry file must not contain references to "
+		      "image header values\n");
+		return 1;
 	}
-	w += 1;  h += 1;  /* Inclusive -> Exclusive */
+
+	/* Determine max orig fs and ss */
+	if ( data_template_get_slab_extents(dtempl, &w, &h) ) {
+		ERROR("Pixel map can only be created if all panels "
+		      "have their data in one \"slab\".\n");
+		return 1;
+	}
 	STATUS("Data slab size: %i x %i\n", w, h);
 
 	x = malloc(w*h*sizeof(float));
@@ -277,66 +283,59 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* For every pixel in the slab ... */
 	for ( ss=0; ss<h; ss++ ) {
-		for ( fs=0; fs<w; fs++ ) {
+	for ( fs=0; fs<w; fs++ ) {
 
-			double rx, ry;
-			struct panel *p;
-			double xs, ys;
-			double cfs, css;
-			int nfs, nss;
+		double rx, ry;
+		double xs, ys;
+		float cfs, css;
+		int pn;
+		struct detgeom_panel *p;
 
-			p = find_orig_panel(det, fs, ss);
+		/* Add half a pixel to fs and ss to get the fs,ss
+		 * coordinates of the CENTRE of the pixel */
+		cfs = fs + 0.5;
+		css = ss + 0.5;
 
-			/* Add half a pixel to fs and ss to get the fs,ss
-			 * coordinates of the CENTRE of the pixel */
-			cfs = fs + 0.5;
-			css = ss + 0.5;
-			xs = (cfs - p->orig_min_fs)*p->fsx
-			      + (css - p->orig_min_ss)*p->ssx;
-			ys = (cfs - p->orig_min_fs)*p->fsy
-			     + (css - p->orig_min_ss)*p->ssy;
-
-			rx = (xs + p->cnx) / p->res;
-			ry = (ys + p->cny) / p->res;
-
-			x[fs + w*ss] = rx;
-			y[fs + w*ss] = ry;
-			z[fs + w*ss] = 0.0;  /* FIXME */
-
-			nfs = fs - p->orig_min_fs;
-			nss = ss - p->orig_min_ss;
-			if ( in_bad_region(det, p, nfs, nss) ) {
-				b[fs + w*ss] = bad_pixel_val;
-			} else {
-				b[fs + w*ss] = good_pixel_val;
-			}
-
+		if ( data_template_file_to_panel_coords(dtempl,
+		                                        &cfs, &css,
+		                                        &pn) )
+		{
+			ERROR("Couldn't convert coordinates\n");
+			return 1;
 		}
 
-		progress_bar(ss, h, "Converting");
-	}
-	STATUS("\n");
+		p = &detgeom->panels[pn];
 
-	res = det->defaults.res;
-	/* use the res of the first panel if not in global definitions
-	 * assumes one of these exist */
-	if ( res == -1.0 ) {
-		res = det->panels[0].res;
+		xs = cfs*p->fsx + css*p->ssx;
+		ys = cfs*p->fsy + css*p->ssy;
+
+		rx = (xs + p->cnx) * p->pixel_pitch;
+		ry = (ys + p->cny) * p->pixel_pitch;
+
+		x[fs + w*ss] = rx;
+		y[fs + w*ss] = ry;
+		z[fs + w*ss] = 0.0;  /* 2D part only */
+
+		if ( data_template_in_bad_region(dtempl, pn, cfs, css) ) {
+			b[fs + w*ss] = bad_pixel_val;
+		} else {
+			b[fs + w*ss] = good_pixel_val;
+		}
+
+	}
 	}
 
-	coffset = det->defaults.coffset;
-	/* use the coffset of the first panel if not in global definitions
-	 * assumes one of these exist*/
-	if ( coffset == 0.0 ) {
-		coffset = det->panels[0].coffset;
-	}
+	res = 1.0 / detgeom->panels[0].pixel_pitch;
 
 	if ( badmap ) {
 		write_badmap_hdf5(output_file, b, w, h);
 	} else {
-		write_pixelmap_hdf5(output_file, x, y, z, w, h, res, coffset);
+		write_pixelmap_hdf5(output_file, x, y, z, w, h, res);
 	}
+
+	data_template_free(dtempl);
 
 	return 0;
 }

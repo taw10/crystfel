@@ -1309,3 +1309,168 @@ void data_template_add_copy_header(DataTemplate *dt,
 	/* FIXME: Add "header" to list of things to copy */
 	STATUS("Adding %s\n", header);
 }
+
+
+/* If possible, i.e. if there are no references to image headers in
+ * 'dt', generate a detgeom structure from it.
+ *
+ * NB This is probably not the function you're looking for!
+ * The detgeom structure should normally come from loading an image,
+ * reading a stream or similar.  This function should only be used
+ * when there is really no data involved, e.g. in make_pixelmap.
+ */
+struct detgeom *data_template_to_detgeom(const DataTemplate *dt)
+{
+	struct detgeom *detgeom;
+	int i;
+
+	if ( dt == NULL ) return NULL;
+
+	detgeom = malloc(sizeof(struct detgeom));
+	if ( detgeom == NULL ) return;
+
+	detgeom->panels = malloc(dt->n_panels*sizeof(struct detgeom_panel));
+	if ( detgeom->panels == NULL ) return;
+
+	detgeom->n_panels = dt->n_panels;
+
+	for ( i=0; i<dt->n_panels; i++ ) {
+
+		detgeom->panels[i].name = safe_strdup(dt->panels[i].name);
+
+		detgeom->panels[i].pixel_pitch = dt->panels[i].pixel_pitch;
+
+		/* NB cnx,cny are in pixels, cnz is in m */
+		detgeom->panels[i].cnx = dt->panels[i].cnx;
+		detgeom->panels[i].cny = dt->panels[i].cny;
+		detgeom->panels[i].cnz = get_length(image, dt->panels[i].cnz_from);
+
+		/* Apply offset (in m) and then convert cnz from
+		 * m to pixels */
+		detgeom->panels[i].cnz += dt->panels[i].cnz_offset;
+		detgeom->panels[i].cnz /= detgeom->panels[i].pixel_pitch;
+
+		detgeom->panels[i].max_adu = dt->panels[i].max_adu;
+		detgeom->panels[i].adu_per_photon = 1.0;  /* FIXME ! */
+
+		detgeom->panels[i].w = dt->panels[i].orig_max_fs
+		                        - dt->panels[i].orig_min_fs + 1;
+		detgeom->panels[i].h = dt->panels[i].orig_max_ss
+		                        - dt->panels[i].orig_min_ss + 1;
+
+		detgeom->panels[i].fsx = dt->panels[i].fsx;
+		detgeom->panels[i].fsy = dt->panels[i].fsy;
+		detgeom->panels[i].fsz = dt->panels[i].fsz;
+		detgeom->panels[i].ssx = dt->panels[i].ssx;
+		detgeom->panels[i].ssy = dt->panels[i].ssy;
+		detgeom->panels[i].ssz = dt->panels[i].ssz;
+
+	}
+
+	return detgeom;
+}
+
+
+int data_template_get_slab_extents(const DataTemplate *dt,
+                                   int *pw, int *ph)
+{
+	int w, h;
+	char *data_from;
+
+	data_from = dt->panels[0].data;
+
+	w = 0;  h = 0;
+	for ( i=0; i<dt->n_panels; i++ ) {
+
+		struct panel_template *p = &dt->panels[i];
+
+		if ( strcmp(data_from, p->data) != 0 ) {
+			/* Not slabby */
+			return 1;
+		}
+
+		if ( p->dim_structure != NULL ) {
+			int j;
+			for ( j=0; j<p->dim_structure->ndims; j++ ) {
+				if ( p->dim_structure->dims[j] == HYSL_PLACEHOLDER ) {
+					/* Not slabby */
+					return 1;
+				}
+			}
+		}
+
+		if ( p->file_max_fs > w ) {
+			w = p->file_max_fs;
+		}
+		if ( p->file_max_ss > h ) {
+			h = p->file_max_ss;
+		}
+	}
+
+	/* Inclusive -> exclusive */
+	*pw = w + 1;
+	*ph = h + 1;
+	return 0;
+}
+
+
+/* Return non-zero if pixel fs,ss on panel p is in a bad region
+ * as specified in the geometry file (regions only, not including
+ * masks, NaN/inf, no_index etc */
+int data_template_in_bad_region(DataTemplate *dtempl,
+                                int pn, double fs, double ss)
+{
+	double rx, ry;
+	double xs, ys;
+	int i;
+	struct panel_template *p;
+
+	if ( p >= dtempl->n_panels ) {
+		ERROR("Panel index out of range\n");
+		return 0;
+	}
+	p = dtempl->panels[pn];
+
+	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
+	 * to x and y */
+	xs = fs*p->fsx + ss*p->ssx;
+	ys = fs*p->fsy + ss*p->ssy;
+
+	rx = xs + p->cnx;
+	ry = ys + p->cny;
+
+	for ( i=0; i<dtempl->n_bad; i++ ) {
+
+		struct dt_badregion *b = &dtempl->bad[i];
+
+		if ( (b->panel != NULL)
+		  && (strcmp(b->panel, p->name) != 0) ) continue;
+
+		if ( b->is_fsss ) {
+
+			int nfs, nss;
+
+			/* fs/ss bad regions are specified according
+			 * to the original coordinates */
+			nfs = fs + p->orig_min_fs;
+			nss = ss + p->orig_min_ss;
+
+			if ( nfs < b->min_fs ) continue;
+			if ( nfs > b->max_fs ) continue;
+			if ( nss < b->min_ss ) continue;
+			if ( nss > b->max_ss ) continue;
+
+		} else {
+
+			if ( rx < b->min_x ) continue;
+			if ( rx > b->max_x ) continue;
+			if ( ry < b->min_y ) continue;
+			if ( ry > b->max_y ) continue;
+
+		}
+
+		return 1;
+	}
+
+	return 0;
+}

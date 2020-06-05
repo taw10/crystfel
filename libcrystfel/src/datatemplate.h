@@ -33,6 +33,7 @@
 #include <config.h>
 #endif
 
+#include "detgeom.h"
 
 /**
  * \file datatemplate.h
@@ -66,6 +67,13 @@ extern int data_template_panel_to_file_coords(const DataTemplate *dt,
 
 extern void data_template_add_copy_header(DataTemplate *dt,
                                           const char *header);
+
+extern struct detgeom *data_template_to_detgeom(const DataTemplate *dt);
+
+extern int data_template_get_slab_extents(const DataTemplate *dt, int *pw, int *ph);
+
+extern int data_template_in_bad_region(DataTemplate *dtempl,
+                                       int pn, double fs, double ss);
 
 #ifdef __cplusplus
 }
