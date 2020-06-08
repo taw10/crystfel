@@ -43,6 +43,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_randist.h>
+#include <hdf5.h>
 
 #include <image.h>
 #include <utils.h>
@@ -1253,8 +1254,6 @@ int main(int argc, char *argv[])
 
 		struct image cur;
 		int i;
-
-		cur.det = NULL;
 
 		if ( read_chunk(st, &cur, NULL,
 		                STREAM_READ_UNITCELL | STREAM_READ_REFLECTIONS) != 0 )
