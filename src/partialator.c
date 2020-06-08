@@ -1212,7 +1212,7 @@ int main(int argc, char *argv[])
 		ERROR("Please give the input filename (with -i)\n");
 		return 1;
 	}
-	st = open_stream_for_read(infile);
+	st = stream_open_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
@@ -1372,34 +1372,30 @@ int main(int argc, char *argv[])
 
 	do {
 
+		struct image *image;
 		RefList *as;
 		int i;
-		struct image cur;
 
-		cur.div = NAN;
-		cur.bw = NAN;
-		if ( read_chunk(st, &cur, NULL,
-		                STREAM_READ_REFLECTIONS | STREAM_READ_UNITCELL) != 0 )
-		{
-			break;
-		}
+		image = stream_read_chunk(st, NULL, STREAM_REFLECTIONS
+		                                  | STREAM_UNITCELL);
+		if ( image == NULL ) break;
 
-		if ( isnan(cur.div) || isnan(cur.bw) ) {
+		if ( isnan(image->div) || isnan(image->bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
 
-		for ( i=0; i<cur.n_crystals; i++ ) {
+		for ( i=0; i<image->n_crystals; i++ ) {
 
 			Crystal *cr;
 			Crystal **crystals_new;
 			RefList *cr_refl;
-			struct image *image;
+			struct image *image_for_crystal;
 
 			n_crystals_seen++;
 			if ( n_crystals_seen <= start_after ) continue;
 
-			if ( crystal_get_resolution_limit(cur.crystals[i]) < min_res ) continue;
+			if ( crystal_get_resolution_limit(image->crystals[i]) < min_res ) continue;
 
 			crystals_new = realloc(crystals,
 			                      (n_crystals+1)*sizeof(Crystal *));
@@ -1409,21 +1405,23 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			crystals = crystals_new;
-			crystals[n_crystals] = cur.crystals[i];
+			crystals[n_crystals] = image->crystals[i];
 			cr = crystals[n_crystals];
 
-			image = malloc(sizeof(struct image));
-			if ( image == NULL ) {
+			/* Create a completely new, separate image
+			 * structure for this crystal. */
+			image_for_crystal = image_new();
+			if ( image_for_crystal == NULL ) {
 				ERROR("Failed to allocate memory for image.\n");
 				return 1;
 			}
 
-			crystal_set_image(cr, image);
-			*image = cur;
-			image->n_crystals = 1;
-			image->crystals = &crystals[n_crystals];
+			crystal_set_image(cr, image_for_crystal);
+			*image_for_crystal = *image;
+			image_for_crystal->n_crystals = 1;
+			image_for_crystal->crystals = &crystals[n_crystals];
 
-			image->filename = strdup(image->filename);
+			image_for_crystal->filename = strdup(image->filename);
 
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
@@ -1449,8 +1447,8 @@ int main(int argc, char *argv[])
 			if ( n_crystals == stop_after ) break;
 
 		}
-		free(cur.crystals);
-		free(cur.filename);
+
+		image_free(image);
 
 		n_images++;
 
@@ -1465,7 +1463,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n");
 	if ( sparams_fh != NULL ) fclose(sparams_fh);
 	audit_info = stream_audit_info(st);
-	close_stream(st);
+	stream_close(st);
 
 	STATUS("Initial partiality calculation...\n");
 	for ( i=0; i<n_crystals; i++ ) {
