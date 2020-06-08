@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2019 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
  *
@@ -45,19 +45,18 @@ struct image;
 #include "datatemplate.h"
 #include "cell.h"
 
-#define GEOM_START_MARKER "----- Begin geometry file -----"
-#define GEOM_END_MARKER "----- End geometry file -----"
-#define CELL_START_MARKER "----- Begin unit cell -----"
-#define CELL_END_MARKER "----- End unit cell -----"
-#define CHUNK_START_MARKER "----- Begin chunk -----"
-#define CHUNK_END_MARKER "----- End chunk -----"
-#define PEAK_LIST_START_MARKER "Peaks from peak search"
-#define PEAK_LIST_END_MARKER "End of peak list"
-#define CRYSTAL_START_MARKER "--- Begin crystal"
-#define CRYSTAL_END_MARKER "--- End crystal"
-#define REFLECTION_START_MARKER "Reflections measured after indexing"
-/* REFLECTION_END_MARKER is over in reflist-utils.h because it is also
- * used to terminate a standalone list of reflections */
+#define STREAM_GEOM_START_MARKER "----- Begin geometry file -----"
+#define STREAM_GEOM_END_MARKER "----- End geometry file -----"
+#define STREAM_CELL_START_MARKER "----- Begin unit cell -----"
+#define STREAM_CELL_END_MARKER "----- End unit cell -----"
+#define STREAM_CHUNK_START_MARKER "----- Begin chunk -----"
+#define STREAM_CHUNK_END_MARKER "----- End chunk -----"
+#define STREAM_PEAK_LIST_START_MARKER "Peaks from peak search"
+#define STREAM_PEAK_LIST_END_MARKER "End of peak list"
+#define STREAM_CRYSTAL_START_MARKER "--- Begin crystal"
+#define STREAM_CRYSTAL_END_MARKER "--- End crystal"
+#define STREAM_REFLECTION_START_MARKER "Reflections measured after indexing"
+#define STREAM_REFLECTION_END_MARKER "End of reflections"
 
 /**
  * An opaque structure representing a stream being read or written
@@ -65,71 +64,59 @@ struct image;
 typedef struct _stream Stream;
 
 /**
- * A bitfield of things that can be read from a stream.  Use this (and
- * \ref read_chunk_2) to read the stream faster if you don't need the entire
- * contents of the stream.
+ * A bitfield of things that can be read from or written to a stream.
+ * Use this (and \ref read_chunk) to read the stream faster if you
+ * don't need the entire contents of the stream.
  *
- * Using either or both of \p STREAM_READ_REFLECTIONS and \p STREAM_READ_UNITCELL
- * implies \p STREAM_READ_CRYSTALS.
+ * When reading, using either of \p STREAM_REFLECTIONS or
+ * \p STREAM_UNITCELL implies \p STREAM_CRYSTALS.
  **/
 typedef enum {
 
 	/** Read the unit cell */
-	STREAM_READ_UNITCELL = 1,
+	STREAM_UNITCELL = 1,
 
 	/** Read the integrated reflections */
-	STREAM_READ_REFLECTIONS = 2,
+	STREAM_REFLECTIONS = 2,
 
 	/** Read the peak search results */
-	STREAM_READ_PEAKS = 4,
+	STREAM_PEAKS = 4,
 
 	/** Read the general information about crystals */
-	STREAM_READ_CRYSTALS = 8,
+	STREAM_CRYSTALS = 8,
 
-} StreamReadFlags;
-
-struct stuff_from_stream
-{
-	char **fields;
-	int n_fields;
-};
+} StreamFlags;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern Stream *open_stream_for_read(const char *filename);
-extern Stream *open_stream_for_write(const char *filename);
-extern Stream *open_stream_for_write_2(const char *filename,
-                                const char* geom_filename, int argc,
-                                char *argv[]);
-extern Stream *open_stream_for_write_3(const char *filename,
-                                const char* geom_filename, UnitCell *cell,
-                                int argc, char *argv[]);
-extern Stream *open_stream_for_write_4(const char *filename,
-                                const char *geom_filename, UnitCell *cell,
-                                int argc, char *argv[], const char *indm_str);
-extern Stream *open_stream_fd_for_write(int fd);
-extern int get_stream_fd(Stream *st);
-extern void close_stream(Stream *st);
+/* Opening/closing streams */
+extern Stream *stream_open_for_read(const char *filename);
+extern Stream *stream_open_for_write(const char *filename);
+extern Stream *stream_open_fd_for_write(int fd);
+extern void stream_close(Stream *st);
 
-extern void free_stuff_from_stream(struct stuff_from_stream *sfs);
+/* Writing things to stream header */
+extern void stream_write_geometry_file(const char *geom_filename);
+extern void stream_write_target_cell(const UnitCell *cell);
+extern void stream_write_commandline_args(int argc, char *argv[]);
+extern void stream_write_indexing_methods(const char *indm_str);
 
-extern int read_chunk(Stream *st, struct image *image,
-                      const DataTemplate *dtempl,
-                      StreamReadFlags srf);
 extern int stream_has_old_indexers(Stream *st);
-
-extern int write_chunk(Stream *st, struct image *image,
-                       const DataTemplate *dtempl,
-                       int include_peaks, int include_reflections);
-
-extern void write_command(Stream *st, int argc, char *argv[]);
-extern void write_geometry_file(Stream *st, const char *geom_filename);
-extern int rewind_stream(Stream *st);
-extern int is_stream(const char *filename);
 extern char *stream_audit_info(Stream *st);
 extern char *stream_geometry_file(Stream *st);
+
+extern int stream_get_fd(Stream *st);
+extern int stream_rewind(Stream *st);
+
+extern struct image *stream_read_chunk(Stream *st,
+                                       const DataTemplate *dtempl,
+                                       StreamFlags srf);
+
+extern int stream_write_chunk(Stream *st, struct image *image,
+                              const DataTemplate *dtempl,
+                              StreamFlags srf);
 
 #ifdef __cplusplus
 }
