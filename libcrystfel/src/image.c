@@ -398,63 +398,8 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 	/* FIXME: Units for wavelength/photon energy in DataTemplate */
 	image->lambda = ph_eV_to_lambda(get_value(image, dtempl->wavelength_from));
 	image->detgeom = detgeom;
+
 	/* FIXME: spectrum */
-}
-
-
-/* Return non-zero if pixel fs,ss on panel p is in a bad region
- * as specified in the geometry file (regions only, not including
- * masks, NaN/inf, no_index etc */
-static int in_bad_region_dtempl(DataTemplate *dtempl,
-                                struct panel_template *p,
-                                double fs, double ss)
-{
-	double rx, ry;
-	double xs, ys;
-	int i;
-
-	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
-	 * to x and y */
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
-
-	rx = xs + p->cnx;
-	ry = ys + p->cny;
-
-	for ( i=0; i<dtempl->n_bad; i++ ) {
-
-		struct dt_badregion *b = &dtempl->bad[i];
-
-		if ( (b->panel != NULL)
-		  && (strcmp(b->panel, p->name) != 0) ) continue;
-
-		if ( b->is_fsss ) {
-
-			int nfs, nss;
-
-			/* fs/ss bad regions are specified according
-			 * to the original coordinates */
-			nfs = fs + p->orig_min_fs;
-			nss = ss + p->orig_min_ss;
-
-			if ( nfs < b->min_fs ) continue;
-			if ( nfs > b->max_fs ) continue;
-			if ( nss < b->min_ss ) continue;
-			if ( nss > b->max_ss ) continue;
-
-		} else {
-
-			if ( rx < b->min_x ) continue;
-			if ( rx > b->max_x ) continue;
-			if ( ry < b->min_y ) continue;
-			if ( ry > b->max_y ) continue;
-
-		}
-
-		return 1;
-	}
-
-	return 0;
 }
 
 
@@ -520,7 +465,7 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 			int fs, ss;
 			for ( fs=0; fs<p_w; fs++ ) {
 			for ( ss=0; ss<p_h; ss++ ) {
-				if ( in_bad_region_dtempl(dtempl, p, fs, ss)
+				if ( data_template_in_bad_region(dtempl, i, fs, ss)
 				     || isnan(image->dp[i][fs+ss*p_w])
 				     || isinf(image->dp[i][fs+ss*p_w]) )
 				{
