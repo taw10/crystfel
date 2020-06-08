@@ -399,12 +399,13 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
                      const SymOpList *sym,
                      double **hist_vals, signed int hist_h,
                      signed int hist_k, signed int hist_l,
-                     int *hist_i, struct polarisation p, int min_measurements,
+                     int *hist_i, struct polarisation p,
+                     int min_measurements,
                      double min_snr, double max_adu,
                      int start_after, int stop_after, double min_res,
-                     double push_res, double min_cc, int do_scale, int flag_even_odd, char *stat_output)
+                     double push_res, double min_cc, int do_scale,
+                     int flag_even_odd, char *stat_output)
 {
-	int rval;
 	int n_images = 0;
 	int n_crystals = 0;
 	int n_crystals_used = 0;
@@ -423,20 +424,21 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 	do {
 
-		struct image image;
+		struct image *image;
 		int i;
 
 		/* Get data from next chunk */
-		rval = read_chunk(st, &image, NULL,
-		                  STREAM_READ_REFLECTIONS | STREAM_READ_UNITCELL);
-		if ( rval ) break;
+		image = stream_read_chunk(st, NULL,
+		                          STREAM_REFLECTIONS
+		                        | STREAM_UNITCELL);
+		if ( image == NULL ) break;
 
 		n_images++;
 
-		for ( i=0; i<image.n_crystals; i++ ) {
+		for ( i=0; i<image->n_crystals; i++ ) {
 
 			int r;
-			Crystal *cr = image.crystals[i];
+			Crystal *cr = image->crystals[i];
 
 			n_crystals_seen++;
 			if ( (n_crystals_seen > start_after)
@@ -444,7 +446,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 			  && (flag_even_odd == 2 || n_crystals_seen%2 == flag_even_odd) )
 			{
 				n_crystals++;
-				r = merge_crystal(model, &image, cr, reference,
+				r = merge_crystal(model, image, cr, reference,
 				                  sym, hist_vals,
 						  hist_h, hist_k, hist_l,
 				                  hist_i, p,
@@ -461,15 +463,13 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 
 		}
 
-		free(image.filename);
-		image_feature_list_free(image.features);
-		free(image.crystals);
+		image_free(image);
 
 		display_progress(n_images, n_crystals_seen, n_crystals_used);
 
 		if ( (stop_after>0) && (n_crystals_used == stop_after) ) break;
 
-	} while ( rval == 0 );
+	} while ( 1 );
 
 	for ( refl = first_refl(model, &iter);
 	      refl != NULL;
@@ -721,7 +721,7 @@ int main(int argc, char *argv[])
 	free(sym_str);
 
 	/* Open the data stream */
-	st = open_stream_for_read(filename);
+	st = stream_open_for_read(filename);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream.\n");
 		return 1;
@@ -797,7 +797,7 @@ int main(int argc, char *argv[])
 
 		RefList *reference;
 
-		if ( rewind_stream(st) ) {
+		if ( stream_rewind(st) ) {
 
 			ERROR("Couldn't rewind stream - scaling cannot be "
 			      "performed.\n");
@@ -847,7 +847,7 @@ int main(int argc, char *argv[])
 	}
 
 	audit_info = stream_audit_info(st);
-	close_stream(st);
+	stream_close(st);
 
 	reflist_add_command_and_version(model, argc, argv);
 	reflist_add_notes(model, "Audit information from stream:");
