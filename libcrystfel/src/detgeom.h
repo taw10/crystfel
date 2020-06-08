@@ -8,7 +8,7 @@
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2009-2019 Thomas White <taw@physics.org>
+ *   2009-2020 Thomas White <taw@physics.org>
  *   2011-2012 Richard Kirian <rkirian@asu.edu>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
