@@ -1221,3 +1221,9 @@ struct event_list *image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 	}
 }
+
+
+int is_hdf5_file(const char *filename)
+{
+	return H5Fis_hdf5(filename);
+}

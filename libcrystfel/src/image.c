@@ -288,7 +288,7 @@ static double get_value(struct image *image, const char *from)
 	val = strtod(from, &rval);
 	if ( (*rval == '\0') && (rval != from) ) return val;
 
-	if ( H5Fis_hdf5(image->filename) > 0 ) {
+	if ( is_hdf5_file(image->filename) > 0 ) {
 		return image_hdf5_get_value(from,
 		                            image->filename,
 		                            image->ev);
@@ -468,7 +468,7 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 		return NULL;
 	}
 
-	if ( H5Fis_hdf5(filename) > 0 ) {
+	if ( is_hdf5_file(filename) > 0 ) {
 		image = image_hdf5_read(dtempl, filename, event);
 
 	} else if ( is_cbf_file(filename) > 0 ) {
@@ -536,7 +536,7 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 			} else {
 				mask_fn = p->mask_file;
 			}
-			if ( H5Fis_hdf5(mask_fn) > 0 ) {
+			if ( is_hdf5_file(mask_fn) > 0 ) {
 				image_hdf5_read_mask(p, mask_fn, event,
 				                     image->bad[i],
 				                     dtempl->mask_good,
@@ -636,7 +636,7 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
                                    const char *event,
                                    int half_pixel_shift)
 {
-	if ( H5Fis_hdf5(filename) > 0 ) {
+	if ( is_hdf5_file(filename) > 0 ) {
 
 		const char *ext;
 		ext = filename_extension(filename, NULL);

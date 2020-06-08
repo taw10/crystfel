@@ -64,4 +64,6 @@ extern ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 extern struct event_list *image_hdf5_expand_frames(const DataTemplate *dtempl,
                                                    const char *filename);
 
+extern int is_hdf5_file(const char *filename);
+
 #endif	/* IMAGE_HDF5_H */
