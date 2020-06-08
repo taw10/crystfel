@@ -1999,8 +1999,6 @@ int main(int argc, char *argv[])
 		struct image cur;
 		int i;
 
-		cur.det = NULL;
-
 		if ( read_chunk(st, &cur, NULL, STREAM_READ_UNITCELL) != 0 ) {
 			break;
 		}

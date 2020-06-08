@@ -629,10 +629,6 @@ struct image *image_new()
        image->peak_resolution = -1.0;
        image->features = NULL;
 
-       /* Deprecated stuff */
-       image->beam = NULL;
-       image->det = NULL;
-
        return image;
 }
 

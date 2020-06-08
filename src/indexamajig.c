@@ -50,23 +50,21 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "utils.h"
-#include "hdf5-file.h"
-#include "index.h"
-#include "peaks.h"
-#include "detector.h"
-#include "filters.h"
-#include "thread-pool.h"
-#include "geometry.h"
-#include "stream.h"
-#include "reflist-utils.h"
-#include "cell-utils.h"
-#include "integration.h"
-#include "taketwo.h"
-#include "im-sandbox.h"
-#include "image.h"
-#include "datatemplate.h"
+#include <utils.h>
+#include <index.h>
+#include <peaks.h>
+#include <filters.h>
+#include <thread-pool.h>
+#include <geometry.h>
+#include <stream.h>
+#include <reflist-utils.h>
+#include <cell-utils.h>
+#include <integration.h>
+#include <taketwo.h>
+#include <image.h>
+#include <datatemplate.h>
 
+#include "im-sandbox.h"
 
 struct indexamajig_arguments
 {

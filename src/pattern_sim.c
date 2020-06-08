@@ -48,7 +48,6 @@
 #include "cell.h"
 #include "cell-utils.h"
 #include "utils.h"
-#include "hdf5-file.h"
 #include "detector.h"
 #include "peaks.h"
 #include "symmetry.h"

@@ -196,16 +196,6 @@ extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern int remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
 
-/* Image files (old API) */
-extern struct imagefile *imagefile_open(const char *filename);
-extern int imagefile_read(struct imagefile *f, struct image *image,
-                          struct event *event);
-extern int imagefile_read_simple(struct imagefile *f, struct image *image);
-extern struct hdfile *imagefile_get_hdfile(struct imagefile *f);
-extern enum imagefile_type imagefile_get_type(struct imagefile *f);
-extern void imagefile_close(struct imagefile *f);
-extern signed int is_cbf_file(const char *filename);
-
 
 /* New API */
 extern struct image *image_new(void);

@@ -56,7 +56,6 @@
 #include "image.h"
 #include "utils.h"
 #include "peaks.h"
-#include "detector.h"
 #include "cell-utils.h"
 
 /** \file xds.h */

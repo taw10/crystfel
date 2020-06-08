@@ -41,11 +41,12 @@
 #include <zmq.h>
 #include <msgpack.h>
 
-#include "events.h"
-#include "image.h"
-#include "hdf5-file.h"
-#include "utils.h"
+#include <events.h>
+#include <image.h>
+#include <utils.h>
+
 #include "im-zmq.h"
+
 #include "datatemplate_priv.h"
 
 

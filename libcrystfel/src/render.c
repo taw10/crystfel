@@ -44,7 +44,6 @@
 #include "peaks.h"
 #include "colscale.h"
 #include "detgeom.h"
-#include "detector.h"
 
 /** \file render.h */
 

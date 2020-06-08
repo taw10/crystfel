@@ -1378,7 +1378,6 @@ int main(int argc, char *argv[])
 
 		cur.div = NAN;
 		cur.bw = NAN;
-		cur.det = NULL;
 		if ( read_chunk(st, &cur, NULL,
 		                STREAM_READ_REFLECTIONS | STREAM_READ_UNITCELL) != 0 )
 		{

@@ -32,7 +32,6 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-#include <hdf5.h>
 #include <zlib.h>
 
 #include "image.h"

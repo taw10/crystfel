@@ -50,7 +50,6 @@
 #include "asdf.h"
 #include "mosflm.h"
 #include "xds.h"
-#include "detector.h"
 #include "index.h"
 #include "geometry.h"
 #include "cell-utils.h"

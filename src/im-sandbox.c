@@ -59,8 +59,6 @@
 #endif
 
 #include <events.h>
-#include <hdf5-file.h>
-#include <detector.h>
 
 #include "im-sandbox.h"
 #include "process_image.h"

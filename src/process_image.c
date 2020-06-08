@@ -40,23 +40,23 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "utils.h"
-#include "hdf5-file.h"
-#include "index.h"
-#include "peaks.h"
-#include "filters.h"
-#include "thread-pool.h"
-#include "geometry.h"
-#include "stream.h"
-#include "reflist-utils.h"
+#include <utils.h>
+#include <index.h>
+#include <peaks.h>
+#include <filters.h>
+#include <thread-pool.h>
+#include <geometry.h>
+#include <stream.h>
+#include <reflist-utils.h>
+#include <integration.h>
+#include <detgeom.h>
+#include <image-msgpack.h>
+
 #include "process_image.h"
-#include "integration.h"
 #include "predict-refine.h"
 #include "im-sandbox.h"
-#include "time-accounts.h"
 #include "im-zmq.h"
-#include "detgeom.h"
-
+#include "time-accounts.h"
 
 static float **backup_image_data(float **dp, struct detgeom *det)
 {

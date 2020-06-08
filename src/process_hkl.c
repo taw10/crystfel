@@ -426,8 +426,6 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 		struct image image;
 		int i;
 
-		image.det = NULL;
-
 		/* Get data from next chunk */
 		rval = read_chunk(st, &image, NULL,
 		                  STREAM_READ_REFLECTIONS | STREAM_READ_UNITCELL);
