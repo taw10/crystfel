@@ -50,14 +50,6 @@ extern void im_zmq_shutdown(struct im_zmq *z);
 
 extern msgpack_object *im_zmq_fetch(struct im_zmq *z);
 
-extern ImageFeatureList *get_peaks_msgpack(msgpack_object *obj,
-                                           const DataTemplate *dtempl,
-                                           int half_pixel_shift);
-
-extern struct image *unpack_msgpack_data(msgpack_object *obj,
-                                         const DataTemplate *dtempl,
-                                         int no_image_data);
-
 #else /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
 
 static UNUSED struct im_zmq *im_zmq_connect(const char *zmq_address) { return NULL; }
@@ -67,16 +59,6 @@ static UNUSED void im_zmq_clean(struct im_zmq *z) { return; }
 static UNUSED void im_zmq_shutdown(struct im_zmq *z) { return; }
 
 static UNUSED void *im_zmq_fetch(struct im_zmq *z) { return NULL; }
-
-static UNUSED ImageFeatureList *get_peaks_msgpack(void *obj,
-                                                  const DataTemplate *dtempl,
-                                                  int half_pixel_shift)
-{ return NULL; }
-
-static UNUSED struct image *unpack_msgpack_data(void *obj,
-                                                const DataTemplate *dtempl,
-                                                int no_image_data)
-{ return NULL; }
 
 #endif /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
 

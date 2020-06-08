@@ -65,6 +65,7 @@ set(LIBCRYSTFEL_SOURCES
     src/detgeom.c
     src/image-cbf.c
     src/image-hdf5.c
+    src/image-msgpack.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
 )
@@ -108,6 +109,7 @@ set(LIBCRYSTFEL_HEADERS
     src/datatemplate.h
     src/colscale.h
     src/detgeom.h
+    src/image-msgpack.h
 )
 
 if (DOXYGEN_FOUND)

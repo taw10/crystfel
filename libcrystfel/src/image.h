@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2019 Thomas White <taw@physics.org>
+ *   2009-2020 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *

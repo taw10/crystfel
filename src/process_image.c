@@ -193,9 +193,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	if ( pargs->msgpack_obj != NULL ) {
 		set_last_task(last_task, "unpacking messagepack object");
-		image = unpack_msgpack_data(pargs->msgpack_obj,
-		                            iargs->dtempl,
-		                            iargs->no_image_data);
+		image = image_msgpack_read(iargs->dtempl,
+		                           pargs->msgpack_obj,
+		                           iargs->no_image_data);
 		if ( image == NULL ) return;
 	} else {
 		image = file_wait_open_read(pargs->filename, pargs->event,
@@ -298,9 +298,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_MSGPACK:
-		image->features = get_peaks_msgpack(pargs->msgpack_obj,
-		                                    iargs->dtempl,
-		                                    iargs->half_pixel_shift);
+		image->features = image_msgpack_read_peaks(iargs->dtempl,
+		                                           pargs->msgpack_obj,
+		                                           iargs->half_pixel_shift);
 		break;
 
 		case PEAK_NONE:
