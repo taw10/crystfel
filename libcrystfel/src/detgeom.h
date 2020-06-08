@@ -103,6 +103,9 @@ extern void detgeom_transform_coords(struct detgeom_panel *p,
 
 extern void detgeom_free(struct detgeom *detgeom);
 
+extern double detgeom_max_resolution(struct detgeom *detgeom,
+                                     double wavelength);
+
 #ifdef __cplusplus
 }
 #endif

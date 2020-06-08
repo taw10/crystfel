@@ -76,3 +76,46 @@ void detgeom_free(struct detgeom *detgeom)
 	free(detgeom->panels);
 	free(detgeom);
 }
+
+
+static double panel_max_res(struct detgeom_panel *p,
+                            double wavelength)
+{
+	double r[3];
+	double max_res = 0.0;
+
+	detgeom_transform_coords(p, 0, 0, wavelength, r);
+	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
+
+	detgeom_transform_coords(p, 0, p->h, wavelength, r);
+	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
+
+	detgeom_transform_coords(p, p->w, 0, wavelength, r);
+	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
+
+	detgeom_transform_coords(p, p->w, p->h, wavelength, r);
+	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
+
+	return max_res;
+}
+
+
+double detgeom_max_resolution(struct detgeom *detgeom,
+                              double wavelength)
+{
+	int i;
+	double max_res = 0.0;
+
+	for ( i=0; i<detgeom->n_panels; i++ ) {
+
+		double panel_maxres;
+
+		panel_maxres = panel_max_res(&detgeom->panels[i],
+		                             wavelength);
+		if ( panel_maxres > max_res ) {
+			max_res = panel_maxres;
+		}
+	}
+
+	return max_res;
+}

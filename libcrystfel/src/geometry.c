@@ -506,6 +506,7 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 	double mres;
 	signed int h, k, l;
 	UnitCell *cell;
+	struct image *image;
 
 	cell = crystal_get_cell(cryst);
 	if ( cell == NULL ) return NULL;
@@ -522,7 +523,8 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	mres = largest_q(crystal_get_image(cryst));
+	image = crystal_get_image(cryst);
+	mres = detgeom_max_resolution(image->detgeom, image->lambda);
 	if ( mres > max_res ) mres = max_res;
 
 	hmax = mres * modulus(ax, ay, az);
