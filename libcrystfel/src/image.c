@@ -581,8 +581,6 @@ void image_free(struct image *image)
 	if ( image->detgeom != NULL ) {
 		np = image->detgeom->n_panels;
 		detgeom_free(image->detgeom);
-	} else if ( image->det != NULL ) {
-		np = image->det->n_panels;
 	} else {
 		np = 0;
 	}

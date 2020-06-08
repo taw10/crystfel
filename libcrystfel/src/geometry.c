@@ -393,7 +393,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 	/* otherwise, calculate position if we have a detector structure, and
 	 * if we don't then just make do with partiality calculation */
-	if ( (image->det != NULL) && (updateme == NULL) ) {
+	if ( (image->detgeom != NULL) && (updateme == NULL) ) {
 
 		double fs, ss;        /* position on detector */
 		signed int p;         /* panel number */
