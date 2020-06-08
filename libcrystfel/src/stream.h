@@ -98,10 +98,14 @@ extern Stream *stream_open_fd_for_write(int fd);
 extern void stream_close(Stream *st);
 
 /* Writing things to stream header */
-extern void stream_write_geometry_file(const char *geom_filename);
-extern void stream_write_target_cell(const UnitCell *cell);
-extern void stream_write_commandline_args(int argc, char *argv[]);
-extern void stream_write_indexing_methods(const char *indm_str);
+extern void stream_write_geometry_file(Stream *st,
+                                       const char *geom_filename);
+extern void stream_write_target_cell(Stream *st,
+                                     const UnitCell *cell);
+extern void stream_write_commandline_args(Stream *st,
+                                          int argc, char *argv[]);
+extern void stream_write_indexing_methods(Stream *st,
+                                          const char *indm_str);
 
 extern int stream_has_old_indexers(Stream *st);
 extern char *stream_audit_info(Stream *st);
