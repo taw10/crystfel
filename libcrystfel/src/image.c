@@ -609,5 +609,6 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 struct event_list *image_expand_frames(const DataTemplate *dtempl,
                                        const char *filename)
 {
+	/* FIXME: Dispatch to other versions, e.g. CBF files */
 	return image_hdf5_expand_frames(dtempl, filename);
 }
