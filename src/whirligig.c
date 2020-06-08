@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2014 Thomas White <taw@physics.org>
+ *   2012-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	st = open_stream_for_read(argv[optind++]);
+	st = stream_open_for_read(argv[optind++]);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", argv[optind-1]);
 		return 1;
@@ -714,29 +714,26 @@ int main(int argc, char *argv[])
 	win.join_ptr = 0;
 	do {
 
-		struct image cur;
+		struct image *image;
 
-		cur.div = NAN;
-		cur.bw = NAN;
-		if ( read_chunk(st, &cur, NULL,
-		                STREAM_READ_REFLECTIONS | STREAM_READ_UNITCELL) != 0 )
-		{
-			break;
-		}
+		image = stream_read_chunk(st, NULL, STREAM_REFLECTIONS
+		                                  | STREAM_UNITCELL);
 
-		if ( verbose ) printf("\n\nIncoming serial %i\n", cur.serial);
+		if ( image == NULL ) break;
 
-		if ( isnan(cur.div) || isnan(cur.bw) ) {
+		if ( verbose ) printf("\n\nIncoming serial %i\n", image->serial);
+
+		if ( isnan(image->div) || isnan(image->bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
 
-		if ( cur.serial < 1 ) {
+		if ( image->serial < 1 ) {
 			ERROR("Serial numbers must be greater than zero.\n");
 			return 1;
 		}
 
-		add_to_window(&cur, &win, &ss);
+		add_to_window(image, &win, &ss);
 		connect_series(&win);
 
 		if ( verbose ) {
@@ -764,7 +761,7 @@ int main(int argc, char *argv[])
 	display_progress(n_images);
 	printf("\n");
 
-	close_stream(st);
+	stream_close(st);
 
 	find_and_process_series(&win, 1, &ss, outdir);
 
