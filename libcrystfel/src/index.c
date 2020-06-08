@@ -812,7 +812,7 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		struct rvec q;
+		double q[3];
 		double h, k, l, hd, kd, ld;
 		double dsq;
 
@@ -821,15 +821,14 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 		nspots++;
 
 		/* Reciprocal space position of found peak */
-		q = get_q_for_panel(&image->det->panels[f->pn],
-		                    f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda, q);
 
 		/* Decimal and fractional Miller indices of nearest
 		 * reciprocal lattice point */
-		hd = q.u * ax + q.v * ay + q.w * az;
-		kd = q.u * bx + q.v * by + q.w * bz;
-		ld = q.u * cx + q.v * cy + q.w * cz;
+		hd = q[0] * ax + q[1] * ay + q[2] * az;
+		kd = q[0] * bx + q[1] * by + q[2] * bz;
+		ld = q[0] * cx + q[1] * cy + q[2] * cz;
 		h = lrint(hd);
 		k = lrint(kd);
 		l = lrint(ld);

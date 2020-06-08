@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2012,2014 Thomas White <taw@physics.org>
+ *   2009-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -53,22 +53,12 @@ static float *get_binned_panel(struct image *image, int binning,
 	float *data;
 	int x, y;
 	int w, h;
-	int p_w, p_h;
 
-	/* Use new API if possible */
-	if ( image->detgeom != NULL ) {
-		struct detgeom_panel *p = &image->detgeom->panels[pi];
-		p_w = p->w;
-		p_h = p->h;
-	} else {
-		struct panel *p = &image->det->panels[pi];
-		p_w = p->w;
-		p_h = p->h;
-	}
+	struct detgeom_panel *p = &image->detgeom->panels[pi];
 
 	/* Some pixels might get discarded */
-	w = p_w / binning;
-	h = p_h / binning;
+	w = p->w / binning;
+	h = p->h / binning;
 	*pw = w;
 	*ph = h;
 
@@ -92,11 +82,11 @@ static float *get_binned_panel(struct image *image, int binning,
 
 			fs = binning*x+xb;
 			ss = binning*y+yb;
-			v = image->dp[pi][fs+ss*p_w];
+			v = image->dp[pi][fs+ss*p->w];
 			total += v;
 
 			if ( (image->bad != NULL)
-			  && (image->bad[pi][fs+ss*p_w]) ) bad = 1;
+			  && (image->bad[pi][fs+ss*p->w]) ) bad = 1;
 
 		}
 		}
@@ -187,12 +177,7 @@ GdkPixbuf **render_panels(struct image *image,
 	double max;
 	int *ws, *hs;
 
-	/* Use new API if possible */
-	if ( image->detgeom != NULL ) {
-		np = image->detgeom->n_panels;
-	} else {
-		np = image->det->n_panels;
-	}
+	np = image->detgeom->n_panels;
 
 	hdrs = calloc(np, sizeof(float *));
 	ws = calloc(np, sizeof(int));
