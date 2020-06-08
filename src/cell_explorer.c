@@ -1983,7 +1983,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	stream_filename = strdup(argv[optind]);
-	st = open_stream_for_read(stream_filename);
+	st = stream_open_for_read(stream_filename);
 	if ( st == NULL ) {
 		fprintf(stderr, "Failed to open '%s'\n", stream_filename);
 		return 1;
@@ -1996,18 +1996,17 @@ int main(int argc, char *argv[])
 	w.n_cells = 0;
 	do {
 
-		struct image cur;
+		struct image *image;
 		int i;
 
-		if ( read_chunk(st, &cur, NULL, STREAM_READ_UNITCELL) != 0 ) {
-			break;
-		}
+		image = stream_read_chunk(st, NULL, STREAM_UNITCELL);
+		if ( image == NULL ) break;
 
-		for ( i=0; i<cur.n_crystals; i++ ) {
+		for ( i=0; i<image->n_crystals; i++ ) {
 
 			Crystal *cr;
 
-			cr = cur.crystals[i];
+			cr = image->crystals[i];
 
 			if ( w.n_cells == max_cells ) {
 
@@ -2041,7 +2040,7 @@ int main(int argc, char *argv[])
 			if ( !right_handed(w.cells[w.n_cells]) ) {
 				ERROR("WARNING: Left-handed cell encountered\n");
 			}
-			w.indms[w.n_cells] = cur.indexed_by;
+			w.indms[w.n_cells] = image->indexed_by;
 			w.n_cells++;
 
 			crystal_free(cr);
@@ -2053,6 +2052,8 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Loaded %i cells from %i chunks\r",
 			        w.n_cells, n_chunks);
 		}
+
+		image_free(image);
 
 	} while ( 1 );
 	fprintf(stderr, "Loaded %i cells from %i chunks\n", w.n_cells, n_chunks);
@@ -2070,7 +2071,7 @@ int main(int argc, char *argv[])
 		ERROR("To simplify matters, it's best to re-run indexamajig.\n");
 		ERROR("------------------\n");
 	}
-	close_stream(st);
+	stream_close(st);
 
 	w.cols_on[0] = 1;
 	for ( i=1; i<8; i++ ) w.cols_on[i] = 2;
