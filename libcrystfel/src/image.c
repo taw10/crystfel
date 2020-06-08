@@ -395,7 +395,8 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 
 	}
 
-	image->lambda = get_value(image, dtempl->wavelength_from);
+	/* FIXME: Units for wavelength/photon energy in DataTemplate */
+	image->lambda = ph_eV_to_lambda(get_value(image, dtempl->wavelength_from));
 	image->detgeom = detgeom;
 	/* FIXME: spectrum */
 }
