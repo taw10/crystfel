@@ -612,3 +612,33 @@ struct event_list *image_expand_frames(const DataTemplate *dtempl,
 	/* FIXME: Dispatch to other versions, e.g. CBF files */
 	return image_hdf5_expand_frames(dtempl, filename);
 }
+
+
+void mark_resolution_range_as_bad(struct image *image,
+                                  double min, double max)
+{
+	int i;
+
+	if ( isinf(min) && isinf(max) ) return;  /* nothing to do */
+
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
+
+		int fs, ss;
+		struct detgeom_panel *p = &image->detgeom->panels[i];
+
+		for ( ss=0; ss<p->h; ss++ ) {
+			for ( fs=0; fs<p->w; fs++ ) {
+				double q[3];
+				double r;
+				detgeom_transform_coords(p, fs, ss,
+				                         image->lambda,
+				                         q);
+				r = modulus(q[0], q[1], q[2]);
+				if ( (r >= min) && (r <= max) ) {
+					image->bad[i][fs+p->w*ss] = 1;
+				}
+			}
+		}
+
+	}
+}

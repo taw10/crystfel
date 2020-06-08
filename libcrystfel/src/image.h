@@ -196,6 +196,8 @@ extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern int remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
 
+extern void mark_resolution_range_as_bad(struct image *image,
+                                         double min, double max);
 
 /* New API */
 extern struct image *image_new(void);
