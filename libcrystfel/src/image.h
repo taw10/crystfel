@@ -84,15 +84,6 @@ struct imagefeature {
 };
 
 
-/** An enum representing the image file formats we can handle */
-enum imagefile_type
-{
-	IMAGEFILE_HDF5,   /**< HDF5 file (single or multiple frames per file) */
-	IMAGEFILE_CBF,    /**< CBF file */
-	IMAGEFILE_CBFGZ   /**< gzipped CBF file, i.e. "file.cbf.gz" */
-};
-
-
 /** An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
 
