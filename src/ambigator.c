@@ -8,7 +8,7 @@
  * Copyright © 2014 Wolfgang Brehm
  *
  * Authors:
- *   2014-2016 Thomas White <taw@physics.org>
+ *   2014-2020 Thomas White <taw@physics.org>
  *   2014      Wolfgang Brehm <wolfgang.brehm@gmail.com>
  *
  * This file is part of CrystFEL.
@@ -874,10 +874,10 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 
 		}
 
-		/* Not a bug: REFLECTION_START_MARKER gets passed through */
+		/* Not a bug: STREAM_REFLECTION_START_MARKER gets passed through */
 		if ( !d ) fputs(line, ofh);
 
-		if ( strcmp(line, REFLECTION_START_MARKER"\n") == 0 ) {
+		if ( strcmp(line, STREAM_REFLECTION_START_MARKER"\n") == 0 ) {
 			reindex_reflections(fh, ofh, assignments[i++], amb);
 		}
 
@@ -1239,12 +1239,11 @@ int main(int argc, char *argv[])
 	}
 
 	infile = argv[optind++];
-	st = open_stream_for_read(infile);
+	st = stream_open_for_write(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
 	}
-
 
 	crystals = NULL;
 	n_crystals = 0;
@@ -1252,24 +1251,22 @@ int main(int argc, char *argv[])
 	n_chunks = 0;
 	do {
 
-		struct image cur;
+		struct image *image;
 		int i;
 
-		if ( read_chunk(st, &cur, NULL,
-		                STREAM_READ_UNITCELL | STREAM_READ_REFLECTIONS) != 0 )
-		{
-			break;
-		}
+		image = stream_read_chunk(st, NULL, STREAM_UNITCELL
+		                          | STREAM_REFLECTIONS);
+		if ( image == NULL ) break;
 
-		image_feature_list_free(cur.features);
+		image_feature_list_free(image->features);
 
-		for ( i=0; i<cur.n_crystals; i++ ) {
+		for ( i=0; i<image->n_crystals; i++ ) {
 
 			Crystal *cr;
 			RefList *list;
 			UnitCell *cell;
 
-			cr = cur.crystals[i];
+			cr = image->crystals[i];
 			cell = crystal_get_cell(cr);
 
 			if ( n_crystals == max_crystals ) {
@@ -1311,7 +1308,7 @@ int main(int argc, char *argv[])
 	} while ( 1 );
 	fprintf(stderr, "\n");
 
-	close_stream(st);
+	stream_close(st);
 
 	assignments = malloc(n_crystals*sizeof(int));
 	if ( assignments == NULL ) {
