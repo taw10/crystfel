@@ -384,7 +384,6 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 	char *filename;
 	char gveFilename[1024];
 	char logFilename[1024];
-	double tt;
 
 	filename = malloc(1024);
 	if ( filename == NULL ) return NULL;
@@ -399,11 +398,6 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 		free(filename);
 		return NULL;
 	}
-
-	get_q_for_panel(image->det->furthest_out_panel,
-	                image->det->furthest_out_fs,
-	                image->det->furthest_out_ss,
-	                &tt, 1.0/image->lambda);
 
 	fprintf(fh, "spacegroup %i\n", gp->spacegroup);
 	fprintf(fh, "tthrange %f %f\n", rad2deg(gp->tthrange_min),
