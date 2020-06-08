@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2013      Anton Barty <anton.barty@desy.de>
  *
  * This file is part of CrystFEL.
@@ -84,8 +84,8 @@ void filter_noise(struct image *image)
 {
 	int i;
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		struct panel *p = &image->det->panels[i];
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
+		struct detgeom_panel *p = &image->detgeom->panels[i];
 		filter_noise_in_panel(image->dp[i], p->w, p->h);
 	}
 }
@@ -149,14 +149,14 @@ void filter_median(struct image *image, int size)
 
 	/* Determine local background
 	 * (median over window width either side of current pixel) */
-	for ( pn=0; pn<image->det->n_panels; pn++ ) {
+	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
 
 		int fs, ss;
 		int i;
-		struct panel *p;
+		struct detgeom_panel *p;
 		float *localBg;
 
-		p = &image->det->panels[pn];
+		p = &image->detgeom->panels[pn];
 
 		localBg = calloc(p->w*p->h, sizeof(float));
 		if ( localBg == NULL ) {
