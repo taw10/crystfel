@@ -444,7 +444,7 @@ static int pump_chunk(FILE *fh, int ofd)
 				if ( chunk_started ) {
 					ERROR("EOF during chunk!\n");
 					lwrite(ofd, "Unfinished chunk!\n");
-					lwrite(ofd, CHUNK_END_MARKER"\n");
+					lwrite(ofd, STREAM_CHUNK_END_MARKER"\n");
 				} /* else normal end of output */
 				return 1;
 			}
@@ -457,7 +457,7 @@ static int pump_chunk(FILE *fh, int ofd)
 		if ( strcmp(line, "FLUSH\n") == 0 ) break;
 		lwrite(ofd, line);
 
-		if ( strcmp(line, CHUNK_END_MARKER"\n") == 0 ) break;
+		if ( strcmp(line, STREAM_CHUNK_END_MARKER"\n") == 0 ) break;
 
 	} while ( 1 );
 	return 0;
@@ -524,7 +524,7 @@ static void try_read(struct sandbox *sb, TimeAccounts *taccs)
 	struct timeval tv;
 	fd_set fds;
 	int fdmax;
-	const int ofd = get_stream_fd(sb->stream);
+	const int ofd = stream_get_fd(sb->stream);
 
 	time_accounts_set(taccs, TACC_SELECT);
 
@@ -659,9 +659,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		 *               prefix
 		 */
 
-		st = open_stream_fd_for_write(stream_pipe[1]);
+		st = stream_open_fd_for_write(stream_pipe[1]);
 		r = run_work(sb->iargs, st, slot, tmp, sb);
-		close_stream(st);
+		stream_close(st);
 
 		free(tmp);
 

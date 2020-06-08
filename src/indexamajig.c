@@ -544,11 +544,13 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 603 :
-		args->iargs.stream_peaks = 0;
+		args->iargs.stream_flags = CLEAR_BIT(args->iargs.stream_flags,
+		                                     STREAM_PEAKS);
 		break;
 
 		case 604 :
-		args->iargs.stream_refls = 0;
+		args->iargs.stream_flags = CLEAR_BIT(args->iargs.stream_flags,
+		                                     STREAM_REFLECTIONS);
 		break;
 
 		case 605 :
@@ -643,8 +645,8 @@ int main(int argc, char *argv[])
 	args.iargs.ir_out = -1.0;
 	args.iargs.use_saturated = 1;
 	args.iargs.no_revalidate = 0;
-	args.iargs.stream_peaks = 1;
-	args.iargs.stream_refls = 1;
+	args.iargs.stream_flags = STREAM_PEAKS | STREAM_REFLECTIONS
+	                        | STREAM_CRYSTALS | STREAM_UNITCELL;
 	args.iargs.stream_nonhits = 1;
 	args.iargs.int_diag = INTDIAG_NONE;
 	args.iargs.min_peaks = 0;
@@ -996,13 +998,18 @@ int main(int argc, char *argv[])
 	free(rn);
 
 	/* Open output stream */
-	st = open_stream_for_write_4(args.outfile, args.geom_filename,
-	                             args.iargs.cell, argc, argv,
-	                             args.indm_str);
+	st = stream_open_for_write(args.outfile);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream '%s'\n", args.outfile);
 		return 1;
 	}
+
+	/* Write audit info */
+	stream_write_commandline_args(st, argc, argv);
+	stream_write_geometry_file(st, args.geom_filename);
+	stream_write_target_cell(st, args.iargs.cell);
+	stream_write_indexing_methods(st, args.indm_str);
+
 	free(args.outfile);
 	free(args.indm_str);
 
@@ -1031,7 +1038,7 @@ int main(int argc, char *argv[])
 	free(args.temp_location);
 	free(tmpdir);
 	data_template_free(args.iargs.dtempl);
-	close_stream(st);
+	stream_close(st);
 	cleanup_indexing(args.iargs.ipriv);
 
 	return r;

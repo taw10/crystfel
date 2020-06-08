@@ -80,6 +80,8 @@ extern gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
 extern size_t notrail(char *s);
 extern void chomp(char *s);
 
+#define CLEAR_BIT(val, bit) (((val) | (bit)) ^ (bit))
+
 /**
  * Controls the behaviour of \ref assplode.
  **/

@@ -83,8 +83,7 @@ struct index_args
 	int integrate_saturated;
 	int use_saturated;
 	int no_revalidate;
-	int stream_peaks;
-	int stream_refls;
+	int stream_flags;
 	int stream_nonhits;
 	IntegrationMethod int_meth;
 	IntDiag int_diag;

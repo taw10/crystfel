@@ -407,8 +407,8 @@ streamwrite:
 	time_accounts_set(taccs, TACC_WRITESTREAM);
 	set_last_task(last_task, "stream write");
 	sb_shared->pings[cookie]++;
-	ret = write_chunk(st, image, iargs->dtempl,
-	                  iargs->stream_peaks, iargs->stream_refls);
+	ret = stream_write_chunk(st, image, iargs->dtempl,
+	                         iargs->stream_flags);
 	if ( ret != 0 ) {
 		ERROR("Error writing stream file.\n");
 	}
