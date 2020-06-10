@@ -903,7 +903,7 @@ static void read_crystal(Stream *st, struct image *image,
 
 
 /**
- * Read the next chunk from a stream and fill in 'image'
+ * Read the next chunk from a stream and return an image structure
  */
 struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
                                 StreamFlags srf)
@@ -912,15 +912,12 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 	char *rval = NULL;
 	int have_filename = 0;
 	int have_ev = 0;
+	struct image *image;
 
-	if ( find_start_of_chunk(st) ) return 1;
+	if ( find_start_of_chunk(st) ) return NULL;
 
-	image->lambda = -1.0;
-	image->features = NULL;
-	image->crystals = NULL;
-	image->n_crystals = 0;
-	image->ev = NULL;
-	image->copied_headers = NULL;
+	image = image_new();
+	if ( image == NULL ) return NULL;
 
 	if ( (srf & STREAM_REFLECTIONS) || (srf & STREAM_UNITCELL) ) {
 		srf |= STREAM_CRYSTALS;
@@ -981,7 +978,8 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 
 			if ( read_peaks(st, dtempl, image) ) {
 				ERROR("Failed while reading peaks\n");
-				return 1;
+				image_free(image);
+				return NULL;
 			}
 		}
 
@@ -993,9 +991,13 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 		/* A chunk must have at least a filename and a wavelength,
 		 * otherwise it's incomplete */
 		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
-			if ( have_filename && have_ev ) return 0;
+			if ( have_filename && have_ev ) {
+				/* Success */
+				return image;
+			}
 			ERROR("Incomplete chunk found in input file.\n");
-			return 1;
+			image_free(image);
+			return NULL;
 		}
 
 	} while ( 1 );
@@ -1004,21 +1006,9 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 		ERROR("Error reading stream.\n");
 	}
 
-	return 1;  /* Either error or EOF, don't care because we will complain
-	            * on the terminal if it was an error. */
-}
-
-
-void write_stream_header(FILE *ofh, int argc, char *argv[])
-{
-	int i;
-
-	fprintf(ofh, "Command line:");
-	for ( i=0; i<argc; i++ ) {
-		fprintf(ofh, " %s", argv[i]);
-	}
-	fprintf(ofh, "\n");
-	fflush(ofh);
+	image_free(image);
+	return NULL;  /* Either error or EOF, don't care because we will complain
+	               * on the terminal if it was an error. */
 }
 
 
@@ -1148,7 +1138,7 @@ static void read_geometry_file(Stream *st)
 }
 
 
-Stream *open_stream_for_read(const char *filename)
+Stream *stream_open_for_read(const char *filename)
 {
 	Stream *st;
 
@@ -1220,7 +1210,7 @@ Stream *open_stream_for_read(const char *filename)
  *
  * \returns A \ref Stream, or NULL on failure.
  */
-Stream *open_stream_fd_for_write(int fd)
+Stream *stream_open_fd_for_write(int fd)
 {
 	Stream *st;
 
@@ -1330,11 +1320,20 @@ void stream_write_commandline_args(Stream *st, int argc, char *argv[])
 
 	if ( argc == 0 ) return;
 
+	fprintf(st->fh, "Command line:");
+
 	for ( i=0; i<argc; i++ ) {
 		if ( i > 0 ) fprintf(st->fh, " ");
 		fprintf(st->fh, "%s", argv[i]);
 	}
 	fprintf(st->fh, "\n");
+	fflush(st->fh);
+}
+
+
+void stream_write_indexing_methods(Stream *st, const char *indm_str)
+{
+	fprintf(st->fh, "Indexing methods selected: %s\n", indm_str);
 	fflush(st->fh);
 }
 
@@ -1392,7 +1391,7 @@ void stream_write_geometry_file(Stream *st, const char *geom_filename)
  *
  * \returns Non-zero if the stream could not be rewound.
  */
-int rewind_stream(Stream *st)
+int stream_rewind(Stream *st)
 {
 	st->ln = 0;
 	return fseek(st->fh, 0, SEEK_SET);
