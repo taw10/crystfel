@@ -868,7 +868,7 @@ static int get_angle_rad(char **bits, int nbits, double *pl)
  * Writes \p cell to \p fh, in CrystFEL unit cell file format
  *
  */
-void write_cell(UnitCell *cell, FILE *fh)
+void write_cell(const UnitCell *cell, FILE *fh)
 {
 	double a, b, c, al, be, ga;
 	LatticeType lt;

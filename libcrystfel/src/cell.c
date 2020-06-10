@@ -157,7 +157,7 @@ void cell_free(UnitCell *cell)
  * \returns True if cell has its parameters specified.
  *
  */
-int cell_has_parameters(UnitCell *cell)
+int cell_has_parameters(const UnitCell *cell)
 {
 	if ( cell == NULL ) return 0;
 	return cell->have_parameters;
@@ -567,19 +567,19 @@ int cell_get_reciprocal(const UnitCell *cell,
 }
 
 
-char cell_get_centering(UnitCell *cell)
+char cell_get_centering(const UnitCell *cell)
 {
 	return cell->centering;
 }
 
 
-LatticeType cell_get_lattice_type(UnitCell *cell)
+LatticeType cell_get_lattice_type(const UnitCell *cell)
 {
 	return cell->lattice_type;
 }
 
 
-struct g6 cell_get_G6(UnitCell *cell)
+struct g6 cell_get_G6(const UnitCell *cell)
 {
 	double a, b, c, al, be, ga;
 	struct g6 g;
@@ -594,7 +594,7 @@ struct g6 cell_get_G6(UnitCell *cell)
 }
 
 
-char cell_get_unique_axis(UnitCell *cell)
+char cell_get_unique_axis(const UnitCell *cell)
 {
 	return cell->unique_axis;
 }
