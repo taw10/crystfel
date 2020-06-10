@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2016 Thomas White <taw@physics.org>
+ *   2012-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -185,18 +185,27 @@ static void calc_either_side(Crystal *cr, double incr_val,
 	Crystal *cr_new;
 
 	cr_new = new_shifted_crystal(cr, refine, -incr_val);
-	compare = predict_to_res(cr_new, largest_q(image));
+	compare = predict_to_res(cr_new, detgeom_max_resolution(image->detgeom,
+	                                                        image->lambda));
 	scan(crystal_get_reflections(cr), compare, valid, vals, 0, det);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
 	reflist_free(compare);
 
 	cr_new = new_shifted_crystal(cr, refine, +incr_val);
-	compare = predict_to_res(cr_new, largest_q(image));
+	compare = predict_to_res(cr_new, detgeom_max_resolution(image->detgeom,
+	                                                        image->lambda));
 	scan(crystal_get_reflections(cr), compare, valid, vals, 2, det);
 	cell_free(crystal_get_cell(cr_new));
 	crystal_free(cr_new);
 	reflist_free(compare);
+}
+
+
+static double max_resolution(const struct image *image)
+{
+	return detgeom_max_resolution(image->detgeom,
+	                              image->lambda);
 }
 
 
@@ -221,7 +230,7 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	int n_line;
 	double cc;
 
-	reflections = predict_to_res(cr, largest_q(crystal_get_image(cr)));
+	reflections = predict_to_res(cr, max_resolution(crystal_get_image(cr)));
 	crystal_set_reflections(cr, reflections);
 
 	nref = num_reflections(reflections);
