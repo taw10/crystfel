@@ -76,7 +76,7 @@ extern struct detgeom *data_template_to_detgeom(const DataTemplate *dt);
 
 extern int data_template_get_slab_extents(const DataTemplate *dt, int *pw, int *ph);
 
-extern int data_template_in_bad_region(DataTemplate *dtempl,
+extern int data_template_in_bad_region(const DataTemplate *dtempl,
                                        int pn, double fs, double ss);
 
 #ifdef __cplusplus

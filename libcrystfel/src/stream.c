@@ -905,8 +905,8 @@ static void read_crystal(Stream *st, struct image *image,
 /**
  * Read the next chunk from a stream and fill in 'image'
  */
-int read_chunk(Stream *st, struct image *image,
-               const DataTemplate *dtempl, StreamFlags srf)
+struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
+                                StreamFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;

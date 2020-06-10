@@ -34,6 +34,7 @@
 #include <stdlib.h>
 
 #include "detgeom.h"
+#include "utils.h"
 
 
 /**

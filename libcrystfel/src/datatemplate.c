@@ -1296,7 +1296,8 @@ int data_template_panel_to_file_coords(const DataTemplate *dt,
 }
 
 
-const char *data_template_panel_name(const DataTemplate *dt, int pn)
+const char *data_template_panel_number_to_name(const DataTemplate *dt,
+                                               int pn)
 {
 	if ( pn >= dt->n_panels ) return NULL;
 	return dt->panels[pn].name;
@@ -1307,6 +1308,8 @@ int data_template_panel_name_to_number(const DataTemplate *dt,
                                        const char *panel_name,
                                        int *pn)
 {
+	int i;
+
 	if ( panel_name == NULL ) return 1;
 
 	for ( i=0; i<dt->n_panels; i++ ) {
@@ -1344,10 +1347,10 @@ struct detgeom *data_template_to_detgeom(const DataTemplate *dt)
 	if ( dt == NULL ) return NULL;
 
 	detgeom = malloc(sizeof(struct detgeom));
-	if ( detgeom == NULL ) return;
+	if ( detgeom == NULL ) return NULL;
 
 	detgeom->panels = malloc(dt->n_panels*sizeof(struct detgeom_panel));
-	if ( detgeom->panels == NULL ) return;
+	if ( detgeom->panels == NULL ) return NULL;
 
 	detgeom->n_panels = dt->n_panels;
 
@@ -1393,6 +1396,7 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 {
 	int w, h;
 	char *data_from;
+	int i;
 
 	data_from = dt->panels[0].data;
 
@@ -1408,7 +1412,7 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 
 		if ( p->dim_structure != NULL ) {
 			int j;
-			for ( j=0; j<p->dim_structure->ndims; j++ ) {
+			for ( j=0; j<p->dim_structure->num_dims; j++ ) {
 				if ( p->dim_structure->dims[j] == HYSL_PLACEHOLDER ) {
 					/* Not slabby */
 					return 1;
@@ -1416,11 +1420,11 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 			}
 		}
 
-		if ( p->file_max_fs > w ) {
-			w = p->file_max_fs;
+		if ( p->orig_max_fs > w ) {
+			w = p->orig_max_fs;
 		}
-		if ( p->file_max_ss > h ) {
-			h = p->file_max_ss;
+		if ( p->orig_max_ss > h ) {
+			h = p->orig_max_ss;
 		}
 	}
 
@@ -1434,7 +1438,7 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 /* Return non-zero if pixel fs,ss on panel p is in a bad region
  * as specified in the geometry file (regions only, not including
  * masks, NaN/inf, no_index etc */
-int data_template_in_bad_region(DataTemplate *dtempl,
+int data_template_in_bad_region(const DataTemplate *dtempl,
                                 int pn, double fs, double ss)
 {
 	double rx, ry;
@@ -1442,11 +1446,11 @@ int data_template_in_bad_region(DataTemplate *dtempl,
 	int i;
 	struct panel_template *p;
 
-	if ( p >= dtempl->n_panels ) {
+	if ( pn >= dtempl->n_panels ) {
 		ERROR("Panel index out of range\n");
 		return 0;
 	}
-	p = dtempl->panels[pn];
+	p = &dtempl->panels[pn];
 
 	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
 	 * to x and y */

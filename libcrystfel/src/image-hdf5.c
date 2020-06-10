@@ -87,14 +87,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 	panel_full_path = retrieve_full_path(ev, path_spec);
 
-	if ( !check_path_existence(fh, panel_full_path) ) {
-		ERROR("Cannot find data for panel %s (%s)\n",
-		      p->name, panel_full_path);
-		free_event(ev);
-		H5Fclose(fh);
-		return 1;
-	}
-
 	dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Cannot open data for panel %s (%s)\n",
@@ -324,7 +316,6 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	hsize_t size[64];
 	herr_t r;
 	herr_t check;
-	int check_pe;
 	int dim_flag;
 	int ndims;
 	int i;
@@ -352,13 +343,13 @@ double image_hdf5_get_value(const char *name, const char *filename,
 
 	subst_name = retrieve_full_path(ev, name);
 
-	check_pe = check_path_existence(fh, subst_name);
-	if ( check_pe == 0 ) {
-		ERROR("No such event-based numeric field '%s'\n", subst_name);
+	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
+	if ( dh < 0 ) {
+		ERROR("No such numeric field '%s'\n", subst_name);
+		H5Fclose(fh);
 		return NAN;
 	}
 
-	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
@@ -710,14 +701,6 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	if ( check_path_existence(fh, subst_name) == 0 ) {
-		ERROR("Peak path not found: %s:%s",
-		      filename, subst_name);
-		free(subst_name);
-		H5Fclose(fh);
-		return NULL;
-	}
-
 	snprintf(path_n, 1024, "%s/nPeaks", subst_name);
 	snprintf(path_x, 1024, "%s/peakXPosRaw", subst_name);
 	snprintf(path_y, 1024, "%s/peakYPosRaw", subst_name);
@@ -804,14 +787,6 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 	if ( subst_name == NULL ) {
 		ERROR("Invalid peak path %s\n", subst_name);
 		free_event(ev);
-		H5Fclose(fh);
-		return NULL;
-	}
-
-	if ( check_path_existence(fh, subst_name) == 0 ) {
-		ERROR("Peak path not found: %s:%s",
-		      filename, subst_name);
-		free(subst_name);
 		H5Fclose(fh);
 		return NULL;
 	}
@@ -924,7 +899,6 @@ static herr_t parse_file_event_structure(hid_t loc_id, char *name,
 	char *substituted_path;
 	char *ph_loc;
 	char *truncated_path;
-	htri_t check;
 	herr_t herrt_iterate, herrt_info;
 	struct H5O_info_t object_info;
 
@@ -956,49 +930,42 @@ static herr_t parse_file_event_structure(hid_t loc_id, char *name,
 	herrt_iterate = 0;
 	herrt_info = 0;
 
-	check = check_path_existence(pp->fh, truncated_path);
-	if ( check == 0 ) {
-			pop_path_entry_from_event(pp->curr_event);
-			return 0;
-	} else {
+	herrt_info = H5Oget_info_by_name(pp->fh, truncated_path,
+                                 &object_info, H5P_DEFAULT);
+	if ( herrt_info < 0 ) {
+		free(truncated_path);
+		free(substituted_path);
+		return -1;
+	}
 
-		herrt_info = H5Oget_info_by_name(pp->fh, truncated_path,
-                                         &object_info, H5P_DEFAULT);
-		if ( herrt_info < 0 ) {
+	if ( pp->curr_event->path_length == pp->path_dim
+	 &&  object_info.type == H5O_TYPE_DATASET )
+	{
+
+		int fail_append;
+
+		fail_append = append_event_to_event_list(pp->ev_list,
+		                                         pp->curr_event);
+		if ( fail_append ) {
 			free(truncated_path);
 			free(substituted_path);
 			return -1;
 		}
 
-		if ( pp->curr_event->path_length == pp->path_dim
-		 &&  object_info.type == H5O_TYPE_DATASET )
-		{
+		pop_path_entry_from_event(pp->curr_event);
+		return 0;
 
-			int fail_append;
+	} else {
 
-			fail_append = append_event_to_event_list(pp->ev_list,
-			                                         pp->curr_event);
-			if ( fail_append ) {
-				free(truncated_path);
-				free(substituted_path);
-				return -1;
-			}
+		pp->path = substituted_path;
 
-			pop_path_entry_from_event(pp->curr_event);
-			return 0;
+		if ( object_info.type == H5O_TYPE_GROUP ) {
 
-		} else {
-
-			pp->path = substituted_path;
-
-			if ( object_info.type == H5O_TYPE_GROUP ) {
-
-				herrt_iterate = H5Literate_by_name(pp->fh,
-				      truncated_path, H5_INDEX_NAME,
-				      H5_ITER_NATIVE, NULL,
-				      (H5L_iterate_t)parse_file_event_structure,
-				      (void *)pp, H5P_DEFAULT);
-			}
+			herrt_iterate = H5Literate_by_name(pp->fh,
+			      truncated_path, H5_INDEX_NAME,
+			      H5_ITER_NATIVE, NULL,
+			      (H5L_iterate_t)parse_file_event_structure,
+			      (void *)pp, H5P_DEFAULT);
 		}
 	}
 
