@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2014,2016 Thomas White <taw@physics.org>
+ *   2013-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -81,39 +81,30 @@ int main(int argc, char *argv[])
 	}
 	fclose(fh);
 
-	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(9000.0);
 	image.bw = 0.000001;
 	image.div = 0.0;
 	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
 
-	image.det = calloc(1, sizeof(struct detector));
-	image.det->n_panels = 1;
-	image.det->panels = calloc(1, sizeof(struct panel));
+	image.detgeom = calloc(1, sizeof(struct detgeom));
+	image.detgeom->n_panels = 1;
+	image.detgeom->panels = calloc(1, sizeof(struct detgeom_panel));
 
 	image.dp = calloc(1, sizeof(float *));
 	image.bad = calloc(1, sizeof(int *));
 
-	image.det->panels[0].w = w;
-	image.det->panels[0].h = h;
-	image.det->panels[0].fsx = 1.0;
-	image.det->panels[0].fsy = 0.0;
-	image.det->panels[0].ssx = 0.0;
-	image.det->panels[0].ssy = 1.0;
-	image.det->panels[0].xfs = 1.0;
-	image.det->panels[0].yfs = 0.0;
-	image.det->panels[0].xss = 0.0;
-	image.det->panels[0].yss = 1.0;
-	image.det->panels[0].cnx = -w/2;
-	image.det->panels[0].cny = -h/2;
-	image.det->panels[0].clen = 60.0e-3;
-	image.det->panels[0].res = 100000;  /* 10 px per mm */
-	image.det->panels[0].adu_per_eV = 10.0/9000.0; /* 10 adu/ph */
-	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
-
-	image.det->furthest_out_panel = &image.det->panels[0];
-	image.det->furthest_out_fs = 0;
-	image.det->furthest_out_ss = 0;
+	image.detgeom->panels[0].w = w;
+	image.detgeom->panels[0].h = h;
+	image.detgeom->panels[0].fsx = 1.0;
+	image.detgeom->panels[0].fsy = 0.0;
+	image.detgeom->panels[0].ssx = 0.0;
+	image.detgeom->panels[0].ssy = 1.0;
+	image.detgeom->panels[0].cnx = -w/2;
+	image.detgeom->panels[0].cny = -h/2;
+	image.detgeom->panels[0].cnz = 60.0e-3 / 100e-6;
+	image.detgeom->panels[0].pixel_pitch = 100e-6;  /* 10 px per mm */
+	image.detgeom->panels[0].adu_per_photon = 10.0;
+	image.detgeom->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
 	image.dp[0] = malloc(w*h*sizeof(float));
 	memset(image.dp[0], 0, w*h*sizeof(float));
@@ -137,7 +128,8 @@ int main(int argc, char *argv[])
 	image.n_crystals = 1;
 	image.crystals = &cr;
 
-	list = predict_to_res(cr, largest_q(&image));
+	list = predict_to_res(cr, detgeom_max_resolution(image.detgeom,
+	                                                 image.lambda));
 	crystal_set_reflections(cr, list);
 
 	for ( fs=0; fs<w; fs++ ) {
@@ -226,9 +218,7 @@ int main(int argc, char *argv[])
 	histogram_show(hi);
 	histogram_free(hi);
 
-	free(image.beam);
-	free(image.det->panels);
-	free(image.det);
+	detgeom_free(image.detgeom);
 	free(image.dp[0]);
 	free(image.dp);
 	gsl_rng_free(rng);

@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2016 Thomas White <taw@physics.org>
+ *   2011-2020 Thomas White <taw@physics.org>
  *   2012      Andrew Martin <andrew.martin@desy.de>
  *
  * This file is part of CrystFEL.
@@ -60,9 +60,9 @@ static void third_integration_check(struct image *image, int n_trials,
 		double fsp, ssp;
 		int r;
 
-		for ( fs=0; fs<image->det->panels[0].w; fs++ ) {
-		for ( ss=0; ss<image->det->panels[0].h; ss++ ) {
-			image->dp[0][fs+image->det->panels[0].w*ss]
+		for ( fs=0; fs<image->detgeom->panels[0].w; fs++ ) {
+		for ( ss=0; ss<image->detgeom->panels[0].h; ss++ ) {
+			image->dp[0][fs+image->detgeom->panels[0].w*ss]
 			                           = poisson_noise(rng, 1000.0);
 		}
 		}
@@ -119,9 +119,9 @@ static void fourth_integration_check(struct image *image, int n_trials,
 		double fsp, ssp;
 		int r;
 
-		for ( fs=0; fs<image->det->panels[0].w; fs++ ) {
-		for ( ss=0; ss<image->det->panels[0].h; ss++ ) {
-			int idx = fs+image->det->panels[0].w*ss;
+		for ( fs=0; fs<image->detgeom->panels[0].w; fs++ ) {
+		for ( ss=0; ss<image->detgeom->panels[0].h; ss++ ) {
+			int idx = fs+image->detgeom->panels[0].w*ss;
 			image->dp[0][idx] = poisson_noise(rng, 1000.0);
 			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
 			image->dp[0][idx] += 1000.0;
@@ -188,30 +188,24 @@ int main(int argc, char *argv[])
 	image.dp[0] = malloc(128*128*sizeof(float));
 	image.bad = malloc(sizeof(uint16_t *));
 	image.bad[0] = calloc(128*128, sizeof(int));
-	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(1000.0);
 
-	image.det = calloc(1, sizeof(struct detector));
-	image.det->n_panels = 1;
-	image.det->panels = calloc(1, sizeof(struct panel));
+	image.detgeom = calloc(1, sizeof(struct detgeom));
+	image.detgeom->n_panels = 1;
+	image.detgeom->panels = calloc(1, sizeof(struct detgeom_panel));
 
-	image.det->panels[0].fsx = 1.0;
-	image.det->panels[0].fsy = 0.0;
-	image.det->panels[0].ssx = 0.0;
-	image.det->panels[0].ssy = 1.0;
-	image.det->panels[0].xfs = 1.0;
-	image.det->panels[0].yfs = 0.0;
-	image.det->panels[0].xss = 0.0;
-	image.det->panels[0].yss = 1.0;
-	image.det->panels[0].cnx = -64.0;
-	image.det->panels[0].cny = -64.0;
-	image.det->panels[0].clen = 1.0;
-	image.det->panels[0].res = 1.0;
-	image.det->panels[0].w = 128;
-	image.det->panels[0].h = 128;
-	image.det->panels[0].adu_per_eV = NAN;
-	image.det->panels[0].adu_per_photon = 1.0;
-	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
+	image.detgeom->panels[0].fsx = 1.0;
+	image.detgeom->panels[0].fsy = 0.0;
+	image.detgeom->panels[0].ssx = 0.0;
+	image.detgeom->panels[0].ssy = 1.0;
+	image.detgeom->panels[0].cnx = -64.0;
+	image.detgeom->panels[0].cny = -64.0;
+	image.detgeom->panels[0].cnz = 1.0;
+	image.detgeom->panels[0].pixel_pitch = 1.0;
+	image.detgeom->panels[0].w = 128;
+	image.detgeom->panels[0].h = 128;
+	image.detgeom->panels[0].adu_per_photon = 1.0;
+	image.detgeom->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
 	memset(image.dp[0], 0, 128*128*sizeof(float));
 
@@ -238,10 +232,10 @@ int main(int argc, char *argv[])
 
 	/* Second check: uniform peak gives correct I and low sigma(I) */
 	npx = 0;
-	for ( fs=0; fs<image.det->panels[0].w; fs++ ) {
-	for ( ss=0; ss<image.det->panels[0].h; ss++ ) {
+	for ( fs=0; fs<image.detgeom->panels[0].w; fs++ ) {
+	for ( ss=0; ss<image.detgeom->panels[0].h; ss++ ) {
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.dp[0][fs+image.det->panels[0].w*ss] = 1000.0;
+		image.dp[0][fs+image.detgeom->panels[0].w*ss] = 1000.0;
 		npx++;
 	}
 	}
@@ -280,11 +274,11 @@ int main(int argc, char *argv[])
 
 	/* Fifth check: uniform peak on uniform background */
 	npx = 0;
-	for ( fs=0; fs<image.det->panels[0].w; fs++ ) {
-	for ( ss=0; ss<image.det->panels[0].h; ss++ ) {
-		image.dp[0][fs+image.det->panels[0].w*ss] = 1000.0;
+	for ( fs=0; fs<image.detgeom->panels[0].w; fs++ ) {
+	for ( ss=0; ss<image.detgeom->panels[0].h; ss++ ) {
+		image.dp[0][fs+image.detgeom->panels[0].w*ss] = 1000.0;
 		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.dp[0][fs+image.det->panels[0].w*ss] += 1000.0;
+		image.dp[0][fs+image.detgeom->panels[0].w*ss] += 1000.0;
 		npx++;
 	}
 	}
@@ -315,9 +309,7 @@ int main(int argc, char *argv[])
 
 	}
 
-	free(image.beam);
-	free(image.det->panels);
-	free(image.det);
+	detgeom_free(image.detgeom);
 	free(image.dp[0]);
 	free(image.dp);
 	gsl_rng_free(rng);
