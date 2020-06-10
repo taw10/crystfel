@@ -1331,6 +1331,47 @@ void data_template_add_copy_header(DataTemplate *dt,
 }
 
 
+static double unit_string_to_unit(const char *str)
+{
+	if ( strcmp(str, "mm") == 0 ) return 1e-3;
+	if ( strcmp(str, "m") == 0 ) return 1.0;
+	ERROR("Invalid length unit '%s'\n", str);
+	return NAN;
+}
+
+
+static double get_length(const char *from)
+{
+	double units;
+	char *sp;
+	char *fromcpy;
+	double val;
+	char *rval;
+
+	if ( from == NULL ) return NAN;
+
+	fromcpy = strdup(from);
+	if ( fromcpy == NULL ) return NAN;
+
+	sp = strchr(fromcpy, ' ');
+	if ( sp == NULL ) {
+		units = 1.0e-3;
+	} else {
+		units = unit_string_to_unit(sp+1);
+	}
+
+	sp[0] = '\0';
+	val = strtod(fromcpy, &rval);
+	if ( !( (*rval == '\0') && (rval != fromcpy)) ) {
+		ERROR("Invalid length value: %s\n", fromcpy);
+		free(fromcpy);
+		return NAN;
+	}
+
+	return val * units;
+}
+
+
 /* If possible, i.e. if there are no references to image headers in
  * 'dt', generate a detgeom structure from it.
  *
@@ -1363,7 +1404,7 @@ struct detgeom *data_template_to_detgeom(const DataTemplate *dt)
 		/* NB cnx,cny are in pixels, cnz is in m */
 		detgeom->panels[i].cnx = dt->panels[i].cnx;
 		detgeom->panels[i].cny = dt->panels[i].cny;
-		detgeom->panels[i].cnz = get_length(image, dt->panels[i].cnz_from);
+		detgeom->panels[i].cnz = get_length(dt->panels[i].cnz_from);
 
 		/* Apply offset (in m) and then convert cnz from
 		 * m to pixels */
