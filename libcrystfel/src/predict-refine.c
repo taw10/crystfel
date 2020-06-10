@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -98,7 +98,7 @@ static double r_dev(struct reflpeak *rp)
 }
 
 
-static double x_dev(struct reflpeak *rp, struct detector *det)
+static double x_dev(struct reflpeak *rp, struct detgeom *det)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
@@ -110,7 +110,7 @@ static double x_dev(struct reflpeak *rp, struct detector *det)
 }
 
 
-static double y_dev(struct reflpeak *rp, struct detector *det)
+static double y_dev(struct reflpeak *rp, struct detgeom *det)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
@@ -135,7 +135,7 @@ static int cmpd2(const void *av, const void *bv)
 
 
 static int check_outlier_transition(struct reflpeak *rps, int n,
-                                    struct detector *det)
+                                    struct detgeom *det)
 {
 	int i;
 
@@ -262,7 +262,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	/* Sort the pairings by excitation error and look for a transition
 	 * between good pairings and outliers */
-	n_final = check_outlier_transition(rps, n_acc, image->det);
+	n_final = check_outlier_transition(rps, n_acc, image->detgeom);
 
 	/* Add the final accepted reflections to the caller's list */
 	if ( reflist != NULL ) {
@@ -314,16 +314,18 @@ int refine_radius(Crystal *cr, struct image *image)
 }
 
 
-static void update_detector(struct detector *det, double xoffs, double yoffs,
+static void update_detector(struct detgeom *det, double xoffs, double yoffs,
                             double coffs)
 {
 	int i;
 
 	for ( i=0; i<det->n_panels; i++ ) {
-		struct panel *p = &det->panels[i];
-		p->cnx += xoffs * p->res;
-		p->cny += yoffs * p->res;
-		p->clen += coffs;
+		struct detgeom_panel *p = &det->panels[i];
+
+		/* Convert to pixels */
+		p->cnx += xoffs / p->pixel_pitch;
+		p->cny += yoffs / p->pixel_pitch;
+		p->cnz += coffs / p->pixel_pitch;
 	}
 }
 
@@ -409,7 +411,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = x_dev(&rps[i], image->det);
+			v_c = x_dev(&rps[i], image->detgeom);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -441,7 +443,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = y_dev(&rps[i], image->det);
+			v_c = y_dev(&rps[i], image->detgeom);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -493,9 +495,9 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	csx += gsl_vector_get(shifts, 6);
 	csy += gsl_vector_get(shifts, 7);
 	csz += gsl_vector_get(shifts, 8);
-	update_detector(image->det, gsl_vector_get(shifts, 9),
-	                            gsl_vector_get(shifts, 10),
-	                            gsl_vector_get(shifts, 11));
+	update_detector(image->detgeom, gsl_vector_get(shifts, 9),
+	                                gsl_vector_get(shifts, 10),
+	                                gsl_vector_get(shifts, 11));
 	*total_x += gsl_vector_get(shifts, 9);
 	*total_y += gsl_vector_get(shifts, 10);
 	*total_z += gsl_vector_get(shifts, 11);
@@ -510,7 +512,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double pred_residual(struct reflpeak *rps, int n, struct detector *det)
+static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
 {
 	int i;
 	double res = 0.0;
@@ -591,7 +593,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 		rps[i].Ih = rps[i].peak->intensity / max_I;
 	}
 
-	//STATUS("Initial residual = %e\n", pred_residual(rps, n, image->det));
+	//STATUS("Initial residual = %e\n", pred_residual(rps, n, image->detgeom));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
@@ -599,12 +601,12 @@ int refine_prediction(struct image *image, Crystal *cr)
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y, &total_z) ) return 1;
 		//STATUS("Residual after %i = %e\n", i,
-		//       pred_residual(rps, n, image->det));
+		//       pred_residual(rps, n, image->detgeom));
 	}
-	//STATUS("Final residual = %e\n", pred_residual(rps, n, image->det));
+	//STATUS("Final residual = %e\n", pred_residual(rps, n, image->detgeom));
 
 	snprintf(tmp, 255, "predict_refine/final_residual = %e",
-	         pred_residual(rps, n, image->det));
+	         pred_residual(rps, n, image->detgeom));
 	crystal_add_notes(cr, tmp);
 
 	crystal_set_det_shift(cr, total_x, total_y);
