@@ -54,8 +54,12 @@ extern "C" {
 extern DataTemplate *data_template_new_from_file(const char *filename);
 extern void data_template_free(DataTemplate *dt);
 
-extern const char *data_template_panel_name(const DataTemplate *dt,
-                                            int pn);
+extern const char *data_template_panel_number_to_name(const DataTemplate *dt,
+                                                      int pn);
+
+extern int data_template_panel_name_to_number(const DataTemplate *dt,
+                                              const char *panel_name,
+                                              int *pn);
 
 extern int data_template_file_to_panel_coords(const DataTemplate *dt,
                                               float *pfs, float *pss,

@@ -1303,6 +1303,23 @@ const char *data_template_panel_name(const DataTemplate *dt, int pn)
 }
 
 
+int data_template_panel_name_to_number(const DataTemplate *dt,
+                                       const char *panel_name,
+                                       int *pn)
+{
+	if ( panel_name == NULL ) return 1;
+
+	for ( i=0; i<dt->n_panels; i++ ) {
+		if ( strcmp(panel_name, dt->panels[i].name) == 0 ) {
+			*pn = i;
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+
 void data_template_add_copy_header(DataTemplate *dt,
                                    const char *header)
 {
