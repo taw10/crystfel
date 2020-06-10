@@ -46,98 +46,7 @@
 #include <utils.h>
 #include <msgpack.h>
 
-#include "im-zmq.h"
-
 #include "datatemplate_priv.h"
-
-
-struct im_zmq
-{
-	void *ctx;
-	void *socket;
-	zmq_msg_t msg;
-	msgpack_unpacked unpacked;
-	int unpacked_set;
-};
-
-
-struct im_zmq *im_zmq_connect(const char *zmq_address)
-{
-	struct im_zmq *z;
-
-	z = malloc(sizeof(struct im_zmq));
-	if ( z == NULL ) return NULL;
-
-	z->unpacked_set = 0;
-
-	z->ctx = zmq_ctx_new();
-	if ( z->ctx == NULL ) return NULL;
-
-	z->socket = zmq_socket(z->ctx, ZMQ_REQ);
-	if ( z->socket == NULL ) return NULL;
-
-	STATUS("Connecting to ZMQ at '%s'\n", zmq_address);
-	if ( zmq_connect(z->socket, zmq_address) == -1 ) {
-		ERROR("ZMQ connection failed: %s\n", zmq_strerror(errno));
-		return NULL;
-	}
-	STATUS("ZMQ connected.\n");
-
-	return z;
-}
-
-
-msgpack_object *im_zmq_fetch(struct im_zmq *z)
-{
-	int msg_size;
-	int r;
-
-	if ( zmq_send(z->socket, "m", 1, 0) == -1 ) {
-		ERROR("ZMQ message send failed: %s\n", zmq_strerror(errno));
-		return NULL;
-	}
-
-	zmq_msg_init(&z->msg);
-	msg_size = zmq_msg_recv(&z->msg, z->socket, 0);
-	if ( msg_size == -1 ) {
-		ERROR("ZMQ recieve failed: %s\n", zmq_strerror(errno));
-		zmq_msg_close(&z->msg);
-		return NULL;
-	}
-
-	msgpack_unpacked_init(&z->unpacked);
-	r = msgpack_unpack_next(&z->unpacked, zmq_msg_data(&z->msg),
-	                        msg_size, NULL);
-	if ( r != MSGPACK_UNPACK_SUCCESS ) {
-		ERROR("Msgpack unpack failed: %i\n", r);
-		zmq_msg_close(&z->msg);
-		return NULL;
-	}
-	z->unpacked_set = 1;
-
-	return &z->unpacked.data;
-}
-
-
-/* Clean structures ready for next frame */
-void im_zmq_clean(struct im_zmq *z)
-{
-	if ( z->unpacked_set ) {
-		msgpack_unpacked_destroy(&z->unpacked);
-		zmq_msg_close(&z->msg);
-		z->unpacked_set = 0;
-	}
-}
-
-
-void im_zmq_shutdown(struct im_zmq *z)
-{
-	if ( z == NULL ) return;
-
-	zmq_msg_close(&z->msg);
-	zmq_close(z->socket);
-	zmq_ctx_destroy(z->ctx);
-}
 
 
 static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
@@ -185,8 +94,8 @@ static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
  *
  */
 ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
-                                                  msgpack_object *obj,
-                                                  int half_pixel_shift)
+                                           msgpack_object *obj,
+                                           int half_pixel_shift)
 {
 	ImageFeatureList *features;
 	int num_peaks;
@@ -243,75 +152,57 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 }
 
 
-static void im_zmq_fill_in_clen(struct detector *det)
-{
-	int i = 0;
-	for ( i=0; i<det->n_panels; i++) {
-		struct panel *p = &det->panels[i];
-		if ( p->clen_from != NULL ) {
-			ERROR("Can't get clen over ZMQ yet.\n");
-		}
-		adjust_centering_for_rail(p);
-	}
-}
-
-
-static void im_zmq_fill_in_beam_parameters(struct beam_params *beam,
-                                           struct image *image)
-{
-	double eV;
-	if ( beam->photon_energy_from == NULL ) {
-		/* Explicit value given */
-		eV = beam->photon_energy;
-	} else {
-		ERROR("Can't get photon energy over ZMQ yet.\n");
-		eV = 0.0;
-	}
-	image->lambda = ph_en_to_lambda(eV_to_J(eV))*beam->photon_energy_scale;
-}
-
-
-static int unpack_slab(struct image *image, double *data,
-                       int data_width, int data_height)
+static struct image *unpack_slab(const DataTemplate *dtempl,
+                                 double *data,
+                                 int data_width, int data_height)
 {
 	uint16_t *flags = NULL;
 	float *sat = NULL;
 	int pi;
+	struct image *image;
 
-	image->dp = malloc(image->det->n_panels*sizeof(float *));
-	image->bad = malloc(image->det->n_panels*sizeof(int *));
-	image->sat = malloc(image->det->n_panels*sizeof(float *));
+	image = image_new();
+	if ( image == NULL ) return NULL;
+
+	image->dp = malloc(dtempl->n_panels*sizeof(float *));
+	image->bad = malloc(dtempl->n_panels*sizeof(int *));
+	image->sat = malloc(dtempl->n_panels*sizeof(float *));
 	if ( (image->dp == NULL) || (image->bad == NULL) || (image->sat == NULL) ) {
 		ERROR("Failed to allocate data arrays.\n");
-		return 1;
+		image_free(image);
+		return NULL;
 	}
 
-	for ( pi=0; pi<image->det->n_panels; pi++ ) {
+	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
 
-		struct panel *p;
+		struct panel_template *p;
 		int fs, ss;
+		int p_w, p_h;
 
-		p = &image->det->panels[pi];
-		image->dp[pi] = malloc(p->w*p->h*sizeof(float));
-		image->bad[pi] = malloc(p->w*p->h*sizeof(int));
-		image->sat[pi] = malloc(p->w*p->h*sizeof(float));
+		p = &dtempl->panels[pi];
+		p_w = p->orig_max_fs - p->orig_min_fs + 1;
+		p_h = p->orig_max_ss - p->orig_min_ss + 1;
+
+		image->dp[pi] = malloc(p_w*p_h*sizeof(float));
+		image->bad[pi] = malloc(p_w*p_h*sizeof(int));
+		image->sat[pi] = malloc(p_w*p_h*sizeof(float));
 		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
 		  || (image->sat[pi] == NULL) )
 		{
 			ERROR("Failed to allocate panel\n");
-			return 1;
+			return NULL;
 		}
 
-		if ( (p->orig_min_fs + p->w > data_width)
-		  || (p->orig_min_ss + p->h > data_height) )
+		if ( (p->orig_min_fs + p_w > data_width)
+		  || (p->orig_min_ss + p_h > data_height) )
 		{
 			ERROR("Panel %s is outside range of data provided\n",
 			      p->name);
-			return 1;
+			return NULL;
 		}
 
-		for ( ss=0; ss<p->h; ss++) {
-		for ( fs=0; fs<p->w; fs++) {
+		for ( ss=0; ss<p_h; ss++) {
+		for ( fs=0; fs<p_w; fs++) {
 
 			int idx;
 			int cfs, css;
@@ -321,17 +212,21 @@ static int unpack_slab(struct image *image, double *data,
 			css = ss+p->orig_min_ss;
 			idx = cfs + css*data_width;
 
-			image->dp[pi][fs+p->w*ss] = data[idx];
+			image->dp[pi][fs+p_w*ss] = data[idx];
 
 			if ( sat != NULL ) {
-				image->sat[pi][fs+p->w*ss] = sat[idx];
+				image->sat[pi][fs+p_w*ss] = sat[idx];
 			} else {
-				image->sat[pi][fs+p->w*ss] = INFINITY;
+				image->sat[pi][fs+p_w*ss] = INFINITY;
 			}
 
-			if ( p->no_index ) bad = 1;
+			if ( p->bad ) bad = 1;
 
-			if ( in_bad_region(image->det, p, cfs, css) ) {
+			if ( data_template_in_bad_region(dtempl, pi,
+			                                 fs, ss)
+			     || isnan(image->dp[pi][fs+ss*p_w])
+			     || isinf(image->dp[pi][fs+ss*p_w]) )
+			{
 				bad = 1;
 			}
 
@@ -343,13 +238,13 @@ static int unpack_slab(struct image *image, double *data,
 
 				f = flags[idx];
 
-				if ( (f & image->det->mask_good)
-				    != image->det->mask_good ) bad = 1;
+				if ( (f & dtempl->mask_good)
+				    != dtempl->mask_good ) bad = 1;
 
-				if ( f & image->det->mask_bad ) bad = 1;
+				if ( f & dtempl->mask_bad ) bad = 1;
 
 			}
-			image->bad[pi][fs+p->w*ss] = bad;
+			image->bad[pi][fs+p_w*ss] = bad;
 		}
 		}
 
@@ -468,21 +363,12 @@ struct image *image_msgpack_read(DataTemplate *dtempl,
 		data = zero_array(dtempl, &data_width, &data_height);
 	}
 
-	image = image_new();
-	if ( image == NULL ) return NULL;
+	image = unpack_slab(dtempl, data, data_width, data_height);
 
-	if ( unpack_slab(image, data, data_width, data_height) ) {
+	if ( image == NULL ) {
 		ERROR("Failed to unpack data slab.\n");
 		return NULL;
 	}
-
-	im_zmq_fill_in_beam_parameters(image->beam, image);
-	if ( image->lambda > 1000 ) {
-		ERROR("Warning: Missing or nonsensical wavelength "
-		      "(%e m).\n", image->lambda);
-	}
-	im_zmq_fill_in_clen(image->det);
-	fill_in_adu(image);
 
 	return image;
 }
