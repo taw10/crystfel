@@ -68,8 +68,8 @@ typedef struct _stream Stream;
  * Use this (and \ref read_chunk) to read the stream faster if you
  * don't need the entire contents of the stream.
  *
- * When reading, using either of \p STREAM_REFLECTIONS or
- * \p STREAM_UNITCELL implies \p STREAM_CRYSTALS.
+ * Using either of \p STREAM_REFLECTIONS or * \p STREAM_UNITCELL
+ * implies \p STREAM_CRYSTALS.
  **/
 typedef enum {
 
