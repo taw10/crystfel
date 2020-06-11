@@ -308,39 +308,84 @@ static double get_value(struct image *image, const char *from)
 }
 
 
-static double unit_string_to_unit(const char *str)
+static char *get_value_and_units(struct image *image, const char *from,
+                                 double *pvalue)
 {
-	if ( strcmp(str, "mm") == 0 ) return 1e-3;
-	if ( strcmp(str, "m") == 0 ) return 1.0;
-	ERROR("Invalid length unit '%s'\n", str);
-	return NAN;
+	char *sp;
+	char *fromcpy;
+	char *unitscpy;
+
+	if ( from == NULL ) {
+		*pvalue = NAN;
+		return NULL;
+	}
+
+	fromcpy = strdup(from);
+	if ( fromcpy == NULL ) {
+		*pvalue = NAN;
+		return NULL;
+	}
+
+	sp = strchr(fromcpy, ' ');
+	if ( sp == NULL ) {
+		unitscpy = NULL;
+	} else {
+		unitscpy = strdup(sp+1);
+		sp[0] = '\0';
+	}
+
+	*pvalue = get_value(image, fromcpy);
+	free(fromcpy);
+
+	return unitscpy;
 }
 
 
 static double get_length(struct image *image, const char *from)
 {
-	double units;
-	char *sp;
-	char *fromcpy;
-	double val;
+	char *units;
+	double value;
+	double scale;
 
-	if ( from == NULL ) return NAN;
-
-	fromcpy = strdup(from);
-	if ( fromcpy == NULL ) return NAN;
-
-	sp = strchr(fromcpy, ' ');
-	if ( sp == NULL ) {
-		units = 1.0e-3;
+	units = get_value_and_units(image, from, &value);
+	if ( units == NULL ) {
+		scale = 1.0e-3;
 	} else {
-		units = unit_string_to_unit(sp+1);
-		sp[0] = '\0';
+		if ( strcmp(units, "mm") == 0 ) {
+			scale = 1e-3;
+		} else if ( strcmp(units, "m") == 0 ) {
+			scale = 1.0;
+		} else {
+			ERROR("Invalid length unit '%s'\n", units);
+			free(units);
+			return NAN;
+		}
 	}
 
-	val = get_value(image, fromcpy);
-	free(fromcpy);
+	free(units);
+	return value * scale;
+}
 
-	return val * units;
+
+static double get_wavelength(struct image *image, const char *from)
+{
+	char *units;
+	double value;
+
+	units = get_value_and_units(image, from, &value);
+	if ( units == NULL ) {
+		/* Default unit is eV */
+		return ph_eV_to_lambda(value);
+	} else {
+		if ( strcmp(units, "A") == 0 ) {
+			free(units);
+			return value * 1e-10;
+		} else {
+			ERROR("Invalid wavelength unit '%s'\n", units);
+			free(units);
+			return NAN;
+		}
+	}
 }
 
 
@@ -395,8 +440,7 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 
 	}
 
-	/* FIXME: Units for wavelength/photon energy in DataTemplate */
-	image->lambda = ph_eV_to_lambda(get_value(image, dtempl->wavelength_from));
+	image->lambda = get_wavelength(image, dtempl->wavelength_from);
 	image->detgeom = detgeom;
 
 	/* FIXME: spectrum */
