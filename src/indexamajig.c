@@ -44,7 +44,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <argp.h>
-#include <hdf5.h>
 #include <gsl/gsl_errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>

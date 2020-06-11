@@ -35,7 +35,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <hdf5.h>
 #include <assert.h>
 #include <unistd.h>
 #include <zmq.h>

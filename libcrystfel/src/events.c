@@ -30,10 +30,10 @@
 #include "events.h"
 #include "utils.h"
 
-#include <hdf5.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stddef.h>
 
 /** \file events.h */
 

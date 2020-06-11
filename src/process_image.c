@@ -33,7 +33,6 @@
 #endif
 
 #include <stdlib.h>
-#include <hdf5.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_statistics_double.h>
 #include <gsl/gsl_sort.h>
