@@ -424,7 +424,25 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 		detgeom->panels[i].cnz /= detgeom->panels[i].pixel_pitch;
 
 		detgeom->panels[i].max_adu = dtempl->panels[i].max_adu;
-		detgeom->panels[i].adu_per_photon = 1.0;  /* FIXME ! */
+
+		switch ( dtempl->panels[i].adu_scale_unit ) {
+
+			case ADU_PER_PHOTON:
+			detgeom->panels[i].adu_per_photon = dtempl->panels[i].adu_scale;
+			break;
+
+			case ADU_PER_EV:
+			detgeom->panels[i].adu_per_photon = dtempl->panels[i].adu_scale
+				* ph_lambda_to_eV(image->lambda);
+			break;
+
+			default:
+			detgeom->panels[i].adu_per_photon = 1.0;
+			ERROR("Invalid ADU/ph scale unit (%i)\n",
+			      dtempl->panels[i].adu_scale_unit);
+			break;
+
+		}
 
 		detgeom->panels[i].w = dtempl->panels[i].orig_max_fs
 		                        - dtempl->panels[i].orig_min_fs + 1;
@@ -440,7 +458,6 @@ static void create_detgeom(struct image *image, DataTemplate *dtempl)
 
 	}
 
-	image->lambda = get_wavelength(image, dtempl->wavelength_from);
 	image->detgeom = detgeom;
 
 	/* FIXME: spectrum */
@@ -473,6 +490,9 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 	}
 
 	if ( image == NULL ) return NULL;
+
+	/* Wavelength might be needed to create detgeom (adu_per_eV) */
+	image->lambda = get_wavelength(image, dtempl->wavelength_from);
 
 	create_detgeom(image, dtempl);
 

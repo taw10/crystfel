@@ -476,9 +476,11 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 	} else if ( strcmp(key, "clen_for_centering") == 0 ) {
 		panel->clen_for_centering = atof(val);
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
-		panel->adu_per_eV = atof(val);
+		panel->adu_scale = atof(val);
+		panel->adu_scale_unit = ADU_PER_EV;
 	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
-		panel->adu_per_photon = atof(val);
+		panel->adu_scale = atof(val);
+		panel->adu_scale_unit = ADU_PER_PHOTON;
 	} else if ( strcmp(key, "rigid_group") == 0 ) {
 		add_to_rigid_group(find_or_add_rg(det, val), panel);
 	} else if ( strcmp(key, "clen") == 0 ) {
@@ -1075,7 +1077,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			      p->name);
 			reject = 1;
 		}
-		if ( isnan(p->adu_per_eV) && isnan(p->adu_per_photon) ) {
+		if ( isnan(p->adu_scale) ) {
 			ERROR("Please specify either adu_per_eV or "
 			      "adu_per_photon for panel %s\n",
 			      dt->panels[i].name);

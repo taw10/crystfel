@@ -133,12 +133,6 @@ struct panel_template
 	int orig_min_ss;
 	int orig_max_ss;
 	/*@}*/
-
-
-	/* FIXME: Should only be one */
-	double                     adu_per_eV;
-	double                     adu_per_photon;
-
 };
 
 
