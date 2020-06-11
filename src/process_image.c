@@ -439,16 +439,10 @@ out:
 	sb_shared->n_hadcrystals += any_crystals;
 	pthread_mutex_unlock(&sb_shared->totals_lock);
 
-	for ( i=0; i<image->n_crystals; i++ ) {
-		cell_free(crystal_get_cell(image->crystals[i]));
-		reflist_free(crystal_get_reflections(image->crystals[i]));
-		crystal_free(image->crystals[i]);
-	}
-	free(image->crystals);
-
 	/* Free spectrum only if we generated it for this image */
 	if ( iargs->spectrum == NULL ) {
 		spectrum_free(image->spectrum);
+		image->spectrum = NULL;
 	}
 
 	/* Free image (including detgeom) */

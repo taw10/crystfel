@@ -334,9 +334,9 @@ static double get_length(struct image *image, const char *from)
 		units = 1.0e-3;
 	} else {
 		units = unit_string_to_unit(sp+1);
+		sp[0] = '\0';
 	}
 
-	sp[0] = '\0';
 	val = get_value(image, fromcpy);
 	free(fromcpy);
 

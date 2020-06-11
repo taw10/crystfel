@@ -1236,6 +1236,7 @@ Stream *stream_open_fd_for_write(int fd)
 
 void stream_write_target_cell(Stream *st, const UnitCell *cell)
 {
+	if ( cell == NULL ) return;
 	fprintf(st->fh, STREAM_CELL_START_MARKER"\n");
 	write_cell(cell, st->fh);
 	fprintf(st->fh, "; Please note: this is the target unit cell.\n");
