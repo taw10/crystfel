@@ -58,8 +58,6 @@
 #include <sys/time.h>
 #endif
 
-#include <events.h>
-
 #include "im-sandbox.h"
 #include "process_image.h"
 #include "time-accounts.h"

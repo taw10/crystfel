@@ -40,7 +40,6 @@
 #include <zmq.h>
 #include <msgpack.h>
 
-#include <events.h>
 #include <image.h>
 #include <utils.h>
 #include <msgpack.h>

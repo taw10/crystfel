@@ -154,26 +154,28 @@ int main(int argc, char *argv[])
 		rval = fgets(filename, 1024, ifh);
 		if ( rval != NULL ) {
 
-			struct event_list *evlist;
+			char **evlist;
+			int num_events;
 
 			chomp(filename);
 
-			evlist = image_expand_frames(dtempl, filename);
+			evlist = image_expand_frames(dtempl, filename,
+			                             &num_events);
 			if ( evlist == NULL ) {
 				ERROR("Failed to read %s\n", filename);
 				return 1;
 			}
 
-			for ( i=0; i<evlist->num_events; i++ ) {
-				char *str = get_event_string(evlist->events[i]);
-				fprintf(ofh, "%s %s\n", filename, str);
-				free(str);
+			for ( i=0; i<num_events; i++ ) {
+				fprintf(ofh, "%s %s\n",
+				        filename, evlist[i]);
+				free(evlist[i]);
 			}
 
-			STATUS("%i events found in %s\n", evlist->num_events,
-			       filename);
+			STATUS("%i events found in %s\n",
+			       num_events, filename);
 
-			free_event_list(evlist);
+			free(evlist);
 
 		}
 

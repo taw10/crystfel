@@ -47,7 +47,6 @@ struct image;
 #include "reflist.h"
 #include "crystal.h"
 #include "index.h"
-#include "events.h"
 #include "spectrum.h"
 #include "datatemplate.h"
 
@@ -190,7 +189,6 @@ extern void free_all_crystals(struct image *image);
 extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);
 
-/* New API */
 extern struct image *image_new(void);
 extern struct image *image_read(DataTemplate *dtempl, const char *filename,
                                 const char *event);
@@ -201,8 +199,8 @@ extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
                                           const char *event,
                                           int half_pixel_shift);
 
-extern struct event_list *image_expand_frames(const DataTemplate *dtempl,
-                                              const char *filename);
+extern char **image_expand_frames(const DataTemplate *dtempl,
+                                  const char *filename, int *nframes);
 
 #ifdef __cplusplus
 }

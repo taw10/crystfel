@@ -36,7 +36,6 @@
 
 #include "image.h"
 #include "utils.h"
-#include "events.h"
 #include "detgeom.h"
 #include "image-hdf5.h"
 #include "image-cbf.h"

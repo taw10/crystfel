@@ -37,7 +37,6 @@
 
 #include "image.h"
 #include "utils.h"
-#include "events.h"
 #include "detgeom.h"
 
 #include "datatemplate.h"

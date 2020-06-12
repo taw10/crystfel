@@ -38,7 +38,6 @@
 
 #include "utils.h"
 #include "datatemplate.h"
-#include "events.h"
 
 #include "datatemplate_priv.h"
 
