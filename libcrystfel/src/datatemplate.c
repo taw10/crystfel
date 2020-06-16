@@ -60,37 +60,28 @@ struct rgc_definition {
 
 static struct panel_template *new_panel(DataTemplate *det, const char *name)
 {
+	struct panel_template *copyme;
 	struct panel_template *new;
+
+	copyme = &det->defaults;
 
 	det->n_panels++;
 	det->panels = realloc(det->panels,
 	                      det->n_panels*sizeof(struct panel_template));
 
 	new = &det->panels[det->n_panels-1];
-	memcpy(new, &det->defaults, sizeof(struct panel_template));
+	memcpy(new, copyme, sizeof(struct panel_template));
 
+	/* Set name */
 	new->name = strdup(name);
 
 	/* Copy strings */
-	if ( new->cnz_from != NULL ) new->cnz_from = strdup(new->cnz_from);
-	if ( new->data != NULL ) new->data = strdup(new->data);
-	if ( new->mask != NULL ) new->mask = strdup(new->mask);
-
-	/* Create a new copy of the dim_structure if needed */
-	if ( new->dim_structure != NULL ) {
-
-		struct dim_structure *dim_copy;
-		int di;
-
-		dim_copy = initialize_dim_structure();
-		dim_copy->num_dims = new->dim_structure->num_dims;
-		dim_copy->dims = malloc(dim_copy->num_dims*sizeof(int));
-		for ( di=0; di<dim_copy->num_dims; di++ ) {
-			dim_copy->dims[di] = new->dim_structure->dims[di];
-		}
-
-		new->dim_structure = dim_copy;
-	}
+	new->cnz_from = safe_strdup(copyme->cnz_from);
+	new->data = safe_strdup(copyme->data);
+	new->mask = safe_strdup(copyme->mask);
+	new->mask_file = safe_strdup(copyme->mask_file);
+	new->satmap = safe_strdup(copyme->satmap);
+	new->satmap_file = safe_strdup(copyme->satmap_file);
 
 	return new;
 }
@@ -447,6 +438,34 @@ static int dir_conv(const char *a, double *sx, double *sy, double *sz)
 }
 
 
+int set_dim(struct panel_template *panel, int dimension,
+            const char *val)
+{
+	if ( dimension >= MAX_DIMS ) {
+		ERROR("Too many dimensions!\n");
+		return 1;
+	}
+
+	if ( strcmp(val, "fs") == 0 ) {
+		panel->dims[dimension] = DIM_FS;
+	} else if ( strcmp(val, "ss") == 0 ) {
+		panel->dims[dimension] = DIM_SS;
+	} else if ( strcmp(val, "%") == 0 ) {
+		panel->dims[dimension] = DIM_PLACEHOLDER;
+	} else {
+		char *endptr;
+		unsigned long int fix_val = strtoul(val, &endptr, 10);
+		if ( endptr[0] != '\0' ) {
+			ERROR("Invalid dimension value '%s'\n", val);
+			return 1;
+		} else {
+			panel->dims[dimension] = fix_val;
+		}
+	}
+	return 0;
+}
+
+
 static int parse_field_for_panel(struct panel_template *panel, const char *key,
                                  const char *val, DataTemplate *det)
 {
@@ -534,16 +553,12 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		int dim_entry;
 		char *endptr;
 		if ( key[3] != '\0' ) {
-			if  ( panel->dim_structure == NULL ) {
-				panel->dim_structure = initialize_dim_structure();
-			}
 			dim_entry = strtoul(key+3, &endptr, 10);
 			if ( endptr[0] != '\0' ) {
-				ERROR("Invalid dimension number %s\n", key+3);
+				ERROR("Invalid dimension number %s\n",
+				      key+3);
 			} else {
-				if ( set_dim_structure_entry(panel->dim_structure,
-				                        dim_entry, val) )
-				{
+				if ( set_dim(panel, dim_entry, val) ) {
 					ERROR("Failed to set dim structure entry\n");
 				}
 			}
@@ -703,10 +718,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	int i;
 	int rgi, rgci;
 	int reject = 0;
-	int path_dim, mask_path_dim;
-	int dim_dim;
-	int dim_reject = 0;
-	int dim_dim_reject = 0;
 	struct rg_definition **rg_defl = NULL;
 	struct rgc_definition **rgc_defl = NULL;
 	int n_rg_definitions = 0;
@@ -726,8 +737,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->mask_bad = 0;
 	dt->n_rigid_groups = 0;
 	dt->rigid_groups = NULL;
-	dt->path_dim = 0;
-	dt->dim_dim = 0;
 	dt->n_rg_collections = 0;
 	dt->rigid_group_collections = NULL;
 	dt->photon_energy_bandwidth = -1.0;
@@ -763,7 +772,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->defaults.satmap = NULL;
 	dt->defaults.satmap_file = NULL;
 	dt->defaults.data = NULL;
-	dt->defaults.dim_structure = NULL;
+	for ( i=0; i<MAX_DIMS; i++ ) dt->defaults.dims[i] = DIM_UNDEFINED;
 	dt->defaults.name = NULL;
 
 	string = strdup(string_in);
@@ -881,151 +890,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		free(dt);
 		return NULL;
 	}
-
-	path_dim = -1;
-	dim_reject = 0;
-
-	for ( i=0; i<dt->n_panels; i++ ) {
-
-		int panel_dim = 0;
-		char *next_instance;
-
-		next_instance = dt->panels[i].data;
-
-		while ( next_instance ) {
-			next_instance = strstr(next_instance, "%");
-			if ( next_instance != NULL ) {
-				next_instance += 1*sizeof(char);
-				panel_dim += 1;
-			}
-		}
-
-		if ( path_dim == -1 ) {
-			path_dim = panel_dim;
-		} else {
-			if ( panel_dim != path_dim ) {
-				dim_reject = 1;
-			}
-		}
-
-	}
-
-	mask_path_dim = -1;
-	for ( i=0; i<dt->n_panels; i++ ) {
-
-		int panel_mask_dim = 0;
-		char *next_instance;
-
-		if ( dt->panels[i].mask != NULL ) {
-
-			next_instance = dt->panels[i].mask;
-
-			while ( next_instance ) {
-				next_instance = strstr(next_instance, "%");
-				if ( next_instance != NULL ) {
-					next_instance += 1*sizeof(char);
-					panel_mask_dim += 1;
-				}
-			}
-
-			if ( mask_path_dim == -1 ) {
-				mask_path_dim = panel_mask_dim;
-			} else {
-				if ( panel_mask_dim != mask_path_dim ) {
-					dim_reject = 1;
-				}
-			}
-
-		}
-	}
-
-	if ( dim_reject ==  1 ) {
-		ERROR("All panels' data and mask entries must have the same "
-		      "number of placeholders\n");
-		reject = 1;
-	}
-
-	if ( mask_path_dim > path_dim ) {
-		ERROR("Number of placeholders in mask cannot be larger than "
-		      "for data\n");
-		reject = 1;
-	}
-
-	dt->path_dim = path_dim;
-
-	dim_dim_reject = 0;
-	dim_dim = -1;
-
-	for ( i=0; i<dt->n_panels; i++ ) {
-
-		int di;
-		int found_ss = 0;
-		int found_fs = 0;
-		int panel_dim_dim = 0;
-
-		if ( dt->panels[i].dim_structure == NULL ) {
-			dt->panels[i].dim_structure = default_dim_structure();
-		}
-
-		for ( di=0; di<dt->panels[i].dim_structure->num_dims; di++ ) {
-
-			if ( dt->panels[i].dim_structure->dims[di] ==
-			                                   HYSL_UNDEFINED  ) {
-				dim_dim_reject = 1;
-				ERROR("Dimension %i for panel %s is undefined.\n",
-				      di, dt->panels[i].name);
-			}
-			if ( dt->panels[i].dim_structure->dims[di] ==
-			                                   HYSL_PLACEHOLDER  ) {
-				panel_dim_dim += 1;
-			}
-			if ( dt->panels[i].dim_structure->dims[di] ==
-			                                   HYSL_SS  ) {
-				found_ss += 1;
-			}
-			if ( dt->panels[i].dim_structure->dims[di] ==
-			                                   HYSL_FS  ) {
-				found_fs += 1;
-			}
-
-		}
-
-		if ( found_ss != 1 ) {
-			ERROR("Exactly one slow scan dim coordinate is needed "
-			      "(found %i for panel %s)\n", found_ss,
-			      dt->panels[i].name);
-			dim_dim_reject = 1;
-		}
-
-		if ( found_fs != 1 ) {
-			ERROR("Exactly one fast scan dim coordinate is needed "
-			      "(found %i for panel %s)\n", found_fs,
-			      dt->panels[i].name);
-			dim_dim_reject = 1;
-		}
-
-		if ( panel_dim_dim > 1 ) {
-			ERROR("Maximum one placeholder dim coordinate is "
-			      "allowed (found %i for panel %s)\n",
-			      panel_dim_dim, dt->panels[i].name);
-			dim_dim_reject = 1;
-		}
-
-		if ( dim_dim == -1 ) {
-			dim_dim = panel_dim_dim;
-		} else {
-			if ( panel_dim_dim != dim_dim ) {
-				dim_dim_reject = 1;
-			}
-		}
-
-	}
-
-	if ( dim_dim_reject ==  1) {
-		reject = 1;
-	}
-
-	dt->dim_dim = dim_dim;
 
 	for ( i=0; i<dt->n_panels; i++ ) {
 
@@ -1241,9 +1105,16 @@ void data_template_free(DataTemplate *dt)
 	free_all_rigid_group_collections(dt);
 
 	for ( i=0; i<dt->n_panels; i++ ) {
+		free(dt->panels[i].name);
+		free(dt->panels[i].mask);
+		free(dt->panels[i].mask_file);
+		free(dt->panels[i].satmap);
+		free(dt->panels[i].satmap_file);
 		free(dt->panels[i].cnz_from);
-		free_dim_structure(dt->panels[i].dim_structure);
 	}
+
+	free(dt->wavelength_from);
+	free(dt->peak_list);
 
 	free(dt->panels);
 	free(dt->bad);
@@ -1433,6 +1304,17 @@ struct detgeom *data_template_to_detgeom(const DataTemplate *dt)
 }
 
 
+static int num_placeholders(const struct panel_template *p)
+{
+	int i;
+	int n_pl = 0;
+	for ( i=0; i<MAX_DIMS; i++ ) {
+		if ( p->dims[i] == DIM_PLACEHOLDER ) n_pl++;
+	}
+	return n_pl;
+}
+
+
 int data_template_get_slab_extents(const DataTemplate *dt,
                                    int *pw, int *ph)
 {
@@ -1452,14 +1334,9 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 			return 1;
 		}
 
-		if ( p->dim_structure != NULL ) {
-			int j;
-			for ( j=0; j<p->dim_structure->num_dims; j++ ) {
-				if ( p->dim_structure->dims[j] == HYSL_PLACEHOLDER ) {
-					/* Not slabby */
-					return 1;
-				}
-			}
+		if ( num_placeholders(p) > 0 ) {
+			/* Not slabby */
+			return 1;
 		}
 
 		if ( p->orig_max_fs > w ) {
@@ -1468,6 +1345,7 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 		if ( p->orig_max_ss > h ) {
 			h = p->orig_max_ss;
 		}
+
 	}
 
 	/* Inclusive -> exclusive */

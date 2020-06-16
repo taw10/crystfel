@@ -506,7 +506,7 @@ signed int is_cbf_file(const char *filename)
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return -1;
 
-	if ( fgets(line, 1024, fh) == NULL ) return -1;
+	if ( fgets(line, 1024, fh) == NULL ) return 0;
 	fclose(fh);
 
 	if ( strstr(line, "CBF") == NULL ) {
@@ -524,7 +524,7 @@ signed int is_cbfgz_file(const char *filename)
 
 	gzfh = gzopen(filename, "rb");
 	if ( gzfh == NULL ) return -1;
-	if ( gzgets(gzfh, line, 1024) == NULL ) return -1;
+	if ( gzgets(gzfh, line, 1024) == NULL ) return 0;
 	gzclose(gzfh);
 
 	if ( strstr(line, "CBF") == NULL ) {

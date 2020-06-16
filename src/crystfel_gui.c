@@ -138,19 +138,21 @@ static void add_all_events(struct crystfelproject *proj,
                            const char *filename,
                            const DataTemplate *dtempl)
 {
-	struct event_list *events;
+	char **events;
 	int i;
+	int n_events;
 
-	events = image_expand_frames(dtempl, filename);
+	events = image_expand_frames(dtempl, filename, &n_events);
 	if ( events == NULL ) {
 		ERROR("Couldn't expand event list\n");
 		return;
 	}
 
-	for ( i=0; i<events->num_events; i++ ) {
-		add_file_to_project(proj, filename,
-		                    get_event_string(events->events[i]));
+	for ( i=0; i<n_events; i++ ) {
+		add_file_to_project(proj, filename, events[i]);
+		free(events[i]);
 	}
+	free(events);
 }
 
 

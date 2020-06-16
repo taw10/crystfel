@@ -7,7 +7,8 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020 Thomas White <taw@physics.org>
+ *   2020      Thomas White <taw@physics.org>
+ *   2014-2018 Valerio Mariani
  *
  * This file is part of CrystFEL.
  *
@@ -43,6 +44,246 @@
 #include "datatemplate_priv.h"
 
 
+/* Get the path parts of the event ID
+ * e.g. ev_orig = abc/def/ghi//5/2/7
+ *     -> [abc, def, ghi], with *pn_plvals=3 */
+static char **read_path_parts(const char *ev_orig, int *pn_plvals)
+{
+	char **plvals;
+	char *ev;
+	int n_plvals = 0;
+	char *start;
+
+	plvals = malloc(MAX_PATH_PARTS*sizeof(char *));
+	if ( plvals == NULL ) return NULL;
+
+	if ( ev_orig == NULL ) {
+		/* No ev -> no path parts */
+		*pn_plvals = 0;
+		return plvals;
+	}
+
+	ev = strdup(ev_orig);
+	if ( ev == NULL ) return NULL;
+
+	start = ev;
+	do {
+
+		char *sep;
+
+		sep = strchr(start, '/');
+
+		if ( sep == NULL ) {
+			/* This would be very strange, because it
+			 * must at least have // */
+			ERROR("Couldn't read path parts ('%s')\n",
+			      start);
+			free(ev);
+			free(plvals);
+			return NULL;
+		}
+
+		/* Remaining string starts with '/' is end condition */
+		if ( sep == start ) break;
+
+		if ( n_plvals == MAX_PATH_PARTS ) {
+			ERROR("Too many path parts: %s\n", ev_orig);
+			free(ev);
+			free(plvals);
+			return NULL;
+		}
+
+		sep[0] = '\0';
+		plvals[n_plvals++] = strdup(start);
+
+		start = sep+1;
+
+	} while ( 1 );
+
+	free(ev);
+	*pn_plvals = n_plvals;
+	return plvals;
+}
+
+
+/* Get the dimension parts of the event ID
+ * e.g. ev_orig = abc/def/ghi//5/2/7
+ *     -> [5, 2, 7], with *pn_dvals=3 */
+static int *read_dim_parts(const char *ev_orig, int *pn_dvals)
+
+{
+	char *ev;
+	int n_dvals = 0;
+	int *dvals;
+	char *start;
+	int done;
+
+	/* Valid event ID? (Just the part after //, please) */
+	ev = strstr(ev_orig, "//");
+	if ( ev == NULL ) return NULL;
+
+	dvals = malloc(MAX_DIMS*sizeof(int));
+	if ( dvals == NULL ) return NULL;
+
+	if ( ev[2] == '\0' ) {
+		/* No dimension parts - early bailout */
+		*pn_dvals = 0;
+		return dvals;  /* NB Not NULL */
+	}
+
+	ev = strdup(ev+2);
+	if ( ev == NULL ) return NULL;
+
+	start = ev;
+	done = 0;
+	do {
+
+		char *sep = strchr(start, '/');
+
+		if ( sep != NULL ) {
+			sep[0] = '\0';
+		} else {
+			done = 1;
+		}
+
+		if ( n_dvals == MAX_PATH_PARTS ) {
+			ERROR("Too many path parts: %s\n", ev_orig);
+			free(ev);
+			free(dvals);
+			return NULL;
+		}
+
+		if ( start[0] == '\0' ) {
+			ERROR("Missing dimension: %s\n", ev_orig);
+			free(ev);
+			free(dvals);
+			return NULL;
+		}
+
+		dvals[n_dvals++] = atoi(start);
+
+		start = sep+1;
+
+	} while ( !done );
+
+	free(ev);
+	*pn_dvals = n_dvals;
+	return dvals;
+}
+
+
+/* ev = abc/def/ghi//5/2/7
+ * pattern = /data/%/somewhere/%/%/data
+ * output = /data/abc/somewhere/def/ghi/data
+ */
+static char *substitute_path(const char *ev, const char *pattern)
+{
+	char **plvals;
+	int n_plvals;
+	int n_pl_exp;
+	size_t l, total_len;
+	int i;
+	char *subs;
+	const char *start;
+	const char *pl_pos;
+
+	if ( pattern == NULL ) {
+		ERROR("Pattern cannot be NULL\n");
+		return NULL;
+	}
+
+	plvals = read_path_parts(ev, &n_plvals);
+	if ( plvals == NULL ) return NULL;
+
+	l = strlen(pattern);
+	n_pl_exp = 0;
+	for ( i=0; i<l; i++ ) {
+		if ( pattern[i] == '%' ) n_pl_exp++;
+	}
+
+	if ( n_plvals != n_pl_exp ) {
+		ERROR("Wrong number of path placeholders: "
+		      "'%s' into '%s'\n", ev, pattern);
+		return NULL;
+	}
+
+	total_len = strlen(pattern) - n_pl_exp;
+	for ( i=0; i<n_plvals; i++ ) {
+		total_len += strlen(plvals[i]);
+	}
+	subs = malloc(total_len+1);
+	if ( subs == NULL ) {
+		free(plvals);
+		return NULL;
+	}
+	subs[0] = '\0';
+
+	pl_pos = strchr(pattern, '%');
+	if ( pl_pos == NULL ) {
+		ERROR("Expected a placeholder char (%): '%s'\n",
+		      pattern);
+		return NULL;
+	}
+	strncpy(subs, pattern, pl_pos-pattern);
+
+	start = pl_pos+1;
+	for ( i=0; i<n_plvals; i++ ) {
+
+		/* Add the placeholder's value */
+		strcat(subs, plvals[i]);
+		free(plvals[i]);
+
+		/* Add the chars up to the next placeholder... */
+		pl_pos = strchr(start, '%');
+		if ( pl_pos == NULL ) {
+			/* ... or the end */
+			pl_pos = start+strlen(start);
+		}
+		strncat(subs, start, pl_pos-start);
+		start = pl_pos+1;
+	}
+
+	free(plvals);
+
+	return subs;
+}
+
+
+static void make_placeholder_skip(signed int *dt_dims,
+                                  signed int *panel_dims)
+{
+	int i;
+	int n_dt = 0;
+	for ( i=0; i<MAX_DIMS; i++ ) {
+		if ( panel_dims[i] != DIM_PLACEHOLDER ) {
+			dt_dims[n_dt++] = panel_dims[i];
+		}
+	}
+}
+
+
+static int num_placeholders(const struct panel_template *p)
+{
+	int i;
+	int n_pl = 0;
+	for ( i=0; i<MAX_DIMS; i++ ) {
+		if ( p->dims[i] == DIM_PLACEHOLDER ) n_pl++;
+	}
+	return n_pl;
+}
+
+
+static int total_dimensions(const struct panel_template *p)
+{
+	int i;
+	int n_dim = 0;
+	for ( i=0; i<MAX_DIMS; i++ ) {
+		if ( p->dims[i] != DIM_UNDEFINED ) n_dim++;
+	}
+	return n_dim;
+}
+
+
 static int load_hdf5_hyperslab(struct panel_template *p,
                                const char *filename,
                                const char *event,
@@ -51,19 +292,24 @@ static int load_hdf5_hyperslab(struct panel_template *p,
                                int skip_placeholders_ok,
                                const char *path_spec)
 {
-	struct event *ev;
 	hid_t fh;
+	int total_dt_dims;
+	int plh_dt_dims;
+	int dt_dims[MAX_DIMS];
+	int n_dt_dims;
 	herr_t r;
 	hsize_t *f_offset, *f_count;
 	hid_t dh;
-	int hsi;
 	herr_t check;
 	hid_t dataspace, memspace;
 	hsize_t dims[2];
 	char *panel_full_path;
 	void *data;
-	int ndims, dpos;
-	int skip_placeholders = 0;
+	int ndims;
+	int dim;
+	int *dim_vals;
+	int n_dim_vals;
+	int pl_pos;
 
 	if ( access(filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n",
@@ -77,21 +323,18 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		return 1;
 	}
 
-	ev = get_event_from_event_string(event);
-	if ( (ev == NULL) && (event != NULL) ) {
-		ERROR("Invalid event identifier '%s'\n", event);
-		H5Fclose(fh);
+	panel_full_path = substitute_path(event, path_spec);
+	if ( panel_full_path == NULL ) {
+		ERROR("Invalid path substitution: '%s' '%s'\n",
+		      event, path_spec);
 		return 1;
 	}
-
-	panel_full_path = retrieve_full_path(ev, path_spec);
 
 	dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Cannot open data for panel %s (%s)\n",
 		      p->name, panel_full_path);
 		free(panel_full_path);
-		free_event(ev);
 		H5Fclose(fh);
 		return 1;
 	}
@@ -105,71 +348,83 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	if ( ndims < 0 ) {
 		ERROR("Failed to get number of dimensions for panel %s\n",
 		      p->name);
-		free_event(ev);
 		H5Fclose(fh);
 		return 1;
 	}
 
-	if ( ndims != p->dim_structure->num_dims ) {
-		/* Dimensionality doesn't match */
-		int n_nonplaceholder = 0;
-		for ( hsi=0; hsi<p->dim_structure->num_dims; hsi++ ) {
-			if ( p->dim_structure->dims[hsi] != HYSL_PLACEHOLDER ) {
-				n_nonplaceholder++;
-			}
-		}
-
+	/* Does the array have the expected number of dimensions? */
+	total_dt_dims = total_dimensions(p);
+	plh_dt_dims = num_placeholders(p);
+	if ( ndims != total_dt_dims ) {
 		/* If the dimensions match after excluding
 		 * placeholders, it's OK - probably a static mask
 		 * in a multi-event file. */
-		if ( ndims == n_nonplaceholder ) {
-			skip_placeholders = 1;
+		if ( skip_placeholders_ok
+		  && (ndims == total_dt_dims - plh_dt_dims) )
+		{
+			make_placeholder_skip(dt_dims, p->dims);
+			n_dt_dims = total_dt_dims - plh_dt_dims;
+		} else {
+			ERROR("Unexpected number of dimensions for "
+			      "panel %s (%i, but expected %i or %i)\n",
+			      p->name, ndims, total_dt_dims,
+			      total_dt_dims - plh_dt_dims);
+			H5Fclose(fh);
+			return 1;
 		}
+	} else {
+		int i;
+		for ( i=0; i<MAX_DIMS; i++ ) {
+			dt_dims[i] = p->dims[i];
+		}
+		n_dt_dims = total_dt_dims;
 	}
 
 	f_offset = malloc(ndims*sizeof(hsize_t));
 	f_count = malloc(ndims*sizeof(hsize_t));
 	if ( (f_offset == NULL) || (f_count == NULL ) ) {
 		ERROR("Failed to allocate offset or count.\n");
-		free_event(ev);
 		H5Fclose(fh);
 		return 1;
 	}
 
-	dpos = 0;
-	for ( hsi=0; hsi<p->dim_structure->num_dims; hsi++ ) {
+	/* Get those placeholder values from the event ID */
+	dim_vals = read_dim_parts(event, &n_dim_vals);
 
-		switch ( p->dim_structure->dims[hsi] ) {
+	pl_pos = 0;
+	for ( dim=0; dim<n_dt_dims; dim++ ) {
 
-			case HYSL_FS:
-			f_offset[dpos] = p->orig_min_fs;
-			f_count[dpos] = p->orig_max_fs - p->orig_min_fs+1;
-			dpos++;
+		switch ( dt_dims[dim] ) {
+
+			case DIM_FS:
+			f_offset[dim] = p->orig_min_fs;
+			f_count[dim] = p->orig_max_fs - p->orig_min_fs+1;
 			break;
 
-			case HYSL_SS:
-			f_offset[dpos] = p->orig_min_ss;
-			f_count[dpos] = p->orig_max_ss - p->orig_min_ss+1;
-			dpos++;
+			case DIM_SS:
+			f_offset[dim] = p->orig_min_ss;
+			f_count[dim] = p->orig_max_ss - p->orig_min_ss+1;
 			break;
 
-			case HYSL_PLACEHOLDER:
-			if ( !skip_placeholders ) {
-				f_offset[dpos] = ev->dim_entries[0];
-				f_count[dpos] = 1;
-				dpos++;
-			}
+			case DIM_PLACEHOLDER:
+			f_offset[dim] = dim_vals[pl_pos++];
+			f_count[dim] = 1;
+			break;
+
+			case DIM_UNDEFINED:
+			ERROR("Undefined dimension found!\n");
 			break;
 
 			default:
-			f_offset[dpos] = p->dim_structure->dims[hsi];
-			f_count[dpos] = 1;
-			dpos++;
+			/* Fixed value */
+			f_offset[dim] = dt_dims[dim];
+			f_count[dim] = 1;
 			break;
 
 		}
-
 	}
+
+	free(dim_vals);
 
 	check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
@@ -178,7 +433,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		      p->name);
 		free(f_offset);
 		free(f_count);
-		free_event(ev);
 		H5Fclose(fh);
 		return 1;
 	}
@@ -192,7 +446,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		ERROR("Failed to allocate panel %s\n", p->name);
 		free(f_offset);
 		free(f_count);
-		free_event(ev);
 		H5Fclose(fh);
 		return 1;
 	}
@@ -205,7 +458,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		free(f_offset);
 		free(f_count);
 		free(data);
-		free_event(ev);
 		H5Fclose(fh);
 		return 1;
 	}
@@ -214,7 +466,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	H5Sclose(dataspace);
 	free(f_offset);
 	free(f_count);
-	free_event(ev);
 	H5Fclose(fh);
 
 	*pdata = data;
@@ -319,9 +570,10 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	int ndims;
 	int i;
 	char *subst_name = NULL;
-	struct event *ev;
 	hid_t fh;
 	double val;
+	int *dim_vals;
+	int n_dim_vals;
 
 	if ( access(filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n", filename);
@@ -333,14 +585,13 @@ double image_hdf5_get_value(const char *name, const char *filename,
 		ERROR("Couldn't open file: %s\n", filename);
 		return NAN;
 	}
-	ev = get_event_from_event_string(event);
-	if ( (ev == NULL) && (event != NULL) ) {
-		ERROR("Invalid event identifier '%s'\n", event);
+
+	subst_name = substitute_path(event, name);
+	if ( subst_name == NULL ) {
+		ERROR("Invalid event ID '%s'\n", event);
 		H5Fclose(fh);
 		return NAN;
 	}
-
-	subst_name = retrieve_full_path(ev, name);
 
 	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
 	if ( dh < 0 ) {
@@ -371,10 +622,19 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	}
 	H5Sget_simple_extent_dims(sh, size, NULL);
 
+	/* We expect a scalar value */
 	m_offset[0] = 0;
 	m_count[0] = 1;
 	msdims[0] = 1;
-	ms = H5Screate_simple(1,msdims,NULL);
+	ms = H5Screate_simple(1, msdims, NULL);
+
+	dim_vals = read_dim_parts(event, &n_dim_vals);
+	if ( dim_vals == NULL ) {
+		ERROR("Couldn't parse event '%s'\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return NAN;
+	}
 
 	/* Check that the size in all dimensions is 1
 	 * or that one of the dimensions has the same
@@ -547,7 +807,7 @@ static int read_peak_count(hid_t fh, char *path, int line,
 }
 
 
-static float *read_hdf5_data(hid_t fh, char *path, int line)
+static float *read_peak_line(hid_t fh, char *path, int line)
 {
 
 	hid_t dh, sh, mh;
@@ -654,7 +914,6 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	char path_i[1024];
 	int r;
 	int pk;
-	struct event *ev;
 	char *subst_name;
 
 	int line = 0;
@@ -678,22 +937,7 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	ev = get_event_from_event_string(event);
-	if ( (ev == NULL) && (event != NULL) ) {
-		ERROR("Invalid event identifier '%s'\n", event);
-		H5Fclose(fh);
-		return NULL;
-	}
-
-	if ( ev->dim_entries == NULL ) {
-		ERROR("CXI format peak list format selected,"
-		      "but file has no event structure");
-		return NULL;
-	}
-	line = ev->dim_entries[0];
-
-	subst_name = retrieve_full_path(ev, dtempl->peak_list);
-	free_event(ev);
+	subst_name = substitute_path(event, dtempl->peak_list);
 	if ( subst_name == NULL ) {
 		ERROR("Invalid peak path %s\n", subst_name);
 		H5Fclose(fh);
@@ -708,13 +952,13 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	r = read_peak_count(fh, path_n, line, &num_peaks);
 	if ( r != 0 ) return NULL;
 
-	buf_x = read_hdf5_data(fh, path_x, line);
+	buf_x = read_peak_line(fh, path_x, line);
 	if ( r != 0 ) return NULL;
 
-	buf_y = read_hdf5_data(fh, path_y, line);
+	buf_y = read_peak_line(fh, path_y, line);
 	if ( r != 0 ) return NULL;
 
-	buf_i = read_hdf5_data(fh, path_i, line);
+	buf_i = read_peak_line(fh, path_i, line);
 	if ( r != 0 ) return NULL;
 
 	features = image_feature_list_new();
@@ -757,7 +1001,6 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 	float *buf;
 	herr_t r;
 	int tw;
-	struct event *ev;
 	char *subst_name;
 	ImageFeatureList *features;
 	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
@@ -774,29 +1017,21 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	ev = get_event_from_event_string(event);
-	if ( (ev == NULL) && (event != NULL) ) {
-		ERROR("Invalid event identifier '%s'\n", event);
-		H5Fclose(fh);
-		return NULL;
-	}
-
-	subst_name = retrieve_full_path(ev, dtempl->peak_list);
-	free_event(ev);
+	subst_name = substitute_path(event, dtempl->peak_list);
 	if ( subst_name == NULL ) {
-		ERROR("Invalid peak path %s\n", subst_name);
-		free_event(ev);
-		H5Fclose(fh);
+		ERROR("Invalid peak path: '%s' '%s'\n",
+		      event, dtempl->peak_list);
 		return NULL;
 	}
 
 	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
-	free(subst_name);
 	if ( dh < 0 ) {
 		ERROR("Peak list (%s) not found.\n", subst_name);
+		free(subst_name);
 		H5Fclose(fh);
 		return NULL;
 	}
+	free(subst_name);
 
 	sh = H5Dget_space(dh);
 	if ( sh < 0 ) {
@@ -877,221 +1112,6 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 	H5Fclose(fh);
 
 	return features;
-}
-
-
-struct parse_params {
-	hid_t fh;
-	int path_dim;
-	const char *path;
-	struct event *curr_event;
-	struct event_list *ev_list;
-	int top_level;
-};
-
-
-static herr_t parse_file_event_structure(hid_t loc_id, char *name,
-                                         const H5L_info_t *info,
-                                         struct parse_params *pp)
-
-{
-	char *substituted_path;
-	char *ph_loc;
-	char *truncated_path;
-	herr_t herrt_iterate, herrt_info;
-	struct H5O_info_t object_info;
-
-	if ( !pp->top_level ) {
-
-		int fail_push;
-
-		fail_push = push_path_entry_to_event(pp->curr_event, name);
-		if ( fail_push ) {
-			return -1;
-		}
-
-		substituted_path = event_path_placeholder_subst(name, pp->path);
-
-	} else {
-		substituted_path = strdup(pp->path);
-	}
-
-	if ( pp->top_level == 1 ) {
-		pp->top_level = 0;
-	}
-
-	truncated_path = strdup(substituted_path);
-	ph_loc = strstr(substituted_path,"%");
-	if ( ph_loc != NULL) {
-		truncated_path[ph_loc-substituted_path] = '\0';
-	}
-
-	herrt_iterate = 0;
-	herrt_info = 0;
-
-	herrt_info = H5Oget_info_by_name(pp->fh, truncated_path,
-                                 &object_info, H5P_DEFAULT);
-	if ( herrt_info < 0 ) {
-		free(truncated_path);
-		free(substituted_path);
-		return -1;
-	}
-
-	if ( pp->curr_event->path_length == pp->path_dim
-	 &&  object_info.type == H5O_TYPE_DATASET )
-	{
-
-		int fail_append;
-
-		fail_append = append_event_to_event_list(pp->ev_list,
-		                                         pp->curr_event);
-		if ( fail_append ) {
-			free(truncated_path);
-			free(substituted_path);
-			return -1;
-		}
-
-		pop_path_entry_from_event(pp->curr_event);
-		return 0;
-
-	} else {
-
-		pp->path = substituted_path;
-
-		if ( object_info.type == H5O_TYPE_GROUP ) {
-
-			herrt_iterate = H5Literate_by_name(pp->fh,
-			      truncated_path, H5_INDEX_NAME,
-			      H5_ITER_NATIVE, NULL,
-			      (H5L_iterate_t)parse_file_event_structure,
-			      (void *)pp, H5P_DEFAULT);
-		}
-	}
-
-	pop_path_entry_from_event(pp->curr_event);
-
-	free(truncated_path);
-	free(substituted_path);
-
-	return herrt_iterate;
-}
-
-
-static int fill_paths(hid_t fh, const DataTemplate *dtempl, int pi,
-                      struct event_list *master_el)
-{
-	struct parse_params pparams;
-	struct event *empty_event;
-	struct event_list *panel_ev_list;
-	int ei;
-	int check;
-
-	empty_event = initialize_event();
-	panel_ev_list = initialize_event_list();
-	if ( (empty_event == NULL) || (panel_ev_list == NULL) )
-	{
-		ERROR("Failed to allocate memory for event list.\n");
-		return 1;
-	}
-
-	pparams.path = dtempl->panels[pi].data;
-	pparams.fh = fh;
-	pparams.path_dim = dtempl->path_dim;
-	pparams.curr_event = empty_event;
-	pparams.top_level = 1;
-	pparams.ev_list = panel_ev_list;
-
-	check = parse_file_event_structure(fh, NULL, NULL, &pparams);
-	if ( check < 0 ) {
-		free_event(empty_event);
-		free_event_list(panel_ev_list);
-		return 1;
-	}
-
-	for ( ei=0; ei<panel_ev_list->num_events; ei++ ) {
-
-		int fail_add;
-
-		fail_add = add_non_existing_event_to_event_list(master_el,
-		                                     panel_ev_list->events[ei]);
-		if ( fail_add ) {
-			free_event(empty_event);
-			free_event_list(panel_ev_list);
-			return 1;
-		}
-
-	}
-
-	free_event(empty_event);
-	free_event_list(panel_ev_list);
-
-	return 0;
-}
-
-
-static int check_dims(hid_t fh, struct panel_template *p,
-                      struct event *ev,
-                      struct event_list *events, int *global_path_dim)
-{
-	char *full_panel_path;
-	hid_t dh;
-	hid_t sh;
-	int dims;
-	hsize_t *size;
-	hsize_t *max_size;
-	int hsdi;
-	int panel_path_dim = 0;
-	struct dim_structure *panel_dim_structure;
-
-	/* Get the full path for this panel in this event */
-	full_panel_path = retrieve_full_path(ev, p->data);
-
-	dh = H5Dopen2(fh, full_panel_path, H5P_DEFAULT);
-	if ( dh < 0 ) {
-		ERROR("Error opening '%s'\n", full_panel_path);
-		ERROR("Failed to enumerate events.  "
-		      "Check your geometry file.\n");
-		return 1;
-	}
-
-	sh = H5Dget_space(dh);
-	dims = H5Sget_simple_extent_ndims(sh);
-	size = malloc(dims*sizeof(hsize_t));
-	max_size = malloc(dims*sizeof(hsize_t));
-	if ( (size==NULL) || (max_size==NULL) ) {
-		ERROR("Failed to allocate memory for dimensions\n");
-		return 1;
-	}
-
-	dims = H5Sget_simple_extent_dims(sh, size, max_size);
-
-	panel_dim_structure = p->dim_structure;
-	for ( hsdi=0; hsdi<panel_dim_structure->num_dims; hsdi++ ) {
-		if ( panel_dim_structure->dims[hsdi] == HYSL_PLACEHOLDER ) {
-			panel_path_dim = size[hsdi];
-			break;
-		}
-	}
-
-	if ( *global_path_dim == -1 ) {
-
-		*global_path_dim = panel_path_dim;
-
-	} else if ( panel_path_dim != *global_path_dim ) {
-
-		ERROR("All panels must have the same number of frames\n");
-		ERROR("Panel %s has %i frames in one dimension, but the first "
-		      "panel has %i.\n",
-		      p->name, panel_path_dim, *global_path_dim);
-		free(size);
-		free(max_size);
-		return 1;
-	}
-
-	H5Sclose(sh);
-	H5Dclose(dh);
-
-	return 0;
 }
 
 
@@ -1191,5 +1211,5 @@ struct event_list *image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 int is_hdf5_file(const char *filename)
 {
-	return H5Fis_hdf5(filename);
+	return (H5Fis_hdf5(filename) > 0);
 }

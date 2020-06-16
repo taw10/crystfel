@@ -32,6 +32,12 @@
 #ifndef DATATEMPLATE_PRIV_H
 #define DATATEMPLATE_PRIV_H
 
+/* Maximum number of dimensions expected in data files */
+#define MAX_DIMS (16)
+
+/* Maximum number of placeholders expected in path structure */
+#define MAX_PATH_PARTS (16)
+
 enum adu_per_unit
 {
 	ADU_PER_PHOTON,
@@ -54,6 +60,12 @@ struct dt_rg_collection
 	int n_rigid_groups;
 };
 
+
+/* Special values for dimension IDs */
+#define DIM_FS (-1)
+#define DIM_SS (-2)
+#define DIM_UNDEFINED (-3)
+#define DIM_PLACEHOLDER (-4)
 
 /**
  * Represents one panel of a detector
@@ -100,11 +112,11 @@ struct panel_template
 	/** Treat pixel as unreliable if higher than this */
 	double max_adu;
 
-	/** Location of data in file */
+	/** Location of data in file (possibly with placeholders) */
 	char *data;
 
-	/** Dimension structure */
-	struct dim_structure *dim_structure;
+	/** Dimensions (see definitions for DIM_FS etc above) */
+	signed int dims[MAX_DIMS];
 
 	/** \name Transformation matrix from pixel coordinates to lab frame */
 	/*@{*/
@@ -176,9 +188,6 @@ struct _datatemplate
 
 	struct dt_rg_collection  **rigid_group_collections;
 	int                        n_rg_collections;
-
-	int                        path_dim;
-	int                        dim_dim;
 
 	char                      *peak_list;
 

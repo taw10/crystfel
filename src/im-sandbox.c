@@ -112,7 +112,8 @@ struct get_pattern_ctx
 	const DataTemplate *dtempl;
 	const char *prefix;
 	char *filename;
-	struct event_list *events;  /* FIXME: Deprecated */
+	char **events;
+	int n_events;
 	int event_index;
 };
 
@@ -184,11 +185,12 @@ static void check_hung_workers(struct sandbox *sb)
 }
 
 
-static char *read_prefixed_filename(struct get_pattern_ctx *gpctx, char **event)
+static char *read_prefixed_filename(struct get_pattern_ctx *gpctx,
+                                    char **event)
 {
 	char* line;
 
-	if ( event != NULL ) *event = NULL;
+	*event = NULL;
 
 	line = malloc(1024);
 	if ( line == NULL ) return NULL;
@@ -206,20 +208,18 @@ static char *read_prefixed_filename(struct get_pattern_ctx *gpctx, char **event)
 
 	} while ( line[0] == '\0' );
 
-	/* Chop off event ID if requested */
-	if ( event != NULL ) {
-		size_t n = strlen(line);
-		while ( line[n] != ' ' && n > 2 ) n--;
-		if ( n != 2 ) {
-			/* Event descriptor must contain "//".
-			* If it doesn't, assume the filename just contains a
-			* space. */
-			if ( strstr(&line[n], "//") != NULL ) {
-				line[n] = '\0';
-				*event = strdup(&line[n+1]);
-			}
-		} /* else no spaces at all */
-	}
+	/* Chop off event ID */
+	size_t n = strlen(line);
+	while ( line[n] != ' ' && n > 2 ) n--;
+	if ( n != 2 ) {
+		/* Event descriptor must contain "//".
+		 * If it doesn't, assume the filename just contains a
+		 * space. */
+		if ( strstr(&line[n], "//") != NULL ) {
+			line[n] = '\0';
+			*event = strdup(&line[n+1]);
+		}
+	} /* else no spaces at all */
 
 	if ( gpctx->use_basename ) {
 		char *tmp;
@@ -256,10 +256,10 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 
 	/* Is an event available already? */
 	if ( (gpctx->events != NULL)
-	  && (gpctx->event_index < gpctx->events->num_events) )
+	  && (gpctx->event_index < gpctx->n_events) )
 	{
-		*pfilename = strdup(gpctx->filename);
-		*pevent = get_event_string(gpctx->events->events[gpctx->event_index++]);
+		*pfilename = gpctx->filename;
+		*pevent = gpctx->events[gpctx->event_index++];
 		return 1;
 	}
 
@@ -272,13 +272,17 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 	/* Does the line from the input file contain an event ID?
 	 * If so, just send it straight back. */
 	if ( evstr != NULL ) {
-		*pfilename = strdup(filename);
-		*pevent = strdup(evstr);
+		*pfilename = filename;
+		*pevent = evstr;
 		return 1;
 	}
 
-	free_event_list(gpctx->events);
-	gpctx->events = image_expand_frames(gpctx->dtempl, filename);
+	/* We got a filename, but no event.  Attempt to expand... */
+	free(gpctx->events);  /* Free the old list.
+	                       * NB The actual strings were freed
+	                       * by fill_queue */
+	gpctx->events = image_expand_frames(gpctx->dtempl, filename,
+	                                    &gpctx->n_events);
 	if ( gpctx->events == NULL ) {
 		ERROR("Failed to get event list.\n");
 		return 0;
@@ -289,8 +293,8 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 	gpctx->filename = filename;
 
 	gpctx->event_index = 0;
-	*pfilename = strdup(gpctx->filename);
-	*pevent = get_event_string(gpctx->events->events[gpctx->event_index++]);
+	*pfilename = gpctx->filename;
+	*pevent = gpctx->events[gpctx->event_index++];
 	return 1;
 }
 
@@ -788,6 +792,7 @@ static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 		snprintf(sb->shared->queue[sb->shared->n_events++], MAX_EV_LEN,
 		         "%s %s %i", filename, evstr, sb->serial++);
 		sem_post(sb->queue_sem);
+		free(evstr);
 
 	}
 	return 0;

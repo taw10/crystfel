@@ -287,12 +287,12 @@ static double get_value(struct image *image, const char *from)
 	val = strtod(from, &rval);
 	if ( (*rval == '\0') && (rval != from) ) return val;
 
-	if ( is_hdf5_file(image->filename) > 0 ) {
+	if ( is_hdf5_file(image->filename) ) {
 		return image_hdf5_get_value(from,
 		                            image->filename,
 		                            image->ev);
 
-	} else if ( is_cbf_file(image->filename) > 0 ) {
+	} else if ( is_cbf_file(image->filename) ) {
 		/* FIXME: From headers */
 		return NAN;
 
@@ -474,10 +474,10 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 		return NULL;
 	}
 
-	if ( is_hdf5_file(filename) > 0 ) {
+	if ( is_hdf5_file(filename) ) {
 		image = image_hdf5_read(dtempl, filename, event);
 
-	} else if ( is_cbf_file(filename) > 0 ) {
+	} else if ( is_cbf_file(filename) ) {
 		image = image_cbf_read(dtempl, filename, event, 0);
 
 	} else if ( is_cbfgz_file(filename) ) {
@@ -545,13 +545,13 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 			} else {
 				mask_fn = p->mask_file;
 			}
-			if ( is_hdf5_file(mask_fn) > 0 ) {
+			if ( is_hdf5_file(mask_fn) ) {
 				image_hdf5_read_mask(p, mask_fn, event,
 				                     image->bad[i],
 				                     dtempl->mask_good,
 				                     dtempl->mask_bad);
 
-			} else if ( is_cbf_file(filename) > 0 ) {
+			} else if ( is_cbf_file(filename) ) {
 				image_cbf_read_mask(p, mask_fn, event,
 				                    0, image->bad[i],
 				                    dtempl->mask_good,
@@ -645,7 +645,7 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
                                    const char *event,
                                    int half_pixel_shift)
 {
-	if ( is_hdf5_file(filename) > 0 ) {
+	if ( is_hdf5_file(filename) ) {
 
 		const char *ext;
 		ext = filename_extension(filename, NULL);
@@ -669,11 +669,16 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 }
 
 
-struct event_list *image_expand_frames(const DataTemplate *dtempl,
-                                       const char *filename)
+char **image_expand_frames(const DataTemplate *dtempl,
+                           const char *filename, int *n_frames)
 {
-	/* FIXME: Dispatch to other versions, e.g. CBF files */
-	return image_hdf5_expand_frames(dtempl, filename);
+	if ( is_hdf5_file(filename) ) {
+		return image_hdf5_expand_frames(dtempl, filename,
+		                                n_frames);
+	} else {
+		ERROR("Can only expand HDF5 files\n");
+		return NULL;
+	}
 }
 
 

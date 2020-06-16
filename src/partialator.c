@@ -484,7 +484,7 @@ static struct custom_split *load_custom_split(const char *filename)
 			ds = bits[2];
 		} else {
 			fn = bits[0];
-			evs = get_event_string(NULL);
+			evs = strdup("(none)");
 			ds = bits[1];
 		}
 		free(bits);
