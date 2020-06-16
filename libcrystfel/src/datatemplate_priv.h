@@ -168,8 +168,6 @@ struct _datatemplate
 	double                     photon_energy_bandwidth;  /* Eww */
 	double                     photon_energy_scale;      /* Eww */
 
-	char                      *peak_info_location;
-
 	unsigned int               mask_bad;
 	unsigned int               mask_good;
 

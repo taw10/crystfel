@@ -732,7 +732,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->rigid_group_collections = NULL;
 	dt->photon_energy_bandwidth = -1.0;
 	dt->photon_energy_scale = -1.0;
-	dt->peak_info_location = NULL;
+	dt->peak_list = NULL;
 
 	/* The default defaults... */
 	dt->defaults.orig_min_fs = -1;
