@@ -207,6 +207,15 @@ static char *substitute_path(const char *ev, const char *pattern)
 		return NULL;
 	}
 
+	if ( n_pl_exp == 0 ) {
+		/* No placeholders in path */
+		for ( i=0; i<n_plvals; i++ ) {
+			free(plvals[i]);
+		}
+		free(plvals);
+		return strdup(pattern);
+	}
+
 	total_len = strlen(pattern) - n_pl_exp;
 	for ( i=0; i<n_plvals; i++ ) {
 		total_len += strlen(plvals[i]);
