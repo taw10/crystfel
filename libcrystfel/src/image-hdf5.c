@@ -575,7 +575,6 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	hsize_t size[64];
 	herr_t r;
 	herr_t check;
-	int dim_flag;
 	int ndims;
 	int i;
 	char *subst_name = NULL;
@@ -583,6 +582,7 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	double val;
 	int *dim_vals;
 	int n_dim_vals;
+	int dim_val_pos;
 
 	if ( access(filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n", filename);
@@ -645,81 +645,74 @@ double image_hdf5_get_value(const char *name, const char *filename,
 		return NAN;
 	}
 
-	/* Check that the size in all dimensions is 1
-	 * or that one of the dimensions has the same
-	 * size as the hyperplane events */
-
-	dim_flag = 0;
-
-	for ( i=0; i<ndims; i++ ) {
-		if ( size[i] == 1 ) continue;
-		if ( ( i==0 ) && (ev != NULL) && (size[i] > ev->dim_entries[0]) ) {
-			dim_flag = 1;
-		} else {
-			H5Tclose(type);
-			H5Dclose(dh);
-			return NAN;
-		}
+	f_offset = malloc(ndims*sizeof(hsize_t));
+	f_count = malloc(ndims*sizeof(hsize_t));
+	if ( (f_offset == NULL) || (f_count == NULL) ) {
+		ERROR("Couldn't allocate dimension arrays\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return NAN;
 	}
 
-	if ( dim_flag == 0 ) {
+	/* Every dimension of the dataset must either be size 1 or
+	 * large enough to contain the next value from the event ID */
+	dim_val_pos = 0;
+	for ( i=0; i<ndims; i++ ) {
 
-		if ( H5Dread(dh, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-		             H5P_DEFAULT, &val) < 0 )
-		{
-			ERROR("Couldn't read value.\n");
-			H5Tclose(type);
-			H5Dclose(dh);
-			return NAN;
-		}
+		if ( size[i] != 1 ) {
 
-	} else {
-
-		f_offset = malloc(ndims*sizeof(hsize_t));
-		f_count = malloc(ndims*sizeof(hsize_t));
-
-		for ( i=0; i<ndims; i++ ) {
-
-			if ( i == 0 ) {
-				f_offset[i] = ev->dim_entries[0];
-				f_count[i] = 1;
-			} else {
-				f_offset[i] = 0;
-				f_count[i] = 0;
+			if ( size[i] <= dim_vals[dim_val_pos] ) {
+				ERROR("Array of scalar values is too "
+				      "small (%s, dim %i, ev value %i,"
+				      " size %i)\n",
+				      subst_name, i,
+				      dim_vals[dim_val_pos], size[i]);
+				return NAN;
 			}
 
-		}
+			f_offset[i] = dim_vals[dim_val_pos];
+			f_count[i] = 1;
+			dim_val_pos++;
 
-		check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
-		                            f_offset, NULL, f_count, NULL);
-		if ( check <0 ) {
-			ERROR("Error selecting dataspace for float value");
-			free(f_offset);
-			free(f_count);
-			return NAN;
-		}
+		} else {
 
-		ms = H5Screate_simple(1,msdims,NULL);
-		check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
-		                            m_offset, NULL, m_count, NULL);
-		if ( check < 0 ) {
-			ERROR("Error selecting memory dataspace for float value");
-			free(f_offset);
-			free(f_count);
-			return NAN;
-		}
+			f_offset[i] = 0;
+			f_count[i] = 1;
 
-		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
-		if ( r < 0 )  {
-			ERROR("Couldn't read value.\n");
-			H5Tclose(type);
-			H5Dclose(dh);
-			return NAN;
 		}
 
 	}
 
-	free_event(ev);
+	check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
+	                            f_offset, NULL, f_count, NULL);
+	if ( check <0 ) {
+		ERROR("Error selecting dataspace for float value");
+		free(f_offset);
+		free(f_count);
+		return NAN;
+	}
+
+	ms = H5Screate_simple(1,msdims,NULL);
+	check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
+	                            m_offset, NULL, m_count, NULL);
+	if ( check < 0 ) {
+		ERROR("Error selecting memory dataspace for float value");
+		free(f_offset);
+		free(f_count);
+		return NAN;
+	}
+
+	r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
+	if ( r < 0 )  {
+		ERROR("Couldn't read value.\n");
+		H5Tclose(type);
+		H5Dclose(dh);
+		return NAN;
+	}
+
+	free(f_offset);
+	free(f_count);
+	H5Tclose(type);
 	free(subst_name);
 	H5Fclose(fh);
 
