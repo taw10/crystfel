@@ -917,13 +917,13 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	int r;
 	int pk;
 	char *subst_name;
-
-	int line = 0;
+	int line;
 	int num_peaks;
-
 	float *buf_x;
 	float *buf_y;
 	float *buf_i;
+	int *dim_vals;
+	int n_dim_vals;
 
 	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
 
@@ -933,23 +933,37 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	if ( fh < 0 ) {
-		ERROR("Couldn't open file: %s\n", filename);
-		return NULL;
-	}
-
 	subst_name = substitute_path(event, dtempl->peak_list);
 	if ( subst_name == NULL ) {
 		ERROR("Invalid peak path %s\n", subst_name);
-		H5Fclose(fh);
 		return NULL;
 	}
+
+	dim_vals = read_dim_parts(event, &n_dim_vals);
+	if ( dim_vals == NULL ) {
+		ERROR("Couldn't parse event '%s'\n");
+		return NULL;
+	}
+
+	if ( n_dim_vals < 1 ) {
+		ERROR("Not enough dimensions in event ID to use CXI "
+		      "peak lists (%i)\n", n_dim_vals);
+		return NULL;
+	}
+
+	line = dim_vals[0];
+	free(dim_vals);
 
 	snprintf(path_n, 1024, "%s/nPeaks", subst_name);
 	snprintf(path_x, 1024, "%s/peakXPosRaw", subst_name);
 	snprintf(path_y, 1024, "%s/peakYPosRaw", subst_name);
 	snprintf(path_i, 1024, "%s/peakTotalIntensity", subst_name);
+
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't open file: %s\n", filename);
+		return NULL;
+	}
 
 	r = read_peak_count(fh, path_n, line, &num_peaks);
 	if ( r != 0 ) return NULL;
