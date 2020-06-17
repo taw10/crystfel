@@ -915,6 +915,16 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	num_mask_pl = num_path_placeholders(dt->panels[i].mask);
 	num_satmap_pl = num_path_placeholders(dt->panels[i].satmap);
 
+	/* This is because the "data" path will be used to expand
+	 * the path to generate the event list */
+	if ( (num_mask_pl > num_data_pl)
+	  || (num_satmap_pl > num_data_pl) )
+	{
+		ERROR("Mask and saturation map paths must have fewer "
+		      "placeholders than image data path.\n");
+		reject = 1;
+	}
+
 	for ( i=0; i<dt->n_panels; i++ ) {
 
 		struct panel_template *p = &dt->panels[i];
