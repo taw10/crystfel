@@ -628,6 +628,7 @@ static int parse_field_bad(struct dt_badregion *badr, const char *key,
 	return reject;
 }
 
+
 static void parse_toplevel(DataTemplate *dt,
                            const char *key, const char *val,
                            struct rg_definition ***rg_defl,
