@@ -711,6 +711,22 @@ static void parse_toplevel(DataTemplate *dt,
 }
 
 
+static int num_path_placeholders(const char *str)
+{
+	size_t i, len;
+	int n_pl;
+
+	if ( str == NULL ) return 0;
+
+	len = strlen(str);
+	for ( i=0; i<len; i++ ) {
+		if ( str[i] == '%' ) n_pl++;
+	}
+
+	return n_pl;
+}
+
+
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;
@@ -726,6 +742,9 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	char *string;
 	char *string_orig;
 	size_t len;
+	int num_data_pl;
+	int num_mask_pl;
+	int num_satmap_pl;
 
 	dt = calloc(1, sizeof(DataTemplate));
 	if ( dt == NULL ) return NULL;
@@ -892,6 +911,10 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		return NULL;
 	}
 
+	num_data_pl = num_path_placeholders(dt->panels[i].data);
+	num_mask_pl = num_path_placeholders(dt->panels[i].mask);
+	num_satmap_pl = num_path_placeholders(dt->panels[i].satmap);
+
 	for ( i=0; i<dt->n_panels; i++ ) {
 
 		struct panel_template *p = &dt->panels[i];
@@ -960,6 +983,24 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			ERROR("You have specified 'mask_file' but not 'mask'.  "
 			      "'mask_file' will therefore have no effect.  "
 			      "(panel %s)\n", p->name);
+			reject = 1;
+		}
+
+		if ( num_path_placeholders(p->data) != num_data_pl ) {
+			ERROR("Data locations for all panels must "
+			      "have the same number of placeholders\n");
+			reject = 1;
+		}
+
+		if ( num_path_placeholders(p->mask) != num_mask_pl ) {
+			ERROR("Mask locations for all panels must "
+			      "have the same number of placeholders\n");
+			reject = 1;
+		}
+
+		if ( num_path_placeholders(p->satmap) != num_satmap_pl ) {
+			ERROR("Satmap locations for all panels must "
+			      "have the same number of placeholders\n");
 			reject = 1;
 		}
 
