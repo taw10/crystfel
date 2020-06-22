@@ -1,3 +1,21 @@
+CrystFEL version 0.9.1, 22nd June 2020
+-------------------------------------
+
+- indexamajig: Fixed default unit cell tolerance (was 1.5 rad, now 1.5 deg)
+- Fixed bug in unit cell reduction/comparison
+- Improved the sigma estimate for very weak reflections
+- Fixed bug when indexing with rhombohedral R cells
+- indexamajig: Added --pinkIndexer-max-refinement-disbalance
+- Fixed two problems when reading metadata values from HDF5
+- partialator: Gracefully handle negative and NaN sigma values
+- scripts/transfer-geom: Now only writes coffset for panels which had
+  coffset values before
+- Fixed/improved pinkIndexer documentation and error messages
+- Fixed build with zlib < 1.2.3.5 (missing gzbuffer routine)
+- Fixed build with HDF5 >= 1.12
+- scripts/mtz2hkl, cif2hkl, hkl2hkl: Added missing header
+
+
 CrystFEL version 0.9.0, 6th February 2020
 -----------------------------------------
 

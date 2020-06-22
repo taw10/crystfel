@@ -1,0 +1,90 @@
+CrystFEL - Data processing for serial crystallography
+-----------------------------------------------------
+
+Release notes for version 0.9.1
+
+Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+                      a research centre of the Helmholtz Association.
+
+Authors:
+  Thomas White <taw@physics.org>
+  Richard Kirian <rkirian@asu.edu>
+  Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+  Andrew Aquila <andrew.aquila@cfel.de>
+  Andrew Martin <andrew.martin@desy.de>
+  Lorenzo Galli <lorenzo.galli@desy.de>
+  Chun Hong Yoon <chun.hong.yoon@desy.de>
+  Karol Nass <karol.nass@desy.de>
+  Nadia Zatsepin <nadia.zatsepin@asu.edu>
+  Anton Barty <anton.barty@desy.de>
+  Cornelius Gati <cornelius.gati@desy.de>
+  Fedor Chervinskii <fedor.chervinskii@gmail.com>
+  Alexandra Tolstikova <alexandra.tolstikova@desy.de>
+  Wolfgang Brehm <wolfgang.brehm@gmail.com>
+  Valerio Mariani <valerio.mariani@desy.de>
+  Parker de Waal <Parker.deWaal@vai.org>
+  Takanori Nakane <nakane.t@gmail.com>
+  Keitaro Yamashita <k.yamashita@spring8.or.jp>
+  Oleksandr Yefanov <oleksandr.yefanov@cfel.de>
+  Steve Aplin <steve.aplin@desy.de>
+  Helen Ginn <helen@strubi.ox.ac.uk>
+  Thomas Grant <tgrant@hwi.buffalo.edu>
+  Mamoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>
+  Nicolas Riebesel <nicolas.riebesel@tuhh.de>
+  Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
+  Omri Mor <omor1@asu.edu>
+
+CrystFEL is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+CrystFEL is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Overview
+--------
+
+This is a maintenance and bug-fixing release which fixes a few issues which
+crept into CrystFEL 0.9.0.  Here are the detils, in roughly decreasing
+order of importance:
+
+1. The unit cell comparision function, which was completely re-written for
+   CrystFEL 0.9.0, was updated to fix a mis-indexing problem with certain
+   types of unit cell.  This may increase indexing rate or fix wrong output
+   cells in those cases.
+
+2. The default unit cell angle tolerance, which was accidentally set to
+   1.5 radians in CrystFEL 0.9.0, was re-set to 1.5 degrees.
+
+3. Build compatability was added with very new HDF5 versions (>= 1.12) and
+   older versions of zlib (< 1.2.3.5).
+
+4. A problem was fixed in indexamajig when reading metadata from certain
+   HDF5 structures (arrays of fixed length strings).
+
+5. The sigma(I) estimates for very weakly negative (unmerged) reflections
+   were improved.
+
+6. PinkIndexer logic fixes and documentation improvements, and addition of
+   "--pinkIndexer-max-refinement-disbalance" option to indexamajig.
+
+7. General documentation improvements.
+
+For your convenience, the announcement and release notes for the previous
+version (CrystFEL 0.9.0) have been included with version 0.9.1.  If you're
+upgrading from CrystFEL 0.8.0, you should check those files as well.
+As always, you can find more details in the "ChangeLog" or the changes page
+on the CrystFEL website.
+
+
+API changes
+-----------
+
+"maxRefinementDisbalance" was added to "struct pinkIndexer_options".
+No other API changes.
