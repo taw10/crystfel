@@ -1131,10 +1131,221 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 }
 
 
-struct event_list *image_hdf5_expand_frames(const DataTemplate *dtempl,
-                                            const char *filename)
+/* This could be extended, later, to include patterns other than just
+ * a literal string (no placeholders) and just %.  However, pattern
+ * matching is in general not that easy. */
+static char *matches_pattern(const char *name, const char *pattern,
+                             const char *ev_str_old)
 {
-	struct event_list *master_el;
+	if ( strcmp(pattern, "%") == 0 ) {
+		char *nstr = malloc(strlen(ev_str_old)+strlen(name)+2);
+		if ( nstr == NULL ) {
+			ERROR("Couldn't allocate memory\n");
+			return NULL;
+		}
+		strcpy(nstr, ev_str_old);
+		strcat(nstr, "/");
+		strcat(nstr, name);
+		return nstr;
+	} else {
+		if ( strcmp(name, pattern) == 0 ) {
+			return strdup(ev_str_old);
+		} else {
+			return NULL;
+		}
+	}
+}
+
+
+/* Private structure, just to avoid passing char *** around */
+struct ev_list
+{
+	char **events;
+	int n_events;
+	int max_events;
+};
+
+
+static void add_to_list(struct ev_list *list, char *ev_str)
+{
+	if ( list->n_events == list->max_events ) {
+		char **new_events = realloc(list->events,
+		                            (list->max_events+128)*sizeof(char *));
+		if ( new_events == NULL ) return;
+		list->max_events += 128;
+		list->events = new_events;
+	}
+
+	list->events[list->n_events++] = ev_str;
+}
+
+
+static int rec_expand_paths(hid_t gh, struct ev_list *list,
+                            const char *ev_str,
+                            char **pattern_bits, int n_pattern_bits)
+{
+	int i;
+	H5G_info_t group_info;
+
+	if ( H5Gget_info(gh, &group_info) < 0 ) {
+		ERROR("Couldn't get group info\n");
+		return 1;
+	}
+
+	for ( i=0; i<group_info.nlinks; i++ ) {
+
+		ssize_t size;
+		char *name;
+		H5O_info_t obj_info;
+		char *ev_str_new;
+
+		size = H5Lget_name_by_idx(gh, ".", H5_INDEX_NAME,
+		                          H5_ITER_INC, i, NULL, 0,
+		                          H5P_DEFAULT);
+		if ( (size < 0) || (size > 20000) ) {
+			ERROR("Couldn't get link name\n");
+			return 1;
+		}
+
+		name = malloc(size+1);
+		if ( name == NULL ) {
+			ERROR("Couldn't allocate memory\n");
+			return 1;
+		}
+
+		if ( H5Lget_name_by_idx(gh, ".", H5_INDEX_NAME,
+		                        H5_ITER_INC, i, name, size+1,
+		                        H5P_DEFAULT) < 0 )
+		{
+			ERROR("Couldn't get name\n");
+			return 1;
+		}
+
+		ev_str_new = matches_pattern(name, pattern_bits[0],
+		                             ev_str);
+		if ( ev_str_new == NULL ) {
+			free(name);
+			continue;
+		}
+
+		if ( H5Oget_info_by_idx(gh, ".", H5_INDEX_NAME,
+		                        H5_ITER_INC, i, &obj_info, 0) )
+		{
+			ERROR("Couldn't get info\n");
+			free(name);
+			free(ev_str_new);
+			return 1;
+		}
+
+		if ( obj_info.type == H5O_TYPE_GROUP ) {
+
+			hid_t child_gh;
+
+			if ( n_pattern_bits == 0 ) {
+				ERROR("Pattern doesn't match file"
+				      " (too short)\n");
+				free(name);
+				free(ev_str_new);
+				return 1;
+			}
+
+			child_gh = H5Gopen1(gh, name);
+			if ( child_gh < 0 ) {
+				ERROR("Couldn't open '%s'\n", name);
+				free(name);
+				free(ev_str_new);
+				return 1;
+			}
+
+			if ( rec_expand_paths(child_gh, list,
+			                      ev_str_new,
+			                      &pattern_bits[1],
+			                      n_pattern_bits - 1) )
+			{
+				free(name);
+				free(ev_str_new);
+				return 1;
+			}
+
+			free(ev_str_new);
+			H5Gclose(child_gh);
+
+		} else if ( obj_info.type == H5O_TYPE_DATASET ) {
+
+			if ( n_pattern_bits != 1 ) {
+				ERROR("Pattern doesn't match file"
+				      " (too long by %i)\n",
+				      n_pattern_bits);
+				free(name);
+				free(ev_str_new);
+				return 1;
+			}
+
+			add_to_list(list, ev_str_new);
+
+		}
+
+		free(name);
+
+	}
+
+	return 0;
+}
+
+
+static char **expand_paths(hid_t fh, char *pattern, int *n_evs)
+{
+	int n_sep;
+	size_t len;
+	char **pattern_bits;
+	struct ev_list list;
+	int i;
+	char *start;
+
+	if ( pattern == NULL ) return NULL;
+	if ( pattern[0] != '/' ) return NULL;
+
+	/* Chop up the pattern into path bits */
+	len = strlen(pattern);
+	n_sep = 0;
+	for ( i=0; i<len; i++ ) {
+		if ( pattern[i] == '/' ) n_sep++;
+	}
+
+	pattern_bits = malloc(n_sep*sizeof(char *));
+	if ( pattern_bits == NULL ) return NULL;
+
+	start = pattern+1;
+	for ( i=0; i<n_sep; i++ ) {
+		char *sep = strchr(start, '/');
+		assert(sep != NULL);
+		pattern_bits[i] = strndup(start, sep-start);
+		if ( pattern_bits[i] == NULL ) return NULL;
+		start = sep+1;
+	}
+
+	list.n_events = 0;
+	list.max_events = 0;
+	list.events = NULL;
+
+	rec_expand_paths(fh, &list, "", pattern_bits, n_sep);
+
+	for ( i=0; i<n_sep; i++ ) {
+		free(pattern_bits[i]);
+	}
+	free(pattern_bits);
+
+	*n_evs = list.n_events;
+	return list.events;
+}
+
+
+char **image_hdf5_expand_frames(const DataTemplate *dtempl,
+                                const char *filename,
+                                int *pn_frames)
+{
+	char **frames = NULL;
+	int n_frames;
 	hid_t fh;
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
