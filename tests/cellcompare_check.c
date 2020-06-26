@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
 	UnitCell *cell, *cref;
 	gsl_rng *rng;
 	int i;
-	const int ntrial = 10;
+	const int ntrial = 5;
 	double tols[] = { 0.01, 0.01, 0.01,
 	                  deg2rad(1.0), deg2rad(1.0), deg2rad(1.0) };
 
