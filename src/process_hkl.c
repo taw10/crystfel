@@ -455,10 +455,6 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 				if ( r == 0 ) n_crystals_used++;
 			}
 
-			reflist_free(crystal_get_reflections(cr));
-			cell_free(crystal_get_cell(cr));
-			crystal_free(cr);
-
 			if ( n_crystals_used == stop_after ) break;
 
 		}

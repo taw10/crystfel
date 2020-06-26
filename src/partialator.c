@@ -551,7 +551,6 @@ static RefList *apply_max_adu(RefList *list, double max_adu)
 			copy_data(nrefl, refl);
 		}
 	}
-	reflist_free(list);
 	return nlist;
 }
 
@@ -1405,7 +1404,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			crystals = crystals_new;
-			crystals[n_crystals] = image->crystals[i];
+			crystals[n_crystals] = crystal_copy_deep(image->crystals[i]);
 			cr = crystals[n_crystals];
 
 			/* Create a completely new, separate image
