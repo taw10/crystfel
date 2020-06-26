@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 	cell = cell_new();
 	cell_set_lattice_type(cell, L_CUBIC);
 	cell_set_centering(cell, 'P');
-	cell_set_parameters(cell, 800.0e-10, 800.0e-10, 800.0e-10,
+	cell_set_parameters(cell, 200.0e-10, 200.0e-10, 200.0e-10,
 	                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
 	cell = cell_rotate(cell, random_quaternion(rng));
 
