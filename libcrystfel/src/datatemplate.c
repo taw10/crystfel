@@ -58,30 +58,29 @@ struct rgc_definition {
 };
 
 
-static struct panel_template *new_panel(DataTemplate *det, const char *name)
+static struct panel_template *new_panel(DataTemplate *det,
+                                        const char *name,
+                                        struct panel_template *defaults)
 {
-	struct panel_template *copyme;
 	struct panel_template *new;
-
-	copyme = &det->defaults;
 
 	det->n_panels++;
 	det->panels = realloc(det->panels,
 	                      det->n_panels*sizeof(struct panel_template));
 
 	new = &det->panels[det->n_panels-1];
-	memcpy(new, copyme, sizeof(struct panel_template));
+	memcpy(new, defaults, sizeof(struct panel_template));
 
 	/* Set name */
 	new->name = strdup(name);
 
 	/* Copy strings */
-	new->cnz_from = safe_strdup(copyme->cnz_from);
-	new->data = safe_strdup(copyme->data);
-	new->mask = safe_strdup(copyme->mask);
-	new->mask_file = safe_strdup(copyme->mask_file);
-	new->satmap = safe_strdup(copyme->satmap);
-	new->satmap_file = safe_strdup(copyme->satmap_file);
+	new->cnz_from = safe_strdup(defaults->cnz_from);
+	new->data = safe_strdup(defaults->data);
+	new->mask = safe_strdup(defaults->mask);
+	new->mask_file = safe_strdup(defaults->mask_file);
+	new->satmap = safe_strdup(defaults->satmap);
+	new->satmap_file = safe_strdup(defaults->satmap_file);
 
 	return new;
 }
@@ -632,8 +631,9 @@ static int parse_field_bad(struct dt_badregion *badr, const char *key,
 static void parse_toplevel(DataTemplate *dt,
                            const char *key, const char *val,
                            struct rg_definition ***rg_defl,
-                           struct rgc_definition ***rgc_defl, int *n_rg_defs,
-                           int *n_rgc_defs)
+                           struct rgc_definition ***rgc_defl,
+                           int *n_rg_defs, int *n_rgc_defs,
+                           struct panel_template *defaults)
 {
 
 	if ( strcmp(key, "mask_bad") == 0 ) {
@@ -655,7 +655,7 @@ static void parse_toplevel(DataTemplate *dt,
 		}
 
 	} else if ( strcmp(key, "coffset") == 0 ) {
-		dt->defaults.cnz_offset = atof(val);
+		defaults->cnz_offset = atof(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		/* Will be expanded when image is loaded */
@@ -705,7 +705,7 @@ static void parse_toplevel(DataTemplate *dt,
 		(*rgc_defl)[*n_rgc_defs]->rgs = strdup(val);
 		*n_rgc_defs = *n_rgc_defs+1;
 
-	} else if ( parse_field_for_panel(&dt->defaults, key, val, dt) ) {
+	} else if ( parse_field_for_panel(defaults, key, val, dt) ) {
 		ERROR("Unrecognised top level field '%s'\n", key);
 	}
 }
@@ -745,6 +745,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	int num_data_pl;
 	int num_mask_pl;
 	int num_satmap_pl;
+	struct panel_template defaults;
 
 	dt = calloc(1, sizeof(DataTemplate));
 	if ( dt == NULL ) return NULL;
@@ -764,36 +765,36 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->peak_list = NULL;
 
 	/* The default defaults... */
-	dt->defaults.orig_min_fs = -1;
-	dt->defaults.orig_min_ss = -1;
-	dt->defaults.orig_max_fs = -1;
-	dt->defaults.orig_max_ss = -1;
-	dt->defaults.cnx = NAN;
-	dt->defaults.cny = NAN;
-	dt->defaults.cnz_from = NULL;
-	dt->defaults.cnz_offset = 0.0;
-	dt->defaults.pixel_pitch = -1.0;
-	dt->defaults.bad = 0;
-	dt->defaults.fsx = 1.0;
-	dt->defaults.fsy = 0.0;
-	dt->defaults.fsz = 0.0;
-	dt->defaults.ssx = 0.0;
-	dt->defaults.ssy = 1.0;
-	dt->defaults.ssz = 0.0;
-        dt->defaults.rail_x = NAN;  /* The actual default rail direction */
-        dt->defaults.rail_y = NAN;  /*  is below */
-        dt->defaults.rail_z = NAN;
-        dt->defaults.clen_for_centering = NAN;
-	dt->defaults.adu_scale = NAN;
-	dt->defaults.adu_scale_unit = ADU_PER_PHOTON;
-	dt->defaults.max_adu = +INFINITY;
-	dt->defaults.mask = NULL;
-	dt->defaults.mask_file = NULL;
-	dt->defaults.satmap = NULL;
-	dt->defaults.satmap_file = NULL;
-	dt->defaults.data = NULL;
-	for ( i=0; i<MAX_DIMS; i++ ) dt->defaults.dims[i] = DIM_UNDEFINED;
-	dt->defaults.name = NULL;
+	defaults.orig_min_fs = -1;
+	defaults.orig_min_ss = -1;
+	defaults.orig_max_fs = -1;
+	defaults.orig_max_ss = -1;
+	defaults.cnx = NAN;
+	defaults.cny = NAN;
+	defaults.cnz_from = NULL;
+	defaults.cnz_offset = 0.0;
+	defaults.pixel_pitch = -1.0;
+	defaults.bad = 0;
+	defaults.fsx = 1.0;
+	defaults.fsy = 0.0;
+	defaults.fsz = 0.0;
+	defaults.ssx = 0.0;
+	defaults.ssy = 1.0;
+	defaults.ssz = 0.0;
+	defaults.rail_x = NAN;  /* The actual default rail direction */
+	defaults.rail_y = NAN;  /*  is below */
+	defaults.rail_z = NAN;
+        defaults.clen_for_centering = NAN;
+	defaults.adu_scale = NAN;
+	defaults.adu_scale_unit = ADU_PER_PHOTON;
+	defaults.max_adu = +INFINITY;
+	defaults.mask = NULL;
+	defaults.mask_file = NULL;
+	defaults.satmap = NULL;
+	defaults.satmap_file = NULL;
+	defaults.data = NULL;
+	for ( i=0; i<MAX_DIMS; i++ ) defaults.dims[i] = DIM_UNDEFINED;
+	defaults.name = NULL;
 
 	string = strdup(string_in);
 	if ( string == NULL ) return NULL;
@@ -871,7 +872,8 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			               &rg_defl,
 			               &rgc_defl,
 			               &n_rg_definitions,
-				       &n_rgc_definitions);
+			               &n_rgc_definitions,
+			               &defaults);
 			free(line);
 			continue;
 		}
@@ -889,7 +891,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		} else {
 			panel = find_panel_by_name(dt, line);
 			if ( panel == NULL ) {
-				panel = new_panel(dt, line);
+				panel = new_panel(dt, line, &defaults);
 			}
 		}
 
@@ -1032,9 +1034,9 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 	}
 
-	free(dt->defaults.cnz_from);
-	free(dt->defaults.data);
-	free(dt->defaults.mask);
+	free(defaults.cnz_from);
+	free(defaults.data);
+	free(defaults.mask);
 
 	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
 

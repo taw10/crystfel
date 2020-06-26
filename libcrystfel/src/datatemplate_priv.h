@@ -190,8 +190,6 @@ struct _datatemplate
 	int                        n_rg_collections;
 
 	char                      *peak_list;
-
-	struct panel_template      defaults;  /* FIXME: Shouldn't be stored */
 };
 
 #endif	/* DATATEMPLATE_PRIV_H */
