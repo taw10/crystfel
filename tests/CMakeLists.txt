@@ -103,57 +103,48 @@ target_include_directories(polarisation_check PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(polarisation_check ${COMMON_LIBRARIES})
 add_test(polarisation_check polarisation_check)
 
-add_executable(evparse1 evparse1.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(evparse1 evparse1.c)
 target_include_directories(evparse1 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(evparse1 ${COMMON_LIBRARIES} -lhdf5)
 add_test(evparse1 evparse1)
 
-add_executable(evparse2 evparse2.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(evparse2 evparse2.c)
 target_include_directories(evparse2 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(evparse2 ${COMMON_LIBRARIES} -lhdf5)
 add_test(evparse2 evparse2)
 
-add_executable(evparse3 evparse3.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(evparse3 evparse3.c)
 target_include_directories(evparse3 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(evparse3 ${COMMON_LIBRARIES} -lhdf5)
 add_test(evparse3 evparse3)
 
-add_executable(evparse4 evparse4.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(evparse4 evparse4.c)
 target_include_directories(evparse4 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(evparse4 ${COMMON_LIBRARIES} -lhdf5)
 add_test(evparse4 evparse4)
 
-add_executable(evparse5 evparse5.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(evparse5 evparse5.c)
 target_include_directories(evparse5 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(evparse5 ${COMMON_LIBRARIES} -lhdf5)
 add_test(evparse5 evparse5)
 
-add_executable(evparse6 evparse6.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(evparse6 evparse6.c)
 target_include_directories(evparse6 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(evparse6 ${COMMON_LIBRARIES} -lhdf5)
 add_test(evparse6 evparse6)
 
-add_executable(evparse7 evparse7.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(evparse7 evparse7.c)
 target_include_directories(evparse7 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(evparse7 ${COMMON_LIBRARIES} -lhdf5)
 add_test(evparse7 evparse7)
 
-add_executable(ev_enum1 ev_enum1.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(ev_enum1 ev_enum1.c)
 target_include_directories(ev_enum1 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ev_enum1 ${COMMON_LIBRARIES} -lhdf5)
 add_test(NAME ev_enum1
          COMMAND ev_enum1 ${CMAKE_CURRENT_SOURCE_DIR}/ev_enum1.h5)
 
-add_executable(ev_enum2 ev_enum2.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../libcrystfel/src/image-hdf5.c)
+add_executable(ev_enum2 ev_enum2.c)
 target_include_directories(ev_enum2 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ev_enum2 ${COMMON_LIBRARIES} -lhdf5)
 add_test(NAME ev_enum2
