@@ -46,8 +46,10 @@
 
 /* Get the path parts of the event ID
  * e.g. ev_orig = abc/def/ghi//5/2/7
- *     -> [abc, def, ghi], with *pn_plvals=3 */
-static char **read_path_parts(const char *ev_orig, int *pn_plvals)
+ *     -> [abc, def, ghi], with *pn_plvals=3.
+ *
+ * Not part of public API.  Not "static" for testing. */
+char **read_path_parts(const char *ev_orig, int *pn_plvals)
 {
 	char **plvals;
 	char *ev;
@@ -108,8 +110,10 @@ static char **read_path_parts(const char *ev_orig, int *pn_plvals)
 
 /* Get the dimension parts of the event ID
  * e.g. ev_orig = abc/def/ghi//5/2/7
- *     -> [5, 2, 7], with *pn_dvals=3 */
-static int *read_dim_parts(const char *ev_orig, int *pn_dvals)
+ *     -> [5, 2, 7], with *pn_dvals=3
+ *
+ * Not part of public API.  Not "static" for testing. */
+int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 
 {
 	char *ev;
@@ -175,8 +179,10 @@ static int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 /* ev = abc/def/ghi//5/2/7
  * pattern = /data/%/somewhere/%/%/data
  * output = /data/abc/somewhere/def/ghi/data
+ *
+ * Not part of public API.  Not "static" for testing.
  */
-static char *substitute_path(const char *ev, const char *pattern)
+char *substitute_path(const char *ev, const char *pattern)
 {
 	char **plvals;
 	int n_plvals;
@@ -203,7 +209,8 @@ static char *substitute_path(const char *ev, const char *pattern)
 
 	if ( n_plvals != n_pl_exp ) {
 		ERROR("Wrong number of path placeholders: "
-		      "'%s' into '%s'\n", ev, pattern);
+		      "'%s' (%i) into '%s' (%i)\n",
+		      ev, n_plvals, pattern, n_pl_exp);
 		return NULL;
 	}
 
@@ -1166,17 +1173,30 @@ struct ev_list
 };
 
 
-static void add_to_list(struct ev_list *list, char *ev_str)
+static int add_to_list(struct ev_list *list, char *ev_str)
 {
 	if ( list->n_events == list->max_events ) {
 		char **new_events = realloc(list->events,
 		                            (list->max_events+128)*sizeof(char *));
-		if ( new_events == NULL ) return;
+		if ( new_events == NULL ) return 1;
 		list->max_events += 128;
 		list->events = new_events;
 	}
 
-	list->events[list->n_events++] = ev_str;
+	list->events[list->n_events++] = strdup(ev_str);
+
+	return 0;
+}
+
+
+static char *demunge_event(const char *orig)
+{
+	size_t len = strlen(orig);
+	char *slash = malloc(len+3);
+	if ( slash == NULL ) return NULL;
+	strcpy(slash, orig+1);
+	strcat(slash, "//");
+	return slash;
 }
 
 
@@ -1272,6 +1292,8 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 
 		} else if ( obj_info.type == H5O_TYPE_DATASET ) {
 
+			char *addme;
+
 			if ( n_pattern_bits != 1 ) {
 				ERROR("Pattern doesn't match file"
 				      " (too long by %i)\n",
@@ -1281,7 +1303,12 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 				return 1;
 			}
 
-			add_to_list(list, ev_str_new);
+			addme = demunge_event(ev_str_new);
+			if ( addme != NULL ) {
+				add_to_list(list, addme);
+				free(addme);
+			}
+			free(ev_str_new);
 
 		}
 
@@ -1293,7 +1320,9 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 }
 
 
-static char **expand_paths(hid_t fh, char *pattern, int *n_evs)
+/* Not "static" so that ev_enumX can test it.
+ * Not part of public API! */
+char **expand_paths(hid_t fh, char *pattern, int *n_evs)
 {
 	int n_sep;
 	size_t len;
@@ -1340,13 +1369,85 @@ static char **expand_paths(hid_t fh, char *pattern, int *n_evs)
 }
 
 
+static int rec_expand_dims(struct ev_list *list,
+                           int *placeholder_sizes,
+                           int n_placeholder_dims,
+                           char *path_ev)
+{
+	int i;
+	char *dim_ev;
+	size_t len;
+
+	len = strlen(path_ev);
+	dim_ev = malloc(len+16);
+	if ( dim_ev == NULL ) return 1;
+
+	if ( n_placeholder_dims == 1 ) {
+		for ( i=0; i<placeholder_sizes[0]; i++ ) {
+			snprintf(dim_ev, 16, "%s/%i", path_ev, i);
+			if ( add_to_list(list, dim_ev) ) return 1;
+		}
+	} else {
+
+		for ( i=0; i<placeholder_sizes[0]; i++ ) {
+			snprintf(dim_ev, 16, "%s/%i", path_ev, i);
+			if ( rec_expand_dims(list,
+			                     &placeholder_sizes[1],
+			                     n_placeholder_dims - 1,
+			                     dim_ev) ) return 1;
+		}
+
+	}
+
+	free(dim_ev);
+	return 0;
+}
+
+
+static char **expand_dims(int *placeholder_sizes,
+                          int n_placeholder_dims,
+                          char *path_ev,
+                          int *n_evs)
+{
+	struct ev_list list;
+
+	list.n_events = 0;
+	list.max_events = 0;
+	list.events = NULL;
+
+	if ( rec_expand_dims(&list, placeholder_sizes,
+	                     n_placeholder_dims, path_ev) )
+	{
+		*n_evs = 0;
+		return NULL;
+	}
+
+	*n_evs = list.n_events;
+	return list.events;
+}
+
+
+static int n_dims_expected(struct panel_template *p)
+{
+	int i;
+	int n_dims = 0;
+	for ( i=0; i<MAX_DIMS; i++ ) {
+		if ( p->dims[i] != DIM_UNDEFINED ) n_dims++;
+	}
+	return n_dims;
+}
+
+
 char **image_hdf5_expand_frames(const DataTemplate *dtempl,
                                 const char *filename,
                                 int *pn_frames)
 {
-	char **frames = NULL;
-	int n_frames;
+	char **path_evs;
+	int n_path_evs;
 	hid_t fh;
+	int i;
+	int dims_expected;
+	struct ev_list full_evs;
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
@@ -1354,85 +1455,117 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	master_el = initialize_event_list();
-	if ( master_el == NULL ) {
-		ERROR("Failed to allocate event list.\n");
+	/* First, expand placeholders in the HDF5 paths.
+	 *
+	 * Since we require the number of placeholders to be the same
+	 * for all panels, and the placeholders will be substituted
+	 * with the same values for each panel (since they come from
+	 * the same event ID), this only needs to be done for the
+	 * first panel. */
+	path_evs = expand_paths(fh, dtempl->panels[0].data,
+	                        &n_path_evs);
+	if ( path_evs == NULL ) {
+		ERROR("Failed to enumerate paths.\n");
 		H5Fclose(fh);
 		return NULL;
 	}
 
-	/* First expand any placeholders in the HDF5 paths */
-	if ( dtempl->path_dim != 0 ) {
-		int pi;
-		for ( pi=0; pi<dtempl->n_panels; pi++ ) {
-			if ( fill_paths(fh, dtempl, pi, master_el) ) {
-				ERROR("Failed to enumerate paths.\n");
-				H5Fclose(fh);
-				return NULL;
+	dims_expected = n_dims_expected(&dtempl->panels[0]);
+
+	full_evs.events = NULL;
+	full_evs.n_events = 0;
+	full_evs.max_events = 0;
+
+	/* For each expanded path, enumerate the placeholder
+	 * dimensions.  Once again, since the number of placeholders
+	 * must be the same for each panel, and the substituted values
+	 * will be the same, this only needs to be done for one panel.
+	 */
+	for ( i=0; i<n_path_evs; i++ ) {
+
+		hid_t dh, sh;
+		char *path;
+		hsize_t *size;
+		int dims;
+		int *placeholder_sizes;
+		int n_placeholder_dims;
+		int j;
+		char **evs_this_path;
+		int n_evs_this_path;
+		struct panel_template *p = &dtempl->panels[0];
+
+		path = substitute_path(path_evs[i], p->data);
+		if ( path == NULL ) {
+			ERROR("Path substitution failed during "
+			      "expansion of '%s' with partial event "
+			      "ID '%s'\n",
+			      p->data, path_evs[i]);
+			return NULL;
+		}
+
+		dh = H5Dopen2(fh, path, H5P_DEFAULT);
+		if ( dh < 0 ) {
+			ERROR("Error opening '%s'\n", path);
+			ERROR("Failed to enumerate events.  "
+			      "Check your geometry file.\n");
+			H5Fclose(fh);
+			return NULL;
+		}
+
+		sh = H5Dget_space(dh);
+		dims = H5Sget_simple_extent_ndims(sh);
+		if ( dims != dims_expected ) {
+			ERROR("Unexpected number of dimensions (%s)\n",
+			      path);
+			H5Fclose(fh);
+			return NULL;
+		}
+
+		size = malloc(dims*sizeof(hsize_t));
+		placeholder_sizes = malloc(dims*sizeof(int));
+		if ( (size == NULL) || (placeholder_sizes == NULL) ) {
+			ERROR("Failed to allocate dimensions\n");
+			H5Fclose(fh);
+			return NULL;
+		}
+
+		if ( H5Sget_simple_extent_dims(sh, size, NULL) < 0 ) {
+			ERROR("Failed to get size\n");
+			H5Fclose(fh);
+			return NULL;
+		}
+
+		n_placeholder_dims = 0;
+		for ( j=0; j<dims; j++ ) {
+			if ( p->dims[j] == DIM_PLACEHOLDER ) {
+				placeholder_sizes[n_placeholder_dims++] = size[j];
 			}
 		}
+		free(size);
+
+		/* Path event ID ends with //, but expand_dims will
+		 * add a slash.  So, remove one slash */
+		path_evs[i][strlen(path_evs[i])-1] = '\0';
+		evs_this_path = expand_dims(placeholder_sizes,
+		                            n_placeholder_dims,
+		                            path_evs[i],
+		                            &n_evs_this_path);
+
+		for ( j=0; j<n_evs_this_path; j++ ) {
+			add_to_list(&full_evs, evs_this_path[j]);
+			free(evs_this_path[j]);
+		}
+
+		free(placeholder_sizes);
+		free(evs_this_path);
+		free(path);
+		free(path_evs[i]);
+
 	}
 
-	/* Now enumerate the placeholder dimensions */
-	if ( dtempl->dim_dim > 0 ) {
-
-		struct event_list *master_el_with_dims;
-		int evi;
-
-		/* If there were no HDF5 path placeholders, add a dummy event */
-		if ( master_el->num_events == 0 ) {
-			struct event *empty_ev;
-			empty_ev = initialize_event();
-			append_event_to_event_list(master_el, empty_ev);
-			free(empty_ev);
-		}
-
-		master_el_with_dims = initialize_event_list();
-
-		/* For each event so far, expand the dimensions */
-		for ( evi=0; evi<master_el->num_events; evi++ ) {
-
-			int pi;
-			int global_path_dim = -1;
-			int mlwd;
-
-			/* Check the dimensionality of each panel */
-			for ( pi=0; pi<dtempl->n_panels; pi++ ) {
-				if ( check_dims(fh, &dtempl->panels[pi],
-				                master_el->events[evi],
-				                master_el_with_dims,
-				                &global_path_dim) )
-				{
-					ERROR("Failed to enumerate dims.\n");
-					H5Fclose(fh);
-					return NULL;
-				}
-			}
-
-			/* Add this dimensionality to all events */
-			for ( mlwd=0; mlwd<global_path_dim; mlwd++ ) {
-
-				struct event *mlwd_ev;
-
-				mlwd_ev = copy_event(master_el->events[evi]);
-				push_dim_entry_to_event(mlwd_ev, mlwd);
-				append_event_to_event_list(master_el_with_dims,
-				                           mlwd_ev);
-				free_event(mlwd_ev);
-			}
-
-		}
-
-		free_event_list(master_el);
-		H5Fclose(fh);
-		return master_el_with_dims;
-
-	} else {
-
-		H5Fclose(fh);
-		return master_el;
-
-	}
+	free(path_evs);
+	*pn_frames = full_evs.n_events;
+	return full_evs.events;
 }
 
 

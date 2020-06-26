@@ -33,9 +33,11 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
 #include <hdf5.h>
 
-#include "../libcrystfel/src/image-hdf5.c"
+extern char **expand_paths(hid_t fh, char *pattern, int *n_evs);
 
 int main(int argc, char *argv[])
 {
@@ -46,7 +48,7 @@ int main(int argc, char *argv[])
 
 	fh = H5Fopen(argv[1], H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file\n");
+		printf("Couldn't open file\n");
 		return 1;
 	}
 
@@ -55,32 +57,32 @@ int main(int argc, char *argv[])
 	                         &n_event_ids);
 
 	if ( event_ids == NULL ) {
-		STATUS("event_ids = NULL\n");
+		printf("event_ids = NULL\n");
 		return 1;
 	}
 
 	if ( n_event_ids != 4 ) {
-		STATUS("Number of event IDs = %i\n", n_event_ids);
+		printf("Number of event IDs = %i\n", n_event_ids);
 		return 1;
 	}
 
-	if ( strcmp(event_ids[0], "/ev_1/dataABCset") != 0 ) {
-		STATUS("Wrong event id '%s'\n", event_ids[0]);
+	if ( strcmp(event_ids[0], "ev_1/dataABCset//") != 0 ) {
+		printf("Wrong event id '%s'\n", event_ids[0]);
 		return 1;
 	}
 
-	if ( strcmp(event_ids[1], "/ev_2/dataDEFset") != 0 ) {
-		STATUS("Wrong event id '%s'\n", event_ids[1]);
+	if ( strcmp(event_ids[1], "ev_2/dataDEFset//") != 0 ) {
+		printf("Wrong event id '%s'\n", event_ids[1]);
 		return 1;
 	}
 
-	if ( strcmp(event_ids[2], "/ev_3/dataGHIset") != 0 ) {
-		STATUS("Wrong event id '%s'\n", event_ids[2]);
+	if ( strcmp(event_ids[2], "ev_3/dataGHIset//") != 0 ) {
+		printf("Wrong event id '%s'\n", event_ids[2]);
 		return 1;
 	}
 
-	if ( strcmp(event_ids[3], "/ev_5/dataNOPset") != 0 ) {
-		STATUS("Wrong event id '%s'\n", event_ids[3]);
+	if ( strcmp(event_ids[3], "ev_5/dataNOPset//") != 0 ) {
+		printf("Wrong event id '%s'\n", event_ids[3]);
 		return 1;
 	}
 

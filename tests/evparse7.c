@@ -32,9 +32,10 @@
 
 
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 
-#include "../libcrystfel/src/image-hdf5.c"
+extern char *substitute_path(const char *ev, const char *pattern);
 
 int main(int argc, char *argv[])
 {

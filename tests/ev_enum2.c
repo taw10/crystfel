@@ -1,7 +1,7 @@
 /*
- * evparse5.c
+ * ev_enum2.c
  *
- * Check that event string parsing works
+ * Check that event enumeration works
  *
  * Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
@@ -33,32 +33,46 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 
-extern int *read_dim_parts(const char *ev_orig, int *pn_dvals);
+#include <image.h>
 
 int main(int argc, char *argv[])
 {
-	int *dvals;
-	int n_dvals = 99;
-	int r = 0;
+	char **event_ids;
+	int n_event_ids;
+	int i;
+	DataTemplate *dtempl;
 
-	dvals = read_dim_parts("cc/data123/bb//59", &n_dvals);
-
-	if ( n_dvals != 1 ) {
-		printf("Wrong number of dimension parts\n");
-		r++;
-	}
-
-	if ( dvals == NULL ) {
-		printf("read_dim_parts failed\n");
+	dtempl = data_template_new_from_file(argv[2]);
+	if ( dtempl == NULL ) {
+		ERROR("Failed ot load data template\n");
 		return 1;
 	}
 
-	if ( dvals[0] != 59 ) {
-		printf("First dimension part is wrong "
-		       "(%i, should be %i)\n", dvals[0], 59);
-		r++;
+	event_ids = image_expand_frames(dtempl, argv[1], &n_event_ids);
+
+	if ( event_ids == NULL ) {
+		printf("event_ids = NULL\n");
+		return 1;
 	}
 
-	return r;
+	for ( i=0; i<n_event_ids; i++ ) {
+		char tmp[64];
+		char c = i < 100 ? 'a' : 'b';
+		int n = i < 100 ? i : (i-100);
+		snprintf(tmp, 64, "%c//%i", c, n);
+		if ( strcmp(tmp, event_ids[i]) != 0 ) {
+			printf("Event ID %i is wrong '%s'\n",
+			       i, event_ids[i]);
+			return 1;
+		}
+		free(event_ids[i]);
+	}
+	free(event_ids);
+
+	data_template_free(dtempl);
+
+	return 0;
 }

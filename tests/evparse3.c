@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "../libcrystfel/src/image-hdf5.c"
+extern char **read_path_parts(const char *ev_orig, int *pn_plvals);
 
 int main(int argc, char *argv[])
 {
