@@ -78,18 +78,20 @@ static void redraw(CrystFELImageView *iv)
 
 static void cleanup_image(CrystFELImageView *iv)
 {
-	int i;
-
-	if ( iv->image != NULL ) {
-		if ( (iv->image->detgeom != NULL) && (iv->pixbufs != NULL) ) {
-			for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
-				if ( iv->pixbufs[i] != NULL ) {
-					gdk_pixbuf_unref(iv->pixbufs[i]);
-				}
+	if ( iv->pixbufs != NULL ) {
+		int i;
+		for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
+			if ( iv->pixbufs[i] != NULL ) {
+				gdk_pixbuf_unref(iv->pixbufs[i]);
 			}
 		}
-		image_free(iv->image);
 	}
+	free(iv->pixbufs);
+
+	image_free(iv->image);
+
+	iv->image = NULL;
+	iv->pixbufs = NULL;
 }
 
 
@@ -593,6 +595,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->num_peaklists = 0;
 	iv->peaklists = NULL;
 	iv->brightness = 1.0;
+	iv->pixbufs = NULL;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -674,107 +677,44 @@ static void detgeom_pixel_extents(struct detgeom *det,
 }
 
 
-static float *get_binned_panel(struct image *image, int binning,
-                               int pi, double *max, int *pw, int *ph)
-{
-	float *data;
-	int x, y;
-	int w, h;
-
-	struct detgeom_panel *p = &image->detgeom->panels[pi];
-
-	/* Some pixels might get discarded */
-	w = p->w / binning;
-	h = p->h / binning;
-	*pw = w;
-	*ph = h;
-
-	data = malloc(w*h*sizeof(float));
-
-	*max = 0.0;
-	for ( x=0; x<w; x++ ) {
-	for ( y=0; y<h; y++ ) {
-
-		double total;
-		size_t xb, yb;
-		int bad = 0;
-		double val;
-
-		total = 0;
-		for ( xb=0; xb<binning; xb++ ) {
-		for ( yb=0; yb<binning; yb++ ) {
-
-			double v;
-			int fs, ss;
-
-			fs = binning*x+xb;
-			ss = binning*y+yb;
-			v = image->dp[pi][fs+ss*p->w];
-			total += v;
-
-			if ( (image->bad != NULL)
-			  && (image->bad[pi][fs+ss*p->w]) ) bad = 1;
-
-		}
-		}
-
-		val = total / ((double)binning * (double)binning);
-
-		if ( bad ) {
-			data[x+w*y] = -INFINITY;
-		} else {
-			data[x+w*y] = val;
-			if ( val > *max ) *max = val;
-		}
-
-	}
-	}
-
-	return data;
-}
-
-
-static void render_free_data(guchar *data, gpointer p)
+static void free_pixbuf(guchar *data, gpointer p)
 {
 	free(data);
 }
 
 
-static GdkPixbuf *render_panel(float *hdr, int scale, double max, int w, int h)
+static GdkPixbuf *render_panel(float *data, int *badmap, int w, int h,
+                               int scale_type, double scale_top)
+
+
 {
-	guchar *data;
+	guchar *pixbuf_data;
 	int x, y;
 
 	/* Rendered (colourful) version */
-	data = malloc(3*w*h);
-	if ( data == NULL ) return NULL;
+	pixbuf_data = malloc(3*w*h);
+	if ( pixbuf_data == NULL ) return NULL;
 
-	/* These x,y coordinates are measured relative to the bottom-left
-	 * corner */
 	for ( y=0; y<h; y++ ) {
 	for ( x=0; x<w; x++ ) {
 
-		double val;
 		double r, g, b;
 
-		val = hdr[x+w*y];
+		if ( !badmap[x+w*y] ) {
 
-		if ( val > -INFINITY ) {
+			colscale_lookup(data[x+w*y], scale_top,
+			                scale_type, &r, &g, &b);
 
-			render_scale(val, max, scale, &r, &g, &b);
-
-			/* Stuff inside square brackets makes this pixel go to
-			 * the expected location in the pixbuf (which measures
-			 * from the top-left corner */
-			data[3*( x+w*y )+0] = 255*r;
-			data[3*( x+w*y )+1] = 255*g;
-			data[3*( x+w*y )+2] = 255*b;
+			pixbuf_data[3*(x+w*y)+0] = 255*r;
+			pixbuf_data[3*(x+w*y)+1] = 255*g;
+			pixbuf_data[3*(x+w*y)+2] = 255*b;
 
 		} else {
 
-			data[3*( x+w*y )+0] = 30;
-			data[3*( x+w*y )+1] = 20;
-			data[3*( x+w*y )+2] = 0;
+			/* Bad pixel indicator colour */
+			pixbuf_data[3*( x+w*y )+0] = 30;
+			pixbuf_data[3*( x+w*y )+1] = 20;
+			pixbuf_data[3*( x+w*y )+2] = 0;
 
 		}
 
@@ -782,63 +722,11 @@ static GdkPixbuf *render_panel(float *hdr, int scale, double max, int w, int h)
 	}
 
 	/* Create the pixbuf from the 8-bit display data */
-	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
-					w, h, w*3, render_free_data, NULL);
+	return gdk_pixbuf_new_from_data(pixbuf_data,
+	                                GDK_COLORSPACE_RGB,
+	                                FALSE, 8, w, h, w*3,
+	                                free_pixbuf, NULL);
 
-}
-
-
-/* Render an image into multiple pixbufs according to geometry */
-GdkPixbuf **render_panels(struct image *image,
-                          int binning, int scale, double boost,
-                          int *n_pixbufs)
-{
-	int i;
-	int np;
-	GdkPixbuf **pixbufs;
-	float **hdrs;
-	double max;
-	int *ws, *hs;
-
-	np = image->detgeom->n_panels;
-
-	hdrs = calloc(np, sizeof(float *));
-	ws = calloc(np, sizeof(int));
-	hs = calloc(np, sizeof(int));
-	if ( (hdrs == NULL) || (ws == NULL) || (hs == NULL) ) {
-		*n_pixbufs = 0;
-		return NULL;
-	}
-
-	/* Find overall max value for whole image */
-	max = 0.0;
-	for ( i=0; i<np; i++ ) {
-		double this_max = 0.0;
-		hdrs[i] = get_binned_panel(image, binning, i, &this_max,
-		                           &ws[i], &hs[i]);
-		if ( this_max > max ) max = this_max;
-	}
-
-	max /= boost;
-	if ( max <= 6 ) { max = 10; }
-
-	pixbufs = calloc(np, sizeof(GdkPixbuf*));
-	if ( pixbufs == NULL ) {
-		*n_pixbufs = 0;
-		return NULL;
-	}
-
-	for ( i=0; i<np; i++ ) {
-		pixbufs[i] = render_panel(hdrs[i], scale, max, ws[i], hs[i]);
-		free(hdrs[i]);
-	}
-
-	free(hdrs);
-	free(ws);
-	free(hs);
-	*n_pixbufs = np;
-
-	return pixbufs;
 }
 
 
@@ -861,18 +749,31 @@ static int reload_image(CrystFELImageView *iv)
 
 static int rerender_image(CrystFELImageView *iv)
 {
-	int n_pb;
+	int i;
 	double min_x, min_y, max_x, max_y;
 	double border;
 
-	iv->pixbufs = render_panels(iv->image, 1, SCALE_COLOUR,
-	                            iv->brightness, &n_pb);
-	if ( n_pb != iv->image->detgeom->n_panels ) {
-		ERROR("Wrong number of panels returned!\n");
-		return 1;
+	if ( iv->pixbufs == NULL ) {
+		iv->pixbufs = calloc(iv->image->detgeom->n_panels,
+		                     sizeof(GdkPixbuf *));
+		if ( iv->pixbufs == NULL ) return 1;
+	} else {
+		for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
+			gdk_pixbuf_unref(iv->pixbufs[i]);
+		}
 	}
 
-	detgeom_pixel_extents(iv->image->detgeom, &min_x, &min_y, &max_x, &max_y);
+	for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
+		iv->pixbufs[i] = render_panel(iv->image->dp[i],
+		                              iv->image->bad[i],
+		                              iv->image->detgeom->panels[i].w,
+		                              iv->image->detgeom->panels[i].h,
+		                              SCALE_COLOUR, 10.0);
+		if ( iv->pixbufs[i] == NULL ) return 1;
+	}
+
+	detgeom_pixel_extents(iv->image->detgeom, &min_x, &min_y,
+	                      &max_x, &max_y);
 	iv->detector_w = max_x - min_x;
 	iv->detector_h = max_y - min_y;
 	border = iv->detector_w * 0.1;
