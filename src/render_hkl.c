@@ -332,8 +332,8 @@ static void draw_circles(double xh, double xk, double xl,
 				        ((double)cy)+v*scale,
 				        radius, 0.0, 2.0*M_PI);
 
-			render_scale(val, max_val/boost, colscale,
-				     &r, &g, &b);
+			colscale_lookup(val, max_val/boost, colscale,
+			                &r, &g, &b);
 			cairo_set_source_rgb(dctx, r, g, b);
 			cairo_fill(dctx);
 
@@ -658,7 +658,7 @@ static int render_key(int colscale, double scale_top)
 			val = v/ht;
 		}
 
-		render_scale(val, top, colscale, &r, &g, &b);
+		colscale_lookup(val, top, colscale, &r, &g, &b);
 		cairo_set_source_rgb(dctx, r, g, b);
 
 		cairo_stroke_preserve(dctx);

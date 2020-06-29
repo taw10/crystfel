@@ -51,8 +51,8 @@ extern "C" {
 #endif
 
 /* Colour scale lookup */
-extern void render_scale(double val, double max, int scale,
-                         double *rp, double *gp, double *bp);
+extern void colscale_lookup(double val, double max, int scale,
+                            double *rp, double *gp, double *bp);
 
 
 #ifdef __cplusplus

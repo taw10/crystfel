@@ -218,8 +218,8 @@ static void render_invmono(double val, double max,
 }
 
 
-void render_scale(double val, double max, int scale,
-                  double *rp, double *gp, double *bp)
+void colscale_lookup(double val, double max, int scale,
+                     double *rp, double *gp, double *bp)
 {
 	switch ( scale ) {
 
