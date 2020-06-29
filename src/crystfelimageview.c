@@ -689,36 +689,34 @@ static GdkPixbuf *render_panel(float *data, int *badmap, int w, int h,
 
 {
 	guchar *pixbuf_data;
-	int x, y;
+	long int i;
 
 	/* Rendered (colourful) version */
 	pixbuf_data = malloc(3*w*h);
 	if ( pixbuf_data == NULL ) return NULL;
 
-	for ( y=0; y<h; y++ ) {
-	for ( x=0; x<w; x++ ) {
+	for ( i=0; i<w*h; i++ ) {
 
 		double r, g, b;
 
-		if ( !badmap[x+w*y] ) {
+		if ( !badmap[i] ) {
 
-			colscale_lookup(data[x+w*y], scale_top,
+			colscale_lookup(data[i], scale_top,
 			                scale_type, &r, &g, &b);
 
-			pixbuf_data[3*(x+w*y)+0] = 255*r;
-			pixbuf_data[3*(x+w*y)+1] = 255*g;
-			pixbuf_data[3*(x+w*y)+2] = 255*b;
+			pixbuf_data[3*i+0] = 255*r;
+			pixbuf_data[3*i+1] = 255*g;
+			pixbuf_data[3*i+2] = 255*b;
 
 		} else {
 
 			/* Bad pixel indicator colour */
-			pixbuf_data[3*( x+w*y )+0] = 30;
-			pixbuf_data[3*( x+w*y )+1] = 20;
-			pixbuf_data[3*( x+w*y )+2] = 0;
+			pixbuf_data[3*i+0] = 30;
+			pixbuf_data[3*i+1] = 20;
+			pixbuf_data[3*i+2] = 0;
 
 		}
 
-	}
 	}
 
 	/* Create the pixbuf from the 8-bit display data */
