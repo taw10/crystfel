@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <gtk/gtk.h>
 #include <glib-object.h>
+#include <gsl/gsl_rstat.h>
 
 #include <utils.h>
 #include <detgeom.h>
@@ -728,6 +729,36 @@ static GdkPixbuf *render_panel(float *data, int *badmap, int w, int h,
 }
 
 
+static double auto_scale_top(const struct image *image)
+{
+	int pn;
+	gsl_rstat_workspace *wksp;
+	double top;
+
+	wksp = gsl_rstat_alloc();
+	if ( wksp == NULL ) return 100.0;
+
+	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+		long int i;
+		int w, h;
+		w = image->detgeom->panels[pn].w;
+		h = image->detgeom->panels[pn].h;
+		for ( i=0; i<w*h; i++ ) {
+			if ( !image->bad[pn][i] ) {
+				gsl_rstat_add(image->dp[pn][i], wksp);
+			}
+		}
+	}
+
+	top = gsl_rstat_mean(wksp) + gsl_rstat_sd(wksp);
+	gsl_rstat_free(wksp);
+
+	top *= 6;
+
+	return top;
+}
+
+
 static int reload_image(CrystFELImageView *iv)
 {
 	if ( iv->dtempl == NULL ) return 0;
@@ -750,6 +781,7 @@ static int rerender_image(CrystFELImageView *iv)
 	int i;
 	double min_x, min_y, max_x, max_y;
 	double border;
+	double scale_top;
 
 	if ( iv->pixbufs == NULL ) {
 		iv->pixbufs = calloc(iv->image->detgeom->n_panels,
@@ -761,12 +793,14 @@ static int rerender_image(CrystFELImageView *iv)
 		}
 	}
 
+	scale_top = auto_scale_top(iv->image);
+
 	for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
 		iv->pixbufs[i] = render_panel(iv->image->dp[i],
 		                              iv->image->bad[i],
 		                              iv->image->detgeom->panels[i].w,
 		                              iv->image->detgeom->panels[i].h,
-		                              SCALE_COLOUR, 10.0);
+		                              SCALE_COLOUR, scale_top);
 		if ( iv->pixbufs[i] == NULL ) return 1;
 	}
 
