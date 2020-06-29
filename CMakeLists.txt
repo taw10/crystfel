@@ -326,6 +326,12 @@ list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 # ----------------------------------------------------------------------
 # geoptimiser
 
+      # FIXME!
+#if (GDKPIXBUF_FOUND)
+#  target_include_directories(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
+#  target_link_libraries(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_LIBRARIES})
+#endif (GDKPIXBUF_FOUND)
+
 # FIXME: Restore!
 #set(GEOPTIMISER_SOURCES src/geoptimiser.c)
 #add_executable(geoptimiser ${GEOPTIMISER_SOURCES})

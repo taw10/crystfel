@@ -42,7 +42,6 @@ set(LIBCRYSTFEL_SOURCES
     src/peaks.c
     src/reflist-utils.c
     src/filters.c
-    src/render.c
     src/index.c
     src/dirax.c
     src/mosflm.c
@@ -84,7 +83,6 @@ set(LIBCRYSTFEL_HEADERS
     src/peakfinder8.h
     src/peaks.h
     src/stream.h
-    src/render.h
     src/index.h
     src/image.h
     src/filters.h
@@ -165,11 +163,6 @@ if (CURSES_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${CURSES_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${CURSES_LIBRARIES})
 endif (CURSES_FOUND)
-
-if (GDKPIXBUF_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_LIBRARIES})
-endif (GDKPIXBUF_FOUND)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${LIBCRYSTFEL_HEADERS}")

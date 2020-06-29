@@ -59,7 +59,6 @@
 #include "crystal.h"
 #include "image.h"
 #include "utils.h"
-#include "render.h"
 #include "colscale.h"
 
 struct imagefeature;
@@ -155,6 +154,49 @@ struct gpanel
 	double                     *avg_displ_y;
 	double                     *avg_displ_abs;
 };
+
+
+static GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
+{
+	guchar *data;
+	size_t x, y;
+	int max;
+
+	data = malloc(3*w*h);
+	if ( data == NULL ) return NULL;
+
+	max = h-(h/6);
+
+	for ( y=0; y<h; y++ ) {
+
+		double r, g, b;
+		int val;
+
+		val = y-(h/6);
+
+		render_scale(val, max, scale, &r, &g, &b);
+
+		data[3*( 0+w*(h-1-y) )+0] = 0;
+		data[3*( 0+w*(h-1-y) )+1] = 0;
+		data[3*( 0+w*(h-1-y) )+2] = 0;
+		for ( x=1; x<w; x++ ) {
+			data[3*( x+w*(h-1-y) )+0] = 255*r;
+			data[3*( x+w*(h-1-y) )+1] = 255*g;
+			data[3*( x+w*(h-1-y) )+2] = 255*b;
+		}
+
+	}
+
+	y = h/6;
+	for ( x=1; x<w; x++ ) {
+		data[3*( x+w*(h-1-y) )+0] = 255;
+		data[3*( x+w*(h-1-y) )+1] = 255;
+		data[3*( x+w*(h-1-y) )+2] = 255;
+	}
+
+	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB, FALSE, 8,
+					w, h, w*3, render_free_data, NULL);
+}
 
 
 static void compute_x_y(double fs, double ss, struct panel *p,
