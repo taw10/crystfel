@@ -45,6 +45,9 @@
 #include "crystfelimageview.h"
 
 
+static int rerender_image(CrystFELImageView *iv);
+
+
 static void scroll_interface_init(GtkScrollable *iface)
 {
 }
@@ -675,10 +678,6 @@ static void detgeom_pixel_extents(struct detgeom *det,
 
 static int reload_image(CrystFELImageView *iv)
 {
-	int n_pb;
-	double min_x, min_y, max_x, max_y;
-	double border;
-
 	if ( iv->dtempl == NULL ) return 0;
 	if ( iv->filename == NULL ) return 0;
 
@@ -689,6 +688,16 @@ static int reload_image(CrystFELImageView *iv)
 		ERROR("Failed to load image\n");
 		return 1;
 	}
+
+	return rerender_image(iv);
+}
+
+
+static int rerender_image(CrystFELImageView *iv)
+{
+	int n_pb;
+	double min_x, min_y, max_x, max_y;
+	double border;
 
 	iv->pixbufs = render_panels(iv->image, 1, SCALE_COLOUR,
 	                            iv->brightness, &n_pb);
@@ -778,5 +787,5 @@ void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                         double brightness)
 {
 	iv->brightness = brightness;
-	reload_image(iv);
+	rerender_image(iv);
 }
