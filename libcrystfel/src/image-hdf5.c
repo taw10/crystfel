@@ -1517,8 +1517,9 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		sh = H5Dget_space(dh);
 		dims = H5Sget_simple_extent_ndims(sh);
 		if ( dims != dims_expected ) {
-			ERROR("Unexpected number of dimensions (%s)\n",
-			      path);
+			ERROR("Unexpected number of dimensions"
+			      "(%s has %i, expected %i)\n",
+			      path, dims, dims_expected);
 			H5Fclose(fh);
 			return NULL;
 		}
