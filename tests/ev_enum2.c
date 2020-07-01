@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
 	dtempl = data_template_new_from_file(argv[2]);
 	if ( dtempl == NULL ) {
-		ERROR("Failed ot load data template\n");
+		ERROR("Failed to load data template\n");
 		return 1;
 	}
 
