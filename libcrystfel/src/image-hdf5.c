@@ -1644,5 +1644,10 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 int is_hdf5_file(const char *filename)
 {
-	return (H5Fis_hdf5(filename) > 0);
+	const char *ext = NULL;
+
+	ext = filename_extension(filename, NULL);
+	if ( ext == NULL ) return 0;
+
+	return (strcmp(ext, ".h5") == 0);
 }
