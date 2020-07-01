@@ -839,8 +839,19 @@ int crystfel_image_view_set_image(CrystFELImageView *iv,
                                   const char *filename,
                                   const char *event)
 {
+	int i;
+
 	free(iv->filename);
 	free(iv->event);
+
+	/* Dump peak lists, because image is changing */
+	for ( i=0; i<iv->num_peaklists; i++ ) {
+		image_feature_list_free(iv->peaklists[i]);
+	}
+	free(iv->peaklists);
+	iv->peaklists = NULL;
+	iv->num_peaklists = 0;
+
 	iv->filename = safe_strdup(filename);
 	iv->event = safe_strdup(event);
 	return reload_image(iv);
