@@ -518,7 +518,7 @@ static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
 
 static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 {
-	add_button(vbox, "Find data", "folder-pictures",
+	add_button(vbox, "Load data", "folder-pictures",
 	           G_CALLBACK(finddata_sig), proj);
 	add_button(vbox, "Peak detection", "edit-find",
 	           G_CALLBACK(peaksearch_sig), proj);
