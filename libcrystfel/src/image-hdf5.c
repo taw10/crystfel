@@ -1066,6 +1066,11 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 	ImageFeatureList *features;
 	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
 
+	if ( dtempl->peak_list == NULL ) {
+		ERROR("Peak location is not given in geometry file.\n");
+		return NULL;
+	}
+
 	if ( access(filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n",
 		      filename);
