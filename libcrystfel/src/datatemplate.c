@@ -793,8 +793,10 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.satmap = NULL;
 	defaults.satmap_file = NULL;
 	defaults.data = NULL;
-	for ( i=0; i<MAX_DIMS; i++ ) defaults.dims[i] = DIM_UNDEFINED;
 	defaults.name = NULL;
+	defaults.dims[0] = DIM_SS;
+	defaults.dims[1] = DIM_FS;
+	for ( i=2; i<MAX_DIMS; i++ ) defaults.dims[i] = DIM_UNDEFINED;
 
 	string = strdup(string_in);
 	if ( string == NULL ) return NULL;
