@@ -142,7 +142,8 @@ add_executable(ev_enum1 ev_enum1.c)
 target_include_directories(ev_enum1 PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ev_enum1 ${COMMON_LIBRARIES} -lhdf5)
 add_test(NAME ev_enum1
-         COMMAND ev_enum1 ${CMAKE_CURRENT_SOURCE_DIR}/ev_enum1.h5)
+  COMMAND ev_enum1 ${CMAKE_CURRENT_SOURCE_DIR}/ev_enum1.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/ev_enum1.geom)
 
 add_executable(ev_enum2 ev_enum2.c)
 target_include_directories(ev_enum2 PRIVATE ${COMMON_INCLUDES})

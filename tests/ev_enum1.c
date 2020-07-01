@@ -35,26 +35,23 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#include <hdf5.h>
 
-extern char **expand_paths(hid_t fh, char *pattern, int *n_evs);
+#include <image.h>
 
 int main(int argc, char *argv[])
 {
-	hid_t fh;
 	char **event_ids;
 	int n_event_ids;
 	int i;
+	DataTemplate *dtempl;
 
-	fh = H5Fopen(argv[1], H5F_ACC_RDONLY, H5P_DEFAULT);
-	if ( fh < 0 ) {
-		printf("Couldn't open file\n");
+	dtempl = data_template_new_from_file(argv[2]);
+	if ( dtempl == NULL ) {
+		ERROR("Failed to load data template\n");
 		return 1;
 	}
 
-	event_ids = expand_paths(fh,
-	                         "/data/panelA/%/panel_data1t/%/array",
-	                         &n_event_ids);
+	event_ids = image_expand_frames(dtempl, argv[1], &n_event_ids);
 
 	if ( event_ids == NULL ) {
 		printf("event_ids = NULL\n");
@@ -91,7 +88,7 @@ int main(int argc, char *argv[])
 	}
 	free(event_ids);
 
-	H5Fclose(fh);
+	data_template_free(dtempl);
 
 	return 0;
 }
