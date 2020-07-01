@@ -1192,7 +1192,11 @@ static int add_to_list(struct ev_list *list, char *ev_str)
 static char *demunge_event(const char *orig)
 {
 	size_t len = strlen(orig);
-	char *slash = malloc(len+3);
+	char *slash;
+
+	if ( len == 0 ) return strdup("//");
+
+	slash = malloc(len+3);
 	if ( slash == NULL ) return NULL;
 	strcpy(slash, orig+1);
 	strcat(slash, "//");
@@ -1490,8 +1494,6 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		int *placeholder_sizes;
 		int n_placeholder_dims;
 		int j;
-		char **evs_this_path;
-		int n_evs_this_path;
 		struct panel_template *p = &dtempl->panels[0];
 
 		path = substitute_path(path_evs[i], p->data);
@@ -1545,19 +1547,32 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 		/* Path event ID ends with //, but expand_dims will
 		 * add a slash.  So, remove one slash */
-		path_evs[i][strlen(path_evs[i])-1] = '\0';
-		evs_this_path = expand_dims(placeholder_sizes,
-		                            n_placeholder_dims,
-		                            path_evs[i],
-		                            &n_evs_this_path);
+		if ( n_placeholder_dims > 0 ) {
 
-		for ( j=0; j<n_evs_this_path; j++ ) {
-			add_to_list(&full_evs, evs_this_path[j]);
-			free(evs_this_path[j]);
+			char **evs_this_path;
+			int n_evs_this_path;
+
+			path_evs[i][strlen(path_evs[i])-1] = '\0';
+			evs_this_path = expand_dims(placeholder_sizes,
+			                            n_placeholder_dims,
+			                            path_evs[i],
+			                            &n_evs_this_path);
+
+			for ( j=0; j<n_evs_this_path; j++ ) {
+				add_to_list(&full_evs, evs_this_path[j]);
+				free(evs_this_path[j]);
+			}
+
+			free(evs_this_path);
+
+		} else {
+
+			/* Easy case with no dims to expand */
+			add_to_list(&full_evs, path_evs[i]);
+
 		}
 
 		free(placeholder_sizes);
-		free(evs_this_path);
 		free(path);
 		free(path_evs[i]);
 

@@ -27,3 +27,8 @@ array = numpy.zeros((100,1,1,2), dtype=float)
 with h5py.File('tests/ev_enum2.h5', 'w') as fh:
     fh.create_dataset('/data/a/data_array', data=array)
     fh.create_dataset('/data/b/data_array', data=array)
+
+array = numpy.zeros((1,1), dtype=float)
+
+with h5py.File('tests/ev_enum3.h5', 'w') as fh:
+    fh.create_dataset('/data/data_array', data=array)
