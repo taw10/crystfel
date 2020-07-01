@@ -80,6 +80,7 @@ struct crystfelproject {
 	int cur_frame;
 
 	char *geom_filename;
+	char *stream_filename;
 	char *data_top_folder;   /* For convenience only.  Filenames in
 	                          * 'filenames' list should be complete */
 	enum match_type_id data_search_pattern;
@@ -92,10 +93,7 @@ struct crystfelproject {
 	int show_peaks;
 	struct peak_params peak_search_params;
 
-	GtkWidget *file_chooser;  /* Data location in "Find data" window */
-	GtkWidget *geom_chooser;  /* Data location in "Find data" window */
-	GtkWidget *type_combo;    /* Search pattern in "Find data" window */
-
+	GtkWidget *type_combo;
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */
 	GtkWidget *peak_params;   /* Peak search parameter widgets */
 	struct peak_params original_params;

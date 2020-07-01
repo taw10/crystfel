@@ -206,46 +206,69 @@ static void add_files(struct crystfelproject *proj, GFile *folder,
 }
 
 
-static void finddata_response_sig(GtkWidget *dialog, gint resp,
-                                  struct crystfelproject *proj)
+struct finddata_ctx
 {
-	GFile *top;
-	DataTemplate *dtempl;
-	char *geom_filename;
-	const char *type_id;
+	struct crystfelproject *proj;
+	GtkWidget *top_folder;
+	GtkWidget *geom_file;
+	GtkWidget *stream;
+	GtkWidget *type_combo;
+	GtkWidget *fi;  /* "Find files" radio */
+};
+
+
+static void finddata_response_sig(GtkWidget *dialog, gint resp,
+                                  struct finddata_ctx *ctx)
+{
+	struct crystfelproject *proj = ctx->proj;
 
 	if ( (resp==GTK_RESPONSE_DELETE_EVENT) || (resp==GTK_RESPONSE_CANCEL) ) {
 		gtk_widget_destroy(dialog);
-		proj->file_chooser = NULL;
-		proj->geom_chooser = NULL;
+		free(ctx);
 		return;
 	}
 
-	geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(proj->geom_chooser));
-	if ( geom_filename == NULL ) return;
-	dtempl = data_template_new_from_file(geom_filename);
-	if ( dtempl == NULL ) return;
-	free(proj->geom_filename);
-	proj->geom_filename = geom_filename;
-	crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                                     dtempl);
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->fi)) ) {
 
-	top = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(proj->file_chooser));
-	if ( top == NULL ) return;
+		GFile *top;
+		DataTemplate *dtempl;
+		char *geom_filename;
+		const char *type_id;
 
-	/* Totally clean up the old list */
-	clear_project_files(proj);
+		geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->geom_file));
+		if ( geom_filename == NULL ) return;
+		dtempl = data_template_new_from_file(geom_filename);
+		if ( dtempl == NULL ) return;
+		free(proj->geom_filename);
+		proj->geom_filename = geom_filename;
+		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                     dtempl);
 
-	type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->type_combo));
-	add_files(proj, top, decode_matchtype(type_id), dtempl);
+		top = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(ctx->top_folder));
+		if ( top == NULL ) return;
+		free(proj->data_top_folder);
+		proj->data_top_folder = g_file_get_path(top);
+
+		/* Totally clean up the old list */
+		clear_project_files(proj);
+
+		type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(ctx->type_combo));
+		proj->data_search_pattern = decode_matchtype(type_id);
+		add_files(proj, top, proj->data_search_pattern, dtempl);
+
+		g_object_unref(top);
+
+	} else {
+
+		STATUS("Mock stream load\n");
+	}
 
 	proj->unsaved = 1;
 	proj->cur_frame = 0;
 	update_imageview(proj);
+	update_peaks(proj);
 
-	proj->file_chooser = NULL;
-	proj->geom_chooser = NULL;
-	g_object_unref(top);
+	free(ctx);
 	gtk_widget_destroy(dialog);
 }
 
@@ -257,10 +280,13 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *vbox;
 	GtkWidget *hbox;
 	GtkWidget *label;
-	GtkWidget *chooser;
-	GtkWidget *combo;
+	struct finddata_ctx *ctx;
+	GtkWidget *ls;
 
-	if ( proj->file_chooser != NULL ) return FALSE;
+	ctx = malloc(sizeof(struct finddata_ctx));
+	if ( ctx == NULL ) return FALSE;
+
+	ctx->proj = proj;
 
 	dialog = gtk_dialog_new_with_buttons("Find data files",
 	                                     GTK_WINDOW(proj->window),
@@ -274,57 +300,76 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_container_add(GTK_CONTAINER(content_area), vbox);
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
+	ctx->fi = gtk_radio_button_new_with_label(NULL, "Load images directly");
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(ctx->fi),
+	                   FALSE, FALSE, 8.0);
+
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
 	label = gtk_label_new("Find data in folder:");
 	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
-	chooser = gtk_file_chooser_button_new("Select a folder",
-	                                      GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
+	ctx->top_folder = gtk_file_chooser_button_new("Select a folder",
+	                                              GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
 	if ( proj->data_top_folder != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(chooser),
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->top_folder),
 		                              proj->data_top_folder);
 	}
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(chooser), TRUE, TRUE, 2.0);
-	proj->file_chooser = chooser;
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->top_folder), TRUE, TRUE, 2.0);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
 	label = gtk_label_new("Search pattern:");
 	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
-	combo = gtk_combo_box_text_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo), TRUE, TRUE, 2.0);
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "everything",
+	ctx->type_combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->type_combo), TRUE, TRUE, 2.0);
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "everything",
 	                "All files in folder and subfolders");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "lcls-cheetah-hdf5",
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "lcls-cheetah-hdf5",
 	                "Individual LCLS files from Cheetah ('LCLS*.h5')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cheetah-cxi",
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "cheetah-cxi",
 	                "Multi-event CXI files from Cheetah ('*.cxi')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cbf",
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "cbf",
 	                "Individual CBF files ('*.cbf')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "cbfgz",
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "cbfgz",
 	                "Individual gzipped CBF files ('*.cbf.gz')");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo),
+	gtk_combo_box_set_active(GTK_COMBO_BOX(ctx->type_combo),
 	                         proj->data_search_pattern);
-	proj->type_combo = combo;
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
 	label = gtk_label_new("Geometry file:");
 	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
-	chooser = gtk_file_chooser_button_new("Select geometry file",
-	                                      GTK_FILE_CHOOSER_ACTION_OPEN);
+	ctx->geom_file = gtk_file_chooser_button_new("Select geometry file",
+	                                             GTK_FILE_CHOOSER_ACTION_OPEN);
 	if ( proj->geom_filename != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(chooser),
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->geom_file),
 		                              proj->geom_filename);
 	}
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(chooser), TRUE, TRUE, 2.0);
-	proj->geom_chooser = chooser;
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->geom_file), TRUE, TRUE, 2.0);
+
+	ls = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(ctx->fi),
+	                                                 "Load stream");
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(ls),
+	                   FALSE, FALSE, 8.0);
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+	label = gtk_label_new("Stream file:");
+	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
+	ctx->stream = gtk_file_chooser_button_new("Select stream file",
+	                                          GTK_FILE_CHOOSER_ACTION_OPEN);
+	if ( proj->stream_filename != NULL ) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->stream),
+		                              proj->stream_filename);
+	}
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream), TRUE, TRUE, 2.0);
 
 	g_signal_connect(dialog, "response",
-	                 G_CALLBACK(finddata_response_sig), proj);
+	                 G_CALLBACK(finddata_response_sig), ctx);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), 512, 0);
 	gtk_widget_show_all(dialog);
@@ -610,8 +655,6 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	proj.unsaved = 0;
-	proj.file_chooser = NULL;
-	proj.geom_chooser = NULL;
 	proj.geom_filename = NULL;
 	proj.n_frames = 0;
 	proj.max_frames = 0;
@@ -623,6 +666,7 @@ int main(int argc, char *argv[])
 	proj.backend_private = NULL;
 	proj.data_top_folder = NULL;
 	proj.data_search_pattern = 0;
+	proj.stream_filename = NULL;
 
 	/* Default parameter values */
 	proj.show_peaks = 0;
