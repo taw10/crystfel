@@ -1498,6 +1498,21 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 	int dims_expected;
 	struct ev_list full_evs;
 
+	full_evs.events = NULL;
+	full_evs.n_events = 0;
+	full_evs.max_events = 0;
+
+	/* If the DataTemplate already says that one frame will be
+	 * found per file, short-circuit this whole affair */
+	if ( (num_placeholders(&dtempl->panels[0]) == 0)
+	  && (num_path_placeholders(dtempl->panels[0].data) == 0) )
+	{
+		add_to_list(&full_evs, "//");
+		*pn_frames = full_evs.n_events;
+		return full_evs.events;
+	}
+
+
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file '%s'\n", filename);
@@ -1520,10 +1535,6 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 	}
 
 	dims_expected = n_dims_expected(&dtempl->panels[0]);
-
-	full_evs.events = NULL;
-	full_evs.n_events = 0;
-	full_evs.max_events = 0;
 
 	/* For each expanded path, enumerate the placeholder
 	 * dimensions.  Once again, since the number of placeholders
