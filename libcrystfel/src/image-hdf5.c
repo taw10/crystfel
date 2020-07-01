@@ -204,6 +204,19 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 }
 
 
+static int num_path_placeholders(const char *pattern)
+{
+	size_t l, i;
+	int n_pl_exp = 0;
+
+	l = strlen(pattern);
+	for ( i=0; i<l; i++ ) {
+		if ( pattern[i] == '%' ) n_pl_exp++;
+	}
+	return n_pl_exp;
+}
+
+
 /* ev = abc/def/ghi//5/2/7
  * pattern = /data/%/somewhere/%/%/data
  * output = /data/abc/somewhere/def/ghi/data
@@ -215,7 +228,7 @@ char *substitute_path(const char *ev, const char *pattern)
 	char **plvals;
 	int n_plvals;
 	int n_pl_exp;
-	size_t l, total_len;
+	size_t total_len;
 	int i;
 	char *subs;
 	const char *start;
@@ -229,11 +242,7 @@ char *substitute_path(const char *ev, const char *pattern)
 	plvals = read_path_parts(ev, &n_plvals);
 	if ( plvals == NULL ) return NULL;
 
-	l = strlen(pattern);
-	n_pl_exp = 0;
-	for ( i=0; i<l; i++ ) {
-		if ( pattern[i] == '%' ) n_pl_exp++;
-	}
+	n_pl_exp = num_path_placeholders(pattern);
 
 	if ( n_plvals != n_pl_exp ) {
 		ERROR("Wrong number of path placeholders: "
