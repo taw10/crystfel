@@ -445,7 +445,9 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	}
 
 	for ( i=0; i<iv->num_peaklists; i++ ){
-		if ( iv->peaklists[i] != NULL ) {
+		if ( (iv->peaklists[i] != NULL)
+		  && (iv->image != NULL) )
+		{
 			draw_peaks(cr, iv , iv->peaklists[i]);
 		}
 	}
