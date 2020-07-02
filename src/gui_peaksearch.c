@@ -54,12 +54,10 @@ void update_peaks(struct crystfelproject *proj)
 	if ( proj->show_peaks ) {
 
 		struct image *image;
-		const DataTemplate *dtempl;
 
 		image = crystfel_image_view_get_image_struct(CRYSTFEL_IMAGE_VIEW(proj->imageview));
 		if ( image == NULL ) return;
 
-		dtempl = crystfel_image_view_get_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview));
 		image_feature_list_free(image->features);
 		image->features = NULL;
 
@@ -90,7 +88,7 @@ void update_peaks(struct crystfelproject *proj)
 
 		case PEAK_HDF5:
 		case PEAK_CXI:
-			image->features = image_read_peaks(dtempl,
+			image->features = image_read_peaks(proj->dtempl,
 			                                   image->filename,
 			                                   image->ev,
 			                                   proj->peak_search_params.half_pixel_shift);

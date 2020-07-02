@@ -255,13 +255,17 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		g_free(proj->geom_filename);
 		proj->geom_filename = geom_filename;
 
+		data_template_free(proj->dtempl);
+		proj->dtempl = dtempl;
+
 		g_free(proj->data_top_folder);
 		proj->data_top_folder = g_file_get_path(top);
 
 		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                     dtempl);
+		                                     proj->dtempl);
 
-		add_files(proj, top, proj->data_search_pattern, dtempl);
+		add_files(proj, top, proj->data_search_pattern,
+		          proj->dtempl);
 
 		g_object_unref(top);
 

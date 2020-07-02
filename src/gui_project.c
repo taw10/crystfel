@@ -413,6 +413,7 @@ void default_project(struct crystfelproject *proj)
 	proj->data_search_pattern = 0;
 	proj->stream_filename = NULL;
 	proj->stream = NULL;
+	proj->dtempl = NULL;
 
 	/* Default parameter values */
 	proj->show_peaks = 0;

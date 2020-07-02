@@ -86,6 +86,7 @@ struct crystfelproject {
 	                          * 'filenames' list should be complete */
 	enum match_type_id data_search_pattern;
 
+	DataTemplate *dtempl;
 	Stream *stream;
 	int n_frames;
 	int max_frames;
