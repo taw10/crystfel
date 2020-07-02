@@ -1158,6 +1158,8 @@ void data_template_free(DataTemplate *dt)
 {
 	int i;
 
+	if ( dt == NULL ) return;
+
 	free_all_rigid_groups(dt);
 	free_all_rigid_group_collections(dt);
 
