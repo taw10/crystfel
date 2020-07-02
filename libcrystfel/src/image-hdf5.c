@@ -386,8 +386,8 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 	dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
 	if ( dh < 0 ) {
-		ERROR("Cannot open data for panel %s (%s)\n",
-		      p->name, panel_full_path);
+		ERROR("Cannot open data for panel %s (%s) in file %s\n",
+		      p->name, panel_full_path, filename);
 		free(panel_full_path);
 		close_hdf5(fh);
 		return 1;
