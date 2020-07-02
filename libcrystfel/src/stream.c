@@ -1299,6 +1299,7 @@ int stream_get_fd(Stream *st)
  */
 void stream_close(Stream *st)
 {
+	if ( st == NULL ) return;
 	free(st->audit_info);
 	free(st->geometry_file);
 	fclose(st->fh);
