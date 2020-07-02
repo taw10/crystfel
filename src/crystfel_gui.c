@@ -109,6 +109,7 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 }
 
 
+/* Bring the image view up to date after changing the selected image */
 static void update_imageview(struct crystfelproject *proj)
 {
 	char tmp[1024];
@@ -117,20 +118,50 @@ static void update_imageview(struct crystfelproject *proj)
 
 	if ( proj->n_frames == 0 ) return;
 
-	if ( proj->events[proj->cur_frame] != NULL ) {
-		ev_str = proj->events[proj->cur_frame];
-		ev_sep = " ";
+	if ( proj->stream != NULL ) {
+
+		struct image *image;
+
+		if ( stream_select_chunk(proj->stream,
+		                         proj->cur_frame) )
+		{
+			ERROR("Failed to select new chunk\n");
+			return;
+		}
+
+		image = stream_read_chunk(proj->stream,
+		                          proj->dtempl,
+		                          STREAM_UNITCELL
+		                        | STREAM_REFLECTIONS
+		                        | STREAM_PEAKS
+		                        | STREAM_CRYSTALS);
+
+		if ( image == NULL ) {
+			ERROR("Failed to read from stream\n");
+			return;
+		}
+
 	} else {
-		ev_str = "";
-		ev_sep = "";
+
+		if ( proj->events[proj->cur_frame] != NULL ) {
+			ev_str = proj->events[proj->cur_frame];
+			ev_sep = " ";
+		} else {
+			ev_str = "";
+			ev_sep = "";
+		}
+		snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
+		         proj->filenames[proj->cur_frame],
+		         ev_sep,
+		         ev_str,
+		         proj->cur_frame+1,
+		         proj->n_frames);
+		gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
+		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              proj->filenames[proj->cur_frame],
+		                              proj->events[proj->cur_frame]);
+
 	}
-	snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
-	         proj->filenames[proj->cur_frame], ev_sep, ev_str,
-	         proj->cur_frame+1, proj->n_frames);
-	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
-	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                              proj->filenames[proj->cur_frame],
-	                              proj->events[proj->cur_frame]);
 }
 
 
@@ -251,6 +282,8 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		clear_project_files(proj);
 		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 		                              NULL, NULL);
+		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                     NULL);
 
 		g_free(proj->geom_filename);
 		proj->geom_filename = geom_filename;
@@ -271,7 +304,62 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 	} else {
 
-		STATUS("Mock stream load\n");
+		Stream *st;
+		char *stream_filename;
+		DataTemplate *dtempl;
+		const char *geom_str;
+		int n_chunks;
+
+		stream_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->stream));
+		if ( stream_filename == NULL ) return;
+
+		st = stream_open_for_read(stream_filename);
+		if ( st == NULL ) return;
+
+		geom_str = stream_geometry_file(st);
+		if ( geom_str == NULL ) {
+			ERROR("No geometry file\n");
+			stream_close(st);
+			return;
+		}
+
+		dtempl = data_template_new_from_string(geom_str);
+		if ( dtempl == NULL ) {
+			stream_close(st);
+			return;
+		}
+
+		clear_project_files(proj);
+		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              NULL, NULL);
+		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                     NULL);
+
+		stream_close(proj->stream);
+		proj->stream = st;
+
+		data_template_free(proj->dtempl);
+		proj->dtempl = dtempl;
+
+		/* Set some defaults for things we won't be using */
+		g_free(proj->geom_filename);
+		proj->geom_filename = NULL;
+		g_free(proj->data_top_folder);
+		proj->data_top_folder = NULL;
+		proj->data_search_pattern = MATCH_EVERYTHING;
+
+		n_chunks = stream_scan_chunks(st);
+		STATUS("There are %i chunks\n", n_chunks);
+
+		if ( n_chunks == 0 ) {
+			ERROR("No chunks found (or error reading)\n");
+			stream_close(st);
+			return;
+		}
+
+		proj->n_frames = n_chunks;
+		proj->stream_filename = stream_filename;
+
 	}
 
 	proj->unsaved = 1;
