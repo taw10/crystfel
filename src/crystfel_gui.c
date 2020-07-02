@@ -237,23 +237,30 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 		geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->geom_file));
 		if ( geom_filename == NULL ) return;
-		dtempl = data_template_new_from_file(geom_filename);
-		if ( dtempl == NULL ) return;
-		free(proj->geom_filename);
-		proj->geom_filename = geom_filename;
-		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                     dtempl);
 
 		top = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(ctx->top_folder));
 		if ( top == NULL ) return;
-		free(proj->data_top_folder);
-		proj->data_top_folder = g_file_get_path(top);
 
-		/* Totally clean up the old list */
-		clear_project_files(proj);
+		dtempl = data_template_new_from_file(geom_filename);
+		if ( dtempl == NULL ) return;
 
 		type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(ctx->type_combo));
 		proj->data_search_pattern = decode_matchtype(type_id);
+
+		/* Totally clean up the old list */
+		clear_project_files(proj);
+		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              NULL, NULL);
+
+		free(proj->geom_filename);
+		proj->geom_filename = geom_filename;
+
+		free(proj->data_top_folder);
+		proj->data_top_folder = g_file_get_path(top);
+
+		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                     dtempl);
+
 		add_files(proj, top, proj->data_search_pattern, dtempl);
 
 		g_object_unref(top);
