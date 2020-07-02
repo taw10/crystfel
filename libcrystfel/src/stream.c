@@ -107,15 +107,23 @@ static ImageFeatureList *read_peaks(Stream *st,
 		char line[1024];
 		float x, y, d, intensity;
 		int r, exp_n;
-		char *panel_name = NULL;
+		char panel_name[1024];
 
 		rval = fgets(line, 1023, st->fh);
 		st->ln++;
-		if ( rval == NULL ) continue;
+		if ( rval == NULL ) {
+			image_feature_list_free(features);
+			return NULL;
+		}
 		chomp(line);
 
 		if ( strcmp(line, STREAM_PEAK_LIST_END_MARKER) == 0 ) {
 			return features;
+		}
+
+		if ( first ) {
+			first = 0;
+			continue;
 		}
 
 		if ( AT_LEAST_VERSION(st, 2, 3) ) {
@@ -127,19 +135,22 @@ static ImageFeatureList *read_peaks(Stream *st,
 			           &x, &y, &d, &intensity);
 			exp_n = 4;
 		}
-		if ( (r != exp_n) && (!first) ) {
+
+		if ( r != exp_n ) {
 			ERROR("Failed to parse peak list line.\n");
 			ERROR("The failed line was: '%s'\n", line);
 			image_feature_list_free(features);
 			return NULL;
 		}
 
-		first = 0;
-		if ( (panel_name != NULL) && (dtempl != NULL) ) {
+		if ( (panel_name[0] != '\0') && (dtempl != NULL) ) {
 
 			int pn;
 
-			if ( data_template_panel_name_to_number(dtempl, panel_name, &pn) ) {
+			if ( data_template_panel_name_to_number(dtempl,
+			                                        panel_name,
+			                                        &pn) )
+			{
 				ERROR("No such panel '%s'\n",
 				      panel_name);
 			} else {
@@ -167,9 +178,7 @@ static ImageFeatureList *read_peaks(Stream *st,
 
 	} while ( rval != NULL );
 
-	/* Got read error of some kind before finding STREAM_PEAK_LIST_END_MARKER */
-	image_feature_list_free(features);
-	return NULL;
+	return features;
 }
 
 
@@ -979,11 +988,18 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 		if ( (srf & STREAM_PEAKS)
 		    && strcmp(line, STREAM_PEAK_LIST_START_MARKER) == 0 ) {
 
-			if ( read_peaks(st, dtempl, image) ) {
+			ImageFeatureList *peaks;
+			peaks = read_peaks(st, dtempl, image);
+
+			if ( peaks == NULL ) {
 				ERROR("Failed while reading peaks\n");
 				image_free(image);
 				return NULL;
 			}
+
+			image->features = peaks;
+
+
 		}
 
 		if ( (srf & STREAM_CRYSTALS)
