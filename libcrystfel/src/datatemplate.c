@@ -792,7 +792,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.mask_file = NULL;
 	defaults.satmap = NULL;
 	defaults.satmap_file = NULL;
-	defaults.data = NULL;
+	defaults.data = strdup("/data/data");
 	defaults.name = NULL;
 	defaults.dims[0] = DIM_SS;
 	defaults.dims[1] = DIM_FS;
