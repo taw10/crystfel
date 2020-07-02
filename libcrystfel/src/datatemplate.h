@@ -52,6 +52,7 @@ extern "C" {
 #endif
 
 extern DataTemplate *data_template_new_from_file(const char *filename);
+extern DataTemplate *data_template_new_from_string(const char *string_in);
 extern void data_template_free(DataTemplate *dt);
 
 extern const char *data_template_panel_number_to_name(const DataTemplate *dt,
