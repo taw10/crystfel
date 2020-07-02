@@ -252,10 +252,10 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 		                              NULL, NULL);
 
-		free(proj->geom_filename);
+		g_free(proj->geom_filename);
 		proj->geom_filename = geom_filename;
 
-		free(proj->data_top_folder);
+		g_free(proj->data_top_folder);
 		proj->data_top_folder = g_file_get_path(top);
 
 		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
