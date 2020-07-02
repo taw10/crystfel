@@ -80,6 +80,9 @@ struct _stream
 	                * encountered, so stream_read_chunk() should assume a chunk is
 	                * already in progress instead of looking for another
 	                * marker */
+
+	long *chunk_offsets;
+	int n_chunks;
 };
 
 
@@ -1148,6 +1151,8 @@ Stream *stream_open_for_read(const char *filename)
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
 	st->in_chunk = 0;
+	st->n_chunks = 0;
+	st->chunk_offsets = NULL;
 
 	if ( strcmp(filename, "-") == 0 ) {
 		st->fh = stdin;
@@ -1220,6 +1225,8 @@ Stream *stream_open_fd_for_write(int fd)
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
 	st->in_chunk = 0;
+	st->n_chunks = 0;
+	st->chunk_offsets = NULL;
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
@@ -1266,6 +1273,8 @@ Stream *stream_open_for_write(const char *filename)
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
 	st->in_chunk = 0;
+	st->n_chunks = 0;
+	st->chunk_offsets = NULL;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1399,3 +1408,77 @@ int stream_rewind(Stream *st)
 	return fseek(st->fh, 0, SEEK_SET);
 }
 
+
+int stream_select_chunk(Stream *st, int chunk_id)
+{
+	if ( st->chunk_offsets == NULL ) return 1;
+	if ( chunk_id >= st->n_chunks ) return 1;
+	if ( fseek(st->fh, st->chunk_offsets[chunk_id], SEEK_SET) != 0 ) {
+		return 1;
+	}
+	st->in_chunk = 1;
+	return 0;
+}
+
+
+int stream_scan_chunks(Stream *st)
+{
+	long start_pos;
+	long int max_chunks = 0;
+	int done = 0;
+
+	if ( st->chunk_offsets != NULL ) {
+		ERROR("Stream has already been scanned\n");
+		return 0;
+	}
+
+	start_pos = ftell(st->fh);
+
+	/* Reset to start of stream.
+	 * Also, this serves as a cursory check that the stream is
+	 * actually something which can be rewound. */
+	if ( fseek(st->fh, 0, SEEK_SET) != 0 ) {
+		return 0;
+	}
+
+	do {
+
+		if ( find_start_of_chunk(st) ) {
+
+			if ( feof(st->fh) ) {
+				done = 1;
+			} else {
+				fseek(st->fh, start_pos, SEEK_SET);
+				free(st->chunk_offsets);
+				st->chunk_offsets = NULL;
+				return 0;
+			}
+		}
+
+		if ( st->n_chunks == max_chunks ) {
+
+			long *new_offsets;
+
+			max_chunks += 1024;
+			new_offsets = realloc(st->chunk_offsets,
+			                      max_chunks*sizeof(long));
+			if ( new_offsets == NULL ) {
+				fseek(st->fh, start_pos, SEEK_SET);
+				free(st->chunk_offsets);
+				st->chunk_offsets = NULL;
+				return 0;
+			}
+
+			st->chunk_offsets = new_offsets;
+
+		}
+
+		st->chunk_offsets[st->n_chunks++] = ftell(st->fh);
+
+	} while ( !done );
+
+	/* Reset to initial position */
+	fseek(st->fh, start_pos, SEEK_SET);
+
+	return st->n_chunks;
+}

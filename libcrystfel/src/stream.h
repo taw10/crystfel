@@ -116,6 +116,10 @@ extern char *stream_geometry_file(Stream *st);
 extern int stream_get_fd(Stream *st);
 extern int stream_rewind(Stream *st);
 
+/* Random access */
+extern int stream_scan_chunks(Stream *st);
+extern int stream_select_chunk(Stream *st, int chunk_number);
+
 /* Read/write chunks */
 extern struct image *stream_read_chunk(Stream *st,
                                        const DataTemplate *dtempl,
