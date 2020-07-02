@@ -1498,6 +1498,8 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 	int dims_expected;
 	struct ev_list full_evs;
 
+	if ( dtempl->n_panels == 0 ) return NULL;
+
 	full_evs.events = NULL;
 	full_evs.n_events = 0;
 	full_evs.max_events = 0;
