@@ -215,6 +215,10 @@ static void handle_var(const char *key, const char *val,
 		proj->data_top_folder = strdup(val);
 	}
 
+	if ( strcmp(key, "stream") == 0 ) {
+		proj->stream_filename = strdup(val);
+	}
+
 	if ( strcmp(key, "search_pattern") == 0 ) {
 		proj->data_search_pattern = decode_matchtype(val);
 	}
@@ -338,6 +342,7 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "data_folder %s\n", proj->data_top_folder);
 	fprintf(fh, "search_pattern %s\n",
 	        str_matchtype(proj->data_search_pattern));
+	fprintf(fh, "stream %s\n", proj->stream_filename);
 
 	fprintf(fh, "peak_search_params.method %s\n",
 	        str_peaksearch(proj->peak_search_params.method));
@@ -389,4 +394,43 @@ int save_project(struct crystfelproject *proj)
 
 	proj->unsaved = 0;
 	return 0;
+}
+
+
+void default_project(struct crystfelproject *proj)
+{
+	proj->unsaved = 0;
+	proj->geom_filename = NULL;
+	proj->n_frames = 0;
+	proj->max_frames = 0;
+	proj->filenames = NULL;
+	proj->events = NULL;
+	proj->peak_params = NULL;
+	proj->unitcell_combo = NULL;
+	proj->info_bar = NULL;
+	proj->backend_private = NULL;
+	proj->data_top_folder = NULL;
+	proj->data_search_pattern = 0;
+	proj->stream_filename = NULL;
+	proj->stream = NULL;
+
+	/* Default parameter values */
+	proj->show_peaks = 0;
+	proj->peak_search_params.method = PEAK_ZAEF;
+	proj->peak_search_params.threshold = 800.0;
+	proj->peak_search_params.min_sq_gradient = 100000;
+	proj->peak_search_params.min_snr = 5.0;
+	proj->peak_search_params.local_bg_radius = 3;
+	proj->peak_search_params.min_res = 0;
+	proj->peak_search_params.min_sig = 11.0;
+	proj->peak_search_params.max_res = 1200;
+	proj->peak_search_params.min_pix_count = 2;
+	proj->peak_search_params.max_pix_count = 200;
+	proj->peak_search_params.min_peak_over_neighbour = -INFINITY;
+	proj->peak_search_params.pk_inn = 3.0;
+	proj->peak_search_params.pk_mid = 4.0;
+	proj->peak_search_params.pk_out = 5.0;
+	proj->peak_search_params.half_pixel_shift = 1;
+	proj->peak_search_params.revalidate = 1;
+	proj->backend = backend_local;
 }

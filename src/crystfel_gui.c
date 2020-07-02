@@ -661,39 +661,7 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	proj.unsaved = 0;
-	proj.geom_filename = NULL;
-	proj.n_frames = 0;
-	proj.max_frames = 0;
-	proj.filenames = NULL;
-	proj.events = NULL;
-	proj.peak_params = NULL;
-	proj.unitcell_combo = NULL;
-	proj.info_bar = NULL;
-	proj.backend_private = NULL;
-	proj.data_top_folder = NULL;
-	proj.data_search_pattern = 0;
-	proj.stream_filename = NULL;
-
-	/* Default parameter values */
-	proj.show_peaks = 0;
-	proj.peak_search_params.method = PEAK_ZAEF;
-	proj.peak_search_params.threshold = 800.0;
-	proj.peak_search_params.min_sq_gradient = 100000;
-	proj.peak_search_params.min_snr = 5.0;
-	proj.peak_search_params.local_bg_radius = 3;
-	proj.peak_search_params.min_res = 0;
-	proj.peak_search_params.min_sig = 11.0;
-	proj.peak_search_params.max_res = 1200;
-	proj.peak_search_params.min_pix_count = 2;
-	proj.peak_search_params.max_pix_count = 200;
-	proj.peak_search_params.min_peak_over_neighbour = -INFINITY;
-	proj.peak_search_params.pk_inn = 3.0;
-	proj.peak_search_params.pk_mid = 4.0;
-	proj.peak_search_params.pk_out = 5.0;
-	proj.peak_search_params.half_pixel_shift = 1;
-	proj.peak_search_params.revalidate = 1;
-	proj.backend = backend_local;
+	default_project(&proj);
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
