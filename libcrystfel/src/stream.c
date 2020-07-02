@@ -77,7 +77,7 @@ struct _stream
 	                    * indexing method */
 
 	int in_chunk;  /* True if a chunk start marker has been "accidentally"
-	                * encountered, so read_chunk() should assume a chunk is
+	                * encountered, so stream_read_chunk() should assume a chunk is
 	                * already in progress instead of looking for another
 	                * marker */
 };
@@ -1386,7 +1386,7 @@ void stream_write_geometry_file(Stream *st, const char *geom_filename)
  * \param st A \ref Stream
  *
  * Attempts to set the file pointer for \p st to the start of the stream, so that
- * later calls to \ref read_chunk will repeat the sequence of chunks from the
+ * later calls to \ref stream_read_chunk will repeat the sequence of chunks from the
  * start.
  *
  * Programs must not assume that this operation always succeeds!

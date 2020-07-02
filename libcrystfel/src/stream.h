@@ -107,13 +107,16 @@ extern void stream_write_commandline_args(Stream *st,
 extern void stream_write_indexing_methods(Stream *st,
                                           const char *indm_str);
 
+/* Metadata */
 extern int stream_has_old_indexers(Stream *st);
 extern char *stream_audit_info(Stream *st);
 extern char *stream_geometry_file(Stream *st);
 
+/* Low-level stuff used for indexamajig sandbox */
 extern int stream_get_fd(Stream *st);
 extern int stream_rewind(Stream *st);
 
+/* Read/write chunks */
 extern struct image *stream_read_chunk(Stream *st,
                                        const DataTemplate *dtempl,
                                        StreamFlags srf);
