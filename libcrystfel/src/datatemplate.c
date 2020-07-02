@@ -850,6 +850,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		if ( eq == NULL ) {
 			ERROR("Bad line in geometry file: '%s'\n", line);
 			free(line);
+			reject = 1;
 			continue;
 		}
 
