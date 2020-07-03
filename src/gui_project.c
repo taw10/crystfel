@@ -229,16 +229,19 @@ void clear_project_files(struct crystfelproject *proj)
 {
 	int i;
 
-	for ( i=0; i<proj->n_frames; i++ ) {
-		free(proj->filenames[i]);
-		free(proj->events[i]);
+	if ( proj->filenames != NULL ) {
+		for ( i=0; i<proj->n_frames; i++ ) {
+			free(proj->filenames[i]);
+			free(proj->events[i]);
+		}
+		free(proj->filenames);
+		free(proj->events);
 	}
-	free(proj->filenames);
-	free(proj->events);
 	proj->n_frames = 0;
 	proj->max_frames = 0;
 	proj->filenames = NULL;
 	proj->events = NULL;
+	proj->stream = NULL;
 }
 
 
