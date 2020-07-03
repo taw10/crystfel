@@ -1012,6 +1012,8 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
 			if ( have_filename && have_ev ) {
 				/* Success */
+				create_detgeom(image, dtempl);
+				create_blank_arrays(image);
 				return image;
 			}
 			ERROR("Incomplete chunk found in input file.\n");

@@ -388,7 +388,7 @@ static double get_wavelength(struct image *image, const char *from)
 }
 
 
-static void create_detgeom(struct image *image, DataTemplate *dtempl)
+void create_detgeom(struct image *image, const DataTemplate *dtempl)
 {
 	struct detgeom *detgeom;
 	int i;
@@ -637,6 +637,46 @@ struct image *image_new()
        image->features = NULL;
 
        return image;
+}
+
+
+int create_blank_arrays(struct image *image)
+{
+	int pn;
+	int num_panels = image->detgeom->n_panels;
+
+	image->dp = malloc(num_panels*sizeof(float *));
+	image->bad = malloc(num_panels*sizeof(int *));
+	image->sat = malloc(num_panels*sizeof(float *));
+
+	if ( (image->dp == NULL) || (image->bad == NULL)
+	  || (image->sat == NULL) ) return 1;
+
+	for ( pn=0; pn<num_panels; pn++ ) {
+
+		long int i;
+		struct detgeom_panel *p = &image->detgeom->panels[pn];
+
+		image->dp[pn] = malloc(p->w*p->h*sizeof(float));
+		image->bad[pn] = malloc(p->w*p->h*sizeof(int));
+		image->sat[pn] = malloc(p->w*p->h*sizeof(float));
+
+		if ( (image->dp[pn] == NULL)
+		  || (image->bad[pn] == NULL)
+		  || (image->sat[pn] == NULL) )
+		{
+			return 1;
+		}
+
+		for ( i=0; i<p->w*p->h; i++ ) {
+			image->dp[pn][i] = 0.0;
+			image->bad[pn][i] = 0;
+			image->sat[pn][i] = INFINITY;
+		}
+
+	}
+
+	return 0;
 }
 
 
