@@ -416,6 +416,7 @@ void default_project(struct crystfelproject *proj)
 	proj->stream_filename = NULL;
 	proj->stream = NULL;
 	proj->dtempl = NULL;
+	proj->cur_image = NULL;
 
 	/* Default parameter values */
 	proj->show_peaks = 0;

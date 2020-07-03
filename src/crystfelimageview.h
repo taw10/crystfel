@@ -81,16 +81,12 @@ struct _crystfelimageview
 	double               offs_x;
 	double               offs_y;
 
-	DataTemplate        *dtempl;
-	char                *filename;
-	char                *event;
-	struct image        *image;
+	const struct image  *image;
+
 	GdkPixbuf          **pixbufs;
 
-	int                  num_peaklists;
-	ImageFeatureList   **peaklists;
-
 	double               brightness;
+	int                  show_peaks;
 };
 
 struct _crystfelimageviewclass
@@ -104,20 +100,13 @@ typedef struct _crystfelimageviewclass CrystFELImageViewClass;
 extern GType crystfel_image_view_get_type(void);
 extern GtkWidget *crystfel_image_view_new(void);
 
-extern int crystfel_image_view_set_datatemplate(CrystFELImageView *iv,
-                                                DataTemplate *dtempl);
-
 extern int crystfel_image_view_set_image(CrystFELImageView *iv,
-                                         const char *filename,
-                                         const char *event);
-
-extern struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv);
-
-extern void crystfel_image_view_set_peaks(CrystFELImageView *iv,
-                                          ImageFeatureList *peaks,
-                                          int list_num);
+                                         const struct image *image);
 
 extern void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                                double brightness);
+
+extern void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
+                                               int show_peaks);
 
 #endif	/* CRYSTFELIMAGEVIEW_H */

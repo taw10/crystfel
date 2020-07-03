@@ -79,6 +79,7 @@ struct crystfelproject {
 	int unsaved;
 
 	int cur_frame;
+	struct image *cur_image;
 
 	char *geom_filename;
 	char *stream_filename;

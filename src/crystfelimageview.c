@@ -45,9 +45,6 @@
 #include "crystfelimageview.h"
 
 
-static int rerender_image(CrystFELImageView *iv);
-
-
 static void scroll_interface_init(GtkScrollable *iface)
 {
 }
@@ -89,8 +86,6 @@ static void cleanup_image(CrystFELImageView *iv)
 	}
 	free(iv->pixbufs);
 
-	image_free(iv->image);
-
 	iv->image = NULL;
 	iv->pixbufs = NULL;
 }
@@ -99,8 +94,6 @@ static void cleanup_image(CrystFELImageView *iv)
 static gint destroy_sig(GtkWidget *window, CrystFELImageView *iv)
 {
 	cleanup_image(iv);
-	free(iv->filename);
-	free(iv->event);
 	return FALSE;
 }
 
@@ -417,7 +410,6 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 {
-	int i;
 	cairo_matrix_t m;
 
 	cairo_save(cr);
@@ -444,12 +436,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 		}
 	}
 
-	for ( i=0; i<iv->num_peaklists; i++ ){
-		if ( (iv->peaklists[i] != NULL)
-		  && (iv->image != NULL) )
-		{
-			draw_peaks(cr, iv , iv->peaklists[i]);
-		}
+	if ( iv->show_peaks ) {
+		draw_peaks(cr, iv, iv->image->features);
 	}
 
 	cairo_restore(cr);
@@ -592,11 +580,8 @@ GtkWidget *crystfel_image_view_new()
 	iv->detector_w = 1.0;
 	iv->detector_h = 1.0;
 	iv->zoom = -1.0;
-	iv->filename = NULL;
-	iv->event = NULL;
 	iv->image = NULL;
-	iv->num_peaklists = 0;
-	iv->peaklists = NULL;
+	iv->show_peaks = 0;
 	iv->brightness = 1.0;
 	iv->pixbufs = NULL;
 
@@ -761,29 +746,15 @@ static double auto_scale_top(const struct image *image)
 }
 
 
-static int reload_image(CrystFELImageView *iv)
-{
-	if ( iv->dtempl == NULL ) return 0;
-	if ( iv->filename == NULL ) return 0;
-
-	cleanup_image(iv);
-
-	iv->image = image_read(iv->dtempl, iv->filename, iv->event);
-	if ( iv->image == NULL ) {
-		ERROR("Failed to load image\n");
-		return 1;
-	}
-
-	return rerender_image(iv);
-}
-
-
 static int rerender_image(CrystFELImageView *iv)
 {
 	int i;
 	double min_x, min_y, max_x, max_y;
 	double border;
 	double scale_top;
+
+	if ( iv->image == NULL ) return 0;
+	if ( iv->image->detgeom == NULL ) return 0;
 
 	if ( iv->pixbufs == NULL ) {
 		iv->pixbufs = calloc(iv->image->detgeom->n_panels,
@@ -827,65 +798,12 @@ static int rerender_image(CrystFELImageView *iv)
 }
 
 
-int crystfel_image_view_set_datatemplate(CrystFELImageView *iv,
-                                         DataTemplate *dtempl)
-{
-	iv->dtempl = dtempl;
-	return reload_image(iv);
-}
-
-
 int crystfel_image_view_set_image(CrystFELImageView *iv,
-                                  const char *filename,
-                                  const char *event)
+                                  const struct image *image)
 {
-	int i;
-
-	free(iv->filename);
-	free(iv->event);
-
-	/* Dump peak lists, because image is changing */
-	for ( i=0; i<iv->num_peaklists; i++ ) {
-		image_feature_list_free(iv->peaklists[i]);
-	}
-	free(iv->peaklists);
-	iv->peaklists = NULL;
-	iv->num_peaklists = 0;
-
-	iv->filename = safe_strdup(filename);
-	iv->event = safe_strdup(event);
-	return reload_image(iv);
-}
-
-
-struct image *crystfel_image_view_get_image_struct(CrystFELImageView *iv)
-{
-	return iv->image;
-}
-
-
-void crystfel_image_view_set_peaks(CrystFELImageView *iv,
-                                   ImageFeatureList *peaks,
-                                   int list_num)
-{
-	int i;
-	if ( list_num >= iv->num_peaklists ) {
-		ImageFeatureList **n_fl;
-		n_fl = realloc(iv->peaklists,
-		               (list_num+1)*sizeof(ImageFeatureList*));
-		if ( n_fl == NULL ) return;
-		for ( i=iv->num_peaklists; i<list_num+1; i++ ) {
-			n_fl[i] = NULL;
-		}
-		iv->peaklists = n_fl;
-		iv->num_peaklists = list_num+1;
-	}
-	if ( iv->peaklists[list_num] != NULL ) {
-		image_feature_list_free(iv->peaklists[list_num]);
-	}
-	iv->peaklists[list_num] = image_feature_list_copy(peaks);
-
-	redraw(iv);
+	cleanup_image(iv);
+	iv->image = image;
+	return rerender_image(iv);
 }
 
 
@@ -893,5 +811,13 @@ void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                         double brightness)
 {
 	iv->brightness = brightness;
+	rerender_image(iv);
+}
+
+
+void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
+                                        int show_peaks)
+{
+	iv->show_peaks = show_peaks;
 	rerender_image(iv);
 }

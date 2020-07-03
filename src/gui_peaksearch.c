@@ -48,23 +48,19 @@
 
 void update_peaks(struct crystfelproject *proj)
 {
-
 	if ( proj->n_frames == 0 ) return;
+
+	if ( proj->cur_image == NULL ) return;
 
 	if ( proj->show_peaks ) {
 
-		struct image *image;
-
-		image = crystfel_image_view_get_image_struct(CRYSTFEL_IMAGE_VIEW(proj->imageview));
-		if ( image == NULL ) return;
-
-		image_feature_list_free(image->features);
-		image->features = NULL;
+		image_feature_list_free(proj->cur_image->features);
+		proj->cur_image->features = NULL;
 
 		switch ( proj->peak_search_params.method ) {
 
-		case PEAK_ZAEF:
-			search_peaks(image,
+			case PEAK_ZAEF:
+			search_peaks(proj->cur_image,
 			             proj->peak_search_params.threshold,
 			             proj->peak_search_params.min_sq_gradient,
 			             proj->peak_search_params.min_snr,
@@ -74,8 +70,8 @@ void update_peaks(struct crystfelproject *proj)
 			             1);
 			break;
 
-		case PEAK_PEAKFINDER8:
-			search_peaks_peakfinder8(image, 2048,
+			case PEAK_PEAKFINDER8:
+			search_peaks_peakfinder8(proj->cur_image, 2048,
 			                         proj->peak_search_params.threshold,
 			                         proj->peak_search_params.min_snr,
 			                         proj->peak_search_params.min_pix_count,
@@ -86,14 +82,14 @@ void update_peaks(struct crystfelproject *proj)
 			                         1);
 			break;
 
-		case PEAK_HDF5:
-		case PEAK_CXI:
-			image->features = image_read_peaks(proj->dtempl,
-			                                   image->filename,
-			                                   image->ev,
-			                                   proj->peak_search_params.half_pixel_shift);
+			case PEAK_HDF5:
+			case PEAK_CXI:
+			proj->cur_image->features = image_read_peaks(proj->dtempl,
+			                                             proj->cur_image->filename,
+			                                             proj->cur_image->ev,
+			                                             proj->peak_search_params.half_pixel_shift);
 			if ( proj->peak_search_params.revalidate ) {
-				validate_peaks(image,
+				validate_peaks(proj->cur_image,
 				               proj->peak_search_params.min_snr,
 				               proj->peak_search_params.pk_inn,
 				               proj->peak_search_params.pk_mid,
@@ -102,18 +98,17 @@ void update_peaks(struct crystfelproject *proj)
 			}
 			break;
 
-		default:
+			default:
 			ERROR("This peak detection method not implemented!\n");
 			break;
 
 		}
 
-		crystfel_image_view_set_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              image->features, 0);
+		crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                   1);
 
-	} else {
-		crystfel_image_view_set_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              NULL, 0);
+		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              proj->cur_image);
 	}
 }
 

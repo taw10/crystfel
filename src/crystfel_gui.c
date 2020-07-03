@@ -115,12 +115,11 @@ static void update_imageview(struct crystfelproject *proj)
 	char tmp[1024];
 	char *ev_str;
 	char *ev_sep;
+	struct image *image;
 
 	if ( proj->n_frames == 0 ) return;
 
 	if ( proj->stream != NULL ) {
-
-		struct image *image;
 
 		if ( stream_select_chunk(proj->stream,
 		                         proj->cur_frame) )
@@ -141,47 +140,41 @@ static void update_imageview(struct crystfelproject *proj)
 			return;
 		}
 
-		if ( image->ev != NULL ) {
-			ev_str = image->ev;
-			ev_sep = " ";
-		} else {
-			ev_str = "";
-			ev_sep = "";
-		}
-		snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
-		         image->filename,
-		         ev_sep,
-		         ev_str,
-		         proj->cur_frame+1,
-		         proj->n_frames);
-		gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
-		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              image->filename,
-		                              image->ev);
-
-		image_free(image);
-
 	} else {
 
-		if ( proj->events[proj->cur_frame] != NULL ) {
-			ev_str = proj->events[proj->cur_frame];
-			ev_sep = " ";
-		} else {
-			ev_str = "";
-			ev_sep = "";
+		image = image_read(proj->dtempl,
+		                   proj->filenames[proj->cur_frame],
+		                   proj->events[proj->cur_frame]);
+
+		if ( image == NULL ) {
+			ERROR("Failed to load image\n");
+			return;
 		}
-		snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
-		         proj->filenames[proj->cur_frame],
-		         ev_sep,
-		         ev_str,
-		         proj->cur_frame+1,
-		         proj->n_frames);
-		gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
-		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              proj->filenames[proj->cur_frame],
-		                              proj->events[proj->cur_frame]);
 
 	}
+
+	/* Give CrystFELImageView a chance to free resources */
+	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                              NULL);
+	image_free(proj->cur_image);
+	proj->cur_image = image;
+
+	if ( proj->cur_image->ev != NULL ) {
+		ev_str = proj->cur_image->ev;
+		ev_sep = " ";
+	} else {
+		ev_str = "";
+		ev_sep = "";
+	}
+	snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
+	         proj->cur_image->filename,
+	         ev_sep,
+	         ev_str,
+	         proj->cur_frame+1,
+	         proj->n_frames);
+	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
+	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                              proj->cur_image);
 }
 
 
@@ -301,9 +294,7 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		/* Totally clean up the old list */
 		clear_project_files(proj);
 		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              NULL, NULL);
-		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                     NULL);
+		                              NULL);
 
 		g_free(proj->geom_filename);
 		proj->geom_filename = geom_filename;
@@ -313,9 +304,6 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 		g_free(proj->data_top_folder);
 		proj->data_top_folder = g_file_get_path(top);
-
-		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                     proj->dtempl);
 
 		add_files(proj, top, proj->data_search_pattern,
 		          proj->dtempl);
@@ -351,17 +339,13 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 		clear_project_files(proj);
 		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              NULL, NULL);
-		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                     NULL);
+		                              NULL);
 
 		stream_close(proj->stream);
 		proj->stream = st;
 
 		data_template_free(proj->dtempl);
 		proj->dtempl = dtempl;
-		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                     proj->dtempl);
 
 		/* Set some defaults for things we won't be using */
 		g_free(proj->geom_filename);
@@ -889,8 +873,6 @@ int main(int argc, char *argv[])
 		if ( proj.geom_filename != NULL ) {
 			dtempl = data_template_new_from_file(proj.geom_filename);
 			if ( dtempl != NULL ) {
-				crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj.imageview),
-				                                     dtempl);
 				proj.dtempl = dtempl;
 			}
 		}
