@@ -863,11 +863,16 @@ int main(int argc, char *argv[])
 		DataTemplate *dtempl;
 		GtkAction *w;
 		proj.cur_frame = 0;
-		dtempl = data_template_new_from_file(proj.geom_filename);
-		if ( dtempl != NULL ) {
-			crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj.imageview),
-			                                     dtempl);
+
+		if ( proj.geom_filename != NULL ) {
+			dtempl = data_template_new_from_file(proj.geom_filename);
+			if ( dtempl != NULL ) {
+				crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj.imageview),
+				                                     dtempl);
+				proj.dtempl = dtempl;
+			}
 		}
+
 		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/peaks");
 		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
 		                             proj.show_peaks);

@@ -383,12 +383,14 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "backend %s\n", proj->backend->name);
 
 	fprintf(fh, "-----\n");
-	for ( i=0; i<proj->n_frames; i++ ) {
-		if ( proj->events[i] != NULL ) {
-			fprintf(fh, "%s %s\n",
-			        proj->filenames[i], proj->events[i]);
-		} else {
-			fprintf(fh, "%s\n", proj->filenames[i]);
+	if ( proj->stream == NULL ) {
+		for ( i=0; i<proj->n_frames; i++ ) {
+			if ( proj->events[i] != NULL ) {
+				fprintf(fh, "%s %s\n",
+				        proj->filenames[i], proj->events[i]);
+			} else {
+				fprintf(fh, "%s\n", proj->filenames[i]);
+			}
 		}
 	}
 
