@@ -1489,7 +1489,9 @@ int stream_scan_chunks(Stream *st)
 
 		}
 
-		st->chunk_offsets[st->n_chunks++] = ftell(st->fh);
+		if ( !done ) {
+			st->chunk_offsets[st->n_chunks++] = ftell(st->fh);
+		}
 
 	} while ( !done );
 
