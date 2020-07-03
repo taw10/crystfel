@@ -49,8 +49,8 @@
 void update_peaks(struct crystfelproject *proj)
 {
 	if ( proj->n_frames == 0 ) return;
-
 	if ( proj->cur_image == NULL ) return;
+	if ( proj->stream != NULL ) return;
 
 	if ( proj->show_peaks ) {
 
