@@ -365,6 +365,9 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		proj->n_frames = n_chunks;
 		proj->stream_filename = stream_filename;
 
+		crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                   1);
+
 	}
 
 	proj->unsaved = 1;
