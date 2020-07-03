@@ -2,7 +2,7 @@ project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
 find_package(XGANDALF)
-find_package(PINKINDEXER)
+#find_package(PINKINDEXER)
 find_package(FDIP)
 find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
