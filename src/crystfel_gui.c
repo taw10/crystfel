@@ -355,7 +355,6 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		proj->data_search_pattern = MATCH_EVERYTHING;
 
 		n_chunks = stream_scan_chunks(st);
-		STATUS("There are %i chunks\n", n_chunks);
 
 		if ( n_chunks == 0 ) {
 			ERROR("No chunks found (or error reading)\n");
