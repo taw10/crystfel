@@ -261,6 +261,28 @@ struct finddata_ctx
 };
 
 
+static void finddata_typetoggle_sig(GtkWidget *radio,
+                                    struct finddata_ctx *ctx)
+{
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio)) ) {
+
+		/* Load images directly */
+		gtk_widget_set_sensitive(ctx->top_folder, TRUE);
+		gtk_widget_set_sensitive(ctx->type_combo, TRUE);
+		gtk_widget_set_sensitive(ctx->geom_file, TRUE);
+		gtk_widget_set_sensitive(ctx->stream, FALSE);
+
+	} else {
+
+		/* Load stream */
+		gtk_widget_set_sensitive(ctx->top_folder, FALSE);
+		gtk_widget_set_sensitive(ctx->type_combo, FALSE);
+		gtk_widget_set_sensitive(ctx->geom_file, FALSE);
+		gtk_widget_set_sensitive(ctx->stream, TRUE);
+	}
+}
+
+
 static void finddata_response_sig(GtkWidget *dialog, gint resp,
                                   struct finddata_ctx *ctx)
 {
@@ -411,6 +433,8 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	ctx->fi = gtk_radio_button_new_with_label(NULL, "Load images directly");
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(ctx->fi),
 	                   FALSE, FALSE, 8.0);
+	g_signal_connect(ctx->fi, "toggled",
+	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
@@ -480,6 +504,7 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                 G_CALLBACK(finddata_response_sig), ctx);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), 512, 0);
+	finddata_typetoggle_sig(ctx->fi, ctx);
 	gtk_widget_show_all(dialog);
 	return FALSE;
 }
