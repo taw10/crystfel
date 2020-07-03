@@ -141,6 +141,26 @@ static void update_imageview(struct crystfelproject *proj)
 			return;
 		}
 
+		if ( image->ev != NULL ) {
+			ev_str = image->ev;
+			ev_sep = " ";
+		} else {
+			ev_str = "";
+			ev_sep = "";
+		}
+		snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
+		         image->filename,
+		         ev_sep,
+		         ev_str,
+		         proj->cur_frame+1,
+		         proj->n_frames);
+		gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
+		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              image->filename,
+		                              image->ev);
+
+		image_free(image);
+
 	} else {
 
 		if ( proj->events[proj->cur_frame] != NULL ) {
@@ -340,6 +360,8 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 		data_template_free(proj->dtempl);
 		proj->dtempl = dtempl;
+		crystfel_image_view_set_datatemplate(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                     proj->dtempl);
 
 		/* Set some defaults for things we won't be using */
 		g_free(proj->geom_filename);
