@@ -372,6 +372,7 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 	proj->unsaved = 1;
 	proj->cur_frame = 0;
+	crystfel_image_view_reset_zoom(CRYSTFEL_IMAGE_VIEW(proj->imageview));
 	update_imageview(proj);
 	update_peaks(proj);
 

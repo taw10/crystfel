@@ -807,6 +807,14 @@ int crystfel_image_view_set_image(CrystFELImageView *iv,
 }
 
 
+void crystfel_image_view_reset_zoom(CrystFELImageView *iv)
+{
+	iv->detector_w = 1.0;
+	iv->detector_h = 1.0;
+	iv->zoom = -1.0;
+}
+
+
 void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                         double brightness)
 {

@@ -103,6 +103,8 @@ extern GtkWidget *crystfel_image_view_new(void);
 extern int crystfel_image_view_set_image(CrystFELImageView *iv,
                                          const struct image *image);
 
+extern void crystfel_image_view_reset_zoom(CrystFELImageView *iv);
+
 extern void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                                double brightness);
 
