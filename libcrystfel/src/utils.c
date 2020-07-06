@@ -803,3 +803,13 @@ char *load_entire_file(const char *filename)
 }
 
 
+/* -------------------------- libcrystfel features  ------------------------ */
+
+int crystfel_has_peakfinder9()
+{
+#ifdef HAVE_FDIP
+	return 1;
+#else
+	return 0;
+#endif
+}

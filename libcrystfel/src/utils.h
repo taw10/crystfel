@@ -292,6 +292,12 @@ static inline void mean_variance(const double x, const double w,
 	*sumw  = temp;
 }
 
+
+/* -------------------------- libcrystfel features  ------------------------ */
+
+extern int crystfel_has_peakfinder9(void);
+
+
 #ifdef __cplusplus
 }
 #endif
