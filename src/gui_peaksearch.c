@@ -82,6 +82,16 @@ void update_peaks(struct crystfelproject *proj)
 			                         1);
 			break;
 
+			case PEAK_PEAKFINDER9:
+			search_peaks_peakfinder9(proj->cur_image,
+			                         proj->peak_search_params.min_snr_biggest_pix,
+			                         proj->peak_search_params.min_snr_peak_pix,
+			                         proj->peak_search_params.min_snr,
+			                         proj->peak_search_params.min_sig,
+			                         proj->peak_search_params.min_peak_over_neighbour,
+			                         proj->peak_search_params.local_bg_radius);
+			break;
+
 			case PEAK_HDF5:
 			case PEAK_CXI:
 			proj->cur_image->features = image_read_peaks(proj->dtempl,
@@ -329,6 +339,23 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		add_int_param(proj->peak_params, "Maximum resolution (pixels):",
 		              &proj->peak_search_params.max_res, proj);
 
+	} else if ( strcmp(algo_id, "peakfinder9") == 0 ) {
+
+		proj->peak_search_params.method = PEAK_PEAKFINDER9;
+
+		add_float_param(proj->peak_params, "Minimum SNR of brightest pixel in peak:",
+		                &proj->peak_search_params.min_snr_biggest_pix, proj);
+		add_float_param(proj->peak_params, "Minimum SNR of peak pixel:",
+		                &proj->peak_search_params.min_snr_peak_pix, proj);
+		add_float_param(proj->peak_params, "Minimum signal/noise ratio:",
+		                &proj->peak_search_params.min_snr, proj);
+		add_float_param(proj->peak_params, "Minimum background standard deviation:",
+		                &proj->peak_search_params.min_sig, proj);
+		add_float_param(proj->peak_params, "Brightest pixel cutoff (just for speed):",
+		                &proj->peak_search_params.min_peak_over_neighbour, proj);
+		add_int_param(proj->peak_params, "Local background radius:",
+		              &proj->peak_search_params.local_bg_radius, proj);
+
 	} else if ( strcmp(algo_id, "hdf5") == 0 ) {
 
 		proj->peak_search_params.method = PEAK_HDF5;
@@ -422,10 +449,12 @@ gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                "Use the peak lists in the data files (hdf5/cxi)");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "peakfinder8",
 	                "Radial background estimation (peakfinder8)");
-	#ifdef HAVE_FDIP
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "peakfinder9",
-	                "Local background estimation (peakfinder9)");
-	#endif
+
+	if ( crystfel_has_peakfinder9() ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "peakfinder9",
+		                          "Local background estimation (peakfinder9)");
+	}
+
 	g_signal_connect(G_OBJECT(combo), "changed",
 	                 G_CALLBACK(peaksearch_algo_changed), proj);
 	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo),
