@@ -408,6 +408,44 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 }
 
 
+static void draw_refls(cairo_t *cr, CrystFELImageView *iv,
+                       RefList *list)
+{
+	const Reflection *refl;
+	RefListIterator *iter;
+	double bs, lw;
+
+	if ( list == NULL ) return;
+
+	bs = 5.0;
+	lw = 1.0;
+	cairo_device_to_user_distance(cr, &bs, &lw);
+	bs = fabs(bs);
+	lw = fabs(lw);
+
+	for ( refl = first_refl_const(list, &iter);
+	      refl != NULL;
+	      refl = next_refl_const(refl, iter) )
+	{
+		struct detgeom_panel *p;
+		double fs, ss;
+		int pn;
+		double x, y;
+
+		get_detector_pos(refl, &fs, &ss);
+		pn = get_panel_number(refl);
+
+		p = &iv->image->detgeom->panels[pn];
+		x = p->pixel_pitch*(p->cnx + p->fsx*fs + p->ssx*ss);
+		y = p->pixel_pitch*(p->cny + p->fsy*fs + p->ssy*ss);
+
+		cairo_arc(cr, x, y, bs, 0, 2*M_PI);
+		cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+		cairo_stroke(cr);
+	}
+}
+
+
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 {
 	cairo_matrix_t m;
@@ -440,6 +478,14 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 		draw_peaks(cr, iv, iv->image->features);
 	}
 
+	if ( iv->show_refls ) {
+		int i;
+		for ( i=0; i<iv->image->n_crystals; i++ ) {
+			Crystal *cry = iv->image->crystals[i];
+			draw_refls(cr, iv, crystal_get_reflections(cry));
+		}
+	}
+
 	cairo_restore(cr);
 
 	return FALSE;
@@ -452,7 +498,8 @@ static void scroll_adjust_sig(GtkAdjustment *adj, CrystFELImageView *iv)
 }
 
 
-static void crystfel_image_view_set_property(GObject *obj, guint id, const GValue *val,
+static void crystfel_image_view_set_property(GObject *obj, guint id,
+                                             const GValue *val,
                                              GParamSpec *spec)
 {
 	CrystFELImageView *iv = CRYSTFEL_IMAGE_VIEW(obj);
@@ -827,5 +874,13 @@ void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
                                         int show_peaks)
 {
 	iv->show_peaks = show_peaks;
+	rerender_image(iv);
+}
+
+
+void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
+                                              int show_refls)
+{
+	iv->show_refls = show_refls;
 	rerender_image(iv);
 }

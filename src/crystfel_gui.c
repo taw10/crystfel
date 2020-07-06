@@ -609,6 +609,15 @@ static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 }
 
 
+static gint show_refls_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	proj->show_refls = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	crystfel_image_view_set_show_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                         proj->show_refls);
+	return FALSE;
+}
+
+
 static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 {
 	GError *error = NULL;
@@ -620,6 +629,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"</menu>"
 		"<menu name=\"view\" action=\"ViewAction\" >"
 		"	<menuitem name=\"peaks\" action=\"PeaksAction\" />"
+		"	<menuitem name=\"refls\" action=\"ReflsAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
 		"</menu>"
@@ -649,6 +659,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 	GtkToggleActionEntry toggles[] = {
 		{ "PeaksAction", NULL, "Peak detection results", NULL, NULL,
 		  G_CALLBACK(show_peaks_sig), FALSE },
+		{ "ReflsAction", NULL, "Calculated reflection positions", NULL, NULL,
+		  G_CALLBACK(show_refls_sig), FALSE },
 	};
 
 	proj->action_group = gtk_action_group_new("cellwindow");

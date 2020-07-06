@@ -87,6 +87,7 @@ struct _crystfelimageview
 
 	double               brightness;
 	int                  show_peaks;
+	int                  show_refls;
 };
 
 struct _crystfelimageviewclass
@@ -110,5 +111,8 @@ extern void crystfel_image_view_set_brightness(CrystFELImageView *iv,
 
 extern void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
                                                int show_peaks);
+
+extern void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
+                                                     int show_refls);
 
 #endif	/* CRYSTFELIMAGEVIEW_H */

@@ -203,6 +203,10 @@ static void handle_var(const char *key, const char *val,
 		proj->show_peaks = parse_int(val);
 	}
 
+	if ( strcmp(key, "show_refls") == 0 ) {
+		proj->show_refls = parse_int(val);
+	}
+
 	if ( strcmp(key, "backend") == 0 ) {
 		proj->backend = parse_backend(val);
 	}
@@ -383,6 +387,7 @@ int save_project(struct crystfelproject *proj)
 	        proj->peak_search_params.revalidate);
 
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
+	fprintf(fh, "show_refls %i\n", proj->show_refls);
 	fprintf(fh, "backend %s\n", proj->backend->name);
 
 	fprintf(fh, "-----\n");
@@ -423,6 +428,7 @@ void default_project(struct crystfelproject *proj)
 
 	/* Default parameter values */
 	proj->show_peaks = 0;
+	proj->show_refls = 0;
 	proj->peak_search_params.method = PEAK_ZAEF;
 	proj->peak_search_params.threshold = 800.0;
 	proj->peak_search_params.min_sq_gradient = 100000;

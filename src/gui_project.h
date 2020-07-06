@@ -97,6 +97,8 @@ struct crystfelproject {
 	int show_peaks;
 	struct peak_params peak_search_params;
 
+	int show_refls;
+
 	GtkWidget *type_combo;
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */
 	GtkWidget *peak_params;   /* Peak search parameter widgets */
