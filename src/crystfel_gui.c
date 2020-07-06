@@ -41,6 +41,7 @@
 
 #include <datatemplate.h>
 #include <peaks.h>
+#include <cell-utils.h>
 
 #include "crystfelimageview.h"
 #include "crystfelimageview.h"
@@ -105,6 +106,18 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 	gtk_box_pack_start(GTK_BOX(container), widget, FALSE, FALSE, 0);
 	if ( GTK_IS_TOOLBAR(widget) ) {
 		gtk_toolbar_set_show_arrow(GTK_TOOLBAR(widget), TRUE);
+	}
+}
+
+
+static void show_crystal_info(struct image *image)
+{
+	int i;
+	STATUS("Frame %s %s has %i crystals:\n",
+	       image->filename, image->ev, image->n_crystals);
+	for ( i=0; i<image->n_crystals; i++ ) {
+		STATUS("   Crystal %2i: ", i);
+		cell_print_oneline(crystal_get_cell(image->crystals[i]));
 	}
 }
 
@@ -175,6 +188,8 @@ static void update_imageview(struct crystfelproject *proj)
 	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
+
+	show_crystal_info(proj->cur_image);
 }
 
 
