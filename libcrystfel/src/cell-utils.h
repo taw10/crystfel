@@ -57,6 +57,7 @@ extern UnitCell *rotate_cell(UnitCell *in, double omega, double phi,
                              double rot);
 
 extern void cell_print(UnitCell *cell);
+extern void cell_print_oneline(UnitCell *cell);
 extern void cell_print_full(UnitCell *cell);
 
 extern UnitCell *load_cell_from_pdb(const char *filename);
