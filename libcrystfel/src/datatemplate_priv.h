@@ -178,7 +178,6 @@ struct _datatemplate
 
 	char                      *wavelength_from;
 	double                     photon_energy_bandwidth;  /* Eww */
-	double                     photon_energy_scale;      /* Eww */
 
 	unsigned int               mask_bad;
 	unsigned int               mask_good;

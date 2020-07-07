@@ -674,9 +674,6 @@ static void parse_toplevel(DataTemplate *dt,
 			ERROR("Invalid value for photon_energy_bandwidth\n");
 		}
 
-	} else if ( strcmp(key, "photon_energy_scale") == 0 ) {
-		dt->photon_energy_scale = atof(val);
-
 	} else if (strncmp(key, "rigid_group", 11) == 0
 	        && strncmp(key, "rigid_group_collection", 22) != 0 ) {
 
@@ -761,7 +758,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->n_rg_collections = 0;
 	dt->rigid_group_collections = NULL;
 	dt->photon_energy_bandwidth = -1.0;
-	dt->photon_energy_scale = -1.0;
 	dt->peak_list = NULL;
 
 	/* The default defaults... */
