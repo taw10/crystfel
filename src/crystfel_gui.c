@@ -113,8 +113,10 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 static void show_crystal_info(struct image *image)
 {
 	int i;
-	STATUS("Frame %s %s has %i crystals:\n",
-	       image->filename, image->ev, image->n_crystals);
+	STATUS("Frame %s %s has %i crystal%s:\n",
+	       image->filename, image->ev,
+	       image->n_crystals,
+	       image->n_crystals == 1 ? "" : "s");
 	for ( i=0; i<image->n_crystals; i++ ) {
 		STATUS("   Crystal %2i: ", i);
 		cell_print_oneline(crystal_get_cell(image->crystals[i]));
