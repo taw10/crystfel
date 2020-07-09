@@ -366,25 +366,31 @@ static double get_length(struct image *image, const char *from)
 }
 
 
-static double get_wavelength(struct image *image, const char *from)
+static double convert_to_m(double val, int units)
 {
-	char *units;
-	double value;
+	switch ( units ) {
 
-	units = get_value_and_units(image, from, &value);
-	if ( units == NULL ) {
-		/* Default unit is eV */
-		return ph_eV_to_lambda(value);
-	} else {
-		if ( strcmp(units, "A") == 0 ) {
-			free(units);
-			return value * 1e-10;
-		} else {
-			ERROR("Invalid wavelength unit '%s'\n", units);
-			free(units);
-			return NAN;
-		}
+		case WAVELENGTH_M :
+		return val;
+
+		case WAVELENGTH_A :
+		return val * 1e-10;
+
+		case WAVELENGTH_PHOTON_EV :
+		return ph_eV_to_lambda(val);
+
+		case WAVELENGTH_PHOTON_KEV :
+		return ph_eV_to_lambda(val*1e3);
+
+		case WAVELENGTH_ELECTRON_V :
+		return el_V_to_lambda(val);
+
+		case WAVELENGTH_ELECTRON_KV :
+		return el_V_to_lambda(val*1e3);
+
 	}
+
+	return NAN;
 }
 
 
@@ -491,7 +497,9 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 	if ( image == NULL ) return NULL;
 
 	/* Wavelength might be needed to create detgeom (adu_per_eV) */
-	image->lambda = get_wavelength(image, dtempl->wavelength_from);
+	image->lambda = convert_to_m(get_value(image,
+	                                       dtempl->wavelength_from),
+	                             dtempl->wavelength_unit);
 
 	create_detgeom(image, dtempl);
 

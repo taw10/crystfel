@@ -158,3 +158,43 @@ target_link_libraries(ev_enum3 ${COMMON_LIBRARIES})
 add_test(NAME ev_enum3
   COMMAND ev_enum3 ${CMAKE_CURRENT_SOURCE_DIR}/ev_enum3.h5
   ${CMAKE_CURRENT_SOURCE_DIR}/ev_enum3.geom)
+
+add_executable(wavelength_geom wavelength_geom.c)
+target_include_directories(wavelength_geom PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(wavelength_geom ${COMMON_LIBRARIES})
+add_test(NAME wavelength_geom1
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom1.geom 1e-10)
+add_test(NAME wavelength_geom2
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom2.geom 1.3776e-10)
+add_test(NAME wavelength_geom3
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom3.geom 1.3776e-10)
+add_test(NAME wavelength_geom4
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom4.geom 1.9687e-12)
+add_test(NAME wavelength_geom5
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom5.geom 1.9687e-12)
+add_test(NAME wavelength_geom6
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom6.geom 1.3776e-10)
+add_test(NAME wavelength_geom7
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom7.geom 1.3776e-10)
+add_test(NAME wavelength_geom8
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom8.geom 1.9687e-12)
+add_test(NAME wavelength_geom9
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom9.geom 1.3776e-10)
+add_test(NAME wavelength_geom10
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom10.geom 1.3776e-10)
+add_test(NAME wavelength_geom11
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom11.geom 1.125e-10)
+add_test(NAME wavelength_geom12
+  COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
+  ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom12.geom 1.125e-10)

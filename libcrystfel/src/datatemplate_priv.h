@@ -45,6 +45,17 @@ enum adu_per_unit
 };
 
 
+enum wavelength_unit
+{
+	WAVELENGTH_M,
+	WAVELENGTH_A,
+	WAVELENGTH_ELECTRON_KV,
+	WAVELENGTH_ELECTRON_V,
+	WAVELENGTH_PHOTON_KEV,
+	WAVELENGTH_PHOTON_EV
+};
+
+
 struct dt_rigid_group
 {
 	char *name;
@@ -178,6 +189,8 @@ struct _datatemplate
 
 	char                      *wavelength_from;
 	double                     photon_energy_bandwidth;  /* Eww */
+
+	enum wavelength_unit       wavelength_unit;
 
 	unsigned int               mask_bad;
 	unsigned int               mask_good;

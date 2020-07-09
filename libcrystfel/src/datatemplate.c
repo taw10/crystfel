@@ -628,6 +628,102 @@ static int parse_field_bad(struct dt_badregion *badr, const char *key,
 }
 
 
+static int parse_electron_voltage(const char *val,
+                                  char **p_from,
+                                  enum wavelength_unit *punit)
+{
+	char *valcpy;
+	char *sp;
+
+	valcpy = strdup(val);
+	if ( valcpy == NULL ) return 1;
+
+	/* "electron_voltage" directive must have explicit units */
+	sp = strchr(valcpy, ' ');
+	if ( sp == NULL ) {
+		free(valcpy);
+		return 1;
+	}
+
+	if ( strcmp(sp+1, "V") == 0 ) {
+		*punit = WAVELENGTH_ELECTRON_V;
+	} else if ( strcmp(sp+1, "kV") == 0 ) {
+		*punit = WAVELENGTH_ELECTRON_KV;
+	} else {
+		free(valcpy);
+		return 1;
+	}
+
+	sp[0] = '\0';
+	*p_from = valcpy;
+	return 0;
+}
+
+
+static int parse_wavelength(const char *val,
+                            char **p_from,
+                            enum wavelength_unit *punit)
+{
+	char *valcpy;
+	char *sp;
+
+	valcpy = strdup(val);
+	if ( valcpy == NULL ) return 1;
+
+	/* "wavelength" directive must have explicit units */
+	sp = strchr(valcpy, ' ');
+	if ( sp == NULL ) {
+		free(valcpy);
+		return 1;
+	}
+
+	if ( strcmp(sp+1, "m") == 0 ) {
+		*punit = WAVELENGTH_M;
+	} else if ( strcmp(sp+1, "A") == 0 ) {
+		*punit = WAVELENGTH_A;
+	} else {
+		free(valcpy);
+		return 1;
+	}
+
+	sp[0] = '\0';
+	*p_from = valcpy;
+	return 0;
+}
+
+
+static int parse_photon_energy(const char *val,
+                               char **p_from,
+                               enum wavelength_unit *punit)
+{
+	char *valcpy;
+	char *sp;
+
+	valcpy = strdup(val);
+	if ( valcpy == NULL ) return 1;
+
+	/* "photon_energy" is the only one of the wavelength
+	 * directives which is allowed to not have units */
+	sp = strchr(valcpy, ' ');
+	if ( sp == NULL ) {
+		*punit = WAVELENGTH_PHOTON_EV;
+	} else if ( strcmp(sp+1, "eV") == 0 ) {
+		*punit = WAVELENGTH_PHOTON_EV;
+		sp[0] = '\0';
+	} else if ( strcmp(sp+1, "keV") == 0 ) {
+		*punit = WAVELENGTH_PHOTON_KEV;
+		sp[0] = '\0';
+	} else {
+		/* Unit specified, but unrecognised */
+		free(valcpy);
+		return 1;
+	}
+
+	*p_from = valcpy;
+	return 0;
+}
+
+
 static int parse_toplevel(DataTemplate *dt,
                           const char *key,
                           const char *val,
@@ -664,8 +760,19 @@ static int parse_toplevel(DataTemplate *dt,
 		defaults->cnz_offset = atof(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
-		/* Will be expanded when image is loaded */
-		dt->wavelength_from = strdup(val);
+		return parse_photon_energy(val,
+		                           &dt->wavelength_from,
+		                           &dt->wavelength_unit);
+
+	} else if ( strcmp(key, "electron_voltage") == 0 ) {
+		return parse_electron_voltage(val,
+		                              &dt->wavelength_from,
+		                              &dt->wavelength_unit);
+
+	} else if ( strcmp(key, "wavelength") == 0 ) {
+		return parse_wavelength(val,
+		                        &dt->wavelength_from,
+		                        &dt->wavelength_unit);
 
 	} else if ( strcmp(key, "peak_list") == 0 ) {
 		dt->peak_list = strdup(val);

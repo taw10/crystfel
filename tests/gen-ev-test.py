@@ -32,3 +32,17 @@ array = numpy.zeros((1,1), dtype=float)
 
 with h5py.File('tests/ev_enum3.h5', 'w') as fh:
     fh.create_dataset('/data/data_array', data=array)
+
+array = numpy.zeros((2,2), dtype=float)
+with h5py.File('tests/wavelength_geom.h5', 'w') as fh:
+    fh.create_dataset('/data/data_array', data=array)
+    dh = fh.create_dataset('/LCLS/photon_energy', (), 'f')
+    dh[()] = 9000.0
+    dh = fh.create_dataset('/LCLS/photon_energyK', (), 'f')
+    dh[()] = 9.0
+    dh = fh.create_dataset('/LCLS/electron_energy', (), 'f')
+    dh[()] = 300000
+    dh = fh.create_dataset('/LCLS/electron_energy2', (), 'f')
+    dh[()] = 300
+    dh = fh.create_dataset('/LCLS/wavelength', (), 'f')
+    dh[()] = 1e-10

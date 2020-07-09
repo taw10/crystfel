@@ -273,17 +273,15 @@ See the "examples" folder for some examples (look at the ones ending in .geom).
 The geometry file can include information about beam characteristics, using general properties, that can appear anywhere in the geometry file and do not follow the usual panel/property syntax. The following beam properties are supported:
 
 .PD 0
-.IP \fBphoton_energy\fR
+.IP "\fBwavelength \fInnn\fR \fB[m|A]"
+.IP "\fBphoton_energy \fInnn\fR \fB[eV|keV]"
+.IP "\fBelectron_voltage \fInnn\fR \fB[V|kV]"
 .PD
-The beam photon energy in eV. You can also specify the HDF5 path to a floating point data block value containing the photon energy in eV.  For example: "photon_energy = /LCLS/photon_energy_eV".  If the HDF5 file contains more than one event, and the data block is scalar, the photon energy value
-it contains will be used for all events. If, however, the data block is multidimensional and the second dimension is bigger than one, the CrystFEL programs will try to match the content of the data block with the events in the file, assigning the first value in the data block to the first event in the file,
-the second value in the data block to the second event in the file, etc. See also \fBphoton_energy_scale\fR.
-
-.PD 0
-.IP \fBphoton_energy_scale\fR
-.PD
-Sometimes the photon energy value recorded in an HDF5 file differs from the true photon energy value by a multiplication factor. This property defines a correction factor that is applied by the CrystFEL programs. The photon energy value read from a file is multiplied by the value of this property if the property is defined in the geometry file.
-
+These statements specify the incident radiation wavelength.  You must include one (not more) of these statements.  \fBwavelength\fR specifies the wavelength directly, \fBphoton_energy\fR specifies the energy per photon for electromagnetic radiation (e.g. X-rays), and \fBelectron_voltage\fR specifies the accelerating voltage for an electron beam.
+.IP
+\fInnn\fR can be a literal number, or it can be a header location in the image data file.  In the latter case, the program will do what you expect in the case of multi-frame data files, e.g. a scalar value in the metadata will be applied to all frames, or an array of values can be used to provide a separate wavelength for each frame.
+.IP
+Units should be specified after the value (or location).  These can be \fBm\fR or \fBA\fR for \fBwavelength\fR, \fBeV\fR or \fBkeV\fR for \fBphoton_energy\fR, and \fBV\fR or \fBkV\fR for \fBelectron_voltage\fR.  For \fBphoton_energy\fR, if no units are given then the value will be taken to be in eV.
 
 .SH PEAK INFO LOCATION
 

@@ -54,8 +54,11 @@
 
 /* -------------------------- Fundamental constants  ------------------------ */
 
-/* Electron charge in C */
+/* Electron charge (Coulombs) */
 #define ELECTRON_CHARGE (1.6021773e-19)
+
+/* Electron rest mass (kg) */
+#define ELECTRON_MASS (9.1093837015e-31)
 
 /* Planck's constant (Js) */
 #define PLANCK (6.62606896e-34)
@@ -193,6 +196,17 @@ static inline int within_tolerance(double a, double b, double percent)
 
 /* Photon energy (eV) to k (1/m) */
 #define ph_eV_to_k(a) ((a)*ELECTRON_CHARGE/PLANCK/C_VACUO)
+
+/* Electron accelerating voltage (V) to wavelength (m) */
+static inline double el_V_to_lambda(double E)
+{
+	double Estar;
+
+	/* Relativistically corrected accelerating voltage */
+	Estar = E * (1.0 + E * ELECTRON_CHARGE/(2.0*ELECTRON_MASS*C_VACUO*C_VACUO));
+
+	return PLANCK / sqrt(2.0*ELECTRON_MASS*ELECTRON_CHARGE*Estar);
+}
 
 
 /* ------------------------------ Message logging ---------------------------- */
