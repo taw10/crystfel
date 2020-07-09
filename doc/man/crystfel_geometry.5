@@ -46,11 +46,6 @@ Naively speaking, this means that CrystFEL looks at the images from the "into th
 beam" perspective, but please avoid thinking of things in this way.  It's much
 better to consider the precise way in which the coordinates are mapped.
 
-Some file formats store data for multiple patterns ("events") within a single file.
-Information about the layout of the file data can be included in the geometry file.
-This allows CrystFEL to unambigously identify data blocks which contain
-data for a specific event, and to determine the number of events that each file contains.
-
 The geometry file should contain lines of the following form:
 
 .IP
@@ -69,10 +64,43 @@ clen = 0.560
 In this case, the value will be used for all \fBsubsequent\fR panels appearing in the file which do not have their own specific values for the property, or until you specify another default value further down the file.  Panel-specific values always have priority over default values, and changing the default value has no effect for panels which had already be mentioned at the point in the file where the default value was specified.
 
 .PP
-Lines which should be ignored start with a semicolon.
+Comments start with a semicolon.  They will be ignored.
 
-.PP
-The properties which can be set are:
+.SH TOP-LEVEL ONLY PARAMETERS
+
+The parameters in this section can only appear without a panel name.
+
+.PD 0
+.IP "\fBwavelength \fInnn\fR \fB[m|A]"
+.IP "\fBphoton_energy \fInnn\fR \fB[eV|keV]"
+.IP "\fBelectron_voltage \fInnn\fR \fB[V|kV]"
+.PD
+These statements specify the incident radiation wavelength.  You must include one (not more) of these statements.  \fBwavelength\fR specifies the wavelength directly, \fBphoton_energy\fR specifies the energy per photon for electromagnetic radiation (e.g. X-rays), and \fBelectron_voltage\fR specifies the accelerating voltage for an electron beam.
+.IP
+\fInnn\fR can be a literal number, or it can be a header location in the image data file.  In the latter case, the program will do what you expect in the case of multi-frame data files, e.g. a scalar value in the metadata will be applied to all frames, or an array of values can be used to provide a separate wavelength for each frame.
+.IP
+Units should be specified after the value (or location).  These can be \fBm\fR or \fBA\fR for \fBwavelength\fR, \fBeV\fR or \fBkeV\fR for \fBphoton_energy\fR, and \fBV\fR or \fBkV\fR for \fBelectron_voltage\fR.  For \fBphoton_energy\fR, if no units are given then the value will be taken to be in eV.
+
+.PD 0
+.IP \fBmask_good\fR
+.IP \fBmask_bad\fR
+.PD
+Bitmasks for bad pixel masks. The pixel is considered good if all of the bits which are set in \fBmask_good\fR are set, \fIand\fR if none of the bits which are set in \fBmask_bad\fR are set. Example:
+.IP
+mask = /processing/hitfinder/masks
+.br
+mask_good = 0x27
+.br
+mask_bad = 0x00
+
+.PD 0
+.IP "\fBpeak_list = \fIloc"
+.PD
+This gives the location of the peak list (for \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR - see indexamajig(1)) in the data files.
+
+.SH PER-PANEL VALUES
+
+The following parameters can be set for each panel individually.  Don't forget that they can also be used at the "top level" to set default values.
 
 .PD 0
 .IP \fBdata\fR
@@ -133,13 +161,9 @@ The range of pixels in the data block specified by the 'data' property that corr
 
 .PD 0
 .IP \fBadu_per_eV\fR
-.PD
-The number of detector intensity units (ADU) which will arise from one electron-Volt of photon energy.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR, but if you use both then \fBadu_per_photon\fR will have priority.
-
-.PD 0
 .IP \fBadu_per_photon\fR
 .PD
-The number of detector intensity units (ADU) which will arise from one photon.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR, but if you use both then \fBadu_per_photon\fR will have priority.
+The number of detector intensity units (ADU) which will arise from either one electron-Volt of photon energy, or one photon.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR.
 
 .PD 0
 .IP \fBbadrow_direction\fR
@@ -197,18 +221,6 @@ This specifies the location of the per-pixel saturation map in the HDF5 file.  T
 Specifies that the saturation map should come from the HDF5 file named here, instead of the HDF5 file being processed.  It can be an absolute filename or relative to the working directory.
 
 .PD 0
-.IP \fBmask_good\fR
-.IP \fBmask_bad\fR
-.PD
-Bitmasks for bad pixel masks. The pixel is considered good if all of the bits which are set in \fBmask_good\fR are set, \fIand\fR if none of the bits which are set in \fBmask_bad\fR are set. Example:
-.IP
-mask = /processing/hitfinder/masks
-.br
-mask_good = 0x27
-.br
-mask_bad = 0x00
-
-.PD 0
 .IP \fBno_index\fR
 Set this to 1 or "true" to ignore this panel completely.
 
@@ -220,7 +232,7 @@ Specify the direction in which the panel should move when the camera length is i
 
 .SH BAD REGIONS
 
-You can also specify bad regions.  Bad regions will be completely ignored by CrystFEL.  Bad regions are specified in pixel units, either in the lab coordinate system (see above) or in fast scan/slow scan coordinates (mixtures are not allowed).   In the latter case, the range of pixels is specified \fIinclusively\fR.  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
+Bad regions will be completely ignored by CrystFEL.  You can specify the pixels to exclude in pixel units, either in the lab coordinate system (see above) or in fast scan/slow scan coordinates (mixtures are not allowed).   In the latter case, the range of pixels is specified \fIinclusively\fR.  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
 .PP
 You can specify a panel name for the bad region, in which case the pixels will only be considered bad if they are within the range you specify \fIand\fR in the panel you specify.  This might be necessary if your HDF5 file layout has overlapping ranges of fs/ss coordinates for different panels (e.g. if the data blocks for the panels are in different HDF5 datasets).
 
@@ -267,25 +279,6 @@ Definitions of rigid groups and rigid group collections can appear at any place 
 
 .PP
 See the "examples" folder for some examples (look at the ones ending in .geom).
-
-.SH BEAM CHARACTERISTICS
-
-The geometry file can include information about beam characteristics, using general properties, that can appear anywhere in the geometry file and do not follow the usual panel/property syntax. The following beam properties are supported:
-
-.PD 0
-.IP "\fBwavelength \fInnn\fR \fB[m|A]"
-.IP "\fBphoton_energy \fInnn\fR \fB[eV|keV]"
-.IP "\fBelectron_voltage \fInnn\fR \fB[V|kV]"
-.PD
-These statements specify the incident radiation wavelength.  You must include one (not more) of these statements.  \fBwavelength\fR specifies the wavelength directly, \fBphoton_energy\fR specifies the energy per photon for electromagnetic radiation (e.g. X-rays), and \fBelectron_voltage\fR specifies the accelerating voltage for an electron beam.
-.IP
-\fInnn\fR can be a literal number, or it can be a header location in the image data file.  In the latter case, the program will do what you expect in the case of multi-frame data files, e.g. a scalar value in the metadata will be applied to all frames, or an array of values can be used to provide a separate wavelength for each frame.
-.IP
-Units should be specified after the value (or location).  These can be \fBm\fR or \fBA\fR for \fBwavelength\fR, \fBeV\fR or \fBkeV\fR for \fBphoton_energy\fR, and \fBV\fR or \fBkV\fR for \fBelectron_voltage\fR.  For \fBphoton_energy\fR, if no units are given then the value will be taken to be in eV.
-
-.SH PEAK INFO LOCATION
-
-Finally, the geometry file can include information about where to look in the HDF5 or CXI files for the table of peak positions.  CrystFEL can use these peak locations for indexing.  Simply include \fBpeak_info_location\fR = \fIlocation\fR, where \fIlocation\fR could be something like /processing/hitfinder/peakinfo.  A peak location given on the indexamajig command line, e.g. \fB--hdf5-peaks=/some/location\fR, has priority over the location in the geometry file.  If neither the geometry file nor the command line specify a location, the default is \fB/processing/hitfinder/peakinfo\fR when \fB--peaks=hdf5\fR is used, and \fB/entry_1/result_1\fR when \fB--peaks=cxi\fR is used.
 
 .SH AUTHOR
 This page was written by Thomas White and Valerio Mariani.
