@@ -756,6 +756,11 @@ static int parse_toplevel(DataTemplate *dt,
 			return 1;
 		}
 
+	} else if ( strcmp(key, "detector_shift_x") == 0 ) {
+		dt->shift_x_from = strdup(val);
+
+	} else if ( strcmp(key, "detector_shift_y") == 0 ) {
+		dt->shift_y_from = strdup(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		return parse_photon_energy(val,
@@ -872,6 +877,8 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->rigid_group_collections = NULL;
 	dt->photon_energy_bandwidth = -1.0;
 	dt->peak_list = NULL;
+	dt->shift_x_from = NULL;
+	dt->shift_y_from = NULL;
 
 	/* The default defaults... */
 	defaults.orig_min_fs = -1;

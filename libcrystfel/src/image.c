@@ -340,7 +340,8 @@ static char *get_value_and_units(struct image *image, const char *from,
 }
 
 
-static double get_length(struct image *image, const char *from)
+static double get_length(struct image *image, const char *from,
+                         double default_scale)
 {
 	char *units;
 	double value;
@@ -348,7 +349,7 @@ static double get_length(struct image *image, const char *from)
 
 	units = get_value_and_units(image, from, &value);
 	if ( units == NULL ) {
-		scale = 1.0e-3;
+		scale = default_scale;
 	} else {
 		if ( strcmp(units, "mm") == 0 ) {
 			scale = 1e-3;
@@ -421,12 +422,16 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 		/* NB cnx,cny are in pixels, cnz is in m */
 		detgeom->panels[i].cnx = dtempl->panels[i].cnx;
 		detgeom->panels[i].cny = dtempl->panels[i].cny;
-		detgeom->panels[i].cnz = get_length(image, dtempl->panels[i].cnz_from);
+		detgeom->panels[i].cnz = get_length(image, dtempl->panels[i].cnz_from, 1e-3);
 
 		/* Apply offset (in m) and then convert cnz from
 		 * m to pixels */
 		detgeom->panels[i].cnz += dtempl->panels[i].cnz_offset;
 		detgeom->panels[i].cnz /= detgeom->panels[i].pixel_pitch;
+
+		/* Apply overall shift (already in m) */
+		detgeom->panels[i].cnx += get_length(image, dtempl->shift_x_from, 1.0);
+		detgeom->panels[i].cny += get_length(image, dtempl->shift_y_from, 1.0);
 
 		detgeom->panels[i].max_adu = dtempl->panels[i].max_adu;
 

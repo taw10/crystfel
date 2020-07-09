@@ -202,6 +202,10 @@ struct _datatemplate
 	int                        n_rg_collections;
 
 	char                      *peak_list;
+
+	/* Shift of whole detector, in m */
+	char *                     shift_x_from;
+	char *                     shift_y_from;
 };
 
 #endif	/* DATATEMPLATE_PRIV_H */

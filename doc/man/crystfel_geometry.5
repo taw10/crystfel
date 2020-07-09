@@ -94,6 +94,12 @@ mask_good = 0x27
 mask_bad = 0x00
 
 .PD 0
+.IP "\fBdetector_shift_x = \fInnn \fB[m|mm]"
+.IP "\fBdetector_shift_y = \fInnn \fB[m|mm]"
+.PD
+These specify that the entire detector should be shifted by this amount in the x and y directions.  The units should be specified as \fBm\fR or \fBmm\fR.  If units are not specified, the value will be taken as metres.  \fInnn\fR can be a file metadata location (e.g. an HDF5 path).
+
+.PD 0
 .IP "\fBpeak_list = \fIloc"
 .PD
 This gives the location of the peak list (for \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR - see indexamajig(1)) in the data files.
