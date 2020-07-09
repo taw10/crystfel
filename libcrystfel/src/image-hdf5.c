@@ -676,11 +676,24 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	}
 	H5Sget_simple_extent_dims(sh, size, NULL);
 
-	/* We expect a scalar value */
+	/* We want to read the value as a scalar */
 	m_offset[0] = 0;
 	m_count[0] = 1;
 	msdims[0] = 1;
 	ms = H5Screate_simple(1, msdims, NULL);
+
+	if ( ndims == 0 ) {
+		/* Easy case, because value is a scalar */
+		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
+		if ( r < 0 )  {
+			ERROR("Couldn't read scalar value from %s.\n",
+			      subst_name);
+			free(subst_name);
+			close_hdf5(fh);
+			return NAN;
+		}
+		return val;
+	}
 
 	dim_vals = read_dim_parts(event, &n_dim_vals);
 	if ( dim_vals == NULL ) {
