@@ -628,12 +628,14 @@ static int parse_field_bad(struct dt_badregion *badr, const char *key,
 }
 
 
-static void parse_toplevel(DataTemplate *dt,
-                           const char *key, const char *val,
-                           struct rg_definition ***rg_defl,
-                           struct rgc_definition ***rgc_defl,
-                           int *n_rg_defs, int *n_rgc_defs,
-                           struct panel_template *defaults)
+static int parse_toplevel(DataTemplate *dt,
+                          const char *key,
+                          const char *val,
+                          struct rg_definition ***rg_defl,
+                          struct rgc_definition ***rgc_defl,
+                          int *n_rg_defs,
+                          int *n_rgc_defs,
+                          struct panel_template *defaults)
 {
 
 	if ( strcmp(key, "mask_bad") == 0 ) {
@@ -643,6 +645,8 @@ static void parse_toplevel(DataTemplate *dt,
 
 		if ( end != val ) {
 			dt->mask_bad = v;
+		} else {
+			return 1;
 		}
 
 	} else if ( strcmp(key, "mask_good") == 0 ) {
@@ -652,6 +656,8 @@ static void parse_toplevel(DataTemplate *dt,
 
 		if ( end != val ) {
 			dt->mask_good = v;
+		} else {
+			return 1;
 		}
 
 	} else if ( strcmp(key, "coffset") == 0 ) {
@@ -703,8 +709,10 @@ static void parse_toplevel(DataTemplate *dt,
 		*n_rgc_defs = *n_rgc_defs+1;
 
 	} else if ( parse_field_for_panel(defaults, key, val, dt) ) {
-		ERROR("Unrecognised top level field '%s'\n", key);
+		return 1;
 	}
+
+	return 0;
 }
 
 
@@ -867,12 +875,17 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	        if ( slash == NULL ) {
 
 			/* Top-level option */
-			parse_toplevel(dt, line, val,
-			               &rg_defl,
-			               &rgc_defl,
-			               &n_rg_definitions,
-			               &n_rgc_definitions,
-			               &defaults);
+		        if ( parse_toplevel(dt, line, val,
+		                            &rg_defl,
+		                            &rgc_defl,
+		                            &n_rg_definitions,
+		                            &n_rgc_definitions,
+		                            &defaults) )
+			{
+				ERROR("Invalid top-level line '%s'\n",
+				      line);
+				reject = 1;
+			}
 			free(line);
 			continue;
 		}
