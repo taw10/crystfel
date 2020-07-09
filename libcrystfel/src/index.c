@@ -60,9 +60,31 @@
 #include "xgandalf.h"
 #include "pinkindexer.h"
 
+#include "uthash.h"
+
 
 /** \file index.h */
 
+struct skip_private
+{
+	char path_to_sol[50];
+	float solutions[];
+};
+
+struct record_key_t{			 	//added
+  char filename[100];
+  char event_path[35];
+  int event_dim;
+};
+
+struct record_t{			 	//added
+    struct record_key_t key;
+    int line;
+    UT_hash_handle hh;
+};
+
+//declared as global variable
+struct record_t *line_hash = NULL;		//added
 
 struct _indexingprivate
 {
@@ -75,6 +97,24 @@ struct _indexingprivate
 	void **engine_private;
 };
 
+void delete_all() {
+  struct record_t *current_line, *tmp;
+
+  HASH_ITER(hh, line_hash, current_line, tmp) {
+    HASH_DEL(line_hash, current_line);
+    free(current_line);             
+  }
+}
+
+void print_struct() {
+    struct record_t *s;
+    s = (struct record_t *)malloc(sizeof *s);
+    memset(s, 0, sizeof *s);
+
+    for(s=line_hash; s != NULL; s=(struct record_t*)(s->hh.next)) {
+        printf("The line is event_path %s and event_dim %d in file %s \n", s->key.event_path, s->key.event_dim, s->key.filename);
+    }
+}
 
 static const char *onoff(int a)
 {
@@ -113,37 +153,225 @@ static void show_indexing_flags(IndexingFlags flags)
 }
 
 
-static int debug_index(struct image *image)
+void *skip_prepare(char *solution_filename)
+{	
+	FILE *fh;
+	int nlines;
+	int nparams_in_solution;
+	int nparams_per_line;
+	int nparams;
+	char *filename[35];   					//??? is that correct
+	char *event_path[35];                   //??? is that correct
+	int event_dim;
+	int current_line;
+	int position_in_current_line;
+	struct record_t *item;
+
+	//Assembling solution file name from input file name to crystfel
+	char path_to_sol[50],extension[10];
+	strcpy(path_to_sol,"../");
+	strcpy(extension,".sol");
+	strtok(solution_filename, "."); //Takes the first part of the list name (before the .)
+	strcat(path_to_sol, strtok(solution_filename, ".") );     //Add .sol at the previously splitted name
+	strcat(path_to_sol, extension );
+
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		//printf("Path where skip_prepare is ran: %s\n", cwd);
+	}
+
+	fh = fopen(path_to_sol, "r");
+
+	if ( fh == NULL ) {
+		ERROR("indexing.sol not found by skip_prepare\n");
+		return 0;
+	}
+
+	nlines = ncrystals_in_sol(path_to_sol);
+	nparams_per_line = 11;  //There are 9 vector component and 2 detector shifts excluding filename and event
+	nparams_in_solution = nlines*nparams_per_line; 
+	nparams = nlines*(nparams_per_line+3);
+  
+	float *params = malloc(nparams_in_solution * sizeof( float));
+
+	//Reads indexing solutions
+	int j = 0; //index that follows the solution parameter
+	for(int i = 0; i < nparams; i++)
+	{	
+
+		current_line = i/(nparams_per_line+3);
+		
+		position_in_current_line = (i)%(nparams_per_line+3);
+
+		if (position_in_current_line == 0){
+
+			if ( fscanf(fh, "%s", filename) != 1 ) {
+				if (current_line == (nlines-1)){
+					break;
+				}
+				else{
+				printf("Failed to read a filename from indexing.sol with skip_prepare\n");
+				return 0;
+				}
+			}
+		}
+
+		if (position_in_current_line == 1){
+
+			if ( fscanf(fh, "%s", event_path) != 1 ) {
+				printf("Failed to read an event_path from indexing.sol with skip_prepare\n");
+				return 0;
+			}
+		}
+			
+		if (position_in_current_line == 2){
+			if ( fscanf(fh, "%d", &event_dim) != 1 ) {
+				printf("Failed to read an event from indexing.sol with skip_prepare\n");
+				return 0;
+			}
+
+			//Prepare to add to the hash table once an event is read
+			item = (struct record_t *)malloc(sizeof *item);
+			memset(item, 0, sizeof *item);
+			strcpy(item->key.filename, filename);
+			strcpy(item->key.event_path, event_path);
+			item->key.event_dim = event_dim;
+			item->line=current_line;
+
+			//Verify the uniqueness of the key
+			struct record_t *uniqueness_test;
+			HASH_FIND(hh, line_hash, &item->key, sizeof(struct record_key_t), uniqueness_test);  /* id already in the hash? */
+    		if (uniqueness_test==NULL) {
+				//If not in the table, add
+				HASH_ADD(hh, line_hash, key, sizeof(struct record_key_t), item);
+			}
+			else{
+				//If already in the table, break with error
+				printf("Keys to the data must be unique! Verify the combination filename, event_path, event_dim");
+				return 0;
+			}
+
+
+			
+		}
+
+		if (position_in_current_line > 2){
+			if ( fscanf(fh, "%e", &params[j]) != 1 ) {
+				printf("Failed to read a parameter from indexing.sol with skip_prepare\n");
+				return 0;
+			}
+			j+=1;
+		}
+	}
+	
+	fclose(fh);
+
+	struct skip_private *dp;
+	dp = (struct skip_private *) malloc( sizeof(struct skip_private) + nparams * sizeof( float) );
+
+	if ( dp == NULL ) return NULL;
+	
+	memcpy(dp->path_to_sol, path_to_sol, sizeof path_to_sol);
+
+	for (int k = 0; k < nparams; k++)
+	{
+		dp->solutions[k] = params[k];
+	}
+
+	free(params);
+	
+	return (void *)dp;
+}
+
+int ncrystals_in_sol(char *path)
 {
 	FILE *fh;
+	int count = 0;  // Line counter (result) 
+    char c;  // To store a character read from file 
+
+	fh = fopen(path, "r");
+
+	if ( fh == NULL ) {
+		ERROR("%s not found by ncrystals_in_sol\n",path);
+		return 0;
+	}
+
+	for (c = getc(fh); c != EOF; c = getc(fh)) 
+        if (c == '\n') // Increment count if this character is newline 
+            count = count + 1; 
+	
+	//For the last line, which has no \n at the end
+	count = count + 1;
+  
+    // Close the file 
+    fclose(fh); 
+
+	return count;
+
+}
+
+//Fonction from pinkindexer.c to update the detector center of individual crystals
+//hack for electron crystallography while crystal_set_det_shift is not working approprietly
+static void update_detector(struct detector *det, double xoffs, double yoffs)
+{
+	int i;
+
+	for (i = 0; i < det->n_panels; i++) {
+		struct panel *p = &det->panels[i];
+		p->cnx += xoffs * p->res;
+		p->cny += yoffs * p->res;
+	}
+}
+
+static int skip_index(struct image *image, void *mpriv)
+{
 	Crystal *cr;
 	UnitCell *cell;
-	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz, xshift, yshift;
+	int serial;
+	int nparams_per_line;
+	struct record_t *item, *p;
+	int line_number;
+	
+	struct skip_private *dp = (struct skip_private *)mpriv;
 
-	fh = fopen("../../indexing.debug", "r");
-	if ( fh == NULL ) {
-		ERROR("indexing.debug not found\n");
+	//Look up the hash table
+	item = (struct record_t *)malloc(sizeof *item);
+	memset(item, 0, sizeof *item);
+	strcpy(item->key.filename, image->filename);
+	strcpy(item->key.event_path, *image->event->path_entries);
+	item->key.event_dim = *image->event->dim_entries;
+
+    HASH_FIND(hh, line_hash, &item->key, sizeof(struct record_key_t), p);  /* id already in the hash? */
+    if (p==NULL) {
+		printf("Not indexing file %s, event %s %d \n", image->filename, *image->event->path_entries, *image->event->dim_entries);
 		return 0;
 	}
 
-	if ( fscanf(fh, "%e %e %e", &asx, &asy, &asz) != 3 ) {
-		ERROR("Failed to read a* from indexing.debug\n");
-		return 0;
-	}
-	if ( fscanf(fh, "%e %e %e", &bsx, &bsy, &bsz) != 3 ) {
-		ERROR("Failed to read b* from indexing.debug\n");
-		return 0;
-	}
-	if ( fscanf(fh, "%e %e %e", &csx, &csy, &csz) != 3 ) {
-		ERROR("Failed to read c* from indexing.debug\n");
-		return 0;
-	}
+	line_number = p->line;
+	nparams_per_line = 11;
+
+	asx = dp->solutions[(line_number * nparams_per_line) + 0];
+	asy = dp->solutions[(line_number * nparams_per_line) + 1];
+	asz = dp->solutions[(line_number * nparams_per_line) + 2];
+	bsx = dp->solutions[(line_number * nparams_per_line) + 3];
+	bsy = dp->solutions[(line_number * nparams_per_line) + 4];
+	bsz = dp->solutions[(line_number * nparams_per_line) + 5];
+	csx = dp->solutions[(line_number * nparams_per_line) + 6];
+	csy = dp->solutions[(line_number * nparams_per_line) + 7];
+	csz = dp->solutions[(line_number * nparams_per_line) + 8];
+	xshift = dp->solutions[(line_number * nparams_per_line) + 9];
+	yshift = dp->solutions[(line_number * nparams_per_line) + 10];
 
 	cr = crystal_new();
 	cell = cell_new();
-	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+	cell_set_reciprocal(cell, asx * 1e9, asy * 1e9, asz* 1e9, bsx * 1e9, bsy * 1e9, bsz * 1e9, csx * 1e9, csy * 1e9, csz* 1e9);
+	
 	crystal_set_cell(cr, cell);
+	crystal_set_det_shift(cr, xshift * 1e-3, yshift * 1e-3);
+	update_detector(image->det, xshift * 1e-3, yshift * 1e-3);
 	image_add_crystal(image, cr);
+
 	return 1;
 }
 
@@ -201,8 +429,8 @@ static char *base_indexer_str(IndexingMethod indm)
 		strcpy(str, "simulation");
 		break;
 
-		case INDEXING_DEBUG :
-		strcpy(str, "debug");
+		case INDEXING_FILE :
+		strcpy(str, "file");
 		break;
 
 		default :
@@ -238,7 +466,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
-                            struct taketwo_options *taketwo_opts)
+                            struct taketwo_options *taketwo_opts,
+                            char *filename)
 {
 	char *str;
 	IndexingMethod in = *m;
@@ -266,8 +495,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		priv = xds_prepare(m, cell);
 		break;
 
-		case INDEXING_DEBUG :
-		priv = (IndexingPrivate *)strdup("Hello!");
+		case INDEXING_FILE :
+		priv = skip_prepare(filename);
 		break;
 
 		case INDEXING_FELIX :
@@ -320,7 +549,8 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
                                 struct pinkIndexer_options *pinkIndexer_opts,
-                                struct felix_options *felix_opts)
+                                struct felix_options *felix_opts,
+                                char *filename)
 {
 	int i, n;
 	char **method_strings;
@@ -417,7 +647,8 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		                                          xgandalf_opts,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
-		                                          ttopts);
+		                                          ttopts,
+                                                  filename);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
@@ -518,8 +749,9 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 			felix_cleanup(ipriv->engine_private[n]);
 			break;
 
-			case INDEXING_DEBUG :
+			case INDEXING_FILE :
 			free(ipriv->engine_private[n]);
+			delete_all();
 			break;
 
 			case INDEXING_TAKETWO :
@@ -645,9 +877,9 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		r = run_xds(image, mpriv);
 		break;
 
-		case INDEXING_DEBUG :
-		set_last_task(last_task, "indexing:debug");
-		r = debug_index(image);
+		case INDEXING_FILE :
+		set_last_task(last_task, "indexing:file");
+		r = skip_index(image,mpriv);
 		break;
 
 		case INDEXING_FELIX :
@@ -1080,9 +1312,9 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 			method = INDEXING_SIMULATION;
 			return method;
 
-		} else if ( strcmp(bits[i], "debug") == 0) {
+		} else if ( strcmp(bits[i], "file") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEBUG;
+			method = INDEXING_FILE;
 			return method;
 
 		} else if ( strcmp(bits[i], "latt") == 0) {

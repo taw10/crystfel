@@ -77,7 +77,7 @@ typedef enum {
 	INDEXING_FELIX = 4,       /**< Invoke Felix program */
 	INDEXING_XDS = 5,         /**< Invoke XDS program (NB not nXDS) */
 	INDEXING_SIMULATION = 6,  /**< Dummy value for simulated data */
-	INDEXING_DEBUG = 7,       /**< Results injector for debugging */
+	INDEXING_FILE = 7,       /**< Results injector for debugging */
 	INDEXING_ASDF = 8,        /**< Use built-in ASDF algorithm */
 	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
@@ -159,7 +159,8 @@ extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,
                                        struct pinkIndexer_options *pinkIndexer_opts,
-                                       struct felix_options *felix_opts);
+                                       struct felix_options *felix_opts,
+                                       char *filename);
 
 extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);
 
