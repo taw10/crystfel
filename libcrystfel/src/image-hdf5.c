@@ -743,7 +743,7 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
 	if ( check <0 ) {
-		ERROR("Error selecting dataspace for float value");
+		ERROR("Error selecting dataspace for float value\n");
 		free(f_offset);
 		free(f_count);
 		close_hdf5(fh);
@@ -754,7 +754,7 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
 	                            m_offset, NULL, m_count, NULL);
 	if ( check < 0 ) {
-		ERROR("Error selecting memory dataspace for float value");
+		ERROR("Error selecting memory dataspace for float value\n");
 		free(f_offset);
 		free(f_count);
 		close_hdf5(fh);
