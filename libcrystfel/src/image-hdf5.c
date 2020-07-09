@@ -544,6 +544,10 @@ struct image *image_hdf5_read(DataTemplate *dtempl,
 		return NULL;
 	}
 
+	if ( event == NULL ) {
+		event = "//";
+	}
+
 	/* Set all pointers to NULL for easier clean-up */
 	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
 
