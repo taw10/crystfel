@@ -756,8 +756,6 @@ static int parse_toplevel(DataTemplate *dt,
 			return 1;
 		}
 
-	} else if ( strcmp(key, "coffset") == 0 ) {
-		defaults->cnz_offset = atof(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		return parse_photon_energy(val,
