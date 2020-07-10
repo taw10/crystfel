@@ -43,7 +43,7 @@ extern double image_hdf5_get_value(const char *from,
                                    const char *ev);
 
 extern int image_hdf5_read(struct image *image,
-                           DataTemplate *dtempl,
+                           const DataTemplate *dtempl,
                            const char *filename,
                            const char *event);
 

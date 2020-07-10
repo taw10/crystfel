@@ -544,7 +544,8 @@ int image_cbf_read_mask(struct panel_template *p,
 }
 
 
-static int unpack_panels(struct image *image, DataTemplate *dtempl,
+static int unpack_panels(struct image *image,
+                         const DataTemplate *dtempl,
                          float *data, int data_width, int data_height)
 {
        int pi;
@@ -600,7 +601,7 @@ static int unpack_panels(struct image *image, DataTemplate *dtempl,
 
 
 int image_cbf_read(struct image *image,
-                   DataTemplate *dtempl,
+                   const DataTemplate *dtempl,
                    const char *filename,
                    const char *event,
                    int gz)

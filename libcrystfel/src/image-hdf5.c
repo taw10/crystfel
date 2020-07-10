@@ -526,7 +526,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 
 int image_hdf5_read(struct image *image,
-                    DataTemplate *dtempl,
+                    const DataTemplate *dtempl,
                     const char *filename,
                     const char *event)
 {

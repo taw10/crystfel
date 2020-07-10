@@ -47,7 +47,7 @@ extern int load_mask_cbf(struct panel_template *p,
                          int gz, int *bad, int mask_good, int mask_bad);
 
 extern int image_cbf_read(struct image *image,
-                          DataTemplate *dtempl,
+                          const DataTemplate *dtempl,
                           const char *filename,
                           const char *event,
                           int gz);
