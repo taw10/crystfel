@@ -525,23 +525,18 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 }
 
 
-struct image *image_hdf5_read(DataTemplate *dtempl,
-                              const char *filename, const char *event)
+int image_hdf5_read(struct image *image,
+                    DataTemplate *dtempl,
+                    const char *filename,
+                    const char *event)
 {
-	struct image *image;
 	int i;
-
-	image = image_new();
-	if ( image == NULL ) {
-		ERROR("Couldn't allocate image structure.\n");
-		return NULL;
-	}
 
 	image->dp = malloc(dtempl->n_panels*sizeof(float *));
 	if ( image->dp == NULL ) {
 		ERROR("Failed to allocate data array.\n");
 		image_free(image);
-		return NULL;
+		return 1;
 	}
 
 	if ( event == NULL ) {
@@ -560,14 +555,14 @@ struct image *image_hdf5_read(DataTemplate *dtempl,
 		{
 			ERROR("Failed to load panel data\n");
 			image_free(image);
-			return NULL;
+			return 1;
 		}
 	}
 
 	image->filename = strdup(filename);
 	image->ev = safe_strdup(event);
 
-	return image;
+	return 0;
 }
 
 

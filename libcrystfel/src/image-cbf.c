@@ -599,28 +599,24 @@ static int unpack_panels(struct image *image, DataTemplate *dtempl,
 }
 
 
-struct image *image_cbf_read(DataTemplate *dtempl, const char *filename,
-                             const char *event, int gz)
+int image_cbf_read(struct image *image,
+                   DataTemplate *dtempl,
+                   const char *filename,
+                   const char *event,
+                   int gz)
 {
-	struct image *image;
 	float *data;
 	int w, h;
 
 	if ( access(filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n", filename);
-		return NULL;
-	}
-
-	image = image_new();
-	if ( image == NULL ) {
-		ERROR("Couldn't allocate image structure.\n");
-		return NULL;
+		return 1;
 	}
 
 	data = read_cbf_data(filename, gz, &w, &h);
 	if ( data == NULL ) {
 		ERROR("Failed to read CBF data\n");
-		return NULL;
+		return 1;
 	}
 
 	unpack_panels(image, dtempl, data, w, h);
@@ -630,5 +626,5 @@ struct image *image_cbf_read(DataTemplate *dtempl, const char *filename,
 	//cbf_fill_in_clen(image->det, f);
 	//fill_in_adu(image);
 
-	return image;
+	return 0;
 }

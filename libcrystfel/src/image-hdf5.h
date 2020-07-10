@@ -42,9 +42,10 @@ extern double image_hdf5_get_value(const char *from,
                                    const char *filename,
                                    const char *ev);
 
-extern struct image *image_hdf5_read(DataTemplate *dtempl,
-                                     const char *filename,
-                                     const char *event);
+extern int image_hdf5_read(struct image *image,
+                           DataTemplate *dtempl,
+                           const char *filename,
+                           const char *event);
 
 extern int image_hdf5_read_mask(struct panel_template *p,
                                 const char *filename,

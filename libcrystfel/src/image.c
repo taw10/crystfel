@@ -479,27 +479,37 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 {
 	struct image *image;
 	int i;
+	int r;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
 		return NULL;
 	}
 
-	if ( is_hdf5_file(filename) ) {
-		image = image_hdf5_read(dtempl, filename, event);
-
-	} else if ( is_cbf_file(filename) ) {
-		image = image_cbf_read(dtempl, filename, event, 0);
-
-	} else if ( is_cbfgz_file(filename) ) {
-		image = image_cbf_read(dtempl, filename, event, 1);
-
-	} else {
-		ERROR("Unrecognised file type: %s\n", filename);
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
 		return NULL;
 	}
 
-	if ( image == NULL ) return NULL;
+	if ( is_hdf5_file(filename) ) {
+		r = image_hdf5_read(image, dtempl, filename, event);
+
+	} else if ( is_cbf_file(filename) ) {
+		r = image_cbf_read(image, dtempl, filename, event, 0);
+
+	} else if ( is_cbfgz_file(filename) ) {
+		r = image_cbf_read(image, dtempl, filename, event, 1);
+
+	} else {
+		ERROR("Unrecognised file type: %s\n", filename);
+		r = 1;
+	}
+
+	if ( r ) {
+		image_free(image);
+		return NULL;
+	}
 
 	/* Wavelength might be needed to create detgeom (adu_per_eV) */
 	image->lambda = convert_to_m(get_value(image,
