@@ -415,6 +415,8 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
+		double shift_x, shift_y;
+
 		detgeom->panels[i].name = safe_strdup(dtempl->panels[i].name);
 
 		detgeom->panels[i].pixel_pitch = dtempl->panels[i].pixel_pitch;
@@ -430,8 +432,15 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 		detgeom->panels[i].cnz /= detgeom->panels[i].pixel_pitch;
 
 		/* Apply overall shift (already in m) */
-		detgeom->panels[i].cnx += get_length(image, dtempl->shift_x_from, 1.0);
-		detgeom->panels[i].cny += get_length(image, dtempl->shift_y_from, 1.0);
+		shift_x = get_length(image, dtempl->shift_x_from, 1.0);
+		shift_y = get_length(image, dtempl->shift_y_from, 1.0);
+
+		if ( !isnan(shift_x) ) {
+			detgeom->panels[i].cnx += shift_x;
+		}
+		if ( !isnan(shift_y) ) {
+			detgeom->panels[i].cny += shift_y;
+		}
 
 		detgeom->panels[i].max_adu = dtempl->panels[i].max_adu;
 
