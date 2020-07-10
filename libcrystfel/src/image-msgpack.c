@@ -150,25 +150,17 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 }
 
 
-static struct image *unpack_slab(const DataTemplate *dtempl,
-                                 double *data,
-                                 int data_width, int data_height)
+static int unpack_slab(struct image *image,
+                       const DataTemplate *dtempl,
+                       double *data,
+                       int data_width, int data_height)
 {
-	uint16_t *flags = NULL;
-	float *sat = NULL;
 	int pi;
-	struct image *image;
-
-	image = image_new();
-	if ( image == NULL ) return NULL;
 
 	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	image->bad = malloc(dtempl->n_panels*sizeof(int *));
-	image->sat = malloc(dtempl->n_panels*sizeof(float *));
-	if ( (image->dp == NULL) || (image->bad == NULL) || (image->sat == NULL) ) {
+	if ( image->dp == NULL ) {
 		ERROR("Failed to allocate data arrays.\n");
-		image_free(image);
-		return NULL;
+		return 1;
 	}
 
 	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
@@ -182,13 +174,9 @@ static struct image *unpack_slab(const DataTemplate *dtempl,
 		p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
 		image->dp[pi] = malloc(p_w*p_h*sizeof(float));
-		image->bad[pi] = malloc(p_w*p_h*sizeof(int));
-		image->sat[pi] = malloc(p_w*p_h*sizeof(float));
-		if ( (image->dp[pi] == NULL) || (image->bad[pi] == NULL)
-		  || (image->sat[pi] == NULL) )
-		{
+		if ( image->dp[pi] == NULL ) {
 			ERROR("Failed to allocate panel\n");
-			return NULL;
+			return 1;
 		}
 
 		if ( (p->orig_min_fs + p_w > data_width)
@@ -196,7 +184,7 @@ static struct image *unpack_slab(const DataTemplate *dtempl,
 		{
 			ERROR("Panel %s is outside range of data provided\n",
 			      p->name);
-			return NULL;
+			return 1;
 		}
 
 		for ( ss=0; ss<p_h; ss++) {
@@ -204,7 +192,6 @@ static struct image *unpack_slab(const DataTemplate *dtempl,
 
 			int idx;
 			int cfs, css;
-			int bad = 0;
 
 			cfs = fs+p->orig_min_fs;
 			css = ss+p->orig_min_ss;
@@ -212,37 +199,6 @@ static struct image *unpack_slab(const DataTemplate *dtempl,
 
 			image->dp[pi][fs+p_w*ss] = data[idx];
 
-			if ( sat != NULL ) {
-				image->sat[pi][fs+p_w*ss] = sat[idx];
-			} else {
-				image->sat[pi][fs+p_w*ss] = INFINITY;
-			}
-
-			if ( p->bad ) bad = 1;
-
-			if ( data_template_in_bad_region(dtempl, pi,
-			                                 fs, ss)
-			     || isnan(image->dp[pi][fs+ss*p_w])
-			     || isinf(image->dp[pi][fs+ss*p_w]) )
-			{
-				bad = 1;
-			}
-
-			if ( isnan(data[idx]) || isinf(data[idx]) ) bad = 1;
-
-			if ( flags != NULL ) {
-
-				int f;
-
-				f = flags[idx];
-
-				if ( (f & dtempl->mask_good)
-				    != dtempl->mask_good ) bad = 1;
-
-				if ( f & dtempl->mask_bad ) bad = 1;
-
-			}
-			image->bad[pi][fs+p_w*ss] = bad;
 		}
 		}
 
@@ -300,29 +256,6 @@ static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
 }
 
 
-static double *zero_array(const DataTemplate *dtempl, int *dw, int *dh)
-{
-	int max_fs = 0;
-	int max_ss = 0;
-	int pi;
-	double *data;
-
-	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
-		if ( dtempl->panels[pi].orig_max_fs > max_fs ) {
-			max_fs = dtempl->panels[pi].orig_max_fs;
-		}
-		if ( dtempl->panels[pi].orig_max_ss > max_ss ) {
-			max_ss = dtempl->panels[pi].orig_max_ss;
-		}
-	}
-
-	data = calloc((max_fs+1)*(max_ss+1), sizeof(double));
-	*dw = max_fs+1;
-	*dh = max_ss+1;
-	return data;
-}
-
-
 /* Unpacks the raw panel data from a msgpack_object, applies panel geometry,
  * and stores the resulting data in an image struct. Object has structure
  * {
@@ -340,7 +273,8 @@ static double *zero_array(const DataTemplate *dtempl, int *dw, int *dh)
  */
 struct image *image_msgpack_read(DataTemplate *dtempl,
                                  msgpack_object *obj,
-                                 int no_image_data)
+                                 int no_image_data,
+                                 int no_mask_data)
 {
 	struct image *image;
 	int data_width, data_height;
@@ -351,22 +285,31 @@ struct image *image_msgpack_read(DataTemplate *dtempl,
 		return NULL;
 	}
 
+	if ( dtempl == NULL ) {
+		ERROR("NULL data template!\n");
+		return NULL;
+	}
+
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
+		return NULL;
+	}
+
 	if ( !no_image_data ) {
-		data = find_msgpack_data(obj, &data_width, &data_height);
+		data = find_msgpack_data(obj,
+		                         &data_width, &data_height);
 		if ( data == NULL ) {
 			ERROR("No image data in MessagePack object.\n");
 			return NULL;
 		}
+		unpack_slab(image, dtempl, data,
+		            data_width, data_height);
 	} else {
-		data = zero_array(dtempl, &data_width, &data_height);
+		image_set_zero_data(image, dtempl);
 	}
 
-	image = unpack_slab(dtempl, data, data_width, data_height);
-
-	if ( image == NULL ) {
-		ERROR("Failed to unpack data slab.\n");
-		return NULL;
-	}
+	image_set_zero_mask(image, dtempl);
 
 	return image;
 }

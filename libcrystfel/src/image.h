@@ -205,12 +205,15 @@ extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 extern char **image_expand_frames(const DataTemplate *dtempl,
                                   const char *filename, int *nframes);
 
-/* The following functions are not part of the public API -
- * use within libcrystfel only */
+extern int image_set_zero_data(struct image *image,
+                               const DataTemplate *dtempl);
+
+extern int image_set_zero_mask(struct image *image,
+                               const DataTemplate *dtempl);
+
+/* Use within libcrystfel only */
 extern void create_detgeom(struct image *image,
                            const DataTemplate *dtempl);
-
-extern int create_blank_arrays(struct image *image);
 
 #ifdef __cplusplus
 }

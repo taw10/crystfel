@@ -474,8 +474,8 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 }
 
 
-static int zero_data_arrays(struct image *image,
-                            const DataTemplate *dtempl)
+int image_set_zero_data(struct image *image,
+                        const DataTemplate *dtempl)
 {
 	int pi;
 
@@ -497,6 +497,40 @@ static int zero_data_arrays(struct image *image,
 
 		for ( i=0; i<p_w*p_h; i++ ) {
 			image->dp[pi][i] = 0.0;
+		}
+	}
+
+	return 0;
+}
+
+
+int image_set_zero_mask(struct image *image,
+                        const DataTemplate *dtempl)
+{
+	int pi;
+
+	image->bad = malloc(dtempl->n_panels*sizeof(int *));
+	image->sat = malloc(dtempl->n_panels*sizeof(float *));
+	if ( (image->bad == NULL) || (image->sat == NULL) ) return 1;
+
+	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+
+		struct panel_template *p;
+		int p_w, p_h;
+		long int i;
+
+		p = &dtempl->panels[pi];
+		p_w = p->orig_max_fs - p->orig_min_fs + 1;
+		p_h = p->orig_max_ss - p->orig_min_ss + 1;
+
+		image->bad[pi] = malloc(p_w*p_h*sizeof(int));
+		image->sat[pi] = malloc(p_w*p_h*sizeof(float));
+		if ( image->bad[pi] == NULL ) return 1;
+		if ( image->sat[pi] == NULL ) return 1;
+
+		for ( i=0; i<p_w*p_h; i++ ) {
+			image->bad[pi][i] = 0;
+			image->sat[pi][i] = INFINITY;
 		}
 	}
 
@@ -543,7 +577,7 @@ struct image *image_read(DataTemplate *dtempl,
 
 	} else {
 
-		r = zero_data_arrays(image, dtempl);
+		r = image_set_zero_data(image, dtempl);
 
 	}
 
@@ -702,46 +736,6 @@ struct image *image_new()
        image->features = NULL;
 
        return image;
-}
-
-
-int create_blank_arrays(struct image *image)
-{
-	int pn;
-	int num_panels = image->detgeom->n_panels;
-
-	image->dp = malloc(num_panels*sizeof(float *));
-	image->bad = malloc(num_panels*sizeof(int *));
-	image->sat = malloc(num_panels*sizeof(float *));
-
-	if ( (image->dp == NULL) || (image->bad == NULL)
-	  || (image->sat == NULL) ) return 1;
-
-	for ( pn=0; pn<num_panels; pn++ ) {
-
-		long int i;
-		struct detgeom_panel *p = &image->detgeom->panels[pn];
-
-		image->dp[pn] = malloc(p->w*p->h*sizeof(float));
-		image->bad[pn] = malloc(p->w*p->h*sizeof(int));
-		image->sat[pn] = malloc(p->w*p->h*sizeof(float));
-
-		if ( (image->dp[pn] == NULL)
-		  || (image->bad[pn] == NULL)
-		  || (image->sat[pn] == NULL) )
-		{
-			return 1;
-		}
-
-		for ( i=0; i<p->w*p->h; i++ ) {
-			image->dp[pn][i] = 0.0;
-			image->bad[pn][i] = 0;
-			image->sat[pn][i] = INFINITY;
-		}
-
-	}
-
-	return 0;
 }
 
 

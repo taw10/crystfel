@@ -1013,7 +1013,7 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 			if ( have_filename && have_ev ) {
 				/* Success */
 				create_detgeom(image, dtempl);
-				create_blank_arrays(image);
+				image_set_zero_data(image, dtempl);
 				return image;
 			}
 			ERROR("Incomplete chunk found in input file.\n");
