@@ -395,6 +395,27 @@ static double convert_to_m(double val, int units)
 }
 
 
+static UNUSED void show_panel(struct detgeom_panel *p)
+{
+	STATUS("Panel '%s':\n", p->name);
+	STATUS("  Size %i x %i px\n", p->w, p->h);
+	STATUS("  Transformation [cnx] + [%6.2f %6.2f] [fs] = [x]\n",
+	       p->fsx, p->ssx);
+	STATUS("                 [cny] + [%6.2f %6.2f] [ss] = [y]\n",
+	       p->fsy, p->ssy);
+	STATUS("                 [cnz] + [%6.2f %6.2f]      = [z]\n",
+	       p->fsz, p->ssz);
+	STATUS("  corner x,y,z = %f, %f, %f px\n",
+	       p->cnx, p->cny, p->cnz);
+	STATUS("               = %f, %f, %f mm\n",
+	       p->cnx*p->pixel_pitch*1e3,
+	       p->cny*p->pixel_pitch*1e3,
+	       p->cnz*p->pixel_pitch*1e3);
+	STATUS("  %f adu/photon, max %f adu\n",
+	       p->adu_per_photon, p->max_adu);
+}
+
+
 void create_detgeom(struct image *image, const DataTemplate *dtempl)
 {
 	struct detgeom *detgeom;
