@@ -98,6 +98,7 @@ struct index_args
 	Spectrum *spectrum;
 	signed int wait_for_file; /* -1 means wait forever */
 	int no_image_data;
+	int no_mask_data;
 };
 
 

@@ -474,8 +474,41 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 }
 
 
-struct image *image_read(DataTemplate *dtempl, const char *filename,
-                         const char *event)
+static int zero_data_arrays(struct image *image,
+                            const DataTemplate *dtempl)
+{
+	int pi;
+
+	image->dp = malloc(dtempl->n_panels*sizeof(float *));
+	if ( image->dp == NULL ) return 1;
+
+	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+
+		struct panel_template *p;
+		int p_w, p_h;
+		long int i;
+
+		p = &dtempl->panels[pi];
+		p_w = p->orig_max_fs - p->orig_min_fs + 1;
+		p_h = p->orig_max_ss - p->orig_min_ss + 1;
+
+		image->dp[pi] = malloc(p_w*p_h*sizeof(float));
+		if ( image->dp[pi] == NULL ) return 1;
+
+		for ( i=0; i<p_w*p_h; i++ ) {
+			image->dp[pi][i] = 0.0;
+		}
+	}
+
+	return 0;
+}
+
+
+struct image *image_read(DataTemplate *dtempl,
+                         const char *filename,
+                         const char *event,
+                         int no_image_data,
+                         int no_mask_data)
 {
 	struct image *image;
 	int i;
@@ -492,18 +525,26 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 		return NULL;
 	}
 
-	if ( is_hdf5_file(filename) ) {
-		r = image_hdf5_read(image, dtempl, filename, event);
+	if ( !no_image_data ) {
 
-	} else if ( is_cbf_file(filename) ) {
-		r = image_cbf_read(image, dtempl, filename, event, 0);
+		if ( is_hdf5_file(filename) ) {
+			r = image_hdf5_read(image, dtempl, filename, event);
 
-	} else if ( is_cbfgz_file(filename) ) {
-		r = image_cbf_read(image, dtempl, filename, event, 1);
+		} else if ( is_cbf_file(filename) ) {
+			r = image_cbf_read(image, dtempl, filename, event, 0);
+
+		} else if ( is_cbfgz_file(filename) ) {
+			r = image_cbf_read(image, dtempl, filename, event, 1);
+
+		} else {
+			ERROR("Unrecognised file type: %s\n", filename);
+			r = 1;
+		}
 
 	} else {
-		ERROR("Unrecognised file type: %s\n", filename);
-		r = 1;
+
+		r = zero_data_arrays(image, dtempl);
+
 	}
 
 	if ( r ) {
@@ -562,7 +603,8 @@ struct image *image_read(DataTemplate *dtempl, const char *filename,
 		}
 
 		/* Load mask (skip if panel is bad anyway) */
-		if ( (!p->bad) && (p->mask != NULL) ) {
+		if ( (!no_mask_data) && (!p->bad) && (p->mask != NULL) )
+		{
 			if ( p->mask_file == NULL ) {
 				mask_fn = filename;
 			} else {

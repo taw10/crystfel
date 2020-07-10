@@ -9,7 +9,7 @@
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2019 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -81,6 +81,7 @@ struct indexamajig_arguments
 	int basename;
 	int zmq;
 	int no_image_data;
+	int no_mask_data;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -208,6 +209,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->spectrum_fn = strdup(arg);
 		ERROR("WARNING: Prediction using arbitrary spectrum does not "
 		      "yet work in a useful way.\n");
+		break;
+
+		case 210 :
+		args->no_mask_data = 1;
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -658,6 +663,7 @@ int main(int argc, char *argv[])
 	args.iargs.fix_profile_r = -1.0;
 	args.iargs.fix_divergence = -1.0;
 	args.iargs.no_image_data = 0;
+	args.iargs.no_mask_data = 0;
 
 	argp_program_version_hook = show_version;
 
@@ -690,9 +696,10 @@ int main(int argc, char *argv[])
 		        "processing"},
 		{"zmq-msgpack", 207, NULL, OPTION_NO_USAGE, "Receive data in MessagePack format "
 		        "over ZMQ"},
-		{"no-image-data", 208, NULL, OPTION_NO_USAGE, "Do not load image data (from ZMQ)"},
+		{"no-image-data", 208, NULL, OPTION_NO_USAGE, "Do not load image data"},
 		{"spectrum-file", 209, "fn", OPTION_NO_USAGE | OPTION_HIDDEN,
 		       "File containing radiation spectrum"},
+		{"no-mask-data", 210, NULL, OPTION_NO_USAGE, "Do not load mask data"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},

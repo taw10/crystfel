@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	image = image_read(dtempl, image_filename, NULL);
+	image = image_read(dtempl, image_filename, NULL, 0, 0);
 	if ( image == NULL ) return 1;
 
 	printf("wavelength = %e\n", image->lambda);

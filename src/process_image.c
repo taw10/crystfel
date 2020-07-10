@@ -106,7 +106,9 @@ static struct image *file_wait_open_read(const char *filename,
                                          TimeAccounts *taccs,
                                          char *last_task,
                                          signed int wait_for_file,
-                                         int cookie)
+                                         int cookie,
+                                         int no_image_data,
+                                         int no_mask_data)
 {
 	signed int file_wait_time = wait_for_file;
 	int wait_message_done = 0;
@@ -157,7 +159,8 @@ static struct image *file_wait_open_read(const char *filename,
 		set_last_task(last_task, "read file");
 		sb_shared->pings[cookie]++;
 
-		image = image_read(dtempl, filename, event);
+		image = image_read(dtempl, filename, event,
+		                   no_image_data, no_mask_data);
 		if ( image == NULL ) {
 			if ( wait_for_file && !read_retry_done ) {
 				read_retry_done = 1;
@@ -201,7 +204,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                            iargs->dtempl,
 		                            sb_shared, taccs, last_task,
 		                            iargs->wait_for_file,
-		                            cookie);
+		                            cookie,
+		                            iargs->no_image_data,
+		                            iargs->no_mask_data);
 		if ( image == NULL ) {
 			if ( iargs->wait_for_file != 0 ) {
 				pthread_mutex_lock(&sb_shared->totals_lock);

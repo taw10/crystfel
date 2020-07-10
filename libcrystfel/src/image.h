@@ -190,8 +190,11 @@ extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);
 
 extern struct image *image_new(void);
-extern struct image *image_read(DataTemplate *dtempl, const char *filename,
-                                const char *event);
+extern struct image *image_read(DataTemplate *dtempl,
+                                const char *filename,
+                                const char *event,
+                                int no_image_data,
+                                int no_mask_data);
 extern void image_free(struct image *image);
 
 extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
