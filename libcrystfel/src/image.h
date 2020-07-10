@@ -215,6 +215,11 @@ extern int image_set_zero_mask(struct image *image,
 extern void create_detgeom(struct image *image,
                            const DataTemplate *dtempl);
 
+extern int image_read_image_data(struct image *image,
+                                 const DataTemplate *dtempl,
+                                 const char *filename,
+                                 const char *event);
+
 #ifdef __cplusplus
 }
 #endif

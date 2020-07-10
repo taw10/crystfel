@@ -538,6 +538,27 @@ int image_set_zero_mask(struct image *image,
 }
 
 
+int image_read_image_data(struct image *image,
+                          const DataTemplate *dtempl,
+                          const char *filename,
+                          const char *event)
+{
+	if ( is_hdf5_file(filename) ) {
+		return image_hdf5_read(image, dtempl, filename, event);
+
+	} else if ( is_cbf_file(filename) ) {
+		return image_cbf_read(image, dtempl, filename, event, 0);
+
+	} else if ( is_cbfgz_file(filename) ) {
+		return image_cbf_read(image, dtempl, filename, event, 1);
+
+	}
+
+	ERROR("Unrecognised file type: %s\n", filename);
+	return 1;
+}
+
+
 struct image *image_read(DataTemplate *dtempl,
                          const char *filename,
                          const char *event,
@@ -561,19 +582,8 @@ struct image *image_read(DataTemplate *dtempl,
 
 	if ( !no_image_data ) {
 
-		if ( is_hdf5_file(filename) ) {
-			r = image_hdf5_read(image, dtempl, filename, event);
-
-		} else if ( is_cbf_file(filename) ) {
-			r = image_cbf_read(image, dtempl, filename, event, 0);
-
-		} else if ( is_cbfgz_file(filename) ) {
-			r = image_cbf_read(image, dtempl, filename, event, 1);
-
-		} else {
-			ERROR("Unrecognised file type: %s\n", filename);
-			r = 1;
-		}
+		r = image_read_image_data(image, dtempl,
+		                          filename, event);
 
 	} else {
 

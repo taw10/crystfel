@@ -85,6 +85,9 @@ typedef enum {
 	/** Read the general information about crystals */
 	STREAM_CRYSTALS = 8,
 
+	/** Read the image data */
+	STREAM_IMAGE_DATA = 16,
+
 } StreamFlags;
 
 #ifdef __cplusplus
