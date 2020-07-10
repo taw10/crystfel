@@ -5,6 +5,19 @@ PARTIALATOR=$1
 cat > partialator_merge_check_1.stream << EOF
 CrystFEL stream format 2.1
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
+----- Begin geometry file -----
+photon_energy = 9000 eV
+panel/min_fs = 0
+panel/min_ss = 0
+panel/max_fs = 1023
+panel/max_ss = 1023
+panel/corner_x = -100
+panel/corner_y = -100
+panel/clen = 50 mm
+panel/res = 1000000
+panel/adu_per_photon = 1
+panel/data = /data/data_array
+----- End geometry file -----
 ----- Begin chunk -----
 Image filename: dummy.h5
 photon_energy_eV = 6000.0

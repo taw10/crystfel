@@ -395,7 +395,8 @@ static void display_progress(int n_images, int n_crystals, int n_crystals_used)
 }
 
 
-static int merge_all(Stream *st, RefList *model, RefList *reference,
+static int merge_all(Stream *st, DataTemplate *dtempl,
+                     RefList *model, RefList *reference,
                      const SymOpList *sym,
                      double **hist_vals, signed int hist_h,
                      signed int hist_k, signed int hist_l,
@@ -428,7 +429,7 @@ static int merge_all(Stream *st, RefList *model, RefList *reference,
 		int i;
 
 		/* Get data from next chunk */
-		image = stream_read_chunk(st, NULL,
+		image = stream_read_chunk(st, dtempl,
 		                          STREAM_REFLECTIONS
 		                        | STREAM_UNITCELL);
 		if ( image == NULL ) break;
@@ -514,6 +515,8 @@ int main(int argc, char *argv[])
 	int hist_i;
 	int space_for_hist = 0;
 	char *histo_params = NULL;
+	const char *geom_str;
+	DataTemplate *dtempl;
 	struct polarisation polarisation = {.fraction = 1.0,
 	                                    .angle = 0.0,
 	                                    .disable = 0};
@@ -723,6 +726,19 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	geom_str = stream_geometry_file(st);
+	if ( geom_str == NULL ) {
+		ERROR("No geometry file found in stream\n");
+		stream_close(st);
+		return 1;
+	}
+
+	dtempl = data_template_new_from_string(geom_str);
+	if ( dtempl == NULL ) {
+		stream_close(st);
+		return 1;
+	}
+
 	model = reflist_new();
 
 	if ( histo != NULL ) {
@@ -779,7 +795,8 @@ int main(int argc, char *argv[])
 	if ( config_scale ) twopass = 1;
 
 	hist_i = 0;
-	r = merge_all(st, model, NULL, sym, &hist_vals, hist_h, hist_k, hist_l,
+	r = merge_all(st, dtempl, model, NULL, sym,
+	              &hist_vals, hist_h, hist_k, hist_l,
 	              &hist_i, polarisation, min_measurements, min_snr,
 	              max_adu, start_after, stop_after, min_res, push_res,
 	              min_cc, config_scale, flag_even_odd, stat_output);
@@ -813,7 +830,7 @@ int main(int argc, char *argv[])
 				hist_i = 0;
 			}
 
-			r = merge_all(st, model, reference, sym, &hist_vals,
+			r = merge_all(st, dtempl, model, reference, sym, &hist_vals,
 			              hist_h, hist_k, hist_l, &hist_i,
 				      polarisation, min_measurements, min_snr,
 				      max_adu, start_after, stop_after, min_res,
