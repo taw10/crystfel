@@ -68,6 +68,7 @@
 struct skip_private
 {
 	char path_to_sol[50];
+    UnitCell *cellTemplate;
 	float solutions[];
 };
 
@@ -153,7 +154,7 @@ static void show_indexing_flags(IndexingFlags flags)
 }
 
 
-void *skip_prepare(char *solution_filename)
+void *skip_prepare(char *solution_filename, UnitCell *cell)
 {	
 	FILE *fh;
 	int nlines;
@@ -277,6 +278,9 @@ void *skip_prepare(char *solution_filename)
 	{
 		dp->solutions[k] = params[k];
 	}
+    
+    
+    dp->cellTemplate = cell;
 
 	free(params);
 	
@@ -366,6 +370,9 @@ static int skip_index(struct image *image, void *mpriv)
 	cr = crystal_new();
 	cell = cell_new();
 	cell_set_reciprocal(cell, asx * 1e9, asy * 1e9, asz* 1e9, bsx * 1e9, bsy * 1e9, bsz * 1e9, csx * 1e9, csy * 1e9, csz* 1e9);
+    cell_set_lattice_type(cell, cell_get_lattice_type(dp->cellTemplate));
+	cell_set_centering(cell, cell_get_centering(dp->cellTemplate));
+	cell_set_unique_axis(cell, cell_get_unique_axis(dp->cellTemplate));
 	
 	crystal_set_cell(cr, cell);
 	crystal_set_det_shift(cr, xshift * 1e-3, yshift * 1e-3);
@@ -496,7 +503,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_FILE :
-		priv = skip_prepare(filename);
+		priv = skip_prepare(filename, cell);
 		break;
 
 		case INDEXING_FELIX :
