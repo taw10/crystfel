@@ -33,10 +33,6 @@
 #ifndef CELL_H
 #define CELL_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "utils.h"
 #include "integer_matrix.h"
 

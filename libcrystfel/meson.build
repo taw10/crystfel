@@ -63,6 +63,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/felix.c',
                        'src/predict-refine.c',
                        'src/xds.c',
+                       'src/asdf.c',
                        'src/filters.c',
                        'src/rational.c',
                        'src/xgandalf.c',
@@ -79,10 +80,6 @@ libcrystfel_sources = ['src/image.c',
                        symop_lex_ch,
                        symop_parse_ch,
                       ]
-
-if fftwdep.found()
-  libcrystfel_sources += 'src/asdf.c'
-endif
 
 configure_file(input : 'config.h.in',
                output : 'config.h',

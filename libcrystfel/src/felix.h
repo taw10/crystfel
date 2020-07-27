@@ -30,10 +30,6 @@
 #ifndef FELIX_H
 #define FELIX_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <argp.h>
 
 #include "cell.h"

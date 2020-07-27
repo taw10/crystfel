@@ -31,10 +31,6 @@
 #ifndef XDS_H
 #define XDS_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "cell.h"
 #include "index.h"
 

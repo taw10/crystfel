@@ -31,10 +31,6 @@
 #ifndef PEAKS_H
 #define PEAKS_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <pthread.h>
 
 #include "reflist.h"

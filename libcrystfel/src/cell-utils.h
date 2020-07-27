@@ -31,10 +31,6 @@
 #ifndef CELL_UTILS_H
 #define CELL_UTILS_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <gsl/gsl_matrix.h>
 
 #include "cell.h"

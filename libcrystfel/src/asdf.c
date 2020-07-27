@@ -55,6 +55,8 @@
  * \file asdf.h
  */
 
+#ifdef HAVE_FFTW
+
 struct fftw_vars {
 	int N;
 	fftw_plan p;
@@ -1200,3 +1202,32 @@ const char *asdf_probe(UnitCell *cell)
 {
 	return "asdf";
 }
+
+#else /* HAVE_FFTW */
+
+int run_asdf(struct image *image, void *ipriv)
+{
+       ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
+       return 0;
+}
+
+
+void *asdf_prepare(IndexingMethod *indm, UnitCell *cell)
+{
+       ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
+       ERROR("To use asdf indexing, recompile with FFTW.\n");
+       return NULL;
+}
+
+
+const char *asdf_probe(UnitCell *cell)
+{
+       return NULL;
+}
+
+
+void asdf_cleanup(void *pp)
+{
+}
+
+#endif /* HAVE_FFTW */

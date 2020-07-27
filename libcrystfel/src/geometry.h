@@ -31,11 +31,6 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "reflist.h"
 #include "cell.h"
 #include "crystal.h"

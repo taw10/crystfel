@@ -31,10 +31,6 @@
 #ifndef ASDF_H
 #define ASDF_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "index.h"
 
 #ifdef __cplusplus
@@ -46,45 +42,12 @@ extern "C" {
  * The ASDF indexing algorithm.
  */
 
-#ifdef HAVE_FFTW
-
 extern int run_asdf(struct image *image, void *ipriv);
 
 extern void *asdf_prepare(IndexingMethod *indm, UnitCell *cell);
 extern const char *asdf_probe(UnitCell *cell);
 
 extern void asdf_cleanup(void *pp);
-
-#else /* HAVE_FFTW */
-
-int run_asdf(struct image *image, void *ipriv)
-{
-	ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
-	return 0;
-}
-
-
-void *asdf_prepare(IndexingMethod *indm, UnitCell *cell)
-{
-	ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
-	ERROR("To use asdf indexing, recompile with FFTW.\n");
-	return NULL;
-}
-
-
-const char *asdf_probe(UnitCell *cell)
-{
-	return NULL;
-}
-
-
-void asdf_cleanup(void *pp)
-{
-}
-
-
-#endif /* HAVE_FFTW */
-
 
 #ifdef __cplusplus
 }

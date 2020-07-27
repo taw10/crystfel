@@ -31,10 +31,6 @@
 #ifndef MOSFLM_H
 #define MOSFLM_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "index.h"
 
 #ifdef __cplusplus

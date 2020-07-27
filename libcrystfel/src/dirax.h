@@ -29,10 +29,6 @@
 #ifndef DIRAX_H
 #define DIRAX_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "index.h"
 
 #ifdef __cplusplus

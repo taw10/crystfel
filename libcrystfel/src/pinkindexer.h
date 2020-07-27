@@ -29,10 +29,6 @@
 #ifndef LIBCRYSTFEL_SRC_PINKINDEXER_H_
 #define LIBCRYSTFEL_SRC_PINKINDEXER_H_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 typedef struct pinkIndexer_options PinkIndexerOptions;
 extern struct argp pinkIndexer_argp;
 

@@ -26,10 +26,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /* NB This file is NOT part of the public API, and should NOT
  * be installed, but rather stays in the libcrystfel source folder. */
 

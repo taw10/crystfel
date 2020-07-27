@@ -27,10 +27,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /** @cond */
 #ifndef REFLIST_UTILS_H
 #define REFLIST_UTILS_H

@@ -29,10 +29,6 @@
 #ifndef INTEGER_MATRIX_H
 #define INTEGER_MATRIX_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /**
  * \file integer_matrix.h
  * Matrix type containing only integers

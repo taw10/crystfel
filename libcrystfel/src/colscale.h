@@ -26,10 +26,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifndef COLSCALE_H
 #define COLSCALE_H
 

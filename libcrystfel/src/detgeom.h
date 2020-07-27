@@ -30,10 +30,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifndef DETGEOM_H
 #define DETGEOM_H
 

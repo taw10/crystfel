@@ -31,10 +31,6 @@
 #ifndef STREAM_H
 #define STREAM_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /**
  * \file stream.h
  * Stream functions (for indexing results)

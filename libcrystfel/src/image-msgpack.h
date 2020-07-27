@@ -26,10 +26,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifndef IMAGE_MSGPACK_H
 #define IMAGE_MSGPACK_H
 
