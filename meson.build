@@ -91,97 +91,16 @@ if cc.has_function('clock_gettime', prefix : '#include <time.h>')
   conf_data.set10('HAVE_CLOCK_GETTIME', 1)
 endif
 
-# FIXME: Curses, Xgandalf, pinkindexer, FDIP
+# ************************ libcrystfel (subdir) ************************
 
+subdir('libcrystfel')
 
-# libcrystfel
-libcrystfel_includes = include_directories('libcrystfel/src')
-
-# Find forkpty()
-utildep = cc.find_library('util', required : true)
-if cc.has_function('forkpty', dependencies : utildep, prefix : '#include <pty.h>')
-  add_project_arguments('-DHAVE_FORKPTY_PTY_H', language : 'c')
-elif cc.has_function('forkpty', dependencies : utildep, prefix : '#include <util.h>')
-  add_project_arguments('-DHAVE_FORKPTY_UTIL_H', language : 'c')
-else
-  error('Couldn\'t find forkpty()')
-endif
-
-
-
-# Symmetry operation parser Flex/Bison stuff
-flex = find_program('flex')
-bison = find_program('bison')
-
-flex_gen = generator(flex,
-                     output : ['@BASENAME@-lex.c', '@BASENAME@-lex.h'],
-                     arguments : ['--outfile=@OUTPUT0@',
-                                  '--header-file=@OUTPUT1@',
-                                  '@INPUT@'])
-
-bison_gen = generator(bison,
-                      output : ['@BASENAME@-parse.c', '@BASENAME@-parse.h'],
-                      arguments : ['--output=@OUTPUT0@',
-                                   '--defines=@OUTPUT1@',
-                                   '--report=all',
-                                   '@INPUT@'])
-
-symop_parse_ch = bison_gen.process('libcrystfel/src/symop.y')
-symop_lex_ch = flex_gen.process('libcrystfel/src/symop.l')
-
-
-libcrystfel_sources = ['libcrystfel/src/image.c',
-                       'libcrystfel/src/render.c',
-                       'libcrystfel/src/cell.c',
-                       'libcrystfel/src/index.c',
-                       'libcrystfel/src/spectrum.c',
-                       'libcrystfel/src/cell-utils.c',
-                       'libcrystfel/src/integer_matrix.c',
-                       'libcrystfel/src/stream.c',
-                       'libcrystfel/src/crystal.c',
-                       'libcrystfel/src/integration.c',
-                       'libcrystfel/src/symmetry.c',
-                       'libcrystfel/src/detector.c',
-                       'libcrystfel/src/mosflm.c',
-                       'libcrystfel/src/taketwo.c',
-                       'libcrystfel/src/dirax.c',
-                       'libcrystfel/src/peakfinder8.c',
-                       'libcrystfel/src/thread-pool.c',
-                       'libcrystfel/src/events.c',
-                       'libcrystfel/src/peaks.c',
-                       'libcrystfel/src/utils.c',
-                       'libcrystfel/src/felix.c',
-                       'libcrystfel/src/predict-refine.c',
-                       'libcrystfel/src/xds.c',
-                       'libcrystfel/src/filters.c',
-                       'libcrystfel/src/rational.c',
-                       'libcrystfel/src/xgandalf.c',
-                       'libcrystfel/src/geometry.c',
-                       'libcrystfel/src/reflist.c',
-                       'libcrystfel/src/hdf5-file.c',
-                       'libcrystfel/src/reflist-utils.c',
-                       symop_lex_ch,
-                       symop_parse_ch,
-                      ]
-
-if fftwdep.found()
-  libcrystfel_sources += 'libcrystfel/src/asdf.c'
-endif
+# ************************ The programs ************************
 
 configure_file(input : 'config.h.in',
                output : 'config.h',
                configuration : conf_data)
 conf_inc = include_directories('.')
-
-libcrystfel = library('crystfel', libcrystfel_sources,
-                   include_directories : [libcrystfel_includes, conf_inc],
-                   dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
-                                   hdf5dep, pthreaddep],
-                   install : true)
-
-libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
-                                    link_with : libcrystfel)
-
 
 # cell_tool
 executable('cell_tool',
@@ -190,10 +109,11 @@ executable('cell_tool',
            install : true)
 
 # partial_sim
-executable('partial_sim',
-           ['src/partial_sim.c'],
-           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
-           install : true)
+# FIXME: restore
+#executable('partial_sim',
+#           ['src/partial_sim.c'],
+#           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
+#           install : true)
 
 # process_hkl
 executable('process_hkl',
@@ -266,18 +186,23 @@ executable('make_pixelmap',
            install : true)
 
 # geoptimiser
-executable('geoptimiser',
-           ['src/geoptimiser.c', 'src/hdfsee-render.c'],
-           dependencies : [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep,
-                           tiffdep],
-           install : true)
+# FIXME: restore
+#executable('geoptimiser',
+#           ['src/geoptimiser.c', 'src/hdfsee-render.c'],
+#           dependencies : [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep,
+#                           tiffdep],
+#           install : true)
 
-# hdfsee
+# CrystFEL GUI
 if gtkdep.found()
-  executable('hdfsee',
-             ['src/hdfsee.c', 'src/dw-hdfsee.c', 'src/hdfsee-render.c'],
-             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep, gdkpixbufdep,
-                             tiffdep],
+  executable('crystfel',
+             ['src/crystfel_gui.c',
+              'src/crystfelimageview.c',
+              'src/gui_peaksearch.c',
+              'src/gui_index.c',
+              'src/gui_backend_local.c',
+              'src/gui_project.c'],
+             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep],
              install : true)
 endif
 
@@ -296,18 +221,16 @@ if gtkdep.found()
 endif
 
 # pattern_sim
-pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c']
-if opencldep.found()
-  pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
-endif
-executable('pattern_sim', pattern_sim_sources,
-           dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
-           install : true)
+# FIXME: restore
+#pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c']
+#if opencldep.found()
+#  pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
+#endif
+#executable('pattern_sim', pattern_sim_sources,
+#           dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
+#           install : true)
 
 # FIXME: Install manual pages
 
-# FIXME: API documents (Doxygen)
-
 # FIXME: Tests
 
-# FIXME: pkgconfig file

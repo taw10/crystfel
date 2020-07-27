@@ -36,8 +36,6 @@
 #include <config.h>
 #endif
 
-#include "image.h"
-
 #if defined(HAVE_MSGPACK) && defined(HAVE_ZMQ)
 
 #include <msgpack.h>

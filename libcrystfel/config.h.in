@@ -1,0 +1,12 @@
+/* config.h for libcrystfel */
+
+#mesondefine HAVE_FFTW
+#mesondefine HAVE_XGANDALF
+#mesondefine HAVE_PINKINDEXER
+#mesondefine HAVE_FDIP
+#mesondefine HAVE_CURSES
+
+#mesondefine HAVE_FORKPTY_PTY_H
+#mesondefine HAVE_FORKPTY_UTIL_H
+
+#define CRYSTFEL_VERSIONSTRING "${CRYSTFEL_VERSION}"

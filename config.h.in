@@ -10,7 +10,6 @@
 #mesondefine HAVE_CLOCK_GETTIME
 #mesondefine HAVE_MSGPACK
 #mesondefine HAVE_ZMQ
-#mesondefine HAVE_FFTW
 
 #define PACKAGE_VERSION "@CRYSTFEL_VERSION@"
 
