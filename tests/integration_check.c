@@ -31,11 +31,11 @@
 
 #include <image.h>
 #include <utils.h>
+#include <cell.h>
+#include <cell-utils.h>
+#include <integration.h>
 
 #include "histogram.h"
-
-#include "../libcrystfel/src/integration.c"
-
 
 int main(int argc, char *argv[])
 {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	RefList *list;
 	Reflection *refl;
 	UnitCell *cell;
-	struct intcontext ic;
+	struct intcontext *ic;
 	const int ir_inn = 2;
 	const int ir_mid = 4;
 	const int ir_out = 6;
@@ -121,25 +121,14 @@ int main(int argc, char *argv[])
 		                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
 		cell = cell_rotate(cell, random_quaternion(rng));
 
-		ic.halfw = ir_out;
-		ic.image = &image;
-		ic.k = 1.0/image.lambda;
-		ic.n_saturated = 0;
-		ic.n_implausible = 0;
-		ic.cell = cell;
-		ic.ir_inn = ir_inn;
-		ic.ir_mid = ir_mid;
-		ic.ir_out = ir_out;
-		ic.meth = INTEGRATION_RINGS;
-		ic.int_diag = INTDIAG_NONE;
-		ic.masks = NULL;
-		if ( init_intcontext(&ic) ) {
+		ic = intcontext_new(&image, cell, INTEGRATION_RINGS,
+		                    ir_inn, ir_mid, ir_out, NULL);
+		if ( ic == NULL ) {
 			ERROR("Failed to initialise integration.\n");
 			return 1;
 		}
-		setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
 
-		integrate_rings_once(refl, &image, &ic, cell, 0);
+		integrate_rings_once(refl, ic, 0);
 
 		cell_free(cell);
 
