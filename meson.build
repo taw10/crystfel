@@ -94,6 +94,7 @@ endif
 # ************************ libcrystfel (subdir) ************************
 
 subdir('libcrystfel')
+subdir('tests')
 
 # ************************ The programs ************************
 
@@ -231,6 +232,3 @@ endif
 #           install : true)
 
 # FIXME: Install manual pages
-
-# FIXME: Tests
-
