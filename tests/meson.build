@@ -1,20 +1,110 @@
 # CrystFEL unit tests
 
-exe = executable('ambi_check', 'ambi_check.c',
-                        dependencies : libcrystfeldep)
-test('ambi_check', exe)
+# Test wrapper scripts for process_hkl
+process_hkl_tests = ['process_hkl_check_1',
+                     'process_hkl_check_2',
+                     'process_hkl_check_3',
+                     'process_hkl_check_4']
 
-exe = executable('cell_check', 'cell_check.c',
-                        dependencies : [libcrystfeldep, mdep, gsldep])
-test('cell_check', exe)
+foreach name : process_hkl_tests
+  exe = find_program(name)
+  test(name, exe, args : [process_hkl.full_path()])
+endforeach
 
 
-exe = executable('centering_check', 'centering_check.c',
-                 dependencies : [libcrystfeldep, mdep, gsldep])
-test('centering_check', exe)
+# Test wrapper scripts for partialator
+partialator_tests = ['partialator_merge_check_1',
+                     'partialator_merge_check_2',
+                     'partialator_merge_check_3']
 
+foreach name : partialator_tests
+  exe = find_program(name)
+  test(name, exe, args : [partialator.full_path()])
+endforeach
+
+
+# Easy unit tests of libcrystfel functions
+simple_tests = ['ambi_check',
+                'cell_check',
+                'centering_check',
+                'list_check',
+                'prediction_gradient_check',
+                'ring_check',
+                'symmetry_check',
+                'transformation_check',
+                'rational_check',
+                'spectrum_check',
+                'cellcompare_check',
+                'polarisation_check',
+                'evparse1',
+                'evparse2',
+                'evparse3',
+                'evparse4',
+                'evparse5',
+                'evparse6',
+                'evparse7']
+
+
+if opencldep.found()
+  simple_tests += 'gpu_sim_check'
+endif
+
+foreach name : simple_tests
+  exe = executable(name, ''.join([name, '.c']),
+                   dependencies : [libcrystfeldep, mdep, gsldep, hdf5dep, opencldep])
+  test(name, exe, timeout : 60)
+endforeach
+
+
+# Less easy unit tests for libcrystfel functions
 exe = executable('integration_check',
                  ['integration_check.c',
                   'histogram.c'],
                  dependencies : [libcrystfeldep, mdep, gsldep])
 test('integration_check', exe)
+
+exe = executable('prof2d_check',
+                 ['prof2d_check.c',
+                  'histogram.c'],
+                 dependencies : [libcrystfeldep, mdep, gsldep])
+test('prof2d_check', exe)
+
+
+# Event enumeration tests
+ev_enum_tests = ['ev_enum1',
+                 'ev_enum2',
+                 'ev_enum3']
+
+foreach name : ev_enum_tests
+  exe = executable(name, ''.join([name, '.c']),
+                   dependencies : [libcrystfeldep, hdf5dep])
+  h5 = files(''.join([name, '.h5']))
+  geom = files(''.join([name, '.geom']))
+  test(name, exe, args : [h5, geom])
+endforeach
+
+
+# Wavelength tests
+wavelength_tests = [['wavelength_geom1', '1e-10'],
+                    ['wavelength_geom2', '1.3776e-10'],
+                    ['wavelength_geom3', '1.3776e-10'],
+                    ['wavelength_geom4', '1.9687e-12'],
+                    ['wavelength_geom5', '1.9687e-12'],
+                    ['wavelength_geom6', '1.3776e-10'],
+                    ['wavelength_geom7', '1.3776e-10'],
+                    ['wavelength_geom8', '1.9687e-12'],
+                    ['wavelength_geom9', '1.3776e-10'],
+                    ['wavelength_geom10', '1.3776e-10'],
+                    ['wavelength_geom11', '1.125e-10'],
+                    ['wavelength_geom12', '1.125e-10']]
+
+exe = executable('wavelength_geom', 'wavelength_geom.c',
+                 dependencies : [libcrystfeldep, hdf5dep])
+
+h5 = files('wavelength_geom.h5')
+
+foreach p : wavelength_tests
+  geom = files(''.join([p[0], '.geom']))
+  expected_wl = p[1]
+  test(p[0], exe, args : [h5, geom, expected_wl])
+endforeach

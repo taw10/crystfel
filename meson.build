@@ -94,7 +94,6 @@ endif
 # ************************ libcrystfel (subdir) ************************
 
 subdir('libcrystfel')
-subdir('tests')
 
 # ************************ The programs ************************
 
@@ -117,10 +116,10 @@ executable('cell_tool',
 #           install : true)
 
 # process_hkl
-executable('process_hkl',
-           ['src/process_hkl.c'],
-           dependencies : [mdep, libcrystfeldep],
-           install : true)
+process_hkl = executable('process_hkl',
+                         ['src/process_hkl.c'],
+                         dependencies : [mdep, libcrystfeldep],
+                         install : true)
 
 # list_events
 executable('list_events',
@@ -147,14 +146,14 @@ executable('check_hkl',
            install : true)
 
 # partialator
-executable('partialator',
-           ['src/partialator.c',
-            'src/post-refinement.c',
-            'src/merge.c',
-            'src/rejection.c',
-            'src/scaling.c'],
-           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
-           install : true)
+partialator = executable('partialator',
+                         ['src/partialator.c',
+                          'src/post-refinement.c',
+                          'src/merge.c',
+                          'src/rejection.c',
+                          'src/scaling.c'],
+                         dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
+                         install : true)
 
 # ambigator
 executable('ambigator',
@@ -232,3 +231,7 @@ endif
 #           install : true)
 
 # FIXME: Install manual pages
+
+# ************************ Testing ************************
+
+subdir('tests')
