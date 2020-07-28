@@ -33,8 +33,13 @@
 #include <image.h>
 #include <utils.h>
 
-#include "../libcrystfel/src/peaks.c"
 
+extern int integrate_peak(struct image *image,
+                          int p_cfs, int p_css, int pn,
+                          double *pfs, double *pss,
+                          double *intensity, double *sigma,
+                          double ir_inn, double ir_mid, double ir_out,
+                          int *saturated);
 
 /* The third integration check draws a Poisson background and checks that, on
  * average, it gets subtracted by the background subtraction. */

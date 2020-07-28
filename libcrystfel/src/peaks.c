@@ -133,12 +133,12 @@ int *make_BgMask(struct image *image, struct detgeom_panel *p,
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-static int integrate_peak(struct image *image,
-                          int p_cfs, int p_css, int pn,
-                          double *pfs, double *pss,
-                          double *intensity, double *sigma,
-                          double ir_inn, double ir_mid, double ir_out,
-                          int *saturated)
+int integrate_peak(struct image *image,
+                   int p_cfs, int p_css, int pn,
+                   double *pfs, double *pss,
+                   double *intensity, double *sigma,
+                   double ir_inn, double ir_mid, double ir_out,
+                   int *saturated)
 {
 	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;

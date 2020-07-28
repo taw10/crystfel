@@ -1372,11 +1372,11 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 }
 
 
-static void integrate_prof2d(IntegrationMethod meth,
-                             Crystal *cr, struct image *image, IntDiag int_diag,
-                             signed int idh, signed int idk, signed int idl,
-                             double ir_inn, double ir_mid, double ir_out,
-                             pthread_mutex_t *term_lock, int **masks)
+void integrate_prof2d(IntegrationMethod meth,
+                      Crystal *cr, struct image *image, IntDiag int_diag,
+                      signed int idh, signed int idk, signed int idl,
+                      double ir_inn, double ir_mid, double ir_out,
+                      pthread_mutex_t *term_lock, int **masks)
 {
 	RefList *list;
 	UnitCell *cell;
@@ -1855,4 +1855,3 @@ IntegrationMethod integration_method(const char *str, int *err)
 	return meth;
 
 }
-
