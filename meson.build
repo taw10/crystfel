@@ -230,8 +230,29 @@ endif
 #           dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
 #           install : true)
 
-# FIXME: Install manual pages
 
 # ************************ Testing ************************
 
 subdir('tests')
+
+
+# ************************ Manual pages ************************
+install_man(['doc/man/ambigator.1',
+             'doc/man/cell_explorer.1',
+             'doc/man/cell_tool.1',
+             'doc/man/check_hkl.1',
+             'doc/man/compare_hkl.1',
+             'doc/man/crystfel.7',
+             'doc/man/crystfel_geometry.5',
+             'doc/man/geoptimiser.1',
+             'doc/man/get_hkl.1',
+             'doc/man/indexamajig.1',
+             'doc/man/list_events.1',
+             'doc/man/list_events.1',
+             'doc/man/make_pixelmap.1',
+             'doc/man/partialator.1',
+             'doc/man/partial_sim.1',
+             'doc/man/pattern_sim.1',
+             'doc/man/process_hkl.1',
+             'doc/man/render_hkl.1',
+             'doc/man/whirligig.1'])
