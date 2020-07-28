@@ -269,7 +269,6 @@ char *substitute_path(const char *ev, const char *pattern)
 		free(plvals);
 		return NULL;
 	}
-	subs[0] = '\0';
 
 	pl_pos = strchr(pattern, '%');
 	if ( pl_pos == NULL ) {
@@ -278,6 +277,7 @@ char *substitute_path(const char *ev, const char *pattern)
 		return NULL;
 	}
 	strncpy(subs, pattern, pl_pos-pattern);
+	subs[pl_pos-pattern] = '\0';
 
 	start = pl_pos+1;
 	for ( i=0; i<n_plvals; i++ ) {
@@ -1408,7 +1408,9 @@ char **expand_paths(hid_t fh, char *pattern, int *n_evs)
 	start = pattern+1;
 	for ( i=0; i<n_sep; i++ ) {
 		char *sep = strchr(start, '/');
-		assert(sep != NULL);
+		if ( sep == NULL ) {
+			sep = start+strlen(start);
+		}
 		pattern_bits[i] = strndup(start, sep-start);
 		if ( pattern_bits[i] == NULL ) return NULL;
 		start = sep+1;
