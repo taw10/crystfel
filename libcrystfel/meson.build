@@ -97,6 +97,27 @@ libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
                                     link_with : libcrystfel)
 
 
+
+# API documentation (Doxygen)
+doxygen = find_program('doxygen')
+
+index_md = files('doc/index.md')
+coding_md = files('doc/coding.md')
+
+doc_data = configuration_data()
+doc_data.set('DOX_TOP', join_paths(meson.current_source_dir(), 'src'))
+doc_data.set('INDEX_MD', join_paths(meson.current_source_dir(), 'doc/index.md'))
+doc_data.set('CODING_MD', join_paths(meson.current_source_dir(), 'doc/coding.md'))
+doc_data.set('OUTPUT_DIR', join_paths(meson.current_build_dir(), 'docs'))
+doc_data.set('VERSION', meson.project_version())
+
+doxyfile = configure_file(input: 'doc/Doxyfile.in',
+                          output: 'Doxyfile',
+                          configuration: doc_data,
+                          install: false)
+
+api_docs = run_target('api-docs', command : [doxygen, doxyfile])
+
+
 # FIXME: pkgconfig file
-# FIXME: API documents (Doxygen)
 # FIXME: install headers
