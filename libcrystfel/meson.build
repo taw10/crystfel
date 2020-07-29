@@ -29,9 +29,9 @@ libcrystfel_includes = include_directories('src')
 # Find forkpty()
 utildep = cc.find_library('util', required : true)
 if cc.has_function('forkpty', dependencies : utildep, prefix : '#include <pty.h>')
-  add_project_arguments('-DHAVE_FORKPTY_PTY_H', language : 'c')
+  conf_data.set10('HAVE_FORKPTY_PTY_H', 1)
 elif cc.has_function('forkpty', dependencies : utildep, prefix : '#include <util.h>')
-  add_project_arguments('-DHAVE_FORKPTY_UTIL_H', language : 'c')
+  conf_data.set10('HAVE_FORKPTY_UTIL_H', 1)
 else
   error('Couldn\'t find forkpty()')
 endif
