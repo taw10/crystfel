@@ -1,14 +1,16 @@
 # Meson file for CrystFEL
 project('crystfel', 'c',
-        version : '0.8.0',
+        version : '0.9.1',
         license : 'GPL3+',
         default_options : ['buildtype=debugoptimized'])
 
 add_project_arguments('-DHAVE_CONFIG_H', language : 'c')
 
-# FIXME: Possibly Git SHA1
+versionc = vcs_tag(input: 'src/version.c.in',
+                   output: 'version.c')
+
+
 conf_data = configuration_data()
-conf_data.set('CRYSTFEL_VERSION',  meson.project_version())
 
 # Mandatory dependencies
 cc = meson.get_compiler('c')
@@ -104,7 +106,7 @@ conf_inc = include_directories('.')
 
 # cell_tool
 executable('cell_tool',
-           ['src/cell_tool.c'],
+           ['src/cell_tool.c', versionc],
            dependencies : [mdep, libcrystfeldep],
            install : true)
 
@@ -117,31 +119,31 @@ executable('cell_tool',
 
 # process_hkl
 process_hkl = executable('process_hkl',
-                         ['src/process_hkl.c'],
+                         ['src/process_hkl.c', versionc],
                          dependencies : [mdep, libcrystfeldep],
                          install : true)
 
 # list_events
 executable('list_events',
-           ['src/list_events.c'],
+           ['src/list_events.c', versionc],
            dependencies : [mdep, libcrystfeldep],
            install : true)
 
 # get_hkl
 executable('get_hkl',
-           ['src/get_hkl.c'],
+           ['src/get_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep],
            install : true)
 
 # compare_hkl
 executable('compare_hkl',
-           ['src/compare_hkl.c'],
+           ['src/compare_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep],
            install : true)
 
 # check_hkl
 executable('check_hkl',
-           ['src/check_hkl.c'],
+           ['src/check_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep],
            install : true)
 
@@ -151,25 +153,27 @@ partialator = executable('partialator',
                           'src/post-refinement.c',
                           'src/merge.c',
                           'src/rejection.c',
-                          'src/scaling.c'],
+                          'src/scaling.c',
+                          versionc],
                          dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
                          install : true)
 
 # ambigator
 executable('ambigator',
-           ['src/ambigator.c'],
+           ['src/ambigator.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep],
            install : true)
 
 # whirligig
 executable('whirligig',
-           ['src/whirligig.c'],
+           ['src/whirligig.c', versionc],
            dependencies : [mdep, libcrystfeldep],
            install : true)
 
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
-                       'src/process_image.c', 'src/time-accounts.c']
+                       'src/process_image.c', 'src/time-accounts.c',
+                       versionc]
 if zmqdep.found() and msgpackdep.found()
   indexamajig_sources += ['src/im-zmq.c']
 endif
@@ -181,14 +185,14 @@ executable('indexamajig', indexamajig_sources,
 
 # make_pixelmap
 executable('make_pixelmap',
-           ['src/make_pixelmap.c'],
+           ['src/make_pixelmap.c', versionc],
            dependencies : [mdep, libcrystfeldep, hdf5dep],
            install : true)
 
 # geoptimiser
 # FIXME: restore
 #executable('geoptimiser',
-#           ['src/geoptimiser.c', 'src/hdfsee-render.c'],
+#           ['src/geoptimiser.c', 'src/hdfsee-render.c', versionc],
 #           dependencies : [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep,
 #                           tiffdep],
 #           install : true)
@@ -201,28 +205,29 @@ if gtkdep.found()
               'src/gui_peaksearch.c',
               'src/gui_index.c',
               'src/gui_backend_local.c',
-              'src/gui_project.c'],
+              'src/gui_project.c',
+              versionc],
              dependencies : [mdep, libcrystfeldep, gtkdep, gsldep],
              install : true)
 endif
 
 # render_hkl
 executable('render_hkl',
-           ['src/render_hkl.c'],
+           ['src/render_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, cairodep, gsldep],
            install : true)
 
 # cell_explorer
 if gtkdep.found()
   executable('cell_explorer',
-             ['src/cell_explorer.c', 'src/multihistogram.c'],
+             ['src/cell_explorer.c', 'src/multihistogram.c', versionc],
              dependencies : [mdep, libcrystfeldep, gtkdep, gsldep],
              install : true)
 endif
 
 # pattern_sim
 # FIXME: restore
-#pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c']
+#pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c', versionc]
 #if opencldep.found()
 #  pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
 #endif

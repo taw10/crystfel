@@ -9,6 +9,11 @@ endif
 
 # FIXME: Curses, Xgandalf, pinkindexer, FDIP
 
+
+libcrystfel_versionc = vcs_tag(input: 'src/libcrystfel-version.c.in',
+                               output: 'libcrystfel-version.c')
+
+
 libcrystfel_includes = include_directories('src')
 
 # Find forkpty()
@@ -87,7 +92,7 @@ configure_file(input : 'config.h.in',
 
 libcrystfel_conf_inc = include_directories('.')
 
-libcrystfel = library('crystfel', libcrystfel_sources,
+libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                    include_directories : [libcrystfel_includes, libcrystfel_conf_inc],
                    dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
                                    hdf5dep, pthreaddep],
