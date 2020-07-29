@@ -153,5 +153,7 @@ doxyfile = configure_file(input: 'doc/Doxyfile.in',
 api_docs = run_target('api-docs', command : [doxygen, doxyfile])
 
 
-# FIXME: pkgconfig file
-# FIXME: install headers
+# pkg-config file
+pkg = import('pkgconfig')
+pkg.generate(libcrystfel,
+             description: 'Data processing for serial crystallography (shared library)')
