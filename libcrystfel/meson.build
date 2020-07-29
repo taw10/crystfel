@@ -12,7 +12,12 @@ if fftwdep.found()
   conf_data.set10('HAVE_FFTW', 1)
 endif
 
-# FIXME: Curses, Xgandalf, pinkindexer, FDIP
+ncursesdep = dependency('ncurses', required: false)
+if ncursesdep.found()
+  conf_data.set10('HAVE_CURSES', 1)
+endif
+
+# FIXME: Xgandalf, pinkindexer, FDIP
 
 
 libcrystfel_versionc = vcs_tag(input: 'src/libcrystfel-version.c.in',
@@ -100,7 +105,7 @@ libcrystfel_conf_inc = include_directories('.')
 libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                    include_directories : [libcrystfel_includes, libcrystfel_conf_inc],
                    dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
-                                   hdf5dep, pthreaddep],
+                                   hdf5dep, pthreaddep, ncursesdep],
                    install : true)
 
 libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
