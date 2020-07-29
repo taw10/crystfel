@@ -43,10 +43,13 @@
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_fit.h>
 
-#include "utils.h"
-#include "symmetry.h"
-#include "reflist-utils.h"
-#include "cell-utils.h"
+#include <utils.h>
+#include <symmetry.h>
+#include <reflist-utils.h>
+#include <cell-utils.h>
+
+#include "version.h"
+
 
 enum fom
 {
@@ -1185,8 +1188,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 10 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'y' :

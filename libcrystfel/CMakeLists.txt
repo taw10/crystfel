@@ -10,6 +10,8 @@ find_package(BISON REQUIRED)
 find_package(Doxygen)
 pkg_search_module(FFTW fftw3)
 
+configure_file(src/libcrystfel-version.c.cmake.in libcrystfel-version.c)
+
 set(HAVE_CURSES ${CURSES_FOUND})
 set(HAVE_FFTW ${FFTW_FOUND})
 set(HAVE_XGANDALF ${XGANDALF_FOUND})
@@ -120,6 +122,7 @@ endif (DOXYGEN_FOUND)
 
 add_library(${PROJECT_NAME} SHARED
 	${LIBCRYSTFEL_SOURCES}
+	${CMAKE_CURRENT_BINARY_DIR}/libcrystfel-version.c
 	${LIBCRYSTFEL_FFTW_SOURCES}
         ${LIBCRYSTFEL_HEADERS})
 

@@ -120,8 +120,8 @@ else ()
   else ()
     message(STATUS "This is a packaged release version")
   endif ()
-
 endif ()
+configure_file(src/version.c.cmake.in version.c)
 
 include(CheckIncludeFile)
 include(CheckLibraryExists)
@@ -182,7 +182,8 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
 
 # FIXME: Restore!
 #set(PARTIAL_SIM_SOURCES src/partial_sim.c)
-#add_executable(partial_sim ${PARTIAL_SIM_SOURCES})
+#add_executable(partial_sim ${PARTIAL_SIM_SOURCES}
+#               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 #target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
 #target_link_libraries(partial_sim ${COMMON_LIBRARIES})
 #list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
@@ -197,7 +198,8 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
 #  set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
 #endif(HAVE_OPENCL)
 #
-#add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
+#add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES}
+#               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 #target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
 #target_link_libraries(pattern_sim ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 #
@@ -215,7 +217,8 @@ if (GTK_FOUND)
 
   set(CELL_EXPLORER_SOURCES src/cell_explorer.c src/multihistogram.c)
 
-  add_executable(cell_explorer ${CELL_EXPLORER_SOURCES})
+  add_executable(cell_explorer ${CELL_EXPLORER_SOURCES}
+                 ${CMAKE_CURRENT_BINARY_DIR}/version.c)
   target_include_directories(cell_explorer PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
   target_link_libraries(cell_explorer ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
 
@@ -229,7 +232,8 @@ endif (GTK_FOUND)
 if (CAIRO_FOUND)
 
   set(RENDER_HKL_SOURCES src/render_hkl.c)
-  add_executable(render_hkl ${RENDER_HKL_SOURCES})
+  add_executable(render_hkl ${RENDER_HKL_SOURCES}
+                 ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 
   target_include_directories(render_hkl PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS})
   target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES})
@@ -242,7 +246,8 @@ endif (CAIRO_FOUND)
 # process_hkl
 
 set(PROCESS_HKL_SOURCES src/process_hkl.c)
-add_executable(process_hkl ${PROCESS_HKL_SOURCES})
+add_executable(process_hkl ${PROCESS_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(process_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(process_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES process_hkl)
@@ -251,7 +256,8 @@ list(APPEND CRYSTFEL_EXECUTABLES process_hkl)
 # list_events
 
 set(LIST_EVENTS_SOURCES src/list_events.c)
-add_executable(list_events ${LIST_EVENTS_SOURCES})
+add_executable(list_events ${LIST_EVENTS_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(list_events PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(list_events ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES list_events)
@@ -266,7 +272,8 @@ if ( ZMQ_FOUND AND MSGPACK_FOUND )
   list(APPEND INDEXAMAJIG_SOURCES src/im-zmq.c)
 endif ()
 
-add_executable(indexamajig ${INDEXAMAJIG_SOURCES})
+add_executable(indexamajig ${INDEXAMAJIG_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(indexamajig ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES indexamajig)
@@ -281,7 +288,8 @@ endif ()
 # get_hkl
 
 set(GET_HKL_SOURCES src/get_hkl.c)
-add_executable(get_hkl ${GET_HKL_SOURCES})
+add_executable(get_hkl ${GET_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(get_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(get_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES get_hkl)
@@ -290,7 +298,8 @@ list(APPEND CRYSTFEL_EXECUTABLES get_hkl)
 # compare_hkl
 
 set(COMPARE_HKL_SOURCES src/compare_hkl.c)
-add_executable(compare_hkl ${COMPARE_HKL_SOURCES})
+add_executable(compare_hkl ${COMPARE_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(compare_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(compare_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES compare_hkl)
@@ -299,7 +308,8 @@ list(APPEND CRYSTFEL_EXECUTABLES compare_hkl)
 # check_hkl
 
 set(CHECK_HKL_SOURCES src/check_hkl.c)
-add_executable(check_hkl ${CHECK_HKL_SOURCES})
+add_executable(check_hkl ${CHECK_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(check_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(check_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES check_hkl)
@@ -309,7 +319,8 @@ list(APPEND CRYSTFEL_EXECUTABLES check_hkl)
 
 set(PARTIALATOR_SOURCES src/partialator.c src/post-refinement.c src/merge.c
                         src/rejection.c src/scaling.c)
-add_executable(partialator ${PARTIALATOR_SOURCES})
+add_executable(partialator ${PARTIALATOR_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(partialator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partialator ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES partialator)
@@ -318,7 +329,8 @@ list(APPEND CRYSTFEL_EXECUTABLES partialator)
 # ambigator
 
 set(AMBIGATOR_SOURCES src/ambigator.c)
-add_executable(ambigator ${AMBIGATOR_SOURCES})
+add_executable(ambigator ${AMBIGATOR_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(ambigator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ambigator ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES ambigator)
@@ -334,7 +346,8 @@ list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 
 # FIXME: Restore!
 #set(GEOPTIMISER_SOURCES src/geoptimiser.c)
-#add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
+#add_executable(geoptimiser ${GEOPTIMISER_SOURCES}
+#               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 #target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
 #target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
 #list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
@@ -365,7 +378,8 @@ list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 # whirligig
 
 set(WHIRLIGIG_SOURCES src/whirligig.c)
-add_executable(whirligig ${WHIRLIGIG_SOURCES})
+add_executable(whirligig ${WHIRLIGIG_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(whirligig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(whirligig ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES whirligig)
@@ -374,7 +388,8 @@ list(APPEND CRYSTFEL_EXECUTABLES whirligig)
 # make_pixelmap
 
 set(MAKE_PIXELMAP_SOURCES src/make_pixelmap.c)
-add_executable(make_pixelmap ${MAKE_PIXELMAP_SOURCES})
+add_executable(make_pixelmap ${MAKE_PIXELMAP_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(make_pixelmap PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(make_pixelmap ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES make_pixelmap)
@@ -383,7 +398,8 @@ list(APPEND CRYSTFEL_EXECUTABLES make_pixelmap)
 # cell_tool
 
 set(CELL_TOOL_SOURCES src/cell_tool.c)
-add_executable(cell_tool ${CELL_TOOL_SOURCES})
+add_executable(cell_tool ${CELL_TOOL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(cell_tool PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(cell_tool ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES cell_tool)
@@ -397,7 +413,8 @@ if (GTK_FOUND)
     src/gui_peaksearch.c src/gui_index.c src/gui_backend_local.c
     src/gui_project.c)
 
-  add_executable(crystfel ${CRYSTFEL_GUI_SOURCES})
+  add_executable(crystfel ${CRYSTFEL_GUI_SOURCES}
+                 ${CMAKE_CURRENT_BINARY_DIR}/version.c)
   target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
   target_link_libraries(crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES})
 

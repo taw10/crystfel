@@ -54,12 +54,15 @@
 #endif /* HAVE_GDK */
 #endif /* HAVE_CAIRO */
 
-#include "detector.h"
-#include "stream.h"
-#include "crystal.h"
-#include "image.h"
-#include "utils.h"
-#include "colscale.h"
+#include <detector.h>
+#include <stream.h>
+#include <crystal.h>
+#include <image.h>
+#include <utils.h>
+#include <colscale.h>
+
+#include "version.h"
+
 
 struct imagefeature;
 
@@ -2730,8 +2733,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 10 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'o' :

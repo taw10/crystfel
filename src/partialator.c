@@ -58,6 +58,7 @@
 #include "post-refinement.h"
 #include "merge.h"
 #include "rejection.h"
+#include "version.h"
 
 
 struct csplit_hash_entry
@@ -1037,8 +1038,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'v' :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'i' :

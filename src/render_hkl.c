@@ -45,13 +45,15 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 
-#include "utils.h"
-#include "symmetry.h"
-#include "colscale.h"
+#include <utils.h>
+#include <symmetry.h>
+#include <colscale.h>
+#include <reflist.h>
+#include <reflist-utils.h>
+#include <cell-utils.h>
+
 #include "render_hkl.h"
-#include "reflist.h"
-#include "reflist-utils.h"
-#include "cell-utils.h"
+#include "version.h"
 
 
 #define KEY_FILENAME "key.pdf"
@@ -811,8 +813,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 5 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'p' :

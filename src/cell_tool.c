@@ -39,10 +39,12 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "cell.h"
-#include "cell-utils.h"
-#include "reflist-utils.h"
-#include "reflist.h"
+#include <cell.h>
+#include <cell-utils.h>
+#include <reflist-utils.h>
+#include <reflist.h>
+
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -54,6 +56,7 @@ static void show_help(const char *s)
 " -h, --help                 Display this help message.\n"
 " -p, --pdb=<file>           Get unit cell from <file> (PDB or CrystFEL format).\n"
 " -o <file>                  Output unit cell file.\n"
+"     --version              Print CrystFEL version number and exit.\n"
 "\n"
 "  Actions:\n"
 "     --find-ambi            Find indexing ambiguities for the cell.\n"
@@ -487,6 +490,7 @@ int main(int argc, char *argv[])
 		{"pdb",                1, NULL,               'p'},
 		{"tolerance",          1, NULL,                2},
 		{"output",             1, NULL,               'o'},
+		{"version",            0, NULL,                6},
 
 		/* Modes of operation */
 		{"find-ambi",          0, &mode,               CT_FINDAMBI},
@@ -545,6 +549,13 @@ int main(int argc, char *argv[])
 			}
 			rmax = 1.0 / (highres/1e10);
 			break;
+
+			case 6 :
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
+			return 0;
 
 			case 0 :
 			break;

@@ -55,6 +55,8 @@
 #include <cell-utils.h>
 #include <thread-pool.h>
 
+#include "version.h"
+
 
 static void show_help(const char *s)
 {
@@ -765,7 +767,8 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 			done = 1;
 
 			/* Add our own header */
-			fprintf(ofh, "Re-indexed by ambigator "CRYSTFEL_VERSIONSTRING"\n");
+			fprintf(ofh, "Re-indexed by ambigator %s\n",
+			        crystfel_version_string());
 			if ( argc > 0 ) {
 				for ( i=0; i<argc; i++ ) {
 					if ( i > 0 ) fprintf(ofh, " ");
@@ -1094,8 +1097,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 10 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'o' :

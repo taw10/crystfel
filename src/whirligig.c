@@ -42,11 +42,13 @@
 #include <image.h>
 #include <utils.h>
 #include <stream.h>
+#include <cell-utils.h>
+#include <integer_matrix.h>
+#include <reflist.h>
+#include <reflist-utils.h>
 
-#include "cell-utils.h"
-#include "integer_matrix.h"
-#include "reflist.h"
-#include "reflist-utils.h"
+#include "version.h"
+
 
 /* Maximum number of series which can overlap at once */
 #define MAX_SER 8
@@ -634,8 +636,10 @@ int main(int argc, char *argv[])
 			break;
 
 			case 3 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 4 :

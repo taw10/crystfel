@@ -38,9 +38,11 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "utils.h"
-#include "image.h"
-#include "datatemplate.h"
+#include <utils.h>
+#include <image.h>
+#include <datatemplate.h>
+
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -92,8 +94,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 2 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'o' :

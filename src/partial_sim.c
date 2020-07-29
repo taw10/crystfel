@@ -42,14 +42,17 @@
 #include <pthread.h>
 #include <gsl/gsl_rng.h>
 
-#include "image.h"
-#include "utils.h"
-#include "reflist-utils.h"
-#include "symmetry.h"
-#include "geometry.h"
-#include "stream.h"
-#include "thread-pool.h"
-#include "cell-utils.h"
+#include <image.h>
+#include <utils.h>
+#include <reflist-utils.h>
+#include <symmetry.h>
+#include <geometry.h>
+#include <stream.h>
+#include <thread-pool.h>
+#include <cell-utils.h>
+
+#include "version.h"
+
 
 /* Number of bins for partiality graph */
 #define NBINS 50
@@ -589,8 +592,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'v' :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'b' :

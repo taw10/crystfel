@@ -50,6 +50,7 @@
 #include "gui_index.h"
 #include "gui_backend_local.h"
 #include "gui_project.h"
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -602,7 +603,8 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(window),
 	        "CrystFEL graphical user interface");
-	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), CRYSTFEL_VERSIONSTRING);
+	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window),
+	                             crystfel_version_string());
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
 		"© 2020 Deutsches Elektronen-Synchrotron DESY, "
 		"a research centre of the Helmholtz Association.");
@@ -797,8 +799,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 1 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			default :

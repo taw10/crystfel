@@ -10,13 +10,3 @@
 #cmakedefine HAVE_CLOCK_GETTIME
 #cmakedefine HAVE_MSGPACK
 #cmakedefine HAVE_ZMQ
-
-#define PACKAGE_VERSION "${CRYSTFEL_VERSION}"
-
-#define CRYSTFEL_VERSIONSTRING "${CRYSTFEL_VERSION}"
-
-#define CRYSTFEL_BOILERPLATE "License GPLv3+: GNU GPL version 3 or later"\
-     " <http://gnu.org/licenses/gpl.html>.\n"\
-     "This is free software: you are free to change and redistribute it.\n"\
-     "There is NO WARRANTY, to the extent permitted by law.\n\n"\
-     "Written by Thomas White and others."

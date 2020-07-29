@@ -43,9 +43,11 @@
 #include <assert.h>
 #include <hdf5.h>
 
-#include "utils.h"
-#include "datatemplate.h"
-#include "detgeom.h"
+#include <utils.h>
+#include <datatemplate.h>
+#include <detgeom.h>
+
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -190,6 +192,7 @@ int main(int argc, char *argv[])
 		{"badmap",             0, &badmap,             1},
 		{"good-pixel",         1, NULL,              301},
 		{"bad-pixel",          1, NULL,              302},
+		{"version",            0, NULL,                2},
 		{0, 0, NULL, 0}
 	};
 
@@ -206,6 +209,13 @@ int main(int argc, char *argv[])
 			case 'o' :
 			output_file = strdup(optarg);
 			break;
+
+			case 2 :
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
+			return 0;
 
 			case 301:
 			if (sscanf(optarg, "%d", &good_pixel_val) != 1)

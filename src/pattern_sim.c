@@ -42,19 +42,21 @@
 #include <getopt.h>
 #include <hdf5.h>
 
-#include "image.h"
+#include <image.h>
+#include <cell.h>
+#include <cell-utils.h>
+#include <utils.h>
+#include <detector.h>
+#include <peaks.h>
+#include <symmetry.h>
+#include <reflist.h>
+#include <reflist-utils.h>
+#include <stream.h>
+
 #include "diffraction.h"
 #include "diffraction-gpu.h"
-#include "cell.h"
-#include "cell-utils.h"
-#include "utils.h"
-#include "detector.h"
-#include "peaks.h"
-#include "symmetry.h"
-#include "reflist.h"
-#include "reflist-utils.h"
 #include "pattern_sim.h"
-#include "stream.h"
+#include "version.h"
 
 
 enum spectrum_type {
@@ -588,8 +590,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'v' :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'b' :
