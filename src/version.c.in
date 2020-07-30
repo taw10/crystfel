@@ -1,3 +1,7 @@
+/* Prevent subsequent inclusion of version.h
+ * (e.g. in the case of Meson unity build mode) */
+#define CRYSTFEL_VERSION_H
+
 const char *crystfel_version_string()
 {
 	return "@VCS_TAG@";
