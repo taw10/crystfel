@@ -44,11 +44,11 @@
 #include <gsl/gsl_fit.h>
 
 #include "image.h"
-#include "dirax.h"
 #include "utils.h"
 #include "peaks.h"
 #include "cell-utils.h"
 #include "asdf.h"
+#include "cell.h"
 
 /**
  * \file asdf.h
