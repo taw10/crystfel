@@ -66,13 +66,10 @@ set(LIBCRYSTFEL_SOURCES
     src/image-cbf.c
     src/image-hdf5.c
     src/image-msgpack.c
+    src/asdf.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
 )
-
-if (HAVE_FFTW)
-	set(LIBCRYSTFEL_FFTW_SOURCES src/asdf.c)
-endif (HAVE_FFTW)
 
 set(LIBCRYSTFEL_HEADERS
     src/reflist.h
