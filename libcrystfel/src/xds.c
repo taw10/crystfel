@@ -73,7 +73,7 @@ struct xds_private
 };
 
 
-/* Essentially the reverse of spacegroup_for_lattice(), below */
+/* Essentially the reverse of xds_spacegroup_for_lattice(), below */
 static int convert_spacegroup_number(int spg, LatticeType *lt, char *cen,
                                      char *ua)
 {
@@ -240,7 +240,7 @@ static void write_spot(struct image *image)
 
 /* Turn what we know about the unit cell into something which we can give to
  * XDS to make it give us only indexing results compatible with the cell. */
-static const char *spacegroup_for_lattice(UnitCell *cell)
+static const char *xds_spacegroup_for_lattice(UnitCell *cell)
 {
 	LatticeType latt;
 	char centering;
@@ -335,7 +335,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 
 	if ( xp->indm & INDEXING_USE_LATTICE_TYPE ) {
 		fprintf(fh, "SPACE_GROUP_NUMBER= %s\n",
-			    spacegroup_for_lattice(xp->cell));
+			    xds_spacegroup_for_lattice(xp->cell));
 	} else {
 		fprintf(fh, "SPACE_GROUP_NUMBER= 0\n");
 	}
@@ -461,7 +461,7 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell)
 		return NULL;
 	}
 
-	if ( (cell != NULL) && (spacegroup_for_lattice(cell) == NULL) ) {
+	if ( (cell != NULL) && (xds_spacegroup_for_lattice(cell) == NULL) ) {
 		ERROR("Don't know how to ask XDS for your cell.\n");
 		return NULL;
 	}

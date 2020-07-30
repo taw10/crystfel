@@ -800,7 +800,7 @@ const char *felix_probe(UnitCell *cell)
 }
 
 
-static void show_help()
+static void felix_show_help()
 {
 	printf("Parameters for the Felix indexing algorithm:\n"
 "     --felix-domega        Degree range of omega (moscaicity) to consider.\n"
@@ -832,7 +832,8 @@ static void show_help()
 }
 
 
-static error_t parse_arg(int key, char *arg, struct argp_state *state)
+static error_t felix_parse_arg(int key, char *arg,
+                               struct argp_state *state)
 {
 	struct felix_options **opts_ptr = state->input;
 	float tmp;
@@ -855,7 +856,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 1 :
-		show_help();
+		felix_show_help();
 		return EINVAL;
 
 		case 2 :
@@ -939,7 +940,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 }
 
 
-static struct argp_option options[] = {
+static struct argp_option felix_options[] = {
 
 	{"help-felix", 1, NULL, OPTION_NO_USAGE,
 	 "Show options for Felix indexing algorithm", 99},
@@ -958,4 +959,5 @@ static struct argp_option options[] = {
 };
 
 
-struct argp felix_argp = { options, parse_arg, NULL, NULL, NULL, NULL, NULL };
+struct argp felix_argp = { felix_options, felix_parse_arg,
+                           NULL, NULL, NULL, NULL, NULL };

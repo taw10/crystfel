@@ -204,7 +204,7 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 }
 
 
-static int num_path_placeholders(const char *pattern)
+static int imh_num_path_placeholders(const char *pattern)
 {
 	size_t l, i;
 	int n_pl_exp = 0;
@@ -242,7 +242,7 @@ char *substitute_path(const char *ev, const char *pattern)
 	plvals = read_path_parts(ev, &n_plvals);
 	if ( plvals == NULL ) return NULL;
 
-	n_pl_exp = num_path_placeholders(pattern);
+	n_pl_exp = imh_num_path_placeholders(pattern);
 
 	if ( n_plvals != n_pl_exp ) {
 		ERROR("Wrong number of path placeholders: "
@@ -315,7 +315,7 @@ static void make_placeholder_skip(signed int *dt_dims,
 }
 
 
-static int num_placeholders(const struct panel_template *p)
+static int imh_num_placeholders(const struct panel_template *p)
 {
 	int i;
 	int n_pl = 0;
@@ -408,7 +408,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 	/* Does the array have the expected number of dimensions? */
 	total_dt_dims = total_dimensions(p);
-	plh_dt_dims = num_placeholders(p);
+	plh_dt_dims = imh_num_placeholders(p);
 	if ( ndims != total_dt_dims ) {
 		/* If the dimensions match after excluding
 		 * placeholders, it's OK - probably a static mask
@@ -1230,7 +1230,7 @@ struct ev_list
 };
 
 
-static int add_to_list(struct ev_list *list, char *ev_str)
+static int add_ev_to_list(struct ev_list *list, char *ev_str)
 {
 	if ( list->n_events == list->max_events ) {
 		char **new_events = realloc(list->events,
@@ -1366,7 +1366,7 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 
 			addme = demunge_event(ev_str_new);
 			if ( addme != NULL ) {
-				add_to_list(list, addme);
+				add_ev_to_list(list, addme);
 				free(addme);
 			}
 			free(ev_str_new);
@@ -1448,7 +1448,7 @@ static int rec_expand_dims(struct ev_list *list,
 	if ( n_placeholder_dims == 1 ) {
 		for ( i=0; i<placeholder_sizes[0]; i++ ) {
 			snprintf(dim_ev, 16, "%s/%i", path_ev, i);
-			if ( add_to_list(list, dim_ev) ) return 1;
+			if ( add_ev_to_list(list, dim_ev) ) return 1;
 		}
 	} else {
 
@@ -1520,10 +1520,10 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 	/* If the DataTemplate already says that one frame will be
 	 * found per file, short-circuit this whole affair */
-	if ( (num_placeholders(&dtempl->panels[0]) == 0)
-	  && (num_path_placeholders(dtempl->panels[0].data) == 0) )
+	if ( (imh_num_placeholders(&dtempl->panels[0]) == 0)
+	  && (imh_num_path_placeholders(dtempl->panels[0].data) == 0) )
 	{
-		add_to_list(&full_evs, "//");
+		add_ev_to_list(&full_evs, "//");
 		*pn_frames = full_evs.n_events;
 		return full_evs.events;
 	}
@@ -1632,7 +1632,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 			                            &n_evs_this_path);
 
 			for ( j=0; j<n_evs_this_path; j++ ) {
-				add_to_list(&full_evs, evs_this_path[j]);
+				add_ev_to_list(&full_evs, evs_this_path[j]);
 				free(evs_this_path[j]);
 			}
 
@@ -1641,7 +1641,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		} else {
 
 			/* Easy case with no dims to expand */
-			add_to_list(&full_evs, path_evs[i]);
+			add_ev_to_list(&full_evs, path_evs[i]);
 
 		}
 

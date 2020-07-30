@@ -267,6 +267,8 @@ extern struct quaternion random_quaternion(gsl_rng *rng);
 extern int quaternion_valid(struct quaternion q);
 extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
+extern int compare_double(const void *av, const void *bv);
+
 /* Keep these ones inline, to avoid function call overhead */
 static inline struct quaternion invalid_quaternion(void)
 {

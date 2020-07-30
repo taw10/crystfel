@@ -803,6 +803,16 @@ char *load_entire_file(const char *filename)
 }
 
 
+int compare_double(const void *av, const void *bv)
+{
+	double a = *(double *)av;
+	double b = *(double *)bv;
+	if ( a > b ) return 1;
+	if ( a < b ) return -1;
+	return 0;
+}
+
+
 /* -------------------------- libcrystfel features  ------------------------ */
 
 int crystfel_has_peakfinder9()

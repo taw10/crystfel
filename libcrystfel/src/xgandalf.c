@@ -346,7 +346,7 @@ const char *xgandalf_probe(UnitCell *cell)
 
 #endif // HAVE_XGANDALF
 
-static void show_help()
+static void xgandalf_show_help()
 {
 	printf("Parameters for the TakeTwo indexing algorithm:\n"
 "     --xgandalf-sampling-pitch\n"
@@ -378,7 +378,8 @@ static void show_help()
 }
 
 
-static error_t parse_arg(int key, char *arg, struct argp_state *state)
+static error_t xgandalf_parse_arg(int key, char *arg,
+                                  struct argp_state *state)
 {
 	struct xgandalf_options **opts_ptr = state->input;
 
@@ -397,7 +398,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 1 :
-		show_help();
+		xgandalf_show_help();
 		return EINVAL;
 
 		case 2 :
@@ -457,7 +458,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 }
 
 
-static struct argp_option options[] = {
+static struct argp_option xgandalf_options[] = {
 
 	{"help-xgandalf", 1, NULL, OPTION_NO_USAGE,
 	 "Show options for XGANDALF indexing algorithm", 99},
@@ -488,4 +489,5 @@ static struct argp_option options[] = {
 };
 
 
-struct argp xgandalf_argp = { options, parse_arg, NULL, NULL, NULL, NULL, NULL };
+struct argp xgandalf_argp = { xgandalf_options, xgandalf_parse_arg,
+                              NULL, NULL, NULL, NULL, NULL };

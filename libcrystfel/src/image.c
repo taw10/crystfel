@@ -340,8 +340,8 @@ static char *get_value_and_units(struct image *image, const char *from,
 }
 
 
-static double get_length(struct image *image, const char *from,
-                         double default_scale)
+static double im_get_length(struct image *image, const char *from,
+                            double default_scale)
 {
 	char *units;
 	double value;
@@ -445,7 +445,9 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 		/* NB cnx,cny are in pixels, cnz is in m */
 		detgeom->panels[i].cnx = dtempl->panels[i].cnx;
 		detgeom->panels[i].cny = dtempl->panels[i].cny;
-		detgeom->panels[i].cnz = get_length(image, dtempl->panels[i].cnz_from, 1e-3);
+		detgeom->panels[i].cnz = im_get_length(image,
+		                                       dtempl->panels[i].cnz_from,
+		                                       1e-3);
 
 		/* Apply offset (in m) and then convert cnz from
 		 * m to pixels */
@@ -453,8 +455,8 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 		detgeom->panels[i].cnz /= detgeom->panels[i].pixel_pitch;
 
 		/* Apply overall shift (already in m) */
-		shift_x = get_length(image, dtempl->shift_x_from, 1.0);
-		shift_y = get_length(image, dtempl->shift_y_from, 1.0);
+		shift_x = im_get_length(image, dtempl->shift_x_from, 1.0);
+		shift_y = im_get_length(image, dtempl->shift_y_from, 1.0);
 
 		if ( !isnan(shift_x) ) {
 			detgeom->panels[i].cnx += shift_x;

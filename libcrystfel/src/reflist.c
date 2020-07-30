@@ -882,8 +882,11 @@ static Reflection *insert_node(Reflection *refl, Reflection *new)
 }
 
 
-static void add_to_list(RefList *list, Reflection *new,
-                        signed int h, signed int k, signed int l)
+static void add_refl_to_list_real(RefList *list,
+                                  Reflection *new,
+                                  signed int h,
+                                  signed int k,
+                                  signed int l)
 {
 	Reflection *f;
 
@@ -929,7 +932,7 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 	new = new_node(SERIAL(h, k, l));
 	if ( new == NULL ) return NULL;
 
-	add_to_list(list, new, h, k, l);
+	add_refl_to_list_real(list, new, h, k, l);
 
 	return new;
 }
@@ -948,7 +951,7 @@ void add_refl_to_list(Reflection *refl, RefList *list)
 
 	get_indices(refl, &h, &k, &l);
 
-	add_to_list(list, refl, h, k, l);
+	add_refl_to_list_real(list, refl, h, k, l);
 }
 
 

@@ -57,7 +57,7 @@ struct scale_args
 };
 
 
-struct queue_args
+struct scale_queue_args
 {
 	int n_started;
 	int n_done;
@@ -77,7 +77,7 @@ static void scale_crystal(void *task, int id)
 static void *get_crystal(void *vqargs)
 {
 	struct scale_args *task;
-	struct queue_args *qargs = vqargs;
+	struct scale_queue_args *qargs = vqargs;
 
 	task = malloc(sizeof(struct scale_args));
 	memcpy(task, &qargs->task_defaults, sizeof(struct scale_args));
@@ -92,7 +92,7 @@ static void *get_crystal(void *vqargs)
 
 static void done_crystal(void *vqargs, void *task)
 {
-	struct queue_args *qa = vqargs;
+	struct scale_queue_args *qa = vqargs;
 	qa->n_done++;
 	progress_bar(qa->n_done, qa->n_crystals, "Scaling");
 	free(task);
@@ -124,7 +124,7 @@ static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
 void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 {
 	struct scale_args task_defaults;
-	struct queue_args qargs;
+	struct scale_queue_args qargs;
 	double old_res, new_res;
 	int niter = 0;
 

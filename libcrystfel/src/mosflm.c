@@ -201,10 +201,11 @@ static void mosflm_parseline(const char *line, struct image *image,
 }
 
 
-/* This is the opposite of spacegroup_for_lattice() below.
+/* This is the opposite of mosflm_spacegroup_for_lattice() below.
  * Note that this is not general, just a set of rules for interpreting MOSFLM's
  * output. */
-static LatticeType spacegroup_to_lattice(const char *sg, char *ua, char *cen)
+static LatticeType mosflm_spacegroup_to_lattice(const char *sg,
+                                                char *ua, char *cen)
 {
 	LatticeType latt;
 
@@ -298,7 +299,7 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 		return 1;
 	}
 	//STATUS("MOSFLM says '%s'\n", symm);
-	latt = spacegroup_to_lattice(symm+5, &ua, &cen);
+	latt = mosflm_spacegroup_to_lattice(symm+5, &ua, &cen);
 
 	/* MOSFLM "A" matrix is multiplied by lambda, so fix this */
 	c = 1.0/image->lambda;
@@ -437,7 +438,7 @@ static void mosflm_sendline(const char *line, struct mosflm_data *mosflm)
 
 /* Turn what we know about the unit cell into something which we can give to
  * MOSFLM to make it give us only indexing results compatible with the cell. */
-static char *spacegroup_for_lattice(UnitCell *cell)
+static char *mosflm_spacegroup_for_lattice(UnitCell *cell)
 {
 	LatticeType latt;
 	char centering;
@@ -530,7 +531,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 				mosflm_sendline("CRYSTAL R\n", mosflm);
 			}
 
-			symm = spacegroup_for_lattice(mosflm->mp->template);
+			symm = mosflm_spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
 			//STATUS("Asking MOSFLM for '%s'\n", symm);
 			free(symm);

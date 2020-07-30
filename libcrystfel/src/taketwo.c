@@ -2269,7 +2269,7 @@ const char *taketwo_probe(UnitCell *cell)
 }
 
 
-static void show_help()
+static void taketwo_show_help()
 {
 	printf("Parameters for the TakeTwo indexing algorithm:\n"
 "     --taketwo-member-threshold\n"
@@ -2284,7 +2284,8 @@ static void show_help()
 }
 
 
-static error_t parse_arg(int key, char *arg, struct argp_state *state)
+static error_t taketwo_parse_arg(int key, char *arg,
+                                 struct argp_state *state)
 {
 	struct taketwo_options **opts_ptr = state->input;
 	float tmp;
@@ -2301,7 +2302,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 1 :
-		show_help();
+		taketwo_show_help();
 		return EINVAL;
 
 		case 2 :
@@ -2348,7 +2349,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 }
 
 
-static struct argp_option options[] = {
+static struct argp_option taketwo_options[] = {
 
 	{"help-taketwo", 1, NULL, OPTION_NO_USAGE,
 	 "Show options for TakeTwo indexing algorithm", 99},
@@ -2361,4 +2362,5 @@ static struct argp_option options[] = {
 };
 
 
-struct argp taketwo_argp = { options, parse_arg, NULL, NULL, NULL, NULL, NULL };
+struct argp taketwo_argp = { taketwo_options, taketwo_parse_arg,
+                             NULL, NULL, NULL, NULL, NULL };

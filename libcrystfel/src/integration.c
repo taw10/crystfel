@@ -1533,16 +1533,6 @@ int integrate_rings_once(Reflection *refl,
 }
 
 
-static int compare_double(const void *av, const void *bv)
-{
-	double a = *(double *)av;
-	double b = *(double *)bv;
-	if ( a > b ) return 1;
-	if ( a < b ) return -1;
-	return 0;
-}
-
-
 static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
 {
 	int i;

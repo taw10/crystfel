@@ -396,7 +396,7 @@ const char *pinkIndexer_probe(UnitCell *cell)
 
 #endif /* HAVE_PINKINDEXER */
 
-static void show_help()
+static void pinkIndexer_show_help()
 {
 	printf(
 "Parameters for the PinkIndexer indexing algorithm:\n"
@@ -440,7 +440,8 @@ static void show_help()
 }
 
 
-static error_t parse_arg(int key, char *arg, struct argp_state *state)
+static error_t pinkindexer_parse_arg(int key, char *arg,
+                                     struct argp_state *state)
 {
 	float tmp, tmp2;
 	struct pinkIndexer_options **opts_ptr = state->input;
@@ -466,7 +467,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 1 :
-		show_help();
+		pinkIndexer_show_help();
 		return EINVAL;
 
 		case 2 :
@@ -576,7 +577,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 }
 
 
-static struct argp_option options[] = {
+static struct argp_option pinkindexer_options[] = {
 
 	{"help-pinkindexer", 1, NULL, OPTION_NO_USAGE,
 	 "Show options for PinkIndexer indexing algorithm", 99},
@@ -617,4 +618,6 @@ static struct argp_option options[] = {
 };
 
 
-struct argp pinkIndexer_argp = { options, parse_arg, NULL, NULL, NULL, NULL, NULL };
+struct argp pinkIndexer_argp = { pinkindexer_options,
+                                 pinkindexer_parse_arg,
+                                 NULL, NULL, NULL, NULL, NULL };

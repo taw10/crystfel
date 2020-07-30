@@ -826,7 +826,7 @@ static int parse_toplevel(DataTemplate *dt,
 }
 
 
-static int num_path_placeholders(const char *str)
+static int dt_num_path_placeholders(const char *str)
 {
 	size_t i, len;
 	int n_pl;
@@ -1037,9 +1037,9 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		return NULL;
 	}
 
-	num_data_pl = num_path_placeholders(dt->panels[i].data);
-	num_mask_pl = num_path_placeholders(dt->panels[i].mask);
-	num_satmap_pl = num_path_placeholders(dt->panels[i].satmap);
+	num_data_pl = dt_num_path_placeholders(dt->panels[i].data);
+	num_mask_pl = dt_num_path_placeholders(dt->panels[i].mask);
+	num_satmap_pl = dt_num_path_placeholders(dt->panels[i].satmap);
 
 	/* This is because the "data" path will be used to expand
 	 * the path to generate the event list */
@@ -1122,19 +1122,19 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			reject = 1;
 		}
 
-		if ( num_path_placeholders(p->data) != num_data_pl ) {
+		if ( dt_num_path_placeholders(p->data) != num_data_pl ) {
 			ERROR("Data locations for all panels must "
 			      "have the same number of placeholders\n");
 			reject = 1;
 		}
 
-		if ( num_path_placeholders(p->mask) != num_mask_pl ) {
+		if ( dt_num_path_placeholders(p->mask) != num_mask_pl ) {
 			ERROR("Mask locations for all panels must "
 			      "have the same number of placeholders\n");
 			reject = 1;
 		}
 
-		if ( num_path_placeholders(p->satmap) != num_satmap_pl ) {
+		if ( dt_num_path_placeholders(p->satmap) != num_satmap_pl ) {
 			ERROR("Satmap locations for all panels must "
 			      "have the same number of placeholders\n");
 			reject = 1;
@@ -1392,7 +1392,7 @@ static double unit_string_to_unit(const char *str)
 }
 
 
-static double get_length(const char *from)
+static double dt_get_length(const char *from)
 {
 	double units;
 	char *sp;
@@ -1456,7 +1456,7 @@ struct detgeom *data_template_to_detgeom(const DataTemplate *dt)
 		/* NB cnx,cny are in pixels, cnz is in m */
 		detgeom->panels[i].cnx = dt->panels[i].cnx;
 		detgeom->panels[i].cny = dt->panels[i].cny;
-		detgeom->panels[i].cnz = get_length(dt->panels[i].cnz_from);
+		detgeom->panels[i].cnz = dt_get_length(dt->panels[i].cnz_from);
 
 		/* Apply offset (in m) and then convert cnz from
 		 * m to pixels */
@@ -1484,7 +1484,7 @@ struct detgeom *data_template_to_detgeom(const DataTemplate *dt)
 }
 
 
-static int num_placeholders(const struct panel_template *p)
+static int dt_num_placeholders(const struct panel_template *p)
 {
 	int i;
 	int n_pl = 0;
@@ -1514,7 +1514,7 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 			return 1;
 		}
 
-		if ( num_placeholders(p) > 0 ) {
+		if ( dt_num_placeholders(p) > 0 ) {
 			/* Not slabby */
 			return 1;
 		}

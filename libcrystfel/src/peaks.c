@@ -723,16 +723,6 @@ void validate_peaks(struct image *image, double min_snr,
 }
 
 
-static int compare_double(const void *av, const void *bv)
-{
-	double a = *(double *)av;
-	double b = *(double *)bv;
-	if ( a > b ) return 1;
-	if ( a < b ) return -1;
-	return 0;
-}
-
-
 double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
                                 struct detgeom *det)
 {
