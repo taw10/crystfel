@@ -102,6 +102,8 @@ extern void detgeom_free(struct detgeom *detgeom);
 extern double detgeom_max_resolution(struct detgeom *detgeom,
                                      double wavelength);
 
+extern void show_panel(struct detgeom_panel *p);
+
 #ifdef __cplusplus
 }
 #endif
