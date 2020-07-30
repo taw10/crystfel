@@ -42,7 +42,6 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_multifit.h>
 #include <gsl/gsl_fit.h>
-#include <fftw3.h>
 
 #include "image.h"
 #include "dirax.h"
@@ -56,6 +55,13 @@
  */
 
 #ifdef HAVE_FFTW
+
+#define FFTW_NO_Complex  /* Please use "double[2]", not C99 "complex",
+                          * despite complex.h possibly already being
+                          * included.  For more information, refer to:
+                          * http://www.fftw.org/doc/Complex-numbers.html */
+
+#include <fftw3.h>
 
 struct fftw_vars {
 	int N;
