@@ -26,6 +26,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "pinkindexer.h"
 
 #ifdef HAVE_PINKINDEXER
