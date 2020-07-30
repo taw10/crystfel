@@ -829,7 +829,7 @@ static int parse_toplevel(DataTemplate *dt,
 static int dt_num_path_placeholders(const char *str)
 {
 	size_t i, len;
-	int n_pl;
+	int n_pl = 0;
 
 	if ( str == NULL ) return 0;
 
@@ -1037,9 +1037,9 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		return NULL;
 	}
 
-	num_data_pl = dt_num_path_placeholders(dt->panels[i].data);
-	num_mask_pl = dt_num_path_placeholders(dt->panels[i].mask);
-	num_satmap_pl = dt_num_path_placeholders(dt->panels[i].satmap);
+	num_data_pl = dt_num_path_placeholders(dt->panels[0].data);
+	num_mask_pl = dt_num_path_placeholders(dt->panels[0].mask);
+	num_satmap_pl = dt_num_path_placeholders(dt->panels[0].satmap);
 
 	/* This is because the "data" path will be used to expand
 	 * the path to generate the event list */
