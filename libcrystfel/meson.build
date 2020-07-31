@@ -17,34 +17,20 @@ if ncursesdep.found()
   conf_data.set10('HAVE_CURSES', 1)
 endif
 
-xgandalfdep = cc.find_library('xgandalf', required: false)
-if xgandalfdep.found() and cc.has_function('IndexerPlain_index',
-                                           prefix: '#include <xgandalf/adaptions/crystfel/IndexerPlain.h>',
-                                           dependencies: xgandalfdep)
+xgandalfdep = dependency('xgandalf', required: false)
+if xgandalfdep.found()
   conf_data.set10('HAVE_XGANDALF', 1)
-else
-  xgandalfdep = dependency('', required: false)
 endif
 
-pinkindexerdep = dependency('', required: false)
-#pinkindexerdep = cc.find_library('pinkIndexer', required: false)
-#if pinkindexerdep.found() and cc.has_function('PinkIndexer_indexPattern',
-#                                              prefix: '#include <pinkIndexer/adaptions/crystfel/PinkIndexer.h>',
-#                                              dependencies: pinkindexerdep)
-#  conf_data.set10('HAVE_PINKINDEXER', 1)
-#else
-#  pinkindexerdep = dependency('', required: false)
-#endif
+pinkindexerdep = dependency('pinkIndexer', required: false)
+if pinkindexerdep.found()
+  conf_data.set10('HAVE_PINKINDEXER', 1)
+endif
 
-fdipdep = dependency('', required: false)
-#fdipdep = cc.find_library('fastDiffractionImageProcessing', required: false)
-#if fdipdep.found() and cc.has_function('allocatePeakList',
-#                                       prefix: '#include <fastDiffractionImageProcessing/peakList.h>',
-#                                       dependencies: fdipdep)
-#  conf_data.set10('HAVE_FDIP', 1)
-#else
-#  fdipdep = dependency('', required: false)
-#endif
+fdipdep = dependency('fastDiffractionImageProcessing', required: false)
+if fdipdep.found()
+  conf_data.set10('HAVE_FDIP', 1)
+endif
 
 libcrystfel_versionc = vcs_tag(input: 'src/libcrystfel-version.c.in',
                                output: 'libcrystfel-version.c')
