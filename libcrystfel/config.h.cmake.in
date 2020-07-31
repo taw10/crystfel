@@ -3,7 +3,6 @@
 #cmakedefine HAVE_CLOCK_GETTIME
 #cmakedefine HAVE_FFTW
 #cmakedefine HAVE_XGANDALF
-#cmakedefine HAVE_NBP
 #cmakedefine HAVE_PINKINDEXER
 #cmakedefine HAVE_FDIP
 #cmakedefine HAVE_CURSES
