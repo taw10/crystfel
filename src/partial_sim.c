@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2017 Thomas White <taw@physics.org>
+ *   2011-2020 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -276,7 +276,7 @@ static void show_help(const char *s)
 }
 
 
-struct queue_args
+struct partial_sim_queue_args
 {
 	RefList *full;
 	pthread_rwlock_t full_lock;
@@ -311,9 +311,9 @@ struct queue_args
 };
 
 
-struct worker_args
+struct partial_sim_worker_args
 {
-	struct queue_args *qargs;
+	struct partial_sim_queue_args *qargs;
 	Crystal *crystal;
 	struct image image;
 
@@ -331,13 +331,13 @@ struct worker_args
 
 static void *create_job(void *vqargs)
 {
-	struct worker_args *wargs;
-	struct queue_args *qargs = vqargs;
+	struct partial_sim_worker_args *wargs;
+	struct partial_sim_queue_args *qargs = vqargs;
 
 	/* All done already? */
 	if ( qargs->n_started == qargs->n_to_do ) return NULL;
 
-	wargs = malloc(sizeof(struct worker_args));
+	wargs = malloc(sizeof(struct partial_sim_worker_args));
 
 	wargs->qargs = qargs;
 	wargs->image = *qargs->template_image;
@@ -380,8 +380,8 @@ static void *create_job(void *vqargs)
 
 static void run_job(void *vwargs, int cookie)
 {
-	struct worker_args *wargs = vwargs;
-	struct queue_args *qargs = wargs->qargs;
+	struct partial_sim_worker_args *wargs = vwargs;
+	struct partial_sim_queue_args *qargs = wargs->qargs;
 	int i;
 	Crystal *cr;
 	double osf;
@@ -462,8 +462,8 @@ static void run_job(void *vwargs, int cookie)
 
 static void finalise_job(void *vqargs, void *vwargs)
 {
-	struct worker_args *wargs = vwargs;
-	struct queue_args *qargs = vqargs;
+	struct partial_sim_worker_args *wargs = vwargs;
+	struct partial_sim_queue_args *qargs = vqargs;
 	int i;
 	int ret;
 
@@ -527,7 +527,7 @@ int main(int argc, char *argv[])
 	int n = 2;
 	int random_intensities = 0;
 	char *save_file = NULL;
-	struct queue_args qargs;
+	struct partial_sim_queue_args qargs;
 	struct image image;
 	int n_threads = 1;
 	char *rval;
