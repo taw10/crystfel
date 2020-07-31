@@ -614,6 +614,8 @@ struct image *image_read(DataTemplate *dtempl,
 	                                       dtempl->wavelength_from),
 	                             dtempl->wavelength_unit);
 
+	image->bw = dtempl->bandwidth;
+
 	create_detgeom(image, dtempl);
 
 	image->bad = malloc(dtempl->n_panels * sizeof(int *));

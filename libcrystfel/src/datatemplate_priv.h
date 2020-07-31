@@ -188,9 +188,9 @@ struct _datatemplate
 	int                        n_bad;
 
 	char                      *wavelength_from;
-	double                     photon_energy_bandwidth;  /* Eww */
-
 	enum wavelength_unit       wavelength_unit;
+
+	double                     bandwidth;
 
 	unsigned int               mask_bad;
 	unsigned int               mask_good;

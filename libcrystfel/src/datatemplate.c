@@ -780,14 +780,14 @@ static int parse_toplevel(DataTemplate *dt,
 	} else if ( strcmp(key, "peak_list") == 0 ) {
 		dt->peak_list = strdup(val);
 
-	} else if ( strcmp(key, "photon_energy_bandwidth") == 0 ) {
+	} else if ( strcmp(key, "bandwidth") == 0 ) {
 		double v;
 		char *end;
 		v = strtod(val, &end);
 		if ( (val[0] != '\0') && (end[0] == '\0') ) {
-			dt->photon_energy_bandwidth = v;
+			dt->bandwidth = v;
 		} else {
-			ERROR("Invalid value for photon_energy_bandwidth\n");
+			ERROR("Invalid value for bandwidth\n");
 		}
 
 	} else if (strncmp(key, "rigid_group", 11) == 0
@@ -875,7 +875,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->rigid_groups = NULL;
 	dt->n_rg_collections = 0;
 	dt->rigid_group_collections = NULL;
-	dt->photon_energy_bandwidth = -1.0;
+	dt->bandwidth = 0.0;
 	dt->peak_list = NULL;
 	dt->shift_x_from = NULL;
 	dt->shift_y_from = NULL;
