@@ -373,7 +373,7 @@ struct cc_list
 };
 
 
-struct queue_args
+struct ambigator_queue_args
 {
 	int n_started;
 	int n_finished;
@@ -408,7 +408,7 @@ struct cc_job
 
 static void *get_task(void *vp)
 {
-	struct queue_args *qargs = vp;
+	struct ambigator_queue_args *qargs = vp;
 	struct cc_job *job;
 
 	if ( qargs->n_started == qargs->n_to_do ) return NULL;
@@ -431,7 +431,7 @@ static void *get_task(void *vp)
 
 static void final(void *qp, void *wp)
 {
-	struct queue_args *qargs = qp;
+	struct ambigator_queue_args *qargs = qp;
 	struct cc_job *job = wp;
 
 	qargs->mean_nac += job->mean_nac;
@@ -563,7 +563,7 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
                                 float *pmean_nac, int nthreads)
 {
 	struct cc_list *ccs;
-	struct queue_args qargs;
+	struct ambigator_queue_args qargs;
 	int i;
 
 	assert(n_crystals >= ncorr);
