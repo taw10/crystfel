@@ -95,7 +95,6 @@ struct index_args
 	float fix_profile_r;
 	float fix_divergence;
 	int overpredict;
-	Spectrum *spectrum;
 	signed int wait_for_file; /* -1 means wait forever */
 	int no_image_data;
 	int no_mask_data;

@@ -78,7 +78,6 @@ struct indexamajig_arguments
 	int check_prefix;
 	int n_proc;
 	char *cellfile;
-	char *spectrum_fn;
 	char *indm_str;
 	int basename;
 	int zmq;
@@ -208,10 +207,9 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 209 :
-		args->spectrum_fn = strdup(arg);
-		ERROR("WARNING: Prediction using arbitrary spectrum does not "
-		      "yet work in a useful way.\n");
-		break;
+		ERROR("--spectrum-filename is no longer used.\n");
+		ERROR("Specify the radiation spectrum via the geometry file instead.\n");
+		return 1;
 
 		case 210 :
 		args->no_mask_data = 1;
@@ -599,7 +597,6 @@ int main(int argc, char *argv[])
 	args.check_prefix = 1;
 	args.n_proc = 1;
 	args.cellfile = NULL;
-	args.spectrum_fn = NULL;
 	args.indm_str = NULL;
 	args.basename = 0;
 	args.zmq = 0;
@@ -886,18 +883,6 @@ int main(int argc, char *argv[])
 		free(args.cellfile);
 	} else {
 		args.iargs.cell = NULL;
-	}
-
-	/* Load spectrum from file if given */
-	if ( args.spectrum_fn != NULL ) {
-		args.iargs.spectrum = spectrum_load(args.spectrum_fn);
-		if ( args.iargs.spectrum == NULL ) {
-			ERROR("Couldn't read spectrum (from %s)\n", args.spectrum_fn);
-			return 1;
-		}
-		free(args.spectrum_fn);
-	} else {
-		args.iargs.spectrum = NULL;
 	}
 
 	tmpdir = create_tempdir(args.temp_location);

@@ -334,13 +334,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	} else {
 		image->div = 0.0;
 	}
-	/* Set beam spectrum */
-	if ( iargs->spectrum != NULL ) {
-		image->spectrum = iargs->spectrum;
-	} else {
-		image->spectrum = spectrum_generate_gaussian(image->lambda,
-		                                             image->bw);
-	}
 
 	if ( image_feature_count(image->features) < iargs->min_peaks ) {
 		r = chdir(rn);
@@ -443,12 +436,6 @@ out:
 	sb_shared->n_hits += image->hit;
 	sb_shared->n_hadcrystals += any_crystals;
 	pthread_mutex_unlock(&sb_shared->totals_lock);
-
-	/* Free spectrum only if we generated it for this image */
-	if ( iargs->spectrum == NULL ) {
-		spectrum_free(image->spectrum);
-		image->spectrum = NULL;
-	}
 
 	/* Free image (including detgeom) */
 	image_free(image);

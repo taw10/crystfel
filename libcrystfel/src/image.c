@@ -616,6 +616,10 @@ struct image *image_read(DataTemplate *dtempl,
 
 	image->bw = dtempl->bandwidth;
 
+	/* FIXME: Possibly load spectrum from file */
+	image->spectrum = spectrum_generate_gaussian(image->lambda,
+	                                             image->bw);
+
 	create_detgeom(image, dtempl);
 
 	image->bad = malloc(dtempl->n_panels * sizeof(int *));
