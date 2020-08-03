@@ -31,6 +31,9 @@ if not hdf5dep.found()
   error('Couldn\'t find HDF5')
 endif
 
+# Request HDF5 1.10-style API
+add_project_arguments('-DH5_USE_110_API', language : 'c')
+
 # "Optional" dependencies
 fftwdep = dependency('fftw3', required : false)
 if fftwdep.found()
