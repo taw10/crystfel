@@ -27,7 +27,7 @@ if pinkindexerdep.found()
   conf_data.set10('HAVE_PINKINDEXER', 1)
 endif
 
-fdipdep = dependency('fastDiffractionImageProcessing', required: false)
+fdipdep = dependency('fdip', required: false)
 if fdipdep.found()
   conf_data.set10('HAVE_FDIP', 1)
 endif
