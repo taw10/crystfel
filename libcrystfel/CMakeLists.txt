@@ -1,9 +1,9 @@
 project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
-find_package(XGANDALF)
-#find_package(PINKINDEXER)
-find_package(FDIP)
+pkg_check_modules (XGANDALF xgandalf)
+pkg_check_modules (PINKINDEXER pinkIndexer)
+pkg_check_modules (FDIP fdip)
 find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
