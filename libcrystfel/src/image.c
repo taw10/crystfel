@@ -397,21 +397,21 @@ static double convert_to_m(double val, int units)
 }
 
 
-void create_detgeom(struct image *image, const DataTemplate *dtempl)
+int create_detgeom(struct image *image, const DataTemplate *dtempl)
 {
 	struct detgeom *detgeom;
 	int i;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
-		return;
+		return 1;
 	}
 
 	detgeom = malloc(sizeof(struct detgeom));
-	if ( detgeom == NULL ) return;
+	if ( detgeom == NULL ) return 1;
 
 	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
-	if ( detgeom->panels == NULL ) return;
+	if ( detgeom->panels == NULL ) return 1;
 
 	detgeom->n_panels = dtempl->n_panels;
 
@@ -483,7 +483,7 @@ void create_detgeom(struct image *image, const DataTemplate *dtempl)
 
 	image->detgeom = detgeom;
 
-	/* FIXME: spectrum */
+	return 0;
 }
 
 
@@ -572,43 +572,9 @@ int image_read_image_data(struct image *image,
 }
 
 
-struct image *image_read(DataTemplate *dtempl,
-                         const char *filename,
-                         const char *event,
-                         int no_image_data,
-                         int no_mask_data)
+static void set_image_parameters(struct image *image,
+                                 const DataTemplate *dtempl)
 {
-	struct image *image;
-	int i;
-	int r;
-
-	if ( dtempl == NULL ) {
-		ERROR("NULL data template!\n");
-		return NULL;
-	}
-
-	image = image_new();
-	if ( image == NULL ) {
-		ERROR("Couldn't allocate image structure.\n");
-		return NULL;
-	}
-
-	if ( !no_image_data ) {
-
-		r = image_read_image_data(image, dtempl,
-		                          filename, event);
-
-	} else {
-
-		r = image_set_zero_data(image, dtempl);
-
-	}
-
-	if ( r ) {
-		image_free(image);
-		return NULL;
-	}
-
 	/* Wavelength might be needed to create detgeom (adu_per_eV) */
 	image->lambda = convert_to_m(get_value(image,
 	                                       dtempl->wavelength_from),
@@ -620,12 +586,19 @@ struct image *image_read(DataTemplate *dtempl,
 	image->spectrum = spectrum_generate_gaussian(image->lambda,
 	                                             image->bw);
 
-	create_detgeom(image, dtempl);
+}
+
+
+static int create_badmap(struct image *image,
+                         const DataTemplate *dtempl,
+                         int no_mask_data)
+{
+	int i;
 
 	image->bad = malloc(dtempl->n_panels * sizeof(int *));
 	if ( image->bad == NULL ) {
 		ERROR("Failed to allocate bad pixel mask\n");
-		return NULL;
+		return 1;
 	}
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
@@ -640,7 +613,7 @@ struct image *image_read(DataTemplate *dtempl,
 		image->bad[i] = calloc(p_w*p_h, sizeof(int));
 		if ( image->bad[i] == NULL ) {
 			ERROR("Failed to allocate bad pixel mask\n");
-			return NULL;
+			return 1;
 		}
 
 		/* Panel marked as bad? */
@@ -669,37 +642,142 @@ struct image *image_read(DataTemplate *dtempl,
 		if ( (!no_mask_data) && (!p->bad) && (p->mask != NULL) )
 		{
 			if ( p->mask_file == NULL ) {
-				mask_fn = filename;
+				mask_fn = image->filename;
 			} else {
 				mask_fn = p->mask_file;
 			}
 			if ( is_hdf5_file(mask_fn) ) {
-				image_hdf5_read_mask(p, mask_fn, event,
+				image_hdf5_read_mask(p, mask_fn,
+				                     image->ev,
 				                     image->bad[i],
 				                     dtempl->mask_good,
 				                     dtempl->mask_bad);
 
-			} else if ( is_cbf_file(filename) ) {
-				image_cbf_read_mask(p, mask_fn, event,
+			} else if ( is_cbf_file(mask_fn) ) {
+				image_cbf_read_mask(p, mask_fn,
+				                    image->ev,
 				                    0, image->bad[i],
 				                    dtempl->mask_good,
 				                    dtempl->mask_bad);
 
-			} else if ( is_cbfgz_file(filename) ) {
-				image_cbf_read_mask(p, mask_fn, event,
+			} else if ( is_cbfgz_file(mask_fn) ) {
+				image_cbf_read_mask(p, mask_fn,
+				                    image->ev,
 				                    1, image->bad[i],
 				                    dtempl->mask_good,
 				                    dtempl->mask_bad);
 
 			} else {
 				ERROR("Unrecognised mask file type"
-				      " (%s)\n", filename);
-				return NULL;
+				      " (%s)\n", mask_fn);
+				return 1;
 			}
 		}
 	}
+	return 0;
+}
 
-	/* FIXME: Load saturation map */
+
+static int create_satmap(struct image *image,
+                         const DataTemplate *dtempl)
+{
+	/* FIXME: Implementation */
+	return 0;
+}
+
+
+struct image *image_create_for_simulation(const DataTemplate *dtempl)
+{
+	struct image *image;
+
+	if ( dtempl == NULL ) {
+		ERROR("NULL data template!\n");
+		return NULL;
+	}
+
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
+		return NULL;
+	}
+
+	if ( image_set_zero_data(image, dtempl) ) {
+		image_free(image);
+		return NULL;
+	}
+
+	set_image_parameters(image, dtempl);
+
+	if ( create_detgeom(image, dtempl) ) {
+		image_free(image);
+		return NULL;
+	}
+
+	if ( create_badmap(image, dtempl, 1) ) {
+		image_free(image);
+		return NULL;
+	}
+
+	if ( create_satmap(image, dtempl) ) {
+		image_free(image);
+		return NULL;
+	}
+
+	return image;
+}
+
+
+struct image *image_read(const DataTemplate *dtempl,
+                         const char *filename,
+                         const char *event,
+                         int no_image_data,
+                         int no_mask_data)
+{
+	struct image *image;
+	int r;
+
+	if ( dtempl == NULL ) {
+		ERROR("NULL data template!\n");
+		return NULL;
+	}
+
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
+		return NULL;
+	}
+
+	image->filename = strdup(filename);
+	image->ev = strdup(event);
+
+	/* Load the image data */
+	if ( !no_image_data ) {
+		r = image_read_image_data(image, dtempl,
+		                          filename, event);
+	} else {
+		r = image_set_zero_data(image, dtempl);
+	}
+	if ( r ) {
+		image_free(image);
+		return NULL;
+	}
+
+	set_image_parameters(image, dtempl);
+
+	if ( create_detgeom(image, dtempl) ) {
+		image_free(image);
+		return NULL;
+	}
+
+	if ( create_badmap(image, dtempl, no_mask_data) ) {
+		image_free(image);
+		return NULL;
+	}
+
+	if ( create_satmap(image, dtempl) ) {
+		image_free(image);
+		return NULL;
+	}
 
 	return image;
 }

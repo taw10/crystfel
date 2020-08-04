@@ -46,6 +46,7 @@
 #include <utils.h>
 #include <datatemplate.h>
 #include <detgeom.h>
+#include <image.h>
 
 #include "version.h"
 
@@ -181,6 +182,7 @@ int main(int argc, char *argv[])
 	float *x, *y, *z;
 	uint16_t *b;
 	float res;
+	struct image *image;
 	int badmap = 0;
 	int good_pixel_val = 1;
 	int bad_pixel_val = 0;
@@ -268,13 +270,13 @@ int main(int argc, char *argv[])
 	}
 	free(input_file);
 
-	detgeom = data_template_to_detgeom(dtempl);
-	if ( detgeom == NULL ) {
-		ERROR("Could not make detector structure.\n");
-		ERROR("Geometry file must not contain references to "
-		      "image header values\n");
+	image = image_create_for_simulation(dtempl);
+	if ( image == NULL ) {
+		ERROR("Geometry file seems to contain references to "
+		      "image header values.\n");
 		return 1;
 	}
+	detgeom = image->detgeom;
 
 	/* Determine max orig fs and ss */
 	if ( data_template_get_slab_extents(dtempl, &w, &h) ) {
@@ -346,6 +348,7 @@ int main(int argc, char *argv[])
 	}
 
 	data_template_free(dtempl);
+	image_free(image);
 
 	return 0;
 }

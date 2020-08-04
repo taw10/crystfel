@@ -186,11 +186,12 @@ extern void mark_resolution_range_as_bad(struct image *image,
                                          double min, double max);
 
 extern struct image *image_new(void);
-extern struct image *image_read(DataTemplate *dtempl,
+extern struct image *image_read(const DataTemplate *dtempl,
                                 const char *filename,
                                 const char *event,
                                 int no_image_data,
                                 int no_mask_data);
+extern struct image *image_create_for_simulation(const DataTemplate *dtempl);
 extern void image_free(struct image *image);
 
 extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
@@ -208,9 +209,10 @@ extern int image_set_zero_mask(struct image *image,
                                const DataTemplate *dtempl);
 
 /* Use within libcrystfel only */
-extern void create_detgeom(struct image *image,
-                           const DataTemplate *dtempl);
+extern int create_detgeom(struct image *image,
+                          const DataTemplate *dtempl);
 
+/* Use within libcrystfel only */
 extern int image_read_image_data(struct image *image,
                                  const DataTemplate *dtempl,
                                  const char *filename,
