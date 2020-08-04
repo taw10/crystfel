@@ -159,6 +159,10 @@ struct panel_template
 };
 
 
+#define PANEL_WIDTH(p) ((p)->orig_max_fs - (p)->orig_min_fs + 1)
+#define PANEL_HEIGHT(p) ((p)->orig_max_ss - (p)->orig_min_ss + 1)
+
+
 struct dt_badregion
 {
 	char name[1024];

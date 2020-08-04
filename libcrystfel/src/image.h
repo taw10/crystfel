@@ -208,6 +208,10 @@ extern int image_set_zero_data(struct image *image,
 extern int image_set_zero_mask(struct image *image,
                                const DataTemplate *dtempl);
 
+extern int image_write(const struct image *image,
+                       const DataTemplate *dtempl,
+                       const char *filename);
+
 /* Use within libcrystfel only */
 extern int create_detgeom(struct image *image,
                           const DataTemplate *dtempl);
