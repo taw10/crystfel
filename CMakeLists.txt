@@ -180,13 +180,12 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
 # ----------------------------------------------------------------------
 # partial_sim
 
-# FIXME: Restore!
-#set(PARTIAL_SIM_SOURCES src/partial_sim.c)
-#add_executable(partial_sim ${PARTIAL_SIM_SOURCES}
-#               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-#target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
-#target_link_libraries(partial_sim ${COMMON_LIBRARIES})
-#list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
+set(PARTIAL_SIM_SOURCES src/partial_sim.c)
+add_executable(partial_sim ${PARTIAL_SIM_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
+target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(partial_sim ${COMMON_LIBRARIES})
+list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
 
 # ----------------------------------------------------------------------
 # pattern_sim

@@ -173,22 +173,24 @@ static void calculate_partials(Crystal *cr,
 }
 
 
-static void draw_and_write_image(struct image *image, RefList *reflections,
+static void draw_and_write_image(struct image *image,
+                                 const DataTemplate *dtempl,
+                                 RefList *reflections,
                                  gsl_rng *rng, double background)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	int i;
 
-	image->dp = malloc(image->det->n_panels*sizeof(float *));
+	image->dp = malloc(image->detgeom->n_panels*sizeof(float *));
 	if ( image->dp == NULL ) {
 		ERROR("Failed to allocate data\n");
 		return;
 	}
-	for ( i=0; i<image->det->n_panels; i++ ) {
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 
 		int j;
-		struct panel *p = &image->det->panels[i];
+		struct detgeom_panel *p = &image->detgeom->panels[i];
 
 		image->dp[i] = calloc(p->w * p->h, sizeof(float));
 		if ( image->dp[i] == NULL ) {
@@ -208,15 +210,15 @@ static void draw_and_write_image(struct image *image, RefList *reflections,
 		double Ip;
 		double dfs, dss;
 		int fs, ss;
-		struct panel *p;
+		struct detgeom_panel *p;
 		signed int pn;
 
 		Ip = get_intensity(refl);
 
 		get_detector_pos(refl, &dfs, &dss);
-		p = get_panel(refl);
-		pn = panel_number(image->det, p);
-		assert(pn != image->det->n_panels);
+		pn = get_panel_number(refl);
+		assert(pn < image->detgeom->n_panels);
+		p = &image->detgeom->panels[pn];
 
 		/* Explicit rounding, downwards */
 		fs = dfs;  ss = dss;
@@ -226,12 +228,11 @@ static void draw_and_write_image(struct image *image, RefList *reflections,
 		assert(ss < p->h);
 
 		image->dp[pn][fs + p->w*ss] += Ip;
-
 	}
 
-	hdf5_write_image(image->filename, image, NULL);
+	image_write(image, dtempl, image->filename);
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		free(image->dp[i]);
 	}
 	free(image->dp);
@@ -280,6 +281,7 @@ struct partial_sim_queue_args
 {
 	RefList *full;
 	pthread_rwlock_t full_lock;
+	const DataTemplate *dtempl;
 
 	int n_done;
 	int n_started;
@@ -295,7 +297,6 @@ struct partial_sim_queue_args
 	double background;
 	double profile_radius;
 
-	struct image *template_image;
 	double max_q;
 
 	char *image_prefix;
@@ -314,8 +315,7 @@ struct partial_sim_queue_args
 struct partial_sim_worker_args
 {
 	struct partial_sim_queue_args *qargs;
-	Crystal *crystal;
-	struct image image;
+	struct image *image;
 
 	UnitCell *template_cell;
 	RefList *template_reflist;
@@ -340,31 +340,28 @@ static void *create_job(void *vqargs)
 	wargs = malloc(sizeof(struct partial_sim_worker_args));
 
 	wargs->qargs = qargs;
-	wargs->image = *qargs->template_image;
 
 	if ( qargs->template_stream != NULL ) {
 
-		struct image im;
-		int r;
+		struct image *image;
 
-		im.det = wargs->image.det;
-		r = read_chunk_2(qargs->template_stream, &im,
-		                 STREAM_READ_UNITCELL | STREAM_READ_REFLECTIONS);
-		if ( r ) {
+		image = stream_read_chunk(qargs->template_stream,
+		                          qargs->dtempl,
+		                          STREAM_UNITCELL | STREAM_REFLECTIONS);
+		if ( image == NULL ) {
 			ERROR("Failed to read template chunk!\n");
 			return NULL;
 		}
-		if ( im.n_crystals != 1 ) {
+		if ( image->n_crystals != 1 ) {
 			ERROR("Template stream must have exactly one crystal "
 			      "per frame.\n");
 			return NULL;
 		}
 
-		wargs->template_cell = crystal_get_cell(im.crystals[0]);
-		wargs->template_reflist = crystal_get_reflections(im.crystals[0]);
+		wargs->template_cell = crystal_get_cell(image->crystals[0]);
+		wargs->template_reflist = crystal_get_reflections(image->crystals[0]);
 
-		crystal_free(im.crystals[0]);
-		free(im.filename);
+		image_free(image);
 
 	} else {
 		wargs->template_cell = NULL;
@@ -385,14 +382,21 @@ static void run_job(void *vwargs, int cookie)
 	int i;
 	Crystal *cr;
 	double osf;
+	struct image *image;
+
+	image = image_create_for_simulation(qargs->dtempl);
+	if ( image == NULL ) {
+		ERROR("Failed to create image.\n");
+		return;
+	}
 
 	cr = crystal_new();
 	if ( cr == NULL ) {
 		ERROR("Failed to create crystal.\n");
 		return;
 	}
-	wargs->crystal = cr;
-	crystal_set_image(cr, &wargs->image);
+	crystal_set_image(cr, image);
+	image_add_crystal(image, cr);
 
 	do {
 		osf = gaussian_noise(qargs->rngs[cookie], 1.0,
@@ -411,21 +415,21 @@ static void run_job(void *vwargs, int cookie)
 		crystal_set_cell(cr, wargs->template_cell);
 	}
 
-	wargs->image.filename = malloc(256);
-	if ( wargs->image.filename == NULL ) {
+	image->filename = malloc(256);
+	if ( image->filename == NULL ) {
 		ERROR("Failed to allocate filename.\n");
 		return;
 	}
 	if ( qargs->image_prefix != NULL ) {
-		snprintf(wargs->image.filename, 255, "%s%i.h5",
+		snprintf(image->filename, 255, "%s%i.h5",
 		         qargs->image_prefix, wargs->n);
 	} else {
-		snprintf(wargs->image.filename, 255, "dummy.h5");
+		snprintf(image->filename, 255, "dummy.h5");
 	}
 
 	if ( wargs->template_reflist == NULL ) {
 		RefList *reflections;
-		reflections = predict_to_res(cr, largest_q(&wargs->image));
+		reflections = predict_to_res(cr, qargs->max_q);
 		crystal_set_reflections(cr, reflections);
 		calculate_partialities(cr, PMODEL_XSPHERE);
 	} else {
@@ -449,14 +453,16 @@ static void run_job(void *vwargs, int cookie)
 	                   wargs->template_cell, wargs->template_reflist);
 
 	if ( qargs->image_prefix != NULL ) {
-		draw_and_write_image(&wargs->image, crystal_get_reflections(cr),
-		                     qargs->rngs[cookie], qargs->background);
+		draw_and_write_image(image, qargs->dtempl,
+		                     crystal_get_reflections(cr),
+		                     qargs->rngs[cookie],
+		                     qargs->background);
 	}
 
 	/* Give a slightly incorrect cell in the stream */
 	mess_up_cell(cr, qargs->cnoise, qargs->rngs[cookie]);
 
-	image_add_crystal(&wargs->image, cr);
+	wargs->image = image;
 }
 
 
@@ -467,8 +473,11 @@ static void finalise_job(void *vqargs, void *vwargs)
 	int i;
 	int ret;
 
-	ret = write_chunk(qargs->stream, &wargs->image, 0, 1);
-	if ( ret != 0) {
+	ret = stream_write_chunk(qargs->stream, wargs->image,
+	                         qargs->dtempl, STREAM_UNITCELL
+	                                      | STREAM_REFLECTIONS
+	                                      | STREAM_CRYSTALS);
+	if ( ret != 0 ) {
 		ERROR("WARNING: error writing stream file.\n");
 	}
 
@@ -483,30 +492,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	qargs->n_done++;
 	progress_bar(qargs->n_done, qargs->n_to_do, "Simulating");
 
-	free_all_crystals(&wargs->image);
-	free(wargs->image.filename);
-	free(wargs);
-}
-
-
-static void fixup_geom(struct detector *det)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-		det->panels[i].clen += det->panels[i].coffset;
-	}
-}
-
-
-static int geom_contains_references(struct detector *det)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-		if ( det->panels[i].clen_from != NULL ) return 1;
-	}
-	return 0;
+	image_free(wargs->image);
 }
 
 
@@ -517,8 +503,7 @@ int main(int argc, char *argv[])
 	char *output_file = NULL;
 	char *geomfile = NULL;
 	char *cellfile = NULL;
-	struct detector *det = NULL;
-	struct beam_params beam;
+	DataTemplate *dtempl;
 	RefList *full = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
@@ -528,7 +513,6 @@ int main(int argc, char *argv[])
 	int random_intensities = 0;
 	char *save_file = NULL;
 	struct partial_sim_queue_args qargs;
-	struct image image;
 	int n_threads = 1;
 	char *rval;
 	int i;
@@ -539,6 +523,7 @@ int main(int argc, char *argv[])
 	char *image_prefix = NULL;
 	Stream *template_stream = NULL;
 	char *template = NULL;
+	struct image *test_image;
 
 	/* Default simulation parameters */
 	double divergence = 0.001;
@@ -801,24 +786,11 @@ int main(int argc, char *argv[])
 		ERROR("You need to give a geometry file.\n");
 		return 1;
 	}
-	det = get_detector_geometry(geomfile, &beam);
-	if ( det == NULL ) {
+	dtempl = data_template_new_from_file(geomfile);
+	if ( dtempl == NULL ) {
 		ERROR("Failed to read geometry from '%s'\n", geomfile);
 		return 1;
 	}
-	if ( (beam.photon_energy > 0.0) && (beam.photon_energy_from == NULL) ) {
-		ERROR("WARNING: An explicit photon energy was found in the "
-		      "geometry file.  It will be ignored!\n");
-		ERROR("The value given on the command line "
-		      "(with --photon-energy) will be used instead.\n");
-	}
-	if ( geom_contains_references(det) ) {
-		ERROR("Geometry file contains a reference to an HDF5 location"
-		      " for the camera length.  Change it to a numerical value "
-		      " and try again.\n");
-		return 1;
-	}
-	fixup_geom(det);
 
 	if ( save_file == NULL ) save_file = strdup("partial_sim.hkl");
 
@@ -880,46 +852,41 @@ int main(int argc, char *argv[])
 		ERROR("You must give a filename for the output.\n");
 		return 1;
 	}
-	stream = open_stream_for_write_2(output_file, geomfile, argc, argv);
+	stream = stream_open_for_write(output_file);
 	if ( stream == NULL ) {
 		ERROR("Couldn't open output file '%s'\n", output_file);
 		return 1;
 	}
 	free(output_file);
 
+	stream_write_geometry_file(stream, geomfile);
+	stream_write_commandline_args(stream, argc, argv);
+
 	if ( template != NULL ) {
-		template_stream = open_stream_for_read(template);
+		template_stream = stream_open_for_read(template);
 		if ( template_stream == NULL ) {
 			ERROR("Couldn't open template stream '%s'\n", template);
 			return 1;
 		}
 	}
 
-	image.det = det;
-	image.beam = &beam;
-
-	image.lambda = ph_en_to_lambda(eV_to_J(photon_energy));
-	image.div = divergence;
-	image.bw = bandwidth;
-	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
-	image.filename = "dummy.h5";
-	image.ev = "(none)";
-	image.copied_headers = NULL;
-	image.crystals = NULL;
-	image.n_crystals = 0;
-	image.indexed_by = INDEXING_SIMULATION;
-	image.serial = 0;
-	image.hit = 0;
-	image.n_indexing_tries = 1;
-	image.features = NULL;
-	image.peak_resolution = 0.0;
+	test_image = image_create_for_simulation(dtempl);
+	if ( test_image == NULL ) {
+		ERROR("Could not create image structure.\n");
+		ERROR("Does the geometry file contain references?\n");
+		return 1;
+	}
 
 	STATUS("Simulation parameters:\n");
-	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
-	       photon_energy, image.lambda*1e10);
-	STATUS("                Beam divergence: %.5f mrad\n", image.div*1e3);
-	STATUS("                 Beam bandwidth: %.5f %%\n", image.bw*100.0);
-	STATUS("Reciprocal space profile radius: %e m^-1\n", profile_radius);
+	STATUS("                     Wavelength: %.5f A (photon energy %.2f eV)\n",
+	       test_image->lambda*1e10,
+	       ph_lambda_to_eV(test_image->lambda));
+	STATUS("                Beam divergence: %.5f mrad\n",
+	       test_image->div*1e3);
+	STATUS("                 Beam bandwidth: %.5f %%\n",
+	       test_image->bw*100.0);
+	STATUS("Reciprocal space profile radius: %e m^-1\n",
+	       profile_radius);
 	if ( image_prefix != NULL ) {
 		STATUS("                     Background: %.2f detector units\n",
 		       background);
@@ -957,14 +924,14 @@ int main(int argc, char *argv[])
 	qargs.sym = sym;
 	qargs.random_intensities = random_intensities;
 	qargs.cell = cell;
-	qargs.template_image = &image;
 	qargs.stream = stream;
 	qargs.cnoise = cnoise;
 	qargs.osf_stddev = osf_stddev;
 	qargs.full_stddev = full_stddev;
 	qargs.noise_stddev = noise_stddev;
 	qargs.background = background;
-	qargs.max_q = largest_q(&image);
+	qargs.max_q = detgeom_max_resolution(test_image->detgeom,
+	                                     test_image->lambda);
 	qargs.image_prefix = image_prefix;
 	qargs.profile_radius = profile_radius;
 	qargs.template_stream = template_stream;
@@ -1058,7 +1025,8 @@ int main(int argc, char *argv[])
 
 			overall_mean /= overall_total;
 
-			STATUS("Overall max partiality = %.2f\n", overall_max);
+			STATUS("Overall max partiality = %.2f\n",
+			       overall_max);
 			STATUS("Overall mean partiality = %.2f\n", overall_mean);
 			STATUS("Total number of reflections = %lli\n",
 			       overall_total);
@@ -1075,9 +1043,9 @@ int main(int argc, char *argv[])
 	}
 	free(qargs.rngs);
 	pthread_rwlock_destroy(&qargs.full_lock);
-	close_stream(stream);
+	stream_close(stream);
 	cell_free(cell);
-	free_detector_geometry(det);
+	data_template_free(dtempl);
 	free_symoplist(sym);
 	reflist_free(full);
 	free(save_file);

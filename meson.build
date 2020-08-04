@@ -114,11 +114,10 @@ executable('cell_tool',
            install : true)
 
 # partial_sim
-# FIXME: restore
-#executable('partial_sim',
-#           ['src/partial_sim.c'],
-#           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
-#           install : true)
+executable('partial_sim',
+           ['src/partial_sim.c', versionc],
+           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
+           install : true)
 
 # process_hkl
 process_hkl = executable('process_hkl',
