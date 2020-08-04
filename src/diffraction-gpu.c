@@ -38,6 +38,7 @@
 #include <string.h>
 #include <complex.h>
 
+#define CL_TARGET_OPENCL_VERSION 220
 #ifdef HAVE_CL_CL_H
 #include <CL/cl.h>
 #else
@@ -187,18 +188,18 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 	if ( set_arg_float(gctx, 2, weight) ) return 1;
 
 	/* Iterate over panels */
-	for ( i=0; i<image->det->n_panels; i++ ) {
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 
 		size_t dims[2];
 		size_t ldims[2];
-		struct panel *p;
+		struct detgeom_panel *p;
 		cl_mem diff;
 		size_t diff_size;
 		float *diff_ptr;
 		int fs, ss;
 		cl_int err;
 
-		p = &image->det->panels[i];
+		p = &image->detgeom->panels[i];
 
 		/* Buffer for the results of this panel */
 		diff_size = p->w * p->h * sizeof(cl_float);
@@ -220,8 +221,8 @@ static int do_panels(struct gpu_context *gctx, struct image *image,
 		if ( set_arg_float(gctx, 9, p->ssx) ) return 1;
 		if ( set_arg_float(gctx, 10, p->ssy) ) return 1;
 		if ( set_arg_float(gctx, 11, p->ssz) ) return 1;
-		if ( set_arg_float(gctx, 12, p->res) ) return 1;
-		if ( set_arg_float(gctx, 13, p->clen) ) return 1;
+		if ( set_arg_float(gctx, 12, 1.0/p->pixel_pitch) ) return 1;
+		if ( set_arg_float(gctx, 13, p->cnz*p->pixel_pitch) ) return 1;
 
 		dims[0] = p->w * sampling;
 		dims[1] = p->h * sampling;
@@ -325,13 +326,13 @@ int get_diffraction_gpu(struct gpu_context *gctx, struct image *image,
 	if ( set_arg_mem(gctx, 19, gctx->sinc_luts[nc-1]) ) return 1;
 
 	/* Allocate memory for the result */
-	image->dp = malloc(image->det->n_panels * sizeof(float *));
+	image->dp = malloc(image->detgeom->n_panels * sizeof(float *));
 	if ( image->dp == NULL ) {
 		ERROR("Couldn't allocate memory for result.\n");
 		return 1;
 	}
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		struct panel *p = &image->det->panels[i];
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
+		struct detgeom_panel *p = &image->detgeom->panels[i];
 		image->dp[i] = calloc(p->w * p->h, sizeof(float));
 		if ( image->dp[i] == NULL ) {
 			ERROR("Couldn't allocate memory for panel %i\n", i);

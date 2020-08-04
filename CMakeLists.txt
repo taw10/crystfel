@@ -190,24 +190,23 @@ list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
 # ----------------------------------------------------------------------
 # pattern_sim
 
-# FIXME: Restore!
-#set(PATTERN_SIM_SOURCES src/pattern_sim.c src/diffraction.c)
-#
-#if(HAVE_OPENCL)
-#  set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
-#endif(HAVE_OPENCL)
-#
-#add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES}
-#               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-#target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
-#target_link_libraries(pattern_sim ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
-#
-#if(HAVE_OPENCL)
-#  target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
-#  target_link_libraries(pattern_sim ${OpenCL_LIBRARIES})
-#endif(HAVE_OPENCL)
-#
-#list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
+set(PATTERN_SIM_SOURCES src/pattern_sim.c src/diffraction.c)
+
+if(HAVE_OPENCL)
+  set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
+endif(HAVE_OPENCL)
+
+add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
+target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(pattern_sim ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
+
+if(HAVE_OPENCL)
+  target_include_directories(pattern_sim PRIVATE ${OpenCL_INCLUDE_DIRS})
+  target_link_libraries(pattern_sim ${OpenCL_LIBRARIES})
+endif(HAVE_OPENCL)
+
+list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
 
 # ----------------------------------------------------------------------
 # cell_explorer

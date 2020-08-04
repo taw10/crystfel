@@ -376,7 +376,7 @@ static void diffraction_panel(struct image *image, const double *intensities,
 	int fs, ss;
 	const int nxs = 4;
 	const int nys = 4;
-	struct panel *p = &image->det->panels[pn];
+	struct detgeom_panel *p = &image->detgeom->panels[pn];
 
 	weight /= nxs*nys;
 
@@ -386,17 +386,22 @@ static void diffraction_panel(struct image *image, const double *intensities,
 		int idx;
 		double f_lattice, I_lattice;
 		double I_molecule;
-		struct rvec q;
 		int xs, ys;
 		float xo, yo;
 
 		for ( xs=0; xs<nxs; xs++ ) {
 		for ( ys=0; ys<nys; ys++ ) {
 
+			double qv[3];
+			struct rvec q;
+
 			xo = (1.0/nxs) * xs;
 			yo = (1.0/nys) * ys;
 
-			q = get_q_for_panel(p, fs+xo, ss+yo, NULL, k);
+			detgeom_transform_coords(p, fs+xo, ss+yo,
+			                         image->lambda, qv);
+
+			q.u = qv[0]; q.v = qv[1]; q.w = qv[2];
 
 			f_lattice = lattice_factor(q, ax, ay, az,
 					           bx, by, bz,
@@ -435,7 +440,7 @@ static void diffraction_at_k(struct image *image, const double *intensities,
 {
 	int i;
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		diffraction_panel(image, intensities, phases, flags, cell, m,
 		                  sym, k, ax, ay, az, bx, by, bz, cx, cy, cz,
 		                  lut_a, lut_b, lut_c, i, weight);

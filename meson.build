@@ -228,14 +228,13 @@ if gtkdep.found()
 endif
 
 # pattern_sim
-# FIXME: restore
-#pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c', versionc]
-#if opencldep.found()
-#  pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
-#endif
-#executable('pattern_sim', pattern_sim_sources,
-#           dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
-#           install : true)
+pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c', versionc]
+if opencldep.found()
+  pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
+endif
+executable('pattern_sim', pattern_sim_sources,
+           dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
+           install : true)
 
 
 # ************************ Testing ************************
