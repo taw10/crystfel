@@ -160,7 +160,7 @@ void *skip_prepare(char *solution_filename, UnitCell *cell)
 	int nlines;
 	int nparams_in_solution;
 	int nparams_per_line;
-	int nparams;
+	int nentries;
 	char *filename[35];   					//??? is that correct
 	char *event_path[35];                   //??? is that correct
 	int event_dim;
@@ -188,19 +188,21 @@ void *skip_prepare(char *solution_filename, UnitCell *cell)
 		return 0;
 	}
 	else {
-		fprintf("Reading solution file %s from %s\n", path_to_sol, cwd);
+		STATUS("Found solution file %s at %s\n", path_to_sol, cwd);
 	}
 
 	nlines = ncrystals_in_sol(path_to_sol);
-	nparams_per_line = 11;  //There are 9 vector component and 2 detector shifts excluding filename and event
-	nparams_in_solution = nlines*nparams_per_line; 
-	nparams = nlines*(nparams_per_line+3);
+	nparams_per_line = 11;  /* There are 9 vector components and 2 detector shifts */
+	nparams_in_solution = nlines*nparams_per_line; /* total crystal parameters in solution file */
+	nentries = nlines*(nparams_per_line+3); /* total entries in solution file */
   
 	float *params = malloc(nparams_in_solution * sizeof( float));
 
+	STATUS("Parsing solution file containing %d lines...\n", nlines);
+
 	//Reads indexing solutions
 	int j = 0; //index that follows the solution parameter
-	for(int i = 0; i < nparams; i++)
+	for(int i = 0; i < nentries; i++)
 	{	
 
 		current_line = i/(nparams_per_line+3);
@@ -270,15 +272,20 @@ void *skip_prepare(char *solution_filename, UnitCell *cell)
 	
 	fclose(fh);
 
+	STATUS("Solution file parsing done. Have %d parameters and %d total entries.\n", nparams_in_solution, nentries)
+
 	struct skip_private *dp;
-	dp = (struct skip_private *) malloc( sizeof(struct skip_private) + nparams * sizeof( float) );
+	dp = (struct skip_private *) malloc( sizeof(struct skip_private) + nentries * sizeof( float) );
 
 	if ( dp == NULL ) return NULL;
 	
 	memcpy(dp->path_to_sol, path_to_sol, sizeof path_to_sol);
 
-	for (int k = 0; k < nparams; k++)
+	for (int k = 0; k < nparams_in_solution; k++)
 	{
+		if ( (k % 1000) == 0 ){
+			STATUS("Read %d parameters.\n", k);
+		}
 		dp->solutions[k] = params[k];
 	}
     
@@ -287,6 +294,8 @@ void *skip_prepare(char *solution_filename, UnitCell *cell)
 
 	free(params);
 	
+	STATUS("Solution lookup table initialized!\n");
+
 	return (void *)dp;
 }
 
@@ -313,7 +322,7 @@ int ncrystals_in_sol(char *path)
     // Close the file 
     fclose(fh); 
 
-	printf("Found indexing file %s containing %d lines. \n", path, count);
+	// STATUS("Found indexing file %s containing %d lines. \n", path, count);
 
 	return count;
 
