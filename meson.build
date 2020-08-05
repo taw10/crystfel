@@ -235,6 +235,8 @@ endif
 executable('pattern_sim', pattern_sim_sources,
            dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
            install : true)
+# For testing (see tests/meson.build)
+simulation_bits = files(['src/diffraction.c', 'src/diffraction-gpu.c', 'src/cl-utils.c'])
 
 
 # ************************ Testing ************************

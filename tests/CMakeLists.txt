@@ -68,7 +68,8 @@ if (HAVE_OPENCL)
                  ../src/diffraction-gpu.c ../src/cl-utils.c)
   target_include_directories(gpu_sim_check PRIVATE ${COMMON_INCLUDES} ${OpenCL_INCLUDE_DIRS})
   target_link_libraries(gpu_sim_check ${COMMON_LIBRARIES} ${OpenCL_LIBRARIES})
-  add_test(gpu_sim_check gpu_sim_check)
+  add_test(NAME gpu_sim_check
+    COMMAND gpu_sim_check ${CMAKE_CURRENT_SOURCE_DIR}/gpu_sim_check.geom)
 endif (HAVE_OPENCL)
 
 add_executable(rational_check rational_check.c)

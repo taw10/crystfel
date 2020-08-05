@@ -44,14 +44,11 @@ simple_tests = ['ambi_check',
                 'evparse6',
                 'evparse7']
 
-
-if opencldep.found()
-  simple_tests += 'gpu_sim_check'
-endif
-
 foreach name : simple_tests
   exe = executable(name, ''.join([name, '.c']),
-                   dependencies : [libcrystfeldep, mdep, gsldep, hdf5dep, opencldep])
+                   dependencies : [libcrystfeldep, mdep, gsldep, hdf5dep],
+		   include_directories: conf_inc)
+
   test(name, exe, timeout : 60)
 endforeach
 
@@ -68,6 +65,14 @@ exe = executable('prof2d_check',
                   'histogram.c'],
                  dependencies : [libcrystfeldep, mdep, gsldep])
 test('prof2d_check', exe)
+
+exe = executable('gpu_sim_check',
+                 ['gpu_sim_check.c',
+                  simulation_bits],
+                 dependencies : [libcrystfeldep, mdep, gsldep, opencldep],
+		 include_directories: conf_inc)
+geom = files('gpu_sim_check.geom')
+test('gpu_sim_check', exe, args: [geom])
 
 
 # Event enumeration tests
