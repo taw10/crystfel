@@ -90,7 +90,8 @@ add_test(cellcompare_check cellcompare_check)
 add_executable(polarisation_check polarisation_check.c)
 target_include_directories(polarisation_check PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(polarisation_check ${COMMON_LIBRARIES})
-add_test(polarisation_check polarisation_check)
+add_test(NAME polarisation_check
+  COMMAND polarisation_check ${CMAKE_CURRENT_SOURCE_DIR}/polarisation_check.geom)
 
 add_executable(evparse1 evparse1.c)
 target_include_directories(evparse1 PRIVATE ${COMMON_INCLUDES})

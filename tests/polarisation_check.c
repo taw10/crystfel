@@ -38,12 +38,11 @@
 
 int main(int argc, char *argv[])
 {
-	struct image image;
+	DataTemplate *dtempl;
+	struct image *image;
 	FILE *fh;
 	unsigned long int seed;
 	int fail = 0;
-	const int w = 1024;
-	const int h = 1024;
 	RefList *list;
 	RefListIterator *iter;
 	Reflection *refl;
@@ -53,8 +52,12 @@ int main(int argc, char *argv[])
 	struct polarisation p;
 	int i;
 	double *map;
-	double *nmap;
+	int *nmap;
 	const int ntrial = 1000;
+
+	/* NB must match polarisation_check.geom */
+	const int w = 512;
+	const int h = 512;
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 
@@ -66,36 +69,11 @@ int main(int argc, char *argv[])
 	}
 	fclose(fh);
 
-	image.lambda = ph_eV_to_lambda(9000.0);
-	image.bw = 0.000001;
-	image.div = 0.0;
-	image.spectrum = spectrum_generate_gaussian(image.lambda, image.bw);
+	dtempl = data_template_new_from_file(argv[1]);
+	if ( dtempl == NULL ) return 1;
 
-	image.detgeom = calloc(1, sizeof(struct detgeom));
-	image.detgeom->n_panels = 1;
-	image.detgeom->panels = calloc(1, sizeof(struct detgeom_panel));
-
-	image.dp = calloc(1, sizeof(float *));
-	image.bad = calloc(1, sizeof(int *));
-
-	image.detgeom->panels[0].w = w;
-	image.detgeom->panels[0].h = h;
-	image.detgeom->panels[0].fsx = 1.0;
-	image.detgeom->panels[0].fsy = 0.0;
-	image.detgeom->panels[0].ssx = 0.0;
-	image.detgeom->panels[0].ssy = 1.0;
-	image.detgeom->panels[0].cnx = -w/2;
-	image.detgeom->panels[0].cny = -h/2;
-	image.detgeom->panels[0].cnz = 50.0e-3 / 10e-6;
-	image.detgeom->panels[0].pixel_pitch = 10e-6;
-	image.detgeom->panels[0].adu_per_photon = 1.0;
-	image.detgeom->panels[0].max_adu = +INFINITY;  /* No cutoff */
-
-	image.dp[0] = malloc(w*h*sizeof(float));
-	memset(image.dp[0], 0, w*h*sizeof(float));
-	image.bad[0] = malloc(w*h*sizeof(int));
-	memset(image.bad[0], 0, w*h*sizeof(int));
-	image.sat = NULL;
+	image = image_create_for_simulation(dtempl);
+	if ( image == NULL ) return 1;
 
 	cell = cell_new();
 	cell_set_lattice_type(cell, L_CUBIC);
@@ -106,17 +84,17 @@ int main(int argc, char *argv[])
 	cr = crystal_new();
 	crystal_set_profile_radius(cr, 0.001e9);
 	crystal_set_mosaicity(cr, 0.0);  /* radians */
-	crystal_set_image(cr, &image);
+	crystal_set_image(cr, image);
 	crystal_set_cell(cr, cell);
 
-	image.n_crystals = 1;
-	image.crystals = &cr;
+	image->n_crystals = 1;
+	image->crystals = &cr;
 
 	map = malloc(w*h*sizeof(double));
-	nmap = malloc(w*h*sizeof(double));
+	nmap = malloc(w*h*sizeof(int));
 	for ( i=0; i<w*h; i++ ) {
 		map[i] = 0.0;
-		nmap[i] = 0.0;
+		nmap[i] = 0;
 	}
 	for ( i=0; i<ntrial; i++ ) {
 
@@ -125,8 +103,8 @@ int main(int argc, char *argv[])
 		ncell = cell_rotate(cell, random_quaternion(rng));
 		crystal_set_cell(cr, ncell);
 
-		list = predict_to_res(cr, detgeom_max_resolution(image.detgeom,
-		                                                 image.lambda));
+		list = predict_to_res(cr, detgeom_max_resolution(image->detgeom,
+		                                                 image->lambda));
 		crystal_set_reflections(cr, list);
 
 		for ( refl = first_refl(list, &iter);
@@ -138,6 +116,7 @@ int main(int argc, char *argv[])
 
 		p.angle = deg2rad(105.0);
 		p.fraction = 1.0;
+		p.disable = 0;
 		polarisation_correction(list, ncell, p);
 
 		for ( refl = first_refl(list, &iter);
@@ -152,25 +131,31 @@ int main(int argc, char *argv[])
 			/* Intensity in reflist is corrected,
 			 * but we want "un-correction" */
 			map[nfs + nss*w] += 1.0/get_intensity(refl);
-			nmap[nfs + nss*w] += 1.0;
+			nmap[nfs + nss*w] += 1;
 		}
 
 		cell_free(ncell);
 		reflist_free(list);
+
+		crystal_set_cell(cr, NULL);
+		crystal_set_reflections(cr, NULL);
 
 		progress_bar(i+1, ntrial, "Calculating");
 
 	}
 
 	for ( i=0; i<w*h; i++ ) {
-		image.dp[0][i] = 1000.0 * map[i] / nmap[i];
-		if ( isnan(image.dp[0][i]) ) image.dp[0][i] = 0.0;
+		if ( nmap[i] > 0 ) {
+			image->dp[0][i] = 1000.0 * map[i] / nmap[i];
+		}
 	}
-	//hdf5_write_image("test.h5", &image, "/data/data");
+	image_write(image, dtempl, "test.h5");
 
-	detgeom_free(image.detgeom);
-	free(image.dp[0]);
-	free(image.dp);
+	image->crystals = NULL;
+	image->n_crystals = 0;
+
+	data_template_free(dtempl);
+	image_free(image);
 	gsl_rng_free(rng);
 
 	if ( fail ) return 1;

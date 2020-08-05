@@ -35,7 +35,6 @@ simple_tests = ['ambi_check',
                 'rational_check',
                 'spectrum_check',
                 'cellcompare_check',
-                'polarisation_check',
                 'evparse1',
                 'evparse2',
                 'evparse3',
@@ -73,6 +72,12 @@ exe = executable('gpu_sim_check',
 		 include_directories: conf_inc)
 geom = files('gpu_sim_check.geom')
 test('gpu_sim_check', exe, args: [geom])
+
+exe = executable('polarisation_check',
+                 ['polarisation_check.c'],
+                 dependencies : [libcrystfeldep, mdep, gsldep])
+geom = files('polarisation_check.geom')
+test('polarisation_check', exe, args: [geom])
 
 
 # Event enumeration tests
