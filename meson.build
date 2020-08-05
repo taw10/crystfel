@@ -40,11 +40,6 @@ if fftwdep.found()
   conf_data.set10('HAVE_FFTW', 1)
 endif
 
-tiffdep = dependency('libtiff-4', required : false)
-if tiffdep.found()
-  conf_data.set10('HAVE_TIFF', 1)
-endif
-
 gtkdep = dependency('gtk+-3.0', required : false)
 if not gtkdep.found()
   gtkdep = dependency('gtk+-2.0', required : false)
@@ -195,8 +190,7 @@ executable('make_pixelmap',
 # FIXME: restore
 #executable('geoptimiser',
 #           ['src/geoptimiser.c', 'src/hdfsee-render.c', versionc],
-#           dependencies : [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep,
-#                           tiffdep],
+#           dependencies : [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep],
 #           install : true)
 
 # CrystFEL GUI

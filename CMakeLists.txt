@@ -14,7 +14,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 find_package(HDF5 REQUIRED COMPONENTS C)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
-find_package(TIFF)
 find_package(OpenCL)
 find_package(PkgConfig)
 
@@ -127,7 +126,6 @@ include(CheckIncludeFile)
 include(CheckLibraryExists)
 
 set(HAVE_CAIRO ${CAIRO_FOUND})
-set(HAVE_TIFF ${TIFF_FOUND})
 set(HAVE_GTK ${GTK_FOUND})
 set(HAVE_OPENCL ${OpenCL_FOUND})
 set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
@@ -366,11 +364,6 @@ list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 #  target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
 #  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
 #endif (GDK_FOUND)
-#
-#if (TIFF_FOUND)
-#  target_include_directories(geoptimiser PRIVATE ${TIFF_INCLUDE_DIRS})
-#  target_link_libraries(geoptimiser ${TIFF_LIBRARIES})
-#endif (TIFF_FOUND)
 
 # ----------------------------------------------------------------------
 # whirligig
