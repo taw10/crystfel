@@ -184,8 +184,11 @@ void *skip_prepare(char *solution_filename, UnitCell *cell)
 	fh = fopen(path_to_sol, "r");
 
 	if ( fh == NULL ) {
-		ERROR("indexing.sol not found by skip_prepare\n");
+	ERROR("%s not found by skip_prepare in %s\n", path_to_sol, cwd);
 		return 0;
+	}
+	else {
+		fprintf("Reading solution file %s from %s\n", path_to_sol, cwd);
 	}
 
 	nlines = ncrystals_in_sol(path_to_sol);
@@ -309,6 +312,8 @@ int ncrystals_in_sol(char *path)
   
     // Close the file 
     fclose(fh); 
+
+	printf("Found indexing file %s containing %d lines. \n", path, count);
 
 	return count;
 
