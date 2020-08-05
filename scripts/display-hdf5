@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+import h5py
+import sys
+import matplotlib.pyplot as plt
+
+if len(sys.argv) != 3:
+    print("Syntax: {} file.h5 /data/location\n".format(sys.argv[0]))
+    sys.exit(1)
+
+fh = h5py.File(sys.argv[1])
+dataset = fh[sys.argv[2]]
+
+show = plt.figure()
+plt.imshow(dataset)
+plt.title("{} {}".format(sys.argv[1], sys.argv[2]))
+plt.show()
+
+fh.close()
