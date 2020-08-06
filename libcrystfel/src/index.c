@@ -184,7 +184,7 @@ void *skip_prepare(char *solution_filename, UnitCell *cell)
 	fh = fopen(path_to_sol, "r");
 
 	if ( fh == NULL ) {
-	ERROR("%s not found by skip_prepare in %s\n", path_to_sol, cwd);
+		ERROR("%s not found by skip_prepare in %s\n", path_to_sol, cwd);
 		return 0;
 	}
 	else {
@@ -283,9 +283,6 @@ void *skip_prepare(char *solution_filename, UnitCell *cell)
 
 	for (int k = 0; k < nparams_in_solution; k++)
 	{
-		if ( (k % 1000) == 0 ){
-			STATUS("Read %d parameters.\n", k);
-		}
 		dp->solutions[k] = params[k];
 	}
     
@@ -362,7 +359,9 @@ static int skip_index(struct image *image, void *mpriv)
 
     HASH_FIND(hh, line_hash, &item->key, sizeof(struct record_key_t), p);  /* id already in the hash? */
     if (p==NULL) {
-		printf("Not indexing file %s, event %s %d \n", image->filename, *image->event->path_entries, *image->event->dim_entries);
+		/*
+		STATUS("Not indexing file %s, event %s %d \n", image->filename, *image->event->path_entries, *image->event->dim_entries);
+		*/
 		return 0;
 	}
 
