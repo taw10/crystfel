@@ -1,15 +1,13 @@
 /*
- * taketwo.h
+ * xgandalf.h
  *
- * Rewrite of TakeTwo algorithm (Acta D72 (8) 956-965) for CrystFEL
+ * Interface to XGANDALF indexer
  *
- * Copyright © 2016-2017 Helen Ginn
- * Copyright © 2016-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2016      Helen Ginn <helen@strubi.ox.ac.uk>
- *   2016-2017 Thomas White <taw@physics.org>
+ *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -28,23 +26,26 @@
  *
  */
 
-#ifndef TAKETWO_H
-#define TAKETWO_H
+#ifndef LIBCRYSTFEL_SRC_XGANDALF_H
+#define LIBCRYSTFEL_SRC_XGANDALF_H
 
+#include <stddef.h>
 #include <argp.h>
 
-#include "cell.h"
+/**
+ * \file xgandalf.h
+ * XGANDALF indexer interface
+ */
+
 #include "index.h"
 
-/** \file taketwo.h */
+extern int run_xgandalf(struct image *image, void *ipriv);
 
-typedef struct taketwo_options TakeTwoOptions;
-extern struct argp taketwo_argp;
+extern void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
+                              struct xgandalf_options *xgandalf_opts);
 
-extern void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
-                             UnitCell *cell);
-extern const char *taketwo_probe(UnitCell *cell);
-extern int taketwo_index(struct image *image, void *priv);
-extern void taketwo_cleanup(IndexingPrivate *pp);
+extern void xgandalf_cleanup(void *pp);
+extern const char *xgandalf_probe(UnitCell *cell);
 
-#endif /* TAKETWO_H */
+
+#endif /* LIBCRYSTFEL_SRC_XGANDALF_H */

@@ -59,7 +59,6 @@
 #include <reflist-utils.h>
 #include <cell-utils.h>
 #include <integration.h>
-#include <taketwo.h>
 #include <image.h>
 #include <datatemplate.h>
 
@@ -244,7 +243,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			ERROR("Invalid value for --min-peaks\n");
 			return EINVAL;
 		}
-		(*(args->pinkindexer_opts_ptr))->min_peaks = args->iargs.min_peaks;
+		/* FIXME: Horrible layering violation, needed for
+		 * pinkIndexer multi-lattice indexing but no longer
+		 * possible. */
+		//(*(args->pinkindexer_opts_ptr))->min_peaks = args->iargs.min_peaks;
 		break;
 
 		case 304 :

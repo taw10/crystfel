@@ -32,17 +32,36 @@
 
 #include "pinkindexer.h"
 
-#ifdef HAVE_PINKINDEXER
 
 #include <stdlib.h>
+#include <sys/errno.h>
+#include <argp.h>
 
 #include "utils.h"
 #include "cell-utils.h"
 #include "peaks.h"
 
-#include "pinkIndexer/adaptions/crystfel/Lattice.h"
-#include "pinkIndexer/adaptions/crystfel/ExperimentSettings.h"
-#include "pinkIndexer/adaptions/crystfel/PinkIndexer.h"
+struct pinkIndexer_options {
+	unsigned int considered_peaks_count;
+	unsigned int angle_resolution;
+	unsigned int refinement_type;
+	float maxResolutionForIndexing_1_per_A;
+	float tolerance;
+	int multi;
+	int thread_count;
+	int min_peaks;
+	int no_check_indexed;
+	float reflectionRadius; /* In m^-1 */
+	float customPhotonEnergy;
+	float customBandwidth;
+	float maxRefinementDisbalance;
+};
+
+#ifdef HAVE_PINKINDEXER
+
+#include <pinkIndexer/adaptions/crystfel/Lattice.h>
+#include <pinkIndexer/adaptions/crystfel/ExperimentSettings.h>
+#include <pinkIndexer/adaptions/crystfel/PinkIndexer.h>
 
 #define MAX_MULTI_LATTICE_COUNT 8
 

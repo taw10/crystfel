@@ -45,19 +45,12 @@ set(LIBCRYSTFEL_SOURCES
     src/reflist-utils.c
     src/filters.c
     src/index.c
-    src/dirax.c
-    src/mosflm.c
     src/cell-utils.c
     src/integer_matrix.c
     src/crystal.c
-    src/xds.c
     src/integration.c
     src/predict-refine.c
-    src/felix.c
     src/peakfinder8.c
-    src/taketwo.c
-    src/xgandalf.c
-    src/pinkindexer.c
     src/rational.c
     src/spectrum.c
     src/datatemplate.c
@@ -66,9 +59,16 @@ set(LIBCRYSTFEL_SOURCES
     src/image-cbf.c
     src/image-hdf5.c
     src/image-msgpack.c
-    src/asdf.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
+    src/indexers/dirax.c
+    src/indexers/mosflm.c
+    src/indexers/xds.c
+    src/indexers/felix.c
+    src/indexers/taketwo.c
+    src/indexers/asdf.c
+    src/indexers/xgandalf.c
+    src/indexers/pinkindexer.c
 )
 
 set(LIBCRYSTFEL_HEADERS
@@ -85,20 +85,12 @@ set(LIBCRYSTFEL_HEADERS
     src/index.h
     src/image.h
     src/filters.h
-    src/dirax.h
-    src/mosflm.h
     src/cell-utils.h
     src/integer_matrix.h
     src/crystal.h
-    src/xds.h
     src/predict-refine.h
     src/integration.h
-    src/asdf.h
-    src/felix.h
     src/peakfinder8.h
-    src/taketwo.h
-    src/xgandalf.h
-    src/pinkindexer.h
     src/rational.h
     src/spectrum.h
     src/datatemplate.h

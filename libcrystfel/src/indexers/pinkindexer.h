@@ -29,26 +29,8 @@
 #ifndef LIBCRYSTFEL_SRC_PINKINDEXER_H_
 #define LIBCRYSTFEL_SRC_PINKINDEXER_H_
 
-typedef struct pinkIndexer_options PinkIndexerOptions;
-extern struct argp pinkIndexer_argp;
-
-struct pinkIndexer_options {
-	unsigned int considered_peaks_count;
-	unsigned int angle_resolution;
-	unsigned int refinement_type;
-	float maxResolutionForIndexing_1_per_A;
-	float tolerance;
-	int multi;
-	int thread_count;
-	int min_peaks;
-	int no_check_indexed;
-	float reflectionRadius; /* In m^-1 */
-	float customPhotonEnergy;
-	float customBandwidth;
-	float maxRefinementDisbalance;
-};
-
 #include <stddef.h>
+
 #include "index.h"
 #include "datatemplate.h"
 

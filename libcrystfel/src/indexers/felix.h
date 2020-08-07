@@ -1,13 +1,14 @@
 /*
- * xgandalf.h
+ * felix.h
  *
- * Interface to XGANDALF indexer
+ * Invoke Felix for multi-crystal autoindexing
  *
- * Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
+ *   2010-2013,2017 Thomas White <taw@physics.org>
+ *   2013-2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -26,29 +27,26 @@
  *
  */
 
-#ifndef LIBCRYSTFEL_SRC_XGANDALF_H
-#define LIBCRYSTFEL_SRC_XGANDALF_H
+#ifndef FELIX_H
+#define FELIX_H
 
-#include <stddef.h>
 #include <argp.h>
 
+#include "cell.h"
+
 /**
- * \file xgandalf.h
- * XGANDALF indexer interface
+ * \file felix.h
+ * Felix indexer interface
  */
 
-typedef struct xgandalf_options XGandalfOptions;
-extern struct argp xgandalf_argp;
+extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
+                           struct felix_options *opts);
 
-#include "index.h"
+extern const char *felix_probe(UnitCell *cell);
 
-extern int run_xgandalf(struct image *image, void *ipriv);
+extern void felix_cleanup(IndexingPrivate *pp);
 
-extern void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
-                              struct xgandalf_options *xgandalf_opts);
-
-extern void xgandalf_cleanup(void *pp);
-extern const char *xgandalf_probe(UnitCell *cell);
+extern int felix_index(struct image *image, IndexingPrivate *p);
 
 
-#endif /* LIBCRYSTFEL_SRC_XGANDALF_H */
+#endif	/* FELIX_H */

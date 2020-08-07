@@ -142,11 +142,17 @@ extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 
 #include "cell.h"
 #include "image.h"
-#include "taketwo.h"
-#include "xgandalf.h"
-#include "pinkindexer.h"
-#include "felix.h"
 #include "datatemplate.h"
+
+typedef struct felix_options FelixOptions;
+typedef struct taketwo_options TakeTwoOptions;
+typedef struct xgandalf_options XGandalfOptions;
+typedef struct pinkIndexer_options PinkIndexerOptions;
+
+extern struct argp felix_argp;
+extern struct argp pinkIndexer_argp;
+extern struct argp taketwo_argp;
+extern struct argp xgandalf_argp;
 
 extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
                                        const DataTemplate *dtempl,

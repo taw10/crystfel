@@ -1,14 +1,15 @@
 /*
- * felix.h
+ * taketwo.h
  *
- * Invoke Felix for multi-crystal autoindexing
+ * Rewrite of TakeTwo algorithm (Acta D72 (8) 956-965) for CrystFEL
  *
- * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2016-2017 Helen Ginn
+ * Copyright © 2016-2020 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2013,2017 Thomas White <taw@physics.org>
- *   2013-2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
+ *   2016      Helen Ginn <helen@strubi.ox.ac.uk>
+ *   2016-2017 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -27,29 +28,20 @@
  *
  */
 
-#ifndef FELIX_H
-#define FELIX_H
+#ifndef TAKETWO_H
+#define TAKETWO_H
 
 #include <argp.h>
 
 #include "cell.h"
+#include "index.h"
 
-/**
- * \file felix.h
- * Felix indexer interface
- */
+/** \file taketwo.h */
 
-typedef struct felix_options FelixOptions;
-extern struct argp felix_argp;
+extern void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
+                             UnitCell *cell);
+extern const char *taketwo_probe(UnitCell *cell);
+extern int taketwo_index(struct image *image, void *priv);
+extern void taketwo_cleanup(IndexingPrivate *pp);
 
-extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
-                           struct felix_options *opts);
-
-extern const char *felix_probe(UnitCell *cell);
-
-extern void felix_cleanup(IndexingPrivate *pp);
-
-extern int felix_index(struct image *image, IndexingPrivate *p);
-
-
-#endif	/* FELIX_H */
+#endif /* TAKETWO_H */
