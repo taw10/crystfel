@@ -89,7 +89,6 @@ struct pinkIndexer_private_data {
 static void reduceReciprocalCell(UnitCell* cell, LatticeTransform_t* appliedReductionTransform);
 static void restoreReciprocalCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform);
 static void makeRightHanded(UnitCell* cell);
-static void update_detector(struct detector *det, double xoffs, double yoffs);
 
 int run_pinkIndexer(struct image *image, void *ipriv)
 {
@@ -173,7 +172,6 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 			}
 			crystal_set_cell(cr, uc);
 			crystal_set_det_shift(cr, center_shift[indexed][0], center_shift[indexed][1]);
-			update_detector(image->det, center_shift[indexed][0], center_shift[indexed][1]);
 			image_add_crystal(image, cr);
 			indexed++;
 
@@ -361,18 +359,6 @@ static void makeRightHanded(UnitCell *cell)
 
 	if (!right_handed(cell)) {
 		cell_set_cartesian(cell, -ax, -ay, -az, -bx, -by, -bz, -cx, -cy, -cz);
-	}
-}
-
-//hack for electron crystallography while crystal_set_det_shift is not working approprietly
-static void update_detector(struct detector *det, double xoffs, double yoffs)
-{
-	int i;
-
-	for (i = 0; i < det->n_panels; i++) {
-		struct panel *p = &det->panels[i];
-		p->cnx += xoffs * p->res;
-		p->cny += yoffs * p->res;
 	}
 }
 
