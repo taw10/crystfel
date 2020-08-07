@@ -832,7 +832,6 @@ struct image *image_new()
        image->filename = NULL;
        image->ev = NULL;
        image->copied_headers = NULL;
-       image->avg_clen = -1.0;
        image->id = 0;
        image->serial = 0;
        image->spectrum = NULL;

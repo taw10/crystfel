@@ -121,9 +121,6 @@ struct image
 	/** A list of metadata read from the stream */
 	char                    *copied_headers;
 
-	/** Mean of the camera length values for all panels */
-	double                  avg_clen;
-
 	/** ID number of the worker processing handling this image */
 	int                     id;
 
