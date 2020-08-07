@@ -132,17 +132,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} ${ZLIB_LI
                       Threads::Threads GSL::gsl m)
 
 if (XGANDALF_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${XGANDALF_LIBRARIES})
 endif (XGANDALF_FOUND)
 
 if (FDIP_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${FDIP_INCLUDES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${FDIP_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${FDIP_LIBRARIES})
 endif (FDIP_FOUND)
 
 if (PINKINDEXER_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${PINKINDEXER_INCLUDES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${PINKINDEXER_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${PINKINDEXER_LIBRARIES})
 endif (PINKINDEXER_FOUND)
 
