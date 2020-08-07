@@ -47,6 +47,22 @@ typedef struct _datatemplate DataTemplate;
 extern "C" {
 #endif
 
+struct rigid_group
+{
+	char *name;
+	int *panel_numbers;
+	int n_panels;
+};
+
+
+struct rg_collection
+{
+	char *name;
+	struct rigid_group **rigid_groups;
+	int n_rigid_groups;
+};
+
+
 extern DataTemplate *data_template_new_from_file(const char *filename);
 extern DataTemplate *data_template_new_from_string(const char *string_in);
 extern void data_template_free(DataTemplate *dt);
@@ -73,6 +89,9 @@ extern int data_template_get_slab_extents(const DataTemplate *dt, int *pw, int *
 
 extern int data_template_in_bad_region(const DataTemplate *dtempl,
                                        int pn, double fs, double ss);
+
+extern struct rg_collection *data_template_get_rigid_groups(const DataTemplate *dtempl,
+                                                            const char *collection_name);
 
 #ifdef __cplusplus
 }

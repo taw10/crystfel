@@ -110,7 +110,8 @@ static struct dt_badregion *new_bad_region(DataTemplate *det, const char *name)
 }
 
 
-static struct panel_template *find_panel_by_name(DataTemplate *det, const char *name)
+static struct panel_template *find_panel_by_name(DataTemplate *det,
+                                                 const char *name)
 {
 	int i;
 
@@ -125,7 +126,7 @@ static struct panel_template *find_panel_by_name(DataTemplate *det, const char *
 
 
 static struct dt_badregion *find_bad_region_by_name(DataTemplate *det,
-                                                 const char *name)
+                                                    const char *name)
 {
 	int i;
 
@@ -139,12 +140,12 @@ static struct dt_badregion *find_bad_region_by_name(DataTemplate *det,
 }
 
 
-static struct dt_rigid_group *find_or_add_rg(DataTemplate *det,
+static struct rigid_group *find_or_add_rg(DataTemplate *det,
                                           const char *name)
 {
 	int i;
-	struct dt_rigid_group **new;
-	struct dt_rigid_group *rg;
+	struct rigid_group **new;
+	struct rigid_group *rg;
 
 	for ( i=0; i<det->n_rigid_groups; i++ ) {
 
@@ -155,30 +156,30 @@ static struct dt_rigid_group *find_or_add_rg(DataTemplate *det,
 	}
 
 	new = realloc(det->rigid_groups,
-	              (1+det->n_rigid_groups)*sizeof(struct dt_rigid_group *));
+	              (1+det->n_rigid_groups)*sizeof(struct rigid_group *));
 	if ( new == NULL ) return NULL;
 
 	det->rigid_groups = new;
 
-	rg = malloc(sizeof(struct dt_rigid_group));
+	rg = malloc(sizeof(struct rigid_group));
 	if ( rg == NULL ) return NULL;
 
 	det->rigid_groups[det->n_rigid_groups++] = rg;
 
 	rg->name = strdup(name);
-	rg->panels = NULL;
+	rg->panel_numbers = NULL;
 	rg->n_panels = 0;
 
 	return rg;
 }
 
 
-static struct dt_rg_collection *find_or_add_rg_coll(DataTemplate *det,
-                                                    const char *name)
+static struct rg_collection *find_or_add_rg_coll(DataTemplate *det,
+                                                 const char *name)
 {
 	int i;
-	struct dt_rg_collection **new;
-	struct dt_rg_collection *rgc;
+	struct rg_collection **new;
+	struct rg_collection *rgc;
 
 	for ( i=0; i<det->n_rg_collections; i++ ) {
 		if ( strcmp(det->rigid_group_collections[i]->name, name) == 0 )
@@ -188,12 +189,12 @@ static struct dt_rg_collection *find_or_add_rg_coll(DataTemplate *det,
 	}
 
 	new = realloc(det->rigid_group_collections,
-	              (1+det->n_rg_collections)*sizeof(struct dt_rg_collection *));
+	              (1+det->n_rg_collections)*sizeof(struct rg_collection *));
 	if ( new == NULL ) return NULL;
 
 	det->rigid_group_collections = new;
 
-	rgc = malloc(sizeof(struct dt_rg_collection));
+	rgc = malloc(sizeof(struct rg_collection));
 	if ( rgc == NULL ) return NULL;
 
 	det->rigid_group_collections[det->n_rg_collections++] = rgc;
@@ -206,28 +207,28 @@ static struct dt_rg_collection *find_or_add_rg_coll(DataTemplate *det,
 }
 
 
-static void add_to_rigid_group(struct dt_rigid_group *rg, struct panel_template *p)
+static void add_to_rigid_group(struct rigid_group *rg, int panel_number)
 {
-	struct panel_template **pn;
+	int *pn;
 
-	pn = realloc(rg->panels, (1+rg->n_panels)*sizeof(struct panel_template *));
+	pn = realloc(rg->panel_numbers, (1+rg->n_panels)*sizeof(int));
 	if ( pn == NULL ) {
 		ERROR("Couldn't add panel to rigid group.\n");
 		return;
 	}
 
-	rg->panels = pn;
-	rg->panels[rg->n_panels++] = p;
+	rg->panel_numbers = pn;
+	rg->panel_numbers[rg->n_panels++] = panel_number;
 }
 
 
-static void add_to_rigid_group_coll(struct dt_rg_collection *rgc,
-                                    struct dt_rigid_group *rg)
+static void add_to_rigid_group_coll(struct rg_collection *rgc,
+                                    struct rigid_group *rg)
 {
-	struct dt_rigid_group **r;
+	struct rigid_group **r;
 
 	r = realloc(rgc->rigid_groups, (1+rgc->n_rigid_groups)*
-	            sizeof(struct dt_rigid_group *));
+	            sizeof(struct rigid_group *));
 	if ( r == NULL ) {
 		ERROR("Couldn't add rigid group to collection.\n");
 		return;
@@ -246,7 +247,7 @@ static void free_all_rigid_groups(DataTemplate *det)
 	if ( det->rigid_groups == NULL ) return;
 	for ( i=0; i<det->n_rigid_groups; i++ ) {
 		free(det->rigid_groups[i]->name);
-		free(det->rigid_groups[i]->panels);
+		free(det->rigid_groups[i]->panel_numbers);
 		free(det->rigid_groups[i]);
 	}
 	free(det->rigid_groups);
@@ -268,8 +269,8 @@ static void free_all_rigid_group_collections(DataTemplate *det)
 }
 
 
-static struct dt_rigid_group *find_rigid_group_by_name(DataTemplate *det,
-                                                       char *name)
+static struct rigid_group *find_rigid_group_by_name(DataTemplate *det,
+                                                    char *name)
 {
 	int i;
 
@@ -498,8 +499,6 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_PHOTON;
-	} else if ( strcmp(key, "rigid_group") == 0 ) {
-		add_to_rigid_group(find_or_add_rg(det, val), panel);
 	} else if ( strcmp(key, "clen") == 0 ) {
 		/* Gets expanded when image is loaded */
 		panel->cnz_from = strdup(val);
@@ -1165,7 +1164,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
 
 		int pi, n1;
-		struct dt_rigid_group *rigidgroup = NULL;
+		struct rigid_group *rigidgroup = NULL;
 
 		rigidgroup = find_or_add_rg(dt, rg_defl[rgi]->name);
 
@@ -1173,16 +1172,18 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 		for ( pi=0; pi<n1; pi++ ) {
 
-			struct panel_template *p;
-
-			p = find_panel_by_name(dt, bits[pi]);
-			if ( p == NULL ) {
+			int panel_number;
+			if ( data_template_panel_name_to_number(dt,
+			                                        bits[pi],
+			                                        &panel_number) )
+			{
 				ERROR("Cannot add panel to rigid group\n");
 				ERROR("Panel not found: %s\n", bits[pi]);
 				return NULL;
 			}
-			add_to_rigid_group(rigidgroup, p);
+			add_to_rigid_group(rigidgroup, panel_number);
 			free(bits[pi]);
+
 		}
 		free(bits);
 		free(rg_defl[rgi]->name);
@@ -1194,7 +1195,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	for ( rgci=0; rgci<n_rgc_definitions; rgci++ ) {
 
 		int rgi, n2;
-		struct dt_rg_collection *rgcollection = NULL;
+		struct rg_collection *rgcollection = NULL;
 
 		rgcollection = find_or_add_rg_coll(dt, rgc_defl[rgci]->name);
 
@@ -1202,7 +1203,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 		for ( rgi=0; rgi<n2; rgi++ ) {
 
-			struct dt_rigid_group *r;
+			struct rigid_group *r;
 
 			r = find_rigid_group_by_name(dt, bits[rgi]);
 			if ( r == NULL ) {
@@ -1220,35 +1221,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 	}
 	free(rgc_defl);
-
-	if ( n_rg_definitions == 0 ) {
-
-		int pi;
-
-		for ( pi=0; pi<dt->n_panels; pi++ ) {
-
-			struct dt_rigid_group *rigidgroup = NULL;
-
-			rigidgroup = find_or_add_rg(dt, dt->panels[pi].name);
-			add_to_rigid_group(rigidgroup, &dt->panels[pi]);
-
-		}
-	}
-
-	if ( n_rgc_definitions == 0 ) {
-
-		int rgi;
-		struct dt_rg_collection *rgcollection = NULL;
-
-		rgcollection = find_or_add_rg_coll(dt, "default");
-
-		for ( rgi=0; rgi<dt->n_rigid_groups; rgi++ ) {
-
-			add_to_rigid_group_coll(rgcollection,
-			                        dt->rigid_groups[rgi]);
-
-		}
-	}
 
 	free(string_orig);
 

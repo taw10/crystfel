@@ -56,22 +56,6 @@ enum wavelength_unit
 };
 
 
-struct dt_rigid_group
-{
-	char *name;
-	struct panel_template **panels;
-	int n_panels;
-};
-
-
-struct dt_rg_collection
-{
-	char *name;
-	struct dt_rigid_group **rigid_groups;
-	int n_rigid_groups;
-};
-
-
 /* Special values for dimension IDs */
 #define DIM_FS (-1)
 #define DIM_SS (-2)
@@ -199,10 +183,10 @@ struct _datatemplate
 	unsigned int               mask_bad;
 	unsigned int               mask_good;
 
-	struct dt_rigid_group    **rigid_groups;
+	struct rigid_group       **rigid_groups;
 	int                        n_rigid_groups;
 
-	struct dt_rg_collection  **rigid_group_collections;
+	struct rg_collection     **rigid_group_collections;
 	int                        n_rg_collections;
 
 	char                      *peak_list;
