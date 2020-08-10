@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
 	const int ntrial = 1000;
 
 	/* NB must match polarisation_check.geom */
-	const int w = 512;
-	const int h = 512;
+	const int w = 256;
+	const int h = 256;
 
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 

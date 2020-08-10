@@ -77,7 +77,8 @@ exe = executable('polarisation_check',
                  ['polarisation_check.c'],
                  dependencies : [libcrystfeldep, mdep, gsldep])
 geom = files('polarisation_check.geom')
-test('polarisation_check', exe, args: [geom])
+test('polarisation_check', exe, args: [geom],
+     timeout: 60)
 
 
 # Event enumeration tests
