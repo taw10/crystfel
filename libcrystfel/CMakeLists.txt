@@ -2,7 +2,8 @@ project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
 pkg_check_modules (XGANDALF xgandalf)
-pkg_check_modules (PINKINDEXER pinkIndexer)
+# FIXME: Disabled
+#pkg_check_modules (PINKINDEXER pinkIndexer)
 pkg_check_modules (FDIP fdip)
 find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
