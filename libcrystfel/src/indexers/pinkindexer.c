@@ -185,22 +185,44 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 	return indexed;
 }
 
+
+static int want_center_adjustment(struct pinkIndexer_options *pinkIndexer_opts)
+{
+	return (pinkIndexer_opts->refinement_type ==
+	        REFINEMENT_TYPE_firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed);
+}
+
+
 void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
                           const DataTemplate *dtempl)
 {
-	if ( beam->photon_energy_from != NULL && pinkIndexer_opts->customPhotonEnergy <= 0) {
-		ERROR("For pinkIndexer, the photon_energy must be defined as a "
-		      "constant in the geometry file or as a parameter (see --pinkIndexer-override-photon-energy)\n");
+	if ( !data_template_has_fixed_wavelength(dtempl)
+	     && (pinkIndexer_opts->customPhotonEnergy <= 0.0) )
+	{
+		ERROR("Geometry file refers to image metadata for "
+		      "wavelength.\n");
+		ERROR("To use PinkIndexer, specify a constant "
+		      "wavelength in the geometry file, or use "
+		      "--pinkIndexer-override-photon-energy.\n");
 		return NULL;
 	}
-	if ( (det->panels[0].clen_from != NULL) && pinkIndexer_opts->refinement_type ==
-	        REFINEMENT_TYPE_firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed) {
-		ERROR("Using center refinement makes it necessary to have the detector distance fixed in the geometry file!");
+
+	if ( !data_template_has_fixed_geometry(dtempl)
+	   && want_center_adjustment(pinkIndexer_opts) )
+	{
+
+		ERROR("Geometry file refers to image metadata for "
+		      "detector position.\n");
+		ERROR("To use PinkIndexer with image center "
+		      "refinement, use a fixed detector position in "
+		      "the geometry file.\n");
 		return NULL;
 	}
-	if(cell == NULL){
-		ERROR("Pink indexer needs a unit cell file to be specified!");
+
+	if ( cell == NULL ) {
+		ERROR("Unit cell information is required for "
+		      "PinkIndexer.\n");
 		return NULL;
 	}
 
@@ -231,12 +253,14 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	        .cx = csz * 1e-10, .cy = csx * 1e-10, .cz = csy * 1e-10 };
 
 	float detectorDistance_m;
-	if ( det->panels[0].clen_from != NULL ) {
+	if ( data_template_has_fixed_geometry(dtempl) ) {
 		detectorDistance_m =  0.25;  /* fake value */
 	} else {
+		/* FIXME: Cannot get clen here without violating abstraction */
 		detectorDistance_m = det->panels[0].clen + det->panels[0].coffset;
 	}
 
+	/* FIXME: Beam gone */
 	float beamEenergy_eV = beam->photon_energy;
 	float nonMonochromaticity = beam->bandwidth*5;
 	if(pinkIndexer_opts->customPhotonEnergy > 0){
@@ -256,7 +280,9 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	}
 
 	if(beamEenergy_eV > 75000 && nonMonochromaticity < 0.02 && reflectionRadius_1_per_A < 0.0005){
-		STATUS("Trying to index electron diffraction? It might be helpful to set a higher reflection radius (see documentation for --pinkIndexer-reflection-radius)")
+		STATUS("Trying to index electron diffraction? It might be "
+		       " helpful to set a higher reflection radius "
+		       "(see documentation for --pinkIndexer-reflection-radius)");
 	}
 
 	float divergenceAngle_deg = 0.01; //fake
