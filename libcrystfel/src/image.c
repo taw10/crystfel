@@ -748,7 +748,11 @@ struct image *image_read(const DataTemplate *dtempl,
 	}
 
 	image->filename = strdup(filename);
-	image->ev = strdup(event);
+	if ( event != NULL ) {
+		image->ev = strdup(event);
+	} else {
+		image->ev = strdup("//");  /* Null event */
+	}
 
 	/* Load the image data */
 	if ( !no_image_data ) {
