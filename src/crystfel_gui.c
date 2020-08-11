@@ -573,6 +573,16 @@ static gint prev_frame_sig(GtkWidget *widget,
 }
 
 
+static gint random_frame_sig(GtkWidget *widget,
+                             struct crystfelproject *proj)
+{
+	proj->cur_frame = random()*proj->n_frames / RAND_MAX;
+	update_imageview(proj);
+	update_peaks(proj);
+	return FALSE;
+}
+
+
 static gint next_frame_sig(GtkWidget *widget,
                            struct crystfelproject *proj)
 {
@@ -862,6 +872,13 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(prev_frame_sig), &proj);
+
+	/* Random */
+	button = gtk_button_new_from_icon_name("media-playlist-shuffle",
+	                                       GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(random_frame_sig), &proj);
 
 	/* Next */
 	button = gtk_button_new_from_icon_name("go-next", GTK_ICON_SIZE_LARGE_TOOLBAR);
