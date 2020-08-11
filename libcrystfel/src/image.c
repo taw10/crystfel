@@ -35,6 +35,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 #include "image.h"
 #include "utils.h"
@@ -551,11 +552,30 @@ int image_set_zero_mask(struct image *image,
 }
 
 
+static int file_exists(const char *filename)
+{
+	struct stat statbuf;
+	int r;
+
+	r = stat(filename, &statbuf);
+	if ( r != 0 ) {
+		return 0;
+	}
+
+	return 1;
+}
+
+
 int image_read_image_data(struct image *image,
                           const DataTemplate *dtempl,
                           const char *filename,
                           const char *event)
 {
+	if ( !file_exists(filename) ) {
+		ERROR("File not found: %s\n", filename);
+		return image_set_zero_data(image, dtempl);
+	}
+
 	if ( is_hdf5_file(filename) ) {
 		return image_hdf5_read(image, dtempl, filename, event);
 
