@@ -552,7 +552,8 @@ static gint save_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
-static gint first_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+static gint first_frame_sig(GtkWidget *widget,
+                            struct crystfelproject *proj)
 {
 	proj->cur_frame = 0;
 	update_imageview(proj);
@@ -561,7 +562,8 @@ static gint first_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
-static gint prev_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+static gint prev_frame_sig(GtkWidget *widget,
+                           struct crystfelproject *proj)
 {
 	if ( proj->cur_frame == 0 ) return FALSE;
 	proj->cur_frame--;
@@ -571,7 +573,8 @@ static gint prev_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
-static gint next_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+static gint next_frame_sig(GtkWidget *widget,
+                           struct crystfelproject *proj)
 {
 	if ( proj->cur_frame == proj->n_frames - 1 ) return FALSE;
 	proj->cur_frame++;
@@ -581,7 +584,8 @@ static gint next_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
-static gint last_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+static gint last_frame_sig(GtkWidget *widget,
+                           struct crystfelproject *proj)
 {
 	proj->cur_frame = proj->n_frames - 1;
 	update_imageview(proj);
@@ -850,22 +854,26 @@ int main(int argc, char *argv[])
 	/* First */
 	button = gtk_button_new_from_icon_name("go-first", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
-	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(first_frame_sig), &proj);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(first_frame_sig), &proj);
 
 	/* Prev */
 	button = gtk_button_new_from_icon_name("go-previous", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
-	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(prev_frame_sig), &proj);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(prev_frame_sig), &proj);
 
 	/* Next */
 	button = gtk_button_new_from_icon_name("go-next", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
-	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(next_frame_sig), &proj);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(next_frame_sig), &proj);
 
 	/* Last */
 	button = gtk_button_new_from_icon_name("go-last", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
-	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(last_frame_sig), &proj);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(last_frame_sig), &proj);
 
 	/* Image view parameters */
 	const gchar *icons[] = {"weather-clear", NULL};
