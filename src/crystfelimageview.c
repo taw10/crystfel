@@ -402,7 +402,7 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 		y = p->pixel_pitch*(p->cny + p->fsy*f->fs + p->ssy*f->ss);
 		cairo_rectangle(cr, x-bs, y-bs, 2*bs, 2*bs);
 		cairo_set_line_width(cr, lw);
-		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+		cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
 		cairo_stroke(cr);
 	}
 }
