@@ -763,13 +763,19 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 {
 	GtkTextBuffer *buf;
 	GtkTextIter iter;
+	GtkTextMark *mark;
 	struct crystfelproject *proj = vp;
+
 	buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(proj->report));
 	gtk_text_buffer_get_end_iter(buf, &iter);
 	gtk_text_buffer_insert(buf, &iter, msg, -1);
+
+	mark = gtk_text_mark_new(NULL, FALSE);
 	gtk_text_buffer_get_end_iter(buf, &iter);
-	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(proj->report),
-	                             &iter, 0.0, FALSE, 0.0, 0.0);
+	gtk_text_buffer_add_mark(buf, mark, &iter);
+	gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(proj->report),
+	                             mark, 0.0, FALSE, 0.0, 0.0);
+	gtk_text_buffer_delete_mark(buf, mark);
 }
 
 
