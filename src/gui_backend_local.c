@@ -132,6 +132,13 @@ static void add_arg(char **args, int pos, const char *label,
 }
 
 
+void setup_subprocess(gpointer user_data)
+{
+	setsid();
+	setpgid(0, 0);
+}
+
+
 static int run_unitcell(struct crystfelproject *proj,
                         const char *algo)
 {
@@ -212,7 +219,7 @@ static int run_unitcell(struct crystfelproject *proj,
 	r = g_spawn_async_with_pipes(NULL, args, NULL,
 	                             G_SPAWN_SEARCH_PATH
 	                           | G_SPAWN_DO_NOT_REAP_CHILD,
-	                             NULL, NULL,
+	                             setup_subprocess, NULL,
 	                             &priv->indexamajig_pid,
 	                             NULL, NULL, &ch_stderr,
 	                             &error);
