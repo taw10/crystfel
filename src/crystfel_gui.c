@@ -743,6 +743,7 @@ static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
 
 static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 {
+	/* FIXME: All these icons are placeholders */
 	add_button(vbox, "Load data", "folder-pictures",
 	           G_CALLBACK(finddata_sig), proj);
 	add_button(vbox, "Peak detection", "edit-find",
@@ -753,9 +754,13 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	           G_CALLBACK(index_all_sig), proj);
 	add_button(vbox, "Determine unit cell", "applications-engineering",
 	           G_CALLBACK(cell_explorer_sig), proj);
+	add_button(vbox, "Indexing ambiguity", "face-worried",
+	           G_CALLBACK(NULL), proj);
 	add_button(vbox, "Merge", "applications-science",
 	           G_CALLBACK(NULL), proj);
 	add_button(vbox, "Figures of merit", "trophy-gold",
+	           G_CALLBACK(NULL), proj);
+	add_button(vbox, "Export data", "document-send",
 	           G_CALLBACK(NULL), proj);
 }
 
