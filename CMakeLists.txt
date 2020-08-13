@@ -402,7 +402,7 @@ if (GTK_FOUND)
 
   set(CRYSTFEL_GUI_SOURCES src/crystfel_gui.c src/crystfelimageview.c
     src/gui_peaksearch.c src/gui_index.c src/gui_backend_local.c
-    src/gui_project.c)
+    src/gui_project.c src/crystfelindexingopts.c)
 
   add_executable(crystfel ${CRYSTFEL_GUI_SOURCES}
                  ${CMAKE_CURRENT_BINARY_DIR}/version.c)

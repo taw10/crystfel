@@ -747,10 +747,12 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	           G_CALLBACK(finddata_sig), proj);
 	add_button(vbox, "Peak detection", "edit-find",
 	           G_CALLBACK(peaksearch_sig), proj);
-	add_button(vbox, "Determine unit cell", "document-page-setup",
-	           G_CALLBACK(unitcell_sig), proj);
-	add_button(vbox, "Index and integrate", "system-run",
-	           G_CALLBACK(NULL), proj);
+	add_button(vbox, "Index this frame", "system-run",
+	           G_CALLBACK(index_one_sig), proj);
+	add_button(vbox, "Index all frames", "view-grid",
+	           G_CALLBACK(index_all_sig), proj);
+	add_button(vbox, "Determine unit cell", "applications-engineering",
+	           G_CALLBACK(cell_explorer_sig), proj);
 	add_button(vbox, "Merge", "applications-science",
 	           G_CALLBACK(NULL), proj);
 	add_button(vbox, "Figures of merit", "trophy-gold",

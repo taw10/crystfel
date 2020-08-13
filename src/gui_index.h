@@ -33,7 +33,12 @@
 
 #include "crystfel_gui.h"
 
-extern gint unitcell_sig(GtkWidget *widget,
-                         struct crystfelproject *proj);
+extern gint index_one_sig(GtkWidget *widget,
+                          struct crystfelproject *proj);
+
+extern gint index_all_sig(GtkWidget *widget,
+                          struct crystfelproject *proj);
+
+extern void cell_explorer_sig(struct crystfelproject *proj);
 
 #endif

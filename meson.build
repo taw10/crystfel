@@ -198,6 +198,7 @@ if gtkdep.found()
   executable('crystfel',
              ['src/crystfel_gui.c',
               'src/crystfelimageview.c',
+              'src/crystfelindexingopts.c',
               'src/gui_peaksearch.c',
               'src/gui_index.c',
               'src/gui_backend_local.c',

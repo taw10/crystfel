@@ -416,7 +416,6 @@ void default_project(struct crystfelproject *proj)
 	proj->filenames = NULL;
 	proj->events = NULL;
 	proj->peak_params = NULL;
-	proj->unitcell_combo = NULL;
 	proj->info_bar = NULL;
 	proj->backend_private = NULL;
 	proj->data_top_folder = NULL;

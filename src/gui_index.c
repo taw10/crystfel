@@ -44,8 +44,9 @@
 
 #include "crystfel_gui.h"
 #include "crystfelimageview.h"
+#include "crystfelindexingopts.h"
 
-static void cell_explorer_sig(struct crystfelproject *proj)
+void cell_explorer_sig(struct crystfelproject *proj)
 {
 	GSubprocess *sp;
 	GError *error = NULL;
@@ -63,43 +64,53 @@ static void cell_explorer_sig(struct crystfelproject *proj)
 }
 
 
-static void unitcell_response_sig(GtkWidget *dialog, gint resp,
-                                  struct crystfelproject *proj)
+static void index_all_response_sig(GtkWidget *dialog, gint resp,
+                                   struct crystfelproject *proj)
 {
-	const char *algo;
-
-	algo = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->unitcell_combo));
+	if ( resp == GTK_RESPONSE_OK ) {
+		STATUS("OK!\n");
+	}
 
 	gtk_widget_destroy(dialog);
-	if ( resp != GTK_RESPONSE_OK ) {
-		proj->unitcell_combo = NULL;
-		return;
-	}
-
-	if ( proj->backend->run_unitcell(proj, algo) == 0 ) {
-
-		proj->unitcell_combo = NULL;
-
-		create_infobar(proj,
-		               "Indexing (determine unit cell parameters)",
-		               "Show cell histograms", cell_explorer_sig);
-
-	}
 }
 
 
-gint unitcell_sig(GtkWidget *widget, struct crystfelproject *proj)
+static GtkWidget *make_backend_opts(struct crystfelproject *proj)
 {
-	GtkWidget *dialog;
-	GtkWidget *content_area;
-	GtkWidget *vbox;
+	GtkWidget *box;
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *combo;
 
-	if ( proj->unitcell_combo != NULL ) return FALSE;
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
 
-	dialog = gtk_dialog_new_with_buttons("Determine unit cell",
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Batch system:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo),
+	                   FALSE, FALSE, 0);
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "local",
+	                "Local (run on this computer)");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "slurm",
+	                "SLURM");
+
+	return box;
+}
+
+
+gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	GtkWidget *dialog;
+	GtkWidget *content_area;
+	GtkWidget *vbox;
+	GtkWidget *indexing_opts;
+
+	dialog = gtk_dialog_new_with_buttons("Index all frames",
 	                                     GTK_WINDOW(proj->window),
 	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
 	                                     "Cancel", GTK_RESPONSE_CANCEL,
@@ -107,39 +118,68 @@ gint unitcell_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                     NULL);
 
 	g_signal_connect(G_OBJECT(dialog), "response",
-	                 G_CALLBACK(unitcell_response_sig), proj);
+	                 G_CALLBACK(index_all_response_sig), proj);
 
 	vbox = gtk_vbox_new(FALSE, 0.0);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	gtk_container_add(GTK_CONTAINER(content_area), vbox);
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
-	proj->peak_vbox = vbox;
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
-	label = gtk_label_new("Unit cell determination algorithm");
-	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
-	combo = gtk_combo_box_text_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo), TRUE, TRUE, 2.0);
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
-	                          "mosflm-nocell-nolatt",
-	                          "MOSFLM");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
-	                          "dirax",
-	                          "DirAx");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
-	                          "asdf-nocell",
-	                          "ASDF");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
-	                          "xds-nocell-nolatt",
-	                          "xds");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
-	                          "xgandalf-nocell",
-	                          "XGANDALF");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
-	proj->unitcell_combo = combo;
+	indexing_opts = crystfel_indexing_opts_new();
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(indexing_opts),
+	                   FALSE, FALSE, 8.0);
 
+	gtk_notebook_append_page(GTK_NOTEBOOK(indexing_opts),
+	                         make_backend_opts(proj),
+	                         gtk_label_new("Cluster/batch system"));
+
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
+	                                GTK_RESPONSE_OK);
+	gtk_widget_show_all(dialog);
+
+	return FALSE;
+}
+
+
+static void index_one_response_sig(GtkWidget *dialog, gint resp,
+                                   struct crystfelproject *proj)
+{
+	if ( resp == GTK_RESPONSE_OK ) {
+		STATUS("OK!\n");
+	}
+
+	gtk_widget_destroy(dialog);
+}
+
+
+gint index_one_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	GtkWidget *dialog;
+	GtkWidget *content_area;
+	GtkWidget *vbox;
+	GtkWidget *indexing_opts;
+
+	dialog = gtk_dialog_new_with_buttons("Index one frame",
+	                                     GTK_WINDOW(proj->window),
+	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                     "Cancel", GTK_RESPONSE_CANCEL,
+	                                     "Run", GTK_RESPONSE_OK,
+	                                     NULL);
+
+	g_signal_connect(G_OBJECT(dialog), "response",
+	                 G_CALLBACK(index_one_response_sig), proj);
+
+	vbox = gtk_vbox_new(FALSE, 0.0);
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
+
+	indexing_opts = crystfel_indexing_opts_new();
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(indexing_opts),
+	                   FALSE, FALSE, 8.0);
+
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
+	                                GTK_RESPONSE_OK);
 	gtk_widget_show_all(dialog);
 
 	return FALSE;
