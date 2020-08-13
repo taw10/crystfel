@@ -234,6 +234,12 @@ executable('pattern_sim', pattern_sim_sources,
 simulation_bits = files(['src/diffraction.c', 'src/diffraction-gpu.c', 'src/cl-utils.c'])
 
 
+# ************************ Misc resources ************************
+
+install_data(['data/crystfel.svg'],
+             install_dir : get_option('datadir')+'/icons/hicolor/scalable/apps')
+
+
 # ************************ Testing ************************
 
 subdir('tests')

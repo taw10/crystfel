@@ -175,6 +175,10 @@ add_subdirectory(tests)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
         DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
+# Misc resources
+install(FILES ${CMAKE_SOURCE_DIR}/data/crystfel.svg
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+
 # ----------------------------------------------------------------------
 # partial_sim
 

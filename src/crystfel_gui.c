@@ -848,6 +848,7 @@ int main(int argc, char *argv[])
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
+	gtk_window_set_default_icon_name("crystfel");
 	g_signal_connect(G_OBJECT(proj.window), "delete-event",
 	                 G_CALLBACK(delete_event_sig),
 	                 &proj);
