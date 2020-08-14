@@ -36,6 +36,10 @@
 #include <assert.h>
 #include <gtk/gtk.h>
 #include <glib-object.h>
+#include <errno.h>
+#include <math.h>
+
+#include <integration.h>
 
 #include "crystfelindexingopts.h"
 
@@ -68,8 +72,8 @@ static void add_method(GtkListStore *store, const char *name)
 }
 
 
-static void add_tol(GtkGrid *grid, const char *spec_t,
-                    const char *unit_t, gint left, gint top)
+static GtkWidget *add_tol(GtkGrid *grid, const char *spec_t,
+                          const char *unit_t, gint left, gint top)
 {
 	GtkWidget *spec;
 	GtkWidget *entry;
@@ -86,6 +90,8 @@ static void add_tol(GtkGrid *grid, const char *spec_t,
 	unit = gtk_label_new(unit_t);
 	g_object_set(G_OBJECT(unit), "margin-right", 12, NULL);
 	gtk_grid_attach(grid, unit, left+2, top, 1, 1);
+
+	return entry;
 }
 
 
@@ -98,12 +104,12 @@ static GtkWidget *make_tolerances(CrystFELIndexingOpts *io)
 	gtk_grid_set_column_spacing(GTK_GRID(grid), 4);
 	gtk_container_set_border_width(GTK_CONTAINER(grid), 6);
 
-	add_tol(GTK_GRID(grid), "a", "%", 0, 0);
-	add_tol(GTK_GRID(grid), "b", "%", 4, 0);
-	add_tol(GTK_GRID(grid), "c", "%", 8, 0);
-	add_tol(GTK_GRID(grid), "α", "°", 0, 1);
-	add_tol(GTK_GRID(grid), "β", "°", 4, 1);
-	add_tol(GTK_GRID(grid), "ɣ", "°", 8, 1);
+	io->tols[0] = add_tol(GTK_GRID(grid), "a", "%", 0, 0);
+	io->tols[1] = add_tol(GTK_GRID(grid), "b", "%", 4, 0);
+	io->tols[2] = add_tol(GTK_GRID(grid), "c", "%", 8, 0);
+	io->tols[3] = add_tol(GTK_GRID(grid), "α", "°", 0, 1);
+	io->tols[4] = add_tol(GTK_GRID(grid), "β", "°", 4, 1);
+	io->tols[5] = add_tol(GTK_GRID(grid), "ɣ", "°", 8, 1);
 
 	return grid;
 }
@@ -170,9 +176,6 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	GtkWidget *box;
 	GtkWidget *hbox;
 	GtkWidget *label;
-	GtkWidget *entry;
-	GtkWidget *check;
-	GtkWidget *filechooser;
 	GtkWidget *expander;
 	GtkWidget *frame;
 	GtkWidget *indexing_methods;
@@ -185,17 +188,19 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 0);
-	check = gtk_check_button_new_with_label("Use unit cell");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(check),
+	io->use_cell = gtk_check_button_new_with_label("Use unit cell");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->use_cell),
 	                   FALSE, FALSE, 0);
-	filechooser = gtk_file_chooser_button_new("Unit cell file",
-	                                          GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(filechooser),
+	io->cell_chooser = gtk_file_chooser_button_new("Unit cell file",
+	                                               GTK_FILE_CHOOSER_ACTION_OPEN);
+	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(io->cell_chooser),
+	                                TRUE);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->cell_chooser),
 	                   FALSE, FALSE, 0);
 
 	/* Indexing method selector */
-	check = gtk_check_button_new_with_label("Automatically choose the indexing methods");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->auto_indm = gtk_check_button_new_with_label("Automatically choose the indexing methods");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->auto_indm),
 	                   FALSE, FALSE, 0);
 	expander = gtk_expander_new("Select indexing methods and prior information");
 	frame = gtk_frame_new(NULL);
@@ -210,28 +215,28 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
 
 	/* --multi */
-	check = gtk_check_button_new_with_label("Attempt to find multiple lattices per frame");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->multi = gtk_check_button_new_with_label("Attempt to find multiple lattices per frame");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->multi),
 	                   FALSE, FALSE, 0);
 
 	/* --no-refine (NB inverse) */
-	check = gtk_check_button_new_with_label("Refine the indexing solution");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->refine = gtk_check_button_new_with_label("Refine the indexing solution");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->refine),
 	                   FALSE, FALSE, 0);
 
 	/* --no-retry (NB inverse) */
-	check = gtk_check_button_new_with_label("Retry indexing if unsuccessful");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->retry = gtk_check_button_new_with_label("Retry indexing if unsuccessful");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->retry),
 	                   FALSE, FALSE, 0);
 
 	/* --no-check-peaks (NB inverse) */
-	check = gtk_check_button_new_with_label("Check indexing solutions match peaks");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->check_peaks = gtk_check_button_new_with_label("Check indexing solutions match peaks");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->check_peaks),
 	                   FALSE, FALSE, 0);
 
 	/* --no-check-cell (NB inverse) and --tolerance */
-	check = gtk_check_button_new_with_label("Check indexing solutions against reference cell");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->check_cell = gtk_check_button_new_with_label("Check indexing solutions against reference cell");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->check_cell),
 	                   FALSE, FALSE, 0);
 	expander = gtk_expander_new("Unit cell tolerances");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(expander),
@@ -243,12 +248,12 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 0);
-	check = gtk_check_button_new_with_label("Skip frames with fewer than");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(check),
+	io->enable_hitfind = gtk_check_button_new_with_label("Skip frames with fewer than");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->enable_hitfind),
 	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(entry), 4);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	io->ignore_fewer_peaks = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(io->ignore_fewer_peaks), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ignore_fewer_peaks),
 	                   FALSE, FALSE, 0);
 	label = gtk_label_new("peaks");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
@@ -261,10 +266,7 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 {
 	GtkWidget *box;
-	GtkWidget *combo;
-	GtkWidget *check;
 	GtkWidget *label;
-	GtkWidget *entry;
 	GtkWidget *hbox;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
@@ -277,36 +279,36 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	label = gtk_label_new("Integration method:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
-	combo = gtk_combo_box_text_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo),
+	io->integration_combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->integration_combo),
 	                   FALSE, FALSE, 0);
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "none",
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(io->integration_combo), "none",
 	                "No integration (only spot prediction)");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "rings",
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(io->integration_combo), "rings",
 	                "Ring summation");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "prof2d",
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(io->integration_combo), "prof2d",
 	                "Two dimensional profile fitting");
 
 	/* -cen */
-	check = gtk_check_button_new_with_label("Center integration boxes on observed reflections");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->centering = gtk_check_button_new_with_label("Center integration boxes on observed reflections");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->centering),
 	                   FALSE, FALSE, 0);
 
 	/* --overpredict */
-	check = gtk_check_button_new_with_label("Over-predict reflections (for post-refinement)");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(check),
+	io->overpredict = gtk_check_button_new_with_label("Over-predict reflections (for post-refinement)");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->overpredict),
 	                   FALSE, FALSE, 0);
 
 	/* --push-res */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 0);
-	check = gtk_check_button_new_with_label("Limit prediction to");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(check),
+	io->limit_res = gtk_check_button_new_with_label("Limit prediction to");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->limit_res),
 	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(entry), 4);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	io->push_res = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(io->push_res), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->push_res),
 	                   FALSE, FALSE, 0);
 	label = gtk_label_new("nm-1 above apparent resolution limit");
 	gtk_label_set_markup(GTK_LABEL(label),
@@ -337,4 +339,290 @@ GtkWidget *crystfel_indexing_opts_new()
 
 	gtk_widget_show_all(GTK_WIDGET(io));
 	return GTK_WIDGET(io);
+}
+
+
+char *crystfel_indexing_opts_get_cell_file(CrystFELIndexingOpts *opts)
+{
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->use_cell)) ) {
+		return gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(opts->cell_chooser));
+	} else {
+		return NULL;
+	}
+}
+
+
+char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *opts)
+{
+	return strdup("dirax");  /* FIXME! */
+}
+
+
+int crystfel_indexing_opts_get_multi_lattice(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->multi));
+}
+
+
+int crystfel_indexing_opts_get_refine(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->refine));
+}
+
+
+int crystfel_indexing_opts_get_retry(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->retry));
+}
+
+
+int crystfel_indexing_opts_get_peak_check(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->check_peaks));
+}
+
+
+int crystfel_indexing_opts_get_cell_check(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->check_cell));
+}
+
+
+void crystfel_indexing_opts_get_tolerances(CrystFELIndexingOpts *opts,
+                                           float *tols)
+{
+	int i;
+	for ( i=0; i<3; i++ ) {
+		float tol;
+		char *rval;
+		const gchar *text = gtk_entry_get_text(GTK_ENTRY(opts->tols[i]));
+		errno = 0;
+		tol = strtod(text, &rval);
+		if ( *rval != '\0' ) {
+			printf("Invalid tolerance '%s'\n", text);
+		} else {
+			tols[i] = tol / 100.0;
+		}
+	}
+	for ( i=3; i<6; i++ ) {
+		float tol;
+		char *rval;
+		const gchar *text = gtk_entry_get_text(GTK_ENTRY(opts->tols[i]));
+		errno = 0;
+		tol = strtod(text, &rval);
+		if ( *rval != '\0' ) {
+			printf("Invalid tolerance '%s'\n", text);
+		} else {
+			tols[i] = deg2rad(tol);
+		}
+	}
+}
+
+
+int crystfel_indexing_opts_get_min_peaks(CrystFELIndexingOpts *opts)
+{
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->enable_hitfind)) ) {
+		const gchar *text;
+		int fewer_peaks;
+		char *rval;
+		text = gtk_entry_get_text(GTK_ENTRY(opts->ignore_fewer_peaks));
+		errno = 0;
+		fewer_peaks = strtod(text, &rval);
+		if ( *rval != '\0' ) {
+			printf("Invalid value for minimum number of peaks (%s)\n",
+			      rval);
+			return 0;
+		}
+		/* Subtract one because the dialog box says to skip
+		 * frames with "FEWER THAN" this number */
+		return fewer_peaks - 1;
+	} else {
+		return 0;
+	}
+}
+
+
+char *crystfel_indexing_opts_get_integration_method_string(CrystFELIndexingOpts *opts)
+{
+	const gchar *id;
+	char method[64];
+
+	id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(opts->integration_combo));
+	if ( id == NULL ) return strdup("none");
+
+	strcpy(method, id);
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->centering)) ) {
+		strcat(method, "-cen");
+	}
+
+	return strdup(method);
+}
+
+
+int crystfel_indexing_opts_get_overpredict(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->overpredict));
+}
+
+
+float crystfel_indexing_opts_get_push_res(CrystFELIndexingOpts *opts)
+{
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->limit_res)) ) {
+		return INFINITY;
+	} else {
+		const gchar *text;
+		float push_res;
+		char *rval;
+		text = gtk_entry_get_text(GTK_ENTRY(opts->ignore_fewer_peaks));
+		errno = 0;
+		push_res = strtof(text, &rval);
+		if ( *rval != '\0' ) {
+			printf("Invalid value for push-res (%s)\n",
+			      rval);
+			return INFINITY;
+		}
+		return push_res;
+	}
+}
+
+
+void crystfel_indexing_opts_set_cell_file(CrystFELIndexingOpts *opts,
+                                          const char *cell_file)
+{
+	if ( cell_file != NULL ) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(opts->cell_chooser),
+		                              cell_file);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->use_cell),
+		                             TRUE);
+	} else {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->use_cell),
+		                             FALSE);
+	}
+}
+
+
+static const char *integration_method_id(IntegrationMethod meth)
+{
+	switch ( meth ) {
+		case INTEGRATION_NONE : return "none";
+		case INTEGRATION_RINGS : return "rings";
+		case INTEGRATION_PROF2D : return "prof2d";
+		default : return "none";
+	}
+}
+
+
+void crystfel_indexing_opts_set_indexing_method_string(CrystFELIndexingOpts *opts,
+                                                       const char *indm_str)
+{
+	/* FIXME */
+}
+
+
+void crystfel_indexing_opts_set_multi_lattice(CrystFELIndexingOpts *opts,
+                                              int multi)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->multi),
+	                             multi);
+}
+
+
+void crystfel_indexing_opts_set_refine(CrystFELIndexingOpts *opts,
+                                       int refine)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->refine),
+	                             refine);
+}
+
+
+void crystfel_indexing_opts_set_retry(CrystFELIndexingOpts *opts,
+                                      int retry)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->retry),
+	                             retry);
+}
+
+
+void crystfel_indexing_opts_set_peak_check(CrystFELIndexingOpts *opts,
+                                           int peak_check)
+
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->check_peaks),
+	                             peak_check);
+}
+
+
+void crystfel_indexing_opts_set_cell_check(CrystFELIndexingOpts *opts,
+                                           int cell_check)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->check_cell),
+	                             cell_check);
+}
+
+
+void crystfel_indexing_opts_set_tolerances(CrystFELIndexingOpts *opts,
+                                           float *tols)
+{
+	int i;
+	for ( i=0; i<3; i++ ) {
+		char tmp[64];
+		snprintf(tmp, 63, "%f", tols[i]*100.0);
+		gtk_entry_set_text(GTK_ENTRY(opts->tols[i]), tmp);
+	}
+	for ( i=3; i<6; i++ ) {
+		char tmp[64];
+		snprintf(tmp, 63, "%f", rad2deg(tols[i]));
+		gtk_entry_set_text(GTK_ENTRY(opts->tols[i]), tmp);
+	}
+}
+
+
+void crystfel_indexing_opts_set_min_peaks(CrystFELIndexingOpts *opts,
+                                          int min_peaks)
+{
+	char tmp[64];
+
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->enable_hitfind),
+	                             (min_peaks > 0));
+
+	/* Plus one because dialog says skip when "fewer than" X peaks */
+	snprintf(tmp, 63, "%i", min_peaks+1);
+	gtk_entry_set_text(GTK_ENTRY(opts->ignore_fewer_peaks), tmp);
+}
+
+
+void crystfel_indexing_opts_set_integration_method_string(CrystFELIndexingOpts *opts,
+                                                          const char *integr_str)
+{
+	IntegrationMethod meth;
+	int err;
+
+	meth = integration_method(integr_str, &err);
+	if ( !err ) {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->centering),
+		                             meth & INTEGRATION_CENTER);
+		gtk_combo_box_set_active_id(GTK_COMBO_BOX(opts->integration_combo),
+		                            integration_method_id(meth & INTEGRATION_METHOD_MASK));
+	}
+}
+
+
+void crystfel_indexing_opts_set_overpredict(CrystFELIndexingOpts *opts,
+                                            int overpredict)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->overpredict),
+	                             overpredict);
+}
+
+
+void crystfel_indexing_opts_set_push_res(CrystFELIndexingOpts *opts,
+                                         float push_res)
+{
+	char tmp[64];
+
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->limit_res),
+	                             !isinf(push_res));
+
+	snprintf(tmp, 63, "%f", push_res);
+	gtk_entry_set_text(GTK_ENTRY(opts->push_res), tmp);
 }

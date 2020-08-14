@@ -64,6 +64,25 @@ struct peak_params {
 	int revalidate;
 };
 
+struct index_params {
+
+	/* Indexing */
+	char *cell_file;
+	char *indexing_methods;
+	int multi;
+	int no_refine;
+	int no_retry;
+	int no_peak_check;
+	int no_cell_check;
+	float tols[6];
+	int min_peaks;
+
+	/* Integration */
+	char *integration_method;
+	int overpredict;
+	float push_res;
+};
+
 struct crystfelproject {
 
 	GtkWidget *window;
@@ -98,6 +117,8 @@ struct crystfelproject {
 	struct peak_params peak_search_params;
 
 	int show_refls;
+	struct index_params indexing_params;
+	GtkWidget *indexing_opts;
 
 	GtkWidget *type_combo;
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */

@@ -128,6 +128,24 @@ int match_filename(const char *fn, enum match_type_id mt)
 }
 
 
+static void parse_tols(const char *text, float *tols)
+{
+	int r;
+
+	r = sscanf(text, "%f,%f,%f,%f,%f,%f",
+	           &tols[0], &tols[1], &tols[2],
+	           &tols[3], &tols[4], &tols[5]);
+
+	if ( r != 6 ) {
+		STATUS("Invalid tolerances '%s'\n", text);
+	} else {
+		int i;
+		for ( i=0; i<3; i++ ) tols[i] /= 100.0;
+		for ( i=3; i<6; i++ ) tols[i] = deg2rad(tols[i]);
+	}
+}
+
+
 static void handle_var(const char *key, const char *val,
                        struct crystfelproject *proj)
 {
@@ -197,6 +215,54 @@ static void handle_var(const char *key, const char *val,
 
 	if ( strcmp(key, "peak_search_params.revalidate") == 0 ) {
 		proj->peak_search_params.revalidate = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.cell_file") == 0 ) {
+		proj->indexing_params.cell_file = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.methods") == 0 ) {
+		proj->indexing_params.indexing_methods = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.multi_lattice") == 0 ) {
+		proj->indexing_params.multi = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.no_refine") == 0 ) {
+		proj->indexing_params.no_refine = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.no_retry") == 0 ) {
+		proj->indexing_params.no_retry = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.no_peak_check") == 0 ) {
+		proj->indexing_params.no_peak_check = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.no_cell_check") == 0 ) {
+		proj->indexing_params.no_cell_check = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.cell_tolerance") == 0 ) {
+		parse_tols(val, proj->indexing_params.tols);
+	}
+
+	if ( strcmp(key, "indexing.min_peaks") == 0 ) {
+		proj->indexing_params.min_peaks = parse_int(val);
+	}
+
+	if ( strcmp(key, "integration.method") == 0 ) {
+		proj->indexing_params.integration_method = strdup(val);
+	}
+
+	if ( strcmp(key, "integration.overpredict") == 0 ) {
+		proj->indexing_params.overpredict = parse_int(val);
+	}
+
+	if ( strcmp(key, "integration.push_res") == 0 ) {
+		proj->indexing_params.push_res = parse_float(val);
 	}
 
 	if ( strcmp(key, "show_peaks") == 0 ) {
@@ -386,6 +452,37 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "peak_search_params.revalidate %i\n",
 	        proj->peak_search_params.revalidate);
 
+	fprintf(fh, "indexing.cell_file %s\n",
+	        proj->indexing_params.cell_file);
+	fprintf(fh, "indexing.methods %s\n",
+	        proj->indexing_params.indexing_methods);
+	fprintf(fh, "indexing.multi_lattice %i\n",
+	        proj->indexing_params.multi);
+	fprintf(fh, "indexing.no_refine %i\n",
+	        proj->indexing_params.no_refine);
+	fprintf(fh, "indexing.no_retry %i\n",
+	        proj->indexing_params.no_retry);
+	fprintf(fh, "indexing.no_peak_check %i\n",
+	        proj->indexing_params.no_peak_check);
+	fprintf(fh, "indexing.no_cell_check %i\n",
+	        proj->indexing_params.no_cell_check);
+	fprintf(fh, "indexing.cell_tolerance %f,%f,%f,%f,%f,%f\n",
+	        proj->indexing_params.tols[0]*100.0,
+	        proj->indexing_params.tols[1]*100.0,
+	        proj->indexing_params.tols[2]*100.0,
+	        rad2deg(proj->indexing_params.tols[3]),
+	        rad2deg(proj->indexing_params.tols[4]),
+	        rad2deg(proj->indexing_params.tols[5]));
+	fprintf(fh, "indexing.min_peaks %i\n",
+	        proj->indexing_params.min_peaks);
+
+	fprintf(fh, "integration.method %s\n",
+	        proj->indexing_params.integration_method);
+	fprintf(fh, "integration.overpredict %i\n",
+	        proj->indexing_params.overpredict);
+	fprintf(fh, "integration.push_res %f\n",
+	        proj->indexing_params.push_res);
+
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
 	fprintf(fh, "backend %s\n", proj->backend->name);
@@ -424,10 +521,12 @@ void default_project(struct crystfelproject *proj)
 	proj->stream = NULL;
 	proj->dtempl = NULL;
 	proj->cur_image = NULL;
+	proj->indexing_opts = NULL;
 
 	/* Default parameter values */
 	proj->show_peaks = 0;
 	proj->show_refls = 0;
+
 	proj->peak_search_params.method = PEAK_ZAEF;
 	proj->peak_search_params.threshold = 800.0;
 	proj->peak_search_params.min_sq_gradient = 100000;
@@ -446,5 +545,24 @@ void default_project(struct crystfelproject *proj)
 	proj->peak_search_params.pk_out = 5.0;
 	proj->peak_search_params.half_pixel_shift = 1;
 	proj->peak_search_params.revalidate = 1;
+
+	proj->indexing_params.cell_file = NULL;
+	proj->indexing_params.indexing_methods = NULL;
+	proj->indexing_params.multi = 1;
+	proj->indexing_params.no_refine = 0;
+	proj->indexing_params.no_retry = 0;
+	proj->indexing_params.no_peak_check = 0;
+	proj->indexing_params.no_cell_check = 0;
+	proj->indexing_params.tols[0] = 5.0;
+	proj->indexing_params.tols[1] = 5.0;
+	proj->indexing_params.tols[2] = 5.0;
+	proj->indexing_params.tols[3] = deg2rad(1.5);
+	proj->indexing_params.tols[4] = deg2rad(1.5);
+	proj->indexing_params.tols[5] = deg2rad(1.5);
+	proj->indexing_params.min_peaks = 0;
+	proj->indexing_params.integration_method = strdup("rings");
+	proj->indexing_params.overpredict = 0;
+	proj->indexing_params.push_res = INFINITY;
+
 	proj->backend = backend_local;
 }

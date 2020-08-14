@@ -72,6 +72,7 @@ static void index_all_response_sig(GtkWidget *dialog, gint resp,
 	}
 
 	gtk_widget_destroy(dialog);
+	proj->indexing_opts = NULL;
 }
 
 
@@ -110,6 +111,8 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *vbox;
 	GtkWidget *indexing_opts;
 
+	if ( proj->indexing_opts != NULL ) return FALSE;
+
 	dialog = gtk_dialog_new_with_buttons("Index all frames",
 	                                     GTK_WINDOW(proj->window),
 	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -141,14 +144,63 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static void set_indexing_opts(struct crystfelproject *proj,
+                              CrystFELIndexingOpts *opts)
+{
+	/* Indexing */
+	crystfel_indexing_opts_set_cell_file(opts, proj->indexing_params.cell_file);
+	crystfel_indexing_opts_set_indexing_method_string(opts, proj->indexing_params.indexing_methods);
+	crystfel_indexing_opts_set_multi_lattice(opts, proj->indexing_params.multi);
+	crystfel_indexing_opts_set_refine(opts, !proj->indexing_params.no_refine);
+	crystfel_indexing_opts_set_retry(opts, !proj->indexing_params.no_retry);
+	crystfel_indexing_opts_set_peak_check(opts, !proj->indexing_params.no_peak_check);
+	crystfel_indexing_opts_set_cell_check(opts, !proj->indexing_params.no_cell_check);
+	crystfel_indexing_opts_set_tolerances(opts, proj->indexing_params.tols);
+	crystfel_indexing_opts_set_min_peaks(opts, proj->indexing_params.min_peaks);
+
+	/* Integration */
+	crystfel_indexing_opts_set_integration_method_string(opts, proj->indexing_params.integration_method);
+	crystfel_indexing_opts_set_overpredict(opts, proj->indexing_params.overpredict);
+	crystfel_indexing_opts_set_push_res(opts, proj->indexing_params.push_res);
+}
+
+
+static void get_indexing_opts(struct crystfelproject *proj,
+                              CrystFELIndexingOpts *opts)
+{
+	/* Indexing */
+	proj->indexing_params.cell_file = crystfel_indexing_opts_get_cell_file(opts);
+	proj->indexing_params.indexing_methods = crystfel_indexing_opts_get_indexing_method_string(opts);
+	proj->indexing_params.multi = crystfel_indexing_opts_get_multi_lattice(opts);
+	proj->indexing_params.no_refine = !crystfel_indexing_opts_get_refine(opts);
+	proj->indexing_params.no_retry = !crystfel_indexing_opts_get_retry(opts);
+	proj->indexing_params.no_peak_check = !crystfel_indexing_opts_get_peak_check(opts);
+	proj->indexing_params.no_cell_check = !crystfel_indexing_opts_get_cell_check(opts);
+	proj->indexing_params.min_peaks = crystfel_indexing_opts_get_min_peaks(opts);
+
+	/* Integration */
+	proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
+	proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
+	proj->indexing_params.push_res = crystfel_indexing_opts_get_push_res(opts);
+}
+
+
+static void run_indexing_once(struct crystfelproject *proj)
+{
+}
+
+
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
 	if ( resp == GTK_RESPONSE_OK ) {
-		STATUS("OK!\n");
+		get_indexing_opts(proj,
+		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
+		run_indexing_once(proj);
 	}
 
 	gtk_widget_destroy(dialog);
+	proj->indexing_opts = NULL;
 }
 
 
@@ -157,7 +209,8 @@ gint index_one_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *dialog;
 	GtkWidget *content_area;
 	GtkWidget *vbox;
-	GtkWidget *indexing_opts;
+
+	if ( proj->indexing_opts != NULL ) return FALSE;
 
 	dialog = gtk_dialog_new_with_buttons("Index one frame",
 	                                     GTK_WINDOW(proj->window),
@@ -174,9 +227,12 @@ gint index_one_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_container_add(GTK_CONTAINER(content_area), vbox);
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
-	indexing_opts = crystfel_indexing_opts_new();
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(indexing_opts),
+	proj->indexing_opts = crystfel_indexing_opts_new();
+	gtk_box_pack_start(GTK_BOX(vbox),
+	                   GTK_WIDGET(proj->indexing_opts),
 	                   FALSE, FALSE, 8.0);
+	set_indexing_opts(proj,
+	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_OK);
