@@ -57,7 +57,7 @@ struct _crystfelindexingopts
 	GtkWidget *use_cell;
 	GtkWidget *cell_chooser;
 	GtkWidget *auto_indm;
-	/* FIXME: indexing algo choice */
+	GtkListStore *indm_store;
 	GtkWidget *multi;
 	GtkWidget *refine;
 	GtkWidget *retry;

@@ -59,19 +59,6 @@ static void crystfel_indexing_opts_init(CrystFELIndexingOpts *io)
 }
 
 
-static void add_method(GtkListStore *store, const char *name)
-{
-	GtkTreeIter iter;
-	gtk_list_store_append(store, &iter);
-	gtk_list_store_set(store, &iter,
-	                   0, FALSE,
-	                   1, name,
-	                   2, FALSE,
-	                   3, FALSE,
-	                   -1);
-}
-
-
 static GtkWidget *add_tol(GtkGrid *grid, const char *spec_t,
                           const char *unit_t, gint left, gint top)
 {
@@ -115,29 +102,89 @@ static GtkWidget *make_tolerances(CrystFELIndexingOpts *io)
 }
 
 
+static void add_method(GtkListStore *store, const char *name,
+                       const char *friendly_name,
+                       gboolean enabled, gboolean prior_cell,
+                       gboolean prior_latt)
+{
+	GtkTreeIter iter;
+	gtk_list_store_append(store, &iter);
+	gtk_list_store_set(store, &iter,
+	                   0, enabled,
+	                   1, friendly_name,
+	                   2, prior_cell,
+	                   3, prior_latt,
+	                   4, name,
+	                   -1);
+}
+
+
+static void toggle_column(GtkListStore *store,
+                          gchar *path_str, int column)
+{
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	gboolean val;
+
+	path = gtk_tree_path_new_from_string(path_str);
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(store),
+	                        &iter, path);
+	gtk_tree_path_free(path);
+
+	gtk_tree_model_get(GTK_TREE_MODEL(store),
+	                   &iter, column, &val, -1);
+
+	gtk_list_store_set(store, &iter, column, !val, -1);
+}
+
+
+static void indm_toggled(GtkCellRendererToggle *cr,
+                         gchar *path_str,
+                         CrystFELIndexingOpts *io)
+{
+	toggle_column(io->indm_store, path_str, 0);
+}
+
+
+static void prior_cell_toggled(GtkCellRendererToggle *cr,
+                               gchar *path_str,
+                               CrystFELIndexingOpts *io)
+{
+	toggle_column(io->indm_store, path_str, 2);
+}
+
+
+static void prior_latt_toggled(GtkCellRendererToggle *cr,
+                               gchar *path_str,
+                               CrystFELIndexingOpts *io)
+{
+	toggle_column(io->indm_store, path_str, 3);
+}
+
+
 static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 {
 	GtkWidget *treeview;
-	GtkListStore *store;
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
 
-	store = gtk_list_store_new(4,
+	io->indm_store = gtk_list_store_new(5,
 	                           G_TYPE_BOOLEAN,  /* Algo on */
-	                           G_TYPE_STRING,   /* Algo name */
+	                           G_TYPE_STRING,   /* Friendly name */
 	                           G_TYPE_BOOLEAN,  /* Prior cell */
-	                           G_TYPE_BOOLEAN); /* Prior latt */
+	                           G_TYPE_BOOLEAN,  /* Prior latt */
+	                           G_TYPE_STRING);  /* Real name */
 
-	add_method(store, "DirAx");
-	add_method(store, "MOSFLM");
-	add_method(store, "XDS");
-	add_method(store, "XGANDALF");
-	add_method(store, "PinkIndexer");
-	add_method(store, "TakeTwo");
-	add_method(store, "ASDF");
-	add_method(store, "Felix");
+	add_method(io->indm_store, "dirax", "DirAx", TRUE, FALSE, FALSE);
+	add_method(io->indm_store, "mosflm", "MOSFLM", TRUE, TRUE, TRUE);
+	add_method(io->indm_store, "xds", "XDS", TRUE, TRUE, TRUE);
+	add_method(io->indm_store, "xgandalf", "XGANDALF", TRUE, TRUE, FALSE);
+	add_method(io->indm_store, "pinkIndexer", "PinkIndexer", FALSE, TRUE, FALSE);
+	add_method(io->indm_store, "taketwo", "TakeTwo", FALSE, TRUE, FALSE);
+	add_method(io->indm_store, "asdf", "ASDF", TRUE, TRUE, FALSE);
+	add_method(io->indm_store, "felix", "Felix", FALSE, TRUE, FALSE);
 
-	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(io->indm_store));
 
 	renderer = gtk_cell_renderer_toggle_new();
 	column = gtk_tree_view_column_new_with_attributes(NULL,
@@ -145,6 +192,8 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 	                                                  "active", 0,
 	                                                  NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+	g_signal_connect(G_OBJECT(renderer), "toggled",
+	                 G_CALLBACK(indm_toggled), io);
 
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Method",
@@ -159,6 +208,8 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 	                                                  "active", 2,
 	                                                  NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+	g_signal_connect(G_OBJECT(renderer), "toggled",
+	                 G_CALLBACK(prior_cell_toggled), io);
 
 	renderer = gtk_cell_renderer_toggle_new();
 	column = gtk_tree_view_column_new_with_attributes("Prior lattice type",
@@ -166,6 +217,8 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 	                                                  "active", 3,
 	                                                  NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
+	g_signal_connect(G_OBJECT(renderer), "toggled",
+	                 G_CALLBACK(prior_latt_toggled), io);
 
 	return treeview;
 }
@@ -354,7 +407,47 @@ char *crystfel_indexing_opts_get_cell_file(CrystFELIndexingOpts *opts)
 
 char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *opts)
 {
-	return strdup("dirax");  /* FIXME! */
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	char indm_str[1024];
+	int first = 1;
+
+	path = gtk_tree_path_new_from_string("0");
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(opts->indm_store),
+	                        &iter, path);
+	gtk_tree_path_free(path);
+
+	indm_str[0] = '\0';
+	do {
+		gboolean enabled, prior_cell, prior_latt;
+		gchar *name;
+
+		gtk_tree_model_get(GTK_TREE_MODEL(opts->indm_store),
+		                   &iter,
+		                   0, &enabled,
+		                   2, &prior_cell,
+		                   3, &prior_latt,
+		                   4, &name,
+		                   -1);
+
+		if ( enabled ) {
+			if ( !first ) {
+				strcat(indm_str, ",");
+			}
+			first = 0;
+			strcat(indm_str, name);
+			if ( prior_cell ) {
+				strcat(indm_str, "-cell");
+			}
+			if ( prior_latt ) {
+				strcat(indm_str, "-latt");
+			}
+		}
+
+	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
+	                                   &iter) );
+
+	return strdup(indm_str);
 }
 
 
