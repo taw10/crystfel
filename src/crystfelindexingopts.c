@@ -40,6 +40,7 @@
 #include <math.h>
 
 #include <integration.h>
+#include <index.h>
 
 #include "crystfelindexingopts.h"
 
@@ -605,10 +606,81 @@ static const char *integration_method_id(IntegrationMethod meth)
 }
 
 
+static void unset_all_methods(CrystFELIndexingOpts *opts)
+{
+	GtkTreePath *path;
+	GtkTreeIter iter;
+
+	path = gtk_tree_path_new_from_string("0");
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(opts->indm_store),
+	                        &iter, path);
+	gtk_tree_path_free(path);
+
+	do {
+		gtk_list_store_set(opts->indm_store, &iter,
+		                   0, FALSE,
+		                   2, FALSE,
+		                   3, FALSE,
+		                   -1);
+
+	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
+	                                   &iter) );
+}
+
+
 void crystfel_indexing_opts_set_indexing_method_string(CrystFELIndexingOpts *opts,
                                                        const char *indm_str)
 {
-	/* FIXME */
+	GtkTreePath *path;
+	GtkTreeIter iter;
+	IndexingMethod *methods;
+	int i, n;
+
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->auto_indm),
+	                             (indm_str == NULL));
+	if ( indm_str == NULL ) {
+		unset_all_methods(opts);
+		return;
+	}
+
+	methods = parse_indexing_methods(indm_str, &n);
+	if ( methods == NULL ) {
+		ERROR("Failed to parse '%s'\n", indm_str);
+		return;
+	}
+
+	path = gtk_tree_path_new_from_string("0");
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(opts->indm_store),
+	                        &iter, path);
+	gtk_tree_path_free(path);
+
+	do {
+		gchar *name;
+		IndexingMethod this_method = 0;
+
+		gtk_tree_model_get(GTK_TREE_MODEL(opts->indm_store),
+		                   &iter,
+		                   4, &name,
+		                   -1);
+
+		for ( i=0; i<n; i++ ) {
+			char *str = base_indexer_str(methods[i]);
+			if ( strcmp(str, name) == 0 ) {
+				this_method = methods[i];
+				break;
+			}
+		}
+
+		gtk_list_store_set(opts->indm_store, &iter,
+		                   0, (this_method != 0),
+		                   2, (this_method & INDEXING_USE_CELL_PARAMETERS),
+		                   3, (this_method & INDEXING_USE_LATTICE_TYPE),
+		                   -1);
+
+	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
+	                                   &iter) );
+
+	free(methods);
 }
 
 
