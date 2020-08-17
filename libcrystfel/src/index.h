@@ -154,7 +154,8 @@ extern struct argp pinkIndexer_argp;
 extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
 
-extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
+extern IndexingPrivate *setup_indexing(const char *methods,
+                                       UnitCell *cell,
                                        const DataTemplate *dtempl,
                                        float *ltl,
                                        IndexingFlags flags,
