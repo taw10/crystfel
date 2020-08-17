@@ -140,6 +140,10 @@ extern char *indexer_str(IndexingMethod indm);
 extern IndexingMethod get_indm_from_string(const char *method);
 extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 
+extern IndexingMethod *parse_indexing_methods(const char *method_list,
+                                              int *pn);
+extern char *base_indexer_str(IndexingMethod indm);
+
 #include "cell.h"
 #include "image.h"
 #include "datatemplate.h"

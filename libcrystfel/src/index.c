@@ -147,7 +147,7 @@ static int debug_index(struct image *image)
 }
 
 
-static char *base_indexer_str(IndexingMethod indm)
+char *base_indexer_str(IndexingMethod indm)
 {
 	char *str;
 
@@ -313,22 +313,16 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 }
 
 
-IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
-                                const DataTemplate *dtempl,
-                                float *tols, IndexingFlags flags,
-                                struct taketwo_options *ttopts,
-                                struct xgandalf_options *xgandalf_opts,
-                                struct pinkIndexer_options *pinkIndexer_opts,
-                                struct felix_options *felix_opts)
+IndexingMethod *parse_indexing_methods(const char *method_list,
+                                       int *pn)
 {
 	int i, n;
 	char **method_strings;
-	IndexingPrivate *ipriv;
+	IndexingMethod *methods;
 
-	/* Parse indexing methods */
 	n = assplode(method_list, ",", &method_strings, ASSPLODE_NONE);
 
-	IndexingMethod *methods = malloc(n * sizeof(IndexingMethod));
+	methods = malloc(n * sizeof(IndexingMethod));
 	if ( methods == NULL ) {
 		ERROR("Failed to allocate indexing method list\n");
 		return NULL;
@@ -354,6 +348,25 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		free(method_strings[i]);
 	}
 	free(method_strings);
+
+	*pn = n;
+	return methods;
+}
+
+
+IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
+                                const DataTemplate *dtempl,
+                                float *tols, IndexingFlags flags,
+                                struct taketwo_options *ttopts,
+                                struct xgandalf_options *xgandalf_opts,
+                                struct pinkIndexer_options *pinkIndexer_opts,
+                                struct felix_options *felix_opts)
+{
+	IndexingPrivate *ipriv;
+	IndexingMethod *methods;
+	int n, i;
+
+	methods = parse_indexing_methods(method_list, &n);
 
 	/* No cell parameters -> no cell checking, no prior cell */
 	if ( !cell_has_parameters(cell) ) {
