@@ -41,6 +41,9 @@
 
 #include <datatemplate.h>
 #include <peaks.h>
+#include <cell.h>
+#include <cell-utils.h>
+#include <integration.h>
 
 #include "crystfel_gui.h"
 #include "crystfelimageview.h"
@@ -185,8 +188,59 @@ static void get_indexing_opts(struct crystfelproject *proj,
 }
 
 
+static IndexingFlags indexing_flags(struct index_params *params)
+{
+	IndexingFlags fl = 0;
+
+	if ( !params->no_retry ) fl |= INDEXING_RETRY;
+	if ( params->multi ) fl |= INDEXING_MULTI;
+	if ( !params->no_refine ) fl |= INDEXING_REFINE;
+	if ( !params->no_peak_check ) fl |= INDEXING_CHECK_PEAKS;
+	if ( !params->no_cell_check ) fl |= INDEXING_CHECK_CELL;
+
+	return fl;
+}
+
+
 static void run_indexing_once(struct crystfelproject *proj)
 {
+	IndexingPrivate *ipriv;
+	UnitCell *cell;
+	IntegrationMethod int_method;
+	int i;
+	int err;
+
+	if ( proj->indexing_params.cell_file != NULL ) {
+		cell = load_cell_from_file(proj->indexing_params.cell_file);
+	} else {
+		cell = NULL;
+	}
+
+	ipriv = setup_indexing(proj->indexing_params.indexing_methods,
+	                       cell,
+	                       proj->dtempl,
+	                       proj->indexing_params.tols,
+	                       indexing_flags(&proj->indexing_params),
+	                       NULL, NULL, NULL, NULL);
+
+	index_pattern(proj->cur_image, ipriv);
+
+	for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
+		crystal_set_profile_radius(proj->cur_image->crystals[i], 0.02e9);
+		crystal_set_mosaicity(proj->cur_image->crystals[i], 0.0);
+	}
+
+	err = 0;
+	int_method = integration_method(proj->indexing_params.integration_method,
+	                                &err);
+
+	integrate_all_5(proj->cur_image, int_method, PMODEL_XSPHERE,
+	                proj->indexing_params.push_res,
+	                3, 4, 5,  /* FIXME */
+	                INTDIAG_NONE, 0, 0, 0, NULL,
+	                proj->indexing_params.overpredict);
+
+	cleanup_indexing(ipriv);
 }
 
 
