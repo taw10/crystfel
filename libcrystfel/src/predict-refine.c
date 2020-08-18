@@ -540,10 +540,10 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	csz += gsl_vector_get(shifts, 8);
 	update_detector(image->det, gsl_vector_get(shifts, 9),
 	                            gsl_vector_get(shifts, 10),
-	                            gsl_vector_get(shifts, 11));
+	                            0.0);
 	*total_x += gsl_vector_get(shifts, 9);
 	*total_y += gsl_vector_get(shifts, 10);
-	*total_z += gsl_vector_get(shifts, 11);
+	*total_z += 0.0;
 
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 
