@@ -83,11 +83,11 @@ static void twod_mapping(double fs, double ss, double *px, double *py,
 {
 	double xs, ys;
 
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
+	xs = fs*p->fsx + ss*p->ssx;  /* pixels */
+	ys = fs*p->fsy + ss*p->ssy;  /* pixels */
 
-	*px = (xs + p->cnx) * p->pixel_pitch;
-	*py = (ys + p->cny) * p->pixel_pitch;
+	*px = (xs + p->cnx) * p->pixel_pitch;  /* metres */
+	*py = (ys + p->cny) * p->pixel_pitch;  /* metres */
 }
 
 
@@ -314,8 +314,8 @@ int refine_radius(Crystal *cr, struct image *image)
 }
 
 
-static void update_detector(struct detgeom *det, double xoffs, double yoffs,
-                            double coffs)
+static void update_detector(struct detgeom *det,
+                            double xoffs, double yoffs, double coffs)
 {
 	int i;
 
