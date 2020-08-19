@@ -123,7 +123,7 @@ extern int stream_select_chunk(Stream *st, int chunk_number);
 
 /* Read/write chunks */
 extern struct image *stream_read_chunk(Stream *st, StreamFlags srf);
-extern int stream_write_chunk(Stream *st, struct image *image,
+extern int stream_write_chunk(Stream *st, const struct image *image,
                               StreamFlags srf);
 
 #ifdef __cplusplus

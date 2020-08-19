@@ -185,7 +185,7 @@ static ImageFeatureList *read_peaks(Stream *st,
 }
 
 
-static int write_peaks(struct image *image,
+static int write_peaks(const struct image *image,
                        const DataTemplate *dtempl, FILE *ofh)
 {
 	int i;
@@ -612,7 +612,7 @@ static int write_crystal(Stream *st, Crystal *cr,
  *
  * \returns non-zero on error.
  */
-int stream_write_chunk(Stream *st, struct image *i,
+int stream_write_chunk(Stream *st, const struct image *i,
                        StreamFlags srf)
 {
 	int j;
