@@ -606,7 +606,6 @@ static int write_crystal(Stream *st, Crystal *cr,
  * \param st A \ref Stream
  * \param i An \ref image structure
  * \param srf A \ref StreamFlags enum saying what to write
- * \param include_reflections Whether to include integration results in stream
  *
  * Writes a new chunk to \p st.
  *
@@ -1217,12 +1216,12 @@ Stream *stream_open_for_read(const char *filename)
  * \param fd File descriptor (e.g. from open()) to use for stream data.
  *
  * Creates a new \ref Stream from \p fd, so that stream data can be written to \p fd
- * using \ref write_chunk.
+ * using \ref stream_write_chunk.
  *
- * In contrast to \ref open_stream_for_write, this function does not write any of
+ * In contrast to \ref stream_open_for_write, this function does not write any of
  * the usual headers.  This function is mostly for use when multiple substreams
  * need to be multiplexed into a single master stream.  The master would be
- * opened using \ref open_stream_for_write, and the substreams using this function.
+ * opened using \ref stream_open_for_write, and the substreams using this function.
  *
  * \returns A \ref Stream, or NULL on failure.
  */
@@ -1272,6 +1271,8 @@ void stream_write_target_cell(Stream *st, const UnitCell *cell)
  *
  * Creates a new stream with name \p filename.  If \p filename already
  * exists, it will be overwritten.
+ *
+ * Audit information (e.g. CrystFEL version number) will be written.
  *
  * \returns A \ref Stream, or NULL on failure.
  */
