@@ -2039,14 +2039,12 @@ int main(int argc, char *argv[])
 
 			}
 
-			w.cells[w.n_cells] = crystal_get_cell(cr);
+			w.cells[w.n_cells] = cell_new_from_cell(crystal_get_cell(cr));
 			if ( !right_handed(w.cells[w.n_cells]) ) {
 				ERROR("WARNING: Left-handed cell encountered\n");
 			}
 			w.indms[w.n_cells] = image->indexed_by;
 			w.n_cells++;
-
-			crystal_free(cr);
 
 		}
 
