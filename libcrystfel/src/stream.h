@@ -61,25 +61,19 @@ typedef struct _stream Stream;
 
 /**
  * A bitfield of things that can be read from or written to a stream.
- * Use this (and \ref read_chunk) to read the stream faster if you
- * don't need the entire contents of the stream.
+ * Use this together with stream_{read,write}_chunk to read/write the
+ * stream faster if you don't need all the information.
  *
- * Using either of \p STREAM_REFLECTIONS or * \p STREAM_UNITCELL
- * implies \p STREAM_CRYSTALS.
+ * General information about crystals (including unit cell parameters)
+ * is always read and written.
  **/
 typedef enum {
-
-	/** Read the unit cell */
-	STREAM_UNITCELL = 1,
 
 	/** Read the integrated reflections */
 	STREAM_REFLECTIONS = 2,
 
 	/** Read the peak search results */
 	STREAM_PEAKS = 4,
-
-	/** Read the general information about crystals */
-	STREAM_CRYSTALS = 8,
 
 	/** Read the image data */
 	STREAM_IMAGE_DATA = 16,

@@ -650,8 +650,7 @@ int main(int argc, char *argv[])
 	args.iargs.ir_out = -1.0;
 	args.iargs.use_saturated = 1;
 	args.iargs.no_revalidate = 0;
-	args.iargs.stream_flags = STREAM_PEAKS | STREAM_REFLECTIONS
-	                        | STREAM_CRYSTALS | STREAM_UNITCELL;
+	args.iargs.stream_flags = STREAM_PEAKS | STREAM_REFLECTIONS;
 	args.iargs.stream_nonhits = 1;
 	args.iargs.int_diag = INTDIAG_NONE;
 	args.iargs.min_peaks = 0;

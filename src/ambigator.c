@@ -1259,8 +1259,7 @@ int main(int argc, char *argv[])
 		struct image *image;
 		int i;
 
-		image = stream_read_chunk(st, STREAM_UNITCELL
-		                          | STREAM_REFLECTIONS);
+		image = stream_read_chunk(st, STREAM_REFLECTIONS);
 		if ( image == NULL ) break;
 
 		image_feature_list_free(image->features);

@@ -346,7 +346,7 @@ static void *create_job(void *vqargs)
 		struct image *image;
 
 		image = stream_read_chunk(qargs->template_stream,
-		                          STREAM_UNITCELL | STREAM_REFLECTIONS);
+		                          STREAM_REFLECTIONS);
 		if ( image == NULL ) {
 			ERROR("Failed to read template chunk!\n");
 			return NULL;
@@ -473,9 +473,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	int ret;
 
 	ret = stream_write_chunk(qargs->stream, wargs->image,
-	                         STREAM_UNITCELL
-	                                      | STREAM_REFLECTIONS
-	                                      | STREAM_CRYSTALS);
+	                         STREAM_REFLECTIONS);
 	if ( ret != 0 ) {
 		ERROR("WARNING: error writing stream file.\n");
 	}

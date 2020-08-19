@@ -145,10 +145,8 @@ static void update_imageview(struct crystfelproject *proj)
 		}
 
 		image = stream_read_chunk(proj->stream,
-		                          STREAM_UNITCELL
-		                        | STREAM_REFLECTIONS
+		                          STREAM_REFLECTIONS
 		                        | STREAM_PEAKS
-		                        | STREAM_CRYSTALS
 		                        | STREAM_IMAGE_DATA);
 
 		if ( image == NULL ) {

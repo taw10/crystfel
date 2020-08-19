@@ -1049,8 +1049,7 @@ int main(int argc, char *argv[])
 			Crystal *cr;
 
 			/* Get data from next chunk */
-			templ_image = stream_read_chunk(st,
-			                                STREAM_CRYSTALS);
+			templ_image = stream_read_chunk(st, 0);
 			if ( templ_image == NULL ) break;
 			if ( templ_image->n_crystals == 0 ) continue;
 

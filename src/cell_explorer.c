@@ -2002,7 +2002,7 @@ int main(int argc, char *argv[])
 		struct image *image;
 		int i;
 
-		image = stream_read_chunk(st, STREAM_UNITCELL);
+		image = stream_read_chunk(st, 0);
 		if ( image == NULL ) break;
 
 		for ( i=0; i<image->n_crystals; i++ ) {

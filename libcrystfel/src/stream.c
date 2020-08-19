@@ -619,9 +619,6 @@ int stream_write_chunk(Stream *st, const struct image *i,
 	char *indexer;
 	int ret = 0;
 
-	if ( srf & STREAM_REFLECTIONS ) srf |= STREAM_CRYSTALS;
-	if ( srf & STREAM_UNITCELL ) srf |= STREAM_CRYSTALS;
-
 	fprintf(st->fh, STREAM_CHUNK_START_MARKER"\n");
 
 	fprintf(st->fh, "Image filename: %s\n", i->filename);
@@ -666,14 +663,12 @@ int stream_write_chunk(Stream *st, const struct image *i,
 		ret = write_peaks(i, st->dtempl, st->fh);
 	}
 
-	if ( srf & STREAM_CRYSTALS ) {
-		for ( j=0; j<i->n_crystals; j++ ) {
-			if ( crystal_get_user_flag(i->crystals[j]) ) {
-				continue;
-			}
-			ret = write_crystal(st, i->crystals[j],
-			                    srf & STREAM_REFLECTIONS);
+	for ( j=0; j<i->n_crystals; j++ ) {
+		if ( crystal_get_user_flag(i->crystals[j]) ) {
+			continue;
 		}
+		ret = write_crystal(st, i->crystals[j],
+		                    srf & STREAM_REFLECTIONS);
 	}
 
 	fprintf(st->fh, STREAM_CHUNK_END_MARKER"\n");
@@ -755,29 +750,25 @@ static void read_crystal(Stream *st, struct image *image,
 		if ( rval == NULL ) break;
 
 		chomp(line);
-		if ( (srf & STREAM_UNITCELL)
-		  && (sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3) )
+		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 )
 		{
 			as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
 			have_as = 1;
 		}
 
-		if ( (srf & STREAM_UNITCELL)
-		  && (sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3) )
+		if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3 )
 		{
 			bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
 			have_bs = 1;
 		}
 
-		if ( (srf & STREAM_UNITCELL)
-		  && (sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3) )
+		if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3 )
 		{
 			cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
 			have_cs = 1;
 		}
 
-		if ( (srf & STREAM_UNITCELL)
-		  && (sscanf(line, "centering = %c", &c) == 1) )
+		if ( sscanf(line, "centering = %c", &c) == 1 )
 		{
 			if ( !have_cen ) {
 				centering = c;
@@ -788,8 +779,7 @@ static void read_crystal(Stream *st, struct image *image,
 			}
 		}
 
-		if ( (srf & STREAM_UNITCELL)
-		  && (sscanf(line, "unique_axis = %c", &c) == 1) )
+		if ( sscanf(line, "unique_axis = %c", &c) == 1 )
 		{
 			if ( !have_ua ) {
 				unique_axis = c;
@@ -800,8 +790,7 @@ static void read_crystal(Stream *st, struct image *image,
 			}
 		}
 
-		if ( (srf & STREAM_UNITCELL)
-		  && (strncmp(line, "lattice_type = ", 15) == 0) )
+		if ( strncmp(line, "lattice_type = ", 15) == 0 )
 		{
 			if ( !have_latt ) {
 				lattice_type = lattice_from_str(line+15);
@@ -926,10 +915,6 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 	image = image_new();
 	if ( image == NULL ) return NULL;
 
-	if ( (srf & STREAM_REFLECTIONS) || (srf & STREAM_UNITCELL) ) {
-		srf |= STREAM_CRYSTALS;
-	}
-
 	do {
 		int ser;
 		float div, bw;
@@ -997,8 +982,7 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 
 		}
 
-		if ( (srf & STREAM_CRYSTALS)
-		  && (strcmp(line, STREAM_CRYSTAL_START_MARKER) == 0) ) {
+		if ( strcmp(line, STREAM_CRYSTAL_START_MARKER) == 0 ) {
 			read_crystal(st, image, srf);
 		}
 

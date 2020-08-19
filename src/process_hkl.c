@@ -432,8 +432,7 @@ static int merge_all(Stream *st,
 
 		/* Get data from next chunk */
 		image = stream_read_chunk(st,
-		                          STREAM_REFLECTIONS
-		                        | STREAM_UNITCELL);
+		                          STREAM_REFLECTIONS);
 		if ( image == NULL ) break;
 
 		n_images++;

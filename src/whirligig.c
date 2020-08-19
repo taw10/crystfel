@@ -720,8 +720,7 @@ int main(int argc, char *argv[])
 
 		struct image *image;
 
-		image = stream_read_chunk(st, STREAM_REFLECTIONS
-		                                  | STREAM_UNITCELL);
+		image = stream_read_chunk(st, STREAM_REFLECTIONS);
 
 		if ( image == NULL ) break;
 
