@@ -860,7 +860,7 @@ struct image *image_new()
        image->serial = 0;
        image->spectrum = NULL;
        image->lambda = -1.0;
-       image->div = -1.0;
+       image->div = 0.0;
        image->bw = -1.0;
        image->peak_resolution = -1.0;
        image->features = NULL;

@@ -874,7 +874,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->rigid_groups = NULL;
 	dt->n_rg_collections = 0;
 	dt->rigid_group_collections = NULL;
-	dt->bandwidth = 0.0;
+	dt->bandwidth = 0.00000001;
 	dt->peak_list = NULL;
 	dt->shift_x_from = NULL;
 	dt->shift_y_from = NULL;
