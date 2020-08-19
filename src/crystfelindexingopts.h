@@ -56,6 +56,7 @@ struct _crystfelindexingopts
 	/*< private >*/
 	GtkWidget *cell_chooser;
 	GtkWidget *auto_indm;
+	GtkWidget *indm_chooser;
 	GtkListStore *indm_store;
 	GtkWidget *multi;
 	GtkWidget *refine;

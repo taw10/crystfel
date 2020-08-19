@@ -233,6 +233,14 @@ static void cell_file_clear_sig(GtkButton *buton,
 }
 
 
+static void auto_indm_toggle_sig(GtkToggleButton *togglebutton,
+                                 CrystFELIndexingOpts *io)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(io->indm_chooser),
+	                         !gtk_toggle_button_get_active(togglebutton));
+}
+
+
 static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 {
 	GtkWidget *box;
@@ -240,7 +248,6 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	GtkWidget *label;
 	GtkWidget *expander;
 	GtkWidget *frame;
-	GtkWidget *indexing_methods;
 	GtkWidget *tolerances;
 	GtkWidget *button;
 
@@ -271,14 +278,15 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	io->auto_indm = gtk_check_button_new_with_label("Automatically choose the indexing methods");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->auto_indm),
 	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(io->auto_indm), "toggled",
+	                 G_CALLBACK(auto_indm_toggle_sig), io);
 	expander = gtk_expander_new("Select indexing methods and prior information");
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
-	gtk_container_add(GTK_CONTAINER(expander),
-	                  GTK_WIDGET(frame));
-	indexing_methods = make_indexing_methods(io);
+	gtk_container_add(GTK_CONTAINER(expander), GTK_WIDGET(frame));
+	io->indm_chooser = make_indexing_methods(io);
 	gtk_container_add(GTK_CONTAINER(frame),
-	                  GTK_WIDGET(indexing_methods));
+	                  GTK_WIDGET(io->indm_chooser));
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(expander),
 	                   FALSE, FALSE, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
