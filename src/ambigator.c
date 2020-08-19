@@ -1244,7 +1244,7 @@ int main(int argc, char *argv[])
 	}
 
 	infile = argv[optind++];
-	st = stream_open_for_write(infile);
+	st = stream_open_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
