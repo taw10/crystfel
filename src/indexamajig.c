@@ -993,7 +993,7 @@ int main(int argc, char *argv[])
 	free(rn);
 
 	/* Open output stream */
-	st = stream_open_for_write(args.outfile);
+	st = stream_open_for_write(args.outfile, args.iargs.dtempl);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream '%s'\n", args.outfile);
 		return 1;

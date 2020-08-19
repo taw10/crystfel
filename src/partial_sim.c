@@ -346,7 +346,6 @@ static void *create_job(void *vqargs)
 		struct image *image;
 
 		image = stream_read_chunk(qargs->template_stream,
-		                          qargs->dtempl,
 		                          STREAM_UNITCELL | STREAM_REFLECTIONS);
 		if ( image == NULL ) {
 			ERROR("Failed to read template chunk!\n");
@@ -474,7 +473,7 @@ static void finalise_job(void *vqargs, void *vwargs)
 	int ret;
 
 	ret = stream_write_chunk(qargs->stream, wargs->image,
-	                         qargs->dtempl, STREAM_UNITCELL
+	                         STREAM_UNITCELL
 	                                      | STREAM_REFLECTIONS
 	                                      | STREAM_CRYSTALS);
 	if ( ret != 0 ) {
@@ -852,7 +851,7 @@ int main(int argc, char *argv[])
 		ERROR("You must give a filename for the output.\n");
 		return 1;
 	}
-	stream = stream_open_for_write(output_file);
+	stream = stream_open_for_write(output_file, dtempl);
 	if ( stream == NULL ) {
 		ERROR("Couldn't open output file '%s'\n", output_file);
 		return 1;

@@ -973,8 +973,6 @@ int main(int argc, char *argv[])
 	PartialityModel pmodel = PMODEL_XSPHERE;
 	int min_measurements = 2;
 	char *rval;
-	const char *geom_str;
-	DataTemplate *dtempl;
 	struct polarisation polarisation = {.fraction = 1.0,
 	                                    .angle = 0.0,
 	                                    .disable = 0};
@@ -1249,19 +1247,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	geom_str = stream_geometry_file(st);
-	if ( geom_str == NULL ) {
-		ERROR("No geometry file\n");
-		stream_close(st);
-		return 1;
-	}
-
-	dtempl = data_template_new_from_string(geom_str);
-	if ( dtempl == NULL ) {
-		stream_close(st);
-		return 1;
-	}
-
 	if ( outfile == NULL ) {
 		outfile = strdup("partialator.hkl");
 	}
@@ -1420,7 +1405,7 @@ int main(int argc, char *argv[])
 		RefList *as;
 		int i;
 
-		image = stream_read_chunk(st, dtempl, STREAM_REFLECTIONS
+		image = stream_read_chunk(st, STREAM_REFLECTIONS
 		                                    | STREAM_UNITCELL);
 		if ( image == NULL ) break;
 

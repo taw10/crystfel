@@ -73,6 +73,8 @@ struct _stream
 	char *audit_info;
 	char *geometry_file;
 
+	const DataTemplate *dtempl;
+
 	long long int ln;
 
 	int old_indexers;  /* True if the stream reader encountered a deprecated
@@ -95,7 +97,6 @@ int stream_has_old_indexers(Stream *st)
 
 
 static ImageFeatureList *read_peaks(Stream *st,
-                                    const DataTemplate *dtempl,
                                     struct image *image)
 {
 	char *rval = NULL;
@@ -145,11 +146,11 @@ static ImageFeatureList *read_peaks(Stream *st,
 			return NULL;
 		}
 
-		if ( (panel_name[0] != '\0') && (dtempl != NULL) ) {
+		if ( (panel_name[0] != '\0') && (st->dtempl != NULL) ) {
 
 			int pn;
 
-			if ( data_template_panel_name_to_number(dtempl,
+			if ( data_template_panel_name_to_number(st->dtempl,
 			                                        panel_name,
 			                                        &pn) )
 			{
@@ -157,7 +158,7 @@ static ImageFeatureList *read_peaks(Stream *st,
 				      panel_name);
 			} else {
 
-				data_template_file_to_panel_coords(dtempl,
+				data_template_file_to_panel_coords(st->dtempl,
 				                                   &x, &y, &pn);
 
 				image_add_feature(features, x, y,
@@ -224,8 +225,7 @@ static int write_peaks(struct image *image,
 }
 
 
-static RefList *read_stream_reflections_2_3(Stream *st,
-                                            const DataTemplate *dtempl)
+static RefList *read_stream_reflections_2_3(Stream *st)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -272,9 +272,9 @@ static RefList *read_stream_reflections_2_3(Stream *st,
 				return NULL;
 			}
 			set_intensity(refl, intensity);
-			if ( dtempl != NULL ) {
+			if ( st->dtempl != NULL ) {
 				int pn;
-				if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
 					ERROR("Failed to convert\n");
 				} else {
 					set_detector_pos(refl, fs, ss);
@@ -295,8 +295,7 @@ static RefList *read_stream_reflections_2_3(Stream *st,
 }
 
 
-static RefList *read_stream_reflections_2_1(Stream *st,
-                                            const DataTemplate *dtempl)
+static RefList *read_stream_reflections_2_1(Stream *st)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -346,10 +345,10 @@ static RefList *read_stream_reflections_2_1(Stream *st,
 			}
 			set_intensity(refl, intensity);
 
-			if ( dtempl != NULL ) {
+			if ( st->dtempl != NULL ) {
 
 				int pn;
-				if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
 					ERROR("Failed to convert\n");
 				} else {
 					set_detector_pos(refl, fs, ss);
@@ -377,8 +376,7 @@ static RefList *read_stream_reflections_2_1(Stream *st,
 }
 
 
-static RefList *read_stream_reflections_2_2(Stream *st,
-                                            const DataTemplate *dtempl)
+static RefList *read_stream_reflections_2_2(Stream *st)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -418,11 +416,11 @@ static RefList *read_stream_reflections_2_2(Stream *st,
 			}
 			set_intensity(refl, intensity);
 
-			if ( dtempl != NULL ) {
+			if ( st->dtempl != NULL ) {
 
 				int pn;
 
-				if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
 					ERROR("Failed to convert to "
 					      "panel-relative coordinates: "
 					      "%i,%i\n", fs, ss);
@@ -515,7 +513,6 @@ static int num_integrated_reflections(RefList *list)
 
 
 static int write_crystal(Stream *st, Crystal *cr,
-                         const DataTemplate *dtempl,
                          int include_reflections)
 {
 	UnitCell *cell;
@@ -589,7 +586,7 @@ static int write_crystal(Stream *st, Crystal *cr,
 
 			fprintf(st->fh, STREAM_REFLECTION_START_MARKER"\n");
 			ret = write_stream_reflections(st->fh, reflist,
-			                               dtempl);
+			                               st->dtempl);
 			fprintf(st->fh, STREAM_REFLECTION_END_MARKER"\n");
 
 		} else {
@@ -616,7 +613,7 @@ static int write_crystal(Stream *st, Crystal *cr,
  * \returns non-zero on error.
  */
 int stream_write_chunk(Stream *st, struct image *i,
-                       const DataTemplate *dtempl, StreamFlags srf)
+                       StreamFlags srf)
 {
 	int j;
 	char *indexer;
@@ -666,7 +663,7 @@ int stream_write_chunk(Stream *st, struct image *i,
 	fprintf(st->fh, "peak_resolution = %f nm^-1 or %f A\n",
 	        i->peak_resolution/1e9, 1e10/i->peak_resolution);
 	if ( srf & STREAM_PEAKS ) {
-		ret = write_peaks(i, dtempl, st->fh);
+		ret = write_peaks(i, st->dtempl, st->fh);
 	}
 
 	if ( srf & STREAM_CRYSTALS ) {
@@ -674,7 +671,7 @@ int stream_write_chunk(Stream *st, struct image *i,
 			if ( crystal_get_user_flag(i->crystals[j]) ) {
 				continue;
 			}
-			ret = write_crystal(st, i->crystals[j], dtempl,
+			ret = write_crystal(st, i->crystals[j],
 			                    srf & STREAM_REFLECTIONS);
 		}
 	}
@@ -717,7 +714,7 @@ static int find_start_of_chunk(Stream *st)
 
 
 static void read_crystal(Stream *st, struct image *image,
-                         const DataTemplate *dtempl, StreamFlags srf)
+                         StreamFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -844,14 +841,11 @@ static void read_crystal(Stream *st, struct image *image,
 			/* The reflection list format in the stream diverges
 			 * after 2.2 */
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				reflist = read_stream_reflections_2_3(st,
-                                                      dtempl);
+				reflist = read_stream_reflections_2_3(st);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				reflist = read_stream_reflections_2_2(st,
-				                                      dtempl);
+				reflist = read_stream_reflections_2_2(st);
 			} else {
-				reflist = read_stream_reflections_2_1(st,
-				                                      dtempl);
+				reflist = read_stream_reflections_2_1(st);
 			}
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
@@ -919,8 +913,7 @@ static void read_crystal(Stream *st, struct image *image,
 /**
  * Read the next chunk from a stream and return an image structure
  */
-struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
-                                StreamFlags srf)
+struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -991,7 +984,7 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 		    && strcmp(line, STREAM_PEAK_LIST_START_MARKER) == 0 ) {
 
 			ImageFeatureList *peaks;
-			peaks = read_peaks(st, dtempl, image);
+			peaks = read_peaks(st, image);
 
 			if ( peaks == NULL ) {
 				ERROR("Failed while reading peaks\n");
@@ -1006,7 +999,7 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 
 		if ( (srf & STREAM_CRYSTALS)
 		  && (strcmp(line, STREAM_CRYSTAL_START_MARKER) == 0) ) {
-			read_crystal(st, image, dtempl, srf);
+			read_crystal(st, image, srf);
 		}
 
 		/* A chunk must have at least a filename and a wavelength,
@@ -1014,16 +1007,16 @@ struct image *stream_read_chunk(Stream *st, const DataTemplate *dtempl,
 		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
 			if ( have_filename && have_ev ) {
 				/* Success */
-				create_detgeom(image, dtempl);
+				create_detgeom(image, st->dtempl);
 				if ( srf & STREAM_IMAGE_DATA ) {
 					image_read_image_data(image,
-					                      dtempl,
+					                      st->dtempl,
 					                      image->filename,
 					                      image->ev);
 				} else {
-					image_set_zero_data(image, dtempl);
+					image_set_zero_data(image, st->dtempl);
 				}
-				image_set_zero_mask(image, dtempl);
+				image_set_zero_mask(image, st->dtempl);
 				return image;
 			}
 			ERROR("Incomplete chunk found in input file.\n");
@@ -1170,6 +1163,7 @@ static void read_geometry_file(Stream *st)
 
 	if ( success ) {
 		st->geometry_file = geom;
+		st->dtempl = data_template_new_from_string(geom);
 	}
 }
 
@@ -1248,7 +1242,7 @@ Stream *stream_open_for_read(const char *filename)
  *
  * \returns A \ref Stream, or NULL on failure.
  */
-Stream *stream_open_fd_for_write(int fd)
+Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 {
 	Stream *st;
 
@@ -1267,6 +1261,7 @@ Stream *stream_open_fd_for_write(int fd)
 		return NULL;
 	}
 
+	st->dtempl = dtempl;
 	st->major_version = LATEST_MAJOR_VERSION;
 	st->minor_version = LATEST_MINOR_VERSION;
 
@@ -1289,13 +1284,15 @@ void stream_write_target_cell(Stream *st, const UnitCell *cell)
 
 /**
  * \param filename Filename of new stream
+ * \param dtempl A DataTemplate
  *
  * Creates a new stream with name \p filename.  If \p filename already
  * exists, it will be overwritten.
  *
  * \returns A \ref Stream, or NULL on failure.
  */
-Stream *stream_open_for_write(const char *filename)
+Stream *stream_open_for_write(const char *filename,
+                              const DataTemplate *dtempl)
 
 {
 	Stream *st;
@@ -1308,6 +1305,7 @@ Stream *stream_open_for_write(const char *filename)
 	st->in_chunk = 0;
 	st->n_chunks = 0;
 	st->chunk_offsets = NULL;
+	st->dtempl = dtempl;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {

@@ -661,7 +661,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		 *               prefix
 		 */
 
-		st = stream_open_fd_for_write(stream_pipe[1]);
+		st = stream_open_fd_for_write(stream_pipe[1], sb->iargs->dtempl);
 		r = run_work(sb->iargs, st, slot, tmp, sb);
 		stream_close(st);
 

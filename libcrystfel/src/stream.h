@@ -92,8 +92,10 @@ extern "C" {
 
 /* Opening/closing streams */
 extern Stream *stream_open_for_read(const char *filename);
-extern Stream *stream_open_for_write(const char *filename);
-extern Stream *stream_open_fd_for_write(int fd);
+extern Stream *stream_open_for_write(const char *filename,
+                                     const DataTemplate *dtempl);
+extern Stream *stream_open_fd_for_write(int fd,
+                                        const DataTemplate *dtempl);
 extern void stream_close(Stream *st);
 
 /* Writing things to stream header */
@@ -120,12 +122,8 @@ extern int stream_scan_chunks(Stream *st);
 extern int stream_select_chunk(Stream *st, int chunk_number);
 
 /* Read/write chunks */
-extern struct image *stream_read_chunk(Stream *st,
-                                       const DataTemplate *dtempl,
-                                       StreamFlags srf);
-
+extern struct image *stream_read_chunk(Stream *st, StreamFlags srf);
 extern int stream_write_chunk(Stream *st, struct image *image,
-                              const DataTemplate *dtempl,
                               StreamFlags srf);
 
 #ifdef __cplusplus
