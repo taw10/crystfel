@@ -225,6 +225,14 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 }
 
 
+static void cell_file_clear_sig(GtkButton *buton,
+                                CrystFELIndexingOpts *io)
+{
+	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(io->cell_chooser),
+	                              "(none)");
+}
+
+
 static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 {
 	GtkWidget *box;
@@ -234,22 +242,29 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	GtkWidget *frame;
 	GtkWidget *indexing_methods;
 	GtkWidget *tolerances;
+	GtkWidget *button;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
 	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
 
-	/* Use unit cell / Cell file chooser */
+	/* Cell file chooser */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 0);
-	io->use_cell = gtk_check_button_new_with_label("Use unit cell");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->use_cell),
+	label = gtk_label_new("Unit cell file:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 	io->cell_chooser = gtk_file_chooser_button_new("Unit cell file",
 	                                               GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(io->cell_chooser),
 	                                TRUE);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->cell_chooser),
+	                   FALSE, FALSE, 0);
+	button = gtk_button_new_from_icon_name("edit-clear",
+	                                       GTK_ICON_SIZE_BUTTON);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(cell_file_clear_sig), io);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
 	                   FALSE, FALSE, 0);
 
 	/* Indexing method selector */
@@ -398,11 +413,10 @@ GtkWidget *crystfel_indexing_opts_new()
 
 char *crystfel_indexing_opts_get_cell_file(CrystFELIndexingOpts *opts)
 {
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->use_cell)) ) {
-		return gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(opts->cell_chooser));
-	} else {
-		return NULL;
-	}
+	gchar *filename;
+
+	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(opts->cell_chooser));
+	return filename;
 }
 
 
@@ -586,11 +600,9 @@ void crystfel_indexing_opts_set_cell_file(CrystFELIndexingOpts *opts,
 	if ( cell_file != NULL ) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(opts->cell_chooser),
 		                              cell_file);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->use_cell),
-		                             TRUE);
 	} else {
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->use_cell),
-		                             FALSE);
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(opts->cell_chooser),
+		                              "(null)");
 	}
 }
 
