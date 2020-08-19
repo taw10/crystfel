@@ -44,6 +44,7 @@
 #include <cell.h>
 #include <cell-utils.h>
 #include <integration.h>
+#include <predict-refine.h>
 
 #include "crystfel_gui.h"
 #include "crystfelimageview.h"
@@ -228,6 +229,11 @@ static void run_indexing_once(struct crystfelproject *proj)
 	for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
 		crystal_set_profile_radius(proj->cur_image->crystals[i], 0.02e9);
 		crystal_set_mosaicity(proj->cur_image->crystals[i], 0.0);
+		if ( refine_radius(proj->cur_image->crystals[i],
+		                   proj->cur_image) )
+		{
+			ERROR("WARNING: Radius determination failed\n");
+		}
 	}
 
 	err = 0;
