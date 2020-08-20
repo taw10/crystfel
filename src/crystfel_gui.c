@@ -111,20 +111,6 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 }
 
 
-static void show_crystal_info(struct image *image)
-{
-	int i;
-	STATUS("Frame %s %s has %i crystal%s:\n",
-	       image->filename, image->ev,
-	       image->n_crystals,
-	       image->n_crystals == 1 ? "" : "s");
-	for ( i=0; i<image->n_crystals; i++ ) {
-		STATUS("   Crystal %2i: ", i);
-		cell_print_oneline(crystal_get_cell(image->crystals[i]));
-	}
-}
-
-
 /* Bring the image view up to date after changing the selected image */
 static void update_imageview(struct crystfelproject *proj)
 {
@@ -190,8 +176,6 @@ static void update_imageview(struct crystfelproject *proj)
 	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
-
-	show_crystal_info(proj->cur_image);
 }
 
 
@@ -633,6 +617,42 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static gint image_info_clicked_sig(GtkWidget *widget,
+                                   struct crystfelproject *proj)
+{
+	GtkWidget *popover;
+	GtkWidget *grid;
+	GtkWidget *label;
+	char tmp[64];
+
+	popover = gtk_popover_new(widget);
+	gtk_popover_set_position(GTK_POPOVER(popover),
+	                         GTK_POS_BOTTOM);
+
+	grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 4);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 4);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 6);
+
+	label = gtk_label_new("Number of peaks:");
+	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
+	snprintf(tmp, 63, "%i", image_feature_count(proj->cur_image->features));
+	label = gtk_label_new(tmp);
+	gtk_grid_attach(GTK_GRID(grid), label, 1, 0, 1, 1);
+
+	label = gtk_label_new("Number of crystals:");
+	gtk_grid_attach(GTK_GRID(grid), label, 0, 1, 1, 1);
+	snprintf(tmp, 63, "%i", proj->cur_image->n_crystals);
+	label = gtk_label_new(tmp);
+	gtk_grid_attach(GTK_GRID(grid), label, 1, 1, 1, 1);
+
+	gtk_container_add(GTK_CONTAINER(popover), grid);
+	gtk_widget_show_all(grid);
+	gtk_popover_popup(GTK_POPOVER(popover));
+	return FALSE;
+}
+
+
 static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
@@ -783,15 +803,6 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 }
 
 
-static void brightness_changed_sig(GtkScaleButton *brightness,
-                                   double value,
-                                   struct crystfelproject *proj)
-{
-	crystfel_image_view_set_brightness(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                                   value);
-}
-
-
 int main(int argc, char *argv[])
 {
 	int c;
@@ -804,7 +815,6 @@ int main(int argc, char *argv[])
 	GtkWidget *main_vbox;
 	GtkWidget *toolbar;
 	GtkWidget *button;
-	GtkWidget *brightness;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -903,14 +913,12 @@ int main(int argc, char *argv[])
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(last_frame_sig), &proj);
 
-	/* Image view parameters */
-	const gchar *icons[] = {"weather-clear", NULL};
-	brightness = gtk_scale_button_new(GTK_ICON_SIZE_LARGE_TOOLBAR,
-	                                  1.0, 10.0, 1.0, icons);
-	gtk_box_pack_end(GTK_BOX(toolbar), brightness, FALSE, FALSE, 0.0);
-	gtk_scale_button_set_value(GTK_SCALE_BUTTON(brightness), 1.0);
-	g_signal_connect(G_OBJECT(brightness), "value-changed",
-	                 G_CALLBACK(brightness_changed_sig), &proj);
+	/* Information about image */
+	button = gtk_button_new_from_icon_name("document-properties",
+	                                       GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_end(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(image_info_clicked_sig), &proj);
 
 	/* Filename */
 	proj.image_info = gtk_label_new("Ready to load images");
