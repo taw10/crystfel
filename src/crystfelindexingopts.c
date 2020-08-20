@@ -241,6 +241,18 @@ static void auto_indm_toggle_sig(GtkToggleButton *togglebutton,
 }
 
 
+static void check_cell_toggle_sig(GtkToggleButton *togglebutton,
+                                  CrystFELIndexingOpts *io)
+{
+	int i;
+	int active = gtk_toggle_button_get_active(togglebutton);
+	for ( i=0; i<6; i++ ) {
+		gtk_widget_set_sensitive(GTK_WIDGET(io->tols[i]),
+		                         active);
+	}
+}
+
+
 static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 {
 	GtkWidget *box;
@@ -320,6 +332,8 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	                   FALSE, FALSE, 0);
 	tolerances = make_tolerances(io);
 	gtk_container_add(GTK_CONTAINER(expander), tolerances);
+	g_signal_connect(G_OBJECT(io->check_cell), "toggled",
+	                 G_CALLBACK(check_cell_toggle_sig), io);
 
 	/* --min-peaks (NB add one) */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
