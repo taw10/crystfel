@@ -158,6 +158,11 @@ extern struct argp pinkIndexer_argp;
 extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
 
+extern void default_method_options(TakeTwoOptions **ttopts,
+                                   XGandalfOptions **xgandalf_opts,
+                                   PinkIndexerOptions **pinkIndexer_opts,
+                                   FelixOptions **felix_opts);
+
 extern IndexingPrivate *setup_indexing(const char *methods,
                                        UnitCell *cell,
                                        const DataTemplate *dtempl,

@@ -39,6 +39,8 @@
 
 #include "index.h"
 
+extern int xgandalf_default_options(XGandalfOptions **opts_ptr);
+
 extern int run_xgandalf(struct image *image, void *ipriv);
 
 extern void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,

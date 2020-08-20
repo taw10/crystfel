@@ -832,27 +832,41 @@ static void felix_show_help()
 }
 
 
+int felix_default_options(FelixOptions **opts_ptr)
+{
+	FelixOptions *opts;
+
+	opts = malloc(sizeof(struct felix_options));
+	if ( opts == NULL ) return ENOMEM;
+
+	opts->ttmin = -1.0;
+	opts->ttmax = -1.0;
+	opts->min_visits = 0;
+	opts->min_completeness = -1.0;
+	opts->max_uniqueness = -1.0;
+	opts->n_voxels = 0;
+	opts->fraction_max_visits = -1.0;
+	opts->sigma = -1.0;
+	opts->domega = -1.0;
+	opts->max_internal_angle = -1.0;
+
+	*opts_ptr = opts;
+	return 0;
+}
+
+
 static error_t felix_parse_arg(int key, char *arg,
                                struct argp_state *state)
 {
 	struct felix_options **opts_ptr = state->input;
 	float tmp;
+	int r;
 
 	switch ( key ) {
 
 		case ARGP_KEY_INIT :
-		*opts_ptr = malloc(sizeof(struct felix_options));
-		if ( *opts_ptr == NULL ) return ENOMEM;
-		(*opts_ptr)->ttmin = -1.0;
-		(*opts_ptr)->ttmax = -1.0;
-		(*opts_ptr)->min_visits = 0;
-		(*opts_ptr)->min_completeness = -1.0;
-		(*opts_ptr)->max_uniqueness = -1.0;
-		(*opts_ptr)->n_voxels = 0;
-		(*opts_ptr)->fraction_max_visits = -1.0;
-		(*opts_ptr)->sigma = -1.0;
-		(*opts_ptr)->domega = -1.0;
-		(*opts_ptr)->max_internal_angle = -1.0;
+		r = felix_default_options(opts_ptr);
+		if ( r ) return r;
 		break;
 
 		case 1 :

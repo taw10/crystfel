@@ -34,6 +34,8 @@
 #include "index.h"
 #include "datatemplate.h"
 
+extern int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr);
+
 extern int run_pinkIndexer(struct image *image, void *ipriv);
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,

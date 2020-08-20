@@ -1195,3 +1195,15 @@ char *detect_indexing_methods(UnitCell *cell)
 
 	return methods;
 }
+
+
+void default_method_options(TakeTwoOptions **ttopts,
+                            XGandalfOptions **xgandalf_opts,
+                            PinkIndexerOptions **pinkIndexer_opts,
+                            FelixOptions **felix_opts)
+{
+	taketwo_default_options(ttopts);
+	xgandalf_default_options(xgandalf_opts);
+	pinkIndexer_default_options(pinkIndexer_opts);
+	felix_default_options(felix_opts);
+}

@@ -475,30 +475,44 @@ static void pinkIndexer_show_help()
 }
 
 
+int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr)
+{
+	PinkIndexerOptions *opts;
+
+	opts = malloc(sizeof(struct pinkIndexer_options));
+	if ( opts == NULL ) return ENOMEM;
+
+	opts->considered_peaks_count = 4;
+	opts->angle_resolution = 2;
+	opts->refinement_type = 1;
+	opts->tolerance = 0.06;
+	opts->maxResolutionForIndexing_1_per_A = +INFINITY;
+	opts->thread_count = 1;
+	opts->multi = 0;
+	opts->no_check_indexed = 0;
+	opts->min_peaks = 2;
+	opts->reflectionRadius = -1;
+	opts->customPhotonEnergy = -1;
+	opts->customBandwidth = -1;
+	opts->maxRefinementDisbalance = 0.4;
+
+	*opts_ptr = opts;
+	return 0;
+}
+
+
 static error_t pinkindexer_parse_arg(int key, char *arg,
                                      struct argp_state *state)
 {
 	float tmp, tmp2;
+	int r;
 	struct pinkIndexer_options **opts_ptr = state->input;
 
 	switch ( key ) {
 
 		case ARGP_KEY_INIT :
-		*opts_ptr = malloc(sizeof(struct pinkIndexer_options));
-		if ( *opts_ptr == NULL ) return ENOMEM;
-		(*opts_ptr)->considered_peaks_count = 4;
-		(*opts_ptr)->angle_resolution = 2;
-		(*opts_ptr)->refinement_type = 1;
-		(*opts_ptr)->tolerance = 0.06;
-		(*opts_ptr)->maxResolutionForIndexing_1_per_A = +INFINITY;
-		(*opts_ptr)->thread_count = 1;
-		(*opts_ptr)->multi = 0;
-		(*opts_ptr)->no_check_indexed = 0;
-		(*opts_ptr)->min_peaks = 2;
-		(*opts_ptr)->reflectionRadius = -1;
-		(*opts_ptr)->customPhotonEnergy = -1;
-		(*opts_ptr)->customBandwidth = -1;
-		(*opts_ptr)->maxRefinementDisbalance = 0.4;
+		r = pinkIndexer_default_options(opts_ptr);
+		if ( r ) return r;
 		break;
 
 		case 1 :
