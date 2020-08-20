@@ -428,12 +428,18 @@ char *crystfel_indexing_opts_get_cell_file(CrystFELIndexingOpts *opts)
 }
 
 
+/* NULL means "automatic".
+ * "none" means "no indexing" */
 char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *opts)
 {
 	GtkTreePath *path;
 	GtkTreeIter iter;
 	char indm_str[1024];
 	int first = 1;
+
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->auto_indm)) ) {
+		return NULL;
+	}
 
 	path = gtk_tree_path_new_from_string("0");
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(opts->indm_store),
@@ -470,6 +476,9 @@ char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *op
 	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
 	                                   &iter) );
 
+	if ( indm_str[0] == '\0' ) {
+		strcpy(indm_str, "none");
+	}
 	return strdup(indm_str);
 }
 
@@ -658,10 +667,7 @@ void crystfel_indexing_opts_set_indexing_method_string(CrystFELIndexingOpts *opt
 
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->auto_indm),
 	                             (indm_str == NULL));
-	if ( indm_str == NULL ) {
-		unset_all_methods(opts);
-		return;
-	}
+	if ( indm_str == NULL ) return;
 
 	methods = parse_indexing_methods(indm_str, &n);
 	if ( methods == NULL ) {

@@ -208,8 +208,13 @@ static void run_indexing_once(struct crystfelproject *proj)
 	IndexingPrivate *ipriv;
 	UnitCell *cell;
 	IntegrationMethod int_method;
+	char *methods;
 	int i;
 	int err;
+	TakeTwoOptions *taketwoopts;
+	XGandalfOptions *xgandalf_opts;
+	PinkIndexerOptions *pinkIndexer_opts;
+	FelixOptions *felix_opts;
 
 	if ( proj->indexing_params.cell_file != NULL ) {
 		cell = load_cell_from_file(proj->indexing_params.cell_file);
@@ -217,12 +222,27 @@ static void run_indexing_once(struct crystfelproject *proj)
 		cell = NULL;
 	}
 
-	ipriv = setup_indexing(proj->indexing_params.indexing_methods,
-	                       cell,
-	                       proj->dtempl,
+	if ( proj->indexing_params.indexing_methods == NULL ) {
+		methods = detect_indexing_methods(cell);
+		STATUS("Auto-detected indexng methods: %s\n",
+		       methods);
+	} else {
+		methods = strdup(proj->indexing_params.indexing_methods);
+	}
+
+	/* Get default options for the indexing methods.
+	 * The GUI current does not allow them to be changed */
+	default_method_options(&taketwoopts,
+	                       &xgandalf_opts,
+	                       &pinkIndexer_opts,
+	                       &felix_opts);
+
+	ipriv = setup_indexing(methods, cell, proj->dtempl,
 	                       proj->indexing_params.tols,
 	                       indexing_flags(&proj->indexing_params),
-	                       NULL, NULL, NULL, NULL);
+	                       taketwoopts, xgandalf_opts,
+	                       pinkIndexer_opts, felix_opts);
+	free(methods);
 
 	index_pattern(proj->cur_image, ipriv);
 
