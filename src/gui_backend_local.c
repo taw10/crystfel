@@ -32,10 +32,14 @@
 #include <gtk/gtk.h>
 
 #include "crystfel_gui.h"
+#include "gui_project.h"
 
 
 struct local_backend_priv
 {
+	struct crystfelproject *proj;  /* FIXME: Once started, the process should
+	                                * be considered detatched.  Therefore, this
+	                                * shouldn't be stored */
 	int indexamajig_running;
 	guint indexamajig_watch;
 	GPid indexamajig_pid;
@@ -46,8 +50,8 @@ struct local_backend_priv
 
 static void watch_indexamajig(GPid pid, gint status, gpointer vp)
 {
-	struct crystfelproject *proj = vp;
-	struct local_backend_priv *priv = proj->backend_private;
+	struct local_backend_priv *priv = vp;
+	struct crystfelproject *proj = priv->proj;
 	STATUS("Indexamajig exited with status %i\n", status);
 	priv->indexamajig_running = 0;
 	g_spawn_close_pid(priv->indexamajig_pid);
@@ -60,8 +64,8 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 {
 	GIOStatus r;
 	GError *err = NULL;
-	struct crystfelproject *proj = vp;
-	struct local_backend_priv *priv = proj->backend_private;
+	struct local_backend_priv *priv = priv;
+	struct crystfelproject *proj = priv->proj;
 	gchar *line;
 
 	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
@@ -139,8 +143,7 @@ void setup_subprocess(gpointer user_data)
 }
 
 
-static int run_unitcell(struct crystfelproject *proj,
-                        const char *algo)
+static void *run_indexing(struct crystfelproject *proj)
 {
 	GIOChannel *ioch;
 	char *args[64];
@@ -151,20 +154,25 @@ static int run_unitcell(struct crystfelproject *proj,
 	int r;
 	int ch_stderr;
 	GError *error;
-	struct local_backend_priv *priv = proj->backend_private;
+	struct local_backend_priv *priv;
 
 	if ( priv->indexamajig_running != 0 ) {
 		STATUS("Indexamajig already running.\n");
-		return 1;
+		return NULL;
 	}
+
+	priv = malloc(sizeof(struct local_backend_priv));
+	if ( priv == NULL ) return NULL;
+
+	priv->proj = proj;
 
 	if ( write_file_list(proj) ) {
 		STATUS("Failed to write list\n");
-		return 1;
+		free(priv);
+		return NULL;
 	}
 
-	strcpy(index_str, "--indexing=");
-	strncat(index_str, algo, 50);
+	strcpy(index_str, "--indexing=dirax"); /* FIXME */
 
 	strcpy(peaks_str, "--peaks=");
 	strncat(peaks_str,
@@ -226,61 +234,33 @@ static int run_unitcell(struct crystfelproject *proj,
 	if ( r == FALSE ) {
 		ERROR("Failed to run indexamajig: %s\n",
 		      error->message);
-		return 1;
+		free(priv);
+		return NULL;
 	}
 	priv->indexamajig_running = 1;
 
 	priv->child_watch_source = g_child_watch_add(priv->indexamajig_pid,
-	                                             watch_indexamajig, proj);
+	                                             watch_indexamajig,
+	                                             priv);
 
 	ioch = g_io_channel_unix_new(ch_stderr);
 	priv->index_readable_source = g_io_add_watch(ioch,
 	                                             G_IO_IN | G_IO_ERR | G_IO_HUP,
-	                                             index_readable, proj);
+	                                             index_readable,
+	                                             priv);
 
-	return 0;
+	return priv;
 }
 
 
-static void cancel(struct crystfelproject *proj)
+static void cancel(void *vp)
 {
-	struct local_backend_priv *priv = proj->backend_private;
+	struct local_backend_priv *priv = vp;
 
 	if ( !priv->indexamajig_running ) return;
 
 	ERROR("Stopping indexamajig (pid %i).\n", priv->indexamajig_pid);
 	kill(-priv->indexamajig_pid, SIGINT);
-}
-
-
-static void shutdown_backend(struct crystfelproject *proj)
-{
-	struct local_backend_priv *priv = proj->backend_private;
-
-	if ( priv->indexamajig_running ) {
-		g_source_remove(priv->child_watch_source);
-		g_source_remove(priv->index_readable_source);
-		kill(-priv->indexamajig_pid, SIGINT);
-	}
-
-	free(priv);
-}
-
-
-static void init_backend(struct crystfelproject *proj)
-{
-	struct local_backend_priv *priv;
-
-	priv = malloc(sizeof(struct local_backend_priv));
-	if ( priv == NULL ) {
-		ERROR("Failed to initialise backend\n");
-		return;
-	}
-
-	priv->indexamajig_running = 0;
-
-	proj->backend_private = priv;
-	STATUS("Local backend initialised.\n");
 }
 
 
@@ -295,9 +275,7 @@ struct crystfel_backend _backend_local =
 	 .name = "local",
 	 .friendly_name = "Local (run on this computer)",
 	 .make_parameters = make_parameters,
-	 .init = init_backend,
-	 .shutdown = shutdown_backend,
-	 .run_unitcell = run_unitcell,
+	 .run_indexing = run_indexing,
 	 .cancel = cancel,
 	};
 

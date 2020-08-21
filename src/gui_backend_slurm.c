@@ -40,25 +40,14 @@ struct slurm_backend_priv
 };
 
 
-static void init_backend(struct crystfelproject *proj)
+static void cancel(void *vp)
 {
 }
 
 
-static void shutdown_backend(struct crystfelproject *proj)
+static void *run_indexing(struct crystfelproject *proj)
 {
-}
-
-
-static void cancel(struct crystfelproject *proj)
-{
-}
-
-
-static int run_unitcell(struct crystfelproject *proj,
-                        const char *algo)
-{
-	return 0;
+	return NULL;
 }
 
 
@@ -73,9 +62,7 @@ const struct crystfel_backend _backend_slurm =
 	 .name = "slurm",
 	 .friendly_name = "SLURM",
 	 .make_parameters = make_parameters,
-	 .init = init_backend,
-	 .shutdown = shutdown_backend,
-	 .run_unitcell = run_unitcell,
+	 .run_indexing = run_indexing,
 	 .cancel = cancel,
 	};
 

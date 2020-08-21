@@ -1000,9 +1000,6 @@ int main(int argc, char *argv[])
 		update_peaks(&proj);
 	}
 
-	/* Initialise backend */
-	proj.backend->init(&proj);
-
 	gtk_window_set_default_size(GTK_WINDOW(proj.window), 1024, 768);
 	gtk_paned_set_position(GTK_PANED(hpaned), 172);
 	gtk_paned_set_position(GTK_PANED(vpaned), 600);
@@ -1016,13 +1013,10 @@ int main(int argc, char *argv[])
 static void infobar_response_sig(GtkInfoBar *infobar, gint resp,
                                  gpointer data)
 {
-	struct crystfelproject *proj = data;
+	//struct crystfelproject *proj = data;
 
 	if ( resp == GTK_RESPONSE_CANCEL ) {
-		proj->backend->cancel(proj);
-
-	} else if ( resp == GTK_RESPONSE_OK ) {
-		proj->infobar_callback(proj);
+		/* FIXME: Cancel processing */
 
 	} else {
 		ERROR("Unrecognised infobar response!\n");
@@ -1059,7 +1053,6 @@ GtkWidget *create_infobar(struct crystfelproject *proj, const char *task,
 	gtk_box_pack_end(GTK_BOX(proj->main_vbox), GTK_WIDGET(info_bar),
 	                 FALSE, FALSE, 0.0);
 	proj->info_bar = info_bar;
-	proj->infobar_callback = cbfunc;
 
 	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
 
