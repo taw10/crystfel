@@ -1,7 +1,7 @@
 /*
- * gui_backend_local.h
+ * gui_backend_slurm.c
  *
- * GUI backend for running jobs on the local machine
+ * GUI backend for running jobs via SLURM
  *
  * Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
@@ -26,11 +26,57 @@
  *
  */
 
-#ifndef GUI_BACKEND_LOCAL_H
-#define GUI_BACKEND_LOCAL_H
+#include <pty.h>
+#include <glib.h>
+#include <sys/wait.h>
+#include <gtk/gtk.h>
 
 #include "crystfel_gui.h"
 
-extern const struct crystfel_backend *backend_local;
 
-#endif
+struct slurm_backend_priv
+{
+	int dummy;
+};
+
+
+static void init_backend(struct crystfelproject *proj)
+{
+}
+
+
+static void shutdown_backend(struct crystfelproject *proj)
+{
+}
+
+
+static void cancel(struct crystfelproject *proj)
+{
+}
+
+
+static int run_unitcell(struct crystfelproject *proj,
+                        const char *algo)
+{
+	return 0;
+}
+
+
+static GtkWidget *make_parameters(void)
+{
+	return gtk_label_new("SLURM params");
+}
+
+
+const struct crystfel_backend _backend_slurm =
+	{
+	 .name = "slurm",
+	 .friendly_name = "SLURM",
+	 .make_parameters = make_parameters,
+	 .init = init_backend,
+	 .shutdown = shutdown_backend,
+	 .run_unitcell = run_unitcell,
+	 .cancel = cancel,
+	};
+
+const struct crystfel_backend *backend_slurm = &_backend_slurm;

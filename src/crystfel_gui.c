@@ -48,9 +48,10 @@
 #include "crystfel_gui.h"
 #include "gui_peaksearch.h"
 #include "gui_index.h"
-#include "gui_backend_local.h"
 #include "gui_project.h"
 #include "version.h"
+#include "gui_backend_local.h"
+#include "gui_backend_slurm.h"
 
 
 static void show_help(const char *s)
@@ -803,6 +804,9 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 }
 
 
+const struct crystfel_backend *backends[16];
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -815,6 +819,11 @@ int main(int argc, char *argv[])
 	GtkWidget *main_vbox;
 	GtkWidget *toolbar;
 	GtkWidget *button;
+
+	backends[0] = backend_local;
+	backends[1] = backend_slurm;
+	backends[2] = NULL;
+	/* Max 16 */
 
 	/* Long options */
 	const struct option longopts[] = {

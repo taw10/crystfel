@@ -1,7 +1,7 @@
 /*
- * crystfel_gui.h
+ * gui_backend_slurm.h
  *
- * CrystFEL's main graphical user interface
+ * GUI backend for running jobs via SLURM
  *
  * Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
@@ -26,29 +26,11 @@
  *
  */
 
-#ifndef CRYSTFEL_GUI_H
-#define CRYSTFEL_GUI_H
+#ifndef GUI_BACKEND_SLURM_H
+#define GUI_BACKEND_SLURM_H
 
-#include "gui_project.h"
+#include "crystfel_gui.h"
 
-struct crystfel_backend {
-	const char *name;
-	const char *friendly_name;
-	GtkWidget *(*make_parameters)(void);
-	int (*run_unitcell)(struct crystfelproject *proj,
-	                    const char *algo);
-	void (*cancel)(struct crystfelproject *proj);
-	void (*init)(struct crystfelproject *proj);
-	void (*shutdown)(struct crystfelproject *proj);
-};
-
-extern const struct crystfel_backend *backends[];
-
-
-extern void remove_infobar(struct crystfelproject *proj);
-
-extern GtkWidget *create_infobar(struct crystfelproject *proj, const char *task,
-                                 const char *extra_button,
-                                 void (*cbfunc)(struct crystfelproject *proj));
+extern const struct crystfel_backend *backend_slurm;
 
 #endif

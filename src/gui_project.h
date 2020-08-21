@@ -125,6 +125,9 @@ struct crystfelproject {
 	GtkWidget *peak_params;   /* Peak search parameter widgets */
 	struct peak_params original_params;
 
+	GtkWidget *backend_opts;
+	GtkWidget *backend_opts_box;
+
 	GtkWidget *info_bar;
 	void (*infobar_callback)(struct crystfelproject *proj);
 	GtkWidget *progressbar;

@@ -202,6 +202,7 @@ if gtkdep.found()
               'src/gui_peaksearch.c',
               'src/gui_index.c',
               'src/gui_backend_local.c',
+              'src/gui_backend_slurm.c',
               'src/gui_project.c',
               versionc],
              dependencies : [mdep, libcrystfeldep, gtkdep, gsldep],

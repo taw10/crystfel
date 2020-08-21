@@ -80,12 +80,33 @@ static void index_all_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
+static void backend_changed_sig(GtkWidget *combo,
+                                struct crystfelproject *proj)
+{
+	int backend_idx;
+
+	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
+	if ( backend_idx < 0 ) return;
+
+	if ( proj->backend_opts != NULL ) {
+		gtk_widget_destroy(proj->backend_opts);
+	}
+	proj->backend_opts = backends[backend_idx]->make_parameters();
+
+	gtk_box_pack_start(GTK_BOX(proj->backend_opts_box),
+	                   GTK_WIDGET(proj->backend_opts),
+	                   FALSE, FALSE, 0);
+	gtk_widget_show_all(proj->backend_opts);
+}
+
+
 static GtkWidget *make_backend_opts(struct crystfelproject *proj)
 {
 	GtkWidget *box;
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *combo;
+	int i;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
@@ -96,55 +117,31 @@ static GtkWidget *make_backend_opts(struct crystfelproject *proj)
 	label = gtk_label_new("Batch system:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
+
 	combo = gtk_combo_box_text_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo),
 	                   FALSE, FALSE, 0);
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "local",
-	                "Local (run on this computer)");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "slurm",
-	                "SLURM");
+
+	i = 0;
+	do {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
+		                          backends[i]->name,
+		                          backends[i]->friendly_name);
+	} while ( backends[++i] != NULL );
+
+	proj->backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
+	                                     0);
+	gtk_box_pack_start(GTK_BOX(box),
+	                   GTK_WIDGET(proj->backend_opts_box),
+	                   FALSE, FALSE, 0);
+	proj->backend_opts = NULL;
+
+	/* proj->backend_opts{_box} must exist before the following */
+	g_signal_connect(G_OBJECT(combo), "changed",
+	                 G_CALLBACK(backend_changed_sig), proj);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
 
 	return box;
-}
-
-
-gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
-{
-	GtkWidget *dialog;
-	GtkWidget *content_area;
-	GtkWidget *vbox;
-	GtkWidget *indexing_opts;
-
-	if ( proj->indexing_opts != NULL ) return FALSE;
-
-	dialog = gtk_dialog_new_with_buttons("Index all frames",
-	                                     GTK_WINDOW(proj->window),
-	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                     "Cancel", GTK_RESPONSE_CANCEL,
-	                                     "Run", GTK_RESPONSE_OK,
-	                                     NULL);
-
-	g_signal_connect(G_OBJECT(dialog), "response",
-	                 G_CALLBACK(index_all_response_sig), proj);
-
-	vbox = gtk_vbox_new(FALSE, 0.0);
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	gtk_container_add(GTK_CONTAINER(content_area), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
-
-	indexing_opts = crystfel_indexing_opts_new();
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(indexing_opts),
-	                   FALSE, FALSE, 8.0);
-
-	gtk_notebook_append_page(GTK_NOTEBOOK(indexing_opts),
-	                         make_backend_opts(proj),
-	                         gtk_label_new("Cluster/batch system"));
-
-	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
-	                                GTK_RESPONSE_OK);
-	gtk_widget_show_all(dialog);
-
-	return FALSE;
 }
 
 
@@ -186,6 +183,53 @@ static void get_indexing_opts(struct crystfelproject *proj,
 	proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
 	proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
 	proj->indexing_params.push_res = crystfel_indexing_opts_get_push_res(opts);
+}
+
+
+gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	GtkWidget *dialog;
+	GtkWidget *content_area;
+	GtkWidget *vbox;
+	GtkWidget *backend_page;
+
+	if ( proj->indexing_opts != NULL ) return FALSE;
+
+	dialog = gtk_dialog_new_with_buttons("Index all frames",
+	                                     GTK_WINDOW(proj->window),
+	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                     "Cancel", GTK_RESPONSE_CANCEL,
+	                                     "Run", GTK_RESPONSE_OK,
+	                                     NULL);
+
+	g_signal_connect(G_OBJECT(dialog), "response",
+	                 G_CALLBACK(index_all_response_sig), proj);
+
+	vbox = gtk_vbox_new(FALSE, 0.0);
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
+
+	proj->indexing_opts = crystfel_indexing_opts_new();
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(proj->indexing_opts),
+	                   FALSE, FALSE, 8.0);
+	set_indexing_opts(proj,
+	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
+
+	backend_page = make_backend_opts(proj),
+	gtk_notebook_append_page(GTK_NOTEBOOK(proj->indexing_opts),
+	                         backend_page,
+	                         gtk_label_new("Cluster/batch system"));
+	proj->backend_opts_box = gtk_vbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(backend_page),
+	                   proj->backend_opts_box,
+	                   FALSE, FALSE, 8.0);
+
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
+	                                GTK_RESPONSE_OK);
+	gtk_widget_show_all(dialog);
+
+	return FALSE;
 }
 
 

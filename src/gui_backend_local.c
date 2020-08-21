@@ -284,13 +284,21 @@ static void init_backend(struct crystfelproject *proj)
 }
 
 
+static GtkWidget *make_parameters(void)
+{
+	return gtk_label_new("Local params");
+}
+
+
 struct crystfel_backend _backend_local =
 	{
 	 .name = "local",
+	 .friendly_name = "Local (run on this computer)",
+	 .make_parameters = make_parameters,
 	 .init = init_backend,
 	 .shutdown = shutdown_backend,
 	 .run_unitcell = run_unitcell,
 	 .cancel = cancel,
 	};
 
-struct crystfel_backend *backend_local = &_backend_local;
+const struct crystfel_backend *backend_local = &_backend_local;
