@@ -290,7 +290,7 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	GtkWidget *label;
 	char tmp[64];
 
-	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
