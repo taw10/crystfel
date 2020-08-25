@@ -134,6 +134,7 @@ static void indexing_backend_changed_sig(GtkWidget *combo,
 
 	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
 	if ( backend_idx < 0 ) return;
+	proj->indexing_backend_selected = backend_idx;
 
 	be = &proj->backends[backend_idx];
 
@@ -187,7 +188,8 @@ static GtkWidget *make_backend_opts(struct crystfelproject *proj)
 	/* proj->indexing_backend_opts{_box} must exist before the following */
 	g_signal_connect(G_OBJECT(proj->indexing_backend_combo), "changed",
 	                 G_CALLBACK(indexing_backend_changed_sig), proj);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(proj->indexing_backend_combo), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(proj->indexing_backend_combo),
+	                         proj->indexing_backend_selected);
 
 	return box;
 }

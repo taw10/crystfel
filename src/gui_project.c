@@ -135,6 +135,21 @@ static void parse_tols(const char *text, float *tols)
 }
 
 
+static int find_backend(const char *name, struct crystfelproject *proj)
+{
+	int i;
+
+	for ( i=0; i<proj->n_backends; i++ ) {
+		if ( strcmp(proj->backends[i].name, name) == 0 ) {
+			return i;
+		}
+	}
+
+	ERROR("Couldn't find backend '%s'\n", name);
+	return 0;
+}
+
+
 static void handle_var(const char *key, const char *val,
                        struct crystfelproject *proj)
 {
@@ -242,6 +257,10 @@ static void handle_var(const char *key, const char *val,
 		proj->indexing_params.min_peaks = parse_int(val);
 	}
 
+	if ( strcmp(key, "indexing.backend") == 0 ) {
+		proj->indexing_backend_selected = find_backend(val, proj);
+	}
+
 	if ( strcmp(key, "integration.method") == 0 ) {
 		proj->indexing_params.integration_method = strdup(val);
 	}
@@ -277,6 +296,18 @@ static void handle_var(const char *key, const char *val,
 	if ( strcmp(key, "search_pattern") == 0 ) {
 		proj->data_search_pattern = decode_matchtype(val);
 	}
+
+	/* Backend indexing option? */
+	if ( strncmp(key, "indexing.", 9) == 0 ) {
+		int i;
+		for ( i=0; i<proj->n_backends; i++ ) {
+			struct crystfel_backend *be;
+			be = &proj->backends[i];
+			be->read_indexing_opt(be->indexing_opts_priv,
+			                      key, val);
+		}
+	}
+
 }
 
 
@@ -462,6 +493,14 @@ int save_project(struct crystfelproject *proj)
 	        rad2deg(proj->indexing_params.tols[5]));
 	fprintf(fh, "indexing.min_peaks %i\n",
 	        proj->indexing_params.min_peaks);
+
+	fprintf(fh, "indexing.backend %s\n",
+	        proj->backends[proj->indexing_backend_selected].name);
+	for ( i=0; i<proj->n_backends; i++ ) {
+		struct crystfel_backend *be;
+		be = &proj->backends[i];
+		be->write_indexing_opts(be->indexing_opts_priv, fh);
+	}
 
 	fprintf(fh, "integration.method %s\n",
 	        proj->indexing_params.integration_method);

@@ -153,6 +153,7 @@ struct crystfelproject {
 
 	int show_refls;
 	struct index_params indexing_params;
+	int indexing_backend_selected;
 	GtkWidget *indexing_opts;
 	GtkWidget *indexing_backend_combo;
 	GtkWidget *indexing_backend_opts_widget;
