@@ -52,6 +52,9 @@ void update_peaks(struct crystfelproject *proj)
 	if ( proj->cur_image == NULL ) return;
 	if ( proj->stream != NULL ) return;
 
+	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                   proj->show_peaks);
+
 	if ( proj->show_peaks ) {
 
 		image_feature_list_free(proj->cur_image->features);
@@ -113,9 +116,6 @@ void update_peaks(struct crystfelproject *proj)
 			break;
 
 		}
-
-		crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                   1);
 
 		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 		                              proj->cur_image);

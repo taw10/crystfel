@@ -351,6 +351,8 @@ static void run_indexing_once(struct crystfelproject *proj)
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
+	GtkWidget *w;
+
 	if ( resp == GTK_RESPONSE_OK ) {
 		get_indexing_opts(proj,
 		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
@@ -359,6 +361,8 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 
 	gtk_widget_destroy(dialog);
 	proj->indexing_opts = NULL;
+	w =  gtk_ui_manager_get_widget(proj->ui, "/ui/mainwindow/view/refls");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 1);
 }
 
 
