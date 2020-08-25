@@ -524,6 +524,8 @@ int save_project(struct crystfelproject *proj)
 		}
 	}
 
+	fclose(fh);
+
 	proj->unsaved = 0;
 	return 0;
 }
