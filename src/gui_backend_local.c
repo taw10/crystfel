@@ -313,6 +313,7 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	                   FALSE, FALSE, 0);
 	entry = gtk_entry_new();
 	snprintf(tmp, 63, "%i", opts->n_processes);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
 	gtk_entry_set_width_chars(GTK_ENTRY(entry), 5);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
 	                   FALSE, FALSE, 0);
@@ -348,10 +349,13 @@ static void read_indexing_opt(void *opts_priv,
                               const char *key,
                               const char *val)
 {
-	//struct local_indexing_opts *opts = opts_priv;
+	struct local_indexing_opts *opts = opts_priv;
 
-	STATUS("Local got %s = '%s'\n", key, val);
-	/* FIXME: Parse and set */
+	if ( strcmp(key, "indexing.local.n_processes") == 0 ) {
+		if ( convert_int(val, &opts->n_processes) ) {
+			ERROR("Invalid number of threads: %s\n", val);
+		}
+	}
 }
 
 
