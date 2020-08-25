@@ -538,7 +538,6 @@ void default_project(struct crystfelproject *proj)
 	proj->filenames = NULL;
 	proj->events = NULL;
 	proj->peak_params = NULL;
-	proj->info_bar = NULL;
 	proj->data_top_folder = NULL;
 	proj->data_search_pattern = 0;
 	proj->stream_filename = NULL;
@@ -546,6 +545,7 @@ void default_project(struct crystfelproject *proj)
 	proj->dtempl = NULL;
 	proj->cur_image = NULL;
 	proj->indexing_opts = NULL;
+	proj->n_running_tasks = 0;
 
 	/* FIXME: Crappy error handling */
 	proj->n_backends = 2;

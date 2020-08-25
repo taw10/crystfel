@@ -44,16 +44,16 @@ struct slurm_indexing_opts
 };
 
 
-struct slurm_indexing_job
+struct slurm_job
 {
 	double frac_complete;
 	/* FIXME: List of SLURM job numbers to track */
 };
 
 
-static void cancel_indexing(void *job_priv)
+static void cancel_task(void *job_priv)
 {
-	//struct slurm_indexing_job *job = job_priv;
+	//struct slurm_job *job = job_priv;
 }
 
 
@@ -220,9 +220,9 @@ int make_slurm_backend(struct crystfel_backend *be)
 
 	be->make_indexing_parameters_widget = make_indexing_parameters_widget;
 	be->run_indexing = run_indexing;
-	be->cancel_indexing = cancel_indexing;
 	be->write_indexing_opts = write_indexing_opts;
 	be->read_indexing_opt = read_indexing_opt;
+	be->cancel_task = cancel_task;
 
 	be->indexing_opts_priv = make_default_slurm_opts();
 	if ( be->indexing_opts_priv == NULL ) return 1;

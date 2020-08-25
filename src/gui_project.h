@@ -34,6 +34,7 @@
 #include <peaks.h>
 #include <stream.h>
 
+#define MAX_RUNNING_TASKS (16)
 
 enum match_type_id
 {
@@ -103,7 +104,7 @@ struct crystfel_backend {
 	                      void *opts_priv);
 
 	/* Called to ask the backend to cancel the job */
-	void (*cancel_indexing)(void *job_priv);
+	void (*cancel_task)(void *job_priv);
 
 	/* Called to ask the backend to write its indexing options */
 	void (*write_indexing_opts)(void *opts_priv, FILE *fh);
@@ -116,6 +117,14 @@ struct crystfel_backend {
 	/* Backend should store options for indexing here */
 	void *indexing_opts_priv;
 
+};
+
+struct gui_task
+{
+	GtkWidget *info_bar;
+	GtkWidget *progress_bar;
+	struct crystfel_backend *backend;
+	void *job_priv;
 };
 
 struct crystfelproject {
@@ -168,8 +177,8 @@ struct crystfelproject {
 	struct crystfel_backend *backends;
 	int n_backends;
 
-	GtkWidget *info_bar;
-	GtkWidget *progressbar;
+	struct gui_task tasks[MAX_RUNNING_TASKS];
+	int n_running_tasks;
 };
 
 extern enum match_type_id decode_matchtype(const char *type_id);

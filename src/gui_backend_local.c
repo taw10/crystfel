@@ -42,7 +42,7 @@ struct local_indexing_opts
 };
 
 
-struct local_indexing_job
+struct local_job
 {
 	double frac_complete;
 	int n_frames;
@@ -60,7 +60,7 @@ struct local_indexing_job
 
 static void watch_indexamajig(GPid pid, gint status, gpointer vp)
 {
-	struct local_indexing_job *job = vp;
+	struct local_job *job = vp;
 	STATUS("Indexamajig exited with status %i\n", status);
 	job->indexamajig_running = 0;
 	g_spawn_close_pid(job->indexamajig_pid);
@@ -72,7 +72,7 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 {
 	GIOStatus r;
 	GError *err = NULL;
-	struct local_indexing_job *job = vp;
+	struct local_job *job = vp;
 	gchar *line;
 
 	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
@@ -168,9 +168,9 @@ static void *run_indexing(char **filenames,
 	int r;
 	int ch_stderr;
 	GError *error;
-	struct local_indexing_job *job;
+	struct local_job *job;
 
-	job = malloc(sizeof(struct local_indexing_job));
+	job = malloc(sizeof(struct local_job));
 	if ( job == NULL ) return NULL;
 
 	if ( write_file_list(filenames, events, n_frames) ) {
@@ -263,9 +263,9 @@ static void *run_indexing(char **filenames,
 }
 
 
-static void cancel_indexing(void *job_priv)
+static void cancel_task(void *job_priv)
 {
-	struct local_indexing_job *job = job_priv;
+	struct local_job *job = job_priv;
 
 	if ( !job->indexamajig_running ) return;
 
@@ -353,7 +353,7 @@ int make_local_backend(struct crystfel_backend *be)
 
 	be->make_indexing_parameters_widget = make_indexing_parameters_widget;
 	be->run_indexing = run_indexing;
-	be->cancel_indexing = cancel_indexing;
+	be->cancel_task = cancel_task;
 	be->indexing_opts_priv = make_default_local_opts();
 	if ( be->indexing_opts_priv == NULL ) return 1;
 	be->write_indexing_opts = write_indexing_opts;

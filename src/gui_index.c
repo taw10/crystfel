@@ -49,6 +49,7 @@
 #include "crystfelimageview.h"
 #include "crystfelindexingopts.h"
 #include "gui_project.h"
+#include "crystfel_gui.h"
 
 void cell_explorer_sig(struct crystfelproject *proj)
 {
@@ -110,7 +111,10 @@ static void run_indexing_all(struct crystfelproject *proj)
 	                            &proj->indexing_params,
 	                            be->indexing_opts_priv);
 
-	STATUS("Started job %p\n", job_priv);
+	if ( job_priv != NULL ) {
+		add_running_task(proj, "Indexing all frames",
+		                 be, job_priv);
+	}
 }
 
 
