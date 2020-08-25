@@ -34,6 +34,7 @@
 #include <peaks.h>
 #include <stream.h>
 
+
 enum match_type_id
 {
 	 MATCH_EVERYTHING,
@@ -83,6 +84,40 @@ struct index_params {
 	float push_res;
 };
 
+struct crystfel_backend {
+
+	const char *name;
+	const char *friendly_name;
+
+	/* Backend should provide a GTK widget to set options */
+	GtkWidget *(*make_indexing_parameters_widget)(void *opts_priv);
+
+	/* Called to ask the backend to start indexing frames.
+	 * It should return a void pointer representing this job */
+	void *(*run_indexing)(char **filenames,
+	                      char **events,
+	                      int n_frames,
+	                      char *geom_filename,
+	                      struct peak_params *peak_search_params,
+	                      struct index_params *indexing_params,
+	                      void *opts_priv);
+
+	/* Called to ask the backend to cancel the job */
+	void (*cancel_indexing)(void *job_priv);
+
+	/* Called to ask the backend to write its indexing options */
+	void (*write_indexing_opts)(void *opts_priv, FILE *fh);
+
+	/* Called when reading a project from file */
+	void (*read_indexing_opt)(void *opts_priv,
+	                          const char *key,
+	                          const char *val);
+
+	/* Backend should store options for indexing here */
+	void *indexing_opts_priv;
+
+};
+
 struct crystfelproject {
 
 	GtkWidget *window;
@@ -119,15 +154,18 @@ struct crystfelproject {
 	int show_refls;
 	struct index_params indexing_params;
 	GtkWidget *indexing_opts;
+	GtkWidget *indexing_backend_combo;
+	GtkWidget *indexing_backend_opts_widget;
+	GtkWidget *indexing_backend_opts_box;
 
 	GtkWidget *type_combo;
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */
 	GtkWidget *peak_params;   /* Peak search parameter widgets */
 	struct peak_params original_params;
 
-	char *backend_name;
-	GtkWidget *backend_opts;
-	GtkWidget *backend_opts_box;
+	/* All the backends available in this project */
+	struct crystfel_backend *backends;
+	int n_backends;
 
 	GtkWidget *info_bar;
 	GtkWidget *progressbar;

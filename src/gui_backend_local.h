@@ -29,8 +29,8 @@
 #ifndef GUI_BACKEND_LOCAL_H
 #define GUI_BACKEND_LOCAL_H
 
-#include "crystfel_gui.h"
+#include "gui_project.h"
 
-extern const struct crystfel_backend *backend_local;
+extern int make_local_backend(struct crystfel_backend *be);
 
 #endif

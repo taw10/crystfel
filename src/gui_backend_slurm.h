@@ -29,8 +29,8 @@
 #ifndef GUI_BACKEND_SLURM_H
 #define GUI_BACKEND_SLURM_H
 
-#include "crystfel_gui.h"
+#include "gui_project.h"
 
-extern const struct crystfel_backend *backend_slurm;
+extern int make_slurm_backend(struct crystfel_backend *be);
 
 #endif

@@ -36,9 +36,9 @@
 #include <string.h>
 #include <assert.h>
 
-#include "crystfel_gui.h"
-#include "gui_backend_local.h"
 #include "gui_project.h"
+#include "gui_backend_local.h"
+#include "gui_backend_slurm.h"
 
 static double parse_float(const char *val)
 {
@@ -262,10 +262,6 @@ static void handle_var(const char *key, const char *val,
 		proj->show_refls = parse_int(val);
 	}
 
-	if ( strcmp(key, "backend") == 0 ) {
-		proj->backend_name = strdup(val);
-	}
-
 	if ( strcmp(key, "geom") == 0 ) {
 		proj->geom_filename = strdup(val);
 	}
@@ -339,6 +335,8 @@ int load_project(struct crystfelproject *proj)
 
 	fh = fopen("crystfel.project", "r");
 	if ( fh == NULL ) return 1;
+
+	default_project(proj);
 
 	do {
 
@@ -474,7 +472,6 @@ int save_project(struct crystfelproject *proj)
 
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
-	fprintf(fh, "backend %s\n", proj->backend_name);
 
 	fprintf(fh, "-----\n");
 	if ( proj->stream == NULL ) {
@@ -503,7 +500,6 @@ void default_project(struct crystfelproject *proj)
 	proj->events = NULL;
 	proj->peak_params = NULL;
 	proj->info_bar = NULL;
-	proj->backend_name = strdup("local");
 	proj->data_top_folder = NULL;
 	proj->data_search_pattern = 0;
 	proj->stream_filename = NULL;
@@ -511,6 +507,19 @@ void default_project(struct crystfelproject *proj)
 	proj->dtempl = NULL;
 	proj->cur_image = NULL;
 	proj->indexing_opts = NULL;
+
+	/* FIXME: Crappy error handling */
+	proj->n_backends = 2;
+	proj->backends = malloc(proj->n_backends*sizeof(struct crystfel_backend));
+	if ( proj->backends == NULL ) {
+		ERROR("Couldn't allocate space for backends\n");
+	}
+	if ( make_local_backend(&proj->backends[0]) ) {
+		ERROR("Local backend setup failed\n");
+	}
+	if ( make_slurm_backend(&proj->backends[1]) ) {
+		ERROR("SLURM backend setup failed\n");
+	}
 
 	/* Default parameter values */
 	proj->show_peaks = 0;

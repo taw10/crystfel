@@ -46,9 +46,9 @@
 #include <integration.h>
 #include <predict-refine.h>
 
-#include "crystfel_gui.h"
 #include "crystfelimageview.h"
 #include "crystfelindexingopts.h"
+#include "gui_project.h"
 
 void cell_explorer_sig(struct crystfelproject *proj)
 {
@@ -68,11 +68,57 @@ void cell_explorer_sig(struct crystfelproject *proj)
 }
 
 
+static void get_indexing_opts(struct crystfelproject *proj,
+                              CrystFELIndexingOpts *opts)
+{
+	/* Indexing */
+	proj->indexing_params.cell_file = crystfel_indexing_opts_get_cell_file(opts);
+	proj->indexing_params.indexing_methods = crystfel_indexing_opts_get_indexing_method_string(opts);
+	proj->indexing_params.multi = crystfel_indexing_opts_get_multi_lattice(opts);
+	proj->indexing_params.no_refine = !crystfel_indexing_opts_get_refine(opts);
+	proj->indexing_params.no_retry = !crystfel_indexing_opts_get_retry(opts);
+	proj->indexing_params.no_peak_check = !crystfel_indexing_opts_get_peak_check(opts);
+	proj->indexing_params.no_cell_check = !crystfel_indexing_opts_get_cell_check(opts);
+	proj->indexing_params.min_peaks = crystfel_indexing_opts_get_min_peaks(opts);
+
+	/* Integration */
+	proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
+	proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
+	proj->indexing_params.push_res = crystfel_indexing_opts_get_push_res(opts);
+}
+
+
+static void run_indexing_all(struct crystfelproject *proj)
+{
+	int backend_idx;
+	struct crystfel_backend *be;
+	void *job_priv;
+
+	get_indexing_opts(proj,
+	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
+
+
+	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(proj->indexing_backend_combo));
+	if ( backend_idx < 0 ) return;
+
+	be = &proj->backends[backend_idx];
+	job_priv = be->run_indexing(proj->filenames,
+	                            proj->events,
+	                            proj->n_frames,
+	                            proj->geom_filename,
+	                            &proj->peak_search_params,
+	                            &proj->indexing_params,
+	                            be->indexing_opts_priv);
+
+	STATUS("Started job %p\n", job_priv);
+}
+
+
 static void index_all_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
 	if ( resp == GTK_RESPONSE_OK ) {
-		STATUS("OK!\n");
+		run_indexing_all(proj);
 	}
 
 	gtk_widget_destroy(dialog);
@@ -80,23 +126,27 @@ static void index_all_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
-static void backend_changed_sig(GtkWidget *combo,
-                                struct crystfelproject *proj)
+static void indexing_backend_changed_sig(GtkWidget *combo,
+                                         struct crystfelproject *proj)
 {
 	int backend_idx;
+	struct crystfel_backend *be;
 
 	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
 	if ( backend_idx < 0 ) return;
 
-	if ( proj->backend_opts != NULL ) {
-		gtk_widget_destroy(proj->backend_opts);
-	}
-	proj->backend_opts = backends[backend_idx]->make_parameters();
+	be = &proj->backends[backend_idx];
 
-	gtk_box_pack_start(GTK_BOX(proj->backend_opts_box),
-	                   GTK_WIDGET(proj->backend_opts),
+	if ( proj->indexing_backend_opts_widget != NULL ) {
+		gtk_widget_destroy(proj->indexing_backend_opts_widget);
+	}
+
+	proj->indexing_backend_opts_widget = be->make_indexing_parameters_widget(be->indexing_opts_priv);
+
+	gtk_box_pack_start(GTK_BOX(proj->indexing_backend_opts_box),
+	                   GTK_WIDGET(proj->indexing_backend_opts_widget),
 	                   FALSE, FALSE, 0);
-	gtk_widget_show_all(proj->backend_opts);
+	gtk_widget_show_all(proj->indexing_backend_opts_widget);
 }
 
 
@@ -105,7 +155,6 @@ static GtkWidget *make_backend_opts(struct crystfelproject *proj)
 	GtkWidget *box;
 	GtkWidget *hbox;
 	GtkWidget *label;
-	GtkWidget *combo;
 	int i;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
@@ -118,28 +167,27 @@ static GtkWidget *make_backend_opts(struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 
-	combo = gtk_combo_box_text_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo),
+	proj->indexing_backend_combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(proj->indexing_backend_combo),
 	                   FALSE, FALSE, 0);
 
-	i = 0;
-	do {
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
-		                          backends[i]->name,
-		                          backends[i]->friendly_name);
-	} while ( backends[++i] != NULL );
+	for ( i=0; i<proj->n_backends; i++ ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(proj->indexing_backend_combo),
+		                          proj->backends[i].name,
+		                          proj->backends[i].friendly_name);
+	}
 
-	proj->backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
-	                                     0);
+	proj->indexing_backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
+	                                              0);
 	gtk_box_pack_start(GTK_BOX(box),
-	                   GTK_WIDGET(proj->backend_opts_box),
+	                   GTK_WIDGET(proj->indexing_backend_opts_box),
 	                   FALSE, FALSE, 0);
-	proj->backend_opts = NULL;
+	proj->indexing_backend_opts_widget = NULL;
 
-	/* proj->backend_opts{_box} must exist before the following */
-	g_signal_connect(G_OBJECT(combo), "changed",
-	                 G_CALLBACK(backend_changed_sig), proj);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+	/* proj->indexing_backend_opts{_box} must exist before the following */
+	g_signal_connect(G_OBJECT(proj->indexing_backend_combo), "changed",
+	                 G_CALLBACK(indexing_backend_changed_sig), proj);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(proj->indexing_backend_combo), 0);
 
 	return box;
 }
@@ -163,26 +211,6 @@ static void set_indexing_opts(struct crystfelproject *proj,
 	crystfel_indexing_opts_set_integration_method_string(opts, proj->indexing_params.integration_method);
 	crystfel_indexing_opts_set_overpredict(opts, proj->indexing_params.overpredict);
 	crystfel_indexing_opts_set_push_res(opts, proj->indexing_params.push_res);
-}
-
-
-static void get_indexing_opts(struct crystfelproject *proj,
-                              CrystFELIndexingOpts *opts)
-{
-	/* Indexing */
-	proj->indexing_params.cell_file = crystfel_indexing_opts_get_cell_file(opts);
-	proj->indexing_params.indexing_methods = crystfel_indexing_opts_get_indexing_method_string(opts);
-	proj->indexing_params.multi = crystfel_indexing_opts_get_multi_lattice(opts);
-	proj->indexing_params.no_refine = !crystfel_indexing_opts_get_refine(opts);
-	proj->indexing_params.no_retry = !crystfel_indexing_opts_get_retry(opts);
-	proj->indexing_params.no_peak_check = !crystfel_indexing_opts_get_peak_check(opts);
-	proj->indexing_params.no_cell_check = !crystfel_indexing_opts_get_cell_check(opts);
-	proj->indexing_params.min_peaks = crystfel_indexing_opts_get_min_peaks(opts);
-
-	/* Integration */
-	proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
-	proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
-	proj->indexing_params.push_res = crystfel_indexing_opts_get_push_res(opts);
 }
 
 
@@ -220,9 +248,9 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_notebook_append_page(GTK_NOTEBOOK(proj->indexing_opts),
 	                         backend_page,
 	                         gtk_label_new("Cluster/batch system"));
-	proj->backend_opts_box = gtk_vbox_new(FALSE, 0.0);
+	proj->indexing_backend_opts_box = gtk_vbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(backend_page),
-	                   proj->backend_opts_box,
+	                   proj->indexing_backend_opts_box,
 	                   FALSE, FALSE, 8.0);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),

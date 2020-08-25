@@ -31,7 +31,7 @@
 
 #include <gtk/gtk.h>
 
-#include "crystfel_gui.h"
+#include "gui_project.h"
 
 extern gint peaksearch_sig(GtkWidget *widget,
                            struct crystfelproject *proj);

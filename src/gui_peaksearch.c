@@ -42,8 +42,8 @@
 #include <datatemplate.h>
 #include <peaks.h>
 
-#include "crystfel_gui.h"
 #include "crystfelimageview.h"
+#include "gui_project.h"
 
 
 void update_peaks(struct crystfelproject *proj)
