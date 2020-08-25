@@ -106,6 +106,11 @@ struct crystfel_backend {
 	/* Called to ask the backend to cancel the job */
 	void (*cancel_task)(void *job_priv);
 
+	/* Called to get the status of a task */
+	int (*task_status)(void *job_priv,
+	                   int *running,
+	                   float *fraction_complete);
+
 	/* Called to ask the backend to write its indexing options */
 	void (*write_indexing_opts)(void *opts_priv, FILE *fh);
 
@@ -122,7 +127,9 @@ struct crystfel_backend {
 struct gui_task
 {
 	GtkWidget *info_bar;
+	GtkWidget *cancel_button;
 	GtkWidget *progress_bar;
+	int running;
 	struct crystfel_backend *backend;
 	void *job_priv;
 };

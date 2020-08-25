@@ -1006,11 +1006,42 @@ static void infobar_response_sig(GtkInfoBar *infobar, gint resp,
 
 	if ( resp == GTK_RESPONSE_CANCEL ) {
 		task->backend->cancel_task(task->job_priv);
-		/* FIXME: Cancel processing */
+
+	} else if ( resp == GTK_RESPONSE_CLOSE ) {
+
+		gtk_info_bar_set_revealed(infobar, FALSE);
+		/* FIXME: Remove task from list */
 
 	} else {
 		ERROR("Unrecognised infobar response!\n");
 	}
+}
+
+
+static gboolean update_info_bar(gpointer data)
+{
+	struct gui_task *task = data;
+	int running;
+	float frac_complete;
+
+	if ( task->backend->task_status(task->job_priv,
+	                                &running, &frac_complete) ) {
+		ERROR("Error retrieving task status\n");
+		return G_SOURCE_CONTINUE;
+	}
+
+	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(task->progress_bar),
+	                              frac_complete);
+
+	if ( !running && task->running ) {
+		/* Task is no longer running */
+		gtk_widget_destroy(task->cancel_button);
+		gtk_info_bar_set_show_close_button(GTK_INFO_BAR(task->info_bar),
+		                                   TRUE);
+		return G_SOURCE_REMOVE;
+	}
+
+	return G_SOURCE_CONTINUE;
 }
 
 
@@ -1025,11 +1056,17 @@ void add_running_task(struct crystfelproject *proj,
 	task = &proj->tasks[proj->n_running_tasks++];
 	task->job_priv = job_priv;
 	task->backend = backend;
+	task->running = 1;
 
 	/* Progress info bar */
-	task->info_bar = gtk_info_bar_new_with_buttons(GTK_STOCK_CANCEL,
-	                                               GTK_RESPONSE_CANCEL,
-	                                               NULL);
+	task->info_bar = gtk_info_bar_new();
+	gtk_info_bar_set_message_type(GTK_INFO_BAR(task->info_bar),
+	                              GTK_MESSAGE_INFO);
+
+	task->cancel_button = gtk_info_bar_add_button(GTK_INFO_BAR(task->info_bar),
+	                                              GTK_STOCK_CANCEL,
+	                                              GTK_RESPONSE_CANCEL);
+
 	gtk_box_pack_end(GTK_BOX(proj->main_vbox), GTK_WIDGET(task->info_bar),
 	                 FALSE, FALSE, 0.0);
 
@@ -1050,4 +1087,6 @@ void add_running_task(struct crystfelproject *proj,
 
 	gtk_widget_show_all(task->info_bar);
 	gtk_info_bar_set_revealed(GTK_INFO_BAR(task->info_bar), TRUE);
+
+	g_timeout_add(500, update_info_bar, task);
 }

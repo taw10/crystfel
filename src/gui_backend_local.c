@@ -90,7 +90,9 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 	}
 	chomp(line);
 
-	if ( strstr(line, " images processed, ") != NULL ) {
+	if ( strncmp(line, "Final: ", 7) == 0 ) {
+		job->frac_complete = 1.0;
+	} else if ( strstr(line, " images processed, ") != NULL ) {
 		int n_proc;
 		sscanf(line, "%i ", &n_proc);
 		job->frac_complete = (double)n_proc/job->n_frames;
@@ -178,7 +180,8 @@ static void *run_indexing(char **filenames,
 		free(job);
 		return NULL;
 	}
-	job->n_frames = job->n_frames;
+	job->n_frames = n_frames;
+	job->frac_complete = 0.0;
 
 	strcpy(index_str, "--indexing=dirax"); /* FIXME */
 
@@ -260,6 +263,17 @@ static void *run_indexing(char **filenames,
 	                                            job);
 
 	return job;
+}
+
+
+static int get_task_status(void *job_priv,
+                           int *running,
+                           float *frac_complete)
+{
+	struct local_job *job = job_priv;
+	*frac_complete = job->frac_complete;
+	*running = job->indexamajig_running;
+	return 0;
 }
 
 
@@ -354,6 +368,7 @@ int make_local_backend(struct crystfel_backend *be)
 	be->make_indexing_parameters_widget = make_indexing_parameters_widget;
 	be->run_indexing = run_indexing;
 	be->cancel_task = cancel_task;
+	be->task_status = get_task_status;
 	be->indexing_opts_priv = make_default_local_opts();
 	if ( be->indexing_opts_priv == NULL ) return 1;
 	be->write_indexing_opts = write_indexing_opts;

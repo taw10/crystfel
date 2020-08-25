@@ -51,6 +51,17 @@ struct slurm_job
 };
 
 
+static int get_task_status(void *job_priv,
+                           int *running,
+                           float *frac_complete)
+{
+	struct slurm_job *job = job_priv;
+	*frac_complete = job->frac_complete;
+	*running = 0;
+	return 1;
+}
+
+
 static void cancel_task(void *job_priv)
 {
 	//struct slurm_job *job = job_priv;
@@ -223,6 +234,7 @@ int make_slurm_backend(struct crystfel_backend *be)
 	be->write_indexing_opts = write_indexing_opts;
 	be->read_indexing_opt = read_indexing_opt;
 	be->cancel_task = cancel_task;
+	be->task_status = get_task_status;
 
 	be->indexing_opts_priv = make_default_slurm_opts();
 	if ( be->indexing_opts_priv == NULL ) return 1;
