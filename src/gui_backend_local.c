@@ -31,6 +31,8 @@
 #include <sys/wait.h>
 #include <gtk/gtk.h>
 
+#include <utils.h>
+
 #include "gui_project.h"
 
 
@@ -269,21 +271,6 @@ static void cancel_indexing(void *job_priv)
 
 	ERROR("Stopping indexamajig (pid %i).\n", job->indexamajig_pid);
 	kill(-job->indexamajig_pid, SIGINT);
-}
-
-
-static int convert_int(const char *str, int *pval)
-{
-	int val;
-	char *rval;
-
-	val = strtod(str, &rval);
-	if ( *rval != '\0' ) {
-		return 1;
-	} else {
-		*pval = val;
-		return 0;
-	}
 }
 
 

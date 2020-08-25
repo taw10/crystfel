@@ -76,7 +76,9 @@ extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v);
 extern void show_matrix(gsl_matrix *M);
 extern gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
                             int verbose);
+
 extern size_t notrail(char *s);
+extern int convert_int(const char *str, int *pval);
 extern void chomp(char *s);
 
 #define CLEAR_BIT(val, bit) (((val) | (bit)) ^ (bit))

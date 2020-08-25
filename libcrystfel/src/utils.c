@@ -307,6 +307,21 @@ void ERROR(const char *format, ...)
 
 /* ------------------------------ Useful functions ---------------------------- */
 
+int convert_int(const char *str, int *pval)
+{
+	int val;
+	char *rval;
+
+	val = strtod(str, &rval);
+	if ( *rval != '\0' ) {
+		return 1;
+	} else {
+		*pval = val;
+		return 0;
+	}
+}
+
+
 size_t notrail(char *s)
 {
 	ssize_t i;

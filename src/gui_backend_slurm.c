@@ -31,6 +31,8 @@
 #include <sys/wait.h>
 #include <gtk/gtk.h>
 
+#include <utils.h>
+
 #include "gui_project.h"
 
 
