@@ -70,11 +70,92 @@ static void *run_indexing(char **filenames,
 }
 
 
+static void block_size_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_indexing_opts *opts = data;
+	convert_int(gtk_entry_get_text(entry), &opts->block_size);
+}
+
+
+static void partition_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_indexing_opts *opts = data;
+	opts->partition = strdup(gtk_entry_get_text(entry));
+}
+
+
+static void email_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_indexing_opts *opts = data;
+	opts->email_address = strdup(gtk_entry_get_text(entry));
+}
+
+
 static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 {
-	//struct slurm_indexing_opts *opts = opts_priv;
+	struct slurm_indexing_opts *opts = opts_priv;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *entry;
+	GtkWidget *label;
+	char tmp[64];
 
-	return gtk_label_new("SLURM params");
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Submit job to partition:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->partition != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->partition);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "maxwell");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(partition_activate_sig),
+	                 opts);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Split job into blocks of");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	snprintf(tmp, 63, "%i", opts->block_size);
+	entry = gtk_entry_new();
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(block_size_activate_sig),
+	                 opts);
+	label = gtk_label_new("frames");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Send notifications to:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->email_address != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->email_address);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "myself@example.org");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(email_activate_sig),
+	                 opts);
+
+	return vbox;
 }
 
 
@@ -97,10 +178,16 @@ static void write_indexing_opts(void *opts_priv, FILE *fh)
 
 	fprintf(fh, "indexing.slurm.block_size %i\n",
 	        opts->block_size);
-	fprintf(fh, "indexing.slurm.partition %s\n",
-	        opts->partition);
-	fprintf(fh, "indexing.slurm.email_address %s\n",
-	        opts->email_address);
+
+	if ( opts->partition != NULL) {
+		fprintf(fh, "indexing.slurm.partition %s\n",
+		        opts->partition);
+	}
+
+	if ( opts->email_address != NULL ) {
+		fprintf(fh, "indexing.slurm.email_address %s\n",
+		        opts->email_address);
+	}
 }
 
 
@@ -108,10 +195,21 @@ static void read_indexing_opt(void *opts_priv,
                               const char *key,
                               const char *val)
 {
-	//struct slurm_indexing_opts *opts = opts_priv;
+	struct slurm_indexing_opts *opts = opts_priv;
 
-	STATUS("SLURM got %s = '%s'\n", key, val);
-	/* FIXME: Parse and set */
+	if ( strcmp(key, "indexing.slurm.block_size") == 0 ) {
+		if ( convert_int(val, &opts->block_size) ) {
+			ERROR("Invalid block size: %s\n", val);
+		}
+	}
+
+	if ( strcmp(key, "indexing.slurm.email_address") == 0 ) {
+		opts->email_address = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.partition") == 0 ) {
+		opts->partition = strdup(val);
+	}
 }
 
 
