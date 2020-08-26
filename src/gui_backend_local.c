@@ -295,6 +295,13 @@ static void n_processes_activate_sig(GtkEntry *entry, gpointer data)
 }
 
 
+static void n_processes_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                  gpointer data)
+{
+	n_processes_activate_sig(entry, data);
+}
+
+
 static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 {
 	struct local_indexing_opts *opts = opts_priv;
@@ -321,6 +328,9 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 
 	g_signal_connect(G_OBJECT(entry), "activate",
 	                 G_CALLBACK(n_processes_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(n_processes_focus_sig),
 	                 opts);
 	return vbox;
 }

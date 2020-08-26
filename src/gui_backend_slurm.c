@@ -88,6 +88,13 @@ static void block_size_activate_sig(GtkEntry *entry, gpointer data)
 }
 
 
+static void block_size_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                 gpointer data)
+{
+	block_size_activate_sig(entry, data);
+}
+
+
 static void partition_activate_sig(GtkEntry *entry, gpointer data)
 {
 	struct slurm_indexing_opts *opts = data;
@@ -95,10 +102,24 @@ static void partition_activate_sig(GtkEntry *entry, gpointer data)
 }
 
 
+static void partition_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                gpointer data)
+{
+	partition_activate_sig(entry, data);
+}
+
+
 static void email_activate_sig(GtkEntry *entry, gpointer data)
 {
 	struct slurm_indexing_opts *opts = data;
 	opts->email_address = strdup(gtk_entry_get_text(entry));
+}
+
+
+static void email_focus_sig(GtkEntry *entry, GdkEvent *event,
+                            gpointer data)
+{
+	email_activate_sig(entry, data);
 }
 
 
@@ -129,6 +150,9 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	g_signal_connect(G_OBJECT(entry), "activate",
 	                 G_CALLBACK(partition_activate_sig),
 	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(partition_focus_sig),
+	                 opts);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -143,6 +167,9 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	                   FALSE, FALSE, 0);
 	g_signal_connect(G_OBJECT(entry), "activate",
 	                 G_CALLBACK(block_size_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(block_size_focus_sig),
 	                 opts);
 	label = gtk_label_new("frames");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
@@ -164,6 +191,9 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	                   FALSE, FALSE, 0);
 	g_signal_connect(G_OBJECT(entry), "activate",
 	                 G_CALLBACK(email_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(email_focus_sig),
 	                 opts);
 
 	return vbox;
