@@ -254,10 +254,6 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_notebook_append_page(GTK_NOTEBOOK(proj->indexing_opts),
 	                         backend_page,
 	                         gtk_label_new("Cluster/batch system"));
-	proj->indexing_backend_opts_box = gtk_vbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(backend_page),
-	                   proj->indexing_backend_opts_box,
-	                   FALSE, FALSE, 8.0);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_OK);
