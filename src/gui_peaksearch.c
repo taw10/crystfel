@@ -158,6 +158,14 @@ static void int_param_callback(GtkWidget *entry,
 }
 
 
+static void int_param_focus_callback(GtkWidget *entry,
+                                     GdkEvent *event,
+                                     struct param_callback_vals *cbvals)
+{
+	int_param_callback(entry, cbvals);
+}
+
+
 static void float_param_callback(GtkWidget *entry,
                                  struct param_callback_vals *cbvals)
 {
@@ -173,6 +181,14 @@ static void float_param_callback(GtkWidget *entry,
 	*(cbvals->pfval) = val;
 	cbvals->proj->unsaved = 1;
 	update_peaks(cbvals->proj);
+}
+
+
+static void float_param_focus_callback(GtkWidget *entry,
+                                       GdkEvent *event,
+                                       struct param_callback_vals *cbvals)
+{
+	float_param_callback(entry, cbvals);
 }
 
 
@@ -209,9 +225,14 @@ static void add_int_param(GtkWidget *params_box, const char *labeltext,
 	if ( cbvals != NULL ) {
 		cbvals->proj = proj;
 		cbvals->pival = pval;
-		g_signal_connect_data(G_OBJECT(entry), "activate",
+		g_signal_connect_data(G_OBJECT(entry),
+		                      "activate",
 		                      G_CALLBACK(int_param_callback),
 		                      cbvals, free_callback_params, 0);
+		g_signal_connect(G_OBJECT(entry),
+		                 "focus-out-event",
+		                 G_CALLBACK(int_param_focus_callback),
+		                 cbvals);
 	} else {
 		ERROR("Failed to connect parameter callback\n");
 	}
@@ -244,9 +265,15 @@ static void add_float_param(GtkWidget *params_box, const char *labeltext,
 	if ( cbvals != NULL ) {
 		cbvals->proj = proj;
 		cbvals->pfval = pval;
-		g_signal_connect_data(G_OBJECT(entry), "activate",
+		g_signal_connect_data(G_OBJECT(entry),
+		                      "activate",
 		                      G_CALLBACK(float_param_callback),
 		                      cbvals, free_callback_params, 0);
+		g_signal_connect(G_OBJECT(entry),
+		                 "focus-out-event",
+		                 G_CALLBACK(float_param_focus_callback),
+		                 cbvals);
+
 	} else {
 		ERROR("Failed to connect parameter callback\n");
 	}
@@ -386,14 +413,13 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 static void peaksearch_response_sig(GtkWidget *dialog, gint resp,
                                     struct crystfelproject *proj)
 {
-
 	if ( (resp == GTK_RESPONSE_DELETE_EVENT)
 	  || (resp == GTK_RESPONSE_CANCEL) )
 	{
 		proj->peak_search_params = proj->original_params;
-		update_peaks(proj);
 	}
 
+	update_peaks(proj);
 	gtk_widget_destroy(dialog);
 	proj->peak_vbox = NULL;
 	proj->peak_params = NULL;
