@@ -127,6 +127,7 @@ struct param_callback_vals
 {
 	float *pfval;
 	int *pival;
+	char *str_val;
 	struct crystfelproject *proj;
 };
 
@@ -152,9 +153,14 @@ static void int_param_callback(GtkWidget *entry,
 		return;
 	}
 
-	*(cbvals->pival) = val;
-	cbvals->proj->unsaved = 1;
-	update_peaks(cbvals->proj);
+	/* Only update peaks if value has changed */
+	if ( strcmp(cbvals->str_val, text) != 0 ) {
+		*(cbvals->pival) = val;
+		cbvals->proj->unsaved = 1;
+		update_peaks(cbvals->proj);
+		free(cbvals->str_val);
+		cbvals->str_val = strdup(text);
+	}
 }
 
 
@@ -178,9 +184,14 @@ static void float_param_callback(GtkWidget *entry,
 		return;
 	}
 
-	*(cbvals->pfval) = val;
-	cbvals->proj->unsaved = 1;
-	update_peaks(cbvals->proj);
+	/* Only update peaks if value has changed */
+	if ( strcmp(cbvals->str_val, text) != 0 ) {
+		*(cbvals->pfval) = val;
+		cbvals->proj->unsaved = 1;
+		update_peaks(cbvals->proj);
+		free(cbvals->str_val);
+		cbvals->str_val = strdup(text);
+	}
 }
 
 
@@ -225,6 +236,7 @@ static void add_int_param(GtkWidget *params_box, const char *labeltext,
 	if ( cbvals != NULL ) {
 		cbvals->proj = proj;
 		cbvals->pival = pval;
+		cbvals->str_val = strdup(tmp);
 		g_signal_connect_data(G_OBJECT(entry),
 		                      "activate",
 		                      G_CALLBACK(int_param_callback),
@@ -265,6 +277,7 @@ static void add_float_param(GtkWidget *params_box, const char *labeltext,
 	if ( cbvals != NULL ) {
 		cbvals->proj = proj;
 		cbvals->pfval = pval;
+		cbvals->str_val = strdup(tmp);
 		g_signal_connect_data(G_OBJECT(entry),
 		                      "activate",
 		                      G_CALLBACK(float_param_callback),
