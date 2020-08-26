@@ -68,7 +68,9 @@ static void cancel_task(void *job_priv)
 }
 
 
-static void *run_indexing(char **filenames,
+static void *run_indexing(const char *job_title,
+                          const char *job_notes,
+                          char **filenames,
                           char **events,
                           int n_frames,
                           char *geom_filename,

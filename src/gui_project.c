@@ -257,6 +257,11 @@ static void handle_var(const char *key, const char *val,
 		proj->indexing_params.min_peaks = parse_int(val);
 	}
 
+	if ( strcmp(key, "indexing.new_job_title") == 0 ) {
+		free(proj->indexing_new_job_title);
+		proj->indexing_new_job_title = strdup(val);
+	}
+
 	if ( strcmp(key, "indexing.backend") == 0 ) {
 		proj->indexing_backend_selected = find_backend(val, proj);
 	}
@@ -494,6 +499,9 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "indexing.min_peaks %i\n",
 	        proj->indexing_params.min_peaks);
 
+	fprintf(fh, "indexing.new_job_title %s\n",
+	        proj->indexing_new_job_title);
+
 	fprintf(fh, "indexing.backend %s\n",
 	        proj->backends[proj->indexing_backend_selected].name);
 	for ( i=0; i<proj->n_backends; i++ ) {
@@ -548,6 +556,7 @@ void default_project(struct crystfelproject *proj)
 	proj->cur_image = NULL;
 	proj->indexing_opts = NULL;
 	proj->n_running_tasks = 0;
+	proj->indexing_new_job_title = NULL;
 
 	/* FIXME: Crappy error handling */
 	proj->n_backends = 2;

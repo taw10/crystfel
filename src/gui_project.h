@@ -95,7 +95,9 @@ struct crystfel_backend {
 
 	/* Called to ask the backend to start indexing frames.
 	 * It should return a void pointer representing this job */
-	void *(*run_indexing)(char **filenames,
+	void *(*run_indexing)(const char *job_title,
+	                      const char *job_notes,
+	                      char **filenames,
 	                      char **events,
 	                      int n_frames,
 	                      char *geom_filename,
@@ -171,9 +173,7 @@ struct crystfelproject {
 	struct index_params indexing_params;
 	int indexing_backend_selected;
 	GtkWidget *indexing_opts;
-	GtkWidget *indexing_backend_combo;
-	GtkWidget *indexing_backend_opts_widget;
-	GtkWidget *indexing_backend_opts_box;
+	char *indexing_new_job_title;
 
 	GtkWidget *type_combo;
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */

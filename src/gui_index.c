@@ -89,21 +89,16 @@ static void get_indexing_opts(struct crystfelproject *proj,
 }
 
 
-static void run_indexing_all(struct crystfelproject *proj)
+static void run_indexing_all(struct crystfelproject *proj,
+                             int backend_idx, const char *job_title,
+                             const char *job_notes)
 {
-	int backend_idx;
 	struct crystfel_backend *be;
 	void *job_priv;
 
-	get_indexing_opts(proj,
-	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
-
-
-	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(proj->indexing_backend_combo));
-	if ( backend_idx < 0 ) return;
-
 	be = &proj->backends[backend_idx];
-	job_priv = be->run_indexing(proj->filenames,
+	job_priv = be->run_indexing(job_title, job_notes,
+	                            proj->filenames,
 	                            proj->events,
 	                            proj->n_frames,
 	                            proj->geom_filename,
@@ -118,44 +113,145 @@ static void run_indexing_all(struct crystfelproject *proj)
 }
 
 
+struct new_job_params {
+	struct crystfelproject *proj;
+	GtkWidget *indexing_backend_combo;
+	GtkWidget *indexing_backend_opts_widget;
+	GtkWidget *indexing_backend_opts_box;
+	GtkWidget *job_title_entry;
+	GtkWidget *job_notes_text;
+};
+
+
+static char *get_all_text(GtkTextView *view)
+{
+	GtkTextBuffer *buf;
+	GtkTextIter start, end;
+
+	buf = gtk_text_view_get_buffer(view);
+
+	gtk_text_buffer_get_start_iter(buf, &start);
+	gtk_text_buffer_get_end_iter(buf, &end);
+
+	return gtk_text_buffer_get_text(buf, &start, &end, FALSE);
+}
+
+
 static void index_all_response_sig(GtkWidget *dialog, gint resp,
-                                   struct crystfelproject *proj)
+                                   struct new_job_params *njp)
 {
 	if ( resp == GTK_RESPONSE_OK ) {
-		run_indexing_all(proj);
+
+		int backend_idx;
+		const char *job_title;
+		char *job_notes;
+
+		get_indexing_opts(njp->proj,
+		                  CRYSTFEL_INDEXING_OPTS(njp->proj->indexing_opts));
+
+		backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(njp->indexing_backend_combo));
+		if ( backend_idx < 0 ) return;
+
+		job_title = gtk_entry_get_text(GTK_ENTRY(njp->job_title_entry));
+		job_notes = get_all_text(GTK_TEXT_VIEW(njp->job_notes_text));
+
+		free(njp->proj->indexing_new_job_title);
+		njp->proj->indexing_new_job_title = strdup(job_title);
+
+		run_indexing_all(njp->proj, backend_idx,
+		                 job_title, job_notes);
+
+		free(job_notes);
 	}
 
 	gtk_widget_destroy(dialog);
-	proj->indexing_opts = NULL;
+	njp->proj->indexing_opts = NULL;
 }
 
 
 static void indexing_backend_changed_sig(GtkWidget *combo,
-                                         struct crystfelproject *proj)
+                                         struct new_job_params *njp)
 {
 	int backend_idx;
 	struct crystfel_backend *be;
 
 	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
 	if ( backend_idx < 0 ) return;
-	proj->indexing_backend_selected = backend_idx;
+	njp->proj->indexing_backend_selected = backend_idx;
 
-	be = &proj->backends[backend_idx];
+	be = &njp->proj->backends[backend_idx];
 
-	if ( proj->indexing_backend_opts_widget != NULL ) {
-		gtk_widget_destroy(proj->indexing_backend_opts_widget);
+	if ( njp->indexing_backend_opts_widget != NULL ) {
+		gtk_widget_destroy(njp->indexing_backend_opts_widget);
 	}
 
-	proj->indexing_backend_opts_widget = be->make_indexing_parameters_widget(be->indexing_opts_priv);
+	njp->indexing_backend_opts_widget = be->make_indexing_parameters_widget(be->indexing_opts_priv);
 
-	gtk_box_pack_start(GTK_BOX(proj->indexing_backend_opts_box),
-	                   GTK_WIDGET(proj->indexing_backend_opts_widget),
+	gtk_box_pack_start(GTK_BOX(njp->indexing_backend_opts_box),
+	                   GTK_WIDGET(njp->indexing_backend_opts_widget),
 	                   FALSE, FALSE, 0);
-	gtk_widget_show_all(proj->indexing_backend_opts_widget);
+	gtk_widget_show_all(njp->indexing_backend_opts_widget);
 }
 
 
-static GtkWidget *make_backend_opts(struct crystfelproject *proj)
+static GtkWidget *make_job_opts(struct crystfelproject *proj,
+                                struct new_job_params *njp)
+{
+	GtkWidget *box;
+	GtkWidget *hbox;
+	GtkWidget *label;
+	GtkWidget *scroll;
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Job name:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	njp->job_title_entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
+	                   TRUE, TRUE, 2.0);
+	if ( proj->indexing_new_job_title != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry),
+		                   proj->indexing_new_job_title);
+	}
+
+	label = gtk_label_new("This name will be used for a working subfolder");
+	gtk_label_set_markup(GTK_LABEL(label),
+	                     "<i>This name will be used for a working subfolder</i>");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	gtk_entry_set_placeholder_text(GTK_ENTRY(njp->job_title_entry),
+	                               "indexing-trial-1");
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   TRUE, TRUE, 0);
+	label = gtk_label_new("Notes:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	njp->job_notes_text = gtk_text_view_new();
+	scroll = gtk_scrolled_window_new(NULL, NULL);
+	gtk_container_add(GTK_CONTAINER(scroll), njp->job_notes_text);
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll),
+	                                    GTK_SHADOW_ETCHED_IN);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(scroll),
+	                   TRUE, TRUE, 2.0);
+
+	label = gtk_label_new("The notes above will be placed in the job's folder as 'notes.txt'");
+	gtk_label_set_markup(GTK_LABEL(label),
+	                     "<i>The notes above will be placed in the job's folder as 'notes.txt'</i>");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+
+	return box;
+}
+
+
+static GtkWidget *make_backend_opts(struct new_job_params *njp)
 {
 	GtkWidget *box;
 	GtkWidget *hbox;
@@ -172,28 +268,28 @@ static GtkWidget *make_backend_opts(struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 
-	proj->indexing_backend_combo = gtk_combo_box_text_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(proj->indexing_backend_combo),
+	njp->indexing_backend_combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->indexing_backend_combo),
 	                   FALSE, FALSE, 0);
 
-	for ( i=0; i<proj->n_backends; i++ ) {
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(proj->indexing_backend_combo),
-		                          proj->backends[i].name,
-		                          proj->backends[i].friendly_name);
+	for ( i=0; i<njp->proj->n_backends; i++ ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(njp->indexing_backend_combo),
+		                          njp->proj->backends[i].name,
+		                          njp->proj->backends[i].friendly_name);
 	}
 
-	proj->indexing_backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
+	njp->indexing_backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
 	                                              0);
 	gtk_box_pack_start(GTK_BOX(box),
-	                   GTK_WIDGET(proj->indexing_backend_opts_box),
+	                   GTK_WIDGET(njp->indexing_backend_opts_box),
 	                   FALSE, FALSE, 0);
-	proj->indexing_backend_opts_widget = NULL;
+	njp->indexing_backend_opts_widget = NULL;
 
-	/* proj->indexing_backend_opts{_box} must exist before the following */
-	g_signal_connect(G_OBJECT(proj->indexing_backend_combo), "changed",
-	                 G_CALLBACK(indexing_backend_changed_sig), proj);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(proj->indexing_backend_combo),
-	                         proj->indexing_backend_selected);
+	/* njp->indexing_backend_opts{_box} must exist before the following */
+	g_signal_connect(G_OBJECT(njp->indexing_backend_combo), "changed",
+	                 G_CALLBACK(indexing_backend_changed_sig), njp);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(njp->indexing_backend_combo),
+	                         njp->proj->indexing_backend_selected);
 
 	return box;
 }
@@ -220,14 +316,27 @@ static void set_indexing_opts(struct crystfelproject *proj,
 }
 
 
+static void free_new_job_params(gpointer njp, GClosure *closure)
+{
+	free(njp);
+}
+
+
 gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *dialog;
 	GtkWidget *content_area;
 	GtkWidget *vbox;
 	GtkWidget *backend_page;
+	GtkWidget *job_page;
+	struct new_job_params *njp;
 
 	if ( proj->indexing_opts != NULL ) return FALSE;
+
+	njp = malloc(sizeof(struct new_job_params));
+	if ( njp == NULL ) return FALSE;
+
+	njp->proj = proj;
 
 	dialog = gtk_dialog_new_with_buttons("Index all frames",
 	                                     GTK_WINDOW(proj->window),
@@ -236,8 +345,9 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                     "Run", GTK_RESPONSE_OK,
 	                                     NULL);
 
-	g_signal_connect(G_OBJECT(dialog), "response",
-	                 G_CALLBACK(index_all_response_sig), proj);
+	g_signal_connect_data(G_OBJECT(dialog), "response",
+	                      G_CALLBACK(index_all_response_sig),
+	                      njp, free_new_job_params, 0);
 
 	vbox = gtk_vbox_new(FALSE, 0.0);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
@@ -250,7 +360,12 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	set_indexing_opts(proj,
 	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 
-	backend_page = make_backend_opts(proj),
+	job_page = make_job_opts(proj, njp);
+	gtk_notebook_prepend_page(GTK_NOTEBOOK(proj->indexing_opts),
+	                          job_page,
+	                          gtk_label_new("Job name"));
+
+	backend_page = make_backend_opts(njp);
 	gtk_notebook_append_page(GTK_NOTEBOOK(proj->indexing_opts),
 	                         backend_page,
 	                         gtk_label_new("Cluster/batch system"));
