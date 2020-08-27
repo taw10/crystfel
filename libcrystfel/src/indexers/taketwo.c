@@ -1557,7 +1557,8 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 
 			cell->seeds = tmp;
 
-			for (int i = 0; i < seed_num; i++)
+			int i;
+			for ( i = 0; i < seed_num; i++)
 			{
 				if (seeds[i].idx1 < 0 || seeds[i].idx2 < 0)
 				{
@@ -2106,7 +2107,8 @@ static void partial_taketwo_cleanup(struct taketwo_private *tp)
 {
 	if (tp->prevSols != NULL)
 	{
-		for (int i = 0; i < tp->numPrevs; i++)
+		int i;
+		for (i = 0; i < tp->numPrevs; i++)
 		{
 			gsl_matrix_free(tp->prevSols[i]);
 		}
