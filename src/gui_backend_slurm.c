@@ -30,6 +30,7 @@
 #include <glib.h>
 #include <sys/wait.h>
 #include <gtk/gtk.h>
+#include <slurm/slurm.h>
 
 #include <utils.h>
 
@@ -79,6 +80,8 @@ static void *run_indexing(const char *job_title,
                           void *opts_priv)
 {
 	//struct slurm_indexing_opts *opts = opts_priv;
+	STATUS("SLURM API version = %li\n",
+	       slurm_api_version());
 	return NULL;
 }
 

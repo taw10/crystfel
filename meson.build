@@ -18,6 +18,10 @@ mdep = cc.find_library('m', required : true)
 gsldep = dependency('gsl', required : true)
 zlibdep = dependency('zlib', required : true)
 pthreaddep = dependency('threads', required : true)
+slurmdep = cc.find_library('slurm', required : false)
+if slurmdep.found()
+  conf_data.set10('HAVE_SLURM', 1)
+endif
 
 # HDF5 >= 1.8.21 and >= 1.10.2 has a pkg-config file:
 hdf5dep = dependency('hdf5', language : 'c', required : false)
@@ -195,18 +199,24 @@ executable('make_pixelmap',
 
 # CrystFEL GUI
 if gtkdep.found()
-  executable('crystfel',
-             ['src/crystfel_gui.c',
-              'src/crystfelimageview.c',
-              'src/crystfelindexingopts.c',
-              'src/gui_peaksearch.c',
-              'src/gui_index.c',
-              'src/gui_backend_local.c',
-              'src/gui_backend_slurm.c',
-              'src/gui_project.c',
-              versionc],
-             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep],
+
+  gui_sources = ['src/crystfel_gui.c',
+                 'src/crystfelimageview.c',
+                 'src/crystfelindexingopts.c',
+                 'src/gui_peaksearch.c',
+                 'src/gui_index.c',
+                 'src/gui_backend_local.c',
+                 'src/gui_project.c',
+                 versionc]
+
+  if slurmdep.found()
+    gui_sources += 'src/gui_backend_slurm.c'
+  endif
+
+  executable('crystfel', gui_sources,
+             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep, slurmdep],
              install : true)
+
 endif
 
 # render_hkl

@@ -17,6 +17,11 @@ find_package(GSL REQUIRED)
 find_package(OpenCL)
 find_package(PkgConfig)
 
+# Find SLURM
+set(CMAKE_REQUIRED_LIBRARIES "-lslurm")
+check_symbol_exists(slurm_api_version "slurm/slurm.h" HAVE_SLURM)
+unset(CMAKE_REQUIRED_LIBRARIES)
+
 # Request HDF5 1.10-style API (can't use 1.12-style yet)
 add_definitions(-DH5_USE_110_API)
 
@@ -406,13 +411,20 @@ if (GTK_FOUND)
 
   set(CRYSTFEL_GUI_SOURCES src/crystfel_gui.c src/crystfelimageview.c
     src/gui_peaksearch.c src/gui_index.c src/gui_backend_local.c
-    src/gui_project.c src/crystfelindexingopts.c
-    src/gui_backend_slurm.c)
+    src/gui_project.c src/crystfelindexingopts.c)
+
+  if (HAVE_SLURM)
+    set(CRYSTFEL_GUI_SOURCES ${CRYSTFEL_GUI_SOURCES} src/gui_backend_slurm.c)
+  endif (HAVE_SLURM)
 
   add_executable(crystfel ${CRYSTFEL_GUI_SOURCES}
                  ${CMAKE_CURRENT_BINARY_DIR}/version.c)
   target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
-  target_link_libraries(crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES})
+  target_link_libraries (crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES})
+
+  if (HAVE_SLURM)
+    target_link_libraries(crystfel slurm)
+  endif (HAVE_SLURM)
 
   list(APPEND CRYSTFEL_EXECUTABLES crystfel)
 

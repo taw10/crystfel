@@ -559,17 +559,21 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_new_job_title = NULL;
 
 	/* FIXME: Crappy error handling */
-	proj->n_backends = 2;
-	proj->backends = malloc(proj->n_backends*sizeof(struct crystfel_backend));
+	proj->n_backends = 0;
+	proj->backends = malloc(2*sizeof(struct crystfel_backend));
 	if ( proj->backends == NULL ) {
 		ERROR("Couldn't allocate space for backends\n");
 	}
-	if ( make_local_backend(&proj->backends[0]) ) {
+
+	if ( make_local_backend(&proj->backends[proj->n_backends++]) ) {
 		ERROR("Local backend setup failed\n");
 	}
-	if ( make_slurm_backend(&proj->backends[1]) ) {
+
+	#ifdef HAVE_SLURM
+	if ( make_slurm_backend(&proj->backends[proj->n_backends++]) ) {
 		ERROR("SLURM backend setup failed\n");
 	}
+	#endif
 
 	/* Default parameter values */
 	proj->show_peaks = 0;
