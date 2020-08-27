@@ -37,6 +37,7 @@
 #include <utils.h>
 
 #include "gui_project.h"
+#include "gui_index.h"
 
 
 struct local_indexing_opts
@@ -134,19 +135,6 @@ static int write_file_list(char **filenames,
 }
 
 
-static void add_arg(char **args, int pos, const char *label,
-                    float val)
-{
-	char *str;
-
-	str = malloc(64);
-	if ( str == NULL ) return;
-
-	snprintf(str, 63, "--%s=%f", label, val);
-	args[pos] = str;
-}
-
-
 void setup_subprocess(gpointer user_data)
 {
 	const char *workdir = user_data;
@@ -168,11 +156,8 @@ static void *run_indexing(const char *job_title,
 {
 	struct local_indexing_opts *opts = opts_priv;
 	GIOChannel *ioch;
-	char *args[64];
-	char index_str[64];
-	char peaks_str[64];
 	char n_thread_str[64];
-	int n_args;
+	char **args;
 	int i;
 	int r;
 	int ch_stderr;
@@ -212,57 +197,15 @@ static void *run_indexing(const char *job_title,
 	job->n_frames = n_frames;
 	job->frac_complete = 0.0;
 
-	strcpy(index_str, "--indexing=dirax"); /* FIXME */
-
-	strcpy(peaks_str, "--peaks=");
-	strncat(peaks_str,
-	        str_peaksearch(peak_search_params->method), 50);
-
 	snprintf(n_thread_str, 63, "%i", opts->n_processes);
+	args = indexamajig_command_line(geom_filename,
+	                                n_thread_str,
+	                                peak_search_params,
+	                                indexing_params);
 
-	args[0] = "indexamajig";
-	args[1] = "-i";
-	args[2] = "files.lst";
-	args[3] = "-g";
-	args[4] = geom_filename;
-	args[5] = "-o";
-	args[6] = "test.stream";
-	args[7] = index_str;
-	args[8] = "--no-check-cell";
-	args[9] = "-j";
-	args[10] = n_thread_str;
-	args[11] = "--integration=none";
-	args[12] = peaks_str;
-	n_args = 13;
-
-	if ( peak_search_params->method == PEAK_ZAEF ) {
-		add_arg(args, n_args++, "threshold",
-		        peak_search_params->threshold);
-		add_arg(args, n_args++, "min-squared-gradient",
-		        peak_search_params->min_sq_gradient);
-		add_arg(args, n_args++, "min-snr",
-		        peak_search_params->min_snr);
-	} else if ( peak_search_params->method == PEAK_PEAKFINDER8 ) {
-		add_arg(args, n_args++, "threshold",
-		        peak_search_params->threshold);
-		add_arg(args, n_args++, "min-snr",
-		        peak_search_params->min_snr);
-		add_arg(args, n_args++, "min-pix-count",
-		        peak_search_params->min_pix_count);
-		add_arg(args, n_args++, "max-pix-count",
-		        peak_search_params->max_pix_count);
-		add_arg(args, n_args++, "local-bg-radius",
-		        peak_search_params->local_bg_radius);
-		add_arg(args, n_args++, "min-res",
-		        peak_search_params->min_res);
-		add_arg(args, n_args++, "max-res",
-		        peak_search_params->max_res);
-	}
-
-	args[n_args] = NULL;
-
-	for ( i=0; i<n_args; i++ ) {
-		STATUS("%s ", args[i]);
+	i = 0;
+	while ( args[i] != NULL ) {
+		STATUS("%s ", args[i++]);
 	}
 	STATUS("\n");
 

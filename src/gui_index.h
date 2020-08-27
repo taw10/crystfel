@@ -41,4 +41,9 @@ extern gint index_all_sig(GtkWidget *widget,
 
 extern void cell_explorer_sig(struct crystfelproject *proj);
 
+extern char **indexamajig_command_line(const char *geom_filename,
+                                       const char *n_thread_str,
+                                       struct peak_params *peak_search_params,
+                                       struct index_params *indexing_params);
+
 #endif

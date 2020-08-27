@@ -521,3 +521,121 @@ gint index_one_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	return FALSE;
 }
+
+
+static void add_arg(char **args, int pos, const char *label)
+{
+	args[pos] = strdup(label);
+}
+
+
+static void add_arg_float(char **args, int pos, const char *label,
+                          float val)
+{
+	char *str = malloc(64);
+	if ( str == NULL ) return;
+	snprintf(str, 63, "--%s=%f", label, val);
+	args[pos] = str;
+}
+
+
+static void add_arg_int(char **args, int pos, const char *label,
+                        int val)
+{
+	char *str = malloc(64);
+	if ( str == NULL ) return;
+	snprintf(str, 63, "--%s=%i", label, val);
+	args[pos] = str;
+}
+
+
+char **indexamajig_command_line(const char *geom_filename,
+                                const char *n_thread_str,
+                                struct peak_params *peak_search_params,
+                                struct index_params *indexing_params)
+{
+	char **args;
+	char tols[2048];
+	int n_args = 0;
+
+	args = malloc(64*sizeof(char *));
+	if ( args == NULL ) return NULL;
+
+	/* The basics */
+	add_arg(args, n_args++, "indexamajig");
+	add_arg(args, n_args++, "-i");
+	add_arg(args, n_args++, "files.lst");
+	add_arg(args, n_args++, "-g");
+	add_arg(args, n_args++, geom_filename);
+	add_arg(args, n_args++, "-o");
+	add_arg(args, n_args++, "crystfel.stream");
+	add_arg(args, n_args++, "-j");
+	add_arg(args, n_args++, n_thread_str);
+
+	/* Peak search */
+	add_arg(args, n_args++, "--peaks");
+	add_arg(args, n_args++, str_peaksearch(peak_search_params->method));
+
+	if ( peak_search_params->method == PEAK_ZAEF ) {
+		add_arg_float(args, n_args++, "threshold",
+		              peak_search_params->threshold);
+		add_arg_float(args, n_args++, "min-squared-gradient",
+		              peak_search_params->min_sq_gradient);
+		add_arg_float(args, n_args++, "min-snr",
+		              peak_search_params->min_snr);
+
+	} else if ( peak_search_params->method == PEAK_PEAKFINDER8 ) {
+		add_arg_float(args, n_args++, "threshold",
+		              peak_search_params->threshold);
+		add_arg_float(args, n_args++, "min-snr",
+		              peak_search_params->min_snr);
+		add_arg_int(args, n_args++, "min-pix-count",
+		            peak_search_params->min_pix_count);
+		add_arg_int(args, n_args++, "max-pix-count",
+		            peak_search_params->max_pix_count);
+		add_arg_int(args, n_args++, "local-bg-radius",
+		            peak_search_params->local_bg_radius);
+		add_arg_int(args, n_args++, "min-res",
+		            peak_search_params->min_res);
+		add_arg_int(args, n_args++, "max-res",
+		            peak_search_params->max_res);
+	}
+
+	if ( indexing_params->min_peaks > 0 ) {
+		add_arg_int(args, n_args++, "min-peaks",
+		            indexing_params->min_peaks);
+	}
+
+	/* Indexing */
+	add_arg(args, n_args++, "--indexing");
+	add_arg(args, n_args++, indexing_params->indexing_methods);
+	if ( indexing_params->cell_file != NULL ) {
+		add_arg(args, n_args++, "-p");
+		add_arg(args, n_args++, indexing_params->cell_file);
+	}
+	snprintf(tols, 2048, "--tolerance=%f,%f,%f,%f,%f,%f",
+	         indexing_params->tols[0],
+	         indexing_params->tols[1],
+	         indexing_params->tols[2],
+	         indexing_params->tols[3],
+	         indexing_params->tols[4],
+	         indexing_params->tols[5]);
+	add_arg(args, n_args++, tols);
+	if ( indexing_params->multi ) add_arg(args, n_args++, "--multi");
+	if ( indexing_params->no_refine ) add_arg(args, n_args++, "--no-refine");
+	if ( indexing_params->no_retry ) add_arg(args, n_args++, "--no-retry");
+	if ( indexing_params->no_peak_check ) add_arg(args, n_args++, "--no-peak-check");
+	if ( indexing_params->no_cell_check ) add_arg(args, n_args++, "--no-cell-check");
+
+	/* Integration */
+	add_arg(args, n_args++, "--integration");
+	add_arg(args, n_args++, indexing_params->integration_method);
+	if ( indexing_params->overpredict ) args[n_args++] = "--overpredict";
+	if ( !isinf(indexing_params->push_res) ) {
+		add_arg_float(args, n_args++, "push-res",
+		              indexing_params->push_res);
+	}
+
+	args[n_args] = NULL;
+	return args;
+}
