@@ -29,6 +29,9 @@
 #include <pty.h>
 #include <glib.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <gtk/gtk.h>
 
 #include <utils.h>
@@ -146,8 +149,10 @@ static void add_arg(char **args, int pos, const char *label,
 
 void setup_subprocess(gpointer user_data)
 {
+	const char *workdir = user_data;
 	setsid();
 	setpgid(0, 0);
+	chdir(workdir);
 }
 
 
@@ -173,15 +178,37 @@ static void *run_indexing(const char *job_title,
 	int ch_stderr;
 	GError *error;
 	struct local_job *job;
+	struct stat s;
+	char *workdir;
+	const char *old_pwd;
+
+	workdir = strdup(job_title);
+	if ( workdir == NULL ) return NULL;
+
+	if ( stat(workdir, &s) != -1 ) {
+		ERROR("Working directory already exists.  "
+		      "Choose a different job title.\n");
+		return NULL;
+	}
+
+	if ( mkdir(workdir, S_IRWXU) ) {
+		ERROR("Failed to create working directory: %s\n",
+		      strerror(errno));
+		return NULL;
+	}
 
 	job = malloc(sizeof(struct local_job));
 	if ( job == NULL ) return NULL;
 
+	old_pwd = getcwd(NULL, 0);
+	chdir(workdir);
 	if ( write_file_list(filenames, events, n_frames) ) {
 		STATUS("Failed to write list\n");
 		free(job);
 		return NULL;
 	}
+	chdir(old_pwd);
+
 	job->n_frames = n_frames;
 	job->frac_complete = 0.0;
 
@@ -242,7 +269,7 @@ static void *run_indexing(const char *job_title,
 	r = g_spawn_async_with_pipes(NULL, args, NULL,
 	                             G_SPAWN_SEARCH_PATH
 	                           | G_SPAWN_DO_NOT_REAP_CHILD,
-	                             setup_subprocess, NULL,
+	                             setup_subprocess, workdir,
 	                             &job->indexamajig_pid,
 	                             NULL, NULL, &ch_stderr,
 	                             &error);
