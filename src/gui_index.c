@@ -89,9 +89,9 @@ static void get_indexing_opts(struct crystfelproject *proj,
 }
 
 
-static void run_indexing_all(struct crystfelproject *proj,
-                             int backend_idx, const char *job_title,
-                             const char *job_notes)
+static int run_indexing_all(struct crystfelproject *proj,
+                            int backend_idx, const char *job_title,
+                            const char *job_notes)
 {
 	struct crystfel_backend *be;
 	void *job_priv;
@@ -109,6 +109,9 @@ static void run_indexing_all(struct crystfelproject *proj,
 	if ( job_priv != NULL ) {
 		add_running_task(proj, "Indexing all frames",
 		                 be, job_priv);
+		return 0;
+	} else {
+		return 1;
 	}
 }
 
@@ -158,14 +161,19 @@ static void index_all_response_sig(GtkWidget *dialog, gint resp,
 		free(njp->proj->indexing_new_job_title);
 		njp->proj->indexing_new_job_title = strdup(job_title);
 
-		run_indexing_all(njp->proj, backend_idx,
-		                 job_title, job_notes);
+		if ( run_indexing_all(njp->proj, backend_idx,
+		                      job_title, job_notes) == 0 )
+		{
+			gtk_widget_destroy(dialog);
+			njp->proj->indexing_opts = NULL;
+		}
 
 		free(job_notes);
-	}
 
-	gtk_widget_destroy(dialog);
-	njp->proj->indexing_opts = NULL;
+	} else {
+		gtk_widget_destroy(dialog);
+		njp->proj->indexing_opts = NULL;
+	}
 }
 
 
