@@ -164,11 +164,12 @@ static void int_param_callback(GtkWidget *entry,
 }
 
 
-static void int_param_focus_callback(GtkWidget *entry,
-                                     GdkEvent *event,
-                                     struct param_callback_vals *cbvals)
+static gboolean int_param_focus_callback(GtkWidget *entry,
+                                         GdkEvent *event,
+                                         struct param_callback_vals *cbvals)
 {
 	int_param_callback(entry, cbvals);
+	return FALSE;
 }
 
 
@@ -195,11 +196,12 @@ static void float_param_callback(GtkWidget *entry,
 }
 
 
-static void float_param_focus_callback(GtkWidget *entry,
-                                       GdkEvent *event,
-                                       struct param_callback_vals *cbvals)
+static gboolean float_param_focus_callback(GtkWidget *entry,
+                                           GdkEvent *event,
+                                           struct param_callback_vals *cbvals)
 {
 	float_param_callback(entry, cbvals);
+	return FALSE;
 }
 
 

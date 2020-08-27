@@ -93,10 +93,11 @@ static void block_size_activate_sig(GtkEntry *entry, gpointer data)
 }
 
 
-static void block_size_focus_sig(GtkEntry *entry, GdkEvent *event,
-                                 gpointer data)
+static gboolean block_size_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                     gpointer data)
 {
 	block_size_activate_sig(entry, data);
+	return FALSE;
 }
 
 
@@ -107,10 +108,11 @@ static void partition_activate_sig(GtkEntry *entry, gpointer data)
 }
 
 
-static void partition_focus_sig(GtkEntry *entry, GdkEvent *event,
-                                gpointer data)
+static gboolean partition_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                    gpointer data)
 {
 	partition_activate_sig(entry, data);
+	return FALSE;
 }
 
 
@@ -121,10 +123,11 @@ static void email_activate_sig(GtkEntry *entry, gpointer data)
 }
 
 
-static void email_focus_sig(GtkEntry *entry, GdkEvent *event,
-                            gpointer data)
+static gboolean email_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                gpointer data)
 {
 	email_activate_sig(entry, data);
+	return FALSE;
 }
 
 

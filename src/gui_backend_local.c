@@ -267,10 +267,11 @@ static void n_processes_activate_sig(GtkEntry *entry, gpointer data)
 }
 
 
-static void n_processes_focus_sig(GtkEntry *entry, GdkEvent *event,
-                                  gpointer data)
+static gboolean n_processes_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                      gpointer data)
 {
 	n_processes_activate_sig(entry, data);
+	return FALSE;
 }
 
 
