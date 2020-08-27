@@ -705,7 +705,7 @@ int main(int argc, char *argv[])
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
 		{"peak-radius", 302, "r1,r2,r3", OPTION_NO_USAGE, "Radii for peak search"},
 		{"min-peaks", 303, "n", OPTION_NO_USAGE, "Minimum number of peaks for indexing"},
-		{"hdf5-peaks", 304, "p", OPTION_NO_USAGE, "Location of peak table in HDF5 file"},
+		{"hdf5-peaks", 304, "p", OPTION_HIDDEN, "Location of peak table in HDF5 file"},
 		{"median-filter", 305, "n", OPTION_NO_USAGE, "Apply median filter to image data"},
 		{"filter-noise", 306, NULL, OPTION_NO_USAGE, "Apply noise filter to image data"},
 		{"threshold", 't', "adu", OPTION_NO_USAGE, "Threshold for peak detection "
