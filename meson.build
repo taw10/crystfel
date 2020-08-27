@@ -45,20 +45,12 @@ if fftwdep.found()
 endif
 
 gtkdep = dependency('gtk+-3.0', required : false)
-if not gtkdep.found()
-  gtkdep = dependency('gtk+-2.0', required : false)
-else
-  add_project_arguments('-Wno-deprecated-declarations', language : 'c')
-endif
-
 if gtkdep.found()
+  add_project_arguments('-Wno-deprecated-declarations', language : 'c')
   conf_data.set10('HAVE_GTK', 1)
 endif
 
 gdkdep = dependency('gdk-3.0', required : false)
-if not gdkdep.found()
-  gdkdep = dependency('gdk-2.0', required : false)
-endif
 if gdkdep.found()
   conf_data.set10('HAVE_GDK', 1)
 endif
