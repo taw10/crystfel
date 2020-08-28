@@ -26,15 +26,18 @@
  *
  */
 
-#include <pty.h>
 #include <glib.h>
-#include <sys/wait.h>
 #include <gtk/gtk.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <slurm/slurm.h>
+#include <gio/gio.h>
 
 #include <utils.h>
 
 #include "gui_project.h"
+#include "gui_index.h"
 
 
 struct slurm_indexing_opts
@@ -79,10 +82,74 @@ static void *run_indexing(const char *job_title,
                           struct index_params *indexing_params,
                           void *opts_priv)
 {
-	//struct slurm_indexing_opts *opts = opts_priv;
-	STATUS("SLURM API version = %li\n",
-	       slurm_api_version());
-	return NULL;
+	struct slurm_indexing_opts *opts = opts_priv;
+	struct slurm_job *job;
+	job_desc_msg_t job_desc_msg;
+	submit_response_msg_t *resp;
+	int r;
+	char *workdir;
+	struct stat s;
+	char **cmdline;
+	char *script;
+	GFile *workdir_file;
+	GFile *cwd_file;
+
+	workdir = strdup(job_title);
+	if ( workdir == NULL ) return NULL;
+
+	if ( stat(workdir, &s) != -1 ) {
+		ERROR("Working directory already exists.  "
+		      "Choose a different job title.\n");
+		return NULL;
+	}
+
+	if ( mkdir(workdir, S_IRWXU) ) {
+		ERROR("Failed to create working directory: %s\n",
+		      strerror(errno));
+		return NULL;
+	}
+
+	cwd_file = g_file_new_for_path(".");
+	workdir_file = g_file_get_child(cwd_file, workdir);
+
+	cmdline = indexamajig_command_line(geom_filename,
+	                                   "`nproc`",
+	                                   peak_search_params,
+	                                   indexing_params);
+
+	script = g_strjoinv(" ", cmdline);
+
+	job = malloc(sizeof(struct slurm_job));
+	if ( job == NULL ) return NULL;
+
+	slurm_init_job_desc_msg(&job_desc_msg);
+	job_desc_msg.mail_user = strdup(opts->email_address);
+	job_desc_msg.mail_type = MAIL_JOB_FAIL;
+	job_desc_msg.comment = strdup("Submitted via CrystFEL GUI");
+	job_desc_msg.shared = 0;
+	job_desc_msg.time_limit = 60;
+	job_desc_msg.partition = strdup(opts->partition);
+	job_desc_msg.min_nodes = 1;
+	job_desc_msg.max_nodes = 1;
+	job_desc_msg.name = strdup(job_title);
+	job_desc_msg.std_err = strdup("job.err");
+	job_desc_msg.std_out = strdup("job.out");
+	job_desc_msg.work_dir = g_file_get_path(workdir_file);
+	job_desc_msg.script = script;
+	//environment/env_size
+
+	r = slurm_submit_batch_job(&job_desc_msg, &resp);
+
+	if ( r ) {
+		ERROR("Couldn't submit job: %i\n", resp->error_code);
+		free(job);
+		return NULL;
+	}
+
+	STATUS("Submitted SLURM job ID %i\n", resp->job_id);
+	slurm_free_submit_response_response_msg(resp);
+
+	return job;
 }
 
 
