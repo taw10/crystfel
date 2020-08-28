@@ -172,7 +172,7 @@ static void *run_indexing(const char *job_title,
 
 	if ( stat(workdir, &s) != -1 ) {
 		ERROR("Working directory already exists.  "
-		      "Choose a different job title.\n");
+		      "Choose a different job name.\n");
 		return NULL;
 	}
 
