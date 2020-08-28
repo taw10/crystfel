@@ -158,6 +158,11 @@ static void index_all_response_sig(GtkWidget *dialog, gint resp,
 		job_title = gtk_entry_get_text(GTK_ENTRY(njp->job_title_entry));
 		job_notes = get_all_text(GTK_TEXT_VIEW(njp->job_notes_text));
 
+		if ( job_title[0] == '\0' ) {
+			ERROR("You must provide a job name.\n");
+			return;
+		}
+
 		free(njp->proj->indexing_new_job_title);
 		njp->proj->indexing_new_job_title = strdup(job_title);
 
