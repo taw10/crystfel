@@ -104,6 +104,7 @@ static void *run_indexing(const char *job_title,
 	char *workdir;
 	struct stat s;
 	char **cmdline;
+	char *cmdline_all;
 	char *script;
 	GFile *workdir_file;
 	GFile *cwd_file;
@@ -143,7 +144,14 @@ static void *run_indexing(const char *job_title,
 	                                   peak_search_params,
 	                                   indexing_params);
 
-	script = g_strjoinv(" ", cmdline);
+	cmdline_all = g_strjoinv(" ", cmdline);
+
+	script = malloc(strlen(cmdline_all)+16);
+	if ( script == NULL ) return NULL;
+
+	strcpy(script, "#!/bin/sh\n");
+	strcat(script, cmdline_all);
+	g_free(cmdline_all);
 
 	job = malloc(sizeof(struct slurm_job));
 	if ( job == NULL ) return NULL;
