@@ -61,8 +61,8 @@ static int get_task_status(void *job_priv,
 {
 	struct slurm_job *job = job_priv;
 	*frac_complete = job->frac_complete;
-	*running = 0;
-	return 1;
+	*running = 1;
+	return 0;
 }
 
 
