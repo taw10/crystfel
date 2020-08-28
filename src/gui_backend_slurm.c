@@ -137,7 +137,6 @@ static void *run_indexing(const char *job_title,
 	fclose(fh);
 	g_free(notes_path);
 	g_object_unref(notes_file);
-	g_object_unref(workdir_file);
 
 	cmdline = indexamajig_command_line(geom_filename,
 	                                   "`nproc`",
@@ -166,6 +165,8 @@ static void *run_indexing(const char *job_title,
 	job_desc_msg.work_dir = g_file_get_path(workdir_file);
 	job_desc_msg.script = script;
 	job_desc_msg.environment = create_env(&job_desc_msg.env_size);
+
+	g_object_unref(workdir_file);
 
 	r = slurm_submit_batch_job(&job_desc_msg, &resp);
 
