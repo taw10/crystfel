@@ -136,6 +136,8 @@ static void *run_indexing(const char *job_title,
 	if ( job == NULL ) return NULL;
 
 	slurm_init_job_desc_msg(&job_desc_msg);
+	job_desc_msg.user_id = getuid();
+	job_desc_msg.group_id = getgid();
 	job_desc_msg.mail_user = strdup(opts->email_address);
 	job_desc_msg.mail_type = MAIL_JOB_FAIL;
 	job_desc_msg.comment = strdup("Submitted via CrystFEL GUI");
