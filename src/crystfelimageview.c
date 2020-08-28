@@ -36,7 +36,7 @@
 #include <assert.h>
 #include <gtk/gtk.h>
 #include <glib-object.h>
-#include <gsl/gsl_rstat.h>
+#include <gsl/gsl_statistics_float.h>
 
 #include <utils.h>
 #include <detgeom.h>
@@ -766,30 +766,40 @@ static GdkPixbuf *render_panel(float *data, int *badmap, int w, int h,
 static double auto_scale_top(const struct image *image)
 {
 	int pn;
-	gsl_rstat_workspace *wksp;
-	double top;
-
-	wksp = gsl_rstat_alloc();
-	if ( wksp == NULL ) return 100.0;
+	double total_mean = 0.0;
+	double total_variance = 0.0;
 
 	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
-		long int i;
+
+		long int i, j;
 		int w, h;
+		float *data;
+		float this_mean;
+
 		w = image->detgeom->panels[pn].w;
 		h = image->detgeom->panels[pn].h;
+
+		data = malloc(w*h*sizeof(float));
+		if ( data == NULL ) return 100.0;
+
+		j = 0;
 		for ( i=0; i<w*h; i++ ) {
 			if ( !image->bad[pn][i] ) {
-				gsl_rstat_add(image->dp[pn][i], wksp);
+				data[j++] = image->dp[pn][i];
 			}
 		}
+
+		this_mean = gsl_stats_float_mean(data, 1, j);
+
+		total_mean += this_mean;
+		total_variance += gsl_stats_float_variance_m(data, 1, j,
+		                                             this_mean);
+
+		free(data);
 	}
 
-	top = gsl_rstat_mean(wksp) + gsl_rstat_sd(wksp);
-	gsl_rstat_free(wksp);
-
-	top *= 6;
-
-	return top;
+	return (total_mean/image->detgeom->n_panels)
+	      + 10.0*sqrt(total_variance/image->detgeom->n_panels);
 }
 
 
