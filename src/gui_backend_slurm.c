@@ -72,6 +72,20 @@ static void cancel_task(void *job_priv)
 }
 
 
+static char **create_env(uint32_t *psize)
+{
+	char **env;
+
+	env = malloc(10*sizeof(char *));
+	if ( env == NULL ) return NULL;
+
+	env[0] = strdup("PATH=/path/to/indexamajig");
+	*psize = 1;
+
+	return env;
+}
+
+
 static void *run_indexing(const char *job_title,
                           const char *job_notes,
                           char **filenames,
@@ -151,7 +165,7 @@ static void *run_indexing(const char *job_title,
 	job_desc_msg.std_out = strdup("job.out");
 	job_desc_msg.work_dir = g_file_get_path(workdir_file);
 	job_desc_msg.script = script;
-	//environment/env_size
+	job_desc_msg.environment = create_env(&job_desc_msg.env_size);
 
 	r = slurm_submit_batch_job(&job_desc_msg, &resp);
 
