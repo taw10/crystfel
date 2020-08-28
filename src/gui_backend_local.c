@@ -166,6 +166,11 @@ static void *run_indexing(const char *job_title,
 	struct stat s;
 	char *workdir;
 	const char *old_pwd;
+	GFile *workdir_file;
+	GFile *cwd_file;
+	GFile *notes_file;
+	char *notes_path;
+	FILE *fh;
 
 	workdir = strdup(job_title);
 	if ( workdir == NULL ) return NULL;
@@ -181,6 +186,19 @@ static void *run_indexing(const char *job_title,
 		      strerror(errno));
 		return NULL;
 	}
+
+	cwd_file = g_file_new_for_path(".");
+	workdir_file = g_file_get_child(cwd_file, workdir);
+	g_object_unref(cwd_file);
+
+	notes_file = g_file_get_child(workdir_file, "notes.txt");
+	notes_path = g_file_get_path(notes_file);
+	fh = fopen(notes_path, "w");
+	fputs(job_notes, fh);
+	fclose(fh);
+	g_free(notes_path);
+	g_object_unref(notes_file);
+	g_object_unref(workdir_file);
 
 	job = malloc(sizeof(struct local_job));
 	if ( job == NULL ) return NULL;
