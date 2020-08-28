@@ -558,9 +558,10 @@ void default_project(struct crystfelproject *proj)
 	proj->n_running_tasks = 0;
 	proj->indexing_new_job_title = NULL;
 
-	/* FIXME: Crappy error handling */
+	proj->indexing_backend_selected = 0;
 	proj->n_backends = 0;
 	proj->backends = malloc(2*sizeof(struct crystfel_backend));
+	/* FIXME: Crappy error handling */
 	if ( proj->backends == NULL ) {
 		ERROR("Couldn't allocate space for backends\n");
 	}
