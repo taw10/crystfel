@@ -70,7 +70,12 @@ static int get_task_status(void *job_priv,
 
 static void cancel_task(void *job_priv)
 {
-	//struct slurm_job *job = job_priv;
+	int i;
+	struct slurm_job *job = job_priv;
+	for ( i=0; i<job->n_blocks; i++) {
+		STATUS("Stopping SLURM job %i\n", job->job_ids[i]);
+		slurm_kill_job(job->job_ids[i], SIGINT, 0);
+	}
 }
 
 
