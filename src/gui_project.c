@@ -475,8 +475,11 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "peak_search_params.revalidate %i\n",
 	        proj->peak_search_params.revalidate);
 
-	fprintf(fh, "indexing.cell_file %s\n",
-	        proj->indexing_params.cell_file);
+	if ( proj->indexing_params.cell_file != NULL ) {
+		fprintf(fh, "indexing.cell_file %s\n",
+		        proj->indexing_params.cell_file);
+	}
+
 	fprintf(fh, "indexing.methods %s\n",
 	        proj->indexing_params.indexing_methods);
 	fprintf(fh, "indexing.multi_lattice %i\n",
