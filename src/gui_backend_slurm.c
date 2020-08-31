@@ -45,6 +45,7 @@ struct slurm_indexing_opts
 	char *partition;
 	int block_size;
 	char *email_address;
+	char *path_add;
 };
 
 
@@ -236,6 +237,21 @@ static gboolean email_focus_sig(GtkEntry *entry, GdkEvent *event,
 }
 
 
+static void pathadd_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_indexing_opts *opts = data;
+	opts->path_add = strdup(gtk_entry_get_text(entry));
+}
+
+
+static gboolean pathadd_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                  gpointer data)
+{
+	pathadd_activate_sig(entry, data);
+	return FALSE;
+}
+
+
 static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 {
 	struct slurm_indexing_opts *opts = opts_priv;
@@ -309,6 +325,27 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	                 G_CALLBACK(email_focus_sig),
 	                 opts);
 
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Search path for executables:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->path_add != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->path_add);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "/path/to/indexing/programs");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(pathadd_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(pathadd_focus_sig),
+	                 opts);
+
 	return vbox;
 }
 
@@ -321,6 +358,7 @@ static struct slurm_indexing_opts *make_default_slurm_opts()
 	opts->partition = NULL;
 	opts->block_size = 1000;
 	opts->email_address = NULL;
+	opts->path_add = NULL;
 
 	return opts;
 }
@@ -341,6 +379,11 @@ static void write_indexing_opts(void *opts_priv, FILE *fh)
 	if ( opts->email_address != NULL ) {
 		fprintf(fh, "indexing.slurm.email_address %s\n",
 		        opts->email_address);
+	}
+
+	if ( opts->path_add != NULL ) {
+		fprintf(fh, "indexing.slurm.path_add %s\n",
+		        opts->path_add);
 	}
 }
 
@@ -363,6 +406,10 @@ static void read_indexing_opt(void *opts_priv,
 
 	if ( strcmp(key, "indexing.slurm.partition") == 0 ) {
 		opts->partition = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.path_add") == 0 ) {
+		opts->path_add = strdup(val);
 	}
 }
 
