@@ -209,7 +209,7 @@ static void *run_indexing(const char *job_title,
 	r = slurm_submit_batch_job(&job_desc_msg, &resp);
 
 	if ( r ) {
-		ERROR("Couldn't submit job: %i\n", resp->error_code);
+		ERROR("Couldn't submit job: %i\n", errno);
 		free(job);
 		return NULL;
 	}
