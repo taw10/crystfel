@@ -73,14 +73,42 @@ static void cancel_task(void *job_priv)
 }
 
 
-static char **create_env(uint32_t *psize)
+static char **create_env(uint32_t *psize, char *path_add)
 {
 	char **env;
+	const char *base_path = "PATH=/bin:/usr/bin";
+	char *crystfel_path;
+	size_t path_len;
 
 	env = malloc(10*sizeof(char *));
 	if ( env == NULL ) return NULL;
 
-	env[0] = strdup("PATH=/path/to/indexamajig");
+	crystfel_path = get_crystfel_path_str();
+
+	path_len = 4 + strlen(base_path);
+
+	if ( path_add != NULL ) {
+		path_len += strlen(path_add);
+	}
+
+	if ( crystfel_path != NULL ) {
+		path_len += strlen(crystfel_path);
+	}
+
+	env[0] = malloc(path_len);
+	if ( env[0] == NULL ) return NULL;
+
+	strcpy(env[0], base_path);
+	if ( crystfel_path != NULL ) {
+		strcat(env[0], ":");
+		strcat(env[0], crystfel_path);
+		g_free(crystfel_path);
+	}
+	if ( path_add != NULL ) {
+		strcat(env[0], ":");
+		strcat(env[0], path_add);
+	}
+
 	*psize = 1;
 
 	return env;
@@ -173,7 +201,8 @@ static void *run_indexing(const char *job_title,
 	job_desc_msg.std_out = strdup("job.out");
 	job_desc_msg.work_dir = g_file_get_path(workdir_file);
 	job_desc_msg.script = script;
-	job_desc_msg.environment = create_env(&job_desc_msg.env_size);
+	job_desc_msg.environment = create_env(&job_desc_msg.env_size,
+	                                      opts->path_add);
 
 	g_object_unref(workdir_file);
 
