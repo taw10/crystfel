@@ -52,7 +52,8 @@ struct slurm_indexing_opts
 struct slurm_job
 {
 	double frac_complete;
-	/* FIXME: List of SLURM job numbers to track */
+	int n_blocks;
+	uint32_t *job_ids;
 };
 
 
@@ -73,7 +74,7 @@ static void cancel_task(void *job_priv)
 }
 
 
-static char **create_env(uint32_t *psize, char *path_add)
+static char **create_env(int *psize, char *path_add)
 {
 	char **env;
 	const char *base_path = "PATH=/bin:/usr/bin";
@@ -115,6 +116,117 @@ static char **create_env(uint32_t *psize, char *path_add)
 }
 
 
+static uint32_t submit_batch_job(const char *geom_filename,
+                                 const char *file_list,
+                                 const char *stream_filename,
+                                 const char *email_address,
+                                 const char *partition,
+                                 char **env,
+                                 int n_env,
+                                 const char *job_name,
+                                 const char *workdir,
+                                 struct peak_params *peak_search_params,
+                                 struct index_params *indexing_params)
+
+{
+	job_desc_msg_t job_desc_msg;
+	submit_response_msg_t *resp;
+	char **cmdline;
+	char *cmdline_all;
+	char *script;
+	int job_id;
+	int r;
+
+	cmdline = indexamajig_command_line(geom_filename,
+	                                   "`nproc`",
+	                                   file_list,
+	                                   stream_filename,
+	                                   peak_search_params,
+	                                   indexing_params);
+
+	cmdline_all = g_strjoinv(" ", cmdline);
+
+	script = malloc(strlen(cmdline_all)+16);
+	if ( script == NULL ) return 0;
+
+	strcpy(script, "#!/bin/sh\n");
+	strcat(script, cmdline_all);
+	g_free(cmdline_all);
+
+	slurm_init_job_desc_msg(&job_desc_msg);
+	job_desc_msg.user_id = getuid();
+	job_desc_msg.group_id = getgid();
+	job_desc_msg.mail_user = strdup(email_address);
+	job_desc_msg.mail_type = MAIL_JOB_FAIL;
+	job_desc_msg.comment = "Submitted via CrystFEL GUI";
+	job_desc_msg.shared = 0;
+	job_desc_msg.time_limit = 60;
+	job_desc_msg.partition = strdup(partition);
+	job_desc_msg.min_nodes = 1;
+	job_desc_msg.max_nodes = 1;
+	job_desc_msg.name = strdup(job_name);
+	job_desc_msg.std_err = strdup("job.err");
+	job_desc_msg.std_out = strdup("job.out");
+	job_desc_msg.work_dir = strdup(workdir);
+	job_desc_msg.script = script;
+	job_desc_msg.environment = env;
+	job_desc_msg.env_size = n_env;
+
+	r = slurm_submit_batch_job(&job_desc_msg, &resp);
+	if ( r ) {
+		ERROR("Couldn't submit job: %i\n", errno);
+		return 0;
+	}
+
+	free(job_desc_msg.mail_user);
+	free(job_desc_msg.partition);
+	free(job_desc_msg.name);
+	free(job_desc_msg.work_dir);
+	free(job_desc_msg.std_err);
+	free(job_desc_msg.std_out);
+
+	job_id = resp->job_id;
+	slurm_free_submit_response_response_msg(resp);
+
+	return job_id;
+}
+
+
+static void write_partial_file_list(GFile *workdir,
+                                    const char *list_filename,
+                                    int j,
+                                    int block_size,
+                                    char **filenames,
+                                    char **events,
+                                    int n_frames)
+{
+	GFile *file;
+	char *file_path;
+	FILE *fh;
+	int i;
+
+	file = g_file_get_child(workdir, list_filename);
+	file_path = g_file_get_path(file);
+
+	fh = fopen(file_path, "w");
+	for ( i=j*block_size;
+	      (i<(j+1)*block_size) && (i<n_frames);
+	      i++ )
+	{
+		fprintf(fh, "%s", filenames[i]);
+		if ( events[i] != NULL ) {
+			fprintf(fh, " %s\n", events[i]);
+		} else {
+			fprintf(fh, "\n");
+		}
+	}
+
+	fclose(fh);
+	g_free(file_path);
+	g_object_unref(file);
+}
+
+
 static void *run_indexing(const char *job_title,
                           const char *job_notes,
                           char **filenames,
@@ -127,19 +239,17 @@ static void *run_indexing(const char *job_title,
 {
 	struct slurm_indexing_opts *opts = opts_priv;
 	struct slurm_job *job;
-	job_desc_msg_t job_desc_msg;
-	submit_response_msg_t *resp;
-	int r;
 	char *workdir;
 	struct stat s;
-	char **cmdline;
-	char *cmdline_all;
-	char *script;
-	GFile *workdir_file;
 	GFile *cwd_file;
 	GFile *notes_file;
+	GFile *workdir_file;
 	char *notes_path;
 	FILE *fh;
+	char **env;
+	int n_env;
+	int i;
+	int fail = 0;
 
 	workdir = strdup(job_title);
 	if ( workdir == NULL ) return NULL;
@@ -168,55 +278,68 @@ static void *run_indexing(const char *job_title,
 	g_free(notes_path);
 	g_object_unref(notes_file);
 
-	cmdline = indexamajig_command_line(geom_filename,
-	                                   "`nproc`",
-	                                   peak_search_params,
-	                                   indexing_params);
+	workdir = g_file_get_path(workdir_file);
 
-	cmdline_all = g_strjoinv(" ", cmdline);
-
-	script = malloc(strlen(cmdline_all)+16);
-	if ( script == NULL ) return NULL;
-
-	strcpy(script, "#!/bin/sh\n");
-	strcat(script, cmdline_all);
-	g_free(cmdline_all);
+	env = create_env(&n_env, opts->path_add);
 
 	job = malloc(sizeof(struct slurm_job));
-	if ( job == NULL ) return NULL;
+	if ( job == NULL ) return 0;
 
-	slurm_init_job_desc_msg(&job_desc_msg);
-	job_desc_msg.user_id = getuid();
-	job_desc_msg.group_id = getgid();
-	job_desc_msg.mail_user = strdup(opts->email_address);
-	job_desc_msg.mail_type = MAIL_JOB_FAIL;
-	job_desc_msg.comment = strdup("Submitted via CrystFEL GUI");
-	job_desc_msg.shared = 0;
-	job_desc_msg.time_limit = 60;
-	job_desc_msg.partition = strdup(opts->partition);
-	job_desc_msg.min_nodes = 1;
-	job_desc_msg.max_nodes = 1;
-	job_desc_msg.name = strdup(job_title);
-	job_desc_msg.std_err = strdup("job.err");
-	job_desc_msg.std_out = strdup("job.out");
-	job_desc_msg.work_dir = g_file_get_path(workdir_file);
-	job_desc_msg.script = script;
-	job_desc_msg.environment = create_env(&job_desc_msg.env_size,
-	                                      opts->path_add);
+	job->n_blocks = n_frames / opts->block_size;
+	if ( n_frames % opts->block_size ) job->n_blocks++;
+	STATUS("Splitting job into %i blocks of max %i frames\n",
+	       job->n_blocks, opts->block_size);
 
+	job->job_ids = malloc(job->n_blocks * sizeof(uint32_t));
+	if ( job->job_ids == NULL ) return NULL;
+
+	for ( i=0; i<job->n_blocks; i++ ) {
+
+		char job_name[128];
+		char file_list[128];
+		char stream_filename[128];
+		int job_id;
+
+		snprintf(job_name, 127, "%s-%i", job_title, i);
+		snprintf(file_list, 127, "files-%i.lst", i);
+		snprintf(stream_filename, 127,
+		         "crystfel-%i.stream", i);
+
+		write_partial_file_list(workdir_file, file_list,
+		                        i, opts->block_size,
+		                        filenames, events, n_frames);
+
+		job_id = submit_batch_job(geom_filename,
+		                          file_list,
+		                          stream_filename,
+		                          opts->email_address,
+		                          opts->partition,
+		                          env,
+		                          n_env,
+		                          job_name,
+		                          workdir,
+		                          peak_search_params,
+		                          indexing_params);
+
+		if ( job_id == 0 ) {
+			fail = 1;
+			break;
+		}
+
+		job->job_ids[i] = job_id;
+		STATUS("Submitted SLURM job ID %i\n", job_id);
+	}
+
+	for ( i=0; i<n_env; i++ ) free(env[i]);
+	free(env);
+	free(workdir);
 	g_object_unref(workdir_file);
 
-	r = slurm_submit_batch_job(&job_desc_msg, &resp);
-
-	if ( r ) {
-		ERROR("Couldn't submit job: %i\n", errno);
+	if ( fail ) {
+		free(job->job_ids);
 		free(job);
 		return NULL;
 	}
-
-	STATUS("Submitted SLURM job ID %i\n", resp->job_id);
-	slurm_free_submit_response_response_msg(resp);
-
 	return job;
 }
 

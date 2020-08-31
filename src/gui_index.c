@@ -619,6 +619,8 @@ static char *get_indexamajig_exe()
 
 char **indexamajig_command_line(const char *geom_filename,
                                 const char *n_thread_str,
+                                const char *files_list,
+                                const char *stream_filename,
                                 struct peak_params *peak_search_params,
                                 struct index_params *indexing_params)
 {
@@ -641,11 +643,11 @@ char **indexamajig_command_line(const char *geom_filename,
 	/* The basics */
 	add_arg(args, n_args++, indexamajig_path);
 	add_arg(args, n_args++, "-i");
-	add_arg(args, n_args++, "files.lst");
+	add_arg(args, n_args++, files_list);
 	add_arg(args, n_args++, "-g");
 	add_arg(args, n_args++, geom_filename);
 	add_arg(args, n_args++, "-o");
-	add_arg(args, n_args++, "crystfel.stream");
+	add_arg(args, n_args++, stream_filename);
 	add_arg(args, n_args++, "-j");
 	add_arg(args, n_args++, n_thread_str);
 

@@ -218,6 +218,8 @@ static void *run_indexing(const char *job_title,
 	snprintf(n_thread_str, 63, "%i", opts->n_processes);
 	args = indexamajig_command_line(geom_filename,
 	                                n_thread_str,
+	                                "files.lst",
+	                                "crystfel.stream",
 	                                peak_search_params,
 	                                indexing_params);
 

@@ -43,6 +43,8 @@ extern void cell_explorer_sig(struct crystfelproject *proj);
 
 extern char **indexamajig_command_line(const char *geom_filename,
                                        const char *n_thread_str,
+                                       const char *files_list,
+                                       const char *stream_filename,
                                        struct peak_params *peak_search_params,
                                        struct index_params *indexing_params);
 
