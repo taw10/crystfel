@@ -125,6 +125,8 @@ static uint32_t submit_batch_job(const char *geom_filename,
                                  int n_env,
                                  const char *job_name,
                                  const char *workdir,
+                                 const char *stderr_file,
+                                 const char *stdout_file,
                                  struct peak_params *peak_search_params,
                                  struct index_params *indexing_params)
 
@@ -165,8 +167,8 @@ static uint32_t submit_batch_job(const char *geom_filename,
 	job_desc_msg.min_nodes = 1;
 	job_desc_msg.max_nodes = 1;
 	job_desc_msg.name = strdup(job_name);
-	job_desc_msg.std_err = strdup("job.err");
-	job_desc_msg.std_out = strdup("job.out");
+	job_desc_msg.std_err = strdup(stderr_file);
+	job_desc_msg.std_out = strdup(stdout_file);
 	job_desc_msg.work_dir = strdup(workdir);
 	job_desc_msg.script = script;
 	job_desc_msg.environment = env;
@@ -298,12 +300,16 @@ static void *run_indexing(const char *job_title,
 		char job_name[128];
 		char file_list[128];
 		char stream_filename[128];
+		char stderr_file[128];
+		char stdout_file[128];
 		int job_id;
 
 		snprintf(job_name, 127, "%s-%i", job_title, i);
 		snprintf(file_list, 127, "files-%i.lst", i);
 		snprintf(stream_filename, 127,
 		         "crystfel-%i.stream", i);
+		snprintf(stderr_file, 127, "stderr-%i.log", i);
+		snprintf(stdout_file, 127, "stdout-%i.log", i);
 
 		write_partial_file_list(workdir_file, file_list,
 		                        i, opts->block_size,
@@ -318,6 +324,8 @@ static void *run_indexing(const char *job_title,
 		                          n_env,
 		                          job_name,
 		                          workdir,
+		                          stderr_file,
+		                          stdout_file,
 		                          peak_search_params,
 		                          indexing_params);
 
