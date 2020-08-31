@@ -691,12 +691,12 @@ char **indexamajig_command_line(const char *geom_filename,
 		add_arg(args, n_args++, indexing_params->cell_file);
 	}
 	snprintf(tols, 2048, "--tolerance=%f,%f,%f,%f,%f,%f",
-	         indexing_params->tols[0],
-	         indexing_params->tols[1],
-	         indexing_params->tols[2],
-	         indexing_params->tols[3],
-	         indexing_params->tols[4],
-	         indexing_params->tols[5]);
+	         rad2deg(indexing_params->tols[0]),
+	         rad2deg(indexing_params->tols[1]),
+	         rad2deg(indexing_params->tols[2]),
+	         rad2deg(indexing_params->tols[3]),
+	         rad2deg(indexing_params->tols[4]),
+	         rad2deg(indexing_params->tols[5]));
 	add_arg(args, n_args++, tols);
 	if ( indexing_params->multi ) add_arg(args, n_args++, "--multi");
 	if ( indexing_params->no_refine ) add_arg(args, n_args++, "--no-refine");
