@@ -64,6 +64,9 @@ static int read_number_processed(const char *filename)
 	FILE *fh = fopen(filename, "r");
 	int n_proc;
 
+	/* Normal situation if SLURM job hasn't started yet */
+	if ( fh == NULL ) return 0;
+
 	do {
 		char line[1024];
 		if ( fgets(line, 1024, fh) == NULL ) break;
