@@ -380,6 +380,7 @@ static void *run_indexing(const char *job_title,
 		char stderr_file[128];
 		char stdout_file[128];
 		int job_id;
+		GFile *stderr_gfile;
 
 		snprintf(job_name, 127, "%s-%i", job_title, i);
 		snprintf(file_list, 127, "files-%i.lst", i);
@@ -412,7 +413,12 @@ static void *run_indexing(const char *job_title,
 		}
 
 		job->job_ids[i] = job_id;
-		job->stderr_filenames[i] = strdup(stderr_file);
+
+		stderr_gfile = g_file_get_child(workdir_file,
+		                                stderr_file);
+		job->stderr_filenames[i] = g_file_get_path(stderr_gfile);
+		g_object_unref(stderr_gfile);
+
 		STATUS("Submitted SLURM job ID %i\n", job_id);
 	}
 
