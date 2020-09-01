@@ -52,9 +52,54 @@ struct slurm_indexing_opts
 struct slurm_job
 {
 	double frac_complete;
+	int n_frames;
 	int n_blocks;
 	uint32_t *job_ids;
+	char **stderr_filenames;
 };
+
+
+static int read_number_processed(const char *filename)
+{
+	FILE *fh = fopen(filename, "r");
+	int n_proc;
+
+	do {
+		char line[1024];
+		if ( fgets(line, 1024, fh) == NULL ) break;
+
+		if ( strncmp(line, "Final: ", 7) == 0 ) {
+			sscanf(line, "Final: %i images processed", &n_proc);
+		} else if ( strstr(line, " images processed, ") != NULL ) {
+			sscanf(line, "%i ", &n_proc);
+		} else {
+			STATUS("%s\n", line);
+		}
+
+	} while ( 1 );
+
+	return n_proc;
+}
+
+
+static int job_running(uint32_t job_id)
+{
+	job_info_msg_t *job_info;
+	int running = 1;
+
+	if ( slurm_load_job(&job_info, job_id, 0) ) {
+		STATUS("Couldn't get status: %i\n",
+		       slurm_strerror(slurm_get_errno()));
+		running = 0;
+		/* FIXME: Distinguish error cond from job complete */
+	}
+
+	/* FIXME: Check that job is actually still running */
+
+	slurm_free_job_info_msg(job_info);
+
+	return running;
+}
 
 
 static int get_task_status(void *job_priv,
@@ -62,8 +107,25 @@ static int get_task_status(void *job_priv,
                            float *frac_complete)
 {
 	struct slurm_job *job = job_priv;
-	*frac_complete = job->frac_complete;
-	*running = 1;
+	int i;
+	int n_proc = 0;
+	int all_complete = 1;
+
+	for ( i=0; i<job->n_blocks; i++ ) {
+
+		n_proc += read_number_processed(job->stderr_filenames[i]);
+
+		if ( (job->job_ids[i] != 0)
+		     && !job_running(job->job_ids[i]) )
+		{
+			job->job_ids[i] = 0;
+		} else {
+			all_complete = 0;
+		}
+	}
+
+	*frac_complete = (double)n_proc / job->n_frames;
+	*running = 1 - all_complete;
 	return 0;
 }
 
@@ -295,6 +357,7 @@ static void *run_indexing(const char *job_title,
 	job = malloc(sizeof(struct slurm_job));
 	if ( job == NULL ) return 0;
 
+	job->n_frames = n_frames;
 	job->n_blocks = n_frames / opts->block_size;
 	if ( n_frames % opts->block_size ) job->n_blocks++;
 	STATUS("Splitting job into %i blocks of max %i frames\n",
@@ -302,6 +365,9 @@ static void *run_indexing(const char *job_title,
 
 	job->job_ids = malloc(job->n_blocks * sizeof(uint32_t));
 	if ( job->job_ids == NULL ) return NULL;
+
+	job->stderr_filenames = malloc(job->n_blocks * sizeof(char *));
+	if ( job->stderr_filenames == NULL ) return NULL;
 
 	for ( i=0; i<job->n_blocks; i++ ) {
 
@@ -343,6 +409,7 @@ static void *run_indexing(const char *job_title,
 		}
 
 		job->job_ids[i] = job_id;
+		job->stderr_filenames[i] = strdup(stderr_file);
 		STATUS("Submitted SLURM job ID %i\n", job_id);
 	}
 
@@ -353,6 +420,7 @@ static void *run_indexing(const char *job_title,
 
 	if ( fail ) {
 		free(job->job_ids);
+		free(job->stderr_filenames);
 		free(job);
 		return NULL;
 	}
