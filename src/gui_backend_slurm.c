@@ -75,11 +75,11 @@ static int read_number_processed(const char *filename)
 			sscanf(line, "Final: %i images processed", &n_proc);
 		} else if ( strstr(line, " images processed, ") != NULL ) {
 			sscanf(line, "%i ", &n_proc);
-		} else {
-			STATUS("%s\n", line);
 		}
 
 	} while ( 1 );
+
+	fclose(fh);
 
 	return n_proc;
 }
