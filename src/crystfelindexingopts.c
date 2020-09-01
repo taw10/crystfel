@@ -228,6 +228,7 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 static void cell_file_clear_sig(GtkButton *buton,
                                 CrystFELIndexingOpts *io)
 {
+	io->cell_file = NULL;
 	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(io->cell_chooser),
 	                              "(none)");
 }
@@ -250,6 +251,16 @@ static void check_cell_toggle_sig(GtkToggleButton *togglebutton,
 		gtk_widget_set_sensitive(GTK_WIDGET(io->tols[i]),
 		                         active);
 	}
+}
+
+
+static void cell_file_set_sig(GtkFileChooserButton *widget,
+                              CrystFELIndexingOpts *io)
+{
+	gchar *filename;
+	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(widget));
+	g_free(io->cell_file);
+	io->cell_file = filename;
 }
 
 
@@ -279,6 +290,8 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	                                TRUE);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->cell_chooser),
 	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(io->cell_chooser), "file-set",
+	                 G_CALLBACK(cell_file_set_sig), io);
 	button = gtk_button_new_from_icon_name("edit-clear",
 	                                       GTK_ICON_SIZE_BUTTON);
 	g_signal_connect(G_OBJECT(button), "clicked",
@@ -420,6 +433,8 @@ GtkWidget *crystfel_indexing_opts_new()
 
 	io = g_object_new(CRYSTFEL_TYPE_INDEXING_OPTS, NULL);
 
+	io->cell_file = NULL;
+
 	gtk_notebook_append_page(GTK_NOTEBOOK(io),
 	                         indexing_parameters(io),
 	                         gtk_label_new("Indexing"));
@@ -435,10 +450,7 @@ GtkWidget *crystfel_indexing_opts_new()
 
 char *crystfel_indexing_opts_get_cell_file(CrystFELIndexingOpts *opts)
 {
-	gchar *filename;
-
-	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(opts->cell_chooser));
-	return filename;
+	return safe_strdup(opts->cell_file);
 }
 
 

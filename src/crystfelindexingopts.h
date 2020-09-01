@@ -54,6 +54,7 @@ struct _crystfelindexingopts
 	GtkNotebook parent_instance;
 
 	/*< private >*/
+	char *cell_file;
 	GtkWidget *cell_chooser;
 	GtkWidget *auto_indm;
 	GtkWidget *indm_chooser;
