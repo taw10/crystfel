@@ -97,7 +97,20 @@ static int job_running(uint32_t job_id)
 		/* FIXME: Distinguish error cond from job complete */
 	}
 
-	/* FIXME: Check that job is actually still running */
+	switch ( job_info->job_array[0].job_state & JOB_STATE_BASE ) {
+
+		/* Only the following states are reasons to keep on watching
+		 * the job */
+		case JOB_PENDING :
+		case JOB_RUNNING :
+		case JOB_SUSPENDED :
+		running = 1;
+		break;
+
+		default :
+		running = 0;
+		break;
+	}
 
 	slurm_free_job_info_msg(job_info);
 
@@ -118,9 +131,9 @@ static int get_task_status(void *job_priv,
 
 		n_proc += read_number_processed(job->stderr_filenames[i]);
 
-		if ( (job->job_ids[i] != 0)
-		     && !job_running(job->job_ids[i]) )
-		{
+		if ( job->job_ids[i] == 0 ) continue;
+
+		if ( !job_running(job->job_ids[i]) ) {
 			job->job_ids[i] = 0;
 		} else {
 			all_complete = 0;
@@ -138,6 +151,7 @@ static void cancel_task(void *job_priv)
 	int i;
 	struct slurm_job *job = job_priv;
 	for ( i=0; i<job->n_blocks; i++) {
+		if ( job->job_ids[i] == 0 ) continue;
 		STATUS("Stopping SLURM job %i\n", job->job_ids[i]);
 		if ( slurm_kill_job(job->job_ids[i], SIGINT, 0) ) {
 			ERROR("Couldn't stop job: %s\n",

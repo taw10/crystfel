@@ -1035,6 +1035,7 @@ static gboolean update_info_bar(gpointer data)
 
 	if ( !running && task->running ) {
 		/* Task is no longer running */
+		task->running = 0;
 		gtk_widget_destroy(task->cancel_button);
 		gtk_info_bar_set_show_close_button(GTK_INFO_BAR(task->info_bar),
 		                                   TRUE);
