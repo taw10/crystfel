@@ -736,5 +736,8 @@ int add_result(struct crystfelproject *proj,
 	proj->results = new_results;
 	proj->n_results++;
 
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(proj->results_combo),
+	                          name, name);
+
 	return 0;
 }

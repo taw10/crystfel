@@ -812,7 +812,9 @@ int main(int argc, char *argv[])
 	GtkWidget *frame;
 	GtkWidget *main_vbox;
 	GtkWidget *toolbar;
+	GtkWidget *results_toolbar;
 	GtkWidget *button;
+	GtkWidget *label;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -882,41 +884,53 @@ int main(int argc, char *argv[])
 
 	/* First */
 	button = gtk_button_new_from_icon_name("go-first", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(first_frame_sig), &proj);
 
 	/* Prev */
 	button = gtk_button_new_from_icon_name("go-previous", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(prev_frame_sig), &proj);
 
 	/* Random */
 	button = gtk_button_new_from_icon_name("media-playlist-shuffle",
 	                                       GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(random_frame_sig), &proj);
 
 	/* Next */
 	button = gtk_button_new_from_icon_name("go-next", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(next_frame_sig), &proj);
 
 	/* Last */
 	button = gtk_button_new_from_icon_name("go-last", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(last_frame_sig), &proj);
 
 	/* Information about image */
 	button = gtk_button_new_from_icon_name("document-properties",
 	                                       GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_end(GTK_BOX(toolbar), button, FALSE, FALSE, 0.0);
+	gtk_box_pack_end(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(image_info_clicked_sig), &proj);
+
+	results_toolbar = gtk_hbox_new(FALSE, 0.0);
+	label = gtk_label_new("Show results from:");
+	gtk_box_pack_start(GTK_BOX(results_toolbar), label,
+	                   FALSE, FALSE, 4.0);
+	proj.results_combo = gtk_combo_box_text_new();
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(proj.results_combo),
+	                          "crystfel-gui-internal",
+	                          "Calculations within GUI");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(proj.results_combo), 0);
+	gtk_box_pack_start(GTK_BOX(results_toolbar), proj.results_combo,
+	                   FALSE, FALSE, 4.0);
 
 	/* Filename */
 	proj.image_info = gtk_label_new("Ready to load images");
@@ -926,7 +940,10 @@ int main(int argc, char *argv[])
 	gtk_box_pack_end(GTK_BOX(toolbar), proj.image_info, TRUE, TRUE, 0.0);
 
 	main_vbox = gtk_vbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(main_vbox), toolbar, FALSE, FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(main_vbox), toolbar,
+	                   FALSE, FALSE, 2.0);
+	gtk_box_pack_start(GTK_BOX(main_vbox), results_toolbar,
+	                   FALSE, FALSE, 2.0);
 
 	/* Main area stuff (toolbar and imageview) at right */
 	frame = gtk_frame_new(NULL);

@@ -154,6 +154,7 @@ struct crystfelproject {
 	GtkWidget *report;     /* Text view at the bottom for messages */
 	GtkWidget *main_vbox;
 	GtkWidget *image_info;
+	GtkWidget *results_combo;
 
 	int unsaved;
 
