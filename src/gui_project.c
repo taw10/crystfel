@@ -362,21 +362,108 @@ void add_file_to_project(struct crystfelproject *proj,
 }
 
 
-int load_project(struct crystfelproject *proj)
+static char **add_stream(char *new_stream,
+                         char **streams,
+                         int *pn_streams)
 {
-	FILE *fh;
-	char line[1024];
+	int i = *pn_streams;
+	char **new_streams = realloc(streams,
+	                             (i+1)*sizeof(struct gui_result));
+	if ( new_streams == NULL ) return streams;
+
+	new_streams[i] = new_stream;
+	*pn_streams = i+1;
+	return new_streams;
+}
+
+
+static void read_parameters(FILE *fh, struct crystfelproject *proj)
+{
 	char *rval;
-	int image_list_mode = 0;
-
-	fh = fopen("crystfel.project", "r");
-	if ( fh == NULL ) return 1;
-
-	default_project(proj);
+	char line[1024];
 
 	do {
 
 		char *sp;
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
+		chomp(line);
+		if ( line[0] == '\0' ) continue;
+
+		if ( strcmp(line, "-----") == 0 ) break;
+
+		sp = strchr(line, ' ');
+		if ( sp == NULL ) {
+			ERROR("Unrecognised line in crystfel.project "
+			      "file: '%s'\n", line);
+			continue;
+		}
+		sp[0] = '\0';
+		handle_var(line, sp+1, proj);
+
+	} while ( rval != NULL );
+}
+
+
+static void read_results(FILE *fh, struct crystfelproject *proj)
+{
+	char *rval;
+	char line[1024];
+	char **streams = NULL;
+	int n_streams = 0;
+	char *results_name = NULL;
+
+	do {
+
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
+		chomp(line);
+		if ( line[0] == '\0' ) continue;
+
+		if ( strncmp(line, "Result ", 7) == 0 ) {
+
+			if ( n_streams > 0 ) {
+				add_result(proj,
+				           results_name,
+				           streams,
+				           n_streams);
+			}
+
+			n_streams = 0;
+			streams = NULL;
+			results_name = strdup(line+7);
+		}
+
+		if ( strncmp(line, "   Stream ", 10) == 0 ) {
+			streams = add_stream(strdup(line+10),
+			                     streams,
+			                     &n_streams);
+		}
+
+		if ( strcmp(line, "-----") == 0 ) {
+
+			if ( n_streams > 0 ) {
+				add_result(proj,
+				           results_name,
+				           streams,
+				           n_streams);
+			}
+
+			break;
+
+		}
+
+	} while ( rval != NULL );
+}
+
+
+static void read_frames(FILE *fh, struct crystfelproject *proj)
+{
+	char *rval;
+	char line[1024];
+
+	do {
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
@@ -385,37 +472,33 @@ int load_project(struct crystfelproject *proj)
 
 		if ( line[0] == '\0' ) continue;
 
-		if ( image_list_mode ) {
-			char *ev = NULL;
-			size_t n = strlen(line)-1;
-			for ( ; n>0; n-- ) {
-				if ( line[n] == ' ' ) {
-					line[n] = '\0';
-					ev = &line[n+1];
-					break;
-				}
+		char *ev = NULL;
+		size_t n = strlen(line)-1;
+		for ( ; n>0; n-- ) {
+			if ( line[n] == ' ' ) {
+				line[n] = '\0';
+				ev = &line[n+1];
+				break;
 			}
-			add_file_to_project(proj, line, ev);
-			continue;
 		}
-
-		if ( strcmp(line, "-----") == 0 ) {
-			image_list_mode = 1;
-			continue;
-		}
-
-		sp = strchr(line, ' ');
-		if ( sp == NULL ) {
-			ERROR("Unrecognised line in crystfel.project "
-			      "file: '%s'\n", line);
-			continue;
-		}
-
-		sp[0] = '\0';
-
-		handle_var(line, sp+1, proj);
+		add_file_to_project(proj, line, ev);
 
 	} while ( rval != NULL );
+}
+
+
+int load_project(struct crystfelproject *proj)
+{
+	FILE *fh;
+
+	fh = fopen("crystfel.project", "r");
+	if ( fh == NULL ) return 1;
+
+	default_project(proj);
+
+	read_parameters(fh, proj);
+	read_results(fh, proj);
+	read_frames(fh, proj);
 
 	fclose(fh);
 
@@ -524,6 +607,16 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
 
 	fprintf(fh, "-----\n");
+	for ( i=0; i<proj->n_results; i++ ) {
+		int j;
+		fprintf(fh, "Result %s\n", proj->results[i].name);
+		for ( j=0; j<proj->results[i].n_streams; j++ ) {
+			fprintf(fh, "   Stream %s\n",
+			        proj->results[i].streams[j]);
+		}
+	}
+
+	fprintf(fh, "-----\n");
 	if ( proj->stream == NULL ) {
 		for ( i=0; i<proj->n_frames; i++ ) {
 			if ( proj->events[i] != NULL ) {
@@ -619,4 +712,29 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_params.integration_method = strdup("rings");
 	proj->indexing_params.overpredict = 0;
 	proj->indexing_params.push_res = INFINITY;
+
+	proj->results = NULL;
+	proj->n_results = 0;
+}
+
+
+/* Assumes ownership of "name" and "streams" */
+int add_result(struct crystfelproject *proj,
+               char *name,
+               char **streams,
+               int n_streams)
+{
+	struct gui_result *new_results;
+
+	new_results = realloc(proj->results,
+	                      (proj->n_results+1)*sizeof(struct gui_result));
+	if ( new_results == NULL ) return 1;
+
+	new_results[proj->n_results].name = name;
+	new_results[proj->n_results].streams = streams;
+	new_results[proj->n_results].n_streams = n_streams;
+	proj->results = new_results;
+	proj->n_results++;
+
+	return 0;
 }

@@ -136,6 +136,13 @@ struct gui_task
 	void *job_priv;
 };
 
+struct gui_result
+{
+	char *name;
+	char **streams;
+	int n_streams;
+};
+
 struct crystfelproject {
 
 	GtkWidget *window;
@@ -186,6 +193,9 @@ struct crystfelproject {
 
 	struct gui_task tasks[MAX_RUNNING_TASKS];
 	int n_running_tasks;
+
+	struct gui_result *results;
+	int n_results;
 };
 
 extern enum match_type_id decode_matchtype(const char *type_id);
@@ -203,5 +213,10 @@ extern void add_file_to_project(struct crystfelproject *proj,
                                 const char *event);
 
 extern void clear_project_files(struct crystfelproject *proj);
+
+extern int add_result(struct crystfelproject *proj,
+                      char *name,
+                      char **streams,
+                      int n_streams);
 
 #endif
