@@ -75,9 +75,6 @@ typedef enum {
 	/** Read the peak search results */
 	STREAM_PEAKS = 4,
 
-	/** Read the image data */
-	STREAM_IMAGE_DATA = 16,
-
 } StreamFlags;
 
 #ifdef __cplusplus
