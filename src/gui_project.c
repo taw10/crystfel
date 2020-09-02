@@ -332,7 +332,6 @@ void clear_project_files(struct crystfelproject *proj)
 	proj->max_frames = 0;
 	proj->filenames = NULL;
 	proj->events = NULL;
-	proj->stream = NULL;
 }
 
 
@@ -517,11 +516,17 @@ int save_project(struct crystfelproject *proj)
 		return 1;
 	}
 
-	fprintf(fh, "geom %s\n", proj->geom_filename);
-	fprintf(fh, "data_folder %s\n", proj->data_top_folder);
+	if ( proj->geom_filename != NULL ) {
+		fprintf(fh, "geom %s\n", proj->geom_filename);
+	}
+	if ( proj->data_top_folder != NULL ) {
+		fprintf(fh, "data_folder %s\n", proj->data_top_folder);
+	}
 	fprintf(fh, "search_pattern %s\n",
 	        str_matchtype(proj->data_search_pattern));
-	fprintf(fh, "stream %s\n", proj->stream_filename);
+	if ( proj->stream_filename != NULL ) {
+		fprintf(fh, "stream %s\n", proj->stream_filename);
+	}
 
 	fprintf(fh, "peak_search_params.method %s\n",
 	        str_peaksearch(proj->peak_search_params.method));
@@ -563,8 +568,10 @@ int save_project(struct crystfelproject *proj)
 		        proj->indexing_params.cell_file);
 	}
 
-	fprintf(fh, "indexing.methods %s\n",
-	        proj->indexing_params.indexing_methods);
+	if ( proj->indexing_params.indexing_methods != NULL ) {
+		fprintf(fh, "indexing.methods %s\n",
+		        proj->indexing_params.indexing_methods);
+	}
 	fprintf(fh, "indexing.multi_lattice %i\n",
 	        proj->indexing_params.multi);
 	fprintf(fh, "indexing.no_refine %i\n",
@@ -585,8 +592,10 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "indexing.min_peaks %i\n",
 	        proj->indexing_params.min_peaks);
 
-	fprintf(fh, "indexing.new_job_title %s\n",
-	        proj->indexing_new_job_title);
+	if ( proj->indexing_new_job_title != NULL ) {
+		fprintf(fh, "indexing.new_job_title %s\n",
+		        proj->indexing_new_job_title);
+	}
 
 	fprintf(fh, "indexing.backend %s\n",
 	        proj->backends[proj->indexing_backend_selected].name);
@@ -617,14 +626,12 @@ int save_project(struct crystfelproject *proj)
 	}
 
 	fprintf(fh, "-----\n");
-	if ( proj->stream == NULL ) {
-		for ( i=0; i<proj->n_frames; i++ ) {
-			if ( proj->events[i] != NULL ) {
-				fprintf(fh, "%s %s\n",
-				        proj->filenames[i], proj->events[i]);
-			} else {
-				fprintf(fh, "%s\n", proj->filenames[i]);
-			}
+	for ( i=0; i<proj->n_frames; i++ ) {
+		if ( proj->events[i] != NULL ) {
+			fprintf(fh, "%s %s\n",
+			        proj->filenames[i], proj->events[i]);
+		} else {
+			fprintf(fh, "%s\n", proj->filenames[i]);
 		}
 	}
 
@@ -647,7 +654,6 @@ void default_project(struct crystfelproject *proj)
 	proj->data_top_folder = NULL;
 	proj->data_search_pattern = 0;
 	proj->stream_filename = NULL;
-	proj->stream = NULL;
 	proj->dtempl = NULL;
 	proj->cur_image = NULL;
 	proj->indexing_opts = NULL;

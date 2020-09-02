@@ -119,37 +119,14 @@ static void update_imageview(struct crystfelproject *proj)
 
 	if ( proj->n_frames == 0 ) return;
 
-	if ( proj->stream != NULL ) {
+	image = image_read(proj->dtempl,
+	                   proj->filenames[proj->cur_frame],
+	                   proj->events[proj->cur_frame],
+	                   0, 0);
 
-		if ( stream_select_chunk(proj->stream,
-		                         proj->cur_frame) )
-		{
-			ERROR("Failed to select new chunk\n");
-			return;
-		}
-
-		image = stream_read_chunk(proj->stream,
-		                          STREAM_REFLECTIONS
-		                        | STREAM_PEAKS
-		                        | STREAM_IMAGE_DATA);
-
-		if ( image == NULL ) {
-			ERROR("Failed to read from stream\n");
-			return;
-		}
-
-	} else {
-
-		image = image_read(proj->dtempl,
-		                   proj->filenames[proj->cur_frame],
-		                   proj->events[proj->cur_frame],
-		                   0, 0);
-
-		if ( image == NULL ) {
-			ERROR("Failed to load image\n");
-			return;
-		}
-
+	if ( image == NULL ) {
+		ERROR("Failed to load image\n");
+		return;
 	}
 
 	/* Give CrystFELImageView a chance to free resources */
@@ -249,6 +226,21 @@ static void add_files(struct crystfelproject *proj, GFile *folder,
 }
 
 
+static void add_frames_from_stream(Stream *st,
+                                   DataTemplate *dtempl,
+                                   struct crystfelproject *proj)
+{
+	do {
+		struct image *image;
+		image = stream_read_chunk(st, 0);
+		if ( image == NULL ) break;
+		add_file_to_project(proj, image->filename, image->ev);
+		image_free(image);
+
+	} while ( 1 );
+}
+
+
 struct finddata_ctx
 {
 	struct crystfelproject *proj;
@@ -337,7 +329,7 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		char *stream_filename;
 		DataTemplate *dtempl;
 		const char *geom_str;
-		int n_chunks;
+		char **streams;
 
 		stream_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->stream));
 		if ( stream_filename == NULL ) return;
@@ -362,9 +354,6 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 		                              NULL);
 
-		stream_close(proj->stream);
-		proj->stream = st;
-
 		data_template_free(proj->dtempl);
 		proj->dtempl = dtempl;
 
@@ -375,16 +364,16 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		proj->data_top_folder = NULL;
 		proj->data_search_pattern = MATCH_EVERYTHING;
 
-		n_chunks = stream_scan_chunks(st);
-
-		if ( n_chunks == 0 ) {
-			ERROR("No chunks found (or error reading)\n");
-			stream_close(st);
-			return;
-		}
-
-		proj->n_frames = n_chunks;
+		add_frames_from_stream(st, proj->dtempl, proj);
 		proj->stream_filename = stream_filename;
+
+		streams = malloc(sizeof(char *));
+		if ( streams != NULL ) {
+			streams[0] = strdup(stream_filename);
+			add_result(proj,
+			           safe_basename(stream_filename),
+			           streams, 1);
+		}
 
 		crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 		                                   1);
@@ -993,10 +982,22 @@ int main(int argc, char *argv[])
 		proj.cur_frame = 0;
 
 		if ( proj.geom_filename != NULL ) {
+
 			dtempl = data_template_new_from_file(proj.geom_filename);
 			if ( dtempl != NULL ) {
 				proj.dtempl = dtempl;
 			}
+		} else if ( proj.stream_filename != NULL ) {
+
+			Stream *st;
+			st = stream_open_for_read(proj.stream_filename);
+			if ( st != NULL ) {
+				char *geom_str = stream_geometry_file(st);
+				if ( geom_str != NULL ) {
+					proj.dtempl = data_template_new_from_string(geom_str);
+				}
+			}
+			stream_close(st);
 		}
 
 		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/peaks");

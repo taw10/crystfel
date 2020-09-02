@@ -168,7 +168,6 @@ struct crystfelproject {
 	enum match_type_id data_search_pattern;
 
 	DataTemplate *dtempl;
-	Stream *stream;
 	int n_frames;
 	int max_frames;
 	char **filenames;
