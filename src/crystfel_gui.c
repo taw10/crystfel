@@ -677,6 +677,14 @@ static gint image_info_clicked_sig(GtkWidget *widget,
 }
 
 
+static gint results_combo_changed_sig(GtkComboBox *w,
+                                      struct crystfelproject *proj)
+{
+	update_imageview(proj);
+	return FALSE;
+}
+
+
 static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
@@ -958,6 +966,8 @@ int main(int argc, char *argv[])
 	gtk_combo_box_set_active(GTK_COMBO_BOX(proj.results_combo), 0);
 	gtk_box_pack_start(GTK_BOX(results_toolbar), proj.results_combo,
 	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(proj.results_combo), "changed",
+	                 G_CALLBACK(results_combo_changed_sig), &proj);
 
 	/* Filename */
 	proj.image_info = gtk_label_new("Ready to load images");
