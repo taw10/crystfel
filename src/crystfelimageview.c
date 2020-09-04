@@ -441,6 +441,7 @@ static void draw_refls(cairo_t *cr, CrystFELImageView *iv,
 		y = p->pixel_pitch*(p->cny + p->fsy*fs + p->ssy*ss);
 
 		cairo_arc(cr, x, y, bs, 0, 2*M_PI);
+		cairo_set_line_width(cr, lw);
 		cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
 		cairo_stroke(cr);
 	}
