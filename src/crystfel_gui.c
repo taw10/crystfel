@@ -187,6 +187,10 @@ static void update_imageview(struct crystfelproject *proj)
 		}
 	}
 
+	crystfel_image_view_set_show_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                         proj->show_refls);
+	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                   proj->show_peaks);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
 }
@@ -676,6 +680,8 @@ static gint image_info_clicked_sig(GtkWidget *widget,
 static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                   proj->show_peaks);
 	return FALSE;
 }
 
