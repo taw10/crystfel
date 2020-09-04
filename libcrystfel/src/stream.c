@@ -1442,6 +1442,8 @@ static char *make_key(const char *filename,
 {
 	char *key;
 
+	if ( ev == NULL ) ev = "//";
+
 	key = malloc(strlen(filename)+strlen(ev)+2);
 	if ( key == NULL ) return NULL;
 
