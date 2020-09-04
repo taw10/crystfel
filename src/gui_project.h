@@ -139,8 +139,10 @@ struct gui_task
 struct gui_result
 {
 	char *name;
-	char **streams;
+
 	int n_streams;
+	char **streams;
+	StreamIndex **indices;
 };
 
 struct crystfelproject {
@@ -218,5 +220,10 @@ extern int add_result(struct crystfelproject *proj,
                       char *name,
                       char **streams,
                       int n_streams);
+
+extern struct image *find_result(struct crystfelproject *proj,
+                                 const char *result_name,
+                                 const char *filename,
+                                 const char *event);
 
 #endif

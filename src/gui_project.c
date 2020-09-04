@@ -730,6 +730,7 @@ int add_result(struct crystfelproject *proj,
                char **streams,
                int n_streams)
 {
+	int i;
 	struct gui_result *new_results;
 
 	new_results = realloc(proj->results,
@@ -739,6 +740,12 @@ int add_result(struct crystfelproject *proj,
 	new_results[proj->n_results].name = name;
 	new_results[proj->n_results].streams = streams;
 	new_results[proj->n_results].n_streams = n_streams;
+	new_results[proj->n_results].indices = malloc(n_streams*sizeof(StreamIndex *));
+
+	for ( i=0; i<n_streams; i++ ) {
+		new_results[proj->n_results].indices[i] = NULL;
+	}
+
 	proj->results = new_results;
 	proj->n_results++;
 
@@ -746,4 +753,90 @@ int add_result(struct crystfelproject *proj,
 	                          name, name);
 
 	return 0;
+}
+
+
+static void update_result_index(struct gui_result *result)
+{
+	int i;
+
+	for ( i=0; i<result->n_streams; i++ ) {
+
+		/* FIXME: Skip if already up to date */
+
+		stream_index_free(result->indices[i]);
+		result->indices[i] = stream_make_index(result->streams[i]);
+
+	}
+}
+
+
+static struct gui_result *find_result_by_name(struct crystfelproject *proj,
+                                              const char *name)
+{
+	int i;
+
+	for ( i=0; i<proj->n_results; i++ ) {
+		if ( strcmp(proj->results[i].name, name) == 0 ) {
+			return &proj->results[i];
+		}
+	}
+	return NULL;
+}
+
+
+struct image *find_result(struct crystfelproject *proj,
+                          const char *results_name,
+                          const char *filename,
+                          const char *event)
+{
+	Stream *st;
+	int i;
+	int found = 0;
+	struct image *image;
+	struct gui_result *result;
+
+	result = find_result_by_name(proj, results_name);
+	if ( result == NULL ) return NULL;
+
+	for ( i=0; i<result->n_streams; i++ ) {
+		if ( stream_select_chunk(NULL,
+		                         result->indices[i],
+		                         filename,
+		                         event) == 0 )
+		{
+			found = 1;
+			break;
+		}
+	}
+
+	if ( !found ) {
+		update_result_index(result);
+		for ( i=0; i<result->n_streams; i++ ) {
+			if ( stream_select_chunk(NULL,
+			                         result->indices[i],
+			                         filename,
+			                         event) == 0 )
+				{
+					found = 1;
+					break;
+				}
+		}
+	}
+
+	if ( !found ) return NULL;
+
+	st = stream_open_for_read(result->streams[i]);
+	if ( stream_select_chunk(st, result->indices[i],
+	                         filename, event) )
+		{
+		ERROR("Error selecting chunk.\n");
+		return NULL;
+	}
+
+	image = stream_read_chunk(st, STREAM_REFLECTIONS
+	                            | STREAM_PEAKS);
+
+	stream_close(st);
+	return image;
 }
