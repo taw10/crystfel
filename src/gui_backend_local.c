@@ -259,7 +259,7 @@ static void *run_indexing(const char *job_title,
 	streams = malloc(sizeof(char *));
 	if ( streams != NULL ) {
 		streams[0] = strdup("crystfel.stream");
-		add_result(proj, job_title, streams, 1);
+		add_result(proj, strdup(job_title), streams, 1);
 	}
 	return job;
 }
