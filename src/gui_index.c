@@ -104,7 +104,8 @@ static int run_indexing_all(struct crystfelproject *proj,
 	                            proj->geom_filename,
 	                            &proj->peak_search_params,
 	                            &proj->indexing_params,
-	                            be->indexing_opts_priv);
+	                            be->indexing_opts_priv,
+	                            proj);
 
 	if ( job_priv != NULL ) {
 		add_running_task(proj, "Indexing all frames",

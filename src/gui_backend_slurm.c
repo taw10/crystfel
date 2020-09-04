@@ -324,7 +324,8 @@ static void *run_indexing(const char *job_title,
                           char *geom_filename,
                           struct peak_params *peak_search_params,
                           struct index_params *indexing_params,
-                          void *opts_priv)
+                          void *opts_priv,
+                          struct crystfelproject *proj)
 {
 	struct slurm_indexing_opts *opts = opts_priv;
 	struct slurm_job *job;
@@ -339,6 +340,7 @@ static void *run_indexing(const char *job_title,
 	int n_env;
 	int i;
 	int fail = 0;
+	char **streams;
 
 	workdir = strdup(job_title);
 	if ( workdir == NULL ) return NULL;
@@ -385,6 +387,9 @@ static void *run_indexing(const char *job_title,
 
 	job->stderr_filenames = malloc(job->n_blocks * sizeof(char *));
 	if ( job->stderr_filenames == NULL ) return NULL;
+
+	streams = malloc(job->n_blocks*sizeof(char *));
+	if ( streams == NULL ) return NULL;
 
 	for ( i=0; i<job->n_blocks; i++ ) {
 
@@ -433,6 +438,8 @@ static void *run_indexing(const char *job_title,
 		job->stderr_filenames[i] = g_file_get_path(stderr_gfile);
 		g_object_unref(stderr_gfile);
 
+		streams[i] = strdup(stream_filename);
+
 		STATUS("Submitted SLURM job ID %i\n", job_id);
 	}
 
@@ -446,6 +453,9 @@ static void *run_indexing(const char *job_title,
 		free(job->stderr_filenames);
 		free(job);
 		return NULL;
+	} else {
+		add_result(proj, strdup(job_title),
+		           streams, job->n_blocks);
 	}
 	return job;
 }

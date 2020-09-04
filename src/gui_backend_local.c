@@ -152,7 +152,8 @@ static void *run_indexing(const char *job_title,
                           char *geom_filename,
                           struct peak_params *peak_search_params,
                           struct index_params *indexing_params,
-                          void *opts_priv)
+                          void *opts_priv,
+                          struct crystfelproject *proj)
 {
 	struct local_indexing_opts *opts = opts_priv;
 	GIOChannel *ioch;
@@ -170,6 +171,7 @@ static void *run_indexing(const char *job_title,
 	GFile *cwd_file;
 	GFile *notes_file;
 	char *notes_path;
+	char **streams;
 	FILE *fh;
 
 	workdir = strdup(job_title);
@@ -254,6 +256,11 @@ static void *run_indexing(const char *job_title,
 	                                            index_readable,
 	                                            job);
 
+	streams = malloc(sizeof(char *));
+	if ( streams != NULL ) {
+		streams[0] = strdup("crystfel.stream");
+		add_result(proj, job_title, streams, 1);
+	}
 	return job;
 }
 

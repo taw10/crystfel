@@ -85,6 +85,8 @@ struct index_params {
 	float push_res;
 };
 
+struct crystfelproject;
+
 struct crystfel_backend {
 
 	const char *name;
@@ -103,7 +105,8 @@ struct crystfel_backend {
 	                      char *geom_filename,
 	                      struct peak_params *peak_search_params,
 	                      struct index_params *indexing_params,
-	                      void *opts_priv);
+	                      void *opts_priv,
+	                      struct crystfelproject *proj);
 
 	/* Called to ask the backend to cancel the job */
 	void (*cancel_task)(void *job_priv);
