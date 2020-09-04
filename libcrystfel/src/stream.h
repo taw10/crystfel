@@ -109,8 +109,12 @@ extern int stream_get_fd(Stream *st);
 extern int stream_rewind(Stream *st);
 
 /* Random access */
-extern int stream_scan_chunks(Stream *st);
-extern int stream_select_chunk(Stream *st, int chunk_number);
+typedef struct _streamindex StreamIndex;
+extern StreamIndex *stream_make_index(const char *filename);
+extern int stream_select_chunk(Stream *st, StreamIndex *index,
+                               const char *filename,
+                               const char *ev);
+extern void stream_index_free(StreamIndex *index);
 
 /* Read/write chunks */
 extern struct image *stream_read_chunk(Stream *st, StreamFlags srf);

@@ -1419,78 +1419,172 @@ int stream_rewind(Stream *st)
 }
 
 
-int stream_select_chunk(Stream *st, int chunk_id)
+struct _streamindex
 {
-	if ( st->chunk_offsets == NULL ) return 1;
-	if ( chunk_id >= st->n_chunks ) return 1;
-	if ( fseek(st->fh, st->chunk_offsets[chunk_id], SEEK_SET) != 0 ) {
-		return 1;
-	}
-	st->in_chunk = 1;
-	return 0;
+	char **keys;
+	long int *ptrs;
+	int n_keys;
+	int max_keys;
+};
+
+
+void stream_index_free(StreamIndex *index)
+{
+	if ( index == NULL ) return;
+	free(index->keys);
+	free(index->ptrs);
+	free(index);
 }
 
 
-int stream_scan_chunks(Stream *st)
+static char *make_key(const char *filename,
+                      const char *ev)
 {
-	long start_pos;
-	long int max_chunks = 0;
+	char *key;
+
+	key = malloc(strlen(filename)+strlen(ev)+2);
+	if ( key == NULL ) return NULL;
+
+	strcpy(key, filename);
+	strcat(key, " ");
+	strcat(key, ev);
+
+	return key;
+}
+
+
+int stream_select_chunk(Stream *st,
+                        StreamIndex *index,
+                        const char *filename,
+                        const char *ev)
+{
+	int i;
+	char *key;
+
+	if ( index == NULL ) return 1;
+
+	key = make_key(filename, ev);
+	for ( i=0; i<index->n_keys; i++ ) {
+		if ( strcmp(index->keys[i], key) == 0 ) {
+			if ( st != NULL ) {
+				fseek(st->fh, index->ptrs[i], SEEK_SET);
+				st->in_chunk = 0;
+			}
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+static void add_index_record(StreamIndex *index,
+                             long int ptr,
+                             const char *filename,
+                             const char *ev)
+{
+	char *key;
+
+	if ( index->n_keys == index->max_keys ) {
+
+		int new_max_keys = index->max_keys + 256;
+		char **new_keys;
+		long int *new_ptrs;
+
+		new_keys = realloc(index->keys,
+		                   new_max_keys*sizeof(char *));
+		if ( new_keys == NULL ) return;
+
+		new_ptrs = realloc(index->ptrs,
+		                   new_max_keys*sizeof(long int));
+		if ( new_ptrs == NULL ) return;
+
+		index->keys = new_keys;
+		index->ptrs = new_ptrs;
+		index->max_keys = new_max_keys;
+
+	}
+
+	key = make_key(filename, ev);
+	if ( key == NULL ) return;
+
+	index->keys[index->n_keys] = key;
+	index->ptrs[index->n_keys] = ptr;
+	index->n_keys++;
+}
+
+
+StreamIndex *stream_make_index(const char *filename)
+{
+	FILE *fh;
+	StreamIndex *index;
+	long int last_start_pos = 0;
+	char *last_filename = NULL;
+	char *last_ev = NULL;
 	int done = 0;
 
-	if ( st->chunk_offsets != NULL ) {
-		ERROR("Stream has already been scanned\n");
-		return 0;
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) return NULL;
+
+	index = malloc(sizeof(StreamIndex));
+	if ( index == NULL ) {
+		fclose(fh);
+		return NULL;
 	}
 
-	start_pos = ftell(st->fh);
+	index->keys = NULL;
+	index->ptrs = NULL;
+	index->n_keys = 0;
+	index->max_keys = 0;
 
-	/* Reset to start of stream.
-	 * Also, this serves as a cursory check that the stream is
-	 * actually something which can be rewound. */
-	if ( fseek(st->fh, 0, SEEK_SET) != 0 ) {
-		return 0;
-	}
+	STATUS("Indexing %s\n", filename);
 
 	do {
 
-		if ( find_start_of_chunk(st) ) {
+		char *rval;
+		char line[1024];
+		long int pos;
 
-			if ( feof(st->fh) ) {
-				done = 1;
-			} else {
-				fseek(st->fh, start_pos, SEEK_SET);
-				free(st->chunk_offsets);
-				st->chunk_offsets = NULL;
-				return 0;
-			}
+		pos = ftell(fh);
+		rval = fgets(line, 1024, fh);
+		if ( rval == NULL ) {
+			done = 1;
+			break;
+		}
+		chomp(line);
+
+		if ( strcmp(line, STREAM_CHUNK_START_MARKER) == 0 ) {
+			last_start_pos = pos;
+			last_filename = NULL;
+			last_ev = NULL;
 		}
 
-		if ( st->n_chunks == max_chunks ) {
-
-			long *new_offsets;
-
-			max_chunks += 1024;
-			new_offsets = realloc(st->chunk_offsets,
-			                      max_chunks*sizeof(long));
-			if ( new_offsets == NULL ) {
-				fseek(st->fh, start_pos, SEEK_SET);
-				free(st->chunk_offsets);
-				st->chunk_offsets = NULL;
-				return 0;
-			}
-
-			st->chunk_offsets = new_offsets;
-
+		if ( strncmp(line, "Image filename: ", 16) == 0 ) {
+			last_filename = strdup(line+16);
 		}
 
-		if ( !done ) {
-			st->chunk_offsets[st->n_chunks++] = ftell(st->fh);
+		if ( strncmp(line, "Event: ", 7) == 0 ) {
+			last_ev = strdup(line+7);
+		}
+
+		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
+			if ( (last_start_pos != 0)
+			   && (last_filename != NULL)
+			   && (last_ev != NULL) )
+			{
+				add_index_record(index,
+				                 last_start_pos,
+				                 last_filename,
+				                 last_ev);
+			}
+			free(last_filename);
+			free(last_ev);
+			last_start_pos = 0;
+			last_filename = NULL;
+			last_ev = NULL;
 		}
 
 	} while ( !done );
 
-	/* Reset to initial position */
-	fseek(st->fh, start_pos, SEEK_SET);
-
-	return st->n_chunks;
+	fclose(fh);
+	return index;
 }
