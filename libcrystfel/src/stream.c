@@ -1570,8 +1570,7 @@ StreamIndex *stream_make_index(const char *filename)
 
 		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
 			if ( (last_start_pos != 0)
-			   && (last_filename != NULL)
-			   && (last_ev != NULL) )
+			     && (last_filename != NULL) )
 			{
 				add_index_record(index,
 				                 last_start_pos,
