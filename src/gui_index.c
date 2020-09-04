@@ -478,6 +478,8 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 	GtkWidget *w;
 
 	if ( resp == GTK_RESPONSE_OK ) {
+		gtk_combo_box_set_active(GTK_COMBO_BOX(proj->results_combo),
+		                         0);
 		get_indexing_opts(proj,
 		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 		run_indexing_once(proj);
