@@ -109,6 +109,26 @@ static void add_ui_sig(GtkUIManager *ui, GtkWidget *widget,
 }
 
 
+static void swap_data_arrays(struct image *a, struct image *b)
+{
+	float **swap;
+	int **swap_bad;
+
+	swap = a->dp;
+	a->dp = b->dp;
+	b->dp = swap;
+
+	swap = a->sat;
+	a->sat = b->sat;
+	b->sat = swap;
+
+	swap_bad = a->bad;
+	a->bad = b->bad;
+	b->bad = swap_bad;
+}
+
+
+
 /* Bring the image view up to date after changing the selected image */
 static void update_imageview(struct crystfelproject *proj)
 {
@@ -116,6 +136,7 @@ static void update_imageview(struct crystfelproject *proj)
 	char *ev_str;
 	char *ev_sep;
 	struct image *image;
+	const gchar *results_name;
 
 	if ( proj->n_frames == 0 ) return;
 
@@ -149,6 +170,23 @@ static void update_imageview(struct crystfelproject *proj)
 	         proj->cur_frame+1,
 	         proj->n_frames);
 	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
+
+	/* Look up results, if applicable */
+	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
+	if ( strcmp(results_name, "crystfel-gui-internal") == 0 ) {
+		update_peaks(proj);
+	} else {
+		struct image *res_im = find_result(proj,
+		                                   results_name,
+		                                   image->filename,
+		                                   image->ev);
+		if ( res_im != NULL ) {
+			swap_data_arrays(image, res_im);
+			image_free(proj->cur_image);
+			proj->cur_image = res_im;
+		}
+	}
+
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
 }
@@ -366,6 +404,7 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 		add_frames_from_stream(st, proj->dtempl, proj);
 		proj->stream_filename = stream_filename;
+		stream_close(st);
 
 		streams = malloc(sizeof(char *));
 		if ( streams != NULL ) {
@@ -384,7 +423,6 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 	proj->cur_frame = 0;
 	crystfel_image_view_reset_zoom(CRYSTFEL_IMAGE_VIEW(proj->imageview));
 	update_imageview(proj);
-	update_peaks(proj);
 
 	free(ctx);
 	gtk_widget_destroy(dialog);
@@ -525,7 +563,6 @@ static gint first_frame_sig(GtkWidget *widget,
 {
 	proj->cur_frame = 0;
 	update_imageview(proj);
-	update_peaks(proj);
 	return FALSE;
 }
 
@@ -536,7 +573,6 @@ static gint prev_frame_sig(GtkWidget *widget,
 	if ( proj->cur_frame == 0 ) return FALSE;
 	proj->cur_frame--;
 	update_imageview(proj);
-	update_peaks(proj);
 	return FALSE;
 }
 
@@ -546,7 +582,6 @@ static gint random_frame_sig(GtkWidget *widget,
 {
 	proj->cur_frame = random()*proj->n_frames / RAND_MAX;
 	update_imageview(proj);
-	update_peaks(proj);
 	return FALSE;
 }
 
@@ -557,7 +592,6 @@ static gint next_frame_sig(GtkWidget *widget,
 	if ( proj->cur_frame == proj->n_frames - 1 ) return FALSE;
 	proj->cur_frame++;
 	update_imageview(proj);
-	update_peaks(proj);
 	return FALSE;
 }
 
@@ -567,7 +601,6 @@ static gint last_frame_sig(GtkWidget *widget,
 {
 	proj->cur_frame = proj->n_frames - 1;
 	update_imageview(proj);
-	update_peaks(proj);
 	return FALSE;
 }
 
@@ -643,7 +676,6 @@ static gint image_info_clicked_sig(GtkWidget *widget,
 static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
-	update_peaks(proj);
 	return FALSE;
 }
 
@@ -1004,7 +1036,6 @@ int main(int argc, char *argv[])
 		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
 		                             proj.show_peaks);
 		update_imageview(&proj);
-		update_peaks(&proj);
 	}
 
 	gtk_window_set_default_size(GTK_WINDOW(proj.window), 1024, 768);
