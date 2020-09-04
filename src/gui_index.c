@@ -647,8 +647,10 @@ char **indexamajig_command_line(const char *geom_filename,
 	add_arg(args, n_args++, indexamajig_path);
 	add_arg(args, n_args++, "-i");
 	add_arg(args, n_args++, files_list);
-	add_arg(args, n_args++, "-g");
-	add_arg(args, n_args++, geom_filename);
+	if ( geom_filename != NULL ) {
+		add_arg(args, n_args++, "-g");
+		add_arg(args, n_args++, geom_filename);
+	}
 	add_arg(args, n_args++, "-o");
 	add_arg(args, n_args++, stream_filename);
 	add_arg(args, n_args++, "-j");
@@ -689,8 +691,10 @@ char **indexamajig_command_line(const char *geom_filename,
 	}
 
 	/* Indexing */
-	add_arg(args, n_args++, "--indexing");
-	add_arg(args, n_args++, indexing_params->indexing_methods);
+	if ( indexing_params->indexing_methods != NULL ) {
+		add_arg(args, n_args++, "--indexing");
+		add_arg(args, n_args++, indexing_params->indexing_methods);
+	}
 	if ( indexing_params->cell_file != NULL ) {
 		add_arg(args, n_args++, "-p");
 		add_arg(args, n_args++, indexing_params->cell_file);
