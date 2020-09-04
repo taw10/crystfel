@@ -993,6 +993,9 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 				create_detgeom(image, st->dtempl);
 				image_set_zero_data(image, st->dtempl);
 				image_set_zero_mask(image, st->dtempl);
+				/* FIXME: Maybe arbitrary spectrum from file (?) */
+				image->spectrum = spectrum_generate_gaussian(image->lambda,
+				                                             image->bw);
 				return image;
 			}
 			ERROR("Incomplete chunk found in input file.\n");
