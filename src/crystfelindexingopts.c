@@ -618,7 +618,7 @@ int crystfel_indexing_opts_get_overpredict(CrystFELIndexingOpts *opts)
 
 float crystfel_indexing_opts_get_push_res(CrystFELIndexingOpts *opts)
 {
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->limit_res)) ) {
+	if ( !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->limit_res)) ) {
 		return INFINITY;
 	} else {
 		const gchar *text;
