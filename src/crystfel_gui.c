@@ -130,7 +130,7 @@ static void swap_data_arrays(struct image *a, struct image *b)
 
 
 /* Bring the image view up to date after changing the selected image */
-static void update_imageview(struct crystfelproject *proj)
+void update_imageview(struct crystfelproject *proj)
 {
 	char tmp[1024];
 	char *ev_str;

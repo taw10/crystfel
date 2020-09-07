@@ -44,15 +44,13 @@
 
 #include "crystfelimageview.h"
 #include "gui_project.h"
+#include "crystfel_gui.h"
 
 
 void update_peaks(struct crystfelproject *proj)
 {
 	if ( proj->n_frames == 0 ) return;
 	if ( proj->cur_image == NULL ) return;
-
-	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                                   proj->show_peaks);
 
 	if ( proj->show_peaks ) {
 
@@ -115,9 +113,6 @@ void update_peaks(struct crystfelproject *proj)
 			break;
 
 		}
-
-		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              proj->cur_image);
 	}
 }
 
@@ -136,7 +131,7 @@ static void check_param_callback(GtkWidget *checkbox,
 {
 	int val = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
 	*(vals->pival) = val;
-	update_peaks(vals->proj);
+	update_imageview(vals->proj);
 }
 
 
@@ -156,7 +151,7 @@ static void int_param_callback(GtkWidget *entry,
 	if ( strcmp(cbvals->str_val, text) != 0 ) {
 		*(cbvals->pival) = val;
 		cbvals->proj->unsaved = 1;
-		update_peaks(cbvals->proj);
+		update_imageview(cbvals->proj);
 		free(cbvals->str_val);
 		cbvals->str_val = strdup(text);
 	}
@@ -188,7 +183,7 @@ static void float_param_callback(GtkWidget *entry,
 	if ( strcmp(cbvals->str_val, text) != 0 ) {
 		*(cbvals->pfval) = val;
 		cbvals->proj->unsaved = 1;
-		update_peaks(cbvals->proj);
+		update_imageview(cbvals->proj);
 		free(cbvals->str_val);
 		cbvals->str_val = strdup(text);
 	}
@@ -420,7 +415,6 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 
 	gtk_widget_show_all(proj->peak_vbox);
 	proj->unsaved = 1;
-	update_peaks(proj);
 }
 
 
@@ -433,7 +427,7 @@ static void peaksearch_response_sig(GtkWidget *dialog, gint resp,
 		proj->peak_search_params = proj->original_params;
 	}
 
-	update_peaks(proj);
+	update_imageview(proj);
 	gtk_widget_destroy(dialog);
 	proj->peak_vbox = NULL;
 	proj->peak_params = NULL;

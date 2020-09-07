@@ -36,4 +36,6 @@ extern void add_running_task(struct crystfelproject *proj,
                              struct crystfel_backend *backend,
                              void *job_priv);
 
+extern void update_imageview(struct crystfelproject *proj);
+
 #endif

@@ -50,6 +50,7 @@
 #include "crystfelindexingopts.h"
 #include "gui_project.h"
 #include "crystfel_gui.h"
+#include "gui_peaksearch.h"
 
 void cell_explorer_sig(struct crystfelproject *proj)
 {
@@ -424,6 +425,8 @@ static void run_indexing_once(struct crystfelproject *proj)
 	} else {
 		cell = NULL;
 	}
+
+	update_peaks(proj);
 
 	if ( proj->indexing_params.indexing_methods == NULL ) {
 		methods = detect_indexing_methods(cell);
