@@ -643,9 +643,11 @@ void crystfel_indexing_opts_set_cell_file(CrystFELIndexingOpts *opts,
 	if ( cell_file != NULL ) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(opts->cell_chooser),
 		                              cell_file);
+		opts->cell_file = strdup(cell_file);
 	} else {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(opts->cell_chooser),
 		                              "(null)");
+		opts->cell_file = NULL;
 	}
 }
 
