@@ -695,9 +695,9 @@ void default_project(struct crystfelproject *proj)
 	proj->peak_search_params.min_snr_peak_pix = 6.0;
 	proj->peak_search_params.min_sig = 11.0;
 	proj->peak_search_params.min_peak_over_neighbour = -INFINITY;
-	proj->peak_search_params.pk_inn = 3.0;
-	proj->peak_search_params.pk_mid = 4.0;
-	proj->peak_search_params.pk_out = 5.0;
+	proj->peak_search_params.pk_inn = 4.0;
+	proj->peak_search_params.pk_mid = 5.0;
+	proj->peak_search_params.pk_out = 7.0;
 	proj->peak_search_params.half_pixel_shift = 1;
 	proj->peak_search_params.revalidate = 1;
 
