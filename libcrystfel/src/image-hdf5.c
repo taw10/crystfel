@@ -152,6 +152,8 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 	char *start;
 	int done;
 
+	if ( ev_orig == NULL ) ev_orig = "//";
+
 	/* Valid event ID? (Just the part after //, please) */
 	ev = strstr(ev_orig, "//");
 	if ( ev == NULL ) return NULL;
