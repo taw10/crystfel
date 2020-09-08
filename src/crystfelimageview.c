@@ -385,26 +385,47 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 	int i, n_pks;
 	double bs, lw;
 
-	bs = 5.0;
-	lw = 1.0;
+	bs = 5.0;  /* Box size in pixels on screen */
+	lw = 1.0;  /* Line width in pixels on screen */
 	cairo_device_to_user_distance(cr, &bs, &lw);
 	bs = fabs(bs);
 	lw = fabs(lw);
 
 	n_pks = image_feature_count(pks);
 	for ( i=0; i<n_pks; i++ ) {
+
 		const struct imagefeature *f;
 		struct detgeom_panel *p;
 		double x, y;
+		double this_bs;
+		int show_cen = 0;
+
 		f = image_get_feature_const(pks, i);
 		if ( f == NULL ) continue;
 		p = &iv->image->detgeom->panels[f->pn];
+
+		this_bs = biggest(iv->peak_box_size * p->pixel_pitch,
+		                  bs);
+
+		if ( this_bs > bs ) {
+			show_cen = 1;
+		}
+
 		x = p->pixel_pitch*(p->cnx + p->fsx*f->fs + p->ssx*f->ss);
 		y = p->pixel_pitch*(p->cny + p->fsy*f->fs + p->ssy*f->ss);
-		cairo_rectangle(cr, x-bs, y-bs, 2*bs, 2*bs);
+		cairo_rectangle(cr, x-this_bs, y-this_bs, 2*this_bs, 2*this_bs);
 		cairo_set_line_width(cr, lw);
 		cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
 		cairo_stroke(cr);
+
+		if ( show_cen ) {
+			cairo_move_to(cr, x-this_bs, y);
+			cairo_line_to(cr, x+this_bs, y);
+			cairo_move_to(cr, x, y-this_bs);
+			cairo_line_to(cr, x, y+this_bs);
+			cairo_stroke(cr);
+		}
+
 	}
 }
 
@@ -633,6 +654,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->show_peaks = 0;
 	iv->brightness = 1.0;
 	iv->pixbufs = NULL;
+	iv->peak_box_size = 1.0;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -895,4 +917,11 @@ void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
 {
 	iv->show_refls = show_refls;
 	rerender_image(iv);
+}
+
+
+void crystfel_image_view_set_peak_box_size(CrystFELImageView *iv,
+                                           float box_size)
+{
+	iv->peak_box_size = box_size;
 }

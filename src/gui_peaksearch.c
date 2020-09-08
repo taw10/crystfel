@@ -52,6 +52,9 @@ void update_peaks(struct crystfelproject *proj)
 	if ( proj->n_frames == 0 ) return;
 	if ( proj->cur_image == NULL ) return;
 
+	crystfel_image_view_set_peak_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                      proj->peak_search_params.pk_inn);
+
 	if ( proj->show_peaks ) {
 
 		image_feature_list_free(proj->cur_image->features);
