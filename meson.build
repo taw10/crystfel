@@ -102,43 +102,50 @@ conf_inc = include_directories('.')
 executable('cell_tool',
            ['src/cell_tool.c', versionc],
            dependencies : [mdep, libcrystfeldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # partial_sim
 executable('partial_sim',
            ['src/partial_sim.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # process_hkl
 process_hkl = executable('process_hkl',
                          ['src/process_hkl.c', versionc],
                          dependencies : [mdep, libcrystfeldep],
-                         install : true)
+                         install : true,
+                         install_rpath: '$ORIGIN/../lib64/')
 
 # list_events
 executable('list_events',
            ['src/list_events.c', versionc],
            dependencies : [mdep, libcrystfeldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # get_hkl
 executable('get_hkl',
            ['src/get_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # compare_hkl
 executable('compare_hkl',
            ['src/compare_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # check_hkl
 executable('check_hkl',
            ['src/check_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # partialator
 partialator = executable('partialator',
@@ -149,19 +156,22 @@ partialator = executable('partialator',
                           'src/scaling.c',
                           versionc],
                          dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep],
-                         install : true)
+                         install : true,
+                         install_rpath: '$ORIGIN/../lib64/')
 
 # ambigator
 executable('ambigator',
            ['src/ambigator.c', versionc],
            dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # whirligig
 executable('whirligig',
            ['src/whirligig.c', versionc],
            dependencies : [mdep, libcrystfeldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
@@ -174,20 +184,23 @@ endif
 executable('indexamajig', indexamajig_sources,
            dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep, zmqdep,
                            msgpackdep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # make_pixelmap
 executable('make_pixelmap',
            ['src/make_pixelmap.c', versionc],
            dependencies : [mdep, libcrystfeldep, hdf5dep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # geoptimiser
 # FIXME: restore
 #executable('geoptimiser',
 #           ['src/geoptimiser.c', 'src/hdfsee-render.c', versionc],
 #           dependencies : [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep],
-#           install : true)
+#          install : true,
+#          install_rpath: '$ORIGIN/../lib64/')
 
 # CrystFEL GUI
 if gtkdep.found()
@@ -207,7 +220,8 @@ if gtkdep.found()
 
   executable('crystfel', gui_sources,
              dependencies : [mdep, libcrystfeldep, gtkdep, gsldep, slurmdep],
-             install : true)
+             install : true,
+             install_rpath: '$ORIGIN/../lib64/')
 
 endif
 
@@ -215,14 +229,16 @@ endif
 executable('render_hkl',
            ['src/render_hkl.c', versionc],
            dependencies : [mdep, libcrystfeldep, cairodep, gsldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 
 # cell_explorer
 if gtkdep.found()
   executable('cell_explorer',
              ['src/cell_explorer.c', 'src/multihistogram.c', versionc],
              dependencies : [mdep, libcrystfeldep, gtkdep, gsldep],
-             install : true)
+             install : true,
+             install_rpath: '$ORIGIN/../lib64/')
 endif
 
 # pattern_sim
@@ -232,7 +248,8 @@ if opencldep.found()
 endif
 executable('pattern_sim', pattern_sim_sources,
            dependencies : [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
-           install : true)
+           install : true,
+           install_rpath: '$ORIGIN/../lib64/')
 # For testing (see tests/meson.build)
 simulation_bits = files(['src/diffraction.c', 'src/diffraction-gpu.c', 'src/cl-utils.c'])
 
