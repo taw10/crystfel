@@ -527,6 +527,7 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	if ( proj->stream_filename != NULL ) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->stream),
 		                              proj->stream_filename);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ls), TRUE);
 	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream), TRUE, TRUE, 2.0);
 
