@@ -154,6 +154,10 @@ struct crystfelproject {
 	GtkWidget *main_vbox;
 	GtkWidget *image_info;
 	GtkWidget *results_combo;
+	GtkWidget *next_button;
+	GtkWidget *prev_button;
+	GtkWidget *first_button;
+	GtkWidget *last_button;
 
 	int unsaved;
 

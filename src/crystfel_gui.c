@@ -193,6 +193,15 @@ void update_imageview(struct crystfelproject *proj)
 	                                   proj->show_peaks);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
+
+	gtk_widget_set_sensitive(proj->next_button,
+	                         !(proj->cur_frame == proj->n_frames-1));
+	gtk_widget_set_sensitive(proj->last_button,
+	                         !(proj->cur_frame == proj->n_frames-1));
+	gtk_widget_set_sensitive(proj->prev_button,
+	                         !(proj->cur_frame == 0));
+	gtk_widget_set_sensitive(proj->first_button,
+	                         !(proj->cur_frame == 0));
 }
 
 
@@ -919,15 +928,15 @@ int main(int argc, char *argv[])
 	toolbar = gtk_hbox_new(FALSE, 0.0);
 
 	/* First */
-	button = gtk_button_new_from_icon_name("go-first", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
-	g_signal_connect(G_OBJECT(button), "clicked",
+	proj.first_button = gtk_button_new_from_icon_name("go-first", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), proj.first_button, FALSE, FALSE, 2.0);
+	g_signal_connect(G_OBJECT(proj.first_button), "clicked",
 	                 G_CALLBACK(first_frame_sig), &proj);
 
 	/* Prev */
-	button = gtk_button_new_from_icon_name("go-previous", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
-	g_signal_connect(G_OBJECT(button), "clicked",
+	proj.prev_button = gtk_button_new_from_icon_name("go-previous", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), proj.prev_button, FALSE, FALSE, 2.0);
+	g_signal_connect(G_OBJECT(proj.prev_button), "clicked",
 	                 G_CALLBACK(prev_frame_sig), &proj);
 
 	/* Random */
@@ -938,15 +947,15 @@ int main(int argc, char *argv[])
 	                 G_CALLBACK(random_frame_sig), &proj);
 
 	/* Next */
-	button = gtk_button_new_from_icon_name("go-next", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
-	g_signal_connect(G_OBJECT(button), "clicked",
+	proj.next_button = gtk_button_new_from_icon_name("go-next", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), proj.next_button, FALSE, FALSE, 2.0);
+	g_signal_connect(G_OBJECT(proj.next_button), "clicked",
 	                 G_CALLBACK(next_frame_sig), &proj);
 
 	/* Last */
-	button = gtk_button_new_from_icon_name("go-last", GTK_ICON_SIZE_LARGE_TOOLBAR);
-	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
-	g_signal_connect(G_OBJECT(button), "clicked",
+	proj.last_button = gtk_button_new_from_icon_name("go-last", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	gtk_box_pack_start(GTK_BOX(toolbar), proj.last_button, FALSE, FALSE, 2.0);
+	g_signal_connect(G_OBJECT(proj.last_button), "clicked",
 	                 G_CALLBACK(last_frame_sig), &proj);
 
 	/* Information about image */
