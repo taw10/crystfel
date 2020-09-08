@@ -189,6 +189,8 @@ void update_imageview(struct crystfelproject *proj)
 
 	crystfel_image_view_set_show_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                         proj->show_refls);
+	crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                      proj->indexing_params.ir_inn);
 	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                   proj->show_peaks);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),

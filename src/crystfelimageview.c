@@ -455,18 +455,38 @@ static void draw_refls(cairo_t *cr, CrystFELImageView *iv,
 		double fs, ss;
 		int pn;
 		double x, y;
+		float this_bs;
+		float this_lw;
+		int show_cen = 0;
 
 		get_detector_pos(refl, &fs, &ss);
 		pn = get_panel_number(refl);
-
 		p = &iv->image->detgeom->panels[pn];
+
+		this_lw = biggest(0.1*p->pixel_pitch, lw);
+		this_bs = biggest(iv->refl_box_size * p->pixel_pitch,
+		                  bs);
+
+		if ( this_bs > bs ) {
+			show_cen = 1;
+		}
+
 		x = p->pixel_pitch*(p->cnx + p->fsx*fs + p->ssx*ss);
 		y = p->pixel_pitch*(p->cny + p->fsy*fs + p->ssy*ss);
 
-		cairo_arc(cr, x, y, bs, 0, 2*M_PI);
-		cairo_set_line_width(cr, lw);
+		cairo_arc(cr, x, y, this_bs, 0, 2*M_PI);
+		cairo_set_line_width(cr, this_lw);
 		cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
 		cairo_stroke(cr);
+
+		if ( show_cen ) {
+			cairo_move_to(cr, x-this_bs, y);
+			cairo_line_to(cr, x+this_bs, y);
+			cairo_move_to(cr, x, y-this_bs);
+			cairo_line_to(cr, x, y+this_bs);
+			cairo_stroke(cr);
+		}
+
 	}
 }
 
@@ -657,6 +677,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->brightness = 1.0;
 	iv->pixbufs = NULL;
 	iv->peak_box_size = 1.0;
+	iv->refl_box_size = 1.0;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -926,4 +947,11 @@ void crystfel_image_view_set_peak_box_size(CrystFELImageView *iv,
                                            float box_size)
 {
 	iv->peak_box_size = box_size;
+}
+
+
+void crystfel_image_view_set_refl_box_size(CrystFELImageView *iv,
+                                           float box_size)
+{
+	iv->refl_box_size = box_size;
 }
