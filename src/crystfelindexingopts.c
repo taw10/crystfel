@@ -420,8 +420,36 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 
+	/* --int-radii */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+
+	label = gtk_label_new("Integration radii - inner:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	io->ir_inn = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(io->ir_inn), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ir_inn),
+	                   FALSE, FALSE, 0);
+
+	label = gtk_label_new("middle:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	io->ir_mid = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(io->ir_mid), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ir_mid),
+	                   FALSE, FALSE, 0);
+
+	label = gtk_label_new("outer:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	io->ir_out = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(io->ir_out), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ir_out),
+	                   FALSE, FALSE, 0);
+
 	/* FIXME: fix-bandwidth, divergence, profile-radius */
-	/* FIXME: --int-radius */
 
 	return box;
 }
@@ -822,4 +850,48 @@ void crystfel_indexing_opts_set_push_res(CrystFELIndexingOpts *opts,
 
 	snprintf(tmp, 63, "%f", push_res);
 	gtk_entry_set_text(GTK_ENTRY(opts->push_res), tmp);
+}
+
+
+void crystfel_indexing_opts_set_integration_radii(CrystFELIndexingOpts *opts,
+                                                  float ir_inn,
+                                                  float ir_mid,
+                                                  float ir_out)
+{
+	char tmp[64];
+
+	snprintf(tmp, 63, "%f", ir_inn);
+	gtk_entry_set_text(GTK_ENTRY(opts->ir_inn), tmp);
+
+	snprintf(tmp, 63, "%f", ir_mid);
+	gtk_entry_set_text(GTK_ENTRY(opts->ir_mid), tmp);
+
+	snprintf(tmp, 63, "%f", ir_out);
+	gtk_entry_set_text(GTK_ENTRY(opts->ir_out), tmp);
+}
+
+
+static void get_float_val(GtkEntry *entry, float *pval)
+{
+	float val;
+	char *rval;
+	const gchar *text = gtk_entry_get_text(entry);
+	errno = 0;
+	val = strtod(text, &rval);
+	if ( *rval != '\0' ) {
+		printf("Invalid integration radius '%s'\n", text);
+	} else {
+		*pval = val;
+	}
+}
+
+
+void crystfel_indexing_opts_get_integration_radii(CrystFELIndexingOpts *opts,
+                                                  float *ir_inn,
+                                                  float *ir_mid,
+                                                  float *ir_out)
+{
+	get_float_val(GTK_ENTRY(opts->ir_inn), ir_inn);
+	get_float_val(GTK_ENTRY(opts->ir_mid), ir_mid);
+	get_float_val(GTK_ENTRY(opts->ir_out), ir_out);
 }

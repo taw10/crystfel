@@ -87,6 +87,10 @@ static void get_indexing_opts(struct crystfelproject *proj,
 	proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
 	proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
 	proj->indexing_params.push_res = crystfel_indexing_opts_get_push_res(opts);
+	crystfel_indexing_opts_get_integration_radii(opts,
+	                                             &proj->indexing_params.ir_inn,
+	                                             &proj->indexing_params.ir_mid,
+	                                             &proj->indexing_params.ir_out);
 }
 
 
@@ -321,6 +325,10 @@ static void set_indexing_opts(struct crystfelproject *proj,
 	crystfel_indexing_opts_set_integration_method_string(opts, proj->indexing_params.integration_method);
 	crystfel_indexing_opts_set_overpredict(opts, proj->indexing_params.overpredict);
 	crystfel_indexing_opts_set_push_res(opts, proj->indexing_params.push_res);
+	crystfel_indexing_opts_set_integration_radii(opts,
+	                                             proj->indexing_params.ir_inn,
+	                                             proj->indexing_params.ir_mid,
+	                                             proj->indexing_params.ir_out);
 }
 
 

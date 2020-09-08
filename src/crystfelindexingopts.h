@@ -73,6 +73,9 @@ struct _crystfelindexingopts
 	GtkWidget *overpredict;
 	GtkWidget *limit_res;
 	GtkWidget *push_res;
+	GtkWidget *ir_inn;
+	GtkWidget *ir_mid;
+	GtkWidget *ir_out;
 };
 
 struct _crystfelindexingoptsclass
@@ -100,6 +103,10 @@ extern int crystfel_indexing_opts_get_min_peaks(CrystFELIndexingOpts *opts);
 extern char *crystfel_indexing_opts_get_integration_method_string(CrystFELIndexingOpts *opts);
 extern int crystfel_indexing_opts_get_overpredict(CrystFELIndexingOpts *opts);
 extern float crystfel_indexing_opts_get_push_res(CrystFELIndexingOpts *opts);
+extern void crystfel_indexing_opts_get_integration_radii(CrystFELIndexingOpts *opts,
+                                                         float *ir_inn,
+                                                         float *ir_mid,
+                                                         float *ir_out);
 
 
 extern void crystfel_indexing_opts_set_cell_file(CrystFELIndexingOpts *opts,
@@ -127,5 +134,9 @@ extern void crystfel_indexing_opts_set_overpredict(CrystFELIndexingOpts *opts,
                                                    int overpredict);
 extern void crystfel_indexing_opts_set_push_res(CrystFELIndexingOpts *opts,
                                                 float push_res);
+extern void crystfel_indexing_opts_set_integration_radii(CrystFELIndexingOpts *opts,
+                                                         float ir_inn,
+                                                         float ir_mid,
+                                                         float ir_out);
 
 #endif	/* CRYSTFELINDEXINGOPTS_H */
