@@ -278,6 +278,18 @@ static void handle_var(const char *key, const char *val,
 		proj->indexing_params.push_res = parse_float(val);
 	}
 
+	if ( strcmp(key, "integration.ir_inn") == 0 ) {
+		proj->indexing_params.ir_inn = parse_float(val);
+	}
+
+	if ( strcmp(key, "integration.ir_mid") == 0 ) {
+		proj->indexing_params.ir_mid = parse_float(val);
+	}
+
+	if ( strcmp(key, "integration.ir_out") == 0 ) {
+		proj->indexing_params.ir_out = parse_float(val);
+	}
+
 	if ( strcmp(key, "show_peaks") == 0 ) {
 		proj->show_peaks = parse_int(val);
 	}
@@ -611,6 +623,12 @@ int save_project(struct crystfelproject *proj)
 	        proj->indexing_params.overpredict);
 	fprintf(fh, "integration.push_res %f\n",
 	        proj->indexing_params.push_res);
+	fprintf(fh, "integration.ir_inn %f\n",
+	        proj->indexing_params.ir_inn);
+	fprintf(fh, "integration.ir_mid %f\n",
+	        proj->indexing_params.ir_mid);
+	fprintf(fh, "integration.ir_out %f\n",
+	        proj->indexing_params.ir_out);
 
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
@@ -718,6 +736,9 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_params.integration_method = strdup("rings");
 	proj->indexing_params.overpredict = 0;
 	proj->indexing_params.push_res = INFINITY;
+	proj->indexing_params.ir_inn = 4.0;
+	proj->indexing_params.ir_mid = 5.0;
+	proj->indexing_params.ir_out = 7.0;
 
 	proj->results = NULL;
 	proj->n_results = 0;

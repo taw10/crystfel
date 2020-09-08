@@ -83,6 +83,9 @@ struct index_params {
 	char *integration_method;
 	int overpredict;
 	float push_res;
+	float ir_inn;
+	float ir_mid;
+	float ir_out;
 };
 
 struct crystfelproject;
