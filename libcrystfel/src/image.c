@@ -566,10 +566,10 @@ static int file_exists(const char *filename)
 }
 
 
-int image_read_image_data(struct image *image,
-                          const DataTemplate *dtempl,
-                          const char *filename,
-                          const char *event)
+static int image_read_image_data(struct image *image,
+                                 const DataTemplate *dtempl,
+                                 const char *filename,
+                                 const char *event)
 {
 	if ( !file_exists(filename) ) {
 		ERROR("File not found: %s\n", filename);
