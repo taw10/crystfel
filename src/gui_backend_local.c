@@ -146,14 +146,8 @@ void setup_subprocess(gpointer user_data)
 
 static void *run_indexing(const char *job_title,
                           const char *job_notes,
-                          char **filenames,
-                          char **events,
-                          int n_frames,
-                          char *geom_filename,
-                          struct peak_params *peak_search_params,
-                          struct index_params *indexing_params,
-                          void *opts_priv,
-                          struct crystfelproject *proj)
+                          struct crystfelproject *proj,
+                          void *opts_priv)
 {
 	struct local_indexing_opts *opts = opts_priv;
 	GIOChannel *ioch;
@@ -206,23 +200,23 @@ static void *run_indexing(const char *job_title,
 
 	old_pwd = getcwd(NULL, 0);
 	chdir(workdir);
-	if ( write_file_list(filenames, events, n_frames) ) {
+	if ( write_file_list(proj->filenames, proj->events, proj->n_frames) ) {
 		STATUS("Failed to write list\n");
 		free(job);
 		return NULL;
 	}
 	chdir(old_pwd);
 
-	job->n_frames = n_frames;
+	job->n_frames = proj->n_frames;
 	job->frac_complete = 0.0;
 
 	snprintf(n_thread_str, 63, "%i", opts->n_processes);
-	args = indexamajig_command_line(geom_filename,
+	args = indexamajig_command_line(proj->geom_filename,
 	                                n_thread_str,
 	                                "files.lst",
 	                                "crystfel.stream",
-	                                peak_search_params,
-	                                indexing_params);
+	                                &proj->peak_search_params,
+	                                &proj->indexing_params);
 
 	i = 0;
 	while ( args[i] != NULL ) {

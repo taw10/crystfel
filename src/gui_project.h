@@ -99,14 +99,8 @@ struct crystfel_backend {
 	 * It should return a void pointer representing this job */
 	void *(*run_indexing)(const char *job_title,
 	                      const char *job_notes,
-	                      char **filenames,
-	                      char **events,
-	                      int n_frames,
-	                      char *geom_filename,
-	                      struct peak_params *peak_search_params,
-	                      struct index_params *indexing_params,
-	                      void *opts_priv,
-	                      struct crystfelproject *proj);
+	                      struct crystfelproject *proj,
+	                      void *opts_priv);
 
 	/* Called to ask the backend to cancel the job */
 	void (*cancel_task)(void *job_priv);

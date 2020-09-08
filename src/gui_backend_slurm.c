@@ -318,14 +318,8 @@ static void write_partial_file_list(GFile *workdir,
 
 static void *run_indexing(const char *job_title,
                           const char *job_notes,
-                          char **filenames,
-                          char **events,
-                          int n_frames,
-                          char *geom_filename,
-                          struct peak_params *peak_search_params,
-                          struct index_params *indexing_params,
-                          void *opts_priv,
-                          struct crystfelproject *proj)
+                          struct crystfelproject *proj,
+                          void *opts_priv)
 {
 	struct slurm_indexing_opts *opts = opts_priv;
 	struct slurm_job *job;
@@ -376,9 +370,9 @@ static void *run_indexing(const char *job_title,
 	job = malloc(sizeof(struct slurm_job));
 	if ( job == NULL ) return 0;
 
-	job->n_frames = n_frames;
-	job->n_blocks = n_frames / opts->block_size;
-	if ( n_frames % opts->block_size ) job->n_blocks++;
+	job->n_frames = proj->n_frames;
+	job->n_blocks = proj->n_frames / opts->block_size;
+	if ( proj->n_frames % opts->block_size ) job->n_blocks++;
 	STATUS("Splitting job into %i blocks of max %i frames\n",
 	       job->n_blocks, opts->block_size);
 
@@ -411,9 +405,11 @@ static void *run_indexing(const char *job_title,
 
 		write_partial_file_list(workdir_file, file_list,
 		                        i, opts->block_size,
-		                        filenames, events, n_frames);
+		                        proj->filenames,
+		                        proj->events,
+		                        proj->n_frames);
 
-		job_id = submit_batch_job(geom_filename,
+		job_id = submit_batch_job(proj->geom_filename,
 		                          file_list,
 		                          stream_filename,
 		                          opts->email_address,
@@ -424,8 +420,8 @@ static void *run_indexing(const char *job_title,
 		                          workdir,
 		                          stderr_file,
 		                          stdout_file,
-		                          peak_search_params,
-		                          indexing_params);
+		                          &proj->peak_search_params,
+		                          &proj->indexing_params);
 
 		if ( job_id == 0 ) {
 			fail = 1;
