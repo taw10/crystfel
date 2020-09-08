@@ -398,12 +398,14 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 		struct detgeom_panel *p;
 		double x, y;
 		double this_bs;
+		double this_lw;
 		int show_cen = 0;
 
 		f = image_get_feature_const(pks, i);
 		if ( f == NULL ) continue;
 		p = &iv->image->detgeom->panels[f->pn];
 
+		this_lw = biggest(0.1*p->pixel_pitch, lw);
 		this_bs = biggest(iv->peak_box_size * p->pixel_pitch,
 		                  bs);
 
@@ -414,7 +416,7 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 		x = p->pixel_pitch*(p->cnx + p->fsx*f->fs + p->ssx*f->ss);
 		y = p->pixel_pitch*(p->cny + p->fsy*f->fs + p->ssy*f->ss);
 		cairo_rectangle(cr, x-this_bs, y-this_bs, 2*this_bs, 2*this_bs);
-		cairo_set_line_width(cr, lw);
+		cairo_set_line_width(cr, this_lw);
 		cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
 		cairo_stroke(cr);
 
