@@ -200,7 +200,6 @@ static void *run_indexing(const char *job_title,
 	fclose(fh);
 	g_free(notes_path);
 	g_object_unref(notes_file);
-	g_object_unref(workdir_file);
 
 	job = malloc(sizeof(struct local_job));
 	if ( job == NULL ) return NULL;
@@ -241,6 +240,7 @@ static void *run_indexing(const char *job_title,
 	if ( r == FALSE ) {
 		ERROR("Failed to run indexamajig: %s\n",
 		      error->message);
+		g_object_unref(workdir_file);
 		free(job);
 		return NULL;
 	}
@@ -258,9 +258,14 @@ static void *run_indexing(const char *job_title,
 
 	streams = malloc(sizeof(char *));
 	if ( streams != NULL ) {
-		streams[0] = strdup("crystfel.stream");
+		GFile *stream_gfile = g_file_get_child(workdir_file,
+		                                       "crystfel.stream");
+		streams[0] = g_file_get_path(stream_gfile);
+		g_object_unref(stream_gfile);
 		add_result(proj, strdup(job_title), streams, 1);
 	}
+
+	g_object_unref(workdir_file);
 	return job;
 }
 
