@@ -1684,21 +1684,24 @@ SymOpList *parse_symmetry_operations(const char *s)
 }
 
 
-static void add_chars(char *t, const char *s, int max_len)
+static void add_chars(char *t, const char *s, size_t max_len)
 {
-	char *tmp;
+	size_t len;
 
-	tmp = strdup(t);
+	len = strlen(t) + strlen(s);
+	if ( len > max_len ) {
+		ERROR("get_matrix_name: String too long!\n");
+		return;
+	}
 
-	snprintf(t, max_len, "%s%s", tmp, s);
-	free(tmp);
+	strcat(t, s);
 }
 
 
 char *get_matrix_name(const IntegerMatrix *m, int col)
 {
 	char *text;
-	const int max_len = 9;
+	const size_t max_len = 31;
 	int i;
 	int printed = 0;
 
