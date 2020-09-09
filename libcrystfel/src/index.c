@@ -627,6 +627,16 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 }
 
 
+#ifdef MEASURE_INDEX_TIME
+static float real_time()
+{
+	struct timespec tp;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
+	return tp.tv_sec + tp.tv_nsec*1e-9;
+}
+#endif
+
+
 /* Return non-zero for "success" */
 static int try_indexer(struct image *image, IndexingMethod indm,
                        IndexingPrivate *ipriv, void *mpriv, char *last_task)
@@ -634,6 +644,12 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	int i, r;
 	int n_bad = 0;
 	int n_before = image->n_crystals;
+
+	#ifdef MEASURE_INDEX_TIME
+	float time_start;
+	float time_end;
+	time_start = real_time();
+	#endif
 
 	switch ( indm & INDEXING_METHOD_MASK ) {
 
@@ -692,6 +708,13 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	}
 
 	set_last_task(last_task, "indexing:finalisation");
+
+	#ifdef MEASURE_INDEX_TIME
+	time_end = real_time();
+	printf("%s took %f s, %i crystals found, %s %s\n",
+	       indexer_str(indm & INDEXING_METHOD_MASK),
+	       time_end - time_start, r, image->filename, image->ev);
+	#endif
 
 	/* Stop a really difficult to debug situation in its tracks */
 	if ( image->n_crystals - n_before != r ) {
