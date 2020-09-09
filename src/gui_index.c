@@ -109,8 +109,10 @@ static int run_indexing_all(struct crystfelproject *proj,
 	                            be->indexing_opts_priv);
 
 	if ( job_priv != NULL ) {
-		add_running_task(proj, "Indexing all frames",
-		                 be, job_priv);
+		char name[256];
+		snprintf(name, 255, "Indexing all frames (%s)",
+		         job_title);
+		add_running_task(proj, name, be, job_priv);
 		return 0;
 	} else {
 		return 1;
