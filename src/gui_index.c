@@ -38,6 +38,9 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms-compat.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <datatemplate.h>
 #include <peaks.h>
@@ -408,6 +411,73 @@ static IndexingFlags indexing_flags(struct index_params *params)
 }
 
 
+static char *enter_gui_tempdir()
+{
+	char *tmpdir;
+	struct stat s;
+
+	tmpdir = malloc(64);
+	if ( tmpdir == NULL ) {
+		ERROR("Failed to allocate temporary directory name\n");
+		return NULL;
+	}
+	snprintf(tmpdir, 63, "crystfel-gui.%i", getpid());
+
+	if ( stat(tmpdir, &s) == -1 ) {
+
+		int r;
+
+		if ( errno != ENOENT ) {
+			ERROR("Failed to stat temporary folder.\n");
+			return NULL;
+		}
+
+		r = mkdir(tmpdir, S_IRWXU);
+		if ( r ) {
+			ERROR("Failed to create temporary folder: %s\n",
+			      strerror(errno));
+			return NULL;
+		}
+
+	}
+
+	return tmpdir;
+}
+
+
+static void delete_gui_tempdir(char *tmpdir)
+{
+	char *path;
+	int i;
+
+	/* List of files which it's safe to delete */
+	char *files[] = {"gmon.out", "mosflm.lp", "SUMMARY", "XDS.INP",
+	                 "xfel_001.img", "xfel_001.spt", "xfel.drx",
+	                 "xfel.felix", "xfel.gve", "xfel.ini", "xfel.log",
+	                 "IDXREF.LP", "SPOT.XDS", "xfel.newmat", "XPARM.XDS"};
+
+	/* Number of items in the above list */
+	int n_files = 15;
+
+	if ( tmpdir == NULL ) return;
+
+	path = calloc(strlen(tmpdir)+64, 1);
+	if ( path == NULL ) return;
+
+	for ( i=0; i<n_files; i++ ) {
+		snprintf(path, 127, "%s/%s", tmpdir, files[i]);
+		unlink(path);
+	}
+
+	if ( rmdir(tmpdir) ) {
+		ERROR("Failed to delete GUI temporary folder: %s\n",
+		      strerror(errno));
+	}
+
+	free(tmpdir);
+}
+
+
 static void run_indexing_once(struct crystfelproject *proj)
 {
 	IndexingPrivate *ipriv;
@@ -420,6 +490,9 @@ static void run_indexing_once(struct crystfelproject *proj)
 	XGandalfOptions *xgandalf_opts;
 	PinkIndexerOptions *pinkIndexer_opts;
 	FelixOptions *felix_opts;
+	char *old_cwd;
+	char *tmpdir;
+	int r;
 
 	if ( proj->indexing_params.cell_file != NULL ) {
 		cell = load_cell_from_file(proj->indexing_params.cell_file);
@@ -428,6 +501,9 @@ static void run_indexing_once(struct crystfelproject *proj)
 	}
 
 	update_peaks(proj);
+
+	old_cwd = getcwd(NULL, 0);
+	tmpdir = enter_gui_tempdir();
 
 	if ( proj->indexing_params.indexing_methods == NULL ) {
 		methods = detect_indexing_methods(cell);
@@ -462,6 +538,14 @@ static void run_indexing_once(struct crystfelproject *proj)
 			ERROR("WARNING: Radius determination failed\n");
 		}
 	}
+
+	r = chdir(old_cwd);
+	if ( r ) {
+		ERROR("Failed to chdir: %s\n", strerror(errno));
+		return;
+	}
+	free(old_cwd);
+	delete_gui_tempdir(tmpdir);
 
 	err = 0;
 	int_method = integration_method(proj->indexing_params.integration_method,
