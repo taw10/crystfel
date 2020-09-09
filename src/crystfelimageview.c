@@ -497,6 +497,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 {
 	cairo_matrix_t m;
 
+	if ( iv->image == NULL ) return FALSE;
+
 	cairo_save(cr);
 
 	/* Overall background (light grey) */
@@ -512,7 +514,7 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	cairo_translate(cr, -gtk_adjustment_get_value(iv->hadj),
 	                     gtk_adjustment_get_value(iv->vadj));
 
-	if ( (iv->image != NULL) && (iv->pixbufs != NULL) ) {
+	if ( iv->pixbufs != NULL ) {
 		int i;
 		for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
 			cairo_save(cr);
