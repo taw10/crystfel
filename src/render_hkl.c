@@ -56,6 +56,13 @@
 #include "version.h"
 
 
+struct resrings
+{
+	double res[100];
+	int n_rings;
+};
+
+
 #define KEY_FILENAME "key.pdf"
 
 
@@ -399,13 +406,6 @@ static void render_overlined_indices(cairo_t *dctx,
 		cairo_stroke(dctx);
 	}
 }
-
-
-struct resrings
-{
-	double res[100];
-	int n_rings;
-};
 
 
 static void render_za(UnitCell *cell, RefList *list,
