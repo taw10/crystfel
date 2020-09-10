@@ -8,7 +8,7 @@ if len(sys.argv) != 3:
     print("Syntax: {} file.h5 /data/location\n".format(sys.argv[0]))
     sys.exit(1)
 
-fh = h5py.File(sys.argv[1])
+fh = h5py.File(sys.argv[1], 'r')
 dataset = fh[sys.argv[2]]
 
 show = plt.figure()
