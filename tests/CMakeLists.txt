@@ -95,37 +95,37 @@ add_test(NAME polarisation_check
 
 add_executable(evparse1 evparse1.c)
 target_include_directories(evparse1 PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(evparse1 ${COMMON_LIBRARIES} -lhdf5)
+target_link_libraries(evparse1 ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 add_test(evparse1 evparse1)
 
 add_executable(evparse2 evparse2.c)
 target_include_directories(evparse2 PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(evparse2 ${COMMON_LIBRARIES} -lhdf5)
+target_link_libraries(evparse2 ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 add_test(evparse2 evparse2)
 
 add_executable(evparse3 evparse3.c)
 target_include_directories(evparse3 PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(evparse3 ${COMMON_LIBRARIES} -lhdf5)
+target_link_libraries(evparse3 ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 add_test(evparse3 evparse3)
 
 add_executable(evparse4 evparse4.c)
 target_include_directories(evparse4 PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(evparse4 ${COMMON_LIBRARIES} -lhdf5)
+target_link_libraries(evparse4 ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 add_test(evparse4 evparse4)
 
 add_executable(evparse5 evparse5.c)
 target_include_directories(evparse5 PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(evparse5 ${COMMON_LIBRARIES} -lhdf5)
+target_link_libraries(evparse5 ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 add_test(evparse5 evparse5)
 
 add_executable(evparse6 evparse6.c)
 target_include_directories(evparse6 PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(evparse6 ${COMMON_LIBRARIES} -lhdf5)
+target_link_libraries(evparse6 ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 add_test(evparse6 evparse6)
 
 add_executable(evparse7 evparse7.c)
 target_include_directories(evparse7 PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(evparse7 ${COMMON_LIBRARIES} -lhdf5)
+target_link_libraries(evparse7 ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 add_test(evparse7 evparse7)
 
 add_executable(ev_enum1 ev_enum1.c)
