@@ -59,7 +59,6 @@ set(LIBCRYSTFEL_SOURCES
     src/detgeom.c
     src/image-cbf.c
     src/image-hdf5.c
-    src/image-msgpack.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
     src/indexers/dirax.c
@@ -99,6 +98,10 @@ set(LIBCRYSTFEL_HEADERS
     src/detgeom.h
     src/image-msgpack.h
 )
+
+if (MSGPACK_FOUND)
+  set(LIBCRYSTFEL_SOURCES ${LIBCRYSTFEL_SOURCES} src/image-msgpack.c)
+endif (MSGPACK_FOUND)
 
 if (DOXYGEN_FOUND)
   configure_file(${PROJECT_SOURCE_DIR}/doc/index.md index.md)
