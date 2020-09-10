@@ -719,10 +719,12 @@ static int render_key(int colscale, double scale_top)
 
 
 static void render_za(UnitCell *cell, RefList *list,
-                      double boost, const char *sym, int wght, int colscale,
+                      double boost, const SymOpList *sym, int wght,
+                      int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
-                      const char *outfile, double scale_top)
+                      const char *outfile, double scale_top, signed int zone,
+                      struct resrings *rings, int noaxes)
 {
 	ERROR("This version of CrystFEL was compiled without Cairo");
 	ERROR(" support, which is required to plot a zone axis");
