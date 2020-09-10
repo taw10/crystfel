@@ -161,10 +161,10 @@ check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
 
 # Check for argp
 check_symbol_exists(argp_parse "argp.h" HAVE_ARGP)
-if (!HAVE_ARGP)
+if (NOT HAVE_ARGP)
   message(ERROR "argp not found.  If you're building on Mac OS using libraries"
                 "from Homebrew, install argp-standalone.")
-endif (!HAVE_ARGP)
+endif (NOT HAVE_ARGP)
 
 # Add the libcrystfel target
 add_subdirectory(libcrystfel)
