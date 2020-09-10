@@ -16,8 +16,8 @@ panel0/ss = y
 
 panel1/min_fs = 0
 panel1/max_fs = 1023
-panel1/min_ss = 512
-panel1/max_ss = 1023
+panel1/min_ss = 0
+panel1/max_ss = 511
 panel1/corner_x = -512.0
 panel1/corner_y = 20.0
 panel1/clen = 100 mm
