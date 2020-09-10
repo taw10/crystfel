@@ -26,7 +26,6 @@
  *
  */
 
-#include <pty.h>
 #include <glib.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
