@@ -84,12 +84,13 @@ static void makeRightHanded(UnitCell* cell);
 
 int run_xgandalf(struct image *image, void *ipriv)
 {
+	int i;
 	struct xgandalf_private_data *xgandalf_private_data = (struct xgandalf_private_data*) ipriv;
 	reciprocalPeaks_1_per_A_t *reciprocalPeaks_1_per_A = &(xgandalf_private_data->reciprocalPeaks_1_per_A);
 
 	int peakCountMax = image_feature_count(image->features);
 	reciprocalPeaks_1_per_A->peakCount = 0;
-	for (int i = 0; i < peakCountMax && i < MAX_PEAK_COUNT_FOR_INDEXER; i++) {
+	for ( i = 0; i < peakCountMax && i < MAX_PEAK_COUNT_FOR_INDEXER; i++) {
 		struct imagefeature *f;
 		f = image_get_feature(image->features, i);
 		if (f == NULL) {
@@ -116,7 +117,7 @@ int run_xgandalf(struct image *image, void *ipriv)
 	}
 
 	int goodLatticesCount = assembledLatticesCount;
-	for (int i = 0; i < assembledLatticesCount && i < 1; i++) {
+	for ( i = 0; i < assembledLatticesCount && i < 1; i++) {
 		reorderLattice(&(xgandalf_private_data->sampleRealLattice_A),
 		                 &assembledLattices[i]);
 
