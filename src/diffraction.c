@@ -399,7 +399,7 @@ static void diffraction_panel(struct image *image, const double *intensities,
 			yo = (1.0/nys) * ys;
 
 			detgeom_transform_coords(p, fs+xo, ss+yo,
-			                         image->lambda, qv);
+			                         1.0/k, qv);
 
 			q.u = qv[0]; q.v = qv[1]; q.w = qv[2];
 
