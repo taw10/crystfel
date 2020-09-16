@@ -1314,7 +1314,7 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 		}
 
 		if ( H5Oget_info_by_idx(gh, ".", H5_INDEX_NAME,
-		                        H5_ITER_INC, i, &obj_info, 0) )
+		                        H5_ITER_INC, i, &obj_info, 0) < 0 )
 		{
 			ERROR("Couldn't get info\n");
 			free(name);
@@ -1326,7 +1326,7 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 
 			hid_t child_gh;
 
-			if ( n_pattern_bits == 0 ) {
+			if ( n_pattern_bits == 1 ) {
 				ERROR("Pattern doesn't match file"
 				      " (too short)\n");
 				free(name);
