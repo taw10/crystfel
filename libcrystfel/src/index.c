@@ -60,33 +60,12 @@
 #include "taketwo.h"
 #include "xgandalf.h"
 #include "pinkindexer.h"
+#include "fromfile.h"
 
 #include "uthash.h"
 
 
 /** \file index.h */
-
-#define NPARAMS_PER_LINE 13  // There are 9 vector components, 2 detector shifts, 1 profile radius, 1 resolution limit 
-#define NKEYS_PER_LINE 4  // The keys are the filename, event path, event dim and crystal number 
-
-struct skip_private
-{
-	UnitCell *cellTemplate;
-	struct record_t *sol_hash;
-};
-
-struct record_key_t{			 	//Hash table keys
-  char filename[100];
-  char event_path[100];
-  int event_dim;
-  int crystal_number;
-};
-
-struct record_t{			 		//Hash table
-    struct record_key_t key;
-    float solution[NPARAMS_PER_LINE];
-    UT_hash_handle hh;
-};
 
 struct _indexingprivate
 {
@@ -98,27 +77,6 @@ struct _indexingprivate
 	IndexingMethod *methods;
 	void **engine_private;
 };
-
-void print_struct(struct record_t *sol_hash) {
-    struct record_t *s;
-    s = (struct record_t *)malloc(sizeof *s);
-    memset(s, 0, sizeof *s);
-
-    for(s=sol_hash; s != NULL; s=(struct record_t*)(s->hh.next)) {
-        printf("This entry corresponds to event %s//%d and crystal_number %d in file %s \n", s->key.event_path, s->key.event_dim, s->key.crystal_number, s->key.filename);
-    }
-}
-
-void full_print_struct(struct record_t *sol_hash) {
-    struct record_t *s;
-    s = (struct record_t *)malloc(sizeof *s);
-    memset(s, 0, sizeof *s);
-
-    for(s=sol_hash; s != NULL; s=(struct record_t*)(s->hh.next)) {
-        printf("This entry corresponds to event %s//%d and crystal_number %d in file %s \n", s->key.event_path, s->key.event_dim, s->key.crystal_number, s->key.filename);
-		printf("The solution parameters are %e %e %e %e %e %e %e %e %e %e %e %e %e \n", s->solution[0], s->solution[1], s->solution[2], s->solution[3], s->solution[4], s->solution[5], s->solution[6], s->solution[7], s->solution[8], s->solution[9], s->solution[10], s->solution[11], s->solution[12]);
-    }
-}
 
 static const char *onoff(int a)
 {
@@ -154,272 +112,6 @@ static void show_indexing_flags(IndexingFlags flags)
 	STATUS("                              Retry indexing: %s\n",
 	       onoff(flags & INDEXING_RETRY));
 }
-
-int ncrystals_in_sol(char *path)
-{
-	FILE *fh;
-	int count = 0;  // Line counter (result) 
-    char c;  // To store a character read from file 
-
-	fh = fopen(path, "r");
-
-	if ( fh == NULL ) {
-		ERROR("%s not found by ncrystals_in_sol\n",path);
-		return 0;
-	}
-
-	for (c = getc(fh); c != EOF; c = getc(fh)) 
-        if (c == '\n') // Increment count if this character is newline 
-            count = count + 1; 
-	
-	//For the last line, which has no \n at the end
-	count = count + 1;
-  
-    // Close the file 
-    fclose(fh); 
-
-	// STATUS("Found indexing file %s containing %d lines. \n", path, count);
-
-	return count;
-
-}
-
-
-void *skip_prepare(char *solution_filename, UnitCell *cell)
-{	
-	FILE *fh;
-	int nlines;
-	int nparams_in_solution;
-	int nentries;
-	char filename[100];   					
-	char event_path[100];   
-	int event_dim;                
-	int crystal_number;
-	int current_line;
-	int position_in_current_line;
-	struct record_t *sol_hash = NULL;
-	struct record_t *item = NULL;
-	float params[NPARAMS_PER_LINE];
-	char path_to_sol[50],extension[10];
-	char cwd[PATH_MAX];
-
-	//Assembling solution file name from input file name to crystfel
-	strcpy(path_to_sol,"../");
-	strcpy(extension,".sol");
-	strcat(path_to_sol, strtok(solution_filename, ".") );     //Add .sol at the previously splitted name
-	strcat(path_to_sol, extension );
-
-	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-		//printf("Path where skip_prepare is ran: %s\n", cwd);
-	}
-
-	fh = fopen(path_to_sol, "r");
-
-	if ( fh == NULL ) {
-		ERROR("%s not found by skip_prepare in %s\n", path_to_sol, cwd);
-		return 0;
-	}
-	else {
-		STATUS("Found solution file %s at %s\n", path_to_sol, cwd);
-	}
-
-	nlines = ncrystals_in_sol(path_to_sol);
-	nparams_in_solution = nlines*NPARAMS_PER_LINE; /* total crystal parameters in solution file */
-	nentries = nlines*(NPARAMS_PER_LINE+NKEYS_PER_LINE); /* total entries in solution file */
-  
-	STATUS("Parsing solution file containing %d lines...\n", nlines);
-
-	//Reads indexing solutions
-	int j = 0; //index that follows the solution parameter [0,NPARAMS_PER_LINE]
-	for(int i = 0; i < nentries; i++)
-	{	
-
-		current_line = i/(NPARAMS_PER_LINE+NKEYS_PER_LINE);
-		
-		position_in_current_line = (i)%(NPARAMS_PER_LINE+NKEYS_PER_LINE);
-
-		if (position_in_current_line == 0){
-
-			if ( fscanf(fh, "%s", filename) != 1 ) {
-				if (current_line == (nlines-1)){
-					break;
-				}
-				else{
-				printf("Failed to read a filename from indexing.sol with skip_prepare\n");
-				return 0;
-				}
-			}
-		}
-
-		if (position_in_current_line == 1){
-
-			if ( fscanf(fh, "%s", event_path) != 1 ) {
-				printf("Failed to read an event path from indexing.sol with skip_prepare\n");
-				return 0;
-			}
-		}
-
-		if (position_in_current_line == 2){
-
-			if ( fscanf(fh, "%d", &event_dim) != 1 ) {
-				printf("Failed to read an event dim from indexing.sol with skip_prepare\n");
-				return 0;
-			}
-		}
-			
-		if (position_in_current_line == 3){
-			if ( fscanf(fh, "%d", &crystal_number) != 1 ) {
-				printf("Failed to read a crystal number from indexing.sol with skip_prepare\n");
-				return 0;
-			}			
-		}
-
-		if (position_in_current_line > 3){
-			if ( fscanf(fh, "%e", &params[j]) != 1 ) {
-				printf("Failed to read a parameter from indexing.sol with skip_prepare\n");
-				return 0;
-			}
-			j+=1;
-
-			
-		}
-
-		if (j == (NPARAMS_PER_LINE) ){
-
-			//Prepare to add to the hash table
-			item = (struct record_t *)malloc(sizeof *item);
-			memset(item, 0, sizeof *item);
-			strcpy(item->key.filename, filename);
-			strcpy(item->key.event_path, event_path);
-			item->key.event_dim = event_dim;
-			item->key.crystal_number = crystal_number;
-			for (int k = 0; k < NPARAMS_PER_LINE; k++){
-    			item->solution[k] = params[k];
-			}
-
-			//Verify the uniqueness of the key
-			struct record_t *uniqueness_test;
-			HASH_FIND(hh, sol_hash, &item->key, sizeof(struct record_key_t), uniqueness_test);  // id already in the hash? 
-    		if (uniqueness_test==NULL) {
-				//If not in the table, add
-				HASH_ADD(hh, sol_hash, key, sizeof(struct record_key_t), item);
-			}
-			else{
-				//If already in the table, break with error
-				printf("Keys to the data must be unique! Verify the combination filename, event, crystal_number");
-				return 0;
-			}
-
-		j=0;		
-
-		}
-	}
-	
-	fclose(fh);
-	
-	STATUS("Solution file parsing done. Have %d parameters and %d total entries.\n", nparams_in_solution, nentries)
-
-	struct skip_private *dp;
-	dp = (struct skip_private *) malloc( sizeof(struct skip_private));
-
-	if ( dp == NULL ) return NULL;
-    
-    dp->cellTemplate = cell;
-	dp->sol_hash = sol_hash;
-	
-	STATUS("Solution lookup table initialized!\n");
-
-	return (void *)dp;
-}
-
-//Fonction from pinkindexer.c to update the detector center of individual crystals
-//hack for electron crystallography while crystal_set_det_shift is not working approprietly
-static void update_detector(struct detector *det, double xoffs, double yoffs)
-{
-	int i;
-
-	for (i = 0; i < det->n_panels; i++) {
-		struct panel *p = &det->panels[i];
-		p->cnx += xoffs * p->res;
-		p->cny += yoffs * p->res;
-	}
-}
-
-static int skip_index(struct image *image, void *mpriv, int crystal_number)
-{
-	Crystal *cr;
-	UnitCell *cell;
-	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz, xshift, yshift, profile_radius, resolution_limit;
-	struct record_t *item, *p, *pprime;
-	float *sol;
-	
-	struct skip_private *dp = (struct skip_private *)mpriv;
-
-	//Look up the hash table
-	item = (struct record_t *)malloc(sizeof *item);
-	memset(item, 0, sizeof *item);
-	strcpy(item->key.filename, image->filename);
-	strcpy(item->key.event_path, *image->event->path_entries);
-	item->key.event_dim = *image->event->dim_entries;
-	item->key.crystal_number = crystal_number;
-
-    HASH_FIND(hh,  dp->sol_hash, &item->key, sizeof(struct record_key_t), p);  //id already in the hash?
-    if (p==NULL) {
-		//STATUS("Not indexing file %s, event %s %d \n", image->filename, *image->event->path_entries, *image->event->dim_entries);
-		return 0;
-	}
-
-	sol = &(p->solution)[0];
-	
-	asx = sol[0];
-	asy = sol[1];
-	asz = sol[2];
-	bsx = sol[3];
-	bsy = sol[4];
-	bsz = sol[5];
-	csx = sol[6];
-	csy = sol[7];
-	csz = sol[8];
-	xshift = sol[9];
-	yshift = sol[10];
-	profile_radius = sol[11];
-	resolution_limit = sol[12];
-
-	cr = crystal_new();
-	cell = cell_new();
-	cell_set_reciprocal(cell, asx * 1e9, asy * 1e9, asz* 1e9, bsx * 1e9, bsy * 1e9, bsz * 1e9, csx * 1e9, csy * 1e9, csz* 1e9);
-    cell_set_lattice_type(cell, cell_get_lattice_type(dp->cellTemplate));
-	cell_set_centering(cell, cell_get_centering(dp->cellTemplate));
-	cell_set_unique_axis(cell, cell_get_unique_axis(dp->cellTemplate));
-	
-	crystal_set_cell(cr, cell);
-	crystal_set_det_shift(cr, xshift * 1e-3, yshift * 1e-3);
-	update_detector(image->det, xshift * 1e-3, yshift * 1e-3);
-	crystal_set_profile_radius(cr, profile_radius*1e9);
-	crystal_set_resolution_limit(cr, resolution_limit*1e9);
-	image_add_crystal(image, cr);
-
-	//Look for additional crystals
-	item->key.crystal_number = crystal_number+1;
-	HASH_FIND(hh,  dp->sol_hash, &item->key, sizeof(struct record_key_t), pprime);  //id already in the hash?
-    if (pprime==NULL) {
-		
-		//If no more crystal, done
-		return 1;
-	}
-	else{
-		//If more crystals, recursive call for next crystal in line
-		skip_index(image,mpriv,crystal_number+1);
-	}
-
-	
-	dp->sol_hash = NULL; //Clean up local copy of the hash table
-	
-
-	return 1;
-	
-}
-
 
 static char *base_indexer_str(IndexingMethod indm)
 {
@@ -541,7 +233,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_FILE :
-		priv = skip_prepare(filename, cell);
+		priv = fromfile_prepare(filename, cell);
 		break;
 
 		case INDEXING_FELIX :
@@ -924,7 +616,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		case INDEXING_FILE :
 		set_last_task(last_task, "indexing:file");
 		int crystal_number = 0;
-		r = skip_index(image,mpriv,crystal_number);
+		r = fromfile_index(image, mpriv, crystal_number);
 		break;
 
 		case INDEXING_FELIX :
