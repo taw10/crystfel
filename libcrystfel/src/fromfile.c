@@ -45,13 +45,7 @@
 #define NPARAMS_PER_LINE 13  
 /* The keys are the filename, 
  * event path, event dim and crystal number */
-#define NKEYS_PER_LINE 4  
-
-struct fromfile_private
-{
-	UnitCell *cellTemplate;
-	struct fromfile_entries *sol_hash;
-};
+#define NKEYS_PER_LINE 4 
 
 struct fromfile_keys
 {			 	
@@ -66,6 +60,12 @@ struct fromfile_entries
     struct fromfile_keys key;
     float solution[NPARAMS_PER_LINE];
     UT_hash_handle hh;
+};
+
+struct fromfile_private
+{
+	UnitCell *cellTemplate;
+	struct fromfile_entries *sol_hash;
 };
 
 void print_struct(struct fromfile_entries *sol_hash) 
@@ -328,18 +328,18 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	profile_radius = sol[11] * 1e9;
 	resolution_limit = sol[12] * 1e9;
 
-	cr = crystal_new();
 	cell = cell_new();
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
     cell_set_lattice_type(cell, cell_get_lattice_type(dp->cellTemplate));
 	cell_set_centering(cell, cell_get_centering(dp->cellTemplate));
 	cell_set_unique_axis(cell, cell_get_unique_axis(dp->cellTemplate));
 	
+	cr = crystal_new();
 	crystal_set_cell(cr, cell);
-	crystal_set_det_shift(cr, xshift , yshift);
-	update_detector(image->det, xshift , yshift);
 	crystal_set_profile_radius(cr, profile_radius);
 	crystal_set_resolution_limit(cr, resolution_limit);
+	crystal_set_det_shift(cr, xshift , yshift);
+	update_detector(image->det, xshift , yshift);
 	image_add_crystal(image, cr);
 
 	/*Look for additional crystals*/
@@ -348,7 +348,6 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	          sizeof(struct fromfile_keys), pprime);
 
     if ( pprime == NULL ) {
-		
 		/* If no more crystal, done */
 		return 1;
 	}

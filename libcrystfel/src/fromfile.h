@@ -27,39 +27,13 @@
 #ifndef FROMFILE_H
 #define FROMFILE_H
 
+struct fromfile_keys;
+struct fromfile_entries;
+struct fromfile_private;
 
 #include "image.h"
 #include "cell.h"
 #include "uthash.h"
-
-/* There are 9 vector components, 
- * 2 detector shifts, 1 profile radius,
- *  1 resolution limit */
-#define NPARAMS_PER_LINE 13  
-/* The keys are the filename, 
- * event path, event dim and crystal number */
-#define NKEYS_PER_LINE 4     
-
-struct fromfile_private
-{
-	UnitCell *cellTemplate;
-	struct fromfile_entries *sol_hash;
-};
-
-struct fromfile_keys
-{			 	
-  char filename[100];
-  char event_path[100];
-  int event_dim;
-  int crystal_number;
-};
-
-struct fromfile_entries
-{			 		
-    struct fromfile_keys key;
-    float solution[NPARAMS_PER_LINE];
-    UT_hash_handle hh;
-};
 
 extern void print_struct(struct fromfile_entries *sol_hash);
 
