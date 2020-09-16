@@ -539,7 +539,6 @@ int image_hdf5_read(struct image *image,
 	image->dp = malloc(dtempl->n_panels*sizeof(float *));
 	if ( image->dp == NULL ) {
 		ERROR("Failed to allocate data array.\n");
-		image_free(image);
 		return 1;
 	}
 
@@ -558,7 +557,6 @@ int image_hdf5_read(struct image *image,
 		                         dtempl->panels[i].data) )
 		{
 			ERROR("Failed to load panel data\n");
-			image_free(image);
 			return 1;
 		}
 	}
