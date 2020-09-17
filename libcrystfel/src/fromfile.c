@@ -44,14 +44,13 @@
  *  1 resolution limit */
 #define NPARAMS_PER_LINE 13  
 /* The keys are the filename, 
- * event path, event dim and crystal number */
-#define NKEYS_PER_LINE 4 
+ * event, and crystal number */
+#define NKEYS_PER_LINE 3
 
 struct fromfile_keys
 {			 	
   char filename[100];
-  char event_path[100];
-  int event_dim;
+  char event[100];
   int crystal_number;
 };
 
@@ -75,9 +74,9 @@ void print_struct(struct fromfile_entries *sol_hash)
     memset(s, 0, sizeof *s);
 
     for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
-        printf("File %s, event %s//%d and crystal_number %d \n",
-		       s->key.filename, s->key.event_path, 
-			   s->key.event_dim, s->key.crystal_number);
+        printf("File %s, event %s, and crystal_number %d \n",
+		       s->key.filename, s->key.event, 
+			   s->key.crystal_number);
     }
 }
 
@@ -88,9 +87,9 @@ void full_print_struct(struct fromfile_entries *sol_hash)
     memset(s, 0, sizeof *s);
 
     for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
-        printf("File %s, event %s//%d and crystal_number %d \n",
-		       s->key.filename, s->key.event_path, 
-			   s->key.event_dim, s->key.crystal_number);
+        printf("File %s, event %s, and crystal_number %d \n",
+		       s->key.filename, s->key.event, 
+			   s->key.crystal_number);
 		
 		printf("Solution parameters:\n");
         for( int i = 0; i < NPARAMS_PER_LINE; i++ ){
@@ -135,8 +134,7 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 	int nparams_in_solution;
 	int nentries;
 	char filename[100];   					
-	char event_path[100];   
-	int event_dim;                
+	char event[100];                 
 	int crystal_number;
 	int current_line;
 	int position_in_current_line;
@@ -197,28 +195,20 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 
 		if ( position_in_current_line == 1 ){
 
-			if ( fscanf(fh, "%s", event_path) != 1 ) {
-				printf("Failed to read an event path\n");
-				return 0;
-			}
-		}
-
-		if ( position_in_current_line == 2 ){
-
-			if ( fscanf(fh, "%d", &event_dim) != 1 ) {
-				printf("Failed to read an event dim\n");
+			if ( fscanf(fh, "%s", event) != 1 ) {
+				printf("Failed to read an event\n");
 				return 0;
 			}
 		}
 			
-		if ( position_in_current_line == 3 ){
+		if ( position_in_current_line == 2 ){
 			if ( fscanf(fh, "%d", &crystal_number) != 1 ) {
 				printf("Failed to read a crystal number\n");
 				return 0;
 			}			
 		}
 
-		if ( position_in_current_line > 3 ){
+		if ( position_in_current_line > 2 ){
 			if ( fscanf(fh, "%e", &params[j]) != 1 ) {
 				printf("Failed to read a parameter\n");
 				return 0;
@@ -232,8 +222,7 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 			item = (struct fromfile_entries *)malloc(sizeof *item);
 			memset(item, 0, sizeof *item);
 			strcpy(item->key.filename, filename);
-			strcpy(item->key.event_path, event_path);
-			item->key.event_dim = event_dim;
+			strcpy(item->key.event, event);
 			item->key.crystal_number = crystal_number;
 			for ( int k = 0; k < NPARAMS_PER_LINE; k++){
     			item->solution[k] = params[k];
@@ -302,8 +291,7 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	item = (struct fromfile_entries *)malloc(sizeof *item);
 	memset(item, 0, sizeof *item);
 	strcpy(item->key.filename, image->filename);
-	strcpy(item->key.event_path, *image->event->path_entries);
-	item->key.event_dim = *image->event->dim_entries;
+	strcpy(item->key.event, get_event_string(image->event));
 	item->key.crystal_number = crystal_number;
 
 	/* key already in the hash? */
