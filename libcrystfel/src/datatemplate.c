@@ -841,6 +841,19 @@ static int dt_num_path_placeholders(const char *str)
 }
 
 
+signed int find_dim(signed int *dims, int which)
+{
+	int i;
+
+	for ( i=0; i<MAX_DIMS; i++ ) {
+		if ( dims[i] == DIM_UNDEFINED ) break;
+		if ( dims[i] == which ) return i;
+	}
+
+	return -1;
+}
+
+
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;
@@ -1053,6 +1066,21 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	for ( i=0; i<dt->n_panels; i++ ) {
 
 		struct panel_template *p = &dt->panels[i];
+		signed int dim_fs = find_dim(p->dims, DIM_FS);
+		signed int dim_ss = find_dim(p->dims, DIM_SS);
+
+		if ( (dim_fs<0) || (dim_ss<0) ) {
+			ERROR("Panel %s does not have dimensions "
+			      "assigned to both fs and ss.\n",
+			      p->name);
+			reject = 1;
+		}
+
+		if ( dim_ss > dim_fs ) {
+			ERROR("Fast scan dimension must be lower than "
+			      "slow scan (panel %s)\n", p->name);
+			reject = 1;
+		}
 
 		if ( p->orig_min_fs < 0 ) {
 			ERROR("Please specify the minimum FS coordinate for"
