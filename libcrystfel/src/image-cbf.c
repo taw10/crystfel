@@ -35,6 +35,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <zlib.h>
+#include <unistd.h>
 
 #include "image.h"
 #include "utils.h"
