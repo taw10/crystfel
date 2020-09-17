@@ -283,6 +283,7 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 	float xshift, yshift, profile_radius, resolution_limit;
 	struct fromfile_entries *item, *p, *pprime;
+	int ncryst = 0;
 	float *sol;
 	
 	struct fromfile_private *dp = (struct fromfile_private *)mpriv;
@@ -323,6 +324,7 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	cell_set_unique_axis(cell, cell_get_unique_axis(dp->cellTemplate));
 	
 	cr = crystal_new();
+	ncryst += 1;
 	crystal_set_cell(cr, cell);
 	crystal_set_profile_radius(cr, profile_radius);
 	crystal_set_resolution_limit(cr, resolution_limit);
@@ -335,17 +337,10 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	HASH_FIND(hh,  dp->sol_hash, &item->key, 
 	          sizeof(struct fromfile_keys), pprime);
 
-    if ( pprime == NULL ) {
-		/* If no more crystal, done */
-		return 1;
+    if ( pprime != NULL ) {
+		ncryst += fromfile_index(image, mpriv, crystal_number+1);
 	}
-	else{
-		/* If more crystals, recursive call for next crystal in line */
-		fromfile_index(image, mpriv, crystal_number+1);
-	}
-	
-	dp->sol_hash = NULL; /* Clean up local copy */
-	
-	return 1;
+		
+	return ncryst;
 	
 }
