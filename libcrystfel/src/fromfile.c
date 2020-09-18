@@ -43,9 +43,9 @@
  * 2 detector shifts, 1 profile radius,
  *  1 resolution limit */
 #define NPARAMS_PER_LINE 13  
-/* The keys are the filename, 
- * event, and crystal number */
-#define NKEYS_PER_LINE 3
+/* The keys read from file 
+ * are the filename, event */
+#define NKEYS_PER_LINE 2
 
 struct fromfile_keys
 {			 	
@@ -176,6 +176,7 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 	int j = 0; /* follows the solution parameter [0,NPARAMS_PER_LINE] */
 	for(int i = 0; i < nentries; i++)
 	{	
+		crystal_number = 0;
 
 		current_line = i/(NPARAMS_PER_LINE+NKEYS_PER_LINE);
 		
@@ -200,15 +201,8 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 				return 0;
 			}
 		}
-			
-		if ( position_in_current_line == 2 ){
-			if ( fscanf(fh, "%d", &crystal_number) != 1 ) {
-				printf("Failed to read a crystal number\n");
-				return 0;
-			}			
-		}
 
-		if ( position_in_current_line > 2 ){
+		if ( position_in_current_line > 1 ){
 			if ( fscanf(fh, "%e", &params[j]) != 1 ) {
 				printf("Failed to read a parameter\n");
 				return 0;
@@ -231,13 +225,25 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 			/* Verify the uniqueness of the key */
 			struct fromfile_entries *uniqueness_test;
 			HASH_FIND(hh, sol_hash, &item->key, 
-			          sizeof(struct fromfile_keys), uniqueness_test); 
-    		if (uniqueness_test==NULL) {
-				HASH_ADD(hh, sol_hash, key, sizeof(struct fromfile_keys), item);
+			          sizeof(struct fromfile_keys), uniqueness_test);
+		
+    		if ( uniqueness_test == NULL ) {
+				HASH_ADD(hh, sol_hash, key, 
+				         sizeof(struct fromfile_keys), item);
 			}
 			else{
-				printf("Keys must be unique! Verify the combinations");
-				return 0;
+				do
+				{
+					uniqueness_test = NULL;
+					crystal_number += 1;
+					item->key.crystal_number = crystal_number;
+					HASH_FIND(hh, sol_hash, &item->key, 
+			          sizeof(struct fromfile_keys), uniqueness_test);
+				}
+				while ( uniqueness_test != NULL );
+				
+				HASH_ADD(hh, sol_hash, key, 
+				         sizeof(struct fromfile_keys), item);
 			}
 
 		j=0;		
