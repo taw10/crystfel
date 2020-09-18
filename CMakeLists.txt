@@ -59,38 +59,20 @@ else()
 endif()
 
 pkg_search_module(GTK gtk+-3.0)
-if (NOT GTK_FOUND)
-
-  # No GTK3.  Try GTK2?
-  pkg_search_module(GTK gtk+-2.0)
-  if (GTK_FOUND)
-    message(STATUS "Using GTK 2")
-    pkg_search_module(GDK gdk-2.0)
-  endif ()
-
-else ()
-
-  message(STATUS "Using GTK 3")
+if (GTK_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations")
-  pkg_search_module(GDK gdk-3.0)
-
+  link_directories(${GTK_LIBRARY_DIRS})
 endif ()
 
 # If no version of GTK was found, try for GDK
 if (NOT GTK_FOUND)
-  message(STATUS "GTK not found. cell_explorer will not be compiled")
+  message(STATUS "GTK3 not found. GUI parts will not be compiled")
   message(STATUS "Looking separately for GDK")
   pkg_search_module(GDK gdk-3.0)
   if (NOT GDK_FOUND)
-    pkg_search_module(GDK gdk-2.0)
-    if (GDK_FOUND)
-      message(STATUS "Using GDK 2")
-    endif()
-  else ()
-    message(STATUS "Using GDK 3")
+    message(STATUS "GDK not found.")
   endif()
 endif()
-link_directories(${GTK_LIBRARY_DIRS})
 
 pkg_search_module(CAIRO cairo)
 pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
