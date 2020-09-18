@@ -127,27 +127,62 @@ int ncrystals_in_sol(char *path)
 
 }
 
+char *read_unknown_string(FILE *fh){
+	/* Source: "https://stackoverflow.com/questions/16870485/
+	 * how-can-i-read-an-input-string-of-unknown-length" */
+
+	char *str = NULL;
+    int ch;
+    size_t len = 0;
+	size_t size = 1;
+
+    str = realloc(NULL, sizeof(char)*size); //size is start size
+	if ( !str ){
+		ERROR("Can't reallocate string size")
+	}
+    
+    while( ( ch = fgetc(fh) ) != ' ' && ch != EOF ){
+		if (ch != '\n'){
+			str[len++]=ch;
+		}
+        if(len==size){
+			size+=64;
+            str = realloc(str, sizeof(char)*(size));
+			if ( !str ){
+				ERROR("Can't reallocate string size")
+			}
+        }
+    }
+
+    return realloc(str, sizeof(char)*len);
+
+}
+
 void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 {	
 	FILE *fh;
 	int nlines;
 	int nparams_in_solution;
 	int nentries;
-	char filename[100];   					
-	char event[100];                 
+	char *filename;   					
+	char *event;                 
 	int crystal_number;
 	int current_line;
 	int position_in_current_line;
 	struct fromfile_entries *sol_hash = NULL;
 	struct fromfile_entries *item = NULL;
 	float params[NPARAMS_PER_LINE];
-	char path_to_sol[50],extension[10];
 	char cwd[PATH_MAX];
 
 	/* Assembling solution file name from input file name*/
+	char *path_to_sol;
+	size_t path_len;
+	char *core_name = strtok(solution_filename, ".");
+	char *extension = ".sol";
+	path_len = sizeof(core_name) + sizeof(extension) + sizeof("../");
+	path_to_sol = realloc(NULL, sizeof(char)*path_len);
 	strcpy(path_to_sol, "../");
-	strcpy(extension, ".sol");
-	strcat(path_to_sol, strtok(solution_filename, "."));
+	strcat(path_to_sol, core_name);
 	strcat(path_to_sol, extension);
 
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -183,23 +218,26 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 		position_in_current_line = (i)%(NPARAMS_PER_LINE+NKEYS_PER_LINE);
 
 		if ( position_in_current_line == 0 ){
-			if ( fscanf(fh, "%s", filename) != 1 ) {
+
+			filename = read_unknown_string(fh);
+
+			if ( !filename ){
 				if ( current_line == (nlines-1) ){
 					break;
 				}
-				else{
 				printf("Failed to read a filename\n");
 				return 0;
-				}
 			}
+			
 		}
 
 		if ( position_in_current_line == 1 ){
-
-			if ( fscanf(fh, "%s", event) != 1 ) {
-				printf("Failed to read an event\n");
+			event = read_unknown_string(fh);
+			if ( !event ){
+				printf("Failed to read a event\n");
 				return 0;
 			}
+
 		}
 
 		if ( position_in_current_line > 1 ){
@@ -232,6 +270,7 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 				         sizeof(struct fromfile_keys), item);
 			}
 			else{
+				/* Look for the next available set of keys */
 				do
 				{
 					uniqueness_test = NULL;
@@ -246,7 +285,7 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 				         sizeof(struct fromfile_keys), item);
 			}
 
-		j=0;		
+		j=0;	
 
 		}
 	}
