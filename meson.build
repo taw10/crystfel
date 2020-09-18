@@ -37,6 +37,7 @@ endif
 
 # Request HDF5 1.10-style API
 add_project_arguments('-DH5_USE_110_API', language : 'c')
+add_project_arguments('-DH5O_GET_INFO_BY_IDX1', language : 'c')
 
 # "Optional" dependencies
 fftwdep = dependency('fftw3', required : false)
