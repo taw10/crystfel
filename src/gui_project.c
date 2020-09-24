@@ -795,8 +795,8 @@ static void update_result_index(struct gui_result *result)
 }
 
 
-static struct gui_result *find_result_by_name(struct crystfelproject *proj,
-                                              const char *name)
+struct gui_result *find_result_by_name(struct crystfelproject *proj,
+                                       const char *name)
 {
 	int i;
 

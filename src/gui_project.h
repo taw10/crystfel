@@ -231,4 +231,7 @@ extern struct image *find_result(struct crystfelproject *proj,
                                  const char *filename,
                                  const char *event);
 
+extern struct gui_result *find_result_by_name(struct crystfelproject *proj,
+                                              const char *name);
+
 #endif
