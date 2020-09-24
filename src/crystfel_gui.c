@@ -686,7 +686,13 @@ static gint image_info_clicked_sig(GtkWidget *widget,
 
 	gtk_container_add(GTK_CONTAINER(popover), grid);
 	gtk_widget_show_all(grid);
+
+#if GTK_CHECK_VERSION(3,22,0)
 	gtk_popover_popup(GTK_POPOVER(popover));
+#else
+	gtk_widget_show_all(GTK_WIDGET(popover));
+#endif
+
 	return FALSE;
 }
 
@@ -1093,7 +1099,7 @@ static void infobar_response_sig(GtkInfoBar *infobar, gint resp,
 
 	} else if ( resp == GTK_RESPONSE_CLOSE ) {
 
-		gtk_info_bar_set_revealed(infobar, FALSE);
+		gtk_widget_destroy(GTK_WIDGET(infobar));
 		/* FIXME: Remove task from list */
 
 	} else {
@@ -1171,7 +1177,10 @@ void add_running_task(struct crystfelproject *proj,
 	                 G_CALLBACK(infobar_response_sig), task);
 
 	gtk_widget_show_all(task->info_bar);
+
+#if GTK_CHECK_VERSION(3,22,29)
 	gtk_info_bar_set_revealed(GTK_INFO_BAR(task->info_bar), TRUE);
+#endif
 
 	g_timeout_add(500, update_info_bar, task);
 }
