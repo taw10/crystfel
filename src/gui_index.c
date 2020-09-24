@@ -555,7 +555,9 @@ static void run_indexing_once(struct crystfelproject *proj)
 
 	integrate_all_5(proj->cur_image, int_method, PMODEL_XSPHERE,
 	                proj->indexing_params.push_res,
-	                3, 4, 5,  /* FIXME */
+	                proj->indexing_params.ir_inn,
+	                proj->indexing_params.ir_mid,
+	                proj->indexing_params.ir_out,
 	                INTDIAG_NONE, 0, 0, 0, NULL,
 	                proj->indexing_params.overpredict);
 
