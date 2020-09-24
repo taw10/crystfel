@@ -70,6 +70,7 @@ static const char *str_matchtype(enum match_type_id mt)
 {
 	switch ( mt ) {
 	case MATCH_EVERYTHING : return "everything";
+	case MATCH_H5 : return "hdf5";
 	case MATCH_CHEETAH_LCLS_H5 : return "lcls-cheetah-hdf5";
 	case MATCH_CHEETAH_CXI : return "cheetah-cxi";
 	case MATCH_CBF : return "cbf";
@@ -82,6 +83,7 @@ static const char *str_matchtype(enum match_type_id mt)
 enum match_type_id decode_matchtype(const char *type_id)
 {
 	if ( strcmp(type_id, "everything") == 0 ) return MATCH_EVERYTHING;
+	if ( strcmp(type_id, "hdf5") == 0 ) return MATCH_H5;
 	if ( strcmp(type_id, "lcls-cheetah-hdf5") == 0 ) return MATCH_CHEETAH_LCLS_H5;
 	if ( strcmp(type_id, "cheetah-cxi") == 0 ) return MATCH_CHEETAH_CXI;
 	if ( strcmp(type_id, "cbf") == 0 ) return MATCH_CBF;
@@ -101,6 +103,7 @@ int match_filename(const char *fn, enum match_type_id mt)
 	ext = filename_extension(fn, &ext2);
 	if ( ext == NULL ) return 0;
 
+	if ( mt == MATCH_H5 ) return (strcmp(ext, ".h5")==0);
 	if ( mt == MATCH_CHEETAH_LCLS_H5 ) {
 		return ((strcmp(ext, ".h5")==0)
 		        && (strncmp(fn, "LCLS", 4)==0));

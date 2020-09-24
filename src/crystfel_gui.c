@@ -499,6 +499,8 @@ static gint finddata_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->type_combo), TRUE, TRUE, 2.0);
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "everything",
 	                "All files in folder and subfolders");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "hdf5",
+	                "All HDF5 files ('*.h5')");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "lcls-cheetah-hdf5",
 	                "Individual LCLS files from Cheetah ('LCLS*.h5')");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->type_combo), "cheetah-cxi",
