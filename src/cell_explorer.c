@@ -1933,6 +1933,7 @@ static int add_stream(CellWindow *w, const char *stream_filename,
 {
 	Stream *st;
 	int n_chunks = 0;
+	int n_cells = 0;
 	int max_cells = *pmax_cells;
 
 	st = stream_open_for_read(stream_filename);
@@ -1990,18 +1991,21 @@ static int add_stream(CellWindow *w, const char *stream_filename,
 			}
 			w->indms[w->n_cells] = image->indexed_by;
 			w->n_cells++;
+			n_cells++;
 
 		}
 
 		n_chunks++;
 		if ( n_chunks % 1000 == 0 ) {
 			fprintf(stderr, "%s: Loaded %i cells from %i chunks\r",
-			        stream_filename, w->n_cells, n_chunks);
+			        stream_filename, n_cells, n_chunks);
 		}
 
 		image_free(image);
 
 	} while ( 1 );
+
+	fprintf(stderr, "\n");
 
 	if ( stream_has_old_indexers(st) ) {
 		ERROR("----- Notice -----\n");
@@ -2017,7 +2021,7 @@ static int add_stream(CellWindow *w, const char *stream_filename,
 
 	stream_close(st);
 
-	*pn_total_chunks = n_chunks;
+	*pn_total_chunks += n_chunks;
 	return 0;
 }
 
