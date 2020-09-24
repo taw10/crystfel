@@ -566,12 +566,7 @@ static void run_indexing_once(struct crystfelproject *proj)
 	STATUS("Number of crystals: %i\n",
 	       proj->cur_image->n_crystals);
 	for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
-		double a, b, c, al, be, ga;
-		cell_get_parameters(crystal_get_cell(proj->cur_image->crystals[i]),
-		                    &a, &b, &c, &al, &be, &ga);
-		STATUS(" %2i: %.2f %.2f %.2f A,  %.2f %.2f %.2f deg\n",
-		       i, a*1e10, b*1e10, c*1e10,
-		       rad2deg(al), rad2deg(be), rad2deg(ga));
+		cell_print(crystal_get_cell(proj->cur_image->crystals[i]));
 	}
 
 }
