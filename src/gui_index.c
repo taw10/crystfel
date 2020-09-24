@@ -122,9 +122,35 @@ void cell_explorer_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GSubprocess *sp;
 	GError *error = NULL;
+	const gchar *results_name;
+	struct gui_result *res;
+	const gchar **streams;
+	int i;
 
-	sp = g_subprocess_new(G_SUBPROCESS_FLAGS_NONE, &error,
-	                      "cell_explorer", "test.stream", NULL);
+	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
+	if ( strcmp(results_name, "crystfel-gui-internal") == 0 ) {
+		STATUS("Please select results first.\n");
+		return;
+	}
+
+	res = find_result_by_name(proj, results_name);
+	if ( res == NULL ) {
+		ERROR("Results for '%s' not found!\n", results_name);
+		return;
+	}
+
+	streams = malloc((res->n_streams+2)*sizeof(gchar *));
+	if ( streams == NULL ) return;
+
+	streams[0] = get_crystfel_exe("cell_explorer");
+	for ( i=0; i<res->n_streams; i++ ) {
+		streams[i+1] = res->streams[i];
+	}
+	streams[res->n_streams+1] = NULL;
+
+	sp = g_subprocess_newv(streams, G_SUBPROCESS_FLAGS_NONE,
+	                       &error);
+	free(streams);
 	if ( sp == NULL ) {
 		ERROR("Failed to start cell_explorer: %s\n",
 		      error->message);
