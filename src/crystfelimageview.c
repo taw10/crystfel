@@ -477,7 +477,12 @@ static void draw_refls(cairo_t *cr, CrystFELImageView *iv,
 
 		cairo_arc(cr, x, y, this_bs, 0, 2*M_PI);
 		cairo_set_line_width(cr, this_lw);
-		cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+
+		if ( get_redundancy(refl) == 0 ) {
+			cairo_set_source_rgb(cr, 0.7, 0.0, 0.0);
+		} else {
+			cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+		}
 		cairo_stroke(cr);
 
 		if ( show_cen ) {
