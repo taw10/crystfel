@@ -516,7 +516,7 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 	/* Cell angle check from Foadi and Evans (2011) */
 	if ( !cell_is_sensible(cell) ) {
 		ERROR("Invalid unit cell parameters given to"
-		      " find_intersections()\n");
+		      " predict_to_res()\n");
 		cell_print(cell);
 		return NULL;
 	}
