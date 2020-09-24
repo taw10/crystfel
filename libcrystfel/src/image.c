@@ -280,7 +280,8 @@ void free_all_crystals(struct image *image)
 }
 
 
-static double get_value(struct image *image, const char *from)
+static double get_value(struct image *image, const char *from,
+                        int *is_literal_number)
 {
 	double val;
 	char *rval;
@@ -288,7 +289,12 @@ static double get_value(struct image *image, const char *from)
 	if ( from == NULL ) return NAN;
 
 	val = strtod(from, &rval);
-	if ( (*rval == '\0') && (rval != from) ) return val;
+	if ( (*rval == '\0') && (rval != from) ) {
+		if ( is_literal_number != NULL ) {
+			*is_literal_number = 1;
+		}
+		return val;
+	}
 
 	if ( is_hdf5_file(image->filename) ) {
 		return image_hdf5_get_value(from,
@@ -311,7 +317,8 @@ static double get_value(struct image *image, const char *from)
 
 
 static char *get_value_and_units(struct image *image, const char *from,
-                                 double *pvalue)
+                                 double *pvalue,
+                                 int *is_literal_number)
 {
 	char *sp;
 	char *fromcpy;
@@ -336,23 +343,40 @@ static char *get_value_and_units(struct image *image, const char *from,
 		sp[0] = '\0';
 	}
 
-	*pvalue = get_value(image, fromcpy);
+	*pvalue = get_value(image, fromcpy, is_literal_number);
 	free(fromcpy);
 
 	return unitscpy;
 }
 
 
+/* default_scale is a value to be used if both of the following
+ * conditions are met:
+ *
+ *  1. The value is a reference to image headers/metadata,
+ *      rather than a literal number.
+ *  2. No units are specified in the number.
+ *
+ * This is totally horrible.  Sorry.  Blame history.
+ */
 static double im_get_length(struct image *image, const char *from,
                             double default_scale)
 {
 	char *units;
 	double value;
 	double scale;
+	int is_literal_number = 0;
 
-	units = get_value_and_units(image, from, &value);
+	if ( from == NULL ) return NAN;
+
+	units = get_value_and_units(image, from,
+	                            &value, &is_literal_number);
 	if ( units == NULL ) {
-		scale = default_scale;
+		if ( is_literal_number ) {
+			scale = 1.0;
+		} else {
+			scale = default_scale;
+		}
 	} else {
 		if ( strcmp(units, "mm") == 0 ) {
 			scale = 1e-3;
@@ -597,7 +621,8 @@ static void set_image_parameters(struct image *image,
 {
 	/* Wavelength might be needed to create detgeom (adu_per_eV) */
 	image->lambda = convert_to_m(get_value(image,
-	                                       dtempl->wavelength_from),
+	                                       dtempl->wavelength_from,
+	                                       NULL),
 	                             dtempl->wavelength_unit);
 
 	image->bw = dtempl->bandwidth;
