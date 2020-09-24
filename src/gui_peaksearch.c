@@ -55,67 +55,64 @@ void update_peaks(struct crystfelproject *proj)
 	crystfel_image_view_set_peak_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                      proj->peak_search_params.pk_inn);
 
-	if ( proj->show_peaks ) {
+	image_feature_list_free(proj->cur_image->features);
+	proj->cur_image->features = NULL;
 
-		image_feature_list_free(proj->cur_image->features);
-		proj->cur_image->features = NULL;
+	switch ( proj->peak_search_params.method ) {
 
-		switch ( proj->peak_search_params.method ) {
+		case PEAK_ZAEF:
+		search_peaks(proj->cur_image,
+		             proj->peak_search_params.threshold,
+		             proj->peak_search_params.min_sq_gradient,
+		             proj->peak_search_params.min_snr,
+		             proj->peak_search_params.pk_inn,
+		             proj->peak_search_params.pk_mid,
+		             proj->peak_search_params.pk_out,
+		             1);
+		break;
 
-			case PEAK_ZAEF:
-			search_peaks(proj->cur_image,
-			             proj->peak_search_params.threshold,
-			             proj->peak_search_params.min_sq_gradient,
-			             proj->peak_search_params.min_snr,
-			             proj->peak_search_params.pk_inn,
-			             proj->peak_search_params.pk_mid,
-			             proj->peak_search_params.pk_out,
-			             1);
-			break;
+		case PEAK_PEAKFINDER8:
+		search_peaks_peakfinder8(proj->cur_image, 2048,
+		                         proj->peak_search_params.threshold,
+		                         proj->peak_search_params.min_snr,
+		                         proj->peak_search_params.min_pix_count,
+		                         proj->peak_search_params.max_pix_count,
+		                         proj->peak_search_params.local_bg_radius,
+		                         proj->peak_search_params.min_res,
+		                         proj->peak_search_params.max_res,
+		                         1);
+		break;
 
-			case PEAK_PEAKFINDER8:
-			search_peaks_peakfinder8(proj->cur_image, 2048,
-			                         proj->peak_search_params.threshold,
-			                         proj->peak_search_params.min_snr,
-			                         proj->peak_search_params.min_pix_count,
-			                         proj->peak_search_params.max_pix_count,
-			                         proj->peak_search_params.local_bg_radius,
-			                         proj->peak_search_params.min_res,
-			                         proj->peak_search_params.max_res,
-			                         1);
-			break;
+		case PEAK_PEAKFINDER9:
+		search_peaks_peakfinder9(proj->cur_image,
+		                         proj->peak_search_params.min_snr_biggest_pix,
+		                         proj->peak_search_params.min_snr_peak_pix,
+		                         proj->peak_search_params.min_snr,
+		                         proj->peak_search_params.min_sig,
+		                         proj->peak_search_params.min_peak_over_neighbour,
+		                         proj->peak_search_params.local_bg_radius);
+		break;
 
-			case PEAK_PEAKFINDER9:
-			search_peaks_peakfinder9(proj->cur_image,
-			                         proj->peak_search_params.min_snr_biggest_pix,
-			                         proj->peak_search_params.min_snr_peak_pix,
-			                         proj->peak_search_params.min_snr,
-			                         proj->peak_search_params.min_sig,
-			                         proj->peak_search_params.min_peak_over_neighbour,
-			                         proj->peak_search_params.local_bg_radius);
-			break;
-
-			case PEAK_HDF5:
-			case PEAK_CXI:
-			proj->cur_image->features = image_read_peaks(proj->dtempl,
-			                                             proj->cur_image->filename,
-			                                             proj->cur_image->ev,
-			                                             proj->peak_search_params.half_pixel_shift);
-			if ( proj->peak_search_params.revalidate ) {
-				validate_peaks(proj->cur_image,
-				               proj->peak_search_params.min_snr,
-				               proj->peak_search_params.pk_inn,
-				               proj->peak_search_params.pk_mid,
-				               proj->peak_search_params.pk_out,
-				               1, 0);
-			}
-			break;
-
-			default:
-			ERROR("This peak detection method not implemented!\n");
-			break;
-
+		case PEAK_HDF5:
+		case PEAK_CXI:
+		proj->cur_image->features = image_read_peaks(proj->dtempl,
+		                                             proj->cur_image->filename,
+		                                             proj->cur_image->ev,
+		                                             proj->peak_search_params.half_pixel_shift);
+		if ( proj->peak_search_params.revalidate ) {
+			validate_peaks(proj->cur_image,
+			               proj->peak_search_params.min_snr,
+			               proj->peak_search_params.pk_inn,
+			               proj->peak_search_params.pk_mid,
+			               proj->peak_search_params.pk_out,
+			               1, 0);
 		}
+		break;
+
+		default:
+		ERROR("This peak detection method not implemented!\n");
+		break;
+
 	}
 }
 
