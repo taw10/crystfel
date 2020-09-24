@@ -245,15 +245,15 @@ static uint32_t submit_batch_job(const char *geom_filename,
 	slurm_init_job_desc_msg(&job_desc_msg);
 	job_desc_msg.user_id = getuid();
 	job_desc_msg.group_id = getgid();
-	job_desc_msg.mail_user = strdup(email_address);
+	job_desc_msg.mail_user = safe_strdup(email_address);
 	job_desc_msg.mail_type = MAIL_JOB_FAIL;
 	job_desc_msg.comment = "Submitted via CrystFEL GUI";
 	job_desc_msg.shared = 0;
 	job_desc_msg.time_limit = 60;
-	job_desc_msg.partition = strdup(partition);
+	job_desc_msg.partition = safe_strdup(partition);
 	job_desc_msg.min_nodes = 1;
 	job_desc_msg.max_nodes = 1;
-	job_desc_msg.name = strdup(job_name);
+	job_desc_msg.name = safe_strdup(job_name);
 	job_desc_msg.std_err = strdup(stderr_file);
 	job_desc_msg.std_out = strdup(stdout_file);
 	job_desc_msg.work_dir = strdup(workdir);
