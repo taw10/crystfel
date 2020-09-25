@@ -1936,6 +1936,8 @@ static int add_stream(CellWindow *w, const char *stream_filename,
 	int n_cells = 0;
 	int max_cells = *pmax_cells;
 
+	fprintf(stderr, "%s\r", stream_filename);
+
 	st = stream_open_for_read(stream_filename);
 	if ( st == NULL ) {
 		fprintf(stderr, "Failed to open '%s'\n",
