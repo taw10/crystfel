@@ -1539,7 +1539,7 @@ StreamIndex *stream_make_index(const char *filename)
 	index->n_keys = 0;
 	index->max_keys = 0;
 
-	STATUS("Indexing %s\n", filename);
+	STATUS("Scanning %s\n", filename);
 
 	do {
 
