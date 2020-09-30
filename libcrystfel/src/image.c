@@ -926,6 +926,11 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 char **image_expand_frames(const DataTemplate *dtempl,
                            const char *filename, int *n_frames)
 {
+	if ( !file_exists(filename) ) {
+		ERROR("File not found: %s\n", filename);
+		return NULL;
+	}
+
 	if ( is_hdf5_file(filename) ) {
 		return image_hdf5_expand_frames(dtempl, filename,
 		                                n_frames);
