@@ -263,30 +263,34 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 		return 1;
 	}
 
-	/* No events in list.  Time to top it up */
-	filename = read_prefixed_filename(gpctx, &evstr);
+	do {
 
-	/* Nothing left in file -> we're done */
-	if ( filename == NULL ) return 0;
+		/* No events in list.  Time to top it up */
+		filename = read_prefixed_filename(gpctx, &evstr);
 
-	/* Does the line from the input file contain an event ID?
-	 * If so, just send it straight back. */
-	if ( evstr != NULL ) {
-		*pfilename = filename;
-		*pevent = evstr;
-		return 1;
-	}
+		/* Nothing left in file -> we're done */
+		if ( filename == NULL ) return 0;
 
-	/* We got a filename, but no event.  Attempt to expand... */
-	free(gpctx->events);  /* Free the old list.
-	                       * NB The actual strings were freed
-	                       * by fill_queue */
-	gpctx->events = image_expand_frames(gpctx->dtempl, filename,
-	                                    &gpctx->n_events);
-	if ( gpctx->events == NULL ) {
-		ERROR("Failed to get event list.\n");
-		return 0;
-	}
+		/* Does the line from the input file contain an event ID?
+		 * If so, just send it straight back. */
+		if ( evstr != NULL ) {
+			*pfilename = filename;
+			*pevent = evstr;
+			return 1;
+		}
+
+		/* We got a filename, but no event.  Attempt to expand... */
+		free(gpctx->events);  /* Free the old list.
+		                       * NB The actual strings were freed
+		                       * by fill_queue */
+		gpctx->events = image_expand_frames(gpctx->dtempl, filename,
+		                                    &gpctx->n_events);
+		if ( gpctx->events == NULL ) {
+			ERROR("Failed to get event list from %s.\n",
+			      filename);
+		}
+
+	} while ( gpctx->events == NULL );
 
 	/* Save filename for next time */
 	free(gpctx->filename);
