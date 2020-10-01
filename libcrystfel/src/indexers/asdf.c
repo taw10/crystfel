@@ -802,15 +802,18 @@ static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit,
 		int i_min = sl < 2 * N_tvectors ? 0 : sl - 2 * N_tvectors;
 		int i_max = sl < N_tvectors ? sl : N_tvectors;
 
-		for ( i = i_min; i < i_max; i++) if (tvectors[i].n > acl ) {
+		for ( i = i_min; i < i_max; i++) {
+
+			if (tvectors[i].n <= acl ) continue;
 
 			int j_min = sl - N_tvectors - 2 * i - 1 < 0 ?
 			                            i + 1 : sl - N_tvectors - i;
 			int j_max = sl - N_tvectors - i < 0 ?
 			                                    sl - i : N_tvectors;
 
-			for ( j = j_min; j < j_max; j++ )
-			                            if ( tvectors[j].n > acl ) {
+			for ( j = j_min; j < j_max; j++ ) {
+
+				if ( tvectors[j].n <= acl ) continue;
 
 				k = sl - i - j - 1;
 
