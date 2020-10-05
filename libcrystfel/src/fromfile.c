@@ -42,7 +42,7 @@
 /* There are 9 vector components, 
  * 2 detector shifts, 1 profile radius,
  *  1 resolution limit */
-#define NPARAMS_PER_LINE 13  
+#define NPARAMS_PER_LINE 11 
 /* The keys read from file 
  * are the filename, event */
 #define NKEYS_PER_LINE 2
@@ -326,7 +326,7 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	Crystal *cr;
 	UnitCell *cell;
 	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-	float xshift, yshift, profile_radius, resolution_limit;
+	float xshift, yshift; 
 	struct fromfile_entries *item, *p, *pprime;
 	int ncryst = 0;
 	float *sol;
@@ -359,8 +359,6 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	csz = sol[8] * 1e9;
 	xshift = sol[9] * 1e-3;
 	yshift = sol[10] * 1e-3;
-	profile_radius = sol[11] * 1e9;
-	resolution_limit = sol[12] * 1e9;
 
 	cell = cell_new();
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
@@ -371,8 +369,6 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	cr = crystal_new();
 	ncryst += 1;
 	crystal_set_cell(cr, cell);
-	crystal_set_profile_radius(cr, profile_radius);
-	crystal_set_resolution_limit(cr, resolution_limit);
 	crystal_set_det_shift(cr, xshift , yshift);
 	update_detector(image->det, xshift , yshift);
 	image_add_crystal(image, cr);
@@ -382,6 +378,8 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	HASH_FIND(hh,  dp->sol_hash, &item->key, 
 	          sizeof(struct fromfile_keys), pprime);
 
+	/* If a similar tag exist,
+	 * recursive call increasing the crystal_number by 1 */
     if ( pprime != NULL ) {
 		ncryst += fromfile_index(image, mpriv, crystal_number+1);
 	}

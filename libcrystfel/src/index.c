@@ -664,9 +664,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		Crystal *cr = image->crystals[this_crystal];
 
 		crystal_set_image(cr, image);
-		if ( indm != INDEXING_FILE){
-			crystal_set_profile_radius(cr, 0.02e9);
-		}
+		crystal_set_profile_radius(cr, 0.02e9);
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Pre-refinement unit cell check if requested */
@@ -877,11 +875,13 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 	if ( ipriv == NULL ) return;
 
-	map_all_peaks(image);
+	if ( ipriv->methods[0] != INDEXING_FILE){
+		map_all_peaks(image);
+		orig = image->features;
+	}
+	
 	image->crystals = NULL;
 	image->n_crystals = 0;
-
-	orig = image->features;
 
 	for ( n=0; n<ipriv->n_methods; n++ ) {
 
@@ -890,7 +890,9 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 		int ntry = 0;
 		int success = 0;
 
-		image->features = sort_peaks(orig);
+		if ( ipriv->methods[0] != INDEXING_FILE){
+			image->features = sort_peaks(orig);
+		}
 
 		do {
 
@@ -906,7 +908,9 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 		} while ( !done );
 
-		image_feature_list_free(image->features);
+		if ( ipriv->methods[0] != INDEXING_FILE){
+			image_feature_list_free(image->features);
+		}
 
 		/* Stop now if the pattern is indexed (don't try again for more
 		 * crystals with a different indexing method) */
@@ -917,13 +921,19 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 	}
 
+	if ( ipriv->methods[0] == INDEXING_FILE){
+		map_all_peaks(image);
+	}
+	else{
+		image->features = orig;
+	}
+
 	if ( n < ipriv->n_methods ) {
 		image->indexed_by = ipriv->methods[n];
 	} else {
 		image->indexed_by = INDEXING_NONE;
 	}
 
-	image->features = orig;
 }
 
 

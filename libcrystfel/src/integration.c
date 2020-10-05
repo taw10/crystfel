@@ -1687,14 +1687,9 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 			                           saved_R * 5);
 		}
 
-		if ( image->indexed_by != INDEXING_FILE ){
-			res = estimate_resolution(crystal_get_cell(image->crystals[i]),
+		res = estimate_resolution(crystal_get_cell(image->crystals[i]),
 		                          image->features);
-			crystal_set_resolution_limit(image->crystals[i], res);
-		}
-		else{
-			res = crystal_get_resolution_limit(image->crystals[i]);
-		}
+		crystal_set_resolution_limit(image->crystals[i], res);
 
 		list = predict_to_res(image->crystals[i], res+push_res);
 		crystal_set_reflections(image->crystals[i], list);
