@@ -2231,6 +2231,7 @@ void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
 	if ( tp == NULL ) return NULL;
 
 	tp->cell = cell;
+	tp->opts = opts;
 	tp->indm = *indm;
 	tp->serial_num = -1;
 	tp->xtal_num = 0;
