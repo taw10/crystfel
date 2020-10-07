@@ -531,7 +531,7 @@ static double matrix_trace(gsl_matrix *a)
 	return tr;
 }
 
-static char *add_ua(const char *inp, char ua)
+static char *add_unique_axis(const char *inp, char ua)
 {
 	char *pg = malloc(64);
 	if ( pg == NULL ) return NULL;
@@ -544,12 +544,13 @@ static char *get_chiral_holohedry(UnitCell *cell)
 {
 	LatticeType lattice = cell_get_lattice_type(cell);
 	char *pg;
-	char *pgout = 0;
+	int add_ua = 1;
 
 	switch (lattice)
 	{
 		case L_TRICLINIC:
 		pg = "1";
+		add_ua = 0;
 		break;
 
 		case L_MONOCLINIC:
@@ -558,6 +559,7 @@ static char *get_chiral_holohedry(UnitCell *cell)
 
 		case L_ORTHORHOMBIC:
 		pg = "222";
+		add_ua = 0;
 		break;
 
 		case L_TETRAGONAL:
@@ -566,11 +568,13 @@ static char *get_chiral_holohedry(UnitCell *cell)
 
 		case L_RHOMBOHEDRAL:
 		pg = "3_R";
+		add_ua = 0;
 		break;
 
 		case L_HEXAGONAL:
 		if ( cell_get_centering(cell) == 'H' ) {
 			pg = "3_H";
+			add_ua = 0;
 		} else {
 			pg = "622";
 		}
@@ -578,6 +582,7 @@ static char *get_chiral_holohedry(UnitCell *cell)
 
 		case L_CUBIC:
 		pg = "432";
+		add_ua = 0;
 		break;
 
 		default:
@@ -585,26 +590,11 @@ static char *get_chiral_holohedry(UnitCell *cell)
 		break;
 	}
 
-	switch (lattice)
-	{
-		case L_TRICLINIC:
-		case L_ORTHORHOMBIC:
-		case L_RHOMBOHEDRAL:
-		case L_CUBIC:
-		pgout = strdup(pg);
-		break;
-
-		case L_MONOCLINIC:
-		case L_TETRAGONAL:
-		case L_HEXAGONAL:
-		pgout = add_ua(pg, cell_get_unique_axis(cell));
-		break;
-
-		default:
-		break;
+	if ( add_ua ) {
+		return add_unique_axis(pg, cell_get_unique_axis(cell));
+	} else {
+		return strdup(pg);
 	}
-
-	return pgout;
 }
 
 
