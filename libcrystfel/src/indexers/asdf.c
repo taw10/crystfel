@@ -1094,7 +1094,7 @@ int run_asdf(struct image *image, void *ipriv)
 
 		d_max = max(a, b, c) * 3 * 1e10;
 
-		double volume = cell_get_volume(dp->template) / 1e30;
+		double volume = cell_get_volume(dp->template) * 1e30;
 
 		/* Divide volume constraints by number of lattice points per
 		 * unit cell since asdf always finds primitive cell */
