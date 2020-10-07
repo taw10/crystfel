@@ -119,11 +119,11 @@ configure_file(input : 'config.h.in',
 libcrystfel_conf_inc = include_directories('.')
 
 libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
-                   include_directories : [libcrystfel_includes, libcrystfel_conf_inc],
-                   dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
-                                   hdf5dep, pthreaddep, ncursesdep,
-                                   xgandalfdep, pinkindexerdep, fdipdep],
-                   install : true)
+                      include_directories : [libcrystfel_includes, libcrystfel_conf_inc],
+                      dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
+                                      hdf5dep, pthreaddep, ncursesdep,
+                                      xgandalfdep, pinkindexerdep, fdipdep],
+                      install : true)
 
 libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
                                     link_with : libcrystfel)
