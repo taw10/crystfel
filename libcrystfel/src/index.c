@@ -1210,12 +1210,11 @@ char *detect_indexing_methods(UnitCell *cell)
 
 	do_probe(mosflm_probe, cell, methods);
 	do_probe(dirax_probe, cell, methods);
+	do_probe(asdf_probe, cell, methods);
 	do_probe(xds_probe, cell, methods);
 	do_probe(xgandalf_probe, cell, methods);
-
-	/* The following methods are all too slow for general use */
+	/* Don't automatically use TakeTwo, Felix or PinkIndexer (yet) */
 	//do_probe(taketwo_probe, cell, methods);
-	//do_probe(asdf_probe, cell, methods);
 	//do_probe(felix_probe, cell, methods);
 	//do_probe(pinkIndexer_probe, cell, methods);
 

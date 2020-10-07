@@ -182,7 +182,7 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 	add_method(io->indm_store, "xgandalf", "XGANDALF", TRUE, TRUE, FALSE);
 	add_method(io->indm_store, "pinkIndexer", "PinkIndexer", FALSE, TRUE, FALSE);
 	add_method(io->indm_store, "taketwo", "TakeTwo", FALSE, TRUE, FALSE);
-	add_method(io->indm_store, "asdf", "ASDF", FALSE, FALSE, FALSE);
+	add_method(io->indm_store, "asdf", "ASDF", TRUE, TRUE, FALSE);
 	add_method(io->indm_store, "felix", "Felix", FALSE, TRUE, FALSE);
 
 	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(io->indm_store));
