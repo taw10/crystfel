@@ -711,9 +711,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	#ifdef MEASURE_INDEX_TIME
 	time_end = real_time();
-	printf("%s took %f s, %i crystals found, %s %s\n",
-	       indexer_str(indm & INDEXING_METHOD_MASK),
-	       time_end - time_start, r, image->filename, image->ev);
 	#endif
 
 	/* Stop a really difficult to debug situation in its tracks */
@@ -799,6 +796,16 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	n_bad = remove_flagged_crystals(image);
 	assert(r >= n_bad);
+
+	#ifdef MEASURE_INDEX_TIME
+	printf("%s took %f s, %i crystals found of which %i accepted. %s %s\n",
+	       indexer_str(indm & INDEXING_METHOD_MASK),
+	       time_end - time_start,
+	       r, r - n_bad,
+	       image->filename,
+	       image->ev);
+	fflush(stdout);
+	#endif
 
 	return r - n_bad;
 }
