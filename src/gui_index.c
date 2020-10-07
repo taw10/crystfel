@@ -605,7 +605,7 @@ static void run_indexing_once(struct crystfelproject *proj)
 	}
 
 	/* Get default options for the indexing methods.
-	 * The GUI current does not allow them to be changed */
+	 * The GUI currently does not allow them to be changed */
 	default_method_options(&taketwoopts,
 	                       &xgandalf_opts,
 	                       &pinkIndexer_opts,

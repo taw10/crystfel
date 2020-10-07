@@ -2150,11 +2150,6 @@ int taketwo_index(struct image *image, void *priv)
 		tp->xtal_num = image->n_crystals;
 	}
 
-	/*
-	STATUS("Indexing %i with %i attempts, %i crystals\n", this_serial, tp->attempts,
-	       image->n_crystals);
-	*/
-
 	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 		struct imagefeature *pk = image_get_feature(image->features, i);
