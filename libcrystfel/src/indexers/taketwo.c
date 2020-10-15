@@ -233,7 +233,10 @@ struct TakeTwoCell
 
 /* Maximum observed vectors before TakeTwo gives up and deals with
  * what is already there. */
-#define MAX_OBS_VECTORS 100000
+#define MAX_OBS_VECTORS 300
+
+/* Maximum number of seeds to start from in start_seeds() */
+#define MAX_SEEDS 10
 
 /* Tolerance for two angles to be considered the same */
 #define ANGLE_TOLERANCE (deg2rad(0.6))
@@ -1577,10 +1580,12 @@ static unsigned int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 	int member_num = 0;
 	int max_members = 0;
 	gsl_matrix *rot = NULL;
+	int k;
+
+	if ( seed_num > MAX_SEEDS ) seed_num = MAX_SEEDS;
 
 	/* We have seeds! Pass each of them through the seed-starter  */
 	/* If a seed has the highest achieved membership, make note...*/
-	int k;
 	for ( k=0; k<seed_num; k++ ) {
 		int seed_idx1 = seeds[k].idx1;
 		int seed_idx2 = seeds[k].idx2;
