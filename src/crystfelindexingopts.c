@@ -181,7 +181,7 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 	add_method(io->indm_store, "xds", "XDS", TRUE, TRUE, TRUE);
 	add_method(io->indm_store, "xgandalf", "XGANDALF", TRUE, TRUE, FALSE);
 	add_method(io->indm_store, "pinkIndexer", "PinkIndexer", FALSE, TRUE, FALSE);
-	add_method(io->indm_store, "taketwo", "TakeTwo", FALSE, TRUE, FALSE);
+	add_method(io->indm_store, "taketwo", "TakeTwo", TRUE, TRUE, FALSE);
 	add_method(io->indm_store, "asdf", "ASDF", TRUE, TRUE, FALSE);
 	add_method(io->indm_store, "felix", "Felix", FALSE, TRUE, FALSE);
 
