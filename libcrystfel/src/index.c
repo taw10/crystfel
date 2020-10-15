@@ -1208,12 +1208,12 @@ char *detect_indexing_methods(UnitCell *cell)
 	if ( methods == NULL ) return NULL;
 	methods[0] = '\0';
 
-	do_probe(mosflm_probe, cell, methods);
-	do_probe(dirax_probe, cell, methods);
-	do_probe(asdf_probe, cell, methods);
-	do_probe(xds_probe, cell, methods);
-	do_probe(xgandalf_probe, cell, methods);
 	do_probe(taketwo_probe, cell, methods);
+	do_probe(xgandalf_probe, cell, methods);
+	do_probe(mosflm_probe, cell, methods);
+	do_probe(asdf_probe, cell, methods);
+	do_probe(dirax_probe, cell, methods);
+	do_probe(xds_probe, cell, methods);
 
 	//do_probe(felix_probe, cell, methods);
 	//do_probe(pinkIndexer_probe, cell, methods);
