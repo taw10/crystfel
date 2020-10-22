@@ -89,6 +89,10 @@ struct index_params {
 	float ir_out;
 };
 
+struct merge_params {
+	int nothing;
+};
+
 struct crystfelproject;
 
 struct crystfel_backend {
@@ -124,6 +128,12 @@ struct crystfel_backend {
 
 	/* Backend should store options for indexing here */
 	void *indexing_opts_priv;
+
+	/* Backend should provide a GTK widget to set options */
+	GtkWidget *(*make_merge_parameters_widget)(void *opts_priv);
+
+	/* Backend should store options for merging here */
+	void *merge_opts_priv;
 
 };
 
@@ -188,6 +198,11 @@ struct crystfelproject {
 	int indexing_backend_selected;
 	GtkWidget *indexing_opts;
 	char *indexing_new_job_title;
+
+	struct merge_params merge_params;
+	int merge_backend_selected;
+	GtkWidget *merge_opts;
+	char *merge_new_job_title;
 
 	GtkWidget *type_combo;
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */

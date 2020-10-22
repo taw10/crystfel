@@ -45,6 +45,12 @@ struct local_indexing_opts
 };
 
 
+struct local_merge_opts
+{
+	int n_threads;
+};
+
+
 struct local_job
 {
 	double frac_complete;
@@ -368,6 +374,55 @@ static void read_indexing_opt(void *opts_priv,
 }
 
 
+static void n_threads_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct local_merge_opts *opts = data;
+	convert_int(gtk_entry_get_text(entry), &opts->n_threads);
+}
+
+
+static gboolean n_threads_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                    gpointer data)
+{
+	n_threads_activate_sig(entry, data);
+	return FALSE;
+}
+
+
+static GtkWidget *make_merge_parameters_widget(void *opts_priv)
+{
+	struct local_merge_opts *opts = opts_priv;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *entry;
+	GtkWidget *label;
+	char tmp[64];
+
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Number of threads:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	snprintf(tmp, 63, "%i", opts->n_threads);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+	gtk_entry_set_width_chars(GTK_ENTRY(entry), 5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(n_threads_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(n_threads_focus_sig),
+	                 opts);
+	return vbox;
+}
+
+
 int make_local_backend(struct crystfel_backend *be)
 {
 	be->name = "local";
@@ -381,6 +436,8 @@ int make_local_backend(struct crystfel_backend *be)
 	if ( be->indexing_opts_priv == NULL ) return 1;
 	be->write_indexing_opts = write_indexing_opts;
 	be->read_indexing_opt = read_indexing_opt;
+
+	be->make_merge_parameters_widget = make_merge_parameters_widget;
 
 	return 0;
 };
