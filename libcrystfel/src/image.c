@@ -935,8 +935,13 @@ char **image_expand_frames(const DataTemplate *dtempl,
 		return image_hdf5_expand_frames(dtempl, filename,
 		                                n_frames);
 	} else {
-		ERROR("Can only expand HDF5 files\n");
-		return NULL;
+		char **list;
+		list = malloc(sizeof(char *));
+		if ( list == NULL ) return NULL;
+		list[0] = strdup("//");
+		if ( list[0] == NULL ) return NULL;
+		*n_frames = 1;
+		return list;
 	}
 }
 
