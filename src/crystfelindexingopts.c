@@ -652,7 +652,7 @@ float crystfel_indexing_opts_get_push_res(CrystFELIndexingOpts *opts)
 		const gchar *text;
 		float push_res;
 		char *rval;
-		text = gtk_entry_get_text(GTK_ENTRY(opts->ignore_fewer_peaks));
+		text = gtk_entry_get_text(GTK_ENTRY(opts->push_res));
 		errno = 0;
 		push_res = strtof(text, &rval);
 		if ( *rval != '\0' ) {
