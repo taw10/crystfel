@@ -1270,6 +1270,18 @@ double cell_get_volume(UnitCell *cell)
 }
 
 
+/* Return true if the two centering symbols are identical,
+ * or if they are a pair of R/P, which should be considered the
+ * same for the purposes of cell comparison */
+static int centering_equivalent(char cen1, char cen2)
+{
+	if ( cen1 == cen2 ) return 1;
+	if ( (cen1=='P') && (cen2=='R') ) return 1;
+	if ( (cen1=='R') && (cen2=='P') ) return 1;
+	return 0;
+}
+
+
 /**
  * \param cell: A UnitCell
  * \param reference: Another UnitCell
@@ -1294,7 +1306,8 @@ int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
 
 	/* Centering must match: we don't arbitrate primitive vs centered,
 	 * different cell choices etc */
-	if ( cell_get_centering(cell) != cell_get_centering(reference) ) return 0;
+	if ( !centering_equivalent(cell_get_centering(cell),
+	                           cell_get_centering(reference)) ) return 0;
 
 	cell_get_parameters(cell, &a1, &b1, &c1, &al1, &be1, &ga1);
 	cell_get_parameters(reference, &a2, &b2, &c2, &al2, &be2, &ga2);
