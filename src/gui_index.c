@@ -209,7 +209,7 @@ static int run_indexing_all(struct crystfelproject *proj,
 }
 
 
-struct new_job_params {
+struct new_index_job_params {
 	struct crystfelproject *proj;
 	GtkWidget *indexing_backend_combo;
 	GtkWidget *indexing_backend_opts_widget;
@@ -234,7 +234,7 @@ static char *get_all_text(GtkTextView *view)
 
 
 static void index_all_response_sig(GtkWidget *dialog, gint resp,
-                                   struct new_job_params *njp)
+                                   struct new_index_job_params *njp)
 {
 	if ( resp == GTK_RESPONSE_OK ) {
 
@@ -276,7 +276,7 @@ static void index_all_response_sig(GtkWidget *dialog, gint resp,
 
 
 static void indexing_backend_changed_sig(GtkWidget *combo,
-                                         struct new_job_params *njp)
+                                         struct new_index_job_params *njp)
 {
 	int backend_idx;
 	struct crystfel_backend *be;
@@ -301,7 +301,7 @@ static void indexing_backend_changed_sig(GtkWidget *combo,
 
 
 static GtkWidget *make_job_opts(struct crystfelproject *proj,
-                                struct new_job_params *njp)
+                                struct new_index_job_params *njp)
 {
 	GtkWidget *box;
 	GtkWidget *hbox;
@@ -357,7 +357,7 @@ static GtkWidget *make_job_opts(struct crystfelproject *proj,
 }
 
 
-static GtkWidget *make_backend_opts(struct new_job_params *njp)
+static GtkWidget *make_backend_opts(struct new_index_job_params *njp)
 {
 	GtkWidget *box;
 	GtkWidget *hbox;
@@ -426,7 +426,7 @@ static void set_indexing_opts(struct crystfelproject *proj,
 }
 
 
-static void free_new_job_params(gpointer njp, GClosure *closure)
+static void free_new_index_job_params(gpointer njp, GClosure *closure)
 {
 	free(njp);
 }
@@ -439,11 +439,11 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *vbox;
 	GtkWidget *backend_page;
 	GtkWidget *job_page;
-	struct new_job_params *njp;
+	struct new_index_job_params *njp;
 
 	if ( proj->indexing_opts != NULL ) return FALSE;
 
-	njp = malloc(sizeof(struct new_job_params));
+	njp = malloc(sizeof(struct new_index_job_params));
 	if ( njp == NULL ) return FALSE;
 
 	njp->proj = proj;
@@ -457,7 +457,7 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	g_signal_connect_data(G_OBJECT(dialog), "response",
 	                      G_CALLBACK(index_all_response_sig),
-	                      njp, free_new_job_params, 0);
+	                      njp, free_new_index_job_params, 0);
 
 	vbox = gtk_vbox_new(FALSE, 0.0);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
