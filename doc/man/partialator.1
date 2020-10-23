@@ -196,6 +196,14 @@ This model is the same as that described in Acta Cryst. D71 (2015) p1400.
 .PD
 Fix all partialities at 1.
 
+.IP \fBoffset\fR
+.PD
+Treat the radiation as perfectly monochromatic, and calculate the partiality as exp(-t^2/R^2), where t is the excitation error and R is the reflection radius (taking mosaicity into account).  This model is similar to that used by XDS.
+
+.IP \fBggpm\fR
+.PD
+An analytical overlap integral modelling the reflection profiles as Gaussian functions, and the radiation spectrum as a sum of Gaussians.
+
 .SH USAGE CASES
 
 .IP "Merging without scaling, partialities or post-refinement:"
