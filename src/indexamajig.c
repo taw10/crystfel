@@ -382,6 +382,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 401 :
+		/* Values in 'tols' are in frac (not %) and rad
+		 * Conversion happens a few lines below */
 		r = sscanf(arg, "%f,%f,%f,%f,%f,%f",
 		           &args->iargs.tols[0], &args->iargs.tols[1], &args->iargs.tols[2],
 		           &args->iargs.tols[3], &args->iargs.tols[4], &args->iargs.tols[5]);
@@ -620,12 +622,12 @@ int main(int argc, char *argv[])
 	args.iargs.cell = NULL;
 	args.iargs.noisefilter = 0;
 	args.iargs.median_filter = 0;
-	args.iargs.tols[0] = 0.05;
-	args.iargs.tols[1] = 0.05;
-	args.iargs.tols[2] = 0.05;
-	args.iargs.tols[3] = deg2rad(1.5);
-	args.iargs.tols[4] = deg2rad(1.5);
-	args.iargs.tols[5] = deg2rad(1.5);
+	args.iargs.tols[0] = 0.05;  /* frac (not %) */
+	args.iargs.tols[1] = 0.05;  /* frac (not %) */
+	args.iargs.tols[2] = 0.05;  /* frac (not %) */
+	args.iargs.tols[3] = deg2rad(1.5); /* radians */
+	args.iargs.tols[4] = deg2rad(1.5); /* radians */
+	args.iargs.tols[5] = deg2rad(1.5); /* radians */
 	args.iargs.threshold = 800.0;
 	args.iargs.min_sq_gradient = 100000.0;
 	args.iargs.min_snr = 5.0;

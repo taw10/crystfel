@@ -354,6 +354,7 @@ IndexingMethod *parse_indexing_methods(const char *method_list,
 }
 
 
+/* 'tols' is in frac (not %) and radians */
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 const DataTemplate *dtempl,
                                 float *tols, IndexingFlags flags,
@@ -776,6 +777,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		for ( j=0; j<this_crystal; j++ ) {
 
 			Crystal *that_cr = image->crystals[j];
+			/* 'tols' is in frac (not %) and radians */
 			const double tols[] = {0.1, 0.1, 0.1,
 			                       deg2rad(5.0),
 			                       deg2rad(5.0),

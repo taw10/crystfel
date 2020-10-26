@@ -1354,6 +1354,7 @@ int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
 	cell_get_parameters(cell, &a1, &b1, &c1, &al1, &be1, &ga1);
 	cell_get_parameters(reference, &a2, &b2, &c2, &al2, &be2, &ga2);
 
+	/* within_tolerance() takes a percentage */
 	if ( !within_tolerance(a1, a2, tols[0]*100.0) ) return 0;
 	if ( !within_tolerance(b1, b2, tols[1]*100.0) ) return 0;
 	if ( !within_tolerance(c1, c2, tols[2]*100.0) ) return 0;
@@ -1399,6 +1400,7 @@ static double moduli_check(double ax, double ay, double az,
  * \returns non-zero if the cells match.
  *
  */
+/* 'tols' is in frac (not %) and radians */
 int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
                                             const double *tols)
 {
@@ -1454,6 +1456,7 @@ int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
  * \returns non-zero if the cells match.
  *
  */
+/* 'tols' is in frac (not %) and radians */
 int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
                                                      UnitCell *reference,
                                                      const double *tols,

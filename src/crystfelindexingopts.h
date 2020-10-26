@@ -64,7 +64,7 @@ struct _crystfelindexingopts
 	GtkWidget *retry;
 	GtkWidget *check_peaks;
 	GtkWidget *check_cell;
-	GtkWidget *tols[6];
+	GtkWidget *tols[6]; /* frac (not %) and radians */
 	GtkWidget *enable_hitfind;
 	GtkWidget *ignore_fewer_peaks;
 
@@ -97,7 +97,7 @@ extern int crystfel_indexing_opts_get_retry(CrystFELIndexingOpts *opts);
 extern int crystfel_indexing_opts_get_peak_check(CrystFELIndexingOpts *opts);
 extern int crystfel_indexing_opts_get_cell_check(CrystFELIndexingOpts *opts);
 extern void crystfel_indexing_opts_get_tolerances(CrystFELIndexingOpts *opts,
-                                                  float *tols);
+                                                  float *tols); /* frac (not %) and rad */
 extern int crystfel_indexing_opts_get_min_peaks(CrystFELIndexingOpts *opts);
 
 extern char *crystfel_indexing_opts_get_integration_method_string(CrystFELIndexingOpts *opts);
@@ -124,7 +124,7 @@ extern void crystfel_indexing_opts_set_peak_check(CrystFELIndexingOpts *opts,
 extern void crystfel_indexing_opts_set_cell_check(CrystFELIndexingOpts *opts,
                                                   int cell_check);
 extern void crystfel_indexing_opts_set_tolerances(CrystFELIndexingOpts *opts,
-                                                  float *tols);
+                                                  float *tols); /* frac (not %) and rad */
 extern void crystfel_indexing_opts_set_min_peaks(CrystFELIndexingOpts *opts,
                                                  int min_peaks);
 

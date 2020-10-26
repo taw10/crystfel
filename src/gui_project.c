@@ -120,6 +120,7 @@ int match_filename(const char *fn, enum match_type_id mt)
 }
 
 
+/* "tols" is in frac (not %) and radians */
 static void parse_tols(const char *text, float *tols)
 {
 	int r;
@@ -597,6 +598,9 @@ int save_project(struct crystfelproject *proj)
 	        proj->indexing_params.no_peak_check);
 	fprintf(fh, "indexing.no_cell_check %i\n",
 	        proj->indexing_params.no_cell_check);
+
+	/* Values in file are in percent and degrees */
+	/* Values in "tol" are in frac (not %) and radians */
 	fprintf(fh, "indexing.cell_tolerance %f,%f,%f,%f,%f,%f\n",
 	        proj->indexing_params.tols[0]*100.0,
 	        proj->indexing_params.tols[1]*100.0,

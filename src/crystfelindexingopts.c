@@ -567,6 +567,8 @@ int crystfel_indexing_opts_get_cell_check(CrystFELIndexingOpts *opts)
 }
 
 
+
+/* Values in 'tols' are in frac (not %) and rad */
 void crystfel_indexing_opts_get_tolerances(CrystFELIndexingOpts *opts,
                                            float *tols)
 {
@@ -785,6 +787,7 @@ void crystfel_indexing_opts_set_cell_check(CrystFELIndexingOpts *opts,
 }
 
 
+/* Values in 'tols' are in frac (not %) and rad */
 void crystfel_indexing_opts_set_tolerances(CrystFELIndexingOpts *opts,
                                            float *tols)
 {
