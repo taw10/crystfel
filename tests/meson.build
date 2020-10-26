@@ -65,13 +65,15 @@ exe = executable('prof2d_check',
                  dependencies : [libcrystfeldep, mdep, gsldep])
 test('prof2d_check', exe)
 
-exe = executable('gpu_sim_check',
-                 ['gpu_sim_check.c',
-                  simulation_bits],
-                 dependencies : [libcrystfeldep, mdep, gsldep, opencldep],
-		 include_directories: conf_inc)
-geom = files('gpu_sim_check.geom')
-test('gpu_sim_check', exe, args: [geom])
+if opencldep.found()
+  exe = executable('gpu_sim_check',
+                   ['gpu_sim_check.c',
+                    simulation_bits],
+                   dependencies : [libcrystfeldep, mdep, gsldep, opencldep],
+                   include_directories: conf_inc)
+  geom = files('gpu_sim_check.geom')
+  test('gpu_sim_check', exe, args: [geom])
+endif
 
 exe = executable('polarisation_check',
                  ['polarisation_check.c'],
