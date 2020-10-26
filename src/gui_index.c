@@ -824,10 +824,12 @@ char **indexamajig_command_line(const char *geom_filename,
 		add_arg(args, n_args++, "-p");
 		add_arg(args, n_args++, indexing_params->cell_file);
 	}
+	/* indexing_params->tols is in frac (not %) and radians.
+	 * Indexamajig command line wants percent and degrees */
 	snprintf(tols, 2048, "--tolerance=%f,%f,%f,%f,%f,%f",
-	         rad2deg(indexing_params->tols[0]),
-	         rad2deg(indexing_params->tols[1]),
-	         rad2deg(indexing_params->tols[2]),
+	         indexing_params->tols[0]*100.0,
+	         indexing_params->tols[1]*100.0,
+	         indexing_params->tols[2]*100.0,
 	         rad2deg(indexing_params->tols[3]),
 	         rad2deg(indexing_params->tols[4]),
 	         rad2deg(indexing_params->tols[5]));
