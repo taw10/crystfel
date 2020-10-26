@@ -75,14 +75,6 @@ if opencldep.found()
   test('gpu_sim_check', exe, args: [geom])
 endif
 
-exe = executable('polarisation_check',
-                 ['polarisation_check.c'],
-                 dependencies : [libcrystfeldep, mdep, gsldep])
-geom = files('polarisation_check.geom')
-test('polarisation_check', exe, args: [geom],
-     timeout: 60)
-
-
 # Event enumeration tests
 ev_enum_tests = ['ev_enum1',
                  'ev_enum2',
