@@ -673,7 +673,7 @@ void free_contribs(RefList *list)
 static char *full_command_line(int argc, char *argv[])
 {
 	int i;
-	size_t len = 0;
+	size_t len = 1;
 	char *cl;
 
 	if ( argc == 0 ) return strdup("");
