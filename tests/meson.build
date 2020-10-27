@@ -53,6 +53,14 @@ endforeach
 
 
 # Less easy unit tests for libcrystfel functions
+exe = executable('stream_read',
+                 ['stream_read.c'],
+                 dependencies : [libcrystfeldep])
+test_stream = files('test.stream')
+test('stream_read',
+     exe,
+     args: [test_stream])
+
 exe = executable('integration_check',
                  ['integration_check.c',
                   'histogram.c'],

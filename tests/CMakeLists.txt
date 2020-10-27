@@ -182,3 +182,9 @@ add_test(NAME wavelength_geom11
 add_test(NAME wavelength_geom12
   COMMAND wavelength_geom ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom.h5
   ${CMAKE_CURRENT_SOURCE_DIR}/wavelength_geom12.geom 1.125e-10)
+
+add_executable(stream_read stream_read.c)
+target_include_directories(stream_read PRIVATE ${COMMON_INCLUDES})
+target_link_libraries(stream_read ${COMMON_LIBRARIES})
+add_test(NAME stream_read
+  COMMAND stream_read ${CMAKE_CURRENT_SOURCE_DIR}/test.stream)
