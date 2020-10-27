@@ -990,9 +990,11 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
 			if ( have_filename && have_ev ) {
 				/* Success */
-				create_detgeom(image, st->dtempl);
-				image_set_zero_data(image, st->dtempl);
-				image_set_zero_mask(image, st->dtempl);
+				if ( srf & STREAM_DATA_DETGEOM ) {
+					create_detgeom(image, st->dtempl);
+					image_set_zero_data(image, st->dtempl);
+					image_set_zero_mask(image, st->dtempl);
+				}
 				/* FIXME: Maybe arbitrary spectrum from file (?) */
 				image->spectrum = spectrum_generate_gaussian(image->lambda,
 				                                             image->bw);

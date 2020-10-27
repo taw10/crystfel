@@ -75,6 +75,11 @@ typedef enum {
 	/** Read the peak search results */
 	STREAM_PEAKS = 4,
 
+	/** Reconstruct the detgeom structure,
+	 * and create (blank) data/mask arrays.
+	 * (NB this is (currently) a slow operation) */
+	STREAM_DATA_DETGEOM = 8,
+
 } StreamFlags;
 
 #ifdef __cplusplus

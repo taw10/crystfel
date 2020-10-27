@@ -865,7 +865,8 @@ struct image *find_result(struct crystfelproject *proj,
 	}
 
 	image = stream_read_chunk(st, STREAM_REFLECTIONS
-	                            | STREAM_PEAKS);
+	                            | STREAM_PEAKS
+	                            | STREAM_DATA_DETGEOM);
 
 	stream_close(st);
 	return image;
