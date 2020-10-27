@@ -46,19 +46,18 @@
 #include "image.h"
 #include "utils.h"
 #include "peaks.h"
-#include "dirax.h"
-#include "asdf.h"
-#include "mosflm.h"
-#include "xds.h"
-#include "detector.h"
 #include "index.h"
 #include "geometry.h"
 #include "cell-utils.h"
-#include "felix.h"
 #include "predict-refine.h"
-#include "taketwo.h"
-#include "xgandalf.h"
-#include "pinkindexer.h"
+#include "indexers/dirax.h"
+#include "indexers/asdf.h"
+#include "indexers/mosflm.h"
+#include "indexers/xds.h"
+#include "indexers/felix.h"
+#include "indexers/taketwo.h"
+#include "indexers/xgandalf.h"
+#include "indexers/pinkindexer.h"
 
 
 /** \file index.h */
@@ -148,7 +147,7 @@ static int debug_index(struct image *image)
 }
 
 
-static char *base_indexer_str(IndexingMethod indm)
+char *base_indexer_str(IndexingMethod indm)
 {
 	char *str;
 
@@ -234,7 +233,7 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
-                            struct detector *det, struct beam_params *beam,
+                            const DataTemplate *dtempl,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
@@ -284,7 +283,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 		case INDEXING_PINKINDEXER :
 		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
-		                           det, beam);
+		                           dtempl);
 		break;
 
 		default :
@@ -314,22 +313,16 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 }
 
 
-IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
-                                struct detector *det, struct beam_params *beam,
-                                float *tols, IndexingFlags flags,
-                                struct taketwo_options *ttopts,
-                                struct xgandalf_options *xgandalf_opts,
-                                struct pinkIndexer_options *pinkIndexer_opts,
-                                struct felix_options *felix_opts)
+IndexingMethod *parse_indexing_methods(const char *method_list,
+                                       int *pn)
 {
 	int i, n;
 	char **method_strings;
-	IndexingPrivate *ipriv;
+	IndexingMethod *methods;
 
-	/* Parse indexing methods */
 	n = assplode(method_list, ",", &method_strings, ASSPLODE_NONE);
 
-	IndexingMethod *methods = malloc(n * sizeof(IndexingMethod));
+	methods = malloc(n * sizeof(IndexingMethod));
 	if ( methods == NULL ) {
 		ERROR("Failed to allocate indexing method list\n");
 		return NULL;
@@ -355,6 +348,26 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		free(method_strings[i]);
 	}
 	free(method_strings);
+
+	*pn = n;
+	return methods;
+}
+
+
+/* 'tols' is in frac (not %) and radians */
+IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
+                                const DataTemplate *dtempl,
+                                float *tols, IndexingFlags flags,
+                                struct taketwo_options *ttopts,
+                                struct xgandalf_options *xgandalf_opts,
+                                struct pinkIndexer_options *pinkIndexer_opts,
+                                struct felix_options *felix_opts)
+{
+	IndexingPrivate *ipriv;
+	IndexingMethod *methods;
+	int n, i;
+
+	methods = parse_indexing_methods(method_list, &n);
 
 	/* No cell parameters -> no cell checking, no prior cell */
 	if ( !cell_has_parameters(cell) ) {
@@ -413,7 +426,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int j;
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
-		                                          det, beam,
+		                                          dtempl,
 		                                          xgandalf_opts,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
@@ -560,14 +573,17 @@ void map_all_peaks(struct image *image)
 	for ( i=0; i<n; i++ ) {
 
 		struct imagefeature *f;
-		struct rvec r;
+		double r[3];
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q_for_panel(f->p, f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
-		f->rx = r.u;  f->ry = r.v;  f->rz = r.w;
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss,
+		                         image->lambda, r);
+		f->rx = r[0];
+		f->ry = r[1];
+		f->rz = r[2];
 
 	}
 }
@@ -612,6 +628,16 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 }
 
 
+#ifdef MEASURE_INDEX_TIME
+static float real_time()
+{
+	struct timespec tp;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
+	return tp.tv_sec + tp.tv_nsec*1e-9;
+}
+#endif
+
+
 /* Return non-zero for "success" */
 static int try_indexer(struct image *image, IndexingMethod indm,
                        IndexingPrivate *ipriv, void *mpriv, char *last_task)
@@ -619,6 +645,12 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	int i, r;
 	int n_bad = 0;
 	int n_before = image->n_crystals;
+
+	#ifdef MEASURE_INDEX_TIME
+	float time_start;
+	float time_end;
+	time_start = real_time();
+	#endif
 
 	switch ( indm & INDEXING_METHOD_MASK ) {
 
@@ -677,6 +709,10 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	}
 
 	set_last_task(last_task, "indexing:finalisation");
+
+	#ifdef MEASURE_INDEX_TIME
+	time_end = real_time();
+	#endif
 
 	/* Stop a really difficult to debug situation in its tracks */
 	if ( image->n_crystals - n_before != r ) {
@@ -741,6 +777,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		for ( j=0; j<this_crystal; j++ ) {
 
 			Crystal *that_cr = image->crystals[j];
+			/* 'tols' is in frac (not %) and radians */
 			const double tols[] = {0.1, 0.1, 0.1,
 			                       deg2rad(5.0),
 			                       deg2rad(5.0),
@@ -761,6 +798,16 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	n_bad = remove_flagged_crystals(image);
 	assert(r >= n_bad);
+
+	#ifdef MEASURE_INDEX_TIME
+	printf("%s took %f s, %i crystals found of which %i accepted. %s %s\n",
+	       indexer_str(indm & INDEXING_METHOD_MASK),
+	       time_end - time_start,
+	       r, r - n_bad,
+	       image->filename,
+	       image->ev);
+	fflush(stdout);
+	#endif
 
 	return r - n_bad;
 }
@@ -810,7 +857,7 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		struct rvec q;
+		double q[3];
 		double h, k, l, hd, kd, ld;
 		double dsq;
 
@@ -819,14 +866,14 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 		nspots++;
 
 		/* Reciprocal space position of found peak */
-		q = get_q_for_panel(f->p, f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda, q);
 
 		/* Decimal and fractional Miller indices of nearest
 		 * reciprocal lattice point */
-		hd = q.u * ax + q.v * ay + q.w * az;
-		kd = q.u * bx + q.v * by + q.w * bz;
-		ld = q.u * cx + q.v * cy + q.w * cz;
+		hd = q[0] * ax + q[1] * ay + q[2] * az;
+		kd = q[0] * bx + q[1] * by + q[2] * bz;
+		ld = q[0] * cx + q[1] * cy + q[2] * cz;
 		h = lrint(hd);
 		k = lrint(kd);
 		l = lrint(ld);
@@ -1163,13 +1210,13 @@ char *detect_indexing_methods(UnitCell *cell)
 	if ( methods == NULL ) return NULL;
 	methods[0] = '\0';
 
-	do_probe(mosflm_probe, cell, methods);
-	do_probe(dirax_probe, cell, methods);
-	do_probe(asdf_probe, cell, methods);
-	do_probe(xds_probe, cell, methods);
+	do_probe(taketwo_probe, cell, methods);
 	do_probe(xgandalf_probe, cell, methods);
-	/* Don't automatically use TakeTwo, Felix or PinkIndexer (yet) */
-	//do_probe(taketwo_probe, cell, methods);
+	do_probe(mosflm_probe, cell, methods);
+	do_probe(asdf_probe, cell, methods);
+	do_probe(dirax_probe, cell, methods);
+	do_probe(xds_probe, cell, methods);
+
 	//do_probe(felix_probe, cell, methods);
 	//do_probe(pinkIndexer_probe, cell, methods);
 
@@ -1179,4 +1226,16 @@ char *detect_indexing_methods(UnitCell *cell)
 	}
 
 	return methods;
+}
+
+
+void default_method_options(TakeTwoOptions **ttopts,
+                            XGandalfOptions **xgandalf_opts,
+                            PinkIndexerOptions **pinkIndexer_opts,
+                            FelixOptions **felix_opts)
+{
+	taketwo_default_options(ttopts);
+	xgandalf_default_options(xgandalf_opts);
+	pinkIndexer_default_options(pinkIndexer_opts);
+	felix_default_options(felix_opts);
 }

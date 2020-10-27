@@ -55,7 +55,7 @@
 #include "image.h"
 #include "utils.h"
 #include "peaks.h"
-#include "detector.h"
+#include "detgeom.h"
 #include "filters.h"
 #include "reflist-utils.h"
 #include "cell-utils.h"
@@ -64,94 +64,8 @@
 
 /** \file peaks.h */
 
-static int cull_peaks_in_panel(struct image *image, struct panel *p)
-{
-	int i, n;
-	int nelim = 0;
-
-	n = image_feature_count(image->features);
-
-	for ( i=0; i<n; i++ ) {
-
-		struct imagefeature *f;
-		int j, ncol;
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		if ( f->p != p ) continue;
-
-		/* How many peaks are in the same column? */
-		ncol = 0;
-		for ( j=0; j<n; j++ ) {
-
-			struct imagefeature *g;
-
-			if ( i==j ) continue;
-
-			g = image_get_feature(image->features, j);
-			if ( g == NULL ) continue;
-
-			if ( p->badrow == 'f' ) {
-				if ( fabs(f->ss - g->ss) < 2.0 ) ncol++;
-			} else if ( p->badrow == 's' ) {
-				if ( fabs(f->fs - g->fs) < 2.0 ) ncol++;
-			} /* else do nothing */
-
-		}
-
-		/* More than three? */
-		if ( ncol <= 3 ) continue;
-
-		/* Yes?  Delete them all... */
-		for ( j=0; j<n; j++ ) {
-			struct imagefeature *g;
-			g = image_get_feature(image->features, j);
-			if ( g == NULL ) continue;
-			if ( p->badrow == 'f' ) {
-				if ( fabs(f->ss - g->ss) < 2.0 ) {
-					image_remove_feature(image->features,
-					                     j);
-					nelim++;
-				}
-			} else if ( p->badrow == 's' ) {
-				if ( fabs(f->fs - g->ss) < 2.0 ) {
-					image_remove_feature(image->features,
-					                     j);
-					nelim++;
-				}
-			} else {
-				ERROR("Invalid badrow direction.\n");
-				abort();
-			}
-
-		}
-
-	}
-
-	return nelim;
-}
-
-
-/* Post-processing of the peak list to remove noise */
-static int cull_peaks(struct image *image)
-{
-	int nelim = 0;
-	struct panel *p;
-	int i;
-
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		p = &image->det->panels[i];
-		if ( p->badrow != '-' ) {
-			nelim += cull_peaks_in_panel(image, p);
-		}
-	}
-
-	return nelim;
-}
-
-
-static void add_crystal_to_mask(struct image *image, struct panel *p,
+static void add_crystal_to_mask(struct image *image,
+                                struct detgeom_panel *p, int pn,
                                 double ir_inn, int *mask, Crystal *cr)
 {
 	Reflection *refl;
@@ -168,7 +82,7 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 		get_detector_pos(refl, &pk2_fs, &pk2_ss);
 
 		/* Determine if reflection is in the same panel */
-		if ( get_panel(refl) != p ) continue;
+		if ( get_panel_number(refl) != pn ) continue;
 
 		for ( dfs=-ir_inn; dfs<=ir_inn; dfs++ ) {
 		for ( dss=-ir_inn; dss<=ir_inn; dss++ ) {
@@ -197,7 +111,8 @@ static void add_crystal_to_mask(struct image *image, struct panel *p,
 
 
 /* cfs, css relative to panel origin */
-int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
+int *make_BgMask(struct image *image, struct detgeom_panel *p,
+                 int pn, double ir_inn)
 {
 	int *mask;
 	int i;
@@ -208,7 +123,7 @@ int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 	if ( image->crystals == NULL ) return mask;
 
 	for ( i=0; i<image->n_crystals; i++ ) {
-		add_crystal_to_mask(image, p, ir_inn,
+		add_crystal_to_mask(image, p, pn, ir_inn,
 		                    mask, image->crystals[i]);
 	}
 
@@ -218,12 +133,12 @@ int *make_BgMask(struct image *image, struct panel *p, double ir_inn)
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-static int integrate_peak(struct image *image,
-                          int p_cfs, int p_css, struct panel *p,
-                          double *pfs, double *pss,
-                          double *intensity, double *sigma,
-                          double ir_inn, double ir_mid, double ir_out,
-                          int *saturated)
+int integrate_peak(struct image *image,
+                   int p_cfs, int p_css, int pn,
+                   double *pfs, double *pss,
+                   double *intensity, double *sigma,
+                   double ir_inn, double ir_mid, double ir_out,
+                   int *saturated)
 {
 	signed int dfs, dss;
 	double lim_sq, out_lim_sq, mid_lim_sq;
@@ -236,21 +151,17 @@ static int integrate_peak(struct image *image,
 	double bg_tot_sq = 0.0;
 	double var;
 	double aduph;
-	int pn;
+	struct detgeom_panel *p;
 
 	if ( saturated != NULL ) *saturated = 0;
+
+	p = &image->detgeom->panels[pn];
 
 	aduph = p->adu_per_photon;
 
 	lim_sq = pow(ir_inn, 2.0);
 	mid_lim_sq = pow(ir_mid, 2.0);
 	out_lim_sq = pow(ir_out, 2.0);
-
-	pn = panel_number(image->det, p);
-	if ( pn == image->det->n_panels ) {
-		ERROR("Couldn't find panel %p\n", p);
-		return 20;
-	}
 
 	/* Estimate the background */
 	for ( dss=-ir_out; dss<=+ir_out; dss++ ) {
@@ -352,7 +263,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 {
 	int fs, ss, stride;
 	float *data;
-	struct panel *p;
+	struct detgeom_panel *p;
 	double d;
 	int idx;
 	double f_fs = 0.0;
@@ -366,9 +277,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 	int nrej_snr = 0;
 	int nrej_sat = 0;
 	int nacc = 0;
-	int ncull;
 
-	p = &image->det->panels[pn];
+	p = &image->detgeom->panels[pn];
 	data = image->dp[pn];
 	stride = p->w;
 
@@ -456,7 +366,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		assert(mask_ss >= 0);
 
 		/* Centroid peak and get better coordinates. */
-		r = integrate_peak(image, mask_fs, mask_ss, p,
+		r = integrate_peak(image, mask_fs, mask_ss, pn,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, &saturated);
 
@@ -479,7 +389,8 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(image->features, f_fs, f_ss, p, &d, &idx);
+		image_feature_closest(image->features, f_fs, f_ss, pn,
+		                      &d, &idx);
 		if ( d < 2.0*ir_inn ) {
 			nrej_pro++;
 			continue;
@@ -491,33 +402,19 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(image->features, f_fs, f_ss, p,
+		image_add_feature(image->features, f_fs, f_ss, pn,
 		                  image, intensity, NULL);
 		nacc++;
 
 	}
 	}
 
-	if ( image->det != NULL ) {
-		ncull = cull_peaks(image);
-		nacc -= ncull;
-	} else {
-		STATUS("Not culling peaks because I don't have a "
-		       "detector geometry file.\n");
-		ncull = 0;
-	}
-
 	//STATUS("%i accepted, %i box, %i proximity, %i outside panel, "
 	//       "%i failed integration, %i with SNR < %g, %i badrow culled, "
 	//        "%i saturated.\n",
 	//       nacc, nrej_dis, nrej_pro, nrej_fra, nrej_fail,
-	//       nrej_snr, min_snr, ncull, nrej_sat);
+	//       nrej_snr, min_snr, nrej_sat);
 
-	if ( ncull != 0 ) {
-		STATUS("WARNING: %i peaks were badrow culled.  This feature"
-		       " should not usually be used.\nConsider setting"
-		       " badrow=- in the geometry file.\n", ncull);
-	}
 }
 
 
@@ -532,9 +429,7 @@ void search_peaks(struct image *image, float threshold, float min_sq_gradient,
 	}
 	image->features = image_feature_list_new();
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
-
-		if ( image->det->panels[i].no_index ) continue;
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 
 		search_peaks_in_panel(image, threshold, min_sq_gradient,
 		                      min_snr, i, ir_inn, ir_mid, ir_out,
@@ -606,16 +501,14 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 
 	if ( allocatePeakList(&peakList, NpeaksMax) ) return 1;
 
-	for ( panel_number=0; panel_number<image->det->n_panels; panel_number++ ) {
+	for ( panel_number=0; panel_number<image->detgeom->n_panels; panel_number++ ) {
 
 		int w, h;
 		int peak_number;
 		detectorRawFormat_t det_size_one_panel;
 
-		if ( image->det->panels[panel_number].no_index ) continue;
-
-		w = image->det->panels[panel_number].w;
-		h = image->det->panels[panel_number].h;
+		w = image->detgeom->panels[panel_number].w;
+		h = image->detgeom->panels[panel_number].h;
 
 		det_size_one_panel.asic_nx = w;
 		det_size_one_panel.asic_ny = h;
@@ -648,8 +541,7 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 			image_add_feature(image->features,
 			                  peakList.centerOfMass_rawX[peak_number],
 			                  peakList.centerOfMass_rawY[peak_number],
-			                  &image->det->panels[panel_number],
-			                  image,
+			                  panel_number, image,
 			                  peakList.totalIntensity[peak_number],
 			                  NULL);
 		}
@@ -698,7 +590,7 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		struct rvec q;
+		double q[3];
 		double h,k,l,hd,kd,ld;
 		int j;
 		int ok = 0;
@@ -709,8 +601,8 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 		n_feat++;
 
 		/* Reciprocal space position of found peak */
-		q = get_q_for_panel(f->p, f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda, q);
 
 		for ( j=0; j<n_cryst; j++ ) {
 
@@ -725,9 +617,9 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 
 			/* Decimal and fractional Miller indices of nearest
 			 * reciprocal lattice point */
-			hd = q.u * ax + q.v * ay + q.w * az;
-			kd = q.u * bx + q.v * by + q.w * bz;
-			ld = q.u * cx + q.v * cy + q.w * cz;
+			hd = q[0] * ax + q[1] * ay + q[2] * az;
+			kd = q[0] * bx + q[1] * by + q[2] * bz;
+			ld = q[0] * cx + q[1] * cy + q[2] * cz;
 			h = lrint(hd);
 			k = lrint(kd);
 			l = lrint(ld);
@@ -797,7 +689,7 @@ void validate_peaks(struct image *image, double min_snr,
 			continue;
 		}
 
-		r = integrate_peak(image, f->fs, f->ss, f->p,
+		r = integrate_peak(image, f->fs, f->ss, f->pn,
 		                   &f_fs, &f_ss, &intensity, &sigma,
 		                   ir_inn, ir_mid, ir_out, &saturated);
 		if ( r ) {
@@ -818,8 +710,8 @@ void validate_peaks(struct image *image, double min_snr,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(flist, f->fs, f->ss, f->p, image, intensity,
-		                  NULL);
+		image_add_feature(flist, f->fs, f->ss, f->pn, image,
+		                  intensity, NULL);
 
 	}
 
@@ -831,17 +723,8 @@ void validate_peaks(struct image *image, double min_snr,
 }
 
 
-static int compare_double(const void *av, const void *bv)
-{
-	double a = *(double *)av;
-	double b = *(double *)bv;
-	if ( a > b ) return 1;
-	if ( a < b ) return -1;
-	return 0;
-}
-
-
-double estimate_peak_resolution(ImageFeatureList *peaks, double lambda)
+double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
+                                struct detgeom *det)
 {
 	int i, npk, ncut;
 	double *rns;
@@ -859,12 +742,14 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda)
 	for ( i=0; i<npk; i++ ) {
 
 		struct imagefeature *f;
-		struct rvec r;
+		double r[3];
 
 		f = image_get_feature(peaks, i);
 
-		r = get_q_for_panel(f->p, f->fs, f->ss, NULL, 1.0/lambda);
-		rns[i] = modulus(r.u, r.v, r.w);
+		detgeom_transform_coords(&det->panels[f->pn],
+		                         f->fs, f->ss,
+		                         lambda, r);
+		rns[i] = modulus(r[0], r[1], r[2]);
 
 	}
 
@@ -876,4 +761,39 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda)
 
 	free(rns);
 	return max_res;
+}
+
+const char *str_peaksearch(enum peak_search_method meth)
+{
+	switch ( meth ) {
+	case PEAK_PEAKFINDER9: return "peakfinder9";
+	case PEAK_PEAKFINDER8: return "peakfinder8";
+	case PEAK_ZAEF: return "zaef";
+	case PEAK_HDF5: return "hdf5";
+	case PEAK_CXI: return "cxi";
+	case PEAK_MSGPACK: return "msgpack";
+	case PEAK_NONE: return "none";
+	default: return "???";
+	}
+}
+
+enum peak_search_method parse_peaksearch(const char *arg)
+{
+	if ( strcmp(arg, "zaef") == 0 ) {
+		return PEAK_ZAEF;
+	} else if ( strcmp(arg, "peakfinder8") == 0 ) {
+		return PEAK_PEAKFINDER8;
+	} else if ( strcmp(arg, "hdf5") == 0 ) {
+		return PEAK_HDF5;
+	} else if ( strcmp(arg, "cxi") == 0 ) {
+		return PEAK_CXI;
+	} else if ( strcmp(arg, "peakfinder9") == 0 ) {
+		return PEAK_PEAKFINDER9;
+	} else if ( strcmp(arg, "msgpack") == 0 ) {
+		return PEAK_MSGPACK;
+	} else if ( strcmp(arg, "none") == 0 ) {
+		return PEAK_NONE;
+	}
+
+	return PEAK_ERROR;
 }

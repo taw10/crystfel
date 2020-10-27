@@ -29,10 +29,6 @@
 #ifndef RATIONAL_H
 #define RATIONAL_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /**
  * \file rational.h
  * %Rational numbers (including rational matrices)

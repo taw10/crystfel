@@ -8,7 +8,7 @@
  * Copyright © 2014 Wolfgang Brehm
  *
  * Authors:
- *   2014-2016 Thomas White <taw@physics.org>
+ *   2014-2020 Thomas White <taw@physics.org>
  *   2014      Wolfgang Brehm <wolfgang.brehm@gmail.com>
  *
  * This file is part of CrystFEL.
@@ -43,6 +43,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_randist.h>
+#include <hdf5.h>
 
 #include <image.h>
 #include <utils.h>
@@ -53,6 +54,8 @@
 #include <cell.h>
 #include <cell-utils.h>
 #include <thread-pool.h>
+
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -370,7 +373,7 @@ struct cc_list
 };
 
 
-struct queue_args
+struct ambigator_queue_args
 {
 	int n_started;
 	int n_finished;
@@ -405,7 +408,7 @@ struct cc_job
 
 static void *get_task(void *vp)
 {
-	struct queue_args *qargs = vp;
+	struct ambigator_queue_args *qargs = vp;
 	struct cc_job *job;
 
 	if ( qargs->n_started == qargs->n_to_do ) return NULL;
@@ -428,7 +431,7 @@ static void *get_task(void *vp)
 
 static void final(void *qp, void *wp)
 {
-	struct queue_args *qargs = qp;
+	struct ambigator_queue_args *qargs = qp;
 	struct cc_job *job = wp;
 
 	qargs->mean_nac += job->mean_nac;
@@ -560,7 +563,7 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
                                 float *pmean_nac, int nthreads)
 {
 	struct cc_list *ccs;
-	struct queue_args qargs;
+	struct ambigator_queue_args qargs;
 	int i;
 
 	assert(n_crystals >= ncorr);
@@ -764,7 +767,8 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 			done = 1;
 
 			/* Add our own header */
-			fprintf(ofh, "Re-indexed by ambigator "CRYSTFEL_VERSIONSTRING"\n");
+			fprintf(ofh, "Re-indexed by ambigator %s\n",
+			        crystfel_version_string());
 			if ( argc > 0 ) {
 				for ( i=0; i<argc; i++ ) {
 					if ( i > 0 ) fprintf(ofh, " ");
@@ -873,10 +877,10 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 
 		}
 
-		/* Not a bug: REFLECTION_START_MARKER gets passed through */
+		/* Not a bug: STREAM_REFLECTION_START_MARKER gets passed through */
 		if ( !d ) fputs(line, ofh);
 
-		if ( strcmp(line, REFLECTION_START_MARKER"\n") == 0 ) {
+		if ( strcmp(line, STREAM_REFLECTION_START_MARKER"\n") == 0 ) {
 			reindex_reflections(fh, ofh, assignments[i++], amb);
 		}
 
@@ -1093,8 +1097,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 10 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'o' :
@@ -1238,12 +1244,11 @@ int main(int argc, char *argv[])
 	}
 
 	infile = argv[optind++];
-	st = open_stream_for_read(infile);
+	st = stream_open_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
 	}
-
 
 	crystals = NULL;
 	n_crystals = 0;
@@ -1251,25 +1256,21 @@ int main(int argc, char *argv[])
 	n_chunks = 0;
 	do {
 
-		struct image cur;
+		struct image *image;
 		int i;
 
-		cur.det = NULL;
+		image = stream_read_chunk(st, STREAM_REFLECTIONS);
+		if ( image == NULL ) break;
 
-		if ( read_chunk_2(st, &cur, STREAM_READ_UNITCELL
-		                          | STREAM_READ_REFLECTIONS) != 0 ) {
-			break;
-		}
+		image_feature_list_free(image->features);
 
-		image_feature_list_free(cur.features);
-
-		for ( i=0; i<cur.n_crystals; i++ ) {
+		for ( i=0; i<image->n_crystals; i++ ) {
 
 			Crystal *cr;
 			RefList *list;
 			UnitCell *cell;
 
-			cr = cur.crystals[i];
+			cr = image->crystals[i];
 			cell = crystal_get_cell(cr);
 
 			if ( n_crystals == max_crystals ) {
@@ -1311,7 +1312,7 @@ int main(int argc, char *argv[])
 	} while ( 1 );
 	fprintf(stderr, "\n");
 
-	close_stream(st);
+	stream_close(st);
 
 	assignments = malloc(n_crystals*sizeof(int));
 	if ( assignments == NULL ) {

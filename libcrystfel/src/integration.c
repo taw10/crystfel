@@ -52,6 +52,7 @@
 #include "image.h"
 #include "peaks.h"
 #include "integration.h"
+#include "detgeom.h"
 
 
 /** \file integration.h */
@@ -110,7 +111,7 @@ struct peak_box
 	enum boxmask_val *bm;  /* Box mask */
 
 	int pn;           /* Panel number */
-	struct panel *p;  /* The panel itself */
+	struct detgeom_panel *p;  /* The panel itself */
 
 	/* Fitted background parameters */
 	double a;
@@ -273,9 +274,6 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 
 	get_indices(bx->refl, &h, &k, &l);
 	get_detector_pos(bx->refl, &fs, &ss);
-	/* Convert coordinates to match arrangement of panels in HDF5 file */
-	fs = fs + bx->p->orig_min_fs;
-	ss = ss + bx->p->orig_min_ss;
 	printw("Indices %i %i %i\nPanel %s\nPosition fs = %.1f, ss = %.1f\n\n",
 	       h, k, l, bx->p->name, fs, ss);
 
@@ -432,70 +430,10 @@ static int alloc_boxes(struct intcontext *ic, int new_max_boxes)
 }
 
 
-static int init_intcontext(struct intcontext *ic)
-{
-	int i;
-
-	ic->w = 2*ic->halfw + 1;
-
-	ic->bm = malloc(ic->w * ic->w * sizeof(enum boxmask_val));
-	if ( ic->bm == NULL ) {
-		ERROR("Failed to allocate box mask.\n");
-		return 1;
-	}
-
-	/* How many reference profiles? */
-	ic->n_reference_profiles = 1;
-	ic->reference_profiles = calloc(ic->n_reference_profiles,
-	                                sizeof(double *));
-	if ( ic->reference_profiles == NULL ) return 1;
-	ic->reference_den = calloc(ic->n_reference_profiles, sizeof(double *));
-	if ( ic->reference_den == NULL ) return 1;
-	ic->n_profiles_in_reference = calloc(ic->n_reference_profiles,
-	                                     sizeof(int));
-	if ( ic->n_profiles_in_reference == NULL ) return 1;
-	for ( i=0; i<ic->n_reference_profiles; i++ ) {
-		ic->reference_profiles[i] = malloc(ic->w*ic->w*sizeof(double));
-		if ( ic->reference_profiles[i] == NULL ) return 1;
-		ic->reference_den[i] = malloc(ic->w*ic->w*sizeof(double));
-		if ( ic->reference_den[i] == NULL ) return 1;
-	}
-	zero_profiles(ic);
-
-	ic->boxes = NULL;
-	ic->n_boxes = 0;
-	ic->max_boxes = 0;
-	if ( alloc_boxes(ic, 32) ) {
-		return 1;
-	}
-
-	return 0;
-}
-
-
-static void free_intcontext(struct intcontext *ic)
-{
-	int i;
-
-	for ( i=0; i<ic->n_boxes; i++ ) {
-		free(ic->boxes[i].bm);
-		gsl_matrix_free(ic->boxes[i].bgm);
-	}
-	free(ic->boxes);
-
-	for ( i=0; i<ic->n_reference_profiles; i++ ) {
-		free(ic->reference_profiles[i]);
-		free(ic->reference_den[i]);
-	}
-	free(ic->reference_profiles);
-	free(ic->reference_den);
-	free(ic->n_profiles_in_reference);
-	free(ic->bm);
-}
-
-
 static void setup_ring_masks(struct intcontext *ic,
-                             double ir_inn, double ir_mid, double ir_out)
+                             double ir_inn,
+                             double ir_mid,
+                             double ir_out)
 {
 	double lim_sq, out_lim_sq, mid_lim_sq;
 	int p, q;
@@ -532,6 +470,100 @@ static void setup_ring_masks(struct intcontext *ic,
 	}
 	}
 
+}
+
+
+void intcontext_set_diag(struct intcontext *ic,
+                         IntDiag int_diag,
+                         signed int idh,
+                         signed int idk,
+                         signed int idl)
+{
+	ic->int_diag = int_diag;
+	ic->int_diag_h = idh;
+	ic->int_diag_k = idk;
+	ic->int_diag_l = idl;
+}
+
+
+struct intcontext *intcontext_new(struct image *image,
+                                  UnitCell *cell,
+                                  IntegrationMethod meth,
+                                  int ir_inn, int ir_mid, int ir_out,
+                                  int **masks)
+{
+	int i;
+	struct intcontext *ic;
+
+	ic = malloc(sizeof(struct intcontext));
+	if ( ic == NULL ) return NULL;
+
+	ic->halfw = ir_out;
+	ic->image = image;
+	ic->k = 1.0/image->lambda;
+	ic->meth = meth;
+	ic->n_saturated = 0;
+	ic->n_implausible = 0;
+	ic->cell = cell;
+	ic->masks = masks;
+	ic->int_diag = INTDIAG_NONE;
+	ic->w = 2*ic->halfw + 1;
+
+	ic->bm = malloc(ic->w * ic->w * sizeof(enum boxmask_val));
+	if ( ic->bm == NULL ) {
+		ERROR("Failed to allocate box mask.\n");
+		return NULL;
+	}
+
+	/* How many reference profiles? */
+	ic->n_reference_profiles = 1;
+	ic->reference_profiles = calloc(ic->n_reference_profiles,
+	                                sizeof(double *));
+	if ( ic->reference_profiles == NULL ) return NULL;
+	ic->reference_den = calloc(ic->n_reference_profiles, sizeof(double *));
+	if ( ic->reference_den == NULL ) return NULL;
+	ic->n_profiles_in_reference = calloc(ic->n_reference_profiles,
+	                                     sizeof(int));
+	if ( ic->n_profiles_in_reference == NULL ) return NULL;
+	for ( i=0; i<ic->n_reference_profiles; i++ ) {
+		ic->reference_profiles[i] = malloc(ic->w*ic->w*sizeof(double));
+		if ( ic->reference_profiles[i] == NULL ) return NULL;
+		ic->reference_den[i] = malloc(ic->w*ic->w*sizeof(double));
+		if ( ic->reference_den[i] == NULL ) return NULL;
+	}
+	zero_profiles(ic);
+
+	ic->boxes = NULL;
+	ic->n_boxes = 0;
+	ic->max_boxes = 0;
+	if ( alloc_boxes(ic, 32) ) {
+		return NULL;
+	}
+
+	setup_ring_masks(ic, ir_inn, ir_mid, ir_out);
+
+	return ic;
+}
+
+
+void intcontext_free(struct intcontext *ic)
+{
+	int i;
+
+	for ( i=0; i<ic->n_boxes; i++ ) {
+		free(ic->boxes[i].bm);
+		gsl_matrix_free(ic->boxes[i].bgm);
+	}
+	free(ic->boxes);
+
+	for ( i=0; i<ic->n_reference_profiles; i++ ) {
+		free(ic->reference_profiles[i]);
+		free(ic->reference_den[i]);
+	}
+	free(ic->reference_profiles);
+	free(ic->reference_den);
+	free(ic->n_profiles_in_reference);
+	free(ic->bm);
 }
 
 
@@ -806,7 +838,7 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		int fs, ss;
 		double hd, kd, ld;
 		signed int h, k, l;
-		struct rvec dv;
+		double dv[3];
 		float lsat;
 
 		fs = bx->cfs + p;
@@ -864,10 +896,11 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 
 		/* Ignore if this pixel is closer to the next reciprocal lattice
 		 * point */
-		dv = get_q_for_panel(bx->p, fs, ss, NULL, ic->k);
-		hd = dv.u * adx + dv.v * ady + dv.w * adz;
-		kd = dv.u * bdx + dv.v * bdy + dv.w * bdz;
-		ld = dv.u * cdx + dv.v * cdy + dv.w * cdz;
+		detgeom_transform_coords(bx->p, fs, ss,
+		                         1.0/ic->k, dv);
+		hd = dv[0] * adx + dv[1] * ady + dv[2] * adz;
+		kd = dv[0] * bdx + dv[1] * bdy + dv[2] * bdz;
+		ld = dv[0] * cdx + dv[1] * cdy + dv[2] * cdz;
 		h = lrint(hd);
 		k = lrint(kd);
 		l = lrint(ld);
@@ -1273,7 +1306,6 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		double pfs, pss;
 		struct peak_box *bx;
 		int pn;
-		struct panel *p;
 		int fid_fs, fid_ss;  /* Center coordinates, rounded,
 		                      * in overall data block */
 		int cfs, css;  /* Corner coordinates */
@@ -1283,12 +1315,7 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		set_redundancy(refl, 0);
 
 		get_detector_pos(refl, &pfs, &pss);
-		p = get_panel(refl);
-		pn = panel_number(ic->image->det, p);
-		if ( pn == ic->image->det->n_panels ) {
-			ERROR("Couldn't find panel %p\n", p);
-			continue;
-		}
+		pn = get_panel_number(refl);
 
 		/* Explicit truncation of digits after the decimal point.
 		 * This is actually the correct thing to do here, not
@@ -1307,7 +1334,7 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 		bx->refl = refl;
 		bx->cfs = cfs;
 		bx->css = css;
-		bx->p = p;
+		bx->p = &ic->image->detgeom->panels[pn];
 		bx->pn = pn;
 
 		/* Which reference profile? */
@@ -1345,68 +1372,58 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 }
 
 
-static void integrate_prof2d(IntegrationMethod meth,
-                             Crystal *cr, struct image *image, IntDiag int_diag,
-                             signed int idh, signed int idk, signed int idl,
-                             double ir_inn, double ir_mid, double ir_out,
-                             pthread_mutex_t *term_lock, int **masks)
+void integrate_prof2d(IntegrationMethod meth,
+                      Crystal *cr, struct image *image, IntDiag int_diag,
+                      signed int idh, signed int idk, signed int idl,
+                      double ir_inn, double ir_mid, double ir_out,
+                      pthread_mutex_t *term_lock, int **masks)
 {
 	RefList *list;
 	UnitCell *cell;
-	struct intcontext ic;
+	struct intcontext *ic;
 	int i;
 
 	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
 
-	ic.halfw = ir_out;
-	ic.image = image;
-	ic.k = 1.0/image->lambda;
-	ic.meth = meth;
-	ic.n_saturated = 0;
-	ic.n_implausible = 0;
-	ic.cell = cell;
-	ic.int_diag = int_diag;
-	ic.int_diag_h = idh;
-	ic.int_diag_k = idk;
-	ic.int_diag_l = idl;
-	ic.masks = masks;
-	if ( init_intcontext(&ic) ) {
+	ic = intcontext_new(image, cell, meth,
+	                    ir_inn, ir_mid, ir_out,
+	                    masks);
+	if ( ic == NULL ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
 	}
 
-	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
-	setup_profile_boxes(&ic, list);
-	calculate_reference_profiles(&ic);
+	intcontext_set_diag(ic, int_diag, idh, idk, idl);
+	setup_profile_boxes(ic, list);
+	calculate_reference_profiles(ic);
 
-	for ( i=0; i<ic.n_reference_profiles; i++ ) {
-		if ( ic.n_profiles_in_reference[i] == 0 ) {
+	for ( i=0; i<ic->n_reference_profiles; i++ ) {
+		if ( ic->n_profiles_in_reference[i] == 0 ) {
 			ERROR("Reference profile %i has no contributions.\n",
 			      i);
-			free_intcontext(&ic);
+			intcontext_free(ic);
 			return;
 		}
 	}
 
-	for ( i=0; i<ic.n_boxes; i++ ) {
+	for ( i=0; i<ic->n_boxes; i++ ) {
 		struct peak_box *bx;
-		bx = &ic.boxes[i];
-		integrate_prof2d_once(&ic, bx, term_lock);
+		bx = &ic->boxes[i];
+		integrate_prof2d_once(ic, bx, term_lock);
 	}
 
-	free_intcontext(&ic);
+	intcontext_free(ic);
 }
 
 
-static int integrate_rings_once(Reflection *refl, struct image *image,
-                                struct intcontext *ic, UnitCell *cell,
-                                pthread_mutex_t *term_lock)
+int integrate_rings_once(Reflection *refl,
+                         struct intcontext *ic,
+                         pthread_mutex_t *term_lock)
 {
 	double pfs, pss;
 	struct peak_box *bx;
 	int pn;
-	struct panel *p;
 	int fid_fs, fid_ss;  /* Center coordinates, rounded,
 	                      * in overall data block */
 	int cfs, css;  /* Corner coordinates */
@@ -1419,12 +1436,7 @@ static int integrate_rings_once(Reflection *refl, struct image *image,
 	set_redundancy(refl, 0);
 
 	get_detector_pos(refl, &pfs, &pss);
-	p = get_panel(refl);
-	pn = panel_number(image->det, p);
-	if ( pn == image->det->n_panels ) {
-		ERROR("Couldn't find panel %p\n", p);
-		return 1;
-	}
+	pn = get_panel_number(refl);
 
 	/* Explicit truncation of digits after the decimal point.
 	 * This is actually the correct thing to do here, not
@@ -1442,7 +1454,7 @@ static int integrate_rings_once(Reflection *refl, struct image *image,
 	bx->refl = refl;
 	bx->cfs = cfs;
 	bx->css = css;
-	bx->p = p;
+	bx->p = &ic->image->detgeom->panels[pn];
 	bx->pn = pn;
 
 	if ( ic->meth & INTEGRATION_CENTER ) {
@@ -1517,16 +1529,6 @@ static int integrate_rings_once(Reflection *refl, struct image *image,
 		return 1;
 	}
 
-	return 0;
-}
-
-
-static int compare_double(const void *av, const void *bv)
-{
-	double a = *(double *)av;
-	double b = *(double *)bv;
-	if ( a > b ) return 1;
-	if ( a < b ) return -1;
 	return 0;
 }
 
@@ -1619,49 +1621,39 @@ static void integrate_rings(IntegrationMethod meth,
 	Reflection *refl;
 	RefListIterator *iter;
 	UnitCell *cell;
-	struct intcontext ic;
+	struct intcontext *ic;
 	int n_rej = 0;
 
 	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
 
-	ic.halfw = ir_out;
-	ic.image = image;
-	ic.k = 1.0/image->lambda;
-	ic.n_saturated = 0;
-	ic.n_implausible = 0;
-	ic.cell = cell;
-	ic.ir_inn = ir_inn;
-	ic.ir_mid = ir_mid;
-	ic.ir_out = ir_out;
-	ic.int_diag = int_diag;
-	ic.int_diag_h = idh;
-	ic.int_diag_k = idk;
-	ic.int_diag_l = idl;
-	ic.meth = meth;
-	ic.masks = masks;
-	if ( init_intcontext(&ic) ) {
+	ic = intcontext_new(image, cell, meth,
+	                    ir_inn, ir_mid, ir_out,
+	                    masks);
+	if ( ic == NULL ) {
 		ERROR("Failed to initialise integration.\n");
 		return;
 	}
-	setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
+
+	intcontext_set_diag(ic, int_diag, idh, idk, idl);
 
 	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		n_rej += integrate_rings_once(refl, image, &ic, cell, term_lock);
+		n_rej += integrate_rings_once(refl, ic,
+		                              term_lock);
 	}
 
-	free_intcontext(&ic);
+	intcontext_free(ic);
 
 	if ( n_rej > 0 ) {
 		ERROR("WARNING: %i reflections could not be integrated\n",
 		      n_rej);
 	}
 
-	crystal_set_num_saturated_reflections(cr, ic.n_saturated);
-	crystal_set_num_implausible_reflections(cr, ic.n_implausible);
+	crystal_set_num_saturated_reflections(cr, ic->n_saturated);
+	crystal_set_num_implausible_reflections(cr, ic->n_implausible);
 }
 
 
@@ -1673,7 +1665,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
                      pthread_mutex_t *term_lock, int overpredict)
 {
 	int i;
-	int *masks[image->det->n_panels];
+	int *masks[image->detgeom->n_panels];
 
 	/* Predict all reflections */
 	for ( i=0; i<image->n_crystals; i++ ) {
@@ -1700,8 +1692,9 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 
 	}
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
-		masks[i] = make_BgMask(image, &image->det->panels[i], ir_inn);
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
+		masks[i] = make_BgMask(image, &image->detgeom->panels[i],
+		                       i, ir_inn);
 	}
 
 	for ( i=0; i<image->n_crystals; i++ ) {
@@ -1737,7 +1730,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 
 	}
 
-	for ( i=0; i<image->det->n_panels; i++ ) {
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		free(masks[i]);
 	}
 }
@@ -1852,4 +1845,3 @@ IntegrationMethod integration_method(const char *str, int *err)
 	return meth;
 
 }
-

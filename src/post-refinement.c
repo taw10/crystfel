@@ -336,9 +336,7 @@ void write_test_logs(Crystal *crystal, const RefList *full,
 	}
 
 	if ( cycle == 0 ) {
-		char *evstr = get_event_string(image->event);
-		fprintf(fh, "Image: %s %s\n", image->filename, evstr);
-		free(evstr);
+		fprintf(fh, "Image: %s %s\n", image->filename, image->ev);
 	}
 
 	if ( cycle >= 0 ) {
@@ -393,10 +391,8 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	}
 
 	if ( cycle == 0 ) {
-		char *evstr = get_event_string(image->event);
-		fprintf(fh, "Image: %s %s\n", image->filename, evstr);
+		fprintf(fh, "Image: %s %s\n", image->filename, image->ev);
 		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration  h  k  l\n");
-		free(evstr);
 	}
 
 	cell = crystal_get_cell(crystal);
@@ -757,7 +753,7 @@ struct refine_args
 };
 
 
-struct queue_args
+struct pr_queue_args
 {
 	int n_started;
 	int n_done;
@@ -784,7 +780,7 @@ static void refine_image(void *task, int id)
 static void *get_image(void *vqargs)
 {
 	struct refine_args *task;
-	struct queue_args *qargs = vqargs;
+	struct pr_queue_args *qargs = vqargs;
 
 	task = malloc(sizeof(struct refine_args));
 	memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
@@ -800,7 +796,7 @@ static void *get_image(void *vqargs)
 
 static void done_image(void *vqargs, void *task)
 {
-	struct queue_args *qa = vqargs;
+	struct pr_queue_args *qa = vqargs;
 
 	qa->n_done++;
 
@@ -815,7 +811,7 @@ void refine_all(Crystal **crystals, int n_crystals,
                 SymOpList *sym, SymOpList *amb, int scaleflags)
 {
 	struct refine_args task_defaults;
-	struct queue_args qargs;
+	struct pr_queue_args qargs;
 
 	task_defaults.full = full;
 	task_defaults.crystal = NULL;

@@ -1,14 +1,17 @@
 project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
-find_package(XGANDALF)
-find_package(PINKINDEXER)
-find_package(FDIP)
+pkg_check_modules (XGANDALF xgandalf)
+# FIXME: Disabled
+#pkg_check_modules (PINKINDEXER pinkIndexer)
+pkg_check_modules (FDIP fdip)
 find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 find_package(Doxygen)
 pkg_search_module(FFTW fftw3)
+
+configure_file(src/libcrystfel-version.c.cmake.in libcrystfel-version.c)
 
 set(HAVE_CURSES ${CURSES_FOUND})
 set(HAVE_FFTW ${FFTW_FOUND})
@@ -20,19 +23,6 @@ set(HAVE_FDIP ${FDIP_FOUND})
 set(CMAKE_REQUIRED_LIBRARIES "-lz")
 check_symbol_exists(gzbuffer "zlib.h" HAVE_GZBUFFER)
 unset(CMAKE_REQUIRED_LIBRARIES)
-
-# Find out where forkpty() is declared
-set(CMAKE_REQUIRED_LIBRARIES "-lutil")
-check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
-check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL_H)
-unset(CMAKE_REQUIRED_LIBRARIES)
-if(HAVE_FORKPTY_PTY_H)
-  message(STATUS "Found forkpty() in pty.h")
-elseif(HAVE_FORKPTY_UTIL_H)
-  message(STATUS "Found forkpty() in util.h")
-else()
-  message(SEND_ERROR "Couldn't find forkpty()")
-endif()
 
 configure_file(config.h.cmake.in config.h)
 
@@ -46,10 +36,8 @@ set(LIBCRYSTFEL_SOURCES
     src/reflist.c
     src/utils.c
     src/cell.c
-    src/detector.c
     src/thread-pool.c
     src/image.c
-    src/hdf5-file.c
     src/geometry.c
     src/peakfinder8.c
     src/symmetry.c
@@ -57,67 +45,63 @@ set(LIBCRYSTFEL_SOURCES
     src/peaks.c
     src/reflist-utils.c
     src/filters.c
-    src/render.c
     src/index.c
-    src/dirax.c
-    src/mosflm.c
     src/cell-utils.c
     src/integer_matrix.c
     src/crystal.c
-    src/xds.c
     src/integration.c
     src/predict-refine.c
-    src/events.c
-    src/felix.c
     src/peakfinder8.c
-    src/taketwo.c
-    src/xgandalf.c
-    src/pinkindexer.c
     src/rational.c
     src/spectrum.c
+    src/datatemplate.c
+    src/colscale.c
+    src/detgeom.c
+    src/image-cbf.c
+    src/image-hdf5.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
+    src/indexers/dirax.c
+    src/indexers/mosflm.c
+    src/indexers/xds.c
+    src/indexers/felix.c
+    src/indexers/taketwo.c
+    src/indexers/asdf.c
+    src/indexers/xgandalf.c
+    src/indexers/pinkindexer.c
 )
 
-if (HAVE_FFTW)
-	set(LIBCRYSTFEL_FFTW_SOURCES src/asdf.c)
-endif (HAVE_FFTW)
-
 set(LIBCRYSTFEL_HEADERS
-    src/hdf5-file.h
     src/reflist.h
     src/symmetry.h
     src/cell.h
     src/reflist-utils.h
     src/thread-pool.h
     src/utils.h
-    src/detector.h
     src/geometry.h
     src/peakfinder8.h
     src/peaks.h
     src/stream.h
-    src/render.h
     src/index.h
     src/image.h
     src/filters.h
-    src/dirax.h
-    src/mosflm.h
     src/cell-utils.h
     src/integer_matrix.h
     src/crystal.h
-    src/xds.h
     src/predict-refine.h
     src/integration.h
-    src/events.h
-    src/asdf.h
-    src/felix.h
     src/peakfinder8.h
-    src/taketwo.h
-    src/xgandalf.h
-    src/pinkindexer.h
     src/rational.h
     src/spectrum.h
+    src/datatemplate.h
+    src/colscale.h
+    src/detgeom.h
+    src/image-msgpack.h
 )
+
+if (MSGPACK_FOUND)
+  set(LIBCRYSTFEL_SOURCES ${LIBCRYSTFEL_SOURCES} src/image-msgpack.c)
+endif (MSGPACK_FOUND)
 
 if (DOXYGEN_FOUND)
   configure_file(${PROJECT_SOURCE_DIR}/doc/index.md index.md)
@@ -131,6 +115,7 @@ endif (DOXYGEN_FOUND)
 
 add_library(${PROJECT_NAME} SHARED
 	${LIBCRYSTFEL_SOURCES}
+	${CMAKE_CURRENT_BINARY_DIR}/libcrystfel-version.c
 	${LIBCRYSTFEL_FFTW_SOURCES}
         ${LIBCRYSTFEL_HEADERS})
 
@@ -151,18 +136,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} ${ZLIB_LI
                       Threads::Threads GSL::gsl m)
 
 if (XGANDALF_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${XGANDALF_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${XGANDALF_LDFLAGS})
 endif (XGANDALF_FOUND)
 
 if (FDIP_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${FDIP_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${FDIP_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${FDIP_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${FDIP_LDFLAGS})
 endif (FDIP_FOUND)
 
 if (PINKINDEXER_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${PINKINDEXER_INCLUDES})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${PINKINDEXER_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${PINKINDEXER_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${PINKINDEXER_LDFLAGS})
 endif (PINKINDEXER_FOUND)
 
 if (FFTW_FOUND)

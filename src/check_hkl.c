@@ -40,11 +40,13 @@
 #include <gsl/gsl_fit.h>
 #include <assert.h>
 
-#include "utils.h"
-#include "symmetry.h"
-#include "reflist.h"
-#include "reflist-utils.h"
-#include "cell-utils.h"
+#include <utils.h>
+#include <symmetry.h>
+#include <reflist.h>
+#include <reflist-utils.h>
+#include <cell-utils.h>
+
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -761,8 +763,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 9 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'y' :

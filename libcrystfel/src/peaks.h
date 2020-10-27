@@ -31,14 +31,12 @@
 #ifndef PEAKS_H
 #define PEAKS_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <pthread.h>
 
 #include "reflist.h"
 #include "crystal.h"
+#include "image.h"
+#include "detgeom.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +47,23 @@ extern "C" {
  * Peak search functions
  */
 
-extern int *make_BgMask(struct image *image, struct panel *p, double ir_inn);
+enum peak_search_method {
+	PEAK_PEAKFINDER9,
+	PEAK_PEAKFINDER8,
+	PEAK_ZAEF,
+	PEAK_HDF5,
+	PEAK_CXI,
+	PEAK_MSGPACK,
+	PEAK_NONE,
+	PEAK_ERROR
+};
+
+extern const char *str_peaksearch(enum peak_search_method meth);
+
+extern enum peak_search_method parse_peaksearch(const char *arg);
+
+extern int *make_BgMask(struct image *image, struct detgeom_panel *p,
+                        int pn, double ir_inn);
 
 extern void search_peaks(struct image *image, float threshold,
                          float min_gradient, float min_snr, double ir_inn,
@@ -78,7 +92,9 @@ extern void validate_peaks(struct image *image, double min_snr,
                            int ir_inn, int ir_mid, int ir_out,
                            int use_saturated, int check_snr);
 
-extern double estimate_peak_resolution(ImageFeatureList *peaks, double lambda);
+extern double estimate_peak_resolution(ImageFeatureList *peaks,
+                                       double lambda,
+                                       struct detgeom *det);
 
 #ifdef __cplusplus
 }

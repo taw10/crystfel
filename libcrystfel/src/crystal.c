@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2016 Thomas White <taw@physics.org>
+ *   2013-2020 Thomas White <taw@physics.org>
  *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -33,6 +33,7 @@
 
 #include "crystal.h"
 #include "utils.h"
+#include "reflist-utils.h"
 
 
 /**
@@ -121,6 +122,44 @@ Crystal *crystal_copy(const Crystal *cryst)
 
 	memcpy(c, cryst, sizeof(Crystal));
 	if ( c->notes != NULL ) c->notes = strdup(c->notes);
+
+	return c;
+}
+
+
+/**
+ * \param cryst: A \ref Crystal to copy.
+ *
+ * Creates a new \ref Crystal which is a copy of \p cryst.  The copy is a "deep
+ * copy", which means that copies ARE made of the data structures which
+ * \p cryst contains references to, for example its \ref RefList.
+ *
+ * \returns A (deep) copy of \p cryst, or NULL on failure.
+ *
+ */
+Crystal *crystal_copy_deep(const Crystal *cryst)
+{
+	Crystal *c;
+
+	c = crystal_new();
+	if ( c == NULL ) return NULL;
+
+	memcpy(c, cryst, sizeof(Crystal));
+	if ( c->notes != NULL ) c->notes = strdup(c->notes);
+
+	if ( cryst->cell != NULL ) {
+		UnitCell *cell;
+		cell = cell_new_from_cell(cryst->cell);
+		if ( cell == NULL ) return NULL;
+		c->cell = cell;
+	}
+
+	if ( cryst->reflections != NULL ) {
+		RefList *refls;
+		refls = copy_reflist(cryst->reflections);
+		if ( refls == NULL ) return NULL;
+		c->reflections = refls;
+	}
 
 	return c;
 }

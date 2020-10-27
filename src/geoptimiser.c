@@ -9,7 +9,7 @@
  * Authors:
  *   2014-2015 Oleksandr Yefanov
  *   2014-2015 Valerio Mariani
- *   2014-2019 Thomas White <taw@physics.org>
+ *   2014-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -54,14 +54,16 @@
 #endif /* HAVE_GDK */
 #endif /* HAVE_CAIRO */
 
-#include "detector.h"
-#include "stream.h"
-#include "crystal.h"
-#include "image.h"
-#include "utils.h"
-#include "render.h"
+#include <detgeom.h>
+#include <datatemplate.h>
+#include <stream.h>
+#include <crystal.h>
+#include <image.h>
+#include <utils.h>
+#include <colscale.h>
 
-#include "hdfsee-render.h"
+#include "version.h"
+
 
 struct imagefeature;
 
@@ -144,7 +146,7 @@ struct single_pixel_displ
 
 struct gpanel
 {
-	struct panel               *p;
+	struct detgeom_panel       *p;
 
 	/* Individual pixel displacements */
 	struct single_pixel_displ  *pix_displ_list;
@@ -158,7 +160,56 @@ struct gpanel
 };
 
 
-static void compute_x_y(double fs, double ss, struct panel *p,
+static void free_pixbuf_data(guchar *data, gpointer p)
+{
+	free(data);
+}
+
+
+static GdkPixbuf *render_get_colour_scale(size_t w, size_t h, int scale)
+{
+	guchar *data;
+	size_t x, y;
+	int max;
+
+	data = malloc(3*w*h);
+	if ( data == NULL ) return NULL;
+
+	max = h-(h/6);
+
+	for ( y=0; y<h; y++ ) {
+
+		double r, g, b;
+		int val;
+
+		val = y-(h/6);
+
+		colscale_lookup(val, max, scale, &r, &g, &b);
+
+		data[3*( 0+w*(h-1-y) )+0] = 0;
+		data[3*( 0+w*(h-1-y) )+1] = 0;
+		data[3*( 0+w*(h-1-y) )+2] = 0;
+		for ( x=1; x<w; x++ ) {
+			data[3*( x+w*(h-1-y) )+0] = 255*r;
+			data[3*( x+w*(h-1-y) )+1] = 255*g;
+			data[3*( x+w*(h-1-y) )+2] = 255*b;
+		}
+	}
+
+	y = h/6;
+	for ( x=1; x<w; x++ ) {
+		data[3*( x+w*(h-1-y) )+0] = 255;
+		data[3*( x+w*(h-1-y) )+1] = 255;
+		data[3*( x+w*(h-1-y) )+2] = 255;
+	}
+
+	return gdk_pixbuf_new_from_data(data, GDK_COLORSPACE_RGB,
+	                                FALSE, 8, w, h, w*3,
+	                                free_pixbuf_data, NULL);
+}
+
+
+static void compute_x_y(double fs, double ss, struct detgeom_panel *p,
                         double *x, double *y)
 {
 	double xs, ys;
@@ -192,10 +243,14 @@ static Reflection *find_closest_reflection(struct image *image,
 			double ds;
 			double rfs, rss;
 			double rx, ry;
+			int pn;
 
 			get_detector_pos(refl, &rfs, &rss);
+			pn = get_panel_number(refl);
 
-			compute_x_y(rfs, rss, get_panel(refl), &rx, &ry);
+			compute_x_y(rfs, rss,
+			            &image->detgeom->panels[pn],
+			            &rx, &ry);
 
 			ds = distance(rx+det_shift[0], ry+det_shift[1], fx, fy);
 
@@ -217,39 +272,28 @@ static Reflection *find_closest_reflection(struct image *image,
 }
 
 
-static double get_average_clen(struct image *image)
+static double avg_clen(struct detgeom *det)
 {
 	int i;
-	struct stuff_from_stream *stuff = image->stuff_from_stream;
+	double av = 0.0;
 
-	if ( stuff == NULL ) {
-		ERROR("No 'stuff' from stream!\n");
-		return -1.0;
+	for ( i=0; i<det->n_panels; i++ ) {
+		av += det->panels[i].cnz * det->panels[i].pixel_pitch;
 	}
-
-	for ( i=0; i<stuff->n_fields; i++ ) {
-
-		if ( strncmp(stuff->fields[i], "average_camera_length = ",
-		             24) == 0 )
-		{
-			return atof(stuff->fields[i]+24);
-		}
-	}
-
-	ERROR("Failed to recover average camera length from stream file\n");
-	return -1.0;
+	return av / i;
 }
 
 
-static struct image *read_patterns_from_stream(Stream *st,
-                                               struct detector *det, int *n)
+static struct image **read_patterns_from_stream(Stream *st,
+                                                const DataTemplate *dtempl,
+                                                int *n)
 {
-	struct image *images;
+	struct image **images;
 	int n_chunks = 0;
 	int max_images = 1024;
 	int n_images = 0;
 
-	images = malloc(max_images * sizeof(struct image));
+	images = malloc(max_images * sizeof(struct image *));
 	if ( images == NULL ) {
 		ERROR("Failed to allocate memory for images.\n");
 		return NULL;
@@ -257,28 +301,25 @@ static struct image *read_patterns_from_stream(Stream *st,
 
 	do {
 
-		images[n_images].det = det;
-
-		if ( read_chunk_2(st, &images[n_images],
-		                  STREAM_READ_REFLECTIONS
-		                | STREAM_READ_PEAKS
-		                | STREAM_READ_UNITCELL) != 0 ) break;
+		images[n_images] = stream_read_chunk(st, dtempl,
+		                                     STREAM_REFLECTIONS
+		                                   | STREAM_PEAKS
+		                                   | STREAM_UNITCELL);
+		if ( images[n_images] == NULL ) break;
 
 		n_chunks++; /* Number of chunks processed */
 
 		/* Reject if there are no crystals (not indexed) */
-		if ( images[n_images].n_crystals == 0 ) continue;
-
-		images[n_images].avg_clen = get_average_clen(&images[n_images]);
+		if ( images[n_images]->n_crystals == 0 ) continue;
 
 		n_images++;  /* Number of images accepted */
 
 		if ( n_images == max_images ) {
 
-			struct image *images_new;
+			struct image **images_new;
 
 			images_new = realloc(images,
-			      (max_images+1024)*sizeof(struct image));
+			      (max_images+1024)*sizeof(struct image *));
 			if ( images_new == NULL ) {
 				ERROR("Failed to allocate memory for "
 				      "patterns.\n");
@@ -323,7 +364,8 @@ static struct rvec get_q_from_xyz(double rx, double ry, double dist, double l)
 }
 
 
-static UnitCell *compute_avg_cell_parameters(struct image *images, int n)
+static UnitCell *compute_avg_cell_parameters(struct image **images,
+                                             int n)
 {
 	int numavc;
 	int j, i;
@@ -344,9 +386,9 @@ static UnitCell *compute_avg_cell_parameters(struct image *images, int n)
 		double cpar[6];
 		int j, cri;
 
-		image = &images[i];
+		image = images[i];
 
-		for ( cri=0; cri<images->n_crystals; cri++ ) {
+		for ( cri=0; cri<image->n_crystals; cri++ ) {
 
 			UnitCell *cell = crystal_get_cell(image->crystals[cri]);
 
@@ -402,7 +444,7 @@ static UnitCell *compute_avg_cell_parameters(struct image *images, int n)
 
 
 static double pick_clen_to_use(struct geoptimiser_params *gparams,
-                               struct image *images, int n,
+                               struct image **images, int n,
                                double avg_res, UnitCell *avg)
 {
 	int cp, i, u;
@@ -439,9 +481,9 @@ static double pick_clen_to_use(struct geoptimiser_params *gparams,
 		int found = 0;
 
 		for ( i=0; i<num_clens; i++ ) {
-			if ( fabs(images[cp].avg_clen - clens[i]) <0.0001 ) {
+			if ( fabs(avg_clen(images[cp]->detgeom) - clens[i]) <0.0001 ) {
 				clens_population[i]++;
-				lambdas[i] += images[cp].lambda;
+				lambdas[i] += images[cp]->lambda;
 				found = 1;
 				break;
 			}
@@ -449,9 +491,9 @@ static double pick_clen_to_use(struct geoptimiser_params *gparams,
 
 		if ( found ) continue;
 
-		clens[num_clens] = images[cp].avg_clen;
+		clens[num_clens] = avg_clen(images[cp]->detgeom);
 		clens_population[num_clens] = 1;
-		lambdas[num_clens] = images[cp].lambda;
+		lambdas[num_clens] = images[cp]->lambda;
 		num_clens++;
 
 	}
@@ -526,18 +568,29 @@ static double comp_median(double *arr, long n)
 }
 
 
+static int panel_in_rigid_group(struct rigid_group *rg,
+                                int panel_number)
+{
+	int i;
+	for ( i=0; i<rg->n_panels; i++ ) {
+		if ( panel_number == rg->panel_numbers[i] ) return 1;
+	}
+	return 0;
+}
+
+
+/* Go up a level in the detector hierarchy, e.g. from "dominoes" to
+ * "quadrants", by finding the first panel in "rg" (a rigid group of
+ * the finer grained type) in the collection of coarser-grained
+ * groups */
 static int find_quad_for_connected(struct rigid_group *rg,
                                    struct rg_collection *quadrants)
 {
-	struct panel *p;
 	int qi;
 
-	/* The quadrant for a group of connected panels is the quadrant to which
-	 * the first panel in the connected set belongs */
-	p = rg->panels[0];
-
 	for ( qi=0; qi<quadrants->n_rigid_groups; qi++ ) {
-		if ( panel_is_in_rigid_group(quadrants->rigid_groups[qi], p) ) {
+		if ( panel_in_rigid_group(quadrants->rigid_groups[qi],
+		                          rg->panel_numbers[0]) ) {
 			return qi;
 		}
 	}
@@ -648,7 +701,7 @@ static int add_distance_to_list(struct gpanel *gp,
 
 	get_detector_pos(refl, &rfs, &rss);
 
-	compute_x_y(rfs, rss, get_panel(refl), &crx, &cry);
+	compute_x_y(rfs, rss, gp->p, &crx, &cry);
 	gp->curr_pix_displ[pix_index]->dx = fx - crx - det_shift[0];
 	gp->curr_pix_displ[pix_index]->dy = fy - cry - det_shift[1];
 	gp->curr_pix_displ[pix_index]->ne = NULL;
@@ -681,7 +734,6 @@ static int count_pixels_with_min_peaks(struct gpanel *gp, int min_num_peaks,
 
 static void adjust_min_peaks_per_conn(struct rg_collection *connected,
                                       struct gpanel *gpanels,
-                                      struct detector *det,
                                       struct geoptimiser_params *gparams,
                                       struct connected_data *conn_data)
 {
@@ -701,11 +753,11 @@ static void adjust_min_peaks_per_conn(struct rg_collection *connected,
 			      ip++ )
 			{
 				int pix_count;
-				struct panel *p;
+				int pn;
 				struct gpanel *gp;
 
-				p = connected->rigid_groups[di]->panels[ip];
-				gp = &gpanels[panel_number(det, p)];
+				pn = connected->rigid_groups[di]->panel_numbers[ip];
+				gp = &gpanels[pn];
 
 				pix_count = count_pixels_with_min_peaks(gp,
 				   min_num_peaks, gparams->max_num_peaks_per_pix);
@@ -728,9 +780,9 @@ static void adjust_min_peaks_per_conn(struct rg_collection *connected,
 }
 
 
-static int compute_pixel_displacements(struct image *images, int n_images,
+static int compute_pixel_displacements(struct image **images,
+                                       int n_images,
                                        struct gpanel *gpanels,
-                                       struct detector *det,
                                        struct rg_collection *connected,
                                        struct geoptimiser_params *gparams,
                                        double clen_to_use,
@@ -743,23 +795,23 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 	for ( cp=0; cp<n_images; cp++ ) {
 
 		int fi;
-		ImageFeatureList *flist = images[cp].features;
+		ImageFeatureList *flist = images[cp]->features;
 		double det_shift[2] = {0.0, 0.0};
 		double shift_x, shift_y;
+		struct detgeom *det = images[cp]->detgeom;
 
 		if ( gparams->only_best_distance ) {
-			if ( fabs(images[cp].avg_clen - clen_to_use) > 0.0001 ) {
+			if ( fabs(avg_clen(det) - clen_to_use) > 0.0001 ) {
 				continue;
 			}
 		}
 
-
-		crystal_get_det_shift(images[cp].crystals[0], &shift_x,
+		crystal_get_det_shift(images[cp]->crystals[0], &shift_x,
 		                      &shift_y);
-		det_shift[0] = shift_x * det->panels[0].res;
-		det_shift[1] = shift_y * det->panels[0].res;
+		det_shift[0] = shift_x / det->panels[0].pixel_pitch;
+		det_shift[1] = shift_y / det->panels[0].pixel_pitch;
 
-		for ( fi=0; fi<image_feature_count(images[cp].features); fi++ ) {
+		for ( fi=0; fi<image_feature_count(images[cp]->features); fi++ ) {
 
 			double min_dist;
 			double fx, fy;
@@ -769,10 +821,11 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 			imfe = image_get_feature(flist, fi);
 			if ( imfe == NULL ) continue;
 
-			compute_x_y(imfe->fs, imfe->ss, imfe->p, &fx, &fy);
+			compute_x_y(imfe->fs, imfe->ss,
+			            &det->panels[imfe->pn], &fx, &fy);
 
 			/* Find the closest reflection (from all crystals) */
-			refl = find_closest_reflection(&images[cp], fx, fy,
+			refl = find_closest_reflection(images[cp], fx, fy,
 			                               &min_dist, det_shift);
 			if ( refl == NULL ) continue;
 
@@ -780,7 +833,7 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 
 				struct gpanel *gp;
 				int r;
-				gp = &gpanels[panel_number(det, imfe->p)];
+				gp = &gpanels[imfe->pn];
 
 				r = add_distance_to_list(gp, imfe, refl, fx, fy,
 				                         det_shift);
@@ -788,8 +841,8 @@ static int compute_pixel_displacements(struct image *images, int n_images,
 					ERROR("Error processing peak %f,%f "
 					      "(panel %s), image %s %s\n",
 					      imfe->fs, imfe->ss, gp->p->name,
-					      images[cp].filename,
-					      get_event_string(images[cp].event));
+					      images[cp]->filename,
+					      images[cp]->ev);
 					return r;
 				}
 
@@ -827,27 +880,25 @@ static int compute_avg_pix_displ(struct gpanel *gp, int idx,
 }
 
 
-static int compute_avg_displacements(struct detector *det,
-                                     struct rg_collection *connected,
+static int compute_avg_displacements(struct rg_collection *connected,
                                      struct connected_data *conn_data,
                                      struct gpanel *gpanels,
                                      struct geoptimiser_params *gparams)
 {
 	int di, ip, ifs, iss;
 	int pix_index, ret, max_peaks;
-	struct panel *p;
+	struct detgeom_panel *p;
 
 	max_peaks = 0;
 	for ( di=0; di<connected->n_rigid_groups; di++ ) {
 
 		for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
 
-			int pp;
+			int pn;
 			struct gpanel *gp;
 
-			p = connected->rigid_groups[di]->panels[ip];
-			pp = panel_number(det, p);
-			gp = &gpanels[pp];
+			pn = connected->rigid_groups[di]->panel_numbers[ip];
+			gp = &gpanels[pn];
 
 			for ( iss=0; iss<p->h; iss++ ) {
 			for ( ifs=0; ifs<p->w; ifs++ ) {
@@ -873,7 +924,6 @@ static int compute_avg_displacements(struct detector *det,
 
 
 static double compute_error(struct rg_collection *connected,
-                            struct detector *det,
                             struct connected_data *conn_data,
                             struct gpanel *gpanels)
 {
@@ -883,24 +933,22 @@ static double compute_error(struct rg_collection *connected,
 
 	for ( di=0;di<connected->n_rigid_groups;di++ ) {
 
-		struct panel *p;
 		double connected_error = 0;
 		int num_connected_error = 0;
 		int ifs, iss;
 
 		for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
 
-			p = connected->rigid_groups[di]->panels[ip];
+			struct gpanel *gp;
+			int pn = connected->rigid_groups[di]->panel_numbers[ip];
 
-			for ( iss=0; iss<p->h; iss++ ) {
-			for ( ifs=0; ifs<p->w; ifs++ ) {
+			gp = &gpanels[pn];
+
+			for ( iss=0; iss<gp->p->h; iss++ ) {
+			for ( ifs=0; ifs<gp->p->w; ifs++ ) {
 
 				int pix_index;
-				struct gpanel *gp;
-				int pp = panel_number(det, p);
-
-				gp = &gpanels[pp];
-				pix_index = ifs+p->w*iss;
+				pix_index = ifs+gp->p->w*iss;
 
 				if ( gp->num_pix_displ[pix_index]
 				       >= conn_data[di].num_peaks_per_pixel &&
@@ -1017,15 +1065,16 @@ static int compute_rot_stretch_for_empty_panels(struct rg_collection *quads,
 }
 
 
-static void correct_rotation_and_stretch(struct rg_collection *connected,
-                                         struct detector *det,
-                                         struct gpanel *gpanels,
-                                         struct connected_data *conn_data,
-                                         double clen_to_use,
-                                         double stretch_coeff,
-                                         struct geoptimiser_params *gparams)
+static DataTemplate *correct_rotation_and_stretch(struct rg_collection *connected,
+                                                  const DataTemplate *dtempl,
+                                                  struct gpanel *gpanels,
+                                                  struct connected_data *conn_data,
+                                                  double clen_to_use,
+                                                  double stretch_coeff,
+                                                  struct geoptimiser_params *gparams)
 {
-
+#if 0
+	/* FIXME ! */
 	int di, ip;
 
 	STATUS("Applying rotation and stretch corrections.\n");
@@ -1037,7 +1086,7 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 			for ( ip=0; ip<connected->rigid_groups[di]->n_panels;
 			      ip++ ) {
 
-				struct panel *p;
+				struct detgeom_panel *p;
 
 				p = connected->rigid_groups[di]->panels[ip];
 				p->coffset -= (1.0-conn_data[di].cstr)*clen_to_use;
@@ -1069,7 +1118,7 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 
 		for ( ip=0; ip<connected->rigid_groups[di]->n_panels; ip++ ) {
 
-			struct panel *p;
+			struct detgeom_panel *p;
 			double new_fsx, new_fsy, new_ssx, new_ssy;
 			double new_cnx, new_cny;
 			int fs, ss;
@@ -1091,7 +1140,7 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 			 * NB All panels follow the first one */
 			if ( ip > 0 ) {
 
-				struct panel *p0;
+				struct detgeom_panel *p0;
 				double dx_old, dy_old, dx_new, dy_new;
 
 				p0 = connected->rigid_groups[di]->panels[0];
@@ -1141,14 +1190,14 @@ static void correct_rotation_and_stretch(struct rg_collection *connected,
 
 		}
 	}
-
+#endif
+	return NULL;
 }
 
 
 /* Collect together all the offsets for each group in "connected"
  * Only offsets which have enough peaks per pixel will be used. */
 static int collate_offsets_for_rg(struct rigid_group *group,
-                                  struct detector *det,
                                   struct gpanel *gpanels,
                                   int num_peaks_per_pixel,
                                   double *list_dx, double *list_dy, int list_sz)
@@ -1159,13 +1208,13 @@ static int collate_offsets_for_rg(struct rigid_group *group,
 	for ( ip=0; ip<group->n_panels; ip++ ) {
 
 		int ifs, iss;
-		struct panel *p = group->panels[ip];
-		struct gpanel *gp = &gpanels[panel_number(det, p)];
+		int pn = group->panel_numbers[ip];
+		struct gpanel *gp = &gpanels[pn];
 
-		for ( iss=0; iss<p->h; iss++ ) {
-		for ( ifs=0; ifs<p->w; ifs++ ) {
+		for ( iss=0; iss<gp->p->h; iss++ ) {
+		for ( ifs=0; ifs<gp->p->w; ifs++ ) {
 
-			int idx = ifs+p->w*iss;
+			int idx = ifs+gp->p->w*iss;
 
 			if ( gp->num_pix_displ[idx] < num_peaks_per_pixel ) {
 				continue;
@@ -1212,7 +1261,6 @@ static void fill_conn_data_sh(struct connected_data *conn_data,
 
 static int compute_shift(struct rg_collection *connected,
                          struct connected_data *conn_data,
-                         struct detector *det,
                          struct geoptimiser_params *gparams,
                          struct gpanel *gpanels)
 {
@@ -1235,7 +1283,7 @@ static int compute_shift(struct rg_collection *connected,
 			return 1;
 		}
 
-		ct = collate_offsets_for_rg(connected->rigid_groups[di], det,
+		ct = collate_offsets_for_rg(connected->rigid_groups[di],
 		                            gpanels,
 		                            conn_data[di].num_peaks_per_pixel,
 		                            list_dx, list_dy,
@@ -1343,7 +1391,8 @@ static void correct_shift(struct rg_collection *connected,
                           struct connected_data *conn_data,
                           double clen_to_use)
 {
-
+#if 0
+	/* FIXME ! */
 	int di;
 	int ip;
 
@@ -1352,7 +1401,7 @@ static void correct_shift(struct rg_collection *connected,
 	for ( di=0;di<connected->n_rigid_groups;di++ ) {
 		for (ip=0; ip<connected->rigid_groups[di]->n_panels; ip++) {
 
-			struct panel *p;
+			struct detgeom_panel *p;
 
 			p = connected->rigid_groups[di]->panels[ip];
 
@@ -1368,12 +1417,13 @@ static void correct_shift(struct rg_collection *connected,
 			}
 		}
 	}
+#endif
 }
 
 
 static void scan_p1(int ip0, int ip1, struct rg_collection *connected,
                     struct connected_data *conn_data,
-                    struct detector *det, struct gpanel *gpanels,
+                    struct gpanel *gpanels,
                     int di, double min_dist,
                     long *num_ang, int ifs0, int iss0,
                     double c_x0, double c_y0, double cd_x0, double cd_y0,
@@ -1381,11 +1431,11 @@ static void scan_p1(int ip0, int ip1, struct rg_collection *connected,
 {
 
 	int iss1, ifs1;
-	struct panel *p1;
+	int p1;
 	struct gpanel *gp1;
 
-	p1 = connected->rigid_groups[di]->panels[ip1];
-	gp1 = &gpanels[panel_number(det, p1)];
+	p1 = connected->rigid_groups[di]->panel_numbers[ip1];
+	gp1 = &gpanels[p1];
 
 	int min_ss_p1, min_fs_p1;
 
@@ -1397,19 +1447,19 @@ static void scan_p1(int ip0, int ip1, struct rg_collection *connected,
 		min_ss_p1 = 0;
 	}
 
-	for ( iss1=min_ss_p1; iss1<p1->h; iss1++ ) {
-	for ( ifs1=min_fs_p1; ifs1<p1->w; ifs1++ ) {
+	for ( iss1=min_ss_p1; iss1<gp1->p->h; iss1++ ) {
+	for ( ifs1=min_fs_p1; ifs1<gp1->p->w; ifs1++ ) {
 
 		double dist;
 		double c_x1, c_y1, cd_x1, cd_y1;
 		double d_c_x, d_c_y, d_cd_x, d_cd_y;
 		double len1, len2;
-		int pix_index1 = ifs1+p1->w*iss1;
+		int pix_index1 = ifs1+gp1->p->w*iss1;
 
 		if ( gp1->num_pix_displ[pix_index1]
 		           < conn_data[di].num_peaks_per_pixel ) continue;
 
-		compute_x_y(ifs1, iss1, p1, &c_x1, &c_y1);
+		compute_x_y(ifs1, iss1, gp1->p, &c_x1, &c_y1);
 		cd_x1 = c_x1 - gp1->avg_displ_x[pix_index1];
 		cd_y1 = c_y1 - gp1->avg_displ_y[pix_index1];
 		d_c_x = c_x1-c_x0;
@@ -1456,28 +1506,28 @@ static void scan_p1(int ip0, int ip1, struct rg_collection *connected,
 /* Executed for each panel in the connected group */
 static void scan_p0(int ip0, struct rg_collection *connected,
                     struct connected_data *conn_data,
-                    struct detector *det, struct gpanel *gpanels,
+                    struct gpanel *gpanels,
                     int di, double min_dist,
                     long *num_ang, int compute,
                     double *angles, double *stretches)
 {
 	int iss0, ifs0, ip1;
 	struct gpanel *gp;
-	struct panel *p0;
+	int p0;
 
-	p0 = connected->rigid_groups[di]->panels[ip0];
-	gp = &gpanels[panel_number(det, p0)];
+	p0 = connected->rigid_groups[di]->panel_numbers[ip0];
+	gp = &gpanels[p0];
 
-	for ( iss0=0; iss0<p0->h; iss0++ ) {
-	for ( ifs0=0; ifs0<p0->w; ifs0++ ) {
+	for ( iss0=0; iss0<gp->p->h; iss0++ ) {
+	for ( ifs0=0; ifs0<gp->p->w; ifs0++ ) {
 
 		double c_x0, c_y0, cd_x0, cd_y0;
-		int pix_index0 = ifs0+p0->w*iss0;
+		int pix_index0 = ifs0+gp->p->w*iss0;
 
 		if ( gp->num_pix_displ[pix_index0]
 		                < conn_data[di].num_peaks_per_pixel ) continue;
 
-		compute_x_y(ifs0, iss0, p0, &c_x0, &c_y0);
+		compute_x_y(ifs0, iss0, gp->p, &c_x0, &c_y0);
 		cd_x0 = c_x0 - gp->avg_displ_x[pix_index0];
 		cd_y0 = c_y0 - gp->avg_displ_y[pix_index0];
 
@@ -1485,7 +1535,7 @@ static void scan_p0(int ip0, struct rg_collection *connected,
 		      ip1++ )
 		{
 			scan_p1(ip0, ip1, connected,
-			        conn_data, det, gpanels, di, min_dist,
+			        conn_data, gpanels, di, min_dist,
 			        num_ang, ifs0, iss0, c_x0,
 			        c_y0, cd_x0, cd_y0, compute,
 			        angles, stretches);
@@ -1498,7 +1548,6 @@ static void scan_p0(int ip0, struct rg_collection *connected,
 
 static double compute_rotation_and_stretch(struct rg_collection *connected,
                                            struct connected_data *conn_data,
-                                           struct detector *det,
                                            struct gpanel *gpanels,
                                            double dist_coeff_for_rot_str,
                                            struct geoptimiser_params *gparams)
@@ -1523,7 +1572,7 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 		double *angles;
 		double *stretches;
 
-		struct panel *first_p;
+		struct detgeom_panel *first_p;
 		long num_ang = 0;
 		int ip0;
 		int num_pix_first_p;
@@ -1541,7 +1590,7 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 		                       * connected->rigid_groups[di]->n_panels);
 
 		for ( ip0=0; ip0<connected->rigid_groups[di]->n_panels; ip0++ ) {
-			scan_p0(ip0, connected, conn_data, det, gpanels,
+			scan_p0(ip0, connected, conn_data, gpanels,
 			        di, min_dist, &num_ang, 0, NULL, NULL);
 		}
 
@@ -1563,7 +1612,7 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 		num_ang = 0;
 
 		for ( ip0=0; ip0<connected->rigid_groups[di]->n_panels; ip0++ ) {
-			scan_p0(ip0, connected, conn_data, det, gpanels,
+			scan_p0(ip0, connected, conn_data, gpanels,
 			        di, min_dist, &num_ang, 1, angles, stretches);
 		}
 
@@ -1660,7 +1709,7 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 static void draw_panel(struct image *image, cairo_t *cr,
                        cairo_matrix_t *basic_m, GdkPixbuf **pixbufs, int i)
 {
-	struct panel p = image->det->panels[i];
+	struct detgeom_panel p = image->det->panels[i];
 	int w = gdk_pixbuf_get_width(pixbufs[i]);
 	int h = gdk_pixbuf_get_height(pixbufs[i]);
 	cairo_matrix_t m;
@@ -1760,7 +1809,7 @@ static int save_data_to_png(char *filename, struct detector *det,
 	for ( i=0; i<det->n_panels; i++ ) {
 
 		int fs, ss;
-		struct panel *p;
+		struct detgeom_panel *p;
 
 		p = &det->panels[i];
 
@@ -1870,7 +1919,7 @@ static int save_stretch_to_png(char *filename, struct detector *det,
 
 		int fs, ss;
 		float val;
-		struct panel *p;
+		struct detgeom_panel *p;
 
 		p = connected->rigid_groups[di]->panels[ip];
 
@@ -1971,8 +2020,8 @@ int check_and_enforce_cspad_dist(struct geoptimiser_params *gparams,
 		double dist2;
                 double cnx2, cny2;
 
-		struct panel *ep = &det->panels[np];
-		struct panel *op = &det->panels[np+1];
+		struct detgeom_panel *ep = &det->panels[np];
+		struct detgeom_panel *op = &det->panels[np+1];
 
                 cnx2 = ep->cnx + 197.0*ep->fsx;
                 cny2 = ep->cny + 197.0*ep->fsy;
@@ -2049,11 +2098,11 @@ int check_and_enforce_agipd_dist(struct geoptimiser_params *gparams,
 		double dist2;
                 double cnx2, cny2;
 
-		struct panel *ep = &det->panels[np];
+		struct detgeom_panel *ep = &det->panels[np];
 
 		for ( npp=0; npp<8; npp++ ) {
 
-			struct panel *op = &det->panels[np+npp];
+			struct detgeom_panel *op = &det->panels[np+npp];
 
 	                cnx2 = ep->cnx + npp*dist_to_check*ep->ssx;
 	                cny2 = ep->cny + npp*dist_to_check*ep->ssy;
@@ -2216,7 +2265,8 @@ static void free_displ_lists(struct gpanel *gpanels, int n)
 
 static void recompute_panel_avg_displ(struct rg_collection *connected,
                                       struct connected_data *conn_data,
-                                      struct panel *p, struct gpanel *gp,
+                                      struct detgeom_panel *p,
+                                      struct gpanel *gp,
                                       int num_peaks_per_pixel,
                                       double sh_x, double sh_y)
 {
@@ -2257,7 +2307,7 @@ void recompute_avg_displ(struct rg_collection *connected,
 
 		for (ip=0; ip<connected->rigid_groups[di]->n_panels; ip++) {
 
-			struct panel *p;
+			struct detgeom_panel *p;
 			struct gpanel *gp;
 
 			p = connected->rigid_groups[di]->panels[ip];
@@ -2294,7 +2344,7 @@ int optimize_geometry(struct geoptimiser_params *gparams, Stream *st,
 	double stretch_coeff = 1.0;
 
 	struct connected_data *conn_data = NULL;
-	struct image *images;
+	struct image **images;
 	int n_images = 0;
 	UnitCell *avg_cell;
 	struct gpanel *gpanels;
@@ -2396,7 +2446,7 @@ int optimize_geometry(struct geoptimiser_params *gparams, Stream *st,
 		}
 	}
 
-	images = read_patterns_from_stream(st, det, &n_images);
+	images = read_patterns_from_stream(st, dtempl, &n_images);
 	if ( (n_images < 1) || (images == NULL) ) {
 		ERROR("Error reading stream file\n");
 		return 1;
@@ -2462,13 +2512,13 @@ int optimize_geometry(struct geoptimiser_params *gparams, Stream *st,
 		return 1;
 	}
 
-	if ( compute_pixel_displacements(images, n_images, gpanels, det,
+	if ( compute_pixel_displacements(images, n_images, gpanels,
 	                                 connected, gparams, clen_to_use,
 	                                 conn_data) ) return 1;
 
-	adjust_min_peaks_per_conn(connected, gpanels, det, gparams, conn_data);
+	adjust_min_peaks_per_conn(connected, gpanels, gparams, conn_data);
 
-	if ( compute_avg_displacements(det, connected, conn_data, gpanels, gparams) ) {
+	if ( compute_avg_displacements(connected, conn_data, gpanels, gparams) ) {
 		free(conn_data);
 		free(images);
 		return 1;
@@ -2545,7 +2595,7 @@ int optimize_geometry(struct geoptimiser_params *gparams, Stream *st,
 		                             stretch_coeff, gparams);
 	}
 
-	ret = compute_shift(connected, conn_data, det, gparams, gpanels);
+	ret = compute_shift(connected, conn_data, gparams, gpanels);
 	if ( ret != 0 ) {
 		free(conn_data);
 		return 1;
@@ -2620,13 +2670,16 @@ int main(int argc, char *argv[])
 	char *connected_coll_name = NULL;
 	Stream *st;
 	struct geoptimiser_params *gparams;
-	struct detector *det = NULL;
+	DataTemplate *dtempl;
 	struct rg_collection *quadrants;
 	struct rg_collection *connected;
-	struct beam_params beam;
 	char *geometry_filename = NULL;
 
 	gparams = malloc(sizeof(struct geoptimiser_params));
+	if ( gparams == NULL ) {
+		ERROR("Couldn't allocate params\n");
+		return 1;
+	}
 
 	gparams->outfile = NULL;
 	gparams->min_num_peaks_per_pix = 3;
@@ -2687,8 +2740,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 10 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'o' :
@@ -2782,7 +2837,7 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-	st = open_stream_for_read(infile);
+	st = stream_open_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
@@ -2791,31 +2846,32 @@ int main(int argc, char *argv[])
 	if ( geometry_filename == NULL ) {
 		const char *stgeom = stream_geometry_file(st);
 		if ( stgeom != NULL ) {
-			det = get_detector_geometry_from_string(stgeom, &beam, NULL);
+			dtempl = data_template_new_from_string(stgeom);
 		} else {
-			ERROR("No input geometry file given, and no geometry "
-			      "found in stream.\n");
+			ERROR("No geometry found in stream.  "
+			      "Try again with --geometry=<file>.\n");
 			return 1;
 		}
 	} else {
-		det = get_detector_geometry(geometry_filename, &beam);
+		dtempl = data_template_new_from_file(geometry_filename);
 		free(geometry_filename);
 	}
 
-	if ( det == NULL ) {
+	if ( dtempl == NULL ) {
 		ERROR("Failed to read initial detector geometry.\n");
 		return 1;
 	}
 
-	quadrants = find_rigid_group_collection_by_name(det, quadrant_coll_name);
+	quadrants = data_template_get_rigid_groups(dtempl,
+	                                           quadrant_coll_name);
 	if ( quadrants == NULL ) {
 		ERROR("Cannot find rigid group collection for quadrants: %s\n",
 		      quadrant_coll_name);
 		return 1;
 	}
 
-	connected = find_rigid_group_collection_by_name(det,
-	                                                connected_coll_name);
+	connected = data_template_get_rigid_groups(dtempl,
+	                                           connected_coll_name);
 	if ( connected == NULL ) {
 		ERROR("Cannot find rigid group collection for connected "
 		      "asics: %s\n", connected_coll_name);
@@ -2824,7 +2880,7 @@ int main(int argc, char *argv[])
 
 	ret_val = optimize_geometry(gparams, st, det, quadrants, connected);
 
-	close_stream(st);
+	stream_close(st);
 
 	return ret_val;
 }

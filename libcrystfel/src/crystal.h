@@ -30,11 +30,6 @@
 #ifndef CRYSTAL_H
 #define CRYSTAL_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include "cell.h"
 
 /**
@@ -56,6 +51,7 @@ extern "C" {
 
 extern Crystal *crystal_new(void);
 extern Crystal *crystal_copy(const Crystal *cryst);
+extern Crystal *crystal_copy_deep(const Crystal *cryst);
 extern void crystal_free(Crystal *cryst);
 
 extern UnitCell *crystal_get_cell(Crystal *cryst);

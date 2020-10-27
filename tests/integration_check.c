@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2016 Thomas White <taw@physics.org>
+ *   2013-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -26,21 +26,16 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include <stdlib.h>
 #include <stdio.h>
 
 #include <image.h>
 #include <utils.h>
+#include <cell.h>
+#include <cell-utils.h>
+#include <integration.h>
 
 #include "histogram.h"
-
-#include "../libcrystfel/src/integration.c"
-
 
 int main(int argc, char *argv[])
 {
@@ -54,7 +49,7 @@ int main(int argc, char *argv[])
 	RefList *list;
 	Reflection *refl;
 	UnitCell *cell;
-	struct intcontext ic;
+	struct intcontext *ic;
 	const int ir_inn = 2;
 	const int ir_mid = 4;
 	const int ir_out = 6;
@@ -73,30 +68,24 @@ int main(int argc, char *argv[])
 	}
 	fclose(fh);
 
-	image.beam = NULL;
 	image.lambda = ph_eV_to_lambda(9000.0);
 
-	image.det = calloc(1, sizeof(struct detector));
-	image.det->n_panels = 1;
-	image.det->panels = calloc(1, sizeof(struct panel));
+	image.detgeom = calloc(1, sizeof(struct detgeom));
+	image.detgeom->n_panels = 1;
+	image.detgeom->panels = calloc(1, sizeof(struct detgeom_panel));
 
-	image.det->panels[0].w = w;
-	image.det->panels[0].h = h;
-	image.det->panels[0].fsx = 1.0;
-	image.det->panels[0].fsy = 0.0;
-	image.det->panels[0].ssx = 0.0;
-	image.det->panels[0].ssy = 1.0;
-	image.det->panels[0].xfs = 1.0;
-	image.det->panels[0].yfs = 0.0;
-	image.det->panels[0].xss = 0.0;
-	image.det->panels[0].yss = 1.0;
-	image.det->panels[0].cnx = -w/2;
-	image.det->panels[0].cny = -h/2;
-	image.det->panels[0].clen = 60.0e-3;
-	image.det->panels[0].res = 100000;  /* 10 px per mm */
-	image.det->panels[0].adu_per_eV = NAN;
-	image.det->panels[0].adu_per_photon = 10;
-	image.det->panels[0].max_adu = +INFINITY;  /* No cutoff */
+	image.detgeom->panels[0].w = w;
+	image.detgeom->panels[0].h = h;
+	image.detgeom->panels[0].fsx = 1.0;
+	image.detgeom->panels[0].fsy = 0.0;
+	image.detgeom->panels[0].ssx = 0.0;
+	image.detgeom->panels[0].ssy = 1.0;
+	image.detgeom->panels[0].cnx = -w/2;
+	image.detgeom->panels[0].cny = -h/2;
+	image.detgeom->panels[0].cnz = 60.0e-3 / 100e-6;
+	image.detgeom->panels[0].pixel_pitch = 100e-6;  /* 10 px per mm */
+	image.detgeom->panels[0].adu_per_photon = 10;
+	image.detgeom->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
 	image.dp = malloc(sizeof(float *));
 	image.dp[0] = malloc(w*h*sizeof(float));
@@ -124,7 +113,7 @@ int main(int argc, char *argv[])
 		list = reflist_new();
 		refl = add_refl(list, 0, 0, 0);
 		set_detector_pos(refl, 64, 64);
-		set_panel(refl, &image.det->panels[0]);
+		set_panel_number(refl, 0);
 		cell = cell_new();
 		cell_set_lattice_type(cell, L_CUBIC);
 		cell_set_centering(cell, 'P');
@@ -132,25 +121,14 @@ int main(int argc, char *argv[])
 		                    deg2rad(90.0), deg2rad(90.0), deg2rad(90.0));
 		cell = cell_rotate(cell, random_quaternion(rng));
 
-		ic.halfw = ir_out;
-		ic.image = &image;
-		ic.k = 1.0/image.lambda;
-		ic.n_saturated = 0;
-		ic.n_implausible = 0;
-		ic.cell = cell;
-		ic.ir_inn = ir_inn;
-		ic.ir_mid = ir_mid;
-		ic.ir_out = ir_out;
-		ic.meth = INTEGRATION_RINGS;
-		ic.int_diag = INTDIAG_NONE;
-		ic.masks = NULL;
-		if ( init_intcontext(&ic) ) {
+		ic = intcontext_new(&image, cell, INTEGRATION_RINGS,
+		                    ir_inn, ir_mid, ir_out, NULL);
+		if ( ic == NULL ) {
 			ERROR("Failed to initialise integration.\n");
 			return 1;
 		}
-		setup_ring_masks(&ic, ir_inn, ir_mid, ir_out);
 
-		integrate_rings_once(refl, &image, &ic, cell, 0);
+		integrate_rings_once(refl, ic, 0);
 
 		cell_free(cell);
 
@@ -163,9 +141,7 @@ int main(int argc, char *argv[])
 	histogram_show(hi);
 
 	histogram_free(hi);
-	free(image.beam);
-	free(image.det->panels);
-	free(image.det);
+	detgeom_free(image.detgeom);
 	free(image.dp[0]);
 	free(image.dp);
 

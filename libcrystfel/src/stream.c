@@ -8,7 +8,7 @@
  * Copyright © 2012 Richard Kirian
  *
  * Authors:
- *   2010-2019 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2014-2016 Valerio Mariani
  *   2011      Richard Kirian
  *   2011      Andrew Aquila
@@ -51,6 +51,10 @@
 #include "stream.h"
 #include "reflist.h"
 #include "reflist-utils.h"
+#include "datatemplate.h"
+#include "detgeom.h"
+#include "libcrystfel-version.h"
+
 
 /** \file stream.h */
 
@@ -69,15 +73,20 @@ struct _stream
 	char *audit_info;
 	char *geometry_file;
 
+	const DataTemplate *dtempl;
+
 	long long int ln;
 
 	int old_indexers;  /* True if the stream reader encountered a deprecated
 	                    * indexing method */
 
 	int in_chunk;  /* True if a chunk start marker has been "accidentally"
-	                * encountered, so read_chunk() should assume a chunk is
+	                * encountered, so stream_read_chunk() should assume a chunk is
 	                * already in progress instead of looking for another
 	                * marker */
+
+	long *chunk_offsets;
+	int n_chunks;
 };
 
 
@@ -87,211 +96,136 @@ int stream_has_old_indexers(Stream *st)
 }
 
 
-static int read_peaks(Stream *st, struct image *image)
+static ImageFeatureList *read_peaks(Stream *st,
+                                    struct image *image)
 {
 	char *rval = NULL;
 	int first = 1;
+	ImageFeatureList *features;
 
-	image->features = image_feature_list_new();
+	features = image_feature_list_new();
 
 	do {
 
 		char line[1024];
 		float x, y, d, intensity;
-		int r;
-		struct panel *p = NULL;
-		float add_x, add_y;
+		int r, exp_n;
+		char panel_name[1024];
 
 		rval = fgets(line, 1023, st->fh);
 		st->ln++;
-		if ( rval == NULL ) continue;
+		if ( rval == NULL ) {
+			image_feature_list_free(features);
+			return NULL;
+		}
 		chomp(line);
 
-		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
-
-		r = sscanf(line, "%f %f %f %f", &x, &y, &d, &intensity);
-		if ( (r != 4) && (!first) ) {
-			ERROR("Failed to parse peak list line.\n");
-			ERROR("The failed line was: '%s'\n", line);
-			return 1;
+		if ( strcmp(line, STREAM_PEAK_LIST_END_MARKER) == 0 ) {
+			return features;
 		}
 
-		first = 0;
-		if ( r == 4 ) {
+		if ( first ) {
+			first = 0;
+			continue;
+		}
 
-			if ( image->det != NULL ) {
+		if ( AT_LEAST_VERSION(st, 2, 3) ) {
+			r = sscanf(line, "%f %f %f %f %s",
+			           &x, &y, &d, &intensity, panel_name);
+			exp_n = 5;
+		} else {
+			r = sscanf(line, "%f %f %f %f",
+			           &x, &y, &d, &intensity);
+			exp_n = 4;
+		}
 
-				p = find_orig_panel(image->det, x, y);
-				if ( p == NULL ) {
-					ERROR("Panel not found\n");
-					return 1;
-				}
+		if ( r != exp_n ) {
+			ERROR("Failed to parse peak list line.\n");
+			ERROR("The failed line was: '%s'\n", line);
+			image_feature_list_free(features);
+			return NULL;
+		}
 
-				add_x = x-p->orig_min_fs;
-				add_y = y-p->orig_min_ss;
+		if ( (panel_name[0] != '\0') && (st->dtempl != NULL) ) {
 
-				image_add_feature(image->features, add_x, add_y,
-				                  p, image, intensity, NULL);
+			int pn;
 
+			if ( data_template_panel_name_to_number(st->dtempl,
+			                                        panel_name,
+			                                        &pn) )
+			{
+				ERROR("No such panel '%s'\n",
+				      panel_name);
 			} else {
 
-				image_add_feature(image->features, x, y,
-				                  p, image, intensity, NULL);
-			}
-		}
+				data_template_file_to_panel_coords(st->dtempl,
+				                                   &x, &y, &pn);
 
-	} while ( rval != NULL );
+				image_add_feature(features, x, y,
+				                  pn, image, intensity,
+				                  NULL);
 
-	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
-	return 1;
-}
-
-
-static int read_peaks_2_3(Stream *st, struct image *image)
-{
-	char *rval = NULL;
-	int first = 1;
-
-	image->features = image_feature_list_new();
-
-	do {
-
-		char line[1024];
-		char pn[32];
-		float x, y, d, intensity;
-		int r;
-		struct panel *p = NULL;
-		float add_x, add_y;
-
-		rval = fgets(line, 1023, st->fh);
-		st->ln++;
-		if ( rval == NULL ) continue;
-		chomp(line);
-
-		if ( strcmp(line, PEAK_LIST_END_MARKER) == 0 ) return 0;
-
-		r = sscanf(line, "%f %f %f %f %s", &x, &y, &d, &intensity, pn);
-		if ( (r != 5) && (!first) ) {
-			ERROR("Failed to parse peak list line.\n");
-			ERROR("The failed line was: '%s'\n", line);
-			return 1;
-		}
-
-		first = 0;
-
-		if ( r == 5 ) {
-
-			p = find_panel_by_name(image->det, pn);
-			if ( p == NULL ) {
-				ERROR("Panel not found: %s\n", pn);
-				return 1;
 			}
 
-			add_x = x-p->orig_min_fs;
-			add_y = y-p->orig_min_ss;
+		} else {
 
-			image_add_feature(image->features, add_x, add_y, p,
+			/* Either it's an old format stream (in which
+			 * case the data is probably "slabby", so no
+			 * coordinate conversion is needed), or
+			 * the caller isn't interested in panel
+			 * locations */
+			image_add_feature(features, x, y, 0,
 			                  image, intensity, NULL);
 
 		}
 
 	} while ( rval != NULL );
 
-	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
-	return 1;
+	return features;
 }
 
 
-static int write_peaks(struct image *image, FILE *ofh)
+static int write_peaks(const struct image *image,
+                       const DataTemplate *dtempl, FILE *ofh)
 {
 	int i;
 
-	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
-	fprintf(ofh, "  fs/px   ss/px  (1/d)/nm^-1   Intensity\n");
-
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
-
-		struct imagefeature *f;
-		struct rvec r;
-		double q;
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		r = get_q_for_panel(f->p, f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
-		q = modulus(r.u, r.v, r.w);
-
-		if ( image->det != NULL ) {
-
-			struct panel *p;
-			double write_fs, write_ss;
-
-			p = find_orig_panel(image->det, f->fs, f->ss);
-			if ( p == NULL ) {
-				ERROR("Panel not found\n");
-				return 1;
-			}
-
-			/* Convert coordinates to match arrangement of panels in
-			 * HDF5 file */
-			write_fs = f->fs + p->orig_min_fs;
-			write_ss = f->ss + p->orig_min_ss;
-
-			fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
-			        write_fs, write_ss, q/1.0e9, f->intensity);
-
-		} else {
-
-			fprintf(ofh, "%7.2f %7.2f   %10.2f  %10.2f\n",
-			        f->fs, f->ss, q/1.0e9, f->intensity);
-
-		}
-
-	}
-
-	fprintf(ofh, PEAK_LIST_END_MARKER"\n");
-	return 0;
-}
-
-
-static int write_peaks_2_3(struct image *image, FILE *ofh)
-{
-	int i;
-
-	fprintf(ofh, PEAK_LIST_START_MARKER"\n");
+	fprintf(ofh, STREAM_PEAK_LIST_START_MARKER"\n");
 	fprintf(ofh, "  fs/px   ss/px (1/d)/nm^-1   Intensity  Panel\n");
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
-		struct rvec r;
+		double r[3];
 		double q;
-		double write_fs, write_ss;
+		float write_fs, write_ss;
+		struct detgeom_panel *p;
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
-		r = get_q_for_panel(f->p, f->fs, f->ss,
-		                    NULL, 1.0/image->lambda);
-		q = modulus(r.u, r.v, r.w);
+		p = &image->detgeom->panels[f->pn];
+		detgeom_transform_coords(p, f->fs, f->ss,
+		                         image->lambda, r);
+		q = modulus(r[0], r[1], r[2]);
 
-		/* Convert coordinates to match arrangement of panels in HDF5
-		 * file */
-		write_fs = f->fs + f->p->orig_min_fs;
-		write_ss = f->ss + f->p->orig_min_ss;
+		write_fs = f->fs;
+		write_ss = f->ss;
+		data_template_panel_to_file_coords(dtempl, f->pn,
+		                                   &write_fs, &write_ss);
 
 		fprintf(ofh, "%7.2f %7.2f %10.2f  %10.2f   %s\n",
-		        write_fs, write_ss, q/1.0e9, f->intensity, f->p->name);
+		        write_fs, write_ss, q/1.0e9, f->intensity,
+		        data_template_panel_number_to_name(dtempl, f->pn));
 
 	}
 
-	fprintf(ofh, PEAK_LIST_END_MARKER"\n");
+	fprintf(ofh, STREAM_PEAK_LIST_END_MARKER"\n");
 	return 0;
 }
 
 
-static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
+static RefList *read_stream_reflections_2_3(Stream *st)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -317,7 +251,7 @@ static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
 		if ( rval == NULL ) continue;
 		chomp(line);
 
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
+		if ( strcmp(line, STREAM_REFLECTION_END_MARKER) == 0 ) return out;
 
 		r = sscanf(line, "%i %i %i %f %f %f %f %f %f %s",
 		           &h, &k, &l, &intensity, &sigma, &pk, &bg,
@@ -332,24 +266,19 @@ static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
 
 		if ( r == 10 ) {
 
-			struct panel *p;
-
 			refl = add_refl(out, h, k, l);
 			if ( refl == NULL ) {
 				ERROR("Failed to add reflection\n");
 				return NULL;
 			}
 			set_intensity(refl, intensity);
-			if ( det != NULL ) {
-				double write_fs, write_ss;
-				p = find_panel_by_name(det,pn);
-				if ( p == NULL ) {
-					ERROR("Couldn't find panel '%s'\n", pn);
+			if ( st->dtempl != NULL ) {
+				int pn;
+				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
+					ERROR("Failed to convert\n");
 				} else {
-					write_fs = fs - p->orig_min_fs;
-					write_ss = ss - p->orig_min_ss;
-					set_detector_pos(refl, write_fs, write_ss);
-					set_panel(refl, p);
+					set_detector_pos(refl, fs, ss);
+					set_panel_number(refl, pn);
 				}
 			}
 			set_esd_intensity(refl, sigma);
@@ -361,12 +290,12 @@ static RefList *read_stream_reflections_2_3(Stream *st, struct detector *det)
 
 	} while ( rval != NULL );
 
-	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	/* Got read error of some kind before finding STREAM_PEAK_LIST_END_MARKER */
 	return NULL;
 }
 
 
-static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
+static RefList *read_stream_reflections_2_1(Stream *st)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -393,7 +322,7 @@ static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
 		if ( rval == NULL ) continue;
 		chomp(line);
 
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
+		if ( strcmp(line, STREAM_REFLECTION_END_MARKER) == 0 ) return out;
 
 		r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
 		                  &h, &k, &l, &intensity, phs, &sigma, &cts,
@@ -416,19 +345,14 @@ static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
 			}
 			set_intensity(refl, intensity);
 
-			if ( det != NULL ) {
+			if ( st->dtempl != NULL ) {
 
-				double write_fs, write_ss;
-				struct panel *p;
-
-				p = find_orig_panel(det, fs, ss);
-				if ( p == NULL ) {
-					ERROR("No panel at %.2f,%.2f\n",
-					      fs, ss);
+				int pn;
+				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
+					ERROR("Failed to convert\n");
 				} else {
-					write_fs = fs - p->orig_min_fs;
-					write_ss = ss - p->orig_min_ss;
-					set_detector_pos(refl, write_fs, write_ss);
+					set_detector_pos(refl, fs, ss);
+					set_panel_number(refl, pn);
 				}
 
 			} else {
@@ -447,12 +371,12 @@ static RefList *read_stream_reflections_2_1(Stream *st, struct detector *det)
 
 	} while ( rval != NULL );
 
-	/* Got read error of some kind before finding PEAK_LIST_END_MARKER */
+	/* Got read error of some kind before finding STREAM_PEAK_LIST_END_MARKER */
 	return NULL;
 }
 
 
-static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
+static RefList *read_stream_reflections_2_2(Stream *st)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -473,7 +397,7 @@ static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
 		if ( rval == NULL ) continue;
 		chomp(line);
 
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) return out;
+		if ( strcmp(line, STREAM_REFLECTION_END_MARKER) == 0 ) return out;
 
 		r = sscanf(line, "%i %i %i %f %f %f %f %f %f",
 		           &h, &k, &l, &intensity, &sigma, &pk, &bg, &fs, &ss);
@@ -492,19 +416,17 @@ static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
 			}
 			set_intensity(refl, intensity);
 
-			if ( det != NULL ) {
+			if ( st->dtempl != NULL ) {
 
-				double write_fs, write_ss;
-				struct panel *p;
+				int pn;
 
-				p = find_orig_panel(det, fs, ss);
-				if ( p == NULL ) {
-					ERROR("No panel at %.2f,%.2f\n",
-					      fs, ss);
+				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
+					ERROR("Failed to convert to "
+					      "panel-relative coordinates: "
+					      "%i,%i\n", fs, ss);
 				} else {
-					write_fs = fs - p->orig_min_fs;
-					write_ss = ss - p->orig_min_ss;
-					set_detector_pos(refl, write_fs, write_ss);
+					set_detector_pos(refl, fs, ss);
+					set_panel_number(refl, pn);
 				}
 
 			} else {
@@ -523,144 +445,13 @@ static RefList *read_stream_reflections_2_2(Stream *st, struct detector *det)
 
 	} while ( rval != NULL );
 
-	/* Got read error of some kind before finding REFLECTION_END_MARKER */
+	/* Got read error of some kind before finding STREAM_REFLECTION_END_MARKER */
 	return NULL;
 }
 
 
-static int write_stream_reflections_2_1(FILE *fh, RefList *list,
-                                        struct image *image)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	fprintf(fh, "  h   k   l          I    phase   sigma(I) "
-			 " counts  fs/px  ss/px\n");
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-
-		signed int h, k, l;
-		double intensity, esd_i, ph;
-		int red;
-		double fs, ss;
-		char phs[16];
-		int have_phase;
-
-		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		intensity = get_intensity(refl);
-		esd_i = get_esd_intensity(refl);
-		red = get_redundancy(refl);
-		ph = get_phase(refl, &have_phase);
-
-		/* Reflections with redundancy = 0 are not written */
-		if ( red == 0 ) continue;
-
-		if ( have_phase ) {
-			snprintf(phs, 16, "%8.2f", rad2deg(ph));
-		} else {
-			strncpy(phs, "       -", 15);
-		}
-
-		if ( image->det != NULL ) {
-
-			struct panel *p;
-			double write_fs, write_ss;
-
-			p = find_orig_panel(image->det, fs, ss);
-			if ( p == NULL ) {
-				ERROR("Panel not found\n");
-				return 1;
-			}
-
-			/* Convert coordinates to match arrangement of panels
-			 * in HDF5 file */
-			write_fs = fs + p->orig_min_fs;
-			write_ss = ss + p->orig_min_ss;
-
-			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i "
-			            "%6.1f %6.1f\n",
-			             h, k, l, intensity, phs, esd_i, red,
-				     write_fs, write_ss);
-
-		} else {
-
-			fprintf(fh, "%3i %3i %3i %10.2f %s %10.2f %7i "
-			            "%6.1f %6.1f\n",
-			            h, k, l, intensity, phs, esd_i, red,
-				    fs, ss);
-
-		}
-	}
-	return 0;
-}
-
-
-static int write_stream_reflections_2_2(FILE *fh, RefList *list,
-                                        struct image *image)
-{
-	Reflection *refl;
-	RefListIterator *iter;
-
-	fprintf(fh, "   h    k    l          I   sigma(I)       "
-	            "peak background  fs/px  ss/px\n");
-
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-
-		signed int h, k, l;
-		double intensity, esd_i, bg, pk;
-		double fs, ss;
-
-		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		intensity = get_intensity(refl);
-		esd_i = get_esd_intensity(refl);
-		pk = get_peak(refl);
-		bg = get_mean_bg(refl);
-
-		/* Reflections with redundancy = 0 are not written */
-		if ( get_redundancy(refl) == 0 ) continue;
-
-		if ( image->det != NULL ) {
-
-			struct panel *p;
-			double write_fs, write_ss;
-
-			p = find_orig_panel(image->det, fs, ss);
-			if ( p == NULL ) {
-				ERROR("Panel not found\n");
-				return 1;
-			}
-
-			/* Convert coordinates to match arrangement of panels in HDF5
-			 * file */
-			write_fs = fs + p->orig_min_fs;
-			write_ss = ss + p->orig_min_ss;
-
-			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
-			            " %6.1f %6.1f\n",
-			        h, k, l, intensity, esd_i, pk, bg, write_fs,
-			        write_ss);
-
-		} else {
-
-			fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f"
-			            " %6.1f %6.1f\n",
-			        h, k, l, intensity, esd_i, pk, bg, fs, ss);
-		}
-	}
-	return 0;
-}
-
-
-static int write_stream_reflections_2_3(FILE *fh, RefList *list,
-                                        struct image *image)
+static int write_stream_reflections(FILE *fh, RefList *list,
+                                    const DataTemplate *dtempl)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -675,13 +466,14 @@ static int write_stream_reflections_2_3(FILE *fh, RefList *list,
 
 		signed int h, k, l;
 		double intensity, esd_i, pk, bg;
-		double fs, ss;
-		double write_fs, write_ss;
-		struct panel *p;
+		double dfs, dss;
+		float fs, ss;
+		int pn;
 
 		get_indices(refl, &h, &k, &l);
-		get_detector_pos(refl, &fs, &ss);
-		p = get_panel(refl);
+		get_detector_pos(refl, &dfs, &dss);
+		fs = dfs;  ss = dss;
+		pn = get_panel_number(refl);
 		intensity = get_intensity(refl);
 		esd_i = get_esd_intensity(refl);
 		pk = get_peak(refl);
@@ -690,14 +482,13 @@ static int write_stream_reflections_2_3(FILE *fh, RefList *list,
 		/* Reflections with redundancy = 0 are not written */
 		if ( get_redundancy(refl) == 0 ) continue;
 
-		write_fs = fs+p->orig_min_fs;
-		write_ss = ss+p->orig_min_ss;
+		data_template_panel_to_file_coords(dtempl, pn,
+		                                   &fs, &ss);
 
-		fprintf(fh,
-                          "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f "
-                          "%6.1f %6.1f %s\n",
-                           h, k, l, intensity, esd_i, pk, bg,
-                           write_fs, write_ss, p->name);
+		fprintf(fh, "%4i %4i %4i %10.2f %10.2f %10.2f %10.2f "
+		        "%6.1f %6.1f %s\n",
+		        h, k, l, intensity, esd_i, pk, bg,
+		        fs, ss, data_template_panel_number_to_name(dtempl, pn));
 
 	}
 	return 0;
@@ -721,7 +512,8 @@ static int num_integrated_reflections(RefList *list)
 }
 
 
-static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
+static int write_crystal(Stream *st, Crystal *cr,
+                         int include_reflections)
 {
 	UnitCell *cell;
 	RefList *reflist;
@@ -733,7 +525,7 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 	double det_shift_x, det_shift_y;
 	int ret = 0;
 
-	fprintf(st->fh, CRYSTAL_START_MARKER"\n");
+	fprintf(st->fh, STREAM_CRYSTAL_START_MARKER"\n");
 
 	cell = crystal_get_cell(cr);
 	assert(cell != NULL);
@@ -792,27 +584,10 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 
 		if ( reflist != NULL ) {
 
-			struct image *image;
-
-			image = crystal_get_image(cr);
-
-			fprintf(st->fh, REFLECTION_START_MARKER"\n");
-			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				ret = write_stream_reflections_2_3(st->fh,
-				                                   reflist,
-				                                   image);
-			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				ret = write_stream_reflections_2_2(st->fh,
-			                                           reflist,
-			                                           image);
-			} else {
-				/* This function writes like a normal reflection
-				 * list was written in stream 2.1 */
-				ret = write_stream_reflections_2_1(st->fh,
-				                                   reflist,
-				                                   image);
-			}
-			fprintf(st->fh, REFLECTION_END_MARKER"\n");
+			fprintf(st->fh, STREAM_REFLECTION_START_MARKER"\n");
+			ret = write_stream_reflections(st->fh, reflist,
+			                               st->dtempl);
+			fprintf(st->fh, STREAM_REFLECTION_END_MARKER"\n");
 
 		} else {
 
@@ -821,7 +596,7 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 		}
 	}
 
-	fprintf(st->fh, CRYSTAL_END_MARKER"\n");
+	fprintf(st->fh, STREAM_CRYSTAL_END_MARKER"\n");
 
 	return ret;
 }
@@ -830,29 +605,23 @@ static int write_crystal(Stream *st, Crystal *cr, int include_reflections)
 /**
  * \param st A \ref Stream
  * \param i An \ref image structure
- * \param imfile A \ref imagefile structure
- * \param include_peaks Whether to include peak search results in stream
- * \param include_reflections Whether to include integration results in stream
- * \param ev A \ref event strucutre
+ * \param srf A \ref StreamFlags enum saying what to write
  *
  * Writes a new chunk to \p st.
  *
  * \returns non-zero on error.
  */
-int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
-                int include_peaks, int include_reflections, struct event *ev)
+int stream_write_chunk(Stream *st, const struct image *i,
+                       StreamFlags srf)
 {
 	int j;
 	char *indexer;
 	int ret = 0;
 
-	fprintf(st->fh, CHUNK_START_MARKER"\n");
+	fprintf(st->fh, STREAM_CHUNK_START_MARKER"\n");
 
 	fprintf(st->fh, "Image filename: %s\n", i->filename);
-	if ( i->event != NULL ) {
-		fprintf(st->fh, "Event: %s\n", get_event_string(i->event));
-	}
-
+	fprintf(st->fh, "Event: %s\n", i->ev);
 	fprintf(st->fh, "Image serial number: %i\n", i->serial);
 
 	fprintf(st->fh, "hit = %i\n", i->hit);
@@ -869,40 +638,39 @@ int write_chunk(Stream *st, struct image *i, struct imagefile *imfile,
 	fprintf(st->fh, "beam_divergence = %.2e rad\n", i->div);
 	fprintf(st->fh, "beam_bandwidth = %.2e (fraction)\n", i->bw);
 
-	imagefile_copy_fields(imfile, i->copyme, st->fh, ev);
+	/* FIXME: Better way of doing this */
+	//imagefile_copy_fields(imfile, i->copyme, st->fh, ev);
 
-	if ( i->det != NULL ) {
+	if ( i->detgeom != NULL ) {
 
 		int j;
 		double tclen = 0.0;
 
-		for ( j=0; j<i->det->n_panels; j++ ) {
-			tclen += i->det->panels[j].clen;
+		for ( j=0; j<i->detgeom->n_panels; j++ ) {
+			tclen += i->detgeom->panels[j].cnz
+				* i->detgeom->panels[j].pixel_pitch;
 		}
 		fprintf(st->fh, "average_camera_length = %f m\n",
-		        tclen / i->det->n_panels);
+		        tclen / i->detgeom->n_panels);
 
 	}
 
 	fprintf(st->fh, "num_peaks = %i\n", image_feature_count(i->features));
 	fprintf(st->fh, "peak_resolution = %f nm^-1 or %f A\n",
 	        i->peak_resolution/1e9, 1e10/i->peak_resolution);
-	if ( include_peaks ) {
-		if ( AT_LEAST_VERSION(st, 2, 3) ) {
-			ret = write_peaks_2_3(i, st->fh);
-		} else {
-			ret = write_peaks(i, st->fh);
-		}
+	if ( srf & STREAM_PEAKS ) {
+		ret = write_peaks(i, st->dtempl, st->fh);
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {
-		if ( crystal_get_user_flag(i->crystals[j]) == 0 ) {
-			ret = write_crystal(st, i->crystals[j],
-			                    include_reflections);
+		if ( crystal_get_user_flag(i->crystals[j]) ) {
+			continue;
 		}
+		ret = write_crystal(st, i->crystals[j],
+		                    srf & STREAM_REFLECTIONS);
 	}
 
-	fprintf(st->fh, CHUNK_END_MARKER"\n");
+	fprintf(st->fh, STREAM_CHUNK_END_MARKER"\n");
 
 	fflush(st->fh);
 
@@ -933,13 +701,14 @@ static int find_start_of_chunk(Stream *st)
 
 		chomp(line);
 
-	} while ( strcmp(line, CHUNK_START_MARKER) != 0 );
+	} while ( strcmp(line, STREAM_CHUNK_START_MARKER) != 0 );
 
 	return 0;
 }
 
 
-static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
+static void read_crystal(Stream *st, struct image *image,
+                         StreamFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
@@ -980,29 +749,25 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 		if ( rval == NULL ) break;
 
 		chomp(line);
-		if ( (srf & STREAM_READ_UNITCELL)
-		  && (sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3) )
+		if ( sscanf(line, "astar = %f %f %f", &u, &v, &w) == 3 )
 		{
 			as.u = u*1e9;  as.v = v*1e9;  as.w = w*1e9;
 			have_as = 1;
 		}
 
-		if ( (srf & STREAM_READ_UNITCELL)
-		  && (sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3) )
+		if ( sscanf(line, "bstar = %f %f %f", &u, &v, &w) == 3 )
 		{
 			bs.u = u*1e9;  bs.v = v*1e9;  bs.w = w*1e9;
 			have_bs = 1;
 		}
 
-		if ( (srf & STREAM_READ_UNITCELL)
-		  && (sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3) )
+		if ( sscanf(line, "cstar = %f %f %f", &u, &v, &w) == 3 )
 		{
 			cs.u = u*1e9;  cs.v = v*1e9;  cs.w = w*1e9;
 			have_cs = 1;
 		}
 
-		if ( (srf & STREAM_READ_UNITCELL)
-		  && (sscanf(line, "centering = %c", &c) == 1) )
+		if ( sscanf(line, "centering = %c", &c) == 1 )
 		{
 			if ( !have_cen ) {
 				centering = c;
@@ -1013,8 +778,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			}
 		}
 
-		if ( (srf & STREAM_READ_UNITCELL)
-		  && (sscanf(line, "unique_axis = %c", &c) == 1) )
+		if ( sscanf(line, "unique_axis = %c", &c) == 1 )
 		{
 			if ( !have_ua ) {
 				unique_axis = c;
@@ -1025,8 +789,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			}
 		}
 
-		if ( (srf & STREAM_READ_UNITCELL)
-		  && (strncmp(line, "lattice_type = ", 15) == 0) )
+		if ( strncmp(line, "lattice_type = ", 15) == 0 )
 		{
 			if ( !have_latt ) {
 				lattice_type = lattice_from_str(line+15);
@@ -1057,8 +820,8 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 		}
 
 
-		if ( (strcmp(line, REFLECTION_START_MARKER) == 0)
-		  && (srf & STREAM_READ_REFLECTIONS) )
+		if ( (strcmp(line, STREAM_REFLECTION_START_MARKER) == 0)
+		  && (srf & STREAM_REFLECTIONS) )
 		{
 
 			RefList *reflist;
@@ -1066,20 +829,16 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 			/* The reflection list format in the stream diverges
 			 * after 2.2 */
 			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				reflist = read_stream_reflections_2_3(st,
-                                                      image->det);
+				reflist = read_stream_reflections_2_3(st);
 			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				reflist = read_stream_reflections_2_2(st,
-				          image->det);
+				reflist = read_stream_reflections_2_2(st);
 			} else {
-				reflist = read_stream_reflections_2_1(st,
-				          image->det);
+				reflist = read_stream_reflections_2_1(st);
 			}
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				ERROR("Filename = %s\n", image->filename);
-				ERROR("Event = %s\n",
-				      get_event_string(image->event));
+				ERROR("Event = %s\n", image->ev);
 				break;
 			}
 
@@ -1087,7 +846,7 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 
 		}
 
-		if ( strcmp(line, CRYSTAL_END_MARKER) == 0 ) break;
+		if ( strcmp(line, STREAM_CRYSTAL_END_MARKER) == 0 ) break;
 
 	} while ( 1 );
 
@@ -1139,77 +898,21 @@ static void read_crystal(Stream *st, struct image *image, StreamReadFlags srf)
 }
 
 
-void free_stuff_from_stream(struct stuff_from_stream *sfs)
-{
-	int i;
-	if ( sfs == NULL ) return;
-	for ( i=0; i<sfs->n_fields; i++ ) {
-		free(sfs->fields[i]);
-	}
-	free(sfs->fields);
-	free(sfs);
-}
-
-
-static int read_and_store_field(struct image *image, const char *line)
-{
-	char **new_fields;
-	char *nf;
-
-	if ( image->stuff_from_stream == NULL ) {
-		image->stuff_from_stream =
-		       malloc(sizeof(struct stuff_from_stream));
-		if ( image->stuff_from_stream == NULL) {
-			ERROR("Failed reading entries from stream\n");
-			return 1;
-		}
-		image->stuff_from_stream->fields = NULL;
-		image->stuff_from_stream->n_fields = 0;
-	}
-
-	new_fields = realloc(image->stuff_from_stream->fields,
-			     (1+image->stuff_from_stream->n_fields)*
-			     sizeof(char *));
-	if ( new_fields == NULL ) {
-		ERROR("Failed reading entries from stream\n");
-		return 1;
-	}
-	image->stuff_from_stream->fields = new_fields;
-
-	nf = strdup(line);
-	if ( nf == NULL ) {
-		ERROR("Failed to allocate field from stream\n");
-		return 1;
-	}
-	image->stuff_from_stream->fields[image->stuff_from_stream->n_fields] = nf;
-	image->stuff_from_stream->n_fields++;
-
-	return 0;
-}
-
-
 /**
- * Read the next chunk from a stream and fill in 'image'
+ * Read the next chunk from a stream and return an image structure
  */
-int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
+struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 {
 	char line[1024];
 	char *rval = NULL;
 	int have_filename = 0;
 	int have_ev = 0;
+	struct image *image;
 
-	if ( find_start_of_chunk(st) ) return 1;
+	if ( find_start_of_chunk(st) ) return NULL;
 
-	image->lambda = -1.0;
-	image->features = NULL;
-	image->crystals = NULL;
-	image->n_crystals = 0;
-	image->event = NULL;
-	image->stuff_from_stream = NULL;
-
-	if ( (srf & STREAM_READ_REFLECTIONS) || (srf & STREAM_READ_UNITCELL) ) {
-		srf |= STREAM_READ_CRYSTALS;
-	}
+	image = image_new();
+	if ( image == NULL ) return NULL;
 
 	do {
 		int ser;
@@ -1229,7 +932,7 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		}
 
 		if ( strncmp(line, "Event: ", 7) == 0 ) {
-			image->event = get_event_from_event_string(line+7);
+			image->ev = strdup(line+7);
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {
@@ -1260,70 +963,46 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 			image->serial = ser;
 		}
 
-		if ( strncmp(line, "camera_length_", 14) == 0 ) {
-			if ( image->det != NULL ) {
 
-				int k;
-				char name[1024];
-				struct panel *p;
+		if ( (srf & STREAM_PEAKS)
+		    && strcmp(line, STREAM_PEAK_LIST_START_MARKER) == 0 ) {
 
-				for ( k=0; k<strlen(line)-14; k++ ) {
-					char ch = line[k+14];
-					name[k] = ch;
-					if ( (ch == ' ') || (ch == '=') ) {
-						name[k] = '\0';
-						break;
-					}
-				}
+			ImageFeatureList *peaks;
+			peaks = read_peaks(st, image);
 
-				p = find_panel_by_name(image->det, name);
-				if ( p == NULL ) {
-					ERROR("No panel '%s'\n", name);
-				} else {
-					p->clen = atof(line+14+k+3);
-				}
-
-			}
-		}
-
-		if ( strstr(line, " = ") != NULL ) {
-
-			int fail;
-
-			fail = read_and_store_field(image, line);
-			if ( fail ) {
-				ERROR("Failed to read fields from stream.\n");
-				return 1;
-			}
-		}
-
-		if ( (srf & STREAM_READ_PEAKS)
-		    && strcmp(line, PEAK_LIST_START_MARKER) == 0 ) {
-
-			int fail;
-
-			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				fail = read_peaks_2_3(st, image);
-			} else {
-				fail = read_peaks(st, image);
-			}
-			if ( fail ) {
+			if ( peaks == NULL ) {
 				ERROR("Failed while reading peaks\n");
-				return 1;
+				image_free(image);
+				return NULL;
 			}
+
+			image->features = peaks;
+
+
 		}
 
-		if ( (srf & STREAM_READ_CRYSTALS)
-		  && (strcmp(line, CRYSTAL_START_MARKER) == 0) ) {
+		if ( strcmp(line, STREAM_CRYSTAL_START_MARKER) == 0 ) {
 			read_crystal(st, image, srf);
 		}
 
 		/* A chunk must have at least a filename and a wavelength,
 		 * otherwise it's incomplete */
-		if ( strcmp(line, CHUNK_END_MARKER) == 0 ) {
-			if ( have_filename && have_ev ) return 0;
+		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
+			if ( have_filename && have_ev ) {
+				/* Success */
+				if ( srf & STREAM_DATA_DETGEOM ) {
+					create_detgeom(image, st->dtempl);
+					image_set_zero_data(image, st->dtempl);
+					image_set_zero_mask(image, st->dtempl);
+				}
+				/* FIXME: Maybe arbitrary spectrum from file (?) */
+				image->spectrum = spectrum_generate_gaussian(image->lambda,
+				                                             image->bw);
+				return image;
+			}
 			ERROR("Incomplete chunk found in input file.\n");
-			return 1;
+			image_free(image);
+			return NULL;
 		}
 
 	} while ( 1 );
@@ -1332,38 +1011,9 @@ int read_chunk_2(Stream *st, struct image *image,  StreamReadFlags srf)
 		ERROR("Error reading stream.\n");
 	}
 
-	return 1;  /* Either error or EOF, don't care because we will complain
-	            * on the terminal if it was an error. */
-}
-
-
-
-/**
- * \param st A \ref Stream
- * \param image An \ref image structure to be filled
- *
- * Reads a chunk from \p st, placing the information in \p image.
- *
- * \returns non-zero on error.
- */
-int read_chunk(Stream *st, struct image *image)
-{
-	return read_chunk_2(st, image, STREAM_READ_UNITCELL
-	                               | STREAM_READ_REFLECTIONS
-	                               | STREAM_READ_PEAKS);
-}
-
-
-void write_stream_header(FILE *ofh, int argc, char *argv[])
-{
-	int i;
-
-	fprintf(ofh, "Command line:");
-	for ( i=0; i<argc; i++ ) {
-		fprintf(ofh, " %s", argv[i]);
-	}
-	fprintf(ofh, "\n");
-	fflush(ofh);
+	image_free(image);
+	return NULL;  /* Either error or EOF, don't care because we will complain
+	               * on the terminal if it was an error. */
 }
 
 
@@ -1406,7 +1056,7 @@ static void read_audit_lines(Stream *st)
 		rval = fgets(line, 1023, st->fh);
 		if ( rval == NULL ) {
 			ERROR("Failed to read stream audit info.\n");
-			close_stream(st);
+			stream_close(st);
 			return;
 		}
 
@@ -1437,14 +1087,16 @@ static void read_geometry_file(Stream *st)
 	int done = 0;
 	size_t len = 0;
 	int started = 0;
+	int success = 0;
 	const size_t max_geom_len = 64*1024;
+	char *geom;
 
-	st->geometry_file = malloc(max_geom_len);
-	if ( st->geometry_file == NULL ) {
+	geom = malloc(max_geom_len);
+	if ( geom == NULL ) {
 		ERROR("Failed to allocate memory for audit information\n");
 		return;
 	}
-	st->geometry_file[0] = '\0';
+	geom[0] = '\0';
 
 	do {
 
@@ -1454,23 +1106,23 @@ static void read_geometry_file(Stream *st)
 		rval = fgets(line, 1023, st->fh);
 		if ( rval == NULL ) {
 			ERROR("Failed to read stream geometry file.\n");
-			close_stream(st);
-			free(st->geometry_file);
-			st->geometry_file = NULL;
+			stream_close(st);
+			free(geom);
 			return;
 		}
 
-		if ( strcmp(line, GEOM_START_MARKER"\n") == 0 ) {
+		if ( strcmp(line, STREAM_GEOM_START_MARKER"\n") == 0 ) {
 			started = 1;
 			continue;
 		}
 
-		if ( strcmp(line, GEOM_END_MARKER"\n") == 0 ) {
+		if ( strcmp(line, STREAM_GEOM_END_MARKER"\n") == 0 ) {
 			done = 1;
+			success = 1;
 			continue;
 		}
 
-		if ( strcmp(line, CHUNK_START_MARKER"\n") == 0 ) {
+		if ( strcmp(line, STREAM_CHUNK_START_MARKER"\n") == 0 ) {
 			done = 1;
 			st->in_chunk = 1;
 			continue;
@@ -1482,18 +1134,22 @@ static void read_geometry_file(Stream *st)
 		if ( len > max_geom_len-1 ) {
 			ERROR("Stream's geometry file is too long (%li > %i).\n",
 			      (long)len, (int)max_geom_len);
-			free(st->geometry_file);
-			st->geometry_file = NULL;
+			free(geom);
 			return;
 		} else {
-			strcat(st->geometry_file, line);
+			strcat(geom, line);
 		}
 
 	} while  ( !done );
+
+	if ( success ) {
+		st->geometry_file = geom;
+		st->dtempl = data_template_new_from_string(geom);
+	}
 }
 
 
-Stream *open_stream_for_read(const char *filename)
+Stream *stream_open_for_read(const char *filename)
 {
 	Stream *st;
 
@@ -1503,6 +1159,8 @@ Stream *open_stream_for_read(const char *filename)
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
 	st->in_chunk = 0;
+	st->n_chunks = 0;
+	st->chunk_offsets = NULL;
 
 	if ( strcmp(filename, "-") == 0 ) {
 		st->fh = stdin;
@@ -1521,7 +1179,7 @@ Stream *open_stream_for_read(const char *filename)
 	rval = fgets(line, 1023, st->fh);
 	if ( rval == NULL ) {
 		ERROR("Failed to read stream version.\n");
-		close_stream(st);
+		stream_close(st);
 		return NULL;
 	}
 
@@ -1539,7 +1197,7 @@ Stream *open_stream_for_read(const char *filename)
 		st->minor_version = 3;
 	} else {
 		ERROR("Invalid stream, or stream format is too new.\n");
-		close_stream(st);
+		stream_close(st);
 		return NULL;
 	}
 
@@ -1556,16 +1214,16 @@ Stream *open_stream_for_read(const char *filename)
  * \param fd File descriptor (e.g. from open()) to use for stream data.
  *
  * Creates a new \ref Stream from \p fd, so that stream data can be written to \p fd
- * using \ref write_chunk.
+ * using \ref stream_write_chunk.
  *
- * In contrast to \ref open_stream_for_write, this function does not write any of
+ * In contrast to \ref stream_open_for_write, this function does not write any of
  * the usual headers.  This function is mostly for use when multiple substreams
  * need to be multiplexed into a single master stream.  The master would be
- * opened using \ref open_stream_for_write, and the substreams using this function.
+ * opened using \ref stream_open_for_write, and the substreams using this function.
  *
  * \returns A \ref Stream, or NULL on failure.
  */
-Stream *open_stream_fd_for_write(int fd)
+Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 {
 	Stream *st;
 
@@ -1575,6 +1233,8 @@ Stream *open_stream_fd_for_write(int fd)
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
 	st->in_chunk = 0;
+	st->n_chunks = 0;
+	st->chunk_offsets = NULL;
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
@@ -1582,6 +1242,7 @@ Stream *open_stream_fd_for_write(int fd)
 		return NULL;
 	}
 
+	st->dtempl = dtempl;
 	st->major_version = LATEST_MAJOR_VERSION;
 	st->minor_version = LATEST_MINOR_VERSION;
 
@@ -1589,35 +1250,32 @@ Stream *open_stream_fd_for_write(int fd)
 }
 
 
-static void write_cell_to_stream(Stream *st, UnitCell *cell)
+void stream_write_target_cell(Stream *st, const UnitCell *cell)
 {
-	fprintf(st->fh, CELL_START_MARKER"\n");
+	if ( cell == NULL ) return;
+	fprintf(st->fh, STREAM_CELL_START_MARKER"\n");
 	write_cell(cell, st->fh);
 	fprintf(st->fh, "; Please note: this is the target unit cell.\n");
 	fprintf(st->fh, "; The actual unit cells produced by indexing "
 	                "depend on many other factors.\n");
-	fprintf(st->fh, CELL_END_MARKER"\n");
+	fprintf(st->fh, STREAM_CELL_END_MARKER"\n");
 	fflush(st->fh);
 }
 
 
 /**
  * \param filename Filename of new stream
- * \param geom_filename The geometry filename to copy
- * \param cell A \ref UnitCell to write into the stream
- * \param argc The number of arguments to the program
- * \param argv The arguments to the program
- * \param indm_str The list of indexing methods
+ * \param dtempl A DataTemplate
  *
- * Creates a new stream with name \p filename, and adds the stream format
- * and version header, plus a verbatim copy of the geometry file and the unit
- * cell in CrystFEL format.
+ * Creates a new stream with name \p filename.  If \p filename already
+ * exists, it will be overwritten.
+ *
+ * Audit information (e.g. CrystFEL version number) will be written.
  *
  * \returns A \ref Stream, or NULL on failure.
  */
-Stream *open_stream_for_write_4(const char *filename,
-                                const char *geom_filename, UnitCell *cell,
-                                int argc, char *argv[], const char *indm_str)
+Stream *stream_open_for_write(const char *filename,
+                              const DataTemplate *dtempl)
 
 {
 	Stream *st;
@@ -1628,6 +1286,9 @@ Stream *open_stream_for_write_4(const char *filename,
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
 	st->in_chunk = 0;
+	st->n_chunks = 0;
+	st->chunk_offsets = NULL;
+	st->dtempl = dtempl;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1641,117 +1302,15 @@ Stream *open_stream_for_write_4(const char *filename,
 
 	fprintf(st->fh, "CrystFEL stream format %i.%i\n",
 	        st->major_version, st->minor_version);
-	fprintf(st->fh, "Generated by CrystFEL "CRYSTFEL_VERSIONSTRING"\n");
+	fprintf(st->fh, "Generated by CrystFEL %s\n",
+	        libcrystfel_version_string());
 	fflush(st->fh);
-
-	if ( (argc > 0) && (argv != NULL) ) {
-		write_command(st, argc, argv);
-	}
-
-	if ( indm_str != NULL ) {
-		fprintf(st->fh, "Indexing methods selected: %s\n", indm_str);
-	}
-	if ( geom_filename != NULL ) {
-		write_geometry_file(st, geom_filename);
-	}
-	if ( cell != NULL ) {
-		write_cell_to_stream(st, cell);
-	}
 
 	return st;
 }
 
 
-Stream *open_stream_for_write_3(const char *filename,
-                                const char *geom_filename, UnitCell *cell,
-                                int argc, char *argv[])
-{
-	return open_stream_for_write_4(filename, geom_filename, cell,
-	                               argc, argv, NULL);
-}
-
-
-/**
- * \param filename Filename of new stream
- * \param geom_filename The geometry filename to copy
- * \param argc The number of arguments to the program
- * \param argv The arguments to the program
- *
- * Creates a new stream with name \p filename, and adds the stream format
- * and version header, plus a verbatim copy of the geometry file
- *
- * \returns A \ref Stream, or NULL on failure.
- */
-Stream *open_stream_for_write_2(const char *filename,
-                                const char *geom_filename, int argc,
-                                char *argv[])
-
-{
-	Stream *st;
-
-	st = malloc(sizeof(struct _stream));
-	if ( st == NULL ) return NULL;
-	st->old_indexers = 0;
-	st->audit_info = NULL;
-	st->geometry_file = NULL;
-	st->in_chunk = 0;
-
-	st->fh = fopen(filename, "w");
-	if ( st->fh == NULL ) {
-		ERROR("Failed to open stream.\n");
-		free(st);
-		return NULL;
-	}
-
-	st->major_version = LATEST_MAJOR_VERSION;
-	st->minor_version = LATEST_MINOR_VERSION;
-
-	fprintf(st->fh, "CrystFEL stream format %i.%i\n",
-	        st->major_version, st->minor_version);
-	fprintf(st->fh, "Generated by CrystFEL "CRYSTFEL_VERSIONSTRING"\n");
-	fflush(st->fh);
-
-	if ( (argc > 0) && (argv != NULL) ) {
-		write_command(st, argc, argv);
-	}
-	if ( geom_filename != NULL ) {
-		write_geometry_file(st, geom_filename);
-	}
-
-	return st;
-}
-
-
-/**
- * \param filename Filename of new stream
- *
- * Creates a new stream with name \p filename, and adds the stream format
- * and version headers.
- *
- * You may want to follow this with a call to \ref write_command to record the
- * command line.
- *
- * \returns A \ref Stream, or NULL on failure.
- */
-Stream *open_stream_for_write(const char *filename)
-{
-	return open_stream_for_write_2(filename, NULL, 0, NULL);
-}
-
-
-/**
- * \param st A \ref Stream
- *
- * This function gets the integer file descriptor for \p st, a bit like fileno().
- *
- * This is useful in conjunction with \ref open_stream_fd_for_write, to get the
- * underlying file descriptor to which the multiplexed stream data should be
- * written.  In this case, the only other operations you should ever do (or have
- * done) on \p st are \ref open_stream_for_write and \ref close_stream.
- *
- * \returns An integer file descriptor
- */
-int get_stream_fd(Stream *st)
+int stream_get_fd(Stream *st)
 {
 	return fileno(st->fh);
 }
@@ -1762,33 +1321,13 @@ int get_stream_fd(Stream *st)
  *
  * Closes the stream
  */
-void close_stream(Stream *st)
+void stream_close(Stream *st)
 {
+	if ( st == NULL ) return;
 	free(st->audit_info);
 	free(st->geometry_file);
 	fclose(st->fh);
 	free(st);
-}
-
-
-int is_stream(const char *filename)
-{
-	FILE *fh;
-	char line[1024];
-	char *rval;
-
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) return 0;
-
-	rval = fgets(line, 1023, fh);
-	fclose(fh);
-	if ( rval == NULL ) return 0;
-
-	if ( strncmp(line, "CrystFEL stream format 2.0", 26) == 0 ) return 1;
-	if ( strncmp(line, "CrystFEL stream format 2.1", 26) == 0 ) return 1;
-	if ( strncmp(line, "CrystFEL stream format 2.2", 26) == 0 ) return 1;
-
-	return 0;
 }
 
 
@@ -1797,11 +1336,11 @@ int is_stream(const char *filename)
  * \param argc number of arguments
  * \param argv command-line arguments
  *
- * Writes the command line to \p st.  \p argc and \p argv should be exactly as were
- * given to main().  This should usually be called immediately after
- * ref open_stream_for_write.
+ * Writes the command line to \p st.  \p argc and \p argv should be
+ * exactly as were given to main().  This should usually be called
+ * immediately after \ref stream_open_for_write.
  */
-void write_command(Stream *st, int argc, char *argv[])
+void stream_write_commandline_args(Stream *st, int argc, char *argv[])
 {
 	int i;
 
@@ -1816,6 +1355,13 @@ void write_command(Stream *st, int argc, char *argv[])
 }
 
 
+void stream_write_indexing_methods(Stream *st, const char *indm_str)
+{
+	fprintf(st->fh, "Indexing methods selected: %s\n", indm_str);
+	fflush(st->fh);
+}
+
+
 /**
  * \param st A \ref Stream
  * \param geom_filename geomtry file name
@@ -1823,8 +1369,8 @@ void write_command(Stream *st, int argc, char *argv[])
  * Writes the content of the geometry file to \p st. This should usually be
  * called immediately after \ref write_command.
  */
-void write_geometry_file(Stream *st, const char *geom_filename) {
-
+void stream_write_geometry_file(Stream *st, const char *geom_filename)
+{
 	char line[2014];
 	FILE *geom_fh;
 	char *rval;
@@ -1838,7 +1384,7 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 		      "'%s'\n", geom_filename);
 		return;
 	}
-	fprintf(st->fh, GEOM_START_MARKER"\n");
+	fprintf(st->fh, STREAM_GEOM_START_MARKER"\n");
 
 	do {
 		rval = fgets(line, 1023, geom_fh);
@@ -1853,7 +1399,7 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
 
 	fclose(geom_fh);
 
-	fprintf(st->fh, GEOM_END_MARKER"\n");
+	fprintf(st->fh, STREAM_GEOM_END_MARKER"\n");
 	fflush(st->fh);
 }
 
@@ -1862,16 +1408,187 @@ void write_geometry_file(Stream *st, const char *geom_filename) {
  * \param st A \ref Stream
  *
  * Attempts to set the file pointer for \p st to the start of the stream, so that
- * later calls to \ref read_chunk will repeat the sequence of chunks from the
+ * later calls to \ref stream_read_chunk will repeat the sequence of chunks from the
  * start.
  *
  * Programs must not assume that this operation always succeeds!
  *
  * \returns Non-zero if the stream could not be rewound.
  */
-int rewind_stream(Stream *st)
+int stream_rewind(Stream *st)
 {
 	st->ln = 0;
 	return fseek(st->fh, 0, SEEK_SET);
 }
 
+
+struct _streamindex
+{
+	char **keys;
+	long int *ptrs;
+	int n_keys;
+	int max_keys;
+};
+
+
+void stream_index_free(StreamIndex *index)
+{
+	if ( index == NULL ) return;
+	free(index->keys);
+	free(index->ptrs);
+	free(index);
+}
+
+
+static char *make_key(const char *filename,
+                      const char *ev)
+{
+	char *key;
+
+	if ( ev == NULL ) ev = "//";
+
+	key = malloc(strlen(filename)+strlen(ev)+2);
+	if ( key == NULL ) return NULL;
+
+	strcpy(key, filename);
+	strcat(key, " ");
+	strcat(key, ev);
+
+	return key;
+}
+
+
+int stream_select_chunk(Stream *st,
+                        StreamIndex *index,
+                        const char *filename,
+                        const char *ev)
+{
+	int i;
+	char *key;
+
+	if ( index == NULL ) return 1;
+
+	key = make_key(filename, ev);
+	for ( i=0; i<index->n_keys; i++ ) {
+		if ( strcmp(index->keys[i], key) == 0 ) {
+			if ( st != NULL ) {
+				fseek(st->fh, index->ptrs[i], SEEK_SET);
+				st->in_chunk = 0;
+			}
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+static void add_index_record(StreamIndex *index,
+                             long int ptr,
+                             const char *filename,
+                             const char *ev)
+{
+	char *key;
+
+	if ( index->n_keys == index->max_keys ) {
+
+		int new_max_keys = index->max_keys + 256;
+		char **new_keys;
+		long int *new_ptrs;
+
+		new_keys = realloc(index->keys,
+		                   new_max_keys*sizeof(char *));
+		if ( new_keys == NULL ) return;
+
+		new_ptrs = realloc(index->ptrs,
+		                   new_max_keys*sizeof(long int));
+		if ( new_ptrs == NULL ) return;
+
+		index->keys = new_keys;
+		index->ptrs = new_ptrs;
+		index->max_keys = new_max_keys;
+
+	}
+
+	key = make_key(filename, ev);
+	if ( key == NULL ) return;
+
+	index->keys[index->n_keys] = key;
+	index->ptrs[index->n_keys] = ptr;
+	index->n_keys++;
+}
+
+
+StreamIndex *stream_make_index(const char *filename)
+{
+	FILE *fh;
+	StreamIndex *index;
+	long int last_start_pos = 0;
+	char *last_filename = NULL;
+	char *last_ev = NULL;
+	int done = 0;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) return NULL;
+
+	index = malloc(sizeof(StreamIndex));
+	if ( index == NULL ) {
+		fclose(fh);
+		return NULL;
+	}
+
+	index->keys = NULL;
+	index->ptrs = NULL;
+	index->n_keys = 0;
+	index->max_keys = 0;
+
+	STATUS("Scanning %s\n", filename);
+
+	do {
+
+		char *rval;
+		char line[1024];
+		long int pos;
+
+		pos = ftell(fh);
+		rval = fgets(line, 1024, fh);
+		if ( rval == NULL ) {
+			done = 1;
+			break;
+		}
+		chomp(line);
+
+		if ( strcmp(line, STREAM_CHUNK_START_MARKER) == 0 ) {
+			last_start_pos = pos;
+			last_filename = NULL;
+			last_ev = NULL;
+		}
+
+		if ( strncmp(line, "Image filename: ", 16) == 0 ) {
+			last_filename = strdup(line+16);
+		}
+
+		if ( strncmp(line, "Event: ", 7) == 0 ) {
+			last_ev = strdup(line+7);
+		}
+
+		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
+			if ( (last_start_pos != 0)
+			     && (last_filename != NULL) )
+			{
+				add_index_record(index,
+				                 last_start_pos,
+				                 last_filename,
+				                 last_ev);
+			}
+			free(last_filename);
+			free(last_ev);
+			last_start_pos = 0;
+			last_filename = NULL;
+			last_ev = NULL;
+		}
+
+	} while ( !done );
+
+	fclose(fh);
+	return index;
+}

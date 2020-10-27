@@ -29,10 +29,6 @@
 #ifndef SPECTRUM_H
 #define SPECTRUM_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <gsl/gsl_rng.h>
 
 /**

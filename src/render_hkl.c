@@ -45,13 +45,22 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 
-#include "utils.h"
-#include "symmetry.h"
-#include "render.h"
+#include <utils.h>
+#include <symmetry.h>
+#include <colscale.h>
+#include <reflist.h>
+#include <reflist-utils.h>
+#include <cell-utils.h>
+
 #include "render_hkl.h"
-#include "reflist.h"
-#include "reflist-utils.h"
-#include "cell-utils.h"
+#include "version.h"
+
+
+struct resrings
+{
+	double res[100];
+	int n_rings;
+};
 
 
 #define KEY_FILENAME "key.pdf"
@@ -332,8 +341,8 @@ static void draw_circles(double xh, double xk, double xl,
 				        ((double)cy)+v*scale,
 				        radius, 0.0, 2.0*M_PI);
 
-			render_scale(val, max_val/boost, colscale,
-				     &r, &g, &b);
+			colscale_lookup(val, max_val/boost, colscale,
+			                &r, &g, &b);
 			cairo_set_source_rgb(dctx, r, g, b);
 			cairo_fill(dctx);
 
@@ -397,13 +406,6 @@ static void render_overlined_indices(cairo_t *dctx,
 		cairo_stroke(dctx);
 	}
 }
-
-
-struct resrings
-{
-	double res[100];
-	int n_rings;
-};
 
 
 static void render_za(UnitCell *cell, RefList *list,
@@ -658,7 +660,7 @@ static int render_key(int colscale, double scale_top)
 			val = v/ht;
 		}
 
-		render_scale(val, top, colscale, &r, &g, &b);
+		colscale_lookup(val, top, colscale, &r, &g, &b);
 		cairo_set_source_rgb(dctx, r, g, b);
 
 		cairo_stroke_preserve(dctx);
@@ -717,10 +719,12 @@ static int render_key(int colscale, double scale_top)
 
 
 static void render_za(UnitCell *cell, RefList *list,
-                      double boost, const char *sym, int wght, int colscale,
+                      double boost, const SymOpList *sym, int wght,
+                      int colscale,
                       signed int xh, signed int xk, signed int xl,
                       signed int yh, signed int yk, signed int yl,
-                      const char *outfile, double scale_top)
+                      const char *outfile, double scale_top, signed int zone,
+                      struct resrings *rings, int noaxes)
 {
 	ERROR("This version of CrystFEL was compiled without Cairo");
 	ERROR(" support, which is required to plot a zone axis");
@@ -811,8 +815,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 5 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'p' :

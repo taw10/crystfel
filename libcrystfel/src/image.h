@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2019 Thomas White <taw@physics.org>
+ *   2009-2020 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -28,33 +28,23 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifndef IMAGE_H
 #define IMAGE_H
-
-struct detector;
 
 #include <stdint.h>
 #include <complex.h>
 #include <sys/types.h>
 
 struct imagefeature;
-struct sample;
 struct image;
-struct imagefile;
-struct imagefile_field_list;
 
 #include "utils.h"
 #include "cell.h"
-#include "detector.h"
 #include "reflist.h"
 #include "crystal.h"
 #include "index.h"
-#include "events.h"
 #include "spectrum.h"
+#include "datatemplate.h"
 
 /**
  * \file image.h
@@ -64,8 +54,6 @@ struct imagefile_field_list;
 
 /** Represents a peak in an image. */
 struct imagefeature {
-
-	struct image                    *parent;   /**< Pointer to image */
 
 	/** \name Coordinates on panel (fast scan, slow scan)
 	 *  Note carefully that these are the distances, measured in pixels,
@@ -77,7 +65,7 @@ struct imagefeature {
 	double                          ss;
 	/**@}*/
 
-	struct panel                    *p;         /**< Pointer to panel */
+	int                             pn;         /**< Panel number */
 	double                          intensity;  /**< Intensity */
 
 	/** \name Reciprocal space coordinates (m^-1) of this feature */
@@ -91,28 +79,8 @@ struct imagefeature {
 };
 
 
-/** An enum representing the image file formats we can handle */
-enum imagefile_type
-{
-	IMAGEFILE_HDF5,   /**< HDF5 file (single or multiple frames per file) */
-	IMAGEFILE_CBF,    /**< CBF file */
-	IMAGEFILE_CBFGZ   /**< gzipped CBF file, i.e. "file.cbf.gz" */
-};
-
-
 /** An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
-
-
-struct beam_params
-{
-	double photon_energy;       /**< eV per photon */
-	char  *photon_energy_from;  /**< HDF5 dataset name */
-	double photon_energy_scale; /**< Scale factor for photon energy, if it
-	                             *   comes from an image header */
-	double bandwidth;           /**< FWHM bandwidth as a fraction of
-	                             *   wavelength */
-};
 
 
 struct image
@@ -142,25 +110,16 @@ struct image
 	int                     n_indexing_tries;
 
 	/** The detector structure */
-	struct detector         *det;
-
-	/** The nominal beam parameters (or where to get them) */
-	struct beam_params      *beam;
+	struct detgeom          *detgeom;
 
 	/** \name The filename and event ID for the image
 	 * @{ */
 	char                    *filename;
-	struct event            *event;
+	char                    *ev;
 	/** @} */
 
-	/** A list of image file headers to copy to the stream */
-	const struct imagefile_field_list *copyme;
-
 	/** A list of metadata read from the stream */
-	struct stuff_from_stream *stuff_from_stream;
-
-	/** Mean of the camera length values for all panels */
-	double                  avg_clen;
+	char                    *copied_headers;
 
 	/** ID number of the worker processing handling this image */
 	int                     id;
@@ -198,7 +157,7 @@ extern ImageFeatureList *image_feature_list_new(void);
 extern void image_feature_list_free(ImageFeatureList *flist);
 
 extern void image_add_feature(ImageFeatureList *flist, double x, double y,
-                              struct panel *p,
+                              int pn,
                               struct image *parent, double intensity,
                               const char *name);
 
@@ -206,42 +165,53 @@ extern void image_remove_feature(ImageFeatureList *flist, int idx);
 
 extern struct imagefeature *image_feature_closest(ImageFeatureList *flist,
                                                   double fs, double ss,
-                                                  struct panel *p,
+                                                  int pn,
                                                   double *d, int *idx);
-
-extern Reflection *image_reflection_closest(RefList *rlist,
-                                            double fs, double ss,
-                                            struct panel *p,
-                                            struct detector *det,
-                                            double *d);
 
 extern int image_feature_count(ImageFeatureList *flist);
 extern struct imagefeature *image_get_feature(ImageFeatureList *flist, int idx);
+extern const struct imagefeature *image_get_feature_const(const ImageFeatureList *flist,
+                                                          int idx);
 extern ImageFeatureList *sort_peaks(ImageFeatureList *flist);
+extern ImageFeatureList *image_feature_list_copy(const ImageFeatureList *flist);
 
 extern void image_add_crystal(struct image *image, Crystal *cryst);
 extern int remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
 
-/* Image files */
-extern struct imagefile *imagefile_open(const char *filename);
-extern int imagefile_read(struct imagefile *f, struct image *image,
-                          struct event *event);
-extern int imagefile_read_simple(struct imagefile *f, struct image *image);
-extern struct hdfile *imagefile_get_hdfile(struct imagefile *f);
-extern enum imagefile_type imagefile_get_type(struct imagefile *f);
-extern void imagefile_copy_fields(struct imagefile *f,
-                                  const struct imagefile_field_list *copyme,
-                                  FILE *fh, struct event *ev);
-extern void imagefile_close(struct imagefile *f);
-extern signed int is_cbf_file(const char *filename);
+extern void mark_resolution_range_as_bad(struct image *image,
+                                         double min, double max);
 
-/* Field lists */
-extern struct imagefile_field_list *new_imagefile_field_list(void);
-extern void free_imagefile_field_list(struct imagefile_field_list *f);
+extern struct image *image_new(void);
+extern struct image *image_read(const DataTemplate *dtempl,
+                                const char *filename,
+                                const char *event,
+                                int no_image_data,
+                                int no_mask_data);
+extern struct image *image_create_for_simulation(const DataTemplate *dtempl);
+extern void image_free(struct image *image);
 
-extern void add_imagefile_field(struct imagefile_field_list *copyme,
-                                const char *name);
+extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
+                                          const char *filename,
+                                          const char *event,
+                                          int half_pixel_shift);
+
+extern char **image_expand_frames(const DataTemplate *dtempl,
+                                  const char *filename, int *nframes);
+
+extern int image_set_zero_data(struct image *image,
+                               const DataTemplate *dtempl);
+
+extern int image_set_zero_mask(struct image *image,
+                               const DataTemplate *dtempl);
+
+extern int image_write(const struct image *image,
+                       const DataTemplate *dtempl,
+                       const char *filename);
+
+/* Use within libcrystfel only */
+extern int create_detgeom(struct image *image,
+                          const DataTemplate *dtempl);
 
 #ifdef __cplusplus
 }

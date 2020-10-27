@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2016 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -73,21 +73,21 @@ struct reflpeak {
 	Reflection *refl;
 	struct imagefeature *peak;
 	double Ih;   /* normalised */
-	struct panel *panel;  /* panel the reflection appears on
-                               * (we assume this never changes) */
+	struct detgeom_panel *panel;  /* panel the reflection appears on
+                                       * (we assume this never changes) */
 };
 
 
 static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct panel *p)
+                         struct detgeom_panel *p)
 {
 	double xs, ys;
 
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
+	xs = fs*p->fsx + ss*p->ssx;  /* pixels */
+	ys = fs*p->fsy + ss*p->ssy;  /* pixels */
 
-	*px = (xs + p->cnx) / p->res;
-	*py = (ys + p->cny) / p->res;
+	*px = (xs + p->cnx) * p->pixel_pitch;  /* metres */
+	*py = (ys + p->cny) * p->pixel_pitch;  /* metres */
 }
 
 
@@ -98,7 +98,7 @@ static double r_dev(struct reflpeak *rp)
 }
 
 
-static double x_dev(struct reflpeak *rp, struct detector *det)
+static double x_dev(struct reflpeak *rp, struct detgeom *det)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
@@ -110,7 +110,7 @@ static double x_dev(struct reflpeak *rp, struct detector *det)
 }
 
 
-static double y_dev(struct reflpeak *rp, struct detector *det)
+static double y_dev(struct reflpeak *rp, struct detgeom *det)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
@@ -119,50 +119,6 @@ static double y_dev(struct reflpeak *rp, struct detector *det)
 	get_detector_pos(rp->refl, &fsh, &ssh);
 	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
 	return yh-ypk;
-}
-
-
-static void UNUSED write_pairs(const char *filename, struct reflpeak *rps,
-                               int n, struct detector *det)
-{
-	int i;
-	FILE *fh;
-
-	fh = fopen(filename, "w");
-	if ( fh == NULL ) {
-		ERROR("Failed to open '%s'\n", filename);
-		return;
-	}
-
-	for ( i=0; i<n; i++ ) {
-
-		double write_fs, write_ss;
-		double fs, ss;
-		struct panel *p;
-		signed int h, k, l;
-
-		fs = rps[i].peak->fs;
-		ss = rps[i].peak->ss;
-		p = rps[i].panel;
-		get_indices(rps[i].refl, &h, &k, &l);
-
-		write_fs = fs + p->orig_min_fs;
-		write_ss = ss + p->orig_min_ss;
-
-		fprintf(fh, "%7.2f %7.2f dev r,x,y: %9f %9f %9f %9f\n",
-		        write_fs, write_ss,
-		        r_dev(&rps[i])/1e9, fabs(r_dev(&rps[i])/1e9),
-		        x_dev(&rps[i], det),
-		        y_dev(&rps[i], det));
-
-		//fprintf(fh, "%4i %4i %4i 0.0 - 0.0 1 %7.2f %7.2f %s\n",
-		//        h, k, l, write_fs, write_ss, p->name);
-
-	}
-
-	fclose(fh);
-
-	STATUS("Wrote %i pairs to %s\n", n, filename);
 }
 
 
@@ -179,14 +135,13 @@ static int cmpd2(const void *av, const void *bv)
 
 
 static int check_outlier_transition(struct reflpeak *rps, int n,
-                                    struct detector *det)
+                                    struct detgeom *det)
 {
 	int i;
 
 	if ( n < 3 ) return n;
 
 	qsort(rps, n, sizeof(struct reflpeak), cmpd2);
-	//write_pairs("pairs-before-outlier.lst", rps, n, det);
 
 	for ( i=1; i<n-1; i++ ) {
 
@@ -267,11 +222,11 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		 * in how far away it is from the peak location.
 		 * The predicted position and excitation errors will be
 		 * filled in by update_predictions(). */
-		set_panel(refl, f->p);
+		set_panel_number(refl, f->pn);
 
 		rps[n].refl = refl;
 		rps[n].peak = f;
-		rps[n].panel = f->p;
+		rps[n].panel = &image->detgeom->panels[f->pn];
 		n++;
 
 	}
@@ -307,7 +262,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	/* Sort the pairings by excitation error and look for a transition
 	 * between good pairings and outliers */
-	n_final = check_outlier_transition(rps, n_acc, image->det);
+	n_final = check_outlier_transition(rps, n_acc, image->detgeom);
 
 	/* Add the final accepted reflections to the caller's list */
 	if ( reflist != NULL ) {
@@ -359,16 +314,18 @@ int refine_radius(Crystal *cr, struct image *image)
 }
 
 
-static void update_detector(struct detector *det, double xoffs, double yoffs,
-                            double coffs)
+static void update_detector(struct detgeom *det,
+                            double xoffs, double yoffs, double coffs)
 {
 	int i;
 
 	for ( i=0; i<det->n_panels; i++ ) {
-		struct panel *p = &det->panels[i];
-		p->cnx += xoffs * p->res;
-		p->cny += yoffs * p->res;
-		p->clen += coffs;
+		struct detgeom_panel *p = &det->panels[i];
+
+		/* Convert to pixels */
+		p->cnx += xoffs / p->pixel_pitch;
+		p->cny += yoffs / p->pixel_pitch;
+		p->cnz += coffs / p->pixel_pitch;
 	}
 }
 
@@ -454,7 +411,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = x_dev(&rps[i], image->det);
+			v_c = x_dev(&rps[i], image->detgeom);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -486,7 +443,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = y_dev(&rps[i], image->det);
+			v_c = y_dev(&rps[i], image->detgeom);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -538,9 +495,10 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	csx += gsl_vector_get(shifts, 6);
 	csy += gsl_vector_get(shifts, 7);
 	csz += gsl_vector_get(shifts, 8);
-	update_detector(image->det, gsl_vector_get(shifts, 9),
-	                            gsl_vector_get(shifts, 10),
-	                            0.0);
+	update_detector(image->detgeom,
+	                gsl_vector_get(shifts, 9),
+	                gsl_vector_get(shifts, 10),
+	                0.0);
 	*total_x += gsl_vector_get(shifts, 9);
 	*total_y += gsl_vector_get(shifts, 10);
 	*total_z += 0.0;
@@ -555,7 +513,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double pred_residual(struct reflpeak *rps, int n, struct detector *det)
+static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
 {
 	int i;
 	double res = 0.0;
@@ -636,7 +594,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 		rps[i].Ih = rps[i].peak->intensity / max_I;
 	}
 
-	//STATUS("Initial residual = %e\n", pred_residual(rps, n, image->det));
+	//STATUS("Initial residual = %e\n", pred_residual(rps, n, image->detgeom));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
@@ -644,12 +602,12 @@ int refine_prediction(struct image *image, Crystal *cr)
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y, &total_z) ) return 1;
 		//STATUS("Residual after %i = %e\n", i,
-		//       pred_residual(rps, n, image->det));
+		//       pred_residual(rps, n, image->detgeom));
 	}
-	//STATUS("Final residual = %e\n", pred_residual(rps, n, image->det));
+	//STATUS("Final residual = %e\n", pred_residual(rps, n, image->detgeom));
 
 	snprintf(tmp, 255, "predict_refine/final_residual = %e",
-	         pred_residual(rps, n, image->det));
+	         pred_residual(rps, n, image->detgeom));
 	crystal_add_notes(cr, tmp);
 
 	crystal_set_det_shift(cr, total_x, total_y);

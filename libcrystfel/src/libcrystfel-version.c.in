@@ -1,0 +1,6 @@
+#define LIBCRYSTFEL_VERSION_H
+
+const char *libcrystfel_version_string()
+{
+	return "@VCS_TAG@";
+}

@@ -34,6 +34,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -251,6 +252,76 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 }
 
 
+/* ------------------------------ Message logging ---------------------------- */
+
+/* Lock to keep lines serialised on the terminal */
+pthread_mutex_t stderr_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
+static void log_to_stderr(enum log_msg_type type, const char *msg,
+                          void *vp)
+{
+	int error_print_val = get_status_label();
+	pthread_mutex_lock(&stderr_lock);
+	if ( error_print_val >= 0 ) {
+		fprintf(stderr, "%3i: ", error_print_val);
+	}
+	fprintf(stderr, "%s", msg);
+	pthread_mutex_unlock(&stderr_lock);
+}
+
+
+/* Function to call with ERROR/STATUS messages */
+LogMsgFunc log_msg_func = log_to_stderr;
+void *log_msg_vp = NULL;
+
+
+void set_log_message_func(LogMsgFunc new_log_msg_func, void *vp)
+{
+	log_msg_func = new_log_msg_func;
+	log_msg_vp = vp;
+}
+
+
+void STATUS(const char *format, ...)
+{
+	va_list args;
+	char tmp[1024];
+	va_start(args, format);
+	vsnprintf(tmp, 1024, format, args);
+	va_end(args);
+	log_msg_func(LOG_MSG_STATUS, tmp, log_msg_vp);
+}
+
+
+void ERROR(const char *format, ...)
+{
+	va_list args;
+	char tmp[1024];
+	va_start(args, format);
+	vsnprintf(tmp, 1024, format, args);
+	va_end(args);
+	log_msg_func(LOG_MSG_ERROR, tmp, log_msg_vp);
+}
+
+
+/* ------------------------------ Useful functions ---------------------------- */
+
+int convert_int(const char *str, int *pval)
+{
+	int val;
+	char *rval;
+
+	val = strtod(str, &rval);
+	if ( *rval != '\0' ) {
+		return 1;
+	} else {
+		*pval = val;
+		return 0;
+	}
+}
+
+
 size_t notrail(char *s)
 {
 	ssize_t i;
@@ -272,10 +343,12 @@ size_t notrail(char *s)
 void chomp(char *s)
 {
 	size_t i;
+	size_t len;
 
 	if ( s == NULL ) return;
+	len = strlen(s);
 
-	for ( i=0; i<strlen(s); i++ ) {
+	for ( i=0; i<len; i++ ) {
 		if ( (s[i] == '\n') || (s[i] == '\r') ) {
 			s[i] = '\0';
 			return;
@@ -503,6 +576,13 @@ char *check_prefix(char *prefix)
 }
 
 
+char *safe_strdup(const char *in)
+{
+	if ( in == NULL ) return NULL;
+	return strdup(in);
+}
+
+
 char *safe_basename(const char *in)
 {
 	int i;
@@ -547,6 +627,29 @@ void strip_extension(char *bfn)
 		}
 		r--;
 	}
+}
+
+
+const char *filename_extension(const char *fn, const char **pext2)
+{
+	const char *ext = NULL;
+	const char *ext2 = NULL;
+	size_t r = strlen(fn)-1;
+
+	while ( r > 0 ) {
+		if ( fn[r] == '.' ) {
+			if ( ext != NULL ) {
+				ext2 = fn+r;
+				break;
+			} else {
+				ext = fn+r;
+			}
+		}
+		r--;
+	}
+
+	if ( pext2 != NULL ) *pext2 = ext2;
+	return ext;
 }
 
 
@@ -673,4 +776,65 @@ struct rvec quat_rot(struct rvec q, struct quaternion z)
 	      + (1.0 - 2.0 * (t11 + t22)) * q.w;
 
 	return res;
+}
+
+
+char *load_entire_file(const char *filename)
+{
+	struct stat statbuf;
+	int r;
+	char *contents;
+	FILE *fh;
+
+	r = stat(filename, &statbuf);
+	if ( r != 0 ) {
+		ERROR("File '%s' not found\n", filename);
+		return NULL;
+	}
+
+	contents = malloc(statbuf.st_size+1);
+	if ( contents == NULL ) {
+		ERROR("Failed to allocate memory for file\n");
+		return NULL;
+	}
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to open file '%s'\n", filename);
+		free(contents);
+		return NULL;
+	}
+
+	if ( fread(contents, 1, statbuf.st_size, fh) != statbuf.st_size ) {
+		ERROR("Failed to read file '%s'\n", filename);
+		free(contents);
+		return NULL;
+	}
+	contents[statbuf.st_size] = '\0';
+
+	fclose(fh);
+
+	return contents;
+}
+
+
+int compare_double(const void *av, const void *bv)
+{
+	double a = *(double *)av;
+	double b = *(double *)bv;
+	if ( a > b ) return 1;
+	if ( a < b ) return -1;
+	return 0;
+}
+
+
+/* -------------------------- libcrystfel features  ------------------------ */
+
+int crystfel_has_peakfinder9()
+{
+#ifdef HAVE_FDIP
+	return 1;
+#else
+	return 0;
+#endif
 }

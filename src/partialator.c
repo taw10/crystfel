@@ -58,6 +58,7 @@
 #include "post-refinement.h"
 #include "merge.h"
 #include "rejection.h"
+#include "version.h"
 
 
 struct csplit_hash_entry
@@ -254,14 +255,12 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	for ( i=0; i<n_crystals; i++ ) {
 
 		const char *fn;
-		struct event *ev;
 		char *evs;
 		char *id;
 		int dsn_crystal;
 
 		fn = crystal_get_image(crystals[i])->filename;
-		ev = crystal_get_image(crystals[i])->event;
-		evs = get_event_string(ev);
+		evs = crystal_get_image(crystals[i])->ev;
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
@@ -349,14 +348,12 @@ static signed int find_first_crystal(Crystal **crystals, int n_crystals,
 
 	for ( i=0; i<n_crystals; i++ ) {
 		const char *fn;
-		struct event *ev;
 		char *evs;
 		char *id;
 		int dsn_crystal;
 
 		fn = crystal_get_image(crystals[i])->filename;
-		ev = crystal_get_image(crystals[i])->event;
-		evs = get_event_string(ev);
+		evs = crystal_get_image(crystals[i])->ev;
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
@@ -389,14 +386,12 @@ static void check_csplit(Crystal **crystals, int n_crystals,
 	for ( i=0; i<n_crystals; i++ ) {
 
 		const char *fn;
-		struct event *ev;
 		char *evs;
 		char *id;
 		int dsn_crystal;
 
 		fn = crystal_get_image(crystals[i])->filename;
-		ev = crystal_get_image(crystals[i])->event;
-		evs = get_event_string(ev);
+		evs = crystal_get_image(crystals[i])->ev;
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
@@ -490,7 +485,7 @@ static struct custom_split *load_custom_split(const char *filename)
 			ds = bits[2];
 		} else {
 			fn = bits[0];
-			evs = get_event_string(NULL);
+			evs = strdup("(none)");
 			ds = bits[1];
 		}
 		free(bits);
@@ -557,7 +552,6 @@ static RefList *apply_max_adu(RefList *list, double max_adu)
 			copy_data(nrefl, refl);
 		}
 	}
-	reflist_free(list);
 	return nlist;
 }
 
@@ -1042,8 +1036,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'v' :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'i' :
@@ -1218,7 +1214,7 @@ int main(int argc, char *argv[])
 		ERROR("Please give the input filename (with -i)\n");
 		return 1;
 	}
-	st = open_stream_for_read(infile);
+	st = stream_open_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
 		return 1;
@@ -1378,37 +1374,29 @@ int main(int argc, char *argv[])
 
 	do {
 
+		struct image *image;
 		RefList *as;
 		int i;
-		struct image cur;
 
-		cur.div = NAN;
-		cur.bw = NAN;
-		cur.det = NULL;
-		if ( read_chunk_2(st, &cur, STREAM_READ_REFLECTIONS
-		                            | STREAM_READ_UNITCELL) != 0 ) {
-			break;
-		}
+		image = stream_read_chunk(st, STREAM_REFLECTIONS);
+		if ( image == NULL ) break;
 
-		if ( isnan(cur.div) || isnan(cur.bw) ) {
+		if ( isnan(image->div) || isnan(image->bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
 
-		free_stuff_from_stream(cur.stuff_from_stream);
-		cur.stuff_from_stream = NULL;
-
-		for ( i=0; i<cur.n_crystals; i++ ) {
+		for ( i=0; i<image->n_crystals; i++ ) {
 
 			Crystal *cr;
 			Crystal **crystals_new;
 			RefList *cr_refl;
-			struct image *image;
+			struct image *image_for_crystal;
 
 			n_crystals_seen++;
 			if ( n_crystals_seen <= start_after ) continue;
 
-			if ( crystal_get_resolution_limit(cur.crystals[i]) < min_res ) continue;
+			if ( crystal_get_resolution_limit(image->crystals[i]) < min_res ) continue;
 
 			crystals_new = realloc(crystals,
 			                      (n_crystals+1)*sizeof(Crystal *));
@@ -1418,21 +1406,31 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			crystals = crystals_new;
-			crystals[n_crystals] = cur.crystals[i];
+			crystals[n_crystals] = crystal_copy_deep(image->crystals[i]);
 			cr = crystals[n_crystals];
 
-			image = malloc(sizeof(struct image));
-			if ( image == NULL ) {
+			/* Create a completely new, separate image
+			 * structure for this crystal. */
+			image_for_crystal = image_new();
+			if ( image_for_crystal == NULL ) {
 				ERROR("Failed to allocate memory for image.\n");
 				return 1;
 			}
 
-			crystal_set_image(cr, image);
-			*image = cur;
-			image->n_crystals = 1;
-			image->crystals = &crystals[n_crystals];
+			crystal_set_image(cr, image_for_crystal);
+			*image_for_crystal = *image;
+			image_for_crystal->n_crystals = 1;
+			image_for_crystal->crystals = &crystals[n_crystals];
 
-			image->filename = strdup(image->filename);
+			image_for_crystal->filename = strdup(image->filename);
+			image_for_crystal->ev = safe_strdup(image->ev);
+			image_for_crystal->detgeom = NULL;
+			image_for_crystal->features = NULL;
+			image_for_crystal->spectrum = NULL;
+			image_for_crystal->copied_headers = NULL;
+			image_for_crystal->dp = NULL;
+			image_for_crystal->bad = NULL;
+			image_for_crystal->sat = NULL;
 
 			/* This is the raw list of reflections */
 			cr_refl = crystal_get_reflections(cr);
@@ -1458,8 +1456,8 @@ int main(int argc, char *argv[])
 			if ( n_crystals == stop_after ) break;
 
 		}
-		free(cur.crystals);
-		free(cur.filename);
+
+		image_free(image);
 
 		n_images++;
 
@@ -1474,7 +1472,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n");
 	if ( sparams_fh != NULL ) fclose(sparams_fh);
 	audit_info = stream_audit_info(st);
-	close_stream(st);
+	stream_close(st);
 
 	STATUS("Initial partiality calculation...\n");
 	for ( i=0; i<n_crystals; i++ ) {

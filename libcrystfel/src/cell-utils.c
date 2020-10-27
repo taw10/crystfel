@@ -256,6 +256,48 @@ void cell_print(UnitCell *cell)
 }
 
 
+void cell_print_oneline(UnitCell *cell)
+{
+	LatticeType lt;
+	char cen;
+
+	if ( cell == NULL ) {
+		STATUS("(NULL cell)\n");
+		return;
+	}
+
+	lt = cell_get_lattice_type(cell);
+	cen = cell_get_centering(cell);
+
+	STATUS("%s %c", str_lattice(lt), cen);
+
+	if ( (lt==L_MONOCLINIC) || (lt==L_TETRAGONAL) || ( lt==L_HEXAGONAL)
+	  || ( (lt==L_ORTHORHOMBIC) && (cen=='A') )
+	  || ( (lt==L_ORTHORHOMBIC) && (cen=='B') )
+	  || ( (lt==L_ORTHORHOMBIC) && (cen=='C') ) )
+	{
+		STATUS(", unique axis %c", cell_get_unique_axis(cell));
+	}
+
+	if ( cell_has_parameters(cell) ) {
+
+		double a, b, c, alpha, beta, gamma;
+
+		if ( !right_handed(cell) ) {
+			STATUS(" (left handed)");
+		}
+
+		cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
+
+		STATUS("  %.2f  %.2f  %.2f A,   %.2f  %.2f  %.2f deg\n",
+		       a*1e10, b*1e10, c*1e10,
+		       rad2deg(alpha), rad2deg(beta), rad2deg(gamma));
+	} else {
+		STATUS(", no cell parameters.\n");
+	}
+}
+
+
 void cell_print_full(UnitCell *cell)
 {
 	cell_print(cell);
@@ -868,7 +910,7 @@ static int get_angle_rad(char **bits, int nbits, double *pl)
  * Writes \p cell to \p fh, in CrystFEL unit cell file format
  *
  */
-void write_cell(UnitCell *cell, FILE *fh)
+void write_cell(const UnitCell *cell, FILE *fh)
 {
 	double a, b, c, al, be, ga;
 	LatticeType lt;
@@ -1312,6 +1354,7 @@ int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
 	cell_get_parameters(cell, &a1, &b1, &c1, &al1, &be1, &ga1);
 	cell_get_parameters(reference, &a2, &b2, &c2, &al2, &be2, &ga2);
 
+	/* within_tolerance() takes a percentage */
 	if ( !within_tolerance(a1, a2, tols[0]*100.0) ) return 0;
 	if ( !within_tolerance(b1, b2, tols[1]*100.0) ) return 0;
 	if ( !within_tolerance(c1, c2, tols[2]*100.0) ) return 0;
@@ -1357,6 +1400,7 @@ static double moduli_check(double ax, double ay, double az,
  * \returns non-zero if the cells match.
  *
  */
+/* 'tols' is in frac (not %) and radians */
 int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
                                             const double *tols)
 {
@@ -1412,6 +1456,7 @@ int compare_cell_parameters_and_orientation(UnitCell *cell, UnitCell *reference,
  * \returns non-zero if the cells match.
  *
  */
+/* 'tols' is in frac (not %) and radians */
 int compare_permuted_cell_parameters_and_orientation(UnitCell *cell,
                                                      UnitCell *reference,
                                                      const double *tols,

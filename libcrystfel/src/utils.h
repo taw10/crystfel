@@ -29,10 +29,6 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <math.h>
 #include <complex.h>
 #include <float.h>
@@ -54,8 +50,11 @@
 
 /* -------------------------- Fundamental constants  ------------------------ */
 
-/* Electron charge in C */
+/* Electron charge (Coulombs) */
 #define ELECTRON_CHARGE (1.6021773e-19)
+
+/* Electron rest mass (kg) */
+#define ELECTRON_MASS (9.1093837015e-31)
 
 /* Planck's constant (Js) */
 #define PLANCK (6.62606896e-34)
@@ -77,8 +76,12 @@ extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v);
 extern void show_matrix(gsl_matrix *M);
 extern gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
                             int verbose);
+
 extern size_t notrail(char *s);
+extern int convert_int(const char *str, int *pval);
 extern void chomp(char *s);
+
+#define CLEAR_BIT(val, bit) (((val) | (bit)) ^ (bit))
 
 /**
  * Controls the behaviour of \ref assplode.
@@ -192,37 +195,45 @@ static inline int within_tolerance(double a, double b, double percent)
 /* Photon energy (eV) to k (1/m) */
 #define ph_eV_to_k(a) ((a)*ELECTRON_CHARGE/PLANCK/C_VACUO)
 
+/* Electron accelerating voltage (V) to wavelength (m) */
+static inline double el_V_to_lambda(double E)
+{
+	double Estar;
 
-/* ------------------------------ Message macros ---------------------------- */
+	/* Relativistically corrected accelerating voltage */
+	Estar = E * (1.0 + E * ELECTRON_CHARGE/(2.0*ELECTRON_MASS*C_VACUO*C_VACUO));
+
+	return PLANCK / sqrt(2.0*ELECTRON_MASS*ELECTRON_CHARGE*Estar);
+}
+
+
+/* ------------------------------ Message logging ---------------------------- */
 
 extern pthread_mutex_t stderr_lock;
 
-#define ERROR(...) { \
-                      int error_print_val = get_status_label(); \
-                      pthread_mutex_lock(&stderr_lock); \
-                      if ( error_print_val >= 0 ) { \
-                         fprintf(stderr, "%3i: ", error_print_val); \
-                      } \
-                      fprintf(stderr, __VA_ARGS__); \
-                      pthread_mutex_unlock(&stderr_lock); \
-                   }
+enum log_msg_type {
+                   LOG_MSG_STATUS,
+                   LOG_MSG_ERROR
+};
 
-#define STATUS(...) { \
-                       int status_print_val = get_status_label(); \
-                       pthread_mutex_lock(&stderr_lock); \
-                       if ( status_print_val >= 0 ) { \
-                          fprintf(stderr, "%3i: ", status_print_val); \
-                       } \
-                       fprintf(stderr, __VA_ARGS__); \
-                       pthread_mutex_unlock(&stderr_lock); \
-                    }
+
+extern void STATUS(const char *format, ...);
+extern void ERROR(const char *format, ...);
+
+typedef void (*LogMsgFunc)(enum log_msg_type type, const char *msg, void *vp);
+
+extern void set_log_message_func(LogMsgFunc new_log_msg_func,
+                                 void *vp);
 
 
 /* ------------------------------ File handling ----------------------------- */
 
 extern char *check_prefix(char *prefix);
 extern char *safe_basename(const char *in);
+extern char *safe_strdup(const char *in);
 extern void strip_extension(char *bfn);
+extern char *load_entire_file(const char *filename);
+extern const char *filename_extension(const char *fn, const char **ext2);
 
 
 /* ------------------------------ Useful stuff ------------------------------ */
@@ -258,6 +269,8 @@ extern struct quaternion random_quaternion(gsl_rng *rng);
 extern int quaternion_valid(struct quaternion q);
 extern struct rvec quat_rot(struct rvec q, struct quaternion z);
 
+extern int compare_double(const void *av, const void *bv);
+
 /* Keep these ones inline, to avoid function call overhead */
 static inline struct quaternion invalid_quaternion(void)
 {
@@ -292,6 +305,12 @@ static inline void mean_variance(const double x, const double w,
 	*M2   += *sumw*delta*R;
 	*sumw  = temp;
 }
+
+
+/* -------------------------- libcrystfel features  ------------------------ */
+
+extern int crystfel_has_peakfinder9(void);
+
 
 #ifdef __cplusplus
 }

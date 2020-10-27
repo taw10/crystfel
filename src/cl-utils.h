@@ -33,7 +33,7 @@
 #include <config.h>
 #endif
 
-
+#define CL_TARGET_OPENCL_VERSION 220
 #ifdef HAVE_CL_CL_H
 #include <CL/cl.h>
 #else

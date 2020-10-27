@@ -29,10 +29,6 @@
 #ifndef INTEGRATION_H
 #define INTEGRATION_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "geometry.h"
 
 /**
@@ -113,7 +109,21 @@ typedef enum {
 extern "C" {
 #endif
 
+struct intcontext;
+
 extern IntegrationMethod integration_method(const char *t, int *err);
+
+extern struct intcontext *intcontext_new(struct image *image,
+                                         UnitCell *cell,
+                                         IntegrationMethod meth,
+                                         int ir_inn, int ir_mid, int ir_out,
+                                         int **masks);
+
+extern int integrate_rings_once(Reflection *refl,
+                                struct intcontext *ic,
+                                pthread_mutex_t *term_lock);
+
+extern void intcontext_free(struct intcontext *ic);
 
 extern void integrate_all(struct image *image, IntegrationMethod meth,
                           double ir_inn, double ir_mid, double ir_out,

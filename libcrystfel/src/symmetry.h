@@ -30,11 +30,6 @@
 #ifndef SYMMETRY_H
 #define SYMMETRY_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include "integer_matrix.h"
 #include "rational.h"
 

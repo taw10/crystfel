@@ -26,6 +26,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -53,7 +57,7 @@ struct _refldata {
 	/* Location in image */
 	double fs;
 	double ss;
-	struct panel *panel;
+	int panel_number;
 
 	/* Non-zero if this reflection can be used for scaling */
 	int scalable;
@@ -308,12 +312,13 @@ void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 /**
  * \param refl: Reflection
  *
- * \returns the panel which the reflection appears on
+ * \returns panel number (index in detgeom/DataTemplate structure)
+ *           which the reflection appears on
  *
  **/
-struct panel *get_panel(const Reflection *refl)
+int get_panel_number(const Reflection *refl)
 {
-	return refl->data.panel;
+	return refl->data.panel_number;
 }
 
 
@@ -589,14 +594,13 @@ void set_detector_pos(Reflection *refl, double fs, double ss)
 
 /**
  * \param refl: Reflection
- * \param p: Pointer to the panel structure on which the reflection appears
- *
- * Note that the pointer will be stored, not the contents of the structure.
+ * \param pn: Panel number (index in detgeom/DataTemplate structure) of
+ *      the panel on which the reflection appears.
  *
  **/
-void set_panel(Reflection *refl, struct panel *p)
+void set_panel_number(Reflection *refl, int pn)
 {
-	refl->data.panel = p;
+	refl->data.panel_number = pn;
 }
 
 
@@ -882,8 +886,11 @@ static Reflection *insert_node(Reflection *refl, Reflection *new)
 }
 
 
-static void add_to_list(RefList *list, Reflection *new,
-                        signed int h, signed int k, signed int l)
+static void add_refl_to_list_real(RefList *list,
+                                  Reflection *new,
+                                  signed int h,
+                                  signed int k,
+                                  signed int l)
 {
 	Reflection *f;
 
@@ -929,7 +936,7 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 	new = new_node(SERIAL(h, k, l));
 	if ( new == NULL ) return NULL;
 
-	add_to_list(list, new, h, k, l);
+	add_refl_to_list_real(list, new, h, k, l);
 
 	return new;
 }
@@ -948,7 +955,7 @@ void add_refl_to_list(Reflection *refl, RefList *list)
 
 	get_indices(refl, &h, &k, &l);
 
-	add_to_list(list, refl, h, k, l);
+	add_refl_to_list_real(list, refl, h, k, l);
 }
 
 

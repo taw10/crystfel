@@ -9,7 +9,7 @@
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2019 Thomas White <taw@physics.org>
+ *   2010-2020 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -44,48 +44,26 @@
 #include <string.h>
 #include <unistd.h>
 #include <argp.h>
-#include <hdf5.h>
 #include <gsl/gsl_errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "utils.h"
-#include "hdf5-file.h"
-#include "index.h"
-#include "peaks.h"
-#include "detector.h"
-#include "filters.h"
-#include "thread-pool.h"
-#include "geometry.h"
-#include "stream.h"
-#include "reflist-utils.h"
-#include "cell-utils.h"
-#include "integration.h"
-#include "taketwo.h"
+#include <utils.h>
+#include <index.h>
+#include <peaks.h>
+#include <filters.h>
+#include <thread-pool.h>
+#include <geometry.h>
+#include <stream.h>
+#include <reflist-utils.h>
+#include <cell-utils.h>
+#include <integration.h>
+#include <image.h>
+#include <datatemplate.h>
+
 #include "im-sandbox.h"
-#include "image.h"
-
-
-static void add_geom_beam_stuff_to_field_list(struct imagefile_field_list *copyme,
-                                              struct detector *det,
-                                              struct beam_params *beam)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-
-		struct panel *p = &det->panels[i];
-
-		if ( p->clen_from != NULL ) {
-			add_imagefile_field(copyme, p->clen_from);
-		}
-	}
-
-	if ( beam->photon_energy_from != NULL ) {
-		add_imagefile_field(copyme, beam->photon_energy_from);
-	}
-}
+#include "version.h"
 
 
 struct indexamajig_arguments
@@ -99,20 +77,21 @@ struct indexamajig_arguments
 	int check_prefix;
 	int n_proc;
 	char *cellfile;
-	char *spectrum_fn;
 	char *indm_str;
 	int basename;
 	int zmq;
 	int no_image_data;
+	int no_mask_data;
 	int serial_start;
 	char *temp_location;
-	char *command_line_peak_path;
 	int if_refine;
 	int if_checkcell;
 	int if_peaks;
 	int if_multi;
 	int if_retry;
 	int profile;  /* Whether to do wall-clock time profiling */
+	char **copy_headers;
+	int n_copy_headers;
 
 	TakeTwoOptions **taketwo_opts_ptr;
 	FelixOptions **felix_opts_ptr;
@@ -123,8 +102,23 @@ struct indexamajig_arguments
 
 static void show_version(FILE *fh, struct argp_state *state)
 {
-	printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-	printf(CRYSTFEL_BOILERPLATE"\n");
+	printf("CrystFEL: %s\n", crystfel_version_string());
+	printf("%s\n", crystfel_licence_string());
+}
+
+
+static void add_copy_header(struct indexamajig_arguments *args,
+                            const char *header)
+{
+	char **new_copy_headers = realloc(args->copy_headers,
+	                                  (args->n_copy_headers+1)*sizeof(char *));
+	if ( new_copy_headers == NULL ) {
+		ERROR("Failed to add copy header '%s'\n", header);
+		return;
+	}
+
+	args->copy_headers = new_copy_headers;
+	args->copy_headers[args->n_copy_headers++] = strdup(header);
 }
 
 
@@ -212,9 +206,12 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 209 :
-		args->spectrum_fn = strdup(arg);
-		ERROR("WARNING: Prediction using arbitrary spectrum does not "
-		      "yet work in a useful way.\n");
+		ERROR("--spectrum-filename is no longer used.\n");
+		ERROR("Specify the radiation spectrum via the geometry file instead.\n");
+		return 1;
+
+		case 210 :
+		args->no_mask_data = 1;
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -224,21 +221,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 301 :
-		if ( strcmp(arg, "zaef") == 0 ) {
-			args->iargs.peaks = PEAK_ZAEF;
-		} else if ( strcmp(arg, "peakfinder8") == 0 ) {
-			args->iargs.peaks = PEAK_PEAKFINDER8;
-		} else if ( strcmp(arg, "hdf5") == 0 ) {
-			args->iargs.peaks = PEAK_HDF5;
-		} else if ( strcmp(arg, "cxi") == 0 ) {
-			args->iargs.peaks = PEAK_CXI;
-		} else if ( strcmp(arg, "peakfinder9") == 0 ) {
-			args->iargs.peaks = PEAK_PEAKFINDER9;
-		} else if ( strcmp(arg, "msgpack") == 0 ) {
-			args->iargs.peaks = PEAK_MSGPACK;
-		} else if ( strcmp(arg, "none") == 0 ) {
-			args->iargs.peaks = PEAK_NONE;
-		} else {
+		args->iargs.peaks = parse_peaksearch(arg);
+		if ( args->iargs.peaks == PEAK_ERROR ) {
 			ERROR("Unrecognised peak detection method '%s'\n", arg);
 			return EINVAL;
 		}
@@ -259,12 +243,15 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			ERROR("Invalid value for --min-peaks\n");
 			return EINVAL;
 		}
-		(*(args->pinkindexer_opts_ptr))->min_peaks = args->iargs.min_peaks;
+		/* FIXME: Horrible layering violation, needed for
+		 * pinkIndexer multi-lattice indexing but no longer
+		 * possible. */
+		//(*(args->pinkindexer_opts_ptr))->min_peaks = args->iargs.min_peaks;
 		break;
 
 		case 304 :
-		free(args->command_line_peak_path);
-		args->command_line_peak_path = strdup(arg);
+		ERROR("The option --hdf5-peak-path is no longer used.\n");
+		ERROR("Set the peak path in the geometry file.\n");
 		break;
 
 		case 305 :
@@ -395,6 +382,8 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 401 :
+		/* Values in 'tols' are in frac (not %) and rad
+		 * Conversion happens a few lines below */
 		r = sscanf(arg, "%f,%f,%f,%f,%f,%f",
 		           &args->iargs.tols[0], &args->iargs.tols[1], &args->iargs.tols[2],
 		           &args->iargs.tols[3], &args->iargs.tols[4], &args->iargs.tols[5]);
@@ -559,15 +548,17 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 602 :
-		add_imagefile_field(args->iargs.copyme, arg);
+		add_copy_header(args, arg);
 		break;
 
 		case 603 :
-		args->iargs.stream_peaks = 0;
+		args->iargs.stream_flags = CLEAR_BIT(args->iargs.stream_flags,
+		                                     STREAM_PEAKS);
 		break;
 
 		case 604 :
-		args->iargs.stream_refls = 0;
+		args->iargs.stream_flags = CLEAR_BIT(args->iargs.stream_flags,
+		                                     STREAM_REFLECTIONS);
 		break;
 
 		case 605 :
@@ -594,7 +585,6 @@ int main(int argc, char *argv[])
 	char *tmpdir;  /* e.g. /tmp/indexamajig.12345 */
 	char *rn;  /* e.g. /home/taw/indexing */
 	int r;
-	struct beam_params beam;
 	char *zmq_address = NULL;
 	int timeout = 240;
 	TakeTwoOptions *taketwo_opts = NULL;
@@ -611,18 +601,18 @@ int main(int argc, char *argv[])
 	args.check_prefix = 1;
 	args.n_proc = 1;
 	args.cellfile = NULL;
-	args.spectrum_fn = NULL;
 	args.indm_str = NULL;
 	args.basename = 0;
 	args.zmq = 0;
 	args.serial_start = 1;
-	args.command_line_peak_path = NULL;
 	args.if_peaks = 1;
 	args.if_multi = 0;
 	args.if_retry = 1;
 	args.if_refine = 1;
 	args.if_checkcell = 1;
 	args.profile = 0;
+	args.copy_headers = NULL;
+	args.n_copy_headers = 0;
 	args.taketwo_opts_ptr = &taketwo_opts;
 	args.felix_opts_ptr = &felix_opts;
 	args.xgandalf_opts_ptr = &xgandalf_opts;
@@ -632,12 +622,12 @@ int main(int argc, char *argv[])
 	args.iargs.cell = NULL;
 	args.iargs.noisefilter = 0;
 	args.iargs.median_filter = 0;
-	args.iargs.tols[0] = 0.05;
-	args.iargs.tols[1] = 0.05;
-	args.iargs.tols[2] = 0.05;
-	args.iargs.tols[3] = deg2rad(1.5);
-	args.iargs.tols[4] = deg2rad(1.5);
-	args.iargs.tols[5] = deg2rad(1.5);
+	args.iargs.tols[0] = 0.05;  /* frac (not %) */
+	args.iargs.tols[1] = 0.05;  /* frac (not %) */
+	args.iargs.tols[2] = 0.05;  /* frac (not %) */
+	args.iargs.tols[3] = deg2rad(1.5); /* radians */
+	args.iargs.tols[4] = deg2rad(1.5); /* radians */
+	args.iargs.tols[5] = deg2rad(1.5); /* radians */
 	args.iargs.threshold = 800.0;
 	args.iargs.min_sq_gradient = 100000.0;
 	args.iargs.min_snr = 5.0;
@@ -651,12 +641,9 @@ int main(int argc, char *argv[])
 	args.iargs.min_sig = 11.0;
 	args.iargs.min_peak_over_neighbour = -INFINITY;
 	args.iargs.check_hdf5_snr = 0;
-	args.iargs.det = NULL;
+	args.iargs.dtempl = NULL;
 	args.iargs.peaks = PEAK_ZAEF;
-	args.iargs.beam = &beam;
-	args.iargs.hdf5_peak_path = NULL;
 	args.iargs.half_pixel_shift = 1;
-	args.iargs.copyme = NULL;
 	args.iargs.pk_inn = -1.0;
 	args.iargs.pk_mid = -1.0;
 	args.iargs.pk_out = -1.0;
@@ -665,18 +652,12 @@ int main(int argc, char *argv[])
 	args.iargs.ir_out = -1.0;
 	args.iargs.use_saturated = 1;
 	args.iargs.no_revalidate = 0;
-	args.iargs.stream_peaks = 1;
-	args.iargs.stream_refls = 1;
+	args.iargs.stream_flags = STREAM_PEAKS | STREAM_REFLECTIONS;
 	args.iargs.stream_nonhits = 1;
 	args.iargs.int_diag = INTDIAG_NONE;
 	args.iargs.min_peaks = 0;
 	args.iargs.overpredict = 0;
 	args.iargs.wait_for_file = 0;
-	args.iargs.copyme = new_imagefile_field_list();
-	if ( args.iargs.copyme == NULL ) {
-		ERROR("Couldn't allocate HDF5 field list.\n");
-		return 1;
-	}
 	args.iargs.ipriv = NULL;  /* No default */
 	args.iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
 	args.iargs.push_res = +INFINITY;
@@ -684,6 +665,7 @@ int main(int argc, char *argv[])
 	args.iargs.fix_profile_r = -1.0;
 	args.iargs.fix_divergence = -1.0;
 	args.iargs.no_image_data = 0;
+	args.iargs.no_mask_data = 0;
 
 	argp_program_version_hook = show_version;
 
@@ -716,15 +698,16 @@ int main(int argc, char *argv[])
 		        "processing"},
 		{"zmq-msgpack", 207, NULL, OPTION_NO_USAGE, "Receive data in MessagePack format "
 		        "over ZMQ"},
-		{"no-image-data", 208, NULL, OPTION_NO_USAGE, "Do not load image data (from ZMQ)"},
+		{"no-image-data", 208, NULL, OPTION_NO_USAGE, "Do not load image data"},
 		{"spectrum-file", 209, "fn", OPTION_NO_USAGE | OPTION_HIDDEN,
 		       "File containing radiation spectrum"},
+		{"no-mask-data", 210, NULL, OPTION_NO_USAGE, "Do not load mask data"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
 		{"peak-radius", 302, "r1,r2,r3", OPTION_NO_USAGE, "Radii for peak search"},
 		{"min-peaks", 303, "n", OPTION_NO_USAGE, "Minimum number of peaks for indexing"},
-		{"hdf5-peaks", 304, "p", OPTION_NO_USAGE, "Location of peak table in HDF5 file"},
+		{"hdf5-peaks", 304, "p", OPTION_HIDDEN, "Location of peak table in HDF5 file"},
 		{"median-filter", 305, "n", OPTION_NO_USAGE, "Apply median filter to image data"},
 		{"filter-noise", 306, NULL, OPTION_NO_USAGE, "Apply noise filter to image data"},
 		{"threshold", 't', "adu", OPTION_NO_USAGE, "Threshold for peak detection "
@@ -797,8 +780,9 @@ int main(int argc, char *argv[])
 		{NULL, 0, 0, OPTION_DOC, "Output options:", 6},
 		{"no-non-hits-in-stream", 601, NULL, OPTION_NO_USAGE, "Don't include non-hits in "
 		        "stream (see --min-peaks)"},
-		{"copy-hdf5-field", 602, "f", OPTION_NO_USAGE, "Put the value of this HDF5 field "
-		        "into the stream"},
+		{"copy-hdf5-field", 602, "f", OPTION_HIDDEN, NULL},
+		{"copy-header", 602, "f", OPTION_NO_USAGE, "Put the value of this image header "
+		        "field into the stream"},
 		{"no-peaks-in-stream", 603, NULL, OPTION_NO_USAGE, "Don't put peak search results "
 		        "in stream"},
 		{"no-refls-in-stream", 604, NULL, OPTION_NO_USAGE, "Don't put integration results "
@@ -861,31 +845,18 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Load detector geometry */
-	args.iargs.det = get_detector_geometry_2(args.geom_filename,
-	                                         args.iargs.beam,
-	                                         &args.iargs.hdf5_peak_path);
-	if ( args.iargs.det == NULL ) {
-		ERROR("Failed to read detector geometry from  '%s'\n",
-		      args.geom_filename);
+	/* Load data template (new API) */
+	args.iargs.dtempl = data_template_new_from_file(args.geom_filename);
+	if ( args.iargs.dtempl == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'"
+		      " (for new API)\n", args.geom_filename);
 		return 1;
 	}
-	add_geom_beam_stuff_to_field_list(args.iargs.copyme, args.iargs.det,
-	                                  args.iargs.beam);
 
-	/* If no peak path from geometry file, use these (but see later) */
-	if ( args.iargs.hdf5_peak_path == NULL ) {
-		if ( args.iargs.peaks == PEAK_HDF5 ) {
-			args.iargs.hdf5_peak_path = strdup("/processing/hitfinder/peakinfo");
-		} else if ( args.iargs.peaks == PEAK_CXI ) {
-			args.iargs.hdf5_peak_path = strdup("/entry_1/result_1");
-		}
-	}
-
-	/* If an HDF5 peak path was given on the command line, use it */
-	if ( args.command_line_peak_path != NULL ) {
-		free(args.iargs.hdf5_peak_path);
-		args.iargs.hdf5_peak_path = args.command_line_peak_path;
+	/* Add any headers we need to copy */
+	for ( r=0; r<args.n_copy_headers; r++ ) {
+		data_template_add_copy_header(args.iargs.dtempl,
+		                              args.copy_headers[r]);
 	}
 
 	/* If no integration radii were given, apply the defaults */
@@ -915,18 +886,6 @@ int main(int argc, char *argv[])
 		free(args.cellfile);
 	} else {
 		args.iargs.cell = NULL;
-	}
-
-	/* Load spectrum from file if given */
-	if ( args.spectrum_fn != NULL ) {
-		args.iargs.spectrum = spectrum_load(args.spectrum_fn);
-		if ( args.iargs.spectrum == NULL ) {
-			ERROR("Couldn't read spectrum (from %s)\n", args.spectrum_fn);
-			return 1;
-		}
-		free(args.spectrum_fn);
-	} else {
-		args.iargs.spectrum = NULL;
 	}
 
 	tmpdir = create_tempdir(args.temp_location);
@@ -1002,7 +961,7 @@ int main(int argc, char *argv[])
 		}
 
 		args.iargs.ipriv = setup_indexing(args.indm_str, args.iargs.cell,
-		                                  args.iargs.det, args.iargs.beam,
+		                                  args.iargs.dtempl,
 		                                  args.iargs.tols, flags,
 		                                  taketwo_opts,
 		                                  xgandalf_opts,
@@ -1035,13 +994,18 @@ int main(int argc, char *argv[])
 	free(rn);
 
 	/* Open output stream */
-	st = open_stream_for_write_4(args.outfile, args.geom_filename,
-	                             args.iargs.cell, argc, argv,
-	                             args.indm_str);
+	st = stream_open_for_write(args.outfile, args.iargs.dtempl);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream '%s'\n", args.outfile);
 		return 1;
 	}
+
+	/* Write audit info */
+	stream_write_commandline_args(st, argc, argv);
+	stream_write_geometry_file(st, args.geom_filename);
+	stream_write_target_cell(st, args.iargs.cell);
+	stream_write_indexing_methods(st, args.indm_str);
+
 	free(args.outfile);
 	free(args.indm_str);
 
@@ -1065,15 +1029,12 @@ int main(int argc, char *argv[])
 	                   fh, st, tmpdir, args.serial_start, zmq_address,
 	                   timeout, args.profile);
 
-	free_imagefile_field_list(args.iargs.copyme);
 	cell_free(args.iargs.cell);
-	free(args.iargs.beam->photon_energy_from);
 	free(args.prefix);
 	free(args.temp_location);
 	free(tmpdir);
-	free_detector_geometry(args.iargs.det);
-	free(args.iargs.hdf5_peak_path);
-	close_stream(st);
+	data_template_free(args.iargs.dtempl);
+	stream_close(st);
 	cleanup_indexing(args.iargs.ipriv);
 
 	return r;

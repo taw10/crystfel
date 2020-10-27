@@ -47,7 +47,6 @@
 
 static int use_status_labels = 0;
 static pthread_key_t status_label_key;
-pthread_mutex_t stderr_lock = PTHREAD_MUTEX_INITIALIZER;
 
 struct worker_args
 {

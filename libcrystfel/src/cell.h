@@ -33,10 +33,6 @@
 #ifndef CELL_H
 #define CELL_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "utils.h"
 #include "integer_matrix.h"
 
@@ -101,7 +97,7 @@ extern UnitCell *cell_new_from_reciprocal_axes(struct rvec as, struct rvec bs,
 extern UnitCell *cell_new_from_direct_axes(struct rvec as, struct rvec bs,
                                            struct rvec cs);
 
-extern int cell_has_parameters(UnitCell *cell);
+extern int cell_has_parameters(const UnitCell *cell);
 
 extern void cell_set_cartesian(UnitCell *cell,
                                double ax, double ay, double az,
@@ -129,7 +125,7 @@ extern void cell_set_reciprocal(UnitCell *cell,
                                 double bsx, double bsy, double bsz,
                                 double csx, double csy, double csz);
 
-extern LatticeType cell_get_lattice_type(UnitCell *cell);
+extern LatticeType cell_get_lattice_type(const UnitCell *cell);
 extern void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type);
 
 struct g6
@@ -142,12 +138,12 @@ struct g6
 	double F;
 };
 
-extern struct g6 cell_get_G6(UnitCell *cell);
+extern struct g6 cell_get_G6(const UnitCell *cell);
 
-extern char cell_get_centering(UnitCell *cell);
+extern char cell_get_centering(const UnitCell *cell);
 extern void cell_set_centering(UnitCell *cell, char centering);
 
-extern char cell_get_unique_axis(UnitCell *cell);
+extern char cell_get_unique_axis(const UnitCell *cell);
 extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
 
 extern const char *cell_rep(UnitCell *cell);

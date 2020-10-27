@@ -37,6 +37,8 @@
 #include <stdlib.h>
 
 #include "peakfinder8.h"
+#include "detgeom.h"
+#include "image.h"
 
 
 /** \file peakfinder8.h */
@@ -101,10 +103,10 @@ struct peakfinder_peak_data
 
 
 // CrystFEL-only block 2
-static struct radius_maps *compute_radius_maps(struct detector *det)
+static struct radius_maps *compute_radius_maps(struct detgeom *det)
 {
 	int i, u, iss, ifs;
-	struct panel p;
+	struct detgeom_panel p;
 	struct radius_maps *rm = NULL;
 
 	rm = (struct radius_maps *)malloc(sizeof(struct radius_maps));
@@ -173,14 +175,14 @@ static struct peakfinder_mask *create_peakfinder_mask(struct image *img,
 	struct peakfinder_mask *msk;
 
 	msk = (struct peakfinder_mask *)malloc(sizeof(struct peakfinder_mask));
-	msk->masks =(char **) malloc(img->det->n_panels*sizeof(char*));
-	msk->n_masks = img->det->n_panels;
-	for ( i=0; i<img->det->n_panels; i++) {
+	msk->masks =(char **) malloc(img->detgeom->n_panels*sizeof(char*));
+	msk->n_masks = img->detgeom->n_panels;
+	for ( i=0; i<img->detgeom->n_panels; i++) {
 
-		struct panel p;
+		struct detgeom_panel p;
 		int iss, ifs;
 
-		p = img->det->panels[i];
+		p = img->detgeom->panels[i];
 
 		msk->masks[i] = (char *)calloc(p.w*p.h,sizeof(char));
 
@@ -1040,14 +1042,10 @@ int peakfinder8(struct image *img, int max_n_peaks,
 
 	iterations = 5;
 
-	if ( img-> det == NULL) {
-		return 1;
-	}
+	if ( img->detgeom == NULL) return 1;
 
-	rmaps = compute_radius_maps(img->det);
-	if ( rmaps == NULL ) {
-		return 1;
-	}
+	rmaps = compute_radius_maps(img->detgeom);
+	if ( rmaps == NULL ) return 1;
 
 	pfmask = create_peakfinder_mask(img, rmaps, min_res, max_res);
 	if ( pfmask == NULL ) {
@@ -1055,18 +1053,18 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		return 1;
 	}
 
-	pfdata = allocate_panel_data(img->det->n_panels);
+	pfdata = allocate_panel_data(img->detgeom->n_panels);
 	if ( pfdata == NULL) {
 		free_radius_maps(rmaps);
 		free_peakfinder_mask(pfmask);
 		return 1;
 	}
 
-	for ( pi=0 ; pi<img->det->n_panels ; pi++ ) {
-		pfdata->panel_h[pi] = img->det->panels[pi].h;
-		pfdata->panel_w[pi] = img->det->panels[pi].w;
+	for ( pi=0 ; pi<img->detgeom->n_panels ; pi++ ) {
+		pfdata->panel_h[pi] = img->detgeom->panels[pi].h;
+		pfdata->panel_w[pi] = img->detgeom->panels[pi].w;
 		pfdata->panel_data[pi] = img->dp[pi];
-		pfdata->num_panels = img->det->n_panels;
+		pfdata->num_panels = img->detgeom->n_panels;
 	}
 
 	max_r = -1e9;
@@ -1139,17 +1137,13 @@ int peakfinder8(struct image *img, int max_n_peaks,
 
 	remaining_max_num_peaks = max_n_peaks;
 
-	for ( pi=0 ; pi<img->det->n_panels ; pi++) {
+	for ( pi=0 ; pi<img->detgeom->n_panels ; pi++) {
 
 		int peaks_to_add;
 		int pki;
 		int ret;
 
 		num_found_peaks = 0;
-
-		if ( img->det->panels[pi].no_index ) {
-			continue;
-		}
 
 		ret = peakfinder8_base(rstats->roffset,
 		                       rstats->rthreshold,
@@ -1192,9 +1186,9 @@ int peakfinder8(struct image *img, int max_n_peaks,
 
 		for ( pki=0 ; pki<peaks_to_add ; pki++ ) {
 
-			struct panel *p;
+			struct detgeom_panel *p;
 
-			p = &img->det->panels[pi];
+			p = &img->detgeom->panels[pi];
 
 			if ( pkdata->max_i[pki] > p->max_adu ) {
 				if ( !use_saturated ) {
@@ -1205,9 +1199,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 			image_add_feature(img->features,
 			                  pkdata->com_fs[pki]+0.5,
 			                  pkdata->com_ss[pki]+0.5,
-			                  p,
-			                  img,
-			                  pkdata->tot_i[pki],
+			                  pi, img, pkdata->tot_i[pki],
 			                  NULL);
 		}
 	}

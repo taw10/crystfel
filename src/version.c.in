@@ -1,0 +1,17 @@
+/* Prevent subsequent inclusion of version.h
+ * (e.g. in the case of Meson unity build mode) */
+#define CRYSTFEL_VERSION_H
+
+const char *crystfel_version_string()
+{
+	return "@VCS_TAG@";
+}
+
+const char *crystfel_licence_string()
+{
+	return "License GPLv3+: GNU GPL version 3 or later" \
+		" <http://gnu.org/licenses/gpl.html>.\n" \
+		"This is free software: you are free to change and redistribute it.\n" \
+		"There is NO WARRANTY, to the extent permitted by law.\n\n" \
+		"Written by Thomas White and others.";
+}

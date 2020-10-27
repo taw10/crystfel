@@ -14,9 +14,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 find_package(HDF5 REQUIRED COMPONENTS C)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
-find_package(TIFF)
 find_package(OpenCL)
 find_package(PkgConfig)
+
+# Find SLURM
+set(CMAKE_REQUIRED_LIBRARIES "-lslurm")
+check_symbol_exists(slurm_api_version "slurm/slurm.h" HAVE_SLURM)
+unset(CMAKE_REQUIRED_LIBRARIES)
 
 # Request HDF5 1.10-style API (can't use 1.12-style yet)
 add_definitions(-DH5_USE_110_API)
@@ -41,39 +45,34 @@ else ()
   message(STATUS "ZMQ not found.")
 endif ()
 
+# Find out where forkpty() is declared
+set(CMAKE_REQUIRED_LIBRARIES "-lutil")
+check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
+check_symbol_exists(forkpty "util.h" HAVE_FORKPTY_UTIL_H)
+unset(CMAKE_REQUIRED_LIBRARIES)
+if(HAVE_FORKPTY_PTY_H)
+  message(STATUS "Found forkpty() in pty.h")
+elseif(HAVE_FORKPTY_UTIL_H)
+  message(STATUS "Found forkpty() in util.h")
+else()
+  message(SEND_ERROR "Couldn't find forkpty()")
+endif()
+
 pkg_search_module(GTK gtk+-3.0)
-if (NOT GTK_FOUND)
-
-  # No GTK3.  Try GTK2?
-  pkg_search_module(GTK gtk+-2.0)
-  if (GTK_FOUND)
-    message(STATUS "Using GTK 2")
-    pkg_search_module(GDK gdk-2.0)
-  endif ()
-
-else ()
-
-  message(STATUS "Using GTK 3")
+if (GTK_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations")
-  pkg_search_module(GDK gdk-3.0)
-
+  link_directories(${GTK_LIBRARY_DIRS})
 endif ()
 
 # If no version of GTK was found, try for GDK
 if (NOT GTK_FOUND)
-  message(STATUS "GTK not found. hdfsee and cell_explorer will not be compiled")
+  message(STATUS "GTK3 not found. GUI parts will not be compiled")
   message(STATUS "Looking separately for GDK")
   pkg_search_module(GDK gdk-3.0)
   if (NOT GDK_FOUND)
-    pkg_search_module(GDK gdk-2.0)
-    if (GDK_FOUND)
-      message(STATUS "Using GDK 2")
-    endif()
-  else ()
-    message(STATUS "Using GDK 3")
+    message(STATUS "GDK not found.")
   endif()
 endif()
-link_directories(${GTK_LIBRARY_DIRS})
 
 pkg_search_module(CAIRO cairo)
 pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
@@ -107,14 +106,13 @@ else ()
   else ()
     message(STATUS "This is a packaged release version")
   endif ()
-
 endif ()
+configure_file(src/version.c.cmake.in version.c)
 
 include(CheckIncludeFile)
 include(CheckLibraryExists)
 
 set(HAVE_CAIRO ${CAIRO_FOUND})
-set(HAVE_TIFF ${TIFF_FOUND})
 set(HAVE_GTK ${GTK_FOUND})
 set(HAVE_OPENCL ${OpenCL_FOUND})
 set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
@@ -145,10 +143,10 @@ check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
 
 # Check for argp
 check_symbol_exists(argp_parse "argp.h" HAVE_ARGP)
-if (!HAVE_ARGP)
-  message(ERROR "argp not found.  If you're building on Mac OS using libraries"
-                "from Homebrew, install argp-standalone.")
-endif (!HAVE_ARGP)
+if (NOT HAVE_ARGP)
+  message(ERROR " argp not found.  If you're building on Mac OS using libraries"
+                " from Homebrew, install argp-standalone.")
+endif (NOT HAVE_ARGP)
 
 # Add the libcrystfel target
 add_subdirectory(libcrystfel)
@@ -164,11 +162,16 @@ add_subdirectory(tests)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
         DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
+# Misc resources
+install(FILES ${CMAKE_SOURCE_DIR}/data/crystfel.svg
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
+
 # ----------------------------------------------------------------------
 # partial_sim
 
 set(PARTIAL_SIM_SOURCES src/partial_sim.c)
-add_executable(partial_sim ${PARTIAL_SIM_SOURCES})
+add_executable(partial_sim ${PARTIAL_SIM_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(partial_sim PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partial_sim ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES partial_sim)
@@ -182,7 +185,8 @@ if(HAVE_OPENCL)
   set(PATTERN_SIM_OPENCL_SOURCES src/cl-utils.c src/diffraction-gpu.c)
 endif(HAVE_OPENCL)
 
-add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES})
+add_executable(pattern_sim ${PATTERN_SIM_SOURCES} ${PATTERN_SIM_OPENCL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(pattern_sim PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(pattern_sim ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 
@@ -194,33 +198,14 @@ endif(HAVE_OPENCL)
 list(APPEND CRYSTFEL_EXECUTABLES pattern_sim)
 
 # ----------------------------------------------------------------------
-# hdfsee
-
-if (GTK_FOUND)
-
-  set(HDFSEE_SOURCES src/hdfsee.c src/dw-hdfsee.c src/hdfsee-render.c)
-  add_executable(hdfsee ${HDFSEE_SOURCES})
-
-  target_include_directories(hdfsee PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
-  target_link_libraries(hdfsee ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
-
-  if (TIFF_FOUND)
-    target_include_directories(hdfsee PRIVATE ${TIFF_INCLUDE_DIRS})
-    target_link_libraries(hdfsee ${TIFF_LIBRARIES})
-  endif (TIFF_FOUND)
-
-  list(APPEND CRYSTFEL_EXECUTABLES hdfsee)
-
-endif (GTK_FOUND)
-
-# ----------------------------------------------------------------------
 # cell_explorer
 
 if (GTK_FOUND)
 
   set(CELL_EXPLORER_SOURCES src/cell_explorer.c src/multihistogram.c)
 
-  add_executable(cell_explorer ${CELL_EXPLORER_SOURCES})
+  add_executable(cell_explorer ${CELL_EXPLORER_SOURCES}
+                 ${CMAKE_CURRENT_BINARY_DIR}/version.c)
   target_include_directories(cell_explorer PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
   target_link_libraries(cell_explorer ${COMMON_LIBRARIES} ${GTK_LIBRARIES})
 
@@ -234,7 +219,8 @@ endif (GTK_FOUND)
 if (CAIRO_FOUND)
 
   set(RENDER_HKL_SOURCES src/render_hkl.c)
-  add_executable(render_hkl ${RENDER_HKL_SOURCES})
+  add_executable(render_hkl ${RENDER_HKL_SOURCES}
+                 ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 
   target_include_directories(render_hkl PRIVATE ${COMMON_INCLUDES} ${CAIRO_INCLUDE_DIRS})
   target_link_libraries(render_hkl ${COMMON_LIBRARIES} ${CAIRO_LIBRARIES})
@@ -247,7 +233,8 @@ endif (CAIRO_FOUND)
 # process_hkl
 
 set(PROCESS_HKL_SOURCES src/process_hkl.c)
-add_executable(process_hkl ${PROCESS_HKL_SOURCES})
+add_executable(process_hkl ${PROCESS_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(process_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(process_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES process_hkl)
@@ -256,7 +243,8 @@ list(APPEND CRYSTFEL_EXECUTABLES process_hkl)
 # list_events
 
 set(LIST_EVENTS_SOURCES src/list_events.c)
-add_executable(list_events ${LIST_EVENTS_SOURCES})
+add_executable(list_events ${LIST_EVENTS_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(list_events PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(list_events ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES list_events)
@@ -271,7 +259,8 @@ if ( ZMQ_FOUND AND MSGPACK_FOUND )
   list(APPEND INDEXAMAJIG_SOURCES src/im-zmq.c)
 endif ()
 
-add_executable(indexamajig ${INDEXAMAJIG_SOURCES})
+add_executable(indexamajig ${INDEXAMAJIG_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(indexamajig ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES indexamajig)
@@ -286,7 +275,8 @@ endif ()
 # get_hkl
 
 set(GET_HKL_SOURCES src/get_hkl.c)
-add_executable(get_hkl ${GET_HKL_SOURCES})
+add_executable(get_hkl ${GET_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(get_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(get_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES get_hkl)
@@ -295,7 +285,8 @@ list(APPEND CRYSTFEL_EXECUTABLES get_hkl)
 # compare_hkl
 
 set(COMPARE_HKL_SOURCES src/compare_hkl.c)
-add_executable(compare_hkl ${COMPARE_HKL_SOURCES})
+add_executable(compare_hkl ${COMPARE_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(compare_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(compare_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES compare_hkl)
@@ -304,7 +295,8 @@ list(APPEND CRYSTFEL_EXECUTABLES compare_hkl)
 # check_hkl
 
 set(CHECK_HKL_SOURCES src/check_hkl.c)
-add_executable(check_hkl ${CHECK_HKL_SOURCES})
+add_executable(check_hkl ${CHECK_HKL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(check_hkl PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(check_hkl ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES check_hkl)
@@ -314,7 +306,8 @@ list(APPEND CRYSTFEL_EXECUTABLES check_hkl)
 
 set(PARTIALATOR_SOURCES src/partialator.c src/post-refinement.c src/merge.c
                         src/rejection.c src/scaling.c)
-add_executable(partialator ${PARTIALATOR_SOURCES})
+add_executable(partialator ${PARTIALATOR_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(partialator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(partialator ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES partialator)
@@ -323,7 +316,8 @@ list(APPEND CRYSTFEL_EXECUTABLES partialator)
 # ambigator
 
 set(AMBIGATOR_SOURCES src/ambigator.c)
-add_executable(ambigator ${AMBIGATOR_SOURCES})
+add_executable(ambigator ${AMBIGATOR_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(ambigator PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(ambigator ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES ambigator)
@@ -331,39 +325,43 @@ list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 # ----------------------------------------------------------------------
 # geoptimiser
 
-set(GEOPTIMISER_SOURCES src/geoptimiser.c src/hdfsee-render.c)
-add_executable(geoptimiser ${GEOPTIMISER_SOURCES})
-target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
-list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
+      # FIXME!
+#if (GDKPIXBUF_FOUND)
+#  target_include_directories(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
+#  target_link_libraries(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_LIBRARIES})
+#endif (GDKPIXBUF_FOUND)
 
-# Add features one by one so that #ifdef HAVE_XX//#include XX.h always works
-# If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
-if (CAIRO_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
-endif (CAIRO_FOUND)
-
-if (GDKPIXBUF_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
-endif (GDKPIXBUF_FOUND)
-
-if (GDK_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
-endif (GDK_FOUND)
-
-if (TIFF_FOUND)
-  target_include_directories(geoptimiser PRIVATE ${TIFF_INCLUDE_DIRS})
-  target_link_libraries(geoptimiser ${TIFF_LIBRARIES})
-endif (TIFF_FOUND)
+# FIXME: Restore!
+#set(GEOPTIMISER_SOURCES src/geoptimiser.c)
+#add_executable(geoptimiser ${GEOPTIMISER_SOURCES}
+#               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
+#target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
+#target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
+#list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
+#
+## Add features one by one so that #ifdef HAVE_XX//#include XX.h always works
+## If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
+#if (CAIRO_FOUND)
+#  target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
+#  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
+#endif (CAIRO_FOUND)
+#
+#if (GDKPIXBUF_FOUND)
+#  target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
+#  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
+#endif (GDKPIXBUF_FOUND)
+#
+#if (GDK_FOUND)
+#  target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
+#  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
+#endif (GDK_FOUND)
 
 # ----------------------------------------------------------------------
 # whirligig
 
 set(WHIRLIGIG_SOURCES src/whirligig.c)
-add_executable(whirligig ${WHIRLIGIG_SOURCES})
+add_executable(whirligig ${WHIRLIGIG_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(whirligig PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(whirligig ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES whirligig)
@@ -372,7 +370,8 @@ list(APPEND CRYSTFEL_EXECUTABLES whirligig)
 # make_pixelmap
 
 set(MAKE_PIXELMAP_SOURCES src/make_pixelmap.c)
-add_executable(make_pixelmap ${MAKE_PIXELMAP_SOURCES})
+add_executable(make_pixelmap ${MAKE_PIXELMAP_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(make_pixelmap PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(make_pixelmap ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES make_pixelmap)
@@ -381,10 +380,37 @@ list(APPEND CRYSTFEL_EXECUTABLES make_pixelmap)
 # cell_tool
 
 set(CELL_TOOL_SOURCES src/cell_tool.c)
-add_executable(cell_tool ${CELL_TOOL_SOURCES})
+add_executable(cell_tool ${CELL_TOOL_SOURCES}
+               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(cell_tool PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(cell_tool ${COMMON_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES cell_tool)
+
+# ----------------------------------------------------------------------
+# crystfel (main graphical user interface)
+
+if (GTK_FOUND)
+
+  set(CRYSTFEL_GUI_SOURCES src/crystfel_gui.c src/crystfelimageview.c
+    src/gui_peaksearch.c src/gui_index.c src/gui_merge.c src/gui_backend_local.c
+    src/gui_project.c src/crystfelindexingopts.c src/crystfelmergeopts.c)
+
+  if (HAVE_SLURM)
+    set(CRYSTFEL_GUI_SOURCES ${CRYSTFEL_GUI_SOURCES} src/gui_backend_slurm.c)
+  endif (HAVE_SLURM)
+
+  add_executable(crystfel ${CRYSTFEL_GUI_SOURCES}
+                 ${CMAKE_CURRENT_BINARY_DIR}/version.c)
+  target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
+  target_link_libraries (crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES})
+
+  if (HAVE_SLURM)
+    target_link_libraries(crystfel slurm)
+  endif (HAVE_SLURM)
+
+  list(APPEND CRYSTFEL_EXECUTABLES crystfel)
+
+endif (GTK_FOUND)
 
 # ----------------------------------------------------------------------
 # Install targets
@@ -408,7 +434,6 @@ install(FILES
 	doc/man/compare_hkl.1
 	doc/man/geoptimiser.1
 	doc/man/get_hkl.1
-	doc/man/hdfsee.1
 	doc/man/indexamajig.1
 	doc/man/list_events.1
 	doc/man/partialator.1

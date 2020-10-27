@@ -640,8 +640,9 @@ void transform_fractional_coords_rtnl_inverse(const RationalMatrix *P,
 }
 
 
-static RationalMatrix *delete_row_and_column(const RationalMatrix *m,
-                                             unsigned int di, unsigned int dj)
+static RationalMatrix *rational_delete_row_and_column(const RationalMatrix *m,
+                                                      unsigned int di,
+                                                      unsigned int dj)
 {
 	RationalMatrix *n;
 	unsigned int i, j;
@@ -667,13 +668,13 @@ static RationalMatrix *delete_row_and_column(const RationalMatrix *m,
 }
 
 
-static Rational cofactor(const RationalMatrix *m,
-                         unsigned int i, unsigned int j)
+static Rational rational_cofactor(const RationalMatrix *m,
+                                  unsigned int i, unsigned int j)
 {
 	RationalMatrix *n;
 	Rational t, C;
 
-	n = delete_row_and_column(m, i, j);
+	n = rational_delete_row_and_column(m, i, j);
 	if ( n == NULL ) {
 		fprintf(stderr, "Failed to allocate matrix.\n");
 		return rtnl_zero();
@@ -708,7 +709,8 @@ Rational rtnl_mtx_det(const RationalMatrix *m)
 	det = rtnl_zero();
 	for ( j=0; j<m->cols; j++ ) {
 		Rational a;
-		a = rtnl_mul(rtnl_mtx_get(m, i, j), cofactor(m, i, j));
+		a = rtnl_mul(rtnl_mtx_get(m, i, j),
+		             rational_cofactor(m, i, j));
 		det = rtnl_add(det, a);
 	}
 

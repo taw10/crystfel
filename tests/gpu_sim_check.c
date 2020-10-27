@@ -26,11 +26,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -40,11 +35,15 @@
 #include <sys/time.h>
 #endif
 
+#define CL_TARGET_OPENCL_VERSION 220
+
 #include "../src/diffraction.h"
 #include "../src/diffraction-gpu.h"
 #include "../src/cl-utils.h"
-#include <detector.h>
+
+#include <datatemplate.h>
 #include <utils.h>
+#include <image.h>
 #include <symmetry.h>
 #include <cell-utils.h>
 
@@ -76,16 +75,15 @@ static double get_hires_seconds()
 int main(int argc, char *argv[])
 {
 	struct gpu_context *gctx;
-	struct image gpu_image;
-	struct image cpu_image;
+	struct image *gpu_image;
+	struct image *cpu_image;
+	DataTemplate *dtempl;
 	UnitCell *cell;
 	UnitCell *cell_raw;
-	struct detector *det;
 	int i;
 	double gpu_min, gpu_max, gpu_tot;
 	double cpu_min, cpu_max, cpu_tot;
 	double dev, perc;
-	const double sep = 20.0;
 	double start, end;
 	double gpu_time, cpu_time;
 	SymOpList *sym;
@@ -109,73 +107,14 @@ int main(int argc, char *argv[])
 
 	cell = cell_rotate(cell_raw, random_quaternion(rng));
 
-	det = calloc(1, sizeof(struct detector));
-	det->n_panels = 2;
-	det->panels = calloc(2, sizeof(struct panel));
+	dtempl = data_template_new_from_file(argv[1]);
+	if ( dtempl == NULL ) return 1;
 
-	det->panels[0].orig_min_fs = 0;
-	det->panels[0].orig_max_fs = 1023;
-	det->panels[0].orig_min_ss = 0;
-	det->panels[0].orig_max_ss = 511;
-	det->panels[0].w = 1024;
-	det->panels[0].h = 512;
-	det->panels[0].fsx = 1.0;
-	det->panels[0].fsy = 0.0;
-	det->panels[0].fsz = 0.4;
-	det->panels[0].ssx = 0.0;
-	det->panels[0].ssy = 1.0;
-	det->panels[0].ssz = 0.0;
-	det->panels[0].xfs = 1.0;
-	det->panels[0].yfs = 0.0;
-	det->panels[0].xss = 0.0;
-	det->panels[0].yss = 1.0;
-	det->panels[0].cnx = -512.0;
-	det->panels[0].cny = -512.0-sep;
-	det->panels[0].clen = 100.0e-3;
-	det->panels[0].res = 9090.91;
-	det->panels[0].adu_per_eV = 1.0;
-	det->panels[0].data = NULL;
-
-	det->panels[1].orig_min_fs = 0;
-	det->panels[1].orig_max_fs = 1023;
-	det->panels[1].orig_min_ss = 512;
-	det->panels[1].orig_max_ss = 1023;
-	det->panels[1].w = 1024;
-	det->panels[1].h = 512;
-	det->panels[1].fsx = 1.0;
-	det->panels[1].fsy = 0.0;
-	det->panels[1].fsz = 0.0;
-	det->panels[1].ssx = 0.0;
-	det->panels[1].ssy = 1.0;
-	det->panels[1].ssz = 1.4;
-	det->panels[1].xfs = 1.0;
-	det->panels[1].yfs = 0.0;
-	det->panels[1].xss = 0.0;
-	det->panels[1].yss = 1.0;
-	det->panels[1].cnx = -512.0;
-	det->panels[1].cny = sep;
-	det->panels[1].clen = 100.0e-3;
-	det->panels[1].res = 9090.91;
-	det->panels[1].adu_per_eV = 1.0;
-	det->panels[1].data = NULL;
-
-	cpu_image.det = det;
-	gpu_image.det = det;
-	cpu_image.beam = NULL;
-	gpu_image.beam = NULL;
-
-	cpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
-	gpu_image.lambda = ph_en_to_lambda(eV_to_J(6000));
-	cpu_image.bw = 1.0 / 100.0;
-	gpu_image.bw = 1.0 / 100.0;
-
-	cpu_image.spectrum = spectrum_generate_tophat(cpu_image.lambda,
-	                                              cpu_image.bw);
-	gpu_image.spectrum = spectrum_generate_tophat(gpu_image.lambda,
-	                                              gpu_image.bw);
+	cpu_image = image_create_for_simulation(dtempl);
+	gpu_image = image_create_for_simulation(dtempl);
 
 	start = get_hires_seconds();
-	if ( get_diffraction_gpu(gctx, &gpu_image, 8, 8, 8, cell, 0, 0, 10) ) {
+	if ( get_diffraction_gpu(gctx, gpu_image, 8, 8, 8, cell, 0, 0, 10) ) {
 		return 1;
 	}
 	end = get_hires_seconds();
@@ -183,22 +122,22 @@ int main(int argc, char *argv[])
 
 	sym = get_pointgroup("1");
 
-	cpu_image.dp = malloc(det->n_panels * sizeof(float *));
-	if ( cpu_image.dp == NULL ) {
+	cpu_image->dp = malloc(cpu_image->detgeom->n_panels * sizeof(float *));
+	if ( cpu_image->dp == NULL ) {
 		ERROR("Couldn't allocate memory for result.\n");
 		return 1;
 	}
-	for ( i=0; i<det->n_panels; i++ ) {
-		struct panel *p = &det->panels[i];
-		cpu_image.dp[i] = calloc(p->w * p->h, sizeof(float));
-		if ( cpu_image.dp[i] == NULL ) {
+	for ( i=0; i<cpu_image->detgeom->n_panels; i++ ) {
+		struct detgeom_panel *p = &cpu_image->detgeom->panels[i];
+		cpu_image->dp[i] = calloc(p->w * p->h, sizeof(float));
+		if ( cpu_image->dp[i] == NULL ) {
 			ERROR("Couldn't allocate memory for panel %i\n", i);
 			return 1;
 		}
 	}
 
 	start = get_hires_seconds();
-	get_diffraction(&cpu_image, 8, 8, 8, NULL, NULL, NULL, cell,
+	get_diffraction(cpu_image, 8, 8, 8, NULL, NULL, NULL, cell,
 	                GRADIENT_MOSAIC, sym, 0, 0, 10);
 	end = get_hires_seconds();
 	cpu_time = end - start;
@@ -210,15 +149,15 @@ int main(int argc, char *argv[])
 	gpu_min = +INFINITY;  gpu_max = -INFINITY;  gpu_tot = 0.0;
 	cpu_min = +INFINITY;  cpu_max = -INFINITY;  cpu_tot = 0.0;
 	dev = 0.0;
-	for ( i=0; i<det->n_panels; i++ ) {
+	for ( i=0; i<cpu_image->detgeom->n_panels; i++ ) {
 
 		int j;
-		struct panel *p = &det->panels[i];
+		struct detgeom_panel *p = &cpu_image->detgeom->panels[i];
 
 		for ( j=0; j<p->w*p->h; j++ ) {
 
-			const double cpu = cpu_image.dp[i][j];
-			const double gpu = gpu_image.dp[i][j];
+			const double cpu = cpu_image->dp[i][j];
+			const double gpu = gpu_image->dp[i][j];
 
 			if ( cpu > cpu_max ) cpu_max = cpu;
 			if ( cpu < cpu_min ) cpu_min = cpu;
@@ -242,8 +181,8 @@ int main(int argc, char *argv[])
 		STATUS("Test failed!  I'm writing cpu-sim.h5 and gpu-sim.h5"
 		       " for you to inspect.\n");
 
-		hdf5_write_image("cpu-sim.h5", &cpu_image, NULL);
-		hdf5_write_image("gpu-sim.h5", &gpu_image, NULL);
+		image_write(cpu_image, dtempl, "cpu-sim.h5");
+		image_write(gpu_image, dtempl, "gpu-sim.h5");
 
 		return 1;
 
@@ -251,8 +190,9 @@ int main(int argc, char *argv[])
 
 	gsl_rng_free(rng);
 	cell_free(cell);
-	free_detector_geometry(det);
-
+	image_free(cpu_image);
+	image_free(gpu_image);
+	data_template_free(dtempl);
 
 	return 0;
 }

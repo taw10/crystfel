@@ -48,6 +48,7 @@
 #include "cell-utils.h"
 
 #include "multihistogram.h"
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -1927,18 +1928,116 @@ static void indexing_method_list(CellWindow *w, GtkWidget *vbox)
 }
 
 
+static int add_stream(CellWindow *w, const char *stream_filename,
+                      int *pmax_cells, int *pn_total_chunks)
+{
+	Stream *st;
+	int n_chunks = 0;
+	int n_cells = 0;
+	int max_cells = *pmax_cells;
+
+	fprintf(stderr, "%s\r", stream_filename);
+
+	st = stream_open_for_read(stream_filename);
+	if ( st == NULL ) {
+		fprintf(stderr, "Failed to open '%s' (skipping)\n",
+		        stream_filename);
+		return 0;
+	}
+	do {
+
+		struct image *image;
+		int i;
+
+		image = stream_read_chunk(st, 0);
+		if ( image == NULL ) break;
+
+		for ( i=0; i<image->n_crystals; i++ ) {
+
+			Crystal *cr;
+
+			cr = image->crystals[i];
+
+			if ( w->n_cells == max_cells ) {
+
+				UnitCell **cells_new;
+				IndexingMethod *indms_new;
+				size_t nsz;
+
+				nsz = (max_cells+1024)*sizeof(UnitCell *);
+				cells_new = realloc(w->cells, nsz);
+				if ( cells_new == NULL ) {
+					fprintf(stderr, "Failed to allocate "
+					        "memory for cells.\n");
+					break;
+				}
+
+				nsz = (max_cells+1024)*sizeof(IndexingMethod);
+				indms_new = realloc(w->indms, nsz);
+				if ( indms_new == NULL ) {
+					fprintf(stderr, "Failed to allocate "
+					        "memory for methods.\n");
+					break;
+				}
+
+				max_cells += 1024;
+				*pmax_cells = max_cells;
+				w->cells = cells_new;
+				w->indms = indms_new;
+
+			}
+
+			w->cells[w->n_cells] = cell_new_from_cell(crystal_get_cell(cr));
+			if ( !right_handed(w->cells[w->n_cells]) ) {
+				ERROR("WARNING: Left-handed cell encountered\n");
+			}
+			w->indms[w->n_cells] = image->indexed_by;
+			w->n_cells++;
+			n_cells++;
+
+		}
+
+		n_chunks++;
+		if ( n_chunks % 1000 == 0 ) {
+			fprintf(stderr, "%s: Loaded %i cells from %i chunks\r",
+			        stream_filename, n_cells, n_chunks);
+		}
+
+		image_free(image);
+
+	} while ( 1 );
+
+	fprintf(stderr, "\n");
+
+	if ( stream_has_old_indexers(st) ) {
+		ERROR("----- Notice -----\n");
+		ERROR("This stream contains indexing methods specified in an old way.\n");
+		ERROR("The full indexing method names will not be shown by cell_explorer, \n");
+		ERROR("only the methods themselves and prior information modifiers ");
+		ERROR("('cell' or 'latt').\n");
+		ERROR("Similar indexing methods will be combined.  For example\n");
+		ERROR("'mosflm-raw' and 'mosflm-axes' will both show up as 'mosflm'\n");
+		ERROR("To simplify matters, it's best to re-run indexamajig.\n");
+		ERROR("------------------\n");
+	}
+
+	stream_close(st);
+
+	*pn_total_chunks += n_chunks;
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
-	Stream *st;
 	int max_cells = 0;
-	char *stream_filename;
+	int n_chunks = 0;
 	GtkWidget *box, *vbox;
 	char title[1024];
-	char *bn;
 	CellWindow w;
-	int n_chunks = 0;
 	int i;
+	char *name_for_title;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1958,8 +2057,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 1 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			default :
@@ -1978,101 +2079,29 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	if ( argc != (optind+1) ) {
-		fprintf(stderr, "Please provide exactly one stream filename.\n");
+	if ( argc < optind ) {
+		fprintf(stderr, "Please provide at least one stream filename.\n");
 		return 1;
 	}
-	stream_filename = strdup(argv[optind]);
-	st = open_stream_for_read(stream_filename);
-	if ( st == NULL ) {
-		fprintf(stderr, "Failed to open '%s'\n", stream_filename);
-		return 1;
-	}
+
+	name_for_title = safe_basename(argv[optind]);
 
 	gsl_set_error_handler_off();
 
 	w.cells = NULL;
 	w.indms = NULL;
 	w.n_cells = 0;
-	do {
 
-		struct image cur;
-		int i;
-
-		cur.det = NULL;
-
-		if ( read_chunk_2(st, &cur, STREAM_READ_UNITCELL) != 0 ) {
-			break;
+	while ( optind < argc ) {
+		if ( add_stream(&w, argv[optind++],
+		                &max_cells, &n_chunks) )
+		{
+			return 1;
 		}
-
-		for ( i=0; i<cur.n_crystals; i++ ) {
-
-			Crystal *cr;
-
-			cr = cur.crystals[i];
-
-			if ( w.n_cells == max_cells ) {
-
-				UnitCell **cells_new;
-				IndexingMethod *indms_new;
-				size_t nsz;
-
-				nsz = (max_cells+1024)*sizeof(UnitCell *);
-				cells_new = realloc(w.cells, nsz);
-				if ( cells_new == NULL ) {
-					fprintf(stderr, "Failed to allocate "
-					        "memory for cells.\n");
-					break;
-				}
-
-				nsz = (max_cells+1024)*sizeof(IndexingMethod);
-				indms_new = realloc(w.indms, nsz);
-				if ( indms_new == NULL ) {
-					fprintf(stderr, "Failed to allocate "
-					        "memory for methods.\n");
-					break;
-				}
-
-				max_cells += 1024;
-				w.cells = cells_new;
-				w.indms = indms_new;
-
-			}
-
-			w.cells[w.n_cells] = crystal_get_cell(cr);
-			if ( !right_handed(w.cells[w.n_cells]) ) {
-				ERROR("WARNING: Left-handed cell encountered\n");
-			}
-			w.indms[w.n_cells] = cur.indexed_by;
-			w.n_cells++;
-
-			crystal_free(cr);
-
-		}
-
-		n_chunks++;
-		if ( n_chunks % 1000 == 0 ) {
-			fprintf(stderr, "Loaded %i cells from %i chunks\r",
-			        w.n_cells, n_chunks);
-		}
-
-	} while ( 1 );
-	fprintf(stderr, "Loaded %i cells from %i chunks\n", w.n_cells, n_chunks);
-
-	fprintf(stderr, "\n");
-
-	if ( stream_has_old_indexers(st) ) {
-		ERROR("----- Notice -----\n");
-		ERROR("This stream contains indexing methods specified in an old way.\n");
-		ERROR("The full indexing method names will not be shown by cell_explorer, \n");
-		ERROR("only the methods themselves and prior information modifiers ");
-		ERROR("('cell' or 'latt').\n");
-		ERROR("Similar indexing methods will be combined.  For example\n");
-		ERROR("'mosflm-raw' and 'mosflm-axes' will both show up as 'mosflm'\n");
-		ERROR("To simplify matters, it's best to re-run indexamajig.\n");
-		ERROR("------------------\n");
 	}
-	close_stream(st);
+
+	fprintf(stderr, "Loaded %i cells from %i total chunks\n",
+	        w.n_cells, n_chunks);
 
 	w.cols_on[0] = 1;
 	for ( i=1; i<8; i++ ) w.cols_on[i] = 2;
@@ -2096,9 +2125,8 @@ int main(int argc, char *argv[])
 	reset_axes(w.hist_ga);
 
 	w.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	bn = safe_basename(stream_filename);
-	snprintf(title, 1023, "%s - Unit Cell Explorer", bn);
-	free(bn);
+	snprintf(title, 1023, "%s - Unit Cell Explorer",
+	         name_for_title);
 	gtk_window_set_title(GTK_WINDOW(w.window), title);
 	g_signal_connect(G_OBJECT(w.window), "destroy", G_CALLBACK(destroy_sig),
 	                 &w);

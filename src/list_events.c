@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2015 Thomas White <taw@physics.org>
+ *   2015-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -38,9 +38,11 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "utils.h"
-#include "detector.h"
-#include "hdf5-file.h"
+#include <utils.h>
+#include <image.h>
+#include <datatemplate.h>
+
+#include "version.h"
 
 
 static void show_help(const char *s)
@@ -69,7 +71,7 @@ int main(int argc, char *argv[])
 	char *rval;
 	FILE *ifh;
 	FILE *ofh;
-	struct detector *det;
+	DataTemplate *dtempl;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -92,8 +94,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 2 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'o' :
@@ -140,16 +144,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	det = get_detector_geometry(geom, NULL);
-	if ( det == NULL ) {
+	dtempl = data_template_new_from_file(geom);
+	if ( dtempl == NULL ) {
 		ERROR("Failed to read '%s'\n", geom);
-		return 1;
-	}
-
-	if ( !multi_event_geometry(det) ) {
-		ERROR("This does not look like a multi-event geometry file.\n");
-		ERROR("Are you sure you need to use list_events instead of "
-		      "just 'find' or 'ls'?\n");
 		return 1;
 	}
 
@@ -161,40 +158,34 @@ int main(int argc, char *argv[])
 		rval = fgets(filename, 1024, ifh);
 		if ( rval != NULL ) {
 
-			struct event_list *evlist;
-			struct hdfile *hdfile;
+			char **evlist;
+			int num_events;
 
 			chomp(filename);
 
-			hdfile = hdfile_open(filename);
-			if ( hdfile == NULL ) {
-				ERROR("Failed to open '%s'\n", filename);
-				ERROR("Aborting creation of event list.\n");
-				return 1;
-			}
-
-			evlist = fill_event_list(hdfile, det);
+			evlist = image_expand_frames(dtempl, filename,
+			                             &num_events);
 			if ( evlist == NULL ) {
 				ERROR("Failed to read %s\n", filename);
-				hdfile_close(hdfile);
-				ERROR("Aborting creation of event list.\n");
 				return 1;
 			}
 
-			for ( i=0; i<evlist->num_events; i++ ) {
-				char *str = get_event_string(evlist->events[i]);
-				fprintf(ofh, "%s %s\n", filename, str);
-				free(str);
+			for ( i=0; i<num_events; i++ ) {
+				fprintf(ofh, "%s %s\n",
+				        filename, evlist[i]);
+				free(evlist[i]);
 			}
 
-			STATUS("%i events found in %s\n", evlist->num_events,
-			       filename);
+			STATUS("%i events found in %s\n",
+			       num_events, filename);
 
-			free_event_list(evlist);
-			hdfile_close(hdfile);
+			free(evlist);
+
 		}
 
 	} while ( rval != NULL );
+
+	data_template_free(dtempl);
 
 	return 0;
 }

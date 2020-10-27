@@ -44,17 +44,7 @@ struct index_args;
 #include "integration.h"
 #include "im-sandbox.h"
 #include "time-accounts.h"
-
-
-enum {
-	PEAK_PEAKFINDER9,
-	PEAK_PEAKFINDER8,
-	PEAK_ZAEF,
-	PEAK_HDF5,
-	PEAK_CXI,
-	PEAK_MSGPACK,
-	PEAK_NONE,
-};
+#include "peaks.h"
 
 
 /* Information about the indexing process which is common to all patterns */
@@ -68,12 +58,10 @@ struct index_args
 	float min_sq_gradient;
 	float min_snr;
 	int check_hdf5_snr;
-	struct detector *det;
+	DataTemplate *dtempl;
 	IndexingPrivate *ipriv;
-	int peaks;                /* Peak detection method */
+	enum peak_search_method peaks;
 	float tols[6];
-	struct beam_params *beam;
-	char *hdf5_peak_path;
 	int half_pixel_shift;
 	float pk_inn;
 	float pk_mid;
@@ -92,12 +80,10 @@ struct index_args
 	float min_snr_peak_pix;
 	float min_sig;
 	float min_peak_over_neighbour;
-	struct imagefile_field_list *copyme;
 	int integrate_saturated;
 	int use_saturated;
 	int no_revalidate;
-	int stream_peaks;
-	int stream_refls;
+	int stream_flags;
 	int stream_nonhits;
 	IntegrationMethod int_meth;
 	IntDiag int_diag;
@@ -109,9 +95,9 @@ struct index_args
 	float fix_profile_r;
 	float fix_divergence;
 	int overpredict;
-	Spectrum *spectrum;
 	signed int wait_for_file; /* -1 means wait forever */
 	int no_image_data;
+	int no_mask_data;
 };
 
 
@@ -119,7 +105,8 @@ struct index_args
 struct pattern_args
 {
 	/* "Input" */
-	struct filename_plus_event *filename_p_e;
+	char *filename;
+	char *event;
 #ifdef HAVE_MSGPACK
 	msgpack_object *msgpack_obj;
 #else

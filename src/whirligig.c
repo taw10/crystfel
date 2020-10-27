@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2014 Thomas White <taw@physics.org>
+ *   2012-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -42,11 +42,13 @@
 #include <image.h>
 #include <utils.h>
 #include <stream.h>
+#include <cell-utils.h>
+#include <integer_matrix.h>
+#include <reflist.h>
+#include <reflist-utils.h>
 
-#include "cell-utils.h"
-#include "integer_matrix.h"
-#include "reflist.h"
-#include "reflist-utils.h"
+#include "version.h"
+
 
 /* Maximum number of series which can overlap at once */
 #define MAX_SER 8
@@ -173,7 +175,7 @@ static void process_series(struct image *images, signed int *ser,
 		Crystal *cr = images[i].crystals[ser[i]];
 		fprintf(fh, "%4i %5i %s %s %i\n", i, images[i].serial,
 		                             images[i].filename,
-		                             get_event_string(images[i].event),
+		                             images[i].ev,
 		                             ser[i]);
 		p[i] = transform_reflections(crystal_get_reflections(cr),
 		                             mat[i]);
@@ -634,8 +636,10 @@ int main(int argc, char *argv[])
 			break;
 
 			case 3 :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 4 :
@@ -670,7 +674,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	st = open_stream_for_read(argv[optind++]);
+	st = stream_open_for_read(argv[optind++]);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", argv[optind-1]);
 		return 1;
@@ -714,29 +718,25 @@ int main(int argc, char *argv[])
 	win.join_ptr = 0;
 	do {
 
-		struct image cur;
+		struct image *image;
 
-		cur.div = NAN;
-		cur.bw = NAN;
-		cur.det = NULL;
-		if ( read_chunk_2(st, &cur, STREAM_READ_REFLECTIONS
-		                            | STREAM_READ_UNITCELL) != 0 ) {
-			break;
-		}
+		image = stream_read_chunk(st, STREAM_REFLECTIONS);
 
-		if ( verbose ) printf("\n\nIncoming serial %i\n", cur.serial);
+		if ( image == NULL ) break;
 
-		if ( isnan(cur.div) || isnan(cur.bw) ) {
+		if ( verbose ) printf("\n\nIncoming serial %i\n", image->serial);
+
+		if ( isnan(image->div) || isnan(image->bw) ) {
 			ERROR("Chunk doesn't contain beam parameters.\n");
 			return 1;
 		}
 
-		if ( cur.serial < 1 ) {
+		if ( image->serial < 1 ) {
 			ERROR("Serial numbers must be greater than zero.\n");
 			return 1;
 		}
 
-		add_to_window(&cur, &win, &ss);
+		add_to_window(image, &win, &ss);
 		connect_series(&win);
 
 		if ( verbose ) {
@@ -764,7 +764,7 @@ int main(int argc, char *argv[])
 	display_progress(n_images);
 	printf("\n");
 
-	close_stream(st);
+	stream_close(st);
 
 	find_and_process_series(&win, 1, &ss, outdir);
 

@@ -29,18 +29,12 @@
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern pthread_mutex_t stderr_lock;
 extern signed int get_status_label(void);
 
 /**

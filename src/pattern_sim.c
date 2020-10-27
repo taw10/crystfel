@@ -42,20 +42,21 @@
 #include <getopt.h>
 #include <hdf5.h>
 
-#include "image.h"
+#include <image.h>
+#include <cell.h>
+#include <cell-utils.h>
+#include <utils.h>
+#include <peaks.h>
+#include <symmetry.h>
+#include <reflist.h>
+#include <reflist-utils.h>
+#include <stream.h>
+#include <datatemplate.h>
+
 #include "diffraction.h"
 #include "diffraction-gpu.h"
-#include "cell.h"
-#include "cell-utils.h"
-#include "utils.h"
-#include "hdf5-file.h"
-#include "detector.h"
-#include "peaks.h"
-#include "symmetry.h"
-#include "reflist.h"
-#include "reflist-utils.h"
 #include "pattern_sim.h"
-#include "stream.h"
+#include "version.h"
 
 
 enum spectrum_type {
@@ -113,6 +114,131 @@ static void show_help(const char *s)
 "     --nphotons            Number of photons per X-ray pulse.  Default 1e12.\n"
 "     --beam-radius         Radius of beam in metres (default 1e-6).\n"
 );
+}
+
+
+static void record_panel(struct detgeom_panel *p, float *dp,
+                         int do_poisson,
+                         gsl_rng *rng, double ph_per_e, double background,
+			 double lambda,
+                         int *n_neg1, int *n_inf1, int *n_nan1,
+                         int *n_neg2, int *n_inf2, int *n_nan2,
+			 double *max_tt)
+{
+	int fs, ss;
+
+	for ( ss=0; ss<p->h; ss++ ) {
+	for ( fs=0; fs<p->w; fs++ ) {
+
+		double counts;
+		double cf;
+		double intensity, sa;
+		double pix_area, Lsq;
+		double xs, ys, rx, ry;
+		double dsq, proj_area;
+		float dval;
+		double twotheta;
+
+		intensity = (double)dp[fs + p->w*ss];
+		if ( isinf(intensity) ) (*n_inf1)++;
+		if ( intensity < 0.0 ) (*n_neg1)++;
+		if ( isnan(intensity) ) (*n_nan1)++;
+
+		/* Area of one pixel */
+		pix_area = pow(p->pixel_pitch, 2.0);
+		Lsq = pow(p->cnz*p->pixel_pitch, 2.0);
+
+		/* Calculate distance from crystal to pixel */
+		xs = fs*p->fsx + ss*p->ssx;
+		ys = ss*p->fsy + ss*p->ssy;
+		rx = (xs + p->cnx) * p->pixel_pitch;
+		ry = (ys + p->cny) * p->pixel_pitch;
+		dsq = pow(rx, 2.0) + pow(ry, 2.0);
+		twotheta = atan2(sqrt(dsq), p->cnz*p->pixel_pitch);
+
+		/* Area of pixel as seen from crystal (approximate) */
+		proj_area = pix_area * cos(twotheta);
+
+		/* Projected area of pixel divided by distance squared */
+		sa = proj_area / (dsq + Lsq);
+
+		if ( do_poisson ) {
+			counts = poisson_noise(rng, intensity * ph_per_e * sa);
+		} else {
+			cf = intensity * ph_per_e * sa;
+			counts = cf;
+		}
+
+		/* Number of photons in pixel */
+		dval = counts + poisson_noise(rng, background);
+
+		/* Convert to ADU */
+		dval *= p->adu_per_photon;
+
+		/* Saturation */
+		if ( dval > p->max_adu ) dval = p->max_adu;
+
+		dp[fs + p->w*ss] = dval;
+
+		/* Sanity checks */
+		if ( isinf(dp[fs + p->w*ss]) ) n_inf2++;
+		if ( isnan(dp[fs + p->w*ss]) ) n_nan2++;
+		if ( dp[fs + p->w*ss] < 0.0 ) n_neg2++;
+
+		if ( twotheta > *max_tt ) *max_tt = twotheta;
+
+	}
+	}
+}
+
+
+void record_image(struct image *image, int do_poisson, double background,
+                  gsl_rng *rng, double beam_radius, double nphotons)
+{
+	double total_energy, energy_density;
+	double ph_per_e;
+	double area;
+	double max_tt = 0.0;
+	int n_inf1 = 0;
+	int n_neg1 = 0;
+	int n_nan1 = 0;
+	int n_inf2 = 0;
+	int n_neg2 = 0;
+	int n_nan2 = 0;
+	int pn;
+
+	/* How many photons are scattered per electron? */
+	area = M_PI*pow(beam_radius, 2.0);
+	total_energy = nphotons * ph_lambda_to_en(image->lambda);
+	energy_density = total_energy / area;
+	ph_per_e = (nphotons /area) * pow(THOMSON_LENGTH, 2.0);
+	STATUS("Fluence = %8.2e photons, "
+	       "Energy density = %5.3f kJ/cm^2, "
+	       "Total energy = %5.3f microJ\n",
+	       nphotons, energy_density/1e7, total_energy*1e6);
+
+	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+
+		record_panel(&image->detgeom->panels[pn], image->dp[pn],
+		             do_poisson, rng, ph_per_e, background,
+			     image->lambda,
+		             &n_neg1, &n_inf1, &n_nan1,
+		             &n_neg2, &n_inf2, &n_nan2, &max_tt);
+	}
+
+	STATUS("Max 2theta = %.2f deg, min d = %.2f nm\n",
+	        rad2deg(max_tt), (image->lambda/(2.0*sin(max_tt/2.0)))/1e-9);
+
+	STATUS("Halve the d values to get the voxel size for a synthesis.\n");
+
+	if ( n_neg1 + n_inf1 + n_nan1 + n_neg2 + n_inf2 + n_nan2 ) {
+		ERROR("WARNING: The raw calculation produced %i negative"
+		      " values, %i infinities and %i NaNs.\n",
+		      n_neg1, n_inf1, n_nan1);
+		ERROR("WARNING: After processing, there were %i negative"
+		      " values, %i infinities and %i NaNs.\n",
+		      n_neg2, n_inf2, n_nan2);
+	}
 }
 
 
@@ -237,28 +363,8 @@ static int random_ncells(double len, double min_m, double max_m)
 }
 
 
-static void fixup_geom(struct detector *det)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-		det->panels[i].clen += det->panels[i].coffset;
-	}
-}
-
-
-static int geom_contains_references(struct detector *det)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-		if ( det->panels[i].clen_from != NULL ) return 1;
-	}
-	return 0;
-}
-
-
-static void add_metadata(const char *filename, struct quaternion q,
+static void add_metadata(const char *filename,
+                         struct quaternion q,
                          UnitCell *cell)
 {
 	hid_t fh, gh, sh, dh;
@@ -361,9 +467,10 @@ static void add_metadata(const char *filename, struct quaternion q,
 int main(int argc, char *argv[])
 {
 	int c;
-	struct image image;
+	struct image *image;
+	DataTemplate *dtempl;
 	struct gpu_context *gctx = NULL;
-	struct image powder;
+	struct image *powder;
 	char *intfile = NULL;
 	double *intensities;
 	char *rval;
@@ -409,8 +516,6 @@ int main(int argc, char *argv[])
 	double photon_energy = 9000.0;
 	double sase_spike_width = 2e6;  /* m^-1 */
 	double twocol_sep = 8e6;  /* m^-1 */
-	struct beam_params beam;
-	int i;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -463,8 +568,10 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'v' :
-			printf("CrystFEL: " CRYSTFEL_VERSIONSTRING "\n");
-			printf(CRYSTFEL_BOILERPLATE"\n");
+			printf("CrystFEL: %s\n",
+			       crystfel_version_string());
+			printf("%s\n",
+			       crystfel_licence_string());
 			return 0;
 
 			case 'b' :
@@ -673,7 +780,7 @@ int main(int argc, char *argv[])
 			ERROR("You cannot use -r and --template together.\n");
 			return 1;
 		}
-		st = open_stream_for_read(template_file);
+		st = stream_open_for_read(template_file);
 		if ( st == NULL ) {
 			ERROR("Failed to open stream.\n");
 			return 1;
@@ -707,26 +814,13 @@ int main(int argc, char *argv[])
 		ERROR("You need to specify a geometry file with --geometry\n");
 		return 1;
 	}
-	image.beam = &beam;
-	image.det = get_detector_geometry(geometry, image.beam);
-	if ( image.det == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'\n", geometry);
+	dtempl = data_template_new_from_file(geometry);
+	if ( dtempl == NULL ) {
+		ERROR("Failed to read detector geometry from '%s'\n",
+		      geometry);
 		return 1;
 	}
 	free(geometry);
-	if ( (beam.photon_energy > 0.0) && (beam.photon_energy_from == NULL) ) {
-		ERROR("WARNING: An explicit photon energy was found in the "
-		      "geometry file.  It will be ignored!\n");
-		ERROR("The value given on the command line "
-		      "(with --photon-energy) will be used instead.\n");
-	}
-	if ( geom_contains_references(image.det) ) {
-		ERROR("Geometry file contains a reference to an HDF5 location"
-		      " for the camera length.  Change it to a numerical value "
-		      " and try again.\n");
-		return 1;
-	}
-	fixup_geom(image.det);
 
 	if ( spectrum_str == NULL ) {
 		STATUS("You didn't specify a spectrum type, so"
@@ -823,28 +917,6 @@ int main(int argc, char *argv[])
 
 	}
 
-	image.lambda = ph_en_to_lambda(eV_to_J(photon_energy));
-	image.bw = bandwidth;
-
-	/* Initialise stuff */
-	image.filename = NULL;
-	image.features = NULL;
-	image.bad = NULL;
-	image.dp = malloc(image.det->n_panels*sizeof(float *));
-	if ( image.dp == NULL ) {
-		ERROR("Failed to allocate data\n");
-		return 1;
-	}
-	for ( i=0; i<image.det->n_panels; i++ ) {
-		image.dp[i] = calloc(image.det->panels[i].w *
-		                     image.det->panels[i].h,
-		                     sizeof(float));
-		if ( image.dp[i] == NULL ) {
-			ERROR("Failed to allocate data\n");
-			return 1;
-		}
-	}
-
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
 	if ( config_random ) {
 		FILE *fh;
@@ -858,30 +930,16 @@ int main(int argc, char *argv[])
 		fclose(fh);
 	}
 
-	powder.det = image.det;
-	powder.beam = NULL;
-	powder.lambda = 0.0;
-	powder.spectrum = NULL;
-	powder.dp = malloc(image.det->n_panels*sizeof(float *));
-	if ( powder.dp == NULL ) {
-		ERROR("Failed to allocate powder data\n");
-		return 1;
-	}
-	for ( i=0; i<image.det->n_panels; i++ ) {
-		powder.dp[i] = calloc(image.det->panels[i].w *
-		                      image.det->panels[i].h,
-		                      sizeof(float));
-		if ( powder.dp[i] == NULL ) {
-			ERROR("Failed to allocate powder data\n");
-			return 1;
-		}
-	}
+	image = image_create_for_simulation(dtempl);
+	powder = image_create_for_simulation(dtempl);
 
 	/* Splurge a few useful numbers */
 	STATUS("Simulation parameters:\n");
-	STATUS("                  Photon energy: %.2f eV (wavelength %.5f A)\n",
-	       photon_energy, image.lambda*1e10);
-	STATUS("              Number of photons: %.0f (%.2f mJ)\n", nphotons,
+	STATUS("                     Wavelength: %.5f A (photon energy %.2f eV)\n",
+	       image->lambda*1e10,
+	       ph_lambda_to_eV(image->lambda));
+	STATUS("              Number of photons: %.0f (%.2f mJ)\n",
+	       nphotons,
 	       eV_to_J(photon_energy)*nphotons*1e3);
 	STATUS("                Beam divergence: not simulated\n");
 	STATUS("                    Beam radius: %.2f microns\n",
@@ -892,22 +950,22 @@ int main(int argc, char *argv[])
 
 		case SPECTRUM_TOPHAT:
 		STATUS("                 X-ray spectrum: top hat, "
-		       "width %.5f %%\n", image.bw*100.0);
+		       "width %.5f %%\n", image->bw*100.0);
 		break;
 
 		case SPECTRUM_GAUSSIAN:
 		STATUS("                 X-ray spectrum: Gaussian, "
-		       "bandwidth %.5f %%\n", image.bw*100.0);
+		       "bandwidth %.5f %%\n", image->bw*100.0);
 		break;
 
 		case SPECTRUM_SASE:
 		STATUS("                 X-ray spectrum: SASE, "
-		       "bandwidth %.5f %%\n", image.bw*100.0);
+		       "bandwidth %.5f %%\n", image->bw*100.0);
 		break;
 
 		case SPECTRUM_TWOCOLOUR:
 		STATUS("                 X-ray spectrum: two colour, "
-		       "separation %.5f %%\n", image.bw*100.0);
+		       "separation %.5f %%\n", image->bw*100.0);
 		break;
 
 		case SPECTRUM_FROMFILE:
@@ -937,12 +995,13 @@ int main(int argc, char *argv[])
 		int err = 0;
 		int pi;
 
-		for ( pi=0; pi<image.det->n_panels; pi++ ) {
+		/* Reset image data to zero for new pattern */
+		for ( pi=0; pi<image->detgeom->n_panels; pi++ ) {
 			long j;
-			long np = image.det->panels[pi].w
-			            * image.det->panels[pi].h;
+			long np = image->detgeom->panels[pi].w
+			            * image->detgeom->panels[pi].h;
 			for ( j=0; j<np; j++ ) {
-				image.dp[pi][j] = 0.0;
+				image->dp[pi][j] = 0.0;
 			}
 		}
 
@@ -986,70 +1045,53 @@ int main(int argc, char *argv[])
 
 		} else {
 
-			struct image image;
-			int i;
+			struct image *templ_image;
 			Crystal *cr;
 
-			image.det = NULL;
-
 			/* Get data from next chunk */
-			if ( read_chunk(st, &image) ) break;
+			templ_image = stream_read_chunk(st, 0);
+			if ( templ_image == NULL ) break;
+			if ( templ_image->n_crystals == 0 ) continue;
 
-			free(image.filename);
-			image_feature_list_free(image.features);
+			cr = templ_image->crystals[0];
+			cell = cell_new_from_cell(crystal_get_cell(cr));
 
-			if ( image.n_crystals == 0 ) continue;
-
-			cr = image.crystals[0];
-			cell = crystal_get_cell(cr);
-
-			if ( image.n_crystals > 1 ) {
+			if ( templ_image->n_crystals > 1 ) {
 				ERROR("Using the first crystal only.\n");
 			}
 
-			for ( i=1; i<image.n_crystals; i++ ) {
-
-				Crystal *cr = image.crystals[i];
-				cell = crystal_get_cell(cr);
-
-				reflist_free(crystal_get_reflections(cr));
-				cell_free(crystal_get_cell(cr));
-				crystal_free(cr);
-
-			}
-
-			free(image.crystals);
+			image_free(templ_image);
 
 		}
 
 		switch ( spectrum_type ) {
 
 			case SPECTRUM_TOPHAT :
-			image.spectrum = spectrum_generate_tophat(image.lambda,
-			                                          image.bw);
+			image->spectrum = spectrum_generate_tophat(image->lambda,
+			                                           image->bw);
 			break;
 
 			case SPECTRUM_GAUSSIAN :
-			image.spectrum = spectrum_generate_gaussian(image.lambda,
-			                                            image.bw);
+			image->spectrum = spectrum_generate_gaussian(image->lambda,
+			                                             image->bw);
 			break;
 
 
 			case SPECTRUM_SASE :
-			image.spectrum = spectrum_generate_sase(image.lambda,
-			                                        image.bw,
-			                                        sase_spike_width,
-			                                        rng);
+			image->spectrum = spectrum_generate_sase(image->lambda,
+			                                         image->bw,
+			                                         sase_spike_width,
+			                                         rng);
 			break;
 
-                        case SPECTRUM_TWOCOLOUR :
-                        image.spectrum = spectrum_generate_twocolour(image.lambda,
-                                                                     image.bw,
-                                                                     twocol_sep);
+			case SPECTRUM_TWOCOLOUR :
+			image->spectrum = spectrum_generate_twocolour(image->lambda,
+			                                              image->bw,
+			                                              twocol_sep);
                         break;
 
-                        case SPECTRUM_FROMFILE :
-                        image.spectrum = spectrum_load(spectrum_fn);
+			case SPECTRUM_FROMFILE :
+			image->spectrum = spectrum_load(spectrum_fn);
                         break;
 
 		}
@@ -1066,12 +1108,12 @@ int main(int argc, char *argv[])
 				                 intensities, flags, sym_str,
 				                 gpu_dev);
 			}
-			err = get_diffraction_gpu(gctx, &image, na, nb, nc,
+			err = get_diffraction_gpu(gctx, image, na, nb, nc,
 			                          cell, no_fringes, flat,
 			                          nsamples);
 
 		} else {
-			get_diffraction(&image, na, nb, nc, intensities, phases,
+			get_diffraction(image, na, nb, nc, intensities, phases,
 			                flags, cell, grad, sym, no_fringes, flat,
 			                nsamples);
 		}
@@ -1081,28 +1123,28 @@ int main(int argc, char *argv[])
 			goto skip;
 		}
 
-		record_image(&image, !config_nonoise, background, rng,
+		record_image(image, !config_nonoise, background, rng,
 		             beam_radius, nphotons);
 
 		if ( powder_fn != NULL ) {
 
 			int pn;
 
-			for ( pn=0; pn<image.det->n_panels; pn++ ) {
+			for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
 
 				size_t w, i;
 
-				w = image.det->panels[pn].w
-				  * image.det->panels[pn].h;
+				w = image->detgeom->panels[pn].w
+				  * image->detgeom->panels[pn].h;
 
 				for ( i=0; i<w; i++ ) {
-					powder.dp[pn][i] += (double)image.dp[pn][i];
+					powder->dp[pn][i] += (double)image->dp[pn][i];
 				}
 
 			}
 
 			if ( !(ndone % 10) ) {
-				hdf5_write_image(powder_fn, &powder, NULL);
+				image_write(powder, dtempl, powder_fn);
 			}
 		}
 
@@ -1120,7 +1162,9 @@ int main(int argc, char *argv[])
 			number++;
 
 			/* Write the output file */
-			hdf5_write_image(filename, &image, NULL);
+			image_write(image, dtempl, filename);
+
+			/* Add some pattern_sim-specific metadata */
 			add_metadata(filename, orientation, cell);
 
 		}
@@ -1135,21 +1179,16 @@ skip:
 	} while ( !done );
 
 	if ( powder_fn != NULL ) {
-		hdf5_write_image(powder_fn, &powder, NULL);
+		image_write(powder, dtempl, powder_fn);
 	}
 
 	if ( gctx != NULL ) {
 		cleanup_gpu(gctx);
 	}
 
-	for ( i=0; i<image.det->n_panels; i++ ) {
-		free(image.dp[i]);
-		free(powder.dp[i]);
-	}
-	free(image.dp);
-	free(powder.dp);
+	image_free(image);
+	image_free(powder);
 	free(intfile);
-	free(image.det);
 	cell_free(input_cell);
 	free(intensities);
 	free(outfile);

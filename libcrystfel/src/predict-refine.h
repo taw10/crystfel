@@ -29,11 +29,6 @@
 #ifndef PREDICT_REFINE_H
 #define PREDICT_REFINE_H
 
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "crystal.h"
 
 struct image;

@@ -52,7 +52,7 @@
 /** \file geometry.h */
 
 static int locate_peak_on_panel(double x, double y, double z, double k,
-                                struct panel *p,
+                                struct detgeom_panel *p,
                                 double *pfs, double *pss)
 {
 	double ctt, tta, phi;
@@ -85,7 +85,7 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 	gsl_matrix_set(M, 1, 0, p->cny);
 	gsl_matrix_set(M, 1, 1, p->fsy);
 	gsl_matrix_set(M, 1, 2, p->ssy);
-	gsl_matrix_set(M, 2, 0, p->clen*p->res);
+	gsl_matrix_set(M, 2, 0, p->cnz);
 	gsl_matrix_set(M, 2, 1, p->fsz);
 	gsl_matrix_set(M, 2, 2, p->ssz);
 
@@ -113,7 +113,8 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 }
 
 static signed int locate_peak(double x, double y, double z, double k,
-                              struct detector *det, double *pfs, double *pss)
+                              struct detgeom *det,
+                              double *pfs, double *pss)
 {
 	int i;
 
@@ -121,7 +122,7 @@ static signed int locate_peak(double x, double y, double z, double k,
 
 	for ( i=0; i<det->n_panels; i++ ) {
 
-		struct panel *p;
+		struct detgeom_panel *p;
 
 		p = &det->panels[i];
 
@@ -379,29 +380,31 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	/* If we are updating a previous reflection, assume it stays
 	 * on the same panel and calculate the new position even if it's
 	 * fallen off the edge of the panel. */
-	if ( (image->det != NULL) && (updateme != NULL) ) {
+	if ( (image->detgeom != NULL) && (updateme != NULL) ) {
 
 		double fs, ss;
+		assert(get_panel_number(updateme) <= image->detgeom->n_panels);
 		locate_peak_on_panel(xl, yl, zl, mean_kpred,
-		                     get_panel(updateme), &fs, &ss);
+		                     &image->detgeom->panels[get_panel_number(updateme)],
+		                     &fs, &ss);
 		set_detector_pos(refl, fs, ss);
 
 	}
 
-	/* Otherwise, calculate position if we have a detector structure, and
+	/* otherwise, calculate position if we have a detector structure, and
 	 * if we don't then just make do with partiality calculation */
-	if ( (image->det != NULL) && (updateme == NULL) ) {
+	if ( (image->detgeom != NULL) && (updateme == NULL) ) {
 
-		double fs, ss;        /* Position on detector */
-		signed int p;         /* Panel number */
+		double fs, ss;        /* position on detector */
+		signed int p;         /* panel number */
 		p = locate_peak(xl, yl, zl, mean_kpred,
-		                image->det, &fs, &ss);
+		                image->detgeom, &fs, &ss);
 		if ( p == -1 ) {
 			reflection_free(refl);
 			return NULL;
 		}
 		set_detector_pos(refl, fs, ss);
-		set_panel(refl, &image->det->panels[p]);
+		set_panel_number(refl, p);
 
 	}
 
@@ -503,6 +506,7 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 	double mres;
 	signed int h, k, l;
 	UnitCell *cell;
+	struct image *image;
 
 	cell = crystal_get_cell(cryst);
 	if ( cell == NULL ) return NULL;
@@ -512,14 +516,15 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 	/* Cell angle check from Foadi and Evans (2011) */
 	if ( !cell_is_sensible(cell) ) {
 		ERROR("Invalid unit cell parameters given to"
-		      " find_intersections()\n");
+		      " predict_to_res()\n");
 		cell_print(cell);
 		return NULL;
 	}
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	mres = largest_q(crystal_get_image(cryst));
+	image = crystal_get_image(cryst);
+	mres = detgeom_max_resolution(image->detgeom, image->lambda);
 	if ( mres > max_res ) mres = max_res;
 
 	hmax = mres * modulus(ax, ay, az);
@@ -1076,7 +1081,8 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 
 
 /* Returns dx_h/dP, where P = any parameter */
-double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
+double x_gradient(int param, Reflection *refl, UnitCell *cell,
+                  struct detgeom_panel *p)
 {
 	signed int h, k, l;
 	double xl, zl, kpred;
@@ -1093,13 +1099,13 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return h * p->clen / (kpred + zl);
+		return h * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_BSX :
-		return k * p->clen / (kpred + zl);
+		return k * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_CSX :
-		return l * p->clen / (kpred + zl);
+		return l * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_ASY :
 		return 0.0;
@@ -1111,13 +1117,13 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 		return 0.0;
 
 		case GPARAM_ASZ :
-		return -h * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -h * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_BSZ :
-		return -k * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -k * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_CSZ :
-		return -l * xl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -l * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_DETX :
 		return -1;
@@ -1136,7 +1142,8 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 
 
 /* Returns dy_h/dP, where P = any parameter */
-double y_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
+double y_gradient(int param, Reflection *refl, UnitCell *cell,
+                  struct detgeom_panel *p)
 {
 	signed int h, k, l;
 	double yl, zl, kpred;
@@ -1162,22 +1169,22 @@ double y_gradient(int param, Reflection *refl, UnitCell *cell, struct panel *p)
 		return 0.0;
 
 		case GPARAM_ASY :
-		return h * p->clen / (kpred + zl);
+		return h * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_BSY :
-		return k * p->clen / (kpred + zl);
+		return k * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_CSY :
-		return l * p->clen / (kpred + zl);
+		return l * p->cnz * p->pixel_pitch / (kpred + zl);
 
 		case GPARAM_ASZ :
-		return -h * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -h * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_BSZ :
-		return -k * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -k * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_CSZ :
-		return -l * yl * p->clen / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		return -l * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
 		case GPARAM_DETX :
 		return 0;

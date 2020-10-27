@@ -34,10 +34,6 @@
 #ifndef INDEX_H
 #define INDEX_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /**
  * \file index.h
  * The indexing subsystem
@@ -144,17 +140,33 @@ extern char *indexer_str(IndexingMethod indm);
 extern IndexingMethod get_indm_from_string(const char *method);
 extern IndexingMethod get_indm_from_string_2(const char *method, int *err);
 
-#include "detector.h"
+extern IndexingMethod *parse_indexing_methods(const char *method_list,
+                                              int *pn);
+extern char *base_indexer_str(IndexingMethod indm);
+
 #include "cell.h"
 #include "image.h"
-#include "taketwo.h"
-#include "xgandalf.h"
-#include "pinkindexer.h"
-#include "felix.h"
+#include "datatemplate.h"
 
-extern IndexingPrivate *setup_indexing(const char *methods, UnitCell *cell,
-                                       struct detector *det,
-                                       struct beam_params *beam, float *ltl,
+typedef struct felix_options FelixOptions;
+typedef struct taketwo_options TakeTwoOptions;
+typedef struct xgandalf_options XGandalfOptions;
+typedef struct pinkIndexer_options PinkIndexerOptions;
+
+extern struct argp felix_argp;
+extern struct argp pinkIndexer_argp;
+extern struct argp taketwo_argp;
+extern struct argp xgandalf_argp;
+
+extern void default_method_options(TakeTwoOptions **ttopts,
+                                   XGandalfOptions **xgandalf_opts,
+                                   PinkIndexerOptions **pinkIndexer_opts,
+                                   FelixOptions **felix_opts);
+
+extern IndexingPrivate *setup_indexing(const char *methods,
+                                       UnitCell *cell,
+                                       const DataTemplate *dtempl,
+                                       float *ltl,
                                        IndexingFlags flags,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,
