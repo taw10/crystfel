@@ -920,33 +920,6 @@ static void write_logs_parallel(Crystal **crystals, int n_crystals,
 }
 
 
-static struct detgeom *copy_detgeom(const struct detgeom *old)
-{
-	struct detgeom *new;
-	int np;
-	int i;
-
-	new = malloc(sizeof(struct detgeom));
-	if ( new == NULL ) return NULL;
-
-	np = old->n_panels;
-	new->panels = malloc(np * sizeof(struct detgeom_panel));
-	if ( new->panels == NULL ) {
-		free(new);
-		return NULL;
-	}
-
-	new->n_panels = np;
-
-	for ( i=0; i<np; i++ ) {
-		new->panels[i] = old->panels[i];
-		new->panels[i].name = strdup(old->panels[i].name);
-	}
-
-	return new;
-}
-
-
 int main(int argc, char *argv[])
 {
 	int c;
@@ -1451,7 +1424,7 @@ int main(int argc, char *argv[])
 
 			image_for_crystal->filename = strdup(image->filename);
 			image_for_crystal->ev = safe_strdup(image->ev);
-			image_for_crystal->detgeom = copy_detgeom(image->detgeom);
+			image_for_crystal->detgeom = NULL;
 			image_for_crystal->features = NULL;
 			image_for_crystal->spectrum = NULL;
 			image_for_crystal->copied_headers = NULL;
