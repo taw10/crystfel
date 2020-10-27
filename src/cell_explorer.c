@@ -1940,9 +1940,9 @@ static int add_stream(CellWindow *w, const char *stream_filename,
 
 	st = stream_open_for_read(stream_filename);
 	if ( st == NULL ) {
-		fprintf(stderr, "Failed to open '%s'\n",
+		fprintf(stderr, "Failed to open '%s' (skipping)\n",
 		        stream_filename);
-		return 1;
+		return 0;
 	}
 	do {
 
