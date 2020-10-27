@@ -524,18 +524,14 @@ int image_set_zero_data(struct image *image,
 
 		struct panel_template *p;
 		int p_w, p_h;
-		long int i;
 
 		p = &dtempl->panels[pi];
 		p_w = p->orig_max_fs - p->orig_min_fs + 1;
 		p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
-		image->dp[pi] = malloc(p_w*p_h*sizeof(float));
+		image->dp[pi] = calloc(p_w*p_h, sizeof(float));
 		if ( image->dp[pi] == NULL ) return 1;
 
-		for ( i=0; i<p_w*p_h; i++ ) {
-			image->dp[pi][i] = 0.0;
-		}
 	}
 
 	return 0;
@@ -561,13 +557,12 @@ int image_set_zero_mask(struct image *image,
 		p_w = p->orig_max_fs - p->orig_min_fs + 1;
 		p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
-		image->bad[pi] = malloc(p_w*p_h*sizeof(int));
-		image->sat[pi] = malloc(p_w*p_h*sizeof(float));
+		image->bad[pi] = calloc(p_w*p_h, sizeof(int));
+		image->sat[pi] = calloc(p_w*p_h, sizeof(float));
 		if ( image->bad[pi] == NULL ) return 1;
 		if ( image->sat[pi] == NULL ) return 1;
 
 		for ( i=0; i<p_w*p_h; i++ ) {
-			image->bad[pi][i] = 0;
 			image->sat[pi][i] = INFINITY;
 		}
 	}
