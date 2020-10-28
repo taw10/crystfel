@@ -393,7 +393,8 @@ if (GTK_FOUND)
 
   set(CRYSTFEL_GUI_SOURCES src/crystfel_gui.c src/crystfelimageview.c
     src/gui_peaksearch.c src/gui_index.c src/gui_merge.c src/gui_backend_local.c
-    src/gui_project.c src/crystfelindexingopts.c src/crystfelmergeopts.c)
+    src/gui_project.c src/crystfelindexingopts.c src/crystfelmergeopts.c
+    src/crystfelsymmetryselector.c)
 
   if (HAVE_SLURM)
     set(CRYSTFEL_GUI_SOURCES ${CRYSTFEL_GUI_SOURCES} src/gui_backend_slurm.c)

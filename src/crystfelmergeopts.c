@@ -43,6 +43,7 @@
 #include <index.h>
 
 #include "crystfelmergeopts.h"
+#include "crystfelsymmetryselector.h"
 
 
 G_DEFINE_TYPE(CrystFELMergeOpts,
@@ -98,7 +99,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	label = gtk_label_new("Symmetry:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
-	mo->symmetry = gtk_combo_box_text_new(); //crystfel_symmetry_selector_new();
+	mo->symmetry = crystfel_symmetry_selector_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->symmetry),
 	                   FALSE, FALSE, 0);
 
@@ -226,7 +227,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	mo->detwin = gtk_check_button_new_with_label("Refine indexing assignments");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->detwin),
 	                   FALSE, FALSE, 0);
-	mo->detwin_sym = gtk_combo_box_text_new(); //crystfel_symmetry_selector_new();
+	mo->detwin_sym = crystfel_symmetry_selector_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->detwin_sym),
 	                   FALSE, FALSE, 0);
 

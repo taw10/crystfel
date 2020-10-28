@@ -210,6 +210,7 @@ if gtkdep.found()
                  'src/crystfelimageview.c',
                  'src/crystfelindexingopts.c',
                  'src/crystfelmergeopts.c',
+                 'src/crystfelsymmetryselector.c',
                  'src/gui_peaksearch.c',
                  'src/gui_index.c',
                  'src/gui_merge.c',
