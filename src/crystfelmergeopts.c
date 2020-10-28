@@ -92,18 +92,143 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	                          "Monochromatic Ewald sphere offset (offset)");
 
 	/* Symmetry */
-	/* Scale on/off */
-	/* B-factor scaling */
-	/* Post-refinement on/off */
-	/* Polarisation horiz/vert/unpolarized beam/no correction */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Symmetry:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	mo->symmetry = gtk_combo_box_text_new(); //crystfel_symmetry_selector_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->symmetry),
+	                   FALSE, FALSE, 0);
+
+	/* Scale, Bscale, post-ref on/off */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	mo->scale = gtk_check_button_new_with_label("Scale intensities");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->scale),
+	                   FALSE, FALSE, 0);
+	mo->bscale = gtk_check_button_new_with_label("Debye-Waller scaling");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->bscale),
+	                   FALSE, FALSE, 0);
+	mo->postref = gtk_check_button_new_with_label("Post-refinement");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->postref),
+	                   FALSE, FALSE, 0);
+
 	/* Number of iterations */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Number of scaling/post-refinement cycles:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	mo->niter = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->niter), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->niter),
+	                   FALSE, FALSE, 0);
+
+	/* Polarisation horiz/vert/unpolarized beam/no correction */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Polarisation:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	mo->polarisation = gtk_combo_box_text_new();
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->polarisation), "horiz",
+	                          "Horizontal e-field (most synchrotrons and FELs)");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->polarisation), "vert",
+	                          "Vertical e-field (LCLS-II hard X-ray undulator)");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->polarisation), "horiz50",
+	                          "Unpolarized incident beam");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->polarisation), "none",
+	                          "No correction");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->polarisation),
+	                   FALSE, FALSE, 0);
+
 	/* deltaCChalf */
+	mo->deltacchalf = gtk_check_button_new_with_label("Reject bad patterns according to ΔCC½");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(mo->deltacchalf),
+	                   FALSE, FALSE, 0);
+
 	/* Detector saturation value */
-	/* Minimum pattern resolution */
-	/* push-res */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Detector saturation value:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	mo->max_adu = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->max_adu), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->max_adu),
+	                   FALSE, FALSE, 0);
+
 	/* Minimum measurements */
-	/* Custom split file */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Minimum number of measurements per merged reflection:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	mo->min_measurements = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->min_measurements), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->min_measurements),
+	                   FALSE, FALSE, 0);
+
+	/* Custom split */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	mo->custom_split = gtk_check_button_new_with_label("Split datasets after merging");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->custom_split),
+	                   FALSE, FALSE, 0);
+	mo->custom_split_file = gtk_file_chooser_button_new("Dataset assignments",
+	                                                    GTK_FILE_CHOOSER_ACTION_OPEN);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->custom_split_file),
+	                   FALSE, FALSE, 0);
+
+	/* Minimum pattern resolution */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	mo->min_res = gtk_check_button_new_with_label("Require minimum estimated pattern resolution");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->min_res),
+	                   FALSE, FALSE, 0);
+	mo->min_res_val = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->min_res_val), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->min_res_val),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Å");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+
+	/* push-res */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	mo->limit_res = gtk_check_button_new_with_label("Exclude measurements more than");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->limit_res),
+	                   FALSE, FALSE, 0);
+	mo->push_res = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->push_res), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->push_res),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("nm^-1 above resolution limit");
+	gtk_label_set_markup(GTK_LABEL(label), "nm<sup>-1</sup> above resolution limit");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+
 	/* Detwin */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	mo->detwin = gtk_check_button_new_with_label("Refine indexing assignments");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->detwin),
+	                   FALSE, FALSE, 0);
+	mo->detwin_sym = gtk_combo_box_text_new(); //crystfel_symmetry_selector_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->detwin_sym),
+	                   FALSE, FALSE, 0);
 
 	return box;
 }

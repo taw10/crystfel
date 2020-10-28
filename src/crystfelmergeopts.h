@@ -55,8 +55,23 @@ struct _crystfelmergeopts
 
 	/*< private >*/
 	GtkWidget *model_combo;
-	GtkWidget *limit_res;
-	GtkWidget *push_res;
+	GtkWidget *symmetry;
+	GtkWidget *scale;
+	GtkWidget *bscale;
+	GtkWidget *postref;
+	GtkWidget *niter;
+	GtkWidget *polarisation;
+	GtkWidget *deltacchalf;
+	GtkWidget *min_measurements;
+	GtkWidget *max_adu;
+	GtkWidget *custom_split;
+	GtkWidget *custom_split_file;
+	GtkWidget *detwin;
+	GtkWidget *detwin_sym;
+	GtkWidget *min_res;
+	GtkWidget *min_res_val;
+	GtkWidget *limit_res;  /* check box for push-res < infinity */
+	GtkWidget *push_res;   /* entry for push-res value */
 };
 
 struct _crystfelmergeoptsclass
