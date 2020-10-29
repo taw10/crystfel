@@ -157,8 +157,8 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Detector saturation value:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	mo->use_max_adu = gtk_check_button_new_with_label("Detector saturation cutoff:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->use_max_adu),
 	                   FALSE, FALSE, 0);
 	mo->max_adu = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(mo->max_adu), 4);
@@ -249,10 +249,153 @@ GtkWidget *crystfel_merge_opts_new()
 }
 
 
-//int crystfel_merge_opts_get_multi_lattice(CrystFELMergeOpts *opts)
-//{
-//	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->multi));
-//}
+static int set_if(GtkWidget *combo, const char *a, const char *new_id)
+{
+	if ( strcmp(a, new_id) == 0 ) {
+		gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo),
+		                            new_id);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+static void set_int(GtkWidget *entry, int val)
+{
+	char tmp[64];
+	snprintf(tmp, 63, "%i", val);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+}
+
+
+static void set_float(GtkWidget *entry, float val)
+{
+	char tmp[64];
+	snprintf(tmp, 63, "%f", val);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+}
+
+
+void crystfel_merge_opts_set_model(CrystFELMergeOpts *opts,
+                                   const char *model)
+{
+	int done = 0;
+	done += set_if(opts->model_combo, model, "process_hkl");
+	done += set_if(opts->model_combo, model, "unity");
+	done += set_if(opts->model_combo, model, "xsphere");
+	done += set_if(opts->model_combo, model, "offset");
+	done += set_if(opts->model_combo, model, "ggpm");
+
+	if ( done == 0 ) {
+		ERROR("Unrecognised model '%s'\n", model);
+	}
+}
+
+
+void crystfel_merge_opts_set_polarisation(CrystFELMergeOpts *opts,
+                                          const char *polar)
+{
+	int done = 0;
+	done += set_if(opts->polarisation, polar, "horiz");
+	done += set_if(opts->polarisation, polar, "vert");
+	done += set_if(opts->polarisation, polar, "none");
+	done += set_if(opts->polarisation, polar, "horiz50");
+
+	if ( done == 0 ) {
+		ERROR("Unrecognised polarisation '%s'\n", polar);
+	}
+}
+
+
+void crystfel_merge_opts_set_symmetry(CrystFELMergeOpts *opts,
+                                      const char *sym)
+{
+	crystfel_symmetry_selector_set_group_symbol(CRYSTFEL_SYMMETRY_SELECTOR(opts->symmetry),
+	                                            sym);
+}
+
+
+void crystfel_merge_opts_set_scale(CrystFELMergeOpts *opts,
+                                   int scale)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->scale),
+	                             scale);
+}
+
+
+void crystfel_merge_opts_set_bscale(CrystFELMergeOpts *opts,
+                                    int bscale)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->bscale),
+	                             bscale);
+}
+
+
+void crystfel_merge_opts_set_postref(CrystFELMergeOpts *opts,
+                                     int postref)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->postref),
+	                             postref);
+}
+
+
+void crystfel_merge_opts_set_niter(CrystFELMergeOpts *opts,
+                                   int niter)
+{
+	set_int(opts->niter, niter);
+}
+
+
+void crystfel_merge_opts_set_deltacchalf(CrystFELMergeOpts *opts,
+                                         int deltacchalf)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->deltacchalf),
+	                             deltacchalf);
+}
+
+
+void crystfel_merge_opts_set_min_measurements(CrystFELMergeOpts *opts,
+                                              int min_measurements)
+{
+	set_int(opts->min_measurements, min_measurements);
+}
+
+
+void crystfel_merge_opts_set_max_adu(CrystFELMergeOpts *opts,
+                                     float max_adu)
+{
+	set_float(opts->max_adu, max_adu);
+}
+
+
+void crystfel_merge_opts_set_custom_split(CrystFELMergeOpts *opts,
+                                          const char *custom_split_file)
+{
+	if ( custom_split_file != NULL ) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(opts->custom_split_file),
+		                              custom_split_file);
+	}
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->custom_split),
+	                             (custom_split_file != NULL));
+}
+
+
+void crystfel_merge_opts_set_twin_sym(CrystFELMergeOpts *opts,
+                                      const char *twin_sym)
+{
+	crystfel_symmetry_selector_set_group_symbol(CRYSTFEL_SYMMETRY_SELECTOR(opts->detwin_sym),
+	                                            twin_sym);
+}
+
+
+void crystfel_merge_opts_set_min_res(CrystFELMergeOpts *opts,
+                                     float min_res)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->min_res),
+	                             !isinf(min_res));
+	set_float(opts->min_res_val, min_res);
+}
 
 
 float crystfel_merge_opts_get_push_res(CrystFELMergeOpts *opts)
@@ -279,11 +422,7 @@ float crystfel_merge_opts_get_push_res(CrystFELMergeOpts *opts)
 void crystfel_merge_opts_set_push_res(CrystFELMergeOpts *mo,
                                       float push_res)
 {
-	char tmp[64];
-
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mo->limit_res),
 	                             !isinf(push_res));
-
-	snprintf(tmp, 63, "%f", push_res);
-	gtk_entry_set_text(GTK_ENTRY(mo->push_res), tmp);
+	set_float(mo->push_res, push_res);
 }

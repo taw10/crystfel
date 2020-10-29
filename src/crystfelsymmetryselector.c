@@ -81,6 +81,8 @@ char *crystfel_symmetry_selector_get_group_symbol(CrystFELSymmetrySelector *sel)
 int crystfel_symmetry_selector_set_group_symbol(CrystFELSymmetrySelector *sel,
                                                 const char *pg_symbol)
 {
-	gtk_entry_set_text(GTK_ENTRY(sel->entry), pg_symbol);
+	if ( pg_symbol != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(sel->entry), pg_symbol);
+	}
 	return 0;
 }

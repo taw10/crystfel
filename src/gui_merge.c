@@ -68,6 +68,26 @@ static void merging_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
+static void set_merging_opts(struct merging_params *opts,
+                             CrystFELMergeOpts *mo)
+{
+	crystfel_merge_opts_set_model(mo, opts->model);
+	crystfel_merge_opts_set_symmetry(mo, opts->symmetry);
+	crystfel_merge_opts_set_scale(mo, opts->scale);
+	crystfel_merge_opts_set_bscale(mo, opts->bscale);
+	crystfel_merge_opts_set_postref(mo, opts->postref);
+	crystfel_merge_opts_set_niter(mo, opts->niter);
+	crystfel_merge_opts_set_polarisation(mo, opts->polarisation);
+	crystfel_merge_opts_set_deltacchalf(mo, opts->deltacchalf);
+	crystfel_merge_opts_set_min_measurements(mo, opts->min_measurements);
+	crystfel_merge_opts_set_max_adu(mo, opts->max_adu);
+	crystfel_merge_opts_set_custom_split(mo, opts->custom_split);
+	crystfel_merge_opts_set_twin_sym(mo, opts->twin_sym);
+	crystfel_merge_opts_set_min_res(mo, opts->min_res);
+	crystfel_merge_opts_set_push_res(mo, opts->push_res);
+}
+
+
 static GtkWidget *make_merging_job_opts(struct crystfelproject *proj,
                                         struct new_merging_job_params *njp)
 {
@@ -228,6 +248,8 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	notebook = crystfel_merge_opts_new();
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(notebook),
 	                   FALSE, FALSE, 8.0);
+
+	set_merging_opts(&proj->merging_params, CRYSTFEL_MERGE_OPTS(notebook));
 
 	job_page = make_merging_job_opts(proj, njp);
 	gtk_notebook_prepend_page(GTK_NOTEBOOK(notebook),
