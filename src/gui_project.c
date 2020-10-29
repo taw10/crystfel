@@ -154,8 +154,8 @@ static int find_backend(const char *name, struct crystfelproject *proj)
 }
 
 
-static void handle_var(const char *key, const char *val,
-                       struct crystfelproject *proj)
+static void parse_peaksearch_opt(const char *key, const char *val,
+                                 struct crystfelproject *proj)
 {
 	if ( strcmp(key, "peak_search_params.method") == 0 ) {
 		proj->peak_search_params.method = parse_peaksearch(val);
@@ -224,7 +224,12 @@ static void handle_var(const char *key, const char *val,
 	if ( strcmp(key, "peak_search_params.revalidate") == 0 ) {
 		proj->peak_search_params.revalidate = parse_int(val);
 	}
+}
 
+
+static void parse_indexing_opt(const char *key, const char *val,
+                               struct crystfelproject *proj)
+{
 	if ( strcmp(key, "indexing.cell_file") == 0 ) {
 		proj->indexing_params.cell_file = strdup(val);
 	}
@@ -260,16 +265,12 @@ static void handle_var(const char *key, const char *val,
 	if ( strcmp(key, "indexing.min_peaks") == 0 ) {
 		proj->indexing_params.min_peaks = parse_int(val);
 	}
+}
 
-	if ( strcmp(key, "indexing.new_job_title") == 0 ) {
-		free(proj->indexing_new_job_title);
-		proj->indexing_new_job_title = strdup(val);
-	}
 
-	if ( strcmp(key, "indexing.backend") == 0 ) {
-		proj->indexing_backend_selected = find_backend(val, proj);
-	}
-
+static void parse_integration_opt(const char *key, const char *val,
+                                  struct crystfelproject *proj)
+{
 	if ( strcmp(key, "integration.method") == 0 ) {
 		proj->indexing_params.integration_method = strdup(val);
 	}
@@ -292,6 +293,90 @@ static void handle_var(const char *key, const char *val,
 
 	if ( strcmp(key, "integration.ir_out") == 0 ) {
 		proj->indexing_params.ir_out = parse_float(val);
+	}
+}
+
+
+static void parse_merging_opt(const char *key, const char *val,
+                              struct crystfelproject *proj)
+{
+	if ( strcmp(key, "merging.model") == 0 ) {
+		proj->merging_params.model = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.symmetry") == 0 ) {
+		proj->merging_params.symmetry = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.scale") == 0 ) {
+		proj->merging_params.scale = parse_int(val);
+	}
+
+	if ( strcmp(key, "merging.bscale") == 0 ) {
+		proj->merging_params.bscale = parse_int(val);
+	}
+
+	if ( strcmp(key, "merging.postref") == 0 ) {
+		proj->merging_params.postref = parse_int(val);
+	}
+
+	if ( strcmp(key, "merging.niter") == 0 ) {
+		proj->merging_params.niter = parse_int(val);
+	}
+
+	if ( strcmp(key, "merging.polarisation") == 0 ) {
+		proj->merging_params.polarisation = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.deltacchalf") == 0 ) {
+		proj->merging_params.deltacchalf = parse_int(val);
+	}
+
+	if ( strcmp(key, "merging.min_measurements") == 0 ) {
+		proj->merging_params.min_measurements = parse_int(val);
+	}
+
+	if ( strcmp(key, "merging.max_adu") == 0 ) {
+		proj->merging_params.max_adu = parse_float(val);
+	}
+
+	if ( strcmp(key, "merging.custom_split") == 0 ) {
+		proj->merging_params.custom_split = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.twin_sym") == 0 ) {
+		proj->merging_params.twin_sym = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.min_res") == 0 ) {
+		proj->merging_params.min_res = parse_float(val);
+	}
+
+	if ( strcmp(key, "merging.push_res") == 0 ) {
+		proj->merging_params.push_res = parse_float(val);
+	}
+}
+
+
+static void handle_var(const char *key, const char *val,
+                       struct crystfelproject *proj)
+{
+	if ( strcmp(key, "indexing.new_job_title") == 0 ) {
+		free(proj->indexing_new_job_title);
+		proj->indexing_new_job_title = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.new_job_title") == 0 ) {
+		free(proj->merging_new_job_title);
+		proj->merging_new_job_title = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.backend") == 0 ) {
+		proj->indexing_backend_selected = find_backend(val, proj);
+	}
+
+	if ( strcmp(key, "merging.backend") == 0 ) {
+		proj->merging_backend_selected = find_backend(val, proj);
 	}
 
 	if ( strcmp(key, "show_peaks") == 0 ) {
@@ -318,9 +403,13 @@ static void handle_var(const char *key, const char *val,
 		proj->data_search_pattern = decode_matchtype(val);
 	}
 
-	/* Backend indexing option? */
+	if ( strncmp(key, "peak_search_params.", 19) == 0 ) {
+		parse_peaksearch_opt(key, val, proj);
+	}
+
 	if ( strncmp(key, "indexing.", 9) == 0 ) {
 		int i;
+		parse_indexing_opt(key, val,  proj);
 		for ( i=0; i<proj->n_backends; i++ ) {
 			struct crystfel_backend *be;
 			be = &proj->backends[i];
@@ -329,6 +418,20 @@ static void handle_var(const char *key, const char *val,
 		}
 	}
 
+	if ( strncmp(key, "integration.", 12) == 0 ) {
+		parse_integration_opt(key, val, proj);
+	}
+
+	if ( strncmp(key, "merging.", 9) == 0 ) {
+		int i;
+		parse_merging_opt(key, val, proj);
+		for ( i=0; i<proj->n_backends; i++ ) {
+			struct crystfel_backend *be;
+			be = &proj->backends[i];
+			be->read_merging_opt(be->merging_opts_priv,
+			                     key, val);
+		}
+	}
 }
 
 
@@ -637,6 +740,35 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "integration.ir_out %f\n",
 	        proj->indexing_params.ir_out);
 
+	fprintf(fh, "merging.model %s\n",
+	        proj->merging_params.model);
+	fprintf(fh, "merging.symmetry %s\n",
+	        proj->merging_params.symmetry);
+	fprintf(fh, "merging.scale %i\n",
+	        proj->merging_params.scale);
+	fprintf(fh, "merging.bscale %i\n",
+	        proj->merging_params.bscale);
+	fprintf(fh, "merging.postref %i\n",
+	        proj->merging_params.postref);
+	fprintf(fh, "merging.niter %i\n",
+	        proj->merging_params.niter);
+	fprintf(fh, "merging.polarisation %s\n",
+	        proj->merging_params.polarisation);
+	fprintf(fh, "merging.deltacchalf %i\n",
+	        proj->merging_params.deltacchalf);
+	fprintf(fh, "merging.min_measurements %i\n",
+	        proj->merging_params.min_measurements);
+	fprintf(fh, "merging.max_adu %f\n",
+	        proj->merging_params.max_adu);
+	fprintf(fh, "merging.custom_split %s\n",
+	        proj->merging_params.custom_split);
+	fprintf(fh, "merging.twin_sym %s\n",
+	        proj->merging_params.twin_sym);
+	fprintf(fh, "merging.min_res %f\n",
+	        proj->merging_params.min_res);
+	fprintf(fh, "merging.push_res %f\n",
+	        proj->merging_params.push_res);
+
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
 
@@ -684,10 +816,10 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_opts = NULL;
 	proj->n_running_tasks = 0;
 	proj->indexing_new_job_title = NULL;
-	proj->merge_new_job_title = NULL;
+	proj->merging_new_job_title = NULL;
 
 	proj->indexing_backend_selected = 0;
-	proj->merge_backend_selected = 0;
+	proj->merging_backend_selected = 0;
 	proj->n_backends = 0;
 	proj->backends = malloc(2*sizeof(struct crystfel_backend));
 	/* FIXME: Crappy error handling */
@@ -748,6 +880,21 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_params.ir_inn = 4.0;
 	proj->indexing_params.ir_mid = 5.0;
 	proj->indexing_params.ir_out = 7.0;
+
+	proj->merging_params.model = strdup("unity");
+	proj->merging_params.symmetry = strdup("1");
+	proj->merging_params.scale = 1;
+	proj->merging_params.bscale = 1;
+	proj->merging_params.postref = 0;
+	proj->merging_params.niter = 3;
+	proj->merging_params.polarisation = "horiz";
+	proj->merging_params.deltacchalf = 1;
+	proj->merging_params.min_measurements = 2;
+	proj->merging_params.max_adu = INFINITY;
+	proj->merging_params.custom_split = NULL;
+	proj->merging_params.twin_sym = NULL;
+	proj->merging_params.min_res = 0.0;
+	proj->merging_params.push_res = INFINITY;
 
 	proj->results = NULL;
 	proj->n_results = 0;

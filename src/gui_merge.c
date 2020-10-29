@@ -42,7 +42,7 @@
 #include "crystfelmergeopts.h"
 
 
-struct new_merge_job_params {
+struct new_merging_job_params {
 	struct crystfelproject *proj;
 	GtkWidget *backend_combo;
 	GtkWidget *backend_opts_widget;
@@ -53,14 +53,14 @@ struct new_merge_job_params {
 };
 
 
-static void free_new_merge_job_params(gpointer njp, GClosure *closure)
+static void free_new_merging_job_params(gpointer njp, GClosure *closure)
 {
 	free(njp);
 }
 
 
-static void merge_response_sig(GtkWidget *dialog, gint resp,
-                               struct new_merge_job_params *njp)
+static void merging_response_sig(GtkWidget *dialog, gint resp,
+                                 struct new_merging_job_params *njp)
 {
 	if ( resp == GTK_RESPONSE_OK ) {
 		STATUS("Doing it!\n");
@@ -68,8 +68,8 @@ static void merge_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
-static GtkWidget *make_merge_job_opts(struct crystfelproject *proj,
-                                      struct new_merge_job_params *njp)
+static GtkWidget *make_merging_job_opts(struct crystfelproject *proj,
+                                        struct new_merging_job_params *njp)
 {
 	GtkWidget *box;
 	GtkWidget *hbox;
@@ -88,9 +88,9 @@ static GtkWidget *make_merge_job_opts(struct crystfelproject *proj,
 	njp->job_title_entry = gtk_entry_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
 	                   TRUE, TRUE, 2.0);
-	if ( proj->merge_new_job_title != NULL ) {
+	if ( proj->merging_new_job_title != NULL ) {
 		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry),
-		                   proj->merge_new_job_title);
+		                   proj->merging_new_job_title);
 	}
 
 	label = gtk_label_new("This name will be used for a working subfolder");
@@ -125,15 +125,15 @@ static GtkWidget *make_merge_job_opts(struct crystfelproject *proj,
 }
 
 
-static void merge_backend_changed_sig(GtkWidget *combo,
-                                      struct new_merge_job_params *njp)
+static void merging_backend_changed_sig(GtkWidget *combo,
+                                        struct new_merging_job_params *njp)
 {
 	int backend_idx;
 	struct crystfel_backend *be;
 
 	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
 	if ( backend_idx < 0 ) return;
-	njp->proj->merge_backend_selected = backend_idx;
+	njp->proj->merging_backend_selected = backend_idx;
 
 	be = &njp->proj->backends[backend_idx];
 
@@ -141,7 +141,7 @@ static void merge_backend_changed_sig(GtkWidget *combo,
 		gtk_widget_destroy(njp->backend_opts_widget);
 	}
 
-	njp->backend_opts_widget = be->make_merge_parameters_widget(be->merge_opts_priv);
+	njp->backend_opts_widget = be->make_merging_parameters_widget(be->merging_opts_priv);
 
 	gtk_box_pack_start(GTK_BOX(njp->backend_opts_box),
 	                   GTK_WIDGET(njp->backend_opts_widget),
@@ -150,7 +150,7 @@ static void merge_backend_changed_sig(GtkWidget *combo,
 }
 
 
-static GtkWidget *make_merge_backend_opts(struct new_merge_job_params *njp)
+static GtkWidget *make_merging_backend_opts(struct new_merging_job_params *njp)
 {
 	GtkWidget *box;
 	GtkWidget *hbox;
@@ -186,9 +186,9 @@ static GtkWidget *make_merge_backend_opts(struct new_merge_job_params *njp)
 
 	/* njp->backend_opts{_box} must exist before the following */
 	g_signal_connect(G_OBJECT(njp->backend_combo), "changed",
-	                 G_CALLBACK(merge_backend_changed_sig), njp);
+	                 G_CALLBACK(merging_backend_changed_sig), njp);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(njp->backend_combo),
-	                         njp->proj->merge_backend_selected);
+	                         njp->proj->merging_backend_selected);
 
 	return box;
 }
@@ -202,9 +202,9 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *backend_page;
 	GtkWidget *job_page;
 	GtkWidget *notebook;
-	struct new_merge_job_params *njp;
+	struct new_merging_job_params *njp;
 
-	njp = malloc(sizeof(struct new_merge_job_params));
+	njp = malloc(sizeof(struct new_merging_job_params));
 	if ( njp == NULL ) return FALSE;
 
 	njp->proj = proj;
@@ -217,8 +217,8 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                     NULL);
 
 	g_signal_connect_data(G_OBJECT(dialog), "response",
-	                      G_CALLBACK(merge_response_sig),
-	                      njp, free_new_merge_job_params, 0);
+	                      G_CALLBACK(merging_response_sig),
+	                      njp, free_new_merging_job_params, 0);
 
 	vbox = gtk_vbox_new(FALSE, 0.0);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
@@ -229,12 +229,12 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(notebook),
 	                   FALSE, FALSE, 8.0);
 
-	job_page = make_merge_job_opts(proj, njp);
+	job_page = make_merging_job_opts(proj, njp);
 	gtk_notebook_prepend_page(GTK_NOTEBOOK(notebook),
 	                          job_page,
 	                          gtk_label_new("Job name/notes"));
 
-	backend_page = make_merge_backend_opts(njp);
+	backend_page = make_merging_backend_opts(njp);
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
 	                         backend_page,
 	                         gtk_label_new("Cluster/batch system"));

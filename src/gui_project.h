@@ -89,8 +89,22 @@ struct index_params {
 	float ir_out;
 };
 
-struct merge_params {
-	int nothing;
+struct merging_params {
+
+	char *model;   /* "process_hkl" in addition to xsphere/unity etc */
+	char *symmetry;
+	int scale;
+	int bscale;
+	int postref;
+	int niter;
+	char *polarisation;
+	int deltacchalf;
+	int min_measurements;
+	float max_adu;
+	char *custom_split;
+	char *twin_sym;
+	float min_res;
+	float push_res;
 };
 
 struct crystfelproject;
@@ -99,6 +113,14 @@ struct crystfel_backend {
 
 	const char *name;
 	const char *friendly_name;
+
+	/* Called to ask the backend to cancel the job */
+	void (*cancel_task)(void *job_priv);
+
+	/* Called to get the status of a task */
+	int (*task_status)(void *job_priv,
+	                   int *running,
+	                   float *fraction_complete);
 
 	/* Backend should provide a GTK widget to set options */
 	GtkWidget *(*make_indexing_parameters_widget)(void *opts_priv);
@@ -109,14 +131,6 @@ struct crystfel_backend {
 	                      const char *job_notes,
 	                      struct crystfelproject *proj,
 	                      void *opts_priv);
-
-	/* Called to ask the backend to cancel the job */
-	void (*cancel_task)(void *job_priv);
-
-	/* Called to get the status of a task */
-	int (*task_status)(void *job_priv,
-	                   int *running,
-	                   float *fraction_complete);
 
 	/* Called to ask the backend to write its indexing options */
 	void (*write_indexing_opts)(void *opts_priv, FILE *fh);
@@ -130,10 +144,25 @@ struct crystfel_backend {
 	void *indexing_opts_priv;
 
 	/* Backend should provide a GTK widget to set options */
-	GtkWidget *(*make_merge_parameters_widget)(void *opts_priv);
+	GtkWidget *(*make_merging_parameters_widget)(void *opts_priv);
+
+	/* Called to ask the backend to start merging data.
+	 * It should return a void pointer representing this job */
+	void *(*run_merging)(const char *job_title,
+	                     const char *job_notes,
+	                     struct crystfelproject *proj,
+	                     void *opts_priv);
+
+	/* Called to ask the backend to write its merging options */
+	void (*write_merging_opts)(void *opts_priv, FILE *fh);
+
+	/* Called when reading a project from file */
+	void (*read_merging_opt)(void *opts_priv,
+	                         const char *key,
+	                         const char *val);
 
 	/* Backend should store options for merging here */
-	void *merge_opts_priv;
+	void *merging_opts_priv;
 
 };
 
@@ -199,10 +228,10 @@ struct crystfelproject {
 	GtkWidget *indexing_opts;
 	char *indexing_new_job_title;
 
-	struct merge_params merge_params;
-	int merge_backend_selected;
-	GtkWidget *merge_opts;
-	char *merge_new_job_title;
+	struct merging_params merging_params;
+	int merging_backend_selected;
+	GtkWidget *merging_opts;
+	char *merging_new_job_title;
 
 	GtkWidget *type_combo;
 	GtkWidget *peak_vbox;     /* Box for peak search parameter widgets */

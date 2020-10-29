@@ -45,7 +45,7 @@ struct local_indexing_opts
 };
 
 
-struct local_merge_opts
+struct local_merging_opts
 {
 	int n_threads;
 };
@@ -376,7 +376,7 @@ static void read_indexing_opt(void *opts_priv,
 
 static void n_threads_activate_sig(GtkEntry *entry, gpointer data)
 {
-	struct local_merge_opts *opts = data;
+	struct local_merging_opts *opts = data;
 	convert_int(gtk_entry_get_text(entry), &opts->n_threads);
 }
 
@@ -389,9 +389,9 @@ static gboolean n_threads_focus_sig(GtkEntry *entry, GdkEvent *event,
 }
 
 
-static GtkWidget *make_merge_parameters_widget(void *opts_priv)
+static GtkWidget *make_merging_parameters_widget(void *opts_priv)
 {
-	struct local_merge_opts *opts = opts_priv;
+	struct local_merging_opts *opts = opts_priv;
 	GtkWidget *vbox;
 	GtkWidget *hbox;
 	GtkWidget *entry;
@@ -423,21 +423,59 @@ static GtkWidget *make_merge_parameters_widget(void *opts_priv)
 }
 
 
+static void *run_merging(const char *job_title,
+                         const char *job_notes,
+                         struct crystfelproject *proj,
+                         void *opts_priv)
+{
+	return NULL;
+}
+
+
+static void write_merging_opts(void *opts_priv, FILE *fh)
+{
+	struct local_merging_opts *opts = opts_priv;
+
+	fprintf(fh, "merging.local.n_threads %i\n",
+	        opts->n_threads);
+}
+
+
+static void read_merging_opt(void *opts_priv,
+                             const char *key,
+                             const char *val)
+{
+	struct local_merging_opts *opts = opts_priv;
+
+	if ( strcmp(key, "merging.local.n_threads") == 0 ) {
+		if ( convert_int(val, &opts->n_threads) ) {
+			ERROR("Invalid number of threads: %s\n", val);
+		}
+	}
+}
+
+
 int make_local_backend(struct crystfel_backend *be)
 {
 	be->name = "local";
 	be->friendly_name = "Local (run on this computer)";
 
-	be->make_indexing_parameters_widget = make_indexing_parameters_widget;
-	be->run_indexing = run_indexing;
 	be->cancel_task = cancel_task;
 	be->task_status = get_task_status;
+
+	be->make_indexing_parameters_widget = make_indexing_parameters_widget;
+	be->run_indexing = run_indexing;
 	be->indexing_opts_priv = make_default_local_opts();
 	if ( be->indexing_opts_priv == NULL ) return 1;
 	be->write_indexing_opts = write_indexing_opts;
 	be->read_indexing_opt = read_indexing_opt;
 
-	be->make_merge_parameters_widget = make_merge_parameters_widget;
+	be->make_merging_parameters_widget = make_merging_parameters_widget;
+	be->run_merging = run_merging;
+	be->merging_opts_priv = make_default_local_opts();
+	if ( be->merging_opts_priv == NULL ) return 1;
+	be->write_merging_opts = write_merging_opts;
+	be->read_merging_opt = read_merging_opt;
 
 	return 0;
 };
