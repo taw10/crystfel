@@ -245,7 +245,6 @@ GtkWidget *crystfel_merge_opts_new()
 	                         merge_parameters(mo),
 	                         gtk_label_new("Merging"));
 
-	gtk_widget_show_all(GTK_WIDGET(mo));
 	return GTK_WIDGET(mo);
 }
 

@@ -471,7 +471,6 @@ GtkWidget *crystfel_indexing_opts_new()
 	                         integration_parameters(io),
 	                         gtk_label_new("Integration"));
 
-	gtk_widget_show_all(GTK_WIDGET(io));
 	return GTK_WIDGET(io);
 }
 
