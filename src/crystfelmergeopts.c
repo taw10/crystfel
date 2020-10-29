@@ -61,6 +61,24 @@ static void crystfel_merge_opts_init(CrystFELMergeOpts *mo)
 }
 
 
+static int maybe_disable(GtkWidget *toggle, GtkWidget *widget)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(widget),
+	                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+	return FALSE;
+}
+
+
+static void disable_if_not(GtkWidget *toggle, GtkWidget *widget)
+{
+	maybe_disable(toggle, widget);
+	g_signal_connect(G_OBJECT(toggle),
+	                 "toggled",
+	                 G_CALLBACK(maybe_disable),
+	                 widget);
+}
+
+
 static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 {
 	GtkWidget *box;
@@ -116,6 +134,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	mo->postref = gtk_check_button_new_with_label("Post-refinement");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->postref),
 	                   FALSE, FALSE, 0);
+	disable_if_not(mo->scale, mo->bscale);
 
 	/* Number of iterations */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -164,6 +183,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_entry_set_width_chars(GTK_ENTRY(mo->max_adu), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->max_adu),
 	                   FALSE, FALSE, 0);
+	disable_if_not(mo->use_max_adu, mo->max_adu);
 
 	/* Minimum measurements */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -188,6 +208,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	                                                    GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->custom_split_file),
 	                   FALSE, FALSE, 0);
+	disable_if_not(mo->custom_split, mo->custom_split_file);
 
 	/* Minimum pattern resolution */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -203,6 +224,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	label = gtk_label_new("Å");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
+	disable_if_not(mo->min_res, mo->min_res_val);
 
 	/* push-res */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -219,6 +241,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_label_set_markup(GTK_LABEL(label), "nm<sup>-1</sup> above resolution limit");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
+	disable_if_not(mo->limit_res, mo->push_res);
 
 	/* Detwin */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -230,6 +253,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	mo->detwin_sym = crystfel_symmetry_selector_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->detwin_sym),
 	                   FALSE, FALSE, 0);
+	disable_if_not(mo->detwin, mo->detwin_sym);
 
 	return box;
 }

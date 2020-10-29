@@ -60,6 +60,24 @@ static void crystfel_indexing_opts_init(CrystFELIndexingOpts *io)
 }
 
 
+static int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(widget),
+	                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+	return FALSE;
+}
+
+
+static void i_disable_if_not(GtkWidget *toggle, GtkWidget *widget)
+{
+	i_maybe_disable(toggle, widget);
+	g_signal_connect(G_OBJECT(toggle),
+	                 "toggled",
+	                 G_CALLBACK(i_maybe_disable),
+	                 widget);
+}
+
+
 static GtkWidget *add_tol(GtkGrid *grid, const char *spec_t,
                           const char *unit_t, gint left, gint top)
 {
@@ -240,20 +258,6 @@ static void auto_indm_toggle_sig(GtkToggleButton *togglebutton,
 	gtk_widget_set_sensitive(GTK_WIDGET(io->indm_chooser),
 	                         !gtk_toggle_button_get_active(togglebutton));
 }
-
-
-static void check_cell_toggle_sig(GtkToggleButton *togglebutton,
-                                  CrystFELIndexingOpts *io)
-{
-	int i;
-	int active = gtk_toggle_button_get_active(togglebutton);
-	for ( i=0; i<6; i++ ) {
-		gtk_widget_set_sensitive(GTK_WIDGET(io->tols[i]),
-		                         active);
-	}
-}
-
-
 static void cell_file_set_sig(GtkFileChooserButton *widget,
                               CrystFELIndexingOpts *io)
 {
@@ -345,8 +349,7 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	                   FALSE, FALSE, 0);
 	tolerances = make_tolerances(io);
 	gtk_container_add(GTK_CONTAINER(expander), tolerances);
-	g_signal_connect(G_OBJECT(io->check_cell), "toggled",
-	                 G_CALLBACK(check_cell_toggle_sig), io);
+	i_disable_if_not(io->check_cell, tolerances);
 
 	/* --min-peaks (NB add one) */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -362,6 +365,7 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	label = gtk_label_new("peaks");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
+	i_disable_if_not(io->enable_hitfind, io->ignore_fewer_peaks);
 
 	return box;
 }
@@ -419,6 +423,7 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	                     "nm<sup>-1</sup> above apparent resolution limit");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
+	i_disable_if_not(io->limit_res, io->push_res);
 
 	/* --int-radii */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
