@@ -846,8 +846,8 @@ void default_project(struct crystfelproject *proj)
 	#endif
 
 	/* Default parameter values */
-	proj->show_peaks = 0;
-	proj->show_refls = 0;
+	proj->show_peaks = 1;
+	proj->show_refls = 1;
 
 	proj->peak_search_params.method = PEAK_ZAEF;
 	proj->peak_search_params.threshold = 800.0;
