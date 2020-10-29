@@ -769,6 +769,14 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "merging.push_res %f\n",
 	        proj->merging_params.push_res);
 
+	fprintf(fh, "merging.backend %s\n",
+	        proj->backends[proj->merging_backend_selected].name);
+	for ( i=0; i<proj->n_backends; i++ ) {
+		struct crystfel_backend *be;
+		be = &proj->backends[i];
+		be->write_merging_opts(be->merging_opts_priv, fh);
+	}
+
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
 

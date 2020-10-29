@@ -340,7 +340,7 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 }
 
 
-static struct local_indexing_opts *make_default_local_opts()
+static struct local_indexing_opts *make_default_local_indexing_opts()
 {
 	struct local_indexing_opts *opts = malloc(sizeof(struct local_indexing_opts));
 	if ( opts == NULL ) return NULL;
@@ -432,6 +432,17 @@ static void *run_merging(const char *job_title,
 }
 
 
+static struct local_merging_opts *make_default_local_merging_opts()
+{
+	struct local_merging_opts *opts = malloc(sizeof(struct local_merging_opts));
+	if ( opts == NULL ) return NULL;
+
+	opts->n_threads = 4;
+
+	return opts;
+}
+
+
 static void write_merging_opts(void *opts_priv, FILE *fh)
 {
 	struct local_merging_opts *opts = opts_priv;
@@ -465,14 +476,14 @@ int make_local_backend(struct crystfel_backend *be)
 
 	be->make_indexing_parameters_widget = make_indexing_parameters_widget;
 	be->run_indexing = run_indexing;
-	be->indexing_opts_priv = make_default_local_opts();
+	be->indexing_opts_priv = make_default_local_indexing_opts();
 	if ( be->indexing_opts_priv == NULL ) return 1;
 	be->write_indexing_opts = write_indexing_opts;
 	be->read_indexing_opt = read_indexing_opt;
 
 	be->make_merging_parameters_widget = make_merging_parameters_widget;
 	be->run_merging = run_merging;
-	be->merging_opts_priv = make_default_local_opts();
+	be->merging_opts_priv = make_default_local_merging_opts();
 	if ( be->merging_opts_priv == NULL ) return 1;
 	be->write_merging_opts = write_merging_opts;
 	be->read_merging_opt = read_merging_opt;

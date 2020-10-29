@@ -85,4 +85,6 @@ typedef struct _crystfelmergeoptsclass CrystFELMergeOptsClass;
 extern GType crystfel_merge_opts_get_type(void);
 extern GtkWidget *crystfel_merge_opts_new(void);
 
+extern float crystfel_merge_opts_get_push_res(CrystFELMergeOpts *opts);
+
 #endif	/* CRYSTFELMERGEOPTS_H */
