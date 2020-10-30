@@ -55,6 +55,20 @@ struct new_merging_job_params {
 };
 
 
+static char *get_all_text(GtkTextView *view)
+{
+	GtkTextBuffer *buf;
+	GtkTextIter start, end;
+
+	buf = gtk_text_view_get_buffer(view);
+
+	gtk_text_buffer_get_start_iter(buf, &start);
+	gtk_text_buffer_get_end_iter(buf, &end);
+
+	return gtk_text_buffer_get_text(buf, &start, &end, FALSE);
+}
+
+
 static void free_new_merging_job_params(gpointer njp, GClosure *closure)
 {
 	free(njp);
@@ -86,14 +100,63 @@ static void get_merging_opts(struct merging_params *opts,
 }
 
 
+static int run_merging(struct crystfelproject *proj,
+                       int backend_idx,
+                       const char *job_title,
+                       const char *job_notes)
+{
+	struct crystfel_backend *be;
+	void *job_priv;
+
+	be = &proj->backends[backend_idx];
+	job_priv = be->run_merging(job_title, job_notes, proj,
+	                           be->merging_opts_priv);
+
+	if ( job_priv != NULL ) {
+		char name[256];
+		snprintf(name, 255, "Merging data (%s)", job_title);
+		add_running_task(proj, name, be, job_priv);
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+
 static void merging_response_sig(GtkWidget *dialog, gint resp,
                                  struct new_merging_job_params *njp)
 {
 	if ( resp == GTK_RESPONSE_OK ) {
 
+		int backend_idx;
+		const char *job_title;
+		char *job_notes;
+
 		get_merging_opts(&njp->proj->merging_params,
 		                 CRYSTFEL_MERGE_OPTS(njp->proj->merging_opts));
-		STATUS("Doing it!\n");
+
+		backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(njp->backend_combo));
+		if ( backend_idx < 0 ) return;
+
+		job_title = gtk_entry_get_text(GTK_ENTRY(njp->job_title_entry));
+		job_notes = get_all_text(GTK_TEXT_VIEW(njp->job_notes_text));
+
+		if ( job_title[0] == '\0' ) {
+			ERROR("You must provide a job name.\n");
+			return;
+		}
+
+		free(njp->proj->merging_new_job_title);
+		njp->proj->merging_new_job_title = strdup(job_title);
+
+		if ( run_merging(njp->proj, backend_idx,
+		                 job_title, job_notes) == 0 )
+		{
+			gtk_widget_destroy(dialog);
+			njp->proj->merging_opts = NULL;
+		}
+
+		free(job_notes);
 
 	} else {
 		gtk_widget_destroy(dialog);
