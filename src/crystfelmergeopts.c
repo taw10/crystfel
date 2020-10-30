@@ -422,31 +422,160 @@ void crystfel_merge_opts_set_min_res(CrystFELMergeOpts *opts,
 }
 
 
-float crystfel_merge_opts_get_push_res(CrystFELMergeOpts *opts)
-{
-	if ( !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->limit_res)) ) {
-		return INFINITY;
-	} else {
-		const gchar *text;
-		float push_res;
-		char *rval;
-		text = gtk_entry_get_text(GTK_ENTRY(opts->push_res));
-		errno = 0;
-		push_res = strtof(text, &rval);
-		if ( *rval != '\0' ) {
-			printf("Invalid value for push-res (%s)\n",
-			      rval);
-			return INFINITY;
-		}
-		return push_res;
-	}
-}
-
-
 void crystfel_merge_opts_set_push_res(CrystFELMergeOpts *mo,
                                       float push_res)
 {
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mo->limit_res),
 	                             !isinf(push_res));
 	set_float(mo->push_res, push_res);
+}
+
+
+static float get_float(GtkWidget *entry)
+{
+	const gchar *text;
+	char *rval;
+	float val;
+	text = gtk_entry_get_text(GTK_ENTRY(entry));
+	errno = 0;
+	val = strtof(text, &rval);
+	if ( *rval != '\0' ) return NAN;
+	return val;
+}
+
+
+static unsigned int get_uint(GtkWidget *entry)
+{
+	const gchar *text;
+	char *rval;
+	unsigned long int val;
+	text = gtk_entry_get_text(GTK_ENTRY(entry));
+	errno = 0;
+	val = strtoul(text, &rval, 10);
+	if ( *rval != '\0' ) {
+		printf("Invalid integer '%s'\n", text);
+		return 0;
+	}
+	return val;
+}
+
+static int get_bool(GtkWidget *widget)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+}
+
+
+const char *crystfel_merge_opts_get_model(CrystFELMergeOpts *opts)
+{
+	return gtk_combo_box_get_active_id(GTK_COMBO_BOX(opts->model_combo));
+}
+
+
+const char *crystfel_merge_opts_get_symmetry(CrystFELMergeOpts *opts)
+{
+	return crystfel_symmetry_selector_get_group_symbol(CRYSTFEL_SYMMETRY_SELECTOR(opts->symmetry));
+}
+
+
+int crystfel_merge_opts_get_scale(CrystFELMergeOpts *opts)
+{
+	return get_bool(opts->scale);
+}
+
+
+int crystfel_merge_opts_get_bscale(CrystFELMergeOpts *opts)
+{
+	return get_bool(opts->bscale);
+}
+
+
+int crystfel_merge_opts_get_postref(CrystFELMergeOpts *opts)
+{
+	return get_bool(opts->postref);
+}
+
+
+int crystfel_merge_opts_get_niter(CrystFELMergeOpts *opts)
+{
+	return get_uint(opts->niter);
+}
+
+
+const char *crystfel_merge_opts_get_polarisation(CrystFELMergeOpts *opts)
+{
+	return gtk_combo_box_get_active_id(GTK_COMBO_BOX(opts->polarisation));
+}
+
+
+int crystfel_merge_opts_get_deltacchalf(CrystFELMergeOpts *opts)
+{
+	return get_bool(opts->deltacchalf);
+}
+
+
+int crystfel_merge_opts_get_min_measurements(CrystFELMergeOpts *opts)
+{
+	return get_uint(opts->min_measurements);
+}
+
+
+float crystfel_merge_opts_get_max_adu(CrystFELMergeOpts *opts)
+{
+	if ( get_bool(opts->use_max_adu) == 0 ) {
+		return INFINITY;
+	} else {
+		return get_float(opts->max_adu);
+	}
+}
+
+
+const char *crystfel_merge_opts_get_custom_split(CrystFELMergeOpts *opts)
+{
+	if ( get_bool(opts->custom_split) == 0 ) {
+		return NULL;
+	} else {
+		return gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(opts->custom_split_file));
+	}
+}
+
+
+const char *crystfel_merge_opts_get_twin_sym(CrystFELMergeOpts *opts)
+{
+	if ( get_bool(opts->detwin) == 0 ) {
+		return NULL;
+	} else {
+		return crystfel_symmetry_selector_get_group_symbol(CRYSTFEL_SYMMETRY_SELECTOR(opts->detwin_sym));
+	}
+}
+
+
+float crystfel_merge_opts_get_min_res(CrystFELMergeOpts *opts)
+{
+	if ( get_bool(opts->min_res) == 0 ) {
+		return 0.0;
+	} else {
+		float min_res = get_float(opts->min_res_val);
+		if ( isnan(min_res) ) {
+			printf("Invalid value for min-res\n");
+			return 0.0;
+		} else {
+			return min_res;
+		}
+	}
+}
+
+
+float crystfel_merge_opts_get_push_res(CrystFELMergeOpts *opts)
+{
+	if ( get_bool(opts->limit_res) == 0 ) {
+		return INFINITY;
+	} else {
+		float push_res = get_float(opts->push_res);
+		if ( isnan(push_res) ) {
+			printf("Invalid value for push-res\n");
+			return INFINITY;
+		} else {
+			return push_res;
+		}
+	}
 }

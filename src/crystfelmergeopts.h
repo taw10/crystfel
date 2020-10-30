@@ -115,7 +115,6 @@ extern void crystfel_merge_opts_set_min_res(CrystFELMergeOpts *opts,
 extern void crystfel_merge_opts_set_push_res(CrystFELMergeOpts *opts,
                                              float push_res);
 
-extern float crystfel_merge_opts_get_push_res(CrystFELMergeOpts *opts);
 extern const char *crystfel_merge_opts_get_model(CrystFELMergeOpts *opts);
 extern const char *crystfel_merge_opts_get_symmetry(CrystFELMergeOpts *opts);
 extern int crystfel_merge_opts_get_scale(CrystFELMergeOpts *opts);
