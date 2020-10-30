@@ -895,7 +895,7 @@ void default_project(struct crystfelproject *proj)
 	proj->merging_params.bscale = 1;
 	proj->merging_params.postref = 0;
 	proj->merging_params.niter = 3;
-	proj->merging_params.polarisation = "horiz";
+	proj->merging_params.polarisation = strdup("horiz");
 	proj->merging_params.deltacchalf = 1;
 	proj->merging_params.min_measurements = 2;
 	proj->merging_params.max_adu = INFINITY;
