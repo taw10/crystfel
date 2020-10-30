@@ -42,6 +42,7 @@
 #include "gui_project.h"
 #include "crystfel_gui.h"
 #include "crystfelmergeopts.h"
+#include "gtk-util-routines.h"
 
 
 struct new_merging_job_params {
@@ -53,20 +54,6 @@ struct new_merging_job_params {
 	GtkWidget *job_notes_text;
 	GtkWidget *model_combo;
 };
-
-
-static char *get_all_text(GtkTextView *view)
-{
-	GtkTextBuffer *buf;
-	GtkTextIter start, end;
-
-	buf = gtk_text_view_get_buffer(view);
-
-	gtk_text_buffer_get_start_iter(buf, &start);
-	gtk_text_buffer_get_end_iter(buf, &end);
-
-	return gtk_text_buffer_get_text(buf, &start, &end, FALSE);
-}
 
 
 static void free_new_merging_job_params(gpointer njp, GClosure *closure)

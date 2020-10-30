@@ -54,6 +54,7 @@
 #include "gui_project.h"
 #include "crystfel_gui.h"
 #include "gui_peaksearch.h"
+#include "gtk-util-routines.h"
 
 static GFile *get_crystfel_path_gfile()
 {
@@ -217,20 +218,6 @@ struct new_index_job_params {
 	GtkWidget *job_title_entry;
 	GtkWidget *job_notes_text;
 };
-
-
-static char *get_all_text(GtkTextView *view)
-{
-	GtkTextBuffer *buf;
-	GtkTextIter start, end;
-
-	buf = gtk_text_view_get_buffer(view);
-
-	gtk_text_buffer_get_start_iter(buf, &start);
-	gtk_text_buffer_get_end_iter(buf, &end);
-
-	return gtk_text_buffer_get_text(buf, &start, &end, FALSE);
-}
 
 
 static void index_all_response_sig(GtkWidget *dialog, gint resp,

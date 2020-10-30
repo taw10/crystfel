@@ -44,6 +44,7 @@
 
 #include "crystfelmergeopts.h"
 #include "crystfelsymmetryselector.h"
+#include "gtk-util-routines.h"
 
 
 G_DEFINE_TYPE(CrystFELMergeOpts,
@@ -428,40 +429,6 @@ void crystfel_merge_opts_set_push_res(CrystFELMergeOpts *mo,
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mo->limit_res),
 	                             !isinf(push_res));
 	set_float(mo->push_res, push_res);
-}
-
-
-static float get_float(GtkWidget *entry)
-{
-	const gchar *text;
-	char *rval;
-	float val;
-	text = gtk_entry_get_text(GTK_ENTRY(entry));
-	errno = 0;
-	val = strtof(text, &rval);
-	if ( *rval != '\0' ) return NAN;
-	return val;
-}
-
-
-static unsigned int get_uint(GtkWidget *entry)
-{
-	const gchar *text;
-	char *rval;
-	unsigned long int val;
-	text = gtk_entry_get_text(GTK_ENTRY(entry));
-	errno = 0;
-	val = strtoul(text, &rval, 10);
-	if ( *rval != '\0' ) {
-		printf("Invalid integer '%s'\n", text);
-		return 0;
-	}
-	return val;
-}
-
-static int get_bool(GtkWidget *widget)
-{
-	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 

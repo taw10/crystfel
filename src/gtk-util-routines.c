@@ -1,0 +1,86 @@
+/*
+ * gtk-util-routines.h
+ *
+ * GTK utilities
+ *
+ * Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
+ * Authors:
+ *   2020 Thomas White <taw@physics.org>
+ *
+ * This file is part of CrystFEL.
+ *
+ * CrystFEL is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * CrystFEL is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdio.h>
+#include <errno.h>
+#include <math.h>
+#include <gtk/gtk.h>
+
+
+char *get_all_text(GtkTextView *view)
+{
+	GtkTextBuffer *buf;
+	GtkTextIter start, end;
+
+	buf = gtk_text_view_get_buffer(view);
+
+	gtk_text_buffer_get_start_iter(buf, &start);
+	gtk_text_buffer_get_end_iter(buf, &end);
+
+	return gtk_text_buffer_get_text(buf, &start, &end, FALSE);
+}
+
+
+float get_float(GtkWidget *entry)
+{
+	const gchar *text;
+	char *rval;
+	float val;
+	text = gtk_entry_get_text(GTK_ENTRY(entry));
+	errno = 0;
+	val = strtof(text, &rval);
+	if ( *rval != '\0' ) return NAN;
+	return val;
+}
+
+
+unsigned int get_uint(GtkWidget *entry)
+{
+	const gchar *text;
+	char *rval;
+	unsigned long int val;
+	text = gtk_entry_get_text(GTK_ENTRY(entry));
+	errno = 0;
+	val = strtoul(text, &rval, 10);
+	if ( *rval != '\0' ) {
+		printf("Invalid integer '%s'\n", text);
+		return 0;
+	}
+	return val;
+}
+
+
+int get_bool(GtkWidget *widget)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+}
