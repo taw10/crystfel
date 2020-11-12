@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Create custom split file for partialator, based on pulse sequence
+#
+# Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
+#                  a research centre of the Helmholtz Association.
+#
+# Author:
+#    2020 Thomas White <taw@physics.org>
+
+import sys
+
+f = open(sys.argv[1])
+
+fn = None
+ev = None
+pulseid = None
+
+def dataset(pulse):
+    # Divide 8 because we are at 0.5 MHz instead of 4 MHz
+    # Pulse sequence is light-dark1-dark2-dark3
+    if (pulse/8) % 4 == 0: return 'light'
+    if (pulse/8) % 4 == 1: return 'dark1'
+    if (pulse/8) % 4 == 2: return 'dark2'
+    if (pulse/8) % 4 == 3: return 'dark3'
+
+while True:
+    fline = f.readline()
+    if not fline:
+        break
+    if fline.find("Image filename: ") != -1:
+        if not fn == None:
+            print("Duplicate filename {}".format(fn), file=sys.stderr)
+        fn = fline.split(': ')[1].split(' ')[0].rstrip("\r\n")
+    if fline.find("Event: ") != -1:
+        if not ev == None:
+            print("Duplicate event ID {}".format(ev), file=sys.stderr)
+        ev = fline.split(': ')[1].split(' ')[0].rstrip("\r\n")
+    if fline.find("hdf5/instrument/pulseID = ") != -1:
+        if not pulseid == None:
+            print("Duplicate pulse ID {}".format(pulseid), file=sys.stderr)
+        pulseid = int(fline.split(' = ')[1].split(' ')[0].rstrip("\r\n"))
+    if fline.find("Begin chunk") != -1:
+        fn = None
+        ev = None
+        pulseid = None
+    if fline.find("End chunk") != -1:
+        if (fn == None) or (ev == None) or (pulseid == None):
+            print('Incomplete chunk! {} {} {}'.format(fn, ev, pulseid), file=sys.stderr)
+        else:
+            if pulseid == 0:
+                print("Zero pulse ID for {} {}".format(fn, ev), file=sys.stderr)
+            else:
+                print('{} {} {}'.format(fn, ev, dataset(pulseid)))
+
+
+f.close()
