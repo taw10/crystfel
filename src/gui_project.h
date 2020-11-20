@@ -87,6 +87,13 @@ struct index_params {
 	float ir_inn;
 	float ir_mid;
 	float ir_out;
+
+	/* Stream output */
+	int exclude_nonhits;
+	int exclude_peaks;
+	int exclude_refls;
+	char **metadata_to_copy;
+	int n_metadata;
 };
 
 struct merging_params {

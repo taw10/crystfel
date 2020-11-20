@@ -184,6 +184,13 @@ static void get_indexing_opts(struct crystfelproject *proj,
 	                                             &proj->indexing_params.ir_inn,
 	                                             &proj->indexing_params.ir_mid,
 	                                             &proj->indexing_params.ir_out);
+
+	/* Stream output */
+	proj->indexing_params.exclude_nonhits = crystfel_indexing_opts_get_exclude_blanks(opts);
+	proj->indexing_params.exclude_peaks = crystfel_indexing_opts_get_exclude_peaks(opts);
+	proj->indexing_params.exclude_refls = crystfel_indexing_opts_get_exclude_reflections(opts);
+	proj->indexing_params.metadata_to_copy = crystfel_indexing_opts_get_metadata_to_copy(opts,
+		               &proj->indexing_params.n_metadata);
 }
 
 
@@ -410,6 +417,17 @@ static void set_indexing_opts(struct crystfelproject *proj,
 	                                             proj->indexing_params.ir_inn,
 	                                             proj->indexing_params.ir_mid,
 	                                             proj->indexing_params.ir_out);
+
+	/* Stream output */
+	crystfel_indexing_opts_set_exclude_blanks(opts,
+	                                          proj->indexing_params.exclude_nonhits);
+	crystfel_indexing_opts_set_exclude_peaks(opts,
+	                                         proj->indexing_params.exclude_peaks);
+	crystfel_indexing_opts_set_exclude_reflections(opts,
+	                                               proj->indexing_params.exclude_refls);
+	crystfel_indexing_opts_set_metadata_to_copy(opts,
+	                                            proj->indexing_params.metadata_to_copy,
+	                                            proj->indexing_params.n_metadata);
 }
 
 
@@ -452,6 +470,8 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
 	proj->indexing_opts = crystfel_indexing_opts_new();
+	crystfel_indexing_opts_set_show_stream_opts(CRYSTFEL_INDEXING_OPTS(proj->indexing_opts),
+	                                            TRUE);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(proj->indexing_opts),
 	                   FALSE, FALSE, 8.0);
 	set_indexing_opts(proj,
@@ -701,7 +721,8 @@ gint index_one_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_OK);
 	gtk_widget_show_all(dialog);
-
+	crystfel_indexing_opts_set_show_stream_opts(CRYSTFEL_INDEXING_OPTS(proj->indexing_opts),
+	                                            FALSE);
 	return FALSE;
 }
 
@@ -732,6 +753,20 @@ static void add_arg_int(char **args, int pos, const char *label,
 }
 
 
+static void add_arg_string(char **args, int pos, const char *label,
+                           const char *val)
+{
+	size_t len;
+	char *str;
+
+	len = strlen(label)+strlen(val)+4;
+	str = malloc(len);
+	if ( str == NULL ) return;
+	snprintf(str, 63, "--%s=%s", label, val);
+	args[pos] = str;
+}
+
+
 char **indexamajig_command_line(const char *geom_filename,
                                 const char *n_thread_str,
                                 const char *files_list,
@@ -742,6 +777,7 @@ char **indexamajig_command_line(const char *geom_filename,
 	char **args;
 	char tols[2048];
 	char *indexamajig_path;
+	int i;
 	int n_args = 0;
 
 	args = malloc(64*sizeof(char *));
@@ -830,10 +866,19 @@ char **indexamajig_command_line(const char *geom_filename,
 	/* Integration */
 	add_arg(args, n_args++, "--integration");
 	add_arg(args, n_args++, indexing_params->integration_method);
-	if ( indexing_params->overpredict ) args[n_args++] = "--overpredict";
+	if ( indexing_params->overpredict ) add_arg(args, n_args++, "--overpredict");
 	if ( !isinf(indexing_params->push_res) ) {
 		add_arg_float(args, n_args++, "push-res",
 		              indexing_params->push_res);
+	}
+
+	/* Stream output */
+	if ( indexing_params->exclude_nonhits ) add_arg(args, n_args++, "--no-non-hits-in-stream");
+	if ( indexing_params->exclude_peaks ) add_arg(args, n_args++, "--no-peaks-in-stream");
+	if ( indexing_params->exclude_refls ) add_arg(args, n_args++, "--no-refls-in-stream");
+	for ( i=0; i<indexing_params->n_metadata; i++ ) {
+		add_arg_string(args, n_args++, "copy-hdf5-field",
+		               indexing_params->metadata_to_copy[i]);
 	}
 
 	args[n_args] = NULL;

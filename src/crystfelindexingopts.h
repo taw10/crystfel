@@ -54,6 +54,9 @@ struct _crystfelindexingopts
 	GtkNotebook parent_instance;
 
 	/*< private >*/
+	int show_stream_opts;
+	GtkWidget *stream_params;  /* Stream output page */
+
 	char *cell_file;
 	GtkWidget *cell_chooser;
 	GtkWidget *auto_indm;
@@ -76,6 +79,11 @@ struct _crystfelindexingopts
 	GtkWidget *ir_inn;
 	GtkWidget *ir_mid;
 	GtkWidget *ir_out;
+
+	GtkWidget *exclude_nonhits;
+	GtkWidget *no_peaks_in_stream;
+	GtkWidget *no_refls_in_stream;
+	GtkListStore *copy_metadata_store;
 };
 
 struct _crystfelindexingoptsclass
@@ -107,7 +115,14 @@ extern void crystfel_indexing_opts_get_integration_radii(CrystFELIndexingOpts *o
                                                          float *ir_inn,
                                                          float *ir_mid,
                                                          float *ir_out);
+extern int crystfel_indexing_opts_get_exclude_blanks(CrystFELIndexingOpts *opts);
+extern int crystfel_indexing_opts_get_exclude_peaks(CrystFELIndexingOpts *opts);
+extern int crystfel_indexing_opts_get_exclude_reflections(CrystFELIndexingOpts *opts);
+extern char **crystfel_indexing_opts_get_metadata_to_copy(CrystFELIndexingOpts *opts,
+                                                          int *n);
 
+extern void crystfel_indexing_opts_set_show_stream_opts(CrystFELIndexingOpts *opts,
+                                                        int val);
 
 extern void crystfel_indexing_opts_set_cell_file(CrystFELIndexingOpts *opts,
                                                  const char *cell_file);
@@ -138,5 +153,14 @@ extern void crystfel_indexing_opts_set_integration_radii(CrystFELIndexingOpts *o
                                                          float ir_inn,
                                                          float ir_mid,
                                                          float ir_out);
+extern void crystfel_indexing_opts_set_metadata_to_copy(CrystFELIndexingOpts *opts,
+                                                        char *const *headers,
+                                                        int n_headers);
+extern void crystfel_indexing_opts_set_exclude_blanks(CrystFELIndexingOpts *opts,
+                                                      int flag);
+extern void crystfel_indexing_opts_set_exclude_peaks(CrystFELIndexingOpts *opts,
+                                                     int flag);
+extern void crystfel_indexing_opts_set_exclude_reflections(CrystFELIndexingOpts *opts,
+                                                           int flag);
 
 #endif	/* CRYSTFELINDEXINGOPTS_H */

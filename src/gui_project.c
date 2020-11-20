@@ -297,6 +297,38 @@ static void parse_integration_opt(const char *key, const char *val,
 }
 
 
+static void add_metadata_to_copy(struct index_params *ip,
+                                 const char *header)
+{
+	char **n;
+
+	n = realloc(ip->metadata_to_copy,
+	            (ip->n_metadata+1)*sizeof(char *));
+	if ( n == NULL ) return;
+	ip->metadata_to_copy = n;
+
+	ip->metadata_to_copy[ip->n_metadata++] = strdup(header);
+}
+
+
+static void parse_stream_opt(const char *key, const char *val,
+                             struct index_params *ip)
+{
+	if ( strcmp(key, "stream.exclude_blanks") == 0 ) {
+		ip->exclude_nonhits = parse_int(val);
+	}
+	if ( strcmp(key, "stream.exclude_peaks") == 0 ) {
+		ip->exclude_peaks = parse_int(val);
+	}
+	if ( strcmp(key, "stream.exclude_refls") == 0 ) {
+		ip->exclude_refls = parse_int(val);
+	}
+	if ( strcmp(key, "stream.metadata") == 0 ) {
+		add_metadata_to_copy(ip, val);
+	}
+}
+
+
 static void parse_merging_opt(const char *key, const char *val,
                               struct crystfelproject *proj)
 {
@@ -395,7 +427,9 @@ static void handle_var(const char *key, const char *val,
 		proj->data_top_folder = strdup(val);
 	}
 
-	if ( strcmp(key, "stream") == 0 ) {
+	if ( strncmp(key, "stream.", 7) == 0 ) {
+		parse_stream_opt(key, val, &proj->indexing_params);
+	} else if ( strcmp(key, "stream") == 0 ) {
 		proj->stream_filename = strdup(val);
 	}
 
@@ -740,6 +774,20 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "integration.ir_out %f\n",
 	        proj->indexing_params.ir_out);
 
+	fprintf(fh, "stream.exclude_blanks %i\n",
+	        proj->indexing_params.exclude_nonhits);
+	fprintf(fh, "stream.exclude_peaks %i\n",
+	        proj->indexing_params.exclude_peaks);
+	fprintf(fh, "stream.exclude_refls %i\n",
+	        proj->indexing_params.exclude_refls);
+	if ( proj->indexing_params.metadata_to_copy != NULL ) {
+		int i;
+		for ( i=0; i<proj->indexing_params.n_metadata; i++ ) {
+			fprintf(fh, "stream.metadata %s\n",
+			        proj->indexing_params.metadata_to_copy[i]);
+		}
+	}
+
 	fprintf(fh, "merging.model %s\n",
 	        proj->merging_params.model);
 	fprintf(fh, "merging.symmetry %s\n",
@@ -888,6 +936,11 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_params.ir_inn = 4.0;
 	proj->indexing_params.ir_mid = 5.0;
 	proj->indexing_params.ir_out = 7.0;
+	proj->indexing_params.exclude_nonhits = 0;
+	proj->indexing_params.exclude_peaks = 0;
+	proj->indexing_params.exclude_refls = 0;
+	proj->indexing_params.metadata_to_copy = NULL;
+	proj->indexing_params.n_metadata = 0;
 
 	proj->merging_params.model = strdup("unity");
 	proj->merging_params.symmetry = strdup("1");

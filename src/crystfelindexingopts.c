@@ -43,6 +43,7 @@
 #include <index.h>
 
 #include "crystfelindexingopts.h"
+#include "gtk-util-routines.h"
 
 
 G_DEFINE_TYPE(CrystFELIndexingOpts,
@@ -460,6 +461,126 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 }
 
 
+static void add_metadata_item(GtkListStore *model, const char *string)
+{
+	GtkTreeIter iter;
+	gtk_list_store_append(model, &iter);
+	gtk_list_store_set(model, &iter, 0, strdup(string), -1);
+}
+
+
+static gboolean add_metadata_sig(GtkWidget *button, GtkListStore *model)
+{
+	add_metadata_item(model, "/instrument/something");
+	return FALSE;
+}
+
+
+static gboolean edit_metadata_sig(GtkCellRendererText *cell,
+                                  const gchar *path_str,
+                                  const gchar *new_text,
+                                  GtkListStore *model)
+{
+	GtkTreeIter iter;
+	gchar *old_text;
+	GtkTreePath *path = gtk_tree_path_new_from_string(path_str);
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, path);
+	gtk_tree_path_free(path);
+	gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &old_text, -1);
+        g_free(old_text);
+	gtk_list_store_set(model, &iter,
+	                   0, g_strdup(new_text),
+	                   -1);
+	return FALSE;
+}
+
+
+static gboolean remove_metadata_sig(GtkWidget *button,
+                                    GtkTreeView *treeview)
+{
+	GtkTreeSelection *sel;
+	GtkTreeIter iter;
+	GtkTreeModel *model;
+
+	model = gtk_tree_view_get_model(treeview);
+	sel = gtk_tree_view_get_selection(treeview);
+	if ( gtk_tree_selection_get_selected(sel, NULL, &iter) != 0 ) {
+		gchar *old_text;
+		gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &old_text, -1);
+		g_free(old_text);
+		gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+	}
+
+	return FALSE;
+}
+
+
+static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
+{
+	GtkWidget *box;
+	GtkWidget *treeview;
+	GtkCellRenderer *renderer;
+	GtkWidget *button;
+	GtkWidget *hbox;
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+
+	/* --no-non-hits-in-stream */
+	io->exclude_nonhits = gtk_check_button_new_with_label("Exclude skipped frames from stream");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->exclude_nonhits),
+	                   FALSE, FALSE, 0);
+
+	/* --no-peaks-in-stream */
+	io->no_peaks_in_stream = gtk_check_button_new_with_label("Exclude peak search results from stream");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->no_peaks_in_stream),
+	                   FALSE, FALSE, 0);
+
+	/* --no-refls-in-stream */
+	io->no_refls_in_stream = gtk_check_button_new_with_label("Exclude integrated intensities from stream");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->no_refls_in_stream),
+	                   FALSE, FALSE, 0);
+
+	io->copy_metadata_store = gtk_list_store_new(1, G_TYPE_STRING);
+
+	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(io->copy_metadata_store));
+
+	renderer = gtk_cell_renderer_text_new();
+	g_object_set(renderer, "editable", TRUE, NULL);
+	g_signal_connect(G_OBJECT(renderer), "edited",
+	                 G_CALLBACK(edit_metadata_sig),
+	                 io->copy_metadata_store);
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(treeview),
+	                                            -1,
+	                                            "Metadata to copy to stream",
+	                                            renderer,
+	                                            "text", 0,
+	                                            NULL);
+
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(treeview),
+	                   FALSE, FALSE, 0);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+	gtk_container_set_border_width(GTK_CONTAINER(hbox), 8);
+	button = gtk_button_new_from_icon_name("list-add", GTK_ICON_SIZE_BUTTON);
+	gtk_button_set_label(GTK_BUTTON(button), "Add item");
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(add_metadata_sig), io->copy_metadata_store);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
+	                   FALSE, FALSE, 0);
+	button = gtk_button_new_from_icon_name("list-remove", GTK_ICON_SIZE_BUTTON);
+	gtk_button_set_label(GTK_BUTTON(button), "Remove item");
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(remove_metadata_sig), treeview);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
+	                   FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+
+	return box;
+}
+
+
 GtkWidget *crystfel_indexing_opts_new()
 {
 	CrystFELIndexingOpts *io;
@@ -475,6 +596,10 @@ GtkWidget *crystfel_indexing_opts_new()
 	gtk_notebook_append_page(GTK_NOTEBOOK(io),
 	                         integration_parameters(io),
 	                         gtk_label_new("Integration"));
+
+	io->stream_params = stream_parameters(io);
+	gtk_notebook_append_page(GTK_NOTEBOOK(io), io->stream_params,
+	                         gtk_label_new("Stream contents"));
 
 	return GTK_WIDGET(io);
 }
@@ -667,6 +792,83 @@ float crystfel_indexing_opts_get_push_res(CrystFELIndexingOpts *opts)
 			return INFINITY;
 		}
 		return push_res;
+	}
+}
+
+
+void crystfel_indexing_opts_get_integration_radii(CrystFELIndexingOpts *opts,
+                                                  float *ir_inn,
+                                                  float *ir_mid,
+                                                  float *ir_out)
+{
+	*ir_inn = get_float(opts->ir_inn);
+	*ir_mid = get_float(opts->ir_mid);
+	*ir_out = get_float(opts->ir_out);
+}
+
+
+int crystfel_indexing_opts_get_exclude_blanks(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->exclude_nonhits));
+}
+
+
+int crystfel_indexing_opts_get_exclude_peaks(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->no_peaks_in_stream));
+}
+
+
+int crystfel_indexing_opts_get_exclude_reflections(CrystFELIndexingOpts *opts)
+{
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->no_refls_in_stream));
+}
+
+
+char **crystfel_indexing_opts_get_metadata_to_copy(CrystFELIndexingOpts *opts,
+                                                   int *pn)
+{
+	GtkTreeIter iter;
+	gboolean r;
+	int n, i;
+	char **arr;
+
+	n = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(opts->copy_metadata_store),
+	                                   NULL);
+
+	arr = malloc(n*sizeof(char *));
+	if ( arr == NULL ) return NULL;
+
+	r = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(opts->copy_metadata_store),
+	                                  &iter);
+	if ( r == FALSE ) return NULL;
+
+	i = 0;
+	do {
+		gchar *header;
+		gtk_tree_model_get(GTK_TREE_MODEL(opts->copy_metadata_store),
+		                   &iter, 0, &header, -1);
+		if ( i == n ) return NULL;
+		arr[i++] = strdup(header);
+	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->copy_metadata_store),
+	                                   &iter) != FALSE );
+
+	*pn = n;
+	return arr;
+}
+
+
+/********************** Setters *************************/
+
+
+void crystfel_indexing_opts_set_show_stream_opts(CrystFELIndexingOpts *opts,
+                                                 int val)
+{
+	opts->show_stream_opts = val;
+	if ( val ) {
+		gtk_widget_show_all(opts->stream_params);
+	} else {
+		gtk_widget_hide(opts->stream_params);
 	}
 }
 
@@ -878,27 +1080,39 @@ void crystfel_indexing_opts_set_integration_radii(CrystFELIndexingOpts *opts,
 }
 
 
-static void get_float_val(GtkEntry *entry, float *pval)
+void crystfel_indexing_opts_set_metadata_to_copy(CrystFELIndexingOpts *opts,
+                                                 char *const *headers,
+                                                 int n)
 {
-	float val;
-	char *rval;
-	const gchar *text = gtk_entry_get_text(entry);
-	errno = 0;
-	val = strtod(text, &rval);
-	if ( *rval != '\0' ) {
-		printf("Invalid integration radius '%s'\n", text);
-	} else {
-		*pval = val;
+	int i;
+	gtk_list_store_clear(opts->copy_metadata_store);
+	if ( headers == NULL ) return;
+	for ( i=0; i<n; i++ ) {
+		add_metadata_item(opts->copy_metadata_store,
+		                  headers[i]);
 	}
 }
 
 
-void crystfel_indexing_opts_get_integration_radii(CrystFELIndexingOpts *opts,
-                                                  float *ir_inn,
-                                                  float *ir_mid,
-                                                  float *ir_out)
+void crystfel_indexing_opts_set_exclude_blanks(CrystFELIndexingOpts *opts,
+                                               int flag)
 {
-	get_float_val(GTK_ENTRY(opts->ir_inn), ir_inn);
-	get_float_val(GTK_ENTRY(opts->ir_mid), ir_mid);
-	get_float_val(GTK_ENTRY(opts->ir_out), ir_out);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->exclude_nonhits),
+	                             flag);
+}
+
+
+void crystfel_indexing_opts_set_exclude_peaks(CrystFELIndexingOpts *opts,
+                                              int flag)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->no_peaks_in_stream),
+	                             flag);
+}
+
+
+void crystfel_indexing_opts_set_exclude_reflections(CrystFELIndexingOpts *opts,
+                                                    int flag)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->no_refls_in_stream),
+	                             flag);
 }
