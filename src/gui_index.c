@@ -477,15 +477,15 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	set_indexing_opts(proj,
 	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 
+	backend_page = make_backend_opts(njp);
+	gtk_notebook_prepend_page(GTK_NOTEBOOK(proj->indexing_opts),
+	                          backend_page,
+	                          gtk_label_new("Cluster/batch system"));
+
 	job_page = make_job_opts(proj, njp);
 	gtk_notebook_prepend_page(GTK_NOTEBOOK(proj->indexing_opts),
 	                          job_page,
 	                          gtk_label_new("Job name"));
-
-	backend_page = make_backend_opts(njp);
-	gtk_notebook_append_page(GTK_NOTEBOOK(proj->indexing_opts),
-	                         backend_page,
-	                         gtk_label_new("Cluster/batch system"));
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_OK);

@@ -588,6 +588,7 @@ GtkWidget *crystfel_indexing_opts_new()
 	io = g_object_new(CRYSTFEL_TYPE_INDEXING_OPTS, NULL);
 
 	io->cell_file = NULL;
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(io), GTK_POS_LEFT);
 
 	gtk_notebook_append_page(GTK_NOTEBOOK(io),
 	                         indexing_parameters(io),
