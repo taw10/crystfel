@@ -57,22 +57,22 @@ struct local_job
 	int n_frames;
 
 	/* When both these are true, free the job resources */
-	int indexamajig_running;
+	int running;
 	int cancelled;
 
-	guint indexamajig_watch;
-	GPid indexamajig_pid;
+	guint io_watch;
+	GPid pid;
 	guint child_watch_source;
-	guint index_readable_source;
+	guint io_readable_source;
 };
 
 
-static void watch_indexamajig(GPid pid, gint status, gpointer vp)
+static void watch_subprocess(GPid pid, gint status, gpointer vp)
 {
 	struct local_job *job = vp;
-	STATUS("Indexamajig exited with status %i\n", status);
-	job->indexamajig_running = 0;
-	g_spawn_close_pid(job->indexamajig_pid);
+	STATUS("Subprocess exited with status %i\n", status);
+	job->running = 0;
+	g_spawn_close_pid(job->pid);
 }
 
 
@@ -90,7 +90,7 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 		return FALSE;
 	}
 	if ( r != G_IO_STATUS_NORMAL ) {
-		if ( job->indexamajig_pid != 0 ) {
+		if ( job->pid != 0 ) {
 			STATUS("Read error?\n");
 		} else {
 			STATUS("End of output (indexamajig exited)\n");
@@ -149,15 +149,13 @@ void setup_subprocess(gpointer user_data)
 }
 
 
-static void *run_indexing(const char *job_title,
-                          const char *job_notes,
-                          struct crystfelproject *proj,
-                          void *opts_priv)
+static struct local_job *start_local_job(char **args,
+                                         const char *job_title,
+                                         const char *job_notes,
+                                         struct crystfelproject *proj,
+                                         GIOFunc readable_func)
 {
-	struct local_indexing_opts *opts = opts_priv;
 	GIOChannel *ioch;
-	char n_thread_str[64];
-	char **args;
 	int i;
 	int r;
 	int ch_stderr;
@@ -212,17 +210,9 @@ static void *run_indexing(const char *job_title,
 	}
 	chdir(old_pwd);
 
-	job->n_frames = proj->n_frames;
 	job->frac_complete = 0.0;
 
-	snprintf(n_thread_str, 63, "%i", opts->n_processes);
-	args = indexamajig_command_line(proj->geom_filename,
-	                                n_thread_str,
-	                                "files.lst",
-	                                "crystfel.stream",
-	                                &proj->peak_search_params,
-	                                &proj->indexing_params);
-
+	STATUS("Running program: ");
 	i = 0;
 	while ( args[i] != NULL ) {
 		STATUS("%s ", args[i++]);
@@ -233,27 +223,27 @@ static void *run_indexing(const char *job_title,
 	                             G_SPAWN_SEARCH_PATH
 	                           | G_SPAWN_DO_NOT_REAP_CHILD,
 	                             setup_subprocess, workdir,
-	                             &job->indexamajig_pid,
+	                             &job->pid,
 	                             NULL, NULL, &ch_stderr,
 	                             &error);
 	if ( r == FALSE ) {
-		ERROR("Failed to run indexamajig: %s\n",
+		ERROR("Failed to start program: %s\n",
 		      error->message);
 		g_object_unref(workdir_file);
 		free(job);
 		return NULL;
 	}
-	job->indexamajig_running = 1;
+	job->running = 1;
 
-	job->child_watch_source = g_child_watch_add(job->indexamajig_pid,
-	                                            watch_indexamajig,
+	job->child_watch_source = g_child_watch_add(job->pid,
+	                                            watch_subprocess,
 	                                            job);
 
 	ioch = g_io_channel_unix_new(ch_stderr);
-	job->index_readable_source = g_io_add_watch(ioch,
-	                                            G_IO_IN | G_IO_ERR | G_IO_HUP,
-	                                            index_readable,
-	                                            job);
+	job->io_readable_source = g_io_add_watch(ioch,
+	                                         G_IO_IN | G_IO_ERR | G_IO_HUP,
+	                                         readable_func,
+	                                         job);
 
 	streams = malloc(sizeof(char *));
 	if ( streams != NULL ) {
@@ -275,7 +265,7 @@ static int get_task_status(void *job_priv,
 {
 	struct local_job *job = job_priv;
 	*frac_complete = job->frac_complete;
-	*running = job->indexamajig_running;
+	*running = job->running;
 	return 0;
 }
 
@@ -284,10 +274,10 @@ static void cancel_task(void *job_priv)
 {
 	struct local_job *job = job_priv;
 
-	if ( !job->indexamajig_running ) return;
+	if ( !job->running ) return;
 
-	ERROR("Stopping indexamajig (pid %i).\n", job->indexamajig_pid);
-	kill(-job->indexamajig_pid, SIGINT);
+	ERROR("Stopping indexamajig (pid %i).\n", job->pid);
+	kill(-job->pid, SIGINT);
 }
 
 
@@ -429,6 +419,42 @@ static void *run_merging(const char *job_title,
                          void *opts_priv)
 {
 	return NULL;
+}
+
+
+static void *run_indexing(const char *job_title,
+                          const char *job_notes,
+                          struct crystfelproject *proj,
+                          void *opts_priv)
+{
+	struct local_indexing_opts *opts = opts_priv;
+	struct local_job *job;
+	char n_thread_str[64];
+	char **args;
+	int i;
+
+	snprintf(n_thread_str, 63, "%i", opts->n_processes);
+	args = indexamajig_command_line(proj->geom_filename,
+	                                n_thread_str,
+	                                "files.lst",
+	                                "crystfel.stream",
+	                                &proj->peak_search_params,
+	                                &proj->indexing_params);
+
+	i = 0;
+	while ( args[i] != NULL ) {
+		STATUS("%s ", args[i++]);
+	}
+	STATUS("\n");
+
+	job = start_local_job(args, job_title, job_notes, proj,
+	                      index_readable);
+	if ( job == NULL ) return NULL;
+
+	/* Indexing-specific job data */
+	job->n_frames = proj->n_frames;
+
+	return job;
 }
 
 
