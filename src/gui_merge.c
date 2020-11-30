@@ -360,3 +360,171 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	return FALSE;
 }
+
+
+static GSList *append_arg_str(GSList *args,
+                              const char *label,
+                              const char *val)
+{
+	size_t len;
+	char *str;
+
+	len = strlen(label)+strlen(val)+4;
+	str = malloc(len);
+	if ( str == NULL ) return args;
+	snprintf(str, 63, "--%s=%s", label, val);
+
+	return g_slist_append(args, str);
+}
+
+
+static GSList *append_arg_int(GSList *args,
+                              const char *label,
+                              int val)
+{
+	char *str = malloc(64);
+	if ( str == NULL ) return args;
+	snprintf(str, 63, "--%s=%i", label, val);
+	return g_slist_append(args, str);
+}
+
+
+static GSList *append_arg_float(GSList *args,
+                                const char *label,
+                                float val)
+{
+	char *str = malloc(64);
+	if ( str == NULL ) return args;
+	snprintf(str, 63, "--%s=%f", label, val);
+	return g_slist_append(args, str);
+}
+
+
+static GSList *process_hkl_command_line(struct gui_result *input,
+                                        struct merging_params *params)
+{
+	GSList *args = NULL;
+	char *exe_path;
+
+	exe_path = get_crystfel_exe("process_hkl");
+	if ( exe_path == NULL ) return NULL;
+	args = g_slist_append(args, exe_path);
+
+	/* FIXME: For each stream */
+	args = append_arg_str(args, "input", input->streams[0]);
+
+	args = append_arg_str(args, "symmetry", params->symmetry);
+
+	if ( params->scale ) {
+		args = g_slist_append(args, strdup("--scale"));
+	}
+
+	args = append_arg_str(args, "polarisation",
+	                      params->polarisation);
+
+	args = append_arg_int(args, "min-measurements",
+	                      params->min_measurements);
+
+	args = append_arg_float(args, "max-adu", params->max_adu);
+
+	args = append_arg_float(args, "min-res", params->min_res);
+
+	args = append_arg_float(args, "push-res", params->push_res);
+
+	return args;
+}
+
+
+static GSList *partialator_command_line(const char *n_thread_str,
+                                        struct gui_result *input,
+                                        struct merging_params *params)
+{
+	GSList *args = NULL;
+	char *exe_path;
+
+	exe_path = get_crystfel_exe("partialator");
+	if ( exe_path == NULL ) return NULL;
+	args = g_slist_append(args, exe_path);
+
+	/* FIXME: For each stream */
+	args = append_arg_str(args, "input", input->streams[0]);
+
+	args = append_arg_str(args, "symmetry", params->symmetry);
+
+	if ( params->twin_sym != NULL ) {
+		args = g_slist_append(args, "-w");
+		args = g_slist_append(args, strdup(params->twin_sym));
+	}
+
+	if ( params->custom_split != NULL ) {
+		args = append_arg_str(args, "custom-split",
+		                      params->custom_split);
+	}
+
+	if ( !params->scale ) {
+		args = g_slist_append(args, "--no-scale");
+	}
+
+	if ( !params->bscale ) {
+		args = g_slist_append(args, "--no-bscale");
+	}
+
+	if ( !params->postref ) {
+		args = g_slist_append(args, "--no-pr");
+	}
+
+	if ( !params->deltacchalf ) {
+		args = g_slist_append(args, "no-deltacchalf");
+	}
+
+	args = append_arg_int(args, "iterations", params->niter);
+
+	args = append_arg_str(args, "polarisation",
+	                      params->polarisation);
+
+	args = append_arg_int(args, "min-measurements",
+	                      params->min_measurements);
+
+	args = append_arg_float(args, "max-adu", params->max_adu);
+
+	args = append_arg_float(args, "min-res", params->min_res);
+
+	args = append_arg_float(args, "push-res", params->push_res);
+
+	return args;
+}
+
+
+char **merging_command_line(const char *n_thread_str,
+                            struct gui_result *input,
+                            struct merging_params *params)
+{
+	GSList *args;
+	char **arg_strings;
+	GSList *args2;
+	int i, n;
+
+	if ( strcmp(params->model, "process_hkl") == 0 ) {
+		args = process_hkl_command_line(input, params);
+	} else {
+		args = partialator_command_line(n_thread_str,
+		                                input,
+		                                params);
+	}
+
+	if ( args == NULL ) return NULL;
+
+	n = g_slist_length(args);
+	arg_strings = malloc((n+1)*sizeof(char *));
+	if ( arg_strings == NULL ) return NULL;
+
+	args2 = args;
+	for ( i=0; i<n; i++ ) {
+		arg_strings[i] = args2->data;
+		args2 = args2->next;
+	}
+	arg_strings[n] = NULL;
+	g_slist_free(args);
+
+	return arg_strings;
+}
