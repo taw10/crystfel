@@ -94,9 +94,19 @@ static int run_merging(struct crystfelproject *proj,
 {
 	struct crystfel_backend *be;
 	void *job_priv;
+	const gchar *results_name;
+	struct gui_result *input;
+
+	/* Which result to merge? */
+	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
+	input = find_result_by_name(proj, results_name);
+	if ( input == NULL ) {
+		ERROR("Please select a result first\n");
+		return 1;
+	}
 
 	be = &proj->backends[backend_idx];
-	job_priv = be->run_merging(job_title, job_notes, proj,
+	job_priv = be->run_merging(job_title, job_notes, proj, input,
 	                           be->merging_opts_priv);
 
 	if ( job_priv != NULL ) {

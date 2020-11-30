@@ -694,6 +694,7 @@ static void read_indexing_opt(void *opts_priv,
 static void *run_merging(const char *job_title,
                          const char *job_notes,
                          struct crystfelproject *proj,
+                         struct gui_result *input,
                          void *opts_priv)
 {
 	return NULL;

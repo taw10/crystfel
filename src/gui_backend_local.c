@@ -416,6 +416,7 @@ static GtkWidget *make_merging_parameters_widget(void *opts_priv)
 static void *run_merging(const char *job_title,
                          const char *job_notes,
                          struct crystfelproject *proj,
+                         struct gui_result *input,
                          void *opts_priv)
 {
 	return NULL;

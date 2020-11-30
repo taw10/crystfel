@@ -114,6 +114,15 @@ struct merging_params {
 	float push_res;
 };
 
+struct gui_result
+{
+	char *name;
+
+	int n_streams;
+	char **streams;
+	StreamIndex **indices;
+};
+
 struct crystfelproject;
 
 struct crystfel_backend {
@@ -158,6 +167,7 @@ struct crystfel_backend {
 	void *(*run_merging)(const char *job_title,
 	                     const char *job_notes,
 	                     struct crystfelproject *proj,
+	                     struct gui_result *input,
 	                     void *opts_priv);
 
 	/* Called to ask the backend to write its merging options */
@@ -181,15 +191,6 @@ struct gui_task
 	int running;
 	struct crystfel_backend *backend;
 	void *job_priv;
-};
-
-struct gui_result
-{
-	char *name;
-
-	int n_streams;
-	char **streams;
-	StreamIndex **indices;
 };
 
 struct crystfelproject {
