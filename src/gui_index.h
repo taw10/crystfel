@@ -48,6 +48,4 @@ extern char **indexamajig_command_line(const char *geom_filename,
                                        struct peak_params *peak_search_params,
                                        struct index_params *indexing_params);
 
-extern char *get_crystfel_path_str(void);
-
 #endif

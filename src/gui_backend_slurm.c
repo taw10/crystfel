@@ -38,6 +38,7 @@
 
 #include "gui_project.h"
 #include "gui_index.h"
+#include "crystfel_gui.h"
 
 
 struct slurm_indexing_opts

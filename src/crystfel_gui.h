@@ -38,4 +38,8 @@ extern void add_running_task(struct crystfelproject *proj,
 
 extern void update_imageview(struct crystfelproject *proj);
 
+extern char *get_crystfel_path_str(void);
+
+extern char *get_crystfel_exe(const char *program);
+
 #endif

@@ -56,68 +56,6 @@
 #include "gui_peaksearch.h"
 #include "gtk-util-routines.h"
 
-static GFile *get_crystfel_path_gfile()
-{
-	GFile *self;
-	GFileInfo *self_info;
-	const char *self_target;
-	GFile *tar;
-	GFile *parent_dir;
-	GError *error = NULL;
-
-	self = g_file_new_for_path("/proc/self/exe");
-	self_info = g_file_query_info(self, "standard",
-	                              G_FILE_QUERY_INFO_NONE,
-	                              NULL, &error);
-	if ( self_info == NULL ) return NULL;
-
-	self_target = g_file_info_get_symlink_target(self_info);
-	if ( self_target == NULL ) return NULL;
-
-	tar = g_file_new_for_path(self_target);
-	if ( tar == NULL ) return NULL;
-
-	parent_dir = g_file_get_parent(tar);
-	if ( parent_dir == NULL ) return NULL;
-
-	g_object_unref(self);
-	g_object_unref(self_info);
-	g_object_unref(tar);
-
-	return parent_dir;
-}
-
-
-char *get_crystfel_path_str()
-{
-	char *path;
-	GFile *crystfel_path = get_crystfel_path_gfile();
-	if ( crystfel_path == NULL ) return NULL;
-	path = g_file_get_path(crystfel_path);
-	g_object_unref(crystfel_path);
-	return path;
-}
-
-
-static char *get_crystfel_exe(const char *program)
-{
-	GFile *crystfel_path;
-	char *indexamajig_path;
-	GFile *indexamajig;
-
-	crystfel_path = get_crystfel_path_gfile();
-	if ( crystfel_path == NULL ) return NULL;
-
-	indexamajig = g_file_get_child(crystfel_path, program);
-	if ( indexamajig == NULL ) return NULL;
-
-	indexamajig_path = g_file_get_path(indexamajig);
-	g_object_unref(indexamajig);
-	g_object_unref(crystfel_path);
-
-	return indexamajig_path;
-}
-
 
 void cell_explorer_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
@@ -784,12 +722,7 @@ char **indexamajig_command_line(const char *geom_filename,
 	if ( args == NULL ) return NULL;
 
 	indexamajig_path = get_crystfel_exe("indexamajig");
-	if ( indexamajig_path == NULL ) {
-		ERROR("Couldn't determine indexamajig path. "
-		      "This is OK provided the executable path is set "
-		      "correctly.\n");
-		indexamajig_path = strdup("indexamajig");
-	}
+	if ( indexamajig_path == NULL ) return NULL;
 
 	/* The basics */
 	add_arg(args, n_args++, indexamajig_path);
