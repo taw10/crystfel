@@ -664,6 +664,8 @@ static gint image_info_clicked_sig(GtkWidget *widget,
 	GtkWidget *label;
 	char tmp[64];
 
+	if ( proj->cur_image == NULL ) return FALSE;
+
 	popover = gtk_popover_new(widget);
 	gtk_popover_set_position(GTK_POPOVER(popover),
 	                         GTK_POS_BOTTOM);
