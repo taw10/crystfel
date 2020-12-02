@@ -920,10 +920,42 @@ static void write_logs_parallel(Crystal **crystals, int n_crystals,
 }
 
 
+struct stream_list
+{
+	int n;
+	int max_n;
+	const char **filenames;
+	Stream **streams;
+};
+
+
+static int add_stream(const char *filename, struct stream_list *list)
+{
+	if ( list->n == list->max_n ) {
+		const char **new_filenames = realloc(list->filenames,
+		                                     (list->n+16)*sizeof(const char *));
+		Stream **new_streams = realloc(list->streams,
+		                                     (list->n+16)*sizeof(Stream *));
+		if ( (new_filenames == NULL) || (new_streams == NULL) ) return 1;
+		list->max_n += 16;
+		list->filenames = new_filenames;
+		list->streams = new_streams;
+	}
+
+	list->filenames[list->n] = filename;
+	list->streams[list->n] = NULL;
+	list->n++;
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
-	char *infile = NULL;
+	struct stream_list stream_list = {.n = 0,
+	                                  .max_n = 0,
+	                                  .filenames = NULL,
+	                                  .streams = NULL};
 	char *outfile = NULL;
 	char *sym_str = NULL;
 	SymOpList *sym;
@@ -940,7 +972,6 @@ int main(int argc, char *argv[])
 	int no_scale = 0;
 	int no_Bscale = 0;
 	int no_pr = 0;
-	Stream *st;
 	Crystal **crystals;
 	char *pmodel_str = NULL;
 	PartialityModel pmodel = PMODEL_XSPHERE;
@@ -1043,7 +1074,7 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'i' :
-			infile = strdup(optarg);
+			add_stream(optarg, &stream_list);
 			break;
 
 			case 'j' :
@@ -1205,18 +1236,17 @@ int main(int argc, char *argv[])
 
 	}
 
+	while ( optind < argc ) {
+		add_stream(argv[optind++], &stream_list);
+	}
+
 	if ( nthreads < 1 ) {
 		ERROR("Invalid number of threads.\n");
 		return 1;
 	}
 
-	if ( infile == NULL ) {
-		ERROR("Please give the input filename (with -i)\n");
-		return 1;
-	}
-	st = stream_open_for_read(infile);
-	if ( st == NULL ) {
-		ERROR("Failed to open input stream '%s'\n", infile);
+	if ( stream_list.n == 0 ) {
+		ERROR("Please give at least one input filename\n");
 		return 1;
 	}
 
@@ -1372,107 +1402,118 @@ int main(int argc, char *argv[])
 		sparams_fh = NULL;
 	}
 
-	do {
+	audit_info = NULL;
+	for ( i=0; i<stream_list.n; i++ ) {
 
-		struct image *image;
-		RefList *as;
-		int i;
-
-		image = stream_read_chunk(st, STREAM_REFLECTIONS);
-		if ( image == NULL ) break;
-
-		if ( isnan(image->div) || isnan(image->bw) ) {
-			ERROR("Chunk doesn't contain beam parameters.\n");
-			return 1;
+		Stream *st = stream_open_for_read(stream_list.filenames[i]);
+		if ( audit_info == NULL ) {
+			audit_info = stream_audit_info(st);
 		}
 
-		for ( i=0; i<image->n_crystals; i++ ) {
+		do {
 
-			Crystal *cr;
-			Crystal **crystals_new;
-			RefList *cr_refl;
-			struct image *image_for_crystal;
+			struct image *image;
+			RefList *as;
+			int i;
 
-			n_crystals_seen++;
-			if ( n_crystals_seen <= start_after ) continue;
+			image = stream_read_chunk(st, STREAM_REFLECTIONS);
+			if ( image == NULL ) break;
 
-			if ( crystal_get_resolution_limit(image->crystals[i]) < min_res ) continue;
-
-			crystals_new = realloc(crystals,
-			                      (n_crystals+1)*sizeof(Crystal *));
-			if ( crystals_new == NULL ) {
-				ERROR("Failed to allocate memory for crystal "
-				      "list.\n");
-				return 1;
-			}
-			crystals = crystals_new;
-			crystals[n_crystals] = crystal_copy_deep(image->crystals[i]);
-			cr = crystals[n_crystals];
-
-			/* Create a completely new, separate image
-			 * structure for this crystal. */
-			image_for_crystal = image_new();
-			if ( image_for_crystal == NULL ) {
-				ERROR("Failed to allocate memory for image.\n");
+			if ( isnan(image->div) || isnan(image->bw) ) {
+				ERROR("Chunk doesn't contain beam parameters.\n");
 				return 1;
 			}
 
-			crystal_set_image(cr, image_for_crystal);
-			*image_for_crystal = *image;
-			image_for_crystal->n_crystals = 1;
-			image_for_crystal->crystals = &crystals[n_crystals];
+			for ( i=0; i<image->n_crystals; i++ ) {
 
-			image_for_crystal->filename = strdup(image->filename);
-			image_for_crystal->ev = safe_strdup(image->ev);
-			image_for_crystal->detgeom = NULL;
-			image_for_crystal->features = NULL;
-			image_for_crystal->spectrum = NULL;
-			image_for_crystal->copied_headers = NULL;
-			image_for_crystal->dp = NULL;
-			image_for_crystal->bad = NULL;
-			image_for_crystal->sat = NULL;
+				Crystal *cr;
+				Crystal **crystals_new;
+				RefList *cr_refl;
+				struct image *image_for_crystal;
 
-			/* This is the raw list of reflections */
-			cr_refl = crystal_get_reflections(cr);
+				n_crystals_seen++;
+				if ( n_crystals_seen <= start_after ) continue;
 
-			cr_refl = apply_max_adu(cr_refl, max_adu);
+				if ( crystal_get_resolution_limit(image->crystals[i]) < min_res ) continue;
 
-			if ( !no_free ) select_free_reflections(cr_refl, rng);
+				crystals_new = realloc(crystals,
+				                       (n_crystals+1)*sizeof(Crystal *));
+				if ( crystals_new == NULL ) {
+					ERROR("Failed to allocate memory for crystal "
+					      "list.\n");
+					return 1;
+				}
+				crystals = crystals_new;
+				crystals[n_crystals] = crystal_copy_deep(image->crystals[i]);
+				cr = crystals[n_crystals];
 
-			as = asymmetric_indices(cr_refl, sym);
-			crystal_set_reflections(cr, as);
-			crystal_set_user_flag(cr, PRFLAG_OK);
-			reflist_free(cr_refl);
+				/* Create a completely new, separate image
+				 * structure for this crystal. */
+				image_for_crystal = image_new();
+				if ( image_for_crystal == NULL ) {
+					ERROR("Failed to allocate memory for image.\n");
+					return 1;
+				}
 
-			if ( set_initial_params(cr, sparams_fh, force_bandwidth,
-			                        force_radius, force_lambda) )
-			{
-				ERROR("Failed to set initial parameters\n");
-				return 1;
+				crystal_set_image(cr, image_for_crystal);
+				*image_for_crystal = *image;
+				image_for_crystal->n_crystals = 1;
+				image_for_crystal->crystals = &crystals[n_crystals];
+
+				image_for_crystal->filename = strdup(image->filename);
+				image_for_crystal->ev = safe_strdup(image->ev);
+				image_for_crystal->detgeom = NULL;
+				image_for_crystal->features = NULL;
+				image_for_crystal->spectrum = NULL;
+				image_for_crystal->copied_headers = NULL;
+				image_for_crystal->dp = NULL;
+				image_for_crystal->bad = NULL;
+				image_for_crystal->sat = NULL;
+
+				/* This is the raw list of reflections */
+				cr_refl = crystal_get_reflections(cr);
+
+				cr_refl = apply_max_adu(cr_refl, max_adu);
+
+				if ( !no_free ) select_free_reflections(cr_refl, rng);
+
+				as = asymmetric_indices(cr_refl, sym);
+				crystal_set_reflections(cr, as);
+				crystal_set_user_flag(cr, PRFLAG_OK);
+				reflist_free(cr_refl);
+
+				if ( set_initial_params(cr, sparams_fh, force_bandwidth,
+				                        force_radius, force_lambda) )
+					{
+						ERROR("Failed to set initial parameters\n");
+						return 1;
+					}
+
+				n_crystals++;
+
+				if ( n_crystals == stop_after ) break;
+
 			}
 
-			n_crystals++;
+			image_free(image);
 
-			if ( n_crystals == stop_after ) break;
+			n_images++;
 
-		}
+			if ( n_images % 100 == 0 ) {
+				display_progress(n_images, n_crystals);
+			}
 
-		image_free(image);
+			if ( (stop_after>0) && (n_crystals == stop_after) ) break;
 
-		n_images++;
+		} while ( 1 );
 
-		if ( n_images % 100 == 0 ) {
-			display_progress(n_images, n_crystals);
-		}
+		stream_close(st);
 
-		if ( (stop_after>0) && (n_crystals == stop_after) ) break;
+	}
 
-	} while ( 1 );
 	display_progress(n_images, n_crystals);
 	fprintf(stderr, "\n");
 	if ( sparams_fh != NULL ) fclose(sparams_fh);
-	audit_info = stream_audit_info(st);
-	stream_close(st);
 
 	STATUS("Initial partiality calculation...\n");
 	for ( i=0; i<n_crystals; i++ ) {
@@ -1637,7 +1678,6 @@ int main(int argc, char *argv[])
 	free_symoplist(sym);
 	free(outfile);
 	free(crystals);
-	free(infile);
 
 	return 0;
 }
