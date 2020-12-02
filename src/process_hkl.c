@@ -397,33 +397,25 @@ static void display_progress(int n_images, int n_crystals, int n_crystals_used)
 }
 
 
-static int merge_all(Stream *st,
-                     RefList *model, RefList *reference,
-                     const SymOpList *sym,
-                     double **hist_vals, signed int hist_h,
-                     signed int hist_k, signed int hist_l,
-                     int *hist_i, struct polarisation p,
-                     int min_measurements,
-                     double min_snr, double max_adu,
-                     int start_after, int stop_after, double min_res,
-                     double push_res, double min_cc, int do_scale,
-                     int flag_even_odd, char *stat_output)
+static int merge_stream(Stream *st,
+                        RefList *model, RefList *reference,
+                        const SymOpList *sym,
+                        double **hist_vals, signed int hist_h,
+                        signed int hist_k, signed int hist_l,
+                        int *hist_i, struct polarisation p,
+                        int min_measurements,
+                        double min_snr, double max_adu,
+                        int start_after, int stop_after, double min_res,
+                        double push_res, double min_cc, int do_scale,
+                        int flag_even_odd, char *stat_output,
+                        int *pn_images, int *pn_crystals,
+                        int *pn_crystals_used, int *pn_crystals_seen,
+                        FILE *stat)
 {
-	int n_images = 0;
-	int n_crystals = 0;
-	int n_crystals_used = 0;
-	Reflection *refl;
-	RefListIterator *iter;
-	int n_crystals_seen = 0;
-	FILE *stat = NULL;
-
-	if ( stat_output != NULL ) {
-		stat = fopen(stat_output, "w");
-		if ( stat == NULL ) {
-			ERROR("Failed to open statistics output file %s\n",
-			      stat_output);
-		}
-	}
+	int n_images = *pn_images;
+	int n_crystals = *pn_crystals;
+	int n_crystals_used = *pn_crystals_used;
+	int n_crystals_seen = *pn_crystals_seen;
 
 	do {
 
@@ -469,6 +461,65 @@ static int merge_all(Stream *st,
 
 	} while ( 1 );
 
+	*pn_images = n_images;
+	*pn_crystals = n_crystals;
+	*pn_crystals_seen = n_crystals_seen;
+	*pn_crystals_used = n_crystals_used;
+	return 0;
+}
+
+
+struct stream_list
+{
+	int n;
+	int max_n;
+	const char **filenames;
+	Stream **streams;
+};
+
+
+static int merge_all(struct stream_list *streams,
+                     RefList *model, RefList *reference,
+                     const SymOpList *sym,
+                     double **hist_vals, signed int hist_h,
+                     signed int hist_k, signed int hist_l,
+                     int *hist_i, struct polarisation p,
+                     int min_measurements,
+                     double min_snr, double max_adu,
+                     int start_after, int stop_after, double min_res,
+                     double push_res, double min_cc, int do_scale,
+                     int flag_even_odd, char *stat_output)
+{
+	Reflection *refl;
+	RefListIterator *iter;
+	int i;
+	int n_images = 0;
+	int n_crystals = 0;
+	int n_crystals_used = 0;
+	int n_crystals_seen = 0;
+	FILE *stat = NULL;
+
+	if ( stat_output != NULL ) {
+		stat = fopen(stat_output, "w");
+		if ( stat == NULL ) {
+			ERROR("Failed to open statistics output file %s\n",
+			      stat_output);
+		}
+	}
+
+	for ( i=0; i<streams->n; i++ ) {
+		if ( merge_stream(streams->streams[i],
+		                  model, reference, sym,
+		                  hist_vals, hist_h, hist_k, hist_l, hist_i,
+		                  p, min_measurements, min_snr, max_adu,
+		                  start_after, stop_after, min_res,
+		                  push_res, min_cc, do_scale,
+		                  flag_even_odd, stat_output,
+		                  &n_images, &n_crystals, &n_crystals_used,
+		                  &n_crystals_seen, stat) ) return 1;
+	}
+
+
 	for ( refl = first_refl(model, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
@@ -494,13 +545,45 @@ static int merge_all(Stream *st,
 }
 
 
+static int add_stream(const char *filename, struct stream_list *list)
+{
+	if ( list->n == list->max_n ) {
+		const char **new_filenames = realloc(list->filenames,
+		                                     (list->n+16)*sizeof(const char *));
+		Stream **new_streams = realloc(list->streams,
+		                                     (list->n+16)*sizeof(Stream *));
+		if ( (new_filenames == NULL) || (new_streams == NULL) ) return 1;
+		list->max_n += 16;
+		list->filenames = new_filenames;
+		list->streams = new_streams;
+	}
+
+	list->filenames[list->n] = filename;
+	list->streams[list->n] = NULL;
+	list->n++;
+	return 0;
+}
+
+
+static int rewind_all_streams(struct stream_list *stream_list)
+{
+	int i;
+
+	for ( i=0; i<stream_list->n; i++ ) {
+		if ( stream_rewind(stream_list->streams[i]) ) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
-	char *filename = NULL;
+	int i;
 	char *output = NULL;
 	char *stat_output = NULL;
-	Stream *st;
 	RefList *model;
 	int config_scale = 0;
 	int config_evenonly = 0;
@@ -531,6 +614,10 @@ int main(int argc, char *argv[])
 	double min_cc = -INFINITY;
 	int twopass = 0;
 	char *audit_info;
+	struct stream_list stream_list = {.n = 0,
+	                                  .max_n = 0,
+	                                  .filenames = NULL,
+	                                  .streams = NULL};
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -572,7 +659,7 @@ int main(int argc, char *argv[])
 			return 0;
 
 			case 'i' :
-			filename = strdup(optarg);
+			add_stream(optarg, &stream_list);
 			break;
 
 			case 'o' :
@@ -706,8 +793,12 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( filename == NULL ) {
-		ERROR("Please specify filename using the -i option\n");
+	while ( optind < argc ) {
+		add_stream(argv[optind++], &stream_list);
+	}
+
+	if ( stream_list.n == 0 ) {
+		ERROR("Please give at least one input stream filename.\n");
 		return 1;
 	}
 
@@ -720,11 +811,13 @@ int main(int argc, char *argv[])
 	sym = get_pointgroup(sym_str);
 	free(sym_str);
 
-	/* Open the data stream */
-	st = stream_open_for_read(filename);
-	if ( st == NULL ) {
-		ERROR("Failed to open stream.\n");
-		return 1;
+	/* Open all the data streams */
+	for ( i=0; i<stream_list.n; i++ ) {
+		stream_list.streams[i] = stream_open_for_read(stream_list.filenames[i]);
+		if ( stream_list.streams[i] == NULL ) {
+			ERROR("Failed to open stream.\n");
+			return 1;
+		}
 	}
 
 	model = reflist_new();
@@ -783,7 +876,7 @@ int main(int argc, char *argv[])
 	if ( config_scale ) twopass = 1;
 
 	hist_i = 0;
-	r = merge_all(st, model, NULL, sym,
+	r = merge_all(&stream_list, model, NULL, sym,
 	              &hist_vals, hist_h, hist_k, hist_l,
 	              &hist_i, polarisation, min_measurements, min_snr,
 	              max_adu, start_after, stop_after, min_res, push_res,
@@ -798,7 +891,7 @@ int main(int argc, char *argv[])
 
 		RefList *reference;
 
-		if ( stream_rewind(st) ) {
+		if ( rewind_all_streams(&stream_list) ) {
 
 			ERROR("Couldn't rewind stream - scaling cannot be "
 			      "performed.\n");
@@ -818,8 +911,8 @@ int main(int argc, char *argv[])
 				hist_i = 0;
 			}
 
-			r = merge_all(st, model, reference, sym, &hist_vals,
-			              hist_h, hist_k, hist_l, &hist_i,
+			r = merge_all(&stream_list, model, reference, sym,
+			              &hist_vals, hist_h, hist_k, hist_l, &hist_i,
 				      polarisation, min_measurements, min_snr,
 				      max_adu, start_after, stop_after, min_res,
 				      push_res, min_cc, config_scale,
@@ -847,8 +940,10 @@ int main(int argc, char *argv[])
 		               hist_nbins);
 	}
 
-	audit_info = stream_audit_info(st);
-	stream_close(st);
+	audit_info = stream_audit_info(stream_list.streams[0]);
+	for ( i=0; i<stream_list.n; i++ ) {
+		stream_close(stream_list.streams[i]);
+	}
 
 	reflist_add_command_and_version(model, argc, argv);
 	reflist_add_notes(model, "Audit information from stream:");
@@ -858,7 +953,6 @@ int main(int argc, char *argv[])
 	free_symoplist(sym);
 	reflist_free(model);
 	free(output);
-	free(filename);
 	free(stat_output);
 
 	return 0;
