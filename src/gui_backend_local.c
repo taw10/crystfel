@@ -37,6 +37,7 @@
 
 #include "gui_project.h"
 #include "gui_index.h"
+#include "gui_merge.h"
 
 
 struct local_indexing_opts
@@ -413,13 +414,57 @@ static GtkWidget *make_merging_parameters_widget(void *opts_priv)
 }
 
 
+static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
+                               void *vp)
+{
+	GIOStatus r;
+	GError *err = NULL;
+	struct local_job *job = vp;
+	gchar *line;
+
+	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
+	if ( r == G_IO_STATUS_EOF ) {
+		STATUS("End of output.\n");
+		return FALSE;
+	}
+	if ( r != G_IO_STATUS_NORMAL ) {
+		if ( job->pid != 0 ) {
+			STATUS("Read error?\n");
+		} else {
+			STATUS("End of output (merge exited)\n");
+		}
+		return FALSE;
+	}
+
+	/* FIXME: Calculate the fraction complete */
+	job->frac_complete = 0.5;
+
+	g_free(line);
+
+	return TRUE;
+}
+
+
 static void *run_merging(const char *job_title,
                          const char *job_notes,
                          struct crystfelproject *proj,
                          struct gui_result *input,
                          void *opts_priv)
 {
-	return NULL;
+	char n_thread_str[64];
+	char **args;
+	struct local_job *job;
+	struct local_merging_opts *opts = opts_priv;
+
+	snprintf(n_thread_str, 63, "%i", opts->n_threads);
+	args = merging_command_line(n_thread_str,
+	                            input,
+	                            &proj->merging_params);
+
+	job = start_local_job(args, job_title, job_notes, proj,
+	                      merge_readable);
+
+	return job;
 }
 
 
