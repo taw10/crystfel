@@ -405,13 +405,15 @@ static GSList *process_hkl_command_line(struct gui_result *input,
 {
 	GSList *args = NULL;
 	char *exe_path;
+	int i;
 
 	exe_path = get_crystfel_exe("process_hkl");
 	if ( exe_path == NULL ) return NULL;
 	args = g_slist_append(args, exe_path);
 
-	/* FIXME: For each stream */
-	args = append_arg_str(args, "input", input->streams[0]);
+	for ( i=0; i<input->n_streams; i++ ) {
+		args = g_slist_append(args, input->streams[i]);
+	}
 
 	args = append_arg_str(args, "symmetry", params->symmetry);
 
@@ -441,13 +443,15 @@ static GSList *partialator_command_line(const char *n_thread_str,
 {
 	GSList *args = NULL;
 	char *exe_path;
+	int i;
 
 	exe_path = get_crystfel_exe("partialator");
 	if ( exe_path == NULL ) return NULL;
 	args = g_slist_append(args, exe_path);
 
-	/* FIXME: For each stream */
-	args = append_arg_str(args, "input", input->streams[0]);
+	for ( i=0; i<input->n_streams; i++ ) {
+		args = g_slist_append(args, input->streams[i]);
+	}
 
 	args = append_arg_str(args, "symmetry", params->symmetry);
 
