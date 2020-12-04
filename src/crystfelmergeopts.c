@@ -181,7 +181,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->use_max_adu),
 	                   FALSE, FALSE, 0);
 	mo->max_adu = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(mo->max_adu), 4);
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->max_adu), 8);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->max_adu),
 	                   FALSE, FALSE, 0);
 	disable_if_not(mo->use_max_adu, mo->max_adu);
@@ -194,7 +194,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 	mo->min_measurements = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(mo->min_measurements), 4);
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->min_measurements), 6);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->min_measurements),
 	                   FALSE, FALSE, 0);
 
@@ -219,7 +219,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->min_res),
 	                   FALSE, FALSE, 0);
 	mo->min_res_val = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(mo->min_res_val), 4);
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->min_res_val), 6);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->min_res_val),
 	                   FALSE, FALSE, 0);
 	label = gtk_label_new("Å");
@@ -235,7 +235,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->limit_res),
 	                   FALSE, FALSE, 0);
 	mo->push_res = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(mo->push_res), 4);
+	gtk_entry_set_width_chars(GTK_ENTRY(mo->push_res), 8);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->push_res),
 	                   FALSE, FALSE, 0);
 	label = gtk_label_new("nm^-1 above resolution limit");
