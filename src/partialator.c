@@ -1484,10 +1484,10 @@ int main(int argc, char *argv[])
 
 				if ( set_initial_params(cr, sparams_fh, force_bandwidth,
 				                        force_radius, force_lambda) )
-					{
-						ERROR("Failed to set initial parameters\n");
-						return 1;
-					}
+				{
+					ERROR("Failed to set initial parameters\n");
+					return 1;
+				}
 
 				n_crystals++;
 
