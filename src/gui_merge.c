@@ -457,6 +457,9 @@ static GSList *partialator_command_line(const char *n_thread_str,
 
 	args = append_arg_str(args, "symmetry", params->symmetry);
 
+	args = g_slist_append(args, "-j");
+	args = g_slist_append(args, strdup(n_thread_str));
+
 	if ( params->twin_sym != NULL ) {
 		args = g_slist_append(args, "-w");
 		args = g_slist_append(args, strdup(params->twin_sym));
