@@ -519,12 +519,12 @@ const char *crystfel_merge_opts_get_twin_sym(CrystFELMergeOpts *opts)
 float crystfel_merge_opts_get_min_res(CrystFELMergeOpts *opts)
 {
 	if ( get_bool(opts->min_res) == 0 ) {
-		return 0.0;
+		return INFINITY;
 	} else {
 		float min_res = get_float(opts->min_res_val);
 		if ( isnan(min_res) ) {
 			printf("Invalid value for min-res\n");
-			return 0.0;
+			return INFINITY;
 		} else {
 			return min_res;
 		}
