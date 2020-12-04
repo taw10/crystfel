@@ -177,10 +177,17 @@ static void cancel_task(void *job_priv)
 {
 	int i;
 	struct slurm_job *job = job_priv;
-	for ( i=0; i<job->n_blocks; i++) {
-		if ( job->job_ids[i] == 0 ) continue;
-		STATUS("Stopping SLURM job %i\n", job->job_ids[i]);
-		if ( slurm_kill_job(job->job_ids[i], SIGINT, 0) ) {
+	if ( job->type == SLURM_JOB_INDEXING ) {
+		for ( i=0; i<job->n_blocks; i++) {
+			if ( job->job_ids[i] == 0 ) continue;
+			STATUS("Stopping SLURM job %i\n", job->job_ids[i]);
+			if ( slurm_kill_job(job->job_ids[i], SIGINT, 0) ) {
+				ERROR("Couldn't stop job: %s\n",
+				      slurm_strerror(slurm_get_errno()));
+			}
+		}
+	} else {
+		if ( slurm_kill_job(job->job_id, SIGINT, 0) ) {
 			ERROR("Couldn't stop job: %s\n",
 			      slurm_strerror(slurm_get_errno()));
 		}
