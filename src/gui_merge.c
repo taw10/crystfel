@@ -222,6 +222,8 @@ static GtkWidget *make_merging_job_opts(struct crystfelproject *proj,
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 	njp->job_notes_text = gtk_text_view_new();
+	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(njp->job_notes_text),
+	                            GTK_WRAP_WORD_CHAR);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_container_add(GTK_CONTAINER(scroll), njp->job_notes_text);
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll),
