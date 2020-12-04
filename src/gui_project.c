@@ -954,7 +954,7 @@ void default_project(struct crystfelproject *proj)
 	proj->merging_params.max_adu = INFINITY;
 	proj->merging_params.custom_split = NULL;
 	proj->merging_params.twin_sym = NULL;
-	proj->merging_params.min_res = 0.0;
+	proj->merging_params.min_res = INFINITY;
 	proj->merging_params.push_res = INFINITY;
 
 	proj->results = NULL;
