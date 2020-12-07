@@ -129,6 +129,13 @@ static void swap_data_arrays(struct image *a, struct image *b)
 }
 
 
+static void select_result(struct crystfelproject *proj,
+                          const char *result_name)
+{
+	gtk_combo_box_set_active_id(GTK_COMBO_BOX(proj->results_combo),
+	                            result_name);
+}
+
 
 /* Bring the image view up to date after changing the selected image */
 void update_imageview(struct crystfelproject *proj)
@@ -424,10 +431,10 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 
 		streams = malloc(sizeof(char *));
 		if ( streams != NULL ) {
+			char *result_name = safe_basename(stream_filename);
 			streams[0] = strdup(stream_filename);
-			add_result(proj,
-			           safe_basename(stream_filename),
-			           streams, 1);
+			add_result(proj, result_name, streams, 1);
+			select_result(proj, result_name);
 		}
 
 		crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
