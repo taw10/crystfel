@@ -129,11 +129,17 @@ static void swap_data_arrays(struct image *a, struct image *b)
 }
 
 
-static void select_result(struct crystfelproject *proj,
-                          const char *result_name)
+void select_result(struct crystfelproject *proj,
+                   const char *result_name)
 {
 	gtk_combo_box_set_active_id(GTK_COMBO_BOX(proj->results_combo),
 	                            result_name);
+}
+
+
+const char *selected_result(struct crystfelproject *proj)
+{
+	return gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
 }
 
 

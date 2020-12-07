@@ -37,6 +37,9 @@ extern void add_running_task(struct crystfelproject *proj,
                              void *job_priv);
 
 extern void update_imageview(struct crystfelproject *proj);
+extern void select_result(struct crystfelproject *proj,
+                          const char *result_name);
+extern const char *selected_result(struct crystfelproject *proj);
 
 extern char *get_crystfel_path_str(void);
 

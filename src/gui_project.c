@@ -37,6 +37,7 @@
 #include <assert.h>
 
 #include "gui_project.h"
+#include "crystfel_gui.h"
 #include "gui_backend_local.h"
 #include "gui_backend_slurm.h"
 
@@ -565,6 +566,7 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 	char **streams = NULL;
 	int n_streams = 0;
 	char *results_name = NULL;
+	int selected = 0;
 
 	do {
 
@@ -576,15 +578,25 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 		if ( strncmp(line, "Result ", 7) == 0 ) {
 
 			if ( n_streams > 0 ) {
+				/* Add the previously-read result */
 				add_result(proj,
 				           results_name,
 				           streams,
 				           n_streams);
+
+				if ( selected ) {
+					select_result(proj, results_name);
+				}
 			}
 
 			n_streams = 0;
+			selected = 0;
 			streams = NULL;
 			results_name = strdup(line+7);
+		}
+
+		if ( strncmp(line, "   Selected", 11) == 0 ) {
+			selected = 1;
 		}
 
 		if ( strncmp(line, "   Stream ", 10) == 0 ) {
@@ -600,6 +612,10 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 				           results_name,
 				           streams,
 				           n_streams);
+
+				if ( selected ) {
+					select_result(proj, results_name);
+				}
 			}
 
 			break;
@@ -835,6 +851,11 @@ int save_project(struct crystfelproject *proj)
 		for ( j=0; j<proj->results[i].n_streams; j++ ) {
 			fprintf(fh, "   Stream %s\n",
 			        proj->results[i].streams[j]);
+		}
+		if ( strcmp(selected_result(proj),
+		            proj->results[i].name) == 0 )
+		{
+			fprintf(fh, "   Selected\n");
 		}
 	}
 
