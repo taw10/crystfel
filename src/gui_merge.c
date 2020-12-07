@@ -346,15 +346,15 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	set_merging_opts(&proj->merging_params, CRYSTFEL_MERGE_OPTS(proj->merging_opts));
 
+	backend_page = make_merging_backend_opts(njp);
+	gtk_notebook_prepend_page(GTK_NOTEBOOK(proj->merging_opts),
+	                          backend_page,
+	                          gtk_label_new("Cluster/batch system"));
+
 	job_page = make_merging_job_opts(proj, njp);
 	gtk_notebook_prepend_page(GTK_NOTEBOOK(proj->merging_opts),
 	                          job_page,
 	                          gtk_label_new("Job name/notes"));
-
-	backend_page = make_merging_backend_opts(njp);
-	gtk_notebook_append_page(GTK_NOTEBOOK(proj->merging_opts),
-	                         backend_page,
-	                         gtk_label_new("Cluster/batch system"));
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_OK);

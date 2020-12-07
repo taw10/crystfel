@@ -315,6 +315,7 @@ GtkWidget *crystfel_merge_opts_new()
 	CrystFELMergeOpts *mo;
 
 	mo = g_object_new(CRYSTFEL_TYPE_MERGE_OPTS, NULL);
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(mo), GTK_POS_LEFT);
 
 	gtk_notebook_append_page(GTK_NOTEBOOK(mo),
 	                         merge_parameters(mo),
