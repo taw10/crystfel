@@ -191,16 +191,21 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		struct imagefeature *f;
 		double h, k, l, hd, kd, ld;
 		Reflection *refl;
+		double r[3];
 
 		/* Assume all image "features" are genuine peaks */
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda,
+		                         r);
+
 		/* Decimal and fractional Miller indices of nearest reciprocal
 		 * lattice point */
-		hd = f->rx * ax + f->ry * ay + f->rz * az;
-		kd = f->rx * bx + f->ry * by + f->rz * bz;
-		ld = f->rx * cx + f->ry * cy + f->rz * cz;
+		hd = r[0] * ax + r[1] * ay + r[2] * az;
+		kd = r[0] * bx + r[1] * by + r[2] * bz;
+		ld = r[0] * cx + r[1] * cy + r[2] * cz;
 		h = lrint(hd);
 		k = lrint(kd);
 		l = lrint(ld);

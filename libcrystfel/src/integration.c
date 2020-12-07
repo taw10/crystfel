@@ -1533,7 +1533,7 @@ int integrate_rings_once(Reflection *refl,
 }
 
 
-static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
+static double estimate_resolution(UnitCell *cell, struct image *image)
 {
 	int i;
 	const double min_dist = 0.25;
@@ -1549,27 +1549,33 @@ static double estimate_resolution(UnitCell *cell, ImageFeatureList *flist)
 		return INFINITY;
 	}
 
-	for ( i=0; i<image_feature_count(flist); i++ ) {
+	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
 		double h, k, l, hd, kd, ld;
-
-		/* Assume all image "features" are genuine peaks */
-		f = image_get_feature(flist, i);
-		if ( f == NULL ) continue;
-
 		double ax, ay, az;
 		double bx, by, bz;
 		double cx, cy, cz;
+		double r[3];
+
+		/* Assume all image "features" are genuine peaks */
+		f = image_get_feature(image->features, i);
+		if ( f == NULL ) continue;
 
 		cell_get_cartesian(cell,
-		                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+		                   &ax, &ay, &az,
+		                   &bx, &by, &bz,
+		                   &cx, &cy, &cz);
+
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda,
+		                         r);
 
 		/* Decimal and fractional Miller indices of nearest
 		 * reciprocal lattice point */
-		hd = f->rx * ax + f->ry * ay + f->rz * az;
-		kd = f->rx * bx + f->ry * by + f->rz * bz;
-		ld = f->rx * cx + f->ry * cy + f->rz * cz;
+		hd = r[0] * ax + r[1] * ay + r[2] * az;
+		kd = r[0] * bx + r[1] * by + r[2] * bz;
+		ld = r[0] * cx + r[1] * cy + r[2] * cz;
 		h = lrint(hd);
 		k = lrint(kd);
 		l = lrint(ld);
@@ -1680,7 +1686,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 		}
 
 		res = estimate_resolution(crystal_get_cell(image->crystals[i]),
-		                          image->features);
+		                          image);
 		crystal_set_resolution_limit(image->crystals[i], res);
 
 		list = predict_to_res(image->crystals[i], res+push_res);

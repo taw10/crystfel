@@ -2157,11 +2157,18 @@ int taketwo_index(struct image *image, void *priv)
 
 	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
+
+		double r[3];
 		struct imagefeature *pk = image_get_feature(image->features, i);
 		if ( pk == NULL ) continue;
-		rlps[n_rlps].u = pk->rx;
-		rlps[n_rlps].v = pk->ry;
-		rlps[n_rlps].w = pk->rz;
+
+		detgeom_transform_coords(&image->detgeom->panels[pk->pn],
+		                         pk->fs, pk->ss, image->lambda,
+		                         r);
+
+		rlps[n_rlps].u = r[0];
+		rlps[n_rlps].v = r[1];
+		rlps[n_rlps].w = r[2];
 		n_rlps++;
 	}
 	rlps[n_rlps].u = 0.0;

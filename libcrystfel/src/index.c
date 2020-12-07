@@ -563,32 +563,6 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 }
 
 
-void map_all_peaks(struct image *image)
-{
-	int i, n;
-
-	n = image_feature_count(image->features);
-
-	/* Map positions to 3D */
-	for ( i=0; i<n; i++ ) {
-
-		struct imagefeature *f;
-		double r[3];
-
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-
-		detgeom_transform_coords(&image->detgeom->panels[f->pn],
-		                         f->fs, f->ss,
-		                         image->lambda, r);
-		f->rx = r[0];
-		f->ry = r[1];
-		f->rz = r[2];
-
-	}
-}
-
-
 /* Return 0 for cell OK, 1 for cell incorrect */
 static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
                       double *tolerance)
@@ -953,7 +927,6 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 	if ( ipriv == NULL ) return;
 
-	map_all_peaks(image);
 	image->crystals = NULL;
 	image->n_crystals = 0;
 

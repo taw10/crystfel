@@ -68,13 +68,6 @@ struct imagefeature {
 	int                             pn;         /**< Panel number */
 	double                          intensity;  /**< Intensity */
 
-	/** \name Reciprocal space coordinates (m^-1) of this feature */
-	/** @{ */
-	double                          rx;
-	double                          ry;
-	double                          rz;
-	/** @} */
-
 	const char                      *name;  /**< Text name, e.g. "5,3,-1" */
 };
 

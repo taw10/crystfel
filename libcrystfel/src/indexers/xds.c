@@ -213,17 +213,22 @@ static void write_spot(struct image *image)
         {
 		struct imagefeature *f;
 		double ttx, tty, x, y;
+		double r[3];
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 		if ( f->intensity <= 0 ) continue;
 
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda,
+		                         r);
+
 		ttx = angle_between_2d(0.0, 1.0,
-		                       f->rx, 1.0/image->lambda + f->rz);
+		                       r[0], 1.0/image->lambda + r[2]);
 		tty = angle_between_2d(0.0, 1.0,
-		                       f->ry, 1.0/image->lambda + f->rz);
-		if ( f->rx < 0.0 ) ttx *= -1.0;
-		if ( f->ry < 0.0 ) tty *= -1.0;
+		                       r[1], 1.0/image->lambda + r[2]);
+		if ( r[0] < 0.0 ) ttx *= -1.0;
+		if ( r[1] < 0.0 ) tty *= -1.0;
 		x = tan(ttx)*FAKE_CLEN;
 		y = tan(tty)*FAKE_CLEN;
 

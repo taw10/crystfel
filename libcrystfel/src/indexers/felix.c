@@ -364,14 +364,19 @@ static void write_gve(struct image *image, struct felix_private *gp)
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
+		double r[3];
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda,
+		                         r);
+
 		fprintf(fh, "%.6f %.6f %.6f 0 0 %.6f %.6f %.6f 0\n",
-		        f->rz/1e10, f->rx/1e10, f->ry/1e10,
-		        modulus(f->rx, f->ry, f->rz)/1e10, /* dstar */
-		        rad2deg(atan2(f->ry, f->rx)), 0.0);   /* eta, omega */
+		        r[2]/1e10, r[0]/1e10, r[1]/1e10,
+		        modulus(r[0], r[1], r[2])/1e10, /* dstar */
+		        rad2deg(atan2(r[1], r[0])), 0.0);   /* eta, omega */
 
 	}
 	fclose(fh);

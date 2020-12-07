@@ -1116,14 +1116,19 @@ int run_asdf(struct image *image, void *ipriv)
 
 	for ( i=0; i<n; i++ ) {
 		struct imagefeature *f;
+		double r[3];
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda,
+		                         r);
+
 		reflections[N_reflections] = gsl_vector_alloc(3);
-		gsl_vector_set(reflections[N_reflections], 0, f->rx/1e10);
-		gsl_vector_set(reflections[N_reflections], 1, f->ry/1e10);
-		gsl_vector_set(reflections[N_reflections], 2, f->rz/1e10);
+		gsl_vector_set(reflections[N_reflections], 0, r[0]/1e10);
+		gsl_vector_set(reflections[N_reflections], 1, r[1]/1e10);
+		gsl_vector_set(reflections[N_reflections], 2, r[2]/1e10);
 		N_reflections++;
 	}
 

@@ -490,12 +490,17 @@ static void write_drx(struct image *image)
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		struct imagefeature *f;
+		double r[3];
 
 		f = image_get_feature(image->features, i);
 		if ( f == NULL ) continue;
 
+		detgeom_transform_coords(&image->detgeom->panels[f->pn],
+		                         f->fs, f->ss, image->lambda,
+		                         r);
+
 		fprintf(fh, "%10f %10f %10f %8f\n",
-		        f->rx/1e10, f->ry/1e10, f->rz/1e10, 1.0);
+		        r[0]/1e10, r[1]/1e10, r[2]/1e10, 1.0);
 
 	}
 	fclose(fh);
