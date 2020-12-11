@@ -1,7 +1,7 @@
 /*
  * gui_merge.h
  *
- * Merging parts of GUI
+ * Merging via CrystFEL GUI
  *
  * Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
