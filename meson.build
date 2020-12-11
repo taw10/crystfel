@@ -215,6 +215,7 @@ if gtkdep.found()
                  'src/gui_peaksearch.c',
                  'src/gui_index.c',
                  'src/gui_merge.c',
+                 'src/gui_fom.c',
                  'src/gui_backend_local.c',
                  'src/gui_project.c',
                  versionc]
