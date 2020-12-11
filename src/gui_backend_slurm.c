@@ -502,8 +502,8 @@ static void *run_indexing(const char *job_title,
 		free(job);
 		return NULL;
 	} else {
-		add_result(proj, strdup(job_title),
-		           streams, job->n_blocks);
+		add_indexing_result(proj, strdup(job_title),
+		                    streams, job->n_blocks);
 	}
 	return job;
 }
@@ -734,7 +734,7 @@ static void read_indexing_opt(void *opts_priv,
 static void *run_merging(const char *job_title,
                          const char *job_notes,
                          struct crystfelproject *proj,
-                         struct gui_result *input,
+                         struct gui_indexing_result *input,
                          void *opts_priv)
 {
 	struct slurm_job *job;

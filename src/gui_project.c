@@ -521,7 +521,7 @@ static char **add_stream(char *new_stream,
 {
 	int i = *pn_streams;
 	char **new_streams = realloc(streams,
-	                             (i+1)*sizeof(struct gui_result));
+	                             (i+1)*sizeof(struct gui_indexing_result));
 	if ( new_streams == NULL ) return streams;
 
 	new_streams[i] = new_stream;
@@ -579,10 +579,10 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 
 			if ( n_streams > 0 ) {
 				/* Add the previously-read result */
-				add_result(proj,
-				           results_name,
-				           streams,
-				           n_streams);
+				add_indexing_result(proj,
+				                    results_name,
+				                    streams,
+				                    n_streams);
 
 				if ( selected ) {
 					select_result(proj, results_name);
@@ -608,10 +608,10 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 		if ( strcmp(line, "-----") == 0 ) {
 
 			if ( n_streams > 0 ) {
-				add_result(proj,
-				           results_name,
-				           streams,
-				           n_streams);
+				add_indexing_result(proj,
+				                    results_name,
+				                    streams,
+				                    n_streams);
 
 				if ( selected ) {
 					select_result(proj, results_name);
@@ -984,16 +984,16 @@ void default_project(struct crystfelproject *proj)
 
 
 /* Assumes ownership of "name" and "streams" */
-int add_result(struct crystfelproject *proj,
-               char *name,
-               char **streams,
-               int n_streams)
+int add_indexing_result(struct crystfelproject *proj,
+                        char *name,
+                        char **streams,
+                        int n_streams)
 {
 	int i;
-	struct gui_result *new_results;
+	struct gui_indexing_result *new_results;
 
 	new_results = realloc(proj->results,
-	                      (proj->n_results+1)*sizeof(struct gui_result));
+	                      (proj->n_results+1)*sizeof(struct gui_indexing_result));
 	if ( new_results == NULL ) return 1;
 
 	new_results[proj->n_results].name = name;
@@ -1015,7 +1015,7 @@ int add_result(struct crystfelproject *proj,
 }
 
 
-static void update_result_index(struct gui_result *result)
+static void update_result_index(struct gui_indexing_result *result)
 {
 	int i;
 
@@ -1030,8 +1030,8 @@ static void update_result_index(struct gui_result *result)
 }
 
 
-struct gui_result *find_result_by_name(struct crystfelproject *proj,
-                                       const char *name)
+struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject *proj,
+                                                         const char *name)
 {
 	int i;
 
@@ -1044,18 +1044,18 @@ struct gui_result *find_result_by_name(struct crystfelproject *proj,
 }
 
 
-struct image *find_result(struct crystfelproject *proj,
-                          const char *results_name,
-                          const char *filename,
-                          const char *event)
+struct image *find_indexed_image(struct crystfelproject *proj,
+                                 const char *results_name,
+                                 const char *filename,
+                                 const char *event)
 {
 	Stream *st;
 	int i;
 	int found = 0;
 	struct image *image;
-	struct gui_result *result;
+	struct gui_indexing_result *result;
 
-	result = find_result_by_name(proj, results_name);
+	result = find_indexing_result_by_name(proj, results_name);
 	if ( result == NULL ) return NULL;
 
 	for ( i=0; i<result->n_streams; i++ ) {

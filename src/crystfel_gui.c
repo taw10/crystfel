@@ -190,10 +190,10 @@ void update_imageview(struct crystfelproject *proj)
 	if ( strcmp(results_name, "crystfel-gui-internal") == 0 ) {
 		update_peaks(proj);
 	} else {
-		struct image *res_im = find_result(proj,
-		                                   results_name,
-		                                   image->filename,
-		                                   image->ev);
+		struct image *res_im = find_indexed_image(proj,
+		                                          results_name,
+		                                          image->filename,
+		                                          image->ev);
 		if ( res_im != NULL ) {
 			swap_data_arrays(image, res_im);
 			image_free(proj->cur_image);
@@ -439,7 +439,7 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		if ( streams != NULL ) {
 			char *result_name = safe_basename(stream_filename);
 			streams[0] = strdup(stream_filename);
-			add_result(proj, result_name, streams, 1);
+			add_indexing_result(proj, result_name, streams, 1);
 			select_result(proj, result_name);
 		}
 

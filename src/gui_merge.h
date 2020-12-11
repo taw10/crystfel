@@ -37,7 +37,7 @@ extern gint merge_sig(GtkWidget *widget,
                       struct crystfelproject *proj);
 
 extern char **merging_command_line(const char *n_thread_str,
-                                   struct gui_result *input,
+                                   struct gui_indexing_result *input,
                                    struct merging_params *params);
 
 #endif

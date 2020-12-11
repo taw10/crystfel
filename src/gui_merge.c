@@ -95,11 +95,11 @@ static int run_merging(struct crystfelproject *proj,
 	struct crystfel_backend *be;
 	void *job_priv;
 	const gchar *results_name;
-	struct gui_result *input;
+	struct gui_indexing_result *input;
 
 	/* Which result to merge? */
 	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
-	input = find_result_by_name(proj, results_name);
+	input = find_indexing_result_by_name(proj, results_name);
 	if ( input == NULL ) {
 		ERROR("Please select a result first\n");
 		return 1;
@@ -402,7 +402,7 @@ static GSList *append_arg_float(GSList *args,
 }
 
 
-static GSList *process_hkl_command_line(struct gui_result *input,
+static GSList *process_hkl_command_line(struct gui_indexing_result *input,
                                         struct merging_params *params)
 {
 	GSList *args = NULL;
@@ -440,7 +440,7 @@ static GSList *process_hkl_command_line(struct gui_result *input,
 
 
 static GSList *partialator_command_line(const char *n_thread_str,
-                                        struct gui_result *input,
+                                        struct gui_indexing_result *input,
                                         struct merging_params *params)
 {
 	GSList *args = NULL;
@@ -505,7 +505,7 @@ static GSList *partialator_command_line(const char *n_thread_str,
 
 
 char **merging_command_line(const char *n_thread_str,
-                            struct gui_result *input,
+                            struct gui_indexing_result *input,
                             struct merging_params *params)
 {
 	GSList *args;

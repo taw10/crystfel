@@ -252,7 +252,7 @@ static struct local_job *start_local_job(char **args,
 		                                       "crystfel.stream");
 		streams[0] = g_file_get_path(stream_gfile);
 		g_object_unref(stream_gfile);
-		add_result(proj, strdup(job_title), streams, 1);
+		add_indexing_result(proj, strdup(job_title), streams, 1);
 	}
 
 	g_object_unref(workdir_file);
@@ -448,7 +448,7 @@ static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
 static void *run_merging(const char *job_title,
                          const char *job_notes,
                          struct crystfelproject *proj,
-                         struct gui_result *input,
+                         struct gui_indexing_result *input,
                          void *opts_priv)
 {
 	char n_thread_str[64];

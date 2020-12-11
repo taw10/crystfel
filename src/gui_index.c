@@ -62,7 +62,7 @@ void cell_explorer_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GSubprocess *sp;
 	GError *error = NULL;
 	const gchar *results_name;
-	struct gui_result *res;
+	struct gui_indexing_result *res;
 	const gchar **streams;
 	int i;
 
@@ -72,7 +72,7 @@ void cell_explorer_sig(GtkWidget *widget, struct crystfelproject *proj)
 		return;
 	}
 
-	res = find_result_by_name(proj, results_name);
+	res = find_indexing_result_by_name(proj, results_name);
 	if ( res == NULL ) {
 		ERROR("Results for '%s' not found!\n", results_name);
 		return;

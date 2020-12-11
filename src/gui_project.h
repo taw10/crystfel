@@ -114,7 +114,7 @@ struct merging_params {
 	float push_res;
 };
 
-struct gui_result
+struct gui_indexing_result
 {
 	char *name;
 
@@ -167,7 +167,7 @@ struct crystfel_backend {
 	void *(*run_merging)(const char *job_title,
 	                     const char *job_notes,
 	                     struct crystfelproject *proj,
-	                     struct gui_result *input,
+	                     struct gui_indexing_result *input,
 	                     void *opts_priv);
 
 	/* Called to ask the backend to write its merging options */
@@ -253,7 +253,7 @@ struct crystfelproject {
 	struct gui_task tasks[MAX_RUNNING_TASKS];
 	int n_running_tasks;
 
-	struct gui_result *results;
+	struct gui_indexing_result *results;
 	int n_results;
 };
 
@@ -273,17 +273,17 @@ extern void add_file_to_project(struct crystfelproject *proj,
 
 extern void clear_project_files(struct crystfelproject *proj);
 
-extern int add_result(struct crystfelproject *proj,
-                      char *name,
-                      char **streams,
-                      int n_streams);
+extern int add_indexing_result(struct crystfelproject *proj,
+                               char *name,
+                               char **streams,
+                               int n_streams);
 
-extern struct image *find_result(struct crystfelproject *proj,
-                                 const char *result_name,
-                                 const char *filename,
-                                 const char *event);
+extern struct image *find_indexed_image(struct crystfelproject *proj,
+                                        const char *result_name,
+                                        const char *filename,
+                                        const char *event);
 
-extern struct gui_result *find_result_by_name(struct crystfelproject *proj,
-                                              const char *name);
+extern struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject *proj,
+                                                                const char *name);
 
 #endif
