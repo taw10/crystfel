@@ -126,7 +126,8 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       install : true)
 
 libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
-                                    link_with : libcrystfel)
+                                    link_with : libcrystfel,
+                                    dependencies: gsldep)
 
 
 install_headers(['src/reflist.h',
