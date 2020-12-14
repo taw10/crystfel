@@ -18,7 +18,13 @@ mdep = cc.find_library('m', required : true)
 gsldep = dependency('gsl', required : true)
 zlibdep = dependency('zlib', required : true)
 pthreaddep = dependency('threads', required : true)
-slurmdep = cc.find_library('slurm', required : false)
+
+# Try via pkg-config first:
+slurmdep = dependency('slurm', required : false)
+if not slurmdep.found()
+  slurmdep = cc.find_library('slurm', required : false)
+endif
+
 if slurmdep.found()
   conf_data.set10('HAVE_SLURM', 1)
 endif
