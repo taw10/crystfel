@@ -36,6 +36,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <fenv.h>
 
 #include "image.h"
 #include "utils.h"
@@ -629,6 +630,36 @@ static void set_image_parameters(struct image *image,
 }
 
 
+static int flag_value(float pixel, struct panel_template *p)
+{
+	int i;
+	for ( i=0; i<MAX_FLAG_VALUES; i++ ) {
+
+		float fv = p->flag_values[i];
+
+		switch ( p->flag_types[i] ) {
+
+			case FLAG_NOTHING:
+			break;
+
+			case FLAG_LESSTHAN:
+			if ( pixel < fv ) return 1;
+			break;
+
+			case FLAG_MORETHAN:
+			if ( pixel > fv ) return 1;
+			break;
+
+			case FLAG_EQUAL:
+			if ( rint(pixel) == fv) return 1;
+			break;
+
+		}
+	}
+	return 0;
+}
+
+
 static int create_badmap(struct image *image,
                          const DataTemplate *dtempl,
                          int no_mask_data)
@@ -665,17 +696,28 @@ static int create_badmap(struct image *image,
 
 		/* Add bad regions (skip if panel is bad anyway) */
 		if ( !p->bad ) {
+
 			int fs, ss;
+			fenv_t envp;
+
+			fegetenv(&envp);
+			fesetround(1);  /* Round to nearest
+			                 * (for flag_value) */
+
 			for ( fs=0; fs<p_w; fs++ ) {
 			for ( ss=0; ss<p_h; ss++ ) {
+				float val = image->dp[i][fs+ss*p_w];
 				if ( data_template_in_bad_region(dtempl, i, fs, ss)
-				     || isnan(image->dp[i][fs+ss*p_w])
-				     || isinf(image->dp[i][fs+ss*p_w]) )
+				  || isnan(val)
+				  || isinf(val)
+				  || flag_value(val, p) )
 				{
 					image->bad[i][fs+ss*p_w] = 1;
 				}
 			}
 			}
+
+			fesetenv(&envp);
 		}
 
 		/* Load mask (skip if panel is bad anyway) */

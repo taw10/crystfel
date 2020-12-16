@@ -211,6 +211,12 @@ The corner of this panel, defined as the first point in the panel to appear in t
 The maximum value, in ADU, before the pixel will be considered as bad.  That is, the saturation value for the panel.
 
 .PD 0
+.IP \fBflag_lessthan
+.IP \fBflag_morethan
+.IP \fBflag_equal
+Mark pixels as "bad" if their values are respectively less than, more than or equal to the given value.  Note carefully that the inequalities are strict, not inclusive: "less than", not "less than or equal to".
+
+.PD 0
 .IP \fBmask\fR
 If you have a bad pixel mask, you can include it in the HDF5 file as data blocks with the same structure and size as the panel data.  You need to specify the location of each panel's mask data block using this property, and two bitmasks (see below).  The number of placeholders ('%') in the \fBmask\fR must be the same for all panels.  They will be substituted with the same values as used for the placeholders in the \fBdata\fR fields, although there may be fewer of them for \fBmask\fR than for \fBdata\fR.
 

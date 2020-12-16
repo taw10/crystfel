@@ -55,6 +55,15 @@ enum wavelength_unit
 	WAVELENGTH_PHOTON_EV
 };
 
+#define MAX_FLAG_VALUES (16)
+
+enum flag_value_type
+{
+	FLAG_NOTHING,
+	FLAG_EQUAL,
+	FLAG_MORETHAN,
+	FLAG_LESSTHAN
+};
 
 /* Special values for dimension IDs */
 #define DIM_FS (-1)
@@ -106,6 +115,10 @@ struct panel_template
 
 	/** Treat pixel as unreliable if higher than this */
 	double max_adu;
+
+	/** Pixels with exactly this value will be marked as bad */
+	enum flag_value_type flag_types[MAX_FLAG_VALUES];
+	signed int flag_values[MAX_FLAG_VALUES];
 
 	/** Location of data in file (possibly with placeholders) */
 	char *data;

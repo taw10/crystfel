@@ -466,6 +466,25 @@ int set_dim(struct panel_template *panel, int dimension,
 }
 
 
+static int add_flag_value(struct panel_template *p,
+                          float val,
+                          enum flag_value_type type)
+{
+	int i;
+
+	for ( i=0; i<MAX_FLAG_VALUES; i++ ) {
+		if ( p->flag_types[i] == FLAG_NOTHING ) {
+			p->flag_types[i] = type;
+			p->flag_values[i] = val;
+			return 0;
+		}
+	}
+
+	ERROR("Too many flag values.\n");
+	return 1;
+}
+
+
 static int parse_field_for_panel(struct panel_template *panel, const char *key,
                                  const char *val, DataTemplate *det)
 {
@@ -531,6 +550,20 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		panel->pixel_pitch = 1.0/atof(val);
 	} else if ( strcmp(key, "max_adu") == 0 ) {
 		panel->max_adu = atof(val);
+
+	} else if ( strcmp(key, "flag_equal") == 0 ) {
+		if ( add_flag_value(panel, atof(val), FLAG_EQUAL) ) {
+			reject = -1;
+		}
+	} else if ( strcmp(key, "flag_lessthan") == 0 ) {
+		if ( add_flag_value(panel, atof(val), FLAG_LESSTHAN) ) {
+			reject = -1;
+		}
+	} else if ( strcmp(key, "flag_morethan") == 0 ) {
+		if ( add_flag_value(panel, atof(val), FLAG_MORETHAN) ) {
+			reject = -1;
+		}
+
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
 		ERROR("WARNING 'badrow_direction' is ignored in this version.\n");
 	} else if ( strcmp(key, "no_index") == 0 ) {
@@ -915,6 +948,8 @@ DataTemplate *data_template_new_from_string(const char *string_in)
         defaults.clen_for_centering = NAN;
 	defaults.adu_scale = NAN;
 	defaults.adu_scale_unit = ADU_PER_PHOTON;
+	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_values[i] = 0;
+	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_types[i] = FLAG_NOTHING;
 	defaults.max_adu = +INFINITY;
 	defaults.mask = NULL;
 	defaults.mask_file = NULL;
