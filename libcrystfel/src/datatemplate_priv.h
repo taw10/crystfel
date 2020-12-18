@@ -65,6 +65,13 @@ enum flag_value_type
 	FLAG_LESSTHAN
 };
 
+enum peak_layout
+{
+	PEAK_LIST_AUTO,
+	PEAK_LIST_CXI,
+	PEAK_LIST_LIST3
+};
+
 /* Special values for dimension IDs */
 #define DIM_FS (-1)
 #define DIM_SS (-2)
@@ -203,6 +210,7 @@ struct _datatemplate
 	int                        n_rg_collections;
 
 	char                      *peak_list;
+	enum peak_layout           peak_list_type;
 
 	/* Shift of whole detector, in m */
 	char *                     shift_x_from;

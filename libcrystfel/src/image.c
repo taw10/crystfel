@@ -938,19 +938,45 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 {
 	if ( is_hdf5_file(filename) ) {
 
-		const char *ext;
-		ext = filename_extension(filename, NULL);
-		if ( strcmp(ext, ".cxi") == 0 ) {
+		enum peak_layout layout;
+
+		if ( dtempl->peak_list_type == PEAK_LIST_AUTO ) {
+
+			const char *ext;
+			ext = filename_extension(filename, NULL);
+
+			if ( strcmp(ext, ".cxi") == 0 ) {
+				layout = PEAK_LIST_CXI;
+			} else if ( strcmp(ext, ".h5") == 0 ) {
+				layout = PEAK_LIST_LIST3;
+			} else {
+				ERROR("Couldn't determine peak list layout.\n");
+				ERROR("Specify peak_layout = cxi or list3n in geometry file.\n");
+				return NULL;
+			}
+
+		} else {
+			layout = dtempl->peak_list_type;
+		}
+
+		switch ( layout ) {
+
+			case PEAK_LIST_CXI :
 			return image_hdf5_read_peaks_cxi(dtempl,
 			                                 filename,
 			                                 event,
 			                                 half_pixel_shift);
 
-		} else {
+			case PEAK_LIST_LIST3 :
 			return image_hdf5_read_peaks_hdf5(dtempl,
 			                                  filename,
 			                                  event,
 			                                  half_pixel_shift);
+
+			default :
+			ERROR("Invalid peak list type %i\n", layout);
+			return NULL;
+
 		}
 
 	} else  {

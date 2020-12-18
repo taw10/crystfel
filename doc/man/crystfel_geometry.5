@@ -104,6 +104,11 @@ These specify that the entire detector should be shifted by this amount in the x
 .PD
 This gives the location of the peak list (for \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR - see indexamajig(1)) in the data files.
 
+.PD 0
+.IP "\fBpeak_list_type = \fIlayout"
+.PD
+Specify the layout of the peak list.  Allowed values are \fBcxi\fR (peak list as used in CXI files from Cheetah), \fBlist3\fR (peak list as used in single-frame HDF5 files from Cheetah) and \fBauto\fR (determine layout from input file extension).
+
 .SH PER-PANEL VALUES
 
 The following parameters can be set for each panel individually.  Don't forget that they can also be used at the "top level" to set default values.

@@ -756,6 +756,28 @@ static int parse_photon_energy(const char *val,
 }
 
 
+static int parse_peak_layout(const char *val,
+                             enum peak_layout *layout)
+{
+	if ( strcmp(val, "auto") == 0 ) {
+		*layout = PEAK_LIST_AUTO;
+		return 0;
+	}
+
+	if ( strcmp(val, "cxi") == 0 ) {
+		*layout = PEAK_LIST_CXI;
+		return 0;
+	}
+
+	if ( (strcmp(val, "list3") == 0) ) {
+		*layout = PEAK_LIST_LIST3;
+		return 0;
+	}
+
+	return 1;
+}
+
+
 static int parse_toplevel(DataTemplate *dt,
                           const char *key,
                           const char *val,
@@ -811,6 +833,9 @@ static int parse_toplevel(DataTemplate *dt,
 
 	} else if ( strcmp(key, "peak_list") == 0 ) {
 		dt->peak_list = strdup(val);
+
+	} else if ( strcmp(key, "peak_list_type") == 0 ) {
+		return parse_peak_layout(val, &dt->peak_list_type);
 
 	} else if ( strcmp(key, "bandwidth") == 0 ) {
 		double v;
