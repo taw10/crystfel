@@ -102,12 +102,20 @@ These specify that the entire detector should be shifted by this amount in the x
 .PD 0
 .IP "\fBpeak_list = \fIloc"
 .PD
-This gives the location of the peak list (for \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR - see indexamajig(1)) in the data files.
+This gives the location of the peak list in the data files, for peak detection methods \fBhdf5\fR and \fBcxi\fR (see \fBman indexamajig\fR).
 
 .PD 0
 .IP "\fBpeak_list_type = \fIlayout"
 .PD
-Specify the layout of the peak list.  Allowed values are \fBcxi\fR (peak list as used in CXI files from Cheetah), \fBlist3\fR (peak list as used in single-frame HDF5 files from Cheetah) and \fBauto\fR (determine layout from input file extension).
+Specify the layout of the peak list.  Allowed values are \fBcxi\fR, \fBlist3\fR and \fBauto\fR.
+.IP
+\fBlist3\fR expects the peak list to be a two dimensional array whose size in the first dimension equals the number of peaks and whose size in the second dimension is exactly three.  The first two columns contain the fast scan and slow scan coordinates, the third contains the intensities.  This is the correct option for "single-frame" HDF5 files as written by older versions of Cheetah.
+.IP
+\fBcxi\fR expects the peak list to be a group containing four separate HDF5 datasets: \fBnPeaks\fR, \fBpeakXPosRaw\fR, \fBpeakYPosRaw\fR and \fBpeakTotalIntensity\fR.  See the specification for the CXI file format at http://www.cxidb.org/ for more details.  This is the correct option for "multi-event" HDF5 files as output by recent versions of Cheetah.
+.IP
+\fBauto\fR tells CrystFEL to decide between the above options based on the file extension.
+.IP
+Note that CrystFEL considers all peak locations to be distances from the corner of the detector panel, in pixel units, consistent with its description of detector geometry (see 'man crystfel_geometry').  The software which generates the HDF5 or CXI files, including Cheetah, may instead consider the peak locations to be pixel indices in the data array.  To compensate for this discrepancy, CrystFEL will, by default, add 0.5 to all peak coordinates. Use \fB--no-half-pixel-shift\fR if this isn't what you want.
 
 .SH PER-PANEL VALUES
 
