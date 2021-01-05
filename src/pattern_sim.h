@@ -48,7 +48,7 @@
 #define TYPE double
 #include "list_tmp.h"
 
-/* CAs above, but for phase values */
+/* As above, but for phase values */
 #define LABEL(x) x##_phase
 #define TYPE double
 #include "list_tmp.h"
