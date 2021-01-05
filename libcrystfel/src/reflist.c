@@ -115,7 +115,6 @@ struct _reflection {
 struct _reflist {
 
 	struct _reflection *head;
-	struct _reflection *tail;
 	char *notes;
 
 };
