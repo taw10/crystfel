@@ -3,7 +3,7 @@
  *
  * Scaling and post refinement for coherent nanocrystallography
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
@@ -1430,11 +1430,22 @@ int main(int argc, char *argv[])
 				Crystal **crystals_new;
 				RefList *cr_refl;
 				struct image *image_for_crystal;
+				double lowest_r;
 
 				n_crystals_seen++;
 				if ( n_crystals_seen <= start_after ) continue;
 
 				if ( crystal_get_resolution_limit(image->crystals[i]) < min_res ) continue;
+
+				lowest_r = lowest_reflection(crystal_get_cell(image->crystals[i]));
+				if ( crystal_get_profile_radius(image->crystals[i]) > 0.2*lowest_r ) {
+					ERROR("Rejecting %s %s crystal %i because "
+					      "profile radius is obviously too big (%e %e).\n",
+					      image->filename, image->ev, i,
+					      crystal_get_profile_radius(image->crystals[i]),
+					      lowest_r);
+					continue;
+				}
 
 				crystals_new = realloc(crystals,
 				                       (n_crystals+1)*sizeof(Crystal *));

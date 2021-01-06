@@ -3,7 +3,7 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
@@ -1309,6 +1309,37 @@ double cell_get_volume(UnitCell *cell)
 
 	/* "a cross b" dot "c" */
 	return (aCb.u*cx + aCb.v*cy + aCb.w*cz);
+}
+
+
+/**
+ * \param cell: A %UnitCell
+ *
+ * \returns the value of 1/d for the lowest order reflection
+ * that is not systematically absent according to the centering.
+ *
+ */
+double lowest_reflection(UnitCell *cell)
+{
+	signed int h, k, l;
+	double lowres = INFINITY;
+
+	/* FIXME: Inelegant and nasty.  Anyone want to work out
+	 * all the possible cases? */
+	for ( h=0; h<4; h++ ) {
+		for ( k=0; k<4; k++ ) {
+			for ( l=0; l<4; l++ ) {
+				if ( (h==0) && (k==0) && (l==0) ) continue;
+				if ( !forbidden_reflection(cell, h, k, l) ) {
+					double r = resolution(cell, h, k, l);
+					if ( r < lowres ) {
+						lowres = r;
+					}
+				}
+			}
+		}
+	}
+	return lowres;
 }
 
 

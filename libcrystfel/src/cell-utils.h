@@ -3,7 +3,7 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
@@ -78,6 +78,8 @@ extern int forbidden_reflection(UnitCell *cell,
                                 signed int h, signed int k, signed int l);
 
 extern double cell_get_volume(UnitCell *cell);
+
+extern double lowest_reflection(UnitCell *cell);
 
 extern int compare_cell_parameters(UnitCell *cell, UnitCell *reference,
                                    const double *tols);
