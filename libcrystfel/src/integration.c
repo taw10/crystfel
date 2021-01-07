@@ -836,9 +836,6 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 	for ( q=0; q<ic->w; q++ ) {
 
 		int fs, ss;
-		double hd, kd, ld;
-		signed int h, k, l;
-		double dv[3];
 		float lsat;
 
 		fs = bx->cfs + p;
@@ -892,20 +889,6 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		  || (boxi(ic, bx, p, q) > lsat)) )
 		{
 			if ( sat != NULL ) *sat = 1;
-		}
-
-		/* Ignore if this pixel is closer to the next reciprocal lattice
-		 * point */
-		detgeom_transform_coords(bx->p, fs, ss,
-		                         1.0/ic->k, dv);
-		hd = dv[0] * adx + dv[1] * ady + dv[2] * adz;
-		kd = dv[0] * bdx + dv[1] * bdy + dv[2] * bdz;
-		ld = dv[0] * cdx + dv[1] * cdy + dv[2] * cdz;
-		h = lrint(hd);
-		k = lrint(kd);
-		l = lrint(ld);
-		if ( (h != hr) || (k != kr) || (l != lr) ) {
-			bx->bm[p+ic->w*q] = BM_BH;
 		}
 
 		/* Find brightest pixel */
