@@ -908,9 +908,11 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 			bx->bm[p+ic->w*q] = BM_BH;
 		}
 
+		/* Find brightest pixel */
 		if ( (bx->bm[p+ic->w*q] != BM_IG)
 		  && (bx->bm[p+ic->w*q] != BM_BH)
-		  && (boxi(ic, bx, p, q) > bx->peak) ) {
+		  && (boxi(ic, bx, p, q) > bx->peak) )
+		{
 			bx->peak = boxi(ic, bx, p, q);
 		}
 
