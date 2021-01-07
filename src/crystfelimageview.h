@@ -88,6 +88,7 @@ struct _crystfelimageview
 	double               brightness;
 	int                  show_peaks;
 	int                  show_refls;
+	int                  label_refls;
 	float                peak_box_size;
 	float                refl_box_size;
 };
@@ -116,6 +117,9 @@ extern void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
 
 extern void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
                                                      int show_refls);
+
+extern void crystfel_image_view_set_label_reflections(CrystFELImageView *iv,
+                                                      int label_refls);
 
 extern void crystfel_image_view_set_peak_box_size(CrystFELImageView *iv,
                                                   float box_size);

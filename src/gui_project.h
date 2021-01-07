@@ -231,6 +231,7 @@ struct crystfelproject {
 	struct peak_params peak_search_params;
 
 	int show_refls;
+	int label_refls;
 	struct index_params indexing_params;
 	int indexing_backend_selected;
 	GtkWidget *indexing_opts;

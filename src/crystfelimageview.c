@@ -433,8 +433,10 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 }
 
 
-static void draw_refls(cairo_t *cr, CrystFELImageView *iv,
-                       RefList *list)
+static void draw_refls(cairo_t *cr,
+                       CrystFELImageView *iv,
+                       RefList *list,
+                       int label_reflections)
 {
 	const Reflection *refl;
 	RefListIterator *iter;
@@ -494,6 +496,27 @@ static void draw_refls(cairo_t *cr, CrystFELImageView *iv,
 			cairo_stroke(cr);
 		}
 
+		if ( label_reflections ) {
+
+			signed int h, k, l;
+			char tmp[64];
+
+			get_indices(refl, &h, &k, &l);
+			snprintf(tmp, 64, "%i %i %i", h, k, l);
+
+			cairo_save(cr);
+			cairo_new_path(cr);
+			cairo_move_to(cr, x, y);
+			cairo_set_source_rgb(cr, 0.0, 0.4, 0.0);
+			cairo_set_font_size(cr, 11*p->pixel_pitch);
+			cairo_scale(cr, 1.0, -1.0);
+			cairo_show_text(cr, tmp);
+			cairo_fill(cr);
+			cairo_restore(cr);
+
+		}
+
+
 	}
 }
 
@@ -536,7 +559,9 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 		int i;
 		for ( i=0; i<iv->image->n_crystals; i++ ) {
 			Crystal *cry = iv->image->crystals[i];
-			draw_refls(cr, iv, crystal_get_reflections(cry));
+			draw_refls(cr, iv,
+			           crystal_get_reflections(cry),
+			           iv->label_refls);
 		}
 	}
 
@@ -687,6 +712,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->pixbufs = NULL;
 	iv->peak_box_size = 1.0;
 	iv->refl_box_size = 1.0;
+	iv->label_refls = 1;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -948,6 +974,14 @@ void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
                                               int show_refls)
 {
 	iv->show_refls = show_refls;
+	rerender_image(iv);
+}
+
+
+void crystfel_image_view_set_label_reflections(CrystFELImageView *iv,
+                                               int label_refls)
+{
+	iv->label_refls = label_refls;
 	rerender_image(iv);
 }
 

@@ -420,6 +420,10 @@ static void handle_var(const char *key, const char *val,
 		proj->show_refls = parse_int(val);
 	}
 
+	if ( strcmp(key, "label_refls") == 0 ) {
+		proj->label_refls = parse_int(val);
+	}
+
 	if ( strcmp(key, "geom") == 0 ) {
 		proj->geom_filename = strdup(val);
 	}
@@ -843,6 +847,7 @@ int save_project(struct crystfelproject *proj)
 
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
+	fprintf(fh, "label_refls %i\n", proj->label_refls);
 
 	fprintf(fh, "-----\n");
 	for ( i=0; i<proj->n_results; i++ ) {
@@ -917,6 +922,7 @@ void default_project(struct crystfelproject *proj)
 	/* Default parameter values */
 	proj->show_peaks = 1;
 	proj->show_refls = 1;
+	proj->label_refls = 1;
 
 	proj->peak_search_params.method = PEAK_ZAEF;
 	proj->peak_search_params.threshold = 800.0;

@@ -204,6 +204,8 @@ void update_imageview(struct crystfelproject *proj)
 
 	crystfel_image_view_set_show_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                         proj->show_refls);
+	crystfel_image_view_set_label_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                          proj->label_refls);
 	crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                      proj->indexing_params.ir_inn);
 	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
@@ -740,6 +742,15 @@ static gint show_refls_sig(GtkWidget *w, struct crystfelproject *proj)
 }
 
 
+static gint label_refls_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	proj->label_refls = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	crystfel_image_view_set_label_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                          proj->label_refls);
+	return FALSE;
+}
+
+
 static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 {
 	GError *error = NULL;
@@ -752,6 +763,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"<menu name=\"view\" action=\"ViewAction\" >"
 		"	<menuitem name=\"peaks\" action=\"PeaksAction\" />"
 		"	<menuitem name=\"refls\" action=\"ReflsAction\" />"
+		"	<menuitem name=\"labelrefls\" action=\"LabelReflsAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
 		"</menu>"
@@ -783,6 +795,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		  G_CALLBACK(show_peaks_sig), FALSE },
 		{ "ReflsAction", NULL, "Calculated reflection positions", NULL, NULL,
 		  G_CALLBACK(show_refls_sig), FALSE },
+		{ "LabelReflsAction", NULL, "Show reflection indices", NULL, NULL,
+		  G_CALLBACK(label_refls_sig), FALSE },
 	};
 
 	proj->action_group = gtk_action_group_new("cellwindow");
@@ -1092,6 +1106,10 @@ int main(int argc, char *argv[])
 		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/refls");
 		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
 		                             proj.show_refls);
+
+		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/labelrefls");
+		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
+		                             proj.label_refls);
 
 		update_imageview(&proj);
 	}
