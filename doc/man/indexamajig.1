@@ -143,7 +143,7 @@ Center the peak boxes iteratively on the actual peak locations.  The opposite is
 
 .IP \fB-sat\fR
 .PD
-Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  This is not usually a good idea, but might be your only choice if there are many saturated reflections.  The opposite is \fB-nosat\fR, which is the default for all integration methods.
+Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  The opposite is \fB-nosat\fR, which is the default for all integration methods.  However, note that the saturation check will only be done if max_adu is set in the geometry file.  Usually, it's better to exclude saturated reflections at the merging stage.  The the documentation for max_adu in crystfel_geometry(5).
 
 .IP \fB-grad\fR
 .PD

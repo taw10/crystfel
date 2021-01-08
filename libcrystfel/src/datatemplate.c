@@ -550,6 +550,9 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		panel->pixel_pitch = 1.0/atof(val);
 	} else if ( strcmp(key, "max_adu") == 0 ) {
 		panel->max_adu = atof(val);
+		ERROR("WARNING: It's usually better not to set max_adu "
+		      "in the geometry file.  Use --max-adu during "
+		      "merging instead.\n");
 
 	} else if ( strcmp(key, "flag_equal") == 0 ) {
 		if ( add_flag_value(panel, atof(val), FLAG_EQUAL) ) {

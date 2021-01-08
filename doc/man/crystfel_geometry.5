@@ -221,7 +221,7 @@ The corner of this panel, defined as the first point in the panel to appear in t
 
 .PD 0
 .IP \fBmax_adu\fR
-The maximum value, in ADU, before the pixel will be considered as bad.  That is, the saturation value for the panel.
+The saturation value for the panel.  You can use this to exclude saturated peaks from the peak search or to avoid integrating saturated reflections.  However, usually it's best to include saturated peaks, and exclude saturated reflections with the --max-adu option of process_hkl and partialator.  Therefore you should avoid setting this parameter - a warning will be displayed if you do.
 
 .PD 0
 .IP \fBflag_lessthan
