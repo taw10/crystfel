@@ -103,6 +103,10 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 
 	*pfs = fs;  *pss = ss;
 
+	/* If "mu" is negative, then the reflection is in the
+	 * wrong direction */
+	if ( one_over_mu < 0.0 ) return 0;
+
 	/* Now, is this on this panel? */
 	if ( fs < 0.0 ) return 0;
 	if ( fs >= p->w ) return 0;
