@@ -47,22 +47,19 @@ void detgeom_transform_coords(struct detgeom_panel *p,
                               double wavelength,
                               double *r)
 {
-	double ctt, twotheta;
 	double xs, ys, zs;
-	double az;
+	double fac;
 
-	/* Calculate 3D position of given position, in m */
-	xs = (p->cnx + fs*p->fsx + ss*p->ssx) * p->pixel_pitch;
-	ys = (p->cny + fs*p->fsy + ss*p->ssy) * p->pixel_pitch;
-	zs = (p->cnz + fs*p->fsz + ss*p->ssz) * p->pixel_pitch;
+	/* Calculate 3D position of given position, in pixels */
+	xs = p->cnx + fs*p->fsx + ss*p->ssx;
+	ys = p->cny + fs*p->fsy + ss*p->ssy;
+	zs = p->cnz + fs*p->fsz + ss*p->ssz;
 
-	ctt = zs/sqrt(xs*xs + ys*ys + zs*zs);
-	twotheta = acos(ctt);
-	az = atan2(ys, xs);
+	fac = wavelength * sqrt(xs*xs + ys*ys + zs*zs);
 
-	r[0] = sin(twotheta)*cos(az) / wavelength;
-	r[1] = sin(twotheta)*sin(az) / wavelength;
-	r[2] = (ctt - 1.0) / wavelength;
+	r[0] = xs / fac;
+	r[1] = ys / fac;
+	r[2] = zs / fac - 1.0/wavelength;
 }
 
 
