@@ -333,8 +333,6 @@ void cell_print_full(UnitCell *cell)
 		       rad2deg(angle_between(asx, asy, asz, csx, csy, csz)),
 		       rad2deg(angle_between(asx, asy, asz, bsx, bsy, bsz)));
 
-		STATUS("Cell representation is %s.\n", cell_rep(cell));
-
 	}
 }
 
@@ -910,7 +908,7 @@ static int get_angle_rad(char **bits, int nbits, double *pl)
  * Writes \p cell to \p fh, in CrystFEL unit cell file format
  *
  */
-void write_cell(const UnitCell *cell, FILE *fh)
+void write_cell(UnitCell *cell, FILE *fh)
 {
 	double a, b, c, al, be, ga;
 	LatticeType lt;

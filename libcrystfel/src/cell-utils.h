@@ -58,7 +58,7 @@ extern void cell_print_full(UnitCell *cell);
 
 extern UnitCell *load_cell_from_pdb(const char *filename);
 extern UnitCell *load_cell_from_file(const char *filename);
-extern void write_cell(const UnitCell *cell, FILE *fh);
+extern void write_cell(UnitCell *cell, FILE *fh);
 
 extern int cell_is_sensible(UnitCell *cell);
 

@@ -98,7 +98,7 @@ extern void stream_close(Stream *st);
 extern void stream_write_geometry_file(Stream *st,
                                        const char *geom_filename);
 extern void stream_write_target_cell(Stream *st,
-                                     const UnitCell *cell);
+                                     UnitCell *cell);
 extern void stream_write_commandline_args(Stream *st,
                                           int argc, char *argv[]);
 extern void stream_write_indexing_methods(Stream *st,

@@ -107,15 +107,15 @@ extern void cell_set_cartesian(UnitCell *cell,
 extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
 				double alpha, double beta, double gamma);
 
-extern int cell_get_parameters(const UnitCell *cell, double *a, double *b, double *c,
+extern int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
                                double *alpha, double *beta, double *gamma);
 
-extern int cell_get_cartesian(const UnitCell *cell,
+extern int cell_get_cartesian(UnitCell *cell,
                               double *ax, double *ay, double *az,
                               double *bx, double *by, double *bz,
                               double *cx, double *cy, double *cz);
 
-extern int cell_get_reciprocal(const UnitCell *cell,
+extern int cell_get_reciprocal(UnitCell *cell,
                                double *asx, double *asy, double *asz,
                                double *bsx, double *bsy, double *bsz,
                                double *csx, double *csy, double *csz);
@@ -138,15 +138,13 @@ struct g6
 	double F;
 };
 
-extern struct g6 cell_get_G6(const UnitCell *cell);
+extern struct g6 cell_get_G6(UnitCell *cell);
 
 extern char cell_get_centering(const UnitCell *cell);
 extern void cell_set_centering(UnitCell *cell, char centering);
 
 extern char cell_get_unique_axis(const UnitCell *cell);
 extern void cell_set_unique_axis(UnitCell *cell, char unique_axis);
-
-extern const char *cell_rep(UnitCell *cell);
 
 extern UnitCell *cell_transform_gsl_direct(UnitCell *in, gsl_matrix *m);
 

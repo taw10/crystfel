@@ -56,7 +56,7 @@ struct rf_alteration
 
 struct rf_priv
 {
-	const Crystal *cr;      /**< Original crystal (before any refinement) */
+	Crystal *cr;      /**< Original crystal (before any refinement) */
 	const RefList *full;
 	int serial;
 	int scaleflags;
@@ -98,7 +98,7 @@ const char *str_prflag(enum prflag flag)
 }
 
 
-static void rotate_cell_xy(const UnitCell *source, UnitCell *tgt,
+static void rotate_cell_xy(UnitCell *source, UnitCell *tgt,
                            double ang1, double ang2)
 {
 	double asx, asy, asz;
@@ -150,7 +150,7 @@ static void rotate_cell_xy(const UnitCell *source, UnitCell *tgt,
 }
 
 
-static void apply_parameters(const Crystal *cr_orig, Crystal *cr_tgt,
+static void apply_parameters(Crystal *cr_orig, Crystal *cr_tgt,
                              struct rf_alteration alter)
 {
 	double R, lambda;
@@ -161,7 +161,7 @@ static void apply_parameters(const Crystal *cr_orig, Crystal *cr_tgt,
 	R = crystal_get_profile_radius(cr_orig);
 	lambda = crystal_get_image_const(cr_orig)->lambda;
 
-	rotate_cell_xy(crystal_get_cell_const(cr_orig), crystal_get_cell(cr_tgt),
+	rotate_cell_xy(crystal_get_cell(cr_orig), crystal_get_cell(cr_tgt),
 	               alter.rot_x, alter.rot_y);
 	crystal_set_profile_radius(cr_tgt, R+alter.delta_R);
 	image->lambda = lambda+alter.delta_wave;

@@ -1250,7 +1250,7 @@ Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 }
 
 
-void stream_write_target_cell(Stream *st, const UnitCell *cell)
+void stream_write_target_cell(Stream *st, UnitCell *cell)
 {
 	if ( cell == NULL ) return;
 	fprintf(st->fh, STREAM_CELL_START_MARKER"\n");
