@@ -617,28 +617,18 @@ UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **pC, RationalMatrix **pCi)
 /* Return sin(theta)/lambda = 1/2d.  Multiply by two if you want 1/d */
 double resolution(UnitCell *cell, signed int h, signed int k, signed int l)
 {
-	double a, b, c, alpha, beta, gamma;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
 
-	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
+	cell_get_reciprocal(cell,
+	                    &asx, &asy, &asz,
+	                    &bsx, &bsy, &bsz,
+	                    &csx, &csy, &csz);
 
-	const double Vsq = a*a*b*b*c*c*(1 - cos(alpha)*cos(alpha)
-	                                  - cos(beta)*cos(beta)
-	                                  - cos(gamma)*cos(gamma)
-				          + 2*cos(alpha)*cos(beta)*cos(gamma) );
-
-	const double S11 = b*b*c*c*sin(alpha)*sin(alpha);
-	const double S22 = a*a*c*c*sin(beta)*sin(beta);
-	const double S33 = a*a*b*b*sin(gamma)*sin(gamma);
-	const double S12 = a*b*c*c*(cos(alpha)*cos(beta) - cos(gamma));
-	const double S23 = a*a*b*c*(cos(beta)*cos(gamma) - cos(alpha));
-	const double S13 = a*b*b*c*(cos(gamma)*cos(alpha) - cos(beta));
-
-	const double brackets = S11*h*h + S22*k*k + S33*l*l
-	                         + 2*S12*h*k + 2*S23*k*l + 2*S13*h*l;
-	const double oneoverdsq = brackets / Vsq;
-	const double oneoverd = sqrt(oneoverdsq);
-
-	return oneoverd / 2;
+	return modulus(h*asx + k*bsx + l*csx,
+	               h*asy + k*bsy + l*csy,
+	               h*asz + k*bsz + l*csz) / 2.0;
 }
 
 
