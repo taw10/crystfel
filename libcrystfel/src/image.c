@@ -660,6 +660,67 @@ static int flag_value(float pixel, struct panel_template *p)
 }
 
 
+static void mark_bad_regions(struct panel_template *p,
+                             float *dp, int *bad,
+                             const DataTemplate *dtempl,
+                             int i)
+{
+	int p_w, p_h;
+	int fs, ss;
+	fenv_t envp;
+
+	fegetenv(&envp);
+	fesetround(1);  /* Round to nearest (for flag_value) */
+
+	p_w = p->orig_max_fs - p->orig_min_fs + 1;
+	p_h = p->orig_max_ss - p->orig_min_ss + 1;
+
+	for ( ss=0; ss<p_h; ss++ ) {
+		for ( fs=0; fs<p_w; fs++ ) {
+			float val = dp[fs+ss*p_w];
+			if ( data_template_in_bad_region(dtempl, i,
+			                                 fs, ss)
+			  || isnan(val)
+			  || isinf(val)
+			  || flag_value(val, p) )
+			{
+				bad[fs+ss*p_w] = 1;
+			}
+		}
+	}
+
+	fesetenv(&envp);
+}
+
+
+static int load_mask(struct panel_template *p,
+                     const char *mask_fn,
+                     const char *ev,
+                     int *bad,
+                     unsigned int mask_good,
+                     unsigned int mask_bad)
+{
+	if ( is_hdf5_file(mask_fn) ) {
+		image_hdf5_read_mask(p, mask_fn, ev, bad,
+		                     mask_good, mask_bad);
+
+	} else if ( is_cbf_file(mask_fn) ) {
+		image_cbf_read_mask(p, mask_fn, ev, 0, bad,
+		                    mask_good, mask_bad);
+
+	} else if ( is_cbfgz_file(mask_fn) ) {
+		image_cbf_read_mask(p, mask_fn, ev, 1, bad,
+		                    mask_good, mask_bad);
+
+	} else {
+		ERROR("Unrecognised mask file type (%s)\n", mask_fn);
+		return 1;
+	}
+
+	return 0;
+}
+
+
 static int create_badmap(struct image *image,
                          const DataTemplate *dtempl,
                          int no_mask_data)
@@ -674,7 +735,6 @@ static int create_badmap(struct image *image,
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
-		const char *mask_fn;
 		int p_w, p_h;
 		struct panel_template *p = &dtempl->panels[i];
 
@@ -696,64 +756,23 @@ static int create_badmap(struct image *image,
 
 		/* Add bad regions (skip if panel is bad anyway) */
 		if ( !p->bad ) {
-
-			int fs, ss;
-			fenv_t envp;
-
-			fegetenv(&envp);
-			fesetround(1);  /* Round to nearest
-			                 * (for flag_value) */
-
-			for ( fs=0; fs<p_w; fs++ ) {
-			for ( ss=0; ss<p_h; ss++ ) {
-				float val = image->dp[i][fs+ss*p_w];
-				if ( data_template_in_bad_region(dtempl, i, fs, ss)
-				  || isnan(val)
-				  || isinf(val)
-				  || flag_value(val, p) )
-				{
-					image->bad[i][fs+ss*p_w] = 1;
-				}
-			}
-			}
-
-			fesetenv(&envp);
+			mark_bad_regions(p, image->dp[i], image->bad[i],
+			                 dtempl, i);
 		}
 
 		/* Load mask (skip if panel is bad anyway) */
 		if ( (!no_mask_data) && (!p->bad) && (p->mask != NULL) )
 		{
+			const char *mask_fn;
+
 			if ( p->mask_file == NULL ) {
 				mask_fn = image->filename;
 			} else {
 				mask_fn = p->mask_file;
 			}
-			if ( is_hdf5_file(mask_fn) ) {
-				image_hdf5_read_mask(p, mask_fn,
-				                     image->ev,
-				                     image->bad[i],
-				                     dtempl->mask_good,
-				                     dtempl->mask_bad);
 
-			} else if ( is_cbf_file(mask_fn) ) {
-				image_cbf_read_mask(p, mask_fn,
-				                    image->ev,
-				                    0, image->bad[i],
-				                    dtempl->mask_good,
-				                    dtempl->mask_bad);
-
-			} else if ( is_cbfgz_file(mask_fn) ) {
-				image_cbf_read_mask(p, mask_fn,
-				                    image->ev,
-				                    1, image->bad[i],
-				                    dtempl->mask_good,
-				                    dtempl->mask_bad);
-
-			} else {
-				ERROR("Unrecognised mask file type"
-				      " (%s)\n", mask_fn);
-				return 1;
-			}
+			load_mask(p, mask_fn, image->ev, image->bad[i],
+			          dtempl->mask_good, dtempl->mask_bad);
 		}
 	}
 	return 0;
