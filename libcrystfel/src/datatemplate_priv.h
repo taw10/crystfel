@@ -213,8 +213,8 @@ struct _datatemplate
 	enum peak_layout           peak_list_type;
 
 	/* Shift of whole detector, in m */
-	char *                     shift_x_from;
-	char *                     shift_y_from;
+	char                      *shift_x_from;
+	char                      *shift_y_from;
 };
 
 #endif	/* DATATEMPLATE_PRIV_H */
