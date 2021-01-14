@@ -1282,6 +1282,13 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 				      dt->bad[i].panel_name,
 				      dt->bad[i].name);
 				reject = 1;
+			} else {
+				struct panel_template *p;
+				p = &dt->panels[dt->bad[i].panel_number];
+				dt->bad[i].min_fs -= p->orig_min_fs;
+				dt->bad[i].max_fs -= p->orig_min_fs;
+				dt->bad[i].min_ss -= p->orig_min_ss;
+				dt->bad[i].max_ss -= p->orig_min_ss;
 			}
 		}
 	}
