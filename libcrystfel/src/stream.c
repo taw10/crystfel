@@ -1063,7 +1063,6 @@ static void read_geometry_file(Stream *st)
 	} while  ( !done );
 
 	st->geometry_file = geom;
-	printf("got geom '%s'\n", geom);
 	st->dtempl = data_template_new_from_string(geom);
 }
 
