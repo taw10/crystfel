@@ -1106,7 +1106,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 	} while ( !done );
 
-	if ( dt->n_panels == -1 ) {
+	if ( dt->n_panels == 0 ) {
 		ERROR("No panel descriptions in geometry file.\n");
 		free(dt);
 		return NULL;
