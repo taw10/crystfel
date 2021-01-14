@@ -630,9 +630,67 @@ static void set_image_parameters(struct image *image,
 }
 
 
-static int flag_value(float pixel, struct panel_template *p)
+static void mark_flagged_pixels_lessthan(float *dp, int *bad,
+                                         long int n, float val)
 {
+	long int i;
+	for ( i=0; i<n; i++ ) {
+		if ( dp[i] < val ) bad[i] = 1;
+	}
+}
+
+
+static void mark_flagged_pixels_morethan(float *dp, int *bad,
+                                         long int n, float val)
+{
+	long int i;
+	for ( i=0; i<n; i++ ) {
+		if ( dp[i] > val ) bad[i] = 1;
+	}
+}
+
+
+static void mark_flagged_pixels_equal(float *dp, int *bad,
+                                      long int n, float val)
+{
+	long int i;
+	fenv_t envp;
+
+	fegetenv(&envp);
+	fesetround(1);  /* Round to nearest (for flag_value) */
+
+	for ( i=0; i<n; i++ ) {
+		if ( rint(dp[i]) == val ) bad[i] = 1;
+	}
+
+	fesetenv(&envp);
+}
+
+
+static void mark_flagged_pixels_naninf(float *dp, int *bad,
+                                       long int n)
+{
+	long int i;
+	for ( i=0; i<n; i++ ) {
+		float val = dp[i];
+		if ( isnan(val) || isinf(val) ) bad[i] = 1;
+	}
+}
+
+
+static void mark_flagged_pixels(struct panel_template *p,
+                                float *dp, int *bad)
+{
+	int p_w, p_h;
+	long int n;
 	int i;
+
+	p_w = p->orig_max_fs - p->orig_min_fs + 1;
+	p_h = p->orig_max_ss - p->orig_min_ss + 1;
+	n = p_w * p_h;
+
+	mark_flagged_pixels_naninf(dp, bad, n);
+
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) {
 
 		float fv = p->flag_values[i];
@@ -643,53 +701,88 @@ static int flag_value(float pixel, struct panel_template *p)
 			break;
 
 			case FLAG_LESSTHAN:
-			if ( pixel < fv ) return 1;
+			mark_flagged_pixels_lessthan(dp, bad, n, fv);
 			break;
 
 			case FLAG_MORETHAN:
-			if ( pixel > fv ) return 1;
+			mark_flagged_pixels_morethan(dp, bad, n, fv);
 			break;
 
 			case FLAG_EQUAL:
-			if ( rint(pixel) == fv) return 1;
+			mark_flagged_pixels_equal(dp, bad, n, fv);
 			break;
 
 		}
 	}
-	return 0;
 }
 
 
-static void mark_bad_regions(struct panel_template *p,
-                             float *dp, int *bad,
-                             const DataTemplate *dtempl,
-                             int i)
+static void draw_bad_region_fsss(struct dt_badregion *region,
+                                 int **bad,
+                                 struct detgeom *detgeom)
 {
-	int p_w, p_h;
+	struct detgeom_panel *panel;
 	int fs, ss;
-	fenv_t envp;
 
-	fegetenv(&envp);
-	fesetround(1);  /* Round to nearest (for flag_value) */
+	panel = &detgeom->panels[region->panel_number];
 
-	p_w = p->orig_max_fs - p->orig_min_fs + 1;
-	p_h = p->orig_max_ss - p->orig_min_ss + 1;
+	for ( ss=region->min_ss; ss<=region->max_ss; ss++ ) {
+		for ( fs=region->min_fs; fs<=region->max_fs; fs++ ) {
+			bad[region->panel_number][fs+ss*panel->w] = 1;
+		}
+	}
+}
 
-	for ( ss=0; ss<p_h; ss++ ) {
-		for ( fs=0; fs<p_w; fs++ ) {
-			float val = dp[fs+ss*p_w];
-			if ( data_template_in_bad_region(dtempl, i,
-			                                 fs, ss)
-			  || isnan(val)
-			  || isinf(val)
-			  || flag_value(val, p) )
-			{
-				bad[fs+ss*p_w] = 1;
+
+static void draw_bad_region_xy(struct dt_badregion *region,
+                               int **bad,
+                               struct detgeom *detgeom)
+{
+	int i;
+
+	for ( i=0; i<detgeom->n_panels; i++ ) {
+
+		int fs, ss;
+
+		struct detgeom_panel *p = &detgeom->panels[i];
+		for ( ss=0; ss<p->h; ss++ ) {
+			for ( fs=0; fs<p->w; fs++ ) {
+
+				double x, y;
+
+				x = fs*p->fsx + ss*p->ssx + p->cnx;
+				y = fs*p->fsy + ss*p->ssy + p->cny;
+
+				if ( (x > region->min_x )
+				     && (x < region->max_x)
+				     && (y > region->min_y)
+				     && (y < region->max_y) )
+				{
+					bad[i][fs+ss*p->w] = 1;
+				}
+
 			}
 		}
 	}
+}
 
-	fesetenv(&envp);
+
+static void mark_bad_regions(struct image *image,
+                             const DataTemplate *dtempl)
+{
+	int i;
+
+	for ( i=0; i<dtempl->n_bad; i++ ) {
+		if ( dtempl->bad[i].is_fsss ) {
+			draw_bad_region_fsss(&dtempl->bad[i],
+			                     image->bad,
+			                     image->detgeom);
+		} else {
+			draw_bad_region_xy(&dtempl->bad[i],
+			                   image->bad,
+			                   image->detgeom);
+		}
+	}
 }
 
 
@@ -756,8 +849,8 @@ static int create_badmap(struct image *image,
 
 		/* Add bad regions (skip if panel is bad anyway) */
 		if ( !p->bad ) {
-			mark_bad_regions(p, image->dp[i], image->bad[i],
-			                 dtempl, i);
+			mark_flagged_pixels(p, image->dp[i],
+			                    image->bad[i]);
 		}
 
 		/* Load mask (skip if panel is bad anyway) */
@@ -775,6 +868,9 @@ static int create_badmap(struct image *image,
 			          dtempl->mask_good, dtempl->mask_bad);
 		}
 	}
+
+	mark_bad_regions(image, dtempl);
+
 	return 0;
 }
 

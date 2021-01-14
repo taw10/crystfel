@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
 		y[fs + w*ss] = ry;
 		z[fs + w*ss] = 0.0;  /* 2D part only */
 
-		if ( data_template_in_bad_region(dtempl, pn, cfs, css) ) {
+		if ( image->bad[pn][fs + w*ss] ) {
 			b[fs + w*ss] = bad_pixel_val;
 		} else {
 			b[fs + w*ss] = good_pixel_val;

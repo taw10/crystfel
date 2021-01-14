@@ -103,7 +103,8 @@ static struct dt_badregion *new_bad_region(DataTemplate *det, const char *name)
 	new->min_ss = 0;
 	new->max_ss = 0;
 	new->is_fsss = 99; /* Slightly nasty: means "unassigned" */
-	new->panel = NULL;
+	new->panel_name = NULL;
+	new->panel_number = 0;  /* Needs to be set after loading */
 	strcpy(new->name, name);
 
 	return new;
@@ -654,7 +655,7 @@ static int parse_field_bad(struct dt_badregion *badr, const char *key,
 		badr->max_ss = atof(val);
 		reject = check_badr_fsss(badr, 1);
 	} else if ( strcmp(key, "panel") == 0 ) {
-		badr->panel = strdup(val);
+		badr->panel_name = strdup(val);
 	} else {
 		ERROR("Unrecognised field '%s'\n", key);
 	}
@@ -912,6 +913,30 @@ signed int find_dim(signed int *dims, int which)
 	}
 
 	return -1;
+}
+
+
+static int lookup_panel(const char *panel_name,
+                        const DataTemplate *dt,
+                        int *res)
+{
+	int i;
+
+	/* If there is exactly one panel, you can get away without
+	 * specifying the panel name */
+	if ( (panel_name == NULL) && (dt->n_panels == 1) ) {
+		*res = 0;
+		return 0;
+	}
+
+	for ( i=0; i<dt->n_panels; i++ ) {
+		if ( strcmp(dt->panels[i].name, panel_name) == 0 ) {
+			*res = i;
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 
@@ -1241,16 +1266,30 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	}
 
 	for ( i=0; i<dt->n_bad; i++ ) {
+
 		if ( dt->bad[i].is_fsss == 99 ) {
 			ERROR("Please specify the coordinate ranges for"
 			      " bad region %s\n", dt->bad[i].name);
 			reject = 1;
+		}
+
+		if ( dt->bad[i].is_fsss ) {
+			if ( lookup_panel(dt->bad[i].panel_name, dt,
+			                  &dt->bad[i].panel_number) )
+			{
+				ERROR("No such panel '%s' for bad "
+				      "region %s\n",
+				      dt->bad[i].panel_name,
+				      dt->bad[i].name);
+				reject = 1;
+			}
 		}
 	}
 
 	free(defaults.cnz_from);
 	free(defaults.data);
 	free(defaults.mask);
+
 
 	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
 
@@ -1493,67 +1532,5 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 	/* Inclusive -> exclusive */
 	*pw = w + 1;
 	*ph = h + 1;
-	return 0;
-}
-
-
-/* Return non-zero if pixel fs,ss on panel p is in a bad region
- * as specified in the geometry file (regions only, not including
- * masks, NaN/inf, no_index etc */
-int data_template_in_bad_region(const DataTemplate *dtempl,
-                                int pn, double fs, double ss)
-{
-	double rx, ry;
-	double xs, ys;
-	int i;
-	struct panel_template *p;
-
-	if ( pn >= dtempl->n_panels ) {
-		ERROR("Panel index out of range\n");
-		return 0;
-	}
-	p = &dtempl->panels[pn];
-
-	/* Convert xs and ys, which are in fast scan/slow scan coordinates,
-	 * to x and y */
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
-
-	rx = xs + p->cnx;
-	ry = ys + p->cny;
-
-	for ( i=0; i<dtempl->n_bad; i++ ) {
-
-		struct dt_badregion *b = &dtempl->bad[i];
-
-		if ( (b->panel != NULL)
-		  && (strcmp(b->panel, p->name) != 0) ) continue;
-
-		if ( b->is_fsss ) {
-
-			int nfs, nss;
-
-			/* fs/ss bad regions are specified according
-			 * to the original coordinates */
-			nfs = fs + p->orig_min_fs;
-			nss = ss + p->orig_min_ss;
-
-			if ( nfs < b->min_fs ) continue;
-			if ( nfs > b->max_fs ) continue;
-			if ( nss < b->min_ss ) continue;
-			if ( nss > b->max_ss ) continue;
-
-		} else {
-
-			if ( rx < b->min_x ) continue;
-			if ( rx > b->max_x ) continue;
-			if ( ry < b->min_y ) continue;
-			if ( ry > b->max_y ) continue;
-
-		}
-
-		return 1;
-	}
-
 	return 0;
 }

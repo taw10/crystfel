@@ -87,9 +87,6 @@ extern void data_template_add_copy_header(DataTemplate *dt,
 
 extern int data_template_get_slab_extents(const DataTemplate *dt, int *pw, int *ph);
 
-extern int data_template_in_bad_region(const DataTemplate *dtempl,
-                                       int pn, double fs, double ss);
-
 extern struct rg_collection *data_template_get_rigid_groups(const DataTemplate *dtempl,
                                                             const char *collection_name);
 

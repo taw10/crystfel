@@ -171,14 +171,15 @@ struct dt_badregion
 {
 	char name[1024];
 	int is_fsss;
-	char *panel;
 
 	double min_x;
 	double max_x;
 	double min_y;
 	double max_y;
 
-	/* Specified INCLUSIVELY */
+	/* Coordinates are specified INCLUSIVELY */
+	int      panel_number;
+	char    *panel_name;
 	int      min_fs;
 	int      max_fs;
 	int      min_ss;
