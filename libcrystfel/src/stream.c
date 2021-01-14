@@ -1030,11 +1030,61 @@ char *stream_geometry_file(Stream *st)
 }
 
 
-static void read_audit_lines(Stream *st)
+static void read_geometry_file(Stream *st)
 {
 	int done = 0;
 	size_t len = 0;
-	int first = 1;
+	const size_t max_geom_len = 64*1024;
+	char *geom;
+
+	geom = malloc(max_geom_len);
+	if ( geom == NULL ) {
+		ERROR("Failed to allocate memory for geometry file\n");
+		return;
+	}
+	geom[0] = '\0';
+
+	do {
+
+		char line[1024];
+		char *rval;
+
+		rval = fgets(line, 1023, st->fh);
+		st->ln++;
+		if ( rval == NULL ) {
+			ERROR("Failed to read stream geometry file.\n");
+			stream_close(st);
+			free(geom);
+			return;
+		}
+
+		if ( strcmp(line, STREAM_GEOM_END_MARKER"\n") == 0 ) {
+			done = 1;
+			continue;
+		}
+
+		len += strlen(line);
+		if ( len > max_geom_len-1 ) {
+			ERROR("Stream's geometry file is too long (%li > %i).\n",
+			      (long)len, (int)max_geom_len);
+			free(geom);
+			return;
+		} else {
+			strcat(geom, line);
+		}
+
+	} while  ( !done );
+
+	st->geometry_file = geom;
+	printf("got geom '%s'\n", geom);
+	st->dtempl = data_template_new_from_string(geom);
+}
+
+
+static void read_headers(Stream *st)
+{
+	int done = 0;
+	size_t len = 0;
 
 	st->audit_info = malloc(4096);
 	if ( st->audit_info == NULL ) {
@@ -1049,103 +1099,29 @@ static void read_audit_lines(Stream *st)
 
 		char line[1024];
 		char *rval;
-		long pos;
-
-		pos = ftell(st->fh);
 
 		rval = fgets(line, 1023, st->fh);
+		st->ln++;
 		if ( rval == NULL ) {
 			ERROR("Failed to read stream audit info.\n");
 			stream_close(st);
 			return;
 		}
 
-		if ( strncmp(line, "-----", 5) == 0 ) {
-			fseek(st->fh, pos, SEEK_SET);
+		if ( strcmp(line, STREAM_GEOM_START_MARKER"\n") == 0 ) {
+			read_geometry_file(st);
 			done = 1;
 		} else {
-			chomp(line);
 			len += strlen(line);
 			if ( len > 4090 ) {
 				ERROR("Too much audit information.\n");
 				return;
 			} else {
-				if ( !first ) {
-					strcat(st->audit_info, "\n");
-				}
-				first = 0;
 				strcat(st->audit_info, line);
 			}
 		}
 
 	} while  ( !done );
-}
-
-
-static void read_geometry_file(Stream *st)
-{
-	int done = 0;
-	size_t len = 0;
-	int started = 0;
-	int success = 0;
-	const size_t max_geom_len = 64*1024;
-	char *geom;
-
-	geom = malloc(max_geom_len);
-	if ( geom == NULL ) {
-		ERROR("Failed to allocate memory for audit information\n");
-		return;
-	}
-	geom[0] = '\0';
-
-	do {
-
-		char line[1024];
-		char *rval;
-
-		rval = fgets(line, 1023, st->fh);
-		if ( rval == NULL ) {
-			ERROR("Failed to read stream geometry file.\n");
-			stream_close(st);
-			free(geom);
-			return;
-		}
-
-		if ( strcmp(line, STREAM_GEOM_START_MARKER"\n") == 0 ) {
-			started = 1;
-			continue;
-		}
-
-		if ( strcmp(line, STREAM_GEOM_END_MARKER"\n") == 0 ) {
-			done = 1;
-			success = 1;
-			continue;
-		}
-
-		if ( strcmp(line, STREAM_CHUNK_START_MARKER"\n") == 0 ) {
-			done = 1;
-			st->in_chunk = 1;
-			continue;
-		}
-
-		if ( !started ) continue;
-
-		len += strlen(line);
-		if ( len > max_geom_len-1 ) {
-			ERROR("Stream's geometry file is too long (%li > %i).\n",
-			      (long)len, (int)max_geom_len);
-			free(geom);
-			return;
-		} else {
-			strcat(geom, line);
-		}
-
-	} while  ( !done );
-
-	if ( success ) {
-		st->geometry_file = geom;
-		st->dtempl = data_template_new_from_string(geom);
-	}
 }
 
 
@@ -1203,8 +1179,7 @@ Stream *stream_open_for_read(const char *filename)
 
 	st->ln = 1;
 
-	read_audit_lines(st);
-	read_geometry_file(st);
+	read_headers(st);
 
 	return st;
 }
