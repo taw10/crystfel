@@ -80,11 +80,6 @@ struct _stream
 	int old_indexers;  /* True if the stream reader encountered a deprecated
 	                    * indexing method */
 
-	int in_chunk;  /* True if a chunk start marker has been "accidentally"
-	                * encountered, so stream_read_chunk() should assume a chunk is
-	                * already in progress instead of looking for another
-	                * marker */
-
 	long *chunk_offsets;
 	int n_chunks;
 };
@@ -683,14 +678,6 @@ static int find_start_of_chunk(Stream *st)
 	char *rval = NULL;
 	char line[1024];
 
-	/* Perhaps read_geometry() encountered a chunk start marker instead of a
-	 * geometry file.  In that case, we're already in a chunk, so this is
-	 * easy. */
-	if ( st->in_chunk ) {
-		st->in_chunk = 0;
-		return 0;
-	}
-
 	do {
 
 		rval = fgets(line, 1023, st->fh);
@@ -1134,7 +1121,6 @@ Stream *stream_open_for_read(const char *filename)
 	st->old_indexers = 0;
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
-	st->in_chunk = 0;
 	st->n_chunks = 0;
 	st->chunk_offsets = NULL;
 
@@ -1207,7 +1193,6 @@ Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 	st->old_indexers = 0;
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
-	st->in_chunk = 0;
 	st->n_chunks = 0;
 	st->chunk_offsets = NULL;
 
@@ -1260,7 +1245,6 @@ Stream *stream_open_for_write(const char *filename,
 	st->old_indexers = 0;
 	st->audit_info = NULL;
 	st->geometry_file = NULL;
-	st->in_chunk = 0;
 	st->n_chunks = 0;
 	st->chunk_offsets = NULL;
 	st->dtempl = dtempl;
@@ -1448,7 +1432,6 @@ int stream_select_chunk(Stream *st,
 		if ( strcmp(index->keys[i], key) == 0 ) {
 			if ( st != NULL ) {
 				fseek(st->fh, index->ptrs[i], SEEK_SET);
-				st->in_chunk = 0;
 			}
 			return 0;
 		}
