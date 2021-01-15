@@ -573,10 +573,14 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	/* Check at all? */
 	if ( !(flags & INDEXING_CHECK_CELL) ) return 0;
 
-	if ( !right_handed(target) ) STATUS("WARNING: reference cell is left handed\n");
-	if ( !right_handed(crystal_get_cell(cr)) ) STATUS("WARNING: unmatched cell is left handed\n");
+	if ( !right_handed(target) ) {
+		STATUS("WARNING: reference cell is left handed\n");
+	}
+	if ( !right_handed(crystal_get_cell(cr)) ) {
+		STATUS("WARNING: unmatched cell is left handed\n");
+	}
 	out = compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
-	                                       tolerance, &rm);
+	                                        tolerance, &rm);
 
 	if ( out != NULL ) {
 
