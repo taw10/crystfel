@@ -599,6 +599,12 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 		cell_set_lattice_type(out, cell_get_lattice_type(target));
 		cell_set_unique_axis(out, cell_get_unique_axis(target));
 
+		/* Correct P to R centering, for the same reason */
+		if ( (cell_get_centering(target) == 'R')
+		     && (cell_get_centering(out) == 'P') ) {
+			cell_set_centering(out, 'R');
+		}
+
 		return 0;
 	}
 
