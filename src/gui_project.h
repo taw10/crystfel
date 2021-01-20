@@ -123,6 +123,12 @@ struct gui_indexing_result
 	StreamIndex **indices;
 };
 
+struct gui_merge_result
+{
+	char *name;
+	char *hkl;
+};
+
 struct crystfelproject;
 
 struct crystfel_backend {
@@ -256,6 +262,9 @@ struct crystfelproject {
 
 	struct gui_indexing_result *results;
 	int n_results;
+
+	struct gui_merge_result *merge_results;
+	int n_merge_results;
 };
 
 extern enum match_type_id decode_matchtype(const char *type_id);
@@ -286,5 +295,9 @@ extern struct image *find_indexed_image(struct crystfelproject *proj,
 
 extern struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject *proj,
                                                                 const char *name);
+
+extern int add_merge_result(struct crystfelproject *proj,
+                            char *name,
+                            char *hkl);
 
 #endif

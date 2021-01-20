@@ -563,6 +563,34 @@ static void read_parameters(FILE *fh, struct crystfelproject *proj)
 }
 
 
+static void add_result(struct crystfelproject *proj,
+                       char *results_name,
+                       char **streams,
+                       int n_streams,
+                       int selected,
+                       char *hkl)
+{
+	if ( (n_streams > 0) && (hkl == NULL) ) {
+		add_indexing_result(proj, results_name,
+		                    streams, n_streams);
+
+		if ( selected ) {
+			select_result(proj, results_name);
+		}
+
+	} else if ( (hkl != NULL) && (n_streams == 0) ) {
+		add_merge_result(proj,
+		                 results_name,
+		                 hkl);
+
+	} else {
+		ERROR("Bad results %s (%i %s)\n",
+		      results_name, n_streams, hkl);
+	}
+
+}
+
+
 static void read_results(FILE *fh, struct crystfelproject *proj)
 {
 	char *rval;
@@ -570,7 +598,9 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 	char **streams = NULL;
 	int n_streams = 0;
 	char *results_name = NULL;
+	char *hkl = NULL;
 	int selected = 0;
+	int first = 1;
 
 	do {
 
@@ -581,21 +611,18 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 
 		if ( strncmp(line, "Result ", 7) == 0 ) {
 
-			if ( n_streams > 0 ) {
-				/* Add the previously-read result */
-				add_indexing_result(proj,
-				                    results_name,
-				                    streams,
-				                    n_streams);
-
-				if ( selected ) {
-					select_result(proj, results_name);
-				}
+			if ( !first ) {
+				add_result(proj, results_name,
+				           streams, n_streams, selected,
+				           hkl);
 			}
+			first = 0;
 
 			n_streams = 0;
 			selected = 0;
 			streams = NULL;
+			hkl = NULL;
+
 			results_name = strdup(line+7);
 		}
 
@@ -609,21 +636,15 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 			                     &n_streams);
 		}
 
+		if ( strncmp(line, "   HKL ", 7) == 0 ) {
+			hkl = strdup(line+7);
+		}
+
 		if ( strcmp(line, "-----") == 0 ) {
-
-			if ( n_streams > 0 ) {
-				add_indexing_result(proj,
-				                    results_name,
-				                    streams,
-				                    n_streams);
-
-				if ( selected ) {
-					select_result(proj, results_name);
-				}
-			}
-
+			add_result(proj, results_name,
+			           streams, n_streams, selected,
+			           hkl);
 			break;
-
 		}
 
 	} while ( rval != NULL );
@@ -863,6 +884,10 @@ int save_project(struct crystfelproject *proj)
 			fprintf(fh, "   Selected\n");
 		}
 	}
+	for ( i=0; i<proj->n_merge_results; i++ ) {
+		fprintf(fh, "Result %s\n", proj->merge_results[i].name);
+		fprintf(fh, "   HKL %s\n", proj->merge_results[i].hkl);
+	}
 
 	fprintf(fh, "-----\n");
 	for ( i=0; i<proj->n_frames; i++ ) {
@@ -986,6 +1011,9 @@ void default_project(struct crystfelproject *proj)
 
 	proj->results = NULL;
 	proj->n_results = 0;
+
+	proj->merge_results = NULL;
+	proj->n_merge_results = 0;
 }
 
 
@@ -1016,6 +1044,26 @@ int add_indexing_result(struct crystfelproject *proj,
 
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(proj->results_combo),
 	                          name, name);
+
+	return 0;
+}
+
+
+int add_merge_result(struct crystfelproject *proj,
+                     char *name,
+                     char *hkl)
+{
+	struct gui_merge_result *new_results;
+
+	new_results = realloc(proj->merge_results,
+	                      (proj->n_merge_results+1)*sizeof(struct gui_merge_result));
+	if ( new_results == NULL ) return 1;
+
+	new_results[proj->n_merge_results].name = name;
+	new_results[proj->n_merge_results].hkl = hkl;
+
+	proj->merge_results = new_results;
+	proj->n_merge_results++;
 
 	return 0;
 }

@@ -65,6 +65,7 @@ struct local_job
 	GPid pid;
 	guint child_watch_source;
 	guint io_readable_source;
+	GFile *workdir;
 };
 
 
@@ -169,7 +170,6 @@ static struct local_job *start_local_job(char **args,
 	GFile *cwd_file;
 	GFile *notes_file;
 	char *notes_path;
-	char **streams;
 	FILE *fh;
 
 	workdir = strdup(job_title);
@@ -212,6 +212,7 @@ static struct local_job *start_local_job(char **args,
 	chdir(old_pwd);
 
 	job->frac_complete = 0.0;
+	job->workdir = workdir_file;
 
 	STATUS("Running program: ");
 	i = 0;
@@ -246,16 +247,6 @@ static struct local_job *start_local_job(char **args,
 	                                         readable_func,
 	                                         job);
 
-	streams = malloc(sizeof(char *));
-	if ( streams != NULL ) {
-		GFile *stream_gfile = g_file_get_child(workdir_file,
-		                                       "crystfel.stream");
-		streams[0] = g_file_get_path(stream_gfile);
-		g_object_unref(stream_gfile);
-		add_indexing_result(proj, strdup(job_title), streams, 1);
-	}
-
-	g_object_unref(workdir_file);
 	return job;
 }
 
@@ -455,6 +446,8 @@ static void *run_merging(const char *job_title,
 	char **args;
 	struct local_job *job;
 	struct local_merging_opts *opts = opts_priv;
+	GFile *hkl_gfile;
+	char *hkl;
 
 	snprintf(n_thread_str, 63, "%i", opts->n_threads);
 	args = merging_command_line(n_thread_str,
@@ -463,6 +456,14 @@ static void *run_merging(const char *job_title,
 
 	job = start_local_job(args, job_title, job_notes, proj,
 	                      merge_readable);
+
+	if ( job == NULL ) return NULL;
+
+	hkl_gfile = g_file_get_child(job->workdir,
+	                             "crystfel.hkl");
+	hkl = g_file_get_path(hkl_gfile);
+	g_object_unref(hkl_gfile);
+	add_merge_result(proj, strdup(job_title), hkl);
 
 	return job;
 }
@@ -477,6 +478,7 @@ static void *run_indexing(const char *job_title,
 	struct local_job *job;
 	char n_thread_str[64];
 	char **args;
+	char **streams;
 	int i;
 
 	snprintf(n_thread_str, 63, "%i", opts->n_processes);
@@ -499,6 +501,16 @@ static void *run_indexing(const char *job_title,
 
 	/* Indexing-specific job data */
 	job->n_frames = proj->n_frames;
+
+	streams = malloc(sizeof(char *));
+	if ( streams != NULL ) {
+		GFile *stream_gfile = g_file_get_child(job->workdir,
+		                                       "crystfel.stream");
+		streams[0] = g_file_get_path(stream_gfile);
+		g_object_unref(stream_gfile);
+		add_indexing_result(proj, strdup(job_title),
+		                    streams, 1);
+	}
 
 	return job;
 }

@@ -417,6 +417,9 @@ static GSList *process_hkl_command_line(struct gui_indexing_result *input,
 		args = g_slist_append(args, input->streams[i]);
 	}
 
+	args = g_slist_append(args, "-o");
+	args = g_slist_append(args, "crystfel.hkl");
+
 	args = append_arg_str(args, "symmetry", params->symmetry);
 
 	if ( params->scale ) {
@@ -454,6 +457,9 @@ static GSList *partialator_command_line(const char *n_thread_str,
 	for ( i=0; i<input->n_streams; i++ ) {
 		args = g_slist_append(args, input->streams[i]);
 	}
+
+	args = g_slist_append(args, "-o");
+	args = g_slist_append(args, "crystfel.hkl");
 
 	args = append_arg_str(args, "symmetry", params->symmetry);
 
