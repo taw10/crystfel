@@ -53,6 +53,7 @@ struct new_merging_job_params {
 	GtkWidget *job_title_entry;
 	GtkWidget *job_notes_text;
 	GtkWidget *model_combo;
+	GtkWidget *input_combo;
 };
 
 
@@ -88,17 +89,16 @@ static void get_merging_opts(struct merging_params *opts,
 
 
 static int run_merging(struct crystfelproject *proj,
+                       const char *results_name,
                        int backend_idx,
                        const char *job_title,
                        const char *job_notes)
 {
 	struct crystfel_backend *be;
 	void *job_priv;
-	const gchar *results_name;
 	struct gui_indexing_result *input;
 
 	/* Which result to merge? */
-	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
 	input = find_indexing_result_by_name(proj, results_name);
 	if ( input == NULL ) {
 		ERROR("Please select a result first\n");
@@ -128,6 +128,7 @@ static void merging_response_sig(GtkWidget *dialog, gint resp,
 		int backend_idx;
 		const char *job_title;
 		char *job_notes;
+		const char *results_name;
 
 		get_merging_opts(&njp->proj->merging_params,
 		                 CRYSTFEL_MERGE_OPTS(njp->proj->merging_opts));
@@ -146,8 +147,13 @@ static void merging_response_sig(GtkWidget *dialog, gint resp,
 		free(njp->proj->merging_new_job_title);
 		njp->proj->merging_new_job_title = strdup(job_title);
 
-		if ( run_merging(njp->proj, backend_idx,
-		                 job_title, job_notes) == 0 )
+		results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(njp->input_combo));
+		if ( results_name == NULL ) {
+			ERROR("Please select the input\n");
+			return;
+		}
+		if ( run_merging(njp->proj, results_name,
+		                 backend_idx, job_title, job_notes) == 0 )
 		{
 			gtk_widget_destroy(dialog);
 			njp->proj->merging_opts = NULL;
@@ -313,10 +319,13 @@ static GtkWidget *make_merging_backend_opts(struct new_merging_job_params *njp)
 gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *dialog;
+	GtkWidget *label;
 	GtkWidget *content_area;
 	GtkWidget *vbox;
+	GtkWidget *hbox;
 	GtkWidget *backend_page;
 	GtkWidget *job_page;
+	int i;
 	struct new_merging_job_params *njp;
 
 	njp = malloc(sizeof(struct new_merging_job_params));
@@ -339,6 +348,23 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	gtk_container_add(GTK_CONTAINER(content_area), vbox);
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 4.0);
+	label = gtk_label_new("Input:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	njp->input_combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->input_combo),
+	                   FALSE, FALSE, 4.0);
+	for ( i=0; i<proj->n_results; i++ ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(njp->input_combo),
+		                          proj->results[i].name,
+		                          proj->results[i].name);
+	}
+	gtk_combo_box_set_active_id(GTK_COMBO_BOX(njp->input_combo),
+	                            selected_result(proj));
+
 
 	proj->merging_opts = crystfel_merge_opts_new();
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(proj->merging_opts),

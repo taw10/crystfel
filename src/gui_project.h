@@ -300,4 +300,6 @@ extern int add_merge_result(struct crystfelproject *proj,
                             char *name,
                             char *hkl);
 
+extern const char *selected_result(struct crystfelproject *proj);
+
 #endif
