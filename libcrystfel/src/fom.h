@@ -56,7 +56,6 @@ enum fom_type
 
 struct fom_shells
 {
-	int config_intshells;
 	int nshells;
 	double *rmins;
 	double *rmaxs;
@@ -91,8 +90,7 @@ extern int fom_select_reflections(RefList *list1, RefList *list2,
                                   UnitCell *cell, SymOpList *sym,
                                   int anom, double rmin_fix, double rmax_fix,
                                   double sigma_cutoff, int ignore_negs,
-                                  int zero_negs, int mul_cutoff,
-                                  double *pmin_I, double *pmax_I);
+                                  int zero_negs, int mul_cutoff);
 
 extern struct fom_context *fom_calculate(RefList *list1, RefList *list2,
                                          UnitCell *cell,
@@ -102,9 +100,6 @@ extern struct fom_context *fom_calculate(RefList *list1, RefList *list2,
 
 extern struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
                                                      int nshells);
-
-extern struct fom_shells *fom_make_intensity_shells(double min_I, double max_I,
-                                                    int nshells);
 
 extern double fom_shell_label(struct fom_shells *s, int i);
 

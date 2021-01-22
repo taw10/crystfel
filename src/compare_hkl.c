@@ -74,7 +74,6 @@ static void show_help(const char *s)
 "      --rmax=<res>           High resolution cutoff (1/d in m^-1).\n"
 "      --lowres=<n>           Low resolution cutoff in (d in A).\n"
 "      --highres=<n>          High resolution cutoff in (d in A).\n"
-"      --intensity-shells     Use shells of intensity instead of resolution.\n"
 "\n"
 "  -h, --help                 Display this help message.\n"
 "      --version              Print CrystFEL version number and exit.\n"
@@ -85,7 +84,6 @@ static void show_help(const char *s)
 static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
                    double rmin, double rmax, enum fom_type fom,
                    int config_unity, int nshells, const char *filename,
-                   int config_intshells, double min_I, double max_I,
                    SymOpList *sym)
 {
 	struct fom_shells *shells;
@@ -95,11 +93,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 	const char *t1, *t2;
 
 	/* Calculate the bins */
-	if ( config_intshells ) {
-		shells = fom_make_intensity_shells(min_I, max_I, nshells);
-	} else {
-		shells = fom_make_resolution_shells(rmin, rmax, nshells);
-	}
+	shells = fom_make_resolution_shells(rmin, rmax, nshells);
 
 	if ( shells == NULL ) {
 		ERROR("Failed to set up shells.\n");
@@ -170,13 +164,8 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		return;
 	}
 
-	if ( config_intshells ) {
-		t1 = "Relative I  ";
-		t2 = "";
-	} else {
-		t1 = "  1/d centre";
-		t2 = "      d / A   Min 1/nm    Max 1/nm";
-	}
+	t1 = "  1/d centre";
+	t2 = "      d / A   Min 1/nm    Max 1/nm";
 
 	switch ( fom ) {
 
@@ -244,61 +233,41 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			case FOM_R2 :
 			case FOM_RSPLIT :
 			case FOM_RANO :
-			if ( config_intshells ) {
-				fprintf(fh, "%10.3f %10.2f %10i\n",
-					cen, r*100.0, fctx->cts[i]);
-			} else {
-				fprintf(fh, "%10.3f %10.2f %10i %10.2f "
-				            "%10.3f  %10.3f\n",
-				        cen*1.0e-9, r*100.0, fctx->cts[i],
-				        (1.0/cen)*1e10,
-				        shells->rmins[i]*1.0e-9,
-				        shells->rmaxs[i]*1.0e-9);
-			}
+			fprintf(fh, "%10.3f %10.2f %10i %10.2f "
+			        "%10.3f  %10.3f\n",
+			        cen*1.0e-9, r*100.0, fctx->cts[i],
+			        (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
 			break;
 
 			case FOM_CC :
 			case FOM_CCSTAR :
 			case FOM_CCANO :
 			case FOM_CRDANO :
-			if ( config_intshells ) {
-				fprintf(fh, "%10.3f %10.7f %10i\n",
-					cen, r, fctx->cts[i]);
-			} else {
-				fprintf(fh, "%10.3f %10.7f %10i %10.2f "
-				            "%10.3f  %10.3f\n",
-				        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
-				        shells->rmins[i]*1.0e-9,
-				        shells->rmaxs[i]*1.0e-9);
-			}
+			fprintf(fh, "%10.3f %10.7f %10i %10.2f "
+			        "%10.3f  %10.3f\n",
+			        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
 			break;
 
 			case FOM_RANORSPLIT :
-			if ( config_intshells ) {
-				fprintf(fh, "%10.3f    %10.7f %10i\n",
-					cen, r, fctx->cts[i]);
-			} else {
-				fprintf(fh, "%10.3f    %10.7f %10i %10.2f "
-				            "%10.3f  %10.3f\n",
-				        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
-				        shells->rmins[i]*1.0e-9,
-				        shells->rmaxs[i]*1.0e-9);
-			}
+			fprintf(fh, "%10.3f    %10.7f %10i %10.2f "
+			        "%10.3f  %10.3f\n",
+			        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
 			break;
 
 			case FOM_D1SIG :
 			case FOM_D2SIG :
-			if ( config_intshells ) {
-				fprintf(fh, "%10.3f %10.2f %10i\n",
-					cen, r*100.0, fctx->cts[i]);
-			} else {
-				fprintf(fh, "%10.3f %10.2f %10i %10.2f "
-				            "%10.3f  %10.3f\n",
-				        cen*1.0e-9, r*100.0, fctx->cts[i],
-				        (1.0/cen)*1e10,
-				        shells->rmins[i]*1.0e-9,
-				        shells->rmaxs[i]*1.0e-9);
-			}
+			fprintf(fh, "%10.3f %10.2f %10i %10.2f "
+			        "%10.3f  %10.3f\n",
+			        cen*1.0e-9, r*100.0, fctx->cts[i],
+			        (1.0/cen)*1e10,
+			        shells->rmins[i]*1.0e-9,
+			        shells->rmaxs[i]*1.0e-9);
 			break;
 
 		}
@@ -358,7 +327,6 @@ int main(int argc, char *argv[])
 	int config_ignorenegs = 0;
 	int config_zeronegs = 0;
 	int config_unity = 0;
-	int config_intshells = 0;
 	int nshells = 10;
 	char *shell_file = NULL;
 	double min_I = +INFINITY;
@@ -384,7 +352,6 @@ int main(int argc, char *argv[])
 		{"min-measurements",   1, NULL,               11},
 		{"ignore-negs",        0, &config_ignorenegs,  1},
 		{"zero-negs",          0, &config_zeronegs,    1},
-		{"intensity-shells",   0, &config_intshells,   1},
 		{0, 0, NULL, 0}
 	};
 
@@ -665,7 +632,7 @@ int main(int argc, char *argv[])
 	                              cell, sym,
 	                              anom, rmin_fix, rmax_fix, sigma_cutoff,
 	                              config_ignorenegs, config_zeronegs,
-	                              mul_cutoff, &min_I, &max_I);
+	                              mul_cutoff);
 	reflist_free(list1);
 	reflist_free(list2);
 
@@ -691,7 +658,7 @@ int main(int argc, char *argv[])
 		       rmin/1e9, rmax/1e9, 1e10/rmin, 1e10/rmax);
 	}
 	do_fom(list1_acc, list2_acc, cell, rmin, rmax, fom, config_unity,
-	       nshells, shell_file, config_intshells, min_I, max_I, sym);
+	       nshells, shell_file, sym);
 
 	free(shell_file);
 	reflist_free(list1_acc);

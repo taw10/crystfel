@@ -427,47 +427,6 @@ double fom_shell(struct fom_context *fctx, int i)
 }
 
 
-struct fom_shells *fom_make_intensity_shells(double min_I, double max_I,
-                                             int nshells)
-{
-	struct fom_shells *s;
-	int i;
-
-	if ( min_I >= max_I ) {
-		ERROR("Invalid intensity range.\n");
-		return NULL;
-	}
-
-	/* Adjust minimum and maximum intensities to get the most densely
-	 * populated part of the reflections */
-	max_I = min_I + (max_I-min_I)/5000.0;
-
-	s = malloc(sizeof(struct fom_shells));
-	if ( s == NULL ) return NULL;
-
-	s->rmins = malloc(nshells*sizeof(double));
-	s->rmaxs = malloc(nshells*sizeof(double));
-
-	if ( (s->rmins==NULL) || (s->rmaxs==NULL) ) {
-		ERROR("Couldn't allocate memory for shells.\n");
-		free(s);
-		return NULL;
-	}
-
-	s->config_intshells = 1;
-	s->nshells = nshells;
-
-	for ( i=0; i<nshells; i++ ) {
-
-		s->rmins[i] = min_I + i*(max_I - min_I)/nshells;;
-		s->rmaxs[i] = min_I + (i+1)*(max_I - min_I)/nshells;;
-
-	}
-
-	return s;
-}
-
-
 struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
                                               int nshells)
 {
@@ -487,7 +446,6 @@ struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
 		return NULL;
 	}
 
-	s->config_intshells = 0;
 	s->nshells = nshells;
 
 	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
@@ -513,60 +471,33 @@ struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
 
 double fom_shell_label(struct fom_shells *s, int i)
 {
-	if ( s->config_intshells ) {
-		return (i+0.5) / s->nshells;
-	} else {
-		return s->rmins[i] + (s->rmaxs[i] - s->rmins[i])/2.0;
-	}
+	return s->rmins[i] + (s->rmaxs[i] - s->rmins[i])/2.0;
 }
 
 
 static int get_bin(struct fom_shells *s, Reflection *refl, UnitCell *cell)
 {
-	if ( s->config_intshells ) {
+	double d;
+	int bin, j;
+	signed int h, k, l;
 
-		double intensity;
-		int bin, j;
+	get_indices(refl, &h, &k, &l);
+	d = 2.0 * resolution(cell, h, k, l);
 
-		intensity = get_intensity(refl);
-
-		bin = -1;
-		for ( j=0; j<s->nshells; j++ ) {
-			if ( (intensity>s->rmins[j])
-			  && (intensity<=s->rmaxs[j]) )
-			{
-				bin = j;
-				break;
-			}
+	bin = -1;
+	for ( j=0; j<s->nshells; j++ ) {
+		if ( (d>s->rmins[j]) && (d<=s->rmaxs[j]) ) {
+			bin = j;
+			break;
 		}
-
-		return bin;
-
-	} else {
-
-		double d;
-		int bin, j;
-		signed int h, k, l;
-
-		get_indices(refl, &h, &k, &l);
-		d = 2.0 * resolution(cell, h, k, l);
-
-		bin = -1;
-		for ( j=0; j<s->nshells; j++ ) {
-			if ( (d>s->rmins[j]) && (d<=s->rmaxs[j]) ) {
-				bin = j;
-				break;
-			}
-		}
-
-		/* Allow for slight rounding errors */
-		if ( (bin == -1) && (d <= s->rmins[0]) ) bin = 0;
-		if ( (bin == -1) && (d >= s->rmaxs[s->nshells-1]) ) bin = 0;
-		assert(bin != -1);
-
-		return bin;
-
 	}
+
+	/* Allow for slight rounding errors */
+	if ( (bin == -1) && (d <= s->rmins[0]) ) bin = 0;
+	if ( (bin == -1) && (d >= s->rmaxs[s->nshells-1]) ) bin = 0;
+	assert(bin != -1);
+
+	return bin;
 }
 
 
@@ -795,14 +726,11 @@ int fom_select_reflections(RefList *list1, RefList *list2,
                            UnitCell *cell, SymOpList *sym,
                            int anom, double rmin_fix, double rmax_fix,
                            double sigma_cutoff, int ignore_negs,
-                           int zero_negs, int mul_cutoff,
-                           double *pmin_I, double *pmax_I)
+                           int zero_negs, int mul_cutoff)
 {
 	Reflection *refl1;
 	RefListIterator *iter;
 	int ncom, nrej, nmul, nneg, nres, nbij, ncen;
-	double min_I = +INFINITY;
-	double max_I = -INFINITY;
 
 	/* Select reflections to be used */
 	ncom = 0;
@@ -892,9 +820,6 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 		copy_data(refl2_acc, refl2);
 		set_intensity(refl2_acc, val2);
 
-		if ( val1 > max_I ) max_I = val1;
-		if ( val1 < min_I ) min_I = val1;
-
 		ncom++;
 
 	}
@@ -908,8 +833,6 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 		list1_acc = reflist_new();
 		list2_acc = reflist_new();
 
-		min_I = +INFINITY;
-		max_I = -INFINITY;
 		ncom = 0;
 
 		for ( refl1 = first_refl(list1, &iter);
@@ -963,9 +886,6 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 			copy_data(refl2_acc, refl2);
 			set_intensity(refl2_acc, val2);
 
-			if ( val1 > max_I ) max_I = val1;
-			if ( val1 < min_I ) min_I = val1;
-
 			ncom++;
 		}
 	}
@@ -1005,7 +925,5 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 		       " centric.\n", ncen);
 	}
 
-	*pmin_I = min_I;
-	*pmax_I = max_I;
 	return ncom;
 }
