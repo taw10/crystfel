@@ -86,6 +86,13 @@ struct fom_context
 	int *n_within;
 };
 
+extern int fom_select_reflections(RefList *list1, RefList *list2,
+                                  RefList *list1_acc, RefList *list2_acc,
+                                  UnitCell *cell, SymOpList *sym,
+                                  int anom, double rmin_fix, double rmax_fix,
+                                  double sigma_cutoff, int ignore_negs,
+                                  int zero_negs, int mul_cutoff,
+                                  double *pmin_I, double *pmax_I);
 
 extern struct fom_context *fom_calculate(RefList *list1, RefList *list2,
                                          UnitCell *cell,

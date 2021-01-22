@@ -789,3 +789,223 @@ struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell
 	return fctx;
 }
 
+
+int fom_select_reflections(RefList *list1, RefList *list2,
+                           RefList *list1_acc, RefList *list2_acc,
+                           UnitCell *cell, SymOpList *sym,
+                           int anom, double rmin_fix, double rmax_fix,
+                           double sigma_cutoff, int ignore_negs,
+                           int zero_negs, int mul_cutoff,
+                           double *pmin_I, double *pmax_I)
+{
+	Reflection *refl1;
+	RefListIterator *iter;
+	int ncom, nrej, nmul, nneg, nres, nbij, ncen;
+	double min_I = +INFINITY;
+	double max_I = -INFINITY;
+
+	/* Select reflections to be used */
+	ncom = 0;
+	nrej = 0;
+	nmul = 0;
+	nneg = 0;
+	nres = 0;
+	nbij = 0;
+	ncen = 0;
+	for ( refl1 = first_refl(list1, &iter);
+	      refl1 != NULL;
+	      refl1 = next_refl(refl1, iter) )
+	{
+		signed int h, k, l;
+		double val1, val2;
+		double esd1, esd2;
+		int mul1, mul2;
+		Reflection *refl2;
+		Reflection *refl1_acc;
+		Reflection *refl2_acc;
+
+		get_indices(refl1, &h, &k, &l);
+
+		refl2 = find_refl(list2, h, k, l);
+		if ( refl2 == NULL ) continue;
+
+		val1 = get_intensity(refl1);
+		val2 = get_intensity(refl2);
+
+		esd1 = get_esd_intensity(refl1);
+		esd2 = get_esd_intensity(refl2);
+
+		mul1 = get_redundancy(refl1);
+		mul2 = get_redundancy(refl2);
+
+		if ( (val1 < sigma_cutoff * esd1)
+		  || (val2 < sigma_cutoff * esd2) )
+		{
+			nrej++;
+			continue;
+		}
+
+		if ( ignore_negs && ((val1 < 0.0) || (val2 < 0.0)) ) {
+			nneg++;
+			continue;
+		}
+
+		if ( (mul1 < mul_cutoff) || (mul2 < mul_cutoff) ) {
+			nmul++;
+			continue;
+		}
+
+		if ( zero_negs ) {
+			int d = 0;
+			if ( val1 < 0.0 ) {
+				val1 = 0.0;
+				d = 1;
+			}
+			if ( val2 < 0.0 ) {
+				val2 = 0.0;
+				d = 1;
+			}
+			if ( d ) nneg++;
+		}
+
+		if ( rmin_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res < rmin_fix ) {
+				nres++;
+				continue;
+			}
+		}
+
+		if ( rmax_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res > rmax_fix ) {
+				nres++;
+				continue;
+			}
+		}
+
+		refl1_acc = add_refl(list1_acc, h, k, l);
+		copy_data(refl1_acc, refl1);
+		set_intensity(refl1_acc, val1);
+
+		refl2_acc = add_refl(list2_acc, h, k, l);
+		copy_data(refl2_acc, refl2);
+		set_intensity(refl2_acc, val2);
+
+		if ( val1 > max_I ) max_I = val1;
+		if ( val1 < min_I ) min_I = val1;
+
+		ncom++;
+
+	}
+
+	/* For anomalous figures of merit, we additionally require that we have
+	 * all the Bijvoet pairs after the above rejection tests */
+	if ( anom ) {
+
+		list1 = list1_acc;
+		list2 = list2_acc;
+		list1_acc = reflist_new();
+		list2_acc = reflist_new();
+
+		min_I = +INFINITY;
+		max_I = -INFINITY;
+		ncom = 0;
+
+		for ( refl1 = first_refl(list1, &iter);
+		      refl1 != NULL;
+		      refl1 = next_refl(refl1, iter) )
+		{
+			Reflection *refl1_bij = NULL;
+			Reflection *refl2_bij = NULL;
+			signed int h, k, l;
+			signed int hb, kb, lb;
+			Reflection *refl1_acc;
+			Reflection *refl2_acc;
+			Reflection *refl2;
+			double val1, val2;
+
+			get_indices(refl1, &h, &k, &l);
+
+			refl2 = find_refl(list2, h, k, l);
+			assert(refl2 != NULL);
+
+			val1 = get_intensity(refl1);
+			val2 = get_intensity(refl2);
+
+			if ( is_centric(h, k, l, sym) ) {
+				ncen++;
+				continue;
+			}
+
+			if ( find_equiv_in_list(list1, -h, -k, -l, sym,
+			                        &hb, &kb, &lb) )
+			{
+				refl1_bij = find_refl(list1, hb, kb, lb);
+			}
+
+			if ( find_equiv_in_list(list2, -h, -k, -l, sym,
+			                        &hb, &kb, &lb) )
+			{
+				refl2_bij = find_refl(list2, hb, kb, lb);
+			}
+
+			if ( (refl1_bij == NULL) || (refl2_bij == NULL) ) {
+				nbij++;
+				continue;
+			}
+
+			refl1_acc = add_refl(list1_acc, h, k, l);
+			copy_data(refl1_acc, refl1);
+			set_intensity(refl1_acc, val1);
+
+			refl2_acc = add_refl(list2_acc, h, k, l);
+			copy_data(refl2_acc, refl2);
+			set_intensity(refl2_acc, val2);
+
+			if ( val1 > max_I ) max_I = val1;
+			if ( val1 < min_I ) min_I = val1;
+
+			ncom++;
+		}
+	}
+
+	if ( nrej > 0 ) {
+		STATUS("Discarded %i reflection pairs because either or both"
+		       " versions had I/sigma(I) < %f.\n", nrej, sigma_cutoff);
+	}
+
+	if ( ignore_negs && (nneg > 0) ) {
+		STATUS("Discarded %i reflection pairs because either or both"
+		       " versions had negative intensities.\n", nneg);
+	}
+
+	if ( zero_negs && (nneg > 0) ) {
+		STATUS("For %i reflection pairs, either or both versions had"
+		       " negative intensities which were set to zero.\n", nneg);
+	}
+
+	if ( nmul > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions had too few measurements.\n", nmul);
+	}
+
+	if ( nres > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions were outside the resolution range.\n", nres);
+	}
+
+	if ( nbij > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions did not have Bijvoet partners.\n", nres);
+	}
+
+	if ( ncen > 0 ) {
+		STATUS("%i reflection pairs rejected because they were"
+		       " centric.\n", ncen);
+	}
+
+	*pmin_I = min_I;
+	*pmax_I = max_I;
+	return ncom;
+}
