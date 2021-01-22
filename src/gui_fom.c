@@ -121,6 +121,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *entry;
 	GtkWidget *check;
 	GtkWidget *da;
+	int i;
+	char tmp[64];
 
 	dialog = gtk_dialog_new_with_buttons("Calculate figures of merit",
 	                                     GTK_WINDOW(proj->window),
@@ -146,8 +148,13 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	combo = gtk_combo_box_text_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(combo),
 	                   FALSE, FALSE, 4.0);
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
-	                          "xxx", "Dummy result");
+	for ( i=0; i<proj->n_merge_results; i++) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo),
+		                          proj->merge_results[i].name,
+		                          proj->merge_results[i].name);
+	}
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo),
+	                         proj->n_merge_results-1);
 
 	label = gtk_label_new("Figures of merit to show:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
@@ -166,6 +173,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	entry = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(entry), 4);
+	snprintf(tmp, 64, "%.2f", proj->fom_res_min);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
 	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("to");
@@ -173,6 +182,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	entry = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(entry), 4);
+	snprintf(tmp, 64, "%.2f", proj->fom_res_max);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
 	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("Å.  Number of bins:");
@@ -182,17 +193,23 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_entry_set_width_chars(GTK_ENTRY(entry), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
 	                   FALSE, FALSE, 4.0);
+	snprintf(tmp, 64, "%i", proj->fom_nbins);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 4.0);
 	check = gtk_check_button_new_with_label("Discard reflections with I/sigI less than");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check),
+	                             proj->fom_use_min_snr);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(check),
 	                   FALSE, FALSE, 4.0);
 	entry = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(entry), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
 	                   FALSE, FALSE, 4.0);
+	snprintf(tmp, 64, "%.2f", proj->fom_min_snr);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
 
 	da = gtk_drawing_area_new();
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(da),

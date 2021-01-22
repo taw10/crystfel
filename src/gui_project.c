@@ -1014,6 +1014,12 @@ void default_project(struct crystfelproject *proj)
 
 	proj->merge_results = NULL;
 	proj->n_merge_results = 0;
+
+	proj->fom_res_min = 0.0;
+	proj->fom_res_max = INFINITY;
+	proj->fom_nbins = 20;
+	proj->fom_min_snr = 0.0;
+	proj->fom_use_min_snr = 0;
 }
 
 

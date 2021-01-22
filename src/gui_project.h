@@ -265,6 +265,12 @@ struct crystfelproject {
 
 	struct gui_merge_result *merge_results;
 	int n_merge_results;
+
+	double fom_res_min;
+	double fom_res_max;
+	int fom_nbins;
+	double fom_min_snr;
+	int fom_use_min_snr;
 };
 
 extern enum match_type_id decode_matchtype(const char *type_id);
