@@ -38,7 +38,7 @@
 #include <reflist.h>
 #include <symmetry.h>
 
-enum fom
+enum fom_type
 {
 	FOM_R1I,
 	FOM_R1F,
@@ -54,7 +54,7 @@ enum fom
 	FOM_D2SIG
 };
 
-struct shells
+struct fom_shells
 {
 	int config_intshells;
 	int nshells;
@@ -64,7 +64,7 @@ struct shells
 
 struct fom_context
 {
-	enum fom fom;
+	enum fom_type fom;
 	int nshells;
 	int *cts;
 
@@ -88,22 +88,23 @@ struct fom_context
 
 
 extern struct fom_context *fom_calculate(RefList *list1, RefList *list2,
-                                         UnitCell *cell, struct shells *shells,
-                                         enum fom fom, int noscale,
+                                         UnitCell *cell,
+                                         struct fom_shells *shells,
+                                         enum fom_type fom, int noscale,
                                          SymOpList *sym);
 
-extern struct shells *make_resolution_shells(double rmin, double rmax,
-                                             int nshells);
+extern struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
+                                                     int nshells);
 
-extern struct shells *make_intensity_shells(double min_I, double max_I,
-                                            int nshells);
+extern struct fom_shells *fom_make_intensity_shells(double min_I, double max_I,
+                                                    int nshells);
 
-extern double shell_label(struct shells *s, int i);
+extern double fom_shell_label(struct fom_shells *s, int i);
 
 extern double fom_shell(struct fom_context *fctx, int i);
 
 extern double fom_overall(struct fom_context *fctx);
 
-extern enum fom get_fom(const char *s);
+extern enum fom_type fom_type_from_string(const char *s);
 
 #endif	/* FOM */

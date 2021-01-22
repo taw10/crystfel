@@ -83,12 +83,12 @@ static void show_help(const char *s)
 
 
 static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
-                   double rmin, double rmax, enum fom fom,
+                   double rmin, double rmax, enum fom_type fom,
                    int config_unity, int nshells, const char *filename,
                    int config_intshells, double min_I, double max_I,
                    SymOpList *sym)
 {
-	struct shells *shells;
+	struct fom_shells *shells;
 	struct fom_context *fctx;
 	FILE *fh;
 	int i;
@@ -96,9 +96,9 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 
 	/* Calculate the bins */
 	if ( config_intshells ) {
-		shells = make_intensity_shells(min_I, max_I, nshells);
+		shells = fom_make_intensity_shells(min_I, max_I, nshells);
 	} else {
-		shells = make_resolution_shells(rmin, rmax, nshells);
+		shells = fom_make_resolution_shells(rmin, rmax, nshells);
 	}
 
 	if ( shells == NULL ) {
@@ -234,7 +234,7 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 
 		double r, cen;
 
-		cen = shell_label(shells, i);
+		cen = fom_shell_label(shells, i);
 		r = fom_shell(fctx, i);
 
 		switch ( fom ) {
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 	RefList *list2;
 	RefList *list1_raw;
 	RefList *list2_raw;
-	enum fom fom = FOM_R1I;
+	enum fom_type fom = FOM_R1I;
 	char *cellfile = NULL;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 4 :
-			fom = get_fom(optarg);
+			fom = fom_type_from_string(optarg);
 			break;
 
 			case 5 :

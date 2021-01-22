@@ -43,7 +43,7 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 
-enum fom get_fom(const char *s)
+enum fom_type fom_type_from_string(const char *s)
 {
 	if ( strcasecmp(s, "r1i") == 0 ) return FOM_R1I;
 	if ( strcasecmp(s, "r1f") == 0 ) return FOM_R1F;
@@ -63,7 +63,7 @@ enum fom get_fom(const char *s)
 }
 
 
-static struct fom_context *init_fom(enum fom fom, int nmax, int nshells)
+static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 {
 	struct fom_context *fctx;
 	int i;
@@ -427,9 +427,10 @@ double fom_shell(struct fom_context *fctx, int i)
 }
 
 
-struct shells *make_intensity_shells(double min_I, double max_I, int nshells)
+struct fom_shells *fom_make_intensity_shells(double min_I, double max_I,
+                                             int nshells)
 {
-	struct shells *s;
+	struct fom_shells *s;
 	int i;
 
 	if ( min_I >= max_I ) {
@@ -441,7 +442,7 @@ struct shells *make_intensity_shells(double min_I, double max_I, int nshells)
 	 * populated part of the reflections */
 	max_I = min_I + (max_I-min_I)/5000.0;
 
-	s = malloc(sizeof(struct shells));
+	s = malloc(sizeof(struct fom_shells));
 	if ( s == NULL ) return NULL;
 
 	s->rmins = malloc(nshells*sizeof(double));
@@ -467,13 +468,14 @@ struct shells *make_intensity_shells(double min_I, double max_I, int nshells)
 }
 
 
-struct shells *make_resolution_shells(double rmin, double rmax, int nshells)
+struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
+                                              int nshells)
 {
-	struct shells *s;
+	struct fom_shells *s;
 	double total_vol, vol_per_shell;
 	int i;
 
-	s = malloc(sizeof(struct shells));
+	s = malloc(sizeof(struct fom_shells));
 	if ( s == NULL ) return NULL;
 
 	s->rmins = malloc(nshells*sizeof(double));
@@ -509,7 +511,7 @@ struct shells *make_resolution_shells(double rmin, double rmax, int nshells)
 }
 
 
-double shell_label(struct shells *s, int i)
+double fom_shell_label(struct fom_shells *s, int i)
 {
 	if ( s->config_intshells ) {
 		return (i+0.5) / s->nshells;
@@ -519,7 +521,7 @@ double shell_label(struct shells *s, int i)
 }
 
 
-static int get_bin(struct shells *s, Reflection *refl, UnitCell *cell)
+static int get_bin(struct fom_shells *s, Reflection *refl, UnitCell *cell)
 {
 	if ( s->config_intshells ) {
 
@@ -674,7 +676,7 @@ static int wilson_scale(RefList *list1, RefList *list2, UnitCell *cell)
 
 
 struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell,
-                                  struct shells *shells, enum fom fom,
+                                  struct fom_shells *shells, enum fom_type fom,
                                   int noscale, SymOpList *sym)
 {
 	Reflection *refl1;
