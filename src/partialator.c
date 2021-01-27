@@ -603,6 +603,7 @@ static int set_initial_params(Crystal *cr, FILE *fh, double force_bandwidth,
 	if ( force_lambda > 0.0 ) {
 		image->lambda = force_lambda;
 	}
+	spectrum_free(image->spectrum);
 	image->spectrum = spectrum_generate_gaussian(image->lambda, image->bw);
 
 	return 0;
@@ -1429,6 +1430,7 @@ int main(int argc, char *argv[])
 				Crystal *cr;
 				Crystal **crystals_new;
 				RefList *cr_refl;
+				RefList *cr_refl_raw;
 				struct image *image_for_crystal;
 				double lowest_r;
 
@@ -1482,9 +1484,10 @@ int main(int argc, char *argv[])
 				image_for_crystal->sat = NULL;
 
 				/* This is the raw list of reflections */
-				cr_refl = crystal_get_reflections(cr);
+				cr_refl_raw = crystal_get_reflections(cr);
 
-				cr_refl = apply_max_adu(cr_refl, max_adu);
+				cr_refl = apply_max_adu(cr_refl_raw, max_adu);
+				reflist_free(cr_refl_raw);
 
 				if ( !no_free ) select_free_reflections(cr_refl, rng);
 
@@ -1521,6 +1524,9 @@ int main(int argc, char *argv[])
 		stream_close(st);
 
 	}
+
+	free(stream_list.filenames);
+	free(stream_list.streams);
 
 	display_progress(n_images, n_crystals);
 	fprintf(stderr, "\n");
@@ -1678,8 +1684,10 @@ int main(int argc, char *argv[])
 	gsl_rng_free(rng);
 	for ( i=0; i<n_crystals; i++ ) {
 		struct image *image = crystal_get_image(crystals[i]);
+		spectrum_free(image->spectrum);
 		reflist_free(crystal_get_reflections(crystals[i]));
 		free(image->filename);
+		free(image->ev);
 		free(image);
 		cell_free(crystal_get_cell(crystals[i]));
 		crystal_free(crystals[i]);
