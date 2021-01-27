@@ -549,6 +549,10 @@ static RefList *apply_max_adu(RefList *list, double max_adu)
 			signed int h, k, l;
 			get_indices(refl, &h, &k, &l);
 			Reflection *nrefl = add_refl(nlist, h, k, l);
+			if ( nrefl == NULL ) {
+				ERROR("Failed to add reflection\n");
+				return NULL;
+			}
 			copy_data(nrefl, refl);
 		}
 	}

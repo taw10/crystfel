@@ -127,6 +127,7 @@ static Reflection *new_node(unsigned int serial)
 	Reflection *new;
 
 	new = calloc(1, sizeof(struct _reflection));
+	if ( new == NULL ) return NULL;
 	new->serial = serial;
 	new->next = NULL;
 	new->prev = NULL;
