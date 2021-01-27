@@ -641,9 +641,11 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 		}
 
 		if ( strcmp(line, "-----") == 0 ) {
-			add_result(proj, results_name,
-			           streams, n_streams, selected,
-			           hkl);
+			if ( !first ) {
+				add_result(proj, results_name,
+				           streams, n_streams, selected,
+				           hkl);
+			}
 			break;
 		}
 
