@@ -528,6 +528,7 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 			ERROR("Invalid data location '%s'\n", val);
 			reject = -1;
 		}
+		free(panel->data);
 		panel->data = strdup(val);
 
 	} else if ( strcmp(key, "mask") == 0 ) {
@@ -1296,7 +1297,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	free(defaults.cnz_from);
 	free(defaults.data);
 	free(defaults.mask);
-
+	free(defaults.mask_file);
 
 	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
 
@@ -1395,6 +1396,7 @@ void data_template_free(DataTemplate *dt)
 
 	for ( i=0; i<dt->n_panels; i++ ) {
 		free(dt->panels[i].name);
+		free(dt->panels[i].data);
 		free(dt->panels[i].mask);
 		free(dt->panels[i].mask_file);
 		free(dt->panels[i].satmap);
