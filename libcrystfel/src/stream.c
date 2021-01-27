@@ -1284,6 +1284,7 @@ void stream_close(Stream *st)
 	if ( st == NULL ) return;
 	free(st->audit_info);
 	free(st->geometry_file);
+	data_template_free(st->dtempl);
 	fclose(st->fh);
 	free(st);
 }
