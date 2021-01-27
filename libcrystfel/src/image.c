@@ -991,6 +991,7 @@ void image_free(struct image *image)
 	if ( image == NULL ) return;
 	image_feature_list_free(image->features);
 	free_all_crystals(image);
+	spectrum_free(image->spectrum);
 	free(image->filename);
 	free(image->ev);
 
