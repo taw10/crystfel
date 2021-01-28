@@ -73,7 +73,13 @@ struct _stream
 	char *audit_info;
 	char *geometry_file;
 
-	const DataTemplate *dtempl;
+	/* The DataTemplate provided to us for writing things.
+	 * We don't own this. */
+	const DataTemplate *dtempl_write;
+
+	/* The DataTemplate we got from the stream itself, used for
+	 * reading things.  We own this. */
+	DataTemplate *dtempl_read;
 
 	long long int ln;
 
@@ -141,11 +147,11 @@ static ImageFeatureList *read_peaks(Stream *st,
 			return NULL;
 		}
 
-		if ( (panel_name[0] != '\0') && (st->dtempl != NULL) ) {
+		if ( (panel_name[0] != '\0') && (st->dtempl_read != NULL) ) {
 
 			int pn;
 
-			if ( data_template_panel_name_to_number(st->dtempl,
+			if ( data_template_panel_name_to_number(st->dtempl_read,
 			                                        panel_name,
 			                                        &pn) )
 			{
@@ -153,7 +159,7 @@ static ImageFeatureList *read_peaks(Stream *st,
 				      panel_name);
 			} else {
 
-				data_template_file_to_panel_coords(st->dtempl,
+				data_template_file_to_panel_coords(st->dtempl_read,
 				                                   &x, &y, &pn);
 
 				image_add_feature(features, x, y,
@@ -267,9 +273,9 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 				return NULL;
 			}
 			set_intensity(refl, intensity);
-			if ( st->dtempl != NULL ) {
+			if ( st->dtempl_read != NULL ) {
 				int pn;
-				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
+				if ( data_template_file_to_panel_coords(st->dtempl_read, &fs, &ss, &pn) ) {
 					ERROR("Failed to convert\n");
 				} else {
 					set_detector_pos(refl, fs, ss);
@@ -340,10 +346,10 @@ static RefList *read_stream_reflections_2_1(Stream *st)
 			}
 			set_intensity(refl, intensity);
 
-			if ( st->dtempl != NULL ) {
+			if ( st->dtempl_read != NULL ) {
 
 				int pn;
-				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
+				if ( data_template_file_to_panel_coords(st->dtempl_read, &fs, &ss, &pn) ) {
 					ERROR("Failed to convert\n");
 				} else {
 					set_detector_pos(refl, fs, ss);
@@ -411,11 +417,11 @@ static RefList *read_stream_reflections_2_2(Stream *st)
 			}
 			set_intensity(refl, intensity);
 
-			if ( st->dtempl != NULL ) {
+			if ( st->dtempl_read != NULL ) {
 
 				int pn;
 
-				if ( data_template_file_to_panel_coords(st->dtempl, &fs, &ss, &pn) ) {
+				if ( data_template_file_to_panel_coords(st->dtempl_read, &fs, &ss, &pn) ) {
 					ERROR("Failed to convert to "
 					      "panel-relative coordinates: "
 					      "%i,%i\n", fs, ss);
@@ -581,7 +587,7 @@ static int write_crystal(Stream *st, Crystal *cr,
 
 			fprintf(st->fh, STREAM_REFLECTION_START_MARKER"\n");
 			ret = write_stream_reflections(st->fh, reflist,
-			                               st->dtempl);
+			                               st->dtempl_write);
 			fprintf(st->fh, STREAM_REFLECTION_END_MARKER"\n");
 
 		} else {
@@ -654,7 +660,7 @@ int stream_write_chunk(Stream *st, const struct image *i,
 	fprintf(st->fh, "peak_resolution = %f nm^-1 or %f A\n",
 	        i->peak_resolution/1e9, 1e10/i->peak_resolution);
 	if ( srf & STREAM_PEAKS ) {
-		ret = write_peaks(i, st->dtempl, st->fh);
+		ret = write_peaks(i, st->dtempl_write, st->fh);
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {
@@ -978,9 +984,9 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 			if ( have_filename && have_ev ) {
 				/* Success */
 				if ( srf & STREAM_DATA_DETGEOM ) {
-					create_detgeom(image, st->dtempl);
-					image_set_zero_data(image, st->dtempl);
-					image_set_zero_mask(image, st->dtempl);
+					create_detgeom(image, st->dtempl_read);
+					image_set_zero_data(image, st->dtempl_read);
+					image_set_zero_mask(image, st->dtempl_read);
 				}
 				/* FIXME: Maybe arbitrary spectrum from file (?) */
 				image->spectrum = spectrum_generate_gaussian(image->lambda,
@@ -1063,7 +1069,7 @@ static void read_geometry_file(Stream *st)
 	} while  ( !done );
 
 	st->geometry_file = geom;
-	st->dtempl = data_template_new_from_string(geom);
+	st->dtempl_read = data_template_new_from_string(geom);
 }
 
 
@@ -1122,6 +1128,8 @@ Stream *stream_open_for_read(const char *filename)
 	st->geometry_file = NULL;
 	st->n_chunks = 0;
 	st->chunk_offsets = NULL;
+	st->dtempl_read = NULL;
+	st->dtempl_write = NULL;
 
 	if ( strcmp(filename, "-") == 0 ) {
 		st->fh = stdin;
@@ -1194,6 +1202,8 @@ Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 	st->geometry_file = NULL;
 	st->n_chunks = 0;
 	st->chunk_offsets = NULL;
+	st->dtempl_read = NULL;
+	st->dtempl_write = NULL;
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
@@ -1201,7 +1211,7 @@ Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 		return NULL;
 	}
 
-	st->dtempl = dtempl;
+	st->dtempl_write = dtempl;
 	st->major_version = LATEST_MAJOR_VERSION;
 	st->minor_version = LATEST_MINOR_VERSION;
 
@@ -1246,7 +1256,8 @@ Stream *stream_open_for_write(const char *filename,
 	st->geometry_file = NULL;
 	st->n_chunks = 0;
 	st->chunk_offsets = NULL;
-	st->dtempl = dtempl;
+	st->dtempl_write = dtempl;
+	st->dtempl_read = NULL;
 
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
@@ -1284,7 +1295,7 @@ void stream_close(Stream *st)
 	if ( st == NULL ) return;
 	free(st->audit_info);
 	free(st->geometry_file);
-	data_template_free(st->dtempl);
+	data_template_free(st->dtempl_read);
 	fclose(st->fh);
 	free(st);
 }
