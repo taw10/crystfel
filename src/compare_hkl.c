@@ -329,8 +329,6 @@ int main(int argc, char *argv[])
 	int config_unity = 0;
 	int nshells = 10;
 	char *shell_file = NULL;
-	double min_I = +INFINITY;
-	double max_I = -INFINITY;
 	float highres, lowres;
 	int mul_cutoff = 0;
 	int anom;
