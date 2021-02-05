@@ -81,6 +81,25 @@ static void show_help(const char *s)
 }
 
 
+static enum fom_type fom_type_from_string(const char *s)
+{
+	if ( strcasecmp(s, "r1i") == 0 ) return FOM_R1I;
+	if ( strcasecmp(s, "r1f") == 0 ) return FOM_R1F;
+	if ( strcasecmp(s, "r2") == 0 ) return FOM_R2;
+	if ( strcasecmp(s, "rsplit") == 0 ) return FOM_RSPLIT;
+	if ( strcasecmp(s, "cc") == 0 ) return FOM_CC;
+	if ( strcasecmp(s, "ccstar") == 0 ) return FOM_CCSTAR;
+	if ( strcasecmp(s, "ccano") == 0 ) return FOM_CCANO;
+	if ( strcasecmp(s, "crdano") == 0 ) return FOM_CRDANO;
+	if ( strcasecmp(s, "rano") == 0 ) return FOM_RANO;
+	if ( strcasecmp(s, "rano/rsplit") == 0 ) return FOM_RANORSPLIT;
+	if ( strcasecmp(s, "d1sig") == 0 ) return FOM_D1SIG;
+	if ( strcasecmp(s, "d2sig") == 0 ) return FOM_D2SIG;
+
+	ERROR("Unknown figure of merit '%s'.\n", s);
+	exit(1);
+}
+
 static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
                    double rmin, double rmax, enum fom_type fom,
                    int config_unity, int nshells, const char *filename,
