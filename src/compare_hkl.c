@@ -106,55 +106,58 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 	switch ( fom ) {
 
 		case FOM_R1I :
-		STATUS("Overall R1(I) = %.2f %%\n", 100.0*fom_overall(fctx));
+		STATUS("Overall R1(I) = %.2f %%\n", 100.0*fom_overall_value(fctx));
 		break;
 
 		case FOM_R1F :
-		STATUS("Overall R1(F) = %.2f %%\n", 100.0*fom_overall(fctx));
+		STATUS("Overall R1(F) = %.2f %%\n", 100.0*fom_overall_value(fctx));
 		break;
 
 		case FOM_R2 :
-		STATUS("Overall R(2) = %.2f %%\n", 100.0*fom_overall(fctx));
+		STATUS("Overall R(2) = %.2f %%\n", 100.0*fom_overall_value(fctx));
 		break;
 
 		case FOM_RSPLIT :
-		STATUS("Overall Rsplit = %.2f %%\n", 100.0*fom_overall(fctx));
+		STATUS("Overall Rsplit = %.2f %%\n", 100.0*fom_overall_value(fctx));
 		break;
 
 		case FOM_CC :
-		STATUS("Overall CC = %.7f\n", fom_overall(fctx));
+		STATUS("Overall CC = %.7f\n", fom_overall_value(fctx));
 		break;
 
 		case FOM_CCSTAR :
-		STATUS("Overall CC* = %.7f\n", fom_overall(fctx));
+		STATUS("Overall CC* = %.7f\n", fom_overall_value(fctx));
 		break;
 
 		case FOM_CCANO :
-		STATUS("Overall CCano = %.7f\n", fom_overall(fctx));
+		STATUS("Overall CCano = %.7f\n", fom_overall_value(fctx));
 		break;
 
 		case FOM_CRDANO :
-		STATUS("Overall CRDano = %.7f\n", fom_overall(fctx));
+		STATUS("Overall CRDano = %.7f\n", fom_overall_value(fctx));
 		break;
 
 		case FOM_RANO :
-		STATUS("Overall Rano =  %.2f %%\n", 100.0*fom_overall(fctx));
+		STATUS("Overall Rano =  %.2f %%\n", 100.0*fom_overall_value(fctx));
 		break;
 
 		case FOM_RANORSPLIT :
-		STATUS("Overall Rano/Rsplit =  %.7f\n", fom_overall(fctx));
+		STATUS("Overall Rano/Rsplit =  %.7f\n", fom_overall_value(fctx));
 		break;
 
 		case FOM_D1SIG :
 		STATUS("Fraction of differences less than 1 sigma = %.7f %%\n",
-		       100.0*fom_overall(fctx));
+		       100.0*fom_overall_value(fctx));
 		break;
 
 		case FOM_D2SIG :
 		STATUS("Fraction of differences less than 2 sigma = %.7f %%\n",
-		       100.0*fom_overall(fctx));
+		       100.0*fom_overall_value(fctx));
 		break;
 
+		default :
+		ERROR("Unhandled figure of merit type\n");
+		break;
 
 	}
 
@@ -217,14 +220,17 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 		fprintf(fh, "%s D<2sigma/%%     nref%s\n", t1, t2);
 		break;
 
+		default :
+		break;
+
 	}
 
 	for ( i=0; i<nshells; i++ ) {
 
 		double r, cen;
 
-		cen = fom_shell_label(shells, i);
-		r = fom_shell(fctx, i);
+		cen = fom_shell_centre(shells, i);
+		r = fom_shell_value(fctx, i);
 
 		switch ( fom ) {
 
@@ -235,7 +241,8 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			case FOM_RANO :
 			fprintf(fh, "%10.3f %10.2f %10i %10.2f "
 			        "%10.3f  %10.3f\n",
-			        cen*1.0e-9, r*100.0, fctx->cts[i],
+			        cen*1.0e-9, r*100.0,
+			        fom_shell_num_reflections(fctx, i),
 			        (1.0/cen)*1e10,
 			        shells->rmins[i]*1.0e-9,
 			        shells->rmaxs[i]*1.0e-9);
@@ -247,7 +254,9 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			case FOM_CRDANO :
 			fprintf(fh, "%10.3f %10.7f %10i %10.2f "
 			        "%10.3f  %10.3f\n",
-			        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
+			        cen*1.0e-9, r,
+			        fom_shell_num_reflections(fctx, i),
+			        (1.0/cen)*1e10,
 			        shells->rmins[i]*1.0e-9,
 			        shells->rmaxs[i]*1.0e-9);
 			break;
@@ -255,7 +264,9 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			case FOM_RANORSPLIT :
 			fprintf(fh, "%10.3f    %10.7f %10i %10.2f "
 			        "%10.3f  %10.3f\n",
-			        cen*1.0e-9, r, fctx->cts[i], (1.0/cen)*1e10,
+			        cen*1.0e-9, r,
+			        fom_shell_num_reflections(fctx, i),
+			        (1.0/cen)*1e10,
 			        shells->rmins[i]*1.0e-9,
 			        shells->rmaxs[i]*1.0e-9);
 			break;
@@ -264,10 +275,14 @@ static void do_fom(RefList *list1, RefList *list2, UnitCell *cell,
 			case FOM_D2SIG :
 			fprintf(fh, "%10.3f %10.2f %10i %10.2f "
 			        "%10.3f  %10.3f\n",
-			        cen*1.0e-9, r*100.0, fctx->cts[i],
+			        cen*1.0e-9, r*100.0,
+			        fom_shell_num_reflections(fctx, i),
 			        (1.0/cen)*1e10,
 			        shells->rmins[i]*1.0e-9,
 			        shells->rmaxs[i]*1.0e-9);
+			break;
+
+			default :
 			break;
 
 		}
@@ -311,7 +326,6 @@ int main(int argc, char *argv[])
 	char *sym_str_fromfile1 = NULL;
 	char *sym_str_fromfile2 = NULL;
 	SymOpList *sym;
-	int ncom;
 	RefList *list1_acc;
 	RefList *list2_acc;
 	RefList *list1;
@@ -332,6 +346,7 @@ int main(int argc, char *argv[])
 	float highres, lowres;
 	int mul_cutoff = 0;
 	int anom;
+	struct fom_rejections rej;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -478,7 +493,7 @@ int main(int argc, char *argv[])
 			      " intensities.\n");
 			ERROR("Please try again with --ignore-negs or"
 			      " --zero-negs.\n");
-			exit(1);
+			return 1;
 
 			case FOM_R2 :
 			case FOM_R1I :
@@ -492,6 +507,10 @@ int main(int argc, char *argv[])
 			case FOM_D1SIG :
 			case FOM_D2SIG :
 			break;
+
+			default :
+			ERROR("Unhandled figure of merit!\n");
+			return 1;
 		}
 	}
 
@@ -579,6 +598,10 @@ int main(int argc, char *argv[])
 			      " try again using a non-centrosymmetric point"
 			      " group for '-y'.\n");
 			return 1;
+
+			default :
+			ERROR("Unhandled figure of merit type!\n");
+			return 1;
 		}
 	}
 
@@ -622,21 +645,60 @@ int main(int argc, char *argv[])
 	reflist_free(list1_raw);
 	reflist_free(list2_raw);
 
-	list1_acc = reflist_new();
-	list2_acc = reflist_new();
 	anom = ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
 	        || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) );
-	ncom = fom_select_reflections(list1, list2, list1_acc, list2_acc,
-	                              cell, sym,
-	                              anom, rmin_fix, rmax_fix, sigma_cutoff,
-	                              config_ignorenegs, config_zeronegs,
-	                              mul_cutoff);
+	rej = fom_select_reflection_pairs(list1, list2, &list1_acc, &list2_acc,
+	                                  cell, sym,
+	                                  anom, rmin_fix, rmax_fix, sigma_cutoff,
+	                                  config_ignorenegs, config_zeronegs,
+	                                  mul_cutoff);
 	reflist_free(list1);
 	reflist_free(list2);
 
 	gsl_set_error_handler_off();
 
-	STATUS("%i reflection pairs accepted.\n", ncom);
+	if ( rej.low_snr > 0 ) {
+		STATUS("Discarded %i reflection pairs because either or both"
+		       " versions had I/sigma(I) < %f.\n",
+		       rej.low_snr, sigma_cutoff);
+	}
+
+	if ( rej.negative_deleted > 0 ) {
+		STATUS("Discarded %i reflection pairs because either or both"
+		       " versions had negative intensities.\n",
+		       rej.negative_deleted);
+	}
+
+	if ( rej.negative_zeroed > 0 ) {
+		STATUS("For %i reflection pairs, either or both versions had"
+		       " negative intensities which were set to zero.\n",
+		       rej.negative_zeroed);
+	}
+
+	if ( rej.few_measurements > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions had too few measurements.\n",
+		       rej.few_measurements);
+	}
+
+	if ( rej.outside_resolution_range > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions were outside the resolution range.\n",
+		       rej.outside_resolution_range);
+	}
+
+	if ( rej.no_bijvoet > 0 ) {
+		STATUS("%i reflection pairs rejected because either or both"
+		       " versions did not have Bijvoet partners.\n",
+		       rej.no_bijvoet);
+	}
+
+	if ( rej.centric > 0 ) {
+		STATUS("%i reflection pairs rejected because they were"
+		       " centric.\n", rej.centric);
+	}
+
+	STATUS("%i reflection pairs accepted.\n", rej.common);
 
 	resolution_limits(list1_acc, cell, &rmin, &rmax);
 	resolution_limits(list2_acc, cell, &rmin, &rmax);

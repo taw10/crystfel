@@ -43,6 +43,33 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 
+struct fom_context
+{
+	enum fom_type fom;
+	int nshells;
+	int *cts;
+
+	/* For R-factors */
+	double *num;
+	double *den;
+
+	/* For "double" R-factors */
+	double *num2;
+	double *den2;
+
+	/* For CCs */
+	double **vec1;
+	double **vec2;
+	int *n;
+	int nmax;
+
+	/* For "counting" things e.g. d1sig or d2sig */
+	int *n_within;
+
+	long int *n_meas;
+	long int *possible;
+};
+
 enum fom_type fom_type_from_string(const char *s)
 {
 	if ( strcasecmp(s, "r1i") == 0 ) return FOM_R1I;
@@ -78,6 +105,12 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		fctx->cts[i] = 0;
 	}
 
+	fctx->num = NULL;
+	fctx->den = NULL;
+	fctx->num2 = NULL;
+	fctx->den2 = NULL;
+	fctx->possible = NULL;
+
 	switch ( fctx->fom ) {
 
 		case FOM_RANORSPLIT :
@@ -95,6 +128,10 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_R2 :
 		case FOM_RSPLIT :
 		case FOM_RANO :
+		case FOM_MEAN_INTENSITY :
+		case FOM_STDDEV_INTENSITY :
+		case FOM_SNR :
+		case FOM_REDUNDANCY :
 		fctx->num = malloc(nshells*sizeof(double));
 		fctx->den = malloc(nshells*sizeof(double));
 		if ( (fctx->num == NULL) || (fctx->den == NULL) ) return NULL;
@@ -102,6 +139,15 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 			fctx->num[i] = 0.0;
 			fctx->den[i] = 0.0;
 		}
+		break;
+
+		case FOM_COMPLETENESS :
+		/* Uses 'cts' and 'possible' only */
+		break;
+
+		case FOM_NUM_MEASUREMENTS :
+		fctx->n_meas = calloc(nshells, sizeof(long int));
+		if ( fctx->n_meas == NULL ) return NULL;
 		break;
 
 		case FOM_CC :
@@ -140,37 +186,45 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 }
 
 
-static void add_to_fom(struct fom_context *fctx, double i1, double i2,
-                       double i1bij, double i2bij, double sig1, double sig2,
-                       int bin)
+static int add_to_fom(struct fom_context *fctx,
+                      Reflection *refl1,
+                      Reflection *refl2,
+                      Reflection *refl1bij,
+                      Reflection *refl2bij,
+                      int bin)
 {
-	double f1, f2;
+	double i1, i2, i1bij, i2bij, sig1, sig2;
 	double im, imbij;
+	int bad = 0;
 
 	fctx->cts[bin]++;
-
-	/* Negative intensities have already been weeded out. */
-	f1 = sqrt(i1);
-	f2 = sqrt(i2);
 
 	switch ( fctx->fom ) {
 
 		case FOM_R1I :
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 		fctx->num[bin] += fabs(i1 - i2);
 		fctx->den[bin] += i1;
 		break;
 
 		case FOM_R1F :
-		fctx->num[bin] += fabs(f1 - f2);
-		fctx->den[bin] += f1;
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+		fctx->num[bin] += fabs(sqrt(i1) - sqrt(i2));
+		fctx->den[bin] += sqrt(i1);
 		break;
 
 		case FOM_R2 :
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 		fctx->num[bin] += pow(i1 - i2, 2.0);
 		fctx->den[bin] += pow(i1, 2.0);
 		break;
 
 		case FOM_RSPLIT :
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 		fctx->num[bin] += fabs(i1 - i2);
 		fctx->den[bin] += i1 + i2;
 		break;
@@ -178,6 +232,8 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		case FOM_CC :
 		case FOM_CCSTAR :
 		assert(fctx->n[bin] < fctx->nmax);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 		fctx->vec1[bin][fctx->n[bin]] = i1;
 		fctx->vec2[bin][fctx->n[bin]] = i2;
 		fctx->n[bin]++;
@@ -186,17 +242,27 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		case FOM_CCANO :
 		case FOM_CRDANO :
 		assert(fctx->n[bin] < fctx->nmax);
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+		i1bij = get_intensity(refl1bij);
+		i2bij = get_intensity(refl2bij);
 		fctx->vec1[bin][fctx->n[bin]] = i1 - i1bij;
 		fctx->vec2[bin][fctx->n[bin]] = i2 - i2bij;
 		fctx->n[bin]++;
 		break;
 
 		case FOM_RANORSPLIT :
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
 		fctx->num2[bin] += fabs(i1 - i2);
 		fctx->den2[bin] += i1 + i2;
 		/* Intentional fall-through (no break) */
 
 		case FOM_RANO :
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+		i1bij = get_intensity(refl1bij);
+		i2bij = get_intensity(refl2bij);
 		im = (i1 + i2)/2.0;
 		imbij = (i1bij + i2bij)/2.0;
 		fctx->num[bin] += fabs(im - imbij);
@@ -204,22 +270,69 @@ static void add_to_fom(struct fom_context *fctx, double i1, double i2,
 		break;
 
 		case FOM_D1SIG :
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+		sig1 = get_esd_intensity(refl1);
+		sig2 = get_esd_intensity(refl2);
 		if ( fabs(i1-i2) < sqrt(sig1*sig1 + sig2*sig2) ) {
 			fctx->n_within[bin]++;
 		}
 		break;
 
 		case FOM_D2SIG :
+		i1 = get_intensity(refl1);
+		i2 = get_intensity(refl2);
+		sig1 = get_esd_intensity(refl1);
+		sig2 = get_esd_intensity(refl2);
 		if ( fabs(i1-i2) < 2.0*sqrt(sig1*sig1 + sig2*sig2) ) {
 			fctx->n_within[bin]++;
 		}
 		break;
 
+		case FOM_NUM_MEASUREMENTS :
+		fctx->n_meas[bin] += get_redundancy(refl1);
+		break;
+
+		case FOM_REDUNDANCY :
+		fctx->num[bin] += get_redundancy(refl1);
+		fctx->den[bin] += 1.0;
+		break;
+
+		case FOM_SNR :
+		i1 = get_intensity(refl1);
+		sig1 = get_esd_intensity(refl1);
+		if ( isfinite(i1/sig1) ) {
+			fctx->num[bin] += i1/sig1;
+			fctx->den[bin] += 1.0;
+		} else {
+			bad = 1;
+		}
+		break;
+
+		case FOM_MEAN_INTENSITY :
+		i1 = get_intensity(refl1);
+		fctx->num[bin] += i1;
+		fctx->den[bin] += 1.0;
+		break;
+
+		/* FIXME: Delete this FoM? */
+		case FOM_STDDEV_INTENSITY :
+		fctx->num[bin] += 1.0;
+		fctx->den[bin] += 1.0;
+		break;
+
+		case FOM_COMPLETENESS :
+		/* fctx->cts already incremented, as needed.
+		 * Will calculate possible reflections later */
+		break;
+
 	}
+
+	return bad;
 }
 
 
-double fom_overall(struct fom_context *fctx)
+double fom_overall_value(struct fom_context *fctx)
 {
 	double overall_num = INFINITY;
 	double overall_den = 0.0;
@@ -234,6 +347,9 @@ double fom_overall(struct fom_context *fctx)
 	double variance_signal;
 	double variance_error;
 	double cc = INFINITY;
+	long int total_meas = 0;
+	long int overall_cts = 0;
+	long int overall_possible = 0;
 
 	switch ( fctx->fom ) {
 
@@ -242,6 +358,10 @@ double fom_overall(struct fom_context *fctx)
 		case FOM_R2 :
 		case FOM_RSPLIT :
 		case FOM_RANO :
+		case FOM_REDUNDANCY :
+		case FOM_SNR :
+		case FOM_MEAN_INTENSITY :
+		case FOM_STDDEV_INTENSITY :
 		overall_num = 0.0;
 		overall_den = 0.0;
 		for ( i=0; i<fctx->nshells; i++ ) {
@@ -321,13 +441,37 @@ double fom_overall(struct fom_context *fctx)
 		}
 		break;
 
+		case FOM_NUM_MEASUREMENTS :
+		total_meas = 0;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			total_meas += fctx->n_meas[i];
+		}
+		break;
+
+		case FOM_COMPLETENESS :
+		for ( i=0; i<fctx->nshells; i++ ) {
+			overall_cts += fctx->cts[i];
+			overall_possible += fctx->possible[i];
+		}
+		break;
+
 	}
 
 	switch ( fctx->fom ) {
 
 		case FOM_R1I :
 		case FOM_R1F :
+		case FOM_REDUNDANCY :
+		case FOM_SNR :
+		case FOM_MEAN_INTENSITY :
+		case FOM_STDDEV_INTENSITY :
 		return overall_num/overall_den;
+
+		case FOM_COMPLETENESS :
+		return (double)overall_cts / overall_possible;
+
+		case FOM_NUM_MEASUREMENTS :
+		return total_meas;
 
 		case FOM_R2 :
 		return sqrt(overall_num/overall_den);
@@ -361,7 +505,7 @@ double fom_overall(struct fom_context *fctx)
 }
 
 
-double fom_shell(struct fom_context *fctx, int i)
+double fom_shell_value(struct fom_context *fctx, int i)
 {
 	double cc;
 	int j;
@@ -374,6 +518,10 @@ double fom_shell(struct fom_context *fctx, int i)
 
 		case FOM_R1I :
 		case FOM_R1F :
+		case FOM_REDUNDANCY :
+		case FOM_SNR :
+		case FOM_MEAN_INTENSITY :
+		case FOM_STDDEV_INTENSITY :
 		return fctx->num[i]/fctx->den[i];
 
 		case FOM_R2 :
@@ -419,6 +567,12 @@ double fom_shell(struct fom_context *fctx, int i)
 		case FOM_D1SIG :
 		case FOM_D2SIG :
 		return (double)fctx->n_within[i] / fctx->cts[i];
+
+		case FOM_NUM_MEASUREMENTS :
+		return fctx->n_meas[i];
+
+		case FOM_COMPLETENESS :
+		return (double)fctx->cts[i] / fctx->possible[i];
 
 	}
 
@@ -469,7 +623,7 @@ struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
 }
 
 
-double fom_shell_label(struct fom_shells *s, int i)
+double fom_shell_centre(struct fom_shells *s, int i)
 {
 	return s->rmins[i] + (s->rmaxs[i] - s->rmins[i])/2.0;
 }
@@ -605,15 +759,143 @@ static int wilson_scale(RefList *list1, RefList *list2, UnitCell *cell)
 }
 
 
+static int calculate_possible(struct fom_context *fctx,
+                              struct fom_shells *shells,
+                              UnitCell *cell,
+                              const SymOpList *sym)
+{
+	RefList *counted;
+	int hmax, kmax, lmax;
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	signed int h, k, l;
+
+	fctx->possible = calloc(fctx->nshells, sizeof(long int));
+	if ( fctx->possible == NULL ) return 1;
+
+	counted = reflist_new();
+	if ( counted == NULL ) {
+		free(fctx->possible);
+		return 1;
+	}
+
+	cell_get_cartesian(cell, &ax, &ay, &az,
+	                         &bx, &by, &bz,
+	                         &cx, &cy, &cz);
+	hmax = shells->rmaxs[fctx->nshells-1] * modulus(ax, ay, az);
+	kmax = shells->rmaxs[fctx->nshells-1] * modulus(bx, by, bz);
+	lmax = shells->rmaxs[fctx->nshells-1] * modulus(cx, cy, cz);
+	for ( h=-hmax; h<=hmax; h++ ) {
+	for ( k=-kmax; k<=kmax; k++ ) {
+	for ( l=-lmax; l<=lmax; l++ ) {
+
+		double d;
+		signed int hs, ks, ls;
+		int bin;
+		int i;
+
+		get_asymm(sym, h, k, l, &hs, &ks, &ls);
+		d = 2.0 * resolution(cell, hs, ks, ls);
+
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
+
+		bin = -1;
+		for ( i=0; i<fctx->nshells; i++ ) {
+			if ( (d>shells->rmins[i]) && (d<=shells->rmaxs[i]) ) {
+				bin = i;
+				break;
+			}
+		}
+		if ( bin == -1 ) continue;
+
+		if ( find_refl(counted, hs, ks, ls) != NULL ) continue;
+		add_refl(counted, hs, ks, ls);
+
+		fctx->possible[bin]++;
+
+	}
+	}
+	}
+	reflist_free(counted);
+
+	return 0;
+}
+
+
+static int is_anomalous(enum fom_type fom)
+{
+	switch ( fom ) {
+
+		case FOM_CCANO:
+		case FOM_RANO:
+		case FOM_CRDANO:
+		case FOM_RANORSPLIT:
+		return 1;
+
+		case FOM_R1I:
+		case FOM_R1F:
+		case FOM_R2:
+		case FOM_RSPLIT:
+		case FOM_CC:
+		case FOM_CCSTAR:
+		case FOM_D1SIG:
+		case FOM_D2SIG:
+		case FOM_NUM_MEASUREMENTS:
+		case FOM_REDUNDANCY:
+		case FOM_SNR:
+		case FOM_MEAN_INTENSITY:
+		case FOM_STDDEV_INTENSITY:
+		case FOM_COMPLETENESS:
+		return 0;
+	}
+
+	ERROR("This point never reached\n");
+	abort();
+}
+
+
+static int is_single_list(enum fom_type fom)
+{
+	switch ( fom ) {
+
+		case FOM_CCANO:
+		case FOM_RANO:
+		case FOM_CRDANO:
+		case FOM_RANORSPLIT:
+		case FOM_R1I:
+		case FOM_R1F:
+		case FOM_R2:
+		case FOM_RSPLIT:
+		case FOM_CC:
+		case FOM_CCSTAR:
+		case FOM_D1SIG:
+		case FOM_D2SIG:
+		return 0;
+
+		case FOM_NUM_MEASUREMENTS:
+		case FOM_REDUNDANCY:
+		case FOM_SNR:
+		case FOM_MEAN_INTENSITY:
+		case FOM_STDDEV_INTENSITY:
+		case FOM_COMPLETENESS:
+		return 1;
+	}
+
+	ERROR("This point never reached\n");
+	abort();
+}
+
 
 struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell,
                                   struct fom_shells *shells, enum fom_type fom,
-                                  int noscale, SymOpList *sym)
+                                  int noscale, const SymOpList *sym)
 {
 	Reflection *refl1;
 	RefListIterator *iter;
 	struct fom_context *fctx;
-	int n_out;
+	long int n_out = 0;
+	long int n_rej = 0;
 
 	fctx = init_fom(fom, num_reflections(list1), shells->nshells);
 
@@ -622,40 +904,44 @@ struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell
 		return NULL;
 	}
 
-	if ( !noscale && wilson_scale(list1, list2, cell) ) {
-		ERROR("Error with scaling.\n");
-		return NULL;
+	if ( !is_single_list(fom) ) {
+		if ( !noscale && wilson_scale(list1, list2, cell) ) {
+			ERROR("Error with scaling.\n");
+			return NULL;
+		}
+
+		for ( refl1 = first_refl(list1, &iter);
+		      refl1 != NULL;
+		      refl1 = next_refl(refl1, iter) )
+		{
+			Reflection *refl2;
+			signed int h, k, l;
+			set_flag(refl1, 0);
+			get_indices(refl1, &h, &k, &l);
+			refl2 = find_refl(list2, h, k, l);
+			assert(refl2 != NULL);
+			set_flag(refl2, 0);
+		}
 	}
 
-	for ( refl1 = first_refl(list1, &iter);
-	      refl1 != NULL;
-	      refl1 = next_refl(refl1, iter) )
-	{
-		Reflection *refl2;
-		signed int h, k, l;
-		set_flag(refl1, 0);
-		get_indices(refl1, &h, &k, &l);
-		refl2 = find_refl(list2, h, k, l);
-		assert(refl2 != NULL);
-		set_flag(refl2, 0);
-	}
-
-	n_out = 0;
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
 	{
 		signed int h, k, l;
 		int bin;
-		double i1, i2;
-		double i1bij, i2bij;
-		double sig1, sig2;
 		Reflection *refl2;
+		Reflection *refl1_bij = NULL;
+		Reflection *refl2_bij = NULL;
 
 		get_indices(refl1, &h, &k, &l);
 
-		refl2 = find_refl(list2, h, k, l);
-		if ( refl2 == NULL ) continue;
+		if ( is_single_list(fom) ) {
+			refl2 = NULL;
+		} else {
+			refl2 = find_refl(list2, h, k, l);
+			if ( refl2 == NULL ) continue;
+		}
 
 		bin = get_bin(shells, refl1, cell);
 		if ( bin == -1 ) {
@@ -663,17 +949,8 @@ struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell
 			continue;
 		}
 
-		i1 = get_intensity(refl1);
-		i2 = get_intensity(refl2);
-		sig1 = get_esd_intensity(refl1);
-		sig2 = get_esd_intensity(refl2);
+		if ( is_anomalous(fom) ) {
 
-		if ( (fom == FOM_CCANO) || (fom == FOM_CRDANO)
-		  || (fom == FOM_RANO) || (fom == FOM_RANORSPLIT) )
-		{
-
-			Reflection *refl1_bij = NULL;
-			Reflection *refl2_bij = NULL;
 			signed int hb, kb, lb;
 
 			if ( find_equiv_in_list(list1, -h, -k, -l, sym,
@@ -700,46 +977,59 @@ struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell
 			assert(refl1_bij != NULL);
 			assert(refl2_bij != NULL);
 
-			i1bij = get_intensity(refl1_bij);
-			i2bij = get_intensity(refl2_bij);
-
-		} else {
-
-			/* Make it obvious if these get used by mistake */
-			i1bij = +INFINITY;
-			i2bij = +INFINITY;
-
 		}
 
-		add_to_fom(fctx, i1, i2, i1bij, i2bij, sig1, sig2, bin);
+		n_rej += add_to_fom(fctx, refl1, refl2, refl1_bij, refl2_bij, bin);
+
 	}
-	if ( n_out)  {
+	if ( n_out )  {
 		ERROR("WARNING: %i reflection pairs outside range.\n", n_out);
+	}
+	if ( n_rej ) {
+		if ( fom == FOM_SNR ) {
+			ERROR("WARNING: %li reflections had infinite or "
+			      "invalid values of I/sigma(I).\n", n_rej);
+		} else {
+			ERROR("WARNING: %li reflections rejected by add_to_fom\n",
+			      n_rej);
+		}
+	}
+
+	if ( fom == FOM_COMPLETENESS ) {
+		calculate_possible(fctx, shells, cell, sym);
 	}
 
 	return fctx;
 }
 
 
-int fom_select_reflections(RefList *list1, RefList *list2,
-                           RefList *list1_acc, RefList *list2_acc,
-                           UnitCell *cell, SymOpList *sym,
-                           int anom, double rmin_fix, double rmax_fix,
-                           double sigma_cutoff, int ignore_negs,
-                           int zero_negs, int mul_cutoff)
+struct fom_rejections fom_select_reflection_pairs(RefList *list1, RefList *list2,
+                                                  RefList **plist1_acc,
+                                                  RefList **plist2_acc,
+                                                  UnitCell *cell, SymOpList *sym,
+                                                  int anom, double rmin_fix, double rmax_fix,
+                                                  double sigma_cutoff, int ignore_negs,
+                                                  int zero_negs, int mul_cutoff)
 {
 	Reflection *refl1;
 	RefListIterator *iter;
-	int ncom, nrej, nmul, nneg, nres, nbij, ncen;
+	struct fom_rejections rej;
+	RefList *list1_acc;
+	RefList *list2_acc;
 
-	/* Select reflections to be used */
-	ncom = 0;
-	nrej = 0;
-	nmul = 0;
-	nneg = 0;
-	nres = 0;
-	nbij = 0;
-	ncen = 0;
+	rej.common = 0;
+	rej.low_snr = 0;
+	rej.negative_deleted = 0;
+	rej.negative_zeroed = 0;
+	rej.few_measurements = 0;
+	rej.outside_resolution_range = 0;
+	rej.no_bijvoet = 0;
+	rej.centric = 0;
+	rej.nan_inf_value = 0;
+
+	list1_acc = reflist_new();
+	list2_acc = reflist_new();
+
 	for ( refl1 = first_refl(list1, &iter);
 	      refl1 != NULL;
 	      refl1 = next_refl(refl1, iter) )
@@ -766,20 +1056,27 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 		mul1 = get_redundancy(refl1);
 		mul2 = get_redundancy(refl2);
 
+		if ( !isfinite(val1) || !isfinite(val2)
+		  || !isfinite(esd1) || !isfinite(esd2) )
+		{
+			rej.nan_inf_value++;
+			continue;
+		}
+
 		if ( (val1 < sigma_cutoff * esd1)
 		  || (val2 < sigma_cutoff * esd2) )
 		{
-			nrej++;
+			rej.low_snr++;
 			continue;
 		}
 
 		if ( ignore_negs && ((val1 < 0.0) || (val2 < 0.0)) ) {
-			nneg++;
+			rej.negative_deleted++;
 			continue;
 		}
 
 		if ( (mul1 < mul_cutoff) || (mul2 < mul_cutoff) ) {
-			nmul++;
+			rej.few_measurements++;
 			continue;
 		}
 
@@ -793,13 +1090,14 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 				val2 = 0.0;
 				d = 1;
 			}
-			if ( d ) nneg++;
+			if ( d ) rej.negative_zeroed++;
+			continue;
 		}
 
 		if ( rmin_fix > 0.0 ) {
 			double res = 2.0*resolution(cell, h, k, l);
 			if ( res < rmin_fix ) {
-				nres++;
+				rej.outside_resolution_range++;
 				continue;
 			}
 		}
@@ -807,7 +1105,7 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 		if ( rmax_fix > 0.0 ) {
 			double res = 2.0*resolution(cell, h, k, l);
 			if ( res > rmax_fix ) {
-				nres++;
+				rej.outside_resolution_range++;
 				continue;
 			}
 		}
@@ -820,7 +1118,7 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 		copy_data(refl2_acc, refl2);
 		set_intensity(refl2_acc, val2);
 
-		ncom++;
+		rej.common++;
 
 	}
 
@@ -833,7 +1131,7 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 		list1_acc = reflist_new();
 		list2_acc = reflist_new();
 
-		ncom = 0;
+		rej.common = 0;
 
 		for ( refl1 = first_refl(list1, &iter);
 		      refl1 != NULL;
@@ -857,7 +1155,7 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 			val2 = get_intensity(refl2);
 
 			if ( is_centric(h, k, l, sym) ) {
-				ncen++;
+				rej.centric++;
 				continue;
 			}
 
@@ -874,7 +1172,7 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 			}
 
 			if ( (refl1_bij == NULL) || (refl2_bij == NULL) ) {
-				nbij++;
+				rej.no_bijvoet++;
 				continue;
 			}
 
@@ -886,44 +1184,138 @@ int fom_select_reflections(RefList *list1, RefList *list2,
 			copy_data(refl2_acc, refl2);
 			set_intensity(refl2_acc, val2);
 
-			ncom++;
+			rej.common++;
 		}
 	}
 
-	if ( nrej > 0 ) {
-		STATUS("Discarded %i reflection pairs because either or both"
-		       " versions had I/sigma(I) < %f.\n", nrej, sigma_cutoff);
+	*plist1_acc = list1_acc;
+	*plist2_acc = list2_acc;
+	return rej;
+}
+
+
+struct fom_rejections fom_select_reflections(RefList *raw_list,
+                                             RefList **plist_acc,
+                                             UnitCell *cell, SymOpList *sym,
+                                             double rmin_fix, double rmax_fix,
+                                             double sigma_cutoff, int ignore_negs,
+                                             int zero_negs, int mul_cutoff)
+{
+	RefList *list;
+	Reflection *refl;
+	RefListIterator *iter;
+	struct fom_rejections rej;
+
+	*plist_acc = NULL;
+
+	rej.common = 0;
+	rej.low_snr = 0;
+	rej.negative_deleted = 0;
+	rej.negative_zeroed = 0;
+	rej.few_measurements = 0;
+	rej.outside_resolution_range = 0;
+	rej.no_bijvoet = 0;
+	rej.centric = 0;
+	rej.nan_inf_value = 0;
+
+	list = reflist_new();
+	if ( list == NULL ) return rej;
+
+	for ( refl = first_refl(raw_list, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) ) {
+
+		signed int h, k, l;
+		double val, sig;
+		int ig = 0;
+		Reflection *new;
+
+		get_indices(refl, &h, &k, &l);
+
+		val = get_intensity(refl);
+		sig = get_esd_intensity(refl);
+
+		if ( !isfinite(val) || !isfinite(sig) ) {
+			rej.nan_inf_value++;
+			continue;
+		}
+
+		if ( val < sigma_cutoff * sig ) {
+			rej.low_snr++;
+			ig = 1;
+		}
+
+		if ( ignore_negs && (val < 0.0) ) {
+			rej.negative_deleted++;
+			ig = 1;
+		}
+
+		if ( zero_negs && (val < 0.0) ) {
+			set_intensity(refl, 0.0);
+			rej.negative_zeroed++;
+		}
+
+		if ( rmin_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res < rmin_fix ) {
+				rej.outside_resolution_range++;
+				continue;
+			}
+		}
+
+		if ( rmax_fix > 0.0 ) {
+			double res = 2.0*resolution(cell, h, k, l);
+			if ( res > rmax_fix ) {
+				rej.outside_resolution_range++;
+				continue;
+			}
+		}
+
+		if ( ig ) continue;
+
+		new = add_refl(list, h, k, l);
+		copy_data(new, refl);
 	}
 
-	if ( ignore_negs && (nneg > 0) ) {
-		STATUS("Discarded %i reflection pairs because either or both"
-		       " versions had negative intensities.\n", nneg);
-	}
+	*plist_acc = list;
+	return rej;
+}
 
-	if ( zero_negs && (nneg > 0) ) {
-		STATUS("For %i reflection pairs, either or both versions had"
-		       " negative intensities which were set to zero.\n", nneg);
-	}
 
-	if ( nmul > 0 ) {
-		STATUS("%i reflection pairs rejected because either or both"
-		       " versions had too few measurements.\n", nmul);
-	}
+int fom_overall_num_reflections(struct fom_context *fctx)
+{
+	int i;
+	long int n = 0;
 
-	if ( nres > 0 ) {
-		STATUS("%i reflection pairs rejected because either or both"
-		       " versions were outside the resolution range.\n", nres);
+	for ( i=0; i<fctx->nshells; i++ ) {
+		n += fctx->cts[i];
 	}
+	return n;
+}
 
-	if ( nbij > 0 ) {
-		STATUS("%i reflection pairs rejected because either or both"
-		       " versions did not have Bijvoet partners.\n", nres);
+
+int fom_shell_num_reflections(struct fom_context *fctx, int i)
+{
+	return fctx->cts[i];
+}
+
+
+int fom_overall_num_possible(struct fom_context *fctx)
+{
+	int i;
+	long int n = 0;
+
+	assert(fctx->fom == FOM_COMPLETENESS);
+
+	for ( i=0; i<fctx->nshells; i++ ) {
+		n += fctx->possible[i];
 	}
+	return n;
+}
 
-	if ( ncen > 0 ) {
-		STATUS("%i reflection pairs rejected because they were"
-		       " centric.\n", ncen);
-	}
 
-	return ncom;
+int fom_shell_num_possible(struct fom_context *fctx, int i)
+{
+	assert(fctx->fom == FOM_COMPLETENESS);
+	return fctx->possible[i];
 }

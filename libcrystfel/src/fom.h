@@ -38,6 +38,19 @@
 #include <reflist.h>
 #include <symmetry.h>
 
+struct fom_rejections
+{
+	int common;
+	int low_snr;
+	int negative_deleted;
+	int negative_zeroed;
+	int few_measurements;
+	int outside_resolution_range;
+	int no_bijvoet;
+	int centric;
+	int nan_inf_value;
+};
+
 enum fom_type
 {
 	FOM_R1I,
@@ -51,7 +64,13 @@ enum fom_type
 	FOM_RANO,
 	FOM_RANORSPLIT,
 	FOM_D1SIG,
-	FOM_D2SIG
+	FOM_D2SIG,
+	FOM_NUM_MEASUREMENTS,
+	FOM_REDUNDANCY,
+	FOM_SNR,
+	FOM_MEAN_INTENSITY,
+	FOM_STDDEV_INTENSITY,
+	FOM_COMPLETENESS,
 };
 
 struct fom_shells
@@ -61,51 +80,53 @@ struct fom_shells
 	double *rmaxs;
 };
 
-struct fom_context
-{
-	enum fom_type fom;
-	int nshells;
-	int *cts;
+struct fom_context;
 
-	/* For R-factors */
-	double *num;
-	double *den;
+extern struct fom_rejections fom_select_reflection_pairs(RefList *list1,
+                                                         RefList *list2,
+                                                         RefList **plist1_acc,
+                                                         RefList **plist2_acc,
+                                                         UnitCell *cell,
+                                                         SymOpList *sym,
+                                                         int anom,
+                                                         double rmin_fix,
+                                                         double rmax_fix,
+                                                         double sigma_cutoff,
+                                                         int ignore_negs,
+                                                         int zero_negs,
+                                                         int mul_cutoff);
 
-	/* For "double" R-factors */
-	double *num2;
-	double *den2;
+extern struct fom_rejections fom_select_reflections(RefList *list,
+                                                    RefList **plist_acc,
+                                                    UnitCell *cell,
+                                                    SymOpList *sym,
+                                                    double rmin_fix,
+                                                    double rmax_fix,
+                                                    double sigma_cutoff,
+                                                    int ignore_negs,
+                                                    int zero_negs,
+                                                    int mul_cutoff);
 
-	/* For CCs */
-	double **vec1;
-	double **vec2;
-	int *n;
-	int nmax;
-
-	/* For "counting" things e.g. d1sig or d2sig */
-	int *n_within;
-};
-
-extern int fom_select_reflections(RefList *list1, RefList *list2,
-                                  RefList *list1_acc, RefList *list2_acc,
-                                  UnitCell *cell, SymOpList *sym,
-                                  int anom, double rmin_fix, double rmax_fix,
-                                  double sigma_cutoff, int ignore_negs,
-                                  int zero_negs, int mul_cutoff);
 
 extern struct fom_context *fom_calculate(RefList *list1, RefList *list2,
                                          UnitCell *cell,
                                          struct fom_shells *shells,
                                          enum fom_type fom, int noscale,
-                                         SymOpList *sym);
+                                         const SymOpList *sym);
 
 extern struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
                                                      int nshells);
 
-extern double fom_shell_label(struct fom_shells *s, int i);
+extern double fom_shell_centre(struct fom_shells *s, int i);
 
-extern double fom_shell(struct fom_context *fctx, int i);
+extern double fom_overall_value(struct fom_context *fctx);
+extern double fom_shell_value(struct fom_context *fctx, int i);
 
-extern double fom_overall(struct fom_context *fctx);
+extern int fom_overall_num_reflections(struct fom_context *fctx);
+extern int fom_shell_num_reflections(struct fom_context *fctx, int i);
+
+extern int fom_overall_num_possible(struct fom_context *fctx);
+extern int fom_shell_num_possible(struct fom_context *fctx, int i);
 
 extern enum fom_type fom_type_from_string(const char *s);
 

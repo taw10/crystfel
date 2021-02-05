@@ -45,6 +45,7 @@
 #include <reflist.h>
 #include <reflist-utils.h>
 #include <cell-utils.h>
+#include <fom.h>
 
 #include "version.h"
 
@@ -390,67 +391,16 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
                         double rmin_fix, double rmax_fix, int nshells,
 			const char *shell_file)
 {
-	unsigned long *possible;
-	unsigned long *measurements;
-	unsigned long *measured;
-	unsigned long *snr_measured;
-	double total_vol, vol_per_shell;
-	double *rmins;
-	double *rmaxs;
-	double *snr;
-	double *mean;
-	double *var;
 	double rmin, rmax;
-	signed int h, k, l;
 	int i;
 	FILE *fh;
-	double snr_total = 0;
-	unsigned long nrefl = 0;
-	unsigned long nmeastot = 0;
-	unsigned long nout = 0;
-	unsigned long possible_tot = 0;
-	unsigned long nsilly = 0;
-	Reflection *refl;
-	RefListIterator *iter;
-	RefList *counted;
-	int hmax, kmax, lmax;
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-
-	possible = malloc(nshells*sizeof(unsigned long));
-	measurements = malloc(nshells*sizeof(unsigned long));
-	measured = malloc(nshells*sizeof(unsigned long));
-	snr_measured = malloc(nshells*sizeof(unsigned long));
-	if ( (possible == NULL) || (measurements == NULL)
-	  || (measured == NULL) || (snr_measured == NULL) ) {
-		ERROR("Couldn't allocate memory.\n");
-		free(possible);
-		free(measurements);
-		free(measured);
-		free(snr_measured);
-		return;
-	}
-
-	rmins = malloc(nshells*sizeof(double));
-	rmaxs = malloc(nshells*sizeof(double));
-	snr = malloc(nshells*sizeof(double));
-	mean = malloc(nshells*sizeof(double));
-	var = malloc(nshells*sizeof(double));
-	if ( (rmins == NULL) || (rmaxs == NULL) || (snr == NULL)
-	  || (mean == NULL) || (var == NULL) ) {
-		ERROR("Couldn't allocate memory.\n");
-		free(possible);
-		free(measurements);
-		free(measured);
-		free(snr_measured);
-		free(rmins);
-		free(rmaxs);
-		free(snr);
-		free(mean);
-		free(var);
-		return;
-	}
+	struct fom_shells *shells;
+	struct fom_context *nmeas_ctx;
+	struct fom_context *red_ctx;
+	struct fom_context *snr_ctx;
+	struct fom_context *mean_ctx;
+	struct fom_context *stddev_ctx;
+	struct fom_context *compl_ctx;
 
 	fh = fopen(shell_file, "w");
 	if ( fh == NULL ) {
@@ -458,224 +408,72 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		return;
 	}
 
-	for ( i=0; i<nshells; i++ ) {
-		possible[i] = 0;
-		measured[i] = 0;
-		snr_measured[i] = 0;
-		measurements[i] = 0;
-		snr[i] = 0;
-		var[i] = 0;
-		mean[i] = 0;
-	}
-
 	resolution_limits(list, cell, &rmin, &rmax);
 	STATUS("1/d goes from %f to %f nm^-1\n", rmin/1e9, rmax/1e9);
-
-	/* Widen the range just a little bit */
-	rmin -= 0.001e9;
-	rmax += 0.001e9;
 
 	/* Fixed resolution shells if needed */
 	if ( rmin_fix > 0.0 ) rmin = rmin_fix;
 	if ( rmax_fix > 0.0 ) rmax = rmax_fix;
 
-	total_vol = pow(rmax, 3.0) - pow(rmin, 3.0);
-	vol_per_shell = total_vol / nshells;
-	rmins[0] = rmin;
-	for ( i=1; i<nshells; i++ ) {
-
-		double r;
-
-		r = vol_per_shell + pow(rmins[i-1], 3.0);
-		r = pow(r, 1.0/3.0);
-
-		/* Shells of constant volume */
-		rmaxs[i-1] = r;
-		rmins[i] = r;
-	}
-	rmaxs[nshells-1] = rmax;
-
-	/* Count the number of reflections possible in each shell */
-	counted = reflist_new();
-	cell_get_cartesian(cell, &ax, &ay, &az,
-	                         &bx, &by, &bz,
-	                         &cx, &cy, &cz);
-	hmax = rmax * modulus(ax, ay, az);
-	kmax = rmax * modulus(bx, by, bz);
-	lmax = rmax * modulus(cx, cy, cz);
-	for ( h=-hmax; h<=hmax; h++ ) {
-	for ( k=-kmax; k<=kmax; k++ ) {
-	for ( l=-lmax; l<=lmax; l++ ) {
-
-		double d;
-		signed int hs, ks, ls;
-		int bin;
-
-		get_asymm(sym, h, k, l, &hs, &ks, &ls);
-		d = 2.0 * resolution(cell, hs, ks, ls);
-
-		if ( forbidden_reflection(cell, h, k, l) ) continue;
-
-		bin = -1;
-		for ( i=0; i<nshells; i++ ) {
-			if ( (d>rmins[i]) && (d<=rmaxs[i]) ) {
-				bin = i;
-				break;
-			}
-		}
-		if ( bin == -1 ) continue;
-
-		if ( find_refl(counted, hs, ks, ls) != NULL ) continue;
-		add_refl(counted, hs, ks, ls);
-
-		possible[bin]++;
-		possible_tot++;
-
-	}
-	}
-	}
-	reflist_free(counted);
-
-	/* Calculate means */
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l, hs, ks, ls;
-		double d, val, esd;
-		int bin;
-		int j;
-
-		get_indices(refl, &h, &k, &l);
-		if ( forbidden_reflection(cell, h, k, l) ) continue;
-
-		get_asymm(sym, h, k, l, &hs, &ks, &ls);
-		d = resolution(cell, hs, ks, ls) * 2.0;
-		val = get_intensity(refl);
-		esd = get_esd_intensity(refl);
-
-		bin = -1;
-		for ( j=0; j<nshells; j++ ) {
-			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
-				bin = j;
-				break;
-			}
-		}
-		if ( bin == -1 ) continue;
-
-		measured[bin]++;
-		mean[bin] += get_intensity(refl);
-
-		if ( !isfinite(val/esd) ) nsilly++;
-
-	}
-
-	for ( i=0; i<nshells; i++ ) {
-		mean[i] /= (double)measured[i];
-	}
-
-	/* Characterise the data set */
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double d;
-		int bin;
-		int j;
-		double val, esd;
-
-		get_indices(refl, &h, &k, &l);
-		if ( forbidden_reflection(cell, h, k, l) ) continue;
-
-		d = resolution(cell, h, k, l) * 2.0;
-		val = get_intensity(refl);
-		esd = get_esd_intensity(refl);
-
-		bin = -1;
-		for ( j=0; j<nshells; j++ ) {
-			if ( (d>rmins[j]) && (d<=rmaxs[j]) ) {
-				bin = j;
-				break;
-			}
-		}
-		if ( bin == -1 ) {
-			nout++;
-			continue;
-		}
-
-		/* measured[bin] was done earlier */
-		measurements[bin] += get_redundancy(refl);
-
-		if ( isfinite(val/esd) ) {
-			snr[bin] += val / esd;
-			snr_total += val / esd;
-			snr_measured[bin]++;
-		} else {
-			nsilly++;
-		}
-
-		nrefl++;
-		nmeastot += get_redundancy(refl);
-
-		var[bin] += pow(val-mean[bin], 2.0);
-
-	}
+	shells = fom_make_resolution_shells(rmin, rmax,  nshells);
 
 	STATUS("Overall values within specified resolution range:\n");
-	STATUS("%li measurements in total.\n", nmeastot);
-	STATUS("%li reflections in total.\n", nrefl);
-	STATUS("%li reflections possible.\n", possible_tot);
-	STATUS("Overall <snr> = %f\n", snr_total/(double)nrefl);
+
+	nmeas_ctx = fom_calculate(list, NULL, cell, shells,
+	                          FOM_NUM_MEASUREMENTS, 0, sym);
+	red_ctx = fom_calculate(list, NULL, cell, shells,
+	                        FOM_REDUNDANCY, 0, sym);
+	snr_ctx = fom_calculate(list, NULL, cell, shells,
+	                        FOM_SNR, 0, sym);
+	mean_ctx = fom_calculate(list, NULL, cell, shells,
+	                         FOM_MEAN_INTENSITY, 0, sym);
+	stddev_ctx = fom_calculate(list, NULL, cell, shells,
+	                           FOM_STDDEV_INTENSITY, 0, sym);
+	compl_ctx = fom_calculate(list, NULL, cell, shells,
+	                          FOM_COMPLETENESS, 0, sym);
+
+	STATUS("%.0f measurements in total.\n",
+	       fom_overall_value(nmeas_ctx));
+	STATUS("%li reflections in total.\n",
+	       fom_overall_num_reflections(compl_ctx));
+	STATUS("%li reflections possible.\n",
+	       fom_overall_num_possible(compl_ctx));
+	STATUS("Overall <snr> = %f\n", fom_overall_value(snr_ctx));
 	STATUS("Overall redundancy = %f measurements/unique reflection\n",
-	       nmeastot/(double)nrefl);
-	STATUS("Overall completeness = %f %%\n", 100.0*nrefl/(double)possible_tot);
-
-	if ( nout ) {
-		STATUS("WARNING; %li reflections outside resolution range.\n",
-		       nout);
-	}
-
-	if ( nsilly ) {
-		STATUS("WARNING; %li reflections had infinite or invalid values"
-		       " of I/sigma(I).\n", nsilly);
-	}
+	       fom_overall_value(red_ctx));
+	STATUS("Overall completeness = %f %%\n",
+	       100.0*fom_overall_value(compl_ctx));
 
 	fprintf(fh, "Center 1/nm  # refs Possible  Compl       "
 		    "Meas   Red   SNR    Std dev       Mean     d(A)    "
 		    "Min 1/nm   Max 1/nm\n");
 	for ( i=0; i<nshells; i++ ) {
 
-		double cen;
-		cen = rmins[i] + (rmaxs[i] - rmins[i])/2.0;
-		fprintf(fh, "%10.3f %8li %8li %6.2f %10li %5.1f"
+		long int measured, possible;
+
+		measured = fom_shell_num_reflections(compl_ctx, i);
+		possible = fom_shell_num_possible(compl_ctx, i);
+
+		fprintf(fh, "%10.3f %8li %8li %6.2f %10.0f %5.1f"
 		            " %5.2f %10.2f %10.2f %8.2f  %10.3f %10.3f\n",
-		        cen*1.0e-9,
-		        measured[i],
-		        possible[i],
-		        100.0*(double)measured[i]/possible[i],
-		        measurements[i],
-		        (double)measurements[i]/measured[i],
-		        snr[i]/(double)snr_measured[i],
-		        sqrt(var[i]/measured[i]),
-		        mean[i], (1.0/cen)*1e10,
-			rmins[i]*1.0e-9, rmaxs[i]*1.0e-9);
+		        fom_shell_centre(shells, i)*1.0e-9,
+		        measured,
+		        possible,
+		        100.0*fom_shell_value(compl_ctx, i),
+		        fom_shell_value(nmeas_ctx, i),
+		        fom_shell_value(red_ctx, i),
+		        fom_shell_value(snr_ctx, i),
+		        fom_shell_value(stddev_ctx, i),
+		        fom_shell_value(mean_ctx, i),
+		        (1.0/fom_shell_centre(shells, i))*1e10,
+			shells->rmins[i]*1.0e-9,
+			shells->rmaxs[i]*1.0e-9);
 
 	}
 
 	fclose(fh);
 
 	STATUS("Resolution shell information written to %s.\n", shell_file);
-
-	free(possible);
-	free(measurements);
-	free(measured);
-	free(snr_measured);
-	free(rmins);
-	free(rmaxs);
-	free(snr);
-	free(mean);
-	free(var);
 }
 
 
@@ -711,10 +509,7 @@ int main(int argc, char *argv[])
 	SymOpList *sym;
 	RefList *raw_list;
 	RefList *list;
-	Reflection *refl;
-	RefListIterator *iter;
 	char *cellfile = NULL;
-	int rej = 0;
 	float rmin_fix = -1.0;
 	float rmax_fix = -1.0;
 	float sigma_cutoff = -INFINITY;
@@ -725,9 +520,8 @@ int main(int argc, char *argv[])
 	int ltest = 0;
 	int ignorenegs = 0;
 	int zeronegs = 0;
-	int nneg = 0;
-	int nres = 0;
 	float highres, lowres;
+	struct fom_rejections rej;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -905,74 +699,32 @@ int main(int argc, char *argv[])
 	}
 
 	/* Reject some reflections */
-	list = reflist_new();
-	for ( refl = first_refl(raw_list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
+	rej = fom_select_reflections(raw_list, &list, cell, sym,
+	                             rmin_fix, rmax_fix, sigma_cutoff,
+	                             ignorenegs, zeronegs, 0);
 
-		signed int h, k, l;
-		double val, sig;
-		int ig = 0;
-		Reflection *new;
-
-		get_indices(refl, &h, &k, &l);
-
-		val = get_intensity(refl);
-		sig = get_esd_intensity(refl);
-
-		if ( val < sigma_cutoff * sig ) {
-			rej++;
-			ig = 1;
-		}
-
-		if ( ignorenegs && (val < 0.0) ) {
-			nneg++;
-			ig = 1;
-		}
-
-		if ( zeronegs && (val < 0.0) ) {
-			set_intensity(refl, 0.0);
-			nneg++;
-		}
-
-		if ( rmin_fix > 0.0 ) {
-			double res = 2.0*resolution(cell, h, k, l);
-			if ( res < rmin_fix ) {
-				nres++;
-				continue;
-			}
-		}
-
-		if ( rmax_fix > 0.0 ) {
-			double res = 2.0*resolution(cell, h, k, l);
-			if ( res > rmax_fix ) {
-				nres++;
-				continue;
-			}
-		}
-
-		if ( ig ) continue;
-
-		new = add_refl(list, h, k, l);
-		copy_data(new, refl);
-
-	}
 	STATUS("Discarded %i reflections (out of %i) with I/sigma(I) < %f\n",
-	       rej, num_reflections(raw_list), sigma_cutoff);
+	       rej.low_snr, num_reflections(raw_list), sigma_cutoff);
 	reflist_free(raw_list);
 
-	if ( ignorenegs && (nneg > 0) ) {
+	if ( rej.negative_deleted > 0 ) {
 		STATUS("Discarded %i reflections because they had negative "
-		       "intensities.\n", nneg);
+		       "intensities.\n", rej.negative_deleted);
 	}
 
-	if ( zeronegs && (nneg > 0) ) {
-		STATUS("Set %i negative intensities to zero\n", nneg);
+	if ( rej.negative_zeroed > 0 ) {
+		STATUS("Set %i negative intensities to zero\n",
+		       rej.negative_zeroed);
 	}
 
-	if ( nres > 0 ) {
+	if ( rej.outside_resolution_range > 0 ) {
 		STATUS("%i reflections rejected because they were outside the "
-		       "resolution range.\n", nres);
+		       "resolution range.\n", rej.outside_resolution_range);
+	}
+
+	if ( rej.nan_inf_value ) {
+		STATUS("WARNING: %i reflections had infinite or invalid values"
+		       " of I or sigma(I).\n", rej.nan_inf_value);
 	}
 
 	if ( wilson ) {
