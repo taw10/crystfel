@@ -399,7 +399,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	struct fom_context *red_ctx;
 	struct fom_context *snr_ctx;
 	struct fom_context *mean_ctx;
-	struct fom_context *stddev_ctx;
 	struct fom_context *compl_ctx;
 
 	fh = fopen(shell_file, "w");
@@ -427,8 +426,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	                        FOM_SNR, 0, sym);
 	mean_ctx = fom_calculate(list, NULL, cell, shells,
 	                         FOM_MEAN_INTENSITY, 0, sym);
-	stddev_ctx = fom_calculate(list, NULL, cell, shells,
-	                           FOM_STDDEV_INTENSITY, 0, sym);
 	compl_ctx = fom_calculate(list, NULL, cell, shells,
 	                          FOM_COMPLETENESS, 0, sym);
 
@@ -445,7 +442,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 	       100.0*fom_overall_value(compl_ctx));
 
 	fprintf(fh, "Center 1/nm  # refs Possible  Compl       "
-		    "Meas   Red   SNR    Std dev       Mean     d(A)    "
+		    "Meas   Red   SNR     Mean I     d(A)    "
 		    "Min 1/nm   Max 1/nm\n");
 	for ( i=0; i<nshells; i++ ) {
 
@@ -455,7 +452,7 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		possible = fom_shell_num_possible(compl_ctx, i);
 
 		fprintf(fh, "%10.3f %8li %8li %6.2f %10.0f %5.1f"
-		            " %5.2f %10.2f %10.2f %8.2f  %10.3f %10.3f\n",
+		            " %5.2f %10.2f %8.2f  %10.3f %10.3f\n",
 		        fom_shell_centre(shells, i)*1.0e-9,
 		        measured,
 		        possible,
@@ -463,7 +460,6 @@ static void plot_shells(RefList *list, UnitCell *cell, const SymOpList *sym,
 		        fom_shell_value(nmeas_ctx, i),
 		        fom_shell_value(red_ctx, i),
 		        fom_shell_value(snr_ctx, i),
-		        fom_shell_value(stddev_ctx, i),
 		        fom_shell_value(mean_ctx, i),
 		        (1.0/fom_shell_centre(shells, i))*1e10,
 			shells->rmins[i]*1.0e-9,

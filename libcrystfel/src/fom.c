@@ -129,7 +129,6 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_RSPLIT :
 		case FOM_RANO :
 		case FOM_MEAN_INTENSITY :
-		case FOM_STDDEV_INTENSITY :
 		case FOM_SNR :
 		case FOM_REDUNDANCY :
 		fctx->num = malloc(nshells*sizeof(double));
@@ -315,12 +314,6 @@ static int add_to_fom(struct fom_context *fctx,
 		fctx->den[bin] += 1.0;
 		break;
 
-		/* FIXME: Delete this FoM? */
-		case FOM_STDDEV_INTENSITY :
-		fctx->num[bin] += 1.0;
-		fctx->den[bin] += 1.0;
-		break;
-
 		case FOM_COMPLETENESS :
 		/* fctx->cts already incremented, as needed.
 		 * Will calculate possible reflections later */
@@ -361,7 +354,6 @@ double fom_overall_value(struct fom_context *fctx)
 		case FOM_REDUNDANCY :
 		case FOM_SNR :
 		case FOM_MEAN_INTENSITY :
-		case FOM_STDDEV_INTENSITY :
 		overall_num = 0.0;
 		overall_den = 0.0;
 		for ( i=0; i<fctx->nshells; i++ ) {
@@ -464,7 +456,6 @@ double fom_overall_value(struct fom_context *fctx)
 		case FOM_REDUNDANCY :
 		case FOM_SNR :
 		case FOM_MEAN_INTENSITY :
-		case FOM_STDDEV_INTENSITY :
 		return overall_num/overall_den;
 
 		case FOM_COMPLETENESS :
@@ -521,7 +512,6 @@ double fom_shell_value(struct fom_context *fctx, int i)
 		case FOM_REDUNDANCY :
 		case FOM_SNR :
 		case FOM_MEAN_INTENSITY :
-		case FOM_STDDEV_INTENSITY :
 		return fctx->num[i]/fctx->den[i];
 
 		case FOM_R2 :
@@ -845,7 +835,6 @@ static int is_anomalous(enum fom_type fom)
 		case FOM_REDUNDANCY:
 		case FOM_SNR:
 		case FOM_MEAN_INTENSITY:
-		case FOM_STDDEV_INTENSITY:
 		case FOM_COMPLETENESS:
 		return 0;
 	}
@@ -877,7 +866,6 @@ static int is_single_list(enum fom_type fom)
 		case FOM_REDUNDANCY:
 		case FOM_SNR:
 		case FOM_MEAN_INTENSITY:
-		case FOM_STDDEV_INTENSITY:
 		case FOM_COMPLETENESS:
 		return 1;
 	}
