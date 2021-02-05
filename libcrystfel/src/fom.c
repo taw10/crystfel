@@ -43,6 +43,10 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 
+/**
+ * \file fom.h
+ */
+
 struct fom_context
 {
 	enum fom_type fom;
@@ -306,6 +310,11 @@ static int add_to_fom(struct fom_context *fctx,
 }
 
 
+/**
+ * Calculates the overall value for the %fom_context
+ *
+ * You must have previously called fom_calculate()
+ */
 double fom_overall_value(struct fom_context *fctx)
 {
 	double overall_num = INFINITY;
@@ -477,6 +486,10 @@ double fom_overall_value(struct fom_context *fctx)
 }
 
 
+/**
+ * Calculates the figure of merit for the specified shell number.
+ * You must have previously called fom_calculate()
+ */
 double fom_shell_value(struct fom_context *fctx, int i)
 {
 	double cc;
@@ -552,6 +565,16 @@ double fom_shell_value(struct fom_context *fctx, int i)
 }
 
 
+/**
+ * \param rmin: The minimum value of 1/d, in m^-1
+ * \param rmax: The maximum value of 1/d, in m^-1
+ * \param nshells: The number of shells to use
+ *
+ * Create a %fom_shells structure for the specified minimum and maximum
+ * resolution limits
+ *
+ * Returns the %fom_shells structure, or NULL on error.
+ */
 struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
                                               int nshells)
 {
@@ -594,6 +617,13 @@ struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
 }
 
 
+/**
+ * \param s: A %fom_shells structure
+ * \param i: The shell number
+ *
+ * Returns the value of 1/d at the middle of the shell,
+ *  i.e. the mean of the minimum and maximum 1/d values for the shell
+ */
 double fom_shell_centre(struct fom_shells *s, int i)
 {
 	return s->rmins[i] + (s->rmaxs[i] - s->rmins[i])/2.0;
@@ -856,6 +886,28 @@ static int is_single_list(enum fom_type fom)
 }
 
 
+/**
+ * \param list1: A %RefList
+ * \param list2: A %RefList
+ * \param cell: A %UnitCell
+ * \param shells: A %fom_shells structure
+ * \param fom: The figure of merit to calculate
+ * \param noscale: Non-zero to disable scaline of reflection lists
+ * \param sym: The symmetry of \p list1 and \p list2.
+ *
+ * Calculates the specified figure of merit, comparing the two reflection lists.
+ *
+ * The \p cell and \p sym must match both reflection lists.  You should also have
+ * called fom_select_reflection_pairs() to pre-process the lists.
+ *
+ * If the figure of merit does not involve comparison (e.g. %FOM_SNR),
+ * then \p list1 will be used.  In this case, \p list2 and \p noscale will be
+ * ignored.  Use fom_select_reflections() instead of fom_select_reflection_pairs()
+ * in this case.
+ *
+ * \returns a %fom_context structure.  Use fom_shell_value() et al., to
+ *  extract the actual figure of merit values.
+ */
 struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell,
                                   struct fom_shells *shells, enum fom_type fom,
                                   int noscale, const SymOpList *sym)
@@ -972,6 +1024,28 @@ struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell
 }
 
 
+/**
+ * \param list1: The first input %RefList
+ * \param list2: The second input %RefList
+ * \param plist1_acc: Pointer to location for accepted list
+ * \param plist2_acc: Pointer to location for accepted list
+ * \param cell: A %UnitCell
+ * \param sym: The symmetry of \p raw_list
+ * \param anom: Non-zero if you will calculate a FoM for anomalous signal
+ * \param rmin_fix: If positive, minimum resolution to use
+ * \param rmax_fix: If positive, maximum resolution to use
+ * \param sigma_cutoff: Minimum I/sigI value
+ * \param ignore_negs: Non-zero to filter out negative intensities
+ * \param zero_negs: Non-zero to set negative intensities to zero
+ * \param mul_cutoff: Minimum number of measurements per reflection
+ *
+ * Selects reflections suitable for use with fom_calculate().
+ *
+ * Use -INFINITY for \p sigma_cutoff to disable the check.
+ * Set \p mul_cutoff to zero to disable the check.
+ *
+ * \returns a %fom_rejections structure with the counts of reflections.
+ */
 struct fom_rejections fom_select_reflection_pairs(RefList *list1, RefList *list2,
                                                   RefList **plist1_acc,
                                                   RefList **plist2_acc,
@@ -1163,6 +1237,23 @@ struct fom_rejections fom_select_reflection_pairs(RefList *list1, RefList *list2
 }
 
 
+/**
+ * \param raw_list: The input %RefList
+ * \param plist_acc: Pointer to location for accepted list
+ * \param cell: A %UnitCell
+ * \param sym: The symmetry of \p raw_list
+ * \param rmin_fix: If positive, minimum resolution to use
+ * \param rmax_fix: If positive, maximum resolution to use
+ * \param sigma_cutoff: Minimum I/sigI value
+ * \param ignore_negs: Non-zero to filter out negative intensities
+ * \param zero_negs: Non-zero to set negative intensities to zero
+ * \param mul_cutoff: Minimum number of measurements per reflection
+ *
+ * Use -INFINITY for \p sigma_cutoff to disable the check.
+ * Set \p mul_cutoff to zero to disable the check.
+ *
+ * \returns a %fom_rejections structure with the counts of reflections.
+ */
 struct fom_rejections fom_select_reflections(RefList *raw_list,
                                              RefList **plist_acc,
                                              UnitCell *cell, SymOpList *sym,
@@ -1251,6 +1342,11 @@ struct fom_rejections fom_select_reflections(RefList *raw_list,
 }
 
 
+/**
+ * \param fctx: A %fom_context structure
+ *
+ * \returns the total number of unique reflections
+ */
 int fom_overall_num_reflections(struct fom_context *fctx)
 {
 	int i;
@@ -1263,12 +1359,26 @@ int fom_overall_num_reflections(struct fom_context *fctx)
 }
 
 
+/**
+ * \param fctx: A %fom_context structure
+ * \param i: Shell number
+ *
+ * \returns the number of unique reflections in the shell
+ */
 int fom_shell_num_reflections(struct fom_context *fctx, int i)
 {
 	return fctx->cts[i];
 }
 
 
+/**
+ * \param fctx: A %fom_context structure
+ *
+ * This must only be called on a %fom_context for %FOM_COMPLETENESS.
+ *
+ * \returns the total number of reflections possible in all shells, taking into
+ * account symmetry and lattice absences, but not screw axis/glide place absences.
+ */
 int fom_overall_num_possible(struct fom_context *fctx)
 {
 	int i;
@@ -1283,6 +1393,15 @@ int fom_overall_num_possible(struct fom_context *fctx)
 }
 
 
+/**
+ * \param fctx: A %fom_context structure
+ * \param i: Shell number
+ *
+ * This must only be called on a %fom_context for %FOM_COMPLETENESS.
+ *
+ * \returns the number of reflections possible in the shell, taking into account
+ * symmetry and lattice absences, but not screw axis/glide place absences.
+ */
 int fom_shell_num_possible(struct fom_context *fctx, int i)
 {
 	assert(fctx->fom == FOM_COMPLETENESS);

@@ -38,19 +38,25 @@
 #include <reflist.h>
 #include <symmetry.h>
 
+/**
+ * Contains counts of rejected reflections
+ */
 struct fom_rejections
 {
-	int common;
-	int low_snr;
-	int negative_deleted;
-	int negative_zeroed;
-	int few_measurements;
-	int outside_resolution_range;
-	int no_bijvoet;
-	int centric;
-	int nan_inf_value;
+	int common;              /**< Number of common reflection pairs accepted */
+	int low_snr;             /**< Reflections with I/sigI too low */
+	int negative_deleted;    /**< Negative intensities which were deleted */
+	int negative_zeroed;     /**< Negative intensities which were set to zero */
+	int few_measurements;    /**< Reflections with too few measurements */
+	int outside_resolution_range;  /**< Reflections outside resolution range */
+	int no_bijvoet;          /**< Reflections with no Bijvoet partner */
+	int centric;             /**< Reflections which are centric */
+	int nan_inf_value;       /**< Reflections with NaN or infinite intensity */
 };
 
+/**
+ * An enumeration of possible figures of merit to calculate
+ */
 enum fom_type
 {
 	FOM_R1I,
