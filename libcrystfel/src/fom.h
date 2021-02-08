@@ -135,4 +135,6 @@ extern int fom_shell_num_possible(struct fom_context *fctx, int i);
 
 extern int fom_is_anomalous(enum fom_type f);
 
+extern const char *fom_name(enum fom_type f);
+
 #endif	/* FOM */

@@ -1407,3 +1407,28 @@ int fom_shell_num_possible(struct fom_context *fctx, int i)
 	assert(fctx->fom == FOM_COMPLETENESS);
 	return fctx->possible[i];
 }
+
+
+const char *fom_name(enum fom_type f)
+{
+	switch ( f ) {
+		case FOM_R1I : return "R1(I)";
+		case FOM_R1F : return "R1(F)";
+		case FOM_R2 : return "R2";
+		case FOM_RSPLIT : return "Rsplit";
+		case FOM_CC : return "CC";
+		case FOM_CCSTAR : return "CC*";
+		case FOM_CCANO : return "CCano";
+		case FOM_CRDANO : return "CRDano";
+		case FOM_RANO : return "Rano";
+		case FOM_RANORSPLIT : return "Rano/Rsplit";
+		case FOM_D1SIG : return "D<1sigma";
+		case FOM_D2SIG : return "D<2sigma";
+		case FOM_NUM_MEASUREMENTS : return "nMeas";
+		case FOM_REDUNDANCY : return "Redundancy";
+		case FOM_SNR : return "I/sigI";
+		case FOM_MEAN_INTENSITY : return "mean I";
+		case FOM_COMPLETENESS : return "Completeness";
+		default : return "unknown FoM";
+	}
+}
