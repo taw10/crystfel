@@ -259,6 +259,8 @@ static void auto_indm_toggle_sig(GtkToggleButton *togglebutton,
 	gtk_widget_set_sensitive(GTK_WIDGET(io->indm_chooser),
 	                         !gtk_toggle_button_get_active(togglebutton));
 }
+
+
 static void cell_file_set_sig(GtkFileChooserButton *widget,
                               CrystFELIndexingOpts *io)
 {
