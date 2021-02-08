@@ -133,4 +133,6 @@ extern int fom_shell_num_reflections(struct fom_context *fctx, int i);
 extern int fom_overall_num_possible(struct fom_context *fctx);
 extern int fom_shell_num_possible(struct fom_context *fctx, int i);
 
+extern int fom_is_anomalous(enum fom_type f);
+
 #endif	/* FOM */

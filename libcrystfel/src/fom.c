@@ -824,7 +824,7 @@ static int calculate_possible(struct fom_context *fctx,
 }
 
 
-static int is_anomalous(enum fom_type fom)
+int fom_is_anomalous(enum fom_type fom)
 {
 	switch ( fom ) {
 
@@ -970,7 +970,7 @@ struct fom_context *fom_calculate(RefList *list1, RefList *list2, UnitCell *cell
 			continue;
 		}
 
-		if ( is_anomalous(fom) ) {
+		if ( fom_is_anomalous(fom) ) {
 
 			signed int hb, kb, lb;
 
