@@ -1077,6 +1077,20 @@ int add_merge_result(struct crystfelproject *proj,
 }
 
 
+struct gui_merge_result *find_merge_result_by_name(struct crystfelproject *proj,
+                                                   const char *name)
+{
+	int i;
+
+	for ( i=0; i<proj->n_merge_results; i++ ) {
+		if ( strcmp(proj->merge_results[i].name, name) == 0 ) {
+			return &proj->merge_results[i];
+		}
+	}
+	return NULL;
+}
+
+
 static void update_result_index(struct gui_indexing_result *result)
 {
 	int i;

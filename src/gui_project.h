@@ -306,6 +306,9 @@ extern int add_merge_result(struct crystfelproject *proj,
                             char *name,
                             char *hkl);
 
+extern struct gui_merge_result *find_merge_result_by_name(struct crystfelproject *proj,
+                                                          const char *name);
+
 extern const char *selected_result(struct crystfelproject *proj);
 
 #endif
