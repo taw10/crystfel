@@ -1411,6 +1411,11 @@ int main(int argc, char *argv[])
 	for ( i=0; i<stream_list.n; i++ ) {
 
 		Stream *st = stream_open_for_read(stream_list.filenames[i]);
+		if ( st == NULL ) {
+			ERROR("Couldn't open %s\n", stream_list.filenames[i]);
+			return 1;
+		}
+
 		if ( audit_info == NULL ) {
 			audit_info = stream_audit_info(st);
 		}
