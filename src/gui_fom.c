@@ -111,6 +111,198 @@ static void show_fom(enum fom_type fom,
 }
 
 
+static int load_dataset(struct gui_merge_result *result,
+                        int need_ano, UnitCell *cell,
+                        double min_res, double max_res,
+                        int min_meas, double min_snr,
+                        SymOpList **psym,
+                        RefList **pall_refls,
+                        RefList **pall_refls_anom,
+                        RefList **ppart1,
+                        RefList **ppart2,
+                        RefList **ppart1_anom,
+                        RefList **ppart2_anom)
+{
+	RefList *raw_refl;
+	RefList *raw_part1;
+	RefList *raw_part2;
+	RefList *all_refls = NULL;
+	RefList *all_refls_anom = NULL;
+	RefList *part1 = NULL;
+	RefList *part2 = NULL;
+	RefList *part1_anom = NULL;
+	RefList *part2_anom = NULL;
+	SymOpList *sym;
+	char *sym_str;
+	char *sym_str_part1;
+	char *sym_str_part2;
+
+	raw_refl = read_reflections_2(result->hkl, &sym_str);
+	if ( raw_refl == NULL ) {
+		ERROR("Failed to load dataset %s (%s)\n",
+		      result->name, result->hkl);
+		return 1;
+	}
+
+	raw_part1 = read_reflections_2(result->hkl1, &sym_str_part1);
+	if ( raw_part1 == NULL ) {
+		ERROR("Failed to load part 1 dataset %s (%s)\n",
+		      result->name, result->hkl1);
+		return 1;
+	}
+
+	raw_part2 = read_reflections_2(result->hkl2, &sym_str_part2);
+	if ( raw_part2 == NULL ) {
+		ERROR("Failed to load part 2 dataset %s (%s)\n",
+		      result->name, result->hkl2);
+		return 1;
+	}
+
+	if ( (sym_str == NULL)
+	  || (sym_str_part1 == NULL)
+	  || (sym_str_part2 == NULL) )
+	{
+		ERROR("Reflection list has no point group\n");
+		reflist_free(raw_refl);
+		reflist_free(raw_part1);
+		reflist_free(raw_part2);
+		return 1;
+	}
+
+	if ( (strcmp(sym_str, sym_str_part1) != 0)
+	  || (strcmp(sym_str, sym_str_part2) != 0) )
+	{
+		ERROR("Datasets do not have the same point group!\n");
+		free(sym_str);
+		free(sym_str_part1);
+		free(sym_str_part2);
+		reflist_free(raw_refl);
+		reflist_free(raw_part1);
+		reflist_free(raw_part2);
+		return 1;
+	}
+
+	sym = get_pointgroup(sym_str);
+	free(sym_str);
+	free(sym_str_part1);
+	free(sym_str_part2);
+
+	fom_select_reflections(raw_refl, &all_refls,
+	                       cell, sym,
+	                       1e10/min_res, 1e10/max_res,
+	                       min_snr, 0, 0, min_meas);
+	if ( all_refls == NULL ) {
+		ERROR("Failed to select reflections for dataset '%s'\n",
+		      result->name);
+		reflist_free(raw_refl);
+		reflist_free(raw_part1);
+		reflist_free(raw_part2);
+		return 1;
+	}
+
+	fom_select_reflection_pairs(raw_part1, raw_part2,
+	                            &part1, &part2,
+	                            cell, sym, 0,
+	                            1e10/min_res, 1e10/max_res,
+	                            min_snr, 0, 0, min_meas);
+	if ( (part1 == NULL) || (part2 == NULL) ) {
+		ERROR("Failed to select reflection pairs for dataset '%s'\n",
+		      result->name);
+		reflist_free(all_refls);
+		reflist_free(raw_refl);
+		reflist_free(raw_part1);
+		reflist_free(raw_part2);
+		return 1;
+	}
+
+	STATUS("%s: accepted %i reflections out of %i\n",
+	       result->hkl,
+	       num_reflections(all_refls),
+	       num_reflections(raw_refl));
+
+	if ( need_ano ) {
+
+		fom_select_reflections(raw_refl, &all_refls_anom,
+		                       cell, sym,
+		                       1e10/min_res, 1e10/max_res,
+		                       min_snr, 0, 0, min_meas);
+		if ( all_refls_anom == NULL ) {
+			ERROR("Failed to load dataset '%s'\n",
+			      result->name);
+			reflist_free(raw_refl);
+			return 1;
+		}
+
+		fom_select_reflection_pairs(raw_part1, raw_part2,
+		                            &part1_anom, &part2_anom,
+		                            cell, sym, 1,
+		                            1e10/min_res, 1e10/max_res,
+		                            min_snr, 0, 0, min_meas);
+		if ( (part1_anom == NULL) || (part2_anom == NULL) ) {
+			ERROR("Failed to select anomalous reflection pairs "
+			      "for dataset '%s'\n", result->name);
+			reflist_free(part1);
+			reflist_free(part2);
+			reflist_free(all_refls);
+			reflist_free(raw_refl);
+			reflist_free(raw_part1);
+			reflist_free(raw_part2);
+			return 1;
+		}
+	}
+
+	reflist_free(raw_refl);
+	reflist_free(raw_part1);
+	reflist_free(raw_part2);
+
+	*pall_refls = all_refls;
+	*pall_refls_anom = all_refls_anom;
+	*ppart1 = part1;
+	*ppart2 = part2;
+	*ppart1_anom = part1_anom;
+	*ppart2_anom = part2_anom;
+	*psym = sym;
+	return 0;
+}
+
+
+static struct fom_context *dispatch_fom(RefList *all_refls,
+                                        RefList *all_refls_anom,
+                                        RefList *part1,
+                                        RefList *part2,
+                                        RefList *part1_anom,
+                                        RefList *part2_anom,
+                                        UnitCell *cell,
+                                        struct fom_shells *shells,
+                                        const SymOpList *sym,
+                                        enum fom_type fom)
+{
+	if ( fom_is_anomalous(fom) ) {
+		if ( fom_is_comparison(fom) ) {
+			if ( part1_anom == NULL ) return NULL;
+			if ( part2_anom == NULL ) return NULL;
+			return fom_calculate(part1_anom, part2_anom,
+			                     cell, shells, fom, 1, sym);
+		} else {
+			if ( all_refls_anom == NULL ) return NULL;
+			return fom_calculate(all_refls_anom, NULL,
+			                     cell, shells, fom, 1, sym);
+		}
+	} else {
+		if ( fom_is_comparison(fom) ) {
+			if ( part1 == NULL ) return NULL;
+			if ( part2 == NULL ) return NULL;
+			return fom_calculate(part1, part2,
+			                     cell, shells, fom, 1, sym);
+		} else {
+			if ( all_refls == NULL ) return NULL;
+			return fom_calculate(all_refls, NULL,
+			                     cell, shells, fom, 1, sym);
+		}
+	}
+}
+
+
 static void fom_response_sig(GtkWidget *dialog, gint resp,
                              struct fom_window *f)
 {
@@ -164,11 +356,13 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 	for ( ds=0; ds<f->n_datasets; ds++ ) {
 
 		struct gui_merge_result *result;
-		RefList *raw_refl;
-		char *sym_str;
 		SymOpList *sym;
 		RefList *all_refls = NULL;
 		RefList *all_refls_anom = NULL;
+		RefList *part1 = NULL;
+		RefList *part2 = NULL;
+		RefList *part1_anom = NULL;
+		RefList *part2_anom = NULL;
 
 		if ( !menu_selected(f->dataset_checkboxes[ds]) ) continue;
 
@@ -176,63 +370,16 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 		result = find_merge_result_by_name(f->proj,
 		                                   f->dataset_names[ds]);
 
-		raw_refl = read_reflections_2(result->hkl, &sym_str);
-		if ( raw_refl == NULL ) {
-			ERROR("Failed to load dataset %s (%s)\n",
-			      f->dataset_names[ds], result->hkl);
+		if ( load_dataset(result, need_ano, cell,
+		                  f->proj->fom_res_min,
+		                  f->proj->fom_res_max,
+		                  f->proj->fom_min_meas,
+		                  f->proj->fom_min_snr,
+		                  &sym, &all_refls, &all_refls_anom,
+		                  &part1, &part2, &part1_anom, &part2_anom) )
+		{
 			continue;
 		}
-
-		if ( sym_str == NULL ) {
-			ERROR("Reflection list has no point group\n");
-			reflist_free(raw_refl);
-			continue;
-		}
-		sym = get_pointgroup(sym_str);
-		free(sym_str);
-
-		fom_select_reflections(raw_refl,
-		                       &all_refls,
-		                       cell, sym,
-		                       1e10/f->proj->fom_res_min,
-		                       1e10/f->proj->fom_res_max,
-		                       f->proj->fom_min_snr,
-		                       0, 0,
-		                       f->proj->fom_min_meas);
-
-		if ( all_refls == NULL ) {
-			ERROR("Failed to load dataset '%s'\n",
-			      f->dataset_names[ds]);
-			reflist_free(raw_refl);
-			continue;
-		}
-
-		STATUS("%s: accepted %i reflections out of %i\n",
-		       result->hkl,
-		       num_reflections(all_refls),
-		       num_reflections(raw_refl));
-
-		if ( need_ano ) {
-			fom_select_reflections(raw_refl,
-			                       &all_refls_anom,
-			                       cell,
-			                       sym,
-			                       1e10/f->proj->fom_res_min,
-			                       1e10/f->proj->fom_res_max,
-			                       f->proj->fom_min_snr,
-			                       0, 0,
-			                       f->proj->fom_min_meas);
-			if ( all_refls_anom == NULL ) {
-				ERROR("Failed to load dataset '%s'\n",
-				      f->dataset_names[ds]);
-				reflist_free(raw_refl);
-				continue;
-			}
-		}
-
-		reflist_free(raw_refl);
-
-		/* FIXME: Load half datasets as well */
 
 		for ( fom=0; fom<f->n_foms; fom++ ) {
 
@@ -240,10 +387,11 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 
 			if ( !fom_selected(f, fom) ) continue;
 
-			fctx = fom_calculate(all_refls,
-			                     NULL, cell, shells,
-			                     f->fom_types[fom], 1,
-			                     sym);
+			fctx = dispatch_fom(all_refls, all_refls_anom,
+			                    part1, part2,
+			                    part1_anom, part2_anom,
+			                    cell, shells, sym,
+			                    f->fom_types[fom]);
 			if ( fctx == NULL ) {
 				ERROR("Failed to calculate FoM %i for dataset %s\n",
 				      f->fom_types[fom], f->dataset_names[ds]);
