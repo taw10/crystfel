@@ -855,6 +855,37 @@ int fom_is_anomalous(enum fom_type fom)
 }
 
 
+int fom_is_comparison(enum fom_type fom)
+{
+	switch ( fom ) {
+
+		case FOM_CCANO:
+		case FOM_RANO:
+		case FOM_CRDANO:
+		case FOM_RANORSPLIT:
+		case FOM_R1I:
+		case FOM_R1F:
+		case FOM_R2:
+		case FOM_RSPLIT:
+		case FOM_CC:
+		case FOM_CCSTAR:
+		case FOM_D1SIG:
+		case FOM_D2SIG:
+		return 1;
+
+		case FOM_NUM_MEASUREMENTS:
+		case FOM_REDUNDANCY:
+		case FOM_SNR:
+		case FOM_MEAN_INTENSITY:
+		case FOM_COMPLETENESS:
+		return 0;
+	}
+
+	ERROR("This point never reached\n");
+	abort();
+}
+
+
 static int is_single_list(enum fom_type fom)
 {
 	switch ( fom ) {

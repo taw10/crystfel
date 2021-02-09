@@ -134,6 +134,7 @@ extern int fom_overall_num_possible(struct fom_context *fctx);
 extern int fom_shell_num_possible(struct fom_context *fctx, int i);
 
 extern int fom_is_anomalous(enum fom_type f);
+extern int fom_is_comparison(enum fom_type f);
 
 extern const char *fom_name(enum fom_type f);
 

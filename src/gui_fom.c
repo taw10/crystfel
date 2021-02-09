@@ -48,18 +48,6 @@
 #define MAX_DATASETS (64)
 
 
-struct fom_dataset
-{
-	SymOpList *sym;
-	RefList *all_refls;
-	RefList *half1;
-	RefList *half2;
-	RefList *all_refls_anom;
-	RefList *half1_anom;
-	RefList *half2_anom;
-};
-
-
 struct fom_window
 {
 	struct crystfelproject *proj;
@@ -73,7 +61,6 @@ struct fom_window
 	int n_datasets;
 	GtkWidget *dataset_checkboxes[MAX_DATASETS];
 	char *dataset_names[MAX_DATASETS];
-	struct fom_dataset datasets[MAX_DATASETS];
 
 	int n_foms;
 	GtkWidget *fom_checkboxes[16];
@@ -179,6 +166,9 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 		struct gui_merge_result *result;
 		RefList *raw_refl;
 		char *sym_str;
+		SymOpList *sym;
+		RefList *all_refls = NULL;
+		RefList *all_refls_anom = NULL;
 
 		if ( !menu_selected(f->dataset_checkboxes[ds]) ) continue;
 
@@ -198,20 +188,19 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 			reflist_free(raw_refl);
 			continue;
 		}
-		f->datasets[ds].sym = get_pointgroup(sym_str);
+		sym = get_pointgroup(sym_str);
 		free(sym_str);
 
 		fom_select_reflections(raw_refl,
-		                       &f->datasets[ds].all_refls,
-		                       cell,
-		                       f->datasets[ds].sym,
+		                       &all_refls,
+		                       cell, sym,
 		                       1e10/f->proj->fom_res_min,
 		                       1e10/f->proj->fom_res_max,
 		                       f->proj->fom_min_snr,
 		                       0, 0,
 		                       f->proj->fom_min_meas);
 
-		if ( f->datasets[ds].all_refls == NULL ) {
+		if ( all_refls == NULL ) {
 			ERROR("Failed to load dataset '%s'\n",
 			      f->dataset_names[ds]);
 			reflist_free(raw_refl);
@@ -220,20 +209,20 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 
 		STATUS("%s: accepted %i reflections out of %i\n",
 		       result->hkl,
-		       num_reflections(f->datasets[ds].all_refls),
+		       num_reflections(all_refls),
 		       num_reflections(raw_refl));
 
 		if ( need_ano ) {
 			fom_select_reflections(raw_refl,
-			                       &f->datasets[ds].all_refls_anom,
+			                       &all_refls_anom,
 			                       cell,
-			                       f->datasets[ds].sym,
+			                       sym,
 			                       1e10/f->proj->fom_res_min,
 			                       1e10/f->proj->fom_res_max,
 			                       f->proj->fom_min_snr,
 			                       0, 0,
 			                       f->proj->fom_min_meas);
-			if ( f->datasets[ds].all_refls_anom == NULL ) {
+			if ( all_refls_anom == NULL ) {
 				ERROR("Failed to load dataset '%s'\n",
 				      f->dataset_names[ds]);
 				reflist_free(raw_refl);
@@ -251,10 +240,10 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 
 			if ( !fom_selected(f, fom) ) continue;
 
-			fctx = fom_calculate(f->datasets[ds].all_refls,
+			fctx = fom_calculate(all_refls,
 			                     NULL, cell, shells,
 			                     f->fom_types[fom], 1,
-			                     f->datasets[ds].sym);
+			                     sym);
 			if ( fctx == NULL ) {
 				ERROR("Failed to calculate FoM %i for dataset %s\n",
 				      f->fom_types[fom], f->dataset_names[ds]);
@@ -262,6 +251,10 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 			}
 			show_fom(f->fom_types[fom], fctx, shells);
 		}
+
+		reflist_free(all_refls);
+		reflist_free(all_refls_anom);
+		free_symoplist(sym);
 
 	}
 
