@@ -312,6 +312,30 @@ static void add_metadata_to_copy(struct index_params *ip,
 }
 
 
+static void parse_fom_opt(const char *key, const char *val,
+                          struct crystfelproject *proj)
+{
+	if ( strcmp(key, "fom.min_res_A") == 0 ) {
+		proj->fom_res_min = parse_float(val);
+	}
+	if ( strcmp(key, "fom.max_res_A") == 0 ) {
+		proj->fom_res_max = parse_float(val);
+	}
+	if ( strcmp(key, "fom.min_snr") == 0 ) {
+		proj->fom_min_snr = parse_float(val);
+	}
+	if ( strcmp(key, "fom.num_bins") == 0 ) {
+		proj->fom_nbins = parse_int(val);
+	}
+	if ( strcmp(key, "fom.min_meas") == 0 ) {
+		proj->fom_min_meas = parse_int(val);
+	}
+	if ( strcmp(key, "fom.cell_file") == 0 ) {
+		proj->fom_cell_filename = strdup(val);
+	}
+}
+
+
 static void parse_stream_opt(const char *key, const char *val,
                              struct index_params *ip)
 {
@@ -430,6 +454,10 @@ static void handle_var(const char *key, const char *val,
 
 	if ( strcmp(key, "data_folder") == 0 ) {
 		proj->data_top_folder = strdup(val);
+	}
+
+	if ( strncmp(key, "fom.", 4) == 0 ) {
+		parse_fom_opt(key, val, proj);
 	}
 
 	if ( strncmp(key, "stream.", 7) == 0 ) {
@@ -879,6 +907,13 @@ int save_project(struct crystfelproject *proj)
 		be = &proj->backends[i];
 		be->write_merging_opts(be->merging_opts_priv, fh);
 	}
+
+	fprintf(fh, "fom.min_res_A %f\n", proj->fom_res_min);
+	fprintf(fh, "fom.max_res_A %f\n", proj->fom_res_max);
+	fprintf(fh, "fom.num_bins %i\n", proj->fom_nbins);
+	fprintf(fh, "fom.min_snr %f\n", proj->fom_min_snr);
+	fprintf(fh, "fom.min_meas %i\n", proj->fom_min_meas);
+	fprintf(fh, "fom.cell_file %s\n", proj->fom_cell_filename);
 
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
