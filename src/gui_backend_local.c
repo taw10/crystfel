@@ -448,6 +448,8 @@ static void *run_merging(const char *job_title,
 	struct local_merging_opts *opts = opts_priv;
 	GFile *hkl_gfile;
 	char *hkl;
+	char *hkl1;
+	char *hkl2;
 
 	snprintf(n_thread_str, 63, "%i", opts->n_threads);
 	args = merging_command_line(n_thread_str,
@@ -463,7 +465,18 @@ static void *run_merging(const char *job_title,
 	                             "crystfel.hkl");
 	hkl = g_file_get_path(hkl_gfile);
 	g_object_unref(hkl_gfile);
-	add_merge_result(proj, strdup(job_title), hkl);
+
+	hkl_gfile = g_file_get_child(job->workdir,
+	                             "crystfel.hkl1");
+	hkl1 = g_file_get_path(hkl_gfile);
+	g_object_unref(hkl_gfile);
+
+	hkl_gfile = g_file_get_child(job->workdir,
+	                             "crystfel.hkl2");
+	hkl2 = g_file_get_path(hkl_gfile);
+	g_object_unref(hkl_gfile);
+
+	add_merge_result(proj, strdup(job_title), hkl, hkl1, hkl2);
 
 	return job;
 }

@@ -568,7 +568,7 @@ static void add_result(struct crystfelproject *proj,
                        char **streams,
                        int n_streams,
                        int selected,
-                       char *hkl)
+                       char *hkl, char *hkl1, char *hkl2)
 {
 	if ( (n_streams > 0) && (hkl == NULL) ) {
 		add_indexing_result(proj, results_name,
@@ -581,7 +581,7 @@ static void add_result(struct crystfelproject *proj,
 	} else if ( (hkl != NULL) && (n_streams == 0) ) {
 		add_merge_result(proj,
 		                 results_name,
-		                 hkl);
+		                 hkl, hkl1, hkl2);
 
 	} else {
 		ERROR("Bad results %s (%i %s)\n",
@@ -599,6 +599,8 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 	int n_streams = 0;
 	char *results_name = NULL;
 	char *hkl = NULL;
+	char *hkl1 = NULL;
+	char *hkl2 = NULL;
 	int selected = 0;
 	int first = 1;
 
@@ -614,7 +616,7 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 			if ( !first ) {
 				add_result(proj, results_name,
 				           streams, n_streams, selected,
-				           hkl);
+				           hkl, hkl1, hkl2);
 			}
 			first = 0;
 
@@ -622,6 +624,8 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 			selected = 0;
 			streams = NULL;
 			hkl = NULL;
+			hkl1 = NULL;
+			hkl2 = NULL;
 
 			results_name = strdup(line+7);
 		}
@@ -640,11 +644,19 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 			hkl = strdup(line+7);
 		}
 
+		if ( strncmp(line, "   HKL1 ", 7) == 0 ) {
+			hkl1 = strdup(line+8);
+		}
+
+		if ( strncmp(line, "   HKL2 ", 7) == 0 ) {
+			hkl2 = strdup(line+8);
+		}
+
 		if ( strcmp(line, "-----") == 0 ) {
 			if ( !first ) {
 				add_result(proj, results_name,
 				           streams, n_streams, selected,
-				           hkl);
+				           hkl, hkl1, hkl2);
 			}
 			break;
 		}
@@ -889,6 +901,8 @@ int save_project(struct crystfelproject *proj)
 	for ( i=0; i<proj->n_merge_results; i++ ) {
 		fprintf(fh, "Result %s\n", proj->merge_results[i].name);
 		fprintf(fh, "   HKL %s\n", proj->merge_results[i].hkl);
+		fprintf(fh, "   HKL1 %s\n", proj->merge_results[i].hkl1);
+		fprintf(fh, "   HKL2 %s\n", proj->merge_results[i].hkl2);
 	}
 
 	fprintf(fh, "-----\n");
@@ -1058,9 +1072,8 @@ int add_indexing_result(struct crystfelproject *proj,
 }
 
 
-int add_merge_result(struct crystfelproject *proj,
-                     char *name,
-                     char *hkl)
+int add_merge_result(struct crystfelproject *proj, char *name,
+                     char *hkl, char *hkl1, char *hkl2)
 {
 	struct gui_merge_result *new_results;
 
@@ -1070,6 +1083,8 @@ int add_merge_result(struct crystfelproject *proj,
 
 	new_results[proj->n_merge_results].name = name;
 	new_results[proj->n_merge_results].hkl = hkl;
+	new_results[proj->n_merge_results].hkl1 = hkl1;
+	new_results[proj->n_merge_results].hkl2 = hkl2;
 
 	proj->merge_results = new_results;
 	proj->n_merge_results++;

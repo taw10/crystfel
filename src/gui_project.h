@@ -126,7 +126,9 @@ struct gui_indexing_result
 struct gui_merge_result
 {
 	char *name;
-	char *hkl;
+	char *hkl;    /* Complete merged data */
+	char *hkl1;   /* First half-split */
+	char *hkl2;   /* Second half-split */
 };
 
 struct crystfelproject;
@@ -303,9 +305,8 @@ extern struct image *find_indexed_image(struct crystfelproject *proj,
 extern struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject *proj,
                                                                 const char *name);
 
-extern int add_merge_result(struct crystfelproject *proj,
-                            char *name,
-                            char *hkl);
+extern int add_merge_result(struct crystfelproject *proj, char *name,
+                            char *hkl, char *hkl1, char *hkl2);
 
 extern struct gui_merge_result *find_merge_result_by_name(struct crystfelproject *proj,
                                                           const char *name);
