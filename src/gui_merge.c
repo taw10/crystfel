@@ -515,7 +515,7 @@ static GSList *partialator_command_line(const char *n_thread_str,
 	}
 
 	if ( !params->deltacchalf ) {
-		args = g_slist_append(args, "no-deltacchalf");
+		args = g_slist_append(args, "--no-deltacchalf");
 	}
 
 	args = append_arg_int(args, "iterations", params->niter);
