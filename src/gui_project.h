@@ -274,6 +274,9 @@ struct crystfelproject {
 	double fom_min_snr;
 	int fom_min_meas;
 	char *fom_cell_filename;
+
+	double export_res_min;
+	double export_res_max;
 };
 
 extern enum match_type_id decode_matchtype(const char *type_id);

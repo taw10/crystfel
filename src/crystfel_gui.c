@@ -49,6 +49,7 @@
 #include "gui_index.h"
 #include "gui_merge.h"
 #include "gui_fom.h"
+#include "gui_export.h"
 #include "gui_project.h"
 #include "version.h"
 
@@ -862,7 +863,7 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	add_button(vbox, "Figures of merit", "trophy-gold",
 	           G_CALLBACK(fom_sig), proj);
 	add_button(vbox, "Export data", "document-send",
-	           G_CALLBACK(NULL), proj);
+	           G_CALLBACK(export_sig), proj);
 }
 
 

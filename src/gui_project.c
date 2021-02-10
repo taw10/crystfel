@@ -1072,6 +1072,9 @@ void default_project(struct crystfelproject *proj)
 	proj->fom_min_snr = -INFINITY;
 	proj->fom_min_meas = 1;
 	proj->fom_cell_filename = NULL;
+
+	proj->export_res_min = INFINITY;
+	proj->export_res_max = 0.0;
 }
 
 
