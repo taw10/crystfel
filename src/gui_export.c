@@ -67,22 +67,12 @@ static void export_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
-static void cell_file_clear_sig(GtkButton *buton,
-                                struct export_window *win)
-{
-	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(win->cell_chooser),
-	                              "(none)");
-}
-
-
 gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *dialog;
-	GtkWidget *content_area;
 	GtkWidget *vbox;
 	GtkWidget *hbox;
 	GtkWidget *label;
-	GtkWidget *button;
 	char tmp[64];
 	struct export_window *win;
 
@@ -91,22 +81,23 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	win->proj = proj;
 
-	dialog = gtk_dialog_new_with_buttons("Export data",
+	dialog = gtk_file_chooser_dialog_new("Export data",
 	                                     GTK_WINDOW(proj->window),
-	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                     "Close", GTK_RESPONSE_CLOSE,
-	                                     "Export", GTK_RESPONSE_OK,
+	                                     GTK_FILE_CHOOSER_ACTION_SAVE,
+	                                     GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+	                                     GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
 	                                     NULL);
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog),
+	                                               TRUE);
 
 	g_signal_connect(G_OBJECT(dialog), "response",
 	                 G_CALLBACK(export_response_sig),
 	                 win);
 
 	vbox = gtk_vbox_new(FALSE, 0.0);
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(dialog),
+	                                  GTK_WIDGET(vbox));
 	gtk_container_set_border_width(GTK_CONTAINER(vbox), 4);
-	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -118,9 +109,6 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->dataset),
 	                   FALSE, FALSE, 4.0);
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("Format");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -133,6 +121,21 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                          "MTZ, Bijvoet pairs together");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "xscale",
 	                          "XSCALE");
+
+	label = gtk_label_new("Unit cell file:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	win->cell_chooser = gtk_file_chooser_button_new("Unit cell file",
+	                                              GTK_FILE_CHOOSER_ACTION_OPEN);
+	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(win->cell_chooser),
+	                                TRUE);
+	/* Use the "FoM" cell file because there should only be one
+	 * point of truth for the "final" cell parameters.  Eventually, I hope
+	 * to determine this automatically. */
+	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(win->cell_chooser),
+	                              proj->fom_cell_filename);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->cell_chooser),
+	                   FALSE, FALSE, 4.0);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -157,27 +160,6 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("Å");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 4.0);
-	label = gtk_label_new("Unit cell file:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-	win->cell_chooser = gtk_file_chooser_button_new("Unit cell file",
-	                                              GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(win->cell_chooser),
-	                                TRUE);
-	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(win->cell_chooser),
-	                              proj->fom_cell_filename);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->cell_chooser),
-	                   FALSE, FALSE, 4.0);
-	button = gtk_button_new_from_icon_name("edit-clear",
-	                                       GTK_ICON_SIZE_BUTTON);
-	g_signal_connect(G_OBJECT(button), "clicked",
-	                 G_CALLBACK(cell_file_clear_sig), win);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
 	                   FALSE, FALSE, 4.0);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
