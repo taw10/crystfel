@@ -81,7 +81,6 @@ struct point_group_conversion
 	int friedel;
 
 	int xds_spgnum;
-	char *xds_reindex;
 
 	const char *ccp4;
 };
@@ -90,56 +89,53 @@ struct point_group_conversion
 struct point_group_conversion pg_conversions[] = {
 
 	/* Triclinic */
-	{'P', "1",       0,     1, "h,k,l",      "P 1"},
+	{'P', "1",       0,     1,      "P 1"},
 
 	/* Monoclinic */
-	{'P', "2_uaa",   0,     3, "k,-h,l",     "P211"},
-	{'P', "2/m_uaa", 1,     3, "k,-h,l",     "P211"},
-	{'P', "2_uab",   0,     3, "h,k,l",      "P121"},
-	{'P', "2/m_uab", 1,     3, "h,k,l",      "P121"},
-	{'P', "2_uac",   0,     3, "h,l,-k",     "P112"},
-	{'P', "2/m_uac", 1,     3, "h,l,-k",     "P112"},
-	{'P', "2",       0,     3, "h,l,-k",     "P121"}, /* unique axis c */
-	{'P', "2/m",     1,     3, "h,l,-k",     "P121"}, /* unique axis c */
+	{'P', "2_uaa",   0,     0,      "P211"},
+	{'P', "2/m_uaa", 1,     0,      "P211"},
+	{'P', "2_uab",   0,     3,      "P121"},
+	{'P', "2/m_uab", 1,     3,      "P121"},
+	{'P', "2_uac",   0,     0,      "P112"},
+	{'P', "2/m_uac", 1,     0,      "P112"},
+	{'P', "2",       0,     0,      "P121"}, /* unique axis c */
+	{'P', "2/m",     1,     0,      "P121"}, /* unique axis c */
 
-	{'C', "2_uaa",   0,     5, "k,-h,l",     "C211"},
-	{'C', "2/m_uaa", 1,     5, "k,-h,l",     "C211"},
-	{'C', "2_uab",   0,     5, "h,k,l",      "C121"},
-	{'C', "2/m_uab", 1,     5, "h,k,l",      "C121"},
-	{'C', "2_uac",   0,     5, "h,l,-k",     "C112"},
-	{'C', "2/m_uac", 1,     5, "h,l,-k",     "C112"},
-	{'C', "2",       0,     5, "h,l,-k",     "C121"}, /* unique axis c */
-	{'C', "2/m",     1,     5, "h,l,-k",     "C121"}, /* unique axis c */
+	{'C', "2_uaa",   0,     0,      "C211"},
+	{'C', "2/m_uaa", 1,     0,      "C211"},
+	{'C', "2_uab",   0,     5,      "C121"},
+	{'C', "2/m_uab", 1,     5,      "C121"},
+	{'C', "2_uac",   0,     0,      "C112"},
+	{'C', "2/m_uac", 1,     0,      "C112"},
+	{'C', "2",       0,     0,      "C121"}, /* unique axis c */
+	{'C', "2/m",     1,     0,      "C121"}, /* unique axis c */
 
 	/* Orthorhombic */
-	{'P', "222",     0,     16, "h,k,l",     "P222"},
-	{'P', "mmm",     1,     16, "h,k,l",     "P222"},
-	{'C', "222",     0,     21, "h,k,l",     "C222"},
-	{'C', "mmm",     1,     21, "h,k,l",     "C222"},
+	{'P', "222",     0,     16,     "P222"},
+	{'P', "mmm",     1,     16,     "P222"},
+	{'C', "222",     0,     21,     "C222"},
+	{'C', "mmm",     1,     21,     "C222"},
 
 	/* FIXME: Complete this list.  Ugh. */
 
-	{'*', NULL,  0, 0, NULL, NULL}
+	{'*', NULL,  0, 0, NULL}
 };
 
 
-static int space_group_for_xds(const char *sym_str, char cen,
-                               const char **reindex)
+static int space_group_for_xds(const char *sym_str, char cen)
 {
 	int i = 0;
 	do {
 		if ( (pg_conversions[i].centering == cen)
 		  && (strcmp(sym_str, pg_conversions[i].crystfel) == 0) )
 		{
-			*reindex = pg_conversions[i].xds_reindex;
 			return pg_conversions[i].xds_spgnum;
 		}
 		i++;
 	} while (pg_conversions[i].centering != '*');
 
 	ERROR("Couldn't derive XDS representation of symmetry.\n");
-	*reindex = "h,k,l";
-	return 1;
+	return 0;
 }
 
 
@@ -154,8 +150,7 @@ static int export_to_xds(struct gui_merge_result *result,
 	double a, b, c, al, be,ga;
 	char *sym_str;
 	SymOpList *sym;
-	const char *reindex_str;
-	SymOpList *reindex;
+	int spg;
 
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) return 1;
@@ -169,11 +164,12 @@ static int export_to_xds(struct gui_merge_result *result,
 
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 
+	spg = space_group_for_xds(sym_str, cell_get_centering(cell));
+	if ( spg == 0 ) return 1;
+
 	fprintf(fh, "!FORMAT=XDS_ASCII MERGE=TRUE FRIEDEL'S_LAW=%s\n",
 	        is_centrosymmetric(sym) ? "TRUE" : "FALSE");
-	fprintf(fh, "!SPACE_GROUP_NUMBER=%i\n",
-	        space_group_for_xds(sym_str, cell_get_centering(cell),
-	                            &reindex_str));
+	fprintf(fh, "!SPACE_GROUP_NUMBER=%i\n", spg);
 	fprintf(fh, "!UNIT_CELL_CONSTANT= %.2f %.2f %.2f %.2f %.2f %.2f\n",
 	        a*1e10, b*1e10, c*1e10, rad2deg(al), rad2deg(be), rad2deg(ga));
 	fprintf(fh, "!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=5\n");
@@ -184,9 +180,6 @@ static int export_to_xds(struct gui_merge_result *result,
 	fprintf(fh, "!ITEM_SIGMA(IOBS)=5\n");
 	fprintf(fh, "!END_OF_HEADER\n");
 
-	reindex = parse_symmetry_operations(reindex_str);
-	if ( reindex == NULL ) return 1;
-
 	for ( refl = first_refl(reflist, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
@@ -195,7 +188,6 @@ static int export_to_xds(struct gui_merge_result *result,
 		double one_over_d;
 
 		get_indices(refl, &h, &k, &l);
-		get_equiv(reindex, NULL, 0, h, k, l, &h, &k, &l);
 
 		one_over_d = 2.0*resolution(cell, h, k, l);
 		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
