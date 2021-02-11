@@ -35,5 +35,6 @@ extern char *get_all_text(GtkTextView *view);
 extern int get_bool(GtkWidget *widget);
 extern unsigned int get_uint(GtkWidget *entry);
 extern float get_float(GtkWidget *entry);
+extern int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget);
 
 #endif

@@ -61,14 +61,6 @@ static void crystfel_indexing_opts_init(CrystFELIndexingOpts *io)
 }
 
 
-static int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget)
-{
-	gtk_widget_set_sensitive(GTK_WIDGET(widget),
-	                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
-	return FALSE;
-}
-
-
 static void i_disable_if_not(GtkWidget *toggle, GtkWidget *widget)
 {
 	i_maybe_disable(toggle, widget);

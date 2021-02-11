@@ -84,3 +84,11 @@ int get_bool(GtkWidget *widget)
 {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
+
+
+int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget)
+{
+	gtk_widget_set_sensitive(GTK_WIDGET(widget),
+	                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+	return FALSE;
+}
