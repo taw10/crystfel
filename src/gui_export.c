@@ -57,13 +57,114 @@ struct export_window
 };
 
 
-static void export_response_sig(GtkWidget *dialog, gint resp,
-                                struct export_window *f)
+static int export_to_mtz(struct gui_merge_result *result,
+                         const char *filename, UnitCell *cell,
+                         double min_res, double max_res)
 {
-	if ( resp != GTK_RESPONSE_APPLY ) {
-		gtk_widget_destroy(dialog);
-		return;
+	return 1;
+}
+
+
+static int export_to_mtz_bij(struct gui_merge_result *result,
+                             const char *filename, UnitCell *cell,
+                             double min_res, double max_res)
+{
+	return 1;
+}
+
+
+static int export_to_xds(struct gui_merge_result *result,
+                         const char *filename, UnitCell *cell,
+                         double min_res, double max_res)
+{
+	return 1;
+}
+
+
+static int export_data(struct export_window *win, char *filename)
+{
+	gchar *cell_filename;
+	const char *dataset;
+	const char *format;
+	struct gui_merge_result *result;
+	UnitCell *cell;
+	int r = 0;
+	double min_res = 0;
+	double max_res = +INFINITY;
+
+	dataset = gtk_combo_box_get_active_id(GTK_COMBO_BOX(win->dataset));
+	if ( dataset == NULL ) {
+		ERROR("Please select the dataset to export.\n");
+		return 1;
 	}
+
+	format = gtk_combo_box_get_active_id(GTK_COMBO_BOX(win->format));
+	if ( format == NULL ) {
+		ERROR("Please select the data format to use.\n");
+		return 1;
+	}
+
+	cell_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(win->cell_chooser));
+	if ( cell_filename == NULL ) {
+		ERROR("Please choose the unit cell file.\n");
+		return 1;
+	}
+
+	cell = load_cell_from_file(cell_filename);
+	if ( cell == NULL ) {
+		ERROR("Failed to load unit cell file %s\n", cell_filename);
+		return 1;
+	}
+
+	if ( get_bool(win->limit_res) ) {
+		min_res = 1e10/get_float(win->min_res);
+		max_res = 1e10/get_float(win->max_res);
+	}
+
+	result = find_merge_result_by_name(win->proj, dataset);
+	if ( result == NULL ) {
+		ERROR("Couldn't find merged dataset '%s'\n", dataset);
+		return 1;
+	}
+
+	STATUS("Exporting dataset %s to %s, in format %s, using unit cell %s,"
+	       "%f to %f m^-1\n", dataset, filename, format, cell_filename,
+	       min_res, max_res);
+
+	if ( strcmp(format, "mtz") == 0 ) {
+		r = export_to_mtz(result, filename, cell, min_res, max_res);
+	} else if ( strcmp(format, "mtz-bij") == 0 ) {
+		r = export_to_mtz_bij(result, filename, cell, min_res, max_res);
+	} else if ( strcmp(format, "xds") == 0 ) {
+		r = export_to_xds(result, filename, cell, min_res, max_res);
+	} else {
+		ERROR("Unrecognised export format '%s'\n", format);
+		return 1;
+	}
+
+	if ( r ) {
+		ERROR("Export failed\n");
+	}
+
+	g_free(cell_filename);
+
+	return 0;
+}
+
+
+static void export_response_sig(GtkWidget *dialog, gint resp,
+                                struct export_window *win)
+{
+	int r = 0;
+
+	if ( resp == GTK_RESPONSE_ACCEPT ) {
+		gchar *filename;
+		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		r = export_data(win, filename);
+		g_free(filename);
+	}
+
+	if ( !r ) gtk_widget_destroy(dialog);
 }
 
 
@@ -75,6 +176,7 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *label;
 	char tmp[64];
 	struct export_window *win;
+	int i;
 
 	win = malloc(sizeof(struct export_window));
 	if ( win == NULL ) return 0;
@@ -108,7 +210,11 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	win->dataset = gtk_combo_box_text_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->dataset),
 	                   FALSE, FALSE, 4.0);
-
+	for ( i=0; i<proj->n_merge_results; i++ ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->dataset),
+		                          proj->merge_results[i].name,
+		                          proj->merge_results[i].name);
+	}
 	label = gtk_label_new("Format");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -119,8 +225,9 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                          "MTZ, plain");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "mtz-bij",
 	                          "MTZ, Bijvoet pairs together");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "xscale",
-	                          "XSCALE");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "xds",
+	                          "XDS ASCII");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(win->format), 0);
 
 	label = gtk_label_new("Unit cell file:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
@@ -161,6 +268,12 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	label = gtk_label_new("Å");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(win->limit_res), "toggled",
+	                 G_CALLBACK(i_maybe_disable), win->min_res);
+	g_signal_connect(G_OBJECT(win->limit_res), "toggled",
+	                 G_CALLBACK(i_maybe_disable), win->max_res);
+	gtk_widget_set_sensitive(win->min_res, FALSE);
+	gtk_widget_set_sensitive(win->max_res, FALSE);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_CLOSE);
