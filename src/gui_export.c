@@ -219,7 +219,7 @@ static int export_to_xds(struct gui_merge_result *result,
 
 
 #ifdef HAVE_LIBCCP4
-static int add_mtz_symmetry_header(MTZ *mtz, const char *spg_name)
+static CCP4SPG *add_mtz_symmetry_header(MTZ *mtz, const char *spg_name)
 {
 	CCP4SPG *spg;
 	float rsymx[192][4][4];
@@ -229,7 +229,7 @@ static int add_mtz_symmetry_header(MTZ *mtz, const char *spg_name)
 	spg = ccp4spg_load_by_spgname(spg_name);
 	if ( spg == NULL ) {
 		ERROR("Couldn't look up CCP4 space group '%s'\n", spg_name);
-		return 1;
+		return NULL;
 	}
 
 	for ( i=0; i<spg->nsymop; i++ ) {
@@ -242,9 +242,7 @@ static int add_mtz_symmetry_header(MTZ *mtz, const char *spg_name)
 	            rsymx, ltypex, spg->spg_ccp4_num, spg->symbol_old,
 	            spg->point_group);
 
-	ccp4spg_free(&spg);
-
-	return 0;
+	return spg;
 }
 #endif
 
@@ -257,7 +255,7 @@ static int export_to_mtz(struct gui_merge_result *result,
 	MTZ *mtz;
 	MTZXTAL *cr;
 	MTZSET *ds;
-	MTZCOL *columns[5];
+	MTZCOL *columns[7];
 	double a, b, c, al, be, ga;
 	int r;
 	char tmp[128];
@@ -267,14 +265,19 @@ static int export_to_mtz(struct gui_merge_result *result,
 	Reflection *refl;
 	RefListIterator *iter;
 	char *sym_str = NULL;
-	const char *spg;
+	CCP4SPG *spg;
+	const char *spg_name;
+	SymOpList *sym;
 
 	reflist = read_reflections_2(result->hkl, &sym_str);
 	if ( reflist == NULL ) return 1;
 	if ( sym_str == NULL ) return 1;
 
-	spg = space_group_for_mtz(sym_str, cell_get_centering(cell));
-	if ( spg == NULL ) {
+	sym = get_pointgroup(sym_str);
+	if ( sym == NULL ) return 1;
+
+	spg_name = space_group_for_mtz(sym_str, cell_get_centering(cell));
+	if ( spg_name == NULL ) {
 		reflist_free(reflist);
 		return 1;
 	}
@@ -288,7 +291,8 @@ static int export_to_mtz(struct gui_merge_result *result,
 	mtz->refs_in_memory = 0;
 	mtz->fileout = MtzOpenForWrite(filename);
 
-	if ( add_mtz_symmetry_header(mtz, spg) ) {
+	spg = add_mtz_symmetry_header(mtz, spg_name);
+	if ( spg == NULL ) {
 		return 1;
 	}
 
@@ -310,8 +314,10 @@ static int export_to_mtz(struct gui_merge_result *result,
 	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
 	columns[1] = MtzAddColumn(mtz, ds, "K", "H");
 	columns[2] = MtzAddColumn(mtz, ds, "L", "H");
-	columns[3] = MtzAddColumn(mtz, ds, "IOBS", "J");
-	columns[4] = MtzAddColumn(mtz, ds, "SIGIOBS", "Q");
+	columns[3] = MtzAddColumn(mtz, ds, "I+", "J");
+	columns[4] = MtzAddColumn(mtz, ds, "SIGI+", "Q");
+	columns[5] = MtzAddColumn(mtz, ds, "I-", "J");
+	columns[6] = MtzAddColumn(mtz, ds, "SIGI-", "Q");
 
 	refl_i = 1;
 	for ( refl = first_refl(reflist, &iter);
@@ -320,22 +326,74 @@ static int export_to_mtz(struct gui_merge_result *result,
 	{
 		signed int h, k, l;
 		double one_over_d;
+		int isym;
 
 		get_indices(refl, &h, &k, &l);
 
 		one_over_d = 2.0*resolution(cell, h, k, l);
 		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
-			float refldata[5];
-			refldata[0] = h;
-			refldata[1] = k;
-			refldata[2] = l;
-			refldata[3] = get_intensity(refl);
-			refldata[4] = get_esd_intensity(refl);
-			ccp4_lwrefl(mtz, refldata, columns, 5, refl_i++);
+
+			float refldata[7];
+			signed int nh, nk, nl;
+			signed int fh, fk, fl;
+			Reflection *friedel;
+			Reflection *refl_plus;
+			Reflection *refl_minus;
+
+			/* Look for Friedel partner */
+			if ( find_equiv_in_list(reflist, -h, -k, -l,
+			                        sym, &fh, &fk, &fl) )
+			{
+				friedel = find_refl(reflist, fh, fk, fl);
+			} else {
+				friedel = NULL;
+			}
+
+			/* Move to CCP4's idea of the ASU */
+			isym = ccp4spg_put_in_asu(spg, h, k, l, &nh, &nk, &nl);
+
+			/* Ok, do we have an I+ or an I- ? */
+			if ( is_odd(isym) ) {
+				/* I+ */
+				refl_plus = refl;
+				refl_minus = friedel;
+			} else {
+				/* I- */
+				refl_minus = refl;
+				refl_plus = friedel;
+			}
+
+			/* If we are looking at an I-, only write it out now
+			 * if the corresponding I+ if not in 'reflist'.
+			 * If I+ is present, then this I- will get written when
+			 * the Friedel pair is processed. */
+			if ( !is_odd(isym) && (refl_plus != NULL) ) continue;
+
+			refldata[0] = nh;
+			refldata[1] = nk;
+			refldata[2] = nl;
+			if ( refl_plus != NULL ) {
+				refldata[3] = get_intensity(refl_plus);
+				refldata[4] = get_esd_intensity(refl_plus);
+			} else {
+				refldata[3] = NAN;
+				refldata[4] = NAN;
+			}
+			if ( refl_minus != NULL ) {
+				refldata[5] = get_intensity(refl_minus);
+				refldata[6] = get_esd_intensity(refl_minus);
+			} else {
+				refldata[5] = NAN;
+				refldata[6] = NAN;
+			}
+
+			ccp4_lwrefl(mtz, refldata, columns, 7, refl_i++);
+
 		}
 	}
 
 	r = MtzPut(mtz, " ");
+	ccp4spg_free(&spg);
 	MtzFree(mtz);
 	reflist_free(reflist);
 	return 1-r; /* Yes, really.  MtzPut return values are backwards */
