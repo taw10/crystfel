@@ -345,14 +345,6 @@ static int export_to_mtz(struct gui_merge_result *result,
 }
 
 
-static int export_to_mtz_bij(struct gui_merge_result *result,
-                             const char *filename, UnitCell *cell,
-                             double min_res, double max_res)
-{
-	return 1;
-}
-
-
 static int export_data(struct export_window *win, char *filename)
 {
 	gchar *cell_filename;
@@ -405,8 +397,6 @@ static int export_data(struct export_window *win, char *filename)
 
 	if ( strcmp(format, "mtz") == 0 ) {
 		r = export_to_mtz(result, filename, cell, min_res, max_res);
-	} else if ( strcmp(format, "mtz-bij") == 0 ) {
-		r = export_to_mtz_bij(result, filename, cell, min_res, max_res);
 	} else if ( strcmp(format, "xds") == 0 ) {
 		r = export_to_xds(result, filename, cell, min_res, max_res);
 	} else {
@@ -495,9 +485,7 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 #ifdef HAVE_LIBCCP4
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "mtz",
-	                          "MTZ, plain");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "mtz-bij",
-	                          "MTZ, Bijvoet pairs together");
+	                          "MTZ");
 #endif
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "xds",
 	                          "XDS ASCII");
