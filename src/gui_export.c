@@ -36,11 +36,18 @@
 #include <gtk/gtk.h>
 #include <assert.h>
 
+#ifdef HAVE_LIBCCP4
+#include <ccp4/cmtzlib.h>
+#include <ccp4/csymlib.h>
+#include <ccp4/ccp4_parser.h>
+#endif
+
 #include <utils.h>
 #include <reflist-utils.h>
 #include <cell-utils.h>
 #include <symmetry.h>
 
+#include "version.h"
 #include "gui_project.h"
 #include "crystfel_gui.h"
 #include "gtk-util-routines.h"
@@ -56,22 +63,6 @@ struct export_window
 	GtkWidget *dataset;
 	GtkWidget *format;
 };
-
-
-static int export_to_mtz(struct gui_merge_result *result,
-                         const char *filename, UnitCell *cell,
-                         double min_res, double max_res)
-{
-	return 1;
-}
-
-
-static int export_to_mtz_bij(struct gui_merge_result *result,
-                             const char *filename, UnitCell *cell,
-                             double min_res, double max_res)
-{
-	return 1;
-}
 
 
 struct point_group_conversion
@@ -136,6 +127,23 @@ static int space_group_for_xds(const char *sym_str, char cen)
 
 	ERROR("Couldn't derive XDS representation of symmetry.\n");
 	return 0;
+}
+
+
+static const char *space_group_for_mtz(const char *sym_str, char cen)
+{
+	int i = 0;
+	do {
+		if ( (pg_conversions[i].centering == cen)
+		  && (strcmp(sym_str, pg_conversions[i].crystfel) == 0) )
+		{
+			return pg_conversions[i].ccp4;
+		}
+		i++;
+	} while (pg_conversions[i].centering != '*');
+
+	ERROR("Couldn't derive CCP4 representation of symmetry.\n");
+	return NULL;
 }
 
 
@@ -207,6 +215,141 @@ static int export_to_xds(struct gui_merge_result *result,
 
 	fclose(fh);
 	return 0;
+}
+
+
+#ifdef HAVE_LIBCCP4
+static int add_mtz_symmetry_header(MTZ *mtz, const char *spg_name)
+{
+	CCP4SPG *spg;
+	float rsymx[192][4][4];
+	char ltypex[2];
+	int i;
+
+	spg = ccp4spg_load_by_spgname(spg_name);
+	if ( spg == NULL ) {
+		ERROR("Couldn't look up CCP4 space group '%s'\n", spg_name);
+		return 1;
+	}
+
+	for ( i=0; i<spg->nsymop; i++ ) {
+		rotandtrn_to_mat4(rsymx[i], spg->symop[i]);
+	}
+	ltypex[0] = spg->symbol_old[0];
+	ltypex[1] = '\0';
+
+	ccp4_lwsymm(mtz, spg->nsymop, spg->nsymop_prim,
+	            rsymx, ltypex, spg->spg_ccp4_num, spg->symbol_old,
+	            spg->point_group);
+
+	ccp4spg_free(&spg);
+
+	return 0;
+}
+#endif
+
+
+static int export_to_mtz(struct gui_merge_result *result,
+                         const char *filename, UnitCell *cell,
+                         double min_res, double max_res)
+{
+#ifdef HAVE_LIBCCP4
+	MTZ *mtz;
+	MTZXTAL *cr;
+	MTZSET *ds;
+	MTZCOL *columns[5];
+	double a, b, c, al, be, ga;
+	int r;
+	char tmp[128];
+	float cellp[6];
+	int refl_i;
+	RefList *reflist;
+	Reflection *refl;
+	RefListIterator *iter;
+	char *sym_str = NULL;
+	const char *spg;
+
+	reflist = read_reflections_2(result->hkl, &sym_str);
+	if ( reflist == NULL ) return 1;
+	if ( sym_str == NULL ) return 1;
+
+	spg = space_group_for_mtz(sym_str, cell_get_centering(cell));
+	if ( spg == NULL ) {
+		reflist_free(reflist);
+		return 1;
+	}
+
+	mtz = MtzMalloc(0, 0);
+
+	snprintf(tmp, 128, "Data exported via CrystFEL GUI, version %s",
+	         crystfel_version_string());
+	ccp4_lwtitl(mtz, tmp, 0);
+
+	mtz->refs_in_memory = 0;
+	mtz->fileout = MtzOpenForWrite(filename);
+
+	if ( add_mtz_symmetry_header(mtz, spg) ) {
+		return 1;
+	}
+
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	cellp[0] = a*1e10;
+	cellp[1] = b*1e10;
+	cellp[2] = c*1e10;
+	cellp[3] = rad2deg(al);
+	cellp[4] = rad2deg(be);
+	cellp[5] = rad2deg(ga);
+
+	/* FIXME: Proposed labelling:
+	 *  title = as above
+	 *  project = basename of folder containing crystfel.project
+	 *  crystal = name of indexing results run
+	 *  dataset = name of merge results run */
+	cr = MtzAddXtal(mtz, "Crystal_name", "Project_name", cellp);
+	ds = MtzAddDataset(mtz, cr, result->name, 0.0);
+	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
+	columns[1] = MtzAddColumn(mtz, ds, "K", "H");
+	columns[2] = MtzAddColumn(mtz, ds, "L", "H");
+	columns[3] = MtzAddColumn(mtz, ds, "IOBS", "J");
+	columns[4] = MtzAddColumn(mtz, ds, "SIGIOBS", "Q");
+
+	refl_i = 1;
+	for ( refl = first_refl(reflist, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double one_over_d;
+
+		get_indices(refl, &h, &k, &l);
+
+		one_over_d = 2.0*resolution(cell, h, k, l);
+		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
+			float refldata[5];
+			refldata[0] = h;
+			refldata[1] = k;
+			refldata[2] = l;
+			refldata[3] = get_intensity(refl);
+			refldata[4] = get_esd_intensity(refl);
+			ccp4_lwrefl(mtz, refldata, columns, 5, refl_i++);
+		}
+	}
+
+	r = MtzPut(mtz, " ");
+	MtzFree(mtz);
+	reflist_free(reflist);
+	return 1-r; /* Yes, really.  MtzPut return values are backwards */
+#else
+	return 1;
+#endif
+}
+
+
+static int export_to_mtz_bij(struct gui_merge_result *result,
+                             const char *filename, UnitCell *cell,
+                             double min_res, double max_res)
+{
+	return 1;
 }
 
 
