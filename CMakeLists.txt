@@ -76,6 +76,7 @@ endif()
 
 pkg_search_module(CAIRO cairo)
 pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
+pkg_search_module(LIBCCP4 libccp4c)
 
 include(CheckCCompilerFlag)
 check_c_compiler_flag("-fdiagnostics-color=always" HAVE_DIAG_COLOR)
@@ -119,6 +120,7 @@ set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
 set(HAVE_GDK ${GDK_FOUND})
 set(HAVE_MSGPACK ${MSGPACK_FOUND})
 set(HAVE_ZMQ ${ZMQ_FOUND})
+set(HAVE_LIBCCP4 ${LIBCCP4_FOUND})
 
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 
@@ -403,8 +405,10 @@ if (GTK_FOUND)
 
   add_executable(crystfel ${CRYSTFEL_GUI_SOURCES}
                  ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-  target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
-  target_link_libraries (crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES})
+  target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS}
+                             ${LIBCCP4_INCLUDES})
+  target_link_libraries (crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES}
+                         ${LIBCCP4_LIBRARIES})
 
   if (HAVE_SLURM)
     target_link_libraries(crystfel slurm)

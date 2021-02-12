@@ -11,3 +11,4 @@
 #cmakedefine HAVE_MSGPACK
 #cmakedefine HAVE_ZMQ
 #cmakedefine HAVE_SLURM
+#cmakedefine HAVE_LIBCCP4

@@ -350,10 +350,12 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	win->format = gtk_combo_box_text_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->format),
 	                   FALSE, FALSE, 4.0);
+#ifdef HAVE_LIBCCP4
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "mtz",
 	                          "MTZ, plain");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "mtz-bij",
 	                          "MTZ, Bijvoet pairs together");
+#endif
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "xds",
 	                          "XDS ASCII");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(win->format), 0);
