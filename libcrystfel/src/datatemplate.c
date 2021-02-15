@@ -1285,11 +1285,31 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 				reject = 1;
 			} else {
 				struct panel_template *p;
+				struct dt_badregion *bad;
+				int r = 0;
 				p = &dt->panels[dt->bad[i].panel_number];
-				dt->bad[i].min_fs -= p->orig_min_fs;
-				dt->bad[i].max_fs -= p->orig_min_fs;
-				dt->bad[i].min_ss -= p->orig_min_ss;
-				dt->bad[i].max_ss -= p->orig_min_ss;
+				bad = &dt->bad[i];
+				if ( bad->min_fs < p->orig_min_fs ) r = 1;
+				if ( bad->min_ss < p->orig_min_ss ) r = 1;
+				if ( bad->max_fs > p->orig_max_fs ) r = 1;
+				if ( bad->max_ss > p->orig_max_ss ) r = 1;
+				if ( r ) {
+					ERROR("Bad region '%s' is outside the "
+					      "panel bounds (%s) as presented "
+					      "in data (%i %i, %i %i inclusive): "
+					      "Bad region %i,%i to %i, %i "
+					      "inclusive\n",
+					      bad->name, p->name,
+					      p->orig_min_fs, p->orig_min_ss,
+					      p->orig_max_fs, p->orig_max_ss,
+					      bad->min_fs, bad->min_ss,
+					      bad->max_fs, bad->max_ss);
+					reject = 1;
+				}
+				bad->min_fs -= p->orig_min_fs;
+				bad->max_fs -= p->orig_min_fs;
+				bad->min_ss -= p->orig_min_ss;
+				bad->max_ss -= p->orig_min_ss;
 			}
 		}
 	}

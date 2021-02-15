@@ -717,6 +717,19 @@ static void mark_flagged_pixels(struct panel_template *p,
 }
 
 
+static int region_within_panel(struct dt_badregion *region,
+                               struct detgeom_panel *panel)
+{
+	assert(region->is_fsss);
+
+	if ( region->min_fs < 0 ) return 0;
+	if ( region->min_ss < 0 ) return 0;
+	if ( region->max_fs >= panel->w ) return 0;
+	if ( region->max_ss >= panel->h ) return 0;
+	return 1;
+}
+
+
 static void draw_bad_region_fsss(struct dt_badregion *region,
                                  int **bad,
                                  struct detgeom *detgeom)
@@ -725,6 +738,12 @@ static void draw_bad_region_fsss(struct dt_badregion *region,
 	int fs, ss;
 
 	panel = &detgeom->panels[region->panel_number];
+
+	if ( !region_within_panel(region, panel) ) {
+		ERROR("Bad pixel region %s is (partially) outside panel - ignoring it\n",
+		      region->name);
+		return;
+	}
 
 	for ( ss=region->min_ss; ss<=region->max_ss; ss++ ) {
 		for ( fs=region->min_fs; fs<=region->max_fs; fs++ ) {
