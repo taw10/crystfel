@@ -1136,8 +1136,9 @@ void default_project(struct crystfelproject *proj)
 	proj->fom_min_meas = 1;
 	proj->fom_cell_filename = NULL;
 
-	proj->export_res_min = INFINITY;
-	proj->export_res_max = 0.0;
+	/* NB Export options are currently not saved (because I'm lazy) */
+	proj->export_res_min = INFINITY;  /* Angstroms */
+	proj->export_res_max = 0.0;  /* Angstroms */
 }
 
 

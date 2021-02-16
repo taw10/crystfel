@@ -268,15 +268,15 @@ struct crystfelproject {
 	struct gui_merge_result *merge_results;
 	int n_merge_results;
 
-	double fom_res_min;
-	double fom_res_max;
+	double fom_res_min;  /* Angstroms */
+	double fom_res_max;  /* Angstroms */
 	int fom_nbins;
 	double fom_min_snr;
 	int fom_min_meas;
 	char *fom_cell_filename;
 
-	double export_res_min;
-	double export_res_max;
+	double export_res_min;  /* Angstroms */
+	double export_res_max;  /* Angstroms */
 
 	int ambi_use_res;
 	double ambi_res_min;  /* Angstroms */
