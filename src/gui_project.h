@@ -277,6 +277,16 @@ struct crystfelproject {
 
 	double export_res_min;
 	double export_res_max;
+
+	int ambi_use_res;
+	double ambi_res_min;  /* Angstroms */
+	double ambi_res_max;  /* Angstroms */
+	int ambi_niter;
+	int ambi_use_ncorr;
+	int ambi_ncorr;
+	char *ambi_sym;
+	char *ambi_source_sym;
+	char *ambi_operator;
 };
 
 extern enum match_type_id decode_matchtype(const char *type_id);

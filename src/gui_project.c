@@ -312,6 +312,39 @@ static void add_metadata_to_copy(struct index_params *ip,
 }
 
 
+static void parse_ambi_opt(const char *key, const char *val,
+                             struct crystfelproject *proj)
+{
+	if ( strcmp(key, "ambi.min_res_A") == 0 ) {
+		proj->ambi_res_min = parse_float(val);
+	}
+	if ( strcmp(key, "ambi.max_res_A") == 0 ) {
+		proj->ambi_res_max = parse_float(val);
+	}
+	if ( strcmp(key, "ambi.use_res") == 0 ) {
+		proj->ambi_use_res = parse_int(val);
+	}
+	if ( strcmp(key, "ambi.niter") == 0 ) {
+		proj->ambi_niter = parse_int(val);
+	}
+	if ( strcmp(key, "ambi.ncorr") == 0 ) {
+		proj->ambi_ncorr = parse_int(val);
+	}
+	if ( strcmp(key, "ambi.use_ncorr") == 0 ) {
+		proj->ambi_use_ncorr = parse_int(val);
+	}
+	if ( strcmp(key, "ambi.sym") == 0 ) {
+		proj->ambi_sym = strdup(val);
+	}
+	if ( strcmp(key, "ambi.source_sym") == 0 ) {
+		proj->ambi_source_sym = strdup(val);
+	}
+	if ( strcmp(key, "ambi.operator") == 0 ) {
+		proj->ambi_operator = strdup(val);
+	}
+}
+
+
 static void parse_fom_opt(const char *key, const char *val,
                           struct crystfelproject *proj)
 {
@@ -458,6 +491,10 @@ static void handle_var(const char *key, const char *val,
 
 	if ( strncmp(key, "fom.", 4) == 0 ) {
 		parse_fom_opt(key, val, proj);
+	}
+
+	if ( strncmp(key, "ambi.", 4) == 0 ) {
+		parse_ambi_opt(key, val, proj);
 	}
 
 	if ( strncmp(key, "stream.", 7) == 0 ) {
@@ -871,6 +908,22 @@ int save_project(struct crystfelproject *proj)
 		}
 	}
 
+	fprintf(fh, "ambi.min_res_A %f\n", proj->ambi_res_min);
+	fprintf(fh, "ambi.max_res_A %f\n", proj->ambi_res_max);
+	fprintf(fh, "ambi.use_res %i\n", proj->ambi_use_res);
+	fprintf(fh, "ambi.niter %i\n", proj->ambi_niter);
+	fprintf(fh, "ambi.ncorr %i\n", proj->ambi_ncorr);
+	fprintf(fh, "ambi.use_ncorr %i\n", proj->ambi_use_ncorr);
+	if ( proj->ambi_sym != NULL ) {
+		fprintf(fh, "ambi.sym %s\n", proj->ambi_sym);
+	}
+	if ( proj->ambi_source_sym != NULL ) {
+		fprintf(fh, "ambi.source_sym %s\n", proj->ambi_source_sym);
+	}
+	if ( proj->ambi_operator != NULL ) {
+		fprintf(fh, "ambi.operator %s\n", proj->ambi_operator);
+	}
+
 	fprintf(fh, "merging.model %s\n",
 	        proj->merging_params.model);
 	fprintf(fh, "merging.symmetry %s\n",
@@ -1045,6 +1098,16 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_params.metadata_to_copy = NULL;
 	proj->indexing_params.n_metadata = 0;
 
+	proj->ambi_use_res = 1;
+	proj->ambi_res_min = 20;  /* Angstroms */
+	proj->ambi_res_max = 4;  /* Angstroms */
+	proj->ambi_niter = 4;
+	proj->ambi_use_ncorr = 0;
+	proj->ambi_ncorr = 1000;
+	proj->ambi_sym = NULL;
+	proj->ambi_source_sym = NULL;
+	proj->ambi_operator = NULL;
+
 	proj->merging_params.model = strdup("unity");
 	proj->merging_params.symmetry = strdup("1");
 	proj->merging_params.scale = 1;
@@ -1066,8 +1129,8 @@ void default_project(struct crystfelproject *proj)
 	proj->merge_results = NULL;
 	proj->n_merge_results = 0;
 
-	proj->fom_res_min = 100.0;
-	proj->fom_res_max = 5.0;
+	proj->fom_res_min = 100.0;  /* Angstroms */
+	proj->fom_res_max = 5.0;  /* Angstroms */
 	proj->fom_nbins = 20;
 	proj->fom_min_snr = -INFINITY;
 	proj->fom_min_meas = 1;

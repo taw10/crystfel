@@ -50,6 +50,7 @@
 #include "gui_merge.h"
 #include "gui_fom.h"
 #include "gui_export.h"
+#include "gui_ambi.h"
 #include "gui_project.h"
 #include "version.h"
 
@@ -857,7 +858,7 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	add_button(vbox, "Determine unit cell", "applications-engineering",
 	           G_CALLBACK(cell_explorer_sig), proj);
 	add_button(vbox, "Indexing ambiguity", "face-worried",
-	           G_CALLBACK(NULL), proj);
+	           G_CALLBACK(ambi_sig), proj);
 	add_button(vbox, "Merge", "applications-science",
 	           G_CALLBACK(merge_sig), proj);
 	add_button(vbox, "Figures of merit", "trophy-gold",
