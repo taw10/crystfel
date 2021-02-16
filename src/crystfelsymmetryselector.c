@@ -73,7 +73,9 @@ GtkWidget *crystfel_symmetry_selector_new()
 
 char *crystfel_symmetry_selector_get_group_symbol(CrystFELSymmetrySelector *sel)
 {
-	const gchar *text = gtk_entry_get_text(GTK_ENTRY(sel->entry));
+	const char *text = gtk_entry_get_text(GTK_ENTRY(sel->entry));
+	if ( text == NULL ) return NULL;
+	if ( text[0] == '\0' ) return NULL;
 	return strdup(text);
 }
 
