@@ -36,5 +36,6 @@ extern int get_bool(GtkWidget *widget);
 extern unsigned int get_uint(GtkWidget *entry);
 extern float get_float(GtkWidget *entry);
 extern int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget);
+extern void set_active(GtkWidget *tb, int active);
 
 #endif
