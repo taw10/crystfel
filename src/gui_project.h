@@ -114,6 +114,18 @@ struct merging_params {
 	float push_res;
 };
 
+struct ambi_params {
+	int use_res;
+	double res_min;  /* Angstroms */
+	double res_max;  /* Angstroms */
+	int niter;
+	int use_ncorr;
+	int ncorr;
+	char *sym;
+	char *source_sym;
+	char *operator;
+};
+
 struct gui_indexing_result
 {
 	char *name;
@@ -308,15 +320,7 @@ struct crystfelproject {
 	char *ambi_new_job_title;
 	int ambi_backend_selected;
 	GtkWidget *ambi_opts;
-	int ambi_use_res;
-	double ambi_res_min;  /* Angstroms */
-	double ambi_res_max;  /* Angstroms */
-	int ambi_niter;
-	int ambi_use_ncorr;
-	int ambi_ncorr;
-	char *ambi_sym;
-	char *ambi_source_sym;
-	char *ambi_operator;
+	struct ambi_params ambi_params;
 };
 
 extern enum match_type_id decode_matchtype(const char *type_id);

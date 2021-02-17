@@ -125,15 +125,15 @@ static void ambi_response_sig(GtkWidget *dialog, gint resp,
 		char *job_notes;
 		const char *results_name;
 
-		win->proj->ambi_use_res = get_bool(win->limit_res);
-		win->proj->ambi_res_min = get_float(win->min_res);
-		win->proj->ambi_res_max = get_float(win->max_res);
-		win->proj->ambi_niter = get_uint(win->niter);
-		win->proj->ambi_use_ncorr = get_bool(win->use_ncorr);
-		win->proj->ambi_ncorr = get_uint(win->ncorr);
-		win->proj->ambi_sym = get_sym(win->sym);
-		win->proj->ambi_source_sym = get_sym(win->source_sym);
-		win->proj->ambi_operator = get_str(win->operator);
+		win->proj->ambi_params.use_res = get_bool(win->limit_res);
+		win->proj->ambi_params.res_min = get_float(win->min_res);
+		win->proj->ambi_params.res_max = get_float(win->max_res);
+		win->proj->ambi_params.niter = get_uint(win->niter);
+		win->proj->ambi_params.use_ncorr = get_bool(win->use_ncorr);
+		win->proj->ambi_params.ncorr = get_uint(win->ncorr);
+		win->proj->ambi_params.sym = get_sym(win->sym);
+		win->proj->ambi_params.source_sym = get_sym(win->source_sym);
+		win->proj->ambi_params.operator = get_str(win->operator);
 
 		backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(win->backend_combo));
 		if ( backend_idx < 0 ) return;
@@ -193,7 +193,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->sym),
 	                   FALSE, FALSE, 4.0);
 	crystfel_symmetry_selector_set_group_symbol(CRYSTFEL_SYMMETRY_SELECTOR(win->sym),
-	                                            proj->ambi_sym);
+	                                            proj->ambi_params.sym);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -205,7 +205,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->source_sym),
 	                   FALSE, FALSE, 4.0);
 	crystfel_symmetry_selector_set_group_symbol(CRYSTFEL_SYMMETRY_SELECTOR(win->source_sym),
-	                                            proj->ambi_source_sym);
+	                                            proj->ambi_params.source_sym);
 	g_signal_connect(G_OBJECT(win->use_source_sym), "toggled",
 	                 G_CALLBACK(i_maybe_disable), win->source_sym);
 
@@ -217,13 +217,13 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->use_operator),
 	                   FALSE, FALSE, 4.0);
 	win->operator = gtk_entry_new();
-	gtk_entry_set_text(GTK_ENTRY(win->operator), proj->ambi_operator);
+	gtk_entry_set_text(GTK_ENTRY(win->operator), proj->ambi_params.operator);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->operator),
 	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(win->use_operator), "toggled",
 	                 G_CALLBACK(i_maybe_disable), win->operator);
 
-	if ( proj->ambi_source_sym != NULL ) {
+	if ( proj->ambi_params.source_sym != NULL ) {
 		gtk_widget_set_sensitive(win->operator, FALSE);
 		set_active(win->use_source_sym, TRUE);
 	} else {
@@ -235,12 +235,12 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 4.0);
 	win->limit_res = gtk_check_button_new_with_label("Restrict resolution range:");
-	set_active(win->limit_res, proj->ambi_use_res);
+	set_active(win->limit_res, proj->ambi_params.use_res);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->limit_res),
 	                   FALSE, FALSE, 4.0);
 	win->min_res = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(win->min_res), 6);
-	snprintf(tmp, 64, "%.2f", proj->ambi_res_min);
+	snprintf(tmp, 64, "%.2f", proj->ambi_params.res_min);
 	gtk_entry_set_text(GTK_ENTRY(win->min_res), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->min_res),
 	                   FALSE, FALSE, 4.0);
@@ -249,7 +249,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                   FALSE, FALSE, 4.0);
 	win->max_res = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(win->max_res), 6);
-	snprintf(tmp, 64, "%.2f", proj->ambi_res_max);
+	snprintf(tmp, 64, "%.2f", proj->ambi_params.res_max);
 	gtk_entry_set_text(GTK_ENTRY(win->max_res), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->max_res),
 	                   FALSE, FALSE, 4.0);
@@ -260,8 +260,8 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                 G_CALLBACK(i_maybe_disable), win->min_res);
 	g_signal_connect(G_OBJECT(win->limit_res), "toggled",
 	                 G_CALLBACK(i_maybe_disable), win->max_res);
-	gtk_widget_set_sensitive(win->min_res, proj->ambi_use_res);
-	gtk_widget_set_sensitive(win->max_res, proj->ambi_use_res);
+	gtk_widget_set_sensitive(win->min_res, proj->ambi_params.use_res);
+	gtk_widget_set_sensitive(win->max_res, proj->ambi_params.use_res);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -271,14 +271,14 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                   FALSE, FALSE, 4.0);
 	win->ncorr = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(win->ncorr), 6);
-	snprintf(tmp, 64, "%i", proj->ambi_ncorr);
+	snprintf(tmp, 64, "%i", proj->ambi_params.ncorr);
 	gtk_entry_set_text(GTK_ENTRY(win->ncorr), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->ncorr),
 	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(win->use_ncorr), "toggled",
 	                 G_CALLBACK(i_maybe_disable), win->ncorr);
-	set_active(win->use_ncorr, proj->ambi_use_ncorr);
-	gtk_widget_set_sensitive(win->ncorr, proj->ambi_use_ncorr);
+	set_active(win->use_ncorr, proj->ambi_params.use_ncorr);
+	gtk_widget_set_sensitive(win->ncorr, proj->ambi_params.use_ncorr);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -288,7 +288,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                   FALSE, FALSE, 4.0);
 	win->niter = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(win->niter), 2);
-	snprintf(tmp, 64, "%i", proj->ambi_niter);
+	snprintf(tmp, 64, "%i", proj->ambi_params.niter);
 	gtk_entry_set_text(GTK_ENTRY(win->niter), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->niter),
 	                   FALSE, FALSE, 4.0);
