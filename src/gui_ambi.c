@@ -59,7 +59,43 @@ struct ambi_window
 	GtkWidget *operator;
 	GtkWidget *use_source_sym;
 	GtkWidget *use_operator;
+	GtkWidget *backend_combo;
+	GtkWidget *backend_opts_widget;
+	GtkWidget *backend_opts_box;
 };
+
+
+static int run_ambi(struct crystfelproject *proj,
+                    const char *results_name,
+                    int backend_idx,
+                    const char *job_title,
+                    const char *job_notes)
+{
+	struct crystfel_backend *be;
+	void *job_priv;
+	struct gui_indexing_result *input;
+
+	/* Which result to merge? */
+	input = find_indexing_result_by_name(proj, results_name);
+	if ( input == NULL ) {
+		ERROR("Please select a result first\n");
+		return 1;
+	}
+
+	be = &proj->backends[backend_idx];
+	job_priv = be->run_ambi(job_title, job_notes, proj, input,
+	                        be->ambi_opts_priv);
+
+	if ( job_priv != NULL ) {
+		char name[256];
+		snprintf(name, 255, "Resolving indexing ambiguity (%s)", job_title);
+		add_running_task(proj, name, be, job_priv);
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 
 
 static char *get_sym(GtkWidget *w)
@@ -83,6 +119,12 @@ static void ambi_response_sig(GtkWidget *dialog, gint resp,
 	int r = 0;
 
 	if ( resp == GTK_RESPONSE_ACCEPT ) {
+
+		int backend_idx;
+		const char *job_title;
+		char *job_notes;
+		const char *results_name;
+
 		win->proj->ambi_use_res = get_bool(win->limit_res);
 		win->proj->ambi_res_min = get_float(win->min_res);
 		win->proj->ambi_res_max = get_float(win->max_res);
@@ -92,9 +134,41 @@ static void ambi_response_sig(GtkWidget *dialog, gint resp,
 		win->proj->ambi_sym = get_sym(win->sym);
 		win->proj->ambi_source_sym = get_sym(win->source_sym);
 		win->proj->ambi_operator = get_str(win->operator);
+
+		backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(win->backend_combo));
+		if ( backend_idx < 0 ) return;
+
+		job_title = gtk_entry_get_text(GTK_ENTRY(win->jobname));
+		job_notes = get_all_text(GTK_TEXT_VIEW(win->notes_page->textview));
+
+		if ( job_title[0] == '\0' ) {
+			ERROR("You must provide a job name.\n");
+			return;
+		}
+
+		free(win->proj->ambi_new_job_title);
+		win->proj->ambi_new_job_title = strdup(job_title);
+
+		results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(win->dataset));
+		if ( results_name == NULL ) {
+			ERROR("Please select the input\n");
+			return;
+		}
+		if ( run_ambi(win->proj, results_name,
+		              backend_idx, job_title, job_notes) == 0 )
+		{
+			gtk_widget_destroy(dialog);
+			win->proj->ambi_opts = NULL;
+		}
+
+		free(job_notes);
+
 	}
 
-	if ( !r ) gtk_widget_destroy(dialog);
+	if ( !r ) {
+		gtk_widget_destroy(dialog);
+		win->proj->ambi_opts = NULL;
+	}
 }
 
 
@@ -223,9 +297,74 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 }
 
 
+static void ambi_backend_changed_sig(GtkWidget *combo,
+                                     struct ambi_window *win)
+{
+	int backend_idx;
+	struct crystfel_backend *be;
+
+	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
+	if ( backend_idx < 0 ) return;
+	win->proj->ambi_backend_selected = backend_idx;
+
+	be = &win->proj->backends[backend_idx];
+
+	if ( win->backend_opts_widget != NULL ) {
+		gtk_widget_destroy(win->backend_opts_widget);
+	}
+
+	win->backend_opts_widget = be->make_ambi_parameters_widget(be->ambi_opts_priv);
+
+	gtk_box_pack_start(GTK_BOX(win->backend_opts_box),
+	                   GTK_WIDGET(win->backend_opts_widget),
+	                   FALSE, FALSE, 0);
+	gtk_widget_show_all(win->backend_opts_widget);
+}
+
+
 static GtkWidget *make_ambi_backend_opts(struct ambi_window *win)
 {
-	return gtk_vbox_new(FALSE, 0.0);
+	GtkWidget *box;
+	GtkWidget *hbox;
+	GtkWidget *label;
+	int i;
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Batch system:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+
+	win->backend_combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->backend_combo),
+	                   FALSE, FALSE, 0);
+
+	for ( i=0; i<win->proj->n_backends; i++ ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->backend_combo),
+		                          win->proj->backends[i].name,
+		                          win->proj->backends[i].friendly_name);
+	}
+
+	win->backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
+	                                    0);
+	gtk_box_pack_start(GTK_BOX(box),
+	                   GTK_WIDGET(win->backend_opts_box),
+	                   FALSE, FALSE, 0);
+	win->backend_opts_widget = NULL;
+
+	/* win->backend_opts{_box} must exist before the following */
+	g_signal_connect(G_OBJECT(win->backend_combo), "changed",
+	                 G_CALLBACK(ambi_backend_changed_sig), win);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(win->backend_combo),
+	                         win->proj->ambi_backend_selected);
+
+	gtk_widget_show_all(box);
+
+	return box;
 }
 
 
@@ -241,6 +380,8 @@ gint ambi_sig(GtkWidget *widget, struct crystfelproject *proj)
 	struct ambi_window *win;
 	int i;
 
+	if ( proj->ambi_opts != NULL ) return FALSE;
+
 	win = malloc(sizeof(struct ambi_window));
 	if ( win == NULL ) return 0;
 
@@ -252,6 +393,7 @@ gint ambi_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                     "Close", GTK_RESPONSE_CLOSE,
 	                                     "Run", GTK_RESPONSE_ACCEPT,
 	                                     NULL);
+	proj->ambi_opts = dialog;
 
 	g_signal_connect(G_OBJECT(dialog), "response",
 	                 G_CALLBACK(ambi_response_sig),

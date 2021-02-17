@@ -461,6 +461,11 @@ static void handle_var(const char *key, const char *val,
 		proj->merging_new_job_title = strdup(val);
 	}
 
+	if ( strcmp(key, "ambi.new_job_title") == 0 ) {
+		free(proj->ambi_new_job_title);
+		proj->ambi_new_job_title = strdup(val);
+	}
+
 	if ( strcmp(key, "indexing.backend") == 0 ) {
 		proj->indexing_backend_selected = find_backend(val, proj);
 	}
@@ -923,6 +928,10 @@ int save_project(struct crystfelproject *proj)
 	if ( proj->ambi_operator != NULL ) {
 		fprintf(fh, "ambi.operator %s\n", proj->ambi_operator);
 	}
+	if ( proj->ambi_new_job_title != NULL ) {
+		fprintf(fh, "ambi.new_job_title %s\n",
+		        proj->ambi_new_job_title);
+	}
 
 	fprintf(fh, "merging.model %s\n",
 	        proj->merging_params.model);
@@ -1030,9 +1039,11 @@ void default_project(struct crystfelproject *proj)
 	proj->cur_image = NULL;
 	proj->indexing_opts = NULL;
 	proj->merging_opts = NULL;
+	proj->ambi_opts = NULL;
 	proj->n_running_tasks = 0;
 	proj->indexing_new_job_title = NULL;
 	proj->merging_new_job_title = NULL;
+	proj->ambi_new_job_title = NULL;
 
 	proj->indexing_backend_selected = 0;
 	proj->merging_backend_selected = 0;

@@ -146,6 +146,8 @@ struct crystfel_backend {
 	                   int *running,
 	                   float *fraction_complete);
 
+	/* ....................... Indexing ........................ */
+
 	/* Backend should provide a GTK widget to set options */
 	GtkWidget *(*make_indexing_parameters_widget)(void *opts_priv);
 
@@ -166,6 +168,8 @@ struct crystfel_backend {
 
 	/* Backend should store options for indexing here */
 	void *indexing_opts_priv;
+
+	/* ....................... Merging ........................ */
 
 	/* Backend should provide a GTK widget to set options */
 	GtkWidget *(*make_merging_parameters_widget)(void *opts_priv);
@@ -189,6 +193,29 @@ struct crystfel_backend {
 	/* Backend should store options for merging here */
 	void *merging_opts_priv;
 
+	/* .................. Indexing ambiguity .................. */
+
+	/* Backend should provide a GTK widget to set options */
+	GtkWidget *(*make_ambi_parameters_widget)(void *opts_priv);
+
+	/* Called to ask the backend to start resolving indexing ambiguity.
+	 * It should return a void pointer representing this job */
+	void *(*run_ambi)(const char *job_title,
+	                  const char *job_notes,
+	                  struct crystfelproject *proj,
+	                  struct gui_indexing_result *input,
+	                  void *opts_priv);
+
+	/* Called to ask the backend to write its ambigator options */
+	void (*write_ambi_opts)(void *opts_priv, FILE *fh);
+
+	/* Called when reading a project from file */
+	void (*read_ambi_opt)(void *opts_priv,
+	                      const char *key,
+	                      const char *val);
+
+	/* Backend should store options for ambigator here */
+	void *ambi_opts_priv;
 };
 
 struct gui_task
@@ -278,6 +305,9 @@ struct crystfelproject {
 	double export_res_min;  /* Angstroms */
 	double export_res_max;  /* Angstroms */
 
+	char *ambi_new_job_title;
+	int ambi_backend_selected;
+	GtkWidget *ambi_opts;
 	int ambi_use_res;
 	double ambi_res_min;  /* Angstroms */
 	double ambi_res_max;  /* Angstroms */

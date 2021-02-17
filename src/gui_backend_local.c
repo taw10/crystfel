@@ -52,6 +52,12 @@ struct local_merging_opts
 };
 
 
+struct local_ambi_opts
+{
+	int n_threads;
+};
+
+
 struct local_job
 {
 	double frac_complete;
@@ -436,6 +442,16 @@ static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
 }
 
 
+static void *run_ambi(const char *job_title,
+                      const char *job_notes,
+                      struct crystfelproject *proj,
+                      struct gui_indexing_result *input,
+                      void *opts_priv)
+{
+	return NULL;
+}
+
+
 static void *run_merging(const char *job_title,
                          const char *job_notes,
                          struct crystfelproject *proj,
@@ -563,6 +579,74 @@ static void read_merging_opt(void *opts_priv,
 }
 
 
+static GtkWidget *make_ambi_parameters_widget(void *opts_priv)
+{
+	struct local_ambi_opts *opts = opts_priv;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *entry;
+	GtkWidget *label;
+	char tmp[64];
+
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Number of threads:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	snprintf(tmp, 63, "%i", opts->n_threads);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+	gtk_entry_set_width_chars(GTK_ENTRY(entry), 5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(n_threads_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(n_threads_focus_sig),
+	                 opts);
+	return vbox;
+}
+
+
+static struct local_ambi_opts *make_default_local_ambi_opts()
+{
+	struct local_ambi_opts *opts = malloc(sizeof(struct local_ambi_opts));
+	if ( opts == NULL ) return NULL;
+
+	opts->n_threads = 4;
+
+	return opts;
+}
+
+
+static void write_ambi_opts(void *opts_priv, FILE *fh)
+{
+	struct local_ambi_opts *opts = opts_priv;
+
+	fprintf(fh, "ambi.local.n_threads %i\n",
+	        opts->n_threads);
+}
+
+
+static void read_ambi_opt(void *opts_priv,
+                          const char *key,
+                          const char *val)
+{
+	struct local_ambi_opts *opts = opts_priv;
+
+	if ( strcmp(key, "ambi.local.n_threads") == 0 ) {
+		if ( convert_int(val, &opts->n_threads) ) {
+			ERROR("Invalid number of threads: %s\n", val);
+		}
+	}
+}
+
+
 int make_local_backend(struct crystfel_backend *be)
 {
 	be->name = "local";
@@ -584,6 +668,13 @@ int make_local_backend(struct crystfel_backend *be)
 	if ( be->merging_opts_priv == NULL ) return 1;
 	be->write_merging_opts = write_merging_opts;
 	be->read_merging_opt = read_merging_opt;
+
+	be->make_ambi_parameters_widget = make_ambi_parameters_widget;
+	be->run_ambi = run_ambi;
+	be->ambi_opts_priv = make_default_local_ambi_opts();
+	if ( be->ambi_opts_priv == NULL ) return 1;
+	be->write_ambi_opts = write_ambi_opts;
+	be->read_ambi_opt = read_ambi_opt;
 
 	return 0;
 };

@@ -57,6 +57,12 @@ struct slurm_merging_opts
 	char *email_address;
 };
 
+struct slurm_ambi_opts
+{
+	char *partition;
+	char *email_address;
+};
+
 enum slurm_job_type
 {
 	SLURM_JOB_INDEXING,
@@ -731,6 +737,16 @@ static void read_indexing_opt(void *opts_priv,
 }
 
 
+static void *run_ambi(const char *job_title,
+                      const char *job_notes,
+                      struct crystfelproject *proj,
+                      struct gui_indexing_result *input,
+                      void *opts_priv)
+{
+	return NULL;
+}
+
+
 static void *run_merging(const char *job_title,
                          const char *job_notes,
                          struct crystfelproject *proj,
@@ -909,6 +925,105 @@ static GtkWidget *make_merging_parameters_widget(void *opts_priv)
 }
 
 
+static struct slurm_ambi_opts *make_default_slurm_ambi_opts()
+{
+	struct slurm_ambi_opts *opts = malloc(sizeof(struct slurm_ambi_opts));
+	if ( opts == NULL ) return NULL;
+
+	opts->email_address = NULL;
+	opts->partition = NULL;
+
+	return opts;
+}
+
+
+static void write_ambi_opts(void *opts_priv, FILE *fh)
+{
+	struct slurm_ambi_opts *opts = opts_priv;
+
+	if ( opts->partition != NULL) {
+		fprintf(fh, "ambi.slurm.partition %s\n",
+		        opts->partition);
+	}
+
+	if ( opts->email_address != NULL ) {
+		fprintf(fh, "ambi.slurm.email_address %s\n",
+		        opts->email_address);
+	}
+}
+
+
+static void read_ambi_opt(void *opts_priv,
+                          const char *key,
+                          const char *val)
+{
+	struct slurm_ambi_opts *opts = opts_priv;
+
+	if ( strcmp(key, "ambi.slurm.email_address") == 0 ) {
+		opts->email_address = strdup(val);
+	}
+
+	if ( strcmp(key, "ambi.slurm.partition") == 0 ) {
+		opts->partition = strdup(val);
+	}
+}
+
+
+static GtkWidget *make_ambi_parameters_widget(void *opts_priv)
+{
+	struct slurm_ambi_opts *opts = opts_priv;
+	GtkWidget *vbox;
+	GtkWidget *hbox;
+	GtkWidget *entry;
+	GtkWidget *label;
+
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Submit job to partition:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->partition != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->partition);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "maxwell");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(partition_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(partition_focus_sig),
+	                 opts);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Send notifications to:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->email_address != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->email_address);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "myself@example.org");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
+	                   FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(email_activate_sig),
+	                 opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(email_focus_sig),
+	                 opts);
+
+	return vbox;
+}
+
+
 int make_slurm_backend(struct crystfel_backend *be)
 {
 	be->name = "slurm";
@@ -930,6 +1045,13 @@ int make_slurm_backend(struct crystfel_backend *be)
 	if ( be->merging_opts_priv == NULL ) return 1;
 	be->write_merging_opts = write_merging_opts;
 	be->read_merging_opt = read_merging_opt;
+
+	be->make_ambi_parameters_widget = make_ambi_parameters_widget;
+	be->run_ambi = run_ambi;
+	be->ambi_opts_priv = make_default_slurm_ambi_opts();
+	if ( be->ambi_opts_priv == NULL ) return 1;
+	be->write_ambi_opts = write_ambi_opts;
+	be->read_ambi_opt = read_ambi_opt;
 
 	return 0;
 };
