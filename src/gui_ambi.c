@@ -452,3 +452,39 @@ gint ambi_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	return FALSE;
 }
+
+
+int write_ambigator_script(const char *filename,
+                           struct gui_indexing_result *input,
+                           const char *n_thread_str,
+                           struct ambi_params *params,
+                           const char *out_stream)
+{
+	FILE *fh;
+	char *exe_path;
+	int i;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+
+	fprintf(fh, "cat \\\n");
+	for ( i=0; i<input->n_streams; i++ ) {
+		fprintf(fh, "%s \\\n", input->streams[i]);
+	}
+
+	exe_path = get_crystfel_exe("ambigator");
+	if ( exe_path == NULL ) return 1;
+	fprintf(fh, "| %s - \\\n", exe_path);
+
+	fprintf(fh, " -j %s", n_thread_str);
+	fprintf(fh, " -o %s", out_stream);
+	fprintf(fh, " -y %s", params->sym);
+//	if ( params->source_sym != NULL ) {
+//		fprintf(fh, " -w %s", params->source_sym);
+//	}
+
+	fprintf(fh, " --iterations=%i", params->niter);
+
+	fclose(fh);
+	return 0;
+}

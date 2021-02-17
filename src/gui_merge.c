@@ -522,3 +522,138 @@ char **merging_command_line(const char *n_thread_str,
 
 	return arg_strings;
 }
+
+
+static int write_partialator_script(const char *filename,
+                                    struct gui_indexing_result *input,
+                                    const char *n_thread_str,
+                                    struct merging_params *params,
+                                    const char *out_hkl)
+{
+	FILE *fh;
+	char *exe_path;
+	int i;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+
+	exe_path = get_crystfel_exe("partialator");
+	if ( exe_path == NULL ) return 1;
+	fprintf(fh, "%s \\\n", exe_path);
+
+	for ( i=0; i<input->n_streams; i++ ) {
+		fprintf(fh, "%s \\\n", input->streams[i]);
+	}
+
+	fprintf(fh, " -j %s", n_thread_str);
+	fprintf(fh, " -o %s", out_hkl);
+	fprintf(fh, " -y %s", params->symmetry);
+
+	fprintf(fh, " --polarisation=%s", params->polarisation);
+	fprintf(fh, " --min-measurements=%i", params->min_measurements);
+	fprintf(fh, " --max-adu=%f", params->max_adu);
+	fprintf(fh, " --min-res=%f", params->min_res);
+	fprintf(fh, " --push-res=%f", params->push_res);
+
+	if ( params->twin_sym != NULL ) {
+		fprintf(fh, " -w %s", params->twin_sym);
+	}
+
+	if ( params->custom_split != NULL ) {
+		fprintf(fh, " --custom-split=%s", params->custom_split);
+	}
+
+	if ( !params->scale ) {
+		fprintf(fh, " --no-scale");
+	}
+
+	if ( !params->bscale ) {
+		fprintf(fh, " --no-bscale");
+	}
+
+	if ( !params->postref ) {
+		fprintf(fh, " --no-pr");
+	}
+
+	if ( !params->deltacchalf ) {
+		fprintf(fh, " --no-deltacchalf");
+	}
+
+	fprintf(fh, " --iterations=%i", params->niter);
+
+	fprintf(fh, "\n");
+
+	fclose(fh);
+	return 0;
+}
+
+
+static void add_process_hkl(FILE *fh,
+                            const char *exe_path,
+                            struct gui_indexing_result *input,
+                            struct merging_params *params,
+                            const char *out_hkl,
+                            const char *extra_arg,
+                            const char *out_suffix)
+{
+	int i;
+
+	fprintf(fh, "%s \\\n", exe_path);
+
+	for ( i=0; i<input->n_streams; i++ ) {
+		fprintf(fh, " %s \\\n", input->streams[i]);
+	}
+
+	fprintf(fh, " -o %s%s", out_hkl, out_suffix);
+	fprintf(fh, " -y %s", params->symmetry);
+
+	if ( params->scale ) {
+		fprintf(fh, " --scale");
+	}
+
+	fprintf(fh, " --polarisation=%s", params->polarisation);
+	fprintf(fh, " --min-measurements=%i", params->min_measurements);
+	fprintf(fh, " --max-adu=%f", params->max_adu);
+	fprintf(fh, " --min-res=%f", params->min_res);
+	fprintf(fh, " --push-res=%f", params->push_res);
+	fprintf(fh, " %s\n", extra_arg);
+}
+
+
+static int write_process_hkl_script(const char *filename,
+                                    struct gui_indexing_result *input,
+                                    struct merging_params *params,
+                                    const char *out_hkl)
+{
+	FILE *fh;
+	char *exe_path;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+
+	exe_path = get_crystfel_exe("process_hkl");
+	if ( exe_path == NULL ) return 1;
+
+	add_process_hkl(fh, exe_path, input, params, out_hkl, "", "");
+	add_process_hkl(fh, exe_path, input, params, out_hkl, "--even-only", "1");
+	add_process_hkl(fh, exe_path, input, params, out_hkl, "--odd-only", "2");
+
+	fclose(fh);
+	return 0;
+}
+
+
+int write_merge_script(const char *filename,
+                       struct gui_indexing_result *input,
+                       const char *n_thread_str,
+                       struct merging_params *params,
+                       const char *out_hkl)
+{
+	if ( strcmp(params->model, "process_hkl") == 0 ) {
+		return write_process_hkl_script(filename, input,
+		                                params, out_hkl);
+	} else {
+		return write_partialator_script(filename, input, n_thread_str,
+		                                params, out_hkl);
+	}
+}

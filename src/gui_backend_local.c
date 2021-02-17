@@ -38,6 +38,7 @@
 #include "gui_project.h"
 #include "gui_index.h"
 #include "gui_merge.h"
+#include "gui_ambi.h"
 
 
 struct local_indexing_opts
@@ -123,14 +124,23 @@ static gboolean index_readable(GIOChannel *source, GIOCondition cond,
 }
 
 
-static int write_file_list(char **filenames,
+static int write_file_list(GFile *workdir,
+                           const char *listname,
+                           char **filenames,
                            char **events,
                            int n_frames)
 {
 	FILE *fh;
 	int i;
+	GFile *list_gfile;
+	char *list_str;
 
-	fh = fopen("files.lst", "w");
+	list_gfile = g_file_get_child(workdir, listname);
+	list_str = g_file_get_path(list_gfile);
+	if ( list_str == NULL ) return 1;
+
+	fh = fopen(list_str, "w");
+	free(list_str);
 	if ( fh == NULL ) return 1;
 
 	for ( i=0; i<n_frames; i++ ) {
@@ -157,21 +167,11 @@ void setup_subprocess(gpointer user_data)
 }
 
 
-static struct local_job *start_local_job(char **args,
-                                         const char *job_title,
-                                         const char *job_notes,
-                                         struct crystfelproject *proj,
-                                         GIOFunc readable_func)
+static GFile *make_job_folder(const char *job_title,
+                              const char *job_notes)
 {
-	GIOChannel *ioch;
-	int i;
-	int r;
-	int ch_stderr;
-	GError *error;
-	struct local_job *job;
 	struct stat s;
 	char *workdir;
-	const char *old_pwd;
 	GFile *workdir_file;
 	GFile *cwd_file;
 	GFile *notes_file;
@@ -197,6 +197,7 @@ static struct local_job *start_local_job(char **args,
 	workdir_file = g_file_get_child(cwd_file, workdir);
 	g_object_unref(cwd_file);
 
+	/* Write the notes into notes.txt */
 	notes_file = g_file_get_child(workdir_file, "notes.txt");
 	notes_path = g_file_get_path(notes_file);
 	fh = fopen(notes_path, "w");
@@ -205,17 +206,30 @@ static struct local_job *start_local_job(char **args,
 	g_free(notes_path);
 	g_object_unref(notes_file);
 
+	return workdir_file;
+}
+
+
+
+static struct local_job *start_local_job(char **args,
+                                         const char *job_title,
+                                         GFile *workdir_file,
+                                         struct crystfelproject *proj,
+                                         GIOFunc readable_func)
+{
+	GIOChannel *ioch;
+	int i;
+	int r;
+	int ch_stderr;
+	GError *error;
+	struct local_job *job;
+	char *workdir_str;
+
+	workdir_str = g_file_get_path(workdir_file);
+	if ( workdir_str == NULL ) return NULL;
+
 	job = malloc(sizeof(struct local_job));
 	if ( job == NULL ) return NULL;
-
-	old_pwd = getcwd(NULL, 0);
-	chdir(workdir);
-	if ( write_file_list(proj->filenames, proj->events, proj->n_frames) ) {
-		STATUS("Failed to write list\n");
-		free(job);
-		return NULL;
-	}
-	chdir(old_pwd);
 
 	job->frac_complete = 0.0;
 	job->workdir = workdir_file;
@@ -227,17 +241,16 @@ static struct local_job *start_local_job(char **args,
 	}
 	STATUS("\n");
 
+	error = NULL;
 	r = g_spawn_async_with_pipes(NULL, args, NULL,
 	                             G_SPAWN_SEARCH_PATH
 	                           | G_SPAWN_DO_NOT_REAP_CHILD,
-	                             setup_subprocess, workdir,
+	                             setup_subprocess, workdir_str,
 	                             &job->pid,
 	                             NULL, NULL, &ch_stderr,
 	                             &error);
 	if ( r == FALSE ) {
-		ERROR("Failed to start program: %s\n",
-		      error->message);
-		g_object_unref(workdir_file);
+		ERROR("Failed to start program: %s\n", error->message);
 		free(job);
 		return NULL;
 	}
@@ -442,13 +455,63 @@ static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
 }
 
 
+static gboolean ambi_readable(GIOChannel *source, GIOCondition cond,
+                              void *vp)
+{
+	/* FIXME: Implementation */
+	return TRUE;
+}
+
+
 static void *run_ambi(const char *job_title,
                       const char *job_notes,
                       struct crystfelproject *proj,
                       struct gui_indexing_result *input,
                       void *opts_priv)
 {
-	return NULL;
+	char n_thread_str[64];
+	struct local_job *job;
+	struct local_merging_opts *opts = opts_priv;
+	GFile *workdir;
+	GFile *sc_gfile;
+	gchar *sc_filename;
+	GFile *stream_gfile;
+	char *stream_str;
+
+	workdir = make_job_folder(job_title, job_notes);
+	if ( workdir == NULL ) return NULL;
+
+	stream_gfile = g_file_get_child(workdir, "ambi.stream");
+	stream_str = g_file_get_path(stream_gfile);
+	g_object_unref(stream_gfile);
+
+	snprintf(n_thread_str, 64, "%i", opts->n_threads);
+	sc_gfile = g_file_get_child(workdir, "run_merge.sh");
+	sc_filename = g_file_get_path(sc_gfile);
+	g_object_unref(sc_gfile);
+	if ( sc_filename == NULL ) return NULL;
+	if ( !write_ambigator_script(sc_filename, input, n_thread_str,
+	                             &proj->ambi_params, stream_str) )
+	{
+		char *args[2];
+		args[0] = "run_ambigator.sh";
+		args[1] = NULL;
+		job = start_local_job(args, job_title, workdir,
+		                      proj, ambi_readable);
+	} else {
+		job = NULL;
+	}
+
+	if ( job != NULL ) {
+		char **streams = malloc(sizeof(char *));
+		if ( streams != NULL ) {
+			streams[0] = stream_str;
+			add_indexing_result(proj, strdup(job_title), streams, 1);
+		}
+	}
+
+	g_object_unref(workdir);
+	return job;
 }
 
 
@@ -459,41 +522,58 @@ static void *run_merging(const char *job_title,
                          void *opts_priv)
 {
 	char n_thread_str[64];
-	char **args;
 	struct local_job *job;
 	struct local_merging_opts *opts = opts_priv;
-	GFile *hkl_gfile;
-	char *hkl;
-	char *hkl1;
-	char *hkl2;
+	GFile *workdir;
+	GFile *sc_gfile;
+	gchar *sc_filename;
+
+	workdir = make_job_folder(job_title, job_notes);
+	if ( workdir == NULL ) return NULL;
 
 	snprintf(n_thread_str, 63, "%i", opts->n_threads);
-	args = merging_command_line(n_thread_str,
-	                            input,
-	                            &proj->merging_params);
+	sc_gfile = g_file_get_child(workdir, "run_merge.sh");
+	sc_filename = g_file_get_path(sc_gfile);
+	g_object_unref(sc_gfile);
+	if ( sc_filename == NULL ) return NULL;
 
-	job = start_local_job(args, job_title, job_notes, proj,
-	                      merge_readable);
+	if ( !write_merge_script(sc_filename, input, n_thread_str,
+	                         &proj->merging_params, "crystfel.hkl") )
+	{
+		char *args[3];
+		args[0] = "sh";
+		args[1] = sc_filename;
+		args[2] = NULL;
+		job = start_local_job(args, job_title, workdir,
+		                      proj, merge_readable);
+	} else {
+		job = NULL;
+	}
+	g_free(sc_filename);
 
-	if ( job == NULL ) return NULL;
+	if ( job != NULL ) {
 
-	hkl_gfile = g_file_get_child(job->workdir,
-	                             "crystfel.hkl");
-	hkl = g_file_get_path(hkl_gfile);
-	g_object_unref(hkl_gfile);
+		GFile *hkl_gfile;
+		char *hkl;
+		char *hkl1;
+		char *hkl2;
 
-	hkl_gfile = g_file_get_child(job->workdir,
-	                             "crystfel.hkl1");
-	hkl1 = g_file_get_path(hkl_gfile);
-	g_object_unref(hkl_gfile);
+		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl");
+		hkl = g_file_get_path(hkl_gfile);
+		g_object_unref(hkl_gfile);
 
-	hkl_gfile = g_file_get_child(job->workdir,
-	                             "crystfel.hkl2");
-	hkl2 = g_file_get_path(hkl_gfile);
-	g_object_unref(hkl_gfile);
+		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl1");
+		hkl1 = g_file_get_path(hkl_gfile);
+		g_object_unref(hkl_gfile);
 
-	add_merge_result(proj, strdup(job_title), hkl, hkl1, hkl2);
+		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl2");
+		hkl2 = g_file_get_path(hkl_gfile);
+		g_object_unref(hkl_gfile);
 
+		add_merge_result(proj, strdup(job_title), hkl, hkl1, hkl2);
+	}
+
+	g_object_unref(workdir);
 	return job;
 }
 
@@ -509,6 +589,19 @@ static void *run_indexing(const char *job_title,
 	char **args;
 	char **streams;
 	int i;
+	GFile *workdir;
+
+	workdir = make_job_folder(job_title, job_notes);
+	if ( workdir == NULL ) return NULL;
+
+	if ( write_file_list(workdir, "files.lst",
+		             proj->filenames,
+		             proj->events,
+		             proj->n_frames) )
+	{
+		STATUS("Failed to write list\n");
+		return NULL;
+	}
 
 	snprintf(n_thread_str, 63, "%i", opts->n_processes);
 	args = indexamajig_command_line(proj->geom_filename,
@@ -524,8 +617,8 @@ static void *run_indexing(const char *job_title,
 	}
 	STATUS("\n");
 
-	job = start_local_job(args, job_title, job_notes, proj,
-	                      index_readable);
+	job = start_local_job(args, job_title, workdir,
+	                      proj, index_readable);
 	if ( job == NULL ) return NULL;
 
 	/* Indexing-specific job data */

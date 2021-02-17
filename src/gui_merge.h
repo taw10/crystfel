@@ -40,4 +40,10 @@ extern char **merging_command_line(const char *n_thread_str,
                                    struct gui_indexing_result *input,
                                    struct merging_params *params);
 
+extern int write_merge_script(const char *filename,
+                              struct gui_indexing_result *input,
+                              const char *n_thread_str,
+                              struct merging_params *params,
+                              const char *out_hkl);
+
 #endif

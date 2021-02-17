@@ -36,4 +36,10 @@
 extern gint ambi_sig(GtkWidget *widget,
                      struct crystfelproject *proj);
 
+extern int write_ambigator_script(const char *filename,
+                                  struct gui_indexing_result *input,
+                                  const char *n_thread_str,
+                                  struct ambi_params *params,
+                                  const char *out_stream);
+
 #endif
