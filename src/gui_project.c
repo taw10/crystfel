@@ -960,6 +960,10 @@ int save_project(struct crystfelproject *proj)
 		be = &proj->backends[i];
 		be->write_merging_opts(be->merging_opts_priv, fh);
 	}
+	if ( proj->merging_new_job_title != NULL ) {
+		fprintf(fh, "merging.new_job_title %s\n",
+			proj->merging_new_job_title);
+	}
 
 	fprintf(fh, "fom.min_res_A %f\n", proj->fom_res_min);
 	fprintf(fh, "fom.max_res_A %f\n", proj->fom_res_max);
