@@ -47,11 +47,11 @@
 
 struct new_merging_job_params {
 	struct crystfelproject *proj;
+	struct gui_job_notes_page *notes_page;
 	GtkWidget *backend_combo;
 	GtkWidget *backend_opts_widget;
 	GtkWidget *backend_opts_box;
 	GtkWidget *job_title_entry;
-	GtkWidget *job_notes_text;
 	GtkWidget *model_combo;
 	GtkWidget *input_combo;
 };
@@ -137,7 +137,7 @@ static void merging_response_sig(GtkWidget *dialog, gint resp,
 		if ( backend_idx < 0 ) return;
 
 		job_title = gtk_entry_get_text(GTK_ENTRY(njp->job_title_entry));
-		job_notes = get_all_text(GTK_TEXT_VIEW(njp->job_notes_text));
+		job_notes = get_all_text(GTK_TEXT_VIEW(njp->notes_page->textview));
 
 		if ( job_title[0] == '\0' ) {
 			ERROR("You must provide a job name.\n");
@@ -185,65 +185,6 @@ static void set_merging_opts(struct merging_params *opts,
 	crystfel_merge_opts_set_twin_sym(mo, opts->twin_sym);
 	crystfel_merge_opts_set_min_res(mo, opts->min_res);
 	crystfel_merge_opts_set_push_res(mo, opts->push_res);
-}
-
-
-static GtkWidget *make_merging_job_opts(struct crystfelproject *proj,
-                                        struct new_merging_job_params *njp)
-{
-	GtkWidget *box;
-	GtkWidget *hbox;
-	GtkWidget *label;
-	GtkWidget *scroll;
-
-	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Job name:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	njp->job_title_entry = gtk_entry_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
-	                   TRUE, TRUE, 2.0);
-	if ( proj->merging_new_job_title != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry),
-		                   proj->merging_new_job_title);
-	}
-
-	label = gtk_label_new("This name will be used for a working subfolder");
-	gtk_label_set_markup(GTK_LABEL(label),
-	                     "<i>This name will be used for a working subfolder</i>");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	gtk_entry_set_placeholder_text(GTK_ENTRY(njp->job_title_entry),
-	                               "merge-trial-1");
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   TRUE, TRUE, 0);
-	label = gtk_label_new("Notes:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	njp->job_notes_text = gtk_text_view_new();
-	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(njp->job_notes_text),
-	                            GTK_WRAP_WORD_CHAR);
-	scroll = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scroll), njp->job_notes_text);
-	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll),
-	                                    GTK_SHADOW_ETCHED_IN);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(scroll),
-	                   TRUE, TRUE, 2.0);
-
-	label = gtk_label_new("The notes above will be placed in the job's folder as 'notes.txt'");
-	gtk_label_set_markup(GTK_LABEL(label),
-	                     "<i>The notes above will be placed in the job's folder as 'notes.txt'</i>");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-
-	return box;
 }
 
 
@@ -324,7 +265,6 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *vbox;
 	GtkWidget *hbox;
 	GtkWidget *backend_page;
-	GtkWidget *job_page;
 	int i;
 	struct new_merging_job_params *njp;
 
@@ -349,8 +289,22 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_container_add(GTK_CONTAINER(content_area), vbox);
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 4.0);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Job/output name:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	njp->job_title_entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
+	                   TRUE, TRUE, 2.0);
+	if ( proj->merging_new_job_title != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry),
+		                   proj->merging_new_job_title);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(njp->job_title_entry),
+	                               "merge-trial-1");
+
 	label = gtk_label_new("Input:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -373,14 +327,11 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	set_merging_opts(&proj->merging_params, CRYSTFEL_MERGE_OPTS(proj->merging_opts));
 
 	backend_page = make_merging_backend_opts(njp);
-	gtk_notebook_prepend_page(GTK_NOTEBOOK(proj->merging_opts),
+	gtk_notebook_append_page(GTK_NOTEBOOK(proj->merging_opts),
 	                          backend_page,
 	                          gtk_label_new("Cluster/batch system"));
 
-	job_page = make_merging_job_opts(proj, njp);
-	gtk_notebook_prepend_page(GTK_NOTEBOOK(proj->merging_opts),
-	                          job_page,
-	                          gtk_label_new("Job name/notes"));
+	njp->notes_page = add_job_notes_page(proj->merging_opts);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_OK);
