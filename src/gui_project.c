@@ -1025,6 +1025,7 @@ void default_project(struct crystfelproject *proj)
 	proj->dtempl = NULL;
 	proj->cur_image = NULL;
 	proj->indexing_opts = NULL;
+	proj->merging_opts = NULL;
 	proj->n_running_tasks = 0;
 	proj->indexing_new_job_title = NULL;
 	proj->merging_new_job_title = NULL;

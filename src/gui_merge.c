@@ -268,6 +268,8 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	int i;
 	struct new_merging_job_params *njp;
 
+	if ( proj->merging_opts != NULL ) return FALSE;
+
 	njp = malloc(sizeof(struct new_merging_job_params));
 	if ( njp == NULL ) return FALSE;
 
