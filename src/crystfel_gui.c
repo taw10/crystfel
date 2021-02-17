@@ -45,6 +45,7 @@
 
 #include "crystfelimageview.h"
 #include "crystfelimageview.h"
+#include "crystfel_gui.h"
 #include "gui_peaksearch.h"
 #include "gui_index.h"
 #include "gui_merge.h"
@@ -1288,4 +1289,42 @@ char *get_crystfel_exe(const char *program)
 	g_object_unref(crystfel_path);
 
 	return exe_path;
+}
+
+
+struct gui_job_notes_page *add_job_notes_page(GtkWidget *notebook)
+{
+	GtkWidget *box;
+	GtkWidget *hbox;
+	GtkWidget *label;
+	GtkWidget *scroll;
+	struct gui_job_notes_page *notes;
+
+	notes = malloc(sizeof(struct gui_job_notes_page));
+	if ( notes == NULL ) return NULL;
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+
+	label = gtk_label_new("Whatever you enter here will be placed in "
+	                      "the job's folder as 'notes.txt'");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   TRUE, TRUE, 0);
+	notes->textview = gtk_text_view_new();
+	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(notes->textview),
+	                            GTK_WRAP_WORD_CHAR);
+	scroll = gtk_scrolled_window_new(NULL, NULL);
+	gtk_container_add(GTK_CONTAINER(scroll), notes->textview);
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll),
+	                                    GTK_SHADOW_ETCHED_IN);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(scroll),
+	                   TRUE, TRUE, 2.0);
+
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), box,
+	                         gtk_label_new("Notes"));
+	return notes;
 }

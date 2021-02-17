@@ -45,6 +45,7 @@
 struct ambi_window
 {
 	struct crystfelproject *proj;
+	struct gui_job_notes_page *notes_page;
 	GtkWidget *jobname;
 	GtkWidget *dataset;
 	GtkWidget *limit_res;
@@ -222,40 +223,6 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 }
 
 
-static GtkWidget *make_job_notes_page()
-{
-	GtkWidget *box;
-	GtkWidget *hbox;
-	GtkWidget *label;
-	GtkWidget *scroll;
-	GtkWidget *job_notes_text;
-
-	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
-
-	label = gtk_label_new("Whatever you enter here will be placed in the job's folder as 'notes.txt'");
-	gtk_label_set_markup(GTK_LABEL(label),
-	                     "<i>Whatever you enter here will be placed in the job's folder as 'notes.txt'</i>");
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   TRUE, TRUE, 0);
-	job_notes_text = gtk_text_view_new();
-	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(job_notes_text),
-	                            GTK_WRAP_WORD_CHAR);
-	scroll = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scroll), job_notes_text);
-	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scroll),
-	                                    GTK_SHADOW_ETCHED_IN);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(scroll),
-	                   TRUE, TRUE, 2.0);
-
-	return box;
-}
-
-
 static GtkWidget *make_ambi_backend_opts(struct ambi_window *win)
 {
 	return gtk_vbox_new(FALSE, 0.0);
@@ -271,7 +238,6 @@ gint ambi_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *label;
 	GtkWidget *notebook;
 	GtkWidget *backend_page;
-	GtkWidget *notes_page;
 	struct ambi_window *win;
 	int i;
 
@@ -336,10 +302,7 @@ gint ambi_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                          backend_page,
 	                          gtk_label_new("Cluster/batch system"));
 
-	notes_page = make_job_notes_page();
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
-	                         notes_page,
-	                         gtk_label_new("Notes"));
+	win->notes_page = add_job_notes_page(notebook);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_CLOSE);
