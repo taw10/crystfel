@@ -279,16 +279,16 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	/* Cell file chooser */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("Unit cell file:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	io->cell_chooser = gtk_file_chooser_button_new("Unit cell file",
 	                                               GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(io->cell_chooser),
 	                                TRUE);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->cell_chooser),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(io->cell_chooser), "file-set",
 	                 G_CALLBACK(cell_file_set_sig), io);
 	button = gtk_button_new_from_icon_name("edit-clear",
@@ -296,12 +296,12 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(cell_file_clear_sig), io);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* Indexing method selector */
 	io->auto_indm = gtk_check_button_new_with_label("Automatically choose the indexing methods");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->auto_indm),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(io->auto_indm), "toggled",
 	                 G_CALLBACK(auto_indm_toggle_sig), io);
 	expander = gtk_expander_new("Select indexing methods and prior information");
@@ -312,36 +312,36 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	gtk_container_add(GTK_CONTAINER(frame),
 	                  GTK_WIDGET(io->indm_chooser));
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(expander),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	gtk_container_set_border_width(GTK_CONTAINER(frame), 6);
 
 	/* --multi */
 	io->multi = gtk_check_button_new_with_label("Attempt to find multiple lattices per frame");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->multi),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --no-refine (NB inverse) */
 	io->refine = gtk_check_button_new_with_label("Refine the indexing solution");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->refine),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --no-retry (NB inverse) */
 	io->retry = gtk_check_button_new_with_label("Retry indexing if unsuccessful");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->retry),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --no-check-peaks (NB inverse) */
 	io->check_peaks = gtk_check_button_new_with_label("Check indexing solutions match peaks");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->check_peaks),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --no-check-cell (NB inverse) and --tolerance */
 	io->check_cell = gtk_check_button_new_with_label("Check indexing solutions against reference cell");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->check_cell),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	expander = gtk_expander_new("Unit cell tolerances");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(expander),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	tolerances = make_tolerances(io);
 	gtk_container_add(GTK_CONTAINER(expander), tolerances);
 	i_disable_if_not(io->check_cell, tolerances);
@@ -349,18 +349,20 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	/* --min-peaks (NB add one) */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	io->enable_hitfind = gtk_check_button_new_with_label("Skip frames with fewer than");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->enable_hitfind),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 0.0);
 	io->ignore_fewer_peaks = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(io->ignore_fewer_peaks), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ignore_fewer_peaks),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("peaks");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	i_disable_if_not(io->enable_hitfind, io->ignore_fewer_peaks);
+
+	gtk_widget_show_all(box);
 
 	return box;
 }
@@ -378,13 +380,13 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	/* --integration=method */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("Integration method:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	io->integration_combo = gtk_combo_box_text_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->integration_combo),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(io->integration_combo), "none",
 	                "No integration (only spot prediction)");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(io->integration_combo), "rings",
@@ -395,61 +397,63 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	/* -cen */
 	io->centering = gtk_check_button_new_with_label("Center integration boxes on observed reflections");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->centering),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --overpredict */
 	io->overpredict = gtk_check_button_new_with_label("Over-predict reflections (for post-refinement)");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->overpredict),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --push-res */
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	io->limit_res = gtk_check_button_new_with_label("Limit prediction to");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->limit_res),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 0.0);
 	io->push_res = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(io->push_res), 4);
+	gtk_entry_set_width_chars(GTK_ENTRY(io->push_res), 6);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->push_res),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("nm-1 above apparent resolution limit");
 	gtk_label_set_markup(GTK_LABEL(label),
 	                     "nm<sup>-1</sup> above apparent resolution limit");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	i_disable_if_not(io->limit_res, io->push_res);
 
 	/* --int-radii */
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	label = gtk_label_new("Integration radii - inner:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	io->ir_inn = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(io->ir_inn), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ir_inn),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	label = gtk_label_new("middle:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	io->ir_mid = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(io->ir_mid), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ir_mid),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	label = gtk_label_new("outer:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	io->ir_out = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(io->ir_out), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ir_out),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* FIXME: fix-bandwidth, divergence, profile-radius */
+
+	gtk_widget_show_all(box);
 
 	return box;
 }
@@ -523,17 +527,17 @@ static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
 	/* --no-non-hits-in-stream */
 	io->exclude_nonhits = gtk_check_button_new_with_label("Exclude skipped frames from stream");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->exclude_nonhits),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --no-peaks-in-stream */
 	io->no_peaks_in_stream = gtk_check_button_new_with_label("Exclude peak search results from stream");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->no_peaks_in_stream),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	/* --no-refls-in-stream */
 	io->no_refls_in_stream = gtk_check_button_new_with_label("Exclude integrated intensities from stream");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->no_refls_in_stream),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	io->copy_metadata_store = gtk_list_store_new(1, G_TYPE_STRING);
 
@@ -552,7 +556,7 @@ static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
 	                                            NULL);
 
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(treeview),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
 	gtk_container_set_border_width(GTK_CONTAINER(hbox), 8);
@@ -561,15 +565,17 @@ static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(add_metadata_sig), io->copy_metadata_store);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	button = gtk_button_new_from_icon_name("list-remove", GTK_ICON_SIZE_BUTTON);
 	gtk_button_set_label(GTK_BUTTON(button), "Remove item");
 	g_signal_connect(G_OBJECT(button), "clicked",
 	                 G_CALLBACK(remove_metadata_sig), treeview);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
+	                   FALSE, FALSE, 4.0);
+
+	gtk_widget_show_all(box);
 
 	return box;
 }
