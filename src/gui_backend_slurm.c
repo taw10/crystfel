@@ -379,6 +379,8 @@ static struct slurm_job *start_slurm_job(enum slurm_job_type type,
 	free(job_desc_msg.std_err);
 	free(job_desc_msg.std_out);
 
+	STATUS("Submitted SLURM job ID %i\n", resp->job_id);
+
 	job->job_id = resp->job_id;
 	slurm_free_submit_response_response_msg(resp);
 
