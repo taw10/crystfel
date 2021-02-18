@@ -301,6 +301,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->niter),
 	                   FALSE, FALSE, 4.0);
 
+	gtk_widget_show_all(vbox);
 	return vbox;
 }
 
