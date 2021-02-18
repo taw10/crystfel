@@ -356,7 +356,7 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 	for ( ds=0; ds<f->n_datasets; ds++ ) {
 
 		struct gui_merge_result *result;
-		SymOpList *sym;
+		SymOpList *sym = NULL;
 		RefList *all_refls = NULL;
 		RefList *all_refls_anom = NULL;
 		RefList *part1 = NULL;
