@@ -136,6 +136,13 @@ static void ambi_response_sig(GtkWidget *dialog, gint resp,
 		win->proj->ambi_params.operator = get_str(win->operator);
 		win->proj->ambi_params.use_operator = get_bool(win->use_operator);
 
+		/* "Minimum resolution" should be the bigger number */
+		if ( win->proj->ambi_params.res_min < win->proj->ambi_params.res_max ) {
+			double tmp = win->proj->ambi_params.res_min;
+			win->proj->ambi_params.res_min = win->proj->ambi_params.res_max;
+			win->proj->ambi_params.res_max = tmp;
+		}
+
 		backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(win->backend_combo));
 		if ( backend_idx < 0 ) return;
 
@@ -472,19 +479,32 @@ int write_ambigator_script(const char *filename,
 	for ( i=0; i<input->n_streams; i++ ) {
 		fprintf(fh, "%s \\\n", input->streams[i]);
 	}
+	fprintf(fh, " > ambigator-input.stream\n");
 
 	exe_path = get_crystfel_exe("ambigator");
 	if ( exe_path == NULL ) return 1;
-	fprintf(fh, "| %s - \\\n", exe_path);
+	fprintf(fh, "%s ambigator-input.stream \\\n", exe_path);
 
 	fprintf(fh, " -j %s", n_thread_str);
 	fprintf(fh, " -o %s", out_stream);
 	fprintf(fh, " -y %s", params->sym);
-//	if ( params->source_sym != NULL ) {
-//		fprintf(fh, " -w %s", params->source_sym);
-//	}
+	if ( params->use_operator ) {
+		fprintf(fh, " --operator=%s", params->operator);
+	} else {
+		fprintf(fh, " -w %s", params->source_sym);
+	}
+
+	if ( params->use_res ) {
+		fprintf(fh, " --lowres=%f", params->res_min);
+		fprintf(fh, " --highres=%f", params->res_max);
+	}
+
+	if ( params->use_ncorr ) {
+		fprintf(fh, " --ncorr=%i", params->ncorr);
+	}
 
 	fprintf(fh, " --iterations=%i", params->niter);
+	fprintf(fh, " --fg-graph=fg.dat\n");
 
 	fclose(fh);
 	return 0;

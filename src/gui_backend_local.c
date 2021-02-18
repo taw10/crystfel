@@ -458,7 +458,29 @@ static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
 static gboolean ambi_readable(GIOChannel *source, GIOCondition cond,
                               void *vp)
 {
-	/* FIXME: Implementation */
+	GIOStatus r;
+	GError *err = NULL;
+	struct local_job *job = vp;
+	gchar *line;
+
+	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
+	if ( r == G_IO_STATUS_EOF ) {
+		STATUS("End of output.\n");
+		return FALSE;
+	}
+	if ( r != G_IO_STATUS_NORMAL ) {
+		if ( job->pid != 0 ) {
+			STATUS("Read error?\n");
+		} else {
+			STATUS("End of output (merge exited)\n");
+		}
+		return FALSE;
+	}
+
+	/* FIXME: Calculate the fraction complete */
+	job->frac_complete = 0.5;
+
+	g_free(line);
 	return TRUE;
 }
 
@@ -486,16 +508,17 @@ static void *run_ambi(const char *job_title,
 	g_object_unref(stream_gfile);
 
 	snprintf(n_thread_str, 64, "%i", opts->n_threads);
-	sc_gfile = g_file_get_child(workdir, "run_merge.sh");
+	sc_gfile = g_file_get_child(workdir, "run_ambigator.sh");
 	sc_filename = g_file_get_path(sc_gfile);
 	g_object_unref(sc_gfile);
 	if ( sc_filename == NULL ) return NULL;
 	if ( !write_ambigator_script(sc_filename, input, n_thread_str,
 	                             &proj->ambi_params, stream_str) )
 	{
-		char *args[2];
-		args[0] = "run_ambigator.sh";
-		args[1] = NULL;
+		char *args[3];
+		args[0] = "sh";
+		args[1] = sc_filename;
+		args[2] = NULL;
 		job = start_local_job(args, job_title, workdir,
 		                      proj, ambi_readable);
 	} else {
