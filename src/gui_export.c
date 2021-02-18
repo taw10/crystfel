@@ -267,6 +267,7 @@ static int space_group_for_xds(const char *sym_str, char cen)
 }
 
 
+#ifdef HAVE_LIBCCP4
 static const char *space_group_for_mtz(const char *sym_str, char cen)
 {
 	int i = 0;
@@ -282,6 +283,7 @@ static const char *space_group_for_mtz(const char *sym_str, char cen)
 	ERROR("Couldn't derive CCP4 representation of symmetry.\n");
 	return NULL;
 }
+#endif
 
 
 static int export_to_xds(struct gui_merge_result *result,
