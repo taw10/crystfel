@@ -339,6 +339,9 @@ static void parse_ambi_opt(const char *key, const char *val,
 	if ( strcmp(key, "ambi.source_sym") == 0 ) {
 		proj->ambi_params.source_sym = strdup(val);
 	}
+	if ( strcmp(key, "ambi.use_operator") == 0 ) {
+		proj->ambi_params.use_operator = parse_int(val);
+	}
 	if ( strcmp(key, "ambi.operator") == 0 ) {
 		proj->ambi_params.operator = strdup(val);
 	}
@@ -919,6 +922,7 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "ambi.niter %i\n", proj->ambi_params.niter);
 	fprintf(fh, "ambi.ncorr %i\n", proj->ambi_params.ncorr);
 	fprintf(fh, "ambi.use_ncorr %i\n", proj->ambi_params.use_ncorr);
+	fprintf(fh, "ambi.use_operator %i\n", proj->ambi_params.use_operator);
 	if ( proj->ambi_params.sym != NULL ) {
 		fprintf(fh, "ambi.sym %s\n", proj->ambi_params.sym);
 	}
@@ -1123,6 +1127,7 @@ void default_project(struct crystfelproject *proj)
 	proj->ambi_params.sym = NULL;
 	proj->ambi_params.source_sym = NULL;
 	proj->ambi_params.operator = NULL;
+	proj->ambi_params.use_operator = 1;
 
 	proj->merging_params.model = strdup("unity");
 	proj->merging_params.symmetry = strdup("1");

@@ -123,6 +123,7 @@ struct ambi_params {
 	int ncorr;
 	char *sym;
 	char *source_sym;
+	int use_operator;
 	char *operator;
 };
 

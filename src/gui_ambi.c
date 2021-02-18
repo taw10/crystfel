@@ -134,6 +134,7 @@ static void ambi_response_sig(GtkWidget *dialog, gint resp,
 		win->proj->ambi_params.sym = get_sym(win->sym);
 		win->proj->ambi_params.source_sym = get_sym(win->source_sym);
 		win->proj->ambi_params.operator = get_str(win->operator);
+		win->proj->ambi_params.use_operator = get_bool(win->use_operator);
 
 		backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(win->backend_combo));
 		if ( backend_idx < 0 ) return;
@@ -223,12 +224,12 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	g_signal_connect(G_OBJECT(win->use_operator), "toggled",
 	                 G_CALLBACK(i_maybe_disable), win->operator);
 
-	if ( proj->ambi_params.source_sym != NULL ) {
-		gtk_widget_set_sensitive(win->operator, FALSE);
-		set_active(win->use_source_sym, TRUE);
-	} else {
+	if ( proj->ambi_params.use_operator ) {
 		gtk_widget_set_sensitive(win->source_sym, FALSE);
 		set_active(win->use_operator, TRUE);
+	} else {
+		gtk_widget_set_sensitive(win->operator, FALSE);
+		set_active(win->use_source_sym, TRUE);
 	}
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
