@@ -476,6 +476,8 @@ int write_ambigator_script(const char *filename,
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) return 1;
 
+	fprintf(fh, "#!/bin/sh\n");
+
 	fprintf(fh, "cat \\\n");
 	for ( i=0; i<input->n_streams; i++ ) {
 		fprintf(fh, "%s \\\n", input->streams[i]);

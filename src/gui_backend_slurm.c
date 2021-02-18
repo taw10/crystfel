@@ -318,6 +318,73 @@ static uint32_t submit_batch_job(const char *geom_filename,
 }
 
 
+/* For submitting a single script to the SLURM cluster.
+ * Used for merging and ambigator, but not for indexing - that needs something
+ *  more sophisticated. */
+static struct slurm_job *start_slurm_job(enum slurm_job_type type,
+                                         const char *script_filename,
+                                         const char *jobname,
+                                         const char *workdir,
+                                         const char *partition,
+                                         const char *email_address)
+{
+	char **env;
+	int n_env;
+	char *script;
+	struct slurm_job *job;
+	job_desc_msg_t job_desc_msg;
+	submit_response_msg_t *resp;
+	int r;
+
+	script = load_entire_file(script_filename);
+	if ( script == NULL ) return NULL;
+
+	job = malloc(sizeof(struct slurm_job));
+	if ( job == NULL ) return NULL;
+
+	job->type = type;
+
+	env = create_env(&n_env, NULL);
+
+	slurm_init_job_desc_msg(&job_desc_msg);
+	job_desc_msg.user_id = getuid();
+	job_desc_msg.group_id = getgid();
+	job_desc_msg.mail_user = safe_strdup(email_address);
+	job_desc_msg.mail_type = MAIL_JOB_FAIL;
+	job_desc_msg.comment = "Submitted via CrystFEL GUI";
+	job_desc_msg.shared = 0;
+	job_desc_msg.time_limit = 60;
+	job_desc_msg.partition = safe_strdup(partition);
+	job_desc_msg.min_nodes = 1;
+	job_desc_msg.max_nodes = 1;
+	job_desc_msg.name = safe_strdup(jobname);
+	job_desc_msg.std_err = strdup("stderr.log");
+	job_desc_msg.std_out = strdup("stdout.log");
+	job_desc_msg.work_dir = strdup(workdir);
+	job_desc_msg.script = script;
+	job_desc_msg.environment = env;
+	job_desc_msg.env_size = n_env;
+
+	r = slurm_submit_batch_job(&job_desc_msg, &resp);
+	if ( r ) {
+		ERROR("Couldn't submit job: %i\n", errno);
+		return NULL;
+	}
+
+	free(job_desc_msg.mail_user);
+	free(job_desc_msg.partition);
+	free(job_desc_msg.name);
+	free(job_desc_msg.work_dir);
+	free(job_desc_msg.std_err);
+	free(job_desc_msg.std_out);
+
+	job->job_id = resp->job_id;
+	slurm_free_submit_response_response_msg(resp);
+
+	return job;
+}
+
+
 static void write_partial_file_list(GFile *workdir,
                                     const char *list_filename,
                                     int j,
@@ -694,7 +761,49 @@ static void *run_ambi(const char *job_title,
                       struct gui_indexing_result *input,
                       void *opts_priv)
 {
-	return NULL;
+	struct slurm_job *job;
+	struct slurm_ambi_opts *opts = opts_priv;
+	GFile *workdir;
+	GFile *sc_gfile;
+	char *sc_filename;
+	GFile *stream_gfile;
+	char *stream_str;
+
+	workdir = make_job_folder(job_title, job_notes);
+	if ( workdir == NULL ) return NULL;
+
+	stream_gfile = g_file_get_child(workdir, "ambi.stream");
+	stream_str = g_file_get_path(stream_gfile);
+	g_object_unref(stream_gfile);
+
+	sc_gfile = g_file_get_child(workdir, "run_ambigator.sh");
+	sc_filename = g_file_get_path(sc_gfile);
+	g_object_unref(sc_gfile);
+	if ( sc_filename == NULL ) return NULL;
+
+	if ( !write_merge_script(sc_filename, input, "`nproc`",
+	                         &proj->merging_params, "crystfel.hkl") )
+	{
+		char *workdir_str = g_file_get_path(workdir);
+		job = start_slurm_job(SLURM_JOB_AMBIGATOR,
+		                      sc_filename, job_title, workdir_str,
+		                      opts->partition, opts->email_address);
+		g_free(workdir_str);
+	} else {
+		job = NULL;
+	}
+	g_free(sc_filename);
+
+	if ( job != NULL ) {
+		char **streams = malloc(sizeof(char *));
+		if ( streams != NULL ) {
+			streams[0] = stream_str;
+			add_indexing_result(proj, strdup(job_title), streams, 1);
+		}
+	}
+
+	g_object_unref(workdir);
+	return job;
 }
 
 
@@ -705,74 +814,55 @@ static void *run_merging(const char *job_title,
                          void *opts_priv)
 {
 	struct slurm_job *job;
-	job_desc_msg_t job_desc_msg;
-	submit_response_msg_t *resp;
-	char **cmdline;
-	char *cmdline_all;
-	char *script;
-	char **env;
-	int n_env;
 	struct slurm_merging_opts *opts = opts_priv;
-	GFile *workdir_gfile;
-	int r;
+	GFile *workdir;
+	GFile *sc_gfile;
+	char *sc_filename;
 
-	workdir_gfile = make_job_folder(job_title, job_notes);
-	if ( workdir_gfile == NULL ) return NULL;
+	workdir = make_job_folder(job_title, job_notes);
+	if ( workdir == NULL ) return NULL;
 
-	job = malloc(sizeof(struct slurm_job));
-	if ( job == NULL ) return NULL;
+	sc_gfile = g_file_get_child(workdir, "run_merge.sh");
+	sc_filename = g_file_get_path(sc_gfile);
+	g_object_unref(sc_gfile);
+	if ( sc_filename == NULL ) return NULL;
 
-	cmdline = merging_command_line("`nproc`",
-	                               input,
-	                               &proj->merging_params);
+	if ( !write_merge_script(sc_filename, input, "`nproc`",
+	                         &proj->merging_params, "crystfel.hkl") )
+	{
+		char *workdir_str = g_file_get_path(workdir);
+		job = start_slurm_job(SLURM_JOB_MERGING,
+		                      sc_filename, job_title, workdir_str,
+		                      opts->partition, opts->email_address);
+		g_free(workdir_str);
+	} else {
+		job = NULL;
+	}
+	g_free(sc_filename);
 
-	cmdline_all = g_strjoinv(" ", cmdline);
+	if ( job != NULL ) {
 
-	script = malloc(strlen(cmdline_all)+16);
-	if ( script == NULL ) return 0;
+		GFile *hkl_gfile;
+		char *hkl;
+		char *hkl1;
+		char *hkl2;
 
-	strcpy(script, "#!/bin/sh\n");
-	strcat(script, cmdline_all);
-	g_free(cmdline_all);
+		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl");
+		hkl = g_file_get_path(hkl_gfile);
+		g_object_unref(hkl_gfile);
 
-	env = create_env(&n_env, NULL);
+		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl1");
+		hkl1 = g_file_get_path(hkl_gfile);
+		g_object_unref(hkl_gfile);
 
-	slurm_init_job_desc_msg(&job_desc_msg);
-	job_desc_msg.user_id = getuid();
-	job_desc_msg.group_id = getgid();
-	job_desc_msg.mail_user = safe_strdup(opts->email_address);
-	job_desc_msg.mail_type = MAIL_JOB_FAIL;
-	job_desc_msg.comment = "Submitted via CrystFEL GUI";
-	job_desc_msg.shared = 0;
-	job_desc_msg.time_limit = 60;
-	job_desc_msg.partition = safe_strdup(opts->partition);
-	job_desc_msg.min_nodes = 1;
-	job_desc_msg.max_nodes = 1;
-	job_desc_msg.name = safe_strdup(job_title);
-	job_desc_msg.std_err = strdup("stderr.log");
-	job_desc_msg.std_out = strdup("stdout.log");
-	job_desc_msg.work_dir = g_file_get_path(workdir_gfile);
-	job_desc_msg.script = script;
-	job_desc_msg.environment = env;
-	job_desc_msg.env_size = n_env;
+		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl2");
+		hkl2 = g_file_get_path(hkl_gfile);
+		g_object_unref(hkl_gfile);
 
-	r = slurm_submit_batch_job(&job_desc_msg, &resp);
-	if ( r ) {
-		ERROR("Couldn't submit job: %i\n", errno);
-		return 0;
+		add_merge_result(proj, strdup(job_title), hkl, hkl1, hkl2);
 	}
 
-	free(job_desc_msg.mail_user);
-	free(job_desc_msg.partition);
-	free(job_desc_msg.name);
-	free(job_desc_msg.work_dir);
-	free(job_desc_msg.std_err);
-	free(job_desc_msg.std_out);
-
-	job->job_id = resp->job_id;
-	job->type = SLURM_JOB_MERGING;
-	slurm_free_submit_response_response_msg(resp);
-
+	g_object_unref(workdir);
 	return job;
 }
 
