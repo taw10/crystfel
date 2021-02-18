@@ -452,6 +452,8 @@ static int write_process_hkl_script(const char *filename,
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) return 1;
 
+	fprintf(fh, "#!/bin/sh\n");
+
 	exe_path = get_crystfel_exe("process_hkl");
 	if ( exe_path == NULL ) return 1;
 
