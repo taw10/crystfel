@@ -36,6 +36,7 @@
 #include "gui_project.h"
 #include "gui_index.h"
 #include "gui_merge.h"
+#include "gui_ambi.h"
 #include "crystfel_gui.h"
 
 
@@ -781,8 +782,8 @@ static void *run_ambi(const char *job_title,
 	g_object_unref(sc_gfile);
 	if ( sc_filename == NULL ) return NULL;
 
-	if ( !write_merge_script(sc_filename, input, "`nproc`",
-	                         &proj->merging_params, "crystfel.hkl") )
+	if ( !write_ambigator_script(sc_filename, input, "`nproc`",
+	                             &proj->ambi_params, stream_str) )
 	{
 		char *workdir_str = g_file_get_path(workdir);
 		job = start_slurm_job(SLURM_JOB_AMBIGATOR,
