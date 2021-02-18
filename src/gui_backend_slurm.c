@@ -28,9 +28,6 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <slurm/slurm.h>
 #include <gio/gio.h>
 
@@ -356,49 +353,6 @@ static void write_partial_file_list(GFile *workdir,
 }
 
 
-static char *make_workdir(const char *job_title,
-                          const char *job_notes)
-{
-	char *workdir;
-	struct stat s;
-	GFile *cwd_file;
-	GFile *notes_file;
-	GFile *workdir_file;
-	char *notes_path;
-	FILE *fh;
-
-	workdir = strdup(job_title);
-	if ( workdir == NULL ) return NULL;
-
-	if ( stat(workdir, &s) != -1 ) {
-		ERROR("Working directory already exists.  "
-		      "Choose a different job name.\n");
-		return NULL;
-	}
-
-	if ( mkdir(workdir, S_IRWXU) ) {
-		ERROR("Failed to create working directory: %s\n",
-		      strerror(errno));
-		return NULL;
-	}
-
-	cwd_file = g_file_new_for_path(".");
-	workdir_file = g_file_get_child(cwd_file, workdir);
-	g_object_unref(cwd_file);
-
-	notes_file = g_file_get_child(workdir_file, "notes.txt");
-	notes_path = g_file_get_path(notes_file);
-	fh = fopen(notes_path, "w");
-	fputs(job_notes, fh);
-	fclose(fh);
-	g_free(notes_path);
-	g_object_unref(notes_file);
-
-	workdir = g_file_get_path(workdir_file);
-	return workdir;
-}
-
-
 static void *run_indexing(const char *job_title,
                           const char *job_notes,
                           struct crystfelproject *proj,
@@ -411,12 +365,10 @@ static void *run_indexing(const char *job_title,
 	int i;
 	int fail = 0;
 	char **streams;
-	char *workdir;
 	GFile *workdir_gfile;
 
-	workdir = make_workdir(job_title, job_notes);
-	if ( workdir == NULL ) return NULL;
-	workdir_gfile = g_file_new_for_path(workdir);
+	workdir_gfile = make_job_folder(job_title, job_notes);
+	if ( workdir_gfile == NULL ) return NULL;
 
 	env = create_env(&n_env, opts->path_add);
 
@@ -471,7 +423,7 @@ static void *run_indexing(const char *job_title,
 		                          env,
 		                          n_env,
 		                          job_name,
-		                          workdir,
+		                          g_file_get_path(workdir_gfile),
 		                          stderr_file,
 		                          stdout_file,
 		                          &proj->peak_search_params,
@@ -499,7 +451,6 @@ static void *run_indexing(const char *job_title,
 
 	for ( i=0; i<n_env; i++ ) free(env[i]);
 	free(env);
-	free(workdir);
 	g_object_unref(workdir_gfile);
 
 	if ( fail ) {
@@ -762,11 +713,11 @@ static void *run_merging(const char *job_title,
 	char **env;
 	int n_env;
 	struct slurm_merging_opts *opts = opts_priv;
-	char *workdir;
+	GFile *workdir_gfile;
 	int r;
 
-	workdir = make_workdir(job_title, job_notes);
-	if ( workdir == NULL ) return NULL;
+	workdir_gfile = make_job_folder(job_title, job_notes);
+	if ( workdir_gfile == NULL ) return NULL;
 
 	job = malloc(sizeof(struct slurm_job));
 	if ( job == NULL ) return NULL;
@@ -800,7 +751,7 @@ static void *run_merging(const char *job_title,
 	job_desc_msg.name = safe_strdup(job_title);
 	job_desc_msg.std_err = strdup("stderr.log");
 	job_desc_msg.std_out = strdup("stdout.log");
-	job_desc_msg.work_dir = strdup(workdir);
+	job_desc_msg.work_dir = g_file_get_path(workdir_gfile);
 	job_desc_msg.script = script;
 	job_desc_msg.environment = env;
 	job_desc_msg.env_size = n_env;

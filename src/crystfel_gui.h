@@ -54,4 +54,6 @@ extern char *get_crystfel_exe(const char *program);
 
 extern struct gui_job_notes_page *add_job_notes_page(GtkWidget *notebook);
 
+extern GFile *make_job_folder(const char *job_title, const char *job_notes);
+
 #endif

@@ -38,6 +38,9 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms-compat.h>
 #include <assert.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <datatemplate.h>
 #include <peaks.h>
@@ -1327,4 +1330,46 @@ struct gui_job_notes_page *add_job_notes_page(GtkWidget *notebook)
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), box,
 	                         gtk_label_new("Notes"));
 	return notes;
+}
+
+
+GFile *make_job_folder(const char *job_title, const char *job_notes)
+{
+	struct stat s;
+	char *workdir;
+	GFile *workdir_file;
+	GFile *cwd_file;
+	GFile *notes_file;
+	char *notes_path;
+	FILE *fh;
+
+	workdir = strdup(job_title);
+	if ( workdir == NULL ) return NULL;
+
+	if ( stat(workdir, &s) != -1 ) {
+		ERROR("Working directory already exists.  "
+		      "Choose a different job name.\n");
+		return NULL;
+	}
+
+	if ( mkdir(workdir, S_IRWXU) ) {
+		ERROR("Failed to create working directory: %s\n",
+		      strerror(errno));
+		return NULL;
+	}
+
+	cwd_file = g_file_new_for_path(".");
+	workdir_file = g_file_get_child(cwd_file, workdir);
+	g_object_unref(cwd_file);
+
+	/* Write the notes into notes.txt */
+	notes_file = g_file_get_child(workdir_file, "notes.txt");
+	notes_path = g_file_get_path(notes_file);
+	fh = fopen(notes_path, "w");
+	fputs(job_notes, fh);
+	fclose(fh);
+	g_free(notes_path);
+	g_object_unref(notes_file);
+
+	return workdir_file;
 }
