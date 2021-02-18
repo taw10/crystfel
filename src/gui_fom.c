@@ -652,8 +652,10 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                              GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(f->cell_chooser),
 	                                TRUE);
-	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(f->cell_chooser),
-	                              proj->fom_cell_filename);
+	if ( proj->fom_cell_filename != NULL ) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(f->cell_chooser),
+		                              proj->fom_cell_filename);
+	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->cell_chooser),
 	                   FALSE, FALSE, 4.0);
 	button = gtk_button_new_from_icon_name("edit-clear",

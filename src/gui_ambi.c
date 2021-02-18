@@ -225,7 +225,9 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->use_operator),
 	                   FALSE, FALSE, 4.0);
 	win->operator = gtk_entry_new();
-	gtk_entry_set_text(GTK_ENTRY(win->operator), proj->ambi_params.operator);
+	if ( proj->ambi_params.operator != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(win->operator), proj->ambi_params.operator);
+	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->operator),
 	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(win->use_operator), "toggled",
