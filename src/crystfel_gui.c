@@ -150,6 +150,22 @@ const char *selected_result(struct crystfelproject *proj)
 }
 
 
+/* Return non-zero if there are any jobs running.
+ * If not, it makes no sense to re-scan any result streams.
+ * Possible future improvement: exclude jobs which don't produce streams
+ *  (i.e. merging) */
+static int have_running_jobs(struct crystfelproject *proj)
+{
+	int i;
+
+	for ( i=0; i<proj->n_running_tasks; i++ ) {
+		if ( proj->tasks[i].running ) return 1;
+	}
+
+	return 0;
+}
+
+
 /* Bring the image view up to date after changing the selected image */
 void update_imageview(struct crystfelproject *proj)
 {
@@ -197,10 +213,13 @@ void update_imageview(struct crystfelproject *proj)
 	if ( strcmp(results_name, "crystfel-gui-internal") == 0 ) {
 		update_peaks(proj);
 	} else {
-		struct image *res_im = find_indexed_image(proj,
-		                                          results_name,
-		                                          image->filename,
-		                                          image->ev);
+		struct image *res_im;
+
+		res_im = find_indexed_image(proj,
+		                            results_name,
+		                            image->filename,
+		                            image->ev,
+		                            have_running_jobs(proj));
 		if ( res_im != NULL ) {
 			swap_data_arrays(image, res_im);
 			image_free(proj->cur_image);
@@ -599,6 +618,24 @@ static gint save_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static gint rescan_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	const char *results_name;
+
+	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
+	if ( strcmp(results_name, "crystfel-gui-internal") != 0 ) {
+		struct gui_indexing_result *res;
+		res = find_indexing_result_by_name(proj, results_name);
+		if ( res != NULL ) {
+			update_result_index(res);
+		} else {
+			ERROR("Couldn't find result '%s'\n", results_name);
+		}
+	}
+	return FALSE;
+}
+
+
 static gint first_frame_sig(GtkWidget *widget,
                             struct crystfelproject *proj)
 {
@@ -772,6 +809,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"labelrefls\" action=\"LabelReflsAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
+		"	<menuitem name=\"rescan\" action=\"RescanAction\" />"
 		"</menu>"
 		"<menu name=\"help\" action=\"HelpAction\">"
 		"	<menuitem name=\"about\" action=\"AboutAction\" />"
@@ -789,6 +827,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		{ "ViewAction", NULL, "_View", NULL, NULL, NULL },
 
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
+		{ "RescanAction", NULL, "Rescan streams", NULL, NULL,
+			G_CALLBACK(rescan_sig) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About", NULL, NULL,

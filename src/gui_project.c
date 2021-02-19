@@ -1230,17 +1230,12 @@ struct gui_merge_result *find_merge_result_by_name(struct crystfelproject *proj,
 }
 
 
-static void update_result_index(struct gui_indexing_result *result)
+void update_result_index(struct gui_indexing_result *result)
 {
 	int i;
-
 	for ( i=0; i<result->n_streams; i++ ) {
-
-		/* FIXME: Skip if already up to date */
-
 		stream_index_free(result->indices[i]);
 		result->indices[i] = stream_make_index(result->streams[i]);
-
 	}
 }
 
@@ -1259,10 +1254,17 @@ struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject 
 }
 
 
+static int ever_scanned(struct gui_indexing_result *result)
+{
+	return ( result->indices[0] != NULL );
+}
+
+
 struct image *find_indexed_image(struct crystfelproject *proj,
                                  const char *results_name,
                                  const char *filename,
-                                 const char *event)
+                                 const char *event,
+                                 int permit_rescan)
 {
 	Stream *st;
 	int i;
@@ -1284,7 +1286,8 @@ struct image *find_indexed_image(struct crystfelproject *proj,
 		}
 	}
 
-	if ( !found ) {
+	if ( !found && (permit_rescan || !ever_scanned(result)) ) {
+		/* Re-scan and try again */
 		update_result_index(result);
 		for ( i=0; i<result->n_streams; i++ ) {
 			if ( stream_select_chunk(NULL,

@@ -348,7 +348,10 @@ extern int add_indexing_result(struct crystfelproject *proj,
 extern struct image *find_indexed_image(struct crystfelproject *proj,
                                         const char *result_name,
                                         const char *filename,
-                                        const char *event);
+                                        const char *event,
+                                        int permit_rescan);
+
+extern void update_result_index(struct gui_indexing_result *result);
 
 extern struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject *proj,
                                                                 const char *name);
