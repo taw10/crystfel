@@ -69,6 +69,9 @@ struct local_job
 	int running;
 	int cancelled;
 
+	int process_hkl;  /* vs partialator */
+	int scale;
+
 	guint io_watch;
 	GPid pid;
 	guint child_watch_source;
@@ -172,7 +175,8 @@ static struct local_job *start_local_job(char **args,
                                          const char *job_title,
                                          GFile *workdir_file,
                                          struct crystfelproject *proj,
-                                         GIOFunc readable_func)
+                                         GIOFunc readable_func,
+                                         int phkl, int scale)
 {
 	GIOChannel *ioch;
 	int i;
@@ -190,6 +194,8 @@ static struct local_job *start_local_job(char **args,
 
 	job->frac_complete = 0.0;
 	job->workdir = workdir_file;
+	job->process_hkl = phkl;
+	job->scale = scale;
 
 	STATUS("Running program: ");
 	i = 0;
@@ -392,6 +398,9 @@ static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
 	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
 	if ( r == G_IO_STATUS_EOF ) {
 		STATUS("End of output.\n");
+		if ( job->frac_complete > 0.91 ) {
+			job->frac_complete = 1.0;
+		}
 		return FALSE;
 	}
 	if ( r != G_IO_STATUS_NORMAL ) {
@@ -403,8 +412,29 @@ static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
 		return FALSE;
 	}
 
-	/* FIXME: Calculate the fraction complete */
-	job->frac_complete = 0.5;
+	if ( job->process_hkl ) {
+		if ( job->scale ) {
+			job->frac_complete += 1.0/6.0;
+		} else {
+			job->frac_complete += 1.0/3.0;
+		}
+	} else {
+		int cycle, max_cycles;
+		if ( strcmp(line, "Initial partiality calculation...\n") == 0 ) {
+			job->frac_complete = 0.1;
+		}
+		if ( sscanf(line, "Scaling and refinement cycle %d of %d\n",
+		            &cycle, &max_cycles) == 2 )
+		{
+			job->frac_complete = 0.1 + 0.8*(double)cycle/max_cycles;
+		}
+		if ( strcmp(line, "Final merge...\n") == 0 ) {
+			job->frac_complete = 0.9;
+		}
+		if ( strncmp(line, "Writing two-way split", 20) == 0 ) {
+			job->frac_complete = 0.95;
+		}
+	}
 
 	g_free(line);
 
@@ -477,7 +507,7 @@ static void *run_ambi(const char *job_title,
 		args[1] = sc_filename;
 		args[2] = NULL;
 		job = start_local_job(args, job_title, workdir,
-		                      proj, ambi_readable);
+		                      proj, ambi_readable, 0, 0);
 	} else {
 		job = NULL;
 	}
@@ -521,11 +551,20 @@ static void *run_merging(const char *job_title,
 	                         &proj->merging_params, "crystfel.hkl") )
 	{
 		char *args[3];
+		int process_hkl, scale;
 		args[0] = "sh";
 		args[1] = sc_filename;
 		args[2] = NULL;
+		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
+			process_hkl = 1;
+			scale = proj->merging_params.scale;
+		} else {
+			process_hkl = 0;
+			scale = 1;
+		}
 		job = start_local_job(args, job_title, workdir,
-		                      proj, merge_readable);
+		                      proj, merge_readable,
+		                      process_hkl, scale);
 	} else {
 		job = NULL;
 	}
@@ -598,7 +637,7 @@ static void *run_indexing(const char *job_title,
 	STATUS("\n");
 
 	job = start_local_job(args, job_title, workdir,
-	                      proj, index_readable);
+	                      proj, index_readable, 0, 0);
 	if ( job == NULL ) return NULL;
 
 	/* Indexing-specific job data */
