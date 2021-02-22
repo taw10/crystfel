@@ -98,3 +98,12 @@ void set_active(GtkWidget *tb, int active)
 {
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tb), active);
 }
+
+
+void redraw_widget(GtkWidget *wid)
+{
+	gint w, h;
+	w = gtk_widget_get_allocated_width(GTK_WIDGET(wid));
+	h = gtk_widget_get_allocated_height(GTK_WIDGET(wid));
+	gtk_widget_queue_draw_area(GTK_WIDGET(wid), 0, 0, w, h);
+}
