@@ -571,6 +571,12 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 		get_indexing_opts(proj,
 		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 		run_indexing_once(proj);
+
+		crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                      proj->indexing_params.ir_inn);
+		crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                                   proj->show_peaks);
+		redraw_widget(proj->imageview);
 	}
 
 	gtk_widget_destroy(dialog);
