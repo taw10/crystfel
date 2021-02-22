@@ -45,6 +45,9 @@
 #include "crystfelimageview.h"
 
 
+static int rerender_image(CrystFELImageView *iv);
+
+
 static void scroll_interface_init(GtkScrollable *iface)
 {
 }
@@ -526,6 +529,7 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	cairo_matrix_t m;
 
 	if ( iv->image == NULL ) return FALSE;
+	if ( iv->need_rerender ) rerender_image(iv);
 
 	cairo_save(cr);
 
@@ -713,6 +717,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->peak_box_size = 1.0;
 	iv->refl_box_size = 1.0;
 	iv->label_refls = 1;
+	iv->need_rerender = 0;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -931,6 +936,7 @@ static int rerender_image(CrystFELImageView *iv)
 	}
 	configure_scroll_adjustments(iv);
 
+	iv->need_rerender = 0;
 	redraw(iv);
 
 	return 0;
@@ -958,7 +964,7 @@ void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                         double brightness)
 {
 	iv->brightness = brightness;
-	rerender_image(iv);
+	iv->need_rerender = 1;
 }
 
 
@@ -966,7 +972,7 @@ void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
                                         int show_peaks)
 {
 	iv->show_peaks = show_peaks;
-	rerender_image(iv);
+	iv->need_rerender = 1;
 }
 
 
@@ -974,7 +980,7 @@ void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
                                               int show_refls)
 {
 	iv->show_refls = show_refls;
-	rerender_image(iv);
+	iv->need_rerender = 1;
 }
 
 
@@ -982,7 +988,7 @@ void crystfel_image_view_set_label_reflections(CrystFELImageView *iv,
                                                int label_refls)
 {
 	iv->label_refls = label_refls;
-	rerender_image(iv);
+	iv->need_rerender = 1;
 }
 
 
@@ -990,6 +996,7 @@ void crystfel_image_view_set_peak_box_size(CrystFELImageView *iv,
                                            float box_size)
 {
 	iv->peak_box_size = box_size;
+	iv->need_rerender = 1;
 }
 
 
@@ -997,4 +1004,5 @@ void crystfel_image_view_set_refl_box_size(CrystFELImageView *iv,
                                            float box_size)
 {
 	iv->refl_box_size = box_size;
+	iv->need_rerender = 1;
 }

@@ -67,6 +67,7 @@ struct _crystfelimageview
 	double               detector_h;
 
 	/* Redraw/scroll stuff */
+	int                  need_rerender;
 	GtkScrollablePolicy  hpol;
 	GtkScrollablePolicy  vpol;
 	GtkAdjustment       *hadj;
