@@ -389,7 +389,7 @@ static int write_partialator_script(const char *filename,
 	}
 
 	if ( !params->bscale ) {
-		fprintf(fh, " --no-bscale");
+		fprintf(fh, " --no-Bscale");
 	}
 
 	if ( !params->postref ) {
