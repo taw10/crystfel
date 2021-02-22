@@ -132,7 +132,7 @@ static double indexing_progress(struct slurm_job *job, int *running)
 			}
 		}
 
-		if ( n_running > 0 ) *running =1;
+		*running = (n_running > 0);
 		return (double)(job->n_blocks - n_running) / job->n_blocks;
 
 	} else {
