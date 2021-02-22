@@ -42,4 +42,6 @@ extern int write_ambigator_script(const char *filename,
                                   struct ambi_params *params,
                                   const char *out_stream);
 
+extern double read_ambigator_progress(char *logfile_str, int niter);
+
 #endif

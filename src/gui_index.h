@@ -48,4 +48,6 @@ extern char **indexamajig_command_line(const char *geom_filename,
                                        struct peak_params *peak_search_params,
                                        struct index_params *indexing_params);
 
+extern int read_number_processed(const char *filename);
+
 #endif

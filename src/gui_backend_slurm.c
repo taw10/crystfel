@@ -61,16 +61,10 @@ struct slurm_ambi_opts
 	char *email_address;
 };
 
-enum slurm_job_type
-{
-	SLURM_JOB_INDEXING,
-	SLURM_JOB_MERGING,
-	SLURM_JOB_AMBIGATOR,
-};
-
 struct slurm_job
 {
-	enum slurm_job_type type;
+	enum gui_job_type type;
+	GFile *workdir;
 
 	/* For indexing job (don't worry - will be replaced soon!) */
 	int n_frames;
@@ -80,33 +74,9 @@ struct slurm_job
 
 	/* For merging/ambigator job */
 	uint32_t job_id;
+	char *stderr_filename;
+	int niter;
 };
-
-
-static int read_number_processed(const char *filename)
-{
-	FILE *fh = fopen(filename, "r");
-	int n_proc;
-
-	/* Normal situation if SLURM job hasn't started yet */
-	if ( fh == NULL ) return 0;
-
-	do {
-		char line[1024];
-		if ( fgets(line, 1024, fh) == NULL ) break;
-
-		if ( strncmp(line, "Final: ", 7) == 0 ) {
-			sscanf(line, "Final: %i images processed", &n_proc);
-		} else if ( strstr(line, " images processed, ") != NULL ) {
-			sscanf(line, "%i ", &n_proc);
-		}
-
-	} while ( 1 );
-
-	fclose(fh);
-
-	return n_proc;
-}
 
 
 static int job_running(uint32_t job_id)
@@ -151,7 +121,9 @@ static int get_task_status(void *job_priv,
 	int n_proc = 0;
 	int all_complete = 1;
 
-	if ( job->type == SLURM_JOB_INDEXING ) {
+	switch ( job->type ) {
+
+		case GUI_JOB_INDEXING :
 		for ( i=0; i<job->n_blocks; i++ ) {
 
 			n_proc += read_number_processed(job->stderr_filenames[i]);
@@ -167,10 +139,22 @@ static int get_task_status(void *job_priv,
 
 		*frac_complete = (double)n_proc / job->n_frames;
 		*running = 1 - all_complete;
+		break;
 
-	} else {
-		*frac_complete = 0.5;
-		*running = 1;
+		case GUI_JOB_AMBIGATOR :
+		*frac_complete = read_ambigator_progress(job->stderr_filename,
+		                                         job->niter);
+		*running = job_running(job->job_id);
+		break;
+
+		case GUI_JOB_PROCESS_HKL :
+		case GUI_JOB_PROCESS_HKL_SCALE :
+		case GUI_JOB_PARTIALATOR :
+		*frac_complete = read_merge_progress(job->stderr_filename,
+		                                     job->type);
+		*running = job_running(job->job_id);
+		break;
+
 	}
 
 	return 0;
@@ -181,7 +165,7 @@ static void cancel_task(void *job_priv)
 {
 	int i;
 	struct slurm_job *job = job_priv;
-	if ( job->type == SLURM_JOB_INDEXING ) {
+	if ( job->type == GUI_JOB_INDEXING ) {
 		for ( i=0; i<job->n_blocks; i++) {
 			if ( job->job_ids[i] == 0 ) continue;
 			STATUS("Stopping SLURM job %i\n", job->job_ids[i]);
@@ -322,10 +306,10 @@ static uint32_t submit_batch_job(const char *geom_filename,
 /* For submitting a single script to the SLURM cluster.
  * Used for merging and ambigator, but not for indexing - that needs something
  *  more sophisticated. */
-static struct slurm_job *start_slurm_job(enum slurm_job_type type,
+static struct slurm_job *start_slurm_job(enum gui_job_type type,
                                          const char *script_filename,
                                          const char *jobname,
-                                         const char *workdir,
+                                         GFile *workdir,
                                          const char *partition,
                                          const char *email_address)
 {
@@ -335,6 +319,7 @@ static struct slurm_job *start_slurm_job(enum slurm_job_type type,
 	struct slurm_job *job;
 	job_desc_msg_t job_desc_msg;
 	submit_response_msg_t *resp;
+	GFile *stderr_gfile;
 	int r;
 
 	script = load_entire_file(script_filename);
@@ -361,7 +346,7 @@ static struct slurm_job *start_slurm_job(enum slurm_job_type type,
 	job_desc_msg.name = safe_strdup(jobname);
 	job_desc_msg.std_err = strdup("stderr.log");
 	job_desc_msg.std_out = strdup("stdout.log");
-	job_desc_msg.work_dir = strdup(workdir);
+	job_desc_msg.work_dir = g_file_get_path(workdir);
 	job_desc_msg.script = script;
 	job_desc_msg.environment = env;
 	job_desc_msg.env_size = n_env;
@@ -380,6 +365,10 @@ static struct slurm_job *start_slurm_job(enum slurm_job_type type,
 	free(job_desc_msg.std_out);
 
 	STATUS("Submitted SLURM job ID %i\n", resp->job_id);
+
+	stderr_gfile = g_file_get_child(workdir, "stderr.log");
+	job->stderr_filename = g_file_get_path(stderr_gfile);
+	g_object_unref(stderr_gfile);
 
 	job->job_id = resp->job_id;
 	slurm_free_submit_response_response_msg(resp);
@@ -445,7 +434,7 @@ static void *run_indexing(const char *job_title,
 	job = malloc(sizeof(struct slurm_job));
 	if ( job == NULL ) return 0;
 
-	job->type = SLURM_JOB_INDEXING;
+	job->type = GUI_JOB_INDEXING;
 	job->n_frames = proj->n_frames;
 	job->n_blocks = proj->n_frames / opts->block_size;
 	if ( proj->n_frames % opts->block_size ) job->n_blocks++;
@@ -788,9 +777,10 @@ static void *run_ambi(const char *job_title,
 	                             &proj->ambi_params, stream_str) )
 	{
 		char *workdir_str = g_file_get_path(workdir);
-		job = start_slurm_job(SLURM_JOB_AMBIGATOR,
-		                      sc_filename, job_title, workdir_str,
+		job = start_slurm_job(GUI_JOB_AMBIGATOR,
+		                      sc_filename, job_title, workdir,
 		                      opts->partition, opts->email_address);
+		job->niter = proj->ambi_params.niter;
 		g_free(workdir_str);
 	} else {
 		job = NULL;
@@ -834,8 +824,17 @@ static void *run_merging(const char *job_title,
 	                         &proj->merging_params, "crystfel.hkl") )
 	{
 		char *workdir_str = g_file_get_path(workdir);
-		job = start_slurm_job(SLURM_JOB_MERGING,
-		                      sc_filename, job_title, workdir_str,
+		enum gui_job_type type;
+		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
+			if ( proj->merging_params.scale ) {
+				type = GUI_JOB_PROCESS_HKL_SCALE;
+			} else {
+				type = GUI_JOB_PROCESS_HKL;
+			}
+		} else {
+			type = GUI_JOB_PARTIALATOR;
+		}
+		job = start_slurm_job(type, sc_filename, job_title, workdir,
 		                      opts->partition, opts->email_address);
 		g_free(workdir_str);
 	} else {

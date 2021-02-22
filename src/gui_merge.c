@@ -402,7 +402,7 @@ static int write_partialator_script(const char *filename,
 
 	fprintf(fh, " --iterations=%i", params->niter);
 
-	fprintf(fh, "\n");
+	fprintf(fh, " >stdout.log 2>stderr.log\n");
 
 	fclose(fh);
 	return 0;
@@ -437,7 +437,7 @@ static void add_process_hkl(FILE *fh,
 	fprintf(fh, " --max-adu=%f", params->max_adu);
 	fprintf(fh, " --min-res=%f", params->min_res);
 	fprintf(fh, " --push-res=%f", params->push_res);
-	fprintf(fh, " %s\n", extra_arg);
+	fprintf(fh, " %s >>stdout.log 2>>stderr.log\n", extra_arg);
 }
 
 
@@ -479,4 +479,48 @@ int write_merge_script(const char *filename,
 		return write_partialator_script(filename, input, n_thread_str,
 		                                params, out_hkl);
 	}
+}
+
+
+double read_merge_progress(char *logfile_str, enum gui_job_type type)
+{
+	FILE *fh;
+	double frac_complete = 0.0;
+
+	fh = fopen(logfile_str, "r");
+	if ( fh == NULL ) return 0.0;
+
+	do {
+		char line[1024];
+
+		if ( fgets(line, 1024, fh) == NULL ) break;
+
+		if ( type == GUI_JOB_PROCESS_HKL ) {
+			frac_complete += 1.0/3.0;
+		} else if ( type == GUI_JOB_PROCESS_HKL_SCALE ) {
+			frac_complete += 1.0/6.0;
+		} else {
+			int cycle, max_cycles;
+			assert(type == GUI_JOB_PARTIALATOR);
+			if ( strcmp(line, "Initial partiality calculation...\n") == 0 ) {
+				frac_complete = 0.1;
+			}
+			if ( sscanf(line, "Scaling and refinement cycle %d of %d\n",
+			            &cycle, &max_cycles) == 2 )
+			{
+				frac_complete = 0.1 + 0.8*(double)cycle/max_cycles;
+			}
+			if ( strcmp(line, "Final merge...\n") == 0 ) {
+				frac_complete = 0.9;
+			}
+			if ( strncmp(line, "Writing two-way split", 20) == 0 ) {
+				frac_complete = 1.0;
+			}
+
+		}
+	} while ( 1 );
+
+	fclose(fh);
+
+	return frac_complete;
 }

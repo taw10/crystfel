@@ -62,20 +62,19 @@ struct local_ambi_opts
 
 struct local_job
 {
-	double frac_complete;
+	enum gui_job_type type;
+
 	int n_frames;
+	int niter;
 
 	/* When both these are true, free the job resources */
 	int running;
 	int cancelled;
 
-	int process_hkl;  /* vs partialator */
-	int scale;
+	char *stderr_filename;
 
-	guint io_watch;
 	GPid pid;
 	guint child_watch_source;
-	guint io_readable_source;
 	GFile *workdir;
 };
 
@@ -86,45 +85,6 @@ static void watch_subprocess(GPid pid, gint status, gpointer vp)
 	STATUS("Subprocess exited with status %i\n", status);
 	job->running = 0;
 	g_spawn_close_pid(job->pid);
-}
-
-
-static gboolean index_readable(GIOChannel *source, GIOCondition cond,
-                               void *vp)
-{
-	GIOStatus r;
-	GError *err = NULL;
-	struct local_job *job = vp;
-	gchar *line;
-
-	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
-	if ( r == G_IO_STATUS_EOF ) {
-		STATUS("End of output.\n");
-		return FALSE;
-	}
-	if ( r != G_IO_STATUS_NORMAL ) {
-		if ( job->pid != 0 ) {
-			STATUS("Read error?\n");
-		} else {
-			STATUS("End of output (indexamajig exited)\n");
-		}
-		return FALSE;
-	}
-	chomp(line);
-
-	if ( strncmp(line, "Final: ", 7) == 0 ) {
-		job->frac_complete = 1.0;
-	} else if ( strstr(line, " images processed, ") != NULL ) {
-		int n_proc;
-		sscanf(line, "%i ", &n_proc);
-		job->frac_complete = (double)n_proc/job->n_frames;
-	} else {
-		STATUS("%s\n", line);
-	}
-
-	g_free(line);
-
-	return TRUE;
 }
 
 
@@ -175,16 +135,15 @@ static struct local_job *start_local_job(char **args,
                                          const char *job_title,
                                          GFile *workdir_file,
                                          struct crystfelproject *proj,
-                                         GIOFunc readable_func,
-                                         int phkl, int scale)
+                                         enum gui_job_type type)
 {
-	GIOChannel *ioch;
 	int i;
 	int r;
 	int ch_stderr;
 	GError *error;
 	struct local_job *job;
 	char *workdir_str;
+	GFile *stderr_gfile;
 
 	workdir_str = g_file_get_path(workdir_file);
 	if ( workdir_str == NULL ) return NULL;
@@ -192,10 +151,8 @@ static struct local_job *start_local_job(char **args,
 	job = malloc(sizeof(struct local_job));
 	if ( job == NULL ) return NULL;
 
-	job->frac_complete = 0.0;
 	job->workdir = workdir_file;
-	job->process_hkl = phkl;
-	job->scale = scale;
+	job->type = type;
 
 	STATUS("Running program: ");
 	i = 0;
@@ -219,15 +176,13 @@ static struct local_job *start_local_job(char **args,
 	}
 	job->running = 1;
 
+	stderr_gfile = g_file_get_child(workdir_file, "stderr.log");
+	job->stderr_filename = g_file_get_path(stderr_gfile);
+	g_object_unref(stderr_gfile);
+
 	job->child_watch_source = g_child_watch_add(job->pid,
 	                                            watch_subprocess,
 	                                            job);
-
-	ioch = g_io_channel_unix_new(ch_stderr);
-	job->io_readable_source = g_io_add_watch(ioch,
-	                                         G_IO_IN | G_IO_ERR | G_IO_HUP,
-	                                         readable_func,
-	                                         job);
 
 	return job;
 }
@@ -237,9 +192,32 @@ static int get_task_status(void *job_priv,
                            int *running,
                            float *frac_complete)
 {
+	int n_proc;
 	struct local_job *job = job_priv;
-	*frac_complete = job->frac_complete;
+
 	*running = job->running;
+
+	switch ( job->type ) {
+
+		case GUI_JOB_INDEXING :
+		n_proc = read_number_processed(job->stderr_filename);
+		*frac_complete = (double)n_proc / job->n_frames;
+		break;
+
+		case GUI_JOB_AMBIGATOR :
+		*frac_complete = read_ambigator_progress(job->stderr_filename,
+		                                         job->niter);
+		break;
+
+		case GUI_JOB_PROCESS_HKL :
+		case GUI_JOB_PROCESS_HKL_SCALE :
+		case GUI_JOB_PARTIALATOR :
+		*frac_complete = read_merge_progress(job->stderr_filename,
+		                                     job->type);
+		break;
+
+	}
+
 	return 0;
 }
 
@@ -387,91 +365,6 @@ static GtkWidget *make_merging_parameters_widget(void *opts_priv)
 }
 
 
-static gboolean merge_readable(GIOChannel *source, GIOCondition cond,
-                               void *vp)
-{
-	GIOStatus r;
-	GError *err = NULL;
-	struct local_job *job = vp;
-	gchar *line;
-
-	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
-	if ( r == G_IO_STATUS_EOF ) {
-		STATUS("End of output.\n");
-		if ( job->frac_complete > 0.91 ) {
-			job->frac_complete = 1.0;
-		}
-		return FALSE;
-	}
-	if ( r != G_IO_STATUS_NORMAL ) {
-		if ( job->pid != 0 ) {
-			STATUS("Read error?\n");
-		} else {
-			STATUS("End of output (merge exited)\n");
-		}
-		return FALSE;
-	}
-
-	if ( job->process_hkl ) {
-		if ( job->scale ) {
-			job->frac_complete += 1.0/6.0;
-		} else {
-			job->frac_complete += 1.0/3.0;
-		}
-	} else {
-		int cycle, max_cycles;
-		if ( strcmp(line, "Initial partiality calculation...\n") == 0 ) {
-			job->frac_complete = 0.1;
-		}
-		if ( sscanf(line, "Scaling and refinement cycle %d of %d\n",
-		            &cycle, &max_cycles) == 2 )
-		{
-			job->frac_complete = 0.1 + 0.8*(double)cycle/max_cycles;
-		}
-		if ( strcmp(line, "Final merge...\n") == 0 ) {
-			job->frac_complete = 0.9;
-		}
-		if ( strncmp(line, "Writing two-way split", 20) == 0 ) {
-			job->frac_complete = 0.95;
-		}
-	}
-
-	g_free(line);
-
-	return TRUE;
-}
-
-
-static gboolean ambi_readable(GIOChannel *source, GIOCondition cond,
-                              void *vp)
-{
-	GIOStatus r;
-	GError *err = NULL;
-	struct local_job *job = vp;
-	gchar *line;
-
-	r = g_io_channel_read_line(source, &line, NULL, NULL, &err);
-	if ( r == G_IO_STATUS_EOF ) {
-		STATUS("End of output.\n");
-		return FALSE;
-	}
-	if ( r != G_IO_STATUS_NORMAL ) {
-		if ( job->pid != 0 ) {
-			STATUS("Read error?\n");
-		} else {
-			STATUS("End of output (merge exited)\n");
-		}
-		return FALSE;
-	}
-
-	/* FIXME: Calculate the fraction complete */
-	job->frac_complete = 0.5;
-
-	g_free(line);
-	return TRUE;
-}
-
-
 static void *run_ambi(const char *job_title,
                       const char *job_notes,
                       struct crystfelproject *proj,
@@ -507,7 +400,8 @@ static void *run_ambi(const char *job_title,
 		args[1] = sc_filename;
 		args[2] = NULL;
 		job = start_local_job(args, job_title, workdir,
-		                      proj, ambi_readable, 0, 0);
+		                      proj, GUI_JOB_AMBIGATOR);
+		job->niter = proj->ambi_params.niter;
 	} else {
 		job = NULL;
 	}
@@ -551,20 +445,20 @@ static void *run_merging(const char *job_title,
 	                         &proj->merging_params, "crystfel.hkl") )
 	{
 		char *args[3];
-		int process_hkl, scale;
+		enum gui_job_type type;
 		args[0] = "sh";
 		args[1] = sc_filename;
 		args[2] = NULL;
 		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
-			process_hkl = 1;
-			scale = proj->merging_params.scale;
+			if ( proj->merging_params.scale ) {
+				type = GUI_JOB_PROCESS_HKL_SCALE;
+			} else {
+				type = GUI_JOB_PROCESS_HKL;
+			}
 		} else {
-			process_hkl = 0;
-			scale = 1;
+			type = GUI_JOB_PARTIALATOR;
 		}
-		job = start_local_job(args, job_title, workdir,
-		                      proj, merge_readable,
-		                      process_hkl, scale);
+		job = start_local_job(args, job_title, workdir, proj, type);
 	} else {
 		job = NULL;
 	}
@@ -609,6 +503,7 @@ static void *run_indexing(const char *job_title,
 	char **streams;
 	int i;
 	GFile *workdir;
+	GFile *stderr_gfile;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -636,12 +531,15 @@ static void *run_indexing(const char *job_title,
 	}
 	STATUS("\n");
 
-	job = start_local_job(args, job_title, workdir,
-	                      proj, index_readable, 0, 0);
+	job = start_local_job(args, job_title, workdir, proj, GUI_JOB_INDEXING);
 	if ( job == NULL ) return NULL;
 
 	/* Indexing-specific job data */
 	job->n_frames = proj->n_frames;
+
+	stderr_gfile = g_file_get_child(workdir, "stderr.log");
+	job->stderr_filename = g_file_get_path(stderr_gfile);
+	g_object_unref(stderr_gfile);
 
 	streams = malloc(sizeof(char *));
 	if ( streams != NULL ) {

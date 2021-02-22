@@ -771,3 +771,29 @@ char **indexamajig_command_line(const char *geom_filename,
 	args[n_args] = NULL;
 	return args;
 }
+
+
+int read_number_processed(const char *filename)
+{
+	FILE *fh = fopen(filename, "r");
+	int n_proc;
+
+	/* Normal situation if SLURM job hasn't started yet */
+	if ( fh == NULL ) return 0;
+
+	do {
+		char line[1024];
+		if ( fgets(line, 1024, fh) == NULL ) break;
+
+		if ( strncmp(line, "Final: ", 7) == 0 ) {
+			sscanf(line, "Final: %i images processed", &n_proc);
+		} else if ( strstr(line, " images processed, ") != NULL ) {
+			sscanf(line, "%i ", &n_proc);
+		}
+
+	} while ( 1 );
+
+	fclose(fh);
+
+	return n_proc;
+}

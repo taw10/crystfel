@@ -509,8 +509,47 @@ int write_ambigator_script(const char *filename,
 	}
 
 	fprintf(fh, " --iterations=%i", params->niter);
-	fprintf(fh, " --fg-graph=fg.dat\n");
+	fprintf(fh, " --fg-graph=fg.dat");
+	fprintf(fh, " >stdout.log 2>stderr.log\n");
 
 	fclose(fh);
 	return 0;
+}
+
+
+double read_ambigator_progress(char *logfile_str, int niter)
+{
+	FILE *fh;
+	double iter_inc;
+	double frac_complete = 0.0;
+
+	iter_inc = 0.8/niter;
+
+	fh = fopen(logfile_str, "r");
+	if ( fh == NULL ) return 0.0;
+
+	do {
+		char line[1024];
+		int junk;
+
+		if ( fgets(line, 1024, fh) == NULL ) break;
+
+		if ( strncmp(line, "Mean number of correlations per crystal:", 40) == 0 ) {
+			frac_complete = 0.1;
+		}
+		if ( strncmp(line, "Mean f,g =", 10) == 0 ) {
+			frac_complete += iter_inc;
+		}
+		if ( sscanf(line, "%d assignments are different from "
+		                  "their starting values\n", &junk) == 1 )
+		{
+			frac_complete = 1.0;
+		}
+
+	} while ( 1 );
+
+	fclose(fh);
+
+	printf("got %f\n", frac_complete);
+	return frac_complete;
 }

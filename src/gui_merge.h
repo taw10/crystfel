@@ -32,6 +32,7 @@
 #include <gtk/gtk.h>
 
 #include "gui_project.h"
+#include "crystfel_gui.h"
 
 extern gint merge_sig(GtkWidget *widget,
                       struct crystfelproject *proj);
@@ -41,5 +42,8 @@ extern int write_merge_script(const char *filename,
                               const char *n_thread_str,
                               struct merging_params *params,
                               const char *out_hkl);
+
+extern double read_merge_progress(const char *logfile_str,
+                                  enum gui_job_type type);
 
 #endif

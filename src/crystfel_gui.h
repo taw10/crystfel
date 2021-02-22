@@ -38,6 +38,15 @@ struct gui_job_notes_page
 };
 
 
+enum gui_job_type
+{
+	GUI_JOB_INDEXING,
+	GUI_JOB_PROCESS_HKL,
+	GUI_JOB_PROCESS_HKL_SCALE,
+	GUI_JOB_PARTIALATOR,
+	GUI_JOB_AMBIGATOR,
+};
+
 extern void add_running_task(struct crystfelproject *proj,
                              const char *task_desc,
                              struct crystfel_backend *backend,
