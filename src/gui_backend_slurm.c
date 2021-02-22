@@ -112,18 +112,37 @@ static int job_running(uint32_t job_id)
 }
 
 
-static int get_task_status(void *job_priv,
-                           int *running,
-                           float *frac_complete)
+static double indexing_progress(struct slurm_job *job, int *running)
 {
-	struct slurm_job *job = job_priv;
-	int i;
-	int n_proc = 0;
-	int all_complete = 1;
+	if ( job->n_blocks > 15 ) {
 
-	switch ( job->type ) {
+		/* Fast path for larger number of sub-jobs */
 
-		case GUI_JOB_INDEXING :
+		int i;
+		int n_running = 0;
+
+		for ( i=0; i<job->n_blocks; i++ ) {
+
+			if ( job->job_ids[i] == 0 ) continue;
+
+			if ( !job_running(job->job_ids[i]) ) {
+				job->job_ids[i] = 0;
+			} else {
+				n_running++;
+			}
+		}
+
+		if ( n_running > 0 ) *running =1;
+		return (double)(job->n_blocks - n_running) / job->n_blocks;
+
+	} else {
+
+		/* Slow path - higher accuracy for smaller number of sub-jobs */
+
+		int i;
+		int n_proc = 0;
+
+		*running = 0;
 		for ( i=0; i<job->n_blocks; i++ ) {
 
 			n_proc += read_number_processed(job->stderr_filenames[i]);
@@ -133,12 +152,25 @@ static int get_task_status(void *job_priv,
 			if ( !job_running(job->job_ids[i]) ) {
 				job->job_ids[i] = 0;
 			} else {
-				all_complete = 0;
+				*running = 1;
 			}
 		}
 
-		*frac_complete = (double)n_proc / job->n_frames;
-		*running = 1 - all_complete;
+		return (double)n_proc / job->n_frames;
+	}
+}
+
+
+static int get_task_status(void *job_priv,
+                           int *running,
+                           float *frac_complete)
+{
+	struct slurm_job *job = job_priv;
+
+	switch ( job->type ) {
+
+		case GUI_JOB_INDEXING :
+		*frac_complete = indexing_progress(job, running);
 		break;
 
 		case GUI_JOB_AMBIGATOR :
