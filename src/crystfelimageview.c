@@ -420,7 +420,7 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 		y = p->pixel_pitch*(p->cny + p->fsy*f->fs + p->ssy*f->ss);
 		cairo_rectangle(cr, x-this_bs, y-this_bs, 2*this_bs, 2*this_bs);
 		cairo_set_line_width(cr, this_lw);
-		cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+		cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 0.9);
 		cairo_stroke(cr);
 
 		if ( show_cen ) {
@@ -428,7 +428,7 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 			cairo_line_to(cr, x+0.2*p->pixel_pitch, y);
 			cairo_move_to(cr, x, y-0.2*p->pixel_pitch);
 			cairo_line_to(cr, x, y+0.2*p->pixel_pitch);
-			cairo_set_source_rgb(cr, 0.4, 0.4, 0.0);
+			cairo_set_source_rgba(cr, 0.4, 0.4, 0.0, 0.9);
 			cairo_stroke(cr);
 		}
 
@@ -484,9 +484,9 @@ static void draw_refls(cairo_t *cr,
 		cairo_set_line_width(cr, this_lw);
 
 		if ( get_redundancy(refl) == 0 ) {
-			cairo_set_source_rgb(cr, 0.7, 0.0, 0.0);
+			cairo_set_source_rgba(cr, 0.7, 0.0, 0.0, 0.9);
 		} else {
-			cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+			cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 0.9);
 		}
 		cairo_stroke(cr);
 
@@ -495,7 +495,7 @@ static void draw_refls(cairo_t *cr,
 			cairo_line_to(cr, x+0.2*p->pixel_pitch, y);
 			cairo_move_to(cr, x, y-0.2*p->pixel_pitch);
 			cairo_line_to(cr, x, y+0.2*p->pixel_pitch);
-			cairo_set_source_rgb(cr, 0.0, 0.4, 0.0);
+			cairo_set_source_rgba(cr, 0.0, 0.4, 0.0, 0.9);
 			cairo_stroke(cr);
 		}
 
@@ -510,7 +510,7 @@ static void draw_refls(cairo_t *cr,
 			cairo_save(cr);
 			cairo_new_path(cr);
 			cairo_move_to(cr, x, y);
-			cairo_set_source_rgb(cr, 0.0, 0.4, 0.0);
+			cairo_set_source_rgba(cr, 0.0, 0.4, 0.0, 0.9);
 			cairo_set_font_size(cr, 11*p->pixel_pitch);
 			cairo_scale(cr, 1.0, -1.0);
 			cairo_show_text(cr, tmp);
