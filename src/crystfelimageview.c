@@ -439,7 +439,8 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 static void draw_refls(cairo_t *cr,
                        CrystFELImageView *iv,
                        RefList *list,
-                       int label_reflections)
+                       int label_reflections,
+                       double *colour)
 {
 	const Reflection *refl;
 	RefListIterator *iter;
@@ -486,7 +487,11 @@ static void draw_refls(cairo_t *cr,
 		if ( get_redundancy(refl) == 0 ) {
 			cairo_set_source_rgba(cr, 0.7, 0.0, 0.0, 0.9);
 		} else {
-			cairo_set_source_rgba(cr, 0.0, 1.0, 0.0, 0.9);
+			cairo_set_source_rgba(cr,
+			                      colour[0],
+			                      colour[1],
+			                      colour[2],
+			                      0.9);
 		}
 		cairo_stroke(cr);
 
@@ -495,7 +500,11 @@ static void draw_refls(cairo_t *cr,
 			cairo_line_to(cr, x+0.2*p->pixel_pitch, y);
 			cairo_move_to(cr, x, y-0.2*p->pixel_pitch);
 			cairo_line_to(cr, x, y+0.2*p->pixel_pitch);
-			cairo_set_source_rgba(cr, 0.0, 0.4, 0.0, 0.9);
+			cairo_set_source_rgba(cr,
+			                      colour[0]/2.0,
+			                      colour[1]/2.0,
+			                      colour[2]/2.0,
+			                      0.9);
 			cairo_stroke(cr);
 		}
 
@@ -522,6 +531,17 @@ static void draw_refls(cairo_t *cr,
 
 	}
 }
+
+
+static double crystal_cols[][3] =
+{
+	{0.0, 1.0, 1.0},   /* bright green */
+	{1.0, 1.0, 0.0},   /* bright yellow */
+	{0.0, 0.8, 0.8},   /* cyan */
+	{1.0, 1.0, 1.0},   /* white */
+};
+
+static int n_crystal_cols = 4;
 
 
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
@@ -565,7 +585,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 			Crystal *cry = iv->image->crystals[i];
 			draw_refls(cr, iv,
 			           crystal_get_reflections(cry),
-			           iv->label_refls);
+			           iv->label_refls,
+			           crystal_cols[i % n_crystal_cols]);
 		}
 	}
 
