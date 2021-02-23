@@ -969,7 +969,9 @@ int crystfel_image_view_set_image(CrystFELImageView *iv,
 {
 	cleanup_image(iv);
 	iv->image = image;
-	return rerender_image(iv);
+	iv->need_rerender = 1;
+	redraw(iv);
+	return 0;
 }
 
 
@@ -978,6 +980,8 @@ void crystfel_image_view_reset_zoom(CrystFELImageView *iv)
 	iv->detector_w = 1.0;
 	iv->detector_h = 1.0;
 	iv->zoom = -1.0;
+	iv->need_rerender = 1;
+	redraw(iv);
 }
 
 
