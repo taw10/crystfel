@@ -636,6 +636,13 @@ static gint rescan_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static gint reset_zoom_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	crystfel_image_view_reset_zoom(CRYSTFEL_IMAGE_VIEW(proj->imageview));
+	return FALSE;
+}
+
+
 static gint first_frame_sig(GtkWidget *widget,
                             struct crystfelproject *proj)
 {
@@ -807,6 +814,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"peaks\" action=\"PeaksAction\" />"
 		"	<menuitem name=\"refls\" action=\"ReflsAction\" />"
 		"	<menuitem name=\"labelrefls\" action=\"LabelReflsAction\" />"
+		"       <separator />"
+		"	<menuitem name=\"resetzoom\" action=\"ResetZoomAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
 		"	<menuitem name=\"rescan\" action=\"RescanAction\" />"
@@ -825,6 +834,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 			G_CALLBACK(quit_sig) },
 
 		{ "ViewAction", NULL, "_View", NULL, NULL, NULL },
+		{ "ResetZoomAction", NULL, "Reset zoom", NULL, NULL,
+			G_CALLBACK(reset_zoom_sig) },
 
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "RescanAction", NULL, "Rescan streams", NULL, NULL,
