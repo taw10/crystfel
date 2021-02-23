@@ -739,6 +739,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->refl_box_size = 1.0;
 	iv->label_refls = 1;
 	iv->need_rerender = 0;
+	iv->need_recentre = 0;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -911,6 +912,15 @@ static double auto_scale_top(const struct image *image)
 }
 
 
+static void center_adjustment(GtkAdjustment *adj)
+{
+	double min = gtk_adjustment_get_lower(adj);
+	double max = gtk_adjustment_get_upper(adj);
+	double page = gtk_adjustment_get_page_size(adj);
+	gtk_adjustment_set_value(adj, min+(max-min-page)/2.0);
+}
+
+
 static int rerender_image(CrystFELImageView *iv)
 {
 	int i;
@@ -956,6 +966,11 @@ static int rerender_image(CrystFELImageView *iv)
 		iv->zoom = 1.0/iv->image->detgeom->panels[0].pixel_pitch;
 	}
 	configure_scroll_adjustments(iv);
+	if ( iv->need_recentre ) {
+		center_adjustment(iv->hadj);
+		center_adjustment(iv->vadj);
+		iv->need_recentre = 0;
+	}
 
 	iv->need_rerender = 0;
 	redraw(iv);
@@ -980,6 +995,7 @@ void crystfel_image_view_reset_zoom(CrystFELImageView *iv)
 	iv->detector_w = 1.0;
 	iv->detector_h = 1.0;
 	iv->zoom = -1.0;
+	iv->need_recentre = 1;
 	iv->need_rerender = 1;
 	redraw(iv);
 }

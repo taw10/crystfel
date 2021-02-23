@@ -68,6 +68,7 @@ struct _crystfelimageview
 
 	/* Redraw/scroll stuff */
 	int                  need_rerender;
+	int                  need_recentre;
 	GtkScrollablePolicy  hpol;
 	GtkScrollablePolicy  vpol;
 	GtkAdjustment       *hadj;

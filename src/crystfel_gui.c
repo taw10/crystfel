@@ -1022,6 +1022,7 @@ int main(int argc, char *argv[])
 
 	proj.cur_frame = 0;
 	update_imageview(&proj);
+	crystfel_image_view_reset_zoom(CRYSTFEL_IMAGE_VIEW(proj.imageview));
 
 	toolbar = gtk_hbox_new(FALSE, 0.0);
 
