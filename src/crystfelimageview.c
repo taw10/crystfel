@@ -965,6 +965,7 @@ void crystfel_image_view_set_brightness(CrystFELImageView *iv,
 {
 	iv->brightness = brightness;
 	iv->need_rerender = 1;
+	redraw(iv);
 }
 
 
@@ -973,6 +974,7 @@ void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
 {
 	iv->show_peaks = show_peaks;
 	iv->need_rerender = 1;
+	redraw(iv);
 }
 
 
@@ -981,6 +983,7 @@ void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
 {
 	iv->show_refls = show_refls;
 	iv->need_rerender = 1;
+	redraw(iv);
 }
 
 
@@ -989,6 +992,7 @@ void crystfel_image_view_set_label_reflections(CrystFELImageView *iv,
 {
 	iv->label_refls = label_refls;
 	iv->need_rerender = 1;
+	redraw(iv);
 }
 
 
@@ -997,6 +1001,7 @@ void crystfel_image_view_set_peak_box_size(CrystFELImageView *iv,
 {
 	iv->peak_box_size = box_size;
 	iv->need_rerender = 1;
+	redraw(iv);
 }
 
 
@@ -1005,4 +1010,5 @@ void crystfel_image_view_set_refl_box_size(CrystFELImageView *iv,
 {
 	iv->refl_box_size = box_size;
 	iv->need_rerender = 1;
+	redraw(iv);
 }
