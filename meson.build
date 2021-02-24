@@ -223,6 +223,7 @@ if gtkdep.found()
                  'src/crystfelmergeopts.c',
                  'src/crystfelsymmetryselector.c',
                  'src/gtk-util-routines.c',
+                 'src/gui_import.c',
                  'src/gui_peaksearch.c',
                  'src/gui_index.c',
                  'src/gui_merge.c',
