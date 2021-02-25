@@ -339,6 +339,7 @@ extern void add_file_to_project(struct crystfelproject *proj,
                                 const char *event);
 
 extern void clear_project_files(struct crystfelproject *proj);
+extern void clear_indexing_results(struct crystfelproject *proj);
 
 extern int add_indexing_result(struct crystfelproject *proj,
                                char *name,

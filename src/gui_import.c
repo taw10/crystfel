@@ -46,6 +46,7 @@
 #include "crystfelimageview.h"
 #include "gui_project.h"
 #include "crystfel_gui.h"
+#include "gtk-util-routines.h"
 
 #include "version.h"
 
@@ -159,6 +160,7 @@ struct finddata_ctx
 	GtkWidget *stream_chooser;
 
 	GtkWidget *dump;
+	GtkWidget *dump_results;
 };
 
 enum import_mode
@@ -387,6 +389,9 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 		                              NULL);
 
+		if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->dump_results)) ) {
+			clear_indexing_results(proj);
+		}
 	}
 
 	switch ( import_mode(ctx) ) {
@@ -443,19 +448,6 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	gtk_container_add(GTK_CONTAINER(content_area), vbox);
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
-
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
-	label = gtk_label_new("Geometry file:");
-	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
-	ctx->geom_file = gtk_file_chooser_button_new("Select geometry file",
-	                                             GTK_FILE_CHOOSER_ACTION_OPEN);
-	if ( proj->geom_filename != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->geom_file),
-		                              proj->geom_filename);
-	}
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->geom_file), TRUE, TRUE, 2.0);
 
 	/* Select individual files */
 	hbox = gtk_hbox_new(FALSE, 0.0);
@@ -545,11 +537,50 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream_chooser),
 	                   TRUE, TRUE, 2.0);
 
+	/* Stuff at bottom */
+	gtk_box_pack_start(GTK_BOX(vbox),
+	                   gtk_separator_new(GTK_ORIENTATION_HORIZONTAL),
+	                   FALSE, FALSE, 4.0);
+
+	/* Geometry file */
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+
+	ctx->geom_file = gtk_file_chooser_button_new("Select geometry file",
+	                                             GTK_FILE_CHOOSER_ACTION_OPEN);
+	if ( proj->geom_filename != NULL ) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->geom_file),
+		                              proj->geom_filename);
+	}
+	if ( proj->dtempl == NULL ) {
+		label = gtk_label_new("Geometry file:");
+		gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+		gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+		                   FALSE, FALSE, 4.0);
+	} else {
+		GtkWidget *check;
+		check = gtk_check_button_new_with_label("Replace geometry file:");
+		gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(check),
+		                   FALSE, FALSE, 4.0);
+		g_signal_connect(G_OBJECT(check), "toggled",
+		                 G_CALLBACK(i_maybe_disable), ctx->geom_file);
+		gtk_widget_set_sensitive(ctx->geom_file, FALSE);
+	}
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->geom_file), TRUE, TRUE, 2.0);
+
 	/* Replace data toggle */
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
 	ctx->dump = gtk_check_button_new_with_label("Replace all the current data");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->dump), FALSE, FALSE, 4.0);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->dump),
+	                   FALSE, FALSE, 4.0);
+	ctx->dump_results = gtk_check_button_new_with_label("Forget about indexing results");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->dump_results),
+	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(ctx->dump), "toggled",
+	                 G_CALLBACK(i_maybe_disable_and_deselect),
+	                 ctx->dump_results);
+	gtk_widget_set_sensitive(ctx->dump_results, FALSE);
 
 	g_signal_connect(dialog, "response",
 	                 G_CALLBACK(finddata_response_sig), ctx);

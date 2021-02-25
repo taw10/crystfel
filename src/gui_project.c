@@ -566,6 +566,32 @@ void clear_project_files(struct crystfelproject *proj)
 }
 
 
+void clear_indexing_results(struct crystfelproject *proj)
+{
+	int i;
+	for ( i=0; i<proj->n_results; i++ ) {
+		int j;
+		free(proj->results[i].name);
+		for ( j=0; j<proj->results[i].n_streams; j++ ) {
+			free(proj->results[i].streams[j]);
+			stream_index_free(proj->results[i].indices[j]);
+		}
+		free(proj->results[i].streams);
+		free(proj->results[i].indices);
+	}
+	free(proj->results);
+	proj->results = NULL;
+	proj->n_results = 0;
+
+	/* Reset the widget, as well */
+	gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(proj->results_combo));
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(proj->results_combo),
+	                          "crystfel-gui-internal",
+	                          "Calculations within GUI");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(proj->results_combo), 0);
+}
+
+
 void add_file_to_project(struct crystfelproject *proj,
                          const char *filename, const char *event)
 {

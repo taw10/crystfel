@@ -94,6 +94,17 @@ int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget)
 }
 
 
+int i_maybe_disable_and_deselect(GtkWidget *toggle, GtkWidget *widget)
+{
+	int active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle));
+	gtk_widget_set_sensitive(GTK_WIDGET(widget), active);
+	if ( !active ) {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);
+	}
+	return FALSE;
+}
+
+
 void set_active(GtkWidget *tb, int active)
 {
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tb), active);
