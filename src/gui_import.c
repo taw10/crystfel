@@ -140,6 +140,8 @@ static void add_frames_from_stream(Stream *st,
 struct finddata_ctx
 {
 	struct crystfelproject *proj;
+
+	GtkWidget *replace_geom;
 	GtkWidget *geom_file;
 
 	/* "Select individual file" */
@@ -223,34 +225,19 @@ static void finddata_typetoggle_sig(GtkWidget *radio,
 static void import_via_search(struct finddata_ctx *ctx)
 {
 	GFile *top;
-	DataTemplate *dtempl;
-	char *geom_filename;
 	const char *type_id;
 	struct crystfelproject *proj = ctx->proj;
-
-	geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->geom_file));
-	if ( geom_filename == NULL ) return;
 
 	top = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(ctx->search_chooser));
 	if ( top == NULL ) return;
 
-	dtempl = data_template_new_from_file(geom_filename);
-	if ( dtempl == NULL ) return;
-
 	type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(ctx->search_pattern));
 	proj->data_search_pattern = decode_matchtype(type_id);
-
-	g_free(proj->geom_filename);
-	proj->geom_filename = geom_filename;
-
-	data_template_free(proj->dtempl);
-	proj->dtempl = dtempl;
 
 	g_free(proj->data_top_folder);
 	proj->data_top_folder = g_file_get_path(top);
 
-	add_files(proj, top, proj->data_search_pattern,
-	          proj->dtempl);
+	add_files(proj, top, proj->data_search_pattern, proj->dtempl);
 
 	g_object_unref(top);
 }
@@ -284,16 +271,15 @@ static void import_stream(struct finddata_ctx *ctx)
 		return;
 	}
 
-	data_template_free(proj->dtempl);
-	proj->dtempl = dtempl;
+	/* If we do not yet have a DataTemplate, the one from the file
+	 * becomes it.  If we already have one, it will be kept.  Note that the
+	 * stream's DataTemplate will always be used for display in the GUI. */
+	if ( proj->dtempl == NULL ) {
+		proj->dtempl = dtempl;
+	}
 
-	/* Set some defaults for things we won't be using */
-	g_free(proj->geom_filename);
-	proj->geom_filename = NULL;
-	g_free(proj->data_top_folder);
-	proj->data_top_folder = NULL;
-	proj->data_search_pattern = MATCH_EVERYTHING;
-
+	/* Use the user's nominated DataTemplate over the one from the stream.
+	 * If it doesn't match, better that things break earlier. */
 	add_frames_from_stream(st, proj->dtempl, proj);
 	proj->stream_filename = stream_filename;
 	stream_close(st);
@@ -392,6 +378,29 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->dump_results)) ) {
 			clear_indexing_results(proj);
 		}
+	}
+
+	if ( import_mode(ctx) != IMPORT_STREAM ) {
+		if ( (ctx->replace_geom == NULL)
+		  || (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->replace_geom))) )
+		{
+			gchar *geom_filename;
+
+			geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->geom_file));
+			if ( geom_filename == NULL ) return;
+			g_free(proj->geom_filename);
+			proj->geom_filename = geom_filename;
+
+			data_template_free(proj->dtempl);
+			proj->dtempl = data_template_new_from_file(geom_filename);
+			if ( proj->dtempl == NULL ) return;
+		}
+	} /* else don't touch the geometry */
+
+	if ( (import_mode(ctx) != IMPORT_STREAM) && (proj->dtempl == NULL) ) {
+		printf("No geometry!\n");
+		ERROR("No geom!\n");
+		return;
 	}
 
 	switch ( import_mode(ctx) ) {
@@ -557,12 +566,12 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 		gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
 		gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 		                   FALSE, FALSE, 4.0);
+		ctx->replace_geom = NULL;
 	} else {
-		GtkWidget *check;
-		check = gtk_check_button_new_with_label("Replace geometry file:");
-		gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(check),
+		ctx->replace_geom = gtk_check_button_new_with_label("Replace geometry file:");
+		gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->replace_geom),
 		                   FALSE, FALSE, 4.0);
-		g_signal_connect(G_OBJECT(check), "toggled",
+		g_signal_connect(G_OBJECT(ctx->replace_geom), "toggled",
 		                 G_CALLBACK(i_maybe_disable), ctx->geom_file);
 		gtk_widget_set_sensitive(ctx->geom_file, FALSE);
 	}
