@@ -47,6 +47,8 @@ enum gui_job_type
 	GUI_JOB_AMBIGATOR,
 };
 
+extern void error_box(struct crystfelproject *proj, const char *message);
+
 extern void add_running_task(struct crystfelproject *proj,
                              const char *task_desc,
                              struct crystfel_backend *backend,

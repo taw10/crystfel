@@ -387,19 +387,24 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 			gchar *geom_filename;
 
 			geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->geom_file));
-			if ( geom_filename == NULL ) return;
+			if ( geom_filename == NULL ) {
+				error_box(proj, "Geometry file not found");
+				return;
+			}
 			g_free(proj->geom_filename);
 			proj->geom_filename = geom_filename;
 
 			data_template_free(proj->dtempl);
 			proj->dtempl = data_template_new_from_file(geom_filename);
-			if ( proj->dtempl == NULL ) return;
+			if ( proj->dtempl == NULL ) {
+				error_box(proj, "Invalid geometry file");
+				return;
+			}
 		}
 	} /* else don't touch the geometry */
 
 	if ( (import_mode(ctx) != IMPORT_STREAM) && (proj->dtempl == NULL) ) {
-		printf("No geometry!\n");
-		ERROR("No geom!\n");
+		error_box(proj, "You must specify the geometry file.");
 		return;
 	}
 

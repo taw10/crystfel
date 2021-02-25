@@ -96,6 +96,21 @@ static int confirm_exit(struct crystfelproject *proj)
 }
 
 
+void error_box(struct crystfelproject *proj, const char *message)
+{
+	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(proj->window),
+	                                           0,
+	                                           GTK_MESSAGE_WARNING,
+	                                           GTK_BUTTONS_NONE,
+	                                           message);
+	gtk_dialog_add_buttons(GTK_DIALOG(dialog),
+	                       "OK", GTK_RESPONSE_OK,
+	                       NULL);
+	gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+}
+
+
 /* Main window destroyed */
 static gboolean delete_event_sig(GtkWidget *da, GdkEvent *event,
                                  struct crystfelproject *proj)
