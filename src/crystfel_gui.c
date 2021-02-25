@@ -638,6 +638,7 @@ int main(int argc, char *argv[])
 	GtkWidget *results_toolbar;
 	GtkWidget *button;
 	GtkWidget *label;
+	GtkWidget *w;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -849,6 +850,13 @@ int main(int argc, char *argv[])
 
 		update_imageview(&proj);
 	}
+
+	w = gtk_ui_manager_get_widget(proj.ui, "/ui/mainwindow/view/peaks");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), proj.show_peaks);
+	w = gtk_ui_manager_get_widget(proj.ui, "/ui/mainwindow/view/refls");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), proj.show_refls);
+	w = gtk_ui_manager_get_widget(proj.ui, "/ui/mainwindow/view/labelrefls");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), proj.label_refls);
 
 	gtk_window_set_default_size(GTK_WINDOW(proj.window), 1024, 768);
 	gtk_paned_set_position(GTK_PANED(hpaned), 172);
