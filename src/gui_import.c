@@ -238,11 +238,6 @@ static void import_via_search(struct finddata_ctx *ctx)
 	type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(ctx->search_pattern));
 	proj->data_search_pattern = decode_matchtype(type_id);
 
-	/* Totally clean up the old list */
-	clear_project_files(proj);
-	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                              NULL);
-
 	g_free(proj->geom_filename);
 	proj->geom_filename = geom_filename;
 
@@ -287,10 +282,6 @@ static void import_stream(struct finddata_ctx *ctx)
 		return;
 	}
 
-	clear_project_files(proj);
-	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                              NULL);
-
 	data_template_free(proj->dtempl);
 	proj->dtempl = dtempl;
 
@@ -318,6 +309,66 @@ static void import_stream(struct finddata_ctx *ctx)
 }
 
 
+static void import_file_list(struct finddata_ctx *ctx)
+{
+	struct crystfelproject *proj = ctx->proj;
+	char *list_filename;
+	FILE *fh;
+
+	list_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->list_chooser));
+	if ( list_filename == NULL ) return;
+
+	fh = fopen(list_filename, "r");
+	if ( fh == NULL ) return;
+
+	do {
+
+		char line[1024];
+		char *event = "//";
+		size_t n;
+
+		if ( fgets(line, 1024, fh) == NULL ) break;
+		chomp(line);
+
+		/* Chop off event ID */
+		n = strlen(line);
+		while ( line[n] != ' ' && n > 2 ) n--;
+		if ( n != 2 ) {
+			/* Event descriptor must contain "//".
+			 * If it doesn't, assume the filename just contains a
+			 * space. */
+			if ( strstr(&line[n], "//") != NULL ) {
+				line[n] = '\0';
+				event = &line[n+1];
+			}
+		} /* else no spaces at all */
+
+		if ( event != NULL ) {
+			/* Explicit event ID given */
+			add_file_to_project(proj, line, event);
+		} else {
+			/* No event ID - expand (possibly 1:1) */
+			add_all_events(proj, line, proj->dtempl);
+		}
+
+	} while ( 1 );
+
+	fclose(fh);
+}
+
+
+static void import_file(struct finddata_ctx *ctx)
+{
+	struct crystfelproject *proj = ctx->proj;
+	char *filename;
+
+	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->indiv_chooser));
+	if ( filename == NULL ) return;
+
+	add_all_events(proj, filename, proj->dtempl);
+}
+
+
 static void finddata_response_sig(GtkWidget *dialog, gint resp,
                                   struct finddata_ctx *ctx)
 {
@@ -331,14 +382,21 @@ static void finddata_response_sig(GtkWidget *dialog, gint resp,
 		return;
 	}
 
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->dump)) ) {
+		clear_project_files(proj);
+		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+		                              NULL);
+
+	}
+
 	switch ( import_mode(ctx) ) {
 
 		case IMPORT_FILES :
-		/* FIXME */
+		import_file(ctx);
 		break;
 
 		case IMPORT_LIST :
-		/* FIXME */
+		import_file_list(ctx);
 		break;
 
 		case IMPORT_SEARCH :
