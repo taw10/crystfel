@@ -67,4 +67,7 @@ extern struct gui_job_notes_page *add_job_notes_page(GtkWidget *notebook);
 
 extern GFile *make_job_folder(const char *job_title, const char *job_notes);
 
+extern void force_peaks_on(struct crystfelproject *proj);
+extern void force_refls_on(struct crystfelproject *proj);
+
 #endif

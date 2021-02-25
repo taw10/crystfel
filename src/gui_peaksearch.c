@@ -448,12 +448,7 @@ gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	if ( proj->peak_params != NULL ) return FALSE;
 
-	proj->show_peaks = 1;
-	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                                   proj->show_peaks);
-
-	w =  gtk_ui_manager_get_widget(proj->ui, "/ui/mainwindow/view/peaks");
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 1);
+	force_peaks_on(proj);
 
 	/* Take a copy of the original parameters, for reverting */
 	proj->original_params = proj->peak_search_params;

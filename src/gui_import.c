@@ -291,9 +291,6 @@ static void import_stream(struct finddata_ctx *ctx)
 		add_indexing_result(proj, result_name, streams, 1);
 		select_result(proj, result_name);
 	}
-
-	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                                   1);
 }
 
 
