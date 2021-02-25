@@ -563,6 +563,7 @@ void clear_project_files(struct crystfelproject *proj)
 	proj->max_frames = 0;
 	proj->filenames = NULL;
 	proj->events = NULL;
+	proj->cur_frame = 0;
 }
 
 

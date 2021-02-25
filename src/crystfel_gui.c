@@ -191,12 +191,38 @@ void update_imageview(struct crystfelproject *proj)
 	struct image *image;
 	const gchar *results_name;
 
-	if ( proj->n_frames == 0 ) return;
+	if ( proj->image_info == NULL ) return;
+
+	if ( (proj->dtempl == NULL)
+	  || (proj->filenames == NULL)
+	  || (proj->events == NULL)
+	  || (proj->n_frames == 0) )
+	{
+		gtk_label_set_text(GTK_LABEL(proj->image_info),
+		                   "Ready to load images");
+		return;
+	}
 
 	image = image_read(proj->dtempl,
 	                   proj->filenames[proj->cur_frame],
 	                   proj->events[proj->cur_frame],
 	                   0, 0);
+
+	if ( proj->events[proj->cur_frame] != NULL ) {
+		ev_str = proj->events[proj->cur_frame];
+		ev_sep = " ";
+	} else {
+		ev_str = "";
+		ev_sep = "";
+	}
+	snprintf(tmp, 1023, "%s%s%s (frame %i of %i%s)",
+	         proj->filenames[proj->cur_frame],
+	         ev_sep,
+	         ev_str,
+	         proj->cur_frame+1,
+	         proj->n_frames,
+		 (image==NULL)?", load error":"");
+	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 
 	if ( image == NULL ) {
 		ERROR("Failed to load image\n");
@@ -208,21 +234,6 @@ void update_imageview(struct crystfelproject *proj)
 	                              NULL);
 	image_free(proj->cur_image);
 	proj->cur_image = image;
-
-	if ( proj->cur_image->ev != NULL ) {
-		ev_str = proj->cur_image->ev;
-		ev_sep = " ";
-	} else {
-		ev_str = "";
-		ev_sep = "";
-	}
-	snprintf(tmp, 1023, "%s%s%s (frame %i of %i)",
-	         proj->cur_image->filename,
-	         ev_sep,
-	         ev_str,
-	         proj->cur_frame+1,
-	         proj->n_frames);
-	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 
 	/* Look up results, if applicable */
 	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
@@ -670,6 +681,8 @@ int main(int argc, char *argv[])
 
 	default_project(&proj);
 
+	proj.image_info = NULL;
+
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");
 	gtk_window_set_default_icon_name("crystfel");
@@ -686,12 +699,6 @@ int main(int argc, char *argv[])
 
 	hpaned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
 	gtk_paned_pack1(GTK_PANED(vpaned), hpaned, TRUE, TRUE);
-
-	proj.imageview = crystfel_image_view_new();
-
-	proj.cur_frame = 0;
-	update_imageview(&proj);
-	crystfel_image_view_reset_zoom(CRYSTFEL_IMAGE_VIEW(proj.imageview));
 
 	toolbar = gtk_hbox_new(FALSE, 0.0);
 
@@ -761,6 +768,8 @@ int main(int argc, char *argv[])
 	                   FALSE, FALSE, 2.0);
 
 	/* Main area stuff (toolbar and imageview) at right */
+	proj.imageview = crystfel_image_view_new();
+	proj.cur_frame = 0;
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
