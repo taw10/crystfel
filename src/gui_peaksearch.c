@@ -444,7 +444,6 @@ gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *combo;
-	GtkWidget *w;
 
 	if ( proj->peak_params != NULL ) return FALSE;
 

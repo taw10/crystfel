@@ -563,7 +563,6 @@ static void run_indexing_once(struct crystfelproject *proj)
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
-	GtkWidget *w;
 
 	if ( resp == GTK_RESPONSE_OK ) {
 		gtk_combo_box_set_active(GTK_COMBO_BOX(proj->results_combo),
