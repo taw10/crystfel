@@ -739,7 +739,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->refl_box_size = 1.0;
 	iv->label_refls = 1;
 	iv->need_rerender = 0;
-	iv->need_recentre = 0;
+	iv->need_recentre = 1;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
