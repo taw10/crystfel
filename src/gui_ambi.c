@@ -389,6 +389,7 @@ gint ambi_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *notebook;
 	GtkWidget *backend_page;
 	struct ambi_window *win;
+	char *new_title;
 	int i;
 
 	if ( proj->ambi_opts != NULL ) return FALSE;
@@ -426,6 +427,11 @@ gint ambi_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_entry_set_width_chars(GTK_ENTRY(win->jobname), 16);
 	gtk_entry_set_placeholder_text(GTK_ENTRY(win->jobname),
 	                               "ambi-trial-1");
+	new_title = make_new_job_title(proj->ambi_new_job_title);
+	if ( new_title != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(win->jobname), new_title);
+		free(new_title);
+	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->jobname),
 	                   TRUE, TRUE, 4.0);
 

@@ -266,6 +266,7 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *hbox;
 	GtkWidget *backend_page;
 	int i;
+	char *new_title;
 	struct new_merging_job_params *njp;
 
 	if ( proj->merging_opts != NULL ) return FALSE;
@@ -300,12 +301,13 @@ gint merge_sig(GtkWidget *widget, struct crystfelproject *proj)
 	njp->job_title_entry = gtk_entry_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
 	                   TRUE, TRUE, 2.0);
-	if ( proj->merging_new_job_title != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry),
-		                   proj->merging_new_job_title);
-	}
 	gtk_entry_set_placeholder_text(GTK_ENTRY(njp->job_title_entry),
 	                               "merge-trial-1");
+	new_title = make_new_job_title(proj->merging_new_job_title);
+	if ( new_title != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry), new_title);
+		free(new_title);
+	}
 
 	label = gtk_label_new("Input:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),

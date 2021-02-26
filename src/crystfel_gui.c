@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <datatemplate.h>
 #include <peaks.h>
@@ -1134,4 +1135,39 @@ void force_refls_on(struct crystfelproject *proj)
 
 	w =  gtk_ui_manager_get_widget(proj->ui, "/ui/mainwindow/view/refls");
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 1);
+}
+
+
+/* Given an "old" job title (possibly NULL), generate a new job title */
+char *make_new_job_title(const char *orig_old_title)
+{
+	size_t len, i;
+	char *old_title;
+
+	if ( orig_old_title == NULL ) return NULL;
+
+	old_title = strdup(orig_old_title);
+	if ( old_title == NULL ) return NULL;
+
+	len = strlen(old_title);
+
+	for ( i=len-1; i>0; i-- ) {
+		if ( !isdigit(old_title[i]) ) break;
+	}
+	if ( i == len-1 ) {
+		/* No digits at end */
+		char *new_title = malloc(len+3);
+		if ( new_title == NULL ) return NULL;
+		strcpy(new_title, old_title);
+		strcat(new_title, "-2");
+		return new_title;
+	} else {
+		/* Digits at end */
+		int n = atoi(&old_title[i+1]);
+		char *new_title = malloc(len+6);
+		if ( new_title == NULL ) return NULL;
+		old_title[i+1] = '\0';
+		snprintf(new_title, len+6, "%s%i", old_title, n+1);
+		return new_title;
+	}
 }

@@ -326,6 +326,7 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *backend_page;
+	char *new_title;
 	struct new_index_job_params *njp;
 
 	if ( proj->indexing_opts != NULL ) return FALSE;
@@ -361,6 +362,11 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_entry_set_width_chars(GTK_ENTRY(njp->job_title_entry), 16);
 	gtk_entry_set_placeholder_text(GTK_ENTRY(njp->job_title_entry),
 	                               "indexing-trial-1");
+	new_title = make_new_job_title(proj->indexing_new_job_title);
+	if ( new_title != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry), new_title);
+		free(new_title);
+	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
 	                   TRUE, TRUE, 4.0);
 

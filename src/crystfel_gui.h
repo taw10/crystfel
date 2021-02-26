@@ -70,4 +70,6 @@ extern GFile *make_job_folder(const char *job_title, const char *job_notes);
 extern void force_peaks_on(struct crystfelproject *proj);
 extern void force_refls_on(struct crystfelproject *proj);
 
+extern char *make_new_job_title(const char *old_title);
+
 #endif
