@@ -467,8 +467,6 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                             "Select an individual file");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->indiv),
 	                   FALSE, FALSE, 4.0);
-	g_signal_connect(ctx->indiv, "toggled",
-	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
 	ctx->indiv_chooser = gtk_file_chooser_button_new("Select file",
 	                                                 GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->indiv_chooser),
@@ -481,8 +479,6 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                                        "Read a list of files");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->list),
 	                   FALSE, FALSE, 4.0);
-	g_signal_connect(ctx->list, "toggled",
-	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
 	ctx->list_chooser = gtk_file_chooser_button_new("Select the list of filenames",
 	                                                GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->list_chooser),
@@ -496,8 +492,6 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                                      "Search for files in folder");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->search),
 	                   FALSE, FALSE, 4.0);
-	g_signal_connect(ctx->search, "toggled",
-	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
 	ctx->search_chooser = gtk_file_chooser_button_new("Select a folder",
 	                                              GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
 	if ( proj->data_top_folder != NULL ) {
@@ -592,6 +586,15 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                 G_CALLBACK(i_maybe_disable_and_deselect),
 	                 ctx->dump_results);
 	gtk_widget_set_sensitive(ctx->dump_results, FALSE);
+
+	g_signal_connect(ctx->indiv, "toggled",
+	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
+	g_signal_connect(ctx->list, "toggled",
+	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
+	g_signal_connect(ctx->search, "toggled",
+	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
+	g_signal_connect(ctx->stream, "toggled",
+	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
 
 	g_signal_connect(dialog, "response",
 	                 G_CALLBACK(finddata_response_sig), ctx);
