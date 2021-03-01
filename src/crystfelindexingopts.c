@@ -297,6 +297,7 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	                 G_CALLBACK(cell_file_clear_sig), io);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(hbox, "-p / --pdb (or CrystFEL format)");
 
 	/* Indexing method selector */
 	io->auto_indm = gtk_check_button_new_with_label("Automatically choose the indexing methods");
@@ -319,32 +320,38 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	io->multi = gtk_check_button_new_with_label("Attempt to find multiple lattices per frame");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->multi),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->multi, "--multi");
 
 	/* --no-refine (NB inverse) */
 	io->refine = gtk_check_button_new_with_label("Refine the indexing solution");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->refine),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->refine, "--no-refine");
 
 	/* --no-retry (NB inverse) */
 	io->retry = gtk_check_button_new_with_label("Retry indexing if unsuccessful");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->retry),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->retry, "--no-retry");
 
 	/* --no-check-peaks (NB inverse) */
 	io->check_peaks = gtk_check_button_new_with_label("Check indexing solutions match peaks");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->check_peaks),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->check_peaks, "--no-check-peaks");
 
 	/* --no-check-cell (NB inverse) and --tolerance */
 	io->check_cell = gtk_check_button_new_with_label("Check indexing solutions against reference cell");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->check_cell),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->check_cell, "--no-check-cell");
 	expander = gtk_expander_new("Unit cell tolerances");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(expander),
 	                   FALSE, FALSE, 4.0);
 	tolerances = make_tolerances(io);
 	gtk_container_add(GTK_CONTAINER(expander), tolerances);
 	i_disable_if_not(io->check_cell, tolerances);
+	gtk_widget_set_tooltip_text(expander, "--tolerance");
 
 	/* --min-peaks (NB add one) */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -361,6 +368,7 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
 	i_disable_if_not(io->enable_hitfind, io->ignore_fewer_peaks);
+	gtk_widget_set_tooltip_text(hbox, "--min-peaks");
 
 	gtk_widget_show_all(box);
 
@@ -393,16 +401,19 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	                "Ring summation");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(io->integration_combo), "prof2d",
 	                "Two dimensional profile fitting");
+	gtk_widget_set_tooltip_text(hbox, "--integration={none,rings,prof2d}");
 
 	/* -cen */
 	io->centering = gtk_check_button_new_with_label("Center integration boxes on observed reflections");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->centering),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->centering, "--integration=xxx-cen");
 
 	/* --overpredict */
 	io->overpredict = gtk_check_button_new_with_label("Over-predict reflections (for post-refinement)");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->overpredict),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->overpredict, "--overpredict");
 
 	/* --push-res */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -421,6 +432,7 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
 	i_disable_if_not(io->limit_res, io->push_res);
+	gtk_widget_set_tooltip_text(io->limit_res, "--push-res");
 
 	/* --int-radii */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -428,6 +440,7 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	                   FALSE, FALSE, 4.0);
 
 	label = gtk_label_new("Integration radii - inner:");
+	gtk_widget_set_tooltip_text(label, "--int-radius=inner,middle,outer");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
 	io->ir_inn = gtk_entry_new();
@@ -528,16 +541,22 @@ static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
 	io->exclude_nonhits = gtk_check_button_new_with_label("Exclude skipped frames from stream");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->exclude_nonhits),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->exclude_nonhits,
+	                            "--no-non-hits-in-stream");
 
 	/* --no-peaks-in-stream */
 	io->no_peaks_in_stream = gtk_check_button_new_with_label("Exclude peak search results from stream");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->no_peaks_in_stream),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->no_peaks_in_stream,
+	                            "--no-peaks-in-stream");
 
 	/* --no-refls-in-stream */
 	io->no_refls_in_stream = gtk_check_button_new_with_label("Exclude integrated intensities from stream");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->no_refls_in_stream),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->no_refls_in_stream,
+	                            "--no-refls-in-stream");
 
 	io->copy_metadata_store = gtk_list_store_new(1, G_TYPE_STRING);
 
@@ -557,6 +576,7 @@ static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
 
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(treeview),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(box, "--copy-header / --copy-hdf5-field");
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
 	gtk_container_set_border_width(GTK_CONTAINER(hbox), 8);

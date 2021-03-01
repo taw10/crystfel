@@ -158,6 +158,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	                          "Monochromatic Ewald sphere offset (offset)");
 	g_signal_connect(G_OBJECT(mo->model_combo), "changed",
 	                 G_CALLBACK(check_greyout), mo);
+	gtk_widget_set_tooltip_text(hbox, "--model");
 
 	/* Symmetry */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -169,6 +170,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	mo->symmetry = crystfel_symmetry_selector_new();
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->symmetry),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(hbox, "--symmetry");
 
 	/* Scale, Bscale, post-ref on/off */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -177,12 +179,15 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	mo->scale = gtk_check_button_new_with_label("Scale intensities");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->scale),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(mo->scale, "--scale / --no-scale");
 	mo->bscale = gtk_check_button_new_with_label("Debye-Waller scaling");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->bscale),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(mo->bscale, "--no-Bscale");
 	mo->postref = gtk_check_button_new_with_label("Post-refinement");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->postref),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(mo->postref, "--no-pr");
 	check_on_toggle(mo->scale, mo);
 
 	/* Number of iterations */
@@ -196,6 +201,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_entry_set_width_chars(GTK_ENTRY(mo->niter), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->niter),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(hbox, "--iterations");
 
 	/* Polarisation horiz/vert/unpolarized beam/no correction */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -215,11 +221,13 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	                          "No correction");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->polarisation),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(hbox, "--polarisation={horiz,vert,horiz50,none}");
 
 	/* deltaCChalf */
 	mo->deltacchalf = gtk_check_button_new_with_label("Reject bad patterns according to ΔCC½");
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(mo->deltacchalf),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(mo->deltacchalf, "--no-deltacchalf");
 
 	/* Detector saturation value */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -233,6 +241,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->max_adu),
 	                   FALSE, FALSE, 0);
 	check_on_toggle(mo->use_max_adu, mo);
+	gtk_widget_set_tooltip_text(hbox, "--max-adu");
 
 	/* Minimum measurements */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -245,6 +254,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_entry_set_width_chars(GTK_ENTRY(mo->min_measurements), 6);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->min_measurements),
 	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(hbox, "--min-measurements");
 
 	/* Custom split */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -258,6 +268,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->custom_split_file),
 	                   FALSE, FALSE, 0);
 	check_on_toggle(mo->custom_split, mo);
+	gtk_widget_set_tooltip_text(hbox, "--custom-split");
 
 	/* Minimum pattern resolution */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -274,6 +285,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 	check_on_toggle(mo->min_res, mo);
+	gtk_widget_set_tooltip_text(hbox, "--min-res");
 
 	/* push-res */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -291,6 +303,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 	check_on_toggle(mo->limit_res, mo);
+	gtk_widget_set_tooltip_text(hbox, "--push-res");
 
 	/* Detwin */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -303,6 +316,7 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->detwin_sym),
 	                   FALSE, FALSE, 0);
 	check_on_toggle(mo->detwin, mo);
+	gtk_widget_set_tooltip_text(hbox, "-w");
 
 	check_greyout(NULL, mo);
 

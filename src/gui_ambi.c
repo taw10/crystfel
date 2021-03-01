@@ -202,6 +202,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                   FALSE, FALSE, 4.0);
 	crystfel_symmetry_selector_set_group_symbol(CRYSTFEL_SYMMETRY_SELECTOR(win->sym),
 	                                            proj->ambi_params.sym);
+	gtk_widget_set_tooltip_text(hbox, "-y / --symmetry");
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -216,6 +217,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                                            proj->ambi_params.source_sym);
 	g_signal_connect(G_OBJECT(win->use_source_sym), "toggled",
 	                 G_CALLBACK(i_maybe_disable), win->source_sym);
+	gtk_widget_set_tooltip_text(hbox, "-w");
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -232,6 +234,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(win->use_operator), "toggled",
 	                 G_CALLBACK(i_maybe_disable), win->operator);
+	gtk_widget_set_tooltip_text(hbox, "--operator");
 
 	if ( proj->ambi_params.use_operator ) {
 		gtk_widget_set_sensitive(win->source_sym, FALSE);
@@ -254,6 +257,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_entry_set_text(GTK_ENTRY(win->min_res), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->min_res),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(win->min_res, "--lowres");
 	label = gtk_label_new("to");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -263,6 +267,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	gtk_entry_set_text(GTK_ENTRY(win->max_res), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->max_res),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(win->max_res, "--highres");
 	label = gtk_label_new("Å");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -289,6 +294,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	                 G_CALLBACK(i_maybe_disable), win->ncorr);
 	set_active(win->use_ncorr, proj->ambi_params.use_ncorr);
 	gtk_widget_set_sensitive(win->ncorr, proj->ambi_params.use_ncorr);
+	gtk_widget_set_tooltip_text(hbox, "--ncorr");
 
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -296,6 +302,7 @@ static GtkWidget *make_ambigator_options(struct ambi_window *win)
 	label = gtk_label_new("Number of iterations:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(hbox, "--iterations");
 	win->niter = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(win->niter), 2);
 	snprintf(tmp, 64, "%i", proj->ambi_params.niter);
