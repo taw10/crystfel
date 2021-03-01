@@ -50,4 +50,12 @@ extern char **indexamajig_command_line(const char *geom_filename,
 
 extern int read_number_processed(const char *filename);
 
+extern int write_indexamajig_script(const char *script_filename,
+                                    const char *geom_filename,
+                                    const char *n_thread_str,
+                                    const char *files_list,
+                                    const char *stream_filename,
+                                    struct peak_params *peak_search_params,
+                                    struct index_params *indexing_params);
+
 #endif

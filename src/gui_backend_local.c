@@ -499,10 +499,10 @@ static void *run_indexing(const char *job_title,
 	struct local_indexing_opts *opts = opts_priv;
 	struct local_job *job;
 	char n_thread_str[64];
-	char **args;
 	char **streams;
-	int i;
 	GFile *workdir;
+	GFile *sc_gfile;
+	gchar *sc_filename;
 	GFile *stderr_gfile;
 
 	workdir = make_job_folder(job_title, job_notes);
@@ -518,37 +518,46 @@ static void *run_indexing(const char *job_title,
 	}
 
 	snprintf(n_thread_str, 63, "%i", opts->n_processes);
-	args = indexamajig_command_line(proj->geom_filename,
-	                                n_thread_str,
-	                                "files.lst",
-	                                "crystfel.stream",
-	                                &proj->peak_search_params,
-	                                &proj->indexing_params);
-
-	i = 0;
-	while ( args[i] != NULL ) {
-		STATUS("%s ", args[i++]);
+	sc_gfile = g_file_get_child(workdir, "run_indexamajig.sh");
+	sc_filename = g_file_get_path(sc_gfile);
+	g_object_unref(sc_gfile);
+	if ( sc_filename == NULL ) return NULL;
+	if ( !write_indexamajig_script(sc_filename,
+	                               proj->geom_filename,
+	                               n_thread_str,
+	                               "files.lst",
+	                               "crystfel.stream",
+	                               &proj->peak_search_params,
+	                               &proj->indexing_params) )
+	{
+		char *args[3];
+		args[0] = "sh";
+		args[1] = sc_filename;
+		args[2] = NULL;
+		job = start_local_job(args, job_title, workdir,
+		                      proj, GUI_JOB_INDEXING);
+	} else {
+		job = NULL;
 	}
-	STATUS("\n");
 
-	job = start_local_job(args, job_title, workdir, proj, GUI_JOB_INDEXING);
-	if ( job == NULL ) return NULL;
+	if ( job != NULL ) {
 
-	/* Indexing-specific job data */
-	job->n_frames = proj->n_frames;
+		/* Indexing-specific job data */
+		job->n_frames = proj->n_frames;
 
-	stderr_gfile = g_file_get_child(workdir, "stderr.log");
-	job->stderr_filename = g_file_get_path(stderr_gfile);
-	g_object_unref(stderr_gfile);
+		stderr_gfile = g_file_get_child(workdir, "stderr.log");
+		job->stderr_filename = g_file_get_path(stderr_gfile);
+		g_object_unref(stderr_gfile);
 
-	streams = malloc(sizeof(char *));
-	if ( streams != NULL ) {
-		GFile *stream_gfile = g_file_get_child(job->workdir,
-		                                       "crystfel.stream");
-		streams[0] = g_file_get_path(stream_gfile);
-		g_object_unref(stream_gfile);
-		add_indexing_result(proj, strdup(job_title),
-		                    streams, 1);
+		streams = malloc(sizeof(char *));
+		if ( streams != NULL ) {
+			GFile *stream_gfile = g_file_get_child(job->workdir,
+			                                       "crystfel.stream");
+			streams[0] = g_file_get_path(stream_gfile);
+			g_object_unref(stream_gfile);
+			add_indexing_result(proj, strdup(job_title),
+			                    streams, 1);
+		}
 	}
 
 	return job;

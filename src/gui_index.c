@@ -815,3 +815,42 @@ int read_number_processed(const char *filename)
 
 	return n_proc;
 }
+
+
+int write_indexamajig_script(const char *script_filename,
+                             const char *geom_filename,
+                             const char *n_thread_str,
+                             const char *files_list,
+                             const char *stream_filename,
+                             struct peak_params *peak_search_params,
+                             struct index_params *indexing_params)
+{
+	FILE *fh;
+	int i;
+	char **cmdline;
+
+	cmdline = indexamajig_command_line(geom_filename,
+	                                   n_thread_str,
+	                                   files_list,
+	                                   stream_filename,
+	                                   peak_search_params,
+	                                   indexing_params);
+	if ( cmdline == NULL ) return 1;
+
+	fh = fopen(script_filename, "w");
+	if ( fh == NULL ) return 1;
+
+	fprintf(fh, "#!/bin/sh\n");
+
+	i = 0;
+	while ( cmdline[i] != NULL ) {
+		fprintf(fh, "%s ", cmdline[i]);
+		free(cmdline[i]);
+		i++;
+	};
+	free(cmdline);
+	fprintf(fh, ">stdout.log 2>stderr.log\n");
+
+	fclose(fh);
+	return 0;
+}
