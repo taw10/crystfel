@@ -727,6 +727,11 @@ char **indexamajig_command_line(const char *geom_filename,
 		add_arg_int(args, n_args++, "max-res",
 		            peak_search_params->max_res);
 	}
+	snprintf(tols, 2048, "--peak-radius=%.1f,%.1f,%.1f",
+	         peak_search_params->pk_inn,
+	         peak_search_params->pk_mid,
+	         peak_search_params->pk_out);
+	add_arg(args, n_args++, tols);
 
 	if ( indexing_params->min_peaks > 0 ) {
 		add_arg_int(args, n_args++, "min-peaks",
