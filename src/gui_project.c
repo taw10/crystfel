@@ -1060,6 +1060,8 @@ void default_project(struct crystfelproject *proj)
 	proj->geom_filename = NULL;
 	proj->n_frames = 0;
 	proj->max_frames = 0;
+	proj->n_random_history = 0;
+	memset(proj->random_history, 0, N_RANDOM_HISTORY*sizeof(int));
 	proj->filenames = NULL;
 	proj->events = NULL;
 	proj->peak_params = NULL;

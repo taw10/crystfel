@@ -241,6 +241,9 @@ struct gui_task
 	void *job_priv;
 };
 
+
+#define N_RANDOM_HISTORY (16)
+
 struct crystfelproject {
 
 	GtkWidget *window;
@@ -262,6 +265,8 @@ struct crystfelproject {
 
 	int cur_frame;
 	struct image *cur_image;
+	int random_history[N_RANDOM_HISTORY];
+	int n_random_history;
 
 	char *geom_filename;
 	char *stream_filename;

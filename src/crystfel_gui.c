@@ -277,6 +277,32 @@ void update_imageview(struct crystfelproject *proj)
 }
 
 
+static void push_random_frame(struct crystfelproject *proj, int fr)
+{
+	memmove(&proj->random_history[1],
+	        &proj->random_history[0],
+	        (N_RANDOM_HISTORY-1)*sizeof(int));
+	proj->random_history[0] = fr;
+	proj->n_random_history++;
+	if ( proj->n_random_history > N_RANDOM_HISTORY ) {
+		proj->n_random_history = N_RANDOM_HISTORY;
+	}
+}
+
+
+static int pop_random_frame(struct crystfelproject *proj)
+{
+	int fr;
+	assert(proj->n_random_history > 0);
+	fr = proj->random_history[0];
+	memmove(&proj->random_history[0],
+	        &proj->random_history[1],
+	        (N_RANDOM_HISTORY-1)*sizeof(int));
+	proj->n_random_history--;
+	return fr;
+}
+
+
 /* File->Quit */
 static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
@@ -344,10 +370,19 @@ static gint prev_frame_sig(GtkWidget *widget,
 
 
 static gint random_frame_sig(GtkWidget *widget,
+                             GdkEventButton *event,
                              struct crystfelproject *proj)
 {
-	proj->cur_frame = random()*proj->n_frames / RAND_MAX;
-	update_imageview(proj);
+	if ( event->state & GDK_SHIFT_MASK ) {
+		if ( proj->n_random_history > 0 ) {
+			proj->cur_frame = pop_random_frame(proj);
+			update_imageview(proj);
+		}
+	} else {
+		push_random_frame(proj, proj->cur_frame);
+		proj->cur_frame = random()*proj->n_frames / RAND_MAX;
+		update_imageview(proj);
+	}
 	return FALSE;
 }
 
@@ -720,7 +755,7 @@ int main(int argc, char *argv[])
 	button = gtk_button_new_from_icon_name("media-playlist-shuffle",
 	                                       GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
-	g_signal_connect(G_OBJECT(button), "clicked",
+	g_signal_connect(G_OBJECT(button), "button-press-event",
 	                 G_CALLBACK(random_frame_sig), &proj);
 
 	/* Next */
