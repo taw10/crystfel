@@ -1275,14 +1275,19 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 
 		if ( dt->bad[i].is_fsss ) {
-			if ( lookup_panel(dt->bad[i].panel_name, dt,
-			                  &dt->bad[i].panel_number) )
-			{
-				ERROR("No such panel '%s' for bad "
-				      "region %s\n",
-				      dt->bad[i].panel_name,
+			if ( dt->bad[i].panel_name == NULL ) {
+
+				ERROR("Panel not specified for bad region '%s'\n",
 				      dt->bad[i].name);
 				reject = 1;
+
+			} else if ( lookup_panel(dt->bad[i].panel_name, dt,
+			                         &dt->bad[i].panel_number) )
+			{
+				ERROR("No such panel '%s' for bad region %s\n",
+				      dt->bad[i].panel_name, dt->bad[i].name);
+				reject = 1;
+
 			} else {
 				struct panel_template *p;
 				struct dt_badregion *bad;
