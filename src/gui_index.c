@@ -766,6 +766,11 @@ char **indexamajig_command_line(const char *geom_filename,
 		add_arg_float(args, n_args++, "push-res",
 		              indexing_params->push_res);
 	}
+	snprintf(tols, 2048, "--int-radius=%.1f,%.1f,%.1f",
+	         indexing_params->ir_inn,
+	         indexing_params->ir_mid,
+	         indexing_params->ir_out);
+	add_arg(args, n_args++, tols);
 
 	/* Stream output */
 	if ( indexing_params->exclude_nonhits ) add_arg(args, n_args++, "--no-non-hits-in-stream");

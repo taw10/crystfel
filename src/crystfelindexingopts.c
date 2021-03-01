@@ -1090,13 +1090,13 @@ void crystfel_indexing_opts_set_integration_radii(CrystFELIndexingOpts *opts,
 {
 	char tmp[64];
 
-	snprintf(tmp, 63, "%f", ir_inn);
+	snprintf(tmp, 63, "%.1f", ir_inn);
 	gtk_entry_set_text(GTK_ENTRY(opts->ir_inn), tmp);
 
-	snprintf(tmp, 63, "%f", ir_mid);
+	snprintf(tmp, 63, "%.1f", ir_mid);
 	gtk_entry_set_text(GTK_ENTRY(opts->ir_mid), tmp);
 
-	snprintf(tmp, 63, "%f", ir_out);
+	snprintf(tmp, 63, "%.1f", ir_out);
 	gtk_entry_set_text(GTK_ENTRY(opts->ir_out), tmp);
 }
 
