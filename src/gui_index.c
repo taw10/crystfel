@@ -755,8 +755,8 @@ char **indexamajig_command_line(const char *geom_filename,
 	if ( indexing_params->multi ) add_arg(args, n_args++, "--multi");
 	if ( indexing_params->no_refine ) add_arg(args, n_args++, "--no-refine");
 	if ( indexing_params->no_retry ) add_arg(args, n_args++, "--no-retry");
-	if ( indexing_params->no_peak_check ) add_arg(args, n_args++, "--no-peak-check");
-	if ( indexing_params->no_cell_check ) add_arg(args, n_args++, "--no-cell-check");
+	if ( indexing_params->no_peak_check ) add_arg(args, n_args++, "--no-check-peaks");
+	if ( indexing_params->no_cell_check ) add_arg(args, n_args++, "--no-check-cell");
 
 	/* Integration */
 	add_arg(args, n_args++, "--integration");
@@ -772,7 +772,7 @@ char **indexamajig_command_line(const char *geom_filename,
 	if ( indexing_params->exclude_peaks ) add_arg(args, n_args++, "--no-peaks-in-stream");
 	if ( indexing_params->exclude_refls ) add_arg(args, n_args++, "--no-refls-in-stream");
 	for ( i=0; i<indexing_params->n_metadata; i++ ) {
-		add_arg_string(args, n_args++, "copy-hdf5-field",
+		add_arg_string(args, n_args++, "copy-header",
 		               indexing_params->metadata_to_copy[i]);
 	}
 
