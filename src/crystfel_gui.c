@@ -1107,6 +1107,14 @@ struct gui_job_notes_page *add_job_notes_page(GtkWidget *notebook)
 }
 
 
+static int job_name_valid(const char *job_title)
+{
+	if ( strchr(job_title, '/') != NULL ) return 0;
+	if ( strchr(job_title, '\\') != NULL ) return 0;
+	return 1;
+}
+
+
 GFile *make_job_folder(const char *job_title, const char *job_notes)
 {
 	struct stat s;
@@ -1116,6 +1124,11 @@ GFile *make_job_folder(const char *job_title, const char *job_notes)
 	GFile *notes_file;
 	char *notes_path;
 	FILE *fh;
+
+	if ( !job_name_valid(job_title) ) {
+		ERROR("Invalid job name '%s'\n", job_title);
+		return NULL;
+	}
 
 	workdir = strdup(job_title);
 	if ( workdir == NULL ) return NULL;
