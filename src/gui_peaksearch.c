@@ -207,7 +207,8 @@ static void free_callback_params(gpointer cbvals,
 
 
 static void add_int_param(GtkWidget *params_box, const char *labeltext,
-                          int *pval, struct crystfelproject *proj)
+                          int *pval, struct crystfelproject *proj,
+                          const char *tooltip)
 {
 	GtkWidget *hbox;
 	GtkWidget *label;
@@ -244,11 +245,14 @@ static void add_int_param(GtkWidget *params_box, const char *labeltext,
 	} else {
 		ERROR("Failed to connect parameter callback\n");
 	}
+
+	gtk_widget_set_tooltip_text(hbox, tooltip);
 }
 
 
 static void add_float_param(GtkWidget *params_box, const char *labeltext,
-                            float *pval, struct crystfelproject *proj)
+                            float *pval, struct crystfelproject *proj,
+                            const char *tooltip)
 {
 	GtkWidget *hbox;
 	GtkWidget *label;
@@ -286,11 +290,14 @@ static void add_float_param(GtkWidget *params_box, const char *labeltext,
 	} else {
 		ERROR("Failed to connect parameter callback\n");
 	}
+
+	gtk_widget_set_tooltip_text(hbox, tooltip);
 }
 
 
 static void add_check_param(GtkWidget *params_box, const char *labeltext,
-                            int *pval, struct crystfelproject *proj)
+                            int *pval, struct crystfelproject *proj,
+                            const char *tooltip)
 {
 	GtkWidget *checkbox;
 	struct param_callback_vals *cbvals;
@@ -311,6 +318,8 @@ static void add_check_param(GtkWidget *params_box, const char *labeltext,
 	} else {
 		ERROR("Failed to connect parameter callback\n");
 	}
+
+	gtk_widget_set_tooltip_text(checkbox, tooltip);
 }
 
 
@@ -318,11 +327,14 @@ static void add_radii(GtkWidget *params_box,
                       struct crystfelproject *proj)
 {
 	add_float_param(params_box, "Peak radius (inner):",
-	                &proj->peak_search_params.pk_inn, proj);
+	                &proj->peak_search_params.pk_inn, proj,
+	                "--peak-radius");
 	add_float_param(params_box, "Peak radius (middle):",
-	                &proj->peak_search_params.pk_mid, proj);
+	                &proj->peak_search_params.pk_mid, proj,
+	                "--peak-radius");
 	add_float_param(params_box, "Peak radius (outer):",
-	                &proj->peak_search_params.pk_out, proj);
+	                &proj->peak_search_params.pk_out, proj,
+	                "--peak-radius");
 }
 
 
@@ -349,11 +361,14 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		proj->peak_search_params.method = PEAK_ZAEF;
 
 		add_float_param(proj->peak_params, "Threshold:",
-		                &proj->peak_search_params.threshold, proj);
+		                &proj->peak_search_params.threshold, proj,
+		                "--threshold");
 		add_float_param(proj->peak_params, "Minimum squared gradient:",
-		                &proj->peak_search_params.min_sq_gradient, proj);
+		                &proj->peak_search_params.min_sq_gradient, proj,
+		                "--min-squared-gradient (--min-gradient)");
 		add_float_param(proj->peak_params, "Minimum signal/noise ratio:",
-		                &proj->peak_search_params.min_snr, proj);
+		                &proj->peak_search_params.min_snr, proj,
+		                "--min-snr");
 		add_radii(proj->peak_params, proj);
 
 	} else if ( strcmp(algo_id, "peakfinder8") == 0 ) {
@@ -361,36 +376,49 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		proj->peak_search_params.method = PEAK_PEAKFINDER8;
 
 		add_float_param(proj->peak_params, "Threshold:",
-		                &proj->peak_search_params.threshold, proj);
+		                &proj->peak_search_params.threshold, proj,
+		                "--threshold");
 		add_float_param(proj->peak_params, "Minimum signal/noise ratio:",
-		                &proj->peak_search_params.min_snr, proj);
+		                &proj->peak_search_params.min_snr, proj,
+		                "--min-snr");
 		add_int_param(proj->peak_params, "Minimum number of pixels:",
-		              &proj->peak_search_params.min_pix_count, proj);
+		              &proj->peak_search_params.min_pix_count, proj,
+		              "--min-pix-count");
 		add_int_param(proj->peak_params, "Maximum number of pixels:",
-		              &proj->peak_search_params.max_pix_count, proj);
+		              &proj->peak_search_params.max_pix_count, proj,
+		              "--max-pix-count");
 		add_int_param(proj->peak_params, "Local background radius:",
-		              &proj->peak_search_params.local_bg_radius, proj);
+		              &proj->peak_search_params.local_bg_radius, proj,
+		              "--local-bg-radius");
 		add_int_param(proj->peak_params, "Minimum resolution (pixels):",
-		              &proj->peak_search_params.min_res, proj);
+		              &proj->peak_search_params.min_res, proj,
+		              "--min-res");
 		add_int_param(proj->peak_params, "Maximum resolution (pixels):",
-		              &proj->peak_search_params.max_res, proj);
+		              &proj->peak_search_params.max_res, proj,
+		              "--max-res");
 
 	} else if ( strcmp(algo_id, "peakfinder9") == 0 ) {
 
 		proj->peak_search_params.method = PEAK_PEAKFINDER9;
 
 		add_float_param(proj->peak_params, "Minimum SNR of brightest pixel in peak:",
-		                &proj->peak_search_params.min_snr_biggest_pix, proj);
+		                &proj->peak_search_params.min_snr_biggest_pix, proj,
+		                "--min-snr-biggest-pix");
 		add_float_param(proj->peak_params, "Minimum SNR of peak pixel:",
-		                &proj->peak_search_params.min_snr_peak_pix, proj);
+		                &proj->peak_search_params.min_snr_peak_pix, proj,
+		                "--min-snr-peak-pix");
 		add_float_param(proj->peak_params, "Minimum signal/noise ratio:",
-		                &proj->peak_search_params.min_snr, proj);
+		                &proj->peak_search_params.min_snr, proj,
+		                "-min-snr");
 		add_float_param(proj->peak_params, "Minimum background standard deviation:",
-		                &proj->peak_search_params.min_sig, proj);
+		                &proj->peak_search_params.min_sig, proj,
+		                "--min-sig");
 		add_float_param(proj->peak_params, "Brightest pixel cutoff (just for speed):",
-		                &proj->peak_search_params.min_peak_over_neighbour, proj);
+		                &proj->peak_search_params.min_peak_over_neighbour, proj,
+		                "--min-peak-over-neighbour");
 		add_int_param(proj->peak_params, "Local background radius:",
-		              &proj->peak_search_params.local_bg_radius, proj);
+		              &proj->peak_search_params.local_bg_radius, proj,
+		              "--local-bg-radius");
 
 	} else if ( strcmp(algo_id, "hdf5") == 0 ) {
 
@@ -398,10 +426,10 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 
 		add_check_param(proj->peak_params, "Half pixel shift",
 		                &proj->peak_search_params.half_pixel_shift,
-		                proj);
+		                proj, "--no-half-pixel-shift");
 		add_check_param(proj->peak_params, "Check peaks first",
 		                &proj->peak_search_params.revalidate,
-		                proj);
+		                proj, "--no-revalidate");
 		add_radii(proj->peak_params, proj);
 
 	} else if ( strcmp(algo_id, "cxi") == 0 ) {
