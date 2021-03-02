@@ -660,6 +660,37 @@ static void add_gui_message(enum log_msg_type type, const char *msg,
 }
 
 
+static void clear_log_sig(GtkMenuItem *widget,
+                          struct crystfelproject *proj)
+{
+	GtkTextBuffer *buf;
+
+	buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(proj->report));
+	if ( buf != NULL ) {
+		gtk_text_buffer_set_text(buf, "", -1);
+	}
+}
+
+
+static void add_log_menu_items(GtkTextView *textview,
+                               GtkWidget *popup,
+                               struct crystfelproject *proj)
+{
+	GtkWidget *item;
+
+	if ( !GTK_IS_MENU(popup) ) return;
+
+	item = gtk_separator_menu_item_new();
+	gtk_menu_shell_append(GTK_MENU_SHELL(popup), item);
+	gtk_widget_show(item);
+
+	item = gtk_menu_item_new_with_label("Clear log");
+	gtk_menu_shell_append(GTK_MENU_SHELL(popup), item);
+	gtk_widget_show(item);
+	g_signal_connect(item, "activate", G_CALLBACK(clear_log_sig), proj);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -844,6 +875,8 @@ int main(int argc, char *argv[])
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
 	                               GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
+	g_signal_connect(proj.report, "populate-popup",
+	                 G_CALLBACK(add_log_menu_items), &proj);
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(scroll));
