@@ -744,12 +744,14 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(toolbar), proj.first_button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(proj.first_button), "clicked",
 	                 G_CALLBACK(first_frame_sig), &proj);
+	gtk_widget_set_tooltip_text(proj.first_button, "First image");
 
 	/* Prev */
 	proj.prev_button = gtk_button_new_from_icon_name("go-previous", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), proj.prev_button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(proj.prev_button), "clicked",
 	                 G_CALLBACK(prev_frame_sig), &proj);
+	gtk_widget_set_tooltip_text(proj.prev_button, "Previous image");
 
 	/* Random */
 	button = gtk_button_new_from_icon_name("media-playlist-shuffle",
@@ -757,18 +759,22 @@ int main(int argc, char *argv[])
 	gtk_box_pack_start(GTK_BOX(toolbar), button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(button), "button-press-event",
 	                 G_CALLBACK(random_frame_sig), &proj);
+	gtk_widget_set_tooltip_text(button, "Jump to a random image.  "
+	                                    "Shift-click to go back");
 
 	/* Next */
 	proj.next_button = gtk_button_new_from_icon_name("go-next", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), proj.next_button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(proj.next_button), "clicked",
 	                 G_CALLBACK(next_frame_sig), &proj);
+	gtk_widget_set_tooltip_text(proj.next_button, "Next image");
 
 	/* Last */
 	proj.last_button = gtk_button_new_from_icon_name("go-last", GTK_ICON_SIZE_LARGE_TOOLBAR);
 	gtk_box_pack_start(GTK_BOX(toolbar), proj.last_button, FALSE, FALSE, 2.0);
 	g_signal_connect(G_OBJECT(proj.last_button), "clicked",
 	                 G_CALLBACK(last_frame_sig), &proj);
+	gtk_widget_set_tooltip_text(proj.last_button, "Last image");
 
 	/* Information about image */
 	button = gtk_button_new_from_icon_name("document-properties",
