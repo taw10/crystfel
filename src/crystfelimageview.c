@@ -129,8 +129,9 @@ static void configure_scroll_adjustments(CrystFELImageView *iv)
 static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
                        CrystFELImageView *iv)
 {
-	double zoom_scale;
+	double zoom_scale, ratio;
 	int claim = FALSE;
+	int zoom_allowed = 1;
 
 	if ( event->direction == GDK_SCROLL_UP ) {
 		zoom_scale = 1.1;
@@ -143,7 +144,12 @@ static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
 	if ( event->direction == GDK_SCROLL_LEFT ) return TRUE;
 	if ( event->direction == GDK_SCROLL_RIGHT ) return TRUE;
 
-	if ( claim ) {
+	ratio = iv->zoom / iv->image->detgeom->panels[0].pixel_pitch;
+
+	if ( (ratio < 5e6) && (zoom_scale < 1.0) ) zoom_allowed = 0;
+	if ( (ratio > 1e10) && (zoom_scale > 1.0) ) zoom_allowed = 0;
+
+	if ( claim && zoom_allowed ) {
 
 		double shift_x, shift_y;
 		double scr_x, scr_y;
