@@ -118,3 +118,11 @@ void redraw_widget(GtkWidget *wid)
 	h = gtk_widget_get_allocated_height(GTK_WIDGET(wid));
 	gtk_widget_queue_draw_area(GTK_WIDGET(wid), 0, 0, w, h);
 }
+
+
+const char *get_text_or_null(GtkEntry *entry)
+{
+	const char *text = gtk_entry_get_text(entry);
+	if ( text[0] == '\0' ) return NULL;
+	return text;
+}
