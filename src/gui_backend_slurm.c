@@ -45,6 +45,8 @@ struct slurm_common_opts
 {
 	char *partition;
 	char *email_address;
+	char *account;
+	char *constraint;
 };
 
 
@@ -294,6 +296,36 @@ static gboolean email_focus_sig(GtkEntry *entry, GdkEvent *event,
 }
 
 
+static void account_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->account = safe_strdup(get_text_or_null(entry));
+}
+
+
+static gboolean account_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                  gpointer data)
+{
+	account_activate_sig(entry, data);
+	return FALSE;
+}
+
+
+static void constraint_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->constraint = safe_strdup(get_text_or_null(entry));
+}
+
+
+static gboolean constraint_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                     gpointer data)
+{
+	constraint_activate_sig(entry, data);
+	return FALSE;
+}
+
+
 static void add_common_opts(GtkWidget *vbox,
                             struct slurm_common_opts *opts)
 {
@@ -333,6 +365,40 @@ static void add_common_opts(GtkWidget *vbox,
 	                 G_CALLBACK(email_activate_sig), opts);
 	g_signal_connect(G_OBJECT(entry), "focus-out-event",
 	                 G_CALLBACK(email_focus_sig), opts);
+
+	/* Account */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Charge resource use to:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->account != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->account);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "SLURM account");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(account_activate_sig), opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(account_focus_sig), opts);
+
+	/* Constraint */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Required node features:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->constraint != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->constraint);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "SLURM constraint");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(constraint_activate_sig), opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(constraint_focus_sig), opts);
 }
 
 
@@ -348,6 +414,16 @@ static void write_common_opts(FILE *fh,
 	if ( opts->email_address != NULL ) {
 		fprintf(fh, "%s.slurm.email_address %s\n",
 		        prefix, opts->email_address);
+	}
+
+	if ( opts->account != NULL ) {
+		fprintf(fh, "%s.slurm.account %s\n",
+		        prefix, opts->account);
+	}
+
+	if ( opts->constraint != NULL ) {
+		fprintf(fh, "%s.slurm.constraint %s\n",
+		        prefix, opts->constraint);
 	}
 }
 
@@ -408,6 +484,8 @@ static uint32_t submit_batch_job(const char *geom_filename,
 	job_desc_msg.script = script;
 	job_desc_msg.environment = env;
 	job_desc_msg.env_size = n_env;
+	job_desc_msg.features = safe_strdup(opts->constraint);
+	job_desc_msg.account = safe_strdup(opts->account);
 
 	r = slurm_submit_batch_job(&job_desc_msg, &resp);
 	if ( r ) {
@@ -421,6 +499,8 @@ static uint32_t submit_batch_job(const char *geom_filename,
 	free(job_desc_msg.work_dir);
 	free(job_desc_msg.std_err);
 	free(job_desc_msg.std_out);
+	free(job_desc_msg.features);
+	free(job_desc_msg.account);
 
 	job_id = resp->job_id;
 	slurm_free_submit_response_response_msg(resp);
@@ -475,6 +555,8 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	job_desc_msg.script = script;
 	job_desc_msg.environment = env;
 	job_desc_msg.env_size = n_env;
+	job_desc_msg.features = safe_strdup(opts->constraint);
+	job_desc_msg.account = safe_strdup(opts->account);
 
 	r = slurm_submit_batch_job(&job_desc_msg, &resp);
 	if ( r ) {
@@ -488,6 +570,8 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	free(job_desc_msg.work_dir);
 	free(job_desc_msg.std_err);
 	free(job_desc_msg.std_out);
+	free(job_desc_msg.features);
+	free(job_desc_msg.account);
 
 	STATUS("Submitted SLURM job ID %i\n", resp->job_id);
 
@@ -742,6 +826,8 @@ static void set_default_common_opts(struct slurm_common_opts *opts)
 {
 	opts->partition = NULL;
 	opts->email_address = NULL;
+	opts->account = NULL;
+	opts->constraint = NULL;
 }
 
 
@@ -796,6 +882,14 @@ static void read_indexing_opt(void *opts_priv,
 
 	if ( strcmp(key, "indexing.slurm.path_add") == 0 ) {
 		opts->path_add = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.account") == 0 ) {
+		opts->common.account = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.constraint") == 0 ) {
+		opts->common.constraint = strdup(val);
 	}
 }
 
@@ -951,6 +1045,15 @@ static void read_merging_opt(void *opts_priv,
 	if ( strcmp(key, "merging.slurm.partition") == 0 ) {
 		opts->common.partition = strdup(val);
 	}
+
+	if ( strcmp(key, "merging.slurm.account") == 0 ) {
+		opts->common.account = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.slurm.constraint") == 0 ) {
+		opts->common.constraint = strdup(val);
+	}
+
 }
 
 
@@ -992,6 +1095,14 @@ static void read_ambi_opt(void *opts_priv,
 
 	if ( strcmp(key, "ambi.slurm.partition") == 0 ) {
 		opts->common.partition = strdup(val);
+	}
+
+	if ( strcmp(key, "ambi.slurm.account") == 0 ) {
+		opts->common.account = strdup(val);
+	}
+
+	if ( strcmp(key, "ambi.slurm.constraint") == 0 ) {
+		opts->common.constraint = strdup(val);
 	}
 }
 
