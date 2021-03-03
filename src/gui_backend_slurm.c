@@ -33,6 +33,7 @@
 
 #include <utils.h>
 
+#include "gtk-util-routines.h"
 #include "gui_project.h"
 #include "gui_index.h"
 #include "gui_merge.h"
@@ -266,7 +267,7 @@ static char **create_env(int *psize, char *path_add)
 static void partition_activate_sig(GtkEntry *entry, gpointer data)
 {
 	struct slurm_common_opts *opts = data;
-	opts->partition = strdup(gtk_entry_get_text(entry));
+	opts->partition = safe_strdup(get_text_or_null(entry));
 }
 
 
@@ -281,7 +282,7 @@ static gboolean partition_focus_sig(GtkEntry *entry, GdkEvent *event,
 static void email_activate_sig(GtkEntry *entry, gpointer data)
 {
 	struct slurm_common_opts *opts = data;
-	opts->email_address = strdup(gtk_entry_get_text(entry));
+	opts->email_address = safe_strdup(get_text_or_null(entry));
 }
 
 
@@ -335,12 +336,26 @@ static void add_common_opts(GtkWidget *vbox,
 }
 
 
+static void write_common_opts(FILE *fh,
+                              struct slurm_common_opts *opts,
+                              const char *prefix)
+{
+	if ( opts->partition != NULL) {
+		fprintf(fh, "%s.slurm.partition %s\n",
+		        prefix, opts->partition);
+	}
+
+	if ( opts->email_address != NULL ) {
+		fprintf(fh, "%s.slurm.email_address %s\n",
+		        prefix, opts->email_address);
+	}
+}
+
 
 static uint32_t submit_batch_job(const char *geom_filename,
                                  const char *file_list,
                                  const char *stream_filename,
-                                 const char *email_address,
-                                 const char *partition,
+                                 struct slurm_common_opts *opts,
                                  char **env,
                                  int n_env,
                                  const char *job_name,
@@ -378,12 +393,12 @@ static uint32_t submit_batch_job(const char *geom_filename,
 	slurm_init_job_desc_msg(&job_desc_msg);
 	job_desc_msg.user_id = getuid();
 	job_desc_msg.group_id = getgid();
-	job_desc_msg.mail_user = safe_strdup(email_address);
+	job_desc_msg.mail_user = safe_strdup(opts->email_address);
 	job_desc_msg.mail_type = MAIL_JOB_FAIL;
 	job_desc_msg.comment = "Submitted via CrystFEL GUI";
 	job_desc_msg.shared = 0;
 	job_desc_msg.time_limit = 60;
-	job_desc_msg.partition = safe_strdup(partition);
+	job_desc_msg.partition = safe_strdup(opts->partition);
 	job_desc_msg.min_nodes = 1;
 	job_desc_msg.max_nodes = 1;
 	job_desc_msg.name = safe_strdup(job_name);
@@ -421,8 +436,7 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
                                          const char *script_filename,
                                          const char *jobname,
                                          GFile *workdir,
-                                         const char *partition,
-                                         const char *email_address)
+                                         struct slurm_common_opts *opts)
 {
 	char **env;
 	int n_env;
@@ -446,12 +460,12 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	slurm_init_job_desc_msg(&job_desc_msg);
 	job_desc_msg.user_id = getuid();
 	job_desc_msg.group_id = getgid();
-	job_desc_msg.mail_user = safe_strdup(email_address);
+	job_desc_msg.mail_user = safe_strdup(opts->email_address);
 	job_desc_msg.mail_type = MAIL_JOB_FAIL;
 	job_desc_msg.comment = "Submitted via CrystFEL GUI";
 	job_desc_msg.shared = 0;
 	job_desc_msg.time_limit = 60;
-	job_desc_msg.partition = safe_strdup(partition);
+	job_desc_msg.partition = safe_strdup(opts->partition);
 	job_desc_msg.min_nodes = 1;
 	job_desc_msg.max_nodes = 1;
 	job_desc_msg.name = safe_strdup(jobname);
@@ -588,8 +602,7 @@ static void *run_indexing(const char *job_title,
 		job_id = submit_batch_job(proj->geom_filename,
 		                          file_list,
 		                          stream_filename,
-		                          opts->common.email_address,
-		                          opts->common.partition,
+		                          &opts->common,
 		                          env,
 		                          n_env,
 		                          job_name,
@@ -725,14 +738,20 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 }
 
 
+static void set_default_common_opts(struct slurm_common_opts *opts)
+{
+	opts->partition = NULL;
+	opts->email_address = NULL;
+}
+
+
 static struct slurm_indexing_opts *make_default_slurm_indexing_opts()
 {
 	struct slurm_indexing_opts *opts = malloc(sizeof(struct slurm_indexing_opts));
 	if ( opts == NULL ) return NULL;
 
-	opts->common.partition = NULL;
+	set_default_common_opts(&opts->common);
 	opts->block_size = 1000;
-	opts->common.email_address = NULL;
 	opts->path_add = NULL;
 
 	return opts;
@@ -743,18 +762,10 @@ static void write_indexing_opts(void *opts_priv, FILE *fh)
 {
 	struct slurm_indexing_opts *opts = opts_priv;
 
+	write_common_opts(fh, &opts->common, "indexing");
+
 	fprintf(fh, "indexing.slurm.block_size %i\n",
 	        opts->block_size);
-
-	if ( opts->common.partition != NULL) {
-		fprintf(fh, "indexing.slurm.partition %s\n",
-		        opts->common.partition);
-	}
-
-	if ( opts->common.email_address != NULL ) {
-		fprintf(fh, "indexing.slurm.email_address %s\n",
-		        opts->common.email_address);
-	}
 
 	if ( opts->path_add != NULL ) {
 		fprintf(fh, "indexing.slurm.path_add %s\n",
@@ -821,8 +832,7 @@ static void *run_ambi(const char *job_title,
 		char *workdir_str = g_file_get_path(workdir);
 		job = start_slurm_job(GUI_JOB_AMBIGATOR,
 		                      sc_filename, job_title, workdir,
-		                      opts->common.partition,
-		                      opts->common.email_address);
+		                      &opts->common);
 		job->niter = proj->ambi_params.niter;
 		g_free(workdir_str);
 	} else {
@@ -878,8 +888,7 @@ static void *run_merging(const char *job_title,
 			type = GUI_JOB_PARTIALATOR;
 		}
 		job = start_slurm_job(type, sc_filename, job_title, workdir,
-		                      opts->common.partition,
-		                      opts->common.email_address);
+		                      &opts->common);
 		g_free(workdir_str);
 	} else {
 		job = NULL;
@@ -917,10 +926,7 @@ static struct slurm_merging_opts *make_default_slurm_merging_opts()
 {
 	struct slurm_merging_opts *opts = malloc(sizeof(struct slurm_merging_opts));
 	if ( opts == NULL ) return NULL;
-
-	opts->common.email_address = NULL;
-	opts->common.partition = NULL;
-
+	set_default_common_opts(&opts->common);
 	return opts;
 }
 
@@ -928,16 +934,7 @@ static struct slurm_merging_opts *make_default_slurm_merging_opts()
 static void write_merging_opts(void *opts_priv, FILE *fh)
 {
 	struct slurm_merging_opts *opts = opts_priv;
-
-	if ( opts->common.partition != NULL) {
-		fprintf(fh, "merging.slurm.partition %s\n",
-		        opts->common.partition);
-	}
-
-	if ( opts->common.email_address != NULL ) {
-		fprintf(fh, "merging.slurm.email_address %s\n",
-		        opts->common.email_address);
-	}
+	write_common_opts(fh, &opts->common, "merging");
 }
 
 
@@ -971,10 +968,7 @@ static struct slurm_ambi_opts *make_default_slurm_ambi_opts()
 {
 	struct slurm_ambi_opts *opts = malloc(sizeof(struct slurm_ambi_opts));
 	if ( opts == NULL ) return NULL;
-
-	opts->common.email_address = NULL;
-	opts->common.partition = NULL;
-
+	set_default_common_opts(&opts->common);
 	return opts;
 }
 
@@ -982,16 +976,7 @@ static struct slurm_ambi_opts *make_default_slurm_ambi_opts()
 static void write_ambi_opts(void *opts_priv, FILE *fh)
 {
 	struct slurm_ambi_opts *opts = opts_priv;
-
-	if ( opts->common.partition != NULL) {
-		fprintf(fh, "ambi.slurm.partition %s\n",
-		        opts->common.partition);
-	}
-
-	if ( opts->common.email_address != NULL ) {
-		fprintf(fh, "ambi.slurm.email_address %s\n",
-		        opts->common.email_address);
-	}
+	write_common_opts(fh, &opts->common, "ambi");
 }
 
 
