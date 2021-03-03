@@ -667,12 +667,12 @@ static void add_arg_string(char **args, int pos, const char *label,
 }
 
 
-char **indexamajig_command_line(const char *geom_filename,
-                                const char *n_thread_str,
-                                const char *files_list,
-                                const char *stream_filename,
-                                struct peak_params *peak_search_params,
-                                struct index_params *indexing_params)
+static char **indexamajig_command_line(const char *geom_filename,
+                                       const char *n_thread_str,
+                                       const char *files_list,
+                                       const char *stream_filename,
+                                       struct peak_params *peak_search_params,
+                                       struct index_params *indexing_params)
 {
 	char **args;
 	char tols[2048];
@@ -828,6 +828,7 @@ int write_indexamajig_script(const char *script_filename,
                              const char *n_thread_str,
                              const char *files_list,
                              const char *stream_filename,
+                             int redirect_output,
                              struct peak_params *peak_search_params,
                              struct index_params *indexing_params)
 {
@@ -855,7 +856,9 @@ int write_indexamajig_script(const char *script_filename,
 		i++;
 	};
 	free(cmdline);
-	fprintf(fh, ">stdout.log 2>stderr.log\n");
+	if ( redirect_output ) {
+		fprintf(fh, ">stdout.log 2>stderr.log\n");
+	}
 
 	fclose(fh);
 	return 0;
