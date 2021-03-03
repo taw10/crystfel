@@ -40,10 +40,16 @@
 #include "crystfel_gui.h"
 
 
-struct slurm_indexing_opts
+struct slurm_common_opts
 {
 	char *partition;
 	char *email_address;
+};
+
+
+struct slurm_indexing_opts
+{
+	struct slurm_common_opts common;
 	char *path_add;
 	int block_size;
 };
@@ -51,15 +57,15 @@ struct slurm_indexing_opts
 
 struct slurm_merging_opts
 {
-	char *partition;
-	char *email_address;
+	struct slurm_common_opts common;
 };
+
 
 struct slurm_ambi_opts
 {
-	char *partition;
-	char *email_address;
+	struct slurm_common_opts common;
 };
+
 
 struct slurm_job
 {
@@ -255,6 +261,79 @@ static char **create_env(int *psize, char *path_add)
 
 	return env;
 }
+
+
+static void partition_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->partition = strdup(gtk_entry_get_text(entry));
+}
+
+
+static gboolean partition_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                    gpointer data)
+{
+	partition_activate_sig(entry, data);
+	return FALSE;
+}
+
+
+static void email_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->email_address = strdup(gtk_entry_get_text(entry));
+}
+
+
+static gboolean email_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                gpointer data)
+{
+	email_activate_sig(entry, data);
+	return FALSE;
+}
+
+
+static void add_common_opts(GtkWidget *vbox,
+                            struct slurm_common_opts *opts)
+{
+	GtkWidget *hbox;
+	GtkWidget *entry;
+	GtkWidget *label;
+
+	/* Partition */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Submit job to partition:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->partition != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->partition);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "maxwell");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(partition_activate_sig), opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(partition_focus_sig), opts);
+
+	/* Email address */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Send notifications to:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->email_address != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->email_address);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "myself@example.org");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(email_activate_sig), opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(email_focus_sig), opts);
+}
+
 
 
 static uint32_t submit_batch_job(const char *geom_filename,
@@ -509,8 +588,8 @@ static void *run_indexing(const char *job_title,
 		job_id = submit_batch_job(proj->geom_filename,
 		                          file_list,
 		                          stream_filename,
-		                          opts->email_address,
-		                          opts->partition,
+		                          opts->common.email_address,
+		                          opts->common.partition,
 		                          env,
 		                          n_env,
 		                          job_name,
@@ -572,36 +651,6 @@ static gboolean block_size_focus_sig(GtkEntry *entry, GdkEvent *event,
 }
 
 
-static void partition_activate_sig(GtkEntry *entry, gpointer data)
-{
-	struct slurm_indexing_opts *opts = data;
-	opts->partition = strdup(gtk_entry_get_text(entry));
-}
-
-
-static gboolean partition_focus_sig(GtkEntry *entry, GdkEvent *event,
-                                    gpointer data)
-{
-	partition_activate_sig(entry, data);
-	return FALSE;
-}
-
-
-static void email_activate_sig(GtkEntry *entry, gpointer data)
-{
-	struct slurm_indexing_opts *opts = data;
-	opts->email_address = strdup(gtk_entry_get_text(entry));
-}
-
-
-static gboolean email_focus_sig(GtkEntry *entry, GdkEvent *event,
-                                gpointer data)
-{
-	email_activate_sig(entry, data);
-	return FALSE;
-}
-
-
 static void pathadd_activate_sig(GtkEntry *entry, gpointer data)
 {
 	struct slurm_indexing_opts *opts = data;
@@ -628,25 +677,7 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Submit job to partition:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	if ( opts->partition != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(entry), opts->partition);
-	}
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "maxwell");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   FALSE, FALSE, 0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(partition_activate_sig),
-	                 opts);
-	g_signal_connect(G_OBJECT(entry), "focus-out-event",
-	                 G_CALLBACK(partition_focus_sig),
-	                 opts);
+	add_common_opts(vbox, &opts->common);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -668,27 +699,6 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	label = gtk_label_new("frames");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Send notifications to:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	if ( opts->email_address != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(entry), opts->email_address);
-	}
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
-	                               "myself@example.org");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   FALSE, FALSE, 0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(email_activate_sig),
-	                 opts);
-	g_signal_connect(G_OBJECT(entry), "focus-out-event",
-	                 G_CALLBACK(email_focus_sig),
-	                 opts);
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
@@ -720,9 +730,9 @@ static struct slurm_indexing_opts *make_default_slurm_indexing_opts()
 	struct slurm_indexing_opts *opts = malloc(sizeof(struct slurm_indexing_opts));
 	if ( opts == NULL ) return NULL;
 
-	opts->partition = NULL;
+	opts->common.partition = NULL;
 	opts->block_size = 1000;
-	opts->email_address = NULL;
+	opts->common.email_address = NULL;
 	opts->path_add = NULL;
 
 	return opts;
@@ -736,14 +746,14 @@ static void write_indexing_opts(void *opts_priv, FILE *fh)
 	fprintf(fh, "indexing.slurm.block_size %i\n",
 	        opts->block_size);
 
-	if ( opts->partition != NULL) {
+	if ( opts->common.partition != NULL) {
 		fprintf(fh, "indexing.slurm.partition %s\n",
-		        opts->partition);
+		        opts->common.partition);
 	}
 
-	if ( opts->email_address != NULL ) {
+	if ( opts->common.email_address != NULL ) {
 		fprintf(fh, "indexing.slurm.email_address %s\n",
-		        opts->email_address);
+		        opts->common.email_address);
 	}
 
 	if ( opts->path_add != NULL ) {
@@ -766,11 +776,11 @@ static void read_indexing_opt(void *opts_priv,
 	}
 
 	if ( strcmp(key, "indexing.slurm.email_address") == 0 ) {
-		opts->email_address = strdup(val);
+		opts->common.email_address = strdup(val);
 	}
 
 	if ( strcmp(key, "indexing.slurm.partition") == 0 ) {
-		opts->partition = strdup(val);
+		opts->common.partition = strdup(val);
 	}
 
 	if ( strcmp(key, "indexing.slurm.path_add") == 0 ) {
@@ -811,7 +821,8 @@ static void *run_ambi(const char *job_title,
 		char *workdir_str = g_file_get_path(workdir);
 		job = start_slurm_job(GUI_JOB_AMBIGATOR,
 		                      sc_filename, job_title, workdir,
-		                      opts->partition, opts->email_address);
+		                      opts->common.partition,
+		                      opts->common.email_address);
 		job->niter = proj->ambi_params.niter;
 		g_free(workdir_str);
 	} else {
@@ -867,7 +878,8 @@ static void *run_merging(const char *job_title,
 			type = GUI_JOB_PARTIALATOR;
 		}
 		job = start_slurm_job(type, sc_filename, job_title, workdir,
-		                      opts->partition, opts->email_address);
+		                      opts->common.partition,
+		                      opts->common.email_address);
 		g_free(workdir_str);
 	} else {
 		job = NULL;
@@ -906,8 +918,8 @@ static struct slurm_merging_opts *make_default_slurm_merging_opts()
 	struct slurm_merging_opts *opts = malloc(sizeof(struct slurm_merging_opts));
 	if ( opts == NULL ) return NULL;
 
-	opts->email_address = NULL;
-	opts->partition = NULL;
+	opts->common.email_address = NULL;
+	opts->common.partition = NULL;
 
 	return opts;
 }
@@ -917,14 +929,14 @@ static void write_merging_opts(void *opts_priv, FILE *fh)
 {
 	struct slurm_merging_opts *opts = opts_priv;
 
-	if ( opts->partition != NULL) {
+	if ( opts->common.partition != NULL) {
 		fprintf(fh, "merging.slurm.partition %s\n",
-		        opts->partition);
+		        opts->common.partition);
 	}
 
-	if ( opts->email_address != NULL ) {
+	if ( opts->common.email_address != NULL ) {
 		fprintf(fh, "merging.slurm.email_address %s\n",
-		        opts->email_address);
+		        opts->common.email_address);
 	}
 }
 
@@ -936,66 +948,21 @@ static void read_merging_opt(void *opts_priv,
 	struct slurm_merging_opts *opts = opts_priv;
 
 	if ( strcmp(key, "merging.slurm.email_address") == 0 ) {
-		opts->email_address = strdup(val);
+		opts->common.email_address = strdup(val);
 	}
 
 	if ( strcmp(key, "merging.slurm.partition") == 0 ) {
-		opts->partition = strdup(val);
+		opts->common.partition = strdup(val);
 	}
 }
 
 
 static GtkWidget *make_merging_parameters_widget(void *opts_priv)
 {
-	struct slurm_merging_opts *opts = opts_priv;
 	GtkWidget *vbox;
-	GtkWidget *hbox;
-	GtkWidget *entry;
-	GtkWidget *label;
-
+	struct slurm_merging_opts *opts = opts_priv;
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Submit job to partition:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	if ( opts->partition != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(entry), opts->partition);
-	}
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "maxwell");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   FALSE, FALSE, 0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(partition_activate_sig),
-	                 opts);
-	g_signal_connect(G_OBJECT(entry), "focus-out-event",
-	                 G_CALLBACK(partition_focus_sig),
-	                 opts);
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Send notifications to:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	if ( opts->email_address != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(entry), opts->email_address);
-	}
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
-	                               "myself@example.org");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   FALSE, FALSE, 0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(email_activate_sig),
-	                 opts);
-	g_signal_connect(G_OBJECT(entry), "focus-out-event",
-	                 G_CALLBACK(email_focus_sig),
-	                 opts);
-
+	add_common_opts(vbox, &opts->common);
 	return vbox;
 }
 
@@ -1005,8 +972,8 @@ static struct slurm_ambi_opts *make_default_slurm_ambi_opts()
 	struct slurm_ambi_opts *opts = malloc(sizeof(struct slurm_ambi_opts));
 	if ( opts == NULL ) return NULL;
 
-	opts->email_address = NULL;
-	opts->partition = NULL;
+	opts->common.email_address = NULL;
+	opts->common.partition = NULL;
 
 	return opts;
 }
@@ -1016,14 +983,14 @@ static void write_ambi_opts(void *opts_priv, FILE *fh)
 {
 	struct slurm_ambi_opts *opts = opts_priv;
 
-	if ( opts->partition != NULL) {
+	if ( opts->common.partition != NULL) {
 		fprintf(fh, "ambi.slurm.partition %s\n",
-		        opts->partition);
+		        opts->common.partition);
 	}
 
-	if ( opts->email_address != NULL ) {
+	if ( opts->common.email_address != NULL ) {
 		fprintf(fh, "ambi.slurm.email_address %s\n",
-		        opts->email_address);
+		        opts->common.email_address);
 	}
 }
 
@@ -1035,66 +1002,21 @@ static void read_ambi_opt(void *opts_priv,
 	struct slurm_ambi_opts *opts = opts_priv;
 
 	if ( strcmp(key, "ambi.slurm.email_address") == 0 ) {
-		opts->email_address = strdup(val);
+		opts->common.email_address = strdup(val);
 	}
 
 	if ( strcmp(key, "ambi.slurm.partition") == 0 ) {
-		opts->partition = strdup(val);
+		opts->common.partition = strdup(val);
 	}
 }
 
 
 static GtkWidget *make_ambi_parameters_widget(void *opts_priv)
 {
-	struct slurm_ambi_opts *opts = opts_priv;
 	GtkWidget *vbox;
-	GtkWidget *hbox;
-	GtkWidget *entry;
-	GtkWidget *label;
-
+	struct slurm_ambi_opts *opts = opts_priv;
 	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Submit job to partition:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	if ( opts->partition != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(entry), opts->partition);
-	}
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "maxwell");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   FALSE, FALSE, 0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(partition_activate_sig),
-	                 opts);
-	g_signal_connect(G_OBJECT(entry), "focus-out-event",
-	                 G_CALLBACK(partition_focus_sig),
-	                 opts);
-
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Send notifications to:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	if ( opts->email_address != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(entry), opts->email_address);
-	}
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
-	                               "myself@example.org");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   FALSE, FALSE, 0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(email_activate_sig),
-	                 opts);
-	g_signal_connect(G_OBJECT(entry), "focus-out-event",
-	                 G_CALLBACK(email_focus_sig),
-	                 opts);
-
+	add_common_opts(vbox, &opts->common);
 	return vbox;
 }
 
