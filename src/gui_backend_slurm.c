@@ -923,12 +923,10 @@ static void *run_ambi(const char *job_title,
 	if ( !write_ambigator_script(sc_filename, input, "`nproc`",
 	                             &proj->ambi_params, stream_str) )
 	{
-		char *workdir_str = g_file_get_path(workdir);
 		job = start_slurm_job(GUI_JOB_AMBIGATOR,
 		                      sc_filename, job_title, workdir,
 		                      &opts->common);
 		job->niter = proj->ambi_params.niter;
-		g_free(workdir_str);
 	} else {
 		job = NULL;
 	}
@@ -970,7 +968,6 @@ static void *run_merging(const char *job_title,
 	if ( !write_merge_script(sc_filename, input, "`nproc`",
 	                         &proj->merging_params, "crystfel.hkl") )
 	{
-		char *workdir_str = g_file_get_path(workdir);
 		enum gui_job_type type;
 		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
 			if ( proj->merging_params.scale ) {
@@ -983,7 +980,6 @@ static void *run_merging(const char *job_title,
 		}
 		job = start_slurm_job(type, sc_filename, job_title, workdir,
 		                      &opts->common);
-		g_free(workdir_str);
 	} else {
 		job = NULL;
 	}
