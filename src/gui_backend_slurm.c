@@ -579,6 +579,7 @@ static void *run_indexing(const char *job_title,
 	char *sc_filename;
 	int n_blocks;
 	char array_inx[128];
+	char serial_offs[128];
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -621,13 +622,15 @@ static void *run_indexing(const char *job_title,
 	if ( sc_filename == NULL ) return NULL;
 
 	snprintf(array_inx, 127, "0-%i", n_blocks-1);
+	snprintf(serial_offs, 127, "$((${SLURM_ARRAY_TASK_ID}*%i))",
+	         opts->block_size);
 
 	if ( !write_indexamajig_script(sc_filename,
 	                               proj->geom_filename,
 	                               "`nproc`",
 	                               "files-${SLURM_ARRAY_TASK_ID}.lst",
 	                               "crystfel-${SLURM_ARRAY_TASK_ID}.stream",
-	                               0,
+	                               serial_offs, 0,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params) )
 	{

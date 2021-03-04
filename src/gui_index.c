@@ -671,6 +671,7 @@ static char **indexamajig_command_line(const char *geom_filename,
                                        const char *n_thread_str,
                                        const char *files_list,
                                        const char *stream_filename,
+                                       const char *serial_start,
                                        struct peak_params *peak_search_params,
                                        struct index_params *indexing_params)
 {
@@ -786,6 +787,10 @@ static char **indexamajig_command_line(const char *geom_filename,
 		               indexing_params->metadata_to_copy[i]);
 	}
 
+	if ( serial_start != NULL ) {
+		add_arg_string(args, n_args++, "serial-start", serial_start);
+	}
+
 	args[n_args] = NULL;
 	return args;
 }
@@ -831,6 +836,7 @@ int write_indexamajig_script(const char *script_filename,
                              const char *n_thread_str,
                              const char *files_list,
                              const char *stream_filename,
+                             const char *serial_start,
                              int redirect_output,
                              struct peak_params *peak_search_params,
                              struct index_params *indexing_params)
@@ -843,6 +849,7 @@ int write_indexamajig_script(const char *script_filename,
 	                                   n_thread_str,
 	                                   files_list,
 	                                   stream_filename,
+	                                   serial_start,
 	                                   peak_search_params,
 	                                   indexing_params);
 	if ( cmdline == NULL ) return 1;

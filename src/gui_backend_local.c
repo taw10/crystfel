@@ -531,7 +531,7 @@ static void *run_indexing(const char *job_title,
 	                               n_thread_str,
 	                               "files.lst",
 	                               "crystfel.stream",
-	                               1,
+	                               NULL, 1,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params) )
 	{
