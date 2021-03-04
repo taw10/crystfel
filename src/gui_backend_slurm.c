@@ -86,6 +86,23 @@ struct slurm_job
 };
 
 
+static int job_alive(slurm_job_info_t *job)
+{
+	switch ( job->job_state & JOB_STATE_BASE ) {
+
+		/* Only the following states are reasons to keep on watching
+		 * the job */
+		case JOB_PENDING :
+		case JOB_RUNNING :
+		case JOB_SUSPENDED :
+		return 1;
+
+		default :
+		return 0;
+	}
+}
+
+
 static int job_running(uint32_t job_id)
 {
 	job_info_msg_t *job_info;
@@ -94,80 +111,88 @@ static int job_running(uint32_t job_id)
 	if ( slurm_load_job(&job_info, job_id, 0) ) {
 		STATUS("Couldn't get status: %i\n",
 		       slurm_strerror(slurm_get_errno()));
-		running = 0;
-		/* FIXME: Distinguish error cond from job complete */
+		return 0;
 	}
 
-	switch ( job_info->job_array[0].job_state & JOB_STATE_BASE ) {
-
-		/* Only the following states are reasons to keep on watching
-		 * the job */
-		case JOB_PENDING :
-		case JOB_RUNNING :
-		case JOB_SUSPENDED :
-		running = 1;
-		break;
-
-		default :
-		running = 0;
-		break;
-	}
-
+	running = job_alive(&job_info->job_array[0]);
 	slurm_free_job_info_msg(job_info);
-
 	return running;
 }
 
 
 static double indexing_progress(struct slurm_job *job, int *running)
 {
-#if 0
+	job_info_msg_t *array_job_info;
+	int i;
+	int n_running;
+	int lowest_alive_task;
+
+	if ( slurm_load_job(&array_job_info, job->job_id, 0) ) {
+		STATUS("Couldn't get status: %i\n",
+		       slurm_strerror(slurm_get_errno()));
+		*running = 0;
+		return 0.0;
+	}
+
+	n_running = 0;
+	lowest_alive_task = job->n_blocks;
+	for ( i=0; i<array_job_info->record_count; i++ ) {
+
+		slurm_job_info_t *job_info = &array_job_info->job_array[i];
+
+		/* Ignore the array job itself */
+		if ( job_info->array_job_id == 0 ) continue;
+
+		if ( job_alive(job_info) ) {
+			if ( job_info->array_task_id < lowest_alive_task ) {
+				lowest_alive_task = job_info->array_task_id;
+			}
+			n_running++;
+		}
+	}
+	slurm_free_job_info_msg(array_job_info);
+
+	*running = (n_running > 0);
+
+	/* If there are lots of blocks, just count running jobs instead of
+	 * reading loads of log files */
 	if ( job->n_blocks > 15 ) {
 
-		/* Fast path for larger number of sub-jobs */
-
-		int i;
-		int n_running = 0;
-
-		for ( i=0; i<job->n_blocks; i++ ) {
-
-			if ( job->job_ids[i] == 0 ) continue;
-
-			if ( !job_running(job->job_ids[i]) ) {
-				job->job_ids[i] = 0;
+		/* Didn't find any alive jobs at all?
+		 * Then we've either just started or just finished. */
+		if ( lowest_alive_task == job->n_blocks ) {
+			if ( n_running > 0 ) {
+				return 0.0;
 			} else {
-				n_running++;
+				return 1.0;
 			}
+		} else {
+			return (double)lowest_alive_task / job->n_blocks;
 		}
 
-		*running = (n_running > 0);
-		return (double)(job->n_blocks - n_running) / job->n_blocks;
-
 	} else {
-
-		/* Slow path - higher accuracy for smaller number of sub-jobs */
 
 		int i;
 		int n_proc = 0;
 
-		*running = 0;
 		for ( i=0; i<job->n_blocks; i++ ) {
 
-			n_proc += read_number_processed(job->stderr_filenames[i]);
+			char tmp[128];
+			GFile *stderr_gfile;
+			char *stderr_filename;
 
-			if ( job->job_ids[i] == 0 ) continue;
+			snprintf(tmp, 127, "stderr-%i.log", i);
+			stderr_gfile = g_file_get_child(job->workdir, tmp);
+			stderr_filename = g_file_get_path(stderr_gfile);
+			g_object_unref(stderr_gfile);
 
-			if ( !job_running(job->job_ids[i]) ) {
-				job->job_ids[i] = 0;
-			} else {
-				*running = 1;
-			}
+			n_proc += read_number_processed(stderr_filename);
+			g_free(stderr_filename);
+
 		}
 
 		return (double)n_proc / job->n_frames;
 	}
-#endif
-	return 0.5;
 }
 
 
