@@ -230,10 +230,20 @@ static int get_task_status(void *job_priv,
 
 static void cancel_task(void *job_priv)
 {
+	char jobid[128];
+	const gchar *args[3];
+	GError *error = NULL;
+	GSubprocess *sp;
 	struct slurm_job *job = job_priv;
-	if ( slurm_kill_job(job->job_id, SIGINT, 0) ) {
-		ERROR("Couldn't stop job: %s\n",
-		      slurm_strerror(slurm_get_errno()));
+
+	snprintf(jobid, 127, "%i", job->job_id);
+	args[0] = "scancel";
+	args[1] = jobid;
+	args[2] = NULL;
+	sp = g_subprocess_newv(args, G_SUBPROCESS_FLAGS_NONE, &error);
+	if ( sp == NULL ) {
+		ERROR("Failed to invoke scancel: %s\n", error->message);
+		g_error_free(error);
 	}
 }
 
