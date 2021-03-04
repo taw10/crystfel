@@ -547,7 +547,11 @@ static void write_partial_file_list(GFile *workdir,
 	      (i<(j+1)*block_size) && (i<n_frames);
 	      i++ )
 	{
-		fprintf(fh, "%s", filenames[i]);
+		if ( filenames[i][0] != '/' ) {
+			fprintf(fh, "../%s", filenames[i]);
+		} else {
+			fprintf(fh, "%s", filenames[i]);
+		}
 		if ( events[i] != NULL ) {
 			fprintf(fh, " %s\n", events[i]);
 		} else {

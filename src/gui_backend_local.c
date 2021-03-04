@@ -108,7 +108,11 @@ static int write_file_list(GFile *workdir,
 	if ( fh == NULL ) return 1;
 
 	for ( i=0; i<n_frames; i++ ) {
-		fprintf(fh, "%s", filenames[i]);
+		if ( filenames[i][0] != '/' ) {
+			fprintf(fh, "../%s", filenames[i]);
+		} else {
+			fprintf(fh, "%s", filenames[i]);
+		}
 		if ( events[i] != NULL ) {
 			fprintf(fh, " %s\n", events[i]);
 		} else {
