@@ -464,7 +464,10 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	if ( script == NULL ) return NULL;
 
 	job = malloc(sizeof(struct slurm_job));
-	if ( job == NULL ) return NULL;
+	if ( job == NULL ) {
+		free(script);
+		return NULL;
+	}
 
 	job->type = type;
 
@@ -493,11 +496,6 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	job_desc_msg.array_inx = safe_strdup(array_inx);
 
 	r = slurm_submit_batch_job(&job_desc_msg, &resp);
-	if ( r ) {
-		ERROR("Couldn't submit job: %i\n", errno);
-		return NULL;
-	}
-
 	free(job_desc_msg.mail_user);
 	free(job_desc_msg.partition);
 	free(job_desc_msg.name);
@@ -506,15 +504,23 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	free(job_desc_msg.std_out);
 	free(job_desc_msg.features);
 	free(job_desc_msg.account);
+	free(job_desc_msg.script);
+	if ( r ) {
+		ERROR("Couldn't submit job: %i\n", errno);
+		free(job);
+		return NULL;
+	}
 
 	STATUS("Submitted SLURM job ID %i\n", resp->job_id);
+
+	job->job_id = resp->job_id;
+	slurm_free_submit_response_response_msg(resp);
 
 	stderr_gfile = g_file_get_child(workdir, stderr_filename);
 	job->stderr_filename = g_file_get_path(stderr_gfile);
 	g_object_unref(stderr_gfile);
 
-	job->job_id = resp->job_id;
-	slurm_free_submit_response_response_msg(resp);
+	job->workdir = g_file_dup(workdir);
 
 	return job;
 }
@@ -629,18 +635,19 @@ static void *run_indexing(const char *job_title,
 		                      "stdout-%a.log",
 		                      "stderr-%a.log",
 		                      &opts->common);
-		job->n_frames = proj->n_frames;
-		job->n_blocks = n_blocks;
 	} else {
 		job = NULL;
 	}
 	g_free(sc_filename);
 
 	if ( job != NULL ) {
+		job->n_frames = proj->n_frames;
+		job->n_blocks = n_blocks;
 		add_indexing_result(proj, strdup(job_title), streams, n_blocks);
 	}
 
 	g_object_unref(workdir);
+
 	return job;
 }
 
