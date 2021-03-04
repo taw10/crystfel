@@ -622,7 +622,7 @@ static void *run_indexing(const char *job_title,
 	if ( sc_filename == NULL ) return NULL;
 
 	snprintf(array_inx, 127, "0-%i", n_blocks-1);
-	snprintf(serial_offs, 127, "$((${SLURM_ARRAY_TASK_ID}*%i))",
+	snprintf(serial_offs, 127, "$((${SLURM_ARRAY_TASK_ID}*%i+1))",
 	         opts->block_size);
 
 	if ( !write_indexamajig_script(sc_filename,
