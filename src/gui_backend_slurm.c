@@ -140,11 +140,13 @@ static double indexing_progress(struct slurm_job *job, int *running)
 
 		slurm_job_info_t *job_info = &array_job_info->job_array[i];
 
-		/* Ignore the array job itself */
-		if ( job_info->array_job_id == 0 ) continue;
-
+		/* Find the array_task_id of the lowest task which is still
+		 * running, or which might still run.  Exclude the main array
+		 * job, identified by having job_id == array_job_id. */
 		if ( job_alive(job_info) ) {
-			if ( job_info->array_task_id < lowest_alive_task ) {
+			if ( (job_info->array_task_id < lowest_alive_task)
+			  && (job_info->job_id != job_info->array_job_id) )
+			{
 				lowest_alive_task = job_info->array_task_id;
 			}
 			n_running++;
@@ -156,19 +158,11 @@ static double indexing_progress(struct slurm_job *job, int *running)
 
 	/* If there are lots of blocks, just count running jobs instead of
 	 * reading loads of log files */
-	if ( job->n_blocks > 15 ) {
+	if ( (job->n_blocks > 15)
+	  && (lowest_alive_task < job->n_blocks) )
+	{
 
-		/* Didn't find any alive jobs at all?
-		 * Then we've either just started or just finished. */
-		if ( lowest_alive_task == job->n_blocks ) {
-			if ( n_running > 0 ) {
-				return 0.0;
-			} else {
-				return 1.0;
-			}
-		} else {
-			return (double)lowest_alive_task / job->n_blocks;
-		}
+		return (double)lowest_alive_task / job->n_blocks;
 
 	} else {
 
