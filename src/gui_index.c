@@ -799,6 +799,9 @@ int read_number_processed(const char *filename)
 	/* Normal situation if SLURM job hasn't started yet */
 	if ( fh == NULL ) return 0;
 
+	/* Only look at the last part of the file */
+	fseek(fh, -4096, SEEK_END);
+
 	do {
 		char line[1024];
 		if ( fgets(line, 1024, fh) == NULL ) break;
