@@ -509,7 +509,7 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 
 	STATUS("Submitted SLURM job ID %i\n", resp->job_id);
 
-	stderr_gfile = g_file_get_child(workdir, "stderr.log");
+	stderr_gfile = g_file_get_child(workdir, stderr_filename);
 	job->stderr_filename = g_file_get_path(stderr_gfile);
 	g_object_unref(stderr_gfile);
 
