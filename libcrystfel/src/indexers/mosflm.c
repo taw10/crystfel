@@ -760,8 +760,8 @@ int run_mosflm(struct image *image, void *ipriv)
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
-		execlp("mosflm", "mosflm", (char *)NULL);
-		execlp("ipmosflm", "ipmosflm", (char *)NULL);
+		execlp("mosflm", "mosflm", "-n", (char *)NULL);
+		execlp("ipmosflm", "ipmosflm", "-n", (char *)NULL);
 		ERROR("Invocation: Failed to invoke MOSFLM: %s\n",
 		      strerror(errno));
 		_exit(0);
