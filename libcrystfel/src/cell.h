@@ -3,15 +3,15 @@
  *
  * A class representing a unit cell
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2012,2014,2017 Thomas White <taw@physics.org>
- *   2010,2012           Richard Kirian
- *   2012                Lorenzo Galli
+ *   2009-2021 Thomas White <taw@physics.org>
+ *   2010-2012 Richard Kirian
+ *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
  *

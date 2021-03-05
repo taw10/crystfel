@@ -3,11 +3,11 @@
  *
  * Utility functions for detgeom structure
  *
- * Copyright © 2019-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2019-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020 Thomas White <taw@physics.org>
+ *   2020-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

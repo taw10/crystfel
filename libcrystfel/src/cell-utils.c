@@ -8,7 +8,7 @@
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2019 Thomas White <taw@physics.org>
+ *   2009-2021 Thomas White <taw@physics.org>
  *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.

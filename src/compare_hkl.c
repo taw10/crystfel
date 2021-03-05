@@ -3,11 +3,11 @@
  *
  * Compare reflection lists
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2017 Thomas White <taw@physics.org>
+ *   2010-2021 Thomas White <taw@physics.org>
  *   2013      Lorenzo Galli <lorenzo.galli@desy.de>
  *
  * This file is part of CrystFEL.

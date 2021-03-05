@@ -3,8 +3,8 @@
  *
  * A GTK widget to set indexing options
  *
- * Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2020-2021 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *  2020 Thomas White <taw@physics.org>

@@ -3,11 +3,11 @@
  *
  * Simulate diffraction patterns from small crystals
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2011-2012 Thomas White <taw@physics.org>
+ *   2011-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

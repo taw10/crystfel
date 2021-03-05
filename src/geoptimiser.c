@@ -3,7 +3,7 @@
  *
  * Refine detector geometry
  *
- * Copyright © 2014-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

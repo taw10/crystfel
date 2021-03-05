@@ -1,5 +1,5 @@
 /*
- * image-cbf.h
+ * image-msgpack.h
  *
  * Image loading, MessagePack parts
  *

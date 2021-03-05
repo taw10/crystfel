@@ -3,13 +3,14 @@
  *
  * The peakfinder8 algorithm
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2017  Valerio Mariani <valerio.mariani@desy.de>
- *   2017  Anton Barty <anton.barty@desy.de>
- *   2017  Oleksandr Yefanov <oleksandr.yefanov@desy.de>
+ *   2019 Thomas White <taw@physics.org>
+ *   2017 Valerio Mariani <valerio.mariani@desy.de>
+ *   2017 Anton Barty <anton.barty@desy.de>
+ *   2017 Oleksandr Yefanov <oleksandr.yefanov@desy.de>
  *
  * This file is part of CrystFEL.
  *

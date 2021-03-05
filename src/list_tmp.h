@@ -19,11 +19,11 @@
  */
 
 /*
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2010,2012 Thomas White <taw@physics.org>
+ *   2009-2012 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

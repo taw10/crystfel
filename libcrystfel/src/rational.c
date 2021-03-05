@@ -3,11 +3,11 @@
  *
  * A small rational number library
  *
- * Copyright © 2019-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2019-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2019 Thomas White <taw@physics.org>
+ *   2019-2020 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

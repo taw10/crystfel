@@ -3,7 +3,7 @@
  *
  * Simple profiling according to wall clock time
  *
- * Copyright © 2016-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2016-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

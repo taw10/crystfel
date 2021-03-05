@@ -1,9 +1,9 @@
 /*
- * zmq.c
+ * image-msgpack.c
  *
- * ZMQ data interface
+ * Image loading, MessagePack parts
  *
- * Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2017-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:

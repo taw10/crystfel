@@ -3,11 +3,11 @@
  *
  * A class representing a single crystal
  *
- * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2016 Thomas White <taw@physics.org>
+ *   2013-2020 Thomas White <taw@physics.org>
  *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.

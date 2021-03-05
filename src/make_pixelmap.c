@@ -3,11 +3,11 @@
  *
  * Create a pixel map file from a CrystFEL geometry description
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2012-2020 Thomas White <taw@physics.org>
+ *   2012-2021 Thomas White <taw@physics.org>
  *   2016-2016 Omri Mor <omor1@asu.edu>
  *
  * This file is part of CrystFEL.

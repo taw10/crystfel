@@ -3,11 +3,11 @@
  *
  * Stream tools
  *
- * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2020 Thomas White <taw@physics.org>
+ *   2010-2021 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Andrew Aquila
  *
