@@ -46,6 +46,7 @@ extern int image_hdf5_read(struct image *image,
 extern int image_hdf5_read_mask(struct panel_template *p,
                                 const char *filename,
                                 const char *event, int *bad,
+                                const char *mask_location,
                                 int mask_good, int mask_bad);
 
 extern ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,

@@ -63,6 +63,7 @@ static struct panel_template *new_panel(DataTemplate *det,
                                         struct panel_template *defaults)
 {
 	struct panel_template *new;
+	int i;
 
 	det->n_panels++;
 	det->panels = realloc(det->panels,
@@ -77,10 +78,12 @@ static struct panel_template *new_panel(DataTemplate *det,
 	/* Copy strings */
 	new->cnz_from = safe_strdup(defaults->cnz_from);
 	new->data = safe_strdup(defaults->data);
-	new->mask = safe_strdup(defaults->mask);
-	new->mask_file = safe_strdup(defaults->mask_file);
 	new->satmap = safe_strdup(defaults->satmap);
 	new->satmap_file = safe_strdup(defaults->satmap_file);
+	for ( i=0; i<MAX_MASKS; i++ ) {
+		new->masks[i].data_location = safe_strdup(defaults->masks[i].data_location);
+		new->masks[i].filename = safe_strdup(defaults->masks[i].filename);
+	}
 
 	return new;
 }
@@ -486,6 +489,67 @@ static int add_flag_value(struct panel_template *p,
 }
 
 
+static int parse_mask(struct panel_template *panel,
+                      const char *key_orig,
+                      const char *val)
+{
+	int n;
+	char *key;
+
+	if ( sscanf(key_orig, "mask%d_", &n) != 1 ) {
+		ERROR("Invalid mask directive '%s'\n", key_orig);
+		return 1;
+	}
+
+	key = strdup(key_orig);
+	if ( key == NULL ) return 1;
+
+	key[4] = '_';
+
+	if ( strcmp(key, "mask__file") == 0 ) {
+
+		panel->masks[n].filename = strdup(val);
+
+	} else if ( strcmp(key, "mask__data") == 0 ) {
+
+		if ( strncmp(val, "/", 1) != 0 ) {
+			ERROR("Invalid mask location '%s'\n", val);
+			free(key);
+			return 1;
+		}
+		panel->masks[n].data_location = strdup(val);
+
+	} else if ( strcmp(key, "mask__goodbits") == 0 ) {
+
+		char *end;
+		double v = strtod(val, &end);
+
+		if ( end != val ) {
+			panel->masks[n].good_bits = v;
+		} else {
+			free(key);
+			return 1;
+		}
+
+	} else if ( strcmp(key, "mask__badbits") == 0 ) {
+
+		char *end;
+		double v = strtod(val, &end);
+
+		if ( end != val ) {
+			panel->masks[n].bad_bits = v;
+		} else {
+			free(key);
+			return 1;
+		}
+
+	}
+
+	free(key);
+	return 0;
+}
+
+
 static int parse_field_for_panel(struct panel_template *panel, const char *key,
                                  const char *val, DataTemplate *det)
 {
@@ -531,15 +595,17 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		free(panel->data);
 		panel->data = strdup(val);
 
+	} else if ( strcmp(key, "mask_bad") == 0 ) {
+		parse_field_for_panel(panel, "mask0_badbits", val, det);
+	} else if ( strcmp(key, "mask_good") == 0 ) {
+		parse_field_for_panel(panel, "mask0_goodbits", val, det);
 	} else if ( strcmp(key, "mask") == 0 ) {
-		if ( strncmp(val,"/",1) != 0 ) {
-			ERROR("Invalid mask location '%s'\n", val);
-			reject = -1;
-		}
-		panel->mask = strdup(val);
-
+		parse_field_for_panel(panel, "mask0_data", val, det);
 	} else if ( strcmp(key, "mask_file") == 0 ) {
-		panel->mask_file = strdup(val);
+		parse_field_for_panel(panel, "mask0_file", val, det);
+
+	} else if ( strncmp(key, "mask", 4) == 0 ) {
+		reject = parse_mask(panel, key, val);
 
 	} else if ( strcmp(key, "saturation_map") == 0 ) {
 		panel->satmap = strdup(val);
@@ -792,30 +858,7 @@ static int parse_toplevel(DataTemplate *dt,
                           int *n_rgc_defs,
                           struct panel_template *defaults)
 {
-
-	if ( strcmp(key, "mask_bad") == 0 ) {
-
-		char *end;
-		double v = strtod(val, &end);
-
-		if ( end != val ) {
-			dt->mask_bad = v;
-		} else {
-			return 1;
-		}
-
-	} else if ( strcmp(key, "mask_good") == 0 ) {
-
-		char *end;
-		double v = strtod(val, &end);
-
-		if ( end != val ) {
-			dt->mask_good = v;
-		} else {
-			return 1;
-		}
-
-	} else if ( strcmp(key, "detector_shift_x") == 0 ) {
+	if ( strcmp(key, "detector_shift_x") == 0 ) {
 		dt->shift_x_from = strdup(val);
 
 	} else if ( strcmp(key, "detector_shift_y") == 0 ) {
@@ -941,6 +984,37 @@ static int lookup_panel(const char *panel_name,
 }
 
 
+static int check_mask_and_satmap_placeholders(const DataTemplate *dt)
+{
+	int i;
+
+	for ( i=0; i<dt->n_panels; i++ ) {
+
+		int num_data_pl;
+		int num_satmap_pl;
+		int j;
+
+		num_data_pl = dt_num_path_placeholders(dt->panels[i].data);
+		num_satmap_pl = dt_num_path_placeholders(dt->panels[i].satmap);
+
+		if ( num_satmap_pl > num_data_pl ) return 1;
+
+		for ( j=0; j<MAX_MASKS; j++ ) {
+
+			int num_mask_pl;
+
+			/* Unused slot? */
+			if ( dt->panels[i].masks[j].data_location == NULL ) continue;
+
+			num_mask_pl = dt_num_path_placeholders(dt->panels[i].masks[j].data_location);
+			if ( num_mask_pl > num_data_pl ) return 1;
+		}
+	}
+
+	return 0;
+}
+
+
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;
@@ -956,9 +1030,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	char *string;
 	char *string_orig;
 	size_t len;
-	int num_data_pl;
-	int num_mask_pl;
-	int num_satmap_pl;
 	struct panel_template defaults;
 
 	dt = calloc(1, sizeof(DataTemplate));
@@ -968,8 +1039,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->panels = NULL;
 	dt->n_bad = 0;
 	dt->bad = NULL;
-	dt->mask_good = 0;
-	dt->mask_bad = 0;
 	dt->n_rigid_groups = 0;
 	dt->rigid_groups = NULL;
 	dt->n_rg_collections = 0;
@@ -1004,9 +1073,13 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.adu_scale_unit = ADU_PER_PHOTON;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_values[i] = 0;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_types[i] = FLAG_NOTHING;
+	for ( i=0; i<MAX_MASKS; i++ ) {
+		defaults.masks[i].data_location = NULL;
+		defaults.masks[i].filename = NULL;
+		defaults.masks[i].good_bits = 0;
+		defaults.masks[i].bad_bits = 0;
+	}
 	defaults.max_adu = +INFINITY;
-	defaults.mask = NULL;
-	defaults.mask_file = NULL;
 	defaults.satmap = NULL;
 	defaults.satmap_file = NULL;
 	defaults.data = strdup("/data/data");
@@ -1138,15 +1211,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		return NULL;
 	}
 
-	num_data_pl = dt_num_path_placeholders(dt->panels[0].data);
-	num_mask_pl = dt_num_path_placeholders(dt->panels[0].mask);
-	num_satmap_pl = dt_num_path_placeholders(dt->panels[0].satmap);
-
-	/* This is because the "data" path will be used to expand
-	 * the path to generate the event list */
-	if ( (num_mask_pl > num_data_pl)
-	  || (num_satmap_pl > num_data_pl) )
-	{
+	if ( check_mask_and_satmap_placeholders(dt) ) {
 		ERROR("Mask and saturation map paths must have fewer "
 		      "placeholders than image data path.\n");
 		reject = 1;
@@ -1154,6 +1219,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 	for ( i=0; i<dt->n_panels; i++ ) {
 
+		int j;
 		struct panel_template *p = &dt->panels[i];
 		signed int dim_fs = find_dim(p->dims, DIM_FS);
 		signed int dim_ss = find_dim(p->dims, DIM_SS);
@@ -1231,29 +1297,15 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			reject = 1;
 		}
 
-		if ( (p->mask_file != NULL) && (p->mask == NULL) ) {
-			ERROR("You have specified 'mask_file' but not 'mask'.  "
-			      "'mask_file' will therefore have no effect.  "
-			      "(panel %s)\n", p->name);
-			reject = 1;
-		}
-
-		if ( dt_num_path_placeholders(p->data) != num_data_pl ) {
-			ERROR("Data locations for all panels must "
-			      "have the same number of placeholders\n");
-			reject = 1;
-		}
-
-		if ( dt_num_path_placeholders(p->mask) != num_mask_pl ) {
-			ERROR("Mask locations for all panels must "
-			      "have the same number of placeholders\n");
-			reject = 1;
-		}
-
-		if ( dt_num_path_placeholders(p->satmap) != num_satmap_pl ) {
-			ERROR("Satmap locations for all panels must "
-			      "have the same number of placeholders\n");
-			reject = 1;
+		for ( j=0; j<MAX_MASKS; j++ ) {
+			if ( (p->masks[j].filename != NULL)
+			  && (p->masks[j].data_location == NULL) )
+			{
+				ERROR("You have specified filename but not data"
+				      " location for mask %i of panel %s\n",
+				      j, p->name);
+				reject = 1;
+			}
 		}
 
 		/* The default rail direction */
@@ -1321,8 +1373,10 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 	free(defaults.cnz_from);
 	free(defaults.data);
-	free(defaults.mask);
-	free(defaults.mask_file);
+	for ( i=0; i<MAX_MASKS; i++ ) {
+		free(defaults.masks[i].data_location);
+		free(defaults.masks[i].filename);
+	}
 
 	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
 
@@ -1420,13 +1474,19 @@ void data_template_free(DataTemplate *dt)
 	free_all_rigid_group_collections(dt);
 
 	for ( i=0; i<dt->n_panels; i++ ) {
+
+		int j;
+
 		free(dt->panels[i].name);
 		free(dt->panels[i].data);
-		free(dt->panels[i].mask);
-		free(dt->panels[i].mask_file);
 		free(dt->panels[i].satmap);
 		free(dt->panels[i].satmap_file);
 		free(dt->panels[i].cnz_from);
+
+		for ( j=0; j<MAX_MASKS; j++ ) {
+			free(dt->panels[i].masks[j].filename);
+			free(dt->panels[i].masks[j].data_location);
+		}
 	}
 
 	free(dt->wavelength_from);

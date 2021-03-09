@@ -809,11 +809,12 @@ static int load_mask(struct panel_template *p,
                      const char *mask_fn,
                      const char *ev,
                      int *bad,
+                     const char *mask_location,
                      unsigned int mask_good,
                      unsigned int mask_bad)
 {
 	if ( is_hdf5_file(mask_fn) ) {
-		image_hdf5_read_mask(p, mask_fn, ev, bad,
+		image_hdf5_read_mask(p, mask_fn, ev, bad, mask_location,
 		                     mask_good, mask_bad);
 
 	} else if ( is_cbf_file(mask_fn) ) {
@@ -872,19 +873,31 @@ static int create_badmap(struct image *image,
 			                    image->bad[i]);
 		}
 
-		/* Load mask (skip if panel is bad anyway) */
-		if ( (!no_mask_data) && (!p->bad) && (p->mask != NULL) )
-		{
-			const char *mask_fn;
+		/* Load masks (skip if panel is bad anyway) */
+		if ( (!no_mask_data) && (!p->bad) ) {
 
-			if ( p->mask_file == NULL ) {
-				mask_fn = image->filename;
-			} else {
-				mask_fn = p->mask_file;
+			int j;
+
+			for ( j=0; j<MAX_MASKS; j++ ) {
+
+				const char *mask_fn;
+
+				if ( p->masks[j].data_location == NULL ) {
+					continue;
+				}
+
+				if ( p->masks[j].filename == NULL ) {
+					mask_fn = image->filename;
+				} else {
+					mask_fn = p->masks[j].filename;
+				}
+
+				load_mask(p, mask_fn, image->ev, image->bad[i],
+				          p->masks[j].data_location,
+				          p->masks[j].good_bits,
+				          p->masks[j].bad_bits);
+
 			}
-
-			load_mask(p, mask_fn, image->ev, image->bad[i],
-			          dtempl->mask_good, dtempl->mask_bad);
 		}
 	}
 

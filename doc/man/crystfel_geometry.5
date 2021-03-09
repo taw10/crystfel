@@ -82,18 +82,6 @@ These statements specify the incident radiation wavelength.  You must include on
 Units should be specified after the value (or location).  These can be \fBm\fR or \fBA\fR for \fBwavelength\fR, \fBeV\fR or \fBkeV\fR for \fBphoton_energy\fR, and \fBV\fR or \fBkV\fR for \fBelectron_voltage\fR.  For \fBphoton_energy\fR, if no units are given then the value will be taken to be in eV.
 
 .PD 0
-.IP \fBmask_good\fR
-.IP \fBmask_bad\fR
-.PD
-Bitmasks for bad pixel masks. The pixel is considered good if all of the bits which are set in \fBmask_good\fR are set, \fIand\fR if none of the bits which are set in \fBmask_bad\fR are set. Example:
-.IP
-mask = /processing/hitfinder/masks
-.br
-mask_good = 0x27
-.br
-mask_bad = 0x00
-
-.PD 0
 .IP "\fBdetector_shift_x = \fInnn \fB[m|mm]"
 .IP "\fBdetector_shift_y = \fInnn \fB[m|mm]"
 .PD
@@ -230,12 +218,43 @@ The saturation value for the panel.  You can use this to exclude saturated peaks
 Mark pixels as "bad" if their values are respectively less than, more than or equal to the given value.  Note carefully that the inequalities are strict, not inclusive: "less than", not "less than or equal to".
 
 .PD 0
-.IP \fBmask\fR
-If you have a bad pixel mask, you can include it in the HDF5 file as data blocks with the same structure and size as the panel data.  You need to specify the location of each panel's mask data block using this property, and two bitmasks (see below).  The number of placeholders ('%') in the \fBmask\fR must be the same for all panels.  They will be substituted with the same values as used for the placeholders in the \fBdata\fR fields, although there may be fewer of them for \fBmask\fR than for \fBdata\fR.
-
+.IP \fBmaskN_data\fR
+.IP \fBmaskN_file\fR
+.IP \fBmaskN_goodbits\fR
+.IP \fBmaskN_badbits\fR
+.PD
+These specify the parameters for bad pixel mask number \fIN\fR.  You can have up to 8 bad pixel masks, numbered from 0 to 7 inclusive.  Placeholders ('%') in the location (\fBmaskN_data\fR) will be substituted with the same values as used for the placeholders in the image data, although there may be fewer of them for the masks than from the image data.
+.IP
+You can optionally give a filename for each mask with \fBmaskN_file\fR.  The filename may be specified as an absolute filename, or relative to the working directory.  If you don't specify a filename, the mask will be read from the same file as the image data.
+.IP
+A pixel will be considered bad unless \fIall\fR of the bits which are set in \fBgoodbits\fR are set.  A pixel will also be considered bad if \fIany\fR of the bits which are set in \fBbadbits\fR are set.  Note that pixels can additionally be marked as bad via other mechanisms as well (e.g. \fBno_index\fR or \fBbad\fR).
+.IP
+Example:
+.RS
 .PD 0
-.IP \fBmask_file\fR
-Use this option to specify that the bad pixel mask should be read from a different file to the image data.  The \fBmask\fR field, if it contains placeholders, will be expanded in exactly the same way as normal, it's just that the data will be read from the file you specify instead of the image data file.  The \fBmask_file\fR may be specified as an absolute filename, or relative to the working directory.
+.IP
+mask2_data = /data/bad_pixel_map
+.IP
+mask2_file = /home/myself/mybadpixels.h5
+.IP
+mask2_goodbits = 0x00
+.IP
+mask2_badbits = 0xff
+.RE
+.PD
+.IP
+There are some older mask directives which are still understood by this version of CrystFEL.  They are synonyms of the new directives as follows:
+.RS
+.PD 0
+.IP
+mask       ----->   mask0_data
+.IP
+mask_file  ----->   mask0_file
+.IP
+mask_good  ----->   mask0_goodbits
+.IP
+mask_bad   ----->   mask0_badbits
+.RE
 
 .PD 0
 .IP \fBsaturation_map\fR

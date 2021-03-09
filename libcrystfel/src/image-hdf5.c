@@ -570,7 +570,8 @@ int image_hdf5_read(struct image *image,
 
 int image_hdf5_read_mask(struct panel_template *p,
                          const char *filename, const char *event,
-                         int *bad, int mask_good, int mask_bad)
+                         int *bad, const char *mask_location,
+                         int mask_good, int mask_bad)
 {
 	int p_w, p_h;
 	int *mask = NULL;
@@ -581,7 +582,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 
 	if ( load_hdf5_hyperslab(p, filename, event,
 	                         (void *)&mask, H5T_NATIVE_INT,
-	                         sizeof(int), 1, p->mask) )
+	                         sizeof(int), 1, mask_location) )
 	{
 		ERROR("Failed to load mask data\n");
 		free(mask);

@@ -78,6 +78,28 @@ enum peak_layout
 #define DIM_UNDEFINED (-3)
 #define DIM_PLACEHOLDER (-4)
 
+
+/* Maximum number of masks per panel */
+#define MAX_MASKS (8)
+
+struct mask_template
+{
+	/** Location of mask data */
+	char *data_location;
+
+	/** Filename for mask data */
+	char *filename;
+
+	/** Bit mask for bad pixels
+	 * (pixel is bad if any of these are set) */
+	unsigned int bad_bits;
+
+	/** Bit mask for good pixels
+	 * (pixel cannot be good unless all of these are set) */
+	unsigned int good_bits;
+};
+
+
 /**
  * Represents one panel of a detector
  */
@@ -98,11 +120,8 @@ struct panel_template
 	/** The offset to be applied from \ref clen */
 	double cnz_offset;
 
-	/** Location of mask data */
-	char *mask;
-
-	/** Filename for mask data */
-	char *mask_file;
+	/** Mask definitions */
+	struct mask_template masks[MAX_MASKS];
 
 	/** Location of per-pixel saturation map */
 	char *satmap;
@@ -200,9 +219,6 @@ struct _datatemplate
 	enum wavelength_unit       wavelength_unit;
 
 	double                     bandwidth;
-
-	unsigned int               mask_bad;
-	unsigned int               mask_good;
 
 	struct rigid_group       **rigid_groups;
 	int                        n_rigid_groups;
