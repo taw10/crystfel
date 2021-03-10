@@ -22,8 +22,7 @@ if xgandalfdep.found()
   conf_data.set10('HAVE_XGANDALF', 1)
 endif
 
-# FIXME: Disabled
-pinkindexerdep = dependency('', required: false)
+pinkindexerdep = dependency('pinkIndexer', required: false)
 if pinkindexerdep.found()
   conf_data.set10('HAVE_PINKINDEXER', 1)
 endif
