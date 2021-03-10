@@ -194,9 +194,9 @@ static int want_center_adjustment(struct pinkIndexer_options *pinkIndexer_opts)
 }
 
 
-void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
+void *pinkIndexer_prepare(IndexingMethod *indm,
+                          UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
-                          const DataTemplate *dtempl,
                           double wavelength_estimate)
 {
 	float beamEenergy_eV;
@@ -408,9 +408,10 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 	return 0;
 }
 
-extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
-		struct pinkIndexer_options *pinkIndexer_opts,
-		const DataTemplate *dtempl)
+extern void *pinkIndexer_prepare(IndexingMethod *indm,
+                                 UnitCell *cell,
+                                 struct pinkIndexer_options *pinkIndexer_opts,
+                                 double wavelength_estimate)
 {
 	ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
 	ERROR("To use PINKINDEXER indexing, recompile with PINKINDEXER.\n");

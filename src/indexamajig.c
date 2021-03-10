@@ -973,7 +973,6 @@ int main(int argc, char *argv[])
 
 		args.iargs.ipriv = setup_indexing(args.indm_str,
 		                                  args.iargs.cell,
-		                                  args.iargs.dtempl,
 		                                  args.iargs.tols,
 		                                  flags,
 		                                  args.iargs.wavelength_estimate,

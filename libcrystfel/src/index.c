@@ -234,7 +234,6 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
-                            const DataTemplate *dtempl,
                             double wavelength_estimate,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
@@ -285,7 +284,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 		case INDEXING_PINKINDEXER :
 		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
-		                           dtempl, wavelength_estimate);
+		                           wavelength_estimate);
 		break;
 
 		default :
@@ -357,9 +356,10 @@ IndexingMethod *parse_indexing_methods(const char *method_list,
 
 
 /* 'tols' is in frac (not %) and radians */
-IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
-                                const DataTemplate *dtempl,
-                                float *tols, IndexingFlags flags,
+IndexingPrivate *setup_indexing(const char *method_list,
+                                UnitCell *cell,
+                                float *tols,
+                                IndexingFlags flags,
                                 double wavelength_estimate,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
@@ -429,7 +429,6 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 		int j;
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
-		                                          dtempl,
 		                                          wavelength_estimate,
 		                                          xgandalf_opts,
 		                                          pinkIndexer_opts,

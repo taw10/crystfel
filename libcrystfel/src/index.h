@@ -165,7 +165,6 @@ extern void default_method_options(TakeTwoOptions **ttopts,
 
 extern IndexingPrivate *setup_indexing(const char *methods,
                                        UnitCell *cell,
-                                       const DataTemplate *dtempl,
                                        float *ltl,
                                        IndexingFlags flags,
                                        double wavelength_estimate,

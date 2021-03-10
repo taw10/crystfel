@@ -39,9 +39,9 @@ extern int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr);
 
 extern int run_pinkIndexer(struct image *image, void *ipriv);
 
-extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
+extern void *pinkIndexer_prepare(IndexingMethod *indm,
+                                 UnitCell *cell,
                                  struct pinkIndexer_options *pinkIndexer_opts,
-                                 const DataTemplate *dtempl,
                                  double wavelength_estimate);
 
 extern void pinkIndexer_cleanup(void *pp);
