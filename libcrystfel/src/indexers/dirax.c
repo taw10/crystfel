@@ -3,11 +3,11 @@
  *
  * Invoke the DirAx auto-indexing program
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2014,2017 Thomas White <taw@physics.org>
+ *   2010-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

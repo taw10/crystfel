@@ -4,12 +4,12 @@
  * Alexandra's Superior Direction Finder, or
  * Algorithm Similar to DirAx, FFT-based
  *
- * Copyright © 2014-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2014-2015 Alexandra Tolstikova <alexandra.tolstikova@desy.de>
- *   2015,2017 Thomas White <taw@physics.org>
+ *   2015-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

@@ -4,12 +4,12 @@
  * Rewrite of TakeTwo algorithm (Acta D72 (8) 956-965) for CrystFEL
  *
  * Copyright © 2016-2017 Helen Ginn
- * Copyright © 2016-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2016-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2016-2017 Helen Ginn <helen@strubi.ox.ac.uk>
- *   2016-2017 Thomas White <taw@physics.org>
+ *   2016-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *

@@ -3,13 +3,13 @@
  *
  * Invoke xds for crystal autoindexing
  *
- * Copyright © 2013-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2013 Cornelius Gati
  *
  * Authors:
  *   2010-2018 Thomas White <taw@physics.org>
- *        2013 Cornelius Gati <cornelius.gati@cfel.de>
+ *   2013      Cornelius Gati <cornelius.gati@cfel.de>
  *
  * This file is part of CrystFEL.
  *
