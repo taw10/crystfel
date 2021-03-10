@@ -9,7 +9,7 @@
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2020 Thomas White <taw@physics.org>
+ *   2010-2021 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
  *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
@@ -168,6 +168,7 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        const DataTemplate *dtempl,
                                        float *ltl,
                                        IndexingFlags flags,
+                                       double wavelength_estimate,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,
                                        struct pinkIndexer_options *pinkIndexer_opts,

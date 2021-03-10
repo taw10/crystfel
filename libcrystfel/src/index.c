@@ -68,6 +68,7 @@ struct _indexingprivate
 	IndexingFlags flags;
 	UnitCell *target_cell;
 	double tolerance[6];
+	double wavelength_estimate;
 
 	int n_methods;
 	IndexingMethod *methods;
@@ -234,6 +235,7 @@ static char *friendly_indexer_name(IndexingMethod m)
 
 static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             const DataTemplate *dtempl,
+                            double wavelength_estimate,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
@@ -283,7 +285,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 		case INDEXING_PINKINDEXER :
 		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
-		                           dtempl);
+		                           dtempl, wavelength_estimate);
 		break;
 
 		default :
@@ -358,6 +360,7 @@ IndexingMethod *parse_indexing_methods(const char *method_list,
 IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
                                 const DataTemplate *dtempl,
                                 float *tols, IndexingFlags flags,
+                                double wavelength_estimate,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
                                 struct pinkIndexer_options *pinkIndexer_opts,
@@ -427,6 +430,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 
 		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
 		                                          dtempl,
+		                                          wavelength_estimate,
 		                                          xgandalf_opts,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
@@ -469,6 +473,7 @@ IndexingPrivate *setup_indexing(const char *method_list, UnitCell *cell,
 	ipriv->methods = methods;
 	ipriv->n_methods = n;
 	ipriv->flags = flags;
+	ipriv->wavelength_estimate = wavelength_estimate;
 
 	if ( cell != NULL ) {
 		ipriv->target_cell = cell_new_from_cell(cell);
@@ -939,6 +944,18 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 	image->crystals = NULL;
 	image->n_crystals = 0;
+
+	if ( !isnan(ipriv->wavelength_estimate) ) {
+		if ( !within_tolerance(image->lambda,
+		                          ipriv->wavelength_estimate,
+		                          10.0) )
+		{
+			   ERROR("WARNING: Wavelength for %s %s (%e) differs by "
+			         "more than 10%% from estimated value (%e)\n",
+			         image->filename, image->ev,
+			         image->lambda, ipriv->wavelength_estimate);
+		}
+	}
 
 	orig = image->features;
 

@@ -516,9 +516,10 @@ static void run_indexing_once(struct crystfelproject *proj)
 	                       &pinkIndexer_opts,
 	                       &felix_opts);
 
-	ipriv = setup_indexing(methods, cell, proj->dtempl,
+	ipriv = setup_indexing(methods, cell,
 	                       proj->indexing_params.tols,
 	                       indexing_flags(&proj->indexing_params),
+	                       proj->cur_image->lambda,
 	                       taketwoopts, xgandalf_opts,
 	                       pinkIndexer_opts, felix_opts);
 	free(methods);

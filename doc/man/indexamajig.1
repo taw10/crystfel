@@ -385,6 +385,11 @@ Skip the prediction refinement step.  Usually this will decrease the quality of 
 Check that most of the peaks can be accounted for by the indexing solution.  This usually increases the quality of the indexing solutions, but prevents "subtract and retry" multi-lattice indexing from working well.
 
 .PD 0
+.IP \fB--wavelength-estimate=\fIm\fR
+.PD
+Some indexing algorithms need to know the wavelength of the incident radiation in advance, e.g. to prepare an internal look-up table.  However, if the wavelength is taken from image headers, then the wavelength is not available at start-up.  In this case, you will be prompted to add this option to give an approximate wavelength, in metres.  A warning will be generated if the actual wavelength differs from this value by more than 10%.
+
+.PD 0
 .IP \fB--taketwo-member-threshold=\fIn\fR
 .IP \fB--taketwo-len-tolerance=\fIn\fR
 .IP \fB--taketwo-angle-tolerance=\fIn\fR
@@ -446,7 +451,6 @@ These set low-level parameters for the XGANDALF indexing algorithm.
 .IP \fB--pinkIndexer-no-check-indexed\fR
 .IP \fB--pinkIndexer-max-refinement-disbalance=\fIn\fR
 .IP \fB--pinkIndexer-override-bandwidth=\fIn\fR
-.IP \fB--pinkIndexer-override-photon-energy=\fIn\fR
 .IP \fB--pinkIndexer-override-visible-energy-range=\fImin-max\fR
 
 .PD
@@ -473,8 +477,6 @@ These set low-level parameters for the PinkIndexer indexing algorithm.
 \fB--pinkIndexer-max-refinement-disbalance Indexing solutions are dismissed if the refinement refined very well to one side of the detector and very badly to the other side. Allowed values range from 0 (no disbalance) to 2 (extreme disbalance), default 0.4. Disbalance after refinement usually appears for bad geometries or bad prior unit cell parameters.
 .IP
 \fB--pinkIndexer-override-bandwidth=\fIn\fR Overrides the bandwidth in (delta energy)/(mean energy) to use for indexing (which usually is defined in the geometry file). Should be used together with \fB--pinkIndexer-override-photon-energy=\fIn\fR. Note: this option sets the borders for the spectrum, whereas the option in the geometry file sets the standard deviation for a Gaussian that fits the spectrum. Internally, the standard deviation is multiplied by 5 to compute the hard borders of the spectrum. I.e., photon_energy_bandwith = 0.005 in the geometry file equals --pinkIndexer-override-bandwidth=0.025. For monochromatic experiments usually --pinkIndexer-override-bandwidth=0.02 is sufficiently large. If in doubt, use --pinkIndexer-override-visible-energy-range.
-.IP
-\fB--pinkIndexer-override-photon-energy=\fIn\fR Overrides the mean energy in eV to use for indexing (which usually is defined in the geometry file). Should be used together with \fB--pinkIndexer-override-bandwidth=\fIn\fR
 .IP
 \fB--pinkIndexer-override-visible-energy-range=\fImin-max\fR Overrides photon energy and bandwidth according to a range of energies that have high enough intensity to produce visible Bragg spots on the detector. min and max range borders are separated by a minus sign (no whitespace).
 

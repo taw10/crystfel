@@ -9,7 +9,7 @@
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2020 Thomas White <taw@physics.org>
+ *   2010-2021 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -455,6 +455,14 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		 *  better than the user expected. */
 		break;
 
+		case 413 :
+		if (sscanf(arg, "%f", &args->iargs.wavelength_estimate) != 1)
+		{
+			ERROR("Invalid value for --wavelength-estimate\n");
+			return EINVAL;
+		}
+		break;
+
 		/* ---------- Integration ---------- */
 
 		case 501 :
@@ -666,6 +674,7 @@ int main(int argc, char *argv[])
 	args.iargs.fix_divergence = -1.0;
 	args.iargs.no_image_data = 0;
 	args.iargs.no_mask_data = 0;
+	args.iargs.wavelength_estimate = NAN;
 
 	argp_program_version_hook = show_version;
 
@@ -763,6 +772,8 @@ int main(int argc, char *argv[])
 		        "accounted for by the indexing solution"},
 		{"check-peaks", 411, NULL, OPTION_HIDDEN, NULL},
 		{"no-cell-combinations", 412, NULL, OPTION_HIDDEN, NULL},
+		{"wavelength-estimate", 413, "metres", 0,
+		        "Estimate of the incident radiation wavelength, in metres."},
 
 		{NULL, 0, 0, OPTION_DOC, "Integration options:", 5},
 		{"integration", 501, "method", OPTION_NO_USAGE, "Integration method"},
@@ -960,9 +971,12 @@ int main(int argc, char *argv[])
 			flags |= INDEXING_RETRY;
 		}
 
-		args.iargs.ipriv = setup_indexing(args.indm_str, args.iargs.cell,
+		args.iargs.ipriv = setup_indexing(args.indm_str,
+		                                  args.iargs.cell,
 		                                  args.iargs.dtempl,
-		                                  args.iargs.tols, flags,
+		                                  args.iargs.tols,
+		                                  flags,
+		                                  args.iargs.wavelength_estimate,
 		                                  taketwo_opts,
 		                                  xgandalf_opts,
 		                                  pinkindexer_opts,

@@ -3,11 +3,12 @@
  *
  * Interface to PinkIndexer
  *
- * Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2017-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2017-2019 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
+ *   2021 Thomas White <thomas.white@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -52,7 +53,6 @@ struct pinkIndexer_options {
 	int min_peaks;
 	int no_check_indexed;
 	float reflectionRadius; /* In m^-1 */
-	float customPhotonEnergy;
 	float customBandwidth;
 	float maxRefinementDisbalance;
 };
@@ -96,6 +96,7 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 	reciprocalPeaks_1_per_A_t* reciprocalPeaks_1_per_A = &(pinkIndexer_private_data->reciprocalPeaks_1_per_A);
 	float *intensities = pinkIndexer_private_data->intensities;
 
+	/* FIXME: Check if wavelength is too far from estimate */
 	int peakCountMax = image_feature_count(image->features);
 	if (peakCountMax < 5) {
 		int goodLatticesCount = 0;
@@ -195,17 +196,17 @@ static int want_center_adjustment(struct pinkIndexer_options *pinkIndexer_opts)
 
 void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
-                          const DataTemplate *dtempl)
+                          const DataTemplate *dtempl,
+                          double wavelength_estimate)
 {
-	if ( !data_template_has_fixed_wavelength(dtempl)
-	     && (pinkIndexer_opts->customPhotonEnergy <= 0.0) )
-	{
-		ERROR("Geometry file refers to image metadata for "
-		      "wavelength.\n");
-		ERROR("To use PinkIndexer, specify a constant "
-		      "wavelength in the geometry file, or use "
-		      "--pinkIndexer-override-photon-energy.\n");
+	float beamEenergy_eV;
+
+	if ( isnan(wavelength_estimate) ) {
+		ERROR("PinkIndexer requires a wavelength estimate.  "
+		      "Try again with --wavelength-estimate=xx\n");
 		return NULL;
+	} else {
+		beamEenergy_eV = J_to_eV(ph_lambda_to_en(wavelength_estimate));
 	}
 
 	if ( !data_template_has_fixed_geometry(dtempl)
@@ -261,11 +262,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
 	}
 
 	/* FIXME: Beam gone */
-	float beamEenergy_eV = beam->photon_energy;
 	float nonMonochromaticity = beam->bandwidth*5;
-	if(pinkIndexer_opts->customPhotonEnergy > 0){
-		beamEenergy_eV = pinkIndexer_opts->customPhotonEnergy;
-	}
 	if(pinkIndexer_opts->customBandwidth >= 0){
 		nonMonochromaticity = pinkIndexer_opts->customBandwidth;
 	}
@@ -462,8 +459,6 @@ static void pinkIndexer_show_help()
 "     --pinkIndexer-max-refinement-disbalance=n\n"
 "                           Maximum disbalance after refinement:\n"
 "                            0 (no disbalance) to 2 (extreme disbalance), default 0.4\n"
-"     --pinkIndexer-override-photon-energy=ev\n"
-"                           Mean energy in eV to use for indexing.\n"
 "     --pinkIndexer-override-bandwidth=n\n"
 "                           Bandwidth in (delta energy)/(mean energy) to use for indexing.\n"
 "     --pinkIndexer-override-visible-energy-range=min-max\n"
@@ -492,7 +487,6 @@ int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr)
 	opts->no_check_indexed = 0;
 	opts->min_peaks = 2;
 	opts->reflectionRadius = -1;
-	opts->customPhotonEnergy = -1;
 	opts->customBandwidth = -1;
 	opts->maxRefinementDisbalance = 0.4;
 
@@ -588,12 +582,9 @@ static error_t pinkindexer_parse_arg(int key, char *arg,
 		break;
 
 		case 11 :
-		if (sscanf(arg, "%f", &(*opts_ptr)->customPhotonEnergy) != 1)
-		{
-			ERROR("Invalid value for --pinkIndexer-override-photon-energy\n");
-			return EINVAL;
-		}
-		break;
+		ERROR("Please use --wavelength-estimate instead of "
+		      "--pinkIndexer-override-photon-energy.\n");
+		return EINVAL;
 
 		case 12 :
 		if (sscanf(arg, "%f", &(*opts_ptr)->customBandwidth) != 1)

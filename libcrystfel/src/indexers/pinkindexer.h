@@ -3,11 +3,12 @@
  *
  * Interface to PinkIndexer
  *
- * Copyright © 2017-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2017-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
  *   2017-2019 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
+ *   2021 Thomas White <thomas.white@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -40,7 +41,8 @@ extern int run_pinkIndexer(struct image *image, void *ipriv);
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm, UnitCell *cell,
                                  struct pinkIndexer_options *pinkIndexer_opts,
-                                 const DataTemplate *dtempl);
+                                 const DataTemplate *dtempl,
+                                 double wavelength_estimate);
 
 extern void pinkIndexer_cleanup(void *pp);
 
