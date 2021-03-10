@@ -112,7 +112,8 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 		if ( f == NULL ) continue;
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
-		                         f->fs, f->ss, image->lambda, r);
+		                         f->fs, f->ss, image->lambda,
+		                         0.0, 0.0, r);
 		reciprocalPeaks_1_per_A->coordinates_x[reciprocalPeaks_1_per_A->peakCount] = r[2] * 1e-10;
 		reciprocalPeaks_1_per_A->coordinates_y[reciprocalPeaks_1_per_A->peakCount] = r[0] * 1e-10;
 		reciprocalPeaks_1_per_A->coordinates_z[reciprocalPeaks_1_per_A->peakCount] = r[1] * 1e-10;

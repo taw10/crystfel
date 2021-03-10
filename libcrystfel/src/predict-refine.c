@@ -178,11 +178,14 @@ static int pair_peaks(struct image *image, Crystal *cr,
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
+	double dx, dy;
 	RefList *all_reflist;
 
 	all_reflist = reflist_new();
 	cell_get_cartesian(crystal_get_cell(cr),
 	                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	crystal_get_det_shift(cr, &dx, &dy);
 
 	/* First, create a RefList containing the most likely indices for each
 	 * peak, with no exclusion criteria */
@@ -199,7 +202,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
-		                         r);
+		                         dx, dy, r);
 
 		/* Decimal and fractional Miller indices of nearest reciprocal
 		 * lattice point */
@@ -583,6 +586,8 @@ int refine_prediction(struct image *image, Crystal *cr)
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
+
+	crystal_get_det_shift(cr, &total_x, &total_y);
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;

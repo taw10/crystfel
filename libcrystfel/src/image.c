@@ -1175,7 +1175,7 @@ void mark_resolution_range_as_bad(struct image *image,
 				double r;
 				detgeom_transform_coords(p, fs, ss,
 				                         image->lambda,
-				                         q);
+				                         0.0, 0.0, q);
 				r = modulus(q[0], q[1], q[2]);
 				if ( (r >= min) && (r <= max) ) {
 					image->bad[i][fs+p->w*ss] = 1;

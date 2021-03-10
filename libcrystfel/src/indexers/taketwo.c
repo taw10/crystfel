@@ -2164,7 +2164,7 @@ int taketwo_index(struct image *image, void *priv)
 
 		detgeom_transform_coords(&image->detgeom->panels[pk->pn],
 		                         pk->fs, pk->ss, image->lambda,
-		                         r);
+		                         0.0, 0.0, r);
 
 		rlps[n_rlps].u = r[0];
 		rlps[n_rlps].v = r[1];

@@ -831,6 +831,7 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 	double ax, ay, az;
 	double bx, by, bz;
 	double cx, cy, cz;
+	double dx, dy;
 	const double min_dist = 0.25;
 	int i, nspots = 0, nindexed = 0;
 
@@ -840,6 +841,8 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 	/* Cell basis vectors for this image */
 	cell_get_cartesian(crystal_get_cell(cr), &ax, &ay, &az,
 	                   &bx, &by, &bz, &cx, &cy, &cz);
+
+	crystal_get_det_shift(cr, &dx, &dy);
 
 	/* Loop over peaks, checking proximity to nearest reflection */
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
@@ -855,7 +858,8 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 
 		/* Reciprocal space position of found peak */
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
-		                         f->fs, f->ss, image->lambda, q);
+		                         f->fs, f->ss, image->lambda, dx, dy,
+		                         q);
 
 		/* Decimal and fractional Miller indices of nearest
 		 * reciprocal lattice point */

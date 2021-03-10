@@ -207,7 +207,7 @@ static int write_peaks(const struct image *image,
 
 		p = &image->detgeom->panels[f->pn];
 		detgeom_transform_coords(p, f->fs, f->ss,
-		                         image->lambda, r);
+		                         image->lambda, 0.0, 0.0, r);
 		q = modulus(r[0], r[1], r[2]);
 
 		write_fs = f->fs;

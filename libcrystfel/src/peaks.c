@@ -600,15 +600,22 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 		if ( f == NULL ) continue;
 		n_feat++;
 
-		/* Reciprocal space position of found peak */
-		detgeom_transform_coords(&image->detgeom->panels[f->pn],
-		                         f->fs, f->ss, image->lambda, q);
-
 		for ( j=0; j<n_cryst; j++ ) {
 
 			double ax, ay, az;
 			double bx, by, bz;
 			double cx, cy, cz;
+			double dx, dy;
+
+			crystal_get_det_shift(crystals[j], &dx, &dy);
+
+			/* Reciprocal space position of found peak,
+			 * based on a calculation including any updates to the
+			 * detector position from the refinement of the
+			 * current crystal. */
+			detgeom_transform_coords(&image->detgeom->panels[f->pn],
+			                         f->fs, f->ss, image->lambda,
+			                         dx, dy, q);
 
 			cell_get_cartesian(crystal_get_cell(crystals[j]),
 			                   &ax, &ay, &az,
@@ -748,7 +755,7 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
 
 		detgeom_transform_coords(&det->panels[f->pn],
 		                         f->fs, f->ss,
-		                         lambda, r);
+		                         lambda, 0.0, 0.0, r);
 		rns[i] = modulus(r[0], r[1], r[2]);
 
 	}

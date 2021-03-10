@@ -101,7 +101,7 @@ int run_xgandalf(struct image *image, void *ipriv)
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
-		                         r);
+		                         0.0, 0.0, r);
 
 		reciprocalPeaks_1_per_A->coordinates_x[reciprocalPeaks_1_per_A->peakCount] = r[0] * 1e-10;
 		reciprocalPeaks_1_per_A->coordinates_y[reciprocalPeaks_1_per_A->peakCount] = r[1] * 1e-10;

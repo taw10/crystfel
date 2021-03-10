@@ -1123,7 +1123,7 @@ int run_asdf(struct image *image, void *ipriv)
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
-		                         r);
+		                         0.0, 0.0, r);
 
 		reflections[N_reflections] = gsl_vector_alloc(3);
 		gsl_vector_set(reflections[N_reflections], 0, r[0]/1e10);

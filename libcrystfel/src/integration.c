@@ -1518,7 +1518,7 @@ int integrate_rings_once(Reflection *refl,
 }
 
 
-static double estimate_resolution(UnitCell *cell, struct image *image)
+static double estimate_resolution(Crystal *cr, struct image *image)
 {
 	int i;
 	const double min_dist = 0.25;
@@ -1527,12 +1527,18 @@ static double estimate_resolution(UnitCell *cell, struct image *image)
 	int n_acc = 0;
 	int max_acc = 1024;
 	int n;
+	double dx, dy;
+	UnitCell *cell;
+
 
 	acc = malloc(max_acc*sizeof(double));
 	if ( acc == NULL ) {
 		ERROR("Allocation failed during estimate_resolution!\n");
 		return INFINITY;
 	}
+
+	cell = crystal_get_cell(cr);
+	crystal_get_det_shift(cr, &dx, &dy);
 
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
@@ -1554,7 +1560,7 @@ static double estimate_resolution(UnitCell *cell, struct image *image)
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
-		                         r);
+		                         dx, dy, r);
 
 		/* Decimal and fractional Miller indices of nearest
 		 * reciprocal lattice point */
@@ -1670,8 +1676,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 			                           saved_R * 5);
 		}
 
-		res = estimate_resolution(crystal_get_cell(image->crystals[i]),
-		                          image);
+		res = estimate_resolution(image->crystals[i], image);
 		crystal_set_resolution_limit(image->crystals[i], res);
 
 		list = predict_to_res(image->crystals[i], res+push_res);

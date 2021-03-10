@@ -95,6 +95,7 @@ struct detgeom
 extern void detgeom_transform_coords(struct detgeom_panel *p,
                                      double fs, double ss,
                                      double wavelength,
+                                     double dx, double dy,
                                      double *r);
 
 extern void detgeom_free(struct detgeom *detgeom);

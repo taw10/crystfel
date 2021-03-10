@@ -364,7 +364,7 @@ static void write_spt(struct image *image, const char *filename)
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
-		                         r);
+		                         0.0, 0.0, r);
 
 		ttx = angle_between_2d(0.0, 1.0,
 		                       r[0], 1.0/image->lambda + r[2]);

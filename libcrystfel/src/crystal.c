@@ -67,7 +67,7 @@ struct _crystal
 	/* Text notes, which go in the stream */
 	char                    *notes;
 
-	/* Detector shift */
+	/* Detector shift in metres */
 	double			det_shift_x;
 	double			det_shift_y;
 };

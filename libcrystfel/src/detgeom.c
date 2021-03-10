@@ -45,14 +45,15 @@
 void detgeom_transform_coords(struct detgeom_panel *p,
                               double fs, double ss,
                               double wavelength,
+                              double dx, double dy,
                               double *r)
 {
 	double xs, ys, zs;
 	double fac;
 
 	/* Calculate 3D position of given position, in pixels */
-	xs = p->cnx + fs*p->fsx + ss*p->ssx;
-	ys = p->cny + fs*p->fsy + ss*p->ssy;
+	xs = p->cnx + fs*p->fsx + ss*p->ssx + dx*p->pixel_pitch;
+	ys = p->cny + fs*p->fsy + ss*p->ssy + dy*p->pixel_pitch;
 	zs = p->cnz + fs*p->fsz + ss*p->ssz;
 
 	fac = wavelength * sqrt(xs*xs + ys*ys + zs*zs);
@@ -82,16 +83,16 @@ static double panel_max_res(struct detgeom_panel *p,
 	double r[3];
 	double max_res = 0.0;
 
-	detgeom_transform_coords(p, 0, 0, wavelength, r);
+	detgeom_transform_coords(p, 0, 0, wavelength, 0.0, 0.0, r);
 	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
 
-	detgeom_transform_coords(p, 0, p->h, wavelength, r);
+	detgeom_transform_coords(p, 0, p->h, wavelength, 0.0, 0.0, r);
 	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
 
-	detgeom_transform_coords(p, p->w, 0, wavelength, r);
+	detgeom_transform_coords(p, p->w, 0, wavelength, 0.0, 0.0, r);
 	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
 
-	detgeom_transform_coords(p, p->w, p->h, wavelength, r);
+	detgeom_transform_coords(p, p->w, p->h, wavelength, 0.0, 0.0, r);
 	max_res = biggest(max_res, modulus(r[0], r[1], r[2]));
 
 	return max_res;

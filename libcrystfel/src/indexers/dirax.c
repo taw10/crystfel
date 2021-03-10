@@ -497,7 +497,7 @@ static void write_drx(struct image *image)
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
-		                         r);
+		                         0.0, 0.0, r);
 
 		fprintf(fh, "%10f %10f %10f %8f\n",
 		        r[0]/1e10, r[1]/1e10, r[2]/1e10, 1.0);

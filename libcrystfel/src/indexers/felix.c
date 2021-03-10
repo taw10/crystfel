@@ -371,7 +371,7 @@ static void write_gve(struct image *image, struct felix_private *gp)
 
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
-		                         r);
+		                         0.0, 0.0, r);
 
 		fprintf(fh, "%.6f %.6f %.6f 0 0 %.6f %.6f %.6f 0\n",
 		        r[2]/1e10, r[0]/1e10, r[1]/1e10,
