@@ -234,4 +234,6 @@ struct _datatemplate
 	char                      *shift_y_from;
 };
 
+extern double convert_to_m(double val, int units);
+
 #endif	/* DATATEMPLATE_PRIV_H */

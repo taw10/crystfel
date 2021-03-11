@@ -400,34 +400,6 @@ static double im_get_length(struct image *image, const char *from,
 }
 
 
-static double convert_to_m(double val, int units)
-{
-	switch ( units ) {
-
-		case WAVELENGTH_M :
-		return val;
-
-		case WAVELENGTH_A :
-		return val * 1e-10;
-
-		case WAVELENGTH_PHOTON_EV :
-		return ph_eV_to_lambda(val);
-
-		case WAVELENGTH_PHOTON_KEV :
-		return ph_eV_to_lambda(val*1e3);
-
-		case WAVELENGTH_ELECTRON_V :
-		return el_V_to_lambda(val);
-
-		case WAVELENGTH_ELECTRON_KV :
-		return el_V_to_lambda(val*1e3);
-
-	}
-
-	return NAN;
-}
-
-
 int create_detgeom(struct image *image, const DataTemplate *dtempl)
 {
 	struct detgeom *detgeom;

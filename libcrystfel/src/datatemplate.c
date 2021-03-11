@@ -1628,3 +1628,56 @@ int data_template_get_slab_extents(const DataTemplate *dt,
 	*ph = h + 1;
 	return 0;
 }
+
+
+double convert_to_m(double val, int units)
+{
+	switch ( units ) {
+
+		case WAVELENGTH_M :
+		return val;
+
+		case WAVELENGTH_A :
+		return val * 1e-10;
+
+		case WAVELENGTH_PHOTON_EV :
+		return ph_eV_to_lambda(val);
+
+		case WAVELENGTH_PHOTON_KEV :
+		return ph_eV_to_lambda(val*1e3);
+
+		case WAVELENGTH_ELECTRON_V :
+		return el_V_to_lambda(val);
+
+		case WAVELENGTH_ELECTRON_KV :
+		return el_V_to_lambda(val*1e3);
+
+	}
+
+	return NAN;
+}
+
+
+/**
+ * Get the wavelength from a DataTemplate, if possible.
+ *
+ * WARNING: This is probably not the routine you are looking for!
+ *  See the disclaimer for image_create_for_simulation(), which applies
+ *  equally to this routine.
+ *
+ * \returns the wavelength, in metres, or NAN if impossible.
+ */
+double data_template_get_wavelength_if_possible(const DataTemplate *dt)
+{
+	float val;
+	char *rval;
+
+	if ( dt->wavelength_from == NULL ) return NAN;
+
+	val = strtod(dt->wavelength_from, &rval);
+	if ( (*rval == '\0') && (rval != dt->wavelength_from) ) {
+		return convert_to_m(val, dt->wavelength_unit);
+	} else {
+		return NAN;
+	}
+}

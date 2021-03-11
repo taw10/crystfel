@@ -601,6 +601,7 @@ int main(int argc, char *argv[])
 	FelixOptions *felix_opts = NULL;
 	XGandalfOptions *xgandalf_opts = NULL;
 	PinkIndexerOptions *pinkindexer_opts = NULL;
+	double wl_from_dt;
 
 	/* Defaults for "top level" arguments */
 	args.filename = NULL;
@@ -928,6 +929,16 @@ int main(int argc, char *argv[])
 
 		args.indm_str = detect_indexing_methods(args.iargs.cell);
 
+	}
+
+	wl_from_dt = data_template_get_wavelength_if_possible(args.iargs.dtempl);
+	if ( !isnan(wl_from_dt) ) {
+		if ( !isnan(args.iargs.wavelength_estimate) ) {
+			ERROR("WARNING: Ignoring your value for "
+			      "--wavelength-estimate because the geometry file "
+			      "already contains a static value.\n");
+		}
+		args.iargs.wavelength_estimate = wl_from_dt;
 	}
 
 	/* Prepare the indexing system */

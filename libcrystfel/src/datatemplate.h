@@ -90,6 +90,8 @@ extern int data_template_get_slab_extents(const DataTemplate *dt, int *pw, int *
 extern struct rg_collection *data_template_get_rigid_groups(const DataTemplate *dtempl,
                                                             const char *collection_name);
 
+extern double data_template_get_wavelength_if_possible(const DataTemplate *dt);
+
 #ifdef __cplusplus
 }
 #endif
