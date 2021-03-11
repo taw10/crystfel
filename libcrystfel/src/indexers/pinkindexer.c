@@ -48,10 +48,7 @@ struct pinkIndexer_options {
 	unsigned int refinement_type;
 	float maxResolutionForIndexing_1_per_A;
 	float tolerance;
-	int multi;
 	int thread_count;
-	int min_peaks;
-	int no_check_indexed;
 	float reflectionRadius; /* In m^-1 */
 	float customBandwidth;
 	float maxRefinementDisbalance;
@@ -63,8 +60,6 @@ struct pinkIndexer_options {
 #include <pinkIndexer/adaptions/crystfel/ExperimentSettings.h>
 #include <pinkIndexer/adaptions/crystfel/PinkIndexer.h>
 
-#define MAX_MULTI_LATTICE_COUNT 8
-
 struct pinkIndexer_private_data {
 	PinkIndexer *pinkIndexer;
 	reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;
@@ -73,10 +68,6 @@ struct pinkIndexer_private_data {
 	IndexingMethod indm;
 	UnitCell *cellTemplate;
 	int threadCount;
-	int multi;
-	int min_peaks;
-
-	int no_check_indexed;
 
 	float maxRefinementDisbalance;
 
@@ -121,71 +112,71 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 		reciprocalPeaks_1_per_A->peakCount++;
 	}
 	int indexed = 0;
-	Lattice_t indexedLattice[MAX_MULTI_LATTICE_COUNT];
-	float center_shift[MAX_MULTI_LATTICE_COUNT][2];
 
+	float center_shift[2];
+	Lattice_t indexedLattice;
+	int matchedPeaksCount = PinkIndexer_indexPattern(pinkIndexer_private_data->pinkIndexer,
+	                                    &indexedLattice,
+	                                    center_shift,
+	                                    reciprocalPeaks_1_per_A,
+	                                    intensities,
+	                                    pinkIndexer_private_data->maxRefinementDisbalance,
+	                                    pinkIndexer_private_data->threadCount);
 
+	if ( matchedPeaksCount == -1 ) {
 
-	do {
-		int peakCount = reciprocalPeaks_1_per_A->peakCount;
-		int matchedPeaksCount = PinkIndexer_indexPattern(pinkIndexer_private_data->pinkIndexer,
-		        &(indexedLattice[indexed]), center_shift[indexed], reciprocalPeaks_1_per_A, intensities,
-		        pinkIndexer_private_data->maxRefinementDisbalance,
-		        pinkIndexer_private_data->threadCount);
+		STATUS("WARNING: Indexing solution was rejected due to too "
+		       "large imbalance of the refinement.\n"
+		        "If you see this message often, check the documentation "
+		        "for parameter --pinkIndexer-max-refinement-disbalance\n");
 
-		if(matchedPeaksCount == -1){
-			STATUS("WARNING: Indexing solution was rejected due to too large disbalance of the refinement."
-			        "If you see this message often, check the documentation for the parameter "
-			        "--pinkIndexer-max-refinement-disbalance\n");
+	} else {
 
-			matchedPeaksCount = 0;
-		}
+		UnitCell *uc;
+		UnitCell *new_cell_trans;
 
-		printf("matchedPeaksCount %d from %d\n",matchedPeaksCount,peakCount);
-		if ((matchedPeaksCount >= 25 && matchedPeaksCount >= peakCount * 0.30)
-		        || matchedPeaksCount >= peakCount * 0.4
-		        || matchedPeaksCount >= 70
-		        || pinkIndexer_private_data->no_check_indexed == 1)
-		                {
-			UnitCell *uc;
-			uc = cell_new();
+		uc = cell_new();
 
-			Lattice_t *l = &(indexedLattice[indexed]);
+		cell_set_reciprocal(uc, indexedLattice.ay * 1e10,
+		                        indexedLattice.az * 1e10,
+		                        indexedLattice.ax * 1e10,
+		                        indexedLattice.by * 1e10,
+		                        indexedLattice.bz * 1e10,
+		                        indexedLattice.bx * 1e10,
+		                        indexedLattice.cy * 1e10,
+		                        indexedLattice.cz * 1e10,
+		                        indexedLattice.cx * 1e10);
 
-			cell_set_reciprocal(uc, l->ay * 1e10, l->az * 1e10, l->ax * 1e10,
-			        l->by * 1e10, l->bz * 1e10, l->bx * 1e10,
-			        l->cy * 1e10, l->cz * 1e10, l->cx * 1e10);
+		restoreReciprocalCell(uc, &pinkIndexer_private_data->latticeReductionTransform);
 
-			restoreReciprocalCell(uc, &pinkIndexer_private_data->latticeReductionTransform);
+		new_cell_trans = cell_transform_intmat(uc, pinkIndexer_private_data->centeringTransformation);
+		cell_free(uc);
 
-			UnitCell *new_cell_trans = cell_transform_intmat(uc, pinkIndexer_private_data->centeringTransformation);
-			cell_free(uc);
-			uc = new_cell_trans;
+		cell_set_lattice_type(new_cell_trans,
+		                      cell_get_lattice_type(pinkIndexer_private_data->cellTemplate));
+		cell_set_centering(new_cell_trans,
+		                   cell_get_centering(pinkIndexer_private_data->cellTemplate));
+		cell_set_unique_axis(new_cell_trans,
+		                     cell_get_unique_axis(pinkIndexer_private_data->cellTemplate));
 
-			cell_set_lattice_type(new_cell_trans, cell_get_lattice_type(pinkIndexer_private_data->cellTemplate));
-			cell_set_centering(new_cell_trans, cell_get_centering(pinkIndexer_private_data->cellTemplate));
-			cell_set_unique_axis(new_cell_trans, cell_get_unique_axis(pinkIndexer_private_data->cellTemplate));
+		if ( validate_cell(new_cell_trans) ) {
+			ERROR("pinkIndexer: problem with returned cell!\n");
+		} else {
 
-			if (validate_cell(uc)) {
-				ERROR("pinkIndexer: problem with returned cell!\n");
-			}
-
-			Crystal * cr = crystal_new();
-			if (cr == NULL) {
+			Crystal *cr = crystal_new();
+			if ( cr == NULL ) {
 				ERROR("Failed to allocate crystal.\n");
 				return 0;
 			}
-			crystal_set_cell(cr, uc);
-			crystal_set_det_shift(cr, center_shift[indexed][0], center_shift[indexed][1]);
+			crystal_set_cell(cr, new_cell_trans);
+			crystal_set_det_shift(cr, center_shift[0],
+			                          center_shift[1]);
 			image_add_crystal(image, cr);
 			indexed++;
 
-		} else {
-			break;
 		}
-	} while (pinkIndexer_private_data->multi
-	        && indexed <= MAX_MULTI_LATTICE_COUNT
-	        && reciprocalPeaks_1_per_A->peakCount >= pinkIndexer_private_data->min_peaks);
+
+	}
 
 	return indexed;
 }
@@ -237,9 +228,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	pinkIndexer_private_data->indm = *indm;
 	pinkIndexer_private_data->cellTemplate = cell;
 	pinkIndexer_private_data->threadCount = pinkIndexer_opts->thread_count;
-	pinkIndexer_private_data->multi = pinkIndexer_opts->multi;
-	pinkIndexer_private_data->min_peaks = pinkIndexer_opts->min_peaks;
-	pinkIndexer_private_data->no_check_indexed = pinkIndexer_opts->no_check_indexed;
 	pinkIndexer_private_data->maxRefinementDisbalance = pinkIndexer_opts->maxRefinementDisbalance;
 
 	UnitCell* primitiveCell = uncenter_cell(cell, &pinkIndexer_private_data->centeringTransformation, NULL);
@@ -454,13 +442,9 @@ static void pinkIndexer_show_help()
 "                            Specified in 1/A.  Default is 2%% of a*.\n"
 "     --pinkIndexer-max-resolution-for-indexing=n\n"
 "                           Measured in 1/A\n"
-"     --pinkIndexer-multi   Use pinkIndexers own multi indexing.\n"
 "     --pinkIndexer-thread-count=n\n"
 "                           Thread count for internal parallelization \n"
 "                            Default: 1\n"
-"     --pinkIndexer-no-check-indexed\n"
-"                           Disable internal check for correct indexing\n"
-"                            solutions\n"
 "     --pinkIndexer-max-refinement-disbalance=n\n"
 "                           Maximum disbalance after refinement:\n"
 "                            0 (no disbalance) to 2 (extreme disbalance), default 0.4\n"
@@ -488,9 +472,6 @@ int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr)
 	opts->tolerance = 0.06;
 	opts->maxResolutionForIndexing_1_per_A = +INFINITY;
 	opts->thread_count = 1;
-	opts->multi = 0;
-	opts->no_check_indexed = 0;
-	opts->min_peaks = 2;
 	opts->reflectionRadius = -1;
 	opts->customBandwidth = -1;
 	opts->maxRefinementDisbalance = 0.4;
@@ -571,11 +552,11 @@ static error_t pinkindexer_parse_arg(int key, char *arg,
 		break;
 
 		case 8 :
-		(*opts_ptr)->multi = 1;
+		ERROR("WARNING: --pinkIndexer-multi is ignored.\n");
 		break;
 
 		case 9 :
-		(*opts_ptr)->no_check_indexed = 1;
+		ERROR("WARNING: --pinkIndexer-no-check-indexed is ignored.\n");
 		break;
 
 		case 10 :
