@@ -297,6 +297,11 @@ static double get_value(struct image *image, const char *from,
 		return val;
 	}
 
+	if ( image == NULL ) {
+		ERROR("Attempt to retrieve a header value without an image\n");
+		return NAN;
+	}
+
 	if ( is_hdf5_file(image->filename) ) {
 		return image_hdf5_get_value(from,
 		                            image->filename,
@@ -915,6 +920,18 @@ static int create_satmap(struct image *image,
 }
 
 
+/**
+ * Create an image structure, suitable for simulation.
+ *
+ * WARNING: This is probably not the routine you are looking for!
+ *   If you use this routine anywhere other than a simulation program, then
+ *   you are abusing the API and can expect breakage.  In particular, your
+ *   program will only work when the experiment is completely described by
+ *   the DataTemplate, with no values whatsoever coming from image headers.
+ *
+ * \returns the new image structure.
+ *
+ */
 struct image *image_create_for_simulation(const DataTemplate *dtempl)
 {
 	struct image *image;
