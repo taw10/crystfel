@@ -65,8 +65,6 @@ struct pinkIndexer_options {
 
 struct pinkIndexer_private_data {
 	PinkIndexer *pinkIndexer;
-	reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;
-	float *intensities;
 
 	IndexingMethod indm;
 	UnitCell *cellTemplate;
@@ -120,17 +118,26 @@ static void scale_detector_shift(double fake_clen,
 int run_pinkIndexer(struct image *image, void *ipriv)
 {
 	struct pinkIndexer_private_data *pinkIndexer_private_data = ipriv;
-	reciprocalPeaks_1_per_A_t* reciprocalPeaks_1_per_A = &(pinkIndexer_private_data->reciprocalPeaks_1_per_A);
-	float *intensities = pinkIndexer_private_data->intensities;
+	reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;
+	float *intensities;
+	int npk;
+	int i;
 
 	/* FIXME: Check if wavelength is too far from estimate */
-	int peakCountMax = image_feature_count(image->features);
-	if (peakCountMax < 5) {
-		int goodLatticesCount = 0;
-		return goodLatticesCount;
+
+	npk = image_feature_count(image->features);
+	if ( npk < 5 ) return 0;
+
+	if ( npk > MAX_PEAK_COUNT_FOR_INDEXER ) {
+		npk = MAX_PEAK_COUNT_FOR_INDEXER;
 	}
-	reciprocalPeaks_1_per_A->peakCount = 0;
-	for (int i = 0; i < peakCountMax && i < MAX_PEAK_COUNT_FOR_INDEXER; i++) {
+
+	reciprocalPeaks_1_per_A.peakCount = 0;
+	intensities = malloc(npk*sizeof(float));
+	allocReciprocalPeaks(&reciprocalPeaks_1_per_A);
+	if ( intensities == NULL ) return 0;
+
+	for ( i=0; i<npk; i++ ) {
 
 		struct imagefeature *f;
 		double r[3];
@@ -141,23 +148,26 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 		detgeom_transform_coords(&image->detgeom->panels[f->pn],
 		                         f->fs, f->ss, image->lambda,
 		                         0.0, 0.0, r);
-		reciprocalPeaks_1_per_A->coordinates_x[reciprocalPeaks_1_per_A->peakCount] = r[2] * 1e-10;
-		reciprocalPeaks_1_per_A->coordinates_y[reciprocalPeaks_1_per_A->peakCount] = r[0] * 1e-10;
-		reciprocalPeaks_1_per_A->coordinates_z[reciprocalPeaks_1_per_A->peakCount] = r[1] * 1e-10;
-		intensities[reciprocalPeaks_1_per_A->peakCount] = (float) (f->intensity);
-		reciprocalPeaks_1_per_A->peakCount++;
+		reciprocalPeaks_1_per_A.coordinates_x[reciprocalPeaks_1_per_A.peakCount] = r[2] * 1e-10;
+		reciprocalPeaks_1_per_A.coordinates_y[reciprocalPeaks_1_per_A.peakCount] = r[0] * 1e-10;
+		reciprocalPeaks_1_per_A.coordinates_z[reciprocalPeaks_1_per_A.peakCount] = r[1] * 1e-10;
+		intensities[reciprocalPeaks_1_per_A.peakCount] = f->intensity;
+		reciprocalPeaks_1_per_A.peakCount++;
 	}
 	int indexed = 0;
 
 	float center_shift[2];
 	Lattice_t indexedLattice;
 	int matchedPeaksCount = PinkIndexer_indexPattern(pinkIndexer_private_data->pinkIndexer,
-	                                    &indexedLattice,
-	                                    center_shift,
-	                                    reciprocalPeaks_1_per_A,
-	                                    intensities,
-	                                    pinkIndexer_private_data->maxRefinementDisbalance,
-	                                    pinkIndexer_private_data->threadCount);
+	                                                 &indexedLattice,
+	                                                 center_shift,
+	                                                 &reciprocalPeaks_1_per_A,
+	                                                 intensities,
+	                                                 pinkIndexer_private_data->maxRefinementDisbalance,
+	                                                 pinkIndexer_private_data->threadCount);
+
+	free(intensities);
+	freeReciprocalPeaks(reciprocalPeaks_1_per_A);
 
 	if ( matchedPeaksCount == -1 ) {
 
@@ -245,8 +255,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	}
 
 	struct pinkIndexer_private_data* pinkIndexer_private_data = malloc(sizeof(struct pinkIndexer_private_data));
-	allocReciprocalPeaks(&(pinkIndexer_private_data->reciprocalPeaks_1_per_A));
-	pinkIndexer_private_data->intensities = malloc(MAX_PEAK_COUNT_FOR_INDEXER * sizeof(float));
 	pinkIndexer_private_data->indm = *indm;
 	pinkIndexer_private_data->cellTemplate = cell;
 	pinkIndexer_private_data->threadCount = pinkIndexer_opts->thread_count;
@@ -396,8 +404,6 @@ void pinkIndexer_cleanup(void *pp)
 {
 	struct pinkIndexer_private_data* pinkIndexer_private_data = (struct pinkIndexer_private_data*) pp;
 
-	freeReciprocalPeaks(pinkIndexer_private_data->reciprocalPeaks_1_per_A);
-	free(pinkIndexer_private_data->intensities);
 	intmat_free(pinkIndexer_private_data->centeringTransformation);
 	PinkIndexer_delete(pinkIndexer_private_data->pinkIndexer);
 }
