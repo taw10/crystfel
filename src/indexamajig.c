@@ -207,7 +207,6 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 		case 209 :
 		ERROR("--spectrum-filename is no longer used.\n");
-		ERROR("Specify the radiation spectrum via the geometry file instead.\n");
 		return 1;
 
 		case 210 :
