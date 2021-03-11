@@ -42,6 +42,9 @@
 #include "cell-utils.h"
 #include "peaks.h"
 
+
+#define FAKE_CLEN (0.25)
+
 struct pinkIndexer_options {
 	unsigned int considered_peaks_count;
 	unsigned int angle_resolution;
@@ -80,6 +83,39 @@ struct pinkIndexer_private_data {
 static void reduceReciprocalCell(UnitCell* cell, LatticeTransform_t* appliedReductionTransform);
 static void restoreReciprocalCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform);
 static void makeRightHanded(UnitCell* cell);
+
+
+static double mean_clen(struct detgeom *dg)
+{
+	int i;
+	double total = 0.0;
+	for ( i=0; i<dg->n_panels; i++ ) {
+		total += dg->panels[i].cnz;
+	}
+	return total / dg->n_panels;
+}
+
+
+static void scale_detector_shift(double fake_clen,
+                                 struct detgeom *dg,
+                                 double inx, double iny,
+                                 double *pdx, double *pdy)
+{
+	int i;
+	double mean = mean_clen(dg);
+	for ( i=0; i<dg->n_panels; i++ ) {
+		if ( !within_tolerance(dg->panels[i].cnz, mean, 2.0) ) {
+			ERROR("WARNING: Detector is not flat enough to apply "
+			      "detector position offset\n");
+			*pdx = 0.0;
+			*pdy = 0.0;
+			return;
+		}
+	}
+	*pdx = (mean/fake_clen)*inx;
+	*pdy = (mean/fake_clen)*iny;
+}
+
 
 int run_pinkIndexer(struct image *image, void *ipriv)
 {
@@ -163,14 +199,19 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 			ERROR("pinkIndexer: problem with returned cell!\n");
 		} else {
 
+			double dx, dy;
 			Crystal *cr = crystal_new();
 			if ( cr == NULL ) {
 				ERROR("Failed to allocate crystal.\n");
 				return 0;
 			}
 			crystal_set_cell(cr, new_cell_trans);
-			crystal_set_det_shift(cr, center_shift[0],
-			                          center_shift[1]);
+			scale_detector_shift(FAKE_CLEN,
+			                     image->detgeom,
+			                     center_shift[0],
+			                     center_shift[1],
+			                     &dx, &dy);
+			crystal_set_det_shift(cr, dx, dy);
 			image_add_crystal(image, cr);
 			indexed++;
 
@@ -179,13 +220,6 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 	}
 
 	return indexed;
-}
-
-
-static int want_center_adjustment(struct pinkIndexer_options *pinkIndexer_opts)
-{
-	return (pinkIndexer_opts->refinement_type ==
-	        REFINEMENT_TYPE_firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed);
 }
 
 
@@ -202,18 +236,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 		return NULL;
 	} else {
 		beamEenergy_eV = J_to_eV(ph_lambda_to_en(wavelength_estimate));
-	}
-
-	if ( !data_template_has_fixed_geometry(dtempl)
-	   && want_center_adjustment(pinkIndexer_opts) )
-	{
-
-		ERROR("Geometry file refers to image metadata for "
-		      "detector position.\n");
-		ERROR("To use PinkIndexer with image center "
-		      "refinement, use a fixed detector position in "
-		      "the geometry file.\n");
-		return NULL;
 	}
 
 	if ( cell == NULL ) {
@@ -245,13 +267,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	        .bx = bsz * 1e-10, .by = bsx * 1e-10, .bz = bsy * 1e-10,
 	        .cx = csz * 1e-10, .cy = csx * 1e-10, .cz = csy * 1e-10 };
 
-	float detectorDistance_m;
-	if ( data_template_has_fixed_geometry(dtempl) ) {
-		detectorDistance_m =  0.25;  /* fake value */
-	} else {
-		/* FIXME: Cannot get clen here without violating abstraction */
-		detectorDistance_m = det->panels[0].clen + det->panels[0].coffset;
-	}
 
 	/* FIXME: Beam gone */
 	float nonMonochromaticity = beam->bandwidth*5;
@@ -279,9 +294,14 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	float tolerance = pinkIndexer_opts->tolerance;
 	Lattice_t sampleReciprocalLattice_1_per_A = lattice;
 	float detectorRadius_m = 0.03; //fake, only for prediction
-	ExperimentSettings* experimentSettings = ExperimentSettings_new(beamEenergy_eV, detectorDistance_m,
-	        detectorRadius_m, divergenceAngle_deg, nonMonochromaticity, sampleReciprocalLattice_1_per_A, tolerance,
-	        reflectionRadius_1_per_A);
+	ExperimentSettings *experimentSettings = ExperimentSettings_new(beamEenergy_eV,
+	                                                                FAKE_CLEN,
+	                                                                detectorRadius_m,
+	                                                                divergenceAngle_deg,
+	                                                                nonMonochromaticity,
+	                                                                sampleReciprocalLattice_1_per_A,
+	                                                                tolerance,
+	                                                                reflectionRadius_1_per_A);
 
 	consideredPeaksCount_t consideredPeaksCount = pinkIndexer_opts->considered_peaks_count;
 	angleResolution_t angleResolution = pinkIndexer_opts->angle_resolution;
