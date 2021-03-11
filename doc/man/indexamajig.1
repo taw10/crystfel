@@ -466,9 +466,9 @@ These set low-level parameters for the PinkIndexer indexing algorithm.
 .IP
 \fB--pinkIndexer-reflection-radius\fR sets radius of the reflections in reciprocal space in 1/A. Default is 2%% of a* (which works quiet well for X-rays). Should be chosen much bigger for electrons (~0.002).
 .IP
-\fB--pinkIndexer-max-resolution-for-indexing\fR sets the maximum resolition in 1/A used for indexing. Peaks at high resolution don't add much information, but they add a lot of computation time. Default is infinity. Does not influence the refinement.
+\fB--pinkIndexer-max-resolution-for-indexing\fR sets the maximum resolution in 1/A used for indexing. Peaks at high resolution don't add much information, but they add a lot of computation time. Default is infinity. Does not influence the refinement.
 .IP
-\fB--pinkIndexer-max-refinement-disbalance Indexing solutions are dismissed if the refinement refined very well to one side of the detector and very badly to the other side. Allowed values range from 0 (no disbalance) to 2 (extreme disbalance), default 0.4. Disbalance after refinement usually appears for bad geometries or bad prior unit cell parameters.
+\fB--pinkIndexer-max-refinement-disbalance\fR Indexing solutions are dismissed if the refinement refined very well to one side of the detector and very badly to the other side. Allowed values range from 0 (no disbalance) to 2 (extreme disbalance), default 0.4. Disbalance after refinement usually appears for bad geometries or bad prior unit cell parameters.
 
 .SH INTEGRATION OPTIONS
 .PD 0
