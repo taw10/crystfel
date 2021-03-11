@@ -51,7 +51,6 @@ struct pinkIndexer_options {
 	unsigned int refinement_type;
 	float maxResolutionForIndexing_1_per_A;
 	float tolerance;
-	int thread_count;
 	float reflectionRadius; /* In m^-1 */
 	float customBandwidth;
 	float maxRefinementDisbalance;
@@ -68,7 +67,6 @@ struct pinkIndexer_private_data {
 
 	IndexingMethod indm;
 	UnitCell *cellTemplate;
-	int threadCount;
 
 	float maxRefinementDisbalance;
 
@@ -115,7 +113,7 @@ static void scale_detector_shift(double fake_clen,
 }
 
 
-int run_pinkIndexer(struct image *image, void *ipriv)
+int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 {
 	struct pinkIndexer_private_data *pinkIndexer_private_data = ipriv;
 	reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;
@@ -164,7 +162,7 @@ int run_pinkIndexer(struct image *image, void *ipriv)
 	                                                 &reciprocalPeaks_1_per_A,
 	                                                 intensities,
 	                                                 pinkIndexer_private_data->maxRefinementDisbalance,
-	                                                 pinkIndexer_private_data->threadCount);
+	                                                 n_threads);
 
 	free(intensities);
 	freeReciprocalPeaks(reciprocalPeaks_1_per_A);
@@ -257,7 +255,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	struct pinkIndexer_private_data* pinkIndexer_private_data = malloc(sizeof(struct pinkIndexer_private_data));
 	pinkIndexer_private_data->indm = *indm;
 	pinkIndexer_private_data->cellTemplate = cell;
-	pinkIndexer_private_data->threadCount = pinkIndexer_opts->thread_count;
 	pinkIndexer_private_data->maxRefinementDisbalance = pinkIndexer_opts->maxRefinementDisbalance;
 
 	UnitCell* primitiveCell = uncenter_cell(cell, &pinkIndexer_private_data->centeringTransformation, NULL);
@@ -415,7 +412,7 @@ const char *pinkIndexer_probe(UnitCell *cell)
 
 #else /* HAVE_PINKINDEXER */
 
-int run_pinkIndexer(struct image *image, void *ipriv)
+int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 {
 	ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
 	return 0;
@@ -463,9 +460,6 @@ static void pinkIndexer_show_help()
 "                            Specified in 1/A.  Default is 2%% of a*.\n"
 "     --pinkIndexer-max-resolution-for-indexing=n\n"
 "                           Measured in 1/A\n"
-"     --pinkIndexer-thread-count=n\n"
-"                           Thread count for internal parallelization \n"
-"                            Default: 1\n"
 "     --pinkIndexer-max-refinement-disbalance=n\n"
 "                           Maximum imbalance after refinement:\n"
 "                            0 (no imbalance) to 2 (extreme imbalance), default 0.4\n"
@@ -485,7 +479,6 @@ int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr)
 	opts->refinement_type = 1;
 	opts->tolerance = 0.06;
 	opts->maxResolutionForIndexing_1_per_A = +INFINITY;
-	opts->thread_count = 1;
 	opts->reflectionRadius = -1;
 	opts->maxRefinementDisbalance = 0.4;
 
@@ -540,12 +533,9 @@ static error_t pinkindexer_parse_arg(int key, char *arg,
 		break;
 
 		case 5 :
-		if (sscanf(arg, "%d", &(*opts_ptr)->thread_count) != 1)
-		{
-			ERROR("Invalid value for --pinkIndexer-thread-count\n");
-			return EINVAL;
-		}
-		break;
+		ERROR("Please use --max-indexer-threads instead of "
+		      "--pinkIndexer-thread-count.\n");
+		return EINVAL;
 
 		case 6 :
 		if (sscanf(arg, "%f", &(*opts_ptr)->maxResolutionForIndexing_1_per_A) != 1)

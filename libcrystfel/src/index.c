@@ -69,6 +69,7 @@ struct _indexingprivate
 	UnitCell *target_cell;
 	double tolerance[6];
 	double wavelength_estimate;
+	int n_threads;
 
 	int n_methods;
 	IndexingMethod *methods;
@@ -361,6 +362,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 float *tols,
                                 IndexingFlags flags,
                                 double wavelength_estimate,
+                                int n_threads,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
                                 struct pinkIndexer_options *pinkIndexer_opts,
@@ -473,6 +475,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
 	ipriv->n_methods = n;
 	ipriv->flags = flags;
 	ipriv->wavelength_estimate = wavelength_estimate;
+	ipriv->n_threads = n_threads;
 
 	if ( cell != NULL ) {
 		ipriv->target_cell = cell_new_from_cell(cell);
@@ -682,7 +685,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_PINKINDEXER :
 		set_last_task(last_task, "indexing:pinkindexer");
-		r = run_pinkIndexer(image, mpriv);
+		r = run_pinkIndexer(image, mpriv, ipriv->n_threads);
 		break;
 
 		case INDEXING_XGANDALF :

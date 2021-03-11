@@ -190,7 +190,7 @@ Prefix the filenames from the input file with \fIprefix\fR.  If \fB--basename\fR
 .PD 0
 .IP "\fB-j\fR \fIn\fR"
 .PD
-Run \fIn\fR analyses in parallel.  Default: 1.
+Run \fIn\fR analyses in parallel.  Default: 1.  See also \fB--max-indexer-threads\fR.
 
 .PD 0
 .IP \fB--no-check-prefix\fR
@@ -390,6 +390,11 @@ Check that most of the peaks can be accounted for by the indexing solution.  Thi
 Some indexing algorithms need to know the wavelength of the incident radiation in advance, e.g. to prepare an internal look-up table.  However, if the wavelength is taken from image headers, then the wavelength is not available at start-up.  In this case, you will be prompted to add this option to give an approximate wavelength, in metres.  A warning will be generated if the actual wavelength differs from this value by more than 10%.
 
 .PD 0
+.IP \fB--max-indexer-threads=\fIn\fR
+.PD
+Some indexing algorithms (e.g. pinkIndexer) can use multiple threads for faster calculations.  This is in addition to the frame-based parallelism already available in indexamajig (see \fB-j\fR).  This option sets the maximum number of threads that each indexing engine is allowed to use.  Default: 1.
+
+.PD 0
 .IP \fB--taketwo-member-threshold=\fIn\fR
 .IP \fB--taketwo-len-tolerance=\fIn\fR
 .IP \fB--taketwo-angle-tolerance=\fIn\fR
@@ -446,7 +451,6 @@ These set low-level parameters for the XGANDALF indexing algorithm.
 .IP \fB--pinkIndexer-tolerance=\fIn\fR
 .IP \fB--pinkIndexer-reflection-radius=\fIn\fR
 .IP \fB--pinkIndexer-max-resolution-for-indexing=\fIn\fR
-.IP \fB--pinkIndexer-thread-count=\fIn\fR
 .IP \fB--pinkIndexer-max-refinement-disbalance=\fIn\fR
 
 .PD
@@ -463,8 +467,6 @@ These set low-level parameters for the PinkIndexer indexing algorithm.
 \fB--pinkIndexer-reflection-radius\fR sets radius of the reflections in reciprocal space in 1/A. Default is 2%% of a* (which works quiet well for X-rays). Should be chosen much bigger for electrons (~0.002).
 .IP
 \fB--pinkIndexer-max-resolution-for-indexing\fR sets the maximum resolition in 1/A used for indexing. Peaks at high resolution don't add much information, but they add a lot of computation time. Default is infinity. Does not influence the refinement.
-.IP
-\fB--pinkIndexer-thread-count\fR sets the thread count for internal parallelization. Default is 1. Very useful for small datasets (e.g. for screening). Internal parallelization does not significantly increase the amount of RAM needed, whereas CrystFEL's parallelization does. For HPCs typically a mixture of both parallelizations leads to best results.
 .IP
 \fB--pinkIndexer-max-refinement-disbalance Indexing solutions are dismissed if the refinement refined very well to one side of the detector and very badly to the other side. Allowed values range from 0 (no disbalance) to 2 (extreme disbalance), default 0.4. Disbalance after refinement usually appears for bad geometries or bad prior unit cell parameters.
 

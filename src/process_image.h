@@ -99,6 +99,7 @@ struct index_args
 	int no_image_data;
 	int no_mask_data;
 	float wavelength_estimate;
+	int n_threads;
 };
 
 

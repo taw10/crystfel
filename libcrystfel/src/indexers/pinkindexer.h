@@ -37,7 +37,7 @@
 
 extern int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr);
 
-extern int run_pinkIndexer(struct image *image, void *ipriv);
+extern int run_pinkIndexer(struct image *image, void *ipriv, int n_threads);
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm,
                                  UnitCell *cell,
