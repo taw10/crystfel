@@ -119,7 +119,7 @@ static void scale_detector_shift(double fake_clen,
 
 int run_pinkIndexer(struct image *image, void *ipriv)
 {
-	struct pinkIndexer_private_data* pinkIndexer_private_data = (struct pinkIndexer_private_data*) ipriv;
+	struct pinkIndexer_private_data *pinkIndexer_private_data = ipriv;
 	reciprocalPeaks_1_per_A_t* reciprocalPeaks_1_per_A = &(pinkIndexer_private_data->reciprocalPeaks_1_per_A);
 	float *intensities = pinkIndexer_private_data->intensities;
 
