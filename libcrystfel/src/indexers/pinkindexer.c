@@ -267,12 +267,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	        .bx = bsz * 1e-10, .by = bsx * 1e-10, .bz = bsy * 1e-10,
 	        .cx = csz * 1e-10, .cy = csx * 1e-10, .cz = csy * 1e-10 };
 
-
-	/* FIXME: Beam gone */
-	float nonMonochromaticity = beam->bandwidth*5;
-	if(pinkIndexer_opts->customBandwidth >= 0){
-		nonMonochromaticity = pinkIndexer_opts->customBandwidth;
-	}
+	float nonMonochromaticity = 0.01;
 
 	float reflectionRadius_1_per_A;
 	if (pinkIndexer_opts->reflectionRadius < 0) {
@@ -466,15 +461,8 @@ static void pinkIndexer_show_help()
 "                           Thread count for internal parallelization \n"
 "                            Default: 1\n"
 "     --pinkIndexer-max-refinement-disbalance=n\n"
-"                           Maximum disbalance after refinement:\n"
-"                            0 (no disbalance) to 2 (extreme disbalance), default 0.4\n"
-"     --pinkIndexer-override-bandwidth=n\n"
-"                           Bandwidth in (delta energy)/(mean energy) to use for indexing.\n"
-"     --pinkIndexer-override-visible-energy-range=min-max\n"
-"                           Overrides photon energy and bandwidth according to a range of \n"
-"                           energies that have high enough intensity to produce \"visible\" \n"
-"                           Bragg spots on the detector.\n"
-"                           Min and max range borders are separated by a minus sign (no whitespace).\n"
+"                           Maximum imbalance after refinement:\n"
+"                            0 (no imbalance) to 2 (extreme imbalance), default 0.4\n"
 	);
 }
 
@@ -493,7 +481,6 @@ int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr)
 	opts->maxResolutionForIndexing_1_per_A = +INFINITY;
 	opts->thread_count = 1;
 	opts->reflectionRadius = -1;
-	opts->customBandwidth = -1;
 	opts->maxRefinementDisbalance = 0.4;
 
 	*opts_ptr = opts;
@@ -504,7 +491,7 @@ int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr)
 static error_t pinkindexer_parse_arg(int key, char *arg,
                                      struct argp_state *state)
 {
-	float tmp, tmp2;
+	float tmp;
 	int r;
 	struct pinkIndexer_options **opts_ptr = state->input;
 
@@ -593,24 +580,15 @@ static error_t pinkindexer_parse_arg(int key, char *arg,
 		return EINVAL;
 
 		case 12 :
-		if (sscanf(arg, "%f", &(*opts_ptr)->customBandwidth) != 1)
-		{
-			ERROR("Invalid value for --pinkIndexer-override-bandwidth\n");
-			return EINVAL;
-		}
-		break;
+		ERROR("This CrystFEL version does not handle wide bandwidth  ");
+		ERROR("(invalid option --pinkIndexer-override-bandwidth)\n");
+		return EINVAL;
+
 		case 13 :
-		if (sscanf(arg, "%f-%f", &tmp, &tmp2) != 2)
-		{
-			ERROR("Invalid value for --pinkIndexer-override-visible-energy-range\n");
-			return EINVAL;
-		}
-		(*opts_ptr)->customPhotonEnergy = (tmp + tmp2)/2;
-		(*opts_ptr)->customBandwidth = (tmp2 - tmp)/(*opts_ptr)->customPhotonEnergy;
-		if((*opts_ptr)->customBandwidth < 0){
-			(*opts_ptr)->customBandwidth *= -1;
-		}
-		break;
+		ERROR("This CrystFEL version does not handle wide bandwidth  ");
+		ERROR("(invalid option --pinkIndexer-override-visible-energy-range)\n");
+		return EINVAL;
+
 		case 14 :
 		if (sscanf(arg, "%f", &(*opts_ptr)->maxRefinementDisbalance) != 1)
 		{
