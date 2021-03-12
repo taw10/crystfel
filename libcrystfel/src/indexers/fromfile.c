@@ -365,3 +365,13 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 
 	return ncryst;
 }
+
+
+void fromfile_cleanup(void *mpriv)
+{
+	struct fromfile_private *dp = mpriv;
+
+	/* FIXME: Implementation */
+
+	free(dp);
+}

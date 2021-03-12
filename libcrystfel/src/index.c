@@ -510,7 +510,7 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 			break;
 
 			case INDEXING_FILE :
-			free(ipriv->engine_private[n]);
+			fromfile_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_TAKETWO :

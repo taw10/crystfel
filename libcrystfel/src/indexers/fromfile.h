@@ -42,5 +42,7 @@ extern void *fromfile_prepare(char *solution_filename, UnitCell *cell);
 
 extern int fromfile_index(struct image *image, void *mpriv, int crystal_number);
 
+extern void fromfile_cleanup(void *mpriv);
+
 
 #endif	/* FROMFILE_H */
