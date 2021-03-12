@@ -319,7 +319,7 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	/* Look up the hash table */
 	item = calloc(1, sizeof(struct fromfile_entries));
 	strcpy(item->key.filename, image->filename);
-	strcpy(item->key.event, get_event_string(image->event));
+	strcpy(item->key.event, image->ev);
 	item->key.crystal_number = crystal_number;
 
 	/* key already in the hash? */
