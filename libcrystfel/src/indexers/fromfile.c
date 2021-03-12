@@ -32,7 +32,6 @@
 #include <unistd.h>
 
 #include "image.h"
-#include "detector.h"
 #include "uthash.h"
 
 /** \file fromfile.h */
@@ -311,18 +310,6 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 }
 
 
-static void update_detector(struct detector *det, double xoffs, double yoffs)
-{
-	int i;
-
-	for ( i = 0; i < det->n_panels; i++ ) {
-		struct panel *p = &det->panels[i];
-		p->cnx += xoffs * p->res;
-		p->cny += yoffs * p->res;
-	}
-}
-
-
 int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 {
 	Crystal *cr;
@@ -369,7 +356,6 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	ncryst += 1;
 	crystal_set_cell(cr, cell);
 	crystal_set_det_shift(cr, xshift , yshift);
-	update_detector(image->det, xshift , yshift);
 	image_add_crystal(image, cr);
 
 	/* Look for additional crystals */
