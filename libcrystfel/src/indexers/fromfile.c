@@ -71,10 +71,11 @@ struct fromfile_private
 void print_struct(struct fromfile_entries *sol_hash)
 {
 	struct fromfile_entries *s;
-	s = (struct fromfile_entries *)malloc(sizeof *s);
-	memset(s, 0, sizeof *s);
 
-	for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
+	s = calloc(1, sizeof(struct fromfile_entries));
+	if ( s == NULL ) return;
+
+	for( s=sol_hash; s != NULL; s=s->hh.next ) {
 		printf("File %s, event %s, and crystal_number %d \n",
 		       s->key.filename, s->key.event, s->key.crystal_number);
 	}
@@ -84,10 +85,10 @@ void print_struct(struct fromfile_entries *sol_hash)
 void full_print_struct(struct fromfile_entries *sol_hash)
 {
 	struct fromfile_entries *s;
-	s = (struct fromfile_entries *)malloc(sizeof *s);
-	memset(s, 0, sizeof *s);
+	s = calloc(1, sizeof(struct fromfile_entries));
+	if ( s == NULL ) return;
 
-	for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
+	for( s=sol_hash; s != NULL; s=s->hh.next ) {
 		printf("File %s, event %s, and crystal_number %d \n",
 		       s->key.filename, s->key.event,
 		       s->key.crystal_number);
@@ -313,11 +314,10 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	struct fromfile_entries *item, *p, *pprime;
 	int ncryst = 0;
 	float *sol;
-	struct fromfile_private *dp = (struct fromfile_private *)mpriv;
+	struct fromfile_private *dp = mpriv;
 
 	/* Look up the hash table */
-	item = (struct fromfile_entries *)malloc(sizeof *item);
-	memset(item, 0, sizeof *item);
+	item = calloc(1, sizeof(struct fromfile_entries));
 	strcpy(item->key.filename, image->filename);
 	strcpy(item->key.event, get_event_string(image->event));
 	item->key.crystal_number = crystal_number;
