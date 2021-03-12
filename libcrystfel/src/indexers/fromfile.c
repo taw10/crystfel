@@ -175,7 +175,6 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 	struct fromfile_entries *sol_hash = NULL;
 	struct fromfile_entries *item = NULL;
 	float params[NPARAMS_PER_LINE];
-	char cwd[PATH_MAX];
 
 	/* Assembling solution file name from input file name*/
 	char *path_to_sol;
@@ -188,18 +187,13 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 	strcat(path_to_sol, core_name);
 	strcat(path_to_sol, extension);
 
-	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-		ERROR("Cannot identify current directory\n");
-	}
-
 	fh = fopen(path_to_sol, "r");
 
 	if ( fh == NULL ) {
-		ERROR("%s not found by fromfile_prepare in %s\n",
-		      path_to_sol, cwd);
+		ERROR("%s not found by fromfile_prepare\n", path_to_sol);
 		return 0;
 	} else {
-		STATUS("Found solution file %s at %s\n", path_to_sol, cwd);
+		STATUS("Found solution file %s\n", path_to_sol);
 	}
 
 	nlines = ncrystals_in_sol(path_to_sol);
