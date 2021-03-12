@@ -142,7 +142,7 @@ char *read_unknown_string(FILE *fh)
 
 	str = realloc(NULL, sizeof(char)*size); //size is start size
 	if ( !str ) {
-		ERROR("Can't reallocate string size")
+		ERROR("Can't reallocate string size");
 	}
 
 	while( ( ch = fgetc(fh) ) != ' ' && ch != EOF ){
@@ -152,8 +152,8 @@ char *read_unknown_string(FILE *fh)
 		if(len==size){
 			size+=64;
 			str = realloc(str, sizeof(char)*(size));
-			if ( !str ){
-				ERROR("Can't reallocate string size")
+			if ( !str ) {
+				ERROR("Can't reallocate string size");
 			}
 		}
 	}
