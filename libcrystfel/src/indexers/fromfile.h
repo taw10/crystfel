@@ -3,7 +3,6 @@
  *
  * Perform indexing from solution file
  *
- *
  * Authors:
  *   2020 Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
  *

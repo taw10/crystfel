@@ -3,7 +3,6 @@
  *
  * Perform indexing from solution file
  *
- *
  * Authors:
  *   2020 Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
  *
@@ -24,9 +23,6 @@
  *
  */
 
-#include "image.h"
-#include "detector.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -35,31 +31,36 @@
 #include <fenv.h>
 #include <unistd.h>
 
+#include "image.h"
+#include "detector.h"
 #include "uthash.h"
 
 /** \file fromfile.h */
 
-/* There are 9 vector components, 
+/* There are 9 vector components,
  * 2 detector shifts, 1 profile radius,
  *  1 resolution limit */
-#define NPARAMS_PER_LINE 11 
-/* The keys read from file 
+#define NPARAMS_PER_LINE 11
+/* The keys read from file
  * are the filename, event */
 #define NKEYS_PER_LINE 2
 
+
 struct fromfile_keys
-{			 	
-  char filename[100];
-  char event[100];
-  int crystal_number;
+{
+	char filename[100];
+	char event[100];
+	int crystal_number;
 };
 
+
 struct fromfile_entries
-{			 		
-    struct fromfile_keys key;
-    float solution[NPARAMS_PER_LINE];
-    UT_hash_handle hh;
+{
+	struct fromfile_keys key;
+	float solution[NPARAMS_PER_LINE];
+	UT_hash_handle hh;
 };
+
 
 struct fromfile_private
 {
@@ -67,105 +68,108 @@ struct fromfile_private
 	struct fromfile_entries *sol_hash;
 };
 
-void print_struct(struct fromfile_entries *sol_hash) 
-{
-    struct fromfile_entries *s;
-    s = (struct fromfile_entries *)malloc(sizeof *s);
-    memset(s, 0, sizeof *s);
 
-    for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
-        printf("File %s, event %s, and crystal_number %d \n",
-		       s->key.filename, s->key.event, 
-			   s->key.crystal_number);
-    }
+void print_struct(struct fromfile_entries *sol_hash)
+{
+	struct fromfile_entries *s;
+	s = (struct fromfile_entries *)malloc(sizeof *s);
+	memset(s, 0, sizeof *s);
+
+	for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
+		printf("File %s, event %s, and crystal_number %d \n",
+		       s->key.filename, s->key.event, s->key.crystal_number);
+	}
 }
+
 
 void full_print_struct(struct fromfile_entries *sol_hash)
 {
-    struct fromfile_entries *s;
-    s = (struct fromfile_entries *)malloc(sizeof *s);
-    memset(s, 0, sizeof *s);
+	struct fromfile_entries *s;
+	s = (struct fromfile_entries *)malloc(sizeof *s);
+	memset(s, 0, sizeof *s);
 
-    for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
-        printf("File %s, event %s, and crystal_number %d \n",
-		       s->key.filename, s->key.event, 
-			   s->key.crystal_number);
-		
+	for( s=sol_hash; s != NULL; s=(struct fromfile_entries*)(s->hh.next) ) {
+		printf("File %s, event %s, and crystal_number %d \n",
+		       s->key.filename, s->key.event,
+		       s->key.crystal_number);
+
 		printf("Solution parameters:\n");
-        for( int i = 0; i < NPARAMS_PER_LINE; i++ ){
-		    printf("%e", s->solution[i]);
-        }
-        printf("\n");
-    }
+		for( int i = 0; i < NPARAMS_PER_LINE; i++ ){
+			printf("%e", s->solution[i]);
+		}
+		printf("\n");
+	}
 }
+
 
 int ncrystals_in_sol(char *path)
 {
 	FILE *fh;
 	int count = 0;  /* Line counter (result) */
-    char c;         /* To store a character read from file */
+	char c;         /* To store a character read from file */
 
 	fh = fopen(path, "r");
 
 	if ( fh == NULL ) {
-		ERROR("%s not found by ncrystals_in_sol\n",path);
+		ERROR("%s not found by ncrystals_in_sol\n", path);
 		return 0;
 	}
 
-	for ( c = getc(fh); c != EOF; c = getc(fh) ){
-        if ( c == '\n' ){
-            count = count + 1; 
+	for ( c = getc(fh); c != EOF; c = getc(fh) ) {
+		if ( c == '\n' ) {
+			count = count + 1;
 		}
 	}
-	
+
 	/* For the last line, which has no \n at the end*/
 	count = count + 1;
-  
-    fclose(fh); 
+
+	fclose(fh);
 
 	return count;
-
 }
 
-char *read_unknown_string(FILE *fh){
+
+char *read_unknown_string(FILE *fh)
+{
 	/* Source: "https://stackoverflow.com/questions/16870485/
 	 * how-can-i-read-an-input-string-of-unknown-length" */
 
 	char *str = NULL;
-    int ch;
-    size_t len = 0;
+	int ch;
+	size_t len = 0;
 	size_t size = 1;
 
-    str = realloc(NULL, sizeof(char)*size); //size is start size
-	if ( !str ){
+	str = realloc(NULL, sizeof(char)*size); //size is start size
+	if ( !str ) {
 		ERROR("Can't reallocate string size")
 	}
-    
-    while( ( ch = fgetc(fh) ) != ' ' && ch != EOF ){
+
+	while( ( ch = fgetc(fh) ) != ' ' && ch != EOF ){
 		if (ch != '\n'){
 			str[len++]=ch;
 		}
-        if(len==size){
+		if(len==size){
 			size+=64;
-            str = realloc(str, sizeof(char)*(size));
+			str = realloc(str, sizeof(char)*(size));
 			if ( !str ){
 				ERROR("Can't reallocate string size")
 			}
-        }
-    }
+		}
+	}
 
-    return realloc(str, sizeof(char)*len);
-
+	return realloc(str, sizeof(char)*len);
 }
 
+
 void *fromfile_prepare(char *solution_filename, UnitCell *cell)
-{	
+{
 	FILE *fh;
 	int nlines;
 	int nparams_in_solution;
 	int nentries;
-	char *filename;   					
-	char *event;                 
+	char *filename;
+	char *event;
 	int crystal_number;
 	int current_line;
 	int position_in_current_line;
@@ -192,46 +196,44 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 	fh = fopen(path_to_sol, "r");
 
 	if ( fh == NULL ) {
-		ERROR("%s not found by fromfile_prepare in %s\n", path_to_sol, cwd);
+		ERROR("%s not found by fromfile_prepare in %s\n",
+		      path_to_sol, cwd);
 		return 0;
-	}
-	else {
+	} else {
 		STATUS("Found solution file %s at %s\n", path_to_sol, cwd);
 	}
 
 	nlines = ncrystals_in_sol(path_to_sol);
 	/* Total crystal parameters in solution file */
-	nparams_in_solution = nlines*NPARAMS_PER_LINE; 
+	nparams_in_solution = nlines*NPARAMS_PER_LINE;
 	/* Total entries in solution file */
-	nentries = nlines*(NPARAMS_PER_LINE+NKEYS_PER_LINE); 
-  
+	nentries = nlines*(NPARAMS_PER_LINE+NKEYS_PER_LINE);
+
 	STATUS("Parsing solution file containing %d lines...\n", nlines);
 
 	/* Reads indexing solutions */
 	int j = 0; /* follows the solution parameter [0,NPARAMS_PER_LINE] */
-	for(int i = 0; i < nentries; i++)
-	{	
+	for(int i = 0; i < nentries; i++) {
+
 		crystal_number = 0;
 
 		current_line = i/(NPARAMS_PER_LINE+NKEYS_PER_LINE);
-		
+
 		position_in_current_line = (i)%(NPARAMS_PER_LINE+NKEYS_PER_LINE);
 
-		if ( position_in_current_line == 0 ){
+		if ( position_in_current_line == 0 ) {
 
 			filename = read_unknown_string(fh);
 
 			if ( !filename ){
-				if ( current_line == (nlines-1) ){
-					break;
-				}
+				if ( current_line == nlines-1 ) break;
 				printf("Failed to read a filename\n");
 				return 0;
 			}
-			
+
 		}
 
-		if ( position_in_current_line == 1 ){
+		if ( position_in_current_line == 1 ) {
 			event = read_unknown_string(fh);
 			if ( !event ){
 				printf("Failed to read a event\n");
@@ -240,15 +242,15 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 
 		}
 
-		if ( position_in_current_line > 1 ){
+		if ( position_in_current_line > 1 ) {
 			if ( fscanf(fh, "%e", &params[j]) != 1 ) {
 				printf("Failed to read a parameter\n");
 				return 0;
 			}
-			j+=1;			
+			j+=1;
 		}
 
-		if ( j == (NPARAMS_PER_LINE) ){
+		if ( j == (NPARAMS_PER_LINE) ) {
 
 			/* Prepare to add to the hash table */
 			item = (struct fromfile_entries *)malloc(sizeof *item);
@@ -257,41 +259,39 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 			strcpy(item->key.event, event);
 			item->key.crystal_number = crystal_number;
 			for ( int k = 0; k < NPARAMS_PER_LINE; k++){
-    			item->solution[k] = params[k];
+				item->solution[k] = params[k];
 			}
 
 			/* Verify the uniqueness of the key */
 			struct fromfile_entries *uniqueness_test;
-			HASH_FIND(hh, sol_hash, &item->key, 
+			HASH_FIND(hh, sol_hash, &item->key,
 			          sizeof(struct fromfile_keys), uniqueness_test);
-		
-    		if ( uniqueness_test == NULL ) {
-				HASH_ADD(hh, sol_hash, key, 
+
+			if ( uniqueness_test == NULL ) {
+				HASH_ADD(hh, sol_hash, key,
 				         sizeof(struct fromfile_keys), item);
-			}
-			else{
+			} else {
 				/* Look for the next available set of keys */
-				do
-				{
+				do {
 					uniqueness_test = NULL;
 					crystal_number += 1;
 					item->key.crystal_number = crystal_number;
-					HASH_FIND(hh, sol_hash, &item->key, 
-			          sizeof(struct fromfile_keys), uniqueness_test);
-				}
-				while ( uniqueness_test != NULL );
-				
-				HASH_ADD(hh, sol_hash, key, 
+					HASH_FIND(hh, sol_hash, &item->key,
+					          sizeof(struct fromfile_keys),
+					          uniqueness_test);
+				} while ( uniqueness_test != NULL );
+
+				HASH_ADD(hh, sol_hash, key,
 				         sizeof(struct fromfile_keys), item);
 			}
 
-		j=0;	
+			j=0;
 
 		}
 	}
-	
+
 	fclose(fh);
-	
+
 	STATUS("Solution parsing done. Have %d parameters and %d total entries.\n",
 	       nparams_in_solution, nentries);
 
@@ -301,14 +301,15 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 	if ( dp == NULL ){
 		return NULL;
 	}
-    
-    dp->cellTemplate = cell;
+
+	dp->cellTemplate = cell;
 	dp->sol_hash = sol_hash;
-	
+
 	STATUS("Solution lookup table initialized!\n");
 
 	return (void *)dp;
 }
+
 
 static void update_detector(struct detector *det, double xoffs, double yoffs)
 {
@@ -321,16 +322,16 @@ static void update_detector(struct detector *det, double xoffs, double yoffs)
 	}
 }
 
+
 int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 {
 	Crystal *cr;
 	UnitCell *cell;
 	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-	float xshift, yshift; 
+	float xshift, yshift;
 	struct fromfile_entries *item, *p, *pprime;
 	int ncryst = 0;
 	float *sol;
-	
 	struct fromfile_private *dp = (struct fromfile_private *)mpriv;
 
 	/* Look up the hash table */
@@ -341,13 +342,11 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	item->key.crystal_number = crystal_number;
 
 	/* key already in the hash? */
-    HASH_FIND(hh,  dp->sol_hash, &item->key, sizeof(struct fromfile_keys), p);
-    if ( p == NULL ) {
-		return 0;
-	}
+	HASH_FIND(hh, dp->sol_hash, &item->key, sizeof(struct fromfile_keys), p);
+	if ( p == NULL ) return 0;
 
 	sol = &(p->solution)[0];
-	
+
 	asx = sol[0] * 1e9;
 	asy = sol[1] * 1e9;
 	asz = sol[2] * 1e9;
@@ -362,10 +361,10 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 
 	cell = cell_new();
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
-    cell_set_lattice_type(cell, cell_get_lattice_type(dp->cellTemplate));
+	cell_set_lattice_type(cell, cell_get_lattice_type(dp->cellTemplate));
 	cell_set_centering(cell, cell_get_centering(dp->cellTemplate));
 	cell_set_unique_axis(cell, cell_get_unique_axis(dp->cellTemplate));
-	
+
 	cr = crystal_new();
 	ncryst += 1;
 	crystal_set_cell(cr, cell);
@@ -373,17 +372,16 @@ int fromfile_index(struct image *image, void *mpriv, int crystal_number)
 	update_detector(image->det, xshift , yshift);
 	image_add_crystal(image, cr);
 
-	/*Look for additional crystals*/
+	/* Look for additional crystals */
 	item->key.crystal_number = crystal_number+1;
-	HASH_FIND(hh,  dp->sol_hash, &item->key, 
+	HASH_FIND(hh,  dp->sol_hash, &item->key,
 	          sizeof(struct fromfile_keys), pprime);
 
 	/* If a similar tag exist,
 	 * recursive call increasing the crystal_number by 1 */
-    if ( pprime != NULL ) {
+	if ( pprime != NULL ) {
 		ncryst += fromfile_index(image, mpriv, crystal_number+1);
 	}
-		
+
 	return ncryst;
-	
 }
