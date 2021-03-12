@@ -849,7 +849,6 @@ int main(int argc, char *argv[])
 		ERROR("Failed to open input file '%s'\n", args.filename);
 		return 1;
 	}
-	
 
 	/* Check prefix (if given) */
 	if ( args.check_prefix ) {
@@ -997,10 +996,10 @@ int main(int argc, char *argv[])
 		                                  xgandalf_opts,
 		                                  pinkindexer_opts,
 		                                  felix_opts,
-                                          args.filename);
-        
-        free(args.filename);
-        
+		                                  args.filename);
+
+		free(args.filename);
+
 		if ( args.iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");
 			return 1;

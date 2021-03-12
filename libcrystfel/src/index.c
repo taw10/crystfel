@@ -63,8 +63,8 @@
 
 #include "uthash.h"
 
-
 /** \file index.h */
+
 
 struct _indexingprivate
 {
@@ -78,6 +78,7 @@ struct _indexingprivate
 	IndexingMethod *methods;
 	void **engine_private;
 };
+
 
 static const char *onoff(int a)
 {
@@ -98,6 +99,7 @@ static void set_last_task(char *lt, const char *task)
 	assert(strlen(task) < MAX_TASK_LEN-1);
 	strcpy(lt, task);
 }
+
 
 static void show_indexing_flags(IndexingFlags flags)
 {
@@ -404,7 +406,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
 		                                          ttopts,
-                                                  filename);
+		                                          filename);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
@@ -639,8 +641,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_FILE :
 		set_last_task(last_task, "indexing:file");
-		int crystal_number = 0;
-		r = fromfile_index(image, mpriv, crystal_number);
+		r = fromfile_index(image, mpriv, 0);
 		break;
 
 		case INDEXING_FELIX :
@@ -942,7 +943,7 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 		int ntry = 0;
 		int success = 0;
 
-		if ( ipriv->methods[0] != INDEXING_FILE){
+		if ( ipriv->methods[0] != INDEXING_FILE ) {
 			image->features = sort_peaks(orig);
 		}
 
@@ -960,7 +961,7 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 		} while ( !done );
 
-		if ( ipriv->methods[0] != INDEXING_FILE){
+		if ( ipriv->methods[0] != INDEXING_FILE ) {
 			image_feature_list_free(image->features);
 		}
 
@@ -979,6 +980,7 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 		image->indexed_by = INDEXING_NONE;
 	}
 
+	image->features = orig;
 }
 
 

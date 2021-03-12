@@ -73,7 +73,7 @@ typedef enum {
 	INDEXING_FELIX = 4,       /**< Invoke Felix program */
 	INDEXING_XDS = 5,         /**< Invoke XDS program (NB not nXDS) */
 	INDEXING_SIMULATION = 6,  /**< Dummy value for simulated data */
-	INDEXING_FILE = 7,       /**< Results injector for debugging */
+	INDEXING_FILE = 7,        /**< Results injector for debugging */
 	INDEXING_ASDF = 8,        /**< Use built-in ASDF algorithm */
 	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
