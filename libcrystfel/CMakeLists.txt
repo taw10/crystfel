@@ -59,6 +59,7 @@ set(LIBCRYSTFEL_SOURCES
     src/image-cbf.c
     src/image-hdf5.c
     src/fom.c
+    src/fromfile.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
     src/indexers/dirax.c
@@ -98,6 +99,7 @@ set(LIBCRYSTFEL_HEADERS
     src/detgeom.h
     src/image-msgpack.h
     src/fom.h
+    src/fromfile.h
 )
 
 if (MSGPACK_FOUND)

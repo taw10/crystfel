@@ -1,0 +1,3 @@
+build*/*
+*ipynb*
+.vscode
