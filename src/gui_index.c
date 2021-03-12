@@ -521,7 +521,8 @@ static void run_indexing_once(struct crystfelproject *proj)
 	                       indexing_flags(&proj->indexing_params),
 	                       proj->cur_image->lambda, 1,
 	                       taketwoopts, xgandalf_opts,
-	                       pinkIndexer_opts, felix_opts);
+	                       pinkIndexer_opts, felix_opts,
+	                       NULL);
 	free(methods);
 
 	index_pattern(proj->cur_image, ipriv);
