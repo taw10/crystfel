@@ -59,7 +59,7 @@
 #include "indexers/taketwo.h"
 #include "indexers/xgandalf.h"
 #include "indexers/pinkindexer.h"
-#include "fromfile.h"
+#include "indexers/fromfile.h"
 
 #include "uthash.h"
 
