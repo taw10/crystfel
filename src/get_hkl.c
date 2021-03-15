@@ -95,6 +95,8 @@ static void show_help(const char *s)
 "\n"
 "Don't forget to specify the output filename:\n"
 "  -o, --output=<filename>    Output filename (default: stdout).\n"
+"      --output-format=mtz    Output in MTZ format.\n"
+"      --output-format=xds    Output in XDS format.\n"
 );
 }
 
@@ -469,6 +471,7 @@ int main(int argc, char *argv[])
 	float lowres = 0.0;        /* 1/d value */
 	double highres = INFINITY;  /* 1/d value */
 	UnitCell *cell = NULL;
+	char *output_format_str = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -491,6 +494,7 @@ int main(int argc, char *argv[])
 		{"highres",            1, NULL,                3},
 		{"reindex",            1, NULL,                4},
 		{"lowres",             1, NULL,                6},
+		{"output-format",      1, NULL,                7},
 		{0, 0, NULL, 0}
 	};
 
@@ -559,6 +563,10 @@ int main(int argc, char *argv[])
 			}
 			lowres /= 1e10;  /* Angstroms -> m */
 			lowres = 1.0/lowres;  /* m -> m^-1 */
+			break;
+
+			case 7 :
+			output_format_str = strdup(optarg);
 			break;
 
 			case 0 :
@@ -883,7 +891,16 @@ int main(int argc, char *argv[])
 	}
 
 	reflist_add_command_and_version(input, argc, argv); /* Yes, really! */
-	write_reflist(output, input);
+
+	if ( output_format_str == NULL ) {
+		write_reflist(output, input);
+	} else if ( cell == NULL ) {
+		ERROR("You must provide a unit cell to use MTZ or XDS output.\n");
+	} else if ( strcasecmp(output_format_str, "mtz") == 0 ) {
+		write_to_mtz(input, mero, cell, 0, INFINITY, output, "dataset");
+	} else if ( strcasecmp(output_format_str, "xds") == 0 ) {
+		write_to_xds(input, mero, cell, 0, INFINITY, output);
+	}
 
 	reflist_free(input);
 
