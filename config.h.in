@@ -10,4 +10,3 @@
 #mesondefine HAVE_MSGPACK
 #mesondefine HAVE_ZMQ
 #mesondefine HAVE_SLURM
-#mesondefine HAVE_LIBCCP4

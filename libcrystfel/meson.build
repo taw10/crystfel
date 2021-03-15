@@ -32,6 +32,11 @@ if fdipdep.found()
   conf_data.set10('HAVE_FDIP', 1)
 endif
 
+ccp4dep = dependency('libccp4c', required: false)
+if ccp4dep.found()
+  conf_data.set10('HAVE_LIBCCP4', 1)
+endif
+
 libcrystfel_versionc = vcs_tag(input: 'src/libcrystfel-version.c.in',
                                output: 'libcrystfel-version.c')
 
@@ -122,7 +127,8 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       include_directories : [libcrystfel_includes, libcrystfel_conf_inc],
                       dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
                                       hdf5dep, pthreaddep, ncursesdep,
-                                      xgandalfdep, pinkindexerdep, fdipdep],
+                                      xgandalfdep, pinkindexerdep, fdipdep,
+                                      ccp4dep],
                       install : true)
 
 libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,

@@ -9,6 +9,7 @@ find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 find_package(Doxygen)
 pkg_search_module(FFTW fftw3)
+pkg_search_module(LIBCCP4 libccp4c)
 
 configure_file(src/libcrystfel-version.c.cmake.in libcrystfel-version.c)
 
@@ -17,6 +18,7 @@ set(HAVE_FFTW ${FFTW_FOUND})
 set(HAVE_XGANDALF ${XGANDALF_FOUND})
 set(HAVE_PINKINDEXER ${PINKINDEXER_FOUND})
 set(HAVE_FDIP ${FDIP_FOUND})
+set(HAVE_LIBCCP4 ${LIBCCP4_FOUND})
 
 # Recent enough version of zlib?
 set(CMAKE_REQUIRED_LIBRARIES "-lz")
@@ -160,6 +162,11 @@ if (CURSES_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${CURSES_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${CURSES_LIBRARIES})
 endif (CURSES_FOUND)
+
+if (LIBCCP4_FOUND)
+	target_include_directories(${PROJECT_NAME} PRIVATE ${LIBCCP4_INCLUDES})
+	target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBCCP4_LIBRARIES})
+endif (LIBCCP4_FOUND)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${LIBCRYSTFEL_HEADERS}")

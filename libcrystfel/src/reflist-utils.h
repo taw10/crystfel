@@ -79,6 +79,16 @@ extern void free_contribs(RefList *list);
 extern void reflist_add_command_and_version(RefList *list,
                                             int argcv, char *argv[]);
 
+extern int write_to_mtz(RefList *reflist, SymOpList *sym, UnitCell *cell,
+                        double min_res, double max_res,
+                        const char *filename, const char *dataset_name);
+
+extern int write_to_xds(RefList *reflist, SymOpList *sym, UnitCell *cell,
+                        double min_res, double max_res, const char *filename);
+
+
+extern int libcrystfel_can_write_mtz(void);
+
 #ifdef __cplusplus
 }
 #endif

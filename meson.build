@@ -94,11 +94,6 @@ if cc.has_function('clock_gettime', prefix : '#include <time.h>')
   conf_data.set10('HAVE_CLOCK_GETTIME', 1)
 endif
 
-ccp4dep = dependency('libccp4c', required: false)
-if ccp4dep.found()
-  conf_data.set10('HAVE_LIBCCP4', 1)
-endif
-
 # ************************ libcrystfel (subdir) ************************
 
 subdir('libcrystfel')
@@ -240,8 +235,7 @@ if gtkdep.found()
 
 
   executable('crystfel', gui_sources,
-             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep, slurmdep,
-	                     ccp4dep],
+             dependencies : [mdep, libcrystfeldep, gtkdep, gsldep, slurmdep],
              install : true,
              install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
