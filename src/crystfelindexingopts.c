@@ -464,8 +464,40 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->ir_out),
 	                   FALSE, FALSE, 4.0);
 
-	/* FIXME: fix-bandwidth, divergence, profile-radius */
+	/* --fix-profile-radius */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
+	io->fix_profile_radius_p = gtk_check_button_new_with_label("Fix the reflection radius to");
+	gtk_box_pack_start(GTK_BOX(hbox),
+	                   GTK_WIDGET(io->fix_profile_radius_p),
+	                   FALSE, FALSE, 0.0);
+	io->fix_profile_radius = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(io->fix_profile_radius), 6);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->fix_profile_radius),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("nm-1");
+	gtk_label_set_markup(GTK_LABEL(label), "nm<sup>-1</sup>");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	i_disable_if_not(io->fix_profile_radius_p, io->fix_profile_radius);
+	gtk_widget_set_tooltip_text(io->fix_profile_radius,
+	                            "--fix-profile-radius");
 
+	/* --fix-divergence */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("Beam divergence (full angle) for spot prediction:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0.0);
+	io->fix_divergence = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(io->fix_divergence), 6);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->fix_divergence),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("mrad");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->fix_profile_radius, "--fix-divergence");
 	gtk_widget_show_all(box);
 
 	return box;
@@ -879,6 +911,20 @@ char **crystfel_indexing_opts_get_metadata_to_copy(CrystFELIndexingOpts *opts,
 }
 
 
+double crystfel_indexing_opts_get_fixed_profile_radius(CrystFELIndexingOpts *opts,
+                                                       int *active)
+{
+	*active = get_bool(opts->fix_profile_radius_p);
+	return get_float(opts->fix_profile_radius)*1e9;
+}
+
+
+double crystfel_indexing_opts_get_fixed_divergence(CrystFELIndexingOpts *opts)
+{
+	return get_float(opts->fix_divergence)/1e3;
+}
+
+
 /********************** Setters *************************/
 
 
@@ -1136,4 +1182,24 @@ void crystfel_indexing_opts_set_exclude_reflections(CrystFELIndexingOpts *opts,
 {
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->no_refls_in_stream),
 	                             flag);
+}
+
+
+void crystfel_indexing_opts_set_fixed_profile_radius(CrystFELIndexingOpts *opts,
+                                                     int active,
+                                                     double val)
+{
+	char tmp[64];
+	set_active(opts->fix_profile_radius_p, active);
+	snprintf(tmp, 63, "%.3f", val/1e9);
+	gtk_entry_set_text(GTK_ENTRY(opts->fix_profile_radius), tmp);
+}
+
+
+void crystfel_indexing_opts_set_fixed_divergence(CrystFELIndexingOpts *opts,
+                                                 double val)
+{
+	char tmp[64];
+	snprintf(tmp, 63, "%.3f", val*1e3);
+	gtk_entry_set_text(GTK_ENTRY(opts->fix_divergence), tmp);
 }

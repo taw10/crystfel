@@ -79,6 +79,9 @@ struct _crystfelindexingopts
 	GtkWidget *ir_inn;
 	GtkWidget *ir_mid;
 	GtkWidget *ir_out;
+	GtkWidget *fix_profile_radius_p;
+	GtkWidget *fix_profile_radius;
+	GtkWidget *fix_divergence;
 
 	GtkWidget *exclude_nonhits;
 	GtkWidget *no_peaks_in_stream;
@@ -120,6 +123,14 @@ extern int crystfel_indexing_opts_get_exclude_peaks(CrystFELIndexingOpts *opts);
 extern int crystfel_indexing_opts_get_exclude_reflections(CrystFELIndexingOpts *opts);
 extern char **crystfel_indexing_opts_get_metadata_to_copy(CrystFELIndexingOpts *opts,
                                                           int *n);
+extern double crystfel_indexing_opts_get_fixed_profile_radius(CrystFELIndexingOpts *opts,
+                                                              int *active);
+extern double crystfel_indexing_opts_get_fixed_divergence(CrystFELIndexingOpts *opts);
+
+
+
+
+
 
 extern void crystfel_indexing_opts_set_show_stream_opts(CrystFELIndexingOpts *opts,
                                                         int val);
@@ -162,5 +173,11 @@ extern void crystfel_indexing_opts_set_exclude_peaks(CrystFELIndexingOpts *opts,
                                                      int flag);
 extern void crystfel_indexing_opts_set_exclude_reflections(CrystFELIndexingOpts *opts,
                                                            int flag);
+extern void crystfel_indexing_opts_set_fixed_profile_radius(CrystFELIndexingOpts *opts,
+                                                            int active,
+                                                            double val);
+extern void crystfel_indexing_opts_set_fixed_divergence(CrystFELIndexingOpts *opts,
+                                                        double val);
+
 
 #endif	/* CRYSTFELINDEXINGOPTS_H */

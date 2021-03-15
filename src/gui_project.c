@@ -295,6 +295,15 @@ static void parse_integration_opt(const char *key, const char *val,
 	if ( strcmp(key, "integration.ir_out") == 0 ) {
 		proj->indexing_params.ir_out = parse_float(val);
 	}
+	if ( strcmp(key, "integration.fix_divergence") == 0 ) {
+		proj->indexing_params.fix_divergence = parse_float(val);
+	}
+	if ( strcmp(key, "integration.fix_profile_radius") == 0 ) {
+		proj->indexing_params.use_fix_profile_radius = parse_int(val);
+	}
+	if ( strcmp(key, "integration.fix_profile_radius_val") == 0 ) {
+		proj->indexing_params.fix_profile_radius = parse_float(val);
+	}
 }
 
 
@@ -928,6 +937,12 @@ int save_project(struct crystfelproject *proj)
 	        proj->indexing_params.ir_mid);
 	fprintf(fh, "integration.ir_out %f\n",
 	        proj->indexing_params.ir_out);
+	fprintf(fh, "integration.fix_profile_radius %i\n",
+	        proj->indexing_params.use_fix_profile_radius);
+	fprintf(fh, "integration.fix_profile_radius_val %e\n",
+	        proj->indexing_params.fix_profile_radius);
+	fprintf(fh, "integration.fix_divergence %e\n",
+	        proj->indexing_params.fix_divergence);
 
 	fprintf(fh, "stream.exclude_blanks %i\n",
 	        proj->indexing_params.exclude_nonhits);
@@ -1146,6 +1161,9 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_params.exclude_refls = 0;
 	proj->indexing_params.metadata_to_copy = NULL;
 	proj->indexing_params.n_metadata = 0;
+	proj->indexing_params.fix_profile_radius = 0.01e9;
+	proj->indexing_params.use_fix_profile_radius = 0;
+	proj->indexing_params.fix_divergence = 0.0;
 
 	proj->ambi_params.use_res = 1;
 	proj->ambi_params.res_min = 20;  /* Angstroms */

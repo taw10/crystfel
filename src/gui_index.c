@@ -122,6 +122,9 @@ static void get_indexing_opts(struct crystfelproject *proj,
 	                                             &proj->indexing_params.ir_inn,
 	                                             &proj->indexing_params.ir_mid,
 	                                             &proj->indexing_params.ir_out);
+	proj->indexing_params.fix_profile_radius = crystfel_indexing_opts_get_fixed_profile_radius(opts,
+	                                      &proj->indexing_params.use_fix_profile_radius);
+	proj->indexing_params.fix_divergence = crystfel_indexing_opts_get_fixed_divergence(opts);
 
 	/* Stream output */
 	proj->indexing_params.exclude_nonhits = crystfel_indexing_opts_get_exclude_blanks(opts);
@@ -298,6 +301,11 @@ static void set_indexing_opts(struct crystfelproject *proj,
 	                                             proj->indexing_params.ir_inn,
 	                                             proj->indexing_params.ir_mid,
 	                                             proj->indexing_params.ir_out);
+	crystfel_indexing_opts_set_fixed_profile_radius(opts,
+	                                                proj->indexing_params.use_fix_profile_radius,
+	                                                proj->indexing_params.fix_profile_radius);
+	crystfel_indexing_opts_set_fixed_divergence(opts,
+	                                            proj->indexing_params.fix_divergence);
 
 	/* Stream output */
 	crystfel_indexing_opts_set_exclude_blanks(opts,
@@ -778,6 +786,12 @@ static char **indexamajig_command_line(const char *geom_filename,
 	         indexing_params->ir_mid,
 	         indexing_params->ir_out);
 	add_arg(args, n_args++, tols);
+	if ( indexing_params->use_fix_profile_radius ) {
+		add_arg_float(args, n_args++, "fix-profile-radius",
+		              indexing_params->fix_profile_radius);
+	}
+	add_arg_float(args, n_args++, "fix-divergence",
+	              indexing_params->fix_divergence);
 
 	/* Stream output */
 	if ( indexing_params->exclude_nonhits ) add_arg(args, n_args++, "--no-non-hits-in-stream");

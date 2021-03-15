@@ -87,6 +87,9 @@ struct index_params {
 	float ir_inn;
 	float ir_mid;
 	float ir_out;
+	float fix_profile_radius;
+	int use_fix_profile_radius;
+	float fix_divergence;
 
 	/* Stream output */
 	int exclude_nonhits;
