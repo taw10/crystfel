@@ -133,6 +133,8 @@ static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
 	int claim = FALSE;
 	int zoom_allowed = 1;
 
+	if ( iv->image == NULL ) return FALSE;
+
 	if ( event->direction == GDK_SCROLL_UP ) {
 		zoom_scale = 1.1;
 		claim = TRUE;
