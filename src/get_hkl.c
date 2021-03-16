@@ -797,24 +797,25 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( (highres < INFINITY) || have_cutoff_aniso || (lowres > 0.0) ) {
-
-		if ( cellfile == NULL ) {
-			ERROR("You must provide a unit cell when using "
-			      "--cutoff-angstroms, --highres or --lowres.\n");
-			return 1;
-		}
-
+	if ( cellfile != NULL ) {
 		cell = load_cell_from_file(cellfile);
 		if ( cell == NULL ) {
 			ERROR("Failed to load cell from '%s'\n", cellfile);
 			return 1;
 		}
 		free(cellfile);
-
 	}
 
-	input = apply_resolution_cutoff(input, lowres, highres, cell);
+	if ( (highres < INFINITY) || (lowres > 0.0) ) {
+		if ( cell == NULL ) {
+			ERROR("You must provide a unit cell when using "
+			      "--highres or --lowres\n");
+			return 1;
+		} else {
+			input = apply_resolution_cutoff(input, lowres, highres,
+			                                cell);
+		}
+	}
 
 	if ( have_cutoff_aniso ) {
 
@@ -825,6 +826,12 @@ int main(int argc, char *argv[])
 		double bsx, bsy, bsz;
 		double csx, csy, csz;
 		double as, bs, cs;
+
+		if ( cell == NULL ) {
+			ERROR("You must provide a unit cell when using "
+			      "--cutoff-angstroms\n");
+			return 1;
+		}
 
 		cell_get_reciprocal(cell, &asx, &asy, &asz,
 				          &bsx, &bsy, &bsz,
