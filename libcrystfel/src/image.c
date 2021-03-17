@@ -420,67 +420,68 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
+		struct detgeom_panel *p = &detgeom->panels[i];
 		double shift_x, shift_y;
 
-		detgeom->panels[i].name = safe_strdup(dtempl->panels[i].name);
+		p->name = safe_strdup(dtempl->panels[i].name);
 
-		detgeom->panels[i].pixel_pitch = dtempl->panels[i].pixel_pitch;
+		p->pixel_pitch = dtempl->panels[i].pixel_pitch;
 
 		/* NB cnx,cny are in pixels, cnz is in m */
-		detgeom->panels[i].cnx = dtempl->panels[i].cnx;
-		detgeom->panels[i].cny = dtempl->panels[i].cny;
-		detgeom->panels[i].cnz = im_get_length(image,
-		                                       dtempl->panels[i].cnz_from,
-		                                       1e-3);
+		p->cnx = dtempl->panels[i].cnx;
+		p->cny = dtempl->panels[i].cny;
+		p->cnz = im_get_length(image,
+		                       dtempl->panels[i].cnz_from,
+		                       1e-3);
 
 		/* Apply offset (in m) and then convert cnz from
 		 * m to pixels */
-		detgeom->panels[i].cnz += dtempl->panels[i].cnz_offset;
-		detgeom->panels[i].cnz /= detgeom->panels[i].pixel_pitch;
+		p->cnz += dtempl->panels[i].cnz_offset;
+		p->cnz /= p->pixel_pitch;
 
 		/* Apply overall shift (already in m) */
 		shift_x = im_get_length(image, dtempl->shift_x_from, 1.0);
 		shift_y = im_get_length(image, dtempl->shift_y_from, 1.0);
 
 		if ( !isnan(shift_x) ) {
-			detgeom->panels[i].cnx += shift_x;
+			p->cnx += shift_x;
 		}
 		if ( !isnan(shift_y) ) {
-			detgeom->panels[i].cny += shift_y;
+			p->cny += shift_y;
 		}
 
-		detgeom->panels[i].max_adu = dtempl->panels[i].max_adu;
+		p->max_adu = dtempl->panels[i].max_adu;
 
 		switch ( dtempl->panels[i].adu_scale_unit ) {
 
 			case ADU_PER_PHOTON:
-			detgeom->panels[i].adu_per_photon = dtempl->panels[i].adu_scale;
+			p->adu_per_photon = dtempl->panels[i].adu_scale;
 			break;
 
 			case ADU_PER_EV:
-			detgeom->panels[i].adu_per_photon = dtempl->panels[i].adu_scale
+			p->adu_per_photon = dtempl->panels[i].adu_scale
 				* ph_lambda_to_eV(image->lambda);
 			break;
 
 			default:
-			detgeom->panels[i].adu_per_photon = 1.0;
+			p->adu_per_photon = 1.0;
 			ERROR("Invalid ADU/ph scale unit (%i)\n",
 			      dtempl->panels[i].adu_scale_unit);
 			break;
 
 		}
 
-		detgeom->panels[i].w = dtempl->panels[i].orig_max_fs
+		p->w = dtempl->panels[i].orig_max_fs
 		                        - dtempl->panels[i].orig_min_fs + 1;
-		detgeom->panels[i].h = dtempl->panels[i].orig_max_ss
+		p->h = dtempl->panels[i].orig_max_ss
 		                        - dtempl->panels[i].orig_min_ss + 1;
 
-		detgeom->panels[i].fsx = dtempl->panels[i].fsx;
-		detgeom->panels[i].fsy = dtempl->panels[i].fsy;
-		detgeom->panels[i].fsz = dtempl->panels[i].fsz;
-		detgeom->panels[i].ssx = dtempl->panels[i].ssx;
-		detgeom->panels[i].ssy = dtempl->panels[i].ssy;
-		detgeom->panels[i].ssz = dtempl->panels[i].ssz;
+		p->fsx = dtempl->panels[i].fsx;
+		p->fsy = dtempl->panels[i].fsy;
+		p->fsz = dtempl->panels[i].fsz;
+		p->ssx = dtempl->panels[i].ssx;
+		p->ssy = dtempl->panels[i].ssy;
+		p->ssz = dtempl->panels[i].ssz;
 
 	}
 
