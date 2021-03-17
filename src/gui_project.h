@@ -282,6 +282,7 @@ struct crystfelproject {
 	int max_frames;
 	char **filenames;
 	char **events;
+	int show_centre;
 
 	int show_peaks;
 	struct peak_params peak_search_params;

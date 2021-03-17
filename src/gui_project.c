@@ -486,6 +486,10 @@ static void handle_var(const char *key, const char *val,
 		proj->merging_backend_selected = find_backend(val, proj);
 	}
 
+	if ( strcmp(key, "show_centre") == 0 ) {
+		proj->show_centre = parse_int(val);
+	}
+
 	if ( strcmp(key, "show_peaks") == 0 ) {
 		proj->show_peaks = parse_int(val);
 	}
@@ -1027,6 +1031,7 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "fom.min_meas %i\n", proj->fom_min_meas);
 	fprintf(fh, "fom.cell_file %s\n", proj->fom_cell_filename);
 
+	fprintf(fh, "show_centre %i\n", proj->show_centre);
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
 	fprintf(fh, "label_refls %i\n", proj->label_refls);
@@ -1113,6 +1118,7 @@ void default_project(struct crystfelproject *proj)
 	#endif
 
 	/* Default parameter values */
+	proj->show_centre = 1;
 	proj->show_peaks = 1;
 	proj->show_refls = 1;
 	proj->label_refls = 1;

@@ -263,6 +263,8 @@ void update_imageview(struct crystfelproject *proj)
 	                                      proj->indexing_params.ir_inn);
 	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                   proj->show_peaks);
+	crystfel_image_view_set_show_centre(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                   proj->show_centre);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
 
@@ -490,6 +492,15 @@ static gint results_combo_changed_sig(GtkComboBox *w,
 }
 
 
+static gint show_centre_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	proj->show_centre = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	crystfel_image_view_set_show_centre(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                    proj->show_centre);
+	return FALSE;
+}
+
+
 static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
@@ -530,6 +541,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"peaks\" action=\"PeaksAction\" />"
 		"	<menuitem name=\"refls\" action=\"ReflsAction\" />"
 		"	<menuitem name=\"labelrefls\" action=\"LabelReflsAction\" />"
+		"	<menuitem name=\"centre\" action=\"CentreAction\" />"
 		"       <separator />"
 		"	<menuitem name=\"resetzoom\" action=\"ResetZoomAction\" />"
 		"</menu>"
@@ -570,6 +582,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		  G_CALLBACK(show_refls_sig), FALSE },
 		{ "LabelReflsAction", NULL, "Show reflection indices", NULL, NULL,
 		  G_CALLBACK(label_refls_sig), FALSE },
+		{ "CentreAction", NULL, "Beam centre", NULL, NULL,
+		  G_CALLBACK(show_centre_sig), FALSE },
 	};
 
 	proj->action_group = gtk_action_group_new("cellwindow");
@@ -911,6 +925,10 @@ int main(int argc, char *argv[])
 			stream_close(st);
 		}
 
+		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/centre");
+		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
+		                             proj.show_centre);
+
 		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/peaks");
 		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
 		                             proj.show_peaks);
@@ -926,6 +944,8 @@ int main(int argc, char *argv[])
 		update_imageview(&proj);
 	}
 
+	w = gtk_ui_manager_get_widget(proj.ui, "/ui/mainwindow/view/centre");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), proj.show_centre);
 	w = gtk_ui_manager_get_widget(proj.ui, "/ui/mainwindow/view/peaks");
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), proj.show_peaks);
 	w = gtk_ui_manager_get_widget(proj.ui, "/ui/mainwindow/view/refls");

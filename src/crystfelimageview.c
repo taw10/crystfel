@@ -374,11 +374,6 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv,
 
 	cairo_restore(cr);
 
-	cairo_arc(cr, 0.0, 0.0, 0.006, 0, 2.0*M_PI);
-	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_set_line_width(cr, 0.00001);
-	cairo_stroke(cr);
-
 	xs = p.pixel_pitch;
 	ys = p.pixel_pitch;
 	cairo_user_to_device_distance(cr, &xs, &ys);
@@ -583,6 +578,19 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 		}
 	}
 
+	if ( iv->show_centre ) {
+		cairo_arc(cr, 0.0, 0.0, 0.006, 0, 2.0*M_PI);
+		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.9);
+		cairo_set_line_width(cr, 0.0001);
+		cairo_stroke(cr);
+		cairo_move_to(cr, -0.001, 0.0);
+		cairo_line_to(cr, 0.001, 0.0);
+		cairo_move_to(cr, 0.0, -0.001);
+		cairo_line_to(cr, 0.0, 0.001);
+		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.9);
+		cairo_stroke(cr);
+	}
+
 	if ( iv->show_peaks ) {
 		draw_peaks(cr, iv, iv->image->features);
 	}
@@ -740,6 +748,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->detector_h = 1.0;
 	iv->zoom = -1.0;
 	iv->image = NULL;
+	iv->show_centre = 1;
 	iv->show_peaks = 0;
 	iv->brightness = 1.0;
 	iv->pixbufs = NULL;
@@ -1013,6 +1022,15 @@ void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                         double brightness)
 {
 	iv->brightness = brightness;
+	iv->need_rerender = 1;
+	redraw(iv);
+}
+
+
+void crystfel_image_view_set_show_centre(CrystFELImageView *iv,
+                                         int show_centre)
+{
+	iv->show_centre = show_centre;
 	iv->need_rerender = 1;
 	redraw(iv);
 }

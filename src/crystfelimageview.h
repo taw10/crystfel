@@ -88,6 +88,7 @@ struct _crystfelimageview
 	GdkPixbuf          **pixbufs;
 
 	double               brightness;
+	int                  show_centre;
 	int                  show_peaks;
 	int                  show_refls;
 	int                  label_refls;
@@ -113,6 +114,9 @@ extern void crystfel_image_view_reset_zoom(CrystFELImageView *iv);
 
 extern void crystfel_image_view_set_brightness(CrystFELImageView *iv,
                                                double brightness);
+
+extern void crystfel_image_view_set_show_centre(CrystFELImageView *iv,
+                                                int show_centre);
 
 extern void crystfel_image_view_set_show_peaks(CrystFELImageView *iv,
                                                int show_peaks);
