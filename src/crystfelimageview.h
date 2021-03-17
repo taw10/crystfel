@@ -75,7 +75,7 @@ struct _crystfelimageview
 	GtkAdjustment       *vadj;
 	double               visible_width;
 	double               visible_height;
-	double               zoom;
+	double               zoom;  /* screen pixels per m */
 	double               drag_start_x;
 	double               drag_start_y;
 	double               drag_start_sp_x;

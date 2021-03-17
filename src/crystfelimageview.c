@@ -146,10 +146,11 @@ static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
 	if ( event->direction == GDK_SCROLL_LEFT ) return TRUE;
 	if ( event->direction == GDK_SCROLL_RIGHT ) return TRUE;
 
-	ratio = iv->zoom / iv->image->detgeom->panels[0].pixel_pitch;
+	/* Size of a detector pixel in screen pixels */
+	ratio = iv->zoom * iv->image->detgeom->panels[0].pixel_pitch;
 
-	if ( (ratio < 5e6) && (zoom_scale < 1.0) ) zoom_allowed = 0;
-	if ( (ratio > 1e10) && (zoom_scale > 1.0) ) zoom_allowed = 0;
+	if ( (ratio < 0.05) && (zoom_scale < 1.0) ) zoom_allowed = 0;
+	if ( (ratio > 100.0) && (zoom_scale > 1.0) ) zoom_allowed = 0;
 
 	if ( claim && zoom_allowed ) {
 
