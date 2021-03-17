@@ -444,10 +444,10 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 		shift_y = im_get_length(image, dtempl->shift_y_from, 1.0);
 
 		if ( !isnan(shift_x) ) {
-			p->cnx += shift_x;
+			p->cnx += shift_x / p->pixel_pitch;
 		}
 		if ( !isnan(shift_y) ) {
-			p->cny += shift_y;
+			p->cny += shift_y / p->pixel_pitch;
 		}
 
 		p->max_adu = dtempl->panels[i].max_adu;
