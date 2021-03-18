@@ -486,6 +486,7 @@ static void run_indexing_once(struct crystfelproject *proj)
 	XGandalfOptions *xgandalf_opts;
 	PinkIndexerOptions *pinkIndexer_opts;
 	FelixOptions *felix_opts;
+	FromFileOptions *fromfile_opts;
 	char *old_cwd;
 	char *tmpdir;
 	int r;
@@ -514,7 +515,8 @@ static void run_indexing_once(struct crystfelproject *proj)
 	default_method_options(&taketwoopts,
 	                       &xgandalf_opts,
 	                       &pinkIndexer_opts,
-	                       &felix_opts);
+	                       &felix_opts,
+	                       &fromfile_opts);
 
 	ipriv = setup_indexing(methods, cell,
 	                       proj->indexing_params.tols,

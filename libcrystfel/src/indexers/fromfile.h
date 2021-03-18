@@ -5,6 +5,7 @@
  *
  * Authors:
  *   2020 Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
+ *   2021 Thomas White <thomas.white@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -26,23 +27,14 @@
 #ifndef FROMFILE_H
 #define FROMFILE_H
 
-struct fromfile_keys;
-struct fromfile_entries;
-struct fromfile_private;
+#include <argp.h>
 
 #include "image.h"
-#include "cell.h"
-#include "uthash.h"
 
-extern void print_struct(struct fromfile_entries *sol_hash);
-
-extern void full_print_struct(struct fromfile_entries *sol_hash);
-
-extern void *fromfile_prepare(char *solution_filename, UnitCell *cell);
-
+extern int fromfile_default_options(FromFileOptions **opts_ptr);
+extern void *fromfile_prepare(IndexingMethod *indm,
+                              struct fromfile_options *opts);
 extern int fromfile_index(struct image *image, void *mpriv, int crystal_number);
-
 extern void fromfile_cleanup(void *mpriv);
-
 
 #endif	/* FROMFILE_H */

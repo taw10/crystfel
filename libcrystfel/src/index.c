@@ -208,7 +208,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
                             struct taketwo_options *taketwo_opts,
-                            char *filename)
+                            struct fromfile_options *fromfile_opts)
 {
 	char *str;
 	IndexingMethod in = *m;
@@ -237,7 +237,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_FILE :
-		priv = fromfile_prepare(filename, cell);
+		priv = fromfile_prepare(m, fromfile_opts);
 		break;
 
 		case INDEXING_FELIX :
@@ -336,7 +336,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 struct xgandalf_options *xgandalf_opts,
                                 struct pinkIndexer_options *pinkIndexer_opts,
                                 struct felix_options *felix_opts,
-                                char *filename)
+                                struct fromfile_options *fromfile_opts)
 {
 	IndexingPrivate *ipriv;
 	IndexingMethod *methods;
@@ -406,7 +406,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
 		                                          ttopts,
-		                                          filename);
+		                                          fromfile_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
@@ -1213,10 +1213,12 @@ char *detect_indexing_methods(UnitCell *cell)
 void default_method_options(TakeTwoOptions **ttopts,
                             XGandalfOptions **xgandalf_opts,
                             PinkIndexerOptions **pinkIndexer_opts,
-                            FelixOptions **felix_opts)
+                            FelixOptions **felix_opts,
+                            FromFileOptions **fromfile_opts)
 {
 	taketwo_default_options(ttopts);
 	xgandalf_default_options(xgandalf_opts);
 	pinkIndexer_default_options(pinkIndexer_opts);
 	felix_default_options(felix_opts);
+	fromfile_default_options(fromfile_opts);
 }

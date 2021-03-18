@@ -152,16 +152,19 @@ typedef struct felix_options FelixOptions;
 typedef struct taketwo_options TakeTwoOptions;
 typedef struct xgandalf_options XGandalfOptions;
 typedef struct pinkIndexer_options PinkIndexerOptions;
+typedef struct fromfile_options FromFileOptions;
 
 extern struct argp felix_argp;
 extern struct argp pinkIndexer_argp;
 extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
+extern struct argp fromfile_argp;
 
 extern void default_method_options(TakeTwoOptions **ttopts,
                                    XGandalfOptions **xgandalf_opts,
                                    PinkIndexerOptions **pinkIndexer_opts,
-                                   FelixOptions **felix_opts);
+                                   FelixOptions **felix_opts,
+                                   FromFileOptions **fromfile_opts);
 
 extern IndexingPrivate *setup_indexing(const char *methods,
                                        UnitCell *cell,
@@ -173,7 +176,7 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        struct xgandalf_options *xgandalf_opts,
                                        struct pinkIndexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts,
-                                       char *filename);
+                                       struct fromfile_options *fromfile_opts);
 
 extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);
 

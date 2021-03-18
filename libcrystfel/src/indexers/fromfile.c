@@ -5,6 +5,7 @@
  *
  * Authors:
  *   2020 Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
+ *   2021 Thomas White <thomas.white@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -30,6 +31,7 @@
 #include <assert.h>
 #include <fenv.h>
 #include <unistd.h>
+#include <argp.h>
 
 #include "image.h"
 #include "uthash.h"
@@ -43,6 +45,12 @@
 /* The keys read from file
  * are the filename, event */
 #define NKEYS_PER_LINE 2
+
+
+struct fromfile_options
+{
+	char *filename;
+};
 
 
 struct fromfile_keys
@@ -162,7 +170,7 @@ char *read_unknown_string(FILE *fh)
 }
 
 
-void *fromfile_prepare(char *solution_filename, UnitCell *cell)
+void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 {
 	FILE *fh;
 	int nlines;
@@ -177,27 +185,15 @@ void *fromfile_prepare(char *solution_filename, UnitCell *cell)
 	struct fromfile_entries *item = NULL;
 	float params[NPARAMS_PER_LINE];
 
-	/* Assembling solution file name from input file name*/
-	char *path_to_sol;
-	size_t path_len;
-	char *core_name = strtok(solution_filename, ".");
-	char *extension = ".sol";
-	path_len = sizeof(core_name) + sizeof(extension) + sizeof("../");
-	path_to_sol = realloc(NULL, sizeof(char)*path_len);
-	strcpy(path_to_sol, "../");
-	strcat(path_to_sol, core_name);
-	strcat(path_to_sol, extension);
-
-	fh = fopen(path_to_sol, "r");
-
+	fh = fopen(opts->filename, "r");
 	if ( fh == NULL ) {
-		ERROR("%s not found by fromfile_prepare\n", path_to_sol);
-		return 0;
+		ERROR("%s not found by fromfile_prepare\n", opts->filename);
+		return NULL;
 	} else {
-		STATUS("Found solution file %s\n", path_to_sol);
+		STATUS("Found solution file %s\n", opts->filename);
 	}
 
-	nlines = ncrystals_in_sol(path_to_sol);
+	nlines = ncrystals_in_sol(opts->filename);
 	/* Total crystal parameters in solution file */
 	nparams_in_solution = nlines*NPARAMS_PER_LINE;
 	/* Total entries in solution file */
@@ -375,3 +371,67 @@ void fromfile_cleanup(void *mpriv)
 
 	free(dp);
 }
+
+
+static void fromfile_show_help()
+{
+	printf("Parameters for 'fromfile' indexing:\n"
+"     --fromfile-input-file\n"
+"                           Filename of indexing solution file\n"
+);
+}
+
+
+int fromfile_default_options(FromFileOptions **opts_ptr)
+{
+	FromFileOptions *opts;
+	opts = malloc(sizeof(struct fromfile_options));
+	if ( opts == NULL ) return ENOMEM;
+	opts->filename = NULL;
+	*opts_ptr = opts;
+	return 0;
+}
+
+
+static error_t fromfile_parse_arg(int key, char *arg,
+                                 struct argp_state *state)
+{
+	struct fromfile_options **opts_ptr = state->input;
+	int r;
+
+	switch ( key ) {
+
+		case ARGP_KEY_INIT :
+		r = fromfile_default_options(opts_ptr);
+		if ( r ) return r;
+		break;
+
+		case 1 :
+		fromfile_show_help();
+		return EINVAL;
+
+		case 2 :
+		(*opts_ptr)->filename = strdup(arg);
+		break;
+
+		default :
+		return ARGP_ERR_UNKNOWN;
+
+	}
+
+	return 0;
+}
+
+
+static struct argp_option fromfile_options[] = {
+
+	{"help-fromfile", 1, NULL, OPTION_NO_USAGE,
+	 "Show options for 'from file' indexing", 99},
+
+	{"fromfile-input-file", 2, "filename", OPTION_HIDDEN, NULL},
+	{0}
+};
+
+
+struct argp fromfile_argp = { fromfile_options, fromfile_parse_arg,
+                              NULL, NULL, NULL, NULL, NULL };
