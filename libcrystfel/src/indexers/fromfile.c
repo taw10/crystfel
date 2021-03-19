@@ -38,336 +38,296 @@
 
 /** \file fromfile.h */
 
-/* There are 9 vector components,
- * 2 detector shifts, 1 profile radius,
- *  1 resolution limit */
-#define NPARAMS_PER_LINE 11
-/* The keys read from file
- * are the filename, event */
-#define NKEYS_PER_LINE 2
-
-
 struct fromfile_options
 {
 	char *filename;
 };
 
+#define MAX_KEY_LEN (256)
+#define MAX_CRYSTALS (16)
 
-struct fromfile_keys
+struct fromfile_key
 {
-	char filename[100];
-	char event[100];
-	int crystal_number;
+	char filename[MAX_KEY_LEN];
+	char event[MAX_KEY_LEN];
 };
 
 
-struct fromfile_entries
+struct fromfile_entry
 {
-	struct fromfile_keys key;
-	float solution[NPARAMS_PER_LINE];
+	struct fromfile_key key_field;
+	Crystal *crystals[MAX_CRYSTALS];
+	int n_crystals;
 	UT_hash_handle hh;
 };
 
 
 struct fromfile_private
 {
-	UnitCell *cellTemplate;
-	struct fromfile_entries *sol_hash;
+	struct fromfile_entry *sol_hash;
 };
 
 
-void print_struct(struct fromfile_entries *sol_hash)
+static int make_key(struct fromfile_key *key,
+                    const char *filename, const char *ev)
 {
-	struct fromfile_entries *s;
+	if ( (strlen(filename) > MAX_KEY_LEN) || (strlen(ev) > MAX_KEY_LEN) ) {
+		ERROR("Filename/event too long: %s %s\n", filename, ev);
+		return 1;
+	}
 
-	s = calloc(1, sizeof(struct fromfile_entries));
-	if ( s == NULL ) return;
+	/* The entire structure is used as a key, not just the pre-terminator
+	 * parts of the strings.  Therefore it must be initialised to zero */
+	memset(key, 0, sizeof(struct fromfile_key));
 
-	for( s=sol_hash; s != NULL; s=s->hh.next ) {
-		printf("File %s, event %s, and crystal_number %d \n",
-		       s->key.filename, s->key.event, s->key.crystal_number);
+	strcpy(key->filename, filename);
+	strcpy(key->event, ev);
+
+	return 0;
+}
+
+
+struct fromfile_entry *add_unique(struct fromfile_entry **phead,
+                                  struct fromfile_key key)
+{
+	struct fromfile_entry *p;
+	struct fromfile_entry *head = *phead;
+
+	HASH_FIND(hh, head, &key, sizeof(struct fromfile_key), p);
+	if ( p == NULL ) {
+
+		struct fromfile_entry *item;
+
+		item = malloc(sizeof(struct fromfile_entry));
+		if ( item == NULL ) return NULL;
+
+		item->n_crystals = 0;
+		item->key_field = key;
+
+		HASH_ADD(hh, head, key_field, sizeof(struct fromfile_key), item);
+		*phead = head;
+		return item;
+
+	} else {
+		return p;
 	}
 }
 
 
-void full_print_struct(struct fromfile_entries *sol_hash)
+static int set_ua(UnitCell *cell, const char *ltsym)
 {
-	struct fromfile_entries *s;
-	s = calloc(1, sizeof(struct fromfile_entries));
-	if ( s == NULL ) return;
-
-	for( s=sol_hash; s != NULL; s=s->hh.next ) {
-		printf("File %s, event %s, and crystal_number %d \n",
-		       s->key.filename, s->key.event,
-		       s->key.crystal_number);
-
-		printf("Solution parameters:\n");
-		for( int i = 0; i < NPARAMS_PER_LINE; i++ ){
-			printf("%e", s->solution[i]);
-		}
-		printf("\n");
-	}
+	if ( strlen(ltsym) != 3 ) return 1;
+	cell_set_unique_axis(cell, ltsym[2]);
+	return 0;
 }
 
 
-int ncrystals_in_sol(char *path)
+static int set_lattice(UnitCell *cell, const char *ltsym)
 {
-	FILE *fh;
-	int count = 0;  /* Line counter (result) */
-	char c;         /* To store a character read from file */
+	if ( (strlen(ltsym) != 2) && (strlen(ltsym) != 3) ) return 1;
 
-	fh = fopen(path, "r");
+	switch ( ltsym[1] ) {
+		case 'P':
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'I':
+		case 'F':
+		case 'R':
+		case 'H':
+		break;
 
-	if ( fh == NULL ) {
-		ERROR("%s not found by ncrystals_in_sol\n", path);
-		return 0;
+		default:
+		return 1;
+	}
+	cell_set_centering(cell, ltsym[1]);
+
+	switch ( ltsym[0] ) {
+
+		case 'a' :
+		cell_set_lattice_type(cell, L_TRICLINIC);
+		break;
+
+		case 'm' :
+		cell_set_lattice_type(cell, L_MONOCLINIC);
+		return set_ua(cell, ltsym);
+
+		case 'o' :
+		cell_set_lattice_type(cell, L_ORTHORHOMBIC);
+		break;
+
+		case 't' :
+		cell_set_lattice_type(cell, L_TETRAGONAL);
+		return set_ua(cell, ltsym);
+
+		case 'c' :
+		cell_set_lattice_type(cell, L_CUBIC);
+		break;
+
+		case 'r' :
+		cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
+		break;
+
+		case 'h' :
+		cell_set_lattice_type(cell, L_HEXAGONAL);
+		return set_ua(cell, ltsym);
+
+		default :
+		return 1;
 	}
 
-	for ( c = getc(fh); c != EOF; c = getc(fh) ) {
-		if ( c == '\n' ) {
-			count = count + 1;
-		}
-	}
-
-	/* For the last line, which has no \n at the end*/
-	count = count + 1;
-
-	fclose(fh);
-
-	return count;
-}
-
-
-char *read_unknown_string(FILE *fh)
-{
-	/* Source: "https://stackoverflow.com/questions/16870485/
-	 * how-can-i-read-an-input-string-of-unknown-length" */
-
-	char *str = NULL;
-	int ch;
-	size_t len = 0;
-	size_t size = 1;
-
-	str = realloc(NULL, sizeof(char)*size); //size is start size
-	if ( !str ) {
-		ERROR("Can't reallocate string size");
-	}
-
-	while( ( ch = fgetc(fh) ) != ' ' && ch != EOF ){
-		if (ch != '\n'){
-			str[len++]=ch;
-		}
-		if(len==size){
-			size+=64;
-			str = realloc(str, sizeof(char)*(size));
-			if ( !str ) {
-				ERROR("Can't reallocate string size");
-			}
-		}
-	}
-
-	return realloc(str, sizeof(char)*len);
+	return 0;
 }
 
 
 void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 {
 	FILE *fh;
-	int nlines;
-	int nparams_in_solution;
-	int nentries;
-	char *filename;
-	char *event;
-	int crystal_number;
-	int current_line;
-	int position_in_current_line;
-	struct fromfile_entries *sol_hash = NULL;
-	struct fromfile_entries *item = NULL;
-	float params[NPARAMS_PER_LINE];
+	struct fromfile_private *dp;
+
+	if ( opts->filename == NULL ) {
+		ERROR("Please try again with --fromfile-input-file\n");
+		return NULL;
+	}
+
+	dp = malloc(sizeof(struct fromfile_private));
+	if ( dp == NULL ) return NULL;
 
 	fh = fopen(opts->filename, "r");
 	if ( fh == NULL ) {
-		ERROR("%s not found by fromfile_prepare\n", opts->filename);
+		ERROR("Couldn't find solution file '%s'\n", opts->filename);
 		return NULL;
-	} else {
-		STATUS("Found solution file %s\n", opts->filename);
 	}
 
-	nlines = ncrystals_in_sol(opts->filename);
-	/* Total crystal parameters in solution file */
-	nparams_in_solution = nlines*NPARAMS_PER_LINE;
-	/* Total entries in solution file */
-	nentries = nlines*(NPARAMS_PER_LINE+NKEYS_PER_LINE);
+	dp->sol_hash = NULL;
 
-	STATUS("Parsing solution file containing %d lines...\n", nlines);
+	/* Read indexing solutions */
+	do {
 
-	/* Reads indexing solutions */
-	int j = 0; /* follows the solution parameter [0,NPARAMS_PER_LINE] */
-	for(int i = 0; i < nentries; i++) {
+		char *rval;
+		char line[1024];
+		int i, n;
+		char **bits;
+		float vals[11];
+		struct fromfile_key key;
+		Crystal *cr;
+		UnitCell *cell;
+		struct fromfile_entry *item = NULL;
 
-		crystal_number = 0;
+		rval = fgets(line, 1023, fh);
+		if ( rval == NULL ) break;
 
-		current_line = i/(NPARAMS_PER_LINE+NKEYS_PER_LINE);
-
-		position_in_current_line = (i)%(NPARAMS_PER_LINE+NKEYS_PER_LINE);
-
-		if ( position_in_current_line == 0 ) {
-
-			filename = read_unknown_string(fh);
-
-			if ( !filename ){
-				if ( current_line == nlines-1 ) break;
-				printf("Failed to read a filename\n");
-				return 0;
-			}
-
+		/* FIXME: Replace this with something that can handle quoted
+		 * filenames with possible spaces */
+		chomp(line);
+		notrail(line);
+		n = assplode(line, " \t,", &bits, ASSPLODE_NONE);
+		if ( n < 14 ) {
+			ERROR("Badly formatted line '%s'\n", line);
+			return NULL;
 		}
 
-		if ( position_in_current_line == 1 ) {
-			event = read_unknown_string(fh);
-			if ( !event ){
-				printf("Failed to read a event\n");
-				return 0;
+		/* filename, event, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz,
+		 * det_shift_x, det_shift_y, latticetype+centering */
+		for ( i=2; i<13; i++ ) {
+			if (sscanf(bits[i], "%f", &vals[i-2]) != 1)
+			{
+				ERROR("Invalid value for number %i\n", i);
+				return NULL;
 			}
-
 		}
 
-		if ( position_in_current_line > 1 ) {
-			if ( fscanf(fh, "%e", &params[j]) != 1 ) {
-				printf("Failed to read a parameter\n");
-				return 0;
-			}
-			j+=1;
+		if ( make_key(&key, bits[0], bits[1]) ) {
+			ERROR("Failed to make key for %s %s\n",
+			      bits[0], bits[1]);
+			continue;
 		}
 
-		if ( j == (NPARAMS_PER_LINE) ) {
+		item = add_unique(&dp->sol_hash, key);
+		if ( item == NULL ) {
+			ERROR("Failed to add/find entry for %s %s\n",
+			      bits[0], bits[1]);
+			continue;
+		}
 
-			/* Prepare to add to the hash table */
-			item = (struct fromfile_entries *)malloc(sizeof *item);
-			memset(item, 0, sizeof *item);
-			strcpy(item->key.filename, filename);
-			strcpy(item->key.event, event);
-			item->key.crystal_number = crystal_number;
-			for ( int k = 0; k < NPARAMS_PER_LINE; k++){
-				item->solution[k] = params[k];
-			}
+		if ( item->n_crystals == MAX_CRYSTALS ) {
 
-			/* Verify the uniqueness of the key */
-			struct fromfile_entries *uniqueness_test;
-			HASH_FIND(hh, sol_hash, &item->key,
-			          sizeof(struct fromfile_keys), uniqueness_test);
+			ERROR("Too many crystals for %s %s\n", bits[0], bits[1]);
 
-			if ( uniqueness_test == NULL ) {
-				HASH_ADD(hh, sol_hash, key,
-				         sizeof(struct fromfile_keys), item);
+		} else {
+
+			cr = crystal_new();
+
+			/* mm -> m */
+			crystal_set_det_shift(cr, vals[9]*1e-3, vals[10]*1e-3);
+
+			cell = cell_new();
+			cell_set_reciprocal(cell, vals[0]*1e9, vals[1]*1e9, vals[2]*1e9,
+			                          vals[3]*1e9, vals[4]*1e9, vals[5]*1e9,
+			                          vals[6]*1e9, vals[7]*1e9, vals[8]*1e9);
+			if ( set_lattice(cell, bits[13]) ) {
+				ERROR("Invalid lattice type '%s'\n", bits[13]);
 			} else {
-				/* Look for the next available set of keys */
-				do {
-					uniqueness_test = NULL;
-					crystal_number += 1;
-					item->key.crystal_number = crystal_number;
-					HASH_FIND(hh, sol_hash, &item->key,
-					          sizeof(struct fromfile_keys),
-					          uniqueness_test);
-				} while ( uniqueness_test != NULL );
-
-				HASH_ADD(hh, sol_hash, key,
-				         sizeof(struct fromfile_keys), item);
+				crystal_set_cell(cr, cell);
+				item->crystals[item->n_crystals++] = cr;
 			}
 
-			j=0;
-
 		}
-	}
+
+		for ( i=0; i<n; i++ ) free(bits[i]);
+		free(bits);
+
+	} while ( 1 );
 
 	fclose(fh);
 
-	STATUS("Solution parsing done. Have %d parameters and %d total entries.\n",
-	       nparams_in_solution, nentries);
+	STATUS("Read %i crystals from %s\n",
+	       HASH_CNT(hh, dp->sol_hash), opts->filename);
 
-	struct fromfile_private *dp;
-	dp = (struct fromfile_private *) malloc( sizeof(struct fromfile_private));
-
-	if ( dp == NULL ){
-		return NULL;
-	}
-
-	dp->cellTemplate = cell;
-	dp->sol_hash = sol_hash;
-
-	STATUS("Solution lookup table initialized!\n");
-
-	return (void *)dp;
+	return dp;
 }
 
 
-int fromfile_index(struct image *image, void *mpriv, int crystal_number)
+int fromfile_index(struct image *image, void *mpriv)
 {
-	Crystal *cr;
-	UnitCell *cell;
-	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-	float xshift, yshift;
-	struct fromfile_entries *item, *p, *pprime;
-	int ncryst = 0;
-	float *sol;
+	struct fromfile_entry *p;
 	struct fromfile_private *dp = mpriv;
+	struct fromfile_key key;
+	int i;
 
-	/* Look up the hash table */
-	item = calloc(1, sizeof(struct fromfile_entries));
-	strcpy(item->key.filename, image->filename);
-	strcpy(item->key.event, image->ev);
-	item->key.crystal_number = crystal_number;
+	make_key(&key, image->filename, image->ev);
 
-	/* key already in the hash? */
-	HASH_FIND(hh, dp->sol_hash, &item->key, sizeof(struct fromfile_keys), p);
-	if ( p == NULL ) return 0;
-
-	sol = &(p->solution)[0];
-
-	asx = sol[0] * 1e9;
-	asy = sol[1] * 1e9;
-	asz = sol[2] * 1e9;
-	bsx = sol[3] * 1e9;
-	bsy = sol[4] * 1e9;
-	bsz = sol[5] * 1e9;
-	csx = sol[6] * 1e9;
-	csy = sol[7] * 1e9;
-	csz = sol[8] * 1e9;
-	xshift = sol[9] * 1e-3;
-	yshift = sol[10] * 1e-3;
-
-	cell = cell_new();
-	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
-	cell_set_lattice_type(cell, cell_get_lattice_type(dp->cellTemplate));
-	cell_set_centering(cell, cell_get_centering(dp->cellTemplate));
-	cell_set_unique_axis(cell, cell_get_unique_axis(dp->cellTemplate));
-
-	cr = crystal_new();
-	ncryst += 1;
-	crystal_set_cell(cr, cell);
-	crystal_set_det_shift(cr, xshift , yshift);
-	image_add_crystal(image, cr);
-
-	/* Look for additional crystals */
-	item->key.crystal_number = crystal_number+1;
-	HASH_FIND(hh,  dp->sol_hash, &item->key,
-	          sizeof(struct fromfile_keys), pprime);
-
-	/* If a similar tag exist,
-	 * recursive call increasing the crystal_number by 1 */
-	if ( pprime != NULL ) {
-		ncryst += fromfile_index(image, mpriv, crystal_number+1);
+	HASH_FIND(hh, dp->sol_hash, &key, sizeof(struct fromfile_key), p);
+	if ( p == NULL ) {
+		STATUS("WARNING: No solution for %s %s\n",
+		       image->filename, image->ev);
+		return 0;
 	}
 
-	return ncryst;
+	for ( i=0; i<p->n_crystals; i++ ) {
+		Crystal *cr;
+		cr = crystal_copy_deep(p->crystals[i]);
+		image_add_crystal(image, cr);
+	}
+
+	return p->n_crystals;
 }
 
 
 void fromfile_cleanup(void *mpriv)
 {
 	struct fromfile_private *dp = mpriv;
+	struct fromfile_entry *item, *tmp;
 
-	/* FIXME: Implementation */
+	HASH_ITER(hh, dp->sol_hash, item, tmp) {
+		int i;
+		HASH_DEL(dp->sol_hash, item);
+		for ( i=0; i<item->n_crystals; i++ ) {
+			Crystal *cr = item->crystals[i];
+			cell_free(crystal_get_cell(cr));
+			crystal_free(cr);
+		}
+	}
 
 	free(dp);
 }
