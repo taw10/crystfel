@@ -71,6 +71,7 @@ set(LIBCRYSTFEL_SOURCES
     src/indexers/asdf.c
     src/indexers/xgandalf.c
     src/indexers/pinkindexer.c
+    src/indexers/fromfile.c
 )
 
 set(LIBCRYSTFEL_HEADERS

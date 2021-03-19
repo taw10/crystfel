@@ -4,7 +4,7 @@ CrystFEL - Data processing for serial crystallography
 Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
                       a research centre of the Helmholtz Association.
 
-See AUTHORS for full details of contributors.
+See AUTHORS as well as individual source code files for full details of contributors.
 
 Introduction
 ------------

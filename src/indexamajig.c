@@ -97,6 +97,7 @@ struct indexamajig_arguments
 	FelixOptions **felix_opts_ptr;
 	XGandalfOptions **xgandalf_opts_ptr;
 	PinkIndexerOptions **pinkindexer_opts_ptr;
+	FromFileOptions **fromfile_opts_ptr;
 };
 
 
@@ -135,6 +136,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		state->child_inputs[1] = args->felix_opts_ptr;
 		state->child_inputs[2] = args->xgandalf_opts_ptr;
 		state->child_inputs[3] = args->pinkindexer_opts_ptr;
+		state->child_inputs[4] = args->fromfile_opts_ptr;
 		break;
 
 		case 'h' :
@@ -601,6 +603,7 @@ int main(int argc, char *argv[])
 	FelixOptions *felix_opts = NULL;
 	XGandalfOptions *xgandalf_opts = NULL;
 	PinkIndexerOptions *pinkindexer_opts = NULL;
+	FromFileOptions *fromfile_opts = NULL;
 	double wl_from_dt;
 
 	/* Defaults for "top level" arguments */
@@ -628,6 +631,7 @@ int main(int argc, char *argv[])
 	args.felix_opts_ptr = &felix_opts;
 	args.xgandalf_opts_ptr = &xgandalf_opts;
 	args.pinkindexer_opts_ptr = &pinkindexer_opts;
+	args.fromfile_opts_ptr = &fromfile_opts;
 
 	/* Defaults for process_image arguments */
 	args.iargs.cell = NULL;
@@ -818,6 +822,7 @@ int main(int argc, char *argv[])
 		{&felix_argp, 0, NULL, -2},
 		{&xgandalf_argp, 0, NULL, -2},
 		{&pinkIndexer_argp, 0, NULL, -2},
+		{&fromfile_argp, 0, NULL, -2},
 		{0}
 	};
 
@@ -849,7 +854,6 @@ int main(int argc, char *argv[])
 		ERROR("Failed to open input file '%s'\n", args.filename);
 		return 1;
 	}
-	free(args.filename);
 
 	/* Check prefix (if given) */
 	if ( args.check_prefix ) {
@@ -996,7 +1000,11 @@ int main(int argc, char *argv[])
 		                                  taketwo_opts,
 		                                  xgandalf_opts,
 		                                  pinkindexer_opts,
-		                                  felix_opts);
+		                                  felix_opts,
+		                                  fromfile_opts);
+
+		free(args.filename);
+
 		if ( args.iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");
 			return 1;

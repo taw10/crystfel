@@ -73,7 +73,7 @@ typedef enum {
 	INDEXING_FELIX = 4,       /**< Invoke Felix program */
 	INDEXING_XDS = 5,         /**< Invoke XDS program (NB not nXDS) */
 	INDEXING_SIMULATION = 6,  /**< Dummy value for simulated data */
-	INDEXING_DEBUG = 7,       /**< Results injector for debugging */
+	INDEXING_FILE = 7,        /**< Results injector for debugging */
 	INDEXING_ASDF = 8,        /**< Use built-in ASDF algorithm */
 	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
@@ -152,16 +152,19 @@ typedef struct felix_options FelixOptions;
 typedef struct taketwo_options TakeTwoOptions;
 typedef struct xgandalf_options XGandalfOptions;
 typedef struct pinkIndexer_options PinkIndexerOptions;
+typedef struct fromfile_options FromFileOptions;
 
 extern struct argp felix_argp;
 extern struct argp pinkIndexer_argp;
 extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
+extern struct argp fromfile_argp;
 
 extern void default_method_options(TakeTwoOptions **ttopts,
                                    XGandalfOptions **xgandalf_opts,
                                    PinkIndexerOptions **pinkIndexer_opts,
-                                   FelixOptions **felix_opts);
+                                   FelixOptions **felix_opts,
+                                   FromFileOptions **fromfile_opts);
 
 extern IndexingPrivate *setup_indexing(const char *methods,
                                        UnitCell *cell,
@@ -172,7 +175,8 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,
                                        struct pinkIndexer_options *pinkIndexer_opts,
-                                       struct felix_options *felix_opts);
+                                       struct felix_options *felix_opts,
+                                       struct fromfile_options *fromfile_opts);
 
 extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);
 

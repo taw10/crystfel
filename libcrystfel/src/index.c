@@ -42,6 +42,7 @@
 #include <string.h>
 #include <assert.h>
 #include <fenv.h>
+#include <unistd.h>
 
 #include "image.h"
 #include "utils.h"
@@ -58,7 +59,9 @@
 #include "indexers/taketwo.h"
 #include "indexers/xgandalf.h"
 #include "indexers/pinkindexer.h"
+#include "indexers/fromfile.h"
 
+#include "uthash.h"
 
 /** \file index.h */
 
@@ -111,41 +114,6 @@ static void show_indexing_flags(IndexingFlags flags)
 	       onoff(flags & INDEXING_MULTI));
 	STATUS("                              Retry indexing: %s\n",
 	       onoff(flags & INDEXING_RETRY));
-}
-
-
-static int debug_index(struct image *image)
-{
-	FILE *fh;
-	Crystal *cr;
-	UnitCell *cell;
-	float asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-
-	fh = fopen("../../indexing.debug", "r");
-	if ( fh == NULL ) {
-		ERROR("indexing.debug not found\n");
-		return 0;
-	}
-
-	if ( fscanf(fh, "%e %e %e", &asx, &asy, &asz) != 3 ) {
-		ERROR("Failed to read a* from indexing.debug\n");
-		return 0;
-	}
-	if ( fscanf(fh, "%e %e %e", &bsx, &bsy, &bsz) != 3 ) {
-		ERROR("Failed to read b* from indexing.debug\n");
-		return 0;
-	}
-	if ( fscanf(fh, "%e %e %e", &csx, &csy, &csz) != 3 ) {
-		ERROR("Failed to read c* from indexing.debug\n");
-		return 0;
-	}
-
-	cr = crystal_new();
-	cell = cell_new();
-	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
-	crystal_set_cell(cr, cell);
-	image_add_crystal(image, cr);
-	return 1;
 }
 
 
@@ -202,8 +170,8 @@ char *base_indexer_str(IndexingMethod indm)
 		strcpy(str, "simulation");
 		break;
 
-		case INDEXING_DEBUG :
-		strcpy(str, "debug");
+		case INDEXING_FILE :
+		strcpy(str, "file");
 		break;
 
 		default :
@@ -239,7 +207,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             struct xgandalf_options *xgandalf_opts,
                             struct pinkIndexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
-                            struct taketwo_options *taketwo_opts)
+                            struct taketwo_options *taketwo_opts,
+                            struct fromfile_options *fromfile_opts)
 {
 	char *str;
 	IndexingMethod in = *m;
@@ -267,8 +236,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		priv = xds_prepare(m, cell);
 		break;
 
-		case INDEXING_DEBUG :
-		priv = (IndexingPrivate *)strdup("Hello!");
+		case INDEXING_FILE :
+		priv = fromfile_prepare(m, fromfile_opts);
 		break;
 
 		case INDEXING_FELIX :
@@ -366,7 +335,8 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
                                 struct pinkIndexer_options *pinkIndexer_opts,
-                                struct felix_options *felix_opts)
+                                struct felix_options *felix_opts,
+                                struct fromfile_options *fromfile_opts)
 {
 	IndexingPrivate *ipriv;
 	IndexingMethod *methods;
@@ -435,7 +405,8 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		                                          xgandalf_opts,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
-		                                          ttopts);
+		                                          ttopts,
+		                                          fromfile_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) return NULL;
 
@@ -538,8 +509,8 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 			felix_cleanup(ipriv->engine_private[n]);
 			break;
 
-			case INDEXING_DEBUG :
-			free(ipriv->engine_private[n]);
+			case INDEXING_FILE :
+			fromfile_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_TAKETWO :
@@ -668,9 +639,9 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		r = run_xds(image, mpriv);
 		break;
 
-		case INDEXING_DEBUG :
-		set_last_task(last_task, "indexing:debug");
-		r = debug_index(image);
+		case INDEXING_FILE :
+		set_last_task(last_task, "indexing:file");
+		r = fromfile_index(image, mpriv, 0);
 		break;
 
 		case INDEXING_FELIX :
@@ -972,7 +943,9 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 		int ntry = 0;
 		int success = 0;
 
-		image->features = sort_peaks(orig);
+		if ( ipriv->methods[0] != INDEXING_FILE ) {
+			image->features = sort_peaks(orig);
+		}
 
 		do {
 
@@ -988,7 +961,9 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 		} while ( !done );
 
-		image_feature_list_free(image->features);
+		if ( ipriv->methods[0] != INDEXING_FILE ) {
+			image_feature_list_free(image->features);
+		}
 
 		/* Stop now if the pattern is indexed (don't try again for more
 		 * crystals with a different indexing method) */
@@ -1133,9 +1108,9 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 			method = INDEXING_SIMULATION;
 			return method;
 
-		} else if ( strcmp(bits[i], "debug") == 0) {
+		} else if ( strcmp(bits[i], "file") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEBUG;
+			method = INDEXING_FILE;
 			return method;
 
 		} else if ( strcmp(bits[i], "latt") == 0) {
@@ -1238,10 +1213,12 @@ char *detect_indexing_methods(UnitCell *cell)
 void default_method_options(TakeTwoOptions **ttopts,
                             XGandalfOptions **xgandalf_opts,
                             PinkIndexerOptions **pinkIndexer_opts,
-                            FelixOptions **felix_opts)
+                            FelixOptions **felix_opts,
+                            FromFileOptions **fromfile_opts)
 {
 	taketwo_default_options(ttopts);
 	xgandalf_default_options(xgandalf_opts);
 	pinkIndexer_default_options(pinkIndexer_opts);
 	felix_default_options(felix_opts);
+	fromfile_default_options(fromfile_opts);
 }
