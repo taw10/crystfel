@@ -3,6 +3,9 @@
  *
  * Perform indexing from solution file
  *
+ * Copyright © 2021 Deutsches Elektronen-Synchrotron DESY,
+ *                  a research centre of the Helmholtz Association.
+ *
  * Authors:
  *   2020 Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
  *   2021 Thomas White <thomas.white@desy.de>
