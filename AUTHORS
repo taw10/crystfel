@@ -93,3 +93,10 @@
 
 * Omri Mor <omor1@asu.edu>
   Some work on make_pixelmap
+
+* Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
+  "FromFile" indexer
+  Features for working with electron diffraction patterns
+
+* Troy D. Hanson
+  uthash (http://troydhanson.github.com/uthash/)
