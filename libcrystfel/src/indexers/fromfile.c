@@ -190,14 +190,25 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 		return NULL;
 	}
 
-	dp = malloc(sizeof(struct fromfile_private));
-	if ( dp == NULL ) return NULL;
+	/* If filename is not absolute, jump out of working directory */
+	if ( opts->filename[0] == '/' ) {
+		fh = fopen(opts->filename, "r");
+	} else {
+		char *prefixed_fn = malloc(4+strlen(opts->filename));
+		if ( prefixed_fn == NULL ) return NULL;
+		strcpy(prefixed_fn, "../");
+		strcat(prefixed_fn, opts->filename);
+		fh = fopen(prefixed_fn, "r");
+		free(prefixed_fn);
+	}
 
-	fh = fopen(opts->filename, "r");
 	if ( fh == NULL ) {
 		ERROR("Couldn't find solution file '%s'\n", opts->filename);
 		return NULL;
 	}
+
+	dp = malloc(sizeof(struct fromfile_private));
+	if ( dp == NULL ) return NULL;
 
 	dp->sol_hash = NULL;
 
