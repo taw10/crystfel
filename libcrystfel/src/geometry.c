@@ -53,6 +53,7 @@
 
 static int locate_peak_on_panel(double x, double y, double z, double k,
                                 struct detgeom_panel *p,
+                                double det_shift_x, double det_shift_y,
                                 double *pfs, double *pss)
 {
 	double ctt, tta, phi;
@@ -79,10 +80,10 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 	gsl_vector_set(t, 1, sin(tta)*sin(phi));
 	gsl_vector_set(t, 2, ctt);
 
-	gsl_matrix_set(M, 0, 0, p->cnx);
+	gsl_matrix_set(M, 0, 0, p->cnx+(det_shift_x/p->pixel_pitch));
 	gsl_matrix_set(M, 0, 1, p->fsx);
 	gsl_matrix_set(M, 0, 2, p->ssx);
-	gsl_matrix_set(M, 1, 0, p->cny);
+	gsl_matrix_set(M, 1, 0, p->cny+(det_shift_y/p->pixel_pitch));
 	gsl_matrix_set(M, 1, 1, p->fsy);
 	gsl_matrix_set(M, 1, 2, p->ssy);
 	gsl_matrix_set(M, 2, 0, p->cnz);
@@ -118,6 +119,7 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 
 static signed int locate_peak(double x, double y, double z, double k,
                               struct detgeom *det,
+                              double det_shift_x, double det_shift_y,
                               double *pfs, double *pss)
 {
 	int i;
@@ -130,12 +132,9 @@ static signed int locate_peak(double x, double y, double z, double k,
 
 		p = &det->panels[i];
 
-		if ( locate_peak_on_panel(x, y, z, k, p, pfs, pss) ) {
-
-			/* Woohoo! */
-			return i;
-
-		}
+		if ( locate_peak_on_panel(x, y, z, k, p,
+			                  det_shift_x, det_shift_y,
+			                  pfs, pss) ) return i; /* Woohoo! */
 
 	}
 
@@ -387,9 +386,13 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	if ( (image->detgeom != NULL) && (updateme != NULL) ) {
 
 		double fs, ss;
+		double det_shift_x, det_shift_y;
+
 		assert(get_panel_number(updateme) <= image->detgeom->n_panels);
+		crystal_get_det_shift(cryst, &det_shift_x, &det_shift_y);
 		locate_peak_on_panel(xl, yl, zl, mean_kpred,
 		                     &image->detgeom->panels[get_panel_number(updateme)],
+		                     det_shift_x, det_shift_y,
 		                     &fs, &ss);
 		set_detector_pos(refl, fs, ss);
 
@@ -401,8 +404,13 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 		double fs, ss;        /* position on detector */
 		signed int p;         /* panel number */
+		double det_shift_x, det_shift_y;
+
+		crystal_get_det_shift(cryst, &det_shift_x, &det_shift_y);
 		p = locate_peak(xl, yl, zl, mean_kpred,
-		                image->detgeom, &fs, &ss);
+		                image->detgeom,
+		                det_shift_x, det_shift_y,
+		                &fs, &ss);
 		if ( p == -1 ) {
 			reflection_free(refl);
 			return NULL;

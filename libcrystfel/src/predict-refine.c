@@ -322,22 +322,6 @@ int refine_radius(Crystal *cr, struct image *image)
 }
 
 
-static void update_detector(struct detgeom *det,
-                            double xoffs, double yoffs, double coffs)
-{
-	int i;
-
-	for ( i=0; i<det->n_panels; i++ ) {
-		struct detgeom_panel *p = &det->panels[i];
-
-		/* Convert to pixels */
-		p->cnx += xoffs / p->pixel_pitch;
-		p->cny += yoffs / p->pixel_pitch;
-		p->cnz += coffs / p->pixel_pitch;
-	}
-}
-
-
 static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
                    struct image *image,
                    double *total_x, double *total_y, double *total_z)
@@ -503,10 +487,6 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	csx += gsl_vector_get(shifts, 6);
 	csy += gsl_vector_get(shifts, 7);
 	csz += gsl_vector_get(shifts, 8);
-	update_detector(image->detgeom,
-	                gsl_vector_get(shifts, 9),
-	                gsl_vector_get(shifts, 10),
-	                0.0);
 	*total_x += gsl_vector_get(shifts, 9);
 	*total_y += gsl_vector_get(shifts, 10);
 	*total_z += 0.0;
