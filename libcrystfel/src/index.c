@@ -641,7 +641,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_FILE :
 		set_last_task(last_task, "indexing:file");
-		r = fromfile_index(image, mpriv, 0);
+		r = fromfile_index(image, mpriv);
 		break;
 
 		case INDEXING_FELIX :

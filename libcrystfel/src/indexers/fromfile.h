@@ -37,7 +37,7 @@
 extern int fromfile_default_options(FromFileOptions **opts_ptr);
 extern void *fromfile_prepare(IndexingMethod *indm,
                               struct fromfile_options *opts);
-extern int fromfile_index(struct image *image, void *mpriv, int crystal_number);
+extern int fromfile_index(struct image *image, void *mpriv);
 extern void fromfile_cleanup(void *mpriv);
 
 #endif	/* FROMFILE_H */
