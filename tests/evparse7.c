@@ -3,11 +3,11 @@
  *
  * Check that event string parsing works
  *
- * Copyright © 2020 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2020-2021 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020 Thomas White <taw@physics.org>
+ *   2020-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -30,14 +30,14 @@
 #include <string.h>
 #include <stdarg.h>
 
-extern char *substitute_path(const char *ev, const char *pattern);
+extern char *substitute_path(const char *ev, const char *pattern, int skip_ok);
 
 int main(int argc, char *argv[])
 {
 	char *subs;
 
 	subs = substitute_path("cc/data123/bb//234/59",
-	                       "/data/%/test/%/%");
+	                       "/data/%/test/%/%", 0);
 
 	if ( subs == NULL ) {
 		printf("substitute_path() failed\n");

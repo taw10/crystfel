@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020      Thomas White <taw@physics.org>
+ *   2020-2021 Thomas White <taw@physics.org>
  *   2014-2018 Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -227,7 +227,7 @@ static int imh_num_path_placeholders(const char *pattern)
  *
  * Not part of public API.  Not "static" for testing.
  */
-char *substitute_path(const char *ev, const char *pattern)
+char *substitute_path(const char *ev, const char *pattern, int skip_ok)
 {
 	char **plvals;
 	int n_plvals;
@@ -243,14 +243,23 @@ char *substitute_path(const char *ev, const char *pattern)
 		return NULL;
 	}
 
+	/* tag_1334/wibble1//3/6 */
 	plvals = read_path_parts(ev, &n_plvals);
 	if ( plvals == NULL ) return NULL;
 
+	/* /data/%/image_data/%/rawpixels */
 	n_pl_exp = imh_num_path_placeholders(pattern);
 
-	if ( n_plvals != n_pl_exp ) {
-		ERROR("Wrong number of path placeholders: "
-		      "'%s' (%i) into '%s' (%i)\n",
+	if ( n_plvals < n_pl_exp ) {
+		ERROR("Event ID does not have enough path placeholder values: "
+		      "event ID '%s' (%i) into pattern '%s' (%i)\n",
+		      ev, n_plvals, pattern, n_pl_exp);
+		return NULL;
+	}
+
+	if ( (n_plvals > n_pl_exp) && !skip_ok ) {
+		ERROR("Event ID has too many path placeholder values: "
+		      "event ID '%s' (%i) into pattern '%s' (%i)\n",
 		      ev, n_plvals, pattern, n_pl_exp);
 		return NULL;
 	}
@@ -284,7 +293,7 @@ char *substitute_path(const char *ev, const char *pattern)
 	subs[pl_pos-pattern] = '\0';
 
 	start = pl_pos+1;
-	for ( i=0; i<n_plvals; i++ ) {
+	for ( i=0; i<n_pl_exp; i++ ) {
 
 		/* Add the placeholder's value */
 		strcat(subs, plvals[i]);
@@ -380,7 +389,8 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		return 1;
 	}
 
-	panel_full_path = substitute_path(event, path_spec);
+	panel_full_path = substitute_path(event, path_spec,
+	                                  skip_placeholders_ok);
 	if ( panel_full_path == NULL ) {
 		ERROR("Invalid path substitution: '%s' '%s'\n",
 		      event, path_spec);
@@ -640,7 +650,7 @@ double image_hdf5_get_value(const char *name, const char *filename,
 		return NAN;
 	}
 
-	subst_name = substitute_path(event, name);
+	subst_name = substitute_path(event, name, 1);
 	if ( subst_name == NULL ) {
 		ERROR("Invalid event ID '%s'\n", event);
 		close_hdf5(fh);
@@ -988,7 +998,7 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	subst_name = substitute_path(event, dtempl->peak_list);
+	subst_name = substitute_path(event, dtempl->peak_list, 0);
 	if ( subst_name == NULL ) {
 		ERROR("Invalid peak path %s\n", subst_name);
 		return NULL;
@@ -1107,7 +1117,7 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	subst_name = substitute_path(event, dtempl->peak_list);
+	subst_name = substitute_path(event, dtempl->peak_list, 0);
 	if ( subst_name == NULL ) {
 		ERROR("Invalid peak path: '%s' '%s'\n",
 		      event, dtempl->peak_list);
@@ -1571,7 +1581,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		int j;
 		struct panel_template *p = &dtempl->panels[0];
 
-		path = substitute_path(path_evs[i], p->data);
+		path = substitute_path(path_evs[i], p->data, 0);
 		if ( path == NULL ) {
 			ERROR("Path substitution failed during "
 			      "expansion of '%s' with partial event "
