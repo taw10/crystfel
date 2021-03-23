@@ -1,15 +1,15 @@
 project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
 find_package(Curses)
-pkg_check_modules (XGANDALF xgandalf)
-pkg_check_modules (PINKINDEXER pinkIndexer)
-pkg_check_modules (FDIP fdip)
+pkg_check_modules(XGANDALF xgandalf)
+pkg_check_modules(PINKINDEXER pinkIndexer)
+pkg_check_modules(FDIP fdip)
 find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 find_package(Doxygen)
-pkg_search_module(FFTW fftw3)
-pkg_search_module(LIBCCP4 libccp4c)
+pkg_check_modules(FFTW fftw3)
+pkg_check_modules(LIBCCP4 libccp4c)
 
 configure_file(src/libcrystfel-version.c.cmake.in libcrystfel-version.c)
 
