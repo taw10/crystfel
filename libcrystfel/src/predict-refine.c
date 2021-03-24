@@ -79,15 +79,15 @@ struct reflpeak {
 
 
 static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct detgeom_panel *p)
+                         struct detgeom_panel *p, double dx, double dy)
 {
 	double xs, ys;
 
 	xs = fs*p->fsx + ss*p->ssx;  /* pixels */
 	ys = fs*p->fsy + ss*p->ssy;  /* pixels */
 
-	*px = (xs + p->cnx) * p->pixel_pitch;  /* metres */
-	*py = (ys + p->cny) * p->pixel_pitch;  /* metres */
+	*px = (xs + p->cnx) * p->pixel_pitch + dx;  /* metres */
+	*py = (ys + p->cny) * p->pixel_pitch + dy;  /* metres */
 }
 
 
@@ -98,26 +98,28 @@ static double r_dev(struct reflpeak *rp)
 }
 
 
-static double x_dev(struct reflpeak *rp, struct detgeom *det)
+static double x_dev(struct reflpeak *rp, struct detgeom *det,
+                    double dx, double dy)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
+	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel, dx, dy);
 	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
+	twod_mapping(fsh, ssh, &xh, &yh, rp->panel, dx, dy);
 	return xh-xpk;
 }
 
 
-static double y_dev(struct reflpeak *rp, struct detgeom *det)
+static double y_dev(struct reflpeak *rp, struct detgeom *det,
+                    double dx, double dy)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
 	double fsh, ssh;
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel);
+	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel, dx, dy);
 	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel);
+	twod_mapping(fsh, ssh, &xh, &yh, rp->panel, dx, dy);
 	return yh-ypk;
 }
 
@@ -403,7 +405,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = x_dev(&rps[i], image->detgeom);
+			v_c = x_dev(&rps[i], image->detgeom, *total_x, *total_y);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -435,7 +437,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = y_dev(&rps[i], image->detgeom);
+			v_c = y_dev(&rps[i], image->detgeom, *total_x, *total_y);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -501,7 +503,8 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
+static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
+                            double dx, double dy)
 {
 	int i;
 	double res = 0.0;
@@ -515,13 +518,13 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(x_dev(&rps[i], det), 2.0);
+		r += pow(x_dev(&rps[i], det, dx, dy), 2.0);
 	}
 	res += r;
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(y_dev(&rps[i], det), 2.0);
+		r += pow(y_dev(&rps[i], det, dx, dy), 2.0);
 	}
 	res += r;
 
@@ -552,6 +555,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 	double total_x = 0.0;
 	double total_y = 0.0;
 	double total_z = 0.0;
+	double orig_shift_x, orig_shift_y;
 	char tmp[256];
 
 	rps = malloc(image_feature_count(image->features)
@@ -568,6 +572,8 @@ int refine_prediction(struct image *image, Crystal *cr)
 	crystal_set_reflections(cr, reflist);
 
 	crystal_get_det_shift(cr, &total_x, &total_y);
+	orig_shift_x = total_x;
+	orig_shift_y = total_y;
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;
@@ -584,20 +590,23 @@ int refine_prediction(struct image *image, Crystal *cr)
 		rps[i].Ih = rps[i].peak->intensity / max_I;
 	}
 
-	//STATUS("Initial residual = %e\n", pred_residual(rps, n, image->detgeom));
+	//STATUS("Initial residual = %e\n",
+	//       pred_residual(rps, n, image->detgeom, total_x, total_y));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_predictions(cr);
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y, &total_z) ) return 1;
+		crystal_set_det_shift(cr, total_x, total_y);
 		//STATUS("Residual after %i = %e\n", i,
-		//       pred_residual(rps, n, image->detgeom));
+		//       pred_residual(rps, n, image->detgeom, total_x, total_y));
 	}
-	//STATUS("Final residual = %e\n", pred_residual(rps, n, image->detgeom));
+	//STATUS("Final residual = %e\n",
+	//       pred_residual(rps, n, image->detgeom, total_x, total_y));
 
 	snprintf(tmp, 255, "predict_refine/final_residual = %e",
-	         pred_residual(rps, n, image->detgeom));
+	         pred_residual(rps, n, image->detgeom, total_x, total_y));
 	crystal_add_notes(cr, tmp);
 
 	crystal_set_det_shift(cr, total_x, total_y);
@@ -608,6 +617,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 	n = pair_peaks(image, cr, NULL, rps);
 	free_rps_noreflist(rps, n);
 	if ( n < 10 ) {
+		crystal_set_det_shift(cr, orig_shift_x, orig_shift_y);
 		return 1;
 	}
 
