@@ -439,8 +439,6 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		ERROR("Unrecognised peak search '%s'\n", algo_id);
 	}
 
-	/* FIXME: Radii */
-
 	gtk_widget_show_all(proj->peak_vbox);
 	update_peaks(proj);
 	update_imageview(proj);

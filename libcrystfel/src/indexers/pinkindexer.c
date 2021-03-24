@@ -121,8 +121,6 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 	int npk;
 	int i;
 
-	/* FIXME: Check if wavelength is too far from estimate */
-
 	npk = image_feature_count(image->features);
 	if ( npk < 5 ) return 0;
 
@@ -171,8 +169,8 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 
 		STATUS("WARNING: Indexing solution was rejected due to too "
 		       "large imbalance of the refinement.\n"
-		        "If you see this message often, check the documentation "
-		        "for parameter --pinkIndexer-max-refinement-disbalance\n");
+		       "If you see this message often, check the documentation "
+		       "for parameter --pinkIndexer-max-refinement-disbalance\n");
 
 	} else {
 
