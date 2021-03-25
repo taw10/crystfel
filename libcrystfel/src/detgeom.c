@@ -139,3 +139,39 @@ void show_panel(struct detgeom_panel *p)
 	STATUS("  %f adu/photon, max %f adu\n",
 	       p->adu_per_photon, p->max_adu);
 }
+
+
+static double clen(struct detgeom *dg, int i)
+{
+	return dg->panels[i].cnz * dg->panels[i].pixel_pitch;
+}
+
+
+static double far_corner_clen(struct detgeom *dg, int i)
+{
+	struct detgeom_panel *p = &dg->panels[i];
+	return (p->cnz + p->fsz*p->w + p->ssz*p->h) * p->pixel_pitch;
+}
+
+
+/* Return mean clen in m, or NAN in the following circumstances:
+ * 1. If the individual panel distances vary by more than 10% of the average
+ * 2. If the tilt of the panel creates a distance variation of more than 10%
+ *    of the corner value over the extent of the panel */
+double detgeom_mean_camera_length(struct detgeom *dg)
+{
+	int i;
+	double mean;
+	double total = 0.0;
+	for ( i=0; i<dg->n_panels; i++ ) {
+		total += clen(dg, i);
+	}
+	mean = total / dg->n_panels;
+
+	for ( i=0; i<dg->n_panels; i++ ) {
+		if ( !within_tolerance(clen(dg, i), mean, 10.0) ) return NAN;
+		if ( !within_tolerance(clen(dg, i), far_corner_clen(dg, i), 10.0) ) return NAN;
+	}
+
+	return mean;
+}

@@ -105,6 +105,8 @@ extern double detgeom_max_resolution(struct detgeom *detgeom,
 
 extern void show_panel(struct detgeom_panel *p);
 
+extern double detgeom_mean_camera_length(struct detgeom *dg);
+
 #ifdef __cplusplus
 }
 #endif
