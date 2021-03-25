@@ -81,12 +81,13 @@ static void restoreReciprocalCell(UnitCell *cell, LatticeTransform_t* appliedRed
 static void makeRightHanded(UnitCell* cell);
 
 
+/* Return mean clen in m */
 static double mean_clen(struct detgeom *dg)
 {
 	int i;
 	double total = 0.0;
 	for ( i=0; i<dg->n_panels; i++ ) {
-		total += dg->panels[i].cnz;
+		total += dg->panels[i].cnz * dg->panels[i].pixel_pitch;
 	}
 	return total / dg->n_panels;
 }
@@ -100,7 +101,7 @@ static void scale_detector_shift(double fake_clen,
 	int i;
 	double mean = mean_clen(dg);
 	for ( i=0; i<dg->n_panels; i++ ) {
-		if ( !within_tolerance(dg->panels[i].cnz, mean, 2.0) ) {
+		if ( !within_tolerance(dg->panels[i].cnz*dg->panels[i].pixel_pitch, mean, 2.0) ) {
 			ERROR("WARNING: Detector is not flat enough to apply "
 			      "detector position offset\n");
 			*pdx = 0.0;
