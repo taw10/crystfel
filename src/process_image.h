@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2020 Thomas White <taw@physics.org>
+ *   2010-2021 Thomas White <taw@physics.org>
  *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
  *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
@@ -99,6 +99,7 @@ struct index_args
 	int no_image_data;
 	int no_mask_data;
 	float wavelength_estimate;
+	float clen_estimate;
 	int n_threads;
 };
 

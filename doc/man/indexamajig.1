@@ -386,8 +386,9 @@ Check that most of the peaks can be accounted for by the indexing solution.  Thi
 
 .PD 0
 .IP \fB--wavelength-estimate=\fIm\fR
+.IP \fB--camera-length-estimate=\fIm\fR
 .PD
-Some indexing algorithms need to know the wavelength of the incident radiation in advance, e.g. to prepare an internal look-up table.  However, if the wavelength is taken from image headers, then the wavelength is not available at start-up.  In this case, you will be prompted to add this option to give an approximate wavelength, in metres.  A warning will be generated if the actual wavelength differs from this value by more than 10%.
+Some indexing algorithms need to know the camera length or the wavelength of the incident radiation in advance, e.g. to prepare an internal look-up table.  However, if these values are taken from image headers, then they are not available at start-up.  In this case, you will be prompted to add one of these options to give approximate values (in metres).  A warning will be generated if the actual value differs from this value by more than 10%.
 
 .PD 0
 .IP \fB--max-indexer-threads=\fIn\fR

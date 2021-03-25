@@ -467,6 +467,15 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			return EINVAL;
 		}
 		break;
+
+		case 415 :
+		if (sscanf(arg, "%f", &args->iargs.clen_estimate) != 1)
+		{
+			ERROR("Invalid value for --camera-length-estimate\n");
+			return EINVAL;
+		}
+		break;
+
 		/* ---------- Integration ---------- */
 
 		case 501 :
@@ -682,6 +691,7 @@ int main(int argc, char *argv[])
 	args.iargs.no_image_data = 0;
 	args.iargs.no_mask_data = 0;
 	args.iargs.wavelength_estimate = NAN;
+	args.iargs.clen_estimate = NAN;
 	args.iargs.n_threads = 1;
 
 	argp_program_version_hook = show_version;
@@ -784,6 +794,8 @@ int main(int argc, char *argv[])
 		        "Estimate of the incident radiation wavelength, in metres."},
 		{"max-indexer-threads", 414, "n", 0,
 		        "Maximum number of threads allowed for indexing engines."},
+		{"camera-length-estimate", 415, "metres", 0,
+		        "Estimate of the camera length, in metres."},
 
 		{NULL, 0, 0, OPTION_DOC, "Integration options:", 5},
 		{"integration", 501, "method", OPTION_NO_USAGE, "Integration method"},
@@ -996,6 +1008,7 @@ int main(int argc, char *argv[])
 		                                  args.iargs.tols,
 		                                  flags,
 		                                  args.iargs.wavelength_estimate,
+		                                  args.iargs.clen_estimate,
 		                                  args.iargs.n_threads,
 		                                  taketwo_opts,
 		                                  xgandalf_opts,

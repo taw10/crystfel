@@ -43,8 +43,6 @@
 #include "peaks.h"
 
 
-#define FAKE_CLEN (0.25)
-
 struct pinkIndexer_options {
 	unsigned int considered_peaks_count;
 	unsigned int angle_resolution;
@@ -79,39 +77,6 @@ struct pinkIndexer_private_data {
 static void reduceReciprocalCell(UnitCell* cell, LatticeTransform_t* appliedReductionTransform);
 static void restoreReciprocalCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform);
 static void makeRightHanded(UnitCell* cell);
-
-
-/* Return mean clen in m */
-static double mean_clen(struct detgeom *dg)
-{
-	int i;
-	double total = 0.0;
-	for ( i=0; i<dg->n_panels; i++ ) {
-		total += dg->panels[i].cnz * dg->panels[i].pixel_pitch;
-	}
-	return total / dg->n_panels;
-}
-
-
-static void scale_detector_shift(double fake_clen,
-                                 struct detgeom *dg,
-                                 double inx, double iny,
-                                 double *pdx, double *pdy)
-{
-	int i;
-	double mean = mean_clen(dg);
-	for ( i=0; i<dg->n_panels; i++ ) {
-		if ( !within_tolerance(dg->panels[i].cnz*dg->panels[i].pixel_pitch, mean, 2.0) ) {
-			ERROR("WARNING: Detector is not flat enough to apply "
-			      "detector position offset\n");
-			*pdx = 0.0;
-			*pdy = 0.0;
-			return;
-		}
-	}
-	*pdx = (mean/fake_clen)*inx;
-	*pdy = (mean/fake_clen)*iny;
-}
 
 
 int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
@@ -206,19 +171,14 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 			ERROR("pinkIndexer: problem with returned cell!\n");
 		} else {
 
-			double dx, dy;
 			Crystal *cr = crystal_new();
 			if ( cr == NULL ) {
 				ERROR("Failed to allocate crystal.\n");
 				return 0;
 			}
 			crystal_set_cell(cr, new_cell_trans);
-			scale_detector_shift(FAKE_CLEN,
-			                     image->detgeom,
-			                     center_shift[0],
-			                     center_shift[1],
-			                     &dx, &dy);
-			crystal_set_det_shift(cr, dx, dy);
+			crystal_set_det_shift(cr, center_shift[0],
+			                          center_shift[1]);
 			image_add_crystal(image, cr);
 			indexed++;
 
@@ -233,7 +193,8 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 void *pinkIndexer_prepare(IndexingMethod *indm,
                           UnitCell *cell,
                           struct pinkIndexer_options *pinkIndexer_opts,
-                          double wavelength_estimate)
+                          double wavelength_estimate,
+                          double clen_estimate)
 {
 	float beamEenergy_eV;
 
@@ -245,9 +206,14 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 		beamEenergy_eV = J_to_eV(ph_lambda_to_en(wavelength_estimate));
 	}
 
+	if ( isnan(clen_estimate) ) {
+		ERROR("PinkIndexer requires a camera length estimate.  "
+		      "Try again with --camera-length-estimate=xx\n");
+		return NULL;
+	}
+
 	if ( cell == NULL ) {
-		ERROR("Unit cell information is required for "
-		      "PinkIndexer.\n");
+		ERROR("Unit cell information is required for PinkIndexer.\n");
 		return NULL;
 	}
 
@@ -294,7 +260,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	Lattice_t sampleReciprocalLattice_1_per_A = lattice;
 	float detectorRadius_m = 0.03; //fake, only for prediction
 	ExperimentSettings *experimentSettings = ExperimentSettings_new(beamEenergy_eV,
-	                                                                FAKE_CLEN,
+	                                                                clen_estimate,
 	                                                                detectorRadius_m,
 	                                                                divergenceAngle_deg,
 	                                                                nonMonochromaticity,
@@ -420,7 +386,8 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 extern void *pinkIndexer_prepare(IndexingMethod *indm,
                                  UnitCell *cell,
                                  struct pinkIndexer_options *pinkIndexer_opts,
-                                 double wavelength_estimate)
+                                 double wavelength_estimate,
+                                 double clen_estimate)
 {
 	ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
 	ERROR("To use PINKINDEXER indexing, recompile with PINKINDEXER.\n");
