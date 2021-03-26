@@ -113,6 +113,8 @@ struct intcontext;
 
 extern IntegrationMethod integration_method(const char *t, int *err);
 
+extern char *str_integration_method(IntegrationMethod m);
+
 extern struct intcontext *intcontext_new(struct image *image,
                                          UnitCell *cell,
                                          IntegrationMethod meth,

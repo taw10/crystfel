@@ -1777,6 +1777,43 @@ void integrate_all(struct image *image, IntegrationMethod meth,
 }
 
 
+char *str_integration_method(IntegrationMethod m)
+{
+	char tmp[64];
+	switch ( m & INTEGRATION_METHOD_MASK ) {
+		case INTEGRATION_NONE :
+		strcpy(tmp, "none");
+		break;
+
+		case INTEGRATION_RINGS :
+		strcpy(tmp, "rings");
+		break;
+
+		case INTEGRATION_PROF2D :
+		strcpy(tmp, "prof2d");
+		break;
+
+		default :
+		strcpy(tmp, "unknown");
+		break;
+	}
+
+	if ( m & INTEGRATION_SATURATED ) {
+		strcat(tmp, "-sat");
+	}
+
+	if ( m & INTEGRATION_CENTER ) {
+		strcat(tmp, "-cen");
+	}
+
+	if ( m & INTEGRATION_GRADIENTBG ) {
+		strcat(tmp, "-grad");
+	}
+
+	return strdup(tmp);
+}
+
+
 IntegrationMethod integration_method(const char *str, int *err)
 {
 	int n, i;
