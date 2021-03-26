@@ -64,6 +64,7 @@
 
 #include "im-sandbox.h"
 #include "version.h"
+#include "json-utils.h"
 
 
 struct indexamajig_arguments
@@ -92,6 +93,7 @@ struct indexamajig_arguments
 	int profile;  /* Whether to do wall-clock time profiling */
 	char **copy_headers;
 	int n_copy_headers;
+	char *harvest_file;
 
 	TakeTwoOptions **taketwo_opts_ptr;
 	FelixOptions **felix_opts_ptr;
@@ -99,6 +101,141 @@ struct indexamajig_arguments
 	PinkIndexerOptions **pinkindexer_opts_ptr;
 	FromFileOptions **fromfile_opts_ptr;
 };
+
+
+static double nan_if_neg(double n)
+{
+	if ( n < 0.0 ) {
+		return NAN;
+	} else {
+		return n;
+	}
+}
+
+
+static void write_json_cell(FILE *fh, const char *name, UnitCell *cell)
+{
+	double a, b, c, al, be, ga;
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+
+	fprintf(fh, "    \"%s\": {\n", name);
+	fprintf(fh, "      \"lattice_type\": \"%s\",\n",
+	        str_lattice(cell_get_lattice_type(cell)));
+	fprintf(fh, "      \"centering\": \"%c\",\n",
+	        cell_get_centering(cell));
+	fprintf(fh, "      \"unique_axis\": \"%c\",\n",
+	        cell_get_unique_axis(cell));
+	fprintf(fh, "      \"a_Angstrom\": %f,\n", a*1e10);
+	fprintf(fh, "      \"b_Angstrom\": %f,\n", b*1e10);
+	fprintf(fh, "      \"c_Angstrom\": %f,\n", c*1e10);
+	fprintf(fh, "      \"alpha_deg\": %f,\n", rad2deg(al));
+	fprintf(fh, "      \"beta_deg\": %f,\n", rad2deg(be));
+	fprintf(fh, "      \"gamma_deg\": %f\n", rad2deg(ga));  /* NB No comma */
+	fprintf(fh, "    },\n");
+}
+
+
+static void write_methods(FILE *fh, const char *name, IndexingPrivate *ipriv)
+{
+	int i, n;
+	const IndexingMethod *methods;
+
+	fprintf(fh, "    \"%s\": [", name);
+
+	methods = indexing_methods(ipriv, &n);
+	for ( i=0; i<n; i++ ) {
+		fprintf(fh, " \"%s\"", indexer_str(methods[i]));
+		if ( i < n-1 ) {
+			fprintf(fh, ",");
+		}
+	}
+	fprintf(fh, " ],\n");
+}
+
+
+static void write_harvest_file(struct index_args *args,
+                               const char *filename,
+                               int if_multi, int if_refine, int if_retry,
+                               int if_peaks, int if_checkcell)
+{
+	FILE *fh;
+	char *tmp;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) {
+		ERROR("Unable to write parameter harvesting file.\n");
+		return;
+	}
+
+	fprintf(fh, "{\n");
+	fprintf(fh, "  \"input\": {\n");
+	write_float(fh, 0, "highres", args->highres);
+	fprintf(fh, "  },\n");
+
+	fprintf(fh, "  \"peaksearch\": {\n");
+	write_str(fh, 1, "method", str_peaksearch(args->peaks));
+	write_float(fh, 1, "radius_inner_px", args->pk_inn);
+	write_float(fh, 1, "radius_middle_px", args->pk_mid);
+	write_float(fh, 1, "radius_outer_px", args->pk_out);
+	write_bool(fh, 1, "noise_filter", args->noisefilter);
+	write_int(fh, 1, "median_filter", args->median_filter);
+	write_float(fh, 1, "threshold_adu", args->threshold);
+	write_float(fh, 1, "min_squared_gradient_adu2", args->min_sq_gradient);
+	write_float(fh, 1, "min_snr", args->min_snr);
+	write_bool(fh, 1, "check_hdf5_snr", args->check_hdf5_snr);
+	write_bool(fh, 1, "half_pixel_shift", args->half_pixel_shift);
+	write_int(fh, 1, "min_res_px", args->min_res);
+	write_int(fh, 1, "max_res_px", args->max_res);
+	write_int(fh, 1, "max_num_peaks", args->max_n_peaks);
+	write_int(fh, 1, "max_pixel_count", args->max_pix_count);
+	write_int(fh, 1, "local_bg_radius_px", args->local_bg_radius);
+	write_bool(fh, 1, "use_saturated", args->use_saturated);
+	write_bool(fh, 1, "revalidate_hdf5", 1-args->no_revalidate);
+	write_float(fh, 1, "min_snr_of_biggest_pixel", args->min_snr_biggest_pix);
+	write_float(fh, 1, "min_snr_of_peak_pixel", args->min_snr_peak_pix);
+	write_float(fh, 1, "min_sig_adu", args->min_sig);
+	write_float(fh, 0, "min_peak_over_neighbour_adu", args->min_peak_over_neighbour);
+	fprintf(fh, "  },\n");
+
+	fprintf(fh, "  \"hitfinding\": {\n");
+	write_int(fh, 0, "min_num_peaks", args->min_peaks);
+	fprintf(fh, "  },\n");
+
+	fprintf(fh, "  \"indexing\": {\n");
+	write_methods(fh, "methods", args->ipriv);
+	write_json_cell(fh, "target_cell", args->cell);
+	write_float(fh, 1, "tolerance_a_percent", 100.0*args->tols[0]);
+	write_float(fh, 1, "tolerance_b_percent", 100.0*args->tols[1]);
+	write_float(fh, 1, "tolerance_c_percent", 100.0*args->tols[2]);
+	write_float(fh, 1, "tolerance_alpha_deg", rad2deg(args->tols[3]));
+	write_float(fh, 1, "tolerance_beta_deg", rad2deg(args->tols[4]));
+	write_float(fh, 1, "tolerance_gamma_deg", rad2deg(args->tols[5]));
+	write_bool(fh, 1, "multi_lattice", if_multi);
+	write_bool(fh, 1, "refine", if_refine);
+	write_bool(fh, 1, "retry", if_retry);
+	write_bool(fh, 1, "check_peaks", if_peaks);
+	write_bool(fh, 1, "check_cell", if_checkcell);
+	write_float(fh, 1, "wavelength_estimate_m", args->wavelength_estimate);
+	write_float(fh, 0, "clen_estimate_m", args->clen_estimate);
+	fprintf(fh, "  },\n");
+
+	fprintf(fh, "  \"integration\": {\n");
+	tmp = str_integration_method(args->int_meth);
+	write_str(fh, 1, "method", tmp);
+	free(tmp);
+	write_float(fh, 1, "radius_inner_px", args->ir_inn);
+	write_float(fh, 1, "radius_middle_px", args->ir_mid);
+	write_float(fh, 1, "radius_outer_px", args->ir_out);
+	write_float(fh, 1, "push_res_invm", args->push_res);
+	write_float(fh, 1, "fix_profile_radius_invm", nan_if_neg(args->fix_profile_r));
+	write_float(fh, 1, "fix_divergence_rad", nan_if_neg(args->fix_divergence));
+	write_bool(fh, 0, "overpredict", args->overpredict);
+	fprintf(fh, "  }\n"); /* NB No comma */
+
+	fprintf(fh, "}\n");
+
+	fclose(fh);
+}
 
 
 static void show_version(FILE *fh, struct argp_state *state)
@@ -589,6 +726,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		}
 		break;
 
+		case 606 :
+		args->harvest_file = strdup(arg);
+		break;
+
 		default :
 		return ARGP_ERR_UNKNOWN;
 
@@ -636,6 +777,7 @@ int main(int argc, char *argv[])
 	args.profile = 0;
 	args.copy_headers = NULL;
 	args.n_copy_headers = 0;
+	args.harvest_file = NULL;
 	args.taketwo_opts_ptr = &taketwo_opts;
 	args.felix_opts_ptr = &felix_opts;
 	args.xgandalf_opts_ptr = &xgandalf_opts;
@@ -822,6 +964,8 @@ int main(int argc, char *argv[])
 		        "in stream"},
 		{"serial-start", 605, "n", OPTION_NO_USAGE, "Start the serial numbers in the stream "
 		        "here"},
+		{"harvest-file", 606, "filename", OPTION_NO_USAGE, "Write the actual parameters "
+			"used in JSON format"},
 
 		{NULL, 0, 0, OPTION_DOC, "More information:", 99},
 
@@ -1056,6 +1200,12 @@ int main(int argc, char *argv[])
 	stream_write_geometry_file(st, args.geom_filename);
 	stream_write_target_cell(st, args.iargs.cell);
 	stream_write_indexing_methods(st, args.indm_str);
+
+	if ( args.harvest_file != NULL ) {
+		write_harvest_file(&args.iargs, args.harvest_file,
+		                   args.if_multi, args.if_refine, args.if_retry,
+		                   args.if_peaks, args.if_checkcell);
+	}
 
 	free(args.outfile);
 	free(args.indm_str);
