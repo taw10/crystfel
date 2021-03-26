@@ -59,6 +59,7 @@
 #include "merge.h"
 #include "rejection.h"
 #include "version.h"
+#include "json-utils.h"
 
 
 struct csplit_hash_entry
@@ -954,6 +955,52 @@ static int add_stream(const char *filename, struct stream_list *list)
 }
 
 
+static void write_polarisation(FILE *fh, const char *name,
+                               struct polarisation p)
+{
+	fprintf(fh, "    \"%s\": {\n", name);
+	fprintf(fh, "      \"angle_from_horizontal_deg\": %f,\n", rad2deg(p.angle));
+	fprintf(fh, "      \"fraction\": %f\n", p.fraction);
+	fprintf(fh, "    }\n");
+}
+
+static void write_harvest_file(const char *filename,
+                               const char *model, const char *symmetry,
+                               int scale, int bscale, int postref,
+                               int niter, int deltacchalf,
+                               int min_measurements, double max_adu,
+                               double min_res, double push_res,
+                               struct polarisation p)
+{
+	FILE *fh;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) {
+		ERROR("Unable to write parameter harvesting file.\n");
+		return;
+	}
+
+	fprintf(fh, "{\n");
+	fprintf(fh, "  \"merging\": {\n");
+	write_str(fh, 1, "partiality_model", model);
+	write_str(fh, 1, "symmetry", symmetry);
+	write_bool(fh, 1, "scale", scale);
+	write_bool(fh, 1, "Bscale", bscale);
+	write_bool(fh, 1, "post_refine", postref);
+	write_int(fh, 1, "num_iterations", niter);
+	write_polarisation(fh, "polarisation_correction", p);
+	write_bool(fh, 1, "deltaCChalf", deltacchalf);
+	write_int(fh, 1, "min_measurements_per_unique_reflection", min_measurements);
+	write_float(fh, 1, "max_adu", max_adu);
+	write_float(fh, 1, "min_resolution_invm", min_res);
+	write_float(fh, 0, "push_res_invm", push_res);
+	fprintf(fh, "  }\n");
+	fprintf(fh, "}\n");
+
+	fclose(fh);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -1010,6 +1057,7 @@ int main(int argc, char *argv[])
 	double min_res = 0.0;
 	int do_write_logs = 0;
 	int no_deltacchalf = 0;
+	char *harvest_file = NULL;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1042,6 +1090,7 @@ int main(int argc, char *argv[])
 		{"polarization",       1, NULL,               14}, /* compat */
 		{"no-polarisation",    0, NULL,               15},
 		{"no-polarization",    0, NULL,               15}, /* compat */
+		{"harvest-file",       1, NULL,               16},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-Bscale",          0, &no_Bscale,          1},
@@ -1227,6 +1276,10 @@ int main(int argc, char *argv[])
 			polarisation = parse_polarisation("none");
 			break;
 
+			case 16 :
+			harvest_file = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -1318,7 +1371,6 @@ int main(int argc, char *argv[])
 			ERROR("Unknown partiality model '%s'.\n", pmodel_str);
 			return 1;
 		}
-		free(pmodel_str);
 	}
 
 	if ( (pmodel == PMODEL_UNITY) && !no_pr ) {
@@ -1380,6 +1432,17 @@ int main(int argc, char *argv[])
 		ERROR("WARNING: If you publish a structure based on the result,"
 		      " expect to have to retract your paper!\n");
 	}
+
+	if ( harvest_file != NULL ) {
+		write_harvest_file(harvest_file,
+		                   pmodel_str,
+		                   symmetry_name(sym),
+		                   1-no_scale, 1-no_Bscale, 1-no_pr,
+		                   n_iter, 1-no_deltacchalf, min_measurements,
+		                   max_adu, min_res, push_res, polarisation);
+	}
+
+	free(pmodel_str);
 
 	gsl_set_error_handler_off();
 	rng = gsl_rng_alloc(gsl_rng_mt19937);
