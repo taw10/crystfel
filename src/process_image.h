@@ -50,57 +50,66 @@ struct index_args;
 /* Information about the indexing process which is common to all patterns */
 struct index_args
 {
-	UnitCell *cell;
-	int cmfilter;
+	/* Input */
+	DataTemplate *dtempl;
+	signed int wait_for_file; /* -1 means wait forever */
+	int no_image_data;
+	int no_mask_data;
+	float highres;
+
+	/* Peak search */
+	enum peak_search_method peaks;
+	float pk_inn;
+	float pk_mid;
+	float pk_out;
 	int noisefilter;
 	int median_filter;
 	float threshold;
 	float min_sq_gradient;
 	float min_snr;
 	int check_hdf5_snr;
-	DataTemplate *dtempl;
-	IndexingPrivate *ipriv;
-	enum peak_search_method peaks;
-	float tols[6];
 	int half_pixel_shift;
-	float pk_inn;
-	float pk_mid;
-	float pk_out;
-	float ir_inn;
-	float ir_mid;
-	float ir_out;
 	int min_res;
 	int max_res;
 	int max_n_peaks;
 	int min_pix_count;
 	int max_pix_count;
 	int local_bg_radius;
-	int min_peaks;
+	int use_saturated;
+	int no_revalidate;
 	float min_snr_biggest_pix;
 	float min_snr_peak_pix;
 	float min_sig;
 	float min_peak_over_neighbour;
-	int integrate_saturated;
-	int use_saturated;
-	int no_revalidate;
-	int stream_flags;
-	int stream_nonhits;
+
+	/* Hit finding */
+	int min_peaks;
+
+	/* Indexing */
+	IndexingPrivate *ipriv;
+	UnitCell *cell;
+	float tols[6];
+	float wavelength_estimate;
+	float clen_estimate;
+	int n_threads;
+
+	/* Integration */
 	IntegrationMethod int_meth;
 	IntDiag int_diag;
+	float ir_inn;
+	float ir_mid;
+	float ir_out;
 	signed int int_diag_h;
 	signed int int_diag_k;
 	signed int int_diag_l;
 	float push_res;
-	float highres;
 	float fix_profile_r;
 	float fix_divergence;
 	int overpredict;
-	signed int wait_for_file; /* -1 means wait forever */
-	int no_image_data;
-	int no_mask_data;
-	float wavelength_estimate;
-	float clen_estimate;
-	int n_threads;
+
+	/* Output */
+	int stream_flags;
+	int stream_nonhits;
 };
 
 
