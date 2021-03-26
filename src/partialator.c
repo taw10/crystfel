@@ -961,7 +961,7 @@ static void write_polarisation(FILE *fh, const char *name,
 	fprintf(fh, "    \"%s\": {\n", name);
 	fprintf(fh, "      \"angle_from_horizontal_deg\": %f,\n", rad2deg(p.angle));
 	fprintf(fh, "      \"fraction\": %f\n", p.fraction);
-	fprintf(fh, "    }\n");
+	fprintf(fh, "    },\n");
 }
 
 static void write_harvest_file(const char *filename,
