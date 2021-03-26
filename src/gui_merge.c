@@ -368,6 +368,8 @@ static int write_partialator_script(const char *filename,
 		fprintf(fh, "%s \\\n", input->streams[i]);
 	}
 
+	fprintf(fh, " --model=%s", params->model);
+
 	fprintf(fh, " -j %s", n_thread_str);
 	fprintf(fh, " -o %s", out_hkl);
 	fprintf(fh, " -y %s", params->symmetry);
