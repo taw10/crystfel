@@ -405,6 +405,7 @@ static int write_partialator_script(const char *filename,
 	}
 
 	fprintf(fh, " --iterations=%i", params->niter);
+	fprintf(fh, " --harvest-file=parameters.json");
 
 	fprintf(fh, " >stdout.log 2>stderr.log\n");
 

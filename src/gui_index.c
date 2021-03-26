@@ -811,6 +811,8 @@ static char **indexamajig_command_line(const char *geom_filename,
 		add_arg_string(args, n_args++, "serial-start", serial_start);
 	}
 
+	add_arg_string(args, n_args++, "harvest-file", "parameters.json");
+
 	args[n_args] = NULL;
 	return args;
 }
