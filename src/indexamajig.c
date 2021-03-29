@@ -1201,7 +1201,7 @@ int main(int argc, char *argv[])
 	stream_write_target_cell(st, args.iargs.cell);
 	stream_write_indexing_methods(st, args.indm_str);
 
-	if ( args.harvest_file != NULL ) {
+	if ( (args.harvest_file != NULL) && (args.serial_start <= 1) ) {
 		write_harvest_file(&args.iargs, args.harvest_file,
 		                   args.if_multi, args.if_refine, args.if_retry,
 		                   args.if_peaks, args.if_checkcell);
