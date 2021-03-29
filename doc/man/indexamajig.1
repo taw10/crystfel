@@ -536,6 +536,12 @@ Do not record integrated reflections in the stream.  The resulting output won't 
 .PD
 Start the serial numbers in the stream at \fIn\fR instead of 1.  Use this if you are splitting an indexing job up into several smaller ones, so that the streams can be concatenated into a single one with consistent numbering.  This is important if you use \fBwhirligig\fR.
 
+.PD 0
+.IP \fB--harvest-file=\fIfn\fR
+.PD
+Write a list of parameters to \fIfn\fR, in JSON format.  This is intended to be used for harvesting data into a database system.  This option has no effect if --serial-offset is set to a number larger than 1, to avoid the file being overwritten multiple times in a batch system.
+
+
 .SH HISTORICAL OPTIONS
 
 .PD 0
