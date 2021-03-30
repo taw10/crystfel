@@ -1550,7 +1550,7 @@ int main(int argc, char *argv[])
 				image_for_crystal->detgeom = NULL;
 				image_for_crystal->features = NULL;
 				image_for_crystal->spectrum = NULL;
-				image_for_crystal->copied_headers = NULL;
+				image_for_crystal->n_cached_headers = 0;
 				image_for_crystal->dp = NULL;
 				image_for_crystal->bad = NULL;
 				image_for_crystal->sat = NULL;

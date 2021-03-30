@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020 Thomas White <taw@physics.org>
+ *   2020-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -36,7 +36,8 @@
 
 extern double image_hdf5_get_value(const char *from,
                                    const char *filename,
-                                   const char *ev);
+                                   const char *ev,
+                                   char *type);
 
 extern int image_hdf5_read(struct image *image,
                            const DataTemplate *dtempl,

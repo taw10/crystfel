@@ -639,8 +639,19 @@ int stream_write_chunk(Stream *st, const struct image *i,
 	fprintf(st->fh, "beam_divergence = %.2e rad\n", i->div);
 	fprintf(st->fh, "beam_bandwidth = %.2e (fraction)\n", i->bw);
 
-	/* FIXME: Better way of doing this */
-	//imagefile_copy_fields(imfile, i->copyme, st->fh, ev);
+	for ( j=0; j<i->n_cached_headers; j++ ) {
+		struct header_cache_entry *ce = i->header_cache[j];
+		if ( ce->type == 'f' ) {
+			fprintf(st->fh, "header/float/%s = %f\n",
+			        ce->header_name, ce->val_float);
+		} else if ( ce->type == 'i' ) {
+			fprintf(st->fh, "header/int/%s = %i\n",
+			        ce->header_name, ce->val_int);
+		} else {
+			ERROR("Unrecognised header cache type '%c'\n",
+			      ce->type);
+		}
+	}
 
 	if ( i->detgeom != NULL ) {
 
@@ -891,6 +902,48 @@ static void read_crystal(Stream *st, struct image *image,
 }
 
 
+static void parse_header(const char *line_in, struct image *image, char type)
+{
+	char *line;
+	char *pos;
+
+	line = strdup(line_in);
+
+	pos = strchr(line, ' ');
+	if ( pos == NULL ) {
+		ERROR("Invalid header line '%s' (no space)\n", line);
+		return;
+	}
+	pos[0] = '\0';
+
+	if ( strlen(line_in) < strlen(line) + 3 ) {
+		ERROR("Invalid header line '%s' (too short)\n", line);
+		return;
+	}
+
+	if ( (pos[1] != '=') || (pos[2] != ' ') ) {
+		ERROR("Invalid header line '%s' (wrong separator)\n", line);
+		return;
+	}
+
+	if ( type == 'f' ) {
+		float v;
+		if ( sscanf(pos+3, "%f", &v) != 1 ) {
+			ERROR("Invalid header line '%s' (invalid value)\n", line);
+			return;
+		}
+		image_cache_header_float(image, line, v);
+	} else {
+		int v;
+		if ( sscanf(pos+3, "%i", &v) != 1 ) {
+			ERROR("Invalid header line '%s' (invalid value)\n", line);
+			return;
+		}
+		image_cache_header_int(image, line, v);
+	}
+}
+
+
 /**
  * Read the next chunk from a stream and return an image structure
  */
@@ -926,6 +979,18 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 
 		if ( strncmp(line, "Event: ", 7) == 0 ) {
 			image->ev = strdup(line+7);
+		}
+
+		if ( strncmp(line, "hdf5/", 5) == 0 ) {
+			parse_header(line+5, image, 'f');
+		}
+
+		if ( strncmp(line, "header/int/", 11) == 0 ) {
+			parse_header(line+11, image, 'i');
+		}
+
+		if ( strncmp(line, "header/float/", 13) == 0 ) {
+			parse_header(line+13, image, 'f');
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {

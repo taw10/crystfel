@@ -281,11 +281,72 @@ void free_all_crystals(struct image *image)
 }
 
 
+static struct header_cache_entry *find_cache_entry(struct image *image,
+                                                   const char *name)
+{
+	int i;
+	for ( i=0; i<image->n_cached_headers; i++ ) {
+		if ( strcmp(name, image->header_cache[i]->header_name) == 0 ) {
+			return image->header_cache[i];
+		}
+	}
+	return NULL;
+}
+
+
+void image_cache_header_int(struct image *image,
+                            const char *header_name,
+                            int header_val)
+{
+	if ( image->n_cached_headers >= HEADER_CACHE_SIZE ) {
+		ERROR("Too many headers to copy.\n");
+	} else {
+
+		struct header_cache_entry *ce;
+		ce = malloc(sizeof(struct header_cache_entry));
+
+		if ( ce != NULL ) {
+			ce->header_name = strdup(header_name);
+			ce->val_int = header_val;
+			ce->type = 'i';
+			image->header_cache[image->n_cached_headers++] = ce;
+		} else {
+			ERROR("Failed to add header cache entry.\n");
+		}
+	}
+}
+
+
+void image_cache_header_float(struct image *image,
+                              const char *header_name,
+                              float header_val)
+{
+	if ( image->n_cached_headers >= HEADER_CACHE_SIZE ) {
+		ERROR("Too many headers to copy.\n");
+	} else {
+
+		struct header_cache_entry *ce;
+		ce = malloc(sizeof(struct header_cache_entry));
+
+		if ( ce != NULL ) {
+			ce->header_name = strdup(header_name);
+			ce->val_float = header_val;
+			ce->type = 'f';
+			image->header_cache[image->n_cached_headers++] = ce;
+		} else {
+			ERROR("Failed to add header cache entry.\n");
+		}
+	}
+}
+
+
 static double get_value(struct image *image, const char *from,
                         int *is_literal_number)
 {
 	double val;
 	char *rval;
+	struct header_cache_entry *ce;
+	char type;
 
 	if ( from == NULL ) return NAN;
 
@@ -302,10 +363,21 @@ static double get_value(struct image *image, const char *from,
 		return NAN;
 	}
 
-	if ( is_hdf5_file(image->filename) ) {
-		return image_hdf5_get_value(from,
-		                            image->filename,
-		                            image->ev);
+	ce = find_cache_entry(image, from);
+	if ( ce != NULL ) {
+		if ( ce->type == 'f' ) {
+			return ce->val_float;
+		} else if ( ce->type == 'i' ) {
+			return ce->val_int;
+		} else {
+			ERROR("Unrecognised header cache type '%c'\n",
+			      ce->type);
+			return NAN;
+		}
+
+	} else if ( is_hdf5_file(image->filename) ) {
+		val = image_hdf5_get_value(from, image->filename, image->ev,
+		                           &type);
 
 	} else if ( is_cbf_file(image->filename) ) {
 		/* FIXME: From headers */
@@ -319,6 +391,13 @@ static double get_value(struct image *image, const char *from,
 		ERROR("Unrecognised file type: %s\n", image->filename);
 		return NAN;
 	}
+
+	if ( type == 'f' ) {
+		image_cache_header_float(image, from, val);
+	} else if ( type == 'i' ) {
+		image_cache_header_int(image, from, val);
+	}
+	return val;
 }
 
 
@@ -954,6 +1033,7 @@ struct image *image_read(const DataTemplate *dtempl,
 {
 	struct image *image;
 	int r;
+	int i;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1002,6 +1082,10 @@ struct image *image_read(const DataTemplate *dtempl,
 		return NULL;
 	}
 
+	for ( i=0; i<dtempl->n_headers_to_copy; i++ ) {
+		get_value(image, dtempl->headers_to_copy[i], NULL);
+	}
+
 	return image;
 }
 
@@ -1030,6 +1114,10 @@ void image_free(struct image *image)
 		if ( image->bad != NULL ) free(image->bad[i]);
 	}
 
+	for ( i=0; i<image->n_cached_headers; i++ ) {
+		free(image->header_cache[i]);
+	}
+
 	free(image->dp);
 	free(image->sat);
 	free(image->bad);
@@ -1055,7 +1143,7 @@ struct image *image_new()
        image->detgeom = NULL;
        image->filename = NULL;
        image->ev = NULL;
-       image->copied_headers = NULL;
+       image->n_cached_headers = 0;
        image->id = 0;
        image->serial = 0;
        image->spectrum = NULL;

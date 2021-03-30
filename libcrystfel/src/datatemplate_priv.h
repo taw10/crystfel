@@ -78,6 +78,9 @@ enum peak_layout
 #define DIM_UNDEFINED (-3)
 #define DIM_PLACEHOLDER (-4)
 
+/* Maximum number of headers to cache, in addition to anything already
+ * referenced by the DataTemplate */
+#define MAX_COPY_HEADERS (32)
 
 /* Maximum number of masks per panel */
 #define MAX_MASKS (8)
@@ -232,6 +235,9 @@ struct _datatemplate
 	/* Shift of whole detector, in m */
 	char                      *shift_x_from;
 	char                      *shift_y_from;
+
+	char                      *headers_to_copy[MAX_COPY_HEADERS];
+	int                        n_headers_to_copy;
 };
 
 extern double convert_to_m(double val, int units);

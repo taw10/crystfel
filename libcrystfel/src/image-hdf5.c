@@ -615,7 +615,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 
 
 double image_hdf5_get_value(const char *name, const char *filename,
-                            const char *event)
+                            const char *event, char *ptype)
 {
 	hid_t dh;
 	hid_t type;
@@ -667,7 +667,11 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
-	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
+	if ( class == H5T_FLOAT ) {
+		*ptype = 'f';
+	} else if ( class == H5T_INTEGER ) {
+		*ptype = 'i';
+	} else {
 		ERROR("Not a floating point or integer value.\n");
 		close_hdf5(fh);
 		return NAN;
@@ -691,16 +695,35 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	ms = H5Screate_simple(1, msdims, NULL);
 
 	if ( ndims == 0 ) {
+
 		/* Easy case, because value is a scalar */
-		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
-		if ( r < 0 )  {
-			ERROR("Couldn't read scalar value from %s.\n",
-			      subst_name);
-			free(subst_name);
-			close_hdf5(fh);
-			return NAN;
+
+		if ( class == H5T_FLOAT ) {
+
+			r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
+			if ( r < 0 )  {
+				ERROR("Couldn't read scalar value from %s.\n",
+				      subst_name);
+				free(subst_name);
+				close_hdf5(fh);
+				return NAN;
+			}
+			return val;
+
+		} else {
+
+			int vali;
+			r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT, &vali);
+			if ( r < 0 )  {
+				ERROR("Couldn't read scalar value from %s.\n",
+				      subst_name);
+				free(subst_name);
+				close_hdf5(fh);
+				return NAN;
+			}
+			return vali;
+
 		}
-		return val;
 	}
 
 	dim_vals = read_dim_parts(event, &n_dim_vals);

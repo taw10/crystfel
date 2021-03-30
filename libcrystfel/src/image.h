@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2020 Thomas White <taw@physics.org>
+ *   2009-2021 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *
  *
@@ -76,6 +76,18 @@ struct imagefeature {
 typedef struct _imagefeaturelist ImageFeatureList;
 
 
+#define HEADER_CACHE_SIZE (128)
+
+struct header_cache_entry {
+	char *header_name;
+	char type;
+	union {
+		int val_int;
+		float val_float;
+	};
+};
+
+
 struct image
 {
 	/** The image data, by panel */
@@ -112,7 +124,8 @@ struct image
 	/** @} */
 
 	/** A list of metadata read from the stream */
-	char                    *copied_headers;
+	struct header_cache_entry *header_cache[HEADER_CACHE_SIZE];
+	int                        n_cached_headers;
 
 	/** ID number of the worker processing handling this image */
 	int                     id;
@@ -183,6 +196,14 @@ extern struct image *image_read(const DataTemplate *dtempl,
                                 int no_mask_data);
 extern struct image *image_create_for_simulation(const DataTemplate *dtempl);
 extern void image_free(struct image *image);
+
+extern void image_cache_header_float(struct image *image,
+                                     const char *header_name,
+                                     float header_val);
+
+extern void image_cache_header_int(struct image *image,
+                                   const char *header_name,
+                                   int header_val);
 
 extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
                                           const char *filename,

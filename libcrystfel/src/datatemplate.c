@@ -1047,6 +1047,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->peak_list = NULL;
 	dt->shift_x_from = NULL;
 	dt->shift_y_from = NULL;
+	dt->n_headers_to_copy = 0;
 
 	/* The default defaults... */
 	defaults.orig_min_fs = -1;
@@ -1489,6 +1490,10 @@ void data_template_free(DataTemplate *dt)
 		}
 	}
 
+	for ( i=0; i<dt->n_headers_to_copy; i++ ) {
+		free(dt->headers_to_copy[i]);
+	}
+
 	free(dt->wavelength_from);
 	free(dt->peak_list);
 
@@ -1574,8 +1579,12 @@ int data_template_panel_name_to_number(const DataTemplate *dt,
 void data_template_add_copy_header(DataTemplate *dt,
                                    const char *header)
 {
-	/* FIXME: Add "header" to list of things to copy */
-	STATUS("Adding %s\n", header);
+	if ( dt->n_headers_to_copy >= MAX_COPY_HEADERS ) {
+		ERROR("Too many extra headers to copy\n");
+		return;
+	}
+
+	dt->headers_to_copy[dt->n_headers_to_copy++] = strdup(header);
 }
 
 
