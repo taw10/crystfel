@@ -139,6 +139,8 @@ static void swap_data_arrays(struct image *a, struct image *b)
 	float **swap;
 	int **swap_bad;
 
+	if ( (a==NULL) || (b==NULL) ) return;
+
 	swap = a->dp;
 	a->dp = b->dp;
 	b->dp = swap;
@@ -183,6 +185,18 @@ static int have_running_jobs(struct crystfelproject *proj)
 }
 
 
+static int file_exists(const char *filename)
+{
+	struct stat sb;
+
+	if ( stat(filename, &sb) ) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+
 /* Bring the image view up to date after changing the selected image */
 void update_imageview(struct crystfelproject *proj)
 {
@@ -204,10 +218,15 @@ void update_imageview(struct crystfelproject *proj)
 		return;
 	}
 
-	image = image_read(proj->dtempl,
-	                   proj->filenames[proj->cur_frame],
-	                   proj->events[proj->cur_frame],
-	                   0, 0);
+	if ( file_exists(proj->filenames[proj->cur_frame]) ) {
+		image = image_read(proj->dtempl,
+		                   proj->filenames[proj->cur_frame],
+		                   proj->events[proj->cur_frame],
+		                   0, 0);
+	} else {
+		STATUS("Image data file not present.\n");
+		image = NULL;
+	}
 
 	if ( proj->events[proj->cur_frame] != NULL ) {
 		ev_str = proj->events[proj->cur_frame];
@@ -225,11 +244,6 @@ void update_imageview(struct crystfelproject *proj)
 		 (image==NULL)?", load error":"");
 	gtk_label_set_text(GTK_LABEL(proj->image_info), tmp);
 
-	if ( image == NULL ) {
-		ERROR("Failed to load image\n");
-		return;
-	}
-
 	/* Give CrystFELImageView a chance to free resources */
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              NULL);
@@ -245,8 +259,8 @@ void update_imageview(struct crystfelproject *proj)
 
 		res_im = find_indexed_image(proj,
 		                            results_name,
-		                            image->filename,
-		                            image->ev,
+		                            proj->filenames[proj->cur_frame],
+		                            proj->events[proj->cur_frame],
 		                            have_running_jobs(proj));
 		if ( res_im != NULL ) {
 			swap_data_arrays(image, res_im);
