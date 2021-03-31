@@ -3,6 +3,8 @@
  *
  * Perform indexing from solution file
  *
+ * Copyright © 2020-2021 Max-Planck-Gesellschaft
+ *                       zur Förderung der Wissenschaften e.V.
  * Copyright © 2021 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
