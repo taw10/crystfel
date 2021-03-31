@@ -185,28 +185,6 @@ static int set_lattice(UnitCell *cell, const char *ltsym)
 }
 
 
-static void unescape(char *line)
-{
-	size_t len;
-	int i, w;
-	int esc = 0;
-
-	len = strlen(line);
-	w = 0;
-	for ( i=0; i<len; i++ ) {
-		if ( esc ) {
-			line[w++] = line[i];
-			esc = 0;
-		} else if ( line[i] == '\\' ) {
-			esc = 1;
-		} else {
-			line[w++] = line[i];
-		}
-	}
-	line[w] = '\0';
-}
-
-
 void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 {
 	FILE *fh;
@@ -287,8 +265,6 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 				return NULL;
 			}
 		}
-
-		unescape(line);
 
 		if ( make_key(&key, line, bits[0]) ) {
 			ERROR("Failed to make key for %s %s\n",

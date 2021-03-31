@@ -81,9 +81,6 @@ class Crystal:
             cs += ' ' + self.lattice_type_sym
             return cs
 
-def escape_spaces(str):
-    return str.replace('\\', '\\\\').replace(' ', '\\ ')
-
 class Chunk:
 
     def __init__(self, line):
@@ -116,7 +113,7 @@ class Chunk:
             # return '\n'.join([' '.join([self.file, *self.Event.split('//'), str(cryst)])
             #             for ii, cryst in enumerate(self.crystals)])
             # new-style (not working yet)
-            return '\n'.join([' '.join([escape_spaces(self.file), self.Event, str(cryst)])
+            return '\n'.join([' '.join([self.file, self.Event, str(cryst)])
                         for ii, cryst in enumerate(self.crystals)])
 
 
