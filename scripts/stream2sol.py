@@ -29,16 +29,13 @@ class Crystal:
         self.centering = None
         self.unique_axis = None
         self.det_shift = (None, None)
-        self.profile_radius = None
-        self.resolution = None
         self.start_line = line
 
     @property
     def initialized(self):
         return all([x is not None
                     for x in [*self.astar, *self.bstar, *self.cstar,
-                              *self.det_shift, self.profile_radius,
-                              self.resolution, self.lattice_type,
+                              *self.det_shift, self.lattice_type,
                               self.centering]])
 
     @property
@@ -69,8 +66,6 @@ class Crystal:
             cs = ' '.join(['{0[0]} {0[1]} {0[2]}'.format(vec)
                             for vec in [self.astar, self.bstar, self.cstar]])
             cs += ' {0[0]} {0[1]}'.format(self.det_shift)
-            if args.include_pars: # this is a bit dirty but will become obsolete one day
-                cs += ' {0} {1}'.format(self.profile_radius, self.resolution)
             cs += ' ' + self.lattice_type_sym
             return cs
 
@@ -202,16 +197,10 @@ def parse_stream(stream, sol=None, return_meta=True,
                 elif l.startswith('unique_axis'):
                     curr_cryst.unique_axis = l.split(' ')[2].rstrip('\r\n')
 
-                elif l.startswith('profile_radius'):
-                    curr_cryst.profile_radius = parse_vec(l)[0]
-
                 elif l.startswith('predict_refine/det_shift'):
                     curr_cryst.det_shift = parse_vec(l)
                     curr_cryst.det_shift = (curr_cryst.det_shift[0] + curr_chunk.x_shift,
                                             curr_cryst.det_shift[1] + curr_chunk.y_shift)
-
-                elif l.startswith('diffraction_resolution_limit'):
-                    curr_cryst.resolution = parse_vec(l)[0]
 
             elif  l.startswith(BEGIN_GEOM) and not have_geom:
                 parsing_geom = True
@@ -270,7 +259,6 @@ def main():
     parser.add_argument('--y-shift-field', type=str, help='Field in chunk for y-shift identifier', default='')
     parser.add_argument('--shift-factor', type=float,
                         help='Pre-factor for shifts, typically the pixel size in mm if the shifts are in pixel', default=1)
-    parser.add_argument('--include-pars', help='Include profile radius and resolution estimate into sol file', action='store_true')
 
     args = parser.parse_args()
 
