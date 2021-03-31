@@ -32,6 +32,9 @@ class Crystal:
         self.astar = (None, None, None)
         self.bstar = (None, None, None)
         self.cstar = (None, None, None)
+        self.lattice_type = None
+        self.centering = None
+        self.unique_axis = None
         self.det_shift = (None, None)
         self.profile_radius = None
         self.resolution = None
@@ -42,8 +45,29 @@ class Crystal:
         return all([x is not None
                     for x in [*self.astar, *self.bstar, *self.cstar,
                               *self.det_shift, self.profile_radius,
-                              self.resolution]])
-    
+                              self.resolution, self.lattice_type,
+                              self.centering]])
+
+    @property
+    def lattice_type_sym(self):
+        if self.lattice_type == 'triclinic':
+            return 'a' + self.centering
+        elif self.lattice_type == 'monoclinic':
+            return 'm' + self.centering + self.unique_axis
+        elif self.lattice_type == 'orthorhombic':
+            return 'o' + self.centering
+        elif self.lattice_type == 'tetragonal':
+            return 't' + self.centering + self.unique_axis
+        elif self.lattice_type == 'cubic':
+            return 'c' + self.centering
+        elif self.lattice_type == 'hexagonal':
+            return 'h' + self.centering + self.unique_axis
+        elif self.lattice_type == 'rhombohedral':
+            return 'r' + self.centering
+        else:
+            warn('Invalid lattice type {}'.format(self.lattice_type))
+            return 'invalid'
+
     def __str__(self):
         if not self.initialized:
             warn('Trying to get string from non-initialized crystal from line {}.'.format(self.start_line))
@@ -54,6 +78,7 @@ class Crystal:
             cs += ' {0[0]} {0[1]}'.format(self.det_shift)
             if args.include_pars: # this is a bit dirty but will become obsolete one day
                 cs += ' {0} {1}'.format(self.profile_radius, self.resolution)
+            cs += ' ' + self.lattice_type_sym
             return cs
 
 class Chunk:
@@ -174,7 +199,16 @@ def parse_stream(stream, sol=None, return_meta=True,
 
                 elif l.startswith('cstar'):
                     curr_cryst.cstar = parse_vec(l)
-                    
+
+                elif l.startswith('lattice_type'):
+                    curr_cryst.lattice_type = l.split(' ')[2].rstrip('\r\n')
+
+                elif l.startswith('centering'):
+                    curr_cryst.centering = l.split(' ')[2].rstrip('\r\n')
+
+                elif l.startswith('unique_axis'):
+                    curr_cryst.unique_axis = l.split(' ')[2].rstrip('\r\n')
+
                 elif l.startswith('profile_radius'):
                     curr_cryst.profile_radius = parse_vec(l)[0]
 
