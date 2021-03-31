@@ -81,6 +81,9 @@ class Crystal:
             cs += ' ' + self.lattice_type_sym
             return cs
 
+def escape_spaces(str):
+    return str.replace('\\', '\\\\').replace(' ', '\\ ')
+
 class Chunk:
 
     def __init__(self, line):
@@ -113,7 +116,7 @@ class Chunk:
             # return '\n'.join([' '.join([self.file, *self.Event.split('//'), str(cryst)])
             #             for ii, cryst in enumerate(self.crystals)])
             # new-style (not working yet)
-            return '\n'.join([' '.join([self.file, self.Event, str(cryst)])
+            return '\n'.join([' '.join([escape_spaces(self.file), self.Event, str(cryst)])
                         for ii, cryst in enumerate(self.crystals)])
 
 
@@ -168,7 +171,7 @@ def parse_stream(stream, sol=None, return_meta=True,
                     curr_chunk = None
 
                 elif l.startswith(file_label):
-                    curr_chunk.file = l.split(' ')[-1].strip()
+                    curr_chunk.file = l.split(' ', 2)[-1].strip()
 
                 elif l.startswith(event_label):
                     curr_chunk.Event = l.split(' ')[-1].strip()
@@ -201,13 +204,13 @@ def parse_stream(stream, sol=None, return_meta=True,
                     curr_cryst.cstar = parse_vec(l)
 
                 elif l.startswith('lattice_type'):
-                    curr_cryst.lattice_type = l.split(' ')[2].rstrip('\r\n')
+                    curr_cryst.lattice_type = l.split(' ')[2].strip()
 
                 elif l.startswith('centering'):
-                    curr_cryst.centering = l.split(' ')[2].rstrip('\r\n')
+                    curr_cryst.centering = l.split(' ')[2].strip()
 
                 elif l.startswith('unique_axis'):
-                    curr_cryst.unique_axis = l.split(' ')[2].rstrip('\r\n')
+                    curr_cryst.unique_axis = l.split(' ')[2].strip()
 
                 elif l.startswith('predict_refine/det_shift'):
                     curr_cryst.det_shift = parse_vec(l)

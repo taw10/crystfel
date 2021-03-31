@@ -185,6 +185,28 @@ static int set_lattice(UnitCell *cell, const char *ltsym)
 }
 
 
+static void unescape(char *line)
+{
+	size_t len;
+	int i, w;
+	int esc = 0;
+
+	len = strlen(line);
+	w = 0;
+	for ( i=0; i<len; i++ ) {
+		if ( esc ) {
+			line[w++] = line[i];
+			esc = 0;
+		} else if ( line[i] == '\\' ) {
+			esc = 1;
+		} else {
+			line[w++] = line[i];
+		}
+	}
+	line[w] = '\0';
+}
+
+
 void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 {
 	FILE *fh;
@@ -228,47 +250,62 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 		struct fromfile_key key;
 		Crystal *cr;
 		UnitCell *cell;
+		size_t len;
+		int n_sp;
 		struct fromfile_entry *item = NULL;
 
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
 
-		/* FIXME: Replace this with something that can handle quoted
-		 * filenames with possible spaces */
 		chomp(line);
 		notrail(line);
-		n = assplode(line, " \t,", &bits, ASSPLODE_NONE);
-		if ( n < 14 ) {
+
+		len = strlen(line);
+		n_sp = 0;
+		for ( i=len-1; i>0; i-- ) {
+			if ( line[i] == ' ' ) {
+				n_sp++;
+				if ( n_sp == 13 ) {
+					line[i] = '\0';
+					break;
+				}
+			}
+		}
+
+		n = assplode(line+i+1, " \t,", &bits, ASSPLODE_NONE);
+		if ( n < 13 ) {
 			ERROR("Badly formatted line '%s'\n", line);
 			return NULL;
 		}
 
 		/* filename, event, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz,
 		 * det_shift_x, det_shift_y, latticetype+centering */
-		for ( i=2; i<13; i++ ) {
-			if (sscanf(bits[i], "%f", &vals[i-2]) != 1)
+		for ( i=1; i<12; i++ ) {
+			if (sscanf(bits[i], "%f", &vals[i-1]) != 1)
 			{
 				ERROR("Invalid value for number %i\n", i);
 				return NULL;
 			}
 		}
 
-		if ( make_key(&key, bits[0], bits[1]) ) {
+		unescape(line);
+
+		if ( make_key(&key, line, bits[0]) ) {
 			ERROR("Failed to make key for %s %s\n",
-			      bits[0], bits[1]);
+			      line, bits[0]);
 			continue;
 		}
 
 		item = add_unique(&dp->sol_hash, key);
 		if ( item == NULL ) {
 			ERROR("Failed to add/find entry for %s %s\n",
-			      bits[0], bits[1]);
+			      line, bits[0]);
 			continue;
 		}
 
 		if ( item->n_crystals == MAX_CRYSTALS ) {
 
-			ERROR("Too many crystals for %s %s\n", bits[0], bits[1]);
+			ERROR("Too many crystals for %s %s\n", line, bits[0]);
 
 		} else {
 
@@ -281,8 +318,8 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 			cell_set_reciprocal(cell, vals[0]*1e9, vals[1]*1e9, vals[2]*1e9,
 			                          vals[3]*1e9, vals[4]*1e9, vals[5]*1e9,
 			                          vals[6]*1e9, vals[7]*1e9, vals[8]*1e9);
-			if ( set_lattice(cell, bits[13]) ) {
-				ERROR("Invalid lattice type '%s'\n", bits[13]);
+			if ( set_lattice(cell, bits[12]) ) {
+				ERROR("Invalid lattice type '%s'\n", bits[12]);
 			} else {
 				crystal_set_cell(cr, cell);
 				item->crystals[item->n_crystals++] = cr;
