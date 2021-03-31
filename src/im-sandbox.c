@@ -343,12 +343,16 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	while ( !allDone ) {
 
 		struct pattern_args pargs;
-		char filename[MAX_EV_LEN];
-		char event_str[MAX_EV_LEN];
 		int ser;
-		int r;
 
 		if ( !sb->zmq ) {
+
+			char *line;
+			size_t len;
+			int i;
+			char *event_str = NULL;
+			char *ser_str = NULL;
+			int ok = 1;
 
 			/* Wait until an event is ready */
 			time_accounts_set(taccs, TACC_EVENTWAIT);
@@ -378,21 +382,50 @@ static int run_work(const struct index_args *iargs, Stream *st,
 				allDone = 1;
 				continue;
 			}
-			r = sscanf(sb->shared->queue[0], "%s %s %i",
-			           filename, event_str, &ser);
-			if ( r != 3 ) {
+
+			line = strdup(sb->shared->queue[0]);
+
+			len = strlen(line);
+			assert(len > 1);
+			for ( i=len-1; i>0; i-- ) {
+				if ( line[i] == ' ' ) {
+					line[i] = '\0';
+					ser_str = &line[i+1];
+					break;
+				}
+			}
+			len = strlen(line);
+			assert(len > 1);
+			for ( i=len-1; i>0; i-- ) {
+				if ( line[i] == ' ' ) {
+					line[i] = '\0';
+					event_str = &line[i+1];
+					break;
+				}
+			}
+			if ( (ser_str != NULL) && (event_str != NULL) ) {
+				if ( sscanf(ser_str, "%i", &ser) != 1 ) {
+					STATUS("Invalid serial number '%s'\n",
+					       ser_str);
+					ok = 0;
+				}
+			}
+			if ( !ok ) {
 				STATUS("Invalid event string '%s'\n",
 				       sb->shared->queue[0]);
+				ok = 0;
 			}
 			memcpy(sb->shared->last_ev[cookie], sb->shared->queue[0],
 			       MAX_EV_LEN);
 			shuffle_events(sb->shared);
 			pthread_mutex_unlock(&sb->shared->queue_lock);
 
-			if ( r != 3 ) continue;
+			if ( !ok ) continue;
 
-			pargs.filename = strdup(filename);
+			pargs.filename = strdup(line);
 			pargs.event = strdup(event_str);
+
+			free(line);
 
 			pargs.msgpack_obj = NULL;
 
