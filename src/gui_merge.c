@@ -365,13 +365,13 @@ static int write_partialator_script(const char *filename,
 	fprintf(fh, "%s \\\n", exe_path);
 
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, "%s \\\n", input->streams[i]);
+		fprintf(fh, "\"%s\" \\\n", input->streams[i]);
 	}
 
 	fprintf(fh, " --model=%s", params->model);
 
 	fprintf(fh, " -j %s", n_thread_str);
-	fprintf(fh, " -o %s", out_hkl);
+	fprintf(fh, " -o \"%s\"", out_hkl);
 	fprintf(fh, " -y %s", params->symmetry);
 
 	fprintf(fh, " --polarisation=%s", params->polarisation);
@@ -385,7 +385,7 @@ static int write_partialator_script(const char *filename,
 	}
 
 	if ( params->custom_split != NULL ) {
-		fprintf(fh, " --custom-split=%s", params->custom_split);
+		fprintf(fh, " --custom-split=\"%s\"", params->custom_split);
 	}
 
 	if ( !params->scale ) {
@@ -427,10 +427,10 @@ static void add_process_hkl(FILE *fh,
 	fprintf(fh, "%s \\\n", exe_path);
 
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, " %s \\\n", input->streams[i]);
+		fprintf(fh, " \"%s\" \\\n", input->streams[i]);
 	}
 
-	fprintf(fh, " -o %s%s", out_hkl, out_suffix);
+	fprintf(fh, " -o \"%s%s\"", out_hkl, out_suffix);
 	fprintf(fh, " -y %s", params->symmetry);
 
 	if ( params->scale ) {

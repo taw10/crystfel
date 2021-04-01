@@ -641,9 +641,31 @@ gint index_one_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static int contains_spaces(const char *str)
+{
+	int i;
+	size_t len;
+	len = strlen(str);
+	for ( i=0; i<len; i++ ) {
+		if ( str[i] == ' ' ) return 1;
+	}
+	return 0;
+}
+
+
 static void add_arg(char **args, int pos, const char *label)
 {
-	args[pos] = strdup(label);
+	if ( contains_spaces(label) ) {
+		size_t len = strlen(label)+3;
+		args[pos] = malloc(len);
+		args[pos][0] = '"';
+		args[pos][1] = '\0';
+		strcat(args[pos], label);
+		args[pos][len-2] = '"';
+		args[pos][len-1] = '\0';
+	} else {
+		args[pos] = strdup(label);
+	}
 }
 
 

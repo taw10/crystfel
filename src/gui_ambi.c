@@ -495,7 +495,7 @@ int write_ambigator_script(const char *filename,
 
 	fprintf(fh, "cat \\\n");
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, "%s \\\n", input->streams[i]);
+		fprintf(fh, "\"%s\" \\\n", input->streams[i]);
 	}
 	fprintf(fh, " > ambigator-input.stream\n");
 
@@ -504,7 +504,7 @@ int write_ambigator_script(const char *filename,
 	fprintf(fh, "%s ambigator-input.stream \\\n", exe_path);
 
 	fprintf(fh, " -j %s", n_thread_str);
-	fprintf(fh, " -o %s", out_stream);
+	fprintf(fh, " -o \"%s\"", out_stream);
 	fprintf(fh, " -y %s", params->sym);
 	if ( params->use_operator ) {
 		fprintf(fh, " --operator=%s", params->operator);
