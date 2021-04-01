@@ -163,7 +163,7 @@ static struct local_job *start_local_job(char **args,
 	job = malloc(sizeof(struct local_job));
 	if ( job == NULL ) return NULL;
 
-	job->workdir = workdir_file;
+	job->workdir = g_file_dup(workdir_file);
 	job->type = type;
 
 	STATUS("Running program: ");
@@ -572,6 +572,7 @@ static void *run_indexing(const char *job_title,
 			                    streams, 1);
 		}
 	}
+	g_object_unref(workdir);
 
 	return job;
 }
