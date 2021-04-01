@@ -98,5 +98,8 @@
   "FromFile" indexer
   Features for working with electron diffraction patterns
 
+* Robert Bücker <robert.buecker@cssb-hamburg.de>
+  stream2sol.py
+
 * Troy D. Hanson
   uthash (http://troydhanson.github.com/uthash/)

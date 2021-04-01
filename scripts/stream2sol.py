@@ -8,7 +8,7 @@
 #                  a research centre of the Helmholtz Association.
 #
 # Authors:
-#   2020 Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
+#   2020 Robert Bücker <robert.buecker@cssb-hamburg.de>
 #   2021 Thomas White <thomas.white@desy.de>
 
 from io import StringIO
