@@ -175,10 +175,12 @@ const char *selected_result(struct crystfelproject *proj)
  *  (i.e. merging) */
 static int have_running_jobs(struct crystfelproject *proj)
 {
-	int i;
+	GSList *item = proj->tasks;
 
-	for ( i=0; i<proj->n_running_tasks; i++ ) {
-		if ( proj->tasks[i].running ) return 1;
+	while ( item != NULL ) {
+		struct gui_task *task = item->data;
+		if ( task->running ) return 1;
+		item = item->next;
 	}
 
 	return 0;
@@ -977,18 +979,49 @@ int main(int argc, char *argv[])
 }
 
 
+struct infobar_data
+{
+	struct crystfelproject *proj;
+	struct gui_task *task;
+};
+
+
+static void free_ib_callback_params(gpointer cbvals,
+                                    GClosure *closure)
+{
+	free(cbvals);
+}
+
+
+static void remove_task(struct crystfelproject *proj,
+                        struct gui_task *task)
+{
+	if ( task->running ) {
+		ERROR("Attempt to remove a running task!\n");
+		return;
+	}
+
+	if ( task->backend->free_task != NULL ) {
+		task->backend->free_task(task->job_priv);
+	}
+	free(task);
+
+	proj->tasks = g_slist_remove(proj->tasks, task);
+}
+
+
 static void infobar_response_sig(GtkInfoBar *infobar, gint resp,
                                  gpointer data)
 {
-	struct gui_task *task = data;
+	struct infobar_data *ibdata = data;
 
 	if ( resp == GTK_RESPONSE_CANCEL ) {
-		task->backend->cancel_task(task->job_priv);
+		ibdata->task->backend->cancel_task(ibdata->task->job_priv);
 
 	} else if ( resp == GTK_RESPONSE_CLOSE ) {
 
 		gtk_widget_destroy(GTK_WIDGET(infobar));
-		/* FIXME: Remove task from list */
+		remove_task(ibdata->proj, ibdata->task);
 
 	} else {
 		ERROR("Unrecognised infobar response!\n");
@@ -1030,12 +1063,16 @@ void add_running_task(struct crystfelproject *proj,
                       void *job_priv)
 {
 	struct gui_task *task;
+	struct infobar_data *ibdata;
 	GtkWidget *bar_area;
 
-	task = &proj->tasks[proj->n_running_tasks++];
+	task = malloc(sizeof(struct gui_task));
+	if ( task == NULL ) return;
+
 	task->job_priv = job_priv;
 	task->backend = backend;
 	task->running = 1;
+	proj->tasks = g_slist_append(proj->tasks, task);
 
 	/* Progress info bar */
 	task->info_bar = gtk_info_bar_new();
@@ -1061,8 +1098,14 @@ void add_running_task(struct crystfelproject *proj,
 	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(task->progress_bar),
 	                               TRUE);
 
-	g_signal_connect(G_OBJECT(task->info_bar), "response",
-	                 G_CALLBACK(infobar_response_sig), task);
+	ibdata = malloc(sizeof(struct infobar_data));
+	if ( ibdata != NULL ) {
+		ibdata->proj = proj;
+		ibdata->task = task;
+		g_signal_connect_data(G_OBJECT(task->info_bar), "response",
+		                      G_CALLBACK(infobar_response_sig), ibdata,
+		                      free_ib_callback_params, 0);
+	}
 
 	gtk_widget_show_all(task->info_bar);
 

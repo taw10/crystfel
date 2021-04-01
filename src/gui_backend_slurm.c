@@ -222,6 +222,14 @@ static int get_task_status(void *job_priv,
 }
 
 
+static void free_task(void *job_priv)
+{
+	struct slurm_job *job = job_priv;
+	g_object_unref(job->workdir);
+	free(job->stderr_filename);
+}
+
+
 static void cancel_task(void *job_priv)
 {
 	char jobid[128];
@@ -1050,6 +1058,7 @@ int make_slurm_backend(struct crystfel_backend *be)
 	be->friendly_name = "SLURM";
 
 	be->cancel_task = cancel_task;
+	be->free_task = free_task;
 	be->task_status = get_task_status;
 
 	be->make_indexing_parameters_widget = make_indexing_parameters_widget;

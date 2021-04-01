@@ -157,6 +157,9 @@ struct crystfel_backend {
 	/* Called to ask the backend to cancel the job */
 	void (*cancel_task)(void *job_priv);
 
+	/* Called to ask the backend to free any resources in the job record */
+	void (*free_task)(void *job_priv);
+
 	/* Called to get the status of a task */
 	int (*task_status)(void *job_priv,
 	                   int *running,
@@ -308,8 +311,7 @@ struct crystfelproject {
 	struct crystfel_backend *backends;
 	int n_backends;
 
-	struct gui_task tasks[MAX_RUNNING_TASKS];
-	int n_running_tasks;
+	GSList *tasks;
 
 	struct gui_indexing_result *results;
 	int n_results;

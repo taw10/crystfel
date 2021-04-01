@@ -1093,7 +1093,7 @@ void default_project(struct crystfelproject *proj)
 	proj->indexing_opts = NULL;
 	proj->merging_opts = NULL;
 	proj->ambi_opts = NULL;
-	proj->n_running_tasks = 0;
+	proj->tasks = NULL;
 	proj->indexing_new_job_title = NULL;
 	proj->merging_new_job_title = NULL;
 	proj->ambi_new_job_title = NULL;

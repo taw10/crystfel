@@ -79,6 +79,14 @@ struct local_job
 };
 
 
+static void free_task(void *job_priv)
+{
+	struct local_job *job = job_priv;
+	g_object_unref(job->workdir);
+	free(job->stderr_filename);
+}
+
+
 static void watch_subprocess(GPid pid, gint status, gpointer vp)
 {
 	struct local_job *job = vp;
@@ -677,6 +685,7 @@ int make_local_backend(struct crystfel_backend *be)
 	be->friendly_name = "Local (run on this computer)";
 
 	be->cancel_task = cancel_task;
+	be->free_task = free_task;
 	be->task_status = get_task_status;
 
 	be->make_indexing_parameters_widget = make_indexing_parameters_widget;
