@@ -967,7 +967,80 @@ static int create_badmap(struct image *image,
 static int create_satmap(struct image *image,
                          const DataTemplate *dtempl)
 {
-	/* FIXME: Implementation */
+	int i;
+	int any;
+
+	/* The panels will be treated separately, but we'll only bother at all
+	 * if at least one of them has a saturation map. */
+	any = 0;
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		if ( dtempl->panels[i].satmap != NULL ) {
+			any = 1;
+			break;
+		}
+	}
+
+	if ( !any ) return 0;
+
+	image->sat = malloc(dtempl->n_panels * sizeof(float *));
+	if ( image->sat == NULL ) {
+		ERROR("Failed to allocate saturation map\n");
+		return 1;
+	}
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		struct panel_template *p = &dtempl->panels[i];
+
+		if ( p->satmap == NULL ) {
+
+			/* At least one other panel has a saturation map,
+			 * but it isn't this one.  Therefore make a fake
+			 * saturation map */
+
+			long int j;
+			int p_w, p_h;
+
+			p_w = p->orig_max_fs - p->orig_min_fs + 1;
+			p_h = p->orig_max_ss - p->orig_min_ss + 1;
+
+			image->sat[i] = malloc(p_w*p_h*sizeof(float));
+
+			if ( image->sat[i] != NULL ) {
+				for ( j=0; j<p_w*p_h; j++ ) {
+					image->sat[i][j] = INFINITY;
+				}
+			}
+
+		} else {
+
+			const char *map_fn;
+
+			if ( p->satmap_file == NULL ) {
+				map_fn = image->filename;
+			} else {
+				map_fn = p->satmap_file;
+			}
+
+			if ( is_hdf5_file(map_fn) ) {
+				image->sat[i] = image_hdf5_read_satmap(p, map_fn,
+				                                       image->ev,
+				                                       p->satmap);
+
+			} else {
+				ERROR("Saturation map must be in HDF5 format\n");
+				return 1;
+			}
+		}
+
+		if ( image->sat[i] == NULL ) {
+			ERROR("Failed to allocate saturation map (panel %s)\n",
+			      p->name);
+			return 1;
+		}
+
+	}
+
 	return 0;
 }
 

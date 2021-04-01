@@ -50,6 +50,11 @@ extern int image_hdf5_read_mask(struct panel_template *p,
                                 const char *mask_location,
                                 int mask_good, int mask_bad);
 
+extern float *image_hdf5_read_satmap(struct panel_template *p,
+                                     const char *filename,
+                                     const char *event,
+                                     const char *map_location);
+
 extern ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
                                                    const char *filename,
                                                    const char *event,

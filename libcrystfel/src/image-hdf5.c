@@ -578,6 +578,27 @@ int image_hdf5_read(struct image *image,
 }
 
 
+float *image_hdf5_read_satmap(struct panel_template *p,
+                              const char *filename,
+                              const char *event,
+                              const char *map_location)
+{
+	float *map = NULL;
+
+	if ( load_hdf5_hyperslab(p, filename, event,
+	                         (void *)&map, H5T_NATIVE_FLOAT,
+	                         sizeof(float), 1, map_location) )
+	{
+		ERROR("Failed to load saturation map data\n");
+		free(map);
+		return NULL;
+	}
+
+	return map;
+}
+
+
+
 int image_hdf5_read_mask(struct panel_template *p,
                          const char *filename, const char *event,
                          int *bad, const char *mask_location,
