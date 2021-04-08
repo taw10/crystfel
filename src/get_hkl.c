@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2009-2020 Thomas White <taw@physics.org>
+ *   2009-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -739,6 +739,7 @@ int main(int argc, char *argv[])
 		/* Replace old with new */
 		reflist_free(input);
 		input = new;
+		mero = expand;
 
 	}
 
@@ -900,7 +901,7 @@ int main(int argc, char *argv[])
 	reflist_add_command_and_version(input, argc, argv); /* Yes, really! */
 
 	if ( output_format_str == NULL ) {
-		write_reflist(output, input);
+		write_reflist_2(output, input, mero);
 	} else if ( cell == NULL ) {
 		ERROR("You must provide a unit cell to use MTZ or XDS output.\n");
 	} else if ( strcasecmp(output_format_str, "mtz") == 0 ) {
