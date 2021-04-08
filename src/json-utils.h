@@ -30,7 +30,7 @@ static void write_float(FILE *fh, int comma, const char *name, float val)
 {
 	const char *cs = comma ? "," : "";
 
-	if ( isnan(val) ) {
+	if ( isnan(val) || isinf(val) ) {
 		fprintf(fh, "    \"%s\": null%s\n", name, cs);
 	} else if ( val > 0.0001 ) {
 		fprintf(fh, "    \"%s\": %f%s\n", name, val, cs);
