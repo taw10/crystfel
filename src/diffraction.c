@@ -490,9 +490,9 @@ void get_diffraction(struct image *image, int na, int nb, int nc,
 		STATUS("Wavelength: %e m, weight = %.5f\n", 1.0/k, prob);
 
 		diffraction_at_k(image, intensities, phases,
-		                flags, cell, m, sym, k,
-		                ax, ay, az, bx, by, bz, cx, cy, cz,
-		                lut_a, lut_b, lut_c, prob);
+		                 flags, cell, m, sym, k,
+		                 ax, ay, az, bx, by, bz, cx, cy, cz,
+		                 lut_a, lut_b, lut_c, prob);
 
 	}
 
