@@ -318,7 +318,10 @@ static int find_ambi(UnitCell *cell, SymOpList *sym, double ltl, double atl)
 		}
 		}
 
-		if ( intmat_det(m) != +1 ) continue;
+		if ( intmat_det(m) != +1 ) {
+			intmat_free(m);
+			continue;
+		}
 
 		nc = cell_transform_intmat(cell, m);
 
