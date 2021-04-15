@@ -427,14 +427,16 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 			free(line);
 
-			pargs.msgpack_obj = NULL;
+			pargs.zmq_data = NULL;
+			pargs.zmq_data_size = 0;
 
 		} else {
 
-			pargs.msgpack_obj = im_zmq_fetch(zmqstuff);
+			pargs.zmq_data = im_zmq_fetch(zmqstuff,
+			                              &pargs.zmq_data_size);
 			pargs.filename = strdup("(from ZMQ)");
 			pargs.event = NULL;
-			ser = 0;  /* FIXME */
+			ser = 0;  /* FIXME: Serial numbers from ZMQ? */
 
 		}
 
@@ -442,10 +444,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		process_image(iargs, &pargs, st, cookie, tmpdir, ser,
 		              sb->shared, taccs, sb->shared->last_task[cookie]);
 
-		if ( sb->zmq ) {
-			im_zmq_clean(zmqstuff);
-		}
-
+		free(pargs.zmq_data);
 	}
 
 	im_zmq_shutdown(zmqstuff);

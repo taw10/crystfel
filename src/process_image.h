@@ -119,11 +119,8 @@ struct pattern_args
 	/* "Input" */
 	char *filename;
 	char *event;
-#ifdef HAVE_MSGPACK
-	msgpack_object *msgpack_obj;
-#else
-	void *msgpack_obj;
-#endif
+	void *zmq_data;
+	size_t zmq_data_size;
 };
 
 

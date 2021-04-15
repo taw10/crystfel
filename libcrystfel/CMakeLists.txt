@@ -177,6 +177,11 @@ if (LIBCCP4_FOUND)
 	target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBCCP4_LIBRARIES})
 endif (LIBCCP4_FOUND)
 
+if (MSGPACK_FOUND)
+	target_include_directories(${PROJECT_NAME} PRIVATE ${MSGPACK_INCLUDES})
+	target_link_libraries(${PROJECT_NAME} PRIVATE ${MSGPACK_LIBRARIES})
+endif (MSGPACK_FOUND)
+
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${LIBCRYSTFEL_HEADERS}")
 

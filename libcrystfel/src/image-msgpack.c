@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2018-2020 Thomas White <taw@physics.org>
+ *   2018-2021 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2017      Stijn de Graaf
  *
@@ -210,49 +210,36 @@ static int unpack_slab(struct image *image,
 
 static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
 {
-	msgpack_object *corr_data_obj;
-	msgpack_object *data_obj;
-	msgpack_object *shape_obj;
-	double *data;
+	FILE *fh = fopen("msgpack.data", "a");
+	fprintf(fh, "object %p:\n", obj);
+	msgpack_object_print(fh, *obj);
+	fprintf(fh, "\n\n\n");
+	fclose(fh);
 
-	corr_data_obj = find_msgpack_kv(obj, "corr_data");
-	if ( corr_data_obj == NULL ) {
-		ERROR("No corr_data MessagePack object found.\n");
-		return NULL;
+	#if 0
+	printf("Data type: %i\n", obj->type);
+	if ( obj->type == MSGPACK_OBJECT_POSITIVE_INTEGER ) {
+		printf("got an integer: %li\n", obj->via.i64);
 	}
 
-	data_obj = find_msgpack_kv(corr_data_obj, "data");
-	if ( data_obj == NULL ) {
-		ERROR("No data MessagePack object found inside corr_data.\n");
-		return NULL;
-	}
-	if ( data_obj->type != MSGPACK_OBJECT_STR ) {
-		ERROR("corr_data.data isn't a binary object.\n");
-		return NULL;
-	}
-	data = (double *)data_obj->via.str.ptr;
+	if ( obj->type == MSGPACK_OBJECT_ARRAY ) {
 
-	shape_obj = find_msgpack_kv(corr_data_obj, "shape");
-	if ( shape_obj == NULL ) {
-		ERROR("No shape MessagePack object found inside corr_data.\n");
-		return NULL;
+		int i;
+		printf("Array %i items\n", obj->via.array.size);
+
+		for ( i=0; i<obj->via.array.size; i++ ) {
+			msgpack_object *obj2 = obj->via.array.ptr[i];
+			printf("Item %i: type %i\n", i, obj2->type);
+			if ( obj2->type == MSGPACK_OBJECT_MAP ) {
+				printf("Map: '%s' -> ");
+			}
+		}
 	}
-	if ( shape_obj->type != MSGPACK_OBJECT_ARRAY ) {
-		ERROR("corr_data.shape isn't an array object.\n");
-		return NULL;
-	}
-	if ( shape_obj->via.array.size != 2 ) {
-		ERROR("corr_data.shape is wrong size (%i, should be 2)\n",
-		      shape_obj->via.array.size);
-		return NULL;
-	}
-	if ( shape_obj->via.array.ptr[0].type != MSGPACK_OBJECT_POSITIVE_INTEGER ) {
-		ERROR("corr_data.shape contains wrong type of element.\n");
-		return NULL;
-	}
-	*height = shape_obj->via.array.ptr[0].via.i64;
-	*width = shape_obj->via.array.ptr[1].via.i64;
-	return data;
+	#endif
+
+	*width = 2068;
+	*height = 2162;
+	return NULL;
 }
 
 
@@ -272,21 +259,31 @@ static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
  * }
  */
 struct image *image_msgpack_read(DataTemplate *dtempl,
-                                 msgpack_object *obj,
+                                 void *data,
+                                 size_t data_size,
                                  int no_image_data,
                                  int no_mask_data)
 {
 	struct image *image;
 	int data_width, data_height;
-	double *data;
+	double *image_data;
+	msgpack_unpacked unpacked;
+	int r;
 
-	if ( obj == NULL ) {
+	if ( data == NULL ) {
 		ERROR("No MessagePack object!\n");
 		return NULL;
 	}
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
+		return NULL;
+	}
+
+	msgpack_unpacked_init(&unpacked);
+	r = msgpack_unpack_next(&unpacked, data, data_size, NULL);
+	if ( r != MSGPACK_UNPACK_SUCCESS ) {
+		ERROR("Msgpack unpack failed: %i\n", r);
 		return NULL;
 	}
 
@@ -297,13 +294,13 @@ struct image *image_msgpack_read(DataTemplate *dtempl,
 	}
 
 	if ( !no_image_data ) {
-		data = find_msgpack_data(obj,
-		                         &data_width, &data_height);
-		if ( data == NULL ) {
+		image_data = find_msgpack_data(&unpacked.data,
+		                               &data_width, &data_height);
+		if ( image_data == NULL ) {
 			ERROR("No image data in MessagePack object.\n");
 			return NULL;
 		}
-		unpack_slab(image, dtempl, data,
+		unpack_slab(image, dtempl, image_data,
 		            data_width, data_height);
 	} else {
 		image_set_zero_data(image, dtempl);

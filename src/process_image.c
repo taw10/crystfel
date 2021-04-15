@@ -193,10 +193,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	float **prefilter;
 	int any_crystals;
 
-	if ( pargs->msgpack_obj != NULL ) {
+	if ( pargs->zmq_data != NULL ) {
 		set_last_task(last_task, "unpacking messagepack object");
 		image = image_msgpack_read(iargs->dtempl,
-		                           pargs->msgpack_obj,
+		                           pargs->zmq_data,
+		                           pargs->zmq_data_size,
 		                           iargs->no_image_data);
 		if ( image == NULL ) return;
 	} else {
@@ -303,7 +304,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 		case PEAK_MSGPACK:
 		image->features = image_msgpack_read_peaks(iargs->dtempl,
-		                                           pargs->msgpack_obj,
+		                                           pargs->zmq_data,
+		                                           pargs->zmq_data_size,
 		                                           iargs->half_pixel_shift);
 		break;
 

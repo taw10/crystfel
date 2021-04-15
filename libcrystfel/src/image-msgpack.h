@@ -3,11 +3,11 @@
  *
  * Image loading, MessagePack parts
  *
- * Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020 Thomas White <taw@physics.org>
+ *   2020-2021 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -33,27 +33,29 @@
 
 #if defined(HAVE_MSGPACK)
 
-#include <msgpack.h>
-
 extern struct image *image_msgpack_read(DataTemplate *dtempl,
-                                        msgpack_object *obj,
+                                        void *data,
+                                        size_t data_size,
                                         int no_image_data);
 
 extern ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
-                                                  msgpack_object *obj,
+                                                  void *data,
+                                                  size_t data_size,
                                                   int half_pixel_shift);
 
 #else /* defined(HAVE_MSGPACK) */
 
 static UNUSED struct image *image_msgpack_read(DataTemplate *dtempl,
-                                                void *obj,
-                                                int no_image_data)
+                                               void *data,
+                                               size_t data_size,
+                                               int no_image_data)
 {
 	return NULL;
 }
 
 static UNUSED ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
-                                                         void *obj,
+                                                         void *data,
+                                                         size_t data_size,
                                                          int half_pixel_shift)
 {
 	return NULL;

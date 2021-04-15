@@ -7,7 +7,7 @@
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2018-2019 Thomas White <taw@physics.org>
+ *   2018-2021 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2017      Stijn de Graaf
  *
@@ -36,28 +36,18 @@
 #include <config.h>
 #endif
 
-#if defined(HAVE_MSGPACK) && defined(HAVE_ZMQ)
-
-#include <msgpack.h>
+#if defined(HAVE_ZMQ)
 
 extern struct im_zmq *im_zmq_connect(const char *zmq_address);
-
-extern void im_zmq_clean(struct im_zmq *z);
-
 extern void im_zmq_shutdown(struct im_zmq *z);
+extern void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size);
 
-extern msgpack_object *im_zmq_fetch(struct im_zmq *z);
-
-#else /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
+#else /* defined(HAVE_ZMQ) */
 
 static UNUSED struct im_zmq *im_zmq_connect(const char *zmq_address) { return NULL; }
+static UNUSED void im_zmq_shutdown(struct im_zmq *z) { }
+static UNUSED void *im_zmq_fetch(struct im_zmq *z, size_t *psize) { *psize = 0; return NULL; }
 
-static UNUSED void im_zmq_clean(struct im_zmq *z) { return; }
-
-static UNUSED void im_zmq_shutdown(struct im_zmq *z) { return; }
-
-static UNUSED void *im_zmq_fetch(struct im_zmq *z) { return NULL; }
-
-#endif /* defined(HAVE_MSGPACK) && defined(HAVE_ZMQ) */
+#endif /* defined(HAVE_ZMQ) */
 
 #endif /* CRYSTFEL_ZMQ_H */
