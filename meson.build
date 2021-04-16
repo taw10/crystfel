@@ -85,11 +85,6 @@ if zmqdep.found()
   conf_data.set10('HAVE_ZMQ', 1)
 endif
 
-msgpackdep = dependency('msgpack', required : false)
-if msgpackdep.found()
-  conf_data.set10('HAVE_MSGPACK', 1)
-endif
-
 if cc.has_function('clock_gettime', prefix : '#include <time.h>')
   conf_data.set10('HAVE_CLOCK_GETTIME', 1)
 endif
@@ -184,13 +179,12 @@ executable('whirligig',
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
                        'src/process_image.c', 'src/time-accounts.c',
                        versionc]
-if zmqdep.found() and msgpackdep.found()
+if zmqdep.found()
   indexamajig_sources += ['src/im-zmq.c']
 endif
 
 executable('indexamajig', indexamajig_sources,
-           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep, zmqdep,
-                           msgpackdep],
+           dependencies : [mdep, libcrystfeldep, gsldep, pthreaddep, zmqdep],
            install : true,
            install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 

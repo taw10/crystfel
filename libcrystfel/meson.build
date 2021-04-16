@@ -37,6 +37,12 @@ if ccp4dep.found()
   conf_data.set10('HAVE_LIBCCP4', 1)
 endif
 
+msgpackdep = dependency('msgpack', required : false)
+if msgpackdep.found()
+  conf_data.set10('HAVE_MSGPACK', 1)
+endif
+
+
 libcrystfel_versionc = vcs_tag(input: 'src/libcrystfel-version.c.in',
                                output: 'libcrystfel-version.c')
 
@@ -129,7 +135,7 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
                                       hdf5dep, pthreaddep, ncursesdep,
                                       xgandalfdep, pinkindexerdep, fdipdep,
-                                      ccp4dep],
+                                      ccp4dep, msgpackdep],
                       install : true)
 
 libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
