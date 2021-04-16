@@ -588,10 +588,6 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		panel->cnz_from = strdup(val);
 
 	} else if ( strcmp(key, "data") == 0 ) {
-		if ( strncmp(val,"/",1) != 0 ) {
-			ERROR("Invalid data location '%s'\n", val);
-			reject = -1;
-		}
 		free(panel->data);
 		panel->data = strdup(val);
 
