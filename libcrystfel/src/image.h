@@ -88,6 +88,16 @@ struct header_cache_entry {
 };
 
 
+typedef enum
+{
+	DST_UNKNOWN,
+	DST_HDF5,
+	DST_CBF,
+	DST_CBFGZ,
+	DST_MSGPACK
+} DataSourceType;
+
+
 struct image
 {
 	/** The image data, by panel */
@@ -117,11 +127,18 @@ struct image
 	/** The detector structure */
 	struct detgeom          *detgeom;
 
+	DataSourceType           data_source_type;
+
 	/** \name The filename and event ID for the image
 	 * @{ */
 	char                    *filename;
 	char                    *ev;
 	/** @} */
+
+	/** The data block, e.g. received over ZMQ, for the image.
+	 * filenename/ev OR this should be filled in, but not both */
+	void                    *data_block;
+	size_t                   data_block_size;
 
 	/** A list of metadata read from the stream */
 	struct header_cache_entry *header_cache[HEADER_CACHE_SIZE];
@@ -195,6 +212,12 @@ extern struct image *image_read(const DataTemplate *dtempl,
                                 int no_image_data,
                                 int no_mask_data);
 extern struct image *image_create_for_simulation(const DataTemplate *dtempl);
+extern struct image *image_read_data_block(const DataTemplate *dtempl,
+                                           void *data_block,
+                                           size_t data_block_size,
+                                           DataSourceType type,
+                                           int no_image_data,
+                                           int no_mask_data);
 extern void image_free(struct image *image);
 
 extern void image_cache_header_float(struct image *image,

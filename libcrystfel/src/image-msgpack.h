@@ -33,24 +33,29 @@
 
 #if defined(HAVE_MSGPACK)
 
-extern struct image *image_msgpack_read(DataTemplate *dtempl,
-                                        void *data,
-                                        size_t data_size,
-                                        int no_image_data);
+extern int image_msgpack_read(struct image *image,
+                              const DataTemplate *dtempl,
+                              void *data,
+                              size_t data_size);
 
 extern ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
                                                   void *data,
                                                   size_t data_size,
                                                   int half_pixel_shift);
 
+extern double image_msgpack_get_value(const char *name,
+                                      void *data_block,
+                                      size_t data_block_size,
+                                      char *ptype);
+
 #else /* defined(HAVE_MSGPACK) */
 
-static UNUSED struct image *image_msgpack_read(DataTemplate *dtempl,
-                                               void *data,
-                                               size_t data_size,
-                                               int no_image_data)
+static UNUSED int image_msgpack_read(struct image *image,
+                                     const DataTemplate *dtempl,
+                                     void *data,
+                                     size_t data_size)
 {
-	return NULL;
+	return 0;
 }
 
 static UNUSED ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
@@ -60,6 +65,17 @@ static UNUSED ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dte
 {
 	return NULL;
 }
+
+static UNUSED double image_msgpack_get_value(const char *name,
+                                             void *data_block,
+                                             size_t data_block_size,
+                                             char *ptype)
+{
+	*ptype = 'f';
+	return NAN;
+}
+
+
 
 #endif /* defined(HAVE_MSGPACK) */
 

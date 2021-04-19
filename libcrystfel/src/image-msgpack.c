@@ -150,163 +150,111 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 }
 
 
-static int unpack_slab(struct image *image,
-                       const DataTemplate *dtempl,
-                       double *data,
-                       int data_width, int data_height)
+double image_msgpack_get_value(const char *name,
+                               void *data_block,
+                               size_t data_block_size,
+                               char *ptype)
 {
-	int pi;
+	*ptype = 'f';
+	return NAN;
+}
 
-	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->dp == NULL ) {
-		ERROR("Failed to allocate data arrays.\n");
+
+static int load_msgpack_data(struct panel_template *p,
+                             msgpack_object *map_obj,
+                             float **data)
+{
+	msgpack_object *obj;
+	msgpack_object *data_obj;
+
+	obj = find_msgpack_kv(map_obj, p->data);
+	if ( obj == NULL ) {
+		ERROR("Couldn't find '%s' in MessagePack object\n",
+		      p->data);
 		return 1;
 	}
 
-	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
-
-		struct panel_template *p;
-		int fs, ss;
-		int p_w, p_h;
-
-		p = &dtempl->panels[pi];
-		p_w = p->orig_max_fs - p->orig_min_fs + 1;
-		p_h = p->orig_max_ss - p->orig_min_ss + 1;
-
-		image->dp[pi] = malloc(p_w*p_h*sizeof(float));
-		if ( image->dp[pi] == NULL ) {
-			ERROR("Failed to allocate panel\n");
-			return 1;
-		}
-
-		if ( (p->orig_min_fs + p_w > data_width)
-		  || (p->orig_min_ss + p_h > data_height) )
-		{
-			ERROR("Panel %s is outside range of data provided\n",
-			      p->name);
-			return 1;
-		}
-
-		for ( ss=0; ss<p_h; ss++) {
-		for ( fs=0; fs<p_w; fs++) {
-
-			int idx;
-			int cfs, css;
-
-			cfs = fs+p->orig_min_fs;
-			css = ss+p->orig_min_ss;
-			idx = cfs + css*data_width;
-
-			image->dp[pi][fs+p_w*ss] = data[idx];
-
-		}
-		}
-
+	if ( obj->type != MSGPACK_OBJECT_MAP ) {
+		ERROR("MessagePack object '%s' is not a map\n", p->data);
+		return 1;
 	}
+
+	//type = get_msgpack_kv_string(obj, "type");
+	//printf("data type is '%s'\n", type);
+
+	//get_msgpack_kv_tuple(obj, "shape", &w, &h);
+
+	//data_obj = find_msgpack_kv(obj, "data");
 
 	return 0;
 }
 
 
-static double *find_msgpack_data(msgpack_object *obj, int *width, int *height)
+/* Read the image data from 'data_block' into 'image', according to 'dtempl' */
+int image_msgpack_read(struct image *image,
+                       DataTemplate *dtempl,
+                       void *data_block,
+                       size_t data_block_size)
 {
-	FILE *fh = fopen("msgpack.data", "a");
-	fprintf(fh, "object %p:\n", obj);
-	msgpack_object_print(fh, *obj);
-	fprintf(fh, "\n\n\n");
-	fclose(fh);
-
-	#if 0
-	printf("Data type: %i\n", obj->type);
-	if ( obj->type == MSGPACK_OBJECT_POSITIVE_INTEGER ) {
-		printf("got an integer: %li\n", obj->via.i64);
-	}
-
-	if ( obj->type == MSGPACK_OBJECT_ARRAY ) {
-
-		int i;
-		printf("Array %i items\n", obj->via.array.size);
-
-		for ( i=0; i<obj->via.array.size; i++ ) {
-			msgpack_object *obj2 = obj->via.array.ptr[i];
-			printf("Item %i: type %i\n", i, obj2->type);
-			if ( obj2->type == MSGPACK_OBJECT_MAP ) {
-				printf("Map: '%s' -> ");
-			}
-		}
-	}
-	#endif
-
-	*width = 2068;
-	*height = 2162;
-	return NULL;
-}
-
-
-/* Unpacks the raw panel data from a msgpack_object, applies panel geometry,
- * and stores the resulting data in an image struct. Object has structure
- * {
- * "corr_data":
- *   {
- *     "data": binary_data,
- *     "shape": [data_height, data_width],
- *           ...
- *           ...
- *   },
- *   "key2": val2,
- *        ...
- *        ...
- * }
- */
-struct image *image_msgpack_read(DataTemplate *dtempl,
-                                 void *data,
-                                 size_t data_size,
-                                 int no_image_data,
-                                 int no_mask_data)
-{
-	struct image *image;
-	int data_width, data_height;
-	double *image_data;
 	msgpack_unpacked unpacked;
 	int r;
+	int n_obj;
+	int i;
+	msgpack_object *the_obj;
 
-	if ( data == NULL ) {
+	if ( image->data_block == NULL ) {
 		ERROR("No MessagePack object!\n");
-		return NULL;
+		return 1;
 	}
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
-		return NULL;
+		return 1;
 	}
 
 	msgpack_unpacked_init(&unpacked);
-	r = msgpack_unpack_next(&unpacked, data, data_size, NULL);
+	r = msgpack_unpack_next(&unpacked, data_block, data_block_size, NULL);
 	if ( r != MSGPACK_UNPACK_SUCCESS ) {
-		ERROR("Msgpack unpack failed: %i\n", r);
-		return NULL;
+		ERROR("MessagePack unpack failed: %i\n", r);
+		return 1;
 	}
 
-	image = image_new();
-	if ( image == NULL ) {
-		ERROR("Couldn't allocate image structure.\n");
-		return NULL;
+	if ( unpacked.data.type != MSGPACK_OBJECT_ARRAY ) {
+		ERROR("MessagePack data isn't an array - ignoring.\n");
+		msgpack_unpacked_destroy(&unpacked);
+		return 1;
 	}
 
-	if ( !no_image_data ) {
-		image_data = find_msgpack_data(&unpacked.data,
-		                               &data_width, &data_height);
-		if ( image_data == NULL ) {
-			ERROR("No image data in MessagePack object.\n");
-			return NULL;
+	n_obj = unpacked.data.via.array.size;
+	if ( n_obj < 1 ) {
+		ERROR("No array elements in MessagePack object?\n");
+		msgpack_unpacked_destroy(&unpacked);
+		return 1;
+	}
+	if ( n_obj > 1 ) {
+		ERROR("WARNING: Too many items in MessagePack object (%i)\n",
+		      n_obj);
+		/* Can continue */
+	}
+
+	the_obj = &unpacked.data.via.array.ptr[0];
+
+	image->dp = malloc(dtempl->n_panels*sizeof(float *));
+	if ( image->dp == NULL ) {
+		ERROR("Failed to allocate data array.\n");
+		return 1;
+	}
+
+	/* Set all pointers to NULL for easier clean-up */
+	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		if ( load_msgpack_data(&dtempl->panels[i], the_obj, &image->dp[i]) )
+		{
+			ERROR("Failed to load panel data\n");
+			return 1;
 		}
-		unpack_slab(image, dtempl, image_data,
-		            data_width, data_height);
-	} else {
-		image_set_zero_data(image, dtempl);
 	}
 
-	image_set_zero_mask(image, dtempl);
-
-	return image;
+	return 0;
 }

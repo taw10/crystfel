@@ -43,6 +43,7 @@
 #include "detgeom.h"
 #include "image-hdf5.h"
 #include "image-cbf.h"
+#include "image-msgpack.h"
 
 #include "datatemplate.h"
 #include "datatemplate_priv.h"
@@ -375,21 +376,33 @@ static double get_value(struct image *image, const char *from,
 			return NAN;
 		}
 
-	} else if ( is_hdf5_file(image->filename) ) {
-		val = image_hdf5_get_value(from, image->filename, image->ev,
-		                           &type);
-
-	} else if ( is_cbf_file(image->filename) ) {
-		/* FIXME: From headers */
-		return NAN;
-
-	} else if ( is_cbfgz_file(image->filename) ) {
-		/* FIXME: From headers */
-		return NAN;
-
 	} else {
-		ERROR("Unrecognised file type: %s\n", image->filename);
-		return NAN;
+
+		switch ( image->data_source_type ) {
+
+			case DST_HDF5:
+			val = image_hdf5_get_value(from, image->filename,
+			                           image->ev, &type);
+			break;
+
+			case DST_CBF:
+			case DST_CBFGZ:
+			/* FIXME: Implementation */
+			val = NAN;
+			break;
+
+			case DST_MSGPACK:
+			val = image_msgpack_get_value(from, image->data_block,
+			                              image->data_block_size,
+			                              &type);
+			break;
+
+			default:
+			ERROR("Unrecognised file type %i\n", image->data_source_type);
+			return 1;
+
+		}
+
 	}
 
 	if ( type == 'f' ) {
@@ -398,6 +411,29 @@ static double get_value(struct image *image, const char *from,
 		image_cache_header_int(image, from, val);
 	}
 	return val;
+}
+
+
+static DataSourceType file_type(const char *filename)
+{
+	if ( !file_exists(filename) ) {
+		ERROR("File not found: %s\n", filename);
+		return DST_UNKNOWN;
+	}
+
+	if ( is_hdf5_file(filename) ) {
+		return DST_HDF5;
+
+	} else if ( is_cbf_file(filename) ) {
+		return DST_CBF;
+
+	} else if ( is_cbfgz_file(filename) ) {
+		return DST_CBFGZ;
+
+	} else {
+		ERROR("Unrecognised file type: %s\n", filename);
+		return DST_UNKNOWN;
+	}
 }
 
 
@@ -630,28 +666,39 @@ int image_set_zero_mask(struct image *image,
 
 
 static int image_read_image_data(struct image *image,
-                                 const DataTemplate *dtempl,
-                                 const char *filename,
-                                 const char *event)
+                                 const DataTemplate *dtempl)
 {
-	if ( !file_exists(filename) ) {
-		ERROR("File not found: %s\n", filename);
+	if ( (image->filename != NULL)
+	  && (!file_exists(image->filename)) )
+	{
+		ERROR("File not found: %s\n", image->filename);
 		return image_set_zero_data(image, dtempl);
 	}
 
-	if ( is_hdf5_file(filename) ) {
-		return image_hdf5_read(image, dtempl, filename, event);
+	switch ( image->data_source_type ) {
 
-	} else if ( is_cbf_file(filename) ) {
-		return image_cbf_read(image, dtempl, filename, event, 0);
+		case DST_HDF5:
+		return image_hdf5_read(image, dtempl,
+		                       image->filename, image->ev);
 
-	} else if ( is_cbfgz_file(filename) ) {
-		return image_cbf_read(image, dtempl, filename, event, 1);
+		case DST_CBF:
+		return image_cbf_read(image, dtempl,
+		                      image->filename, image->ev,
+		                      0);
 
+		case DST_CBFGZ:
+		return image_cbf_read(image, dtempl,
+		                      image->filename, image->ev,
+		                      1);
+
+		case DST_MSGPACK:
+		return image_msgpack_read(image, dtempl, image->data_block,
+		                          image->data_block_size);
+
+		default:
+		ERROR("Unrecognised file type %i\n", image->data_source_type);
+		return 1;
 	}
-
-	ERROR("Unrecognised file type: %s\n", filename);
-	return 1;
 }
 
 
@@ -1084,6 +1131,31 @@ struct image *image_create_for_simulation(const DataTemplate *dtempl)
 }
 
 
+static int do_image_read(struct image *image, const DataTemplate *dtempl,
+                         int no_image_data, int no_mask_data)
+{
+	int i;
+
+	/* Load the image data */
+	if ( !no_image_data ) {
+		if ( image_read_image_data(image, dtempl) ) return 1;
+	} else {
+		if ( image_set_zero_data(image, dtempl) ) return 1;
+	}
+
+	set_image_parameters(image, dtempl);
+	if ( create_detgeom(image, dtempl) ) return 1;
+	if ( create_badmap(image, dtempl, no_mask_data) ) return 1;
+	if ( create_satmap(image, dtempl) ) return 1;
+
+	for ( i=0; i<dtempl->n_headers_to_copy; i++ ) {
+		get_value(image, dtempl->headers_to_copy[i], NULL);
+	}
+
+	return 0;
+}
+
+
 struct image *image_read(const DataTemplate *dtempl,
                          const char *filename,
                          const char *event,
@@ -1091,8 +1163,6 @@ struct image *image_read(const DataTemplate *dtempl,
                          int no_mask_data)
 {
 	struct image *image;
-	int r;
-	int i;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1111,38 +1181,50 @@ struct image *image_read(const DataTemplate *dtempl,
 	} else {
 		image->ev = strdup("//");  /* Null event */
 	}
+	image->data_block = NULL;
+	image->data_block_size = 0;
 
-	/* Load the image data */
-	if ( !no_image_data ) {
-		r = image_read_image_data(image, dtempl,
-		                          filename, event);
-	} else {
-		r = image_set_zero_data(image, dtempl);
-	}
-	if ( r ) {
+	image->data_source_type = file_type(image->filename);
+
+	if ( do_image_read(image, dtempl, no_image_data, no_mask_data) ) {
 		image_free(image);
 		return NULL;
 	}
 
-	set_image_parameters(image, dtempl);
+	return image;
+}
 
-	if ( create_detgeom(image, dtempl) ) {
-		image_free(image);
+
+struct image *image_read_data_block(const DataTemplate *dtempl,
+                                    void *data_block,
+                                    size_t data_block_size,
+                                    DataSourceType type,
+                                    int no_image_data,
+                                    int no_mask_data)
+{
+	struct image *image;
+
+	if ( dtempl == NULL ) {
+		ERROR("NULL data template!\n");
 		return NULL;
 	}
 
-	if ( create_badmap(image, dtempl, no_mask_data) ) {
-		image_free(image);
+	image = image_new();
+	if ( image == NULL ) {
+		ERROR("Couldn't allocate image structure.\n");
 		return NULL;
 	}
 
-	if ( create_satmap(image, dtempl) ) {
+	image->filename = NULL;
+	image->ev = NULL;
+	image->data_block = data_block;
+	image->data_block_size = data_block_size;
+
+	image->data_source_type = file_type(image->filename);
+
+	if ( do_image_read(image, dtempl, no_image_data, no_mask_data) ) {
 		image_free(image);
 		return NULL;
-	}
-
-	for ( i=0; i<dtempl->n_headers_to_copy; i++ ) {
-		get_value(image, dtempl->headers_to_copy[i], NULL);
 	}
 
 	return image;
@@ -1159,6 +1241,7 @@ void image_free(struct image *image)
 	spectrum_free(image->spectrum);
 	free(image->filename);
 	free(image->ev);
+	free(image->data_block);
 
 	if ( image->detgeom != NULL ) {
 		np = image->detgeom->n_panels;
@@ -1187,32 +1270,36 @@ void image_free(struct image *image)
 
 struct image *image_new()
 {
-       struct image *image;
+	struct image *image;
 
-       image = malloc(sizeof(struct image));
-       if ( image == NULL ) return NULL;
+	image = malloc(sizeof(struct image));
+	if ( image == NULL ) return NULL;
 
-       image->dp = NULL;
-       image->bad = NULL;
-       image->sat = NULL;
-       image->hit = 0;
-       image->crystals = NULL;
-       image->n_crystals = 0;
-       image->indexed_by = INDEXING_NONE;
-       image->detgeom = NULL;
-       image->filename = NULL;
-       image->ev = NULL;
-       image->n_cached_headers = 0;
-       image->id = 0;
-       image->serial = 0;
-       image->spectrum = NULL;
-       image->lambda = -1.0;
-       image->div = 0.0;
-       image->bw = -1.0;
-       image->peak_resolution = -1.0;
-       image->features = NULL;
+	image->dp = NULL;
+	image->bad = NULL;
+	image->sat = NULL;
+	image->hit = 0;
+	image->crystals = NULL;
+	image->n_crystals = 0;
+	image->indexed_by = INDEXING_NONE;
+	image->detgeom = NULL;
+	image->filename = NULL;
+	image->ev = NULL;
+	image->data_block = NULL;
+	image->data_block_size = 0;
+	image->data_source_type = DST_UNKNOWN;
 
-       return image;
+	image->n_cached_headers = 0;
+	image->id = 0;
+	image->serial = 0;
+	image->spectrum = NULL;
+	image->lambda = -1.0;
+	image->div = 0.0;
+	image->bw = -1.0;
+	image->peak_resolution = -1.0;
+	image->features = NULL;
+
+	return image;
 }
 
 

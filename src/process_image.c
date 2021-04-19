@@ -195,10 +195,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	if ( pargs->zmq_data != NULL ) {
 		set_last_task(last_task, "unpacking messagepack object");
-		image = image_msgpack_read(iargs->dtempl,
-		                           pargs->zmq_data,
-		                           pargs->zmq_data_size,
-		                           iargs->no_image_data);
+		image = image_read_data_block(iargs->dtempl,
+		                              pargs->zmq_data,
+		                              pargs->zmq_data_size,
+		                              DST_MSGPACK,
+		                              iargs->no_image_data,
+		                              iargs->no_mask_data);
 		if ( image == NULL ) return;
 	} else {
 		image = file_wait_open_read(pargs->filename, pargs->event,
