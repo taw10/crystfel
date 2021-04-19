@@ -818,6 +818,20 @@ char *load_entire_file(const char *filename)
 }
 
 
+int file_exists(const char *filename)
+{
+	struct stat statbuf;
+	int r;
+
+	r = stat(filename, &statbuf);
+	if ( r != 0 ) {
+		return 0;
+	}
+
+	return 1;
+}
+
+
 int compare_double(const void *av, const void *bv)
 {
 	double a = *(double *)av;

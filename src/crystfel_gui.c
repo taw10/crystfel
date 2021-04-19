@@ -187,18 +187,6 @@ static int have_running_jobs(struct crystfelproject *proj)
 }
 
 
-static int file_exists(const char *filename)
-{
-	struct stat sb;
-
-	if ( stat(filename, &sb) ) {
-		return 0;
-	} else {
-		return 1;
-	}
-}
-
-
 /* Bring the image view up to date after changing the selected image */
 void update_imageview(struct crystfelproject *proj)
 {

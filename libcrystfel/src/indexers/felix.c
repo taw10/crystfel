@@ -730,20 +730,6 @@ void felix_cleanup(IndexingPrivate *pp)
 }
 
 
-static int file_exists(const char *filename)
-{
-	struct stat s;
-
-	if ( stat(filename, &s) != 0 ) {
-		if ( errno == ENOENT ) return 0;
-		ERROR("Failed to check for %s.\n", filename);
-		exit(1);
-	}
-
-	return 1;
-}
-
-
 const char *felix_probe(UnitCell *cell)
 {
 	pid_t pid;

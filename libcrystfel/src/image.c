@@ -629,20 +629,6 @@ int image_set_zero_mask(struct image *image,
 }
 
 
-static int file_exists(const char *filename)
-{
-	struct stat statbuf;
-	int r;
-
-	r = stat(filename, &statbuf);
-	if ( r != 0 ) {
-		return 0;
-	}
-
-	return 1;
-}
-
-
 static int image_read_image_data(struct image *image,
                                  const DataTemplate *dtempl,
                                  const char *filename,

@@ -233,6 +233,7 @@ extern char *safe_basename(const char *in);
 extern char *safe_strdup(const char *in);
 extern void strip_extension(char *bfn);
 extern char *load_entire_file(const char *filename);
+extern int file_exists(const char *filename);
 extern const char *filename_extension(const char *fn, const char **ext2);
 
 
