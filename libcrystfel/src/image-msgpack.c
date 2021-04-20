@@ -47,6 +47,29 @@
 #include "datatemplate_priv.h"
 
 
+static msgpack_object *find_main_object(msgpack_unpacked *unpacked)
+{
+	int n_obj;
+
+	if ( unpacked->data.type != MSGPACK_OBJECT_ARRAY ) {
+		ERROR("MessagePack data isn't an array - ignoring.\n");
+		return NULL;
+	}
+
+	n_obj = unpacked->data.via.array.size;
+	if ( n_obj < 1 ) {
+		ERROR("No array elements in MessagePack object?\n");
+		return NULL;
+	}
+	if ( n_obj > 1 ) {
+		ERROR("WARNING: Multiple (%i) items in MessagePack object - "
+		      "ignoring all but the first one.\n", n_obj);
+	}
+
+	return &unpacked->data.via.array.ptr[0];
+}
+
+
 static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
 {
 	int i;
@@ -155,8 +178,65 @@ double image_msgpack_get_value(const char *name,
                                size_t data_block_size,
                                char *ptype)
 {
-	*ptype = 'f';
-	return NAN;
+	msgpack_unpacked unpacked;
+	msgpack_object *value_obj;
+	msgpack_object *obj;
+	int r;
+	float val = NAN;
+
+	*ptype = 'x';
+
+	if ( data_block == NULL ) {
+		ERROR("No MsgPack data!\n");
+		goto out;
+	}
+
+	msgpack_unpacked_init(&unpacked);
+	r = msgpack_unpack_next(&unpacked, data_block, data_block_size, NULL);
+	if ( r != MSGPACK_UNPACK_SUCCESS ) {
+		ERROR("MessagePack unpack failed: %i\n", r);
+		goto out;
+	}
+
+	obj = find_main_object(&unpacked);
+	if ( obj == NULL ) {
+		ERROR("Failed to find main MsgPack object.\n");
+		msgpack_unpacked_destroy(&unpacked);
+		goto out;
+	}
+
+	value_obj = find_msgpack_kv(obj, name);
+	if ( obj == NULL ) {
+		ERROR("Couldn't find '%s' in MessagePack object\n", name);
+		msgpack_unpacked_destroy(&unpacked);
+		goto out;
+	}
+
+	switch ( value_obj->type ) {
+
+		case MSGPACK_OBJECT_FLOAT64:
+		case MSGPACK_OBJECT_FLOAT32:
+		//case MSGPACK_OBJECT_FLOAT:
+		*ptype = 'f';
+		val = value_obj->via.f64;
+		break;
+
+		case MSGPACK_OBJECT_POSITIVE_INTEGER:
+		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
+		*ptype = 'i';
+		val = value_obj->via.i64;
+		break;
+
+		default:
+		ERROR("Unrecognised MsgPack type %i\n", value_obj->type);
+		break;
+
+	}
+
+	msgpack_unpacked_destroy(&unpacked);
+
+out:
+	return val;
 }
 
 
@@ -165,7 +245,6 @@ static int load_msgpack_data(struct panel_template *p,
                              float **data)
 {
 	msgpack_object *obj;
-	msgpack_object *data_obj;
 
 	obj = find_msgpack_kv(map_obj, p->data);
 	if ( obj == NULL ) {
@@ -196,19 +275,18 @@ int image_msgpack_read(struct image *image,
                        void *data_block,
                        size_t data_block_size)
 {
-	msgpack_unpacked unpacked;
-	int r;
-	int n_obj;
 	int i;
-	msgpack_object *the_obj;
-
-	if ( image->data_block == NULL ) {
-		ERROR("No MessagePack object!\n");
-		return 1;
-	}
+	int r;
+	msgpack_unpacked unpacked;
+	msgpack_object *obj;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
+		return 1;
+	}
+
+	if ( data_block == NULL ) {
+		ERROR("No MsgPack data!\n");
 		return 1;
 	}
 
@@ -219,28 +297,17 @@ int image_msgpack_read(struct image *image,
 		return 1;
 	}
 
-	if ( unpacked.data.type != MSGPACK_OBJECT_ARRAY ) {
-		ERROR("MessagePack data isn't an array - ignoring.\n");
+	obj = find_main_object(&unpacked);
+	if ( obj == NULL ) {
+		ERROR("Failed to find main MsgPack object.\n");
 		msgpack_unpacked_destroy(&unpacked);
 		return 1;
 	}
-
-	n_obj = unpacked.data.via.array.size;
-	if ( n_obj < 1 ) {
-		ERROR("No array elements in MessagePack object?\n");
-		msgpack_unpacked_destroy(&unpacked);
-		return 1;
-	}
-	if ( n_obj > 1 ) {
-		ERROR("WARNING: Multiple (%i) items in MessagePack object - "
-		      "ignoring all but the first one.\n", n_obj);
-	}
-
-	the_obj = &unpacked.data.via.array.ptr[0];
 
 	image->dp = malloc(dtempl->n_panels*sizeof(float *));
 	if ( image->dp == NULL ) {
 		ERROR("Failed to allocate data array.\n");
+		msgpack_unpacked_destroy(&unpacked);
 		return 1;
 	}
 
@@ -248,12 +315,14 @@ int image_msgpack_read(struct image *image,
 	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
-		if ( load_msgpack_data(&dtempl->panels[i], the_obj, &image->dp[i]) )
+		if ( load_msgpack_data(&dtempl->panels[i], obj, &image->dp[i]) )
 		{
 			ERROR("Failed to load panel data\n");
+			msgpack_unpacked_destroy(&unpacked);
 			return 1;
 		}
 	}
 
-	return 0;
+	msgpack_unpacked_destroy(&unpacked);
+	return 1;
 }
