@@ -7,6 +7,5 @@
 #cmakedefine HAVE_OPENCL
 #cmakedefine HAVE_CL_CL_H
 #cmakedefine HAVE_CLOCK_GETTIME
-#cmakedefine HAVE_MSGPACK
 #cmakedefine HAVE_ZMQ
 #cmakedefine HAVE_SLURM

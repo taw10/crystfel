@@ -7,6 +7,5 @@
 #mesondefine HAVE_OPENCL
 #mesondefine HAVE_CL_CL_H
 #mesondefine HAVE_CLOCK_GETTIME
-#mesondefine HAVE_MSGPACK
 #mesondefine HAVE_ZMQ
 #mesondefine HAVE_SLURM

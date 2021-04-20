@@ -7,6 +7,7 @@
 #mesondefine HAVE_CURSES
 #mesondefine HAVE_GZBUFFER
 #mesondefine HAVE_LIBCCP4
+#mesondefine HAVE_MSGPACK
 
 #mesondefine HAVE_FORKPTY_PTY_H
 #mesondefine HAVE_FORKPTY_UTIL_H
