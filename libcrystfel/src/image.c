@@ -1220,7 +1220,7 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 	image->data_block = data_block;
 	image->data_block_size = data_block_size;
 
-	image->data_source_type = file_type(image->filename);
+	image->data_source_type = type;
 
 	if ( do_image_read(image, dtempl, no_image_data, no_mask_data) ) {
 		image_free(image);
