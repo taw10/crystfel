@@ -1224,6 +1224,7 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 
 	if ( do_image_read(image, dtempl, no_image_data, no_mask_data) ) {
 		image_free(image);
+		ERROR("Failed to load image\n");
 		return NULL;
 	}
 
