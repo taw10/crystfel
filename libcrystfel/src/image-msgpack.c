@@ -232,9 +232,8 @@ int image_msgpack_read(struct image *image,
 		return 1;
 	}
 	if ( n_obj > 1 ) {
-		ERROR("WARNING: Too many items in MessagePack object (%i)\n",
-		      n_obj);
-		/* Can continue */
+		ERROR("WARNING: Multiple (%i) items in MessagePack object - "
+		      "ignoring all but the first one.\n", n_obj);
 	}
 
 	the_obj = &unpacked.data.via.array.ptr[0];
