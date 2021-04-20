@@ -444,7 +444,9 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		process_image(iargs, &pargs, st, cookie, tmpdir, ser,
 		              sb->shared, taccs, sb->shared->last_task[cookie]);
 
-		free(pargs.zmq_data);
+		/* pargs.zmq_data will be copied into the image structure, so
+		 * that it can be queried for "header" values etc.  It will
+		 * eventually be freed by image_free() under process_image() */
 	}
 
 	im_zmq_shutdown(zmqstuff);
