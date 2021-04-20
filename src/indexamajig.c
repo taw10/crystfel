@@ -81,8 +81,6 @@ struct indexamajig_arguments
 	char *indm_str;
 	int basename;
 	int zmq;
-	int no_image_data;
-	int no_mask_data;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -342,7 +340,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 208 :
-		args->no_image_data = 1;
+		args->iargs.no_image_data = 1;
 		break;
 
 		case 209 :
@@ -350,7 +348,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		return 1;
 
 		case 210 :
-		args->no_mask_data = 1;
+		args->iargs.no_mask_data = 1;
 		break;
 
 		/* ---------- Peak search ---------- */
