@@ -116,20 +116,24 @@ static void write_json_cell(FILE *fh, const char *name, UnitCell *cell)
 	double a, b, c, al, be, ga;
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 
-	fprintf(fh, "    \"%s\": {\n", name);
-	fprintf(fh, "      \"lattice_type\": \"%s\",\n",
-	        str_lattice(cell_get_lattice_type(cell)));
-	fprintf(fh, "      \"centering\": \"%c\",\n",
-	        cell_get_centering(cell));
-	fprintf(fh, "      \"unique_axis\": \"%c\",\n",
-	        cell_get_unique_axis(cell));
-	fprintf(fh, "      \"a_Angstrom\": %f,\n", a*1e10);
-	fprintf(fh, "      \"b_Angstrom\": %f,\n", b*1e10);
-	fprintf(fh, "      \"c_Angstrom\": %f,\n", c*1e10);
-	fprintf(fh, "      \"alpha_deg\": %f,\n", rad2deg(al));
-	fprintf(fh, "      \"beta_deg\": %f,\n", rad2deg(be));
-	fprintf(fh, "      \"gamma_deg\": %f\n", rad2deg(ga));  /* NB No comma */
-	fprintf(fh, "    },\n");
+	if ( cell == NULL ) {
+		fprintf(fh, "    \"%s\": null,\n", name);
+	} else {
+		fprintf(fh, "    \"%s\": {\n", name);
+		fprintf(fh, "      \"lattice_type\": \"%s\",\n",
+		        str_lattice(cell_get_lattice_type(cell)));
+		fprintf(fh, "      \"centering\": \"%c\",\n",
+		        cell_get_centering(cell));
+		fprintf(fh, "      \"unique_axis\": \"%c\",\n",
+		        cell_get_unique_axis(cell));
+		fprintf(fh, "      \"a_Angstrom\": %f,\n", a*1e10);
+		fprintf(fh, "      \"b_Angstrom\": %f,\n", b*1e10);
+		fprintf(fh, "      \"c_Angstrom\": %f,\n", c*1e10);
+		fprintf(fh, "      \"alpha_deg\": %f,\n", rad2deg(al));
+		fprintf(fh, "      \"beta_deg\": %f,\n", rad2deg(be));
+		fprintf(fh, "      \"gamma_deg\": %f\n", rad2deg(ga));  /* NB No comma */
+		fprintf(fh, "    },\n");
+	}
 }
 
 
@@ -140,11 +144,13 @@ static void write_methods(FILE *fh, const char *name, IndexingPrivate *ipriv)
 
 	fprintf(fh, "    \"%s\": [", name);
 
-	methods = indexing_methods(ipriv, &n);
-	for ( i=0; i<n; i++ ) {
-		fprintf(fh, " \"%s\"", indexer_str(methods[i]));
-		if ( i < n-1 ) {
-			fprintf(fh, ",");
+	if ( ipriv != NULL ) {
+		methods = indexing_methods(ipriv, &n);
+		for ( i=0; i<n; i++ ) {
+			fprintf(fh, " \"%s\"", indexer_str(methods[i]));
+			if ( i < n-1 ) {
+				fprintf(fh, ",");
+			}
 		}
 	}
 	fprintf(fh, " ],\n");
