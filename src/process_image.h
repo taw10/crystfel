@@ -71,7 +71,6 @@ struct index_args
 	int half_pixel_shift;
 	int min_res;
 	int max_res;
-	int max_n_peaks;
 	int min_pix_count;
 	int max_pix_count;
 	int local_bg_radius;

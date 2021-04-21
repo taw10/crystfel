@@ -190,7 +190,6 @@ static void write_harvest_file(struct index_args *args,
 	write_bool(fh, 1, "half_pixel_shift", args->half_pixel_shift);
 	write_int(fh, 1, "min_res_px", args->min_res);
 	write_int(fh, 1, "max_res_px", args->max_res);
-	write_int(fh, 1, "max_num_peaks", args->max_n_peaks);
 	write_int(fh, 1, "min_pixel_count", args->min_pix_count);
 	write_int(fh, 1, "max_pixel_count", args->max_pix_count);
 	write_int(fh, 1, "local_bg_radius_px", args->local_bg_radius);
