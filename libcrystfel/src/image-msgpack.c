@@ -80,7 +80,8 @@ static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
 	for ( i=0; i<obj->via.map.size; i++ ) {
 		const char *kstr;
 		size_t klen;
-		assert(obj->via.map.ptr[i].key.type == MSGPACK_OBJECT_STR);
+		if ( (obj->via.map.ptr[i].key.type != MSGPACK_OBJECT_STR)
+		  && (obj->via.map.ptr[i].key.type != MSGPACK_OBJECT_BIN) ) continue;
 		kstr = obj->via.map.ptr[i].key.via.str.ptr;
 		klen = obj->via.map.ptr[i].key.via.str.size;
 		if ( strncmp(kstr, key, klen) == 0 ) {
@@ -242,9 +243,15 @@ out:
 
 static int load_msgpack_data(struct panel_template *p,
                              msgpack_object *map_obj,
-                             float **data)
+                             float **pdata)
 {
 	msgpack_object *obj;
+	msgpack_object *type_obj;
+	msgpack_object *shape_obj;
+	msgpack_object *data_obj;
+	char *dtype;
+	int data_size_fs, data_size_ss;
+	void *data = NULL;
 
 	obj = find_msgpack_kv(map_obj, p->data);
 	if ( obj == NULL ) {
@@ -258,13 +265,84 @@ static int load_msgpack_data(struct panel_template *p,
 		return 1;
 	}
 
-	//type = get_msgpack_kv_string(obj, "type");
-	//printf("data type is '%s'\n", type);
+	type_obj = find_msgpack_kv(obj, "type");
+	if ( type_obj == NULL ) {
+		ERROR("Data 'type' not found\n");
+		return 1;
+	}
+	if ( type_obj->type != MSGPACK_OBJECT_STR ) {
+		ERROR("Data 'type' isn't a string\n");
+		return 1;
+	}
+	dtype = strndup(type_obj->via.str.ptr, type_obj->via.str.size);
 
-	//get_msgpack_kv_tuple(obj, "shape", &w, &h);
+	shape_obj = find_msgpack_kv(obj, "shape");
+	if ( shape_obj == NULL ) {
+		ERROR("Data 'shape' not found\n");
+		free(dtype);
+		return 1;
+	}
+	if ( shape_obj->type != MSGPACK_OBJECT_ARRAY ) {
+		ERROR("Data 'shape' isn't an array\n");
+		free(dtype);
+		return 1;
+	}
+	if ( shape_obj->via.array.size != 2 ) {
+		ERROR("Data 'shape' has wrong number of dimensions (%i)\n",
+		      shape_obj->via.array.size);
+		free(dtype);
+		return 1;
+	}
+	data_size_ss = shape_obj->via.array.ptr[0].via.u64;
+	data_size_fs = shape_obj->via.array.ptr[1].via.u64;
 
-	//data_obj = find_msgpack_kv(obj, "data");
+	if ( (p->orig_min_fs + PANEL_WIDTH(p) > data_size_fs)
+	  || (p->orig_min_ss + PANEL_HEIGHT(p) > data_size_ss) )
+	{
+		ERROR("Data for panel %s (%i x %i + %i + %i) is outside data "
+		      "array bounds (%i x %i)\n",
+		      p->name,
+		      PANEL_WIDTH(p), PANEL_HEIGHT(p),
+		      p->orig_min_fs, p->orig_min_ss,
+		data_size_fs, data_size_ss);
+		return 1;
+	}
 
+	data_obj = find_msgpack_kv(obj, "data");
+	if ( data_obj == NULL ) {
+		ERROR("Data 'data' not found\n");
+		free(dtype);
+		return 1;
+	}
+	if ( data_obj->type != MSGPACK_OBJECT_BIN ) {
+		ERROR("Data 'data' isn't binary\n");
+		free(dtype);
+		return 1;
+	}
+
+	if ( strcmp(dtype, "<i4") == 0 ) {
+
+		int fs, ss;
+		float *fdata;
+
+		fdata = malloc(PANEL_WIDTH(p) * PANEL_HEIGHT(p) * sizeof(float));
+		if ( fdata == NULL ) return 1;
+
+		for ( ss=0; ss<PANEL_HEIGHT(p); ss++ ) {
+			for ( fs=0; fs<PANEL_WIDTH(p); fs++ ) {
+				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
+				fdata[fs+ss*PANEL_WIDTH(p)] = data_obj->via.bin.ptr[idx];
+			}
+		}
+
+		data = fdata;
+
+	} else {
+		ERROR("Unrecognised data type '%s'\n", dtype);
+	}
+
+	free(dtype);
+	*pdata = data;
 	return 0;
 }
 
@@ -324,5 +402,5 @@ int image_msgpack_read(struct image *image,
 	}
 
 	msgpack_unpacked_destroy(&unpacked);
-	return 1;
+	return 0;
 }

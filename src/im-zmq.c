@@ -90,9 +90,7 @@ void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size)
 	void *data_copy;
 
 	zmq_msg_init(&z->msg);
-	STATUS("requesting data...\n");
 	msg_size = zmq_msg_recv(&z->msg, z->socket, 0);
-	STATUS("done (got %i bytes)\n", msg_size);
 	if ( msg_size == -1 ) {
 		ERROR("ZMQ recieve failed: %s\n", zmq_strerror(errno));
 		zmq_msg_close(&z->msg);
