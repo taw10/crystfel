@@ -80,7 +80,7 @@ struct indexamajig_arguments
 	char *cellfile;
 	char *indm_str;
 	int basename;
-	int zmq;
+	char *zmq_addr;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -346,7 +346,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 207 :
-		args->zmq = 1;
+		args->zmq_addr = strdup(arg);
 		break;
 
 		case 208 :
@@ -750,13 +750,12 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 int main(int argc, char *argv[])
 {
-	FILE *fh;
+	FILE *fh = NULL;
 	Stream *st;
 	struct indexamajig_arguments args;
 	char *tmpdir;  /* e.g. /tmp/indexamajig.12345 */
 	char *rn;  /* e.g. /home/taw/indexing */
 	int r;
-	char *zmq_address = NULL;
 	int timeout = 240;
 	TakeTwoOptions *taketwo_opts = NULL;
 	FelixOptions *felix_opts = NULL;
@@ -776,7 +775,7 @@ int main(int argc, char *argv[])
 	args.cellfile = NULL;
 	args.indm_str = NULL;
 	args.basename = 0;
-	args.zmq = 0;
+	args.zmq_addr = NULL;
 	args.serial_start = 1;
 	args.if_peaks = 1;
 	args.if_multi = 0;
@@ -874,8 +873,8 @@ int main(int argc, char *argv[])
 		{"temp-dir", 205, "path", OPTION_NO_USAGE, "Location for temporary folder"},
 		{"wait-for-file", 206, "seconds", OPTION_NO_USAGE, "Wait for each file before "
 		        "processing"},
-		{"zmq-msgpack", 207, NULL, OPTION_NO_USAGE, "Receive data in MessagePack format "
-		        "over ZMQ"},
+		{"zmq-input", 207, "addr", OPTION_NO_USAGE, "Receive data over ZeroMQ from "
+			"this location"},
 		{"no-image-data", 208, NULL, OPTION_NO_USAGE, "Do not load image data"},
 		{"spectrum-file", 209, "fn", OPTION_NO_USAGE | OPTION_HIDDEN,
 		       "File containing radiation spectrum"},
@@ -996,7 +995,7 @@ int main(int argc, char *argv[])
 	if ( argp_parse(&argp, argc, argv, 0, NULL, &args) ) return 1;
 
 	/* Check for minimal information */
-	if ( args.filename == NULL ) {
+	if ( (args.filename == NULL) && (args.zmq_addr == NULL) ) {
 		ERROR("You need to provide the input filename (use -i)\n");
 		return 1;
 	}
@@ -1009,15 +1008,22 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Open input */
-	if ( strcmp(args.filename, "-") == 0 ) {
-		fh = stdin;
-	} else {
-		fh = fopen(args.filename, "r");
-	}
-	if ( fh == NULL ) {
-		ERROR("Failed to open input file '%s'\n", args.filename);
+	if ( (args.filename != NULL) && (args.zmq_addr != NULL) ) {
+		ERROR("You must only specify one of --input and --zmq-input.\n");
 		return 1;
+	}
+
+	/* Open input */
+	if ( args.filename != NULL ) {
+		if ( strcmp(args.filename, "-") == 0 ) {
+			fh = stdin;
+		} else {
+			fh = fopen(args.filename, "r");
+		}
+		if ( fh == NULL ) {
+			ERROR("Failed to open input file '%s'\n", args.filename);
+			return 1;
+		}
 	}
 
 	/* Check prefix (if given) */
@@ -1221,22 +1227,8 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
-	if ( args.zmq ) {
-		char line[1024];
-		char *rval;
-		rval = fgets(line, 1024, fh);
-		if ( rval == NULL ) {
-			ERROR("Failed to read ZMQ server/port from input.\n");
-			return 1;
-		}
-		chomp(line);
-		zmq_address = strdup(line);
-		/* In future, read multiple addresses and hand them out
-		 * evenly to workers */
-	}
-
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
-	                   fh, st, tmpdir, args.serial_start, zmq_address,
+	                   fh, st, tmpdir, args.serial_start, args.zmq_addr,
 	                   timeout, args.profile);
 
 	cell_free(args.iargs.cell);

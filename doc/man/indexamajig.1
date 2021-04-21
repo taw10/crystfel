@@ -177,6 +177,11 @@ Write the output data stream to \fIfilename\fR.
 Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel_geometry\fR for more information.
 
 .PD 0
+.IP \fB--zmq-input=\fIaddress\fR
+.PD
+Receive data over ZeroMQ from \fIaddress\fR.  In this version, the ZeroMQ data will be assumed to be serialised with MsgPack, but other formats might be added in future.  The options \fB--input\fR and \fB--zmq-input\fR are mutually exclusive - you must specify exactly one of them.  Example: \fB--zmq-input=tcp://127.0.0.1:5002\fR.
+
+.PD 0
 .IP \fB--basename\fR
 .PD
 Remove the directory parts of the filenames taken from the input file.  If \fB--prefix\fR or \fB-x\fR is also given, the directory parts of the filename will be removed \fIbefore\fR adding the prefix.
@@ -216,11 +221,6 @@ Put the temporary folder under \fIpath\fR.
 .IP \fB--wait-for-file=\fIn\fR
 .PD
 Wait at most \fIn\fR seconds for each image file in the input list to be created before trying to process it.  This is useful for some automated processing pipelines.  It obviously only really works for single-frame files.  If a file exists but is not readable when this option is set non-zero, a second attempt will be made after ten seconds.  This is to allow for incompletely written files.  A value of -1 means to wait forever.  The default value is \fB--wait-for-file=0\fR.
-
-.PD 0
-.IP \fB--zmq-msgpack\fR
-.PD
-Receive data as MessagePack objects over ZeroMQ.  The input "file list", given with \fB--input\fR or \fB-i\fR, should contain a socket URL suitable for passing to zmq_connect(), such as "tcp://127.0.0.1:12322".  At the moment, only one URL can be given, but this may change in future.
 
 .IP \fB--no-image-data\fR
 .PD
