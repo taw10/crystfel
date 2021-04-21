@@ -205,36 +205,41 @@ static void write_harvest_file(struct index_args *args,
 	write_int(fh, 0, "min_num_peaks", args->min_peaks);
 	fprintf(fh, "  },\n");
 
-	fprintf(fh, "  \"indexing\": {\n");
-	write_methods(fh, "methods", args->ipriv);
-	write_json_cell(fh, "target_cell", args->cell);
-	write_float(fh, 1, "tolerance_a_percent", 100.0*args->tols[0]);
-	write_float(fh, 1, "tolerance_b_percent", 100.0*args->tols[1]);
-	write_float(fh, 1, "tolerance_c_percent", 100.0*args->tols[2]);
-	write_float(fh, 1, "tolerance_alpha_deg", rad2deg(args->tols[3]));
-	write_float(fh, 1, "tolerance_beta_deg", rad2deg(args->tols[4]));
-	write_float(fh, 1, "tolerance_gamma_deg", rad2deg(args->tols[5]));
-	write_bool(fh, 1, "multi_lattice", if_multi);
-	write_bool(fh, 1, "refine", if_refine);
-	write_bool(fh, 1, "retry", if_retry);
-	write_bool(fh, 1, "check_peaks", if_peaks);
-	write_bool(fh, 1, "check_cell", if_checkcell);
-	write_float(fh, 1, "wavelength_estimate_m", args->wavelength_estimate);
-	write_float(fh, 0, "clen_estimate_m", args->clen_estimate);
-	fprintf(fh, "  },\n");
+	if ( args->ipriv == NULL ) {
+		fprintf(fh, "  \"indexing\": null\n");
+		fprintf(fh, "  \"integration\": null\n");
+	} else {
+		fprintf(fh, "  \"indexing\": {\n");
+		write_methods(fh, "methods", args->ipriv);
+		write_json_cell(fh, "target_cell", args->cell);
+		write_float(fh, 1, "tolerance_a_percent", 100.0*args->tols[0]);
+		write_float(fh, 1, "tolerance_b_percent", 100.0*args->tols[1]);
+		write_float(fh, 1, "tolerance_c_percent", 100.0*args->tols[2]);
+		write_float(fh, 1, "tolerance_alpha_deg", rad2deg(args->tols[3]));
+		write_float(fh, 1, "tolerance_beta_deg", rad2deg(args->tols[4]));
+		write_float(fh, 1, "tolerance_gamma_deg", rad2deg(args->tols[5]));
+		write_bool(fh, 1, "multi_lattice", if_multi);
+		write_bool(fh, 1, "refine", if_refine);
+		write_bool(fh, 1, "retry", if_retry);
+		write_bool(fh, 1, "check_peaks", if_peaks);
+		write_bool(fh, 1, "check_cell", if_checkcell);
+		write_float(fh, 1, "wavelength_estimate_m", args->wavelength_estimate);
+		write_float(fh, 0, "clen_estimate_m", args->clen_estimate);
+		fprintf(fh, "  },\n");
 
-	fprintf(fh, "  \"integration\": {\n");
-	tmp = str_integration_method(args->int_meth);
-	write_str(fh, 1, "method", tmp);
-	free(tmp);
-	write_float(fh, 1, "radius_inner_px", args->ir_inn);
-	write_float(fh, 1, "radius_middle_px", args->ir_mid);
-	write_float(fh, 1, "radius_outer_px", args->ir_out);
-	write_float(fh, 1, "push_res_invm", args->push_res);
-	write_float(fh, 1, "fix_profile_radius_invm", nan_if_neg(args->fix_profile_r));
-	write_float(fh, 1, "fix_divergence_rad", nan_if_neg(args->fix_divergence));
-	write_bool(fh, 0, "overpredict", args->overpredict);
-	fprintf(fh, "  }\n"); /* NB No comma */
+		fprintf(fh, "  \"integration\": {\n");
+		tmp = str_integration_method(args->int_meth);
+		write_str(fh, 1, "method", tmp);
+		free(tmp);
+		write_float(fh, 1, "radius_inner_px", args->ir_inn);
+		write_float(fh, 1, "radius_middle_px", args->ir_mid);
+		write_float(fh, 1, "radius_outer_px", args->ir_out);
+		write_float(fh, 1, "push_res_invm", args->push_res);
+		write_float(fh, 1, "fix_profile_radius_invm", nan_if_neg(args->fix_profile_r));
+		write_float(fh, 1, "fix_divergence_rad", nan_if_neg(args->fix_divergence));
+		write_bool(fh, 0, "overpredict", args->overpredict);
+		fprintf(fh, "  }\n"); /* NB No comma */
+	}
 
 	fprintf(fh, "}\n");
 
