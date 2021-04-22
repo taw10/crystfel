@@ -81,6 +81,8 @@ struct indexamajig_arguments
 	char *indm_str;
 	int basename;
 	char *zmq_addr;
+	char *zmq_subscriptions[256];
+	int n_zmq_subscriptions;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -360,6 +362,13 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		case 210 :
 		args->iargs.no_mask_data = 1;
 		break;
+
+		case 211 :
+		if ( args->n_zmq_subscriptions == 256 ) {
+			ERROR("Too many ZMQ subscriptions.\n");
+			return 1;
+		}
+		args->zmq_subscriptions[args->n_zmq_subscriptions++] = strdup(arg);
 
 		/* ---------- Peak search ---------- */
 
@@ -776,6 +785,7 @@ int main(int argc, char *argv[])
 	args.indm_str = NULL;
 	args.basename = 0;
 	args.zmq_addr = NULL;
+	args.n_zmq_subscriptions = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
 	args.if_multi = 0;
@@ -879,6 +889,8 @@ int main(int argc, char *argv[])
 		{"spectrum-file", 209, "fn", OPTION_NO_USAGE | OPTION_HIDDEN,
 		       "File containing radiation spectrum"},
 		{"no-mask-data", 210, NULL, OPTION_NO_USAGE, "Do not load mask data"},
+		{"zmq-subscribe", 211, "tag", OPTION_NO_USAGE, "Subscribe to ZMQ message"
+			"type"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
@@ -1229,6 +1241,7 @@ int main(int argc, char *argv[])
 
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
 	                   fh, st, tmpdir, args.serial_start, args.zmq_addr,
+	                   args.zmq_subscriptions, args.n_zmq_subscriptions,
 	                   timeout, args.profile);
 
 	cell_free(args.iargs.cell);

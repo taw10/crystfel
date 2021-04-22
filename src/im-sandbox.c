@@ -100,6 +100,8 @@ struct sandbox
 	/* ZMQ mode */
 	int zmq;
 	const char *zmq_address;
+	char **zmq_subscriptions;
+	int n_zmq_subscriptions;
 
 	/* Final output */
 	Stream *stream;
@@ -331,7 +333,9 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 	/* Connect via ZMQ */
 	if ( sb->zmq ) {
-		zmqstuff = im_zmq_connect(sb->zmq_address);
+		zmqstuff = im_zmq_connect(sb->zmq_address,
+		                          sb->zmq_subscriptions,
+		                          sb->n_zmq_subscriptions);
 		if ( zmqstuff == NULL ) {
 			ERROR("ZMQ setup failed.\n");
 			return 1;
@@ -1013,7 +1017,8 @@ char *create_tempdir(const char *temp_location)
 int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    int config_basename, FILE *fh,
                    Stream *stream, const char *tmpdir, int serial_start,
-                   const char *zmq_address, int timeout, int profile)
+                   const char *zmq_address, char **zmq_subscriptions,
+                   int n_zmq_subscriptions, int timeout, int profile)
 {
 	int i;
 	struct sandbox *sb;
@@ -1047,6 +1052,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	if ( zmq_address != NULL ) {
 		sb->zmq = 1;
 		sb->zmq_address = zmq_address;
+		sb->zmq_subscriptions = zmq_subscriptions;
+		sb->n_zmq_subscriptions = n_zmq_subscriptions;
 	} else {
 		sb->zmq = 0;
 	}

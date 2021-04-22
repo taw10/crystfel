@@ -55,9 +55,12 @@ struct im_zmq
 };
 
 
-struct im_zmq *im_zmq_connect(const char *zmq_address)
+struct im_zmq *im_zmq_connect(const char *zmq_address,
+                              char **subscriptions,
+                              int n_subscriptions)
 {
 	struct im_zmq *z;
+	int i;
 
 	z = malloc(sizeof(struct im_zmq));
 	if ( z == NULL ) return NULL;
@@ -73,11 +76,22 @@ struct im_zmq *im_zmq_connect(const char *zmq_address)
 		ERROR("ZMQ connection failed: %s\n", zmq_strerror(errno));
 		return NULL;
 	}
-	STATUS("ZMQ connected.  Subscribing to 'ondaframedata'\n");
 
-	if ( zmq_setsockopt(z->socket, ZMQ_SUBSCRIBE, "ondaframedata", 13) ) {
-		ERROR("ZMQ subscription failed: %s\n", zmq_strerror(errno));
-		return NULL;
+	if ( n_subscriptions == 0 ) {
+		ERROR("WARNING: No ZeroMQ subscriptions.  You should probably "
+		      "try again with --zmq-subscribe.\n");
+	}
+
+	for ( i=0; i<n_subscriptions; i++ ) {
+		STATUS("Subscribing to '%s'\n", subscriptions[i]);
+		if ( zmq_setsockopt(z->socket, ZMQ_SUBSCRIBE,
+		                    subscriptions[i],
+		                    strlen(subscriptions[i])) )
+		{
+			ERROR("ZMQ subscription failed: %s\n",
+			      zmq_strerror(errno));
+			return NULL;
+		}
 	}
 
 	return z;

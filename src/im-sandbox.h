@@ -85,6 +85,7 @@ extern void set_last_task(char *lt, const char *task);
 extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           int config_basename, FILE *fh,  Stream *stream,
                           const char *tempdir, int serial_start,
-                          const char *zmq_address, int timeout, int profile);
+                          const char *zmq_address, char **zmq_subscriptions,
+                          int n_zmq_subscriptions, int timeout, int profile);
 
 #endif /* IM_SANDBOX_H */

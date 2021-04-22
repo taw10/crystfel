@@ -38,13 +38,17 @@
 
 #if defined(HAVE_ZMQ)
 
-extern struct im_zmq *im_zmq_connect(const char *zmq_address);
+extern struct im_zmq *im_zmq_connect(const char *zmq_address,
+                                     char **subscriptions,
+                                     int n_subscriptions);
 extern void im_zmq_shutdown(struct im_zmq *z);
 extern void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size);
 
 #else /* defined(HAVE_ZMQ) */
 
-static UNUSED struct im_zmq *im_zmq_connect(const char *zmq_address) { return NULL; }
+static UNUSED struct im_zmq *im_zmq_connect(const char *zmq_address,
+                                            char *zmq_subscriptions,
+                                            int n_subscriptions) { return NULL; }
 static UNUSED void im_zmq_shutdown(struct im_zmq *z) { }
 static UNUSED void *im_zmq_fetch(struct im_zmq *z, size_t *psize) { *psize = 0; return NULL; }
 

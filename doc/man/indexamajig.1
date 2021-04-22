@@ -180,6 +180,13 @@ Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel
 .IP \fB--zmq-input=\fIaddress\fR
 .PD
 Receive data over ZeroMQ from \fIaddress\fR.  In this version, the ZeroMQ data will be assumed to be serialised with MsgPack, but other formats might be added in future.  The options \fB--input\fR and \fB--zmq-input\fR are mutually exclusive - you must specify exactly one of them.  Example: \fB--zmq-input=tcp://127.0.0.1:5002\fR.
+.IP
+If you use this option, you should also use \fB--zmq-subscribe\fR to add a ZeroMQ subscription.
+
+.PD 0
+.IP \fB--zmq-subscribe=\fItag\fR
+.PD
+Subscribe to ZeroMQ message type \fItag\fR.  You can use this option multiple times to add multiple subscriptions.
 
 .PD 0
 .IP \fB--basename\fR
