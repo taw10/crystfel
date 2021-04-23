@@ -669,7 +669,7 @@ int image_set_zero_mask(struct image *image,
 static int image_read_image_data(struct image *image,
                                  const DataTemplate *dtempl)
 {
-	if ( (image->filename != NULL)
+	if ( (image->data_block == NULL)
 	  && (!file_exists(image->filename)) )
 	{
 		ERROR("File not found: %s (read data)\n", image->filename);
@@ -1201,10 +1201,12 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
                                     void *data_block,
                                     size_t data_block_size,
                                     DataSourceType type,
+                                    int serial,
                                     int no_image_data,
                                     int no_mask_data)
 {
 	struct image *image;
+	char tmp[64];
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1217,8 +1219,9 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	image->filename = NULL;
-	image->ev = NULL;
+	snprintf(tmp, 63, "datablock-%i", serial);
+	image->filename = strdup(tmp);
+	image->ev = strdup("//");
 	image->data_block = data_block;
 	image->data_block_size = data_block_size;
 

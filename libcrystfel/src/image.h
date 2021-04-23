@@ -216,6 +216,7 @@ extern struct image *image_read_data_block(const DataTemplate *dtempl,
                                            void *data_block,
                                            size_t data_block_size,
                                            DataSourceType type,
+                                           int serial,
                                            int no_image_data,
                                            int no_mask_data);
 extern void image_free(struct image *image);

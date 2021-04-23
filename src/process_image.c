@@ -199,6 +199,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              pargs->zmq_data,
 		                              pargs->zmq_data_size,
 		                              DST_MSGPACK,
+		                              serial,
 		                              iargs->no_image_data,
 		                              iargs->no_mask_data);
 		if ( image == NULL ) return;
