@@ -436,8 +436,10 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		} else {
 
-			pargs.zmq_data = im_zmq_fetch(zmqstuff,
-			                              &pargs.zmq_data_size);
+			do {
+				pargs.zmq_data = im_zmq_fetch(zmqstuff,
+				                              &pargs.zmq_data_size);
+			} while ( pargs.zmq_data_size < 15 );
 			pargs.filename = strdup("(from ZMQ)");
 			pargs.event = NULL;
 			ser = 0;  /* FIXME: Serial numbers from ZMQ? */
