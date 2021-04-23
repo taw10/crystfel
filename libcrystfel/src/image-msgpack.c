@@ -395,7 +395,8 @@ int image_msgpack_read(struct image *image,
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 		if ( load_msgpack_data(&dtempl->panels[i], obj, &image->dp[i]) )
 		{
-			ERROR("Failed to load panel data\n");
+			ERROR("Failed to load data for panel '%s'\n",
+			      dtempl->panels[i].name);
 			msgpack_unpacked_destroy(&unpacked);
 			return 1;
 		}
