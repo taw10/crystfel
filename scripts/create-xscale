@@ -1,50 +1,11 @@
-#!/usr/bin/perl -w
+#!/bin/sh
 
-use strict;
-
-# When you've edited the relevant parameters, delete this comment and the
-# following two lines
-printf("You need to edit this script first, to set the space group and ".
-       "cell parameters.\n");
-exit(1);
-
-open(FH, $ARGV[0]);
-
-printf("!FORMAT=XDS_ASCII   MERGE=TRUE   FRIEDEL'S_LAW=TRUE\n");
-printf("!SPACE_GROUP_NUMBER=182\n");
-printf("!UNIT_CELL_CONSTANTS=      281.00    281.00   165.00 90.000 90.000    120.000\n");
-printf("!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=5\n");
-printf("!X-RAY_WAVELENGTH= -1.0\n");
-printf("!ITEM_H=1\n");
-printf("!ITEM_K=2\n");
-printf("!ITEM_L=3\n");
-printf("!ITEM_IOBS=4\n");
-printf("!ITEM_SIGMA(IOBS)=5\n");
-printf("!END_OF_HEADER\n");
-
-my $line;
-while ( $line = <FH> ) {
-
-	chomp($line);
-
-	if ( $line =~ /^\s+([0-9\-]+)\s+([0-9\-]+)\s+([0-9\-]+)\s+([0-9\.\-]+)\s+([\-]+)\s+([0-9\.\-]+)/ ) {
-
-		my $h = $1;
-		my $k = $2;
-		my $l = $3;
-		my $int = $4;
-		my $sig = $6;  # Yes, it's meant to be $6 not $5 ($5 is phase)
-
-		printf("%6i %6i %5i %9.2f %9.2f\n", $h, $k, $l, $int, $sig);
-
-	} else {
-
-		printf(STDERR "Unrecognised: '%s'\n", $line);
-
-	}
-
-}
-
-printf("!END_OF_DATA");
-
-close(FH);
+echo -------------------------------------------------------------
+echo
+echo In this CrystFEL version, XDS export is now done via get_hkl:
+echo get_hkl -i file.hkl -p my.cell -o out.hkl --output-format=xds
+echo
+echo Alternatively, use the Export Data function of the CrystFEL GUI
+echo
+echo -------------------------------------------------------------
+exit 1

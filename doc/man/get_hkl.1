@@ -1,7 +1,7 @@
 .\"
 .\" get_hkl man page
 .\"
-.\" Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -19,7 +19,9 @@ get_hkl \- manipulate reflection data
 .SH DESCRIPTION
 get_hkl performs various manipulations on reflection lists.  Possible manipulations include: expanding to a point group of lower symmetry, 'twinning' to a point group of higher symmetry, adding noise, restricting the list to contain only reflections included in another 'template' list, and some less common miscellaneous manipulations.
 .PP
-The input filename should be specified with \fB-i\fR \fIfilename\fR or \fB--input=\fR\fIfilename\fR.  The output filename should be specified with \fB-o\fR \fIfilename\fR or \fB--output=\fR\fIfilename\fR.  The symmetry of the input reflection list should be specified with \fB-y\fR \fIpointgroup\fR or \fB--symmetry=\fR\fIpointgroup\fR.  Beyond these parameters, you can choose one of the manipulations described below.  The behaviour if multiple manipulations are requested is deliberately left undefined: it's much clearer to perform multiple manipulations in explicit separate steps.
+The input filename should be specified with \fB-i\fR \fIfilename\fR or \fB--input=\fR\fIfilename\fR.  The output filename should be specified with \fB-o\fR \fIfilename\fR or \fB--output=\fR\fIfilename\fR.  Beyond these parameters, you can choose one of the manipulations described below.
+.PP
+The behaviour if multiple manipulations are requested is undefined. Perform multiple manipulations in explicit separate steps instead.
 
 .PD 0
 .IP "\fB-p\fR \fIunitcell.cell\fR"
@@ -27,6 +29,11 @@ The input filename should be specified with \fB-i\fR \fIfilename\fR or \fB--inpu
 .IP \fB--pdb=\fR\fIunitcell.pdb\fR
 .PD
 Specify the name of the file containing unit cell information, in PDB or CrystFEL format.
+
+.SH CHOOSING THE OUTPUT FORMAT
+.IP \fB--output-format=\fIformat\fR
+.PD
+The output file will be written in \fIformat\fR, which can be \fBmtz\fR or \fBxds\fR.  If you omit this option, the output will be in the usual CrystFEL reflection list format.
 
 .SH EXPANDING REFLECTIONS INTO A POINT GROUP OF LOWER SYMMETRY
 .PD 0
@@ -92,6 +99,13 @@ The option \fB--lowres\fR will remove reflections with d > \fIn\fR.  \fB--highre
 .PD
 Reindex the reflections according to \fIop\fR.  Example: \fB--reindex=k,h,-l\fR.
 
+.SH OVERRIDING THE INPUT SYMMETRY
+.PD 0
+.IP "\fB-y \fIpg\fR"
+.IP \fB--symmetry=\fIpg\fR
+.PD
+Use \fIpg\fR for the symmetry of the input data.  In almost all cases, you should omit this option which will cause the program to use the point group recorded in the headers of the input data.
+
 .SH AUTHOR
 This page was written by Thomas White.
 
@@ -99,7 +113,7 @@ This page was written by Thomas White.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012-2020 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 get_hkl, and this manual, are part of CrystFEL.
 .P

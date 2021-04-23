@@ -1,42 +1,11 @@
 #!/bin/sh
 
-# When you've edited the relevant parameters, delete this comment and the following two lines
-echo "You need to edit this script first, to set the space group and cell parameters."
+echo -------------------------------------------------------------
+echo
+echo In this CrystFEL version, MTZ export is now done via get_hkl:
+echo get_hkl -i file.hkl -p my.cell -o out.mtz --output-format=mtz
+echo
+echo Alternatively, use the Export Data function of the CrystFEL GUI
+echo
+echo -------------------------------------------------------------
 exit 1
-
-OUTFILE=`echo $1 | sed -e 's/\.hkl$/.mtz/'`
-
-echo " Input: $1"
-echo "Output: $OUTFILE"
-if [ -e $OUTFILE ]; then
-	echo "   The output file already exists:"
-	echo "   " $OUTFILE
-	echo "   To confirm that you want to continue, which will DESTROY the"
-	echo "   current contents of this file, type 'y' and press enter."
-	read conf
-	if [ $conf != y ]; then
-		echo "Not confirmed."
-		exit 1
-	else
-		echo "Proceeding"
-	fi
-fi
-
-sed -n '/End\ of\ reflections/q;p' $1 > create-mtz.temp.hkl
-
-echo "Running 'f2mtz'..."
-f2mtz HKLIN create-mtz.temp.hkl HKLOUT $OUTFILE > out.html << EOF
-TITLE Reflections from CrystFEL
-NAME PROJECT wibble CRYSTAL wibble DATASET wibble
-CELL 100 100 100  90  90 90
-SYMM P1
-SKIP 3
-LABOUT H K L IMEAN SIGIMEAN
-CTYPE  H H H J     Q
-FORMAT '(3(F4.0,1X),F10.2,10X,F10.2)'
-EOF
-
-if [ $? -ne 0 ]; then echo "Failed."; exit; fi
-
-rm -f create-mtz.temp.hkl
-echo "Done."
