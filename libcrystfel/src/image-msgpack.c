@@ -118,37 +118,73 @@ static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
  *
  */
 ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
-                                           msgpack_object *obj,
+                                           void *data_block,
+                                           size_t data_block_size,
                                            int half_pixel_shift)
 {
+	msgpack_unpacked unpacked;
+	msgpack_object *obj;
+	int r;
 	ImageFeatureList *features;
 	int num_peaks;
 	int pk;
 	msgpack_object *peak_list;
-	msgpack_object *peak_x;
-	msgpack_object *peak_y;
+	msgpack_object *peak_fs;
+	msgpack_object *peak_ss;
 	msgpack_object *peak_i;
 	double peak_offset = half_pixel_shift ? 0.5 : 0.0;
 
-	if ( obj == NULL ) {
-		ERROR("No MessagePack object to get peaks from.\n");
+	if ( data_block == NULL ) {
+		ERROR("No MsgPack data!\n");
 		return NULL;
 	}
 
-	/* Object has structure:
-	 *   {
-	 *    "peak_list": [[peak_x], [peak_y], [peak_i]]
-	 *    "key2":val2,
-	 *    ...
-	 *   }
-	 */
-	peak_list = find_msgpack_kv(obj, "peak_list");
-	peak_x = &peak_list->via.array.ptr[0];
-	peak_y = &peak_list->via.array.ptr[1];
-	peak_i = &peak_list->via.array.ptr[2];
+	msgpack_unpacked_init(&unpacked);
+	r = msgpack_unpack_next(&unpacked, data_block, data_block_size, NULL);
+	if ( r != MSGPACK_UNPACK_SUCCESS ) {
+		ERROR("MessagePack unpack failed: %i (read_peaks)\n", r);
+		return NULL;
+	}
+
+	obj = find_main_object(&unpacked);
+	if ( obj == NULL ) {
+		ERROR("Failed to find main MsgPack object (read_peaks).\n");
+		msgpack_unpacked_destroy(&unpacked);
+		return NULL;
+	}
+
+	peak_list = find_msgpack_kv(obj, dtempl->peak_list);
+	if ( peak_list == NULL ) {
+		ERROR("Peak list object not found ('%s')\n", dtempl->peak_list);
+		msgpack_unpacked_destroy(&unpacked);
+		return NULL;
+	}
+
+	peak_fs = find_msgpack_kv(peak_list, "fs");
+	peak_ss = find_msgpack_kv(peak_list, "ss");
+	peak_i = find_msgpack_kv(peak_list, "intensity");
+
+	if ( (peak_fs == NULL)
+	  || (peak_ss == NULL)
+	  || (peak_i == NULL)
+	  || (peak_fs->type != MSGPACK_OBJECT_ARRAY)
+	  || (peak_ss->type != MSGPACK_OBJECT_ARRAY)
+	  || (peak_i->type != MSGPACK_OBJECT_ARRAY) )
+	{
+		ERROR("Peak list has wrong structure.\n");
+		msgpack_unpacked_destroy(&unpacked);
+		return NULL;
+	}
 
 	/* Length of peak_x  array gives number of peaks */
-	num_peaks = peak_x->via.array.size;
+	num_peaks = peak_fs->via.array.size;
+	if ( (peak_ss->via.array.size != num_peaks)
+	  || (peak_i->via.array.size != num_peaks) )
+	{
+		ERROR("Peak list arrays do not have equal size.\n");
+		msgpack_unpacked_destroy(&unpacked);
+		return NULL;
+	}
 
 	features = image_feature_list_new();
 
@@ -159,8 +195,8 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 
 		/* Retrieve data from peak_list and apply half_pixel_shift,
 		 * if appropriate */
-		fs = peak_x->via.array.ptr[pk].via.f64 + peak_offset;
-		ss = peak_y->via.array.ptr[pk].via.f64 + peak_offset;
+		fs = peak_fs->via.array.ptr[pk].via.f64 + peak_offset;
+		ss = peak_ss->via.array.ptr[pk].via.f64 + peak_offset;
 		val = peak_i->via.array.ptr[pk].via.f64;
 
 		/* Convert coordinates to panel-relative */
@@ -172,6 +208,7 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 		}
 	}
 
+	msgpack_unpacked_destroy(&unpacked);
 	return features;
 }
 
@@ -421,8 +458,8 @@ static UNUSED int image_msgpack_read(struct image *image,
 }
 
 static UNUSED ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
-                                                         void *data,
-                                                         size_t data_size,
+                                                         void *data_block,
+                                                         size_t data_block_size,
                                                          int half_pixel_shift)
 {
 	ERROR("MessagePack is not supported in this installation (read_peaks).\n");
