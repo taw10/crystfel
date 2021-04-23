@@ -398,7 +398,8 @@ static double get_value(struct image *image, const char *from,
 			break;
 
 			default:
-			ERROR("Unrecognised file type %i\n", image->data_source_type);
+			ERROR("Unrecognised file type %i (get_value)\n",
+			      image->data_source_type);
 			return 1;
 
 		}
@@ -417,7 +418,7 @@ static double get_value(struct image *image, const char *from,
 static DataSourceType file_type(const char *filename)
 {
 	if ( !file_exists(filename) ) {
-		ERROR("File not found: %s\n", filename);
+		ERROR("File not found: %s (file_type)\n", filename);
 		return DST_UNKNOWN;
 	}
 
@@ -431,7 +432,7 @@ static DataSourceType file_type(const char *filename)
 		return DST_CBFGZ;
 
 	} else {
-		ERROR("Unrecognised file type: %s\n", filename);
+		ERROR("Unrecognised file type: %s (file_type)\n", filename);
 		return DST_UNKNOWN;
 	}
 }
@@ -671,7 +672,7 @@ static int image_read_image_data(struct image *image,
 	if ( (image->filename != NULL)
 	  && (!file_exists(image->filename)) )
 	{
-		ERROR("File not found: %s\n", image->filename);
+		ERROR("File not found: %s (read data)\n", image->filename);
 		return image_set_zero_data(image, dtempl);
 	}
 
@@ -696,7 +697,8 @@ static int image_read_image_data(struct image *image,
 		                          image->data_block_size);
 
 		default:
-		ERROR("Unrecognised file type %i\n", image->data_source_type);
+		ERROR("Unrecognised file type %i (image_read_image_data)\n",
+		      image->data_source_type);
 		return 1;
 	}
 }
