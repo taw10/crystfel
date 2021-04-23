@@ -29,13 +29,8 @@
 #ifndef IMAGE_MSGPACK_H
 #define IMAGE_MSGPACK_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "datatemplate.h"
 
-#if defined(HAVE_MSGPACK)
 
 extern int image_msgpack_read(struct image *image,
                               const DataTemplate *dtempl,
@@ -51,39 +46,5 @@ extern double image_msgpack_get_value(const char *name,
                                       void *data_block,
                                       size_t data_block_size,
                                       char *ptype);
-
-#else /* defined(HAVE_MSGPACK) */
-
-static UNUSED int image_msgpack_read(struct image *image,
-                                     const DataTemplate *dtempl,
-                                     void *data,
-                                     size_t data_size)
-{
-	ERROR("MessagePack is not supported in this installation.\n");
-	return 1;
-}
-
-static UNUSED ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
-                                                         void *data,
-                                                         size_t data_size,
-                                                         int half_pixel_shift)
-{
-	ERROR("MessagePack is not supported in this installation.\n");
-	return NULL;
-}
-
-static UNUSED double image_msgpack_get_value(const char *name,
-                                             void *data_block,
-                                             size_t data_block_size,
-                                             char *ptype)
-{
-	ERROR("MessagePack is not supported in this installation.\n");
-	*ptype = 'f';
-	return NAN;
-}
-
-
-
-#endif /* defined(HAVE_MSGPACK) */
 
 #endif	/* IMAGE_MSGPACK_H */

@@ -47,6 +47,8 @@
 #include "datatemplate_priv.h"
 
 
+#if defined(HAVE_MSGPACK)
+
 static msgpack_object *find_main_object(msgpack_unpacked *unpacked)
 {
 	int n_obj;
@@ -405,3 +407,38 @@ int image_msgpack_read(struct image *image,
 	msgpack_unpacked_destroy(&unpacked);
 	return 0;
 }
+
+
+#else /* defined(HAVE_MSGPACK) */
+
+static UNUSED int image_msgpack_read(struct image *image,
+                                     const DataTemplate *dtempl,
+                                     void *data,
+                                     size_t data_size)
+{
+	ERROR("MessagePack is not supported in this installation (read).\n");
+	return 1;
+}
+
+static UNUSED ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
+                                                         void *data,
+                                                         size_t data_size,
+                                                         int half_pixel_shift)
+{
+	ERROR("MessagePack is not supported in this installation (read_peaks).\n");
+	return NULL;
+}
+
+static UNUSED double image_msgpack_get_value(const char *name,
+                                             void *data_block,
+                                             size_t data_block_size,
+                                             char *ptype)
+{
+	ERROR("MessagePack is not supported in this installation (get_value).\n");
+	*ptype = 'f';
+	return NAN;
+}
+
+
+
+#endif /* defined(HAVE_MSGPACK) */
