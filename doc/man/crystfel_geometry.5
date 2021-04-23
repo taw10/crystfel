@@ -112,7 +112,7 @@ The following parameters can be set for each panel individually.  Don't forget t
 .PD 0
 .IP \fBdata\fR
 .PD
-The location in the HDF5 file of the data block that contains the panel's data. If this property is not set, the first 2-dimensional data block in the file hierarchy will be used as data source. If the HDF5 file contains multiple events, and each event is stored in a different data block, the variable part of the path can be represented using the % character placeholder.
+The location in the HDF5 file of the data block that contains the panel's data. The default value is \fB/data/data\fR.  If the HDF5 file contains multiple events, and each event is stored in a different data block, the variable part of the path can be represented using the % character placeholder.
 
 Example:
 .IP
@@ -139,9 +139,9 @@ the axis encodes the fast scan index
 the index in this dimension should be fixed at \fInumber\fR.
 .RE
 .IP
-CrystFEL assumes that the data block defined by the 'data' property has a dimensionality equal to the axis with the highest value of \fIn\fR defined by the 'dim' property, and requires the user to provide information about each of the axes in the data block. When no 'dim' property is defined in the geometry file, CrystFEL assumes the data block to be 2-dimensional, with the two axes encoding slow scan and fast scan information respectively.
+CrystFEL assumes that the data block defined by the 'data' property has a dimensionality corresponding to the axis with the highest value of \fIn\fR defined by the 'dim' property.  That is, if the geometry file specifies \fBdim0\fR, \fBdim1\fR and \fBdim2\fR, then the data block is expected to be three-dimensional.  The size of the data block along each of those axes comes from the image metadata (e.g. the array sizes in the HDF5 file).
 .IP
-Note that this does indeed mean that you can assign the fast scan coordinates to the slow scan axis of the data block, and vice versa!  This "quirk" helps backwards compatibility with geometry files from older versions of CrystFEL.
+The lowest number of \fIn\fR corresponds to the \fImost slowly-changing\fR array index as the data block is traversed.  The default values are \fBdim0=ss\fR and \fBdim1=fs\fR.  The value of \fIn\fR corresponding to \fBfs\fR must not be lower than the value assigned to \fBss\fR, i.e. "fast scan is always fast scan".
 
 Example:
 .RS
@@ -149,14 +149,14 @@ Example:
 .IP
 dim0 = %
 .IP
-dim1 = ss
+dim1 = 4
 .IP
-dim2 = fs
+dim2 = ss
 .IP
-dim3 = 4
+dim3 = fs
 .RE
 .IP
-The above snippet specifies that the data block is 3-dimensional. The first axis represents the event number, the second the slow scan panel coordinate, the third the fast scan panel coordinate, and the index in the final axis is always 4.
+The above snippet specifies that the data block is 3-dimensional. The first axis represents the event number, the index in the second axis is always 4, and the remaining two axes are the image coordinates.
 
 .PD 0
 .IP \fBmin_fs\fR
