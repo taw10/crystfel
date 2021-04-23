@@ -107,6 +107,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/fom.c',
                        'src/image-cbf.c',
                        'src/image-hdf5.c',
+                       'src/image-msgpack.c',
                        'src/indexers/dirax.c',
                        'src/indexers/felix.c',
                        'src/indexers/mosflm.c',
@@ -119,10 +120,6 @@ libcrystfel_sources = ['src/image.c',
                        symop_lex_ch,
                        symop_parse_ch,
                       ]
-
-if msgpackdep.found()
-  libcrystfel_sources += 'src/image-msgpack.c'
-endif
 
 configure_file(input : 'config.h.in',
                output : 'config.h',

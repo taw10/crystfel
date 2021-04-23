@@ -7,6 +7,7 @@ pkg_check_modules(FDIP fdip)
 find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
+pkg_check_modules(MSGPACK msgpack)
 find_package(Doxygen)
 pkg_check_modules(FFTW fftw3)
 pkg_check_modules(LIBCCP4 libccp4c)
@@ -18,6 +19,7 @@ set(HAVE_FFTW ${FFTW_FOUND})
 set(HAVE_XGANDALF ${XGANDALF_FOUND})
 set(HAVE_PINKINDEXER ${PINKINDEXER_FOUND})
 set(HAVE_FDIP ${FDIP_FOUND})
+set(HAVE_MSGPACK ${MSGPACK_FOUND})
 set(HAVE_LIBCCP4 ${LIBCCP4_FOUND})
 
 # Recent enough version of zlib?
@@ -61,6 +63,7 @@ set(LIBCRYSTFEL_SOURCES
     src/image-cbf.c
     src/image-hdf5.c
     src/fom.c
+    src/image-msgpack.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
     src/indexers/dirax.c
@@ -102,10 +105,6 @@ set(LIBCRYSTFEL_HEADERS
     src/image-msgpack.h
     src/fom.h
 )
-
-if (MSGPACK_FOUND)
-  set(LIBCRYSTFEL_SOURCES ${LIBCRYSTFEL_SOURCES} src/image-msgpack.c)
-endif (MSGPACK_FOUND)
 
 if (DOXYGEN_FOUND)
   configure_file(${PROJECT_SOURCE_DIR}/doc/index.md index.md)
