@@ -47,8 +47,8 @@ static void filter_noise_in_panel(float *data, int width, int height)
 {
 	int x, y;
 
-	for ( x=0; x<width; x++ ) {
 	for ( y=0; y<height; y++ ) {
+	for ( x=0; x<width; x++ ) {
 
 		int dx, dy;
 		float val = data[x+width*y];
@@ -61,8 +61,8 @@ static void filter_noise_in_panel(float *data, int width, int height)
 			continue;
 		}
 
-		for ( dx=-1; dx<=+1; dx++ ) {
 		for ( dy=-1; dy<=+1; dy++ ) {
+		for ( dx=-1; dx<=+1; dx++ ) {
 
 			int val2;
 
@@ -164,16 +164,16 @@ void filter_median(struct image *image, int size)
 			return;
 		}
 
-		for ( fs=0; fs<p->w; fs++ ) {
 		for ( ss=0; ss<p->h; ss++ ) {
+		for ( fs=0; fs<p->w; fs++ ) {
 
 			int ifs, iss;
 
 			counter = 0;
 
 			// Loop over median window
-			for ( ifs=-size; ifs<=size; ifs++ ) {
 			for ( iss=-size; iss<=size; iss++ ) {
+			for ( ifs=-size; ifs<=size; ifs++ ) {
 
 				int idx;
 
