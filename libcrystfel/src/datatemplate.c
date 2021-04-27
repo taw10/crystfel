@@ -850,7 +850,8 @@ static int parse_toplevel(DataTemplate *dt,
                           struct rgc_definition ***rgc_defl,
                           int *n_rg_defs,
                           int *n_rgc_defs,
-                          struct panel_template *defaults)
+                          struct panel_template *defaults,
+                          int *defaults_updated)
 {
 	if ( strcmp(key, "detector_shift_x") == 0 ) {
 		dt->shift_x_from = strdup(val);
@@ -917,8 +918,13 @@ static int parse_toplevel(DataTemplate *dt,
 		(*rgc_defl)[*n_rgc_defs]->rgs = strdup(val);
 		*n_rgc_defs = *n_rgc_defs+1;
 
-	} else if ( parse_field_for_panel(defaults, key, val, dt) ) {
-		return 1;
+	} else {
+
+		if ( parse_field_for_panel(defaults, key, val, dt) == 0 ) {
+			*defaults_updated = 1;
+		} else {
+			return 1;
+		}
 	}
 
 	return 0;
@@ -1025,6 +1031,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	char *string_orig;
 	size_t len;
 	struct panel_template defaults;
+	int have_unused_defaults = 0;
 
 	dt = calloc(1, sizeof(DataTemplate));
 	if ( dt == NULL ) return NULL;
@@ -1161,7 +1168,8 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		                            &rgc_defl,
 		                            &n_rg_definitions,
 		                            &n_rgc_definitions,
-		                            &defaults) )
+		                            &defaults,
+		                            &have_unused_defaults) )
 			{
 				ERROR("Invalid top-level line '%s'\n",
 				      line);
@@ -1185,6 +1193,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			panel = find_panel_by_name(dt, line);
 			if ( panel == NULL ) {
 				panel = new_panel(dt, line, &defaults);
+				have_unused_defaults = 0;
 			}
 		}
 
@@ -1209,6 +1218,13 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	if ( check_mask_and_satmap_placeholders(dt) ) {
 		ERROR("Mask and saturation map paths must have fewer "
 		      "placeholders than image data path.\n");
+		reject = 1;
+	}
+
+	if ( have_unused_defaults ) {
+		ERROR("WARNING: There are statements at the end of the geometry "
+		      "file which have no effect because they only apply to "
+		      "subsequently-defined panels.\n");
 		reject = 1;
 	}
 
