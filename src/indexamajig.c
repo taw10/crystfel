@@ -1052,8 +1052,8 @@ int main(int argc, char *argv[])
 	/* Load data template (new API) */
 	args.iargs.dtempl = data_template_new_from_file(args.geom_filename);
 	if ( args.iargs.dtempl == NULL ) {
-		ERROR("Failed to read detector geometry from '%s'"
-		      " (for new API)\n", args.geom_filename);
+		ERROR("Failed to read detector geometry from '%s'\n",
+		      args.geom_filename);
 		return 1;
 	}
 
