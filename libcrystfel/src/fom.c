@@ -27,9 +27,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <libcrystfel-config.h>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_statistics.h>

@@ -121,8 +121,8 @@ libcrystfel_sources = ['src/image.c',
                        symop_parse_ch,
                       ]
 
-configure_file(input : 'config.h.in',
-               output : 'config.h',
+configure_file(input : 'libcrystfel-config.h.meson.in',
+               output : 'libcrystfel-config.h',
                configuration : conf_data)
 
 libcrystfel_conf_inc = include_directories('.')

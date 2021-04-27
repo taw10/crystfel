@@ -86,9 +86,7 @@
  * * Clean up the mess (cleanup_taketwo_obs_vecs())
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <libcrystfel-config.h>
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>

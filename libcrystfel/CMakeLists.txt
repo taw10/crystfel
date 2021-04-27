@@ -27,7 +27,7 @@ set(CMAKE_REQUIRED_LIBRARIES "-lz")
 check_symbol_exists(gzbuffer "zlib.h" HAVE_GZBUFFER)
 unset(CMAKE_REQUIRED_LIBRARIES)
 
-configure_file(config.h.cmake.in config.h)
+configure_file(libcrystfel-config.h.cmake.in libcrystfel-config.h)
 
 bison_target(symopp src/symop.y ${CMAKE_CURRENT_BINARY_DIR}/symop-parse.c COMPILE_FLAGS --report=all)
 flex_target(symopl src/symop.l ${CMAKE_CURRENT_BINARY_DIR}/symop-lex.c
@@ -140,7 +140,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 
 target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-add_definitions(-DHAVE_CONFIG_H)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} ${ZLIB_LIBRARIES}

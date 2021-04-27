@@ -26,9 +26,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <libcrystfel-config.h>
 
 #include <assert.h>
 #include <gsl/gsl_sort.h>

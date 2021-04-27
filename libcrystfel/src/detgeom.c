@@ -26,10 +26,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include <libcrystfel-config.h>
 #include <math.h>
 #include <stdlib.h>
 
