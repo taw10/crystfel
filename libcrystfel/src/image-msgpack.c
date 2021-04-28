@@ -60,10 +60,6 @@ static msgpack_object *find_main_object(msgpack_unpacked *unpacked)
 		ERROR("No array elements in MessagePack object?\n");
 		return NULL;
 	}
-	if ( n_obj > 1 ) {
-		ERROR("WARNING: Multiple (%i) items in MessagePack object - "
-		      "ignoring all but the first one.\n", n_obj);
-	}
 
 	return &unpacked->data.via.array.ptr[0];
 }
