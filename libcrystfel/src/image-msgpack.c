@@ -392,6 +392,7 @@ static int load_msgpack_data(struct panel_template *p,
 
 		int fs, ss;
 		float *fdata;
+		int32_t *in_data = (int32_t *)data_obj->via.bin.ptr;
 
 		fdata = malloc(PANEL_WIDTH(p) * PANEL_HEIGHT(p) * sizeof(float));
 		if ( fdata == NULL ) return 1;
@@ -399,7 +400,25 @@ static int load_msgpack_data(struct panel_template *p,
 		for ( ss=0; ss<PANEL_HEIGHT(p); ss++ ) {
 			for ( fs=0; fs<PANEL_WIDTH(p); fs++ ) {
 				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
-				fdata[fs+ss*PANEL_WIDTH(p)] = data_obj->via.bin.ptr[idx];
+				fdata[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
+			}
+		}
+
+		data = fdata;
+
+	} else if ( strcmp(dtype, "<f4") == 0 ) {
+
+		int fs, ss;
+		float *fdata;
+		float *in_data = (float *)data_obj->via.bin.ptr;
+
+		fdata = malloc(PANEL_WIDTH(p) * PANEL_HEIGHT(p) * sizeof(float));
+		if ( fdata == NULL ) return 1;
+
+		for ( ss=0; ss<PANEL_HEIGHT(p); ss++ ) {
+			for ( fs=0; fs<PANEL_WIDTH(p); fs++ ) {
+				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
+				fdata[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
 			}
 		}
 
