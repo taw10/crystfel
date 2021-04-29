@@ -206,6 +206,19 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 }
 
 
+static char *terminate_str(const char *ptr, size_t len)
+{
+	char *str;
+	if ( len < 1 ) return NULL;
+	if ( len > 16*1024 ) return NULL;
+	str = malloc(len+1);
+	if ( str == NULL ) return NULL;
+	strncpy(str, ptr, len);
+	str[len] = '\0';
+	return str;
+}
+
+
 double image_msgpack_get_value(const char *name,
                                void *data_block,
                                size_t data_block_size,
@@ -216,6 +229,7 @@ double image_msgpack_get_value(const char *name,
 	msgpack_object *obj;
 	int r;
 	float val = NAN;
+	char *str;
 
 	*ptype = 'x';
 
@@ -260,8 +274,30 @@ double image_msgpack_get_value(const char *name,
 		val = value_obj->via.i64;
 		break;
 
+		case MSGPACK_OBJECT_STR:
+		str = terminate_str(value_obj->via.str.ptr,
+		                    value_obj->via.str.size);
+		if ( str != NULL ) {
+			int ival;
+			if ( convert_int(str, &ival) == 0 ) {
+				*ptype = 'i';
+				val = ival;
+			} else {
+				ERROR("MsgPack header %s has a string type (%s)"
+				      "(need a number, and can't convert).\n",
+				      name, str);
+				val = NAN;
+			}
+			free(str);
+		} else {
+			ERROR("Failed to read MsgPack string (%s)\n", name);
+			val = NAN;
+		}
+		break;
+
 		default:
-		ERROR("Unrecognised MsgPack type %i\n", value_obj->type);
+		ERROR("Unrecognised MsgPack type %i (%s)\n",
+		      value_obj->type, name);
 		break;
 
 	}
