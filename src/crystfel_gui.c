@@ -63,7 +63,7 @@
 
 static void show_help(const char *s)
 {
-	printf("Syntax: %s\n\n", s);
+	printf("Syntax: %s [data.stream]\n\n", s);
 	printf(
 "CrystFEL graphical user interface.\n"
 "\n"
@@ -724,6 +724,7 @@ int main(int argc, char *argv[])
 	GtkWidget *button;
 	GtkWidget *label;
 	GtkWidget *w;
+	int load_result;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -904,8 +905,15 @@ int main(int argc, char *argv[])
 	/* Send messages to report region */
 	set_log_message_func(add_gui_message, &proj);
 
-	/* Load state from disk */
-	if ( load_project(&proj) == 0 ) {
+	if ( optind < argc ) {
+		/* Create view of stream - probably temporary */
+		load_result = load_stream(&proj, argv[optind++]);
+	} else {
+		/* Try to load state from disk */
+		load_result = load_project(&proj);
+	}
+
+	if ( load_result == 0 ) {
 		DataTemplate *dtempl;
 		GtkAction *w;
 		proj.cur_frame = 0;

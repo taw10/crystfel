@@ -243,32 +243,28 @@ static void import_via_search(struct finddata_ctx *ctx)
 }
 
 
-static void import_stream(struct finddata_ctx *ctx)
+/* stream_filename will be adopted */
+int load_stream(struct crystfelproject *proj, char *stream_filename)
 {
-	struct crystfelproject *proj = ctx->proj;
 	Stream *st;
-	char *stream_filename;
 	DataTemplate *dtempl;
 	const char *geom_str;
 	char **streams;
 
-	stream_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->stream_chooser));
-	if ( stream_filename == NULL ) return;
-
 	st = stream_open_for_read(stream_filename);
-	if ( st == NULL ) return;
+	if ( st == NULL ) return 1;
 
 	geom_str = stream_geometry_file(st);
 	if ( geom_str == NULL ) {
 		ERROR("No geometry file\n");
 		stream_close(st);
-		return;
+		return 1;
 	}
 
 	dtempl = data_template_new_from_string(geom_str);
 	if ( dtempl == NULL ) {
 		stream_close(st);
-		return;
+		return 1;
 	}
 
 	/* If we do not yet have a DataTemplate, the one from the file
@@ -291,6 +287,19 @@ static void import_stream(struct finddata_ctx *ctx)
 		add_indexing_result(proj, result_name, streams, 1);
 		select_result(proj, result_name);
 	}
+
+	return 0;
+}
+
+
+static void import_stream(struct finddata_ctx *ctx)
+{
+	char *stream_filename;
+
+	stream_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->stream_chooser));
+	if ( stream_filename == NULL ) return;
+
+	load_stream(ctx->proj, stream_filename);
 }
 
 

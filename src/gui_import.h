@@ -34,5 +34,7 @@
 #include "gui_project.h"
 
 extern gint import_sig(GtkWidget *widget, struct crystfelproject *proj);
+extern int load_stream(struct crystfelproject *proj,
+                       const char *stream_filename);
 
 #endif
