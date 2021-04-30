@@ -474,6 +474,7 @@ gint peaksearch_sig(GtkWidget *widget, struct crystfelproject *proj)
 	if ( proj->peak_params != NULL ) return FALSE;
 
 	force_peaks_on(proj);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(proj->results_combo), 0);
 
 	/* Take a copy of the original parameters, for reverting */
 	proj->original_params = proj->peak_search_params;
