@@ -1282,8 +1282,8 @@ void force_refls_on(struct crystfelproject *proj)
 {
 	GtkWidget *w;
 	proj->show_refls = 1;
-	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                                   proj->show_refls);
+	crystfel_image_view_set_show_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                         proj->show_refls);
 
 	w =  gtk_ui_manager_get_widget(proj->ui, "/ui/mainwindow/view/refls");
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), 1);
