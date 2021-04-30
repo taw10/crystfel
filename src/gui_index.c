@@ -505,7 +505,9 @@ static void run_indexing_once(struct crystfelproject *proj)
 		cell = NULL;
 	}
 
-	update_peaks(proj);
+	if ( proj->cur_image->features == NULL ) {
+		update_peaks(proj);
+	}
 
 	old_cwd = getcwd(NULL, 0);
 	tmpdir = enter_gui_tempdir();
@@ -585,8 +587,6 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 {
 
 	if ( resp == GTK_RESPONSE_OK ) {
-		gtk_combo_box_set_active(GTK_COMBO_BOX(proj->results_combo),
-		                         0);
 		get_indexing_opts(proj,
 		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 		run_indexing_once(proj);
