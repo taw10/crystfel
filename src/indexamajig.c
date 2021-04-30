@@ -402,7 +402,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 304 :
-		ERROR("The option --hdf5-peak-path is no longer used.\n");
+		ERROR("The option --hdf5-peaks is no longer used.\n");
 		ERROR("Set the peak path in the geometry file.\n");
 		break;
 
