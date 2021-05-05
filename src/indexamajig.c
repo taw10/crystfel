@@ -369,6 +369,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			return 1;
 		}
 		args->zmq_subscriptions[args->n_zmq_subscriptions++] = strdup(arg);
+		break;
 
 		/* ---------- Peak search ---------- */
 
