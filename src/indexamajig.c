@@ -81,6 +81,7 @@ struct indexamajig_arguments
 	char *indm_str;
 	int basename;
 	char *zmq_addr;
+	char *zmq_request;
 	char *zmq_subscriptions[256];
 	int n_zmq_subscriptions;
 	int serial_start;
@@ -369,6 +370,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			return 1;
 		}
 		args->zmq_subscriptions[args->n_zmq_subscriptions++] = strdup(arg);
+		break;
+
+		case 212 :
+		args->zmq_request = strdup(arg);
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -786,6 +791,7 @@ int main(int argc, char *argv[])
 	args.indm_str = NULL;
 	args.basename = 0;
 	args.zmq_addr = NULL;
+	args.zmq_request = NULL;
 	args.n_zmq_subscriptions = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
@@ -892,6 +898,8 @@ int main(int argc, char *argv[])
 		{"no-mask-data", 210, NULL, OPTION_NO_USAGE, "Do not load mask data"},
 		{"zmq-subscribe", 211, "tag", OPTION_NO_USAGE, "Subscribe to ZMQ message"
 			"type"},
+		{"zmq-request", 212, "str", OPTION_NO_USAGE, "Request messages using"
+			"this string."},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
@@ -1023,6 +1031,12 @@ int main(int argc, char *argv[])
 
 	if ( (args.filename != NULL) && (args.zmq_addr != NULL) ) {
 		ERROR("You must only specify one of --input and --zmq-input.\n");
+		return 1;
+	}
+
+	if ( (args.zmq_request != NULL) && (args.n_zmq_subscriptions > 0) ) {
+		ERROR("The options --zmq-request and --zmq-subscribe are "
+		      "mutually exclusive.\n");
 		return 1;
 	}
 
@@ -1243,7 +1257,7 @@ int main(int argc, char *argv[])
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
 	                   fh, st, tmpdir, args.serial_start, args.zmq_addr,
 	                   args.zmq_subscriptions, args.n_zmq_subscriptions,
-	                   timeout, args.profile);
+	                   args.zmq_request, timeout, args.profile);
 
 	cell_free(args.iargs.cell);
 	free(args.prefix);

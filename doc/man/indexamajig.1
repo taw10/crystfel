@@ -181,12 +181,17 @@ Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel
 .PD
 Receive data over ZeroMQ from \fIaddress\fR.  In this version, the ZeroMQ data will be assumed to be serialised with MsgPack, but other formats might be added in future.  The options \fB--input\fR and \fB--zmq-input\fR are mutually exclusive - you must specify exactly one of them.  Example: \fB--zmq-input=tcp://127.0.0.1:5002\fR.
 .IP
-If you use this option, you should also use \fB--zmq-subscribe\fR to add a ZeroMQ subscription.
+If you use this option, you should also use either \fB--zmq-subscribe\fR to add a ZeroMQ subscription, or \fB--zmq-request\fR to define how to request data.
 
 .PD 0
 .IP \fB--zmq-subscribe=\fItag\fR
 .PD
-Subscribe to ZeroMQ message type \fItag\fR.  You can use this option multiple times to add multiple subscriptions.
+Subscribe to ZeroMQ message type \fItag\fR.  You can use this option multiple times to add multiple subscriptions.  This option and \fB--zmq-request\fR are mutually exclusive.
+
+.PD 0
+.IP \fB--zmq-request=\fImsg\fR
+.PD
+Request new data over ZeroMQ by sending string \fImsg\fR.  This will cause indexamajig's ZeroMQ socket to use REQ mode instead of SUB.  This option and \fB--zmq-subscribe\fR are mutually exclusive.
 
 .PD 0
 .IP \fB--basename\fR

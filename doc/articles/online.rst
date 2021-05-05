@@ -7,9 +7,10 @@ socket.  Use ``--zmq-input`` instead of ``--input`` or ``-i``.  An error will
 be generated if you use ``--zmq-input`` and ``--input``  or ``-i``
 simultaneously.
 
-Indexamajig assumes that the socket is a *pub/sub* socket.  You will also need
-to specify which message prefixes to subscribe to.  Use ``--zmq-subscribe`` for
-this::
+Indexamajig can use either a SUB (subscriber) or a REQ (request) socket.  The
+SUB socket type can be used for receiving data from OnDA/OM via the same
+mechanism that the OnDA/OM GUI uses.  In this case, you will also need to
+specify which message prefixes to subscribe to using ``--zmq-subscribe``::
 
   indexamajig --zmq-input=tcp://127.0.0.1:5002 \
               --zmq-subscribe=ondaframedata \
@@ -18,8 +19,24 @@ this::
 You can use ``--zmq-subscribe`` multiple times to subscribe to multiple message
 prefixes.
 
-The option ``--no-image-data`` will be honoured, if given.  This makes it
-possible to quickly check streaming data for "indexability".
+Note that this mode of operation does not combine well with multi-threading
+in inddxamajig - all worker processes will receive the same data!  For anything
+more than "taking a peek" at the data, use the REQ socket instead by using
+``--zmq-request`` instead of ``--zmq-subscribe``.  The argument to this option
+is the string which should be sent in the request message::
+
+  indexamajig --zmq-input=tcp://127.0.0.1:5002 \
+              --zmq-request=next \
+              -o output.stream -g Eiger.geom ...
+
+Because they represent completely different modes of operation, the two options
+``--zmq-request`` and ``--zmq-subscribe`` are mutually exclusive.
+
+In both cases, the option ``--no-image-data`` will be honoured, if given.  This
+makes it possible to quickly check streaming data for "indexability".  You will
+be able to do almost all of the usual downstream analysis operations on the
+resulting stream, except that attempting to merge it using partialator or
+process_hkl will result in zeroes everywhere.
 
 
 Data format
