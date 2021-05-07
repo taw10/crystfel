@@ -486,6 +486,10 @@ static void handle_var(const char *key, const char *val,
 		proj->merging_backend_selected = find_backend(val, proj);
 	}
 
+	if ( strcmp(key, "ambi.backend") == 0 ) {
+		proj->ambi_backend_selected = find_backend(val, proj);
+	}
+
 	if ( strcmp(key, "show_centre") == 0 ) {
 		proj->show_centre = parse_int(val);
 	}
@@ -978,6 +982,13 @@ int save_project(struct crystfelproject *proj)
 	if ( proj->ambi_params.operator != NULL ) {
 		fprintf(fh, "ambi.operator %s\n", proj->ambi_params.operator);
 	}
+	fprintf(fh, "ambi.backend %s\n",
+	        proj->backends[proj->ambi_backend_selected].name);
+	for ( i=0; i<proj->n_backends; i++ ) {
+		struct crystfel_backend *be;
+		be = &proj->backends[i];
+		be->write_ambi_opts(be->ambi_opts_priv, fh);
+	}
 	if ( proj->ambi_new_job_title != NULL ) {
 		fprintf(fh, "ambi.new_job_title %s\n",
 		        proj->ambi_new_job_title);
@@ -1100,6 +1111,7 @@ void default_project(struct crystfelproject *proj)
 
 	proj->indexing_backend_selected = 0;
 	proj->merging_backend_selected = 0;
+	proj->ambi_backend_selected = 0;
 	proj->n_backends = 0;
 	proj->backends = malloc(2*sizeof(struct crystfel_backend));
 	/* FIXME: Crappy error handling */
