@@ -77,14 +77,28 @@ static msgpack_object *find_msgpack_kv(msgpack_object *obj, const char *key)
 	if ( obj->type != MSGPACK_OBJECT_MAP ) return NULL;
 
 	for ( i=0; i<obj->via.map.size; i++ ) {
-		const char *kstr;
-		size_t klen;
-		if ( (obj->via.map.ptr[i].key.type != MSGPACK_OBJECT_STR)
-		  && (obj->via.map.ptr[i].key.type != MSGPACK_OBJECT_BIN) ) continue;
-		kstr = obj->via.map.ptr[i].key.via.str.ptr;
-		klen = obj->via.map.ptr[i].key.via.str.size;
-		if ( strncmp(kstr, key, klen) == 0 ) {
-			return &obj->via.map.ptr[i].val;
+
+		if ( obj->via.map.ptr[i].key.type == MSGPACK_OBJECT_STR ) {
+
+			const char *kstr;
+			size_t klen;
+
+			kstr = obj->via.map.ptr[i].key.via.str.ptr;
+			klen = obj->via.map.ptr[i].key.via.str.size;
+			if ( strncmp(kstr, key, klen) == 0 ) {
+				return &obj->via.map.ptr[i].val;
+			}
+
+		} else if ( obj->via.map.ptr[i].key.type == MSGPACK_OBJECT_BIN ) {
+
+			const char *kstr;
+			size_t klen;
+
+			kstr = obj->via.map.ptr[i].key.via.bin.ptr;
+			klen = obj->via.map.ptr[i].key.via.bin.size;
+			if ( strncmp(kstr, key, klen) == 0 ) {
+				return &obj->via.map.ptr[i].val;
+			}
 		}
 	}
 	return NULL;
