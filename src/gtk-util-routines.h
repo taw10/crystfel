@@ -37,6 +37,7 @@ extern unsigned int get_uint(GtkWidget *entry);
 extern float get_float(GtkWidget *entry);
 extern int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget);
 extern int i_maybe_disable_and_deselect(GtkWidget *toggle, GtkWidget *widget);
+extern void deselect_when_active(GtkWidget *toggle, GtkWidget *widget);
 extern void set_active(GtkWidget *tb, int active);
 extern void redraw_widget(GtkWidget *wid);
 extern const char *get_text_or_null(GtkEntry *entry);

@@ -105,6 +105,24 @@ int i_maybe_disable_and_deselect(GtkWidget *toggle, GtkWidget *widget)
 }
 
 
+static int inv_maybe_disable(GtkWidget *toggle, GtkWidget *victim)
+{
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)) ) {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(victim), FALSE);
+	}
+	return FALSE;
+}
+
+
+void deselect_when_active(GtkWidget *toggle, GtkWidget *victim)
+{
+	g_signal_connect(G_OBJECT(toggle), "toggled",
+	                 G_CALLBACK(inv_maybe_disable),
+	                 victim);
+	inv_maybe_disable(toggle, victim);
+}
+
+
 void set_active(GtkWidget *tb, int active)
 {
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tb), active);
