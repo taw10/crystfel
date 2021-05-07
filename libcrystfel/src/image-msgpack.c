@@ -50,6 +50,10 @@ static msgpack_object *find_main_object(msgpack_unpacked *unpacked)
 {
 	int n_obj;
 
+	if ( unpacked->data.type == MSGPACK_OBJECT_MAP ) {
+		return &unpacked->data;
+	}
+
 	if ( unpacked->data.type != MSGPACK_OBJECT_ARRAY ) {
 		ERROR("MessagePack data isn't an array - ignoring.\n");
 		return NULL;
