@@ -116,6 +116,28 @@ LatticeType lattice_from_str(const char *s)
 }
 
 
+int has_unique_axis(LatticeType l)
+{
+	switch ( l )
+	{
+		case L_MONOCLINIC :
+		case L_HEXAGONAL :
+		case L_TETRAGONAL :
+		return 1;
+
+		case L_TRICLINIC :
+		case L_ORTHORHOMBIC :
+		case L_RHOMBOHEDRAL :
+		case L_CUBIC :
+		return 0;
+
+		default:
+		ERROR("Unrecognised lattice type %i\n", l);
+		return 1;
+	}
+}
+
+
 static int check_centering(char cen)
 {
 	switch ( cen ) {

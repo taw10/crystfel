@@ -68,7 +68,7 @@ extern UnitCell *uncenter_cell(UnitCell *in, IntegerMatrix **pC,
                                RationalMatrix **pCi);
 
 extern int bravais_lattice(UnitCell *cell);
-
+extern int has_unique_axis(LatticeType l);
 extern int right_handed(UnitCell *cell);
 
 extern const char *str_lattice(LatticeType l);
