@@ -150,6 +150,11 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 		return NULL;
 	}
 
+	if ( dtempl->peak_list == NULL ) {
+		ERROR("You must set 'peak_list' in the geometry file.\n");
+		return NULL;
+	}
+
 	msgpack_unpacked_init(&unpacked);
 	r = msgpack_unpack_next(&unpacked, data_block, data_block_size, NULL);
 	if ( r != MSGPACK_UNPACK_SUCCESS ) {
