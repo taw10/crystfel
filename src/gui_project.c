@@ -551,7 +551,7 @@ static void handle_var(const char *key, const char *val,
 		parse_integration_opt(key, val, proj);
 	}
 
-	if ( strncmp(key, "merging.", 9) == 0 ) {
+	if ( strncmp(key, "merging.", 8) == 0 ) {
 		int i;
 		parse_merging_opt(key, val, proj);
 		for ( i=0; i<proj->n_backends; i++ ) {
