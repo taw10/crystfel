@@ -32,6 +32,8 @@
 #include <gtk/gtk.h>
 #include <glib-object.h>
 
+#include <cell.h>
+
 #define CRYSTFEL_TYPE_SYMMETRY_SELECTOR (crystfel_symmetry_selector_get_type())
 
 #define CRYSTFEL_SYMMETRY_SELECTOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), \
@@ -49,17 +51,43 @@
 #define CRYSTFEL_SYMMETRY_SELECTOR_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), \
                                            CRYSTFEL_TYPE_SYMMETRY_SELECTOR, CrystFELSymmetrySelector))
 
+struct pointgroup_widget
+{
+	GtkWidget *w;
+	const char *symbol;
+	int centro;
+	int sohnke;
+	LatticeType lattice_type;
+	char *unique_axis;
+};
+
+
 struct _crystfelsymmetryselector
 {
-	GtkBox parent_instance;
+	GtkButton parent_instance;
 
 	/*< private >*/
-	GtkWidget *entry;
+	GtkWindow *parent_window;
+	GtkWidget *label;
+	GtkWidget *dialog;
+	GtkWidget *lattice_combo;
+	GtkWidget *sohnke_checkbox;
+	GtkWidget *centro_checkbox;
+	GtkWidget *flowbox;
+	GtkWidget *unique_axis_combo;
+	GtkWidget *weird;
+	GtkWidget *rhombo1;
+	GtkWidget *rhombo2;
+	GtkWidget *nonbio;
+	int have_pg;
+	int n_pgs;
+
+	struct pointgroup_widget *pointgroups;
 };
 
 struct _crystfelsymmetryselectorclass
 {
-	GtkBoxClass parent_class;
+	GtkButtonClass parent_class;
 };
 
 typedef struct _crystfelsymmetryselector CrystFELSymmetrySelector;
