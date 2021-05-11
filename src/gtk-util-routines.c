@@ -129,6 +129,12 @@ void set_active(GtkWidget *tb, int active)
 }
 
 
+void set_combo_id(GtkWidget *cb, const char *id)
+{
+	gtk_combo_box_set_active_id(GTK_COMBO_BOX(cb), id);
+}
+
+
 void redraw_widget(GtkWidget *wid)
 {
 	gint w, h;
