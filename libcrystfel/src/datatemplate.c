@@ -1015,6 +1015,19 @@ static int check_mask_and_satmap_placeholders(const DataTemplate *dt)
 }
 
 
+static int try_guess_panel(struct dt_badregion *bad, DataTemplate *dt)
+{
+	if ( dt->n_panels == 1 ) {
+		bad->panel_name = dt->panels[0].name;
+		ERROR("WARNING: Assuming bad_%s/panel = %s\n",
+		      bad->name, dt->panels[0].name);
+		return 1;
+	}
+
+	return 0;
+}
+
+
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;
@@ -1340,9 +1353,11 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		if ( dt->bad[i].is_fsss ) {
 			if ( dt->bad[i].panel_name == NULL ) {
 
-				ERROR("Panel not specified for bad region '%s'\n",
-				      dt->bad[i].name);
-				reject = 1;
+				if ( !try_guess_panel(&dt->bad[i], dt) ) {
+					ERROR("Panel not specified for bad "
+					      "region '%s'\n", dt->bad[i].name);
+					reject = 1;
+				}
 
 			} else if ( lookup_panel(dt->bad[i].panel_name, dt,
 			                         &dt->bad[i].panel_number) )
