@@ -104,14 +104,15 @@ static int check_greyout(GtkWidget *nothing, CrystFELMergeOpts *mo)
 		gtk_widget_set_sensitive(GTK_WIDGET(mo->deltacchalf), TRUE);
 		gtk_widget_set_sensitive(GTK_WIDGET(mo->custom_split), TRUE);
 		gtk_widget_set_sensitive(GTK_WIDGET(mo->detwin), TRUE);
-		disable_if_inactive(mo->use_max_adu, mo->max_adu);
 		disable_if_inactive(mo->custom_split, mo->custom_split_file);
-		disable_if_inactive(mo->min_res, mo->min_res_val);
-		disable_if_inactive(mo->limit_res, mo->push_res);
 		disable_if_inactive(mo->detwin, mo->detwin_sym);
 		disable_if_inactive(mo->scale, mo->bscale);
 		deactivate_if_inactive(mo->scale, mo->bscale);
 	}
+
+	disable_if_inactive(mo->use_max_adu, mo->max_adu);
+	disable_if_inactive(mo->min_res, mo->min_res_val);
+	disable_if_inactive(mo->limit_res, mo->push_res);
 
 	return FALSE;
 }
