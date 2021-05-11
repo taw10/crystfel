@@ -140,6 +140,30 @@ static void write_json_cell(FILE *fh, const char *name, UnitCell *cell)
 }
 
 
+static void write_json_tolerances(FILE *fh, const char *name, float tols[6])
+{
+	fprintf(fh, "    \"%s\": {\n", name);
+	fprintf(fh, "      \"a_percent\": %f,\n", 100.0*tols[0]);
+	fprintf(fh, "      \"b_percent\": %f,\n", 100.0*tols[1]);
+	fprintf(fh, "      \"c_percent\": %f,\n", 100.0*tols[2]);
+	fprintf(fh, "      \"alpha_deg\": %f,\n", rad2deg(tols[3]));
+	fprintf(fh, "      \"beta_deg\": %f,\n", rad2deg(tols[4]));
+	fprintf(fh, "      \"gamma_deg\": %f\n", rad2deg(tols[5]));
+	fprintf(fh, "    },\n");
+}
+
+
+static void write_json_radii(FILE *fh, const char *name,
+                             double inn, double mid, double out)
+{
+	fprintf(fh, "    \"%s\": {\n", name);
+	fprintf(fh, "      \"inner_px\": %f,\n", inn);
+	fprintf(fh, "      \"middle_px\": %f,\n", mid);
+	fprintf(fh, "      \"outer_px\": %f\n", out);
+	fprintf(fh, "    },\n");
+}
+
+
 static void write_methods(FILE *fh, const char *name, IndexingPrivate *ipriv)
 {
 	int i, n;
@@ -181,9 +205,7 @@ static void write_harvest_file(struct index_args *args,
 
 	fprintf(fh, "  \"peaksearch\": {\n");
 	write_str(fh, 1, "method", str_peaksearch(args->peaks));
-	write_float(fh, 1, "radius_inner_px", args->pk_inn);
-	write_float(fh, 1, "radius_middle_px", args->pk_mid);
-	write_float(fh, 1, "radius_outer_px", args->pk_out);
+	write_json_radii(fh, "radii", args->pk_inn, args->pk_mid, args->pk_out);
 	write_bool(fh, 1, "noise_filter", args->noisefilter);
 	write_int(fh, 1, "median_filter", args->median_filter);
 	write_float(fh, 1, "threshold_adu", args->threshold);
@@ -215,12 +237,7 @@ static void write_harvest_file(struct index_args *args,
 		fprintf(fh, "  \"indexing\": {\n");
 		write_methods(fh, "methods", args->ipriv);
 		write_json_cell(fh, "target_cell", args->cell);
-		write_float(fh, 1, "tolerance_a_percent", 100.0*args->tols[0]);
-		write_float(fh, 1, "tolerance_b_percent", 100.0*args->tols[1]);
-		write_float(fh, 1, "tolerance_c_percent", 100.0*args->tols[2]);
-		write_float(fh, 1, "tolerance_alpha_deg", rad2deg(args->tols[3]));
-		write_float(fh, 1, "tolerance_beta_deg", rad2deg(args->tols[4]));
-		write_float(fh, 1, "tolerance_gamma_deg", rad2deg(args->tols[5]));
+		write_json_tolerances(fh, "tolerances", args->tols);
 		write_bool(fh, 1, "multi_lattice", if_multi);
 		write_bool(fh, 1, "refine", if_refine);
 		write_bool(fh, 1, "retry", if_retry);
@@ -234,9 +251,7 @@ static void write_harvest_file(struct index_args *args,
 		tmp = str_integration_method(args->int_meth);
 		write_str(fh, 1, "method", tmp);
 		free(tmp);
-		write_float(fh, 1, "radius_inner_px", args->ir_inn);
-		write_float(fh, 1, "radius_middle_px", args->ir_mid);
-		write_float(fh, 1, "radius_outer_px", args->ir_out);
+		write_json_radii(fh, "radii", args->ir_inn, args->ir_mid, args->ir_out);
 		write_float(fh, 1, "push_res_invm", args->push_res);
 		write_float(fh, 1, "fix_profile_radius_invm", nan_if_neg(args->fix_profile_r));
 		write_float(fh, 1, "fix_divergence_rad", nan_if_neg(args->fix_divergence));
