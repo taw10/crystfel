@@ -1105,6 +1105,7 @@ void default_project(struct crystfelproject *proj)
 	proj->merging_opts = NULL;
 	proj->ambi_opts = NULL;
 	proj->tasks = NULL;
+	proj->scanned_since_last_job_finished = 0;
 	proj->indexing_new_job_title = NULL;
 	proj->merging_new_job_title = NULL;
 	proj->ambi_new_job_title = NULL;

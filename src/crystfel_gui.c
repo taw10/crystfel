@@ -169,13 +169,18 @@ const char *selected_result(struct crystfelproject *proj)
 }
 
 
-/* Return non-zero if there are any jobs running.
- * If not, it makes no sense to re-scan any result streams.
+/* Return non-zero if it makes sense to re-scan the streams for results.
+ * e.g. if there are any jobs running, or one finished since the last scan.
  * Possible future improvement: exclude jobs which don't produce streams
  *  (i.e. merging) */
-static int have_running_jobs(struct crystfelproject *proj)
+static int should_rescan_streams(struct crystfelproject *proj)
 {
 	GSList *item = proj->tasks;
+
+	if ( !proj->scanned_since_last_job_finished ) {
+		proj->scanned_since_last_job_finished = 1;
+		return 1;
+	}
 
 	while ( item != NULL ) {
 		struct gui_task *task = item->data;
@@ -251,7 +256,7 @@ void update_imageview(struct crystfelproject *proj)
 		                            results_name,
 		                            proj->filenames[proj->cur_frame],
 		                            proj->events[proj->cur_frame],
-		                            have_running_jobs(proj));
+		                            should_rescan_streams(proj));
 		if ( res_im != NULL ) {
 			swap_data_arrays(image, res_im);
 			image_free(proj->cur_image);
@@ -1046,6 +1051,9 @@ static gboolean update_info_bar(gpointer data)
 		gtk_widget_destroy(task->cancel_button);
 		gtk_info_bar_set_show_close_button(GTK_INFO_BAR(task->info_bar),
 		                                   TRUE);
+
+		task->proj->scanned_since_last_job_finished = 0;
+
 		return G_SOURCE_REMOVE;
 	}
 
@@ -1068,6 +1076,7 @@ void add_running_task(struct crystfelproject *proj,
 	task->job_priv = job_priv;
 	task->backend = backend;
 	task->running = 1;
+	task->proj = proj;
 	proj->tasks = g_slist_append(proj->tasks, task);
 
 	/* Progress info bar */

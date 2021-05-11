@@ -244,6 +244,7 @@ struct gui_task
 	GtkWidget *progress_bar;
 	int running;
 	struct crystfel_backend *backend;
+	struct crystfelproject *proj;
 	void *job_priv;
 };
 
@@ -312,6 +313,7 @@ struct crystfelproject {
 	int n_backends;
 
 	GSList *tasks;
+	int scanned_since_last_job_finished;
 
 	struct gui_indexing_result *results;
 	int n_results;
