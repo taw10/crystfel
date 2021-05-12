@@ -276,7 +276,7 @@ double image_msgpack_get_value(const char *name,
 	}
 
 	value_obj = find_msgpack_kv(obj, name);
-	if ( obj == NULL ) {
+	if ( value_obj == NULL ) {
 		ERROR("Couldn't find '%s' in MessagePack object\n", name);
 		msgpack_unpacked_destroy(&unpacked);
 		goto out;
