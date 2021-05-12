@@ -439,6 +439,7 @@ int image_read_header_float(struct image *image, const char *from, double *val)
 	}
 }
 
+
 static double get_value(struct image *image, const char *from,
                         int *is_literal_number)
 {
