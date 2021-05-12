@@ -520,10 +520,8 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 	return NULL;
 }
 
-double image_msgpack_get_value(const char *name,
-                               void *data_block,
-                               size_t data_block_size,
-                               char *ptype)
+int image_msgpack_read_header_to_cache(struct image *image,
+                                       const char *name)
 {
 	ERROR("MessagePack is not supported in this installation (get_value).\n");
 	*ptype = 'f';
