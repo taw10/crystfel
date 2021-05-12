@@ -523,9 +523,9 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 int image_msgpack_read_header_to_cache(struct image *image,
                                        const char *name)
 {
-	ERROR("MessagePack is not supported in this installation (get_value).\n");
-	*ptype = 'f';
-	return NAN;
+	ERROR("MessagePack is not supported in this installation"
+	      " (read_header_to_cache).\n");
+	return 1;
 }
 
 
