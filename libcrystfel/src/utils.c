@@ -307,7 +307,22 @@ void ERROR(const char *format, ...)
 
 int convert_int(const char *str, int *pval)
 {
-	int val;
+	long int val;
+	char *rval;
+
+	val = strtol(str, &rval, 10);
+	if ( *rval != '\0' ) {
+		return 1;
+	} else {
+		*pval = val;
+		return 0;
+	}
+}
+
+
+int convert_float(const char *str, double *pval)
+{
+	double val;
 	char *rval;
 
 	val = strtod(str, &rval);
