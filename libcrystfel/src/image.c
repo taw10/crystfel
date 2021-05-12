@@ -307,7 +307,7 @@ void image_cache_header_int(struct image *image,
 		if ( ce != NULL ) {
 			ce->header_name = strdup(header_name);
 			ce->val_int = header_val;
-			ce->type = 'i';
+			ce->type = HEADER_INT;
 			image->header_cache[image->n_cached_headers++] = ce;
 		} else {
 			ERROR("Failed to add header cache entry.\n");
@@ -318,7 +318,7 @@ void image_cache_header_int(struct image *image,
 
 void image_cache_header_float(struct image *image,
                               const char *header_name,
-                              float header_val)
+                              double header_val)
 {
 	if ( image->n_cached_headers >= HEADER_CACHE_SIZE ) {
 		ERROR("Too many headers to copy.\n");
@@ -330,7 +330,7 @@ void image_cache_header_float(struct image *image,
 		if ( ce != NULL ) {
 			ce->header_name = strdup(header_name);
 			ce->val_float = header_val;
-			ce->type = 'f';
+			ce->type = HEADER_FLOAT;
 			image->header_cache[image->n_cached_headers++] = ce;
 		} else {
 			ERROR("Failed to add header cache entry.\n");
@@ -339,13 +339,111 @@ void image_cache_header_float(struct image *image,
 }
 
 
+void image_cache_header_str(struct image *image,
+                            const char *header_name,
+                            const char *header_val)
+{
+	if ( image->n_cached_headers >= HEADER_CACHE_SIZE ) {
+		ERROR("Too many headers to copy.\n");
+	} else {
+
+		struct header_cache_entry *ce;
+		ce = malloc(sizeof(struct header_cache_entry));
+
+		if ( ce != NULL ) {
+			ce->header_name = strdup(header_name);
+			ce->val_str = strdup(header_val);
+			ce->type = HEADER_STR;
+			image->header_cache[image->n_cached_headers++] = ce;
+		} else {
+			ERROR("Failed to add header cache entry.\n");
+		}
+	}
+}
+
+
+static int read_header_to_cache(struct image *image, const char *from)
+{
+	switch ( image->data_source_type ) {
+
+		case DST_HDF5:
+		return image_hdf5_read_header_to_cache(image, from);
+
+		case DST_CBF:
+		case DST_CBFGZ:
+		return image_cbf_read_header_to_cache(image, from);
+
+		case DST_MSGPACK:
+		return image_msgpack_read_header_to_cache(image, from);
+
+		default:
+		ERROR("Unrecognised file type %i (read_header_to_cache)\n",
+		      image->data_source_type);
+		return 1;
+
+	}
+}
+
+
+static struct header_cache_entry *cached_header(struct image *image, const char *from)
+{
+	struct header_cache_entry *ce;
+
+	if ( image == NULL ) {
+		ERROR("Attempt to retrieve a header value without an image\n");
+		return NULL;
+	}
+
+	ce = find_cache_entry(image, from);
+	if ( ce != NULL ) return ce;
+
+	/* Try to get the value from the file */
+	if ( read_header_to_cache(image, from) == 0 ) {
+		return find_cache_entry(image, from);
+	} else {
+		ERROR("Couldn't find header value '%s'\n", from);
+		return NULL;
+	}
+}
+
+
+int image_read_header_float(struct image *image, const char *from, double *val)
+{
+	struct header_cache_entry *ce;
+
+	ce = cached_header(image, from);
+	if ( ce == NULL ) return 1;
+
+	switch ( ce->type ) {
+
+		case HEADER_FLOAT:
+		*val = ce->val_float;
+		return 0;
+
+		case HEADER_INT:
+		*val = ce->val_int;
+		return 0;
+
+		case HEADER_STR:
+		if ( convert_float(ce->val_str, val) == 0 ) {
+			return 0;
+		} else {
+			ERROR("Value '%s' (%s) can't be converted to float\n",
+			      ce->val_str, from);
+			return 1;
+		}
+
+		default:
+		ERROR("Unrecognised header cache type %i\n", ce->type);
+		return 1;
+	}
+}
+
 static double get_value(struct image *image, const char *from,
                         int *is_literal_number)
 {
 	double val;
 	char *rval;
-	struct header_cache_entry *ce;
-	char type;
 
 	if ( from == NULL ) return NAN;
 
@@ -357,59 +455,14 @@ static double get_value(struct image *image, const char *from,
 		return val;
 	}
 
-	if ( image == NULL ) {
-		ERROR("Attempt to retrieve a header value without an image\n");
-		return NAN;
+	if ( is_literal_number != NULL ) {
+		*is_literal_number = 0;
 	}
-
-	ce = find_cache_entry(image, from);
-	if ( ce != NULL ) {
-		if ( ce->type == 'f' ) {
-			return ce->val_float;
-		} else if ( ce->type == 'i' ) {
-			return ce->val_int;
-		} else {
-			ERROR("Unrecognised header cache type '%c'\n",
-			      ce->type);
-			return NAN;
-		}
-
+	if ( image_read_header_float(image, from, &val) == 0 ) {
+		return val;
 	} else {
-
-		switch ( image->data_source_type ) {
-
-			case DST_HDF5:
-			val = image_hdf5_get_value(from, image->filename,
-			                           image->ev, &type);
-			break;
-
-			case DST_CBF:
-			case DST_CBFGZ:
-			/* FIXME: Implementation */
-			val = NAN;
-			break;
-
-			case DST_MSGPACK:
-			val = image_msgpack_get_value(from, image->data_block,
-			                              image->data_block_size,
-			                              &type);
-			break;
-
-			default:
-			ERROR("Unrecognised file type %i (get_value)\n",
-			      image->data_source_type);
-			return 1;
-
-		}
-
+		return NAN;  /* FIXME: Use out-of-band flag */
 	}
-
-	if ( type == 'f' ) {
-		image_cache_header_float(image, from, val);
-	} else if ( type == 'i' ) {
-		image_cache_header_int(image, from, val);
-	}
-	return val;
 }
 
 

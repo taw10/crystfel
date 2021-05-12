@@ -638,15 +638,27 @@ int stream_write_chunk(Stream *st, const struct image *i,
 
 	for ( j=0; j<i->n_cached_headers; j++ ) {
 		struct header_cache_entry *ce = i->header_cache[j];
-		if ( ce->type == 'f' ) {
+		switch ( ce->type ) {
+
+			case HEADER_FLOAT:
 			fprintf(st->fh, "header/float/%s = %f\n",
 			        ce->header_name, ce->val_float);
-		} else if ( ce->type == 'i' ) {
+			break;
+
+			case HEADER_INT:
 			fprintf(st->fh, "header/int/%s = %i\n",
 			        ce->header_name, ce->val_int);
-		} else {
-			ERROR("Unrecognised header cache type '%c'\n",
-			      ce->type);
+			break;
+
+			case HEADER_STR:
+			fprintf(st->fh, "header/str/%s = %s\n",
+			        ce->header_name, ce->val_str);
+			break;
+
+			default:
+			ERROR("Unrecognised header cache type %i\n", ce->type);
+			break;
+
 		}
 	}
 
@@ -899,12 +911,14 @@ static void read_crystal(Stream *st, struct image *image,
 }
 
 
-static void parse_header(const char *line_in, struct image *image, char type)
+static void parse_header(const char *line_in, struct image *image,
+                         HeaderCacheType type)
 {
 	char *line;
 	char *pos;
 
 	line = strdup(line_in);
+	chomp(line);
 
 	pos = strchr(line, ' ');
 	if ( pos == NULL ) {
@@ -923,20 +937,34 @@ static void parse_header(const char *line_in, struct image *image, char type)
 		return;
 	}
 
-	if ( type == 'f' ) {
-		float v;
-		if ( sscanf(pos+3, "%f", &v) != 1 ) {
+	switch ( type ) {
+
+		double vf;
+		int vi;
+
+		case HEADER_FLOAT:
+		if ( convert_float(pos+3, &vf) != 0 ) {
 			ERROR("Invalid header line '%s' (invalid value)\n", line);
 			return;
 		}
-		image_cache_header_float(image, line, v);
-	} else {
-		int v;
-		if ( sscanf(pos+3, "%i", &v) != 1 ) {
+		image_cache_header_float(image, line, vf);
+		break;
+
+		case HEADER_INT:
+		if ( convert_int(pos+3, &vi) != 0 ) {
 			ERROR("Invalid header line '%s' (invalid value)\n", line);
 			return;
 		}
-		image_cache_header_int(image, line, v);
+		image_cache_header_int(image, line, vi);
+		break;
+
+		case HEADER_STR:
+		image_cache_header_str(image, line, pos+3);
+		break;
+
+		default:
+		ERROR("Unrecognised header cache type %i (from stream)\n", type);
+		break;
 	}
 }
 
@@ -983,11 +1011,15 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 		}
 
 		if ( strncmp(line, "header/int/", 11) == 0 ) {
-			parse_header(line+11, image, 'i');
+			parse_header(line+11, image, HEADER_INT);
 		}
 
 		if ( strncmp(line, "header/float/", 13) == 0 ) {
-			parse_header(line+13, image, 'f');
+			parse_header(line+13, image, HEADER_FLOAT);
+		}
+
+		if ( strncmp(line, "header/str/", 13) == 0 ) {
+			parse_header(line+11, image, HEADER_STR);
 		}
 
 		if ( strncmp(line, "indexed_by = ", 13) == 0 ) {

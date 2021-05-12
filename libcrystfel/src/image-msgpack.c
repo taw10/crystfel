@@ -242,93 +242,76 @@ static char *terminate_str(const char *ptr, size_t len)
 }
 
 
-double image_msgpack_get_value(const char *name,
-                               void *data_block,
-                               size_t data_block_size,
-                               char *ptype)
+int image_msgpack_read_header_to_cache(struct image *image,
+                                       const char *name)
 {
 	msgpack_unpacked unpacked;
 	msgpack_object *value_obj;
 	msgpack_object *obj;
 	int r;
-	float val = NAN;
 	char *str;
 
-	*ptype = 'x';
-
-	if ( data_block == NULL ) {
+	if ( image->data_block == NULL ) {
 		ERROR("No MsgPack data!\n");
-		goto out;
+		return 1;
 	}
 
 	msgpack_unpacked_init(&unpacked);
-	r = msgpack_unpack_next(&unpacked, data_block, data_block_size, NULL);
+	r = msgpack_unpack_next(&unpacked, image->data_block,
+	                        image->data_block_size, NULL);
 	if ( r != MSGPACK_UNPACK_SUCCESS ) {
 		ERROR("MessagePack unpack failed: %i\n", r);
-		goto out;
+		return 1;
 	}
 
 	obj = find_main_object(&unpacked);
 	if ( obj == NULL ) {
 		ERROR("Failed to find main MsgPack object.\n");
 		msgpack_unpacked_destroy(&unpacked);
-		goto out;
+		return 1;
 	}
 
 	value_obj = find_msgpack_kv(obj, name);
 	if ( value_obj == NULL ) {
 		ERROR("Couldn't find '%s' in MessagePack object\n", name);
 		msgpack_unpacked_destroy(&unpacked);
-		goto out;
+		return 1;
 	}
 
 	switch ( value_obj->type ) {
 
 		case MSGPACK_OBJECT_FLOAT64:
 		case MSGPACK_OBJECT_FLOAT32:
-		//case MSGPACK_OBJECT_FLOAT:
-		*ptype = 'f';
-		val = value_obj->via.f64;
-		break;
+		image_cache_header_float(image, name, value_obj->via.f64);
+		msgpack_unpacked_destroy(&unpacked);
+		return 0;
 
 		case MSGPACK_OBJECT_POSITIVE_INTEGER:
 		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
-		*ptype = 'i';
-		val = value_obj->via.i64;
-		break;
+		image_cache_header_int(image, name, value_obj->via.i64);
+		msgpack_unpacked_destroy(&unpacked);
+		return 0;
 
 		case MSGPACK_OBJECT_STR:
 		str = terminate_str(value_obj->via.str.ptr,
 		                    value_obj->via.str.size);
-		if ( str != NULL ) {
-			int ival;
-			if ( convert_int(str, &ival) == 0 ) {
-				*ptype = 'i';
-				val = ival;
-			} else {
-				ERROR("MsgPack header %s has a string type (%s)"
-				      "(need a number, and can't convert).\n",
-				      name, str);
-				val = NAN;
-			}
-			free(str);
-		} else {
-			ERROR("Failed to read MsgPack string (%s)\n", name);
-			val = NAN;
+		if ( str == NULL ) {
+			msgpack_unpacked_destroy(&unpacked);
+			return 1;
 		}
-		break;
+
+		image_cache_header_str(image, name, str);
+		free(str);
+		msgpack_unpacked_destroy(&unpacked);
+		return 0;
 
 		default:
 		ERROR("Unrecognised MsgPack type %i (%s)\n",
 		      value_obj->type, name);
-		break;
+		msgpack_unpacked_destroy(&unpacked);
+		return 1;
 
 	}
-
-	msgpack_unpacked_destroy(&unpacked);
-
-out:
-	return val;
 }
 
 

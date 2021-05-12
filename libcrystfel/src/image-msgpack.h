@@ -42,9 +42,7 @@ extern ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
                                                   size_t data_size,
                                                   int half_pixel_shift);
 
-extern double image_msgpack_get_value(const char *name,
-                                      void *data_block,
-                                      size_t data_block_size,
-                                      char *ptype);
+extern int image_msgpack_read_header_to_cache(struct image *image,
+                                              const char *name);
 
 #endif	/* IMAGE_MSGPACK_H */

@@ -34,10 +34,8 @@
 
 #include "datatemplate_priv.h"
 
-extern double image_hdf5_get_value(const char *from,
-                                   const char *filename,
-                                   const char *ev,
-                                   char *type);
+extern int image_hdf5_read_header_to_cache(struct image *image,
+                                           const char *name);
 
 extern int image_hdf5_read(struct image *image,
                            const DataTemplate *dtempl,

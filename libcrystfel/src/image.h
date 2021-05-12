@@ -78,12 +78,20 @@ typedef struct _imagefeaturelist ImageFeatureList;
 
 #define HEADER_CACHE_SIZE (128)
 
+typedef enum
+{
+	HEADER_FLOAT,
+	HEADER_INT,
+	HEADER_STR
+} HeaderCacheType;
+
 struct header_cache_entry {
 	char *header_name;
-	char type;
+	HeaderCacheType type;
 	union {
 		int val_int;
-		float val_float;
+		double val_float;
+		char *val_str;
 	};
 };
 
@@ -221,13 +229,23 @@ extern struct image *image_read_data_block(const DataTemplate *dtempl,
                                            int no_mask_data);
 extern void image_free(struct image *image);
 
+extern int image_read_header_float(struct image *image, const char *from,
+                                   double *val);
+
+/* NB image_read_header_int and image_read_header_str should exist, but there
+ * is currently no use for them.  Get in touch if you disagree! */
+
 extern void image_cache_header_float(struct image *image,
                                      const char *header_name,
-                                     float header_val);
+                                     double header_val);
 
 extern void image_cache_header_int(struct image *image,
                                    const char *header_name,
                                    int header_val);
+
+extern void image_cache_header_str(struct image *image,
+                                   const char *header_name,
+                                   const char *header_val);
 
 extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
                                           const char *filename,

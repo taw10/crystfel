@@ -53,4 +53,7 @@ extern int image_cbf_read_mask(struct panel_template *p,
                                int gz, int *bad,
                                int mask_good, int mask_bad);
 
+extern int image_cbf_read_header_to_cache(struct image *image,
+                                          const char *from);
+
 #endif	/* IMAGE_CBF_H */

@@ -633,8 +633,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 }
 
 
-double image_hdf5_get_value(const char *name, const char *filename,
-                            const char *event, char *ptype)
+int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 {
 	hid_t dh;
 	hid_t type;
@@ -653,47 +652,44 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	int i;
 	char *subst_name = NULL;
 	hid_t fh;
-	double val;
 	int *dim_vals;
 	int n_dim_vals;
 	int dim_val_pos;
 
-	if ( access(filename, R_OK) == -1 ) {
-		ERROR("File does not exist or cannot be read: %s\n", filename);
-		return NAN;
+	if ( access(image->filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n",
+		      image->filename);
+		return 1;
 	}
 
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fh = H5Fopen(image->filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file: %s\n", filename);
-		return NAN;
+		ERROR("Couldn't open file: %s\n", image->filename);
+		return 1;
 	}
 
-	subst_name = substitute_path(event, name, 1);
+	subst_name = substitute_path(image->ev, name, 1);
 	if ( subst_name == NULL ) {
-		ERROR("Invalid event ID '%s'\n", event);
+		ERROR("Invalid event ID '%s'\n", image->ev);
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
 
 	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("No such numeric field '%s'\n", subst_name);
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
 
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
-	if ( class == H5T_FLOAT ) {
-		*ptype = 'f';
-	} else if ( class == H5T_INTEGER ) {
-		*ptype = 'i';
-	} else {
+	/* FIXME: Handle strings as well */
+	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
 		ERROR("Not a floating point or integer value.\n");
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
 
 	/* Get the dimensionality.  We have to cope with scalars expressed as
@@ -703,7 +699,7 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	if ( ndims > 64 ) {
 		ERROR("Too many dimensions for numeric value\n");
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
 	H5Sget_simple_extent_dims(sh, size, NULL);
 
@@ -719,37 +715,42 @@ double image_hdf5_get_value(const char *name, const char *filename,
 
 		if ( class == H5T_FLOAT ) {
 
-			r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
+			double val;
+			r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT,
+			            &val);
 			if ( r < 0 )  {
 				ERROR("Couldn't read scalar value from %s.\n",
 				      subst_name);
 				free(subst_name);
 				close_hdf5(fh);
-				return NAN;
+				return 1;
 			}
-			return val;
+			image_cache_header_float(image, name, val);
+			return 0;
 
 		} else {
 
-			int vali;
-			r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT, &vali);
+			int val;
+			r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT,
+			            &val);
 			if ( r < 0 )  {
 				ERROR("Couldn't read scalar value from %s.\n",
 				      subst_name);
 				free(subst_name);
 				close_hdf5(fh);
-				return NAN;
+				return 1;
 			}
-			return vali;
+			image_cache_header_int(image, name, val);
+			return 0;
 
 		}
 	}
 
-	dim_vals = read_dim_parts(event, &n_dim_vals);
+	dim_vals = read_dim_parts(image->ev, &n_dim_vals);
 	if ( dim_vals == NULL ) {
 		ERROR("Couldn't parse event '%s'\n");
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
 
 	f_offset = malloc(ndims*sizeof(hsize_t));
@@ -757,7 +758,7 @@ double image_hdf5_get_value(const char *name, const char *filename,
 	if ( (f_offset == NULL) || (f_count == NULL) ) {
 		ERROR("Couldn't allocate dimension arrays\n");
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
 
 	/* Every dimension of the dataset must either be size 1 or
@@ -774,7 +775,7 @@ double image_hdf5_get_value(const char *name, const char *filename,
 				      subst_name, i,
 				      dim_vals[dim_val_pos], size[i]);
 				close_hdf5(fh);
-				return NAN;
+				return 1;
 			}
 
 			f_offset[i] = dim_vals[dim_val_pos];
@@ -790,6 +791,8 @@ double image_hdf5_get_value(const char *name, const char *filename,
 
 	}
 
+	free(subst_name);
+
 	check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
 	if ( check <0 ) {
@@ -797,33 +800,49 @@ double image_hdf5_get_value(const char *name, const char *filename,
 		free(f_offset);
 		free(f_count);
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
+
+	free(f_offset);
+	free(f_count);
 
 	ms = H5Screate_simple(1,msdims,NULL);
 	check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
 	                            m_offset, NULL, m_count, NULL);
 	if ( check < 0 ) {
 		ERROR("Error selecting memory dataspace for float value\n");
-		free(f_offset);
-		free(f_count);
 		close_hdf5(fh);
-		return NAN;
+		return 1;
 	}
 
-	r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
-	if ( r < 0 )  {
-		ERROR("Couldn't read value.\n");
+	if ( class == H5T_FLOAT ) {
+
+		double val;
+		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
+		if ( r < 0 )  {
+			ERROR("Couldn't read value.\n");
+			close_hdf5(fh);
+			return 1;
+		}
+
+		image_cache_header_float(image, name, val);
 		close_hdf5(fh);
-		return NAN;
+		return 0;
+
+	} else {
+
+		int val;
+		r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT, &val);
+		if ( r < 0 )  {
+			ERROR("Couldn't read value.\n");
+			close_hdf5(fh);
+			return 1;
+		}
+
+		image_cache_header_int(image, name, val);
+		close_hdf5(fh);
+		return 0;
 	}
-
-	free(f_offset);
-	free(f_count);
-	free(subst_name);
-	close_hdf5(fh);
-
-	return val;
 }
 
 
