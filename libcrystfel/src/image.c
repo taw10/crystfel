@@ -1203,7 +1203,7 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
 	if ( create_satmap(image, dtempl) ) return 1;
 
 	for ( i=0; i<dtempl->n_headers_to_copy; i++ ) {
-		get_value(image, dtempl->headers_to_copy[i], NULL);
+		read_header_to_cache(image, dtempl->headers_to_copy[i]);
 	}
 
 	return 0;
