@@ -877,19 +877,6 @@ void mosflm_cleanup(void *pp)
 }
 
 
-static void chop_word(char *s)
-{
-	int i;
-	size_t l = strlen(s);
-	for ( i=0; i<l; i++ ) {
-		if ( s[i] == ' ' ) {
-			s[i] = '\0';
-			return;
-		}
-	}
-}
-
-
 const char *mosflm_probe(UnitCell *cell)
 {
 	pid_t pid;
@@ -926,12 +913,7 @@ const char *mosflm_probe(UnitCell *cell)
 		char *pos;
 		if ( fgets(line, 1024, fh) != NULL ) {
 			pos = strstr(line, "Mosflm version ");
-			if ( pos != NULL ) {
-				char *vers = pos+15;
-				ok = 1;
-				chop_word(vers);
-				/* FIXME: Set capabilities based on version */
-			}
+			if ( pos != NULL ) ok = 1;
 		}
 	}
 
