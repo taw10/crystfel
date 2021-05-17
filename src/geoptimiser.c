@@ -1074,7 +1074,7 @@ static DataTemplate *correct_rotation_and_stretch(struct rg_collection *connecte
                                                   struct geoptimiser_params *gparams)
 {
 #if 0
-	/* FIXME ! */
+	/* FIXME (GitLab #29) */
 	int di, ip;
 
 	STATUS("Applying rotation and stretch corrections.\n");
@@ -1392,7 +1392,7 @@ static void correct_shift(struct rg_collection *connected,
                           double clen_to_use)
 {
 #if 0
-	/* FIXME ! */
+	/* FIXME (GitLab #29) */
 	int di;
 	int ip;
 
@@ -1585,7 +1585,7 @@ static double compute_rotation_and_stretch(struct rg_collection *connected,
 
 		num_pix_first_p = first_p->w * first_p->h;
 
-		/* FIXME: minrad here is not universal */
+		/* FIXME: minrad here is not universal (GitLab #29) */
 		min_dist = dist_coeff_for_rot_str * sqrt(num_pix_first_p
 		                       * connected->rigid_groups[di]->n_panels);
 

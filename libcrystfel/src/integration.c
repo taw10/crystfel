@@ -355,7 +355,7 @@ static void fit_gradient_bg(struct intcontext *ic, struct peak_box *bx)
 	}
 	}
 
-	/* FIXME: SVD is massive overkill here */
+	/* SVD is massive overkill here, but the routine is right there. */
 	ans = solve_svd(v, bx->bgm, NULL, 0);
 	gsl_vector_free(v);
 

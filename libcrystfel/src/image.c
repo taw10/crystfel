@@ -462,7 +462,7 @@ static double get_value(struct image *image, const char *from,
 	if ( image_read_header_float(image, from, &val) == 0 ) {
 		return val;
 	} else {
-		return NAN;  /* FIXME: Use out-of-band flag */
+		return NAN;  /* FIXME: Use out-of-band flag (GitLab #37) */
 	}
 }
 
@@ -767,10 +767,8 @@ static void set_image_parameters(struct image *image,
 
 	image->bw = dtempl->bandwidth;
 
-	/* FIXME: Possibly load spectrum from file */
 	image->spectrum = spectrum_generate_gaussian(image->lambda,
 	                                             image->bw);
-
 }
 
 

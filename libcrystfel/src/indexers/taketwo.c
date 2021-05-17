@@ -248,8 +248,6 @@ struct TakeTwoCell
 /* Final required step size for refinement of solutions */
 #define ANGLE_CONVERGE_SIZE (deg2rad(0.01))
 
-/* TODO: Multiple lattices */
-
 
 /* ------------------------------------------------------------------------
  * apologetic function

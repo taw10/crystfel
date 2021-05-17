@@ -1332,8 +1332,7 @@ double lowest_reflection(UnitCell *cell)
 	signed int h, k, l;
 	double lowres = INFINITY;
 
-	/* FIXME: Inelegant and nasty.  Anyone want to work out
-	 * all the possible cases? */
+	/* Boring brute-force approach */
 	for ( h=0; h<4; h++ ) {
 		for ( k=0; k<4; k++ ) {
 			for ( l=0; l<4; l++ ) {

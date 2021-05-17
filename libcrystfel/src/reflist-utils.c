@@ -1077,7 +1077,7 @@ int write_to_mtz(RefList *reflist,
 	cellp[4] = rad2deg(be);
 	cellp[5] = rad2deg(ga);
 
-	/* FIXME: Proposed labelling:
+	/* FIXME: Proposed labelling (GitLab #28):
 	 *  title = as above
 	 *  project = basename of folder containing crystfel.project
 	 *  crystal = name of indexing results run

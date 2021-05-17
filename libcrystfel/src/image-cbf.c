@@ -635,8 +635,7 @@ int image_cbf_read(struct image *image,
 int image_cbf_read_header_to_cache(struct image *image,
                                    const char *from)
 {
-	/* FIXME: Implementation
-	 * https://gitlab.desy.de/thomas.white/crystfel/-/issues/10 */
+	/* FIXME: Implementation (GitLab #10) */
 	ERROR("Reading headers from CBF files is not currently supported.\n");
 	return 1;
 }

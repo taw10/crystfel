@@ -29,31 +29,6 @@
  *
  */
 
-/* TODO:
- *
- * Properly read the newmat file (don't use fscanf-- spaces between numers
- *  are not guaranteed)
- *
- * "Success" is indicated by existence of NEWMAT file written by mosflm.
- *  Better to interact with mosflm directly in order to somehow verify success.
- *
- * Investigate how these keywords affect mosflms behavior:
- *
- *  MOSAICITY
- *  DISPERSION
- *  DIVERGENCE
- *  POLARISATION
- *  POSTREF BEAM
- *  POSTREF USEBEAM OFF
- *  PREREFINE ON
- *  EXTRA ON
- *  POSTREF ON
- *
- *  These did not seem to affect the results by my (Rick's) experience, probably
- *  because they are only used conjunction with image intensity data, but it's
- *  worth another look at the documentation.
- */
-
 #include <libcrystfel-config.h>
 
 #include <stdlib.h>
@@ -575,8 +550,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 			                    &a, &b, &c, &alpha, &beta, &gamma);
 			cen = cell_get_centering(mosflm->mp->template);
 			/* Old MOSFLM simply ignores CELL and CENTERING subkeywords.
-			 * So this doesn't do any harm.
-			 * TODO: but still better to show WARNING if MOSFLM is old. */
+			 * So this doesn't do any harm.  */
 			snprintf(tmp, 255, "AUTOINDEX DPS FILE %s IMAGE 1 "
 			         "MAXCELL 1000 REFINE "
 			         "CELL %.1f %.1f %.1f %.1f %.1f %.1f "

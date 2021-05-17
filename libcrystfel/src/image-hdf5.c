@@ -685,7 +685,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
-	/* FIXME: Handle strings as well */
+	/* FIXME: Handle strings as well (GitLab #36) */
 	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
 		ERROR("Not a floating point or integer value.\n");
 		close_hdf5(fh);

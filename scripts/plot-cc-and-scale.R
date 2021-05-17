@@ -5,8 +5,6 @@
 scale_cc <- read.table("stats.dat", col.names=c("ImageName", "ScaleFactor", "CC"))
 
 # scatter plot
-# FIXME: sometimes white lines appear on the plot.
-#        seems to be a bug in smoothScatter
 
 smoothScatter(scale_cc$ScaleFactor, scale_cc$CC,
               nbin=200, xlim=c(0, 2), ylim=c(0, 1),

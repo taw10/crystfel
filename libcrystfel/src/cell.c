@@ -884,7 +884,7 @@ UnitCell *cell_transform_rational(UnitCell *cell, RationalMatrix *m)
 	ncen = determine_centering(m, cell_get_centering(cell));
 	cell_set_centering(out, ncen);
 
-	/* FIXME: Update unique axis, lattice type */
+	/* FIXME: Update unique axis, lattice type (GitLab #39) */
 	cell_set_lattice_type(out, L_TRICLINIC);
 	cell_set_unique_axis(out, '?');
 
@@ -972,7 +972,7 @@ UnitCell *cell_transform_rational_inverse(UnitCell *cell, RationalMatrix *m)
 
 	out = cell_transform_gsl_direct(cell, inv);
 
-	/* FIXME: Update centering, unique axis, lattice type */
+	/* FIXME: Update centering, unique axis, lattice type (GitLab #39) */
 
 	gsl_matrix_free(tm);
 	gsl_matrix_free(inv);

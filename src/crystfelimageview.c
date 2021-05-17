@@ -239,7 +239,7 @@ static void draw_pixel_values(cairo_t *cr,
 	PangoFontDescription *fontdesc;
 	double w, h;
 
-	/* FIXME: This is wrong for slanty pixels */
+	/* FIXME: This is wrong for slanty pixels (GitLab #17) */
 	min_fs = clamp(imin_fs, 0, p.w-1);
 	min_ss = clamp(imin_ss, 0, p.h-1);
 	max_fs = clamp(imax_fs, 0, p.w-1);

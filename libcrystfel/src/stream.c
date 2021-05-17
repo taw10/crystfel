@@ -1082,7 +1082,6 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 					image_set_zero_data(image, st->dtempl_read);
 					image_set_zero_mask(image, st->dtempl_read);
 				}
-				/* FIXME: Maybe arbitrary spectrum from file (?) */
 				image->spectrum = spectrum_generate_gaussian(image->lambda,
 				                                             image->bw);
 				return image;
