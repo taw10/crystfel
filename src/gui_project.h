@@ -343,7 +343,7 @@ extern int match_filename(const char *fn, enum match_type_id mt);
 
 extern int load_project(struct crystfelproject *proj);
 
-extern void default_project(struct crystfelproject *proj);
+extern int default_project(struct crystfelproject *proj);
 
 extern int save_project(struct crystfelproject *proj);
 

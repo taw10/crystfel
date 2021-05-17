@@ -771,7 +771,10 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	default_project(&proj);
+	if ( default_project(&proj) ) {
+		ERROR("Failed to set up default project\n");
+		return 1;
+	}
 
 	proj.image_info = NULL;
 

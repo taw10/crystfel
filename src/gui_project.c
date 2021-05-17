@@ -818,7 +818,10 @@ int load_project(struct crystfelproject *proj)
 	fh = fopen("crystfel.project", "r");
 	if ( fh == NULL ) return 1;
 
-	default_project(proj);
+	if ( default_project(proj) ) {
+		ERROR("Failed to make default project when loading.\n");
+		return 1;
+	}
 
 	read_parameters(fh, proj);
 	read_results(fh, proj);
@@ -1085,7 +1088,7 @@ int save_project(struct crystfelproject *proj)
 }
 
 
-void default_project(struct crystfelproject *proj)
+int default_project(struct crystfelproject *proj)
 {
 	proj->unsaved = 0;
 	proj->geom_filename = NULL;
@@ -1115,18 +1118,20 @@ void default_project(struct crystfelproject *proj)
 	proj->ambi_backend_selected = 0;
 	proj->n_backends = 0;
 	proj->backends = malloc(2*sizeof(struct crystfel_backend));
-	/* FIXME: Crappy error handling */
 	if ( proj->backends == NULL ) {
 		ERROR("Couldn't allocate space for backends\n");
+		return 1;
 	}
 
 	if ( make_local_backend(&proj->backends[proj->n_backends++]) ) {
 		ERROR("Local backend setup failed\n");
+		return 1;
 	}
 
 	#ifdef HAVE_SLURM
 	if ( make_slurm_backend(&proj->backends[proj->n_backends++]) ) {
 		ERROR("SLURM backend setup failed\n");
+		return 1;
 	}
 	#endif
 
@@ -1226,6 +1231,8 @@ void default_project(struct crystfelproject *proj)
 	/* NB Export options are currently not saved (because I'm lazy) */
 	proj->export_res_min = INFINITY;  /* Angstroms */
 	proj->export_res_max = 0.0;  /* Angstroms */
+
+	return 0;
 }
 
 
