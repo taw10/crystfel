@@ -25,9 +25,10 @@ give the wavelength directly::
 
   wavelength 2.51e-12 m
 
-You can also use `V` instead of `kV` and `A` (Angstroms) instead of `m`.
+You can also use ``V`` instead of ``kV`` and ``A`` (Angstroms) instead of
+``m``.
 
-Obviously, do not use `photon_energy` - that's only for electromagnetic
+Obviously, do not use ``photon_energy`` - that's only for electromagnetic
 radiation.
 
 
@@ -43,22 +44,22 @@ location of the shifts in the geometry file, for example::
   detector_shift_x = /%/shots/shift_x_mm mm
   detector_shift_y = /%/shots/shift_y_mm mm
 
-The location (`/%/shots/shift_x_mm`) will, of course, depend on your
-pre-processing.  These are the correct locations for data from `diffractem`.
+The location (``/%/shots/shift_x_mm``) will, of course, depend on your
+pre-processing.  These are the correct locations for data from ``diffractem``.
 
 Note that the coordinates are shifts of the *detector* (not the *beam*) in the
-*laboratory coordinate system* (see `man crystfel_geometry`).  Shifts in
-"detector coordinates" (i.e. `detector_shift_fs`) would only make sense for
+*laboratory coordinate system* (see ``man crystfel_geometry``).  Shifts in
+"detector coordinates" (i.e. ``detector_shift_fs``) would only make sense for
 single-panel detectors and are therefore not implemented.
 
 Correcting elliptical distortions of the projector lens can be done quite well
-by setting the panel direction vectors (see `man crystfel_geometry` again) to be
+by setting the panel direction vectors (see ``man crystfel_geometry`` again) to be
 non-orthogonal.  For example::
 
   p0/fs = +0.9934x -0.0092y
   p0/ss = -0.0092x +1.0067y
 
-This is also covered by `diffractem`.
+This is also covered by ``diffractem``.
 
 
 Indexing patterns
@@ -66,9 +67,9 @@ Indexing patterns
 
 The only indexing method suitable for electrons is PinkIndexer, but more
 methods might be added in the future.  As well as selecting the indexing method
-using `--indexing=pinkindexer`, you will need to configure PinkIndexer's
+using ``--indexing=pinkindexer``, you will need to configure PinkIndexer's
 assumption about the size of a reflection in reciprocal space using
-`--pinkIndexer-reflection-radius=0.003`::
+``--pinkIndexer-reflection-radius=0.003``::
 
   indexamajig -g sample.geom -i input-files.lst -o sample.stream \
               --indexing=pinkindexer --pinkIndexer-reflection-radius=0.003 \
@@ -80,20 +81,20 @@ diffraction data.
 
 The default parameters give quick and reasonably good indexing.  You can get
 more accurate results by increasing the granularity of refinement within
-Pinkindexer using `--pinkIndexer-refinement-type=N`, with `N` from 0 (least
+Pinkindexer using ``--pinkIndexer-refinement-type=N``, with ``N`` from 0 (least
 precise and fastest) to 5 (most precise and slowest).  The default value is 1.
 
-For speed, you might want to add `--max-indexer-threads=N`, where `N` is the
+For speed, you might want to add ``--max-indexer-threads=N``, where ``N`` is the
 number of threads that PinkIndexer should use within itself.  You should also
-use `-j M` to specify the number of frames that `indexamajig` should process in
-parallel.  The sum of `N` and `M` should be roughly the number of available CPU
-cores.  It's also useful to try indexing each pattern only once (`--no-retry`).
+use ``-j M`` to specify the number of frames that ``indexamajig`` should process in
+parallel.  The sum of ``N`` and ``M`` should be roughly the number of available CPU
+cores.  It's also useful to try indexing each pattern only once (``--no-retry``).
 
 If the camera length is specified in the geometry file by referencing values
 from image file headers, then you will also need to give an estimate of the
-camera length using `--camera-length-estimate`.  The same applies if the
+camera length using ``--camera-length-estimate``.  The same applies if the
 wavelength is specified indirectly, in which case you will need
-`--wavelength-estimate`.  Neither of these are usually necessary for electron
+``--wavelength-estimate``.  Neither of these are usually necessary for electron
 diffraction data.
 
 
@@ -102,21 +103,21 @@ Saving and re-loading indexing results
 
 Indexing patterns with PinkIndexer can take a long time, which makes it painful
 to try (for example) different integration parameters.  To mitigate this, you
-can store the results from one run of `indexamajig` and re-run the process
+can store the results from one run of ``indexamajig`` and re-run the process
 using the previous indexing results instead of repeating the PinkIndexer step.
 
-First, create a *solution file* from the stream using the `stream2sol.py`
+First, create a *solution file* from the stream using the ``stream2sol.py``
 program from the CrystFEL scripts folder::
 
   stream2sol.py -i sample.stream -o sample.sol
 
-Then, run `indexamajig` using `--indexing=file` and giving the filename::
+Then, run ``indexamajig`` using ``--indexing=file`` and giving the filename::
 
   indexamajig -g sample.geom -i input-files.lst -o output.stream \
               --indexing=file --fromfile-input-file=sample.sol \
               --no-refine --no-check-peaks --no-retry \
               --int-radius=10,12,14
 
-Note the options `--no-refine --no-check-peaks --no-retry` are added to skip
+Note the options ``--no-refine --no-check-peaks --no-retry`` are added to skip
 the checks and refinement stages normally performed after indexing - these are
 not necessary when replaying solutions like this.
