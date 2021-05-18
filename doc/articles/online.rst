@@ -52,7 +52,16 @@ received via ZeroMQ:
   used.  The others will be ignored.
 * The image data is given as a two-dimensional array (i.e. no 3D arrays with
   'panel number' as one of the dimensions).
-* The image data itself is given as a MsgPack 'map' object with "type"=>"<i4".
+* The image data itself is given as a MsgPack 'map' object representing a
+  serialised NumPy array.  That is, it should contain ``type``, ``data`` and
+  ``shape`` keys.
+* The data ``type`` field should contain either ``<i4`` (if the data is in
+  little-endian 32-bit signed integer format) or ``<f4`` for 32-bit (IEEE754
+  single precision) floating-point.
+* The data ``shape`` field should be a 1D array of two values.  The first
+  element is the slow-scan size, the second is that fast-scan size.
+* The data array within the NumPy map should be in a binary object called
+  ``data``.
 
 Note that *all* of the above assumptions are 'open for negotiation' and will be
 relaxed in future CrystFEL versions, as new online data formats arise.  Anyone
