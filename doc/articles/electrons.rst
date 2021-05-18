@@ -3,11 +3,15 @@ Processing electron diffraction data with CrystFEL
 ==================================================
 
 Electron diffraction data is fully supported in recent versions of CrystFEL.
-For some background, see this paper:
+For some background, see these papers:
 
-R. Bücker, P. Hogan-Lamarre, P. Mehrabi, E. C. Schulz et al. "Serial protein
-crystallography in an electron microscope". Nature Communications 11 (2020)
-996. `doi:10.1038/s41467-020-14793-0 <https://doi.org/10.1038/s41467-020-14793-0>`_
+* R. Bücker, P. Hogan-Lamarre, P. Mehrabi, E. C. Schulz et al. "Serial protein
+  crystallography in an electron microscope". Nature Communications 11 (2020)
+  996.
+  `doi:10.1038/s41467-020-14793-0 <https://doi.org/10.1038/s41467-020-14793-0>`_
+* Robert Bücker, Pascal Hogan-Lamarre, R. J. Dwayne Miller. "Serial Electron
+  Diffraction Data Processing with diffractem and CrystFEL"
+  https://arxiv.org/abs/2011.02977
 
 Here are some tips to get you started with your own data.
 
@@ -17,7 +21,7 @@ Setting the wavelength
 
 You can set the accelerating voltage in the geometry file::
 
-  electron_voltage 300 kV
+  electron_voltage 200 kV
 
 This should be the accelerating voltage, not the relativistically-corrected
 energy of the accelerated electrons (the difference is small).  Alternatively,
@@ -53,8 +57,8 @@ Note that the coordinates are shifts of the *detector* (not the *beam*) in the
 single-panel detectors and are therefore not implemented.
 
 Correcting elliptical distortions of the projector lens can be done quite well
-by setting the panel direction vectors (see ``man crystfel_geometry`` again) to be
-non-orthogonal.  For example::
+by setting the panel direction vectors (see ``man crystfel_geometry`` again) to
+be non-orthogonal.  For example::
 
   p0/fs = +0.9934x -0.0092y
   p0/ss = -0.0092x +1.0067y
@@ -84,18 +88,20 @@ more accurate results by increasing the granularity of refinement within
 Pinkindexer using ``--pinkIndexer-refinement-type=N``, with ``N`` from 0 (least
 precise and fastest) to 5 (most precise and slowest).  The default value is 1.
 
-For speed, you might want to add ``--max-indexer-threads=N``, where ``N`` is the
-number of threads that PinkIndexer should use within itself.  You should also
-use ``-j M`` to specify the number of frames that ``indexamajig`` should process in
-parallel.  The sum of ``N`` and ``M`` should be roughly the number of available CPU
-cores.  It's also useful to try indexing each pattern only once (``--no-retry``).
+For speed, you might want to add ``--max-indexer-threads=N``, where ``N`` is
+the number of threads that PinkIndexer should use within itself.  You should
+also use ``-j M`` to specify the number of frames that ``indexamajig`` should
+process in parallel.  The sum of ``N`` and ``M`` should be roughly equal to the
+number of available CPU cores.  It's also helpful to disable the
+default``indexamajig`` behaviour of making multiple attempts to index each
+pattern (``--no-retry``).
 
 If the camera length is specified in the geometry file by referencing values
 from image file headers, then you will also need to give an estimate of the
 camera length using ``--camera-length-estimate``.  The same applies if the
 wavelength is specified indirectly, in which case you will need
-``--wavelength-estimate``.  Neither of these are usually necessary for electron
-diffraction data.
+``--wavelength-estimate``.  However, neither of these are usually necessary for
+electron diffraction data.
 
 
 Saving and re-loading indexing results
