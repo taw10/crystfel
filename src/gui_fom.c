@@ -525,6 +525,79 @@ static GtkWidget *make_dataset_menu(struct fom_window *win)
 }
 
 
+static int result_res_range(struct gui_merge_result *result,
+                            UnitCell *cell,
+                            double *lowres,
+                            double *highres)
+{
+	RefList *rl;
+	double rmin, rmax;
+
+	rl = read_reflections(result->hkl);
+	if ( rl == NULL ) return 1;
+
+	resolution_limits(rl, cell, &rmin, &rmax);
+	reflist_free(rl);
+
+	*lowres = 1e10/rmin;
+	*highres = 1e10/rmax;
+
+	return 0;
+}
+
+
+static void res_range_to_data_sig(GtkButton *buton,
+                                  struct fom_window *f)
+{
+	int ds;
+	gchar *cell_filename;
+	UnitCell *cell;
+	char tmp[64];
+	double lowres = 0.0;  /* Angstroms */
+	double highres = INFINITY;
+
+	cell_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(f->cell_chooser));
+	if ( cell_filename == NULL ) {
+		ERROR("You must choose the unit cell first.\n");
+		return;
+	}
+	cell = load_cell_from_file(cell_filename);
+	if ( cell == NULL ) {
+		ERROR("Invalid cell file '%s'\n", cell_filename);
+		g_free(cell_filename);
+		return;
+	}
+	g_free(cell_filename);
+
+	for ( ds=0; ds<f->n_datasets; ds++ ) {
+
+		struct gui_merge_result *result;
+		double ds_lowres, ds_highres;
+
+		if ( !menu_selected(f->dataset_checkboxes[ds]) ) continue;
+
+		result = find_merge_result_by_name(f->proj,
+		                                   f->dataset_names[ds]);
+
+		if ( result_res_range(result, cell,
+		                      &ds_lowres, &ds_highres) ) continue;
+
+		if ( ds_lowres > lowres ) lowres = ds_lowres;
+		if ( ds_highres < highres ) highres = ds_highres;
+
+	}
+
+	cell_free(cell);
+
+	f->proj->fom_res_min = lowres;
+	f->proj->fom_res_max = highres;
+	snprintf(tmp, 64, "%.2f", f->proj->fom_res_min);
+	gtk_entry_set_text(GTK_ENTRY(f->min_res), tmp);
+	snprintf(tmp, 64, "%.2f", f->proj->fom_res_max);
+	gtk_entry_set_text(GTK_ENTRY(f->max_res), tmp);
+}
+
+
 static void cell_file_clear_sig(GtkButton *buton,
                                 struct fom_window *f)
 {
@@ -589,59 +662,7 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_menu_button_set_popup(GTK_MENU_BUTTON(button),
 	                          make_fom_menu(f));
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 4.0);
-	label = gtk_label_new("Resolution range:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-	f->min_res = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(f->min_res), 6);
-	snprintf(tmp, 64, "%.2f", proj->fom_res_min);
-	gtk_entry_set_text(GTK_ENTRY(f->min_res), tmp);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_res),
-	                   FALSE, FALSE, 4.0);
-	label = gtk_label_new("to");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-	f->max_res = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(f->max_res), 4);
-	snprintf(tmp, 64, "%.2f", proj->fom_res_max);
-	gtk_entry_set_text(GTK_ENTRY(f->max_res), tmp);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->max_res),
-	                   FALSE, FALSE, 4.0);
-	label = gtk_label_new("Å.  Number of bins:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-	f->num_bins = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(f->num_bins), 4);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->num_bins),
-	                   FALSE, FALSE, 4.0);
-	snprintf(tmp, 64, "%i", proj->fom_nbins);
-	gtk_entry_set_text(GTK_ENTRY(f->num_bins), tmp);
-
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 4.0);
-	label = gtk_label_new("Minimum I/sigI:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-	f->min_snr = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(f->min_snr), 4);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_snr),
-	                   FALSE, FALSE, 4.0);
-	snprintf(tmp, 64, "%.2f", proj->fom_min_snr);
-	gtk_entry_set_text(GTK_ENTRY(f->min_snr), tmp);
-	label = gtk_label_new("Minimum measurements per reflection:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-	f->min_meas = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(f->min_meas), 4);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_meas),
-	                   FALSE, FALSE, 4.0);
-	snprintf(tmp, 64, "%i", proj->fom_min_meas);
-	gtk_entry_set_text(GTK_ENTRY(f->min_meas), tmp);
-
+	/* Unit cell */
 	hbox = gtk_hbox_new(FALSE, 0.0);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
 	                   FALSE, FALSE, 4.0);
@@ -664,6 +685,79 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                 G_CALLBACK(cell_file_clear_sig), f);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
 	                   FALSE, FALSE, 4.0);
+
+	/* Resolution range */
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("Resolution range:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	f->min_res = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(f->min_res), 6);
+	snprintf(tmp, 64, "%.2f", proj->fom_res_min);
+	gtk_entry_set_text(GTK_ENTRY(f->min_res), tmp);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_res),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("to");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	f->max_res = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(f->max_res), 4);
+	snprintf(tmp, 64, "%.2f", proj->fom_res_max);
+	gtk_entry_set_text(GTK_ENTRY(f->max_res), tmp);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->max_res),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("Å");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	button = gtk_button_new_with_label("Reset to entire data");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
+	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(button), "clicked",
+	                 G_CALLBACK(res_range_to_data_sig), f);
+
+	/* Number of resolution bins */
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("Number of resolution bins:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	f->num_bins = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(f->num_bins), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->num_bins),
+	                   FALSE, FALSE, 4.0);
+	snprintf(tmp, 64, "%i", proj->fom_nbins);
+	gtk_entry_set_text(GTK_ENTRY(f->num_bins), tmp);
+
+	/* Minimum I/sigI */
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
+	label = gtk_label_new("Minimum I/sigI:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	f->min_snr = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(f->min_snr), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_snr),
+	                   FALSE, FALSE, 4.0);
+
+	/* Min measurements per reflection */
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
+	snprintf(tmp, 64, "%.2f", proj->fom_min_snr);
+	gtk_entry_set_text(GTK_ENTRY(f->min_snr), tmp);
+	label = gtk_label_new("Minimum number of measurements per reflection:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 4.0);
+	f->min_meas = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(f->min_meas), 4);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_meas),
+	                   FALSE, FALSE, 4.0);
+	snprintf(tmp, 64, "%i", proj->fom_min_meas);
+	gtk_entry_set_text(GTK_ENTRY(f->min_meas), tmp);
 
 	da = gtk_drawing_area_new();
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(da),
