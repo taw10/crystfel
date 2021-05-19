@@ -596,7 +596,7 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
 	f->min_res = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(f->min_res), 4);
+	gtk_entry_set_width_chars(GTK_ENTRY(f->min_res), 6);
 	snprintf(tmp, 64, "%.2f", proj->fom_res_min);
 	gtk_entry_set_text(GTK_ENTRY(f->min_res), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_res),
