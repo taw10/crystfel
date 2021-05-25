@@ -48,7 +48,7 @@ extern void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size);
 #else /* defined(HAVE_ZMQ) */
 
 static UNUSED struct im_zmq *im_zmq_connect(const char *zmq_address,
-                                            char *zmq_subscriptions,
+                                            char **zmq_subscriptions,
                                             int n_subscriptions,
                                             const char *zmq_request) { return NULL; }
 static UNUSED void im_zmq_shutdown(struct im_zmq *z) { }
