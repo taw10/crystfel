@@ -170,7 +170,7 @@ static struct image *file_wait_open_read(const char *filename,
 				sleep(10);
 				continue;
 			}
-			ERROR("Couldn't open file: %s\n", filename);
+			ERROR("Couldn't read image: %s\n", filename);
 			return NULL;
 		}
 

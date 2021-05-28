@@ -440,33 +440,6 @@ int image_read_header_float(struct image *image, const char *from, double *val)
 }
 
 
-static double get_value(struct image *image, const char *from,
-                        int *is_literal_number)
-{
-	double val;
-	char *rval;
-
-	if ( from == NULL ) return NAN;
-
-	val = strtod(from, &rval);
-	if ( (*rval == '\0') && (rval != from) ) {
-		if ( is_literal_number != NULL ) {
-			*is_literal_number = 1;
-		}
-		return val;
-	}
-
-	if ( is_literal_number != NULL ) {
-		*is_literal_number = 0;
-	}
-	if ( image_read_header_float(image, from, &val) == 0 ) {
-		return val;
-	} else {
-		return NAN;  /* FIXME: Use out-of-band flag (GitLab #37) */
-	}
-}
-
-
 static DataSourceType file_type(const char *filename)
 {
 	if ( !file_exists(filename) ) {
@@ -490,24 +463,18 @@ static DataSourceType file_type(const char *filename)
 }
 
 
-static char *get_value_and_units(struct image *image, const char *from,
-                                 double *pvalue,
-                                 int *is_literal_number)
+static int separate_value_and_units(const char *from,
+                                    char **pvalue,
+                                    char **punits)
 {
 	char *sp;
 	char *fromcpy;
 	char *unitscpy;
 
-	if ( from == NULL ) {
-		*pvalue = NAN;
-		return NULL;
-	}
+	if ( from == NULL ) return 1;
 
 	fromcpy = strdup(from);
-	if ( fromcpy == NULL ) {
-		*pvalue = NAN;
-		return NULL;
-	}
+	if ( fromcpy == NULL ) return 1;
 
 	sp = strchr(fromcpy, ' ');
 	if ( sp == NULL ) {
@@ -517,10 +484,9 @@ static char *get_value_and_units(struct image *image, const char *from,
 		sp[0] = '\0';
 	}
 
-	*pvalue = get_value(image, fromcpy, is_literal_number);
-	free(fromcpy);
-
-	return unitscpy;
+	*pvalue = fromcpy;
+	*punits = unitscpy;
+	return 0;
 }
 
 
@@ -533,38 +499,83 @@ static char *get_value_and_units(struct image *image, const char *from,
  *
  * This is totally horrible.  Sorry.  Blame history.
  */
-static double im_get_length(struct image *image, const char *from,
-                            double default_scale)
+static int im_get_length(struct image *image, const char *from,
+                         double default_scale, double *pval)
 {
+	char *value_str;
 	char *units;
-	double value;
-	double scale;
-	int is_literal_number = 0;
 
-	if ( from == NULL ) return NAN;
+	if ( from == NULL ) return 1;
 
-	units = get_value_and_units(image, from,
-	                            &value, &is_literal_number);
+	if ( separate_value_and_units(from, &value_str, &units) ) return 1;
+
 	if ( units == NULL ) {
-		if ( is_literal_number ) {
-			scale = 1.0;
+
+		/* No units given */
+
+		if ( convert_float(value_str, pval) == 0 ) {
+
+			/* Literal value with no units */
+			free(value_str);
+			return 0;
+
 		} else {
-			scale = default_scale;
+
+			int r;
+			r = image_read_header_float(image, value_str, pval);
+			free(value_str);
+
+			if ( r == 0 ) {
+				/* Value read from headers with no units */
+				*pval *= default_scale;
+				return 0;
+			} else {
+				/* Failed to read value from headers */
+				return 1;
+			}
 		}
+
 	} else {
+
+		/* Units are specified */
+
+		double scale;
+
 		if ( strcmp(units, "mm") == 0 ) {
 			scale = 1e-3;
 		} else if ( strcmp(units, "m") == 0 ) {
 			scale = 1.0;
 		} else {
 			ERROR("Invalid length unit '%s'\n", units);
+			free(value_str);
 			free(units);
-			return NAN;
+			return 1;
+		}
+
+		if ( convert_float(value_str, pval) == 0 ) {
+
+			/* Literal value, units specified */
+			free(value_str);
+			free(units);
+			*pval *= scale;
+			return 0;
+
+		} else {
+
+			int r;
+			r = image_read_header_float(image, value_str, pval);
+			free(value_str);
+
+			if ( r == 0 ) {
+				/* Value read from headers, units specified */
+				*pval *= scale;
+				return 0;
+			} else {
+				/* Failed to read value from headers */
+				return 1;
+			}
 		}
 	}
-
-	free(units);
-	return value * scale;
 }
 
 
@@ -598,9 +609,12 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 		/* NB cnx,cny are in pixels, cnz is in m */
 		p->cnx = dtempl->panels[i].cnx;
 		p->cny = dtempl->panels[i].cny;
-		p->cnz = im_get_length(image,
-		                       dtempl->panels[i].cnz_from,
-		                       1e-3);
+		if ( im_get_length(image, dtempl->panels[i].cnz_from,
+		                   1e-3, &p->cnz) )
+		{
+			ERROR("Failed to read length from '%s'\n", dtempl->panels[i].cnz_from);
+			return 1;
+		}
 
 		/* Apply offset (in m) and then convert cnz from
 		 * m to pixels */
@@ -608,8 +622,21 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 		p->cnz /= p->pixel_pitch;
 
 		/* Apply overall shift (already in m) */
-		shift_x = im_get_length(image, dtempl->shift_x_from, 1.0);
-		shift_y = im_get_length(image, dtempl->shift_y_from, 1.0);
+		if ( dtempl->shift_x_from != NULL ) {
+			if ( im_get_length(image, dtempl->shift_x_from, 1.0, &shift_x) ) {
+				ERROR("Failed to read length from '%s'\n",
+				      dtempl->shift_x_from);
+				return 1;
+			}
+			if ( im_get_length(image, dtempl->shift_y_from, 1.0, &shift_y) ) {
+				ERROR("Failed to read length from '%s'\n",
+				      dtempl->shift_y_from);
+				return 1;
+			}
+		} else {
+			shift_x = 0.0;
+			shift_y = 0.0;
+		}
 
 		if ( !isnan(shift_x) ) {
 			p->cnx += shift_x / p->pixel_pitch;
@@ -756,19 +783,31 @@ static int image_read_image_data(struct image *image,
 }
 
 
-static void set_image_parameters(struct image *image,
-                                 const DataTemplate *dtempl)
+static int set_image_parameters(struct image *image,
+                                const DataTemplate *dtempl)
 {
-	/* Wavelength might be needed to create detgeom (adu_per_eV) */
-	image->lambda = convert_to_m(get_value(image,
-	                                       dtempl->wavelength_from,
-	                                       NULL),
-	                             dtempl->wavelength_unit);
+	double wl_val;
+	if ( convert_float(dtempl->wavelength_from, &wl_val) ) {
+
+		/* Not a literal value - try header */
+		if ( image_read_header_float(image,
+		                             dtempl->wavelength_from,
+		                             &wl_val) )
+		{
+			ERROR("Failed to read header value for wavelength (%s)\n",
+			      dtempl->wavelength_from);
+			return 1;
+		}
+	}
+
+	image->lambda = convert_to_m(wl_val, dtempl->wavelength_unit);
 
 	image->bw = dtempl->bandwidth;
 
 	image->spectrum = spectrum_generate_gaussian(image->lambda,
 	                                             image->bw);
+
+	return 0;
 }
 
 
@@ -1162,7 +1201,10 @@ struct image *image_create_for_simulation(const DataTemplate *dtempl)
 		return NULL;
 	}
 
-	set_image_parameters(image, dtempl);
+	if ( set_image_parameters(image, dtempl) ) {
+		image_free(image);
+		return NULL;
+	}
 
 	if ( create_detgeom(image, dtempl) ) {
 		image_free(image);
@@ -1195,8 +1237,14 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
 		if ( image_set_zero_data(image, dtempl) ) return 1;
 	}
 
-	set_image_parameters(image, dtempl);
-	if ( create_detgeom(image, dtempl) ) return 1;
+	if ( set_image_parameters(image, dtempl) ) {
+		ERROR("Failed to read image parameters\n");
+		return 1;
+	}
+	if ( create_detgeom(image, dtempl) ) {
+		ERROR("Failed to read geometry information\n");
+		return 1;
+	}
 	if ( create_badmap(image, dtempl, no_mask_data) ) return 1;
 	if ( create_satmap(image, dtempl) ) return 1;
 

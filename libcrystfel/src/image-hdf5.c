@@ -383,7 +383,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file: %s\n", filename);
+		ERROR("Couldn't open file (hyperslab): %s\n", filename);
 		return 1;
 	}
 
@@ -664,7 +664,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 	fh = H5Fopen(image->filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file: %s\n", image->filename);
+		ERROR("Couldn't open file (header): %s\n", image->filename);
 		return 1;
 	}
 
@@ -687,7 +687,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 	/* FIXME: Handle strings as well (GitLab #36) */
 	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
-		ERROR("Not a floating point or integer value.\n");
+		ERROR("HDF5 value is not a floating point or integer value (%s).\n",
+		      subst_name);
 		close_hdf5(fh);
 		return 1;
 	}
@@ -1087,7 +1088,7 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file: %s\n", filename);
+		ERROR("Couldn't open file (peaks/cxi): %s\n", filename);
 		return NULL;
 	}
 
@@ -1174,7 +1175,7 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file: %s\n", filename);
+		ERROR("Couldn't open file (peaks/hdf5): %s\n", filename);
 		return NULL;
 	}
 
@@ -1605,7 +1606,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file '%s'\n", filename);
+		ERROR("Couldn't open file (expand): %s\n", filename);
 		return NULL;
 	}
 
