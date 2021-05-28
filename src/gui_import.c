@@ -249,7 +249,7 @@ int load_stream(struct crystfelproject *proj, char *stream_filename)
 	Stream *st;
 	DataTemplate *dtempl;
 	const char *geom_str;
-	char **streams;
+	char *result_name;
 
 	st = stream_open_for_read(stream_filename);
 	if ( st == NULL ) return 1;
@@ -280,13 +280,10 @@ int load_stream(struct crystfelproject *proj, char *stream_filename)
 	proj->stream_filename = stream_filename;
 	stream_close(st);
 
-	streams = malloc(sizeof(char *));
-	if ( streams != NULL ) {
-		char *result_name = safe_basename(stream_filename);
-		streams[0] = strdup(stream_filename);
-		add_indexing_result(proj, result_name, streams, 1);
-		select_result(proj, result_name);
-	}
+	result_name = safe_basename(stream_filename);
+	add_indexing_result(proj, result_name, &stream_filename, 1);
+	select_result(proj, result_name);
+	free(result_name);
 
 	return 0;
 }

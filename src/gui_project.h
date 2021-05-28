@@ -355,7 +355,7 @@ extern void clear_project_files(struct crystfelproject *proj);
 extern void clear_indexing_results(struct crystfelproject *proj);
 
 extern int add_indexing_result(struct crystfelproject *proj,
-                               char *name,
+                               const char *name,
                                char **streams,
                                int n_streams);
 
@@ -370,8 +370,8 @@ extern void update_result_index(struct gui_indexing_result *result);
 extern struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject *proj,
                                                                 const char *name);
 
-extern int add_merge_result(struct crystfelproject *proj, char *name,
-                            char *hkl, char *hkl1, char *hkl2);
+extern int add_merge_result(struct crystfelproject *proj, const char *name,
+                            const char *hkl, const char *hkl1, const char *hkl2);
 
 extern struct gui_merge_result *find_merge_result_by_name(struct crystfelproject *proj,
                                                           const char *name);

@@ -681,11 +681,11 @@ static void read_parameters(FILE *fh, struct crystfelproject *proj)
 
 
 static void add_result(struct crystfelproject *proj,
-                       char *results_name,
+                       const char *results_name,
                        char **streams,
                        int n_streams,
                        int selected,
-                       char *hkl, char *hkl1, char *hkl2)
+                       const char *hkl, const char *hkl1, const char *hkl2)
 {
 	if ( (n_streams > 0) && (hkl == NULL) ) {
 		add_indexing_result(proj, results_name,
@@ -730,12 +730,23 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 
 		if ( strncmp(line, "Result ", 7) == 0 ) {
 
+			int i;
+
 			if ( !first ) {
 				add_result(proj, results_name,
 				           streams, n_streams, selected,
 				           hkl, hkl1, hkl2);
 			}
 			first = 0;
+
+			free(hkl);
+			free(hkl1);
+			free(hkl2);
+			for ( i=0; i<n_streams; i++ ) {
+				free(streams[i]);
+			}
+			free(streams);
+			free(results_name);
 
 			n_streams = 0;
 			selected = 0;
@@ -771,9 +782,18 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 
 		if ( strcmp(line, "-----") == 0 ) {
 			if ( !first ) {
+				int i;
 				add_result(proj, results_name,
 				           streams, n_streams, selected,
 				           hkl, hkl1, hkl2);
+				free(hkl);
+				free(hkl1);
+				free(hkl2);
+				for ( i=0; i<n_streams; i++ ) {
+					free(streams[i]);
+				}
+				free(streams);
+				free(results_name);
 			}
 			break;
 		}
@@ -1236,9 +1256,23 @@ int default_project(struct crystfelproject *proj)
 }
 
 
-/* Assumes ownership of "name" and "streams" */
+static char *relative_path(struct crystfelproject *proj, const char *fn)
+{
+	GFile *pwd = g_file_new_for_path(".");
+	GFile *fn_gfile = g_file_new_for_path(fn);
+	char *rel = g_file_get_relative_path(pwd, fn_gfile);
+	if ( rel == NULL ) {
+		ERROR("Can't make relative path for '%s'\n", fn);
+		return NULL;
+	}
+	g_object_unref(pwd);
+	g_object_unref(fn_gfile);
+	return rel;
+}
+
+
 int add_indexing_result(struct crystfelproject *proj,
-                        char *name,
+                        const char *name,
                         char **streams,
                         int n_streams)
 {
@@ -1249,13 +1283,14 @@ int add_indexing_result(struct crystfelproject *proj,
 	                      (proj->n_results+1)*sizeof(struct gui_indexing_result));
 	if ( new_results == NULL ) return 1;
 
-	new_results[proj->n_results].name = name;
-	new_results[proj->n_results].streams = streams;
+	new_results[proj->n_results].name = strdup(name);
+	new_results[proj->n_results].streams = malloc(n_streams*sizeof(char *));
 	new_results[proj->n_results].n_streams = n_streams;
 	new_results[proj->n_results].indices = malloc(n_streams*sizeof(StreamIndex *));
 
 	for ( i=0; i<n_streams; i++ ) {
 		new_results[proj->n_results].indices[i] = NULL;
+		new_results[proj->n_results].streams[i] = relative_path(proj, streams[i]);
 	}
 
 	proj->results = new_results;
@@ -1268,8 +1303,8 @@ int add_indexing_result(struct crystfelproject *proj,
 }
 
 
-int add_merge_result(struct crystfelproject *proj, char *name,
-                     char *hkl, char *hkl1, char *hkl2)
+int add_merge_result(struct crystfelproject *proj, const char *name,
+                     const char *hkl, const char *hkl1, const char *hkl2)
 {
 	struct gui_merge_result *new_results;
 
@@ -1277,10 +1312,10 @@ int add_merge_result(struct crystfelproject *proj, char *name,
 	                      (proj->n_merge_results+1)*sizeof(struct gui_merge_result));
 	if ( new_results == NULL ) return 1;
 
-	new_results[proj->n_merge_results].name = name;
-	new_results[proj->n_merge_results].hkl = hkl;
-	new_results[proj->n_merge_results].hkl1 = hkl1;
-	new_results[proj->n_merge_results].hkl2 = hkl2;
+	new_results[proj->n_merge_results].name = strdup(name);
+	new_results[proj->n_merge_results].hkl = relative_path(proj, hkl);
+	new_results[proj->n_merge_results].hkl1 = relative_path(proj, hkl1);
+	new_results[proj->n_merge_results].hkl2 = relative_path(proj, hkl2);
 
 	proj->merge_results = new_results;
 	proj->n_merge_results++;

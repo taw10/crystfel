@@ -419,11 +419,7 @@ static void *run_ambi(const char *job_title,
 	}
 
 	if ( job != NULL ) {
-		char **streams = malloc(sizeof(char *));
-		if ( streams != NULL ) {
-			streams[0] = stream_str;
-			add_indexing_result(proj, strdup(job_title), streams, 1);
-		}
+		add_indexing_result(proj, job_title, &stream_str, 1);
 	}
 
 	g_object_unref(workdir);
@@ -495,7 +491,10 @@ static void *run_merging(const char *job_title,
 		hkl2 = g_file_get_path(hkl_gfile);
 		g_object_unref(hkl_gfile);
 
-		add_merge_result(proj, strdup(job_title), hkl, hkl1, hkl2);
+		add_merge_result(proj, job_title, hkl, hkl1, hkl2);
+		g_free(hkl);
+		g_free(hkl1);
+		g_free(hkl2);
 	}
 
 	g_object_unref(workdir);
@@ -511,7 +510,6 @@ static void *run_indexing(const char *job_title,
 	struct local_indexing_opts *opts = opts_priv;
 	struct local_job *job;
 	char n_thread_str[64];
-	char **streams;
 	GFile *workdir;
 	GFile *sc_gfile;
 	gchar *sc_filename;
@@ -555,6 +553,8 @@ static void *run_indexing(const char *job_title,
 
 	if ( job != NULL ) {
 
+		char *stream_fn;
+
 		/* Indexing-specific job data */
 		job->n_frames = proj->n_frames;
 
@@ -562,15 +562,12 @@ static void *run_indexing(const char *job_title,
 		job->stderr_filename = g_file_get_path(stderr_gfile);
 		g_object_unref(stderr_gfile);
 
-		streams = malloc(sizeof(char *));
-		if ( streams != NULL ) {
-			GFile *stream_gfile = g_file_get_child(job->workdir,
-			                                       "crystfel.stream");
-			streams[0] = g_file_get_path(stream_gfile);
-			g_object_unref(stream_gfile);
-			add_indexing_result(proj, strdup(job_title),
-			                    streams, 1);
-		}
+		GFile *stream_gfile = g_file_get_child(job->workdir,
+		                                       "crystfel.stream");
+		stream_fn = g_file_get_path(stream_gfile);
+		g_object_unref(stream_gfile);
+		add_indexing_result(proj, job_title, &stream_fn, 1);
+		g_free(stream_fn);
 	}
 	g_object_unref(workdir);
 

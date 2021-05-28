@@ -662,8 +662,13 @@ static void *run_indexing(const char *job_title,
 	if ( job != NULL ) {
 		job->n_frames = proj->n_frames;
 		job->n_blocks = n_blocks;
-		add_indexing_result(proj, strdup(job_title), streams, n_blocks);
+		add_indexing_result(proj, job_title, streams, n_blocks);
 	}
+
+	for ( i=0; i<n_blocks; i++ ) {
+		free(streams[i]);
+	}
+	free(streams);
 
 	g_object_unref(workdir);
 
@@ -871,11 +876,7 @@ static void *run_ambi(const char *job_title,
 	g_free(sc_filename);
 
 	if ( job != NULL ) {
-		char **streams = malloc(sizeof(char *));
-		if ( streams != NULL ) {
-			streams[0] = stream_str;
-			add_indexing_result(proj, strdup(job_title), streams, 1);
-		}
+		add_indexing_result(proj, job_title, &stream_str, 1);
 	}
 
 	g_object_unref(workdir);
@@ -943,7 +944,10 @@ static void *run_merging(const char *job_title,
 		hkl2 = g_file_get_path(hkl_gfile);
 		g_object_unref(hkl_gfile);
 
-		add_merge_result(proj, strdup(job_title), hkl, hkl1, hkl2);
+		add_merge_result(proj, job_title, hkl, hkl1, hkl2);
+		g_free(hkl);
+		g_free(hkl1);
+		g_free(hkl2);
 	}
 
 	g_object_unref(workdir);
