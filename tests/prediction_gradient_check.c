@@ -56,7 +56,7 @@ static void scan(RefList *reflections, RefList *compare,
 	{
 		signed int h, k, l;
 		Reflection *refl2;
-		double fs, ss, xh, yh;
+		double fs, ss;
 		int pn;
 
 		get_indices(refl, &h, &k, &l);
@@ -69,7 +69,6 @@ static void scan(RefList *reflections, RefList *compare,
 
 		get_detector_pos(refl2, &fs, &ss);
 		pn = get_panel_number(refl2);
-		twod_mapping(fs, ss, &xh, &yh, &det->panels[pn], 0, 0);
 
 		switch ( checkrxy ) {
 
@@ -78,11 +77,11 @@ static void scan(RefList *reflections, RefList *compare,
 			break;
 
 			case 1 :
-			vals[idx][i] = xh;
+			vals[idx][i] = fs * det->panels[pn].pixel_pitch;
 			break;
 
 			case 2 :
-			vals[idx][i] = yh;
+			vals[idx][i] = ss * det->panels[pn].pixel_pitch;
 			break;
 		}
 
@@ -286,11 +285,11 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 				image = crystal_get_image(cr);
 
 				if ( checkrxy == 1 ) {
-					cgrad = x_gradient(refine, refl,
+					cgrad = fs_gradient(refine, refl,
 					         crystal_get_cell(cr),
 					         &image->detgeom->panels[0]);
 				} else {
-					cgrad = y_gradient(refine, refl,
+					cgrad = ss_gradient(refine, refl,
 					         crystal_get_cell(cr),
 					         &image->detgeom->panels[0]);
 				}
@@ -408,10 +407,10 @@ int main(int argc, char *argv[])
 	image.detgeom->panels[0].max_adu = INFINITY;
 	image.detgeom->panels[0].fsx = 1.0;
 	image.detgeom->panels[0].fsy = 0.0;
-	image.detgeom->panels[0].fsz = 0.0;
+	image.detgeom->panels[0].fsz = 0.5;
 	image.detgeom->panels[0].ssx = 0.0;
 	image.detgeom->panels[0].ssy = 1.0;
-	image.detgeom->panels[0].ssz = 0.0;
+	image.detgeom->panels[0].ssz = 0.5;
 	image.detgeom->panels[0].cnx = -500.0;
 	image.detgeom->panels[0].cny = -500.0;
 	image.detgeom->panels[0].cnz = 1000.0; /* pixels */
@@ -449,11 +448,11 @@ int main(int argc, char *argv[])
 			STATUS("Excitation error:\n");
 			break;
 			case 1:
-			STATUS("x coordinate:\n");
+			STATUS("fs coordinate:\n");
 			break;
 			default:
 			case 2:
-			STATUS("y coordinate:\n");
+			STATUS("ss coordinate:\n");
 			break;
 			STATUS("WTF??\n");
 			break;

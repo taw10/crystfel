@@ -68,19 +68,6 @@ static const enum gparam rv[] =
 };
 
 
-void twod_mapping(double fs, double ss, double *px, double *py,
-                  struct detgeom_panel *p, double dx, double dy)
-{
-	double xs, ys;
-
-	xs = fs*p->fsx + ss*p->ssx;  /* pixels */
-	ys = fs*p->fsy + ss*p->ssy;  /* pixels */
-
-	*px = (xs + p->cnx) * p->pixel_pitch + dx;  /* metres */
-	*py = (ys + p->cny) * p->pixel_pitch + dy;  /* metres */
-}
-
-
 static double r_dev(struct reflpeak *rp)
 {
 	/* Excitation error term */
@@ -88,29 +75,19 @@ static double r_dev(struct reflpeak *rp)
 }
 
 
-double x_dev(struct reflpeak *rp, struct detgeom *det,
-             double dx, double dy)
+double fs_dev(struct reflpeak *rp, struct detgeom *det)
 {
-	/* Peak position term */
-	double xpk, ypk, xh, yh;
 	double fsh, ssh;
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel, dx, dy);
 	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel, dx, dy);
-	return xh-xpk;
+	return fsh - rp->peak->fs;
 }
 
 
-double y_dev(struct reflpeak *rp, struct detgeom *det,
-             double dx, double dy)
+double ss_dev(struct reflpeak *rp, struct detgeom *det)
 {
-	/* Peak position term */
-	double xpk, ypk, xh, yh;
 	double fsh, ssh;
-	twod_mapping(rp->peak->fs, rp->peak->ss, &xpk, &ypk, rp->panel, dx, dy);
 	get_detector_pos(rp->refl, &fsh, &ssh);
-	twod_mapping(fsh, ssh, &xh, &yh, rp->panel, dx, dy);
-	return yh-ypk;
+	return ssh - rp->peak->ss;
 }
 
 
@@ -397,10 +374,10 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 		}
 
-		/* Positional x terms */
+		/* Positional fs terms */
 		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = x_gradient(rv[k], rps[i].refl, cell,
-			                          rps[i].panel);
+			gradients[k] = fs_gradient(rv[k], rps[i].refl, cell,
+			                           rps[i].panel);
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -422,17 +399,17 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = x_dev(&rps[i], image->detgeom, *total_x, *total_y);
+			v_c = fs_dev(&rps[i], image->detgeom, *total_x, *total_y);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
 		}
 
-		/* Positional y terms */
+		/* Positional ss terms */
 		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = y_gradient(rv[k], rps[i].refl, cell,
-			                          rps[i].panel);
+			gradients[k] = ss_gradient(rv[k], rps[i].refl, cell,
+			                           rps[i].panel);
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -454,7 +431,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = y_dev(&rps[i], image->detgeom, *total_x, *total_y);
+			v_c = ss_dev(&rps[i], image->detgeom, *total_x, *total_y);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -535,13 +512,13 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(x_dev(&rps[i], det, dx, dy), 2.0);
+		r += pow(fs_dev(&rps[i], det, dx, dy), 2.0);
 	}
 	res += r;
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(y_dev(&rps[i], det, dx, dy), 2.0);
+		r += pow(ss_dev(&rps[i], det, dx, dy), 2.0);
 	}
 	res += r;
 

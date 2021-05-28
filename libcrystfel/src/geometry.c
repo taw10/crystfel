@@ -1086,9 +1086,11 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 }
 
 
-/* Returns dx_h/dP, where P = any parameter */
-double x_gradient(int param, Reflection *refl, UnitCell *cell,
-                  struct detgeom_panel *p)
+/* Returns dfs_refl/dP, where P = any parameter *
+ * fs_refl is the fast scan position of refl in panel 'p',
+ * in metres (not pixels) */
+double fs_gradient(int param, Reflection *refl, UnitCell *cell,
+                   struct detgeom_panel *p)
 {
 	signed int h, k, l;
 	double xl, zl, kpred;
@@ -1140,16 +1142,20 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell,
 		case GPARAM_CLEN :
 		return -xl / (kpred+zl);
 
+		default:
+		ERROR("Positional gradient requested for parameter %i?\n", param);
+		abort();
+
 	}
 
-	ERROR("Positional gradient requested for parameter %i?\n", param);
-	abort();
 }
 
 
-/* Returns dy_h/dP, where P = any parameter */
-double y_gradient(int param, Reflection *refl, UnitCell *cell,
-                  struct detgeom_panel *p)
+/* Returns dss_refl/dP, where P = any parameter
+ * ss_refl is the slow scan position of refl in panel 'p',
+ * in metres (not pixels) */
+double ss_gradient(int param, Reflection *refl, UnitCell *cell,
+                   struct detgeom_panel *p)
 {
 	signed int h, k, l;
 	double yl, zl, kpred;
@@ -1201,8 +1207,9 @@ double y_gradient(int param, Reflection *refl, UnitCell *cell,
 		case GPARAM_CLEN :
 		return -yl / (kpred+zl);
 
-	}
+		default :
+		ERROR("Positional gradient requested for parameter %i?\n", param);
+		abort();
 
-	ERROR("Positional gradient requested for parameter %i?\n", param);
-	abort();
+	}
 }
