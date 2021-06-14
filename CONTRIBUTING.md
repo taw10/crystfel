@@ -15,7 +15,7 @@ The easiest way to ensure the future of CrystFEL is to use it and cite it in you
 Getting started
 ---------------
 
-Want to get involved with the CrystFEL project, but don't know where to start?  Look for [issues tagged as "good first issue"](https://gitlab.desy.de/thomas.white/crystfel/-/issues?label_name%5B%5D=good+first+issue) or ["help wanted"](https://gitlab.desy.de/thomas.white/crystfel/-/issues?label_name%5B%5D=help+wanted).  These issues are not necessarily easy, but they don't involve invasive changes to CrystFEL's guts and in fact some of them don't involve programming at all.
+Want to get involved with the CrystFEL project, but don't know where to start?  Look for [issues tagged as "good first issue"](https://gitlab.desy.de/thomas.white/crystfel/-/issues?label_name%5B%5D=good+first+issue) or ["help wanted"](https://gitlab.desy.de/thomas.white/crystfel/-/issues?label_name%5B%5D=help+wanted).  These issues are not necessarily easy, but they don't involve invasive changes to CrystFEL's guts.  In fact, some of them don't involve programming at all.
 
 Perhaps you're interested in translating CrystFEL into another language?  Changes to CrystFEL to enable easy translation are planned.  It would be helpful to know how much demand there is for this, as well as which languages might be added.  Please get in touch if you're interested.
 
@@ -39,7 +39,7 @@ The CrystFEL project on the [DESY Jira](https://agira.desy.de/projects/CRYS/issu
 "Getting your new paper into CrystFEL"
 --------------------------------------
 
-You're working on an exciting new analysis method for serial crystallography, and you want to implement your new method in CrystFEL?  Great!  But, be aware that such things usually end up needing deeper changes within CrystFEL.  It's very important that new methods compose well with, or at least are compatible with, all the existing features.  Your new method will need generalise to all crystal symmetries, all types of detector (including ones with weird pixel shapes or tilted panel) and so on.  Hundreds of scientific results depend on us getting this right, so we won't rush it - not even if you have a paper deadline coming up.
+You're working on an exciting new analysis method for serial crystallography, and you want to implement your new method in CrystFEL?  Great!  Be aware, however, that new methods often require deeper changes within CrystFEL.  It's very important that new methods compose well with, or at least are compatible with, all the existing features.  For example, your new method will need generalise to all crystal symmetries and all types of detector (especially with multiple panels or tilted panels), and use the same data formats.  Hundreds of scientific results depend on us getting this right, so we won't rush it - not even if you have a paper deadline coming up.
 
 The best way to proceed is to base your paper on a proof of concept, probably as a completely separate program.  For preference, use CrystFEL's data formats rather than inventing your own (if you're programming in C/C++, you can even directly use `libcrystfel`).  This makes the publication of your paper independent of how long it takes to implement in mainline CrystFEL.  Afterwards, we can look together at how it should be implemented in CrystFEL.
 
