@@ -24,6 +24,7 @@ unset(CMAKE_REQUIRED_LIBRARIES)
 
 # Request HDF5 1.10-style API (can't use 1.12-style yet)
 add_definitions(-DH5_USE_110_API)
+add_definitions(-DH5O_GET_INFO_BY_IDX1)
 
 pkg_check_modules (GLIB glib-2.0)
 include_directories (${GLIB_INCLUDE_DIRS})
