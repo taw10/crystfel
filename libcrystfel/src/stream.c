@@ -1080,7 +1080,10 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 			if ( have_filename && have_ev ) {
 				/* Success */
 				if ( srf & STREAM_DATA_DETGEOM ) {
-					create_detgeom(image, st->dtempl_read);
+					if ( create_detgeom(image, st->dtempl_read) ) {
+						image_free(image);
+						return NULL;
+					}
 					image_set_zero_data(image, st->dtempl_read);
 					image_set_zero_mask(image, st->dtempl_read);
 				}
