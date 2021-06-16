@@ -93,8 +93,8 @@ the number of threads that PinkIndexer should use within itself.  You should
 also use ``-j M`` to specify the number of frames that ``indexamajig`` should
 process in parallel.  The sum of ``N`` and ``M`` should be roughly equal to the
 number of available CPU cores.  It's also helpful to disable the
-default``indexamajig`` behaviour of making multiple attempts to index each
-pattern (``--no-retry``).
+default ``indexamajig`` behaviour of making multiple attempts to index each
+pattern (``--no-retry``) - this doesn't gain much when using PinkIndexer.
 
 If the camera length is specified in the geometry file by referencing values
 from image file headers, then you will also need to give an estimate of the
