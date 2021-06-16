@@ -261,6 +261,9 @@ void update_imageview(struct crystfelproject *proj)
 			swap_data_arrays(image, res_im);
 			image_free(proj->cur_image);
 			proj->cur_image = res_im;
+		} else {
+			ERROR("Failed to load chunk from stream.  "
+			      "Just displaying the image.\n");
 		}
 	}
 
