@@ -366,6 +366,11 @@ static int read_header_to_cache(struct image *image, const char *from)
 {
 	switch ( image->data_source_type ) {
 
+		case DST_NONE:
+		ERROR("No data source for %s %s - not loading header\n",
+		      image->filename, image->ev);
+		return 1;
+
 		case DST_HDF5:
 		return image_hdf5_read_header_to_cache(image, from);
 
@@ -444,7 +449,7 @@ static DataSourceType file_type(const char *filename)
 {
 	if ( !file_exists(filename) ) {
 		ERROR("File not found: %s (file_type)\n", filename);
-		return DST_UNKNOWN;
+		return DST_NONE;
 	}
 
 	if ( is_hdf5_file(filename) ) {
@@ -756,6 +761,11 @@ static int image_read_image_data(struct image *image,
 	}
 
 	switch ( image->data_source_type ) {
+
+		case DST_NONE:
+		STATUS("No data source for %s %s - not loading.\n",
+		       image->filename, image->ev);
+		return 1;
 
 		case DST_HDF5:
 		return image_hdf5_read(image, dtempl,

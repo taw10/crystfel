@@ -99,6 +99,7 @@ struct header_cache_entry {
 typedef enum
 {
 	DST_UNKNOWN,
+	DST_NONE,
 	DST_HDF5,
 	DST_CBF,
 	DST_CBFGZ,

@@ -985,6 +985,8 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 	image = image_new();
 	if ( image == NULL ) return NULL;
 
+	image->data_source_type = DST_NONE;
+
 	do {
 		int ser;
 		float div, bw;
