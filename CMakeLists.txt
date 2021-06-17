@@ -260,7 +260,7 @@ list(APPEND CRYSTFEL_EXECUTABLES indexamajig)
 
 if ( ZMQ_FOUND )
   target_include_directories(indexamajig PRIVATE ${ZMQ_INCLUDE_DIR})
-  target_link_libraries(indexamajig ${ZMQ_LIBRARIES})
+  target_link_libraries(indexamajig ${ZMQ_LDFLAGS})
 endif ()
 
 
