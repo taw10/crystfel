@@ -760,6 +760,11 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	g_signal_connect(G_OBJECT(entry), "focus-out-event",
 	                 G_CALLBACK(pathadd_focus_sig),
 	                 opts);
+	gtk_widget_set_tooltip_text(hbox, "The search path includes /bin, "
+	                            "/usr/bin, the location of the CrystFEL GUI "
+	                            "executable, and anything you enter here. "
+	                            "You can include multiple locations "
+	                            "separated by colons.");
 
 	return vbox;
 }
