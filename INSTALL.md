@@ -83,7 +83,8 @@ is not automatically referenced in your shell setup files (`.bashrc` and
 others).
 
 Here are the commands to install all the basic dependencies (including the
-optional dependencies, but not the indexing engines) on Fedora 22 or later:
+optional dependencies, but not the indexing engines) on CentOS and Fedora 22 or
+later (for CentOS, replace `dnf` with `yum`):
 ```
 $ sudo dnf group install 'Development Tools'
 $ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake
