@@ -633,6 +633,61 @@ int image_hdf5_read_mask(struct panel_template *p,
 }
 
 
+static char *read_single_fixed_string(hid_t dh)
+{
+	hid_t sh, type;
+	herr_t r;
+	size_t size;
+	char *tmp;
+
+	sh = H5Dget_space(dh);
+	if ( H5Sget_simple_extent_ndims(sh) ) {
+		ERROR("Non-scalar string\n");
+		return NULL;
+	}
+
+	sh = H5Screate(H5S_SCALAR);
+	type = H5Dget_type(dh);
+	size = H5Tget_size(type);
+	tmp = malloc(size+1);
+	if ( tmp == NULL ) {
+		H5Tclose(type);
+		return NULL;
+	}
+	r = H5Dread(dh, type, sh, H5S_ALL, H5P_DEFAULT, tmp);
+	H5Sclose(sh);
+	H5Tclose(type);
+	if ( r < 0 ) {
+		free(tmp);
+		ERROR("Couldn't read scalar string\n");
+		return NULL;
+	} else {
+		tmp[size] = '\0';
+		chomp(tmp);
+		return tmp;
+	}
+}
+
+
+static char *read_single_vlen_string(hid_t dh)
+{
+	herr_t r;
+	char *tmp;
+	hid_t type;
+
+	type = H5Dget_type(dh);
+	r = H5Dread(dh, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, &tmp);
+	H5Tclose(type);
+	if ( r < 0 ) {
+		ERROR("Couldn't read vlen string\n");
+		return NULL;
+	}
+
+	chomp(tmp);
+	return tmp;
+}
+
+
 int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 {
 	hid_t dh;
@@ -685,9 +740,16 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	type = H5Dget_type(dh);
 	class = H5Tget_class(type);
 
-	/* FIXME: Handle strings as well (GitLab #36) */
-	if ( (class != H5T_FLOAT) && (class != H5T_INTEGER) ) {
-		ERROR("HDF5 value is not a floating point or integer value (%s).\n",
+	switch ( class ) {
+
+		/* Acceptable types */
+		case H5T_FLOAT:
+		case H5T_INTEGER:
+		case H5T_STRING:
+		break;
+
+		default:
+		ERROR("HDF5 header is not a recognised type (%s).\n",
 		      subst_name);
 		close_hdf5(fh);
 		return 1;
@@ -713,7 +775,6 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	if ( ndims == 0 ) {
 
 		/* Easy case, because value is a scalar */
-
 		if ( class == H5T_FLOAT ) {
 
 			double val;
@@ -729,7 +790,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			image_cache_header_float(image, name, val);
 			return 0;
 
-		} else {
+		} else if ( class == H5T_INTEGER ) {
 
 			int val;
 			r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT,
@@ -744,6 +805,45 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			image_cache_header_int(image, name, val);
 			return 0;
 
+		} else if ( class == H5T_STRING ) {
+
+			htri_t v;
+			hid_t type;
+			char *val;
+			int r;
+
+			type = H5Dget_type(dh);
+			v = H5Tis_variable_str(type);
+			H5Tclose(type);
+
+			if ( v == 0 ) {
+				val = read_single_fixed_string(dh);
+			} else if ( v > 0 ) {
+				val = read_single_vlen_string(dh);
+			} else {
+				ERROR("Unrecognised string type: %s\n",
+				      subst_name);
+				val = NULL;
+			}
+
+			if ( val != NULL ) {
+				image_cache_header_str(image, name, val);
+				free(val);
+				r = 0;
+			} else {
+				ERROR("Failed to read string '%s'\n",
+				      subst_name);
+				r = 1;
+			}
+
+			free(subst_name);
+			close_hdf5(fh);
+			return r;
+
+		} else {
+			/* Should never be reached */
+			ERROR("Invalid HDF5 class %i\n", class);
+			return 1;
 		}
 	}
 
@@ -792,14 +892,13 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 	}
 
-	free(subst_name);
-
 	check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
-	if ( check <0 ) {
-		ERROR("Error selecting dataspace for float value\n");
+	if ( check < 0 ) {
+		ERROR("Error selecting dataspace for header value\n");
 		free(f_offset);
 		free(f_count);
+		free(subst_name);
 		close_hdf5(fh);
 		return 1;
 	}
@@ -811,8 +910,9 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
 	                            m_offset, NULL, m_count, NULL);
 	if ( check < 0 ) {
-		ERROR("Error selecting memory dataspace for float value\n");
+		ERROR("Error selecting memory dataspace for header value\n");
 		close_hdf5(fh);
+		free(subst_name);
 		return 1;
 	}
 
@@ -823,26 +923,103 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		if ( r < 0 )  {
 			ERROR("Couldn't read value.\n");
 			close_hdf5(fh);
+			free(subst_name);
 			return 1;
 		}
 
 		image_cache_header_float(image, name, val);
 		close_hdf5(fh);
+		free(subst_name);
 		return 0;
 
-	} else {
+	} else if ( class == H5T_INTEGER ) {
 
 		int val;
 		r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT, &val);
 		if ( r < 0 )  {
 			ERROR("Couldn't read value.\n");
 			close_hdf5(fh);
+			free(subst_name);
 			return 1;
 		}
 
 		image_cache_header_int(image, name, val);
 		close_hdf5(fh);
+		free(subst_name);
 		return 0;
+
+	} else if ( class == H5T_STRING ) {
+
+		hid_t type;
+
+		type = H5Dget_type(dh);
+		if ( H5Tis_variable_str(type) ) {
+
+			/* Vlen string from array */
+
+			herr_t r;
+			char *val;
+
+			r = H5Dread(dh, type, ms, sh, H5P_DEFAULT, &val);
+			if ( r < 0 ) {
+				ERROR("Can't read HDF5 vlen string from array - %s\n",
+				      subst_name);
+				free(subst_name);
+				close_hdf5(fh);
+				free(subst_name);
+				return 1;
+			} else {
+
+				chomp(val);
+				image_cache_header_str(image, name, val);
+				free(val);
+				close_hdf5(fh);
+				free(subst_name);
+				return 0;
+			}
+
+		} else {
+
+			/* Fixed-length string from array */
+
+			herr_t r;
+			char *val;
+			size_t size;
+
+			size = H5Tget_size(type);
+			val = malloc(size);
+			if ( val == NULL ) {
+				close_hdf5(fh);
+				free(subst_name);
+				return 1;
+			}
+			r = H5Dread(dh, type, ms, sh, H5P_DEFAULT, val);
+			H5Tclose(type);
+			if ( r < 0 ) {
+				ERROR("Couldn't read HDF5 fixed string from array - %s\n",
+				      subst_name);
+				close_hdf5(fh);
+				free(subst_name);
+				return 1;
+			} else {
+
+				chomp(val);
+				image_cache_header_str(image, name, val);
+				free(val);
+				close_hdf5(fh);
+				free(subst_name);
+				return 0;
+
+			}
+
+		}  /* I feel sick. */
+
+	} else {
+		/* Should never be reached */
+		ERROR("Invalid HDF5 class %i\n", class);
+		close_hdf5(fh);
+		free(subst_name);
+		return 1;
 	}
 }
 
