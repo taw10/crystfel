@@ -343,6 +343,11 @@ void image_cache_header_str(struct image *image,
                             const char *header_name,
                             const char *header_val)
 {
+	if ( strchr(header_val, '\n') != NULL ) {
+		ERROR("Header '%s' contains newline (not allowed!)\n");
+		return;
+	}
+
 	if ( image->n_cached_headers >= HEADER_CACHE_SIZE ) {
 		ERROR("Too many headers to copy.\n");
 	} else {
