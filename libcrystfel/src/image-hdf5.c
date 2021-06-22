@@ -1003,6 +1003,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				return 1;
 			} else {
 
+				val[size] = '\0';
 				chomp(val);
 				image_cache_header_str(image, name, val);
 				free(val);
