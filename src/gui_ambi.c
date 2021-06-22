@@ -563,6 +563,5 @@ double read_ambigator_progress(char *logfile_str, int niter)
 
 	fclose(fh);
 
-	printf("got %f\n", frac_complete);
 	return frac_complete;
 }
