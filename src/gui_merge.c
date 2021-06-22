@@ -365,7 +365,7 @@ static int write_partialator_script(const char *filename,
 	fprintf(fh, "%s \\\n", exe_path);
 
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, "\"%s\" \\\n", input->streams[i]);
+		fprintf(fh, "\"../%s\" \\\n", input->streams[i]);
 	}
 
 	fprintf(fh, " --model=%s", params->model);
@@ -427,7 +427,7 @@ static void add_process_hkl(FILE *fh,
 	fprintf(fh, "%s \\\n", exe_path);
 
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, " \"%s\" \\\n", input->streams[i]);
+		fprintf(fh, " \"../%s\" \\\n", input->streams[i]);
 	}
 
 	fprintf(fh, " -o \"%s%s\"", out_hkl, out_suffix);

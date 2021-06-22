@@ -495,7 +495,7 @@ int write_ambigator_script(const char *filename,
 
 	fprintf(fh, "cat \\\n");
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, "\"%s\" \\\n", input->streams[i]);
+		fprintf(fh, "\"../%s\" \\\n", input->streams[i]);
 	}
 	fprintf(fh, " > ambigator-input.stream\n");
 
