@@ -475,10 +475,9 @@ static void draw_refls(cairo_t *cr,
 		p = &iv->image->detgeom->panels[pn];
 
 		this_lw = biggest(0.1*p->pixel_pitch, lw);
-		this_bs = biggest(iv->refl_box_size * p->pixel_pitch,
-		                  bs);
+		this_bs = biggest(iv->refl_box_size * p->pixel_pitch, bs);
 
-		if ( this_bs > bs ) {
+		if ( this_bs > 2.5*bs ) {
 			show_cen = 1;
 		}
 
