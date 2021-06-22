@@ -540,8 +540,8 @@ static void draw_refls(cairo_t *cr,
 static double crystal_cols[][3] =
 {
 	{0.0, 1.0, 0.0},   /* bright green */
-	{1.0, 1.0, 0.0},   /* bright yellow */
 	{0.0, 0.8, 0.8},   /* cyan */
+	{1.0, 1.0, 0.0},   /* bright yellow */
 	{1.0, 1.0, 1.0},   /* white */
 };
 
