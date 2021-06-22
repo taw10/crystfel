@@ -39,20 +39,23 @@ CrystFEL without them.  However, a CrystFEL installation without these will lack
 important features such as the graphical user interface.  The following list is
 roughly in order of importance:
 
-* GTK3 (required for GUI)
-* Cairo (required for GUI)
-* Pango (required for GUI)
-* gdk-pixbuf (required for GUI)
+* [GTK](https://gtk.org/) version between 3.12 and 3.24 (inclusive) - required for GUI
+* [Cairo](https://www.cairographics.org/) 1.2 or later (required for GUI)
+* [Pango](https://pango.gnome.org/) 1.0 or later, including [PangoCairo](https://docs.gtk.org/PangoCairo/) (required for GUI)
+* [gdk-pixbuf](https://docs.gtk.org/gdk-pixbuf/) 2.0 or later (required for GUI)
 * [libccp4](ftp://ftp.ccp4.ac.uk/opensource/) (required for MTZ import/export)
-* [FFTW3](http://fftw.org/) (required for `asdf` indexing)
+* [FFTW3](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) (for `peakFinder9` peak search algorithm)
 * NCurses (for integration diagnostics: `indexamajig --int-diag`)
 
 Apart from FDIP, all of the dependencies mentioned above (including libccp4 -
 yes, really!) should be available from your Linux distribution's package
 manager, or from [Homebrew](https://brew.sh/) on Mac OS.  You should not need
-to download and install any of them separately from source, and we emphatically
-recommend against trying to do so.
+to download and install any of them separately from source.  We emphatically
+recommend against trying to install GTK, Cairo, Pango or gdk-pixbuf from source.
+
+If OpenCL is available on your system, GPU-accelerated diffraction calculation
+will be enabled for `pattern_sim`.
 
 Processing data relies on indexing 'engines'.  By default, you will have access
 to the [TakeTwo](https://journals.iucr.org/d/issues/2016/08/00/rr5128/) indexing
