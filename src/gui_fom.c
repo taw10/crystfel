@@ -628,8 +628,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	dialog = gtk_dialog_new_with_buttons("Calculate figures of merit",
 	                                     GTK_WINDOW(proj->window),
 	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                     "Calculate", GTK_RESPONSE_APPLY,
 	                                     "Close", GTK_RESPONSE_CLOSE,
+	                                     "Calculate", GTK_RESPONSE_APPLY,
 	                                     NULL);
 
 	g_signal_connect(G_OBJECT(dialog), "response",
