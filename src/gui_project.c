@@ -1037,10 +1037,14 @@ int save_project(struct crystfelproject *proj)
 	        proj->merging_params.min_measurements);
 	fprintf(fh, "merging.max_adu %f\n",
 	        proj->merging_params.max_adu);
-	fprintf(fh, "merging.custom_split %s\n",
-	        proj->merging_params.custom_split);
-	fprintf(fh, "merging.twin_sym %s\n",
-	        proj->merging_params.twin_sym);
+	if ( proj->merging_params.custom_split != NULL ) {
+		fprintf(fh, "merging.custom_split %s\n",
+		        proj->merging_params.custom_split);
+	}
+	if ( proj->merging_params.twin_sym != NULL ) {
+		fprintf(fh, "merging.twin_sym %s\n",
+		        proj->merging_params.twin_sym);
+	}
 	fprintf(fh, "merging.min_res %f\n",
 	        proj->merging_params.min_res);
 	fprintf(fh, "merging.push_res %f\n",
@@ -1063,7 +1067,9 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "fom.num_bins %i\n", proj->fom_nbins);
 	fprintf(fh, "fom.min_snr %f\n", proj->fom_min_snr);
 	fprintf(fh, "fom.min_meas %i\n", proj->fom_min_meas);
-	fprintf(fh, "fom.cell_file %s\n", proj->fom_cell_filename);
+	if ( proj->fom_cell_filename != NULL ) {
+		fprintf(fh, "fom.cell_file %s\n", proj->fom_cell_filename);
+	}
 
 	fprintf(fh, "show_centre %i\n", proj->show_centre);
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
