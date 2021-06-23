@@ -497,7 +497,7 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 	label = gtk_label_new("mrad");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
-	gtk_widget_set_tooltip_text(io->fix_profile_radius, "--fix-divergence");
+	gtk_widget_set_tooltip_text(hbox, "--fix-divergence");
 	gtk_widget_show_all(box);
 
 	return box;
