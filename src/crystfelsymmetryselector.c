@@ -503,6 +503,7 @@ int crystfel_symmetry_selector_set_group_symbol(CrystFELSymmetrySelector *sel,
 	if ( pg_symbol != NULL ) {
 		GtkWidget *label = gtk_bin_get_child(GTK_BIN(sel));
 		gtk_label_set_text(GTK_LABEL(label), pg_symbol);
+		sel->have_pg = 1;
 	}
 	return 0;
 }
