@@ -2,6 +2,7 @@
 project('crystfel', 'c',
         version : '0.9.1',
         license : 'GPL3+',
+        meson_version : '>=0.50.0',
         default_options : ['buildtype=debugoptimized'])
 
 add_project_arguments('-DHAVE_CONFIG_H', language : 'c')
@@ -29,17 +30,8 @@ if slurmdep.found()
   conf_data.set10('HAVE_SLURM', 1)
 endif
 
-# HDF5 >= 1.8.21 and >= 1.10.2 has a pkg-config file:
-hdf5dep = dependency('hdf5', language : 'c', required : false)
-
-# Otherwise, try finding it ourselves:
-if not hdf5dep.found()
-  hdf5dep = cc.find_library('hdf5', required : false)
-endif
-
-if not hdf5dep.found()
-  error('Couldn\'t find HDF5')
-endif
+# Find HDF5 using inbuilt Meson methods.  Requires Meson >= 0.50.0
+hdf5dep = dependency('hdf5', language : 'c', required : true)
 
 # Request HDF5 1.10-style API
 add_project_arguments('-DH5_USE_110_API', language : 'c')
