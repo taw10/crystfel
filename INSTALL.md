@@ -163,14 +163,22 @@ installations of certain dependencies.
     /usr/bin/ld: <install path>/lib/libhdf5.a(H5.o): relocation R_X86_64_32 against `.rodata' can not be used when making a shared object; recompile with -fPIC
     ```
 
-  **Explanation**: CrystFEL uses several libraries, including HDF5, GSL and FFTW,
-  via its own shared library.  To make this work, the dependency libraries need
-  to have been compiled into relocatable code (position-independent code, hence
-  'PIC').
+  **Explanation**: The dependency libraries, including HDF5, GSL and FFTW,
+  must be built such that they can be used from within CrystFEL's shared
+  library *libcrystfel*.  In particular, they must be compiled into relocatable
+  code (position-independent code, hence 'PIC').  This is usually (but not
+  always!) the case when the libraries are built as shared objects ("`.so`"),
+  but not for static-linking libraries ("`.a`").  HDF5's `h5cc` tool prefers to
+  use static linking by default, and the preference gets picked up and used by
+  Meson for CrystFEL.  However, because *libcrystfel* is itself a shared
+  library, this will only work if the HDF5 static-linking library was compiled
+  with `-fPIC`.
 
-  **Solution**: If compiling HDF5 with autotools (`./configure` et al.), add the
-  appropriate compiler option: `./configure H5_CFLAGS=-fPIC`.  The problem is
-  not known to occur when compiling HDF5 using CMake.
+  **Solution**: When building HDF5, disable the static linking libraries
+  altogether, to force the use of shared libraries: `./configure
+  --enable-shared --disable-static`.  Alternatively, add the `-fPIC` option so
+  that the static libraries can be used within *libcrystfel*: `./configure
+  H5_CFLAGS=-fPIC`.  Compiling HDF5 using CMake also avoids the problem.
 
 * **Problem**: Linker error about FFTW and `fPIC`:
     ```
