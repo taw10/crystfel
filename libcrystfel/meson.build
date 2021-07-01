@@ -1,13 +1,13 @@
 # libcrystfel
 
-zlibdep = dependency('zlib', required : true)
+zlibdep = dependency('zlib', required: true)
 if cc.has_function('gzbuffer',
                    prefix: '#include <zlib.h>',
                    dependencies: zlibdep)
   conf_data.set10('HAVE_GZBUFFER', 1)
 endif
 
-fftwdep = dependency('fftw3', required : false)
+fftwdep = dependency('fftw3', required: false)
 if fftwdep.found()
   conf_data.set10('HAVE_FFTW', 1)
 endif
@@ -37,7 +37,7 @@ if ccp4dep.found()
   conf_data.set10('HAVE_LIBCCP4', 1)
 endif
 
-msgpackdep = dependency('msgpack', required : false)
+msgpackdep = dependency('msgpack', required: false)
 if msgpackdep.found()
   conf_data.set10('HAVE_MSGPACK', 1)
 endif
@@ -50,10 +50,10 @@ libcrystfel_versionc = vcs_tag(input: 'src/libcrystfel-version.c.in',
 libcrystfel_includes = include_directories('src')
 
 # Find forkpty()
-utildep = cc.find_library('util', required : true)
-if cc.has_function('forkpty', dependencies : utildep, prefix : '#include <pty.h>')
+utildep = cc.find_library('util', required: true)
+if cc.has_function('forkpty', dependencies: utildep, prefix: '#include <pty.h>')
   conf_data.set10('HAVE_FORKPTY_PTY_H', 1)
-elif cc.has_function('forkpty', dependencies : utildep, prefix : '#include <util.h>')
+elif cc.has_function('forkpty', dependencies: utildep, prefix: '#include <util.h>')
   conf_data.set10('HAVE_FORKPTY_UTIL_H', 1)
 else
   error('Couldn\'t find forkpty()')
@@ -65,17 +65,17 @@ flex = find_program('flex')
 bison = find_program('bison')
 
 flex_gen = generator(flex,
-                     output : ['@BASENAME@-lex.c', '@BASENAME@-lex.h'],
-                     arguments : ['--outfile=@OUTPUT0@',
-                                  '--header-file=@OUTPUT1@',
-                                  '@INPUT@'])
+                     output: ['@BASENAME@-lex.c', '@BASENAME@-lex.h'],
+                     arguments: ['--outfile=@OUTPUT0@',
+                                 '--header-file=@OUTPUT1@',
+                                 '@INPUT@'])
 
 bison_gen = generator(bison,
-                      output : ['@BASENAME@-parse.c', '@BASENAME@-parse.h'],
-                      arguments : ['--output=@OUTPUT0@',
-                                   '--defines=@OUTPUT1@',
-                                   '--report=all',
-                                   '@INPUT@'])
+                      output: ['@BASENAME@-parse.c', '@BASENAME@-parse.h'],
+                      arguments: ['--output=@OUTPUT0@',
+                                  '--defines=@OUTPUT1@',
+                                  '--report=all',
+                                  '@INPUT@'])
 
 symop_parse_ch = bison_gen.process('src/symop.y')
 symop_lex_ch = flex_gen.process('src/symop.l')
@@ -118,25 +118,25 @@ libcrystfel_sources = ['src/image.c',
                        'src/indexers/pinkindexer.c',
                        'src/indexers/fromfile.c',
                        symop_lex_ch,
-                       symop_parse_ch,
-                      ]
+                       symop_parse_ch]
 
-configure_file(input : 'libcrystfel-config.h.meson.in',
-               output : 'libcrystfel-config.h',
-               configuration : conf_data)
+configure_file(input: 'libcrystfel-config.h.meson.in',
+               output: 'libcrystfel-config.h',
+               configuration: conf_data)
 
 libcrystfel_conf_inc = include_directories('.')
 
 libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
-                      include_directories : [libcrystfel_includes, libcrystfel_conf_inc],
-                      dependencies : [mdep, utildep, fftwdep, gsldep, zlibdep,
-                                      hdf5dep, pthreaddep, ncursesdep,
-                                      xgandalfdep, pinkindexerdep, fdipdep,
-                                      ccp4dep, msgpackdep],
-                      install : true)
+                      include_directories: [libcrystfel_includes,
+                                            libcrystfel_conf_inc],
+                      dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
+                                     hdf5dep, pthreaddep, ncursesdep,
+                                     xgandalfdep, pinkindexerdep, fdipdep,
+                                     ccp4dep, msgpackdep],
+                      install: true)
 
-libcrystfeldep = declare_dependency(include_directories : libcrystfel_includes,
-                                    link_with : libcrystfel,
+libcrystfeldep = declare_dependency(include_directories: libcrystfel_includes,
+                                    link_with: libcrystfel,
                                     dependencies: gsldep)
 
 
@@ -187,7 +187,7 @@ if doxygen.found()
                             configuration: doc_data,
                             install: false)
 
-  api_docs = run_target('api-docs', command : [doxygen, doxyfile])
+  api_docs = run_target('api-docs', command: [doxygen, doxyfile])
 endif
 
 
