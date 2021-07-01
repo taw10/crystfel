@@ -84,6 +84,10 @@ struct indexamajig_arguments
 	char *zmq_request;
 	char *zmq_subscriptions[256];
 	int n_zmq_subscriptions;
+	char *asapo_endpoint;
+	char *asapo_token;
+	char *asapo_beamtime;
+	char *asapo_path;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -400,6 +404,22 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 		case 212 :
 		args->zmq_request = strdup(arg);
+		break;
+
+		case 213 :
+		args->asapo_endpoint = strdup(arg);
+		break;
+
+		case 214 :
+		args->asapo_token = strdup(arg);
+		break;
+
+		case 215 :
+		args->asapo_beamtime = strdup(arg);
+		break;
+
+		case 216 :
+		args->asapo_path = strdup(arg);
 		break;
 
 		case 219 :
@@ -934,6 +954,10 @@ int main(int argc, char *argv[])
 			"type"},
 		{"zmq-request", 212, "str", OPTION_NO_USAGE, "Request messages using"
 			"this string."},
+		{"asapo-endpoint", 213, "str", OPTION_NO_USAGE, "ASAP::O endpoint"},
+		{"asapo-token", 214, "str", OPTION_NO_USAGE, "ASAP::O token"},
+		{"asapo-beamtime", 215, "str", OPTION_NO_USAGE, "ASAP::O beamtime ID"},
+		{"asapo-path", 216, "str", OPTION_NO_USAGE, "ASAP::O path to files"},
 		{"data-format", 219, "str", OPTION_NO_USAGE, "Streamed data format"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
@@ -1290,9 +1314,12 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
-	                   fh, st, tmpdir, args.serial_start, args.zmq_addr,
-	                   args.zmq_subscriptions, args.n_zmq_subscriptions,
-	                   args.zmq_request, timeout, args.profile);
+	                   fh, st, tmpdir, args.serial_start,
+	                   args.zmq_addr, args.zmq_subscriptions,
+	                   args.n_zmq_subscriptions, args.zmq_request,
+	                   args.asapo_endpoint, args.asapo_token,
+	                   args.asapo_beamtime, args.asapo_path,
+	                   timeout, args.profile);
 
 	cell_free(args.iargs.cell);
 	free(args.prefix);

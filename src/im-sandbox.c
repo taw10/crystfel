@@ -104,6 +104,13 @@ struct sandbox
 	int n_zmq_subscriptions;
 	const char *zmq_request;
 
+	/* ASAP::O mode */
+	int asapo;
+	const char *asapo_endpoint;
+	const char *asapo_token;
+	const char *asapo_beamtime;
+	const char *asapo_path;
+
 	/* Final output */
 	Stream *stream;
 };
@@ -330,6 +337,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 {
 	int allDone = 0;
 	struct im_zmq *zmqstuff = NULL;
+	struct im_asapo *asapostuff = NULL;
 
 	if ( sb->profile ) {
 		profile_init();
@@ -337,6 +345,17 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 	/* Connect via ZMQ */
 	if ( sb->zmq ) {
+		zmqstuff = im_zmq_connect(sb->zmq_address,
+		                          sb->zmq_subscriptions,
+		                          sb->n_zmq_subscriptions,
+		                          sb->zmq_request);
+		if ( zmqstuff == NULL ) {
+			ERROR("ZMQ setup failed.\n");
+			return 1;
+		}
+	}
+
+	if ( sb->asapo ) {
 		zmqstuff = im_zmq_connect(sb->zmq_address,
 		                          sb->zmq_subscriptions,
 		                          sb->n_zmq_subscriptions,
@@ -1056,6 +1075,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    Stream *stream, const char *tmpdir, int serial_start,
                    const char *zmq_address, char **zmq_subscriptions,
                    int n_zmq_subscriptions, const char *zmq_request,
+                   const char *asapo_endpoint, const char *asapo_token,
+                   const char *asapo_beamtime, const char *asapo_path,
                    int timeout, int profile)
 {
 	int i;
@@ -1094,6 +1115,21 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		sb->zmq_request = zmq_request;
 	} else {
 		sb->zmq = 0;
+	}
+
+	if ( asapo_endpoint != NULL ) {
+		sb->asapo = 1;
+		sb->asapo_endpoint = asapo_endpoint;
+		sb->asapo_token = asapo_token;
+		sb->asapo_beamtime = asapo_beamtime;
+		sb->asapo_path = asapo_path;
+	} else {
+		sb->asapo = 0;
+	}
+
+	if ( sb->zmq && sb->asapo ) {
+		ERROR("Cannot simultaneously use ZMQ and ASAP::O input.\n");
+		return 0;
 	}
 
 	sb->fds = NULL;
