@@ -254,7 +254,7 @@ these.  The default is to use the same values as for \fB--int-radius\fR.
 .PD 0
 .IP \fB--min-peaks=\fIn\fR
 .PD
-Do not try to index frames with fewer than \fIn\fR peaks.  These frames will still be described in the output stream.  To exclude them, use \fB--no-non-hits-in-stream\fR.
+Do not try to index frames with fewer than \fIn\fR peaks.  These frames will still be described in the output stream.  To exclude them, use \fB--no-non-hits-in-stream\fR.  The default is \fB--min-peaks=0\fR, which means that \fIall\fR frames will be considered hits, even if they have no peaks at all.
 
 .PD 0
 .IP \fB--hdf5-peaks=\fR\fIpath\fR
@@ -526,7 +526,7 @@ Over-predict reflections.  This is needed to provide a buffer zone when using po
 .PD 0
 .IP \fB--no-non-hits-in-stream\fR
 .PD
-Completely exclude 'non-hit' frames in the stream.  When this option is given, frames with fewer than the number of peaks given to \fB--min-peaks\fR will not have chunks written to the stream at all.
+Completely exclude 'non-hit' frames in the stream.  When this option is given, frames with fewer than the number of peaks given to \fB--min-peaks\fR will not have chunks written to the stream at all.  Note that the default value for \fB--min-peaks\fR is zero, which means \fIall\fR frames will be written to the stream, even if they have no peaks at all.
 
 .PD 0
 .IP \fB--copy-hdf5-field=\fR\fIpath\fR
