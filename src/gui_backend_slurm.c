@@ -518,7 +518,8 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	free(job_desc_msg.account);
 	free(job_desc_msg.script);
 	if ( r ) {
-		ERROR("Couldn't submit job: %i\n", errno);
+		ERROR("Couldn't submit job: %s\n",
+		      slurm_strerror(slurm_get_errno()));
 		free(job);
 		return NULL;
 	}
