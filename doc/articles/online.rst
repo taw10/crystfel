@@ -20,7 +20,7 @@ You can use ``--zmq-subscribe`` multiple times to subscribe to multiple message
 prefixes.
 
 Note that this mode of operation does not combine well with multi-threading
-in inddxamajig - all worker processes will receive the same data!  For anything
+in indexamajig - all worker processes will receive the same data!  For anything
 more than "taking a peek" at the data, use the REQ socket instead by using
 ``--zmq-request`` instead of ``--zmq-subscribe``.  The argument to this option
 is the string which should be sent in the request message::
