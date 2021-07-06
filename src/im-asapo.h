@@ -36,15 +36,61 @@
 
 #if defined(HAVE_ASAPO)
 
-extern struct im_asapo *im_asapo_connect();
+#include <asapo/consumer_c.h>
+
+extern struct im_asapo *im_asapo_connect(const char *endpoint,
+                                         const char *token,
+                                         const char *beamtime,
+                                         const char *path,
+                                         AsapoStringHandle group_id);
+
 extern void im_asapo_shutdown(struct im_asapo *a);
+
 extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size);
+
+extern AsapoStringHandle im_asapo_group_id_from_string(const char *str);
+
+extern AsapoStringHandle im_asapo_make_unique_group_id(const char *endpoint,
+                                                       const char *token,
+                                                       const char *beamtime,
+                                                       const char *path);
 
 #else /* defined(HAVE_ASAPO) */
 
-static UNUSED struct im_asapo *im_asapo_connect() { return NULL; }
-static UNUSED void im_asapo_shutdown(struct im_asapo *a) { }
-static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize) { *psize = 0; return NULL; }
+typedef void* AsapoStringHandle;
+
+static UNUSED struct im_asapo *im_asapo_connect(const char *endpoint,
+                                                const char *token,
+                                                const char *beamtime,
+                                                const char *path,
+                                                AsapoStringHandle group_id)
+{
+	return NULL;
+}
+
+static UNUSED void im_asapo_shutdown(struct im_asapo *a)
+{
+}
+
+static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize)
+{
+	*psize = 0;
+	return NULL;
+}
+
+static UNUSED AsapoStringHandle im_asapo_group_id_from_string(const char *str)
+{
+	return NULL;
+}
+
+static UNUSED AsapoStringHandle im_asapo_make_unique_group_id(const char *endpoint,
+                                                              const char *token,
+                                                              const char *beamtime,
+                                                              const char *path
+                                                              AsapoStringHandle group_id)
+{
+	return NULL;
+}
 
 #endif /* defined(HAVE_ASAPO) */
 

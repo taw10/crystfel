@@ -89,6 +89,7 @@ extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           int n_zmq_subscriptions, const char *zmq_request,
                           const char *asapo_endpoint, const char *asapo_token,
                           const char *asapo_beamtime, const char *asapo_path,
+                          const char *asapo_group_id,
                           int timeout, int profile);
 
 #endif /* IM_SANDBOX_H */

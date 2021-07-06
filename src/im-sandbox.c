@@ -62,6 +62,7 @@
 #include "process_image.h"
 #include "im-zmq.h"
 #include "profile.h"
+#include "im-asapo.h"
 
 
 struct sandbox
@@ -110,6 +111,7 @@ struct sandbox
 	const char *asapo_token;
 	const char *asapo_beamtime;
 	const char *asapo_path;
+	AsapoStringHandle asapo_group_id;
 
 	/* Final output */
 	Stream *stream;
@@ -356,12 +358,13 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	}
 
 	if ( sb->asapo ) {
-		zmqstuff = im_zmq_connect(sb->zmq_address,
-		                          sb->zmq_subscriptions,
-		                          sb->n_zmq_subscriptions,
-		                          sb->zmq_request);
-		if ( zmqstuff == NULL ) {
-			ERROR("ZMQ setup failed.\n");
+		asapostuff = im_asapo_connect(sb->asapo_endpoint,
+		                              sb->asapo_token,
+		                              sb->asapo_beamtime,
+		                              sb->asapo_path,
+		                              sb->asapo_group_id);
+		if ( asapostuff == NULL ) {
+			ERROR("ASAP::O setup failed.\n");
 			return 1;
 		}
 	}
@@ -1077,6 +1080,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    int n_zmq_subscriptions, const char *zmq_request,
                    const char *asapo_endpoint, const char *asapo_token,
                    const char *asapo_beamtime, const char *asapo_path,
+                   const char *asapo_group_id,
                    int timeout, int profile)
 {
 	int i;
@@ -1130,6 +1134,15 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	if ( sb->zmq && sb->asapo ) {
 		ERROR("Cannot simultaneously use ZMQ and ASAP::O input.\n");
 		return 0;
+	}
+
+	if ( asapo_group_id != NULL ) {
+		sb->asapo_group_id = im_asapo_group_id_from_string(asapo_group_id);
+	} else {
+		sb->asapo_group_id = im_asapo_make_unique_group_id(asapo_endpoint,
+		                                                   asapo_token,
+		                                                   asapo_beamtime,
+		                                                   asapo_path);
 	}
 
 	sb->fds = NULL;

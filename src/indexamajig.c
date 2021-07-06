@@ -88,6 +88,7 @@ struct indexamajig_arguments
 	char *asapo_token;
 	char *asapo_beamtime;
 	char *asapo_path;
+	char *asapo_group_id;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -420,6 +421,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 		case 216 :
 		args->asapo_path = strdup(arg);
+		break;
+
+		case 217 :
+		args->asapo_group_id = strdup(arg);
 		break;
 
 		case 219 :
@@ -846,6 +851,11 @@ int main(int argc, char *argv[])
 	args.basename = 0;
 	args.zmq_addr = NULL;
 	args.zmq_request = NULL;
+	args.asapo_endpoint = NULL;
+	args.asapo_token = NULL;
+	args.asapo_beamtime = NULL;
+	args.asapo_path = NULL;
+	args.asapo_group_id = NULL;
 	args.n_zmq_subscriptions = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
@@ -958,6 +968,7 @@ int main(int argc, char *argv[])
 		{"asapo-token", 214, "str", OPTION_NO_USAGE, "ASAP::O token"},
 		{"asapo-beamtime", 215, "str", OPTION_NO_USAGE, "ASAP::O beamtime ID"},
 		{"asapo-path", 216, "str", OPTION_NO_USAGE, "ASAP::O path to files"},
+		{"asapo-group", 217, "str", OPTION_NO_USAGE, "ASAP::O group ID"},
 		{"data-format", 219, "str", OPTION_NO_USAGE, "Streamed data format"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
@@ -1319,6 +1330,7 @@ int main(int argc, char *argv[])
 	                   args.n_zmq_subscriptions, args.zmq_request,
 	                   args.asapo_endpoint, args.asapo_token,
 	                   args.asapo_beamtime, args.asapo_path,
+	                   args.asapo_group_id,
 	                   timeout, args.profile);
 
 	cell_free(args.iargs.cell);
