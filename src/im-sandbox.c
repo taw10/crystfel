@@ -457,10 +457,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		if ( !sb->zmq ) {
 
-			pargs.zmq_data = NULL;
-			pargs.zmq_data_size = 0;
-
-		} else {
+		}
+		if ( sb->zmq ) {
 
 			do {
 				pargs.zmq_data = im_zmq_fetch(zmqstuff,
@@ -472,6 +470,16 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			 * importantly, the event queue gave us a unique
 			 * serial number for this image. */
 
+		} else if ( sb->asapo ) {
+
+			/* Temporary (?) abuse of "zmq_data", even though
+			 * data comes via ASAP::O */
+			pargs.zmq_data = im_asapo_fetch(asapostuff,
+			                                &pargs.zmq_data_size);
+
+		} else {
+			pargs.zmq_data = NULL;
+			pargs.zmq_data_size = 0;
 		}
 
 		sb->shared->time_last_start[cookie] = get_monotonic_seconds();
@@ -489,7 +497,9 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		}
 	}
 
+	/* These are both no-ops if argument is NULL */
 	im_zmq_shutdown(zmqstuff);
+	im_asapo_shutdown(asapostuff);
 
 	cleanup_indexing(iargs->ipriv);
 	cell_free(iargs->cell);
