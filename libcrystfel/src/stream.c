@@ -1009,7 +1009,7 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 		}
 
 		if ( strncmp(line, "hdf5/", 5) == 0 ) {
-			parse_header(line+5, image, 'f');
+			parse_header(line+4, image, HEADER_FLOAT);
 		}
 
 		if ( strncmp(line, "header/int/", 11) == 0 ) {
