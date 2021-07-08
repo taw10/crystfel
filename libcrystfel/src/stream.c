@@ -56,7 +56,7 @@
 /** \file stream.h */
 
 #define LATEST_MAJOR_VERSION (2)
-#define LATEST_MINOR_VERSION (4)
+#define LATEST_MINOR_VERSION (3)
 
 #define AT_LEAST_VERSION(st, a, b) ((st->major_version>=(a)) \
                                     && (st->minor_version>=(b)))
@@ -1262,9 +1262,6 @@ Stream *stream_open_for_read(const char *filename)
 	} else if ( strncmp(line, "CrystFEL stream format 2.3", 26) == 0 ) {
 		st->major_version = 2;
 		st->minor_version = 3;
-	} else if ( strncmp(line, "CrystFEL stream format 2.4", 26) == 0 ) {
-		st->major_version = 2;
-		st->minor_version = 4;
 	} else {
 		ERROR("Invalid stream, or stream format is too new.\n");
 		stream_close(st);
