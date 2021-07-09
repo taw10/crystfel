@@ -96,7 +96,7 @@ static void show_help(const char *s)
 " -t, --gradients=<method>  Select method for calculation of shape transforms\n"
 "     --really-random       Seed the random number generator with /dev/urandom.\n"
 "     --min-size=<s>        Minimum crystal size in nm.\n"
-"     --max-size=<s>        Naximum crystal size in nm.\n"
+"     --max-size=<s>        Maximum crystal size in nm.\n"
 "     --no-noise            Do not calculate Poisson noise.\n"
 " -s, --sample-spectrum=<N> Use N samples from spectrum. Default 3.\n"
 " -x, --spectrum=<type>     Type of spectrum to simulate.\n"
