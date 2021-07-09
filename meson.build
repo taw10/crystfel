@@ -1,6 +1,6 @@
 # Meson file for CrystFEL
 project('crystfel', 'c',
-        version: '0.9.1',
+        version: '0.10.0',
         license: 'GPL3+',
         meson_version: '>=0.50.0',
         default_options: ['buildtype=debugoptimized'])

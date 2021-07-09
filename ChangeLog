@@ -1,5 +1,44 @@
+CrystFEL version 0.10.0, 16th August 2021
+-----------------------------------------
+
+- New GUI ('crystfel') added, replacing 'hdfsee' which has been removed
+- Added ZeroMQ interface for streaming data processing
+- Added Meson build system
+- get_hkl can now write XDS and MTZ directly
+- Removed geoptimiser
+- Removed wide-bandwidth features
+- Added 'parameter harvest files' to indexamajig and partialator
+- Better handling of static masks with multi-event files
+- Added 'FromFile' indexing
+- Added scripts/display-hdf5 and scripts/make-csplit
+- New DataTemplate API
+- New Stream API, allowing random access and better recreation of processing
+- Bug fix for asdf indexing, vastly increasing speed and success rate
+- Big speed improvement for TakeTwo
+- Speed improvement for detector pixel coordinate transformation
+- Speed improvement for UnitCell
+- Speed improvement for creation of bad pixel maps from bad regions
+- Fixed a large memory leak in cell_tool
+- Fix large number of "rejected" reflections
+- Support for units in geometry file distances (eg 'clen = 43 mm')
+- Support for wavelength and electron accelerating voltage in geometry file
+- Added detector_shift_x/y to geometry file
+- Added peak_list_type to geometry file
+- Added flag_{lessthan,morethan,equal} to geometry file
+- Added peak_list to geometry file (no more --hdf5-peaks)
+- Added requirement for fs/ss bad regions to name a panel
+- indexamajig: Added --no-image-data and --no-mask-data
+- partialator, process_hkl: Handle multiple input streams
+- partialator: Reject crystals with large profile radii
+- indexamajig: Added --wavelength-estimate and --camera-length-estimate
+- indexamajig: Added --max-indexer-threads
+- Figure of merit calculations moved to libcrystfel
+- Removed badrow culling
+- compare_hkl: Removed --intensity-shells
+
+
 CrystFEL version 0.9.1, 22nd June 2020
--------------------------------------
+--------------------------------------
 
 - indexamajig: Fixed default unit cell tolerance (was 1.5 rad, now 1.5 deg)
 - Fixed bug in unit cell reduction/comparison
