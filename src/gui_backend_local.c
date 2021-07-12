@@ -505,7 +505,9 @@ static void *run_merging(const char *job_title,
 static void *run_indexing(const char *job_title,
                           const char *job_notes,
                           struct crystfelproject *proj,
-                          void *opts_priv)
+                          void *opts_priv,
+                          double wavelength_estimate,
+                          double clen_estimate)
 {
 	struct local_indexing_opts *opts = opts_priv;
 	struct local_job *job;
@@ -539,7 +541,9 @@ static void *run_indexing(const char *job_title,
 	                               "crystfel.stream",
 	                               NULL, 1,
 	                               &proj->peak_search_params,
-	                               &proj->indexing_params) )
+	                               &proj->indexing_params,
+	                               wavelength_estimate,
+	                               clen_estimate) )
 	{
 		char *args[3];
 		args[0] = "sh";

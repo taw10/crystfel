@@ -581,7 +581,9 @@ static void write_partial_file_list(GFile *workdir,
 static void *run_indexing(const char *job_title,
                           const char *job_notes,
                           struct crystfelproject *proj,
-                          void *opts_priv)
+                          void *opts_priv,
+                          double wavelength_estimate,
+                          double clen_estimate)
 {
 	struct slurm_indexing_opts *opts = opts_priv;
 	struct slurm_job *job;
@@ -645,7 +647,9 @@ static void *run_indexing(const char *job_title,
 	                               "crystfel-${SLURM_ARRAY_TASK_ID}.stream",
 	                               serial_offs, 0,
 	                               &proj->peak_search_params,
-	                               &proj->indexing_params) )
+	                               &proj->indexing_params,
+	                               wavelength_estimate,
+	                               clen_estimate) )
 	{
 		job = start_slurm_job(GUI_JOB_INDEXING,
 		                      sc_filename,

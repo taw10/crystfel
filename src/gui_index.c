@@ -135,16 +135,55 @@ static void get_indexing_opts(struct crystfelproject *proj,
 }
 
 
+static int get_first_frame_parameters(struct crystfelproject *proj,
+                                      double *wavelength_estimate,
+                                      double *clen_estimate)
+{
+	struct image *image;
+
+	if ( proj->n_frames < 1 ) {
+		ERROR("No frames!\n");
+		return 1;
+	}
+
+
+	image = image_read(proj->dtempl,
+	                   proj->filenames[0],
+	                   proj->events[0],
+	                   0, 0);
+
+	if ( image == NULL ) {
+		ERROR("Failed to load first frame\n");
+		return 1;
+	}
+
+	*wavelength_estimate = image->lambda;
+	*clen_estimate = detgeom_mean_camera_length(image->detgeom);
+
+	image_free(image);
+
+	return 0;
+}
+
+
 static int run_indexing_all(struct crystfelproject *proj,
                             int backend_idx, const char *job_title,
                             const char *job_notes)
 {
 	struct crystfel_backend *be;
 	void *job_priv;
+	double wavelength_estimate;
+	double clen_estimate;
+
+	/* Get parameters from first frame */
+	if ( get_first_frame_parameters(proj, &wavelength_estimate,
+	                                      &clen_estimate) ) return 1;
 
 	be = &proj->backends[backend_idx];
 	job_priv = be->run_indexing(job_title, job_notes, proj,
-	                            be->indexing_opts_priv);
+	                            be->indexing_opts_priv,
+	                            wavelength_estimate,
+	                            clen_estimate);
 
 	if ( job_priv != NULL ) {
 		char name[256];
@@ -679,6 +718,16 @@ static void add_arg_float(char **args, int pos, const char *label,
 }
 
 
+static void add_arg_float_exp(char **args, int pos, const char *label,
+                              float val)
+{
+	char *str = malloc(64);
+	if ( str == NULL ) return;
+	snprintf(str, 63, "--%s=%e", label, val);
+	args[pos] = str;
+}
+
+
 static void add_arg_int(char **args, int pos, const char *label,
                         int val)
 {
@@ -703,13 +752,40 @@ static void add_arg_string(char **args, int pos, const char *label,
 }
 
 
+static int is_method(IndexingMethod m, IndexingMethod b)
+{
+	return (m & INDEXING_METHOD_MASK) == b;
+}
+
+
+static int pinkindexer_used(const char *methods)
+{
+	IndexingMethod *m;
+	int n, i;
+	int r = 0;
+
+	m = parse_indexing_methods(methods, &n);
+	for ( i=0; i<n; i++ ) {
+		if ( is_method(m[i], INDEXING_PINKINDEXER) ) {
+			r = 1;
+			break;
+		}
+	}
+
+	free(m);
+	return r;
+}
+
+
 static char **indexamajig_command_line(const char *geom_filename,
                                        const char *n_thread_str,
                                        const char *files_list,
                                        const char *stream_filename,
                                        const char *serial_start,
                                        struct peak_params *peak_search_params,
-                                       struct index_params *indexing_params)
+                                       struct index_params *indexing_params,
+                                       double wavelength_estimate,
+                                       double clen_estimate)
 {
 	char **args;
 	char tols[2048];
@@ -779,6 +855,13 @@ static char **indexamajig_command_line(const char *geom_filename,
 	if ( indexing_params->indexing_methods != NULL ) {
 		add_arg(args, n_args++, "--indexing");
 		add_arg(args, n_args++, indexing_params->indexing_methods);
+
+		if ( pinkindexer_used(indexing_params->indexing_methods) ) {
+			add_arg_float_exp(args, n_args++, "wavelength-estimate",
+			                  wavelength_estimate);
+			add_arg_float(args, n_args++, "camera-length-estimate",
+			              clen_estimate);
+		}
 	}
 	if ( indexing_params->cell_file != NULL ) {
 		add_arg(args, n_args++, "-p");
@@ -883,7 +966,9 @@ int write_indexamajig_script(const char *script_filename,
                              const char *serial_start,
                              int redirect_output,
                              struct peak_params *peak_search_params,
-                             struct index_params *indexing_params)
+                             struct index_params *indexing_params,
+                             double wavelength_estimate,
+                             double clen_estimate)
 {
 	FILE *fh;
 	int i;
@@ -895,7 +980,9 @@ int write_indexamajig_script(const char *script_filename,
 	                                   stream_filename,
 	                                   serial_start,
 	                                   peak_search_params,
-	                                   indexing_params);
+	                                   indexing_params,
+	                                   wavelength_estimate,
+	                                   clen_estimate);
 	if ( cmdline == NULL ) return 1;
 
 	fh = fopen(script_filename, "w");

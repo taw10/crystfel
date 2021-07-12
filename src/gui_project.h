@@ -175,7 +175,9 @@ struct crystfel_backend {
 	void *(*run_indexing)(const char *job_title,
 	                      const char *job_notes,
 	                      struct crystfelproject *proj,
-	                      void *opts_priv);
+	                      void *opts_priv,
+	                      double wavelength_estimate,
+	                      double clen_estimate);
 
 	/* Called to ask the backend to write its indexing options */
 	void (*write_indexing_opts)(void *opts_priv, FILE *fh);

@@ -51,6 +51,8 @@ extern int write_indexamajig_script(const char *script_filename,
                                     const char *serial_start,
                                     int redirect_output,
                                     struct peak_params *peak_search_params,
-                                    struct index_params *indexing_params);
+                                    struct index_params *indexing_params,
+                                    double wavelength_estimate,
+                                    double clen_estimate);
 
 #endif
