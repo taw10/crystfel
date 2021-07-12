@@ -317,6 +317,101 @@ static int pop_random_frame(struct crystfelproject *proj)
 }
 
 
+static int goto_frame(struct crystfelproject *proj, const char *ev)
+{
+	int i;
+	for ( i=0; i<proj->n_frames; i++ ) {
+		if ( strcmp(proj->events[i], ev) == 0 ) {
+			proj->cur_frame = i;
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+struct goto_frame_stuff
+{
+	GtkWidget *entry;
+	struct crystfelproject *proj;
+};
+
+
+static void free_goto_frame_stuff(gpointer stuff,
+                                  GClosure *closure)
+{
+	free(stuff);
+}
+
+
+static void goto_frame_activate_sig(GtkEntry *entry, GtkDialog *dialog)
+{
+	gtk_dialog_response(dialog, GTK_RESPONSE_OK);
+}
+
+
+static void goto_frame_response_sig(GtkDialog *dialog, gint response_id,
+                                    struct goto_frame_stuff *stuff)
+{
+	if ( response_id == GTK_RESPONSE_OK ) {
+		if ( goto_frame(stuff->proj,
+		                gtk_entry_get_text(GTK_ENTRY(stuff->entry))) )
+		{
+			error_box(stuff->proj, "Frame ID not found");
+		} else {
+			gtk_widget_destroy(GTK_WIDGET(dialog));
+			update_imageview(stuff->proj);
+		}
+	} else {
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+	}
+}
+
+
+static gint goto_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	GtkWidget *window;
+	GtkWidget *hbox;
+	GtkWidget *label;
+	struct goto_frame_stuff *stuff;
+
+	stuff = malloc(sizeof(struct goto_frame_stuff));
+	if ( stuff == NULL ) return 0;
+
+	stuff->proj = proj;
+
+	window = gtk_dialog_new_with_buttons("Jump to frame",
+					GTK_WINDOW(proj->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
+					GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+
+	hbox = gtk_hbox_new(FALSE, 8.0);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(window))),
+	                   hbox, FALSE, FALSE, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(hbox), 8.0);
+
+	label = gtk_label_new("Jump to frame ID:");
+	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 3);
+
+	stuff->entry = gtk_entry_new();
+	gtk_entry_set_text(GTK_ENTRY(stuff->entry),
+	                   proj->events[proj->cur_frame]);
+	gtk_box_pack_start(GTK_BOX(hbox), stuff->entry, TRUE, TRUE, 3);
+
+	g_signal_connect(G_OBJECT(stuff->entry), "activate",
+			 G_CALLBACK(goto_frame_activate_sig), window);
+	g_signal_connect_data(G_OBJECT(window), "response",
+	                      G_CALLBACK(goto_frame_response_sig), stuff,
+	                      free_goto_frame_stuff, 0);
+
+	gtk_widget_show_all(window);
+	gtk_widget_grab_focus(GTK_WIDGET(stuff->entry));
+
+	return 0;
+}
+
+
 /* File->Quit */
 static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
@@ -615,6 +710,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
 		"	<menuitem name=\"rescan\" action=\"RescanAction\" />"
+		"	<menuitem name=\"jumpframe\" action=\"JumpFrameAction\" />"
 		"</menu>"
 		"<menu name=\"help\" action=\"HelpAction\">"
 		"	<menuitem name=\"about\" action=\"AboutAction\" />"
@@ -636,6 +732,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "RescanAction", NULL, "Rescan streams", NULL, NULL,
 			G_CALLBACK(rescan_sig) },
+		{ "JumpFrameAction", NULL, "Jump to frame", NULL, NULL,
+			G_CALLBACK(goto_frame_sig) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About", NULL, NULL,
