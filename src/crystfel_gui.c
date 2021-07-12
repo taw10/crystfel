@@ -429,19 +429,75 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 		NULL
 	};
 
+	/* Alphabetical by family name */
+	const gchar *contributors[] = {
+		"Steve Aplin <steve.aplin@desy.de>",
+		"Andrew Aquila <andrew.aquila@cfel.de>",
+		"Anton Barty <anton.barty@desy.de>",
+		"Kenneth Beyerlein <kenneth.beyerlein@desy.de>",
+		"Wolfgang Brehm <wolfgang.brehm@gmail.com>",
+		"Robert Bücker <robert.buecker@cssb-hamburg.de>",
+		"Fedor Chervinskii <fedor.chervinskii@gmail.com>",
+		"Lorenzo Galli <lorenzo.galli@desy.de>",
+		"Cornelius Gati <cornelius.gati@cfel.de>",
+		"Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>",
+		"Helen Ginn <helen@strubi.ox.ac.uk>",
+		"Thomas Grant <tgrant@hwi.buffalo.edu>",
+		"Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>",
+		"Richard Kirian <rkirian@asu.edu>",
+		"Valerio Mariani <<alerio.mariani@desy.de>",
+		"Andrew Martin <andrew.martin@desy.de>",
+		"Omri Mor <omor1@asu.edu>",
+		"Takanori Nakane <nakane.t@gmail.com>",
+		"Karol Nass <karol.nass@desy.de>",
+		"Nicolas Riebesel <nicolas.riebesel@tuhh.de>",
+		"Mamoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>",
+		"Alexandra Tolstikova <alexandra.tolstikova@desy.de>",
+		"Parker de Waal <Parker.deWaal@vai.org>",
+		"Keitaro Yamashita <k.yamashita@spring8.or.jp>",
+		"Oleksandr Yefanov <oleksandr.yefanov@desy.de>",
+		"Chun Hong Yoon <chun.hong.yoon@desy.de>",
+		"Nadia Zatsepin <nadia.zatsepin@asu.edu>",
+		NULL
+	};
+
+	const gchar *uthash[] = {
+		"Troy D. Hanson",
+		NULL
+	};
+
+	const gchar *gpl = "CrystFEL is free software: you can redistribute it and/or modify\n"
+	                   "it under the terms of the GNU General Public License as published by\n"
+	                   "the Free Software Foundation, either version 3 of the License, or\n"
+	                   "(at your option) any later version.\n\n"
+	                   "CrystFEL is distributed in the hope that it will be useful,\n"
+	                   "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+	                   "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+	                   "GNU General Public License for more details.\n\n"
+	                   "You should have received a copy of the GNU General Public License\n"
+	                   "along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.";
+
 	window = gtk_about_dialog_new();
 	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(proj->window));
 
+	gtk_about_dialog_set_logo_icon_name(GTK_ABOUT_DIALOG(window), "crystfel");
 	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(window),
 	        "CrystFEL graphical user interface");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window),
 	                             crystfel_version_string());
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"© 2020 Deutsches Elektronen-Synchrotron DESY, "
+		"© 2020-2021 Deutsches Elektronen-Synchrotron DESY, "
 		"a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
 		"https://www.desy.de/~twhite/crystfel");
+
 	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
+	gtk_about_dialog_add_credit_section(GTK_ABOUT_DIALOG(window),
+	                                    "Contributors", contributors);
+	gtk_about_dialog_add_credit_section(GTK_ABOUT_DIALOG(window),
+	                                    "Incorporates uthash by", uthash);
+
+	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(window), gpl);
 
 	g_signal_connect(window, "response", G_CALLBACK(gtk_widget_destroy),
 			 NULL);
