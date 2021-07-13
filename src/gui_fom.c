@@ -323,7 +323,9 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 	f->proj->fom_nbins = get_uint(f->num_bins);
 	if ( isnan(f->proj->fom_res_min)
 	  || isnan(f->proj->fom_res_max)
-	  || isnan(f->proj->fom_min_snr) )
+	  || isnan(f->proj->fom_min_snr)
+	  || isinf(f->proj->fom_res_min)
+	  || isinf(f->proj->fom_res_max) )
 	{
 		ERROR("Invalid parameters\n");
 		return;
