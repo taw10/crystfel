@@ -913,6 +913,35 @@ static char **indexamajig_command_line(const char *geom_filename,
 	if ( indexing_params->no_peak_check ) add_arg(args, n_args++, "--no-check-peaks");
 	if ( indexing_params->no_cell_check ) add_arg(args, n_args++, "--no-check-cell");
 
+	/* PinkIndexer-specific */
+	if ( pinkindexer_used(indexing_params->indexing_methods) ) {
+		add_arg_int(args, n_args++,
+		            "pinkIndexer-considered-peaks-count",
+		            indexing_params->pinkindexer_cpeaks);
+		if ( indexing_params->pinkindexer_use_max_res ) {
+			add_arg_float(args, n_args++,
+			              "pinkIndexer-max-resolution-for-indexing",
+			              indexing_params->pinkindexer_max_res);
+		}
+		add_arg_int(args, n_args++,
+		            "pinkIndexer-angle-resolution",
+		            indexing_params->pinkindexer_angle_density);
+		add_arg_int(args, n_args++,
+		            "pinkIndexer-refinement-type",
+		            indexing_params->pinkindexer_refinement_type);
+		add_arg_float(args, n_args++,
+		              "pinkIndexer-tolerance",
+		              indexing_params->pinkindexer_tolerance);
+		if ( indexing_params->pinkindexer_use_refl_radius ) {
+			add_arg_float(args, n_args++,
+			              "pinkIndexer-reflection-radius",
+			              indexing_params->pinkindexer_refl_radius);
+		}
+		add_arg_float(args, n_args++,
+		              "pinkIndexer-max-refinement-disbalance",
+		              indexing_params->pinkindexer_max_imbalance);
+	}
+
 	/* Integration */
 	add_arg(args, n_args++, "--integration");
 	add_arg(args, n_args++, indexing_params->integration_method);
