@@ -229,8 +229,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 
 	float reflectionRadius_1_per_A;
 	if (pinkIndexer_opts->reflectionRadius < 0) {
-		reflectionRadius_1_per_A = 0.02
-		        * sqrt(lattice.ax * lattice.ax + lattice.ay * lattice.ay + lattice.az * lattice.az);
+		reflectionRadius_1_per_A = 0.02 * modulus(lattice.ax, lattice.ay, lattice.az);
 	}
 	else {
 		reflectionRadius_1_per_A = pinkIndexer_opts->reflectionRadius * 1e10;  /* m^-1 to A^-1*/
