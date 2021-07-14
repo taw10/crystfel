@@ -507,18 +507,129 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 {
 	GtkWidget *box;
+	GtkWidget *vbox;
+	GtkWidget *vvbox;
+	GtkWidget *hbox;
 	GtkWidget *expander;
 	GtkWidget *label;
+	GtkWidget *scale;
+	GtkWidget *combo;
+	GtkWidget *entry;
+	GtkWidget *check;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
 
 	expander = gtk_expander_new("PinkIndexer");
 	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
-	label = gtk_label_new("Advanced options for this indexing method are "
-	                      "currently not available through the GUI.");
-	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
-	gtk_container_add(GTK_CONTAINER(expander), label);
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_add(GTK_CONTAINER(expander), vbox);
+
+	vvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), vvbox, FALSE, FALSE, 8);
+	label = gtk_label_new("Number of peaks to consider in initial stage:");
+	gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(vvbox), label, FALSE, FALSE, 0);
+	scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,
+	                                 0.0, 4.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(scale), TRUE);
+	gtk_scale_add_mark(GTK_SCALE(scale), 0.0, GTK_POS_TOP, "very few");
+	gtk_scale_add_mark(GTK_SCALE(scale), 1.0, GTK_POS_TOP, "few");
+	gtk_scale_add_mark(GTK_SCALE(scale), 2.0, GTK_POS_TOP, "medium");
+	gtk_scale_add_mark(GTK_SCALE(scale), 3.0, GTK_POS_TOP, "many");
+	gtk_scale_add_mark(GTK_SCALE(scale), 4.0, GTK_POS_TOP, "very many");
+	gtk_widget_set_margin_start(scale, 12);
+	gtk_box_pack_start(GTK_BOX(vvbox), scale, TRUE, TRUE, 0);
+	io->pinkindexer_cpeaks = scale;
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+	gtk_container_add(GTK_CONTAINER(vbox), hbox);
+	check = gtk_check_button_new_with_label("Exclude peaks with 1/d above");
+	gtk_box_pack_start(GTK_BOX(hbox), check, FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(entry), 5);
+	gtk_entry_set_input_purpose(GTK_ENTRY(entry), GTK_INPUT_PURPOSE_NUMBER);
+	gtk_box_pack_start(GTK_BOX(hbox), entry, FALSE, FALSE, 4);
+	label = gtk_label_new("Å^-1 from initial stage");
+	gtk_label_set_markup(GTK_LABEL(label), "Å<sup>-1</sup> from initial stage");
+	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 4);
+	i_disable_if_not(check, entry);
+	io->pinkindexer_use_max_res = check;
+	io->pinkindexer_max_res = entry;
+
+	vvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), vvbox, FALSE, FALSE, 8);
+	label = gtk_label_new("Angular sampling density:");
+	gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(vvbox), label, FALSE, FALSE, 0);
+	scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,
+	                                 0.0, 4.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(scale), TRUE);
+	gtk_scale_add_mark(GTK_SCALE(scale), 0.0, GTK_POS_TOP, "very loose");
+	gtk_scale_add_mark(GTK_SCALE(scale), 1.0, GTK_POS_TOP, "loose");
+	gtk_scale_add_mark(GTK_SCALE(scale), 2.0, GTK_POS_TOP, "medium");
+	gtk_scale_add_mark(GTK_SCALE(scale), 3.0, GTK_POS_TOP, "dense");
+	gtk_scale_add_mark(GTK_SCALE(scale), 4.0, GTK_POS_TOP, "very dense");
+	gtk_widget_set_margin_start(scale, 12);
+	gtk_box_pack_start(GTK_BOX(vvbox), scale, TRUE, TRUE, 0);
+	io->pinkindexer_angle_density = scale;
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_container_add(GTK_CONTAINER(vbox), hbox);
+	label = gtk_label_new("Refinement type");
+	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+	combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), combo, FALSE, FALSE, 4);
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "0",
+	                          "None");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "1",
+	                          "Fixed lattice parameters");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "2",
+	                          "Variable lattice parameters");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "3",
+	                          "Fixed, then variable parameters");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "4",
+	                          "Fixed, then variable, multiseed");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "5",
+	                          "Fixed, then variable, multiseed, center refinement");
+	io->pinkindexer_refinement_type = combo;
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_container_add(GTK_CONTAINER(vbox), hbox);
+	label = gtk_label_new("Relative tolerance for lattice vectors:");
+	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(entry), 5);
+	gtk_entry_set_input_purpose(GTK_ENTRY(entry), GTK_INPUT_PURPOSE_NUMBER);
+	gtk_box_pack_start(GTK_BOX(hbox), entry, FALSE, FALSE, 4);
+	io->pinkindexer_tolerance = entry;
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_container_add(GTK_CONTAINER(vbox), hbox);
+	check = gtk_check_button_new_with_label("Manually set the estimated reflection radius to");
+	gtk_box_pack_start(GTK_BOX(hbox), check, FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(entry), 5);
+	gtk_entry_set_input_purpose(GTK_ENTRY(entry), GTK_INPUT_PURPOSE_NUMBER);
+	gtk_box_pack_start(GTK_BOX(hbox), entry, FALSE, FALSE, 4);
+	label = gtk_label_new("Å^-1");
+	gtk_label_set_markup(GTK_LABEL(label), "Å<sup>-1</sup>");
+	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 4);
+	i_disable_if_not(check, entry);
+	io->pinkindexer_use_refl_radius = check;
+	io->pinkindexer_refl_radius = entry;
+
+	vvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), vvbox, FALSE, FALSE, 8);
+	label = gtk_label_new("Maximum allowable refinement imbalance:");
+	gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+	gtk_box_pack_start(GTK_BOX(vvbox), label, FALSE, FALSE, 0);
+	scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,
+	                                 0.0, 2.0, 0.1);
+	gtk_scale_set_draw_value(GTK_SCALE(scale), TRUE);
+	gtk_widget_set_margin_start(scale, 12);
+	gtk_box_pack_start(GTK_BOX(vvbox), scale, TRUE, TRUE, 0);
+	io->pinkindexer_max_imbalance = scale;
 
 	expander = gtk_expander_new("XGandalf");
 	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
@@ -977,6 +1088,60 @@ double crystfel_indexing_opts_get_fixed_divergence(CrystFELIndexingOpts *opts)
 }
 
 
+int crystfel_indexing_opts_get_pinkindexer_cpeaks(CrystFELIndexingOpts *opts)
+{
+	return gtk_range_get_value(GTK_RANGE(opts->pinkindexer_cpeaks));
+}
+
+
+int crystfel_indexing_opts_get_pinkindexer_use_max_res(CrystFELIndexingOpts *opts)
+{
+	return get_bool(opts->pinkindexer_use_max_res);
+}
+
+
+double crystfel_indexing_opts_get_pinkindexer_max_res(CrystFELIndexingOpts *opts)
+{
+	return get_float(opts->pinkindexer_max_res);
+}
+
+
+int crystfel_indexing_opts_get_pinkindexer_angle_density(CrystFELIndexingOpts *opts)
+{
+	return gtk_range_get_value(GTK_RANGE(opts->pinkindexer_angle_density));
+}
+
+
+int crystfel_indexing_opts_get_pinkindexer_refinement_type(CrystFELIndexingOpts *opts)
+{
+	return atoi(get_combo_id(opts->pinkindexer_refinement_type));
+}
+
+
+double crystfel_indexing_opts_get_pinkindexer_tolerance(CrystFELIndexingOpts *opts)
+{
+	return get_float(opts->pinkindexer_tolerance);
+}
+
+
+int crystfel_indexing_opts_get_pinkindexer_use_refl_radius(CrystFELIndexingOpts *opts)
+{
+	return get_bool(opts->pinkindexer_use_refl_radius);
+}
+
+
+double crystfel_indexing_opts_get_pinkindexer_refl_radius(CrystFELIndexingOpts *opts)
+{
+	return get_float(opts->pinkindexer_refl_radius);
+}
+
+
+double crystfel_indexing_opts_get_pinkindexer_max_imbalance(CrystFELIndexingOpts *opts)
+{
+	return gtk_range_get_value(GTK_RANGE(opts->pinkindexer_max_imbalance));
+}
+
+
 /********************** Setters *************************/
 
 
@@ -1254,4 +1419,75 @@ void crystfel_indexing_opts_set_fixed_divergence(CrystFELIndexingOpts *opts,
 	char tmp[64];
 	snprintf(tmp, 63, "%.3f", val*1e3);
 	gtk_entry_set_text(GTK_ENTRY(opts->fix_divergence), tmp);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_cpeaks(CrystFELIndexingOpts *opts,
+                                                   int val)
+{
+	gtk_range_set_value(GTK_RANGE(opts->pinkindexer_cpeaks), val);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_use_max_res(CrystFELIndexingOpts *opts,
+                                                        int val)
+{
+	set_active(opts->pinkindexer_use_max_res, val);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_max_res(CrystFELIndexingOpts *opts,
+                                                    double val)
+{
+	char tmp[64];
+	snprintf(tmp, 63, "%.3f", val);
+	gtk_entry_set_text(GTK_ENTRY(opts->pinkindexer_max_res), tmp);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_angle_density(CrystFELIndexingOpts *opts,
+                                                          int val)
+{
+	gtk_range_set_value(GTK_RANGE(opts->pinkindexer_angle_density), val);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_refinement_type(CrystFELIndexingOpts *opts,
+                                                            int val)
+{
+	char tmp[64];
+	snprintf(tmp, 63, "%i", val);
+	set_combo_id(opts->pinkindexer_refinement_type, tmp);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_tolerance(CrystFELIndexingOpts *opts,
+                                                      double val)
+{
+	char tmp[64];
+	snprintf(tmp, 63, "%.3f", val);
+	gtk_entry_set_text(GTK_ENTRY(opts->pinkindexer_tolerance), tmp);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_use_refl_radius(CrystFELIndexingOpts *opts,
+                                                            int val)
+{
+	set_active(opts->pinkindexer_use_refl_radius, val);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_refl_radius(CrystFELIndexingOpts *opts,
+                                                        double val)
+{
+	char tmp[64];
+	snprintf(tmp, 63, "%.3f", val);
+	gtk_entry_set_text(GTK_ENTRY(opts->pinkindexer_refl_radius), tmp);
+}
+
+
+void crystfel_indexing_opts_set_pinkindexer_max_imbalance(CrystFELIndexingOpts *opts,
+                                                          double val)
+{
+	gtk_range_set_value(GTK_RANGE(opts->pinkindexer_max_imbalance), val);
 }

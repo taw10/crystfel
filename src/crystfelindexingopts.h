@@ -83,6 +83,16 @@ struct _crystfelindexingopts
 	GtkWidget *fix_profile_radius;
 	GtkWidget *fix_divergence;
 
+	GtkWidget *pinkindexer_cpeaks;
+	GtkWidget *pinkindexer_use_max_res;
+	GtkWidget *pinkindexer_max_res;
+	GtkWidget *pinkindexer_angle_density;
+	GtkWidget *pinkindexer_refinement_type;
+	GtkWidget *pinkindexer_tolerance;
+	GtkWidget *pinkindexer_use_refl_radius;
+	GtkWidget *pinkindexer_refl_radius;
+	GtkWidget *pinkindexer_max_imbalance;
+
 	GtkWidget *exclude_nonhits;
 	GtkWidget *no_peaks_in_stream;
 	GtkWidget *no_refls_in_stream;
@@ -127,7 +137,15 @@ extern double crystfel_indexing_opts_get_fixed_profile_radius(CrystFELIndexingOp
                                                               int *active);
 extern double crystfel_indexing_opts_get_fixed_divergence(CrystFELIndexingOpts *opts);
 
-
+extern int crystfel_indexing_opts_get_pinkindexer_cpeaks(CrystFELIndexingOpts *opts);
+extern int crystfel_indexing_opts_get_pinkindexer_use_max_res(CrystFELIndexingOpts *opts);
+extern double crystfel_indexing_opts_get_pinkindexer_max_res(CrystFELIndexingOpts *opts);
+extern int crystfel_indexing_opts_get_pinkindexer_angle_density(CrystFELIndexingOpts *opts);
+extern int crystfel_indexing_opts_get_pinkindexer_refinement_type(CrystFELIndexingOpts *opts);
+extern double crystfel_indexing_opts_get_pinkindexer_tolerance(CrystFELIndexingOpts *opts);
+extern int crystfel_indexing_opts_get_pinkindexer_use_refl_radius(CrystFELIndexingOpts *opts);
+extern double crystfel_indexing_opts_get_pinkindexer_refl_radius(CrystFELIndexingOpts *opts);
+extern double crystfel_indexing_opts_get_pinkindexer_max_imbalance(CrystFELIndexingOpts *opts);
 
 
 
@@ -179,5 +197,23 @@ extern void crystfel_indexing_opts_set_fixed_profile_radius(CrystFELIndexingOpts
 extern void crystfel_indexing_opts_set_fixed_divergence(CrystFELIndexingOpts *opts,
                                                         double val);
 
+extern void crystfel_indexing_opts_set_pinkindexer_cpeaks(CrystFELIndexingOpts *opts,
+                                                          int val);
+extern void crystfel_indexing_opts_set_pinkindexer_use_max_res(CrystFELIndexingOpts *opts,
+                                                               int val);
+extern void crystfel_indexing_opts_set_pinkindexer_max_res(CrystFELIndexingOpts *opts,
+                                                           double val);
+extern void crystfel_indexing_opts_set_pinkindexer_angle_density(CrystFELIndexingOpts *opts,
+                                                                 int val);
+extern void crystfel_indexing_opts_set_pinkindexer_refinement_type(CrystFELIndexingOpts *opts,
+                                                                   int val);
+extern void crystfel_indexing_opts_set_pinkindexer_tolerance(CrystFELIndexingOpts *opts,
+                                                             double val);
+extern void crystfel_indexing_opts_set_pinkindexer_use_refl_radius(CrystFELIndexingOpts *opts,
+                                                                   int val);
+extern void crystfel_indexing_opts_set_pinkindexer_refl_radius(CrystFELIndexingOpts *opts,
+                                                               double val);
+extern void crystfel_indexing_opts_set_pinkindexer_max_imbalance(CrystFELIndexingOpts *opts,
+                                                                 double val);
 
 #endif	/* CRYSTFELINDEXINGOPTS_H */
