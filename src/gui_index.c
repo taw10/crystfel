@@ -114,6 +114,16 @@ static void get_indexing_opts(struct crystfelproject *proj,
 	proj->indexing_params.no_cell_check = !crystfel_indexing_opts_get_cell_check(opts);
 	proj->indexing_params.min_peaks = crystfel_indexing_opts_get_min_peaks(opts);
 
+	proj->indexing_params.pinkindexer_cpeaks = crystfel_indexing_opts_get_pinkindexer_cpeaks(opts);
+	proj->indexing_params.pinkindexer_use_max_res = crystfel_indexing_opts_get_pinkindexer_use_max_res(opts);
+	proj->indexing_params.pinkindexer_max_res = crystfel_indexing_opts_get_pinkindexer_max_res(opts);
+	proj->indexing_params.pinkindexer_angle_density = crystfel_indexing_opts_get_pinkindexer_angle_density(opts);
+	proj->indexing_params.pinkindexer_refinement_type = crystfel_indexing_opts_get_pinkindexer_refinement_type(opts);
+	proj->indexing_params.pinkindexer_tolerance = crystfel_indexing_opts_get_pinkindexer_tolerance(opts);
+	proj->indexing_params.pinkindexer_use_refl_radius = crystfel_indexing_opts_get_pinkindexer_use_refl_radius(opts);
+	proj->indexing_params.pinkindexer_refl_radius = crystfel_indexing_opts_get_pinkindexer_refl_radius(opts);
+	proj->indexing_params.pinkindexer_max_imbalance = crystfel_indexing_opts_get_pinkindexer_max_imbalance(opts);
+
 	/* Integration */
 	proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
 	proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
@@ -331,6 +341,26 @@ static void set_indexing_opts(struct crystfelproject *proj,
 	crystfel_indexing_opts_set_cell_check(opts, !proj->indexing_params.no_cell_check);
 	crystfel_indexing_opts_set_tolerances(opts, proj->indexing_params.tols);
 	crystfel_indexing_opts_set_min_peaks(opts, proj->indexing_params.min_peaks);
+
+	/* PinkIndexer */
+	crystfel_indexing_opts_set_pinkindexer_cpeaks(opts,
+	                       proj->indexing_params.pinkindexer_cpeaks);
+	crystfel_indexing_opts_set_pinkindexer_use_max_res(opts,
+	                       proj->indexing_params.pinkindexer_use_max_res);
+	crystfel_indexing_opts_set_pinkindexer_max_res(opts,
+	                       proj->indexing_params.pinkindexer_max_res);
+	crystfel_indexing_opts_set_pinkindexer_angle_density(opts,
+	                       proj->indexing_params.pinkindexer_angle_density);
+	crystfel_indexing_opts_set_pinkindexer_refinement_type(opts,
+	                       proj->indexing_params.pinkindexer_refinement_type);
+	crystfel_indexing_opts_set_pinkindexer_tolerance(opts,
+	                       proj->indexing_params.pinkindexer_tolerance);
+	crystfel_indexing_opts_set_pinkindexer_use_refl_radius(opts,
+	                       proj->indexing_params.pinkindexer_use_refl_radius);
+	crystfel_indexing_opts_set_pinkindexer_refl_radius(opts,
+	                       proj->indexing_params.pinkindexer_refl_radius);
+	crystfel_indexing_opts_set_pinkindexer_max_imbalance(opts,
+	                       proj->indexing_params.pinkindexer_max_imbalance);
 
 	/* Integration */
 	crystfel_indexing_opts_set_integration_method_string(opts, proj->indexing_params.integration_method);
