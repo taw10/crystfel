@@ -266,6 +266,42 @@ static void parse_indexing_opt(const char *key, const char *val,
 	if ( strcmp(key, "indexing.min_peaks") == 0 ) {
 		proj->indexing_params.min_peaks = parse_int(val);
 	}
+
+	if ( strcmp(key, "indexing.pinkindexer.cpeaks") == 0 ) {
+		proj->indexing_params.pinkindexer_cpeaks = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.use_max_res") == 0 ) {
+		proj->indexing_params.pinkindexer_use_max_res = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.max_res") == 0 ) {
+		proj->indexing_params.pinkindexer_max_res = parse_float(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.angle_density") == 0 ) {
+		proj->indexing_params.pinkindexer_angle_density = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.refinement_type") == 0 ) {
+		proj->indexing_params.pinkindexer_refinement_type = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.tolerance") == 0 ) {
+		proj->indexing_params.pinkindexer_tolerance = parse_float(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.use_refl_radius") == 0 ) {
+		proj->indexing_params.pinkindexer_use_refl_radius = parse_int(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.refl_radius") == 0 ) {
+		proj->indexing_params.pinkindexer_refl_radius = parse_float(val);
+	}
+
+	if ( strcmp(key, "indexing.pinkindexer.max_imbalance") == 0 ) {
+		proj->indexing_params.pinkindexer_max_imbalance = parse_float(val);
+	}
 }
 
 
@@ -956,6 +992,27 @@ int save_project(struct crystfelproject *proj)
 		be->write_indexing_opts(be->indexing_opts_priv, fh);
 	}
 
+	/* PinkIndexer-specific */
+	fprintf(fh, "indexing.pinkindexer.cpeaks %i\n",
+	        proj->indexing_params.pinkindexer_cpeaks);
+	fprintf(fh, "indexing.pinkindexer.use_max_res %i\n",
+	        proj->indexing_params.pinkindexer_use_max_res);
+	fprintf(fh, "indexing.pinkindexer.max_res %f\n",
+	        proj->indexing_params.pinkindexer_max_res);
+	fprintf(fh, "indexing.pinkindexer.angle_density %i\n",
+	        proj->indexing_params.pinkindexer_angle_density);
+	fprintf(fh, "indexing.pinkindexer.refinement_type %i\n",
+	        proj->indexing_params.pinkindexer_refinement_type);
+	fprintf(fh, "indexing.pinkindexer.tolerance %f\n",
+	        proj->indexing_params.pinkindexer_tolerance);
+	fprintf(fh, "indexing.pinkindexer.use_refl_radius %i\n",
+	        proj->indexing_params.pinkindexer_use_refl_radius);
+	fprintf(fh, "indexing.pinkindexer.refl_radius %f\n",
+	        proj->indexing_params.pinkindexer_refl_radius);
+	fprintf(fh, "indexing.pinkindexer.max_imbalance %f\n",
+	        proj->indexing_params.pinkindexer_max_imbalance);
+
+	/* Integration */
 	fprintf(fh, "integration.method %s\n",
 	        proj->indexing_params.integration_method);
 	fprintf(fh, "integration.overpredict %i\n",
@@ -1214,6 +1271,16 @@ int default_project(struct crystfelproject *proj)
 	proj->indexing_params.fix_profile_radius = 0.01e9;
 	proj->indexing_params.use_fix_profile_radius = 0;
 	proj->indexing_params.fix_divergence = 0.0;
+
+	proj->indexing_params.pinkindexer_cpeaks = 4;
+	proj->indexing_params.pinkindexer_use_max_res = 0;
+	proj->indexing_params.pinkindexer_max_res = 2.5;  /* Angstroms */
+	proj->indexing_params.pinkindexer_angle_density = 2;
+	proj->indexing_params.pinkindexer_refinement_type = 1;
+	proj->indexing_params.pinkindexer_tolerance = 0.06;
+	proj->indexing_params.pinkindexer_use_refl_radius = 0;
+	proj->indexing_params.pinkindexer_refl_radius = 0.003;
+	proj->indexing_params.pinkindexer_max_imbalance = 0.4;
 
 	proj->ambi_params.use_res = 1;
 	proj->ambi_params.res_min = 20;  /* Angstroms */

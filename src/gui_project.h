@@ -80,6 +80,17 @@ struct index_params {
 	float tols[6];
 	int min_peaks;
 
+	/* PinkIndexer-specific */
+	int pinkindexer_cpeaks;
+	int pinkindexer_use_max_res;
+	double pinkindexer_max_res;
+	int pinkindexer_angle_density;
+	int pinkindexer_refinement_type;
+	double pinkindexer_tolerance;
+	int pinkindexer_use_refl_radius;
+	double pinkindexer_refl_radius;
+	double pinkindexer_max_imbalance;
+
 	/* Integration */
 	char *integration_method;
 	int overpredict;
