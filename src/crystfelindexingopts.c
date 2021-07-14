@@ -504,6 +504,54 @@ static GtkWidget *integration_parameters(CrystFELIndexingOpts *io)
 }
 
 
+static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
+{
+	GtkWidget *box;
+	GtkWidget *expander;
+	GtkWidget *label;
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+
+	expander = gtk_expander_new("PinkIndexer");
+	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
+	label = gtk_label_new("Advanced options for this indexing method are "
+	                      "currently not available through the GUI.");
+	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+	gtk_container_add(GTK_CONTAINER(expander), label);
+
+	expander = gtk_expander_new("XGandalf");
+	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
+	label = gtk_label_new("Advanced options for this indexing method are "
+	                      "currently not available through the GUI.");
+	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+	gtk_container_add(GTK_CONTAINER(expander), label);
+
+	expander = gtk_expander_new("Felix");
+	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
+	label = gtk_label_new("Advanced options for this indexing method are "
+	                      "currently not available through the GUI.");
+	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+	gtk_container_add(GTK_CONTAINER(expander), label);
+
+	expander = gtk_expander_new("TakeTwo");
+	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
+	label = gtk_label_new("Advanced options for this indexing method are "
+	                      "currently not available through the GUI.");
+	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+	gtk_container_add(GTK_CONTAINER(expander), label);
+
+	expander = gtk_expander_new("FromFile");
+	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
+	label = gtk_label_new("Advanced options for this indexing method are "
+	                      "currently not available through the GUI.");
+	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+	gtk_container_add(GTK_CONTAINER(expander), label);
+
+	return box;
+}
+
+
 static void add_metadata_item(GtkListStore *model, const char *string)
 {
 	GtkTreeIter iter;
@@ -649,6 +697,10 @@ GtkWidget *crystfel_indexing_opts_new()
 	gtk_notebook_append_page(GTK_NOTEBOOK(io),
 	                         integration_parameters(io),
 	                         gtk_label_new("Integration"));
+
+	gtk_notebook_append_page(GTK_NOTEBOOK(io),
+	                         advanced_parameters(io),
+	                         gtk_label_new("Advanced indexing"));
 
 	io->stream_params = stream_parameters(io);
 	gtk_notebook_append_page(GTK_NOTEBOOK(io), io->stream_params,
