@@ -204,7 +204,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             double wavelength_estimate,
                             double clen_estimate,
                             struct xgandalf_options *xgandalf_opts,
-                            struct pinkIndexer_options* pinkIndexer_opts,
+                            struct pinkindexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
                             struct taketwo_options *taketwo_opts,
                             struct fromfile_options *fromfile_opts)
@@ -335,7 +335,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 int n_threads,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
-                                struct pinkIndexer_options *pinkIndexer_opts,
+                                struct pinkindexer_options *pinkIndexer_opts,
                                 struct felix_options *felix_opts,
                                 struct fromfile_options *fromfile_opts)
 {
@@ -1189,11 +1189,11 @@ char *detect_indexing_methods(UnitCell *cell)
 }
 
 
-void default_method_options(TakeTwoOptions **ttopts,
-                            XGandalfOptions **xgandalf_opts,
-                            PinkIndexerOptions **pinkIndexer_opts,
-                            FelixOptions **felix_opts,
-                            FromFileOptions **fromfile_opts)
+void default_method_options(struct taketwo_options **ttopts,
+                            struct xgandalf_options **xgandalf_opts,
+                            struct pinkindexer_options **pinkIndexer_opts,
+                            struct felix_options **felix_opts,
+                            struct fromfile_options **fromfile_opts)
 {
 	taketwo_default_options(ttopts);
 	xgandalf_default_options(xgandalf_opts);

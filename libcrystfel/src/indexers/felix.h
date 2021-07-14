@@ -39,7 +39,7 @@
  * Felix indexer interface
  */
 
-extern int felix_default_options(FelixOptions **opts_ptr);
+extern int felix_default_options(struct felix_options **opts_ptr);
 
 extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
                            struct felix_options *opts);

@@ -39,7 +39,7 @@
 
 #include "index.h"
 
-extern int xgandalf_default_options(XGandalfOptions **opts_ptr);
+extern int xgandalf_default_options(struct xgandalf_options **opts_ptr);
 
 extern int run_xgandalf(struct image *image, void *ipriv);
 

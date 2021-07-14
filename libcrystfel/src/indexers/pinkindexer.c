@@ -39,18 +39,8 @@
 #include "utils.h"
 #include "cell-utils.h"
 #include "peaks.h"
+#include "index.h"
 
-
-struct pinkIndexer_options {
-	unsigned int considered_peaks_count;
-	unsigned int angle_resolution;
-	unsigned int refinement_type;
-	float maxResolutionForIndexing_1_per_A;
-	float tolerance;
-	float reflectionRadius; /* In m^-1 */
-	float customBandwidth;
-	float maxRefinementDisbalance;
-};
 
 #ifdef HAVE_PINKINDEXER
 
@@ -190,7 +180,7 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 
 void *pinkIndexer_prepare(IndexingMethod *indm,
                           UnitCell *cell,
-                          struct pinkIndexer_options *pinkIndexer_opts,
+                          struct pinkindexer_options *pinkIndexer_opts,
                           double wavelength_estimate,
                           double clen_estimate)
 {
@@ -383,7 +373,7 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 
 extern void *pinkIndexer_prepare(IndexingMethod *indm,
                                  UnitCell *cell,
-                                 struct pinkIndexer_options *pinkIndexer_opts,
+                                 struct pinkindexer_options *pinkIndexer_opts,
                                  double wavelength_estimate,
                                  double clen_estimate)
 {
@@ -431,11 +421,11 @@ static void pinkIndexer_show_help()
 }
 
 
-int pinkIndexer_default_options(PinkIndexerOptions **opts_ptr)
+int pinkIndexer_default_options(struct pinkindexer_options **opts_ptr)
 {
-	PinkIndexerOptions *opts;
+	struct pinkindexer_options *opts;
 
-	opts = malloc(sizeof(struct pinkIndexer_options));
+	opts = malloc(sizeof(struct pinkindexer_options));
 	if ( opts == NULL ) return ENOMEM;
 
 	opts->considered_peaks_count = 4;
@@ -456,7 +446,7 @@ static error_t pinkindexer_parse_arg(int key, char *arg,
 {
 	float tmp;
 	int r;
-	struct pinkIndexer_options **opts_ptr = state->input;
+	struct pinkindexer_options **opts_ptr = state->input;
 
 	switch ( key ) {
 

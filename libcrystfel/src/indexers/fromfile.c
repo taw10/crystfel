@@ -42,13 +42,9 @@
 
 #include "image.h"
 #include "uthash.h"
+#include "index.h"
 
 /** \file fromfile.h */
-
-struct fromfile_options
-{
-	char *filename;
-};
 
 #define MAX_KEY_LEN (256)
 #define MAX_CRYSTALS (16)
@@ -373,9 +369,9 @@ static void fromfile_show_help()
 }
 
 
-int fromfile_default_options(FromFileOptions **opts_ptr)
+int fromfile_default_options(struct fromfile_options **opts_ptr)
 {
-	FromFileOptions *opts;
+	struct fromfile_options *opts;
 	opts = malloc(sizeof(struct fromfile_options));
 	if ( opts == NULL ) return ENOMEM;
 	opts->filename = NULL;

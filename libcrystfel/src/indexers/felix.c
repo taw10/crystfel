@@ -62,24 +62,10 @@
 #include "cell.h"
 #include "cell-utils.h"
 #include "felix.h"
+#include "index.h"
 
 
 #define FELIX_VERBOSE 0
-
-
-struct felix_options
-{
-	double ttmin;  /* radians */
-	double ttmax;  /* radians */
-	int min_visits;
-	double min_completeness;
-	double max_uniqueness;
-	int n_voxels;
-	double fraction_max_visits;
-	double sigma;
-	double domega;
-	double max_internal_angle;
-};
 
 
 /* Global private data, prepared once */
@@ -820,9 +806,9 @@ static void felix_show_help()
 }
 
 
-int felix_default_options(FelixOptions **opts_ptr)
+int felix_default_options(struct felix_options **opts_ptr)
 {
-	FelixOptions *opts;
+	struct felix_options *opts;
 
 	opts = malloc(sizeof(struct felix_options));
 	if ( opts == NULL ) return ENOMEM;

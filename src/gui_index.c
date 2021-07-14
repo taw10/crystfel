@@ -529,11 +529,11 @@ static void run_indexing_once(struct crystfelproject *proj)
 	char *methods;
 	int i;
 	int err;
-	TakeTwoOptions *taketwoopts;
-	XGandalfOptions *xgandalf_opts;
-	PinkIndexerOptions *pinkIndexer_opts;
-	FelixOptions *felix_opts;
-	FromFileOptions *fromfile_opts;
+	struct taketwo_options *taketwoopts;
+	struct felix_options *felix_opts;
+	struct xgandalf_options *xgandalf_opts;
+	struct pinkindexer_options *pinkIndexer_opts;
+	struct fromfile_options *fromfile_opts;
 	char *old_cwd;
 	char *tmpdir;
 	int r;

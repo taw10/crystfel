@@ -35,6 +35,7 @@
 #include "utils.h"
 #include "cell-utils.h"
 #include "peaks.h"
+#include "index.h"
 
 #ifdef HAVE_XGANDALF
 #include "xgandalf/adaptions/crystfel/Lattice.h"
@@ -43,16 +44,6 @@
 #endif
 
 /** \file xgandalf.h */
-
-struct xgandalf_options {
-	unsigned int sampling_pitch;
-	unsigned int grad_desc_iterations;
-	float tolerance;
-	unsigned int no_deviation_from_provided_cell;
-	float minLatticeVectorLength_A;
-	float maxLatticeVectorLength_A;
-	int maxPeaksForIndexing;
-};
 
 #ifdef HAVE_XGANDALF
 
@@ -387,9 +378,9 @@ static void xgandalf_show_help()
 }
 
 
-int xgandalf_default_options(XGandalfOptions **opts_ptr)
+int xgandalf_default_options(struct xgandalf_options **opts_ptr)
 {
-	XGandalfOptions *opts;
+	struct xgandalf_options *opts;
 
 	opts = malloc(sizeof(struct xgandalf_options));
 	if ( opts == NULL ) return ENOMEM;

@@ -125,6 +125,63 @@ typedef enum {
 
 } IndexingFlags;
 
+
+/**
+ * Indexer-specific "private" options
+ */
+struct pinkindexer_options {
+	unsigned int considered_peaks_count;
+	unsigned int angle_resolution;
+	unsigned int refinement_type;
+	float maxResolutionForIndexing_1_per_A;
+	float tolerance;
+	float reflectionRadius; /* In m^-1 */
+	float customBandwidth;
+	float maxRefinementDisbalance;
+};
+
+
+struct xgandalf_options {
+	unsigned int sampling_pitch;
+	unsigned int grad_desc_iterations;
+	float tolerance;
+	unsigned int no_deviation_from_provided_cell;
+	float minLatticeVectorLength_A;
+	float maxLatticeVectorLength_A;
+	int maxPeaksForIndexing;
+};
+
+
+struct taketwo_options
+{
+	int member_thresh;
+	double len_tol;
+	double angle_tol;
+	double trace_tol;
+};
+
+
+struct fromfile_options
+{
+	char *filename;
+};
+
+
+struct felix_options
+{
+	double ttmin;  /* radians */
+	double ttmax;  /* radians */
+	int min_visits;
+	double min_completeness;
+	double max_uniqueness;
+	int n_voxels;
+	double fraction_max_visits;
+	double sigma;
+	double domega;
+	double max_internal_angle;
+};
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -148,23 +205,17 @@ extern char *base_indexer_str(IndexingMethod indm);
 #include "image.h"
 #include "datatemplate.h"
 
-typedef struct felix_options FelixOptions;
-typedef struct taketwo_options TakeTwoOptions;
-typedef struct xgandalf_options XGandalfOptions;
-typedef struct pinkIndexer_options PinkIndexerOptions;
-typedef struct fromfile_options FromFileOptions;
-
 extern struct argp felix_argp;
 extern struct argp pinkIndexer_argp;
 extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
 extern struct argp fromfile_argp;
 
-extern void default_method_options(TakeTwoOptions **ttopts,
-                                   XGandalfOptions **xgandalf_opts,
-                                   PinkIndexerOptions **pinkIndexer_opts,
-                                   FelixOptions **felix_opts,
-                                   FromFileOptions **fromfile_opts);
+extern void default_method_options(struct taketwo_options **ttopts,
+                                   struct xgandalf_options **xgandalf_opts,
+                                   struct pinkindexer_options **pinkIndexer_opts,
+                                   struct felix_options **felix_opts,
+                                   struct fromfile_options **fromfile_opts);
 
 extern IndexingPrivate *setup_indexing(const char *methods,
                                        UnitCell *cell,
@@ -175,7 +226,7 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        int n_threads,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,
-                                       struct pinkIndexer_options *pinkIndexer_opts,
+                                       struct pinkindexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts,
                                        struct fromfile_options *fromfile_opts);
 

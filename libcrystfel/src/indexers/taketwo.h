@@ -38,7 +38,7 @@
 
 /** \file taketwo.h */
 
-extern int taketwo_default_options(TakeTwoOptions **opts_ptr);
+extern int taketwo_default_options(struct taketwo_options **opts_ptr);
 extern void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
                              UnitCell *cell);
 extern const char *taketwo_probe(UnitCell *cell);

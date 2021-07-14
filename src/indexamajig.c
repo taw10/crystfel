@@ -96,11 +96,11 @@ struct indexamajig_arguments
 	int n_copy_headers;
 	char *harvest_file;
 
-	TakeTwoOptions **taketwo_opts_ptr;
-	FelixOptions **felix_opts_ptr;
-	XGandalfOptions **xgandalf_opts_ptr;
-	PinkIndexerOptions **pinkindexer_opts_ptr;
-	FromFileOptions **fromfile_opts_ptr;
+	struct taketwo_options **taketwo_opts_ptr;
+	struct felix_options **felix_opts_ptr;
+	struct xgandalf_options **xgandalf_opts_ptr;
+	struct pinkindexer_options **pinkindexer_opts_ptr;
+	struct fromfile_options **fromfile_opts_ptr;
 };
 
 
@@ -787,11 +787,11 @@ int main(int argc, char *argv[])
 	char *rn;  /* e.g. /home/taw/indexing */
 	int r;
 	int timeout = 240;
-	TakeTwoOptions *taketwo_opts = NULL;
-	FelixOptions *felix_opts = NULL;
-	XGandalfOptions *xgandalf_opts = NULL;
-	PinkIndexerOptions *pinkindexer_opts = NULL;
-	FromFileOptions *fromfile_opts = NULL;
+	struct taketwo_options *taketwo_opts = NULL;
+	struct felix_options *felix_opts = NULL;
+	struct xgandalf_options *xgandalf_opts = NULL;
+	struct pinkindexer_options *pinkindexer_opts = NULL;
+	struct fromfile_options *fromfile_opts = NULL;
 	double wl_from_dt;
 
 	/* Defaults for "top level" arguments */

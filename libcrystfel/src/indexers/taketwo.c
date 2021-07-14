@@ -102,14 +102,6 @@
 #include "peaks.h"
 #include "symmetry.h"
 
-struct taketwo_options
-{
-	int member_thresh;
-	double len_tol;
-	double angle_tol;
-	double trace_tol;
-};
-
 /**
  * \param obsvec an observed vector between two spots
  * \param matches array of matching theoretical vectors from unit cell
@@ -2284,9 +2276,9 @@ static void taketwo_show_help()
 }
 
 
-int taketwo_default_options(TakeTwoOptions **opts_ptr)
+int taketwo_default_options(struct taketwo_options **opts_ptr)
 {
-	TakeTwoOptions *opts;
+	struct taketwo_options *opts;
 
 	opts = malloc(sizeof(struct taketwo_options));
 	if ( opts == NULL ) return ENOMEM;
