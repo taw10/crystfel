@@ -85,7 +85,6 @@ set(LIBCRYSTFEL_HEADERS
     src/thread-pool.h
     src/utils.h
     src/geometry.h
-    src/peakfinder8.h
     src/peaks.h
     src/stream.h
     src/index.h
@@ -96,13 +95,11 @@ set(LIBCRYSTFEL_HEADERS
     src/crystal.h
     src/predict-refine.h
     src/integration.h
-    src/peakfinder8.h
     src/rational.h
     src/spectrum.h
     src/datatemplate.h
     src/colscale.h
     src/detgeom.h
-    src/image-msgpack.h
     src/fom.h
 )
 
