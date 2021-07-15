@@ -541,6 +541,8 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	gtk_widget_set_margin_start(scale, 12);
 	gtk_box_pack_start(GTK_BOX(vvbox), scale, TRUE, TRUE, 0);
 	io->pinkindexer_cpeaks = scale;
+	gtk_widget_set_tooltip_text(vvbox,
+	                            "--pinkIndexer-considered-peaks-count");
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
 	gtk_container_add(GTK_CONTAINER(vbox), hbox);
@@ -556,6 +558,8 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	i_disable_if_not(check, entry);
 	io->pinkindexer_use_max_res = check;
 	io->pinkindexer_max_res = entry;
+	gtk_widget_set_tooltip_text(hbox,
+	                            "--pinkIndexer-max-resolution-for-indexing");
 
 	vvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), vvbox, FALSE, FALSE, 8);
@@ -573,6 +577,7 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	gtk_widget_set_margin_start(scale, 12);
 	gtk_box_pack_start(GTK_BOX(vvbox), scale, TRUE, TRUE, 0);
 	io->pinkindexer_angle_density = scale;
+	gtk_widget_set_tooltip_text(vvbox, "--pinkIndexer-angle-resolution");
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_container_add(GTK_CONTAINER(vbox), hbox);
@@ -593,6 +598,7 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo), "5",
 	                          "Fixed, then variable, multiseed, center refinement");
 	io->pinkindexer_refinement_type = combo;
+	gtk_widget_set_tooltip_text(hbox, "--pinkIndexer-refinement-type");
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_container_add(GTK_CONTAINER(vbox), hbox);
@@ -603,6 +609,7 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	gtk_entry_set_input_purpose(GTK_ENTRY(entry), GTK_INPUT_PURPOSE_NUMBER);
 	gtk_box_pack_start(GTK_BOX(hbox), entry, FALSE, FALSE, 4);
 	io->pinkindexer_tolerance = entry;
+	gtk_widget_set_tooltip_text(hbox, "--pinkIndexer-tolerance");
 
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_container_add(GTK_CONTAINER(vbox), hbox);
@@ -618,6 +625,7 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	i_disable_if_not(check, entry);
 	io->pinkindexer_use_refl_radius = check;
 	io->pinkindexer_refl_radius = entry;
+	gtk_widget_set_tooltip_text(hbox, "--pinkIndexer-reflection-radius");
 
 	vvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), vvbox, FALSE, FALSE, 8);
@@ -630,6 +638,8 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	gtk_widget_set_margin_start(scale, 12);
 	gtk_box_pack_start(GTK_BOX(vvbox), scale, TRUE, TRUE, 0);
 	io->pinkindexer_max_imbalance = scale;
+	gtk_widget_set_tooltip_text(vvbox,
+	                            "--pinkIndexer-max-refinement-disbalance");
 
 	expander = gtk_expander_new("XGandalf");
 	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
