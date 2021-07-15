@@ -1255,8 +1255,8 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			reject = 1;
 		}
 
-		if ( dim_ss > dim_fs ) {
-			ERROR("Fast scan dimension must be lower than "
+		if ( dim_ss >= dim_fs ) {
+			ERROR("Fast scan dimension must be higher than "
 			      "slow scan (panel %s)\n", p->name);
 			reject = 1;
 		}
