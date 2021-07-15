@@ -116,11 +116,7 @@ static int write_file_list(GFile *workdir,
 	if ( fh == NULL ) return 1;
 
 	for ( i=0; i<n_frames; i++ ) {
-		if ( filenames[i][0] != '/' ) {
-			fprintf(fh, "../%s", filenames[i]);
-		} else {
-			fprintf(fh, "%s", filenames[i]);
-		}
+		fprintf(fh, "%s", filenames[i]);
 		if ( events[i] != NULL ) {
 			fprintf(fh, " %s\n", events[i]);
 		} else {
@@ -177,7 +173,7 @@ static struct local_job *start_local_job(char **args,
 	r = g_spawn_async_with_pipes(NULL, args, NULL,
 	                             G_SPAWN_SEARCH_PATH
 	                           | G_SPAWN_DO_NOT_REAP_CHILD,
-	                             setup_subprocess, workdir_str,
+	                             setup_subprocess, NULL,
 	                             &job->pid,
 	                             NULL, NULL, &ch_stderr,
 	                             &error);
@@ -387,29 +383,37 @@ static void *run_ambi(const char *job_title,
 	struct local_job *job;
 	struct local_merging_opts *opts = opts_priv;
 	GFile *workdir;
-	GFile *sc_gfile;
-	gchar *sc_filename;
-	GFile *stream_gfile;
-	char *stream_str;
+	gchar *sc_rel_filename;
+	gchar *stream_rel_filename;
+	gchar *stderr_rel_filename;
+	gchar *stdout_rel_filename;
+	gchar *fg_rel_filename;
+	gchar *intermediate_rel_filename;
+	gchar *harvest_rel_filename;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
 
-	stream_gfile = g_file_get_child(workdir, "ambi.stream");
-	stream_str = g_file_get_path(stream_gfile);
-	g_object_unref(stream_gfile);
+	stream_rel_filename = relative_to_cwd(workdir, "ambi.stream");
+	stdout_rel_filename = relative_to_cwd(workdir, "stdout.log");
+	stderr_rel_filename = relative_to_cwd(workdir, "stderr.log");
+	sc_rel_filename = relative_to_cwd(workdir, "run_ambigator.sh");
+	fg_rel_filename = relative_to_cwd(workdir, "fg.dat");
+	intermediate_rel_filename = relative_to_cwd(workdir, "ambigator-input.stream");
+	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 
 	snprintf(n_thread_str, 64, "%i", opts->n_threads);
-	sc_gfile = g_file_get_child(workdir, "run_ambigator.sh");
-	sc_filename = g_file_get_path(sc_gfile);
-	g_object_unref(sc_gfile);
-	if ( sc_filename == NULL ) return NULL;
-	if ( !write_ambigator_script(sc_filename, input, n_thread_str,
-	                             &proj->ambi_params, stream_str) )
+
+	if ( !write_ambigator_script(sc_rel_filename, input, n_thread_str,
+	                             &proj->ambi_params, stream_rel_filename,
+	                             stdout_rel_filename, stderr_rel_filename,
+	                             fg_rel_filename,
+	                             intermediate_rel_filename,
+	                             harvest_rel_filename) )
 	{
 		char *args[3];
 		args[0] = "sh";
-		args[1] = sc_filename;
+		args[1] = sc_rel_filename;
 		args[2] = NULL;
 		job = start_local_job(args, job_title, workdir,
 		                      proj, GUI_JOB_AMBIGATOR);
@@ -419,10 +423,18 @@ static void *run_ambi(const char *job_title,
 	}
 
 	if ( job != NULL ) {
-		add_indexing_result(proj, job_title, &stream_str, 1);
+		add_indexing_result(proj, job_title, &stream_rel_filename, 1);
 	}
 
 	g_object_unref(workdir);
+	free(sc_rel_filename);
+	free(stream_rel_filename);
+	free(stdout_rel_filename);
+	free(stderr_rel_filename);
+	free(fg_rel_filename);
+	free(intermediate_rel_filename);
+	free(harvest_rel_filename);
+
 	return job;
 }
 
@@ -437,25 +449,32 @@ static void *run_merging(const char *job_title,
 	struct local_job *job;
 	struct local_merging_opts *opts = opts_priv;
 	GFile *workdir;
-	GFile *sc_gfile;
-	gchar *sc_filename;
+	gchar *sc_rel_filename;
+	gchar *output_rel_filename;
+	gchar *stderr_rel_filename;
+	gchar *stdout_rel_filename;
+	gchar *harvest_rel_filename;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
 
-	snprintf(n_thread_str, 63, "%i", opts->n_threads);
-	sc_gfile = g_file_get_child(workdir, "run_merge.sh");
-	sc_filename = g_file_get_path(sc_gfile);
-	g_object_unref(sc_gfile);
-	if ( sc_filename == NULL ) return NULL;
+	sc_rel_filename = relative_to_cwd(workdir, "run_merge.sh");
+	output_rel_filename = relative_to_cwd(workdir, "crystfel.hkl");
+	stdout_rel_filename = relative_to_cwd(workdir, "stdout.log");
+	stderr_rel_filename = relative_to_cwd(workdir, "stderr.log");
+	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 
-	if ( !write_merge_script(sc_filename, input, n_thread_str,
-	                         &proj->merging_params, "crystfel.hkl") )
+	snprintf(n_thread_str, 63, "%i", opts->n_threads);
+
+	if ( !write_merge_script(sc_rel_filename, input, n_thread_str,
+	                         &proj->merging_params, output_rel_filename,
+	                         stdout_rel_filename, stderr_rel_filename,
+	                         harvest_rel_filename) )
 	{
 		char *args[3];
 		enum gui_job_type type;
 		args[0] = "sh";
-		args[1] = sc_filename;
+		args[1] = sc_rel_filename;
 		args[2] = NULL;
 		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
 			if ( proj->merging_params.scale ) {
@@ -470,34 +489,27 @@ static void *run_merging(const char *job_title,
 	} else {
 		job = NULL;
 	}
-	g_free(sc_filename);
 
 	if ( job != NULL ) {
 
-		GFile *hkl_gfile;
-		char *hkl;
 		char *hkl1;
 		char *hkl2;
 
-		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl");
-		hkl = g_file_get_path(hkl_gfile);
-		g_object_unref(hkl_gfile);
+		hkl1 = relative_to_cwd(workdir, "crystfel.hkl1");
+		hkl2 = relative_to_cwd(workdir, "crystfel.hkl2");
 
-		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl1");
-		hkl1 = g_file_get_path(hkl_gfile);
-		g_object_unref(hkl_gfile);
-
-		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl2");
-		hkl2 = g_file_get_path(hkl_gfile);
-		g_object_unref(hkl_gfile);
-
-		add_merge_result(proj, job_title, hkl, hkl1, hkl2);
-		g_free(hkl);
+		add_merge_result(proj, job_title, output_rel_filename,
+		                 hkl1, hkl2);
 		g_free(hkl1);
 		g_free(hkl2);
 	}
 
 	g_object_unref(workdir);
+	g_free(sc_rel_filename);
+	free(output_rel_filename);
+	free(stdout_rel_filename);
+	free(stderr_rel_filename);
+	free(harvest_rel_filename);
 	return job;
 }
 
@@ -513,9 +525,12 @@ static void *run_indexing(const char *job_title,
 	struct local_job *job;
 	char n_thread_str[64];
 	GFile *workdir;
-	GFile *sc_gfile;
-	gchar *sc_filename;
-	GFile *stderr_gfile;
+	gchar *sc_rel_filename;
+	gchar *stdout_rel_filename;
+	gchar *stderr_rel_filename;
+	gchar *files_rel_filename;
+	gchar *stream_rel_filename;
+	gchar *harvest_rel_filename;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -530,16 +545,23 @@ static void *run_indexing(const char *job_title,
 	}
 
 	snprintf(n_thread_str, 63, "%i", opts->n_processes);
-	sc_gfile = g_file_get_child(workdir, "run_indexamajig.sh");
-	sc_filename = g_file_get_path(sc_gfile);
-	g_object_unref(sc_gfile);
-	if ( sc_filename == NULL ) return NULL;
-	if ( !write_indexamajig_script(sc_filename,
+
+	sc_rel_filename = relative_to_cwd(workdir, "run_indexamajig.sh");
+	stdout_rel_filename = relative_to_cwd(workdir, "stdout.log");
+	stderr_rel_filename = relative_to_cwd(workdir, "stderr.log");
+	files_rel_filename = relative_to_cwd(workdir, "files.lst");
+	stream_rel_filename = relative_to_cwd(workdir, "crystfel.stream");
+	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
+
+	if ( !write_indexamajig_script(sc_rel_filename,
 	                               proj->geom_filename,
 	                               n_thread_str,
-	                               "files.lst",
-	                               "crystfel.stream",
-	                               NULL, 1,
+	                               files_rel_filename,
+	                               stream_rel_filename,
+	                               stdout_rel_filename,
+	                               stderr_rel_filename,
+	                               harvest_rel_filename,
+	                               NULL,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params,
 	                               wavelength_estimate,
@@ -547,7 +569,7 @@ static void *run_indexing(const char *job_title,
 	{
 		char *args[3];
 		args[0] = "sh";
-		args[1] = sc_filename;
+		args[1] = sc_rel_filename;
 		args[2] = NULL;
 		job = start_local_job(args, job_title, workdir,
 		                      proj, GUI_JOB_INDEXING);
@@ -557,23 +579,20 @@ static void *run_indexing(const char *job_title,
 
 	if ( job != NULL ) {
 
-		char *stream_fn;
-
 		/* Indexing-specific job data */
 		job->n_frames = proj->n_frames;
+		job->stderr_filename = strdup(stderr_rel_filename);
+		add_indexing_result(proj, job_title, &stream_rel_filename, 1);
 
-		stderr_gfile = g_file_get_child(workdir, "stderr.log");
-		job->stderr_filename = g_file_get_path(stderr_gfile);
-		g_object_unref(stderr_gfile);
-
-		GFile *stream_gfile = g_file_get_child(job->workdir,
-		                                       "crystfel.stream");
-		stream_fn = g_file_get_path(stream_gfile);
-		g_object_unref(stream_gfile);
-		add_indexing_result(proj, job_title, &stream_fn, 1);
-		g_free(stream_fn);
+	} else {
 	}
 	g_object_unref(workdir);
+	free(sc_rel_filename);
+	free(files_rel_filename);
+	free(stream_rel_filename);
+	free(stdout_rel_filename);
+	free(stderr_rel_filename);
+	free(harvest_rel_filename);
 
 	return job;
 }

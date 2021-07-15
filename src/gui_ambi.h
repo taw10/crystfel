@@ -40,7 +40,12 @@ extern int write_ambigator_script(const char *filename,
                                   struct gui_indexing_result *input,
                                   const char *n_thread_str,
                                   struct ambi_params *params,
-                                  const char *out_stream);
+                                  const char *out_stream,
+                                  const char *stdout_filename,
+                                  const char *stderr_filename,
+                                  const char *fg_filename,
+                                  const char *intermediate_rel_filename,
+                                  const char *harvest_filename);
 
 extern double read_ambigator_progress(char *logfile_str, int niter);
 

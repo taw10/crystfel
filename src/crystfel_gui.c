@@ -1500,3 +1500,20 @@ char *make_new_job_title(const char *orig_old_title)
 		return new_title;
 	}
 }
+
+
+char *relative_to_cwd(GFile *workdir, const char *filename)
+{
+	GFile *current_dir;
+	GFile *gfile;
+	char *rel;
+
+	current_dir = g_file_new_for_path(".");
+
+	gfile = g_file_get_child(workdir, filename);
+	rel = g_file_get_relative_path(current_dir, gfile);
+	g_object_unref(gfile);
+	g_object_unref(current_dir);
+
+	return rel;
+}

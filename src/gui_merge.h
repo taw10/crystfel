@@ -41,7 +41,10 @@ extern int write_merge_script(const char *filename,
                               struct gui_indexing_result *input,
                               const char *n_thread_str,
                               struct merging_params *params,
-                              const char *out_hkl);
+                              const char *out_hkl,
+                              const char *stdout_filename,
+                              const char *stderr_filename,
+                              const char *harvest_filename);
 
 extern double read_merge_progress(const char *logfile_str,
                                   enum gui_job_type type);

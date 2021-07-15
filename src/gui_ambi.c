@@ -482,7 +482,12 @@ int write_ambigator_script(const char *filename,
                            struct gui_indexing_result *input,
                            const char *n_thread_str,
                            struct ambi_params *params,
-                           const char *out_stream)
+                           const char *out_stream,
+                           const char *stdout_filename,
+                           const char *stderr_filename,
+                           const char *fg_filename,
+                           const char *intermediate_rel_filename,
+                           const char *harvest_filename)
 {
 	FILE *fh;
 	char *exe_path;
@@ -495,13 +500,13 @@ int write_ambigator_script(const char *filename,
 
 	fprintf(fh, "cat \\\n");
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, "\"../%s\" \\\n", input->streams[i]);
+		fprintf(fh, "\"%s\" \\\n", input->streams[i]);
 	}
-	fprintf(fh, " > ambigator-input.stream\n");
+	fprintf(fh, " > %s\n", intermediate_rel_filename);
 
 	exe_path = get_crystfel_exe("ambigator");
 	if ( exe_path == NULL ) return 1;
-	fprintf(fh, "%s ambigator-input.stream \\\n", exe_path);
+	fprintf(fh, "%s %s \\\n", exe_path, intermediate_rel_filename);
 
 	fprintf(fh, " -j %s", n_thread_str);
 	fprintf(fh, " -o \"%s\"", out_stream);
@@ -522,8 +527,8 @@ int write_ambigator_script(const char *filename,
 	}
 
 	fprintf(fh, " --iterations=%i", params->niter);
-	fprintf(fh, " --fg-graph=fg.dat");
-	fprintf(fh, " >stdout.log 2>stderr.log\n");
+	fprintf(fh, " --fg-graph=%s", fg_filename);
+	fprintf(fh, " >%s 2>%s\n", stdout_filename, stderr_filename);
 
 	fclose(fh);
 	return 0;

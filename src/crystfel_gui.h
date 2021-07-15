@@ -72,4 +72,6 @@ extern void force_refls_on(struct crystfelproject *proj);
 
 extern char *make_new_job_title(const char *old_title);
 
+extern char *relative_to_cwd(GFile *workdir, const char *filename);
+
 #endif

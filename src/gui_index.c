@@ -811,6 +811,7 @@ static char **indexamajig_command_line(const char *geom_filename,
                                        const char *n_thread_str,
                                        const char *files_list,
                                        const char *stream_filename,
+                                       const char *harvest_filename,
                                        const char *serial_start,
                                        struct peak_params *peak_search_params,
                                        struct index_params *indexing_params,
@@ -975,7 +976,7 @@ static char **indexamajig_command_line(const char *geom_filename,
 		add_arg_string(args, n_args++, "serial-start", serial_start);
 	}
 
-	add_arg_string(args, n_args++, "harvest-file", "parameters.json");
+	add_arg_string(args, n_args++, "harvest-file", harvest_filename);
 
 	args[n_args] = NULL;
 	return args;
@@ -1022,8 +1023,10 @@ int write_indexamajig_script(const char *script_filename,
                              const char *n_thread_str,
                              const char *files_list,
                              const char *stream_filename,
+                             const char *stdout_filename,
+                             const char *stderr_filename,
+                             const char *harvest_filename,
                              const char *serial_start,
-                             int redirect_output,
                              struct peak_params *peak_search_params,
                              struct index_params *indexing_params,
                              double wavelength_estimate,
@@ -1037,6 +1040,7 @@ int write_indexamajig_script(const char *script_filename,
 	                                   n_thread_str,
 	                                   files_list,
 	                                   stream_filename,
+	                                   harvest_filename,
 	                                   serial_start,
 	                                   peak_search_params,
 	                                   indexing_params,
@@ -1056,8 +1060,8 @@ int write_indexamajig_script(const char *script_filename,
 		i++;
 	};
 	free(cmdline);
-	if ( redirect_output ) {
-		fprintf(fh, ">stdout.log 2>stderr.log\n");
+	if ( stdout_filename != NULL ) {
+		fprintf(fh, ">%s 2>%s\n", stdout_filename, stderr_filename);
 	}
 
 	fclose(fh);

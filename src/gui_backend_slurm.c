@@ -172,13 +172,10 @@ static double indexing_progress(struct slurm_job *job, int *running)
 		for ( i=0; i<job->n_blocks; i++ ) {
 
 			char tmp[128];
-			GFile *stderr_gfile;
 			char *stderr_filename;
 
 			snprintf(tmp, 127, "stderr-%i.log", i);
-			stderr_gfile = g_file_get_child(job->workdir, tmp);
-			stderr_filename = g_file_get_path(stderr_gfile);
-			g_object_unref(stderr_gfile);
+			stderr_filename = relative_to_cwd(job->workdir, tmp);
 
 			n_proc += read_number_processed(stderr_filename);
 			g_free(stderr_filename);
@@ -469,8 +466,8 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	struct slurm_job *job;
 	job_desc_msg_t job_desc_msg;
 	submit_response_msg_t *resp;
-	GFile *stderr_gfile;
 	int r;
+	GFile *cwd_gfile;
 
 	script = load_entire_file(script_filename);
 	if ( script == NULL ) return NULL;
@@ -482,6 +479,8 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	}
 
 	job->type = type;
+
+	cwd_gfile = g_file_new_for_path(".");
 
 	env = create_env(&n_env, NULL);
 
@@ -499,13 +498,15 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	job_desc_msg.name = safe_strdup(jobname);
 	job_desc_msg.std_err = strdup(stderr_filename);
 	job_desc_msg.std_out = strdup(stdout_filename);
-	job_desc_msg.work_dir = g_file_get_path(workdir);
+	job_desc_msg.work_dir = g_file_get_path(cwd_gfile);
 	job_desc_msg.script = script;
 	job_desc_msg.environment = env;
 	job_desc_msg.env_size = n_env;
 	job_desc_msg.features = safe_strdup(opts->constraint);
 	job_desc_msg.account = safe_strdup(opts->account);
 	job_desc_msg.array_inx = safe_strdup(array_inx);
+
+	g_object_unref(cwd_gfile);
 
 	r = slurm_submit_batch_job(&job_desc_msg, &resp);
 	free(job_desc_msg.mail_user);
@@ -529,10 +530,7 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	job->job_id = resp->job_id;
 	slurm_free_submit_response_response_msg(resp);
 
-	stderr_gfile = g_file_get_child(workdir, stderr_filename);
-	job->stderr_filename = g_file_get_path(stderr_gfile);
-	g_object_unref(stderr_gfile);
-
+	job->stderr_filename = strdup(stderr_filename);
 	job->workdir = g_file_dup(workdir);
 
 	return job;
@@ -560,11 +558,7 @@ static void write_partial_file_list(GFile *workdir,
 	      (i<(j+1)*block_size) && (i<n_frames);
 	      i++ )
 	{
-		if ( filenames[i][0] != '/' ) {
-			fprintf(fh, "../%s", filenames[i]);
-		} else {
-			fprintf(fh, "%s", filenames[i]);
-		}
+		fprintf(fh, "%s", filenames[i]);
 		if ( events[i] != NULL ) {
 			fprintf(fh, " %s\n", events[i]);
 		} else {
@@ -590,11 +584,15 @@ static void *run_indexing(const char *job_title,
 	int i;
 	char **streams;
 	GFile *workdir;
-	GFile *sc_gfile;
-	char *sc_filename;
 	int n_blocks;
 	char array_inx[128];
 	char serial_offs[128];
+	gchar *sc_rel_filename;
+	gchar *stdout_rel_filename;
+	gchar *stderr_rel_filename;
+	gchar *files_rel_filename;
+	gchar *stream_rel_filename;
+	gchar *harvest_rel_filename;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -611,7 +609,6 @@ static void *run_indexing(const char *job_title,
 
 		char file_list[128];
 		char stream_filename[128];
-		GFile *stream_gfile;
 
 		/* Create (sub-)list of files */
 		snprintf(file_list, 127, "files-%i.lst", i);
@@ -625,44 +622,46 @@ static void *run_indexing(const char *job_title,
 
 		/* Work out the stream filename */
 		snprintf(stream_filename, 127, "crystfel-%i.stream", i);
-		stream_gfile = g_file_get_child(workdir,
-		                                stream_filename);
-		streams[i] = g_file_get_path(stream_gfile);
-		g_object_unref(stream_gfile);
+		streams[i] = relative_to_cwd(workdir, stream_filename);
 	}
-
-	sc_gfile = g_file_get_child(workdir, "run_indexamajig.sh");
-	sc_filename = g_file_get_path(sc_gfile);
-	g_object_unref(sc_gfile);
-	if ( sc_filename == NULL ) return NULL;
 
 	snprintf(array_inx, 127, "0-%i", n_blocks-1);
 	snprintf(serial_offs, 127, "$((${SLURM_ARRAY_TASK_ID}*%i+1))",
 	         opts->block_size);
 
-	if ( !write_indexamajig_script(sc_filename,
+	sc_rel_filename = relative_to_cwd(workdir, "run_indexamajig.sh");
+	files_rel_filename = relative_to_cwd(workdir,
+	                                     "files-${SLURM_ARRAY_TASK_ID}.lst");
+	stream_rel_filename = relative_to_cwd(workdir,
+	                                      "crystfel-${SLURM_ARRAY_TASK_ID}.stream");
+	stdout_rel_filename = relative_to_cwd(workdir, "stdout-%a.log");
+	stderr_rel_filename = relative_to_cwd(workdir, "stderr-%a.log");
+	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
+
+	if ( !write_indexamajig_script(sc_rel_filename,
 	                               proj->geom_filename,
 	                               "`nproc`",
-	                               "files-${SLURM_ARRAY_TASK_ID}.lst",
-	                               "crystfel-${SLURM_ARRAY_TASK_ID}.stream",
-	                               serial_offs, 0,
+	                               files_rel_filename,
+	                               stream_rel_filename,
+	                               NULL, NULL,
+	                               harvest_rel_filename,
+	                               serial_offs,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params,
 	                               wavelength_estimate,
 	                               clen_estimate) )
 	{
 		job = start_slurm_job(GUI_JOB_INDEXING,
-		                      sc_filename,
+		                      sc_rel_filename,
 		                      job_title,
 		                      array_inx,
 		                      workdir,
-		                      "stdout-%a.log",
-		                      "stderr-%a.log",
+		                      stdout_rel_filename,
+		                      stderr_rel_filename,
 		                      &opts->common);
 	} else {
 		job = NULL;
 	}
-	g_free(sc_filename);
 
 	if ( job != NULL ) {
 		job->n_frames = proj->n_frames;
@@ -675,6 +674,12 @@ static void *run_indexing(const char *job_title,
 	}
 	free(streams);
 
+	free(sc_rel_filename);
+	free(files_rel_filename);
+	free(stream_rel_filename);
+	free(stdout_rel_filename);
+	free(stderr_rel_filename);
+	free(harvest_rel_filename);
 	g_object_unref(workdir);
 
 	return job;
@@ -856,37 +861,47 @@ static void *run_ambi(const char *job_title,
 	struct slurm_job *job;
 	struct slurm_ambi_opts *opts = opts_priv;
 	GFile *workdir;
-	GFile *sc_gfile;
-	char *sc_filename;
-	GFile *stream_gfile;
-	char *stream_str;
+	char *sc_rel_filename;
+	char *stream_rel_filename;
+	char *stdout_rel_filename;
+	char *stderr_rel_filename;
+	char *fg_rel_filename;
+	char *intermediate_rel_filename;
+	char *harvest_rel_filename;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
 
-	stream_gfile = g_file_get_child(workdir, "ambi.stream");
-	stream_str = g_file_get_path(stream_gfile);
-	g_object_unref(stream_gfile);
+	stream_rel_filename = relative_to_cwd(workdir, "ambi.stream");
+	sc_rel_filename = relative_to_cwd(workdir, "run_ambigator.sh");
+	stdout_rel_filename = relative_to_cwd(workdir, "stdout.log");
+	stderr_rel_filename = relative_to_cwd(workdir, "stderr.log");
+	fg_rel_filename = relative_to_cwd(workdir, "fg.dat");
+	intermediate_rel_filename = relative_to_cwd(workdir, "ambigator-input.stream");
+	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 
-	sc_gfile = g_file_get_child(workdir, "run_ambigator.sh");
-	sc_filename = g_file_get_path(sc_gfile);
-	g_object_unref(sc_gfile);
-	if ( sc_filename == NULL ) return NULL;
-
-	if ( !write_ambigator_script(sc_filename, input, "`nproc`",
-	                             &proj->ambi_params, stream_str) )
+	if ( !write_ambigator_script(sc_rel_filename, input, "`nproc`",
+	                             &proj->ambi_params, stream_rel_filename,
+	                             stdout_rel_filename, stderr_rel_filename,
+	                             fg_rel_filename,
+	                             intermediate_rel_filename,
+	                             harvest_rel_filename) )
 	{
 		job = start_slurm_job(GUI_JOB_AMBIGATOR,
-		                      sc_filename, job_title, NULL, workdir,
-		                      "stdout.log", "stderr.log", &opts->common);
+		                      sc_rel_filename, job_title, NULL, workdir,
+		                      stdout_rel_filename, stderr_rel_filename,
+		                      &opts->common);
 		job->niter = proj->ambi_params.niter;
 	} else {
 		job = NULL;
 	}
-	g_free(sc_filename);
+	g_free(sc_rel_filename);
+	g_free(stdout_rel_filename);
+	g_free(stderr_rel_filename);
+	g_free(harvest_rel_filename);
 
 	if ( job != NULL ) {
-		add_indexing_result(proj, job_title, &stream_str, 1);
+		add_indexing_result(proj, job_title, &stream_rel_filename, 1);
 	}
 
 	g_object_unref(workdir);
@@ -903,19 +918,25 @@ static void *run_merging(const char *job_title,
 	struct slurm_job *job;
 	struct slurm_merging_opts *opts = opts_priv;
 	GFile *workdir;
-	GFile *sc_gfile;
-	char *sc_filename;
+	char *sc_rel_filename;
+	char *output_rel_filename;
+	char *stdout_rel_filename;
+	char *stderr_rel_filename;
+	char *harvest_rel_filename;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
 
-	sc_gfile = g_file_get_child(workdir, "run_merge.sh");
-	sc_filename = g_file_get_path(sc_gfile);
-	g_object_unref(sc_gfile);
-	if ( sc_filename == NULL ) return NULL;
+	sc_rel_filename = relative_to_cwd(workdir, "run_merge.sh");
+	output_rel_filename = relative_to_cwd(workdir, "crystfel.hkl");
+	stdout_rel_filename = relative_to_cwd(workdir, "stdout.log");
+	stderr_rel_filename = relative_to_cwd(workdir, "stderr.log");
+	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 
-	if ( !write_merge_script(sc_filename, input, "`nproc`",
-	                         &proj->merging_params, "crystfel.hkl") )
+	if ( !write_merge_script(sc_rel_filename, input, "`nproc`",
+	                         &proj->merging_params, output_rel_filename,
+	                         stdout_rel_filename, stderr_rel_filename,
+	                         harvest_rel_filename) )
 	{
 		enum gui_job_type type;
 		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
@@ -927,40 +948,34 @@ static void *run_merging(const char *job_title,
 		} else {
 			type = GUI_JOB_PARTIALATOR;
 		}
-		job = start_slurm_job(type, sc_filename, job_title, NULL,
-		                      workdir, "stdout.log", "stderr.log",
+		job = start_slurm_job(type, sc_rel_filename, job_title, NULL,
+		                      workdir, stdout_rel_filename,
+		                      stderr_rel_filename,
 		                      &opts->common);
 	} else {
 		job = NULL;
 	}
-	g_free(sc_filename);
 
 	if ( job != NULL ) {
 
-		GFile *hkl_gfile;
-		char *hkl;
 		char *hkl1;
 		char *hkl2;
 
-		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl");
-		hkl = g_file_get_path(hkl_gfile);
-		g_object_unref(hkl_gfile);
+		hkl1 = relative_to_cwd(workdir, "crystfel.hkl1");
+		hkl2 = relative_to_cwd(workdir, "crystfel.hkl2");
 
-		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl1");
-		hkl1 = g_file_get_path(hkl_gfile);
-		g_object_unref(hkl_gfile);
-
-		hkl_gfile = g_file_get_child(workdir, "crystfel.hkl2");
-		hkl2 = g_file_get_path(hkl_gfile);
-		g_object_unref(hkl_gfile);
-
-		add_merge_result(proj, job_title, hkl, hkl1, hkl2);
-		g_free(hkl);
+		add_merge_result(proj, job_title, output_rel_filename,
+		                 hkl1, hkl2);
 		g_free(hkl1);
 		g_free(hkl2);
 	}
 
 	g_object_unref(workdir);
+	g_free(sc_rel_filename);
+	g_free(stdout_rel_filename);
+	g_free(stderr_rel_filename);
+	g_free(output_rel_filename);
+	g_free(harvest_rel_filename);
 	return job;
 }
 

@@ -349,7 +349,10 @@ static int write_partialator_script(const char *filename,
                                     struct gui_indexing_result *input,
                                     const char *n_thread_str,
                                     struct merging_params *params,
-                                    const char *out_hkl)
+                                    const char *out_hkl,
+                                    const char *stdout_filename,
+                                    const char *stderr_filename,
+                                    const char *harvest_filename)
 {
 	FILE *fh;
 	char *exe_path;
@@ -365,7 +368,7 @@ static int write_partialator_script(const char *filename,
 	fprintf(fh, "%s \\\n", exe_path);
 
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, "\"../%s\" \\\n", input->streams[i]);
+		fprintf(fh, "\"%s\" \\\n", input->streams[i]);
 	}
 
 	fprintf(fh, " --model=%s", params->model);
@@ -405,9 +408,9 @@ static int write_partialator_script(const char *filename,
 	}
 
 	fprintf(fh, " --iterations=%i", params->niter);
-	fprintf(fh, " --harvest-file=parameters.json");
+	fprintf(fh, " --harvest-file=%s", harvest_filename);
 
-	fprintf(fh, " >stdout.log 2>stderr.log\n");
+	fprintf(fh, " >%s 2>%s\n", stdout_filename, stderr_filename);
 
 	fclose(fh);
 	return 0;
@@ -419,6 +422,8 @@ static void add_process_hkl(FILE *fh,
                             struct gui_indexing_result *input,
                             struct merging_params *params,
                             const char *out_hkl,
+                            const char *stdout_filename,
+                            const char *stderr_filename,
                             const char *extra_arg,
                             const char *out_suffix)
 {
@@ -427,7 +432,7 @@ static void add_process_hkl(FILE *fh,
 	fprintf(fh, "%s \\\n", exe_path);
 
 	for ( i=0; i<input->n_streams; i++ ) {
-		fprintf(fh, " \"../%s\" \\\n", input->streams[i]);
+		fprintf(fh, " \"%s\" \\\n", input->streams[i]);
 	}
 
 	fprintf(fh, " -o \"%s%s\"", out_hkl, out_suffix);
@@ -442,14 +447,17 @@ static void add_process_hkl(FILE *fh,
 	fprintf(fh, " --max-adu=%f", params->max_adu);
 	fprintf(fh, " --min-res=%f", params->min_res);
 	fprintf(fh, " --push-res=%f", params->push_res);
-	fprintf(fh, " %s >>stdout.log 2>>stderr.log\n", extra_arg);
+	fprintf(fh, " %s >>%s 2>>%s\n",
+	        extra_arg, stdout_filename, stderr_filename);
 }
 
 
 static int write_process_hkl_script(const char *filename,
                                     struct gui_indexing_result *input,
                                     struct merging_params *params,
-                                    const char *out_hkl)
+                                    const char *out_hkl,
+                                    const char *stdout_filename,
+                                    const char *stderr_filename)
 {
 	FILE *fh;
 	char *exe_path;
@@ -462,9 +470,12 @@ static int write_process_hkl_script(const char *filename,
 	exe_path = get_crystfel_exe("process_hkl");
 	if ( exe_path == NULL ) return 1;
 
-	add_process_hkl(fh, exe_path, input, params, out_hkl, "", "");
-	add_process_hkl(fh, exe_path, input, params, out_hkl, "--even-only", "1");
-	add_process_hkl(fh, exe_path, input, params, out_hkl, "--odd-only", "2");
+	add_process_hkl(fh, exe_path, input, params, out_hkl,
+	                stdout_filename, stderr_filename, "", "");
+	add_process_hkl(fh, exe_path, input, params, out_hkl,
+	                stdout_filename, stderr_filename, "--even-only", "1");
+	add_process_hkl(fh, exe_path, input, params, out_hkl,
+	                stdout_filename, stderr_filename, "--odd-only", "2");
 
 	fclose(fh);
 	return 0;
@@ -475,14 +486,22 @@ int write_merge_script(const char *filename,
                        struct gui_indexing_result *input,
                        const char *n_thread_str,
                        struct merging_params *params,
-                       const char *out_hkl)
+                       const char *out_hkl,
+                       const char *stdout_filename,
+                       const char *stderr_filename,
+                       const char *harvest_filename)
 {
 	if ( strcmp(params->model, "process_hkl") == 0 ) {
 		return write_process_hkl_script(filename, input,
-		                                params, out_hkl);
+		                                params, out_hkl,
+		                                stdout_filename,
+		                                stderr_filename);
 	} else {
 		return write_partialator_script(filename, input, n_thread_str,
-		                                params, out_hkl);
+		                                params, out_hkl,
+		                                stdout_filename,
+		                                stderr_filename,
+		                                harvest_filename);
 	}
 }
 
