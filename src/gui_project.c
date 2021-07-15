@@ -1329,21 +1329,6 @@ int default_project(struct crystfelproject *proj)
 }
 
 
-static char *relative_path(struct crystfelproject *proj, const char *fn)
-{
-	GFile *pwd = g_file_new_for_path(".");
-	GFile *fn_gfile = g_file_new_for_path(fn);
-	char *rel = g_file_get_relative_path(pwd, fn_gfile);
-	if ( rel == NULL ) {
-		ERROR("Can't make relative path for '%s'\n", fn);
-		return NULL;
-	}
-	g_object_unref(pwd);
-	g_object_unref(fn_gfile);
-	return rel;
-}
-
-
 int add_indexing_result(struct crystfelproject *proj,
                         const char *name,
                         char **streams,
@@ -1363,7 +1348,7 @@ int add_indexing_result(struct crystfelproject *proj,
 
 	for ( i=0; i<n_streams; i++ ) {
 		new_results[proj->n_results].indices[i] = NULL;
-		new_results[proj->n_results].streams[i] = relative_path(proj, streams[i]);
+		new_results[proj->n_results].streams[i] = strdup(streams[i]);
 	}
 
 	proj->results = new_results;
@@ -1386,9 +1371,9 @@ int add_merge_result(struct crystfelproject *proj, const char *name,
 	if ( new_results == NULL ) return 1;
 
 	new_results[proj->n_merge_results].name = strdup(name);
-	new_results[proj->n_merge_results].hkl = relative_path(proj, hkl);
-	new_results[proj->n_merge_results].hkl1 = relative_path(proj, hkl1);
-	new_results[proj->n_merge_results].hkl2 = relative_path(proj, hkl2);
+	new_results[proj->n_merge_results].hkl = strdup(hkl);
+	new_results[proj->n_merge_results].hkl1 = strdup(hkl1);
+	new_results[proj->n_merge_results].hkl2 = strdup(hkl2);
 
 	proj->merge_results = new_results;
 	proj->n_merge_results++;
