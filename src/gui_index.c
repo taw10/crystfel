@@ -794,6 +794,8 @@ static int pinkindexer_used(const char *methods)
 	int n, i;
 	int r = 0;
 
+	if ( methods == NULL ) return 0;
+
 	m = parse_indexing_methods(methods, &n);
 	for ( i=0; i<n; i++ ) {
 		if ( is_method(m[i], INDEXING_PINKINDEXER) ) {
