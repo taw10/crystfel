@@ -371,19 +371,19 @@ static int read_header_to_cache(struct image *image, const char *from)
 {
 	switch ( image->data_source_type ) {
 
-		case DST_NONE:
+		case DATA_SOURCE_TYPE_NONE:
 		ERROR("No data source for %s %s - not loading header\n",
 		      image->filename, image->ev);
 		return 1;
 
-		case DST_HDF5:
+		case DATA_SOURCE_TYPE_HDF5:
 		return image_hdf5_read_header_to_cache(image, from);
 
-		case DST_CBF:
-		case DST_CBFGZ:
+		case DATA_SOURCE_TYPE_CBF:
+		case DATA_SOURCE_TYPE_CBFGZ:
 		return image_cbf_read_header_to_cache(image, from);
 
-		case DST_MSGPACK:
+		case DATA_SOURCE_TYPE_MSGPACK:
 		return image_msgpack_read_header_to_cache(image, from);
 
 		default:
@@ -454,21 +454,21 @@ static DataSourceType file_type(const char *filename)
 {
 	if ( !file_exists(filename) ) {
 		ERROR("File not found: %s (file_type)\n", filename);
-		return DST_NONE;
+		return DATA_SOURCE_TYPE_NONE;
 	}
 
 	if ( is_hdf5_file(filename) ) {
-		return DST_HDF5;
+		return DATA_SOURCE_TYPE_HDF5;
 
 	} else if ( is_cbf_file(filename) ) {
-		return DST_CBF;
+		return DATA_SOURCE_TYPE_CBF;
 
 	} else if ( is_cbfgz_file(filename) ) {
-		return DST_CBFGZ;
+		return DATA_SOURCE_TYPE_CBFGZ;
 
 	} else {
 		ERROR("Unrecognised file type: %s (file_type)\n", filename);
-		return DST_UNKNOWN;
+		return DATA_SOURCE_TYPE_UNKNOWN;
 	}
 }
 
@@ -767,26 +767,26 @@ static int image_read_image_data(struct image *image,
 
 	switch ( image->data_source_type ) {
 
-		case DST_NONE:
+		case DATA_SOURCE_TYPE_NONE:
 		STATUS("No data source for %s %s - not loading.\n",
 		       image->filename, image->ev);
 		return 1;
 
-		case DST_HDF5:
+		case DATA_SOURCE_TYPE_HDF5:
 		return image_hdf5_read(image, dtempl,
 		                       image->filename, image->ev);
 
-		case DST_CBF:
+		case DATA_SOURCE_TYPE_CBF:
 		return image_cbf_read(image, dtempl,
 		                      image->filename, image->ev,
 		                      0);
 
-		case DST_CBFGZ:
+		case DATA_SOURCE_TYPE_CBFGZ:
 		return image_cbf_read(image, dtempl,
 		                      image->filename, image->ev,
 		                      1);
 
-		case DST_MSGPACK:
+		case DATA_SOURCE_TYPE_MSGPACK:
 		return image_msgpack_read(image, dtempl, image->data_block,
 		                          image->data_block_size);
 
@@ -1406,7 +1406,7 @@ struct image *image_new()
 	image->ev = NULL;
 	image->data_block = NULL;
 	image->data_block_size = 0;
-	image->data_source_type = DST_UNKNOWN;
+	image->data_source_type = DATA_SOURCE_TYPE_UNKNOWN;
 
 	image->n_cached_headers = 0;
 	image->id = 0;
