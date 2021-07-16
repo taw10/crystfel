@@ -70,9 +70,14 @@ better your experience will be:
 * [DirAx](http://www.crystal.chem.uu.nl/distr/dirax/)
 * [XDS](http://xds.mpimf-heidelberg.mpg.de/)
 
-The indexing engines have their own installation instructions.  XGandalf and
-PinkIndexer need to be installed before compiling CrystFEL, but the others can
-be installed at any time afterwards.
+The indexing engines have their own installation instructions.  Mosflm, DirAx
+and XDS can be installed at any time before or after installing CrystFEL, but
+XGandalf and PinkIndexer need to be installed in advance.  If you install them
+in a non-system location, set `PKG_CONFIG_PATH` so that they can be found.  For
+example:
+```
+$ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/user/xgandalf/lib64/pkgconfig
+```
 
 Note that you only need the Mosflm binary, not the full `iMosflm` user interface.
 [Download it here](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver730/pre-built/mosflm-linux-64-noX11.zip).
