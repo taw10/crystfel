@@ -5,6 +5,8 @@ project('crystfel', 'c',
         meson_version: '>=0.50.0',
         default_options: ['buildtype=debugoptimized'])
 
+libcrystfel_api_version = 14
+
 add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
 
 versionc = vcs_tag(input: 'src/version.c.in',

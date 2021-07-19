@@ -127,6 +127,7 @@ configure_file(input: 'libcrystfel-config.h.meson.in',
 libcrystfel_conf_inc = include_directories('.')
 
 libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
+                      soversion: libcrystfel_api_version,
                       include_directories: [libcrystfel_includes,
                                             libcrystfel_conf_inc],
                       dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
