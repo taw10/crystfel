@@ -62,7 +62,10 @@
 #include "process_image.h"
 #include "im-zmq.h"
 #include "profile.h"
+
+#ifdef HAVE_ASAPO
 #include "im-asapo.h"
+#endif
 
 
 struct sandbox
@@ -111,7 +114,9 @@ struct sandbox
 	const char *asapo_token;
 	const char *asapo_beamtime;
 	const char *asapo_path;
+#ifdef HAVE_ASAPO
 	AsapoStringHandle asapo_group_id;
+#endif
 
 	/* Final output */
 	Stream *stream;
@@ -339,7 +344,10 @@ static int run_work(const struct index_args *iargs, Stream *st,
 {
 	int allDone = 0;
 	struct im_zmq *zmqstuff = NULL;
+
+#ifdef HAVE_ASAPO
 	struct im_asapo *asapostuff = NULL;
+#endif
 
 	if ( sb->profile ) {
 		profile_init();
@@ -357,6 +365,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		}
 	}
 
+#ifdef HAVE_ASAPO
 	if ( sb->asapo ) {
 		asapostuff = im_asapo_connect(sb->asapo_endpoint,
 		                              sb->asapo_token,
@@ -368,6 +377,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			return 1;
 		}
 	}
+#endif
 
 	while ( !allDone ) {
 
@@ -472,10 +482,12 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		} else if ( sb->asapo ) {
 
+#ifdef HAVE_ASAPO
 			/* Temporary (?) abuse of "zmq_data", even though
 			 * data comes via ASAP::O */
 			pargs.zmq_data = im_asapo_fetch(asapostuff,
 			                                &pargs.zmq_data_size);
+#endif
 
 		} else {
 			pargs.zmq_data = NULL;
@@ -499,7 +511,9 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 	/* These are both no-ops if argument is NULL */
 	im_zmq_shutdown(zmqstuff);
+#ifdef HAVE_ASAPO
 	im_asapo_shutdown(asapostuff);
+#endif
 
 	cleanup_indexing(iargs->ipriv);
 	cell_free(iargs->cell);
@@ -1146,6 +1160,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return 0;
 	}
 
+#ifdef HAVE_ASAPO
 	if ( asapo_group_id != NULL ) {
 		sb->asapo_group_id = im_asapo_group_id_from_string(asapo_group_id);
 	} else {
@@ -1154,6 +1169,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		                                                   asapo_beamtime,
 		                                                   asapo_path);
 	}
+#endif
 
 	sb->fds = NULL;
 	sb->fhs = NULL;
