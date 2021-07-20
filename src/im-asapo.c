@@ -62,8 +62,7 @@ static void show_asapo_error(const char *msg, const AsapoErrorHandle err)
 
 AsapoStringHandle im_asapo_group_id_from_string(const char *str)
 {
-	/* FIXME: This function does not yet exist */
-	return asapostringhandle_from_string(str);
+	return asapo_string_from_c_str(str);
 }
 
 
