@@ -1,10 +1,11 @@
 Installation instructions
 =========================
 
-CrystFEL installation is supported on GNU/Linux (including on Windows via
+CrystFEL installation is easiest on GNU/Linux.  Installation on Mac OS X is
+supported, but more difficult because you have to get all the dependencies
+from a third-party repository.  Installation in Windows via
 [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/))
-and Mac OS X.  A native installation on Windows is reported as possible, but is
-not supported.
+is also possible.
 
 
 Supported installations at facilities
@@ -54,6 +55,12 @@ manager, or from [Homebrew](https://brew.sh/) on Mac OS.  You should not need
 to download and install any of them separately from source.  In particular, we
 emphatically recommend against trying to install GTK, Cairo, Pango or
 gdk-pixbuf from source.
+
+We also do not recommend using dependencies from Conda/Anaconda.  Do not
+activate any Conda environment before compiling CrystFEL, not even the "base"
+environment.  Don't even "source" the Conda setup file before installing
+CrystFEL - keep it completely separate.  A Conda recipe for CrystFEL might be
+coming soon, though, if development resources allow for it.
 
 If OpenCL headers and corresponding GPU drivers are available on your system,
 GPU-accelerated diffraction calculation will be enabled for `pattern_sim`.
