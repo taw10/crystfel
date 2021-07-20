@@ -103,6 +103,7 @@ void error_box(struct crystfelproject *proj, const char *message)
 	                                           0,
 	                                           GTK_MESSAGE_WARNING,
 	                                           GTK_BUTTONS_NONE,
+	                                           "%s",
 	                                           message);
 	gtk_dialog_add_buttons(GTK_DIALOG(dialog),
 	                       "OK", GTK_RESPONSE_OK,
