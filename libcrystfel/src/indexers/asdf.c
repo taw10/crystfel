@@ -591,7 +591,7 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 	int n = 0;
 	while ( changed ) {
 
-		double a, b, c, alpha, beta, gamma, ab, bc, ca;
+		double a, b, c, alpha, beta, gamma, ab, bc, ca, bb;
 
 		n += 1;
 		changed = 0;
@@ -612,28 +612,23 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 		beta = acos(ca/a/c)/M_PI*180;
 		gamma = acos(ab/a/b)/M_PI*180;
 
-		if ( changed == 0 ) {
+		if ( gamma < 90 ) {
+			gsl_vector_scale(vb, -1);
+			gamma = 180 - gamma;
+			alpha = 180 - alpha;
+		}
 
-			double bb;
-
-			if ( gamma < 90 ) {
-				gsl_vector_scale(vb, -1);
-				gamma = 180 - gamma;
-				alpha = 180 - alpha;
+		gsl_vector_add(vb, va);
+		bb = gsl_blas_dnrm2(vb);
+		if ( bb < b ) {
+			b = bb;
+			if ( a < b ) {
+				gsl_vector_memcpy(cl->axes[1], vb);
+			} else {
+				gsl_vector_memcpy(cl->axes[1], va);
+				gsl_vector_memcpy(cl->axes[0], vb);
 			}
-
-			gsl_vector_add(vb, va);
-			bb = gsl_blas_dnrm2(vb);
-			if ( bb < b ) {
-				b = bb;
-				if ( a < b ) {
-					gsl_vector_memcpy(cl->axes[1], vb);
-				} else {
-					gsl_vector_memcpy(cl->axes[1], va);
-					gsl_vector_memcpy(cl->axes[0], vb);
-				}
-				changed = 1;
-			}
+			changed = 1;
 		}
 
 		if ( changed == 0 ) {
