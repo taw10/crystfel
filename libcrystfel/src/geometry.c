@@ -670,7 +670,6 @@ static double do_integral(double q2, double zl, double R,
 	if ( kmin < k1 ) {
 		if ( kmax < k1 ) {
 			/* Case 1 */
-			kstart = k1;   kfinis = k0;
 			return 0.0;
 		} else if ( kmax < k0 ) {
 			/* Case 2 (kmax > k1)*/
@@ -689,7 +688,6 @@ static double do_integral(double q2, double zl, double R,
 		}
 	} else {
 		/* Case 6 (kmin > k1 and (kmax>)kmin > k0) */
-		kstart = k1;   kfinis = k0;
 		return 0.0;
 	}
 
