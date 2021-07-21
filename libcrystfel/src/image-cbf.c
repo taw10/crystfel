@@ -263,7 +263,7 @@ static int convert_type(float *data_out, long nmemb_exp,
 static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 {
 	FILE *fh;
-	void *buf = NULL;
+	char *buf = NULL;
 	char *rval;
 	size_t data_compressed_len = 0;
 	float *data_out = NULL;
@@ -285,7 +285,8 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 	} else {
 
 		gzFile gzfh;
-		size_t len, len_read;
+		int len_read;
+		size_t len;
 		const size_t bufinc = 8*1024*1024;  /* Allocate buffer in 8Mb chunks */
 		size_t bufsz = bufinc;
 
