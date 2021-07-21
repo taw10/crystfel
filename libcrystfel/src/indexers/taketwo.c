@@ -1751,7 +1751,7 @@ static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_coun
 			/* we have a match, add to array! */
 
 			size_t new_size = (count+1)*sizeof(struct sortme);
-			for_sort = realloc(for_sort, new_size);
+			for_sort = srealloc(for_sort, new_size);
 
 			if ( for_sort == NULL ) return 0;
 

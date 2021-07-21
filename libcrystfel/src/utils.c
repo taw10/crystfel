@@ -856,6 +856,18 @@ int compare_double(const void *av, const void *bv)
 }
 
 
+void *srealloc(void *arr, size_t new_size)
+{
+	void *new_arr = realloc(arr, new_size);
+	if ( new_arr == NULL ) {
+		free(arr);
+		return NULL;
+	} else {
+		return new_arr;
+	}
+}
+
+
 /* -------------------------- libcrystfel features  ------------------------ */
 
 int crystfel_has_peakfinder9()

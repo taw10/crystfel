@@ -307,7 +307,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 
 			if ( len_read == bufinc ) {
 				bufsz += bufinc;
-				buf = realloc(buf, bufsz);
+				buf = srealloc(buf, bufsz);
 				if ( buf == NULL ) return NULL;
 			}
 

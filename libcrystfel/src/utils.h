@@ -81,6 +81,7 @@ extern size_t notrail(char *s);
 extern int convert_int(const char *str, int *pval);
 extern int convert_float(const char *str, double *pval);
 extern void chomp(char *s);
+extern void *srealloc(void *arr, size_t new_size);
 
 #define CLEAR_BIT(val, bit) (((val) | (bit)) ^ (bit))
 

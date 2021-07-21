@@ -259,13 +259,17 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 
 		if ( n == max_n ) {
 			max_n *= 2;
-			x = realloc(x, max_n*sizeof(double));
-			y = realloc(y, max_n*sizeof(double));
-			w = realloc(w, max_n*sizeof(double));
+			x = srealloc(x, max_n*sizeof(double));
+			y = srealloc(y, max_n*sizeof(double));
+			w = srealloc(w, max_n*sizeof(double));
 			if ( (x==NULL) || (y==NULL) || (w==NULL) ) {
+				free(x);
+				free(y);
+				free(w);
 				ERROR("Failed to allocate memory for scaling.\n");
 				return 1;
 			}
+
 		}
 
 		x[n] = s*s;

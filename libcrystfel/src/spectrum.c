@@ -390,9 +390,13 @@ static int read_esrf_spectrum(FILE *fh, Spectrum *s)
 
 		if ( n_bins == max_bins ) {
 			max_bins += 64;
-			k = realloc(k, max_bins*sizeof(double));
-			samp = realloc(samp, max_bins*sizeof(double));
-			if ( (k==NULL) || (samp==NULL) ) return 1;
+			k = srealloc(k, max_bins*sizeof(double));
+			samp = srealloc(samp, max_bins*sizeof(double));
+			if ( (k==NULL) || (samp==NULL) ) {
+				free(k);
+				free(samp);
+				return 1;
+			}
 		}
 
 		k[n_bins] = ph_eV_to_k(energy*1000.0);

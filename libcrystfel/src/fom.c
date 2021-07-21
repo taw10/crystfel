@@ -731,8 +731,8 @@ static int wilson_scale(RefList *list1, RefList *list2, UnitCell *cell)
 
 		if ( n == max_n ) {
 			max_n *= 2;
-			x = realloc(x, max_n*sizeof(double));
-			y = realloc(y, max_n*sizeof(double));
+			x = srealloc(x, max_n*sizeof(double));
+			y = srealloc(y, max_n*sizeof(double));
 			if ( (x==NULL) || (y==NULL) ) {
 				ERROR("Failed to allocate memory for scaling.\n");
 				return 1;

@@ -1588,7 +1588,7 @@ static double estimate_resolution(Crystal *cr, struct image *image)
 			acc[n_acc++] = res;
 			if ( n_acc == max_acc ) {
 				max_acc += 1024;
-				acc = realloc(acc, max_acc*sizeof(double));
+				acc = srealloc(acc, max_acc*sizeof(double));
 				if ( acc == NULL ) {
 					ERROR("Allocation failed during"
 					      " estimate_resolution!\n");
