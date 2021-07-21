@@ -1283,19 +1283,19 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	}
 
 	buf_x = read_peak_line(fh, path_x, line);
-	if ( r != 0 ) {
+	if ( buf_x == NULL ) {
 		close_hdf5(fh);
 		return NULL;
 	}
 
 	buf_y = read_peak_line(fh, path_y, line);
-	if ( r != 0 ) {
+	if ( buf_y == NULL ) {
 		close_hdf5(fh);
 		return NULL;
 	}
 
 	buf_i = read_peak_line(fh, path_i, line);
-	if ( r != 0 ) {
+	if ( buf_i == NULL ) {
 		close_hdf5(fh);
 		return NULL;
 	}
