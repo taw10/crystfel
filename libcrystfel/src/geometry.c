@@ -194,47 +194,46 @@ double gaussian_fraction(double rlow, double rhigh, double R)
 }
 
 
+static void reseed(gsl_rng *rng)
+{
+	unsigned long int seed = gsl_rng_get(rng);
+	gsl_rng_set(rng, seed);
+}
+
+
 static double random_partiality(signed int h, signed int k, signed int l,
                                 int serial)
 {
 	gsl_rng *rng = gsl_rng_alloc(gsl_rng_mt19937);
-	unsigned long int seed;
 	double p;
 	int i;
 
 	gsl_rng_set(rng, serial);
-	seed = gsl_rng_get(rng);
-	gsl_rng_set(rng, seed);
+	reseed(rng);
 
 	for ( i=0; i<abs(h)+1; i++ ) {
-		seed = gsl_rng_get(rng);
+		gsl_rng_get(rng);
 	}
-	gsl_rng_set(rng, seed);
+	reseed(rng);
 	if ( h >= 0 ) {
-		seed = gsl_rng_get(rng);
+		reseed(rng);
 	}
-	seed = gsl_rng_get(rng);
-	gsl_rng_set(rng, seed);
 
 	for ( i=0; i<abs(k)+1; i++ ) {
-		seed = gsl_rng_get(rng);
+		gsl_rng_get(rng);
 	}
-	gsl_rng_set(rng, seed);
+	reseed(rng);
 	if ( k >= 0 ) {
-		seed = gsl_rng_get(rng);
+		reseed(rng);
 	}
-	seed = gsl_rng_get(rng);
-	gsl_rng_set(rng, seed);
 
 	for ( i=0; i<abs(l)+1; i++ ) {
-		seed = gsl_rng_get(rng);
+		gsl_rng_get(rng);
 	}
-	gsl_rng_set(rng, seed);
+	reseed(rng);
 	if ( l >= 0 ) {
-		seed = gsl_rng_get(rng);
+		reseed(rng);
 	}
-	seed = gsl_rng_get(rng);
-	gsl_rng_set(rng, seed);
 
 	p = gsl_rng_uniform(rng);
 	gsl_rng_free(rng);
