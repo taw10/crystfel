@@ -245,7 +245,7 @@ static inline double safe_khalf(const double xl,
                                 const double yl,
                                 const double zl)
 {
-	if ( zl > 0.0 ) return 0.0/0.0;
+	if ( zl > 0.0 ) return NAN;
 	return -(xl*xl+yl*yl+zl*zl) / (2.0*zl);
 }
 
