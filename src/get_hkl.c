@@ -232,7 +232,6 @@ static RefList *twin_reflections(RefList *in, int need_all_parts,
 
 			signed int he, ke, le;
 			signed int hu, ku, lu;
-			Reflection *part;
 			int r;
 
 			get_equiv(holo, m, j, h, k, l, &he, &ke, &le);
@@ -262,6 +261,7 @@ static RefList *twin_reflections(RefList *in, int need_all_parts,
 
 				double i, sigi;
 				int mult;
+				Reflection *part;
 
 				part = find_refl(in, hu, ku, lu);
 

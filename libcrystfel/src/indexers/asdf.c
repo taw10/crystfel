@@ -364,7 +364,7 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	memcpy(projections_sorted, projections, sizeof(double) * n);
 	qsort(projections_sorted, n, sizeof(double), compare_doubles);
 
-	int i, k;
+	int i;
 
 	int N = fftw.N; // number of points in fft calculation
 	double *in = fftw.in;
@@ -376,6 +376,7 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	}
 
 	for ( i=0; i<n; i++ ) {
+		int k;
 		k = (int)((projections_sorted[i] - projections_sorted[0]) /
 		          (projections_sorted[n - 1] - projections_sorted[0]) *
 		          (N - 1));
@@ -394,8 +395,8 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 
 	int d = 1;
 	double max = 0;
-	double a;
 	for ( i=1; i<=i_max; i++ ) {
+		double a;
 		a = sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]);
 		if (a > max) {
 			max = a;
@@ -581,8 +582,6 @@ static int refine_asdf_cell(struct asdf_cell *c, gsl_vector **reflections,
 
 static int reduce_asdf_cell(struct asdf_cell *cl)
 {
-	double a, b, c, alpha, beta, gamma, ab, bc, ca, bb, cc;
-
 	gsl_vector *va = gsl_vector_alloc(3);
 	gsl_vector *vb = gsl_vector_alloc(3);
 	gsl_vector *vc = gsl_vector_alloc(3);
@@ -591,6 +590,9 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 
 	int n = 0;
 	while ( changed ) {
+
+		double a, b, c, alpha, beta, gamma, ab, bc, ca;
+
 		n += 1;
 		changed = 0;
 
@@ -611,6 +613,8 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 		gamma = acos(ab/a/b)/M_PI*180;
 
 		if ( changed == 0 ) {
+
+			double bb;
 
 			if ( gamma < 90 ) {
 				gsl_vector_scale(vb, -1);
@@ -633,6 +637,8 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 		}
 
 		if ( changed == 0 ) {
+
+			double cc;
 
 			if ( beta < 90 ) {
 				gsl_vector_scale(vc, -1);
@@ -659,6 +665,9 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 		}
 
 		if ( changed == 0 ) {
+
+			double cc;
+
 			if ( alpha < 90 ) {
 				gsl_vector_scale(vc, -1);
 				beta = 180 - beta;
@@ -901,10 +910,12 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 		return 0;
 	}
 
-	int is_in_triplets;
 	n = 0;
 
 	while ( n < N_triplets ) {
+
+		int is_in_triplets;
+
 		/* Generate three different integer numbers < N_reflections */
 		i = rand() % N_reflections;
 		j = i;

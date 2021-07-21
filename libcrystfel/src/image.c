@@ -1140,7 +1140,6 @@ static int create_satmap(struct image *image,
 			 * but it isn't this one.  Therefore make a fake
 			 * saturation map */
 
-			long int j;
 			int p_w, p_h;
 
 			p_w = p->orig_max_fs - p->orig_min_fs + 1;
@@ -1149,6 +1148,7 @@ static int create_satmap(struct image *image,
 			image->sat[i] = malloc(p_w*p_h*sizeof(float));
 
 			if ( image->sat[i] != NULL ) {
+				long int j;
 				for ( j=0; j<p_w*p_h; j++ ) {
 					image->sat[i][j] = INFINITY;
 				}

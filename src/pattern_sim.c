@@ -131,7 +131,6 @@ static void record_panel(struct detgeom_panel *p, float *dp,
 	for ( fs=0; fs<p->w; fs++ ) {
 
 		double counts;
-		double cf;
 		double intensity, sa;
 		double pix_area, Lsq;
 		double xs, ys, rx, ry;
@@ -165,8 +164,7 @@ static void record_panel(struct detgeom_panel *p, float *dp,
 		if ( do_poisson ) {
 			counts = poisson_noise(rng, intensity * ph_per_e * sa);
 		} else {
-			cf = intensity * ph_per_e * sa;
-			counts = cf;
+			counts = intensity * ph_per_e * sa;
 		}
 
 		/* Number of photons in pixel */

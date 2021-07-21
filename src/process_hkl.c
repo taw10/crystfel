@@ -131,9 +131,8 @@ static void plot_histogram(double *vals, int n, float hist_min, float hist_max,
 	step = (max-min)/nbins;
 
 	for ( i=0; i<n; i++ ) {
-		int bin;
 		if ( (vals[i] > min) && (vals[i] < max) ) {
-			bin = (vals[i]-min)/step;
+			int bin = (vals[i]-min)/step;
 			histo[bin]++;
 		}
 	}
@@ -282,7 +281,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	Reflection *refl;
 	RefListIterator *iter;
 	RefList *new_refl;
-	double scale, cc;
+	double scale;
 
 	new_refl = crystal_get_reflections(cr);
 
@@ -291,6 +290,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 	polarisation_correction(new_refl, crystal_get_cell(cr), p);
 
 	if ( reference != NULL ) {
+		double cc;
 		if ( do_scale ) {
 			scale = scale_intensities(reference, new_refl, sym);
 		} else {
@@ -431,7 +431,6 @@ static int merge_stream(Stream *st,
 
 		for ( i=0; i<image->n_crystals; i++ ) {
 
-			int r;
 			Crystal *cr = image->crystals[i];
 
 			n_crystals_seen++;
@@ -439,6 +438,7 @@ static int merge_stream(Stream *st,
 			  && (crystal_get_resolution_limit(cr) >= min_res)
 			  && (flag_even_odd == 2 || n_crystals_seen%2 == flag_even_odd) )
 			{
+				int r;
 				n_crystals++;
 				r = merge_crystal(model, image, cr, reference,
 				                  sym, hist_vals,
@@ -889,8 +889,6 @@ int main(int argc, char *argv[])
 
 	if ( twopass ) {
 
-		RefList *reference;
-
 		if ( rewind_all_streams(&stream_list) ) {
 
 			ERROR("Couldn't rewind stream - scaling cannot be "
@@ -899,6 +897,7 @@ int main(int argc, char *argv[])
 		} else {
 
 			int r;
+			RefList *reference;
 
 			STATUS("Second pass for scaling and/or CCs...\n");
 

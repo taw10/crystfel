@@ -421,7 +421,6 @@ static void render_za(UnitCell *cell, RefList *list,
 	double max_val;
 	double scale1, scale2, scale;
 	double sep_u, sep_v, max_r;
-	double u, v;
 	double as, bs, theta;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -561,6 +560,8 @@ static void render_za(UnitCell *cell, RefList *list,
 	}
 
 	if ( !noaxes ) {
+
+		double u, v;
 
 		/* Centre marker */
 		cairo_arc(dctx, (double)cx,

@@ -98,7 +98,6 @@ static void calculate_partials(Crystal *cr,
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	double res;
 
 	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
 	      refl != NULL;
@@ -108,6 +107,7 @@ static void calculate_partials(Crystal *cr,
 		Reflection *rfull;
 		double L, p, Ip, If;
 		int bin;
+		double res;
 
 		get_indices(refl, &h, &k, &l);
 		get_asymm(sym, h, k, l, &h, &k, &l);
@@ -515,9 +515,7 @@ int main(int argc, char *argv[])
 	int n_threads = 1;
 	char *rval;
 	int i;
-	FILE *fh;
 	char *phist_file = NULL;
-	gsl_rng *rng_for_seeds;
 	int config_random = 0;
 	char *image_prefix = NULL;
 	Stream *template_stream = NULL;
@@ -969,6 +967,7 @@ int main(int argc, char *argv[])
 		fclose(fh);
 
 	} else {
+		gsl_rng *rng_for_seeds;
 		rng_for_seeds = gsl_rng_alloc(gsl_rng_mt19937);
 		for ( i=0; i<n_threads; i++ ) {
 			qargs.rngs[i] = gsl_rng_alloc(gsl_rng_mt19937);
@@ -993,13 +992,15 @@ int main(int argc, char *argv[])
 
 	if ( phist_file != NULL ) {
 
-		double overall_max = 0.0;
-		double overall_mean = 0.0;
-		long long int overall_total = 0;
+		FILE *fh;
 
 		fh = fopen(phist_file, "w");
 
 		if ( fh != NULL ) {
+
+			double overall_max = 0.0;
+			double overall_mean = 0.0;
+			long long int overall_total = 0;
 
 			for ( i=0; i<NBINS; i++ ) {
 

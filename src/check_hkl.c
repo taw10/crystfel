@@ -350,12 +350,12 @@ static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
 	} else {
 		int bs = (pow(3.125e9/2.0, 2.0) - s2min)/s2step + 1;
 		double lnk, minus2B, cov00, cov01, cov11, sumsq;
-		double B;
 		if ( nbins - bs < 3 ) {
 			ERROR("Not enough bins to estimate B factor\n");
 			ERROR("Resolution of data, or number of bins, is too "
 			      "low.\n");
 		} else {
+			double B;
 			double *s2fit;
 			double *lnifit;
 			int nbfit = 0;

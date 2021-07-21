@@ -481,7 +481,6 @@ static char *mosflm_spacegroup_for_lattice(UnitCell *cell)
 static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 {
 	char tmp[256];
-	char cen;
 	double wavelength;
 	double a = 0, b = 0, c = 0, alpha = 0, beta = 0, gamma = 0;
 
@@ -548,6 +547,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 
 		case 9 :
 		if ( mosflm->mp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+			char cen;
 			cell_get_parameters(mosflm->mp->template,
 			                    &a, &b, &c, &alpha, &beta, &gamma);
 			cen = cell_get_centering(mosflm->mp->template);
@@ -886,9 +886,8 @@ const char *mosflm_probe(UnitCell *cell)
 	fh = fdopen(pty, "r");
 
 	for ( l=0; l<10; l++ ) {
-		char *pos;
 		if ( fgets(line, 1024, fh) != NULL ) {
-			pos = strstr(line, "Mosflm version ");
+			char *pos = strstr(line, "Mosflm version ");
 			if ( pos != NULL ) ok = 1;
 		}
 	}

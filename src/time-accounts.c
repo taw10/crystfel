@@ -77,13 +77,13 @@ void time_accounts_free(TimeAccounts *accs)
 static int find_account(TimeAccounts *accs, enum timeaccount acc)
 {
 	int i;
-	static int warned_toomany = 0;
 
 	for ( i=0; i<accs->n_accs; i++ ) {
 		if ( accs->accs[i] == acc ) return i;
 	}
 
 	if ( i == MAX_ACCOUNTS ) {
+		static int warned_toomany = 0;
 		if ( !warned_toomany ) printf("Too many time accounts used!\n");
 		warned_toomany = 1;
 		return MAX_ACCOUNTS;

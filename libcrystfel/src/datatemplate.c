@@ -646,9 +646,9 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 			reject = 1;
 		}
 	} else if ( strncmp(key, "dim", 3) == 0) {
-		int dim_entry;
 		char *endptr;
 		if ( key[3] != '\0' ) {
+			int dim_entry;
 			dim_entry = strtoul(key+3, &endptr, 10);
 			if ( endptr[0] != '\0' ) {
 				ERROR("Invalid dimension number %s\n",

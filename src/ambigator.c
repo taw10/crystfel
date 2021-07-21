@@ -119,7 +119,6 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 		signed int h, k, l;
 		signed int ha, ka, la;
 		Reflection *cr;
-		double res;
 		int group = 0;
 
 		get_indices(refl, &h, &k, &l);
@@ -127,7 +126,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 		if ( cell == NULL ) {
 			ERROR("Can't calculate resolution cutoff - no cell\n");
 		} else {
-			res = 2.0*resolution(cell, h, k, l);
+			double res = 2.0*resolution(cell, h, k, l);
 			if ( res < rmin ) continue;
 			if ( res > rmax ) continue;
 			if ( auto_res ) {

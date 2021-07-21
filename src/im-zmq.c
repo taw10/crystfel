@@ -62,7 +62,6 @@ struct im_zmq *im_zmq_connect(const char *zmq_address,
                               const char *zmq_request)
 {
 	struct im_zmq *z;
-	int i;
 
 	z = malloc(sizeof(struct im_zmq));
 	if ( z == NULL ) return NULL;
@@ -92,6 +91,8 @@ struct im_zmq *im_zmq_connect(const char *zmq_address,
 	}
 
 	if ( zmq_request == NULL ) {
+
+		int i;
 
 		/* SUB mode */
 		if ( n_subscriptions == 0 ) {

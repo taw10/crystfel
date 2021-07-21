@@ -523,8 +523,8 @@ const char *xds_probe(UnitCell *cell)
 	fh = fdopen(pty, "r");
 
 	for ( l=0; l<10; l++ ) {
-		char *pos;
 		if ( fgets(line, 1024, fh) != NULL ) {
+			char *pos;
 			pos = strstr(line, "** XDS **");
 			if ( pos != NULL ) {
 				ok = 1;

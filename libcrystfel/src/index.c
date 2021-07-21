@@ -922,7 +922,6 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 	for ( n=0; n<ipriv->n_methods; n++ ) {
 
 		int done = 0;
-		int r;
 		int ntry = 0;
 		int success = 0;
 
@@ -931,6 +930,8 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 		}
 
 		do {
+
+			int r;
 
 			r = try_indexer(image, ipriv->methods[n],
 			                ipriv, ipriv->engine_private[n],

@@ -1220,7 +1220,6 @@ int cell_is_sensible(UnitCell *cell)
 int validate_cell(UnitCell *cell)
 {
 	int err = 0;
-	char cen, ua;
 
 	if ( cell_has_parameters(cell) && !cell_is_sensible(cell) ) {
 		ERROR("WARNING: Unit cell parameters are not sensible.\n");
@@ -1241,6 +1240,7 @@ int validate_cell(UnitCell *cell)
 	/* For monoclinic A, B or C centering, the unique axis must be something
 	 * other than the centering. */
 	if ( cell_get_lattice_type(cell) == L_MONOCLINIC ) {
+		char cen, ua;
 		cen = cell_get_centering(cell);
 		ua = cell_get_unique_axis(cell);
 		if ( ((cen == 'A') && (ua == 'a'))

@@ -228,7 +228,6 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 		float vals[11];
 		struct fromfile_key key;
 		Crystal *cr;
-		UnitCell *cell;
 		size_t len;
 		int n_sp;
 		struct fromfile_entry *item = NULL;
@@ -285,6 +284,8 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 			ERROR("Too many crystals for %s %s\n", line, bits[0]);
 
 		} else {
+
+			UnitCell *cell;
 
 			cr = crystal_new();
 

@@ -1099,13 +1099,13 @@ int write_to_mtz(RefList *reflist,
 	{
 		signed int h, k, l;
 		double one_over_d;
-		int isym;
 
 		get_indices(refl, &h, &k, &l);
 
 		one_over_d = 2.0*resolution(cell, h, k, l);
 		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
 
+			int isym;
 			float refldata[7];
 			signed int nh, nk, nl;
 			signed int fh, fk, fl;

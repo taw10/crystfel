@@ -166,12 +166,11 @@ static void write_json_radii(FILE *fh, const char *name,
 
 static void write_methods(FILE *fh, const char *name, IndexingPrivate *ipriv)
 {
-	int i, n;
-	const IndexingMethod *methods;
-
 	fprintf(fh, "    \"%s\": [", name);
 
 	if ( ipriv != NULL ) {
+		const IndexingMethod *methods;
+		int i, n;
 		methods = indexing_methods(ipriv, &n);
 		for ( i=0; i<n; i++ ) {
 			fprintf(fh, " \"%s\"", indexer_str(methods[i]));
@@ -190,7 +189,6 @@ static void write_harvest_file(struct index_args *args,
                                int if_peaks, int if_checkcell)
 {
 	FILE *fh;
-	char *tmp;
 
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) {
@@ -234,6 +232,9 @@ static void write_harvest_file(struct index_args *args,
 		fprintf(fh, "  \"indexing\": null\n");
 		fprintf(fh, "  \"integration\": null\n");
 	} else {
+
+		char *tmp;
+
 		fprintf(fh, "  \"indexing\": {\n");
 		write_methods(fh, "methods", args->ipriv);
 		write_json_cell(fh, "target_cell", args->cell);

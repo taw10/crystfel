@@ -131,7 +131,6 @@ static int read_felix(struct felix_private *gp, struct image *image,
 	float mean_ia;
 	int ngv;
 	char line[1024];
-	int r;
 	int n_crystals = 0;
 
 	fh = fopen(filename, "r");
@@ -151,6 +150,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 
 		Crystal *cr;
 		UnitCell *cell;
+		int r;
 
 		/* One line per grain */
 		if ( fgets( line, 1024, fh ) == NULL ) {

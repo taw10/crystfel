@@ -153,13 +153,13 @@ int main(int argc, char *argv[])
 	do {
 
 		char filename[1024];
-		int i;
 
 		rval = fgets(filename, 1024, ifh);
 		if ( rval != NULL ) {
 
 			char **evlist;
 			int num_events;
+			int i;
 
 			chomp(filename);
 

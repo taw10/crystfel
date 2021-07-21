@@ -403,8 +403,6 @@ static void connect_series(struct window *win)
 {
 	while ( win->join_ptr < win->ws ) {
 
-		int i;
-
 		if ( win->join_ptr == 0 ) {
 			win->join_ptr++;
 			continue;
@@ -415,6 +413,7 @@ static void connect_series(struct window *win)
 
 		/* Try to join this frame to each of the active series */
 		if ( win->join_ptr > 1 ) {
+			int i;
 			for ( i=0; i<MAX_SER; i++ ) {
 				if ( win->ser[i][win->join_ptr-1] != -1 ) {
 					try_join(win, i);

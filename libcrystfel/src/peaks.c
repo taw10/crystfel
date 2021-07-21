@@ -288,7 +288,6 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		double grad;
 		int mask_fs, mask_ss;
 		int s_fs, s_ss;
-		double max;
 		unsigned int did_something;
 		int r;
 		int saturated;
@@ -321,6 +320,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		do {
 
+			double max;
 			max = data[mask_fs+stride*mask_ss];
 			did_something = 0;
 
@@ -589,7 +589,6 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 
 		struct imagefeature *f;
 		double q[3];
-		double h,k,l,hd,kd,ld;
 		int j;
 		int ok = 0;
 
@@ -604,6 +603,7 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 			double bx, by, bz;
 			double cx, cy, cz;
 			double dx, dy;
+			double h,k,l,hd,kd,ld;
 
 			crystal_get_det_shift(crystals[j], &dx, &dy);
 

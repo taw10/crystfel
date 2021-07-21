@@ -242,7 +242,6 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 		float intensity, sigma, fs, ss, pk, bg;
 		char pn[32];
 		int r;
-		Reflection *refl;
 
 		rval = fgets(line, 1023, st->fh);
 		st->ln++;
@@ -264,6 +263,7 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 
 		if ( r == 10 ) {
 
+			Reflection *refl;
 			refl = add_refl(out, h, k, l);
 			if ( refl == NULL ) {
 				ERROR("Failed to add reflection\n");
@@ -313,7 +313,6 @@ static RefList *read_stream_reflections_2_1(Stream *st)
 		char phs[1024];
 		int cts;
 		int r;
-		Reflection *refl;
 
 		rval = fgets(line, 1023, st->fh);
 		st->ln++;
@@ -333,6 +332,7 @@ static RefList *read_stream_reflections_2_1(Stream *st)
 		first = 0;
 		if ( r == 9 ) {
 
+			Reflection *refl;
 			double ph;
 			char *v;
 
@@ -388,7 +388,6 @@ static RefList *read_stream_reflections_2_2(Stream *st)
 		signed int h, k, l;
 		float intensity, sigma, fs, ss, pk, bg;
 		int r;
-		Reflection *refl;
 
 		rval = fgets(line, 1023, st->fh);
 		st->ln++;
@@ -407,6 +406,7 @@ static RefList *read_stream_reflections_2_2(Stream *st)
 		first = 0;
 		if ( r == 9 ) {
 
+			Reflection *refl;
 			refl = add_refl(out, h, k, l);
 			if ( refl == NULL ) {
 				ERROR("Failed to add reflection\n");

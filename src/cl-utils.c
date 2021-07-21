@@ -188,7 +188,7 @@ cl_device_id get_cl_dev(cl_context ctx, int n)
 	cl_device_id *dev;
 	cl_int r;
 	size_t size;
-	int i, num_devs;
+	int num_devs;
 
 	/* Get the required size of the array */
 	r = clGetContextInfo(ctx, CL_CONTEXT_DEVICES, 0, NULL, &size);
@@ -211,6 +211,8 @@ cl_device_id get_cl_dev(cl_context ctx, int n)
 	}
 
 	if ( n < 0 ) {
+
+		int i;
 
 		STATUS("Available devices:\n");
 		for ( i=0; i<num_devs; i++ ) {
@@ -267,7 +269,6 @@ cl_program load_program_from_string(const char *source_in, size_t len,
 	cl_int r;
 	char cflags[1024] = "";
 	char *insert_pos;
-	size_t il;
 	char *source;
 
 	/* Copy the code because we need to zero-terminate it */
@@ -282,6 +283,8 @@ cl_program load_program_from_string(const char *source_in, size_t len,
 		if ( insert_pos != NULL ) {
 
 			char *source2;
+			size_t il;
+
 			source2 = malloc(strlen(source)+strlen(insert_stuff)+1);
 			if ( source2 == NULL ) {
 				free(source);

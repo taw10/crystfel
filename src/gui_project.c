@@ -602,9 +602,8 @@ static void handle_var(const char *key, const char *val,
 
 void clear_project_files(struct crystfelproject *proj)
 {
-	int i;
-
 	if ( proj->filenames != NULL ) {
+		int i;
 		for ( i=0; i<proj->n_frames; i++ ) {
 			free(proj->filenames[i]);
 			free(proj->events[i]);

@@ -340,10 +340,9 @@ static void fit_gradient_bg(struct intcontext *ic, struct peak_box *bx)
 	for ( p=0; p<ic->w; p++ ) {
 	for ( q=0; q<ic->w; q++ ) {
 
-		double bi;
-
 		if ( bx->bm[p + ic->w*q] == BM_BG ) {
 
+			double bi;
 			bi = boxi(ic, bx, p, q);
 
 			addv(v, 0, bi*p);

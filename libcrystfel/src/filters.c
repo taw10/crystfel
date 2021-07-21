@@ -99,13 +99,14 @@ void filters_fudge_gslcblas()
 #define SWAP(a,b) { float t=(a);(a)=(b);(b)=t; }
 static float kth_smallest(float *a, int n, int k)
 {
-	long i, j, l, m;
-	float x;
+	long l, m;
 
 	l = 0;
 	m = n-1;
 
 	while ( l < m ) {
+		long i, j;
+		float x;
 		x=a[k];
 		i=l;
 		j=m;

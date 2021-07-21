@@ -268,10 +268,8 @@ static void try_reindex(Crystal *crin, const RefList *full,
                         SymOpList *sym, SymOpList *amb, int scaleflags,
                         PartialityModel pmodel)
 {
-	RefList *list;
 	Crystal *cr;
-	UnitCell *cell;
-	double residual_original, residual_flipped;
+	double residual_original;
 	int idx, n;
 
 	if ( sym == NULL || amb == NULL ) return;
@@ -284,6 +282,10 @@ static void try_reindex(Crystal *crin, const RefList *full,
 	n = num_equivs(amb, NULL);
 
 	for ( idx=0; idx<n; idx++ ) {
+
+		RefList *list;
+		UnitCell *cell;
+		double residual_flipped;
 
 		cell = cell_new_from_cell(crystal_get_cell(crin));
 		if ( cell == NULL ) return;
