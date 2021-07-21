@@ -410,11 +410,15 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		                                          ttopts,
 		                                          fromfile_opts);
 
-		if ( ipriv->engine_private[i] == NULL ) return NULL;
+		if ( ipriv->engine_private[i] == NULL ) {
+			free(ipriv->engine_private);
+			return NULL;
+		}
 
 		for ( j=0; j<i; j++ ) {
 			if ( methods[i] == methods[j] ) {
 				ERROR("Duplicate indexing method.\n");
+				free(ipriv->engine_private);
 				return NULL;
 			}
 		}

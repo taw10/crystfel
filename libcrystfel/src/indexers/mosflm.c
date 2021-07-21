@@ -244,6 +244,7 @@ static int read_newmat(struct mosflm_data *mosflm, const char *filename,
 	n += fscanf(fh, "%f %f %f\n", &asz, &bsz, &csz);
 	if ( n != 9 ) {
 		STATUS("Fewer than 9 parameters found in NEWMAT file.\n");
+		fclose(fh);
 		return 1;
 	}
 
@@ -371,6 +372,7 @@ static void write_img(struct image *image, const char *filename)
 	fh = fopen(filename, "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file '%s'\n", filename);
+		free(intimage);
 		return;
 	}
 

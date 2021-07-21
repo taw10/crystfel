@@ -94,7 +94,10 @@ char **read_path_parts(const char *ev_orig, int *pn_plvals)
 	}
 
 	ev = strdup(ev_orig);
-	if ( ev == NULL ) return NULL;
+	if ( ev == NULL ) {
+		free(plvals);
+		return NULL;
+	}
 
 	start = ev;
 	do {
@@ -166,7 +169,10 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 	}
 
 	ev = strdup(ev+2);
-	if ( ev == NULL ) return NULL;
+	if ( ev == NULL ) {
+		free(dvals);
+		return NULL;
+	}
 
 	start = ev;
 	done = 0;

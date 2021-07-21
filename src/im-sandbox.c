@@ -529,6 +529,7 @@ static void add_pipe(struct sandbox *sb, int fd)
 	fhs_new = realloc(sb->fhs, (sb->n_read+1)*sizeof(FILE *));
 	if ( fhs_new == NULL ) {
 		ERROR("Failed to allocate memory for new FH.\n");
+		free(fds_new);
 		return;
 	}
 

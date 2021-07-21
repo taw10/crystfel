@@ -1769,6 +1769,10 @@ static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_coun
 		match_array = &(obs_vecs[i].matches);
 		match_count = &(obs_vecs[i].match_num);
 
+		if ( for_sort == NULL ) {
+			return 0;
+		}
+
 		/* Sort in order to get most agreeable matches first */
 		qsort(for_sort, count, sizeof(struct sortme), sort_theory_distances);
 		*match_array = malloc(count*sizeof(struct TheoryVec));
@@ -1831,6 +1835,7 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 				spot_vec.match_num = 0;
 				spot_vec.her_rlp = &rlps[i];
 				spot_vec.his_rlp = &rlps[j];
+				spot_vec.in_network = 0;
 
 				cell->obs_vecs[count - 1] = spot_vec;
 			}

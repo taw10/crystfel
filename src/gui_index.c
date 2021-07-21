@@ -830,7 +830,10 @@ static char **indexamajig_command_line(const char *geom_filename,
 	if ( args == NULL ) return NULL;
 
 	indexamajig_path = get_crystfel_exe("indexamajig");
-	if ( indexamajig_path == NULL ) return NULL;
+	if ( indexamajig_path == NULL ) {
+		free(args);
+		return NULL;
+	}
 
 	/* The basics */
 	add_arg(args, n_args++, indexamajig_path);

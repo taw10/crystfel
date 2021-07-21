@@ -364,7 +364,10 @@ static int write_partialator_script(const char *filename,
 	fprintf(fh, "#!/bin/sh\n");
 
 	exe_path = get_crystfel_exe("partialator");
-	if ( exe_path == NULL ) return 1;
+	if ( exe_path == NULL ) {
+		fclose(fh);
+		return 1;
+	}
 	fprintf(fh, "%s \\\n", exe_path);
 
 	for ( i=0; i<input->n_streams; i++ ) {
@@ -468,7 +471,10 @@ static int write_process_hkl_script(const char *filename,
 	fprintf(fh, "#!/bin/sh\n");
 
 	exe_path = get_crystfel_exe("process_hkl");
-	if ( exe_path == NULL ) return 1;
+	if ( exe_path == NULL ) {
+		fclose(fh);
+		return 1;
+	}
 
 	add_process_hkl(fh, exe_path, input, params, out_hkl,
 	                stdout_filename, stderr_filename, "", "");

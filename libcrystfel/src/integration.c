@@ -509,6 +509,7 @@ struct intcontext *intcontext_new(struct image *image,
 	ic->bm = malloc(ic->w * ic->w * sizeof(enum boxmask_val));
 	if ( ic->bm == NULL ) {
 		ERROR("Failed to allocate box mask.\n");
+		free(ic);
 		return NULL;
 	}
 
@@ -516,12 +517,21 @@ struct intcontext *intcontext_new(struct image *image,
 	ic->n_reference_profiles = 1;
 	ic->reference_profiles = calloc(ic->n_reference_profiles,
 	                                sizeof(double *));
-	if ( ic->reference_profiles == NULL ) return NULL;
+	if ( ic->reference_profiles == NULL ) {
+		free(ic);
+		return NULL;
+	}
 	ic->reference_den = calloc(ic->n_reference_profiles, sizeof(double *));
-	if ( ic->reference_den == NULL ) return NULL;
+	if ( ic->reference_den == NULL ) {
+		free(ic);
+		return NULL;
+	}
 	ic->n_profiles_in_reference = calloc(ic->n_reference_profiles,
 	                                     sizeof(int));
-	if ( ic->n_profiles_in_reference == NULL ) return NULL;
+	if ( ic->n_profiles_in_reference == NULL ) {
+		free(ic);
+		return NULL;
+	}
 	for ( i=0; i<ic->n_reference_profiles; i++ ) {
 		ic->reference_profiles[i] = malloc(ic->w*ic->w*sizeof(double));
 		if ( ic->reference_profiles[i] == NULL ) return NULL;
@@ -534,6 +544,7 @@ struct intcontext *intcontext_new(struct image *image,
 	ic->n_boxes = 0;
 	ic->max_boxes = 0;
 	if ( alloc_boxes(ic, 32) ) {
+		free(ic);
 		return NULL;
 	}
 

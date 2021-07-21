@@ -68,7 +68,10 @@ struct im_zmq *im_zmq_connect(const char *zmq_address,
 	if ( z == NULL ) return NULL;
 
 	z->ctx = zmq_ctx_new();
-	if ( z->ctx == NULL ) return NULL;
+	if ( z->ctx == NULL ) {
+		free(z);
+		return NULL;
+	}
 
 	if ( zmq_request == NULL ) {
 		STATUS("Connecting ZMQ subscriber to '%s'\n", zmq_address);
@@ -77,10 +80,14 @@ struct im_zmq *im_zmq_connect(const char *zmq_address,
 		STATUS("Connecting ZMQ requester to '%s'\n", zmq_address);
 		z->socket = zmq_socket(z->ctx, ZMQ_REQ);
 	}
-	if ( z->socket == NULL ) return NULL;
+	if ( z->socket == NULL ) {
+		free(z);
+		return NULL;
+	}
 
 	if ( zmq_connect(z->socket, zmq_address) == -1 ) {
 		ERROR("ZMQ connection failed: %s\n", zmq_strerror(errno));
+		free(z);
 		return NULL;
 	}
 

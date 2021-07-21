@@ -820,6 +820,7 @@ char *load_entire_file(const char *filename)
 
 	if ( fread(contents, 1, statbuf.st_size, fh) != statbuf.st_size ) {
 		ERROR("Failed to read file '%s'\n", filename);
+		fclose(fh);
 		free(contents);
 		return NULL;
 	}

@@ -130,6 +130,7 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 
 	task_defaults.crystal = NULL;
 	task_defaults.flags = scaleflags;
+	task_defaults.full = NULL;  /* (not used) */
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_crystals = n_crystals;

@@ -143,6 +143,7 @@ static int read_felix(struct felix_private *gp, struct image *image,
 	/* Read and discard first line */
 	if ( fgets( line, 1024, fh ) == NULL ) {
 		ERROR("Failed to read *.felix file.\n");
+		fclose(fh);
 		return 0;
 	}
 
@@ -639,6 +640,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( gp->spacegroup == 0 ) {
 		ERROR("Couldn't determine representative space group for your cell.\n");
 		ERROR("Try again with a more conventional cell.\n");
+		free(gp);
 		return NULL;
 	}
 

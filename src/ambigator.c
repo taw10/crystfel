@@ -196,7 +196,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 	   || (f->s_reidx == NULL) || (f->i_reidx == NULL)
 	   || (f->group_reidx == NULL) || (f->group == NULL) ) {
 		ERROR("Failed to allocate flist\n");
-		return NULL;
+		goto out;
 	}
 
 	f->n = 0;
@@ -218,7 +218,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 	if ( amb != NULL ) {
 
 		RefList *reidx = reflist_new();
-		if ( reidx == NULL ) return NULL;
+		if ( reidx == NULL ) goto out;
 
 		for ( refl = first_refl(asym, &iter);
 		      refl != NULL;
@@ -236,7 +236,8 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			cr = add_refl(reidx, hra, kra, lra);
 			if ( cr == NULL ) {
 				ERROR("Failed to add reflection\n");
-				return NULL;
+				reflist_free(reidx);
+				goto out;
 			}
 			copy_data(cr, refl);
 		}
@@ -260,6 +261,16 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 	reflist_free(asym);
 
 	return f;
+
+out:
+	free(f->s);
+	free(f->s_reidx);
+	free(f->i);
+	free(f->i_reidx);
+	free(f->group);
+	free(f->group_reidx);
+	free(f);
+	return NULL;
 }
 
 
@@ -747,6 +758,7 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 	ofh = fopen(outfile, "w");
 	if ( ofh == NULL ) {
 		ERROR("Failed to open '%s'\n", outfile);
+		fclose(fh);
 		return;
 	}
 

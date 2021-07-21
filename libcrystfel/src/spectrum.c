@@ -435,6 +435,7 @@ Spectrum *spectrum_load(const char *filename)
 	if ( fgets(line, 1024, fh) != line ) {
 		ERROR("Failed to read '%s'\n", filename);
 		spectrum_free(s);
+		fclose(fh);
 		return NULL;
 	}
 
@@ -444,6 +445,7 @@ Spectrum *spectrum_load(const char *filename)
 			ERROR("Failed to read ESRF spectrum from %s\n",
 			      filename);
 			spectrum_free(s);
+			fclose(fh);
 			return NULL;
 		}
 	} else {

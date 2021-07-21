@@ -88,10 +88,15 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		fctx->cts[i] = 0;
 	}
 
-	fctx->num = NULL;
-	fctx->den = NULL;
 	fctx->num2 = NULL;
 	fctx->den2 = NULL;
+	fctx->num = NULL;
+	fctx->den = NULL;
+	fctx->n_meas = NULL;
+	fctx->vec1 = NULL;
+	fctx->vec2 = NULL;
+	fctx->n = NULL;
+	fctx->n_within = NULL;
 	fctx->possible = NULL;
 
 	switch ( fctx->fom ) {
@@ -99,7 +104,7 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_RANORSPLIT :
 		fctx->num2 = malloc(nshells*sizeof(double));
 		fctx->den2 = malloc(nshells*sizeof(double));
-		if ( (fctx->num2 == NULL) || (fctx->den2 == NULL) ) return NULL;
+		if ( (fctx->num2 == NULL) || (fctx->den2 == NULL) ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->num2[i] = 0.0;
 			fctx->den2[i] = 0.0;
@@ -116,7 +121,7 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_REDUNDANCY :
 		fctx->num = malloc(nshells*sizeof(double));
 		fctx->den = malloc(nshells*sizeof(double));
-		if ( (fctx->num == NULL) || (fctx->den == NULL) ) return NULL;
+		if ( (fctx->num == NULL) || (fctx->den == NULL) ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->num[i] = 0.0;
 			fctx->den[i] = 0.0;
@@ -124,12 +129,12 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		break;
 
 		case FOM_COMPLETENESS :
-		/* Uses 'cts' and 'possible' only */
+		/* Uses 'cts' and 'possible' only - see calculate_possible() */
 		break;
 
 		case FOM_NUM_MEASUREMENTS :
 		fctx->n_meas = calloc(nshells, sizeof(long int));
-		if ( fctx->n_meas == NULL ) return NULL;
+		if ( fctx->n_meas == NULL ) goto out;
 		break;
 
 		case FOM_CC :
@@ -138,15 +143,19 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_CRDANO :
 		fctx->vec1 = malloc(nshells*sizeof(double *));
 		fctx->vec2 = malloc(nshells*sizeof(double *));
-		if ( (fctx->vec1 == NULL) || (fctx->vec2 == NULL) ) return NULL;
+		if ( (fctx->vec1 == NULL) || (fctx->vec2 == NULL) ) goto out;
+		for ( i=0; i<nshells; i++ ) {
+			fctx->vec1[i] = NULL;
+			fctx->vec2[i] = NULL;
+		}
 		for ( i=0; i<nshells; i++ ) {
 			fctx->vec1[i] = malloc(nmax*sizeof(double));
-			if ( fctx->vec1[i] == NULL ) return NULL;
+			if ( fctx->vec1[i] == NULL ) goto out;
 			fctx->vec2[i] = malloc(nmax*sizeof(double));
-			if ( fctx->vec2[i] == NULL ) return NULL;
-			fctx->n = malloc(nshells*sizeof(int));
-			if ( fctx->n == NULL ) return NULL;
+			if ( fctx->vec2[i] == NULL ) goto out;
 		}
+		fctx->n = malloc(nshells*sizeof(int));
+		if ( fctx->n == NULL ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->n[i] = 0;
 		}
@@ -156,7 +165,7 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_D1SIG :
 		case FOM_D2SIG :
 		fctx->n_within = malloc(nshells*sizeof(int));
-		if ( fctx->n_within == NULL ) return NULL;
+		if ( fctx->n_within == NULL ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->n_within[i] = 0;
 		}
@@ -165,6 +174,29 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 	}
 
 	return fctx;
+
+out:
+	free(fctx->num2);
+	free(fctx->den2);
+	free(fctx->num);
+	free(fctx->den);
+	free(fctx->n_meas);
+	if ( fctx->vec1 != NULL ) {
+		for ( i=0; i<nshells; i++ ) {
+			free(fctx->vec1[i]);
+		}
+		free(fctx->vec1);
+	}
+	if ( fctx->vec2 != NULL ) {
+		for ( i=0; i<nshells; i++ ) {
+			free(fctx->vec2[i]);
+		}
+		free(fctx->vec2);
+	}
+	free(fctx->n);
+	free(fctx->n_within);
+	free(fctx);
+	return NULL;
 }
 
 
@@ -588,6 +620,8 @@ struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
 
 	if ( (s->rmins==NULL) || (s->rmaxs==NULL) ) {
 		ERROR("Couldn't allocate memory for resolution shells.\n");
+		free(s->rmins);
+		free(s->rmaxs);
 		free(s);
 		return NULL;
 	}

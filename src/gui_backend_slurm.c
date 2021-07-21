@@ -270,7 +270,10 @@ static char **create_env(int *psize, char *path_add)
 	}
 
 	env[0] = malloc(path_len);
-	if ( env[0] == NULL ) return NULL;
+	if ( env[0] == NULL ) {
+		free(env);
+		return NULL;
+	}
 
 	strcpy(env[0], base_path);
 	if ( crystfel_path != NULL ) {

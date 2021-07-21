@@ -349,11 +349,13 @@ static void *create_job(void *vqargs)
 		                          STREAM_REFLECTIONS);
 		if ( image == NULL ) {
 			ERROR("Failed to read template chunk!\n");
+			free(wargs);
 			return NULL;
 		}
 		if ( image->n_crystals != 1 ) {
 			ERROR("Template stream must have exactly one crystal "
 			      "per frame.\n");
+			free(wargs);
 			return NULL;
 		}
 
@@ -947,6 +949,7 @@ int main(int argc, char *argv[])
 		if ( fh == NULL ) {
 			ERROR("Failed to open /dev/urandom.  Try again without"
 			      " --really-random.\n");
+			free(qargs.rngs);
 			return 1;
 		}
 

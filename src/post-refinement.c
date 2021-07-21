@@ -821,6 +821,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.sym = sym;
 	task_defaults.amb = amb;
 	task_defaults.scaleflags = scaleflags;
+	task_defaults.serial = 0;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;

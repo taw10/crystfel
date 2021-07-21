@@ -1588,7 +1588,10 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 	if ( cands == NULL ) return NULL;
 
 	rat = rtnl_list(-5, 5, 1, csl ? 4 : 1, &nrat);
-	if ( rat == NULL ) return NULL;
+	if ( rat == NULL ) {
+		free(cands);
+		return NULL;
+	}
 
 	for ( ia=0; ia<nrat; ia++ ) {
 	for ( ib=0; ib<nrat; ib++ ) {

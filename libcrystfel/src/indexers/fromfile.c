@@ -211,7 +211,10 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 	}
 
 	dp = malloc(sizeof(struct fromfile_private));
-	if ( dp == NULL ) return NULL;
+	if ( dp == NULL ) {
+		fclose(fh);
+		return NULL;
+	}
 
 	dp->sol_hash = NULL;
 

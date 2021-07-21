@@ -1067,7 +1067,10 @@ char **crystfel_indexing_opts_get_metadata_to_copy(CrystFELIndexingOpts *opts,
 
 	r = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(opts->copy_metadata_store),
 	                                  &iter);
-	if ( r == FALSE ) return NULL;
+	if ( r == FALSE ) {
+		free(arr);
+		return NULL;
+	}
 
 	i = 0;
 	do {

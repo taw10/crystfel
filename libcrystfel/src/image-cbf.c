@@ -314,7 +314,10 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 		} while ( len_read == bufinc );
 
 		fh = fmemopen(buf, len, "rb");
-		if ( fh == NULL ) return NULL;
+		if ( fh == NULL ) {
+			free(buf);
+			return NULL;
+		}
 
 		gzclose(gzfh);
 
@@ -507,7 +510,11 @@ signed int is_cbf_file(const char *filename)
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return -1;
 
-	if ( fgets(line, 1024, fh) == NULL ) return 0;
+	if ( fgets(line, 1024, fh) == NULL ) {
+		fclose(fh);
+		return 0;
+	}
+
 	fclose(fh);
 
 	if ( strstr(line, "CBF") == NULL ) {

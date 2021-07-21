@@ -876,6 +876,7 @@ int load_project(struct crystfelproject *proj)
 
 	if ( default_project(proj) ) {
 		ERROR("Failed to make default project when loading.\n");
+		fclose(fh);
 		return 1;
 	}
 

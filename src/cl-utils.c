@@ -283,7 +283,10 @@ cl_program load_program_from_string(const char *source_in, size_t len,
 
 			char *source2;
 			source2 = malloc(strlen(source)+strlen(insert_stuff)+1);
-			if ( source2 == NULL ) return 0;
+			if ( source2 == NULL ) {
+				free(source);
+				return 0;
+			}
 
 			il = insert_pos - source;
 			memcpy(source2, source, il);
@@ -336,7 +339,10 @@ cl_program load_program(const char *filename, cl_context ctx,
 		return 0;
 	}
 	source = malloc(16384);
-	if ( source == NULL ) return 0;
+	if ( source == NULL ) {
+		fclose(fh);
+		return 0;
+	}
 	len = fread(source, 1, 16383, fh);
 	fclose(fh);
 

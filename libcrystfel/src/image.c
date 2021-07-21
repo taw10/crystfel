@@ -603,7 +603,10 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 	if ( detgeom == NULL ) return 1;
 
 	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
-	if ( detgeom->panels == NULL ) return 1;
+	if ( detgeom->panels == NULL ) {
+		free(detgeom);
+		return 1;
+	}
 
 	detgeom->n_panels = dtempl->n_panels;
 
@@ -1493,7 +1496,10 @@ char **image_expand_frames(const DataTemplate *dtempl,
 		list = malloc(sizeof(char *));
 		if ( list == NULL ) return NULL;
 		list[0] = strdup("//");
-		if ( list[0] == NULL ) return NULL;
+		if ( list[0] == NULL ) {
+			free(list);
+			return NULL;
+		}
 		*n_frames = 1;
 		return list;
 	}

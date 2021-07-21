@@ -129,6 +129,8 @@ static void find_all_ambiguities(const char *first, ...)
 	}
 
 	STATUS("\n");
+
+	va_end(vp);
 }
 
 

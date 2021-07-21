@@ -1568,7 +1568,10 @@ static void add_index_record(StreamIndex *index,
 
 		new_ptrs = realloc(index->ptrs,
 		                   new_max_keys*sizeof(long int));
-		if ( new_ptrs == NULL ) return;
+		if ( new_ptrs == NULL ) {
+			free(new_keys);
+			return;
+		}
 
 		index->keys = new_keys;
 		index->ptrs = new_ptrs;

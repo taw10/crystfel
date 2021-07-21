@@ -167,7 +167,10 @@ static void process_series(struct image *images, signed int *ser,
 	}
 
 	p = calloc(len, sizeof(RefList *));
-	if ( p == NULL ) return;
+	if ( p == NULL ) {
+		fclose(fh);
+		return;
+	}
 
 	fprintf(fh, "%i frames in series\n\n", len);
 	fprintf(fh, "   # Serial Filename   EventID   Crystal\n");

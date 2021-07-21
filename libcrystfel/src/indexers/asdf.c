@@ -180,11 +180,18 @@ static struct asdf_cell *asdf_cell_new(int n)
 	if (c->reflections == NULL) return NULL;
 
 	c->indices = malloc(sizeof(double *) * n);
-	if (c->indices == NULL) return NULL;
+	if (c->indices == NULL) {
+		free(c->reflections);
+		return NULL;
+	}
 
 	for ( i = 0; i < n; i++ ) {
 		c->indices[i] = malloc(sizeof(double) * 3);
-		if (c->indices[i] == NULL) return NULL;
+		if (c->indices[i] == NULL) {
+			free(c->reflections);
+			free(c->indices);
+			return NULL;
+		}
 	}
 
 	c->n = 0;
@@ -973,6 +980,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	struct tvector *tvectors = malloc(N_triplets * sizeof(struct tvector));
 	if (tvectors == NULL) {
 		ERROR("Failed to allocate tvectors in index_refls!\n");
+		free(fits);
 		return 0;
 	}
 
