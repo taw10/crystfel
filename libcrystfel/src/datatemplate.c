@@ -1122,10 +1122,10 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		/* Copy the next line from the big string */
 		const char *nl = strchr(string, '\n');
 		if ( nl != NULL ) {
-			size_t len = nl - string;
-			line = strndup(string, nl-string);
-			line[len] = '\0';
-			string += len+1;
+			size_t nlen = nl - string;
+			line = strndup(string, nlen);
+			line[nlen] = '\0';
+			string += nlen+1;
 		} else {
 			line = strdup(string);
 			done = 1;
@@ -1437,7 +1437,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 	for ( rgci=0; rgci<n_rgc_definitions; rgci++ ) {
 
-		int rgi, n2;
+		int n2;
 		struct rg_collection *rgcollection = NULL;
 
 		rgcollection = find_or_add_rg_coll(dt, rgc_defl[rgci]->name);

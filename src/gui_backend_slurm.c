@@ -166,15 +166,15 @@ static double indexing_progress(struct slurm_job *job, int *running)
 
 	} else {
 
-		int i;
+		int ijob;
 		int n_proc = 0;
 
-		for ( i=0; i<job->n_blocks; i++ ) {
+		for ( ijob=0; ijob<job->n_blocks; ijob++ ) {
 
 			char tmp[128];
 			char *stderr_filename;
 
-			snprintf(tmp, 127, "stderr-%i.log", i);
+			snprintf(tmp, 127, "stderr-%i.log", ijob);
 			stderr_filename = relative_to_cwd(job->workdir, tmp);
 
 			n_proc += read_number_processed(stderr_filename);

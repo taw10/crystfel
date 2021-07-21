@@ -1538,15 +1538,15 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 
 			cell->seeds = tmp;
 
-			int i;
-			for ( i = 0; i < seed_num; i++)
+			int seed_i;
+			for ( seed_i = 0; seed_i < seed_num; seed_i++)
 			{
-				if (seeds[i].idx1 < 0 || seeds[i].idx2 < 0)
+				if (seeds[seed_i].idx1 < 0 || seeds[seed_i].idx2 < 0)
 				{
 					continue;
 				}
 
-				cell->seeds[cell->seed_count] = seeds[i];
+				cell->seeds[cell->seed_count] = seeds[seed_i];
 				cell->seed_count++;
 			}
 

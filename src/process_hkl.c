@@ -604,7 +604,7 @@ int main(int argc, char *argv[])
 	                                    .disable = 0};
 	char *rval;
 	int min_measurements = 2;
-	int r;
+	int merge_r;
 	int start_after = 0;
 	int stop_after = 0;
 	double min_snr = -INFINITY;
@@ -876,13 +876,13 @@ int main(int argc, char *argv[])
 	if ( config_scale ) twopass = 1;
 
 	hist_i = 0;
-	r = merge_all(&stream_list, model, NULL, sym,
-	              &hist_vals, hist_h, hist_k, hist_l,
-	              &hist_i, polarisation, min_measurements, min_snr,
-	              max_adu, start_after, stop_after, min_res, push_res,
-	              min_cc, config_scale, flag_even_odd, stat_output);
+	merge_r = merge_all(&stream_list, model, NULL, sym,
+	                    &hist_vals, hist_h, hist_k, hist_l,
+	                    &hist_i, polarisation, min_measurements, min_snr,
+	                    max_adu, start_after, stop_after, min_res, push_res,
+	                    min_cc, config_scale, flag_even_odd, stat_output);
 	fprintf(stderr, "\n");
-	if ( r ) {
+	if ( merge_r ) {
 		ERROR("Error while reading stream.\n");
 		return 1;
 	}

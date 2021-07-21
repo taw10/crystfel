@@ -982,7 +982,6 @@ UnitCell *load_cell_from_file(const char *filename)
 
 	do {
 
-		char line[1024];
 		int n1;
 		int i;
 		char **bits;

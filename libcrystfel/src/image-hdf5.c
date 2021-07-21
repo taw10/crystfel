@@ -814,13 +814,13 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		} else if ( class == H5T_STRING ) {
 
 			htri_t v;
-			hid_t type;
+			hid_t stype;
 			char *val;
-			int r;
+			int rv;
 
-			type = H5Dget_type(dh);
-			v = H5Tis_variable_str(type);
-			H5Tclose(type);
+			stype = H5Dget_type(dh);
+			v = H5Tis_variable_str(stype);
+			H5Tclose(stype);
 
 			if ( v == 0 ) {
 				val = read_single_fixed_string(dh);
@@ -835,16 +835,16 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			if ( val != NULL ) {
 				image_cache_header_str(image, name, val);
 				free(val);
-				r = 0;
+				rv = 0;
 			} else {
 				ERROR("Failed to read string '%s'\n",
 				      subst_name);
-				r = 1;
+				rv = 1;
 			}
 
 			free(subst_name);
 			close_hdf5(fh);
-			return r;
+			return rv;
 
 		} else {
 			/* Should never be reached */
@@ -956,18 +956,18 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 	} else if ( class == H5T_STRING ) {
 
-		hid_t type;
+		hid_t stype;
 
-		type = H5Dget_type(dh);
-		if ( H5Tis_variable_str(type) ) {
+		stype = H5Dget_type(dh);
+		if ( H5Tis_variable_str(stype) ) {
 
 			/* Vlen string from array */
 
-			herr_t r;
+			herr_t rv;
 			char *val;
 
-			r = H5Dread(dh, type, ms, sh, H5P_DEFAULT, &val);
-			if ( r < 0 ) {
+			rv = H5Dread(dh, stype, ms, sh, H5P_DEFAULT, &val);
+			if ( rv < 0 ) {
 				ERROR("Can't read HDF5 vlen string from array - %s\n",
 				      subst_name);
 				free(subst_name);
@@ -988,20 +988,20 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 			/* Fixed-length string from array */
 
-			herr_t r;
+			herr_t rv;
 			char *val;
-			size_t size;
+			size_t ssize;
 
-			size = H5Tget_size(type);
-			val = malloc(size);
+			ssize = H5Tget_size(stype);
+			val = malloc(ssize);
 			if ( val == NULL ) {
 				close_hdf5(fh);
 				free(subst_name);
 				return 1;
 			}
-			r = H5Dread(dh, type, ms, sh, H5P_DEFAULT, val);
-			H5Tclose(type);
-			if ( r < 0 ) {
+			rv = H5Dread(dh, stype, ms, sh, H5P_DEFAULT, val);
+			H5Tclose(stype);
+			if ( rv < 0 ) {
 				ERROR("Couldn't read HDF5 fixed string from array - %s\n",
 				      subst_name);
 				close_hdf5(fh);
@@ -1009,7 +1009,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				return 1;
 			} else {
 
-				val[size] = '\0';
+				val[ssize] = '\0';
 				chomp(val);
 				image_cache_header_str(image, name, val);
 				free(val);

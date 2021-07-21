@@ -460,16 +460,16 @@ int transform_fractional_coords_rtnl(const RationalMatrix *P,
 			                rtnl_mtx_get(cm, h, k));
 
 			for ( j=0; j<cm->cols; j++ ) {
-				Rational t = rtnl_mtx_get(cm, i, j);
+				Rational tcol = rtnl_mtx_get(cm, i, j);
 				Rational p = rtnl_mul(dval, rtnl_mtx_get(cm, h, j));
-				t = rtnl_sub(t, p);
-				rtnl_mtx_set(cm, i, j, t);
+				tcol = rtnl_sub(tcol, p);
+				rtnl_mtx_set(cm, i, j, tcol);
 			}
 
 			/* Divide the right hand side as well */
-			Rational t = vec[i];
+			Rational trhs = vec[i];
 			Rational p = rtnl_mul(dval, vec[h]);
-			vec[i] = rtnl_sub(t, p);
+			vec[i] = rtnl_sub(trhs, p);
 		}
 
 		h++;

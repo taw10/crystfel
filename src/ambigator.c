@@ -1056,7 +1056,7 @@ int main(int argc, char *argv[])
 	int n_dif;
 	struct flist **crystals;
 	Stream *st;
-	int i;
+	int j;
 	int *assignments;
 	int *orig_assignments;
 	gsl_rng *rng;
@@ -1362,6 +1362,7 @@ int main(int argc, char *argv[])
 	if ( start_ass_fn != NULL ) {
 
 		FILE *fh;
+		int i;
 		fh = fopen(start_ass_fn, "r");
 		if ( fh == NULL ) {
 			ERROR("Failed to open '%s'\n", start_ass_fn);
@@ -1387,13 +1388,14 @@ int main(int argc, char *argv[])
 		free(start_ass_fn);
 
 	} else {
+		int i;
 		for ( i=0; i<n_crystals; i++ ) {
 			assignments[i] = (random_flat(rng, 1.0) > 0.5);
 		}
 	}
 
-	for ( i=0; i<n_crystals; i++ ) {
-		orig_assignments[i] = assignments[i];
+	for ( j=0; j<n_crystals; j++ ) {
+		orig_assignments[j] = assignments[j];
 	}
 
 	if ( fg_graph_fn != NULL ) {
@@ -1415,16 +1417,16 @@ int main(int argc, char *argv[])
 	}
 	STATUS("Mean number of correlations per crystal: %.1f\n", mean_nac);
 
-	for ( i=0; i<n_crystals; i++ ) {
-		free(crystals[i]->s);
-		free(crystals[i]->i);
-		free(crystals[i]->s_reidx);
-		free(crystals[i]->i_reidx);
-		free(crystals[i]);
+	for ( j=0; j<n_crystals; j++ ) {
+		free(crystals[j]->s);
+		free(crystals[j]->i);
+		free(crystals[j]->s_reidx);
+		free(crystals[j]->i_reidx);
+		free(crystals[j]);
 	}
 	free(crystals);
 
-	for ( i=0; i<n_iter; i++ ) {
+	for ( j=0; j<n_iter; j++ ) {
 		detwin(ccs, n_crystals, assignments, fgfh, crystals);
 	}
 
@@ -1442,6 +1444,7 @@ int main(int argc, char *argv[])
 		if ( fh == NULL ) {
 			ERROR("Failed to open '%s'\n", end_ass_fn);
 		} else {
+			int i;
 			for ( i=0; i<n_crystals; i++ ) {
 				fprintf(fh, "%i\n", assignments[i]);
 			}
@@ -1450,8 +1453,8 @@ int main(int argc, char *argv[])
 	}
 
 	n_dif = 0;
-	for ( i=0; i<n_crystals; i++ ) {
-		if ( orig_assignments[i] != assignments[i] ) n_dif++;
+	for ( j=0; j<n_crystals; j++ ) {
+		if ( orig_assignments[j] != assignments[j] ) n_dif++;
 	}
 	STATUS("%i assignments are different from their starting values.\n",
 	       n_dif);

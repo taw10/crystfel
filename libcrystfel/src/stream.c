@@ -240,7 +240,7 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 		char line[1024];
 		signed int h, k, l;
 		float intensity, sigma, fs, ss, pk, bg;
-		char pn[32];
+		char pname[32];
 		int r;
 
 		rval = fgets(line, 1023, st->fh);
@@ -252,7 +252,7 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 
 		r = sscanf(line, "%i %i %i %f %f %f %f %f %f %s",
 		           &h, &k, &l, &intensity, &sigma, &pk, &bg,
-			   &fs, &ss, pn);
+			   &fs, &ss, pname);
 
 		if ( (r != 10) && (!first) ) {
 			reflist_free(out);
@@ -664,12 +664,12 @@ int stream_write_chunk(Stream *st, const struct image *i,
 
 	if ( i->detgeom != NULL ) {
 
-		int j;
+		int pn;
 		double tclen = 0.0;
 
-		for ( j=0; j<i->detgeom->n_panels; j++ ) {
-			tclen += i->detgeom->panels[j].cnz
-				* i->detgeom->panels[j].pixel_pitch;
+		for ( pn=0; pn<i->detgeom->n_panels; pn++ ) {
+			tclen += i->detgeom->panels[pn].cnz
+				* i->detgeom->panels[pn].pixel_pitch;
 		}
 		fprintf(st->fh, "average_camera_length = %f m\n",
 		        tclen / i->detgeom->n_panels);
@@ -814,8 +814,8 @@ static void read_crystal(Stream *st, struct image *image,
 		}
 
 		if ( strncmp(line, "num_saturated_reflections = ", 28) == 0 ) {
-			int n = atoi(line+28);
-			crystal_set_num_saturated_reflections(cr, n);
+			int nsat = atoi(line+28);
+			crystal_set_num_saturated_reflections(cr, nsat);
 		}
 
 		if ( sscanf(line, "diffraction_resolution_limit = %f nm^-1",

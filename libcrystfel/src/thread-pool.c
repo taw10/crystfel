@@ -86,11 +86,11 @@ static void *task_worker(void *pargsv)
 {
 	struct worker_args *w = pargsv;
 	struct task_queue *q = w->tq;
-	int *cookie;
+	int *cookie_slot;
 
-	cookie = malloc(sizeof(int));
-	*cookie = w->id;
-	pthread_setspecific(status_label_key, cookie);
+	cookie_slot = malloc(sizeof(int));
+	*cookie_slot = w->id;
+	pthread_setspecific(status_label_key, cookie_slot);
 
 	free(w);
 
@@ -129,7 +129,7 @@ static void *task_worker(void *pargsv)
 
 	} while ( 1 );
 
-	free(cookie);
+	free(cookie_slot);
 
 	return NULL;
 }

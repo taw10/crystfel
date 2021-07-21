@@ -228,10 +228,10 @@ static void dirax_parseline(const char *line, struct image *image,
 	                               &d, &d, &d, &d, &d, &d, &di) == 9 ) {
 		if ( acl_nh > dirax->best_acl_nh ) {
 
-			int i, found = 0;
+			int i_acl, found = 0;
 
-			for ( i=0; i<dirax->n_acls_tried; i++ ) {
-				if ( dirax->acls_tried[i] == acl ) found = 1;
+			for ( i_acl=0; i_acl<dirax->n_acls_tried; i_acl++ ) {
+				if ( dirax->acls_tried[i_acl] == acl ) found = 1;
 			}
 
 			if ( !found ) {

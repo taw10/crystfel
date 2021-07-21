@@ -758,7 +758,6 @@ int main(int argc, char *argv[])
 	int config_colkey = 0;
 	int config_zawhinge = 0;
 	char *cellfile = NULL;
-	int r = 0;
 	double boost = 1.0;
 	char *sym_str = NULL;
 	char *sym_str_fromfile = NULL;
@@ -1049,5 +1048,5 @@ int main(int argc, char *argv[])
 	reflist_free(list);
 	if ( outfile != NULL ) free(outfile);
 
-	return r;
+	return 0;
 }

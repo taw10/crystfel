@@ -191,7 +191,7 @@ static int all_rings(UnitCell *cell, SymOpList *sym, double mres)
 	RefList *list;
 	int i, n;
 	RefListIterator *iter;
-	Reflection *refl;
+	Reflection *ring;
 	struct sortmerefl *sortus;
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
@@ -235,19 +235,19 @@ static int all_rings(UnitCell *cell, SymOpList *sym, double mres)
 	sortus = malloc(n*sizeof(struct sortmerefl));
 
 	i = 0;
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
+	for ( ring = first_refl(list, &iter);
+	      ring != NULL;
+	      ring = next_refl(ring, iter) )
 	{
-		signed int h, k, l;
+		signed int rh, rk, rl;
 
-		get_indices(refl, &h, &k, &l);
+		get_indices(ring, &rh, &rk, &rl);
 
-		sortus[i].h = h;
-		sortus[i].k = k;
-		sortus[i].l = l;
-		sortus[i].resolution = 2.0*resolution(cell, h, k, l);  /* one over d */
-		sortus[i].multi = get_redundancy(refl);
+		sortus[i].h = rh;
+		sortus[i].k = rk;
+		sortus[i].l = rl;
+		sortus[i].resolution = 2.0*resolution(cell, rh, rk, rl);  /* one over d */
+		sortus[i].multi = get_redundancy(ring);
 		i++;
 
 	}

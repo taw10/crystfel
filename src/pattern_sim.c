@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 	int config_gpu = 0;
 	int config_random = 0;
 	char *powder_fn = NULL;
-	char *filename = NULL;
+	char *cell_filename = NULL;
 	char *grad_str = NULL;
 	char *outfile = NULL;
 	char *geometry = NULL;
@@ -599,7 +599,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'p' :
-			filename = strdup(optarg);
+			cell_filename = strdup(optarg);
 			break;
 
 			case 'o' :
@@ -761,8 +761,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( filename == NULL ) {
-		filename = strdup("molecule.pdb");
+	if ( cell_filename == NULL ) {
+		cell_filename = strdup("molecule.pdb");
 	}
 
 	if ( outfile == NULL ) {
@@ -844,7 +844,7 @@ int main(int argc, char *argv[])
 	free(spectrum_str);
 
 	/* Load unit cell */
-	input_cell = load_cell_from_file(filename);
+	input_cell = load_cell_from_file(cell_filename);
 	if ( input_cell == NULL ) {
 		exit(1);
 	}
@@ -988,7 +988,7 @@ int main(int argc, char *argv[])
 	do {
 
 		int na, nb, nc;
-		double a, b, c, d;
+		double a, b, c, dis;
 		UnitCell *cell;
 		int err = 0;
 		int pi;
@@ -1094,7 +1094,7 @@ int main(int argc, char *argv[])
 
 		}
 
-		cell_get_parameters(cell, &a, &b, &c, &d, &d, &d);
+		cell_get_parameters(cell, &a, &b, &c, &dis, &dis, &dis);
 		STATUS("Particle size = %i x %i x %i"
 		       " ( = %5.2f x %5.2f x %5.2f nm)\n",
 	               na, nb, nc, na*a/1.0e-9, nb*b/1.0e-9, nc*c/1.0e-9);
@@ -1148,22 +1148,22 @@ int main(int argc, char *argv[])
 
 		if ( !config_noimages ) {
 
-			char filename[1024];
+			char h5filename[1024];
 
 			if ( n_images != 1 ) {
-				snprintf(filename, 1023, "%s-%i.h5",
+				snprintf(h5filename, 1023, "%s-%i.h5",
 				         outfile, number);
 			} else {
-				strncpy(filename, outfile, 1023);
+				strncpy(h5filename, outfile, 1023);
 			}
 
 			number++;
 
 			/* Write the output file */
-			image_write(image, dtempl, filename);
+			image_write(image, dtempl, h5filename);
 
 			/* Add some pattern_sim-specific metadata */
-			add_metadata(filename, orientation, cell);
+			add_metadata(h5filename, orientation, cell);
 
 		}
 
@@ -1190,7 +1190,7 @@ skip:
 	cell_free(input_cell);
 	free(intensities);
 	free(outfile);
-	free(filename);
+	free(cell_filename);
 	free(sym_str);
 	free_symoplist(sym);
 

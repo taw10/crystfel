@@ -391,7 +391,7 @@ struct gpu_context *setup_gpu(int no_sfac,
 	size_t flags_size;
 	float *flags_ptr;
 	size_t maxwgsize;
-	int i;
+	int iplat;
 	int have_ctx = 0;
 	char cflags[512] = "";
 	char *insert_stuff = NULL;
@@ -409,10 +409,10 @@ struct gpu_context *setup_gpu(int no_sfac,
 	}
 
 	/* Find a GPU platform in the list */
-	for ( i=0; i<nplat; i++ ) {
+	for ( iplat=0; iplat<nplat; iplat++ ) {
 
 		prop[0] = CL_CONTEXT_PLATFORM;
-		prop[1] = (cl_context_properties)platforms[i];
+		prop[1] = (cl_context_properties)platforms[iplat];
 		prop[2] = 0;
 
 		gctx = malloc(sizeof(*gctx));
@@ -430,7 +430,8 @@ struct gpu_context *setup_gpu(int no_sfac,
 				return NULL;
 			}
 		} else {
-			STATUS("Using OpenCL platform %i (%i total)\n", i, nplat);
+			STATUS("Using OpenCL platform %i (%i total)\n",
+			       iplat, nplat);
 			have_ctx = 1;
 			break;
 		}
@@ -454,10 +455,12 @@ struct gpu_context *setup_gpu(int no_sfac,
 	intensities_size = IDIM*IDIM*IDIM*sizeof(cl_float);
 	intensities_ptr = malloc(intensities_size);
 	if ( intensities != NULL ) {
+		int i;
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			intensities_ptr[i] = intensities[i];
 		}
 	} else {
+		int i;
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			intensities_ptr[i] = 100.0;  /* Does nothing */
 		}
@@ -522,10 +525,12 @@ struct gpu_context *setup_gpu(int no_sfac,
 	flags_size = IDIM*IDIM*IDIM*sizeof(cl_float);
 	flags_ptr = malloc(flags_size);
 	if ( flags != NULL ) {
+		int i;
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			flags_ptr[i] = flags[i];
 		}
 	} else {
+		int i;
 		for ( i=0; i<IDIM*IDIM*IDIM; i++ ) {
 			flags_ptr[i] = 1.0;
 		}

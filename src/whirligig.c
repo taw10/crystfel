@@ -485,11 +485,13 @@ static void add_to_window(struct image *cur, struct window *win,
 
 	if ( pos >= win->ws ) {
 
-		int sf, i;
+		int sf, iwin;
 
 		sf = (pos - win->ws) + 1;
 
 		if ( series_fills_window(win) ) {
+
+			int i;
 
 			win->ws += sf;
 			win->img = realloc(win->img,
@@ -513,6 +515,8 @@ static void add_to_window(struct image *cur, struct window *win,
 
 		} else {
 
+			int iser;
+
 			pos -= sf;
 			if ( sf > win->join_ptr ) {
 
@@ -534,29 +538,29 @@ static void add_to_window(struct image *cur, struct window *win,
 				sf = win->ws;
 			}
 
-			for ( i=0; i<sf; i++ ) {
-				if ( win->img[i].serial != 0 ) {
-					free_all_crystals(&win->img[i]);
+			for ( iser=0; iser<sf; iser++ ) {
+				if ( win->img[iser].serial != 0 ) {
+					free_all_crystals(&win->img[iser]);
 				}
 			}
 
 			memmove(win->img, win->img+sf,
 			        (win->ws-sf)*sizeof(struct image));
 
-			for ( i=0; i<MAX_SER; i++ ) {
-				memmove(win->ser[i], win->ser[i]+sf,
+			for ( iser=0; iser<MAX_SER; iser++ ) {
+				memmove(win->ser[iser], win->ser[iser]+sf,
 					(win->ws-sf)*sizeof(signed int));
-				memmove(win->mat[i], win->mat[i]+sf,
+				memmove(win->mat[iser], win->mat[iser]+sf,
 					(win->ws-sf)*sizeof(IntegerMatrix *));
 			}
 		}
 
-		for ( i=0; i<sf; i++ ) {
+		for ( iwin=0; iwin<sf; iwin++ ) {
 			int j;
-			win->img[win->ws-sf+i].serial = 0;
+			win->img[win->ws-sf+iwin].serial = 0;
 			for ( j=0; j<MAX_SER; j++ ) {
-				win->ser[j][win->ws-sf+i] = -1;
-				win->mat[j][win->ws-sf+i] = NULL;
+				win->ser[j][win->ws-sf+iwin] = -1;
+				win->mat[j][win->ws-sf+iwin] = NULL;
 			}
 		}
 

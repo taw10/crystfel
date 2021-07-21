@@ -1081,7 +1081,7 @@ int main(int argc, char *argv[])
 
 	if ( load_result == 0 ) {
 		DataTemplate *dtempl;
-		GtkAction *w;
+		GtkAction *act;
 		proj.cur_frame = 0;
 
 		if ( proj.geom_filename != NULL ) {
@@ -1103,20 +1103,20 @@ int main(int argc, char *argv[])
 			stream_close(st);
 		}
 
-		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/centre");
-		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
+		act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/centre");
+		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
 		                             proj.show_centre);
 
-		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/peaks");
-		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
+		act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/peaks");
+		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
 		                             proj.show_peaks);
 
-		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/refls");
-		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
+		act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/refls");
+		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
 		                             proj.show_refls);
 
-		w = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/labelrefls");
-		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w),
+		act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/labelrefls");
+		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
 		                             proj.label_refls);
 
 		update_imageview(&proj);

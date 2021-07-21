@@ -1014,7 +1014,7 @@ int main(int argc, char *argv[])
 	SymOpList *amb;
 	SymOpList *w_sym;
 	int nthreads = 1;
-	int i;
+	int istream, icmd, icryst, itn;
 	int n_iter = 10;
 	RefList *full;
 	int n_images = 0;
@@ -1104,8 +1104,8 @@ int main(int argc, char *argv[])
 	};
 
 	cmdline[0] = '\0';
-	for ( i=1; i<argc; i++ ) {
-		strncat(cmdline, argv[i], 1023-strlen(cmdline));
+	for ( icmd=1; icmd<argc; icmd++ ) {
+		strncat(cmdline, argv[icmd], 1023-strlen(cmdline));
 		strncat(cmdline, " ", 1023-strlen(cmdline));
 	}
 
@@ -1471,11 +1471,11 @@ int main(int argc, char *argv[])
 	}
 
 	audit_info = NULL;
-	for ( i=0; i<stream_list.n; i++ ) {
+	for ( istream=0; istream<stream_list.n; istream++ ) {
 
-		Stream *st = stream_open_for_read(stream_list.filenames[i]);
+		Stream *st = stream_open_for_read(stream_list.filenames[istream]);
 		if ( st == NULL ) {
-			ERROR("Couldn't open %s\n", stream_list.filenames[i]);
+			ERROR("Couldn't open %s\n", stream_list.filenames[istream]);
 			return 1;
 		}
 
@@ -1605,9 +1605,9 @@ int main(int argc, char *argv[])
 	if ( sparams_fh != NULL ) fclose(sparams_fh);
 
 	STATUS("Initial partiality calculation...\n");
-	for ( i=0; i<n_crystals; i++ ) {
+	for ( icryst=0; icryst<n_crystals; icryst++ ) {
 
-		Crystal *cr = crystals[i];
+		Crystal *cr = crystals[icryst];
 		update_predictions(cr);
 
 		/* Polarisation correction requires kpred values */
@@ -1647,13 +1647,13 @@ int main(int argc, char *argv[])
 	}
 
 	/* Iterate */
-	for ( i=0; i<n_iter; i++ ) {
+	for ( itn=0; itn<n_iter; itn++ ) {
 
-		STATUS("Scaling and refinement cycle %i of %i\n", i+1, n_iter);
+		STATUS("Scaling and refinement cycle %i of %i\n", itn+1, n_iter);
 
 		if ( !no_pr ) {
 			refine_all(crystals, n_crystals, full, nthreads, pmodel,
-			           i+1, no_logs, sym, amb, scaleflags);
+			           itn+1, no_logs, sym, amb, scaleflags);
 		}
 
 		/* Create new reference if needed */
@@ -1674,13 +1674,13 @@ int main(int argc, char *argv[])
 		show_all_residuals(crystals, n_crystals, full, no_free);
 
 		if ( do_write_logs ) {
-			write_pgraph(full, crystals, n_crystals, i+1, "");
+			write_pgraph(full, crystals, n_crystals, itn+1, "");
 		}
 
 		if ( output_everycycle ) {
 
 			char tmp[1024];
-			snprintf(tmp, 1024, "iter%.2d_%s", i+1, outfile);
+			snprintf(tmp, 1024, "iter%.2d_%s", itn+1, outfile);
 
 			/* Output results */
 			STATUS("Writing overall results to %s\n", tmp);
@@ -1745,6 +1745,7 @@ int main(int argc, char *argv[])
 
 	/* Output custom split results */
 	if ( csplit != NULL ) {
+		int i;
 		for ( i=0; i<csplit->n_datasets; i++ ) {
 			write_custom_split(csplit, i, crystals, n_crystals,
 			                   pmodel, min_measurements, push_res,
@@ -1754,15 +1755,15 @@ int main(int argc, char *argv[])
 
 	/* Clean up */
 	gsl_rng_free(rng);
-	for ( i=0; i<n_crystals; i++ ) {
-		struct image *image = crystal_get_image(crystals[i]);
+	for ( icryst=0; icryst<n_crystals; icryst++ ) {
+		struct image *image = crystal_get_image(crystals[icryst]);
 		spectrum_free(image->spectrum);
-		reflist_free(crystal_get_reflections(crystals[i]));
+		reflist_free(crystal_get_reflections(crystals[icryst]));
 		free(image->filename);
 		free(image->ev);
 		free(image);
-		cell_free(crystal_get_cell(crystals[i]));
-		crystal_free(crystals[i]);
+		cell_free(crystal_get_cell(crystals[icryst]));
+		crystal_free(crystals[icryst]);
 	}
 	free_contribs(full);
 	reflist_free(full);

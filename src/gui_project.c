@@ -891,7 +891,7 @@ int load_project(struct crystfelproject *proj)
 
 int save_project(struct crystfelproject *proj)
 {
-	int i;
+	int ibackend, iresult, iframe;
 	FILE *fh;
 
 	fh = fopen("crystfel.project", "w");
@@ -986,9 +986,9 @@ int save_project(struct crystfelproject *proj)
 
 	fprintf(fh, "indexing.backend %s\n",
 	        proj->backends[proj->indexing_backend_selected].name);
-	for ( i=0; i<proj->n_backends; i++ ) {
+	for ( ibackend=0; ibackend<proj->n_backends; ibackend++ ) {
 		struct crystfel_backend *be;
-		be = &proj->backends[i];
+		be = &proj->backends[ibackend];
 		be->write_indexing_opts(be->indexing_opts_priv, fh);
 	}
 
@@ -1064,9 +1064,9 @@ int save_project(struct crystfelproject *proj)
 	}
 	fprintf(fh, "ambi.backend %s\n",
 	        proj->backends[proj->ambi_backend_selected].name);
-	for ( i=0; i<proj->n_backends; i++ ) {
+	for ( ibackend=0; ibackend<proj->n_backends; ibackend++ ) {
 		struct crystfel_backend *be;
-		be = &proj->backends[i];
+		be = &proj->backends[ibackend];
 		be->write_ambi_opts(be->ambi_opts_priv, fh);
 	}
 	if ( proj->ambi_new_job_title != NULL ) {
@@ -1109,9 +1109,9 @@ int save_project(struct crystfelproject *proj)
 
 	fprintf(fh, "merging.backend %s\n",
 	        proj->backends[proj->merging_backend_selected].name);
-	for ( i=0; i<proj->n_backends; i++ ) {
+	for ( ibackend=0; ibackend<proj->n_backends; ibackend++ ) {
 		struct crystfel_backend *be;
-		be = &proj->backends[i];
+		be = &proj->backends[ibackend];
 		be->write_merging_opts(be->merging_opts_priv, fh);
 	}
 	if ( proj->merging_new_job_title != NULL ) {
@@ -1134,33 +1134,33 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "label_refls %i\n", proj->label_refls);
 
 	fprintf(fh, "-----\n");
-	for ( i=0; i<proj->n_results; i++ ) {
+	for ( iresult=0; iresult<proj->n_results; iresult++ ) {
 		int j;
-		fprintf(fh, "Result %s\n", proj->results[i].name);
-		for ( j=0; j<proj->results[i].n_streams; j++ ) {
+		fprintf(fh, "Result %s\n", proj->results[iresult].name);
+		for ( j=0; j<proj->results[iresult].n_streams; j++ ) {
 			fprintf(fh, "   Stream %s\n",
-			        proj->results[i].streams[j]);
+			        proj->results[iresult].streams[j]);
 		}
 		if ( strcmp(selected_result(proj),
-		            proj->results[i].name) == 0 )
+		            proj->results[iresult].name) == 0 )
 		{
 			fprintf(fh, "   Selected\n");
 		}
 	}
-	for ( i=0; i<proj->n_merge_results; i++ ) {
-		fprintf(fh, "Result %s\n", proj->merge_results[i].name);
-		fprintf(fh, "   HKL %s\n", proj->merge_results[i].hkl);
-		fprintf(fh, "   HKL1 %s\n", proj->merge_results[i].hkl1);
-		fprintf(fh, "   HKL2 %s\n", proj->merge_results[i].hkl2);
+	for ( iresult=0; iresult<proj->n_merge_results; iresult++ ) {
+		fprintf(fh, "Result %s\n", proj->merge_results[iresult].name);
+		fprintf(fh, "   HKL %s\n", proj->merge_results[iresult].hkl);
+		fprintf(fh, "   HKL1 %s\n", proj->merge_results[iresult].hkl1);
+		fprintf(fh, "   HKL2 %s\n", proj->merge_results[iresult].hkl2);
 	}
 
 	fprintf(fh, "-----\n");
-	for ( i=0; i<proj->n_frames; i++ ) {
-		if ( proj->events[i] != NULL ) {
+	for ( iframe=0; iframe<proj->n_frames; iframe++ ) {
+		if ( proj->events[iframe] != NULL ) {
 			fprintf(fh, "%s %s\n",
-			        proj->filenames[i], proj->events[i]);
+			        proj->filenames[iframe], proj->events[iframe]);
 		} else {
-			fprintf(fh, "%s\n", proj->filenames[i]);
+			fprintf(fh, "%s\n", proj->filenames[iframe]);
 		}
 	}
 

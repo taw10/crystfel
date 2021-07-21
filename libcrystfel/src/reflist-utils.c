@@ -411,7 +411,6 @@ static RefList *read_reflections_from_file(FILE *fh, char **sym)
 
 	/* We are now in the notes region */
 	do {
-		char line[1024];
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) continue;
 		chomp(line);
