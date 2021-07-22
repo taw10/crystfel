@@ -1389,7 +1389,7 @@ static UnitCell *enforce_cell(UnitCell *orig, const char *t)
 		alpha = av;  beta = av;  gamma = av;
 	}
 
-	if ( (t[0] == 'c') && (t[0] == 'r') ) {
+	if ( (t[0] == 'c') || (t[0] == 'r') ) {
 		double av = (a+b+c)/3.0;
 		a = av;  b = av;  c = av;
 	}
