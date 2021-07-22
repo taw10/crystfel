@@ -514,6 +514,12 @@ static char *enter_gui_tempdir()
 
 	}
 
+	if ( chdir(tmpdir) ) {
+		ERROR("Failed to chdir to temporary fodler: %s\n",
+		      strerror(errno));
+		/* Still return as usual */
+	}
+
 	return tmpdir;
 }
 
