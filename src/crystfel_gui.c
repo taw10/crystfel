@@ -1341,10 +1341,10 @@ char *get_crystfel_exe(const char *program)
 		      "This is OK provided the executable "
 		      "path is set correctly.\n");
 		exe_path = strdup(program);
+	} else {
+		exe_path = g_file_get_path(exe);
+		g_object_unref(exe);
 	}
-
-	exe_path = g_file_get_path(exe);
-	g_object_unref(exe);
 	g_object_unref(crystfel_path);
 
 	return exe_path;
