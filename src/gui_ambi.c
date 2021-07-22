@@ -116,8 +116,6 @@ static char *get_str(GtkWidget *w)
 static void ambi_response_sig(GtkWidget *dialog, gint resp,
                               struct ambi_window *win)
 {
-	int r = 0;
-
 	if ( resp == GTK_RESPONSE_ACCEPT ) {
 
 		int backend_idx;
@@ -173,10 +171,8 @@ static void ambi_response_sig(GtkWidget *dialog, gint resp,
 
 	}
 
-	if ( !r ) {
-		gtk_widget_destroy(dialog);
-		win->proj->ambi_opts = NULL;
-	}
+	gtk_widget_destroy(dialog);
+	win->proj->ambi_opts = NULL;
 }
 
 
