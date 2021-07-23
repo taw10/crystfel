@@ -235,7 +235,7 @@ static void cancel_task(void *job_priv)
 	GSubprocess *sp;
 	struct slurm_job *job = job_priv;
 
-	snprintf(jobid, 127, "%i", job->job_id);
+	snprintf(jobid, 127, "%u", job->job_id);
 	args[0] = "scancel";
 	args[1] = jobid;
 	args[2] = NULL;
