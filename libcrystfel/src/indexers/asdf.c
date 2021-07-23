@@ -394,12 +394,12 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	                           projections_sorted[0]));
 
 	int d = 1;
-	double max = 0;
+	double maxval = 0;
 	for ( i=1; i<=i_max; i++ ) {
 		double a;
 		a = sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]);
-		if (a > max) {
-			max = a;
+		if (a > maxval) {
+			maxval = a;
 			d = i;
 		}
 	}
