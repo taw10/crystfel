@@ -467,7 +467,7 @@ static void add_metadata(const char *filename,
 
 int main(int argc, char *argv[])
 {
-	int c;
+	int argn;
 	struct image *image;
 	DataTemplate *dtempl;
 	struct gpu_context *gctx = NULL;
@@ -559,10 +559,10 @@ int main(int argc, char *argv[])
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hrn:i:t:p:o:g:y:s:x:vb:",
+	while ((argn = getopt_long(argc, argv, "hrn:i:t:p:o:g:y:s:x:vb:",
 	                        longopts, NULL)) != -1) {
 
-		switch (c) {
+		switch (argn) {
 
 			case 'h' :
 			show_help(argv[0]);
@@ -752,7 +752,7 @@ int main(int argc, char *argv[])
 			break;
 
 			default :
-			ERROR("Unhandled option '%c'\n", c);
+			ERROR("Unhandled option '%c'\n", argn);
 			break;
 
 		}
@@ -1008,10 +1008,10 @@ int main(int argc, char *argv[])
 
 		if ( random_size ) {
 
-			double alen, blen, clen, dis;
+			double alen, blen, clen, discard;
 
 			cell_get_parameters(input_cell, &alen, &blen, &clen,
-			                    &dis, &dis, &dis);
+			                    &discard, &discard, &discard);
 
 			na = random_ncells(alen, min_size, max_size);
 			nb = random_ncells(blen, min_size, max_size);
