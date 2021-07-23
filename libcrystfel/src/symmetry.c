@@ -1102,12 +1102,12 @@ static void do_op(const IntegerMatrix *op,
                   signed int h, signed int k, signed int l,
                   signed int *he, signed int *ke, signed int *le)
 {
-	signed int v[3];
+	signed int vec[3];
 	signed int *ans;
 
-	v[0] = h;  v[1] = k;  v[2] = l;
+	vec[0] = h;  vec[1] = k;  vec[2] = l;
 
-	ans = transform_indices(op, v);
+	ans = transform_indices(op, vec);
 	assert(ans != NULL);
 
 	*he = ans[0];  *ke = ans[1];  *le = ans[2];
@@ -1708,21 +1708,21 @@ char *get_matrix_name(const IntegerMatrix *m, int col)
 
 	for ( i=0; i<3; i++ ) {
 
-		signed int v;
+		signed int val;
 
-		v = intmat_get(m, i, col);
+		val = intmat_get(m, i, col);
 
-		if ( v == 0 ) continue;
+		if ( val == 0 ) continue;
 
-		if ( v < 0 ) {
+		if ( val < 0 ) {
 			add_chars(text, "-", max_len);
 		} else {
 			if ( printed ) add_chars(text, "+", max_len);
 		}
 
-		if ( abs(v) > 1 ) {
+		if ( abs(val) > 1 ) {
 			char num[11];
-			snprintf(num, 11, "%i", abs(v));
+			snprintf(num, 11, "%i", abs(val));
 			add_chars(text, num, max_len);
 		}
 
