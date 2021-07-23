@@ -128,7 +128,7 @@ static ImageFeatureList *read_peaks(Stream *st,
 		}
 
 		if ( AT_LEAST_VERSION(st, 2, 3) ) {
-			r = sscanf(line, "%f %f %f %f %s",
+			r = sscanf(line, "%f %f %f %f %64s",
 			           &x, &y, &d, &intensity, panel_name);
 			exp_n = 5;
 		} else {
@@ -240,7 +240,7 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 		char line[1024];
 		signed int h, k, l;
 		float intensity, sigma, fs, ss, pk, bg;
-		char pname[32];
+		char pname[64];
 		int r;
 
 		rval = fgets(line, 1023, st->fh);
@@ -250,7 +250,7 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 
 		if ( strcmp(line, STREAM_REFLECTION_END_MARKER) == 0 ) return out;
 
-		r = sscanf(line, "%i %i %i %f %f %f %f %f %f %s",
+		r = sscanf(line, "%i %i %i %f %f %f %f %f %f %63s",
 		           &h, &k, &l, &intensity, &sigma, &pk, &bg,
 			   &fs, &ss, pname);
 
@@ -321,7 +321,7 @@ static RefList *read_stream_reflections_2_1(Stream *st)
 
 		if ( strcmp(line, STREAM_REFLECTION_END_MARKER) == 0 ) return out;
 
-		r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
+		r = sscanf(line, "%i %i %i %f %64s %f %i %f %f",
 		                  &h, &k, &l, &intensity, phs, &sigma, &cts,
 		                   &fs, &ss);
 		if ( (r != 9) && (!first) ) {

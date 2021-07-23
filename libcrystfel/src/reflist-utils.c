@@ -351,7 +351,7 @@ static RefList *read_reflections_from_file(FILE *fh, char **sym)
 			int cts;
 			int r;
 
-			r = sscanf(line, "%i %i %i %f %s %f %i",
+			r = sscanf(line, "%i %i %i %f %64s %f %i",
 				   &h, &k, &l, &intensity, phs, &sigma, &cts);
 
 			if ( r != 7 ) {
@@ -380,7 +380,7 @@ static RefList *read_reflections_from_file(FILE *fh, char **sym)
 			int cts;
 			int r;
 
-			r = sscanf(line, "%i %i %i %f %s %f %i %f %f",
+			r = sscanf(line, "%i %i %i %f %64s %f %i %f %f",
 				   &h, &k, &l, &intensity, phs, &sigma,
 				   &cts, &fs, &ss);
 
