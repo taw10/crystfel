@@ -1965,14 +1965,13 @@ static void add_panel_to_location(struct hdf5_write_location *loc,
 }
 
 
-static void add_panel_location(struct panel_template *p,
-                               const char *p_location, int pi,
-                               struct hdf5_write_location **plocations,
-                               int *pnum_locations)
+static struct hdf5_write_location *add_panel_location(struct panel_template *p,
+                                                      const char *p_location, int pi,
+                                                      struct hdf5_write_location *locations,
+                                                      int *pnum_locations)
 {
 	int li;
 	int num_locations = *pnum_locations;
-	struct hdf5_write_location *locations = *plocations;
 	int done = 0;
 
 	/* Does this HDF5 path already exist in the location list?
@@ -1994,7 +1993,7 @@ static void add_panel_location(struct panel_template *p,
 		new_locations = realloc(locations, nsz);
 		if ( new_locations == NULL ) {
 			ERROR("Failed to grow location list.\n");
-			return;
+			return NULL;
 		}
 		locations = new_locations;
 
@@ -2004,7 +2003,7 @@ static void add_panel_location(struct panel_template *p,
 		locations[num_locations].panel_idxs = malloc(sizeof(int));
 		if ( locations[num_locations].panel_idxs == NULL ) {
 			ERROR("Failed to allocate single idx (!)\n");
-			return;
+			return NULL;
 		}
 		locations[num_locations].panel_idxs[0] = pi;
 		locations[num_locations].n_panels = 1;
@@ -2013,8 +2012,8 @@ static void add_panel_location(struct panel_template *p,
 
 	}
 
-	*plocations = locations;
 	*pnum_locations = num_locations;
+	return locations;
 }
 
 
@@ -2035,8 +2034,14 @@ static struct hdf5_write_location *make_location_list(const DataTemplate *dtempl
 		assert(p->data != NULL);
 		p_location = p->data;
 
-		add_panel_location(p, p_location, pi,
-		                   &locations, &num_locations);
+		locations = add_panel_location(p, p_location, pi,
+		                               locations,
+		                               &num_locations);
+		if ( locations == NULL ) {
+			ERROR("Failed to add location for panel %s\n",
+			      p->name);
+			return NULL;
+		}
 
 	}
 
@@ -2242,6 +2247,11 @@ int image_hdf5_write(const struct image *image,
 	}
 
 	locations = make_location_list(dtempl, &num_locations);
+	if ( locations == NULL ) {
+		ERROR("Failed to create location list\n");
+		H5Fclose(fh);
+		return 1;
+	}
 
 	for ( li=0; li<num_locations; li++ ) {
 		write_location(fh, dtempl, image->dp, &locations[li]);
