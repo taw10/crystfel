@@ -140,19 +140,20 @@ Rational rtnl_div(Rational a, Rational b)
 
 Rational rtnl_add(Rational a, Rational b)
 {
-	Rational r, trt1, trt2;
+	Rational r;
+	long long int common_den;
+	long long int a_num, b_num;
 
-	trt1.num = a.num * b.den;
-	trt2.num = b.num * a.den;
-	check_overflow(trt1.num, a.num, b.den);
-	check_overflow(trt2.num, b.num, a.den);
+	a_num = a.num * b.den;
+	b_num = b.num * a.den;
+	check_overflow(a_num, a.num, b.den);
+	check_overflow(b_num, b.num, a.den);
 
-	trt1.den = a.den * b.den;
-	trt2.den = trt1.den;
-	check_overflow(trt1.den, a.den, b.den);
+	common_den = a.den * b.den;
+	check_overflow(common_den, a.den, b.den);
 
-	r.num = trt1.num + trt2.num;
-	r.den = trt1.den;
+	r.num = a_num + b_num;
+	r.den = common_den;
 	squish(&r);
 	return r;
 }
