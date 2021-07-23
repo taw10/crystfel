@@ -498,8 +498,8 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 			}
 			fprintf(fh, "\n");
 		}
+		fclose(fh);
 	}
-	fclose(fh);
 
 	reflist_free(crystal_get_reflections(priv.cr_tgt));
 	crystal_free(priv.cr_tgt);
@@ -564,8 +564,8 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 			}
 			fprintf(fh, "\n");
 		}
+		fclose(fh);
 	}
-	fclose(fh);
 
 	reflist_free(crystal_get_reflections(priv.cr_tgt));
 	crystal_free(priv.cr_tgt);
