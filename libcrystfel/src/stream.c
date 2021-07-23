@@ -1618,10 +1618,7 @@ StreamIndex *stream_make_index(const char *filename)
 
 		pos = ftell(fh);
 		rval = fgets(line, 1024, fh);
-		if ( rval == NULL ) {
-			done = 1;
-			break;
-		}
+		if ( rval == NULL ) break;
 		chomp(line);
 
 		if ( strcmp(line, STREAM_CHUNK_START_MARKER) == 0 ) {
