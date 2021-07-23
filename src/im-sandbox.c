@@ -898,7 +898,6 @@ static void try_status(struct sandbox *sb, int final)
 	r = pthread_mutex_trylock(&sb->shared->term_lock);
 	if ( r ) return; /* No lock -> don't bother */
 
-	finalstr = final ? "Final: " : "";
 	if ( final ) {
 		finalstr = "Final: ";
 		persec[0] = '\0';
