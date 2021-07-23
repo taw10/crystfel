@@ -1169,8 +1169,6 @@ static double obs_to_sol_score(struct TakeTwoCell *ttCell)
 static void match_all_obs_to_sol(struct TakeTwoCell *ttCell)
 {
 	int i, j;
-	double total = 0;
-	int count = 0;
 	gsl_matrix *solution = ttCell->solution;
 
 	for (i = 0; i < ttCell->obs_vec_count; i++)
@@ -1200,17 +1198,7 @@ static void match_all_obs_to_sol(struct TakeTwoCell *ttCell)
 		}
 
 		ttCell->obs_vecs[i].assignment = assigned;
-
-		if (smallest != FLT_MAX)
-		{
-			double addition = exp(-(1 / RECIP_TOLERANCE) * smallest);
-			total += addition;
-			count++;
-
-		}
 	}
-
-	total /= (double)count;
 }
 
 /**
