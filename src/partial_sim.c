@@ -1015,7 +1015,7 @@ int main(int argc, char *argv[])
 
 				rcen = i/(double)NBINS*qargs.max_q
 					  + qargs.max_q/(2.0*NBINS);
-				fprintf(fh, "%.2f %7li %.3f %.3f\n", rcen/1.0e9,
+				fprintf(fh, "%.2f %7lu %.3f %.3f\n", rcen/1.0e9,
 					qargs.n_ref[i],
 					qargs.p_hist[i]/qargs.n_ref[i],
 					qargs.p_max[i]);
