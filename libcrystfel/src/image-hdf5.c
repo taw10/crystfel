@@ -522,8 +522,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		return 1;
 	}
 
-	r = H5Dread(dh, el_type, memspace, dataspace,
-	            H5P_DEFAULT, data);
+	r = H5Dread(dh, el_type, memspace, dataspace, H5P_DEFAULT, data);
 	if ( r < 0 ) {
 		ERROR("Couldn't read data for panel %s\n",
 		      p->name);
