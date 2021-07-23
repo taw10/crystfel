@@ -162,7 +162,7 @@ double spectrum_get_density_at_k(Spectrum *s, double k)
 		if ( k >= s->k[s->n_samples-1] ) return 0.0;
 		/* k is definitely after the first sample, and definitely
 		 * before the last one */
-		while ( (s->k[i] < k) && (i<s->n_samples) ) i++;
+		while ( (i<s->n_samples) && (s->k[i] < k) ) i++;
 		assert(i < s->n_samples);
 		frac = (k - s->k[i-1]) / (s->k[i] - s->k[i-1]);
 		return s->pdf[i-1] + frac * (s->pdf[i] - s->pdf[i-1]);
