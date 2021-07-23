@@ -60,16 +60,10 @@ static void show_asapo_error(const char *msg, const AsapoErrorHandle err)
 }
 
 
-AsapoStringHandle im_asapo_group_id_from_string(const char *str)
-{
-	return asapo_string_from_c_str(str);
-}
-
-
-AsapoStringHandle im_asapo_make_unique_group_id(const char *endpoint,
-                                                const char *token,
-                                                const char *beamtime,
-                                                const char *path)
+char *im_asapo_make_unique_group_id(const char *endpoint,
+                                    const char *token,
+                                    const char *beamtime,
+                                    const char *path)
 {
 	AsapoConsumerHandle consumer;
 	AsapoSourceCredentialsHandle cred;
@@ -94,7 +88,7 @@ AsapoStringHandle im_asapo_make_unique_group_id(const char *endpoint,
 		return NULL;
 	}
 
-	return group_id;
+	return strdup(asapo_string_c_str(group_id));
 }
 
 
@@ -102,7 +96,7 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
                                   const char *token,
                                   const char *beamtime,
                                   const char *path,
-                                  AsapoStringHandle group_id)
+                                  const char *group_id)
 {
 	struct im_asapo *a;
 	AsapoSourceCredentialsHandle cred;
@@ -122,7 +116,7 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 
 	asapo_consumer_set_timeout(a->consumer, 1000);
 
-	a->group_id = group_id;
+	a->group_id = asapo_string_from_c_str(group_id);
 
 	return a;
 }

@@ -36,34 +36,28 @@
 
 #if defined(HAVE_ASAPO)
 
-#include <asapo/consumer_c.h>
-
 extern struct im_asapo *im_asapo_connect(const char *endpoint,
                                          const char *token,
                                          const char *beamtime,
                                          const char *path,
-                                         AsapoStringHandle group_id);
+                                         const char *group_id);
 
 extern void im_asapo_shutdown(struct im_asapo *a);
 
 extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size);
 
-extern AsapoStringHandle im_asapo_group_id_from_string(const char *str);
-
-extern AsapoStringHandle im_asapo_make_unique_group_id(const char *endpoint,
-                                                       const char *token,
-                                                       const char *beamtime,
-                                                       const char *path);
+extern char *im_asapo_make_unique_group_id(const char *endpoint,
+                                           const char *token,
+                                           const char *beamtime,
+                                           const char *path);
 
 #else /* defined(HAVE_ASAPO) */
-
-typedef void* AsapoStringHandle;
 
 static UNUSED struct im_asapo *im_asapo_connect(const char *endpoint,
                                                 const char *token,
                                                 const char *beamtime,
                                                 const char *path,
-                                                AsapoStringHandle group_id)
+                                                const char *group_id)
 {
 	return NULL;
 }
@@ -78,16 +72,10 @@ static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize)
 	return NULL;
 }
 
-static UNUSED AsapoStringHandle im_asapo_group_id_from_string(const char *str)
-{
-	return NULL;
-}
-
-static UNUSED AsapoStringHandle im_asapo_make_unique_group_id(const char *endpoint,
-                                                              const char *token,
-                                                              const char *beamtime,
-                                                              const char *path
-                                                              AsapoStringHandle group_id)
+static char *im_asapo_make_unique_group_id(const char *endpoint,
+                                           const char *token,
+                                           const char *beamtime,
+                                           const char *path)
 {
 	return NULL;
 }
