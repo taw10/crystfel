@@ -404,6 +404,9 @@ static void add_metadata(const char *filename,
 	data[2] = q.y;
 	data[3] = q.z;
 	r = H5Dwrite(dh, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+	if ( r < 0 ) {
+		ERROR("Failed to write quaternion to file\n");
+	}
 	H5Dclose(dh);
 
 	size[0] = 3;
