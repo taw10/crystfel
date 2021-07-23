@@ -123,6 +123,7 @@ struct merging_params {
 	int min_measurements;
 	float max_adu;
 	char *custom_split;
+	int pr_logs;
 	char *twin_sym;
 	float min_res;
 	float push_res;

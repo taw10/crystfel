@@ -482,6 +482,10 @@ static void parse_merging_opt(const char *key, const char *val,
 		proj->merging_params.custom_split = strdup(val);
 	}
 
+	if ( strcmp(key, "merging.pr_logs") == 0 ) {
+		proj->merging_params.pr_logs = parse_int(val);
+	}
+
 	if ( strcmp(key, "merging.twin_sym") == 0 ) {
 		proj->merging_params.twin_sym = strdup(val);
 	}
@@ -1098,6 +1102,7 @@ int save_project(struct crystfelproject *proj)
 		fprintf(fh, "merging.custom_split %s\n",
 		        proj->merging_params.custom_split);
 	}
+	fprintf(fh, "merging.pr_logs %i\n", proj->merging_params.pr_logs);
 	if ( proj->merging_params.twin_sym != NULL ) {
 		fprintf(fh, "merging.twin_sym %s\n",
 		        proj->merging_params.twin_sym);
@@ -1304,6 +1309,7 @@ int default_project(struct crystfelproject *proj)
 	proj->merging_params.min_measurements = 2;
 	proj->merging_params.max_adu = INFINITY;
 	proj->merging_params.custom_split = NULL;
+	proj->merging_params.pr_logs = 1;
 	proj->merging_params.twin_sym = NULL;
 	proj->merging_params.min_res = INFINITY;
 	proj->merging_params.push_res = INFINITY;

@@ -67,6 +67,7 @@ struct _crystfelmergeopts
 	GtkWidget *max_adu;
 	GtkWidget *custom_split;
 	GtkWidget *custom_split_file;
+	GtkWidget *pr_logs;
 	GtkWidget *detwin;
 	GtkWidget *detwin_sym;
 	GtkWidget *min_res;
@@ -108,6 +109,7 @@ extern void crystfel_merge_opts_set_max_adu(CrystFELMergeOpts *opts,
                                             float max_adu);
 extern void crystfel_merge_opts_set_custom_split(CrystFELMergeOpts *opts,
                                                  const char *custom_split_file);
+extern void crystfel_merge_opts_set_pr_logs(CrystFELMergeOpts *opts, int val);
 extern void crystfel_merge_opts_set_twin_sym(CrystFELMergeOpts *opts,
                                              const char *twin_sym);
 extern void crystfel_merge_opts_set_min_res(CrystFELMergeOpts *opts,
@@ -126,6 +128,7 @@ extern int crystfel_merge_opts_get_deltacchalf(CrystFELMergeOpts *opts);
 extern int crystfel_merge_opts_get_min_measurements(CrystFELMergeOpts *opts);
 extern float crystfel_merge_opts_get_max_adu(CrystFELMergeOpts *opts);
 extern const char *crystfel_merge_opts_get_custom_split(CrystFELMergeOpts *opts);
+extern int crystfel_merge_opts_get_pr_logs(CrystFELMergeOpts *opts);
 extern const char *crystfel_merge_opts_get_twin_sym(CrystFELMergeOpts *opts);
 extern float crystfel_merge_opts_get_min_res(CrystFELMergeOpts *opts);
 extern float crystfel_merge_opts_get_push_res(CrystFELMergeOpts *opts);

@@ -82,6 +82,7 @@ static void get_merging_opts(struct merging_params *opts,
 	free(opts->custom_split);
 	opts->custom_split = safe_strdup(crystfel_merge_opts_get_custom_split(mo));
 	free(opts->twin_sym);
+	opts->pr_logs = crystfel_merge_opts_get_pr_logs(mo);
 	opts->twin_sym = safe_strdup(crystfel_merge_opts_get_twin_sym(mo));
 	opts->min_res = crystfel_merge_opts_get_min_res(mo);
 	opts->push_res = crystfel_merge_opts_get_push_res(mo);
@@ -182,6 +183,7 @@ static void set_merging_opts(struct merging_params *opts,
 	crystfel_merge_opts_set_min_measurements(mo, opts->min_measurements);
 	crystfel_merge_opts_set_max_adu(mo, opts->max_adu);
 	crystfel_merge_opts_set_custom_split(mo, opts->custom_split);
+	crystfel_merge_opts_set_pr_logs(mo, opts->pr_logs);
 	crystfel_merge_opts_set_twin_sym(mo, opts->twin_sym);
 	crystfel_merge_opts_set_min_res(mo, opts->min_res);
 	crystfel_merge_opts_set_push_res(mo, opts->push_res);
@@ -409,6 +411,10 @@ static int write_partialator_script(const char *filename,
 
 	if ( !params->deltacchalf ) {
 		fprintf(fh, " --no-deltacchalf");
+	}
+
+	if ( !params->pr_logs ) {
+		fprintf(fh, " --no-logs");
 	}
 
 	fprintf(fh, " --iterations=%i", params->niter);

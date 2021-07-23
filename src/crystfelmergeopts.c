@@ -271,6 +271,12 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	check_on_toggle(mo->custom_split, mo);
 	gtk_widget_set_tooltip_text(hbox, "--custom-split");
 
+	/* --no-logs */
+	mo->pr_logs = gtk_check_button_new_with_label("Write partiality model diagnostics");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(mo->pr_logs),
+	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(mo->pr_logs, "--no-logs");
+
 	/* Minimum pattern resolution */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
@@ -472,6 +478,12 @@ void crystfel_merge_opts_set_custom_split(CrystFELMergeOpts *opts,
 }
 
 
+void crystfel_merge_opts_set_pr_logs(CrystFELMergeOpts *opts, int val)
+{
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->pr_logs), val);
+}
+
+
 void crystfel_merge_opts_set_twin_sym(CrystFELMergeOpts *opts,
                                       const char *twin_sym)
 {
@@ -569,6 +581,12 @@ const char *crystfel_merge_opts_get_custom_split(CrystFELMergeOpts *opts)
 	} else {
 		return gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(opts->custom_split_file));
 	}
+}
+
+
+int crystfel_merge_opts_get_pr_logs(CrystFELMergeOpts *opts)
+{
+	return get_bool(opts->pr_logs);
 }
 
 
