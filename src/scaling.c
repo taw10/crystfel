@@ -193,7 +193,6 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 	int r;
 	double cov00, cov01, cov11, chisq;
 	int n_esdS = 0;
-	int n_esdR = 0;
 	int n_ihS = 0;
 	int n_ihR = 0;
 	int n_nanS = 0;
@@ -282,7 +281,6 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 	if ( n < 2 ) {
 		if ( flags & SCALE_VERBOSE_ERRORS ) {
 			ERROR("Not enough reflections for scaling (had %i, but %i remain)\n", nb, n);
-			if ( n_esdR ) ERROR("%i reference reflection esd\n", n_esdR);
 			if ( n_esdS ) ERROR("%i subject reflection esd\n", n_esdS);
 			if ( n_ihR ) ERROR("%i reference reflection intensity\n", n_ihR);
 			if ( n_red ) ERROR("%i reference reflection redundancy\n", n_red);
