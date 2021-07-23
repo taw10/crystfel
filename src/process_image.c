@@ -174,7 +174,7 @@ static struct image *file_wait_open_read(const char *filename,
 			return NULL;
 		}
 
-	} while ( r );
+	} while ( image == NULL );
 
 	return image;
 }
