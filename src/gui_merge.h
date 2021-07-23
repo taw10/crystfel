@@ -44,7 +44,8 @@ extern int write_merge_script(const char *filename,
                               const char *out_hkl,
                               const char *stdout_filename,
                               const char *stderr_filename,
-                              const char *harvest_filename);
+                              const char *harvest_filename,
+                              const char *log_folder);
 
 extern double read_merge_progress(const char *logfile_str,
                                   enum gui_job_type type);

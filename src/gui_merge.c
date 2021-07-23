@@ -352,7 +352,8 @@ static int write_partialator_script(const char *filename,
                                     const char *out_hkl,
                                     const char *stdout_filename,
                                     const char *stderr_filename,
-                                    const char *harvest_filename)
+                                    const char *harvest_filename,
+                                    const char *log_folder)
 {
 	FILE *fh;
 	char *exe_path;
@@ -412,6 +413,7 @@ static int write_partialator_script(const char *filename,
 
 	fprintf(fh, " --iterations=%i", params->niter);
 	fprintf(fh, " --harvest-file=%s", harvest_filename);
+	fprintf(fh, " --log-folder=%s", log_folder);
 
 	fprintf(fh, " >%s 2>%s\n", stdout_filename, stderr_filename);
 
@@ -495,7 +497,8 @@ int write_merge_script(const char *filename,
                        const char *out_hkl,
                        const char *stdout_filename,
                        const char *stderr_filename,
-                       const char *harvest_filename)
+                       const char *harvest_filename,
+                       const char *log_folder)
 {
 	if ( strcmp(params->model, "process_hkl") == 0 ) {
 		return write_process_hkl_script(filename, input,
@@ -507,7 +510,8 @@ int write_merge_script(const char *filename,
 		                                params, out_hkl,
 		                                stdout_filename,
 		                                stderr_filename,
-		                                harvest_filename);
+		                                harvest_filename,
+		                                log_folder);
 	}
 }
 

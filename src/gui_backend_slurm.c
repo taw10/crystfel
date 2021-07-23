@@ -926,6 +926,7 @@ static void *run_merging(const char *job_title,
 	char *stdout_rel_filename;
 	char *stderr_rel_filename;
 	char *harvest_rel_filename;
+	char *log_folder_rel;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -935,11 +936,13 @@ static void *run_merging(const char *job_title,
 	stdout_rel_filename = relative_to_cwd(workdir, "stdout.log");
 	stderr_rel_filename = relative_to_cwd(workdir, "stderr.log");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
+	log_folder_rel = relative_to_cwd(workdir, "pr-logs");
 
 	if ( !write_merge_script(sc_rel_filename, input, "`nproc`",
 	                         &proj->merging_params, output_rel_filename,
 	                         stdout_rel_filename, stderr_rel_filename,
-	                         harvest_rel_filename) )
+	                         harvest_rel_filename,
+	                         log_folder_rel) )
 	{
 		enum gui_job_type type;
 		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
