@@ -169,16 +169,13 @@ Rational rtnl_sub(Rational a, Rational b)
 /* -1, 0 +1 respectively for a<b, a==b, a>b */
 signed int rtnl_cmp(Rational a, Rational b)
 {
-	Rational trt1, trt2;
+	long long int a_num, b_num;
 
-	trt1.num = a.num * b.den;
-	trt2.num = b.num * a.den;
+	a_num = a.num * b.den;
+	b_num = b.num * a.den;
 
-	trt1.den = a.den * b.den;
-	trt2.den = a.den * b.den;
-
-	if ( trt1.num > trt2.num ) return +1;
-	if ( trt1.num < trt2.num ) return -1;
+	if ( a_num > b_num ) return +1;
+	if ( a_num < b_num ) return -1;
 	return 0;
 }
 
