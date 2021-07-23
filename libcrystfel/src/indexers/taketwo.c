@@ -849,17 +849,18 @@ static int obs_vecs_match_angles(int her, int his,
 
 			if ( tmp_seeds == NULL ) {
 				apologise();
+			} else {
+
+				(*seeds) = tmp_seeds;
+
+				(*seeds)[*match_count].obs1 = her;
+				(*seeds)[*match_count].obs2 = his;
+				(*seeds)[*match_count].idx1 = i;
+				(*seeds)[*match_count].idx2 = j;
+				(*seeds)[*match_count].score = score * 1000;
+
+	                        (*match_count)++;
 			}
-
-			(*seeds) = tmp_seeds;
-
-			(*seeds)[*match_count].obs1 = her;
-			(*seeds)[*match_count].obs2 = his;
-			(*seeds)[*match_count].idx1 = i;
-			(*seeds)[*match_count].idx2 = j;
-			(*seeds)[*match_count].score = score * 1000;
-
-                        (*match_count)++;
                 }
         }
 
@@ -2071,16 +2072,17 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 
 	if (!tmp) {
 		apologise();
+	} else {
+
+		tp->prevSols = tmp;
+		tp->prevScores = tmpScores;
+		tp->membership = tmpSuccesses;
+
+		tp->prevSols[tp->numPrevs] = solution;
+		tp->prevScores[tp->numPrevs] = score;
+		tp->membership[tp->numPrevs] = members;
+		tp->numPrevs++;
 	}
-
-	tp->prevSols = tmp;
-	tp->prevScores = tmpScores;
-	tp->membership = tmpSuccesses;
-
-	tp->prevSols[tp->numPrevs] = solution;
-	tp->prevScores[tp->numPrevs] = score;
-	tp->membership[tp->numPrevs] = members;
-	tp->numPrevs++;
 
 	/* Prepare the solution for CrystFEL friendliness */
 	result = cell_post_smiley_face(cell, solution);
