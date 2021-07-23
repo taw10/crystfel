@@ -506,6 +506,9 @@ static int pump_chunk(FILE *fh, int ofd)
 		if ( strcmp(line, "FLUSH\n") == 0 ) break;
 		lwrite(ofd, line);
 
+		if ( strcmp(line, STREAM_CHUNK_START_MARKER"\n") == 0 ) {
+			chunk_started = 1;
+		}
 		if ( strcmp(line, STREAM_CHUNK_END_MARKER"\n") == 0 ) break;
 
 	} while ( 1 );
