@@ -889,9 +889,6 @@ static void read_crystal(Stream *st, struct image *image,
 
 		crystal_set_cell(cr, cell);
 
-		have_as = 0;  have_bs = 0;  have_cs = 0;
-		have_latt = 0;  have_ua = 0;  have_cen = 0;
-
 	}
 
 	/* Unused at the moment */
