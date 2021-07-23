@@ -317,14 +317,15 @@ static void try_reindex(Crystal *crin, const RefList *full,
 
 
 void write_test_logs(Crystal *crystal, const RefList *full,
-                     signed int cycle, int serial)
+                     signed int cycle, int serial,
+                     const char *log_folder)
 {
 	FILE *fh;
 	struct image *image = crystal_get_image(crystal);
 	char tmp[256];
 	char ins[16];
 
-	snprintf(tmp, 256, "pr-logs/parameters-crystal%i.dat", serial);
+	snprintf(tmp, 256, "%s/parameters-crystal%i.dat", log_folder, serial);
 
 	if ( cycle == 0 ) {
 		fh = fopen(tmp, "w");
@@ -367,7 +368,8 @@ void write_test_logs(Crystal *crystal, const RefList *full,
 
 
 void write_specgraph(Crystal *crystal, const RefList *full,
-                     signed int cycle, int serial)
+                     signed int cycle, int serial,
+                     const char *log_folder)
 {
 	FILE *fh;
 	char tmp[256];
@@ -379,7 +381,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	struct image *image = crystal_get_image(crystal);
 	char ins[16];
 
-	snprintf(tmp, 256, "pr-logs/specgraph-crystal%i.dat", serial);
+	snprintf(tmp, 256, "%s/specgraph-crystal%i.dat", log_folder, serial);
 
 	if ( cycle == 0 ) {
 		fh = fopen(tmp, "w");
@@ -443,7 +445,8 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 
 static void write_angle_grid(Crystal *cr, const RefList *full,
                              signed int cycle, int serial, int scaleflags,
-                             PartialityModel pmodel)
+                             PartialityModel pmodel,
+                             const char *log_folder)
 {
 	FILE *fh;
 	char fn[64];
@@ -475,8 +478,8 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 		ins[1] = '\0';
 	}
 
-	snprintf(fn, 64, "pr-logs/grid-crystal%i-cycle%s-ang1-ang2.dat",
-	         serial, ins);
+	snprintf(fn, 64, "%s/grid-crystal%i-cycle%s-ang1-ang2.dat",
+	         log_folder, serial, ins);
 	fh = fopen(fn, "w");
 	if ( fh != NULL ) {
 		double v1, v2;
@@ -509,7 +512,8 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 
 static void write_radius_grid(Crystal *cr, const RefList *full,
                               signed int cycle, int serial, int scaleflags,
-                              PartialityModel pmodel)
+                              PartialityModel pmodel,
+                              const char *log_folder)
 {
 	FILE *fh;
 	char fn[64];
@@ -541,8 +545,8 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 		ins[1] = '\0';
 	}
 
-	snprintf(fn, 64, "pr-logs/grid-crystal%i-cycle%s-R-wave.dat",
-	         serial, ins);
+	snprintf(fn, 64, "%s/grid-crystal%i-cycle%s-R-wave.dat",
+	         log_folder, serial, ins);
 	fh = fopen(fn, "w");
 	if ( fh != NULL ) {
 		double v1, v2;
@@ -575,10 +579,11 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 
 void write_gridscan(Crystal *cr, const RefList *full,
                     signed int cycle, int serial, int scaleflags,
-                    PartialityModel pmodel)
+                    PartialityModel pmodel,
+                    const char *log_folder)
 {
-	write_angle_grid(cr, full, cycle, serial, scaleflags, pmodel);
-	write_radius_grid(cr, full, cycle, serial, scaleflags, pmodel);
+	write_angle_grid(cr, full, cycle, serial, scaleflags, pmodel, log_folder);
+	write_radius_grid(cr, full, cycle, serial, scaleflags, pmodel, log_folder);
 }
 
 
@@ -647,7 +652,8 @@ static void zero_alter(struct rf_alteration *alter)
 static void do_pr_refine(Crystal *cr, const RefList *full,
                          PartialityModel pmodel, int serial,
                          int cycle, int write_logs,
-                         SymOpList *sym, SymOpList *amb, int scaleflags)
+                         SymOpList *sym, SymOpList *amb, int scaleflags,
+                         const char *log_folder)
 {
 	struct rf_priv priv;
 	struct rf_alteration alter;
@@ -684,7 +690,8 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 
 		char fn[64];
 
-		snprintf(fn, 63, "pr-logs/crystal%i-cycle%i.log", serial, cycle);
+		snprintf(fn, 63, "%s/crystal%i-cycle%i.log",
+		         log_folder, serial, cycle);
 		fh = fopen(fn, "w");
 		if ( fh != NULL ) {
 			fprintf(fh, "iter  FoM        FreeFoM     rotx/rad   "
@@ -722,9 +729,10 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	calculate_partialities(cr, pmodel);
 
 	if ( write_logs ) {
-		write_gridscan(cr, full, cycle, serial, scaleflags, pmodel);
-		write_specgraph(cr, full, cycle, serial);
-		write_test_logs(cr, full, cycle, serial);
+		write_gridscan(cr, full, cycle, serial, scaleflags,
+		               pmodel, log_folder);
+		write_specgraph(cr, full, cycle, serial, log_folder);
+		write_test_logs(cr, full, cycle, serial, log_folder);
 	}
 
 	if ( crystal_get_profile_radius(cr) > 5e9 ) {
@@ -752,6 +760,7 @@ struct refine_args
 	SymOpList *sym;
 	SymOpList *amb;
 	int scaleflags;
+	const char *log_folder;
 };
 
 
@@ -775,7 +784,8 @@ static void refine_image(void *task, int id)
 
 	do_pr_refine(cr, pargs->full, pargs->pmodel,
 	             pargs->serial, pargs->cycle, write_logs,
-	             pargs->sym, pargs->amb, pargs->scaleflags);
+	             pargs->sym, pargs->amb, pargs->scaleflags,
+	             pargs->log_folder);
 }
 
 
@@ -810,7 +820,8 @@ static void done_image(void *vqargs, void *task)
 void refine_all(Crystal **crystals, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
                 int cycle, int no_logs,
-                SymOpList *sym, SymOpList *amb, int scaleflags)
+                SymOpList *sym, SymOpList *amb, int scaleflags,
+                const char *log_folder)
 {
 	struct refine_args task_defaults;
 	struct pr_queue_args qargs;
@@ -824,6 +835,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	task_defaults.amb = amb;
 	task_defaults.scaleflags = scaleflags;
 	task_defaults.serial = 0;
+	task_defaults.log_folder = log_folder;
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_started = 0;

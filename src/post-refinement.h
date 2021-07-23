@@ -61,20 +61,24 @@ extern const char *str_prflag(enum prflag flag);
 extern void refine_all(Crystal **crystals, int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
                        int cycle, int no_logs,
-                       SymOpList *sym, SymOpList *amb, int scaleflags);
+                       SymOpList *sym, SymOpList *amb, int scaleflags,
+                       const char *log_folder);
 
 extern void write_gridscan(Crystal *cr, const RefList *full,
                            int cycle, int serial, int scaleflags,
-                           PartialityModel model);
+                           PartialityModel model,
+                           const char *log_folder);
 
 extern void write_specgraph(Crystal *crystal, const RefList *full,
-                            signed int cycle, int serial);
+                            signed int cycle, int serial,
+                            const char *log_folder);
 
 /* Exported so it can be poked by tests/pr_p_gradient_check */
 extern double gradient(Crystal *cr, int k, Reflection *refl,
                        PartialityModel pmodel);
 
 extern void write_test_logs(Crystal *crystal, const RefList *full,
-                            signed int cycle, int serial);
+                            signed int cycle, int serial,
+                            const char *log_folder);
 
 #endif	/* POST_REFINEMENT_H */

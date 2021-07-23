@@ -334,6 +334,7 @@ static void show_help(const char *s)
 "      --custom-split         List of files for custom dataset splitting.\n"
 "      --max-rel-B            Maximum allowable relative |B| factor.\n"
 "      --no-logs              Do not write extensive log files.\n"
+"      --log-folder=<fn>      Location for log folder.\n"
 "  -w <pg>                    Apparent point group for resolving ambiguities.\n"
 "      --operator=<op>        Indexing ambiguity operator for resolving.\n"
 "      --force-bandwidth=<n>  Set all bandwidths to <n> (fraction).\n"
@@ -686,13 +687,14 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 
 
 static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
-                         signed int iter, const char *suff)
+                         signed int iter, const char *suff,
+                         const char *log_folder)
 {
 	FILE *fh;
 	char tmp[256];
 	int i;
 
-	snprintf(tmp, 256, "pr-logs/pgraph%s.dat", suff);
+	snprintf(tmp, 256, "%s/pgraph%s.dat", log_folder, suff);
 
 	if ( iter == 0 ) {
 		fh = fopen(tmp, "w");
@@ -850,6 +852,7 @@ struct log_qargs
 	int scaleflags;
 	PartialityModel pmodel;
 	int n_done;
+	const char *log_folder;
 };
 
 
@@ -861,6 +864,7 @@ struct log_args
 	PartialityModel pmodel;
 	int iter;
 	int cnum;
+	const char *log_folder;
 };
 
 
@@ -880,6 +884,7 @@ static void *get_log_task(void *vp)
 	task->cnum = qargs->next;
 	task->scaleflags = qargs->scaleflags;
 	task->pmodel = qargs->pmodel;
+	task->log_folder = qargs->log_folder;
 
 	qargs->next += 20;
 	return task;
@@ -889,10 +894,12 @@ static void *get_log_task(void *vp)
 static void write_logs(void *vp, int cookie)
 {
 	struct log_args *args = vp;
-	write_specgraph(args->cr, args->full, args->iter, args->cnum);
+	write_specgraph(args->cr, args->full, args->iter, args->cnum,
+	                args->log_folder);
 	write_gridscan(args->cr, args->full, args->iter, args->cnum,
-	               args->scaleflags, args->pmodel);
-	write_test_logs(args->cr, args->full, args->iter, args->cnum);
+	               args->scaleflags, args->pmodel, args->log_folder);
+	write_test_logs(args->cr, args->full, args->iter, args->cnum,
+	                args->log_folder);
 }
 
 
@@ -908,7 +915,8 @@ static void done_log(void *vqargs, void *vp)
 
 static void write_logs_parallel(Crystal **crystals, int n_crystals,
                                 RefList *full, int iter, int n_threads,
-                                int scaleflags, PartialityModel pmodel)
+                                int scaleflags, PartialityModel pmodel,
+                                const char *log_folder)
 {
 	struct log_qargs qargs;
 
@@ -920,6 +928,7 @@ static void write_logs_parallel(Crystal **crystals, int n_crystals,
 	qargs.n_crystals = n_crystals;
 	qargs.scaleflags = scaleflags;
 	qargs.pmodel = pmodel;
+	qargs.log_folder = log_folder;
 
 	run_threads(n_threads, write_logs, get_log_task, done_log, &qargs,
 	            n_crystals/20, 0, 0, 0);
@@ -1058,6 +1067,7 @@ int main(int argc, char *argv[])
 	int do_write_logs = 0;
 	int no_deltacchalf = 0;
 	char *harvest_file = NULL;
+	char *log_folder = "pr-logs";
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1091,6 +1101,7 @@ int main(int argc, char *argv[])
 		{"no-polarisation",    0, NULL,               15},
 		{"no-polarization",    0, NULL,               15}, /* compat */
 		{"harvest-file",       1, NULL,               16},
+		{"log-folder",         1, NULL,               17},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-Bscale",          0, &no_Bscale,          1},
@@ -1280,6 +1291,10 @@ int main(int argc, char *argv[])
 			harvest_file = strdup(optarg);
 			break;
 
+			case 17 :
+			log_folder = strdup(optarg);
+			break;
+
 			case 0 :
 			break;
 
@@ -1391,21 +1406,24 @@ int main(int argc, char *argv[])
 	}
 
 	if ( do_write_logs ) {
-		int r = mkdir("pr-logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		int r = mkdir(log_folder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if ( r ) {
 			if ( errno == EEXIST ) {
-				ERROR("WARNING: pr-logs folder already exists. "
-				      "Beware of mixing old and new log files!\n");
+				ERROR("WARNING: Log folder (%s) already exists. "
+				      "Beware of mixing old and new log files!\n",
+				      log_folder);
 			} else {
-				ERROR("Failed to create pr-logs folder.\n");
+				ERROR("Failed to create log folder (%s).\n",
+				      log_folder);
 				return 1;
 			}
 		}
 	} else {
 		struct stat s;
-		if ( stat("pr-logs", &s) != -1 ) {
-			ERROR("WARNING: pr-logs folder exists, but I will not "
-			      "write anything in it with these settings.\n");
+		if ( stat(log_folder, &s) != -1 ) {
+			ERROR("WARNING: Log folder (%s) exists, but I will not "
+			      "write anything in it with these settings.\n",
+			      log_folder);
 		}
 	}
 
@@ -1641,9 +1659,9 @@ int main(int argc, char *argv[])
 	show_all_residuals(crystals, n_crystals, full, no_free);
 
 	if ( do_write_logs ) {
-		write_pgraph(full, crystals, n_crystals, 0, "");
+		write_pgraph(full, crystals, n_crystals, 0, "", log_folder);
 		write_logs_parallel(crystals, n_crystals, full, 0, nthreads,
-		                    scaleflags, pmodel);
+		                    scaleflags, pmodel, log_folder);
 	}
 
 	/* Iterate */
@@ -1653,7 +1671,8 @@ int main(int argc, char *argv[])
 
 		if ( !no_pr ) {
 			refine_all(crystals, n_crystals, full, nthreads, pmodel,
-			           itn+1, no_logs, sym, amb, scaleflags);
+			           itn+1, no_logs, sym, amb, scaleflags,
+			           log_folder);
 		}
 
 		/* Create new reference if needed */
@@ -1674,7 +1693,8 @@ int main(int argc, char *argv[])
 		show_all_residuals(crystals, n_crystals, full, no_free);
 
 		if ( do_write_logs ) {
-			write_pgraph(full, crystals, n_crystals, itn+1, "");
+			write_pgraph(full, crystals, n_crystals, itn+1, "",
+			             log_folder);
 		}
 
 		if ( output_everycycle ) {
@@ -1724,9 +1744,9 @@ int main(int argc, char *argv[])
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full, no_free);
 	if ( do_write_logs ) {
-		write_pgraph(full, crystals, n_crystals, -1, "");
+		write_pgraph(full, crystals, n_crystals, -1, "", log_folder);
 		write_logs_parallel(crystals, n_crystals, full, -1, nthreads,
-		                    scaleflags, pmodel);
+		                    scaleflags, pmodel, log_folder);
 	}
 
 	/* Output results */
