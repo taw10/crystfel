@@ -897,7 +897,6 @@ int main(int argc, char *argv[])
 			phases = NULL;
 		}
 		intensities = intensities_from_list(reflections, sym);
-		phases = phases_from_list(reflections);
 		flags = flags_from_list(reflections);
 
 		/* Check that the intensities have the correct symmetry */
