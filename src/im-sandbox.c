@@ -1143,6 +1143,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	if ( sb->zmq && sb->asapo ) {
 		ERROR("Cannot simultaneously use ZMQ and ASAP::O input.\n");
+		free(sb);
 		return 0;
 	}
 
