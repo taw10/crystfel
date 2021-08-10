@@ -319,7 +319,7 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 	f->proj->fom_res_min = get_float(f->min_res);
 	f->proj->fom_res_max = get_float(f->max_res);
 	f->proj->fom_min_snr = get_float(f->min_snr);
-	f->proj->fom_min_meas = get_float(f->min_meas);
+	f->proj->fom_min_meas = get_uint(f->min_meas);
 	f->proj->fom_nbins = get_uint(f->num_bins);
 	if ( isnan(f->proj->fom_res_min)
 	  || isnan(f->proj->fom_res_max)
