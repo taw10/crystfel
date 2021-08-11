@@ -1086,7 +1086,9 @@ int main(int argc, char *argv[])
 	if ( argp_parse(&argp, argc, argv, 0, NULL, &args) ) return 1;
 
 	/* Check for minimal information */
-	if ( (args.filename == NULL) && (args.zmq_addr == NULL) ) {
+	if ( (args.filename == NULL)
+	  && (args.zmq_addr == NULL)
+	  && (args.asapo_endpoint == NULL) ) {
 		ERROR("You need to provide the input filename (use -i)\n");
 		return 1;
 	}
