@@ -455,9 +455,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		free(line);
 
-		if ( !sb->zmq ) {
-
-		}
 		if ( sb->zmq ) {
 
 			do {
