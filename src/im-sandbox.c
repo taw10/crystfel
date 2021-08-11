@@ -1155,6 +1155,10 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		                                                   asapo_beamtime,
 		                                                   asapo_path);
 	}
+	if ( sb->asapo_group_id == NULL ) {
+		ERROR("Failed to create ASAP::O group ID.\n");
+		return 0;
+	}
 
 	sb->fds = NULL;
 	sb->fhs = NULL;
