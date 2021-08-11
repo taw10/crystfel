@@ -73,7 +73,7 @@ char *im_asapo_make_unique_group_id(const char *endpoint,
 	cred = asapo_create_source_credentials(kProcessed, beamtime, "", "", token);
 	consumer = asapo_create_consumer(endpoint, path, 1, cred, &err);
 	asapo_free_handle(&cred);
-	if ( err ) {
+	if ( asapo_is_error(err) ) {
 		show_asapo_error("Cannot create temporary ASAP::O consumer", err);
 		asapo_free_handle(&consumer);
 		return NULL;
@@ -83,7 +83,7 @@ char *im_asapo_make_unique_group_id(const char *endpoint,
 
 	group_id = asapo_consumer_generate_new_group_id(consumer, &err);
 	asapo_free_handle(&consumer);
-	if ( err ) {
+	if ( asapo_is_error(err) ) {
 		show_asapo_error("Cannot create ASAP::O group ID", err);
 		return NULL;
 	}
@@ -108,7 +108,7 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 	cred = asapo_create_source_credentials(kProcessed, beamtime, "", "", token);
 	a->consumer = asapo_create_consumer(endpoint, path, 1, cred, &err);
 	asapo_free_handle(&cred);
-	if ( err ) {
+	if ( asapo_is_error(err) ) {
 		show_asapo_error("Cannot create ASAP::O consumer", err);
 		free(a);
 		return NULL;
@@ -131,7 +131,7 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 
 	asapo_consumer_get_next(a->consumer, a->group_id, &meta, &data,
 	                        "default", &err);
-	if ( err ) {
+	if ( asapo_is_error(err) ) {
 		show_asapo_error("Couldn't get next ASAP::O record", err);
 		return NULL;
 	}
