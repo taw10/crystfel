@@ -156,7 +156,7 @@ dim2 = ss
 dim3 = fs
 .RE
 .IP
-The above snippet specifies that the data block is 3-dimensional. The first axis represents the event number, the index in the second axis is always 4, and the remaining two axes are the image coordinates.
+The above snippet specifies that the data block is 4-dimensional. The first axis represents the event number, the index in the second axis is always 4, and the remaining two axes are the image coordinates.
 
 .PD 0
 .IP \fBmin_fs\fR
@@ -171,13 +171,6 @@ The range of pixels in the data block specified by the 'data' property that corr
 .IP \fBadu_per_photon\fR
 .PD
 The number of detector intensity units (ADU) which will arise from either one electron-Volt of photon energy, or one photon.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR.
-
-.PD 0
-.IP \fBbadrow_direction\fR
-.PD
-This is the readout direction of a CCD panel, and can be \fBf\fR, \fBs\fR or \fB-\fR.
-If more than three peaks are found in the same readout region with similar coordinates perpendicular to the readout direction, they will all be discarded.  This helps to avoid problems due to streaks appearing along the readout direction, which has happened in the past with pnCCD detectors.
-If the badrow direction is '-', then the culling will not be performed for this panel.
 
 .PD 0
 .IP \fBres\fR
@@ -223,7 +216,7 @@ Mark pixels as "bad" if their values are respectively less than, more than or eq
 .IP \fBmaskN_goodbits\fR
 .IP \fBmaskN_badbits\fR
 .PD
-These specify the parameters for bad pixel mask number \fIN\fR.  You can have up to 8 bad pixel masks, numbered from 0 to 7 inclusive.  Placeholders ('%') in the location (\fBmaskN_data\fR) will be substituted with the same values as used for the placeholders in the image data, although there may be fewer of them for the masks than from the image data.
+These specify the parameters for bad pixel mask number \fIN\fR.  You can have up to 8 bad pixel masks, numbered from 0 to 7 inclusive.  Placeholders ('%') in the location (\fBmaskN_data\fR) will be substituted with the same values as used for the placeholders in the image data, although there may be fewer of them for the masks than for the image data.
 .IP
 You can optionally give a filename for each mask with \fBmaskN_file\fR.  The filename may be specified as an absolute filename, or relative to the working directory.  If you don't specify a filename, the mask will be read from the same file as the image data.
 .IP
@@ -278,7 +271,9 @@ Specify the direction in which the panel should move when the camera length is i
 
 Bad regions will be completely ignored by CrystFEL.  You can specify the pixels to exclude in pixel units, either in the lab coordinate system (see above) or in fast scan/slow scan coordinates (mixtures are not allowed).   In the latter case, the range of pixels is specified \fIinclusively\fR.  Bad regions are distinguished from normal panels by the fact that they begin with the three letters "bad".
 .PP
-You can specify a panel name for the bad region, in which case the pixels will only be considered bad if they are within the range you specify \fIand\fR in the panel you specify.  This might be necessary if your HDF5 file layout has overlapping ranges of fs/ss coordinates for different panels (e.g. if the data blocks for the panels are in different HDF5 datasets).
+If you specify a bad region in fs/ss (image data) coordinates, you must also specify which panel name you are referring to.
+.PP
+Note that bad regions specified in x/y (lab frame) coordinates take longer to process (when loading images) than regions specified in fs/ss (image data) coordinates.  You should use fs/ss coordinates unless the convenience of x/y coordinates outweighs the speed reduction.
 
 Examples:
 .br
