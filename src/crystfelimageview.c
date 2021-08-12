@@ -617,6 +617,39 @@ static void scroll_adjust_sig(GtkAdjustment *adj, CrystFELImageView *iv)
 	redraw(iv);
 }
 
+static void set_adjustment_horizontal(CrystFELImageView *iv, GtkAdjustment *adj)
+{
+	if ( iv->hadj == adj ) return;
+
+	if ( adj == NULL ) {
+		adj = gtk_adjustment_new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	}
+
+	iv->hadj = adj;
+	g_object_ref_sink(iv->hadj);
+
+	configure_scroll_adjustments(iv);
+	g_signal_connect(G_OBJECT(iv->hadj), "value-changed",
+	                 G_CALLBACK(scroll_adjust_sig), iv);
+}
+
+
+static void set_adjustment_vertical(CrystFELImageView *iv, GtkAdjustment *adj)
+{
+	if ( iv->vadj == adj ) return;
+
+	if ( adj == NULL ) {
+		adj = gtk_adjustment_new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	}
+
+	iv->vadj = adj;
+	g_object_ref_sink(iv->vadj);
+
+	configure_scroll_adjustments(iv);
+	g_signal_connect(G_OBJECT(iv->vadj), "value-changed",
+	                 G_CALLBACK(scroll_adjust_sig), iv);
+}
+
 
 static void crystfel_image_view_set_property(GObject *obj, guint id,
                                              const GValue *val,
@@ -635,21 +668,11 @@ static void crystfel_image_view_set_property(GObject *obj, guint id,
 		break;
 
 		case CRYSTFELIMAGEVIEW_VADJ :
-		iv->vadj = g_value_get_object(val);
-		configure_scroll_adjustments(iv);
-		if ( iv->vadj != NULL ) {
-			g_signal_connect(G_OBJECT(iv->vadj), "value-changed",
-			                 G_CALLBACK(scroll_adjust_sig), iv);
-		}
+		set_adjustment_vertical(iv, g_value_get_object(val));
 		break;
 
 		case CRYSTFELIMAGEVIEW_HADJ :
-		iv->hadj = g_value_get_object(val);
-		configure_scroll_adjustments(iv);
-		if ( iv->hadj != NULL ) {
-			g_signal_connect(G_OBJECT(iv->hadj), "value-changed",
-			                 G_CALLBACK(scroll_adjust_sig), iv);
-		}
+		set_adjustment_horizontal(iv, g_value_get_object(val));
 		break;
 
 		default :
