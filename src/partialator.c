@@ -1530,7 +1530,7 @@ int main(int argc, char *argv[])
 				if ( crystal_get_resolution_limit(image->crystals[i]) < min_res ) continue;
 
 				lowest_r = lowest_reflection(crystal_get_cell(image->crystals[i]));
-				if ( crystal_get_profile_radius(image->crystals[i]) > 0.2*lowest_r ) {
+				if ( crystal_get_profile_radius(image->crystals[i]) > 0.5*lowest_r ) {
 					ERROR("Rejecting %s %s crystal %i because "
 					      "profile radius is obviously too big (%e %e).\n",
 					      image->filename, image->ev, i,
