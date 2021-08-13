@@ -1147,17 +1147,19 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return 0;
 	}
 
-	if ( asapo_group_id != NULL ) {
-		sb->asapo_group_id = strdup(asapo_group_id);
-	} else {
-		sb->asapo_group_id = im_asapo_make_unique_group_id(asapo_endpoint,
-		                                                   asapo_token,
-		                                                   asapo_beamtime,
-		                                                   asapo_path);
-	}
-	if ( sb->asapo_group_id == NULL ) {
-		ERROR("Failed to create ASAP::O group ID.\n");
-		return 0;
+	if ( sb->asapo ) {
+		if ( asapo_group_id != NULL ) {
+			sb->asapo_group_id = strdup(asapo_group_id);
+		} else {
+			sb->asapo_group_id = im_asapo_make_unique_group_id(asapo_endpoint,
+			                                                   asapo_token,
+			                                                   asapo_beamtime,
+			                                                   asapo_path);
+		}
+		if ( sb->asapo_group_id == NULL ) {
+			ERROR("Failed to create ASAP::O group ID.\n");
+			return 0;
+		}
 	}
 
 	sb->fds = NULL;
