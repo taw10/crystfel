@@ -1627,6 +1627,7 @@ static void integrate_rings(IntegrationMethod meth,
 	UnitCell *cell;
 	struct intcontext *ic;
 	int n_rej = 0;
+	int n_refl = 0;
 
 	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
@@ -1645,13 +1646,14 @@ static void integrate_rings(IntegrationMethod meth,
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
+		n_refl++;
 		n_rej += integrate_rings_once(refl, ic,
 		                              term_lock);
 	}
 
 	intcontext_free(ic);
 
-	if ( n_rej > 0 ) {
+	if ( n_rej*4 > n_refl ) {
 		ERROR("WARNING: %i reflections could not be integrated\n",
 		      n_rej);
 	}
