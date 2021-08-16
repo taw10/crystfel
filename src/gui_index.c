@@ -574,6 +574,11 @@ static void run_indexing_once(struct crystfelproject *proj)
 	char *tmpdir;
 	int r;
 
+	if ( proj->cur_image == NULL ) {
+		ERROR("No image to index!\n");
+		return;
+	}
+
 	if ( proj->indexing_params.cell_file != NULL ) {
 		cell = load_cell_from_file(proj->indexing_params.cell_file);
 	} else {
