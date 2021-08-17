@@ -72,7 +72,7 @@ opencldep = dependency('OpenCL', required: false)
 if opencldep.found()
   conf_data.set10('HAVE_OPENCL', 1)
 endif
-if cc.has_header('CL/cl.h')
+if cc.has_header('CL/cl.h', dependencies: opencldep)
   conf_data.set10('HAVE_CL_CL_H', 1)
 endif
 
