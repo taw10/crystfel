@@ -25,7 +25,9 @@ pthreaddep = dependency('threads', required: true)
 # Try via pkg-config first:
 slurmdep = dependency('slurm', required: false)
 if not slurmdep.found()
-  slurmdep = cc.find_library('slurm', required: false)
+  slurmdep = cc.find_library('slurm',
+                             has_headers: 'slurm/slurm.h',
+                             required: false)
 endif
 
 if slurmdep.found()
