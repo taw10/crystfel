@@ -534,6 +534,7 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 		"Wolfgang Brehm <wolfgang.brehm@gmail.com>",
 		"Robert Bücker <robert.buecker@cssb-hamburg.de>",
 		"Fedor Chervinskii <fedor.chervinskii@gmail.com>",
+		"Nicholas Devenish <ndevenish@gmail.com>",
 		"Lorenzo Galli <lorenzo.galli@desy.de>",
 		"Cornelius Gati <cornelius.gati@cfel.de>",
 		"Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>",
