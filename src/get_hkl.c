@@ -472,6 +472,7 @@ int main(int argc, char *argv[])
 	double highres = INFINITY;  /* 1/d value */
 	UnitCell *cell = NULL;
 	char *output_format_str = NULL;
+	int r;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -901,16 +902,38 @@ int main(int argc, char *argv[])
 	reflist_add_command_and_version(input, argc, argv); /* Yes, really! */
 
 	if ( output_format_str == NULL ) {
-		write_reflist_2(output, input, mero);
+		r = write_reflist_2(output, input, mero);
 	} else if ( cell == NULL ) {
 		ERROR("You must provide a unit cell to use MTZ or XDS output.\n");
+		r = 1;
 	} else if ( strcasecmp(output_format_str, "mtz") == 0 ) {
-		write_to_mtz(input, mero, cell, 0, INFINITY, output, "dataset");
+		if ( !libcrystfel_can_write_mtz() ) {
+			ERROR("Sorry, this version of CrystFEL was compiled "
+			      "without MTZ support (libccp4 is required)\n");
+			r = 1;
+		} else if ( output == NULL ) {
+			ERROR("You must provide the MTZ output filename.\n");
+			r = 1;
+		} else {
+			r = write_to_mtz(input, mero, cell, 0, INFINITY, output, "dataset");
+		}
 	} else if ( strcasecmp(output_format_str, "xds") == 0 ) {
-		write_to_xds(input, mero, cell, 0, INFINITY, output);
+		if ( output == NULL ) {
+			ERROR("You must provide the XDS output filename.\n");
+			r = 1;
+		} else {
+			r = write_to_xds(input, mero, cell, 0, INFINITY, output);
+		}
+	} else {
+		STATUS("Unrecognised output format '%s'\n", output_format_str);
+		r = 1;
+	}
+
+	if ( r ) {
+		ERROR("Failed to write output file.\n");
 	}
 
 	reflist_free(input);
 
-	return 0;
+	return r;
 }
