@@ -877,8 +877,8 @@ const char *mosflm_probe(UnitCell *cell)
 		t.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 		tcsetattr(STDIN_FILENO, TCSANOW, &t);
 
-		execlp("mosflm", "mosflm", (char *)NULL);
-		execlp("ipmosflm", "ipmosflm", (char *)NULL);
+		execlp("mosflm", "mosflm", "-n", (char *)NULL);
+		execlp("ipmosflm", "ipmosflm", "-n", (char *)NULL);
 		_exit(1);
 
 	}
