@@ -958,7 +958,7 @@ int write_to_xds(RefList *reflist,
 	fprintf(fh, "!FORMAT=XDS_ASCII MERGE=TRUE FRIEDEL'S_LAW=%s\n",
 	        is_centrosymmetric(sym) ? "TRUE" : "FALSE");
 	fprintf(fh, "!SPACE_GROUP_NUMBER=%i\n", spg);
-	fprintf(fh, "!UNIT_CELL_CONSTANT= %.2f %.2f %.2f %.2f %.2f %.2f\n",
+	fprintf(fh, "!UNIT_CELL_CONSTANTS= %.2f %.2f %.2f %.2f %.2f %.2f\n",
 	        a*1e10, b*1e10, c*1e10, rad2deg(al), rad2deg(be), rad2deg(ga));
 	fprintf(fh, "!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=5\n");
 	fprintf(fh, "!ITEM_H=1\n");
