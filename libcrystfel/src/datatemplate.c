@@ -1074,12 +1074,12 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.cnz_offset = 0.0;
 	defaults.pixel_pitch = -1.0;
 	defaults.bad = 0;
-	defaults.fsx = 1.0;
-	defaults.fsy = 0.0;
-	defaults.fsz = 0.0;
-	defaults.ssx = 0.0;
-	defaults.ssy = 1.0;
-	defaults.ssz = 0.0;
+	defaults.fsx = NAN;
+	defaults.fsy = NAN;
+	defaults.fsz = NAN;
+	defaults.ssx = NAN;
+	defaults.ssy = NAN;
+	defaults.ssz = NAN;
 	defaults.rail_x = NAN;  /* The actual default rail direction */
 	defaults.rail_y = NAN;  /*  is below */
 	defaults.rail_z = NAN;
@@ -1258,6 +1258,18 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		if ( dim_ss >= dim_fs ) {
 			ERROR("Fast scan dimension must be higher than "
 			      "slow scan (panel %s)\n", p->name);
+			reject = 1;
+		}
+
+		if ( isnan(p->fsx) ) {
+			ERROR("Please specify the FS direction for panel %s\n",
+			      dt->panels[i].name);
+			reject = 1;
+		}
+
+		if ( isnan(p->ssx) ) {
+			ERROR("Please specify the FS direction for panel %s\n",
+			      dt->panels[i].name);
 			reject = 1;
 		}
 
