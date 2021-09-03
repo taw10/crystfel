@@ -1268,7 +1268,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 
 		if ( isnan(p->ssx) ) {
-			ERROR("Please specify the FS direction for panel %s\n",
+			ERROR("Please specify the SS direction for panel %s\n",
 			      dt->panels[i].name);
 			reject = 1;
 		}
