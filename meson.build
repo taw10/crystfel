@@ -2,7 +2,7 @@
 project('crystfel', 'c',
         version: '0.10.0',
         license: 'GPL3+',
-        meson_version: '>=0.50.0',
+        meson_version: '>=0.55.0',
         default_options: ['buildtype=debugoptimized'])
 
 libcrystfel_api_version = 14

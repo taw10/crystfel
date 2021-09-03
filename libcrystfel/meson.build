@@ -32,7 +32,9 @@ if fdipdep.found()
   conf_data.set10('HAVE_FDIP', 1)
 endif
 
-ccp4dep = dependency('libccp4c', required: false)
+ccp4dep = dependency('libccp4c',
+                     required: false,
+                     fallback: ['libccp4c', 'libccp4c_dep'])
 if ccp4dep.found()
   conf_data.set10('HAVE_LIBCCP4', 1)
 endif

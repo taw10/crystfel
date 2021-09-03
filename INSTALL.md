@@ -56,6 +56,12 @@ to download and install any of them separately from source.  In particular, we
 emphatically recommend against trying to install GTK, Cairo, Pango or
 gdk-pixbuf from source.
 
+If libccp4 is not available on the system and you compile using Meson, then
+libccp4 will be downloaded and compiled automatically.  If you don't want this,
+add option `--wrap-mode=nofallback` when invoking Meson.  See the Meson manual
+for other possibilities, such as using locally-provided files instead of
+downloading them.
+
 We also do not recommend using dependencies from Conda/Anaconda.  Do not
 activate any Conda environment before compiling CrystFEL, not even the "base"
 environment.  Don't even "source" the Conda setup file before installing
