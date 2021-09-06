@@ -21,13 +21,13 @@ Setting the wavelength
 
 You can set the accelerating voltage in the geometry file::
 
-  electron_voltage 200 kV
+  electron_voltage = 200 kV
 
 This should be the accelerating voltage, not the relativistically-corrected
 energy of the accelerated electrons (the difference is small).  Alternatively,
 give the wavelength directly::
 
-  wavelength 2.51e-12 m
+  wavelength = 2.51e-12 m
 
 You can also use ``V`` instead of ``kV`` and ``A`` (Angstroms) instead of
 ``m``.
