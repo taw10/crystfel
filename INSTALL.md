@@ -28,7 +28,7 @@ Dependencies
 
 Here are the mandatory dependencies - you cannot install CrystFEL without these:
 
-* Either [CMake](https://cmake.org/) 3.12 or later or [Meson](https://mesonbuild.com/) 0.50.0 or later (Meson is preferred)
+* Either [CMake](https://cmake.org/) 3.12 or later or [Meson](https://mesonbuild.com/) 0.55.0 or later (Meson is preferred)
 * [HDF5](https://www.hdfgroup.org/downloads/hdf5/) 1.8.0 or later (1.10.0 or later is required for many recent data formats which use the 'virtual data set' feature)
 * [GNU Scientific Library (GSL)](https://www.gnu.org/software/gsl/)
 * [Bison](https://www.gnu.org/software/bison/) 2.6 or later
