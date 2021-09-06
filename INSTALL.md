@@ -44,9 +44,9 @@ roughly in order of importance:
 * [Cairo](https://www.cairographics.org/) 1.2 or later (required for GUI)
 * [Pango](https://pango.gnome.org/) 1.0 or later, including [PangoCairo](https://docs.gtk.org/PangoCairo/) (required for GUI)
 * [gdk-pixbuf](https://docs.gtk.org/gdk-pixbuf/) 2.0 or later (required for GUI)
-* [libccp4](ftp://ftp.ccp4.ac.uk/opensource/) (required for MTZ import/export)
+* [libccp4](ftp://ftp.ccp4.ac.uk/opensource/) \[\*\] (required for MTZ import/export)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
-* [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) (for `peakFinder9` peak search algorithm)
+* [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
 * NCurses (for integration diagnostics: `indexamajig --int-diag`)
 
 Apart from FDIP, all of the dependencies mentioned above (including libccp4 -
@@ -56,11 +56,11 @@ to download and install any of them separately from source.  In particular, we
 emphatically recommend against trying to install GTK, Cairo, Pango or
 gdk-pixbuf from source.
 
-If libccp4 is not available on the system and you compile using Meson, then
-libccp4 will be downloaded and compiled automatically.  If you don't want this,
-add option `--wrap-mode=nofallback` when invoking Meson.  See the Meson manual
-for other possibilities, such as using locally-provided files instead of
-downloading them.
+If you compile using Meson, dependencies marked with \[\*\] above will be
+downloaded and compiled automatically if they are not available on the system.
+If you don't want this, add option `--wrap-mode=nofallback` when invoking
+Meson.  See the Meson manual for other possibilities, such as using
+locally-provided files instead of downloading them.
 
 We also do not recommend using dependencies from Conda/Anaconda.  Do not
 activate any Conda environment before compiling CrystFEL, not even the "base"

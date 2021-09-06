@@ -27,7 +27,9 @@ if pinkindexerdep.found()
   conf_data.set10('HAVE_PINKINDEXER', 1)
 endif
 
-fdipdep = dependency('fdip', required: false)
+fdipdep = dependency('fdip',
+                     required: false,
+                     fallback: ['fdip', 'fdip_dep'])
 if fdipdep.found()
   conf_data.set10('HAVE_FDIP', 1)
 endif
