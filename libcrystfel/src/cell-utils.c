@@ -971,6 +971,11 @@ UnitCell *load_cell_from_file(const char *filename)
 	}
 
 	rval = fgets(line, 1023, fh);
+	if ( rval == NULL ) {
+		ERROR("Failed to read first line from cell file\n");
+		fclose(fh);
+		return NULL;
+	}
 	chomp(line);
 
 	if ( strcmp(line, "CrystFEL unit cell file version 1.0") != 0 ) {
