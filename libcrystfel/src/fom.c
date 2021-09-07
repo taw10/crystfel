@@ -1190,20 +1190,6 @@ struct fom_rejections fom_select_reflection_pairs(RefList *list1, RefList *list2
 			continue;
 		}
 
-		if ( zero_negs ) {
-			int d = 0;
-			if ( val1 < 0.0 ) {
-				val1 = 0.0;
-				d = 1;
-			}
-			if ( val2 < 0.0 ) {
-				val2 = 0.0;
-				d = 1;
-			}
-			if ( d ) rej.negative_zeroed++;
-			continue;
-		}
-
 		if ( rmin_fix > 0.0 ) {
 			double res = 2.0*resolution(cell, h, k, l);
 			if ( res < rmin_fix ) {
@@ -1218,6 +1204,19 @@ struct fom_rejections fom_select_reflection_pairs(RefList *list1, RefList *list2
 				rej.outside_resolution_range++;
 				continue;
 			}
+		}
+
+		if ( zero_negs ) {
+			int d = 0;
+			if ( val1 < 0.0 ) {
+				val1 = 0.0;
+				d = 1;
+			}
+			if ( val2 < 0.0 ) {
+				val2 = 0.0;
+				d = 1;
+			}
+			if ( d ) rej.negative_zeroed++;
 		}
 
 		refl1_acc = add_refl(list1_acc, h, k, l);
