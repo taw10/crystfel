@@ -486,6 +486,7 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	cwd_gfile = g_file_new_for_path(".");
 
 	env = create_env(&n_env, NULL);
+	if ( env == NULL ) return NULL;
 
 	slurm_init_job_desc_msg(&job_desc_msg);
 	job_desc_msg.user_id = getuid();
