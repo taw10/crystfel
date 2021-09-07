@@ -84,6 +84,10 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 	fctx->fom = fom;
 	fctx->nshells = nshells;
 	fctx->cts = malloc(nshells*sizeof(int));
+	if ( fctx->cts == NULL ) {
+		free(fctx);
+		return NULL;
+	}
 	for ( i=0; i<nshells; i++ ) {
 		fctx->cts[i] = 0;
 	}
