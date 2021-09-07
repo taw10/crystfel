@@ -1142,7 +1142,10 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
 {
 	IntegerMatrix *op;
 	op = get_symop(ops, m, idx);
-	if ( op == NULL ) return;
+	if ( op == NULL ) {
+		fprintf(stderr, "Cannot proceed.\n");
+		abort();
+	}
 	do_op(op, h, k, l, he, ke, le);
 }
 
