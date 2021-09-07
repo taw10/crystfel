@@ -971,7 +971,6 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				      subst_name);
 				free(subst_name);
 				close_hdf5(fh);
-				free(subst_name);
 				return 1;
 			} else {
 
