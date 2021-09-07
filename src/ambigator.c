@@ -614,7 +614,7 @@ static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
 
 
 static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
-                   FILE *fh, struct flist **crystals)
+                   FILE *fh)
 {
 	int i;
 	int nch = 0;
@@ -1427,7 +1427,7 @@ int main(int argc, char *argv[])
 	free(crystals);
 
 	for ( j=0; j<n_iter; j++ ) {
-		detwin(ccs, n_crystals, assignments, fgfh, crystals);
+		detwin(ccs, n_crystals, assignments, fgfh);
 	}
 
 	if ( corr_matrix_fn != NULL ) {
