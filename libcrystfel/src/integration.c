@@ -826,7 +826,7 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 
 	if ( sat != NULL ) *sat = 0;
 
-	bx->bm = malloc(ic->w*ic->w*sizeof(int));
+	bx->bm = malloc(ic->w*ic->w*sizeof(enum boxmask_val));
 	if ( bx->bm == NULL ) {
 		ERROR("Failed to allocate box mask\n");
 		return 1;
