@@ -426,7 +426,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		if ( !ok ) continue;
 
 		pargs.filename = strdup(line);
-		pargs.event = strdup(event_str);
+		pargs.event = safe_strdup(event_str);
 
 		free(line);
 
