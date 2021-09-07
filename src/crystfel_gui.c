@@ -1167,9 +1167,9 @@ static void remove_task(struct crystfelproject *proj,
 	if ( task->backend->free_task != NULL ) {
 		task->backend->free_task(task->job_priv);
 	}
-	free(task);
 
 	proj->tasks = g_slist_remove(proj->tasks, task);
+	free(task);
 }
 
 
