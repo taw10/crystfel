@@ -680,8 +680,7 @@ static char **add_stream(char *new_stream,
                          int *pn_streams)
 {
 	int i = *pn_streams;
-	char **new_streams = realloc(streams,
-	                             (i+1)*sizeof(struct gui_indexing_result));
+	char **new_streams = realloc(streams, (i+1)*sizeof(char *));
 	if ( new_streams == NULL ) return streams;
 
 	new_streams[i] = new_stream;
