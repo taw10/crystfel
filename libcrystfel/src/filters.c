@@ -55,19 +55,15 @@ static void filter_noise_in_panel(float *data, int width, int height)
 		 * but this filter is so horrible it's unlikely to matter. */
 		if ( (x==0) || (x==width-1)
 		  || (y==0) || (y==height-1) ) {
-			if ( val < 0 ) val = 0;
+			if ( val < 0 ) {
+				data[x+width*y] = 0.0;
+			}
 			continue;
 		}
 
 		for ( dy=-1; dy<=+1; dy++ ) {
 		for ( dx=-1; dx<=+1; dx++ ) {
-
-			int val2;
-
-			val2 = data[(x+dx)+width*(y+dy)];
-
-			if ( val2 < 0 ) val = 0;
-
+			if ( data[(x+dx)+width*(y+dy)] ) val = 0.0;
 		}
 		}
 
