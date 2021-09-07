@@ -41,6 +41,7 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
+#include <assert.h>
 
 #include "utils.h"
 #include "image.h"
@@ -475,7 +476,9 @@ static int assplode_extract(char ***pbits, int n, size_t n_captured,
 {
 	char **bits = *pbits;
 	bits = realloc(bits, sizeof(char *)*(n+1));
+	assert(bits != NULL);
 	bits[n] = malloc(n_captured+1);
+	assert(bits[n] != NULL);
 	memcpy(bits[n], a+start, n_captured);
 	bits[n][n_captured] = '\0';
 	n++;
