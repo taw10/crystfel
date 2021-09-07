@@ -1831,6 +1831,11 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 		}
 	}
 
+	if ( count == 0 ) {
+		ERROR("No observed vectors for cell!\n");
+		return 0;
+	}
+
 	/* Sort such that the shortest distances are searched first. */
 	qsort(cell->obs_vecs, count, sizeof(struct SpotVec), compare_spot_vecs);
 
