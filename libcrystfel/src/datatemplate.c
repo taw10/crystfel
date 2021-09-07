@@ -973,6 +973,11 @@ static int lookup_panel(const char *panel_name,
 		return 0;
 	}
 
+	if ( panel_name == NULL ) {
+		ERROR("Panel name must be specified.\n");
+		return 1;
+	}
+
 	for ( i=0; i<dt->n_panels; i++ ) {
 		if ( strcmp(dt->panels[i].name, panel_name) == 0 ) {
 			*res = i;
