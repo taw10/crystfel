@@ -175,11 +175,23 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 {
 	char tmp[1024];
 	RefList *split;
-	Crystal *crystals1[n_crystals];
-	Crystal *crystals2[n_crystals];
+	Crystal **crystals1;
+	Crystal **crystals2;
 	int n_crystals1 = 0;
 	int n_crystals2 = 0;
 	int i;
+
+	if ( n_crystals == 0 ) {
+		ERROR("No crystals for split!\n");
+		return;
+	}
+
+	crystals1 = malloc(n_crystals * sizeof(Crystal *));
+	if ( crystals1 == NULL ) return;
+
+	crystals2 = malloc(n_crystals * sizeof(Crystal *));
+	if ( crystals2 == NULL ) return;
+
 
 	for ( i=0; i<n_crystals; i++ ) {
 		if ( i % 2 ) {
@@ -196,6 +208,8 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 
 	if ( split == NULL ) {
 		ERROR("Not enough crystals for two way split!\n");
+		free(crystals1);
+		free(crystals2);
 		return;
 	}
 
@@ -210,6 +224,9 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 	write_reflist_2(tmp, split, sym);
 	free_contribs(split);
 	reflist_free(split);
+
+	free(crystals1);
+	free(crystals2);
 }
 
 
