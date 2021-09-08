@@ -124,10 +124,11 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 
 void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 {
-	void *data_block;
+	void *data_copy;
 	AsapoMessageMetaHandle meta = asapo_new_handle();
 	AsapoMessageDataHandle data = asapo_new_handle();
 	AsapoErrorHandle err = asapo_new_handle();
+	uint64_t msg_size;
 
 	asapo_consumer_get_next(a->consumer, a->group_id, &meta, &data,
 	                        "default", &err);
@@ -136,16 +137,22 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 		return NULL;
 	}
 
+	msg_size = asapo_message_meta_get_size(meta);
+
 	STATUS("ASAP::O ID: %llu\n", asapo_message_meta_get_id(meta));
 	STATUS("ASAP::O filename: %s\n", asapo_message_meta_get_name(meta));
+	STATUS("ASAP::O size: %lli\n", (long long int)msg_size);
 
-	data_block = asapo_message_data_get_as_chars(data);
+
+	data_copy = malloc(msg_size);
+	if ( data_copy == NULL ) return NULL;
+	memcpy(data_copy, asapo_message_data_get_as_chars(data), msg_size);
 
 	asapo_free_handle(&err);
 	asapo_free_handle(&meta);
 	asapo_free_handle(&data);
 
-	return data_block;
+	return data_copy;
 }
 
 
