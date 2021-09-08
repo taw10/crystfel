@@ -1159,6 +1159,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		if ( sb->asapo_group_id == NULL ) {
 			ERROR("Failed to create ASAP::O group ID.\n");
 			return 0;
+		} else {
+			STATUS("The unique ID is %s\n", sb->asapo_group_id);
 		}
 	}
 
