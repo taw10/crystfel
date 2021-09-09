@@ -1160,9 +1160,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			sb->asapo_group_id = strdup(asapo_group_id);
 		} else {
 			sb->asapo_group_id = im_asapo_make_unique_group_id(asapo_endpoint,
-			                                                   asapo_token,
-			                                                   asapo_beamtime,
-			                                                   asapo_path);
+			                                                   asapo_token);
 		}
 		if ( sb->asapo_group_id == NULL ) {
 			ERROR("Failed to create ASAP::O group ID.\n");

@@ -47,9 +47,7 @@ extern void im_asapo_shutdown(struct im_asapo *a);
 extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size);
 
 extern char *im_asapo_make_unique_group_id(const char *endpoint,
-                                           const char *token,
-                                           const char *beamtime,
-                                           const char *path);
+                                           const char *token);
 
 #else /* defined(HAVE_ASAPO) */
 
@@ -73,9 +71,7 @@ static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize)
 }
 
 static char *im_asapo_make_unique_group_id(const char *endpoint,
-                                           const char *token,
-                                           const char *beamtime,
-                                           const char *path)
+                                           const char *token)
 {
 	return NULL;
 }

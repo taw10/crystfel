@@ -61,25 +61,21 @@ static void show_asapo_error(const char *msg, const AsapoErrorHandle err)
 
 
 char *im_asapo_make_unique_group_id(const char *endpoint,
-                                    const char *token,
-                                    const char *beamtime,
-                                    const char *path)
+                                    const char *token)
 {
 	AsapoConsumerHandle consumer;
 	AsapoSourceCredentialsHandle cred;
 	AsapoStringHandle group_id;
 	AsapoErrorHandle err = asapo_new_handle();
 
-	cred = asapo_create_source_credentials(kProcessed, beamtime, "", "", token);
-	consumer = asapo_create_consumer(endpoint, path, 1, cred, &err);
+	cred = asapo_create_source_credentials(kProcessed, "", "", "", token);
+	consumer = asapo_create_consumer(endpoint, "", 0, cred, &err);
 	asapo_free_handle(&cred);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Cannot create temporary ASAP::O consumer", err);
 		asapo_free_handle(&consumer);
 		return NULL;
 	}
-
-	asapo_consumer_set_timeout(consumer, 1000);
 
 	group_id = asapo_consumer_generate_new_group_id(consumer, &err);
 	asapo_free_handle(&consumer);
