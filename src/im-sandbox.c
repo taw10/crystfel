@@ -454,6 +454,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		pargs.event = safe_strdup(event_str);
 
 		free(line);
+		ok = 0;
 
 		if ( sb->zmq ) {
 
@@ -461,6 +462,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 				pargs.zmq_data = im_zmq_fetch(zmqstuff,
 				                              &pargs.zmq_data_size);
 			} while ( pargs.zmq_data_size < 15 );
+			ok = 1;
 
 			/* The filename/event, which will be 'fake' values in
 			 * this case, still came via the event queue.  More
@@ -473,17 +475,23 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			 * data comes via ASAP::O */
 			pargs.zmq_data = im_asapo_fetch(asapostuff,
 			                                &pargs.zmq_data_size);
+			if ( pargs.zmq_data != NULL ) {
+				ok = 1;
+			}
 
 		} else {
 			pargs.zmq_data = NULL;
 			pargs.zmq_data_size = 0;
+			ok = 1;
 		}
 
-		sb->shared->time_last_start[cookie] = get_monotonic_seconds();
-		profile_start("process-image");
-		process_image(iargs, &pargs, st, cookie, tmpdir, ser,
-		              sb->shared, sb->shared->last_task[cookie]);
-		profile_end("process-image");
+		if ( ok ) {
+			sb->shared->time_last_start[cookie] = get_monotonic_seconds();
+			profile_start("process-image");
+			process_image(iargs, &pargs, st, cookie, tmpdir, ser,
+			              sb->shared, sb->shared->last_task[cookie]);
+			profile_end("process-image");
+		}
 
 		/* pargs.zmq_data will be copied into the image structure, so
 		 * that it can be queried for "header" values etc.  It will
