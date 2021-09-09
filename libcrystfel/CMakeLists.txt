@@ -143,22 +143,22 @@ target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} ${ZLIB_LI
 
 if (XGANDALF_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${XGANDALF_LDFLAGS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${XGANDALF_LINK_LIBRARIES})
 endif (XGANDALF_FOUND)
 
 if (FDIP_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${FDIP_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${FDIP_LDFLAGS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${FDIP_LINK_LIBRARIES})
 endif (FDIP_FOUND)
 
 if (PINKINDEXER_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${PINKINDEXER_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${PINKINDEXER_LDFLAGS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${PINKINDEXER_LINK_LIBRARIES})
 endif (PINKINDEXER_FOUND)
 
 if (FFTW_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${FFTW_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LDFLAGS})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LINK_LIBRARIES})
 endif (FFTW_FOUND)
 
 if (CURSES_FOUND)
