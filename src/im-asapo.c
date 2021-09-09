@@ -91,12 +91,10 @@ char *im_asapo_make_unique_group_id(const char *endpoint,
 struct im_asapo *im_asapo_connect(const char *endpoint,
                                   const char *token,
                                   const char *beamtime,
-                                  const char *path,
                                   const char *group_id,
                                   const char *data_source)
 {
 	struct im_asapo *a;
-	int has_filesystem;
 	AsapoSourceCredentialsHandle cred;
 	AsapoErrorHandle err = asapo_new_handle();
 
@@ -105,14 +103,7 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 
 	cred = asapo_create_source_credentials(kProcessed, beamtime, "",
 	                                       data_source, token);
-	if ( path == NULL ) {
-		path = "";
-		has_filesystem = 0;
-	} else {
-		has_filesystem = 1;
-	}
-	a->consumer = asapo_create_consumer(endpoint, path, has_filesystem,
-	                                    cred, &err);
+	a->consumer = asapo_create_consumer(endpoint, "", 0, cred, &err);
 	asapo_free_handle(&cred);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Cannot create ASAP::O consumer", err);
