@@ -143,7 +143,6 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 	STATUS("ASAP::O filename: %s\n", asapo_message_meta_get_name(meta));
 	STATUS("ASAP::O size: %lli\n", (long long int)msg_size);
 
-
 	data_copy = malloc(msg_size);
 	if ( data_copy == NULL ) return NULL;
 	memcpy(data_copy, asapo_message_data_get_as_chars(data), msg_size);
