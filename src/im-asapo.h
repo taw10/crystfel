@@ -40,7 +40,8 @@ extern struct im_asapo *im_asapo_connect(const char *endpoint,
                                          const char *token,
                                          const char *beamtime,
                                          const char *path,
-                                         const char *group_id);
+                                         const char *group_id,
+                                         const char *data_source);
 
 extern void im_asapo_shutdown(struct im_asapo *a);
 
@@ -55,7 +56,8 @@ static UNUSED struct im_asapo *im_asapo_connect(const char *endpoint,
                                                 const char *token,
                                                 const char *beamtime,
                                                 const char *path,
-                                                const char *group_id)
+                                                const char *group_id,
+                                                const char *data_source)
 {
 	return NULL;
 }

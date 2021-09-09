@@ -112,6 +112,7 @@ struct sandbox
 	const char *asapo_beamtime;
 	const char *asapo_path;
 	const char *asapo_group_id;
+	const char *asapo_source;
 
 	/* Final output */
 	Stream *stream;
@@ -362,7 +363,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		                              sb->asapo_token,
 		                              sb->asapo_beamtime,
 		                              sb->asapo_path,
-		                              sb->asapo_group_id);
+		                              sb->asapo_group_id,
+		                              sb->asapo_source);
 		if ( asapostuff == NULL ) {
 			ERROR("ASAP::O setup failed.\n");
 			return 1;
@@ -1098,7 +1100,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    int n_zmq_subscriptions, const char *zmq_request,
                    const char *asapo_endpoint, const char *asapo_token,
                    const char *asapo_beamtime, const char *asapo_path,
-                   const char *asapo_group_id,
+                   const char *asapo_group_id, const char *asapo_source,
                    int timeout, int profile)
 {
 	int i;
@@ -1145,6 +1147,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		sb->asapo_token = asapo_token;
 		sb->asapo_beamtime = asapo_beamtime;
 		sb->asapo_path = asapo_path;
+		sb->asapo_source = asapo_source;
 	} else {
 		sb->asapo = 0;
 	}
