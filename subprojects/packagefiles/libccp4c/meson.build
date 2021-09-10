@@ -17,6 +17,13 @@ datadir = get_option('datadir') / 'ccp4'
 
 add_project_arguments('-DPACKAGE_ROOT="' + get_option('prefix') + '"',
                       language: 'c')
+add_project_arguments('-Wno-uninitialized', language: 'c')
+add_project_arguments('-Wno-unused-function', language: 'c')
+add_project_arguments('-Wno-stringop-truncation', language: 'c')
+add_project_arguments('-Wno-stringop-overflow', language: 'c')
+add_project_arguments('-Wno-format-overflow', language: 'c')
+add_project_arguments('-Wno-misleading-indentation', language: 'c')
+add_project_arguments('-Wno-pointer-compare', language: 'c')
 
 
 # C library
