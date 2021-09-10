@@ -148,6 +148,7 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 	asapo_free_handle(&meta);
 	asapo_free_handle(&data);
 
+	*pdata_size = msg_size;
 	return data_copy;
 }
 
