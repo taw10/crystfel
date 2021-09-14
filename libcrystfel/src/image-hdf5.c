@@ -757,13 +757,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	int n_dim_vals;
 	int dim_val_pos;
 
-	if ( access(image->filename, R_OK) == -1 ) {
-		ERROR("File does not exist or cannot be read: %s\n",
-		      image->filename);
-		return 1;
-	}
-
-	fh = H5Fopen(image->filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fh = open_hdf5(image);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file (header): %s\n", image->filename);
 		return 1;
