@@ -616,6 +616,11 @@ int image_cbf_read(struct image *image,
 	float *data;
 	int w, h;
 
+	if ( image->data_block != NULL ) {
+		ERROR("In-memory CBF not (yet!) implemented.\n");
+		return 1;
+	}
+
 	if ( access(image->filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n",
 		      image->filename);
