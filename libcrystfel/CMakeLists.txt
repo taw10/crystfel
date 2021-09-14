@@ -138,8 +138,8 @@ target_include_directories(${PROJECT_NAME} INTERFACE ${PROJECT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDF5_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} ${ZLIB_LIBRARIES}
-                      Threads::Threads GSL::gsl m)
+target_link_libraries(${PROJECT_NAME} PRIVATE util ${HDF5_C_LIBRARIES} ${HDF5_C_HL_LIBRARIES}
+                      ${ZLIB_LIBRARIES} Threads::Threads GSL::gsl m)
 
 if (XGANDALF_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${XGANDALF_INCLUDE_DIRS})

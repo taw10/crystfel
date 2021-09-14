@@ -34,6 +34,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <hdf5.h>
+#include <hdf5_hl.h>
 #include <unistd.h>
 
 #include "image.h"
@@ -355,14 +356,13 @@ static int total_dimensions(const struct panel_template *p)
 
 
 static int load_hdf5_hyperslab(struct panel_template *p,
-                               const char *filename,
+                               hid_t fh,
                                const char *event,
                                void **pdata,
                                hid_t el_type, size_t el_size,
                                int skip_placeholders_ok,
                                const char *path_spec)
 {
-	hid_t fh;
 	int total_dt_dims;
 	int plh_dt_dims;
 	int dt_dims[MAX_DIMS];
@@ -381,33 +381,19 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	int n_dim_vals;
 	int pl_pos;
 
-	if ( access(filename, R_OK) == -1 ) {
-		ERROR("File does not exist or cannot be read: %s\n",
-		      filename);
-		return 1;
-	}
-
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	if ( fh < 0 ) {
-		ERROR("Couldn't open file (hyperslab): %s\n", filename);
-		return 1;
-	}
-
 	panel_full_path = substitute_path(event, path_spec,
 	                                  skip_placeholders_ok);
 	if ( panel_full_path == NULL ) {
 		ERROR("Invalid path substitution: '%s' '%s'\n",
 		      event, path_spec);
-		close_hdf5(fh);
 		return 1;
 	}
 
 	dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
 	if ( dh < 0 ) {
-		ERROR("Cannot open data for panel %s (%s) in file %s\n",
-		      p->name, panel_full_path, filename);
+		ERROR("Cannot open data for panel %s (%s)\n",
+		      p->name, panel_full_path);
 		free(panel_full_path);
-		close_hdf5(fh);
 		return 1;
 	}
 
@@ -420,7 +406,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	if ( ndims < 0 ) {
 		ERROR("Failed to get number of dimensions for panel %s\n",
 		      p->name);
-		close_hdf5(fh);
 		return 1;
 	}
 
@@ -441,7 +426,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 			      "panel %s (%i, but expected %i or %i)\n",
 			      p->name, ndims, total_dt_dims,
 			      total_dt_dims - plh_dt_dims);
-			close_hdf5(fh);
 			return 1;
 		}
 	} else {
@@ -456,7 +440,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	f_count = malloc(ndims*sizeof(hsize_t));
 	if ( (f_offset == NULL) || (f_count == NULL ) ) {
 		ERROR("Failed to allocate offset or count.\n");
-		close_hdf5(fh);
 		return 1;
 	}
 
@@ -505,7 +488,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		      p->name);
 		free(f_offset);
 		free(f_count);
-		close_hdf5(fh);
 		return 1;
 	}
 
@@ -518,7 +500,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		ERROR("Failed to allocate panel %s\n", p->name);
 		free(f_offset);
 		free(f_count);
-		close_hdf5(fh);
 		return 1;
 	}
 
@@ -529,16 +510,60 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		free(f_offset);
 		free(f_count);
 		free(data);
-		close_hdf5(fh);
 		return 1;
 	}
 
 	free(f_offset);
 	free(f_count);
-	close_hdf5(fh);
 
 	*pdata = data;
 	return 0;
+}
+
+
+static hid_t open_hdf5_file(const char *filename)
+{
+	hid_t fh;
+
+	if ( access(filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n",
+		      filename);
+		return -1;
+	}
+
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if ( fh < 0 ) {
+		ERROR("Couldn't open HDF5 file: %s\n", filename);
+		return -1;
+	}
+
+	return fh;
+}
+
+
+static hid_t open_hdf5(struct image *image)
+{
+	if ( image->data_block == NULL ) {
+
+		return open_hdf5_file(image->filename);
+
+	} else {
+
+		hid_t fh;
+
+		fh = H5LTopen_file_image(image->data_block,
+		                         image->data_block_size,
+		                         H5LT_FILE_IMAGE_DONT_COPY
+		                         | H5LT_FILE_IMAGE_DONT_RELEASE);
+
+		if ( fh < 0 ) {
+			ERROR("Couldn't open HDF5 image (%p %lli)\n",
+			      image->data_block, image->data_block_size);
+			return -1;
+		}
+
+		return fh;
+	}
 }
 
 
@@ -546,6 +571,7 @@ int image_hdf5_read(struct image *image,
                     const DataTemplate *dtempl)
 {
 	int i;
+	hid_t fh;
 
 	image->dp = malloc(dtempl->n_panels*sizeof(float *));
 	if ( image->dp == NULL ) {
@@ -560,18 +586,26 @@ int image_hdf5_read(struct image *image,
 	/* Set all pointers to NULL for easier clean-up */
 	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
 
+	fh = open_hdf5(image);
+	if ( fh < 0 ) {
+		ERROR("Failed to open file\n");
+		return 1;
+	}
+
 	for ( i=0; i<dtempl->n_panels; i++ ) {
-		if ( load_hdf5_hyperslab(&dtempl->panels[i], image->filename,
+		if ( load_hdf5_hyperslab(&dtempl->panels[i], fh,
 		                         image->ev, (void *)&image->dp[i],
 		                         H5T_NATIVE_FLOAT,
 		                         sizeof(float), 0,
 		                         dtempl->panels[i].data) )
 		{
 			ERROR("Failed to load panel data\n");
+			close_hdf5(fh);
 			return 1;
 		}
 	}
 
+	close_hdf5(fh);
 	return 0;
 }
 
@@ -582,8 +616,12 @@ float *image_hdf5_read_satmap(struct panel_template *p,
                               const char *map_location)
 {
 	float *map = NULL;
+	hid_t fh;
 
-	if ( load_hdf5_hyperslab(p, filename, event,
+	fh = open_hdf5_file(filename);
+	if ( fh < 0 ) return NULL;
+
+	if ( load_hdf5_hyperslab(p, fh, event,
 	                         (void *)&map, H5T_NATIVE_FLOAT,
 	                         sizeof(float), 1, map_location) )
 	{
@@ -591,6 +629,8 @@ float *image_hdf5_read_satmap(struct panel_template *p,
 		free(map);
 		return NULL;
 	}
+
+	close_hdf5(fh);
 
 	return map;
 }
@@ -605,11 +645,15 @@ int image_hdf5_read_mask(struct panel_template *p,
 	int p_w, p_h;
 	int *mask = NULL;
 	long unsigned int j;
+	hid_t fh;
 
 	p_w = p->orig_max_fs - p->orig_min_fs + 1;
 	p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
-	if ( load_hdf5_hyperslab(p, filename, event,
+	fh = open_hdf5_file(filename);
+	if ( fh < 0 ) return 1;
+
+	if ( load_hdf5_hyperslab(p, fh, event,
 	                         (void *)&mask, H5T_NATIVE_INT,
 	                         sizeof(int), 1, mask_location) )
 	{
@@ -617,6 +661,8 @@ int image_hdf5_read_mask(struct panel_template *p,
 		free(mask);
 		return 1;
 	}
+
+	close_hdf5(fh);
 
 	for ( j=0; j<p_w*p_h; j++ ) {
 

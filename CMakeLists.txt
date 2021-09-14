@@ -11,7 +11,7 @@ include(GNUInstallDirs)
 # Set CMAKE_MODULE_PATH to assist cmake in finding our own package definitions
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 
-find_package(HDF5 REQUIRED COMPONENTS C)
+find_package(HDF5 REQUIRED COMPONENTS C HL)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
 find_package(OpenCL)
