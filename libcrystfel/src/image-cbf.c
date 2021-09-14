@@ -611,19 +611,18 @@ static int unpack_panels(struct image *image,
 
 int image_cbf_read(struct image *image,
                    const DataTemplate *dtempl,
-                   const char *filename,
-                   const char *event,
                    int gz)
 {
 	float *data;
 	int w, h;
 
-	if ( access(filename, R_OK) == -1 ) {
-		ERROR("File does not exist or cannot be read: %s\n", filename);
+	if ( access(image->filename, R_OK) == -1 ) {
+		ERROR("File does not exist or cannot be read: %s\n",
+		      image->filename);
 		return 1;
 	}
 
-	data = read_cbf_data(filename, gz, &w, &h);
+	data = read_cbf_data(image->filename, gz, &w, &h);
 	if ( data == NULL ) {
 		ERROR("Failed to read CBF data\n");
 		return 1;

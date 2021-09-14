@@ -776,18 +776,13 @@ static int image_read_image_data(struct image *image,
 		return 1;
 
 		case DATA_SOURCE_TYPE_HDF5:
-		return image_hdf5_read(image, dtempl,
-		                       image->filename, image->ev);
+		return image_hdf5_read(image, dtempl);
 
 		case DATA_SOURCE_TYPE_CBF:
-		return image_cbf_read(image, dtempl,
-		                      image->filename, image->ev,
-		                      0);
+		return image_cbf_read(image, dtempl, 0);
 
 		case DATA_SOURCE_TYPE_CBFGZ:
-		return image_cbf_read(image, dtempl,
-		                      image->filename, image->ev,
-		                      1);
+		return image_cbf_read(image, dtempl, 1);
 
 		case DATA_SOURCE_TYPE_MSGPACK:
 		return image_msgpack_read(image, dtempl, image->data_block,

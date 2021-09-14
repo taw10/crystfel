@@ -543,9 +543,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 
 int image_hdf5_read(struct image *image,
-                    const DataTemplate *dtempl,
-                    const char *filename,
-                    const char *event)
+                    const DataTemplate *dtempl)
 {
 	int i;
 
@@ -555,16 +553,16 @@ int image_hdf5_read(struct image *image,
 		return 1;
 	}
 
-	if ( event == NULL ) {
-		event = "//";
+	if ( image->ev == NULL ) {
+		image->ev = "//";
 	}
 
 	/* Set all pointers to NULL for easier clean-up */
 	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
-		if ( load_hdf5_hyperslab(&dtempl->panels[i], filename,
-		                         event, (void *)&image->dp[i],
+		if ( load_hdf5_hyperslab(&dtempl->panels[i], image->filename,
+		                         image->ev, (void *)&image->dp[i],
 		                         H5T_NATIVE_FLOAT,
 		                         sizeof(float), 0,
 		                         dtempl->panels[i].data) )
@@ -573,9 +571,6 @@ int image_hdf5_read(struct image *image,
 			return 1;
 		}
 	}
-
-	image->filename = strdup(filename);
-	image->ev = safe_strdup(event);
 
 	return 0;
 }

@@ -38,9 +38,7 @@ extern int image_hdf5_read_header_to_cache(struct image *image,
                                            const char *name);
 
 extern int image_hdf5_read(struct image *image,
-                           const DataTemplate *dtempl,
-                           const char *filename,
-                           const char *event);
+                           const DataTemplate *dtempl);
 
 extern int image_hdf5_read_mask(struct panel_template *p,
                                 const char *filename,
