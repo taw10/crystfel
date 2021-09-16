@@ -141,16 +141,18 @@ static int select_last_stream(struct im_asapo *a)
 	STATUS("Streams available at start:\n");
 	n = asapo_stream_infos_get_size(si);
 	for ( i=0; i<n; i++ ) {
-		AsapoStreamInfoHandle st;
-		st = asapo_stream_infos_get_item(si, i);
+		AsapoStreamInfoHandle st = asapo_stream_infos_get_item(si, i);
 		STATUS("Stream %i: %s\n", i, asapo_stream_info_get_name(st));
+		asapo_free_handle(&st);
 	}
 	STATUS("End of stream list\n");
 
 	st = asapo_stream_infos_get_item(si, n-1);
 	a->stream = strdup(asapo_stream_info_get_name(st));
+	asapo_free_handle(&st);
 	STATUS("Starting with the last stream: %s\n", a->stream);
 
+	asapo_free_handle(&si);
 	asapo_free_handle(&err);
 	return 0;
 }
@@ -168,6 +170,7 @@ static int select_next_stream(struct im_asapo *a)
 
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Couldn't get ASAP::O stream list", err);
+		asapo_free_handle(&si);
 		asapo_free_handle(&err);
 		return 1;
 	}
@@ -176,6 +179,7 @@ static int select_next_stream(struct im_asapo *a)
 
 	st = asapo_stream_infos_get_item(si, 0);
 	next_stream = asapo_stream_info_get_name(st);
+	asapo_free_handle(&st);
 	if ( strcmp(next_stream, a->stream) == 0 ) {
 		STATUS("Waiting for new data...\n");
 	} else {
@@ -183,6 +187,8 @@ static int select_next_stream(struct im_asapo *a)
 		a->stream = strdup(next_stream);
 		STATUS("Selecting next stream: %s\n", a->stream);
 	}
+
+	asapo_free_handle(&si);
 
 	return 0;
 }
@@ -194,9 +200,25 @@ static void skip_to_stream_end(struct im_asapo *a)
 	AsapoErrorHandle err = asapo_new_handle();
 
 	size = asapo_consumer_get_current_size(a->consumer, a->stream, &err);
-	asapo_consumer_set_last_read_marker(a->consumer, a->group_id, size,
-	                                    a->stream, &err);
-	STATUS("Skipping to end of stream (%lli)\n", size);
+	if ( asapo_is_error(err) ) {
+		show_asapo_error("Failed to get length of stream", err);
+	} else {
+
+		AsapoErrorHandle err = asapo_new_handle();
+
+		asapo_consumer_set_last_read_marker(a->consumer,
+		                                    a->group_id, size,
+		                                    a->stream, &err);
+		if ( asapo_is_error(err) ) {
+			show_asapo_error("Failed to skip to end of stream", err);
+		} else {
+			STATUS("Skipped to end of stream (%lli)\n", size);
+		}
+
+		asapo_free_handle(&err);
+	}
+
+	asapo_free_handle(&err);
 }
 
 
@@ -205,17 +227,17 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 	void *data_copy;
 	AsapoMessageMetaHandle meta;
 	AsapoMessageDataHandle data;
-	AsapoErrorHandle err = asapo_new_handle();
+	AsapoErrorHandle err;
 	uint64_t msg_size;
 
 	if ( a->stream == NULL ) {
 		if ( select_last_stream(a) ) {
-			asapo_free_handle(&err);
 			return NULL;
 		}
 		skip_to_stream_end(a);
 	}
 
+	err = asapo_new_handle();
 	meta = asapo_new_handle();
 	data = asapo_new_handle();
 
