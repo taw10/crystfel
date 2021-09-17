@@ -42,10 +42,17 @@ process_hkl will result in zeroes everywhere.
 Data format
 ===========
 
-In this version, CrystFEL makes the following assumptions about the data
-received via ZeroMQ:
+In this version, CrystFEL can handle real-time data in HDF5 for MessagePack
+format.  To specify the format of the data, use either ``--data-format=hdf5``
+or ``--data-format=msgpack``.  Note that *all* data format assumptions are
+'open for negotiation' and will be relaxed in future CrystFEL versions, as new
+online data formats arise.
 
-* The data is serialised using MessagePack
+For HDF5 format, everything works just as it does with HDF5 files, except that
+peak lists are not currently supported.  This will be added soon.
+
+For data in MessagePack format, the following assumptions are made:
+
 * The data consists of either a single MsgPack 'map' object, or an array of
   maps.
   If there are multiple map objects in the array, only the first one will be
@@ -62,10 +69,6 @@ received via ZeroMQ:
   element is the slow-scan size, the second is that fast-scan size.
 * The data array within the NumPy map should be in a binary object called
   ``data``.
-
-Note that *all* of the above assumptions are 'open for negotiation' and will be
-relaxed in future CrystFEL versions, as new online data formats arise.  Anyone
-interested in streaming CBF files over ZeroMQ?
 
 You can specify which map objects to look at in the geometry file.  The
 following example will get the incident photon energy (in eV) and detector
@@ -94,7 +97,9 @@ explanation of ``peak_list``::
 Peak lists
 ==========
 
-You can use all of the usual peak search methods for streaming data.
+You can use all of the usual peak search methods for streaming data, but
+note that HDF5/CXI peak lists are not currently supported for streamed data.
+This will be fixed soon.
 
 In addition, you can use ``--peaks=msgpack`` to get the peak locations from
 the MsgPack data.  In this case, the ``peak_list`` directive in the geometry
