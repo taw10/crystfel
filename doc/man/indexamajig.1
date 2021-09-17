@@ -186,9 +186,22 @@ Subscribe to ZeroMQ message type \fItag\fR.  You can use this option multiple ti
 Request new data over ZeroMQ by sending string \fImsg\fR.  This will cause indexamajig's ZeroMQ socket to use REQ mode instead of SUB.  This option and \fB--zmq-subscribe\fR are mutually exclusive.
 
 .PD 0
+.IP \fB--asapo-endpoint=\fIendpoint\fR
+.PD
+Receive data via the specified ASAP::O endpoint.  This option and \fB--zmq-input\fR are mutually exclusive.
+
+.PD 0
+.IP \fB--asapo-token=\fItoken\fR
+.IP \fB--asapo-beamtime=\fIbeamtime\fR
+.IP \fB--asapo-source=\fIsource\fR
+.IP \fB--asapo-group=\fIgroup\fR
+.PD
+Authentication token, beamtime, data source and consumer group, respectively, for ASAP::O data.
+
+.PD 0
 .IP \fB--data-format=\fIformat\fR
 .PD
-Specify the data format for data received over ZeroMQ.  Possible values in this version are \fBmsgpack\fR and \fBhdf5\fR.
+Specify the data format for data received over ZeroMQ or ASAP::O.  Possible values in this version are \fBmsgpack\fR and \fBhdf5\fR.
 
 .PD 0
 .IP \fB--basename\fR
