@@ -288,6 +288,16 @@ static void add_copy_header(struct indexamajig_arguments *args,
 }
 
 
+static DataSourceType parse_data_format(const char *str)
+{
+	if ( strcmp(str, "hdf5") == 0 ) return DATA_SOURCE_TYPE_HDF5;
+	if ( strcmp(str, "msgpack") == 0 ) return DATA_SOURCE_TYPE_MSGPACK;
+	/* CBF and CBFGZ should be added here once image-cbf.c supports
+	 * in-memory access */
+	return DATA_SOURCE_TYPE_UNKNOWN;
+}
+
+
 static error_t parse_arg(int key, char *arg, struct argp_state *state)
 {
 	float tmp;
@@ -390,6 +400,14 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 		case 212 :
 		args->zmq_request = strdup(arg);
+		break;
+
+		case 219 :
+		args->iargs.data_format = parse_data_format(arg);
+		if ( args->iargs.data_format == DATA_SOURCE_TYPE_UNKNOWN ) {
+			ERROR("Unrecognised data format '%s'\n", arg);
+			return EINVAL;
+		}
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -916,6 +934,7 @@ int main(int argc, char *argv[])
 			"type"},
 		{"zmq-request", 212, "str", OPTION_NO_USAGE, "Request messages using"
 			"this string."},
+		{"data-format", 219, "str", OPTION_NO_USAGE, "Streamed data format"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},

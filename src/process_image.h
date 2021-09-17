@@ -45,6 +45,7 @@ struct index_args;
 #include "im-sandbox.h"
 #include "time-accounts.h"
 #include "peaks.h"
+#include "image.h"
 
 
 /* Information about the indexing process which is common to all patterns */
@@ -56,6 +57,7 @@ struct index_args
 	int no_image_data;
 	int no_mask_data;
 	float highres;
+	DataSourceType data_format;
 
 	/* Peak search */
 	enum peak_search_method peaks;
