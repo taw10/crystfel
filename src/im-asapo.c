@@ -177,17 +177,21 @@ static int select_next_stream(struct im_asapo *a)
 
 	asapo_free_handle(&err);
 
-	st = asapo_stream_infos_get_item(si, 0);
-	next_stream = asapo_stream_info_get_name(st);
-	asapo_free_handle(&st);
-	if ( strcmp(next_stream, a->stream) == 0 ) {
-		STATUS("Waiting for new data...\n");
-	} else {
-		free(a->stream);
-		a->stream = strdup(next_stream);
-		STATUS("Selecting next stream: %s\n", a->stream);
+	/* Stream list includes the current stream, so we need at least
+	 * two entries */
+	if ( asapo_stream_infos_get_size(si) < 2 ) {
+		STATUS("No newer stream.  Waiting for new data...\n");
+		asapo_free_handle(&si);
+		return 0;
 	}
 
+	/* Stream list includes the current stream, so look at the second one */
+	st = asapo_stream_infos_get_item(si, 1);
+	next_stream = asapo_stream_info_get_name(st);
+	free(a->stream);
+	a->stream = strdup(next_stream);
+	STATUS("Selecting next stream: %s\n", a->stream);
+	asapo_free_handle(&st);
 	asapo_free_handle(&si);
 
 	return 0;
