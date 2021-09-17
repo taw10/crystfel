@@ -47,6 +47,7 @@ struct slurm_common_opts
 	char *email_address;
 	char *account;
 	char *constraint;
+	int time_limit;
 };
 
 
@@ -352,12 +353,27 @@ static gboolean constraint_focus_sig(GtkEntry *entry, GdkEvent *event,
 }
 
 
+static void timelimit_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->time_limit = get_uint(GTK_WIDGET(entry));
+}
+
+
+static gboolean timelimit_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                    gpointer data)
+{
+	timelimit_activate_sig(entry, data);
+	return FALSE;
+}
+
 static void add_common_opts(GtkWidget *vbox,
                             struct slurm_common_opts *opts)
 {
 	GtkWidget *hbox;
 	GtkWidget *entry;
 	GtkWidget *label;
+	char tmp[64];
 
 	/* Partition */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -425,6 +441,22 @@ static void add_common_opts(GtkWidget *vbox,
 	                 G_CALLBACK(constraint_activate_sig), opts);
 	g_signal_connect(G_OBJECT(entry), "focus-out-event",
 	                 G_CALLBACK(constraint_focus_sig), opts);
+
+	/* Time limit */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Job time limit (minutes):");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	snprintf(tmp, 63, "%i", opts->time_limit);
+	gtk_entry_set_text(GTK_ENTRY(entry), tmp);
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "time limit in minutes");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(timelimit_activate_sig), opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(timelimit_focus_sig), opts);
 }
 
 
@@ -451,6 +483,9 @@ static void write_common_opts(FILE *fh,
 		fprintf(fh, "%s.slurm.constraint %s\n",
 		        prefix, opts->constraint);
 	}
+
+	fprintf(fh, "%s.slurm.time_limit %i\n",
+	        prefix, opts->time_limit);
 }
 
 
@@ -495,7 +530,7 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	job_desc_msg.mail_type = MAIL_JOB_FAIL;
 	job_desc_msg.comment = "Submitted via CrystFEL GUI";
 	job_desc_msg.shared = 0;
-	job_desc_msg.time_limit = 60;
+	job_desc_msg.time_limit = opts->time_limit; /* minutes */
 	job_desc_msg.partition = safe_strdup(opts->partition);
 	job_desc_msg.min_nodes = 1;
 	job_desc_msg.max_nodes = 1;
@@ -790,6 +825,7 @@ static void set_default_common_opts(struct slurm_common_opts *opts)
 	opts->email_address = NULL;
 	opts->account = NULL;
 	opts->constraint = NULL;
+	opts->time_limit = 60;
 }
 
 
@@ -852,6 +888,10 @@ static void read_indexing_opt(void *opts_priv,
 
 	if ( strcmp(key, "indexing.slurm.constraint") == 0 ) {
 		opts->common.constraint = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.time_limit") == 0 ) {
+		opts->common.time_limit = atoi(val);
 	}
 }
 
@@ -1025,6 +1065,9 @@ static void read_merging_opt(void *opts_priv,
 		opts->common.constraint = strdup(val);
 	}
 
+	if ( strcmp(key, "merging.slurm.time_limit") == 0 ) {
+		opts->common.time_limit = atoi(val);
+	}
 }
 
 
@@ -1074,6 +1117,10 @@ static void read_ambi_opt(void *opts_priv,
 
 	if ( strcmp(key, "ambi.slurm.constraint") == 0 ) {
 		opts->common.constraint = strdup(val);
+	}
+
+	if ( strcmp(key, "ambi.slurm.time_limit") == 0 ) {
+		opts->common.time_limit = atoi(val);
 	}
 }
 
