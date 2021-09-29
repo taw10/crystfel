@@ -117,10 +117,10 @@ struct panel_template
 	double cny;
 	/**@}*/
 
-	/** Location to get \ref cnz from, e.g. from HDF5 file */
+	/** Location to get cnz from, e.g. from HDF5 file */
 	char *cnz_from;
 
-	/** The offset to be applied from \ref clen */
+	/** The offset to be applied from clen */
 	double cnz_offset;
 
 	/** Mask definitions */
