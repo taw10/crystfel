@@ -8,7 +8,6 @@ find_package(ZLIB REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 pkg_check_modules(MSGPACK msgpack)
-find_package(Doxygen)
 pkg_check_modules(FFTW fftw3)
 pkg_check_modules(LIBCCP4 libccp4c)
 
@@ -102,16 +101,6 @@ set(LIBCRYSTFEL_HEADERS
     src/detgeom.h
     src/fom.h
 )
-
-if (DOXYGEN_FOUND)
-  configure_file(${PROJECT_SOURCE_DIR}/doc/index.md index.md)
-  set(DOXYGEN_SHOW_INCLUDE_FILES NO)
-  set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
-  set(DOXYGEN_PREDEFINED HAVE_FFTW)
-  doxygen_add_docs(api-docs ${PROJECT_SOURCE_DIR}/src
-                   ${CMAKE_CURRENT_BINARY_DIR}/index.md
-                   ${PROJECT_SOURCE_DIR}/doc/coding.md)
-endif (DOXYGEN_FOUND)
 
 add_library(${PROJECT_NAME} SHARED
             ${LIBCRYSTFEL_SOURCES}

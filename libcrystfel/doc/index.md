@@ -1,10 +1,5 @@
 \mainpage libcrystfel index page
 
-Version
-=======
-This documentation is for libcrystfel from CrystFEL ${CRYSTFEL_VERSION}, API
-revision ${CRYSTFEL_API_VERSION}.
-
 Abstract
 ========
 This is the internal documentation for CrystFEL.  Unless you are looking at
@@ -12,6 +7,8 @@ the code, writing new programs or fixing bugs, you should not need to read
 this.  You might use the information here when reading the code or to better
 understand how the software works, or refer to it when creating a new
 program within the suite.
+
+API revision \apirevision.
 
 Coding standards
 ================
