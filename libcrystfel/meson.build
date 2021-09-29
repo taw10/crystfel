@@ -182,6 +182,8 @@ if doxygen.found()
   doc_data.set('INDEX_MD', join_paths(meson.current_source_dir(), 'doc/index.md'))
   doc_data.set('CODING_MD', join_paths(meson.current_source_dir(), 'doc/coding.md'))
   doc_data.set('OUTPUT_DIR', join_paths(meson.current_build_dir(), 'docs'))
+  doc_data.set('DT_PRIV', join_paths(meson.current_source_dir(), 'src/datatemplate_priv.h'))
+  doc_data.set('UTHASH', join_paths(meson.current_source_dir(), 'src/uthash.h'))
   doc_data.set('VERSION', meson.project_version())
   doc_data.set('API_REVISION', libcrystfel_api_version)
 
