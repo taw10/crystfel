@@ -186,6 +186,7 @@ if doxygen.found()
   doc_data.set('UTHASH', join_paths(meson.current_source_dir(), 'src/uthash.h'))
   doc_data.set('VERSION', meson.project_version())
   doc_data.set('API_REVISION', libcrystfel_api_version)
+  doc_data.set('LOGO_FILE', join_paths(meson.current_source_dir(), 'doc/crystfel-logo.png'))
 
   doxyfile = configure_file(input: 'doc/Doxyfile.in',
                             output: 'Doxyfile',
