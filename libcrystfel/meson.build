@@ -17,7 +17,9 @@ if ncursesdep.found()
   conf_data.set10('HAVE_CURSES', 1)
 endif
 
-xgandalfdep = dependency('xgandalf', required: false)
+xgandalfdep = dependency('xgandalf',
+                         required: false,
+                         fallback: ['xgandalf', 'xgandalf_dep'])
 if xgandalfdep.found()
   conf_data.set10('HAVE_XGANDALF', 1)
 endif

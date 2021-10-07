@@ -1,0 +1,8 @@
+[wrap-git]
+directory = xgandalf
+url = https://gitlab.desy.de/thomas.white/xgandalf.git
+revision = main
+depth = 1
+
+[provide]
+xgandalf = xgandalf_dep

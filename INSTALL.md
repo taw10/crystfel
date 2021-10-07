@@ -77,11 +77,17 @@ algorithm.  Provided that FFTW is available, you will also have access to the
 `asdf` algorithm.  The more of the following are additionally installed, the
 better your experience will be:
 
-* [XGandalf](https://stash.desy.de/users/gevorkov/repos/xgandalf)
+* [XGandalf](https://stash.desy.de/users/gevorkov/repos/xgandalf) \[\*\]
 * [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer)
 * [Mosflm](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/)
 * [DirAx](http://www.crystal.chem.uu.nl/distr/dirax/)
 * [XDS](http://xds.mpimf-heidelberg.mpg.de/)
+
+As above, if you compile using Meson, dependencies marked with \[\*\] above
+will be downloaded and compiled automatically if they are not available on the
+system.  If you don't want this, add option `--wrap-mode=nofallback` when
+invoking Meson.  See the Meson manual for other possibilities, such as using
+locally-provided files instead of downloading them.
 
 The indexing engines have their own installation instructions.  Mosflm, DirAx
 and XDS can be installed at any time before or after installing CrystFEL, but
