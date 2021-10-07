@@ -12,7 +12,7 @@ build-meson:
   image: fedora:32
   script:
     - dnf group install -y 'Development Tools'
-    - dnf install -y hdf5-devel gsl-devel flex bison
+    - dnf install -y hdf5-devel gsl-devel flex bison gcc-c++
     - dnf install -y gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel fftw-devel ncurses-devel libpng-devel  diffutils
     - dnf install -y meson
     - meson build && ninja -C build
