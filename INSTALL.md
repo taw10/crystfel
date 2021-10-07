@@ -45,15 +45,15 @@ roughly in order of importance:
 * [Pango](https://pango.gnome.org/) 1.0 or later, including [PangoCairo](https://docs.gtk.org/PangoCairo/) (required for GUI)
 * [gdk-pixbuf](https://docs.gtk.org/gdk-pixbuf/) 2.0 or later (required for GUI)
 * [libccp4](ftp://ftp.ccp4.ac.uk/opensource/) \[\*\] (required for MTZ import/export)
+* [XGandalf](https://stash.desy.de/users/gevorkov/repos/xgandalf) \[\*\] (for `xgandalf` indexing)
+* [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
 * NCurses (for integration diagnostics: `indexamajig --int-diag`)
 
-Apart from FDIP, all of the dependencies mentioned above (including libccp4 -
-yes, really!) should be available from your Linux distribution's package
-manager, or from [Homebrew](https://brew.sh/) on Mac OS.  You should not need
-to download and install any of them separately from source.  In particular, we
-emphatically recommend against trying to install GTK, Cairo, Pango or
+Most of the dependencies mentioned above should be available from your Linux
+distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
+We emphatically recommend against trying to install GTK, Cairo, Pango or
 gdk-pixbuf from source.
 
 If you compile using Meson, dependencies marked with \[\*\] above will be
@@ -61,6 +61,14 @@ downloaded and compiled automatically if they are not available on the system.
 If you don't want this, add option `--wrap-mode=nofallback` when invoking
 Meson.  See the Meson manual for other possibilities, such as using
 locally-provided files instead of downloading them.
+
+If you install libraries in a non-system location, set `PKG_CONFIG_PATH` so
+that they can be found.  For example:
+```
+$ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/user/xgandalf/lib64/pkgconfig
+```
+Tip: build using Meson wherever possible, because it will take care of several
+of the dependencies automatically and you will never have to worry about this.
 
 We also do not recommend using dependencies from Conda/Anaconda.  Do not
 activate any Conda environment before compiling CrystFEL, not even the "base"
@@ -72,34 +80,18 @@ If OpenCL headers and corresponding GPU drivers are available on your system,
 GPU-accelerated diffraction calculation will be enabled for `pattern_sim`.
 
 Processing data relies on indexing 'engines'.  By default, you will have access
-to the [TakeTwo](https://journals.iucr.org/d/issues/2016/08/00/rr5128/) indexing
-algorithm.  Provided that FFTW is available, you will also have access to the
-`asdf` algorithm.  The more of the following are additionally installed, the
-better your experience will be:
+to the [TakeTwo](https://journals.iucr.org/d/issues/2016/08/00/rr5128/)
+indexing algorithm.  Some of the optional dependencies listed above, if found,
+will add more indexing algorithms.  In addition, the following programs will be
+used for indexing if they are available:
 
-* [XGandalf](https://stash.desy.de/users/gevorkov/repos/xgandalf) \[\*\]
-* [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer)
 * [Mosflm](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/)
 * [DirAx](http://www.crystal.chem.uu.nl/distr/dirax/)
 * [XDS](http://xds.mpimf-heidelberg.mpg.de/)
 
-As above, if you compile using Meson, dependencies marked with \[\*\] above
-will be downloaded and compiled automatically if they are not available on the
-system.  If you don't want this, add option `--wrap-mode=nofallback` when
-invoking Meson.  See the Meson manual for other possibilities, such as using
-locally-provided files instead of downloading them.
-
-The indexing engines have their own installation instructions.  Mosflm, DirAx
-and XDS can be installed at any time before or after installing CrystFEL, but
-XGandalf and PinkIndexer need to be installed in advance.  If you install them
-in a non-system location, set `PKG_CONFIG_PATH` so that they can be found.  For
-example:
-```
-$ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/user/xgandalf/lib64/pkgconfig
-```
-
-Note that you only need the Mosflm binary, not the full `iMosflm` user interface.
-[Download it here](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver730/pre-built/mosflm-linux-64-noX11.zip).
+You can install these at any time before or after installing CrystFEL.  Note
+that you only need the Mosflm binary, not the full `iMosflm` user interface.
+[Download it here](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip).
 
 You probably have CCP4 installed already, with its own copy of `mosflm`.
 However, you should keep your CCP4 installation separate from CrystFEL.  The
@@ -115,14 +107,14 @@ optional dependencies, but not the indexing engines) on CentOS and Fedora 22 or
 later (for CentOS, replace `dnf` with `yum`):
 ```
 $ sudo dnf group install 'Development Tools'
-$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake
+$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake gcc-c++
 $ sudo dnf install fftw-devel ncurses-devel zeromq-devel msgpack-devel libccp4-devel
 ```
 
 Here are the commands for Ubuntu and Debian:
 ```
 $ sudo apt install build-essential
-$ sudo apt install libhdf5-dev libgsl-dev gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake
+$ sudo apt install libhdf5-dev libgsl-dev gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake gcc-c++
 $ sudo apt install fftw-devel ncurses-devel libmsgpack-dev libzmq3-dev libccp4-dev
 ```
 
