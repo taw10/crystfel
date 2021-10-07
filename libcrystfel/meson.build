@@ -24,7 +24,9 @@ if xgandalfdep.found()
   conf_data.set10('HAVE_XGANDALF', 1)
 endif
 
-pinkindexerdep = dependency('pinkIndexer', required: false)
+pinkindexerdep = dependency('pinkIndexer',
+                            required: false,
+                            fallback: ['pinkindexer', 'pinkindexer_dep'])
 if pinkindexerdep.found()
   conf_data.set10('HAVE_PINKINDEXER', 1)
 endif

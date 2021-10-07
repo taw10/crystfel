@@ -1,0 +1,8 @@
+[wrap-git]
+directory = pinkindexer
+url = https://gitlab.desy.de/thomas.white/pinkindexer.git
+revision = main
+depth = 1
+
+[provide]
+pinkindexer = pinkindexer_dep
