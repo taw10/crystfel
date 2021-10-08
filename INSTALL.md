@@ -4,7 +4,7 @@ Installation instructions
 CrystFEL installation is easiest on GNU/Linux.  Installation on Mac OS X is
 supported, but more difficult because you have to get all the dependencies
 from a third-party repository.  Installation in Windows via
-[Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/))
+[Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/)
 is also possible.
 
 
