@@ -440,6 +440,62 @@ static void draw_peaks(cairo_t *cr, CrystFELImageView *iv,
 }
 
 
+static void render_overlined_indices(cairo_t *dctx,
+                                     signed int h,
+                                     signed int k,
+                                     signed int l)
+{
+	char tmp[256];
+	cairo_text_extents_t size;
+	double x, y;
+
+	cairo_save(dctx);
+
+	cairo_set_line_cap(dctx, CAIRO_LINE_CAP_ROUND);
+	cairo_get_current_point(dctx, &x, &y);
+
+	/* Draw 'h' */
+	snprintf(tmp, 255, "%i", abs(h));
+	cairo_text_extents(dctx, tmp, &size);
+	cairo_set_line_width(dctx, size.height*0.1);
+	cairo_show_text(dctx, tmp);
+	cairo_fill(dctx);
+	if ( h < 0 ) {
+		cairo_move_to(dctx, x+size.x_bearing, y-size.height*1.1);
+		cairo_rel_line_to(dctx, size.width, 0.0);
+		cairo_stroke(dctx);
+	}
+	x += size.x_advance*1.4;
+
+	/* Draw 'k' */
+	cairo_move_to(dctx, x, y);
+	snprintf(tmp, 255, "%i", abs(k));
+	cairo_text_extents(dctx, tmp, &size);
+	cairo_show_text(dctx, tmp);
+	cairo_fill(dctx);
+	if ( k < 0 ) {
+		cairo_move_to(dctx, x+size.x_bearing, y-size.height*1.1);
+		cairo_rel_line_to(dctx, size.width, 0.0);
+		cairo_stroke(dctx);
+	}
+	x += size.x_advance*1.4;
+
+	/* Draw 'l' */
+	cairo_move_to(dctx, x, y);
+	snprintf(tmp, 255, "%i", abs(l));
+	cairo_text_extents(dctx, tmp, &size);
+	cairo_show_text(dctx, tmp);
+	cairo_fill(dctx);
+	if ( l < 0 ) {
+		cairo_move_to(dctx, x+size.x_bearing, y-size.height*1.1);
+		cairo_rel_line_to(dctx, size.width, 0.0);
+		cairo_stroke(dctx);
+	}
+
+	cairo_restore(dctx);
+}
+
+
 static void draw_refls(cairo_t *cr,
                        CrystFELImageView *iv,
                        RefList *list,
@@ -514,19 +570,14 @@ static void draw_refls(cairo_t *cr,
 		if ( label_reflections ) {
 
 			signed int h, k, l;
-			char tmp[64];
 
 			get_indices(refl, &h, &k, &l);
-			snprintf(tmp, 64, "%i %i %i", h, k, l);
-
 			cairo_save(cr);
-			cairo_new_path(cr);
 			cairo_move_to(cr, x, y);
 			cairo_set_source_rgba(cr, 0.0, 0.4, 0.0, 0.9);
 			cairo_set_font_size(cr, 11*p->pixel_pitch);
 			cairo_scale(cr, 1.0, -1.0);
-			cairo_show_text(cr, tmp);
-			cairo_fill(cr);
+			render_overlined_indices(cr, h, k, l);
 			cairo_restore(cr);
 
 		}
