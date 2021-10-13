@@ -2,12 +2,22 @@
 
 zlibdep = dependency('zlib', required: false)
 if zlibdep.found()
-  conf_data.set10('HAVE_ZLIB', 1)
   if cc.has_function('gzbuffer',
                      prefix: '#include <zlib.h>',
                      dependencies: zlibdep)
     conf_data.set10('HAVE_GZBUFFER', 1)
   endif
+else
+  zlibproj = subproject('zlib')
+  zlibdep = zlibproj.get_variable('zlib_dep')
+  # Cannot check for gzbuffer in this case, because Zlib won't be built
+  # until compile time.  However, we already know that the wrap version is
+  # new enough
+  conf_data.set10('HAVE_GZBUFFER', 1)
+endif
+
+if zlibdep.found()
+  conf_data.set10('HAVE_ZLIB', 1)
 endif
 
 fftwdep = dependency('fftw3', required: false)
