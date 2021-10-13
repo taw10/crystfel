@@ -1,10 +1,13 @@
 # libcrystfel
 
-zlibdep = dependency('zlib', required: true)
-if cc.has_function('gzbuffer',
-                   prefix: '#include <zlib.h>',
-                   dependencies: zlibdep)
-  conf_data.set10('HAVE_GZBUFFER', 1)
+zlibdep = dependency('zlib', required: false)
+if zlibdep.found()
+  conf_data.set10('HAVE_ZLIB', 1)
+  if cc.has_function('gzbuffer',
+                     prefix: '#include <zlib.h>',
+                     dependencies: zlibdep)
+    conf_data.set10('HAVE_GZBUFFER', 1)
+  endif
 endif
 
 fftwdep = dependency('fftw3', required: false)

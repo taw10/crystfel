@@ -19,7 +19,6 @@ conf_data = configuration_data()
 cc = meson.get_compiler('c')
 mdep = cc.find_library('m', required: true)
 gsldep = dependency('gsl', required: true)
-zlibdep = dependency('zlib', required: true)
 pthreaddep = dependency('threads', required: true)
 
 # Try via pkg-config first:

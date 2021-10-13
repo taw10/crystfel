@@ -33,7 +33,6 @@ Here are the mandatory dependencies - you cannot install CrystFEL without these:
 * [GNU Scientific Library (GSL)](https://www.gnu.org/software/gsl/)
 * [Bison](https://www.gnu.org/software/bison/) 2.6 or later
 * [Flex](https://www.gnu.org/software/flex/)
-* [Zlib](https://www.zlib.net/) (1.2.3.5 or later preferred for better decompression speed)
 
 The following dependencies are "optional", in the sense that you can install
 CrystFEL without them.  However, a CrystFEL installation without these will lack
@@ -46,6 +45,7 @@ roughly in order of importance:
 * [gdk-pixbuf](https://docs.gtk.org/gdk-pixbuf/) 2.0 or later (required for GUI)
 * [libccp4](ftp://ftp.ccp4.ac.uk/opensource/) \[\*\] (required for MTZ import/export)
 * [XGandalf](https://stash.desy.de/users/gevorkov/repos/xgandalf) \[\*\] (for `xgandalf` indexing)
+* [Zlib](https://www.zlib.net/) \[\*\] (required for reading gzipped CBF files.  Version 1.2.3.5 or later preferred for better decompression speed)
 * [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)

@@ -32,8 +32,11 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
-#include <zlib.h>
 #include <unistd.h>
+
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif
 
 #include "image.h"
 #include "utils.h"
@@ -284,6 +287,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 
 	} else {
 
+		#ifdef HAVE_ZLIB
 		gzFile gzfh;
 		int len_read;
 		size_t len;
@@ -293,8 +297,10 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 		gzfh = gzopen(filename, "rb");
 		if ( gzfh == NULL ) return NULL;
 
+		#ifdef HAVE_GZBUFFER
 		/* Set larger buffer size for hopefully faster uncompression */
 		gzbuffer(gzfh, 128*1024);
+		#endif
 
 		buf = malloc(bufsz);
 		if ( buf == NULL ) return NULL;
@@ -321,6 +327,10 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 		}
 
 		gzclose(gzfh);
+
+		#else
+		return NULL;
+		#endif
 
 	}
 
@@ -528,6 +538,7 @@ signed int is_cbf_file(const char *filename)
 
 signed int is_cbfgz_file(const char *filename)
 {
+	#ifdef HAVE_ZLIB
 	gzFile gzfh;
 	char line[1024];
 
@@ -541,6 +552,10 @@ signed int is_cbfgz_file(const char *filename)
 	}
 
 	return 1;
+
+	#else /* No zlib */
+	return 0;
+	#endif
 }
 
 
