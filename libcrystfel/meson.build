@@ -12,11 +12,6 @@ if fftwdep.found()
   conf_data.set10('HAVE_FFTW', 1)
 endif
 
-ncursesdep = dependency('ncurses', required: false)
-if ncursesdep.found()
-  conf_data.set10('HAVE_CURSES', 1)
-endif
-
 xgandalfdep = dependency('xgandalf',
                          required: false,
                          fallback: ['xgandalf', 'xgandalf_dep'])
@@ -139,7 +134,7 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       include_directories: [libcrystfel_includes,
                                             libcrystfel_conf_inc],
                       dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
-                                     hdf5dep, pthreaddep, ncursesdep,
+                                     hdf5dep, pthreaddep,
                                      xgandalfdep, pinkindexerdep, fdipdep,
                                      ccp4dep, msgpackdep],
                       install: true)

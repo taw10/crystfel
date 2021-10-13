@@ -1,6 +1,5 @@
 project(libcrystfel VERSION ${CRYSTFEL_SHORT_VERSION} LANGUAGES C)
 
-find_package(Curses)
 pkg_check_modules(XGANDALF xgandalf)
 pkg_check_modules(PINKINDEXER pinkIndexer)
 pkg_check_modules(FDIP fdip)
@@ -13,7 +12,6 @@ pkg_check_modules(LIBCCP4 libccp4c)
 
 configure_file(src/libcrystfel-version.c.cmake.in libcrystfel-version.c)
 
-set(HAVE_CURSES ${CURSES_FOUND})
 set(HAVE_FFTW ${FFTW_FOUND})
 set(HAVE_XGANDALF ${XGANDALF_FOUND})
 set(HAVE_PINKINDEXER ${PINKINDEXER_FOUND})
@@ -149,11 +147,6 @@ if (FFTW_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${FFTW_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${FFTW_LINK_LIBRARIES})
 endif (FFTW_FOUND)
-
-if (CURSES_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${CURSES_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ${CURSES_LIBRARIES})
-endif (CURSES_FOUND)
 
 if (LIBCCP4_FOUND)
 	target_include_directories(${PROJECT_NAME} PRIVATE ${LIBCCP4_INCLUDES})

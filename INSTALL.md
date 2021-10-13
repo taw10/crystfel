@@ -49,7 +49,6 @@ roughly in order of importance:
 * [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
-* NCurses (for integration diagnostics: `indexamajig --int-diag`)
 
 Most of the dependencies mentioned above should be available from your Linux
 distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
@@ -108,14 +107,14 @@ later (for CentOS, replace `dnf` with `yum`):
 ```
 $ sudo dnf group install 'Development Tools'
 $ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake gcc-c++
-$ sudo dnf install fftw-devel ncurses-devel zeromq-devel msgpack-devel libccp4-devel
+$ sudo dnf install fftw-devel zeromq-devel msgpack-devel libccp4-devel
 ```
 
 Here are the commands for Ubuntu and Debian:
 ```
 $ sudo apt install build-essential
 $ sudo apt install libhdf5-dev libgsl-dev gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake gcc-c++
-$ sudo apt install fftw-devel ncurses-devel libmsgpack-dev libzmq3-dev libccp4-dev
+$ sudo apt install fftw-devel libmsgpack-dev libzmq3-dev libccp4-dev
 ```
 
 For Mac OS X, first install [Homebrew](https://brew.sh/), which will also cause

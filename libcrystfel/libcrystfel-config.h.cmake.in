@@ -5,7 +5,6 @@
 #cmakedefine HAVE_XGANDALF
 #cmakedefine HAVE_PINKINDEXER
 #cmakedefine HAVE_FDIP
-#cmakedefine HAVE_CURSES
 #cmakedefine HAVE_GZBUFFER
 #cmakedefine HAVE_GDKPIXBUF
 #cmakedefine HAVE_LIBCCP4

@@ -36,10 +36,6 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
 
-#ifdef HAVE_CURSES
-#include <ncurses.h>
-#endif
-
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "cell.h"
@@ -178,21 +174,20 @@ static float boxi(struct intcontext *ic, struct peak_box *bx, int p, int q)
 }
 
 
-#ifdef HAVE_CURSES
 static void colour_on(enum boxmask_val b)
 {
 	switch ( b ) {
 
 		case BM_BG :
-		attron(COLOR_PAIR(1));
+		printf("\e[44m\e[37m");
 		break;
 
 		case BM_PK :
-		attron(COLOR_PAIR(2));
+		printf("\e[41m\e[37m");
 		break;
 
 		case BM_BH :
-		attron(COLOR_PAIR(3));
+		printf("\e[46m\e[30m");
 		break;
 
 		default:
@@ -207,15 +202,15 @@ static void colour_off(enum boxmask_val b)
 	switch ( b ) {
 
 		case BM_BG :
-		attroff(COLOR_PAIR(1));
+		printf("\e[49m\e[39m");
 		break;
 
 		case BM_PK :
-		attroff(COLOR_PAIR(2));
+		printf("\e[49m\e[39m");
 		break;
 
 		case BM_BH :
-		attroff(COLOR_PAIR(3));
+		printf("\e[49m\e[39m");
 		break;
 
 		default:
@@ -223,15 +218,13 @@ static void colour_off(enum boxmask_val b)
 
 	}
 }
-#endif
 
 
-#ifdef HAVE_CURSES
 static void show_reference_profile(struct intcontext *ic, int i)
 {
 	int q;
 
-	printw("Reference profile number %i (%i contributions):\n", i,
+	printf("Reference profile number %i (%i contributions):\n", i,
 	       ic->n_profiles_in_reference[i]);
 
 	for ( q=ic->w-1; q>=0; q-- ) {
@@ -241,40 +234,32 @@ static void show_reference_profile(struct intcontext *ic, int i)
 		for ( p=0; p<ic->w; p++ ) {
 
 			colour_on(ic->bm[p+q*ic->w]);
-			printw("%4.0f ", ic->reference_profiles[i][p+ic->w*q]);
+			printf("%4.0f ", ic->reference_profiles[i][p+ic->w*q]);
 			colour_off(ic->bm[p+q*ic->w]);
 
 		}
 
-		printw("\n");
+		printf("\n");
 	}
 }
-#endif
 
 
 static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
                           pthread_mutex_t *term_lock)
 {
-#ifdef HAVE_CURSES
 	int q;
 	signed int h, k, l;
 	double fs, ss;
 
 	if ( term_lock != NULL ) pthread_mutex_lock(term_lock);
 
-	initscr();
-	clear();
-	start_color();
-	init_pair(1, COLOR_WHITE, COLOR_BLUE) ;  /* Background */
-	init_pair(2, COLOR_WHITE, COLOR_RED);    /* Peak */
-	init_pair(3, COLOR_BLACK, COLOR_CYAN);   /* Blackhole */
-
 	get_indices(bx->refl, &h, &k, &l);
 	get_detector_pos(bx->refl, &fs, &ss);
-	printw("Indices %i %i %i\nPanel %s\nPosition fs = %.1f, ss = %.1f\n\n",
+	printf("-------- Start of integration diagnostics\n");
+	printf("Indices %i %i %i\nPanel %s\nPosition fs = %.1f, ss = %.1f\n\n",
 	       h, k, l, bx->p->name, fs, ss);
 
-	printw("Pixel values:\n");
+	printf("Pixel values:\n");
 	for ( q=ic->w-1; q>=0; q-- ) {
 
 		int p;
@@ -282,15 +267,15 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 		for ( p=0; p<ic->w; p++ ) {
 
 			colour_on(bx->bm[p+q*ic->w]);
-			printw("%5.0f ", boxi(ic, bx, p, q));
+			printf("%5.0f ", boxi(ic, bx, p, q));
 			colour_off(bx->bm[p+q*ic->w]);
 
 		}
 
-		printw("\n");
+		printf("\n");
 	}
 
-	printw("\nFitted background (parameters a=%.2f, b=%.2f, c=%.2f)\n",
+	printf("\nFitted background (parameters a=%.2f, b=%.2f, c=%.2f)\n",
 	       bx->a, bx->b, bx->c);
 	for ( q=ic->w-1; q>=0; q-- ) {
 
@@ -299,33 +284,24 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
 		for ( p=0; p<ic->w; p++ ) {
 
 			colour_on(bx->bm[p+q*ic->w]);
-			printw("%5.0f ", bx->a*p + bx->b*q + bx->c);
+			printf("%5.0f ", bx->a*p + bx->b*q + bx->c);
 			colour_off(bx->bm[p+q*ic->w]);
 
 		}
 
-		printw("\n");
+		printf("\n");
 	}
 
 	if ( ic->meth & INTEGRATION_PROF2D ) {
-		printw("\n");
+		printf("\n");
 		show_reference_profile(ic, bx->rp);
 	}
 
-	printw("\nIntensity = %.2f +/- %.2f\n", get_intensity(bx->refl),
+	printf("\nIntensity = %.2f +/- %.2f\n", get_intensity(bx->refl),
 	                                        get_esd_intensity(bx->refl));
-
-	printw("\n\nPress any key to continue processing...\n\n");
-
-	refresh();
-	getch();
-	endwin();
+	printf("-------- End of integration diagnostics\n");
 
 	if ( term_lock != NULL ) pthread_mutex_unlock(term_lock);
-#else
-	STATUS("Not showing peak box because CrystFEL was compiled without "
-	       "ncurses.\n");
-#endif
 }
 
 

@@ -4,7 +4,6 @@
 #mesondefine HAVE_XGANDALF
 #mesondefine HAVE_PINKINDEXER
 #mesondefine HAVE_FDIP
-#mesondefine HAVE_CURSES
 #mesondefine HAVE_GZBUFFER
 #mesondefine HAVE_LIBCCP4
 #mesondefine HAVE_MSGPACK
