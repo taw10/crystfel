@@ -28,11 +28,16 @@ Dependencies
 
 Here are the mandatory dependencies - you cannot install CrystFEL without these:
 
-* Either [CMake](https://cmake.org/) 3.12 or later or [Meson](https://mesonbuild.com/) 0.55.0 or later (Meson is preferred)
+* [Meson](https://mesonbuild.com/) 0.55.0 or later
 * [HDF5](https://www.hdfgroup.org/downloads/hdf5/) 1.8.0 or later (1.10.0 or later is required for many recent data formats which use the 'virtual data set' feature)
 * [GNU Scientific Library (GSL)](https://www.gnu.org/software/gsl/)
 * [Bison](https://www.gnu.org/software/bison/) 2.6 or later
 * [Flex](https://www.gnu.org/software/flex/)
+
+[CMake](https://cmake.org/) 3.12 or later can be used in place of Meson,
+but Meson is strongly preferred.  The CMake build system is considered
+deprecated, already lacks several useful features and will be removed at some
+point in the future.
 
 The following dependencies are "optional", in the sense that you can install
 CrystFEL without them.  However, a CrystFEL installation without these will lack
@@ -49,6 +54,9 @@ roughly in order of importance:
 * [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
+* [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)
+* [msgpack-c](https://github.com/msgpack/msgpack-c) (for online data streaming)
+* [SLURM](https://slurm.schedmd.com/) (development files required for submitting jobs via GUI)
 
 Most of the dependencies mentioned above should be available from your Linux
 distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
@@ -101,57 +109,132 @@ setup file before trying to install CrystFEL, and make sure that the setup file
 is not automatically referenced in your shell setup files (`.bashrc` and
 others).
 
-Here are the commands to install all the basic dependencies (including the
-optional dependencies, but not the indexing engines) on CentOS and Fedora 22 or
-later (for CentOS, replace `dnf` with `yum`):
+Fedora 22 or later
+------------------
+
+All dependencies can be taken from the Fedora repositories:
+
 ```
 $ sudo dnf group install 'Development Tools'
-$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake gcc-c++
-$ sudo dnf install fftw-devel zeromq-devel msgpack-devel libccp4-devel
-```
-
-Here are the commands for Ubuntu and Debian:
-```
-$ sudo apt install build-essential
-$ sudo apt install libhdf5-dev libgsl-dev gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson cmake gcc-c++
-$ sudo apt install fftw-devel libmsgpack-dev libzmq3-dev libccp4-dev
-```
-
-For Mac OS X, first install [Homebrew](https://brew.sh/), which will also cause
-[Xcode](https://developer.apple.com/xcode/) to be installed.  Then:
-```
-$ brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson cmake
-$ export PATH="$(brew --prefix)/opt/bison/bin:$(brew --prefix)/opt/flex/bin:$PATH"
-$ export LDFLAGS="-L$(brew --prefix)/opt/bison/lib -L$(brew --prefix)/opt/flex/lib -L$(brew --prefix)/opt/argp-standalone/lib -largp $LDFLAGS"
-$ export CFLAGS="-I$(brew --prefix)/opt/flex/include -I$(brew --prefix)/opt/argp-standalone/include/ $CFLAGS"
-```
-The `export` commands ensure that the libraries installed via Homebrew can be
-found by CrystFEL's build system.
-
-
-Building and installing using Meson (recommended)
--------------------------------------------------
-
-The actual compilation and installation step is very easy.  Here are the
-commands:
-```
+$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson gcc-c++ fftw-devel zeromq-devel msgpack-devel
 $ meson build
 $ ninja -C build
 $ sudo ninja -C build install
 ```
 
+Up to Fedora 32 (inclusive), you can also install `libccp4-devel` via `dnf`.
+This package was removed starting from Fedora 33, but CrystFEL's build system
+will take care of it.
 
-Building and installing using CMake (deprecated)
-------------------------------------------------
 
-Compiling and installing using CMake is also simple:
+Ubuntu 18.04 LTS ("Bionic") and 20.04 LTS ("Focal")
+---------------------------------------------------
+
+The Meson version in these Ubuntu releases is slightly too old for CrystFEL.
+Install version 0.55.0 or later from the
+[Meson website](https://mesonbuild.com/Getting-meson.html).
+You don't need to "install" it, but do remember the location where you unpacked
+it.  You will need to additionally install `python3`, if it's not already
+present.
+
+All other dependencies are available in the Ubuntu repositories.  Make sure
+that the "universe" repository is enabled -
+[instructions here](https://help.ubuntu.com/community/Repositories/Ubuntu).
 ```
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
-$ sudo make install
+$ apt install -y build-essential libhdf5-dev libgsl-dev \
+                 libgtk-3-dev libcairo2-dev libpango1.0-dev \
+                 libgdk-pixbuf2.0-dev libfftw3-dev \
+                 git flex bison libzmq3-dev libmsgpack-dev \
+                 libeigen3-dev libccp4-dev \
+                 ninja-build python3
+$ /home/user/downloads/meson/meson.py build
+$ ninja -C build
+$ sudo ninja -C build install
+$ sudo ldconfig
 ```
+
+CrystFEL will install the remaining dependencies (Xgandalf, PinkIndexer, FDIP)
+automatically as part of its build process.
+
+
+Ubuntu 16.04 LTS ("Xenial")
+--------------------------
+
+The Meson version in Ubuntu 16.04 is too old for CrystFEL, and unfortunately
+the Python version is also "end of life" and too old for recent versions of
+Meson.  However, the last release of Meson before it became incompatible with
+older Python versions, 0.56.2, is new enough to build CrystFEL.
+
+Ninja is not available in this Ubuntu release, but fortunately it's an easy
+download.
+
+The Eigen version is too old for XGandalf and PinkIndexer, so you should not
+install Eigen from Ubuntu (`libeigen3-dev`), instead let Meson take care of
+it during the build process.
+
+Finally, the dynamic library loader has to be made aware that libraries have
+been installed under `/usr/local`.
+
+```
+$ apt install -y build-essential libhdf5-dev libgsl-dev \
+                 libgtk-3-dev libcairo2-dev libpango1.0-dev \
+                 libgdk-pixbuf2.0-dev libfftw3-dev \
+                 git flex bison libzmq3-dev libmsgpack-dev \
+                 libccp4-dev wget python3 unzip
+
+$ wget https://github.com/mesonbuild/meson/releases/download/0.56.2/meson-0.56.2.tar.gz
+$ tar -xzf meson-0.56.2.tar.gz
+$ export MESON=`pwd`/meson-0.56.2/meson.py
+
+$ wget https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip
+$ unzip ninja-linux.zip
+$ export NINJA=`pwd`/ninja
+
+$ cd crystfel
+$ $MESON build
+$ $NINJA -C build
+$ sudo $NINJA -C build install
+
+$ sudo echo "/usr/local/lib/x86_64-linux-gnu/" > /etc/ld.so.conf.d/local.conf
+$ sudo ldconfig
+```
+
+Debian 11 (Bullseye)
+--------------------
+
+All dependencies can be taken from the Debain repositories:
+
+```
+$ sudo apt install -y build-essential libhdf5-dev libgsl-dev \
+                      libgtk-3-dev libcairo2-dev libpango1.0-dev \
+                      libgdk-pixbuf2.0-dev libfftw3-dev \
+                      git flex bison libzmq3-dev libmsgpack-dev \
+                      libeigen3-dev libccp4-dev \
+                      meson ninja-build
+$ meson build
+$ ninja -C build
+$ sudo ninja -C build install
+$ sudo ldconfig
+```
+
+Mac OS X
+--------
+
+First install [Homebrew](https://brew.sh/), which will also cause
+[Xcode](https://developer.apple.com/xcode/) to be installed.  Then:
+
+```
+$ brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson
+$ export PATH="$(brew --prefix)/opt/bison/bin:$(brew --prefix)/opt/flex/bin:$PATH"
+$ export LDFLAGS="-L$(brew --prefix)/opt/bison/lib -L$(brew --prefix)/opt/flex/lib -L$(brew --prefix)/opt/argp-standalone/lib -largp $LDFLAGS"
+$ export CFLAGS="-I$(brew --prefix)/opt/flex/include -I$(brew --prefix)/opt/argp-standalone/include/ $CFLAGS"
+$ meson build
+$ ninja -C build
+$ ninja -C build install
+```
+
+The `export` commands ensure that the libraries installed via Homebrew can be
+found by CrystFEL's build system.
 
 
 Starting up
