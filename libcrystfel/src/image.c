@@ -800,7 +800,7 @@ static int set_image_parameters(struct image *image,
                                 const DataTemplate *dtempl)
 {
 	double wl_val;
-	if ( convert_float(dtempl->wavelength_from, &wl_val) ) {
+	if ( dtempl->wavelength_from && convert_float(dtempl->wavelength_from, &wl_val) ) {
 
 		/* Not a literal value - try header */
 		if ( image_read_header_float(image,
