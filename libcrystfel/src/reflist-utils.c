@@ -1118,7 +1118,7 @@ static void write_mtz_refls_bij(MTZ *mtz, MTZSET *ds, CCP4SPG *spg,
 
 
 static void write_mtz_refls_plain(MTZ *mtz, MTZSET *ds, CCP4SPG *spg,
-                                  RefList *reflist, UnitCell *cell, SymOpList *sym,
+                                  RefList *reflist, UnitCell *cell,
                                   double min_res, double max_res)
 {
 	MTZCOL *columns[7];
@@ -1222,7 +1222,7 @@ int write_to_mtz(RefList *reflist,
 	if ( bij ) {
 		write_mtz_refls_bij(mtz, ds, spg, reflist, cell, sym, min_res, max_res);
 	} else {
-		write_mtz_refls_plain(mtz, ds, spg, reflist, cell, sym, min_res, max_res);
+		write_mtz_refls_plain(mtz, ds, spg, reflist, cell, min_res, max_res);
 	}
 
 	r = MtzPut(mtz, " ");
