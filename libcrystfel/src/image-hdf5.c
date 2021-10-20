@@ -1153,7 +1153,8 @@ static int read_peak_count(hid_t fh, char *path, int line,
 }
 
 
-static float *read_peak_line(hid_t fh, char *path, int line)
+static float *read_peak_line(hid_t fh, char *path, int line,
+                             int num_peaks)
 {
 
 	hid_t dh, sh, mh;
@@ -1193,6 +1194,15 @@ static float *read_peak_line(hid_t fh, char *path, int line)
 		H5Dclose(dh);
 		ERROR("Data block %s does not contain data for required event.\n",
 		      path);
+		return NULL;
+	}
+
+	/* NB The array might be bigger - Cheetah allocates in blocks of 2048 */
+	if ( size[1] < num_peaks ) {
+		ERROR("Data block %s is too small for the specified number of "
+		      "peaks (has %i, expected %i)\n", path, size[1], num_peaks);
+		H5Sclose(sh);
+		H5Dclose(dh);
 		return NULL;
 	}
 
@@ -1315,19 +1325,19 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	buf_x = read_peak_line(fh, path_x, line);
+	buf_x = read_peak_line(fh, path_x, line, num_peaks);
 	if ( buf_x == NULL ) {
 		close_hdf5(fh);
 		return NULL;
 	}
 
-	buf_y = read_peak_line(fh, path_y, line);
+	buf_y = read_peak_line(fh, path_y, line, num_peaks);
 	if ( buf_y == NULL ) {
 		close_hdf5(fh);
 		return NULL;
 	}
 
-	buf_i = read_peak_line(fh, path_i, line);
+	buf_i = read_peak_line(fh, path_i, line, num_peaks);
 	if ( buf_i == NULL ) {
 		close_hdf5(fh);
 		return NULL;
