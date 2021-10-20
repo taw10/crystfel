@@ -1129,8 +1129,8 @@ static void write_mtz_refls_plain(MTZ *mtz, MTZSET *ds, CCP4SPG *spg,
 	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
 	columns[1] = MtzAddColumn(mtz, ds, "K", "H");
 	columns[2] = MtzAddColumn(mtz, ds, "L", "H");
-	columns[3] = MtzAddColumn(mtz, ds, "I", "K");
-	columns[4] = MtzAddColumn(mtz, ds, "SIGI", "M");
+	columns[3] = MtzAddColumn(mtz, ds, "I", "J");
+	columns[4] = MtzAddColumn(mtz, ds, "SIGI", "Q");
 
 	refl_i = 1;
 	for ( refl = first_refl(reflist, &iter);
