@@ -1030,7 +1030,9 @@ int write_to_mtz(RefList *reflist,
                  double min_res,
                  double max_res,
                  const char *filename,
-                 const char *dataset_name)
+                 const char *dataset_name,
+                 const char *crystal_name,
+                 const char *project_name)
 {
 #ifdef HAVE_LIBCCP4
 	MTZ *mtz;
@@ -1076,12 +1078,7 @@ int write_to_mtz(RefList *reflist,
 	cellp[4] = rad2deg(be);
 	cellp[5] = rad2deg(ga);
 
-	/* FIXME: Proposed labelling (GitLab #28):
-	 *  title = as above
-	 *  project = basename of folder containing crystfel.project
-	 *  crystal = name of indexing results run
-	 *  dataset = name of merge results run */
-	cr = MtzAddXtal(mtz, "Crystal_name", "Project_name", cellp);
+	cr = MtzAddXtal(mtz, crystal_name, project_name, cellp);
 	ds = MtzAddDataset(mtz, cr, dataset_name, 0.0);
 	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
 	columns[1] = MtzAddColumn(mtz, ds, "K", "H");

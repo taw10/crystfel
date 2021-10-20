@@ -915,7 +915,8 @@ int main(int argc, char *argv[])
 			ERROR("You must provide the MTZ output filename.\n");
 			r = 1;
 		} else {
-			r = write_to_mtz(input, mero, cell, 0, INFINITY, output, "dataset");
+			r = write_to_mtz(input, mero, cell, 0, INFINITY, output,
+			                 "dataset", "crystal", "project");
 		}
 	} else if ( strcasecmp(output_format_str, "xds") == 0 ) {
 		if ( output == NULL ) {

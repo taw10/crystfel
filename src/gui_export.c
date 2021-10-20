@@ -93,6 +93,7 @@ static int export_to_mtz(struct gui_merge_result *result,
 	char *sym_str;
 	SymOpList *sym;
 	int r;
+	char *crystal_name;
 
 	reflist = read_reflections_2(result->hkl, &sym_str);
 	if ( reflist == NULL ) return 1;
@@ -101,8 +102,14 @@ static int export_to_mtz(struct gui_merge_result *result,
 	sym = get_pointgroup(sym_str);
 	if ( sym == NULL ) return 1;
 
+	/* FIXME: Proposed labelling (GitLab #28):
+	 *  project = basename of folder containing crystfel.project */
+	crystal_name = result->indexing_result_name;
+	if ( crystal_name == NULL ) {
+		crystal_name = "unknown";
+	}
 	r = write_to_mtz(reflist, sym, cell, min_res, max_res, filename,
-	                 result->name);
+	                 result->name, crystal_name, "project", bij);
 
 	free_symoplist(sym);
 	free(sym_str);

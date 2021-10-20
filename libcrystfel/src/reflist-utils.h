@@ -81,7 +81,8 @@ extern void reflist_add_command_and_version(RefList *list,
 
 extern int write_to_mtz(RefList *reflist, SymOpList *sym, UnitCell *cell,
                         double min_res, double max_res,
-                        const char *filename, const char *dataset_name);
+                        const char *filename, const char *dataset_name,
+                        const char *crystal_name, const char *project_name);
 
 extern int write_to_xds(RefList *reflist, SymOpList *sym, UnitCell *cell,
                         double min_res, double max_res, const char *filename);
