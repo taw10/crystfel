@@ -1,3 +1,4 @@
+photon_energy = 10000 eV
 panel/min_fs = 0
 panel/min_ss = 1
 panel/max_fs = 0
