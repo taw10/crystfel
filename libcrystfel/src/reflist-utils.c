@@ -1024,62 +1024,16 @@ static CCP4SPG *add_mtz_symmetry_header(MTZ *mtz, const char *spg_name)
 #endif
 
 
-int write_to_mtz(RefList *reflist,
-                 SymOpList *sym,
-                 UnitCell *cell,
-                 double min_res,
-                 double max_res,
-                 const char *filename,
-                 const char *dataset_name,
-                 const char *crystal_name,
-                 const char *project_name)
-{
 #ifdef HAVE_LIBCCP4
-	MTZ *mtz;
-	MTZXTAL *cr;
-	MTZSET *ds;
+static void write_mtz_refls_bij(MTZ *mtz, MTZSET *ds, CCP4SPG *spg,
+                                RefList *reflist, UnitCell *cell, SymOpList *sym,
+                                double min_res, double max_res)
+{
 	MTZCOL *columns[7];
-	double a, b, c, al, be, ga;
-	int r;
-	char tmp[128];
-	float cellp[6];
 	int refl_i;
 	Reflection *refl;
 	RefListIterator *iter;
-	CCP4SPG *spg;
-	const char *spg_name;
 
-	spg_name = space_group_for_mtz(symmetry_name(sym),
-	                               cell_get_centering(cell));
-	if ( spg_name == NULL ) {
-		reflist_free(reflist);
-		return 1;
-	}
-
-	mtz = MtzMalloc(0, 0);
-
-	snprintf(tmp, 128, "Data exported via CrystFEL version %s",
-	         libcrystfel_version_string());
-	ccp4_lwtitl(mtz, tmp, 0);
-
-	mtz->refs_in_memory = 0;
-	mtz->fileout = MtzOpenForWrite(filename);
-
-	spg = add_mtz_symmetry_header(mtz, spg_name);
-	if ( spg == NULL ) {
-		return 1;
-	}
-
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	cellp[0] = a*1e10;
-	cellp[1] = b*1e10;
-	cellp[2] = c*1e10;
-	cellp[3] = rad2deg(al);
-	cellp[4] = rad2deg(be);
-	cellp[5] = rad2deg(ga);
-
-	cr = MtzAddXtal(mtz, crystal_name, project_name, cellp);
-	ds = MtzAddDataset(mtz, cr, dataset_name, 0.0);
 	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
 	columns[1] = MtzAddColumn(mtz, ds, "K", "H");
 	columns[2] = MtzAddColumn(mtz, ds, "L", "H");
@@ -1159,6 +1113,116 @@ int write_to_mtz(RefList *reflist,
 			ccp4_lwrefl(mtz, refldata, columns, 7, refl_i++);
 
 		}
+	}
+}
+
+
+static void write_mtz_refls_plain(MTZ *mtz, MTZSET *ds, CCP4SPG *spg,
+                                  RefList *reflist, UnitCell *cell, SymOpList *sym,
+                                  double min_res, double max_res)
+{
+	MTZCOL *columns[7];
+	int refl_i;
+	Reflection *refl;
+	RefListIterator *iter;
+
+	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
+	columns[1] = MtzAddColumn(mtz, ds, "K", "H");
+	columns[2] = MtzAddColumn(mtz, ds, "L", "H");
+	columns[3] = MtzAddColumn(mtz, ds, "I", "K");
+	columns[4] = MtzAddColumn(mtz, ds, "SIGI", "M");
+
+	refl_i = 1;
+	for ( refl = first_refl(reflist, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+		signed int h, k, l;
+		double one_over_d;
+
+		get_indices(refl, &h, &k, &l);
+
+		one_over_d = 2.0*resolution(cell, h, k, l);
+		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
+
+			float refldata[5];
+			signed int nh, nk, nl;
+
+			/* Move to CCP4's idea of the ASU */
+			ccp4spg_put_in_asu(spg, h, k, l, &nh, &nk, &nl);
+			refldata[0] = nh;
+			refldata[1] = nk;
+			refldata[2] = nl;
+
+			refldata[3] = get_intensity(refl);
+			refldata[4] = get_esd_intensity(refl);
+
+			ccp4_lwrefl(mtz, refldata, columns, 5, refl_i++);
+
+		}
+	}
+}
+#endif
+
+
+int write_to_mtz(RefList *reflist,
+                 SymOpList *sym,
+                 UnitCell *cell,
+                 double min_res,
+                 double max_res,
+                 const char *filename,
+                 const char *dataset_name,
+                 const char *crystal_name,
+                 const char *project_name,
+                 int bij)
+{
+#ifdef HAVE_LIBCCP4
+	MTZ *mtz;
+	MTZXTAL *cr;
+	MTZSET *ds;
+	double a, b, c, al, be, ga;
+	int r;
+	char tmp[128];
+	float cellp[6];
+	CCP4SPG *spg;
+	const char *spg_name;
+
+	spg_name = space_group_for_mtz(symmetry_name(sym),
+	                               cell_get_centering(cell));
+	if ( spg_name == NULL ) {
+		reflist_free(reflist);
+		return 1;
+	}
+
+	mtz = MtzMalloc(0, 0);
+
+	snprintf(tmp, 128, "Data exported via CrystFEL version %s",
+	         libcrystfel_version_string());
+	ccp4_lwtitl(mtz, tmp, 0);
+
+	mtz->refs_in_memory = 0;
+	mtz->fileout = MtzOpenForWrite(filename);
+
+	spg = add_mtz_symmetry_header(mtz, spg_name);
+	if ( spg == NULL ) {
+		return 1;
+	}
+
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	cellp[0] = a*1e10;
+	cellp[1] = b*1e10;
+	cellp[2] = c*1e10;
+	cellp[3] = rad2deg(al);
+	cellp[4] = rad2deg(be);
+	cellp[5] = rad2deg(ga);
+
+	cr = MtzAddXtal(mtz, crystal_name, project_name, cellp);
+	ds = MtzAddDataset(mtz, cr, dataset_name, 0.0);
+
+	if ( bij ) {
+		write_mtz_refls_bij(mtz, ds, spg, reflist, cell, sym, min_res, max_res);
+	} else {
+		write_mtz_refls_plain(mtz, ds, spg, reflist, cell, sym, min_res, max_res);
 	}
 
 	r = MtzPut(mtz, " ");

@@ -94,9 +94,10 @@ static void show_help(const char *s)
 "                              equivalent reflections.\n"
 "\n"
 "Don't forget to specify the output filename:\n"
-"  -o, --output=<filename>    Output filename (default: stdout).\n"
-"      --output-format=mtz    Output in MTZ format.\n"
-"      --output-format=xds    Output in XDS format.\n"
+"  -o, --output=<filename>     Output filename (default: stdout).\n"
+"      --output-format=mtz     Output in MTZ format.\n"
+"      --output-format=mtz-bij Output in MTZ format, Bijvoet pairs together\n"
+"      --output-format=xds     Output in XDS format.\n"
 );
 }
 
@@ -916,7 +917,19 @@ int main(int argc, char *argv[])
 			r = 1;
 		} else {
 			r = write_to_mtz(input, mero, cell, 0, INFINITY, output,
-			                 "dataset", "crystal", "project");
+			                 "dataset", "crystal", "project", 0);
+		}
+	} else if ( strcasecmp(output_format_str, "mtz-bij") == 0 ) {
+		if ( !libcrystfel_can_write_mtz() ) {
+			ERROR("Sorry, this version of CrystFEL was compiled "
+			      "without MTZ support (libccp4 is required)\n");
+			r = 1;
+		} else if ( output == NULL ) {
+			ERROR("You must provide the MTZ output filename.\n");
+			r = 1;
+		} else {
+			r = write_to_mtz(input, mero, cell, 0, INFINITY, output,
+			                 "dataset", "crystal", "project", 1);
 		}
 	} else if ( strcasecmp(output_format_str, "xds") == 0 ) {
 		if ( output == NULL ) {
