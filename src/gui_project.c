@@ -720,6 +720,7 @@ static void read_parameters(FILE *fh, struct crystfelproject *proj)
 
 static void add_result(struct crystfelproject *proj,
                        const char *results_name,
+                       const char *from_name,
                        char **streams,
                        int n_streams,
                        int selected,
@@ -734,8 +735,7 @@ static void add_result(struct crystfelproject *proj,
 		}
 
 	} else if ( (hkl != NULL) && (n_streams == 0) ) {
-		add_merge_result(proj,
-		                 results_name,
+		add_merge_result(proj, results_name, from_name,
 		                 hkl, hkl1, hkl2);
 
 	} else {
@@ -753,6 +753,7 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 	char **streams = NULL;
 	int n_streams = 0;
 	char *results_name = NULL;
+	char *from = NULL;
 	char *hkl = NULL;
 	char *hkl1 = NULL;
 	char *hkl2 = NULL;
@@ -771,7 +772,7 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 			int i;
 
 			if ( !first ) {
-				add_result(proj, results_name,
+				add_result(proj, results_name, from,
 				           streams, n_streams, selected,
 				           hkl, hkl1, hkl2);
 			}
@@ -792,6 +793,7 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 			hkl = NULL;
 			hkl1 = NULL;
 			hkl2 = NULL;
+			from = NULL;
 
 			results_name = strdup(line+7);
 		}
@@ -806,27 +808,32 @@ static void read_results(FILE *fh, struct crystfelproject *proj)
 			                     &n_streams);
 		}
 
+		if ( strncmp(line, "   From ", 8) == 0 ) {
+			from = strdup(line+8);
+		}
+
 		if ( strncmp(line, "   HKL ", 7) == 0 ) {
 			hkl = strdup(line+7);
 		}
 
-		if ( strncmp(line, "   HKL1 ", 7) == 0 ) {
+		if ( strncmp(line, "   HKL1 ", 8) == 0 ) {
 			hkl1 = strdup(line+8);
 		}
 
-		if ( strncmp(line, "   HKL2 ", 7) == 0 ) {
+		if ( strncmp(line, "   HKL2 ", 8) == 0 ) {
 			hkl2 = strdup(line+8);
 		}
 
 		if ( strcmp(line, "-----") == 0 ) {
 			if ( !first ) {
 				int i;
-				add_result(proj, results_name,
+				add_result(proj, results_name, from,
 				           streams, n_streams, selected,
 				           hkl, hkl1, hkl2);
 				free(hkl);
 				free(hkl1);
 				free(hkl2);
+				free(from);
 				for ( i=0; i<n_streams; i++ ) {
 					free(streams[i]);
 				}
@@ -1153,6 +1160,10 @@ int save_project(struct crystfelproject *proj)
 	}
 	for ( iresult=0; iresult<proj->n_merge_results; iresult++ ) {
 		fprintf(fh, "Result %s\n", proj->merge_results[iresult].name);
+		if ( proj->merge_results[iresult].indexing_result_name != NULL ) {
+			fprintf(fh, "   From %s\n",
+			        proj->merge_results[iresult].indexing_result_name);
+		}
 		fprintf(fh, "   HKL %s\n", proj->merge_results[iresult].hkl);
 		fprintf(fh, "   HKL1 %s\n", proj->merge_results[iresult].hkl1);
 		fprintf(fh, "   HKL2 %s\n", proj->merge_results[iresult].hkl2);
@@ -1367,6 +1378,7 @@ int add_indexing_result(struct crystfelproject *proj,
 
 
 int add_merge_result(struct crystfelproject *proj, const char *name,
+                     const char *from,
                      const char *hkl, const char *hkl1, const char *hkl2)
 {
 	struct gui_merge_result *new_results;
@@ -1376,6 +1388,7 @@ int add_merge_result(struct crystfelproject *proj, const char *name,
 	if ( new_results == NULL ) return 1;
 
 	new_results[proj->n_merge_results].name = strdup(name);
+	new_results[proj->n_merge_results].indexing_result_name = safe_strdup(from);
 	new_results[proj->n_merge_results].hkl = strdup(hkl);
 	new_results[proj->n_merge_results].hkl1 = strdup(hkl1);
 	new_results[proj->n_merge_results].hkl2 = strdup(hkl2);

@@ -154,6 +154,7 @@ struct gui_indexing_result
 struct gui_merge_result
 {
 	char *name;
+	char *indexing_result_name;  /* Indexing result this was derived from */
 	char *hkl;    /* Complete merged data */
 	char *hkl1;   /* First half-split */
 	char *hkl2;   /* Second half-split */
@@ -385,6 +386,7 @@ extern struct gui_indexing_result *find_indexing_result_by_name(struct crystfelp
                                                                 const char *name);
 
 extern int add_merge_result(struct crystfelproject *proj, const char *name,
+                            const char *indexing_result_name,
                             const char *hkl, const char *hkl1, const char *hkl2);
 
 extern struct gui_merge_result *find_merge_result_by_name(struct crystfelproject *proj,

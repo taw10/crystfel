@@ -501,8 +501,8 @@ static void *run_merging(const char *job_title,
 		hkl1 = relative_to_cwd(workdir, "crystfel.hkl1");
 		hkl2 = relative_to_cwd(workdir, "crystfel.hkl2");
 
-		add_merge_result(proj, job_title, output_rel_filename,
-		                 hkl1, hkl2);
+		add_merge_result(proj, job_title, input->name,
+		                 output_rel_filename, hkl1, hkl2);
 		g_free(hkl1);
 		g_free(hkl2);
 	}
