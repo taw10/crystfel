@@ -1026,7 +1026,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			size_t ssize;
 
 			ssize = H5Tget_size(stype);
-			val = malloc(ssize);
+			val = malloc(ssize+1);
 			if ( val == NULL ) {
 				close_hdf5(fh);
 				free(subst_name);
