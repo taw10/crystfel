@@ -1188,7 +1188,7 @@ static float *read_peak_line(hid_t fh, char *path, int line)
 	H5Sget_simple_extent_dims(sh, size, max_size);
 
 	tw = size[0];
-	if ( line> tw-1 ) {
+	if ( line > tw-1 ) {
 		H5Sclose(sh);
 		H5Dclose(dh);
 		ERROR("Data block %s does not contain data for required event.\n",
