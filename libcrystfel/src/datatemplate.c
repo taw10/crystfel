@@ -1246,6 +1246,12 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		reject = 1;
 	}
 
+	if ( dt->wavelength_from == NULL ) {
+		ERROR("Geometry file must specify the wavelength "
+		      "(value or location)\n");
+		reject = 1;
+	}
+
 	for ( i=0; i<dt->n_panels; i++ ) {
 
 		int j;
