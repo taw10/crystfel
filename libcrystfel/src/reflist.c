@@ -167,6 +167,9 @@ RefList *reflist_new()
  */
 Reflection *reflection_new(signed int h, signed int k, signed int l)
 {
+	assert(abs(h)<512);
+	assert(abs(k)<512);
+	assert(abs(l)<512);
 	return new_node(SERIAL(h, k, l));
 }
 
