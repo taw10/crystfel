@@ -215,6 +215,14 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		/* Don't pair with 000, because that can cause trouble later */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
 
+		if ( (abs(h)>=512) || (abs(k)>=512) || (abs(l)>=512) ) {
+			ERROR("Peak %i (on panel %s at %.2f,%.2f) has indices too "
+			      "large for pairing (%.0f %.0f %.0f)\n",
+			      i, image->detgeom->panels[f->pn].name,
+			      f->fs, f->ss, h, k, l);
+			continue;
+		}
+
 		refl = reflection_new(h, k, l);
 		if ( refl == NULL ) {
 			ERROR("Failed to create reflection\n");
