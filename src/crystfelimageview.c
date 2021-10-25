@@ -113,14 +113,15 @@ static void configure_scroll_adjustments(CrystFELImageView *iv)
 		double pos = gtk_adjustment_get_value(iv->hadj);
 		double vis_size = iv->visible_width / iv->zoom;
 		gtk_adjustment_configure(iv->hadj, pos,
-		                         0.0, iv->detector_w,
+		                         iv->min_x, iv->min_x+iv->detector_w*1.1,
 		                         0.0001, 0.1, vis_size);
 	}
 	if ( iv->vadj != NULL ) {
 		double pos = gtk_adjustment_get_value(iv->vadj);
 		double vis_size = iv->visible_height / iv->zoom;
 		gtk_adjustment_configure(iv->vadj, pos,
-		                         0.0, iv->detector_h,
+		                         -iv->max_y,
+		                         -(iv->max_y-iv->detector_h*1.1),
 		                         0.0001, 0.1, vis_size);
 	}
 }
@@ -615,8 +616,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	cairo_get_matrix(cr, &m);
 
 	cairo_scale(cr, iv->zoom, iv->zoom);
-	cairo_translate(cr, iv->offs_x, iv->offs_y);
 	cairo_scale(cr, 1.0, -1.0);
+
 	cairo_translate(cr, -gtk_adjustment_get_value(iv->hadj),
 	                     gtk_adjustment_get_value(iv->vadj));
 
@@ -1016,7 +1017,6 @@ static int rerender_image(CrystFELImageView *iv)
 {
 	int i;
 	double min_x, min_y, max_x, max_y;
-	double border;
 	double scale_top;
 
 	if ( iv->image == NULL ) return 0;
@@ -1043,17 +1043,14 @@ static int rerender_image(CrystFELImageView *iv)
 		if ( iv->pixbufs[i] == NULL ) return 1;
 	}
 
-	detgeom_pixel_extents(iv->image->detgeom, &min_x, &min_y,
+	detgeom_pixel_extents(iv->image->detgeom,
+	                      &min_x, &min_y,
 	                      &max_x, &max_y);
 	iv->detector_w = max_x - min_x;
 	iv->detector_h = max_y - min_y;
-	border = iv->detector_w * 0.1;
-	iv->detector_w += border;
-	iv->detector_h += border;
+	iv->min_x = min_x - iv->detector_w*0.05;
+	iv->max_y = max_y + iv->detector_h*0.05;
 	if ( iv->zoom < 0.0 ) {
-		/* Set initial values */
-		iv->offs_x = -min_x + border/2.0;
-		iv->offs_y = max_y + border/2.0;
 		iv->zoom = 1.0/iv->image->detgeom->panels[0].pixel_pitch;
 	}
 	configure_scroll_adjustments(iv);

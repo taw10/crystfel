@@ -80,8 +80,8 @@ struct _crystfelimageview
 	double               drag_start_y;
 	double               drag_start_sp_x;
 	double               drag_start_sp_y;
-	double               offs_x;
-	double               offs_y;
+	double               min_x;
+	double               max_y;
 
 	const struct image  *image;
 
