@@ -165,16 +165,6 @@ struct panel_template
 	double ssz;
 	/*@}*/
 
-	/** \name Rail direction */
-	/*@{*/
-	double rail_x;
-	double rail_y;
-	double rail_z;
-	/*@}*/
-
-	/* Value of clen (without coffset) at which beam is centered */
-	double clen_for_centering;
-
 	/** \name Position of the panel in the data block in the file. */
 	/*@{*/
 	int orig_min_fs;

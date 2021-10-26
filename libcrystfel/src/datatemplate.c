@@ -565,16 +565,6 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		panel->cnx = atof(val);
 	} else if ( strcmp(key, "corner_y") == 0 ) {
 		panel->cny = atof(val);
-	} else if ( strcmp(key, "rail_direction") == 0 ) {
-		if ( dir_conv(val, &panel->rail_x,
-		                   &panel->rail_y,
-		                   &panel->rail_z) )
-		{
-			ERROR("Invalid rail direction '%s'\n", val);
-			reject = 1;
-		}
-	} else if ( strcmp(key, "clen_for_centering") == 0 ) {
-		panel->clen_for_centering = atof(val);
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_EV;
@@ -1085,10 +1075,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.ssx = NAN;
 	defaults.ssy = NAN;
 	defaults.ssz = NAN;
-	defaults.rail_x = NAN;  /* The actual default rail direction */
-	defaults.rail_y = NAN;  /*  is below */
-	defaults.rail_z = NAN;
-        defaults.clen_for_centering = NAN;
 	defaults.adu_scale = NAN;
 	defaults.adu_scale_unit = ADU_PER_PHOTON;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_values[i] = 0;
@@ -1336,14 +1322,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			reject = 1;
 		}
 
-		if ( isnan(p->clen_for_centering) && !isnan(p->rail_x) )
-		{
-			ERROR("You must specify clen_for_centering if you "
-			      "specify the rail direction (panel %s)\n",
-			      p->name);
-			reject = 1;
-		}
-
 		for ( j=0; j<MAX_MASKS; j++ ) {
 			if ( (p->masks[j].filename != NULL)
 			  && (p->masks[j].data_location == NULL) )
@@ -1354,14 +1332,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 				reject = 1;
 			}
 		}
-
-		/* The default rail direction */
-		if ( isnan(p->rail_x) ) {
-			p->rail_x = 0.0;
-			p->rail_y = 0.0;
-			p->rail_z = 1.0;
-		}
-		if ( isnan(p->clen_for_centering) ) p->clen_for_centering = 0.0;
 
 	}
 
