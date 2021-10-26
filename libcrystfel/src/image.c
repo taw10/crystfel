@@ -613,25 +613,26 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
 		struct detgeom_panel *p = &detgeom->panels[i];
+		struct panel_template *tmpl = &dtempl->panels[i];
 		double shift_x, shift_y;
 
-		p->name = safe_strdup(dtempl->panels[i].name);
+		p->name = safe_strdup(tmpl->name);
 
-		p->pixel_pitch = dtempl->panels[i].pixel_pitch;
+		p->pixel_pitch = tmpl->pixel_pitch;
 
 		/* NB cnx,cny are in pixels, cnz is in m */
-		p->cnx = dtempl->panels[i].cnx;
-		p->cny = dtempl->panels[i].cny;
-		if ( im_get_length(image, dtempl->panels[i].cnz_from,
+		p->cnx = tmpl->cnx;
+		p->cny = tmpl->cny;
+		if ( im_get_length(image, tmpl->cnz_from,
 		                   1e-3, &p->cnz) )
 		{
-			ERROR("Failed to read length from '%s'\n", dtempl->panels[i].cnz_from);
+			ERROR("Failed to read length from '%s'\n", tmpl->cnz_from);
 			return 1;
 		}
 
 		/* Apply offset (in m) and then convert cnz from
 		 * m to pixels */
-		p->cnz += dtempl->panels[i].cnz_offset;
+		p->cnz += tmpl->cnz_offset;
 		p->cnz /= p->pixel_pitch;
 
 		/* Apply overall shift (already in m) */
@@ -658,38 +659,36 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 			p->cny += shift_y / p->pixel_pitch;
 		}
 
-		p->max_adu = dtempl->panels[i].max_adu;
+		p->max_adu = tmpl->max_adu;
 
-		switch ( dtempl->panels[i].adu_scale_unit ) {
+		switch ( tmpl->adu_scale_unit ) {
 
 			case ADU_PER_PHOTON:
-			p->adu_per_photon = dtempl->panels[i].adu_scale;
+			p->adu_per_photon = tmpl->adu_scale;
 			break;
 
 			case ADU_PER_EV:
-			p->adu_per_photon = dtempl->panels[i].adu_scale
+			p->adu_per_photon = tmpl->adu_scale
 				* ph_lambda_to_eV(image->lambda);
 			break;
 
 			default:
 			p->adu_per_photon = 1.0;
 			ERROR("Invalid ADU/ph scale unit (%i)\n",
-			      dtempl->panels[i].adu_scale_unit);
+			      tmpl->adu_scale_unit);
 			break;
 
 		}
 
-		p->w = dtempl->panels[i].orig_max_fs
-		                        - dtempl->panels[i].orig_min_fs + 1;
-		p->h = dtempl->panels[i].orig_max_ss
-		                        - dtempl->panels[i].orig_min_ss + 1;
+		p->w = tmpl->orig_max_fs - tmpl->orig_min_fs + 1;
+		p->h = tmpl->orig_max_ss - tmpl->orig_min_ss + 1;
 
-		p->fsx = dtempl->panels[i].fsx;
-		p->fsy = dtempl->panels[i].fsy;
-		p->fsz = dtempl->panels[i].fsz;
-		p->ssx = dtempl->panels[i].ssx;
-		p->ssy = dtempl->panels[i].ssy;
-		p->ssz = dtempl->panels[i].ssz;
+		p->fsx = tmpl->fsx;
+		p->fsy = tmpl->fsy;
+		p->fsz = tmpl->fsz;
+		p->ssx = tmpl->ssx;
+		p->ssy = tmpl->ssy;
+		p->ssz = tmpl->ssz;
 
 	}
 
