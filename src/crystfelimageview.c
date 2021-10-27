@@ -212,41 +212,16 @@ static gint configure_sig(GtkWidget *window, GdkEventConfigure *rec,
 }
 
 
-static int clamp(double val, int min, int max)
-{
-	if ( val < min ) return min;
-	if ( val > max ) return max;
-	return val;
-}
-
-
-static void swap(int *a, int *b)
-{
-	int tmp = *a;
-	*a = *b;
-	*b = tmp;
-}
-
-
 static void draw_pixel_values(cairo_t *cr,
-                              double imin_fs, double imin_ss,
-                              double imax_fs, double imax_ss,
+                              int min_fs, int max_fs,
+                              int min_ss, int max_ss,
                               struct detgeom_panel p, float *dp,
                               int *bad)
 {
-	int min_fs, max_fs, min_ss, max_ss;
 	int fs, ss;
 	PangoLayout *layout;
 	PangoFontDescription *fontdesc;
 	double w, h;
-
-	/* FIXME: This is wrong for slanty pixels (GitLab #17) */
-	min_fs = clamp(imin_fs, 0, p.w-1);
-	min_ss = clamp(imin_ss, 0, p.h-1);
-	max_fs = clamp(imax_fs, 0, p.w-1);
-	max_ss = clamp(imax_ss, 0, p.h-1);
-	if ( min_ss > max_ss ) swap(&min_ss, &max_ss);
-	if ( min_fs > max_fs ) swap(&min_fs, &max_fs);
 
 	layout = pango_cairo_create_layout(cr);
 	fontdesc = pango_font_description_from_string("Sans 10");
@@ -316,13 +291,41 @@ static void draw_pixel_values(cairo_t *cr,
 }
 
 
+static void check_pixel_visibility(cairo_matrix_t *gtkmatrix,
+                                   cairo_t *cr,
+                                   struct detgeom_panel *p,
+                                   double x, double y,
+                                   int *min_fs, int *max_fs,
+                                   int *min_ss, int *max_ss)
+{
+	/* Take into account the transformation which GTK already
+	 * has in effect on the widget (translation from parent
+	 * window's origin). */
+	cairo_matrix_transform_point(gtkmatrix, &x, &y);
+	cairo_device_to_user(cr, &x, &y);
+
+	x /= p->pixel_pitch;
+	y /= p->pixel_pitch;
+	/* x,y is now fs,ss for the current panel */
+
+	if ( x < 0 ) x = 0;
+	if ( x > p->w ) x = p->w-1;
+	if ( y < 0 ) y = 0;
+	if ( y > p->h ) y = p->h-1;
+
+	if ( (x > *max_fs) ) *max_fs = x;
+	if ( (x < *min_fs) ) *min_fs = x;
+	if ( (y > *max_ss) ) *max_ss = y;
+	if ( (y < *min_ss) ) *min_ss = y;
+}
+
+
 static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv,
                                  int i, cairo_matrix_t *gtkmatrix)
 {
 	struct detgeom_panel p = iv->image->detgeom->panels[i];
 	cairo_matrix_t m;
 	cairo_pattern_t *patt;
-	double min_x, min_y, max_x, max_y;
 	double xs, ys, pixel_size_on_screen;
 	int have_pixels = 1;
 
@@ -352,27 +355,18 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv,
 	cairo_stroke(cr);
 
 	/* Are any pixels from this panel visible? */
-	min_x = 0.0;
-	min_y = 0.0;
-	max_x = iv->visible_width;
-	max_y = iv->visible_height;
-
-	/* Take into account the transformation which GTK already
-	 * has in effect on the widget (translation from parent
-	 * window's origin). */
-	cairo_matrix_transform_point(gtkmatrix, &min_x, &min_y);
-	cairo_matrix_transform_point(gtkmatrix, &max_x, &max_y);
-	cairo_device_to_user(cr, &min_x, &min_y);
-	cairo_device_to_user(cr, &max_x, &max_y);
-
-	min_x /= p.pixel_pitch;
-	min_y /= p.pixel_pitch;
-	max_x /= p.pixel_pitch;
-	max_y /= p.pixel_pitch;
-	if ( (min_x < 0.0) && (max_x < 0.0) ) have_pixels = 0;
-	if ( (min_y < 0.0) && (max_y < 0.0) ) have_pixels = 0;
-	if ( (min_x > p.w) && (max_x > p.w) ) have_pixels = 0;
-	if ( (min_y > p.h) && (max_y > p.h) ) have_pixels = 0;
+	int min_fs = p.w;
+	int max_fs = 0;
+	int min_ss = p.h;
+	int max_ss = 0;
+	check_pixel_visibility(gtkmatrix, cr, &p, 0.0, 0.0,
+	                       &min_fs, &max_fs, &min_ss, &max_ss);
+	check_pixel_visibility(gtkmatrix, cr, &p, 0.0, iv->visible_height,
+	                       &min_fs, &max_fs, &min_ss, &max_ss);
+	check_pixel_visibility(gtkmatrix, cr, &p, iv->visible_width, 0.0,
+	                       &min_fs, &max_fs, &min_ss, &max_ss);
+	check_pixel_visibility(gtkmatrix, cr, &p, iv->visible_width, iv->visible_height,
+	                       &min_fs, &max_fs, &min_ss, &max_ss);
 
 	cairo_restore(cr);
 
@@ -381,7 +375,7 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv,
 	cairo_user_to_device_distance(cr, &xs, &ys);
 	pixel_size_on_screen = smallest(fabs(xs), fabs(ys));
 	if ( (pixel_size_on_screen > 40.0) && have_pixels ) {
-		draw_pixel_values(cr, min_x, min_y, max_x, max_y, p,
+		draw_pixel_values(cr, min_fs, max_fs, min_ss, max_ss, p,
 		                  iv->image->dp[i], iv->image->bad[i]);
 	}
 }
