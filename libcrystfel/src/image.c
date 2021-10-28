@@ -1027,6 +1027,29 @@ static int load_mask(struct panel_template *p,
 }
 
 
+static void mask_panel_edges(int *bad, int p_w, int p_h, int edgew)
+{
+	int i;
+
+	/* Silly values should not cause memory errors */
+	if ( edgew > p_w ) edgew = p_w/2 + 1;
+	if ( edgew > p_h ) edgew = p_h/2 + 1;
+	if ( edgew < 0 ) return;
+
+	for ( i=0; i<edgew; i++ ) {
+		int fs, ss;
+		for ( fs=i; fs<p_w-i; fs++ ) {
+			bad[fs+p_w*i] = 1;
+			bad[fs+p_w*(p_h-i-1)] = 1;
+		}
+		for ( ss=i; ss<p_h-i; ss++ ) {
+			bad[i+p_w*ss] = 1;
+			bad[(p_w-i-1)+p_w*ss] = 1;
+		}
+	}
+}
+
+
 static int create_badmap(struct image *image,
                          const DataTemplate *dtempl,
                          int no_mask_data)
@@ -1064,6 +1087,12 @@ static int create_badmap(struct image *image,
 		if ( !p->bad ) {
 			mark_flagged_pixels(p, image->dp[i],
 			                    image->bad[i]);
+		}
+
+		/* Mask panel edges (skip if panel is bad anyway) */
+		if ( (p->mask_edge_pixels > 0) && !p->bad ) {
+			mask_panel_edges(image->bad[i], p_w, p_h,
+			                 p->mask_edge_pixels);
 		}
 
 		/* Load masks (skip if panel is bad anyway) */

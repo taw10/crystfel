@@ -581,6 +581,13 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		free(panel->data);
 		panel->data = strdup(val);
 
+	} else if ( strcmp(key, "mask_edge_pixels") == 0 ) {
+		if ( convert_int(val, &panel->mask_edge_pixels) ) {
+			ERROR("Invalid value for %s/mask_edge_pixels (%s)\n",
+			      panel->name, val);
+			reject = 1;
+		}
+
 	} else if ( strcmp(key, "mask_bad") == 0 ) {
 		parse_field_for_panel(panel, "mask0_badbits", val, det);
 	} else if ( strcmp(key, "mask_good") == 0 ) {
@@ -1071,6 +1078,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.cnz_offset = 0.0;
 	defaults.pixel_pitch = -1.0;
 	defaults.bad = 0;
+	defaults.mask_edge_pixels = 0;
 	defaults.fsx = NAN;
 	defaults.fsy = NAN;
 	defaults.fsz = NAN;

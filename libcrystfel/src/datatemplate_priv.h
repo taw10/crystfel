@@ -135,6 +135,9 @@ struct panel_template
 	/** Mark entire panel as bad if set */
 	int bad;
 
+	/** Mark this number of edge rows as bad */
+	int mask_edge_pixels;
+
 	/** Resolution in pixels per metre  */
 	double pixel_pitch;
 
