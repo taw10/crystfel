@@ -504,6 +504,8 @@ static int parse_mask(struct panel_template *panel,
 
 	key[4] = '_';
 
+	/* The mask number has been replaced with '_'.
+	 * Double underscore is deliberate! */
 	if ( strcmp(key, "mask__file") == 0 ) {
 
 		panel->masks[n].filename = strdup(val);
