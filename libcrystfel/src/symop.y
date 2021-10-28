@@ -32,14 +32,16 @@
   #include "rational.h"
   #include "symmetry.h"
 
-  extern int symoplex();
-  extern int symopparse(RationalMatrix *m, SymOpList *list);
-  void symoperror(RationalMatrix *m, SymOpList *list, const char *s);
+  #include "symop-parse.h"
+  #include "symop-lex.h"
+
+  void symoperror(void *scanner, RationalMatrix *m, SymOpList *list, const char *s);
 %}
 
 %define api.prefix {symop}
-
-%parse-param {RationalMatrix *m} {SymOpList *list}
+%define api.pure full
+%parse-param {void *scanner} {RationalMatrix *m} {SymOpList *list}
+%lex-param {void *scanner}
 
 %code requires {
   #include "symmetry.h"
@@ -70,19 +72,19 @@
 %type <r> fraction
 
 %{
-static int try_add_symop(SymOpList *list, RationalMatrix *m, int complain)
+static int try_add_symop(void *scanner, SymOpList *list, RationalMatrix *m, int complain)
 {
 	if ( list == NULL ) {
 		/* Only complain if this isn't the only operation provided */
 		if ( complain ) {
-			yyerror(m, list, "Must be a single symmetry operation");
+			yyerror(scanner, m, list, "Must be a single symmetry operation");
 		}
 		return 1;
 	} else {
 		IntegerMatrix *im;
 		im = intmat_from_rtnl_mtx(m);
 		if ( im == NULL ) {
-			yyerror(m, list, "Symmetry operations must all be integer");
+			yyerror(scanner, m, list, "Symmetry operations must all be integer");
 			return 1;
 		} else {
 			add_symop(list, im);
@@ -95,8 +97,8 @@ static int try_add_symop(SymOpList *list, RationalMatrix *m, int complain)
 %%
 
 symoplist:
-  symop                       { try_add_symop(list, m, 0); }
-| symoplist SEMICOLON symop   { if ( try_add_symop(list, m, 1) ) YYERROR; }
+  symop                       { try_add_symop(scanner, list, m, 0); }
+| symoplist SEMICOLON symop   { if ( try_add_symop(scanner, list, m, 1) ) YYERROR; }
 ;
 
 symop:
@@ -135,6 +137,6 @@ fraction:
 
 %%
 
-void symoperror(RationalMatrix *m, SymOpList *list, const char *s) {
+void symoperror(void *scanner, RationalMatrix *m, SymOpList *list, const char *s) {
 	printf("Error: %s\n", s);
 }

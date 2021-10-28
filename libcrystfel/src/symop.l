@@ -27,18 +27,17 @@
  */
 
 %{
-  #define YYDEBUG 1
-  #include "rational.h"
   #include "symop-parse.h"
+  #define YYSTYPE SYMOPSTYPE
 %}
 
 %option prefix="symop"
-%option noyywrap nounput noinput
+%option noyywrap nounput noinput reentrant bison-bridge
 
 %%
 
 [,]        { return COMMA; }
-[0-9]+     { symoplval.n = atoi(yytext); return NUMBER; }
+[0-9]+     { yylval->n = atoi(yytext); return NUMBER; }
 [/]        { return DIVIDE; }
 [+]        { return PLUS; }
 [-]        { return MINUS; }

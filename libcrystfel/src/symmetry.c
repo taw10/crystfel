@@ -40,6 +40,7 @@
 #include "utils.h"
 #include "integer_matrix.h"
 #include "symop-parse.h"
+#define YYSTYPE SYMOPSTYPE
 #include "symop-lex.h"
 
 
@@ -1623,11 +1624,14 @@ RationalMatrix *parse_symmetry_operation(const char *s)
 	YY_BUFFER_STATE b;
 	RationalMatrix *m;
 	int r;
+	void *scanner;
 
 	m = rtnl_mtx_new(3, 3);
-	b = symop_scan_string(s);
-	r = symopparse(m, NULL);
-	symop_delete_buffer(b);
+	symoplex_init(&scanner);
+	b = symop_scan_string(s, scanner);
+	r = symopparse(scanner, m, NULL);
+	symop_delete_buffer(b, scanner);
+	symoplex_destroy(scanner);
 
 	if ( r ) {
 		ERROR("Failed to parse '%s'\n", s);
@@ -1669,13 +1673,16 @@ SymOpList *parse_symmetry_operations(const char *s)
 	RationalMatrix *m;
 	SymOpList *list;
 	int r;
+	void *scanner;
 
 	m = rtnl_mtx_new(3, 3); /* Scratch space for parser */
 	list = new_symoplist(); /* The result we want */
 
-	b = symop_scan_string(s);
-	r = symopparse(m, list);
-	symop_delete_buffer(b);
+	symoplex_init(&scanner);
+	b = symop_scan_string(s, scanner);
+	r = symopparse(scanner, m, list);
+	symop_delete_buffer(b, scanner);
+	symoplex_destroy(scanner);
 	rtnl_mtx_free(m);
 
 	if ( r ) {
