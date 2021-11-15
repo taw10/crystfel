@@ -179,10 +179,13 @@ static int pair_peaks(struct image *image, Crystal *cr,
 	double cx, cy, cz;
 	double dx, dy;
 	RefList *all_reflist;
+	double lowest_one_over_d;
 
 	all_reflist = reflist_new();
 	cell_get_cartesian(crystal_get_cell(cr),
 	                   &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+
+	lowest_one_over_d = lowest_reflection(crystal_get_cell(cr));
 
 	crystal_get_det_shift(cr, &dx, &dy);
 
@@ -255,17 +258,32 @@ static int pair_peaks(struct image *image, Crystal *cr,
 	 * good pairings */
 	for ( i=0; i<n; i++ ) {
 
-		double fs, ss, pd;
+		double fs, ss;
 		signed int h, k, l;
+		int pnl;
+		double refl_r[3];
+		double pk_r[3];
 		Reflection *refl = rps[i].refl;
 
 		get_indices(refl, &h, &k, &l);
 
 		/* Is the supposed reflection anywhere near the peak? */
 		get_detector_pos(refl, &fs, &ss);
-		pd = pow(fs - rps[i].peak->fs, 2.0)
-		   + pow(ss - rps[i].peak->ss, 2.0);
-		if ( pd > 10.0 * 10.0 ) continue; /* FIXME Hardcoded distance (GitLab #38) */
+
+		pnl = get_panel_number(refl);
+		detgeom_transform_coords(&image->detgeom->panels[pnl],
+		                         fs, ss,
+		                         image->lambda, dx, dy, refl_r);
+		detgeom_transform_coords(&image->detgeom->panels[pnl],
+		                         rps[i].peak->fs, rps[i].peak->ss,
+		                         image->lambda, dx, dy, pk_r);
+
+		if ( modulus(refl_r[0] - pk_r[0],
+		             refl_r[1] - pk_r[1],
+		             refl_r[2] - pk_r[2]) > lowest_one_over_d / 3.0 )
+		{
+			continue;
+		}
 
 		rps[n_acc] = rps[i];
 		rps[n_acc].refl = reflection_new(h, k, l);
