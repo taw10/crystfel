@@ -274,6 +274,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	}
 	reflist_free(all_reflist);
+	crystal_set_reflections(cr, NULL);
 
 	/* Sort the pairings by excitation error and look for a transition
 	 * between good pairings and outliers */
@@ -589,6 +590,7 @@ int refine_prediction(struct image *image, Crystal *cr)
 	if ( max_I <= 0.0 ) {
 		ERROR("All peaks negative?\n");
 		free(rps);
+		crystal_set_reflections(cr, NULL);
 		return 1;
 	}
 	for ( i=0; i<n; i++ ) {
@@ -602,7 +604,11 @@ int refine_prediction(struct image *image, Crystal *cr)
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_predictions(cr);
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
-		             &total_x, &total_y, &total_z) ) return 1;
+		             &total_x, &total_y, &total_z) )
+		{
+			crystal_set_reflections(cr, NULL);
+			return 1;
+		}
 		crystal_set_det_shift(cr, total_x, total_y);
 		//STATUS("Residual after %i = %e\n", i,
 		//       pred_residual(rps, n, image->detgeom, total_x, total_y));
