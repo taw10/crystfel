@@ -1607,8 +1607,8 @@ int main(int argc, char *argv[])
 				crystal_set_image(cr, image_for_crystal);
 				*image_for_crystal = *image;
 				image_for_crystal->n_crystals = 1;
-				image_for_crystal->crystals = &crystals[n_crystals];
-
+				image_for_crystal->crystals = malloc(sizeof(Crystal *));
+				image_for_crystal->crystals[0] = cr;
 				image_for_crystal->filename = strdup(image->filename);
 				image_for_crystal->ev = safe_strdup(image->ev);
 				image_for_crystal->detgeom = NULL;
@@ -1823,13 +1823,7 @@ int main(int argc, char *argv[])
 	gsl_rng_free(rng);
 	for ( icryst=0; icryst<n_crystals; icryst++ ) {
 		struct image *image = crystal_get_image(crystals[icryst]);
-		spectrum_free(image->spectrum);
-		reflist_free(crystal_get_reflections(crystals[icryst]));
-		free(image->filename);
-		free(image->ev);
-		free(image);
-		cell_free(crystal_get_cell(crystals[icryst]));
-		crystal_free(crystals[icryst]);
+		image_free(image);
 	}
 	free_contribs(full);
 	reflist_free(full);
