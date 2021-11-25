@@ -451,11 +451,22 @@ static void check_csplit(Crystal **crystals, int n_crystals,
 }
 
 
+static int looks_like_event(const char *str)
+{
+	if ( strstr(str, "//") == NULL ) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+
 static struct custom_split *load_custom_split(const char *filename)
 {
 	struct custom_split *csplit;
 	FILE *fh;
 	int i;
+	int lno = 0;
 
 	csplit = malloc(sizeof(struct custom_split));
 	if ( csplit == NULL ) return NULL;
@@ -483,31 +494,49 @@ static struct custom_split *load_custom_split(const char *filename)
 		char *evs;
 		char *ds;
 		char *id;
-		int n;
-		char **bits;
+		size_t n, ev_start, ds_start;
 
+		lno++;
 		rval = fgets(line, 1023, fh);
 		if ( rval == NULL ) break;
 
 		chomp(line);
 		notrail(line);
-		n = assplode(line, " \t,", &bits, ASSPLODE_NONE);
-		if ( n < 2 ) {
-			ERROR("Badly formatted line '%s'\n", line);
+
+		/* Look for start of dataset */
+		n = strlen(line);
+		while ( line[n] != ' ' && n > 0 ) n--;
+		if ( n == 0 ) {
+			ERROR("Custom split file line %i has too few (only 1) "
+			      "fields.\n", lno);
+			free(csplit);
 			return NULL;
 		}
+		ds_start = n+1;
+		ds = strdup(&line[ds_start]);
 
-		if ( n == 3 ) {
-			/* Filename, event, dataset */
-			fn = bits[0];
-			evs = bits[1];
-			ds = bits[2];
+		n--;
+		while ( line[n] != ' ' && n > 0 ) n--;
+		if ( n == 0 ) {
+			ev_start = 0;
 		} else {
-			fn = bits[0];
-			evs = strdup("(none)");
-			ds = bits[1];
+			ev_start = n+1;
 		}
-		free(bits);
+
+		evs = strndup(&line[ev_start], ds_start-ev_start-1);
+		if ( !looks_like_event(evs) || (ev_start == 0) ) {
+			/* It doesn't look like an event ID - assume it's part
+			 * of the filename (which contains spaces) */
+			ev_start = 0;
+		}
+
+		if ( ev_start > 0 ) {
+			evs = strndup(&line[ev_start], ds_start-ev_start-1);
+			fn = strndup(line, ev_start-1);
+		} else {
+			evs = strdup("//");
+			fn = strndup(line, ds_start-1);
+		}
 
 		id = malloc(strlen(fn) + strlen(evs) + 2);
 		strcpy(id, fn);
