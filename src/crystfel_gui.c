@@ -1091,17 +1091,6 @@ int main(int argc, char *argv[])
 			if ( dtempl != NULL ) {
 				proj.dtempl = dtempl;
 			}
-		} else if ( proj.stream_filename != NULL ) {
-
-			Stream *st;
-			st = stream_open_for_read(proj.stream_filename);
-			if ( st != NULL ) {
-				char *geom_str = stream_geometry_file(st);
-				if ( geom_str != NULL ) {
-					proj.dtempl = data_template_new_from_string(geom_str);
-				}
-			}
-			stream_close(st);
 		}
 
 		act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/centre");

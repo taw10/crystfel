@@ -277,7 +277,6 @@ int load_stream(struct crystfelproject *proj, char *stream_filename)
 	/* Use the user's nominated DataTemplate over the one from the stream.
 	 * If it doesn't match, better that things break earlier. */
 	add_frames_from_stream(st, proj->dtempl, proj);
-	proj->stream_filename = stream_filename;
 	stream_close(st);
 
 	result_name = safe_basename(stream_filename);
@@ -540,11 +539,6 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	ctx->stream_chooser = gtk_file_chooser_button_new("Select stream file",
 	                                                  GTK_FILE_CHOOSER_ACTION_OPEN);
-	if ( proj->stream_filename != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->stream_chooser),
-		                              proj->stream_filename);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ctx->stream), TRUE);
-	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream_chooser),
 	                   TRUE, TRUE, 2.0);
 

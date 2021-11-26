@@ -565,7 +565,7 @@ static void handle_var(const char *key, const char *val,
 	if ( strncmp(key, "stream.", 7) == 0 ) {
 		parse_stream_opt(key, val, &proj->indexing_params);
 	} else if ( strcmp(key, "stream") == 0 ) {
-		proj->stream_filename = strdup(val);
+		/* Ignore, kept for backwards compatability */
 	}
 
 	if ( strcmp(key, "search_pattern") == 0 ) {
@@ -918,9 +918,6 @@ int save_project(struct crystfelproject *proj)
 	}
 	fprintf(fh, "search_pattern %s\n",
 	        str_matchtype(proj->data_search_pattern));
-	if ( proj->stream_filename != NULL ) {
-		fprintf(fh, "stream %s\n", proj->stream_filename);
-	}
 
 	fprintf(fh, "peak_search_params.method %s\n",
 	        str_peaksearch(proj->peak_search_params.method));
@@ -1199,7 +1196,6 @@ int default_project(struct crystfelproject *proj)
 	proj->peak_params = NULL;
 	proj->data_top_folder = NULL;
 	proj->data_search_pattern = 0;
-	proj->stream_filename = NULL;
 	proj->dtempl = NULL;
 	proj->cur_image = NULL;
 	proj->indexing_opts = NULL;

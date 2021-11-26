@@ -291,7 +291,6 @@ struct crystfelproject {
 	int n_random_history;
 
 	char *geom_filename;
-	char *stream_filename;
 	char *data_top_folder;   /* For convenience only.  Filenames in
 	                          * 'filenames' list should be complete */
 	enum match_type_id data_search_pattern;
