@@ -216,6 +216,7 @@ if gtkdep.found()
                  'src/gui_ambi.c',
                  'src/gui_backend_local.c',
                  'src/gui_project.c',
+                 'src/gtkmultifilechooserbutton.c',
                  versionc]
 
   if slurmdep.found()
