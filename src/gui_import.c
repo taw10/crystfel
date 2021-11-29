@@ -47,6 +47,7 @@
 #include "gui_project.h"
 #include "crystfel_gui.h"
 #include "gtk-util-routines.h"
+#include "gtkmultifilechooserbutton.h"
 
 #include "version.h"
 
@@ -288,14 +289,106 @@ int load_stream(struct crystfelproject *proj, char *stream_filename)
 }
 
 
+struct add_stuff_ctx
+{
+	int max;
+	int n;
+	char **filenames;
+	struct crystfelproject *proj;
+	int err;
+};
+
+
+static void add_stream_stuff(gpointer data, gpointer user_data)
+{
+	struct add_stuff_ctx *ctx = user_data;
+	const char *filename = data;
+	Stream *st;
+
+	st = stream_open_for_read(filename);
+	if ( st != NULL ) {
+		add_frames_from_stream(st, ctx->proj->dtempl, ctx->proj);
+		stream_close(st);
+	} else {
+		ctx->err = 1;
+	}
+
+	if ( ctx->n >= ctx->max ) {
+		ctx->err = 1;
+	} else {
+		ctx->filenames[ctx->n++] = strdup(filename);
+	}
+}
+
+
+static int load_multiple_streams(GSList *filenames, struct crystfelproject *proj)
+{
+	Stream *st;
+	DataTemplate *dtempl;
+	const char *geom_str;
+	char *result_name;
+	struct add_stuff_ctx ctx;
+	char tmp[128];
+
+	/* Get geometry from first stream */
+	st = stream_open_for_read(filenames->data);
+	if ( st == NULL ) return 1;
+
+	geom_str = stream_geometry_file(st);
+	if ( geom_str == NULL ) {
+		ERROR("No geometry file\n");
+		stream_close(st);
+		return 1;
+	}
+
+	dtempl = data_template_new_from_string(geom_str);
+	if ( dtempl == NULL ) {
+		stream_close(st);
+		return 1;
+	}
+
+	stream_close(st);
+
+	/* If we do not yet have a DataTemplate, the one from the file
+	 * becomes it.  If we already have one, it will be kept.  Note that the
+	 * stream's DataTemplate will always be used for display in the GUI. */
+	if ( proj->dtempl == NULL ) {
+		proj->dtempl = dtempl;
+	}
+
+	/* Add all the streams */
+	ctx.max = g_slist_length(filenames);
+	ctx.n = 0;
+	ctx.filenames = malloc(ctx.max*sizeof(char *));
+	ctx.err = 0;
+	ctx.proj = proj;
+	if ( ctx.filenames == NULL ) return 1;
+	g_slist_foreach(filenames, add_stream_stuff, &ctx);
+	if ( ctx.err ) return 1;
+
+	/* Result name based on the first stream in the list */
+	result_name = safe_basename(filenames->data);
+	snprintf(tmp, 127, "%s-et-al", result_name);
+	add_indexing_result(proj, tmp, ctx.filenames, ctx.n);
+	select_result(proj, tmp);
+	free(result_name);
+
+	free(ctx.filenames);
+
+	return 0;
+}
+
 static void import_stream(struct finddata_ctx *ctx)
 {
-	char *stream_filename;
+	GSList *filenames;
 
-	stream_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->stream_chooser));
-	if ( stream_filename == NULL ) return;
+	filenames = gtk_multi_file_chooser_button_get_filenames(
+	                    GTK_MULTI_FILE_CHOOSER_BUTTON(ctx->stream_chooser));
+	if ( filenames == NULL ) return;
 
-	load_stream(ctx->proj, stream_filename);
+	if ( load_multiple_streams(filenames, ctx->proj) ) {
+		error_box(ctx->proj, "Failed to load streams");
+	}
 }
 
 
@@ -537,8 +630,7 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                                          "Load stream");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream),
 	                   FALSE, FALSE, 4.0);
-	ctx->stream_chooser = gtk_file_chooser_button_new("Select stream file",
-	                                                  GTK_FILE_CHOOSER_ACTION_OPEN);
+	ctx->stream_chooser = gtk_multi_file_chooser_button_new("Select stream file(s)");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream_chooser),
 	                   TRUE, TRUE, 2.0);
 
