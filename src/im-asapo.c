@@ -226,7 +226,8 @@ static void skip_to_stream_end(struct im_asapo *a)
 }
 
 
-void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
+void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
+                     char **pfilename, char **pevent)
 {
 	void *data_copy;
 	AsapoMessageMetaHandle meta;
@@ -265,9 +266,6 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 
 	msg_size = asapo_message_meta_get_size(meta);
 
-	STATUS("ASAP::O ID: %llu\n", asapo_message_meta_get_id(meta));
-	STATUS("ASAP::O filename: %s\n", asapo_message_meta_get_name(meta));
-
 	data_copy = malloc(msg_size);
 	if ( data_copy == NULL ) {
 		ERROR("Failed to copy data block.\n");
@@ -277,6 +275,9 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size)
 		return NULL;
 	}
 	memcpy(data_copy, asapo_message_data_get_as_chars(data), msg_size);
+
+	*pfilename = strdup(asapo_message_meta_get_id(meta));
+	*pevent = strdup("//");
 
 	asapo_free_handle(&err);
 	asapo_free_handle(&meta);

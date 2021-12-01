@@ -471,12 +471,21 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		} else if ( sb->asapo ) {
 
+			char *filename;
+			char *event;
+
 			/* Temporary (?) abuse of "zmq_data", even though
 			 * data comes via ASAP::O */
 			pargs.zmq_data = im_asapo_fetch(asapostuff,
-			                                &pargs.zmq_data_size);
+			                                &pargs.zmq_data_size,
+			                                &filename,
+			                                &event);
 			if ( pargs.zmq_data != NULL ) {
 				ok = 1;
+				free(pargs.filename);
+				free(pargs.event);
+				pargs.filename = filename;
+				pargs.event = event;
 			}
 
 		} else {
