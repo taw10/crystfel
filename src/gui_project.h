@@ -301,6 +301,7 @@ struct crystfelproject {
 	char **filenames;
 	char **events;
 	int show_centre;
+	int rescan_on_change;
 
 	int show_peaks;
 	struct peak_params peak_search_params;

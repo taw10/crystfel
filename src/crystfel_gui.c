@@ -178,6 +178,8 @@ static int should_rescan_streams(struct crystfelproject *proj)
 {
 	GSList *item = proj->tasks;
 
+	if ( !proj->rescan_on_change ) return 0;
+
 	if ( !proj->scanned_since_last_job_finished ) {
 		proj->scanned_since_last_job_finished = 1;
 		return 1;
@@ -657,6 +659,13 @@ static gint results_combo_changed_sig(GtkComboBox *w,
 }
 
 
+static gint rescan_on_change_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	proj->rescan_on_change = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	return FALSE;
+}
+
+
 static gint show_centre_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_centre = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
@@ -711,6 +720,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"resetzoom\" action=\"ResetZoomAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
+		"	<menuitem name=\"rescanonchange\" action=\"RescanOnChangeAction\" />"
 		"	<menuitem name=\"rescan\" action=\"RescanAction\" />"
 		"	<menuitem name=\"jumpframe\" action=\"JumpFrameAction\" />"
 		"</menu>"
@@ -752,6 +762,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		  G_CALLBACK(label_refls_sig), FALSE },
 		{ "CentreAction", NULL, "Beam centre", NULL, NULL,
 		  G_CALLBACK(show_centre_sig), FALSE },
+		{ "RescanOnChangeAction", NULL, "Rescan streams when changing frame", NULL, NULL,
+		  G_CALLBACK(rescan_on_change_sig), FALSE },
 	};
 
 	proj->action_group = gtk_action_group_new("cellwindow");

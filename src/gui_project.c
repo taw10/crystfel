@@ -534,6 +534,10 @@ static void handle_var(const char *key, const char *val,
 		proj->show_centre = parse_int(val);
 	}
 
+	if ( strcmp(key, "rescan_on_change") == 0 ) {
+		proj->rescan_on_change = parse_int(val);
+	}
+
 	if ( strcmp(key, "show_peaks") == 0 ) {
 		proj->show_peaks = parse_int(val);
 	}
@@ -1140,6 +1144,7 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
 	fprintf(fh, "label_refls %i\n", proj->label_refls);
+	fprintf(fh, "rescan_on_change %i\n", proj->rescan_on_change);
 
 	fprintf(fh, "-----\n");
 	for ( iresult=0; iresult<proj->n_results; iresult++ ) {
@@ -1234,6 +1239,7 @@ int default_project(struct crystfelproject *proj)
 	proj->show_peaks = 1;
 	proj->show_refls = 1;
 	proj->label_refls = 1;
+	proj->rescan_on_change = 1;
 
 	proj->peak_search_params.method = PEAK_ZAEF;
 	proj->peak_search_params.threshold = 800.0;
