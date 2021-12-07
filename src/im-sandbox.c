@@ -674,6 +674,13 @@ static void start_worker_process(struct sandbox *sb, int slot)
 			exit(1);
 	        }
 
+	        sa.sa_handler = SIG_IGN;
+	        r = sigaction(SIGUSR1, &sa, NULL);
+	        if ( r == -1 ) {
+			ERROR("Failed to set signal handler!\n");
+			exit(1);
+	        }
+
 		ll = 64 + strlen(sb->tmpdir);
 		tmp = malloc(ll);
 		if ( tmp == NULL ) {
@@ -855,6 +862,7 @@ static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 
 volatile sig_atomic_t at_zombies = 0;
 volatile sig_atomic_t at_interrupt = 0;
+volatile sig_atomic_t at_shutdown = 0;
 
 static void sigchld_handler(int sig, siginfo_t *si, void *uc_v)
 {
@@ -865,6 +873,12 @@ static void sigchld_handler(int sig, siginfo_t *si, void *uc_v)
 static void sigint_handler(int sig, siginfo_t *si, void *uc_v)
 {
 	at_interrupt = 1;
+}
+
+
+static void sigusr1_handler(int sig, siginfo_t *si, void *uc_v)
+{
+	at_shutdown = 1;
 }
 
 
@@ -879,6 +893,14 @@ static void check_signals(struct sandbox *sb, const char *semname_q,
 	if ( at_interrupt ) {
 		sem_unlink(semname_q);
 		exit(0);
+	}
+
+	if ( at_shutdown ) {
+		at_shutdown = 0;
+		STATUS("Received signal - shutting down cleanly.\n");
+		pthread_mutex_lock(&sb->shared->totals_lock);
+		sb->shared->should_shutdown = 1;
+		pthread_mutex_unlock(&sb->shared->totals_lock);
 	}
 }
 
@@ -1146,6 +1168,16 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	        return 0;
 	}
 	r = sigaction(SIGQUIT, &sa, NULL);
+	if ( r == -1 ) {
+	        ERROR("Failed to set signal handler!\n");
+	        return 0;
+	}
+
+	/* Set up signal handler to shut down gracefully on request */
+	sa.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_RESTART;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_sigaction = sigusr1_handler;
+	r = sigaction(SIGUSR1, &sa, NULL);
 	if ( r == -1 ) {
 	        ERROR("Failed to set signal handler!\n");
 	        return 0;
