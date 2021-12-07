@@ -329,7 +329,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
                     int cookie, const char *tmpdir, struct sandbox *sb)
 {
 	int allDone = 0;
-	TimeAccounts *taccs;
 	struct im_zmq *zmqstuff = NULL;
 
 	/* Connect via ZMQ */
@@ -344,10 +343,9 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		}
 	}
 
-	taccs = time_accounts_init();
-
 	while ( !allDone ) {
 
+		TimeAccounts *taccs;
 		struct pattern_args pargs;
 		int ser;
 		char *line;
@@ -356,6 +354,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		char *event_str = NULL;
 		char *ser_str = NULL;
 		int ok = 1;
+
+		taccs = time_accounts_init();
 
 		/* Wait until an event is ready */
 		time_accounts_set(taccs, TACC_EVENTWAIT);
@@ -456,15 +456,19 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		/* pargs.zmq_data will be copied into the image structure, so
 		 * that it can be queried for "header" values etc.  It will
 		 * eventually be freed by image_free() under process_image() */
+
+		if ( sb->profile ) {
+			pthread_mutex_lock(&sb->shared->term_lock);
+			time_accounts_print_short(taccs);
+			pthread_mutex_unlock(&sb->shared->term_lock);
+		}
+		time_accounts_free(taccs);
 	}
 
 	im_zmq_shutdown(zmqstuff);
 
-	time_accounts_set(taccs, TACC_FINALCLEANUP);
 	cleanup_indexing(iargs->ipriv);
 	cell_free(iargs->cell);
-	if ( sb->profile ) time_accounts_print(taccs);
-	time_accounts_free(taccs);
 	return 0;
 }
 

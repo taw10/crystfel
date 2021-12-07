@@ -98,6 +98,13 @@ static int find_account(TimeAccounts *accs, enum timeaccount acc)
 }
 
 
+void time_accounts_reset(TimeAccounts *accs)
+{
+	accs->n_accs = 0;
+	accs->cur_acc = TACC_NOTHING;
+}
+
+
 #ifdef HAVE_CLOCK_GETTIME
 
 void time_accounts_set(TimeAccounts *accs, enum timeaccount new_acc)
@@ -189,6 +196,49 @@ static const char *taccname(enum timeaccount acc)
 		case TACC_FINALCLEANUP : return "Final cleanup";
 		default : return "Unknown";
 	}
+}
+
+
+static const char *taccname_short(enum timeaccount acc)
+{
+	switch ( acc ) {
+		case TACC_NOTHING : return "?????";
+		case TACC_SELECT : return "selct";
+		case TACC_STREAMREAD : return "sread";
+		case TACC_SIGNALS : return "signs";
+		case TACC_QUEUETOPUP : return "qfill";
+		case TACC_STATUS : return "print";
+		case TACC_ENDCHECK : return "endch";
+		case TACC_WAKEUP : return "wakew";
+		case TACC_WAITPID : return "waitw";
+		case TACC_WAITFILE : return "wfile";
+		case TACC_HDF5OPEN : return "ofile";
+		case TACC_HDF5READ : return "rfile";
+		case TACC_FILTER : return "filtr";
+		case TACC_RESRANGE : return "rrnge";
+		case TACC_PEAKSEARCH : return "peaks";
+		case TACC_INDEXING : return "index";
+		case TACC_PREDPARAMS : return "predp";
+		case TACC_INTEGRATION : return "integ";
+		case TACC_TOTALS : return "ctotl";
+		case TACC_WRITESTREAM : return "swrte";
+		case TACC_CLEANUP : return "clean";
+		case TACC_EVENTWAIT : return "wevnt";
+		case TACC_FINALCLEANUP : return "final";
+		default : return "unkwn";
+	}
+}
+
+
+void time_accounts_print_short(TimeAccounts *accs)
+{
+	int i;
+	for ( i=0; i<accs->n_accs; i++ ) {
+		printf("%s: %.3f ", taccname_short(accs->accs[i]),
+		       (double)accs->sec[i] + accs->nsec[i]/1e9);
+	}
+	printf("\n");
+	fflush(stdout);
 }
 
 

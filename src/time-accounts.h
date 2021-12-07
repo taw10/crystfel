@@ -67,6 +67,9 @@ extern void time_accounts_free(TimeAccounts *accs);
 
 extern void time_accounts_set(TimeAccounts *accs, enum timeaccount new_acc);
 
+extern void time_accounts_reset(TimeAccounts *accs);
+
+extern void time_accounts_print_short(TimeAccounts *accs);
 extern void time_accounts_print(TimeAccounts *accs);
 
 #endif	/* TIME_ACCOUNTS_H */
