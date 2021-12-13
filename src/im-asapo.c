@@ -276,7 +276,7 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 	}
 	memcpy(data_copy, asapo_message_data_get_as_chars(data), msg_size);
 
-	*pfilename = strdup(asapo_message_meta_get_id(meta));
+	*pfilename = strdup(asapo_message_meta_get_name(meta));
 	*pevent = strdup("//");
 
 	asapo_free_handle(&err);
