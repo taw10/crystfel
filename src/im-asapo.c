@@ -180,7 +180,7 @@ static int select_next_stream(struct im_asapo *a)
 	/* Stream list includes the current stream, so we need at least
 	 * two entries */
 	if ( asapo_stream_infos_get_size(si) < 2 ) {
-		STATUS("No newer stream.  Waiting for new data...\n");
+		//STATUS("No newer stream.  Waiting for new data...\n");
 		asapo_free_handle(&si);
 		return 0;
 	}
