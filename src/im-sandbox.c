@@ -359,6 +359,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		/* Wait until an event is ready */
 		time_accounts_set(taccs, TACC_EVENTWAIT);
+		sb->shared->pings[cookie]++;
 		set_last_task(sb->shared->last_task[cookie], "wait_event");
 		if ( sem_wait(sb->queue_sem) != 0 ) {
 			ERROR("Failed to wait on queue semaphore: %s\n",
