@@ -194,6 +194,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	int any_crystals;
 
 	if ( pargs->zmq_data != NULL ) {
+		time_accounts_set(taccs, TACC_HDF5READ);
 		set_last_task(last_task, "unpacking messagepack object");
 		image = image_read_data_block(iargs->dtempl,
 		                              pargs->zmq_data,
