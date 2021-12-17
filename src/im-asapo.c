@@ -104,7 +104,7 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 
 	cred = asapo_create_source_credentials(kProcessed, beamtime, "",
 	                                       data_source, token);
-	a->consumer = asapo_create_consumer(endpoint, "", 0, cred, &err);
+	a->consumer = asapo_create_consumer(endpoint, "auto", 0, cred, &err);
 	asapo_free_handle(&cred);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Cannot create ASAP::O consumer", err);
