@@ -112,7 +112,7 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 		return NULL;
 	}
 
-	asapo_consumer_set_timeout(a->consumer, 1000);
+	asapo_consumer_set_timeout(a->consumer, 3000);
 
 	a->group_id = asapo_string_from_c_str(group_id);
 	a->stream = NULL;
