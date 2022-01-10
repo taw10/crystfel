@@ -199,6 +199,14 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->no_mask_data);
 		profile_end("read-data-block");
 		if ( image == NULL ) return;
+
+		/* image_read_data_block() will leave the filename/event as
+		 * NULL, because there's no file (duh).  Fill them in now with
+		 * the values passed down to us.  These values might be
+		 * meaningful (e.g. ASAP::O), or just placeholders.  */
+		image->filename = strdup(pargs->filename);
+		image->ev = strdup(pargs->event);
+
 	} else {
 		profile_start("file-wait-open-read");
 		image = file_wait_open_read(pargs->filename, pargs->event,

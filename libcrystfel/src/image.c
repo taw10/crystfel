@@ -1391,7 +1391,6 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
                                     int no_mask_data)
 {
 	struct image *image;
-	char tmp[64];
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1404,9 +1403,8 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	snprintf(tmp, 63, "datablock-%i", serial);
-	image->filename = strdup(tmp);
-	image->ev = strdup("//");
+	image->filename = NULL;
+	image->ev = NULL;
 	image->data_block = data_block;
 	image->data_block_size = data_block_size;
 
