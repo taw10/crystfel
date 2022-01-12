@@ -54,7 +54,6 @@ struct slurm_common_opts
 struct slurm_indexing_opts
 {
 	struct slurm_common_opts common;
-	char *path_add;
 	int block_size;
 };
 
@@ -248,7 +247,7 @@ static void cancel_task(void *job_priv)
 }
 
 
-static char **create_env(int *psize, char *path_add)
+static char **create_env(int *psize)
 {
 	char **env;
 	gchar **env_list;
@@ -501,7 +500,7 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 
 	cwd_gfile = g_file_new_for_path(".");
 
-	env = create_env(&n_env, NULL);
+	env = create_env(&n_env);
 	if ( env == NULL ) return NULL;
 
 	slurm_init_job_desc_msg(&job_desc_msg);
@@ -721,21 +720,6 @@ static gboolean block_size_focus_sig(GtkEntry *entry, GdkEvent *event,
 }
 
 
-static void pathadd_activate_sig(GtkEntry *entry, gpointer data)
-{
-	struct slurm_indexing_opts *opts = data;
-	opts->path_add = strdup(gtk_entry_get_text(entry));
-}
-
-
-static gboolean pathadd_focus_sig(GtkEntry *entry, GdkEvent *event,
-                                  gpointer data)
-{
-	pathadd_activate_sig(entry, data);
-	return FALSE;
-}
-
-
 static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 {
 	struct slurm_indexing_opts *opts = opts_priv;
@@ -770,32 +754,6 @@ static GtkWidget *make_indexing_parameters_widget(void *opts_priv)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 0);
 
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Search path for executables:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
-	entry = gtk_entry_new();
-	if ( opts->path_add != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(entry), opts->path_add);
-	}
-	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
-	                               "/path/to/indexing/programs");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry),
-	                   FALSE, FALSE, 0);
-	g_signal_connect(G_OBJECT(entry), "activate",
-	                 G_CALLBACK(pathadd_activate_sig),
-	                 opts);
-	g_signal_connect(G_OBJECT(entry), "focus-out-event",
-	                 G_CALLBACK(pathadd_focus_sig),
-	                 opts);
-	gtk_widget_set_tooltip_text(hbox, "The search path includes /bin, "
-	                            "/usr/bin, the location of the CrystFEL GUI "
-	                            "executable, and anything you enter here. "
-	                            "You can include multiple locations "
-	                            "separated by colons.");
-
 	return vbox;
 }
 
@@ -817,7 +775,6 @@ static struct slurm_indexing_opts *make_default_slurm_indexing_opts()
 
 	set_default_common_opts(&opts->common);
 	opts->block_size = 1000;
-	opts->path_add = NULL;
 
 	return opts;
 }
@@ -831,11 +788,6 @@ static void write_indexing_opts(void *opts_priv, FILE *fh)
 
 	fprintf(fh, "indexing.slurm.block_size %i\n",
 	        opts->block_size);
-
-	if ( opts->path_add != NULL ) {
-		fprintf(fh, "indexing.slurm.path_add %s\n",
-		        opts->path_add);
-	}
 }
 
 
@@ -860,7 +812,11 @@ static void read_indexing_opt(void *opts_priv,
 	}
 
 	if ( strcmp(key, "indexing.slurm.path_add") == 0 ) {
-		opts->path_add = strdup(val);
+		STATUS("The 'search path for executables' input for the SLURM "
+		       "backend is no longer used.\n");
+		STATUS("Add the correct locations to PATH before starting the "
+		       "CrystFEL GUI.  This will be propagated to your SLURM "
+		       "jobs.\n");
 	}
 
 	if ( strcmp(key, "indexing.slurm.account") == 0 ) {
