@@ -255,7 +255,7 @@ static char **create_env(int *psize)
 
 	env_list = g_get_environ();
 	n_env = 0;
-	while ( env_list[n_env] == NULL ) n_env++;
+	while ( env_list[n_env] != NULL ) n_env++;
 
 	/* Can't mix g_malloc/g_free with normal malloc/free, so we
 	 * must do a deep copy */
