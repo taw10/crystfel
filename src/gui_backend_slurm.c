@@ -251,44 +251,25 @@ static void cancel_task(void *job_priv)
 static char **create_env(int *psize, char *path_add)
 {
 	char **env;
-	const char *base_path = "PATH=/bin:/usr/bin";
-	char *crystfel_path;
-	size_t path_len;
+	gchar **env_list;
+	int i, n_env;
 
-	env = malloc(10*sizeof(char *));
+	env_list = g_get_environ();
+	n_env = 0;
+	while ( env_list[n_env] == NULL ) n_env++;
+
+	/* Can't mix g_malloc/g_free with normal malloc/free, so we
+	 * must do a deep copy */
+	env = malloc(n_env*sizeof(char *));
 	if ( env == NULL ) return NULL;
 
-	crystfel_path = get_crystfel_path_str();
-
-	path_len = 4 + strlen(base_path);
-
-	if ( path_add != NULL ) {
-		path_len += strlen(path_add);
+	for ( i=0; i<n_env; i++ ) {
+		env[i] = strdup(env_list[i]);
 	}
 
-	if ( crystfel_path != NULL ) {
-		path_len += strlen(crystfel_path);
-	}
+	g_strfreev(env_list);
 
-	env[0] = malloc(path_len);
-	if ( env[0] == NULL ) {
-		free(env);
-		return NULL;
-	}
-
-	strcpy(env[0], base_path);
-	if ( crystfel_path != NULL ) {
-		strcat(env[0], ":");
-		strcat(env[0], crystfel_path);
-		g_free(crystfel_path);
-	}
-	if ( path_add != NULL ) {
-		strcat(env[0], ":");
-		strcat(env[0], path_add);
-	}
-
-	*psize = 1;
-
+	*psize = n_env;
 	return env;
 }
 
