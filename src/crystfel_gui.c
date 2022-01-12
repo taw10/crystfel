@@ -885,6 +885,50 @@ static void add_log_menu_items(GtkTextView *textview,
 }
 
 
+static void try_load_geom_from_result(struct crystfelproject *proj)
+{
+	struct gui_indexing_result *res;
+	Stream *st;
+	char *geom_str;
+	const char *res_name = selected_result(proj);
+
+	STATUS("No geometry file specified in project file.\n");
+	if ( strcmp(res_name, "crystfel-gui-internal") == 0 ) {
+		if ( proj->n_results == 0 ) {
+			ERROR("No indexing results found.  "
+			      "No geometry information!\n");
+			return;
+		}
+		res_name = proj->results[0].name;
+	}
+
+	res = find_indexing_result_by_name(proj, res_name);
+	if ( res == NULL ) {
+		ERROR("Couldn't find results '%s'\n", res_name);
+		return;
+	}
+
+	st = stream_open_for_read(res->streams[0]);
+	if ( st == NULL ) {
+		ERROR("Couldn't open stream '%s' from result '%s'\n",
+		      res->streams[0], res_name);
+		return;
+	}
+
+	geom_str = stream_geometry_file(st);
+	if ( geom_str == NULL ) {
+		ERROR("No geometry in stream '%s' from result '%s'\n",
+		      res->streams[0], res_name);
+		return;
+	}
+
+	proj->dtempl = data_template_new_from_string(geom_str);
+	stream_close(st);
+
+	STATUS("Using geometry from result '%s'\n", res_name);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -1102,6 +1146,8 @@ int main(int argc, char *argv[])
 			if ( dtempl != NULL ) {
 				proj.dtempl = dtempl;
 			}
+		} else {
+			try_load_geom_from_result(&proj);
 		}
 
 		update_imageview(&proj);
