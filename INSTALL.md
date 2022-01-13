@@ -117,6 +117,7 @@ All dependencies can be taken from the Fedora repositories:
 ```
 $ sudo dnf group install 'Development Tools'
 $ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson gcc-c++ fftw-devel zeromq-devel msgpack-devel
+$ cd /home/user/downloads/crystfel
 $ meson build
 $ ninja -C build
 $ sudo ninja -C build install
@@ -147,6 +148,7 @@ $ apt install -y build-essential libhdf5-dev libgsl-dev \
                  git flex bison libzmq3-dev libmsgpack-dev \
                  libeigen3-dev libccp4-dev \
                  ninja-build python3
+$ cd /home/user/downloads/crystfel
 $ /home/user/downloads/meson/meson.py build
 $ ninja -C build
 $ sudo ninja -C build install
@@ -190,7 +192,7 @@ $ wget https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linu
 $ unzip ninja-linux.zip
 $ export NINJA=`pwd`/ninja
 
-$ cd crystfel
+$ cd /home/user/downloads/crystfel
 $ $MESON build
 $ $NINJA -C build
 $ sudo $NINJA -C build install
@@ -211,6 +213,7 @@ $ sudo apt install -y build-essential libhdf5-dev libgsl-dev \
                       git flex bison libzmq3-dev libmsgpack-dev \
                       libeigen3-dev libccp4-dev \
                       meson ninja-build
+$ cd /home/user/downloads/crystfel
 $ meson build
 $ ninja -C build
 $ sudo ninja -C build install
@@ -228,6 +231,7 @@ $ brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cair
 $ export PATH="$(brew --prefix)/opt/bison/bin:$(brew --prefix)/opt/flex/bin:$PATH"
 $ export LDFLAGS="-L$(brew --prefix)/opt/bison/lib -L$(brew --prefix)/opt/flex/lib -L$(brew --prefix)/opt/argp-standalone/lib -largp $LDFLAGS"
 $ export CFLAGS="-I$(brew --prefix)/opt/flex/include -I$(brew --prefix)/opt/argp-standalone/include/ $CFLAGS"
+$ cd /home/user/downloads/crystfel
 $ meson build
 $ ninja -C build
 $ ninja -C build install
