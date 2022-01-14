@@ -1,3 +1,32 @@
+CrystFEL version 0.10.1, 14 January 2022
+----------------------------------------
+
+- GUI: Proper overlines for reflection indices
+- GUI: Allow import of multiple streams at once
+- GUI: Fix for image panning after change of beam centre
+- GUI: Fix for pixel value display at high zoom with "slanty" pixels
+- GUI: Addition of checkbox "Rescan streams wihen changing frame"
+- GUI: Crystal and project names will be added to MTZ
+- GUI: Copy environment from parent process for SLURM jobs
+- GUI: Addition of SLURM time limit field
+- Build system: Auto-compilation of dependencies when using Meson
+- Build system: Fix detection of OpenCL and SLURM
+- Overhaul Doxygen API docs
+- Geometry files: Wavelength (or photon energy etc) must be specified
+- Geometry files: Experiment-space directions of fs/ss vectors must be specified
+- Geometry files: Removal of rail direction
+- Geometry files: Addition of mask_edge_pixels
+- indexamajig: Switch from pixel distance to fraction of cell axis, when pairing peaks
+- indexamajig: Add --data-format, implement HDF5s from online data source
+- indexamajig: Shut down cleanly on SIGUSR1 (useful for online data)
+- indexamajig: Generate per-frame profiling data
+- MTZ export: Split into "plain" and "Bijvoet" modes of operation
+- XDS export: Bug fix (missing 'S'!)
+- compare_hkl: Bug fix for FoM reflection pair selection
+- partialator: Handle spaces in custom split file
+- partialator: Gracefully handle zero crystals in split dataset
+
+
 CrystFEL version 0.10.0, 16th August 2021
 -----------------------------------------
 
