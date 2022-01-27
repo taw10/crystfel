@@ -348,7 +348,7 @@ const char *xgandalf_probe(UnitCell *cell)
 
 static void xgandalf_show_help()
 {
-	printf("Parameters for the TakeTwo indexing algorithm:\n"
+	printf("Parameters for the XGANDALF indexing algorithm:\n"
 "     --xgandalf-sampling-pitch\n"
 "                           Sampling pitch: 0 (loosest) to 4 (most dense)\n"
 "                            or with secondary Miller indices: 5 (loosest) to\n"
