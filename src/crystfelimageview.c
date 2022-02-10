@@ -127,25 +127,12 @@ static void configure_scroll_adjustments(CrystFELImageView *iv)
 }
 
 
-static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
-                       CrystFELImageView *iv)
+static void handle_scroll_click(double zoom_scale,
+                                CrystFELImageView *iv,
+                                GdkEventScroll *event)
 {
-	double zoom_scale, ratio;
-	int claim = FALSE;
+	double ratio;
 	int zoom_allowed = 1;
-
-	if ( iv->image == NULL ) return FALSE;
-
-	if ( event->direction == GDK_SCROLL_UP ) {
-		zoom_scale = 1.1;
-		claim = TRUE;
-	}
-	if ( event->direction == GDK_SCROLL_DOWN ) {
-		zoom_scale = 0.9;
-		claim = TRUE;
-	}
-	if ( event->direction == GDK_SCROLL_LEFT ) return TRUE;
-	if ( event->direction == GDK_SCROLL_RIGHT ) return TRUE;
 
 	/* Size of a detector pixel in screen pixels */
 	ratio = iv->zoom * iv->image->detgeom->panels[0].pixel_pitch;
@@ -153,7 +140,7 @@ static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
 	if ( (ratio < 0.05) && (zoom_scale < 1.0) ) zoom_allowed = 0;
 	if ( (ratio > 100.0) && (zoom_scale > 1.0) ) zoom_allowed = 0;
 
-	if ( claim && zoom_allowed ) {
+	if ( zoom_allowed ) {
 
 		double shift_x, shift_y;
 		double scr_x, scr_y;
@@ -173,8 +160,42 @@ static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
 		redraw(iv);
 
 	}
+}
 
-	return claim;
+
+static gint scroll_sig(GtkWidget *window, GdkEventScroll *event,
+                       CrystFELImageView *iv)
+{
+	double xs, ys;
+
+	if ( iv->image == NULL ) return FALSE;
+
+	switch ( event->direction ) {
+
+		case GDK_SCROLL_SMOOTH:
+		if ( gdk_event_get_scroll_deltas((GdkEvent *)event, &xs, &ys) ) {
+			handle_scroll_click(1.0-ys*0.1, iv, event);
+		}
+		return TRUE;
+
+		case GDK_SCROLL_UP:
+		handle_scroll_click(1.1, iv, event);
+		return TRUE;
+
+		case GDK_SCROLL_DOWN:
+		handle_scroll_click(0.9, iv, event);
+		return TRUE;
+
+		case GDK_SCROLL_LEFT:
+		return TRUE;  /* Do not propagate further */
+
+		case GDK_SCROLL_RIGHT:
+		return TRUE;  /* Do not propagate further */
+
+		default:
+		printf("Unhandled scroll direction %i\n", event->direction);
+		return FALSE;
+	}
 }
 
 
@@ -848,7 +869,7 @@ GtkWidget *crystfel_image_view_new()
 	                       | GDK_BUTTON1_MOTION_MASK
 	                       | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK
 	                       | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK
-	                       | GDK_SCROLL_MASK);
+	                       | GDK_SCROLL_MASK | GDK_SMOOTH_SCROLL_MASK);
 
 	gtk_widget_grab_focus(GTK_WIDGET(iv));
 
