@@ -1751,18 +1751,41 @@ static gint motion_sig(GtkWidget *da, GdkEventMotion *event, HistoBox *h)
 }
 
 
+static void handle_scroll_click(double zoom_scale, HistoBox *h, double pos)
+{
+	h->dmin = pos - (pos-h->dmin)*zoom_scale;
+	h->dmax = pos + (h->dmax-pos)*zoom_scale;
+}
+
+
 static gint scroll_sig(GtkWidget *widget, GdkEventScroll *event, HistoBox *h)
 {
+	double xs, ys;
 	double span = h->dmax - h->dmin;
 	double pos = h->dmin + span*event->x/h->width;;
 
-	if ( event->direction == GDK_SCROLL_UP ) {
-		h->dmin = pos - (pos-h->dmin)*0.9;
-		h->dmax = pos + (h->dmax-pos)*0.9;
-	} else if ( event->direction == GDK_SCROLL_DOWN ) {
-		h->dmin = pos - (pos-h->dmin)*1.1;
-		h->dmax = pos + (h->dmax-pos)*1.1;
-	} else {
+	switch ( event->direction ) {
+
+		case GDK_SCROLL_UP:
+		handle_scroll_click(0.9, h, pos);
+		break;
+
+		case GDK_SCROLL_DOWN:
+		handle_scroll_click(1.1, h, pos);
+		break;
+
+		case GDK_SCROLL_SMOOTH:
+		if ( gdk_event_get_scroll_deltas((GdkEvent *)event, &xs, &ys) ) {
+			handle_scroll_click(1.0+ys*0.1, h, pos);
+		}
+		break;
+
+		case GDK_SCROLL_LEFT:
+		case GDK_SCROLL_RIGHT:
+		return FALSE;  /* Not handled here */
+
+		default:
+		STATUS("Unhandled scroll direction %i\n", event->direction);
 		return FALSE;
 	}
 
@@ -1826,6 +1849,7 @@ static HistoBox *histobox_new(CellWindow *w, const char *units, const char *n)
 	                      | GDK_BUTTON1_MOTION_MASK
 	                      | GDK_POINTER_MOTION_HINT_MASK
 	                      | GDK_SCROLL_MASK
+	                      | GDK_SMOOTH_SCROLL_MASK
 	                      | GDK_KEY_PRESS_MASK);
 
 	if ( g_signal_lookup("draw", GTK_TYPE_DRAWING_AREA) ) {
