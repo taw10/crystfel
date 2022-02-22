@@ -109,6 +109,10 @@ setup file before trying to install CrystFEL, and make sure that the setup file
 is not automatically referenced in your shell setup files (`.bashrc` and
 others).
 
+The script `install-indexers`, found in the `scripts` directory of the CrystFEL
+source code, can help you to install Mosflm, DirAx and XDS.  Run
+`scripts/install-indexers --help` for information.
+
 Fedora 22 or later
 ------------------
 

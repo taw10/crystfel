@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Set the installation location here
+# Executables will be placed in $CFPREFIX/bin
+CFPREFIX=/usr
+
+# Set the location of syminfo.lib here
+SYMINFO=/usr/share/ccp4/syminfo.lib
+
+if [ x$1 == x--help ]; then
+	echo 'This script downloads and installs Mosflm, DirAx and XDS'
+	echo
+	echo Step 1: $0
+	echo Step 2: $0 'install    ' \# perhaps with sudo
+	echo
+	echo '    Installation location:' $CFPREFIX
+	echo 'CCP4 syminfo.lib location:' $SYMINFO
+	echo
+	echo 'Please note the license conditions for each program:'
+	echo '   DirAx: http://www.crystal.chem.uu.nl/distr/dirax/'
+	echo '  Mosflm: https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/'
+	echo '     XDS: https://xds.mr.mpg.de/'
+	exit 0
+fi
+
+if [ ! -f $SYMINFO ]; then
+	echo Cannot find SYMINFO file at $SYMINFO
+	echo -n You need to install libCCP4
+	echo ' (separately, or as part of the CrystFEL installation process)'
+	echo Or, edit the script to set the correct location
+	exit 1
+fi
+
+# Exit immediately if something doesn't work
+set -e
+
+if [ x$1 != xinstall ]; then
+
+	if [ x$USER == xroot ]; then
+		echo Do not run this as root
+		exit 1
+	fi
+
+	echo '    Installation location:' $CFPREFIX
+	echo 'CCP4 syminfo.lib location:' $SYMINFO
+	echo
+
+	mkdir mosflm-tempdir
+	pushd mosflm-tempdir
+	wget -nv https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip
+	unzip mosflm-linux-64-noX11.zip
+	echo '#!/bin/sh' > mosflm
+	echo "export SYMINFO=$SYMINFO" >> mosflm
+	echo "$CFPREFIX/bin/mosflm.real -n \$@" >> mosflm
+	chmod +x mosflm
+	popd
+	
+	mkdir dirax-tempdir
+	pushd dirax-tempdir
+	wget -nv http://www.crystal.chem.uu.nl/distr/dirax/download/dirax1.17-Linux-x86_64-static.tar.Z
+	set +e
+	tar -xZf dirax1.17-Linux-x86_64-static.tar.Z
+	if [ $? != 0 ]; then
+		echo You might need to install package \'ncompress\'
+		exit 1
+	fi
+	set -e
+	mv dirax dirax.real
+	echo "#!/bin/sh" > dirax
+	echo "exec $CFPREFIX/bin/dirax.real \"\$@\"" >> dirax
+	chmod +x dirax
+	popd
+	
+	mkdir xds-tempdir
+	pushd xds-tempdir
+	wget -nv https://xds.mr.mpg.de/XDS-INTEL64_Linux_x86_64.tar.gz
+	tar -xzf XDS-INTEL64_Linux_x86_64.tar.gz
+	popd
+
+else
+
+	if [ ! -f mosflm-tempdir/mosflm-linux-64-noX11 ]; then
+		echo Run this script without \'install\' first
+		exit 1
+	fi
+	set -x
+	install -D mosflm-tempdir/mosflm-linux-64-noX11 $CFPREFIX/bin/mosflm.real
+	install mosflm-tempdir/mosflm $CFPREFIX/bin/mosflm
+	install dirax-tempdir/dirax dirax-tempdir/dirax.real $CFPREFIX/bin
+	install --mode=644 dirax-tempdir/dirax.commands $CFPREFIX/bin
+	install xds-tempdir/XDS-INTEL64_Linux_x86_64/xds $CFPREFIX/bin/xds
+
+fi
