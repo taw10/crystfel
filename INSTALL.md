@@ -258,6 +258,18 @@ that the dependencies for the GUI were met (see above).
 Refer to the tutorial to see where to go from here!
 
 
+Finding syminfo.lib
+-------------------
+The CCP4 libraries need to refer to symmetry information in a file called
+`syminfo.lib`.  Unfortunately, they can only find this file if either `CLIBD`
+or `SYMINFO` are set in the environment.  The CrystFEL GUI (`crystfel`),
+`get_hkl` and `mosflm` therefore all need this variable to be set.  You could
+set this variable in your shell setup file (e.g. as part of a `module load`),
+or create wrapper scripts for these three programs.  The `install-indexers`
+script, which assists with installing indexing engines, creates such a wrapper
+for Mosflm already.
+
+
 Notes about strange problems
 ----------------------------
 The following problems are usually only encountered when installing dependencies
