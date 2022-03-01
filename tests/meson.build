@@ -23,6 +23,14 @@ foreach name : partialator_tests
 endforeach
 
 
+# Test of waiting for files
+test('file-wait',
+     find_program('file-wait'),
+     args : [indexamajig.full_path(),
+             files('wavelength_geom.h5'),
+             files('wavelength_geom1.geom')])
+
+
 # Easy unit tests of libcrystfel functions
 simple_tests = ['ambi_check',
                 'cell_check',

@@ -1,0 +1,38 @@
+#!/bin/sh
+
+INDEXAMAJIG=$1
+INFILE=$2
+GEOM=$3
+
+function make_link {
+	sleep 5
+	ln -s $INFILE file_wait_input.h5
+}
+
+if [ -f file_wait_input.h5 ]; then
+	echo file_wait_input.h5 exists.  Not proceeding!
+	exit 1
+fi
+
+if [ -f file_wait_input.lst ]; then
+	echo file_wait_input.lst exists.  Not proceeding!
+	exit 1
+fi
+
+if [ -f file_wait_input.stream ]; then
+	echo file_wait_input.stream exists.  Not proceeding!
+	exit 1
+fi
+
+make_link &
+
+echo "file_wait_input.h5" > file_wait_input.lst
+$INDEXAMAJIG -i file_wait_input.lst -o file_wait_input.stream -g $GEOM --wait-for-file=10
+OUTVAL=$?
+
+wait
+rm -f file_wait_input.h5 file_wait_input.lst file_wait_input.stream
+
+if [ $OUTVAL -ne 0 ]; then
+	exit 1;
+fi

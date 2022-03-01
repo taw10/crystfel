@@ -178,10 +178,10 @@ if zmqdep.found()
   indexamajig_sources += ['src/im-zmq.c']
 endif
 
-executable('indexamajig', indexamajig_sources,
-           dependencies: [mdep, libcrystfeldep, gsldep, pthreaddep, zmqdep],
-           install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+indexamajig = executable('indexamajig', indexamajig_sources,
+                         dependencies: [mdep, libcrystfeldep, gsldep, pthreaddep, zmqdep],
+                         install: true,
+                         install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
 # make_pixelmap
 executable('make_pixelmap',
