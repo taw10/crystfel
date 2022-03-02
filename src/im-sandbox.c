@@ -1279,7 +1279,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	free(sb->pids);
 
 	try_status(sb, 1);
-	r = (sb->shared->n_processed == 0);
+	if ( sb->shared->n_processed == 0 ) r = 5;
 	if ( sb->shared->should_shutdown ) r = 1;
 
 	delete_temporary_folder(sb->tmpdir, n_proc);
