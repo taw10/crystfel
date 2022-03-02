@@ -31,6 +31,12 @@ test('file-wait',
              files('wavelength_geom1.geom')])
 
 
+test('indexamajig-missing-file',
+     find_program('indexamajig-missing-file'),
+     args : [indexamajig.full_path(),
+             files('wavelength_geom1.geom')])
+
+
 # Easy unit tests of libcrystfel functions
 simple_tests = ['ambi_check',
                 'cell_check',

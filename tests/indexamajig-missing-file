@@ -1,0 +1,35 @@
+#!/bin/sh
+
+INDEXAMAJIG=$1
+GEOM=$2
+
+INFILES=`echo file_does_not_exist{1..10}.h5`
+
+if [ -f test-input.lst ]; then
+	echo test-input.lst exists.  Not proceeding!
+	exit 1
+fi
+
+if [ -f test-output.stream ]; then
+	echo test-output.stream exists.  Not proceeding!
+	exit 1
+fi
+
+for FILE in $INFILES; do
+	if [ -f $FILE ]; then
+		echo $FILE exists.  Not proceeding!
+		exit 1
+	fi
+	echo $FILE >> test-input.lst
+done
+
+$INDEXAMAJIG -i test-input.lst -o test-output.stream -g $GEOM
+OUTVAL=$?
+
+rm -f test-output.stream test-input.lst
+
+# indexamajig should have failed with a specific error code
+if [ $OUTVAL -ne 5 ]; then
+	echo indexamajig returned $OUTVAL, should be 5
+	exit 1;
+fi
