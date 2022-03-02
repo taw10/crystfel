@@ -1830,6 +1830,10 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		return full_evs.events;
 	}
 
+	if ( !file_exists(filename) ) {
+		ERROR("File not found: %s (hdf5_expand_frames)\n", filename);
+		return NULL;
+	}
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
