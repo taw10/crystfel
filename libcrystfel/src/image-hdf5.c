@@ -1833,7 +1833,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
-		ERROR("Couldn't open file (expand): %s\n", filename);
+		ERROR("Couldn't open file (hdf5_expand_frames): %s\n", filename);
 		return NULL;
 	}
 

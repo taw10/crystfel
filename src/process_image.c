@@ -130,8 +130,7 @@ static struct image *file_wait_open_read(const char *filename,
 			if ( (wait_for_file != 0) && (file_wait_time != 0) ) {
 
 				if ( !wait_message_done ) {
-					STATUS("Waiting for '%s'\n",
-					       filename);
+					STATUS("Waiting for '%s'\n", filename);
 					wait_message_done = 1;
 				}
 
@@ -143,7 +142,7 @@ static struct image *file_wait_open_read(const char *filename,
 
 			}
 
-			ERROR("File %s not found\n", filename);
+			ERROR("File not found: %s (process_image)\n", filename);
 			return NULL;
 		}
 
