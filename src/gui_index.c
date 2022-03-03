@@ -622,12 +622,24 @@ static void run_indexing_once(struct crystfelproject *proj)
 	index_pattern(proj->cur_image, ipriv);
 
 	for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
-		crystal_set_profile_radius(proj->cur_image->crystals[i], 0.02e9);
 		crystal_set_mosaicity(proj->cur_image->crystals[i], 0.0);
-		if ( refine_radius(proj->cur_image->crystals[i],
-		                   proj->cur_image) )
-		{
-			ERROR("WARNING: Radius determination failed\n");
+		if ( proj->indexing_params.use_fix_profile_radius ) {
+
+			/* Manual radius */
+			crystal_set_profile_radius(proj->cur_image->crystals[i],
+			                           proj->indexing_params.fix_profile_radius);
+
+		} else {
+
+			/* Auto radius determination */
+			crystal_set_profile_radius(proj->cur_image->crystals[i],
+			                           0.02e9);
+			if ( refine_radius(proj->cur_image->crystals[i],
+		                           proj->cur_image) )
+			{
+				ERROR("WARNING: Radius determination failed\n");
+			}
+
 		}
 	}
 
