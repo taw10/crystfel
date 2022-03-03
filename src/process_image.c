@@ -148,10 +148,6 @@ static struct image *file_wait_open_read(const char *filename,
 
 	} while ( r );
 
-	time_accounts_set(taccs, TACC_HDF5OPEN);
-	set_last_task(last_task, "open file");
-	sb_shared->pings[cookie]++;
-
 	do {
 
 		time_accounts_set(taccs, TACC_HDF5READ);
