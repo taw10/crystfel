@@ -245,8 +245,7 @@ list(APPEND CRYSTFEL_EXECUTABLES list_events)
 # ----------------------------------------------------------------------
 # indexamajig
 
-set(INDEXAMAJIG_SOURCES src/indexamajig.c src/im-sandbox.c src/process_image.c
-                        src/time-accounts.c)
+set(INDEXAMAJIG_SOURCES src/indexamajig.c src/im-sandbox.c src/process_image.c)
 
 if ( ZMQ_FOUND )
   list(APPEND INDEXAMAJIG_SOURCES src/im-zmq.c)

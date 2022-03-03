@@ -29,10 +29,6 @@
 #ifndef TIME_ACCOUNTS_H
 #define TIME_ACCOUNTS_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 enum timeaccount
 {
 	TACC_NOTHING,

@@ -8,6 +8,7 @@
 #mesondefine HAVE_GZBUFFER
 #mesondefine HAVE_LIBCCP4
 #mesondefine HAVE_MSGPACK
+#mesondefine HAVE_CLOCK_GETTIME
 
 #mesondefine HAVE_FORKPTY_PTY_H
 #mesondefine HAVE_FORKPTY_UTIL_H

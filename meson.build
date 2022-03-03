@@ -172,7 +172,7 @@ executable('whirligig',
 
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
-                       'src/process_image.c', 'src/time-accounts.c',
+                       'src/process_image.c',
                        versionc]
 if zmqdep.found()
   indexamajig_sources += ['src/im-zmq.c']

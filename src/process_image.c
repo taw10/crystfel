@@ -50,12 +50,12 @@
 #include <integration.h>
 #include <detgeom.h>
 #include <image-msgpack.h>
+#include <time-accounts.h>
 
 #include "process_image.h"
 #include "predict-refine.h"
 #include "im-sandbox.h"
 #include "im-zmq.h"
-#include "time-accounts.h"
 
 static float **backup_image_data(float **dp, struct detgeom *det)
 {
