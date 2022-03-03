@@ -150,7 +150,7 @@ static struct image *file_wait_open_read(const char *filename,
 
 	do {
 
-		time_accounts_set(taccs, TACC_HDF5READ);
+		time_accounts_set(taccs, TACC_IMAGE_DATA);
 		set_last_task(last_task, "read file");
 		sb_shared->pings[cookie]++;
 
@@ -189,7 +189,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	int any_crystals;
 
 	if ( pargs->zmq_data != NULL ) {
-		time_accounts_set(taccs, TACC_HDF5READ);
+		time_accounts_set(taccs, TACC_IMAGE_DATA);
 		set_last_task(last_task, "unpacking messagepack object");
 		image = image_read_data_block(iargs->dtempl,
 		                              pargs->zmq_data,
