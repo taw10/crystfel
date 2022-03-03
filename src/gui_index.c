@@ -1015,30 +1015,53 @@ int read_number_processed(const char *filename)
 {
 	FILE *fh = fopen(filename, "r");
 	int n_proc = 0;
+	long len = 0;
+	int found;
 
 	/* Normal situation if SLURM job hasn't started yet */
 	if ( fh == NULL ) return 0;
 
-	/* Only look at the last part of the file */
-	fseek(fh, -4096, SEEK_END);
-
 	do {
-		char line[1024];
-		if ( fgets(line, 1024, fh) == NULL ) break;
 
-		if ( strncmp(line, "Final: ", 7) == 0 ) {
-			int i;
-			if ( sscanf(line, "Final: %i images processed", &i) == 1 ) {
-				n_proc = i;
-			}
-		} else if ( strstr(line, " images processed, ") != NULL ) {
-			int i;
-			if ( sscanf(line, "%i ", &i) == 1 ) {
-				n_proc = i;
-			}
+		len += 4096;
+
+		/* Only look at the last part of the file */
+		if ( fseek(fh, -len, SEEK_END) ) {
+			/* Whoops, tried to go too far.
+			 * Start from beginning, and don't loop again */
+			fseek(fh, 0, SEEK_SET);
+			found = 1;
+		} else {
+			found = 0;
 		}
 
-	} while ( 1 );
+		do {
+			char line[1024];
+			if ( fgets(line, 1024, fh) == NULL ) break;
+
+			if ( strncmp(line, "Final: ", 7) == 0 ) {
+				int i;
+				if ( sscanf(line, "Final: %i images processed", &i) == 1 ) {
+					n_proc = i;
+					found = 1;
+				}
+			} else if ( strstr(line, " images processed, ") != NULL ) {
+				int i;
+				if ( sscanf(line, "%i ", &i) == 1 ) {
+					n_proc = i;
+					found = 1;
+				}
+			}
+
+		} while ( 1 );
+
+	} while ( !found && (len < 16384) );
+
+	if ( !found ) {
+		ERROR("Couldn't find status message in last 16k of %s - "
+		      "indexamajig output probably contains copious errors.\n",
+		      filename);
+	}
 
 	fclose(fh);
 
