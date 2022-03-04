@@ -180,11 +180,6 @@ static int should_rescan_streams(struct crystfelproject *proj)
 
 	if ( !proj->rescan_on_change ) return 0;
 
-	if ( !proj->scanned_since_last_job_finished ) {
-		proj->scanned_since_last_job_finished = 1;
-		return 1;
-	}
-
 	while ( item != NULL ) {
 		struct gui_task *task = item->data;
 		if ( task->running ) return 1;
@@ -1249,13 +1244,21 @@ static gboolean update_info_bar(gpointer data)
 	                              frac_complete);
 
 	if ( !running && task->running ) {
+
+		int i;
+
 		/* Task is no longer running */
 		task->running = 0;
 		gtk_widget_destroy(task->cancel_button);
 		gtk_info_bar_set_show_close_button(GTK_INFO_BAR(task->info_bar),
 		                                   TRUE);
 
-		task->proj->scanned_since_last_job_finished = 0;
+		/* We don't have an easy way to get the result name from the
+		 * task structure, so cheat by marking all of the results as
+		 * "possibly out of date" */
+		for ( i=0; i<task->proj->n_results; i++ ) {
+			task->proj->results[i].need_rescan = 1;
+		}
 
 		return G_SOURCE_REMOVE;
 	}

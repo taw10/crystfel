@@ -1207,7 +1207,6 @@ int default_project(struct crystfelproject *proj)
 	proj->merging_opts = NULL;
 	proj->ambi_opts = NULL;
 	proj->tasks = NULL;
-	proj->scanned_since_last_job_finished = 0;
 	proj->indexing_new_job_title = NULL;
 	proj->merging_new_job_title = NULL;
 	proj->ambi_new_job_title = NULL;
@@ -1362,6 +1361,7 @@ int add_indexing_result(struct crystfelproject *proj,
 	new_results[proj->n_results].name = strdup(name);
 	new_results[proj->n_results].streams = malloc(n_streams*sizeof(char *));
 	new_results[proj->n_results].n_streams = n_streams;
+	new_results[proj->n_results].need_rescan = 0;
 	new_results[proj->n_results].indices = malloc(n_streams*sizeof(StreamIndex *));
 
 	for ( i=0; i<n_streams; i++ ) {
@@ -1461,6 +1461,11 @@ struct image *find_indexed_image(struct crystfelproject *proj,
 	result = find_indexing_result_by_name(proj, results_name);
 	if ( result == NULL ) return NULL;
 
+	if ( !ever_scanned(result) ) {
+		update_result_index(result);
+		result->need_rescan = 0;
+	}
+
 	for ( i=0; i<result->n_streams; i++ ) {
 		if ( stream_select_chunk(NULL,
 		                         result->indices[i],
@@ -1472,9 +1477,10 @@ struct image *find_indexed_image(struct crystfelproject *proj,
 		}
 	}
 
-	if ( !found && (permit_rescan || !ever_scanned(result)) ) {
+	if ( !found && (result->need_rescan || permit_rescan) ) {
 		/* Re-scan and try again */
 		update_result_index(result);
+		result->need_rescan = 0;
 		for ( i=0; i<result->n_streams; i++ ) {
 			if ( stream_select_chunk(NULL,
 			                         result->indices[i],

@@ -149,6 +149,7 @@ struct gui_indexing_result
 	int n_streams;
 	char **streams;
 	StreamIndex **indices;
+	int need_rescan;
 };
 
 struct gui_merge_result
@@ -328,7 +329,6 @@ struct crystfelproject {
 	int n_backends;
 
 	GSList *tasks;
-	int scanned_since_last_job_finished;
 
 	struct gui_indexing_result *results;
 	int n_results;
