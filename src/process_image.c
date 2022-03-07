@@ -224,7 +224,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	time_accounts_set(taccs, TACC_FILTER);
 	set_last_task(last_task, "image filter");
 	sb_shared->pings[cookie]++;
-	prefilter = backup_image_data(image->dp, image->detgeom);
+
+	if ( (iargs->median_filter > 0) || iargs->noisefilter ) {
+		prefilter = backup_image_data(image->dp, image->detgeom);
+	} else {
+		prefilter = NULL;
+	}
 
 	if ( iargs->median_filter > 0 ) {
 		filter_median(image, iargs->median_filter);
@@ -319,7 +324,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                                                  image->lambda,
 	                                                  image->detgeom);
 
-	restore_image_data(image->dp, image->detgeom, prefilter);
+	if ( prefilter != NULL ) {
+		restore_image_data(image->dp, image->detgeom, prefilter);
+	}
 
 	rn = getcwd(NULL, 0);
 
