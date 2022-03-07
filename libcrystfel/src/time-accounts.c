@@ -62,6 +62,10 @@ TimeAccounts *time_accounts_init()
 	accs->n_accs = 0;
 	accs->cur_acc = TACC_NOTHING;
 
+#ifndef HAVE_CLOCK_GETTIME
+	printf("Profiling disabled because clock_gettime is not available\n");
+#endif
+
 	return accs;
 }
 
