@@ -154,8 +154,9 @@ static struct image *file_wait_open_read(const char *filename,
 		set_last_task(last_task, "read file");
 		sb_shared->pings[cookie]++;
 
-		image = image_read(dtempl, filename, event,
-		                   no_image_data, no_mask_data);
+		image = image_read_with_time_accounting(dtempl, filename, event,
+		                                        no_image_data, no_mask_data,
+		                                        taccs);
 		if ( image == NULL ) {
 			if ( wait_for_file && !read_retry_done ) {
 				read_retry_done = 1;
