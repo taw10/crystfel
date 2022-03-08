@@ -91,8 +91,7 @@ int stream_has_old_indexers(Stream *st)
 }
 
 
-static ImageFeatureList *read_peaks(Stream *st,
-                                    struct image *image)
+static ImageFeatureList *read_peaks(Stream *st, struct image *image)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -104,8 +103,9 @@ static ImageFeatureList *read_peaks(Stream *st,
 
 		char line[1024];
 		float x, y, d, intensity;
-		int r, exp_n;
+		int r;
 		char panel_name[1024];
+		int pn;
 
 		rval = fgets(line, 1023, st->fh);
 		st->ln++;
@@ -124,53 +124,32 @@ static ImageFeatureList *read_peaks(Stream *st,
 			continue;
 		}
 
-		if ( AT_LEAST_VERSION(st, 2, 3) ) {
-			r = sscanf(line, "%f %f %f %f %64s",
-			           &x, &y, &d, &intensity, panel_name);
-			exp_n = 5;
-		} else {
-			r = sscanf(line, "%f %f %f %f",
-			           &x, &y, &d, &intensity);
-			exp_n = 4;
-		}
+		r = sscanf(line, "%f %f %f %f %64s",
+		           &x, &y, &d, &intensity, panel_name);
 
-		if ( r != exp_n ) {
+		if ( r != 5 ) {
 			ERROR("Failed to parse peak list line.\n");
 			ERROR("The failed line was: '%s'\n", line);
 			image_feature_list_free(features);
 			return NULL;
 		}
 
-		if ( (panel_name[0] != '\0') && (st->dtempl_read != NULL) ) {
+		if ( data_template_panel_name_to_number(st->dtempl_read,
+		                                        panel_name,
+		                                        &pn) )
+		{
+			ERROR("No such panel '%s'\n", panel_name);
+		} else {
 
-			int pn;
-
-			if ( data_template_panel_name_to_number(st->dtempl_read,
-			                                        panel_name,
-			                                        &pn) )
+			if ( data_template_file_to_panel_coords(st->dtempl_read,
+			                                        &x, &y, pn) )
 			{
-				ERROR("No such panel '%s'\n",
-				      panel_name);
+				ERROR("Failed to convert peak coords\n");
 			} else {
-
-				data_template_file_to_panel_coords(st->dtempl_read,
-				                                   &x, &y, pn);
-
 				image_add_feature(features, x, y,
 				                  pn, image, intensity,
 				                  NULL);
-
 			}
-
-		} else {
-
-			/* Either it's an old format stream (in which
-			 * case the data is probably "slabby", so no
-			 * coordinate conversion is needed), or
-			 * the caller isn't interested in panel
-			 * locations */
-			image_add_feature(features, x, y, 0,
-			                  image, intensity, NULL);
 
 		}
 
