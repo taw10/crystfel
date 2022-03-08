@@ -3,7 +3,7 @@
 PARTIALATOR=$1
 
 cat > partialator_merge_check_1.stream << EOF
-CrystFEL stream format 2.1
+CrystFEL stream format 2.3
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
 ----- Begin geometry file -----
 photon_energy = 9000 eV
@@ -11,6 +11,8 @@ panel/min_fs = 0
 panel/min_ss = 0
 panel/max_fs = 1023
 panel/max_ss = 1023
+panel/fs = x
+panel/ss = y
 panel/corner_x = -100
 panel/corner_y = -100
 panel/clen = 50 mm
@@ -30,8 +32,8 @@ bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
 cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
 profile_radius = 0.0005 nm^-1
 Reflections measured after indexing
-  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0     100.00        -       1.00       1  938.0  629.0
+   h    k    l          I   sigma(I)       peak background  fs/px  ss/px panel
+   1   0   0       100.00       0.00      100.0        0.0  938.0  629.0 panel
 End of reflections
 --- End crystal
 --- Begin crystal
@@ -41,8 +43,8 @@ bstar = -0.0068281 +0.0403989 -0.0005196 nm^-1
 cstar = +0.0406926 +0.0052233 -0.0426520 nm^-1
 profile_radius = 0.0005 nm^-1
 Reflections measured after indexing
-  h   k   l          I    phase   sigma(I)  counts  fs/px  ss/px
-  1   0   0     200.00        -       1.00       1  938.0  629.0
+   h    k    l          I   sigma(I)       peak background  fs/px  ss/px panel
+   1   0   0       200.00       0.00      100.0        0.0  938.0  629.0 panel
 End of reflections
 --- End crystal
 ----- End chunk -----
