@@ -58,9 +58,6 @@
 #define LATEST_MAJOR_VERSION (2)
 #define LATEST_MINOR_VERSION (3)
 
-#define AT_LEAST_VERSION(st, a, b) ((st->major_version>=(a)) \
-                                    && (st->minor_version>=(b)))
-
 struct _stream
 {
 	FILE *fh;
@@ -289,161 +286,6 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 	} while ( rval != NULL );
 
 	/* Got read error of some kind before finding STREAM_PEAK_LIST_END_MARKER */
-	return NULL;
-}
-
-
-static RefList *read_stream_reflections_2_1(Stream *st)
-{
-	char *rval = NULL;
-	int first = 1;
-	RefList *out;
-
-	out = reflist_new();
-	if ( out == NULL ) {
-		ERROR("Failed to allocate reflection list\n");
-		return NULL;
-	}
-
-	do {
-
-		char line[1024];
-		signed int h, k, l;
-		float intensity, sigma, fs, ss;
-		char phs[1024];
-		int cts;
-		int r;
-
-		rval = fgets(line, 1023, st->fh);
-		st->ln++;
-		if ( rval == NULL ) continue;
-		chomp(line);
-
-		if ( strcmp(line, STREAM_REFLECTION_END_MARKER) == 0 ) return out;
-
-		r = sscanf(line, "%i %i %i %f %64s %f %i %f %f",
-		                  &h, &k, &l, &intensity, phs, &sigma, &cts,
-		                   &fs, &ss);
-		if ( (r != 9) && (!first) ) {
-			reflist_free(out);
-			return NULL;
-		}
-
-		first = 0;
-		if ( r == 9 ) {
-
-			Reflection *refl;
-			double ph;
-			char *v;
-
-			refl = add_refl(out, h, k, l);
-			if ( refl == NULL ) {
-				ERROR("Failed to add reflection\n");
-				return NULL;
-			}
-			set_intensity(refl, intensity);
-
-			if ( st->dtempl_read != NULL ) {
-
-				int pn;
-				if ( data_template_file_to_panel_coords(st->dtempl_read, &fs, &ss, &pn) ) {
-					ERROR("Failed to convert\n");
-				} else {
-					set_detector_pos(refl, fs, ss);
-					set_panel_number(refl, pn);
-				}
-
-			} else {
-
-				set_detector_pos(refl, fs, ss);
-
-			}
-			set_esd_intensity(refl, sigma);
-			set_redundancy(refl, cts);
-			set_symmetric_indices(refl, h, k, l);
-
-			ph = strtod(phs, &v);
-			if ( v != phs ) set_phase(refl, deg2rad(ph));
-
-		}
-
-	} while ( rval != NULL );
-
-	/* Got read error of some kind before finding STREAM_PEAK_LIST_END_MARKER */
-	return NULL;
-}
-
-
-static RefList *read_stream_reflections_2_2(Stream *st)
-{
-	char *rval = NULL;
-	int first = 1;
-	RefList *out;
-
-	out = reflist_new();
-
-	do {
-
-		char line[1024];
-		signed int h, k, l;
-		float intensity, sigma, fs, ss, pk, bg;
-		int r;
-
-		rval = fgets(line, 1023, st->fh);
-		st->ln++;
-		if ( rval == NULL ) continue;
-		chomp(line);
-
-		if ( strcmp(line, STREAM_REFLECTION_END_MARKER) == 0 ) return out;
-
-		r = sscanf(line, "%i %i %i %f %f %f %f %f %f",
-		           &h, &k, &l, &intensity, &sigma, &pk, &bg, &fs, &ss);
-		if ( (r != 9) && (!first) ) {
-			reflist_free(out);
-			return NULL;
-		}
-
-		first = 0;
-		if ( r == 9 ) {
-
-			Reflection *refl;
-			refl = add_refl(out, h, k, l);
-			if ( refl == NULL ) {
-				ERROR("Failed to add reflection\n");
-				return NULL;
-			}
-			set_intensity(refl, intensity);
-
-			if ( st->dtempl_read != NULL ) {
-
-				int pn;
-
-				if ( data_template_file_to_panel_coords(st->dtempl_read, &fs, &ss, &pn) ) {
-					ERROR("Failed to convert to "
-					      "panel-relative coordinates: "
-					      "%i,%i\n", fs, ss);
-				} else {
-					set_detector_pos(refl, fs, ss);
-					set_panel_number(refl, pn);
-				}
-
-			} else {
-
-				set_detector_pos(refl, fs, ss);
-
-			}
-
-			set_esd_intensity(refl, sigma);
-			set_redundancy(refl, 1);
-			set_peak(refl, pk);
-			set_mean_bg(refl, bg);
-			set_symmetric_indices(refl, h, k, l);
-
-		}
-
-	} while ( rval != NULL );
-
-	/* Got read error of some kind before finding STREAM_REFLECTION_END_MARKER */
 	return NULL;
 }
 
@@ -838,16 +680,7 @@ static void read_crystal(Stream *st, struct image *image,
 		{
 
 			RefList *reflist;
-
-			/* The reflection list format in the stream diverges
-			 * after 2.2 */
-			if ( AT_LEAST_VERSION(st, 2, 3) ) {
-				reflist = read_stream_reflections_2_3(st);
-			} else if ( AT_LEAST_VERSION(st, 2, 2) ) {
-				reflist = read_stream_reflections_2_2(st);
-			} else {
-				reflist = read_stream_reflections_2_1(st);
-			}
+			reflist = read_stream_reflections_2_3(st);
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				ERROR("Filename = %s\n", image->filename);
@@ -1247,20 +1080,11 @@ Stream *stream_open_for_read(const char *filename)
 		return NULL;
 	}
 
-	if ( strncmp(line, "CrystFEL stream format 2.0", 26) == 0 ) {
-		st->major_version = 2;
-		st->minor_version = 0;
-	} else if ( strncmp(line, "CrystFEL stream format 2.1", 26) == 0 ) {
-		st->major_version = 2;
-		st->minor_version = 1;
-	} else if ( strncmp(line, "CrystFEL stream format 2.2", 26) == 0 ) {
-		st->major_version = 2;
-		st->minor_version = 2;
-	} else if ( strncmp(line, "CrystFEL stream format 2.3", 26) == 0 ) {
+	if ( strncmp(line, "CrystFEL stream format 2.3", 26) == 0 ) {
 		st->major_version = 2;
 		st->minor_version = 3;
 	} else {
-		ERROR("Invalid stream, or stream format is too new.\n");
+		ERROR("Invalid stream, or stream format is not understood.\n");
 		stream_close(st);
 		return NULL;
 	}
