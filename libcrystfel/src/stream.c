@@ -1158,7 +1158,10 @@ void stream_write_target_cell(Stream *st, UnitCell *cell)
  * Creates a new stream with name \p filename.  If \p filename already
  * exists, it will be overwritten.
  *
- * Audit information (e.g. CrystFEL version number) will be written.
+ * The CrystFEL version number will be written, but you should call
+ * stream_write_geometry_file, stream_write_target_cell,
+ * stream_write_commandline_args and stream_write_Indexing_methods to write
+ * extended audit information.
  *
  * \returns A \ref Stream, or NULL on failure.
  */
