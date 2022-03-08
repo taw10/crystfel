@@ -1,0 +1,29 @@
+photon_energy = 10000 eV
+data = /data/data_array
+clen = 50 mm
+res = 1000000
+adu_per_photon = 1
+
+panelA/min_fs = 0
+panelA/max_fs = 99
+panelA/min_ss = 0
+panelA/max_ss = 99
+panelA/fs = x
+panelA/ss = y
+panelA/dim0 = ss
+panelA/dim1 = fs
+panelA/dim2 = 0
+panelA/corner_x = -100
+panelA/corner_y = -100
+
+panelB/min_fs = 0
+panelB/max_fs = 99
+panelB/min_ss = 0
+panelB/max_ss = 99
+panelB/fs = x
+panelB/ss = y
+panelB/dim0 = ss
+panelB/dim1 = fs
+panelB/dim2 = 1
+panelB/corner_x = -100
+panelB/corner_y = 100

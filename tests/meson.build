@@ -68,6 +68,12 @@ endforeach
 
 
 # Less easy unit tests for libcrystfel functions
+exe = executable('stream_roundtrip',
+                 ['stream_roundtrip.c'],
+                 dependencies : [libcrystfeldep])
+test('stream_roundtrip', exe,
+     args: [files('stream_roundtrip.geom')])
+
 exe = executable('stream_read',
                  ['stream_read.c'],
                  dependencies : [libcrystfeldep])
