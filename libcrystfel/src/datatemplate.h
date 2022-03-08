@@ -76,7 +76,11 @@ extern int data_template_panel_name_to_number(const DataTemplate *dt,
 
 extern int data_template_file_to_panel_coords(const DataTemplate *dt,
                                               float *pfs, float *pss,
-                                              int *pn);
+                                              int pn);
+
+extern int data_template_slabby_file_to_panel_coords(const DataTemplate *dt,
+                                                     float *pfs, float *pss,
+                                                     int *ppn);
 
 extern int data_template_panel_to_file_coords(const DataTemplate *dt,
                                               int pn,

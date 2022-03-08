@@ -1531,39 +1531,55 @@ void data_template_free(DataTemplate *dt)
 }
 
 
-static int data_template_find_panel(const DataTemplate *dt,
-                                    int fs, int ss, int *ppn)
-{
-	int p;
-
-	for ( p=0; p<dt->n_panels; p++ ) {
-		if ( (fs >= dt->panels[p].orig_min_fs)
-		  && (fs < dt->panels[p].orig_max_fs+1)
-		  && (ss >= dt->panels[p].orig_min_ss)
-		  && (ss < dt->panels[p].orig_max_ss+1) ) {
-			*ppn = p;
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
-
 int data_template_file_to_panel_coords(const DataTemplate *dt,
                                        float *pfs, float *pss,
-                                       int *ppn)
+                                       int pn)
 {
-	int pn;
-
-	if ( data_template_find_panel(dt, *pfs, *pss, &pn) ) {
-		return 1;
-	}
-
-	*ppn = pn;
 	*pfs = *pfs - dt->panels[pn].orig_min_fs;
 	*pss = *pss - dt->panels[pn].orig_min_ss;
 	return 0;
+}
+
+
+/**
+ * Convert image-data-space fs/ss coordinates to panel-relative fs/ss
+ * coordinates and panel number, assuming that the data is all in one slab.
+ *
+ * WARNING: This is probably not the routine you are looking for!
+ *   If you use this routine, your code will only work with 'slabby' data, and
+ *   will break for (amongst others) EuXFEL data.  Use
+ *   data_template_file_to_panel_coords instead, and provide the panel number.
+ *
+ * \returns 0 on success, 1 on failure
+ *
+ */
+int data_template_slabby_file_to_panel_coords(const DataTemplate *dt,
+                                              float *pfs, float *pss, int *ppn)
+{
+	int p;
+	int found = 0;
+
+	for ( p=0; p<dt->n_panels; p++ ) {
+		if ( (*pfs >= dt->panels[p].orig_min_fs)
+		  && (*pfs < dt->panels[p].orig_max_fs+1)
+		  && (*pss >= dt->panels[p].orig_min_ss)
+		  && (*pss < dt->panels[p].orig_max_ss+1) )
+		{
+			if ( found ) {
+				ERROR("Panel is ambiguous for fs,ss %f,%f\n");
+				return 1;
+			}
+			*ppn = p;
+			found = 1;
+		}
+	}
+
+	if ( !found ) {
+		ERROR("Couldn't find panel for fs,ss %f,%f\n", *pfs, *pss);
+		return 1;
+	}
+
+	return data_template_file_to_panel_coords(dt, pfs, pss, *ppn);
 }
 
 

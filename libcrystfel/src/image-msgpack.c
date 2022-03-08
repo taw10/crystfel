@@ -216,8 +216,9 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 		val = peak_i->via.array.ptr[pk].via.f64;
 
 		/* Convert coordinates to panel-relative */
-		if ( data_template_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
-			ERROR("Peak not in panel!\n");
+		if ( data_template_slabby_file_to_panel_coords(dtempl, &fs, &ss, &pn) ) {
+			ERROR("Failed to convert %i,%i to "
+			      "panel-relative coordinates\n", fs, ss);
 		} else {
 			image_add_feature(features, fs, ss, pn,
 			                  NULL, val, NULL);

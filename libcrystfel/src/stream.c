@@ -154,7 +154,7 @@ static ImageFeatureList *read_peaks(Stream *st,
 			} else {
 
 				data_template_file_to_panel_coords(st->dtempl_read,
-				                                   &x, &y, &pn);
+				                                   &x, &y, pn);
 
 				image_add_feature(features, x, y,
 				                  pn, image, intensity,
@@ -269,11 +269,18 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 			set_intensity(refl, intensity);
 			if ( st->dtempl_read != NULL ) {
 				int pn;
-				if ( data_template_file_to_panel_coords(st->dtempl_read, &fs, &ss, &pn) ) {
-					ERROR("Failed to convert\n");
+
+				if ( data_template_panel_name_to_number(st->dtempl_read,
+			                                                pname, &pn) )
+				{
+					ERROR("No such panel '%s'\n", pname);
 				} else {
-					set_detector_pos(refl, fs, ss);
-					set_panel_number(refl, pn);
+					if ( data_template_file_to_panel_coords(st->dtempl_read, &fs, &ss, pn) ) {
+						ERROR("Failed to convert\n");
+					} else {
+						set_detector_pos(refl, fs, ss);
+						set_panel_number(refl, pn);
+					}
 				}
 			}
 			set_esd_intensity(refl, sigma);

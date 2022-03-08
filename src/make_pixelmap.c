@@ -310,9 +310,8 @@ int main(int argc, char *argv[])
 		cfs = fs + 0.5;
 		css = ss + 0.5;
 
-		if ( data_template_file_to_panel_coords(dtempl,
-		                                        &cfs, &css,
-		                                        &pn) )
+		if ( data_template_slabby_file_to_panel_coords(dtempl,
+		                                               &cfs, &css, &pn) )
 		{
 			ERROR("Couldn't convert coordinates\n");
 			return 1;

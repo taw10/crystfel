@@ -1354,9 +1354,8 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 		ss = buf_y[pk] + peak_offset;
 		val = buf_i[pk];
 
-		if ( data_template_file_to_panel_coords(dtempl,
-		                                        &fs, &ss,
-		                                        &pn) )
+		if ( data_template_slabby_file_to_panel_coords(dtempl,
+		                                               &fs, &ss, &pn) )
 		{
 			ERROR("Failed to convert %i,%i to "
 			      "panel-relative coordinates\n", fs, ss);
@@ -1477,9 +1476,8 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 		ss = buf[tw*i+1] + peak_offset;
 		val = buf[tw*i+2];
 
-		if ( data_template_file_to_panel_coords(dtempl,
-		                                        &fs, &ss,
-		                                        &pn) )
+		if ( data_template_slabby_file_to_panel_coords(dtempl,
+		                                               &fs, &ss, &pn) )
 		{
 			ERROR("Failed to convert %i,%i to "
 			      "panel-relative coordinates\n", fs, ss);
