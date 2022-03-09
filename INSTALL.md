@@ -57,16 +57,7 @@ roughly in order of importance:
 * [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)
 * [msgpack-c](https://github.com/msgpack/msgpack-c) (for online data streaming)
 * [SLURM](https://slurm.schedmd.com/) (development files required for submitting jobs via GUI)
-
-When building with Meson, it's possible to compile without HDF5.  This is
-useful if you only need to use other file formats, e.g. CBF.  You may have
-noticed that most compilation problems (see *Notes about strange problems*
-below) are related to HDF5.  To build without HDF5, set up your build directory
-as follows, replacing the `meson build` step:
-```
-meson build -Dhdf5=disabled
-```
-When building with CMake, HDF5 is a mandatory dependency.
+* [OpenCL](https://www.khronos.org/opencl/) plus appropriate GPU drivers (for GPU-accelerated pattern simulation)
 
 Most of the dependencies mentioned above should be available from your Linux
 distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
@@ -84,8 +75,8 @@ that they can be found.  For example:
 ```
 $ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/user/xgandalf/lib64/pkgconfig
 ```
-Tip: build using Meson wherever possible, because it will take care of several
-of the dependencies automatically and you will never have to worry about this.
+If the libraries are automatically installed by Meson (see above about \[\*\]),
+you will not have to worry about this.
 
 We also do not recommend using dependencies from Conda/Anaconda.  Do not
 activate any Conda environment before compiling CrystFEL, not even the "base"
@@ -93,8 +84,8 @@ environment.  Don't even "source" the Conda setup file before installing
 CrystFEL - keep it completely separate.  A Conda recipe for CrystFEL might be
 coming soon, though, if development resources allow for it.
 
-If OpenCL headers and corresponding GPU drivers are available on your system,
-GPU-accelerated diffraction calculation will be enabled for `pattern_sim`.
+Installing the indexing engines
+-------------------------------
 
 Processing data relies on indexing 'engines'.  By default, you will have access
 to the [TakeTwo](https://journals.iucr.org/d/issues/2016/08/00/rr5128/)
@@ -105,6 +96,7 @@ used for indexing if they are available:
 * [Mosflm](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/)
 * [DirAx](http://www.crystal.chem.uu.nl/distr/dirax/)
 * [XDS](http://xds.mpimf-heidelberg.mpg.de/)
+* [Felix](https://doi.org/10.1107/S1600576717007506)
 
 You can install these at any time before or after installing CrystFEL.  Note
 that you only need the Mosflm binary, not the full `iMosflm` user interface.
@@ -122,6 +114,19 @@ others).
 The script `install-indexers`, found in the `scripts` directory of the CrystFEL
 source code, can help you to install Mosflm, DirAx and XDS.  Run
 `scripts/install-indexers --help` for information.
+
+Compiling without HDF5
+----------------------
+
+When building with Meson, it's possible to compile without HDF5.  This is
+useful if you only need to use other file formats, e.g. CBF.  You may have
+noticed that most compilation problems (see *Notes about strange problems*
+below) are related to HDF5.  To build without HDF5, set up your build directory
+as follows, replacing the `meson build` step:
+```
+meson build -Dhdf5=disabled
+```
+When building with CMake, HDF5 is a mandatory dependency.
 
 Fedora 22 or later
 ------------------
