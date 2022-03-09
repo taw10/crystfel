@@ -17,3 +17,13 @@ build-meson:
     - dnf install -y meson
     - meson build && ninja -C build
     - ninja -C build test
+
+build-meson-nohdf5:
+  image: fedora:35
+  script:
+    - dnf group install -y 'Development Tools'
+    - dnf install -y gsl-devel flex bison gcc-c++
+    - dnf install -y gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils
+    - dnf install -y meson
+    - meson build -Dhdf5=disabled && ninja -C build
+    - ninja -C build test
