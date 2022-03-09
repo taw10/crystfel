@@ -33,9 +33,11 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <unistd.h>
+#ifdef HAVE_HDF5
 #include <hdf5.h>
 #include <hdf5_hl.h>
-#include <unistd.h>
+#endif
 
 #include "image.h"
 #include "utils.h"
@@ -43,34 +45,6 @@
 
 #include "datatemplate.h"
 #include "datatemplate_priv.h"
-
-
-static void close_hdf5(hid_t fh)
-{
-        int n_ids, i;
-        hid_t ids[2048];
-
-        n_ids = H5Fget_obj_ids(fh, H5F_OBJ_ALL, 2048, ids);
-
-        for ( i=0; i<n_ids; i++ ) {
-
-                hid_t id;
-                H5I_type_t type;
-
-                id = ids[i];
-
-                type = H5Iget_type(id);
-
-                if ( type == H5I_GROUP ) H5Gclose(id);
-                if ( type == H5I_DATASET ) H5Dclose(id);
-                if ( type == H5I_DATATYPE ) H5Tclose(id);
-                if ( type == H5I_DATASPACE ) H5Sclose(id);
-                if ( type == H5I_ATTR ) H5Aclose(id);
-
-        }
-
-        H5Fclose(fh);
-}
 
 
 /* Get the path parts of the event ID
@@ -320,6 +294,8 @@ char *substitute_path(const char *ev, const char *pattern, int skip_ok)
 }
 
 
+#ifdef HAVE_HDF5
+
 static void make_placeholder_skip(signed int *dt_dims,
                                   signed int *panel_dims)
 {
@@ -353,6 +329,36 @@ static int total_dimensions(const struct panel_template *p)
 	}
 	return n_dim;
 }
+
+
+static void close_hdf5(hid_t fh)
+{
+        int n_ids, i;
+        hid_t ids[2048];
+
+        n_ids = H5Fget_obj_ids(fh, H5F_OBJ_ALL, 2048, ids);
+
+        for ( i=0; i<n_ids; i++ ) {
+
+                hid_t id;
+                H5I_type_t type;
+
+                id = ids[i];
+
+                type = H5Iget_type(id);
+
+                if ( type == H5I_GROUP ) H5Gclose(id);
+                if ( type == H5I_DATASET ) H5Dclose(id);
+                if ( type == H5I_DATATYPE ) H5Tclose(id);
+                if ( type == H5I_DATASPACE ) H5Sclose(id);
+                if ( type == H5I_ATTR ) H5Aclose(id);
+
+        }
+
+        H5Fclose(fh);
+}
+
+
 
 
 static int load_hdf5_hyperslab(struct panel_template *p,
@@ -2316,3 +2322,5 @@ int image_hdf5_write(const struct image *image,
 	free(locations);
 	return 0;
 }
+
+#endif  /* HAVE_HDF5 */

@@ -43,7 +43,9 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_randist.h>
+#ifdef HAVE_HDF5
 #include <hdf5.h>
+#endif
 
 #include <image.h>
 #include <utils.h>
@@ -909,6 +911,7 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 static void save_corr(const char *filename, struct cc_list *ccs, int n_crystals,
                       int *assignments)
 {
+#ifdef HAVE_HDF5
 	hid_t fh, fsh, msh, cdh, rdh;
 	herr_t r;
 	hsize_t size[2];
@@ -1035,6 +1038,9 @@ static void save_corr(const char *filename, struct cc_list *ccs, int n_crystals,
 	H5Fclose(fh);
 
 	STATUS("Wrote correlation matrix in HDF5 format to %s\n", filename);
+#else
+	ERROR("Can't save correlation matrix - not compiled with HDF5\n");
+#endif
 }
 
 

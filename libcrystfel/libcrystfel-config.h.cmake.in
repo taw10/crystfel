@@ -11,6 +11,7 @@
 #cmakedefine HAVE_LIBCCP4
 #cmakedefine HAVE_MSGPACK
 #cmakedefine HAVE_CLOCK_GETTIME
+#cmakedefine HAVE_HDF5
 
 #cmakedefine HAVE_FORKPTY_PTY_H
 #cmakedefine HAVE_FORKPTY_UTIL_H

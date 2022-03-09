@@ -24,11 +24,13 @@ endforeach
 
 
 # Test of waiting for files
-test('file-wait',
-     find_program('file-wait'),
-     args : [indexamajig.full_path(),
-             files('wavelength_geom.h5'),
-             files('wavelength_geom1.geom')])
+if hdf5dep.found()
+  test('file-wait',
+       find_program('file-wait'),
+       args : [indexamajig.full_path(),
+               files('wavelength_geom.h5'),
+               files('wavelength_geom1.geom')])
+endif
 
 
 test('indexamajig-missing-file',
@@ -105,40 +107,44 @@ if opencldep.found()
 endif
 
 # Event enumeration tests
-ev_enum_tests = ['ev_enum1',
-                 'ev_enum2',
-                 'ev_enum3']
+if hdf5dep.found()
+  ev_enum_tests = ['ev_enum1',
+                   'ev_enum2',
+                   'ev_enum3']
 
-foreach name : ev_enum_tests
-  exe = executable(name, ''.join([name, '.c']),
-                   dependencies : [libcrystfeldep, hdf5dep])
-  h5 = files(''.join([name, '.h5']))
-  geom = files(''.join([name, '.geom']))
-  test(name, exe, args : [h5, geom])
-endforeach
+  foreach name : ev_enum_tests
+    exe = executable(name, ''.join([name, '.c']),
+                     dependencies : [libcrystfeldep, hdf5dep])
+    h5 = files(''.join([name, '.h5']))
+    geom = files(''.join([name, '.geom']))
+    test(name, exe, args : [h5, geom])
+  endforeach
+endif
 
 
 # Wavelength tests
-wavelength_tests = [['wavelength_geom1', '1e-10'],
-                    ['wavelength_geom2', '1.3776e-10'],
-                    ['wavelength_geom3', '1.3776e-10'],
-                    ['wavelength_geom4', '1.9687e-12'],
-                    ['wavelength_geom5', '1.9687e-12'],
-                    ['wavelength_geom6', '1.3776e-10'],
-                    ['wavelength_geom7', '1.3776e-10'],
-                    ['wavelength_geom8', '1.9687e-12'],
-                    ['wavelength_geom9', '1.3776e-10'],
-                    ['wavelength_geom10', '1.3776e-10'],
-                    ['wavelength_geom11', '1.125e-10'],
-                    ['wavelength_geom12', '1.125e-10']]
+if hdf5dep.found()
+  wavelength_tests = [['wavelength_geom1', '1e-10'],
+                      ['wavelength_geom2', '1.3776e-10'],
+                      ['wavelength_geom3', '1.3776e-10'],
+                      ['wavelength_geom4', '1.9687e-12'],
+                      ['wavelength_geom5', '1.9687e-12'],
+                      ['wavelength_geom6', '1.3776e-10'],
+                      ['wavelength_geom7', '1.3776e-10'],
+                      ['wavelength_geom8', '1.9687e-12'],
+                      ['wavelength_geom9', '1.3776e-10'],
+                      ['wavelength_geom10', '1.3776e-10'],
+                      ['wavelength_geom11', '1.125e-10'],
+                      ['wavelength_geom12', '1.125e-10']]
 
-exe = executable('wavelength_geom', 'wavelength_geom.c',
-                 dependencies : [libcrystfeldep, hdf5dep])
+  exe = executable('wavelength_geom', 'wavelength_geom.c',
+                   dependencies : [libcrystfeldep, hdf5dep])
 
-h5 = files('wavelength_geom.h5')
+  h5 = files('wavelength_geom.h5')
 
-foreach p : wavelength_tests
-  geom = files(''.join([p[0], '.geom']))
-  expected_wl = p[1]
-  test(p[0], exe, args : [h5, geom, expected_wl])
-endforeach
+  foreach p : wavelength_tests
+    geom = files(''.join([p[0], '.geom']))
+    expected_wl = p[1]
+    test(p[0], exe, args : [h5, geom, expected_wl])
+  endforeach
+endif

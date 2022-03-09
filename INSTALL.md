@@ -26,24 +26,24 @@ supported facility installations.
 Dependencies
 ------------
 
-Here are the mandatory dependencies - you cannot install CrystFEL without these:
+There are very few mandatory dependencies for CrystFEL.  They are:
 
 * [Meson](https://mesonbuild.com/) 0.55.0 or later
-* [HDF5](https://www.hdfgroup.org/downloads/hdf5/) 1.8.0 or later (1.10.0 or later is required for many recent data formats which use the 'virtual data set' feature)
 * [GNU Scientific Library (GSL)](https://www.gnu.org/software/gsl/)
 * [Bison](https://www.gnu.org/software/bison/) 2.6 or later
 * [Flex](https://www.gnu.org/software/flex/)
 
 [CMake](https://cmake.org/) 3.12 or later can be used in place of Meson,
-but Meson is strongly preferred.  The CMake build system is considered
-deprecated, already lacks several useful features and will be removed at some
-point in the future.
+but Meson is strongly preferred.  CrystFEL's CMake-based build system is
+considered deprecated and will be removed at some point in the future.  It
+already lacks several features compared to the Meson-based system.
 
 The following dependencies are "optional", in the sense that you can install
 CrystFEL without them.  However, a CrystFEL installation without these will lack
 important features such as the graphical user interface.  The following list is
 roughly in order of importance:
 
+* [HDF5](https://www.hdfgroup.org/downloads/hdf5/) 1.8.0 or later (required for HDF5 file read/write.  Version 1.10.0 or later is required for many recent data formats which use the 'virtual data set' feature)
 * [GTK](https://gtk.org/) version between 3.12 and 3.24 inclusive (required for GUI)
 * [Cairo](https://www.cairographics.org/) 1.2 or later (required for GUI)
 * [Pango](https://pango.gnome.org/) 1.0 or later, including [PangoCairo](https://docs.gtk.org/PangoCairo/) (required for GUI)
@@ -57,6 +57,16 @@ roughly in order of importance:
 * [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)
 * [msgpack-c](https://github.com/msgpack/msgpack-c) (for online data streaming)
 * [SLURM](https://slurm.schedmd.com/) (development files required for submitting jobs via GUI)
+
+When building with Meson, it's possible to compile without HDF5.  This is
+useful if you only need to use other file formats, e.g. CBF.  You may have
+noticed that most compilation problems (see *Notes about strange problems*
+below) are related to HDF5.  To build without HDF5, set up your build directory
+as follows, replacing the `meson build` step:
+```
+meson build -Dhdf5=disabled
+```
+When building with CMake, HDF5 is a mandatory dependency.
 
 Most of the dependencies mentioned above should be available from your Linux
 distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.

@@ -49,6 +49,13 @@
 
 /** \file image.h */
 
+#ifndef HAVE_HDF5
+int is_hdf5_file(const char *filename)
+{
+	return 0;
+}
+#endif
+
 struct _imagefeaturelist
 {
 	struct imagefeature *features;
@@ -378,7 +385,11 @@ static int read_header_to_cache(struct image *image, const char *from)
 		return 1;
 
 		case DATA_SOURCE_TYPE_HDF5:
+		#ifdef HAVE_HDF5
 		return image_hdf5_read_header_to_cache(image, from);
+		#else
+		return 1;
+		#endif
 
 		case DATA_SOURCE_TYPE_CBF:
 		case DATA_SOURCE_TYPE_CBFGZ:
@@ -776,7 +787,11 @@ static int image_read_image_data(struct image *image,
 		return 1;
 
 		case DATA_SOURCE_TYPE_HDF5:
+		#ifdef HAVE_HDF5
 		return image_hdf5_read(image, dtempl);
+		#else
+		return 1;
+		#endif
 
 		case DATA_SOURCE_TYPE_CBF:
 		return image_cbf_read(image, dtempl, 0);
@@ -1008,8 +1023,10 @@ static int load_mask(struct panel_template *p,
                      unsigned int mask_bad)
 {
 	if ( is_hdf5_file(mask_fn) ) {
+		#ifdef HAVE_HDF5
 		image_hdf5_read_mask(p, mask_fn, ev, bad, mask_location,
 		                     mask_good, mask_bad);
+		#endif
 
 	} else if ( is_cbf_file(mask_fn) ) {
 		image_cbf_read_mask(p, mask_fn, ev, 0, bad,
@@ -1189,9 +1206,11 @@ static int create_satmap(struct image *image,
 			}
 
 			if ( is_hdf5_file(map_fn) ) {
+				#ifdef HAVE_HDF5
 				image->sat[i] = image_hdf5_read_satmap(p, map_fn,
 				                                       image->ev,
 				                                       p->satmap);
+				#endif
 
 			} else {
 				ERROR("Saturation map must be in HDF5 format\n");
@@ -1476,6 +1495,7 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 {
 	if ( is_hdf5_file(filename) ) {
 
+		#ifdef HAVE_HDF5
 		enum peak_layout layout;
 
 		if ( dtempl->peak_list_type == PEAK_LIST_AUTO ) {
@@ -1516,6 +1536,10 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 			return NULL;
 
 		}
+		#else
+		ERROR("Can't read peak list - compiled without HDF5\n");
+		return NULL;
+		#endif
 
 	} else  {
 		ERROR("Peak lists can only be read from HDF5 files\n");
@@ -1528,8 +1552,14 @@ char **image_expand_frames(const DataTemplate *dtempl,
                            const char *filename, int *n_frames)
 {
 	if ( is_hdf5_file(filename) ) {
+		#ifdef HAVE_HDF5
 		return image_hdf5_expand_frames(dtempl, filename,
 		                                n_frames);
+		#else
+		ERROR("Can't expand frames - compiled without HDF5\n");
+		return NULL;
+		#endif
+
 	} else {
 		char **list;
 		list = malloc(sizeof(char *));
@@ -1580,7 +1610,12 @@ int image_write(const struct image *image,
                 const char *filename)
 {
 	if ( is_hdf5_file(filename) ) {
+		#ifdef HAVE_HDF5
 		return image_hdf5_write(image, dtempl, filename);
+		#else
+		ERROR("Can't write image - compiled without HDF5\n");
+		return 1;
+		#endif
 	}
 
 	ERROR("Can only write to HDF5 files.\n");

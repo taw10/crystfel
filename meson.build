@@ -34,13 +34,14 @@ if slurmdep.found()
 endif
 
 # Find HDF5 using inbuilt Meson methods.  Requires Meson >= 0.50.0
-hdf5dep = dependency('hdf5', language: 'c', required: true)
+hdf5dep = dependency('hdf5', language: 'c', required: get_option('hdf5'))
+if hdf5dep.found()
+  conf_data.set10('HAVE_HDF5', 1)
+  # Request HDF5 1.10-style API
+  add_project_arguments('-DH5_USE_110_API', language: 'c')
+  add_project_arguments('-DH5O_GET_INFO_BY_IDX1', language: 'c')
+endif
 
-# Request HDF5 1.10-style API
-add_project_arguments('-DH5_USE_110_API', language: 'c')
-add_project_arguments('-DH5O_GET_INFO_BY_IDX1', language: 'c')
-
-# "Optional" dependencies
 fftwdep = dependency('fftw3', required: false)
 if fftwdep.found()
   conf_data.set10('HAVE_FFTW', 1)
@@ -184,11 +185,13 @@ indexamajig = executable('indexamajig', indexamajig_sources,
                          install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
 # make_pixelmap
-executable('make_pixelmap',
-           ['src/make_pixelmap.c', versionc],
-           dependencies: [mdep, libcrystfeldep, hdf5dep],
-           install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+if hdf5dep.found()
+  executable('make_pixelmap',
+             ['src/make_pixelmap.c', versionc],
+             dependencies: [mdep, libcrystfeldep, hdf5dep],
+             install: true,
+             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+endif
 
 # geoptimiser
 # FIXME: restore
@@ -248,19 +251,20 @@ if gtkdep.found()
 endif
 
 # pattern_sim
-pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c', versionc]
-if opencldep.found()
-  pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
+if hdf5dep.found()
+  pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c', versionc]
+  if opencldep.found()
+    pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
+  endif
+  executable('pattern_sim', pattern_sim_sources,
+             dependencies: [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
+             install: true,
+             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 endif
-executable('pattern_sim', pattern_sim_sources,
-           dependencies: [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
-           install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 # For testing (see tests/meson.build)
 simulation_bits = files(['src/diffraction.c',
                          'src/diffraction-gpu.c',
                          'src/cl-utils.c'])
-
 
 # ************************ Misc resources ************************
 
