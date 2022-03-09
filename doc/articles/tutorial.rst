@@ -371,10 +371,9 @@ if you have access to a cluster system then you should make use of it here.
 There are two options found in the **Batch system** menu.  **SLURM** will make
 the GUI submit its jobs through the `SLURM <https://slurm.schedmd.com/>`_
 system.  You'll have to give details such as the partition name and any
-relevant constraints - ask your system manager about these.  If SLURM is not
-shown in this menu, it's because the SLURM libraries weren't available when
-CrystFEL was compiled - see `INSTALL.md <../../INSTALL.md>`_  or ask your
-facility or lab's computing team.
+relevant constraints - ask your system manager about these.  Obviously,
+SLURM must be available on your system to use this option.  If in doubt, ask
+your facility or lab's computing team.
 
 If SLURM isn't available, you'll have to run "locally", which means to run on
 the same computer as where the GUI itself is running.  This is the right option

@@ -880,18 +880,13 @@ static void read_frames(FILE *fh, struct crystfelproject *proj)
 }
 
 
+/* NB caller is responsible for applying default_project() to proj */
 int load_project(struct crystfelproject *proj)
 {
 	FILE *fh;
 
 	fh = fopen("crystfel.project", "r");
 	if ( fh == NULL ) return 1;
-
-	if ( default_project(proj) ) {
-		ERROR("Failed to make default project when loading.\n");
-		fclose(fh);
-		return 1;
-	}
 
 	read_parameters(fh, proj);
 	read_results(fh, proj);
@@ -1226,12 +1221,11 @@ int default_project(struct crystfelproject *proj)
 		return 1;
 	}
 
-	#ifdef HAVE_SLURM
-	if ( make_slurm_backend(&proj->backends[proj->n_backends++]) ) {
-		ERROR("SLURM backend setup failed\n");
-		return 1;
+	if ( make_slurm_backend(&proj->backends[proj->n_backends]) == 0 ) {
+		proj->n_backends++;
+	} else {
+		STATUS("Slurm unavailable\n");
 	}
-	#endif
 
 	/* Default parameter values */
 	proj->show_centre = 1;

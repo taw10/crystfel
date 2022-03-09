@@ -21,18 +21,6 @@ mdep = cc.find_library('m', required: true)
 gsldep = dependency('gsl', required: true)
 pthreaddep = dependency('threads', required: true)
 
-# Try via pkg-config first:
-slurmdep = dependency('slurm', required: false)
-if not slurmdep.found()
-  slurmdep = cc.find_library('slurm',
-                             has_headers: 'slurm/slurm.h',
-                             required: false)
-endif
-
-if slurmdep.found()
-  conf_data.set10('HAVE_SLURM', 1)
-endif
-
 # Find HDF5 using inbuilt Meson methods.  Requires Meson >= 0.50.0
 hdf5dep = dependency('hdf5', language: 'c', required: get_option('hdf5'))
 if hdf5dep.found()
@@ -218,17 +206,13 @@ if gtkdep.found()
                  'src/gui_export.c',
                  'src/gui_ambi.c',
                  'src/gui_backend_local.c',
+                 'src/gui_backend_slurm.c',
                  'src/gui_project.c',
                  'src/gtkmultifilechooserbutton.c',
                  versionc]
 
-  if slurmdep.found()
-    gui_sources += 'src/gui_backend_slurm.c'
-  endif
-
-
   executable('crystfel', gui_sources,
-             dependencies: [mdep, libcrystfeldep, gtkdep, gsldep, slurmdep],
+             dependencies: [mdep, libcrystfeldep, gtkdep, gsldep],
              install: true,
              install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 

@@ -56,7 +56,6 @@ roughly in order of importance:
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
 * [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)
 * [msgpack-c](https://github.com/msgpack/msgpack-c) (for online data streaming)
-* [SLURM](https://slurm.schedmd.com/) (development files required for submitting jobs via GUI)
 * [OpenCL](https://www.khronos.org/opencl/) plus appropriate GPU drivers (for GPU-accelerated pattern simulation)
 
 Most of the dependencies mentioned above should be available from your Linux
