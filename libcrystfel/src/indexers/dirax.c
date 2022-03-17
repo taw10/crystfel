@@ -447,14 +447,12 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 
 		} else {
 
-			if ( dirax->rbufpos==dirax->rbuflen ) {
+			if ( dirax->rbufpos == dirax->rbuflen ) {
 
 				/* More buffer space is needed */
-				dirax->rbuffer = realloc(
-				                    dirax->rbuffer,
-				                    dirax->rbuflen + 256);
-				dirax->rbuflen = dirax->rbuflen
-				                                          + 256;
+				dirax->rbuffer = realloc(dirax->rbuffer,
+				                         dirax->rbuflen + 256);
+				dirax->rbuflen = dirax->rbuflen + 256;
 				/* The new space gets used at the next
 				 * read, shortly... */
 
