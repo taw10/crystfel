@@ -1324,7 +1324,7 @@ void add_running_task(struct crystfelproject *proj,
 	gtk_info_bar_set_revealed(GTK_INFO_BAR(task->info_bar), TRUE);
 #endif
 
-	g_timeout_add(500, update_info_bar, task);
+	g_timeout_add(2000, update_info_bar, task);
 }
 
 
