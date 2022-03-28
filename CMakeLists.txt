@@ -34,6 +34,13 @@ else ()
   message(STATUS "ZMQ not found.")
 endif ()
 
+pkg_search_module(ASAPO libasapo-consumer)
+if (ASAPO_FOUND)
+  message(STATUS "Found ASAP::O")
+else ()
+  message(STATUS "ASAP::O not found")
+endif ()
+
 # Find out where forkpty() is declared
 set(CMAKE_REQUIRED_LIBRARIES "-lutil")
 check_symbol_exists(forkpty "pty.h" HAVE_FORKPTY_PTY_H)
@@ -108,6 +115,7 @@ set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
 set(HAVE_GDK ${GDK_FOUND})
 set(HAVE_ZMQ ${ZMQ_FOUND})
 set(HAVE_HDF5 1)
+set(HAVE_ASAPO ${ASAPO_FOUND})
 
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 
@@ -247,6 +255,10 @@ if ( ZMQ_FOUND )
   list(APPEND INDEXAMAJIG_SOURCES src/im-zmq.c)
 endif ()
 
+if ( ASAPO_FOUND )
+  list(APPEND INDEXAMAJIG_SOURCES src/im-asapo.c)
+endif ()
+
 add_executable(indexamajig ${INDEXAMAJIG_SOURCES}
                ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 target_include_directories(indexamajig PRIVATE ${COMMON_INCLUDES})
@@ -256,6 +268,11 @@ list(APPEND CRYSTFEL_EXECUTABLES indexamajig)
 if ( ZMQ_FOUND )
   target_include_directories(indexamajig PRIVATE ${ZMQ_INCLUDE_DIR})
   target_link_libraries(indexamajig ${ZMQ_LDFLAGS})
+endif ()
+
+if ( ASAPO_FOUND )
+  target_include_directories(indexamajig PRIVATE ${ASAPO_INCLUDE_DIR})
+  target_link_libraries(indexamajig ${ASAPO_LDFLAGS})
 endif ()
 
 

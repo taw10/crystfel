@@ -69,6 +69,11 @@ if zmqdep.found()
   conf_data.set10('HAVE_ZMQ', true)
 endif
 
+asapodep = dependency('libasapo-consumer', required: false)
+if asapodep.found()
+  conf_data.set10('HAVE_ASAPO', 1)
+endif
+
 if cc.has_function('clock_gettime', prefix: '#include <time.h>')
   conf_data.set10('HAVE_CLOCK_GETTIME', true)
 endif
@@ -167,8 +172,13 @@ if zmqdep.found()
   indexamajig_sources += ['src/im-zmq.c']
 endif
 
+if asapodep.found()
+  indexamajig_sources += ['src/im-asapo.c']
+endif
+
 indexamajig = executable('indexamajig', indexamajig_sources,
-                         dependencies: [mdep, libcrystfeldep, gsldep, pthreaddep, zmqdep],
+                         dependencies: [mdep, libcrystfeldep, gsldep,
+                                        pthreaddep, zmqdep, asapodep],
                          install: true,
                          install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 

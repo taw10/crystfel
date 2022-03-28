@@ -10,3 +10,4 @@
 #mesondefine HAVE_ZMQ
 #mesondefine HAVE_SLURM
 #mesondefine HAVE_HDF5
+#mesondefine HAVE_ASAPO
