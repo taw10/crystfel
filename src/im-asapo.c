@@ -69,7 +69,13 @@ char *im_asapo_make_unique_group_id(const char *endpoint,
 	AsapoStringHandle group_id;
 	AsapoErrorHandle err = asapo_new_handle();
 
-	cred = asapo_create_source_credentials(kProcessed, "", "", "", token);
+	cred = asapo_create_source_credentials(kProcessed,
+	                                       "",  /* instance ID */
+	                                       "",  /* pipeline step */
+	                                       "",  /* beamtime */
+	                                       "",  /* beamline */
+	                                       "",  /* data source */
+	                                       token);
 	consumer = asapo_create_consumer(endpoint, "", 0, cred, &err);
 	asapo_free_handle(&cred);
 	if ( asapo_is_error(err) ) {
@@ -102,8 +108,13 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 	a = malloc(sizeof(struct im_asapo));
 	if ( a == NULL ) return NULL;
 
-	cred = asapo_create_source_credentials(kProcessed, beamtime, "",
-	                                       data_source, token);
+	cred = asapo_create_source_credentials(kProcessed,
+	                                       "auto",        /* instance ID */
+	                                       "indexamajig", /* pipeline step */
+	                                       beamtime,
+	                                       "",  /* beamline */
+	                                       data_source,
+	                                       token);
 	a->consumer = asapo_create_consumer(endpoint, "auto", 0, cred, &err);
 	asapo_free_handle(&cred);
 	if ( asapo_is_error(err) ) {
