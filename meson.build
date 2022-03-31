@@ -56,7 +56,7 @@ if cairodep.found()
   conf_data.set10('HAVE_CAIRO', 1)
 endif
 
-opencldep = dependency('OpenCL', required: false)
+opencldep = dependency('OpenCL', required: get_option('opencl'))
 if opencldep.found()
   conf_data.set10('HAVE_OPENCL', 1)
 endif
