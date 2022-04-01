@@ -59,9 +59,9 @@ endif
 opencldep = dependency('OpenCL', required: get_option('opencl'))
 if opencldep.found()
   conf_data.set10('HAVE_OPENCL', 1)
-endif
-if cc.has_header('CL/cl.h', dependencies: opencldep)
-  conf_data.set10('HAVE_CL_CL_H', 1)
+  if cc.has_header('CL/cl.h', dependencies: opencldep)
+    conf_data.set10('HAVE_CL_CL_H', 1)
+  endif
 endif
 
 zmqdep = dependency('libzmq', required: false)

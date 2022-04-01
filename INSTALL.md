@@ -127,6 +127,18 @@ meson build -Dhdf5=disabled
 ```
 When building with CMake, HDF5 is a mandatory dependency.
 
+Using OpenCL for GPU acceleration
+---------------------------------
+
+OpenCL is disabled by default when building with Meson, to keep things simple
+for the majority of people who don't need it.  To enable it, add
+`-Dopencl=enabled` to the `meson` command line:
+```
+meson build -Dopencl=enabled
+```
+When building with CMake, OpenCL will always be used if the libraries are
+found.
+
 Fedora 22 or later
 ------------------
 
