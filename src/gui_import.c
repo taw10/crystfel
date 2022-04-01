@@ -61,7 +61,9 @@ static void add_all_events(struct crystfelproject *proj,
 
 	events = image_expand_frames(dtempl, filename, &n_events);
 	if ( events == NULL ) {
-		ERROR("Couldn't expand event list\n");
+		ERROR("Couldn't expand event list.  Either the data file(s)"
+		      " are corrupted, or the geometry file does not match"
+		      " their contents.\n");
 		return;
 	}
 
