@@ -243,6 +243,7 @@ static const char *taccname_short(enum timeaccount acc)
 void time_accounts_print_short(TimeAccounts *accs)
 {
 	int i;
+	time_accounts_set(accs, accs->cur_acc);
 	for ( i=0; i<accs->n_accs; i++ ) {
 		printf("%s: %.3f ", taccname_short(accs->accs[i]),
 		       (double)accs->sec[i] + accs->nsec[i]/1e9);
