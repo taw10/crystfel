@@ -1382,7 +1382,8 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
                                     DataSourceType type,
                                     int serial,
                                     int no_image_data,
-                                    int no_mask_data)
+                                    int no_mask_data,
+                                    TimeAccounts *taccs)
 {
 	struct image *image;
 	char tmp[64];
@@ -1406,7 +1407,7 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 
 	image->data_source_type = type;
 
-	if ( do_image_read(image, dtempl, no_image_data, no_mask_data, NULL) ) {
+	if ( do_image_read(image, dtempl, no_image_data, no_mask_data, taccs) ) {
 		image_free(image);
 		ERROR("Failed to load image\n");
 		return NULL;

@@ -198,7 +198,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->data_format,
 		                              serial,
 		                              iargs->no_image_data,
-		                              iargs->no_mask_data);
+		                              iargs->no_mask_data,
+		                              taccs);
 		if ( image == NULL ) return;
 	} else {
 		image = file_wait_open_read(pargs->filename, pargs->event,

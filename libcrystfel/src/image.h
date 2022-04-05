@@ -235,7 +235,8 @@ extern struct image *image_read_data_block(const DataTemplate *dtempl,
                                            DataSourceType type,
                                            int serial,
                                            int no_image_data,
-                                           int no_mask_data);
+                                           int no_mask_data,
+                                           TimeAccounts *taccs);
 extern void image_free(struct image *image);
 
 extern int image_read_header_float(struct image *image, const char *from,
