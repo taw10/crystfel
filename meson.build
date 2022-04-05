@@ -216,6 +216,8 @@ if gtkdep.found()
              install: true,
              install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
+  install_data(['data/crystfel.desktop'],
+               install_dir: get_option('datadir') / 'applications')
 endif
 
 # render_hkl

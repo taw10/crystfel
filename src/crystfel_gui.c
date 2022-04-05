@@ -980,6 +980,7 @@ int main(int argc, char *argv[])
 	gtk_disable_setlocale();
 
 	gtk_init(&argc, &argv);
+	g_set_application_name("CrystFEL");
 
 	if ( default_project(&proj) ) {
 		ERROR("Failed to set up default project\n");

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=CrystFEL
+GenericName=CrystFEL
+Comment=A graphical interface for CrystFEL
+Exec=crystfel
+Icon=crystfel
+Terminal=false
+Type=Application
+Categories=Science
+
