@@ -234,6 +234,9 @@ if gtkdep.found()
              dependencies: [mdep, libcrystfeldep, gtkdep, gsldep],
              install: true,
              install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+
+  install_data(['data/cell_explorer.desktop'],
+               install_dir: get_option('datadir') / 'applications')
 endif
 
 # pattern_sim

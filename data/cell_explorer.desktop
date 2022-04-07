@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=cell_explorer
+GenericName=cell_explorer
+Comment=Unit cell explorer
+Exec=cell_explorer
+Icon=crystfel
+Terminal=false
+NoDisplay=true
+Type=Application
+Categories=Science
+
