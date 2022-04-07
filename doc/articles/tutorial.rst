@@ -99,7 +99,7 @@ computing team.
 
 The bar at the left (note that it may have a vertical scrollbar) shows the main
 data processing steps in roughly chronological order from top to bottom.  The
-white area a the bottom is the *log area*, where messages will be displayed.
+white area at the bottom is the *log area*, where messages will be displayed.
 The large grey area is where images will be displayed.
 
 Start by loading the data.  To do this, click **Load data** at the top.  You
