@@ -149,8 +149,13 @@ static int select_last_stream(struct im_asapo *a)
 		return 1;
 	}
 
-	STATUS("Streams available at start:\n");
 	n = asapo_stream_infos_get_size(si);
+	if ( n == 0 ) {
+		STATUS("No streams.\n");
+		return 1;
+	}
+
+	STATUS("Streams available at start:\n");
 	for ( i=0; i<n; i++ ) {
 		AsapoStreamInfoHandle st = asapo_stream_infos_get_item(si, i);
 		STATUS("Stream %i: %s\n", i, asapo_stream_info_get_name(st));
