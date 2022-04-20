@@ -180,7 +180,8 @@ install_headers(['src/reflist.h',
                  'src/datatemplate.h',
                  'src/colscale.h',
                  'src/detgeom.h',
-                 'src/fom.h'],
+                 'src/fom.h',
+                 'src/time-accounts.h'],
                 subdir: 'crystfel')
 
 # API documentation (Doxygen)
