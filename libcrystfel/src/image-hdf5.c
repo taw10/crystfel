@@ -1976,7 +1976,8 @@ int is_hdf5_file(const char *filename)
 	if ( ext == NULL ) return 0;
 
 	return ( (strcmp(ext, ".h5") == 0)
-	      || (strcmp(ext, ".cxi") == 0) );
+	      || (strcmp(ext, ".cxi") == 0)
+	      || (strcmp(ext, ".nx5") == 0) );
 }
 
 
