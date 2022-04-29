@@ -62,7 +62,6 @@ set(LIBCRYSTFEL_SOURCES
     src/image-hdf5.c
     src/fom.c
     src/image-msgpack.c
-    src/time-accounts.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
     src/indexers/dirax.c

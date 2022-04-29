@@ -60,7 +60,6 @@
 
 #include "im-sandbox.h"
 #include "process_image.h"
-#include "time-accounts.h"
 #include "im-zmq.h"
 
 
@@ -345,7 +344,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 	while ( !allDone ) {
 
-		TimeAccounts *taccs;
 		struct pattern_args pargs;
 		int ser;
 		char *line;
@@ -355,10 +353,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		char *ser_str = NULL;
 		int ok = 1;
 
-		taccs = time_accounts_init();
-
 		/* Wait until an event is ready */
-		time_accounts_set(taccs, TACC_EVENTWAIT);
 		sb->shared->pings[cookie]++;
 		set_last_task(sb->shared->last_task[cookie], "wait_event");
 		if ( sem_wait(sb->queue_sem) != 0 ) {
@@ -460,10 +455,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		if ( sb->profile ) {
 			pthread_mutex_lock(&sb->shared->term_lock);
-			time_accounts_print_short(taccs);
 			pthread_mutex_unlock(&sb->shared->term_lock);
 		}
-		time_accounts_free(taccs);
 	}
 
 	im_zmq_shutdown(zmqstuff);
@@ -576,15 +569,13 @@ static void remove_pipe(struct sandbox *sb, int d)
 }
 
 
-static void try_read(struct sandbox *sb, TimeAccounts *taccs)
+static void try_read(struct sandbox *sb)
 {
 	int r, i;
 	struct timeval tv;
 	fd_set fds;
 	int fdmax;
 	const int ofd = stream_get_fd(sb->stream);
-
-	time_accounts_set(taccs, TACC_SELECT);
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 500000;
@@ -619,7 +610,6 @@ static void try_read(struct sandbox *sb, TimeAccounts *taccs)
 
 		/* If the chunk cannot be read, assume the connection
 		 * is broken and that the process will die soon. */
-		time_accounts_set(taccs, TACC_STREAMREAD);
 		if ( pump_chunk(sb->fhs[i], ofd) ) {
 			remove_pipe(sb, i);
 		}
@@ -1066,7 +1056,6 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	struct sigaction sa;
 	int r;
 	int allDone = 0;
-	TimeAccounts *taccs;
 	struct get_pattern_ctx gpctx;
 
 	if ( n_proc > MAX_NUM_WORKERS ) {
@@ -1188,22 +1177,18 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	        return 0;
 	}
 
-	taccs = time_accounts_init();
-
 	do {
 
 		/* Check for stream output from workers */
-		try_read(sb, taccs);
+		try_read(sb);
 
 		/* Check for interrupt or zombies */
-		time_accounts_set(taccs, TACC_SIGNALS);
 		check_signals(sb, semname_q, 1);
 
 		/* Check for hung workers */
 		check_hung_workers(sb);
 
 		/* Top up the queue if necessary */
-		time_accounts_set(taccs, TACC_QUEUETOPUP);
 		pthread_mutex_lock(&sb->shared->queue_lock);
 		if ( !sb->shared->no_more && (sb->shared->n_events < QUEUE_SIZE/2) ) {
 			if ( fill_queue(&gpctx, sb) ) sb->shared->no_more = 1;
@@ -1211,11 +1196,9 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 
 		/* Update progress */
-		time_accounts_set(taccs, TACC_STATUS);
 		try_status(sb, 0);
 
 		/* Have all the events been swallowed? */
-		time_accounts_set(taccs, TACC_ENDCHECK);
 		pthread_mutex_lock(&sb->shared->queue_lock);
 		if ( sb->shared->no_more && (sb->shared->n_events == 0) ) allDone = 1;
 		if ( sb->shared->should_shutdown ) {
@@ -1234,7 +1217,6 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	/* Indicate to the workers that we are finished, and wake them up one
 	 * last time */
-	time_accounts_set(taccs, TACC_WAKEUP);
 	STATUS("Waiting for the last patterns to be processed...\n");
 	pthread_mutex_lock(&sb->shared->queue_lock);
 	sb->shared->no_more = 1;
@@ -1244,28 +1226,20 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 	for ( i=0; i<n_proc; i++ ) {
 		int status;
-		time_accounts_set(taccs, TACC_WAITPID);
 		while ( waitpid(sb->pids[i], &status, WNOHANG) == 0 ) {
 
-			time_accounts_set(taccs, TACC_STREAMREAD);
-			try_read(sb, taccs);
+			try_read(sb);
 
-			time_accounts_set(taccs, TACC_SIGNALS);
 			check_signals(sb, semname_q, 0);
 
 			check_hung_workers(sb);
 
-			time_accounts_set(taccs, TACC_STATUS);
 			try_status(sb, 0);
 
-			time_accounts_set(taccs, TACC_WAITPID);
 		}
 		/* If this worker died and got waited by the zombie handler,
 		 * waitpid() returns -1 and the loop still exits. */
 	}
-
-	if ( profile ) time_accounts_print(taccs);
-	time_accounts_free(taccs);
 
 	sem_unlink(semname_q);
 

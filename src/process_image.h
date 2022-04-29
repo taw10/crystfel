@@ -43,7 +43,6 @@ struct index_args;
 
 #include "integration.h"
 #include "im-sandbox.h"
-#include "time-accounts.h"
 #include "peaks.h"
 #include "image.h"
 
@@ -128,8 +127,7 @@ struct pattern_args
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
                           int cookie, const char *tmpdir, int serial,
-                          struct sb_shm *sb_shared, TimeAccounts *taccs,
-                          char *last_task);
+                          struct sb_shm *sb_shared, char *last_task);
 
 
 #endif	/* PROCESS_IMAGE_H */

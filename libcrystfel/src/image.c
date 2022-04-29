@@ -42,7 +42,6 @@
 #include "image-hdf5.h"
 #include "image-cbf.h"
 #include "image-msgpack.h"
-#include "time-accounts.h"
 
 #include "datatemplate.h"
 #include "datatemplate_priv.h"
@@ -1287,35 +1286,28 @@ struct image *image_create_for_simulation(const DataTemplate *dtempl)
 
 
 static int do_image_read(struct image *image, const DataTemplate *dtempl,
-                         int no_image_data, int no_mask_data,
-                         TimeAccounts *taccs)
+                         int no_image_data, int no_mask_data)
 {
 	int i;
 
 	/* Load the image data */
-	time_accounts_set(taccs, TACC_IMAGE_DATA);
 	if ( !no_image_data ) {
 		if ( image_read_image_data(image, dtempl) ) return 1;
 	} else {
 		if ( image_set_zero_data(image, dtempl) ) return 1;
 	}
 
-	time_accounts_set(taccs, TACC_IMAGE_PARAMS);
 	if ( set_image_parameters(image, dtempl) ) {
 		ERROR("Failed to read image parameters\n");
 		return 1;
 	}
-	time_accounts_set(taccs, TACC_CREATE_DETGEOM);
 	if ( create_detgeom(image, dtempl) ) {
 		ERROR("Failed to read geometry information\n");
 		return 1;
 	}
-	time_accounts_set(taccs, TACC_CREATE_BADMAP);
 	if ( create_badmap(image, dtempl, no_mask_data) ) return 1;
-	time_accounts_set(taccs, TACC_CREATE_SATMAP);
 	if ( create_satmap(image, dtempl) ) return 1;
 
-	time_accounts_set(taccs, TACC_CACHE_HEADERS);
 	for ( i=0; i<dtempl->n_headers_to_copy; i++ ) {
 		read_header_to_cache(image, dtempl->headers_to_copy[i]);
 	}
@@ -1324,12 +1316,11 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
 }
 
 
-struct image *image_read_with_time_accounting(const DataTemplate *dtempl,
-                                              const char *filename,
-                                              const char *event,
-                                              int no_image_data,
-                                              int no_mask_data,
-                                              TimeAccounts *taccs)
+struct image *image_read(const DataTemplate *dtempl,
+                         const char *filename,
+                         const char *event,
+                         int no_image_data,
+                         int no_mask_data)
 {
 	struct image *image;
 
@@ -1355,24 +1346,12 @@ struct image *image_read_with_time_accounting(const DataTemplate *dtempl,
 
 	image->data_source_type = file_type(image->filename);
 
-	if ( do_image_read(image, dtempl, no_image_data, no_mask_data, taccs) ) {
+	if ( do_image_read(image, dtempl, no_image_data, no_mask_data) ) {
 		image_free(image);
 		return NULL;
 	}
 
 	return image;
-}
-
-
-struct image *image_read(const DataTemplate *dtempl,
-                         const char *filename,
-                         const char *event,
-                         int no_image_data,
-                         int no_mask_data)
-{
-	return image_read_with_time_accounting(dtempl, filename, event,
-	                                       no_image_data, no_mask_data,
-	                                       NULL);
 }
 
 
@@ -1382,8 +1361,7 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
                                     DataSourceType type,
                                     int serial,
                                     int no_image_data,
-                                    int no_mask_data,
-                                    TimeAccounts *taccs)
+                                    int no_mask_data)
 {
 	struct image *image;
 	char tmp[64];
@@ -1407,7 +1385,7 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 
 	image->data_source_type = type;
 
-	if ( do_image_read(image, dtempl, no_image_data, no_mask_data, taccs) ) {
+	if ( do_image_read(image, dtempl, no_image_data, no_mask_data) ) {
 		image_free(image);
 		ERROR("Failed to load image\n");
 		return NULL;

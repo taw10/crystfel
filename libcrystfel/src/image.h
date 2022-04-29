@@ -45,7 +45,6 @@ struct image;
 #include "index.h"
 #include "spectrum.h"
 #include "datatemplate.h"
-#include "time-accounts.h"
 
 /**
  * \file image.h
@@ -221,12 +220,6 @@ extern struct image *image_read(const DataTemplate *dtempl,
                                 const char *event,
                                 int no_image_data,
                                 int no_mask_data);
-extern struct image *image_read_with_time_accounting(const DataTemplate *dtempl,
-                                                     const char *filename,
-                                                     const char *event,
-                                                     int no_image_data,
-                                                     int no_mask_data,
-                                                     TimeAccounts *taccs);
 
 extern struct image *image_create_for_simulation(const DataTemplate *dtempl);
 extern struct image *image_read_data_block(const DataTemplate *dtempl,
@@ -235,8 +228,7 @@ extern struct image *image_read_data_block(const DataTemplate *dtempl,
                                            DataSourceType type,
                                            int serial,
                                            int no_image_data,
-                                           int no_mask_data,
-                                           TimeAccounts *taccs);
+                                           int no_mask_data);
 extern void image_free(struct image *image);
 
 extern int image_read_header_float(struct image *image, const char *from,
