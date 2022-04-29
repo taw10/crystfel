@@ -61,6 +61,7 @@
 #include "im-sandbox.h"
 #include "process_image.h"
 #include "im-zmq.h"
+#include "profile.h"
 
 
 struct sandbox
@@ -330,6 +331,10 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	int allDone = 0;
 	struct im_zmq *zmqstuff = NULL;
 
+	if ( sb->profile ) {
+		profile_init();
+	}
+
 	/* Connect via ZMQ */
 	if ( sb->zmq ) {
 		zmqstuff = im_zmq_connect(sb->zmq_address,
@@ -356,10 +361,12 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		/* Wait until an event is ready */
 		sb->shared->pings[cookie]++;
 		set_last_task(sb->shared->last_task[cookie], "wait_event");
+		profile_start("wait-queue-semaphore");
 		if ( sem_wait(sb->queue_sem) != 0 ) {
 			ERROR("Failed to wait on queue semaphore: %s\n",
 			      strerror(errno));
 		}
+		profile_end("wait-queue-semaphore");
 
 		/* Get the event from the queue */
 		set_last_task(sb->shared->last_task[cookie], "read_queue");
@@ -446,8 +453,10 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		}
 
 		sb->shared->time_last_start[cookie] = get_monotonic_seconds();
+		profile_start("process-image");
 		process_image(iargs, &pargs, st, cookie, tmpdir, ser,
-		              sb->shared, taccs, sb->shared->last_task[cookie]);
+		              sb->shared, sb->shared->last_task[cookie]);
+		profile_end("process-image");
 
 		/* pargs.zmq_data will be copied into the image structure, so
 		 * that it can be queried for "header" values etc.  It will
@@ -455,6 +464,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		if ( sb->profile ) {
 			pthread_mutex_lock(&sb->shared->term_lock);
+			profile_print_and_reset();
 			pthread_mutex_unlock(&sb->shared->term_lock);
 		}
 	}

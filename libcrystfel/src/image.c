@@ -42,6 +42,7 @@
 #include "image-hdf5.h"
 #include "image-cbf.h"
 #include "image-msgpack.h"
+#include "profile.h"
 
 #include "datatemplate.h"
 #include "datatemplate_priv.h"
@@ -1289,28 +1290,54 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
                          int no_image_data, int no_mask_data)
 {
 	int i;
+	int r;
 
 	/* Load the image data */
 	if ( !no_image_data ) {
-		if ( image_read_image_data(image, dtempl) ) return 1;
+		int r;
+		profile_start("load-image-data");
+		r = image_read_image_data(image, dtempl);
+		profile_end("load-image-data");
+		if ( r ) return r;
 	} else {
-		if ( image_set_zero_data(image, dtempl) ) return 1;
+		int r;
+		profile_start("set-zero-image-data");
+		r = image_set_zero_data(image, dtempl);
+		profile_end("set-zero-image-data");
+		if ( r ) return 1;
 	}
 
-	if ( set_image_parameters(image, dtempl) ) {
+	profile_start("set-image-parameters");
+	r = set_image_parameters(image, dtempl);
+	profile_end("set-image-parameters");
+	if ( r ) {
 		ERROR("Failed to read image parameters\n");
 		return 1;
 	}
-	if ( create_detgeom(image, dtempl) ) {
+
+	profile_start("create-detgeom");
+	r = create_detgeom(image, dtempl);
+	profile_end("create-detgeom");
+	if ( r ) {
 		ERROR("Failed to read geometry information\n");
 		return 1;
 	}
-	if ( create_badmap(image, dtempl, no_mask_data) ) return 1;
-	if ( create_satmap(image, dtempl) ) return 1;
 
+	profile_start("create-badmap");
+	r = create_badmap(image, dtempl, no_mask_data);
+	profile_end("create-badmap");
+	if ( r ) return 1;
+
+	profile_start("create-satmap");
+	r = create_satmap(image, dtempl);
+	profile_end("create-satmap");
+	if ( r ) return 1;
+
+	profile_start("read-headers-to-cache");
 	for ( i=0; i<dtempl->n_headers_to_copy; i++ ) {
 		read_header_to_cache(image, dtempl->headers_to_copy[i]);
 	}
+	profile_end("read-headers-to-cache");
 
 	return 0;
 }

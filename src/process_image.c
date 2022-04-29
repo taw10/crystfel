@@ -50,6 +50,7 @@
 #include <integration.h>
 #include <detgeom.h>
 #include <image-msgpack.h>
+#include <profile.h>
 
 #include "process_image.h"
 #include "predict-refine.h"
@@ -150,8 +151,10 @@ static struct image *file_wait_open_read(const char *filename,
 		set_last_task(last_task, "read file");
 		sb_shared->pings[cookie]++;
 
+		profile_start("image-read");
 		image = image_read(dtempl, filename, event,
 		                   no_image_data, no_mask_data);
+		profile_end("image-read");
 		if ( image == NULL ) {
 			if ( wait_for_file && !read_retry_done ) {
 				read_retry_done = 1;
@@ -186,6 +189,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	if ( pargs->zmq_data != NULL ) {
 		set_last_task(last_task, "unpacking messagepack object");
+		profile_start("read-data-block");
 		image = image_read_data_block(iargs->dtempl,
 		                              pargs->zmq_data,
 		                              pargs->zmq_data_size,
@@ -193,8 +197,10 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              serial,
 		                              iargs->no_image_data,
 		                              iargs->no_mask_data);
+		profile_end("read-data-block");
 		if ( image == NULL ) return;
 	} else {
+		profile_start("file-wait-open-read");
 		image = file_wait_open_read(pargs->filename, pargs->event,
 		                            iargs->dtempl,
 		                            sb_shared, last_task,
@@ -202,6 +208,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                            cookie,
 		                            iargs->no_image_data,
 		                            iargs->no_mask_data);
+		profile_end("file-wait-open-read");
 		if ( image == NULL ) {
 			if ( iargs->wait_for_file != 0 ) {
 				pthread_mutex_lock(&sb_shared->totals_lock);
@@ -216,27 +223,36 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Take snapshot of image before applying horrible noise filters */
 	set_last_task(last_task, "image filter");
+	profile_start("image-filter");
 	sb_shared->pings[cookie]++;
 
 	if ( (iargs->median_filter > 0) || iargs->noisefilter ) {
+		profile_start("data-backup");
 		prefilter = backup_image_data(image->dp, image->detgeom);
+		profile_end("data-backup");
 	} else {
 		prefilter = NULL;
 	}
 
 	if ( iargs->median_filter > 0 ) {
+		profile_start("median-filter");
 		filter_median(image, iargs->median_filter);
+		profile_end("median-filter");
 	}
 
 	if ( iargs->noisefilter ) {
+		profile_start("noise-filter");
 		filter_noise(image);
+		profile_end("noise-filter");
 	}
+	profile_end("image-filter");
 
 	set_last_task(last_task, "resolution range");
 	sb_shared->pings[cookie]++;
 	mark_resolution_range_as_bad(image, iargs->highres, +INFINITY);
 
 	sb_shared->pings[cookie]++;
+	profile_start("peak-search");
 	switch ( iargs->peaks ) {
 
 		case PEAK_HDF5:
@@ -310,13 +326,16 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 	}
+	profile_end("peak-search");
 
 	image->peak_resolution = estimate_peak_resolution(image->features,
 	                                                  image->lambda,
 	                                                  image->detgeom);
 
 	if ( prefilter != NULL ) {
+		profile_start("restore-filter-backup");
 		restore_image_data(image->dp, image->detgeom, prefilter);
+		profile_end("restore-filter-backup");
 	}
 
 	rn = getcwd(NULL, 0);
@@ -354,8 +373,10 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Index the pattern */
 	set_last_task(last_task, "indexing");
+	profile_start("index");
 	index_pattern_3(image, iargs->ipriv, &sb_shared->pings[cookie],
 	                last_task);
+	profile_end("index");
 
 	r = chdir(rn);
 	if ( r ) {
@@ -389,6 +410,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Integrate! */
 	set_last_task(last_task, "integration");
+	profile_start("integration");
 	sb_shared->pings[cookie]++;
 	integrate_all_5(image, iargs->int_meth, PMODEL_XSPHERE,
 	                iargs->push_res,
@@ -396,14 +418,17 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	                iargs->int_diag, iargs->int_diag_h,
 	                iargs->int_diag_k, iargs->int_diag_l,
 	                &sb_shared->term_lock, iargs->overpredict);
+	profile_end("integration");
 
 streamwrite:
 	set_last_task(last_task, "stream write");
+	profile_start("write-stream");
 	sb_shared->pings[cookie]++;
 	ret = stream_write_chunk(st, image, iargs->stream_flags);
 	if ( ret != 0 ) {
 		ERROR("Error writing stream file.\n");
 	}
+	profile_end("write-stream");
 
 	int n = 0;
 	for ( i=0; i<image->n_crystals; i++ ) {

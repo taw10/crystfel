@@ -42,6 +42,7 @@
 #include "image.h"
 #include "utils.h"
 #include "detgeom.h"
+#include "profile.h"
 
 #include "datatemplate.h"
 #include "datatemplate_priv.h"
@@ -395,13 +396,16 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		return 1;
 	}
 
+	profile_start("H5Dopen2");
 	dh = H5Dopen2(fh, panel_full_path, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Cannot open data for panel %s (%s)\n",
 		      p->name, panel_full_path);
+		profile_end("H5Dopen2");
 		free(panel_full_path);
 		return 1;
 	}
+	profile_end("H5Dopen2");
 
 	free(panel_full_path);
 
@@ -509,7 +513,9 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		return 1;
 	}
 
+	profile_start("H5Dread");
 	r = H5Dread(dh, el_type, memspace, dataspace, H5P_DEFAULT, data);
+	profile_end("H5Dread");
 	if ( r < 0 ) {
 		ERROR("Couldn't read data for panel %s\n",
 		      p->name);
@@ -592,13 +598,16 @@ int image_hdf5_read(struct image *image,
 	/* Set all pointers to NULL for easier clean-up */
 	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
 
+	profile_start("open-hdf5");
 	fh = open_hdf5(image);
+	profile_end("open-hdf5");
 	if ( fh < 0 ) {
 		ERROR("Failed to open file\n");
 		return 1;
 	}
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
+		profile_start("load-hdf5-hyperslab");
 		if ( load_hdf5_hyperslab(&dtempl->panels[i], fh,
 		                         image->ev, (void *)&image->dp[i],
 		                         H5T_NATIVE_FLOAT,
@@ -606,9 +615,11 @@ int image_hdf5_read(struct image *image,
 		                         dtempl->panels[i].data) )
 		{
 			ERROR("Failed to load panel data\n");
+			profile_end("load-hdf5-hyperslab");
 			close_hdf5(fh);
 			return 1;
 		}
+		profile_end("load-hdf5-hyperslab");
 	}
 
 	close_hdf5(fh);
