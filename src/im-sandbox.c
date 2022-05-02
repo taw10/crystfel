@@ -463,9 +463,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		 * eventually be freed by image_free() under process_image() */
 
 		if ( sb->profile ) {
-			pthread_mutex_lock(&sb->shared->term_lock);
 			profile_print_and_reset();
-			pthread_mutex_unlock(&sb->shared->term_lock);
 		}
 	}
 

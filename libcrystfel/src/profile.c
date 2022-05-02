@@ -33,6 +33,7 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "profile.h"
 
@@ -128,15 +129,29 @@ void profile_init()
 }
 
 
-static void print_profile_block(struct _profile_block *b)
+static char *format_profile_block(struct _profile_block *b)
 {
 	int i;
-	printf("(%s %.3f", b->name, b->total_time);
+	size_t total_len = 0;
+	char *subbufs[MAX_PROFILE_CHILDREN];
+	char *full_buf;
+
+	total_len = 32 + strlen(b->name);
 	for ( i=0; i<b->n_children; i++ ) {
-		printf(" ");
-		print_profile_block(b->children[i]);
+		subbufs[i] = format_profile_block(b->children[i]);
+		total_len += 1 + strlen(subbufs[i]);
 	}
-	printf(")");
+
+	full_buf = malloc(total_len);
+	snprintf(full_buf, 32, "(%s %.3f", b->name, b->total_time);
+	for ( i=0; i<b->n_children; i++ ) {
+		strcat(full_buf, " ");
+		strcat(full_buf, subbufs[i]);
+		free(subbufs[i]);
+	}
+	strcat(full_buf, ")");
+
+	return full_buf;
 }
 
 
@@ -153,6 +168,9 @@ static void free_profile_block(struct _profile_block *b)
 
 void profile_print_and_reset()
 {
+	char *buf;
+	char *buf2;
+
 	if ( pd == NULL ) {
 		fprintf(stderr, "Profiling not initialised yet!\n");
 		fflush(stderr);
@@ -168,8 +186,11 @@ void profile_print_and_reset()
 
 	stop_profile_block(pd->root);
 
-	print_profile_block(pd->root);
-	printf("\n");
+	buf = format_profile_block(pd->root);
+	buf2 = malloc(2+strlen(buf));
+	strcpy(buf2, buf);
+	strcat(buf2, "\n");
+	write(STDOUT_FILENO, buf2, strlen(buf2));
 
 	free_profile_block(pd->root);
 	pd->root = start_profile_block("root");
