@@ -476,10 +476,12 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 			/* Temporary (?) abuse of "zmq_data", even though
 			 * data comes via ASAP::O */
+			profile_start("asapo-fetch");
 			pargs.zmq_data = im_asapo_fetch(asapostuff,
 			                                &pargs.zmq_data_size,
 			                                &filename,
 			                                &event);
+			profile_end("asapo-fetch");
 			if ( pargs.zmq_data != NULL ) {
 				ok = 1;
 

@@ -39,6 +39,7 @@
 
 #include <image.h>
 #include <utils.h>
+#include <profile.h>
 
 #include "im-asapo.h"
 
@@ -262,8 +263,10 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 	meta = asapo_new_handle();
 	data = asapo_new_handle();
 
+	profile_start("asapo-get-next");
 	asapo_consumer_get_next(a->consumer, a->group_id, &meta, &data,
 	                        a->stream, &err);
+	profile_end("asapo-get-next");
 	if ( asapo_error_get_type(err) == kEndOfStream ) {
 		select_next_stream(a);
 		asapo_free_handle(&err);
