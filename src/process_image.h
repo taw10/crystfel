@@ -119,8 +119,13 @@ struct pattern_args
 	/* "Input" */
 	char *filename;
 	char *event;
+
 	void *zmq_data;
 	size_t zmq_data_size;
+
+	char *asapo_data;
+	size_t asapo_data_size;
+	char *asapo_meta;
 };
 
 

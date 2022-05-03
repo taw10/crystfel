@@ -148,6 +148,7 @@ struct image
 	 * filenename/ev OR this should be filled in, but not both */
 	void                    *data_block;
 	size_t                   data_block_size;
+	char                    *meta_data;
 
 	/** A list of metadata read from the stream */
 	struct header_cache_entry *header_cache[HEADER_CACHE_SIZE];
@@ -225,6 +226,7 @@ extern struct image *image_create_for_simulation(const DataTemplate *dtempl);
 extern struct image *image_read_data_block(const DataTemplate *dtempl,
                                            void *data_block,
                                            size_t data_block_size,
+                                           char *meta_data,
                                            DataSourceType type,
                                            int serial,
                                            int no_image_data,

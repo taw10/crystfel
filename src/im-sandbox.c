@@ -456,6 +456,13 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		free(line);
 		ok = 0;
 
+		/* Default values */
+		pargs.zmq_data = NULL;
+		pargs.zmq_data_size = 0;
+		pargs.asapo_data = NULL;
+		pargs.asapo_data_size = 0;
+		pargs.asapo_meta = NULL;
+
 		if ( sb->zmq ) {
 
 			do {
@@ -474,15 +481,14 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			char *filename;
 			char *event;
 
-			/* Temporary (?) abuse of "zmq_data", even though
-			 * data comes via ASAP::O */
 			profile_start("asapo-fetch");
-			pargs.zmq_data = im_asapo_fetch(asapostuff,
-			                                &pargs.zmq_data_size,
-			                                &filename,
-			                                &event);
+			pargs.asapo_data = im_asapo_fetch(asapostuff,
+			                                  &pargs.asapo_data_size,
+			                                  &pargs.asapo_meta,
+			                                  &filename,
+			                                  &event);
 			profile_end("asapo-fetch");
-			if ( pargs.zmq_data != NULL ) {
+			if ( pargs.asapo_data != NULL ) {
 				ok = 1;
 
 				/* ASAP::O provides a meaningful filename, which
@@ -494,8 +500,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			}
 
 		} else {
-			pargs.zmq_data = NULL;
-			pargs.zmq_data_size = 0;
 			ok = 1;
 		}
 
@@ -507,9 +511,10 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			profile_end("process-image");
 		}
 
-		/* pargs.zmq_data will be copied into the image structure, so
-		 * that it can be queried for "header" values etc.  It will
-		 * eventually be freed by image_free() under process_image() */
+		/* NB pargs.zmq_data, pargs.asapo_data and  pargs.asapo_meta
+		 * will be copied into the image structure, so
+		 * that it can be queried for "header" values etc.  They will
+		 * eventually be freed by image_free() under process_image(). */
 
 		if ( sb->profile ) {
 			profile_print_and_reset();

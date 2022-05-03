@@ -244,7 +244,7 @@ static void skip_to_stream_end(struct im_asapo *a)
 
 
 void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
-                     char **pfilename, char **pevent)
+                     char **pmeta, char **pfilename, char **pevent)
 {
 	void *data_copy;
 	AsapoMessageMetaHandle meta;
@@ -295,6 +295,7 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 	}
 	memcpy(data_copy, asapo_message_data_get_as_chars(data), msg_size);
 
+	*pmeta = strdup(asapo_message_meta_get_metadata(meta));
 	*pfilename = strdup(asapo_message_meta_get_name(meta));
 	*pevent = strdup("//");
 

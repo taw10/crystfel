@@ -45,7 +45,7 @@ extern struct im_asapo *im_asapo_connect(const char *endpoint,
 extern void im_asapo_shutdown(struct im_asapo *a);
 
 extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
-                            char **pfilename, char **pevent);
+                            char **pmeta, char **pfilename, char **pevent);
 
 extern char *im_asapo_make_unique_group_id(const char *endpoint,
                                            const char *token);
@@ -66,9 +66,10 @@ static UNUSED void im_asapo_shutdown(struct im_asapo *a)
 }
 
 static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize,
-                                   char **pfilename, char **pevent)
+                                   char **pmeta, char **pfilename, char **pevent)
 {
 	*psize = 0;
+	*pmeta = NULL;
 	*pfilename = NULL;
 	*pevent = NULL;
 	return NULL;

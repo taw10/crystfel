@@ -1385,6 +1385,7 @@ struct image *image_read(const DataTemplate *dtempl,
 struct image *image_read_data_block(const DataTemplate *dtempl,
                                     void *data_block,
                                     size_t data_block_size,
+                                    char *meta_data,
                                     DataSourceType type,
                                     int serial,
                                     int no_image_data,
@@ -1407,6 +1408,7 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 	image->ev = NULL;
 	image->data_block = data_block;
 	image->data_block_size = data_block_size;
+	image->meta_data = meta_data;
 
 	image->data_source_type = type;
 
@@ -1431,6 +1433,7 @@ void image_free(struct image *image)
 	free(image->filename);
 	free(image->ev);
 	free(image->data_block);
+	free(image->meta_data);
 
 	if ( image->detgeom != NULL ) {
 		np = image->detgeom->n_panels;
@@ -1476,6 +1479,7 @@ struct image *image_new()
 	image->ev = NULL;
 	image->data_block = NULL;
 	image->data_block_size = 0;
+	image->meta_data = NULL;
 	image->data_source_type = DATA_SOURCE_TYPE_UNKNOWN;
 
 	image->n_cached_headers = 0;
