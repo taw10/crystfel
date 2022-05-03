@@ -445,7 +445,7 @@ static void check_csplit(Crystal **crystals, int n_crystals,
 
 	STATUS("Please check that these numbers match your expectations:\n");
 	STATUS("    Number of crystals assigned to a dataset: %i\n", n_split);
-	STATUS("Number of crystals with no dataset asssigned: %i\n", n_nosplit);
+	STATUS(" Number of crystals with no dataset assigned: %i\n", n_nosplit);
 	STATUS("Number of datasets with at least one crystal: %i\n", n_cry);
 	STATUS("         Number of datasets with no crystals: %i\n", n_nocry);
 }
