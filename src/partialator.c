@@ -279,6 +279,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 
 		fn = crystal_get_image(crystals[i])->filename;
 		evs = crystal_get_image(crystals[i])->ev;
+		if ( evs == NULL ) evs = "//";
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
@@ -373,6 +374,7 @@ static signed int find_first_crystal(Crystal **crystals, int n_crystals,
 
 		fn = crystal_get_image(crystals[i])->filename;
 		evs = crystal_get_image(crystals[i])->ev;
+		if ( evs == NULL ) evs = "//";
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
@@ -411,6 +413,7 @@ static void check_csplit(Crystal **crystals, int n_crystals,
 
 		fn = crystal_get_image(crystals[i])->filename;
 		evs = crystal_get_image(crystals[i])->ev;
+		if ( evs == NULL ) evs = "//";
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
