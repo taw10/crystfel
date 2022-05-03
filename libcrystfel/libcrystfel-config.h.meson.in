@@ -10,6 +10,7 @@
 #mesondefine HAVE_MSGPACK
 #mesondefine HAVE_CLOCK_GETTIME
 #mesondefine HAVE_HDF5
+#mesondefine HAVE_SEEDEE
 
 #mesondefine HAVE_FORKPTY_PTY_H
 #mesondefine HAVE_FORKPTY_UTIL_H

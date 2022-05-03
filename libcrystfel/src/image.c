@@ -42,6 +42,7 @@
 #include "image-hdf5.h"
 #include "image-cbf.h"
 #include "image-msgpack.h"
+#include "image-seedee.h"
 #include "profile.h"
 
 #include "datatemplate.h"
@@ -802,6 +803,11 @@ static int image_read_image_data(struct image *image,
 		case DATA_SOURCE_TYPE_MSGPACK:
 		return image_msgpack_read(image, dtempl, image->data_block,
 		                          image->data_block_size);
+
+		case DATA_SOURCE_TYPE_SEEDEE:
+		return image_seedee_read(image, dtempl, image->data_block,
+		                         image->data_block_size,
+		                         image->meta_data);
 
 		default:
 		ERROR("Unrecognised file type %i (image_read_image_data)\n",

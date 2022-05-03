@@ -297,6 +297,7 @@ static DataSourceType parse_data_format(const char *str)
 {
 	if ( strcmp(str, "hdf5") == 0 ) return DATA_SOURCE_TYPE_HDF5;
 	if ( strcmp(str, "msgpack") == 0 ) return DATA_SOURCE_TYPE_MSGPACK;
+	if ( strcmp(str, "seedee") == 0 ) return DATA_SOURCE_TYPE_SEEDEE;
 	/* CBF and CBFGZ should be added here once image-cbf.c supports
 	 * in-memory access */
 	return DATA_SOURCE_TYPE_UNKNOWN;
