@@ -199,6 +199,11 @@ Receive data via the specified ASAP::O endpoint.  This option and \fB--zmq-input
 Authentication token, beamtime, data source and consumer group, respectively, for ASAP::O data.
 
 .PD 0
+.IP \fB--asapo-stream=\fIstream\fR
+.PD
+Name of ASAP::O stream to process.  If this option is not given, indexamajig will start processing from the end of the current last stream.
+
+.PD 0
 .IP \fB--data-format=\fIformat\fR
 .PD
 Specify the data format for data received over ZeroMQ or ASAP::O.  Possible values in this version are \fBmsgpack\fR, \fBhdf5\fR and \fBseedee\fR.

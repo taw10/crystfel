@@ -112,6 +112,7 @@ struct sandbox
 	const char *asapo_beamtime;
 	const char *asapo_group_id;
 	const char *asapo_source;
+	const char *asapo_stream;
 
 	/* Final output */
 	Stream *stream;
@@ -362,7 +363,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		                              sb->asapo_token,
 		                              sb->asapo_beamtime,
 		                              sb->asapo_group_id,
-		                              sb->asapo_source);
+		                              sb->asapo_source,
+		                              sb->asapo_stream);
 		if ( asapostuff == NULL ) {
 			ERROR("ASAP::O setup failed.\n");
 			return 1;
@@ -480,13 +482,15 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 			char *filename;
 			char *event;
+			int finished = 0;
 
 			profile_start("asapo-fetch");
 			pargs.asapo_data = im_asapo_fetch(asapostuff,
 			                                  &pargs.asapo_data_size,
 			                                  &pargs.asapo_meta,
 			                                  &filename,
-			                                  &event);
+			                                  &event,
+			                                  &finished);
 			profile_end("asapo-fetch");
 			if ( pargs.asapo_data != NULL ) {
 				ok = 1;
@@ -497,6 +501,11 @@ static int run_work(const struct index_args *iargs, Stream *st,
 				free(pargs.event);
 				pargs.filename = filename;
 				pargs.event = event;
+			} else {
+				if ( finished ) {
+					sb->shared->should_shutdown = 1;
+					allDone = 1;
+				}
 			}
 
 		} else {
@@ -1120,8 +1129,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    const char *zmq_address, char **zmq_subscriptions,
                    int n_zmq_subscriptions, const char *zmq_request,
                    const char *asapo_endpoint, const char *asapo_token,
-                   const char *asapo_beamtime,
-                   const char *asapo_group_id, const char *asapo_source,
+                   const char *asapo_beamtime, const char *asapo_group_id,
+                   const char *asapo_source, const char *asapo_stream,
                    int timeout, int profile)
 {
 	int i;
@@ -1168,6 +1177,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		sb->asapo_token = asapo_token;
 		sb->asapo_beamtime = asapo_beamtime;
 		sb->asapo_source = asapo_source;
+		sb->asapo_stream = asapo_stream;
 	} else {
 		sb->asapo = 0;
 	}

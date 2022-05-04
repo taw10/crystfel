@@ -40,12 +40,14 @@ extern struct im_asapo *im_asapo_connect(const char *endpoint,
                                          const char *token,
                                          const char *beamtime,
                                          const char *group_id,
-                                         const char *data_source);
+                                         const char *data_source,
+                                         const char *stream);
 
 extern void im_asapo_shutdown(struct im_asapo *a);
 
 extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
-                            char **pmeta, char **pfilename, char **pevent);
+                            char **pmeta, char **pfilename, char **pevent,
+                            int *pfinished);
 
 extern char *im_asapo_make_unique_group_id(const char *endpoint,
                                            const char *token);
@@ -56,7 +58,8 @@ static UNUSED struct im_asapo *im_asapo_connect(const char *endpoint,
                                                 const char *token,
                                                 const char *beamtime,
                                                 const char *group_id,
-                                                const char *data_source)
+                                                const char *data_source,
+                                                const char *stream)
 {
 	return NULL;
 }
@@ -66,12 +69,14 @@ static UNUSED void im_asapo_shutdown(struct im_asapo *a)
 }
 
 static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize,
-                                   char **pmeta, char **pfilename, char **pevent)
+                                   char **pmeta, char **pfilename, char **pevent,
+                                   int *pfinished)
 {
 	*psize = 0;
 	*pmeta = NULL;
 	*pfilename = NULL;
 	*pevent = NULL;
+	*pfinished = 1;
 	return NULL;
 }
 

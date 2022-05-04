@@ -89,6 +89,7 @@ struct indexamajig_arguments
 	char *asapo_beamtime;
 	char *asapo_group_id;
 	char *asapo_source;
+	char *asapo_stream;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -434,6 +435,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			ERROR("Unrecognised data format '%s'\n", arg);
 			return EINVAL;
 		}
+		break;
+
+		case 220 :
+		args->asapo_stream = strdup(arg);
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -857,6 +862,7 @@ int main(int argc, char *argv[])
 	args.asapo_beamtime = NULL;
 	args.asapo_group_id = NULL;
 	args.asapo_source = NULL;
+	args.asapo_stream = NULL;
 	args.n_zmq_subscriptions = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
@@ -971,6 +977,7 @@ int main(int argc, char *argv[])
 		{"asapo-group", 217, "str", OPTION_NO_USAGE, "ASAP::O group ID"},
 		{"asapo-source", 218, "str", OPTION_NO_USAGE, "ASAP::O data source"},
 		{"data-format", 219, "str", OPTION_NO_USAGE, "Streamed data format"},
+		{"asapo-stream", 220, "str", OPTION_NO_USAGE, "ASAP::O stream name"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
@@ -1332,8 +1339,8 @@ int main(int argc, char *argv[])
 	                   args.zmq_addr, args.zmq_subscriptions,
 	                   args.n_zmq_subscriptions, args.zmq_request,
 	                   args.asapo_endpoint, args.asapo_token,
-	                   args.asapo_beamtime,
-	                   args.asapo_group_id, args.asapo_source,
+	                   args.asapo_beamtime, args.asapo_group_id,
+	                   args.asapo_source, args.asapo_stream,
 	                   timeout, args.profile);
 
 	cell_free(args.iargs.cell);
