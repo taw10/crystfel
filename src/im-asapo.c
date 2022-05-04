@@ -252,23 +252,30 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 	AsapoErrorHandle err;
 	uint64_t msg_size;
 
+	profile_start("select-stream");
 	if ( a->stream == NULL ) {
 		if ( select_last_stream(a) ) {
+			profile_end("select-stream");
 			return NULL;
 		}
 		skip_to_stream_end(a);
 	}
+	profile_end("select-stream");
 
+	profile_start("create-handles");
 	err = asapo_new_handle();
 	meta = asapo_new_handle();
 	data = asapo_new_handle();
+	profile_end("create-handles");
 
 	profile_start("asapo-get-next");
 	asapo_consumer_get_next(a->consumer, a->group_id, &meta, &data,
 	                        a->stream, &err);
 	profile_end("asapo-get-next");
 	if ( asapo_error_get_type(err) == kEndOfStream ) {
+		profile_start("next-stream");
 		select_next_stream(a);
+		profile_end("next-stream");
 		asapo_free_handle(&err);
 		asapo_free_handle(&meta);
 		asapo_free_handle(&data);
@@ -283,8 +290,11 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 		return NULL;
 	}
 
+	profile_start("get-size");
 	msg_size = asapo_message_meta_get_size(meta);
+	profile_end("get-size");
 
+	profile_start("malloc-copy");
 	data_copy = malloc(msg_size);
 	if ( data_copy == NULL ) {
 		ERROR("Failed to copy data block.\n");
@@ -294,10 +304,13 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 		return NULL;
 	}
 	memcpy(data_copy, asapo_message_data_get_as_chars(data), msg_size);
+	profile_end("malloc-copy");
 
+	profile_start("copy-meta");
 	*pmeta = strdup(asapo_message_meta_get_metadata(meta));
 	*pfilename = strdup(asapo_message_meta_get_name(meta));
 	*pevent = strdup("//");
+	profile_end("copy-meta");
 
 	asapo_free_handle(&err);
 	asapo_free_handle(&meta);
