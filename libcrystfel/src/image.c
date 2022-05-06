@@ -903,8 +903,11 @@ static void mark_flagged_pixels(struct panel_template *p,
 	p_h = p->orig_max_ss - p->orig_min_ss + 1;
 	n = p_w * p_h;
 
+	profile_start("nan-inf");
 	mark_flagged_pixels_naninf(dp, bad, n);
+	profile_end("nan-inf");
 
+	profile_start("flag-values");
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) {
 
 		float fv = p->flag_values[i];
@@ -928,6 +931,7 @@ static void mark_flagged_pixels(struct panel_template *p,
 
 		}
 	}
+	profile_end("flag-values");
 }
 
 
@@ -1101,27 +1105,34 @@ static int create_badmap(struct image *image,
 
 		/* Panel marked as bad? */
 		if ( p->bad ) {
+			profile_start("whole-panel");
 			/* NB this sets every element to 0x1111,
 			 * but that's OK - value is still 'true'. */
 			memset(image->bad[i], 1, p_w*p_h);
+			profile_end("whole-panel");
 		}
 
 		/* Add bad regions (skip if panel is bad anyway) */
 		if ( !p->bad ) {
+			profile_start("flagged-pixels");
 			mark_flagged_pixels(p, image->dp[i],
 			                    image->bad[i]);
+			profile_end("flagged-pixels");
 		}
 
 		/* Mask panel edges (skip if panel is bad anyway) */
 		if ( (p->mask_edge_pixels > 0) && !p->bad ) {
+			profile_start("panel-edges");
 			mask_panel_edges(image->bad[i], p_w, p_h,
 			                 p->mask_edge_pixels);
+			profile_end("panel-edges");
 		}
 
 		/* Load masks (skip if panel is bad anyway) */
 		if ( (!no_mask_data) && (!p->bad) ) {
 
 			int j;
+			profile_start("load-masks");
 
 			for ( j=0; j<MAX_MASKS; j++ ) {
 
@@ -1143,10 +1154,13 @@ static int create_badmap(struct image *image,
 				          p->masks[j].bad_bits);
 
 			}
+			profile_end("load-masks");
 		}
 	}
 
+	profile_start("mark-regions");
 	mark_bad_regions(image, dtempl);
+	profile_end("mark-regions");
 
 	return 0;
 }
