@@ -485,6 +485,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			int finished = 0;
 
 			profile_start("asapo-fetch");
+			set_last_task(sb->shared->last_task[cookie], "ASAPO fetch");
 			pargs.asapo_data = im_asapo_fetch(asapostuff,
 			                                  &pargs.asapo_data_size,
 			                                  &pargs.asapo_meta,
