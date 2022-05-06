@@ -887,8 +887,7 @@ static void mark_flagged_pixels_naninf(float *dp, int *bad,
 {
 	long int i;
 	for ( i=0; i<n; i++ ) {
-		float val = dp[i];
-		if ( isnan(val) || isinf(val) ) bad[i] = 1;
+		if ( !isfinite(dp[i]) ) bad[i] = 1;
 	}
 }
 
