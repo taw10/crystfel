@@ -526,7 +526,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		 * eventually be freed by image_free() under process_image(). */
 
 		if ( sb->profile ) {
-			profile_print_and_reset();
+			profile_print_and_reset(cookie);
 		}
 	}
 

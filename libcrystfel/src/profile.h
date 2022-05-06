@@ -35,7 +35,7 @@
  */
 
 extern void profile_init();
-extern void profile_print_and_reset();
+extern void profile_print_and_reset(int worker_id);
 extern void profile_start(const char *name);
 extern void profile_end(const char *name);
 

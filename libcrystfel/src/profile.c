@@ -166,7 +166,7 @@ static void free_profile_block(struct _profile_block *b)
 }
 
 
-void profile_print_and_reset()
+void profile_print_and_reset(int worker_id)
 {
 	char *buf;
 	char *buf2;
@@ -187,10 +187,12 @@ void profile_print_and_reset()
 	stop_profile_block(pd->root);
 
 	buf = format_profile_block(pd->root);
-	buf2 = malloc(2+strlen(buf));
-	strcpy(buf2, buf);
-	strcat(buf2, "\n");
+	buf2 = malloc(8+strlen(buf));
+	size_t len = 8+strlen(buf);
+	snprintf(buf2, len, "%i %s\n", worker_id, buf);
 	write(STDOUT_FILENO, buf2, strlen(buf2));
+	free(buf);
+	free(buf2);
 
 	free_profile_block(pd->root);
 	pd->root = start_profile_block("root");
