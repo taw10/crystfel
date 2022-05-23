@@ -59,6 +59,7 @@
 #include "cell-utils.h"
 #include "geometry.h"
 #include "peakfinder8.h"
+#include "peakfinders/robustpeakfinder.h"
 
 /** \file peaks.h */
 
@@ -566,6 +567,82 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 
 
 /**
+ * Robust peak finder
+ * \param img An \ref image structure
+ * \param max_n_peaks The maximum number of peaks to be searched for
+ * \param detectorsNoiseSTD for photon counting detectors, 1
+ * \param min_snr The minimum signal to noise ratio for a peak
+ * \param min_pix_count The minimum number of pixels in a peak
+ * \param max_pix_count The maximum number of pixels in a peak
+ * \param local_bg_radius The averaging radius for background calculation
+ * \param min_res The minimum number of pixels out from the center
+ * \param max_res The maximum number of pixels out from the center
+ * \param use_saturated Whether saturated peaks should be considered
+ * \param singlePhotonADU The image singlePhotonADU value, in detector units
+ * \param supportGradient use a tilting plane 1 to model the background
+ * \param inlier_SNR use this snr far to model the background noise
+ * \param search_SNR search for Bragg peaks after this snr
+ * \param finiteSampleBias 200 pixels are neded to estimate scale
+ * \param n_optIters number of iterations of the model fitting optimization
+ * \param topKthPerc the rough guess of portion of data that are inliers, 0.5
+ * \param botKthPerc the rough guess of poetion of data that are good inliers 0.3
+ * \param maxBackMeanMap the maximum value of the backgournd average
+ * \param downSampledSize 200 data points are needed to estimate average.
+ * \param highPoissonTh the maximum of acceptable average/variance of background
+ * \param lowPoissonTh the minimum of acceptable average/variance of background
+ */
+int search_peaks_robustpeakfinder(struct image *image,
+							      int    max_n_peaks,
+							      float  rpf_darkSTD,
+							      float  min_snr,
+							      int    min_pix_count,
+							      int    max_pix_count,
+							      int    local_bg_radius,
+							      int    min_res,
+							      int    max_res,
+							      int    use_saturated,
+							      int    rpf_supportGradient,
+							      float  rpf_inlier_SNR,
+							      float  rpf_search_SNR,
+							      int    rpf_finiteSampleBias,
+							      int    rpf_n_optIters,
+							      float  rpf_topKthPerc,
+							      float  rpf_botKthPerc,
+							      float  rpf_maxBackMeanMap,
+							      int    rpf_downSampledSize,
+							      float  rpf_highPoissonTh,
+							      float  rpf_lowPoissonTh)
+{
+	if ( image->features != NULL ) {
+		image_feature_list_free(image->features);
+	}
+	image->features = image_feature_list_new();
+
+	return robustpeakfinder(image,
+	                        max_n_peaks,
+	                        rpf_darkSTD,
+	                        min_snr,
+	                        min_pix_count,
+	                        max_pix_count,
+	                        local_bg_radius,
+	                        min_res,
+	                        max_res,
+	                        use_saturated,
+	                        rpf_supportGradient,
+	                        rpf_inlier_SNR,
+	                        rpf_search_SNR,
+	                        rpf_finiteSampleBias,
+	                        rpf_n_optIters,
+	                        rpf_topKthPerc,
+	                        rpf_botKthPerc,
+	                        rpf_maxBackMeanMap,
+	                        rpf_downSampledSize,
+	                        rpf_highPoissonTh,
+	                        rpf_lowPoissonTh);
+}
+
+
+/**
  * \param image An \ref image structure
  * \param crystals Pointer to array of pointers to crystals
  * \param n_cryst The number of crystals
@@ -773,6 +850,7 @@ const char *str_peaksearch(enum peak_search_method meth)
 	switch ( meth ) {
 	case PEAK_PEAKFINDER9: return "peakfinder9";
 	case PEAK_PEAKFINDER8: return "peakfinder8";
+	case PEAK_ROBUSTPEAKFINDER: return "robustpeakfinder";
 	case PEAK_ZAEF: return "zaef";
 	case PEAK_HDF5: return "hdf5";
 	case PEAK_CXI: return "cxi";
@@ -794,6 +872,8 @@ enum peak_search_method parse_peaksearch(const char *arg)
 		return PEAK_CXI;
 	} else if ( strcmp(arg, "peakfinder9") == 0 ) {
 		return PEAK_PEAKFINDER9;
+	} else if ( strcmp(arg, "robustpeakfinder") == 0 ) {
+		return PEAK_ROBUSTPEAKFINDER;
 	} else if ( strcmp(arg, "msgpack") == 0 ) {
 		return PEAK_MSGPACK;
 	} else if ( strcmp(arg, "none") == 0 ) {

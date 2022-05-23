@@ -53,6 +53,9 @@ set(LIBCRYSTFEL_SOURCES
     src/integration.c
     src/predict-refine.c
     src/peakfinder8.c
+    src/peakfinders/RGFLib.c
+	src/peakfinders/RPFSource.c
+	src/peakfinders/robustpeakfinder.c
     src/rational.c
     src/spectrum.c
     src/datatemplate.c
@@ -85,6 +88,9 @@ set(LIBCRYSTFEL_HEADERS
     src/utils.h
     src/geometry.h
     src/peaks.h
+    src/peakfinders/RGFLib.h
+	src/peakfinders/RPFSource.h
+	src/peakfinders/robustpeakfinder.h
     src/stream.h
     src/index.h
     src/image.h

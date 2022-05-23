@@ -562,6 +562,103 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->iargs.check_hdf5_snr = 1;
 		break;
 
+		/* ---------- RPF ---------- */
+		case 322 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_darkSTD) != 1)
+		{
+			ERROR("Invalid value for --rpf_darkSTD\n");
+			return EINVAL;
+		}
+		break;
+
+		case 323 :
+		if (sscanf(arg, "%u", &args->iargs.rpf_supportGradient) != 1)
+		{
+			ERROR("Invalid value for --rpf_supportGradient\n");
+			return EINVAL;
+		}
+		break;
+
+		case 324 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_inlier_SNR) != 1)
+		{
+			ERROR("Invalid value for --rpf_inlier_SNR\n");
+			return EINVAL;
+		}
+		break;
+
+		case 325 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_search_SNR) != 1)
+		{
+			ERROR("Invalid value for --rpf_search_SNR\n");
+			return EINVAL;
+		}
+		break;
+
+		case 326 :
+		if (sscanf(arg, "%u", &args->iargs.rpf_finiteSampleBias) != 1)
+		{
+			ERROR("Invalid value for --rpf_finiteSampleBias\n");
+			return EINVAL;
+		}
+		break;
+
+		case 327 :
+		if (sscanf(arg, "%u", &args->iargs.rpf_n_optIters) != 1)
+		{
+			ERROR("Invalid value for --rpf_n_optIters\n");
+			return EINVAL;
+		}
+		break;
+
+		case 328 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_topKthPerc) != 1)
+		{
+			ERROR("Invalid value for --rpf_topKthPerc\n");
+			return EINVAL;
+		}
+		break;
+
+		case 329 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_botKthPerc) != 1)
+		{
+			ERROR("Invalid value for --rpf_botKthPerc\n");
+			return EINVAL;
+		}
+		break;
+
+		case 330 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_maxBackMeanMap) != 1)
+		{
+			ERROR("Invalid value for --rpf_maxBackMeanMap\n");
+			return EINVAL;
+		}
+		break;
+
+		case 331 :
+		if (sscanf(arg, "%u", &args->iargs.rpf_downSampledSize) != 1)
+		{
+			ERROR("Invalid value for --rpf_downSampledSize\n");
+			return EINVAL;
+		}
+		break;
+
+		case 332 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_highPoissonTh) != 1)
+		{
+			ERROR("Invalid value for --rpf_highPoissonTh\n");
+			return EINVAL;
+		}
+		break;
+
+		case 333 :
+		if (sscanf(arg, "%f", &args->iargs.rpf_lowPoissonTh) != 1)
+		{
+			ERROR("Invalid value for --rpf_lowPoissonTh\n");
+			return EINVAL;
+		}
+		break;
+
 		/* ---------- Indexing ---------- */
 
 		case 400 :
@@ -866,6 +963,18 @@ int main(int argc, char *argv[])
 	args.iargs.min_sig = 11.0;
 	args.iargs.min_peak_over_neighbour = -INFINITY;
 	args.iargs.check_hdf5_snr = 0;
+	args.iargs.rpf_darkSTD = 1;			    /* robustpeakfinder */
+	args.iargs.rpf_supportGradient = 1;
+	args.iargs.rpf_inlier_SNR = 4.0;
+	args.iargs.rpf_search_SNR = 5.7;
+	args.iargs.rpf_finiteSampleBias = 200;
+	args.iargs.rpf_n_optIters = 6;
+	args.iargs.rpf_topKthPerc = 0.5;
+	args.iargs.rpf_botKthPerc = 0.3;
+	args.iargs.rpf_maxBackMeanMap = INFINITY;
+	args.iargs.rpf_downSampledSize = 200;
+	args.iargs.rpf_highPoissonTh = 2;
+	args.iargs.rpf_lowPoissonTh = 0.5;
 	args.iargs.dtempl = NULL;
 	args.iargs.peaks = PEAK_ZAEF;
 	args.iargs.half_pixel_shift = 1;
@@ -949,17 +1058,17 @@ int main(int argc, char *argv[])
 		        "(zaef only, default 100000)"},
 		{"min-gradient", 307, "n", OPTION_ALIAS | OPTION_HIDDEN, NULL},
 		{"min-snr", 308, "n", OPTION_NO_USAGE, "Minimum signal/noise ratio for peaks "
-		        "(zaef,peakfinder8,peakfinder9 only, default 5)"},
+		        "(zaef,peakfinder8,peakfinder9,robustpeakfinder only, default 5)"},
 		{"min-pix-count", 309, "n", OPTION_NO_USAGE, "Minimum number of pixels per peak "
-		        "(peakfinder8 only, default 2)"},
+		        "(peakfinder8,robustpeakfinder only, default 2)"},
 		{"max-pix-count", 310, "n", OPTION_NO_USAGE, "Maximum number of pixels per peak "
-		        "(peakfinder8 only, default 2)"},
+		        "(peakfinder8,robustpeakfinder only, default 2)"},
 		{"local-bg-radius", 311, "n", OPTION_NO_USAGE, "Radius (pixels) for local "
-		        "background estimation (peakfinder8/9 only, default 3)"},
+		        "background estimation (peakfinder8,peakfinder9,robustpeakfinder only, default 3)"},
 		{"min-res", 312, "n", OPTION_NO_USAGE, "Minimum resoultion (pixels) for peak "
-		        "search (peakfinder8 only, default 0)"},
+		        "search (peakfinder8,robustpeakfinder only, default 0)"},
 		{"max-res", 313, "n", OPTION_NO_USAGE, "Maximum resoultion (pixels) for peak "
-		        "search (peakfinder8 only, default 1200)"},
+		        "search (peakfinder8,robustpeakfinder only, default 1200)"},
 		{"min-snr-biggest-pix", 314, "n", OPTION_NO_USAGE, "Minimum SNR of the biggest "
 		        "pixel in the peak (peakfinder9 only)"},
 		{"min-snr-peak-pix", 315, "n", OPTION_NO_USAGE, "Minimum SNR of peak pixel "
@@ -975,7 +1084,30 @@ int main(int argc, char *argv[])
 		        "locations by 0.5 pixels"},
 		{"check-hdf5-snr", 321, NULL, OPTION_NO_USAGE, "Check SNR for peaks from HDF5 or "
 		        "CXI (see --min-snr)"},
-
+		{"rpf_darkSTD", 322, "n", OPTION_NO_USAGE, "Standard deviation of pixels in the dark "
+		        "(robustpeakfinder only, default 0)"},
+		{"rpf_supportGradient", 323, "n", OPTION_NO_USAGE, "Allow modelling the background via a tilting plane robustly"
+		        "(robustpeakfinder only, default 0)"},
+		{"rpf_inlier_SNR", 324, "n", OPTION_NO_USAGE, "Minimum signal/noise ratio for background inliers "
+		        "(robustpeakfinder only, default min_snr)"},
+		{"rpf_search_SNR", 325, "n", OPTION_NO_USAGE, "Minimum signal/noise ratio for candidate peaks "
+		        "(robustpeakfinder only, default min_snr)"},
+		{"rpf_finiteSampleBias", 326, "n", OPTION_NO_USAGE, "finiteSampleBias for MSSE "
+		        "(robustpeakfinder only, default 200)"},
+		{"rpf_n_optIters", 327, "n", OPTION_NO_USAGE, "Number of FLKOS iterations"
+		        "(robustpeakfinder only, default 8)"},
+		{"rpf_topKthPerc", 328, "n", OPTION_NO_USAGE, "Minimum structure size rough estimate"
+		        "(robustpeakfinder only, default 0.5)"},
+		{"rpf_botKthPerc", 329, "n", OPTION_NO_USAGE, "make it so sample size is no smaller than 8"
+		        "(robustpeakfinder only, default 0.35)"},
+		{"rpf_maxBackMeanMap", 330, "n", OPTION_NO_USAGE, "the maximum threshold for background"
+		        "(robustpeakfinder only, default 1e+10)"},
+		{"rpf_downSampledSize", 331, "n", OPTION_NO_USAGE, "downsampling for background modelling"
+		        "(robustpeakfinder only, default 200)"},
+		{"rpf_highPoissonTh", 332, "n", OPTION_NO_USAGE, "maximum of background average by variance ratio"
+		        "(robustpeakfinder only, default 1.5)"},
+		{"rpf_lowPoissonTh", 333, "n", OPTION_NO_USAGE, "minimum of background average by variance ratio"
+		        "(robustpeakfinder only, default 0.5)"},
 		{NULL, 0, 0, OPTION_DOC, "Indexing options:", 4},
 		{"indexing", 400, "method", 0, "List of indexing methods"},
 		{NULL, 'z', "method", OPTION_HIDDEN | OPTION_ALIAS, NULL},

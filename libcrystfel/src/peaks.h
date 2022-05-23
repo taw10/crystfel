@@ -50,6 +50,7 @@ extern "C" {
 enum peak_search_method {
 	PEAK_PEAKFINDER9,
 	PEAK_PEAKFINDER8,
+	PEAK_ROBUSTPEAKFINDER,
 	PEAK_ZAEF,
 	PEAK_HDF5,
 	PEAK_CXI,
@@ -81,6 +82,28 @@ extern int search_peaks_peakfinder9(struct image *image,
                                     float min_snr_whole_peak, float min_sig,
                                     float min_peak_over_neighbour,
                                     int window_radius);
+
+extern int search_peaks_robustpeakfinder(struct image *img,
+							             int    max_n_peaks,
+							             float  rpf_darkSTD,
+							             float  min_snr,
+							             int    min_pix_count,
+							             int    max_pix_count,
+							             int    local_bg_radius,
+							             int    min_res,
+							             int    max_res,
+							             int    use_saturated,
+							             int    rpf_supportGradient,
+							             float  rpf_inlier_SNR,
+							             float  rpf_search_SNR,
+							             int    rpf_finiteSampleBias,
+							             int    rpf_n_optIters,
+							             float  rpf_topKthPerc,
+							             float  rpf_botKthPerc,
+							             float  rpf_maxBackMeanMap,
+							             int    rpf_downSampledSize,
+							             float  rpf_highPoissonTh,
+							             float  rpf_lowPoissonTh);
 
 extern int indexing_peak_check(struct image *image, Crystal **crystals,
                                int n_cryst, int multi_mode);

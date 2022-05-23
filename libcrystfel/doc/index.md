@@ -30,6 +30,7 @@ API documentation
 * Peak search
    * \ref peaks.h "Main peak search functions"
    * \ref peakfinder8.h "The peakfinder8 algorithm"
+   * \ref robustpeakfinder.h "Robust peak finder"
 * \ref filters.h "Image (noise) filters"
 * \ref symmetry.h "Point group symmetry"
 * Mathematical constructions:

@@ -78,6 +78,18 @@ struct index_args
 	int local_bg_radius;
 	int use_saturated;
 	int no_revalidate;
+	float rpf_darkSTD;
+	int   rpf_supportGradient;
+	float rpf_inlier_SNR;
+	float rpf_search_SNR;
+	int   rpf_finiteSampleBias;
+	int   rpf_n_optIters;
+	float rpf_topKthPerc;
+	float rpf_botKthPerc;
+	float rpf_maxBackMeanMap;
+	int   rpf_downSampledSize;
+	float rpf_highPoissonTh;
+	float rpf_lowPoissonTh;
 	float min_snr_biggest_pix;
 	float min_snr_peak_pix;
 	float min_sig;

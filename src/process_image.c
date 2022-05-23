@@ -308,6 +308,35 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		}
 		break;
 
+		case PEAK_ROBUSTPEAKFINDER:
+		set_last_task(last_task, "peaksearch:rpf");
+		if ( search_peaks_robustpeakfinder(image, 
+                                           2048,
+                                           iargs->rpf_darkSTD,
+                                           iargs->min_snr,
+                                           iargs->min_pix_count,
+                                           iargs->max_pix_count,
+                                           iargs->local_bg_radius,
+                                           iargs->min_res,
+                                           iargs->max_res,
+                                           iargs->use_saturated,
+                                           iargs->rpf_supportGradient,
+                                           iargs->rpf_inlier_SNR,
+                                           iargs->rpf_search_SNR,
+                                           iargs->rpf_finiteSampleBias,
+                                           iargs->rpf_n_optIters,
+                                           iargs->rpf_topKthPerc,
+                                           iargs->rpf_botKthPerc,
+                                           iargs->rpf_maxBackMeanMap,
+                                           iargs->rpf_downSampledSize,
+                                           iargs->rpf_highPoissonTh,
+                                           iargs->rpf_lowPoissonTh) ) {
+			ERROR("Failed to find peaks in image %s"
+			      "(event %s).\n",
+			      image->filename, image->ev);
+		}
+		break;
+
 		case PEAK_MSGPACK:
 		image->features = image_msgpack_read_peaks(iargs->dtempl,
 		                                           pargs->zmq_data,
