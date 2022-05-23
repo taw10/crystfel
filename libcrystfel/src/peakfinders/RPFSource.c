@@ -87,8 +87,8 @@ int rpfMain(float *inData,
     unsigned long pixIndex;
     unsigned char dist2Max;
     float ds_ratio, ds_cnt;
-    float _minBackMeanMap;
-    float _maxBackMeanMap;
+    float _minBackMeanMap=0.0f;
+    float _maxBackMeanMap=0.0f;
 
     if(minBackMeanHasAMap==0) _minBackMeanMap = minBackMeanMap[0];
     if(maxBackMeanHasAMap==0) _maxBackMeanMap = maxBackMeanMap[0];
