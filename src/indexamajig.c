@@ -229,7 +229,7 @@ static void write_harvest_file(struct index_args *args,
 	fprintf(fh, "  },\n");
 
 	if ( args->ipriv == NULL ) {
-		fprintf(fh, "  \"indexing\": null\n");
+		fprintf(fh, "  \"indexing\": null,\n");
 		fprintf(fh, "  \"integration\": null\n");
 	} else {
 
