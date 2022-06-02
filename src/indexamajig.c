@@ -970,11 +970,11 @@ int main(int argc, char *argv[])
 		        "highest pixel and neighbours (peakfinder9 only, just for speed)"},
 		{"no-use-saturated", 318, NULL, OPTION_NO_USAGE, "Reject saturated peaks"},
 		{"no-revalidate", 319, NULL, OPTION_NO_USAGE, "Don't re-integrate and check HDF5 "
-		        "peaks"},
+		        "or MsgPack peaks"},
 		{"no-half-pixel-shift", 320, NULL, OPTION_NO_USAGE, "Don't offset HDF5 peak "
 		        "locations by 0.5 pixels"},
-		{"check-hdf5-snr", 321, NULL, OPTION_NO_USAGE, "Check SNR for peaks from HDF5 or "
-		        "CXI (see --min-snr)"},
+		{"check-hdf5-snr", 321, NULL, OPTION_NO_USAGE, "Check SNR for peaks from HDF5, "
+		        "CXI or MsgPack (see --min-snr)"},
 
 		{NULL, 0, 0, OPTION_DOC, "Indexing options:", 4},
 		{"indexing", 400, "method", 0, "List of indexing methods"},

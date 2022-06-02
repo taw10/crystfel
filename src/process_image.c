@@ -313,6 +313,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                                           pargs->zmq_data,
 		                                           pargs->zmq_data_size,
 		                                           iargs->half_pixel_shift);
+		if ( !iargs->no_revalidate ) {
+			validate_peaks(image, iargs->min_snr,
+				       iargs->pk_inn, iargs->pk_mid,
+		                       iargs->pk_out, iargs->use_saturated,
+				       iargs->check_hdf5_snr);
+		}
 		break;
 
 		case PEAK_NONE:
