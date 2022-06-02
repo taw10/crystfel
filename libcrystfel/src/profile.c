@@ -41,7 +41,7 @@
 #define CLOCK_MONOTONIC_RAW (CLOCK_MONOTONIC)
 #endif
 
-#define MAX_PROFILE_CHILDREN 32
+#define MAX_PROFILE_CHILDREN 256
 
 struct _profile_block
 {
