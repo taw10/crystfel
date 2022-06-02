@@ -42,6 +42,7 @@
 #include "image-hdf5.h"
 #include "image-cbf.h"
 #include "image-msgpack.h"
+#include "image-seedee.h"
 #include "profile.h"
 
 #include "datatemplate.h"
@@ -803,6 +804,11 @@ static int image_read_image_data(struct image *image,
 		return image_msgpack_read(image, dtempl, image->data_block,
 		                          image->data_block_size);
 
+		case DATA_SOURCE_TYPE_SEEDEE:
+		return image_seedee_read(image, dtempl, image->data_block,
+		                         image->data_block_size,
+		                         image->meta_data);
+
 		default:
 		ERROR("Unrecognised file type %i (image_read_image_data)\n",
 		      image->data_source_type);
@@ -881,8 +887,7 @@ static void mark_flagged_pixels_naninf(float *dp, int *bad,
 {
 	long int i;
 	for ( i=0; i<n; i++ ) {
-		float val = dp[i];
-		if ( isnan(val) || isinf(val) ) bad[i] = 1;
+		if ( !isfinite(dp[i]) ) bad[i] = 1;
 	}
 }
 
@@ -898,8 +903,11 @@ static void mark_flagged_pixels(struct panel_template *p,
 	p_h = p->orig_max_ss - p->orig_min_ss + 1;
 	n = p_w * p_h;
 
+	profile_start("nan-inf");
 	mark_flagged_pixels_naninf(dp, bad, n);
+	profile_end("nan-inf");
 
+	profile_start("flag-values");
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) {
 
 		float fv = p->flag_values[i];
@@ -923,6 +931,7 @@ static void mark_flagged_pixels(struct panel_template *p,
 
 		}
 	}
+	profile_end("flag-values");
 }
 
 
@@ -1096,27 +1105,34 @@ static int create_badmap(struct image *image,
 
 		/* Panel marked as bad? */
 		if ( p->bad ) {
+			profile_start("whole-panel");
 			/* NB this sets every element to 0x1111,
 			 * but that's OK - value is still 'true'. */
 			memset(image->bad[i], 1, p_w*p_h);
+			profile_end("whole-panel");
 		}
 
 		/* Add bad regions (skip if panel is bad anyway) */
 		if ( !p->bad ) {
+			profile_start("flagged-pixels");
 			mark_flagged_pixels(p, image->dp[i],
 			                    image->bad[i]);
+			profile_end("flagged-pixels");
 		}
 
 		/* Mask panel edges (skip if panel is bad anyway) */
 		if ( (p->mask_edge_pixels > 0) && !p->bad ) {
+			profile_start("panel-edges");
 			mask_panel_edges(image->bad[i], p_w, p_h,
 			                 p->mask_edge_pixels);
+			profile_end("panel-edges");
 		}
 
 		/* Load masks (skip if panel is bad anyway) */
 		if ( (!no_mask_data) && (!p->bad) ) {
 
 			int j;
+			profile_start("load-masks");
 
 			for ( j=0; j<MAX_MASKS; j++ ) {
 
@@ -1138,10 +1154,13 @@ static int create_badmap(struct image *image,
 				          p->masks[j].bad_bits);
 
 			}
+			profile_end("load-masks");
 		}
 	}
 
+	profile_start("mark-regions");
 	mark_bad_regions(image, dtempl);
+	profile_end("mark-regions");
 
 	return 0;
 }
@@ -1385,13 +1404,13 @@ struct image *image_read(const DataTemplate *dtempl,
 struct image *image_read_data_block(const DataTemplate *dtempl,
                                     void *data_block,
                                     size_t data_block_size,
+                                    char *meta_data,
                                     DataSourceType type,
                                     int serial,
                                     int no_image_data,
                                     int no_mask_data)
 {
 	struct image *image;
-	char tmp[64];
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1404,11 +1423,11 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	snprintf(tmp, 63, "datablock-%i", serial);
-	image->filename = strdup(tmp);
-	image->ev = strdup("//");
+	image->filename = NULL;
+	image->ev = NULL;
 	image->data_block = data_block;
 	image->data_block_size = data_block_size;
+	image->meta_data = meta_data;
 
 	image->data_source_type = type;
 
@@ -1433,6 +1452,7 @@ void image_free(struct image *image)
 	free(image->filename);
 	free(image->ev);
 	free(image->data_block);
+	free(image->meta_data);
 
 	if ( image->detgeom != NULL ) {
 		np = image->detgeom->n_panels;
@@ -1478,6 +1498,7 @@ struct image *image_new()
 	image->ev = NULL;
 	image->data_block = NULL;
 	image->data_block_size = 0;
+	image->meta_data = NULL;
 	image->data_source_type = DATA_SOURCE_TYPE_UNKNOWN;
 
 	image->n_cached_headers = 0;

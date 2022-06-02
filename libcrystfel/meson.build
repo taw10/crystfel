@@ -25,6 +25,14 @@ if fftwdep.found()
   conf_data.set10('HAVE_FFTW', true)
 endif
 
+seedeedep = dependency('seedee', required: false)
+cjsondep = dependency('cjson',
+                      required: true,
+                      fallback: ['cjson', 'libcjson_dep'])
+if cjsondep.found() and seedeedep.found()
+  conf_data.set10('HAVE_SEEDEE', 1)
+endif
+
 xgandalfdep = dependency('xgandalf',
                          required: false,
                          fallback: ['xgandalf', 'xgandalf_dep'])
@@ -125,6 +133,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/image-cbf.c',
                        'src/image-hdf5.c',
                        'src/image-msgpack.c',
+                       'src/image-seedee.c',
                        'src/indexers/dirax.c',
                        'src/indexers/felix.c',
                        'src/indexers/mosflm.c',
@@ -150,7 +159,7 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
                                      hdf5dep, pthreaddep,
                                      xgandalfdep, pinkindexerdep, fdipdep,
-                                     ccp4dep, msgpackdep],
+                                     ccp4dep, msgpackdep, seedeedep, cjsondep],
                       install: true)
 
 libcrystfeldep = declare_dependency(include_directories: libcrystfel_includes,

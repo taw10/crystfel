@@ -10,3 +10,4 @@
 #cmakedefine HAVE_ZMQ
 #cmakedefine HAVE_SLURM
 #cmakedefine HAVE_HDF5
+#cmakedefine HAVE_ASAPO

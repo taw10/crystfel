@@ -84,6 +84,12 @@ struct indexamajig_arguments
 	char *zmq_request;
 	char *zmq_subscriptions[256];
 	int n_zmq_subscriptions;
+	char *asapo_endpoint;
+	char *asapo_token;
+	char *asapo_beamtime;
+	char *asapo_group_id;
+	char *asapo_source;
+	char *asapo_stream;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -292,6 +298,7 @@ static DataSourceType parse_data_format(const char *str)
 {
 	if ( strcmp(str, "hdf5") == 0 ) return DATA_SOURCE_TYPE_HDF5;
 	if ( strcmp(str, "msgpack") == 0 ) return DATA_SOURCE_TYPE_MSGPACK;
+	if ( strcmp(str, "seedee") == 0 ) return DATA_SOURCE_TYPE_SEEDEE;
 	/* CBF and CBFGZ should be added here once image-cbf.c supports
 	 * in-memory access */
 	return DATA_SOURCE_TYPE_UNKNOWN;
@@ -402,12 +409,36 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->zmq_request = strdup(arg);
 		break;
 
+		case 213 :
+		args->asapo_endpoint = strdup(arg);
+		break;
+
+		case 214 :
+		args->asapo_token = strdup(arg);
+		break;
+
+		case 215 :
+		args->asapo_beamtime = strdup(arg);
+		break;
+
+		case 217 :
+		args->asapo_group_id = strdup(arg);
+		break;
+
+		case 218 :
+		args->asapo_source = strdup(arg);
+		break;
+
 		case 219 :
 		args->iargs.data_format = parse_data_format(arg);
 		if ( args->iargs.data_format == DATA_SOURCE_TYPE_UNKNOWN ) {
 			ERROR("Unrecognised data format '%s'\n", arg);
 			return EINVAL;
 		}
+		break;
+
+		case 220 :
+		args->asapo_stream = strdup(arg);
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -826,6 +857,12 @@ int main(int argc, char *argv[])
 	args.basename = 0;
 	args.zmq_addr = NULL;
 	args.zmq_request = NULL;
+	args.asapo_endpoint = NULL;
+	args.asapo_token = NULL;
+	args.asapo_beamtime = NULL;
+	args.asapo_group_id = NULL;
+	args.asapo_source = NULL;
+	args.asapo_stream = NULL;
 	args.n_zmq_subscriptions = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
@@ -934,7 +971,13 @@ int main(int argc, char *argv[])
 			"type"},
 		{"zmq-request", 212, "str", OPTION_NO_USAGE, "Request messages using"
 			"this string."},
+		{"asapo-endpoint", 213, "str", OPTION_NO_USAGE, "ASAP::O endpoint"},
+		{"asapo-token", 214, "str", OPTION_NO_USAGE, "ASAP::O token"},
+		{"asapo-beamtime", 215, "str", OPTION_NO_USAGE, "ASAP::O beamtime ID"},
+		{"asapo-group", 217, "str", OPTION_NO_USAGE, "ASAP::O group ID"},
+		{"asapo-source", 218, "str", OPTION_NO_USAGE, "ASAP::O data source"},
 		{"data-format", 219, "str", OPTION_NO_USAGE, "Streamed data format"},
+		{"asapo-stream", 220, "str", OPTION_NO_USAGE, "ASAP::O stream name"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
@@ -1051,7 +1094,9 @@ int main(int argc, char *argv[])
 	if ( argp_parse(&argp, argc, argv, 0, NULL, &args) ) return 1;
 
 	/* Check for minimal information */
-	if ( (args.filename == NULL) && (args.zmq_addr == NULL) ) {
+	if ( (args.filename == NULL)
+	  && (args.zmq_addr == NULL)
+	  && (args.asapo_endpoint == NULL) ) {
 		ERROR("You need to provide the input filename (use -i)\n");
 		return 1;
 	}
@@ -1290,9 +1335,13 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
-	                   fh, st, tmpdir, args.serial_start, args.zmq_addr,
-	                   args.zmq_subscriptions, args.n_zmq_subscriptions,
-	                   args.zmq_request, timeout, args.profile);
+	                   fh, st, tmpdir, args.serial_start,
+	                   args.zmq_addr, args.zmq_subscriptions,
+	                   args.n_zmq_subscriptions, args.zmq_request,
+	                   args.asapo_endpoint, args.asapo_token,
+	                   args.asapo_beamtime, args.asapo_group_id,
+	                   args.asapo_source, args.asapo_stream,
+	                   timeout, args.profile);
 
 	cell_free(args.iargs.cell);
 	free(args.prefix);

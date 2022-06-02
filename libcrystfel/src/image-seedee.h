@@ -1,13 +1,13 @@
 /*
- * profile.h
+ * image-seedee.h
  *
- * Simple profiling according to wall clock time
+ * Image loading, SeeDee parts
  *
- * Copyright © 2016-2022 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2022 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2016-2022 Thomas White <taw@physics.org>
+ *   2020-2022 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -26,17 +26,16 @@
  *
  */
 
-#ifndef PROFILE_H
-#define PROFILE_H
+#ifndef IMAGE_SEEDEE_H
+#define IMAGE_SEEDEE_H
 
-/**
- * \file profile.h
- * Simple wall-clock profiling
- */
+#include "datatemplate.h"
 
-extern void profile_init();
-extern void profile_print_and_reset(int worker_id);
-extern void profile_start(const char *name);
-extern void profile_end(const char *name);
 
-#endif	/* PROFILE_H */
+extern int image_seedee_read(struct image *image,
+                             const DataTemplate *dtempl,
+                             void *data,
+                             size_t data_size,
+                             char *meta_data);
+
+#endif	/* IMAGE_SEEDEE_H */

@@ -188,17 +188,48 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	int any_crystals;
 
 	if ( pargs->zmq_data != NULL ) {
-		set_last_task(last_task, "unpacking messagepack object");
-		profile_start("read-data-block");
+
+		set_last_task(last_task, "unpacking ZMQ data");
+		profile_start("read-zmq-data");
 		image = image_read_data_block(iargs->dtempl,
 		                              pargs->zmq_data,
 		                              pargs->zmq_data_size,
+		                              NULL,
 		                              iargs->data_format,
 		                              serial,
 		                              iargs->no_image_data,
 		                              iargs->no_mask_data);
-		profile_end("read-data-block");
+		profile_end("read-zmq-data");
 		if ( image == NULL ) return;
+
+		/* image_read_data_block() will leave the filename/event as
+		 * NULL, because there's no file (duh).  Fill them in now with
+		 * the values passed down to us. For ZMQ, these values are just
+		 * placeholders. */
+		image->filename = strdup(pargs->filename);
+		image->ev = strdup(pargs->event);
+
+	} else if ( pargs->asapo_data != NULL ) {
+
+		set_last_task(last_task, "unpacking ASAP::O data");
+		profile_start("read-asapo-data");
+		image = image_read_data_block(iargs->dtempl,
+		                              pargs->asapo_data,
+		                              pargs->asapo_data_size,
+		                              pargs->asapo_meta,
+		                              iargs->data_format,
+		                              serial,
+		                              iargs->no_image_data,
+		                              iargs->no_mask_data);
+		profile_end("read-asapo-data");
+		if ( image == NULL ) return;
+
+		/* image_read_data_block() will leave the filename/event as
+		 * NULL, because there's no file (duh).  Fill them in now with
+		 * the values passed down to us from ASAP::O. */
+		image->filename = strdup(pargs->filename);
+		image->ev = strdup(pargs->event);
+
 	} else {
 		profile_start("file-wait-open-read");
 		image = file_wait_open_read(pargs->filename, pargs->event,

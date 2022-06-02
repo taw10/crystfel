@@ -19,6 +19,7 @@ set(HAVE_FDIP ${FDIP_FOUND})
 set(HAVE_MSGPACK ${MSGPACK_FOUND})
 set(HAVE_LIBCCP4 ${LIBCCP4_FOUND})
 set(HAVE_ZLIB ${ZLIB_FOUND})
+set(HAVE_SEEDEE 0)
 
 # Recent enough version of zlib?
 set(CMAKE_REQUIRED_LIBRARIES "-lz")
@@ -62,6 +63,7 @@ set(LIBCRYSTFEL_SOURCES
     src/image-hdf5.c
     src/fom.c
     src/image-msgpack.c
+    src/image-seedee.c
     src/profile.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
