@@ -24,7 +24,7 @@ pthreaddep = dependency('threads', required: true)
 # Find HDF5 using inbuilt Meson methods.  Requires Meson >= 0.50.0
 hdf5dep = dependency('hdf5', language: 'c', required: get_option('hdf5'))
 if hdf5dep.found()
-  conf_data.set10('HAVE_HDF5', 1)
+  conf_data.set10('HAVE_HDF5', true)
   # Request HDF5 1.10-style API
   add_project_arguments('-DH5_USE_110_API', language: 'c')
   add_project_arguments('-DH5O_GET_INFO_BY_IDX1', language: 'c')
@@ -32,45 +32,45 @@ endif
 
 fftwdep = dependency('fftw3', required: false)
 if fftwdep.found()
-  conf_data.set10('HAVE_FFTW', 1)
+  conf_data.set10('HAVE_FFTW', true)
 endif
 
 gtkdep = dependency('gtk+-3.0', required: false)
 if gtkdep.found()
   add_project_arguments('-Wno-deprecated-declarations', language: 'c')
-  conf_data.set10('HAVE_GTK', 1)
+  conf_data.set10('HAVE_GTK', true)
 endif
 
 gdkdep = dependency('gdk-3.0', required: false)
 if gdkdep.found()
-  conf_data.set10('HAVE_GDK', 1)
+  conf_data.set10('HAVE_GDK', true)
 endif
 
 gdkpixbufdep = dependency('gdk-pixbuf-2.0', required: false)
 if gdkpixbufdep.found()
-  conf_data.set10('HAVE_GDKPIXBUF', 1)
+  conf_data.set10('HAVE_GDKPIXBUF', true)
 endif
 
 cairodep = dependency('cairo', required: false)
 if cairodep.found()
-  conf_data.set10('HAVE_CAIRO', 1)
+  conf_data.set10('HAVE_CAIRO', true)
 endif
 
 opencldep = dependency('OpenCL', required: get_option('opencl'))
 if opencldep.found()
-  conf_data.set10('HAVE_OPENCL', 1)
+  conf_data.set10('HAVE_OPENCL', true)
   if cc.has_header('CL/cl.h', dependencies: opencldep)
-    conf_data.set10('HAVE_CL_CL_H', 1)
+    conf_data.set10('HAVE_CL_CL_H', true)
   endif
 endif
 
 zmqdep = dependency('libzmq', required: false)
 if zmqdep.found()
-  conf_data.set10('HAVE_ZMQ', 1)
+  conf_data.set10('HAVE_ZMQ', true)
 endif
 
 if cc.has_function('clock_gettime', prefix: '#include <time.h>')
-  conf_data.set10('HAVE_CLOCK_GETTIME', 1)
+  conf_data.set10('HAVE_CLOCK_GETTIME', true)
 endif
 
 # ************************ libcrystfel (subdir) ************************

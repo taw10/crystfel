@@ -5,7 +5,7 @@ if zlibdep.found()
   if cc.has_function('gzbuffer',
                      prefix: '#include <zlib.h>',
                      dependencies: zlibdep)
-    conf_data.set10('HAVE_GZBUFFER', 1)
+    conf_data.set10('HAVE_GZBUFFER', true)
   endif
 else
   zlibproj = subproject('zlib')
@@ -13,49 +13,49 @@ else
   # Cannot check for gzbuffer in this case, because Zlib won't be built
   # until compile time.  However, we already know that the wrap version is
   # new enough
-  conf_data.set10('HAVE_GZBUFFER', 1)
+  conf_data.set10('HAVE_GZBUFFER', true)
 endif
 
 if zlibdep.found()
-  conf_data.set10('HAVE_ZLIB', 1)
+  conf_data.set10('HAVE_ZLIB', true)
 endif
 
 fftwdep = dependency('fftw3', required: false)
 if fftwdep.found()
-  conf_data.set10('HAVE_FFTW', 1)
+  conf_data.set10('HAVE_FFTW', true)
 endif
 
 xgandalfdep = dependency('xgandalf',
                          required: false,
                          fallback: ['xgandalf', 'xgandalf_dep'])
 if xgandalfdep.found()
-  conf_data.set10('HAVE_XGANDALF', 1)
+  conf_data.set10('HAVE_XGANDALF', true)
 endif
 
 pinkindexerdep = dependency('pinkIndexer',
                             required: false,
                             fallback: ['pinkindexer', 'pinkindexer_dep'])
 if pinkindexerdep.found()
-  conf_data.set10('HAVE_PINKINDEXER', 1)
+  conf_data.set10('HAVE_PINKINDEXER', true)
 endif
 
 fdipdep = dependency('fdip',
                      required: false,
                      fallback: ['fdip', 'fdip_dep'])
 if fdipdep.found()
-  conf_data.set10('HAVE_FDIP', 1)
+  conf_data.set10('HAVE_FDIP', true)
 endif
 
 ccp4dep = dependency('libccp4c',
                      required: false,
                      fallback: ['libccp4c', 'libccp4c_dep'])
 if ccp4dep.found()
-  conf_data.set10('HAVE_LIBCCP4', 1)
+  conf_data.set10('HAVE_LIBCCP4', true)
 endif
 
 msgpackdep = dependency('msgpack', required: false)
 if msgpackdep.found()
-  conf_data.set10('HAVE_MSGPACK', 1)
+  conf_data.set10('HAVE_MSGPACK', true)
 endif
 
 
@@ -68,9 +68,9 @@ libcrystfel_includes = include_directories('src')
 # Find forkpty()
 utildep = cc.find_library('util', required: true)
 if cc.has_function('forkpty', dependencies: utildep, prefix: '#include <pty.h>')
-  conf_data.set10('HAVE_FORKPTY_PTY_H', 1)
+  conf_data.set10('HAVE_FORKPTY_PTY_H', true)
 elif cc.has_function('forkpty', dependencies: utildep, prefix: '#include <util.h>')
-  conf_data.set10('HAVE_FORKPTY_UTIL_H', 1)
+  conf_data.set10('HAVE_FORKPTY_UTIL_H', true)
 else
   error('Couldn\'t find forkpty()')
 endif
