@@ -28,6 +28,7 @@
 
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include <stream.h>
 #include <image.h>
@@ -135,6 +136,8 @@ int main(int argc, char *argv[])
 			fail = 1;
 		}
 	}
+
+	unlink("stream_roundtrip.stream");
 
 	return fail;
 }
