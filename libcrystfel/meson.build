@@ -121,7 +121,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/colscale.c',
                        'src/detgeom.c',
                        'src/fom.c',
-                       'src/time-accounts.c',
+                       'src/profile.c',
                        'src/image-cbf.c',
                        'src/image-hdf5.c',
                        'src/image-msgpack.c',
@@ -180,8 +180,7 @@ install_headers(['src/reflist.h',
                  'src/datatemplate.h',
                  'src/colscale.h',
                  'src/detgeom.h',
-                 'src/fom.h',
-                 'src/time-accounts.h'],
+                 'src/fom.h'],
                 subdir: 'crystfel')
 
 # API documentation (Doxygen)

@@ -49,6 +49,7 @@
 #include "geometry.h"
 #include "cell-utils.h"
 #include "predict-refine.h"
+#include "profile.h"
 #include "indexers/dirax.h"
 #include "indexers/asdf.h"
 #include "indexers/mosflm.h"
@@ -604,47 +605,65 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		case INDEXING_DIRAX :
 		set_last_task(last_task, "indexing:dirax");
+		profile_start("dirax");
 		r = run_dirax(image, mpriv);
+		profile_end("dirax");
 		break;
 
 		case INDEXING_ASDF :
 		set_last_task(last_task, "indexing:asdf");
+		profile_start("asdf");
 		r = run_asdf(image, mpriv);
+		profile_end("asdf");
 		break;
 
 		case INDEXING_MOSFLM :
 		set_last_task(last_task, "indexing:mosflm");
+		profile_start("mosflm");
 		r = run_mosflm(image, mpriv);
+		profile_end("mosflm");
 		break;
 
 		case INDEXING_XDS :
 		set_last_task(last_task, "indexing:xds");
+		profile_start("xds");
 		r = run_xds(image, mpriv);
+		profile_end("xds");
 		break;
 
 		case INDEXING_FILE :
 		set_last_task(last_task, "indexing:file");
+		profile_start("fromfile");
 		r = fromfile_index(image, mpriv);
+		profile_end("fromfile");
 		break;
 
 		case INDEXING_FELIX :
 		set_last_task(last_task, "indexing:felix");
+		profile_start("felix");
 		r = felix_index(image, mpriv);
+		profile_end("felix");
 		break;
 
 		case INDEXING_TAKETWO :
 		set_last_task(last_task, "indexing:taketwo");
+		profile_start("taketwo");
 		r = taketwo_index(image, mpriv);
+		profile_end("taketwo");
 		break;
 
 		case INDEXING_PINKINDEXER :
 		set_last_task(last_task, "indexing:pinkindexer");
+		profile_start("pinkindexer");
 		r = run_pinkIndexer(image, mpriv, ipriv->n_threads);
+		profile_end("pinkindexer");
 		break;
 
 		case INDEXING_XGANDALF :
 		set_last_task(last_task, "indexing:xgandalf");
+		profile_start("xgandalf");
 		r = run_xgandalf(image, mpriv);
+		profile_end("xgandalf");
 		break;
 
 		default :
@@ -670,6 +689,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	for ( i=0; i<r; i++ ) {
 
 		int j;
+		int r;
 		int this_crystal = image->n_crystals - i - 1;
 
 		/* ... starting at the end of the (complete) list ... */
@@ -680,9 +700,11 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Pre-refinement unit cell check if requested */
-		if ( check_cell(ipriv->flags, cr, ipriv->target_cell,
-		                ipriv->tolerance) )
-		{
+		profile_start("prerefine-cell-check");
+		r = check_cell(ipriv->flags, cr, ipriv->target_cell,
+		               ipriv->tolerance);
+		profile_end("prerefine-cell-check");
+		if ( r ) {
 			crystal_set_user_flag(cr, 1);
 			continue;
 		}
@@ -690,20 +712,27 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		/* Prediction refinement if requested */
 		if ( ipriv->flags & INDEXING_REFINE )
 		{
-			if ( refine_prediction(image, cr) ) {
+			int r;
+			profile_start("refine");
+			r = refine_prediction(image, cr);
+			profile_end("refine");
+			if ( r ) {
 				crystal_set_user_flag(cr, 1);
 				continue;
 			}
 		}
 
 		/* After refinement unit cell check if requested */
+		profile_start("postrefine-cell-check");
 		if ( (ipriv->flags & INDEXING_CHECK_CELL)
 		  && !compare_cell_parameters(crystal_get_cell(cr), ipriv->target_cell,
 		                              ipriv->tolerance) )
 		{
+			profile_end("postrefine-cell-check");
 			crystal_set_user_flag(cr, 1);
 			continue;
 		}
+		profile_end("postrefine-cell-check");
 
 		/* Peak alignment check if requested */
 		if ( ipriv->flags & INDEXING_CHECK_PEAKS )
@@ -719,6 +748,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		if ( crystal_get_user_flag(cr) ) continue;
 
 		/* Check if cell is too similar to existing ones */
+		profile_start("cell-compare-to-others");
 		for ( j=0; j<this_crystal; j++ ) {
 
 			Crystal *that_cr = image->crystals[j];
@@ -738,6 +768,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 				crystal_set_user_flag(cr, 1);
 			}
 		}
+		profile_end("cell-compare-to-others");
 
 	}
 

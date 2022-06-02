@@ -62,7 +62,7 @@ set(LIBCRYSTFEL_SOURCES
     src/image-hdf5.c
     src/fom.c
     src/image-msgpack.c
-    src/time-accounts.c
+    src/profile.c
     ${BISON_symopp_OUTPUTS}
     ${FLEX_symopl_OUTPUTS}
     src/indexers/dirax.c
@@ -100,6 +100,7 @@ set(LIBCRYSTFEL_HEADERS
     src/colscale.h
     src/detgeom.h
     src/fom.h
+    src/profile.h
 )
 
 add_library(${PROJECT_NAME} SHARED
