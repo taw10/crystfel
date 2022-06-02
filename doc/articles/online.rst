@@ -2,10 +2,37 @@
 Real-time data processing with indexamajig
 ==========================================
 
-Instead of reading from files, indexamajig can get its data over a ZeroMQ
-socket.  Use ``--zmq-input`` instead of ``--input`` or ``-i``.  An error will
-be generated if you use ``--zmq-input`` and ``--input``  or ``-i``
-simultaneously.
+Instead of reading from files, indexamajig can receive its data from an
+"online" streaming system.  In this version, two streaming systems are
+implemented in CrystFEL: ZeroMQ and ASAP::O.
+
+When using streamed data, most things work as they normally would.  However,
+there are some limitations and "gotchas".  Read this document closely for
+details.
+
+Streamed data can be in HDF5, MsgPack or Seedee format.  CBF (as well as
+gzipped CBF) may be added in the future.  To specify the format of the data,
+use ``--data-format=hdf5``, ``--data-format=seedee`` or
+``--data-format=msgpack``.
+
+You can use all of the usual peak search methods for streaming data, but
+note that HDF5/CXI peak lists are not currently supported for streamed data.
+This may also be added in future.
+
+The option ``--no-image-data`` will be honoured, if given.  This makes it
+possible to quickly check streaming data for "indexability", which is more
+likely to be useful with streamed data than with files.  You will be able
+to do almost all of the usual downstream analysis operations on the resulting
+stream, except that attempting to merge it using partialator or process_hkl
+will result in zeroes everywhere.
+
+
+Streaming data over ZeroMQ
+==========================
+
+To tell indexamajig to receive data over a ZeroMQ socket, use ``--zmq-input``
+instead of ``--input`` or ``-i``.  An error will be generated if you use
+``--zmq-input`` and ``--input``  or ``-i`` simultaneously.
 
 Indexamajig can use either a SUB (subscriber) or a REQ (request) socket.  The
 SUB socket type can be used for receiving data from OnDA/OM via the same
@@ -32,24 +59,33 @@ is the string which should be sent in the request message::
 Because they represent completely different modes of operation, the two options
 ``--zmq-request`` and ``--zmq-subscribe`` are mutually exclusive.
 
-In both cases, the option ``--no-image-data`` will be honoured, if given.  This
-makes it possible to quickly check streaming data for "indexability".  You will
-be able to do almost all of the usual downstream analysis operations on the
-resulting stream, except that attempting to merge it using partialator or
-process_hkl will result in zeroes everywhere.
+
+Streaming data using ASAP::O
+============================
+
+To tell indexamajig to receive data via ASAP::O, use ``--asapo-endpoint``.
+You must additionally specify ``--asapo-token`` (giving the ASAP::O
+authentication token), ``--asapo-beamtime`` and ``--asapo-source`` (specifying
+the ASAP::O beamtime ID and data source, respectively).
+
+You can optionally specify the ASAP::O consumer group ID using
+``--asapo-group``.  If you don't do this, a random group ID will be generated
+and used.  If you run multiple copies of ``indexamajig`` on the same data
+stream, you should make sure that they all use the same consumer group ID.
+
+Tip: Since the ASAP::O token is a long text string, put it in a separate file
+and use ``cat`` in backticks, as follows::
+
+   indexamajig \
+       --asapo-endpoint=my-endpoint.facility.de:8400 \
+       --asapo-token=`cat /path/to/asapo-token.txt` \
+       --asapo-beamtime=mybeamtime1234 \
+       --asapo-source=eiger \
+       --asapo-group=online
 
 
-Data format
-===========
-
-In this version, CrystFEL can handle real-time data in HDF5 for MessagePack
-format.  To specify the format of the data, use either ``--data-format=hdf5``
-or ``--data-format=msgpack``.  Note that *all* data format assumptions are
-'open for negotiation' and will be relaxed in future CrystFEL versions, as new
-online data formats arise.
-
-For HDF5 format, everything works just as it does with HDF5 files, except that
-peak lists are not currently supported.  This will be added soon.
+MsgPack data format
+===================
 
 For data in MessagePack format, the following assumptions are made:
 
@@ -69,6 +105,9 @@ For data in MessagePack format, the following assumptions are made:
   element is the slow-scan size, the second is that fast-scan size.
 * The data array within the NumPy map should be in a binary object called
   ``data``.
+
+Note that *all* of these assumptions are 'open for negotiation' and will be
+relaxed in future CrystFEL versions, as new online data formats arise.
 
 You can specify which map objects to look at in the geometry file.  The
 following example will get the incident photon energy (in eV) and detector
@@ -94,23 +133,19 @@ explanation of ``peak_list``::
   thepanel/ss = y
 
 
-Peak lists
-==========
-
-You can use all of the usual peak search methods for streaming data, but
-note that HDF5/CXI peak lists are not currently supported for streamed data.
-This will be fixed soon.
-
-In addition, you can use ``--peaks=msgpack`` to get the peak locations from
-the MsgPack data.  In this case, the ``peak_list`` directive in the geometry
-file specifies the key for the peak information in the MsgPack map object.
-The peak information itself is expected to be a map object with three keys:
-``fs``, ``ss`` and ``intensity``.  Each of these keys should correspond to an
-array containing (respectively) the fast scan and slow scan coordinates of each
-peak, and their intensities.  Obviously, the three arrays must have equal sizes.
+You can use ``--peaks=msgpack`` to get the peak locations from the MsgPack
+data.  In this case, the ``peak_list`` directive in the geometry file specifies
+the key for the peak information in the MsgPack map object. The peak
+information itself is expected to be a map object with three keys: ``fs``,
+``ss`` and ``intensity``.  Each of these keys should correspond to an array
+containing (respectively) the fast scan and slow scan coordinates of each peak,
+and their intensities.  Obviously, the three arrays must have equal sizes.
 
 Note that there is no way, in this structure, to communicate which detector
 panel contains a peak, in the case where different detector panels cover the
 same pixel ranges (in this case, the pixel data would from multiple data
 blocks).  In practice, this means that the ``data`` directives for all panels
 need to be the same when using ``--peaks=msgpack``.
+
+Note also that the options ``--no-revalidate`` and ``--check-hdf5-snr`` apply
+to the peak lists from ``--peaks=msgpack``.

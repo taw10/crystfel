@@ -55,7 +55,10 @@ roughly in order of importance:
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
 * [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)
-* [msgpack-c](https://github.com/msgpack/msgpack-c) (for online data streaming)
+* [libasapo-consumer](https://stash.desy.de/projects/ASAPO/repos/asapo/browse) (for online and offline data streaming via DESY's ASAP::O framework)
+* [msgpack-c](https://github.com/msgpack/msgpack-c) (for streaming data in MsgPack format)
+* [Seedee](https://gitlab.desy.de/fs-sc/seedee) (for streaming data serialised with Seedee)
+* [cJSON](https://github.com/DaveGamble/cJSON/) \[\*\] (extra dependency if Seedee is found)
 * [OpenCL](https://www.khronos.org/opencl/) plus appropriate GPU drivers (for GPU-accelerated pattern simulation)
 
 Most of the dependencies mentioned above should be available from your Linux
