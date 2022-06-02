@@ -336,7 +336,7 @@ Normally, peaks which contain one or more pixels above max_adu (defined in the d
 .PD 0
 .IP \fB--no-revalidate\fR
 .PD
-When using \fB--peaks=hdf5\fR or \fB--peaks=cxi\fR, the peaks will be put through some of the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
+When using \fB--peaks=hdf5\fR, \fB--peaks=cxi\fR or \fB--peaks=msgpack\fR, the peaks will be put through some of the same checks as if you were using \fB--peaks=zaef\fR.  These checks reject peaks which are too close to panel edges, are saturated (unless you use \fB--use-saturated\fR), have other nearby peaks (closer than twice the inner integration radius, see \fB--int-radius\fR), or have any part in a bad region.  Using this option skips this validation step, and uses the peaks directly.
 
 .PD 0
 .IP \fB--no-half-pixel-shift\fR
@@ -346,7 +346,7 @@ CrystFEL considers all peak locations to be distances from the corner of the det
 .PD 0
 .IP \fB--check-hdf5-snr\fR
 .PD
-With this option with \fB--peaks=hdf5\fR, the peaks will additionally be checked to see that they satisfy the minimum SNR specified with \fB--min-snr\fR.
+With this option with \fB--peaks=hdf5\fR (or \fBcxi\fR or \fBmsgpack\fR), the peaks will additionally be checked to see that they satisfy the minimum SNR specified with \fB--min-snr\fR.
 
 .SH INDEXING OPTIONS
 .PD 0
