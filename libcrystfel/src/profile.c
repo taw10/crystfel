@@ -206,7 +206,9 @@ void profile_start(const char *name)
 	if ( pd == NULL ) return;
 
 	if ( pd->current->n_children >= MAX_PROFILE_CHILDREN ) {
-		fprintf(stderr, "Too many profile children.\n");
+		fprintf(stderr, "Too many profile children "
+		                "(opening %s inside %s).\n",
+		                pd->current->name, name);
 		fflush(stderr);
 		abort();
 	}
