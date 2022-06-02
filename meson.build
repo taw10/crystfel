@@ -71,7 +71,7 @@ endif
 
 asapodep = dependency('libasapo-consumer', required: false)
 if asapodep.found()
-  conf_data.set10('HAVE_ASAPO', 1)
+  conf_data.set10('HAVE_ASAPO', true)
 endif
 
 if cc.has_function('clock_gettime', prefix: '#include <time.h>')
