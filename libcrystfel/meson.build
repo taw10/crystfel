@@ -26,11 +26,16 @@ if fftwdep.found()
 endif
 
 seedeedep = dependency('seedee', required: false)
-cjsondep = dependency('cjson',
-                      required: true,
-                      fallback: ['cjson', 'libcjson_dep'])
-if cjsondep.found() and seedeedep.found()
-  conf_data.set10('HAVE_SEEDEE', 1)
+if seedeedep.found()
+  cjsondep = dependency('cjson',
+                        required: true,
+                        fallback: ['cjson', 'libcjson_dep'])
+  if cjsondep.found() and seedeedep.found()
+    conf_data.set10('HAVE_SEEDEE', true)
+  endif
+else
+  # Default 'not found' dependency
+  cjsondep = dependency('', required : false)
 endif
 
 xgandalfdep = dependency('xgandalf',
