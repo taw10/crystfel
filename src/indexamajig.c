@@ -1110,7 +1110,20 @@ int main(int argc, char *argv[])
 	}
 
 	if ( (args.filename != NULL) && (args.zmq_addr != NULL) ) {
-		ERROR("You must only specify one of --input and --zmq-input.\n");
+		ERROR("The options --input and --zmq-input are mutually "
+		      "exclusive.\n");
+		return 1;
+	}
+
+	if ( (args.filename != NULL) && (args.asapo_endpoint != NULL) ) {
+		ERROR("The options --input and --asapo-endpoint are mutually "
+		      "exclusive.\n");
+		return 1;
+	}
+
+	if ( (args.asapo_endpoint != NULL) && (args.zmq_addr != NULL) ) {
+		ERROR("The options --asapo-endpoint and --zmq-input are mutually "
+		      "exclusive.\n");
 		return 1;
 	}
 
