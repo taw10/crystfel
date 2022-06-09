@@ -218,7 +218,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 		/* Don't pair with 000, because that can cause trouble later */
 		if ( (h==0) && (k==0) && (l==0) ) continue;
 
-		if ( (abs(h)>=512) || (abs(k)>=512) || (abs(l)>=512) ) {
+		if ( (fabs(h)>=512) || (fabs(k)>=512) || (fabs(l)>=512) ) {
 			ERROR("Peak %i (on panel %s at %.2f,%.2f) has indices too "
 			      "large for pairing (%.0f %.0f %.0f)\n",
 			      i, image->detgeom->panels[f->pn].name,
