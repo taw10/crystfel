@@ -662,7 +662,6 @@ static void search_in_ring(int ring_width, int com_fs_int, int com_ss_int,
 	float curr_i;
 
 	int np_sigma;
-	int np_counted;
 	int local_radius;
 
 	float sum_i;
@@ -673,7 +672,6 @@ static void search_in_ring(int ring_width, int com_fs_int, int com_ss_int,
 	sum_i = 0;
 	sum_i_squared = 0;
 	np_sigma = 0;
-	np_counted = 0;
 	local_radius = 0;
 
 	for ( ssj = -ring_width ; ssj<ring_width ; ssj++ ) {
@@ -712,7 +710,6 @@ static void search_in_ring(int ring_width, int com_fs_int, int com_ss_int,
 					*background_max_i = curr_i;
 				}
 			}
-			np_counted += 1;
 		}
 	}
 

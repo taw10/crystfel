@@ -168,7 +168,6 @@ static double calculate_cchalf(RefList *template, RefList *full,
 	double sig2E, sig2Y;
 	int n = 0;
 	double wSum = 0.0;
-	double wSum2 = 0.0;
 	double mean = 0.0;
 	double S = 0.0;
 	double all_sum_var = 0.0;
@@ -258,7 +257,6 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 		/* Running variance calculation to get sig2Y */
 		wSum += w;
-		wSum2 += w*w;
 		meanOld = mean;
 		mean = meanOld + (w/wSum) * (refl_mean - meanOld);
 		S += w * (refl_mean - meanOld) * (refl_mean - mean);

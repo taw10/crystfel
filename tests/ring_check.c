@@ -47,8 +47,6 @@ static void third_integration_check(struct image *image, int n_trials,
                                     int *fail, gsl_rng *rng)
 {
 	double mean_intensity = 0.0;
-	double mean_bg = 0.0;
-	double mean_max = 0.0;
 	double mean_sigma = 0.0;
 	int i;
 	int fs, ss;
@@ -80,8 +78,6 @@ static void third_integration_check(struct image *image, int n_trials,
 
 	}
 	mean_intensity /= n_trials;
-	mean_bg /= n_trials;
-	mean_max /= n_trials;
 	mean_sigma /= n_trials;
 
 	STATUS("  Third check (mean values): intensity = %.2f, sigma = %.2f,"

@@ -218,7 +218,6 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 	RefList *reflections;
 	FILE *fh = NULL;
 	int ntot = 0;
-	double total = 0.0;
 	char tmp[32];
 	double *vec1;
 	double *vec2;
@@ -328,7 +327,6 @@ static double test_gradients(Crystal *cr, double incr_val, int refine,
 				continue;
 			}
 
-			total += fabsl(cgrad - grad);
 			ntot++;
 
 			if ( !within_tolerance(grad, cgrad, 5.0)
