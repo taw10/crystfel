@@ -61,6 +61,7 @@ static UNUSED struct im_asapo *im_asapo_connect(const char *endpoint,
                                                 const char *data_source,
                                                 const char *stream)
 {
+	ERROR("This installation of CrystFEL was compiled without ASAP::O support.\n");
 	return NULL;
 }
 

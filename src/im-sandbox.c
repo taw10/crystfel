@@ -367,6 +367,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		                              sb->asapo_stream);
 		if ( asapostuff == NULL ) {
 			ERROR("ASAP::O setup failed.\n");
+			sb->shared->should_shutdown = 1;
 			return 1;
 		}
 	}
