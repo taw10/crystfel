@@ -25,47 +25,25 @@ RUN apt-get update && apt-get install -y \
    unzip \
    wget \
    curl \
+   ninja-build \
    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN cd /usr/local/include && ln -sf eigen3/Eigen Eigen
-RUN cd /usr/local/include && ln -sf eigen3/unsupported unsupported
 
 WORKDIR /root
 RUN pip3 install meson
 
-
-RUN curl -L -O https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip
-#wget https://github-releases.githubusercontent.com/ninja-linux.zip
-RUN unzip ninja-linux.zip
-RUN mv ninja /usr/local/bin
-
 WORKDIR /home/crystfel-build
-# Xgandalf
-RUN git clone https://gitlab.desy.de/thomas.white/xgandalf.git
-RUN mkdir xgandalf/build
-RUN cd xgandalf && meson build/
-RUN cd xgandalf && ninja -C build/
-RUN cd xgandalf && ninja -C build/ install
-
-# Fastdiffractionimageprocessing
-RUN git clone https://stash.desy.de/scm/~gevorkov/fastdiffractionimageprocessing.git
-RUN mkdir fastdiffractionimageprocessing/build
-RUN cd fastdiffractionimageprocessing/build && cmake ..
-RUN cd fastdiffractionimageprocessing && make -C build
-RUN cd fastdiffractionimageprocessing && make -C build install
 
 # Mosflm
-RUN wget https://www.mrc-lmb.cam.ac.uk/mosflm/imosflm/ver740/downloads/imosflm-7.4.0-linux-64.zip
-RUN unzip imosflm-7.4.0-linux-64.zip
-RUN mv imosflm /usr/local/
-RUN ln -sf ../imosflm/bin/mosflm /usr/local/bin/mosflm
+RUN wget -nv https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip
+RUN unzip mosflm-linux-64-noX11.zip
+RUN mv mosflm-linux-64-noX11 /usr/local/bin/mosflm
 
 # CrystFEL
-RUN git clone --branch container https://gitlab.desy.de/silvan.schoen/crystfel.git
-RUN mkdir crystfel/build
-RUN cd crystfel && meson build/
-RUN cd crystfel && ninja -C build/
-RUN cd crystfel && ninja -C build/ install
+RUN git clone https://gitlab.desy.de/thomas.white/crystfel.git
+RUN cd crystfel && meson build -Dprefix=/usr/local
+RUN cd crystfel && ninja -C build
+RUN cd crystfel && ninja -C build test
+RUN cd crystfel && ninja -C build install
 
 ## Stage 2
 FROM debian:buster-slim
@@ -84,8 +62,9 @@ RUN apt-get update && apt-get install -y \
    libmsgpackc2 \
    && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=0 /usr/local /usr/local
-ENV CLIBD=/usr/local/imosflm
-ENV CINCL=/usr/local/imosflm
-ENV CCP4_SCR=/usr/local/imosflm/src
-RUN ldconfig
 
+# Environment variable needed for CrystFEL GUI and Mosflm
+# The file is installed by libccp4c, a wrapped subproject of CrystFEL
+ENV SYMINFO=/usr/share/ccp4/syminfo.lib
+
+RUN ldconfig
