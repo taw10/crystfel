@@ -1,3 +1,7 @@
+stages:
+  - test
+  - build_container
+
 build-cmake:
   image: fedora:32
   script:
@@ -27,3 +31,58 @@ build-meson-nohdf5:
     - dnf install -y meson
     - meson build -Dhdf5=disabled && ninja -C build
     - ninja -C build test
+
+build_container_image:
+  stage: build_container
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+
+  variables:
+    IMAGE: "crystfel"
+    IMAGE_TAG_LATEST: "latest"
+    IMAGE_TAG_SHA: $CI_COMMIT_SHORT_SHA
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/Dockerfile
+      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
+      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
+      --build-arg HELM_VERSION=$HELM_VERSION
+      --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
+
+  tags:
+    - kubernetes
+
+build_container_image_tag:
+  stage: build_container
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+
+  variables:
+    IMAGE: "crystfel"
+    IMAGE_TAG_VER: $CI_COMMIT_TAG
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/Dockerfile
+      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_VER
+      --build-arg HELM_VERSION=$HELM_VERSION
+      --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
+
+  tags:
+    - kubernetes
+
+  rules:
+    - if: $CI_COMMIT_TAG
