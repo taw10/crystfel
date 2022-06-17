@@ -4,7 +4,7 @@ INDEXAMAJIG=$1
 INFILE=$2
 GEOM=$3
 
-function make_link {
+make_link() {
 	sleep 5
 	ln -s $INFILE file_wait_input.h5
 }
