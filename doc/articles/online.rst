@@ -66,12 +66,10 @@ Streaming data using ASAP::O
 To tell indexamajig to receive data via ASAP::O, use ``--asapo-endpoint``.
 You must additionally specify ``--asapo-token`` (giving the ASAP::O
 authentication token), ``--asapo-beamtime`` and ``--asapo-source`` (specifying
-the ASAP::O beamtime ID and data source, respectively).
-
-You can optionally specify the ASAP::O consumer group ID using
-``--asapo-group``.  If you don't do this, a random group ID will be generated
-and used.  If you run multiple copies of ``indexamajig`` on the same data
-stream, you should make sure that they all use the same consumer group ID.
+the ASAP::O beamtime ID and data source, respectively), and ``--asapo-group``
+with the ASAP::O consumer group ID.  If you run multiple copies of
+``indexamajig`` on the same data stream, you should make sure that they all use
+the same consumer group ID.
 
 Tip: Since the ASAP::O token is a long text string, put it in a separate file
 and use ``cat`` in backticks, as follows::
@@ -82,6 +80,12 @@ and use ``cat`` in backticks, as follows::
        --asapo-beamtime=mybeamtime1234 \
        --asapo-source=eiger \
        --asapo-group=online
+
+ASAP::O will remember the last retrieved frame in the stream for the given
+consumer group ID.  Therefore, if you run ``indexamajig`` again, it will start
+from where it left off.  To start again from the beginning of a stream, you
+will need to reset the 'last read' location separately.  Instructions and tools
+for this are pending...
 
 
 MsgPack data format

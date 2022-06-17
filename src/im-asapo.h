@@ -49,9 +49,6 @@ extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
                             char **pmeta, char **pfilename, char **pevent,
                             int *pfinished);
 
-extern char *im_asapo_make_unique_group_id(const char *endpoint,
-                                           const char *token);
-
 #else /* defined(HAVE_ASAPO) */
 
 static UNUSED struct im_asapo *im_asapo_connect(const char *endpoint,
@@ -78,12 +75,6 @@ static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize,
 	*pfilename = NULL;
 	*pevent = NULL;
 	*pfinished = 1;
-	return NULL;
-}
-
-static char *im_asapo_make_unique_group_id(const char *endpoint,
-                                           const char *token)
-{
 	return NULL;
 }
 
