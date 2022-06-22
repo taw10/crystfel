@@ -63,6 +63,7 @@
 #include <datatemplate.h>
 
 #include "im-sandbox.h"
+#include "im-zmq.h"
 #include "im-asapo.h"
 #include "version.h"
 #include "json-utils.h"
@@ -81,10 +82,7 @@ struct indexamajig_arguments
 	char *cellfile;
 	char *indm_str;
 	int basename;
-	char *zmq_addr;
-	char *zmq_request;
-	char *zmq_subscriptions[256];
-	int n_zmq_subscriptions;
+	struct im_zmq_params zmq_params;
 	struct im_asapo_params asapo_params;
 	int serial_start;
 	char *temp_location;
@@ -378,7 +376,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 207 :
-		args->zmq_addr = strdup(arg);
+		args->zmq_params.addr = strdup(arg);
 		break;
 
 		case 208 :
@@ -394,15 +392,15 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 211 :
-		if ( args->n_zmq_subscriptions == 256 ) {
+		if ( args->zmq_params.n_subscriptions == 256 ) {
 			ERROR("Too many ZMQ subscriptions.\n");
 			return 1;
 		}
-		args->zmq_subscriptions[args->n_zmq_subscriptions++] = strdup(arg);
+		args->zmq_params.subscriptions[args->zmq_params.n_subscriptions++] = strdup(arg);
 		break;
 
 		case 212 :
-		args->zmq_request = strdup(arg);
+		args->zmq_params.request = strdup(arg);
 		break;
 
 		case 213 :
@@ -851,15 +849,15 @@ int main(int argc, char *argv[])
 	args.cellfile = NULL;
 	args.indm_str = NULL;
 	args.basename = 0;
-	args.zmq_addr = NULL;
-	args.zmq_request = NULL;
+	args.zmq_params.addr = NULL;
+	args.zmq_params.request = NULL;
+	args.zmq_params.n_subscriptions = 0;
 	args.asapo_params.endpoint = NULL;
 	args.asapo_params.token = NULL;
 	args.asapo_params.beamtime = NULL;
 	args.asapo_params.group_id = NULL;
 	args.asapo_params.source = NULL;
 	args.asapo_params.stream = NULL;
-	args.n_zmq_subscriptions = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
 	args.if_multi = 0;
@@ -1091,7 +1089,7 @@ int main(int argc, char *argv[])
 
 	/* Check for minimal information */
 	if ( (args.filename == NULL)
-	  && (args.zmq_addr == NULL)
+	  && (args.zmq_params.addr == NULL)
 	  && (args.asapo_params.endpoint == NULL) ) {
 		ERROR("You need to provide the input filename (use -i)\n");
 		return 1;
@@ -1105,7 +1103,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( (args.filename != NULL) && (args.zmq_addr != NULL) ) {
+	if ( (args.filename != NULL) && (args.zmq_params.addr != NULL) ) {
 		ERROR("The options --input and --zmq-input are mutually "
 		      "exclusive.\n");
 		return 1;
@@ -1117,13 +1115,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( (args.asapo_params.endpoint != NULL) && (args.zmq_addr != NULL) ) {
+	if ( (args.asapo_params.endpoint != NULL) && (args.zmq_params.addr != NULL) ) {
 		ERROR("The options --asapo-endpoint and --zmq-input are mutually "
 		      "exclusive.\n");
 		return 1;
 	}
 
-	if ( (args.zmq_request != NULL) && (args.n_zmq_subscriptions > 0) ) {
+	if ( (args.zmq_params.request != NULL) && (args.zmq_params.n_subscriptions > 0) ) {
 		ERROR("The options --zmq-request and --zmq-subscribe are "
 		      "mutually exclusive.\n");
 		return 1;
@@ -1345,9 +1343,8 @@ int main(int argc, char *argv[])
 
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
 	                   fh, st, tmpdir, args.serial_start,
-	                   args.zmq_addr, args.zmq_subscriptions,
-	                   args.n_zmq_subscriptions, args.zmq_request,
-	                   &args.asapo_params, timeout, args.profile);
+	                   &args.zmq_params, &args.asapo_params,
+	                   timeout, args.profile);
 
 	cell_free(args.iargs.cell);
 	free(args.prefix);

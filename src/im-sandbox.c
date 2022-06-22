@@ -98,12 +98,8 @@ struct sandbox
 
 	const char *tmpdir;
 
-	/* ZMQ mode */
-	int zmq;
-	const char *zmq_address;
-	char **zmq_subscriptions;
-	int n_zmq_subscriptions;
-	const char *zmq_request;
+	/* If non-NULL, we are using ZMQ */
+	struct im_zmq_params *zmq_params;
 
 	/* If non-NULL, we are using ASAP::O */
 	struct im_asapo_params *asapo_params;
@@ -341,11 +337,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	}
 
 	/* Connect via ZMQ */
-	if ( sb->zmq ) {
-		zmqstuff = im_zmq_connect(sb->zmq_address,
-		                          sb->zmq_subscriptions,
-		                          sb->n_zmq_subscriptions,
-		                          sb->zmq_request);
+	if ( sb->zmq_params != NULL ) {
+		zmqstuff = im_zmq_connect(sb->zmq_params);
 		if ( zmqstuff == NULL ) {
 			ERROR("ZMQ setup failed.\n");
 			return 1;
@@ -455,7 +448,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		pargs.asapo_data_size = 0;
 		pargs.asapo_meta = NULL;
 
-		if ( sb->zmq ) {
+		if ( sb->zmq_params != NULL ) {
 
 			do {
 				pargs.zmq_data = im_zmq_fetch(zmqstuff,
@@ -898,7 +891,7 @@ static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 		char *filename;
 		char *evstr;
 
-		if ( sb->zmq ) {
+		if ( sb->zmq_params != NULL ) {
 			/* These are just semi-meaningful placeholder values to
 			 * be put into the queue, instead of "(null)".
 			 * A unique filename is needed so that the GUI can
@@ -1117,8 +1110,7 @@ char *create_tempdir(const char *temp_location)
 int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    int config_basename, FILE *fh,
                    Stream *stream, const char *tmpdir, int serial_start,
-                   const char *zmq_address, char **zmq_subscriptions,
-                   int n_zmq_subscriptions, const char *zmq_request,
+                   struct im_zmq_params *zmq_params,
                    struct im_asapo_params *asapo_params,
                    int timeout, int profile)
 {
@@ -1150,14 +1142,11 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->tmpdir = tmpdir;
 	sb->profile = profile;
 	sb->timeout = timeout;
-	if ( zmq_address != NULL ) {
-		sb->zmq = 1;
-		sb->zmq_address = zmq_address;
-		sb->zmq_subscriptions = zmq_subscriptions;
-		sb->n_zmq_subscriptions = n_zmq_subscriptions;
-		sb->zmq_request = zmq_request;
+
+	if ( zmq_params->addr != NULL ) {
+		sb->zmq_params = zmq_params;
 	} else {
-		sb->zmq = 0;
+		sb->zmq_params = NULL;
 	}
 
 	if ( asapo_params->endpoint != NULL ) {
@@ -1166,7 +1155,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		sb->asapo_params = NULL;
 	}
 
-	if ( sb->zmq && sb->asapo_params ) {
+	if ( sb->zmq_params && sb->asapo_params ) {
 		ERROR("Cannot simultaneously use ZMQ and ASAP::O input.\n");
 		free(sb);
 		return 0;

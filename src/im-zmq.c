@@ -56,10 +56,7 @@ struct im_zmq
 };
 
 
-struct im_zmq *im_zmq_connect(const char *zmq_address,
-                              char **subscriptions,
-                              int n_subscriptions,
-                              const char *zmq_request)
+struct im_zmq *im_zmq_connect(struct im_zmq_params *params)
 {
 	struct im_zmq *z;
 
@@ -72,11 +69,11 @@ struct im_zmq *im_zmq_connect(const char *zmq_address,
 		return NULL;
 	}
 
-	if ( zmq_request == NULL ) {
-		STATUS("Connecting ZMQ subscriber to '%s'\n", zmq_address);
+	if ( params->request == NULL ) {
+		STATUS("Connecting ZMQ subscriber to '%s'\n", params->addr);
 		z->socket = zmq_socket(z->ctx, ZMQ_SUB);
 	} else {
-		STATUS("Connecting ZMQ requester to '%s'\n", zmq_address);
+		STATUS("Connecting ZMQ requester to '%s'\n", params->addr);
 		z->socket = zmq_socket(z->ctx, ZMQ_REQ);
 	}
 	if ( z->socket == NULL ) {
@@ -84,26 +81,26 @@ struct im_zmq *im_zmq_connect(const char *zmq_address,
 		return NULL;
 	}
 
-	if ( zmq_connect(z->socket, zmq_address) == -1 ) {
+	if ( zmq_connect(z->socket, params->addr) == -1 ) {
 		ERROR("ZMQ connection failed: %s\n", zmq_strerror(errno));
 		free(z);
 		return NULL;
 	}
 
-	if ( zmq_request == NULL ) {
+	if ( params->request == NULL ) {
 
 		int i;
 
 		/* SUB mode */
-		if ( n_subscriptions == 0 ) {
+		if ( params->n_subscriptions == 0 ) {
 			ERROR("WARNING: No ZeroMQ subscriptions.  You should "
 			      "probably try again with --zmq-subscribe.\n");
 		}
-		for ( i=0; i<n_subscriptions; i++ ) {
-			STATUS("Subscribing to '%s'\n", subscriptions[i]);
+		for ( i=0; i<params->n_subscriptions; i++ ) {
+			STATUS("Subscribing to '%s'\n", params->subscriptions[i]);
 			if ( zmq_setsockopt(z->socket, ZMQ_SUBSCRIBE,
-			                    subscriptions[i],
-			                    strlen(subscriptions[i])) )
+			                    params->subscriptions[i],
+			                    strlen(params->subscriptions[i])) )
 			{
 				ERROR("ZMQ subscription failed: %s\n",
 				      zmq_strerror(errno));
@@ -116,7 +113,7 @@ struct im_zmq *im_zmq_connect(const char *zmq_address,
 	} else {
 
 		/* REQ mode */
-		z->request_str = zmq_request;
+		z->request_str = params->request;
 
 	}
 

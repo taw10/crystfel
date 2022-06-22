@@ -36,21 +36,23 @@
 #include <config.h>
 #endif
 
+struct im_zmq_params
+{
+	char *addr;
+	char *request;
+	char *subscriptions[256];
+	int n_subscriptions;
+};
+
 #if defined(HAVE_ZMQ)
 
-extern struct im_zmq *im_zmq_connect(const char *zmq_address,
-                                     char **subscriptions,
-                                     int n_subscriptions,
-                                     const char *zmq_request);
+extern struct im_zmq *im_zmq_connect(struct im_zmq_params *params);
 extern void im_zmq_shutdown(struct im_zmq *z);
 extern void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size);
 
 #else /* defined(HAVE_ZMQ) */
 
-static UNUSED struct im_zmq *im_zmq_connect(const char *zmq_address,
-                                            char **zmq_subscriptions,
-                                            int n_subscriptions,
-                                            const char *zmq_request) { return NULL; }
+static UNUSED struct im_zmq *im_zmq_connect(struct im_zmq_params *params) { return NULL; }
 static UNUSED void im_zmq_shutdown(struct im_zmq *z) { }
 static UNUSED void *im_zmq_fetch(struct im_zmq *z, size_t *psize) { *psize = 0; return NULL; }
 

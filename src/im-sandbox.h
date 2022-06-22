@@ -42,6 +42,7 @@ struct sb_shm;
 #include "stream.h"
 #include "cell.h"
 #include "process_image.h"
+#include "im-zmq.h"
 #include "im-asapo.h"
 
 /* Length of event queue */
@@ -86,8 +87,7 @@ extern void set_last_task(char *lt, const char *task);
 extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           int config_basename, FILE *fh,  Stream *stream,
                           const char *tempdir, int serial_start,
-                          const char *zmq_address, char **zmq_subscriptions,
-                          int n_zmq_subscriptions, const char *zmq_request,
+                          struct im_zmq_params *zmq_params,
                           struct im_asapo_params *asapo_params,
                           int timeout, int profile);
 
