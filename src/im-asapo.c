@@ -62,34 +62,29 @@ static void show_asapo_error(const char *msg, const AsapoErrorHandle err)
 }
 
 
-struct im_asapo *im_asapo_connect(const char *endpoint,
-                                  const char *token,
-                                  const char *beamtime,
-                                  const char *group_id,
-                                  const char *data_source,
-                                  const char *stream)
+struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 {
 	struct im_asapo *a;
 	AsapoSourceCredentialsHandle cred;
 	AsapoErrorHandle err = asapo_new_handle();
 
-	if ( endpoint == NULL ) {
+	if ( params->endpoint == NULL ) {
 		ERROR("ASAP::O endpoint not specified.\n");
 		return NULL;
 	}
-	if ( beamtime == NULL ) {
+	if ( params->beamtime == NULL ) {
 		ERROR("ASAP::O beamtime not specified.\n");
 		return NULL;
 	}
-	if ( group_id == NULL ) {
+	if ( params->group_id == NULL ) {
 		ERROR("ASAP::O consumer group ID not specified.\n");
 		return NULL;
 	}
-	if ( data_source == NULL ) {
+	if ( params->source == NULL ) {
 		ERROR("ASAP::O data source not specified.\n");
 		return NULL;
 	}
-	if ( stream == NULL ) {
+	if ( params->stream == NULL ) {
 		ERROR("ASAP::O stream not specified.\n");
 		return NULL;
 	}
@@ -100,11 +95,11 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 	cred = asapo_create_source_credentials(kProcessed,
 	                                       "auto",        /* instance ID */
 	                                       "indexamajig", /* pipeline step */
-	                                       beamtime,
+	                                       params->beamtime,
 	                                       "",  /* beamline */
-	                                       data_source,
-	                                       token);
-	a->consumer = asapo_create_consumer(endpoint, "auto", 0, cred, &err);
+	                                       params->source,
+	                                       params->token);
+	a->consumer = asapo_create_consumer(params->endpoint, "auto", 0, cred, &err);
 	asapo_free_handle(&cred);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Cannot create ASAP::O consumer", err);
@@ -112,9 +107,9 @@ struct im_asapo *im_asapo_connect(const char *endpoint,
 		return NULL;
 	}
 
-	a->stream = strdup(stream);
+	a->stream = strdup(params->stream);
 	asapo_consumer_set_timeout(a->consumer, 3000);
-	a->group_id = asapo_string_from_c_str(group_id);
+	a->group_id = asapo_string_from_c_str(params->group_id);
 
 	return a;
 }

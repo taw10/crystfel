@@ -34,14 +34,19 @@
 #include <config.h>
 #endif
 
+struct im_asapo_params
+{
+	char *endpoint;
+	char *token;
+	char *beamtime;
+	char *group_id;
+	char *source;
+	char *stream;
+};
+
 #if defined(HAVE_ASAPO)
 
-extern struct im_asapo *im_asapo_connect(const char *endpoint,
-                                         const char *token,
-                                         const char *beamtime,
-                                         const char *group_id,
-                                         const char *data_source,
-                                         const char *stream);
+extern struct im_asapo *im_asapo_connect(struct im_asapo_params *params);
 
 extern void im_asapo_shutdown(struct im_asapo *a);
 
@@ -51,12 +56,7 @@ extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 
 #else /* defined(HAVE_ASAPO) */
 
-static UNUSED struct im_asapo *im_asapo_connect(const char *endpoint,
-                                                const char *token,
-                                                const char *beamtime,
-                                                const char *group_id,
-                                                const char *data_source,
-                                                const char *stream)
+static UNUSED struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 {
 	ERROR("This installation of CrystFEL was compiled without ASAP::O support.\n");
 	return NULL;

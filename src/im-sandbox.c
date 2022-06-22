@@ -105,14 +105,8 @@ struct sandbox
 	int n_zmq_subscriptions;
 	const char *zmq_request;
 
-	/* ASAP::O mode */
-	int asapo;
-	const char *asapo_endpoint;
-	const char *asapo_token;
-	const char *asapo_beamtime;
-	const char *asapo_group_id;
-	const char *asapo_source;
-	const char *asapo_stream;
+	/* If non-NULL, we are using ASAP::O */
+	struct im_asapo_params *asapo_params;
 
 	/* Final output */
 	Stream *stream;
@@ -358,13 +352,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		}
 	}
 
-	if ( sb->asapo ) {
-		asapostuff = im_asapo_connect(sb->asapo_endpoint,
-		                              sb->asapo_token,
-		                              sb->asapo_beamtime,
-		                              sb->asapo_group_id,
-		                              sb->asapo_source,
-		                              sb->asapo_stream);
+	if ( sb->asapo_params != NULL ) {
+		asapostuff = im_asapo_connect(sb->asapo_params);
 		if ( asapostuff == NULL ) {
 			ERROR("ASAP::O setup failed.\n");
 			sb->shared->should_shutdown = 1;
@@ -479,7 +468,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			 * importantly, the event queue gave us a unique
 			 * serial number for this image. */
 
-		} else if ( sb->asapo ) {
+		} else if ( sb->asapo_params != NULL ) {
 
 			char *filename;
 			char *event;
@@ -919,7 +908,7 @@ static int fill_queue(struct get_pattern_ctx *gpctx, struct sandbox *sb)
 			filename = "ZMQdata";
 			evstr = malloc(64);
 			snprintf(evstr, 64, "//%i", sb->serial);
-		} else if ( sb->asapo ) {
+		} else if ( sb->asapo_params != NULL ) {
 			filename = "ASAPOdata";
 			evstr = malloc(64);
 			snprintf(evstr, 64, "//%i", sb->serial);
@@ -1130,9 +1119,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    Stream *stream, const char *tmpdir, int serial_start,
                    const char *zmq_address, char **zmq_subscriptions,
                    int n_zmq_subscriptions, const char *zmq_request,
-                   const char *asapo_endpoint, const char *asapo_token,
-                   const char *asapo_beamtime, const char *asapo_group_id,
-                   const char *asapo_source, const char *asapo_stream,
+                   struct im_asapo_params *asapo_params,
                    int timeout, int profile)
 {
 	int i;
@@ -1173,25 +1160,16 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		sb->zmq = 0;
 	}
 
-	if ( asapo_endpoint != NULL ) {
-		sb->asapo = 1;
-		sb->asapo_endpoint = asapo_endpoint;
-		sb->asapo_token = asapo_token;
-		sb->asapo_beamtime = asapo_beamtime;
-		sb->asapo_source = asapo_source;
-		sb->asapo_stream = asapo_stream;
+	if ( asapo_params->endpoint != NULL ) {
+		sb->asapo_params = asapo_params;
 	} else {
-		sb->asapo = 0;
+		sb->asapo_params = NULL;
 	}
 
-	if ( sb->zmq && sb->asapo ) {
+	if ( sb->zmq && sb->asapo_params ) {
 		ERROR("Cannot simultaneously use ZMQ and ASAP::O input.\n");
 		free(sb);
 		return 0;
-	}
-
-	if ( sb->asapo ) {
-		sb->asapo_group_id = strdup(asapo_group_id);
 	}
 
 	sb->fds = NULL;

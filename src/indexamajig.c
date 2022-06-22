@@ -63,6 +63,7 @@
 #include <datatemplate.h>
 
 #include "im-sandbox.h"
+#include "im-asapo.h"
 #include "version.h"
 #include "json-utils.h"
 
@@ -84,12 +85,7 @@ struct indexamajig_arguments
 	char *zmq_request;
 	char *zmq_subscriptions[256];
 	int n_zmq_subscriptions;
-	char *asapo_endpoint;
-	char *asapo_token;
-	char *asapo_beamtime;
-	char *asapo_group_id;
-	char *asapo_source;
-	char *asapo_stream;
+	struct im_asapo_params asapo_params;
 	int serial_start;
 	char *temp_location;
 	int if_refine;
@@ -410,23 +406,23 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 213 :
-		args->asapo_endpoint = strdup(arg);
+		args->asapo_params.endpoint = strdup(arg);
 		break;
 
 		case 214 :
-		args->asapo_token = strdup(arg);
+		args->asapo_params.token = strdup(arg);
 		break;
 
 		case 215 :
-		args->asapo_beamtime = strdup(arg);
+		args->asapo_params.beamtime = strdup(arg);
 		break;
 
 		case 217 :
-		args->asapo_group_id = strdup(arg);
+		args->asapo_params.group_id = strdup(arg);
 		break;
 
 		case 218 :
-		args->asapo_source = strdup(arg);
+		args->asapo_params.source = strdup(arg);
 		break;
 
 		case 219 :
@@ -438,7 +434,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 220 :
-		args->asapo_stream = strdup(arg);
+		args->asapo_params.stream = strdup(arg);
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -857,12 +853,12 @@ int main(int argc, char *argv[])
 	args.basename = 0;
 	args.zmq_addr = NULL;
 	args.zmq_request = NULL;
-	args.asapo_endpoint = NULL;
-	args.asapo_token = NULL;
-	args.asapo_beamtime = NULL;
-	args.asapo_group_id = NULL;
-	args.asapo_source = NULL;
-	args.asapo_stream = NULL;
+	args.asapo_params.endpoint = NULL;
+	args.asapo_params.token = NULL;
+	args.asapo_params.beamtime = NULL;
+	args.asapo_params.group_id = NULL;
+	args.asapo_params.source = NULL;
+	args.asapo_params.stream = NULL;
 	args.n_zmq_subscriptions = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
@@ -1096,7 +1092,7 @@ int main(int argc, char *argv[])
 	/* Check for minimal information */
 	if ( (args.filename == NULL)
 	  && (args.zmq_addr == NULL)
-	  && (args.asapo_endpoint == NULL) ) {
+	  && (args.asapo_params.endpoint == NULL) ) {
 		ERROR("You need to provide the input filename (use -i)\n");
 		return 1;
 	}
@@ -1115,13 +1111,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( (args.filename != NULL) && (args.asapo_endpoint != NULL) ) {
+	if ( (args.filename != NULL) && (args.asapo_params.endpoint != NULL) ) {
 		ERROR("The options --input and --asapo-endpoint are mutually "
 		      "exclusive.\n");
 		return 1;
 	}
 
-	if ( (args.asapo_endpoint != NULL) && (args.zmq_addr != NULL) ) {
+	if ( (args.asapo_params.endpoint != NULL) && (args.zmq_addr != NULL) ) {
 		ERROR("The options --asapo-endpoint and --zmq-input are mutually "
 		      "exclusive.\n");
 		return 1;
@@ -1351,10 +1347,7 @@ int main(int argc, char *argv[])
 	                   fh, st, tmpdir, args.serial_start,
 	                   args.zmq_addr, args.zmq_subscriptions,
 	                   args.n_zmq_subscriptions, args.zmq_request,
-	                   args.asapo_endpoint, args.asapo_token,
-	                   args.asapo_beamtime, args.asapo_group_id,
-	                   args.asapo_source, args.asapo_stream,
-	                   timeout, args.profile);
+	                   &args.asapo_params, timeout, args.profile);
 
 	cell_free(args.iargs.cell);
 	free(args.prefix);
