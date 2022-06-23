@@ -42,6 +42,7 @@ struct im_asapo_params
 	char *group_id;
 	char *source;
 	char *stream;
+	int wait_for_stream;
 };
 
 #if defined(HAVE_ASAPO)

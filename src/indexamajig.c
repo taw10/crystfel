@@ -435,6 +435,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->asapo_params.stream = strdup(arg);
 		break;
 
+		case 221 :
+		args->asapo_params.wait_for_stream = 1;
+		break;
+
 		/* ---------- Peak search ---------- */
 
 		case 't' :
@@ -858,6 +862,7 @@ int main(int argc, char *argv[])
 	args.asapo_params.group_id = NULL;
 	args.asapo_params.source = NULL;
 	args.asapo_params.stream = NULL;
+	args.asapo_params.wait_for_stream = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
 	args.if_multi = 0;
@@ -972,6 +977,8 @@ int main(int argc, char *argv[])
 		{"asapo-source", 218, "str", OPTION_NO_USAGE, "ASAP::O data source"},
 		{"data-format", 219, "str", OPTION_NO_USAGE, "Streamed data format"},
 		{"asapo-stream", 220, "str", OPTION_NO_USAGE, "ASAP::O stream name"},
+		{"asapo-wait-for-stream", 221, "str", OPTION_NO_USAGE,
+		        "Wait for ASAP::O stream to appear"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},

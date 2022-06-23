@@ -51,6 +51,7 @@ struct im_asapo
 	char *stream;
 	AsapoConsumerHandle consumer;
 	AsapoStringHandle group_id;
+	int wait_for_stream;
 };
 
 
@@ -110,8 +111,27 @@ struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 	a->stream = strdup(params->stream);
 	asapo_consumer_set_timeout(a->consumer, 3000);
 	a->group_id = asapo_string_from_c_str(params->group_id);
+	a->wait_for_stream = params->wait_for_stream;
 
 	return a;
+}
+
+
+static int stream_empty(struct im_asapo *a)
+{
+	AsapoErrorHandle err;
+
+	err = asapo_new_handle();
+	int64_t size = asapo_consumer_get_current_size(a->consumer, a->stream,
+	                                               &err);
+
+	if ( asapo_is_error(err) ) {
+		show_asapo_error("Couldn't get stream size", err);
+		asapo_free_handle(&err);
+		return 0;
+	}
+
+	return ( size == 0 );
 }
 
 
@@ -141,7 +161,11 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 		asapo_free_handle(&err);
 		asapo_free_handle(&meta);
 		asapo_free_handle(&data);
-		*pfinished = 1;
+		if ( stream_empty(a) && a->wait_for_stream ) {
+			*pfinished = 0;
+		} else {
+			*pfinished = 1;
+		}
 		return NULL;
 	}
 
