@@ -158,6 +158,9 @@ void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size)
 		return NULL;
 	}
 
+	/* Reply received.  OK to send request again */
+	z->request_sent = 0;
+
 	data_copy = malloc(msg_size);
 	if ( data_copy == NULL ) return NULL;
 	memcpy(data_copy, zmq_msg_data(&z->msg), msg_size);
