@@ -109,3 +109,6 @@
 
 * Nicholas Devenish <ndevenish@gmail.com>
   Build system bug fixing
+
+* Silvan Schön <silvan.schoen@cfel.de>
+  Container images and CI
