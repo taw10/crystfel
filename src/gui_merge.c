@@ -358,7 +358,6 @@ static int write_partialator_script(const char *filename,
                                     const char *log_folder)
 {
 	FILE *fh;
-	char *exe_path;
 	int i;
 
 	fh = fopen(filename, "w");
@@ -366,12 +365,7 @@ static int write_partialator_script(const char *filename,
 
 	fprintf(fh, "#!/bin/sh\n");
 
-	exe_path = get_crystfel_exe("partialator");
-	if ( exe_path == NULL ) {
-		fclose(fh);
-		return 1;
-	}
-	fprintf(fh, "%s \\\n", exe_path);
+	fprintf(fh, "partialator \\\n");
 
 	for ( i=0; i<input->n_streams; i++ ) {
 		fprintf(fh, "\"%s\" \\\n", input->streams[i]);
@@ -429,7 +423,6 @@ static int write_partialator_script(const char *filename,
 
 
 static void add_process_hkl(FILE *fh,
-                            const char *exe_path,
                             struct gui_indexing_result *input,
                             struct merging_params *params,
                             const char *out_hkl,
@@ -440,7 +433,7 @@ static void add_process_hkl(FILE *fh,
 {
 	int i;
 
-	fprintf(fh, "%s \\\n", exe_path);
+	fprintf(fh, "process_hkl \\\n");
 
 	for ( i=0; i<input->n_streams; i++ ) {
 		fprintf(fh, " \"%s\" \\\n", input->streams[i]);
@@ -471,24 +464,17 @@ static int write_process_hkl_script(const char *filename,
                                     const char *stderr_filename)
 {
 	FILE *fh;
-	char *exe_path;
 
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) return 1;
 
 	fprintf(fh, "#!/bin/sh\n");
 
-	exe_path = get_crystfel_exe("process_hkl");
-	if ( exe_path == NULL ) {
-		fclose(fh);
-		return 1;
-	}
-
-	add_process_hkl(fh, exe_path, input, params, out_hkl,
+	add_process_hkl(fh, input, params, out_hkl,
 	                stdout_filename, stderr_filename, "", "");
-	add_process_hkl(fh, exe_path, input, params, out_hkl,
+	add_process_hkl(fh, input, params, out_hkl,
 	                stdout_filename, stderr_filename, "--even-only", "1");
-	add_process_hkl(fh, exe_path, input, params, out_hkl,
+	add_process_hkl(fh, input, params, out_hkl,
 	                stdout_filename, stderr_filename, "--odd-only", "2");
 
 	fclose(fh);

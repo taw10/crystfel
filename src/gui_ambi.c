@@ -486,7 +486,6 @@ int write_ambigator_script(const char *filename,
                            const char *harvest_filename)
 {
 	FILE *fh;
-	char *exe_path;
 	int i;
 
 	fh = fopen(filename, "w");
@@ -500,9 +499,7 @@ int write_ambigator_script(const char *filename,
 	}
 	fprintf(fh, " > %s\n", intermediate_rel_filename);
 
-	exe_path = get_crystfel_exe("ambigator");
-	if ( exe_path == NULL ) return 1;
-	fprintf(fh, "%s %s \\\n", exe_path, intermediate_rel_filename);
+	fprintf(fh, "ambigator %s \\\n", intermediate_rel_filename);
 
 	fprintf(fh, " -j %s", n_thread_str);
 	fprintf(fh, " -o \"%s\"", out_stream);

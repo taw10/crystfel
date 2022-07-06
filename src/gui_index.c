@@ -81,7 +81,7 @@ void cell_explorer_sig(GtkWidget *widget, struct crystfelproject *proj)
 	streams = malloc((res->n_streams+2)*sizeof(gchar *));
 	if ( streams == NULL ) return;
 
-	streams[0] = get_crystfel_exe("cell_explorer");
+	streams[0] = "cell_explorer";
 	for ( i=0; i<res->n_streams; i++ ) {
 		streams[i+1] = res->streams[i];
 	}
@@ -845,21 +845,14 @@ static char **indexamajig_command_line(const char *geom_filename,
 {
 	char **args;
 	char tols[2048];
-	char *indexamajig_path;
 	int i;
 	int n_args = 0;
 
 	args = malloc(64*sizeof(char *));
 	if ( args == NULL ) return NULL;
 
-	indexamajig_path = get_crystfel_exe("indexamajig");
-	if ( indexamajig_path == NULL ) {
-		free(args);
-		return NULL;
-	}
-
 	/* The basics */
-	add_arg(args, n_args++, indexamajig_path);
+	add_arg(args, n_args++, "indexamajig");
 	add_arg(args, n_args++, "-i");
 	add_arg(args, n_args++, files_list);
 	if ( geom_filename != NULL ) {

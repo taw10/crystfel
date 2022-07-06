@@ -1372,31 +1372,6 @@ char *get_crystfel_path_str()
 }
 
 
-char *get_crystfel_exe(const char *program)
-{
-	GFile *crystfel_path;
-	char *exe_path;
-	GFile *exe;
-
-	crystfel_path = get_crystfel_path_gfile();
-	if ( crystfel_path == NULL ) return NULL;
-
-	exe = g_file_get_child(crystfel_path, program);
-	if ( exe == NULL ) {
-		ERROR("Couldn't determine executable path. "
-		      "This is OK provided the executable "
-		      "path is set correctly.\n");
-		exe_path = strdup(program);
-	} else {
-		exe_path = g_file_get_path(exe);
-		g_object_unref(exe);
-	}
-	g_object_unref(crystfel_path);
-
-	return exe_path;
-}
-
-
 struct gui_job_notes_page *add_job_notes_page(GtkWidget *notebook)
 {
 	GtkWidget *box;

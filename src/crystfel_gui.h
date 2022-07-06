@@ -61,8 +61,6 @@ extern const char *selected_result(struct crystfelproject *proj);
 
 extern char *get_crystfel_path_str(void);
 
-extern char *get_crystfel_exe(const char *program);
-
 extern struct gui_job_notes_page *add_job_notes_page(GtkWidget *notebook);
 
 extern GFile *make_job_folder(const char *job_title, const char *job_notes);
