@@ -53,6 +53,7 @@ struct im_zmq
 	void *socket;
 	zmq_msg_t msg;
 	const char *request_str;
+	int request_sent;
 };
 
 
@@ -87,6 +88,11 @@ struct im_zmq *im_zmq_connect(struct im_zmq_params *params)
 		return NULL;
 	}
 
+	int timeout = 3000;
+	zmq_setsockopt(z->socket, ZMQ_RCVTIMEO, &timeout, sizeof(timeout));
+	int linger = 0;;
+	zmq_setsockopt(z->socket, ZMQ_LINGER, &linger, sizeof(linger));
+
 	if ( params->request == NULL ) {
 
 		int i;
@@ -114,6 +120,7 @@ struct im_zmq *im_zmq_connect(struct im_zmq_params *params)
 
 		/* REQ mode */
 		z->request_str = params->request;
+		z->request_sent = 0;
 
 	}
 
@@ -126,7 +133,7 @@ void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size)
 	int msg_size;
 	void *data_copy;
 
-	if ( z->request_str != NULL ) {
+	if ( (z->request_str != NULL) && !z->request_sent ) {
 
 		/* Send the request */
 		if ( zmq_send(z->socket, z->request_str,
@@ -136,13 +143,17 @@ void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size)
 			      zmq_strerror(errno));
 			return NULL;
 		}
+
+		z->request_sent = 1;
 	}
 
 	/* Receive message */
 	zmq_msg_init(&z->msg);
 	msg_size = zmq_msg_recv(&z->msg, z->socket, 0);
 	if ( msg_size == -1 ) {
-		ERROR("ZMQ recieve failed: %s\n", zmq_strerror(errno));
+		if ( errno != EAGAIN ) {
+			ERROR("ZMQ recieve failed: %s\n", zmq_strerror(errno));
+		}
 		zmq_msg_close(&z->msg);
 		return NULL;
 	}
