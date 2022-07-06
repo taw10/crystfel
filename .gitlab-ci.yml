@@ -34,6 +34,8 @@ build-meson-nohdf5:
 
 build_container_image:
   stage: build_container
+  only:
+    - master
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [ "" ]
