@@ -450,11 +450,15 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 		if ( sb->zmq_params != NULL ) {
 
+			profile_start("zmq-fetch");
+			set_last_task(sb->shared->last_task[cookie], "ZMQ fetch");
 			do {
 				pargs.zmq_data = im_zmq_fetch(zmqstuff,
 				                              &pargs.zmq_data_size);
 			} while ( pargs.zmq_data_size < 15 );
 			ok = 1;
+
+			profile_end("zmq-fetch");
 
 			/* The filename/event, which will be 'fake' values in
 			 * this case, still came via the event queue.  More
