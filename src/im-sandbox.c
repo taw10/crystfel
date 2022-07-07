@@ -798,6 +798,16 @@ static void start_worker_process(struct sandbox *sb, int slot)
 }
 
 
+static int any_running(struct sandbox *sb)
+{
+	int i;
+	for ( i=0; i<sb->n_proc; i++ ) {
+		if ( sb->running[i] ) return 1;
+	}
+	return 0;
+}
+
+
 static void handle_zombie(struct sandbox *sb, int respawn)
 {
 	int i;
@@ -811,7 +821,7 @@ static void handle_zombie(struct sandbox *sb, int respawn)
 		p = waitpid(sb->pids[i], &status, WNOHANG);
 
 		if ( p == -1 ) {
-			ERROR("waitpid() failed.\n");
+			ERROR("waitpid(%i) failed: %s.\n", i, strerror(errno));
 			continue;
 		}
 
@@ -1301,17 +1311,11 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		sem_post(sb->queue_sem);
 	}
 	for ( i=0; i<n_proc; i++ ) {
-		int status;
-		while ( waitpid(sb->pids[i], &status, WNOHANG) == 0 ) {
-
+		while ( any_running(sb) ) {
 			try_read(sb);
-
 			check_signals(sb, semname_q, 0);
-
 			check_hung_workers(sb);
-
 			try_status(sb, 0);
-
 		}
 		/* If this worker died and got waited by the zombie handler,
 		 * waitpid() returns -1 and the loop still exits. */
