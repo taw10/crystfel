@@ -978,7 +978,7 @@ int main(int argc, char *argv[])
 		{"asapo-source", 218, "str", OPTION_NO_USAGE, "ASAP::O data source"},
 		{"data-format", 219, "str", OPTION_NO_USAGE, "Streamed data format"},
 		{"asapo-stream", 220, "str", OPTION_NO_USAGE, "ASAP::O stream name"},
-		{"asapo-wait-for-stream", 221, "str", OPTION_NO_USAGE,
+		{"asapo-wait-for-stream", 221, NULL, OPTION_NO_USAGE,
 		        "Wait for ASAP::O stream to appear"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
