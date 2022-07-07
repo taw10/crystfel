@@ -930,6 +930,7 @@ int main(int argc, char *argv[])
 	args.iargs.wavelength_estimate = NAN;
 	args.iargs.clen_estimate = NAN;
 	args.iargs.n_threads = 1;
+	args.iargs.data_format = DATA_SOURCE_TYPE_UNKNOWN;
 
 	argp_program_version_hook = show_version;
 
