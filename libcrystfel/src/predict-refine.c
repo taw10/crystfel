@@ -612,7 +612,11 @@ int refine_prediction(struct image *image, Crystal *cr)
 		return 1;
 	}
 	for ( i=0; i<n; i++ ) {
-		rps[i].Ih = rps[i].peak->intensity / max_I;
+		if ( rps[i].peak->intensity > 0.0 ) {
+			rps[i].Ih = rps[i].peak->intensity / max_I;
+		} else {
+			rps[i].Ih = 0.0;
+		}
 	}
 
 	//STATUS("Initial residual = %e\n",
