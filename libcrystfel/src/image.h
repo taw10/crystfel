@@ -260,10 +260,10 @@ extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 extern char **image_expand_frames(const DataTemplate *dtempl,
                                   const char *filename, int *nframes);
 
-extern int image_set_zero_data(struct image *image,
-                               const DataTemplate *dtempl);
+extern int image_create_dp_bad_sat(struct image *image,
+                            const DataTemplate *dtempl);
 
-extern int image_set_zero_mask(struct image *image,
+extern int image_set_zero_data(struct image *image,
                                const DataTemplate *dtempl);
 
 extern int image_write(const struct image *image,

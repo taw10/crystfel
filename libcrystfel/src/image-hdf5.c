@@ -365,7 +365,7 @@ static void close_hdf5(hid_t fh)
 static int load_hdf5_hyperslab(struct panel_template *p,
                                hid_t fh,
                                const char *event,
-                               void **pdata,
+                               void *data,
                                hid_t el_type, size_t el_size,
                                int skip_placeholders_ok,
                                const char *path_spec)
@@ -381,7 +381,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	hid_t dataspace, memspace;
 	hsize_t dims[2];
 	char *panel_full_path;
-	void *data;
 	int ndims;
 	int dim;
 	int *dim_vals;
@@ -505,14 +504,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	dims[1] = p->orig_max_fs - p->orig_min_fs + 1;
 	memspace = H5Screate_simple(2, dims, NULL);
 
-	data = malloc(dims[0]*dims[1]*el_size);
-	if ( data == NULL ) {
-		ERROR("Failed to allocate panel %s\n", p->name);
-		free(f_offset);
-		free(f_count);
-		return 1;
-	}
-
 	profile_start("H5Dread");
 	r = H5Dread(dh, el_type, memspace, dataspace, H5P_DEFAULT, data);
 	profile_end("H5Dread");
@@ -528,7 +519,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	free(f_offset);
 	free(f_count);
 
-	*pdata = data;
 	return 0;
 }
 
@@ -585,18 +575,9 @@ int image_hdf5_read(struct image *image,
 	int i;
 	hid_t fh;
 
-	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->dp == NULL ) {
-		ERROR("Failed to allocate data array.\n");
-		return 1;
-	}
-
 	if ( image->ev == NULL ) {
 		image->ev = "//";
 	}
-
-	/* Set all pointers to NULL for easier clean-up */
-	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
 
 	profile_start("open-hdf5");
 	fh = open_hdf5(image);
@@ -607,9 +588,11 @@ int image_hdf5_read(struct image *image,
 	}
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
+		long int j;
+		struct panel_template *p = &dtempl->panels[i];
 		profile_start("load-hdf5-hyperslab");
-		if ( load_hdf5_hyperslab(&dtempl->panels[i], fh,
-		                         image->ev, (void *)&image->dp[i],
+		if ( load_hdf5_hyperslab(p, fh,
+		                         image->ev, image->dp[i],
 		                         H5T_NATIVE_FLOAT,
 		                         sizeof(float), 0,
 		                         dtempl->panels[i].data) )
@@ -620,6 +603,13 @@ int image_hdf5_read(struct image *image,
 			return 1;
 		}
 		profile_end("load-hdf5-hyperslab");
+		profile_start("nan-inf");
+		for ( j=0; j<PANEL_WIDTH(p)*PANEL_HEIGHT(p); j++ ) {
+			if ( !isfinite(image->dp[i][j]) ) {
+				image->bad[i][j] = 1;
+			}
+		}
+		profile_end("nan-inf");
 	}
 
 	close_hdf5(fh);
@@ -627,29 +617,28 @@ int image_hdf5_read(struct image *image,
 }
 
 
-float *image_hdf5_read_satmap(struct panel_template *p,
-                              const char *filename,
-                              const char *event,
-                              const char *map_location)
+int image_hdf5_read_satmap(struct panel_template *p,
+                           const char *filename,
+                           const char *event,
+                           const char *map_location,
+                           float *map_data)
 {
-	float *map = NULL;
 	hid_t fh;
 
 	fh = open_hdf5_file(filename);
-	if ( fh < 0 ) return NULL;
+	if ( fh < 0 ) return 1;
 
 	if ( load_hdf5_hyperslab(p, fh, event,
-	                         (void *)&map, H5T_NATIVE_FLOAT,
+	                         map_data, H5T_NATIVE_FLOAT,
 	                         sizeof(float), 1, map_location) )
 	{
 		ERROR("Failed to load saturation map data\n");
-		free(map);
-		return NULL;
+		return 1;
 	}
 
 	close_hdf5(fh);
 
-	return map;
+	return 0;
 }
 
 
@@ -668,10 +657,16 @@ int image_hdf5_read_mask(struct panel_template *p,
 	p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
 	fh = open_hdf5_file(filename);
-	if ( fh < 0 ) return 1;
+	if ( fh < 0 ) {
+		ERROR("Failed to open mask '%s'\n", filename);
+		return 1;
+	}
+
+	mask = malloc(p_w*p_h*sizeof(int));
+	if ( mask == NULL ) return 1;
 
 	if ( load_hdf5_hyperslab(p, fh, event,
-	                         (void *)&mask, H5T_NATIVE_INT,
+	                         mask, H5T_NATIVE_INT,
 	                         sizeof(int), 1, mask_location) )
 	{
 		ERROR("Failed to load mask data\n");

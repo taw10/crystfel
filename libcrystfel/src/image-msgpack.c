@@ -318,7 +318,7 @@ int image_msgpack_read_header_to_cache(struct image *image,
 
 static int load_msgpack_data(struct panel_template *p,
                              msgpack_object *map_obj,
-                             float **pdata)
+                             float *data, int *bad)
 {
 	msgpack_object *obj;
 	msgpack_object *type_obj;
@@ -326,7 +326,6 @@ static int load_msgpack_data(struct panel_template *p,
 	msgpack_object *data_obj;
 	char *dtype;
 	int data_size_fs, data_size_ss;
-	void *data = NULL;
 
 	obj = find_msgpack_kv(map_obj, p->data);
 	if ( obj == NULL ) {
@@ -398,45 +397,36 @@ static int load_msgpack_data(struct panel_template *p,
 	if ( strcmp(dtype, "<i4") == 0 ) {
 
 		int fs, ss;
-		float *fdata;
 		int32_t *in_data = (int32_t *)data_obj->via.bin.ptr;
-
-		fdata = malloc(PANEL_WIDTH(p) * PANEL_HEIGHT(p) * sizeof(float));
-		if ( fdata == NULL ) return 1;
 
 		for ( ss=0; ss<PANEL_HEIGHT(p); ss++ ) {
 			for ( fs=0; fs<PANEL_WIDTH(p); fs++ ) {
 				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
-				fdata[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
+				data[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
+				/* Integer data -> no need to check NaN/inf */
 			}
 		}
-
-		data = fdata;
 
 	} else if ( strcmp(dtype, "<f4") == 0 ) {
 
 		int fs, ss;
-		float *fdata;
 		float *in_data = (float *)data_obj->via.bin.ptr;
-
-		fdata = malloc(PANEL_WIDTH(p) * PANEL_HEIGHT(p) * sizeof(float));
-		if ( fdata == NULL ) return 1;
 
 		for ( ss=0; ss<PANEL_HEIGHT(p); ss++ ) {
 			for ( fs=0; fs<PANEL_WIDTH(p); fs++ ) {
 				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
-				fdata[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
+				data[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
+				if ( !isfinite(in_data[idx]) ) {
+					bad[idx] = 1;
+				}
 			}
 		}
-
-		data = fdata;
 
 	} else {
 		ERROR("Unrecognised data type '%s'\n", dtype);
 	}
 
 	free(dtype);
-	*pdata = data;
 	return 0;
 }
 
@@ -476,18 +466,9 @@ int image_msgpack_read(struct image *image,
 		return 1;
 	}
 
-	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->dp == NULL ) {
-		ERROR("Failed to allocate data array.\n");
-		msgpack_unpacked_destroy(&unpacked);
-		return 1;
-	}
-
-	/* Set all pointers to NULL for easier clean-up */
-	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
-
 	for ( i=0; i<dtempl->n_panels; i++ ) {
-		if ( load_msgpack_data(&dtempl->panels[i], obj, &image->dp[i]) )
+		if ( load_msgpack_data(&dtempl->panels[i], obj,
+		                       image->dp[i], image->bad[i]) )
 		{
 			ERROR("Failed to load data for panel '%s'\n",
 			      dtempl->panels[i].name);

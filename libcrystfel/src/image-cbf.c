@@ -572,55 +572,47 @@ static int unpack_panels(struct image *image,
                          const DataTemplate *dtempl,
                          float *data, int data_width, int data_height)
 {
-       int pi;
+	int pi;
 
-       image->dp = malloc(dtempl->n_panels * sizeof(float *));
-       if ( image->dp == NULL ) {
-               ERROR("Failed to allocate panels.\n");
-               return 1;
-       }
+	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
 
-       for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+		struct panel_template *p;
+		int fs, ss;
+		int p_w, p_h;
 
-               struct panel_template *p;
-               int fs, ss;
-               int p_w, p_h;
+		p = &dtempl->panels[pi];
+		p_w = p->orig_max_fs - p->orig_min_fs + 1;
+		p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
-               p = &dtempl->panels[pi];
-               p_w = p->orig_max_fs - p->orig_min_fs + 1;
-               p_h = p->orig_max_ss - p->orig_min_ss + 1;
-               image->dp[pi] = malloc(p_w*p_h*sizeof(float));
-               if ( image->dp[pi] == NULL ) {
-                       ERROR("Failed to allocate panel\n");
-                       return 1;
-               }
-
-               if ( (p->orig_min_fs + p_w > data_width)
-                 || (p->orig_min_ss + p_h > data_height) )
-               {
-                       ERROR("Panel %s is outside range of data in CBF file\n",
-                             p->name);
-                       return 1;
+		if ( (p->orig_min_fs + p_w > data_width)
+		  || (p->orig_min_ss + p_h > data_height) )
+		{
+			ERROR("Panel %s is outside range of data in CBF file\n",
+			      p->name);
+			return 1;
                }
 
                for ( ss=0; ss<p_h; ss++ ) {
                for ( fs=0; fs<p_w; fs++ ) {
 
-                       int idx;
-                       int cfs, css;
+			int idx;
+			int cfs, css;
 
-                       cfs = fs+p->orig_min_fs;
-                       css = ss+p->orig_min_ss;
-                       idx = cfs + css*data_width;
+			cfs = fs+p->orig_min_fs;
+			css = ss+p->orig_min_ss;
+			idx = cfs + css*data_width;
 
-                       image->dp[pi][fs+p_w*ss] = data[idx];
+			image->dp[pi][fs+p_w*ss] = data[idx];
+			if ( !isfinite(data[idx]) ) {
+				image->bad[pi][fs+p_w*ss] = 1;
+			}
 
-               }
-               }
+		}
+		}
 
-       }
+	}
 
-       return 0;
+	return 0;
 }
 
 

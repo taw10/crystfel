@@ -716,54 +716,75 @@ int image_set_zero_data(struct image *image,
 {
 	int pi;
 
-	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->dp == NULL ) return 1;
-
 	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
-
 		struct panel_template *p;
-		int p_w, p_h;
-
+		long int i;
 		p = &dtempl->panels[pi];
-		p_w = p->orig_max_fs - p->orig_min_fs + 1;
-		p_h = p->orig_max_ss - p->orig_min_ss + 1;
-
-		image->dp[pi] = calloc(p_w*p_h, sizeof(float));
-		if ( image->dp[pi] == NULL ) return 1;
-
+		for ( i=0; i<PANEL_WIDTH(p)*PANEL_HEIGHT(p); i++ ) {
+			image->dp[pi][i] = 0.0;
+		}
 	}
 
 	return 0;
 }
 
 
-int image_set_zero_mask(struct image *image,
-                        const DataTemplate *dtempl)
+int image_create_dp_bad_sat(struct image *image,
+                            const DataTemplate *dtempl)
 {
-	int pi;
+	int i;
+
+	image->dp = malloc(dtempl->n_panels*sizeof(float *));
+	if ( image->dp == NULL ) {
+		ERROR("Failed to allocate data array.\n");
+		return 1;
+	}
 
 	image->bad = malloc(dtempl->n_panels*sizeof(int *));
+	if ( image->bad == NULL ) {
+		ERROR("Failed to allocate bad pixel mask\n");
+		free(image->dp);
+		return 1;
+	}
+
 	image->sat = malloc(dtempl->n_panels*sizeof(float *));
-	if ( (image->bad == NULL) || (image->sat == NULL) ) return 1;
+	if ( image->sat == NULL ) {
+		ERROR("Failed to allocate saturation map\n");
+		free(image->dp);
+		free(image->bad);
+		return 1;
+	}
 
-	for ( pi=0; pi<dtempl->n_panels; pi++ ) {
+	/* Set all pointers to NULL for easier clean-up */
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		image->dp[i] = NULL;
+		image->bad[i] = NULL;
+		image->sat[i] = NULL;
+	}
 
-		struct panel_template *p;
-		int p_w, p_h;
-		long int i;
+	for ( i=0; i<dtempl->n_panels; i++ ) {
 
-		p = &dtempl->panels[pi];
-		p_w = p->orig_max_fs - p->orig_min_fs + 1;
-		p_h = p->orig_max_ss - p->orig_min_ss + 1;
+		size_t nel = PANEL_WIDTH(&dtempl->panels[i]) * PANEL_HEIGHT(&dtempl->panels[i]);
 
-		image->bad[pi] = calloc(p_w*p_h, sizeof(int));
-		image->sat[pi] = calloc(p_w*p_h, sizeof(float));
-		if ( image->bad[pi] == NULL ) return 1;
-		if ( image->sat[pi] == NULL ) return 1;
+		image->dp[i] = malloc(nel*sizeof(float));
+		image->bad[i] = calloc(nel, sizeof(int));
+		image->sat[i] = malloc(nel*sizeof(float));
 
-		for ( i=0; i<p_w*p_h; i++ ) {
-			image->sat[pi][i] = INFINITY;
+		if ( (image->dp[i] == NULL)
+		  || (image->bad[i] == NULL)
+		  || (image->sat[i] == NULL) ) {
+			ERROR("Failed to allocate panel data arrays\n");
+			for ( i=0; i<dtempl->n_panels; i++ ) {
+				free(image->dp[i]);
+				free(image->bad[i]);
+				free(image->sat[i]);
+			}
+			free(image->dp);
+			free(image->bad);
+			free(image->sat);
+			return 1;
 		}
+
 	}
 
 	return 0;
@@ -882,16 +903,6 @@ static void mark_flagged_pixels_equal(float *dp, int *bad,
 }
 
 
-static void mark_flagged_pixels_naninf(float *dp, int *bad,
-                                       long int n)
-{
-	long int i;
-	for ( i=0; i<n; i++ ) {
-		if ( !isfinite(dp[i]) ) bad[i] = 1;
-	}
-}
-
-
 static void mark_flagged_pixels(struct panel_template *p,
                                 float *dp, int *bad)
 {
@@ -902,10 +913,6 @@ static void mark_flagged_pixels(struct panel_template *p,
 	p_w = p->orig_max_fs - p->orig_min_fs + 1;
 	p_h = p->orig_max_ss - p->orig_min_ss + 1;
 	n = p_w * p_h;
-
-	profile_start("nan-inf");
-	mark_flagged_pixels_naninf(dp, bad, n);
-	profile_end("nan-inf");
 
 	profile_start("flag-values");
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) {
@@ -1033,17 +1040,17 @@ static int load_mask(struct panel_template *p,
 {
 	if ( is_hdf5_file(mask_fn) ) {
 		#ifdef HAVE_HDF5
-		image_hdf5_read_mask(p, mask_fn, ev, bad, mask_location,
-		                     mask_good, mask_bad);
+		return image_hdf5_read_mask(p, mask_fn, ev, bad, mask_location,
+		                            mask_good, mask_bad);
 		#endif
 
 	} else if ( is_cbf_file(mask_fn) ) {
-		image_cbf_read_mask(p, mask_fn, ev, 0, bad,
-		                    mask_good, mask_bad);
+		return image_cbf_read_mask(p, mask_fn, ev, 0, bad,
+		                           mask_good, mask_bad);
 
 	} else if ( is_cbfgz_file(mask_fn) ) {
-		image_cbf_read_mask(p, mask_fn, ev, 1, bad,
-		                    mask_good, mask_bad);
+		return image_cbf_read_mask(p, mask_fn, ev, 1, bad,
+		                           mask_good, mask_bad);
 
 	} else {
 		ERROR("Unrecognised mask file type (%s)\n", mask_fn);
@@ -1083,11 +1090,9 @@ static int create_badmap(struct image *image,
 {
 	int i;
 
-	image->bad = malloc(dtempl->n_panels * sizeof(int *));
-	if ( image->bad == NULL ) {
-		ERROR("Failed to allocate bad pixel mask\n");
-		return 1;
-	}
+	/* The bad pixel map array is already created (see image_create_dp_bad_sat),
+	 * and a preliminary mask (with NaN/inf pixels marked) has already been
+	 * created when the image data was loaded. */
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
@@ -1096,12 +1101,6 @@ static int create_badmap(struct image *image,
 
 		p_w = p->orig_max_fs - p->orig_min_fs + 1;
 		p_h = p->orig_max_ss - p->orig_min_ss + 1;
-
-		image->bad[i] = calloc(p_w*p_h, sizeof(int));
-		if ( image->bad[i] == NULL ) {
-			ERROR("Failed to allocate bad pixel mask\n");
-			return 1;
-		}
 
 		/* Panel marked as bad? */
 		if ( p->bad ) {
@@ -1148,10 +1147,16 @@ static int create_badmap(struct image *image,
 					mask_fn = p->masks[j].filename;
 				}
 
-				load_mask(p, mask_fn, image->ev, image->bad[i],
-				          p->masks[j].data_location,
-				          p->masks[j].good_bits,
-				          p->masks[j].bad_bits);
+				if ( load_mask(p, mask_fn, image->ev, image->bad[i],
+				               p->masks[j].data_location,
+				               p->masks[j].good_bits,
+				               p->masks[j].bad_bits) )
+				{
+					ERROR("Failed to load mask for %s\n",
+					      p->name);
+					profile_end("load-masks");
+					return 1;
+				}
 
 			}
 			profile_end("load-masks");
@@ -1226,9 +1231,7 @@ static int create_satmap(struct image *image,
 
 			if ( is_hdf5_file(map_fn) ) {
 				#ifdef HAVE_HDF5
-				image->sat[i] = image_hdf5_read_satmap(p, map_fn,
-				                                       image->ev,
-				                                       p->satmap);
+				image_hdf5_read_satmap(p, map_fn, image->ev, p->satmap);
 				#endif
 
 			} else {
@@ -1276,6 +1279,11 @@ struct image *image_create_for_simulation(const DataTemplate *dtempl)
 		return NULL;
 	}
 
+	if ( image_create_dp_bad_sat(image, dtempl) ) {
+		image_free(image);
+		return NULL;
+	}
+
 	if ( image_set_zero_data(image, dtempl) ) {
 		image_free(image);
 		return NULL;
@@ -1310,6 +1318,8 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
 {
 	int i;
 	int r;
+
+	if ( image_create_dp_bad_sat(image, dtempl) ) return 1;
 
 	/* Load the image data */
 	if ( !no_image_data ) {

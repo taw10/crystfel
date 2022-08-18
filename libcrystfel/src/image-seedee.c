@@ -51,10 +51,9 @@
 
 static int load_seedee_data(struct panel_template *p,
                             struct SeedeeNDArray *array,
-                            float **pdata)
+                            float *data, int *bad)
 {
 	int data_size_fs, data_size_ss;
-	float *data = NULL;
 
 	data_size_ss = array->shape[0];
 	data_size_fs = array->shape[1];
@@ -78,22 +77,20 @@ static int load_seedee_data(struct panel_template *p,
 		int fs, ss;
 		uint16_t *in_data = (uint16_t *)array->data;
 
-		data = malloc(PANEL_WIDTH(p) * PANEL_HEIGHT(p) * sizeof(float));
-		if ( data == NULL ) return 1;
-
 		for ( ss=0; ss<PANEL_HEIGHT(p); ss++ ) {
 			for ( fs=0; fs<PANEL_WIDTH(p); fs++ ) {
 				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
 				data[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
 			}
 		}
-		*pdata = data;
 
 	} else {
 		ERROR("Unrecognised data type %c%i%c\n",
 		      array->datatype, array->itemsize, array->byteorder);
 		return 1;
 	}
+	/* Note: when adding a new data type, don't forget that you are
+	 * responsible for marking NaN/inf pixels as bad. */
 
 	return 0;
 }
@@ -161,20 +158,10 @@ int image_seedee_read(struct image *image,
 		return 1;
 	}
 
-	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->dp == NULL ) {
-		ERROR("Failed to allocate data array.\n");
-		free(array.data);
-		free(array.shape);
-		return 1;
-	}
-
-	/* Set all pointers to NULL for easier clean-up */
-	for ( i=0; i<dtempl->n_panels; i++ ) image->dp[i] = NULL;
-
 	profile_start("seedee-panel");
 	for ( i=0; i<dtempl->n_panels; i++ ) {
-		if ( load_seedee_data(&dtempl->panels[i], &array, &image->dp[i]) )
+		if ( load_seedee_data(&dtempl->panels[i], &array,
+		                      image->dp[i], image->bad[i]) )
 		{
 			ERROR("Failed to load data for panel '%s'\n",
 			      dtempl->panels[i].name);
