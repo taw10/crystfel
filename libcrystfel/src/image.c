@@ -764,6 +764,7 @@ int image_create_dp_bad_sat(struct image *image,
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
+		int j;
 		size_t nel = PANEL_WIDTH(&dtempl->panels[i]) * PANEL_HEIGHT(&dtempl->panels[i]);
 
 		image->dp[i] = malloc(nel*sizeof(float));
@@ -783,6 +784,10 @@ int image_create_dp_bad_sat(struct image *image,
 			free(image->bad);
 			free(image->sat);
 			return 1;
+		}
+
+		for ( j=0; j<nel; j++ ) {
+			image->sat[i][j] = INFINITY;
 		}
 
 	}
