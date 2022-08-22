@@ -1,3 +1,34 @@
+Changes in this development version
+-----------------------------------
+
+- New tutorial added (doc/articles/tutorial.rst)
+- Add Dockerfile and container CI setup (Silvan Schön)
+- Added scripts/install-indexers
+- Fixed peak coordinates when loading a stream (#66)
+- indexamajig: fixed --wait-for-file (#65)
+- indexamajig: re-implement and improve --profile
+- indexamajig: Return value 5 if no files could be processed
+- indexamajig: Fix harvest file JSON syntax (#68)
+- indexamajig: Put MsgPack peaks through validation procedure
+- indexamajig: Fix ZMQ request-reply sequence
+- indexamajig: Refuse to overwrite a stream
+- indexamajig: Avoid trouble with negative peaks in prediction refinement
+- indexamajig: Add ASAP::O and Seedee interfaces
+- indexamajig: Improve shutdown at end of data
+- partialator: Use default event ID when none given in --custom-split
+- Dropped support for pre-2015 stream formats
+- Recognise '.nx5' as HDF5
+- GUI: Use sbatch/scancel/scontrol instead of SLURM API
+- GUI: Honour fixed profile radius for single frame indexing (#61)
+- GUI: Better handling of error-filled indexamajig logs
+- GUI: Fix stream re-scan logic (#64)
+- GUI: Fix scrolling on Wayland
+- GUI: Add 'desktop' file (fixes window icons on Wayland)
+- GUI: Correct a mis-labelled field (Jerome Kieffer)
+- Build system: Allow building without HDF5
+- Build system: Disable OpenCL by default
+
+
 CrystFEL version 0.10.1, 14 January 2022
 ----------------------------------------
 
