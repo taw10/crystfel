@@ -534,6 +534,10 @@ static void handle_var(const char *key, const char *val,
 		proj->show_centre = parse_int(val);
 	}
 
+	if ( strcmp(key, "resolution_rings") == 0 ) {
+		proj->resolution_rings = parse_int(val);
+	}
+
 	if ( strcmp(key, "rescan_on_change") == 0 ) {
 		proj->rescan_on_change = parse_int(val);
 	}
@@ -1136,6 +1140,7 @@ int save_project(struct crystfelproject *proj)
 	}
 
 	fprintf(fh, "show_centre %i\n", proj->show_centre);
+	fprintf(fh, "resolution_rings %i\n", proj->resolution_rings);
 	fprintf(fh, "show_peaks %i\n", proj->show_peaks);
 	fprintf(fh, "show_refls %i\n", proj->show_refls);
 	fprintf(fh, "label_refls %i\n", proj->label_refls);
@@ -1229,6 +1234,7 @@ int default_project(struct crystfelproject *proj)
 
 	/* Default parameter values */
 	proj->show_centre = 1;
+	proj->resolution_rings = 0;
 	proj->show_peaks = 1;
 	proj->show_refls = 1;
 	proj->label_refls = 1;

@@ -302,6 +302,7 @@ struct crystfelproject {
 	char **filenames;
 	char **events;
 	int show_centre;
+	int resolution_rings;
 	int rescan_on_change;
 
 	int show_peaks;

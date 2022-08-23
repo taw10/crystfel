@@ -603,6 +603,48 @@ static void draw_refls(cairo_t *cr,
 }
 
 
+static double ring_radius(double d, double wl, double z)
+{
+	double theta = asin(wl / (2.0*d));
+	return z * tan(2.0*theta);
+}
+
+
+static void show_ring(cairo_t *cr, double wl, double mean_z,
+                      double d, const char *label,
+                      double r, double g, double b)
+{
+	cairo_text_extents_t size;
+	double bs, lw;
+	double radius = ring_radius(d, wl, mean_z);
+
+	if ( isnan(radius) ) return;
+
+	bs = 17.0;
+	lw = 1.0;
+	cairo_device_to_user_distance(cr, &bs, &lw);
+	bs = fabs(bs);
+	lw = fabs(lw);
+
+	cairo_save(cr);
+
+	cairo_arc(cr, 0.0, 0.0, radius, 0.0, 2.0*M_PI);
+	cairo_set_source_rgb(cr, r, g, b);
+	cairo_set_line_width(cr, lw);
+	cairo_stroke(cr);
+
+	cairo_rotate(cr, -M_PI/4.0);
+	cairo_scale(cr, 1.0, -1.0);
+	cairo_set_font_size(cr, bs);
+	cairo_text_extents(cr, label, &size);
+	cairo_translate(cr, -size.width/2.0, radius-5.0*lw);
+	cairo_show_text(cr, label);
+	cairo_fill(cr);
+
+	cairo_restore(cr);
+}
+
+
 static double crystal_cols[][3] =
 {
 	{0.0, 1.0, 0.0},   /* bright green */
@@ -670,6 +712,24 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 			           crystal_get_reflections(cry),
 			           iv->label_refls,
 			           crystal_cols[i % n_crystal_cols]);
+		}
+	}
+
+	if ( iv->resolution_rings ) {
+		double wl = iv->image->lambda;
+		double mean_z = detgeom_mean_camera_length(iv->image->detgeom);
+		if ( !isnan(mean_z) ) {
+			show_ring(cr, wl, mean_z, 10.0e-10, "10A",   1.0, 0.0, 0.0);
+			show_ring(cr, wl, mean_z, 9.0e-10,   "9A",   1.0, 0.0, 0.0);
+			show_ring(cr, wl, mean_z, 8.0e-10,   "8A",   1.0, 0.0, 0.0);
+			show_ring(cr, wl, mean_z, 7.0e-10,   "7A",   1.0, 0.5, 0.0);
+			show_ring(cr, wl, mean_z, 6.0e-10,   "6A",   1.0, 1.0, 0.0);
+			show_ring(cr, wl, mean_z, 5.0e-10,   "5A",   0.0, 1.0, 0.0);
+			show_ring(cr, wl, mean_z, 4.0e-10,   "4A",   0.2, 1.0, 0.2);
+			show_ring(cr, wl, mean_z, 3.0e-10,   "3A",   0.4, 1.0, 0.4);
+			show_ring(cr, wl, mean_z, 2.0e-10,   "2A",   0.6, 1.0, 0.6);
+			show_ring(cr, wl, mean_z, 1.0e-10,   "1A",   0.8, 1.0, 0.8);
+			show_ring(cr, wl, mean_z, 0.5e-10, "0.5A",   1.0, 1.0, 1.0);
 		}
 	}
 
@@ -847,6 +907,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->label_refls = 1;
 	iv->need_rerender = 0;
 	iv->need_recentre = 1;
+	iv->resolution_rings = 0;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -1162,6 +1223,15 @@ void crystfel_image_view_set_refl_box_size(CrystFELImageView *iv,
                                            float box_size)
 {
 	iv->refl_box_size = box_size;
+	iv->need_rerender = 1;
+	redraw(iv);
+}
+
+
+void crystfel_image_view_set_resolution_rings(CrystFELImageView *iv,
+                                              int rings)
+{
+	iv->resolution_rings = rings;
 	iv->need_rerender = 1;
 	redraw(iv);
 }

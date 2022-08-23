@@ -275,6 +275,8 @@ void update_imageview(struct crystfelproject *proj)
 	                                   proj->show_peaks);
 	crystfel_image_view_set_show_centre(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                   proj->show_centre);
+	crystfel_image_view_set_resolution_rings(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                         proj->resolution_rings);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
 
@@ -670,6 +672,30 @@ static gint show_centre_sig(GtkWidget *w, struct crystfelproject *proj)
 }
 
 
+static gint resolution_rings_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	int tr = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+
+	if ( tr && proj->cur_image == NULL ) {
+		error_box(proj, "Load some images first!\n");
+		return FALSE;
+	}
+
+	if ( tr && isnan(detgeom_mean_camera_length(proj->cur_image->detgeom)) ) {
+		error_box(proj, "Cannot display resolution rings accurately "
+		          "because detector is not flat enough");
+		tr = FALSE;
+		gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(w), FALSE);
+	}
+
+	proj->resolution_rings = tr;
+	crystfel_image_view_set_resolution_rings(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                         tr);
+
+	return FALSE;
+}
+
+
 static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
@@ -711,6 +737,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"refls\" action=\"ReflsAction\" />"
 		"	<menuitem name=\"labelrefls\" action=\"LabelReflsAction\" />"
 		"	<menuitem name=\"centre\" action=\"CentreAction\" />"
+		"	<menuitem name=\"resrings\" action=\"ResolutionRingsAction\" />"
 		"       <separator />"
 		"	<menuitem name=\"resetzoom\" action=\"ResetZoomAction\" />"
 		"</menu>"
@@ -757,6 +784,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		  G_CALLBACK(label_refls_sig), FALSE },
 		{ "CentreAction", NULL, "Beam centre", NULL, NULL,
 		  G_CALLBACK(show_centre_sig), FALSE },
+		{ "ResolutionRingsAction", NULL, "Resolution rings", NULL, NULL,
+		  G_CALLBACK(resolution_rings_sig), FALSE },
 		{ "RescanOnChangeAction", NULL, "Rescan streams when changing frame", NULL, NULL,
 		  G_CALLBACK(rescan_on_change_sig), FALSE },
 	};
@@ -1164,6 +1193,10 @@ int main(int argc, char *argv[])
 	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/labelrefls");
 	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
 	                             proj.label_refls);
+
+	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/resrings");
+	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
+	                             proj.resolution_rings);
 
 	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/tools/rescanonchange");
 	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
