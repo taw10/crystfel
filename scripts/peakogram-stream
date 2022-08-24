@@ -64,7 +64,7 @@ def resolution(scell, shkl):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-i", default="my.stream", help="stream filename")
+parser.add_argument("-i", action="append", required=True, help="stream filename")
 parser.add_argument("-l", action="store_true", help="log scale y-axis")
 parser.add_argument("--rmin", type=float, help="minimum resolution cutoff (1/d in Angstroms^-1)")
 parser.add_argument("--rmax", type=float, help="maximum resolution cutoff (1/d in Angstroms^-1)")
@@ -79,12 +79,13 @@ n=0
 in_list = 0
 cell = []
 
-if args.i == "-":
-    f = sys.stdin
-else:
-    f = open(args.i)
+for file in args.i:
 
-if f:
+    if file == "-":
+        f = sys.stdin
+    else:
+        f = open(file)
+
     for line in f:
 
         if line.find("Cell parameters") != -1:
@@ -119,6 +120,8 @@ if f:
 
         if n >= args.nmax:
             break
+
+    f.close()
 
 
 
