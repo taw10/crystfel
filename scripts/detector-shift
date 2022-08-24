@@ -18,16 +18,19 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 
-if sys.argv[1] == "-":
-    f = sys.stdin
-else:
-    f = open(sys.argv[1], 'r')
+infiles = []
 
-if len(sys.argv) > 2:
-    geom = sys.argv[2]
-    have_geom = 1
-else:
+if sys.argv[1] == "--":
     have_geom = 0
+    infiles += sys.argv[2:]
+else:
+    if len(sys.argv) > 2:
+        infiles += [sys.argv[1]]
+        geom = sys.argv[2]
+        have_geom = 1
+    else:
+        have_geom = 0
+        infiles += sys.argv[1:]
 
 # Determine the mean shifts
 x_shifts = []
@@ -37,25 +40,33 @@ z_shifts = []
 prog1 = re.compile("^predict_refine/det_shift\sx\s=\s([0-9\.\-]+)\sy\s=\s([0-9\.\-]+)\smm$")
 prog2 = re.compile("^predict_refine/clen_shift\s=\s([0-9\.\-]+)\smm$")
 
-while True:
+for file in infiles:
 
-    fline = f.readline()
-    if not fline:
-        break
+    print("Reading "+file)
+    if file == "-":
+        f = sys.stdin
+    else:
+        f = open(file, 'r')
 
-    match = prog1.match(fline)
-    if match:
-        xshift = float(match.group(1))
-        yshift = float(match.group(2))
-        x_shifts.append(xshift)
-        y_shifts.append(yshift)
+    while True:
 
-    match = prog2.match(fline)
-    if match:
-        zshift = float(match.group(1))
-        z_shifts.append(zshift)
+        fline = f.readline()
+        if not fline:
+            break
 
-f.close()
+        match = prog1.match(fline)
+        if match:
+            xshift = float(match.group(1))
+            yshift = float(match.group(2))
+            x_shifts.append(xshift)
+            y_shifts.append(yshift)
+
+        match = prog2.match(fline)
+        if match:
+            zshift = float(match.group(1))
+            z_shifts.append(zshift)
+
+    f.close()
 
 mean_x = sum(x_shifts) / len(x_shifts)
 mean_y = sum(y_shifts) / len(y_shifts)
