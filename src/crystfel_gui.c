@@ -836,23 +836,23 @@ static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
 static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 {
 	/* FIXME: All these icons are placeholders (GitLab #9) */
-	add_button(vbox, "Load data", "folder-pictures",
+	add_button(vbox, "Load data", "crystfel-load-data",
 	           G_CALLBACK(import_sig), proj);
-	add_button(vbox, "Peak detection", "edit-find",
+	add_button(vbox, "Peak detection", "crystfel-peak-detection",
 	           G_CALLBACK(peaksearch_sig), proj);
-	add_button(vbox, "Index this frame", "system-run",
+	add_button(vbox, "Index this frame", "crystfel-index-frame",
 	           G_CALLBACK(index_one_sig), proj);
-	add_button(vbox, "Index all frames", "view-grid",
+	add_button(vbox, "Index all frames", "crystfel-index-all",
 	           G_CALLBACK(index_all_sig), proj);
-	add_button(vbox, "Determine unit cell", "applications-engineering",
+	add_button(vbox, "Determine unit cell", "crystfel-unitcell",
 	           G_CALLBACK(cell_explorer_sig), proj);
-	add_button(vbox, "Indexing ambiguity", "face-worried",
+	add_button(vbox, "Indexing ambiguity", "crystfel-ambiguity",
 	           G_CALLBACK(ambi_sig), proj);
-	add_button(vbox, "Merge", "applications-science",
+	add_button(vbox, "Merge", "crystfel-merge",
 	           G_CALLBACK(merge_sig), proj);
-	add_button(vbox, "Figures of merit", "trophy-gold",
+	add_button(vbox, "Figures of merit", "crystfel-fom",
 	           G_CALLBACK(fom_sig), proj);
-	add_button(vbox, "Export data", "document-send",
+	add_button(vbox, "Export data", "crystfel-export",
 	           G_CALLBACK(export_sig), proj);
 }
 

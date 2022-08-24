@@ -267,7 +267,16 @@ simulation_bits = files(['src/diffraction.c',
 
 # ************************ Misc resources ************************
 
-install_data(['data/crystfel.svg'],
+install_data(['data/crystfel.svg',
+              'data/crystfel-load-data.svg',
+              'data/crystfel-peak-detection.svg',
+              'data/crystfel-index-frame.svg',
+              'data/crystfel-index-all.svg',
+              'data/crystfel-unitcell.svg',
+              'data/crystfel-ambiguity.svg',
+              'data/crystfel-merge.svg',
+              'data/crystfel-fom.svg',
+              'data/crystfel-export.svg' ],
              install_dir: get_option('datadir')+'/icons/hicolor/scalable/apps')
 
 

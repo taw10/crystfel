@@ -18,6 +18,7 @@ Changes in this development version
 - partialator: Use default event ID when none given in --custom-split
 - Dropped support for pre-2015 stream formats
 - Recognise '.nx5' as HDF5
+- GUI: Add custom icons for tasks
 - GUI: Optionally show resolution rings
 - GUI: Use sbatch/scancel/scontrol instead of SLURM API
 - GUI: Honour fixed profile radius for single frame indexing (#61)
