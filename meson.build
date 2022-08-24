@@ -280,6 +280,13 @@ install_data(['data/crystfel.svg',
              install_dir: get_option('datadir')+'/icons/hicolor/scalable/apps')
 
 
+# ************************ Scripts ************************
+
+install_data(['scripts/detector-shift',
+              'scripts/peakogram-stream'],
+             install_dir: 'bin')
+
+
 # ************************ Testing ************************
 
 subdir('tests')

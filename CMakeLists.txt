@@ -159,6 +159,10 @@ add_subdirectory(tests)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
         DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
+install(FILES ${CMAKE_SOURCE_DIR}/scripts/detector-shift
+	      ${CMAKE_SOURCE_DIR}/scripts/peakogram-stream
+	DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 # Misc resources
 install(FILES ${CMAKE_SOURCE_DIR}/data/crystfel.svg
               ${CMAKE_SOURCE_DIR}/data/crystfel-load-data.svg
