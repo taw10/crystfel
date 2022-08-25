@@ -180,15 +180,6 @@ install(FILES ${CMAKE_SOURCE_DIR}/scripts/detector-shift
 
 # Misc resources
 install(FILES ${CMAKE_SOURCE_DIR}/data/crystfel.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-load-data.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-peak-detection.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-index-frame.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-index-all.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-unitcell.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-ambiguity.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-merge.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-fom.svg
-              ${CMAKE_SOURCE_DIR}/data/crystfel-export.svg
         DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
 
 # ----------------------------------------------------------------------
