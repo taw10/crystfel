@@ -1083,6 +1083,9 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 	g_set_application_name("CrystFEL");
 
+	gtk_icon_theme_add_resource_path(gtk_icon_theme_get_default(),
+	                                 "/de/desy/CrystFEL");
+
 	if ( default_project(&proj) ) {
 		ERROR("Failed to set up default project\n");
 		return 1;

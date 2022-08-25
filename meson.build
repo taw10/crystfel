@@ -35,6 +35,8 @@ if fftwdep.found()
   conf_data.set10('HAVE_FFTW', true)
 endif
 
+gnome = import('gnome')
+
 gtkdep = dependency('gtk+-3.0', required: false)
 if gtkdep.found()
   add_project_arguments('-Wno-deprecated-declarations', language: 'c')
@@ -221,13 +223,18 @@ if gtkdep.found()
                  'src/gtkmultifilechooserbutton.c',
                  versionc]
 
-  executable('crystfel', gui_sources,
+  gresources = gnome.compile_resources('crystfel-gui-resources',
+                                       'data/crystfel.gresource.xml',
+                                       source_dir: 'data', c_name: 'crystfel')
+
+  executable('crystfel', gui_sources, gresources,
              dependencies: [mdep, libcrystfeldep, gtkdep, gsldep],
              install: true,
              install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
   install_data(['data/crystfel.desktop'],
                install_dir: get_option('datadir') / 'applications')
+
 endif
 
 # render_hkl
@@ -267,16 +274,7 @@ simulation_bits = files(['src/diffraction.c',
 
 # ************************ Misc resources ************************
 
-install_data(['data/crystfel.svg',
-              'data/crystfel-load-data.svg',
-              'data/crystfel-peak-detection.svg',
-              'data/crystfel-index-frame.svg',
-              'data/crystfel-index-all.svg',
-              'data/crystfel-unitcell.svg',
-              'data/crystfel-ambiguity.svg',
-              'data/crystfel-merge.svg',
-              'data/crystfel-fom.svg',
-              'data/crystfel-export.svg' ],
+install_data(['data/crystfel.svg'],
              install_dir: get_option('datadir')+'/icons/hicolor/scalable/apps')
 
 

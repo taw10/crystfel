@@ -58,6 +58,21 @@ pkg_search_module(GTK gtk+-3.0)
 if (GTK_FOUND)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations")
   link_directories(${GTK_LIBRARY_DIRS})
+
+
+  find_program(GLIB_COMPILE_RESOURCES NAMES glib-compile-resources REQUIRED)
+
+  add_custom_command(OUTPUT crystfel-gresources.c
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data
+		     VERBATIM
+                     COMMAND ${GLIB_COMPILE_RESOURCES}
+                     ARGS --generate-source
+		          --target=${CMAKE_CURRENT_BINARY_DIR}/crystfel-gresources.c
+                          crystfel.gresource.xml)
+
+  add_custom_target(crystfel-gresources
+                    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/crystfel-gresources.c)
+
 endif ()
 
 # If no version of GTK was found, try for GDK
@@ -417,7 +432,8 @@ if (GTK_FOUND)
     src/gtkmultifilechooserbutton.c src/gui_backend_slurm.c)
 
   add_executable(crystfel ${CRYSTFEL_GUI_SOURCES}
-                 ${CMAKE_CURRENT_BINARY_DIR}/version.c)
+                 ${CMAKE_CURRENT_BINARY_DIR}/version.c
+                 ${CMAKE_CURRENT_BINARY_DIR}/crystfel-gresources.c)
   target_include_directories(crystfel PRIVATE ${COMMON_INCLUDES} ${GTK_INCLUDE_DIRS})
   target_link_libraries (crystfel ${COMMON_LIBRARIES} util ${GTK_LIBRARIES})
 
