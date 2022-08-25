@@ -273,6 +273,11 @@ $ ninja -C build install
 The `export` commands ensure that the libraries installed via Homebrew can be
 found by CrystFEL's build system.
 
+CrystFEL itself is compatible with M1 Macs, but some of the dependencies have
+problems.  Meson will try to build the dependencies anyway, resulting in a
+failure.  If this happens to you, add `--wrap-mode=nofallback` (as mentioned
+above) to disable automatic building of dependencies.
+
 
 Starting up
 -----------
