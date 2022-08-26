@@ -408,6 +408,13 @@ gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	if ( proj->indexing_opts != NULL ) return FALSE;
 
+	if ( proj->geom_filename == NULL ) {
+		error_box(proj, "No geometry file was selected.  "
+		"You must select a geometry file via 'Load data' before using "
+		"this function");
+		return FALSE;
+	}
+
 	njp = malloc(sizeof(struct new_index_job_params));
 	if ( njp == NULL ) return FALSE;
 
