@@ -103,6 +103,7 @@ struct _reflection {
 	struct _reflection *next;     /* Next and previous in doubly linked */
 	struct _reflection *prev;     /*  list of duplicate reflections */
 	enum _nodecol col;            /* Colour (red or black) */
+	int in_list;                  /* If 0, reflection is not in a list */
 
 	/* Payload */
 	pthread_mutex_t lock;         /* Protects the contents of "data" */
@@ -126,6 +127,7 @@ static Reflection *new_node(unsigned int serial)
 
 	new = calloc(1, sizeof(struct _reflection));
 	if ( new == NULL ) return NULL;
+	new->in_list = 0;
 	new->serial = serial;
 	new->next = NULL;
 	new->prev = NULL;
@@ -895,6 +897,8 @@ static void add_refl_to_list_real(RefList *list,
 {
 	Reflection *f;
 
+	assert(!new->in_list);
+
 	f = find_refl(list, h, k, l);
 	if ( f == NULL ) {
 
@@ -910,6 +914,8 @@ static void add_refl_to_list_real(RefList *list,
 		f->next = new;
 		new->prev = f;
 	}
+
+	new->in_list = 1;
 }
 
 
