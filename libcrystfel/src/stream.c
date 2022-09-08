@@ -937,7 +937,7 @@ char *stream_geometry_file(Stream *st)
 }
 
 
-static void read_geometry_file(Stream *st)
+static int read_geometry_file(Stream *st)
 {
 	int done = 0;
 	size_t len = 0;
@@ -947,7 +947,7 @@ static void read_geometry_file(Stream *st)
 	geom = malloc(max_geom_len);
 	if ( geom == NULL ) {
 		ERROR("Failed to allocate memory for geometry file\n");
-		return;
+		return 1;
 	}
 	geom[0] = '\0';
 
@@ -962,7 +962,7 @@ static void read_geometry_file(Stream *st)
 			ERROR("Failed to read stream geometry file.\n");
 			stream_close(st);
 			free(geom);
-			return;
+			return 1;
 		}
 
 		if ( strcmp(line, STREAM_GEOM_END_MARKER"\n") == 0 ) {
@@ -975,7 +975,7 @@ static void read_geometry_file(Stream *st)
 			ERROR("Stream's geometry file is too long (%li > %i).\n",
 			      (long)len, (int)max_geom_len);
 			free(geom);
-			return;
+			return 1;
 		} else {
 			strcat(geom, line);
 		}
@@ -984,10 +984,11 @@ static void read_geometry_file(Stream *st)
 
 	st->geometry_file = geom;
 	st->dtempl_read = data_template_new_from_string(geom);
+	return (st->dtempl_read == NULL);
 }
 
 
-static void read_headers(Stream *st)
+static int read_headers(Stream *st)
 {
 	int done = 0;
 	size_t len = 0;
@@ -995,7 +996,7 @@ static void read_headers(Stream *st)
 	st->audit_info = malloc(4096);
 	if ( st->audit_info == NULL ) {
 		ERROR("Failed to allocate memory for audit information\n");
-		return;
+		return 1;
 	}
 	st->audit_info[0] = '\0';
 
@@ -1011,23 +1012,27 @@ static void read_headers(Stream *st)
 		if ( rval == NULL ) {
 			ERROR("Failed to read stream audit info.\n");
 			stream_close(st);
-			return;
+			return 1;
 		}
 
 		if ( strcmp(line, STREAM_GEOM_START_MARKER"\n") == 0 ) {
-			read_geometry_file(st);
+			if ( read_geometry_file(st) ) {
+				return 1;
+			}
 			done = 1;
 		} else {
 			len += strlen(line);
 			if ( len > 4090 ) {
 				ERROR("Too much audit information.\n");
-				return;
+				return 1;
 			} else {
 				strcat(st->audit_info, line);
 			}
 		}
 
 	} while  ( !done );
+
+	return 0;
 }
 
 
@@ -1077,7 +1082,9 @@ Stream *stream_open_for_read(const char *filename)
 
 	st->ln = 1;
 
-	read_headers(st);
+	if ( read_headers(st) ) {
+		return NULL;
+	}
 
 	return st;
 }

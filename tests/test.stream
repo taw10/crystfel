@@ -16,12 +16,6 @@ mask = /data/data
 mask_good = 0x0001
 mask_bad = 0xfffe
 
-bad_test/min_fs = 0
-bad_test/min_ss = 0
-bad_test/max_fs = 100
-bad_test/max_ss = 100
-bad_test/panel = q2a0
-
 bad_thing/min_x = -390
 bad_thing/max_x = -270
 bad_thing/min_y = 820
