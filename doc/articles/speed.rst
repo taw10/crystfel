@@ -9,6 +9,30 @@ already using a compute cluster with a batch system, via the GUI or the
 speed?  Here are some tips for getting things to run as fast as possible:
 
 
+Compile CrystFEL and dependencies with optimisations
+====================================================
+
+Note that CMake's default is to compile *without* optimisations.  You need to
+add the option ``-DCMAKE_BUILD_TYPE=Release`` (or ``RelWithDebInfo``) to your
+CMake invokation to tell it to enable optimisations.  In CrystFEL, it's
+particularly important to do this for the HDF5 compression plugins (this makes
+a factor of 3 difference in decompression speed!), XGandalf and PinkIndexer.
+If you compile CrystFEL itself using CMake (not recommended - use Meson
+instead), then you should add the option here as well.
+
+
+Tune or avoid compression
+=========================
+
+Data compression always trades speed for disk space.  For the highest speed,
+disable it altogether.  Obviously, there needs to be a trade-off with available
+disk space.
+
+When compressing data in HDF5, pay careful attention to the
+`chunk size <https://support.hdfgroup.org/HDF5/doc/Advanced/Chunking/>`_.
+A badly selected chunk size can cause a very large slowdown.
+
+
 Bin the pixel data
 ==================
 
@@ -32,6 +56,16 @@ specified area in the lab coordinate system, for which it (currently) uses a
 slow brute-force algorithm.
 
 
+Avoid bad pixel masks
+=====================
+
+In many cases, e.g. Pilatus and Eiger detectors, the bad pixel information is
+included in the image data itself, so there's no need to put the information in
+a separate file.  Bad pixels have a special flag value, usually 65535.  With
+recent versions, you can tell CrystFEL to take note of these values using
+``flag_morethan = 65535`` in the geometry file.
+
+
 Skip non-hits
 =============
 
@@ -40,16 +74,12 @@ time, add ``--no-non-hits-in-stream`` so that time isn't wasted recording
 information about non-hits.
 
 
-Tune or avoid compression
-=========================
+Choose the fastest peak search algorithms
+=========================================
 
-Data compression always trades speed for disk space.  For the highest speed,
-disable it altogether.  Obviously, there needs to be a trade-off with available
-disk space.
-
-When compressing data in HDF5, pay careful attention to the
-`chunk size <https://support.hdfgroup.org/HDF5/doc/Advanced/Chunking/>`_.
-A badly selected chunk size can cause a very large slowdown.
+If the background is low and/or smooth, you can use the faster ``zaef`` peak
+search algorithm instead of ``peakfinder8`` without compromising on the
+results.
 
 
 Choose the fastest indexing algorithms
