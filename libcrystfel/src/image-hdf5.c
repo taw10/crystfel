@@ -368,7 +368,8 @@ static int load_hdf5_hyperslab(struct panel_template *p,
                                void *data,
                                hid_t el_type, size_t el_size,
                                int skip_placeholders_ok,
-                               const char *path_spec)
+                               const char *path_spec,
+                               hid_t *orig_type)
 {
 	int total_dt_dims;
 	int plh_dt_dims;
@@ -526,6 +527,10 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	free(f_offset);
 	free(f_count);
 
+	if ( orig_type != NULL ) {
+		*orig_type = H5Dget_type(dh);
+	}
+
 	H5Dclose(dh);
 
 	return 0;
@@ -599,12 +604,14 @@ int image_hdf5_read(struct image *image,
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 		long int j;
 		struct panel_template *p = &dtempl->panels[i];
+		hid_t orig_type;
 		profile_start("load-hdf5-hyperslab");
 		if ( load_hdf5_hyperslab(p, fh,
 		                         image->ev, image->dp[i],
 		                         H5T_NATIVE_FLOAT,
 		                         sizeof(float), 0,
-		                         dtempl->panels[i].data) )
+		                         dtempl->panels[i].data,
+		                         &orig_type) )
 		{
 			ERROR("Failed to load panel data\n");
 			profile_end("load-hdf5-hyperslab");
@@ -612,13 +619,16 @@ int image_hdf5_read(struct image *image,
 			return 1;
 		}
 		profile_end("load-hdf5-hyperslab");
-		profile_start("nan-inf");
-		for ( j=0; j<PANEL_WIDTH(p)*PANEL_HEIGHT(p); j++ ) {
-			if ( !isfinite(image->dp[i][j]) ) {
-				image->bad[i][j] = 1;
+		if ( H5Tget_class(orig_type) == H5T_FLOAT ) {
+			profile_start("nan-inf");
+			for ( j=0; j<PANEL_WIDTH(p)*PANEL_HEIGHT(p); j++ ) {
+				if ( !isfinite(image->dp[i][j]) ) {
+					image->bad[i][j] = 1;
+				}
 			}
+			profile_end("nan-inf");
 		}
-		profile_end("nan-inf");
+		H5Tclose(orig_type);
 	}
 
 	close_hdf5(fh);
@@ -639,7 +649,7 @@ int image_hdf5_read_satmap(struct panel_template *p,
 
 	if ( load_hdf5_hyperslab(p, fh, event,
 	                         map_data, H5T_NATIVE_FLOAT,
-	                         sizeof(float), 1, map_location) )
+	                         sizeof(float), 1, map_location, NULL) )
 	{
 		ERROR("Failed to load saturation map data\n");
 		return 1;
@@ -676,7 +686,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 
 	if ( load_hdf5_hyperslab(p, fh, event,
 	                         mask, H5T_NATIVE_INT,
-	                         sizeof(int), 1, mask_location) )
+	                         sizeof(int), 1, mask_location, NULL) )
 	{
 		ERROR("Failed to load mask data\n");
 		free(mask);
