@@ -415,6 +415,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	if ( ndims < 0 ) {
 		ERROR("Failed to get number of dimensions for panel %s\n",
 		      p->name);
+		H5Dclose(dh);
 		return 1;
 	}
 
@@ -435,6 +436,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 			      "panel %s (%i, but expected %i or %i)\n",
 			      p->name, ndims, total_dt_dims,
 			      total_dt_dims - plh_dt_dims);
+			H5Dclose(dh);
 			return 1;
 		}
 	} else {
@@ -449,6 +451,9 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	f_count = malloc(ndims*sizeof(hsize_t));
 	if ( (f_offset == NULL) || (f_count == NULL ) ) {
 		ERROR("Failed to allocate offset or count.\n");
+		free(f_offset);
+		free(f_count);
+		H5Dclose(dh);
 		return 1;
 	}
 
@@ -497,6 +502,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		      p->name);
 		free(f_offset);
 		free(f_count);
+		H5Dclose(dh);
 		return 1;
 	}
 
@@ -513,11 +519,14 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		free(f_offset);
 		free(f_count);
 		free(data);
+		H5Dclose(dh);
 		return 1;
 	}
 
 	free(f_offset);
 	free(f_count);
+
+	H5Dclose(dh);
 
 	return 0;
 }
