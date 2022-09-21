@@ -234,5 +234,7 @@ struct _datatemplate
 };
 
 extern double convert_to_m(double val, int units);
+extern int create_detgeom(struct image *image,
+                          const DataTemplate *dtempl);
 
 #endif	/* DATATEMPLATE_PRIV_H */

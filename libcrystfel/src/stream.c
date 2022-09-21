@@ -49,6 +49,7 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "datatemplate.h"
+#include "datatemplate_priv.h"
 #include "detgeom.h"
 #include "libcrystfel-version.h"
 

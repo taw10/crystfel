@@ -36,6 +36,7 @@
 
 #include "utils.h"
 #include "datatemplate.h"
+#include "image.h"
 
 #include "datatemplate_priv.h"
 
@@ -1733,4 +1734,230 @@ double data_template_get_wavelength_if_possible(const DataTemplate *dt)
 	} else {
 		return NAN;
 	}
+}
+
+
+static int separate_value_and_units(const char *from,
+                                    char **pvalue,
+                                    char **punits)
+{
+	char *sp;
+	char *fromcpy;
+	char *unitscpy;
+
+	if ( from == NULL ) return 1;
+
+	fromcpy = strdup(from);
+	if ( fromcpy == NULL ) return 1;
+
+	sp = strchr(fromcpy, ' ');
+	if ( sp == NULL ) {
+		unitscpy = NULL;
+	} else {
+		unitscpy = strdup(sp+1);
+		sp[0] = '\0';
+	}
+
+	*pvalue = fromcpy;
+	*punits = unitscpy;
+	return 0;
+}
+
+
+/* default_scale is a value to be used if both of the following
+ * conditions are met:
+ *
+ *  1. The value is a reference to image headers/metadata,
+ *      rather than a literal number.
+ *  2. No units are specified in the number.
+ *
+ * This is totally horrible.  Sorry.  Blame history.
+ */
+static int im_get_length(struct image *image, const char *from,
+                         double default_scale, double *pval)
+{
+	char *value_str;
+	char *units;
+
+	if ( from == NULL ) return 1;
+
+	if ( separate_value_and_units(from, &value_str, &units) ) return 1;
+
+	if ( units == NULL ) {
+
+		/* No units given */
+
+		if ( convert_float(value_str, pval) == 0 ) {
+
+			/* Literal value with no units */
+			free(value_str);
+			return 0;
+
+		} else {
+
+			int r;
+			r = image_read_header_float(image, value_str, pval);
+			free(value_str);
+
+			if ( r == 0 ) {
+				/* Value read from headers with no units */
+				*pval *= default_scale;
+				return 0;
+			} else {
+				/* Failed to read value from headers */
+				return 1;
+			}
+		}
+
+	} else {
+
+		/* Units are specified */
+
+		double scale;
+
+		if ( strcmp(units, "mm") == 0 ) {
+			scale = 1e-3;
+		} else if ( strcmp(units, "m") == 0 ) {
+			scale = 1.0;
+		} else {
+			ERROR("Invalid length unit '%s'\n", units);
+			free(value_str);
+			free(units);
+			return 1;
+		}
+
+		if ( convert_float(value_str, pval) == 0 ) {
+
+			/* Literal value, units specified */
+			free(value_str);
+			free(units);
+			*pval *= scale;
+			return 0;
+
+		} else {
+
+			int r;
+			r = image_read_header_float(image, value_str, pval);
+			free(value_str);
+
+			if ( r == 0 ) {
+				/* Value read from headers, units specified */
+				*pval *= scale;
+				return 0;
+			} else {
+				/* Failed to read value from headers */
+				return 1;
+			}
+		}
+	}
+}
+
+
+
+int create_detgeom(struct image *image, const DataTemplate *dtempl)
+{
+	struct detgeom *detgeom;
+	int i;
+
+	if ( dtempl == NULL ) {
+		ERROR("NULL data template!\n");
+		return 1;
+	}
+
+	detgeom = malloc(sizeof(struct detgeom));
+	if ( detgeom == NULL ) return 1;
+
+	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
+	if ( detgeom->panels == NULL ) {
+		free(detgeom);
+		return 1;
+	}
+
+	detgeom->n_panels = dtempl->n_panels;
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		struct detgeom_panel *p = &detgeom->panels[i];
+		struct panel_template *tmpl = &dtempl->panels[i];
+		double shift_x, shift_y;
+
+		p->name = safe_strdup(tmpl->name);
+
+		p->pixel_pitch = tmpl->pixel_pitch;
+
+		/* NB cnx,cny are in pixels, cnz is in m */
+		p->cnx = tmpl->cnx;
+		p->cny = tmpl->cny;
+		if ( im_get_length(image, tmpl->cnz_from,
+		                   1e-3, &p->cnz) )
+		{
+			ERROR("Failed to read length from '%s'\n", tmpl->cnz_from);
+			return 1;
+		}
+
+		/* Apply offset (in m) and then convert cnz from
+		 * m to pixels */
+		p->cnz += tmpl->cnz_offset;
+		p->cnz /= p->pixel_pitch;
+
+		/* Apply overall shift (already in m) */
+		if ( dtempl->shift_x_from != NULL ) {
+			if ( im_get_length(image, dtempl->shift_x_from, 1.0, &shift_x) ) {
+				ERROR("Failed to read length from '%s'\n",
+				      dtempl->shift_x_from);
+				return 1;
+			}
+			if ( im_get_length(image, dtempl->shift_y_from, 1.0, &shift_y) ) {
+				ERROR("Failed to read length from '%s'\n",
+				      dtempl->shift_y_from);
+				return 1;
+			}
+		} else {
+			shift_x = 0.0;
+			shift_y = 0.0;
+		}
+
+		if ( !isnan(shift_x) ) {
+			p->cnx += shift_x / p->pixel_pitch;
+		}
+		if ( !isnan(shift_y) ) {
+			p->cny += shift_y / p->pixel_pitch;
+		}
+
+		p->max_adu = tmpl->max_adu;
+
+		switch ( tmpl->adu_scale_unit ) {
+
+			case ADU_PER_PHOTON:
+			p->adu_per_photon = tmpl->adu_scale;
+			break;
+
+			case ADU_PER_EV:
+			p->adu_per_photon = tmpl->adu_scale
+				* ph_lambda_to_eV(image->lambda);
+			break;
+
+			default:
+			p->adu_per_photon = 1.0;
+			ERROR("Invalid ADU/ph scale unit (%i)\n",
+			      tmpl->adu_scale_unit);
+			break;
+
+		}
+
+		p->w = tmpl->orig_max_fs - tmpl->orig_min_fs + 1;
+		p->h = tmpl->orig_max_ss - tmpl->orig_min_ss + 1;
+
+		p->fsx = tmpl->fsx;
+		p->fsy = tmpl->fsy;
+		p->fsz = tmpl->fsz;
+		p->ssx = tmpl->ssx;
+		p->ssy = tmpl->ssy;
+		p->ssz = tmpl->ssz;
+
+	}
+
+	image->detgeom = detgeom;
+
+	return 0;
 }

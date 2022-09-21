@@ -270,9 +270,6 @@ extern int image_write(const struct image *image,
                        const DataTemplate *dtempl,
                        const char *filename);
 
-/* Use within libcrystfel only */
-extern int create_detgeom(struct image *image,
-                          const DataTemplate *dtempl);
 
 #ifdef __cplusplus
 }
