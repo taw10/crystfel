@@ -503,6 +503,11 @@ These set low-level parameters for the PinkIndexer indexing algorithm.
 .IP
 \fB--pinkIndexer-max-refinement-disbalance\fR Indexing solutions are dismissed if the refinement refined very well to one side of the detector and very badly to the other side. Allowed values range from 0 (no disbalance) to 2 (extreme disbalance), default 0.4. Disbalance after refinement usually appears for bad geometries or bad prior unit cell parameters.
 
+.PD 0
+.IP \fB--asdf-fast
+.PD
+This enables a faster mode of operation for \fIasdf\fR indexing, which is around 3 times faster but only about 7% less successful.
+
 .SH INTEGRATION OPTIONS
 .PD 0
 .IP \fB--integration=\fR\fImethod\fR
