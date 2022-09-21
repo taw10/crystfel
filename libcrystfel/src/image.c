@@ -1074,7 +1074,8 @@ struct image *image_create_for_simulation(const DataTemplate *dtempl)
 		return NULL;
 	}
 
-	if ( create_detgeom(image, dtempl) ) {
+	image->detgeom = create_detgeom(image, dtempl);
+	if ( image->detgeom == NULL ) {
 		image_free(image);
 		return NULL;
 	}
@@ -1125,9 +1126,9 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
 	}
 
 	profile_start("create-detgeom");
-	r = create_detgeom(image, dtempl);
+	image->detgeom = create_detgeom(image, dtempl);
 	profile_end("create-detgeom");
-	if ( r ) {
+	if ( image->detgeom == NULL ) {
 		ERROR("Failed to read geometry information\n");
 		return 1;
 	}

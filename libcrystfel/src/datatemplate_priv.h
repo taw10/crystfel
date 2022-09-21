@@ -32,6 +32,8 @@
 #ifndef DATATEMPLATE_PRIV_H
 #define DATATEMPLATE_PRIV_H
 
+#include "detgeom.h"
+
 /* Maximum number of dimensions expected in data files */
 #define MAX_DIMS (16)
 
@@ -234,7 +236,7 @@ struct _datatemplate
 };
 
 extern double convert_to_m(double val, int units);
-extern int create_detgeom(struct image *image,
-                          const DataTemplate *dtempl);
+extern struct detgeom *create_detgeom(struct image *image,
+                                      const DataTemplate *dtempl);
 
 #endif	/* DATATEMPLATE_PRIV_H */

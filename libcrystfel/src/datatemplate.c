@@ -1853,24 +1853,24 @@ static int im_get_length(struct image *image, const char *from,
 }
 
 
-
-int create_detgeom(struct image *image, const DataTemplate *dtempl)
+struct detgeom *create_detgeom(struct image *image,
+                               const DataTemplate *dtempl)
 {
 	struct detgeom *detgeom;
 	int i;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
-		return 1;
+		return NULL;
 	}
 
 	detgeom = malloc(sizeof(struct detgeom));
-	if ( detgeom == NULL ) return 1;
+	if ( detgeom == NULL ) return NULL;
 
 	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
 	if ( detgeom->panels == NULL ) {
 		free(detgeom);
-		return 1;
+		return NULL;
 	}
 
 	detgeom->n_panels = dtempl->n_panels;
@@ -1888,11 +1888,10 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 		/* NB cnx,cny are in pixels, cnz is in m */
 		p->cnx = tmpl->cnx;
 		p->cny = tmpl->cny;
-		if ( im_get_length(image, tmpl->cnz_from,
-		                   1e-3, &p->cnz) )
+		if ( im_get_length(image, tmpl->cnz_from, 1e-3, &p->cnz) )
 		{
 			ERROR("Failed to read length from '%s'\n", tmpl->cnz_from);
-			return 1;
+			return NULL;
 		}
 
 		/* Apply offset (in m) and then convert cnz from
@@ -1905,12 +1904,12 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 			if ( im_get_length(image, dtempl->shift_x_from, 1.0, &shift_x) ) {
 				ERROR("Failed to read length from '%s'\n",
 				      dtempl->shift_x_from);
-				return 1;
+				return NULL;
 			}
 			if ( im_get_length(image, dtempl->shift_y_from, 1.0, &shift_y) ) {
 				ERROR("Failed to read length from '%s'\n",
 				      dtempl->shift_y_from);
-				return 1;
+				return NULL;
 			}
 		} else {
 			shift_x = 0.0;
@@ -1957,7 +1956,7 @@ int create_detgeom(struct image *image, const DataTemplate *dtempl)
 
 	}
 
-	image->detgeom = detgeom;
+	return detgeom;
+}
 
-	return 0;
 }

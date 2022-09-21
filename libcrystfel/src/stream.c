@@ -897,7 +897,8 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 			if ( have_filename && have_ev ) {
 				/* Success */
 				if ( srf & STREAM_DATA_DETGEOM ) {
-					if ( create_detgeom(image, st->dtempl_read) ) {
+					image->detgeom = create_detgeom(image, st->dtempl_read);
+					if ( image->detgeom == NULL ) {
 						image_free(image);
 						return NULL;
 					}
