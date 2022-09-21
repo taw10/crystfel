@@ -40,7 +40,10 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_multifit.h>
 #include <gsl/gsl_fit.h>
+#include <profile.h>
+#include <assert.h>
 
+#include "index.h"
 #include "image.h"
 #include "utils.h"
 #include "peaks.h"
@@ -73,6 +76,7 @@ struct asdf_private {
 	IndexingMethod          indm;
 	UnitCell                *template;
 	struct fftw_vars        fftw;
+	int                     fast_execution;
 };
 
 
@@ -826,11 +830,7 @@ static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit,
 
 				k = sl - i - j - 1;
 
-				if ( k > j && tvectors[k].n > acl &&
-				     check_cell_angles(tvectors[i].t,
-						       tvectors[j].t,
-						       tvectors[k].t, 0.99) )
-				{
+				if ( k > j && tvectors[k].n > acl ) {
 
 					if ( !create_cell(tvectors[i],
 						          tvectors[j],
@@ -849,8 +849,6 @@ static int find_cell(struct tvector *tvectors, int N_tvectors, double IndexFit,
 					               tvectors[k]);
 					c->acl = acl;
 					c->n_max = n_max;
-
-					reduce_asdf_cell(c);
 
 					/* If the new cell has more fitting
 					 * reflections save it to result */
@@ -884,15 +882,45 @@ void swap(int *a, int *b) {
 }
 
 
+long nCk(int n, int k) {
+	// computes nCk, the number of combinations n choose k for 0 <= k <= 3
+	assert(k>=0 && k<4);
+	switch ( k ) {
+		case 0 : return 1;
+		case 1 : return n;
+		case 2 : return n*(n-1)/2;
+		case 3 : return n*(n-1)*(n-2)/6;
+	}
+	return 0;
+}
+
+
+void get_triplet_by_index(int index, int n, int *triplet) {
+	// finds the i-th combination of 3 numbers chosen from 0,1,2,...,n-1
+	int r = index + 1;
+	int j = 0;
+	int s, cs;
+	for ( s = 1; s < 4; s++ )
+	{
+		cs = j + 1;
+		while ( r - nCk(n - cs, 3 - s) > 0 )
+		{
+			r -= nCk(n - cs, 3 - s);
+			cs += 1;
+		}
+		triplet[s - 1] = cs - 1;
+		j = cs;
+	}
+}
+
+
 /* Generate triplets of integers < N_reflections in random sequence */
 static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 {
-	int i, j, k, l, n;
+	int i, n, ri;
+	int N_triplets_tot = nCk(N_reflections, 3);
 
-	/* Number of triplets = c_n^3 if n - number of reflections */
-	int N_triplets = N_reflections * (N_reflections - 1) *
-	                                 (N_reflections - 2) / 6;
-
+	int N_triplets = N_triplets_tot;
 	if ( N_triplets > N_triplets_max || N_reflections > 1000 ) {
 		N_triplets = N_triplets_max;
 	}
@@ -900,64 +928,64 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 
 	int **triplets = malloc(N_triplets * sizeof(int *));
 
-	if (triplets == NULL) {
+	if ( triplets == NULL ) {
 		ERROR("Failed to allocate triplets in generate_triplets!\n");
 		return 0;
 	}
 
 	n = 0;
-
-	while ( n < N_triplets ) {
-
-		int is_in_triplets;
-
-		/* Generate three different integer numbers < N_reflections */
-		i = rand() % N_reflections;
-		j = i;
-		k = i;
-		while ( j == i ) {
-			j = rand() % N_reflections;
-		}
-		while ( k == i || k == j ) {
-			k = rand() % N_reflections;
-		}
-
-		/* Sort (i, j, k) */
-		if ( i > k ) swap(&i, &k);
-		if ( i > j ) swap(&i, &j);
-		if ( j > k ) swap(&j, &k);
-
-		/* Check if it's already in triplets[] */
-		is_in_triplets = 0;
-		for ( l = 0; l < n; l++ ) {
-			if ( triplets[l][0] == i &&
-			     triplets[l][1] == j &&
-			     triplets[l][2] == k ) {
-				is_in_triplets = 1;
-				break;
+	if ( N_triplets_tot / N_triplets < 7 ) {
+		// Reservoir sampling:
+		for ( i = 0; i < N_triplets_tot; i++ ) {
+			if ( n < N_triplets ) {
+				triplets[n] = (int *)malloc(3 * sizeof(int));
+				if (triplets[n] == NULL) {
+					ERROR("Failed to allocate triplet in generate_triplets!\n");
+					return NULL;
+				}
+				get_triplet_by_index(i, N_reflections, triplets[n]);
+				n += 1;
+			} else {
+				ri = rand() % N_triplets;
+				if (ri < N_triplets)
+				{
+					get_triplet_by_index(i, N_reflections, triplets[ri]);
+				}
 			}
 		}
-
-		if ( is_in_triplets == 0 ) {
-			triplets[n] = malloc(3 * sizeof(int));
-			if (triplets[n] == NULL) {
-				ERROR("Failed to allocate triplets "
-				      " in generate_triplets!\n");
-				return 0;
-			}
-			triplets[n][0] = i;
-			triplets[n][1] = j;
-			triplets[n][2] = k;
-
-			n++;
+	} else {
+		// Random selection from the whole set:
+		int *tidx = (int *)malloc(N_triplets * sizeof(int));
+		if ( tidx == NULL ) {
+			ERROR("Failed to allocate tidx in generate_triplets_2!\n");
+			free(triplets);
+			return NULL;
 		}
+		while ( n < N_triplets ) {
+			int already_in_triplets = 1;
+			while ( already_in_triplets ) {
+				ri = rand() % N_triplets_tot;
+				already_in_triplets = 0;
+				for ( i = 0; i < n; i++ ) {
+					if (tidx[i] == ri) already_in_triplets = 1;
+				}
+			}
+			tidx[n] = ri;
+			triplets[n] = (int *)malloc(3 * sizeof(int));
+			if ( triplets[n] == NULL ) {
+				ERROR("Failed to allocate triplet in generate_triplets!\n");
+				return NULL;
+			}
+			get_triplet_by_index(ri, N_reflections, triplets[n]);
+			n += 1;
+		}
+		free(tidx);
 	}
-
 	return triplets;
 }
 
 
-static int index_refls(gsl_vector **reflections, int N_reflections,
+static int index_refls(gsl_vector **reflections, int N_reflections, int N_refl_max,
                        double d_max, double volume_min, double volume_max,
                        double LevelFit, double IndexFit, int N_triplets_max,
                        struct asdf_cell *c, struct fftw_vars fftw)
@@ -966,26 +994,50 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	int i, k, n;
 
 	int N_triplets;
-	int **triplets = generate_triplets(N_reflections, N_triplets_max,
-	                                   &N_triplets);
-	if ( N_triplets == 0 ) {
-		return 0;
+	int **triplets;
+
+	if ( N_reflections < 4 ) return 0;
+
+	gsl_vector **refl_sample;
+	if ( N_reflections > N_refl_max ) {
+		refl_sample = (gsl_vector **)malloc(N_refl_max * sizeof(gsl_vector *));
+		n = 0;
+		for ( i = 0; i < N_reflections; i++ ) {
+			if (i < N_refl_max) {
+				refl_sample[n] = reflections[i];
+				n += 1;
+			} else {
+				k = rand() % N_refl_max;
+				if (k < N_refl_max) refl_sample[k] = reflections[i];
+			}
+		}
+	} else {
+		refl_sample = reflections;
+		N_refl_max = N_reflections;
 	}
+
+	profile_start("asdf-triplets");
+	triplets = generate_triplets(N_refl_max, N_triplets_max, &N_triplets);
+	profile_end("asdf-triplets");
+
+	if ( N_triplets == 0 ) return 0;
 
 	gsl_vector *normal = gsl_vector_alloc(3);
 
-	double projections[N_reflections];
+	double projections[N_refl_max];
 	double ds;
 
-	int *fits = malloc(N_reflections * sizeof(int));
-	if (fits == NULL) {
+	int *fits = malloc(N_refl_max * sizeof(int));
+	if ( fits == NULL ) {
 		ERROR("Failed to allocate fits in index_refls!\n");
+		if ( N_reflections > N_refl_max ) free(refl_sample);
 		return 0;
 	}
 
 	struct tvector *tvectors = malloc(N_triplets * sizeof(struct tvector));
-	if (tvectors == NULL) {
+	if ( tvectors == NULL ) {
 		ERROR("Failed to allocate tvectors in index_refls!\n");
+		if ( N_reflections > N_refl_max ) free(refl_sample);
 		free(fits);
 		return 0;
 	}
@@ -993,48 +1045,43 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	int N_tvectors = 0;
 
 	int n_max = 0; // maximum number of reflections fitting one of tvectors
-
+	profile_start("asdf-search");
 	for ( i = 0; i < N_triplets; i++ ) {
-		if ( calc_normal(reflections[triplets[i][0]],
-		                 reflections[triplets[i][1]],
-		                 reflections[triplets[i][2]],
-		                 normal) )
+		if ( calc_normal(refl_sample[triplets[i][0]],
+				 refl_sample[triplets[i][1]],
+				 refl_sample[triplets[i][2]],
+				 normal) )
 		{
 
 			/* Calculate projections of reflections to normal */
-			for ( k = 0; k < N_reflections; k++ ) {
-				gsl_blas_ddot(normal, reflections[k],
-				              &projections[k]);
+			for ( k = 0; k < N_refl_max; k++ ) {
+				gsl_blas_ddot(normal, refl_sample[k], &projections[k]);
 			}
 
 			/* Find ds - period in 1d lattice of projections */
-			ds = find_ds_fft(projections, N_reflections, d_max,
-			                 fftw);
+			ds = find_ds_fft(projections, N_refl_max, d_max, fftw);
 			if ( ds < 0.0 ) {
 				ERROR("find_ds_fft() failed.\n");
-				return 0;
+				continue;
 			}
 
 			/* Refine ds, write 1 to fits[i] if reflections[i]
 			 * fits ds */
-			ds = refine_ds(projections, N_reflections, ds, LevelFit,
-			               fits);
+			ds = refine_ds(projections, N_refl_max, ds, LevelFit, fits);
 
 			/* n - number of reflections fitting ds */
-			n = check_refl_fitting_ds(projections, N_reflections,
-			                          ds, LevelFit);
+			n = check_refl_fitting_ds(projections, N_refl_max, ds, LevelFit);
 
 			/* normal/ds - possible direct vector */
 			gsl_vector_scale(normal, 1/ds);
 
-			if ( n > N_reflections/3 && n > 6 ) {
+			if ( n > N_refl_max / 3 && n > 6 ) {
 
-				tvectors[N_tvectors] = tvector_new(N_reflections);
+				tvectors[N_tvectors] = tvector_new(N_refl_max);
 
-				gsl_vector_memcpy(tvectors[N_tvectors].t,
-				                  normal);
+				gsl_vector_memcpy(tvectors[N_tvectors].t, normal);
 				memcpy(tvectors[N_tvectors].fits, fits,
-				       N_reflections * sizeof(int));
+				       N_refl_max * sizeof(int));
 
 				tvectors[N_tvectors].n = n;
 
@@ -1044,8 +1091,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 			}
 		}
 
-		if ( (i != 0 && i % 10000 == 0) || i == N_triplets - 1 ) {
-
+		if ( (i != 0 && i % (N_triplets_max/2) == 0) || i == N_triplets - 1 ) {
 			/* Sort tvectors by length */
 			qsort(tvectors, N_tvectors, sizeof(struct tvector),
 			      compare_tvectors);
@@ -1054,16 +1100,17 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 			 * determine the final cell. acl is selected for the
 			 * solution with the maximum number of fitting
 			 * reflections */
-
+			profile_start("asdf-findcell");
 			find_cell(tvectors, N_tvectors, IndexFit, volume_min,
-			          volume_max, n_max, reflections,
-			          N_reflections, c);
+				  volume_max, n_max, refl_sample, N_refl_max, c);
+			profile_end("asdf-findcell");
 
 			if ( c->n > 4 * n_max / 5 ) {
 				break;
 			}
 		}
 	}
+	profile_end("asdf-search");
 	free(fits);
 
 	for ( i = 0; i < N_tvectors; i++ ) {
@@ -1077,6 +1124,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections,
 	free(triplets);
 
 	gsl_vector_free(normal);
+	if ( N_reflections > N_refl_max ) free(refl_sample);
 
 	if ( c->n ) return 1;
 
@@ -1094,9 +1142,18 @@ int run_asdf(struct image *image, void *ipriv)
 	double volume_min = 100.;
 	double volume_max = 100000000.;
 
-	int N_triplets_max = 10000; // maximum number of triplets
+	int N_refl_max;
+	int N_triplets_max;
 
 	struct asdf_private *dp = (struct asdf_private *)ipriv;
+
+	if ( dp->fast_execution ) {
+		N_refl_max = 120; // maximum number of peaks to be used for indexing
+		N_triplets_max = 10000; // maximum number of triplets
+	} else {
+		N_refl_max = 2000;
+		N_triplets_max = 20000;
+	}
 
 	if ( dp->indm & INDEXING_USE_CELL_PARAMETERS ) {
 
@@ -1152,7 +1209,7 @@ int run_asdf(struct image *image, void *ipriv)
 
 	if ( N_reflections == 0 ) return 0;
 
-	j = index_refls(reflections, N_reflections, d_max, volume_min,
+	j = index_refls(reflections, N_reflections, N_refl_max, d_max, volume_min,
 	                volume_max, LevelFit, IndexFit, N_triplets_max, c,
 	                dp->fftw);
 
@@ -1196,7 +1253,7 @@ int run_asdf(struct image *image, void *ipriv)
 /**
  * Prepare the ASDF indexing algorithm
  */
-void *asdf_prepare(IndexingMethod *indm, UnitCell *cell)
+void *asdf_prepare(IndexingMethod *indm, UnitCell *cell, struct asdf_options *asdf_opts)
 {
 	struct asdf_private *dp;
 
@@ -1208,7 +1265,7 @@ void *asdf_prepare(IndexingMethod *indm, UnitCell *cell)
 
 	dp->template = cell;
 	dp->indm = *indm;
-
+	dp->fast_execution = asdf_opts->fast_execution;
 	dp->fftw = fftw_vars_new();
 
 	return (void *)dp;
@@ -1257,3 +1314,69 @@ void asdf_cleanup(void *pp)
 }
 
 #endif /* HAVE_FFTW */
+
+static void asdf_show_help()
+{
+	printf("Parameters for the asdf indexing algorithm:\n"
+"     --asdf-fast\n"
+"                           Speed up execution by limiting maximum number of peaks\n"
+"                            used for indexing and the number of unit cell search\n"
+"                            iterations\n"
+);
+}
+
+
+int asdf_default_options(struct asdf_options **opts_ptr)
+{
+	struct asdf_options *opts;
+
+	opts = malloc(sizeof(struct asdf_options));
+	if ( opts == NULL ) return ENOMEM;
+
+	opts->fast_execution = 0;
+
+	*opts_ptr = opts;
+	return 0;
+}
+
+
+static error_t asdf_parse_arg(int key, char *arg,
+                                  struct argp_state *state)
+{
+	struct asdf_options **opts_ptr = state->input;
+	int r;
+
+	switch ( key ) {
+
+		case ARGP_KEY_INIT :
+		r = asdf_default_options(opts_ptr);
+		if ( r ) return r;
+		break;
+
+		case 1 :
+		asdf_show_help();
+		return EINVAL;
+
+		case 2 :
+		(*opts_ptr)->fast_execution = 1;
+		break;
+
+	}
+
+	return 0;
+}
+
+
+static struct argp_option asdf_options[] = {
+
+	{"help-asdf", 1, NULL, OPTION_NO_USAGE,
+	 "Show options for asdf indexing algorithm", 99},
+
+	{"asdf-fast", 2, NULL, OPTION_HIDDEN, NULL},
+
+	{0}
+};
+
+
+struct argp asdf_argp = { asdf_options, asdf_parse_arg,
+                              NULL, NULL, NULL, NULL, NULL };

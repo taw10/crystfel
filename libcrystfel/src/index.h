@@ -129,6 +129,12 @@ typedef enum {
 /**
  * Indexer-specific "private" options
  */
+
+struct asdf_options {
+	int fast_execution;
+};
+
+
 struct pinkindexer_options {
 	unsigned int considered_peaks_count;
 	unsigned int angle_resolution;
@@ -210,12 +216,14 @@ extern struct argp pinkIndexer_argp;
 extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
 extern struct argp fromfile_argp;
+extern struct argp asdf_argp;
 
 extern void default_method_options(struct taketwo_options **ttopts,
                                    struct xgandalf_options **xgandalf_opts,
                                    struct pinkindexer_options **pinkIndexer_opts,
                                    struct felix_options **felix_opts,
-                                   struct fromfile_options **fromfile_opts);
+                                   struct fromfile_options **fromfile_opts,
+                                   struct asdf_options **asdf_opts);
 
 extern IndexingPrivate *setup_indexing(const char *methods,
                                        UnitCell *cell,
@@ -228,7 +236,8 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        struct xgandalf_options *xgandalf_opts,
                                        struct pinkindexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts,
-                                       struct fromfile_options *fromfile_opts);
+                                       struct fromfile_options *fromfile_opts,
+                                       struct asdf_options *asdf_opts);
 
 extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);
 

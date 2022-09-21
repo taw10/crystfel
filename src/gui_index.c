@@ -577,6 +577,7 @@ static void run_indexing_once(struct crystfelproject *proj)
 	struct xgandalf_options *xgandalf_opts;
 	struct pinkindexer_options *pinkIndexer_opts;
 	struct fromfile_options *fromfile_opts;
+	struct asdf_options *asdf_opts;
 	char *old_cwd;
 	char *tmpdir;
 	int r;
@@ -613,7 +614,8 @@ static void run_indexing_once(struct crystfelproject *proj)
 	                       &xgandalf_opts,
 	                       &pinkIndexer_opts,
 	                       &felix_opts,
-	                       &fromfile_opts);
+	                       &fromfile_opts,
+			       &asdf_opts);
 
 	ipriv = setup_indexing(methods, cell,
 	                       proj->indexing_params.tols,
@@ -623,7 +625,7 @@ static void run_indexing_once(struct crystfelproject *proj)
 	                       1,
 	                       taketwoopts, xgandalf_opts,
 	                       pinkIndexer_opts, felix_opts,
-	                       NULL);
+	                       NULL, asdf_opts);
 	free(methods);
 
 	index_pattern(proj->cur_image, ipriv);

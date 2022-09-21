@@ -208,7 +208,8 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             struct pinkindexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
                             struct taketwo_options *taketwo_opts,
-                            struct fromfile_options *fromfile_opts)
+                            struct fromfile_options *fromfile_opts,
+                            struct asdf_options *asdf_opts)
 {
 	char *str;
 	IndexingMethod in = *m;
@@ -225,7 +226,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 		break;
 
 		case INDEXING_ASDF :
-		priv = asdf_prepare(m, cell);
+		priv = asdf_prepare(m, cell, asdf_opts);
 		break;
 
 		case INDEXING_MOSFLM :
@@ -338,7 +339,8 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 struct xgandalf_options *xgandalf_opts,
                                 struct pinkindexer_options *pinkIndexer_opts,
                                 struct felix_options *felix_opts,
-                                struct fromfile_options *fromfile_opts)
+                                struct fromfile_options *fromfile_opts,
+                                struct asdf_options *asdf_opts)
 {
 	IndexingPrivate *ipriv;
 	IndexingMethod *methods;
@@ -409,7 +411,8 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
 		                                          ttopts,
-		                                          fromfile_opts);
+		                                          fromfile_opts,
+							  asdf_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) {
 			free(ipriv->engine_private);
@@ -1229,11 +1232,13 @@ void default_method_options(struct taketwo_options **ttopts,
                             struct xgandalf_options **xgandalf_opts,
                             struct pinkindexer_options **pinkIndexer_opts,
                             struct felix_options **felix_opts,
-                            struct fromfile_options **fromfile_opts)
+                            struct fromfile_options **fromfile_opts,
+                            struct asdf_options **asdf_opts)
 {
 	taketwo_default_options(ttopts);
 	xgandalf_default_options(xgandalf_opts);
 	pinkIndexer_default_options(pinkIndexer_opts);
 	felix_default_options(felix_opts);
 	fromfile_default_options(fromfile_opts);
+	asdf_default_options(asdf_opts);
 }
