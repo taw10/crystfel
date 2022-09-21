@@ -85,10 +85,15 @@ results.
 Choose the fastest indexing algorithms
 ======================================
 
-Don't use PinkIndexer, unless you really need it (wide bandwidth or electron
-diffraction data).  PinkIndexer is a very general and accurate indexing
-algorithm, but these advantages must be "paid for" in speed.  Prefer DirAx,
-TakeTwo, Mosflm and XGandalf.
+In our tests, ``asdf`` gives the best compromise between speed and success
+rate, so it's the best choice if you need fast processing.  The ``indexamajig``
+option ``--asdf-fast`` makes it about three times faster with only a small
+reduction in success rate.
+
+DirAx, TakeTwo, Mosflm and XGandalf are also good choices (roughly in that
+order). Don't use PinkIndexer, unless you really need it (wide bandwidth or
+electron diffraction data).  PinkIndexer is a very general and accurate
+indexing algorithm, but these advantages must be "paid for" in speed.
 
 
 Try less hard to index each frame
