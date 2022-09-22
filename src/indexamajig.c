@@ -61,6 +61,8 @@
 #include <integration.h>
 #include <image.h>
 #include <datatemplate.h>
+#include <detgeom.h>
+#include <peakfinder8.h>
 
 #include "im-sandbox.h"
 #include "im-zmq.h"
@@ -210,6 +212,7 @@ static void write_harvest_file(struct index_args *args,
 	write_float(fh, 1, "min_squared_gradient_adu2", args->min_sq_gradient);
 	write_float(fh, 1, "min_snr", args->min_snr);
 	write_bool(fh, 1, "check_hdf5_snr", args->check_hdf5_snr);
+	write_bool(fh, 1, "peakfinder8_fast", args->peakfinder8_fast);
 	write_bool(fh, 1, "half_pixel_shift", args->half_pixel_shift);
 	write_int(fh, 1, "min_res_px", args->min_res);
 	write_int(fh, 1, "max_res_px", args->max_res);
@@ -591,6 +594,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->iargs.check_hdf5_snr = 1;
 		break;
 
+		case 322:
+		args->iargs.peakfinder8_fast = 1;
+		break;
+
 		/* ---------- Indexing ---------- */
 
 		case 400 :
@@ -902,6 +909,8 @@ int main(int argc, char *argv[])
 	args.iargs.min_sig = 11.0;
 	args.iargs.min_peak_over_neighbour = -INFINITY;
 	args.iargs.check_hdf5_snr = 0;
+	args.iargs.peakfinder8_fast = 0;
+	args.iargs.pf_private = NULL;
 	args.iargs.dtempl = NULL;
 	args.iargs.peaks = PEAK_ZAEF;
 	args.iargs.half_pixel_shift = 1;
@@ -1020,6 +1029,7 @@ int main(int argc, char *argv[])
 		        "locations by 0.5 pixels"},
 		{"check-hdf5-snr", 321, NULL, OPTION_NO_USAGE, "Check SNR for peaks from HDF5, "
 		        "CXI or MsgPack (see --min-snr)"},
+		{"peakfinder8-fast", 322, NULL, OPTION_NO_USAGE, "peakfinder8 fast execution"},
 
 		{NULL, 0, 0, OPTION_DOC, "Indexing options:", 4},
 		{"indexing", 400, "method", 0, "List of indexing methods"},
@@ -1349,11 +1359,21 @@ int main(int argc, char *argv[])
 
 	gsl_set_error_handler_off();
 
+	struct pf8_private_data *pf8_data = NULL;
+	struct detgeom *detgeom = NULL;
+	if ( args.iargs.peaks == PEAK_PEAKFINDER8 ) {
+		detgeom = data_template_get_2d_detgeom_if_possible(args.iargs.dtempl);
+		pf8_data = prepare_peakfinder8(detgeom, args.iargs.peakfinder8_fast);
+		args.iargs.pf_private = pf8_data;
+	}
+
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
 	                   fh, st, tmpdir, args.serial_start,
 	                   &args.zmq_params, &args.asapo_params,
 	                   timeout, args.profile);
 
+	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
+	if ( detgeom != NULL) detgeom_free(detgeom);
 	cell_free(args.iargs.cell);
 	free(args.prefix);
 	free(args.temp_location);

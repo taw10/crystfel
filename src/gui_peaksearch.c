@@ -80,7 +80,7 @@ void update_peaks(struct crystfelproject *proj)
 		                         proj->peak_search_params.local_bg_radius,
 		                         proj->peak_search_params.min_res,
 		                         proj->peak_search_params.max_res,
-		                         1);
+		                         1, 0, NULL);
 		break;
 
 		case PEAK_PEAKFINDER9:

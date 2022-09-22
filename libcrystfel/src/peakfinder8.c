@@ -34,6 +34,7 @@
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
+#include <profile.h>
 
 #include "peakfinder8.h"
 #include "detgeom.h"
@@ -43,10 +44,21 @@
 /** \file peakfinder8.h */
 
 // CrystFEL-only block 1
+
 struct radius_maps
 {
 	float **r_maps;
+	int *n_pixels;
 	int n_rmaps;
+};
+
+
+struct radial_stats_pixels
+{
+	int n_panels;
+	int *n_pixels; // n_pixels[panel]
+	int **pidx;	   // pixel_index[panel][0..n_pixels]
+	int **radius;  // pixel_radius[panel][0..n_pixels]
 };
 
 
@@ -101,7 +113,138 @@ struct peakfinder_peak_data
 };
 
 
-// CrystFEL-only block 2
+static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rmaps)
+{
+	int p;
+	int i;
+
+	struct radial_stats_pixels *rsp = NULL;
+	rsp = (struct radial_stats_pixels *)malloc(sizeof(struct radial_stats_pixels));
+	if ( rsp == NULL ) {
+		return NULL;
+	}
+	rsp->n_pixels = (int *)malloc(rmaps->n_rmaps * sizeof(int));
+	if ( rsp->n_pixels == NULL ) {
+		free(rsp);
+		return NULL;
+	}
+	rsp->pidx = (int **)malloc(rmaps->n_rmaps * sizeof(int *));
+	if ( rsp->pidx == NULL ) {
+		free(rsp->n_pixels);
+		free(rsp);
+		return NULL;
+	}
+	rsp->radius = (int **)malloc(rmaps->n_rmaps * sizeof(int *));
+	if ( rsp->radius == NULL ) {
+		free(rsp->n_pixels);
+		free(rsp->pidx);
+		free(rsp);
+		return NULL;
+	}
+	srand(0);
+
+	int n_pixels_per_bin = 100; // Can make this a parameter
+
+	// Assuming 5000 is the maximum possible radius
+	int n_pixels[5000] = {0}; // selected pixels per bin
+	int n_tot_pixels[5000] = {0}; // total pixels per bin
+	int panel[5000][n_pixels_per_bin]; // panel ID of selected pixels
+	int idx[5000][n_pixels_per_bin]; // index of selected pixels
+	int radius;
+
+	for ( p = 0; p < rmaps->n_rmaps; p++ ) {
+		rsp->n_pixels[p] = 0;
+		for ( i = 0; i < rmaps->n_pixels[p]; i++ ) {
+			// Reservoir sampling:
+			radius = (int)rint(rmaps->r_maps[p][i]);
+			n_tot_pixels[radius] += 1;
+
+			if ( n_pixels[radius] < n_pixels_per_bin ) {
+				panel[radius][n_pixels[radius]] = p;
+				idx[radius][n_pixels[radius]] = i;
+
+				n_pixels[radius] += 1;
+				rsp->n_pixels[p] += 1;
+			} else {
+				int rand_i = rand() % n_tot_pixels[radius];
+				if ( rand_i < n_pixels_per_bin ) {
+					rsp->n_pixels[panel[radius][rand_i]] -= 1;
+					rsp->n_pixels[p] += 1;
+
+					panel[radius][rand_i] = p;
+					idx[radius][rand_i] = i;
+				}
+			}
+		}
+	}
+
+	int *sidx = (int *)malloc(rmaps->n_rmaps * sizeof(int));
+	if ( sidx == NULL ) {
+		free(rsp->n_pixels);
+		free(rsp->pidx);
+		free(rsp->radius);
+		free(rsp);
+		return NULL;
+	}
+	for ( p = 0; p < rmaps->n_rmaps; p++ ) {
+		rsp->pidx[p] = (int *)malloc(rsp->n_pixels[p] * sizeof(int));
+		if ( rsp->pidx[p] == NULL ) {
+			for ( i = 0; i < p; i++ ) {
+				free(rsp->pidx[i]);
+				free(rsp->radius[i]);
+			}
+			free(rsp->pidx);
+			free(rsp->radius);
+			free(rsp->n_pixels);
+			free(rsp);
+			free(sidx);
+			return NULL;
+		}
+		rsp->radius[p] = (int *)malloc(rsp->n_pixels[p] * sizeof(int));
+		if ( rsp->radius[p] == NULL ) {
+			for ( i = 0; i < p; i++ ) {
+				free(rsp->pidx[i]);
+				free(rsp->radius[i]);
+			}
+			free(rsp->pidx[p]);
+			free(rsp->pidx);
+			free(rsp->radius);
+			free(rsp->n_pixels);
+			free(rsp);
+			free(sidx);
+			return NULL;
+		}
+		sidx[p] = 0;
+	}
+
+	for ( radius = 0; radius < 5000; radius++ ) {
+		for ( i = 0; i < n_pixels[radius]; i++ ) {
+			p = panel[radius][i];
+			rsp->pidx[p][sidx[p]] = idx[radius][i];
+			rsp->radius[p][sidx[p]] = radius;
+			sidx[p] += 1;
+		}
+	}
+	free(sidx);
+
+	rsp->n_panels = rmaps->n_rmaps;
+	return rsp;
+}
+
+static void free_rstats_pixels(struct radial_stats_pixels *rsp)
+{
+	int i;
+	for ( i = 0; i < rsp->n_panels; i++ ) {
+		free(rsp->pidx[i]);
+		free(rsp->radius[i]);
+	}
+	free(rsp->pidx);
+	free(rsp->radius);
+	free(rsp->n_pixels);
+	free(rsp);
+}
+
+
 static struct radius_maps *compute_radius_maps(struct detgeom *det)
 {
 	int i, u, iss, ifs;
@@ -114,6 +257,12 @@ static struct radius_maps *compute_radius_maps(struct detgeom *det)
 	}
 
 	rm->r_maps = (float **)malloc(det->n_panels*sizeof(float*));
+	if ( rm->r_maps == NULL ) {
+		free(rm);
+		return NULL;
+	}
+
+	rm->n_pixels = (int *)malloc(det->n_panels*sizeof(int*));
 	if ( rm->r_maps == NULL ) {
 		free(rm);
 		return NULL;
@@ -133,7 +282,7 @@ static struct radius_maps *compute_radius_maps(struct detgeom *det)
 			free(rm);
 			return NULL;
 		}
-
+		rm->n_pixels[i] = p.h * p.w;
 		for ( iss=0 ; iss<p.h ; iss++ ) {
 			for ( ifs=0; ifs<p.w; ifs++ ) {
 
@@ -161,7 +310,50 @@ static void free_radius_maps(struct radius_maps *r_maps)
 		free(r_maps->r_maps[i]);
 	}
 	free(r_maps->r_maps);
+	free(r_maps->n_pixels);
 	free(r_maps);
+}
+
+
+// CrystFEL-only block 2
+struct pf8_private_data *prepare_peakfinder8(struct detgeom *det, int fast_mode)
+{
+	struct pf8_private_data *data = NULL;
+	if ( det == NULL ) {
+		return NULL;
+	}
+
+	data = (struct pf8_private_data *)malloc(sizeof(struct pf8_private_data));
+	if ( data == NULL ) {
+		return NULL;
+	}
+	data->rmaps = compute_radius_maps(det);
+	if ( data->rmaps == NULL ) {
+		free(data);
+		return NULL;
+	}
+	if ( fast_mode ) {
+		data->rpixels = compute_rstats_pixels(data->rmaps);
+		if ( data->rpixels == NULL ) {
+			free_radius_maps(data->rmaps);
+			free(data);
+			return NULL;
+		}
+	} else {
+		data->rpixels = NULL;
+	}
+	data->fast_mode = fast_mode;
+	return data;
+}
+
+
+void free_pf8_private_data(struct pf8_private_data *data)
+{
+	free_radius_maps(data->rmaps);
+	if ( data->fast_mode ) {
+		free_rstats_pixels(data->rpixels);
+	}
+	free(data);
 }
 
 
@@ -385,6 +577,31 @@ static void fill_radial_bins(float *data,
 	}
 }
 
+static void fill_radial_bins_fast(float *data, int w, int h, int n_pixels,
+				  int *pidx, int *radius, char *mask,
+				  float *rthreshold, float *lthreshold,
+				  float *roffset, float *rsigma, int *rcount)
+{
+	int i;
+
+	int curr_r;
+	float value;
+
+	for (i = 0; i < n_pixels; i++)
+	{
+		if (mask[pidx[i]] != 0)
+		{
+			curr_r = radius[i];
+			value = data[pidx[i]];
+			if (value < rthreshold[curr_r] && value > lthreshold[curr_r])
+			{
+				roffset[curr_r] += value;
+				rsigma[curr_r] += (value * value);
+				rcount[curr_r] += 1;
+			}
+		}
+	}
+}
 
 static void compute_radial_stats(float *rthreshold,
                                  float *lthreshold,
@@ -1021,9 +1238,13 @@ int peakfinder8(struct image *img, int max_n_peaks,
                 float threshold, float min_snr,
                 int min_pix_count, int max_pix_count,
                 int local_bg_radius, int min_res,
-                int max_res, int use_saturated)
+                int max_res, int use_saturated,
+                int fast_mode, struct pf8_private_data *private_data)
 {
+	struct pf8_private_data *geomdata;
 	struct radius_maps *rmaps;
+	struct radial_stats_pixels *rspixels;
+
 	struct peakfinder_mask *pfmask;
 	struct peakfinder_panel_data *pfdata;
 	struct radial_stats *rstats;
@@ -1040,18 +1261,28 @@ int peakfinder8(struct image *img, int max_n_peaks,
 
 	if ( img->detgeom == NULL) return 1;
 
-	rmaps = compute_radius_maps(img->detgeom);
-	if ( rmaps == NULL ) return 1;
+	profile_start("pf8-rmaps");
+	if ( private_data == NULL ) {
+		geomdata = prepare_peakfinder8(img->detgeom, fast_mode);
+	} else {
+		geomdata = private_data;
+	}
+	rmaps = geomdata->rmaps;
+	rspixels = geomdata->rpixels;
+	profile_end("pf8-rmaps");
+	if (geomdata == NULL) return 1;
 
+	profile_start("pf8-mask");
 	pfmask = create_peakfinder_mask(img, rmaps, min_res, max_res);
+	profile_end("pf8-mask");
 	if ( pfmask == NULL ) {
-		free_radius_maps(rmaps);
+		if ( private_data == NULL ) free_pf8_private_data(geomdata);
 		return 1;
 	}
 
 	pfdata = allocate_panel_data(img->detgeom->n_panels);
 	if ( pfdata == NULL) {
-		free_radius_maps(rmaps);
+		if ( private_data == NULL ) free_pf8_private_data(geomdata);
 		free_peakfinder_mask(pfmask);
 		return 1;
 	}
@@ -1077,7 +1308,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 
 	rstats = allocate_radial_stats(num_rad_bins);
 	if ( rstats == NULL ) {
-		free_radius_maps(rmaps);
+		if ( private_data == NULL ) free_pf8_private_data(geomdata);
 		free_peakfinder_mask(pfmask);
 		free_panel_data(pfdata);
 		return 1;
@@ -1087,7 +1318,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		rstats->rthreshold[i] = 1e9;
 		rstats->lthreshold[i] = -1e9;
 	}
-
+	profile_start("pf8-rstats");
 	for ( it_counter=0 ; it_counter<iterations ; it_counter++ ) {
 
 		for ( i=0; i<num_rad_bins; i++ ) {
@@ -1097,18 +1328,31 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		}
 
 		for ( pi=0 ; pi<pfdata->num_panels ; pi++ ) {
-
-			fill_radial_bins(pfdata->panel_data[pi],
-			                 pfdata->panel_w[pi],
-			                 pfdata->panel_h[pi],
-			                 rmaps->r_maps[pi],
-			                 pfmask->masks[pi],
-			                 rstats->rthreshold,
-			                 rstats->lthreshold,
-			                 rstats->roffset,
-			                 rstats->rsigma,
-			                 rstats->rcount);
-
+			if ( fast_mode ) {
+				fill_radial_bins_fast(pfdata->panel_data[pi],
+						      pfdata->panel_w[pi],
+						      pfdata->panel_h[pi],
+						      rspixels->n_pixels[pi],
+						      rspixels->pidx[pi],
+						      rspixels->radius[pi],
+						      pfmask->masks[pi],
+						      rstats->rthreshold,
+						      rstats->lthreshold,
+						      rstats->roffset,
+						      rstats->rsigma,
+						      rstats->rcount);
+			} else {
+				fill_radial_bins(pfdata->panel_data[pi],
+						 pfdata->panel_w[pi],
+						 pfdata->panel_h[pi],
+						 rmaps->r_maps[pi],
+						 pfmask->masks[pi],
+						 rstats->rthreshold,
+						 rstats->lthreshold,
+						 rstats->roffset,
+						 rstats->rsigma,
+						 rstats->rcount);
+			}
 		}
 
 		compute_radial_stats(rstats->rthreshold,
@@ -1121,10 +1365,11 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		                     threshold);
 
 	}
+	profile_end("pf8-rstats");
 
 	pkdata = allocate_peak_data(max_n_peaks);
 	if ( pkdata == NULL ) {
-		free_radius_maps(rmaps);
+		if ( private_data == NULL ) free_pf8_private_data(geomdata);
 		free_peakfinder_mask(pfmask);
 		free_panel_data(pfdata);
 		free_radial_stats(rstats);
@@ -1132,7 +1377,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	}
 
 	remaining_max_num_peaks = max_n_peaks;
-
+	profile_start("pf8-search");
 	for ( pi=0 ; pi<img->detgeom->n_panels ; pi++) {
 
 		int peaks_to_add;
@@ -1165,10 +1410,11 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		                       NULL);
 
 		if ( ret != 0 ) {
-			free_radius_maps(rmaps);
+			if ( private_data == NULL ) free_pf8_private_data(geomdata);
 			free_peakfinder_mask(pfmask);
 			free_panel_data(pfdata);
 			free_radial_stats(rstats);
+			profile_end("pf8-search");
 			return 1;
 		}
 
@@ -1199,8 +1445,9 @@ int peakfinder8(struct image *img, int max_n_peaks,
 			                  NULL);
 		}
 	}
+	profile_end("pf8-search");
 
-	free_radius_maps(rmaps);
+	if ( private_data == NULL ) free_pf8_private_data(geomdata);
 	free_peakfinder_mask(pfmask);
 	free_panel_data(pfdata);
 	free_radial_stats(rstats);
