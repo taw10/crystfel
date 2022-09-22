@@ -1853,8 +1853,108 @@ static int im_get_length(struct image *image, const char *from,
 }
 
 
+static int all_panels_reference_same_clen(const DataTemplate *dtempl)
+{
+	int i;
+	char *first_val = NULL;
+	char *first_units = NULL;
+	int fail = 0;
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		struct panel_template *p = &dtempl->panels[i];
+		char *val;
+		char *units;
+		if ( separate_value_and_units(p->cnz_from, &val, &units) ) {
+			/* Parse error */
+			return 0;
+		}
+		if ( i == 0 ) {
+			first_val = val;
+			first_units = units;
+		} else {
+			if ( strcmp(val, first_val) != 0 ) fail = 1;
+			if ( strcmp(units, first_units) != 0 ) fail = 1;
+			free(val);
+			free(units);
+		}
+	}
+
+	free(first_val);
+	free(first_units);
+	return fail;
+}
+
+
+static int all_coffsets_small(const DataTemplate *dtempl)
+{
+	int i;
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		struct panel_template *p = &dtempl->panels[i];
+		if ( p->cnz_offset > 10.0*p->pixel_pitch ) return 0;
+	}
+
+	return 1;
+}
+
+
+static int all_panels_same_clen(const DataTemplate *dtempl)
+{
+	int i;
+	double *zvals;
+	double total = 0.0;
+	double mean;
+
+	zvals = malloc(sizeof(double)*dtempl->n_panels);
+	if ( zvals == NULL ) return 0;
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		struct panel_template *p = &dtempl->panels[i];
+		if ( im_get_length(NULL, p->cnz_from, 1e-3, &zvals[i]) ) {
+			/* Can't get length because it used a header reference */
+			free(zvals);
+			return 0;
+		}
+		total += zvals[i];
+	}
+
+	mean = total/dtempl->n_panels;
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		struct panel_template *p = &dtempl->panels[i];
+		if ( fabs(zvals[i] - mean) > 10.0*p->pixel_pitch ) return 0;
+	}
+
+	free(zvals);
+
+	return 1;
+}
+
+
+static int all_panels_perpendicular_to_beam(const DataTemplate *dtempl)
+{
+	int i;
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		double z_diff;
+		struct panel_template *p = &dtempl->panels[i];
+		z_diff = p->fsz*PANEL_WIDTH(p) + p->ssz*PANEL_HEIGHT(p);
+		if ( z_diff > 10.0*p->pixel_pitch ) return 0;
+	}
+	return 1;
+}
+
+
+static int detector_flat(const DataTemplate *dtempl)
+{
+	return all_panels_perpendicular_to_beam(dtempl)
+	    && ( (all_panels_reference_same_clen(dtempl) && all_coffsets_small(dtempl))
+	          || all_panels_same_clen(dtempl) );
+}
+
+
 struct detgeom *create_detgeom(struct image *image,
-                               const DataTemplate *dtempl)
+                               const DataTemplate *dtempl,
+                               int two_d_only)
 {
 	struct detgeom *detgeom;
 	int i;
@@ -1875,6 +1975,12 @@ struct detgeom *create_detgeom(struct image *image,
 
 	detgeom->n_panels = dtempl->n_panels;
 
+	if ( two_d_only ) {
+		if ( !detector_flat(dtempl) ) return NULL;
+		if ( dtempl->shift_x_from != NULL ) return NULL;
+		if ( dtempl->shift_y_from != NULL ) return NULL;
+	}
+
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
 		struct detgeom_panel *p = &detgeom->panels[i];
@@ -1888,10 +1994,15 @@ struct detgeom *create_detgeom(struct image *image,
 		/* NB cnx,cny are in pixels, cnz is in m */
 		p->cnx = tmpl->cnx;
 		p->cny = tmpl->cny;
+
 		if ( im_get_length(image, tmpl->cnz_from, 1e-3, &p->cnz) )
 		{
-			ERROR("Failed to read length from '%s'\n", tmpl->cnz_from);
-			return NULL;
+			if ( two_d_only ) {
+				p->cnz = NAN;
+			} else {
+				ERROR("Failed to read length from '%s'\n", tmpl->cnz_from);
+				return NULL;
+			}
 		}
 
 		/* Apply offset (in m) and then convert cnz from
@@ -1959,4 +2070,21 @@ struct detgeom *create_detgeom(struct image *image,
 	return detgeom;
 }
 
+
+/**
+ * Create a detgeom structure from the DataTemplate, if possible, and ignoring
+ * 3D information.
+ *
+ * This procedure will create a detgeom structure provided that the detector
+ *  is close to lying in a single flat plane perpendicular to the beam
+ *  direction.  If certain things (e.g. panel z-positions) refer to headers,
+ *  it might not be possible to determine that the detector is really flat
+ *  until an image is loaded.  Therefore you must gracefully handle a NULL
+ *  return value from this routine.
+ *
+ * \returns the detgeom structure, or NULL if impossible.
+ */
+struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTemplate *dt)
+{
+	return create_detgeom(NULL, dt, 1);
 }

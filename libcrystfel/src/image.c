@@ -412,11 +412,6 @@ static struct header_cache_entry *cached_header(struct image *image, const char 
 {
 	struct header_cache_entry *ce;
 
-	if ( image == NULL ) {
-		ERROR("Attempt to retrieve a header value without an image\n");
-		return NULL;
-	}
-
 	ce = find_cache_entry(image, from);
 	if ( ce != NULL ) return ce;
 
@@ -433,6 +428,8 @@ static struct header_cache_entry *cached_header(struct image *image, const char 
 int image_read_header_float(struct image *image, const char *from, double *val)
 {
 	struct header_cache_entry *ce;
+
+	if ( image == NULL ) return 1;
 
 	ce = cached_header(image, from);
 	if ( ce == NULL ) return 1;
@@ -1074,7 +1071,7 @@ struct image *image_create_for_simulation(const DataTemplate *dtempl)
 		return NULL;
 	}
 
-	image->detgeom = create_detgeom(image, dtempl);
+	image->detgeom = create_detgeom(image, dtempl, 0);
 	if ( image->detgeom == NULL ) {
 		image_free(image);
 		return NULL;
@@ -1126,7 +1123,7 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
 	}
 
 	profile_start("create-detgeom");
-	image->detgeom = create_detgeom(image, dtempl);
+	image->detgeom = create_detgeom(image, dtempl, 0);
 	profile_end("create-detgeom");
 	if ( image->detgeom == NULL ) {
 		ERROR("Failed to read geometry information\n");
