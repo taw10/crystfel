@@ -1853,6 +1853,14 @@ static int im_get_length(struct image *image, const char *from,
 }
 
 
+static int safe_strcmp(const char *a, const char *b)
+{
+	if ( (a==NULL) && (b==NULL) ) return 0;
+	if ( (a!=NULL) && (b!=NULL) ) return strcmp(a, b);
+	return 1;
+}
+
+
 static int all_panels_reference_same_clen(const DataTemplate *dtempl)
 {
 	int i;
@@ -1872,8 +1880,8 @@ static int all_panels_reference_same_clen(const DataTemplate *dtempl)
 			first_val = val;
 			first_units = units;
 		} else {
-			if ( strcmp(val, first_val) != 0 ) fail = 1;
-			if ( strcmp(units, first_units) != 0 ) fail = 1;
+			if ( safe_strcmp(val, first_val) != 0 ) fail = 1;
+			if ( safe_strcmp(units, first_units) != 0 ) fail = 1;
 			free(val);
 			free(units);
 		}
