@@ -146,10 +146,18 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 	int n_pixels_per_bin = 100; // Can make this a parameter
 
 	// Assuming 5000 is the maximum possible radius
-	int n_pixels[5000] = {0}; // selected pixels per bin
-	int n_tot_pixels[5000] = {0}; // total pixels per bin
-	int panel[5000][n_pixels_per_bin]; // panel ID of selected pixels
-	int idx[5000][n_pixels_per_bin]; // index of selected pixels
+	int n_bins = 5000;
+	int *n_pixels = (int *)malloc(n_bins * sizeof(int)); // selected pixels per bin
+	int *n_tot_pixels = (int *)malloc(n_bins * sizeof(int));; // total pixels per bin
+	int **panel = (int **)malloc(n_bins * sizeof(int *)); // panel ID of selected pixels
+	int **idx = (int **)malloc(n_bins * sizeof(int *)); // index of selected pixels
+
+	for ( i = 0; i < n_bins; i++ ) {
+		n_pixels[i] = 0;
+		n_tot_pixels[i] = 0;
+		panel[i] = (int *)malloc(n_pixels_per_bin * sizeof(int));
+		idx[i] = (int *)malloc(n_pixels_per_bin * sizeof(int));
+	}
 	int radius;
 
 	for ( p = 0; p < rmaps->n_rmaps; p++ ) {
@@ -217,7 +225,7 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 		sidx[p] = 0;
 	}
 
-	for ( radius = 0; radius < 5000; radius++ ) {
+	for ( radius = 0; radius < n_bins; radius++ ) {
 		for ( i = 0; i < n_pixels[radius]; i++ ) {
 			p = panel[radius][i];
 			rsp->pidx[p][sidx[p]] = idx[radius][i];
@@ -226,6 +234,14 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 		}
 	}
 	free(sidx);
+	for ( i = 0; i < n_bins; i++ ) {
+		free(panel[i]);
+		free(idx[i]);
+	}
+	free(panel);
+	free(idx);
+	free(n_pixels);
+	free(n_tot_pixels);
 
 	rsp->n_panels = rmaps->n_rmaps;
 	return rsp;
