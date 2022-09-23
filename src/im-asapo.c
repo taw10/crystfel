@@ -58,8 +58,15 @@ struct im_asapo
 static void show_asapo_error(const char *msg, const AsapoErrorHandle err)
 {
 	char buf[1024];
+	char tstr[256];
+	time_t t;
+	struct tm *tmp;
+
+	t = time(NULL);
+	tmp = localtime(&t);
 	asapo_error_explain(err, buf, sizeof(buf));
-	ERROR("%s: %s\n", msg, buf);
+	strftime(tstr, 256, "%d-%m-%y %T %z", tmp);
+	ERROR("[%s] %s: %s\n", tstr, msg, buf);
 }
 
 
