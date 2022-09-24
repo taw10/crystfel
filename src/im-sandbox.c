@@ -68,7 +68,7 @@
 struct sandbox
 {
 	int n_processed_last_stats;
-	time_t t_last_stats;
+	double t_last_stats;
 
 	/* Processing timeout in seconds.  After this long without responding
 	 * to a ping, the worker will be killed.  After 3 times this long
@@ -123,11 +123,11 @@ struct get_pattern_ctx
 
 #ifdef HAVE_CLOCK_GETTIME
 
-static time_t get_monotonic_seconds()
+static double get_monotonic_seconds()
 {
 	struct timespec tp;
 	clock_gettime(CLOCK_MONOTONIC, &tp);
-	return tp.tv_sec;
+	return tp.tv_sec + tp.tv_nsec * 1e-9;
 }
 
 #else
@@ -135,11 +135,11 @@ static time_t get_monotonic_seconds()
 /* Fallback version of the above.  The time according to gettimeofday() is not
  * monotonic, so measuring intervals based on it will screw up if there's a
  * timezone change (e.g. daylight savings) while the program is running. */
-static time_t get_monotonic_seconds()
+static double get_monotonic_seconds()
 {
 	struct timeval tp;
 	gettimeofday(&tp, NULL);
-	return tp.tv_sec;
+	return tp.tv_sec + tp.tv_usec * 1e-6;
 }
 
 #endif
@@ -981,8 +981,8 @@ static void try_status(struct sandbox *sb, int final)
 {
 	int r;
 	int n_proc_this;
-	time_t tNow;
-	time_t time_this;
+	double tNow;
+	double time_this;
 	const char *finalstr;
 	char persec[64];
 
