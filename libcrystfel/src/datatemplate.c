@@ -2051,8 +2051,13 @@ struct detgeom *create_detgeom(struct image *image,
 			break;
 
 			case ADU_PER_EV:
-			p->adu_per_photon = tmpl->adu_scale
-				* ph_lambda_to_eV(image->lambda);
+			if ( image == NULL ) {
+				p->adu_per_photon = NAN;
+				ERROR("Cannot use adu_per_eV without image\n");
+			} else {
+				p->adu_per_photon = tmpl->adu_scale
+					* ph_lambda_to_eV(image->lambda);
+			}
 			break;
 
 			default:
