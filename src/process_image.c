@@ -322,7 +322,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->local_bg_radius,
 		                              iargs->min_res,
 		                              iargs->max_res,
-		                              iargs->use_saturated) ) {
+		                              iargs->use_saturated,
+					      iargs->peakfinder8_fast,
+					      iargs->pf_private) ) {
 			ERROR("Failed to find peaks in image %s"
 			      "(event %s).\n",
 			      image->filename, image->ev);

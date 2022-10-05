@@ -81,6 +81,8 @@ struct index_args
 	float min_snr_peak_pix;
 	float min_sig;
 	float min_peak_over_neighbour;
+	int peakfinder8_fast;
+	void *pf_private;
 
 	/* Hit finding */
 	int min_peaks;

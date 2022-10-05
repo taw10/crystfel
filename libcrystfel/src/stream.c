@@ -49,6 +49,7 @@
 #include "reflist.h"
 #include "reflist-utils.h"
 #include "datatemplate.h"
+#include "datatemplate_priv.h"
 #include "detgeom.h"
 #include "libcrystfel-version.h"
 
@@ -896,7 +897,8 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 			if ( have_filename && have_ev ) {
 				/* Success */
 				if ( srf & STREAM_DATA_DETGEOM ) {
-					if ( create_detgeom(image, st->dtempl_read) ) {
+					image->detgeom = create_detgeom(image, st->dtempl_read, 0);
+					if ( image->detgeom == NULL ) {
 						image_free(image);
 						return NULL;
 					}

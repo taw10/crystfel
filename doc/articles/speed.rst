@@ -132,3 +132,13 @@ you limit the resolution at the integration stage, the number of reflections to
 be integrated will be much smaller, which can lead to a significant speed
 improvement.  However, the ``--push-res`` value that you use for merging must
 be smaller than the value used for integration.
+
+
+Use a static detector geometry
+==============================
+
+CrystFEL geometry files allow some aspects of the geometry to come from the
+data files, such as the panel z-positions ("clen"/camera length) and overall
+detector shifts.  If you can instead give fixed numerical values for
+everything, then some parts of CrystFEL can prepare calculations in advance.
+In some cases, this can make a significant speed improvement.

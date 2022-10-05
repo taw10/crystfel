@@ -454,10 +454,11 @@ void search_peaks(struct image *image, float threshold, float min_sq_gradient,
  * the actual \ref peakfinder8 function, found in \ref peakfinder8.h.
  */
 int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
-                              float threshold, float min_snr,
-                              int min_pix_count, int max_pix_count,
-                              int local_bg_radius, int min_res,
-                              int max_res, int use_saturated)
+                             float threshold, float min_snr,
+                             int min_pix_count, int max_pix_count,
+                             int local_bg_radius, int min_res,
+                             int max_res, int use_saturated,
+                             int fast_mode, void *private_data)
 {
 	if ( image->features != NULL ) {
 		image_feature_list_free(image->features);
@@ -467,7 +468,8 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
 	return peakfinder8(image, max_n_peaks, threshold, min_snr,
 	                   min_pix_count, max_pix_count,
 	                   local_bg_radius, min_res,
-	                   max_res, use_saturated);
+	                   max_res, use_saturated,
+			   fast_mode, private_data);
 }
 
 
