@@ -206,15 +206,6 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 	*pevent = strdup("//");
 	profile_end("copy-meta");
 
-	struct timespec timestamp;
-	struct timespec timenow;
-	asapo_message_meta_get_timestamp(meta, &timestamp);
-	clock_gettime(CLOCK_REALTIME, &timenow);
-	double tnow_s = timenow.tv_sec + 1e-9*timenow.tv_nsec;
-	double tsnd_s = timestamp.tv_sec + 1e-9*timestamp.tv_nsec;
-	double tlag = tnow_s - tsnd_s;
-	STATUS("ASAP::O lag = %.1f s\n", tlag);
-
 	asapo_free_handle(&err);
 	asapo_free_handle(&meta);
 	asapo_free_handle(&data);
