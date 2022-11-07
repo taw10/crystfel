@@ -69,6 +69,7 @@ struct sb_shm
 	char last_ev[MAX_NUM_WORKERS][MAX_EV_LEN];
 	char last_task[MAX_NUM_WORKERS][MAX_TASK_LEN];
 	int pings[MAX_NUM_WORKERS];
+	int end_of_stream[MAX_NUM_WORKERS];
 	time_t time_last_start[MAX_NUM_WORKERS];
 	int warned_long_running[MAX_NUM_WORKERS];
 
