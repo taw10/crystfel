@@ -359,17 +359,25 @@ static void wilson_plot(RefList *list, UnitCell *cell, const SymOpList *sym,
 			double *s2fit;
 			double *lnifit;
 			int nbfit = 0;
+			int ndisc = 0;
 			s2fit = malloc(nbins*sizeof(double));
 			lnifit = malloc(nbins*sizeof(double));
 			if ( (s2fit==NULL) || (lnifit==NULL) ) return;
 			for ( i=0; i<nbins-bs; i++ ) {
-				if ( isnan(plot_i[bs+i]) ) continue;
-				s2fit[i] = s2[bs+i];
-				lnifit[i] = plot_i[bs+i];
+				if ( isnan(plot_i[bs+i]) ) {
+					ndisc++;
+					continue;
+				}
+				s2fit[nbfit] = s2[bs+i];
+				lnifit[nbfit] = plot_i[bs+i];
 				nbfit++;
 			}
+			if ( ndisc > 0 ) {
+				ERROR("%i bins contained invalid values "
+				"and were ignored.\n", ndisc);
+			}
 			if ( nbfit < 3 ) {
-				ERROR("Too many bits had invalid values.\n");
+				ERROR("Not enough bins left.\n");
 				return;
 			}
 			gsl_fit_linear(s2fit, 1, lnifit, 1, nbfit,
