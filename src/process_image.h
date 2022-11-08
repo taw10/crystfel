@@ -108,6 +108,7 @@ struct index_args
 	float fix_profile_r;
 	float fix_divergence;
 	int overpredict;
+	int cell_params_only;
 
 	/* Output */
 	int stream_flags;

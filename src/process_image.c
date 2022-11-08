@@ -448,16 +448,18 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	/* Integrate! */
-	set_last_task(last_task, "integration");
-	profile_start("integration");
-	sb_shared->pings[cookie]++;
-	integrate_all_5(image, iargs->int_meth, PMODEL_XSPHERE,
-	                iargs->push_res,
-	                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
-	                iargs->int_diag, iargs->int_diag_h,
-	                iargs->int_diag_k, iargs->int_diag_l,
-	                &sb_shared->term_lock, iargs->overpredict);
-	profile_end("integration");
+	if ( !iargs->cell_params_only ) {
+		set_last_task(last_task, "integration");
+		profile_start("integration");
+		sb_shared->pings[cookie]++;
+		integrate_all_5(image, iargs->int_meth, PMODEL_XSPHERE,
+		                iargs->push_res,
+		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
+		                iargs->int_diag, iargs->int_diag_h,
+		                iargs->int_diag_k, iargs->int_diag_l,
+		                &sb_shared->term_lock, iargs->overpredict);
+		profile_end("integration");
+	}
 
 streamwrite:
 	set_last_task(last_task, "stream write");

@@ -3,7 +3,7 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2022 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
@@ -260,7 +260,8 @@ static void write_harvest_file(struct index_args *args,
 		write_float(fh, 1, "push_res_invm", args->push_res);
 		write_float(fh, 1, "fix_profile_radius_invm", nan_if_neg(args->fix_profile_r));
 		write_float(fh, 1, "fix_divergence_rad", nan_if_neg(args->fix_divergence));
-		write_bool(fh, 0, "overpredict", args->overpredict);
+		write_bool(fh, 1, "overpredict", args->overpredict);
+		write_bool(fh, 0, "cell_parameters_only", args->cell_params_only);
 		fprintf(fh, "  }\n"); /* NB No comma */
 	}
 
@@ -795,6 +796,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->iargs.overpredict = 1;
 		break;
 
+		case 509 :
+		args->iargs.cell_params_only = 1;
+		break;
+
 		/* ---------- Output ---------- */
 
 		case 601 :
@@ -931,6 +936,7 @@ int main(int argc, char *argv[])
 	args.iargs.int_diag = INTDIAG_NONE;
 	args.iargs.min_peaks = 0;
 	args.iargs.overpredict = 0;
+	args.iargs.cell_params_only = 0;
 	args.iargs.wait_for_file = 0;
 	args.iargs.ipriv = NULL;  /* No default */
 	args.iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
@@ -1074,6 +1080,7 @@ int main(int argc, char *argv[])
 		{"int-diag", 506, "condition", 0, "Show debugging information about reflections"},
 		{"push-res", 507, "dist", 0, "Integrate higher than apparent resolution cutoff (m^-1)"},
 		{"overpredict", 508, NULL, 0, "Over-predict reflections"},
+		{"cell-parameters-only", 509, NULL, 0, "Don't predict reflections at all"},
 
 		{NULL, 0, 0, OPTION_DOC, "Output options:", 6},
 		{"no-non-hits-in-stream", 601, NULL, OPTION_NO_USAGE, "Don't include non-hits in "

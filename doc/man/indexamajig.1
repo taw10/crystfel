@@ -1,7 +1,7 @@
 .\"
 .\" indexamajig man page
 .\"
-.\" Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2022 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -545,6 +545,11 @@ Integrate \fIn\fR nm^-1 higher than the apparent resolution limit of each indivi
 .IP \fB--overpredict\fR
 .PD
 Over-predict reflections.  This is needed to provide a buffer zone when using post-refinement, but makes it difficult to judge the accuracy of the predictions because there are so many reflections.  It will also reduce the quality of the merged data if you merge without partiality estimation.
+
+.PD 0
+.IP \fB--cell-parameters-only\fR
+.PD
+Do not predict reflections at all.  Use this option if you're not at all interested in the integrated reflection intensities or even the positions of the reflections.  You will still get unit cell parameters, and the process will be much faster, especially for large unit cells.
 
 .SH OUTPUT OPTIONS
 
