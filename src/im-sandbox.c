@@ -37,6 +37,12 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SCHED_SETAFFINITY
+#define _GNU_SOURCE
+#include <sys/sysinfo.h>
+#include <sched.h>
+#endif
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -85,6 +91,7 @@ struct sandbox
 	time_t *last_response;
 	int last_ping[MAX_NUM_WORKERS];
 	int profile;  /* Whether to do wall-clock time profiling */
+	int cpu_pin;
 
 	/* Streams to read from (NB not the same indices as the above) */
 	int n_read;
@@ -678,6 +685,20 @@ static void try_read(struct sandbox *sb)
 }
 
 
+static void pin_to_cpu(int slot)
+{
+	#ifdef HAVE_SCHED_SETAFFINITY
+	cpu_set_t c;
+
+	CPU_ZERO(&c);
+	CPU_SET(slot, &c);
+	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
+		fprintf(stderr, "Failed to set CPU affinity for %i\n", slot);
+	}
+	#endif
+}
+
+
 static void start_worker_process(struct sandbox *sb, int slot)
 {
 	pid_t p;
@@ -711,6 +732,8 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		struct stat s;
 		size_t ll;
 		int i;
+
+		if ( sb->cpu_pin ) pin_to_cpu(slot);
 
 	        /* First, disconnect the signal handlers */
 	        sa.sa_flags = 0;
@@ -1139,7 +1162,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    Stream *stream, const char *tmpdir, int serial_start,
                    struct im_zmq_params *zmq_params,
                    struct im_asapo_params *asapo_params,
-                   int timeout, int profile)
+                   int timeout, int profile, int cpu_pin)
 {
 	int i;
 	struct sandbox *sb;
@@ -1148,12 +1171,31 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	int r;
 	int allDone = 0;
 	struct get_pattern_ctx gpctx;
+	int n_cpus;
 
 	if ( n_proc > MAX_NUM_WORKERS ) {
 		ERROR("Number of workers (%i) is too large.  Using %i\n",
 		      n_proc, MAX_NUM_WORKERS);
 		n_proc = MAX_NUM_WORKERS;
 	}
+
+	#ifdef HAVE_SCHED_SETAFFINITY
+	n_cpus = get_nprocs();
+	if ( n_proc > n_cpus ) {
+		ERROR("WARNING: Number of workers (%i) is larger than the "
+		      "number of available CPUs (%i)\n", n_proc, n_cpus);
+		if ( cpu_pin ) {
+			ERROR("Try again with a smaller number of workers (-j) "
+			      "or without --cpu-pin\n");
+			return 1;
+		}
+	}
+	#else
+	if ( cpu_pin ) {
+		ERROR("Option --cpu-pin not available on this system.");
+		return 1;
+	}
+	#endif
 
 	sb = calloc(1, sizeof(struct sandbox));
 	if ( sb == NULL ) {
@@ -1169,6 +1211,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->tmpdir = tmpdir;
 	sb->profile = profile;
 	sb->timeout = timeout;
+	sb->cpu_pin = cpu_pin;
 
 	if ( zmq_params->addr != NULL ) {
 		sb->zmq_params = zmq_params;

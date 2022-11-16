@@ -227,6 +227,11 @@ Run \fIn\fR analyses in parallel.  Default: 1.  See also \fB--max-indexer-thread
 Tip: use \fB-j `nproc`\fR (note the backticks) to use as many processes as there are available CPUs.
 
 .PD 0
+.IP \fB--cpu-pin
+.PD
+Pin worker processes to CPUs.  Usually this is not needed or desirable, but in some cases it dramatically improves performance.
+
+.PD 0
 .IP \fB--no-check-prefix\fR
 .PD
 Don't attempt to correct the prefix (see \fB--prefix\fR) if it doesn't look correct.

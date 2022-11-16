@@ -62,6 +62,12 @@ if cc.has_function('clock_gettime', prefix: '#include <time.h>')
   conf_data.set10('HAVE_CLOCK_GETTIME', true)
 endif
 
+if cc.has_function('sched_setaffinity',
+                   prefix: '#include <sched.h>',
+                   args: '-D_GNU_SOURCE')
+  conf_data.set10('HAVE_SCHED_SETAFFINITY', true)
+endif
+
 # ************************ libcrystfel (subdir) ************************
 
 subdir('libcrystfel')

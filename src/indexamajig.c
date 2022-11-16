@@ -9,7 +9,7 @@
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2021 Thomas White <taw@physics.org>
+ *   2010-2022 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -97,6 +97,7 @@ struct indexamajig_arguments
 	char **copy_headers;
 	int n_copy_headers;
 	char *harvest_file;
+	int cpu_pin;
 
 	struct taketwo_options **taketwo_opts_ptr;
 	struct felix_options **felix_opts_ptr;
@@ -443,6 +444,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 		case 221 :
 		args->asapo_params.wait_for_stream = 1;
+		break;
+
+		case 222 :
+		args->cpu_pin = 1;
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -879,6 +884,7 @@ int main(int argc, char *argv[])
 	args.asapo_params.source = NULL;
 	args.asapo_params.stream = NULL;
 	args.asapo_params.wait_for_stream = 0;
+	args.cpu_pin = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
 	args.if_multi = 0;
@@ -1000,6 +1006,7 @@ int main(int argc, char *argv[])
 		{"asapo-stream", 220, "str", OPTION_NO_USAGE, "ASAP::O stream name"},
 		{"asapo-wait-for-stream", 221, NULL, OPTION_NO_USAGE,
 		        "Wait for ASAP::O stream to appear"},
+		{"cpu-pin", 222, NULL, OPTION_NO_USAGE, "Pin worker processes to CPUs"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
@@ -1394,7 +1401,7 @@ int main(int argc, char *argv[])
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
 	                   fh, st, tmpdir, args.serial_start,
 	                   &args.zmq_params, &args.asapo_params,
-	                   timeout, args.profile);
+	                   timeout, args.profile, args.cpu_pin);
 
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
 	if ( detgeom != NULL) detgeom_free(detgeom);
