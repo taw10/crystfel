@@ -1,13 +1,13 @@
 [wrap-file]
-directory = libccp4-6.5.1
-source_url = http://ftp.ccp4.ac.uk/opensource/libccp4-6.5.1.tar.gz
-source_fallback_url = https://www.desy.de/~twhite/crystfel/libccp4-6.5.1.tar.gz
-source_filename = libccp4-6.5.1.tar.gz
-source_hash = 280b473d950cdf8837ef66147ec581104298b892399bd856f13b096f2395dbe5
-patch_filename = libccp4c_6.5.1-2_patch.zip
-patch_url = https://wrapdb.mesonbuild.com/v2/libccp4c_6.5.1-2/get_patch
-patch_hash = c1d2212e2b50fa79f2c6985513dd4a4e7feaa0dd368690df6f0bea3928f3f0bc
+directory = libccp4-8.0.0
+source_url = http://ftp.ccp4.ac.uk/opensource/libccp4-8.0.0.tar.gz
+source_fallback_url = https://www.desy.de/~twhite/crystfel/libccp4-8.0.0.tar.gz
+source_filename = libccp4-8.0.0.tar.gz
+source_hash = cb813ae86612a0866329deab7cee96eac573d81be5b240341d40f9ad5322ff2d
+patch_filename = libccp4c_8.0.0-1_patch.zip
+patch_url = https://wrapdb.mesonbuild.com/v2/libccp4c_8.0.0-1/get_patch
+patch_hash = 80386ead4709ab24102fd5e32eb535f1aa8debbdd98a7769df1bc3ae79a43644
+wrapdb_version = 8.0.0-1
 
 [provide]
 libccp4c = libccp4c_dep
-
