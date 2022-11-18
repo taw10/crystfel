@@ -409,7 +409,7 @@ static void import_file_list(struct finddata_ctx *ctx)
 	do {
 
 		char line[1024];
-		char *event = "//";
+		char *event = NULL;
 		size_t n;
 
 		if ( fgets(line, 1024, fh) == NULL ) break;
