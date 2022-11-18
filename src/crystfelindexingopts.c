@@ -876,9 +876,13 @@ char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *op
 			strcat(indm_str, name);
 			if ( prior_cell ) {
 				strcat(indm_str, "-cell");
+			} else {
+				strcat(indm_str, "-nocell");
 			}
 			if ( prior_latt ) {
 				strcat(indm_str, "-latt");
+			} else {
+				strcat(indm_str, "-nolatt");
 			}
 		}
 
