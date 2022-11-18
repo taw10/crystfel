@@ -98,6 +98,17 @@ double rtnl_as_double(Rational r)
 }
 
 
+int rtnl_as_int(Rational r, int *err)
+{
+	if ( r.den != 1 ) {
+		*err = 1;
+		return 0;
+	}
+	*err = 0;
+	return r.num;
+}
+
+
 static void overflow(long long int c, long long int a, long long int b)
 {
 	setlocale(LC_ALL, "");

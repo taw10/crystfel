@@ -3,7 +3,7 @@
  *
  * Resolve indexing ambiguities
  *
- * Copyright © 2014-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2014-2022 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2014 Wolfgang Brehm
  *
@@ -101,9 +101,28 @@ struct flist
 };
 
 
+void rtnl_equiv(const RationalMatrix *P,
+                signed int h, signed int k, signed int l,
+                signed int *he, signed int *ke, signed int *le)
+{
+	Rational v[3];
+	Rational ans[3];
+	int err1, err2, err3;
+	v[0] = rtnl(h, 1);  v[1] = rtnl(k, 1);  v[2] = rtnl(l, 1);
+	transform_fractional_coords_rtnl(P, v, ans);
+	*he = rtnl_as_int(ans[0], &err1);
+	*ke = rtnl_as_int(ans[1], &err2);
+	*le = rtnl_as_int(ans[2], &err3);
+	if ( err1 || err2 || err3 ) {
+		ERROR("Ambiguity operation produced non-integer indices\n");
+		abort();
+	}
+}
+
+
 static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
                                      UnitCell *cell, double rmin, double rmax,
-                                     SymOpList *amb, int auto_res)
+                                     RationalMatrix *amb, int auto_res)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -149,7 +168,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			signed int hr, kr, lr;
 			signed int hra, kra, lra;
 
-			get_equiv(amb, NULL, 0, ha, ka, la, &hr, &kr, &lr);
+			rtnl_equiv(amb, ha, ka, la, &hr, &kr, &lr);
 			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
 
 			/* Skip twin-proof reflections */
@@ -231,7 +250,7 @@ static struct flist *asymm_and_merge(RefList *in, const SymOpList *sym,
 			Reflection *cr;
 
 			get_indices(refl, &h, &k, &l);
-			get_equiv(amb, NULL, 0, h, k, l, &hr, &kr, &lr);
+			rtnl_equiv(amb, h, k, l, &hr, &kr, &lr);
 			get_asymm(sym, hr, kr, lr, &hra, &kra, &lra);
 
 			cr = add_refl(reidx, hra, kra, lra);
@@ -397,7 +416,7 @@ struct ambigator_queue_args
 	struct flist **crystals;
 	int n_crystals;
 	int ncorr;
-	SymOpList *amb;
+	RationalMatrix *amb;
 	gsl_rng **rngs;
 };
 
@@ -413,7 +432,7 @@ struct cc_job
 	struct flist **crystals;
 	int n_crystals;
 	int ncorr;
-	SymOpList *amb;
+	RationalMatrix *amb;
 	gsl_rng **rngs;
 };
 
@@ -469,7 +488,7 @@ static void work(void *wp, int cookie)
 	struct flist **crystals = job->crystals;
 	int n_crystals = job->n_crystals;
 	int ncorr = job->ncorr;
-	SymOpList *amb = job->amb;
+	RationalMatrix *amb = job->amb;
 	int mean_nac = 0;
 	int nmean_nac = 0;
 	gsl_permutation *p;
@@ -571,7 +590,7 @@ static gsl_rng **setup_random(gsl_rng *rng, int n)
 
 
 static struct cc_list *calc_ccs(struct flist **crystals, int n_crystals,
-                                int ncorr, SymOpList *amb, gsl_rng *rng,
+                                int ncorr, RationalMatrix *amb, gsl_rng *rng,
                                 float *pmean_nac, int nthreads)
 {
 	struct cc_list *ccs;
@@ -694,7 +713,7 @@ static void detwin(struct cc_list *ccs, int n_crystals, int *assignments,
 
 
 static void reindex_reflections(FILE *fh, FILE *ofh, int assignment,
-                                SymOpList *amb)
+                                RationalMatrix *amb)
 {
 	int first = 1;
 
@@ -726,7 +745,7 @@ static void reindex_reflections(FILE *fh, FILE *ofh, int assignment,
 		if ( (r < 3) && !first ) return;
 
 		if ( assignment ) {
-			get_equiv(amb, NULL, 0, h, k, l, &h, &k, &l);
+			rtnl_equiv(amb, h, k, l, &h, &k, &l);
 		}
 
 		fprintf(ofh, "%4i %4i %4i%s", h, k, l, line+n);
@@ -738,7 +757,7 @@ static void reindex_reflections(FILE *fh, FILE *ofh, int assignment,
 /* This is nasty, but means the output includes absolutely everything in the
  * input, even stuff ignored by read_chunk() */
 static void write_reindexed_stream(const char *infile, const char *outfile,
-                                   int *assignments, SymOpList *amb,
+                                   int *assignments, RationalMatrix *amb,
                                    int argc, char *argv[])
 {
 	FILE *fh;
@@ -845,17 +864,17 @@ static void write_reindexed_stream(const char *infile, const char *outfile,
 				signed int h, k, l;
 				struct rvec na, nb, nc;
 
-				get_equiv(amb, NULL, 0, 1, 0, 0, &h, &k, &l);
+				rtnl_equiv(amb, 1, 0, 0, &h, &k, &l);
 				na.u = as.u*h + bs.u*k + cs.u*l;
 				na.v = as.v*h + bs.v*k + cs.v*l;
 				na.w = as.w*h + bs.w*k + cs.w*l;
 
-				get_equiv(amb, NULL, 0, 0, 1, 0, &h, &k, &l);
+				rtnl_equiv(amb, 0, 1, 0, &h, &k, &l);
 				nb.u = as.u*h + bs.u*k + cs.u*l;
 				nb.v = as.v*h + bs.v*k + cs.v*l;
 				nb.w = as.w*h + bs.w*k + cs.w*l;
 
-				get_equiv(amb, NULL, 0, 0, 0, 1, &h, &k, &l);
+				rtnl_equiv(amb, 0, 0, 1, &h, &k, &l);
 				nc.u = as.u*h + bs.u*k + cs.u*l;
 				nc.v = as.v*h + bs.v*k + cs.v*l;
 				nc.w = as.w*h + bs.w*k + cs.w*l;
@@ -1056,7 +1075,7 @@ int main(int argc, char *argv[])
 	SymOpList *s_sym;
 	char *w_sym_str = NULL;
 	SymOpList *w_sym;
-	SymOpList *amb;
+	RationalMatrix *amb;
 	int n_iter = 6;
 	int n_crystals, n_chunks, max_crystals;
 	int have_tty;
@@ -1223,30 +1242,19 @@ int main(int argc, char *argv[])
 		w_sym = NULL;
 		amb = NULL;
 	} else {
+		SymOpList *amb_sym;
 		pointgroup_warning(w_sym_str);
 		w_sym = get_pointgroup(w_sym_str);
 		free(w_sym_str);
 		if ( w_sym == NULL ) return 1;
-		amb = get_ambiguities(w_sym, s_sym);
-		if ( amb == NULL ) {
+		amb_sym = get_ambiguities(w_sym, s_sym);
+		if ( amb_sym == NULL ) {
 			ERROR("Couldn't find ambiguity operator.\n");
 			ERROR("Check that your values for -y and -w are "
 			      "correct.\n");
 			return 1;
 		}
-
-	}
-
-	if ( operator ) {
-		amb = parse_symmetry_operations(operator);
-		if ( amb == NULL ) return 1;
-		set_symmetry_name(amb, "Ambiguity");
-	}
-
-	if ( amb != NULL ) {
-		STATUS("Ambiguity operations:\n");
-		describe_symmetry(amb);
-		if ( num_equivs(amb, NULL) != 1 ) {
+		if ( num_equivs(amb_sym, NULL) != 1 ) {
 			ERROR("There must be only one ambiguity operator.\n");
 			if ( w_sym_str != NULL ) {
 				ERROR("Try again with a different value"
@@ -1254,6 +1262,17 @@ int main(int argc, char *argv[])
 			}
 			return 1;
 		}
+		amb = rtnl_mtx_from_intmat(get_symop(amb_sym, NULL, 0));
+	}
+
+	if ( operator ) {
+		amb = parse_symmetry_operation(operator);
+		if ( amb == NULL ) return 1;
+	}
+
+	if ( amb != NULL ) {
+		STATUS("Ambiguity operation:\n");
+		//describe_symmetry(amb);
 	}
 
 	if ( argc != (optind+1) ) {

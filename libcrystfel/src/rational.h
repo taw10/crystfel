@@ -63,6 +63,7 @@ extern "C" {
 extern Rational rtnl_zero(void);
 extern Rational rtnl(signed long long int num, signed long long int den);
 extern double rtnl_as_double(Rational r);
+extern int rtnl_as_int(Rational r, int *err);
 
 extern Rational rtnl_mul(Rational a, Rational b);
 extern Rational rtnl_div(Rational a, Rational b);
