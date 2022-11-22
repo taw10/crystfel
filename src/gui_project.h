@@ -274,6 +274,7 @@ struct crystfelproject {
 	GtkActionGroup *action_group;
 
 	GtkWidget *imageview;
+	GtkWidget *colscale;
 	GtkWidget *icons;      /* Drawing area for task icons */
 	GtkWidget *report;     /* Text view at the bottom for messages */
 	GtkWidget *main_vbox;

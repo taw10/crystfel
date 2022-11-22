@@ -48,7 +48,7 @@
 #include <cell-utils.h>
 
 #include "crystfelimageview.h"
-#include "crystfelimageview.h"
+#include "crystfelcolourscale.h"
 #include "crystfel_gui.h"
 #include "gui_import.h"
 #include "gui_peaksearch.h"
@@ -279,6 +279,9 @@ void update_imageview(struct crystfelproject *proj)
 	                                         proj->resolution_rings);
 	crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                              proj->cur_image);
+
+	crystfel_colour_scale_scan_image(CRYSTFEL_COLOUR_SCALE(proj->colscale),
+	                                 proj->cur_image);
 
 	gtk_widget_set_sensitive(proj->next_button,
 	                         !(proj->cur_frame == proj->n_frames-1));
@@ -1034,6 +1037,7 @@ int main(int argc, char *argv[])
 	GtkWidget *scroll;
 	GtkWidget *frame;
 	GtkWidget *main_vbox;
+	GtkWidget *iv_hbox;
 	GtkWidget *toolbar;
 	GtkWidget *results_toolbar;
 	GtkWidget *button;
@@ -1187,14 +1191,20 @@ int main(int argc, char *argv[])
 	proj.cur_frame = 0;
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
+
+	iv_hbox = gtk_hbox_new(FALSE, 0.0);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
 	                               GTK_POLICY_ALWAYS, GTK_POLICY_ALWAYS);
 	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(proj.imageview));
-	gtk_box_pack_start(GTK_BOX(main_vbox), scroll, TRUE, TRUE, 0.0);
+	gtk_box_pack_start(GTK_BOX(main_vbox), iv_hbox, TRUE, TRUE, 0.0);
+	gtk_box_pack_start(GTK_BOX(iv_hbox), scroll, TRUE, TRUE, 0.0);
 	gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(main_vbox));
 	gtk_paned_pack2(GTK_PANED(hpaned), GTK_WIDGET(frame), TRUE, TRUE);
 	proj.main_vbox = main_vbox;
+
+	proj.colscale = crystfel_colour_scale_new();
+	gtk_box_pack_start(GTK_BOX(iv_hbox), proj.colscale, FALSE, FALSE, 0.0);
 
 	/* Icon region at left */
 	proj.icons = gtk_vbox_new(FALSE, 0.0);

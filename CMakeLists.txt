@@ -420,7 +420,8 @@ if (GTK_FOUND)
     src/gui_project.c src/crystfelindexingopts.c src/crystfelmergeopts.c
     src/crystfelsymmetryselector.c src/gtk-util-routines.c src/gui_fom.c
     src/gui_export.c src/gui_ambi.c src/gui_import.c
-    src/gtkmultifilechooserbutton.c src/gui_backend_slurm.c)
+    src/gtkmultifilechooserbutton.c src/gui_backend_slurm.c
+    src/crystfelcolourscale.c)
 
   add_executable(crystfel ${CRYSTFEL_GUI_SOURCES}
                  ${CMAKE_CURRENT_BINARY_DIR}/version.c

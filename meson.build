@@ -209,6 +209,7 @@ if gtkdep.found()
                  'src/crystfelindexingopts.c',
                  'src/crystfelmergeopts.c',
                  'src/crystfelsymmetryselector.c',
+                 'src/crystfelcolourscale.c',
                  'src/gtk-util-routines.c',
                  'src/gui_import.c',
                  'src/gui_peaksearch.c',
