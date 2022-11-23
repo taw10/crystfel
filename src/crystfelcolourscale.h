@@ -54,6 +54,7 @@
 
 
 #define COLSCALE_N_BINS (256)
+#define COLSCALE_SAMPLE_SIZE (4096)
 
 struct _crystfelcolourscale
 {
@@ -62,8 +63,13 @@ struct _crystfelcolourscale
 	double               visible_height;
 	double               drag_start_x;
 	double               drag_start_y;
+	double               drag_min;
 
+	double               lo;
+	double               hi;
 	int                  bins[COLSCALE_N_BINS];
+	float               *sample;
+	int                  n_samples;
 };
 
 struct _crystfelcolourscaleclass
@@ -83,5 +89,7 @@ extern void crystfel_colour_scale_scan_image(CrystFELColourScale *cs,
 extern void crystfel_colour_scale_get_range(CrystFELColourScale *cs,
                                             double scale_min,
                                             double scale_max);
+
+extern void crystfel_colour_scale_auto_range(CrystFELColourScale *cs);
 
 #endif	/* CRYSTFELCOLOURSCALE_H */

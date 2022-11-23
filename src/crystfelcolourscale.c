@@ -44,15 +44,6 @@
 G_DEFINE_TYPE(CrystFELColourScale, crystfel_colour_scale,
               GTK_TYPE_DRAWING_AREA)
 
-static void redraw(CrystFELColourScale *cs)
-{
-	gint w, h;
-	w = gtk_widget_get_allocated_width(GTK_WIDGET(cs));
-	h = gtk_widget_get_allocated_height(GTK_WIDGET(cs));
-	gtk_widget_queue_draw_area(GTK_WIDGET(cs), 0, 0, w, h);
-}
-
-
 static gint destroy_sig(GtkWidget *window, CrystFELColourScale *cs)
 {
 	return FALSE;
@@ -70,18 +61,52 @@ static gint button_press_sig(GtkWidget *window, GdkEventButton *event,
 {
 	cs->drag_start_x = event->x;
 	cs->drag_start_y = event->y;
-	return FALSE;
+	cs->drag_min = cs->lo;
+	gtk_widget_grab_focus(GTK_WIDGET(cs));
+	return TRUE;
+}
+
+
+static void make_histogram(CrystFELColourScale *cs)
+{
+	int i;
+	int n_bins = COLSCALE_N_BINS;
+	float min = cs->lo;
+	float max = cs->hi;
+
+	for ( i=0; i<COLSCALE_N_BINS; i++ ) {
+		cs->bins[i] = 0;
+	}
+
+	for ( i=0; i<COLSCALE_SAMPLE_SIZE; i++ ) {
+		int bin;
+		double v = cs->sample[i];
+		bin = n_bins*(v-min)/(max-min);
+		if ( (bin >= 0) && (bin < n_bins) ) {
+			cs->bins[bin]++;
+		}
+	}
 }
 
 
 static gint motion_sig(GtkWidget *window, GdkEventMotion *event,
                        CrystFELColourScale *cs)
 {
-	double ddx, ddy;
-	ddx = event->x - cs->drag_start_x;
-	ddy = event->y - cs->drag_start_y;
-	/* FIXME: Do something */
-	redraw(cs);
+	double span = cs->hi - cs->lo;
+	//double ddx = event->x - cs->drag_start_x;
+	//double ddy = event->y - cs->drag_start_y;
+
+	cs->lo = cs->drag_min + span*(event->y - cs->drag_start_y)/cs->visible_height;
+	cs->hi = cs->lo + span;
+
+	make_histogram(cs);
+	gtk_widget_queue_draw(GTK_WIDGET(cs));
+
+	if ( event->is_hint ) {
+		gdk_window_get_pointer(gtk_widget_get_window(GTK_WIDGET(cs)),
+		                       NULL, NULL, NULL);
+	}
+
 	return FALSE;
 }
 
@@ -128,6 +153,53 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELColourScale *cs)
 }
 
 
+static void handle_scroll_click(double zoom_scale, CrystFELColourScale *cs,
+                                double pos)
+{
+	cs->lo = pos - (pos - cs->lo)*zoom_scale;
+	cs->hi = pos + (cs->hi - pos)*zoom_scale;
+}
+
+
+static gint scroll_sig(GtkWidget *widget, GdkEventScroll *event,
+                       CrystFELColourScale *cs)
+{
+	double xs, ys;
+	double span = cs->hi - cs->lo;
+	double pos = cs->lo + span*(1.0-event->y/cs->visible_height);
+
+	switch ( event->direction ) {
+
+		case GDK_SCROLL_UP:
+		handle_scroll_click(0.9, cs, pos);
+		break;
+
+		case GDK_SCROLL_DOWN:
+		handle_scroll_click(1.1, cs, pos);
+		break;
+
+		case GDK_SCROLL_SMOOTH:
+		if ( gdk_event_get_scroll_deltas((GdkEvent *)event, &xs, &ys) ) {
+			handle_scroll_click(1.0+ys*0.1, cs, pos);
+		}
+		break;
+
+		case GDK_SCROLL_LEFT:
+		case GDK_SCROLL_RIGHT:
+		return FALSE;  /* Not handled here */
+
+		default:
+		STATUS("Unhandled scroll direction %i\n", event->direction);
+		return FALSE;
+	}
+
+	make_histogram(cs);
+	gtk_widget_grab_focus(GTK_WIDGET(cs));
+	gtk_widget_queue_draw(GTK_WIDGET(cs));
+
+	return TRUE;
+}
+
 static GtkSizeRequestMode get_request_mode(GtkWidget *widget)
 {
 	return GTK_SIZE_REQUEST_CONSTANT_SIZE;
@@ -168,6 +240,9 @@ GtkWidget *crystfel_colour_scale_new()
 
 	cs = g_object_new(CRYSTFEL_TYPE_COLOUR_SCALE, NULL);
 
+	cs->sample = calloc(COLSCALE_SAMPLE_SIZE, sizeof(float));
+	if ( cs->sample == NULL ) return NULL;
+
 	g_signal_connect(G_OBJECT(cs), "destroy",
 	                 G_CALLBACK(destroy_sig), cs);
 	g_signal_connect(G_OBJECT(cs), "realize",
@@ -178,6 +253,8 @@ GtkWidget *crystfel_colour_scale_new()
 	                 G_CALLBACK(motion_sig), cs);
 	g_signal_connect(G_OBJECT(cs), "configure-event",
 	                 G_CALLBACK(configure_sig), cs);
+	g_signal_connect(G_OBJECT(cs), "scroll-event",
+	                 G_CALLBACK(scroll_sig), cs);
 	g_signal_connect(G_OBJECT(cs), "draw",
 	                 G_CALLBACK(draw_sig), cs);
 
@@ -185,8 +262,12 @@ GtkWidget *crystfel_colour_scale_new()
 	gtk_widget_add_events(GTK_WIDGET(cs),
 	                      GDK_POINTER_MOTION_HINT_MASK
 	                       | GDK_BUTTON1_MOTION_MASK
-	                       | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK
-	                       | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
+	                       | GDK_BUTTON_PRESS_MASK
+	                       | GDK_BUTTON_RELEASE_MASK
+	                       | GDK_SCROLL_MASK
+	                       | GDK_SMOOTH_SCROLL_MASK
+	                       | GDK_KEY_PRESS_MASK
+	                       | GDK_KEY_RELEASE_MASK);
 
 	gtk_widget_grab_focus(GTK_WIDGET(cs));
 
@@ -196,114 +277,58 @@ GtkWidget *crystfel_colour_scale_new()
 }
 
 
-static double auto_scale_top(const struct image *image)
+void crystfel_colour_scale_auto_range(CrystFELColourScale *cs)
 {
-	int pn;
-	double total_mean = 0.0;
-	double total_variance = 0.0;
+	double mean;
+	double variance;
 
-	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+	mean = gsl_stats_float_mean(cs->sample, 1, cs->n_samples);
+	variance = gsl_stats_float_variance_m(cs->sample, 1,
+	                                      cs->n_samples, mean);
 
-		long int i, j;
-		int w, h;
-		float *data;
-		float this_mean;
+	cs->lo = 0.0;
+	cs->hi = mean + 10.0*sqrt(variance);
 
-		w = image->detgeom->panels[pn].w;
-		h = image->detgeom->panels[pn].h;
-
-		data = malloc(w*h*sizeof(float));
-		if ( data == NULL ) return 100.0;
-
-		j = 0;
-		for ( i=0; i<w*h; i++ ) {
-			if ( !image->bad[pn][i] ) {
-				data[j++] = image->dp[pn][i];
-			}
-		}
-
-		this_mean = gsl_stats_float_mean(data, 1, j);
-
-		total_mean += this_mean;
-		total_variance += gsl_stats_float_variance_m(data, 1, j,
-		                                             this_mean);
-
-		free(data);
-	}
-
-	return (total_mean/image->detgeom->n_panels)
-	      + 10.0*sqrt(total_variance/image->detgeom->n_panels);
-}
-
-
-void image_min_max(struct image *image, double *pmin, double *pmax)
-{
-	int pn;
-	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
-		int w, h;
-		long int i;
-		w = image->detgeom->panels[pn].w;
-		h = image->detgeom->panels[pn].h;
-		for ( i=0; i<w*h; i++ ) {
-			if ( !image->bad[pn][i] ) {
-				double v = image->dp[pn][i];
-				*pmin = fmin(v, *pmin);
-				*pmax = fmax(v, *pmax);
-			}
-		}
-	}
-}
-
-
-void histogram_image(struct image *image,
-                     int *bins, int n_bins,
-                     double min, double max)
-{
-	int pn;
-	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
-		int w, h;
-		long int i;
-		w = image->detgeom->panels[pn].w;
-		h = image->detgeom->panels[pn].h;
-		for ( i=0; i<w*h; i++ ) {
-			if ( !image->bad[pn][i] ) {
-				int bin;
-				double v = image->dp[pn][i];
-				bin = n_bins*(v-min)/(max-min);
-				if ( bin < 0 ) bin = 0;
-				if ( bin >= n_bins ) bin = n_bins-1;
-				bins[bin]++;
-			}
-		}
-	}
+	make_histogram(cs);
 }
 
 
 void crystfel_colour_scale_scan_image(CrystFELColourScale *cs,
                                       struct image *image)
 {
-	double range_min, range_max;
 	int i;
-	int n_filled = 0;
+	int pn;
+	long int n_pix;
 
 	if ( image == NULL ) return;
 
-	image_min_max(image, &range_min, &range_max);
+	n_pix = 0;
+	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+		int w, h;
+		w = image->detgeom->panels[pn].w;
+		h = image->detgeom->panels[pn].h;
+		for ( i=0; i<w*h; i++ ) {
+			if ( !image->bad[pn][i] ) n_pix++;
+		}
+	}
+	float p = (float)COLSCALE_SAMPLE_SIZE/n_pix;
 
-	for ( i=0; i<COLSCALE_N_BINS; i++ ) {
-		cs->bins[i] = 0;
+	cs->n_samples = 0;
+	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+		int w, h;
+		long int i;
+		w = image->detgeom->panels[pn].w;
+		h = image->detgeom->panels[pn].h;
+		for ( i=0; i<w*h; i++ ) {
+			if ( !image->bad[pn][i] ) {
+				if ( rand() < p*RAND_MAX ) {
+					cs->sample[cs->n_samples++] = image->dp[pn][i];
+				}
+			}
+			if ( cs->n_samples == COLSCALE_SAMPLE_SIZE ) break;
+		}
+		if ( cs->n_samples == COLSCALE_SAMPLE_SIZE ) break;
 	}
 
-	histogram_image(image, cs->bins, COLSCALE_N_BINS, range_min, range_max);
-
-	for ( i=0; i<COLSCALE_N_BINS; i++ ) {
-		if ( cs->bins[i] > 0 ) n_filled++;
-	}
-
-	if ( n_filled < 3 ) {
-		ERROR("WARNING: Suspicious pixel value distribution - "
-		      "are there still some bad pixels to mask?\n");
-	}
-
-	redraw(cs);
+	make_histogram(cs);
 }

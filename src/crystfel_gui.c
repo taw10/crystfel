@@ -282,6 +282,7 @@ void update_imageview(struct crystfelproject *proj)
 
 	crystfel_colour_scale_scan_image(CRYSTFEL_COLOUR_SCALE(proj->colscale),
 	                                 proj->cur_image);
+	crystfel_colour_scale_auto_range(CRYSTFEL_COLOUR_SCALE(proj->colscale));
 
 	gtk_widget_set_sensitive(proj->next_button,
 	                         !(proj->cur_frame == proj->n_frames-1));
