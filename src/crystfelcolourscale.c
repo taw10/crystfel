@@ -304,6 +304,7 @@ void crystfel_colour_scale_auto_range(CrystFELColourScale *cs)
 	make_histogram(cs);
 
 	g_signal_emit_by_name(cs, "range-changed");
+	gtk_widget_queue_draw(GTK_WIDGET(cs));
 }
 
 

@@ -530,6 +530,13 @@ static gint reset_zoom_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static gint reset_range_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	crystfel_colour_scale_auto_range(CRYSTFEL_COLOUR_SCALE(proj->colscale));
+	return FALSE;
+}
+
+
 static gint first_frame_sig(GtkWidget *widget,
                             struct crystfelproject *proj)
 {
@@ -811,6 +818,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"resrings\" action=\"ResolutionRingsAction\" />"
 		"       <separator />"
 		"	<menuitem name=\"resetzoom\" action=\"ResetZoomAction\" />"
+		"	<menuitem name=\"resetrange\" action=\"ResetRangeAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
 		"	<menuitem name=\"rescanonchange\" action=\"RescanOnChangeAction\" />"
@@ -836,6 +844,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		{ "ViewAction", NULL, "_View", NULL, NULL, NULL },
 		{ "ResetZoomAction", NULL, "Reset zoom", NULL, NULL,
 			G_CALLBACK(reset_zoom_sig) },
+		{ "ResetRangeAction", NULL, "Reset colour scale", NULL, NULL,
+			G_CALLBACK(reset_range_sig) },
 
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "RescanAction", NULL, "Rescan streams", NULL, NULL,
