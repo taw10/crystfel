@@ -38,6 +38,8 @@
 #include <glib-object.h>
 #include <gsl/gsl_statistics_float.h>
 
+#include <colscale.h>
+
 #include "crystfelcolourscale.h"
 
 
@@ -130,8 +132,10 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELColourScale *cs)
 {
 	int i;
 	int mx = 0;
-	double max_w = cs->visible_width;
+	double histo_w = 3.0 * cs->visible_width / 4.0;
+	double bar_w = cs->visible_width / 4.0;
 	double bin_h = cs->visible_height/COLSCALE_N_BINS;
+	double pos;
 
 	cairo_save(cr);
 
@@ -147,8 +151,16 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELColourScale *cs)
 	cairo_translate(cr, cs->visible_width, cs->visible_height);
 	cairo_scale(cr, -1.0, -1.0);
 
+	for ( pos=0.0; pos<cs->visible_height; pos += 1.0 ) {
+		double r, g, b;
+		cairo_rectangle(cr, 0.0, pos, bar_w, 1.0);
+		colscale_lookup(pos, cs->visible_height, SCALE_COLOUR, &r, &g, &b);
+		cairo_set_source_rgb(cr, r, g, b);
+		cairo_fill(cr);
+	}
+
 	for ( i=0; i<COLSCALE_N_BINS; i++ ) {
-		cairo_rectangle(cr, 0.0, bin_h*i, max_w*cs->bins[i]/mx, bin_h);
+		cairo_rectangle(cr, bar_w, bin_h*i, histo_w*cs->bins[i]/mx, bin_h);
 		cairo_set_source_rgb(cr, 0, 0, 0);
 		cairo_fill(cr);
 	}
