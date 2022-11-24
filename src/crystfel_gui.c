@@ -907,7 +907,6 @@ static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
 
 static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 {
-	/* FIXME: All these icons are placeholders (GitLab #9) */
 	add_button(vbox, "Load data", "crystfel-load-data",
 	           G_CALLBACK(import_sig), proj);
 	add_button(vbox, "Peak detection", "crystfel-peak-detection",
