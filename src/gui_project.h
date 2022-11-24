@@ -284,6 +284,7 @@ struct crystfelproject {
 	GtkWidget *prev_button;
 	GtkWidget *first_button;
 	GtkWidget *last_button;
+	int range_set;
 
 	int unsaved;
 

@@ -69,6 +69,8 @@ struct _crystfelimageview
 	/* Redraw/scroll stuff */
 	int                  need_rerender;
 	int                  need_recentre;
+	double               scale_lo;
+	double               scale_hi;
 	GtkScrollablePolicy  hpol;
 	GtkScrollablePolicy  vpol;
 	GtkAdjustment       *hadj;
@@ -136,5 +138,8 @@ extern void crystfel_image_view_set_refl_box_size(CrystFELImageView *iv,
 
 extern void crystfel_image_view_set_resolution_rings(CrystFELImageView *iv,
                                                      int rings);
+
+extern void crystfel_image_view_set_colour_scale(CrystFELImageView *iv,
+                                                 double lo, double hi);
 
 #endif	/* CRYSTFELIMAGEVIEW_H */

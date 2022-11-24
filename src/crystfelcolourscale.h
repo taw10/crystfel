@@ -87,8 +87,8 @@ extern void crystfel_colour_scale_scan_image(CrystFELColourScale *cs,
                                              struct image *image);
 
 extern void crystfel_colour_scale_get_range(CrystFELColourScale *cs,
-                                            double scale_min,
-                                            double scale_max);
+                                            double *scale_min,
+                                            double *scale_max);
 
 extern void crystfel_colour_scale_auto_range(CrystFELColourScale *cs);
 

@@ -908,6 +908,8 @@ GtkWidget *crystfel_image_view_new()
 	iv->need_rerender = 0;
 	iv->need_recentre = 1;
 	iv->resolution_rings = 0;
+	iv->scale_lo = 0.0;
+	iv->scale_hi = 100000.0;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -996,7 +998,7 @@ static void free_pixbuf(guchar *data, gpointer p)
 
 
 static GdkPixbuf *render_panel(float *data, int *badmap, int w, int h,
-                               int scale_type, double scale_top)
+                               int scale_type, double scale_lo, double scale_hi)
 
 
 {
@@ -1013,7 +1015,7 @@ static GdkPixbuf *render_panel(float *data, int *badmap, int w, int h,
 
 		if ( !badmap[i] ) {
 
-			colscale_lookup(data[i], scale_top,
+			colscale_lookup(data[i]-scale_lo, scale_hi-scale_lo,
 			                scale_type, &r, &g, &b);
 
 			pixbuf_data[3*i+0] = 255*r;
@@ -1040,46 +1042,6 @@ static GdkPixbuf *render_panel(float *data, int *badmap, int w, int h,
 }
 
 
-static double auto_scale_top(const struct image *image)
-{
-	int pn;
-	double total_mean = 0.0;
-	double total_variance = 0.0;
-
-	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
-
-		long int i, j;
-		int w, h;
-		float *data;
-		float this_mean;
-
-		w = image->detgeom->panels[pn].w;
-		h = image->detgeom->panels[pn].h;
-
-		data = malloc(w*h*sizeof(float));
-		if ( data == NULL ) return 100.0;
-
-		j = 0;
-		for ( i=0; i<w*h; i++ ) {
-			if ( !image->bad[pn][i] ) {
-				data[j++] = image->dp[pn][i];
-			}
-		}
-
-		this_mean = gsl_stats_float_mean(data, 1, j);
-
-		total_mean += this_mean;
-		total_variance += gsl_stats_float_variance_m(data, 1, j,
-		                                             this_mean);
-
-		free(data);
-	}
-
-	return (total_mean/image->detgeom->n_panels)
-	      + 10.0*sqrt(total_variance/image->detgeom->n_panels);
-}
-
-
 static void center_adjustment(GtkAdjustment *adj)
 {
 	double min = gtk_adjustment_get_lower(adj);
@@ -1093,7 +1055,6 @@ static int rerender_image(CrystFELImageView *iv)
 {
 	int i;
 	double min_x, min_y, max_x, max_y;
-	double scale_top;
 
 	if ( iv->image == NULL ) return 0;
 	if ( iv->image->detgeom == NULL ) return 0;
@@ -1108,14 +1069,13 @@ static int rerender_image(CrystFELImageView *iv)
 		}
 	}
 
-	scale_top = auto_scale_top(iv->image);
-
 	for ( i=0; i<iv->image->detgeom->n_panels; i++ ) {
 		iv->pixbufs[i] = render_panel(iv->image->dp[i],
 		                              iv->image->bad[i],
 		                              iv->image->detgeom->panels[i].w,
 		                              iv->image->detgeom->panels[i].h,
-		                              SCALE_COLOUR, scale_top);
+		                              SCALE_COLOUR,
+		                              iv->scale_lo, iv->scale_hi);
 		if ( iv->pixbufs[i] == NULL ) return 1;
 	}
 
@@ -1232,6 +1192,16 @@ void crystfel_image_view_set_resolution_rings(CrystFELImageView *iv,
                                               int rings)
 {
 	iv->resolution_rings = rings;
+	iv->need_rerender = 1;
+	redraw(iv);
+}
+
+
+void crystfel_image_view_set_colour_scale(CrystFELImageView *iv,
+                                          double lo, double hi)
+{
+	iv->scale_lo = lo;
+	iv->scale_hi = hi;
 	iv->need_rerender = 1;
 	redraw(iv);
 }

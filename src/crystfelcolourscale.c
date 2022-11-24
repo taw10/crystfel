@@ -67,6 +67,14 @@ static gint button_press_sig(GtkWidget *window, GdkEventButton *event,
 }
 
 
+static gint button_release_sig(GtkWidget *window, GdkEventButton *event,
+                               CrystFELColourScale *cs)
+{
+	g_signal_emit_by_name(cs, "range-changed");
+	return FALSE;
+}
+
+
 static void make_histogram(CrystFELColourScale *cs)
 {
 	int i;
@@ -93,8 +101,6 @@ static gint motion_sig(GtkWidget *window, GdkEventMotion *event,
                        CrystFELColourScale *cs)
 {
 	double span = cs->hi - cs->lo;
-	//double ddx = event->x - cs->drag_start_x;
-	//double ddy = event->y - cs->drag_start_y;
 
 	cs->lo = cs->drag_min + span*(event->y - cs->drag_start_y)/cs->visible_height;
 	cs->hi = cs->lo + span;
@@ -158,6 +164,7 @@ static void handle_scroll_click(double zoom_scale, CrystFELColourScale *cs,
 {
 	cs->lo = pos - (pos - cs->lo)*zoom_scale;
 	cs->hi = pos + (cs->hi - pos)*zoom_scale;
+	g_signal_emit_by_name(cs, "range-changed");
 }
 
 
@@ -226,6 +233,9 @@ static void crystfel_colour_scale_class_init(CrystFELColourScaleClass *klass)
 	GTK_WIDGET_CLASS(klass)->get_preferred_width = get_preferred_width;
 	GTK_WIDGET_CLASS(klass)->get_preferred_height = get_preferred_height;
 	GTK_WIDGET_CLASS(klass)->get_preferred_height_for_width = NULL;
+
+	g_signal_new("range-changed", CRYSTFEL_TYPE_COLOUR_SCALE,
+	             G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
 }
 
 
@@ -249,6 +259,8 @@ GtkWidget *crystfel_colour_scale_new()
 	                 G_CALLBACK(realise_sig), cs);
 	g_signal_connect(G_OBJECT(cs), "button-press-event",
 	                 G_CALLBACK(button_press_sig), cs);
+	g_signal_connect(G_OBJECT(cs), "button-release-event",
+	                 G_CALLBACK(button_release_sig), cs);
 	g_signal_connect(G_OBJECT(cs), "motion-notify-event",
 	                 G_CALLBACK(motion_sig), cs);
 	g_signal_connect(G_OBJECT(cs), "configure-event",
@@ -290,6 +302,8 @@ void crystfel_colour_scale_auto_range(CrystFELColourScale *cs)
 	cs->hi = mean + 10.0*sqrt(variance);
 
 	make_histogram(cs);
+
+	g_signal_emit_by_name(cs, "range-changed");
 }
 
 
@@ -300,7 +314,14 @@ void crystfel_colour_scale_scan_image(CrystFELColourScale *cs,
 	int pn;
 	long int n_pix;
 
-	if ( image == NULL ) return;
+	if ( image == NULL ) {
+		for ( i=0; i<COLSCALE_SAMPLE_SIZE; i++ ) {
+			cs->sample[i] = 0;
+		}
+		cs->n_samples = COLSCALE_SAMPLE_SIZE;
+		make_histogram(cs);
+		return;
+	}
 
 	n_pix = 0;
 	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
@@ -331,4 +352,13 @@ void crystfel_colour_scale_scan_image(CrystFELColourScale *cs,
 	}
 
 	make_histogram(cs);
+}
+
+
+void crystfel_colour_scale_get_range(CrystFELColourScale *cs,
+                                     double *scale_min,
+                                     double *scale_max)
+{
+	*scale_min = cs->lo;
+	*scale_max = cs->hi;
 }

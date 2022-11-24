@@ -282,7 +282,9 @@ void update_imageview(struct crystfelproject *proj)
 
 	crystfel_colour_scale_scan_image(CRYSTFEL_COLOUR_SCALE(proj->colscale),
 	                                 proj->cur_image);
-	crystfel_colour_scale_auto_range(CRYSTFEL_COLOUR_SCALE(proj->colscale));
+	if ( !proj->range_set ) {
+		crystfel_colour_scale_auto_range(CRYSTFEL_COLOUR_SCALE(proj->colscale));
+	}
 
 	gtk_widget_set_sensitive(proj->next_button,
 	                         !(proj->cur_frame == proj->n_frames-1));
@@ -965,6 +967,19 @@ static void clear_log_sig(GtkMenuItem *widget,
 }
 
 
+static void colscale_change_sig(CrystFELColourScale *colscale,
+                                struct crystfelproject *proj)
+{
+	double lo, hi;
+	crystfel_colour_scale_get_range(colscale, &lo, &hi);
+	crystfel_image_view_set_colour_scale(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                     lo, hi);
+	if ( proj->cur_image != NULL ) {
+		proj->range_set = 1;
+	}
+}
+
+
 static void add_log_menu_items(GtkTextView *textview,
                                GtkWidget *popup,
                                struct crystfelproject *proj)
@@ -1206,6 +1221,8 @@ int main(int argc, char *argv[])
 
 	proj.colscale = crystfel_colour_scale_new();
 	gtk_box_pack_start(GTK_BOX(iv_hbox), proj.colscale, FALSE, FALSE, 0.0);
+	g_signal_connect(proj.colscale, "range-changed",
+	                 G_CALLBACK(colscale_change_sig), &proj);
 
 	/* Icon region at left */
 	proj.icons = gtk_vbox_new(FALSE, 0.0);
