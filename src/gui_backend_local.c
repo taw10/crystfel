@@ -578,6 +578,7 @@ static void *run_indexing(const char *job_title,
 		                      proj, GUI_JOB_INDEXING);
 	} else {
 		job = NULL;
+		ERROR("Failed to write job script\n");
 	}
 
 	if ( job != NULL ) {
@@ -588,6 +589,7 @@ static void *run_indexing(const char *job_title,
 		add_indexing_result(proj, job_title, &stream_rel_filename, 1);
 
 	} else {
+		ERROR("Failed to run job.\n");
 	}
 	g_object_unref(workdir);
 	free(sc_rel_filename);
