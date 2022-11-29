@@ -44,6 +44,7 @@
 #include "gui_project.h"
 #include "crystfel_gui.h"
 #include "gtk-util-routines.h"
+#include "crystfelfomgraph.h"
 
 #define MAX_DATASETS (64)
 
@@ -57,6 +58,7 @@ struct fom_window
 	GtkWidget *min_snr;
 	GtkWidget *min_meas;
 	GtkWidget *cell_chooser;
+	GtkWidget *graph;
 
 	int n_datasets;
 	GtkWidget *dataset_checkboxes[MAX_DATASETS];
@@ -616,7 +618,6 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *button;
-	GtkWidget *da;
 	char tmp[64];
 	struct fom_window *f;
 
@@ -761,9 +762,9 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	snprintf(tmp, 64, "%i", proj->fom_min_meas);
 	gtk_entry_set_text(GTK_ENTRY(f->min_meas), tmp);
 
-	da = gtk_drawing_area_new();
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(da),
-	                   FALSE, FALSE, 4.0);
+	f->graph = crystfel_fom_graph_new();
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(f->graph),
+	                   TRUE, TRUE, 4.0);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_CLOSE);
