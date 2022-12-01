@@ -37,6 +37,8 @@
 #include <gtk/gtk.h>
 #include <glib-object.h>
 
+#include <fom.h>
+
 #include "crystfelfomgraph.h"
 
 
@@ -125,4 +127,12 @@ GtkWidget *crystfel_fom_graph_new()
 	gtk_widget_show(GTK_WIDGET(fg));
 
 	return GTK_WIDGET(fg);
+}
+
+
+void crystfel_fom_graph_set_data(CrystFELFoMGraph *fg,
+                                 double *shell_centers, int n_shells,
+                                 enum fom_type *fom_types, double **fom_values,
+                                 int n_foms)
+{
 }

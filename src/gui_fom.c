@@ -113,6 +113,39 @@ static void show_fom(enum fom_type fom,
 }
 
 
+static double *make_shell_centers(struct fom_shells *shells)
+{
+	int i;
+	double *vals;
+
+	vals = malloc(shells->nshells*sizeof(double));
+	if ( vals == NULL ) return NULL;
+
+	for ( i=0; i<shells->nshells; i++ ) {
+		vals[i] = fom_shell_centre(shells, i);
+	}
+
+	return vals;
+}
+
+
+static double *make_fom_vals(struct fom_context *fctx,
+                             struct fom_shells *shells)
+{
+	int i;
+	double *vals;
+
+	vals = malloc(shells->nshells*sizeof(double));
+	if ( vals == NULL ) return NULL;
+
+	for ( i=0; i<shells->nshells; i++ ) {
+		vals[i] = fom_shell_value(fctx, i);
+	}
+
+	return vals;
+}
+
+
 static int load_dataset(struct gui_merge_result *result,
                         int need_ano, UnitCell *cell,
                         double min_res, double max_res,
@@ -385,6 +418,9 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 			continue;
 		}
 
+		double *shell_centers = malloc(shells->nshells*sizeof(double));
+		double **fom_values = malloc(f->n_foms*sizeof(double *));
+
 		for ( fom=0; fom<f->n_foms; fom++ ) {
 
 			struct fom_context *fctx;
@@ -402,7 +438,15 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 				continue;
 			}
 			show_fom(f->fom_types[fom], fctx, shells);
+
+			fom_values[fom] = make_fom_vals(fctx, shells);
+
 		}
+
+		shell_centers = make_shell_centers(shells);
+		crystfel_fom_graph_set_data(CRYSTFEL_FOM_GRAPH(f->graph),
+		                            shell_centers, shells->nshells,
+		                            f->fom_types, fom_values, f->n_foms);
 
 		reflist_free(all_refls);
 		reflist_free(all_refls_anom);

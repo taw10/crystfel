@@ -33,6 +33,8 @@
 #include <config.h>
 #endif
 
+#include <fom.h>
+
 #define CRYSTFEL_TYPE_FOM_GRAPH (crystfel_fom_graph_get_type())
 
 #define CRYSTFEL_FOM_GRAPH(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), \
@@ -71,5 +73,10 @@ typedef struct _crystfelfomgraphclass CrystFELFoMGraphClass;
 
 extern GType crystfel_fom_graph_get_type(void);
 extern GtkWidget *crystfel_fom_graph_new(void);
+
+extern void crystfel_fom_graph_set_data(CrystFELFoMGraph *fg,
+                                        double *shell_centers, int n_shells,
+                                        enum fom_type *fom_types,
+                                        double **fom_values, int n_foms);
 
 #endif	/* CRYSTFELFOMGRAPH_H */
