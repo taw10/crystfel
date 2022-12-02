@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/de/desy/CrystFEL">
+    <file>crystfel.svg</file>
     <file>crystfel-ambiguity.svg</file>
-    <file>crystfel.desktop</file>
     <file>crystfel-export.svg</file>
     <file>crystfel-fom.svg</file>
-    <file>crystfel.gresource.xml</file>
     <file>crystfel-index-all.svg</file>
     <file>crystfel-index-frame.svg</file>
     <file>crystfel-load-data.svg</file>
     <file>crystfel-merge.svg</file>
     <file>crystfel-peak-detection.svg</file>
-    <file>crystfel.svg</file>
     <file>crystfel-unitcell.svg</file>
+    <file>crystfel.png</file>
+    <file>crystfel-ambiguity.png</file>
+    <file>crystfel-export.png</file>
+    <file>crystfel-fom.png</file>
+    <file>crystfel-index-all.png</file>
+    <file>crystfel-index-frame.png</file>
+    <file>crystfel-load-data.png</file>
+    <file>crystfel-merge.png</file>
+    <file>crystfel-peak-detection.png</file>
+    <file>crystfel-unitcell.png</file>
   </gresource>
 </gresources>
