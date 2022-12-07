@@ -60,14 +60,205 @@ static gint configure_sig(GtkWidget *window, GdkEventConfigure *rec,
 }
 
 
+static void fom_colour(enum fom_type t, double *col)
+{
+	switch ( t ) {
+		case FOM_R1I :
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_R1F:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_R2:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_RSPLIT:
+		col[0] = 0.5;  col[1] = 0.0;  col[2] = 0.5; break;
+		case FOM_CC:
+		col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.3; break;
+		case FOM_CCSTAR:
+		col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.5; break;
+		case FOM_CCANO:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_CRDANO:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_RANO:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_RANORSPLIT:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_D1SIG:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_D2SIG:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_REDUNDANCY:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_SNR:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		case FOM_COMPLETENESS:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		default:
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+	}
+}
+
+
+static void fom_range(enum fom_type t, double *min, double *max)
+{
+	switch ( t ) {
+		case FOM_R1I:              *min = 0.0;   *max = 0.8;   break;
+		case FOM_R1F:              *min = 0.0;   *max = 0.8;   break;
+		case FOM_R2:               *min = 0.0;   *max = 0.8;   break;
+		case FOM_RSPLIT:           *min = 0.0;   *max = 0.8;   break;
+		case FOM_CC:               *min = 0.9;   *max = 1.0;   break;
+		case FOM_CCSTAR:           *min = 0.9;   *max = 1.0;   break;
+		case FOM_CCANO:            *min = 0.9;   *max = 1.0;   break;
+		case FOM_CRDANO:           *min = 0.9;   *max = 1.0;   break;
+		case FOM_RANO:             *min = 0.0;   *max = 0.7;   break;
+		case FOM_RANORSPLIT:       *min = 0.0;   *max = 8.0;   break;
+		case FOM_D1SIG:            *min = 0.0;   *max = 1.0;   break;
+		case FOM_D2SIG:            *min = 0.0;   *max = 1.0;   break;
+		case FOM_REDUNDANCY:       *min = 0.0;   *max = 100;   break;
+		case FOM_SNR:              *min = 0.0;   *max = 10.0;  break;
+		case FOM_COMPLETENESS:     *min = 0.0;   *max = 1.0;   break;
+		default:                   *min = 0.0;   *max = 1.0;   break;
+	}
+}
+
+
+static void draw_x_axis(cairo_t *cr, double *tics, int n_tics,
+                        double x1, double x2, double ox, double w, double axsp)
+{
+	int i;
+
+	cairo_new_path(cr);
+	cairo_move_to(cr, ox, axsp);
+	cairo_line_to(cr, w, axsp);
+	cairo_set_line_width(cr, 1.0);
+	cairo_stroke(cr);
+
+	for ( i=0; i<15; i++ ) {
+
+		cairo_text_extents_t ext;
+		char label[128];
+		double x;
+
+		if ( (1e10/tics[i] > x1) && (1e10/tics[i] < x2) ) {
+
+			x = ox + (w-ox) * (1e10/tics[i]-x1)/(x2-x1);
+
+			cairo_move_to(cr, x, axsp);
+			cairo_line_to(cr, x, axsp-5.0);
+			cairo_set_line_width(cr, 1.0);
+			cairo_stroke(cr);
+
+			cairo_save(cr);
+			snprintf(label, 127, "%.1f A", tics[i]);
+			cairo_text_extents(cr, label, &ext);
+			cairo_move_to(cr, x-ext.x_advance/2, -3.0);
+			cairo_scale(cr, 1.0, -1.0);
+			cairo_show_text(cr, label);
+			cairo_restore(cr);
+
+		}
+	}
+}
+
+
+static void draw_y_axis(cairo_t *cr, double h, double oy,
+                        double y1, double y2)
+{
+	int i;
+
+	cairo_new_path(cr);
+	cairo_move_to(cr, oy, oy);
+	cairo_line_to(cr, oy, h);
+	cairo_set_line_width(cr, 1.0);
+	cairo_stroke(cr);
+
+	for ( i=0; i<5; i++ ) {
+
+		cairo_text_extents_t ext;
+		char label[128];
+		double y;
+
+		y = oy + (h-oy) * i*(y2-y1)/5.0;
+
+		cairo_move_to(cr, 0.0, y);
+		cairo_line_to(cr, -5.0, y);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
+
+		cairo_save(cr);
+		snprintf(label, 127, "%.1f", y);
+		cairo_text_extents(cr, label, &ext);
+		cairo_move_to(cr, -ext.x_advance-3.0, y-ext.y_advance/2.0);
+		cairo_scale(cr, 1.0, -1.0);
+		cairo_show_text(cr, label);
+		cairo_restore(cr);
+
+	}
+}
+
+
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 {
+	int j;
+
 	cairo_save(cr);
 
 	/* Overall background */
 	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 	cairo_paint(cr);
 
+	double border = 10.0;
+	double w = fg->visible_width;
+	double h = fg->visible_height;
+	double axsp = 20.0;
+	double x1 = fg->shell_centers[0];
+	double x2 = fg->shell_centers[fg->n_shells-1];
+
+	/* Logical coordinates */
+	cairo_translate(cr, 0.0, h);
+	cairo_scale(cr, 1.0, -1.0);
+
+	/* Add empty border */
+	cairo_translate(cr, border, border);
+	w -= border*2.0;
+	h -= border*2.0;
+
+	/* y-axes (multiple) */
+	double ox = 0.0;
+	cairo_save(cr);
+	for ( j=0; j<fg->n_foms; j++ ) {
+		double col[3];
+		double y1, y2;
+		fom_colour(fg->fom_types[j], col);
+		fom_range(fg->fom_types[j], &y1, &y2);
+		cairo_set_source_rgb(cr, col[0], col[1], col[2]);
+		draw_y_axis(cr, h, axsp, y1, y2);
+		ox += axsp;
+		cairo_translate(cr, axsp, 0.0);
+	}
+	cairo_restore(cr);
+
+	/* x-axis */
+	double tics[] = {20.0, 15.0, 10.0, 5.0, 4.0, 3.0, 2.5, 2.0, 1.7, 1.5,
+		         1.4, 1.3, 1.2, 1.1, 1.0};
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	draw_x_axis(cr, tics, 15, x1, x2, ox, w, axsp);
+
+	//for ( j=0; j<fg->n_foms; j++ ) {
+	//	int i;
+	//	double col[3];
+	//	cairo_new_path(cr);
+	//	cairo_move_to(cr, aw*fg->shell_centers[0]/mx,
+	//	                  ah*fg->fom_values[j][0]/my);
+	//	for ( i=1; i<fg->n_shells; i++ ) {
+	//		cairo_line_to(cr, aw*fg->shell_centers[i]/mx,
+	//		                  ah*fg->fom_values[j][i]/my);
+	//	}
+	//	cairo_set_line_width(cr, 1.0);
+	//	fom_colour(fg->fom_types[j], col);
+	//	cairo_set_source_rgb(cr, col[0], col[1], col[2]);
+	//	cairo_stroke(cr);
+	//}
 
 	cairo_restore(cr);
 
@@ -115,6 +306,12 @@ GtkWidget *crystfel_fom_graph_new()
 
 	fg = g_object_new(CRYSTFEL_TYPE_FOM_GRAPH, NULL);
 
+	fg->n_shells = 0;
+	fg->shell_centers = NULL;
+	fg->n_foms = 0;
+	fg->fom_types = NULL;
+	fg->fom_values = NULL;
+
 	g_signal_connect(G_OBJECT(fg), "destroy",
 	                 G_CALLBACK(destroy_sig), fg);
 	g_signal_connect(G_OBJECT(fg), "configure-event",
@@ -135,4 +332,19 @@ void crystfel_fom_graph_set_data(CrystFELFoMGraph *fg,
                                  enum fom_type *fom_types, double **fom_values,
                                  int n_foms)
 {
+	int i;
+	for ( i=0; i<fg->n_foms; i++ ) {
+		free(fg->fom_values[i]);
+	}
+	free(fg->shell_centers);
+	free(fg->fom_types);
+	free(fg->fom_values);
+
+	fg->n_shells = n_shells;
+	fg->shell_centers = shell_centers;
+	fg->n_foms = n_foms;
+	fg->fom_types = fom_types;
+	fg->fom_values= fom_values;
+
+	gtk_widget_queue_draw(GTK_WIDGET(fg));
 }

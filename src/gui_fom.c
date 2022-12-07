@@ -420,7 +420,9 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 
 		double *shell_centers = malloc(shells->nshells*sizeof(double));
 		double **fom_values = malloc(f->n_foms*sizeof(double *));
+		enum fom_type *fom_types = malloc(f->n_foms*sizeof(enum fom_type));
 
+		int fomi = 0;
 		for ( fom=0; fom<f->n_foms; fom++ ) {
 
 			struct fom_context *fctx;
@@ -439,14 +441,16 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 			}
 			show_fom(f->fom_types[fom], fctx, shells);
 
-			fom_values[fom] = make_fom_vals(fctx, shells);
+			fom_types[fomi] = f->fom_types[fom];
+			fom_values[fomi] = make_fom_vals(fctx, shells);
+			fomi++;
 
 		}
 
 		shell_centers = make_shell_centers(shells);
 		crystfel_fom_graph_set_data(CRYSTFEL_FOM_GRAPH(f->graph),
 		                            shell_centers, shells->nshells,
-		                            f->fom_types, fom_values, f->n_foms);
+		                            fom_types, fom_values, fomi);
 
 		reflist_free(all_refls);
 		reflist_free(all_refls_anom);
