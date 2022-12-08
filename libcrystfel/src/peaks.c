@@ -404,6 +404,12 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		                  image, intensity, NULL);
 		nacc++;
 
+		if ( nacc > 10000 ) {
+			ERROR("Too many peaks!  Aborting peak seach "
+			      "for panel %s\n", p->name);
+			return;
+		}
+
 	}
 	}
 
