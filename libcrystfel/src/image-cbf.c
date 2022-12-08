@@ -640,7 +640,10 @@ int image_cbf_read(struct image *image,
 		return 1;
 	}
 
-	unpack_panels(image, dtempl, data, w, h);
+	if ( unpack_panels(image, dtempl, data, w, h) ) {
+		ERROR("Failed to read CBF data\n");
+		return 1;
+	}
 	free(data);
 
 	//cbf_fill_in_beam_parameters(image->beam, f, image);
