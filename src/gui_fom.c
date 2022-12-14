@@ -94,25 +94,6 @@ static int anomalous_foms_selected(struct fom_window *f)
 }
 
 
-static void show_fom(enum fom_type fom,
-                     struct fom_context *fctx,
-                     struct fom_shells *shells)
-{
-	int i;
-
-	STATUS("Overall %s: %f (%i reflections)\n",
-	       fom_name(fom), fom_overall_value(fctx),
-	       fom_overall_num_reflections(fctx));
-	STATUS("%10s %10s %10s\n", "1/d / nm^-1", fom_name(fom), "num refl");
-	for ( i=0; i<shells->nshells; i++ ) {
-		STATUS("%10f %10f %10i\n",
-		       fom_shell_centre(shells, i)/1e9,
-		       fom_shell_value(fctx, i),
-		       fom_shell_num_reflections(fctx, i));
-	}
-}
-
-
 static double *make_shell_centers(struct fom_shells *shells)
 {
 	int i;
@@ -439,7 +420,6 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 				      f->fom_types[fom], f->dataset_names[ds]);
 				continue;
 			}
-			show_fom(f->fom_types[fom], fctx, shells);
 
 			fom_types[fomi] = f->fom_types[fom];
 			fom_values[fomi] = make_fom_vals(fctx, shells);
@@ -689,7 +669,7 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	vbox = gtk_vbox_new(FALSE, 0.0);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_box_pack_start(GTK_BOX(content_area), GTK_WIDGET(vbox), TRUE, TRUE, 0.0);
 	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
 	hbox = gtk_hbox_new(FALSE, 0.0);

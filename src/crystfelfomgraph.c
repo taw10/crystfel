@@ -123,7 +123,8 @@ static void fom_range(enum fom_type t, double *min, double *max)
 
 
 static void draw_x_axis(cairo_t *cr, double *tics, int n_tics,
-                        double x1, double x2, double ox, double w, double axsp)
+                        double x1, double x2, double ox, double w, double h,
+                        double axsp)
 {
 	int i;
 
@@ -143,7 +144,7 @@ static void draw_x_axis(cairo_t *cr, double *tics, int n_tics,
 
 			x = ox + (w-ox) * (1e10/tics[i]-x1)/(x2-x1);
 
-			cairo_move_to(cr, x, axsp);
+			cairo_move_to(cr, x, h);
 			cairo_line_to(cr, x, axsp-5.0);
 			cairo_set_line_width(cr, 1.0);
 			cairo_stroke(cr);
@@ -199,7 +200,7 @@ static void draw_y_axis(cairo_t *cr, double h, double oy,
 
 	cairo_save(cr);
 	cairo_text_extents(cr, name, &ext);
-	cairo_move_to(cr, -ext.height-3.0, oy+(h-oy+ext.x_advance)/2.0);
+	cairo_move_to(cr, -ext.height-30.0, oy+(h-oy+ext.x_advance)/2.0);
 	cairo_scale(cr, 1.0, -1.0);
 	cairo_rotate(cr, M_PI_2);
 	cairo_show_text(cr, name);
@@ -217,11 +218,16 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 	cairo_paint(cr);
 
+	if ( fg->n_foms == 0 ) {
+		cairo_restore(cr);
+		return FALSE;
+	}
+
 	double border = 10.0;
 	double w = fg->visible_width;
 	double h = fg->visible_height;
 	double axsp = 20.0;   /* Vertical space for x-axis labels */
-	double yaxsp = 30.0;  /* Horizontal space for y-axis labels */
+	double yaxsp = 50.0;  /* Horizontal space for y-axis labels */
 	double x1 = fg->shell_centers[0];
 	double x2 = fg->shell_centers[fg->n_shells-1];
 
@@ -254,23 +260,41 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 	double tics[] = {20.0, 15.0, 10.0, 5.0, 4.0, 3.0, 2.5, 2.0, 1.7, 1.5,
 		         1.4, 1.3, 1.2, 1.1, 1.0};
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	draw_x_axis(cr, tics, 15, x1, x2, ox, w, axsp);
+	draw_x_axis(cr, tics, 15, x1, x2, ox, w, h, axsp);
 
-	//for ( j=0; j<fg->n_foms; j++ ) {
-	//	int i;
-	//	double col[3];
-	//	cairo_new_path(cr);
-	//	cairo_move_to(cr, aw*fg->shell_centers[0]/mx,
-	//	                  ah*fg->fom_values[j][0]/my);
-	//	for ( i=1; i<fg->n_shells; i++ ) {
-	//		cairo_line_to(cr, aw*fg->shell_centers[i]/mx,
-	//		                  ah*fg->fom_values[j][i]/my);
-	//	}
-	//	cairo_set_line_width(cr, 1.0);
-	//	fom_colour(fg->fom_types[j], col);
-	//	cairo_set_source_rgb(cr, col[0], col[1], col[2]);
-	//	cairo_stroke(cr);
-	//}
+	cairo_translate(cr, ox, axsp);
+	w -= ox;
+	h -= axsp;
+	cairo_rectangle(cr, 0, 0, w, h);
+	cairo_set_source_rgba(cr, 0.9, 0.9, 0.9, 0.9);
+	cairo_clip_preserve(cr);
+	cairo_fill(cr);
+	for ( j=0; j<fg->n_foms; j++ ) {
+		int i;
+		double col[3];
+		double y1, y2;
+		int split = 1;
+		fom_range(fg->fom_types[j], &y1, &y2);
+		for ( i=0; i<fg->n_shells; i++ ) {
+			double fv = fg->fom_values[j][i];
+			if ( !isnan(fv) ) {
+				if ( split ) {
+					cairo_move_to(cr, w*(fg->shell_centers[i]-x1)/(x2-x1),
+					              h*(fv-y1)/(y2-y1));
+					split = 0;
+				} else {
+					cairo_line_to(cr, w*(fg->shell_centers[i]-x1)/(x2-x1),
+					              h*(fv-y1)/(y2-y1));
+				}
+			} else {
+				split = 1;
+			}
+		}
+		cairo_set_line_width(cr, 1.0);
+		fom_colour(fg->fom_types[j], col);
+		cairo_set_source_rgb(cr, col[0], col[1], col[2]);
+		cairo_stroke(cr);
+	}
 
 	cairo_restore(cr);
 
