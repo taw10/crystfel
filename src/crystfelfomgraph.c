@@ -162,38 +162,48 @@ static void draw_x_axis(cairo_t *cr, double *tics, int n_tics,
 
 
 static void draw_y_axis(cairo_t *cr, double h, double oy,
-                        double y1, double y2)
+                        double y1, double y2, const char *name)
 {
 	int i;
+	cairo_text_extents_t ext;
 
 	cairo_new_path(cr);
-	cairo_move_to(cr, oy, oy);
-	cairo_line_to(cr, oy, h);
+	cairo_move_to(cr, 0, oy);
+	cairo_line_to(cr, 0, h);
 	cairo_set_line_width(cr, 1.0);
 	cairo_stroke(cr);
 
-	for ( i=0; i<5; i++ ) {
+	for ( i=0; i<=5; i++ ) {
 
-		cairo_text_extents_t ext;
 		char label[128];
-		double y;
+		double y_pos;
+		double y_val;
 
-		y = oy + (h-oy) * i*(y2-y1)/5.0;
+		y_val = y1 + i*(y2-y1)/5.0;
+		y_pos = oy + (h-oy) * (y_val-y1)/(y2-y1);
 
-		cairo_move_to(cr, 0.0, y);
-		cairo_line_to(cr, -5.0, y);
+		cairo_move_to(cr, 0.0, y_pos);
+		cairo_line_to(cr, -5.0, y_pos);
 		cairo_set_line_width(cr, 1.0);
 		cairo_stroke(cr);
 
 		cairo_save(cr);
-		snprintf(label, 127, "%.1f", y);
+		snprintf(label, 127, "%.2f", y_val);
 		cairo_text_extents(cr, label, &ext);
-		cairo_move_to(cr, -ext.x_advance-3.0, y-ext.y_advance/2.0);
+		cairo_move_to(cr, -ext.width-5.0, y_pos-ext.height/2.0);
 		cairo_scale(cr, 1.0, -1.0);
 		cairo_show_text(cr, label);
 		cairo_restore(cr);
 
 	}
+
+	cairo_save(cr);
+	cairo_text_extents(cr, name, &ext);
+	cairo_move_to(cr, -ext.height-3.0, oy+(h-oy+ext.x_advance)/2.0);
+	cairo_scale(cr, 1.0, -1.0);
+	cairo_rotate(cr, M_PI_2);
+	cairo_show_text(cr, name);
+	cairo_restore(cr);
 }
 
 
@@ -210,7 +220,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 	double border = 10.0;
 	double w = fg->visible_width;
 	double h = fg->visible_height;
-	double axsp = 20.0;
+	double axsp = 20.0;   /* Vertical space for x-axis labels */
+	double yaxsp = 30.0;  /* Horizontal space for y-axis labels */
 	double x1 = fg->shell_centers[0];
 	double x2 = fg->shell_centers[fg->n_shells-1];
 
@@ -226,15 +237,16 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 	/* y-axes (multiple) */
 	double ox = 0.0;
 	cairo_save(cr);
+	cairo_translate(cr, yaxsp, 0.0);
 	for ( j=0; j<fg->n_foms; j++ ) {
 		double col[3];
 		double y1, y2;
 		fom_colour(fg->fom_types[j], col);
 		fom_range(fg->fom_types[j], &y1, &y2);
 		cairo_set_source_rgb(cr, col[0], col[1], col[2]);
-		draw_y_axis(cr, h, axsp, y1, y2);
-		ox += axsp;
-		cairo_translate(cr, axsp, 0.0);
+		draw_y_axis(cr, h, axsp, y1, y2, fom_name(fg->fom_types[j]));
+		ox += yaxsp;
+		cairo_translate(cr, yaxsp, 0.0);
 	}
 	cairo_restore(cr);
 
