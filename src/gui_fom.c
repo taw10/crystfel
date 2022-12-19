@@ -59,10 +59,7 @@ struct fom_window
 	GtkWidget *min_meas;
 	GtkWidget *cell_chooser;
 	GtkWidget *graph;
-
-	int n_datasets;
-	GtkWidget *dataset_checkboxes[MAX_DATASETS];
-	char *dataset_names[MAX_DATASETS];
+	GtkWidget *input_combo;
 
 	int n_foms;
 	GtkWidget *fom_checkboxes[16];
@@ -231,11 +228,6 @@ static int load_dataset(struct gui_merge_result *result,
 		return 1;
 	}
 
-	STATUS("%s: accepted %i reflections out of %i\n",
-	       result->hkl,
-	       num_reflections(all_refls),
-	       num_reflections(raw_refl));
-
 	if ( need_ano ) {
 
 		fom_select_reflections(raw_refl, &all_refls_anom,
@@ -322,15 +314,19 @@ static struct fom_context *dispatch_fom(RefList *all_refls,
 static void fom_response_sig(GtkWidget *dialog, gint resp,
                              struct fom_window *f)
 {
-	int ds, fom;
-	int need_ano;
-	UnitCell *cell;
-	struct fom_shells *shells;
-
 	if ( resp != GTK_RESPONSE_APPLY ) {
 		gtk_widget_destroy(dialog);
 		return;
 	}
+}
+
+
+static void update_fom(GtkWidget *widget, struct fom_window *f)
+{
+	int fom;
+	int need_ano;
+	UnitCell *cell;
+	struct fom_shells *shells;
 
 	f->proj->fom_res_min = get_float(f->min_res);
 	f->proj->fom_res_max = get_float(f->max_res);
@@ -371,79 +367,75 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 
 	need_ano = anomalous_foms_selected(f);
 
-	for ( ds=0; ds<f->n_datasets; ds++ ) {
+	const char *name;
+	struct gui_merge_result *result;
+	SymOpList *sym = NULL;
+	RefList *all_refls = NULL;
+	RefList *all_refls_anom = NULL;
+	RefList *part1 = NULL;
+	RefList *part2 = NULL;
+	RefList *part1_anom = NULL;
+	RefList *part2_anom = NULL;
 
-		struct gui_merge_result *result;
-		SymOpList *sym = NULL;
-		RefList *all_refls = NULL;
-		RefList *all_refls_anom = NULL;
-		RefList *part1 = NULL;
-		RefList *part2 = NULL;
-		RefList *part1_anom = NULL;
-		RefList *part2_anom = NULL;
+	/* Load dataset */
+	name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(f->input_combo));
+	result = find_merge_result_by_name(f->proj, name);
 
-		if ( !menu_selected(f->dataset_checkboxes[ds]) ) continue;
+	if ( load_dataset(result, need_ano, cell,
+	                  f->proj->fom_res_min,
+	                  f->proj->fom_res_max,
+	                  f->proj->fom_min_meas,
+	                  f->proj->fom_min_snr,
+	                  &sym, &all_refls, &all_refls_anom,
+	                  &part1, &part2, &part1_anom, &part2_anom) )
+	{
+		return;
+	}
 
-		/* Load dataset */
-		result = find_merge_result_by_name(f->proj,
-		                                   f->dataset_names[ds]);
+	double *shell_centers = malloc(shells->nshells*sizeof(double));
+	double **fom_values = malloc(f->n_foms*sizeof(double *));
+	enum fom_type *fom_types = malloc(f->n_foms*sizeof(enum fom_type));
 
-		if ( load_dataset(result, need_ano, cell,
-		                  f->proj->fom_res_min,
-		                  f->proj->fom_res_max,
-		                  f->proj->fom_min_meas,
-		                  f->proj->fom_min_snr,
-		                  &sym, &all_refls, &all_refls_anom,
-		                  &part1, &part2, &part1_anom, &part2_anom) )
-		{
+	int fomi = 0;
+	for ( fom=0; fom<f->n_foms; fom++ ) {
+
+		struct fom_context *fctx;
+
+		if ( !fom_selected(f, fom) ) continue;
+
+		fctx = dispatch_fom(all_refls, all_refls_anom,
+		                    part1, part2,
+		                    part1_anom, part2_anom,
+		                    cell, shells, sym,
+		                    f->fom_types[fom]);
+		if ( fctx == NULL ) {
+			ERROR("Failed to calculate FoM %i for dataset %s\n",
+			      f->fom_types[fom], name);
 			continue;
 		}
 
-		double *shell_centers = malloc(shells->nshells*sizeof(double));
-		double **fom_values = malloc(f->n_foms*sizeof(double *));
-		enum fom_type *fom_types = malloc(f->n_foms*sizeof(enum fom_type));
-
-		int fomi = 0;
-		for ( fom=0; fom<f->n_foms; fom++ ) {
-
-			struct fom_context *fctx;
-
-			if ( !fom_selected(f, fom) ) continue;
-
-			fctx = dispatch_fom(all_refls, all_refls_anom,
-			                    part1, part2,
-			                    part1_anom, part2_anom,
-			                    cell, shells, sym,
-			                    f->fom_types[fom]);
-			if ( fctx == NULL ) {
-				ERROR("Failed to calculate FoM %i for dataset %s\n",
-				      f->fom_types[fom], f->dataset_names[ds]);
-				continue;
-			}
-
-			fom_types[fomi] = f->fom_types[fom];
-			fom_values[fomi] = make_fom_vals(fctx, shells);
-			fomi++;
-
-		}
-
-		shell_centers = make_shell_centers(shells);
-		crystfel_fom_graph_set_data(CRYSTFEL_FOM_GRAPH(f->graph),
-		                            shell_centers, shells->nshells,
-		                            fom_types, fom_values, fomi);
-
-		reflist_free(all_refls);
-		reflist_free(all_refls_anom);
-		free_symoplist(sym);
+		fom_types[fomi] = f->fom_types[fom];
+		fom_values[fomi] = make_fom_vals(fctx, shells);
+		fomi++;
 
 	}
+
+	shell_centers = make_shell_centers(shells);
+	crystfel_fom_graph_set_data(CRYSTFEL_FOM_GRAPH(f->graph),
+	                            shell_centers, shells->nshells,
+	                            fom_types, fom_values, fomi);
+
+	reflist_free(all_refls);
+	reflist_free(all_refls_anom);
+	free_symoplist(sym);
 
 }
 
 
 static GtkWidget *add_item(GtkWidget *menu,
                            const char *text,
-                           const char *markup)
+                           const char *markup,
+                           struct fom_window *f)
 {
 	GtkWidget *label;
 	GtkWidget *item;
@@ -460,6 +452,7 @@ static GtkWidget *add_item(GtkWidget *menu,
 	gtk_widget_show_all(item);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(update_fom), f);
 
 	return item;
 }
@@ -486,22 +479,22 @@ static GtkWidget *make_fom_menu(struct fom_window *fom)
 	gtk_widget_show_all(item);
 
 	/* Order of FoMs must match list below */
-	fom->fom_checkboxes[0] = add_item(menu, "I/σ(I)", NULL);
-	fom->fom_checkboxes[1] = add_item(menu, "Completeness", NULL);
-	fom->fom_checkboxes[2] = add_item(menu, "Redundancy", NULL);
+	fom->fom_checkboxes[0] = add_item(menu, "I/σ(I)", NULL, fom);
+	fom->fom_checkboxes[1] = add_item(menu, "Completeness", NULL, fom);
+	fom->fom_checkboxes[2] = add_item(menu, "Redundancy", NULL, fom);
 	add_separator(menu);
-	fom->fom_checkboxes[3] = add_item(menu, "Rsplit", "R<sub>split</sub>");
-	fom->fom_checkboxes[4] = add_item(menu, "CC", "CC<sub>½</sub>");
-	fom->fom_checkboxes[5] = add_item(menu, "CC*", "CC<sup>*</sup>");
+	fom->fom_checkboxes[3] = add_item(menu, "Rsplit", "R<sub>split</sub>", fom);
+	fom->fom_checkboxes[4] = add_item(menu, "CC", "CC<sub>½</sub>", fom);
+	fom->fom_checkboxes[5] = add_item(menu, "CC*", "CC<sup>*</sup>", fom);
 	add_separator(menu);
-	fom->fom_checkboxes[6] = add_item(menu, "CCano", "CC<sub>ano</sub>");
-	fom->fom_checkboxes[7] = add_item(menu, "Rano", "R<sub>ano</sub>");
+	fom->fom_checkboxes[6] = add_item(menu, "CCano", "CC<sub>ano</sub>", fom);
+	fom->fom_checkboxes[7] = add_item(menu, "Rano", "R<sub>ano</sub>", fom);
 	fom->fom_checkboxes[8] = add_item(menu, "Rano ÷ Rsplit",
-	                                  "R<sub>ano</sub> ÷ R<sub>split</sub>");
-	fom->fom_checkboxes[9] = add_item(menu, "RMS anomalous correlation ratio", NULL);
+	                                  "R<sub>ano</sub> ÷ R<sub>split</sub>", fom);
+	fom->fom_checkboxes[9] = add_item(menu, "RMS anomalous correlation ratio", NULL, fom);
 	add_separator(menu);
-	fom->fom_checkboxes[10] = add_item(menu, "Fraction of differences within 1σ(I)", NULL);
-	fom->fom_checkboxes[11] = add_item(menu, "Fraction of differences within 2σ(I)", NULL);
+	fom->fom_checkboxes[10] = add_item(menu, "Fraction of differences within 1σ(I)", NULL, fom);
+	fom->fom_checkboxes[11] = add_item(menu, "Fraction of differences within 2σ(I)", NULL, fom);
 
 	/* Order must match the list above */
 	fom->fom_types[0] = FOM_SNR;
@@ -521,37 +514,6 @@ static GtkWidget *make_fom_menu(struct fom_window *fom)
 	fom->fom_types[11] = FOM_D2SIG;
 
 	fom->n_foms = 12;
-
-	return menu;
-}
-
-
-static GtkWidget *make_dataset_menu(struct fom_window *win)
-{
-	GtkWidget *menu;
-	GtkWidget *item;
-	int i;
-
-	menu = gtk_menu_new();
-
-	item = gtk_tearoff_menu_item_new();
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	gtk_widget_show_all(item);
-
-	for ( i=0; i<win->proj->n_merge_results; i++ ) {
-
-		const char *ds_name = win->proj->merge_results[i].name;
-
-		/* Yes, I'm lazy */
-		if ( i >= MAX_DATASETS ) {
-			ERROR("Too many datasets - ignoring %s\n", ds_name);
-			continue;
-		}
-
-		win->dataset_checkboxes[i] = add_item(menu, ds_name, NULL);
-		win->dataset_names[i] = strdup(ds_name);
-		win->n_datasets++;
-	}
 
 	return menu;
 }
@@ -581,12 +543,13 @@ static int result_res_range(struct gui_merge_result *result,
 static void res_range_to_data_sig(GtkButton *buton,
                                   struct fom_window *f)
 {
-	int ds;
+	const char *name;
+	struct gui_merge_result *result;
 	gchar *cell_filename;
 	UnitCell *cell;
 	char tmp[64];
-	double lowres = 0.0;  /* Angstroms */
-	double highres = INFINITY;
+	double lowres;  /* Angstroms */
+	double highres;
 
 	cell_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(f->cell_chooser));
 	if ( cell_filename == NULL ) {
@@ -601,23 +564,10 @@ static void res_range_to_data_sig(GtkButton *buton,
 	}
 	g_free(cell_filename);
 
-	for ( ds=0; ds<f->n_datasets; ds++ ) {
+	name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(f->input_combo));
+	result = find_merge_result_by_name(f->proj, name);
 
-		struct gui_merge_result *result;
-		double ds_lowres, ds_highres;
-
-		if ( !menu_selected(f->dataset_checkboxes[ds]) ) continue;
-
-		result = find_merge_result_by_name(f->proj,
-		                                   f->dataset_names[ds]);
-
-		if ( result_res_range(result, cell,
-		                      &ds_lowres, &ds_highres) ) continue;
-
-		if ( ds_lowres > lowres ) lowres = ds_lowres;
-		if ( ds_highres < highres ) highres = ds_highres;
-
-	}
+	if ( result_res_range(result, cell, &lowres, &highres) ) return;
 
 	cell_free(cell);
 
@@ -627,14 +577,17 @@ static void res_range_to_data_sig(GtkButton *buton,
 	gtk_entry_set_text(GTK_ENTRY(f->min_res), tmp);
 	snprintf(tmp, 64, "%.2f", f->proj->fom_res_max);
 	gtk_entry_set_text(GTK_ENTRY(f->max_res), tmp);
+
+	update_fom(NULL, f);
 }
 
 
-static void cell_file_clear_sig(GtkButton *buton,
+static void cell_file_clear_sig(GtkButton *button,
                                 struct fom_window *f)
 {
 	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(f->cell_chooser),
 	                              "(none)");
+	update_fom(NULL, f);
 }
 
 
@@ -648,19 +601,18 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *button;
 	char tmp[64];
 	struct fom_window *f;
+	int i;
 
 	f = malloc(sizeof(struct fom_window));
 	if ( f == NULL ) return 0;
 
 	f->proj = proj;
-	f->n_datasets = 0;
 	f->n_foms = 0;
 
 	dialog = gtk_dialog_new_with_buttons("Calculate figures of merit",
 	                                     GTK_WINDOW(proj->window),
 	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
 	                                     "Close", GTK_RESPONSE_CLOSE,
-	                                     "Calculate", GTK_RESPONSE_APPLY,
 	                                     NULL);
 
 	g_signal_connect(G_OBJECT(dialog), "response",
@@ -678,11 +630,18 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	label = gtk_label_new("Results to show:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
-	button = gtk_menu_button_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(button),
+	f->input_combo = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->input_combo),
 	                   FALSE, FALSE, 4.0);
-	gtk_menu_button_set_popup(GTK_MENU_BUTTON(button),
-	                          make_dataset_menu(f));
+	for ( i=0; i<proj->n_merge_results; i++ ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(f->input_combo),
+		                          proj->merge_results[i].name,
+		                          proj->merge_results[i].name);
+	}
+	gtk_combo_box_set_active(GTK_COMBO_BOX(f->input_combo),
+	                         proj->n_merge_results-1);
+	g_signal_connect(G_OBJECT(f->input_combo), "changed",
+	                 G_CALLBACK(update_fom), f);
 
 	label = gtk_label_new("Figures of merit to show:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
@@ -710,6 +669,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->cell_chooser),
 	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(f->cell_chooser), "file-set",
+	                 G_CALLBACK(update_fom), f);
 	button = gtk_button_new_from_icon_name("edit-clear",
 	                                       GTK_ICON_SIZE_BUTTON);
 	g_signal_connect(G_OBJECT(button), "clicked",
@@ -730,6 +691,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_entry_set_text(GTK_ENTRY(f->min_res), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_res),
 	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(f->min_res), "activate",
+	                 G_CALLBACK(update_fom), f);
 	label = gtk_label_new("to");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -739,6 +702,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_entry_set_text(GTK_ENTRY(f->max_res), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->max_res),
 	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(f->max_res), "activate",
+	                 G_CALLBACK(update_fom), f);
 	label = gtk_label_new("Å");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -761,6 +726,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	snprintf(tmp, 64, "%i", proj->fom_nbins);
 	gtk_entry_set_text(GTK_ENTRY(f->num_bins), tmp);
+	g_signal_connect(G_OBJECT(f->num_bins), "activate",
+	                 G_CALLBACK(update_fom), f);
 
 	/* Minimum I/sigI */
 	hbox = gtk_hbox_new(FALSE, 0.0);
@@ -773,6 +740,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_entry_set_width_chars(GTK_ENTRY(f->min_snr), 4);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->min_snr),
 	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(f->min_snr), "activate",
+	                 G_CALLBACK(update_fom), f);
 
 	/* Min measurements per reflection */
 	hbox = gtk_hbox_new(FALSE, 0.0);
@@ -789,10 +758,15 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	snprintf(tmp, 64, "%i", proj->fom_min_meas);
 	gtk_entry_set_text(GTK_ENTRY(f->min_meas), tmp);
+	g_signal_connect(G_OBJECT(f->min_meas), "activate",
+	                 G_CALLBACK(update_fom), f);
 
 	f->graph = crystfel_fom_graph_new();
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(f->graph),
 	                   TRUE, TRUE, 4.0);
+
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(f->fom_checkboxes[3]), TRUE);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(f->fom_checkboxes[5]), TRUE);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	                                GTK_RESPONSE_CLOSE);
