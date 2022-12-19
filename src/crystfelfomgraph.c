@@ -70,29 +70,29 @@ static void fom_colour(enum fom_type t, double *col)
 		case FOM_R2:
 		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
 		case FOM_RSPLIT:
-		col[0] = 0.5;  col[1] = 0.0;  col[2] = 0.5; break;
+		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
 		case FOM_CC:
 		col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.3; break;
 		case FOM_CCSTAR:
 		col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.5; break;
 		case FOM_CCANO:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.0;  col[1] = 0.0;  col[2] = 1.0; break;
 		case FOM_CRDANO:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.5;  col[1] = 0.0;  col[2] = 0.5; break;
 		case FOM_RANO:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.5;  col[1] = 0.2;  col[2] = 0.0; break;
 		case FOM_RANORSPLIT:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.8;  col[1] = 0.2;  col[2] = 0.0; break;
 		case FOM_D1SIG:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.0;  col[1] = 0.3;  col[2] = 0.0; break;
 		case FOM_D2SIG:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 1.0;  col[1] = 0.5;  col[2] = 0.0; break;
 		case FOM_REDUNDANCY:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.0;  col[1] = 1.0;  col[2] = 0.0; break;
 		case FOM_SNR:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.5;  col[1] = 0.5;  col[2] = 0.0; break;
 		case FOM_COMPLETENESS:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+		col[0] = 0.3;  col[1] = 0.3;  col[2] = 0.3; break;
 		default:
 		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
 	}
