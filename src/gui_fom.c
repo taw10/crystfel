@@ -64,6 +64,12 @@ struct fom_window
 	int n_foms;
 	GtkWidget *fom_checkboxes[16];
 	enum fom_type fom_types[16];
+
+	struct fom_shells *calc_shells;
+	int calc_n_foms;
+	enum fom_type *calc_fom_types;
+	double **calc_fom_values;
+	double *calc_fom_overall;
 };
 
 
@@ -311,12 +317,77 @@ static struct fom_context *dispatch_fom(RefList *all_refls,
 }
 
 
+static void fom_export_response_sig(GtkWidget *dialog, gint resp,
+                                    struct fom_window *f)
+{
+	char *filename;
+	FILE *fh;
+	int i;
+
+	if ( resp != GTK_RESPONSE_OK ) {
+		gtk_widget_destroy(dialog);
+		return;
+	}
+
+	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+	STATUS("Saving to %s\n", filename);
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return;
+
+	fprintf(fh, "\"1/d min/nm^-1\",\"1/d center/nm^-1\",\"1/d max/nm^-1\",\"d center/A\"");
+	for ( i=0; i<f->calc_n_foms; i++ ) {
+		fprintf(fh, ",\"%s\"", fom_name(f->calc_fom_types[i]));
+	}
+	fprintf(fh, "\n");
+	for ( i=0; i<f->calc_shells->nshells; i++ ) {
+		int j;
+		fprintf(fh, "%f,%f,%f,%f",
+		        f->calc_shells->rmins[i]/1e9,
+		        fom_shell_centre(f->calc_shells, i)/1e9,
+		        f->calc_shells->rmaxs[i]/1e9,
+		        1e10/fom_shell_centre(f->calc_shells, i));
+		for ( j=0; j<f->calc_n_foms; j++ ) {
+			fprintf(fh, ",%f", f->calc_fom_values[j][i]);
+		}
+		fprintf(fh, "\n");
+	}
+
+	fprintf(fh, "\n\n");
+	for ( i=0; i<f->calc_n_foms; i++ ) {
+		fprintf(fh, "Overall %s = %f\n",
+		        fom_name(f->calc_fom_types[i]),
+		        f->calc_fom_overall[i]);
+	}
+
+	fprintf(fh, "\n\n");
+	fprintf(fh, "Note: R-factors are given as decimal numbers (usually <1), not as percentages.\n");
+	fclose(fh);
+
+	g_free(filename);
+	gtk_widget_destroy(dialog);
+}
+
+
 static void fom_response_sig(GtkWidget *dialog, gint resp,
                              struct fom_window *f)
 {
-	if ( resp != GTK_RESPONSE_APPLY ) {
+	if ( resp == GTK_RESPONSE_CLOSE ) {
 		gtk_widget_destroy(dialog);
 		return;
+	}
+
+	if ( resp == GTK_RESPONSE_ACCEPT ) {
+		GtkWidget *w;
+		w = gtk_file_chooser_dialog_new("Export filename",
+		                                GTK_WINDOW(f->proj->window),
+		                                GTK_FILE_CHOOSER_ACTION_SAVE,
+		                                "Export", GTK_RESPONSE_OK,
+		                                NULL);
+		gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(w), TRUE);
+		g_signal_connect(G_OBJECT(w), "response",
+	                 G_CALLBACK(fom_export_response_sig), f);
+		gtk_widget_show_all(w);
 	}
 }
 
@@ -394,6 +465,7 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 
 	double *shell_centers = malloc(shells->nshells*sizeof(double));
 	double **fom_values = malloc(f->n_foms*sizeof(double *));
+	double *overall_values = malloc(f->n_foms*sizeof(double));
 	enum fom_type *fom_types = malloc(f->n_foms*sizeof(enum fom_type));
 
 	int fomi = 0;
@@ -416,19 +488,29 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 
 		fom_types[fomi] = f->fom_types[fom];
 		fom_values[fomi] = make_fom_vals(fctx, shells);
+		overall_values[fomi] = fom_overall_value(fctx);
 		fomi++;
 
 	}
+
+	free(f->calc_fom_overall);
+	/* All the other old memory is freed by CrystFELFoMGraph
+	 * during the set_data call */
 
 	shell_centers = make_shell_centers(shells);
 	crystfel_fom_graph_set_data(CRYSTFEL_FOM_GRAPH(f->graph),
 	                            shell_centers, shells->nshells,
 	                            fom_types, fom_values, fomi);
 
+	f->calc_shells = shells;
+	f->calc_n_foms = fomi;
+	f->calc_fom_types = fom_types;
+	f->calc_fom_values = fom_values;
+	f->calc_fom_overall = overall_values;
+
 	reflist_free(all_refls);
 	reflist_free(all_refls_anom);
 	free_symoplist(sym);
-
 }
 
 
@@ -608,10 +690,12 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	f->proj = proj;
 	f->n_foms = 0;
+	f->calc_fom_overall = NULL;
 
 	dialog = gtk_dialog_new_with_buttons("Calculate figures of merit",
 	                                     GTK_WINDOW(proj->window),
 	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                     "Export", GTK_RESPONSE_ACCEPT,
 	                                     "Close", GTK_RESPONSE_CLOSE,
 	                                     NULL);
 
