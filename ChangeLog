@@ -2,10 +2,13 @@ Changes in this development version
 -----------------------------------
 
 - New tutorial added (doc/articles/tutorial.rst)
+- New documentation on point group choice (doc/articles/pointgroup.rst)
 - Add Dockerfile and container CI setup (Silvan Schön)
 - Added scripts/install-indexers
-- Fixed peak coordinates when loading a stream (#66)
+- indexamajig: Add --peakfinder8-fast (Alexandra Tolstikova)
+- indexamajig: Add --asdf-fast (Alexandra Tolstikova)
 - indexamajig: fixed --wait-for-file (#65)
+- indexamajig: Add --cell-parameters-only
 - indexamajig: re-implement and improve --profile
 - indexamajig: Return value 5 if no files could be processed
 - indexamajig: Fix harvest file JSON syntax (#68)
@@ -18,6 +21,12 @@ Changes in this development version
 - partialator: Use default event ID when none given in --custom-split
 - Dropped support for pre-2015 stream formats
 - Recognise '.nx5' as HDF5
+- Set upper limit on number of peaks found by "zaef"
+- Improve handling of bad CBF files
+- Fixed peak coordinates when loading a stream (#66)
+- GUI: Add colour scale widget
+- GUI: Overhaul figure of merit calculation
+- GUI: Add menu items for detector-shift and peakogram
 - GUI: Add custom icons for tasks
 - GUI: Optionally show resolution rings
 - GUI: Use sbatch/scancel/scontrol instead of SLURM API
