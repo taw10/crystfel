@@ -814,9 +814,6 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                 G_CALLBACK(update_fom), f);
 
 	/* Minimum I/sigI */
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 4.0);
 	label = gtk_label_new("Minimum I/sigI:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
