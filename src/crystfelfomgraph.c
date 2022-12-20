@@ -99,25 +99,51 @@ static void fom_colour(enum fom_type t, double *col)
 }
 
 
-static void fom_range(enum fom_type t, double *min, double *max)
+static void fom_range(enum fom_type t, double *vals, int n_shells,
+                      double *min, double *max)
 {
+	double cmin, cmax;
+
 	switch ( t ) {
-		case FOM_R1I:              *min = 0.0;   *max = 0.8;   break;
-		case FOM_R1F:              *min = 0.0;   *max = 0.8;   break;
-		case FOM_R2:               *min = 0.0;   *max = 0.8;   break;
-		case FOM_RSPLIT:           *min = 0.0;   *max = 0.8;   break;
-		case FOM_CC:               *min = 0.9;   *max = 1.0;   break;
-		case FOM_CCSTAR:           *min = 0.9;   *max = 1.0;   break;
-		case FOM_CCANO:            *min = 0.9;   *max = 1.0;   break;
-		case FOM_CRDANO:           *min = 0.9;   *max = 1.0;   break;
-		case FOM_RANO:             *min = 0.0;   *max = 0.7;   break;
-		case FOM_RANORSPLIT:       *min = 0.0;   *max = 8.0;   break;
-		case FOM_D1SIG:            *min = 0.0;   *max = 1.0;   break;
-		case FOM_D2SIG:            *min = 0.0;   *max = 1.0;   break;
-		case FOM_REDUNDANCY:       *min = 0.0;   *max = 100;   break;
-		case FOM_SNR:              *min = 0.0;   *max = 10.0;  break;
-		case FOM_COMPLETENESS:     *min = 0.0;   *max = 1.0;   break;
-		default:                   *min = 0.0;   *max = 1.0;   break;
+		case FOM_R1I:              cmin = 0.0;   cmax = 0.8;   break;
+		case FOM_R1F:              cmin = 0.0;   cmax = 0.8;   break;
+		case FOM_R2:               cmin = 0.0;   cmax = 0.8;   break;
+		case FOM_RSPLIT:           cmin = 0.0;   cmax = 0.8;   break;
+		case FOM_CC:               cmin = 0.9;   cmax = 1.0;   break;
+		case FOM_CCSTAR:           cmin = 0.9;   cmax = 1.0;   break;
+		case FOM_CCANO:            cmin = 0.9;   cmax = 1.0;   break;
+		case FOM_CRDANO:           cmin = 0.5;   cmax = 1.0;   break;
+		case FOM_RANO:             cmin = 0.0;   cmax = 0.8;   break;
+		case FOM_RANORSPLIT:       cmin = NAN;   cmax = NAN;   break;
+		case FOM_D1SIG:            cmin = 0.0;   cmax = 1.0;   break;
+		case FOM_D2SIG:            cmin = 0.0;   cmax = 1.0;   break;
+		case FOM_REDUNDANCY:       cmin = 0.0;   cmax = NAN;   break;
+		case FOM_SNR:              cmin = 0.0;   cmax = NAN;   break;
+		case FOM_COMPLETENESS:     cmin = 0.0;   cmax = 1.0;   break;
+		default:                   cmin = 0.0;   cmax = 1.0;   break;
+	}
+
+	if ( isnan(cmin) || isnan(cmax) ) {
+		int i;
+		double vmin = INFINITY;
+		double vmax = -INFINITY;
+		for ( i=0; i<n_shells; i++ ) {
+			if ( vals[i] < vmin )  vmin = vals[i];
+			if ( vals[i] > vmax )  vmax = vals[i];
+		}
+		if ( isnan(cmin) ) {
+			*min = vmin;
+		} else {
+			*min = cmin;
+		}
+		if ( isnan(cmax) ) {
+			*max = vmax;
+		} else {
+			*max = cmax;
+		}
+	} else {
+		*min = cmin;
+		*max = cmax;
 	}
 }
 
@@ -248,7 +274,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 		double col[3];
 		double y1, y2;
 		fom_colour(fg->fom_types[j], col);
-		fom_range(fg->fom_types[j], &y1, &y2);
+		fom_range(fg->fom_types[j], fg->fom_values[j], fg->n_shells,
+		          &y1, &y2);
 		cairo_set_source_rgb(cr, col[0], col[1], col[2]);
 		draw_y_axis(cr, h, axsp, y1, y2, fom_name(fg->fom_types[j]));
 		ox += yaxsp;
@@ -274,7 +301,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 		double col[3];
 		double y1, y2;
 		int split = 1;
-		fom_range(fg->fom_types[j], &y1, &y2);
+		fom_range(fg->fom_types[j], fg->fom_values[j], fg->n_shells,
+		          &y1, &y2);
 		for ( i=0; i<fg->n_shells; i++ ) {
 			double fv = fg->fom_values[j][i];
 			if ( !isnan(fv) ) {
