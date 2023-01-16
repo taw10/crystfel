@@ -887,9 +887,9 @@ long nCk(int n, int k) {
 	assert(k>=0 && k<4);
 	switch ( k ) {
 		case 0 : return 1;
-		case 1 : return n;
-		case 2 : return n*(n-1)/2;
-		case 3 : return n*(n-1)*(n-2)/6;
+		case 1 : return (long)n;
+		case 2 : return (long)n*(n-1)/2;
+		case 3 : return (long)n*(n-1)*(n-2)/6;
 	}
 	return 0;
 }
@@ -918,11 +918,13 @@ void get_triplet_by_index(int index, int n, int *triplet) {
 static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 {
 	int i, n, ri;
-	int N_triplets_tot = nCk(N_reflections, 3);
+	long int N_triplets_tot = nCk(N_reflections, 3);
 
-	int N_triplets = N_triplets_tot;
-	if ( N_triplets > N_triplets_max || N_reflections > 1000 ) {
+	int N_triplets;
+	if ( N_triplets_tot > N_triplets_max || N_reflections > 1000 ) {
 		N_triplets = N_triplets_max;
+	} else {
+		N_triplets = N_triplets_tot;
 	}
 	*N = N_triplets;
 
