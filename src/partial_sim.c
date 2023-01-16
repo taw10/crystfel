@@ -410,8 +410,12 @@ static void run_job(void *vwargs, int cookie)
 	if ( wargs->template_cell == NULL ) {
 		/* Set up a random orientation */
 		struct quaternion orientation;
+		char tmp[128];
 		orientation = random_quaternion(qargs->rngs[cookie]);
 		crystal_set_cell(cr, cell_rotate(qargs->cell, orientation));
+		snprintf(tmp, 127, "quaternion = %f %f %f %f",
+		         orientation.w, orientation.x, orientation.y, orientation.z);
+		crystal_add_notes(cr, tmp);
 	} else {
 		crystal_set_cell(cr, wargs->template_cell);
 	}
