@@ -23,7 +23,7 @@ build-meson:
     - ninja -C build test
 
 build-meson-nohdf5:
-  image: fedora:35
+  image: fedora:37
   script:
     - dnf group install -y 'Development Tools'
     - dnf install -y gsl-devel flex bison gcc-c++
