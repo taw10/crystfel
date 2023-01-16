@@ -923,6 +923,7 @@ int main(int argc, char *argv[])
 	qargs.n_done = 0;
 	qargs.n_started = 0;
 	qargs.sym = sym;
+	qargs.dtempl = dtempl;
 	qargs.random_intensities = random_intensities;
 	qargs.cell = cell;
 	qargs.stream = stream;
