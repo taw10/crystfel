@@ -304,11 +304,32 @@ script, which assists with installing indexing engines, creates such a wrapper
 for Mosflm already.
 
 
-Notes about strange problems
-----------------------------
-The following problems are usually only encountered when installing dependencies
-manually, in non-standard locations and with multiple conflicting parallel
-installations of certain dependencies.
+Installation problems and solutions
+-----------------------------------
+
+* **Problem**: After installation, CrystFEL programs fail to start with an error about a missing shared object file:
+    ```
+    $ crystfel
+    crystfel: error while loading shared libraries: libxgandalf.so: cannot open shared object file: No such file directory
+    ```
+
+    The error message might mention a different shared library, such as `libcrystfel.so`.
+
+  **Explanation**: The default installation location for CrystFEL is `/usr/local`.
+  Some Linux distributions (including Fedora) don't include this location in
+  the default search path for libraries.  This problem will affect any program
+  you install under `/usr/local`, not just CrystFEL.
+
+  **Solution**: The best solution is to create (as root) a new file called
+  `/etc/ld.so.conf.d/local.conf`, with the following two lines:
+  ```
+  /usr/local/lib
+  /usr/local/lib64
+  ```
+  Then run `sudo ldconfig`.
+
+  You can also simply run `sudo ldconfig /usr/local/lib /usr/local/lib64`, but
+  the effect will not be permanent, e.g. across system updates.
 
 * **Problem**: Linker error about HDF5 and `fPIC`:
     ```
