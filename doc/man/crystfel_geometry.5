@@ -173,6 +173,12 @@ The range of pixels in the data block specified by the 'data' property that corr
 The number of detector intensity units (ADU) which will arise from either one electron-Volt of photon energy, or one photon.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR.
 
 .PD 0
+.IP \fBadu_bias\fR
+.PD
+The number of detector intensity units (ADU) read from an image without signal. This is sometimes called dark value and the default value is 0.0.
+
+
+.PD 0
 .IP \fBres\fR
 The resolution (in pixels per metre) for this panel.  This is one over the pixel size in metres.
 

@@ -143,6 +143,9 @@ struct panel_template
 	/** Resolution in pixels per metre  */
 	double pixel_pitch;
 
+	/** Bias applied to the raw detector intensity unit (or dark-value), in  ADU */
+	double adu_bias;
+
 	/** Number of detector intensity units per photon, or eV */
 	double adu_scale;
 	enum adu_per_unit adu_scale_unit;

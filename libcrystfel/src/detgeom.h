@@ -62,6 +62,9 @@ struct detgeom_panel
 	/** Pixel size in metres */
 	double      pixel_pitch;
 
+    /** Bias applied to the raw detector intensity unit (or dark-value), in  ADU */
+	double      adu_bias;
+
 	/** Number of detector intensity units per photon (or electron, etc) */
 	double      adu_per_photon;
 

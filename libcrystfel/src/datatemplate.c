@@ -568,6 +568,8 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		panel->cnx = atof(val);
 	} else if ( strcmp(key, "corner_y") == 0 ) {
 		panel->cny = atof(val);
+    } else if ( strcmp(key, "adu_bias") == 0 ) {
+        panel->adu_bias = atof(val);
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_EV;
@@ -1086,6 +1088,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.ssx = NAN;
 	defaults.ssy = NAN;
 	defaults.ssz = NAN;
+	defaults.adu_bias = 0.0;
 	defaults.adu_scale = NAN;
 	defaults.adu_scale_unit = ADU_PER_PHOTON;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_values[i] = 0;
@@ -2043,7 +2046,7 @@ struct detgeom *create_detgeom(struct image *image,
 		}
 
 		p->max_adu = tmpl->max_adu;
-
+        p->adu_bias = tmpl->adu_bias;
 		switch ( tmpl->adu_scale_unit ) {
 
 			case ADU_PER_PHOTON:

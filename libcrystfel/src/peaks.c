@@ -148,7 +148,7 @@ int integrate_peak(struct image *image,
 	double bg_mean, bg_var;
 	double bg_tot_sq = 0.0;
 	double var;
-	double aduph;
+	double aduph, bias;
 	struct detgeom_panel *p;
 
 	if ( saturated != NULL ) *saturated = 0;
@@ -156,6 +156,7 @@ int integrate_peak(struct image *image,
 	p = &image->detgeom->panels[pn];
 
 	aduph = p->adu_per_photon;
+	bias = p->adu_bias;
 
 	lim_sq = pow(ir_inn, 2.0);
 	mid_lim_sq = pow(ir_mid, 2.0);
@@ -222,6 +223,9 @@ int integrate_peak(struct image *image,
 
 		idx = dfs+p_cfs+p->w*(dss+p_css);
 		val = image->dp[pn][idx];
+
+		/* correct raw intensity for the bias */
+		val -= bias;
 
 		/* Check if peak contains saturation */
 		if ( (saturated != NULL) && (val > p->max_adu) ) *saturated = 1;

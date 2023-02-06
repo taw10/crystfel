@@ -1399,7 +1399,7 @@ int integrate_rings_once(Reflection *refl,
 	double sigma;
 	int saturated;
 	int r;
-	double bgmean, sig2_bg, sig2_poisson, aduph;
+	double bgmean, sig2_bg, sig2_poisson, aduph, bias;
 
 	set_redundancy(refl, 0);
 
@@ -1451,6 +1451,9 @@ int integrate_rings_once(Reflection *refl,
 
 	intensity = tentative_intensity(ic, bx);
 	mean_var_area(ic, bx, BM_BG, &bgmean, &sig2_bg);
+
+	bias = bx->p->adu_bias;
+	intensity -= bias;
 
 	aduph = bx->p->adu_per_photon;
 	sig2_poisson = aduph * intensity;

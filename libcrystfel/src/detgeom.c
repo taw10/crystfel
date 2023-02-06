@@ -133,8 +133,8 @@ void show_panel(struct detgeom_panel *p)
 	       p->cnx*p->pixel_pitch*1e3,
 	       p->cny*p->pixel_pitch*1e3,
 	       p->cnz*p->pixel_pitch*1e3);
-	STATUS("  %f adu/photon, max %f adu\n",
-	       p->adu_per_photon, p->max_adu);
+	STATUS("  %f adu/photon, bias %f, max %f adu\n",
+	       p->adu_per_photon, p->adu_bias, p->max_adu);
 }
 
 
