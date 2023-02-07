@@ -512,6 +512,23 @@ static void render_overlined_indices(cairo_t *dctx,
 }
 
 
+static double *circle_points(int n)
+{
+	double ang;
+	int i;
+	double *cp = malloc(2*n*sizeof(double));
+	if ( cp == NULL ) return NULL;
+
+	ang = 2.0*M_PI / n;
+	for ( i=0; i<n; i++ ) {
+		cp[2*i] = cos(i*ang);
+		cp[2*i+1] = sin(i*ang);
+	}
+
+	return cp;
+}
+
+
 static void draw_refls(cairo_t *cr,
                        CrystFELImageView *iv,
                        RefList *list,
@@ -521,6 +538,8 @@ static void draw_refls(cairo_t *cr,
 	const Reflection *refl;
 	RefListIterator *iter;
 	double bs, lw;
+	double *cp;
+	const int circle_subdiv = 20;
 
 	if ( list == NULL ) return;
 
@@ -529,6 +548,9 @@ static void draw_refls(cairo_t *cr,
 	cairo_device_to_user_distance(cr, &bs, &lw);
 	bs = fabs(bs);
 	lw = fabs(lw);
+
+	cp = circle_points(circle_subdiv);
+	if ( cp == NULL ) return;
 
 	for ( refl = first_refl_const(list, &iter);
 	      refl != NULL;
@@ -541,6 +563,7 @@ static void draw_refls(cairo_t *cr,
 		float this_bs;
 		float this_lw;
 		int show_cen = 0;
+		int i;
 
 		get_detector_pos(refl, &fs, &ss);
 		pn = get_panel_number(refl);
@@ -556,7 +579,11 @@ static void draw_refls(cairo_t *cr,
 		x = p->pixel_pitch*(p->cnx + p->fsx*fs + p->ssx*ss);
 		y = p->pixel_pitch*(p->cny + p->fsy*fs + p->ssy*ss);
 
-		cairo_arc(cr, x, y, this_bs, 0, 2*M_PI);
+		cairo_move_to(cr, x+cp[0]*this_bs, y+cp[1]*this_bs);
+		for ( i=1; i<circle_subdiv; i++ ) {
+			cairo_line_to(cr, x+cp[2*i]*this_bs, y+cp[2*i+1]*this_bs);
+		}
+		cairo_line_to(cr, x+cp[0]*this_bs, y+cp[1]*this_bs);
 		cairo_set_line_width(cr, this_lw);
 
 		if ( get_redundancy(refl) == 0 ) {
@@ -600,6 +627,8 @@ static void draw_refls(cairo_t *cr,
 
 
 	}
+
+	free(cp);
 }
 
 
