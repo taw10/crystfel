@@ -512,17 +512,34 @@ static void render_overlined_indices(cairo_t *dctx,
 }
 
 
+struct refl_pre
+{
+	int pn;
+	double x;
+	double y;
+	signed int h;
+	signed int k;
+	signed int l;
+	double colour[3];
+};
+
+
+struct refl_precalc
+{
+	int n;
+	struct refl_pre *refls;
+};
+
+
 static void draw_refls(cairo_t *cr,
                        CrystFELImageView *iv,
-                       RefList *list,
                        int label_reflections,
-                       double *colour)
+                       struct refl_precalc *pre)
 {
-	const Reflection *refl;
-	RefListIterator *iter;
+	int i;
 	double bs, lw;
 
-	if ( list == NULL ) return;
+	if ( pre == NULL ) return;
 
 	bs = 5.0;
 	lw = 1.0;
@@ -530,21 +547,19 @@ static void draw_refls(cairo_t *cr,
 	bs = fabs(bs);
 	lw = fabs(lw);
 
-	for ( refl = first_refl_const(list, &iter);
-	      refl != NULL;
-	      refl = next_refl_const(refl, iter) )
-	{
+	for ( i=0; i<pre->n; i++ ) {
+
 		struct detgeom_panel *p;
-		double fs, ss;
-		int pn;
 		double x, y;
 		float this_bs;
 		float this_lw;
+		double *colour;
 		int show_cen = 0;
 
-		get_detector_pos(refl, &fs, &ss);
-		pn = get_panel_number(refl);
-		p = &iv->image->detgeom->panels[pn];
+		x = pre->refls[i].x;
+		y = pre->refls[i].y;
+		p = &iv->image->detgeom->panels[pre->refls[i].pn];
+		colour = pre->refls[i].colour;
 
 		this_lw = biggest(0.1*p->pixel_pitch, lw);
 		this_bs = biggest(iv->refl_box_size * p->pixel_pitch, bs);
@@ -553,21 +568,9 @@ static void draw_refls(cairo_t *cr,
 			show_cen = 1;
 		}
 
-		x = p->pixel_pitch*(p->cnx + p->fsx*fs + p->ssx*ss);
-		y = p->pixel_pitch*(p->cny + p->fsy*fs + p->ssy*ss);
-
 		cairo_arc(cr, x, y, this_bs, 0, 2*M_PI);
 		cairo_set_line_width(cr, this_lw);
-
-		if ( get_redundancy(refl) == 0 ) {
-			cairo_set_source_rgba(cr, 0.7, 0.0, 0.0, 0.9);
-		} else {
-			cairo_set_source_rgba(cr,
-			                      colour[0],
-			                      colour[1],
-			                      colour[2],
-			                      0.9);
-		}
+		cairo_set_source_rgba(cr, colour[0], colour[1], colour[2], 0.9);
 		cairo_stroke(cr);
 
 		if ( show_cen ) {
@@ -585,21 +588,114 @@ static void draw_refls(cairo_t *cr,
 
 		if ( label_reflections ) {
 
-			signed int h, k, l;
-
-			get_indices(refl, &h, &k, &l);
 			cairo_save(cr);
 			cairo_move_to(cr, x, y);
 			cairo_set_source_rgba(cr, 0.0, 0.4, 0.0, 0.9);
 			cairo_set_font_size(cr, 11*p->pixel_pitch);
 			cairo_scale(cr, 1.0, -1.0);
-			render_overlined_indices(cr, h, k, l);
+			render_overlined_indices(cr, pre->refls[i].h,
+			                             pre->refls[i].k,
+			                             pre->refls[i].l);
 			cairo_restore(cr);
 
 		}
 
+	}
+}
+
+
+static void refl_precalc_free(struct refl_precalc *pre)
+{
+	if ( pre != NULL ) {
+		free(pre->refls);
+		free(pre);
+	}
+}
+
+
+static int total_refls(const struct image *image)
+{
+	int i;
+	int n = 0;
+
+	for ( i=0; i<image->n_crystals; i++ ) {
+		n += num_reflections(crystal_get_reflections(image->crystals[i]));
+	}
+
+	return n;
+}
+
+
+static double crystal_cols[][3] =
+{
+	{0.0, 1.0, 0.0},   /* bright green */
+	{0.0, 0.8, 0.8},   /* cyan */
+	{1.0, 1.0, 0.0},   /* bright yellow */
+	{1.0, 1.0, 1.0},   /* white */
+};
+
+static int n_crystal_cols = 4;
+
+
+static struct refl_precalc *precalc_refls(const struct image *image)
+{
+	int n, i, j;
+	struct refl_precalc *pre;
+
+	if ( image->n_crystals == 0 ) return NULL;
+
+	n = total_refls(image);
+	if ( n == 0 ) return NULL;
+
+	pre = malloc(sizeof(struct refl_precalc));
+	if ( pre == NULL ) return NULL;
+	pre->refls = malloc(n*sizeof(struct refl_pre));
+	if ( pre->refls == NULL ) return NULL;
+
+	j = 0;
+	for ( i=0; i<image->n_crystals; i++ ) {
+
+		const Reflection *refl;
+		RefListIterator *iter;
+		const RefList *list = crystal_get_reflections(image->crystals[i]);
+
+		for ( refl = first_refl_const(list, &iter);
+		      refl != NULL;
+		      refl = next_refl_const(refl, iter) )
+		{
+			struct detgeom_panel *p;
+			double fs, ss;
+
+			pre->refls[j].pn = get_panel_number(refl);
+			p = &image->detgeom->panels[get_panel_number(refl)];
+
+			get_detector_pos(refl, &fs, &ss);
+			pre->refls[j].x = p->pixel_pitch*(p->cnx + p->fsx*fs + p->ssx*ss);
+			pre->refls[j].y = p->pixel_pitch*(p->cny + p->fsy*fs + p->ssy*ss);
+
+			get_indices(refl, &pre->refls[j].h,
+			                  &pre->refls[j].k,
+			                  &pre->refls[j].l);
+
+			if ( get_redundancy(refl) == 0 ) {
+				pre->refls[j].colour[0] = 0.7;
+				pre->refls[j].colour[1] = 0.0;
+				pre->refls[j].colour[2] = 0.0;
+			} else {
+				double *col = crystal_cols[i % n_crystal_cols];
+				pre->refls[j].colour[0] = col[0];
+				pre->refls[j].colour[1] = col[1];
+				pre->refls[j].colour[2] = col[2];
+			}
+
+			j++;
+		}
 
 	}
+
+	pre->n = j;
+
+	return pre;
 }
 
 
@@ -643,17 +739,6 @@ static void show_ring(cairo_t *cr, double wl, double mean_z,
 
 	cairo_restore(cr);
 }
-
-
-static double crystal_cols[][3] =
-{
-	{0.0, 1.0, 0.0},   /* bright green */
-	{0.0, 0.8, 0.8},   /* cyan */
-	{1.0, 1.0, 0.0},   /* bright yellow */
-	{1.0, 1.0, 1.0},   /* white */
-};
-
-static int n_crystal_cols = 4;
 
 
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
@@ -705,14 +790,7 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	}
 
 	if ( iv->show_refls ) {
-		int i;
-		for ( i=0; i<iv->image->n_crystals; i++ ) {
-			Crystal *cry = iv->image->crystals[i];
-			draw_refls(cr, iv,
-			           crystal_get_reflections(cry),
-			           iv->label_refls,
-			           crystal_cols[i % n_crystal_cols]);
-		}
+		draw_refls(cr, iv, iv->label_refls, iv->refl_precalc);
 	}
 
 	if ( iv->resolution_rings ) {
@@ -910,6 +988,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->resolution_rings = 0;
 	iv->scale_lo = 0.0;
 	iv->scale_hi = 100000.0;
+	iv->refl_precalc = NULL;
 
 	g_signal_connect(G_OBJECT(iv), "destroy",
 	                 G_CALLBACK(destroy_sig), iv);
@@ -1078,6 +1157,9 @@ static int rerender_image(CrystFELImageView *iv)
 		                              iv->scale_lo, iv->scale_hi);
 		if ( iv->pixbufs[i] == NULL ) return 1;
 	}
+
+	refl_precalc_free(iv->refl_precalc);
+	iv->refl_precalc = precalc_refls(iv->image);
 
 	detgeom_pixel_extents(iv->image->detgeom,
 	                      &min_x, &min_y,

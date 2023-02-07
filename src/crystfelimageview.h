@@ -97,6 +97,7 @@ struct _crystfelimageview
 	float                peak_box_size;
 	float                refl_box_size;
 	int                  resolution_rings;
+	struct refl_precalc *refl_precalc;
 };
 
 struct _crystfelimageviewclass
