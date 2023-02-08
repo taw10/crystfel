@@ -96,6 +96,8 @@ extern struct rg_collection *data_template_get_rigid_groups(const DataTemplate *
 
 extern double data_template_get_wavelength_if_possible(const DataTemplate *dt);
 
+extern double data_template_get_clen_if_possible(const DataTemplate *dt);
+
 extern struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTemplate *dt);
 
 #ifdef __cplusplus

@@ -2101,3 +2101,24 @@ struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTemplate *dt)
 {
 	return create_detgeom(NULL, dt, 1);
 }
+
+
+/**
+ * Returns the mean clen in m, or NAN in the following circumstances:
+ * 1. If the individual panel distances vary by more than 10% of the average
+ * 2. If the tilt of the panel creates a distance variation of more than 10%
+ *    of the corner value over the extent of the panel
+ * 3. If the detector geometry is not static (per-frame clen)
+ *
+ * \returns the mean camera length, or NAN if impossible.
+ */
+double data_template_get_clen_if_possible(const DataTemplate *dt)
+{
+	struct detgeom *dg;
+	double clen;
+	dg = data_template_get_2d_detgeom_if_possible(dt);
+	if ( dg == NULL ) return NAN;
+	clen = detgeom_mean_camera_length(dg);
+	detgeom_free(dg);
+	return clen;
+}

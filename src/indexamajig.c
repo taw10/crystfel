@@ -856,6 +856,7 @@ int main(int argc, char *argv[])
 	struct fromfile_options *fromfile_opts = NULL;
 	struct asdf_options *asdf_opts = NULL;
 	double wl_from_dt;
+	double clen_from_dt;
 
 	/* Defaults for "top level" arguments */
 	args.filename = NULL;
@@ -1258,6 +1259,16 @@ int main(int argc, char *argv[])
 			      "already contains a static value.\n");
 		}
 		args.iargs.wavelength_estimate = wl_from_dt;
+	}
+
+	clen_from_dt = data_template_get_clen_if_possible(args.iargs.dtempl);
+	if ( !isnan(clen_from_dt) ) {
+		if ( !isnan(args.iargs.clen_estimate) ) {
+			ERROR("WARNING: Ignoring your value for "
+			      "--camera-length-estimate because the geometry file "
+			      "already contains a static value.\n");
+		}
+		args.iargs.clen_estimate = clen_from_dt;
 	}
 
 	/* Prepare the indexing system */

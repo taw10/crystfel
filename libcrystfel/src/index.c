@@ -71,6 +71,7 @@ struct _indexingprivate
 	UnitCell *target_cell;
 	double tolerance[6];
 	double wavelength_estimate;
+	double clen_estimate;
 	int n_threads;
 
 	int n_methods;
@@ -433,6 +434,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
 	ipriv->n_methods = n;
 	ipriv->flags = flags;
 	ipriv->wavelength_estimate = wavelength_estimate;
+	ipriv->clen_estimate = clen_estimate;
 	ipriv->n_threads = n_threads;
 
 	if ( cell != NULL ) {
@@ -948,6 +950,17 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 			         "more than 10%% from estimated value (%e)\n",
 			         image->filename, image->ev,
 			         image->lambda, ipriv->wavelength_estimate);
+		}
+	}
+
+	if ( !isnan(ipriv->clen_estimate) ) {
+		double mean_clen = detgeom_mean_camera_length(image->detgeom);
+		if ( !within_tolerance(mean_clen, ipriv->clen_estimate, 10.0) )
+		{
+			   ERROR("WARNING: Camera length for %s %s (%e) differs by "
+			         "more than 10%% from estimated value (%e)\n",
+			         image->filename, image->ev,
+			         mean_clen, ipriv->clen_estimate);
 		}
 	}
 
