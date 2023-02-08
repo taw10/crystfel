@@ -1,7 +1,7 @@
 .\"
 .\" Geometry man page
 .\"
-.\" Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -80,6 +80,11 @@ These statements specify the incident radiation wavelength.  You must include on
 \fInnn\fR can be a literal number, or it can be a header location in the image data file.  In the latter case, the program will do what you expect in the case of multi-frame data files, e.g. a scalar value in the metadata will be applied to all frames, or an array of values can be used to provide a separate wavelength for each frame.
 .IP
 Units should be specified after the value (or location).  These can be \fBm\fR or \fBA\fR for \fBwavelength\fR, \fBeV\fR or \fBkeV\fR for \fBphoton_energy\fR, and \fBV\fR or \fBkV\fR for \fBelectron_voltage\fR.  For \fBphoton_energy\fR, if no units are given then the value will be taken to be in eV.
+
+.PD 0
+.IP "\fBbandwidth = \fIbw"
+.PD
+The bandwidth of the radiation, expressed as a fraction of the wavelength.  The bandwidth will be interpreted as the standard deviation of a Gaussian spectrum, and used for calculating reflection positions.
 
 .PD 0
 .IP "\fBdetector_shift_x = \fInnn \fB[m|mm]"
