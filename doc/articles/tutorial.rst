@@ -33,6 +33,10 @@ Let's get started!
 1. Download some data
 =====================
 
+Start by creating an empty directory to work in.  You'll start by downloading a
+few data files into your working directory.  The files are large (38 Gb for the
+file suggested below), so make sure you have enough disk space available.
+
 There are many serial crystallography datasets available from the `Coherent X-ray
 Imaging Data Bank <https://cxidb.org/>`_.  For this tutorial, we'll use
 `dataset 103 <https://cxidb.org/id-103.html>`_.  This datasaet is from an
@@ -43,7 +47,6 @@ You can download as much data as you have disk space for, but one file is
 enough to demonstrate the principles. Here, we will use file
 `run7.JF06T32V01.h5
 <http://portal.nersc.gov/archive/home/projects/cxidb/www/103/Raw_Files/2018-08-10/a2a/run7.JF06T32V01.h5>`_.
-This file is 38 Gb in size, so make sure you have enough disk space available.
 Note also that the download can take some time to complete, even if you have
 a fast internet connection.
 
@@ -59,13 +62,14 @@ features to CrystFEL and deprecate others.  The geometry file on the website
 will still work fine, but we provide here an updated file which will work
 slightly more smoothly.  If you've downloaded CrystFEL, you'll find it in
 `doc/examples/jf-swissfel-16M.geom <https://gitlab.desy.de/thomas.white/crystfel/-/raw/master/doc/examples/jf-swissfel-16M.geom?inline=false>`_.
-Otherwise, click the link to download a copy.
+Otherwise, click the link to download a copy, and save it in your working
+directory.
 
 Finally, you'll need a *bad pixel map* which contains the information about
 which pixels of the detector cannot be trusted.  This file is also available
 from the CXIDB.  Download it here -
 `run47.JF06T32V01.mask.h5 <https://cxidb.org/data/103/run47.JF06T32V01.mask.h5>`_
-- and save it alongside the geometry and data files.
+- and save it in your working directory, alongside the geometry and data files.
 
 Advanced
 --------
@@ -91,6 +95,11 @@ the file provided here, they are as follows:
 
 Provided that CrystFEL has been installed properly, you can start the graphical
 user interface (GUI) by running the command ``crystfel`` at a command line.
+Make sure that you do this from the working directory, for example::
+
+    $ cd my-working-directory
+    $ crystfel
+
 An empty workspace should open, which looks like the picture below.  If not,
 see `INSTALL.md <../../INSTALL.md>`_ for details, or ask your facility or lab's
 computing team.
