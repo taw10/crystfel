@@ -104,13 +104,10 @@ static void show_help(const char *s)
 "     --template=<file>     Take orientations from stream <file>.\n"
 "     --no-fringes          Exclude the side maxima of Bragg peaks.\n"
 "     --flat                Make Bragg peaks flat.\n"
-"     --beam-bandwidth      Beam bandwidth (standard deviation of wavelength as\n"
-"                            a fraction of wavelenth).  Default 0.001 (1%%)\n"
 "     --sase-spike-width    SASE spike width (standard deviation in m^-1)\n"
 "                            Default 2e6 m^-1\n"
 "     --twocol-separation   Separation between peaks in two-colour mode in m^-1\n"
 "                            Default 8e6 m^-1\n"
-"     --photon-energy       Photon energy in eV.  Default 9000.\n"
 "     --nphotons            Number of photons per X-ray pulse.  Default 1e12.\n"
 "     --beam-radius         Radius of beam in metres (default 1e-6).\n"
 );
@@ -513,8 +510,6 @@ int main(int argc, char *argv[])
 	int flat = 0;
 	double nphotons = 1e12;
 	double beam_radius = 1e-6;  /* metres */
-	double bandwidth = 0.01;
-	double photon_energy = 9000.0;
 	double sase_spike_width = 2e6;  /* m^-1 */
 	double twocol_sep = 8e6;  /* m^-1 */
 
@@ -670,28 +665,14 @@ int main(int argc, char *argv[])
 			break;
 
 			case 7 :
-			bandwidth = strtod(optarg, &rval);
-			if ( *rval != '\0' ) {
-				ERROR("Invalid beam bandwidth.\n");
-				return 1;
-			}
-			if ( bandwidth < 0.0 ) {
-				ERROR("Beam bandwidth must be positive.\n");
-				return 1;
-			}
-			break;
+			ERROR("--beam-bandwidth is no longer used.\n");
+			ERROR("Set the bandwidth in the geometry file instead.\n");
+			return 1;
 
 			case 9 :
-			photon_energy = strtod(optarg, &rval);
-			if ( *rval != '\0' ) {
-				ERROR("Invalid photon energy.\n");
-				return 1;
-			}
-			if ( photon_energy < 0.0 ) {
-				ERROR("Photon energy must be positive.\n");
-				return 1;
-			}
-			break;
+			ERROR("--photon-energy is no longer used.\n");
+			ERROR("Set the photon energy in the geometry file instead.\n");
+			return 1;
 
 			case 10 :
 			nphotons = strtod(optarg, &rval);
@@ -939,8 +920,7 @@ int main(int argc, char *argv[])
 	       image->lambda*1e10,
 	       ph_lambda_to_eV(image->lambda));
 	STATUS("              Number of photons: %.0f (%.2f mJ)\n",
-	       nphotons,
-	       eV_to_J(photon_energy)*nphotons*1e3);
+	       nphotons, eV_to_J(ph_lambda_to_eV(image->lambda))*nphotons*1e3);
 	STATUS("                Beam divergence: not simulated\n");
 	STATUS("                    Beam radius: %.2f microns\n",
 	      beam_radius*1e6);
@@ -965,7 +945,8 @@ int main(int argc, char *argv[])
 
 		case SPECTRUM_TWOCOLOUR:
 		STATUS("                 X-ray spectrum: two colour, "
-		       "separation %.5f %%\n", image->bw*100.0);
+		       "bandwidth %.5f %%, separation %.5e m^-1\n",
+		       image->bw*100.0, twocol_sep);
 		break;
 
 		case SPECTRUM_FROMFILE:

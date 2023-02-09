@@ -27,6 +27,8 @@ pattern_sim -g mydetector.geom -p my.pdb -r -i myintensities.hkl
 
 The unit cell geometry will be taken from the unit cell file you provide, and the intensities of the reflections will be interpolated from the reflection list file you provide.  The reflection list format is the same as that output by process_hkl and handled by get_hkl.  You also need a geometry description file (-g).  See `man crystfel_geometry' for details of how to create a geometry file.  Examples of both files can be found in the installation directory, which is normally /usr/local/share/doc/crystfel.
 
+Set the incident radiation wavelength and bandwidth in the geometry file.  Beam divergence is not taken into account.  See \fBman crystfel_geometry\fR for information about CrystFEL geometry description files.
+
 The result will be written to an HDF5 file in the current directory with the name `sim.h5'.
 
 .SH OPTIONS
@@ -137,20 +139,6 @@ Add \fIn\fR photons of Poisson-distributed background uniformly over the detecto
 .IP \fB--no-fringes\fR
 .PD
 Suppress the subsidiary maxima of the shape transforms by setting I_latt(q) to zero beyond the first minimum of the function.
-
-.PD 0
-.B
-.IP "\fB--beam-bandwidth=\fIval\fR"
-.PD
-Set the bandwidth, expressed as a decimal fraction applying to to wavelengths (not the photon energies), for the incident beam.  The default is \fB--beam-bandwidth=0.01\fR, i.e. 1%.\fR.
-.PD
-Note: When using the two-colour or SASE spectrum, the spectrum calculation actually takes this value to be the bandwidth applying to the photon energies instead of the wavelengths.  For small bandwidths, the difference should be very small.  Sorry for the horrifying inconsistency.
-
-.PD 0
-.B
-.IP "\fB--photon-energy=\fIval\fR"
-.PD
-Set the central photon energy, in eV, for the incident beam.  The default is \fB--photon-energy=9000\fR, i.e. 9 keV X-rays.
 
 .PD 0
 .B
