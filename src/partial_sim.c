@@ -718,7 +718,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case '?' :
-			break;
+			return 1;
 
 			default :
 			ERROR("Unhandled option '%c'\n", c);
