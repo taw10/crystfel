@@ -426,7 +426,7 @@ static void run_job(void *vwargs, int cookie)
 		snprintf(image->filename, 255, "%s%i.h5",
 		         qargs->image_prefix, wargs->n);
 	} else {
-		snprintf(image->filename, 255, "dummy.h5");
+		snprintf(image->filename, 255, "dummy-%i.h5", wargs->n);
 	}
 
 	if ( wargs->template_reflist == NULL ) {
