@@ -266,11 +266,8 @@ static void show_help(const char *s)
 "                           generated full intensities, if not using -i.\n"
 "     --noise-stddev=<val> Set the standard deviation of the noise.\n"
 "     --background=<val>   Background level in photons.  Default 3000.\n"
-"     --beam-divergence    Beam divergence in radians. Default 1 mrad.\n"
-"     --beam-bandwidth     Beam bandwidth as a fraction. Default 1%%.\n"
 "     --profile-radius     Reciprocal space reflection profile radius in m^-1.\n"
 "                           Default 0.001e9 m^-1\n"
-"     --photon-energy      Photon energy in eV.  Default 9000.\n"
 "     --really-random      Be non-deterministic.\n"
 "\n"
 );
@@ -527,10 +524,7 @@ int main(int argc, char *argv[])
 	struct image *test_image;
 
 	/* Default simulation parameters */
-	double divergence = 0.001;
-	double bandwidth = 0.01;
 	double profile_radius = 0.001e9;
-	double photon_energy = 9000.0;
 	double osf_stddev = 2.0;
 	double full_stddev = 1000.0;
 	double noise_stddev = 20.0;
@@ -690,28 +684,14 @@ int main(int argc, char *argv[])
 			break;
 
 			case 8 :
-			divergence = strtod(optarg, &rval);
-			if ( *rval != '\0' ) {
-				ERROR("Invalid beam divergence.\n");
-				return 1;
-			}
-			if ( divergence < 0.0 ) {
-				ERROR("Beam divergence must be positive.\n");
-				return 1;
-			}
-			break;
+			ERROR("--beam-divergence is no longer used.\n");
+			ERROR("The 'xsphere' partiality model does not take divergence into account.\n");
+			return 1;
 
 			case 9 :
-			bandwidth = strtod(optarg, &rval);
-			if ( *rval != '\0' ) {
-				ERROR("Invalid beam bandwidth.\n");
-				return 1;
-			}
-			if ( bandwidth < 0.0 ) {
-				ERROR("Beam bandwidth must be positive.\n");
-				return 1;
-			}
-			break;
+			ERROR("--beam-bandwidth is no longer used.\n");
+			ERROR("Set the bandwidth in the geometry file instead.\n");
+			return 1;
 
 			case 10 :
 			profile_radius = strtod(optarg, &rval);
@@ -719,23 +699,16 @@ int main(int argc, char *argv[])
 				ERROR("Invalid profile radius.\n");
 				return 1;
 			}
-			if ( divergence < 0.0 ) {
+			if ( profile_radius < 0.0 ) {
 				ERROR("Profile radius must be positive.\n");
 				return 1;
 			}
 			break;
 
 			case 11 :
-			photon_energy = strtod(optarg, &rval);
-			if ( *rval != '\0' ) {
-				ERROR("Invalid photon energy.\n");
-				return 1;
-			}
-			if ( photon_energy < 0.0 ) {
-				ERROR("Photon energy must be positive.\n");
-				return 1;
-			}
-			break;
+			ERROR("--photon-energy is no longer used.\n");
+			ERROR("Set the photon energy in the geometry file instead.\n");
+			return 1;
 
 			case 12 :
 			template = strdup(optarg);
@@ -882,8 +855,7 @@ int main(int argc, char *argv[])
 	STATUS("                     Wavelength: %.5f A (photon energy %.2f eV)\n",
 	       test_image->lambda*1e10,
 	       ph_lambda_to_eV(test_image->lambda));
-	STATUS("                Beam divergence: %.5f mrad\n",
-	       test_image->div*1e3);
+	STATUS("                Beam divergence: 0 (not modelled)\n");
 	STATUS("                 Beam bandwidth: %.5f %%\n",
 	       test_image->bw*100.0);
 	STATUS("Reciprocal space profile radius: %e m^-1\n",

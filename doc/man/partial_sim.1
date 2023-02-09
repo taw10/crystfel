@@ -29,10 +29,7 @@ You need to provide a CrystFEL geometry file (with \fB--geometry=\fR\fImy.geom\f
 
 For each randomly generated orientation, partial_sim calculates which reflections would appear on the detector with the specified beam parameters.  It calculates the partiality for each reflection and multiplies it by the fully integrated intensity to produce a partial intensity.  The fully integrated intensities can be taken from a file you provide (see below), otherwise they will be randomly generated (by taking the absolute value of a Gaussian random number, mean zero and standard deviation 1000).  All the partial intensities for the orientation are multiplied by an overall scaling factor, which is randomly generated with a Gaussian distribution with mean 1 and standard deviation 0.3.  The partial intensities are written to the output stream, and the process repeated for as many different orientations as you ask for (see below, default: 2).
 
-.P
-See
-.BR "man crystfel_geometry"
-for information about CrystFEL geometry description files.
+Set the incident radiation wavelength and bandwidth in the geometry file.  Set the reciprocal space profile radius on the command line with \fI--profile-radius\fR.  Beam divergence is not taken into account by the \fIxsphere\fR partiality model used by partial_sim. See \fBman crystfel_geometry\fR for information about CrystFEL geometry description files.
 
 .SH OPTIONS
 .PD 0
@@ -122,27 +119,9 @@ Add a Poisson-distributed background with \fIval\fR photons to the sketches (see
 
 .PD 0
 .B
-.IP "\fB--beam-divergence=\fIval\fR"
-.PD
-Set the convergence angle (the full angle, not "half-angle"/"semi-angle") for the incident beam.  The default is \fB--beam-divergence=0.001\fR, i.e. 1 mrad.\fR.
-
-.PD 0
-.B
-.IP "\fB--beam-bandwidth=\fIval\fR"
-.PD
-Set the bandwidth, expressed as a decimal fraction applying to to wavelengths (not the photon energies), for the incident beam.  The default is \fB--beam-bandwidth=0.01\fR, i.e. 1%.\fR.
-
-.PD 0
-.B
 .IP "\fB--profile-radius=\fIval\fR"
 .PD
 Set the radius of the scattering density surrounding each reciprocal lattice point, in m^-1.  The default is \fB--profile-radius=0.001e9\fR m^-1.
-
-.PD 0
-.B
-.IP "\fB--photon-energy=\fIval\fR"
-.PD
-Set the central photon energy, in eV, for the incident beam.  The default is \fB--photon-energy=9000\fR, i.e. 9 keV X-rays.
 
 .PD 0
 .IP \fB--really-random\fR
