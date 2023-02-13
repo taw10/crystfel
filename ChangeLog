@@ -9,6 +9,7 @@ Changes in this development version
 - indexamajig: Add --asdf-fast (Alexandra Tolstikova)
 - indexamajig: fixed --wait-for-file (#65)
 - indexamajig: Add --cell-parameters-only
+- indexamajig: Don't require camera length estimate if static value is given
 - indexamajig: re-implement and improve --profile
 - indexamajig: Return value 5 if no files could be processed
 - indexamajig: Fix harvest file JSON syntax (#68)
@@ -19,7 +20,9 @@ Changes in this development version
 - indexamajig: Add ASAP::O and Seedee interfaces
 - indexamajig: Improve shutdown at end of data
 - partialator: Use default event ID when none given in --custom-split
+- partial_sim and pattern_sim: Fixed parameter handling (#78)
 - Dropped support for pre-2015 stream formats
+- asdf: Fix an integer overflow with the number of triplets
 - Recognise '.nx5' as HDF5
 - Set upper limit on number of peaks found by "zaef"
 - Improve handling of bad CBF files
