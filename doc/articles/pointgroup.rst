@@ -318,7 +318,7 @@ cells.  For example, you might also encounter *R3:h* and *R3:r* for hexagonal
 and rhombohedral axes respectively.  Unfortunately, sometimes you might even
 encounter programs which use *R3* to refer to *hexagonal* axes, and *H3* for
 *rhombohedral* axes!  However, you can always tell the difference by looking
-at the unit cell paramters.  For some more discussion, including a useful
+at the unit cell parameters.  For some more discussion, including a useful
 diagram, see `this classic article
 <http://www.phenix-online.org/phenixwebsite_static/mainsite/files/newsletter/CCN_2011_01.pdf#page=12>`_.
 
@@ -420,7 +420,7 @@ to indexing ambiguities.  As noted above, it's the *apparent* symmetries of the
 lattice that matter here.  For example, unless the indexing is *very* accurate
 (within 1/20 of a degree), the following unit cell will need to be merged with
 point group *222* (or *mmm* to merge Friedel pairs), even though it is
-technicall monoclinic:
+technically monoclinic:
 
 a=63 Å, b=82 Å, c=95 Å, alpha=gamma=90°, beta=90.04°
 
