@@ -55,6 +55,8 @@ if [ x$1 == x--help ]; then
 	echo 'CCP4 syminfo.lib location:' $SYMINFO '(only needed for Mosflm)'
 	echo '                 Platform:' $PLATFORM
 	echo
+	echo 'To alter the installation location, edit this script.'
+	echo
 	echo 'Please note the license conditions for each program:'
 	echo '   DirAx: http://www.crystal.chem.uu.nl/distr/dirax/'
 	echo '  Mosflm: https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/'
