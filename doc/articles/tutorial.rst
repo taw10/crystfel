@@ -782,13 +782,16 @@ of section 8)::
    predict_refine/det_shift x = -0.016 y = -0.002 mm
    $
 
-A script provided with CrystFEL called detector-shift will plot these values.
+A program provided with CrystFEL called detector-shift will plot these values.
 Simply run it on the stream::
 
-   $ cp ~/crystfel/scripts/detector-shift .
-   $ chmod +x detector-shift
-   $ ./detector-shift index-all-cell-1/crystfel.stream
+   $ detector-shift index-all-cell-1/crystfel.stream
    Mean shifts: dx = 0.0062 mm,  dy = -0.0097 mm
+
+You can also run ``detector-shift`` conveniently from within the CrystFEL GUI:
+Simply choose **Check detector shift** from the **Tools** menu.  This will run
+``detector-shift`` on whichever indexing result is currently selected (see the
+start of section 7).
 
 A window should open, which shows the detector shifts as a scatter plot:
 
@@ -809,10 +812,10 @@ Notice that the cluster of points is significantly displaced from the origin.
 This offset has already been taken into account by CrystFEL when calculating
 the position of Bragg peaks, but the results will be better overall if the
 geometry is correct from the start of the process.  In this case, it would be a
-good idea to update the geometry file.  The detector-shift script can fix the
+good idea to update the geometry file.  The detector-shift program can fix the
 geometry file for you::
 
-   $ ~/crystfel/scripts/detector-shift index-all-cell-1/crystfel.stream jf-swissfel-16M.geom
+   $ detector-shift index-all-cell-1/crystfel.stream jf-swissfel-16M.geom
    Mean shifts: dx = -0.14 mm,  dy = -0.25 mm
    Applying corrections to jf-swissfel-16M.geom, output filename jf-swissfel-16M-predrefine.geom
    default res 9097.525473
@@ -836,9 +839,12 @@ small program distributed with CrystFEL, called ``peakogram-stream``, will help
 you judge the maximum intensity to allow for a reflection.  Run it on your
 stream, like this::
 
-   $ cp ~/crystfel/scripts/peakogram-stream .
-   $ chmod +x peakogram-stream
-   $ ./peakogram-stream -i index-all-cell-1/crystfel.stream
+   $ peakogram-stream -i index-all-cell-1/crystfel.stream
+
+You can also run ``peakogram-stream`` from the CrystFEL user interface by
+selecting **Check detector saturation (peakogram)** from the **Tools** menu.
+As with ``detector-shift``, this applies to the currently selected indexing
+result.
 
 A graph like this should appear:
 
