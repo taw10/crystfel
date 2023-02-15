@@ -1,11 +1,11 @@
 # Meson file for CrystFEL
 project('crystfel', 'c',
-        version: '0.10.1',
+        version: '0.10.2',
         license: 'GPL3+',
         meson_version: '>=0.55.0',
         default_options: ['buildtype=debugoptimized'])
 
-libcrystfel_api_version = 15
+libcrystfel_api_version = 16
 
 add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
 
