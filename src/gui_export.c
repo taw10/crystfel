@@ -284,8 +284,10 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	/* Use the "FoM" cell file because there should only be one
 	 * point of truth for the "final" cell parameters.  Eventually, I hope
 	 * to determine this automatically. */
-	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(win->cell_chooser),
-	                              proj->fom_cell_filename);
+	if ( proj->fom_cell_filename != NULL ) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(win->cell_chooser),
+		                              proj->fom_cell_filename);
+	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->cell_chooser),
 	                   FALSE, FALSE, 4.0);
 
