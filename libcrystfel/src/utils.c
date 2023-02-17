@@ -635,8 +635,12 @@ char *safe_basename(const char *in)
 
 void strip_extension(char *bfn)
 {
-	size_t r = strlen(bfn)-1;
-	while ( r > 0 ) {
+	size_t r = strlen(bfn);
+
+	if ( r < 3 ) return;
+
+	r -= 1;
+	while ( r > 1 ) {   /* Don't strip down to nothing */
 		if ( bfn[r] == '.') {
 			bfn[r] = '\0';
 			return;
