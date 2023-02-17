@@ -151,19 +151,19 @@ static int export_data(struct export_window *win, char *filename)
 
 	dataset = gtk_combo_box_get_active_id(GTK_COMBO_BOX(win->dataset));
 	if ( dataset == NULL ) {
-		ERROR("Please select the dataset to export.\n");
+		error_box(win->proj, "Please select the dataset to export.\n");
 		return 1;
 	}
 
 	format = gtk_combo_box_get_active_id(GTK_COMBO_BOX(win->format));
 	if ( format == NULL ) {
-		ERROR("Please select the data format to use.\n");
+		error_box(win->proj, "Please select the data format to use.\n");
 		return 1;
 	}
 
 	cell_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(win->cell_chooser));
 	if ( cell_filename == NULL ) {
-		ERROR("Please choose the unit cell file.\n");
+		error_box(win->proj, "Please choose the unit cell file.\n");
 		return 1;
 	}
 
