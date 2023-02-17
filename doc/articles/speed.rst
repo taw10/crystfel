@@ -81,9 +81,9 @@ If the background is low and/or smooth, you can use the faster ``zaef`` peak
 search algorithm instead of ``peakfinder8`` without compromising on the
 results.
 
-The speed of ``peakfinder8`` can be improved with option ``indexamajig
---peakfinder8-fast``, which tells CrystFEL to pre-calculate some structures.
-This is only possible with a static detector geometry (see below).
+The speed of ``peakfinder8`` can be improved with option
+``indexamajig --peakfinder8-fast``, which tells CrystFEL to pre-calculate some
+values. This is only possible with a static detector geometry (see below).
 
 
 Choose the fastest indexing algorithms
@@ -144,10 +144,10 @@ Don't need integration results?  Don't integrate!
 If you're using CrystFEL as part of an online monitoring system, you might not
 be interested in the integration results at all.  Since spot prediction and
 integration can take a significant amount of time, you can save a lot by
-disabling them.  Disable integration, but not prediction, with ``indexamajig
---integration=none``.  The stream will contain predicted spot positions, but
-their intensities will all be zero.  Disable prediction altoghether with
-``indexamajig --cell-parameters-only``.
+disabling them.  Disable integration, but not prediction, with
+``indexamajig --integration=none``.  The stream will contain predicted spot
+positions, but their intensities will all be zero.  Disable prediction
+altoghether with ``indexamajig --cell-parameters-only``.
 
 This is particularly important when doing "unrestricted" indexing with no
 prior unit cell information.  Occasional spuriously large unit cells can slow
