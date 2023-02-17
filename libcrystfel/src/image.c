@@ -1324,7 +1324,7 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 				layout = PEAK_LIST_LIST3;
 			} else {
 				ERROR("Couldn't determine peak list layout.\n");
-				ERROR("Specify peak_layout = cxi or list3n in geometry file.\n");
+				ERROR("Specify peak_layout = cxi or list3 in geometry file.\n");
 				return NULL;
 			}
 
