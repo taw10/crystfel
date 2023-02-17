@@ -50,6 +50,7 @@
 struct export_window
 {
 	struct crystfelproject *proj;
+	GtkWidget *window;
 	GtkWidget *cell_chooser;
 	GtkWidget *limit_res;
 	GtkWidget *min_res;
@@ -124,6 +125,19 @@ static int export_to_mtz(struct gui_merge_result *result,
 }
 
 
+void reminder(GtkWidget *window, const char *message)
+{
+	GtkWidget *dialog = gtk_message_dialog_new_with_markup(GTK_WINDOW(window),
+	                                                       GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                                       GTK_MESSAGE_INFO,
+	                                                       GTK_BUTTONS_OK,
+	                                                       message);
+	gtk_window_set_title(GTK_WINDOW(dialog), "Reminder");
+	gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+}
+
+
 static int export_data(struct export_window *win, char *filename)
 {
 	gchar *cell_filename;
@@ -176,10 +190,44 @@ static int export_data(struct export_window *win, char *filename)
 
 	if ( strcmp(format, "mtz") == 0 ) {
 		r = export_to_mtz(result, filename, cell, min_res, max_res, 0);
+		reminder(win->window,
+		         "CrystFEL <b>does not know</b> the space "
+		         "group of your structure.\n\n"
+		         "The space group written into the MTZ header is just "
+		         "a representation of the processing done within "
+		         "CrystFEL.\n\n"
+		         "You may need to change the space group in the MTZ "
+		         "header, to allow structure solution programs to find "
+		         "the correct space group.\n\n"
+		         "<a href=\"https://gitlab.desy.de/thomas.white/crystfel/-/blob/master/doc/articles/pointgroup.rst\">"
+		         "Click here for some background information</a>");
 	} else if ( strcmp(format, "mtz-bij") == 0 ) {
 		r = export_to_mtz(result, filename, cell, min_res, max_res, 1);
+		reminder(win->window,
+		         "CrystFEL <b>does not know</b> the space "
+		         "group of your structure.\n\n"
+		         "The space group written into the MTZ header is just "
+		         "a representation of the processing done within "
+		         "CrystFEL.\n\n"
+		         "You may need to change the space group in the MTZ "
+		         "header, to allow structure solution programs to find "
+		         "the correct space group.\n\n"
+		         "<a href=\"https://gitlab.desy.de/thomas.white/crystfel/-/blob/master/doc/articles/pointgroup.rst\">"
+		         "Click here for some background information</a>");
 	} else if ( strcmp(format, "xds") == 0 ) {
 		r = export_to_xds(result, filename, cell, min_res, max_res);
+		reminder(win->window,
+		         "CrystFEL <b>does not know</b> the space "
+		         "group of your structure.\n\n"
+		         "The space group written into the XDS file "
+		         "(header SPACE_GROUP_NUMBER=...) is just a "
+		         "representation of the processing done within "
+		         "CrystFEL.\n\n"
+		         "You may need to change the space group in the XDS "
+		         "header, to allow structure solution programs to find "
+		         "the correct space group.\n\n"
+		         "<a href=\"https://gitlab.desy.de/thomas.white/crystfel/-/blob/master/doc/articles/pointgroup.rst\">"
+		         "Click here for some background information</a>");
 	} else {
 		ERROR("Unrecognised export format '%s'\n", format);
 		return 1;
