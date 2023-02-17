@@ -1,7 +1,7 @@
 .\"
 .\" indexamajig man page
 .\"
-.\" Copyright © 2012-2022 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -20,7 +20,7 @@ indexamajig \- bulk indexing and data reduction program
 
 .SH DESCRIPTION
 
-\fBindexamajig\fR takes a list of diffraction snapshots from crystals in random orientations and attempts to find peaks, index and integrate each one.  The input is a list of diffraction image files in HDF5 format and some auxiliary files and parameters.  The output is a long text file ('stream') containing the results from each image in turn.
+\fBindexamajig\fR takes a list of diffraction snapshots from crystals in random orientations and attempts to find peaks, index and integrate each one.  The input is a list of diffraction image files and some auxiliary files and parameters.  The output is a long text file ('stream') containing the results from each image in turn.
 
 For minimal basic use, you need to provide the list of diffraction patterns, the method which will be used to index, a file describing the geometry of the detector, and a file which contains the unit cell which will be used for the indexing.  Here is what the minimal use might look like on the command line:
 
@@ -36,7 +36,7 @@ See \fBman crystfel_geometry\fR for information about how to create a file descr
 
 .SH DIFFRACTION PATTERN LIST
 
-Indexamajig requires an input file with a list of diffraction patterns ("events") to process. In its simplest form, this is just a text files containing a list of HDF5 filenames. The HDF5 files might be in some folder a long way from the current directory, so you might want to specify a full pathname to be added in front of each filename. The geometry file includes a description of the data layout within the HDF5 files. Indexamajig uses this description to determine the number of diffraction patterns stored in each file, and tries to process them all.  You can also specify explicity which event(s) you would like to process by putting a string describing the event after the file name(s) in this list.
+Indexamajig requires an input file with a list of diffraction patterns ("events") to process. In its simplest form, this is just a text files containing a list of image filenames. The image files might be in some folder a long way from the current directory, so you might want to specify a full pathname to be added in front of each filename. The geometry file includes a description of the data layout within the files. Indexamajig uses this description to determine the number of diffraction patterns stored in each file, and tries to process them all.  You can also specify explicity which event(s) you would like to process by putting a string describing the event after the file name(s) in this list.
 
 
 .SH PEAK DETECTION
@@ -58,11 +58,11 @@ You can choose between a variety of indexing methods.  You can choose more than 
 
 .IP \fBdirax\fR
 .PD
-Invoke DirAx.  To use this option, 'dirax' must be in your shell's search path.  If you see the DirAx version and copyright information when you run \fBdirax\fR on the command line, things are set up correctly.
+Invoke DirAx.  See Duisenberg, J. Applied Crystallography 25 (1992) p92, https://doi.org/10.1107/S0021889891010634.
 
 .IP \fBmosflm\fR
 .PD
-Invoke Mosflm.  To use this option, 'ipmosflm' must be in your shell's search path.  If you see the MOSFLM version and copyright information when you run \fBipmosflm\fR on the command line, things are set up correctly.
+Invoke Mosflm.  See Powell, Acta Crystallographica D55 (1999) p1690, https://doi.org/10.1107/S0907444999009506.
 
 .IP \fBasdf\fR
 .PD
@@ -80,16 +80,18 @@ Invoke XDS, and use its REFIDX procedure to attempt to index the pattern.
 
 .IP \fBtaketwo\fR
 .PD
-Use the TakeTwo algorithm.  See Ginn et al., Acta Cryst. (2016). D72, 956-965.
+Use the TakeTwo algorithm.  See Ginn et al., Acta Crystallographica D72 (2016), p956, https://doi.org/10.1107/S2059798316010706.
 
 .IP \fBxgandalf\fR
 .PD
-Invoke XGANDALF - eXtended GrAdieNt Descent Algorithm for Lattice Finding. Xgandalf must be installed in order to be able to use it.
+Invoke XGANDALF - eXtended GrAdieNt Descent Algorithm for Lattice Finding.  See  Gevorkov et al., Acta Crystallographica A75 (2019) p694, https://doi.org/10.1107/S2053273319010593.
 
 .IP \fBpinkIndexer\fR
 .PD
-Invoke pinkIndexer. pinkIndexer must be installed in order to be able to use it. The geometry file should contain the value photon_energy_bandwidth, which sets the bandwidth as (delta energy)/(mean energy).
+Invoke pinkIndexer.  See Gevorkov et al., Acta Crystallographica A76 (2020) p121, https://doi.org/10.1107/S2053273319015559.
 
+.PP
+Most of the indexing methods require some extra software to be installed, either at the time of compiling CrystFEL or afterwards.  CrystFEL is distributed with a script (\fBscripts/install-indexers\fR) which can help you to quickly install all the required programs.
 
 .PP
 You can add one or more of the following to the above indexing methods, to control what information should be provided to them.  Note that indexamajig performs a series of checks on the indexing results, including checking that the result is consistent with the target unit cell parameters.  To get completely "raw" indexing, you need to disable these checks (see below) \fBand\fR not provide prior information.
@@ -114,12 +116,10 @@ The opposite of \fB-cell\fR: do not provide unit cell parameters as prior inform
 Example: \fB--indexing=mosflm-cell-latt\fR means to use Mosflm for indexing, and provide it with unit cell parameters and Bravais lattice type information.
 
 .PP
-The default indexing method is 'none', which means no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.
+If you don't specify any indexing methods, \fBindexamajig\fR will try to automatically determine which indexing methods are available.  You can also specify indexing method \fBnone\fR, in which case no indexing will be done.  This is useful if you just want to check that the peak detection is working properly.
 
 .PP
-You do not need to explicitly specify anything more than the indexing method itself (e.g. \fBmosflm\fR or \fBasdf\fR).  The default behaviour for all indexing methods is to make the maximum possible use of prior information such as the lattice type and cell parameters.  If you do not provide this information, for example if you do not give any unit cell file or if the unit cell file does not contain cell parameters (only lattice type information), the indexing methods you give will be modified accordingly.  If you only specify the indexing methods themselves, in most cases \fBindexamajig\fR will do what you want and intuitively expect!  However, the options are available if you need finer control.
-
-If you don't know what to give for this option, leave it out completely.  Indexamajig will then automatically select indexing methods based on the programs available on your computer.
+Usually, you do not need to explicitly specify anything more than the indexing method itself (e.g. \fBmosflm\fR or \fBasdf\fR).  The default behaviour for all indexing methods is to make the maximum possible use of prior information such as the lattice type and cell parameters.  If you do not provide this information, for example if you do not give any unit cell file or if the unit cell file does not contain cell parameters (only lattice type information), the indexing methods you give will be modified accordingly.  If you only specify the indexing methods themselves, in most cases \fBindexamajig\fR will do what you want and intuitively expect!  However, the options are available if you need finer control.
 
 The indexing results from the indexing engine will be put through a number of refinement and checking stages.  See the options \fB--no-check-cell, --no-multi, --no-retry\fR and \fB--no-refine\fR below for more details.
 
@@ -143,11 +143,11 @@ Center the peak boxes iteratively on the actual peak locations.  The opposite is
 
 .IP \fB-sat\fR
 .PD
-Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  The opposite is \fB-nosat\fR, which is the default for all integration methods.  However, note that the saturation check will only be done if max_adu is set in the geometry file.  Usually, it's better to exclude saturated reflections at the merging stage.  The the documentation for max_adu in crystfel_geometry(5).
+Normally, reflections which contain one or more pixels above max_adu (defined in the detector geometry file) will not be integrated and written to the stream.  Using this option skips this check, and allows saturated reflections to be passed to the later merging stages.  The opposite is \fB-nosat\fR, which is the default for all integration methods.  However, note that the saturation check will only be done if max_adu is set in the geometry file.  Usually, it's better to exclude saturated reflections at the merging stage.  See the documentation for max_adu in crystfel_geometry(5).
 
 .IP \fB-grad\fR
 .PD
-Fit the background around the reflection using gradients in two dimensions.  This was the default until version 0.6.1.  Without the option (or with its opposite, \fB-nograd\fR, which is the default), the background will be considered to have the same value across the entire integration box.
+Fit the background around the reflection using gradients in two dimensions.  This was the default until version 0.6.1.  Without the option (or with its opposite, \fB-nograd\fR, which is the default), the background will be considered to have the same value across the entire integration box, which gives better results in most cases.
 
 .SH BASIC OPTIONS
 .PD 0
@@ -171,7 +171,7 @@ Read the detector geometry description from \fIfilename\fR.  See \fBman crystfel
 .PD 0
 .IP \fB--zmq-input=\fIaddress\fR
 .PD
-Receive data over ZeroMQ from \fIaddress\fR.  In this version, the ZeroMQ data will be assumed to be serialised with MsgPack, but other formats might be added in future.  The options \fB--input\fR and \fB--zmq-input\fR are mutually exclusive - you must specify exactly one of them.  Example: \fB--zmq-input=tcp://127.0.0.1:5002\fR.
+Receive data over ZeroMQ from \fIaddress\fR.  The options \fB--input\fR and \fB--zmq-input\fR are mutually exclusive - you must specify exactly one of them.  Example: \fB--zmq-input=tcp://127.0.0.1:5002\fR.
 .IP
 If you use this option, you should also use either \fB--zmq-subscribe\fR to add a ZeroMQ subscription, or \fB--zmq-request\fR to define how to request data.
 
@@ -195,13 +195,9 @@ Receive data via the specified ASAP::O endpoint.  This option and \fB--zmq-input
 .IP \fB--asapo-beamtime=\fIbeamtime\fR
 .IP \fB--asapo-source=\fIsource\fR
 .IP \fB--asapo-group=\fIgroup\fR
-.PD
-Authentication token, beamtime, data source and consumer group, respectively, for ASAP::O data.
-
-.PD 0
 .IP \fB--asapo-stream=\fIstream\fR
 .PD
-Name of ASAP::O stream to process.  If this option is not given, indexamajig will start processing from the end of the current last stream.
+Authentication token, beamtime, data source, consumer group and stream, respectively, for ASAP::O data.
 
 .PD 0
 .IP \fB--asapo-wait-for-stream
@@ -256,7 +252,7 @@ Wait at most \fIn\fR seconds for each image file in the input list to be created
 
 .IP \fB--no-image-data\fR
 .PD
-Do not load the actual image data (or bad pixel masks), only the metadata.  This allows you to check if patterns can be indexed, without high data bandwidth requirements.  Obviously, any feature requiring the image data, especially peak search procedures and integration, cannot be used in this case.  At the moment, this option only works when \fB--zmq-msgpack\fR is also used.  You will probably want to use \fB--peaks=msgpack\fR.
+Do not load the actual image data (or bad pixel masks), only the metadata.  This allows you to check if patterns can be indexed, without high data bandwidth requirements.  Obviously, any feature requiring the image data, especially peak search procedures and integration, cannot be used in this case.  Therefore, you'll need to get the peaks from somewhere else (see \fB--peaks=msgpack\fR or \fB--peaks=hdf5\fR).
 
 
 .SH PEAK SEARCH OPTIONS
@@ -275,11 +271,6 @@ these.  The default is to use the same values as for \fB--int-radius\fR.
 .IP \fB--min-peaks=\fIn\fR
 .PD
 Do not try to index frames with fewer than \fIn\fR peaks.  These frames will still be described in the output stream.  To exclude them, use \fB--no-non-hits-in-stream\fR.  The default is \fB--min-peaks=0\fR, which means that \fIall\fR frames will be considered hits, even if they have no peaks at all.
-
-.PD 0
-.IP \fB--hdf5-peaks=\fR\fIpath\fR
-.PD
-When using \fB--peaks=hdf5\fR or \fB--peaks=cxi\fR, read the peak positions from location \fIpath\fR.  The path can include placeholders, e.g. \fB--hdf5-peaks=/%/peaks\fR.  See \fBPEAK DETECTION\fR above.
 
 .PD 0
 .IP \fB--median-filter=\fR\fIn\fR
@@ -364,7 +355,7 @@ When using \fB--peaks=hdf5\fR, \fB--peaks=cxi\fR or \fB--peaks=msgpack\fR, the p
 .PD 0
 .IP \fB--no-half-pixel-shift\fR
 .PD
-CrystFEL considers all peak locations to be distances from the corner of the detector panel, in pixel units, consistent with its description of detector geometry (see 'man crystfel_geometry').  The software which generates the HDF5 or CXI files, including Cheetah, may instead consider the peak locations to be pixel indices in the data array.  Therefore, the peak coordinates from \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR will by default have 0.5 added to them.  This option \fBdisables\fR this half-pixel offset.
+CrystFEL considers all peak locations to be distances from the corner of the detector panel, in pixel units, consistent with its description of detector geometry (see 'man crystfel_geometry').  The software which generates the image data files, including Cheetah, may instead consider the peak locations to be pixel indices in the data array.  Therefore, the peak coordinates from \fB--peaks=cxi\fR or \fB--peaks=hdf5\fR will by default have 0.5 added to them.  This option \fBdisables\fR this half-pixel offset.
 
 .PD 0
 .IP \fB--check-hdf5-snr\fR
@@ -397,9 +388,16 @@ The default is \fB--tolerance=5,5,5,1.5\fR.
 Do not check the cell parameters against the reference unit cell (given with \fB-p\fR).  If you've used older versions of CrystFEL, this replaces putting "-raw" in the indexing method.
 
 .PD 0
+.IP \fB--no-check-peaks
+.PD
+Do not check that most of the peaks can be accounted for by the indexing solution.  The thresholds for a successful result are influenced by option \fB--multi\fR.
+
+.PD 0
 .IP \fB--multi
 .PD
 Enable the "subtract and retry" method, where after a successful indexing attempt the spots accounted for by the indexing solution are removed before trying to index again in the hope of finding a second lattice.  This doesn't have anything to do with the multi-lattice indexing algorithms such as Felix.
+.IP
+This option also adjusts the thresholds for identifying successful indexing results (see \fB--no-check-peaks\fR).
 
 .PD 0
 .IP \fB--no-retry
@@ -410,11 +408,6 @@ Disable retry indexing.  After an unsuccessful indexing attempt, indexamajig wou
 .IP \fB--no-refine
 .PD
 Skip the prediction refinement step.  Usually this will decrease the quality of the results and allow false solutions to get through, but occasionally it might be necessary.
-
-.PD 0
-.IP \fB--check-peaks
-.PD
-Check that most of the peaks can be accounted for by the indexing solution.  This usually increases the quality of the indexing solutions, but prevents "subtract and retry" multi-lattice indexing from working well.
 
 .PD 0
 .IP \fB--wavelength-estimate=\fIm\fR
@@ -559,9 +552,11 @@ Do not predict reflections at all.  Use this option if you're not at all interes
 Completely exclude 'non-hit' frames in the stream.  When this option is given, frames with fewer than the number of peaks given to \fB--min-peaks\fR will not have chunks written to the stream at all.  Note that the default value for \fB--min-peaks\fR is zero, which means \fIall\fR frames will be written to the stream, even if they have no peaks at all.
 
 .PD 0
-.IP \fB--copy-hdf5-field=\fR\fIpath\fR
+.IP \fB--copy-header=\fR\fIheader\fR
 .PD
-Copy the information from \fR\fIpath\fR in the HDF5 file into the output stream.  The information must be a single scalar value.  This option is sometimes useful to allow data to be separated after indexing according to some condition such the presence of an optical pump pulse.  You can give this option as many times as you need to copy multiple bits of information.
+Copy the information from \fR\fIheader\fR in the image file into the output stream.  For HDF5 files, \fIheader\fR is interpreted as a path within the file.  This option is sometimes useful to allow data to be separated after indexing according to some condition such the presence of an optical pump pulse.  You can give this option as many times as you need to copy multiple bits of information.
+.IP
+The old option \fB--copy-hdf5-field\fR is a synonym for this option.
 
 .PD 0
 .IP \fB--no-peaks-in-stream\fR
@@ -589,7 +584,7 @@ Write a list of parameters to \fIfn\fR, in JSON format.  This is intended to be 
 .PD 0
 .IP \fB--no-sat-corr\fR
 .PD
-This option is here for historical purposes only, to disable a correction which is done if certain extra information is included in the HDF5 file.
+This option is here for historical purposes only, to disable a correction which is done if certain extra information is included in the image data file.
 
 .SH IDENTIFYING SINGLE PATTERNS IN THE INPUT FILE
 
