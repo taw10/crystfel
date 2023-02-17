@@ -259,6 +259,39 @@ static void export_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
+static void format_changed_sig(GtkWidget *format, struct export_window *win)
+{
+	const char *new_format;
+	gchar *cur_name;
+	new_format = gtk_combo_box_get_active_id(GTK_COMBO_BOX(format));
+	cur_name = gtk_file_chooser_get_current_name(GTK_FILE_CHOOSER(win->window));
+	strip_extension(cur_name);
+	if ( cur_name[0] == '\0' ) {
+		if ( strncmp(new_format, "mtz", 3) == 0 ) {
+			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(win->window),
+			                                  "data_from_crystfel.mtz");
+		} else if ( strcmp(new_format, "xds") == 0 ) {
+			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(win->window),
+			                                  "XDS_ASCII.HKL");
+		}
+	} else {
+		gchar *new_name = malloc(strlen(cur_name)+5);
+		if ( new_name != NULL ) {
+			strcpy(new_name, cur_name);
+			if ( strncmp(new_format, "mtz", 3) == 0 ) {
+				strcat(new_name, ".mtz");
+			} else if ( strcmp(new_format, "xds") == 0 ) {
+				strcat(new_name, ".HKL");
+			}
+			gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(win->window),
+			                                  new_name);
+			free(new_name);
+		}
+	}
+	g_free(cur_name);
+}
+
+
 gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *dialog;
@@ -282,6 +315,7 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                     NULL);
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog),
 	                                               TRUE);
+	win->window = dialog;
 
 	g_signal_connect(G_OBJECT(dialog), "response",
 	                 G_CALLBACK(export_response_sig),
@@ -321,6 +355,9 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(win->format), "xds",
 	                          "XDS ASCII");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(win->format), 0);
+	g_signal_connect(G_OBJECT(win->format), "changed",
+	                 G_CALLBACK(format_changed_sig), win);
+	format_changed_sig(win->format, win);
 
 	label = gtk_label_new("Unit cell file:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
