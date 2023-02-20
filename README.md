@@ -1,7 +1,7 @@
 CrystFEL - Data processing for serial crystallography
 =====================================================
 
-Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
                       a research centre of the Helmholtz Association.
 
 See AUTHORS as well as individual source code files for full details of contributors.
@@ -57,6 +57,9 @@ Funding acknowledgements
 Development of CrystFEL is primarily funded by the Helmholtz Association.
 
 Partial funding for CrystFEL has previously been provided by:
+
+- European Union’s Horizon 2020 research and innovation programme under grant
+  agreement No 857641 (ExPaNDS) (2019-2023).
 
 - "X-Probe", a project of the European Union's 2020 Research and Innovation
   Program Under the Marie Skłodowska-Curie grant agreement 637295 (2015-2018).
