@@ -3,11 +3,11 @@
  *
  * CrystFEL's main graphical user interface
  *
- * Copyright © 2020-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2020-2023 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020-2021 Thomas White <taw@physics.org>
+ *   2020-2023 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -660,7 +660,7 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window),
 	                             crystfel_version_string());
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"© 2020-2021 Deutsches Elektronen-Synchrotron DESY, "
+		"© 2020-2023 Deutsches Elektronen-Synchrotron DESY, "
 		"a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
 		"https://www.desy.de/~twhite/crystfel");
