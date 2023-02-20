@@ -147,7 +147,7 @@ integration can take a significant amount of time, you can save a lot by
 disabling them.  Disable integration, but not prediction, with
 ``indexamajig --integration=none``.  The stream will contain predicted spot
 positions, but their intensities will all be zero.  Disable prediction
-altoghether with ``indexamajig --cell-parameters-only``.
+altogether with ``indexamajig --cell-parameters-only``.
 
 This is particularly important when doing "unrestricted" indexing with no
 prior unit cell information.  Occasional spuriously large unit cells can slow
