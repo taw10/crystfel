@@ -29,8 +29,7 @@ For minimal basic use, you need to provide the list of diffraction patterns, the
 -i mypatterns.lst -g mygeometry.geom --indexing=mosflm,dirax --peaks=hdf5 -o test.stream -p mycell.pdb
 
 .PP
-More typical use includes all the above, but might also include extra parameters to modify the behaviour. For example, you'll probably want to
-run more than one indexing job at a time (-j <n>).
+More typical use includes all the above, but might also include extra parameters to modify the behaviour. For example, you'll probably want to run more than one indexing job at a time (-j <n>).
 
 See \fBman crystfel_geometry\fR for information about how to create a file describing the detector geometry and beam characteristics.
 
@@ -362,6 +361,11 @@ CrystFEL considers all peak locations to be distances from the corner of the det
 .PD
 With this option with \fB--peaks=hdf5\fR (or \fBcxi\fR or \fBmsgpack\fR), the peaks will additionally be checked to see that they satisfy the minimum SNR specified with \fB--min-snr\fR.
 
+.PD 0
+.IP \fB--peakfinder8-fast\fR
+.PD
+(peakfinder8 only) Increase speed by pre-calculating some coordinate tables.
+
 .SH INDEXING OPTIONS
 .PD 0
 .IP \fB--indexing=\fR\fImethod\fR
@@ -639,7 +643,7 @@ This page was written by Thomas White, Yaroslav Gevorkov and Valerio Mariani.
 Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
 
 .SH COPYRIGHT AND DISCLAIMER
-Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .P
 indexamajig, and this manual, are part of CrystFEL.
 .P
