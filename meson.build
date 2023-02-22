@@ -43,16 +43,6 @@ if gtkdep.found()
   conf_data.set10('HAVE_GTK', true)
 endif
 
-gdkdep = dependency('gdk-3.0', required: false)
-if gdkdep.found()
-  conf_data.set10('HAVE_GDK', true)
-endif
-
-gdkpixbufdep = dependency('gdk-pixbuf-2.0', required: false)
-if gdkpixbufdep.found()
-  conf_data.set10('HAVE_GDKPIXBUF', true)
-endif
-
 cairodep = dependency('cairo', required: false)
 if cairodep.found()
   conf_data.set10('HAVE_CAIRO', true)
@@ -193,13 +183,6 @@ if hdf5dep.found()
              install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 endif
 
-# geoptimiser
-# FIXME: restore
-#executable('geoptimiser',
-#           ['src/geoptimiser.c', 'src/hdfsee-render.c', versionc],
-#           dependencies: [mdep, libcrystfeldep, gsldep, gdkpixbufdep, gdkdep],
-#           install: true,
-#           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
 # CrystFEL GUI
 if gtkdep.found()
@@ -300,7 +283,6 @@ install_man(['doc/man/ambigator.1',
              'doc/man/compare_hkl.1',
              'doc/man/crystfel.7',
              'doc/man/crystfel_geometry.5',
-             'doc/man/geoptimiser.1',
              'doc/man/get_hkl.1',
              'doc/man/indexamajig.1',
              'doc/man/list_events.1',

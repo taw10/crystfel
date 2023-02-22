@@ -1,8 +1,6 @@
 /* config.h for CrystFEL main programs */
 
 #cmakedefine HAVE_GTK
-#cmakedefine HAVE_GDKPIXBUF
-#cmakedefine HAVE_GDK
 #cmakedefine HAVE_CAIRO
 #cmakedefine HAVE_OPENCL
 #cmakedefine HAVE_CL_CL_H

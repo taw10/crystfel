@@ -73,20 +73,11 @@ if (GTK_FOUND)
   add_custom_target(crystfel-gresources
                     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/crystfel-gresources.c)
 
+else()
+  message(STATUS "GTK3 not found. GUI parts will not be compiled")
 endif ()
 
-# If no version of GTK was found, try for GDK
-if (NOT GTK_FOUND)
-  message(STATUS "GTK3 not found. GUI parts will not be compiled")
-  message(STATUS "Looking separately for GDK")
-  pkg_search_module(GDK gdk-3.0)
-  if (NOT GDK_FOUND)
-    message(STATUS "GDK not found.")
-  endif()
-endif()
-
 pkg_search_module(CAIRO cairo)
-pkg_search_module(GDKPIXBUF gdk-pixbuf-2.0)
 
 include(CheckCCompilerFlag)
 check_c_compiler_flag("-fdiagnostics-color=always" HAVE_DIAG_COLOR)
@@ -126,8 +117,6 @@ include(CheckLibraryExists)
 set(HAVE_CAIRO ${CAIRO_FOUND})
 set(HAVE_GTK ${GTK_FOUND})
 set(HAVE_OPENCL ${OpenCL_FOUND})
-set(HAVE_GDKPIXBUF ${GDKPIXBUF_FOUND})
-set(HAVE_GDK ${GDK_FOUND})
 set(HAVE_ZMQ ${ZMQ_FOUND})
 set(HAVE_HDF5 1)
 set(HAVE_ASAPO ${ASAPO_FOUND})
@@ -347,40 +336,6 @@ target_link_libraries(ambigator ${COMMON_LIBRARIES} ${HDF5_C_LIBRARIES})
 list(APPEND CRYSTFEL_EXECUTABLES ambigator)
 
 # ----------------------------------------------------------------------
-# geoptimiser
-
-      # FIXME!
-#if (GDKPIXBUF_FOUND)
-#  target_include_directories(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
-#  target_link_libraries(${PROJECT_NAME} PRIVATE ${GDKPIXBUF_LIBRARIES})
-#endif (GDKPIXBUF_FOUND)
-
-# FIXME: Restore!
-#set(GEOPTIMISER_SOURCES src/geoptimiser.c)
-#add_executable(geoptimiser ${GEOPTIMISER_SOURCES}
-#               ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-#target_include_directories(geoptimiser PRIVATE ${COMMON_INCLUDES})
-#target_link_libraries(geoptimiser ${COMMON_LIBRARIES})
-#list(APPEND CRYSTFEL_EXECUTABLES geoptimiser)
-#
-## Add features one by one so that #ifdef HAVE_XX//#include XX.h always works
-## If Cairo, gdk-pixbuf and GDK are all found, geoptimiser will add PNG support
-#if (CAIRO_FOUND)
-#  target_include_directories(geoptimiser PRIVATE ${CAIRO_INCLUDE_DIRS})
-#  target_link_libraries(geoptimiser ${CAIRO_LIBRARIES})
-#endif (CAIRO_FOUND)
-#
-#if (GDKPIXBUF_FOUND)
-#  target_include_directories(geoptimiser PRIVATE ${GDKPIXBUF_INCLUDE_DIRS})
-#  target_link_libraries(geoptimiser ${GDKPIXBUF_LIBRARIES})
-#endif (GDKPIXBUF_FOUND)
-#
-#if (GDK_FOUND)
-#  target_include_directories(geoptimiser PRIVATE ${GDK_INCLUDE_DIRS})
-#  target_link_libraries(geoptimiser ${GDK_LIBRARIES})
-#endif (GDK_FOUND)
-
-# ----------------------------------------------------------------------
 # whirligig
 
 set(WHIRLIGIG_SOURCES src/whirligig.c)
@@ -453,7 +408,6 @@ install(FILES
 	doc/man/cell_explorer.1
 	doc/man/check_hkl.1
 	doc/man/compare_hkl.1
-	doc/man/geoptimiser.1
 	doc/man/get_hkl.1
 	doc/man/indexamajig.1
 	doc/man/list_events.1

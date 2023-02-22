@@ -1,8 +1,6 @@
 /* config.h for CrystFEL main programs */
 
 #mesondefine HAVE_GTK
-#mesondefine HAVE_GDKPIXBUF
-#mesondefine HAVE_GDK
 #mesondefine HAVE_CAIRO
 #mesondefine HAVE_OPENCL
 #mesondefine HAVE_CL_CL_H
