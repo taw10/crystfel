@@ -15,7 +15,7 @@ to add your name to the 'AUTHORS' file in the top level folder, as well.
 
 The remainder of these rules apply to C code in libcrystfel and the core
 CrystFEL programs.  There are currently no specific guidelines for Python,
-Perl, shell script, CMake files or other parts of the codebase.
+Perl, shell script, build scripts or other parts of the codebase.
 
 ### Indentation
 

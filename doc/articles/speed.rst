@@ -17,8 +17,6 @@ add the option ``-DCMAKE_BUILD_TYPE=Release`` (or ``RelWithDebInfo``) to your
 CMake invokation to tell it to enable optimisations.  In CrystFEL, it's
 particularly important to do this for the HDF5 compression plugins (this makes
 a factor of 3 difference in decompression speed!), XGandalf and PinkIndexer.
-If you compile CrystFEL itself using CMake (not recommended - use Meson
-instead), then you should add the option here as well.
 
 
 Tune or avoid compression

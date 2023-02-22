@@ -1,4 +1,0 @@
-const char *libcrystfel_version_string()
-{
-	return "${CRYSTFEL_VERSION}";
-}

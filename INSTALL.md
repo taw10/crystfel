@@ -76,11 +76,6 @@ There are very few mandatory dependencies for CrystFEL.  They are:
 * [Bison](https://www.gnu.org/software/bison/) 2.6 or later
 * [Flex](https://www.gnu.org/software/flex/)
 
-[CMake](https://cmake.org/) 3.12 or later can be used in place of Meson,
-but Meson is strongly preferred.  CrystFEL's CMake-based build system is
-considered deprecated and will be removed at some point in the future.  It
-already lacks several features compared to the Meson-based system.
-
 The following dependencies are "optional", in the sense that you can install
 CrystFEL without them.  However, a CrystFEL installation without these will lack
 important features such as the graphical user interface.  The following list is
@@ -171,7 +166,6 @@ as follows, replacing the `meson build` step:
 ```
 meson build -Dhdf5=disabled
 ```
-When building with CMake, HDF5 is a mandatory dependency.
 
 Using OpenCL for GPU acceleration
 ---------------------------------
@@ -427,7 +421,7 @@ Installation problems and solutions
   flags in `CFLAGS`.  One such flag is `-D_BSD_SOURCE`, which changes the
   prototypes of certain system calls including `getpgrp`, breaking CrystFEL.
 
-  **Solution**: Three options:
+  **Solution**: Two options:
 
   Option 1: Do not use your distribution's HDF5 package.  Instead, compile
   HDF5 yourself.  If you compile HDF5 with autotools (`./configure` et al.),
@@ -439,11 +433,6 @@ Installation problems and solutions
   Option 2: Compile HDF5 using CMake instead of autotools.  In this case,
   HDF5 will install a `pkg-config` file which Meson will use in preference to
   `h5cc`.
-
-  Option 3: Compile CrystFEL using CMake instead of Meson.  CMake extracts
-  the include paths from the `h5cc` output and ignores the others.  However,
-  note that CrystFEL's CMake build process is deprecated and will eventually be
-  removed.
 
 
 * **Problem**: Linker error about missing HDF5 symbols:
