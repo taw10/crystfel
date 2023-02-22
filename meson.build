@@ -48,14 +48,6 @@ if cairodep.found()
   conf_data.set10('HAVE_CAIRO', true)
 endif
 
-opencldep = dependency('OpenCL', required: get_option('opencl'))
-if opencldep.found()
-  conf_data.set10('HAVE_OPENCL', true)
-  if cc.has_header('CL/cl.h', dependencies: opencldep)
-    conf_data.set10('HAVE_CL_CL_H', true)
-  endif
-endif
-
 zmqdep = dependency('libzmq', required: false)
 if zmqdep.found()
   conf_data.set10('HAVE_ZMQ', true)
@@ -85,13 +77,6 @@ conf_inc = include_directories('.')
 executable('cell_tool',
            ['src/cell_tool.c', versionc],
            dependencies: [mdep, libcrystfeldep],
-           install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
-
-# partial_sim
-executable('partial_sim',
-           ['src/partial_sim.c', versionc],
-           dependencies: [mdep, libcrystfeldep, gsldep, pthreaddep],
            install: true,
            install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
@@ -241,21 +226,6 @@ if gtkdep.found()
                install_dir: get_option('datadir') / 'applications')
 endif
 
-# pattern_sim
-if hdf5dep.found()
-  pattern_sim_sources = ['src/pattern_sim.c', 'src/diffraction.c', versionc]
-  if opencldep.found()
-    pattern_sim_sources += ['src/diffraction-gpu.c', 'src/cl-utils.c']
-  endif
-  executable('pattern_sim', pattern_sim_sources,
-             dependencies: [mdep, libcrystfeldep, gsldep, hdf5dep, opencldep],
-             install: true,
-             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
-endif
-# For testing (see tests/meson.build)
-simulation_bits = files(['src/diffraction.c',
-                         'src/diffraction-gpu.c',
-                         'src/cl-utils.c'])
 
 # ************************ Misc resources ************************
 
@@ -289,8 +259,6 @@ install_man(['doc/man/ambigator.1',
              'doc/man/list_events.1',
              'doc/man/make_pixelmap.1',
              'doc/man/partialator.1',
-             'doc/man/partial_sim.1',
-             'doc/man/pattern_sim.1',
              'doc/man/process_hkl.1',
              'doc/man/render_hkl.1',
              'doc/man/whirligig.1'])

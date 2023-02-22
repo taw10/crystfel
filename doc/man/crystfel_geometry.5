@@ -14,8 +14,9 @@ CRYSTFEL DETECTOR GEOMETRY DESCRIPTION FILES
 .SH CRYSTFEL DETECTOR GEOMETRY FILES
 The detector geometry is taken from a text file rather than hardcoded into the
 program.  Programs which care about the geometry (particularly
-\fBindexamajig\fR and \fBpattern_sim\fR) take an argument
-\fB--geometry=\fR\fIfilename\fR, where \fIfilename\fR contains the geometry.
+\fBindexamajig\fR) take an argument \fB--geometry=\fR\fIfilename\fR, where
+\fIfilename\fR contains the geometry.
+
 .PP
 A flexible (and pedantic) representation of the detector has been developed to
 avoid all possible sources of ambiguity.  CrystFEL's representation of a
@@ -175,7 +176,7 @@ The range of pixels in the data block specified by the 'data' property that corr
 .IP \fBadu_per_eV\fR
 .IP \fBadu_per_photon\fR
 .PD
-The number of detector intensity units (ADU) which will arise from either one electron-Volt of photon energy, or one photon.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data, but it does affect the intensities calculated by \fBpattern_sim\fR.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR.
+The number of detector intensity units (ADU) which will arise from either one electron-Volt of photon energy, or one photon.  This is used to estimate Poisson errors.  Note that setting different values for this parameter for different panels does \fBnot\fR result in the intensities being scaled accordingly when integrating data.  You should only specify one out of \fBadu_per_eV\fR and \fBadu_per_photon\fR.
 
 .PD 0
 .IP \fBres\fR
@@ -339,5 +340,4 @@ You should have received a copy of the GNU General Public License along with Cry
 
 .SH SEE ALSO
 .BR crystfel (7),
-.BR pattern_sim (1),
 .BR indexamajig (1)

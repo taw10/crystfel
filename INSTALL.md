@@ -97,7 +97,6 @@ roughly in order of importance:
 * [msgpack-c](https://github.com/msgpack/msgpack-c) (for streaming data in MsgPack format)
 * [Seedee](https://gitlab.desy.de/fs-sc/seedee) (for streaming data serialised with Seedee)
 * [cJSON](https://github.com/DaveGamble/cJSON/) \[\*\] (extra dependency if Seedee is found)
-* [OpenCL](https://www.khronos.org/opencl/) plus appropriate GPU drivers (for GPU-accelerated pattern simulation)
 
 Most of the dependencies mentioned above should be available from your Linux
 distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
@@ -166,18 +165,6 @@ as follows, replacing the `meson build` step:
 ```
 meson build -Dhdf5=disabled
 ```
-
-Using OpenCL for GPU acceleration
----------------------------------
-
-OpenCL is disabled by default when building with Meson, to keep things simple
-for the majority of people who don't need it.  To enable it, add
-`-Dopencl=enabled` to the `meson` command line:
-```
-meson build -Dopencl=enabled
-```
-When building with CMake, OpenCL will always be used if the libraries are
-found.
 
 Fedora 22 or later
 ------------------

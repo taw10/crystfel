@@ -96,16 +96,6 @@ exe = executable('prof2d_check',
                  dependencies : [libcrystfeldep, mdep, gsldep])
 test('prof2d_check', exe)
 
-if opencldep.found()
-  exe = executable('gpu_sim_check',
-                   ['gpu_sim_check.c',
-                    simulation_bits],
-                   dependencies : [libcrystfeldep, mdep, gsldep, opencldep],
-                   include_directories: conf_inc)
-  geom = files('gpu_sim_check.geom')
-  test('gpu_sim_check', exe, args: [geom])
-endif
-
 # Event enumeration tests
 if hdf5dep.found()
   ev_enum_tests = ['ev_enum1',
