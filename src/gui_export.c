@@ -125,13 +125,14 @@ static int export_to_mtz(struct gui_merge_result *result,
 }
 
 
-void reminder(GtkWidget *window, const char *message)
+static void reminder(GtkWidget *window, const char *message)
 {
-	GtkWidget *dialog = gtk_message_dialog_new_with_markup(GTK_WINDOW(window),
-	                                                       GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                                       GTK_MESSAGE_INFO,
-	                                                       GTK_BUTTONS_OK,
-	                                                       message);
+	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+	                                           GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                           GTK_MESSAGE_INFO,
+	                                           GTK_BUTTONS_OK,
+	                                           NULL);
+	gtk_message_dialog_set_markup(GTK_MESSAGE_DIALOG(dialog), message);
 	gtk_window_set_title(GTK_WINDOW(dialog), "Reminder");
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
