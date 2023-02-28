@@ -44,7 +44,7 @@ important features such as the graphical user interface.  The following list is
 roughly in order of importance:
 
 * [HDF5](https://www.hdfgroup.org/downloads/hdf5/) 1.8.0 or later (required for HDF5 file read/write.  Version 1.10.0 or later is required for many recent data formats which use the 'virtual data set' feature)
-* [GTK](https://gtk.org/) version between 3.12 and 3.24 inclusive (required for GUI)
+* [GTK](https://gtk.org/) 3.12 or later, but not 4.x (required for GUI)
 * [Cairo](https://www.cairographics.org/) 1.2 or later (required for GUI)
 * [Pango](https://pango.gnome.org/) 1.0 or later, including [PangoCairo](https://docs.gtk.org/PangoCairo/) (required for GUI)
 * [gdk-pixbuf](https://docs.gtk.org/gdk-pixbuf/) 2.0 or later (required for GUI)
