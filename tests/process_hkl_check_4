@@ -46,8 +46,9 @@ $PROCESS_HKL -i process_hkl_check_4.stream -o process_hkl_check_4.hkl --no-polar
 if [ $? -ne 0 ]; then
 	exit 1;
 fi
-sed -n '/End of reflections/q;p' process_hkl_check_4.hkl > tempf.hkl
-mv tempf.hkl process_hkl_check_4.hkl
+
+sed -n '/End of reflections/q;p' process_hkl_check_4.hkl > tempU.hkl
+mv tempU.hkl process_hkl_check_4.hkl
 diff process_hkl_check_4.hkl process_hkl_check_4_ans.hkl
 if [ $? -ne 0 ]; then
 	exit 1
