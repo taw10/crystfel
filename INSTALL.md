@@ -23,6 +23,23 @@ and also to make sure that the installation is documented on the list of
 supported facility installations.
 
 
+Installation via package manager
+--------------------------------
+
+CrystFEL is available through <a href="https://nixos.org/">NixOS</a> since
+22.05, for x86_64 and Darwin (aarch64 to follow soon).  Two packages are
+available.  Package `crystfel` contains all tools including the GUI,
+whereas `crystfel-headless` excludes the GUI, making it easier to
+install and more suitable for (e.g.) backend data processing servers.
+
+To install via NixOS, simply add the package globally to your
+`environment.systemPackages`, or enter a temporary shell via `nix shell
+nixpkgs#crystfel` to have all CrystFEL tools in your `PATH`.
+
+Packages for other systems (e.g. <a href="https://brew.sh/">Homebrew</a>) are
+under development!
+
+
 Dependencies
 ------------
 
