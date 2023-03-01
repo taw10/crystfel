@@ -6,6 +6,5 @@
 #mesondefine HAVE_CL_CL_H
 #mesondefine HAVE_CLOCK_GETTIME
 #mesondefine HAVE_ZMQ
-#mesondefine HAVE_SLURM
 #mesondefine HAVE_HDF5
 #mesondefine HAVE_ASAPO

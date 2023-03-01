@@ -6,6 +6,5 @@
 #cmakedefine HAVE_CL_CL_H
 #cmakedefine HAVE_CLOCK_GETTIME
 #cmakedefine HAVE_ZMQ
-#cmakedefine HAVE_SLURM
 #cmakedefine HAVE_HDF5
 #cmakedefine HAVE_ASAPO
