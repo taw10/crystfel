@@ -478,6 +478,7 @@ int main(int argc, char *argv[])
 	/* Long options */
 	const struct option longopts[] = {
 		{"help",               0, NULL,               'h'},
+		{"input",              1, NULL,               'i'},
 		{"version",            0, NULL,                5 },
 		{"template",           1, NULL,               't'},
 		{"poisson",            0, &config_poisson,     1},
