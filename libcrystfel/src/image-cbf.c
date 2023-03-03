@@ -287,7 +287,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 
 	} else {
 
-		#ifdef HAVE_ZLIB
+		#if defined(HAVE_ZLIB) && !(defined(__aarch64__) && defined(__APPLE__))
 		gzFile gzfh;
 		int len_read;
 		size_t len;
