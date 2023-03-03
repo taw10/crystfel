@@ -14,8 +14,8 @@ Getting started
 ---------------
 
 See [INSTALL.md](INSTALL.md) for installation instructions, including
-installation via package manager and details of pre-existing installations at
-X-ray facilities around the world.
+our container registry, installation via package manager and details of
+pre-existing installations at X-ray facilities around the world.
 
 CrystFEL can be used from the command line or via a graphical user interface.
 To start the graphical user interface, run ```crystfel```.

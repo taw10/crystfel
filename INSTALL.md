@@ -23,6 +23,32 @@ and also to make sure that the installation is documented on the list of
 supported facility installations.
 
 
+Installation via container registry
+-----------------------------------
+
+The easiest way to get started is to download our container image and run it
+using a virtualization tool of your choice (e.g. Docker, Podman,
+[Singularity/Apptainer](http://apptainer.org/)).  For example, using Apptainer:
+```
+$ apptainer pull docker://gitlab.desy.de:5555/thomas.white/crystfel/crystfel:latest
+$ apptainer run -B /path/to/data crystfel_latest.sif
+```
+
+After the second command, you are working inside the container and should be
+able to run all the CrystFEL commands. Start by running ```crystfel``` to run
+the GUI.
+
+By default, only a few directories will be accessible inside the container,
+including your home directory. The argument ```--bind /path/to/data``` tells
+Apptainer to additionally make the given path available. You will probably need
+to use this to access your data.
+
+"Singularity" changed name to "Apptainer" in 2021. If you're using a slightly
+older version, simply replace ```apptainer``` with ```singularity``` in the
+commands above. Don't worry, it's the same software! Further documentation is
+available on [their website](http://apptainer.org/).
+
+
 Installation via package manager
 --------------------------------
 
