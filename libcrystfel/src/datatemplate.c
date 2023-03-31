@@ -1351,6 +1351,16 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 				      j, p->name);
 				reject = 1;
 			}
+
+			if ( (mt->good_bits || mt->bad_bits)
+			  && (mt->filename == NULL)
+			  && (mt->data_location == NULL) )
+			{
+				ERROR("You have specified good/bad bits for "
+				      "mask %i of panel %s, but not the mask "
+				      "location.\n", j, p->name);
+				reject = 1;
+			}
 		}
 
 	}
