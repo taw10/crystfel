@@ -1339,8 +1339,12 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 
 		for ( j=0; j<MAX_MASKS; j++ ) {
-			if ( (p->masks[j].filename != NULL)
-			  && (p->masks[j].data_location == NULL) )
+
+			struct mask_template *mt;
+			mt = &p->masks[j];
+
+			if ( (mt->filename != NULL)
+			  && (mt->data_location == NULL) )
 			{
 				ERROR("You have specified filename but not data"
 				      " location for mask %i of panel %s\n",
