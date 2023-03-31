@@ -544,6 +544,11 @@ static int parse_mask(struct panel_template *panel,
 			return 1;
 		}
 
+	} else {
+
+		ERROR("Invalid mask directive '%s'\n", key_orig);
+		free(key);
+		return 1;
 	}
 
 	free(key);
