@@ -449,6 +449,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 222 :
+		args->asapo_params.output_stream = strdup(arg);
+		break;
+
+		case 223 :
 		args->cpu_pin = 1;
 		break;
 
@@ -887,6 +891,7 @@ int main(int argc, char *argv[])
 	args.asapo_params.source = NULL;
 	args.asapo_params.stream = NULL;
 	args.asapo_params.wait_for_stream = 0;
+	args.asapo_params.output_stream = NULL;
 	args.cpu_pin = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
@@ -1009,7 +1014,8 @@ int main(int argc, char *argv[])
 		{"asapo-stream", 220, "str", OPTION_NO_USAGE, "ASAP::O stream name"},
 		{"asapo-wait-for-stream", 221, NULL, OPTION_NO_USAGE,
 		        "Wait for ASAP::O stream to appear"},
-		{"cpu-pin", 222, NULL, OPTION_NO_USAGE, "Pin worker processes to CPUs"},
+		{"asapo-output-stream", 222, "str", OPTION_NO_USAGE, "ASAP::O output stream name"},
+		{"cpu-pin", 223, NULL, OPTION_NO_USAGE, "Pin worker processes to CPUs"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},

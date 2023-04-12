@@ -56,6 +56,7 @@
 #include "predict-refine.h"
 #include "im-sandbox.h"
 #include "im-zmq.h"
+#include "im-asapo.h"
 
 static float **backup_image_data(float **dp, struct detgeom *det)
 {
@@ -177,7 +178,7 @@ static struct image *file_wait_open_read(const char *filename,
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir,
                    int serial, struct sb_shm *sb_shared,
-                   char *last_task)
+                   char *last_task, struct im_asapo *asapostuff)
 {
 	struct image *image;
 	int i;
@@ -479,6 +480,8 @@ streamwrite:
 		STATUS("WARNING: %i implausibly negative reflection%s in %s "
 		       "%s\n", n, n>1?"s":"", image->filename, image->ev);
 	}
+
+	im_asapo_send(asapostuff, image, image->hit);
 
 out:
 	/* Count crystals which are still good */

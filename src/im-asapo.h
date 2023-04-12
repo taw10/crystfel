@@ -43,7 +43,10 @@ struct im_asapo_params
 	char *source;
 	char *stream;
 	int wait_for_stream;
+	char *output_stream;
 };
+
+struct im_asapo;
 
 #if defined(HAVE_ASAPO)
 
@@ -54,6 +57,8 @@ extern void im_asapo_shutdown(struct im_asapo *a);
 extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
                             char **pmeta, char **pfilename, char **pevent,
                             int *pfinished, int *pmessageid);
+
+extern void im_asapo_send(struct im_asapo *a, struct image *image, int hit);
 
 #else /* defined(HAVE_ASAPO) */
 
@@ -78,6 +83,10 @@ static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize,
 	*pfinished = 1;
 	*pmessageid = 0;
 	return NULL;
+}
+
+static UNUSED void im_asapo_send(struct im_asapo *a, struct image *image, int hit)
+{
 }
 
 #endif /* defined(HAVE_ASAPO) */

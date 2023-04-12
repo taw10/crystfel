@@ -516,7 +516,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			sb->shared->time_last_start[cookie] = get_monotonic_seconds();
 			profile_start("process-image");
 			process_image(iargs, &pargs, st, cookie, tmpdir, ser,
-			              sb->shared, sb->shared->last_task[cookie]);
+			              sb->shared, sb->shared->last_task[cookie],
+			              asapostuff);
 			profile_end("process-image");
 		}
 
