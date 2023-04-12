@@ -3,11 +3,11 @@
  *
  * ASAP::O data interface
  *
- * Copyright © 2021 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2021-2023 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2021 Thomas White <taw@physics.org>
+ *   2021-2023 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -144,7 +144,7 @@ static int stream_empty(struct im_asapo *a)
 
 void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
                      char **pmeta, char **pfilename, char **pevent,
-                     int *pfinished)
+                     int *pfinished, int *pmessageid)
 {
 	void *data_copy;
 	AsapoMessageMetaHandle meta;
@@ -204,6 +204,7 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 	*pmeta = strdup(asapo_message_meta_get_metadata(meta));
 	*pfilename = strdup(asapo_message_meta_get_name(meta));
 	*pevent = strdup("//");
+	*pmessageid = asapo_message_meta_get_id(meta);
 	profile_end("copy-meta");
 
 	asapo_free_handle(&err);

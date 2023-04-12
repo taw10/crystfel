@@ -53,7 +53,7 @@ extern void im_asapo_shutdown(struct im_asapo *a);
 
 extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
                             char **pmeta, char **pfilename, char **pevent,
-                            int *pfinished);
+                            int *pfinished, int *pmessageid);
 
 #else /* defined(HAVE_ASAPO) */
 
@@ -69,13 +69,14 @@ static UNUSED void im_asapo_shutdown(struct im_asapo *a)
 
 static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize,
                                    char **pmeta, char **pfilename, char **pevent,
-                                   int *pfinished)
+                                   int *pfinished, int *pmessageid)
 {
 	*psize = 0;
 	*pmeta = NULL;
 	*pfilename = NULL;
 	*pevent = NULL;
 	*pfinished = 1;
+	*pmessageid = 0;
 	return NULL;
 }
 
