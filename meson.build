@@ -53,9 +53,16 @@ if zmqdep.found()
   conf_data.set10('HAVE_ZMQ', true)
 endif
 
-asapodep = dependency('libasapo-consumer', required: false)
-if asapodep.found()
-  conf_data.set10('HAVE_ASAPO', true)
+# There are two separate dependencies for ASAP::O (consumer and producer)
+# We need both of them.
+asapoproddep = dependency('libasapo-producer', required: false)
+if asapoproddep.found()
+  asapodep = dependency('libasapo-consumer', required: true)
+  if asapodep.found()
+    conf_data.set10('HAVE_ASAPO', true)
+  endif
+else
+  asapodep = dependency('', required: false)
 endif
 
 if cc.has_function('clock_gettime', prefix: '#include <time.h>')
@@ -161,7 +168,7 @@ endif
 
 indexamajig = executable('indexamajig', indexamajig_sources,
                          dependencies: [mdep, libcrystfeldep, gsldep,
-                                        pthreaddep, zmqdep, asapodep],
+                                        pthreaddep, zmqdep, asapodep, asapoproddep],
                          install: true,
                          install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
