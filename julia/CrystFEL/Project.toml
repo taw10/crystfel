@@ -1,0 +1,4 @@
+name = "CrystFEL"
+uuid = "02864af1-98e3-4af5-94a7-a156d2a4edba"
+authors = ["Thomas White <taw@physics.org>"]
+version = "0.1.0"
