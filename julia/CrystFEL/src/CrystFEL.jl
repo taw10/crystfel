@@ -1,6 +1,7 @@
 module CrystFEL
 
-include("datatemplates.jl")
 include("symmetry.jl")
+include("datatemplates.jl")
+include("reflists.jl")
 
 end # module CrystFEL
