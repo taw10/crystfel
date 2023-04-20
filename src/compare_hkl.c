@@ -88,7 +88,10 @@ static enum fom_type fom_type_from_string(const char *s)
 	if ( strcasecmp(s, "r2") == 0 ) return FOM_R2;
 	if ( strcasecmp(s, "rsplit") == 0 ) return FOM_RSPLIT;
 	if ( strcasecmp(s, "cc") == 0 ) return FOM_CC;
+	if ( strcasecmp(s, "cc1/2") == 0 ) return FOM_CC;
+	if ( strcasecmp(s, "cchalf") == 0 ) return FOM_CC;
 	if ( strcasecmp(s, "ccstar") == 0 ) return FOM_CCSTAR;
+	if ( strcasecmp(s, "cc*") == 0 ) return FOM_CCSTAR;
 	if ( strcasecmp(s, "ccano") == 0 ) return FOM_CCANO;
 	if ( strcasecmp(s, "crdano") == 0 ) return FOM_CRDANO;
 	if ( strcasecmp(s, "rano") == 0 ) return FOM_RANO;
