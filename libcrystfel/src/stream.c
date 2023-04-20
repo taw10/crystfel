@@ -1176,11 +1176,6 @@ Stream *stream_open_for_write(const char *filename,
 	st->dtempl_write = dtempl;
 	st->dtempl_read = NULL;
 
-	if ( file_exists(filename) ) {
-		ERROR("Refusing to overwrite stream '%s'!\n", filename);
-		return NULL;
-	}
-
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
 		ERROR("Failed to open stream.\n");
