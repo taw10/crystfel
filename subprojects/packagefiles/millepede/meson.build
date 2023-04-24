@@ -5,7 +5,8 @@ project('millepede', ['c', 'cpp','fortran'],
         default_options: ['buildtype=debugoptimized'])
 
 
-mille = library('mille', ['Mille.cc'],
+mille = library('mille', ['Mille.cc',
+                          'mille_c_wrap.cc'],
                 install: true)
 
 millepede_dep = declare_dependency(include_directories: '.',
