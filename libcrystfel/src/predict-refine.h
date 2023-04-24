@@ -33,12 +33,19 @@
 
 struct image;
 
+typedef void *Mille;
+
 /**
  * \file predict-refine.h
  * Prediction refinement: refinement of indexing solutions before integration.
  */
 
-extern int refine_prediction(struct image *image, Crystal *cr);
+extern Mille *crystfel_mille_new(const char *outFileName,
+                                 int asBinary,
+                                 int writeZero);
+extern void crystfel_mille_free(Mille *m);
+
+extern int refine_prediction(struct image *image, Crystal *cr, Mille *mille);
 extern int refine_radius(Crystal *cr, struct image *image);
 
 

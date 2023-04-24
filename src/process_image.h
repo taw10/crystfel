@@ -3,11 +3,11 @@
  *
  * The processing pipeline for one image
  *
- * Copyright © 2012-2022 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2022 Thomas White <taw@physics.org>
+ *   2010-2023 Thomas White <taw@physics.org>
  *   2014-2017 Valerio Mariani <valerio.mariani@desy.de>
  *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
  *
@@ -46,6 +46,7 @@ struct index_args;
 #include "peaks.h"
 #include "image.h"
 #include "im-asapo.h"
+#include "predict-refine.h"
 
 
 /* Information about the indexing process which is common to all patterns */
@@ -73,6 +74,7 @@ struct index_args
 	float wavelength_estimate;
 	float clen_estimate;
 	int n_threads;
+	int mille;
 
 	/* Integration */
 	IntegrationMethod int_meth;
@@ -115,7 +117,8 @@ extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
                           int cookie, const char *tmpdir, int serial,
                           struct sb_shm *sb_shared, char *last_task,
-                          struct im_asapo *asapostuff);
+                          struct im_asapo *asapostuff,
+                          Mille *mille);
 
 
 #endif	/* PROCESS_IMAGE_H */

@@ -3,13 +3,13 @@
  *
  * Index patterns, output hkl+intensity etc.
  *
- * Copyright © 2012-2022 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2022 Thomas White <taw@physics.org>
+ *   2010-2023 Thomas White <taw@physics.org>
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
  *   2012      Chunhong Yoon
@@ -722,6 +722,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		}
 		break;
 
+		case 416 :
+		args->iargs.mille = 1;
+		break;
+
 		/* ---------- Integration ---------- */
 
 		case 501 :
@@ -966,6 +970,7 @@ int main(int argc, char *argv[])
 	args.iargs.clen_estimate = NAN;
 	args.iargs.n_threads = 1;
 	args.iargs.data_format = DATA_SOURCE_TYPE_UNKNOWN;
+	args.iargs.mille = 0;
 
 	argp_program_version_hook = show_version;
 
@@ -1085,6 +1090,8 @@ int main(int argc, char *argv[])
 		        "Maximum number of threads allowed for indexing engines."},
 		{"camera-length-estimate", 415, "metres", 0,
 		        "Estimate of the camera length, in metres."},
+		{"mille", 416, NULL, 0,
+		        "Generate data for detector geometry refinement using Millepede"},
 
 		{NULL, 0, 0, OPTION_DOC, "Integration options:", 5},
 		{"integration", 501, "method", OPTION_NO_USAGE, "Integration method"},

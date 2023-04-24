@@ -591,7 +591,8 @@ static float real_time()
 
 /* Return non-zero for "success" */
 static int try_indexer(struct image *image, IndexingMethod indm,
-                       IndexingPrivate *ipriv, void *mpriv, char *last_task)
+                       IndexingPrivate *ipriv, void *mpriv, char *last_task,
+                       Mille *mille)
 {
 	int i, r;
 	int n_bad = 0;
@@ -719,7 +720,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		{
 			int r;
 			profile_start("refine");
-			r = refine_prediction(image, cr);
+			r = refine_prediction(image, cr, mille);
 			profile_end("refine");
 			if ( r ) {
 				crystal_set_user_flag(cr, 1);
@@ -920,18 +921,25 @@ static int finished_retry(IndexingMethod indm, IndexingFlags flags,
 
 void index_pattern(struct image *image, IndexingPrivate *ipriv)
 {
-	index_pattern_3(image, ipriv, NULL, NULL);
+	index_pattern_4(image, ipriv, NULL, NULL, NULL);
 }
 
 
 void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
 {
-	index_pattern_3(image, ipriv, ping, NULL);
+	index_pattern_4(image, ipriv, ping, NULL, NULL);
 }
 
 
 void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
                      char *last_task)
+{
+	index_pattern_4(image, ipriv, ping, last_task, NULL);
+}
+
+
+void index_pattern_4(struct image *image, IndexingPrivate *ipriv, int *ping,
+                     char *last_task, Mille *mille)
 {
 	int n = 0;
 	ImageFeatureList *orig;
@@ -982,7 +990,7 @@ void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 			r = try_indexer(image, ipriv->methods[n],
 			                ipriv, ipriv->engine_private[n],
-			                last_task);
+			                last_task, mille);
 			success += r;
 			ntry++;
 			done = finished_retry(ipriv->methods[n], ipriv->flags,

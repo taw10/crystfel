@@ -3,13 +3,13 @@
  *
  * Perform indexing (somehow)
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2021 Thomas White <taw@physics.org>
+ *   2010-2023 Thomas White <taw@physics.org>
  *   2010      Richard Kirian
  *   2012      Lorenzo Galli
  *   2015      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
@@ -210,6 +210,7 @@ extern char *base_indexer_str(IndexingMethod indm);
 #include "cell.h"
 #include "image.h"
 #include "datatemplate.h"
+#include "predict-refine.h"
 
 extern struct argp felix_argp;
 extern struct argp pinkIndexer_argp;
@@ -250,6 +251,9 @@ extern void index_pattern_2(struct image *image, IndexingPrivate *ipriv,
 
 extern void index_pattern_3(struct image *image, IndexingPrivate *ipriv,
                             int *ping, char *last_task);
+
+extern void index_pattern_4(struct image *image, IndexingPrivate *ipriv,
+                            int *ping, char *last_task, Mille *mille);
 
 extern void cleanup_indexing(IndexingPrivate *ipriv);
 

@@ -3,11 +3,11 @@
  *
  * Prediction refinement
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2020 Thomas White <taw@physics.org>
+ *   2010-2023 Thomas White <taw@physics.org>
  *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -37,6 +37,11 @@
 #include "image.h"
 #include "geometry.h"
 #include "cell-utils.h"
+#include "predict-refine.h"
+
+#ifdef HAVE_MILLEPEDE
+#include <mille_c_wrap.h>
+#endif
 
 
 /** \file predict-refine.h */
@@ -569,7 +574,7 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 }
 
 
-int refine_prediction(struct image *image, Crystal *cr)
+int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 {
 	int n;
 	int i;
@@ -654,5 +659,29 @@ int refine_prediction(struct image *image, Crystal *cr)
 		return 1;
 	}
 
+	if ( mille != NULL ) {
+		printf("Mille mode!\n");
+	}
+
 	return 0;
+}
+
+
+Mille *crystfel_mille_new(const char *outFileName,
+                          int asBinary,
+                          int writeZero)
+{
+	#ifdef HAVE_MILLEPEDE
+	return mille_new(outFileName, asBinary, writeZero);
+	#else
+	return NULL;
+	#endif
+}
+
+
+void crystfel_mille_free(Mille *m)
+{
+	#ifdef HAVE_MILLEPEDE
+	mille_free(m);
+	#endif
 }

@@ -178,7 +178,8 @@ static struct image *file_wait_open_read(const char *filename,
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir,
                    int serial, struct sb_shm *sb_shared,
-                   char *last_task, struct im_asapo *asapostuff)
+                   char *last_task, struct im_asapo *asapostuff,
+                   Mille *mille)
 {
 	struct image *image;
 	int i;
@@ -414,8 +415,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	/* Index the pattern */
 	set_last_task(last_task, "indexing");
 	profile_start("index");
-	index_pattern_3(image, iargs->ipriv, &sb_shared->pings[cookie],
-	                last_task);
+	index_pattern_4(image, iargs->ipriv, &sb_shared->pings[cookie],
+	                last_task, mille);
 	profile_end("index");
 
 	r = chdir(rn);
