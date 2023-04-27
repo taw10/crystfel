@@ -69,8 +69,6 @@ static const enum gparam rv[] =
 	GPARAM_DETY,
 };
 
-static const int num_params = 11;
-
 struct reflpeak {
 	Reflection *refl;
 	struct imagefeature *peak;
@@ -354,7 +352,7 @@ int refine_radius(Crystal *cr, struct image *image)
 
 
 static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image,
+                   struct image *image, int num_params,
                    double *total_x, double *total_y, double *total_z)
 {
 	int i;
@@ -574,6 +572,85 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 }
 
 
+static void write_mille(Mille *mille, int n, UnitCell *cell,
+                        struct reflpeak *rps, struct image *image,
+                        double dx, double dy)
+{
+#ifdef HAVE_MILLEPEDE
+	int i;
+	float local_gradients[9];
+	float global_gradients[2];
+	int labels[2];
+
+	/* Excitation error terms */
+	for ( i=0; i<n; i++ ) {
+
+		int j;
+		for ( j=0; j<9; j++ ) {
+			local_gradients[j] = r_gradient(cell, rv[j], rps[i].refl, image);
+		}
+
+		global_gradients[0] = r_gradient(cell, GPARAM_DETX, rps[i].refl, image);
+		global_gradients[1] = r_gradient(cell, GPARAM_DETY, rps[i].refl, image);
+		labels[0] = 1;
+		labels[1] = 2;
+
+		mille_add_measurement(mille,
+		                      9, local_gradients,
+		                      2, global_gradients, labels,
+		                      r_dev(&rps[i]),
+		                      1e-18);
+	}
+
+	/* Spot x-position terms */
+	for ( i=0; i<n; i++ ) {
+
+		int j;
+		for ( j=0; j<9; j++ ) {
+			local_gradients[j] = x_gradient(rv[j], rps[i].refl,
+			                                cell, rps[i].panel);
+		}
+
+		global_gradients[0] = x_gradient(GPARAM_DETX, rps[i].refl,
+		                                 cell, rps[i].panel);
+		global_gradients[1] = x_gradient(GPARAM_DETY, rps[i].refl,
+		                                 cell, rps[i].panel);
+		labels[0] = 1;
+		labels[1] = 2;
+
+		mille_add_measurement(mille,
+		                      9, local_gradients,
+		                      2, global_gradients, labels,
+		                      x_dev(&rps[i], image->detgeom, dx, dy),
+		                      10.0);
+	}
+
+	/* Spot y-position terms */
+	for ( i=0; i<n; i++ ) {
+
+		int j;
+		for ( j=0; j<9; j++ ) {
+			local_gradients[j] = y_gradient(rv[j], rps[i].refl,
+			                                cell, rps[i].panel);
+		}
+
+		global_gradients[0] = y_gradient(GPARAM_DETX, rps[i].refl,
+		                                 cell, rps[i].panel);
+		global_gradients[1] = y_gradient(GPARAM_DETY, rps[i].refl,
+		                                 cell, rps[i].panel);
+		labels[0] = 1;
+		labels[1] = 2;
+
+		mille_add_measurement(mille,
+		                      9, local_gradients,
+		                      2, global_gradients, labels,
+		                      y_dev(&rps[i], image->detgeom, dx, dy),
+		                      10.0);
+	}
+#endif /* HAVE_MILLEPEDE */
+}
+
+
 int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 {
 	int n;
@@ -586,6 +663,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	double total_z = 0.0;
 	double orig_shift_x, orig_shift_y;
 	char tmp[256];
+	int num_params;
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -624,13 +702,21 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 		}
 	}
 
+	if ( mille == NULL ) {
+		/* Without Millepede, we refine beam center as well */
+		num_params = 11;
+	} else {
+		/* With Millepede, leave all global parameters for later */
+		num_params = 9;
+	}
+
 	//STATUS("Initial residual = %e\n",
 	//       pred_residual(rps, n, image->detgeom, total_x, total_y));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_predictions(cr);
-		if ( iterate(rps, n, crystal_get_cell(cr), image,
+		if ( iterate(rps, n, crystal_get_cell(cr), image, num_params,
 		             &total_x, &total_y, &total_z) )
 		{
 			crystal_set_reflections(cr, NULL);
@@ -647,6 +733,11 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	         pred_residual(rps, n, image->detgeom, total_x, total_y));
 	crystal_add_notes(cr, tmp);
 
+	if ( mille != NULL ) {
+		write_mille(mille, n, crystal_get_cell(cr), rps, image,
+		            total_x, total_y);
+	}
+
 	crystal_set_det_shift(cr, total_x, total_y);
 
 	crystal_set_reflections(cr, NULL);
@@ -656,12 +747,19 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	free_rps_noreflist(rps, n);
 	if ( n < 10 ) {
 		crystal_set_det_shift(cr, orig_shift_x, orig_shift_y);
+		#ifdef HAVE_MILLEPEDE
+		if ( mille != NULL ) {
+			mille_delete_last_record(mille);
+		}
+		#endif
 		return 1;
 	}
 
+	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
-		printf("Mille mode!\n");
+		mille_write_record(mille);
 	}
+	#endif
 
 	return 0;
 }
