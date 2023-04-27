@@ -599,7 +599,7 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 		                      9, local_gradients,
 		                      2, global_gradients, labels,
 		                      r_dev(&rps[i]),
-		                      1e-18);
+		                      1e10);
 	}
 
 	/* Spot x-position terms */
@@ -622,7 +622,7 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 		                      9, local_gradients,
 		                      2, global_gradients, labels,
 		                      x_dev(&rps[i], image->detgeom, dx, dy),
-		                      10.0);
+		                      0.65*rps[i].panel->pixel_pitch);
 	}
 
 	/* Spot y-position terms */
@@ -645,7 +645,7 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 		                      9, local_gradients,
 		                      2, global_gradients, labels,
 		                      y_dev(&rps[i], image->detgeom, dx, dy),
-		                      10.0);
+		                      0.65*rps[i].panel->pixel_pitch);
 	}
 #endif /* HAVE_MILLEPEDE */
 }
