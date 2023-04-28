@@ -4,6 +4,12 @@ project('millepede', ['c', 'cpp','fortran'],
         license: 'LGPL2+',
         default_options: ['buildtype=debugoptimized'])
 
+pede_c_args = []
+
+zlibdep = dependency('zlib', required: false)
+if zlibdep.found()
+  pede_c_args += '-DUSE_ZLIB'
+endif
 
 mille = library('mille', ['Mille.cc',
                           'mille_c_wrap.cc'],
@@ -37,4 +43,6 @@ executable('pede',
             'pede.f90',
             'readc.c'],
            fortran_args: ['-DREAD_C_FILES', '-cpp'],
+           c_args: pede_c_args,
+           dependencies: [zlibdep],
            install: true)
