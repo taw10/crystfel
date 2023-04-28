@@ -11,8 +11,7 @@ if zlibdep.found()
   pede_c_args += '-DUSE_ZLIB'
 endif
 
-mille = library('mille', ['Mille.cc',
-                          'mille_c_wrap.cc'],
+mille = library('mille', ['Mille.cc', 'mille_c_wrap.cc'],
                 install: true)
 
 millepede_dep = declare_dependency(include_directories: '.',
