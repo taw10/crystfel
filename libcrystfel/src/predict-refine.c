@@ -38,6 +38,7 @@
 #include "geometry.h"
 #include "cell-utils.h"
 #include "predict-refine.h"
+#include "profile.h"
 
 #ifdef HAVE_MILLEPEDE
 #include <mille_c_wrap.h>
@@ -582,6 +583,8 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 	float global_gradients[2];
 	int labels[2];
 
+	profile_start("mille-calc");
+
 	/* Excitation error terms */
 	for ( i=0; i<n; i++ ) {
 
@@ -647,6 +650,9 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 		                      y_dev(&rps[i], image->detgeom, dx, dy),
 		                      0.65*rps[i].panel->pixel_pitch);
 	}
+
+	profile_end("mille-calc");
+
 #endif /* HAVE_MILLEPEDE */
 }
 
@@ -757,7 +763,9 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 
 	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
+		profile_start("mille-write");
 		mille_write_record(mille);
+		profile_end("mille-write");
 	}
 	#endif
 
