@@ -67,8 +67,4 @@ extern char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 extern int is_hdf5_file(const char *filename);
 
-extern int image_hdf5_write(const struct image *image,
-                            const DataTemplate *dtempl,
-                            const char *filename);
-
 #endif	/* IMAGE_HDF5_H */

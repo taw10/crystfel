@@ -266,11 +266,6 @@ extern int image_create_dp_bad_sat(struct image *image,
 extern int image_set_zero_data(struct image *image,
                                const DataTemplate *dtempl);
 
-extern int image_write(const struct image *image,
-                       const DataTemplate *dtempl,
-                       const char *filename);
-
-
 #ifdef __cplusplus
 }
 #endif

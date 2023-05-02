@@ -1418,21 +1418,3 @@ void mark_resolution_range_as_bad(struct image *image,
 
 	}
 }
-
-
-int image_write(const struct image *image,
-                const DataTemplate *dtempl,
-                const char *filename)
-{
-	if ( is_hdf5_file(filename) ) {
-		#ifdef HAVE_HDF5
-		return image_hdf5_write(image, dtempl, filename);
-		#else
-		ERROR("Can't write image - compiled without HDF5\n");
-		return 1;
-		#endif
-	}
-
-	ERROR("Can only write to HDF5 files.\n");
-	return 1;
-}
