@@ -53,7 +53,7 @@ Installation via package manager
 --------------------------------
 
 CrystFEL is available through <a href="https://nixos.org/">NixOS</a> since
-22.05, for x86_64 and Darwin (aarch64 to follow soon).  Two packages are
+22.05, for x86_64, Darwin and aarch64.  Two packages are
 available.  Package `crystfel` contains all tools including the GUI,
 whereas `crystfel-headless` excludes the GUI, making it easier to
 install and more suitable for (e.g.) backend data processing servers.
