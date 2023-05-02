@@ -1171,7 +1171,6 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	int r;
 	int allDone = 0;
 	struct get_pattern_ctx gpctx;
-	int n_cpus;
 
 	if ( n_proc > MAX_NUM_WORKERS ) {
 		ERROR("Number of workers (%i) is too large.  Using %i\n",
@@ -1180,7 +1179,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	#ifdef HAVE_SCHED_SETAFFINITY
-	n_cpus = get_nprocs();
+	int n_cpus = get_nprocs();
 	if ( n_proc > n_cpus ) {
 		ERROR("WARNING: Number of workers (%i) is larger than the "
 		      "number of available CPUs (%i)\n", n_proc, n_cpus);
