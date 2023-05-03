@@ -206,27 +206,29 @@ static void write_harvest_file(struct index_args *args,
 	fprintf(fh, "  },\n");
 
 	fprintf(fh, "  \"peaksearch\": {\n");
-	write_str(fh, 1, "method", str_peaksearch(args->peaks));
-	write_json_radii(fh, "radii", args->pk_inn, args->pk_mid, args->pk_out);
-	write_bool(fh, 1, "noise_filter", args->noisefilter);
-	write_int(fh, 1, "median_filter", args->median_filter);
-	write_float(fh, 1, "threshold_adu", args->threshold);
-	write_float(fh, 1, "min_squared_gradient_adu2", args->min_sq_gradient);
-	write_float(fh, 1, "min_snr", args->min_snr);
-	write_bool(fh, 1, "check_hdf5_snr", args->check_hdf5_snr);
-	write_bool(fh, 1, "peakfinder8_fast", args->peakfinder8_fast);
-	write_bool(fh, 1, "half_pixel_shift", args->half_pixel_shift);
-	write_int(fh, 1, "min_res_px", args->min_res);
-	write_int(fh, 1, "max_res_px", args->max_res);
-	write_int(fh, 1, "min_pixel_count", args->min_pix_count);
-	write_int(fh, 1, "max_pixel_count", args->max_pix_count);
-	write_int(fh, 1, "local_bg_radius_px", args->local_bg_radius);
-	write_bool(fh, 1, "use_saturated", args->use_saturated);
-	write_bool(fh, 1, "revalidate_hdf5", 1-args->no_revalidate);
-	write_float(fh, 1, "min_snr_of_biggest_pixel", args->min_snr_biggest_pix);
-	write_float(fh, 1, "min_snr_of_peak_pixel", args->min_snr_peak_pix);
-	write_float(fh, 1, "min_sig_adu", args->min_sig);
-	write_float(fh, 0, "min_peak_over_neighbour_adu", args->min_peak_over_neighbour);
+	write_str(fh, 1, "method", str_peaksearch(args->peak_search.method));
+	write_json_radii(fh, "radii", args->peak_search.pk_inn,
+	                              args->peak_search.pk_mid,
+	                              args->peak_search.pk_out);
+	write_bool(fh, 1, "noise_filter", args->peak_search.noisefilter);
+	write_int(fh, 1, "median_filter", args->peak_search.median_filter);
+	write_float(fh, 1, "threshold_adu", args->peak_search.threshold);
+	write_float(fh, 1, "min_squared_gradient_adu2", args->peak_search.min_sq_gradient);
+	write_float(fh, 1, "min_snr", args->peak_search.min_snr);
+	write_bool(fh, 1, "check_hdf5_snr", args->peak_search.check_hdf5_snr);
+	write_bool(fh, 1, "peakfinder8_fast", args->peak_search.peakfinder8_fast);
+	write_bool(fh, 1, "half_pixel_shift", args->peak_search.half_pixel_shift);
+	write_int(fh, 1, "min_res_px", args->peak_search.min_res);
+	write_int(fh, 1, "max_res_px", args->peak_search.max_res);
+	write_int(fh, 1, "min_pixel_count", args->peak_search.min_pix_count);
+	write_int(fh, 1, "max_pixel_count", args->peak_search.max_pix_count);
+	write_int(fh, 1, "local_bg_radius_px", args->peak_search.local_bg_radius);
+	write_bool(fh, 1, "use_saturated", args->peak_search.use_saturated);
+	write_bool(fh, 1, "revalidate_hdf5", args->peak_search.revalidate);
+	write_float(fh, 1, "min_snr_of_biggest_pixel", args->peak_search.min_snr_biggest_pix);
+	write_float(fh, 1, "min_snr_of_peak_pixel", args->peak_search.min_snr_peak_pix);
+	write_float(fh, 1, "min_sig_adu", args->peak_search.min_sig);
+	write_float(fh, 0, "min_peak_over_neighbour_adu", args->peak_search.min_peak_over_neighbour);
 	fprintf(fh, "  },\n");
 
 	fprintf(fh, "  \"hitfinding\": {\n");
@@ -453,21 +455,21 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		/* ---------- Peak search ---------- */
 
 		case 't' :
-		args->iargs.threshold = strtof(arg, NULL);
+		args->iargs.peak_search.threshold = strtof(arg, NULL);
 		break;
 
 		case 301 :
-		args->iargs.peaks = parse_peaksearch(arg);
-		if ( args->iargs.peaks == PEAK_ERROR ) {
+		args->iargs.peak_search.method = parse_peaksearch(arg);
+		if ( args->iargs.peak_search.method == PEAK_ERROR ) {
 			ERROR("Unrecognised peak detection method '%s'\n", arg);
 			return EINVAL;
 		}
 		break;
 
 		case 302 :
-		r = sscanf(arg, "%f,%f,%f", &args->iargs.pk_inn,
-		           &args->iargs.pk_mid, &args->iargs.pk_out);
-		if ( (r != 3) || (args->iargs.pk_inn < 0) ) {
+		r = sscanf(arg, "%f,%f,%f", &args->iargs.peak_search.pk_inn,
+		           &args->iargs.peak_search.pk_mid, &args->iargs.peak_search.pk_out);
+		if ( (r != 3) || (args->iargs.peak_search.pk_inn < 0) ) {
 			ERROR("Invalid parameters for '--peak-radius'\n");
 			return EINVAL;
 		}
@@ -487,7 +489,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 305 :
-		if (sscanf(arg, "%d", &args->iargs.median_filter) != 1)
+		if (sscanf(arg, "%d", &args->iargs.peak_search.median_filter) != 1)
 		{
 			ERROR("Invalid value for --median-filter\n");
 			return EINVAL;
@@ -495,11 +497,11 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 306 :
-		args->iargs.noisefilter = 1;
+		args->iargs.peak_search.noisefilter = 1;
 		break;
 
 		case 307 :
-		if (sscanf(arg, "%f", &args->iargs.min_sq_gradient) != 1)
+		if (sscanf(arg, "%f", &args->iargs.peak_search.min_sq_gradient) != 1)
 		{
 			ERROR("Invalid value for --min-squared-gradient\n");
 			return EINVAL;
@@ -507,7 +509,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 308 :
-		if (sscanf(arg, "%f", &args->iargs.min_snr) != 1)
+		if (sscanf(arg, "%f", &args->iargs.peak_search.min_snr) != 1)
 		{
 			ERROR("Invalid value for --min-snr\n");
 			return EINVAL;
@@ -515,7 +517,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 309 :
-		if (sscanf(arg, "%d", &args->iargs.min_pix_count) != 1)
+		if (sscanf(arg, "%d", &args->iargs.peak_search.min_pix_count) != 1)
 		{
 			ERROR("Invalid value for --min-pix-count\n");
 			return EINVAL;
@@ -523,7 +525,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 310 :
-		if (sscanf(arg, "%d", &args->iargs.max_pix_count) != 1)
+		if (sscanf(arg, "%d", &args->iargs.peak_search.max_pix_count) != 1)
 		{
 			ERROR("Invalid value for --max-pix-count\n");
 			return EINVAL;
@@ -531,7 +533,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 311 :
-		if (sscanf(arg, "%d", &args->iargs.local_bg_radius) != 1)
+		if (sscanf(arg, "%d", &args->iargs.peak_search.local_bg_radius) != 1)
 		{
 			ERROR("Invalid value for --local-bg-radius\n");
 			return EINVAL;
@@ -539,7 +541,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 312 :
-		if (sscanf(arg, "%d", &args->iargs.min_res) != 1)
+		if (sscanf(arg, "%d", &args->iargs.peak_search.min_res) != 1)
 		{
 			ERROR("Invalid value for --min-res\n");
 			return EINVAL;
@@ -547,7 +549,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 313 :
-		if (sscanf(arg, "%d", &args->iargs.max_res) != 1)
+		if (sscanf(arg, "%d", &args->iargs.peak_search.max_res) != 1)
 		{
 			ERROR("Invalid value for --max-res\n");
 			return EINVAL;
@@ -555,7 +557,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 314 :
-		if (sscanf(arg, "%f", &args->iargs.min_snr_biggest_pix) != 1)
+		if (sscanf(arg, "%f", &args->iargs.peak_search.min_snr_biggest_pix) != 1)
 		{
 			ERROR("Invalid value for --max-snr-biggest-pix\n");
 			return EINVAL;
@@ -563,7 +565,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 315 :
-		if (sscanf(arg, "%f", &args->iargs.min_snr_peak_pix) != 1)
+		if (sscanf(arg, "%f", &args->iargs.peak_search.min_snr_peak_pix) != 1)
 		{
 			ERROR("Invalid value for --max-snr-peak-pix\n");
 			return EINVAL;
@@ -571,7 +573,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 316 :
-		if (sscanf(arg, "%f", &args->iargs.min_sig) != 1)
+		if (sscanf(arg, "%f", &args->iargs.peak_search.min_sig) != 1)
 		{
 			ERROR("Invalid value for --max-ssig\n");
 			return EINVAL;
@@ -579,7 +581,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 317 :
-		if (sscanf(arg, "%f", &args->iargs.min_peak_over_neighbour) != 1)
+		if (sscanf(arg, "%f", &args->iargs.peak_search.min_peak_over_neighbour) != 1)
 		{
 			ERROR("Invalid value for --max-peak-over-neighbour\n");
 			return EINVAL;
@@ -587,23 +589,23 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 318 :
-		args->iargs.use_saturated = 0;
+		args->iargs.peak_search.use_saturated = 0;
 		break;
 
 		case 319 :
-		args->iargs.no_revalidate = 1;
+		args->iargs.peak_search.revalidate = 0;
 		break;
 
 		case 320 :
-		args->iargs.half_pixel_shift = 0;
+		args->iargs.peak_search.half_pixel_shift = 0;
 		break;
 
 		case 321 :
-		args->iargs.check_hdf5_snr = 1;
+		args->iargs.peak_search.check_hdf5_snr = 1;
 		break;
 
 		case 322:
-		args->iargs.peakfinder8_fast = 1;
+		args->iargs.peak_search.peakfinder8_fast = 1;
 		break;
 
 		/* ---------- Indexing ---------- */
@@ -904,40 +906,40 @@ int main(int argc, char *argv[])
 
 	/* Defaults for process_image arguments */
 	args.iargs.cell = NULL;
-	args.iargs.noisefilter = 0;
-	args.iargs.median_filter = 0;
+	args.iargs.peak_search.noisefilter = 0;
+	args.iargs.peak_search.median_filter = 0;
 	args.iargs.tols[0] = 0.05;  /* frac (not %) */
 	args.iargs.tols[1] = 0.05;  /* frac (not %) */
 	args.iargs.tols[2] = 0.05;  /* frac (not %) */
 	args.iargs.tols[3] = deg2rad(1.5); /* radians */
 	args.iargs.tols[4] = deg2rad(1.5); /* radians */
 	args.iargs.tols[5] = deg2rad(1.5); /* radians */
-	args.iargs.threshold = 800.0;
-	args.iargs.min_sq_gradient = 100000.0;
-	args.iargs.min_snr = 5.0;
-	args.iargs.min_pix_count = 2;
-	args.iargs.max_pix_count = 200;
-	args.iargs.min_res = 0;
-	args.iargs.max_res = 1200;
-	args.iargs.local_bg_radius = 3;
-	args.iargs.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
-	args.iargs.min_snr_peak_pix = 6.0;
-	args.iargs.min_sig = 11.0;
-	args.iargs.min_peak_over_neighbour = -INFINITY;
-	args.iargs.check_hdf5_snr = 0;
-	args.iargs.peakfinder8_fast = 0;
+	args.iargs.peak_search.threshold = 800.0;
+	args.iargs.peak_search.min_sq_gradient = 100000.0;
+	args.iargs.peak_search.min_snr = 5.0;
+	args.iargs.peak_search.min_pix_count = 2;
+	args.iargs.peak_search.max_pix_count = 200;
+	args.iargs.peak_search.min_res = 0;
+	args.iargs.peak_search.max_res = 1200;
+	args.iargs.peak_search.local_bg_radius = 3;
+	args.iargs.peak_search.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
+	args.iargs.peak_search.min_snr_peak_pix = 6.0;
+	args.iargs.peak_search.min_sig = 11.0;
+	args.iargs.peak_search.min_peak_over_neighbour = -INFINITY;
+	args.iargs.peak_search.check_hdf5_snr = 0;
+	args.iargs.peak_search.peakfinder8_fast = 0;
 	args.iargs.pf_private = NULL;
 	args.iargs.dtempl = NULL;
-	args.iargs.peaks = PEAK_ZAEF;
-	args.iargs.half_pixel_shift = 1;
-	args.iargs.pk_inn = -1.0;
-	args.iargs.pk_mid = -1.0;
-	args.iargs.pk_out = -1.0;
+	args.iargs.peak_search.method = PEAK_ZAEF;
+	args.iargs.peak_search.half_pixel_shift = 1;
+	args.iargs.peak_search.pk_inn = -1.0;
+	args.iargs.peak_search.pk_mid = -1.0;
+	args.iargs.peak_search.pk_out = -1.0;
 	args.iargs.ir_inn = -1.0;
 	args.iargs.ir_mid = -1.0;
 	args.iargs.ir_out = -1.0;
-	args.iargs.use_saturated = 1;
-	args.iargs.no_revalidate = 0;
+	args.iargs.peak_search.use_saturated = 1;
+	args.iargs.peak_search.revalidate = 1;
 	args.iargs.stream_flags = STREAM_PEAKS | STREAM_REFLECTIONS;
 	args.iargs.stream_nonhits = 1;
 	args.iargs.int_diag = INTDIAG_NONE;
@@ -1214,10 +1216,10 @@ int main(int argc, char *argv[])
 	}
 
 	/* If no peak radii were given, copy the integration radii */
-	if ( args.iargs.pk_inn < 0.0 ) {
-		args.iargs.pk_inn = args.iargs.ir_inn;
-		args.iargs.pk_mid = args.iargs.ir_mid;
-		args.iargs.pk_out = args.iargs.ir_out;
+	if ( args.iargs.peak_search.pk_inn < 0.0 ) {
+		args.iargs.peak_search.pk_inn = args.iargs.ir_inn;
+		args.iargs.peak_search.pk_mid = args.iargs.ir_mid;
+		args.iargs.peak_search.pk_out = args.iargs.ir_out;
 	}
 
 	/* Load unit cell (if given) */
@@ -1392,9 +1394,9 @@ int main(int argc, char *argv[])
 
 	struct pf8_private_data *pf8_data = NULL;
 	struct detgeom *detgeom = NULL;
-	if ( args.iargs.peaks == PEAK_PEAKFINDER8 ) {
+	if ( args.iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
 		detgeom = data_template_get_2d_detgeom_if_possible(args.iargs.dtempl);
-		pf8_data = prepare_peakfinder8(detgeom, args.iargs.peakfinder8_fast);
+		pf8_data = prepare_peakfinder8(detgeom, args.iargs.peak_search.peakfinder8_fast);
 		args.iargs.pf_private = pf8_data;
 	}
 

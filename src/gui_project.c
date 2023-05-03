@@ -1259,6 +1259,10 @@ int default_project(struct crystfelproject *proj)
 	proj->peak_search_params.pk_out = 7.0;
 	proj->peak_search_params.half_pixel_shift = 1;
 	proj->peak_search_params.revalidate = 1;
+	proj->peak_search_params.noisefilter = 0;
+	proj->peak_search_params.median_filter = 0;
+	proj->peak_search_params.check_hdf5_snr = 0;
+	proj->peak_search_params.use_saturated = 1;
 
 	proj->indexing_params.cell_file = NULL;
 	proj->indexing_params.indexing_methods = NULL;

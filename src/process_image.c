@@ -257,7 +257,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	profile_start("image-filter");
 	sb_shared->pings[cookie]++;
 
-	if ( (iargs->median_filter > 0) || iargs->noisefilter ) {
+	if ( (iargs->peak_search.median_filter > 0) || iargs->peak_search.noisefilter ) {
 		profile_start("data-backup");
 		prefilter = backup_image_data(image->dp, image->detgeom);
 		profile_end("data-backup");
@@ -265,14 +265,14 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		prefilter = NULL;
 	}
 
-	if ( iargs->median_filter > 0 ) {
+	if ( iargs->peak_search.median_filter > 0 ) {
 		profile_start("median-filter");
-		filter_median(image, iargs->median_filter);
+		filter_median(image, iargs->peak_search.median_filter);
 		profile_end("median-filter");
 	}
 
-	if ( iargs->noisefilter ) {
-		profile_start("noise-filter");
+	if ( iargs->peak_search.noisefilter ) {
+		profile_start("median-filter");
 		filter_noise(image);
 		profile_end("noise-filter");
 	}
@@ -284,7 +284,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	sb_shared->pings[cookie]++;
 	profile_start("peak-search");
-	switch ( iargs->peaks ) {
+	switch ( iargs->peak_search.method ) {
 
 		case PEAK_HDF5:
 		case PEAK_CXI:
@@ -292,38 +292,38 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		image->features = image_read_peaks(iargs->dtempl,
 		                                   pargs->filename,
 		                                   pargs->event,
-		                                   iargs->half_pixel_shift);
+		                                   iargs->peak_search.half_pixel_shift);
 		if ( image->features == NULL ) {
 			ERROR("Failed to get peaks from HDF5 file.\n");
 		}
-		if ( !iargs->no_revalidate ) {
-			validate_peaks(image, iargs->min_snr,
-				       iargs->pk_inn, iargs->pk_mid,
-		                       iargs->pk_out, iargs->use_saturated,
-				       iargs->check_hdf5_snr);
+		if ( iargs->peak_search.revalidate ) {
+			validate_peaks(image, iargs->peak_search.min_snr,
+				       iargs->peak_search.pk_inn, iargs->peak_search.pk_mid,
+		                       iargs->peak_search.pk_out, iargs->peak_search.use_saturated,
+				       iargs->peak_search.check_hdf5_snr);
 		}
 		break;
 
 		case PEAK_ZAEF:
 		set_last_task(last_task, "peaksearch:zaef");
-		search_peaks(image, iargs->threshold,
-		             iargs->min_sq_gradient, iargs->min_snr,
-		             iargs->pk_inn, iargs->pk_mid, iargs->pk_out,
-		             iargs->use_saturated);
+		search_peaks(image, iargs->peak_search.threshold,
+		             iargs->peak_search.min_sq_gradient, iargs->peak_search.min_snr,
+		             iargs->peak_search.pk_inn, iargs->peak_search.pk_mid, iargs->peak_search.pk_out,
+		             iargs->peak_search.use_saturated);
 		break;
 
 		case PEAK_PEAKFINDER8:
 		set_last_task(last_task, "peaksearch:pf8");
 		if ( search_peaks_peakfinder8(image, 2048,
-		                              iargs->threshold,
-		                              iargs->min_snr,
-		                              iargs->min_pix_count,
-		                              iargs->max_pix_count,
-		                              iargs->local_bg_radius,
-		                              iargs->min_res,
-		                              iargs->max_res,
-		                              iargs->use_saturated,
-					      iargs->peakfinder8_fast,
+		                              iargs->peak_search.threshold,
+		                              iargs->peak_search.min_snr,
+		                              iargs->peak_search.min_pix_count,
+		                              iargs->peak_search.max_pix_count,
+		                              iargs->peak_search.local_bg_radius,
+		                              iargs->peak_search.min_res,
+		                              iargs->peak_search.max_res,
+		                              iargs->peak_search.use_saturated,
+					      iargs->peak_search.peakfinder8_fast,
 					      iargs->pf_private) ) {
 			ERROR("Failed to find peaks in image %s"
 			      "(event %s).\n",
@@ -334,12 +334,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		case PEAK_PEAKFINDER9:
 		set_last_task(last_task, "peaksearch:pf9");
 		if ( search_peaks_peakfinder9(image,
-		                              iargs->min_snr_biggest_pix,
-		                              iargs->min_snr_peak_pix,
-		                              iargs->min_snr,
-		                              iargs->min_sig,
-		                              iargs->min_peak_over_neighbour,
-		                              iargs->local_bg_radius) )
+		                              iargs->peak_search.min_snr_biggest_pix,
+		                              iargs->peak_search.min_snr_peak_pix,
+		                              iargs->peak_search.min_snr,
+		                              iargs->peak_search.min_sig,
+		                              iargs->peak_search.min_peak_over_neighbour,
+		                              iargs->peak_search.local_bg_radius) )
 		{
 			ERROR("Failed to find peaks in image %s"
 			      "(event %s).\n",
@@ -351,12 +351,12 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		image->features = image_msgpack_read_peaks(iargs->dtempl,
 		                                           pargs->zmq_data,
 		                                           pargs->zmq_data_size,
-		                                           iargs->half_pixel_shift);
-		if ( !iargs->no_revalidate ) {
-			validate_peaks(image, iargs->min_snr,
-				       iargs->pk_inn, iargs->pk_mid,
-		                       iargs->pk_out, iargs->use_saturated,
-				       iargs->check_hdf5_snr);
+		                                           iargs->peak_search.half_pixel_shift);
+		if ( iargs->peak_search.revalidate ) {
+			validate_peaks(image, iargs->peak_search.min_snr,
+				       iargs->peak_search.pk_inn, iargs->peak_search.pk_mid,
+		                       iargs->peak_search.pk_out, iargs->peak_search.use_saturated,
+				       iargs->peak_search.check_hdf5_snr);
 		}
 		break;
 

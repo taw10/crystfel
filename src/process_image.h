@@ -59,29 +59,7 @@ struct index_args
 	DataSourceType data_format;
 
 	/* Peak search */
-	enum peak_search_method peaks;
-	float pk_inn;
-	float pk_mid;
-	float pk_out;
-	int noisefilter;
-	int median_filter;
-	float threshold;
-	float min_sq_gradient;
-	float min_snr;
-	int check_hdf5_snr;
-	int half_pixel_shift;
-	int min_res;
-	int max_res;
-	int min_pix_count;
-	int max_pix_count;
-	int local_bg_radius;
-	int use_saturated;
-	int no_revalidate;
-	float min_snr_biggest_pix;
-	float min_snr_peak_pix;
-	float min_sig;
-	float min_peak_over_neighbour;
-	int peakfinder8_fast;
+	struct peak_params peak_search;
 	void *pf_private;
 
 	/* Hit finding */

@@ -46,27 +46,6 @@ enum match_type_id
 	 MATCH_CBFGZ,
 };
 
-struct peak_params {
-	enum peak_search_method method;
-	float threshold;                /* zaef, pf8 */
-	float min_sq_gradient;          /* zaef */
-	float min_snr;                  /* zaef, pf8 */
-	int min_pix_count;              /* pf8 */
-	int max_pix_count;              /* pf8 */
-	int local_bg_radius;            /* pf8 */
-	int min_res;                    /* pf8 */
-	int max_res;                    /* pf8 */
-	float min_snr_biggest_pix;      /* pf9 */
-	float min_snr_peak_pix;         /* pf9 */
-	float min_sig;                  /* pf9 */
-	float min_peak_over_neighbour;  /* pf9 */
-	float pk_inn;
-	float pk_mid;
-	float pk_out;
-	int half_pixel_shift;           /* cxi, hdf5 */
-	int revalidate;
-};
-
 struct index_params {
 
 	/* Indexing */
