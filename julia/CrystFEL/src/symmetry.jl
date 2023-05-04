@@ -36,14 +36,14 @@ end
 
 function Base.getindex(sym::SymOpList, i::Int)
 
-    if i >= length(sym)
+    if i > length(sym)
         throw(BoundsError())
     end
 
     out = ccall((:get_symop, :libcrystfel),
                 Ptr{InternalIntegerMatrix},
                 (Ptr{InternalSymOpList},Ptr{Cvoid},Cint),
-                sym.internalptr,C_NULL,i)
+                sym.internalptr,C_NULL,i-1)
 
     if out == C_NULL
         throw(OutOfMemoryError())
@@ -80,12 +80,12 @@ end
 
 
 function Base.iterate(sym::SymOpList)
-    return (sym[1], 1)
+    return (sym[1], 2)
 end
 
 
 function Base.iterate(sym::SymOpList, i)
-    if i == length(sym)
+    if i > length(sym)
         return nothing
     else
         return (sym[i], i+1)
