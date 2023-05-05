@@ -513,52 +513,6 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 }
 
 
-signed int is_cbf_file(const char *filename)
-{
-	FILE *fh;
-	char line[1024];
-
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) return -1;
-
-	if ( fgets(line, 1024, fh) == NULL ) {
-		fclose(fh);
-		return 0;
-	}
-
-	fclose(fh);
-
-	if ( strstr(line, "CBF") == NULL ) {
-		return 0;
-	}
-
-	return 1;
-}
-
-
-signed int is_cbfgz_file(const char *filename)
-{
-	#ifdef HAVE_ZLIB
-	gzFile gzfh;
-	char line[1024];
-
-	gzfh = gzopen(filename, "rb");
-	if ( gzfh == NULL ) return -1;
-	if ( gzgets(gzfh, line, 1024) == NULL ) return 0;
-	gzclose(gzfh);
-
-	if ( strstr(line, "CBF") == NULL ) {
-		return 0;
-	}
-
-	return 1;
-
-	#else /* No zlib */
-	return 0;
-	#endif
-}
-
-
 int image_cbf_read_mask(struct panel_template *p,
                         const char *filename, const char *event,
                         int gz, int *bad, int mask_good, int mask_bad)

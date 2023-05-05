@@ -34,10 +34,6 @@
 
 #include "datatemplate_priv.h"
 
-extern signed int is_cbf_file(const char *filename);
-
-extern signed int is_cbfgz_file(const char *filename);
-
 extern int load_mask_cbf(struct panel_template *p,
                          const char *filename, const char *event,
                          int gz, int *bad, int mask_good, int mask_bad);

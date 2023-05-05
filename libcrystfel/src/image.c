@@ -3,12 +3,11 @@
  *
  * Handle images and image features
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
- *
  * Authors:
  *   2014      Kenneth Beyerlein <kenneth.beyerlein@desy.de>
- *   2011-2021 Thomas White <taw@physics.org>
+ *   2011-2023 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -36,6 +35,10 @@
 #include <sys/stat.h>
 #include <fenv.h>
 
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif
+
 #include "image.h"
 #include "utils.h"
 #include "detgeom.h"
@@ -50,12 +53,96 @@
 
 /** \file image.h */
 
-#ifndef HAVE_HDF5
-int is_hdf5_file(const char *filename)
+int is_hdf5_file(const char *filename, int *err)
 {
-	return 0;
+	FILE *fh;
+	unsigned char bytes[8];
+	unsigned char sig[8] = {137, 'H', 'D', 'F', '\r', '\n', 26, '\n'};
+	size_t n;
+	int i;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+
+	n = fread(bytes, 1, 8, fh);
+	fclose(fh);
+
+	if ( n != 8 ) {
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+
+	if ( err != NULL ) *err = 0;
+
+	/* HDF5 superblock signature from the specification document */
+	for ( i=0; i<8; i++ ) {
+		if ( bytes[i] != sig[i] ) return 0;
+	}
+
+	return 1;
 }
-#endif
+
+int is_cbf_file(const char *filename, int *err)
+{
+	FILE *fh;
+	char line[1024];
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+
+	if ( fgets(line, 1024, fh) == NULL ) {
+		fclose(fh);
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+
+	fclose(fh);
+
+	if ( err != NULL ) *err = 0;
+	if ( strncmp(line, "###CBF: VERSION", 15) == 0 ) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+int is_cbfgz_file(const char *filename, int *err)
+{
+	#ifdef HAVE_ZLIB
+	gzFile gzfh;
+	char line[1024];
+
+	gzfh = gzopen(filename, "rb");
+	if ( gzfh == NULL ) {
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+	if ( gzgets(gzfh, line, 1024) == NULL ) {
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+	gzclose(gzfh);
+
+	if ( err != NULL ) *err = 0;
+	if ( strncmp(line, "###CBF: VERSION", 15) == 0 ) {
+		return 1;
+	} else {
+		return 0;
+	}
+
+	#else /* No zlib */
+	if ( err != NULL ) *err = 1;
+	return 0;
+	#endif
+}
+
 
 struct _imagefeaturelist
 {
@@ -462,24 +549,39 @@ int image_read_header_float(struct image *image, const char *from, double *val)
 
 static DataSourceType file_type(const char *filename)
 {
+	int err;
+
 	if ( !file_exists(filename) ) {
 		ERROR("File not found: %s (file_type)\n", filename);
 		return DATA_SOURCE_TYPE_NONE;
 	}
 
-	if ( is_hdf5_file(filename) ) {
+	if ( is_hdf5_file(filename, &err) ) {
 		return DATA_SOURCE_TYPE_HDF5;
-
-	} else if ( is_cbf_file(filename) ) {
-		return DATA_SOURCE_TYPE_CBF;
-
-	} else if ( is_cbfgz_file(filename) ) {
-		return DATA_SOURCE_TYPE_CBFGZ;
-
-	} else {
-		ERROR("Unrecognised file type: %s (file_type)\n", filename);
-		return DATA_SOURCE_TYPE_UNKNOWN;
 	}
+	if ( err ) {
+		ERROR("Couldn't check for HDF5 file: %s\n",  filename);
+		return DATA_SOURCE_TYPE_NONE;
+	}
+
+	if ( is_cbf_file(filename, &err) ) {
+		return DATA_SOURCE_TYPE_CBF;
+	}
+	if ( err ) {
+		ERROR("Couldn't check for CBF file: %s\n",  filename);
+		return DATA_SOURCE_TYPE_NONE;
+	}
+
+	if ( is_cbfgz_file(filename, &err) ) {
+		return DATA_SOURCE_TYPE_CBFGZ;
+	}
+	if ( err ) {
+		ERROR("Couldn't check for CBF.gz file: %s\n",  filename);
+		return DATA_SOURCE_TYPE_NONE;
+	}
+
+	ERROR("Unrecognised file type: %s (file_type)\n", filename);
+	return DATA_SOURCE_TYPE_UNKNOWN;
 }
 
 
@@ -815,17 +917,17 @@ static int load_mask(struct panel_template *p,
                      unsigned int mask_good,
                      unsigned int mask_bad)
 {
-	if ( is_hdf5_file(mask_fn) ) {
+	if ( is_hdf5_file(mask_fn, NULL) ) {
 		#ifdef HAVE_HDF5
 		return image_hdf5_read_mask(p, mask_fn, ev, bad, mask_location,
 		                            mask_good, mask_bad);
 		#endif
 
-	} else if ( is_cbf_file(mask_fn) ) {
+	} else if ( is_cbf_file(mask_fn, NULL) ) {
 		return image_cbf_read_mask(p, mask_fn, ev, 0, bad,
 		                           mask_good, mask_bad);
 
-	} else if ( is_cbfgz_file(mask_fn) ) {
+	} else if ( is_cbfgz_file(mask_fn, NULL) ) {
 		return image_cbf_read_mask(p, mask_fn, ev, 1, bad,
 		                           mask_good, mask_bad);
 
@@ -1006,7 +1108,7 @@ static int create_satmap(struct image *image,
 				map_fn = p->satmap_file;
 			}
 
-			if ( is_hdf5_file(map_fn) ) {
+			if ( is_hdf5_file(map_fn, NULL) ) {
 				#ifdef HAVE_HDF5
 				image_hdf5_read_satmap(p, map_fn, image->ev, p->satmap);
 				#endif
@@ -1308,7 +1410,7 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
                                    const char *event,
                                    int half_pixel_shift)
 {
-	if ( is_hdf5_file(filename) ) {
+	if ( is_hdf5_file(filename, NULL) ) {
 
 		#ifdef HAVE_HDF5
 		enum peak_layout layout;
@@ -1366,7 +1468,7 @@ ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 char **image_expand_frames(const DataTemplate *dtempl,
                            const char *filename, int *n_frames)
 {
-	if ( is_hdf5_file(filename) ) {
+	if ( is_hdf5_file(filename, NULL) ) {
 		#ifdef HAVE_HDF5
 		return image_hdf5_expand_frames(dtempl, filename,
 		                                n_frames);

@@ -1993,17 +1993,4 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 }
 
 
-int is_hdf5_file(const char *filename)
-{
-	const char *ext = NULL;
-
-	ext = filename_extension(filename, NULL);
-	if ( ext == NULL ) return 0;
-
-	return ( (strcmp(ext, ".h5") == 0)
-	      || (strcmp(ext, ".cxi") == 0)
-	      || (strcmp(ext, ".nx5") == 0) );
-}
-
-
 #endif  /* HAVE_HDF5 */

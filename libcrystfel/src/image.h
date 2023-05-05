@@ -185,6 +185,11 @@ struct image
 extern "C" {
 #endif
 
+/* File classifiers */
+extern int is_hdf5_file(const char *filename, int *err);
+extern int is_cbf_file(const char *filename, int *err);
+extern int is_cbfgz_file(const char *filename, int *err);
+
 /* Feature lists */
 extern ImageFeatureList *image_feature_list_new(void);
 
