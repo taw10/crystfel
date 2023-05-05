@@ -155,6 +155,13 @@ executable('whirligig',
            install: true,
            install_rpath: crystfel_rpath)
 
+# align_detector
+executable('align_detector',
+           ['src/align_detector.c', versionc],
+           dependencies: [mdep, libcrystfeldep],
+           install: true,
+           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
                        'src/process_image.c',
