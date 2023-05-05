@@ -864,6 +864,7 @@ int main(int argc, char *argv[])
 	struct asdf_options *asdf_opts = NULL;
 	double wl_from_dt;
 	double clen_from_dt;
+	int err;
 
 	/* Defaults for "top level" arguments */
 	args.filename = NULL;
@@ -1164,6 +1165,20 @@ int main(int argc, char *argv[])
 	if ( (args.zmq_params.request != NULL) && (args.zmq_params.n_subscriptions > 0) ) {
 		ERROR("The options --zmq-request and --zmq-subscribe are "
 		      "mutually exclusive.\n");
+		return 1;
+	}
+
+	if ( is_hdf5_file(args.filename, &err) ) {
+		ERROR("Your input file appears to be an HDF5 file.\n");
+		ERROR("The input file should be a list of data files, not the "
+		      "data file itself.\n");
+		ERROR("If you have only one input file, try the following:\n");
+		ERROR("  echo %s > files.lst\n", args.filename);
+		ERROR("  indexamajig -i files.lst -o %s -g %s ...\n",
+		      args.outfile, args.geom_filename);
+		return 1;
+	} else if ( err ) {
+		ERROR("Couldn't open '%s'\n", args.filename);
 		return 1;
 	}
 
