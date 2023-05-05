@@ -360,8 +360,6 @@ static void close_hdf5(hid_t fh)
 }
 
 
-
-
 static int load_hdf5_hyperslab(struct panel_template *p,
                                hid_t fh,
                                const char *event,
