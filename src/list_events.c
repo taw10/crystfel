@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 	FILE *ifh;
 	FILE *ofh;
 	DataTemplate *dtempl;
+	int err;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -129,6 +130,19 @@ int main(int argc, char *argv[])
 	if ( (input == NULL) || (output == NULL) || (geom == NULL) ) {
 		ERROR("You must specify at least the input, output and geometry"
 		      " filenames.\n");
+		return 1;
+	}
+
+	if ( is_hdf5_file(input, &err) ) {
+		ERROR("Your input file appears to be an HDF5 file.\n");
+		ERROR("The input file should be a list of data files, not the "
+		      "data file itself.\n");
+		ERROR("If you have only one input file, try the following:\n");
+		ERROR("  echo %s > files.lst\n", input);
+		ERROR("  list_events -i files.lst -o %s -g %s ...\n", output, geom);
+		return 1;
+	} else if ( err ) {
+		ERROR("Couldn't open '%s'\n", input);
 		return 1;
 	}
 
