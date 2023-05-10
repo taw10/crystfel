@@ -55,6 +55,7 @@ static void show_help(const char *s)
 	       "\n"
 	       "  -g, --geometry=file        Input geometry file\n"
 	       "  -o, --output=file          Output geometry file\n"
+	       "  -l, --level=n              Alignment hierarchy level\n"
 	       "\n"
 	       "  -h, --help                 Display this help message\n"
 	       "      --version              Print version number and exit\n");
@@ -66,6 +67,8 @@ int main(int argc, char *argv[])
 	int c;
 	char *in_geom = NULL;
 	char *out_geom = NULL;
+	int level = 0;
+	char *rval;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -76,12 +79,13 @@ int main(int argc, char *argv[])
 		{"version",            0, NULL,               'V'},
 		{"input",              1, NULL,               'g'},
 		{"output",             1, NULL,               'o'},
+		{"level",              1, NULL,               'l'},
 
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hVo:g:i:",
+	while ((c = getopt_long(argc, argv, "hVo:g:i:l:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -104,6 +108,14 @@ int main(int argc, char *argv[])
 			case 'o' :
 			out_geom = strdup(optarg);
 			break;
+
+			case 'l' :
+			errno = 0;
+			level = strtol(optarg, &rval, 10);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --level.\n");
+				return 1;
+			}
 
 			case 0 :
 			break;
