@@ -45,16 +45,6 @@
  * \file datatemplate.h
  */
 
-struct rg_definition {
-	char *name;
-	char *pns;
-};
-
-
-struct rgc_definition {
-	char *name;
-	char *rgs;
-};
 
 
 static struct panel_template *new_panel(DataTemplate *det,
@@ -136,150 +126,6 @@ static struct dt_badregion *find_bad_region_by_name(DataTemplate *det,
 	for ( i=0; i<det->n_bad; i++ ) {
 		if ( strcmp(det->bad[i].name, name) == 0 ) {
 			return &det->bad[i];
-		}
-	}
-
-	return NULL;
-}
-
-
-static struct rigid_group *find_or_add_rg(DataTemplate *det,
-                                          const char *name)
-{
-	int i;
-	struct rigid_group **new;
-	struct rigid_group *rg;
-
-	for ( i=0; i<det->n_rigid_groups; i++ ) {
-
-		if ( strcmp(det->rigid_groups[i]->name, name) == 0 ) {
-			return det->rigid_groups[i];
-		}
-
-	}
-
-	new = realloc(det->rigid_groups,
-	              (1+det->n_rigid_groups)*sizeof(struct rigid_group *));
-	if ( new == NULL ) return NULL;
-
-	det->rigid_groups = new;
-
-	rg = malloc(sizeof(struct rigid_group));
-	if ( rg == NULL ) return NULL;
-
-	det->rigid_groups[det->n_rigid_groups++] = rg;
-
-	rg->name = strdup(name);
-	rg->panel_numbers = NULL;
-	rg->n_panels = 0;
-
-	return rg;
-}
-
-
-static struct rg_collection *find_or_add_rg_coll(DataTemplate *det,
-                                                 const char *name)
-{
-	int i;
-	struct rg_collection **new;
-	struct rg_collection *rgc;
-
-	for ( i=0; i<det->n_rg_collections; i++ ) {
-		if ( strcmp(det->rigid_group_collections[i]->name, name) == 0 )
-		{
-			return det->rigid_group_collections[i];
-		}
-	}
-
-	new = realloc(det->rigid_group_collections,
-	              (1+det->n_rg_collections)*sizeof(struct rg_collection *));
-	if ( new == NULL ) return NULL;
-
-	det->rigid_group_collections = new;
-
-	rgc = malloc(sizeof(struct rg_collection));
-	if ( rgc == NULL ) return NULL;
-
-	det->rigid_group_collections[det->n_rg_collections++] = rgc;
-
-	rgc->name = strdup(name);
-	rgc->rigid_groups = NULL;
-	rgc->n_rigid_groups = 0;
-
-	return rgc;
-}
-
-
-static void add_to_rigid_group(struct rigid_group *rg, int panel_number)
-{
-	int *pn;
-
-	pn = realloc(rg->panel_numbers, (1+rg->n_panels)*sizeof(int));
-	if ( pn == NULL ) {
-		ERROR("Couldn't add panel to rigid group.\n");
-		return;
-	}
-
-	rg->panel_numbers = pn;
-	rg->panel_numbers[rg->n_panels++] = panel_number;
-}
-
-
-static void add_to_rigid_group_coll(struct rg_collection *rgc,
-                                    struct rigid_group *rg)
-{
-	struct rigid_group **r;
-
-	r = realloc(rgc->rigid_groups, (1+rgc->n_rigid_groups)*
-	            sizeof(struct rigid_group *));
-	if ( r == NULL ) {
-		ERROR("Couldn't add rigid group to collection.\n");
-		return;
-	}
-
-	rgc->rigid_groups = r;
-	rgc->rigid_groups[rgc->n_rigid_groups++] = rg;
-}
-
-
-/* Free all rigid groups in detector */
-static void free_all_rigid_groups(DataTemplate *det)
-{
-	int i;
-
-	if ( det->rigid_groups == NULL ) return;
-	for ( i=0; i<det->n_rigid_groups; i++ ) {
-		free(det->rigid_groups[i]->name);
-		free(det->rigid_groups[i]->panel_numbers);
-		free(det->rigid_groups[i]);
-	}
-	free(det->rigid_groups);
-}
-
-
-/* Free all rigid groups in detector */
-static void free_all_rigid_group_collections(DataTemplate *det)
-{
-	int i;
-
-	if ( det->rigid_group_collections == NULL ) return;
-	for ( i=0; i<det->n_rg_collections; i++ ) {
-		free(det->rigid_group_collections[i]->name);
-		free(det->rigid_group_collections[i]->rigid_groups);
-		free(det->rigid_group_collections[i]);
-	}
-	free(det->rigid_group_collections);
-}
-
-
-static struct rigid_group *find_rigid_group_by_name(DataTemplate *det,
-                                                    char *name)
-{
-	int i;
-
-	for ( i=0; i<det->n_rigid_groups; i++ ) {
-		if ( strcmp(det->rigid_groups[i]->name, name) == 0 ) {
-			return det->rigid_groups[i];
 		}
 	}
 
@@ -851,10 +697,6 @@ static int parse_peak_layout(const char *val,
 static int parse_toplevel(DataTemplate *dt,
                           const char *key,
                           const char *val,
-                          struct rg_definition ***rg_defl,
-                          struct rgc_definition ***rgc_defl,
-                          int *n_rg_defs,
-                          int *n_rgc_defs,
                           struct panel_template *defaults,
                           int *defaults_updated)
 {
@@ -895,33 +737,9 @@ static int parse_toplevel(DataTemplate *dt,
 			ERROR("Invalid value for bandwidth\n");
 		}
 
-	} else if (strncmp(key, "rigid_group", 11) == 0
-	        && strncmp(key, "rigid_group_collection", 22) != 0 ) {
+	} else if ( strncmp(key, "rigid_group", 11) == 0 ) {
 
-		struct rg_definition **new;
-
-		new = realloc(*rg_defl,
-		             ((*n_rg_defs)+1)*sizeof(struct rg_definition*));
-		*rg_defl = new;
-
-		(*rg_defl)[*n_rg_defs] = malloc(sizeof(struct rg_definition));
-		(*rg_defl)[*n_rg_defs]->name = strdup(key+12);
-		(*rg_defl)[*n_rg_defs]->pns = strdup(val);
-		*n_rg_defs = *n_rg_defs+1;
-
-	} else if ( strncmp(key, "rigid_group_collection", 22) == 0 ) {
-
-		struct rgc_definition **new;
-
-		new = realloc(*rgc_defl, ((*n_rgc_defs)+1)*
-		      sizeof(struct rgc_definition*));
-		*rgc_defl = new;
-
-		(*rgc_defl)[*n_rgc_defs] =
-		                   malloc(sizeof(struct rgc_definition));
-		(*rgc_defl)[*n_rgc_defs]->name = strdup(key+23);
-		(*rgc_defl)[*n_rgc_defs]->rgs = strdup(val);
-		*n_rgc_defs = *n_rgc_defs+1;
+		/* Rigid group lines are ignored in this version */
 
 	} else {
 
@@ -1041,15 +859,9 @@ static int try_guess_panel(struct dt_badregion *bad, DataTemplate *dt)
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;
-	char **bits;
 	int done = 0;
 	int i;
-	int rgi, rgci;
 	int reject = 0;
-	struct rg_definition **rg_defl = NULL;
-	struct rgc_definition **rgc_defl = NULL;
-	int n_rg_definitions = 0;
-	int n_rgc_definitions = 0;
 	char *string;
 	char *string_orig;
 	size_t len;
@@ -1063,10 +875,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->panels = NULL;
 	dt->n_bad = 0;
 	dt->bad = NULL;
-	dt->n_rigid_groups = 0;
-	dt->rigid_groups = NULL;
-	dt->n_rg_collections = 0;
-	dt->rigid_group_collections = NULL;
 	dt->bandwidth = 0.00000001;
 	dt->peak_list = NULL;
 	dt->shift_x_from = NULL;
@@ -1184,10 +992,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 			/* Top-level option */
 		        if ( parse_toplevel(dt, line, val,
-		                            &rg_defl,
-		                            &rgc_defl,
-		                            &n_rg_definitions,
-		                            &n_rgc_definitions,
 		                            &defaults,
 		                            &have_unused_defaults) )
 			{
@@ -1427,67 +1231,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		free(defaults.masks[i].filename);
 	}
 
-	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
-
-		int pi, n1;
-		struct rigid_group *rigidgroup = NULL;
-
-		rigidgroup = find_or_add_rg(dt, rg_defl[rgi]->name);
-
-		n1 = assplode(rg_defl[rgi]->pns, ",", &bits, ASSPLODE_NONE);
-
-		for ( pi=0; pi<n1; pi++ ) {
-
-			int panel_number;
-			if ( data_template_panel_name_to_number(dt,
-			                                        bits[pi],
-			                                        &panel_number) )
-			{
-				ERROR("Cannot add panel to rigid group\n");
-				ERROR("Panel not found: %s\n", bits[pi]);
-				return NULL;
-			}
-			add_to_rigid_group(rigidgroup, panel_number);
-			free(bits[pi]);
-
-		}
-		free(bits);
-		free(rg_defl[rgi]->name);
-		free(rg_defl[rgi]->pns);
-		free(rg_defl[rgi]);
-	}
-	free(rg_defl);
-
-	for ( rgci=0; rgci<n_rgc_definitions; rgci++ ) {
-
-		int n2;
-		struct rg_collection *rgcollection = NULL;
-
-		rgcollection = find_or_add_rg_coll(dt, rgc_defl[rgci]->name);
-
-		n2 = assplode(rgc_defl[rgci]->rgs, ",", &bits, ASSPLODE_NONE);
-
-		for ( rgi=0; rgi<n2; rgi++ ) {
-
-			struct rigid_group *r;
-
-			r = find_rigid_group_by_name(dt, bits[rgi]);
-			if ( r == NULL ) {
-				ERROR("Cannot add rigid group to collection\n");
-				ERROR("Rigid group not found: %s\n", bits[rgi]);
-				return NULL;
-			}
-			add_to_rigid_group_coll(rgcollection, r);
-			free(bits[rgi]);
-		}
-		free(bits);
-		free(rgc_defl[rgci]->name);
-		free(rgc_defl[rgci]->rgs);
-		free(rgc_defl[rgci]);
-
-	}
-	free(rgc_defl);
-
 	free(string_orig);
 
 	if ( reject ) return NULL;
@@ -1518,9 +1261,6 @@ void data_template_free(DataTemplate *dt)
 	int i;
 
 	if ( dt == NULL ) return;
-
-	free_all_rigid_groups(dt);
-	free_all_rigid_group_collections(dt);
 
 	for ( i=0; i<dt->n_panels; i++ ) {
 

@@ -218,12 +218,6 @@ struct _datatemplate
 
 	double                     bandwidth;
 
-	struct rigid_group       **rigid_groups;
-	int                        n_rigid_groups;
-
-	struct rg_collection     **rigid_group_collections;
-	int                        n_rg_collections;
-
 	char                      *peak_list;
 	enum peak_layout           peak_list_type;
 
