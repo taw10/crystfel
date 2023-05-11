@@ -69,6 +69,8 @@ int main(int argc, char *argv[])
 	char *out_geom = NULL;
 	int level = 0;
 	char *rval;
+	int i;
+	FILE *fh;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -135,6 +137,25 @@ int main(int argc, char *argv[])
 		show_syntax(argv[0]);
 		return 1;
 	}
+
+	fh = fopen("millepede.txt", "w");
+	if ( fh == NULL ) {
+		ERROR("Couldn't open Millepede steering file\n");
+		return 1;
+	}
+
+	for ( i=optind; i<argc; i++ ) {
+		fprintf(fh, "%s\n", argv[i]);
+	}
+
+	fprintf(fh, "Parameter\n");
+	fprintf(fh, "1 0 0\n");
+	fprintf(fh, "2 0 0\n");
+	fprintf(fh, "method inversion 5 0.1\n");
+	fprintf(fh, "end\n");
+	fclose(fh);
+
+	system("pede millepede.txt");
 
 	return 0;
 }
