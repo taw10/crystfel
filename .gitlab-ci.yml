@@ -1,5 +1,6 @@
 stages:
   - test
+  - test_brew
   - build_container
 
 build-meson:
@@ -79,17 +80,33 @@ build_container_image_tag:
   rules:
     - if: $CI_COMMIT_TAG
 
-build-macos:
+build-native-macos:
   tags:
     - macOS
   variables:
     GIT_STRATEGY: clone
   script:
-    - brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson python-tk
+    - brew update
+    - brew upgrade
+    - brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson ninja python python-tk
     - export PATH="$(brew --prefix)/opt/bison/bin:$(brew --prefix)/opt/flex/bin:$PATH"
     - export LDFLAGS="-L$(brew --prefix)/opt/bison/lib -L$(brew --prefix)/opt/flex/lib -L$(brew --prefix)/opt/argp-standalone/lib -largp $LDFLAGS"
     - export CFLAGS="-I$(brew --prefix)/opt/flex/include -I$(brew --prefix)/opt/argp-standalone/include/ $CFLAGS"
     - meson build
     - ninja -C build
     - ninja -C build test
+
+build-brew-macos:
+  stage: test_brew
+  tags:
+    - macOS
+  variables:
+    GIT_STRATEGY: clone
+  script:
+    - brew update
+    - brew upgrade
+    - brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson ninja python python-tk
+    - brew uninstall -v -f crystfel
+    - brew install -v -s ./crystfel.rb --HEAD
+    - brew uninstall -v -f crystfel
 
