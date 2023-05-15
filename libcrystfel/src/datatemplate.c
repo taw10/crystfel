@@ -953,6 +953,32 @@ static int try_guess_panel(struct dt_badregion *bad, DataTemplate *dt)
 }
 
 
+static void show_group(const struct panel_group_template *gt, int level)
+{
+	int i;
+
+	for ( i=0; i<level; i++ ) STATUS("  ");
+
+	if ( gt == NULL ) {
+		STATUS("!!!\n");
+		return;
+	}
+
+	STATUS("%s\n", gt->name);
+
+	for ( i=0; i<gt->n_children; i++ ) {
+		show_group(gt->children[i], level+1);
+	}
+}
+
+
+void data_template_show_hierarchy(const DataTemplate *dtempl)
+{
+	STATUS("Hierarchy:\n");
+	show_group(find_group(dtempl, "top"), 0);
+}
+
+
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;

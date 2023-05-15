@@ -81,6 +81,8 @@ extern double data_template_get_clen_if_possible(const DataTemplate *dt);
 
 extern struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTemplate *dt);
 
+extern void data_template_show_hierarchy(const DataTemplate *dtempl);
+
 #ifdef __cplusplus
 }
 #endif
