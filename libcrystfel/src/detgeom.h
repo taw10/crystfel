@@ -125,6 +125,8 @@ extern double detgeom_mean_camera_length(struct detgeom *dg);
 
 extern struct detgeom_panel *detgeom_find_panel(struct detgeom *dg, const char *name);
 
+extern void detgeom_show_hierarchy(const struct detgeom *dg);
+
 #ifdef __cplusplus
 }
 #endif

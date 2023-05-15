@@ -186,3 +186,28 @@ struct detgeom_panel *detgeom_find_panel(struct detgeom *dg, const char *name)
 	}
 	return NULL;
 }
+
+
+static void detgeom_show_group(const struct detgeom_panel_group *group, int level)
+{
+	int i;
+
+	for ( i=0; i<level; i++ ) STATUS("  ");
+
+	if ( group == NULL ) {
+		STATUS("!!!\n");
+		return;
+	}
+
+	STATUS("%s\n", group->name);
+
+	for ( i=0; i<group->n_children; i++ ) {
+		detgeom_show_group(group->children[i], level+1);
+	}
+}
+
+
+void detgeom_show_hierarchy(const struct detgeom *dg)
+{
+	detgeom_show_group(dg->top_group, 0);
+}
