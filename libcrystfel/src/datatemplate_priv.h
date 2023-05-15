@@ -40,6 +40,12 @@
 /* Maximum number of placeholders expected in path structure */
 #define MAX_PATH_PARTS (16)
 
+/* Maximum number of panel groups */
+#define MAX_PANEL_GROUPS (256)
+
+/* Maximum number of panel groups that can derive from one panel */
+#define MAX_PANEL_GROUP_CHILDREN (64)
+
 enum adu_per_unit
 {
 	ADU_PER_PHOTON,
@@ -205,6 +211,14 @@ struct dt_badregion
 };
 
 
+struct panel_group_template
+{
+	char *name;
+	int n_children;
+	const struct panel_group_template *children[MAX_PANEL_GROUP_CHILDREN];
+};
+
+
 struct _datatemplate
 {
 	struct panel_template     *panels;
@@ -217,6 +231,9 @@ struct _datatemplate
 	enum wavelength_unit       wavelength_unit;
 
 	double                     bandwidth;
+
+	struct panel_group_template *groups[MAX_PANEL_GROUPS];
+	int                          n_groups;
 
 	char                      *peak_list;
 	enum peak_layout           peak_list_type;

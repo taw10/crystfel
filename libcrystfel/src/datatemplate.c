@@ -45,6 +45,94 @@
  * \file datatemplate.h
  */
 
+static const struct panel_group_template *find_group(const DataTemplate *dt, const char *name)
+{
+	int i;
+
+	for ( i=0; i<dt->n_groups; i++ ) {
+		if ( strcmp(dt->groups[i]->name, name) == 0 ) {
+			return dt->groups[i];
+		}
+	}
+
+	return NULL;
+}
+
+
+static struct panel_group_template *add_group(const char *name, DataTemplate *dt)
+{
+	struct panel_group_template *gt;
+
+	if ( find_group(dt, name) != NULL ) {
+		ERROR("Duplicate panel group '%s'\n", name);
+		return NULL;
+	}
+
+	if ( dt->n_groups >= MAX_PANEL_GROUPS ) {
+		ERROR("Too many panel groups\n");
+		return NULL;
+	}
+
+	gt = malloc(sizeof(struct panel_group_template));
+	if ( gt == NULL ) return NULL;
+
+	gt->name = strdup(name);
+	gt->n_children = 0;
+
+	if ( gt->name == NULL ) {
+		free(gt);
+		return NULL;
+	}
+
+	dt->groups[dt->n_groups++] = gt;
+
+	return gt;
+}
+
+
+static int parse_group(const char *name, DataTemplate *dt, const char *val)
+{
+	struct panel_group_template *gt;
+	int n_members;
+	char **members;
+	int i;
+	int fail = 0;
+
+	gt = add_group(name, dt);
+	if ( gt == NULL ) {
+		ERROR("Failed to add group\n");
+		return 1;
+	}
+
+	n_members = assplode(val, ",",  &members, ASSPLODE_NONE);
+	if ( n_members == 0 ) {
+		ERROR("Panel group '%s' has no members\n", name);
+		fail = 1;
+	}
+
+	if ( n_members > MAX_PANEL_GROUP_CHILDREN ) {
+		ERROR("Panel group '%s' has too many members\n", name);
+		fail = 1;
+	} else {
+
+		for ( i=0; i<n_members; i++ ) {
+			gt->children[i] =  find_group(dt, members[i]);
+			if ( gt->children[i] == NULL ) {
+				ERROR("Unknown panel group '%s'\n", members[i]);
+				fail = 1;
+			}
+		}
+
+		gt->n_children = n_members;
+
+	}
+
+	for ( i=0; i<n_members; i++ ) free(members[i]);
+	free(members);
+
+	return fail;
+}
+
 
 
 static struct panel_template *new_panel(DataTemplate *det,
@@ -73,6 +161,9 @@ static struct panel_template *new_panel(DataTemplate *det,
 		new->masks[i].data_location = safe_strdup(defaults->masks[i].data_location);
 		new->masks[i].filename = safe_strdup(defaults->masks[i].filename);
 	}
+
+	/* Create a new group just for this panel */
+	add_group(name, det);
 
 	return new;
 }
@@ -741,6 +832,12 @@ static int parse_toplevel(DataTemplate *dt,
 
 		/* Rigid group lines are ignored in this version */
 
+	} else if ( strncmp(key, "group_", 6) == 0 ) {
+
+		if ( parse_group(key+6, dt, val) ) {
+			return 1;
+		}
+
 	} else {
 
 		if ( parse_field_for_panel(defaults, key, val, dt) == 0 ) {
@@ -880,6 +977,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->shift_x_from = NULL;
 	dt->shift_y_from = NULL;
 	dt->n_headers_to_copy = 0;
+	dt->n_groups = 0;
 
 	/* The default defaults... */
 	defaults.orig_min_fs = -1;
