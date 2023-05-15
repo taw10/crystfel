@@ -174,3 +174,15 @@ double detgeom_mean_camera_length(struct detgeom *dg)
 
 	return mean;
 }
+
+
+struct detgeom_panel *detgeom_find_panel(struct detgeom *dg, const char *name)
+{
+	int i;
+	for ( i=0; i<dg->n_panels; i++ ) {
+		if ( strcmp(dg->panels[i].name, name) == 0 ) {
+			return &dg->panels[i];
+		}
+	}
+	return NULL;
+}

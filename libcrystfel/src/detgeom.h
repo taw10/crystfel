@@ -86,11 +86,27 @@ struct detgeom_panel
 };
 
 
+struct detgeom_panel_group
+{
+	char *name;
+	int n_children;
+
+	/* If n_children > 0, here are the child groups */
+	const struct detgeom_panel_group **children;
+
+	/* If n_children == 0, this is a leaf node, so: */
+	struct detgeom_panel *panel;
+};
+
+
 struct detgeom
 {
 	struct detgeom_panel *panels;
-	int                   n_panels;
+	int n_panels;
+
+	struct detgeom_panel_group *top_group;
 };
+
 
 extern void detgeom_transform_coords(struct detgeom_panel *p,
                                      double fs, double ss,
@@ -106,6 +122,8 @@ extern double detgeom_max_resolution(struct detgeom *detgeom,
 extern void show_panel(struct detgeom_panel *p);
 
 extern double detgeom_mean_camera_length(struct detgeom *dg);
+
+extern struct detgeom_panel *detgeom_find_panel(struct detgeom *dg, const char *name);
 
 #ifdef __cplusplus
 }
