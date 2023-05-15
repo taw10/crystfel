@@ -89,6 +89,7 @@ static double parse_double(const char *str, char complain)
 int main(int argc, char *argv[])
 {
 	int c;
+	DataTemplate *dtempl;
 	char *in_geom = NULL;
 	char *out_geom = NULL;
 	double x_shift = 0.0;
@@ -191,6 +192,11 @@ int main(int argc, char *argv[])
 		show_syntax(argv[0]);
 		return 1;
 	}
+
+	dtempl = data_template_new_from_file(in_geom);
+	if ( dtempl == NULL ) return 1;
+
+	data_template_show_hierarchy(dtempl);
 
 	return 0;
 }
