@@ -83,6 +83,14 @@ extern struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTempla
 
 extern void data_template_show_hierarchy(const DataTemplate *dtempl);
 
+extern int data_template_translate_group_px(DataTemplate *dtempl,
+                                            const char *group_name,
+                                            double x, double y, double z);
+
+extern int data_template_translate_group_m(DataTemplate *dtempl,
+                                           const char *group_name,
+                                           double x, double y, double z);
+
 #ifdef __cplusplus
 }
 #endif

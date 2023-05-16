@@ -2057,3 +2057,67 @@ double data_template_get_clen_if_possible(const DataTemplate *dt)
 	detgeom_free(dg);
 	return clen;
 }
+
+
+static int translate_group_contents(DataTemplate *dtempl,
+                                    const struct panel_group_template *group,
+                                    double x, double y, double z,
+                                    int is_metres)
+{
+	int i;
+
+	if ( group->n_children == 0 ) {
+
+		struct panel_template *p = find_panel_by_name(dtempl, group->name);
+		if ( p == NULL ) return 1;
+
+		if ( is_metres ) {
+			p->cnx += x/p->pixel_pitch;
+			p->cny += y/p->pixel_pitch;
+			p->cnz_offset += z;
+		} else {
+			p->cnx += x;
+			p->cny += y;
+			p->cnz_offset += z*p->pixel_pitch;
+		}
+
+	} else {
+		for ( i=0; i<group->n_children; i++ ) {
+			translate_group_contents(dtempl, group->children[i],
+			                         x, y, z, is_metres);
+		}
+	}
+
+	return 0;
+}
+
+
+/**
+ * Alters dtempl by shifting the named panel group by x,y,z in the CrystFEL
+ * coordinate system.  x,y,z are in pixels, and all panels in the group must
+ * have the same pixel size (but, this will not be checked).
+ *
+ * \returns zero for success, non-zero on error
+ */
+int data_template_translate_group_px(DataTemplate *dtempl, const char *group_name,
+                                     double x, double y, double z)
+{
+	const struct panel_group_template *group = find_group(dtempl, group_name);
+	if ( group == NULL ) return 1;
+	return translate_group_contents(dtempl, group, x, y, z, 0);
+}
+
+
+/**
+ * Alters dtempl by shifting the named panel group by x,y,z in the CrystFEL
+ * coordinate system.  x,y,z are in metres.
+ *
+ * \returns zero for success, non-zero on error
+ */
+int data_template_translate_group_m(DataTemplate *dtempl, const char *group_name,
+                                    double x, double y, double z)
+{
+	const struct panel_group_template *group = find_group(dtempl, group_name);
+	if ( group == NULL ) return 1;
+	return translate_group_contents(dtempl, group, x, y, z, 1);
+}
