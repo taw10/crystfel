@@ -140,7 +140,7 @@ struct panel_template
 	/** Mark this number of edge rows as bad */
 	int mask_edge_pixels;
 
-	/** Resolution in pixels per metre  */
+	/** Pixel size in metres */
 	double pixel_pitch;
 
 	/** Number of detector intensity units per photon, or eV */
