@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
 	double z_rot = 0.0;
 	int mm = 0;
 	char *group = strdup("all");
+	int r;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -197,6 +198,21 @@ int main(int argc, char *argv[])
 	if ( dtempl == NULL ) return 1;
 
 	data_template_show_hierarchy(dtempl);
+
+	if ( mm ) {
+		r = data_template_translate_group_m(dtempl, group,
+		                                    x_shift * 1e-3,
+		                                    y_shift * 1e-3,
+		                                    z_shift * 1e-3);
+	} else {
+		r = data_template_translate_group_px(dtempl, group,
+		                                     x_shift, y_shift, z_shift);
+	}
+
+	if ( r ) {
+		ERROR("Failed to translate group.\n");
+		return 1;
+	}
 
 	return 0;
 }
