@@ -143,6 +143,7 @@ build-maxwell:
     when: on_success
     expire_in: 1 day
   rules:
+
 deploy-local-maxwell:
   stage: deploy
   variables:
