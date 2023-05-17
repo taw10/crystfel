@@ -177,15 +177,17 @@ deploy-remote-maxwell:
   ## Create the SSH directory and give it the right permissions
   ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
   ## to connect using Kerberos.
+  - yum update -y
+  - yum install -y wget
   - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
-        command -v ssh-agent >/dev/null || ( yum update -y && yum install openssh-clients -y );
+        command -v ssh-agent >/dev/null || ( yum install openssh-clients -y );
         eval $(ssh-agent -s);
         chmod 400 "$MAXWELL_SSH_PRIVATE_KEY";
         ssh-add "$MAXWELL_SSH_PRIVATE_KEY";
         mkdir -p ~/.ssh;
         chmod 700 ~/.ssh;
     else
-        yum update -y && yum install -y openssh-clients  krb5-workstation;
+        yum install -y openssh-clients  krb5-workstation;
         echo $MAXWELL_ACCOUNT_PASSWORD | kinit $MAXWELL_USER_NAME@DESY.DE;
     fi
   - wget -q https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
