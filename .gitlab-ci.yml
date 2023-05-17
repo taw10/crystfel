@@ -120,9 +120,9 @@ build-centos7:
     - yum group install -y "Development Tools"
     - yum install -y wget lz4 lz4-devel bzip2-libs bzip2-devel python3 gtk3-devel
     - python3 -m pip  install meson ninja
-    - wget https://gitlab.desy.de/fs-sc/install-crystfel/-/raw/main/run-me
-    - chmod 755 ./run-me
-    - ./run-me --yes-really
+    - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell
+    - chmod 755 ./run-me-desy-maxwell
+    - ./run-me-desy-maxwell--yes-really
   artifacts:
     paths:
       - software/
@@ -135,9 +135,9 @@ build-maxwell:
   variables:
     GIT_STRATEGY: clone
   script:
-    - wget https://gitlab.desy.de/fs-sc/install-crystfel/-/raw/main/run-me
-    - chmod 755 ./run-me
-    - ./run-me --yes-really
+    - wget https://gitlab.desy.de/fs-sc/install-crystfel/-/raw/main/run-me-desy-maxwell
+    - chmod 755 ./run-me-desy-maxwell
+    - ./run-me-desy-maxwell --yes-really
   artifacts:
     paths:
       - software/
