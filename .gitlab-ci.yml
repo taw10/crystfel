@@ -2,6 +2,7 @@ stages:
   - test
   - test_brew
   - build_container
+  - deploy
 
 build-meson:
   image: fedora:32
