@@ -122,7 +122,7 @@ build-centos7:
     - python3 -m pip  install meson ninja
     - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell
     - chmod 755 ./run-me-desy-maxwell
-    - ./run-me-desy-maxwell--yes-really
+    - ./run-me-desy-maxwell --yes-really
   artifacts:
     paths:
       - software/
