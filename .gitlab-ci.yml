@@ -110,3 +110,87 @@ build-brew-macos:
     - brew install -v -s ./crystfel.rb --HEAD
     - brew uninstall -v -f crystfel
 
+build-centos7:
+  image: centos:centos7
+  #image:centos:latest
+  #image: centos:centos7.9.2009
+  script:
+    - yum update -y
+    - yum group install -y "Development Tools"
+    - yum install -y wget lz4 lz4-devel bzip2-libs bzip2-devel python3 gtk3-devel
+    - python3 -m pip  install meson ninja
+    - wget https://gitlab.desy.de/fs-sc/install-crystfel/-/raw/main/run-me
+    - chmod 755 ./run-me
+    - ./run-me --yes-really
+  artifacts:
+    paths:
+      - software/
+    when: on_success
+    expire_in: 1 day
+    
+build-maxwell:
+  tags:
+    - maxwell
+  variables:
+    GIT_STRATEGY: clone
+  script:
+    - wget https://gitlab.desy.de/fs-sc/install-crystfel/-/raw/main/run-me
+    - chmod 755 ./run-me
+    - ./run-me --yes-really
+  artifacts:
+    paths:
+      - software/
+    when: on_success
+    expire_in: 1 day
+  rules:
+deploy-local-maxwell:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  tags: 
+    - maxwell
+  script:
+   - if [ -d ~/software/crystfel/devel ]; then
+        mv -f ~/software/crystfel/devel ~/software/crystfel/devel-`date +%F-%H:%M:%S`;
+     fi
+   - cp -rv software/crystfel/devel ~/software/crystfel/
+  rules:
+    - if: $MAXWELL_DEPLOYMENT == "local"  &&  $CI_COMMIT_BRANCH == "master"
+
+deploy-remote-maxwell:
+  stage: deploy
+  image: centos:centos7
+  variables:
+    GIT_STRATEGY: none
+  tags:
+    - DESY-intern
+  before_script:
+  ##
+  ## Install ssh-agent or kerberos client if not already installed, it is required by Docker.
+  ## (change apt-get to yum if you use an RPM-based image)
+  ## Run ssh-agent (inside the build environment)
+  ## Give the right permissions, otherwise ssh-add will refuse to add files
+  ## Add the SSH key stored in MAXWELL_SSH_PRIVATE_KEY file type CI/CD variable to the agent store
+  ## Create the SSH directory and give it the right permissions
+  ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
+  ## to connect using Kerberos.
+  - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
+        command -v ssh-agent >/dev/null || ( yum update -y && yum install openssh-clients -y );
+        eval $(ssh-agent -s);
+        chmod 400 "$MAXWELL_SSH_PRIVATE_KEY";
+        ssh-add "$MAXWELL_SSH_PRIVATE_KEY";
+        mkdir -p ~/.ssh;
+        chmod 700 ~/.ssh;
+    else
+        yum update -y && yum install -y openssh-clients  krb5-workstation;
+        echo $MAXWELL_ACCOUNT_PASSWORD | kinit $MAXWELL_USER_NAME@DESY.DE;
+    fi
+  - wget -q https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
+  script:
+   - ssh   $MAXWELL_USER_NAME@max-wgs 
+     "if [ -d ~/software/crystfel/devel ]; then
+        mv -f ~/software/crystfel/devel ~/software/crystfel/devel-`date +%F-%H:%M:%S`;
+     fi"
+   - scp   -r software/crystfel/devel $MAXWELL_USER_NAME@max-wgs:~/software/crystfel/
+  rules:
+    - if: $MAXWELL_DEPLOYMENT == "remote"  && $CI_COMMIT_BRANCH == "master"
