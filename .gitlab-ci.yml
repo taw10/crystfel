@@ -192,10 +192,10 @@ deploy-remote-maxwell:
     fi
   - wget -q https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
   script:
-   - ssh   $MAXWELL_USER_NAME@max-wgs 
-     "if [ -d ~/software/crystfel/devel ]; then
-        mv -f ~/software/crystfel/devel ~/software/crystfel/devel-`date +%F-%H:%M:%S`;
+   - ssh   $MAXWELL_USER_NAME@max-wgs
+     "if [ -d /software/crystfel/devel ]; then
+        mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
      fi"
-   - scp   -r software/crystfel/devel $MAXWELL_USER_NAME@max-wgs:~/software/crystfel/
+   - scp -r software/crystfel/devel $MAXWELL_USER_NAME@max-wgs:software/crystfel/
   rules:
     - if: $MAXWELL_DEPLOYMENT == "remote"  && $CI_COMMIT_BRANCH == "master"
