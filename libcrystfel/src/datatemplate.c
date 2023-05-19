@@ -426,7 +426,8 @@ static int add_flag_value(struct panel_template *p,
 
 static int parse_mask(struct panel_template *panel,
                       const char *key_orig,
-                      const char *val)
+                      const char *val,
+                      int def)
 {
 	int n;
 	char *key;
@@ -493,7 +494,8 @@ static int parse_mask(struct panel_template *panel,
 
 
 static int parse_field_for_panel(struct panel_template *panel, const char *key,
-                                 const char *val, DataTemplate *det)
+                                 const char *val, DataTemplate *det,
+                                 int def)
 {
 	int reject = 0;
 
@@ -512,9 +514,11 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_EV;
+		panel->adu_scale_default = def;
 	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_PHOTON;
+		panel->adu_scale_default = def;
 	} else if ( strcmp(key, "clen") == 0 ) {
 		ERROR("'clen' is a top-level property in this version of CrystFEL.\n");
 		reject = 1;
@@ -522,6 +526,7 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 	} else if ( strcmp(key, "data") == 0 ) {
 		free(panel->data);
 		panel->data = strdup(val);
+		panel->data_default = def;
 
 	} else if ( strcmp(key, "mask_edge_pixels") == 0 ) {
 		if ( convert_int(val, &panel->mask_edge_pixels) ) {
@@ -529,30 +534,36 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 			      panel->name, val);
 			reject = 1;
 		}
+		panel->mask_edge_pixels_default = def;
 
 	} else if ( strcmp(key, "mask_bad") == 0 ) {
-		parse_field_for_panel(panel, "mask0_badbits", val, det);
+		parse_field_for_panel(panel, "mask0_badbits", val, det, def);
 	} else if ( strcmp(key, "mask_good") == 0 ) {
-		parse_field_for_panel(panel, "mask0_goodbits", val, det);
+		parse_field_for_panel(panel, "mask0_goodbits", val, det, def);
 	} else if ( strcmp(key, "mask") == 0 ) {
-		parse_field_for_panel(panel, "mask0_data", val, det);
+		parse_field_for_panel(panel, "mask0_data", val, det, def);
 	} else if ( strcmp(key, "mask_file") == 0 ) {
-		parse_field_for_panel(panel, "mask0_file", val, det);
+		parse_field_for_panel(panel, "mask0_file", val, det, def);
 
 	} else if ( strncmp(key, "mask", 4) == 0 ) {
-		reject = parse_mask(panel, key, val);
+		reject = parse_mask(panel, key, val, def);
 
 	} else if ( strcmp(key, "saturation_map") == 0 ) {
 		panel->satmap = strdup(val);
+		panel->satmap_default = def;
 	} else if ( strcmp(key, "saturation_map_file") == 0 ) {
 		panel->satmap_file = strdup(val);
+		panel->satmap_file_default = def;
 
 	} else if ( strcmp(key, "coffset") == 0) {
 		panel->cnz_offset = atof(val);
+		panel->cnz_offset_default = def;
 	} else if ( strcmp(key, "res") == 0 ) {
 		panel->pixel_pitch = 1.0/atof(val);
+		panel->pixel_pitch_default = def;
 	} else if ( strcmp(key, "max_adu") == 0 ) {
 		panel->max_adu = atof(val);
+		panel->max_adu_default = def;
 		ERROR("WARNING: It's usually better not to set max_adu "
 		      "in the geometry file.  Use --max-adu during "
 		      "merging instead.\n");
@@ -842,7 +853,10 @@ static int parse_toplevel(DataTemplate *dt,
 
 	} else {
 
-		if ( parse_field_for_panel(defaults, key, val, dt) == 0 ) {
+		/* If there are any panels, the value in 'defaults' gets marked
+		 * as "not default".  This will cause it to be written out for
+		 * each subsequent panel. */
+		if ( parse_field_for_panel(defaults, key, val, dt, (dt->n_panels==0)) == 0 ) {
 			*defaults_updated = 1;
 		} else {
 			return 1;
@@ -1016,9 +1030,12 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.cnx = NAN;
 	defaults.cny = NAN;
 	defaults.cnz_offset = 0.0;
+	defaults.cnz_offset_default = 1;
 	defaults.pixel_pitch = -1.0;
+	defaults.pixel_pitch_default = 1;
 	defaults.bad = 0;
 	defaults.mask_edge_pixels = 0;
+	defaults.mask_edge_pixels_default = 1;
 	defaults.fsx = NAN;
 	defaults.fsy = NAN;
 	defaults.fsz = NAN;
@@ -1027,8 +1044,10 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.ssz = NAN;
 	defaults.adu_scale = NAN;
 	defaults.adu_scale_unit = ADU_PER_PHOTON;
+	defaults.adu_scale_default = 1;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_values[i] = 0;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_types[i] = FLAG_NOTHING;
+	defaults.flag_values_default = 1;
 	for ( i=0; i<MAX_MASKS; i++ ) {
 		defaults.masks[i].data_location = NULL;
 		defaults.masks[i].filename = NULL;
@@ -1036,13 +1055,18 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		defaults.masks[i].bad_bits = 0;
 	}
 	defaults.max_adu = +INFINITY;
+	defaults.max_adu_default = 1;
 	defaults.satmap = NULL;
+	defaults.satmap_default = 1;
 	defaults.satmap_file = NULL;
+	defaults.satmap_file_default = 1;
 	defaults.data = strdup("/data/data");
+	defaults.data_default = 1;
 	defaults.name = NULL;
 	defaults.dims[0] = DIM_SS;
 	defaults.dims[1] = DIM_FS;
 	for ( i=2; i<MAX_DIMS; i++ ) defaults.dims[i] = DIM_UNDEFINED;
+	for ( i=0; i<MAX_DIMS; i++ ) defaults.dims_default[i] = 1;
 
 	string = strdup(string_in);
 	if ( string == NULL ) return NULL;
@@ -1148,11 +1172,9 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 
 		if ( panel != NULL ) {
-			if ( parse_field_for_panel(panel, key, val,
-			                           dt) ) reject = 1;
+			if ( parse_field_for_panel(panel, key, val, dt, 0) ) reject = 1;
 		} else {
-			if ( parse_field_bad(badregion, key,
-			                     val) ) reject = 1;
+			if ( parse_field_bad(badregion, key, val) ) reject = 1;
 		}
 
 		free(line);

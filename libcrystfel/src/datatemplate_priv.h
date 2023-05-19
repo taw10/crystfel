@@ -108,6 +108,9 @@ struct mask_template
 	/** Bit mask for good pixels
 	 * (pixel cannot be good unless all of these are set) */
 	unsigned int good_bits;
+
+	/** If non-zero, this mask came from the top level */
+	int mask_default;
 };
 
 
@@ -127,41 +130,52 @@ struct panel_template
 
 	/** The offset to be applied from clen */
 	double cnz_offset;
+	int cnz_offset_default;
 
 	/** Mask definitions */
 	struct mask_template masks[MAX_MASKS];
+	int mask_default;
 
 	/** Location of per-pixel saturation map */
 	char *satmap;
+	int satmap_default;
 
 	/** Filename for saturation map */
 	char *satmap_file;
+	int satmap_file_default;
 
 	/** Mark entire panel as bad if set */
 	int bad;
 
 	/** Mark this number of edge rows as bad */
 	int mask_edge_pixels;
+	int mask_edge_pixels_default;
 
 	/** Pixel size in metres */
 	double pixel_pitch;
+	int pixel_pitch_default;
 
 	/** Number of detector intensity units per photon, or eV */
 	double adu_scale;
 	enum adu_per_unit adu_scale_unit;
+	int adu_scale_default;
 
 	/** Treat pixel as unreliable if higher than this */
 	double max_adu;
+	int max_adu_default;
 
 	/** Pixels with exactly this value will be marked as bad */
 	enum flag_value_type flag_types[MAX_FLAG_VALUES];
 	signed int flag_values[MAX_FLAG_VALUES];
+	int flag_values_default;
 
 	/** Location of data in file (possibly with placeholders) */
 	char *data;
+	int data_default;
 
 	/** Dimensions (see definitions for DIM_FS etc above) */
 	signed int dims[MAX_DIMS];
+	int dims_default[MAX_DIMS];
 
 	/** \name Transformation matrix from pixel coordinates to lab frame */
 	/*@{*/
