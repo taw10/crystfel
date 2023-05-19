@@ -196,6 +196,6 @@ deploy-remote-maxwell:
      "if [ -d /software/crystfel/devel ]; then
         mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
      fi"
-   - scp -r software/crystfel/devel $MAXWELL_USER_NAME@max-wgs:software/crystfel/
+   - scp -r software/crystfel/devel $MAXWELL_USER_NAME@max-wgs:/software/crystfel/
   rules:
     - if: $MAXWELL_DEPLOYMENT == "remote"  && $CI_COMMIT_BRANCH == "master"
