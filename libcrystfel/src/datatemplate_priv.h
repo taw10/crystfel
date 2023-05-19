@@ -125,9 +125,6 @@ struct panel_template
 	double cny;
 	/**@}*/
 
-	/** Location to get cnz from, e.g. from HDF5 file */
-	char *cnz_from;
-
 	/** The offset to be applied from clen */
 	double cnz_offset;
 
@@ -241,6 +238,9 @@ struct _datatemplate
 	/* Shift of whole detector, in m */
 	char                      *shift_x_from;
 	char                      *shift_y_from;
+
+	/** Location to get detector z from, e.g. from HDF5 file */
+	char                      *cnz_from;
 
 	char                      *headers_to_copy[MAX_COPY_HEADERS];
 	int                        n_headers_to_copy;

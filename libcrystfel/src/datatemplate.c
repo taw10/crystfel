@@ -153,7 +153,6 @@ static struct panel_template *new_panel(DataTemplate *det,
 	new->name = strdup(name);
 
 	/* Copy strings */
-	new->cnz_from = safe_strdup(defaults->cnz_from);
 	new->data = safe_strdup(defaults->data);
 	new->satmap = safe_strdup(defaults->satmap);
 	new->satmap_file = safe_strdup(defaults->satmap_file);
@@ -517,8 +516,8 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_PHOTON;
 	} else if ( strcmp(key, "clen") == 0 ) {
-		/* Gets expanded when image is loaded */
-		panel->cnz_from = strdup(val);
+		ERROR("'clen' is a top-level property in this version of CrystFEL.\n");
+		reject = 1;
 
 	} else if ( strcmp(key, "data") == 0 ) {
 		free(panel->data);
@@ -797,6 +796,9 @@ static int parse_toplevel(DataTemplate *dt,
 	} else if ( strcmp(key, "detector_shift_y") == 0 ) {
 		dt->shift_y_from = strdup(val);
 
+	} else if ( strcmp(key, "clen") == 0 ) {
+		dt->cnz_from = strdup(val);
+
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		return parse_photon_energy(val,
 		                           &dt->wavelength_from,
@@ -1002,6 +1004,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->peak_list = NULL;
 	dt->shift_x_from = NULL;
 	dt->shift_y_from = NULL;
+	dt->cnz_from = NULL;
 	dt->n_headers_to_copy = 0;
 	dt->n_groups = 0;
 
@@ -1012,7 +1015,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.orig_max_ss = -1;
 	defaults.cnx = NAN;
 	defaults.cny = NAN;
-	defaults.cnz_from = NULL;
 	defaults.cnz_offset = 0.0;
 	defaults.pixel_pitch = -1.0;
 	defaults.bad = 0;
@@ -1182,6 +1184,11 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		reject = 1;
 	}
 
+	if ( dt->cnz_from == NULL ) {
+		ERROR("Geometry file must specify the camera length\n");
+		reject = 1;
+	}
+
 	for ( i=0; i<dt->n_panels; i++ ) {
 
 		int j;
@@ -1242,11 +1249,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		if ( isnan(p->cny) ) {
 			ERROR("Please specify the corner Y coordinate for"
 			      " panel %s\n", dt->panels[i].name);
-			reject = 1;
-		}
-		if ( p->cnz_from == NULL ) {
-			ERROR("Please specify the camera length for panel %s\n",
-			      dt->panels[i].name);
 			reject = 1;
 		}
 		if ( p->pixel_pitch < 0 ) {
@@ -1348,7 +1350,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 	}
 
-	free(defaults.cnz_from);
 	free(defaults.data);
 	for ( i=0; i<MAX_MASKS; i++ ) {
 		free(defaults.masks[i].data_location);
@@ -1394,7 +1395,6 @@ void data_template_free(DataTemplate *dt)
 		free(dt->panels[i].data);
 		free(dt->panels[i].satmap);
 		free(dt->panels[i].satmap_file);
-		free(dt->panels[i].cnz_from);
 
 		for ( j=0; j<MAX_MASKS; j++ ) {
 			free(dt->panels[i].masks[j].filename);
@@ -1408,6 +1408,7 @@ void data_template_free(DataTemplate *dt)
 
 	free(dt->wavelength_from);
 	free(dt->peak_list);
+	free(dt->cnz_from);
 
 	free(dt->panels);
 	free(dt->bad);
@@ -1736,86 +1737,22 @@ static int im_get_length(struct image *image, const char *from,
 }
 
 
-static int safe_strcmp(const char *a, const char *b)
-{
-	if ( (a==NULL) && (b==NULL) ) return 0;
-	if ( (a!=NULL) && (b!=NULL) ) return strcmp(a, b);
-	return 1;
-}
-
-
-static int all_panels_reference_same_clen(const DataTemplate *dtempl)
+static int all_panels_same_coffset(const DataTemplate *dtempl)
 {
 	int i;
-	char *first_val = NULL;
-	char *first_units = NULL;
-	int fail = 0;
-
-	for ( i=0; i<dtempl->n_panels; i++ ) {
-		struct panel_template *p = &dtempl->panels[i];
-		char *val;
-		char *units;
-		if ( separate_value_and_units(p->cnz_from, &val, &units) ) {
-			/* Parse error */
-			return 0;
-		}
-		if ( i == 0 ) {
-			first_val = val;
-			first_units = units;
-		} else {
-			if ( safe_strcmp(val, first_val) != 0 ) fail = 1;
-			if ( safe_strcmp(units, first_units) != 0 ) fail = 1;
-			free(val);
-			free(units);
-		}
-	}
-
-	free(first_val);
-	free(first_units);
-	return fail;
-}
-
-
-static int all_coffsets_small(const DataTemplate *dtempl)
-{
-	int i;
-
-	for ( i=0; i<dtempl->n_panels; i++ ) {
-		struct panel_template *p = &dtempl->panels[i];
-		if ( p->cnz_offset > 10.0*p->pixel_pitch ) return 0;
-	}
-
-	return 1;
-}
-
-
-static int all_panels_same_clen(const DataTemplate *dtempl)
-{
-	int i;
-	double *zvals;
-	double total = 0.0;
+	double total;
 	double mean;
 
-	zvals = malloc(sizeof(double)*dtempl->n_panels);
-	if ( zvals == NULL ) return 0;
-
+	total = 0.0;
 	for ( i=0; i<dtempl->n_panels; i++ ) {
-		struct panel_template *p = &dtempl->panels[i];
-		if ( im_get_length(NULL, p->cnz_from, 1e-3, &zvals[i]) ) {
-			/* Can't get length because it used a header reference */
-			free(zvals);
-			return 0;
-		}
-		total += zvals[i];
+		total += dtempl->panels[i].cnz_offset;
 	}
-
 	mean = total/dtempl->n_panels;
+
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 		struct panel_template *p = &dtempl->panels[i];
-		if ( fabs(zvals[i] - mean) > 10.0*p->pixel_pitch ) return 0;
+		if ( fabs(dtempl->panels[i].cnz_offset - mean) > 10.0*p->pixel_pitch ) return 0;
 	}
-
-	free(zvals);
 
 	return 1;
 }
@@ -1838,8 +1775,7 @@ static int all_panels_perpendicular_to_beam(const DataTemplate *dtempl)
 static int detector_flat(const DataTemplate *dtempl)
 {
 	return all_panels_perpendicular_to_beam(dtempl)
-	    && ( (all_panels_reference_same_clen(dtempl) && all_coffsets_small(dtempl))
-	          || all_panels_same_clen(dtempl) );
+	    && all_panels_same_coffset(dtempl);
 }
 
 
@@ -1895,6 +1831,7 @@ struct detgeom *create_detgeom(struct image *image,
 {
 	struct detgeom *detgeom;
 	int i;
+	double clen;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1923,6 +1860,17 @@ struct detgeom *create_detgeom(struct image *image,
 		}
 	}
 
+	if ( im_get_length(image, dtempl->cnz_from, 1e-3, &clen) )
+	{
+		if ( two_d_only ) {
+			clen = NAN;
+		} else {
+			ERROR("Failed to read length from '%s'\n", dtempl->cnz_from);
+			return NULL;
+		}
+	}
+
+
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
 		struct detgeom_panel *p = &detgeom->panels[i];
@@ -1937,20 +1885,8 @@ struct detgeom *create_detgeom(struct image *image,
 		p->cnx = tmpl->cnx;
 		p->cny = tmpl->cny;
 
-		if ( im_get_length(image, tmpl->cnz_from, 1e-3, &p->cnz) )
-		{
-			if ( two_d_only ) {
-				p->cnz = NAN;
-			} else {
-				ERROR("Failed to read length from '%s'\n", tmpl->cnz_from);
-				return NULL;
-			}
-		}
-
-		/* Apply offset (in m) and then convert cnz from
-		 * m to pixels */
-		p->cnz += tmpl->cnz_offset;
-		p->cnz /= p->pixel_pitch;
+		/* Apply offset (in m) and then convert cnz from m to pixels */
+		p->cnz = (clen + tmpl->cnz_offset) / p->pixel_pitch;
 
 		/* Apply overall shift (already in m) */
 		if ( dtempl->shift_x_from != NULL ) {
