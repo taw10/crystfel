@@ -7,6 +7,7 @@ CrystFEL stream format 2.3
 Command line: indexamajig -i dummy.lst -o dummy.stream --kraken=prawn
 ----- Begin geometry file -----
 photon_energy = 9000 eV
+clen = 50 mm
 panel/min_fs = 0
 panel/min_ss = 0
 panel/max_fs = 1023
@@ -15,7 +16,6 @@ panel/fs = x
 panel/ss = y
 panel/corner_x = -100
 panel/corner_y = -100
-panel/clen = 50 mm
 panel/res = 1000000
 panel/adu_per_photon = 1
 panel/data = /data/data_array
