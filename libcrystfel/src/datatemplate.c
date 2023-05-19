@@ -488,6 +488,7 @@ static int parse_mask(struct panel_template *panel,
 		return 1;
 	}
 
+	panel->masks[n].mask_default = def;
 	free(key);
 	return 0;
 }
@@ -572,14 +573,17 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		if ( add_flag_value(panel, atof(val), FLAG_EQUAL) ) {
 			reject = -1;
 		}
+		panel->flag_values_default = def;
 	} else if ( strcmp(key, "flag_lessthan") == 0 ) {
 		if ( add_flag_value(panel, atof(val), FLAG_LESSTHAN) ) {
 			reject = -1;
 		}
+		panel->flag_values_default = def;
 	} else if ( strcmp(key, "flag_morethan") == 0 ) {
 		if ( add_flag_value(panel, atof(val), FLAG_MORETHAN) ) {
 			reject = -1;
 		}
+		panel->flag_values_default = def;
 
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
 		ERROR("WARNING 'badrow_direction' is ignored in this version.\n");
@@ -1053,6 +1057,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		defaults.masks[i].filename = NULL;
 		defaults.masks[i].good_bits = 0;
 		defaults.masks[i].bad_bits = 0;
+		defaults.masks[i].mask_default = 1;
 	}
 	defaults.max_adu = +INFINITY;
 	defaults.max_adu_default = 1;
@@ -2213,4 +2218,359 @@ int data_template_rotate_group(DataTemplate *dtempl, const char *group_name,
 	if ( group_center(dtempl, group, &cx, &cy, &cz) ) return 1;
 
 	return rotate_all_panels(dtempl, group, axis, ang, cx, cy, cz);
+}
+
+
+static const char *str_dim(int dim)
+{
+	switch ( dim ) {
+		case DIM_FS: return "fs";
+		case DIM_SS: return "ss";
+		case DIM_PLACEHOLDER: return "%";
+		default: return NULL;
+	}
+}
+
+
+int data_template_write_to_file(const DataTemplate *dtempl, const char *filename)
+{
+	FILE *fh;
+	int i;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+
+	/* Basic top-level parameters */
+	switch ( dtempl->wavelength_unit ) {
+
+		case WAVELENGTH_M:
+		fprintf(fh, "wavelength = %s m\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_A:
+		fprintf(fh, "wavelength = %s A\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_ELECTRON_KV:
+		fprintf(fh, "electron_voltage = %s kV\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_ELECTRON_V:
+		fprintf(fh, "electron_voltage = %s V\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_PHOTON_KEV:
+		fprintf(fh, "photon_energy = %s keV\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_PHOTON_EV:
+		fprintf(fh, "photon_energy = %s eV\n", dtempl->wavelength_from);
+		break;
+
+		default:
+		ERROR("Unknown wavelength unit (%i)\n", dtempl->wavelength_unit);
+		return 1;
+
+	}
+
+	fprintf(fh, "clen = %s\n", dtempl->cnz_from);
+
+	if ( dtempl->peak_list != NULL ) {
+		fprintf(fh, "peak_list = %s\n", dtempl->peak_list);
+	}
+	switch ( dtempl->peak_list_type ) {
+		case PEAK_LIST_AUTO:
+		break;
+
+		case PEAK_LIST_CXI:
+		fprintf(fh, "peak_list_type = cxi\n");
+		break;
+
+		case PEAK_LIST_LIST3:
+		fprintf(fh, "peak_list_type = list3\n");
+		break;
+
+		default:
+		ERROR("Unknown peak list type (%i)\n", dtempl->peak_list_type);
+		return 1;
+	}
+
+	fprintf(fh, "bandwidth = %e\n", dtempl->bandwidth);
+
+	if ( dtempl->shift_x_from != NULL ) {
+		fprintf(fh, "detector_shift_x = %s\n", dtempl->shift_x_from);
+	}
+	if ( dtempl->shift_y_from != NULL ) {
+		fprintf(fh, "detector_shift_y = %s\n", dtempl->shift_y_from);
+	}
+
+	/* Other top-levels */
+	int cnz_offset_done = 0;
+	int mask_done[MAX_MASKS] = {0};
+	int satmap_done = 0;
+	int satmap_file_done = 0;
+	int mask_edge_pixels_done = 0;
+	int pixel_pitch_done = 0;
+	int adu_scale_done = 0;
+	int max_adu_done = 0;
+	int flag_values_done = 0;
+	int data_done = 0;
+	int dims_done[MAX_DIMS] = {0};
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		const struct panel_template *p = &dtempl->panels[i];
+		int j;
+
+		if ( p->cnz_offset_default && !cnz_offset_done ) {
+			fprintf(fh, "coffset = %f\n", p->cnz_offset);
+			cnz_offset_done = 1;
+		}
+
+		for ( j=0; j<MAX_MASKS; j++ ) {
+			if ( p->masks[j].data_location == NULL ) continue;
+			if ( !p->masks[j].mask_default ) continue;
+			if ( mask_done[j] ) continue;
+			fprintf(fh, "mask%i_data = %s\n",
+			        j, p->masks[j].data_location);
+			if ( p->masks[j].filename != NULL ) {
+				fprintf(fh, "mask%i_filename = %s\n",
+				        j, p->masks[j].filename);
+			}
+			fprintf(fh, "mask%i_goodbits = 0x%x\n",
+			        j, p->masks[j].good_bits);
+			fprintf(fh, "mask%i_badbits = 0x%x\n",
+			        j, p->masks[j].bad_bits);
+			mask_done[j] = 1;
+		}
+
+		if ( p->satmap_default && !satmap_done && (p->satmap != NULL) ) {
+			fprintf(fh, "saturation_map = %s\n", p->satmap);
+			satmap_done = 1;
+		}
+
+		if ( p->satmap_file_default && !satmap_file_done && (p->satmap_file != NULL) ) {
+			fprintf(fh, "saturation_map_file = %s\n", p->satmap);
+			satmap_file_done = 1;
+		}
+
+		if ( p->mask_edge_pixels_default && !mask_edge_pixels_done && (p->mask_edge_pixels != 0) ) {
+			fprintf(fh, "mask_edge_pixels = %i\n", p->mask_edge_pixels);
+			mask_edge_pixels_done = 1;
+		}
+
+		if ( p->pixel_pitch_default && !pixel_pitch_done ) {
+			fprintf(fh, "res = %f\n", 1.0/p->pixel_pitch);
+			pixel_pitch_done = 1;
+		}
+
+		if ( p->max_adu_default && !max_adu_done && !isinf(p->max_adu) ) {
+			fprintf(fh, "max_adu = %f\n", p->max_adu);
+			max_adu_done = 1;
+		}
+
+		if ( p->data_default && !data_done ) {
+			fprintf(fh, "data = %s\n", p->data);
+			data_done = 1;
+		}
+
+		if ( p->flag_values_default && !flag_values_done ) {
+			for ( j=0; j<MAX_FLAG_VALUES; j++ ) {
+				switch ( p->flag_types[j] ) {
+					case FLAG_NOTHING :
+					break;
+
+					case FLAG_EQUAL:
+					fprintf(fh, "flag_equal = %i\n",
+					        p->flag_values[j]);
+					break;
+
+					case FLAG_MORETHAN:
+					fprintf(fh, "flag_morethan = %i\n",
+					        p->flag_values[j]);
+					break;
+
+					case FLAG_LESSTHAN:
+					fprintf(fh, "flag_lessthan = %i\n",
+					        p->flag_values[j]);
+					break;
+				}
+			}
+			flag_values_done = 1;
+		}
+
+		if ( p->adu_scale_default && !adu_scale_done ) {
+			switch ( p->adu_scale_unit ) {
+
+				case ADU_PER_EV:
+				fprintf(fh, "adu_per_eV = %f\n", p->adu_scale);
+				break;
+
+				case ADU_PER_PHOTON:
+				fprintf(fh, "adu_per_photon = %f\n", p->adu_scale);
+				break;
+			}
+			adu_scale_done = 1;
+		}
+
+		for ( j=0; j<MAX_DIMS; j++ ) {
+			if ( p->dims_default[j] && !dims_done[j] && p->dims[j] != DIM_UNDEFINED ) {
+				if ( p->dims[j] < 0 ) {
+					fprintf(fh, "dim%i = %s\n", j, str_dim(p->dims[j]));
+				} else {
+					fprintf(fh, "dim%i = %i\n", j, p->dims[j]);
+				}
+				dims_done[j] = 1;
+			}
+		}
+	}
+
+	fprintf(fh, "\n");
+
+	/* Bad regions */
+	for ( i=0; i<dtempl->n_bad; i++ ) {
+		const struct dt_badregion *bad = &dtempl->bad[i];
+		if ( bad->is_fsss ) {
+			fprintf(fh, "bad_%s/panel = %s\n", bad->name, bad->panel_name);
+			fprintf(fh, "bad_%s/min_fs = %i\n", bad->name, bad->min_fs);
+			fprintf(fh, "bad_%s/max_fs = %i\n", bad->name, bad->max_fs);
+			fprintf(fh, "bad_%s/min_ss = %i\n", bad->name, bad->min_ss);
+			fprintf(fh, "bad_%s/max_ss = %i\n", bad->name, bad->max_ss);
+		} else {
+			fprintf(fh, "bad_%s/min_x = %f\n", bad->name, bad->min_x);
+			fprintf(fh, "bad_%s/max_x = %f\n", bad->name, bad->max_x);
+			fprintf(fh, "bad_%s/min_y = %f\n", bad->name, bad->min_y);
+			fprintf(fh, "bad_%s/max_y = %f\n", bad->name, bad->max_y);
+		}
+		fprintf(fh, "\n");
+	}
+
+	/* Panels */
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		int j;
+		const struct panel_template *p = &dtempl->panels[i];
+
+		fprintf(fh, "%s/min_fs = %i\n", p->name, p->orig_min_fs);
+		fprintf(fh, "%s/max_fs = %i\n", p->name, p->orig_max_fs);
+		fprintf(fh, "%s/min_ss = %i\n", p->name, p->orig_min_ss);
+		fprintf(fh, "%s/max_ss = %i\n", p->name, p->orig_max_ss);
+		fprintf(fh, "%s/corner_x = %f\n", p->name, p->cnx);
+		fprintf(fh, "%s/corner_y = %f\n", p->name, p->cny);
+		fprintf(fh, "%s/fs = %fx %+fy %+fz\n", p->name,
+		        p->fsx, p->fsy, p->fsz);
+		fprintf(fh, "%s/ss = %fx %+fy %+fz\n", p->name,
+		        p->ssx, p->ssy, p->ssz);
+
+		if ( !p->cnz_offset_default ) {
+			fprintf(fh, "%s/coffset = %f\n", p->name, p->cnz_offset);
+		}
+
+		for ( j=0; j<MAX_MASKS; j++ ) {
+			if ( p->masks[j].data_location == NULL ) continue;
+			if ( p->masks[j].mask_default ) continue;
+			fprintf(fh, "%s/mask%i_data = %s\n",
+			        p->name, j, p->masks[j].data_location);
+			if ( p->masks[j].filename != NULL ) {
+				fprintf(fh, "%smask%i_filename = %s\n",
+				        p->name, j, p->masks[j].filename);
+			}
+			fprintf(fh, "%s/mask%i_goodbits = 0x%x\n",
+			        p->name, j, p->masks[j].good_bits);
+			fprintf(fh, "%s/mask%i_badbits = 0x%x\n",
+			        p->name, j, p->masks[j].bad_bits);
+		}
+
+		if ( !p->satmap_default && (p->satmap != NULL) ) {
+			fprintf(fh, "%s/saturation_map = %s\n", p->name, p->satmap);
+		}
+
+		if ( !p->satmap_file_default && (p->satmap_file != NULL) ) {
+			fprintf(fh, "%s/saturation_map_file = %s\n", p->name, p->satmap_file);
+		}
+
+		if ( !p->mask_edge_pixels_default && (p->mask_edge_pixels != 0) ) {
+			fprintf(fh, "%s/mask_edge_pixels = %i\n", p->name, p->mask_edge_pixels);
+		}
+
+		if ( !p->pixel_pitch_default ) {
+			fprintf(fh, "%s/res = %f\n", p->name, 1.0/p->pixel_pitch);
+		}
+
+		if ( !p->adu_scale_default ) {
+			switch ( p->adu_scale_unit ) {
+
+				case ADU_PER_EV:
+				fprintf(fh, "%s/adu_per_eV = %f\n", p->name, p->adu_scale);
+				break;
+
+				case ADU_PER_PHOTON:
+				fprintf(fh, "%s/adu_per_photon = %f\n", p->name, p->adu_scale);
+				break;
+			}
+		}
+
+		if ( !p->max_adu_default ) {
+			fprintf(fh, "%s/max_adu = %f\n", p->name, p->max_adu);
+		}
+
+		if ( !p->flag_values_default ) {
+			for ( j=0; j<MAX_FLAG_VALUES; j++ ) {
+				switch ( p->flag_types[j] ) {
+					case FLAG_NOTHING :
+					break;
+
+					case FLAG_EQUAL:
+					fprintf(fh, "%s/flag_equal = %i\n",
+					        p->name, p->flag_values[j]);
+					break;
+
+					case FLAG_MORETHAN:
+					fprintf(fh, "%s/flag_morethan = %i\n",
+					        p->name, p->flag_values[j]);
+					break;
+
+					case FLAG_LESSTHAN:
+					fprintf(fh, "%s/flag_lessthan = %i\n",
+					        p->name, p->flag_values[j]);
+					break;
+				}
+			}
+		}
+
+		if ( !p->data_default ) {
+			fprintf(fh, "%s/data = %s\n", p->name, p->data);
+		}
+
+		for ( j=0; j<MAX_DIMS; j++ ) {
+			if ( !p->dims_default[j] && (p->dims[j] != DIM_UNDEFINED) ) {
+				if ( p->dims[j] < 0 ) {
+					fprintf(fh, "%s/dim%i = %s\n", p->name, j, str_dim(p->dims[j]));
+				} else {
+					fprintf(fh, "%s/dim%i = %i\n", p->name, j, p->dims[j]);
+				}
+				dims_done[j] = 1;
+			}
+		}
+
+		if ( p->bad ) {
+			fprintf(fh, "%s/no_index = 1\n", p->name);
+		}
+
+		fprintf(fh, "\n");
+	}
+
+	/* Groups */
+	for ( i=0; i<dtempl->n_groups; i++ ) {
+		int j;
+		if ( dtempl->groups[i]->n_children == 0 ) continue;
+		fprintf(fh, "group_%s = ", dtempl->groups[i]->name);
+		for ( j=0; j<dtempl->groups[i]->n_children; j++ ) {
+			if ( j > 0 ) fprintf(fh, ",");
+			fprintf(fh, "%s", dtempl->groups[i]->children[j]->name);
+		}
+		fprintf(fh, "\n");
+	}
+
+	fclose(fh);
+	return 0;
 }

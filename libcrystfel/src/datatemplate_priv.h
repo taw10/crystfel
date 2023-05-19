@@ -134,7 +134,6 @@ struct panel_template
 
 	/** Mask definitions */
 	struct mask_template masks[MAX_MASKS];
-	int mask_default;
 
 	/** Location of per-pixel saturation map */
 	char *satmap;
