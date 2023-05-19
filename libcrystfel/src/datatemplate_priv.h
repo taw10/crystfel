@@ -215,7 +215,7 @@ struct panel_group_template
 {
 	char *name;
 	int n_children;
-	const struct panel_group_template *children[MAX_PANEL_GROUP_CHILDREN];
+	struct panel_group_template *children[MAX_PANEL_GROUP_CHILDREN];
 };
 
 

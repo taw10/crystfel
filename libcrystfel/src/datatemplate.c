@@ -45,7 +45,7 @@
  * \file datatemplate.h
  */
 
-static const struct panel_group_template *find_group(const DataTemplate *dt, const char *name)
+static struct panel_group_template *find_group(const DataTemplate *dt, const char *name)
 {
 	int i;
 
@@ -116,7 +116,7 @@ static int parse_group(const char *name, DataTemplate *dt, const char *val)
 	} else {
 
 		for ( i=0; i<n_members; i++ ) {
-			gt->children[i] =  find_group(dt, members[i]);
+			gt->children[i] = find_group(dt, members[i]);
 			if ( gt->children[i] == NULL ) {
 				ERROR("Unknown panel group '%s'\n", members[i]);
 				fail = 1;
@@ -2120,4 +2120,139 @@ int data_template_translate_group_m(DataTemplate *dtempl, const char *group_name
 	const struct panel_group_template *group = find_group(dtempl, group_name);
 	if ( group == NULL ) return 1;
 	return translate_group_contents(dtempl, group, x, y, z, 1);
+}
+
+
+static void add_point(const struct panel_template *p,
+                      int fs, int ss,
+                      double *tx, double *ty, double *tz)
+{
+	*tx += (p->cnx + fs*p->fsx + ss*p->ssx) * p->pixel_pitch;
+	*ty += (p->cny + fs*p->fsy + ss*p->ssy) * p->pixel_pitch;
+	*tz += p->cnz_offset + (fs*p->fsz + ss*p->ssz) * p->pixel_pitch;
+}
+
+
+static int group_center(DataTemplate *dtempl,
+                        const struct panel_group_template *group,
+                        double *cx, double *cy, double *cz)
+{
+	if ( group->n_children == 0 ) {
+
+		const struct panel_template *p = find_panel_by_name(dtempl, group->name);
+		if ( p == NULL ) return 1;
+
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		add_point(p, 0, 0, &tx, &ty, &tz);
+		add_point(p, PANEL_WIDTH(p), 0, &tx, &ty, &tz);
+		add_point(p, 0, PANEL_HEIGHT(p), &tx, &ty, &tz);
+		add_point(p, PANEL_WIDTH(p), PANEL_HEIGHT(p), &tx, &ty, &tz);
+
+		*cx = tx / 4.0;
+		*cy = ty / 4.0;
+		*cz = tz / 4.0;
+
+		return 0;
+
+	} else {
+
+		int i;
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		for ( i=0; i<group->n_children; i++ ) {
+			double gcx, gcy, gcz;
+			group_center(dtempl, group->children[i], &gcx, &gcy, &gcz);
+			tx += gcx;
+			ty += gcy;
+			tz += gcz;
+		}
+
+		*cx = tx / group->n_children;
+		*cy = ty / group->n_children;
+		*cz = tz / group->n_children;
+
+		return 0;
+
+	}
+}
+
+static int rotate_all_panels(DataTemplate *dtempl,
+                             struct panel_group_template *group,
+                             char axis, double ang,
+                             double cx, double cy, double cz)
+{
+	if ( group->n_children == 0 ) {
+
+		struct panel_template *p = find_panel_by_name(dtempl, group->name);
+		if ( p == NULL ) return 1;
+
+		switch ( axis )
+		{
+			case 'x':
+			p->cnz_offset =  p->cnz_offset*cos(ang) + p->cny*sin(ang);
+			p->cny = -p->cnz_offset*sin(ang) + p->cny*cos(ang);
+			p->fsz =  p->fsz*cos(ang) + p->fsy*sin(ang);
+			p->fsy = -p->fsz*sin(ang) + p->fsy*cos(ang);
+			p->ssz =  p->ssz*cos(ang) + p->ssy*sin(ang);
+			p->ssy = -p->ssz*sin(ang) + p->ssy*cos(ang);
+			break;
+
+			case 'y':
+			p->cnx =  p->cnx*cos(ang) + p->cnz_offset*sin(ang);
+			p->cnz_offset = -p->cnx*sin(ang) + p->cnz_offset*cos(ang);
+			p->fsx =  p->fsx*cos(ang) + p->fsz*sin(ang);
+			p->fsz = -p->fsx*sin(ang) + p->fsz*cos(ang);
+			p->ssx =  p->ssx*cos(ang) + p->ssz*sin(ang);
+			p->ssz = -p->ssx*sin(ang) + p->ssz*cos(ang);
+			break;
+
+			case 'z':
+			p->cnx =  p->cnx*cos(ang) + p->cny*sin(ang);
+			p->cny = -p->cnx*sin(ang) + p->cny*cos(ang);
+			p->fsx =  p->fsx*cos(ang) + p->fsy*sin(ang);
+			p->fsy = -p->fsx*sin(ang) + p->fsy*cos(ang);
+			p->ssx =  p->ssx*cos(ang) + p->ssy*sin(ang);
+			p->ssy = -p->ssx*sin(ang) + p->ssy*cos(ang);
+			break;
+		}
+
+		return 0;
+
+	} else {
+
+		int i;
+
+		for ( i=0; i<group->n_children; i++ ) {
+			rotate_all_panels(dtempl, group->children[i],
+			                  axis, ang, cx, cy, cz);
+		}
+
+		return 0;
+
+	}
+}
+
+/**
+ * Alters dtempl by rotating the named panel group by ang (degrees) about its
+ * center.
+ *
+ * \returns zero for success, non-zero on error
+ */
+int data_template_rotate_group(DataTemplate *dtempl, const char *group_name,
+                               double ang, char axis)
+{
+	struct panel_group_template *group;
+	double cx, cy, cz;
+
+	group = find_group(dtempl, group_name);
+	if ( group == NULL ) return 1;
+
+	if ( group_center(dtempl, group, &cx, &cy, &cz) ) return 1;
+
+	return rotate_all_panels(dtempl, group, axis, ang, cx, cy, cz);
 }

@@ -91,6 +91,10 @@ extern int data_template_translate_group_m(DataTemplate *dtempl,
                                            const char *group_name,
                                            double x, double y, double z);
 
+extern int data_template_rotate_group(DataTemplate *dtempl,
+                                      const char *group_name,
+                                      double ang, char axis);
+
 #ifdef __cplusplus
 }
 #endif

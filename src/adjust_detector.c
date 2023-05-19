@@ -58,9 +58,9 @@ static void show_help(const char *s)
 	       "  -p, --panel=p              Panel (or group) to move\n"
 	       "      --mm                   Interpret shifts as mm, not px\n"
 	       "\n"
-	       "  -a                         Rotation around x-axis\n"
-	       "  -b                         Rotation around y-axis\n"
-	       "  -c                         Rotation around z-axis\n"
+	       "  -a                         Rotation around x-axis (deg)\n"
+	       "  -b                         Rotation around y-axis (deg)\n"
+	       "  -c                         Rotation around z-axis (deg)\n"
 	       "  -x                         Shift in x direction\n"
 	       "  -y                         Shift in y direction\n"
 	       "  -z                         Shift in z direction\n"
@@ -213,6 +213,28 @@ int main(int argc, char *argv[])
 		ERROR("Failed to translate group.\n");
 		return 1;
 	}
+
+	if ( data_template_rotate_group(dtempl, group, deg2rad(x_rot), 'x') ) {
+		ERROR("Failed to rotate group around x.\n");
+		return 1;
+	}
+
+	if ( data_template_rotate_group(dtempl, group, deg2rad(y_rot), 'y') ) {
+		ERROR("Failed to rotate group around y.\n");
+		return 1;
+	}
+
+	if ( data_template_rotate_group(dtempl, group, deg2rad(z_rot), 'z') ) {
+		ERROR("Failed to rotate group around z.\n");
+		return 1;
+	}
+
+	if ( data_template_write_to_file(dtempl, out_geom) ) {
+		ERROR("Failed to save geometry file.\n");
+		return 1;
+	}
+
+	data_template_free(dtempl);
 
 	return 0;
 }
