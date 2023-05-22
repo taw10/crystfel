@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 'y' :
-			x_shift = parse_double(optarg, 'y');
+			y_shift = parse_double(optarg, 'y');
 			break;
 
 			case 'z' :
