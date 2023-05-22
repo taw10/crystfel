@@ -995,7 +995,7 @@ static void show_group(const struct panel_group_template *gt, int level)
 void data_template_show_hierarchy(const DataTemplate *dtempl)
 {
 	STATUS("Hierarchy:\n");
-	show_group(find_group(dtempl, "top"), 0);
+	show_group(find_group(dtempl, "all"), 0);
 }
 
 
@@ -1976,7 +1976,7 @@ struct detgeom *create_detgeom(struct image *image,
 
 	}
 
-	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "top"), detgeom);
+	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom);
 
 	return detgeom;
 }
