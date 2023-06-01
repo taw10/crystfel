@@ -2170,9 +2170,6 @@ static int rotate_all_panels(DataTemplate *dtempl,
 		cz /= p->pixel_pitch;
 		cnz_px = p->cnz_offset / p->pixel_pitch;
 
-		STATUS("%f %f %f\n", cx, cy, cz);
-		STATUS("%f\n", cnz_px);
-
 		switch ( axis )
 		{
 			case 'x':
