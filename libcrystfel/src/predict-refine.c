@@ -580,8 +580,8 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 #ifdef HAVE_MILLEPEDE
 	int i;
 	float local_gradients[9];
-	float global_gradients[2];
-	int labels[2];
+	float global_gradients[6];
+	int labels[6];
 
 	profile_start("mille-calc");
 
@@ -618,12 +618,15 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 		                                 cell, rps[i].panel);
 		global_gradients[1] = x_gradient(GPARAM_DETY, rps[i].refl,
 		                                 cell, rps[i].panel);
+		global_gradients[2] = x_gradient(GPARAM_CLEN, rps[i].refl,
+		                                 cell, rps[i].panel);
 		labels[0] = 1;
 		labels[1] = 2;
+		labels[2] = 3;
 
 		mille_add_measurement(mille,
 		                      9, local_gradients,
-		                      2, global_gradients, labels,
+		                      3, global_gradients, labels,
 		                      x_dev(&rps[i], image->detgeom, dx, dy),
 		                      0.65*rps[i].panel->pixel_pitch);
 	}
@@ -641,12 +644,15 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 		                                 cell, rps[i].panel);
 		global_gradients[1] = y_gradient(GPARAM_DETY, rps[i].refl,
 		                                 cell, rps[i].panel);
+		global_gradients[2] = y_gradient(GPARAM_CLEN, rps[i].refl,
+		                                 cell, rps[i].panel);
 		labels[0] = 1;
 		labels[1] = 2;
+		labels[2] = 3;
 
 		mille_add_measurement(mille,
 		                      9, local_gradients,
-		                      2, global_gradients, labels,
+		                      3, global_gradients, labels,
 		                      y_dev(&rps[i], image->detgeom, dx, dy),
 		                      0.65*rps[i].panel->pixel_pitch);
 	}
