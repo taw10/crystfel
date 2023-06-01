@@ -585,26 +585,6 @@ static void write_mille(Mille *mille, int n, UnitCell *cell,
 
 	profile_start("mille-calc");
 
-	/* Excitation error terms */
-	for ( i=0; i<n; i++ ) {
-
-		int j;
-		for ( j=0; j<9; j++ ) {
-			local_gradients[j] = r_gradient(cell, rv[j], rps[i].refl, image);
-		}
-
-		global_gradients[0] = r_gradient(cell, GPARAM_DETX, rps[i].refl, image);
-		global_gradients[1] = r_gradient(cell, GPARAM_DETY, rps[i].refl, image);
-		labels[0] = 1;
-		labels[1] = 2;
-
-		mille_add_measurement(mille,
-		                      9, local_gradients,
-		                      2, global_gradients, labels,
-		                      r_dev(&rps[i]),
-		                      1e10);
-	}
-
 	/* Spot x-position terms */
 	for ( i=0; i<n; i++ ) {
 
