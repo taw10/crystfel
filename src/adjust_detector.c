@@ -197,8 +197,6 @@ int main(int argc, char *argv[])
 	dtempl = data_template_new_from_file(in_geom);
 	if ( dtempl == NULL ) return 1;
 
-	data_template_show_hierarchy(dtempl);
-
 	if ( mm ) {
 		r = data_template_translate_group_m(dtempl, group,
 		                                    x_shift * 1e-3,
