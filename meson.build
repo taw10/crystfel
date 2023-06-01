@@ -6,6 +6,7 @@ project('crystfel', 'c',
         default_options: ['buildtype=debugoptimized'])
 
 libcrystfel_api_version = 16
+crystfel_rpath = '$ORIGIN/../lib64/:$ORIGIN/../lib:$ORIGIN/../../asapo-libraries/lib:$ORIGIN/../../asapo-libraries/lib64'
 
 add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
 
@@ -119,7 +120,7 @@ executable('compare_hkl',
            ['src/compare_hkl.c', versionc],
            dependencies: [mdep, libcrystfeldep, gsldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # check_hkl
 executable('check_hkl',
@@ -138,21 +139,21 @@ partialator = executable('partialator',
                           versionc],
                          dependencies: [mdep, libcrystfeldep, gsldep, pthreaddep],
                          install: true,
-                         install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+                         install_rpath: crystfel_rpath)
 
 # ambigator
 executable('ambigator',
            ['src/ambigator.c', versionc],
            dependencies: [mdep, libcrystfeldep, gsldep, hdf5dep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # whirligig
 executable('whirligig',
            ['src/whirligig.c', versionc],
            dependencies: [mdep, libcrystfeldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
@@ -170,7 +171,7 @@ indexamajig = executable('indexamajig', indexamajig_sources,
                          dependencies: [mdep, libcrystfeldep, gsldep,
                                         pthreaddep, zmqdep, asapodep, asapoproddep],
                          install: true,
-                         install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+                         install_rpath: crystfel_rpath)
 
 # make_pixelmap
 if hdf5dep.found()
@@ -178,7 +179,7 @@ if hdf5dep.found()
              ['src/make_pixelmap.c', versionc],
              dependencies: [mdep, libcrystfeldep, hdf5dep],
              install: true,
-             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+             install_rpath: crystfel_rpath)
 endif
 
 
@@ -213,7 +214,7 @@ if gtkdep.found()
   executable('crystfel', gui_sources, gresources,
              dependencies: [mdep, libcrystfeldep, gtkdep, gsldep],
              install: true,
-             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+             install_rpath: crystfel_rpath)
 
   install_data(['data/crystfel.desktop'],
                install_dir: get_option('datadir') / 'applications')
@@ -225,7 +226,7 @@ executable('render_hkl',
            ['src/render_hkl.c', versionc],
            dependencies: [mdep, libcrystfeldep, cairodep, gsldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # cell_explorer
 if gtkdep.found()
@@ -233,7 +234,7 @@ if gtkdep.found()
              ['src/cell_explorer.c', 'src/multihistogram.c', versionc],
              dependencies: [mdep, libcrystfeldep, gtkdep, gsldep],
              install: true,
-             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+             install_rpath: crystfel_rpath)
 
   install_data(['data/cell_explorer.desktop'],
                install_dir: get_option('datadir') / 'applications')
