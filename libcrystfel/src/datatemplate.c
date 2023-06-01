@@ -2144,6 +2144,16 @@ static int group_center(DataTemplate *dtempl,
 	}
 }
 
+
+static void rot(double *x, double *y, double cx, double cy, double ang)
+{
+	double nx, ny;
+	nx = cx + (*x-cx)*cos(ang) - (*y-cy)*sin(ang);
+	ny = cy + (*x-cx)*sin(ang) + (*y-cy)*cos(ang);
+	*x = nx;  *y = ny;
+}
+
+
 static int rotate_all_panels(DataTemplate *dtempl,
                              struct panel_group_template *group,
                              char axis, double ang,
@@ -2151,37 +2161,43 @@ static int rotate_all_panels(DataTemplate *dtempl,
 {
 	if ( group->n_children == 0 ) {
 
+		double cnz_px;
 		struct panel_template *p = find_panel_by_name(dtempl, group->name);
 		if ( p == NULL ) return 1;
+
+		cx /= p->pixel_pitch;
+		cy /= p->pixel_pitch;
+		cz /= p->pixel_pitch;
+		cnz_px = p->cnz_offset / p->pixel_pitch;
+
+		STATUS("%f %f %f\n", cx, cy, cz);
+		STATUS("%f\n", cnz_px);
 
 		switch ( axis )
 		{
 			case 'x':
-			p->cnz_offset =  p->cnz_offset*cos(ang) + p->cny*sin(ang);
-			p->cny = -p->cnz_offset*sin(ang) + p->cny*cos(ang);
-			p->fsz =  p->fsz*cos(ang) + p->fsy*sin(ang);
-			p->fsy = -p->fsz*sin(ang) + p->fsy*cos(ang);
-			p->ssz =  p->ssz*cos(ang) + p->ssy*sin(ang);
-			p->ssy = -p->ssz*sin(ang) + p->ssy*cos(ang);
+			rot(&cnz_px, &p->cny, cz, cy, ang);
+			rot(&p->fsz, &p->fsy, 0, 0, ang);
+			rot(&p->ssz, &p->ssy, 0, 0, ang);
+			p->cnz_offset = cnz_px * p->pixel_pitch;
 			break;
 
 			case 'y':
-			p->cnx =  p->cnx*cos(ang) + p->cnz_offset*sin(ang);
-			p->cnz_offset = -p->cnx*sin(ang) + p->cnz_offset*cos(ang);
-			p->fsx =  p->fsx*cos(ang) + p->fsz*sin(ang);
-			p->fsz = -p->fsx*sin(ang) + p->fsz*cos(ang);
-			p->ssx =  p->ssx*cos(ang) + p->ssz*sin(ang);
-			p->ssz = -p->ssx*sin(ang) + p->ssz*cos(ang);
+			rot(&p->cnx, &cnz_px, cx, cz, ang);
+			rot(&p->fsx, &p->fsz, 0, 0, ang);
+			rot(&p->ssx, &p->ssz, 0, 0, ang);
+			p->cnz_offset = cnz_px * p->pixel_pitch;
 			break;
 
 			case 'z':
-			p->cnx =  p->cnx*cos(ang) + p->cny*sin(ang);
-			p->cny = -p->cnx*sin(ang) + p->cny*cos(ang);
-			p->fsx =  p->fsx*cos(ang) + p->fsy*sin(ang);
-			p->fsy = -p->fsx*sin(ang) + p->fsy*cos(ang);
-			p->ssx =  p->ssx*cos(ang) + p->ssy*sin(ang);
-			p->ssy = -p->ssx*sin(ang) + p->ssy*cos(ang);
+			rot(&p->cnx, &p->cny, cx, cy, ang);
+			rot(&p->fsx, &p->fsy, 0, 0, ang);
+			rot(&p->ssx, &p->ssy, 0, 0, ang);
 			break;
+
+			default:
+			ERROR("Invalid rotation axis '%c'\n", axis);
+			return 1;
 		}
 
 		return 0;
