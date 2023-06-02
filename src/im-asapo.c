@@ -339,6 +339,7 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
  * send a placeholder */
 void im_asapo_send(struct im_asapo *a, struct image *image, int hit)
 {
+	if ( a->producer == NULL ) return;
 	profile_start("asapo-send");
 	if ( hit ) {
 		send_real(a, image);
