@@ -99,7 +99,9 @@ struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 		ERROR("ASAP::O stream not specified.\n");
 		return NULL;
 	}
-	if ( strcmp(params->stream, params->output_stream) == 0 ) {
+	if ( (params->output_stream != NULL)
+	  && (strcmp(params->stream, params->output_stream) == 0) )
+	{
 		ERROR("ASAP::O input and output streams cannot be the same.\n");
 		return NULL;
 	}
