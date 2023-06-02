@@ -43,7 +43,7 @@ struct im_asapo_params
 	char *source;
 	char *stream;
 	int wait_for_stream;
-	char *output_stream;
+	int write_output_stream;
 };
 
 struct im_asapo;

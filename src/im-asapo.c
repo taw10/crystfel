@@ -54,7 +54,6 @@ struct im_asapo
 	AsapoProducerHandle producer;
 	AsapoStringHandle group_id;
 	int wait_for_stream;
-	char *output_stream;
 };
 
 
@@ -79,8 +78,7 @@ static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
 	AsapoSourceCredentialsHandle cred;
 	AsapoErrorHandle err = asapo_new_handle();
 
-	if ( params->output_stream == NULL ) {
-		a->output_stream = NULL;
+	if ( !params->write_output_stream ) {
 		a->producer = NULL;
 		return 0;
 	}
@@ -98,6 +96,7 @@ static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
 	                                       "",  /* beamline */
 	                                       source,
 	                                       params->token);
+	STATUS("Writing hits-only output stream as data source '%s'\n", source);
 	free(source);
 
 	a->producer = asapo_create_producer(params->endpoint,
@@ -115,7 +114,6 @@ static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
 	}
 
 	asapo_free_handle(&err);
-	a->output_stream = strdup(params->output_stream);
 	return 0;
 }
 
@@ -144,12 +142,6 @@ struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 	}
 	if ( params->stream == NULL ) {
 		ERROR("ASAP::O stream not specified.\n");
-		return NULL;
-	}
-	if ( (params->output_stream != NULL)
-	  && (strcmp(params->stream, params->output_stream) == 0) )
-	{
-		ERROR("ASAP::O input and output streams cannot be the same.\n");
 		return NULL;
 	}
 
@@ -301,7 +293,7 @@ static void send_real(struct im_asapo *a, struct image *image)
                                              0);  /* Auto ID */
 
 	asapo_producer_send(a->producer, header, image->data_block,
-	                    kDefaultIngestMode, a->output_stream,
+	                    kDefaultIngestMode, a->stream,
 	                    send_callback, &err);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Couldn't ASAP::O message", err);
@@ -329,7 +321,7 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
                                              0);  /* Auto ID */
 
 	asapo_producer_send(a->producer, header, "SKIPPED",
-	                    kDefaultIngestMode, a->output_stream,
+	                    kDefaultIngestMode, a->stream,
 	                    send_callback, &err);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Couldn't ASAP::O message", err);
