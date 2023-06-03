@@ -35,6 +35,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <asapo/consumer_c.h>
 #include <asapo/producer_c.h>
 
@@ -112,6 +113,8 @@ static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
 		asapo_free_handle(&err);
 		return 1;
 	}
+
+	asapo_producer_set_log_level(a->producer, Debug);
 
 	asapo_free_handle(&err);
 	return 0;
@@ -294,6 +297,10 @@ static void send_real(struct im_asapo *a, struct image *image)
                                              0,
                                              0);  /* Auto ID */
 
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	STATUS("sent %s at %lli . %lli\n", filename, tv.tv_sec, tv.tv_usec);
+
 	err = asapo_new_handle();
 	asapo_producer_send(a->producer, header, image->data_block,
 	                    kDefaultIngestMode, a->stream,
@@ -318,6 +325,10 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
 
 	snprintf(filename, 1024, "processed/%s_hits/%s-%i.placeholder",
 	         a->stream, a->stream, image->serial);
+
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	STATUS("sent %s at %lli . %lli\n", filename, tv.tv_sec, tv.tv_usec);
 
         header = asapo_create_message_header(image->serial,
                                              8,   /* strlen("SKIPPED"+\0) */
