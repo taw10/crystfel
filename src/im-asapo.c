@@ -301,7 +301,7 @@ static void send_real(struct im_asapo *a, struct image *image)
 	                    kDefaultIngestMode, a->stream,
 	                    send_callback, &err);
 	if ( asapo_is_error(err) ) {
-		show_asapo_error("Couldn't ASAP::O message", err);
+		show_asapo_error("Couldn't send ASAP::O message", err);
 		asapo_free_handle(&header);
 		asapo_free_handle(&err);
 		return;
@@ -334,7 +334,7 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
 	                    kDefaultIngestMode, a->stream,
 	                    send_callback, &err);
 	if ( asapo_is_error(err) ) {
-		show_asapo_error("Couldn't ASAP::O message", err);
+		show_asapo_error("Couldn't send ASAP::O message", err);
 		asapo_free_handle(&header);
 		asapo_free_handle(&err);
 		return;
