@@ -273,8 +273,6 @@ static void send_callback(void *a, AsapoRequestCallbackPayloadHandle payload,
 {
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("ASAP::O send error", err);
-	} else if ( err != NULL ) {
-		show_asapo_error("ASAP::O send warning", err);
 	}
 }
 
