@@ -103,7 +103,7 @@ static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
 	                                    1,      /* Number of sender threads */
 	                                    kTcp,
 	                                    cred,
-	                                    60000,  /* Timeout */
+	                                    30000,  /* Timeout */
 	                                    &err);
 
 	if ( asapo_is_error(err) ) {
