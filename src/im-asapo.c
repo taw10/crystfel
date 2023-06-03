@@ -283,17 +283,20 @@ static void send_real(struct im_asapo *a, struct image *image)
 {
 	AsapoMessageHeaderHandle header;
 	AsapoErrorHandle err;
+	char filename[1024];
 
-	err = asapo_new_handle();
+	snprintf(filename, 1024, "processed/%s_hits/%s-%i.data",
+	         a->stream, a->stream, image->serial);
 
         header = asapo_create_message_header(image->serial,
                                              image->data_block_size,
-                                             image->filename,
+                                             filename,
                                              image->meta_data,
                                              0,   /* Dataset substream */
                                              0,
                                              0);  /* Auto ID */
 
+	err = asapo_new_handle();
 	asapo_producer_send(a->producer, header, image->data_block,
 	                    kDefaultIngestMode, a->stream,
 	                    send_callback, &err);
@@ -313,17 +316,20 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
 {
 	AsapoMessageHeaderHandle header;
 	AsapoErrorHandle err;
+	char filename[1024];
 
-	err = asapo_new_handle();
+	snprintf(filename, 1024, "processed/%s_hits/%s-%i.placeholder",
+	         a->stream, a->stream, image->serial);
 
         header = asapo_create_message_header(image->serial,
                                              8,   /* strlen("SKIPPED"+\0) */
-                                             image->filename,
+                                             filename,
                                              image->meta_data,
                                              0,   /* Dataset substream */
                                              0,
                                              0);  /* Auto ID */
 
+	err = asapo_new_handle();
 	asapo_producer_send(a->producer, header, "SKIPPED",
 	                    kDefaultIngestMode, a->stream,
 	                    send_callback, &err);
