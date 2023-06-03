@@ -100,7 +100,7 @@ static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
 	free(source);
 
 	a->producer = asapo_create_producer(params->endpoint,
-	                                    1,      /* Number of sender threads */
+	                                    8,      /* Number of sender threads */
 	                                    kTcp,
 	                                    cred,
 	                                    30000,  /* Timeout */
