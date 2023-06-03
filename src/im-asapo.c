@@ -284,6 +284,8 @@ static void send_real(struct im_asapo *a, struct image *image)
 	AsapoMessageHeaderHandle header;
 	AsapoErrorHandle err;
 
+	err = asapo_new_handle();
+
         header = asapo_create_message_header(image->serial,
                                              image->data_block_size,
                                              image->filename,
@@ -312,6 +314,8 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
 	AsapoMessageHeaderHandle header;
 	AsapoErrorHandle err;
 
+	err = asapo_new_handle();
+
         header = asapo_create_message_header(image->serial,
                                              8,   /* strlen("SKIPPED"+\0) */
                                              image->filename,
@@ -339,6 +343,7 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
  * send a placeholder */
 void im_asapo_send(struct im_asapo *a, struct image *image, int hit)
 {
+	if ( a == NULL ) return;
 	if ( a->producer == NULL ) return;
 	profile_start("asapo-send");
 	if ( hit ) {
