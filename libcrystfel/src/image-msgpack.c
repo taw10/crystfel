@@ -426,7 +426,7 @@ static int load_msgpack_data(struct panel_template *p,
 				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
 				data[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
 				if ( !isfinite(in_data[idx]) ) {
-					bad[idx] = 1;
+					bad[fs+ss*PANEL_WIDTH(p)] = 1;
 				}
 			}
 		}
