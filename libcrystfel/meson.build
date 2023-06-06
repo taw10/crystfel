@@ -66,7 +66,10 @@ if ccp4dep.found()
   conf_data.set10('HAVE_LIBCCP4', true)
 endif
 
-msgpackdep = dependency('msgpack', required: false)
+msgpackdep = dependency('msgpack-c', required: false)
+if not msgpackdep.found()
+  msgpackdep = dependency('msgpack', required: false)
+endif
 if msgpackdep.found()
   conf_data.set10('HAVE_MSGPACK', true)
 endif
