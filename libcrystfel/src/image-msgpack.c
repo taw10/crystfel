@@ -326,6 +326,15 @@ static int load_msgpack_data(struct panel_template *p,
 	msgpack_object *data_obj;
 	char *dtype;
 	int data_size_fs, data_size_ss;
+	int i;
+
+	for ( i=0; i<MAX_DIMS; i++ ) {
+		if ( (p->dims[i] >= 0) || (p->dims[i] == DIM_PLACEHOLDER) ) {
+			ERROR("Only a single 2D array is supported via MsgPack.\n");
+			ERROR("Check the geometry file and remove 'dimX = %' and 'dimX = <n>'\n");
+			return 1;
+		}
+	}
 
 	obj = find_msgpack_kv(map_obj, p->data);
 	if ( obj == NULL ) {
