@@ -199,6 +199,11 @@ Receive data via the specified ASAP::O endpoint.  This option and \fB--zmq-input
 Authentication token, beamtime, data source, consumer group and stream, respectively, for ASAP::O data.
 
 .PD 0
+.IP \fB--asapo-output-stream=\fIstream\fR
+.PD
+Send an output stream via ASAP::O.  For non-hits, a small placeholder will be sent.
+
+.PD 0
 .IP \fB--asapo-wait-for-stream
 .PD
 If the ASAP::O stream does not exist, wait for it to be appear.  Without this option, indexamajig will exit immediately if the stream is not found.

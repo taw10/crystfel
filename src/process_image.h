@@ -45,6 +45,7 @@ struct index_args;
 #include "im-sandbox.h"
 #include "peaks.h"
 #include "image.h"
+#include "im-asapo.h"
 
 
 /* Information about the indexing process which is common to all patterns */
@@ -113,7 +114,8 @@ struct pattern_args
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
                           int cookie, const char *tmpdir, int serial,
-                          struct sb_shm *sb_shared, char *last_task);
+                          struct sb_shm *sb_shared, char *last_task,
+                          struct im_asapo *asapostuff);
 
 
 #endif	/* PROCESS_IMAGE_H */
