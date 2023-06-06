@@ -41,8 +41,6 @@
 #define CLOCK_MONOTONIC_RAW (CLOCK_MONOTONIC)
 #endif
 
-#define MAX_PROFILE_CHILDREN 256
-
 struct _profile_block
 {
 	char *name;
@@ -52,8 +50,9 @@ struct _profile_block
 	double total_time;
 
 	struct _profile_block *parent;
-	struct _profile_block *children[MAX_PROFILE_CHILDREN];
+	struct _profile_block **children;
 	int n_children;
+	int max_children;
 };
 
 
@@ -80,6 +79,8 @@ static struct _profile_block *start_profile_block(const char *name)
 		return NULL;
 	}
 	b->n_children = 0;
+	b->max_children = 0;
+	b->children = NULL;
 
 #ifdef HAVE_CLOCK_GETTIME
 	struct timespec tp;
@@ -133,12 +134,16 @@ static char *format_profile_block(struct _profile_block *b)
 {
 	int i;
 	size_t total_len = 0;
-	char *subbufs[MAX_PROFILE_CHILDREN];
+	char **subbufs;
 	char *full_buf;
+
+	subbufs = malloc(b->n_children * sizeof(char *));
+	if ( subbufs == NULL ) return NULL;
 
 	total_len = 32 + strlen(b->name);
 	for ( i=0; i<b->n_children; i++ ) {
 		subbufs[i] = format_profile_block(b->children[i]);
+		if ( subbufs[i] == NULL ) return NULL;
 		total_len += 1 + strlen(subbufs[i]);
 	}
 
@@ -150,6 +155,8 @@ static char *format_profile_block(struct _profile_block *b)
 		free(subbufs[i]);
 	}
 	strcat(full_buf, ")");
+
+	free(subbufs);
 
 	return full_buf;
 }
@@ -207,12 +214,16 @@ void profile_start(const char *name)
 
 	if ( pd == NULL ) return;
 
-	if ( pd->current->n_children >= MAX_PROFILE_CHILDREN ) {
-		fprintf(stderr, "Too many profile children "
-		                "(opening %s inside %s).\n",
-		                pd->current->name, name);
-		fflush(stderr);
-		abort();
+	if ( pd->current->n_children >= pd->current->max_children ) {
+		struct _profile_block **nblock;
+		int nmax = pd->current->n_children + 64;
+		nblock = realloc(pd->current->children, nmax*sizeof(struct _profile_block));
+		if ( nblock == NULL ) {
+			fprintf(stderr, "Failed to allocate profiling record.  Try again without --profile.\n");
+			abort();
+		}
+		pd->current->children = nblock;
+		pd->current->max_children = nmax;
 	}
 
 	b = start_profile_block(name);
