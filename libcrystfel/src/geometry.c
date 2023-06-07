@@ -1138,7 +1138,7 @@ double x_gradient(int param, Reflection *refl, UnitCell *cell,
 		return 0;
 
 		case GPARAM_CLEN :
-		return xl / (kpred+zl);
+		return -xl / (kpred+zl);
 
 	}
 
@@ -1199,7 +1199,7 @@ double y_gradient(int param, Reflection *refl, UnitCell *cell,
 		return -1;
 
 		case GPARAM_CLEN :
-		return yl / (kpred+zl);
+		return -yl / (kpred+zl);
 
 	}
 
