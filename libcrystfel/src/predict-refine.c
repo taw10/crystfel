@@ -39,10 +39,7 @@
 #include "cell-utils.h"
 #include "predict-refine.h"
 #include "profile.h"
-
-#ifdef HAVE_MILLEPEDE
-#include <mille_c_wrap.h>
-#endif
+#include "crystfel-mille.h"
 
 
 /** \file predict-refine.h */
@@ -70,15 +67,6 @@ static const enum gparam rv[] =
 	GPARAM_DETY,
 };
 
-struct reflpeak {
-	Reflection *refl;
-	struct imagefeature *peak;
-	double Ih;   /* normalised */
-	struct detgeom_panel *panel;  /* panel the reflection appears on
-                                       * (we assume this never changes) */
-};
-
-
 static void twod_mapping(double fs, double ss, double *px, double *py,
                          struct detgeom_panel *p, double dx, double dy)
 {
@@ -99,8 +87,8 @@ static double r_dev(struct reflpeak *rp)
 }
 
 
-static double x_dev(struct reflpeak *rp, struct detgeom *det,
-                    double dx, double dy)
+double x_dev(struct reflpeak *rp, struct detgeom *det,
+             double dx, double dy)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
@@ -112,8 +100,8 @@ static double x_dev(struct reflpeak *rp, struct detgeom *det,
 }
 
 
-static double y_dev(struct reflpeak *rp, struct detgeom *det,
-                    double dx, double dy)
+double y_dev(struct reflpeak *rp, struct detgeom *det,
+             double dx, double dy)
 {
 	/* Peak position term */
 	double xpk, ypk, xh, yh;
@@ -573,76 +561,6 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 }
 
 
-static void write_mille(Mille *mille, int n, UnitCell *cell,
-                        struct reflpeak *rps, struct image *image,
-                        double dx, double dy)
-{
-#ifdef HAVE_MILLEPEDE
-	int i;
-	float local_gradients[9];
-	float global_gradients[6];
-	int labels[6];
-
-	profile_start("mille-calc");
-
-	/* Spot x-position terms */
-	for ( i=0; i<n; i++ ) {
-
-		int j;
-		for ( j=0; j<9; j++ ) {
-			local_gradients[j] = x_gradient(rv[j], rps[i].refl,
-			                                cell, rps[i].panel);
-		}
-
-		global_gradients[0] = x_gradient(GPARAM_DETX, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[1] = x_gradient(GPARAM_DETY, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[2] = x_gradient(GPARAM_CLEN, rps[i].refl,
-		                                 cell, rps[i].panel);
-		labels[0] = 1;
-		labels[1] = 2;
-		labels[2] = 3;
-
-		mille_add_measurement(mille,
-		                      9, local_gradients,
-		                      3, global_gradients, labels,
-		                      x_dev(&rps[i], image->detgeom, dx, dy),
-		                      0.65*rps[i].panel->pixel_pitch);
-	}
-
-	/* Spot y-position terms */
-	for ( i=0; i<n; i++ ) {
-
-		int j;
-		for ( j=0; j<9; j++ ) {
-			local_gradients[j] = y_gradient(rv[j], rps[i].refl,
-			                                cell, rps[i].panel);
-		}
-
-		global_gradients[0] = y_gradient(GPARAM_DETX, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[1] = y_gradient(GPARAM_DETY, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[2] = y_gradient(GPARAM_CLEN, rps[i].refl,
-		                                 cell, rps[i].panel);
-		labels[0] = 1;
-		labels[1] = 2;
-		labels[2] = 3;
-
-		mille_add_measurement(mille,
-		                      9, local_gradients,
-		                      3, global_gradients, labels,
-		                      y_dev(&rps[i], image->detgeom, dx, dy),
-		                      0.65*rps[i].panel->pixel_pitch);
-	}
-
-	profile_end("mille-calc");
-
-#endif /* HAVE_MILLEPEDE */
-}
-
-
 int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 {
 	int n;
@@ -725,10 +643,15 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	         pred_residual(rps, n, image->detgeom, total_x, total_y));
 	crystal_add_notes(cr, tmp);
 
+	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
+		profile_start("mille-calc");
 		write_mille(mille, n, crystal_get_cell(cr), rps, image,
-		            total_x, total_y);
+		            total_x, total_y,
+		            image->detgeom->top_group, 0, 0);
+		profile_end("mille-calc");
 	}
+	#endif
 
 	crystal_set_det_shift(cr, total_x, total_y);
 
@@ -741,7 +664,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 		crystal_set_det_shift(cr, orig_shift_x, orig_shift_y);
 		#ifdef HAVE_MILLEPEDE
 		if ( mille != NULL ) {
-			mille_delete_last_record(mille);
+			crystfel_mille_delete_last_record(mille);
 		}
 		#endif
 		return 1;
@@ -750,30 +673,10 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
 		profile_start("mille-write");
-		mille_write_record(mille);
+		crystfel_mille_write_record(mille);
 		profile_end("mille-write");
 	}
 	#endif
 
 	return 0;
-}
-
-
-Mille *crystfel_mille_new(const char *outFileName,
-                          int asBinary,
-                          int writeZero)
-{
-	#ifdef HAVE_MILLEPEDE
-	return mille_new(outFileName, asBinary, writeZero);
-	#else
-	return NULL;
-	#endif
-}
-
-
-void crystfel_mille_free(Mille *m)
-{
-	#ifdef HAVE_MILLEPEDE
-	mille_free(m);
-	#endif
 }

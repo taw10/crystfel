@@ -161,6 +161,10 @@ libcrystfel_sources = ['src/image.c',
                        symop_lex_ch,
                        symop_parse_ch]
 
+if millepededep.found()
+  libcrystfel_sources += 'src/crystfel-mille.c'
+endif
+
 configure_file(input: 'libcrystfel-config.h.meson.in',
                output: 'libcrystfel-config.h',
                configuration: conf_data)
@@ -205,7 +209,8 @@ install_headers(['src/reflist.h',
                  'src/datatemplate.h',
                  'src/colscale.h',
                  'src/detgeom.h',
-                 'src/fom.h'],
+                 'src/fom.h',
+                 'src/crystfel-mille.h'],
                 subdir: 'crystfel')
 
 # API documentation (Doxygen)

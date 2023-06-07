@@ -365,13 +365,14 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		}
 	}
 
+	mille = NULL;
+	#ifdef HAVE_MILLEPEDE
 	if ( iargs->mille ) {
 		char tmp[64];
 		snprintf(tmp, 63, "mille-data-%i.bin", cookie);
 		mille = crystfel_mille_new(tmp, 1, 0);
-	} else {
-		mille = NULL;
 	}
+	#endif
 
 	while ( !allDone ) {
 
@@ -546,7 +547,9 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		free(pargs.event);
 	}
 
+	#ifdef HAVE_MILLEPEDE
 	crystfel_mille_free(mille);
+	#endif
 
 	/* These are both no-ops if argument is NULL */
 	im_zmq_shutdown(zmqstuff);

@@ -29,24 +29,31 @@
 #ifndef PREDICT_REFINE_H
 #define PREDICT_REFINE_H
 
+struct reflpeak;
 #include "crystal.h"
+#include "crystfel-mille.h"
 
-struct image;
-
-typedef void *Mille;
+struct reflpeak {
+	Reflection *refl;
+	struct imagefeature *peak;
+	double Ih;   /* normalised */
+	struct detgeom_panel *panel;  /* panel the reflection appears on
+                                       * (we assume this never changes) */
+};
 
 /**
  * \file predict-refine.h
  * Prediction refinement: refinement of indexing solutions before integration.
  */
 
-extern Mille *crystfel_mille_new(const char *outFileName,
-                                 int asBinary,
-                                 int writeZero);
-extern void crystfel_mille_free(Mille *m);
-
 extern int refine_prediction(struct image *image, Crystal *cr, Mille *mille);
+
 extern int refine_radius(Crystal *cr, struct image *image);
 
+extern double x_dev(struct reflpeak *rp, struct detgeom *det,
+                    double dx, double dy);
+
+extern double y_dev(struct reflpeak *rp, struct detgeom *det,
+                    double dx, double dy);
 
 #endif	/* PREDICT_REFINE_H */
