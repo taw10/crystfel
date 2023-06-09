@@ -303,7 +303,7 @@ static void send_real(struct im_asapo *a, struct image *image)
 
 	err = asapo_new_handle();
 	asapo_producer_send(a->producer, header, image->data_block,
-	                    kDefaultIngestMode, a->stream,
+	                    kTransferData | kStoreInDatabase, a->stream,
 	                    send_callback, &err);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Couldn't send ASAP::O message", err);
