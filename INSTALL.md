@@ -52,6 +52,8 @@ available on [their website](http://apptainer.org/).
 Installation via package manager
 --------------------------------
 
+### Nix
+
 CrystFEL is available through <a href="https://nixos.org/">NixOS</a> since
 22.05, for x86_64, Darwin and aarch64.  Two packages are
 available.  Package `crystfel` contains all tools including the GUI,
@@ -62,8 +64,23 @@ To install via NixOS, simply add the package globally to your
 `environment.systemPackages`, or enter a temporary shell via `nix shell
 nixpkgs#crystfel` to have all CrystFEL tools in your `PATH`.
 
-Packages for other systems (e.g. <a href="https://brew.sh/">Homebrew</a>) are
-under development!
+### Homebrew
+
+To install the development version of CrystFEL using
+<a href="https://brew.sh/">Homebrew</a>, run the following:
+```
+$ git clone https://gitlab.desy.de/thomas.white/crystfel.git
+$ cd crystfel
+$ brew install -v -s ./crystfel.rb --HEAD
+```
+Normally, CrystFEL's build system would automatically download and install
+certain dependencies, notably (among others) XGandalf, MTZ output, PinkIndexer
+and PeakFinder9.  However, Homebrew prefers that packages do not do this.
+Therefore, unless you've installed them separately, the CrystFEL installation
+made this way will lack some features.
+
+We hope to contribute the Homebrew formula to the main repository soon, so that
+you can install CrystFEL with a simple `brew install crystfel`.
 
 
 Dependencies
