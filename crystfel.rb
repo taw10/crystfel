@@ -18,7 +18,9 @@ class Crystfel < Formula
   depends_on 'meson' => :build
   depends_on 'ninja' => :build
   depends_on 'pkg-config' => :build
-  depends_on 'argp-standalone' => :build
+  if OS.mac? 
+      depends_on 'argp-standalone' => :build
+  end
   depends_on 'cairo'
   depends_on 'fftw'
   depends_on 'gdk-pixbuf'
@@ -31,9 +33,13 @@ class Crystfel < Formula
 
   def install
       args = std_meson_args
+      args.delete_at(args.index("--wrap-mode=nofallback"))
+      puts args
       if OS.mac? 
         args << "-Dc_args=-I/opt/argp-standalone/include"
+        args << "-Dcpp_args=-I/opt/argp-standalone/include"
         args << "-Dc_link_args=-L/usr/local/opt/argp-standalone/lib -largp"
+        args << "-Dcpp_link_args=-L/usr/local/opt/argp-standalone/lib -largp"
       end
       system 'meson', 'setup', *args, 'build'
       system 'ninja','-C','build'
