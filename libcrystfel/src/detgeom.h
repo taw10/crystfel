@@ -83,6 +83,9 @@ struct detgeom_panel
 	int         w;
 	int         h;
 	/*@}*/
+
+	/** \name Leaf group containing this panel (only) */
+	const struct detgeom_panel_group *group;
 };
 
 
@@ -91,8 +94,12 @@ struct detgeom_panel_group
 	char *name;
 	int n_children;
 
+	struct detgeom_panel_group *parent;
+	int hierarchy_level;
+	int member_index;
+
 	/* If n_children > 0, here are the child groups */
-	const struct detgeom_panel_group **children;
+	struct detgeom_panel_group **children;
 
 	/* If n_children == 0, this is a leaf node, so: */
 	struct detgeom_panel *panel;

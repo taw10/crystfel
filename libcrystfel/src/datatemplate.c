@@ -1807,8 +1807,10 @@ static int detector_flat(const DataTemplate *dtempl)
 
 
 static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
-                                              const struct panel_group_template *gt,
-                                              struct detgeom *detgeom)
+                                              struct panel_group_template *gt,
+                                              struct detgeom *detgeom,
+                                              int hierarchy_level,
+                                              int member_index)
 {
 	struct detgeom_panel_group *gr;
 
@@ -1829,6 +1831,7 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 			ERROR("Couldn't find panel %s for leaf group\n", gr->name);
 			return NULL;
 		}
+		gr->panel->group = gr;
 
 	} else {
 
@@ -1842,12 +1845,16 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 		}
 
 		for ( i=0; i<gt->n_children; i++ ) {
-			gr->children[i] = walk_group(dtempl, gt->children[i], detgeom);
+			gr->children[i] = walk_group(dtempl, gt->children[i],
+			                             detgeom, hierarchy_level+1, i);
 			if ( gr->children[i] == NULL ) return NULL;
+			gr->children[i]->parent = gr;
 		}
 
 	}
 
+	gr->member_index = member_index;
+	gr->hierarchy_level = hierarchy_level;
 	return gr;
 }
 
@@ -1976,7 +1983,8 @@ struct detgeom *create_detgeom(struct image *image,
 
 	}
 
-	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom);
+	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom, 0, 0);
+	detgeom->top_group->parent = NULL;
 
 	return detgeom;
 }
