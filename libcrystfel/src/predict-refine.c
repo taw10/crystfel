@@ -67,8 +67,9 @@ static const enum gparam rv[] =
 	GPARAM_DETY,
 };
 
-static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct detgeom_panel *p, double dx, double dy)
+
+void twod_mapping(double fs, double ss, double *px, double *py,
+                  struct detgeom_panel *p, double dx, double dy)
 {
 	double xs, ys;
 

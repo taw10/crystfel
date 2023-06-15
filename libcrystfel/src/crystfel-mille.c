@@ -62,9 +62,12 @@ int mille_label(int hierarchy_level, int member_index, char param)
 
 	label = 100000*hierarchy_level + 100*member_index;
 	switch ( param ) {
-		case 'x' : return label+1;
-		case 'y' : return label+2;
-		case 'z' : return label+3;
+		case 'x' : return label+1;  /* x-shift */
+		case 'y' : return label+2;  /* y-shift */
+		case 'z' : return label+3;  /* z-shift */
+		case 'a' : return label+4;  /* Rotation around x */
+		case 'b' : return label+5;  /* Rotation around y */
+		case 'c' : return label+6;  /* Rotation around z */
 		default : abort();
 	}
 }
@@ -78,11 +81,28 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 	float global_gradients[64];
 	int labels[6];
 	int i;
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
 
 	for ( i=0; i<n; i++ ) {
 
+		signed int h, k, l;
+		double xl, yl, zl, kpred;
+		double xpk, ypk;
 		int j;
 		const struct detgeom_panel_group *group;
+
+		get_indices(rps[i].refl, &h, &k, &l);
+		kpred = get_kpred(rps[i].refl);
+		xl = h*asx + k*bsx + l*csx;
+		yl = h*asy + k*bsy + l*csy;
+		zl = h*asz + k*bsz + l*csz;
+
+		twod_mapping(rps[i].peak->fs, rps[i].peak->ss, &xpk, &ypk,
+		             rps[i].panel, dx, dy);
 
 		/* x terms: local */
 		for ( j=0; j<9; j++ ) {
@@ -99,12 +119,13 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'x');
 			j++;
 
-			global_gradients[j] = x_gradient(GPARAM_CLEN, rps[i].refl,
-			                                 cell, rps[i].panel);
+			global_gradients[j] = -xl / (kpred+zl);
 			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'z');
 			j++;
 
-			/* FIXME: Rotations */
+			global_gradients[j] = -(ypk - group->cy);
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'c');
+			j++;
 
 			group = group->parent;
 		}
@@ -130,12 +151,13 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'y');
 			j++;
 
-			global_gradients[j] = y_gradient(GPARAM_CLEN, rps[i].refl,
-			                                 cell, rps[i].panel);
+			global_gradients[j] = -yl / (kpred+zl);
 			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'z');
 			j++;
 
-			/* FIXME: Rotations */
+			global_gradients[j] = xpk - group->cx;
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'c');
+			j++;
 
 			group = group->parent;
 		}

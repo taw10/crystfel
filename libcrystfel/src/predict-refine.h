@@ -46,6 +46,9 @@ struct reflpeak {
  * Prediction refinement: refinement of indexing solutions before integration.
  */
 
+extern void twod_mapping(double fs, double ss, double *px, double *py,
+                         struct detgeom_panel *p, double dx, double dy);
+
 extern int refine_prediction(struct image *image, Crystal *cr, Mille *mille);
 
 extern int refine_radius(Crystal *cr, struct image *image);

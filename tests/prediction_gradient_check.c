@@ -41,19 +41,6 @@
 int checkrxy;
 
 
-static void twod_mapping(double fs, double ss, double *px, double *py,
-                         struct detgeom_panel *p)
-{
-	double xs, ys;
-
-	xs = fs*p->fsx + ss*p->ssx;
-	ys = fs*p->fsy + ss*p->ssy;
-
-	*px = (xs + p->cnx) * p->pixel_pitch;
-	*py = (ys + p->cny) * p->pixel_pitch;
-}
-
-
 static void scan(RefList *reflections, RefList *compare,
                  int *valid, long double *vals[3], int idx,
                  struct detgeom *det)
@@ -82,7 +69,7 @@ static void scan(RefList *reflections, RefList *compare,
 
 		get_detector_pos(refl2, &fs, &ss);
 		pn = get_panel_number(refl2);
-		twod_mapping(fs, ss, &xh, &yh, &det->panels[pn]);
+		twod_mapping(fs, ss, &xh, &yh, &det->panels[pn], 0, 0);
 
 		switch ( checkrxy ) {
 
