@@ -72,73 +72,80 @@ int mille_label(int hierarchy_level, int member_index, char param)
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
                  struct reflpeak *rps, struct image *image,
-                 double dx, double dy,
-                 const struct detgeom_panel_group *group,
-                 int hierarchy_level, int member_index)
+                 double dx, double dy)
 {
-	int i;
 	float local_gradients[9];
-	float global_gradients[6];
+	float global_gradients[64];
 	int labels[6];
+	int i;
 
-	/* Spot x-position terms */
 	for ( i=0; i<n; i++ ) {
 
 		int j;
+		const struct detgeom_panel_group *group;
+
+		/* x terms: local */
 		for ( j=0; j<9; j++ ) {
 			local_gradients[j] = x_gradient(rv[j], rps[i].refl,
 			                                cell, rps[i].panel);
 		}
 
-		global_gradients[0] = x_gradient(GPARAM_DETX, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[1] = x_gradient(GPARAM_DETY, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[2] = x_gradient(GPARAM_CLEN, rps[i].refl,
-		                                 cell, rps[i].panel);
-		labels[0] = mille_label(hierarchy_level, member_index, 'x');
-		labels[1] = mille_label(hierarchy_level, member_index, 'y');
-		labels[2] = mille_label(hierarchy_level, member_index, 'z');
+		/* x terms: global */
+		j = 0;
+		group = rps[i].panel->group;
+		while ( group != NULL ) {
+
+			global_gradients[j] = -1.0;
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'x');
+			j++;
+
+			global_gradients[j] = x_gradient(GPARAM_CLEN, rps[i].refl,
+			                                 cell, rps[i].panel);
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'z');
+			j++;
+
+			/* FIXME: Rotations */
+
+			group = group->parent;
+		}
 
 		mille_add_measurement(mille,
 		                      9, local_gradients,
-		                      3, global_gradients, labels,
+		                      j, global_gradients, labels,
 		                      x_dev(&rps[i], image->detgeom, dx, dy),
 		                      0.65*rps[i].panel->pixel_pitch);
-	}
 
-	/* Spot y-position terms */
-	for ( i=0; i<n; i++ ) {
-
-		int j;
+		/* y terms: local */
 		for ( j=0; j<9; j++ ) {
 			local_gradients[j] = y_gradient(rv[j], rps[i].refl,
 			                                cell, rps[i].panel);
 		}
 
-		global_gradients[0] = y_gradient(GPARAM_DETX, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[1] = y_gradient(GPARAM_DETY, rps[i].refl,
-		                                 cell, rps[i].panel);
-		global_gradients[2] = y_gradient(GPARAM_CLEN, rps[i].refl,
-		                                 cell, rps[i].panel);
-		labels[0] = mille_label(hierarchy_level, member_index, 'x');
-		labels[1] = mille_label(hierarchy_level, member_index, 'y');
-		labels[2] = mille_label(hierarchy_level, member_index, 'z');
+		/* y terms: global */
+		j = 0;
+		group = rps[i].panel->group;
+		while ( group != NULL ) {
+
+			global_gradients[j] = -1.0;
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'y');
+			j++;
+
+			global_gradients[j] = y_gradient(GPARAM_CLEN, rps[i].refl,
+			                                 cell, rps[i].panel);
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'z');
+			j++;
+
+			/* FIXME: Rotations */
+
+			group = group->parent;
+		}
 
 		mille_add_measurement(mille,
 		                      9, local_gradients,
-		                      3, global_gradients, labels,
-		                      y_dev(&rps[i], image->detgeom, dx, dy),
+		                      j, global_gradients, labels,
+		                      x_dev(&rps[i], image->detgeom, dx, dy),
 		                      0.65*rps[i].panel->pixel_pitch);
 	}
-
-	/* Next level of hierarchy */
-	for ( i=0; i<group->n_children; i++ ) {
-		write_mille(mille, n, cell, rps, image, dx, dy,
-		            group->children[i], hierarchy_level+1, i);
-	}
-
 }
 
 

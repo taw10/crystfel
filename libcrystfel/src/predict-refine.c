@@ -647,8 +647,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	if ( mille != NULL ) {
 		profile_start("mille-calc");
 		write_mille(mille, n, crystal_get_cell(cr), rps, image,
-		            total_x, total_y,
-		            image->detgeom->top_group, 0, 0);
+		            total_x, total_y);
 		profile_end("mille-calc");
 	}
 	#endif

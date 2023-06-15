@@ -50,9 +50,7 @@ extern int mille_label(int hierarchy_level, int member_index, char param);
 
 extern void write_mille(Mille *mille, int n, UnitCell *cell,
                         struct reflpeak *rps, struct image *image,
-                        double dx, double dy,
-                        const struct detgeom_panel_group *group,
-                        int hierarchy_level, int member_index);
+                        double dx, double dy);
 
 extern void crystfel_mille_delete_last_record(Mille *m);
 
