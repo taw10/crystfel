@@ -1984,7 +1984,12 @@ struct detgeom *create_detgeom(struct image *image,
 	}
 
 	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom, 0, 0);
-	detgeom->top_group->parent = NULL;
+	if ( detgeom->top_group != NULL ) {
+		detgeom->top_group->parent = NULL;
+	} else {
+		ERROR("Warning: Top-level panel group ('all') not found.  "
+		      "Geometry refinement will not be possible.\n");
+	}
 
 	return detgeom;
 }
