@@ -34,6 +34,7 @@ typedef void *Mille;
 #include "cell.h"
 #include "image.h"
 #include "predict-refine.h"
+#include "geometry.h"
 
 /**
  * \file crystfel-mille.h
@@ -46,7 +47,7 @@ extern Mille *crystfel_mille_new(const char *outFileName,
 
 extern void crystfel_mille_free(Mille *m);
 
-extern int mille_label(int hierarchy_level, int member_index, char param);
+extern int mille_label(int hierarchy_level, int member_index, enum gparam param);
 
 extern void write_mille(Mille *mille, int n, UnitCell *cell,
                         struct reflpeak *rps, struct image *image,

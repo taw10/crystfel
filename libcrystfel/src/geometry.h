@@ -83,6 +83,9 @@ enum gparam {
 	GPARAM_ANG1,  /* Out of plane rotation angles of crystal */
 	GPARAM_ANG2,
 	GPARAM_WAVELENGTH,
+	GPARAM_ROTX,  /* Detector panel rotation about +x */
+	GPARAM_ROTY,  /* Detector panel rotation about +y */
+	GPARAM_ROTZ,  /* Detector panel rotation about +z */
 
 	GPARAM_EOL    /* End of list */
 };

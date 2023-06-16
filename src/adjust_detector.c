@@ -58,12 +58,12 @@ static void show_help(const char *s)
 	       "  -p, --panel=p              Panel (or group) to move\n"
 	       "      --mm                   Interpret shifts as mm, not px\n"
 	       "\n"
-	       "  -a                         Rotation around x-axis (deg)\n"
-	       "  -b                         Rotation around y-axis (deg)\n"
-	       "  -c                         Rotation around z-axis (deg)\n"
-	       "  -x                         Shift in x direction\n"
-	       "  -y                         Shift in y direction\n"
-	       "  -z                         Shift in z direction\n"
+	       "  --rotx                     Rotation around x-axis (deg)\n"
+	       "  --roty                     Rotation around y-axis (deg)\n"
+	       "  --rotz                     Rotation around z-axis (deg)\n"
+	       "  --shiftx                   Shift in x direction (px, see above)\n"
+	       "  --shifty                   Shift in y direction (px, see above)\n"
+	       "  --shiftz                   Shift in z direction (px, see above)\n"
 	       "\n"
 	       "  -h, --help                 Display this help message\n"
 	       "      --version              Print version number and exit\n");
@@ -114,11 +114,18 @@ int main(int argc, char *argv[])
 		{"panel",              1, NULL,               'p'},
 		{"mm",                 0, NULL,                3},
 
+		{"shiftx",             1, NULL,                11},
+		{"shifty",             1, NULL,                12},
+		{"shiftz",             1, NULL,                13},
+		{"rotx",               1, NULL,                14},
+		{"roty",               1, NULL,                15},
+		{"rotz",               1, NULL,                16},
+
 		{0, 0, NULL, 0}
 	};
 
 	/* Short options */
-	while ((c = getopt_long(argc, argv, "hVo:g:i:l:p:x:y:z:a:b:c:",
+	while ((c = getopt_long(argc, argv, "hVo:g:i:l:p:",
 	                        longopts, NULL)) != -1)
 	{
 
@@ -151,27 +158,27 @@ int main(int argc, char *argv[])
 			mm = 1;
 			break;
 
-			case 'x' :
+			case 11 :
 			x_shift = parse_double(optarg, 'x');
 			break;
 
-			case 'y' :
+			case 12 :
 			y_shift = parse_double(optarg, 'y');
 			break;
 
-			case 'z' :
+			case 13 :
 			z_shift = parse_double(optarg, 'z');
 			break;
 
-			case 'a' :
+			case 14 :
 			x_rot = parse_double(optarg, 'a');
 			break;
 
-			case 'b' :
+			case 15 :
 			y_rot = parse_double(optarg, 'b');
 			break;
 
-			case 'c' :
+			case 16 :
 			z_rot = parse_double(optarg, 'c');
 			break;
 

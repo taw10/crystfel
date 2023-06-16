@@ -54,7 +54,7 @@ static const enum gparam rv[] =
 };
 
 
-int mille_label(int hierarchy_level, int member_index, char param)
+int mille_label(int hierarchy_level, int member_index, enum gparam param)
 {
 	int label;
 
@@ -62,12 +62,12 @@ int mille_label(int hierarchy_level, int member_index, char param)
 
 	label = 100000*hierarchy_level + 100*member_index;
 	switch ( param ) {
-		case 'x' : return label+1;  /* x-shift */
-		case 'y' : return label+2;  /* y-shift */
-		case 'z' : return label+3;  /* z-shift */
-		case 'a' : return label+4;  /* Rotation around x */
-		case 'b' : return label+5;  /* Rotation around y */
-		case 'c' : return label+6;  /* Rotation around z */
+		case GPARAM_DETX : return label+1;  /* x-shift */
+		case GPARAM_DETY : return label+2;  /* y-shift */
+		case GPARAM_CLEN : return label+3;  /* z-shift */
+		case GPARAM_ROTX : return label+4;  /* Rotation around x */
+		case GPARAM_ROTY : return label+5;  /* Rotation around y */
+		case GPARAM_ROTZ : return label+6;  /* Rotation around z */
 		default : abort();
 	}
 }
@@ -116,15 +116,15 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		while ( group != NULL ) {
 
 			global_gradients[j] = -1.0;
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'x');
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DETX);
 			j++;
 
 			global_gradients[j] = -xl / (kpred+zl);
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'z');
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_CLEN);
 			j++;
 
 			global_gradients[j] = -(ypk - group->cy);
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'c');
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_ROTZ);
 			j++;
 
 			group = group->parent;
@@ -148,15 +148,15 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		while ( group != NULL ) {
 
 			global_gradients[j] = -1.0;
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'y');
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DETY);
 			j++;
 
 			global_gradients[j] = -yl / (kpred+zl);
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'z');
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_CLEN);
 			j++;
 
 			global_gradients[j] = xpk - group->cx;
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, 'c');
+			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_ROTZ);
 			j++;
 
 			group = group->parent;
