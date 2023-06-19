@@ -1806,6 +1806,16 @@ static int detector_flat(const DataTemplate *dtempl)
 }
 
 
+static void add_dg_point(const struct detgeom_panel *p,
+                         int fs, int ss,
+                         double *tx, double *ty, double *tz)
+{
+	*tx += (p->cnx + fs*p->fsx + ss*p->ssx) * p->pixel_pitch;
+	*ty += (p->cny + fs*p->fsy + ss*p->ssy) * p->pixel_pitch;
+	*tz += (p->cnz + fs*p->fsz + ss*p->ssz) * p->pixel_pitch;
+}
+
+
 static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
                                               struct panel_group_template *gt,
                                               struct detgeom *detgeom,
@@ -1833,9 +1843,26 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 		}
 		gr->panel->group = gr;
 
+		/* Calculate and make a note of the panel center */
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		add_dg_point(gr->panel, 0, 0, &tx, &ty, &tz);
+		add_dg_point(gr->panel, gr->panel->w, 0, &tx, &ty, &tz);
+		add_dg_point(gr->panel, 0, gr->panel->h, &tx, &ty, &tz);
+		add_dg_point(gr->panel, gr->panel->w, gr->panel->h, &tx, &ty, &tz);
+
+		gr->cx = tx / 4.0;
+		gr->cy = ty / 4.0;
+		gr->cz = tz / 4.0;
+
 	} else {
 
 		int i;
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
 
 		gr->panel = NULL;
 		gr->children = malloc(gt->n_children*sizeof(struct detgeom_panel_group *));
@@ -1849,7 +1876,14 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 			                             detgeom, hierarchy_level+1, i);
 			if ( gr->children[i] == NULL ) return NULL;
 			gr->children[i]->parent = gr;
+			tx += gr->children[i]->cx;
+			ty += gr->children[i]->cy;
+			tz += gr->children[i]->cz;
 		}
+
+		gr->cx = tx / gt->n_children;
+		gr->cy = ty / gt->n_children;
+		gr->cz = tz / gt->n_children;
 
 	}
 
