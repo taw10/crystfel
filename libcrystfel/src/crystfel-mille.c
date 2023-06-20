@@ -74,8 +74,7 @@ int mille_label(int hierarchy_level, int member_index, enum gparam param)
 
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
-                 struct reflpeak *rps, struct image *image,
-                 double dx, double dy)
+                 struct reflpeak *rps, struct image *image)
 {
 	float local_gradients[9];
 	float global_gradients[64];
@@ -91,7 +90,6 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 
 		signed int h, k, l;
 		double xl, yl, zl, kpred;
-		double xpk, ypk;
 		int j;
 		const struct detgeom_panel_group *group;
 

@@ -320,7 +320,7 @@ int refine_radius(Crystal *cr, struct image *image)
 
 static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
                    struct image *image, int num_params,
-                   double *total_x, double *total_y, double *total_z)
+                   double *total_x, double *total_y)
 {
 	int i;
 	gsl_matrix *M;
@@ -399,7 +399,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = fs_dev(&rps[i], image->detgeom, *total_x, *total_y);
+			v_c = fs_dev(&rps[i], image->detgeom);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -431,7 +431,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 			}
 
-			v_c = ss_dev(&rps[i], image->detgeom, *total_x, *total_y);
+			v_c = ss_dev(&rps[i], image->detgeom);
 			v_c *= -gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -483,11 +483,17 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	csx += gsl_vector_get(shifts, 6);
 	csy += gsl_vector_get(shifts, 7);
 	csz += gsl_vector_get(shifts, 8);
-	*total_x += gsl_vector_get(shifts, 9);
-	*total_y += gsl_vector_get(shifts, 10);
-	*total_z += 0.0;
 
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+	detgeom_translate_detector_m(image->detgeom,
+	                             gsl_vector_get(shifts, 9),
+	                             gsl_vector_get(shifts, 10),
+	                             0.0);
+
+	/* The overall shifts will go into the stream and be used by
+	 * scripts/detector-shift */
+	*total_x += gsl_vector_get(shifts, 9);
+	*total_y += gsl_vector_get(shifts, 10);
 
 	gsl_vector_free(shifts);
 	gsl_matrix_free(M);
@@ -497,8 +503,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
-                            double dx, double dy)
+static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
 {
 	int i;
 	double res = 0.0;
@@ -548,7 +553,6 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	RefList *reflist;
 	double total_x = 0.0;
 	double total_y = 0.0;
-	double total_z = 0.0;
 	double orig_shift_x, orig_shift_y;
 	char tmp[256];
 	int num_params;
@@ -599,26 +603,26 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	}
 
 	//STATUS("Initial residual = %e\n",
-	//       pred_residual(rps, n, image->detgeom, total_x, total_y));
+	//       pred_residual(rps, n, image->detgeom));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_predictions(cr);
 		if ( iterate(rps, n, crystal_get_cell(cr), image, num_params,
-		             &total_x, &total_y, &total_z) )
+		             &total_x, &total_y) )
 		{
 			crystal_set_reflections(cr, NULL);
 			return 1;
 		}
 		crystal_set_det_shift(cr, total_x, total_y);
 		//STATUS("Residual after %i = %e\n", i,
-		//       pred_residual(rps, n, image->detgeom, total_x, total_y));
+		//       pred_residual(rps, n, image->detgeom));
 	}
 	//STATUS("Final residual = %e\n",
-	//       pred_residual(rps, n, image->detgeom, total_x, total_y));
+	//       pred_residual(rps, n, image->detgeom));
 
 	snprintf(tmp, 255, "predict_refine/final_residual = %e",
-	         pred_residual(rps, n, image->detgeom, total_x, total_y));
+	         pred_residual(rps, n, image->detgeom));
 	crystal_add_notes(cr, tmp);
 
 	#ifdef HAVE_MILLEPEDE
