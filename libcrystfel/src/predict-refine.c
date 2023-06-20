@@ -491,8 +491,7 @@ int refine_radius(Crystal *cr, struct image *image)
 }
 
 
-static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image, double *total_x, double *total_y)
+static int iterate(struct reflpeak *rps, int n, UnitCell *cell, struct image *image)
 {
 	int i;
 	gsl_matrix *M;
@@ -526,8 +525,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		double gradients[num_params];
 		double w;
 
-		/* Excitation error terms */
-		w = EXC_WEIGHT * rps[i].Ih;
+		w = rps[i].Ih;
 
 		for ( k=0; k<num_params; k++ ) {
 			gradients[k] = r_gradient(cell, rv[k], rps[i].refl,
@@ -630,11 +628,6 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	for ( k=0; k<num_params; k++ ) {
 		double M_curr;
 		M_curr = gsl_matrix_get(M, k, k);
-		if ( (rv[k] == GPARAM_DETX) || (rv[k] == GPARAM_DETY) ) {
-			M_curr += 10.0;
-		} else {
-			M_curr += 1e-18;
-		}
 		gsl_matrix_set(M, k, k, M_curr);
 	}
 
@@ -671,15 +664,6 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	csz += gsl_vector_get(shifts, 8);
 
 	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
-	detgeom_translate_detector_m(image->detgeom,
-	                             gsl_vector_get(shifts, 9),
-	                             gsl_vector_get(shifts, 10),
-	                             0.0);
-
-	/* The overall shifts will go into the stream and be used by
-	 * scripts/detector-shift */
-	*total_x += gsl_vector_get(shifts, 9);
-	*total_y += gsl_vector_get(shifts, 10);
 
 	gsl_vector_free(shifts);
 	gsl_matrix_free(M);
@@ -737,9 +721,6 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	struct reflpeak *rps;
 	double max_I;
 	RefList *reflist;
-	double total_x = 0.0;
-	double total_y = 0.0;
-	double orig_shift_x, orig_shift_y;
 	char tmp[256];
 
 	rps = malloc(image_feature_count(image->features)
@@ -754,10 +735,6 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
-
-	crystal_get_det_shift(cr, &total_x, &total_y);
-	orig_shift_x = total_x;
-	orig_shift_y = total_y;
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;
@@ -785,13 +762,11 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	/* Refine (max 10 cycles) */
 	for ( i=0; i<10; i++ ) {
 		update_predictions(cr);
-		if ( iterate(rps, n, crystal_get_cell(cr), image,
-		             &total_x, &total_y) )
+		if ( iterate(rps, n, crystal_get_cell(cr), image) )
 		{
 			crystal_set_reflections(cr, NULL);
 			return 1;
 		}
-		crystal_set_det_shift(cr, total_x, total_y);
 		//STATUS("Residual after %i = %e\n", i,
 		//       pred_residual(rps, n, image->detgeom));
 	}
@@ -805,13 +780,10 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
 		profile_start("mille-calc");
-		write_mille(mille, n, crystal_get_cell(cr), rps, image,
-		            total_x, total_y);
+		write_mille(mille, n, crystal_get_cell(cr), rps, image);
 		profile_end("mille-calc");
 	}
 	#endif
-
-	crystal_set_det_shift(cr, total_x, total_y);
 
 	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);
@@ -819,7 +791,6 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	n = pair_peaks(image, cr, NULL, rps);
 	free_rps_noreflist(rps, n);
 	if ( n < 10 ) {
-		crystal_set_det_shift(cr, orig_shift_x, orig_shift_y);
 		#ifdef HAVE_MILLEPEDE
 		if ( mille != NULL ) {
 			crystfel_mille_delete_last_record(mille);
