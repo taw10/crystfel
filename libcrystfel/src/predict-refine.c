@@ -51,22 +51,6 @@
 /* Weighting of excitation error term (m^-1) compared to position term (m) */
 #define EXC_WEIGHT (4e-20)
 
-/* Parameters to refine */
-static const enum gparam rv[] =
-{
-	GPARAM_ASX,
-	GPARAM_ASY,
-	GPARAM_ASZ,
-	GPARAM_BSX,
-	GPARAM_BSY,
-	GPARAM_BSZ,
-	GPARAM_CSX,
-	GPARAM_CSY,
-	GPARAM_CSZ,
-	GPARAM_DETX,
-	GPARAM_DETY,
-};
-
 
 double r_dev(struct reflpeak *rp)
 {
@@ -511,8 +495,7 @@ int refine_radius(Crystal *cr, struct image *image)
 
 
 static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image, int num_params,
-                   double *total_x, double *total_y)
+                   struct image *image, double *total_x, double *total_y)
 {
 	int i;
 	gsl_matrix *M;
@@ -521,6 +504,20 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+
+	const enum gparam rv[] =
+	{
+		GPARAM_ASX,
+		GPARAM_ASY,
+		GPARAM_ASZ,
+		GPARAM_BSX,
+		GPARAM_BSY,
+		GPARAM_BSZ,
+		GPARAM_CSX,
+		GPARAM_CSY,
+		GPARAM_CSZ,
+	};
+	int num_params = 9;
 
 	/* Number of parameters to refine */
 	M = gsl_matrix_calloc(num_params, num_params);
@@ -747,7 +744,6 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	double total_y = 0.0;
 	double orig_shift_x, orig_shift_y;
 	char tmp[256];
-	int num_params;
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -786,21 +782,13 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 		}
 	}
 
-	if ( mille == NULL ) {
-		/* Without Millepede, we refine beam center as well */
-		num_params = 11;
-	} else {
-		/* With Millepede, leave all global parameters for later */
-		num_params = 9;
-	}
-
 	//STATUS("Initial residual = %e\n",
 	//       pred_residual(rps, n, image->detgeom));
 
 	/* Refine */
 	for ( i=0; i<MAX_CYCLES; i++ ) {
 		update_predictions(cr);
-		if ( iterate(rps, n, crystal_get_cell(cr), image, num_params,
+		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y) )
 		{
 			crystal_set_reflections(cr, NULL);
