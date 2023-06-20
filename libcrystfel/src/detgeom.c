@@ -213,3 +213,15 @@ void detgeom_show_hierarchy(const struct detgeom *dg)
 {
 	detgeom_show_group(dg->top_group, 0);
 }
+
+
+void detgeom_translate_detector_m(struct detgeom *dg, double x, double y, double z)
+{
+	int i;
+	for ( i=0; i<dg->n_panels; i++ ) {
+		struct detgeom_panel *p = &dg->panels[i];
+		p->cnx += x / p->pixel_pitch;
+		p->cny += y / p->pixel_pitch;
+		p->cnz += z / p->pixel_pitch;
+	}
+}
