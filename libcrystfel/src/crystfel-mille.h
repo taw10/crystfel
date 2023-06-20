@@ -34,7 +34,6 @@ typedef void *Mille;
 #include "cell.h"
 #include "image.h"
 #include "predict-refine.h"
-#include "geometry.h"
 
 /**
  * \file crystfel-mille.h

@@ -30,6 +30,36 @@
 #define PREDICT_REFINE_H
 
 struct reflpeak;
+
+/** Enumeration of parameters which may want to be refined */
+enum gparam {
+	GPARAM_ASX,
+	GPARAM_ASY,
+	GPARAM_ASZ,
+	GPARAM_BSX,
+	GPARAM_BSY,
+	GPARAM_BSZ,
+	GPARAM_CSX,
+	GPARAM_CSY,
+	GPARAM_CSZ,
+	GPARAM_R,
+	GPARAM_DIV,
+	GPARAM_DETX,
+	GPARAM_DETY,
+	GPARAM_CLEN,
+	GPARAM_OSF,   /* Linear scale factor */
+	GPARAM_BFAC,  /* D-W scale factor */
+	GPARAM_ANG1,  /* Out of plane rotation angles of crystal */
+	GPARAM_ANG2,
+	GPARAM_WAVELENGTH,
+	GPARAM_ROTX,  /* Detector panel rotation about +x */
+	GPARAM_ROTY,  /* Detector panel rotation about +y */
+	GPARAM_ROTZ,  /* Detector panel rotation about +z */
+
+	GPARAM_EOL    /* End of list */
+};
+
+
 #include "crystal.h"
 #include "crystfel-mille.h"
 
@@ -50,8 +80,19 @@ extern int refine_prediction(struct image *image, Crystal *cr, Mille *mille);
 
 extern int refine_radius(Crystal *cr, struct image *image);
 
+extern double r_dev(struct reflpeak *rp);
+
 extern double fs_dev(struct reflpeak *rp, struct detgeom *det);
 
 extern double ss_dev(struct reflpeak *rp, struct detgeom *det);
+
+extern double r_gradient(UnitCell *cell, int k, Reflection *refl,
+                         struct image *image);
+
+extern double fs_gradient(int param, Reflection *refl, UnitCell *cell,
+                          struct detgeom_panel *p);
+
+extern double ss_gradient(int param, Reflection *refl, UnitCell *cell,
+                          struct detgeom_panel *p);
 
 #endif	/* PREDICT_REFINE_H */

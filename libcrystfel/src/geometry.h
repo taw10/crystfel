@@ -62,35 +62,6 @@ typedef enum {
 } PartialityModel;
 
 
-/** Enumeration of parameters which may want to be refined */
-enum gparam {
-	GPARAM_ASX,
-	GPARAM_ASY,
-	GPARAM_ASZ,
-	GPARAM_BSX,
-	GPARAM_BSY,
-	GPARAM_BSZ,
-	GPARAM_CSX,
-	GPARAM_CSY,
-	GPARAM_CSZ,
-	GPARAM_R,
-	GPARAM_DIV,
-	GPARAM_DETX,
-	GPARAM_DETY,
-	GPARAM_CLEN,
-	GPARAM_OSF,   /* Linear scale factor */
-	GPARAM_BFAC,  /* D-W scale factor */
-	GPARAM_ANG1,  /* Out of plane rotation angles of crystal */
-	GPARAM_ANG2,
-	GPARAM_WAVELENGTH,
-	GPARAM_ROTX,  /* Detector panel rotation about +x */
-	GPARAM_ROTY,  /* Detector panel rotation about +y */
-	GPARAM_ROTZ,  /* Detector panel rotation about +z */
-
-	GPARAM_EOL    /* End of list */
-};
-
-
 /**
  * This structure represents the polarisation of the incident radiation
  */
@@ -110,8 +81,6 @@ extern RefList *predict_to_res(Crystal *cryst, double max_res);
 
 extern void calculate_partialities(Crystal *cryst, PartialityModel pmodel);
 
-extern double r_gradient(UnitCell *cell, int k, Reflection *refl,
-                         struct image *image);
 extern void update_predictions(Crystal *cryst);
 extern struct polarisation parse_polarisation(const char *text);
 extern void polarisation_correction(RefList *list, UnitCell *cell,
@@ -119,11 +88,6 @@ extern void polarisation_correction(RefList *list, UnitCell *cell,
 
 extern double sphere_fraction(double rlow, double rhigh, double pr);
 extern double gaussian_fraction(double rlow, double rhigh, double pr);
-
-extern double fs_gradient(int param, Reflection *refl, UnitCell *cell,
-                          struct detgeom_panel *p);
-extern double ss_gradient(int param, Reflection *refl, UnitCell *cell,
-                          struct detgeom_panel *p);
 
 #ifdef __cplusplus
 }
