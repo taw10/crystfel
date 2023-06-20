@@ -99,16 +99,13 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		twod_mapping(rps[i].peak->fs, rps[i].peak->ss, &xpk, &ypk,
-		             rps[i].panel, dx, dy);
-
-		/* x terms: local */
+		/* fs terms: local */
 		for ( j=0; j<9; j++ ) {
-			local_gradients[j] = x_gradient(rv[j], rps[i].refl,
-			                                cell, rps[i].panel);
+			local_gradients[j] = fs_gradient(rv[j], rps[i].refl,
+			                                 cell, rps[i].panel);
 		}
 
-		/* x terms: global */
+		/* fs terms: global */
 		j = 0;
 		group = rps[i].panel->group;
 		while ( group != NULL ) {
@@ -131,16 +128,16 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		mille_add_measurement(mille,
 		                      9, local_gradients,
 		                      j, global_gradients, labels,
-		                      x_dev(&rps[i], image->detgeom, dx, dy),
+		                      fs_dev(&rps[i], image->detgeom),
 		                      0.65*rps[i].panel->pixel_pitch);
 
-		/* y terms: local */
+		/* ss terms: local */
 		for ( j=0; j<9; j++ ) {
-			local_gradients[j] = y_gradient(rv[j], rps[i].refl,
-			                                cell, rps[i].panel);
+			local_gradients[j] = ss_gradient(rv[j], rps[i].refl,
+			                                 cell, rps[i].panel);
 		}
 
-		/* y terms: global */
+		/* ss terms: global */
 		j = 0;
 		group = rps[i].panel->group;
 		while ( group != NULL ) {
@@ -163,7 +160,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		mille_add_measurement(mille,
 		                      9, local_gradients,
 		                      j, global_gradients, labels,
-		                      x_dev(&rps[i], image->detgeom, dx, dy),
+		                      ss_dev(&rps[i], image->detgeom),
 		                      0.65*rps[i].panel->pixel_pitch);
 	}
 }
