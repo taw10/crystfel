@@ -42,21 +42,12 @@ enum gparam {
 	GPARAM_CSX,
 	GPARAM_CSY,
 	GPARAM_CSZ,
-	GPARAM_R,
-	GPARAM_DIV,
-	GPARAM_DETX,
-	GPARAM_DETY,
-	GPARAM_CLEN,
-	GPARAM_OSF,   /* Linear scale factor */
-	GPARAM_BFAC,  /* D-W scale factor */
-	GPARAM_ANG1,  /* Out of plane rotation angles of crystal */
-	GPARAM_ANG2,
-	GPARAM_WAVELENGTH,
-	GPARAM_ROTX,  /* Detector panel rotation about +x */
-	GPARAM_ROTY,  /* Detector panel rotation about +y */
-	GPARAM_ROTZ,  /* Detector panel rotation about +z */
-
-	GPARAM_EOL    /* End of list */
+	GPARAM_DET_TX,
+	GPARAM_DET_TY,
+	GPARAM_DET_TZ,
+	GPARAM_DET_RX,  /* Detector panel (group) rotation about +x */
+	GPARAM_DET_RY,  /* Detector panel (group) rotation about +y */
+	GPARAM_DET_RZ,  /* Detector panel (group) rotation about +z */
 };
 
 

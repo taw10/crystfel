@@ -123,9 +123,13 @@ double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 		case GPARAM_CSZ :
 		return - ls * cos(phi);
 
-		case GPARAM_DETX :
-		case GPARAM_DETY :
-		case GPARAM_CLEN :
+		/* Detector movements don't affect excitation error */
+		case GPARAM_DET_TX :
+		case GPARAM_DET_TY :
+		case GPARAM_DET_TZ :
+		case GPARAM_DET_RX :
+		case GPARAM_DET_RY :
+		case GPARAM_DET_RZ :
 		return 0.0;
 
 	}
@@ -182,14 +186,23 @@ double fs_gradient(int param, Reflection *refl, UnitCell *cell,
 		case GPARAM_CSZ :
 		return -l * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
-		case GPARAM_DETX :
-		return -1;
+		case GPARAM_DET_TX :
+		return 0.0;
 
-		case GPARAM_DETY :
-		return 0;
+		case GPARAM_DET_TY :
+		return 0.0;
 
-		case GPARAM_CLEN :
+		case GPARAM_DET_TZ :
 		return -xl / (kpred+zl);
+
+		case GPARAM_DET_RX :
+		return 0.0;
+
+		case GPARAM_DET_RY :
+		return 0.0;
+
+		case GPARAM_DET_RZ :
+		return -1;
 
 		default:
 		ERROR("Positional gradient requested for parameter %i?\n", param);
@@ -247,14 +260,23 @@ double ss_gradient(int param, Reflection *refl, UnitCell *cell,
 		case GPARAM_CSZ :
 		return -l * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
 
-		case GPARAM_DETX :
-		return 0;
+		case GPARAM_DET_TX :
+		return 0.0;
 
-		case GPARAM_DETY :
-		return -1;
+		case GPARAM_DET_TY :
+		return 0.0;
 
-		case GPARAM_CLEN :
+		case GPARAM_DET_TZ :
 		return -yl / (kpred+zl);
+
+		case GPARAM_DET_RX :
+		return 0.0;
+
+		case GPARAM_DET_RY :
+		return 0.0;
+
+		case GPARAM_DET_RZ :
+		return -1;
 
 		default :
 		ERROR("Positional gradient requested for parameter %i?\n", param);
