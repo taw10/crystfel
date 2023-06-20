@@ -45,9 +45,6 @@
 /** \file predict-refine.h */
 
 
-/* Maximum number of iterations of NLSq to do for each image per macrocycle. */
-#define MAX_CYCLES (10)
-
 /* Weighting of excitation error term (m^-1) compared to position term (m) */
 #define EXC_WEIGHT (4e-20)
 
@@ -785,8 +782,8 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	//STATUS("Initial residual = %e\n",
 	//       pred_residual(rps, n, image->detgeom));
 
-	/* Refine */
-	for ( i=0; i<MAX_CYCLES; i++ ) {
+	/* Refine (max 10 cycles) */
+	for ( i=0; i<10; i++ ) {
 		update_predictions(cr);
 		if ( iterate(rps, n, crystal_get_cell(cr), image,
 		             &total_x, &total_y) )
