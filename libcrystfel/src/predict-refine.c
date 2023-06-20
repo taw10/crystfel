@@ -517,13 +517,13 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(fs_dev(&rps[i], det, dx, dy), 2.0);
+		r += pow(rps[i].panel->pixel_pitch*fs_dev(&rps[i], det), 2.0);
 	}
 	res += r;
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(ss_dev(&rps[i], det, dx, dy), 2.0);
+		r += pow(rps[i].panel->pixel_pitch*ss_dev(&rps[i], det), 2.0);
 	}
 	res += r;
 
