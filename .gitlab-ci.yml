@@ -120,7 +120,7 @@ build-centos7:
   script:
     - yum update -y
     - yum group install -y "Development Tools"
-    - yum install -y wget lz4 lz4-devel bzip2-libs bzip2-devel python3 gtk3-devel
+    - yum install -y wget lz4 lz4-devel bzip2-libs bzip2-devel python3 gtk3-devel curl
     - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
     - python3 -m pip  install meson ninja
     - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
