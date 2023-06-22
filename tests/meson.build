@@ -44,7 +44,6 @@ simple_tests = ['ambi_check',
                 'cell_check',
                 'centering_check',
                 'list_check',
-                'prediction_gradient_check',
                 'ring_check',
                 'symmetry_check',
                 'transformation_check',
@@ -95,6 +94,19 @@ exe = executable('prof2d_check',
                   'histogram.c'],
                  dependencies : [libcrystfeldep, mdep, gsldep])
 test('prof2d_check', exe)
+
+
+# Refinement gradient checks
+gradient_tests = ['gradient_panel_x']
+
+foreach name : gradient_tests
+  exe = executable(name,
+                   [''.join([name, '.c']),
+                    'gradient_check_utils.c'],
+                   dependencies : [libcrystfeldep, mdep, gsldep])
+  test(name, exe)
+endforeach
+
 
 # Event enumeration tests
 if hdf5dep.found()
