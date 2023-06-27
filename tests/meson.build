@@ -97,7 +97,8 @@ test('prof2d_check', exe)
 
 
 # Refinement gradient checks
-gradient_tests = ['gradient_panel_x']
+gradient_tests = ['gradient_panel_x',
+                  'gradient_cell_asx']
 
 foreach name : gradient_tests
   exe = executable(name,
