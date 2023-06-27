@@ -77,8 +77,8 @@ extern double fs_dev(struct reflpeak *rp, struct detgeom *det);
 
 extern double ss_dev(struct reflpeak *rp, struct detgeom *det);
 
-extern double r_gradient(UnitCell *cell, int k, Reflection *refl,
-                         struct image *image);
+extern double r_gradient(int param, Reflection *refl, UnitCell *cell,
+                         double wavelength);
 
 extern double fs_gradient(int param, Reflection *refl, UnitCell *cell,
                           struct detgeom_panel *p);

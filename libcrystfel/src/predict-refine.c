@@ -72,7 +72,7 @@ double ss_dev(struct reflpeak *rp, struct detgeom *det)
 }
 
 
-double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
+double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength)
 {
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
@@ -91,10 +91,10 @@ double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 	zl = hs*asz + ks*bsz + ls*csz;
 
 	tl = sqrt(xl*xl + yl*yl);
-	phi = angle_between_2d(tl, zl+1.0/image->lambda, 0.0, 1.0); /* 2theta */
+	phi = angle_between_2d(tl, zl+1.0/wavelength, 0.0, 1.0); /* 2theta */
 	azi = atan2(yl, xl); /* azimuth */
 
-	switch ( k ) {
+	switch ( param ) {
 
 		case GPARAM_ASX :
 		return - hs * sin(phi) * cos(azi);
@@ -134,7 +134,7 @@ double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
 
 	}
 
-	ERROR("No r gradient defined for parameter %i\n", k);
+	ERROR("No r gradient defined for parameter %i\n", param);
 	abort();
 }
 
@@ -550,8 +550,8 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell, struct image *im
 		w = rps[i].Ih;
 
 		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = r_gradient(cell, rv[k], rps[i].refl,
-			                          image);
+			gradients[k] = r_gradient(rv[k], rps[i].refl, cell,
+			                          image->lambda);
 		}
 
 		for ( k=0; k<num_params; k++ ) {
