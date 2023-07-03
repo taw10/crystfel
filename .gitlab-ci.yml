@@ -126,6 +126,7 @@ build-centos7:
     - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
     - chmod 755 ./run-me-desy-maxwell-centos7
     - ./run-me-desy-maxwell-centos7 --yes-really
+    - cp -Rp /software $CI_PROJECT_DIR
   artifacts:
     paths:
       - software/
