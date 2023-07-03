@@ -29,6 +29,8 @@
 #ifndef CRYSTFEL_MILLE_H
 #define CRYSTFEL_MILLE_H
 
+#include <gsl/gsl_matrix.h>
+
 typedef void *Mille;
 
 #include "cell.h"
@@ -49,7 +51,8 @@ extern void crystfel_mille_free(Mille *m);
 extern int mille_label(int hierarchy_level, int member_index, enum gparam param);
 
 extern void write_mille(Mille *mille, int n, UnitCell *cell,
-                        struct reflpeak *rps, struct image *image);
+                        struct reflpeak *rps, struct image *image,
+                        gsl_matrix **panel_matrices);
 
 extern void crystfel_mille_delete_last_record(Mille *m);
 

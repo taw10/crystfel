@@ -29,6 +29,8 @@
 #ifndef PREDICT_REFINE_H
 #define PREDICT_REFINE_H
 
+#include <gsl/gsl_matrix.h>
+
 struct reflpeak;
 
 /** Enumeration of parameters which may want to be refined */
@@ -58,8 +60,6 @@ struct reflpeak {
 	Reflection *refl;
 	struct imagefeature *peak;
 	double Ih;   /* normalised */
-	struct detgeom_panel *panel;  /* panel the reflection appears on
-                                       * (we assume this never changes) */
 };
 
 /**
@@ -80,10 +80,8 @@ extern double ss_dev(struct reflpeak *rp, struct detgeom *det);
 extern double r_gradient(int param, Reflection *refl, UnitCell *cell,
                          double wavelength);
 
-extern double fs_gradient(int param, Reflection *refl, UnitCell *cell,
-                          struct detgeom_panel *p);
-
-extern double ss_gradient(int param, Reflection *refl, UnitCell *cell,
-                          struct detgeom_panel *p);
+extern int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
+                          struct detgeom_panel *p, gsl_matrix *panel_Minv,
+                          float *fsg, float *ssg);
 
 #endif	/* PREDICT_REFINE_H */

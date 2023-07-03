@@ -74,94 +74,61 @@ int mille_label(int hierarchy_level, int member_index, enum gparam param)
 
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
-                 struct reflpeak *rps, struct image *image)
+                 struct reflpeak *rps, struct image *image,
+                 gsl_matrix **panel_matrices)
 {
-	float local_gradients[9];
-	float global_gradients[64];
-	int labels[6];
 	int i;
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
 
 	for ( i=0; i<n; i++ ) {
 
-		signed int h, k, l;
-		double xl, yl, zl, kpred;
+		float local_gradients_fs[9];
+		float local_gradients_ss[9];
+		float global_gradients_fs[64];
+		float global_gradients_ss[64];
+		int labels[6];
 		int j;
 		const struct detgeom_panel_group *group;
 
-		get_indices(rps[i].refl, &h, &k, &l);
-		kpred = get_kpred(rps[i].refl);
-		xl = h*asx + k*bsx + l*csx;
-		yl = h*asy + k*bsy + l*csy;
-		zl = h*asz + k*bsz + l*csz;
-
-		/* fs terms: local */
+		/* Local gradients for fs and ss */
 		for ( j=0; j<9; j++ ) {
-			local_gradients[j] = fs_gradient(rv[j], rps[i].refl,
-			                                 cell, rps[i].panel);
+			fs_ss_gradient(rv[j], rps[i].refl, cell,
+			               &image->detgeom->panels[rps[i].peak->pn],
+			               panel_matrices[rps[i].peak->pn],
+			               &local_gradients_fs[j],
+			               &local_gradients_ss[j]);
 		}
 
-		/* fs terms: global */
+		/* Global gradients for fs and ss */
 		j = 0;
-		group = rps[i].panel->group;
+		group = image->detgeom->panels[rps[i].peak->pn].group;
 		while ( group != NULL ) {
 
-			global_gradients[j] = -1.0;
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DET_TX);
-			j++;
+			fs_ss_gradient(GPARAM_DET_TX, rps[i].refl, cell,
+			               &image->detgeom->panels[rps[i].peak->pn],
+			               panel_matrices[rps[i].peak->pn],
+			               &global_gradients_fs[j],
+			               &global_gradients_ss[j]);
 
-			global_gradients[j] = -xl / (kpred+zl);
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DET_TZ);
+			labels[j] = mille_label(group->hierarchy_level,
+			                        group->member_index,
+			                        GPARAM_DET_TX);
 			j++;
-
-			global_gradients[j] = 0.0;
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DET_RZ);
-			j++;
-
 			group = group->parent;
 		}
 
+		/* Add fs measurement */
 		mille_add_measurement(mille,
-		                      9, local_gradients,
-		                      j, global_gradients, labels,
+		                      9, local_gradients_fs,
+		                      j, global_gradients_fs, labels,
 		                      fs_dev(&rps[i], image->detgeom),
-		                      0.65*rps[i].panel->pixel_pitch);
+		                      0.65*image->detgeom->panels[rps[i].peak->pn].pixel_pitch);
 
-		/* ss terms: local */
-		for ( j=0; j<9; j++ ) {
-			local_gradients[j] = ss_gradient(rv[j], rps[i].refl,
-			                                 cell, rps[i].panel);
-		}
-
-		/* ss terms: global */
-		j = 0;
-		group = rps[i].panel->group;
-		while ( group != NULL ) {
-
-			global_gradients[j] = -1.0;
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DET_TY);
-			j++;
-
-			global_gradients[j] = -yl / (kpred+zl);
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DET_TZ);
-			j++;
-
-			global_gradients[j] = 0.0;
-			labels[j] = mille_label(group->hierarchy_level, group->member_index, GPARAM_DET_RZ);
-			j++;
-
-			group = group->parent;
-		}
-
+		/* Add ss measurement */
 		mille_add_measurement(mille,
-		                      9, local_gradients,
-		                      j, global_gradients, labels,
+		                      9, local_gradients_ss,
+		                      j, global_gradients_ss, labels,
 		                      ss_dev(&rps[i], image->detgeom),
-		                      0.65*rps[i].panel->pixel_pitch);
+		                      0.65*image->detgeom->panels[rps[i].peak->pn].pixel_pitch);
 	}
 }
 

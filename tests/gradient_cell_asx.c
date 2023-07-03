@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
+	gsl_matrix *panel_matrices[64];
 
 	rps = make_test_image(&n_refls, &image);
 
@@ -72,20 +73,18 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<n_refls; i++ ) {
 
-		double calc[3];
+		float calc[3];
 		double obs[3];
 
 		calc[0] = r_gradient(GPARAM_ASX, rps[i].refl,
 		                     crystal_get_cell(image.crystals[0]),
 		                     image.lambda);
 
-		calc[1] = fs_gradient(GPARAM_ASX, rps[i].refl,
-		                      crystal_get_cell(image.crystals[0]),
-		                      rps[i].panel);
-
-		calc[2] = ss_gradient(GPARAM_ASX, rps[i].refl,
-		                      crystal_get_cell(image.crystals[0]),
-		                      rps[i].panel);
+		fs_ss_gradient(GPARAM_ASX, rps[i].refl,
+		               crystal_get_cell(image.crystals[0]),
+		               &image.detgeom->panels[rps[i].peak->pn],
+		               panel_matrices[rps[i].peak->pn],
+		               &calc[1], &calc[2]);
 
 		obs[0] = (after[0][i] - before[0][i]) / step;
 		obs[1] = (after[1][i] - before[1][i]) / step;

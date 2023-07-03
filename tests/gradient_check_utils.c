@@ -172,7 +172,6 @@ struct reflpeak *make_test_image(int *pn_refls, struct image *image)
 		rps[i].peak = pk;
 		rps[i].refl = refl;
 		rps[i].Ih = 1.0;
-		rps[i].panel = &image->detgeom->panels[pn];
 		i++;
 	}
 

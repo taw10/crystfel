@@ -139,150 +139,108 @@ double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength
 }
 
 
-/* Returns dfs_refl/dP, where P = any parameter *
+/* Returns dfs_refl/dP and fss_refl/dP, where P = any parameter
  * fs_refl is the fast scan position of refl in panel 'p',
  * in metres (not pixels) */
-double fs_gradient(int param, Reflection *refl, UnitCell *cell,
-                   struct detgeom_panel *p)
+int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
+                   struct detgeom_panel *p, gsl_matrix *panel_Minv,
+                   float *fsg, float *ssg)
 {
-	signed int h, k, l;
-	double xl, zl, kpred;
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	//signed int h, k, l;
+	//double xl, yl, zl, kpred;
+	//double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 
-	get_indices(refl, &h, &k, &l);
-	kpred = get_kpred(refl);
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	xl = h*asx + k*bsx + l*csx;
-	zl = h*asz + k*bsz + l*csz;
+	//get_indices(refl, &h, &k, &l);
+	//kpred = get_kpred(refl);
+	//cell_get_reciprocal(cell, &asx, &asy, &asz,
+	//                          &bsx, &bsy, &bsz,
+	//                          &csx, &csy, &csz);
+	//xl = h*asx + k*bsx + l*csx;
+	//yl = h*asy + k*bsy + l*csy;
+	//zl = h*asz + k*bsz + l*csz;
 
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return h * p->cnz * p->pixel_pitch / (kpred + zl);
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_BSX :
-		return k * p->cnz * p->pixel_pitch / (kpred + zl);
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_CSX :
-		return l * p->cnz * p->pixel_pitch / (kpred + zl);
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_ASY :
-		return 0.0;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_BSY :
-		return 0.0;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_CSY :
-		return 0.0;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_ASZ :
-		return -h * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_BSZ :
-		return -k * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_CSZ :
-		return -l * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_DET_TX :
-		return 0.0;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_DET_TY :
-		return 0.0;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_DET_TZ :
-		return -xl / (kpred+zl);
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_DET_RX :
-		return 0.0;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_DET_RY :
-		return 0.0;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		case GPARAM_DET_RZ :
-		return -1;
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
 
 		default:
-		ERROR("Positional gradient requested for parameter %i?\n", param);
-		abort();
+		return 1;
 
 	}
 
-}
-
-
-/* Returns dss_refl/dP, where P = any parameter
- * ss_refl is the slow scan position of refl in panel 'p',
- * in metres (not pixels) */
-double ss_gradient(int param, Reflection *refl, UnitCell *cell,
-                   struct detgeom_panel *p)
-{
-	signed int h, k, l;
-	double yl, zl, kpred;
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-
-	get_indices(refl, &h, &k, &l);
-	kpred = get_kpred(refl);
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	yl = h*asy + k*bsy + l*csy;
-	zl = h*asz + k*bsz + l*csz;
-
-	switch ( param ) {
-
-		case GPARAM_ASX :
-		return 0.0;
-
-		case GPARAM_BSX :
-		return 0.0;
-
-		case GPARAM_CSX :
-		return 0.0;
-
-		case GPARAM_ASY :
-		return h * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_BSY :
-		return k * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_CSY :
-		return l * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_ASZ :
-		return -h * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_BSZ :
-		return -k * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_CSZ :
-		return -l * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_DET_TX :
-		return 0.0;
-
-		case GPARAM_DET_TY :
-		return 0.0;
-
-		case GPARAM_DET_TZ :
-		return -yl / (kpred+zl);
-
-		case GPARAM_DET_RX :
-		return 0.0;
-
-		case GPARAM_DET_RY :
-		return 0.0;
-
-		case GPARAM_DET_RZ :
-		return -1;
-
-		default :
-		ERROR("Positional gradient requested for parameter %i?\n", param);
-		abort();
-
-	}
 }
 
 
@@ -409,7 +367,6 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 		rps[n].refl = refl;
 		rps[n].peak = f;
-		rps[n].panel = &image->detgeom->panels[f->pn];
 		n++;
 
 	}
@@ -513,7 +470,8 @@ int refine_radius(Crystal *cr, struct image *image)
 }
 
 
-static int iterate(struct reflpeak *rps, int n, UnitCell *cell, struct image *image)
+static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
+                   struct image *image, gsl_matrix **panel_matrices)
 {
 	int i;
 	gsl_matrix *M;
@@ -544,14 +502,23 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell, struct image *im
 	for ( i=0; i<n; i++ ) {
 
 		int k;
-		double gradients[num_params];
+		double r_gradients[num_params];
+		float fs_gradients[num_params];
+		float ss_gradients[num_params];
 		double w;
 
 		w = rps[i].Ih;
 
+		/* Calculate the gradients w.r.t. all parameters, for the
+		 * three measurements (r, fs, ss) of this reflpeak */
 		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = r_gradient(rv[k], rps[i].refl, cell,
-			                          image->lambda);
+			r_gradients[k] = r_gradient(rv[k], rps[i].refl, cell,
+			                            image->lambda);
+			fs_ss_gradient(rv[k], rps[i].refl, cell,
+			               &image->detgeom->panels[rps[i].peak->pn],
+			               panel_matrices[rps[i].peak->pn],
+			               &fs_gradients[k], &ss_gradients[k]);
+
 		}
 
 		for ( k=0; k<num_params; k++ ) {
@@ -566,79 +533,18 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell, struct image *im
 				/* Matrix is symmetric */
 				if ( g > k ) continue;
 
-				M_c = w * gradients[g] * gradients[k];
+				M_c = w * r_gradients[g] * r_gradients[k];
+				M_c += w * fs_gradients[g] * fs_gradients[k];
+				M_c += w * ss_gradients[g] * ss_gradients[k];
 				M_curr = gsl_matrix_get(M, k, g);
 				gsl_matrix_set(M, k, g, M_curr + M_c);
 				gsl_matrix_set(M, g, k, M_curr + M_c);
 
 			}
 
-			v_c = w * r_dev(&rps[i]);
-			v_c *= -gradients[k];
-			v_curr = gsl_vector_get(v, k);
-			gsl_vector_set(v, k, v_curr + v_c);
-
-		}
-
-		/* Positional fs terms */
-		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = fs_gradient(rv[k], rps[i].refl, cell,
-			                           rps[i].panel);
-		}
-
-		for ( k=0; k<num_params; k++ ) {
-
-			int g;
-			double v_c, v_curr;
-
-			for ( g=0; g<num_params; g++ ) {
-
-				double M_c, M_curr;
-
-				/* Matrix is symmetric */
-				if ( g > k ) continue;
-
-				M_c = gradients[g] * gradients[k];
-				M_curr = gsl_matrix_get(M, k, g);
-				gsl_matrix_set(M, k, g, M_curr + M_c);
-				gsl_matrix_set(M, g, k, M_curr + M_c);
-
-			}
-
-			v_c = fs_dev(&rps[i], image->detgeom);
-			v_c *= -gradients[k];
-			v_curr = gsl_vector_get(v, k);
-			gsl_vector_set(v, k, v_curr + v_c);
-
-		}
-
-		/* Positional ss terms */
-		for ( k=0; k<num_params; k++ ) {
-			gradients[k] = ss_gradient(rv[k], rps[i].refl, cell,
-			                           rps[i].panel);
-		}
-
-		for ( k=0; k<num_params; k++ ) {
-
-			int g;
-			double v_c, v_curr;
-
-			for ( g=0; g<num_params; g++ ) {
-
-				double M_c, M_curr;
-
-				/* Matrix is symmetric */
-				if ( g > k ) continue;
-
-				M_c = gradients[g] * gradients[k];
-				M_curr = gsl_matrix_get(M, k, g);
-				gsl_matrix_set(M, k, g, M_curr + M_c);
-				gsl_matrix_set(M, g, k, M_curr + M_c);
-
-			}
-
-			v_c = ss_dev(&rps[i], image->detgeom);
-			v_c *= -gradients[k];
+			v_c = -w * r_dev(&rps[i]) * r_gradients[k];
+			v_c += -fs_dev(&rps[i], image->detgeom) * fs_gradients[k];
+			v_c += -ss_dev(&rps[i], image->detgeom) * ss_gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
@@ -709,13 +615,13 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(rps[i].panel->pixel_pitch*fs_dev(&rps[i], det), 2.0);
+		r += pow(det->panels[rps[i].peak->pn].pixel_pitch*fs_dev(&rps[i], det), 2.0);
 	}
 	res += r;
 
 	r = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += pow(rps[i].panel->pixel_pitch*ss_dev(&rps[i], det), 2.0);
+		r += pow(det->panels[rps[i].peak->pn].pixel_pitch*ss_dev(&rps[i], det), 2.0);
 	}
 	res += r;
 
@@ -744,6 +650,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	double max_I;
 	RefList *reflist;
 	char tmp[256];
+	gsl_matrix *panel_matrices[64];
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -784,7 +691,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	/* Refine (max 10 cycles) */
 	for ( i=0; i<10; i++ ) {
 		update_predictions(cr);
-		if ( iterate(rps, n, crystal_get_cell(cr), image) )
+		if ( iterate(rps, n, crystal_get_cell(cr), image, panel_matrices) )
 		{
 			crystal_set_reflections(cr, NULL);
 			return 1;
@@ -802,7 +709,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
 		profile_start("mille-calc");
-		write_mille(mille, n, crystal_get_cell(cr), rps, image);
+		write_mille(mille, n, crystal_get_cell(cr), rps, image, panel_matrices);
 		profile_end("mille-calc");
 	}
 	#endif
