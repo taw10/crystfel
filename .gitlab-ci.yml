@@ -138,6 +138,7 @@ build-deploy-local-maxwell:
     - maxwell
   variables:
     GIT_STRATEGY: clone
+    SECURE_FILES_DOWNLOAD_PATH: './downloads'
   script:
     - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
     - wget  https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
