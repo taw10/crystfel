@@ -471,7 +471,7 @@ int refine_radius(Crystal *cr, struct image *image)
 
 
 static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image, gsl_matrix **panel_matrices)
+                   struct image *image, gsl_matrix **Minvs)
 {
 	int i;
 	gsl_matrix *M;
@@ -516,7 +516,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 			                            image->lambda);
 			fs_ss_gradient(rv[k], rps[i].refl, cell,
 			               &image->detgeom->panels[rps[i].peak->pn],
-			               panel_matrices[rps[i].peak->pn],
+			               Minvs[rps[i].peak->pn],
 			               &fs_gradients[k], &ss_gradients[k]);
 
 		}
@@ -650,7 +650,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	double max_I;
 	RefList *reflist;
 	char tmp[256];
-	gsl_matrix *panel_matrices[64];
+	gsl_matrix **Minvs;
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -664,6 +664,8 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 		return 1;
 	}
 	crystal_set_reflections(cr, reflist);
+
+	Minvs = make_panel_minvs(image->detgeom);
 
 	/* Normalise the intensities to max 1 */
 	max_I = -INFINITY;
@@ -691,7 +693,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	/* Refine (max 10 cycles) */
 	for ( i=0; i<10; i++ ) {
 		update_predictions(cr);
-		if ( iterate(rps, n, crystal_get_cell(cr), image, panel_matrices) )
+		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs) )
 		{
 			crystal_set_reflections(cr, NULL);
 			return 1;
@@ -709,10 +711,15 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
 		profile_start("mille-calc");
-		write_mille(mille, n, crystal_get_cell(cr), rps, image, panel_matrices);
+		write_mille(mille, n, crystal_get_cell(cr), rps, image, Minvs);
 		profile_end("mille-calc");
 	}
 	#endif
+
+	for ( i=0; i<image->detgeom->n_panels; i++ ) {
+		gsl_matrix_free(Minvs[i]);
+	}
+	free(Minvs);
 
 	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);

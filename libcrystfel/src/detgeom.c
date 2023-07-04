@@ -29,6 +29,9 @@
 #include <libcrystfel-config.h>
 #include <math.h>
 #include <stdlib.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_linalg.h>
 
 #include "detgeom.h"
 #include "utils.h"
@@ -224,4 +227,82 @@ void detgeom_translate_detector_m(struct detgeom *dg, double x, double y, double
 		p->cny += y / p->pixel_pitch;
 		p->cnz += z / p->pixel_pitch;
 	}
+}
+
+
+static gsl_matrix *invert(gsl_matrix *m)
+{
+	gsl_permutation *perm;
+	gsl_matrix *inv;
+	int s;
+
+	perm = gsl_permutation_alloc(m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation\n");
+		gsl_matrix_free(m);
+		return NULL;
+	}
+
+	inv = gsl_matrix_alloc(m->size1, m->size2);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+
+	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+		ERROR("Couldn't decompose matrix\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+
+	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+		ERROR("Couldn't invert cell matrix:\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+
+	gsl_permutation_free(perm);
+	gsl_matrix_free(m);
+
+	return inv;
+}
+
+
+gsl_matrix **make_panel_minvs(struct detgeom *dg)
+{
+	int i;
+	gsl_matrix **Minvs;
+
+	Minvs = malloc(dg->n_panels * sizeof(gsl_matrix *));
+	if ( Minvs == NULL ) return NULL;
+
+	for ( i=0; i<dg->n_panels; i++ ) {
+
+		struct detgeom_panel *p = &dg->panels[i];
+		gsl_matrix *M = gsl_matrix_calloc(3, 3);
+
+		gsl_matrix_set(M, 0, 0, p->cnx);
+		gsl_matrix_set(M, 0, 1, p->fsx);
+		gsl_matrix_set(M, 0, 2, p->ssx);
+		gsl_matrix_set(M, 1, 0, p->cny);
+		gsl_matrix_set(M, 1, 1, p->fsy);
+		gsl_matrix_set(M, 1, 2, p->ssy);
+		gsl_matrix_set(M, 2, 0, p->cnz);
+		gsl_matrix_set(M, 2, 1, p->fsz);
+		gsl_matrix_set(M, 2, 2, p->ssz);
+
+		Minvs[i] = invert(M);
+		if ( Minvs[i] == NULL ) {
+			ERROR("Failed to calculate inverse panel matrix for %s\n",
+			      p->name);
+			return NULL;
+		}
+
+	}
+
+	return Minvs;
 }

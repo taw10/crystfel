@@ -52,7 +52,7 @@ extern int mille_label(int hierarchy_level, int member_index, enum gparam param)
 
 extern void write_mille(Mille *mille, int n, UnitCell *cell,
                         struct reflpeak *rps, struct image *image,
-                        gsl_matrix **panel_matrices);
+                        gsl_matrix **Minvs);
 
 extern void crystfel_mille_delete_last_record(Mille *m);
 

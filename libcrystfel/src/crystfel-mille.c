@@ -75,7 +75,7 @@ int mille_label(int hierarchy_level, int member_index, enum gparam param)
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
                  struct reflpeak *rps, struct image *image,
-                 gsl_matrix **panel_matrices)
+                 gsl_matrix **Minvs)
 {
 	int i;
 
@@ -93,7 +93,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		for ( j=0; j<9; j++ ) {
 			fs_ss_gradient(rv[j], rps[i].refl, cell,
 			               &image->detgeom->panels[rps[i].peak->pn],
-			               panel_matrices[rps[i].peak->pn],
+			               Minvs[rps[i].peak->pn],
 			               &local_gradients_fs[j],
 			               &local_gradients_ss[j]);
 		}
@@ -105,7 +105,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 
 			fs_ss_gradient(GPARAM_DET_TX, rps[i].refl, cell,
 			               &image->detgeom->panels[rps[i].peak->pn],
-			               panel_matrices[rps[i].peak->pn],
+			               Minvs[rps[i].peak->pn],
 			               &global_gradients_fs[j],
 			               &global_gradients_ss[j]);
 

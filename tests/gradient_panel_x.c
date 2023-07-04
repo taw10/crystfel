@@ -51,9 +51,10 @@ int main(int argc, char *argv[])
 	int n_wrong_obsr = 0;
 	int fail = 0;
 	double step = 0.1;  /* Pixels */
-	gsl_matrix *panel_matrices[64];
+	gsl_matrix **panel_matrices;
 
 	rps = make_test_image(&n_refls, &image);
+	panel_matrices = make_panel_minvs(image.detgeom);
 
 	before = make_dev_list(rps, n_refls, image.detgeom);
 	image.detgeom->panels[0].cnx += step;

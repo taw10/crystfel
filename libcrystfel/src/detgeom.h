@@ -42,6 +42,7 @@ extern "C" {
  * Detector geometry structure and related functions.
  */
 
+#include <gsl/gsl_matrix.h>
 
 /**
  * Represents one panel of a detector
@@ -141,6 +142,8 @@ extern struct detgeom_panel *detgeom_find_panel(struct detgeom *dg, const char *
 extern void detgeom_show_hierarchy(const struct detgeom *dg);
 
 extern void detgeom_translate_detector_m(struct detgeom *dg, double x, double y, double z);
+
+extern gsl_matrix **make_panel_minvs(struct detgeom *dg);
 
 #ifdef __cplusplus
 }
