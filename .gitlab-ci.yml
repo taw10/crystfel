@@ -133,34 +133,18 @@ build-centos7:
     when: on_success
     expire_in: 1 day
     
-build-maxwell:
+build-deploy-local-maxwell:
   tags:
     - maxwell
   variables:
     GIT_STRATEGY: clone
   script:
-    - wget https://gitlab.desy.de/fs-sc/install-crystfel/-/raw/main/run-me-desy-maxwell-local
-    - chmod 755 ./run-me-desy-maxwell-local
-    - ./run-me-desy-maxwell-local --yes-really
-  artifacts:
-    paths:
-      - software/
-    when: on_success
-    expire_in: 1 day
-  rules:
-    - if: $MAXWELL_DEPLOYMENT == "local"
-
-deploy-local-maxwell:
-  stage: deploy
-  variables:
-    GIT_STRATEGY: none
-  tags: 
-    - maxwell
-  script:
-   - if [ -d ~/software/crystfel/devel ]; then
-        mv -f ~/software/crystfel/devel ~/software/crystfel/devel-`date +%F-%H:%M:%S`;
-     fi
-   - cp -rv software/crystfel/devel ~/software/crystfel/
+    - wget  https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
+    - chmod 755 ./run-me-desy-maxwell-centos7
+    - if [ -d /software/crystfel/devel ]; then
+        mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
+      fi
+    - ./run-me-desy-maxwell-centos7 --yes-really
   rules:
     - if: $MAXWELL_DEPLOYMENT == "local"  &&  $CI_COMMIT_BRANCH == "master"
 
