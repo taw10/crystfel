@@ -33,6 +33,7 @@
 #include <assert.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_linalg.h>
 
 #include "image.h"
 #include "geometry.h"
@@ -143,22 +144,70 @@ double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength
  * fs_refl is the fast scan position of refl in panel 'p',
  * in metres (not pixels) */
 int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
-                   struct detgeom_panel *p, gsl_matrix *panel_Minv,
+                   struct detgeom_panel *p, gsl_matrix *Minv,
                    float *fsg, float *ssg)
 {
-	//signed int h, k, l;
-	//double xl, yl, zl, kpred;
-	//double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	signed int h, k, l;
+	double xl, yl, zl, kpred;
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	double tta, ctt, phi;
+	gsl_vector *t;
+	gsl_vector *v;
+	gsl_matrix *M;
+	double mu;
+	gsl_matrix *dMdp;
+	gsl_matrix *minusMinvdMdp;
+	gsl_matrix *minusMinvdMdpMinv;
+	double fs, ss;
 
-	//get_indices(refl, &h, &k, &l);
-	//kpred = get_kpred(refl);
-	//cell_get_reciprocal(cell, &asx, &asy, &asz,
-	//                          &bsx, &bsy, &bsz,
-	//                          &csx, &csy, &csz);
-	//xl = h*asx + k*bsx + l*csx;
-	//yl = h*asy + k*bsy + l*csy;
-	//zl = h*asz + k*bsz + l*csz;
+	get_indices(refl, &h, &k, &l);
+	kpred = get_kpred(refl);
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	xl = h*asx + k*bsx + l*csx;
+	yl = h*asy + k*bsy + l*csy;
+	zl = h*asz + k*bsz + l*csz;
 
+	/* Calculate 2theta (scattering angle) and azimuth (phi) */
+	tta = atan2(sqrt(xl*xl+yl*yl), kpred+zl);
+	ctt = cos(tta);
+	phi = atan2(yl, xl);
+
+	/* Set up matrix equation */
+	M = gsl_matrix_alloc(3, 3);
+	v = gsl_vector_alloc(3);
+	t = gsl_vector_alloc(3);
+	if ( (M==NULL) || (v==NULL) || (t==NULL) ) {
+		ERROR("Failed to allocate vectors for gradient calculation\n");
+		return 1;
+	}
+
+	gsl_vector_set(t, 0, sin(tta)*cos(phi));
+	gsl_vector_set(t, 1, sin(tta)*sin(phi));
+	gsl_vector_set(t, 2, ctt);
+
+	gsl_matrix_set(M, 0, 0, p->cnx);
+	gsl_matrix_set(M, 0, 1, p->fsx);
+	gsl_matrix_set(M, 0, 2, p->ssx);
+	gsl_matrix_set(M, 1, 0, p->cny);
+	gsl_matrix_set(M, 1, 1, p->fsy);
+	gsl_matrix_set(M, 1, 2, p->ssy);
+	gsl_matrix_set(M, 2, 0, p->cnz);
+	gsl_matrix_set(M, 2, 1, p->fsz);
+	gsl_matrix_set(M, 2, 2, p->ssz);
+
+	if ( gsl_linalg_HH_solve(M, t, v) ) {
+		ERROR("Failed to solve gradient equation\n");
+		return 1;
+	}
+
+	gsl_matrix_free(M);
+	mu = 1.0 / gsl_vector_get(v, 0);
+	fs = mu*gsl_vector_get(v, 1);
+	ss = mu*gsl_vector_get(v, 2);
+
+	dMdp = gsl_matrix_calloc(3, 3);
 	switch ( param ) {
 
 		case GPARAM_ASX :
@@ -207,19 +256,16 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 		return 0;
 
 		case GPARAM_DET_TX :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
+		gsl_matrix_set(dMdp, 0, 0, 1.0);
+		break;
 
 		case GPARAM_DET_TY :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
+		gsl_matrix_set(dMdp, 1, 0, 1.0);
+		break;
 
 		case GPARAM_DET_TZ :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
+		gsl_matrix_set(dMdp, 2, 0, 1.0);
+		break;
 
 		case GPARAM_DET_RX :
 		*fsg = 0.0;
@@ -241,6 +287,22 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 
 	}
 
+	minusMinvdMdp = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, -1.0, Minv, dMdp, 0.0, minusMinvdMdp);
+	minusMinvdMdpMinv = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, -1.0, minusMinvdMdp, Minv, 0.0, minusMinvdMdpMinv);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, minusMinvdMdpMinv, t, 0.0, v);
+
+	*fsg = -(mu*gsl_vector_get(v, 1) - mu*fs*gsl_vector_get(v, 0));
+	*ssg = -(mu*gsl_vector_get(v, 2) - mu*ss*gsl_vector_get(v, 0));
+
+	gsl_vector_free(v);
+	gsl_matrix_free(minusMinvdMdpMinv);
+	gsl_matrix_free(dMdp);
+	gsl_matrix_free(minusMinvdMdp);
+	gsl_vector_free(t);
+
+	return 0;
 }
 
 

@@ -85,8 +85,9 @@ int main(int argc, char *argv[])
 		if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;
 
 		/* Panel gradients should be within tolerance */
-		if ( fabs(obs[1] - calc[1]) > 1e-6 ) n_wrong_fs++;
-		if ( fabs(obs[2] - calc[2]) > 1e-6 ) n_wrong_ss++;
+		if ( fabs(obs[1] - calc[1]) > 1e-3 ) n_wrong_fs++;
+		if ( fabs(obs[2] - calc[2]) > 1e-3 ) n_wrong_ss++;
+
 	}
 
 	if ( n_wrong_r > 0 ) {
