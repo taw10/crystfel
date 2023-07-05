@@ -97,6 +97,18 @@ void show_matrix(gsl_matrix *M)
 }
 
 
+void show_vector(gsl_vector *v)
+{
+	int i;
+
+	for ( i=0; i<v->size; i++ ) {
+		STATUS("[ ");
+		STATUS("%+9.3e ", gsl_vector_get(v, i));
+		STATUS("]\n");
+	}
+}
+
+
 static int check_eigen(gsl_vector *e_val, int verbose)
 {
 	int i;
