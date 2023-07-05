@@ -146,6 +146,7 @@ build-deploy-local-maxwell:
     - if [ -d /software/crystfel/devel ]; then
         mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
       fi
+    - module load maxwell git
     - ./run-me-desy-maxwell-centos7 --yes-really
   rules:
     - if: $MAXWELL_DEPLOYMENT == "local"  &&  $CI_COMMIT_BRANCH == "master"
