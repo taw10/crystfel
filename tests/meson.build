@@ -96,16 +96,19 @@ exe = executable('prof2d_check',
 test('prof2d_check', exe)
 
 
-# Refinement gradient checks
-gradient_tests = ['gradient_panel_x',
-                  'gradient_cell_asx']
+# Refinement gradient checks, part 1: panel positions
+panel_gradient_tests = [['gradient_panel_x', 'cnx', 'GPARAM_DET_TX'],
+                        ['gradient_panel_y', 'cny', 'GPARAM_DET_TY'],
+                        ['gradient_panel_z', 'cnz', 'GPARAM_DET_TZ']]
 
-foreach name : gradient_tests
-  exe = executable(name,
-                   [''.join([name, '.c']),
+foreach name : panel_gradient_tests
+  exe = executable(name[0],
+                   ['gradient_panel_move.c',
                     'gradient_check_utils.c'],
+                   c_args : ['-DTHING_TO_MOVE='+name[1],
+                             '-DTEST_GPARAM='+name[2]],
                    dependencies : [libcrystfeldep, mdep, gsldep])
-  test(name, exe)
+  test(name[0], exe)
 endforeach
 
 

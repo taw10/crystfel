@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	panel_matrices = make_panel_minvs(image.detgeom);
 
 	before = make_dev_list(rps, n_refls, image.detgeom);
-	image.detgeom->panels[0].cnx += step;
+	image.detgeom->panels[0].THING_TO_MOVE += step;
 	update_predictions(image.crystals[0]);
 	after = make_dev_list(rps, n_refls, image.detgeom);
 
@@ -66,11 +66,11 @@ int main(int argc, char *argv[])
 		float calc[3];
 		double obs[3];
 
-		calc[0] = r_gradient(GPARAM_DET_TX, rps[i].refl,
+		calc[0] = r_gradient(TEST_GPARAM, rps[i].refl,
 		                     crystal_get_cell(image.crystals[0]),
 		                     image.lambda);
 
-		fs_ss_gradient(GPARAM_DET_TX, rps[i].refl,
+		fs_ss_gradient(TEST_GPARAM, rps[i].refl,
 		               crystal_get_cell(image.crystals[0]),
 		               &image.detgeom->panels[rps[i].peak->pn],
 		               panel_matrices[rps[i].peak->pn],
