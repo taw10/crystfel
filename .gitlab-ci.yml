@@ -148,15 +148,12 @@ build-centos7:
   artifacts:
     paths:
       - software/
+      - temp/crystfel/build/meson-logs/testlog.junit.xml
     when: on_success
     expire_in: 1 day
-  artifacts:
-    when: always
-    paths:
-      - temp/crystfel/build/meson-logs/testlog.junit.xml
     reports:
       junit: temp/crystfel/build/meson-logs/testlog.junit.xml
-    
+
 build-deploy-local-maxwell:
   tags:
     - maxwell
