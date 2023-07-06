@@ -153,9 +153,9 @@ build-centos7:
   artifacts:
     when: always
     paths:
-      - build/meson-logs/testlog.junit.xml
+      - work/crystfel/build/meson-logs/testlog.junit.xml
     reports:
-      junit: build/meson-logs/testlog.junit.xml
+      junit: work/crystfel/build/meson-logs/testlog.junit.xml
     
 build-deploy-local-maxwell:
   tags:
