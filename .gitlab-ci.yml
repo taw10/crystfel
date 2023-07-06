@@ -13,6 +13,12 @@ build-meson:
     - dnf install -y meson
     - meson build && ninja -C build
     - ninja -C build test
+  artifacts:
+    when: always
+    paths:
+      - build/meson-logs/testlog.junit.xml
+    reports:
+      junit: build/meson-logs/testlog.junit.xml
 
 build-meson-nohdf5:
   image: fedora:37
@@ -23,6 +29,12 @@ build-meson-nohdf5:
     - dnf install -y meson
     - meson build -Dhdf5=disabled && ninja -C build
     - ninja -C build test
+  artifacts:
+    when: always
+    paths:
+      - build/meson-logs/testlog.junit.xml
+    reports:
+      junit: build/meson-logs/testlog.junit.xml
 
 build_container_image:
   stage: build_container
@@ -96,6 +108,12 @@ build-native-macos:
     - meson build
     - ninja -C build
     - ninja -C build test
+  artifacts:
+    when: always
+    paths:
+      - build/meson-logs/testlog.junit.xml
+    reports:
+      junit: build/meson-logs/testlog.junit.xml
 
 build-brew-macos:
   stage: test_brew
@@ -132,6 +150,12 @@ build-centos7:
       - software/
     when: on_success
     expire_in: 1 day
+  artifacts:
+    when: always
+    paths:
+      - build/meson-logs/testlog.junit.xml
+    reports:
+      junit: build/meson-logs/testlog.junit.xml
     
 build-deploy-local-maxwell:
   tags:
