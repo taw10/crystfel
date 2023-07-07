@@ -50,14 +50,32 @@ int main(int argc, char *argv[])
 	int n_wrong_ss = 0;
 	int n_wrong_obsr = 0;
 	int fail = 0;
-	double step = 0.1;  /* Pixels */
+	double step;
 	gsl_matrix **panel_matrices;
 
 	rps = make_test_image(&n_refls, &image);
 	panel_matrices = make_panel_minvs(image.detgeom);
 
 	before = make_dev_list(rps, n_refls, image.detgeom);
+
+	#ifdef MOVE_PANEL
+	step = 0.1;  /* Pixels */
 	image.detgeom->panels[0].THING_TO_MOVE += step;
+	#endif
+
+	#ifdef CHANGE_CELL
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	UnitCell *cell = crystal_get_cell(image.crystals[0]);
+	step = 0.5e5;
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	THING_TO_MOVE += step;
+	cell_set_reciprocal(cell, asx, asy, asz,
+	                          bsx, bsy, bsz,
+	                          csx, csy, csz);
+	#endif
+
 	update_predictions(image.crystals[0]);
 	after = make_dev_list(rps, n_refls, image.detgeom);
 
@@ -80,13 +98,18 @@ int main(int argc, char *argv[])
 		obs[1] = (after[1][i] - before[1][i]) / step;
 		obs[2] = (after[2][i] - before[2][i]) / step;
 
-		/* Gradient of excitation error w.r.t. panel should be zero */
-		if ( fabs(obs[0]) > 1e-12 ) n_wrong_obsr++;
-		if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;
-
-		/* Panel gradients should be within tolerance */
+		#ifdef MOVE_PANEL
+		if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;  /* Should be zero */
+		if ( fabs(obs[0]) > 1e-12 ) n_wrong_obsr++;  /* Should also be zero */
 		if ( fabs(obs[1] - calc[1]) > 1e-3 ) n_wrong_fs++;
 		if ( fabs(obs[2] - calc[2]) > 1e-3 ) n_wrong_ss++;
+		#endif
+
+		#ifdef CHANGE_CELL
+		if ( fabs(obs[0] - calc[0]) > 1e-2 ) n_wrong_r++;
+		if ( fabs(obs[1] - calc[1]) > 1e-8 ) n_wrong_fs++;
+		if ( fabs(obs[2] - calc[2]) > 1e-8 ) n_wrong_ss++;
+		#endif
 
 	}
 
