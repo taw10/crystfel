@@ -103,7 +103,7 @@ panel_gradient_tests = [['gradient_panel_x', 'cnx', 'GPARAM_DET_TX'],
 
 foreach name : panel_gradient_tests
   exe = executable(name[0],
-                   ['gradient_panel_move.c',
+                   ['gradient_check.c',
                     'gradient_check_utils.c'],
                    c_args : ['-DTHING_TO_MOVE='+name[1],
                              '-DTEST_GPARAM='+name[2],
@@ -126,7 +126,7 @@ panel_gradient_tests = [['gradient_cell_asx', 'asx', 'GPARAM_ASX'],
 
 foreach name : panel_gradient_tests
   exe = executable(name[0],
-                   ['gradient_panel_move.c',
+                   ['gradient_check.c',
                     'gradient_check_utils.c'],
                    c_args : ['-DTHING_TO_MOVE='+name[1],
                              '-DTEST_GPARAM='+name[2],
