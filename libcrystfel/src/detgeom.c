@@ -230,48 +230,6 @@ void detgeom_translate_detector_m(struct detgeom *dg, double x, double y, double
 }
 
 
-static gsl_matrix *invert(gsl_matrix *m)
-{
-	gsl_permutation *perm;
-	gsl_matrix *inv;
-	int s;
-
-	perm = gsl_permutation_alloc(m->size1);
-	if ( perm == NULL ) {
-		ERROR("Couldn't allocate permutation\n");
-		gsl_matrix_free(m);
-		return NULL;
-	}
-
-	inv = gsl_matrix_alloc(m->size1, m->size2);
-	if ( inv == NULL ) {
-		ERROR("Couldn't allocate inverse\n");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		return NULL;
-	}
-
-	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
-		ERROR("Couldn't decompose matrix\n");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		return NULL;
-	}
-
-	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert cell matrix:\n");
-		gsl_matrix_free(m);
-		gsl_permutation_free(perm);
-		return NULL;
-	}
-
-	gsl_permutation_free(perm);
-	gsl_matrix_free(m);
-
-	return inv;
-}
-
-
 gsl_matrix **make_panel_minvs(struct detgeom *dg)
 {
 	int i;
@@ -295,7 +253,7 @@ gsl_matrix **make_panel_minvs(struct detgeom *dg)
 		gsl_matrix_set(M, 2, 1, p->fsz);
 		gsl_matrix_set(M, 2, 2, p->ssz);
 
-		Minvs[i] = invert(M);
+		Minvs[i] = matrix_invert(M);
 		if ( Minvs[i] == NULL ) {
 			ERROR("Failed to calculate inverse panel matrix for %s\n",
 			      p->name);

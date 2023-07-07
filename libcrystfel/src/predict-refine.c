@@ -156,8 +156,7 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	gsl_matrix *M;
 	double mu;
 	gsl_matrix *dMdp;
-	gsl_matrix *minusMinvdMdp;
-	gsl_matrix *minusMinvdMdpMinv;
+	gsl_matrix *gM;  /* M^-1 * dM/dx * M^-1 */
 	double fs, ss;
 
 	get_indices(refl, &h, &k, &l);
@@ -287,19 +286,15 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 
 	}
 
-	minusMinvdMdp = gsl_matrix_calloc(3, 3);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, -1.0, Minv, dMdp, 0.0, minusMinvdMdp);
-	minusMinvdMdpMinv = gsl_matrix_calloc(3, 3);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, -1.0, minusMinvdMdp, Minv, 0.0, minusMinvdMdpMinv);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, minusMinvdMdpMinv, t, 0.0, v);
+	gM = matrix_mult3(Minv, dMdp, Minv);
+	gsl_blas_dgemv(CblasNoTrans, -1.0, gM, t, 0.0, v);
 
-	*fsg = -(mu*gsl_vector_get(v, 1) - mu*fs*gsl_vector_get(v, 0));
-	*ssg = -(mu*gsl_vector_get(v, 2) - mu*ss*gsl_vector_get(v, 0));
+	*fsg = mu*(gsl_vector_get(v, 1) - fs*gsl_vector_get(v, 0));
+	*ssg = mu*(gsl_vector_get(v, 2) - ss*gsl_vector_get(v, 0));
 
 	gsl_vector_free(v);
-	gsl_matrix_free(minusMinvdMdpMinv);
+	gsl_matrix_free(gM);
 	gsl_matrix_free(dMdp);
-	gsl_matrix_free(minusMinvdMdp);
 	gsl_vector_free(t);
 
 	return 0;
