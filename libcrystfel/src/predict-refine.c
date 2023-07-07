@@ -140,6 +140,164 @@ double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength
 }
 
 
+/* Spot position gradients for diffraction physics (anything that changes the
+ * diffracted ray direction) */
+int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
+                         struct detgeom_panel *p, gsl_matrix *Minv,
+                         double fs, double ss, double mu,
+                         float *fsg, float *ssg)
+{
+	signed int h, k, l;
+	double xl, yl, zl, kpred;
+	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+	gsl_vector *dRdp;
+	gsl_vector *v;
+
+	get_indices(refl, &h, &k, &l);
+	kpred = get_kpred(refl);
+	cell_get_reciprocal(cell, &asx, &asy, &asz,
+	                          &bsx, &bsy, &bsz,
+	                          &csx, &csy, &csz);
+	xl = h*asx + k*bsx + l*csx;
+	yl = h*asy + k*bsy + l*csy;
+	zl = h*asz + k*bsz + l*csz;
+
+	dRdp = gsl_vector_calloc(3);
+
+	switch ( param ) {
+
+		case GPARAM_ASX :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_BSX :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_CSX :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_ASY :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_BSY :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_CSY :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_ASZ :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_BSZ :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		case GPARAM_CSZ :
+		gsl_vector_set(dRdp, 0, 0.0);
+		gsl_vector_set(dRdp, 1, 0.0);
+		gsl_vector_set(dRdp, 2, 0.0);
+		break;
+
+		default :
+		ERROR("Invalid physics gradient %i\n", param);
+		return 1;
+	}
+
+	v = gsl_vector_calloc(3);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, Minv, dRdp, 0.0, v);
+
+	*fsg = mu*(gsl_vector_get(v, 1) - fs*gsl_vector_get(v, 0));
+	*ssg = mu*(gsl_vector_get(v, 2) - ss*gsl_vector_get(v, 0));
+
+	return 0;
+}
+
+
+/* Spot position gradients for panel motions (translation or rotation) */
+int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
+                         struct detgeom_panel *p, gsl_matrix *Minv,
+                         double fs, double ss, double mu,
+                         gsl_vector *t,
+                         float *fsg, float *ssg)
+{
+	gsl_vector *v;
+	gsl_matrix *gM;  /* M^-1 * dM/dx * M^-1 */
+	gsl_matrix *dMdp = gsl_matrix_calloc(3, 3);
+
+	switch ( param ) {
+
+		case GPARAM_DET_TX :
+		gsl_matrix_set(dMdp, 0, 0, 1.0);
+		break;
+
+		case GPARAM_DET_TY :
+		gsl_matrix_set(dMdp, 1, 0, 1.0);
+		break;
+
+		case GPARAM_DET_TZ :
+		gsl_matrix_set(dMdp, 2, 0, 1.0);
+		break;
+
+		case GPARAM_DET_RX :
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
+
+		case GPARAM_DET_RY :
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
+
+		case GPARAM_DET_RZ :
+		*fsg = 0.0;
+		*ssg = 0.0;
+		return 0;
+
+		default:
+		ERROR("Invalid panel gradient %i\n", param);
+		return 1;
+
+	}
+
+	gM = matrix_mult3(Minv, dMdp, Minv);
+	gsl_matrix_free(dMdp);
+
+	v = gsl_vector_calloc(3);
+	gsl_blas_dgemv(CblasNoTrans, -1.0, gM, t, 0.0, v);
+	gsl_vector_free(t);
+	gsl_matrix_free(gM);
+
+	*fsg = mu*(gsl_vector_get(v, 1) - fs*gsl_vector_get(v, 0));
+	*ssg = mu*(gsl_vector_get(v, 2) - ss*gsl_vector_get(v, 0));
+
+	gsl_vector_free(v);
+
+	return 0;
+}
+
+
 /* Returns dfs_refl/dP and fss_refl/dP, where P = any parameter
  * fs_refl is the fast scan position of refl in panel 'p',
  * in metres (not pixels) */
@@ -155,8 +313,6 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	gsl_vector *v;
 	gsl_matrix *M;
 	double mu;
-	gsl_matrix *dMdp;
-	gsl_matrix *gM;  /* M^-1 * dM/dx * M^-1 */
 	double fs, ss;
 
 	get_indices(refl, &h, &k, &l);
@@ -200,104 +356,23 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 		ERROR("Failed to solve gradient equation\n");
 		return 1;
 	}
-
 	gsl_matrix_free(M);
+
 	mu = 1.0 / gsl_vector_get(v, 0);
 	fs = mu*gsl_vector_get(v, 1);
 	ss = mu*gsl_vector_get(v, 2);
-
-	dMdp = gsl_matrix_calloc(3, 3);
-	switch ( param ) {
-
-		case GPARAM_ASX :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_BSX :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_CSX :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_ASY :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_BSY :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_CSY :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_ASZ :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_BSZ :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_CSZ :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_DET_TX :
-		gsl_matrix_set(dMdp, 0, 0, 1.0);
-		break;
-
-		case GPARAM_DET_TY :
-		gsl_matrix_set(dMdp, 1, 0, 1.0);
-		break;
-
-		case GPARAM_DET_TZ :
-		gsl_matrix_set(dMdp, 2, 0, 1.0);
-		break;
-
-		case GPARAM_DET_RX :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_DET_RY :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		case GPARAM_DET_RZ :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
-
-		default:
-		return 1;
-
-	}
-
-	gM = matrix_mult3(Minv, dMdp, Minv);
-	gsl_blas_dgemv(CblasNoTrans, -1.0, gM, t, 0.0, v);
-
-	*fsg = mu*(gsl_vector_get(v, 1) - fs*gsl_vector_get(v, 0));
-	*ssg = mu*(gsl_vector_get(v, 2) - ss*gsl_vector_get(v, 0));
-
 	gsl_vector_free(v);
-	gsl_matrix_free(gM);
-	gsl_matrix_free(dMdp);
-	gsl_vector_free(t);
 
-	return 0;
+	if ( param <= GPARAM_CSZ ) {
+		gsl_vector_free(t);
+		return fs_ss_gradient_physics(param, refl, cell, p,
+		                              Minv, fs, ss, mu,
+		                              fsg, ssg);
+	} else {
+		return fs_ss_gradient_panel(param, refl, cell, p,
+		                            Minv, fs, ss, mu, t,
+		                            fsg, ssg);
+	}
 }
 
 
