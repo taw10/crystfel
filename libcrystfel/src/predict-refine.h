@@ -82,6 +82,7 @@ extern double r_gradient(int param, Reflection *refl, UnitCell *cell,
 
 extern int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
                           struct detgeom_panel *p, gsl_matrix *panel_Minv,
+                          double cx, double cy, double cz,
                           float *fsg, float *ssg);
 
 #endif	/* PREDICT_REFINE_H */

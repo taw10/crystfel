@@ -52,15 +52,47 @@ int main(int argc, char *argv[])
 	int fail = 0;
 	double step;
 	gsl_matrix **panel_matrices;
+	int didsomething = 0;
+	const double cx = -200.0;
+	const double cy = +100.0;
+	const double cz = -50.0;
 
 	rps = make_test_image(&n_refls, &image);
 	panel_matrices = make_panel_minvs(image.detgeom);
 
 	before = make_dev_list(rps, n_refls, image.detgeom);
 
-	#ifdef MOVE_PANEL
+	#ifdef TRANSLATE_PANEL
 	step = 0.1;  /* Pixels */
 	image.detgeom->panels[0].THING_TO_MOVE += step;
+	didsomething = 1;
+	#endif
+
+	#ifdef ROTATE_PANEL_X
+	struct detgeom_panel *p = &image.detgeom->panels[0];
+	step = deg2rad(0.01);
+	rotate2d(&p->cnz, &p->cny, cz, cy, step);
+	rotate2d(&p->fsz, &p->fsy, 0, 0, step);
+	rotate2d(&p->ssz, &p->ssy, 0, 0, step);
+	didsomething = 1;
+	#endif
+
+	#ifdef ROTATE_PANEL_Y
+	struct detgeom_panel *p = &image.detgeom->panels[0];
+	step = deg2rad(0.01);
+	rotate2d(&p->cnx, &p->cnz, cx, cz, step);
+	rotate2d(&p->fsx, &p->fsz, 0, 0, step);
+	rotate2d(&p->ssx, &p->ssz, 0, 0, step);
+	didsomething = 1;
+	#endif
+
+	#ifdef ROTATE_PANEL_Z
+	struct detgeom_panel *p = &image.detgeom->panels[0];
+	step = deg2rad(0.01);
+	rotate2d(&p->cnx, &p->cny, cx, cy, step);
+	rotate2d(&p->fsx, &p->fsy, 0, 0, step);
+	rotate2d(&p->ssx, &p->ssy, 0, 0, step);
+	didsomething = 1;
 	#endif
 
 	#ifdef CHANGE_CELL
@@ -74,7 +106,13 @@ int main(int argc, char *argv[])
 	cell_set_reciprocal(cell, asx, asy, asz,
 	                          bsx, bsy, bsz,
 	                          csx, csy, csz);
+	didsomething = 1;
 	#endif
+
+	if ( !didsomething ) {
+		fprintf(stderr, "Nothing changed.  Check the build system.\n");
+		return 1;
+	}
 
 	update_predictions(image.crystals[0]);
 	after = make_dev_list(rps, n_refls, image.detgeom);
@@ -91,18 +129,25 @@ int main(int argc, char *argv[])
 		fs_ss_gradient(TEST_GPARAM, rps[i].refl,
 		               crystal_get_cell(image.crystals[0]),
 		               &image.detgeom->panels[rps[i].peak->pn],
-		               panel_matrices[rps[i].peak->pn],
+		               panel_matrices[rps[i].peak->pn], cx, cy, cz,
 		               &calc[1], &calc[2]);
 
 		obs[0] = (after[0][i] - before[0][i]) / step;
 		obs[1] = (after[1][i] - before[1][i]) / step;
 		obs[2] = (after[2][i] - before[2][i]) / step;
 
-		#ifdef MOVE_PANEL
+		#ifdef TRANSLATE_PANEL
 		if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;  /* Should be zero */
 		if ( fabs(obs[0]) > 1e-12 ) n_wrong_obsr++;  /* Should also be zero */
 		if ( fabs(obs[1] - calc[1]) > 1e-3 ) n_wrong_fs++;
 		if ( fabs(obs[2] - calc[2]) > 1e-3 ) n_wrong_ss++;
+		#endif
+
+		#if defined(ROTATE_PANEL_X) || defined(ROTATE_PANEL_Y) || defined(ROTATE_PANEL_Z)
+		if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;  /* Should be zero */
+		if ( fabs(obs[0]) > 1e-12 ) n_wrong_obsr++;  /* Should also be zero */
+		if ( fabs(obs[1] - calc[1]) > 1.0 ) n_wrong_fs++;  /* Units are pixels/rad */
+		if ( fabs(obs[2] - calc[2]) > 1.0 ) n_wrong_ss++;  /* (numbers are big) */
 		#endif
 
 		#ifdef CHANGE_CELL

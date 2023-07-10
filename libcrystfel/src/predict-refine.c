@@ -239,7 +239,7 @@ int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
 int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
                          struct detgeom_panel *p, gsl_matrix *Minv,
                          double fs, double ss, double mu,
-                         gsl_vector *t,
+                         gsl_vector *t, double cx, double cy, double cz,
                          float *fsg, float *ssg)
 {
 	gsl_vector *v;
@@ -261,19 +261,31 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
 		break;
 
 		case GPARAM_DET_RX :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
+		gsl_matrix_set(dMdp, 1, 0, p->cnz-cz);
+		gsl_matrix_set(dMdp, 2, 0, cy-p->cny);
+		gsl_matrix_set(dMdp, 1, 1, p->fsz);
+		gsl_matrix_set(dMdp, 2, 1, -p->fsy);
+		gsl_matrix_set(dMdp, 1, 2, p->ssz);
+		gsl_matrix_set(dMdp, 2, 2, -p->ssy);
+		break;
 
 		case GPARAM_DET_RY :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
+		gsl_matrix_set(dMdp, 0, 0, cz-p->cnz);
+		gsl_matrix_set(dMdp, 2, 0, p->cnx-cx);
+		gsl_matrix_set(dMdp, 0, 1, -p->fsz);
+		gsl_matrix_set(dMdp, 2, 1, p->fsx);
+		gsl_matrix_set(dMdp, 0, 2, -p->ssz);
+		gsl_matrix_set(dMdp, 2, 2, p->ssx);
+		break;
 
 		case GPARAM_DET_RZ :
-		*fsg = 0.0;
-		*ssg = 0.0;
-		return 0;
+		gsl_matrix_set(dMdp, 0, 0, cy-p->cny);
+		gsl_matrix_set(dMdp, 1, 0, p->cnx-cx);
+		gsl_matrix_set(dMdp, 0, 1, -p->fsy);
+		gsl_matrix_set(dMdp, 1, 1, p->fsx);
+		gsl_matrix_set(dMdp, 0, 2, -p->ssy);
+		gsl_matrix_set(dMdp, 1, 2, p->ssx);
+		break;
 
 		default:
 		ERROR("Invalid panel gradient %i\n", param);
@@ -303,6 +315,7 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
  * in metres (not pixels) */
 int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
                    struct detgeom_panel *p, gsl_matrix *Minv,
+                   double cx, double cy, double cz,
                    float *fsg, float *ssg)
 {
 	signed int h, k, l;
@@ -371,7 +384,7 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	} else {
 		return fs_ss_gradient_panel(param, refl, cell, p,
 		                            Minv, fs, ss, mu, t,
-		                            fsg, ssg);
+		                            cx, cy, cz, fsg, ssg);
 	}
 }
 
@@ -648,7 +661,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 			                            image->lambda);
 			fs_ss_gradient(rv[k], rps[i].refl, cell,
 			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn],
+			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &fs_gradients[k], &ss_gradients[k]);
 
 		}

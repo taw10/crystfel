@@ -96,7 +96,7 @@ exe = executable('prof2d_check',
 test('prof2d_check', exe)
 
 
-# Refinement gradient checks, part 1: panel positions
+# Refinement gradient checks, part 1: panel translations
 panel_gradient_tests = [['gradient_panel_x', 'cnx', 'GPARAM_DET_TX'],
                         ['gradient_panel_y', 'cny', 'GPARAM_DET_TY'],
                         ['gradient_panel_z', 'cnz', 'GPARAM_DET_TZ']]
@@ -107,13 +107,29 @@ foreach name : panel_gradient_tests
                     'gradient_check_utils.c'],
                    c_args : ['-DTHING_TO_MOVE='+name[1],
                              '-DTEST_GPARAM='+name[2],
-                             '-DMOVE_PANEL=1'],
+                             '-DTRANSLATE_PANEL=1'],
                    dependencies : [libcrystfeldep, mdep, gsldep])
   test(name[0], exe)
 endforeach
 
 
-# Refinement gradient checks, part 2: diffraction physics
+# Refinement gradient checks, part 2: panel rotations
+panel_gradient_tests = [['gradient_panel_rx', '-DROTATE_PANEL_X', 'GPARAM_DET_RX'],
+                        ['gradient_panel_ry', '-DROTATE_PANEL_Y', 'GPARAM_DET_RY'],
+                        ['gradient_panel_rz', '-DROTATE_PANEL_Z', 'GPARAM_DET_RZ']]
+
+foreach name : panel_gradient_tests
+  exe = executable(name[0],
+                   ['gradient_check.c',
+                    'gradient_check_utils.c'],
+                   c_args : [name[1],
+                             '-DTEST_GPARAM='+name[2]],
+                   dependencies : [libcrystfeldep, mdep, gsldep])
+  test(name[0], exe)
+endforeach
+
+
+# Refinement gradient checks, part 3: diffraction physics
 panel_gradient_tests = [['gradient_cell_asx', 'asx', 'GPARAM_ASX'],
                         ['gradient_cell_asy', 'asy', 'GPARAM_ASY'],
                         ['gradient_cell_asz', 'asz', 'GPARAM_ASZ'],
