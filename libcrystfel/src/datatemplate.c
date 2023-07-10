@@ -2192,15 +2192,6 @@ static int group_center(DataTemplate *dtempl,
 }
 
 
-static void rot(double *x, double *y, double cx, double cy, double ang)
-{
-	double nx, ny;
-	nx = cx + (*x-cx)*cos(ang) - (*y-cy)*sin(ang);
-	ny = cy + (*x-cx)*sin(ang) + (*y-cy)*cos(ang);
-	*x = nx;  *y = ny;
-}
-
-
 static int rotate_all_panels(DataTemplate *dtempl,
                              struct panel_group_template *group,
                              char axis, double ang,
@@ -2220,23 +2211,23 @@ static int rotate_all_panels(DataTemplate *dtempl,
 		switch ( axis )
 		{
 			case 'x':
-			rot(&cnz_px, &p->cny, cz, cy, ang);
-			rot(&p->fsz, &p->fsy, 0, 0, ang);
-			rot(&p->ssz, &p->ssy, 0, 0, ang);
+			rotate2d(&cnz_px, &p->cny, cz, cy, ang);
+			rotate2d(&p->fsz, &p->fsy, 0, 0, ang);
+			rotate2d(&p->ssz, &p->ssy, 0, 0, ang);
 			p->cnz_offset = cnz_px * p->pixel_pitch;
 			break;
 
 			case 'y':
-			rot(&p->cnx, &cnz_px, cx, cz, ang);
-			rot(&p->fsx, &p->fsz, 0, 0, ang);
-			rot(&p->ssx, &p->ssz, 0, 0, ang);
+			rotate2d(&p->cnx, &cnz_px, cx, cz, ang);
+			rotate2d(&p->fsx, &p->fsz, 0, 0, ang);
+			rotate2d(&p->ssx, &p->ssz, 0, 0, ang);
 			p->cnz_offset = cnz_px * p->pixel_pitch;
 			break;
 
 			case 'z':
-			rot(&p->cnx, &p->cny, cx, cy, ang);
-			rot(&p->fsx, &p->fsy, 0, 0, ang);
-			rot(&p->ssx, &p->ssy, 0, 0, ang);
+			rotate2d(&p->cnx, &p->cny, cx, cy, ang);
+			rotate2d(&p->fsx, &p->fsy, 0, 0, ang);
+			rotate2d(&p->ssx, &p->ssy, 0, 0, ang);
 			break;
 
 			default:

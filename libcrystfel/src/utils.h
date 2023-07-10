@@ -168,6 +168,8 @@ static inline int within_tolerance(double a, double b, double percent)
 	return 0;
 }
 
+extern void rotate2d(double *x, double *y, double cx, double cy, double ang);
+
 
 /* ----------------------------- Useful macros ------------------------------ */
 

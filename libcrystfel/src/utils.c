@@ -470,6 +470,15 @@ void progress_bar(int val, int total, const char *text)
 }
 
 
+void rotate2d(double *x, double *y, double cx, double cy, double ang)
+{
+	double nx, ny;
+	nx = cx + (*x-cx)*cos(ang) - (*y-cy)*sin(ang);
+	ny = cy + (*x-cx)*sin(ang) + (*y-cy)*cos(ang);
+	*x = nx;  *y = ny;
+}
+
+
 double random_flat(gsl_rng *rng, double max)
 {
 	return max * gsl_rng_uniform(rng);
