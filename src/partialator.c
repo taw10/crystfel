@@ -332,6 +332,7 @@ static void show_help(const char *s)
 "  -i, --input=<filename>     Specify the name of the input 'stream'.\n"
 "  -o, --output=<filename>    Output filename.  Default: partialator.hkl.\n"
 "      --output-every-cycle   Write .hkl* and .params files in every cycle.\n"
+"      --unmerged-output=<f>  Write unmerged (but scaled and corrected) intensities.\n"
 "  -y, --symmetry=<sym>       Merge according to symmetry <sym>.\n"
 "      --start-after=<n>      Skip <n> crystals at the start of the stream.\n"
 "      --stop-after=<n>       Stop after merging <n> crystals.\n"
@@ -1068,6 +1069,7 @@ int main(int argc, char *argv[])
 	                                  .streams = NULL};
 	char *outfile = NULL;
 	char *sym_str = NULL;
+	char *unmerged_filename = NULL;
 	SymOpList *sym;
 	SymOpList *amb;
 	SymOpList *w_sym;
@@ -1151,6 +1153,7 @@ int main(int argc, char *argv[])
 		{"no-polarization",    0, NULL,               15}, /* compat */
 		{"harvest-file",       1, NULL,               16},
 		{"log-folder",         1, NULL,               17},
+		{"unmerged-output",    1, NULL,               18},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-Bscale",          0, &no_Bscale,          1},
@@ -1342,6 +1345,10 @@ int main(int argc, char *argv[])
 
 			case 17 :
 			log_folder = strdup(optarg);
+			break;
+
+			case 18 :
+			unmerged_filename = strdup(optarg);
 			break;
 
 			case 0 :
@@ -1788,6 +1795,10 @@ int main(int argc, char *argv[])
 	} else {
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1, 0);
+	}
+
+	if ( unmerged_filename != NULL ) {
+		write_unmerged(unmerged_filename, crystals, n_crystals);
 	}
 
 	/* Write final figures of merit (no rejection any more) */

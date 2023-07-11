@@ -484,3 +484,64 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 	if ( pn_used != NULL ) *pn_used = n_used;
 	return dev;
 }
+
+
+/* Has to match run_merge_job to be useful */
+void write_unmerged(const char *fn, Crystal **crystals, int n_crystals)
+{
+	FILE *fh;
+	int i;
+
+	fh = fopen(fn, "w");
+	if ( fh == NULL ) {
+		ERROR("Failed to open %s\n", fn);
+		return;
+	}
+
+	for ( i=0; i<n_crystals; i++ ) {
+
+		Reflection *refl;
+		RefListIterator *iter;
+		double G, B;
+		UnitCell *cell;
+
+		fprintf(fh, "Crystal %i\n", i);
+		if ( crystal_get_user_flag(crystals[i]) ) {
+			fprintf(fh, "Flagged: yes\n");
+		} else {
+			fprintf(fh, "Flagged: no\n");
+		}
+
+		G = crystal_get_osf(crystals[i]);
+		B = crystal_get_Bfac(crystals[i]);
+		cell = crystal_get_cell(crystals[i]);
+
+		for ( refl = first_refl(crystal_get_reflections(crystals[i]), &iter);
+		      refl != NULL;
+		      refl = next_refl(refl, iter) )
+		{
+			signed int h, k, l;
+			double res;
+
+			get_indices(refl, &h, &k, &l);
+			res = resolution(cell, h, k, l);
+			fprintf(fh, "%4i %4i %4i %10.2f %10.2f", h, k, l,
+			        correct_reflection(get_intensity(refl), refl, G,  B, res),
+			        get_partiality(refl) / correct_reflection_nopart(1.0, refl, G, B, res));
+
+			if ( get_partiality(refl) < MIN_PART_MERGE ) {
+				fprintf(fh, " partiality_too_small");
+			}
+			if ( isnan(get_esd_intensity(refl)) ) {
+				fprintf(fh, " nan_esd");
+			}
+			fprintf(fh, "\n");
+
+		}
+
+		fprintf(fh, "\n");
+
+	}
+
+	fclose(fh);
+}
