@@ -592,9 +592,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-
-	const enum gparam rv[] =
-	{
+	const enum gparam rv[] = {
 		GPARAM_ASX,
 		GPARAM_ASY,
 		GPARAM_ASZ,
@@ -605,7 +603,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		GPARAM_CSY,
 		GPARAM_CSZ,
 	};
-	int num_params = 9;
+	const int num_params = 9;
 
 	/* Number of parameters to refine */
 	M = gsl_matrix_calloc(num_params, num_params);
@@ -614,25 +612,21 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	for ( i=0; i<n; i++ ) {
 
 		int k;
-		double r_gradients[num_params];
 		float fs_gradients[num_params];
 		float ss_gradients[num_params];
+		float r_gradients[num_params];
 		double w;
 
-		w = rps[i].Ih;
-
-		/* Calculate the gradients w.r.t. all parameters, for the
-		 * three measurements (r, fs, ss) of this reflpeak */
+		/* Calculate all gradients for this parameter */
 		for ( k=0; k<num_params; k++ ) {
-			r_gradients[k] = r_gradient(rv[k], rps[i].refl, cell,
-			                            image->lambda);
-			fs_ss_gradient(rv[k], rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], 0, 0, 0,
-			               &fs_gradients[k], &ss_gradients[k]);
-
+			int pn = rps[i].peak->pn;
+			r_gradients[k] = r_gradient(rv[k], rps[i].refl, cell, image->lambda);
+			fs_ss_gradient(rv[k], rps[i].refl, cell, &image->detgeom->panels[pn],
+			               Minvs[pn], 0, 0, 0, &fs_gradients[k], &ss_gradients[k]);
 		}
 
+		/* Excitation error terms */
+		w = EXC_WEIGHT * rps[i].Ih;
 		for ( k=0; k<num_params; k++ ) {
 
 			int g;
@@ -646,17 +640,68 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 				if ( g > k ) continue;
 
 				M_c = w * r_gradients[g] * r_gradients[k];
-				M_c += w * fs_gradients[g] * fs_gradients[k];
-				M_c += w * ss_gradients[g] * ss_gradients[k];
 				M_curr = gsl_matrix_get(M, k, g);
 				gsl_matrix_set(M, k, g, M_curr + M_c);
 				gsl_matrix_set(M, g, k, M_curr + M_c);
 
 			}
 
-			v_c = -w * r_dev(&rps[i]) * r_gradients[k];
-			v_c += -fs_dev(&rps[i], image->detgeom) * fs_gradients[k];
-			v_c += -ss_dev(&rps[i], image->detgeom) * ss_gradients[k];
+			v_c = w * r_dev(&rps[i]);
+			v_c *= -r_gradients[k];
+			v_curr = gsl_vector_get(v, k);
+			gsl_vector_set(v, k, v_curr + v_c);
+
+		}
+
+		/* Positional fs terms */
+		for ( k=0; k<num_params; k++ ) {
+
+			int g;
+			double v_c, v_curr;
+
+			for ( g=0; g<num_params; g++ ) {
+
+				double M_c, M_curr;
+
+				/* Matrix is symmetric */
+				if ( g > k ) continue;
+
+				M_c = fs_gradients[g] * fs_gradients[k];
+				M_curr = gsl_matrix_get(M, k, g);
+				gsl_matrix_set(M, k, g, M_curr + M_c);
+				gsl_matrix_set(M, g, k, M_curr + M_c);
+
+			}
+
+			v_c = fs_dev(&rps[i], image->detgeom);
+			v_c *= -fs_gradients[k];
+			v_curr = gsl_vector_get(v, k);
+			gsl_vector_set(v, k, v_curr + v_c);
+
+		}
+
+		/* Positional ss terms */
+		for ( k=0; k<num_params; k++ ) {
+
+			int g;
+			double v_c, v_curr;
+
+			for ( g=0; g<num_params; g++ ) {
+
+				double M_c, M_curr;
+
+				/* Matrix is symmetric */
+				if ( g > k ) continue;
+
+				M_c = ss_gradients[g] * ss_gradients[k];
+				M_curr = gsl_matrix_get(M, k, g);
+				gsl_matrix_set(M, k, g, M_curr + M_c);
+				gsl_matrix_set(M, g, k, M_curr + M_c);
+
+			}
+
+			v_c = ss_dev(&rps[i], image->detgeom);
+			v_c *= -ss_gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
 
@@ -666,9 +711,8 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 
 	int k;
 	for ( k=0; k<num_params; k++ ) {
-		double M_curr;
-		M_curr = gsl_matrix_get(M, k, k);
-		gsl_matrix_set(M, k, k, M_curr);
+		double M_curr = gsl_matrix_get(M, k, k);
+		gsl_matrix_set(M, k, k, M_curr+1e-18);
 	}
 
 	//show_matrix_eqn(M, v);
