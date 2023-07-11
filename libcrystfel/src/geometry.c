@@ -53,16 +53,10 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
                                 double det_shift_x, double det_shift_y,
                                 double *pfs, double *pss)
 {
-	double ctt, tta, phi;
 	gsl_vector *v;
 	gsl_vector *t;
 	gsl_matrix *M;
 	double fs, ss, one_over_mu;
-
-	/* Calculate 2theta (scattering angle) and azimuth (phi) */
-	tta = atan2(sqrt(x*x+y*y), k+z);
-	ctt = cos(tta);
-	phi = atan2(y, x);
 
 	/* Set up matrix equation */
 	M = gsl_matrix_alloc(3, 3);
@@ -73,9 +67,9 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 		return 0;
 	}
 
-	gsl_vector_set(t, 0, sin(tta)*cos(phi));
-	gsl_vector_set(t, 1, sin(tta)*sin(phi));
-	gsl_vector_set(t, 2, ctt);
+	gsl_vector_set(t, 0, x);
+	gsl_vector_set(t, 1, y);
+	gsl_vector_set(t, 2, k+z);
 
 	gsl_matrix_set(M, 0, 0, p->cnx+(det_shift_x/p->pixel_pitch));
 	gsl_matrix_set(M, 0, 1, p->fsx);

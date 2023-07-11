@@ -148,76 +148,49 @@ int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
                          float *fsg, float *ssg)
 {
 	signed int h, k, l;
-	double xl, yl, zl, kpred;
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 	gsl_vector *dRdp;
 	gsl_vector *v;
 
 	get_indices(refl, &h, &k, &l);
-	kpred = get_kpred(refl);
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	xl = h*asx + k*bsx + l*csx;
-	yl = h*asy + k*bsy + l*csy;
-	zl = h*asz + k*bsz + l*csz;
 
 	dRdp = gsl_vector_calloc(3);
 
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 0, h);
 		break;
 
 		case GPARAM_BSX :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 0, k);
 		break;
 
 		case GPARAM_CSX :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 0, l);
 		break;
 
 		case GPARAM_ASY :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 1, h);
 		break;
 
 		case GPARAM_BSY :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 1, k);
 		break;
 
 		case GPARAM_CSY :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 1, l);
 		break;
 
 		case GPARAM_ASZ :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 2, h);
 		break;
 
 		case GPARAM_BSZ :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 2, k);
 		break;
 
 		case GPARAM_CSZ :
-		gsl_vector_set(dRdp, 0, 0.0);
-		gsl_vector_set(dRdp, 1, 0.0);
-		gsl_vector_set(dRdp, 2, 0.0);
+		gsl_vector_set(dRdp, 2, l);
 		break;
 
 		default :
@@ -321,7 +294,6 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	signed int h, k, l;
 	double xl, yl, zl, kpred;
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-	double tta, ctt, phi;
 	gsl_vector *t;
 	gsl_vector *v;
 	gsl_matrix *M;
@@ -337,11 +309,6 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	yl = h*asy + k*bsy + l*csy;
 	zl = h*asz + k*bsz + l*csz;
 
-	/* Calculate 2theta (scattering angle) and azimuth (phi) */
-	tta = atan2(sqrt(xl*xl+yl*yl), kpred+zl);
-	ctt = cos(tta);
-	phi = atan2(yl, xl);
-
 	/* Set up matrix equation */
 	M = gsl_matrix_alloc(3, 3);
 	v = gsl_vector_alloc(3);
@@ -351,9 +318,9 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 		return 1;
 	}
 
-	gsl_vector_set(t, 0, sin(tta)*cos(phi));
-	gsl_vector_set(t, 1, sin(tta)*sin(phi));
-	gsl_vector_set(t, 2, ctt);
+	gsl_vector_set(t, 0, xl);
+	gsl_vector_set(t, 1, yl);
+	gsl_vector_set(t, 2, kpred+zl);
 
 	gsl_matrix_set(M, 0, 0, p->cnx);
 	gsl_matrix_set(M, 0, 1, p->fsx);
