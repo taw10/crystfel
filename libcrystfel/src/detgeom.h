@@ -143,6 +143,9 @@ extern void detgeom_show_hierarchy(const struct detgeom *dg);
 
 extern void detgeom_translate_detector_m(struct detgeom *dg, double x, double y, double z);
 
+extern int detgeom_group_center(const struct detgeom_panel_group *grp,
+                                double *x, double *y, double *z);
+
 extern gsl_matrix **make_panel_minvs(struct detgeom *dg);
 
 #ifdef __cplusplus

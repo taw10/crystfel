@@ -264,3 +264,61 @@ gsl_matrix **make_panel_minvs(struct detgeom *dg)
 
 	return Minvs;
 }
+
+
+static void add_point(const struct detgeom_panel *p,
+                      int fs, int ss,
+                      double *tx, double *ty, double *tz)
+{
+	*tx += (p->cnx + fs*p->fsx + ss*p->ssx) * p->pixel_pitch;
+	*ty += (p->cny + fs*p->fsy + ss*p->ssy) * p->pixel_pitch;
+	*tz += (p->cnz + fs*p->fsz + ss*p->ssz) * p->pixel_pitch;
+}
+
+
+int detgeom_group_center(const struct detgeom_panel_group *grp,
+                         double *x, double *y, double *z)
+{
+	if ( grp->n_children == 0 ) {
+
+		const struct detgeom_panel *p = grp->panel;
+		if ( p == NULL ) return 1;
+
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		add_point(p, 0, 0, &tx, &ty, &tz);
+		add_point(p, p->w, 0, &tx, &ty, &tz);
+		add_point(p, 0, p->h, &tx, &ty, &tz);
+		add_point(p, p->w, p->h, &tx, &ty, &tz);
+
+		*x = tx / 4.0;
+		*y = ty / 4.0;
+		*z = tz / 4.0;
+
+		return 0;
+
+	} else {
+
+		int i;
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		for ( i=0; i<grp->n_children; i++ ) {
+			double gcx, gcy, gcz;
+			detgeom_group_center(grp->children[i], &gcx, &gcy, &gcz);
+			tx += gcx;
+			ty += gcy;
+			tz += gcz;
+		}
+
+		*x = tx / grp->n_children;
+		*y = ty / grp->n_children;
+		*z = tz / grp->n_children;
+
+		return 0;
+
+	}
+}
