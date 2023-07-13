@@ -96,8 +96,7 @@ struct detgeom_panel_group
 	int n_children;
 
 	struct detgeom_panel_group *parent;
-	int hierarchy_level;
-	int member_index;
+	int serial;
 
 	/* Center of panel group, in lab coordinate system (metres)
 	 * This will be the rotation center. */

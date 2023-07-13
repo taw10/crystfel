@@ -54,20 +54,15 @@ static const enum gparam rv[] =
 };
 
 
-int mille_label(int hierarchy_level, int member_index, enum gparam param)
+int mille_label(int group_serial, enum gparam param)
 {
-	int label;
-
-	assert(member_index < 1000);
-
-	label = 100000*hierarchy_level + 100*member_index;
 	switch ( param ) {
-		case GPARAM_DET_TX : return label+1;  /* x-shift */
-		case GPARAM_DET_TY : return label+2;  /* y-shift */
-		case GPARAM_DET_TZ : return label+3;  /* z-shift */
-		case GPARAM_DET_RX : return label+4;  /* Rotation around x */
-		case GPARAM_DET_RY : return label+5;  /* Rotation around y */
-		case GPARAM_DET_RZ : return label+6;  /* Rotation around z */
+		case GPARAM_DET_TX : return group_serial+1;  /* x-shift */
+		case GPARAM_DET_TY : return group_serial+2;  /* y-shift */
+		case GPARAM_DET_TZ : return group_serial+3;  /* z-shift */
+		case GPARAM_DET_RX : return group_serial+4;  /* Rotation around x */
+		case GPARAM_DET_RY : return group_serial+5;  /* Rotation around y */
+		case GPARAM_DET_RZ : return group_serial+6;  /* Rotation around z */
 		default : abort();
 	}
 }
@@ -112,9 +107,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &global_gradients_fs[j],
 			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->hierarchy_level,
-			                        group->member_index,
-			                        GPARAM_DET_TX);
+			labels[j] = mille_label(group->serial, GPARAM_DET_TX);
 			j++;
 
 			fs_ss_gradient(GPARAM_DET_TY, rps[i].refl, cell,
@@ -122,9 +115,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &global_gradients_fs[j],
 			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->hierarchy_level,
-			                        group->member_index,
-			                        GPARAM_DET_TY);
+			labels[j] = mille_label(group->serial, GPARAM_DET_TY);
 			j++;
 
 			fs_ss_gradient(GPARAM_DET_TZ, rps[i].refl, cell,
@@ -132,9 +123,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &global_gradients_fs[j],
 			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->hierarchy_level,
-			                        group->member_index,
-			                        GPARAM_DET_TZ);
+			labels[j] = mille_label(group->serial, GPARAM_DET_TZ);
 			j++;
 
 			fs_ss_gradient(GPARAM_DET_RX, rps[i].refl, cell,
@@ -142,9 +131,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], cx, cy, cz,
 			               &global_gradients_fs[j],
 			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->hierarchy_level,
-			                        group->member_index,
-			                        GPARAM_DET_RX);
+			labels[j] = mille_label(group->serial, GPARAM_DET_RX);
 			j++;
 
 			fs_ss_gradient(GPARAM_DET_RY, rps[i].refl, cell,
@@ -152,9 +139,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], cx, cy, cz,
 			               &global_gradients_fs[j],
 			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->hierarchy_level,
-			                        group->member_index,
-			                        GPARAM_DET_RX);
+			labels[j] = mille_label(group->serial, GPARAM_DET_RY);
 			j++;
 
 			fs_ss_gradient(GPARAM_DET_RZ, rps[i].refl, cell,
@@ -162,9 +147,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], cx, cy, cz,
 			               &global_gradients_fs[j],
 			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->hierarchy_level,
-			                        group->member_index,
-			                        GPARAM_DET_RZ);
+			labels[j] = mille_label(group->serial, GPARAM_DET_RZ);
 			j++;
 
 			group = group->parent;

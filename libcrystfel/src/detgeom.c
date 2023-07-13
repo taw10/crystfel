@@ -202,9 +202,7 @@ static void detgeom_show_group(const struct detgeom_panel_group *group, int leve
 		return;
 	}
 
-	STATUS("%s (level %i, index %i)\n", group->name,
-	                                    group->hierarchy_level,
-	                                    group->member_index);
+	STATUS("%s (serial %i)\n", group->name, group->serial);
 
 	for ( i=0; i<group->n_children; i++ ) {
 		detgeom_show_group(group->children[i], level+1);

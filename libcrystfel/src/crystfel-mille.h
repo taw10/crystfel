@@ -48,7 +48,7 @@ extern Mille *crystfel_mille_new(const char *outFileName,
 
 extern void crystfel_mille_free(Mille *m);
 
-extern int mille_label(int hierarchy_level, int member_index, enum gparam param);
+extern int mille_label(int group_serial, enum gparam param);
 
 extern void write_mille(Mille *mille, int n, UnitCell *cell,
                         struct reflpeak *rps, struct image *image,

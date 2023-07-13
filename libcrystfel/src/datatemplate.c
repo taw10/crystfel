@@ -1819,8 +1819,7 @@ static void add_dg_point(const struct detgeom_panel *p,
 static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
                                               struct panel_group_template *gt,
                                               struct detgeom *detgeom,
-                                              int hierarchy_level,
-                                              int member_index)
+                                              int serial, int c_mul)
 {
 	struct detgeom_panel_group *gr;
 
@@ -1872,8 +1871,8 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 		}
 
 		for ( i=0; i<gt->n_children; i++ ) {
-			gr->children[i] = walk_group(dtempl, gt->children[i],
-			                             detgeom, hierarchy_level+1, i);
+			gr->children[i] = walk_group(dtempl, gt->children[i], detgeom,
+			                             serial + c_mul*(i+1), c_mul*100);
 			if ( gr->children[i] == NULL ) return NULL;
 			gr->children[i]->parent = gr;
 			tx += gr->children[i]->cx;
@@ -1887,8 +1886,7 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 
 	}
 
-	gr->member_index = member_index;
-	gr->hierarchy_level = hierarchy_level;
+	gr->serial = serial;
 	return gr;
 }
 
@@ -2017,7 +2015,7 @@ struct detgeom *create_detgeom(struct image *image,
 
 	}
 
-	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom, 0, 0);
+	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom, 0, 100);
 	if ( detgeom->top_group != NULL ) {
 		detgeom->top_group->parent = NULL;
 	} else {
