@@ -283,12 +283,12 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
 }
 
 
-/* Returns dfs_refl/dP and fss_refl/dP, where P = any parameter
- * fs_refl is the fast scan position of refl in panel 'p',
+/* Returns the gradient of fs_dev and ss_dev w.r.t. any parameter.
+ * cx,cy,cz are the rotation axis coordinates (only 2 in use at any time)
  * in metres (not pixels) */
 int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
                    struct detgeom_panel *p, gsl_matrix *Minv,
-                   double cx, double cy, double cz,
+                   double cxm, double cym, double czm,
                    float *fsg, float *ssg)
 {
 	signed int h, k, l;
@@ -351,7 +351,10 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	} else {
 		return fs_ss_gradient_panel(param, refl, cell, p,
 		                            Minv, fs, ss, mu, t,
-		                            cx, cy, cz, fsg, ssg);
+		                            cxm/p->pixel_pitch,
+		                            cym/p->pixel_pitch,
+		                            czm/p->pixel_pitch,
+		                            fsg, ssg);
 	}
 }
 

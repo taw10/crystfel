@@ -53,9 +53,9 @@ int main(int argc, char *argv[])
 	double step;
 	gsl_matrix **panel_matrices;
 	int didsomething = 0;
-	const double cx = -200.0;
-	const double cy = +100.0;
-	const double cz = -50.0;
+	const double cx = 0.03;  /* Detector is a 7.5 cm side length square */
+	const double cy = 0.02;
+	const double cz = 0.01;
 
 	rps = make_test_image(&n_refls, &image);
 	panel_matrices = make_panel_minvs(image.detgeom);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 	#ifdef ROTATE_PANEL_X
 	struct detgeom_panel *p = &image.detgeom->panels[0];
 	step = deg2rad(0.01);
-	rotate2d(&p->cnz, &p->cny, cz, cy, step);
+	rotate2d(&p->cnz, &p->cny, cz/p->pixel_pitch, cy/p->pixel_pitch, step);
 	rotate2d(&p->fsz, &p->fsy, 0, 0, step);
 	rotate2d(&p->ssz, &p->ssy, 0, 0, step);
 	didsomething = 1;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	#ifdef ROTATE_PANEL_Y
 	struct detgeom_panel *p = &image.detgeom->panels[0];
 	step = deg2rad(0.01);
-	rotate2d(&p->cnx, &p->cnz, cx, cz, step);
+	rotate2d(&p->cnx, &p->cnz, cx/p->pixel_pitch, cz/p->pixel_pitch, step);
 	rotate2d(&p->fsx, &p->fsz, 0, 0, step);
 	rotate2d(&p->ssx, &p->ssz, 0, 0, step);
 	didsomething = 1;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 	#ifdef ROTATE_PANEL_Z
 	struct detgeom_panel *p = &image.detgeom->panels[0];
 	step = deg2rad(0.01);
-	rotate2d(&p->cnx, &p->cny, cx, cy, step);
+	rotate2d(&p->cnx, &p->cny, cx/p->pixel_pitch, cy/p->pixel_pitch, step);
 	rotate2d(&p->fsx, &p->fsy, 0, 0, step);
 	rotate2d(&p->ssx, &p->ssy, 0, 0, step);
 	didsomething = 1;
