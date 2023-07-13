@@ -38,6 +38,8 @@
 
 #include <datatemplate.h>
 #include <utils.h>
+#include <predict-refine.h>
+#include <crystfel-mille.h>
 
 #include "version.h"
 
@@ -71,6 +73,9 @@ int main(int argc, char *argv[])
 	char *rval;
 	int i;
 	FILE *fh;
+	DataTemplate *dtempl;
+	struct dg_group_info *groups;
+	int n_groups;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -148,9 +153,21 @@ int main(int argc, char *argv[])
 		fprintf(fh, "%s\n", argv[i]);
 	}
 
-	fprintf(fh, "Parameter\n");
-	fprintf(fh, "1 0 0\n");
-	fprintf(fh, "2 0 0\n");
+	dtempl = data_template_new_from_file(in_geom);
+	groups = data_template_group_info(dtempl, &n_groups);
+
+	fprintf(fh, "\nParameter\n");
+	for ( i=0; i<n_groups; i++ ) {
+		int f = (groups[i].hierarchy_level > level) ? -1 : 0;
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
+	}
+	fprintf(fh, "\n");
+
 	fprintf(fh, "method inversion 5 0.1\n");
 	fprintf(fh, "end\n");
 	fclose(fh);
