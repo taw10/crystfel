@@ -2623,3 +2623,40 @@ int data_template_write_to_file(const DataTemplate *dtempl, const char *filename
 	fclose(fh);
 	return 0;
 }
+
+
+static void add_group_info(struct dg_group_info *ginfo, int *ppos,
+                           struct panel_group_template *group,
+                           int serial, int level, int c_mul)
+{
+	int j;
+	int i = *ppos;
+	(*ppos)++;
+
+	ginfo[i].name = group->name;
+	ginfo[i].serial = serial;
+	ginfo[i].hierarchy_level = level;
+
+	for ( j=0; j<group->n_children; j++ ) {
+		add_group_info(ginfo, ppos, group->children[j],
+		               serial+c_mul*(j+1), level+1, c_mul*100);
+	}
+}
+
+
+struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *n)
+{
+	struct dg_group_info *ginfo;
+	int i;
+	struct panel_group_template *group;
+
+	ginfo = malloc(sizeof(struct dg_group_info)*dtempl->n_groups);
+	if ( ginfo == NULL ) return NULL;
+
+	group = find_group(dtempl, "all");
+	i = 0;
+	add_group_info(ginfo, &i, group, 0, 0, 100);
+
+	*n = dtempl->n_groups;
+	return ginfo;
+}

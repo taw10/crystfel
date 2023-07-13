@@ -43,6 +43,14 @@
 typedef struct _datatemplate DataTemplate;
 
 
+struct dg_group_info
+{
+	const char *name;
+	int serial;
+	int hierarchy_level;
+};
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -97,6 +105,8 @@ extern int data_template_rotate_group(DataTemplate *dtempl,
 
 extern int data_template_write_to_file(const DataTemplate *dtempl,
                                        const char *filename);
+
+extern struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *n);
 
 #ifdef __cplusplus
 }
