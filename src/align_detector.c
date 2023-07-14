@@ -164,7 +164,12 @@ int main(int argc, char *argv[])
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
+		if ( groups[i].hierarchy_level > 0 ) {
+			fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
+		} else {
+			/* No overall rotation around beam */
+			fprintf(fh, "%i 0 -1\n", mille_label(groups[i].serial, GPARAM_DET_RZ));
+		}
 	}
 	fprintf(fh, "\n");
 
