@@ -80,7 +80,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		float local_gradients_ss[9];
 		float global_gradients_fs[64];
 		float global_gradients_ss[64];
-		int labels[6];
+		int labels[64];
 		int j;
 		const struct detgeom_panel_group *group;
 
