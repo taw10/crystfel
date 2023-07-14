@@ -40,20 +40,6 @@
 #include <mille_c_wrap.h>
 
 
-static const enum gparam rv[] =
-{
-	GPARAM_ASX,
-	GPARAM_ASY,
-	GPARAM_ASZ,
-	GPARAM_BSX,
-	GPARAM_BSY,
-	GPARAM_BSZ,
-	GPARAM_CSX,
-	GPARAM_CSY,
-	GPARAM_CSZ,
-};
-
-
 int mille_label(int group_serial, enum gparam param)
 {
 	switch ( param ) {
@@ -74,95 +60,94 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 {
 	int i;
 
+	/* Local parameters */
+	const enum gparam rvl[] =
+	{
+		GPARAM_ASX,
+		GPARAM_ASY,
+		GPARAM_ASZ,
+		GPARAM_BSX,
+		GPARAM_BSY,
+		GPARAM_BSZ,
+		GPARAM_CSX,
+		GPARAM_CSY,
+		GPARAM_CSZ,
+	};
+	const int nl = 9;
+
+	/* Global parameters */
+	const enum gparam rvg[] =
+	{
+		GPARAM_DET_TX,
+		GPARAM_DET_TY,
+		GPARAM_DET_TZ,
+		GPARAM_DET_RX,
+		GPARAM_DET_RY,
+		GPARAM_DET_RZ,
+	};
+	const int ng = 6;
+	const int max_hierarchy_levels = 8;
+
 	for ( i=0; i<n; i++ ) {
 
-		float local_gradients_fs[9];
-		float local_gradients_ss[9];
-		float global_gradients_fs[64];
-		float global_gradients_ss[64];
-		int labels[64];
-		int j;
+		float local_gradients_fs[nl];
+		float local_gradients_ss[nl];
+		float global_gradients_fs[ng*max_hierarchy_levels];
+		float global_gradients_ss[ng*max_hierarchy_levels];
+		int labels[ng*max_hierarchy_levels];
+		int j, levels;
 		const struct detgeom_panel_group *group;
 
 		/* Local gradients */
-		for ( j=0; j<9; j++ ) {
-			fs_ss_gradient(rv[j], rps[i].refl, cell,
+		for ( j=0; j<nl; j++ ) {
+			fs_ss_gradient(rvl[j], rps[i].refl, cell,
 			               &image->detgeom->panels[rps[i].peak->pn],
 			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &local_gradients_fs[j],
 			               &local_gradients_ss[j]);
 		}
 
-		/* Global gradients (for each group, at least level of hierarchy) */
+		/* Global gradients for each hierarchy level, starting at the
+		 * individual panel and working up to the top level */
 		j = 0;
+		levels = 0;
 		group = image->detgeom->panels[rps[i].peak->pn].group;
 		while ( group != NULL ) {
 
 			double cx, cy, cz;
+			int g;
 
 			detgeom_group_center(group, &cx, &cy, &cz);
 
-			fs_ss_gradient(GPARAM_DET_TX, rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], 0, 0, 0,
-			               &global_gradients_fs[j],
-			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->serial, GPARAM_DET_TX);
-			j++;
+			for ( g=0; g<ng; g++ ) {
+				fs_ss_gradient(rvg[g], rps[i].refl, cell,
+				               &image->detgeom->panels[rps[i].peak->pn],
+				               Minvs[rps[i].peak->pn], 0, 0, 0,
+				               &global_gradients_fs[j],
+				               &global_gradients_ss[j]);
+				labels[j] = mille_label(group->serial, rvg[g]);
+				j++;
+			}
 
-			fs_ss_gradient(GPARAM_DET_TY, rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], 0, 0, 0,
-			               &global_gradients_fs[j],
-			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->serial, GPARAM_DET_TY);
-			j++;
-
-			fs_ss_gradient(GPARAM_DET_TZ, rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], 0, 0, 0,
-			               &global_gradients_fs[j],
-			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->serial, GPARAM_DET_TZ);
-			j++;
-
-			fs_ss_gradient(GPARAM_DET_RX, rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], cx, cy, cz,
-			               &global_gradients_fs[j],
-			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->serial, GPARAM_DET_RX);
-			j++;
-
-			fs_ss_gradient(GPARAM_DET_RY, rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], cx, cy, cz,
-			               &global_gradients_fs[j],
-			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->serial, GPARAM_DET_RY);
-			j++;
-
-			fs_ss_gradient(GPARAM_DET_RZ, rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], cx, cy, cz,
-			               &global_gradients_fs[j],
-			               &global_gradients_ss[j]);
-			labels[j] = mille_label(group->serial, GPARAM_DET_RZ);
-			j++;
-
+			levels++;
 			group = group->parent;
+
+			if ( levels >= max_hierarchy_levels ) {
+				ERROR("Too many nested hierarchy levels for refinement.\n");
+				break;
+			}
 		}
 
 		/* Add fs measurement */
 		mille_add_measurement(mille,
-		                      9, local_gradients_fs,
+		                      nl, local_gradients_fs,
 		                      j, global_gradients_fs, labels,
 		                      fs_dev(&rps[i], image->detgeom),
 		                      0.65*image->detgeom->panels[rps[i].peak->pn].pixel_pitch);
 
 		/* Add ss measurement */
 		mille_add_measurement(mille,
-		                      9, local_gradients_ss,
+		                      nl, local_gradients_ss,
 		                      j, global_gradients_ss, labels,
 		                      ss_dev(&rps[i], image->detgeom),
 		                      0.65*image->detgeom->panels[rps[i].peak->pn].pixel_pitch);
