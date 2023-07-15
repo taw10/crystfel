@@ -241,15 +241,15 @@ gsl_matrix **make_panel_minvs(struct detgeom *dg)
 		struct detgeom_panel *p = &dg->panels[i];
 		gsl_matrix *M = gsl_matrix_calloc(3, 3);
 
-		gsl_matrix_set(M, 0, 0, p->cnx);
-		gsl_matrix_set(M, 0, 1, p->fsx);
-		gsl_matrix_set(M, 0, 2, p->ssx);
-		gsl_matrix_set(M, 1, 0, p->cny);
-		gsl_matrix_set(M, 1, 1, p->fsy);
-		gsl_matrix_set(M, 1, 2, p->ssy);
-		gsl_matrix_set(M, 2, 0, p->cnz);
-		gsl_matrix_set(M, 2, 1, p->fsz);
-		gsl_matrix_set(M, 2, 2, p->ssz);
+		gsl_matrix_set(M, 0, 0, p->pixel_pitch*p->cnx);
+		gsl_matrix_set(M, 0, 1, p->pixel_pitch*p->fsx);
+		gsl_matrix_set(M, 0, 2, p->pixel_pitch*p->ssx);
+		gsl_matrix_set(M, 1, 0, p->pixel_pitch*p->cny);
+		gsl_matrix_set(M, 1, 1, p->pixel_pitch*p->fsy);
+		gsl_matrix_set(M, 1, 2, p->pixel_pitch*p->ssy);
+		gsl_matrix_set(M, 2, 0, p->pixel_pitch*p->cnz);
+		gsl_matrix_set(M, 2, 1, p->pixel_pitch*p->fsz);
+		gsl_matrix_set(M, 2, 2, p->pixel_pitch*p->ssz);
 
 		Minvs[i] = matrix_invert(M);
 		if ( Minvs[i] == NULL ) {

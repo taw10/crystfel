@@ -46,8 +46,8 @@
 /** \file predict-refine.h */
 
 
-/* Weighting of excitation error term (m^-1) compared to position term (m) */
-#define EXC_WEIGHT (4e-20)
+/* Weighting of excitation error term (m^-1) compared to position term (pixels) */
+#define EXC_WEIGHT (0.5e-6)
 
 
 double r_dev(struct reflpeak *rp)
@@ -234,30 +234,30 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
 		break;
 
 		case GPARAM_DET_RX :
-		gsl_matrix_set(dMdp, 1, 0, p->cnz-cz);
-		gsl_matrix_set(dMdp, 2, 0, cy-p->cny);
-		gsl_matrix_set(dMdp, 1, 1, p->fsz);
-		gsl_matrix_set(dMdp, 2, 1, -p->fsy);
-		gsl_matrix_set(dMdp, 1, 2, p->ssz);
-		gsl_matrix_set(dMdp, 2, 2, -p->ssy);
+		gsl_matrix_set(dMdp, 1, 0, p->pixel_pitch*p->cnz-cz);
+		gsl_matrix_set(dMdp, 2, 0, cy-p->pixel_pitch*p->cny);
+		gsl_matrix_set(dMdp, 1, 1, p->pixel_pitch*p->fsz);
+		gsl_matrix_set(dMdp, 2, 1, -p->pixel_pitch*p->fsy);
+		gsl_matrix_set(dMdp, 1, 2, p->pixel_pitch*p->ssz);
+		gsl_matrix_set(dMdp, 2, 2, -p->pixel_pitch*p->ssy);
 		break;
 
 		case GPARAM_DET_RY :
-		gsl_matrix_set(dMdp, 0, 0, cz-p->cnz);
-		gsl_matrix_set(dMdp, 2, 0, p->cnx-cx);
-		gsl_matrix_set(dMdp, 0, 1, -p->fsz);
-		gsl_matrix_set(dMdp, 2, 1, p->fsx);
-		gsl_matrix_set(dMdp, 0, 2, -p->ssz);
-		gsl_matrix_set(dMdp, 2, 2, p->ssx);
+		gsl_matrix_set(dMdp, 0, 0, cz-p->pixel_pitch*p->cnz);
+		gsl_matrix_set(dMdp, 2, 0, p->pixel_pitch*p->cnx-cx);
+		gsl_matrix_set(dMdp, 0, 1, -p->pixel_pitch*p->fsz);
+		gsl_matrix_set(dMdp, 2, 1, p->pixel_pitch*p->fsx);
+		gsl_matrix_set(dMdp, 0, 2, -p->pixel_pitch*p->ssz);
+		gsl_matrix_set(dMdp, 2, 2, p->pixel_pitch*p->ssx);
 		break;
 
 		case GPARAM_DET_RZ :
-		gsl_matrix_set(dMdp, 0, 0, cy-p->cny);
-		gsl_matrix_set(dMdp, 1, 0, p->cnx-cx);
-		gsl_matrix_set(dMdp, 0, 1, -p->fsy);
-		gsl_matrix_set(dMdp, 1, 1, p->fsx);
-		gsl_matrix_set(dMdp, 0, 2, -p->ssy);
-		gsl_matrix_set(dMdp, 1, 2, p->ssx);
+		gsl_matrix_set(dMdp, 0, 0, cy-p->pixel_pitch*p->cny);
+		gsl_matrix_set(dMdp, 1, 0, p->pixel_pitch*p->cnx-cx);
+		gsl_matrix_set(dMdp, 0, 1, -p->pixel_pitch*p->fsy);
+		gsl_matrix_set(dMdp, 1, 1, p->pixel_pitch*p->fsx);
+		gsl_matrix_set(dMdp, 0, 2, -p->pixel_pitch*p->ssy);
+		gsl_matrix_set(dMdp, 1, 2, p->pixel_pitch*p->ssx);
 		break;
 
 		default:
@@ -288,7 +288,7 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
  * in metres (not pixels) */
 int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
                    struct detgeom_panel *p, gsl_matrix *Minv,
-                   double cxm, double cym, double czm,
+                   double cx, double cy, double cz,
                    float *fsg, float *ssg)
 {
 	signed int h, k, l;
@@ -322,15 +322,15 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	gsl_vector_set(t, 1, yl);
 	gsl_vector_set(t, 2, kpred+zl);
 
-	gsl_matrix_set(M, 0, 0, p->cnx);
-	gsl_matrix_set(M, 0, 1, p->fsx);
-	gsl_matrix_set(M, 0, 2, p->ssx);
-	gsl_matrix_set(M, 1, 0, p->cny);
-	gsl_matrix_set(M, 1, 1, p->fsy);
-	gsl_matrix_set(M, 1, 2, p->ssy);
-	gsl_matrix_set(M, 2, 0, p->cnz);
-	gsl_matrix_set(M, 2, 1, p->fsz);
-	gsl_matrix_set(M, 2, 2, p->ssz);
+	gsl_matrix_set(M, 0, 0, (p->cnx)*p->pixel_pitch);
+	gsl_matrix_set(M, 0, 1, (p->fsx)*p->pixel_pitch);
+	gsl_matrix_set(M, 0, 2, (p->ssx)*p->pixel_pitch);
+	gsl_matrix_set(M, 1, 0, (p->cny)*p->pixel_pitch);
+	gsl_matrix_set(M, 1, 1, (p->fsy)*p->pixel_pitch);
+	gsl_matrix_set(M, 1, 2, (p->ssy)*p->pixel_pitch);
+	gsl_matrix_set(M, 2, 0, (p->cnz)*p->pixel_pitch);
+	gsl_matrix_set(M, 2, 1, (p->fsz)*p->pixel_pitch);
+	gsl_matrix_set(M, 2, 2, (p->ssz)*p->pixel_pitch);
 
 	if ( gsl_linalg_HH_solve(M, t, v) ) {
 		ERROR("Failed to solve gradient equation\n");
@@ -351,9 +351,7 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	} else {
 		return fs_ss_gradient_panel(param, refl, cell, p,
 		                            Minv, fs, ss, mu, t,
-		                            cxm/p->pixel_pitch,
-		                            cym/p->pixel_pitch,
-		                            czm/p->pixel_pitch,
+		                            cx, cy, cz,
 		                            fsg, ssg);
 	}
 }

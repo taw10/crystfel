@@ -63,8 +63,9 @@ int main(int argc, char *argv[])
 	before = make_dev_list(rps, n_refls, image.detgeom);
 
 	#ifdef TRANSLATE_PANEL
-	step = 0.1;  /* Pixels */
-	image.detgeom->panels[0].THING_TO_MOVE += step;
+	struct detgeom_panel *p = &image.detgeom->panels[0];
+	step = 0.01e-3;  /* metres */
+	image.detgeom->panels[0].THING_TO_MOVE += step/p->pixel_pitch;
 	didsomething = 1;
 	#endif
 
@@ -139,8 +140,8 @@ int main(int argc, char *argv[])
 		#ifdef TRANSLATE_PANEL
 		if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;  /* Should be zero */
 		if ( fabs(obs[0]) > 1e-12 ) n_wrong_obsr++;  /* Should also be zero */
-		if ( fabs(obs[1] - calc[1]) > 1e-3 ) n_wrong_fs++;
-		if ( fabs(obs[2] - calc[2]) > 1e-3 ) n_wrong_ss++;
+		if ( fabs(obs[1] - calc[1]) > 10.0 ) n_wrong_fs++;
+		if ( fabs(obs[2] - calc[2]) > 10.0 ) n_wrong_ss++;
 		#endif
 
 		#if defined(ROTATE_PANEL_X) || defined(ROTATE_PANEL_Y) || defined(ROTATE_PANEL_Z)
