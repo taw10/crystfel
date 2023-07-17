@@ -142,15 +142,13 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		mille_add_measurement(mille,
 		                      nl, local_gradients_fs,
 		                      j, global_gradients_fs, labels,
-		                      fs_dev(&rps[i], image->detgeom),
-		                      0.65*image->detgeom->panels[rps[i].peak->pn].pixel_pitch);
+		                      fs_dev(&rps[i], image->detgeom), 1.0);
 
 		/* Add ss measurement */
 		mille_add_measurement(mille,
 		                      nl, local_gradients_ss,
 		                      j, global_gradients_ss, labels,
-		                      ss_dev(&rps[i], image->detgeom),
-		                      0.65*image->detgeom->panels[rps[i].peak->pn].pixel_pitch);
+		                      ss_dev(&rps[i], image->detgeom), 1.0);
 	}
 }
 
