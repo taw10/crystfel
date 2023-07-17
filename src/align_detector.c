@@ -161,7 +161,12 @@ int main(int argc, char *argv[])
 		int f = (groups[i].hierarchy_level > level) ? -1 : 0;
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
+		if ( groups[i].hierarchy_level > 0 ) {
+			fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
+		} else {
+			/* No overall camera length change */
+			fprintf(fh, "%i 0 -1\n", mille_label(groups[i].serial, GPARAM_DET_TZ));
+		}
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f);
 		if ( groups[i].hierarchy_level > 0 ) {
