@@ -82,6 +82,12 @@ Prize](https://www.desy.de/news/news_search/index_eng.html?openDirectAnchor=1202
 from the [German Society for Crystallography (DGK)](https://dgk-home.de/en/).
 
 
+Citing CrystFEL
+---------------
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for citation instructions.
+
+
 Funding acknowledgements
 ------------------------
 

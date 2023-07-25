@@ -11,6 +11,11 @@ The easiest way to ensure the future of CrystFEL is to use it and cite it in you
 * T. A. White, A. Barty, F. Stellato, J. M. Holton, R. A. Kirian, N. A. Zatsepin and H. N. Chapman. "Crystallographic data processing for free-electron laser sources". Acta Cryst. D69 (2013), p1231–1240.  [doi:10.1107/S0907444913013620](http://dx.doi.org/10.1107/S0907444913013620)
 * T. A. White, R. A. Kirian, A. V. Martin, A. Aquila, K. Nass, A. Barty and H. N. Chapman. "CrystFEL: a software suite for snapshot serial crystallography". J. Appl. Cryst. 45 (2012), p335–341.  [doi:10.1107/S0021889812002312](http://dx.doi.org/10.1107/S0021889812002312)
 
+You can also cite CrystFEL directly using one of the following DOIs:
+
+* All versions: [10.5281/zenodo.8183384](https://zenodo.org/record/8183384).
+* Version 0.10.2: [10.5281/zenodo.8183385](https://zenodo.org/record/8183385).
+
 
 Getting started
 ---------------
