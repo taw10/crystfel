@@ -163,11 +163,11 @@ executable('align_detector',
            install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
 # adjust_detector
-executable('adjust_detector',
-           ['src/adjust_detector.c', versionc],
-           dependencies: [mdep, libcrystfeldep],
-           install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+adjust_detector = executable('adjust_detector',
+                             ['src/adjust_detector.c', versionc],
+                             dependencies: [mdep, libcrystfeldep],
+                             install: true,
+                             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',

@@ -194,3 +194,8 @@ if hdf5dep.found()
     test(p[0], exe, args : [h5, geom, expected_wl])
   endforeach
 endif
+
+
+test('geom_roundtrip',
+     find_program('geom_roundtrip'),
+     args: [adjust_detector.full_path()])
