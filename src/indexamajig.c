@@ -868,7 +868,7 @@ int main(int argc, char *argv[])
 	struct asdf_options *asdf_opts = NULL;
 	double wl_from_dt;
 	double clen_from_dt;
-	int err;
+	int err = 0;
 
 	/* Defaults for "top level" arguments */
 	args.filename = NULL;
