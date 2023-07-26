@@ -802,6 +802,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("No such numeric field '%s'\n", subst_name);
+		free(subst_name);
 		close_hdf5(fh);
 		return 1;
 	}
@@ -821,6 +822,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		ERROR("HDF5 header is not a recognised type (%s).\n",
 		      subst_name);
 		close_hdf5(fh);
+		free(subst_name);
 		return 1;
 	}
 
@@ -831,6 +833,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	if ( ndims > 64 ) {
 		ERROR("Too many dimensions for numeric value\n");
 		close_hdf5(fh);
+		free(subst_name);
 		return 1;
 	}
 	H5Sget_simple_extent_dims(sh, size, NULL);
@@ -857,6 +860,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				return 1;
 			}
 			image_cache_header_float(image, name, val);
+			free(subst_name);
 			return 0;
 
 		} else if ( class == H5T_INTEGER ) {
@@ -872,6 +876,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				return 1;
 			}
 			image_cache_header_int(image, name, val);
+			free(subst_name);
 			return 0;
 
 		} else if ( class == H5T_STRING ) {
@@ -912,6 +917,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		} else {
 			/* Should never be reached */
 			ERROR("Invalid HDF5 class %i\n", class);
+			free(subst_name);
 			return 1;
 		}
 	}
@@ -920,6 +926,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	if ( dim_vals == NULL ) {
 		ERROR("Couldn't parse event '%s'\n");
 		close_hdf5(fh);
+		free(subst_name);
 		return 1;
 	}
 
@@ -928,6 +935,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	if ( (f_offset == NULL) || (f_count == NULL) ) {
 		ERROR("Couldn't allocate dimension arrays\n");
 		close_hdf5(fh);
+		free(subst_name);
 		return 1;
 	}
 
@@ -945,6 +953,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				      subst_name, i,
 				      dim_vals[dim_val_pos], size[i]);
 				close_hdf5(fh);
+				free(subst_name);
 				return 1;
 			}
 

@@ -1358,6 +1358,7 @@ void image_free(struct image *image)
 	}
 
 	for ( i=0; i<image->n_cached_headers; i++ ) {
+		free(image->header_cache[i]->header_name);
 		free(image->header_cache[i]);
 	}
 
