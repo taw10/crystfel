@@ -76,6 +76,8 @@ int main(int argc, char *argv[])
 	DataTemplate *dtempl;
 	struct dg_group_info *groups;
 	int n_groups;
+	int r;
+	char line[256];
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -182,7 +184,60 @@ int main(int argc, char *argv[])
 	fprintf(fh, "end\n");
 	fclose(fh);
 
-	system("pede millepede.txt");
+	r = system("pede millepede.txt");
+	if ( r == -1 ) {
+		ERROR("Failed to run Millepde: %s\n", strerror(errno));
+		return 1;
+	}
+	if ( !WIFEXITED(r) ) {
+		ERROR("Millepede exited abnormally.\n");
+		return 1;
+	}
+	if ( WEXITSTATUS(r) != 0 ) {
+		ERROR("Millepede returned an error status (%i)\n", WEXITSTATUS(r));
+		return 1;
+	}
+
+	STATUS("Millepede succeeded.\n");
+
+	fh = fopen("millepede.res", "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to open millepede.res\n");
+		return 1;
+	}
+
+	if ( fgets(line, 256, fh) != line ) {
+		ERROR("Failed to read first line of millepede.res\n");
+		return 1;
+	}
+	if ( strncmp(line, " Parameter ", 11) != 0 ) {
+		ERROR("First line of millepede.res is not as expected.\n");
+		return 1;
+	}
+
+	do {
+
+		char **bits;
+		int i, n;
+
+		rval = fgets(line, 256, fh);
+		if ( rval != line ) continue;
+
+		chomp(line);
+		notrail(line);
+		n = assplode(line, " ", &bits, ASSPLODE_NONE);
+		if ( (n != 3) && (n != 5) ) {
+			ERROR("Didn't understand this line from Millepede: (%i) %s", n, line);
+			return 1;
+		}
+
+
+		for ( i=0; i<n; i++ ) free(bits[i]);
+		free(bits);
+
+	} while ( rval == line );
+
+	fclose(fh);
 
 	return 0;
 }
