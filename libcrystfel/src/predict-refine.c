@@ -204,6 +204,9 @@ int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
 	*fsg = mu*(gsl_vector_get(v, 1) - fs*gsl_vector_get(v, 0));
 	*ssg = mu*(gsl_vector_get(v, 2) - ss*gsl_vector_get(v, 0));
 
+	gsl_vector_free(v);
+	gsl_vector_free(dRdp);
+
 	return 0;
 }
 
