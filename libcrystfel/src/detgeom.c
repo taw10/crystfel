@@ -64,6 +64,20 @@ void detgeom_transform_coords(struct detgeom_panel *p,
 }
 
 
+static void free_group(struct detgeom_panel_group *g)
+{
+	int i;
+
+	for ( i=0; i<g->n_children; i++ ) {
+		free_group(g->children[i]);
+	}
+
+	free(g->name);
+	free(g->children);
+	free(g);
+}
+
+
 void detgeom_free(struct detgeom *detgeom)
 {
 	int i;
@@ -74,6 +88,7 @@ void detgeom_free(struct detgeom *detgeom)
 		free(detgeom->panels[i].name);
 	}
 
+	free_group(detgeom->top_group);
 	free(detgeom->panels);
 	free(detgeom);
 }
