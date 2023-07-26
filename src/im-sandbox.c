@@ -529,6 +529,9 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		if ( sb->profile ) {
 			profile_print_and_reset(cookie);
 		}
+
+		free(pargs.filename);
+		free(pargs.event);
 	}
 
 	/* These are both no-ops if argument is NULL */

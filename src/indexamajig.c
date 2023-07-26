@@ -341,6 +341,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		case 'x' :
+		free(args->prefix);
 		args->prefix = strdup(arg);
 		break;
 
@@ -1414,11 +1415,11 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	struct pf8_private_data *pf8_data = NULL;
-	struct detgeom *detgeom = NULL;
 	if ( args.iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
-		detgeom = data_template_get_2d_detgeom_if_possible(args.iargs.dtempl);
+		struct detgeom *detgeom = data_template_get_2d_detgeom_if_possible(args.iargs.dtempl);
 		pf8_data = prepare_peakfinder8(detgeom, args.iargs.peak_search.peakfinder8_fast);
 		args.iargs.pf_private = pf8_data;
+		detgeom_free(detgeom);
 	}
 
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
@@ -1427,7 +1428,6 @@ int main(int argc, char *argv[])
 	                   timeout, args.profile, args.cpu_pin);
 
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
-	if ( detgeom != NULL) detgeom_free(detgeom);
 	cell_free(args.iargs.cell);
 	free(args.prefix);
 	free(args.temp_location);
