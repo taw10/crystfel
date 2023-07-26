@@ -47,7 +47,7 @@
 
 
 /* Weighting of excitation error term (m^-1) compared to position term (pixels) */
-#define EXC_WEIGHT (0.5e-6)
+#define EXC_WEIGHT (0.5e-7)
 
 
 double r_dev(struct reflpeak *rp)
@@ -713,7 +713,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	int k;
 	for ( k=0; k<num_params; k++ ) {
 		double M_curr = gsl_matrix_get(M, k, k);
-		gsl_matrix_set(M, k, k, M_curr+1e-18);
+		gsl_matrix_set(M, k, k, M_curr+1e-7);
 	}
 
 	//show_matrix_eqn(M, v);
