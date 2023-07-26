@@ -145,6 +145,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/detgeom.c',
                        'src/fom.c',
                        'src/profile.c',
+                       'src/crystfel-mille.c',
                        'src/image-cbf.c',
                        'src/image-hdf5.c',
                        'src/image-msgpack.c',
@@ -160,10 +161,6 @@ libcrystfel_sources = ['src/image.c',
                        'src/indexers/fromfile.c',
                        symop_lex_ch,
                        symop_parse_ch]
-
-if millepededep.found()
-  libcrystfel_sources += 'src/crystfel-mille.c'
-endif
 
 configure_file(input: 'libcrystfel-config.h.meson.in',
                output: 'libcrystfel-config.h',

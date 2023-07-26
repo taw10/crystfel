@@ -37,7 +37,9 @@
 #include "predict-refine.h"
 #include "profile.h"
 
+#ifdef HAVE_MILLEPEDE
 #include <mille_c_wrap.h>
+#endif /* HAVE_MILLEPEDE */
 
 
 int mille_label(int group_serial, enum gparam param)
@@ -53,6 +55,8 @@ int mille_label(int group_serial, enum gparam param)
 	}
 }
 
+
+#ifdef HAVE_MILLEPEDE
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
                  struct reflpeak *rps, struct image *image,
@@ -177,3 +181,5 @@ void crystfel_mille_write_record(Mille *m)
 {
 	mille_write_record(m);
 }
+
+#endif /* HAVE_MILLEPEDE */
