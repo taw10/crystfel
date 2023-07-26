@@ -1912,6 +1912,8 @@ struct detgeom *create_detgeom(struct image *image,
 	detgeom = malloc(sizeof(struct detgeom));
 	if ( detgeom == NULL ) return NULL;
 
+	detgeom->top_group = NULL;
+
 	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
 	if ( detgeom->panels == NULL ) {
 		free(detgeom);

@@ -68,6 +68,8 @@ static void free_group(struct detgeom_panel_group *g)
 {
 	int i;
 
+	if ( g == NULL ) return;
+
 	for ( i=0; i<g->n_children; i++ ) {
 		free_group(g->children[i]);
 	}
