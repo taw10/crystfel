@@ -547,6 +547,7 @@ void intcontext_free(struct intcontext *ic)
 	free(ic->reference_den);
 	free(ic->n_profiles_in_reference);
 	free(ic->bm);
+	free(ic);
 }
 
 
@@ -1627,8 +1628,6 @@ static void integrate_rings(IntegrationMethod meth,
 		                              term_lock);
 	}
 
-	intcontext_free(ic);
-
 	if ( n_rej*4 > n_refl ) {
 		ERROR("WARNING: %i reflections could not be integrated\n",
 		      n_rej);
@@ -1636,6 +1635,8 @@ static void integrate_rings(IntegrationMethod meth,
 
 	crystal_set_num_saturated_reflections(cr, ic->n_saturated);
 	crystal_set_num_implausible_reflections(cr, ic->n_implausible);
+
+	intcontext_free(ic);
 }
 
 
