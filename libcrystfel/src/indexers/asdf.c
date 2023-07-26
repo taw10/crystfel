@@ -218,7 +218,6 @@ static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src)
 	dest->volume = src->volume;
 
 	int n = src->N_refls;
-	dest->N_refls = n;
 
 	dest->n = src->n;
 	memcpy(dest->reflections, src->reflections, sizeof(int) * n);
@@ -226,6 +225,10 @@ static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src)
 	for (i  = 0; i < n; i++ ) {
 		memcpy(dest->indices[i], src->indices[i], sizeof(double) * 3);
 	}
+	for ( i=n; i<dest->N_refls; i++ ) {
+		free(dest->indices[i]);
+	}
+	dest->N_refls = n;
 
 	dest->acl = src->acl;
 	dest->n_max = src->n_max;
