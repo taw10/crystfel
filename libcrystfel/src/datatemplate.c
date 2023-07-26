@@ -1433,6 +1433,11 @@ void data_template_free(DataTemplate *dt)
 		free(dt->headers_to_copy[i]);
 	}
 
+	for ( i=0; i<dt->n_groups; i++ ) {
+		free(dt->groups[i]->name);
+		free(dt->groups[i]);
+	}
+
 	free(dt->wavelength_from);
 	free(dt->peak_list);
 	free(dt->cnz_from);
