@@ -78,6 +78,98 @@ static const char *group_serial_to_name(int serial,
 }
 
 
+static struct dg_group_info *find_group(struct dg_group_info *groups,
+                                        int n_groups, const char *name)
+{
+	int i;
+
+	for ( i=0; i<n_groups; i++ ) {
+		if ( strcmp(name, groups[i].name) == 0 ) return &groups[i];
+	}
+
+	return NULL;
+}
+
+static int ipow(int base, int ex)
+{
+	int i;
+	int v = 1;
+	for ( i=0; i<ex; i++ ) {
+		v *= base;
+	}
+	return v;
+}
+
+
+static int is_child(struct dg_group_info *parent, struct dg_group_info *child)
+{
+	int parent_serial;
+
+	if ( 1+parent->hierarchy_level != child->hierarchy_level ) return 0;
+
+	parent_serial = child->serial % ipow(100, child->hierarchy_level);
+	if ( parent->serial != parent_serial ) return 0;
+
+	return 1;
+}
+
+
+static void write_zero_sum(FILE *fh, struct dg_group_info *g,
+                           struct dg_group_info *groups, int n_groups,
+                           enum gparam p)
+{
+	int i;
+	int found = 0;
+
+	for ( i=0; i<n_groups; i++ ) {
+		if ( is_child(g, &groups[i]) ) {
+			if ( !found ) {
+				fprintf(fh, "Constraint 0\n");
+				found = 1;
+			}
+			fprintf(fh, "%i 1\n", mille_label(groups[i].serial, p));
+		}
+	}
+
+	if ( found ) {
+		fprintf(fh, "\n");
+	}
+}
+
+
+static int make_zero_sum(FILE *fh, struct dg_group_info *groups, int n_groups,
+                         const char *group_name, int level)
+{
+	int i;
+	struct dg_group_info *g = find_group(groups, n_groups, group_name);
+
+	if ( g == NULL ) {
+		ERROR("Couldn't find group '%s'\n", group_name);
+		return 1;
+	}
+
+	/* Millepede doesn't like excessive constraints */
+	if ( g->hierarchy_level >= level ) return 0;
+
+	fprintf(fh, "! Hierarchy constraints for group %s\n", group_name);
+	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TX);
+	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TY);
+	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TZ);
+	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RX);
+	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RY);
+	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RZ);
+	fprintf(fh, "\n");
+
+	for ( i=0; i<n_groups; i++ ) {
+		if ( is_child(g, &groups[i]) ) {
+			if ( make_zero_sum(fh, groups, n_groups, groups[i].name, level) ) return 1;
+		}
+	}
+
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -184,6 +276,7 @@ int main(int argc, char *argv[])
 
 	for ( i=0; i<n_groups; i++ ) {
 		int f = (groups[i].hierarchy_level > level) ? -1 : 0;
+		if ( groups[i].hierarchy_level == 0 ) continue;
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
@@ -192,6 +285,9 @@ int main(int argc, char *argv[])
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
 	}
 	fprintf(fh, "\n");
+
+	/* All corrections must sum to zero at each level of hierarchy */
+	if ( make_zero_sum(fh, groups, n_groups, "all", level) ) return 1;
 
 	fprintf(fh, "method inversion 5 0.1\n");
 	fprintf(fh, "end\n");
