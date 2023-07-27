@@ -64,6 +64,20 @@ static void show_help(const char *s)
 }
 
 
+static const char *group_serial_to_name(int serial,
+                                        struct dg_group_info *groups,
+                                        int n_groups)
+{
+	int i;
+
+	for ( i=0; i<n_groups; i++ ) {
+		if ( groups[i].serial == serial ) return groups[i].name;
+	}
+
+	return NULL;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -159,24 +173,23 @@ int main(int argc, char *argv[])
 	groups = data_template_group_info(dtempl, &n_groups);
 
 	fprintf(fh, "\nParameter\n");
+
+	/* Top level */
+	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_DET_TX));
+	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_DET_TY));
+	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_TZ));
+	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RX));
+	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RY));
+	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RZ));
+
 	for ( i=0; i<n_groups; i++ ) {
 		int f = (groups[i].hierarchy_level > level) ? -1 : 0;
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f);
-		if ( groups[i].hierarchy_level > 0 ) {
-			fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
-		} else {
-			/* No overall camera length change */
-			fprintf(fh, "%i 0 -1\n", mille_label(groups[i].serial, GPARAM_DET_TZ));
-		}
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f);
-		if ( groups[i].hierarchy_level > 0 ) {
-			fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
-		} else {
-			/* No overall rotation around beam */
-			fprintf(fh, "%i 0 -1\n", mille_label(groups[i].serial, GPARAM_DET_RZ));
-		}
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
 	}
 	fprintf(fh, "\n");
 
@@ -231,6 +244,72 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
+		if ( n == 5 ) {
+
+			int code;
+			double shift;
+			int p;
+			const char *group_name;
+
+			if ( convert_int(bits[0], &code) ) {
+				ERROR("Didn't understand '%s'\n", bits[0]);
+				return 1;
+			}
+			if ( convert_float(bits[1], &shift) ) {
+				ERROR("Didn't understand '%s'\n", bits[1]);
+				return 1;
+			}
+
+			p = mille_unlabel(code % 100);
+			group_name = group_serial_to_name(code-(code%100),
+			                                  groups,
+			                                  n_groups);
+
+			STATUS("%s: %i -> %f\n", group_name, p, shift);
+
+			if ( group_name == NULL ) {
+				ERROR("Invalid group serial number %i\n", code);
+				return 1;
+			}
+
+			switch ( p ) {
+
+				case GPARAM_DET_TX:
+				data_template_translate_group_m(dtempl, group_name,
+				                                -shift, 0, 0);
+				break;
+
+				case GPARAM_DET_TY:
+				data_template_translate_group_m(dtempl, group_name,
+				                                0, -shift, 0);
+				break;
+
+				case GPARAM_DET_TZ:
+				data_template_translate_group_m(dtempl, group_name,
+				                                0, 0, -shift);
+				break;
+
+				case GPARAM_DET_RX:
+				data_template_rotate_group(dtempl, group_name,
+				                           -shift, 'x');
+				break;
+
+				case GPARAM_DET_RY:
+				data_template_rotate_group(dtempl, group_name,
+				                           -shift, 'y');
+				break;
+
+				case GPARAM_DET_RZ:
+				data_template_rotate_group(dtempl, group_name,
+				                           -shift, 'z');
+				break;
+
+				default:
+				ERROR("Invalid parameter %i\n", p);
+				return 1;
+			}
+
+		}
 
 		for ( i=0; i<n; i++ ) free(bits[i]);
 		free(bits);
@@ -238,6 +317,8 @@ int main(int argc, char *argv[])
 	} while ( rval == line );
 
 	fclose(fh);
+
+	data_template_write_to_file(dtempl, out_geom);
 
 	return 0;
 }

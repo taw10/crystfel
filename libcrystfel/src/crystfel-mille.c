@@ -56,6 +56,22 @@ int mille_label(int group_serial, enum gparam param)
 }
 
 
+
+/* Opposite of mille_label(), for decoding labels later */
+enum gparam mille_unlabel(int n)
+{
+	switch ( n ) {
+		case 1 : return GPARAM_DET_TX;
+		case 2 : return GPARAM_DET_TY;
+		case 3 : return GPARAM_DET_TZ;
+		case 4 : return GPARAM_DET_RX;
+		case 5 : return GPARAM_DET_RY;
+		case 6 : return GPARAM_DET_RZ;
+		default : abort();
+	}
+}
+
+
 #ifdef HAVE_MILLEPEDE
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
