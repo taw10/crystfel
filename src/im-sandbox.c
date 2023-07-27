@@ -286,6 +286,8 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 		if ( evstr != NULL ) {
 			*pfilename = filename;
 			*pevent = evstr;
+			free(gpctx->filename);
+			gpctx->filename = filename;
 			return 1;
 		}
 

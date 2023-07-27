@@ -954,6 +954,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				      dim_vals[dim_val_pos], size[i]);
 				close_hdf5(fh);
 				free(subst_name);
+				free(dim_vals);
 				return 1;
 			}
 
@@ -969,6 +970,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		}
 
 	}
+	free(dim_vals);
 
 	check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
@@ -1334,12 +1336,14 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	dim_vals = read_dim_parts(event, &n_dim_vals);
 	if ( dim_vals == NULL ) {
 		ERROR("Couldn't parse event '%s'\n");
+		free(subst_name);
 		return NULL;
 	}
 
 	if ( n_dim_vals < 1 ) {
 		ERROR("Not enough dimensions in event ID to use CXI "
 		      "peak lists (%i)\n", n_dim_vals);
+		free(subst_name);
 		return NULL;
 	}
 
@@ -1354,29 +1358,37 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file (peaks/cxi): %s\n", filename);
+		free(subst_name);
 		return NULL;
 	}
 
 	r = read_peak_count(fh, path_n, line, &num_peaks);
 	if ( r != 0 ) {
 		close_hdf5(fh);
+		free(subst_name);
 		return NULL;
 	}
 
 	buf_x = read_peak_line(fh, path_x, line, num_peaks);
 	if ( buf_x == NULL ) {
 		close_hdf5(fh);
+		free(subst_name);
 		return NULL;
 	}
 
 	buf_y = read_peak_line(fh, path_y, line, num_peaks);
 	if ( buf_y == NULL ) {
+		free(buf_x);
+		free(subst_name);
 		close_hdf5(fh);
 		return NULL;
 	}
 
 	buf_i = read_peak_line(fh, path_i, line, num_peaks);
 	if ( buf_i == NULL ) {
+		free(buf_x);
+		free(buf_y);
+		free(subst_name);
 		close_hdf5(fh);
 		return NULL;
 	}
@@ -1403,6 +1415,11 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 		}
 
 	}
+
+	free(buf_x);
+	free(buf_y);
+	free(buf_i);
+	free(subst_name);
 
 	close_hdf5(fh);
 

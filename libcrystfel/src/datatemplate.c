@@ -2003,9 +2003,14 @@ struct detgeom *create_detgeom(struct image *image,
 	detgeom->n_panels = dtempl->n_panels;
 
 	if ( two_d_only ) {
-		if ( !detector_flat(dtempl) ) return NULL;
-		if ( dtempl->shift_x_from != NULL ) return NULL;
-		if ( dtempl->shift_y_from != NULL ) return NULL;
+		if ( !detector_flat(dtempl)
+		  || (dtempl->shift_x_from != NULL)
+		  || (dtempl->shift_y_from != NULL) )
+		{
+			free(detgeom->panels);
+			free(detgeom);
+			return NULL;
+		}
 	}
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
