@@ -64,6 +64,9 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 {
 	int i;
 
+	/* No groups -> no refinement */
+	if ( image->detgeom->top_group == NULL ) return;
+
 	/* Local parameters */
 	const enum gparam rvl[] =
 	{
