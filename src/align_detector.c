@@ -290,6 +290,7 @@ int main(int argc, char *argv[])
 	if ( make_zero_sum(fh, groups, n_groups, "all", level) ) return 1;
 
 	fprintf(fh, "method inversion 5 0.1\n");
+	fprintf(fh, "skipemptycons\n");
 	fprintf(fh, "end\n");
 	fclose(fh);
 
