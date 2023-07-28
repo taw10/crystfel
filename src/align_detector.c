@@ -64,6 +64,20 @@ static void show_help(const char *s)
 }
 
 
+static const char *str_param(enum gparam param)
+{
+	switch ( param ) {
+		case GPARAM_DET_TX : return "x-translation";
+		case GPARAM_DET_TY : return "y-translation";
+		case GPARAM_DET_TZ : return "z-translation";
+		case GPARAM_DET_RX : return "x-rotation";
+		case GPARAM_DET_RY : return "y-rotation";
+		case GPARAM_DET_RZ : return "z-rotation";
+		default : return "(unknown)";
+	}
+}
+
+
 static const char *group_serial_to_name(int serial,
                                         struct dg_group_info *groups,
                                         int n_groups)
@@ -325,6 +339,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	int last_group_serial = -1;
 	do {
 
 		char **bits;
@@ -347,6 +362,7 @@ int main(int argc, char *argv[])
 			double shift;
 			int p;
 			const char *group_name;
+			int group_serial;
 
 			if ( convert_int(bits[0], &code) ) {
 				ERROR("Didn't understand '%s'\n", bits[0]);
@@ -358,11 +374,29 @@ int main(int argc, char *argv[])
 			}
 
 			p = mille_unlabel(code % 100);
-			group_name = group_serial_to_name(code-(code%100),
+			group_serial = code - (code % 100);
+			group_name = group_serial_to_name(group_serial,
 			                                  groups,
 			                                  n_groups);
 
-			STATUS("%s: %i -> %f\n", group_name, p, shift);
+			if ( last_group_serial != group_serial ) {
+				STATUS("Group %s:\n", group_name);
+				last_group_serial = group_serial;
+			}
+
+			switch ( p ) {
+				case GPARAM_DET_TX:
+				case GPARAM_DET_TY:
+				case GPARAM_DET_TZ:
+				STATUS("   %14s %+f mm\n", str_param(p), 1e3*shift);
+				break;
+
+				case GPARAM_DET_RX:
+				case GPARAM_DET_RY:
+				case GPARAM_DET_RZ:
+				STATUS("   %14s %+f deg\n", str_param(p), rad2deg(shift));
+				break;
+			}
 
 			if ( group_name == NULL ) {
 				ERROR("Invalid group serial number %i\n", code);
