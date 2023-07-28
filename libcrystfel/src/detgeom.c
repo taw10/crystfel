@@ -65,6 +65,8 @@ void detgeom_free(struct detgeom *detgeom)
 {
 	int i;
 
+	if ( detgeom == NULL ) return;
+
 	for ( i=0; i<detgeom->n_panels; i++ ) {
 		free(detgeom->panels[i].name);
 	}
