@@ -294,9 +294,9 @@ int main(int argc, char *argv[])
 		if ( groups[i].hierarchy_level == 0 ) continue;
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), -1);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), -1);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), -1);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
 	}
 	fprintf(fh, "\n");
