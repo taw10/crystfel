@@ -31,7 +31,7 @@
 
 #include <gsl/gsl_matrix.h>
 
-typedef void *Mille;
+typedef struct mille Mille;
 
 #include "cell.h"
 #include "image.h"
@@ -42,9 +42,7 @@ typedef void *Mille;
  * Detector geometry refinement using Millepede
  */
 
-extern Mille *crystfel_mille_new(const char *outFileName,
-                                 int asBinary,
-                                 int writeZero);
+extern Mille *crystfel_mille_new(const char *outFileName);
 
 extern void crystfel_mille_free(Mille *m);
 

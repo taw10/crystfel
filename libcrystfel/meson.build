@@ -41,9 +41,6 @@ endif
 millepededep = dependency('millepede',
                          required: false,
                          fallback: ['millepede', 'millepede_dep'])
-if millepededep.found()
-  conf_data.set10('HAVE_MILLEPEDE', true)
-endif
 
 xgandalfdep = dependency('xgandalf',
                          required: false,

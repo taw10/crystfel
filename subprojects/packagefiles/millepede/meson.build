@@ -1,5 +1,5 @@
 # Meson file for Millepede-II
-project('millepede', ['c', 'cpp','fortran'],
+project('millepede', ['c', 'fortran'],
         version: '2.0.0',
         license: 'LGPL2+',
         default_options: ['buildtype=debugoptimized'])
@@ -11,11 +11,7 @@ if zlibdep.found()
   pede_c_args += '-DUSE_ZLIB'
 endif
 
-mille = library('mille', ['Mille.cc', 'mille_c_wrap.cc'],
-                install: true)
-
-millepede_dep = declare_dependency(include_directories: '.',
-                                   link_with: mille)
+millepede_dep = declare_dependency()
 
 executable('pede',
            ['mpdef.f90',

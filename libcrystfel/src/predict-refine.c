@@ -868,13 +868,11 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	         pred_residual(rps, n, image->detgeom));
 	crystal_add_notes(cr, tmp);
 
-	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
 		profile_start("mille-calc");
 		write_mille(mille, n, crystal_get_cell(cr), rps, image, Minvs);
 		profile_end("mille-calc");
 	}
-	#endif
 
 	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		gsl_matrix_free(Minvs[i]);
@@ -887,21 +885,17 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	n = pair_peaks(image, cr, NULL, rps);
 	free_rps_noreflist(rps, n);
 	if ( n < 10 ) {
-		#ifdef HAVE_MILLEPEDE
 		if ( mille != NULL ) {
 			crystfel_mille_delete_last_record(mille);
 		}
-		#endif
 		return 1;
 	}
 
-	#ifdef HAVE_MILLEPEDE
 	if ( mille != NULL ) {
 		profile_start("mille-write");
 		crystfel_mille_write_record(mille);
 		profile_end("mille-write");
 	}
-	#endif
 
 	return 0;
 }

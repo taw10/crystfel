@@ -37,11 +37,6 @@
 #include "predict-refine.h"
 #include "profile.h"
 
-#ifdef HAVE_MILLEPEDE
-#include <mille_c_wrap.h>
-#endif /* HAVE_MILLEPEDE */
-
-
 int mille_label(int group_serial, enum gparam param)
 {
 	switch ( param ) {
@@ -72,7 +67,84 @@ enum gparam mille_unlabel(int n)
 }
 
 
-#ifdef HAVE_MILLEPEDE
+struct mille
+{
+	float *float_arr;
+	int *int_arr;
+	int max_entries;
+	int n;
+	FILE *fh;
+};
+
+typedef struct mille Mille;
+
+
+static void mille_add_measurement(Mille *m,
+                                  int NLC, float *derLc,
+                                  int NGL, float *derGl, int *labels,
+                                  float rMeas, float sigma)
+{
+	int space_required;
+	int i;
+
+	if ( m == NULL ) return;
+
+	/* Allocate extra space if necessary */
+	space_required = m->n + NLC + NGL + 2;
+	if ( space_required > m->max_entries ) {
+
+		float *new_float_arr;
+		int *new_int_arr;
+		int new_max_entries;
+
+		if ( m->max_entries == 0 ) {
+			new_max_entries = 256;
+		} else {
+			new_max_entries = m->max_entries;
+		}
+
+		while ( new_max_entries < space_required ) {
+			new_max_entries *= 2;
+		}
+
+		new_float_arr = realloc(m->float_arr, new_max_entries*sizeof(float));
+		new_int_arr = realloc(m->int_arr, new_max_entries*sizeof(int));
+		if ( (new_float_arr == NULL) || (new_int_arr == NULL) ) return;
+
+		m->float_arr = new_float_arr;
+		m->int_arr = new_int_arr;
+		m->max_entries = new_max_entries;
+	}
+
+	/* The measurement */
+	m->float_arr[m->n] = rMeas;
+	m->int_arr[m->n] = 0;
+	m->n++;
+
+	/* Local gradients */
+	for ( i=0; i<NLC; i++ ) {
+		if ( derLc[i] != 0.0 ) {
+			m->float_arr[m->n] = derLc[i];
+			m->int_arr[m->n] = i+1;
+			m->n++;
+		}
+	}
+
+	/* The measurement error */
+	m->float_arr[m->n] = sigma;
+	m->int_arr[m->n] = 0;
+	m->n++;
+
+	/* Global gradients */
+	for ( i=0; i<NGL; i++ ) {
+		if ( (derGl[i] != 0.0) && (labels[i] > 0) ) {
+			m->float_arr[m->n] = derGl[i];
+			m->int_arr[m->n] = labels[i];
+			m->n++;
+		}
+	}
+}
+
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
                  struct reflpeak *rps, struct image *image,
@@ -176,29 +248,58 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 }
 
 
-Mille *crystfel_mille_new(const char *outFileName,
-                          int asBinary,
-                          int writeZero)
+Mille *crystfel_mille_new(const char *outFileName)
 {
-	return mille_new(outFileName, asBinary, writeZero);
+	Mille *m;
+
+	m = malloc(sizeof(Mille));
+	if ( m == NULL ) return NULL;
+
+	m->max_entries = 0;
+	m->n = 0;
+	m->float_arr = NULL;
+	m->int_arr = NULL;
+
+	m->fh = fopen(outFileName, "wb");
+	if ( m->fh == NULL ) {
+		ERROR("Failed to open Mille file '%s'\n", outFileName);
+		free(m);
+		return NULL;
+	}
+
+
+	return m;
 }
 
 
 void crystfel_mille_free(Mille *m)
 {
-	mille_free(m);
+	if ( m == NULL ) return;
+	fclose(m->fh);
+	free(m->float_arr);
+	free(m->int_arr);
+	free(m);
 }
 
 
 void crystfel_mille_delete_last_record(Mille *m)
 {
-	mille_delete_last_record(m);
+	m->n = 0;
 }
 
 
 void crystfel_mille_write_record(Mille *m)
 {
-	mille_write_record(m);
-}
+	float nf = 0.0;
+	int ni = 0;
+	int nw = (m->n * 2)+2;
 
-#endif /* HAVE_MILLEPEDE */
+	fwrite(&nw, sizeof(int), 1, m->fh);
+
+	fwrite(&nf, sizeof(float), 1, m->fh);
+	fwrite(m->float_arr, sizeof(float), m->n, m->fh);
+
+	fwrite(&ni, sizeof(int), 1, m->fh);
+	fwrite(m->int_arr, sizeof(int), m->n, m->fh);
+	m->n = 0;
+}
