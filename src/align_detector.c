@@ -31,6 +31,7 @@
 #include <config.h>
 #endif
 
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -307,6 +308,8 @@ int main(int argc, char *argv[])
 	fprintf(fh, "skipemptycons\n");
 	fprintf(fh, "end\n");
 	fclose(fh);
+
+	unlink("millepede.res");
 
 	r = system("pede millepede.txt");
 	if ( r == -1 ) {
