@@ -31,6 +31,8 @@
 #include <config.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -185,6 +187,29 @@ static int make_zero_sum(FILE *fh, struct dg_group_info *groups, int n_groups,
 }
 
 
+static void print_time_warning()
+{
+	ERROR("\n\n");
+	ERROR("WARNING: The modification times of the Mille data files differ "
+	      "by more than one minute.\n");
+	ERROR("This suggests that they might have come from different runs of "
+	      "indexamajig.\n");
+	ERROR("If this is not the case, then there is no problem and you can "
+	      "ignore this warning.\n");
+	ERROR("However, if Mille files have been mixed up between indexamajig "
+	      "runs, then the detector alignment results will be wrong.\n");
+	ERROR("\n\n");
+}
+
+
+static int different(time_t a, time_t b)
+{
+	if ( a-b > 60 ) return 1;
+	if ( b-a > 60 ) return 1;
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -199,6 +224,8 @@ int main(int argc, char *argv[])
 	int n_groups;
 	int r;
 	char line[256];
+	time_t first_mtime = 0;
+	int warn_times = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -273,8 +300,27 @@ int main(int argc, char *argv[])
 	}
 
 	for ( i=optind; i<argc; i++ ) {
+
+		struct stat statbuf;
+
+		r = stat(argv[i], &statbuf);
+		if ( r != 0 ) {
+			ERROR("File '%s' not found\n", argv[i]);
+			return 1;
+		}
+
+		if ( i == optind ) {
+			first_mtime = statbuf.st_mtim.tv_sec;
+		} else {
+			if ( different(statbuf.st_mtim.tv_sec, first_mtime) ) {
+				warn_times = 1;
+			}
+		}
+
 		fprintf(fh, "%s\n", argv[i]);
 	}
+
+	if ( warn_times ) print_time_warning();
 
 	dtempl = data_template_new_from_file(in_geom);
 	groups = data_template_group_info(dtempl, &n_groups);
@@ -453,6 +499,8 @@ int main(int argc, char *argv[])
 	fclose(fh);
 
 	data_template_write_to_file(dtempl, out_geom);
+
+	if ( warn_times ) print_time_warning();
 
 	return 0;
 }
