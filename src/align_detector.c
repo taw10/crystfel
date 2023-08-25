@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	STATUS("Millepede succeeded.\n");
+	STATUS("Millepede succeeded.\n\n");
 
 	fh = fopen("millepede.res", "r");
 	if ( fh == NULL ) {
