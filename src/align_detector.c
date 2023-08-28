@@ -310,9 +310,9 @@ int main(int argc, char *argv[])
 		}
 
 		if ( i == optind ) {
-			first_mtime = statbuf.st_mtim.tv_sec;
+			first_mtime = statbuf.st_mtime;
 		} else {
-			if ( different(statbuf.st_mtim.tv_sec, first_mtime) ) {
+			if ( different(statbuf.st_mtime, first_mtime) ) {
 				warn_times = 1;
 			}
 		}
