@@ -11,9 +11,7 @@ if zlibdep.found()
   pede_c_args += '-DUSE_ZLIB'
 endif
 
-millepede_dep = declare_dependency()
-
-executable('pede',
+pede = executable('pede',
            ['mpdef.f90',
             'mpdalc.f90',
             'mpmod.f90',
@@ -39,5 +37,6 @@ executable('pede',
             'readc.c'],
            fortran_args: ['-DREAD_C_FILES', '-cpp'],
            c_args: pede_c_args,
+           build_by_default: true,
            dependencies: [zlibdep],
            install: true)

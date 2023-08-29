@@ -38,10 +38,6 @@ else
   cjsondep = dependency('', required : false)
 endif
 
-millepededep = dependency('millepede',
-                         required: false,
-                         fallback: ['millepede', 'millepede_dep'])
-
 xgandalfdep = dependency('xgandalf',
                          required: false,
                          fallback: ['xgandalf', 'xgandalf_dep'])
@@ -172,8 +168,7 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
                                      hdf5dep, pthreaddep,
                                      xgandalfdep, pinkindexerdep, fdipdep,
-                                     ccp4dep, msgpackdep, seedeedep, cjsondep,
-                                     millepededep],
+                                     ccp4dep, msgpackdep, seedeedep, cjsondep],
                       install: true)
 
 libcrystfeldep = declare_dependency(include_directories: libcrystfel_includes,
