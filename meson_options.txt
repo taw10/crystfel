@@ -1,2 +1,1 @@
 option('hdf5', type: 'feature', value: 'enabled')
-option('opencl', type: 'feature', value: 'disabled')
