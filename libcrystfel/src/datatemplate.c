@@ -1383,6 +1383,12 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		free(defaults.masks[i].filename);
 	}
 
+	/* If this is a single-panel detector, there should only be one group
+	 * called "all" which points to the panel */
+	if ( (dt->n_panels == 1) && (dt->n_groups == 1) ) {
+		parse_group("all", dt, dt->groups[0]->name);
+	}
+
 	free(string_orig);
 
 	if ( reject ) return NULL;
