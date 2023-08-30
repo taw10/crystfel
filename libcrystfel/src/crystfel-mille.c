@@ -51,7 +51,6 @@ int mille_label(int group_serial, enum gparam param)
 }
 
 
-
 /* Opposite of mille_label(), for decoding labels later */
 enum gparam mille_unlabel(int n)
 {
