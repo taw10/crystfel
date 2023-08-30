@@ -61,6 +61,7 @@ static void show_help(const char *s)
 	       "  -g, --geometry=file        Input geometry file\n"
 	       "  -o, --output=file          Output geometry file\n"
 	       "  -l, --level=n              Alignment hierarchy level\n"
+	       "      --out-of-plane         Also refine out of x/y plane\n"
 	       "\n"
 	       "  -h, --help                 Display this help message\n"
 	       "      --version              Print version number and exit\n");
@@ -226,6 +227,7 @@ int main(int argc, char *argv[])
 	char line[256];
 	time_t first_mtime = 0;
 	int warn_times = 0;
+	int out_of_plane = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -237,6 +239,7 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'g'},
 		{"output",             1, NULL,               'o'},
 		{"level",              1, NULL,               'l'},
+		{"out-of-plane",       0, &out_of_plane,       1},
 
 		{0, 0, NULL, 0}
 	};
@@ -330,20 +333,21 @@ int main(int argc, char *argv[])
 	/* Top level */
 	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_DET_TX));
 	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_DET_TY));
-	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_TZ));
-	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RX));
-	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RY));
+	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_TZ), out_of_plane ? 0 : -1);
+	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RX), out_of_plane ? 0 : -1);
+	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RY), out_of_plane ? 0 : -1);
 	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RZ));
 
 	for ( i=0; i<n_groups; i++ ) {
-		int f = (groups[i].hierarchy_level > level) ? -1 : 0;
+		int f_inplane = (groups[i].hierarchy_level > level) ? -1 : 0;
+		int f_outplane = out_of_plane ? f_inplane : -1;
 		if ( groups[i].hierarchy_level == 0 ) continue;
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), -1);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), -1);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), -1);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f_inplane);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f_inplane);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f_outplane);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f_outplane);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f_outplane);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f_inplane);
 	}
 	fprintf(fh, "\n");
 
