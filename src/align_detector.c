@@ -156,7 +156,7 @@ static void write_zero_sum(FILE *fh, struct dg_group_info *g,
 
 
 static int make_zero_sum(FILE *fh, struct dg_group_info *groups, int n_groups,
-                         const char *group_name, int level)
+                         const char *group_name, int level, int out_of_plane)
 {
 	int i;
 	struct dg_group_info *g = find_group(groups, n_groups, group_name);
@@ -172,15 +172,18 @@ static int make_zero_sum(FILE *fh, struct dg_group_info *groups, int n_groups,
 	fprintf(fh, "! Hierarchy constraints for group %s\n", group_name);
 	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TX);
 	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TY);
-	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TZ);
-	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RX);
-	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RY);
+	if ( out_of_plane ) {
+		write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TZ);
+		write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RX);
+		write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RY);
+	}
 	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RZ);
 	fprintf(fh, "\n");
 
 	for ( i=0; i<n_groups; i++ ) {
 		if ( is_child(g, &groups[i]) ) {
-			if ( make_zero_sum(fh, groups, n_groups, groups[i].name, level) ) return 1;
+			if ( make_zero_sum(fh, groups, n_groups, groups[i].name,
+			                   level, out_of_plane) ) return 1;
 		}
 	}
 
@@ -352,10 +355,9 @@ int main(int argc, char *argv[])
 	fprintf(fh, "\n");
 
 	/* All corrections must sum to zero at each level of hierarchy */
-	if ( make_zero_sum(fh, groups, n_groups, "all", level) ) return 1;
+	if ( make_zero_sum(fh, groups, n_groups, "all", level, out_of_plane) ) return 1;
 
 	fprintf(fh, "method inversion 5 0.1\n");
-	fprintf(fh, "skipemptycons\n");
 	fprintf(fh, "end\n");
 	fclose(fh);
 
