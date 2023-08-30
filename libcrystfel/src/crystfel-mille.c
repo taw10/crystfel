@@ -186,6 +186,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 
 		float local_gradients_fs[nl];
 		float local_gradients_ss[nl];
+		float local_gradients_r[nl];
 		float global_gradients_fs[ng*max_hierarchy_levels];
 		float global_gradients_ss[ng*max_hierarchy_levels];
 		int labels[ng*max_hierarchy_levels];
@@ -199,6 +200,8 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &local_gradients_fs[j],
 			               &local_gradients_ss[j]);
+			local_gradients_r[j] = EXC_WEIGHT * r_gradient(rvl[j], rps[i].refl,
+			                                               cell, image->lambda);
 		}
 
 		/* Global gradients for each hierarchy level, starting at the
@@ -243,6 +246,10 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		                      nl, local_gradients_ss,
 		                      j, global_gradients_ss, labels,
 		                      ss_dev(&rps[i], image->detgeom), 0.22);
+
+		/* Add excitation error "measurement" (local-only) */
+		mille_add_measurement(mille, nl, local_gradients_r,
+		                      0, NULL, NULL, r_dev(&rps[i])*EXC_WEIGHT, 1.0);
 	}
 }
 
