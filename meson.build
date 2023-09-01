@@ -283,15 +283,17 @@ pandoc = find_program('pandoc', required: false)
 
 pandoc_pages = ['adjust_detector.1.md']
 
-foreach page : pandoc_pages
-  custom_target(page,
-                input: join_paths('doc/man', page),
-                output: '@BASENAME@',
-                command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
-                          '-s', '-f', 'markdown-smart', '-t', 'man'],
-                install: true,
-                install_dir: join_paths(get_option('mandir'), 'man1'))
-endforeach
+if pandoc.found()
+  foreach page : pandoc_pages
+    custom_target(page,
+                  input: join_paths('doc/man', page),
+                  output: '@BASENAME@',
+                  command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
+                            '-s', '-f', 'markdown-smart', '-t', 'man'],
+                  install: true,
+                  install_dir: join_paths(get_option('mandir'), 'man1'))
+  endforeach
+endif
 
 install_man(['doc/man/ambigator.1',
              'doc/man/cell_explorer.1',
