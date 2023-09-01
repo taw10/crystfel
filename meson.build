@@ -278,6 +278,21 @@ subdir('tests')
 
 
 # ************************ Manual pages ************************
+
+pandoc = find_program('pandoc', required: false)
+
+pandoc_pages = ['adjust_detector.1.md']
+
+foreach page : pandoc_pages
+  custom_target(page,
+                input: join_paths('doc/man', page),
+                output: '@BASENAME@',
+                command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
+                          '-s', '-f', 'markdown-smart', '-t', 'man'],
+                install: true,
+                install_dir: join_paths(get_option('mandir'), 'man1'))
+endforeach
+
 install_man(['doc/man/ambigator.1',
              'doc/man/cell_explorer.1',
              'doc/man/cell_tool.1',
