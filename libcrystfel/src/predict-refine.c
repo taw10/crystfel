@@ -232,21 +232,21 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
 		break;
 
 		case GPARAM_DET_RX :
-		gsl_matrix_set(dMdp, 1, 0, p->pixel_pitch*p->cnz-cz);
-		gsl_matrix_set(dMdp, 2, 0, cy-p->pixel_pitch*p->cny);
-		gsl_matrix_set(dMdp, 1, 1, p->pixel_pitch*p->fsz);
-		gsl_matrix_set(dMdp, 2, 1, -p->pixel_pitch*p->fsy);
-		gsl_matrix_set(dMdp, 1, 2, p->pixel_pitch*p->ssz);
-		gsl_matrix_set(dMdp, 2, 2, -p->pixel_pitch*p->ssy);
+		gsl_matrix_set(dMdp, 1, 0, cz-p->pixel_pitch*p->cnz);
+		gsl_matrix_set(dMdp, 2, 0, p->pixel_pitch*p->cny-cy);
+		gsl_matrix_set(dMdp, 1, 1, -p->pixel_pitch*p->fsz);
+		gsl_matrix_set(dMdp, 2, 1, p->pixel_pitch*p->fsy);
+		gsl_matrix_set(dMdp, 1, 2, -p->pixel_pitch*p->ssz);
+		gsl_matrix_set(dMdp, 2, 2, p->pixel_pitch*p->ssy);
 		break;
 
 		case GPARAM_DET_RY :
-		gsl_matrix_set(dMdp, 0, 0, cz-p->pixel_pitch*p->cnz);
-		gsl_matrix_set(dMdp, 2, 0, p->pixel_pitch*p->cnx-cx);
-		gsl_matrix_set(dMdp, 0, 1, -p->pixel_pitch*p->fsz);
-		gsl_matrix_set(dMdp, 2, 1, p->pixel_pitch*p->fsx);
-		gsl_matrix_set(dMdp, 0, 2, -p->pixel_pitch*p->ssz);
-		gsl_matrix_set(dMdp, 2, 2, p->pixel_pitch*p->ssx);
+		gsl_matrix_set(dMdp, 0, 0, p->pixel_pitch*p->cnz-cz);
+		gsl_matrix_set(dMdp, 2, 0, cx-p->pixel_pitch*p->cnx);
+		gsl_matrix_set(dMdp, 0, 1, p->pixel_pitch*p->fsz);
+		gsl_matrix_set(dMdp, 2, 1, -p->pixel_pitch*p->fsx);
+		gsl_matrix_set(dMdp, 0, 2, p->pixel_pitch*p->ssz);
+		gsl_matrix_set(dMdp, 2, 2, -p->pixel_pitch*p->ssx);
 		break;
 
 		case GPARAM_DET_RZ :

@@ -2222,16 +2222,16 @@ static int rotate_all_panels(DataTemplate *dtempl,
 		switch ( axis )
 		{
 			case 'x':
-			rotate2d(&cnz_px, &p->cny, cz, cy, ang);
-			rotate2d(&p->fsz, &p->fsy, 0, 0, ang);
-			rotate2d(&p->ssz, &p->ssy, 0, 0, ang);
+			rotate2d(&p->cny, &cnz_px, cy, cz, ang);
+			rotate2d(&p->fsy, &p->fsz, 0, 0, ang);
+			rotate2d(&p->ssy, &p->ssz, 0, 0, ang);
 			p->cnz_offset = cnz_px * p->pixel_pitch;
 			break;
 
 			case 'y':
-			rotate2d(&p->cnx, &cnz_px, cx, cz, ang);
-			rotate2d(&p->fsx, &p->fsz, 0, 0, ang);
-			rotate2d(&p->ssx, &p->ssz, 0, 0, ang);
+			rotate2d(&cnz_px, &p->cnx, cz, cx, ang);
+			rotate2d(&p->fsz, &p->fsx, 0, 0, ang);
+			rotate2d(&p->ssz, &p->ssx, 0, 0, ang);
 			p->cnz_offset = cnz_px * p->pixel_pitch;
 			break;
 

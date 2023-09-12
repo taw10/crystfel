@@ -72,18 +72,18 @@ int main(int argc, char *argv[])
 	#ifdef ROTATE_PANEL_X
 	struct detgeom_panel *p = &image.detgeom->panels[0];
 	step = deg2rad(0.01);
-	rotate2d(&p->cnz, &p->cny, cz/p->pixel_pitch, cy/p->pixel_pitch, step);
-	rotate2d(&p->fsz, &p->fsy, 0, 0, step);
-	rotate2d(&p->ssz, &p->ssy, 0, 0, step);
+	rotate2d(&p->cny, &p->cnz, cy/p->pixel_pitch, cz/p->pixel_pitch, step);
+	rotate2d(&p->fsy, &p->fsz, 0, 0, step);
+	rotate2d(&p->ssy, &p->ssz, 0, 0, step);
 	didsomething = 1;
 	#endif
 
 	#ifdef ROTATE_PANEL_Y
 	struct detgeom_panel *p = &image.detgeom->panels[0];
 	step = deg2rad(0.01);
-	rotate2d(&p->cnx, &p->cnz, cx/p->pixel_pitch, cz/p->pixel_pitch, step);
-	rotate2d(&p->fsx, &p->fsz, 0, 0, step);
-	rotate2d(&p->ssx, &p->ssz, 0, 0, step);
+	rotate2d(&p->cnz, &p->cnx, cz/p->pixel_pitch, cx/p->pixel_pitch, step);
+	rotate2d(&p->fsz, &p->fsx, 0, 0, step);
+	rotate2d(&p->ssz, &p->ssx, 0, 0, step);
 	didsomething = 1;
 	#endif
 
