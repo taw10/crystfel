@@ -745,9 +745,9 @@ struct point_group_conversion pg_conversions[] = {
 	{'P', "2_uac",   0,      0,     "P112"},
 	{'P', "m_uac",   0,      0,     "P11m"},
 	{'P', "2/m_uac", 1,      0,     "P112"},
-	{'P', "2",       0,      0,     "P121"}, /* unique axis c */
+	{'P', "2",       0,      0,     "P112"}, /* unique axis c */
 	{'P', "m",       0,      0,     "P11m"}, /* unique axis c */
-	{'P', "2/m",     1,      0,     "P121"}, /* unique axis c */
+	{'P', "2/m",     1,      0,     "P112"}, /* unique axis c */
 
 	{'A', "2_uab",   0,      0,     "A121"},
 	{'A', "m_uab",   0,      0,     "A1m1"},
