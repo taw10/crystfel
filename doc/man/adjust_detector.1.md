@@ -25,11 +25,11 @@ centroid of all the panel centers in the specified group.
 
 To translate a panel or group, use one of **--shiftx**, **--shifty** or
 **--shiftz**.  The translation will be along the positive direction of the
-specified axis.  The units are pixels, unless you additionall specify
+specified axis.  The units are pixels, unless you additionally specify
 **--mm**.
 
 You can use multiple movements together, but the results are unspecified if you
-combine a rotation with any other movement.
+combine a rotation with any other movement (including another rotation).
 
 
 OPTIONS
