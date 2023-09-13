@@ -986,6 +986,25 @@ static gint fit_sig(GtkWidget *widget, CellWindow *w)
 }
 
 
+static gint clear_sig(GtkWidget *widget, CellWindow *w)
+{
+	w->hist_a->show_sel = 0;
+	w->hist_b->show_sel = 0;
+	w->hist_c->show_sel = 0;
+	w->hist_al->show_sel = 0;
+	w->hist_be->show_sel = 0;
+	w->hist_ga->show_sel = 0;
+	w->hist_a->sel = 1;
+	w->hist_b->sel = 1;
+	w->hist_c->sel = 1;
+	w->hist_al->sel = 1;
+	w->hist_be->sel = 1;
+	w->hist_ga->sel = 1;
+	redraw_all(w);
+	return TRUE;
+}
+
+
 static void write_vals(FILE *fh, MultiHistogram *h, int nbin, char *cen, int cat)
 {
 	int *data;
@@ -1641,6 +1660,7 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
 		"       <menuitem name=\"fit\" action=\"FitCellAction\" />"
+		"       <menuitem name=\"clear\" action=\"ClearAction\" />"
 		"</menu>"
 		"<menu name=\"help\" action=\"HelpAction\">"
 		"	<menuitem name=\"about\" action=\"AboutAction\" />"
@@ -1660,6 +1680,8 @@ static void add_menu_bar(CellWindow *w, GtkWidget *vbox)
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "FitCellAction", NULL, "_Fit cell", "<Control>F", NULL,
 			G_CALLBACK(fit_sig) },
+		{ "ClearAction", NULL, "_Clear selection", "<Control>Z", NULL,
+			G_CALLBACK(clear_sig) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About", NULL, NULL,
