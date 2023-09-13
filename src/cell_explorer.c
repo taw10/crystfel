@@ -1628,10 +1628,12 @@ static gint about_sig(GtkWidget *widget, CellWindow *w)
 	gtk_window_set_transient_for(GTK_WINDOW(window), GTK_WINDOW(w->window));
 
 	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(window),
-	        "Unit Cell Explorer");
-	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window), "0.0.1");
+	                                  "Unit Cell Explorer");
+	gtk_about_dialog_set_logo_icon_name(GTK_ABOUT_DIALOG(window), "crystfel");
+	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window),
+	                             crystfel_version_string());
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"© 2014-2016 Deutsches Elektronen-Synchrotron DESY, "
+		"© 2014-2023 Deutsches Elektronen-Synchrotron DESY, "
 		"a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
 		"Examine unit cell distributions");
