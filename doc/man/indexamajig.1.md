@@ -577,6 +577,9 @@ INDEXING OPTIONS
 : the results and allow false solutions to get through, but occasionally it might
 : be necessary.
 
+**--mille**
+: Write detector calibration data in Millepede-II format.
+
 **--wavelength-estimate=m** **--camera-length-estimate=m**
 : Some indexing algorithms need to know the camera length or the wavelength of
 : the incident radiation in advance, e.g. to prepare an internal look-up table.
