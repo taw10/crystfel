@@ -131,7 +131,6 @@ reports that the pattern has been successfully indexed.  Choose from:
 **felix**
 : Invoke Felix, which will use your cell parameters to find multiple crystals in
 : each pattern.
-:
 : The Felix indexer has been developed by Soeren Schmidt <ssch@fysik.dtu.dk>. To
 : use this option, 'Felix' must be in your shell's search path. This can be a
 : link to the latest version of Felix. If you see the Felix version information
@@ -145,18 +144,29 @@ reports that the pattern has been successfully indexed.  Choose from:
 (2016), p956, https://doi.org/10.1107/S2059798316010706.
 
 **xgandalf**
-: Invoke XGANDALF - eXtended GrAdieNt Descent Algorithm for Lattice Finding.
-: See  Gevorkov et al., Acta Crystallographica A75 (2019) p694,
+: Use the eXtended GrAdieNt Descent Algorithm for Lattice Finding.
+: See Gevorkov et al., Acta Crystallographica A75 (2019) p694,
 : https://doi.org/10.1107/S2053273319010593.
 
 **pinkIndexer**
-: Invoke pinkIndexer.  See Gevorkov et al., Acta Crystallographica A76 (2020)
-: p121, https://doi.org/10.1107/S2053273319015559.
+: Use the pinkIndexer algorithm.  See Gevorkov et al., Acta Crystallographica
+: A76 (2020) p121, https://doi.org/10.1107/S2053273319015559.
+
+**file**
+: See **Re-playing old indexing and injecting external results** below.
 
 Most of the indexing methods require some extra software to be installed,
 either at the time of compiling CrystFEL or afterwards.  CrystFEL is
 distributed with a script (scripts/install-indexers) which can help you to
 quickly install all the required programs.
+
+If you don't specify any indexing methods, indexamajig will try to
+automatically determine which indexing methods are available.  You can also
+specify indexing method none, in which case no indexing will be done.  This is
+useful if you just want to check that the peak detection is working properly.
+
+
+### Prior unit cell information
 
 You can add one or more of the following to the above indexing methods, to
 control what information should be provided to them.  Note that indexamajig
@@ -184,11 +194,6 @@ provide prior information.
 Example: **--indexing=mosflm-cell-latt** means to use Mosflm for indexing, and
 provide it with unit cell parameters and Bravais lattice type information.
 
-If you don't specify any indexing methods, indexamajig will try to
-automatically determine which indexing methods are available.  You can also
-specify indexing method none, in which case no indexing will be done.  This is
-useful if you just want to check that the peak detection is working properly.
-
 Usually, you do not need to explicitly specify anything more than the indexing
 method itself (e.g. mosflm or asdf).  The default behaviour for all indexing
 methods is to make the maximum possible use of prior information such as the
@@ -200,13 +205,47 @@ methods themselves, in most cases indexamajig will do what you want and
 intuitively expect!  However, the options are available if you need finer
 control.
 
+
+### Post-indexing stages
+
 The indexing results from the indexing engine will be put through a number of
 refinement and checking stages.  See the options **--no-check-cell**,
 **--no-multi**, **--no-retry** and **--no-refine** below for more details.
 
 
-PEAK INTEGRATION
-================
+### Re-playing old indexing and injecting external results
+
+With **--indexing=file**, indexamajig will read indexing results from a text
+file.  Use **--fromfile-input-file** to specify the filename.  Each line of the
+file represents one diffraction pattern in one image, and should be formatted
+as follows:
+
+    filename frameID asx asy asz bsx bsy bsz csx csy csz xshift yshift latt_cen
+
+To describe multiple overlapping diffraction patterns in one frame, simply
+use the same _filename_ and _frameID_ in multiple lines.
+
+The lattice type and centering information are contained in _latt\_cen_.
+This should consist of two characters, e.g. **tI** or **aP**.  The first letter
+represents the lattice type (**a**, **m**, **o**, **t**, **c**, **h**, **r**
+for, respectively, triclinic, monoclinic, orthorhombic, tetragonal, cubic,
+hexagonal or rhombohedral).  The centering symbol (**P**, **A**, **B**, **C**,
+**I**, **F**, **H** or **R**) follows.
+
+The vector components _asx_,_asy_,... are the reciprocal lattice basis vectors
+in reciprocal nanometres.  The _xshift_ and _yshift_ values are the offsets of
+the detector position in millimetres.  Usually, these offsets should be zero.
+
+This method can be used to inject indexing results from an external indexing
+program.  It can also be used to re-play previous indexing results, which is
+useful for changing integration parameters while using slower indexing methods
+(such as **pinkIndexer**).  To generate an indexing result from a previous
+**indexamajig** run, use the script **stream2sol** in the CrystFEL **scripts**
+folder.
+
+
+REFLECTION INTEGRATION
+======================
 
 If the pattern could be successfully indexed, peaks will be predicted in the
 pattern and their intensities measured.  You have a choice of integration
