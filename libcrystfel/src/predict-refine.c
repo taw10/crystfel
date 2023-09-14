@@ -582,7 +582,8 @@ int refine_radius(Crystal *cr, struct image *image)
 
 
 static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image, gsl_matrix **Minvs)
+                   struct image *image, gsl_matrix **Minvs,
+                   double *total_shifts)
 {
 	int i;
 	gsl_matrix *M;
@@ -728,6 +729,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		if ( isnan(gsl_vector_get(shifts, i)) ) {
 			gsl_vector_set(shifts, i, 0.0);
 		}
+		total_shifts[i] += gsl_vector_get(shifts, i);
 	}
 
 	/* Apply shifts */
@@ -806,6 +808,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	RefList *reflist;
 	char tmp[256];
 	gsl_matrix **Minvs;
+	double total_shifts[12];
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -845,10 +848,16 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	//STATUS("Initial residual = %e\n",
 	//       pred_residual(rps, n, image->detgeom));
 
+	snprintf(tmp, 255, "predict_refine/initial_residual = %e",
+	         pred_residual(rps, n, image->detgeom));
+	crystal_add_notes(cr, tmp);
+
+	for ( i=0; i<12; i++ ) total_shifts[i] = 0.0;
+
 	/* Refine (max 10 cycles) */
 	for ( i=0; i<10; i++ ) {
 		update_predictions(cr);
-		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs) )
+		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs, total_shifts) )
 		{
 			crystal_set_reflections(cr, NULL);
 			return 1;
@@ -861,6 +870,10 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 
 	snprintf(tmp, 255, "predict_refine/final_residual = %e",
 	         pred_residual(rps, n, image->detgeom));
+	crystal_add_notes(cr, tmp);
+
+	snprintf(tmp, 255, "predict_refine/total_shifts = %e %e %e",
+	         total_shifts[0], total_shifts[1], total_shifts[2]);
 	crystal_add_notes(cr, tmp);
 
 	if ( mille != NULL ) {
