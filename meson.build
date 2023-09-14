@@ -281,7 +281,8 @@ subdir('tests')
 
 pandoc = find_program('pandoc', required: false)
 
-pandoc_pages = ['adjust_detector.1.md']
+pandoc_pages = ['indexamajig.1.md',
+                'adjust_detector.1.md']
 
 if pandoc.found()
   foreach page : pandoc_pages
@@ -303,7 +304,6 @@ install_man(['doc/man/ambigator.1',
              'doc/man/crystfel.7',
              'doc/man/crystfel_geometry.5',
              'doc/man/get_hkl.1',
-             'doc/man/indexamajig.1',
              'doc/man/list_events.1',
              'doc/man/list_events.1',
              'doc/man/make_pixelmap.1',
