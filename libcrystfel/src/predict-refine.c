@@ -770,9 +770,9 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
 	res_fs = 0.0;
 	res_ss = 0.0;
 	for ( i=0; i<n; i++ ) {
-		res_r += pow(r_dev(&rps[i]), 2.0);
-		res_fs += pow(fs_dev(&rps[i], det), 2.0);
-		res_ss += pow(ss_dev(&rps[i], det), 2.0);
+		res_r += sq(r_dev(&rps[i]));
+		res_fs += sq(fs_dev(&rps[i], det));
+		res_ss += sq(ss_dev(&rps[i], det));
 	}
 
 	if ( pres_r != NULL ) *pres_r = res_r;

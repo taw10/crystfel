@@ -105,6 +105,11 @@ extern double flat_noise(gsl_rng *rng, double expected, double width);
 extern double gaussian_noise(gsl_rng *rng, double expected, double stddev);
 extern int poisson_noise(gsl_rng *rng, double expected);
 
+static inline double sq(double a)
+{
+	return a*a;
+}
+
 static inline double distance(double x1, double y1, double x2, double y2)
 {
 	return sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
