@@ -769,8 +769,8 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
 	res_ss = 0.0;
 	for ( i=0; i<n; i++ ) {
 		res_r += EXC_WEIGHT * rps[i].Ih * pow(r_dev(&rps[i]), 2.0);
-		res_fs += pow(det->panels[rps[i].peak->pn].pixel_pitch*fs_dev(&rps[i], det), 2.0);
-		res_ss += pow(det->panels[rps[i].peak->pn].pixel_pitch*ss_dev(&rps[i], det), 2.0);
+		res_fs += pow(fs_dev(&rps[i], det), 2.0);
+		res_ss += pow(ss_dev(&rps[i], det), 2.0);
 	}
 
 	if ( pres_r != NULL ) *pres_r = res_r;
