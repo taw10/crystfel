@@ -758,31 +758,26 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 }
 
 
-static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det)
+static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
+                            double *pres_r, double *pres_fs, double *pres_ss)
 {
 	int i;
-	double res = 0.0;
-	double r;
+	double res_r, res_fs, res_ss;
 
-	r = 0.0;
+	res_r = 0.0;
+	res_fs = 0.0;
+	res_ss = 0.0;
 	for ( i=0; i<n; i++ ) {
-		r += EXC_WEIGHT * rps[i].Ih * pow(r_dev(&rps[i]), 2.0);
+		res_r += EXC_WEIGHT * rps[i].Ih * pow(r_dev(&rps[i]), 2.0);
+		res_fs += pow(det->panels[rps[i].peak->pn].pixel_pitch*fs_dev(&rps[i], det), 2.0);
+		res_ss += pow(det->panels[rps[i].peak->pn].pixel_pitch*ss_dev(&rps[i], det), 2.0);
 	}
-	res += r;
 
-	r = 0.0;
-	for ( i=0; i<n; i++ ) {
-		r += pow(det->panels[rps[i].peak->pn].pixel_pitch*fs_dev(&rps[i], det), 2.0);
-	}
-	res += r;
+	if ( pres_r != NULL ) *pres_r = res_r;
+	if ( pres_fs != NULL ) *pres_fs = res_fs;
+	if ( pres_ss != NULL ) *pres_ss = res_ss;
 
-	r = 0.0;
-	for ( i=0; i<n; i++ ) {
-		r += pow(det->panels[rps[i].peak->pn].pixel_pitch*ss_dev(&rps[i], det), 2.0);
-	}
-	res += r;
-
-	return res;
+	return res_r + res_fs + res_ss;
 }
 
 
@@ -809,6 +804,7 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 	char tmp[256];
 	gsl_matrix **Minvs;
 	double total_shifts[12];
+	double res_r, res_fs, res_ss, res_overall;
 
 	rps = malloc(image_feature_count(image->features)
 	                       * sizeof(struct reflpeak));
@@ -845,12 +841,12 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 		}
 	}
 
-	//STATUS("Initial residual = %e\n",
-	//       pred_residual(rps, n, image->detgeom));
-
-	snprintf(tmp, 255, "predict_refine/initial_residual = %e",
-	         pred_residual(rps, n, image->detgeom));
+	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+	snprintf(tmp, 255, "predict_refine/initial_residual = %f (%f %f %f)",
+	         res_overall, res_r, res_fs, res_ss);
 	crystal_add_notes(cr, tmp);
+	//STATUS("Initial residual = %f (%f %f %f)\n",
+	//       res_overall, res_r, res_fs, res_ss);
 
 	for ( i=0; i<12; i++ ) total_shifts[i] = 0.0;
 
@@ -862,15 +858,18 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 			crystal_set_reflections(cr, NULL);
 			return 1;
 		}
-		//STATUS("Residual after %i = %e\n", i,
-		//       pred_residual(rps, n, image->detgeom));
-	}
-	//STATUS("Final residual = %e\n",
-	//       pred_residual(rps, n, image->detgeom));
 
-	snprintf(tmp, 255, "predict_refine/final_residual = %e",
-	         pred_residual(rps, n, image->detgeom));
+		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+		//STATUS("Residual after %i = %f (%f %f %f)\n",
+		//       i, res_overall, res_r, res_fs, res_ss);
+	}
+
+	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+	snprintf(tmp, 255, "predict_refine/final_residual = %f (%f %f %f)",
+	         res_overall, res_r, res_fs, res_ss);
 	crystal_add_notes(cr, tmp);
+	//STATUS("Final residual = %f (%f %f %f)\n",
+	//       res_overall, res_r, res_fs, res_ss);
 
 	snprintf(tmp, 255, "predict_refine/total_shifts = %e %e %e",
 	         total_shifts[0], total_shifts[1], total_shifts[2]);
