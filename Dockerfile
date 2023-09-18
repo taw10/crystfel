@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y \
    wget \
    curl \
    ninja-build \
+   gfortran \
    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root
