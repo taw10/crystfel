@@ -45,16 +45,94 @@
  * \file datatemplate.h
  */
 
-struct rg_definition {
-	char *name;
-	char *pns;
-};
+static struct panel_group_template *find_group(const DataTemplate *dt, const char *name)
+{
+	int i;
+
+	for ( i=0; i<dt->n_groups; i++ ) {
+		if ( strcmp(dt->groups[i]->name, name) == 0 ) {
+			return dt->groups[i];
+		}
+	}
+
+	return NULL;
+}
 
 
-struct rgc_definition {
-	char *name;
-	char *rgs;
-};
+static struct panel_group_template *add_group(const char *name, DataTemplate *dt)
+{
+	struct panel_group_template *gt;
+
+	if ( find_group(dt, name) != NULL ) {
+		ERROR("Duplicate panel group '%s'\n", name);
+		return NULL;
+	}
+
+	if ( dt->n_groups >= MAX_PANEL_GROUPS ) {
+		ERROR("Too many panel groups\n");
+		return NULL;
+	}
+
+	gt = malloc(sizeof(struct panel_group_template));
+	if ( gt == NULL ) return NULL;
+
+	gt->name = strdup(name);
+	gt->n_children = 0;
+
+	if ( gt->name == NULL ) {
+		free(gt);
+		return NULL;
+	}
+
+	dt->groups[dt->n_groups++] = gt;
+
+	return gt;
+}
+
+
+static int parse_group(const char *name, DataTemplate *dt, const char *val)
+{
+	struct panel_group_template *gt;
+	int n_members;
+	char **members;
+	int i;
+	int fail = 0;
+
+	gt = add_group(name, dt);
+	if ( gt == NULL ) {
+		ERROR("Failed to add group\n");
+		return 1;
+	}
+
+	n_members = assplode(val, ",",  &members, ASSPLODE_NONE);
+	if ( n_members == 0 ) {
+		ERROR("Panel group '%s' has no members\n", name);
+		fail = 1;
+	}
+
+	if ( n_members > MAX_PANEL_GROUP_CHILDREN ) {
+		ERROR("Panel group '%s' has too many members\n", name);
+		fail = 1;
+	} else {
+
+		for ( i=0; i<n_members; i++ ) {
+			gt->children[i] = find_group(dt, members[i]);
+			if ( gt->children[i] == NULL ) {
+				ERROR("Unknown panel group '%s'\n", members[i]);
+				fail = 1;
+			}
+		}
+
+		gt->n_children = n_members;
+
+	}
+
+	for ( i=0; i<n_members; i++ ) free(members[i]);
+	free(members);
+
+	return fail;
+}
+
 
 
 static struct panel_template *new_panel(DataTemplate *det,
@@ -75,7 +153,6 @@ static struct panel_template *new_panel(DataTemplate *det,
 	new->name = strdup(name);
 
 	/* Copy strings */
-	new->cnz_from = safe_strdup(defaults->cnz_from);
 	new->data = safe_strdup(defaults->data);
 	new->satmap = safe_strdup(defaults->satmap);
 	new->satmap_file = safe_strdup(defaults->satmap_file);
@@ -83,6 +160,9 @@ static struct panel_template *new_panel(DataTemplate *det,
 		new->masks[i].data_location = safe_strdup(defaults->masks[i].data_location);
 		new->masks[i].filename = safe_strdup(defaults->masks[i].filename);
 	}
+
+	/* Create a new group just for this panel */
+	add_group(name, det);
 
 	return new;
 }
@@ -136,150 +216,6 @@ static struct dt_badregion *find_bad_region_by_name(DataTemplate *det,
 	for ( i=0; i<det->n_bad; i++ ) {
 		if ( strcmp(det->bad[i].name, name) == 0 ) {
 			return &det->bad[i];
-		}
-	}
-
-	return NULL;
-}
-
-
-static struct rigid_group *find_or_add_rg(DataTemplate *det,
-                                          const char *name)
-{
-	int i;
-	struct rigid_group **new;
-	struct rigid_group *rg;
-
-	for ( i=0; i<det->n_rigid_groups; i++ ) {
-
-		if ( strcmp(det->rigid_groups[i]->name, name) == 0 ) {
-			return det->rigid_groups[i];
-		}
-
-	}
-
-	new = realloc(det->rigid_groups,
-	              (1+det->n_rigid_groups)*sizeof(struct rigid_group *));
-	if ( new == NULL ) return NULL;
-
-	det->rigid_groups = new;
-
-	rg = malloc(sizeof(struct rigid_group));
-	if ( rg == NULL ) return NULL;
-
-	det->rigid_groups[det->n_rigid_groups++] = rg;
-
-	rg->name = strdup(name);
-	rg->panel_numbers = NULL;
-	rg->n_panels = 0;
-
-	return rg;
-}
-
-
-static struct rg_collection *find_or_add_rg_coll(DataTemplate *det,
-                                                 const char *name)
-{
-	int i;
-	struct rg_collection **new;
-	struct rg_collection *rgc;
-
-	for ( i=0; i<det->n_rg_collections; i++ ) {
-		if ( strcmp(det->rigid_group_collections[i]->name, name) == 0 )
-		{
-			return det->rigid_group_collections[i];
-		}
-	}
-
-	new = realloc(det->rigid_group_collections,
-	              (1+det->n_rg_collections)*sizeof(struct rg_collection *));
-	if ( new == NULL ) return NULL;
-
-	det->rigid_group_collections = new;
-
-	rgc = malloc(sizeof(struct rg_collection));
-	if ( rgc == NULL ) return NULL;
-
-	det->rigid_group_collections[det->n_rg_collections++] = rgc;
-
-	rgc->name = strdup(name);
-	rgc->rigid_groups = NULL;
-	rgc->n_rigid_groups = 0;
-
-	return rgc;
-}
-
-
-static void add_to_rigid_group(struct rigid_group *rg, int panel_number)
-{
-	int *pn;
-
-	pn = realloc(rg->panel_numbers, (1+rg->n_panels)*sizeof(int));
-	if ( pn == NULL ) {
-		ERROR("Couldn't add panel to rigid group.\n");
-		return;
-	}
-
-	rg->panel_numbers = pn;
-	rg->panel_numbers[rg->n_panels++] = panel_number;
-}
-
-
-static void add_to_rigid_group_coll(struct rg_collection *rgc,
-                                    struct rigid_group *rg)
-{
-	struct rigid_group **r;
-
-	r = realloc(rgc->rigid_groups, (1+rgc->n_rigid_groups)*
-	            sizeof(struct rigid_group *));
-	if ( r == NULL ) {
-		ERROR("Couldn't add rigid group to collection.\n");
-		return;
-	}
-
-	rgc->rigid_groups = r;
-	rgc->rigid_groups[rgc->n_rigid_groups++] = rg;
-}
-
-
-/* Free all rigid groups in detector */
-static void free_all_rigid_groups(DataTemplate *det)
-{
-	int i;
-
-	if ( det->rigid_groups == NULL ) return;
-	for ( i=0; i<det->n_rigid_groups; i++ ) {
-		free(det->rigid_groups[i]->name);
-		free(det->rigid_groups[i]->panel_numbers);
-		free(det->rigid_groups[i]);
-	}
-	free(det->rigid_groups);
-}
-
-
-/* Free all rigid groups in detector */
-static void free_all_rigid_group_collections(DataTemplate *det)
-{
-	int i;
-
-	if ( det->rigid_group_collections == NULL ) return;
-	for ( i=0; i<det->n_rg_collections; i++ ) {
-		free(det->rigid_group_collections[i]->name);
-		free(det->rigid_group_collections[i]->rigid_groups);
-		free(det->rigid_group_collections[i]);
-	}
-	free(det->rigid_group_collections);
-}
-
-
-static struct rigid_group *find_rigid_group_by_name(DataTemplate *det,
-                                                    char *name)
-{
-	int i;
-
-	for ( i=0; i<det->n_rigid_groups; i++ ) {
-		if ( strcmp(det->rigid_groups[i]->name, name) == 0 ) {
-			return det->rigid_groups[i];
 		}
 	}
 
@@ -490,7 +426,8 @@ static int add_flag_value(struct panel_template *p,
 
 static int parse_mask(struct panel_template *panel,
                       const char *key_orig,
-                      const char *val)
+                      const char *val,
+                      int def)
 {
 	int n;
 	char *key;
@@ -551,13 +488,15 @@ static int parse_mask(struct panel_template *panel,
 		return 1;
 	}
 
+	panel->masks[n].mask_default = def;
 	free(key);
 	return 0;
 }
 
 
 static int parse_field_for_panel(struct panel_template *panel, const char *key,
-                                 const char *val, DataTemplate *det)
+                                 const char *val, DataTemplate *det,
+                                 int def)
 {
 	int reject = 0;
 
@@ -576,16 +515,19 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 	} else if ( strcmp(key, "adu_per_eV") == 0 ) {
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_EV;
+		panel->adu_scale_default = def;
 	} else if ( strcmp(key, "adu_per_photon") == 0 ) {
 		panel->adu_scale = atof(val);
 		panel->adu_scale_unit = ADU_PER_PHOTON;
+		panel->adu_scale_default = def;
 	} else if ( strcmp(key, "clen") == 0 ) {
-		/* Gets expanded when image is loaded */
-		panel->cnz_from = strdup(val);
+		ERROR("'clen' is a top-level property in this version of CrystFEL.\n");
+		reject = 1;
 
 	} else if ( strcmp(key, "data") == 0 ) {
 		free(panel->data);
 		panel->data = strdup(val);
+		panel->data_default = def;
 
 	} else if ( strcmp(key, "mask_edge_pixels") == 0 ) {
 		if ( convert_int(val, &panel->mask_edge_pixels) ) {
@@ -593,30 +535,36 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 			      panel->name, val);
 			reject = 1;
 		}
+		panel->mask_edge_pixels_default = def;
 
 	} else if ( strcmp(key, "mask_bad") == 0 ) {
-		parse_field_for_panel(panel, "mask0_badbits", val, det);
+		parse_field_for_panel(panel, "mask0_badbits", val, det, def);
 	} else if ( strcmp(key, "mask_good") == 0 ) {
-		parse_field_for_panel(panel, "mask0_goodbits", val, det);
+		parse_field_for_panel(panel, "mask0_goodbits", val, det, def);
 	} else if ( strcmp(key, "mask") == 0 ) {
-		parse_field_for_panel(panel, "mask0_data", val, det);
+		parse_field_for_panel(panel, "mask0_data", val, det, def);
 	} else if ( strcmp(key, "mask_file") == 0 ) {
-		parse_field_for_panel(panel, "mask0_file", val, det);
+		parse_field_for_panel(panel, "mask0_file", val, det, def);
 
 	} else if ( strncmp(key, "mask", 4) == 0 ) {
-		reject = parse_mask(panel, key, val);
+		reject = parse_mask(panel, key, val, def);
 
 	} else if ( strcmp(key, "saturation_map") == 0 ) {
 		panel->satmap = strdup(val);
+		panel->satmap_default = def;
 	} else if ( strcmp(key, "saturation_map_file") == 0 ) {
 		panel->satmap_file = strdup(val);
+		panel->satmap_file_default = def;
 
 	} else if ( strcmp(key, "coffset") == 0) {
 		panel->cnz_offset = atof(val);
+		panel->cnz_offset_default = def;
 	} else if ( strcmp(key, "res") == 0 ) {
 		panel->pixel_pitch = 1.0/atof(val);
+		panel->pixel_pitch_default = def;
 	} else if ( strcmp(key, "max_adu") == 0 ) {
 		panel->max_adu = atof(val);
+		panel->max_adu_default = def;
 		ERROR("WARNING: It's usually better not to set max_adu "
 		      "in the geometry file.  Use --max-adu during "
 		      "merging instead.\n");
@@ -625,14 +573,17 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		if ( add_flag_value(panel, atof(val), FLAG_EQUAL) ) {
 			reject = -1;
 		}
+		panel->flag_values_default = def;
 	} else if ( strcmp(key, "flag_lessthan") == 0 ) {
 		if ( add_flag_value(panel, atof(val), FLAG_LESSTHAN) ) {
 			reject = -1;
 		}
+		panel->flag_values_default = def;
 	} else if ( strcmp(key, "flag_morethan") == 0 ) {
 		if ( add_flag_value(panel, atof(val), FLAG_MORETHAN) ) {
 			reject = -1;
 		}
+		panel->flag_values_default = def;
 
 	} else if ( strcmp(key, "badrow_direction") == 0 ) {
 		ERROR("WARNING 'badrow_direction' is ignored in this version.\n");
@@ -851,10 +802,6 @@ static int parse_peak_layout(const char *val,
 static int parse_toplevel(DataTemplate *dt,
                           const char *key,
                           const char *val,
-                          struct rg_definition ***rg_defl,
-                          struct rgc_definition ***rgc_defl,
-                          int *n_rg_defs,
-                          int *n_rgc_defs,
                           struct panel_template *defaults,
                           int *defaults_updated)
 {
@@ -863,6 +810,9 @@ static int parse_toplevel(DataTemplate *dt,
 
 	} else if ( strcmp(key, "detector_shift_y") == 0 ) {
 		dt->shift_y_from = strdup(val);
+
+	} else if ( strcmp(key, "clen") == 0 ) {
+		dt->cnz_from = strdup(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		return parse_photon_energy(val,
@@ -895,37 +845,22 @@ static int parse_toplevel(DataTemplate *dt,
 			ERROR("Invalid value for bandwidth\n");
 		}
 
-	} else if (strncmp(key, "rigid_group", 11) == 0
-	        && strncmp(key, "rigid_group_collection", 22) != 0 ) {
+	} else if ( strncmp(key, "rigid_group", 11) == 0 ) {
 
-		struct rg_definition **new;
+		/* Rigid group lines are ignored in this version */
 
-		new = realloc(*rg_defl,
-		             ((*n_rg_defs)+1)*sizeof(struct rg_definition*));
-		*rg_defl = new;
+	} else if ( strncmp(key, "group_", 6) == 0 ) {
 
-		(*rg_defl)[*n_rg_defs] = malloc(sizeof(struct rg_definition));
-		(*rg_defl)[*n_rg_defs]->name = strdup(key+12);
-		(*rg_defl)[*n_rg_defs]->pns = strdup(val);
-		*n_rg_defs = *n_rg_defs+1;
-
-	} else if ( strncmp(key, "rigid_group_collection", 22) == 0 ) {
-
-		struct rgc_definition **new;
-
-		new = realloc(*rgc_defl, ((*n_rgc_defs)+1)*
-		      sizeof(struct rgc_definition*));
-		*rgc_defl = new;
-
-		(*rgc_defl)[*n_rgc_defs] =
-		                   malloc(sizeof(struct rgc_definition));
-		(*rgc_defl)[*n_rgc_defs]->name = strdup(key+23);
-		(*rgc_defl)[*n_rgc_defs]->rgs = strdup(val);
-		*n_rgc_defs = *n_rgc_defs+1;
+		if ( parse_group(key+6, dt, val) ) {
+			return 1;
+		}
 
 	} else {
 
-		if ( parse_field_for_panel(defaults, key, val, dt) == 0 ) {
+		/* If there are any panels, the value in 'defaults' gets marked
+		 * as "not default".  This will cause it to be written out for
+		 * each subsequent panel. */
+		if ( parse_field_for_panel(defaults, key, val, dt, (dt->n_panels==0)) == 0 ) {
 			*defaults_updated = 1;
 		} else {
 			return 1;
@@ -1038,18 +973,38 @@ static int try_guess_panel(struct dt_badregion *bad, DataTemplate *dt)
 }
 
 
+static void show_group(const struct panel_group_template *gt, int level)
+{
+	int i;
+
+	for ( i=0; i<level; i++ ) STATUS("  ");
+
+	if ( gt == NULL ) {
+		STATUS("!!!\n");
+		return;
+	}
+
+	STATUS("%s\n", gt->name);
+
+	for ( i=0; i<gt->n_children; i++ ) {
+		show_group(gt->children[i], level+1);
+	}
+}
+
+
+void data_template_show_hierarchy(const DataTemplate *dtempl)
+{
+	STATUS("Hierarchy:\n");
+	show_group(find_group(dtempl, "all"), 0);
+}
+
+
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;
-	char **bits;
 	int done = 0;
 	int i;
-	int rgi, rgci;
 	int reject = 0;
-	struct rg_definition **rg_defl = NULL;
-	struct rgc_definition **rgc_defl = NULL;
-	int n_rg_definitions = 0;
-	int n_rgc_definitions = 0;
 	char *string;
 	char *string_orig;
 	size_t len;
@@ -1063,15 +1018,13 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->panels = NULL;
 	dt->n_bad = 0;
 	dt->bad = NULL;
-	dt->n_rigid_groups = 0;
-	dt->rigid_groups = NULL;
-	dt->n_rg_collections = 0;
-	dt->rigid_group_collections = NULL;
 	dt->bandwidth = 0.00000001;
 	dt->peak_list = NULL;
 	dt->shift_x_from = NULL;
 	dt->shift_y_from = NULL;
+	dt->cnz_from = NULL;
 	dt->n_headers_to_copy = 0;
+	dt->n_groups = 0;
 
 	/* The default defaults... */
 	defaults.orig_min_fs = -1;
@@ -1080,11 +1033,13 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.orig_max_ss = -1;
 	defaults.cnx = NAN;
 	defaults.cny = NAN;
-	defaults.cnz_from = NULL;
 	defaults.cnz_offset = 0.0;
+	defaults.cnz_offset_default = 1;
 	defaults.pixel_pitch = -1.0;
+	defaults.pixel_pitch_default = 1;
 	defaults.bad = 0;
 	defaults.mask_edge_pixels = 0;
+	defaults.mask_edge_pixels_default = 1;
 	defaults.fsx = NAN;
 	defaults.fsy = NAN;
 	defaults.fsz = NAN;
@@ -1093,22 +1048,30 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.ssz = NAN;
 	defaults.adu_scale = NAN;
 	defaults.adu_scale_unit = ADU_PER_PHOTON;
+	defaults.adu_scale_default = 1;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_values[i] = 0;
 	for ( i=0; i<MAX_FLAG_VALUES; i++ ) defaults.flag_types[i] = FLAG_NOTHING;
+	defaults.flag_values_default = 1;
 	for ( i=0; i<MAX_MASKS; i++ ) {
 		defaults.masks[i].data_location = NULL;
 		defaults.masks[i].filename = NULL;
 		defaults.masks[i].good_bits = 0;
 		defaults.masks[i].bad_bits = 0;
+		defaults.masks[i].mask_default = 1;
 	}
 	defaults.max_adu = +INFINITY;
+	defaults.max_adu_default = 1;
 	defaults.satmap = NULL;
+	defaults.satmap_default = 1;
 	defaults.satmap_file = NULL;
+	defaults.satmap_file_default = 1;
 	defaults.data = strdup("/data/data");
+	defaults.data_default = 1;
 	defaults.name = NULL;
 	defaults.dims[0] = DIM_SS;
 	defaults.dims[1] = DIM_FS;
 	for ( i=2; i<MAX_DIMS; i++ ) defaults.dims[i] = DIM_UNDEFINED;
+	for ( i=0; i<MAX_DIMS; i++ ) defaults.dims_default[i] = 1;
 
 	string = strdup(string_in);
 	if ( string == NULL ) return NULL;
@@ -1184,10 +1147,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 
 			/* Top-level option */
 		        if ( parse_toplevel(dt, line, val,
-		                            &rg_defl,
-		                            &rgc_defl,
-		                            &n_rg_definitions,
-		                            &n_rgc_definitions,
 		                            &defaults,
 		                            &have_unused_defaults) )
 			{
@@ -1218,11 +1177,9 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 
 		if ( panel != NULL ) {
-			if ( parse_field_for_panel(panel, key, val,
-			                           dt) ) reject = 1;
+			if ( parse_field_for_panel(panel, key, val, dt, 0) ) reject = 1;
 		} else {
-			if ( parse_field_bad(badregion, key,
-			                     val) ) reject = 1;
+			if ( parse_field_bad(badregion, key, val) ) reject = 1;
 		}
 
 		free(line);
@@ -1251,6 +1208,11 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	if ( dt->wavelength_from == NULL ) {
 		ERROR("Geometry file must specify the wavelength "
 		      "(value or location)\n");
+		reject = 1;
+	}
+
+	if ( dt->cnz_from == NULL ) {
+		ERROR("Geometry file must specify the camera length\n");
 		reject = 1;
 	}
 
@@ -1314,11 +1276,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		if ( isnan(p->cny) ) {
 			ERROR("Please specify the corner Y coordinate for"
 			      " panel %s\n", dt->panels[i].name);
-			reject = 1;
-		}
-		if ( p->cnz_from == NULL ) {
-			ERROR("Please specify the camera length for panel %s\n",
-			      dt->panels[i].name);
 			reject = 1;
 		}
 		if ( p->pixel_pitch < 0 ) {
@@ -1420,73 +1377,17 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 	}
 
-	free(defaults.cnz_from);
 	free(defaults.data);
 	for ( i=0; i<MAX_MASKS; i++ ) {
 		free(defaults.masks[i].data_location);
 		free(defaults.masks[i].filename);
 	}
 
-	for ( rgi=0; rgi<n_rg_definitions; rgi++) {
-
-		int pi, n1;
-		struct rigid_group *rigidgroup = NULL;
-
-		rigidgroup = find_or_add_rg(dt, rg_defl[rgi]->name);
-
-		n1 = assplode(rg_defl[rgi]->pns, ",", &bits, ASSPLODE_NONE);
-
-		for ( pi=0; pi<n1; pi++ ) {
-
-			int panel_number;
-			if ( data_template_panel_name_to_number(dt,
-			                                        bits[pi],
-			                                        &panel_number) )
-			{
-				ERROR("Cannot add panel to rigid group\n");
-				ERROR("Panel not found: %s\n", bits[pi]);
-				return NULL;
-			}
-			add_to_rigid_group(rigidgroup, panel_number);
-			free(bits[pi]);
-
-		}
-		free(bits);
-		free(rg_defl[rgi]->name);
-		free(rg_defl[rgi]->pns);
-		free(rg_defl[rgi]);
+	/* If this is a single-panel detector, there should only be one group
+	 * called "all" which points to the panel */
+	if ( (dt->n_panels == 1) && (dt->n_groups == 1) ) {
+		parse_group("all", dt, dt->groups[0]->name);
 	}
-	free(rg_defl);
-
-	for ( rgci=0; rgci<n_rgc_definitions; rgci++ ) {
-
-		int n2;
-		struct rg_collection *rgcollection = NULL;
-
-		rgcollection = find_or_add_rg_coll(dt, rgc_defl[rgci]->name);
-
-		n2 = assplode(rgc_defl[rgci]->rgs, ",", &bits, ASSPLODE_NONE);
-
-		for ( rgi=0; rgi<n2; rgi++ ) {
-
-			struct rigid_group *r;
-
-			r = find_rigid_group_by_name(dt, bits[rgi]);
-			if ( r == NULL ) {
-				ERROR("Cannot add rigid group to collection\n");
-				ERROR("Rigid group not found: %s\n", bits[rgi]);
-				return NULL;
-			}
-			add_to_rigid_group_coll(rgcollection, r);
-			free(bits[rgi]);
-		}
-		free(bits);
-		free(rgc_defl[rgci]->name);
-		free(rgc_defl[rgci]->rgs);
-		free(rgc_defl[rgci]);
-
-	}
-	free(rgc_defl);
 
 	free(string_orig);
 
@@ -1519,9 +1420,6 @@ void data_template_free(DataTemplate *dt)
 
 	if ( dt == NULL ) return;
 
-	free_all_rigid_groups(dt);
-	free_all_rigid_group_collections(dt);
-
 	for ( i=0; i<dt->n_panels; i++ ) {
 
 		int j;
@@ -1530,7 +1428,6 @@ void data_template_free(DataTemplate *dt)
 		free(dt->panels[i].data);
 		free(dt->panels[i].satmap);
 		free(dt->panels[i].satmap_file);
-		free(dt->panels[i].cnz_from);
 
 		for ( j=0; j<MAX_MASKS; j++ ) {
 			free(dt->panels[i].masks[j].filename);
@@ -1542,8 +1439,14 @@ void data_template_free(DataTemplate *dt)
 		free(dt->headers_to_copy[i]);
 	}
 
+	for ( i=0; i<dt->n_groups; i++ ) {
+		free(dt->groups[i]->name);
+		free(dt->groups[i]);
+	}
+
 	free(dt->wavelength_from);
 	free(dt->peak_list);
+	free(dt->cnz_from);
 
 	free(dt->panels);
 	free(dt->bad);
@@ -1872,86 +1775,22 @@ static int im_get_length(struct image *image, const char *from,
 }
 
 
-static int safe_strcmp(const char *a, const char *b)
-{
-	if ( (a==NULL) && (b==NULL) ) return 0;
-	if ( (a!=NULL) && (b!=NULL) ) return strcmp(a, b);
-	return 1;
-}
-
-
-static int all_panels_reference_same_clen(const DataTemplate *dtempl)
+static int all_panels_same_coffset(const DataTemplate *dtempl)
 {
 	int i;
-	char *first_val = NULL;
-	char *first_units = NULL;
-	int fail = 0;
-
-	for ( i=0; i<dtempl->n_panels; i++ ) {
-		struct panel_template *p = &dtempl->panels[i];
-		char *val;
-		char *units;
-		if ( separate_value_and_units(p->cnz_from, &val, &units) ) {
-			/* Parse error */
-			return 0;
-		}
-		if ( i == 0 ) {
-			first_val = val;
-			first_units = units;
-		} else {
-			if ( safe_strcmp(val, first_val) != 0 ) fail = 1;
-			if ( safe_strcmp(units, first_units) != 0 ) fail = 1;
-			free(val);
-			free(units);
-		}
-	}
-
-	free(first_val);
-	free(first_units);
-	return fail;
-}
-
-
-static int all_coffsets_small(const DataTemplate *dtempl)
-{
-	int i;
-
-	for ( i=0; i<dtempl->n_panels; i++ ) {
-		struct panel_template *p = &dtempl->panels[i];
-		if ( p->cnz_offset > 10.0*p->pixel_pitch ) return 0;
-	}
-
-	return 1;
-}
-
-
-static int all_panels_same_clen(const DataTemplate *dtempl)
-{
-	int i;
-	double *zvals;
-	double total = 0.0;
+	double total;
 	double mean;
 
-	zvals = malloc(sizeof(double)*dtempl->n_panels);
-	if ( zvals == NULL ) return 0;
-
+	total = 0.0;
 	for ( i=0; i<dtempl->n_panels; i++ ) {
-		struct panel_template *p = &dtempl->panels[i];
-		if ( im_get_length(NULL, p->cnz_from, 1e-3, &zvals[i]) ) {
-			/* Can't get length because it used a header reference */
-			free(zvals);
-			return 0;
-		}
-		total += zvals[i];
+		total += dtempl->panels[i].cnz_offset;
 	}
-
 	mean = total/dtempl->n_panels;
+
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 		struct panel_template *p = &dtempl->panels[i];
-		if ( fabs(zvals[i] - mean) > 10.0*p->pixel_pitch ) return 0;
+		if ( fabs(dtempl->panels[i].cnz_offset - mean) > 10.0*p->pixel_pitch ) return 0;
 	}
-
-	free(zvals);
 
 	return 1;
 }
@@ -1974,8 +1813,92 @@ static int all_panels_perpendicular_to_beam(const DataTemplate *dtempl)
 static int detector_flat(const DataTemplate *dtempl)
 {
 	return all_panels_perpendicular_to_beam(dtempl)
-	    && ( (all_panels_reference_same_clen(dtempl) && all_coffsets_small(dtempl))
-	          || all_panels_same_clen(dtempl) );
+	    && all_panels_same_coffset(dtempl);
+}
+
+
+static void add_dg_point(const struct detgeom_panel *p,
+                         int fs, int ss,
+                         double *tx, double *ty, double *tz)
+{
+	*tx += (p->cnx + fs*p->fsx + ss*p->ssx) * p->pixel_pitch;
+	*ty += (p->cny + fs*p->fsy + ss*p->ssy) * p->pixel_pitch;
+	*tz += (p->cnz + fs*p->fsz + ss*p->ssz) * p->pixel_pitch;
+}
+
+
+static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
+                                              struct panel_group_template *gt,
+                                              struct detgeom *detgeom,
+                                              int serial, int c_mul)
+{
+	struct detgeom_panel_group *gr;
+
+	if ( gt == NULL ) return NULL;
+
+	gr = malloc(sizeof(struct detgeom_panel_group));
+	if ( gr == NULL ) return NULL;
+
+	gr->name = strdup(gt->name);
+	gr->n_children = gt->n_children;
+
+	if ( gr->n_children == 0 ) {
+
+		/* Leaf node */
+		gr->children = NULL;
+		gr->panel = detgeom_find_panel(detgeom, gr->name);
+		if ( gr->panel == NULL ) {
+			ERROR("Couldn't find panel %s for leaf group\n", gr->name);
+			return NULL;
+		}
+		gr->panel->group = gr;
+
+		/* Calculate and make a note of the panel center */
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		add_dg_point(gr->panel, 0, 0, &tx, &ty, &tz);
+		add_dg_point(gr->panel, gr->panel->w, 0, &tx, &ty, &tz);
+		add_dg_point(gr->panel, 0, gr->panel->h, &tx, &ty, &tz);
+		add_dg_point(gr->panel, gr->panel->w, gr->panel->h, &tx, &ty, &tz);
+
+		gr->cx = tx / 4.0;
+		gr->cy = ty / 4.0;
+		gr->cz = tz / 4.0;
+
+	} else {
+
+		int i;
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		gr->panel = NULL;
+		gr->children = malloc(gt->n_children*sizeof(struct detgeom_panel_group *));
+		if ( gr->children == NULL ) {
+			free(gr);
+			return NULL;
+		}
+
+		for ( i=0; i<gt->n_children; i++ ) {
+			gr->children[i] = walk_group(dtempl, gt->children[i], detgeom,
+			                             serial + c_mul*(i+1), c_mul*100);
+			if ( gr->children[i] == NULL ) return NULL;
+			gr->children[i]->parent = gr;
+			tx += gr->children[i]->cx;
+			ty += gr->children[i]->cy;
+			tz += gr->children[i]->cz;
+		}
+
+		gr->cx = tx / gt->n_children;
+		gr->cy = ty / gt->n_children;
+		gr->cz = tz / gt->n_children;
+
+	}
+
+	gr->serial = serial;
+	return gr;
 }
 
 
@@ -1985,6 +1908,7 @@ struct detgeom *create_detgeom(struct image *image,
 {
 	struct detgeom *detgeom;
 	int i;
+	double clen;
 
 	if ( dtempl == NULL ) {
 		ERROR("NULL data template!\n");
@@ -1993,6 +1917,8 @@ struct detgeom *create_detgeom(struct image *image,
 
 	detgeom = malloc(sizeof(struct detgeom));
 	if ( detgeom == NULL ) return NULL;
+
+	detgeom->top_group = NULL;
 
 	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
 	if ( detgeom->panels == NULL ) {
@@ -2013,6 +1939,17 @@ struct detgeom *create_detgeom(struct image *image,
 		}
 	}
 
+	if ( im_get_length(image, dtempl->cnz_from, 1e-3, &clen) )
+	{
+		if ( two_d_only ) {
+			clen = NAN;
+		} else {
+			ERROR("Failed to read length from '%s'\n", dtempl->cnz_from);
+			return NULL;
+		}
+	}
+
+
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
 		struct detgeom_panel *p = &detgeom->panels[i];
@@ -2027,20 +1964,8 @@ struct detgeom *create_detgeom(struct image *image,
 		p->cnx = tmpl->cnx;
 		p->cny = tmpl->cny;
 
-		if ( im_get_length(image, tmpl->cnz_from, 1e-3, &p->cnz) )
-		{
-			if ( two_d_only ) {
-				p->cnz = NAN;
-			} else {
-				ERROR("Failed to read length from '%s'\n", tmpl->cnz_from);
-				return NULL;
-			}
-		}
-
-		/* Apply offset (in m) and then convert cnz from
-		 * m to pixels */
-		p->cnz += tmpl->cnz_offset;
-		p->cnz /= p->pixel_pitch;
+		/* Apply offset (in m) and then convert cnz from m to pixels */
+		p->cnz = (clen + tmpl->cnz_offset) / p->pixel_pitch;
 
 		/* Apply overall shift (already in m) */
 		if ( dtempl->shift_x_from != NULL ) {
@@ -2103,6 +2028,14 @@ struct detgeom *create_detgeom(struct image *image,
 
 	}
 
+	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom, 0, 100);
+	if ( detgeom->top_group != NULL ) {
+		detgeom->top_group->parent = NULL;
+	} else {
+		ERROR("Warning: Top-level panel group ('all') not found.  "
+		      "Geometry refinement will not be possible.\n");
+	}
+
 	return detgeom;
 }
 
@@ -2144,4 +2077,599 @@ double data_template_get_clen_if_possible(const DataTemplate *dt)
 	clen = detgeom_mean_camera_length(dg);
 	detgeom_free(dg);
 	return clen;
+}
+
+
+static int translate_group_contents(DataTemplate *dtempl,
+                                    const struct panel_group_template *group,
+                                    double x, double y, double z,
+                                    int is_metres)
+{
+	int i;
+
+	if ( group->n_children == 0 ) {
+
+		struct panel_template *p = find_panel_by_name(dtempl, group->name);
+		if ( p == NULL ) return 1;
+
+		if ( is_metres ) {
+			p->cnx += x/p->pixel_pitch;
+			p->cny += y/p->pixel_pitch;
+			p->cnz_offset += z;
+		} else {
+			p->cnx += x;
+			p->cny += y;
+			p->cnz_offset += z*p->pixel_pitch;
+		}
+
+	} else {
+		for ( i=0; i<group->n_children; i++ ) {
+			translate_group_contents(dtempl, group->children[i],
+			                         x, y, z, is_metres);
+		}
+	}
+
+	return 0;
+}
+
+
+/**
+ * Alters dtempl by shifting the named panel group by x,y,z in the CrystFEL
+ * coordinate system.  x,y,z are in pixels, and all panels in the group must
+ * have the same pixel size (but, this will not be checked).
+ *
+ * \returns zero for success, non-zero on error
+ */
+int data_template_translate_group_px(DataTemplate *dtempl, const char *group_name,
+                                     double x, double y, double z)
+{
+	const struct panel_group_template *group = find_group(dtempl, group_name);
+	if ( group == NULL ) return 1;
+	return translate_group_contents(dtempl, group, x, y, z, 0);
+}
+
+
+/**
+ * Alters dtempl by shifting the named panel group by x,y,z in the CrystFEL
+ * coordinate system.  x,y,z are in metres.
+ *
+ * \returns zero for success, non-zero on error
+ */
+int data_template_translate_group_m(DataTemplate *dtempl, const char *group_name,
+                                    double x, double y, double z)
+{
+	const struct panel_group_template *group = find_group(dtempl, group_name);
+	if ( group == NULL ) return 1;
+	return translate_group_contents(dtempl, group, x, y, z, 1);
+}
+
+
+static void add_point(const struct panel_template *p,
+                      int fs, int ss,
+                      double *tx, double *ty, double *tz)
+{
+	*tx += (p->cnx + fs*p->fsx + ss*p->ssx) * p->pixel_pitch;
+	*ty += (p->cny + fs*p->fsy + ss*p->ssy) * p->pixel_pitch;
+	*tz += p->cnz_offset + (fs*p->fsz + ss*p->ssz) * p->pixel_pitch;
+}
+
+
+static int group_center(DataTemplate *dtempl,
+                        const struct panel_group_template *group,
+                        double *cx, double *cy, double *cz)
+{
+	if ( group->n_children == 0 ) {
+
+		const struct panel_template *p = find_panel_by_name(dtempl, group->name);
+		if ( p == NULL ) return 1;
+
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		add_point(p, 0, 0, &tx, &ty, &tz);
+		add_point(p, PANEL_WIDTH(p), 0, &tx, &ty, &tz);
+		add_point(p, 0, PANEL_HEIGHT(p), &tx, &ty, &tz);
+		add_point(p, PANEL_WIDTH(p), PANEL_HEIGHT(p), &tx, &ty, &tz);
+
+		*cx = tx / 4.0;
+		*cy = ty / 4.0;
+		*cz = tz / 4.0;
+
+		return 0;
+
+	} else {
+
+		int i;
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		for ( i=0; i<group->n_children; i++ ) {
+			double gcx, gcy, gcz;
+			group_center(dtempl, group->children[i], &gcx, &gcy, &gcz);
+			tx += gcx;
+			ty += gcy;
+			tz += gcz;
+		}
+
+		*cx = tx / group->n_children;
+		*cy = ty / group->n_children;
+		*cz = tz / group->n_children;
+
+		return 0;
+
+	}
+}
+
+
+static int rotate_all_panels(DataTemplate *dtempl,
+                             struct panel_group_template *group,
+                             char axis, double ang,
+                             double cx, double cy, double cz)
+{
+	if ( group->n_children == 0 ) {
+
+		double cnz_px;
+		struct panel_template *p = find_panel_by_name(dtempl, group->name);
+		if ( p == NULL ) return 1;
+
+		cx /= p->pixel_pitch;
+		cy /= p->pixel_pitch;
+		cz /= p->pixel_pitch;
+		cnz_px = p->cnz_offset / p->pixel_pitch;
+
+		switch ( axis )
+		{
+			case 'x':
+			rotate2d(&p->cny, &cnz_px, cy, cz, ang);
+			rotate2d(&p->fsy, &p->fsz, 0, 0, ang);
+			rotate2d(&p->ssy, &p->ssz, 0, 0, ang);
+			p->cnz_offset = cnz_px * p->pixel_pitch;
+			break;
+
+			case 'y':
+			rotate2d(&cnz_px, &p->cnx, cz, cx, ang);
+			rotate2d(&p->fsz, &p->fsx, 0, 0, ang);
+			rotate2d(&p->ssz, &p->ssx, 0, 0, ang);
+			p->cnz_offset = cnz_px * p->pixel_pitch;
+			break;
+
+			case 'z':
+			rotate2d(&p->cnx, &p->cny, cx, cy, ang);
+			rotate2d(&p->fsx, &p->fsy, 0, 0, ang);
+			rotate2d(&p->ssx, &p->ssy, 0, 0, ang);
+			break;
+
+			default:
+			ERROR("Invalid rotation axis '%c'\n", axis);
+			return 1;
+		}
+
+		return 0;
+
+	} else {
+
+		int i;
+
+		for ( i=0; i<group->n_children; i++ ) {
+			rotate_all_panels(dtempl, group->children[i],
+			                  axis, ang, cx, cy, cz);
+		}
+
+		return 0;
+
+	}
+}
+
+/**
+ * Alters dtempl by rotating the named panel group by ang (degrees) about its
+ * center.
+ *
+ * \returns zero for success, non-zero on error
+ */
+int data_template_rotate_group(DataTemplate *dtempl, const char *group_name,
+                               double ang, char axis)
+{
+	struct panel_group_template *group;
+	double cx, cy, cz;
+
+	group = find_group(dtempl, group_name);
+	if ( group == NULL ) return 1;
+
+	if ( group_center(dtempl, group, &cx, &cy, &cz) ) return 1;
+
+	return rotate_all_panels(dtempl, group, axis, ang, cx, cy, cz);
+}
+
+
+static const char *str_dim(int dim)
+{
+	switch ( dim ) {
+		case DIM_FS: return "fs";
+		case DIM_SS: return "ss";
+		case DIM_PLACEHOLDER: return "%";
+		default: return NULL;
+	}
+}
+
+
+int data_template_write_to_file(const DataTemplate *dtempl, const char *filename)
+{
+	FILE *fh;
+	int i;
+
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+
+	/* Basic top-level parameters */
+	switch ( dtempl->wavelength_unit ) {
+
+		case WAVELENGTH_M:
+		fprintf(fh, "wavelength = %s m\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_A:
+		fprintf(fh, "wavelength = %s A\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_ELECTRON_KV:
+		fprintf(fh, "electron_voltage = %s kV\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_ELECTRON_V:
+		fprintf(fh, "electron_voltage = %s V\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_PHOTON_KEV:
+		fprintf(fh, "photon_energy = %s keV\n", dtempl->wavelength_from);
+		break;
+
+		case WAVELENGTH_PHOTON_EV:
+		fprintf(fh, "photon_energy = %s eV\n", dtempl->wavelength_from);
+		break;
+
+		default:
+		ERROR("Unknown wavelength unit (%i)\n", dtempl->wavelength_unit);
+		return 1;
+
+	}
+
+	fprintf(fh, "clen = %s\n", dtempl->cnz_from);
+
+	if ( dtempl->peak_list != NULL ) {
+		fprintf(fh, "peak_list = %s\n", dtempl->peak_list);
+	}
+	switch ( dtempl->peak_list_type ) {
+		case PEAK_LIST_AUTO:
+		break;
+
+		case PEAK_LIST_CXI:
+		fprintf(fh, "peak_list_type = cxi\n");
+		break;
+
+		case PEAK_LIST_LIST3:
+		fprintf(fh, "peak_list_type = list3\n");
+		break;
+
+		default:
+		ERROR("Unknown peak list type (%i)\n", dtempl->peak_list_type);
+		return 1;
+	}
+
+	fprintf(fh, "bandwidth = %e\n", dtempl->bandwidth);
+
+	if ( dtempl->shift_x_from != NULL ) {
+		fprintf(fh, "detector_shift_x = %s\n", dtempl->shift_x_from);
+	}
+	if ( dtempl->shift_y_from != NULL ) {
+		fprintf(fh, "detector_shift_y = %s\n", dtempl->shift_y_from);
+	}
+
+	/* Other top-levels */
+	int cnz_offset_done = 0;
+	int mask_done[MAX_MASKS] = {0};
+	int satmap_done = 0;
+	int satmap_file_done = 0;
+	int mask_edge_pixels_done = 0;
+	int pixel_pitch_done = 0;
+	int adu_scale_done = 0;
+	int max_adu_done = 0;
+	int flag_values_done = 0;
+	int data_done = 0;
+	int dims_done[MAX_DIMS] = {0};
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		const struct panel_template *p = &dtempl->panels[i];
+		int j;
+
+		if ( p->cnz_offset_default && !cnz_offset_done ) {
+			fprintf(fh, "coffset = %f\n", p->cnz_offset);
+			cnz_offset_done = 1;
+		}
+
+		for ( j=0; j<MAX_MASKS; j++ ) {
+			if ( p->masks[j].data_location == NULL ) continue;
+			if ( !p->masks[j].mask_default ) continue;
+			if ( mask_done[j] ) continue;
+			fprintf(fh, "mask%i_data = %s\n",
+			        j, p->masks[j].data_location);
+			if ( p->masks[j].filename != NULL ) {
+				fprintf(fh, "mask%i_filename = %s\n",
+				        j, p->masks[j].filename);
+			}
+			fprintf(fh, "mask%i_goodbits = 0x%x\n",
+			        j, p->masks[j].good_bits);
+			fprintf(fh, "mask%i_badbits = 0x%x\n",
+			        j, p->masks[j].bad_bits);
+			mask_done[j] = 1;
+		}
+
+		if ( p->satmap_default && !satmap_done && (p->satmap != NULL) ) {
+			fprintf(fh, "saturation_map = %s\n", p->satmap);
+			satmap_done = 1;
+		}
+
+		if ( p->satmap_file_default && !satmap_file_done && (p->satmap_file != NULL) ) {
+			fprintf(fh, "saturation_map_file = %s\n", p->satmap);
+			satmap_file_done = 1;
+		}
+
+		if ( p->mask_edge_pixels_default && !mask_edge_pixels_done && (p->mask_edge_pixels != 0) ) {
+			fprintf(fh, "mask_edge_pixels = %i\n", p->mask_edge_pixels);
+			mask_edge_pixels_done = 1;
+		}
+
+		if ( p->pixel_pitch_default && !pixel_pitch_done ) {
+			fprintf(fh, "res = %f\n", 1.0/p->pixel_pitch);
+			pixel_pitch_done = 1;
+		}
+
+		if ( p->max_adu_default && !max_adu_done && !isinf(p->max_adu) ) {
+			fprintf(fh, "max_adu = %f\n", p->max_adu);
+			max_adu_done = 1;
+		}
+
+		if ( p->data_default && !data_done ) {
+			fprintf(fh, "data = %s\n", p->data);
+			data_done = 1;
+		}
+
+		if ( p->flag_values_default && !flag_values_done ) {
+			for ( j=0; j<MAX_FLAG_VALUES; j++ ) {
+				switch ( p->flag_types[j] ) {
+					case FLAG_NOTHING :
+					break;
+
+					case FLAG_EQUAL:
+					fprintf(fh, "flag_equal = %i\n",
+					        p->flag_values[j]);
+					break;
+
+					case FLAG_MORETHAN:
+					fprintf(fh, "flag_morethan = %i\n",
+					        p->flag_values[j]);
+					break;
+
+					case FLAG_LESSTHAN:
+					fprintf(fh, "flag_lessthan = %i\n",
+					        p->flag_values[j]);
+					break;
+				}
+			}
+			flag_values_done = 1;
+		}
+
+		if ( p->adu_scale_default && !adu_scale_done ) {
+			switch ( p->adu_scale_unit ) {
+
+				case ADU_PER_EV:
+				fprintf(fh, "adu_per_eV = %f\n", p->adu_scale);
+				break;
+
+				case ADU_PER_PHOTON:
+				fprintf(fh, "adu_per_photon = %f\n", p->adu_scale);
+				break;
+			}
+			adu_scale_done = 1;
+		}
+
+		for ( j=0; j<MAX_DIMS; j++ ) {
+			if ( p->dims_default[j] && !dims_done[j] && p->dims[j] != DIM_UNDEFINED ) {
+				if ( p->dims[j] < 0 ) {
+					fprintf(fh, "dim%i = %s\n", j, str_dim(p->dims[j]));
+				} else {
+					fprintf(fh, "dim%i = %i\n", j, p->dims[j]);
+				}
+				dims_done[j] = 1;
+			}
+		}
+	}
+
+	fprintf(fh, "\n");
+
+	/* Bad regions */
+	for ( i=0; i<dtempl->n_bad; i++ ) {
+		const struct dt_badregion *bad = &dtempl->bad[i];
+		if ( bad->is_fsss ) {
+			fprintf(fh, "bad_%s/panel = %s\n", bad->name, bad->panel_name);
+			fprintf(fh, "bad_%s/min_fs = %i\n", bad->name, bad->min_fs);
+			fprintf(fh, "bad_%s/max_fs = %i\n", bad->name, bad->max_fs);
+			fprintf(fh, "bad_%s/min_ss = %i\n", bad->name, bad->min_ss);
+			fprintf(fh, "bad_%s/max_ss = %i\n", bad->name, bad->max_ss);
+		} else {
+			fprintf(fh, "bad_%s/min_x = %f\n", bad->name, bad->min_x);
+			fprintf(fh, "bad_%s/max_x = %f\n", bad->name, bad->max_x);
+			fprintf(fh, "bad_%s/min_y = %f\n", bad->name, bad->min_y);
+			fprintf(fh, "bad_%s/max_y = %f\n", bad->name, bad->max_y);
+		}
+		fprintf(fh, "\n");
+	}
+
+	/* Panels */
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		int j;
+		const struct panel_template *p = &dtempl->panels[i];
+
+		fprintf(fh, "%s/min_fs = %i\n", p->name, p->orig_min_fs);
+		fprintf(fh, "%s/max_fs = %i\n", p->name, p->orig_max_fs);
+		fprintf(fh, "%s/min_ss = %i\n", p->name, p->orig_min_ss);
+		fprintf(fh, "%s/max_ss = %i\n", p->name, p->orig_max_ss);
+		fprintf(fh, "%s/corner_x = %f\n", p->name, p->cnx);
+		fprintf(fh, "%s/corner_y = %f\n", p->name, p->cny);
+		fprintf(fh, "%s/fs = %fx %+fy %+fz\n", p->name,
+		        p->fsx, p->fsy, p->fsz);
+		fprintf(fh, "%s/ss = %fx %+fy %+fz\n", p->name,
+		        p->ssx, p->ssy, p->ssz);
+
+		if ( !p->cnz_offset_default ) {
+			fprintf(fh, "%s/coffset = %f\n", p->name, p->cnz_offset);
+		}
+
+		for ( j=0; j<MAX_MASKS; j++ ) {
+			if ( p->masks[j].data_location == NULL ) continue;
+			if ( p->masks[j].mask_default ) continue;
+			fprintf(fh, "%s/mask%i_data = %s\n",
+			        p->name, j, p->masks[j].data_location);
+			if ( p->masks[j].filename != NULL ) {
+				fprintf(fh, "%smask%i_filename = %s\n",
+				        p->name, j, p->masks[j].filename);
+			}
+			fprintf(fh, "%s/mask%i_goodbits = 0x%x\n",
+			        p->name, j, p->masks[j].good_bits);
+			fprintf(fh, "%s/mask%i_badbits = 0x%x\n",
+			        p->name, j, p->masks[j].bad_bits);
+		}
+
+		if ( !p->satmap_default && (p->satmap != NULL) ) {
+			fprintf(fh, "%s/saturation_map = %s\n", p->name, p->satmap);
+		}
+
+		if ( !p->satmap_file_default && (p->satmap_file != NULL) ) {
+			fprintf(fh, "%s/saturation_map_file = %s\n", p->name, p->satmap_file);
+		}
+
+		if ( !p->mask_edge_pixels_default && (p->mask_edge_pixels != 0) ) {
+			fprintf(fh, "%s/mask_edge_pixels = %i\n", p->name, p->mask_edge_pixels);
+		}
+
+		if ( !p->pixel_pitch_default ) {
+			fprintf(fh, "%s/res = %f\n", p->name, 1.0/p->pixel_pitch);
+		}
+
+		if ( !p->adu_scale_default ) {
+			switch ( p->adu_scale_unit ) {
+
+				case ADU_PER_EV:
+				fprintf(fh, "%s/adu_per_eV = %f\n", p->name, p->adu_scale);
+				break;
+
+				case ADU_PER_PHOTON:
+				fprintf(fh, "%s/adu_per_photon = %f\n", p->name, p->adu_scale);
+				break;
+			}
+		}
+
+		if ( !p->max_adu_default ) {
+			fprintf(fh, "%s/max_adu = %f\n", p->name, p->max_adu);
+		}
+
+		if ( !p->flag_values_default ) {
+			for ( j=0; j<MAX_FLAG_VALUES; j++ ) {
+				switch ( p->flag_types[j] ) {
+					case FLAG_NOTHING :
+					break;
+
+					case FLAG_EQUAL:
+					fprintf(fh, "%s/flag_equal = %i\n",
+					        p->name, p->flag_values[j]);
+					break;
+
+					case FLAG_MORETHAN:
+					fprintf(fh, "%s/flag_morethan = %i\n",
+					        p->name, p->flag_values[j]);
+					break;
+
+					case FLAG_LESSTHAN:
+					fprintf(fh, "%s/flag_lessthan = %i\n",
+					        p->name, p->flag_values[j]);
+					break;
+				}
+			}
+		}
+
+		if ( !p->data_default ) {
+			fprintf(fh, "%s/data = %s\n", p->name, p->data);
+		}
+
+		for ( j=0; j<MAX_DIMS; j++ ) {
+			if ( !p->dims_default[j] && (p->dims[j] != DIM_UNDEFINED) ) {
+				if ( p->dims[j] < 0 ) {
+					fprintf(fh, "%s/dim%i = %s\n", p->name, j, str_dim(p->dims[j]));
+				} else {
+					fprintf(fh, "%s/dim%i = %i\n", p->name, j, p->dims[j]);
+				}
+				dims_done[j] = 1;
+			}
+		}
+
+		if ( p->bad ) {
+			fprintf(fh, "%s/no_index = 1\n", p->name);
+		}
+
+		fprintf(fh, "\n");
+	}
+
+	/* Groups */
+	for ( i=0; i<dtempl->n_groups; i++ ) {
+		int j;
+		if ( dtempl->groups[i]->n_children == 0 ) continue;
+		fprintf(fh, "group_%s = ", dtempl->groups[i]->name);
+		for ( j=0; j<dtempl->groups[i]->n_children; j++ ) {
+			if ( j > 0 ) fprintf(fh, ",");
+			fprintf(fh, "%s", dtempl->groups[i]->children[j]->name);
+		}
+		fprintf(fh, "\n");
+	}
+
+	fclose(fh);
+	return 0;
+}
+
+
+static void add_group_info(struct dg_group_info *ginfo, int *ppos,
+                           struct panel_group_template *group,
+                           int serial, int level, int c_mul)
+{
+	int j;
+	int i = *ppos;
+	(*ppos)++;
+
+	ginfo[i].name = group->name;
+	ginfo[i].serial = serial;
+	ginfo[i].hierarchy_level = level;
+
+	for ( j=0; j<group->n_children; j++ ) {
+		add_group_info(ginfo, ppos, group->children[j],
+		               serial+c_mul*(j+1), level+1, c_mul*100);
+	}
+}
+
+
+struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *n)
+{
+	struct dg_group_info *ginfo;
+	int i;
+	struct panel_group_template *group;
+
+	ginfo = malloc(sizeof(struct dg_group_info)*dtempl->n_groups);
+	if ( ginfo == NULL ) return NULL;
+
+	group = find_group(dtempl, "all");
+	i = 0;
+	add_group_info(ginfo, &i, group, 0, 0, 100);
+
+	*n = dtempl->n_groups;
+	return ginfo;
 }

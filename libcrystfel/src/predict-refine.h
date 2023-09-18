@@ -29,17 +29,64 @@
 #ifndef PREDICT_REFINE_H
 #define PREDICT_REFINE_H
 
-#include "crystal.h"
+#include <gsl/gsl_matrix.h>
 
-struct image;
+struct reflpeak;
+
+/** Enumeration of parameters which may want to be refined */
+enum gparam {
+	GPARAM_ASX,
+	GPARAM_ASY,
+	GPARAM_ASZ,
+	GPARAM_BSX,
+	GPARAM_BSY,
+	GPARAM_BSZ,
+	GPARAM_CSX,
+	GPARAM_CSY,
+	GPARAM_CSZ,
+	GPARAM_DET_TX,
+	GPARAM_DET_TY,
+	GPARAM_DET_TZ,
+	GPARAM_DET_RX,  /* Detector panel (group) rotation about +x */
+	GPARAM_DET_RY,  /* Detector panel (group) rotation about +y */
+	GPARAM_DET_RZ,  /* Detector panel (group) rotation about +z */
+};
+
+
+/* Weighting of excitation error term (m^-1) compared to position term (pixels) */
+#define EXC_WEIGHT (0.5e-7)
+
+
+#include "crystal.h"
+#include "crystfel-mille.h"
+
+struct reflpeak {
+	Reflection *refl;
+	struct imagefeature *peak;
+	double Ih;   /* normalised */
+};
 
 /**
  * \file predict-refine.h
  * Prediction refinement: refinement of indexing solutions before integration.
  */
 
-extern int refine_prediction(struct image *image, Crystal *cr);
+extern int refine_prediction(struct image *image, Crystal *cr, Mille *mille);
+
 extern int refine_radius(Crystal *cr, struct image *image);
 
+extern double r_dev(struct reflpeak *rp);
+
+extern double fs_dev(struct reflpeak *rp, struct detgeom *det);
+
+extern double ss_dev(struct reflpeak *rp, struct detgeom *det);
+
+extern double r_gradient(int param, Reflection *refl, UnitCell *cell,
+                         double wavelength);
+
+extern int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
+                          struct detgeom_panel *p, gsl_matrix *panel_Minv,
+                          double cx, double cy, double cz,
+                          float *fsg, float *ssg);
 
 #endif	/* PREDICT_REFINE_H */

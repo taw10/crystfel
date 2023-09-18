@@ -1,4 +1,5 @@
 adu_per_eV = 1.0
+clen = 50.0e-3
 
 ; Upper panel
 0/min_fs = 0
@@ -9,7 +10,6 @@ adu_per_eV = 1.0
 0/corner_y = 10.00
 0/fs = x
 0/ss = y
-0/clen = 50.0e-3
 0/res = 13333.3  ; 75 micron pixel size
 
 ; Lower panel
@@ -21,5 +21,4 @@ adu_per_eV = 1.0
 1/corner_y = -522.00
 1/fs = x
 1/ss = y
-1/clen = 50.0e-3
 1/res = 13333.3  ; 75 micron pixel size

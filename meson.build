@@ -155,6 +155,24 @@ executable('whirligig',
            install: true,
            install_rpath: crystfel_rpath)
 
+# align_detector
+executable('align_detector',
+           ['src/align_detector.c', versionc],
+           dependencies: [mdep, libcrystfeldep],
+           install: true,
+           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+
+# Get 'pede' from the subproject (needed for align_detector)
+millepede_proj = subproject('millepede')
+pede_exe = millepede_proj.get_variable('pede')
+
+# adjust_detector
+adjust_detector = executable('adjust_detector',
+                             ['src/adjust_detector.c', versionc],
+                             dependencies: [mdep, libcrystfeldep],
+                             install: true,
+                             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
                        'src/process_image.c',
@@ -260,6 +278,24 @@ subdir('tests')
 
 
 # ************************ Manual pages ************************
+
+pandoc = find_program('pandoc', required: false)
+
+pandoc_pages = ['indexamajig.1.md',
+                'adjust_detector.1.md']
+
+if pandoc.found()
+  foreach page : pandoc_pages
+    custom_target(page,
+                  input: join_paths('doc/man', page),
+                  output: '@BASENAME@',
+                  command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
+                            '-s', '-f', 'markdown-smart', '-t', 'man'],
+                  install: true,
+                  install_dir: join_paths(get_option('mandir'), 'man1'))
+  endforeach
+endif
+
 install_man(['doc/man/ambigator.1',
              'doc/man/cell_explorer.1',
              'doc/man/cell_tool.1',
@@ -268,7 +304,6 @@ install_man(['doc/man/ambigator.1',
              'doc/man/crystfel.7',
              'doc/man/crystfel_geometry.5',
              'doc/man/get_hkl.1',
-             'doc/man/indexamajig.1',
              'doc/man/list_events.1',
              'doc/man/list_events.1',
              'doc/man/make_pixelmap.1',

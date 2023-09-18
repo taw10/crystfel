@@ -29,6 +29,9 @@
 #include <libcrystfel-config.h>
 #include <math.h>
 #include <stdlib.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_linalg.h>
 
 #include "detgeom.h"
 #include "utils.h"
@@ -61,6 +64,22 @@ void detgeom_transform_coords(struct detgeom_panel *p,
 }
 
 
+static void free_group(struct detgeom_panel_group *g)
+{
+	int i;
+
+	if ( g == NULL ) return;
+
+	for ( i=0; i<g->n_children; i++ ) {
+		free_group(g->children[i]);
+	}
+
+	free(g->name);
+	free(g->children);
+	free(g);
+}
+
+
 void detgeom_free(struct detgeom *detgeom)
 {
 	int i;
@@ -71,6 +90,7 @@ void detgeom_free(struct detgeom *detgeom)
 		free(detgeom->panels[i].name);
 	}
 
+	free_group(detgeom->top_group);
 	free(detgeom->panels);
 	free(detgeom);
 }
@@ -173,4 +193,147 @@ double detgeom_mean_camera_length(struct detgeom *dg)
 	}
 
 	return mean;
+}
+
+
+struct detgeom_panel *detgeom_find_panel(struct detgeom *dg, const char *name)
+{
+	int i;
+	for ( i=0; i<dg->n_panels; i++ ) {
+		if ( strcmp(dg->panels[i].name, name) == 0 ) {
+			return &dg->panels[i];
+		}
+	}
+	return NULL;
+}
+
+
+static void detgeom_show_group(const struct detgeom_panel_group *group, int level)
+{
+	int i;
+
+	for ( i=0; i<level; i++ ) STATUS("  ");
+
+	if ( group == NULL ) {
+		STATUS("!!!\n");
+		return;
+	}
+
+	STATUS("%s (serial %i)\n", group->name, group->serial);
+
+	for ( i=0; i<group->n_children; i++ ) {
+		detgeom_show_group(group->children[i], level+1);
+	}
+}
+
+
+void detgeom_show_hierarchy(const struct detgeom *dg)
+{
+	detgeom_show_group(dg->top_group, 0);
+}
+
+
+void detgeom_translate_detector_m(struct detgeom *dg, double x, double y, double z)
+{
+	int i;
+	for ( i=0; i<dg->n_panels; i++ ) {
+		struct detgeom_panel *p = &dg->panels[i];
+		p->cnx += x / p->pixel_pitch;
+		p->cny += y / p->pixel_pitch;
+		p->cnz += z / p->pixel_pitch;
+	}
+}
+
+
+gsl_matrix **make_panel_minvs(struct detgeom *dg)
+{
+	int i;
+	gsl_matrix **Minvs;
+
+	Minvs = malloc(dg->n_panels * sizeof(gsl_matrix *));
+	if ( Minvs == NULL ) return NULL;
+
+	for ( i=0; i<dg->n_panels; i++ ) {
+
+		struct detgeom_panel *p = &dg->panels[i];
+		gsl_matrix *M = gsl_matrix_calloc(3, 3);
+
+		gsl_matrix_set(M, 0, 0, p->pixel_pitch*p->cnx);
+		gsl_matrix_set(M, 0, 1, p->pixel_pitch*p->fsx);
+		gsl_matrix_set(M, 0, 2, p->pixel_pitch*p->ssx);
+		gsl_matrix_set(M, 1, 0, p->pixel_pitch*p->cny);
+		gsl_matrix_set(M, 1, 1, p->pixel_pitch*p->fsy);
+		gsl_matrix_set(M, 1, 2, p->pixel_pitch*p->ssy);
+		gsl_matrix_set(M, 2, 0, p->pixel_pitch*p->cnz);
+		gsl_matrix_set(M, 2, 1, p->pixel_pitch*p->fsz);
+		gsl_matrix_set(M, 2, 2, p->pixel_pitch*p->ssz);
+
+		Minvs[i] = matrix_invert(M);
+		if ( Minvs[i] == NULL ) {
+			ERROR("Failed to calculate inverse panel matrix for %s\n",
+			      p->name);
+			return NULL;
+		}
+
+	}
+
+	return Minvs;
+}
+
+
+static void add_point(const struct detgeom_panel *p,
+                      int fs, int ss,
+                      double *tx, double *ty, double *tz)
+{
+	*tx += (p->cnx + fs*p->fsx + ss*p->ssx) * p->pixel_pitch;
+	*ty += (p->cny + fs*p->fsy + ss*p->ssy) * p->pixel_pitch;
+	*tz += (p->cnz + fs*p->fsz + ss*p->ssz) * p->pixel_pitch;
+}
+
+
+int detgeom_group_center(const struct detgeom_panel_group *grp,
+                         double *x, double *y, double *z)
+{
+	if ( grp->n_children == 0 ) {
+
+		const struct detgeom_panel *p = grp->panel;
+		if ( p == NULL ) return 1;
+
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		add_point(p, 0, 0, &tx, &ty, &tz);
+		add_point(p, p->w, 0, &tx, &ty, &tz);
+		add_point(p, 0, p->h, &tx, &ty, &tz);
+		add_point(p, p->w, p->h, &tx, &ty, &tz);
+
+		*x = tx / 4.0;
+		*y = ty / 4.0;
+		*z = tz / 4.0;
+
+		return 0;
+
+	} else {
+
+		int i;
+		double tx = 0.0;
+		double ty = 0.0;
+		double tz = 0.0;
+
+		for ( i=0; i<grp->n_children; i++ ) {
+			double gcx, gcy, gcz;
+			detgeom_group_center(grp->children[i], &gcx, &gcy, &gcz);
+			tx += gcx;
+			ty += gcy;
+			tz += gcz;
+		}
+
+		*x = tx / grp->n_children;
+		*y = ty / grp->n_children;
+		*z = tz / grp->n_children;
+
+		return 0;
+
+	}
 }

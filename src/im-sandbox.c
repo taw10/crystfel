@@ -69,6 +69,7 @@
 #include "im-zmq.h"
 #include "profile.h"
 #include "im-asapo.h"
+#include "predict-refine.h"
 
 
 struct sandbox
@@ -340,6 +341,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	int allDone = 0;
 	struct im_zmq *zmqstuff = NULL;
 	struct im_asapo *asapostuff = NULL;
+	Mille *mille;
 
 	if ( sb->profile ) {
 		profile_init();
@@ -361,6 +363,13 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			sb->shared->should_shutdown = 1;
 			return 1;
 		}
+	}
+
+	mille = NULL;
+	if ( iargs->mille ) {
+		char tmp[64];
+		snprintf(tmp, 63, "mille-data-%i.bin", cookie);
+		mille = crystfel_mille_new(tmp);
 	}
 
 	while ( !allDone ) {
@@ -519,7 +528,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			profile_start("process-image");
 			process_image(iargs, &pargs, st, cookie, tmpdir, ser,
 			              sb->shared, sb->shared->last_task[cookie],
-			              asapostuff);
+			              asapostuff, mille);
 			profile_end("process-image");
 		}
 
@@ -535,6 +544,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		free(pargs.filename);
 		free(pargs.event);
 	}
+
+	crystfel_mille_free(mille);
 
 	/* These are both no-ops if argument is NULL */
 	im_zmq_shutdown(zmqstuff);

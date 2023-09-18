@@ -44,7 +44,6 @@ simple_tests = ['ambi_check',
                 'cell_check',
                 'centering_check',
                 'list_check',
-                'prediction_gradient_check',
                 'ring_check',
                 'symmetry_check',
                 'transformation_check',
@@ -96,6 +95,63 @@ exe = executable('prof2d_check',
                  dependencies : [libcrystfeldep, mdep, gsldep])
 test('prof2d_check', exe)
 
+
+# Refinement gradient checks, part 1: panel translations
+panel_gradient_tests = [['gradient_panel_x', 'cnx', 'GPARAM_DET_TX'],
+                        ['gradient_panel_y', 'cny', 'GPARAM_DET_TY'],
+                        ['gradient_panel_z', 'cnz', 'GPARAM_DET_TZ']]
+
+foreach name : panel_gradient_tests
+  exe = executable(name[0],
+                   ['gradient_check.c',
+                    'gradient_check_utils.c'],
+                   c_args : ['-DTHING_TO_MOVE='+name[1],
+                             '-DTEST_GPARAM='+name[2],
+                             '-DTRANSLATE_PANEL=1'],
+                   dependencies : [libcrystfeldep, mdep, gsldep])
+  test(name[0], exe)
+endforeach
+
+
+# Refinement gradient checks, part 2: panel rotations
+panel_gradient_tests = [['gradient_panel_rx', '-DROTATE_PANEL_X', 'GPARAM_DET_RX'],
+                        ['gradient_panel_ry', '-DROTATE_PANEL_Y', 'GPARAM_DET_RY'],
+                        ['gradient_panel_rz', '-DROTATE_PANEL_Z', 'GPARAM_DET_RZ']]
+
+foreach name : panel_gradient_tests
+  exe = executable(name[0],
+                   ['gradient_check.c',
+                    'gradient_check_utils.c'],
+                   c_args : [name[1],
+                             '-DTEST_GPARAM='+name[2]],
+                   dependencies : [libcrystfeldep, mdep, gsldep])
+  test(name[0], exe)
+endforeach
+
+
+# Refinement gradient checks, part 3: diffraction physics
+panel_gradient_tests = [['gradient_cell_asx', 'asx', 'GPARAM_ASX'],
+                        ['gradient_cell_asy', 'asy', 'GPARAM_ASY'],
+                        ['gradient_cell_asz', 'asz', 'GPARAM_ASZ'],
+                        ['gradient_cell_bsx', 'bsx', 'GPARAM_BSX'],
+                        ['gradient_cell_bsy', 'bsy', 'GPARAM_BSY'],
+                        ['gradient_cell_bsz', 'bsz', 'GPARAM_BSZ'],
+                        ['gradient_cell_csx', 'csx', 'GPARAM_CSX'],
+                        ['gradient_cell_csy', 'csy', 'GPARAM_CSY'],
+                        ['gradient_cell_csz', 'csz', 'GPARAM_CSZ']]
+
+foreach name : panel_gradient_tests
+  exe = executable(name[0],
+                   ['gradient_check.c',
+                    'gradient_check_utils.c'],
+                   c_args : ['-DTHING_TO_MOVE='+name[1],
+                             '-DTEST_GPARAM='+name[2],
+                             '-DCHANGE_CELL=1'],
+                   dependencies : [libcrystfeldep, mdep, gsldep])
+  test(name[0], exe)
+endforeach
+
+
 # Event enumeration tests
 if hdf5dep.found()
   ev_enum_tests = ['ev_enum1',
@@ -138,3 +194,8 @@ if hdf5dep.found()
     test(p[0], exe, args : [h5, geom, expected_wl])
   endforeach
 endif
+
+
+test('geom_roundtrip',
+     find_program('geom_roundtrip'),
+     args: [adjust_detector.full_path()])

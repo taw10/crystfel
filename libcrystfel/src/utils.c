@@ -97,6 +97,77 @@ void show_matrix(gsl_matrix *M)
 }
 
 
+void show_vector(gsl_vector *v)
+{
+	int i;
+
+	for ( i=0; i<v->size; i++ ) {
+		STATUS("[ ");
+		STATUS("%+9.3e ", gsl_vector_get(v, i));
+		STATUS("]\n");
+	}
+}
+
+
+gsl_matrix *matrix_mult(gsl_matrix *A, gsl_matrix *B)
+{
+	gsl_matrix *r = gsl_matrix_calloc(A->size1, A->size2);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 0.0, r);
+	return r;
+}
+
+
+gsl_matrix *matrix_mult3(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C)
+{
+	gsl_matrix *tmp = matrix_mult(B, C);
+	gsl_matrix *r = matrix_mult(A, tmp);
+	gsl_matrix_free(tmp);
+	return r;
+}
+
+
+gsl_matrix *matrix_invert(gsl_matrix *m)
+{
+	gsl_permutation *perm;
+	gsl_matrix *inv;
+	int s;
+
+	perm = gsl_permutation_alloc(m->size1);
+	if ( perm == NULL ) {
+		ERROR("Couldn't allocate permutation\n");
+		gsl_matrix_free(m);
+		return NULL;
+	}
+
+	inv = gsl_matrix_alloc(m->size1, m->size2);
+	if ( inv == NULL ) {
+		ERROR("Couldn't allocate inverse\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+
+	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+		ERROR("Couldn't decompose matrix\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+
+	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+		ERROR("Couldn't invert cell matrix:\n");
+		gsl_matrix_free(m);
+		gsl_permutation_free(perm);
+		return NULL;
+	}
+
+	gsl_permutation_free(perm);
+	gsl_matrix_free(m);
+
+	return inv;
+}
+
+
 static int check_eigen(gsl_vector *e_val, int verbose)
 {
 	int i;
@@ -396,6 +467,15 @@ void progress_bar(int val, int total, const char *text)
 	pthread_mutex_unlock(&stderr_lock);
 
 	fflush(stdout);
+}
+
+
+void rotate2d(double *x, double *y, double cx, double cy, double ang)
+{
+	double nx, ny;
+	nx = cx + (*x-cx)*cos(ang) - (*y-cy)*sin(ang);
+	ny = cy + (*x-cx)*sin(ang) + (*y-cy)*cos(ang);
+	*x = nx;  *y = ny;
 }
 
 

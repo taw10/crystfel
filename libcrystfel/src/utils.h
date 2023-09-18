@@ -74,8 +74,12 @@ extern "C" {
 
 extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v);
 extern void show_matrix(gsl_matrix *M);
+extern void show_vector(gsl_vector *M);
 extern gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
                             int verbose);
+extern gsl_matrix *matrix_mult2(gsl_matrix *A, gsl_matrix *B);
+extern gsl_matrix *matrix_mult3(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C);
+extern gsl_matrix *matrix_invert(gsl_matrix *m);
 
 extern size_t notrail(char *s);
 extern int convert_int(const char *str, int *pval);
@@ -163,6 +167,8 @@ static inline int within_tolerance(double a, double b, double percent)
 	if ( fabs(b-a) < tol ) return 1;
 	return 0;
 }
+
+extern void rotate2d(double *x, double *y, double cx, double cy, double ang);
 
 
 /* ----------------------------- Useful macros ------------------------------ */

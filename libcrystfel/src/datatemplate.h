@@ -43,25 +43,17 @@
 typedef struct _datatemplate DataTemplate;
 
 
+struct dg_group_info
+{
+	const char *name;
+	int serial;
+	int hierarchy_level;
+};
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct rigid_group
-{
-	char *name;
-	int *panel_numbers;
-	int n_panels;
-};
-
-
-struct rg_collection
-{
-	char *name;
-	struct rigid_group **rigid_groups;
-	int n_rigid_groups;
-};
-
 
 extern DataTemplate *data_template_new_from_file(const char *filename);
 extern DataTemplate *data_template_new_from_string(const char *string_in);
@@ -91,14 +83,30 @@ extern void data_template_add_copy_header(DataTemplate *dt,
 
 extern int data_template_get_slab_extents(const DataTemplate *dt, int *pw, int *ph);
 
-extern struct rg_collection *data_template_get_rigid_groups(const DataTemplate *dtempl,
-                                                            const char *collection_name);
-
 extern double data_template_get_wavelength_if_possible(const DataTemplate *dt);
 
 extern double data_template_get_clen_if_possible(const DataTemplate *dt);
 
 extern struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTemplate *dt);
+
+extern void data_template_show_hierarchy(const DataTemplate *dtempl);
+
+extern int data_template_translate_group_px(DataTemplate *dtempl,
+                                            const char *group_name,
+                                            double x, double y, double z);
+
+extern int data_template_translate_group_m(DataTemplate *dtempl,
+                                           const char *group_name,
+                                           double x, double y, double z);
+
+extern int data_template_rotate_group(DataTemplate *dtempl,
+                                      const char *group_name,
+                                      double ang, char axis);
+
+extern int data_template_write_to_file(const DataTemplate *dtempl,
+                                       const char *filename);
+
+extern struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *n);
 
 #ifdef __cplusplus
 }

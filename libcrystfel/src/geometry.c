@@ -53,16 +53,10 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
                                 double det_shift_x, double det_shift_y,
                                 double *pfs, double *pss)
 {
-	double ctt, tta, phi;
 	gsl_vector *v;
 	gsl_vector *t;
 	gsl_matrix *M;
 	double fs, ss, one_over_mu;
-
-	/* Calculate 2theta (scattering angle) and azimuth (phi) */
-	tta = atan2(sqrt(x*x+y*y), k+z);
-	ctt = cos(tta);
-	phi = atan2(y, x);
 
 	/* Set up matrix equation */
 	M = gsl_matrix_alloc(3, 3);
@@ -73,9 +67,9 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 		return 0;
 	}
 
-	gsl_vector_set(t, 0, sin(tta)*cos(phi));
-	gsl_vector_set(t, 1, sin(tta)*sin(phi));
-	gsl_vector_set(t, 2, ctt);
+	gsl_vector_set(t, 0, x);
+	gsl_vector_set(t, 1, y);
+	gsl_vector_set(t, 2, k+z);
 
 	gsl_matrix_set(M, 0, 0, p->cnx+(det_shift_x/p->pixel_pitch));
 	gsl_matrix_set(M, 0, 1, p->fsx);
@@ -426,69 +420,6 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 	set_partiality(refl, partiality);
 
 	return refl;
-}
-
-
-double r_gradient(UnitCell *cell, int k, Reflection *refl, struct image *image)
-{
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double xl, yl, zl;
-	signed int hs, ks, ls;
-	double tl, phi, azi;
-
-	get_symmetric_indices(refl, &hs, &ks, &ls);
-
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	xl = hs*asx + ks*bsx + ls*csx;
-	yl = hs*asy + ks*bsy + ls*csy;
-	zl = hs*asz + ks*bsz + ls*csz;
-
-	tl = sqrt(xl*xl + yl*yl);
-	phi = angle_between_2d(tl, zl+1.0/image->lambda, 0.0, 1.0); /* 2theta */
-	azi = atan2(yl, xl); /* azimuth */
-
-	switch ( k ) {
-
-		case GPARAM_ASX :
-		return - hs * sin(phi) * cos(azi);
-
-		case GPARAM_BSX :
-		return - ks * sin(phi) * cos(azi);
-
-		case GPARAM_CSX :
-		return - ls * sin(phi) * cos(azi);
-
-		case GPARAM_ASY :
-		return - hs * sin(phi) * sin(azi);
-
-		case GPARAM_BSY :
-		return - ks * sin(phi) * sin(azi);
-
-		case GPARAM_CSY :
-		return - ls * sin(phi) * sin(azi);
-
-		case GPARAM_ASZ :
-		return - hs * cos(phi);
-
-		case GPARAM_BSZ :
-		return - ks * cos(phi);
-
-		case GPARAM_CSZ :
-		return - ls * cos(phi);
-
-		case GPARAM_DETX :
-		case GPARAM_DETY :
-		case GPARAM_CLEN :
-		return 0.0;
-
-	}
-
-	ERROR("No r gradient defined for parameter %i\n", k);
-	abort();
 }
 
 
@@ -1083,126 +1014,4 @@ void polarisation_correction(RefList *list, UnitCell *cell,
 		set_intensity(refl, intensity / pol);
 		set_esd_intensity(refl, sigma / pol);
 	}
-}
-
-
-/* Returns dx_h/dP, where P = any parameter */
-double x_gradient(int param, Reflection *refl, UnitCell *cell,
-                  struct detgeom_panel *p)
-{
-	signed int h, k, l;
-	double xl, zl, kpred;
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-
-	get_indices(refl, &h, &k, &l);
-	kpred = get_kpred(refl);
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	xl = h*asx + k*bsx + l*csx;
-	zl = h*asz + k*bsz + l*csz;
-
-	switch ( param ) {
-
-		case GPARAM_ASX :
-		return h * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_BSX :
-		return k * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_CSX :
-		return l * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_ASY :
-		return 0.0;
-
-		case GPARAM_BSY :
-		return 0.0;
-
-		case GPARAM_CSY :
-		return 0.0;
-
-		case GPARAM_ASZ :
-		return -h * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_BSZ :
-		return -k * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_CSZ :
-		return -l * xl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_DETX :
-		return -1;
-
-		case GPARAM_DETY :
-		return 0;
-
-		case GPARAM_CLEN :
-		return xl / (kpred+zl);
-
-	}
-
-	ERROR("Positional gradient requested for parameter %i?\n", param);
-	abort();
-}
-
-
-/* Returns dy_h/dP, where P = any parameter */
-double y_gradient(int param, Reflection *refl, UnitCell *cell,
-                  struct detgeom_panel *p)
-{
-	signed int h, k, l;
-	double yl, zl, kpred;
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-
-	get_indices(refl, &h, &k, &l);
-	kpred = get_kpred(refl);
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	yl = h*asy + k*bsy + l*csy;
-	zl = h*asz + k*bsz + l*csz;
-
-	switch ( param ) {
-
-		case GPARAM_ASX :
-		return 0.0;
-
-		case GPARAM_BSX :
-		return 0.0;
-
-		case GPARAM_CSX :
-		return 0.0;
-
-		case GPARAM_ASY :
-		return h * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_BSY :
-		return k * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_CSY :
-		return l * p->cnz * p->pixel_pitch / (kpred + zl);
-
-		case GPARAM_ASZ :
-		return -h * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_BSZ :
-		return -k * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_CSZ :
-		return -l * yl * p->cnz * p->pixel_pitch / (kpred*kpred + 2.0*kpred*zl + zl*zl);
-
-		case GPARAM_DETX :
-		return 0;
-
-		case GPARAM_DETY :
-		return -1;
-
-		case GPARAM_CLEN :
-		return yl / (kpred+zl);
-
-	}
-
-	ERROR("Positional gradient requested for parameter %i?\n", param);
-	abort();
 }

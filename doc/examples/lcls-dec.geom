@@ -1,6 +1,7 @@
 mask = /processing/hitfinder/masks
 mask_good = 0x07
 mask_bad = 0x00
+clen = 67.8e-3
 
 ; These default values will be used unless overridden by the per-panel values
 adu_per_eV = 0.0835
@@ -13,7 +14,7 @@ upper/corner_x = -491.90
 upper/corner_y = 71.30
 upper/fs = x
 upper/ss = y
-upper/clen = 67.8e-3
+upper/coffset = 0.0
 upper/res = 13333.3  ; 75 micron pixel size
 upper/badrow_direction = y
 
@@ -25,7 +26,7 @@ lower/corner_x = -492.00
 lower/corner_y = -779.70
 lower/fs = x
 lower/ss = y
-lower/clen = 70.8e-3
+lower/coffset = 3e-3
 lower/res = 13333.3  ; 75 micron pixel size
 lower/badrow_direction = y
 

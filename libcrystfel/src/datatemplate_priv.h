@@ -40,6 +40,12 @@
 /* Maximum number of placeholders expected in path structure */
 #define MAX_PATH_PARTS (16)
 
+/* Maximum number of panel groups */
+#define MAX_PANEL_GROUPS (256)
+
+/* Maximum number of panel groups that can derive from one panel */
+#define MAX_PANEL_GROUP_CHILDREN (64)
+
 enum adu_per_unit
 {
 	ADU_PER_PHOTON,
@@ -102,6 +108,9 @@ struct mask_template
 	/** Bit mask for good pixels
 	 * (pixel cannot be good unless all of these are set) */
 	unsigned int good_bits;
+
+	/** If non-zero, this mask came from the top level */
+	int mask_default;
 };
 
 
@@ -119,46 +128,53 @@ struct panel_template
 	double cny;
 	/**@}*/
 
-	/** Location to get cnz from, e.g. from HDF5 file */
-	char *cnz_from;
-
 	/** The offset to be applied from clen */
 	double cnz_offset;
+	int cnz_offset_default;
 
 	/** Mask definitions */
 	struct mask_template masks[MAX_MASKS];
 
 	/** Location of per-pixel saturation map */
 	char *satmap;
+	int satmap_default;
 
 	/** Filename for saturation map */
 	char *satmap_file;
+	int satmap_file_default;
 
 	/** Mark entire panel as bad if set */
 	int bad;
 
 	/** Mark this number of edge rows as bad */
 	int mask_edge_pixels;
+	int mask_edge_pixels_default;
 
 	/** Pixel size in metres */
 	double pixel_pitch;
+	int pixel_pitch_default;
 
 	/** Number of detector intensity units per photon, or eV */
 	double adu_scale;
 	enum adu_per_unit adu_scale_unit;
+	int adu_scale_default;
 
 	/** Treat pixel as unreliable if higher than this */
 	double max_adu;
+	int max_adu_default;
 
 	/** Pixels with exactly this value will be marked as bad */
 	enum flag_value_type flag_types[MAX_FLAG_VALUES];
 	signed int flag_values[MAX_FLAG_VALUES];
+	int flag_values_default;
 
 	/** Location of data in file (possibly with placeholders) */
 	char *data;
+	int data_default;
 
 	/** Dimensions (see definitions for DIM_FS etc above) */
 	signed int dims[MAX_DIMS];
+	int dims_default[MAX_DIMS];
 
 	/** \name Transformation matrix from pixel coordinates to lab frame */
 	/*@{*/
@@ -205,6 +221,14 @@ struct dt_badregion
 };
 
 
+struct panel_group_template
+{
+	char *name;
+	int n_children;
+	struct panel_group_template *children[MAX_PANEL_GROUP_CHILDREN];
+};
+
+
 struct _datatemplate
 {
 	struct panel_template     *panels;
@@ -218,11 +242,8 @@ struct _datatemplate
 
 	double                     bandwidth;
 
-	struct rigid_group       **rigid_groups;
-	int                        n_rigid_groups;
-
-	struct rg_collection     **rigid_group_collections;
-	int                        n_rg_collections;
+	struct panel_group_template *groups[MAX_PANEL_GROUPS];
+	int                          n_groups;
 
 	char                      *peak_list;
 	enum peak_layout           peak_list_type;
@@ -230,6 +251,9 @@ struct _datatemplate
 	/* Shift of whole detector, in m */
 	char                      *shift_x_from;
 	char                      *shift_y_from;
+
+	/** Location to get detector z from, e.g. from HDF5 file */
+	char                      *cnz_from;
 
 	char                      *headers_to_copy[MAX_COPY_HEADERS];
 	int                        n_headers_to_copy;

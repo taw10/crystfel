@@ -656,3 +656,44 @@ q3a15/fs = -0.0010058292x +0.9999995232y
 q3a15/ss = -0.9999995232x -0.0010058292y
 q3a15/corner_x =       575.475
 q3a15/corner_y =      -221.866
+
+
+group_a0 = q0a0,q0a1
+group_a1 = q0a2,q0a3
+group_a2 = q0a4,q0a5
+group_a3 = q0a6,q0a7
+group_a4 = q0a8,q0a9
+group_a5 = q0a10,q0a11
+group_a6 = q0a12,q0a13
+group_a7 = q0a14,q0a15
+group_a8 = q1a0,q1a1
+group_a9 = q1a2,q1a3
+group_a10 = q1a4,q1a5
+group_a11 = q1a6,q1a7
+group_a12 = q1a8,q1a9
+group_a13 = q1a10,q1a11
+group_a14 = q1a12,q1a13
+group_a15 = q1a14,q1a15
+group_a16 = q2a0,q2a1
+group_a17 = q2a2,q2a3
+group_a18 = q2a4,q2a5
+group_a19 = q2a6,q2a7
+group_a20 = q2a8,q2a9
+group_a21 = q2a10,q2a11
+group_a22 = q2a12,q2a13
+group_a23 = q2a14,q2a15
+group_a24 = q3a0,q3a1
+group_a25 = q3a2,q3a3
+group_a26 = q3a4,q3a5
+group_a27 = q3a6,q3a7
+group_a28 = q3a8,q3a9
+group_a29 = q3a10,q3a11
+group_a30 = q3a12,q3a13
+group_a31 = q3a14,q3a15
+
+group_q0 = a0,a1,a2,a3,a4,a5,a6,a7
+group_q1 = a8,a9,a10,a11,a12,a13,a14,a15
+group_q2 = a16,a17,a18,a19,a20,a21,a22,a23
+group_q3 = a24,a25,a26,a27,a28,a29,a30,a31
+
+group_all = q0,q1,q2,q3
