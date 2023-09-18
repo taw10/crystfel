@@ -49,7 +49,7 @@ double **make_dev_list(struct reflpeak *rps, int n_refls, struct detgeom *det)
 	vals[2] = malloc(n_refls*sizeof(double));
 
 	for ( i=0; i<n_refls; i++ ) {
-		vals[0][i] = get_exerr(rps[i].refl);
+		vals[0][i] = r_dev(&rps[i]);
 		vals[1][i] = fs_dev(&rps[i], det);
 		vals[2][i] = ss_dev(&rps[i], det);
 	}
