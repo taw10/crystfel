@@ -45,10 +45,14 @@
 
 /** \file predict-refine.h */
 
+/* Weighting of excitation error term (m^-1) compared to position term (pixels) */
+#define EXC_WEIGHT (0.5e-7)
+
+
 double r_dev(struct reflpeak *rp)
 {
 	/* Excitation error term */
-	return get_exerr(rp->refl);
+	return EXC_WEIGHT * get_exerr(rp->refl);
 }
 
 
@@ -93,31 +97,31 @@ double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength
 	switch ( param ) {
 
 		case GPARAM_ASX :
-		return - hs * sin(phi) * cos(azi);
+		return - hs * sin(phi) * cos(azi) * EXC_WEIGHT;
 
 		case GPARAM_BSX :
-		return - ks * sin(phi) * cos(azi);
+		return - ks * sin(phi) * cos(azi) * EXC_WEIGHT;
 
 		case GPARAM_CSX :
-		return - ls * sin(phi) * cos(azi);
+		return - ls * sin(phi) * cos(azi) * EXC_WEIGHT;
 
 		case GPARAM_ASY :
-		return - hs * sin(phi) * sin(azi);
+		return - hs * sin(phi) * sin(azi) * EXC_WEIGHT;
 
 		case GPARAM_BSY :
-		return - ks * sin(phi) * sin(azi);
+		return - ks * sin(phi) * sin(azi) * EXC_WEIGHT;
 
 		case GPARAM_CSY :
-		return - ls * sin(phi) * sin(azi);
+		return - ls * sin(phi) * sin(azi) * EXC_WEIGHT;
 
 		case GPARAM_ASZ :
-		return - hs * cos(phi);
+		return - hs * cos(phi) * EXC_WEIGHT;
 
 		case GPARAM_BSZ :
-		return - ks * cos(phi);
+		return - ks * cos(phi) * EXC_WEIGHT;
 
 		case GPARAM_CSZ :
-		return - ls * cos(phi);
+		return - ls * cos(phi) * EXC_WEIGHT;
 
 		/* Detector movements don't affect excitation error */
 		case GPARAM_DET_TX :
@@ -615,7 +619,6 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		float fs_gradients[num_params];
 		float ss_gradients[num_params];
 		float r_gradients[num_params];
-		double w;
 
 		/* Calculate all gradients for this parameter */
 		for ( k=0; k<num_params; k++ ) {
@@ -626,7 +629,6 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		}
 
 		/* Excitation error terms */
-		w = EXC_WEIGHT * rps[i].Ih;
 		for ( k=0; k<num_params; k++ ) {
 
 			int g;
@@ -639,14 +641,14 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 				/* Matrix is symmetric */
 				if ( g > k ) continue;
 
-				M_c = w * r_gradients[g] * r_gradients[k];
+				M_c = r_gradients[g] * r_gradients[k];
 				M_curr = gsl_matrix_get(M, k, g);
 				gsl_matrix_set(M, k, g, M_curr + M_c);
 				gsl_matrix_set(M, g, k, M_curr + M_c);
 
 			}
 
-			v_c = w * r_dev(&rps[i]);
+			v_c = r_dev(&rps[i]);
 			v_c *= -r_gradients[k];
 			v_curr = gsl_vector_get(v, k);
 			gsl_vector_set(v, k, v_curr + v_c);
@@ -768,7 +770,7 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
 	res_fs = 0.0;
 	res_ss = 0.0;
 	for ( i=0; i<n; i++ ) {
-		res_r += EXC_WEIGHT * rps[i].Ih * pow(r_dev(&rps[i]), 2.0);
+		res_r += pow(r_dev(&rps[i]), 2.0);
 		res_fs += pow(fs_dev(&rps[i], det), 2.0);
 		res_ss += pow(ss_dev(&rps[i], det), 2.0);
 	}

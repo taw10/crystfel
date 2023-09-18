@@ -200,8 +200,8 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &local_gradients_fs[j],
 			               &local_gradients_ss[j]);
-			local_gradients_r[j] = EXC_WEIGHT * r_gradient(rvl[j], rps[i].refl,
-			                                               cell, image->lambda);
+			local_gradients_r[j] = r_gradient(rvl[j], rps[i].refl,
+			                                  cell, image->lambda);
 		}
 
 		/* Global gradients for each hierarchy level, starting at the
@@ -249,7 +249,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 
 		/* Add excitation error "measurement" (local-only) */
 		mille_add_measurement(mille, nl, local_gradients_r,
-		                      0, NULL, NULL, r_dev(&rps[i])*EXC_WEIGHT, 1.0);
+		                      0, NULL, NULL, r_dev(&rps[i]), 1.0);
 	}
 }
 
