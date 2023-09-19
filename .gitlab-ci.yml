@@ -4,7 +4,7 @@ stages:
   - build_container
   - deploy
 
-build-meson:
+build-and-test:
   image: fedora:32
   script:
     - dnf group install -y 'Development Tools'
@@ -20,11 +20,11 @@ build-meson:
     reports:
       junit: build/meson-logs/testlog.junit.xml
 
-build-meson-nohdf5:
+build-and-test-minimal:
   image: fedora:37
   script:
     - dnf group install -y 'Development Tools'
-    - dnf install -y gsl-devel flex bison gcc-c++ gcc-gfortran
+    - dnf install -y gsl-devel flex bison
     - dnf install -y gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils
     - dnf install -y meson
     - meson setup build -Dhdf5=disabled && ninja -C build
