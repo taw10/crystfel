@@ -162,9 +162,8 @@ executable('align_detector',
            install: true,
            install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
 
-# Get 'pede' from the subproject (needed for align_detector)
-millepede_proj = subproject('millepede', required: false)
-pede_exe = millepede_proj.get_variable('pede')
+# Millepede subproject gives us 'pede', needed for align_detector
+subproject('millepede', required: false)
 
 # adjust_detector
 adjust_detector = executable('adjust_detector',
