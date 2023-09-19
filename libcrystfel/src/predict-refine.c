@@ -714,7 +714,7 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 	int k;
 	for ( k=0; k<num_params; k++ ) {
 		double M_curr = gsl_matrix_get(M, k, k);
-		gsl_matrix_set(M, k, k, M_curr+1e-7);
+		gsl_matrix_set(M, k, k, M_curr+1e-18);
 	}
 
 	//show_matrix_eqn(M, v);
@@ -852,8 +852,8 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 
 	for ( i=0; i<12; i++ ) total_shifts[i] = 0.0;
 
-	/* Refine (max 10 cycles) */
-	for ( i=0; i<10; i++ ) {
+	/* Refine (max 5 cycles) */
+	for ( i=0; i<5; i++ ) {
 		update_predictions(cr);
 		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs, total_shifts) )
 		{
