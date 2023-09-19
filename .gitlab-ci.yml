@@ -38,6 +38,7 @@ build-and-test-minimal:
 
 build_container_image:
   stage: build_container
+  dependencies: []
   only:
     - master
   image:
@@ -117,6 +118,7 @@ build-native-macos:
 
 build-brew-macos:
   stage: test_brew
+  dependencies: []
   tags:
     - macOS
   variables:
@@ -157,6 +159,8 @@ build-centos7:
 build-deploy-local-maxwell:
   tags:
     - maxwell
+  dependencies:
+    - build-centos7
   variables:
     GIT_STRATEGY: clone
     SECURE_FILES_DOWNLOAD_PATH: './downloads'
@@ -174,6 +178,8 @@ build-deploy-local-maxwell:
 
 deploy-remote-maxwell:
   stage: deploy
+  dependencies:
+    - build-centos7
   image: centos:centos7
   variables:
     GIT_STRATEGY: none
