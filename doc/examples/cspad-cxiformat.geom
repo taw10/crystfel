@@ -33,52 +33,6 @@ mask_good = 0x0000
 mask_bad = 0xffff
 
 
-; The following lines define "rigid groups" which express the physical
-; construction of the detector.  This is used when refining the detector
-; geometry.
-
-rigid_group_q0 = q0a0,q0a1,q0a2,q0a3,q0a4,q0a5,q0a6,q0a7,q0a8,q0a9,q0a10,q0a11,q0a12,q0a13,q0a14,q0a15
-rigid_group_q1 = q1a0,q1a1,q1a2,q1a3,q1a4,q1a5,q1a6,q1a7,q1a8,q1a9,q1a10,q1a11,q1a12,q1a13,q1a14,q1a15
-rigid_group_q2 = q2a0,q2a1,q2a2,q2a3,q2a4,q2a5,q2a6,q2a7,q2a8,q2a9,q2a10,q2a11,q2a12,q2a13,q2a14,q2a15
-rigid_group_q3 = q3a0,q3a1,q3a2,q3a3,q3a4,q3a5,q3a6,q3a7,q3a8,q3a9,q3a10,q3a11,q3a12,q3a13,q3a14,q3a15
-
-rigid_group_a0 = q0a0,q0a1
-rigid_group_a1 = q0a2,q0a3
-rigid_group_a2 = q0a4,q0a5
-rigid_group_a3 = q0a6,q0a7
-rigid_group_a4 = q0a8,q0a9
-rigid_group_a5 = q0a10,q0a11
-rigid_group_a6 = q0a12,q0a13
-rigid_group_a7 = q0a14,q0a15
-rigid_group_a8 = q1a0,q1a1
-rigid_group_a9 = q1a2,q1a3
-rigid_group_a10 = q1a4,q1a5
-rigid_group_a11 = q1a6,q1a7
-rigid_group_a12 = q1a8,q1a9
-rigid_group_a13 = q1a10,q1a11
-rigid_group_a14 = q1a12,q1a13
-rigid_group_a15 = q1a14,q1a15
-rigid_group_a16 = q2a0,q2a1
-rigid_group_a17 = q2a2,q2a3
-rigid_group_a18 = q2a4,q2a5
-rigid_group_a19 = q2a6,q2a7
-rigid_group_a20 = q2a8,q2a9
-rigid_group_a21 = q2a10,q2a11
-rigid_group_a22 = q2a12,q2a13
-rigid_group_a23 = q2a14,q2a15
-rigid_group_a24 = q3a0,q3a1
-rigid_group_a25 = q3a2,q3a3
-rigid_group_a26 = q3a4,q3a5
-rigid_group_a27 = q3a6,q3a7
-rigid_group_a28 = q3a8,q3a9
-rigid_group_a29 = q3a10,q3a11
-rigid_group_a30 = q3a12,q3a13
-rigid_group_a31 = q3a14,q3a15
-
-rigid_group_collection_quadrants = q0,q1,q2,q3
-rigid_group_collection_asics = a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30,a31
-
-
 ; The geometrical parameters for the panels follow.
 ; The above parameters can also be set for each panel individually, but usually
 ; it makes more sense to define them once for all panels.
