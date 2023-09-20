@@ -726,6 +726,11 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->iargs.mille = 1;
 		break;
 
+		case 417 :
+		free(args->iargs.milledir);
+		args->iargs.milledir = strdup(arg);
+		break;
+
 		/* ---------- Integration ---------- */
 
 		case 501 :
@@ -971,6 +976,7 @@ int main(int argc, char *argv[])
 	args.iargs.n_threads = 1;
 	args.iargs.data_format = DATA_SOURCE_TYPE_UNKNOWN;
 	args.iargs.mille = 0;
+	args.iargs.milledir = strdup(".");
 
 	argp_program_version_hook = show_version;
 
@@ -1092,6 +1098,8 @@ int main(int argc, char *argv[])
 		        "Estimate of the camera length, in metres."},
 		{"mille", 416, NULL, 0,
 		        "Generate data for detector geometry refinement using Millepede"},
+		{"mille-dir", 417, "dirname", 0,
+		        "Save Millepede data in folder"},
 
 		{NULL, 0, 0, OPTION_DOC, "Integration options:", 5},
 		{"integration", 501, "method", OPTION_NO_USAGE, "Integration method"},
@@ -1418,6 +1426,15 @@ int main(int argc, char *argv[])
 
 	free(args.outfile);
 	free(args.indm_str);
+
+	r = mkdir(args.iargs.milledir, S_IRWXU);
+	if ( r ) {
+		if ( errno != EEXIST ) {
+			ERROR("Failed to create folder for Millepede data: %s\n",
+			      strerror(errno));
+			exit(1);
+		}
+	}
 
 	gsl_set_error_handler_off();
 

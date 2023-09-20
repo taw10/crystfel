@@ -580,6 +580,9 @@ INDEXING OPTIONS
 **--mille**
 : Write detector calibration data in Millepede-II format.
 
+**--mille-dir=dirname**
+: Write the Millepede-II data into _dirname_.
+
 **--wavelength-estimate=m** **--camera-length-estimate=m**
 : Some indexing algorithms need to know the camera length or the wavelength of
 : the incident radiation in advance, e.g. to prepare an internal look-up table.
