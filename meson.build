@@ -281,7 +281,8 @@ subdir('tests')
 pandoc = find_program('pandoc', required: false)
 
 pandoc_pages = ['indexamajig.1.md',
-                'adjust_detector.1.md']
+                'adjust_detector.1.md',
+                'align_detector.1.md']
 
 if pandoc.found()
   foreach page : pandoc_pages
