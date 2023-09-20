@@ -366,7 +366,7 @@ static int cmpd2(const void *av, const void *bv)
 	a = (struct reflpeak *)av;
 	b = (struct reflpeak *)bv;
 
-	if ( fabs(r_dev(a)) < fabs(r_dev(b)) ) return -1;
+	if ( fabs(get_exerr(a->refl)) < fabs(get_exerr(b->refl)) ) return -1;
 	return 1;
 }
 
@@ -383,10 +383,10 @@ static int check_outlier_transition(struct reflpeak *rps, int n,
 	for ( i=1; i<n-1; i++ ) {
 
 		int j;
-		double grad = fabs(r_dev(&rps[i])) / i;
+		double grad = fabs(get_exerr(rps[i].refl)) / i;
 
 		for ( j=i+1; j<n; j++ ) {
-			if ( fabs(r_dev(&rps[j])) < 0.001e9+grad*j ) {
+			if ( fabs(get_exerr(rps[j].refl)) < 0.001e9+grad*j ) {
 				break;
 			}
 		}
@@ -576,7 +576,7 @@ int refine_radius(Crystal *cr, struct image *image)
 	qsort(rps, n_acc, sizeof(struct reflpeak), cmpd2);
 	n = (n_acc-1) - n_acc/50;
 	if ( n < 2 ) n = 2; /* n_acc is always >= 2 */
-	crystal_set_profile_radius(cr, fabs(r_dev(&rps[n])));
+	crystal_set_profile_radius(cr, fabs(get_exerr(rps[n].refl)));
 
 	reflist_free(reflist);
 	free(rps);
