@@ -114,6 +114,7 @@ roughly in order of importance:
 * [msgpack-c](https://github.com/msgpack/msgpack-c) (for streaming data in MsgPack format)
 * [Seedee](https://gitlab.desy.de/fs-sc/seedee) (for streaming data serialised with Seedee)
 * [cJSON](https://github.com/DaveGamble/cJSON/) \[\*\] (extra dependency if Seedee is found)
+* [Pandoc](https://pandoc.org/) (to convert documentation to `man` format)
 
 Most of the dependencies mentioned above should be available from your Linux
 distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
@@ -190,7 +191,7 @@ All dependencies can be taken from the Fedora repositories:
 
 ```
 $ sudo dnf group install 'Development Tools'
-$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson gcc-c++ fftw-devel zeromq-devel msgpack-devel flex bison
+$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson gcc-c++ fftw-devel zeromq-devel msgpack-devel flex bison gcc-gfortran pandoc
 $ cd /home/user/downloads/crystfel
 $ meson build
 $ ninja -C build
