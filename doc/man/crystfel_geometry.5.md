@@ -148,6 +148,15 @@ can only be specified once in the geometry file (not for each panel):
 : always specify the units.  Like when specifying the wavelength (see above),
 : CrystFEL should do what you expect with multi-frame data files.
 
+Getting the **clen** value from the image headers gives the illusion of
+avoiding the need to create a new geometry file every time you change the
+detector position.  However, in practice this doesn't work very well because
+the detector movement direction is usually not exactly parallel to the beam
+axis.  That means that the beam center position varies with the camera length,
+and you would have to prepare a new geometry file for each position anyway.
+For the best results, simply make sure that the experimental geometry stays as
+static as possible.
+
 ### Per-frame beam center position
 
 You can specify an overall detector shift.  The most common use of this is for
@@ -167,174 +176,325 @@ versions.
 PANEL DATA LOCATIONS
 ====================
 
-data
-: The location in the HDF5 file of the data block that contains the panel's data.
-: The default value is /data/data.  If the HDF5 file contains multiple events,
-: and each event is stored in a different data block, the variable part of the
-: path can be represented using the % character placeholder.
-:
-: Example:
-:
-:     data = /data/%/rawdata
-:
-: The CrystFEL programs will look for the first event at
-: /data/event1_name/rawdata, for the second at /data/event2_name/rawdata, etc.,
-: where event_name and event2_name are simply whatever the program could find in
-: the HDF5 file which matched the pattern you gave.
+For each panel, you have to specify where to find the data in the file.  Don't
+forget that many of these parameters will be the same for each panel, so you
+can set them once at the top (see the section **Panels and geometry file
+syntax**).
 
-dimn
-: Information about the layout of the data block identified by the 'data'
-: property. n is an integer number identifying an axis in a multidimensional HDF5
-: data block. The property value defines the kind of information encoded by the
-: axis. Possible values are:
-: % - event placeholder,the axis encodes events
-: ss - the axis encoding the slow scan index
-: fs - the axis encodes the fast scan index
-: number -  the index in this dimension should be fixed at number.
-:
-: CrystFEL assumes that the data block defined by the 'data' property has a
-: dimensionality corresponding to the axis with the highest value of n defined by
-: the 'dim' property.  That is, if the geometry file specifies dim0, dim1 and
-: dim2, then the data block is expected to be three-dimensional.  The size of the
-: data block along each of those axes comes from the image metadata (e.g. the
-: array sizes in the HDF5 file).
-:
-: The lowest number of n corresponds to the most slowly-changing array index as
-: the data block is traversed.  The default values are dim0=ss and dim1=fs.  The
-: value of n corresponding to fs must not be lower than the value assigned to ss,
-: i.e. "fast scan is always fast scan".
-:
-: Example:
-:
-:     dim0 = %
-:     dim1 = 4
-:     dim2 = ss
-:     dim3 = fs
-:
-: The above snippet specifies that the data block is 4-dimensional. The first
-: axis represents the event number, the index in the second axis is always 4, and
-: the remaining two axes are the image coordinates.
+**data** = _/location/of/data_
+: The location in the data file of the array that contains the panel's data.
+: The interpretation of the value depends on the file type.  If you're using
+: HDF5 files, it will be a path such as `/data/run_1/imagedata`.  The default
+: value is `/data/data`.
 
-min_fs, min_ss, max_fs, max_ss
-: The range of pixels in the data block specified by the 'data' property that
-: corresponds to the panel, in fast scan/slow scan coordinates, specified
-: inclusively.
+**min_fs**, **max_fs**, **min_ss**, **max_ss** = _nnn_
+: The range of pixels in the data block that correspond to this panel.  Often,
+: multiple panels are grouped together into one "slab".  The pixel ranges are
+: in the *data coordinate system*, and are specified *inclusively*.
+
+### Multiple frames per file
+
+The best performance is achieved when each file on disk contains a large number
+of images, rather than just one.  In this case, you have to additionally
+specify the data layout to CrystFEL.
+
+Consider a file format where each frame has its own data array under a separate
+name, for example an HDF5 file with the following layout:
+
+    /data/run_1/image_1/data
+    /data/run_1/image_2/data
+    /data/run_1/image_3/data
+    /data/run_1/image_4/data
+    /data/run_1/image_5/data
+    ...
+
+In this case, you can use **%** as a placeholder in the data location.
+For example:
+
+    data = /data/run_1/%/data
+
+For HDF5 files, the **%** must be a whole name at a certain hierarchy level,
+i.e. the following is not allowed:
+
+    data = /data/run_1/image_%/data  ;; This won't work
+
+Next, consider a file format where the frames and detector panels are grouped
+into a four-dimensional array.  The first two dimensions are the image data
+axes, the third dimension is the panel number, and the fourth dimension is the
+frame number.  In this case, you can specify the data location as follows:
+
+    data = /data/run_1/image4Darray
+    dim0 = %
+    dim2 = ss
+    dim3 = fs
+    min_fs = 0
+    max_fs = 255
+    min_ss = 0
+    max_ss = 255
+
+    panel1/dim1 = 0
+    panel1/corner_x = ....
+    ...
+
+    panel2/dim1 = 1
+    panel2/corner_x = ....
+    ...
+
+    panel3/dim1 = 2
+    panel3/corner_x = ....
+    ...
+
+**dim** values can be a literal number, a placeholder (**%**), or **fs** or
+**ss**.  Note that, in this example, the common parameter values have been
+placed at the top, avoiding some repetition.
+
+CrystFEL assumes that the data block defined by the 'data' property has a
+dimensionality corresponding to the axis with the highest value of n defined by
+the 'dim' property.  That is, if the geometry file specifies dim0, dim1 and
+dim2, then the data block is expected to be three-dimensional.  The size of the
+data block along each of those axes comes from the image metadata (e.g. the
+array sizes in the HDF5 file).
+
+The lowest number of n corresponds to the most slowly-changing array index as
+the data block is traversed.  The default values are dim0=ss and dim1=fs.  The
+value of n corresponding to fs must not be lower than the value assigned to ss,
+i.e. "fast scan is always fast scan".
 
 
 PEAK LISTS
 ==========
 
-peak_list = loc
-: This gives the location of the peak list in the data files, for peak detection
-: methods hdf5 and cxi (see man indexamajig).
+It's possible to include lists of peak positions into the data file.  If the
+data is pre-processed using a "hit finding" procedure, usually a peak search
+will already have been performed.  It makes sense to re-use these peak search
+results, instead of performing a new peak search inside CrystFEL.
 
-peak_list_type = layout
-: Specify the layout of the peak list.  Allowed values are cxi, list3 and auto.
-:
-: list3 expects the peak list to be a two dimensional array whose size in the
-: first dimension equals the number of peaks and whose size in the second
-: dimension is exactly three.  The first two columns contain the fast scan and
-: slow scan coordinates, the third contains the intensities.  This is the correct
-: option for "single-frame" HDF5 files as written by older versions of Cheetah.
-:
-: cxi expects the peak list to be a group containing four separate HDF5 datasets:
-: nPeaks, peakXPosRaw, peakYPosRaw and peakTotalIntensity.  See the specification
-: for the CXI file format at http://www.cxidb.org/ for more details.  This is the
-: correct option for "multi-event" HDF5 files as output by recent versions of
-: Cheetah.
-:
-: auto tells CrystFEL to decide between the above options based on the file extension.
-:
-: Note that CrystFEL considers all peak locations to be distances from the corner
-: of the detector panel, in pixel units, consistent with its description of
-: detector geometry (see 'man crystfel_geometry').  The software which generates
-: the HDF5 or CXI files, including Cheetah, may instead consider the peak
-: locations to be pixel indices in the data array.  To compensate for this
-: discrepancy, CrystFEL will, by default, add 0.5 to all peak coordinates. Use
-: --no-half-pixel-shift if this isn't what you want.
+In this case, you need to specify the location of the peak list in the data
+file, and the format of the peak list.
+
+**peak_list** = _loc_
+: Peak list location in the data files.
+
+**peak_list_type** = _type_
+: Specify the layout of the peak list.  Allowed values are **cxi**, **list3**
+: and **auto**.
+
+The possible list types are:
+
+**list3**
+: The peak list is a two dimensional array whose size in the first dimension
+: equals the number of peaks and whose size in the second dimension is exactly
+: three.  The first two columns contain the fast scan and slow scan coordinates,
+: the third contains the intensities.  This is the correct option for
+: "single-frame" HDF5 files as written by older versions of Cheetah.
+
+**cxi**
+: The peak list is an HDF5 group containing four separate HDF5 datasets: nPeaks,
+: peakXPosRaw, peakYPosRaw and peakTotalIntensity.  See the specification for the
+: CXI file format at http://www.cxidb.org/ for more details.  This is the correct
+: option for "multi-event" HDF5 files as output by recent versions of Cheetah.
+
+**auto**
+: CrystFEL will decide between the above options based on the file extension.
+
+### Important note about coordinate conventions
+
+Note that CrystFEL considers all peak locations to be distances from the corner
+of the detector panel, in pixel units, consistent with its description of
+detector geometry (see the section about **corner_x** above).  The software
+which generates the HDF5 or CXI files, including Cheetah, may instead consider
+the peak locations to be pixel indices in the data array.  In the former case,
+a peak position (0,0) corresponds to the very corner of the detector panel.  In
+the latter case, position (0,0) corresponds to the center of the first pixel,
+and the very corner would be (-0.5,-0.5).
+
+To compensate for this discrepancy, CrystFEL will, by default, add 0.5 to all
+peak coordinates. See the **indexamajig** option **--no-half-pixel-shift** if
+this isn't what you want.
 
 
-DETECTOR RESPONSE PROPERTIES
-============================
+PIXEL SIZE
+==========
 
-adu_per_eV, adu_per_photon
-: The number of detector intensity units (ADU) which will arise from either one
-: electron-Volt of photon energy, or one photon.  This is used to estimate
-: Poisson errors.  Note that setting different values for this parameter for
-: different panels does not result in the intensities being scaled accordingly
-: when integrating data.  You should only specify one out of adu_per_eV and
-: adu_per_photon.
+You will need to specify the size of the pixels, of course.  Use one of the
+following:
 
-res
-: The resolution (in pixels per metre) for this panel.  This is one over the
-: pixel size in metres.
+**pixel_pitch** = _pixelSize_
+: The width of the pixels, in meters.
 
-max_adu
-: The saturation value for the panel.  You can use this to exclude saturated
-: peaks from the peak search or to avoid integrating saturated reflections.
-: However, usually it's best to include saturated peaks, and exclude saturated
-: reflections with the --max-adu option of process_hkl and partialator.
-: Therefore you should avoid setting this parameter - a warning will be displayed
-: if you do.
+**res** = _pixelsPerMeter_
+: The resolution, in pixels per metre, i.e. one divided by the pixel size in
+: metres.
 
-saturation_map
-: This specifies the location of the per-pixel saturation map in the HDF5 file.
-: This works just like mask in that it can come from the current file or a
-: separate one (see saturation_map_file).  Reflections will be rejected if they
-: contain any pixel above the per-pixel values, in addition to the other checks
-: (see max_adu).
+These values effectively give the scale factor between the length of the
+**fs,ss** vectors and physical space.  If the **fs** and **ss** vectors have
+different magnitudes, the pixels will not be square.  This is allowed, but
+comes with a possibility of strange problems, because many algorithms assume
+square pixels.
 
-saturation_map_file
-: Specifies that the saturation map should come from the HDF5 file named here,
-: instead of the HDF5 file being processed.  It can be an absolute filename or
+
+DETECTOR GAIN
+=============
+
+CrystFEL needs to know the gain of the detector, in order to determine how
+many photons correspond to a particular signal level and hence calculate error
+estimates on the intensity values.  These gain values are **not** used to
+correct the pixel values for different gains among the panels.
+
+Use one of the following:
+
+**adu_per_photon**
+: The number of detector intensity units which will arise from one quantum of
+: intensity (one X-ray photon, or one electron in an electron microscope).
+
+**adu_per_eV**
+: The number of detector intensity units which will arise from a 1 eV photon
+: of electromagnetic radiation.  This will be scaled by the photon energy
+: (see **photon_energy**) to calculate the intensity per photon at the
+: wavelength used by the experiment.  This option should only be used for
+: electromagnetic radiation.
+
+
+DETECTOR SATURATION
+===================
+
+You can specify the saturation value in the geometry file, which will allow
+**indexamajig** to avoid integrating saturated reflections.  However, usually
+it's best to include all reflections at this stage, and exclude the saturated
+reflections at the merging stage (see **process_hkl** and **partialator**
+options **--max-adu**).
+
+**max_adu**
+: The saturation value for the panel.  A warning will be displayed if you use
+: this option, because it's better to exclude saturated reflections at the
+: merging stage.
+
+Some combinations of detectors and processing methods result in the saturation
+level varying pixel-to-pixel.  For this case, you can provide a per-pixel map
+of saturation values.  Note that **both** the map values and the **max_adu**
+values will both be honoured.
+
+**saturation_map**
+: This specifies the location of the per-pixel saturation map in the data file.
+
+**saturation_map_file**
+: Specifies that the saturation map should come from the file named here,
+: instead of the file being processed.  This can be an absolute filename or
 : relative to the working directory.
 
 
 BAD REGIONS
 ===========
 
-Bad regions will be completely ignored by CrystFEL.  You can specify the pixels
-to exclude in pixel units, either in the lab coordinate system (see above) or
-in fast scan/slow scan coordinates (mixtures are not allowed).   In the latter
-case, the range of pixels is specified inclusively.  Bad regions are
-distinguished from normal panels by the fact that they begin with the three
-letters "bad".
+"Bad region" refers to any set of pixels that should be completely ignored by
+CrystFEL.  There are multiple ways to mark pixels as bad.
 
-If you specify a bad region in fs/ss (image data) coordinates, you must also
-specify which panel name you are referring to.
+### Marking a whole panel
 
-Note that bad regions specified in x/y (lab frame) coordinates take longer to
-process (when loading images) than regions specified in fs/ss (image data)
-coordinates.  You should use fs/ss coordinates unless the convenience of x/y
-coordinates outweighs the speed reduction.
+To flag all pixels in one panel as bad, simply set the **no_index** parameter:
 
-no_index
-: Set this to 1 or "true" to ignore this panel completely.
+**no_index**
+: If set to **true** or any numerical value other than 0, indicates that the
+: panel should be ignored.  The slightly misleading name is for historical
+: reasons.
 
-flag_lessthan, flag_morethan, flag_equal
-: Mark pixels as "bad" if their values are respectively less than, more than or
-: equal to the given value.  Note carefully that the inequalities are strict, not
-: inclusive: "less than", not "less than or equal to".
+### Marking pixels at the panel edges
 
-mask_edge_pixels
-: Mark the specified number of pixels, at the edge of the panel, as "bad".
+With many detectors, the pixels at the edge of the detector panels behave
+differently and should be masked out.
 
-maskN_data, maskN_file, maskN_goodbits, maskN_badbits
-: These specify the parameters for bad pixel mask number N.  You can have up to 8
-: bad pixel masks, numbered from 0 to 7 inclusive.  Placeholders ('%') in the
-: location (maskN_data) will be substituted with the same values as used for the
+**mask_edge_pixels** = _n_
+: Mark a border of _n_ pixels around the edge of the panel as bad.
+
+### Marking pixels according to value
+
+Many data files contain information about bad pixels encoded in the pixel
+values, for example a value of 65535 often indicates a bad pixel.
+
+**flag_lessthan** = _n_
+: Mark pixels as bad if their value is less than _n_.
+
+**flag_morethan** = _n_
+: Mark pixels as bad if their value is more than _n_.
+
+**flag_equal** = _n_
+: Mark pixels as bad if their value exactly _n_.
+
+Note carefully that the inequalities are strict, not inclusive: "less than",
+not "less than or equal to".
+
+Note also that **flag_equal** will be difficult to use for data in
+floating-point format.  With floating-point data, you should use
+**flag_lessthan** and **flag_morethan**.
+
+### Marking pixels in rectangles
+
+You can specify a range of pixels to ignore in the *data coordinate system* or
+the *laboratory coordinate system*.
+
+To mask pixels in the *data coordinate system*, use the following syntax:
+
+    badregionB/min_fs = 128
+    badregionB/max_fs = 160
+    badregionB/min_ss = 256
+    badregionB/max_ss = 512
+    badregionB/panel = q0a1
+
+A bad region is distinguished from a panel because it starts with **bad**.
+Apart from that, the region can use any name of your choice.
+
+The pixel ranges are specified *inclusively*.  The *panel* name has to be
+specified, because the pixel range alone might not be unique (see section
+**Multiple frames per file**).  Bad regions specified in this way therefore
+cannot stretch across multiple panels.
+
+To mask pixels in the *laboratory coordinate system*, use the following syntax:
+
+    badregionA/min_x = -20.0
+    badregionA/max_x = +20.0
+    badregionA/min_y = -100.0
+    badregionA/max_y = +100.0
+
+In this case, the panel name is not required, and the bad region can span
+multiple panels.  However, bad regions specified in laboratory coordinates take
+longer to process (when loading images) than regions specified in fs/ss (image
+data) coordinates.  You should therefore use fs/ss coordinates unless the
+convenience of x/y coordinates outweighs the speed reduction.
+
+### Providing a separate bad pixel mask
+
+You can provide an array, separate to the image data array, containing
+information about the bad pixels.  Up to 8 such masks can be provided for each
+detector panel.  Specify the mask location using the following directives,
+where you should substitute **N** for a number between 0 and 7 inclusive:
+
+**maskN_data** = _location_
+: The location (inside the image data file) of the mask array.  Placeholders
+: ('%') in the location will be substituted with the same values as used for the
 : placeholders in the image data, although there may be fewer of them for the
 : masks than for the image data.
-: 
-: You can optionally give a filename for each mask with maskN_file.  The filename
-: may be specified as an absolute filename, or relative to the working directory.
-: If you don't specify a filename, the mask will be read from the same file as
-: the image data.
-: 
-: A pixel will be considered bad unless all of the bits which are set in goodbits
-: are set.  A pixel will also be considered bad if any of the bits which are set
-: in badbits are set.  Note that pixels can additionally be marked as bad via
-: other mechanisms as well (e.g. no_index or bad).
+
+**maskN_file** = _filename_
+: Filename to use for the mask data, if not the same as the image data.
+: The filename : may be specified as an absolute filename, or relative to the
+: working directory.
+
+**maskN_goodbits** = _bitmask_
+: Bit mask for good pixels (see below).
+
+**maskN_badbits** = _bitmask_
+: Bit mask for bad pixels (see below).
+
+A pixel will be considered *bad* unless all of the bits which are set in
+**goodbits** are set.  A pixel will *also* be considered bad if *any* of the
+bits which are set in **badbits** are set.  In pseudocode, where **&** is a
+bitwise "and", the algorithm is:
+
+    if (mask_value & mask_goodbits) != mask_goodbits:
+        mark_pixel_as_bad
+
+    if (mask_value & mask_badbits) != 0:
+        mark_pixel_as_bad
 
 Example:
 
@@ -350,19 +510,6 @@ of CrystFEL.  They are synonyms of the new directives as follows:
     mask_file  ----->   mask0_file
     mask_good  ----->   mask0_goodbits
     mask_bad   ----->   mask0_badbits
-
-Examples:
-
-    badregionA/min_x = -20.0
-    badregionA/max_x = +20.0
-    badregionA/min_y = -100.0
-    badregionA/max_y = +100.0
-
-    badregionB/min_fs = 128
-    badregionB/max_fs = 160
-    badregionB/min_ss = 256
-    badregionB/max_ss = 512
-    badregionB/panel = q0a1
 
 
 DETECTOR HIERARCHY
