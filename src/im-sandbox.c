@@ -367,8 +367,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 	mille = NULL;
 	if ( iargs->mille ) {
-		char tmp[64];
-		snprintf(tmp, 63, "%s/mille-data-%i.bin", iargs->milledir, cookie);
+		char tmp[1024];
+		snprintf(tmp, 1024, "%s/mille-data-%i.bin", iargs->milledir, cookie);
 		mille = crystfel_mille_new(tmp);
 	}
 
