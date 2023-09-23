@@ -603,8 +603,8 @@ int image_set_zero_data(struct image *image,
 }
 
 
-int image_create_dp_bad_sat(struct image *image,
-                            const DataTemplate *dtempl)
+int image_create_dp_bad(struct image *image,
+                        const DataTemplate *dtempl)
 {
 	int i;
 
@@ -621,47 +621,28 @@ int image_create_dp_bad_sat(struct image *image,
 		return 1;
 	}
 
-	image->sat = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->sat == NULL ) {
-		ERROR("Failed to allocate saturation map\n");
-		free(image->dp);
-		free(image->bad);
-		return 1;
-	}
-
 	/* Set all pointers to NULL for easier clean-up */
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 		image->dp[i] = NULL;
 		image->bad[i] = NULL;
-		image->sat[i] = NULL;
 	}
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
-		int j;
 		size_t nel = PANEL_WIDTH(&dtempl->panels[i]) * PANEL_HEIGHT(&dtempl->panels[i]);
 
 		image->dp[i] = malloc(nel*sizeof(float));
 		image->bad[i] = calloc(nel, sizeof(int));
-		image->sat[i] = malloc(nel*sizeof(float));
 
-		if ( (image->dp[i] == NULL)
-		  || (image->bad[i] == NULL)
-		  || (image->sat[i] == NULL) ) {
+		if ( (image->dp[i] == NULL) || (image->bad[i] == NULL) ) {
 			ERROR("Failed to allocate panel data arrays\n");
 			for ( i=0; i<dtempl->n_panels; i++ ) {
 				free(image->dp[i]);
 				free(image->bad[i]);
-				free(image->sat[i]);
 			}
 			free(image->dp);
 			free(image->bad);
-			free(image->sat);
 			return 1;
-		}
-
-		for ( j=0; j<nel; j++ ) {
-			image->sat[i][j] = INFINITY;
 		}
 
 	}
@@ -969,7 +950,7 @@ static int create_badmap(struct image *image,
 {
 	int i;
 
-	/* The bad pixel map array is already created (see image_create_dp_bad_sat),
+	/* The bad pixel map array is already created (see image_create_dp_bad),
 	 * and a preliminary mask (with NaN/inf pixels marked) has already been
 	 * created when the image data was loaded. */
 
@@ -1158,7 +1139,7 @@ struct image *image_create_for_simulation(const DataTemplate *dtempl)
 		return NULL;
 	}
 
-	if ( image_create_dp_bad_sat(image, dtempl) ) {
+	if ( image_create_dp_bad(image, dtempl) ) {
 		image_free(image);
 		return NULL;
 	}
@@ -1199,7 +1180,7 @@ static int do_image_read(struct image *image, const DataTemplate *dtempl,
 	int i;
 	int r;
 
-	if ( image_create_dp_bad_sat(image, dtempl) ) return 1;
+	if ( image_create_dp_bad(image, dtempl) ) return 1;
 
 	/* Load the image data */
 	if ( !no_image_data ) {

@@ -902,7 +902,7 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 						image_free(image);
 						return NULL;
 					}
-					image_create_dp_bad_sat(image, st->dtempl_read);
+					image_create_dp_bad(image, st->dtempl_read);
 					image_set_zero_data(image, st->dtempl_read);
 				}
 				image->spectrum = spectrum_generate_gaussian(image->lambda,
