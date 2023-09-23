@@ -108,7 +108,8 @@ static struct image *file_wait_open_read(const char *filename,
                                          signed int wait_for_file,
                                          int cookie,
                                          int no_image_data,
-                                         int no_mask_data)
+                                         int no_mask_data,
+                                         ImageDataArrays *ida)
 {
 	signed int file_wait_time = wait_for_file;
 	int wait_message_done = 0;
@@ -154,7 +155,7 @@ static struct image *file_wait_open_read(const char *filename,
 
 		profile_start("image-read");
 		image = image_read(dtempl, filename, event,
-		                   no_image_data, no_mask_data);
+		                   no_image_data, no_mask_data, ida);
 		profile_end("image-read");
 		if ( image == NULL ) {
 			if ( wait_for_file && !read_retry_done ) {
@@ -179,7 +180,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir,
                    int serial, struct sb_shm *sb_shared,
                    char *last_task, struct im_asapo *asapostuff,
-                   Mille *mille)
+                   Mille *mille, ImageDataArrays *ida)
 {
 	struct image *image;
 	int i;
@@ -200,7 +201,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->data_format,
 		                              serial,
 		                              iargs->no_image_data,
-		                              iargs->no_mask_data);
+		                              iargs->no_mask_data,
+		                              ida);
 		profile_end("read-zmq-data");
 		if ( image == NULL ) return;
 
@@ -222,7 +224,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->data_format,
 		                              serial,
 		                              iargs->no_image_data,
-		                              iargs->no_mask_data);
+		                              iargs->no_mask_data,
+		                              ida);
 		profile_end("read-asapo-data");
 		if ( image == NULL ) return;
 
@@ -240,7 +243,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                            iargs->wait_for_file,
 		                            cookie,
 		                            iargs->no_image_data,
-		                            iargs->no_mask_data);
+		                            iargs->no_mask_data,
+		                            ida);
 		profile_end("file-wait-open-read");
 		if ( image == NULL ) {
 			if ( iargs->wait_for_file != 0 ) {

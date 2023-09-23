@@ -160,7 +160,7 @@ static int get_first_frame_parameters(struct crystfelproject *proj,
 	image = image_read(proj->dtempl,
 	                   proj->filenames[0],
 	                   proj->events[0],
-	                   0, 0);
+	                   0, 0, NULL);
 
 	if ( image == NULL ) {
 		ERROR("Failed to load first frame\n");

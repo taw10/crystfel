@@ -75,6 +75,8 @@ struct imagefeature {
 /** An opaque type representing a list of image features */
 typedef struct _imagefeaturelist ImageFeatureList;
 
+typedef struct _image_data_arrays ImageDataArrays;
+
 
 #define HEADER_CACHE_SIZE (128)
 
@@ -179,6 +181,9 @@ struct image
 	/** List of peaks found in the image */
 	ImageFeatureList        *features;
 
+	/** Re-usable data array structure, or NULL if not used */
+	ImageDataArrays         *ida;
+
 };
 
 #ifdef __cplusplus
@@ -226,7 +231,8 @@ extern struct image *image_read(const DataTemplate *dtempl,
                                 const char *filename,
                                 const char *event,
                                 int no_image_data,
-                                int no_mask_data);
+                                int no_mask_data,
+                                ImageDataArrays *ida);
 
 extern struct image *image_create_for_simulation(const DataTemplate *dtempl);
 extern struct image *image_read_data_block(const DataTemplate *dtempl,
@@ -236,7 +242,8 @@ extern struct image *image_read_data_block(const DataTemplate *dtempl,
                                            DataSourceType type,
                                            int serial,
                                            int no_image_data,
-                                           int no_mask_data);
+                                           int no_mask_data,
+                                           ImageDataArrays *ida);
 extern void image_free(struct image *image);
 
 extern int image_read_header_float(struct image *image, const char *from,
@@ -264,6 +271,10 @@ extern ImageFeatureList *image_read_peaks(const DataTemplate *dtempl,
 
 extern char **image_expand_frames(const DataTemplate *dtempl,
                                   const char *filename, int *nframes);
+
+extern ImageDataArrays *image_data_arrays_new(void);
+
+extern void image_data_arrays_free(ImageDataArrays *ida);
 
 extern int image_create_dp_bad(struct image *image,
                                const DataTemplate *dtempl);

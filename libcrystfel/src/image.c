@@ -603,47 +603,114 @@ int image_set_zero_data(struct image *image,
 }
 
 
+struct _image_data_arrays
+{
+	float **dp;
+	int **bad;
+	int np;
+};
+
+
+ImageDataArrays *image_data_arrays_new()
+{
+	ImageDataArrays *ida = malloc(sizeof(struct _image_data_arrays));
+	if ( ida == NULL ) return NULL;
+
+	ida->dp = NULL;
+	ida->bad = NULL;
+	ida->np = 0;
+
+	return ida;
+}
+
+
+void image_data_arrays_free(ImageDataArrays *ida)
+{
+	int i;
+
+	for ( i=0; i<ida->np; i++ ) {
+		if ( ida->dp != NULL ) free(ida->dp[i]);
+		if ( ida->bad != NULL ) free(ida->bad[i]);
+	}
+
+	free(ida->dp);
+	free(ida->bad);
+
+	free(ida);
+}
+
+
 int image_create_dp_bad(struct image *image,
                         const DataTemplate *dtempl)
 {
 	int i;
 
-	image->dp = malloc(dtempl->n_panels*sizeof(float *));
-	if ( image->dp == NULL ) {
-		ERROR("Failed to allocate data array.\n");
-		return 1;
-	}
+	if ( (image->ida != NULL) && (image->ida->np > 0) ) {
 
-	image->bad = malloc(dtempl->n_panels*sizeof(int *));
-	if ( image->bad == NULL ) {
-		ERROR("Failed to allocate bad pixel mask\n");
-		free(image->dp);
-		return 1;
-	}
+		assert(dtempl->n_panels == image->ida->np);
 
-	/* Set all pointers to NULL for easier clean-up */
-	for ( i=0; i<dtempl->n_panels; i++ ) {
-		image->dp[i] = NULL;
-		image->bad[i] = NULL;
+		/* (Re-)use the provided arrays */
+		image->dp = image->ida->dp;
+		image->bad = image->ida->bad;
+
+	} else {
+
+		/* Allocate new arrays */
+
+		image->dp = malloc(dtempl->n_panels*sizeof(float *));
+		if ( image->dp == NULL ) {
+			ERROR("Failed to allocate data array.\n");
+			return 1;
+		}
+
+		image->bad = malloc(dtempl->n_panels*sizeof(int *));
+		if ( image->bad == NULL ) {
+			ERROR("Failed to allocate bad pixel mask\n");
+			free(image->dp);
+			return 1;
+		}
+
+		/* Set all pointers to NULL for easier clean-up */
+		for ( i=0; i<dtempl->n_panels; i++ ) {
+			image->dp[i] = NULL;
+			image->bad[i] = NULL;
+		}
+
+		for ( i=0; i<dtempl->n_panels; i++ ) {
+
+			size_t nel = PANEL_WIDTH(&dtempl->panels[i]) * PANEL_HEIGHT(&dtempl->panels[i]);
+
+			image->dp[i] = malloc(nel*sizeof(float));
+			image->bad[i] = malloc(nel*sizeof(int));
+
+			if ( (image->dp[i] == NULL)|| (image->bad[i] == NULL) ) {
+				ERROR("Failed to allocate panel data arrays\n");
+				for ( i=0; i<dtempl->n_panels; i++ ) {
+					free(image->dp[i]);
+					free(image->bad[i]);
+				}
+				free(image->dp);
+				free(image->bad);
+				return 1;
+			}
+
+		}
+
+		if ( image->ida != NULL ) {
+			image->ida->dp = image->dp;
+			image->ida->bad = image->bad;
+			image->ida->np = dtempl->n_panels;
+		}
+
 	}
 
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
 		size_t nel = PANEL_WIDTH(&dtempl->panels[i]) * PANEL_HEIGHT(&dtempl->panels[i]);
 
-		image->dp[i] = malloc(nel*sizeof(float));
-		image->bad[i] = calloc(nel, sizeof(int));
-
-		if ( (image->dp[i] == NULL) || (image->bad[i] == NULL) ) {
-			ERROR("Failed to allocate panel data arrays\n");
-			for ( i=0; i<dtempl->n_panels; i++ ) {
-				free(image->dp[i]);
-				free(image->bad[i]);
-			}
-			free(image->dp);
-			free(image->bad);
-			return 1;
-		}
+		profile_start("zero-mask");
+		memset(image->bad[i], 0, nel*sizeof(int));
+		profile_end("zero-mask");
 
 	}
 
@@ -1237,7 +1304,8 @@ struct image *image_read(const DataTemplate *dtempl,
                          const char *filename,
                          const char *event,
                          int no_image_data,
-                         int no_mask_data)
+                         int no_mask_data,
+                         ImageDataArrays *ida)
 {
 	struct image *image;
 
@@ -1262,6 +1330,7 @@ struct image *image_read(const DataTemplate *dtempl,
 	image->data_block_size = 0;
 
 	image->data_source_type = file_type(image->filename);
+	image->ida = ida;
 
 	if ( do_image_read(image, dtempl, no_image_data, no_mask_data) ) {
 		image_free(image);
@@ -1279,7 +1348,8 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
                                     DataSourceType type,
                                     int serial,
                                     int no_image_data,
-                                    int no_mask_data)
+                                    int no_mask_data,
+                                    ImageDataArrays *ida)
 {
 	struct image *image;
 
@@ -1294,6 +1364,7 @@ struct image *image_read_data_block(const DataTemplate *dtempl,
 		return NULL;
 	}
 
+	image->ida = ida;
 	image->filename = NULL;
 	image->ev = NULL;
 	image->data_block = data_block;
@@ -1332,20 +1403,24 @@ void image_free(struct image *image)
 		np = 0;
 	}
 
-	for ( i=0; i<np; i++ ) {
-		if ( image->dp != NULL ) free(image->dp[i]);
-		if ( image->sat != NULL ) free(image->sat[i]);
-		if ( image->bad != NULL ) free(image->bad[i]);
-	}
+	if ( image->ida == NULL ) {
+
+		for ( i=0; i<np; i++ ) {
+			if ( image->dp != NULL ) free(image->dp[i]);
+			if ( image->sat != NULL ) free(image->sat[i]);
+			if ( image->bad != NULL ) free(image->bad[i]);
+		}
+
+		free(image->dp);
+		free(image->sat);
+		free(image->bad);
+
+	} /* else the arrays belong to the IDA structure */
 
 	for ( i=0; i<image->n_cached_headers; i++ ) {
 		free(image->header_cache[i]->header_name);
 		free(image->header_cache[i]);
 	}
-
-	free(image->dp);
-	free(image->sat);
-	free(image->bad);
 
 	free(image);
 }
@@ -1372,6 +1447,7 @@ struct image *image_new()
 	image->data_block_size = 0;
 	image->meta_data = NULL;
 	image->data_source_type = DATA_SOURCE_TYPE_UNKNOWN;
+	image->ida = NULL;
 
 	image->n_cached_headers = 0;
 	image->id = 0;

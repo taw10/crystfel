@@ -215,7 +215,7 @@ void update_imageview(struct crystfelproject *proj)
 		image = image_read(proj->dtempl,
 		                   proj->filenames[proj->cur_frame],
 		                   proj->events[proj->cur_frame],
-		                   0, 0);
+		                   0, 0, NULL);
 	} else {
 		STATUS("Image data file not present.\n");
 		image = NULL;

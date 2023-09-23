@@ -342,6 +342,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	struct im_zmq *zmqstuff = NULL;
 	struct im_asapo *asapostuff = NULL;
 	Mille *mille;
+	ImageDataArrays *ida;
 
 	if ( sb->profile ) {
 		profile_init();
@@ -371,6 +372,8 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		snprintf(tmp, 1024, "%s/mille-data-%i.bin", iargs->milledir, cookie);
 		mille = crystfel_mille_new(tmp);
 	}
+
+	ida = image_data_arrays_new();
 
 	while ( !allDone ) {
 
@@ -528,7 +531,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			profile_start("process-image");
 			process_image(iargs, &pargs, st, cookie, tmpdir, ser,
 			              sb->shared, sb->shared->last_task[cookie],
-			              asapostuff, mille);
+			              asapostuff, mille, ida);
 			profile_end("process-image");
 		}
 
@@ -545,6 +548,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		free(pargs.event);
 	}
 
+	image_data_arrays_free(ida);
 	crystfel_mille_free(mille);
 
 	/* These are both no-ops if argument is NULL */

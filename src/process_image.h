@@ -119,7 +119,7 @@ extern void process_image(const struct index_args *iargs,
                           int cookie, const char *tmpdir, int serial,
                           struct sb_shm *sb_shared, char *last_task,
                           struct im_asapo *asapostuff,
-                          Mille *mille);
+                          Mille *mille, ImageDataArrays *ida);
 
 
 #endif	/* PROCESS_IMAGE_H */
