@@ -168,6 +168,7 @@ static void free_profile_block(struct _profile_block *b)
 	for ( i=0; i<b->n_children; i++ ) {
 		free_profile_block(b->children[i]);
 	}
+	free(b->children);
 	free(b->name);
 	free(b);
 }
@@ -217,9 +218,10 @@ void profile_start(const char *name)
 	if ( pd->current->n_children >= pd->current->max_children ) {
 		struct _profile_block **nblock;
 		int nmax = pd->current->n_children + 64;
-		nblock = realloc(pd->current->children, nmax*sizeof(struct _profile_block));
+		nblock = realloc(pd->current->children, nmax*sizeof(struct _profile_block *));
 		if ( nblock == NULL ) {
-			fprintf(stderr, "Failed to allocate profiling record.  Try again without --profile.\n");
+			fprintf(stderr, "Failed to allocate profiling record. "
+			                "Try again without --profile.\n");
 			abort();
 		}
 		pd->current->children = nblock;
