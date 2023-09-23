@@ -502,7 +502,9 @@ out:
 	pthread_mutex_unlock(&sb_shared->totals_lock);
 
 	/* Free image (including detgeom) */
+	profile_start("free-image");
 	image_free(image);
+	profile_end("free-image");
 
 	set_last_task(last_task, "sandbox");
 }
