@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
+#include <libgen.h>
 
 #include <datatemplate.h>
 #include <utils.h>
@@ -214,6 +215,46 @@ static int different(time_t a, time_t b)
 }
 
 
+static int run_pede()
+{
+	char buf[1024];
+	char cmdline[1280];
+	int r;
+
+	if ( readlink("/proc/self/exe", buf, 1024) != -1 ) {
+		char *dir = dirname(buf);
+		strcpy(cmdline, dir);
+		strcat(cmdline, "/pede");
+		if ( !file_exists(cmdline) ) {
+			ERROR("Couldn't find %s - falling back on shell path\n");
+			strcpy(cmdline, "pede millepede.txt");
+		} else {
+			strcat(cmdline, " millepede.txt");
+		}
+	} else {
+		ERROR("readlink() failed: %s\n", strerror(errno));
+		strcpy(cmdline, "pede millepede.txt");
+	}
+
+	STATUS("Running '%s'\n", cmdline);
+	r = system(cmdline);
+	if ( r == -1 ) {
+		ERROR("Failed to run Millepde: %s\n", strerror(errno));
+		return 1;
+	}
+	if ( !WIFEXITED(r) ) {
+		ERROR("Millepede exited abnormally.\n");
+		return 1;
+	}
+	if ( WEXITSTATUS(r) != 0 ) {
+		ERROR("Millepede returned an error status (%i)\n", WEXITSTATUS(r));
+		return 1;
+	}
+
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -363,20 +404,7 @@ int main(int argc, char *argv[])
 
 	unlink("millepede.res");
 
-	r = system("pede millepede.txt");
-	if ( r == -1 ) {
-		ERROR("Failed to run Millepde: %s\n", strerror(errno));
-		return 1;
-	}
-	if ( !WIFEXITED(r) ) {
-		ERROR("Millepede exited abnormally.\n");
-		return 1;
-	}
-	if ( WEXITSTATUS(r) != 0 ) {
-		ERROR("Millepede returned an error status (%i)\n", WEXITSTATUS(r));
-		return 1;
-	}
-
+	if ( run_pede() ) return 1;
 	STATUS("Millepede succeeded.\n\n");
 
 	fh = fopen("millepede.res", "r");
