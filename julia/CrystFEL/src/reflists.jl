@@ -1,3 +1,7 @@
+module RefLists
+
+using ..Symmetry
+
 export RefList, Reflection, loadreflist, savereflections
 
 mutable struct InternalRefList end
@@ -20,3 +24,5 @@ function loadreflist(filename::AbstractString)
     return RefList(out, SymOpList(psym))
 
 end
+
+end  # of module

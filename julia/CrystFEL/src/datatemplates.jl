@@ -1,3 +1,5 @@
+module DataTemplates
+
 export DataTemplate, loaddatatemplate
 
 mutable struct InternalDataTemplate end
@@ -23,3 +25,5 @@ function loaddatatemplate(filename::AbstractString)
 
     return dt
 end
+
+end  # of module
