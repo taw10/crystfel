@@ -1,4 +1,6 @@
-export SymOpList
+module Symmetry
+
+export SymOpList, InternalSymOpList, InternalIntegerMatrix
 
 # Types for pointers returned by libcrystfel
 mutable struct InternalSymOpList end
@@ -107,3 +109,5 @@ function Base.show(io::IO, op::SymOp)
     write(io, hkl_op(op))
     write(io, "\")")
 end
+
+end  # of module

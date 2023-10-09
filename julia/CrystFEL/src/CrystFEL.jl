@@ -1,7 +1,26 @@
+"""
+    CrystFEL
+
+Julia bindings for CrystFEL data structures and routines
+
+## Quick start
+```julia
+  using CrystFEL
+  ...
+```
+"""
 module CrystFEL
 
 include("symmetry.jl")
-include("datatemplates.jl")
-include("reflists.jl")
+using .Symmetry
+export SymOpList
 
-end # module CrystFEL
+include("datatemplates.jl")
+using .DataTemplates
+export DataTemplate, loaddatatemplate
+
+include("reflists.jl")
+using .RefLists
+export RefList, Reflection, loadreflist, savereflections
+
+end  # of module
