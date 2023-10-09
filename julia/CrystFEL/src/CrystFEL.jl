@@ -11,6 +11,10 @@ Julia bindings for CrystFEL data structures and routines
 """
 module CrystFEL
 
+include("detgeom.jl")
+using .DetGeoms
+export Panel, DetGeom
+
 include("symmetry.jl")
 using .Symmetry
 export SymOpList
