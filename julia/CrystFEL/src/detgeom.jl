@@ -1,6 +1,22 @@
 module DetGeoms
 export Panel, DetGeom
 
+guardian = []
+
+function protect(guardian, obj)
+    push!(guardian, obj)
+    obj
+end
+
+function unprotect(guardian, obj)
+    let pos = findfirst(==(obj), guardian)
+        if pos !== nothing
+            deleteat!(guardian, pos)
+        end
+    end
+end
+
+
 mutable struct Panel
     name::Cstring
     cx::Cdouble
@@ -43,12 +59,18 @@ function Panel(name, width, height, corner::Tuple{Real, Real}, clen,
                pixel_pitch, adu_per_photon,
                max_adu=Inf, group=C_NULL)
 
-    @Base.GC.preserve name return Panel(pointer(name),
-                                        corner[1], corner[2], clen/pixel_pitch,
-                                        pixel_pitch, adu_per_photon, max_adu,
-                                        fs[1], fs[2], fs[3],
-                                        ss[1], ss[2], ss[3],
-                                        width, height, group)
+    myname = protect(guardian, deepcopy(name))
+
+    p = Panel(pointer(myname),
+              corner[1], corner[2], clen/pixel_pitch,
+              pixel_pitch, adu_per_photon, max_adu,
+              fs[1], fs[2], fs[3],
+              ss[1], ss[2], ss[3],
+              width, height, group)
+
+    finalizer(p) do x
+        unprotect(guardian, myname)
+    end
 
 end
 
