@@ -15,6 +15,10 @@ include("detgeom.jl")
 using .DetGeoms
 export Panel, DetGeom
 
+include("image.jl")
+using .Images
+export Image
+
 include("symmetry.jl")
 using .Symmetry
 export SymOpList

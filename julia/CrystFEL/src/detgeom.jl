@@ -37,6 +37,13 @@ mutable struct Panel
 end
 
 
+mutable struct DetGeom
+    panels::Ptr{Panel}
+    n_panels::Cint
+    top_group::Ptr{Cvoid}
+end
+
+
 """
     Panel(name, width, height, (cnx, cny), clen, (fsx,fsy,fsz), (ssx,ssy,ssz), pixelsize, aduperphoton)
 
@@ -97,7 +104,20 @@ end
 Create a CrystFEL `DetGeom` from a vector of `Panel`s.  Optionally set the
 panel group which should be the top of the hierarchy.
 """
-function DetGeom(panels; topgroup=nothing)
+function DetGeom(panels; topgroup=C_NULL)
+
+    pmem = Base.Libc.malloc(sizeof(panels[1])*length(panels))
+
+    for (i,panel) in enumerate(panels)
+        Base.unsafe_copyto!(pmem, pointer(panel), 1)
+    end
+
+    dg = DetGeom(pmem, length(panels), topgroup)
+
+    finalize(dg) do x
+        Base.Libc.free(dg.panels)
+    end
+
 end
 
 end  # of module
