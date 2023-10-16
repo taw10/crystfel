@@ -526,7 +526,8 @@ PEAK SEARCH OPTIONS
 : **--min-snr**.
 
 **--peakfinder8-fast**
-: (peakfinder8 only) Increase speed by pre-calculating some coordinate tables.
+: (peakfinder8 only) Increase speed by restricting the number of sampling
+: points used for the background statistics calculation.
 
 
 INDEXING OPTIONS
