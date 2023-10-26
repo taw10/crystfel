@@ -1,7 +1,7 @@
 module DataTemplates
 
 import ..CrystFEL: libcrystfel
-export DataTemplate, loaddatatemplate
+export DataTemplate, InternalDataTemplate, loaddatatemplate
 
 mutable struct InternalDataTemplate end
 
@@ -20,7 +20,7 @@ function loaddatatemplate(filename::AbstractString)
     dt = DataTemplate(out)
 
     finalizer(dt) do x
-        ccall((:data_template_free, :libcrystfel),
+        ccall((:data_template_free, libcrystfel),
               Cvoid, (Ptr{InternalDataTemplate},), x.internalptr)
     end
 

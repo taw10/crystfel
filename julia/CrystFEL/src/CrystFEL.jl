@@ -17,10 +17,6 @@ include("detgeom.jl")
 using .DetGeoms
 export Panel, DetGeom
 
-include("image.jl")
-using .Images
-export Image
-
 include("symmetry.jl")
 using .Symmetry
 export SymOpList
@@ -28,6 +24,10 @@ export SymOpList
 include("datatemplates.jl")
 using .DataTemplates
 export DataTemplate, loaddatatemplate
+
+include("image.jl")
+using .Images
+export Image
 
 include("reflists.jl")
 using .RefLists
