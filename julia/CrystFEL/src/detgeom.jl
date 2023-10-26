@@ -1,21 +1,5 @@
 module DetGeoms
-export Panel, DetGeom
-
-guardian = []
-
-function protect(guardian, obj)
-    push!(guardian, obj)
-    obj
-end
-
-function unprotect(guardian, obj)
-    let pos = findfirst(==(obj), guardian)
-        if pos !== nothing
-            deleteat!(guardian, pos)
-        end
-    end
-end
-
+export Panel
 
 mutable struct Panel
     name::Cstring
@@ -44,44 +28,6 @@ mutable struct DetGeom
 end
 
 
-"""
-    Panel(name, width, height, (cnx, cny), clen, (fsx,fsy,fsz), (ssx,ssy,ssz), pixelsize, aduperphoton)
-
-Create a panel for a CrystFEL `DetGeom`.
-
-* `cnx` and `cny`: Corner position in pixel units
-* `clen`: Corner z-position in meters
-* `(fsx,fsy,fsz)`: Fast scan vector in pixel units
-* `(ssx,ssy,ssz)`: Slow scan vector in pixel units
-* `pixelsize`: Conversion factor from pixels to meters
-* `aduperphoton`: Detector units per quantum, for error estimation
-
-Additional keyword arguments:
-
-* `max_adu`=Inf: Saturation value
-* `group`: Panel group (for hierarchy)
-"""
-function Panel(name, width, height, corner::Tuple{Real, Real}, clen,
-               fs::Tuple{Real,Real,Real}, ss::Tuple{Real,Real,Real},
-               pixel_pitch, adu_per_photon,
-               max_adu=Inf, group=C_NULL)
-
-    myname = protect(guardian, deepcopy(name))
-
-    p = Panel(pointer(myname),
-              corner[1], corner[2], clen/pixel_pitch,
-              pixel_pitch, adu_per_photon, max_adu,
-              fs[1], fs[2], fs[3],
-              ss[1], ss[2], ss[3],
-              width, height, group)
-
-    finalizer(p) do x
-        unprotect(guardian, myname)
-    end
-
-end
-
-
 function Base.show(io::IO, p::Panel)
     write(io, "Panel(")
     write(io, "name=\"")
@@ -97,27 +43,5 @@ function Base.show(io::IO, p::Panel)
     write(io, "))")
 end
 
-
-"""
-    DetGeom(panels; topgroup=g)
-
-Create a CrystFEL `DetGeom` from a vector of `Panel`s.  Optionally set the
-panel group which should be the top of the hierarchy.
-"""
-function DetGeom(panels; topgroup=C_NULL)
-
-    pmem = Base.Libc.malloc(sizeof(panels[1])*length(panels))
-
-    for (i,panel) in enumerate(panels)
-        Base.unsafe_copyto!(pmem, pointer(panel), 1)
-    end
-
-    dg = DetGeom(pmem, length(panels), topgroup)
-
-    finalize(dg) do x
-        Base.Libc.free(dg.panels)
-    end
-
-end
 
 end  # of module
