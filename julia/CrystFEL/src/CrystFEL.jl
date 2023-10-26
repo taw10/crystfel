@@ -11,6 +11,8 @@ Julia bindings for CrystFEL data structures and routines
 """
 module CrystFEL
 
+libcrystfel = "libcrystfel.so"
+
 include("detgeom.jl")
 using .DetGeoms
 export Panel, DetGeom
