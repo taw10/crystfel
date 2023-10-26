@@ -38,6 +38,19 @@ mutable struct Image
     internalptr::Ptr{InternalImage}
 end
 
+function Base.getproperty(image::Image, name::Symbol)
+    if name === :internalptr
+        getfield(image, :internalptr)
+    else
+        idata = unsafe_load(image.internalptr)
+        getproperty(idata, name)
+    end
+end
+
+function Base.propertynames(image::Image)
+    (:lambda, :internalptr)
+end
+
 function Image(dtempl::DataTemplate)
 
     out = ccall((:image_create_for_simulation, libcrystfel),
