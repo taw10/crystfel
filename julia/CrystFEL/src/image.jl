@@ -36,9 +36,11 @@ mutable struct InternalImage
     ida::Ptr{Cvoid}
 end
 
+
 mutable struct Image
     internalptr::Ptr{InternalImage}
 end
+
 
 function Base.getproperty(image::Image, name::Symbol)
     if name === :internalptr
@@ -49,10 +51,25 @@ function Base.getproperty(image::Image, name::Symbol)
     end
 end
 
-function Base.propertynames(image::Image)
-    (:lambda, :internalptr)
+
+function Base.propertynames(image::Image; private=false)
+    if private
+        fieldnames(InternalImage)
+    else
+        tuple(fieldnames(InternalImage)..., :internalptr)
+    end
 end
 
+
+"""
+    Image(dtempl::DataTemplate)
+
+Creates a CrystFEL image structure, not linked to any file or data block,
+i.e. for simulation purposes.  This will fail if `dtempl` contains any
+references to metadata fields, e.g. `photon_energy = /LCLS/photon_energy eV`.
+
+Corresponds to CrystFEL C API function `image_create_for_simulation()`.
+"""
 function Image(dtempl::DataTemplate)
 
     out = ccall((:image_create_for_simulation, libcrystfel),
@@ -69,5 +86,38 @@ function Image(dtempl::DataTemplate)
 
     return image
 end
+
+
+"""
+    Image(dtempl::DataTemplate, filename::AbstractString, event::AbstractString,
+          no_image_data=false, no_mask_data=false)
+
+Loads an image from the filesystem.
+
+Corresponds to CrystFEL C API function `image_read()`.
+"""
+function Image(dtempl::DataTemplate,
+               filename::AbstractString,
+               event::AbstractString="//",
+               no_image_data=false,
+               no_mask_data=false)
+
+    out = @ccall libcrystfel.image_read(dtempl.internalptr::Ptr{InternalDataTemplate},
+                                        filename::Cstring, event::Cstring,
+                                       no_image_data::Cint, no_mask_data::Cint,
+                                       C_NULL::Ptr{Cvoid})::Ptr{Image}
+    if out == C_NULL
+        throw(OutOfMemoryError())
+    end
+
+    image = Image(out)
+
+    finalizer(image) do x
+        ccall((:image_free, libcrystfel), Cvoid, (Ptr{InternalImage},), x.internalptr)
+    end
+
+    return image
+end
+
 
 end  # of module
