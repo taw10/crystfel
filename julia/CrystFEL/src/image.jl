@@ -5,6 +5,8 @@ import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.DetGeoms: DetGeom
 export Image
 
+const HEADER_CACHE_SIZE = 128
+
 mutable struct InternalImage
     dp::Ptr{Ptr{Cfloat}}
     bad::Ptr{Ptr{Cint}}
@@ -21,7 +23,7 @@ mutable struct InternalImage
     data_block::Ptr{Cvoid}
     data_block_size::Csize_t
     meta_data::Cstring
-    header_cache::Ptr{Cvoid}
+    header_cache::NTuple{HEADER_CACHE_SIZE, Ptr{Cvoid}}
     n_cached_headers::Cint
     id::Cint
     serial::Cint
