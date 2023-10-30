@@ -75,7 +75,7 @@ function Image(dtempl::DataTemplate)
     out = ccall((:image_create_for_simulation, libcrystfel),
                 Ptr{Image}, (Ref{InternalDataTemplate},), dtempl.internalptr)
     if out == C_NULL
-        throw(OutOfMemoryError())
+        throw(ArgumentError("Failed to create image"))
     end
 
     image = Image(out)
@@ -107,7 +107,7 @@ function Image(dtempl::DataTemplate,
                                        no_image_data::Cint, no_mask_data::Cint,
                                        C_NULL::Ptr{Cvoid})::Ptr{Image}
     if out == C_NULL
-        throw(OutOfMemoryError())
+        throw(ArgumentError("Failed to load image"))
     end
 
     image = Image(out)
