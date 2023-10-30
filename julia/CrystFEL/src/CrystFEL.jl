@@ -13,6 +13,12 @@ module CrystFEL
 
 libcrystfel = "libcrystfel.so"
 
+include("cell.jl")
+using .UnitCells
+export UnitCell, LatticeType
+export TriclinicLattice, MonoclinicLattice, OrthorhombicLattice
+export TetragonalLattice, HexagonalLattice, RhombohedralLattice, CubicLattice
+
 include("detgeom.jl")
 using .DetGeoms
 export Panel, DetGeom
