@@ -15,9 +15,12 @@ libcrystfel = "libcrystfel.so"
 
 include("cell.jl")
 using .UnitCells
-export UnitCell, LatticeType
+export UnitCell, LatticeType, CenteringType, UniqueAxis
 export TriclinicLattice, MonoclinicLattice, OrthorhombicLattice
 export TetragonalLattice, HexagonalLattice, RhombohedralLattice, CubicLattice
+export PrimitiveCell, ACenteredCell, BCenteredCell, CCenteredCell
+export BodyCenteredCell, FaceCenteredCell, RhombohedralCell, RhombohedralCellOnHexagonalAxes
+export NoUniqueAxis, UnknownUniqueAxis, UniqueAxisA, UniqueAxisB, UniqueAxisC
 
 include("detgeom.jl")
 using .DetGeoms
