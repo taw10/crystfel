@@ -216,6 +216,49 @@ function UnitCell(latticetype, centering, a, b, c, α, β, γ)
 end
 
 
+"""
+    UnitCell(latticetype, centering, a, b, c)
+
+Construct a `UnitCell` for an `OrthorhombicLattice`, `TetragonalLattice` or
+`CubicLattice`.
+"""
+function UnitCell(latticetype::LatticeType, centering::CenteringType, a::Real, b::Real, c::Real)
+    if latticetype in (OrthorhombicLattice, TetragonalLattice, CubicLattice)
+        UnitCell(latticetype, centering, a, b, c, 90, 90, 90)
+    else
+        throw(ArgumentError("More parameters needed for this type of lattice"))
+    end
+end
+
+
+"""
+    UnitCell(CubicLattice, centering, a)
+
+Construct a `UnitCell` for a `CubicLattice`.
+"""
+function UnitCell(latticetype::LatticeType, centering::CenteringType, a::Real)
+    if latticetype == CubicLattice
+        UnitCell(latticetype, centering, a, a, a, 90, 90, 90)
+    else
+        throw(ArgumentError("More parameters needed for this type of lattice"))
+    end
+end
+
+
+"""
+    UnitCell(RhombohedralLattice, a, α)
+
+Construct a `UnitCell` for a `RhombohedralLattice`.
+"""
+function UnitCell(latticetype::LatticeType, a::Real, α::Real)
+    if latticetype == RhombohedralLattice
+        UnitCell(latticetype, RhombohedralCell, a, a, a, α, α, α)
+    else
+        throw(ArgumentError("More parameters needed for this type of lattice"))
+    end
+end
+
+
 function getlatticetype(cell)
     lt = ccall((:cell_get_lattice_type, libcrystfel),
                Cint, (Ptr{InternalUnitCell},), cell.internalptr)
