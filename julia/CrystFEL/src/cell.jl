@@ -88,6 +88,41 @@ calls to `cell_set_centering`, `cell_set_lattice_type` and `cell_set_unique_axis
 """
 function UnitCell(latticetype, centering, uniqueaxis, a, b, c, α, β, γ)
 
+    ninety(a) = isapprox(a, 90, atol=0.1)
+
+    if latticetype == OrthorhombicLattice
+        if !(ninety(α) && ninety(β) && ninety(γ))
+            throw(ArgumentError("All angles must be 90°"))
+        end
+
+    elseif latticetype == TetragonalLattice
+        if !(ninety(α) && ninety(β) && ninety(γ))
+            throw(ArgumentError("All angles must be 90°"))
+        end
+
+    elseif latticetype == CubicLattice
+        if !(ninety(α) && ninety(β) && ninety(γ))
+            throw(ArgumentError("All angles must be 90°"))
+        end
+
+    elseif latticetype == HexagonalLattice
+        if uniqueaxis == UniqueAxisA
+            if !isapprox(b, c, rtol=0.01)
+                throw(ArgumentError("b and c lengths should be equal"))
+            end
+        elseif uniqueaxis == UniqueAxisB
+            if !isapprox(a, c, rtol=0.01)
+                throw(ArgumentError("a and c lengths should be equal"))
+            end
+        elseif uniqueaxis == UniqueAxisC
+            if !isapprox(a, b, rtol=0.01)
+                throw(ArgumentError("a and b lengths should be equal"))
+            end
+        else
+            throw(ArgumentError("Hexagonal cell requires a unique axis"))
+        end
+    end
+
     out = ccall((:cell_new_from_parameters, libcrystfel),
                 Ptr{InternalUnitCell},
                 (Cdouble,Cdouble,Cdouble,Cdouble,Cdouble,Cdouble),
@@ -118,8 +153,67 @@ function UnitCell(latticetype, centering, uniqueaxis, a, b, c, α, β, γ)
     return cell
 end
 
-UnitCell(a, b, c, α, β, γ) = UnitCell(TriclinicLattice, PrimitiveCell, UnknownUniqueAxis,
-                                      a, b, c, α, β, γ)
+
+
+"""
+    UnitCell(latticetype, centering, a, b, c, α, β, γ)
+
+A convenience constructor which attempts to determine the unique axis
+automatically from the cell parameters.  If the unique axis is not obvious,
+an `ArgumentError` will be thrown.
+"""
+function UnitCell(latticetype, centering, a, b, c, α, β, γ)
+
+    notninety(a) = !isapprox(a, 90, atol=0.5)
+    ninety(a) = isapprox(a, 90, atol=0.1)
+    onetwenty(a) = isapprox(a, 120, atol=0.1)
+
+    if latticetype == TriclinicLattice
+        ua = NoUniqueAxis
+    elseif latticetype == OrthorhombicLattice
+        ua = NoUniqueAxis
+    elseif latticetype == RhombohedralLattice
+        ua = NoUniqueAxis
+    elseif latticetype == CubicLattice
+        ua = NoUniqueAxis
+
+    elseif latticetype == MonoclinicLattice
+        if notninety(α) && ninety(β) && ninety(γ)
+            ua = UniqueAxisA
+        elseif ninety(α) && notninety(β) && ninety(γ)
+            ua = UniqueAxisB
+        elseif ninety(α) && ninety(β) && notninety(γ)
+            ua = UniqueAxisC
+        else
+            throw(ArgumentError("Can't determine unique axis"))
+        end
+
+    elseif latticetype == TetragonalLattice
+        if isapprox(b, c, rtol=0.01) && !isapprox(a, b, rtol=0.05)
+            ua = UniqueAxisA
+        elseif isapprox(a, c, rtol=0.01) && !isapprox(a, b, rtol=0.05)
+            ua = UniqueAxisB
+        elseif isapprox(a, b, rtol=0.01) && !isapprox(c, b, rtol=0.05)
+            ua = UniqueAxisC
+        else
+            throw(ArgumentError("Can't determine unique axis"))
+        end
+
+    elseif latticetype == HexagonalLattice
+        if onetwenty(α) && ninety(β) && ninety(γ)
+            ua = UniqueAxisA
+        elseif ninety(α) && onetwenty(β) && ninety(γ)
+            ua = UniqueAxisB
+        elseif ninety(α) && ninety(β) && onetwenty(γ)
+            ua = UniqueAxisC
+        else
+            throw(ArgumentError("Can't determine unique axis"))
+        end
+    end
+
+    UnitCell(latticetype, centering, ua, a, b, c, α, β, γ)
+
+end
 
 
 function getlatticetype(cell)
