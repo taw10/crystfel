@@ -1,8 +1,9 @@
 module RefLists
 
-using ..Symmetry
+import ..CrystFEL: libcrystfel
+import ..CrystFEL.Symmetry: SymOpList, InternalSymOpList
 
-export RefList, Reflection, loadreflist, savereflections
+export RefList, loadreflist
 
 mutable struct InternalRefList end
 
@@ -14,11 +15,11 @@ end
 function loadreflist(filename::AbstractString)
 
     psym = Ptr{InternalSymOpList}()
-    out = ccall((:read_reflections_2, :libcrystfel),
+    out = ccall((:read_reflections_2, libcrystfel),
                 Ptr{InternalRefList}, (Cstring,Ptr{InternalSymOpList}),
                 filename, psym)
     if out == C_NULL
-        throw(OutOfMemoryError())
+        throw(ArgumentError("Failed to load reflection list"))
     end
 
     return RefList(out, SymOpList(psym))

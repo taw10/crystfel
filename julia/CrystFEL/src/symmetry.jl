@@ -1,15 +1,19 @@
 module Symmetry
 
+import ..CrystFEL: libcrystfel
 export SymOpList, InternalSymOpList, InternalIntegerMatrix
+
 
 # Types for pointers returned by libcrystfel
 mutable struct InternalSymOpList end
 mutable struct InternalIntegerMatrix end
 
+
 # Exposed types
 mutable struct SymOpList
     internalptr::Ptr{InternalSymOpList}
 end
+
 
 mutable struct SymOp
     internalptr::Ptr{InternalIntegerMatrix}
@@ -18,7 +22,7 @@ end
 
 function SymOpList(pointgroup::AbstractString)
 
-    out = ccall((:get_pointgroup, :libcrystfel),
+    out = ccall((:get_pointgroup, libcrystfel),
                 Ptr{InternalSymOpList}, (Cstring,), pointgroup)
     if out == C_NULL
         throw(OutOfMemoryError())
@@ -27,7 +31,7 @@ function SymOpList(pointgroup::AbstractString)
     sym = SymOpList(out)
 
     finalizer(sym) do x
-        ccall((:free_symoplist, :libcrystfel),
+        ccall((:free_symoplist, libcrystfel),
               Cvoid, (Ptr{InternalSymOpList},), x.internalptr)
     end
 
@@ -38,11 +42,11 @@ end
 
 function Base.getindex(sym::SymOpList, i::Int)
 
-    if i > length(sym)
+    if (i<1) || (i > length(sym))
         throw(BoundsError())
     end
 
-    out = ccall((:get_symop, :libcrystfel),
+    out = ccall((:get_symop, libcrystfel),
                 Ptr{InternalIntegerMatrix},
                 (Ptr{InternalSymOpList},Ptr{Cvoid},Cint),
                 sym.internalptr,C_NULL,i-1)
@@ -57,14 +61,14 @@ end
 
 
 function Base.length(sym::SymOpList)
-    return ccall((:num_equivs, :libcrystfel),
+    return ccall((:num_equivs, libcrystfel),
                  Cint, (Ptr{InternalSymOpList},Ptr{Cvoid}),
                  sym.internalptr, C_NULL)
 end
 
 
 function hkl_op(op::SymOp)
-    s = ccall((:name_equiv, :libcrystfel),
+    s = ccall((:name_equiv, libcrystfel),
                Cstring,
                (Ptr{InternalIntegerMatrix},),
                op.internalptr)
@@ -73,7 +77,7 @@ end
 
 
 function symmetry_name(sym::SymOpList)
-    s = ccall((:symmetry_name, :libcrystfel),
+    s = ccall((:symmetry_name, libcrystfel),
                Cstring,
                (Ptr{InternalSymOpList},),
                sym.internalptr)
