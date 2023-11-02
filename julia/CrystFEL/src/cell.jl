@@ -74,8 +74,14 @@ end
     UnitCell(latticetype, centering, uniqueaxis, a, b, c, α, β, γ)
 
 Creates a CrystFEL UnitCell, in an undefined orientation, from the given
-parameters.  The angles (α, β, γ) should be in *degrees* - note that this is
-different to the equivalent function in CrystFEL's C API.
+parameters.  The axis lengths (a, b, c) should be in *Ångstroms*, and the
+angles (α, β, γ) should be in *degrees* - note that this is different to the
+equivalent function in CrystFEL's C API.
+
+See the documentation for `LatticeType`, `CenteringType` and `UniqueAxis` for
+possible values.  You can also use the characters `'a'`, `'b'` and `'c'` for
+`uniqueaxis`, or `'P'`, `'A'`, `'B'`, `'C'`, `'I'`, `'F'`, `'R'` and `'H`' for
+`centering.
 
 Corresponds to CrystFEL C API function `cell_new_from_parameters` with follow-up
 calls to `cell_set_centering`, `cell_set_lattice_type` and `cell_set_unique_axis`.
@@ -85,7 +91,7 @@ function UnitCell(latticetype, centering, uniqueaxis, a, b, c, α, β, γ)
     out = ccall((:cell_new_from_parameters, libcrystfel),
                 Ptr{InternalUnitCell},
                 (Cdouble,Cdouble,Cdouble,Cdouble,Cdouble,Cdouble),
-                a, b, c, deg2rad(α), deg2rad(β), deg2rad(γ))
+                a/1e10, b/1e10, c/1e10, deg2rad(α), deg2rad(β), deg2rad(γ))
     if out == C_NULL
         throw(ArgumentError("Failed to create unit cell"))
     end
