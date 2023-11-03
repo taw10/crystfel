@@ -2,6 +2,7 @@ module Symmetry
 
 import ..CrystFEL: libcrystfel
 export SymOpList, InternalSymOpList, InternalIntegerMatrix
+export symmetry_name
 
 
 # Types for pointers returned by libcrystfel
@@ -99,11 +100,16 @@ function Base.iterate(sym::SymOpList, i)
 end
 
 
-function Base.show(io::IO, sym::SymOpList)
-    println(io, length(sym), "-element SymOpList (\"", symmetry_name(sym), "\")")
+function Base.show(io::IO, ::MIME"text/plain", sym::SymOpList)
+    print(io, length(sym), "-element SymOpList (\"", symmetry_name(sym), "\")")
     for op in sym
-        println(io, hkl_op(op))
+        print(io, "\n", hkl_op(op))
     end
+end
+
+
+function Base.show(io::IO, sym::SymOpList)
+    write(io, "SymOpList(\"", symmetry_name(sym), "\")")
 end
 
 
