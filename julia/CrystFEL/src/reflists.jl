@@ -14,15 +14,16 @@ end
 
 function loadreflist(filename::AbstractString)
 
-    psym = Ptr{InternalSymOpList}()
+    psym = Ref{Cstring}()
     out = ccall((:read_reflections_2, libcrystfel),
-                Ptr{InternalRefList}, (Cstring,Ptr{InternalSymOpList}),
+                Ptr{InternalRefList}, (Cstring,Ref{Cstring}),
                 filename, psym)
     if out == C_NULL
         throw(ArgumentError("Failed to load reflection list"))
     end
 
-    return RefList(out, SymOpList(psym))
+    symmetryname = unsafe_string(psym[])
+    return RefList(out, SymOpList(symmetryname))
 
 end
 
