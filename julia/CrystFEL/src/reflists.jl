@@ -94,4 +94,15 @@ function Base.show(io::IO, ::MIME"text/plain", reflist::RefList)
 end
 
 
+function intensity(refl::Reflection)
+    ccall((:get_intensity, libcrystfel),
+          Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+end
+
+function Base.show(io::IO, refl::Reflection)
+    write(io, "Reflection(intensity=")
+    show(io, intensity(refl))
+    write(io, ")")
+end
+
 end  # of module
