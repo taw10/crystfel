@@ -2,7 +2,7 @@ module RefLists
 
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.Symmetry: SymOpList, InternalSymOpList, symmetry_name
-export RefList, loadreflist
+export RefList, loadreflist, reflections
 
 
 # The internal libcrystfel structures, not exposed directly
@@ -22,28 +22,41 @@ mutable struct Reflection
 end
 
 mutable struct RefListIterator
+    reflist::RefList
     lastrefl::Ptr{InternalReflection}
     internalptr::Ptr{InternalRefListIterator}
 end
 
 
-function Base.iterate(a::RefList)
+function reflections(reflist::RefList)
+    iter = RefListIterator(reflist, C_NULL, C_NULL)
+    finalizer(iter) do x
+        @async println("Finalising iterator: ", x)
+    end
+    return iter
+end
 
-    ir = Ref{Ptr{InternalRefListIterator}}()
+
+function Base.iterate(iter::RefListIterator)
+
+    rli = Ref{Ptr{InternalRefListIterator}}(C_NULL)
     refl = ccall((:first_refl, libcrystfel),
                  Ptr{InternalReflection}, (Ptr{InternalRefList},Ref{Ptr{InternalRefListIterator}}),
-                 a.internalptr, ir)
+                 iter.reflist.internalptr, rli)
 
     if refl == C_NULL
         throw(ArgumentError("Failed to find first reflection in list"))
     end
 
-    return Reflection(refl),RefListIterator(refl, ir[])
+    iter.lastrefl = refl
+    iter.internalptr = rli[]
+
+    return Reflection(refl),iter
 
 end
 
 
-function Base.iterate(a::RefList, iter)
+function Base.iterate(iter::RefListIterator, _)
 
     refl = ccall((:next_refl, libcrystfel),
                  Ptr{InternalReflection}, (Ptr{InternalReflection},Ptr{InternalRefListIterator}),
@@ -53,7 +66,9 @@ function Base.iterate(a::RefList, iter)
         return nothing
     end
 
-    return Reflection(refl),RefListIterator(refl, iter.internalptr)
+    iter.lastrefl = refl
+
+    return Reflection(refl),iter
 
 end
 
