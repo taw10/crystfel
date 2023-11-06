@@ -42,6 +42,8 @@
 
 struct slurm_common_opts
 {
+	char *reservation;
+	char *qos;
 	char *partition;
 	char *email_address;
 	char *account;
@@ -333,6 +335,36 @@ static void cancel_task(void *job_priv)
 }
 
 
+static void reservation_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->reservation = safe_strdup(get_text_or_null(entry));
+}
+
+
+static gboolean reservation_focus_sig(GtkEntry *entry, GdkEvent *event,
+                                      gpointer data)
+{
+	reservation_activate_sig(entry, data);
+	return FALSE;
+}
+
+
+static void qos_activate_sig(GtkEntry *entry, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->qos = safe_strdup(get_text_or_null(entry));
+}
+
+
+static gboolean qos_focus_sig(GtkEntry *entry, GdkEvent *event,
+                              gpointer data)
+{
+	qos_activate_sig(entry, data);
+	return FALSE;
+}
+
+
 static void partition_activate_sig(GtkEntry *entry, gpointer data)
 {
 	struct slurm_common_opts *opts = data;
@@ -497,6 +529,40 @@ static void add_common_opts(GtkWidget *vbox,
 	                 G_CALLBACK(timelimit_activate_sig), opts);
 	g_signal_connect(G_OBJECT(entry), "focus-out-event",
 	                 G_CALLBACK(timelimit_focus_sig), opts);
+
+	/* Reservation */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Reservation:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->reservation != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->reservation);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "SLURM reservation");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(reservation_activate_sig), opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(reservation_focus_sig), opts);
+
+	/* QoS */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	label = gtk_label_new("Quality of service:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 0);
+	entry = gtk_entry_new();
+	if ( opts->qos != NULL ) {
+		gtk_entry_set_text(GTK_ENTRY(entry), opts->qos);
+	}
+	gtk_entry_set_placeholder_text(GTK_ENTRY(entry),
+	                               "SLURM QoS");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(entry), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(entry), "activate",
+	                 G_CALLBACK(qos_activate_sig), opts);
+	g_signal_connect(G_OBJECT(entry), "focus-out-event",
+	                 G_CALLBACK(qos_focus_sig), opts);
 }
 
 
@@ -522,6 +588,16 @@ static void write_common_opts(FILE *fh,
 	if ( opts->constraint != NULL ) {
 		fprintf(fh, "%s.slurm.constraint %s\n",
 		        prefix, opts->constraint);
+	}
+
+	if ( opts->reservation != NULL ) {
+		fprintf(fh, "%s.slurm.reservation %s\n",
+		        prefix, opts->reservation);
+	}
+
+	if ( opts->qos != NULL ) {
+		fprintf(fh, "%s.slurm.qos %s\n",
+		        prefix, opts->qos);
 	}
 
 	fprintf(fh, "%s.slurm.time_limit %i\n",
@@ -584,6 +660,14 @@ static struct slurm_job *start_slurm_job(enum gui_job_type type,
 	if ( !empty(opts->account) ) {
 		args[n++] = "--account";
 		args[n++] = opts->account;
+	}
+	if ( !empty(opts->reservation) ) {
+		args[n++] = "--reservation";
+		args[n++] = opts->reservation;
+	}
+	if ( !empty(opts->qos) ) {
+		args[n++] = "--qos";
+		args[n++] = opts->qos;
 	}
 	args[n++] = "--nodes=1";
 	args[n++] = "--mail-type=FAIL";
@@ -845,6 +929,8 @@ static void set_default_common_opts(struct slurm_common_opts *opts)
 	opts->account = NULL;
 	opts->constraint = NULL;
 	opts->time_limit = 60;
+	opts->qos = NULL;
+	opts->reservation = NULL;
 }
 
 
@@ -905,6 +991,14 @@ static void read_indexing_opt(void *opts_priv,
 
 	if ( strcmp(key, "indexing.slurm.constraint") == 0 ) {
 		opts->common.constraint = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.reservation") == 0 ) {
+		opts->common.reservation = strdup(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.qos") == 0 ) {
+		opts->common.qos = strdup(val);
 	}
 
 	if ( strcmp(key, "indexing.slurm.time_limit") == 0 ) {
@@ -1082,6 +1176,14 @@ static void read_merging_opt(void *opts_priv,
 		opts->common.constraint = strdup(val);
 	}
 
+	if ( strcmp(key, "merging.slurm.reservation") == 0 ) {
+		opts->common.reservation = strdup(val);
+	}
+
+	if ( strcmp(key, "merging.slurm.qos") == 0 ) {
+		opts->common.qos = strdup(val);
+	}
+
 	if ( strcmp(key, "merging.slurm.time_limit") == 0 ) {
 		opts->common.time_limit = atoi(val);
 	}
@@ -1134,6 +1236,14 @@ static void read_ambi_opt(void *opts_priv,
 
 	if ( strcmp(key, "ambi.slurm.constraint") == 0 ) {
 		opts->common.constraint = strdup(val);
+	}
+
+	if ( strcmp(key, "ambi.slurm.reservation") == 0 ) {
+		opts->common.reservation = strdup(val);
+	}
+
+	if ( strcmp(key, "ambi.slurm.qos") == 0 ) {
+		opts->common.qos = strdup(val);
 	}
 
 	if ( strcmp(key, "ambi.slurm.time_limit") == 0 ) {
