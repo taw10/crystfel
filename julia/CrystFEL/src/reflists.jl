@@ -31,7 +31,10 @@ end
 function reflections(reflist::RefList)
     iter = RefListIterator(reflist, C_NULL, C_NULL)
     finalizer(iter) do x
-        @async println("Finalising iterator: ", x)
+        if x.internalptr != C_NULL
+            ccall((:free_reflistiterator, libcrystfel),
+                  Cvoid, (Ptr{InternalRefListIterator},), x.internalptr)
+        end
     end
     return iter
 end
@@ -63,6 +66,7 @@ function Base.iterate(iter::RefListIterator, _)
                  iter.lastrefl, iter.internalptr)
 
     if refl == C_NULL
+        iter.internalptr = C_NULL   # libcrystfel already freed it
         return nothing
     end
 
