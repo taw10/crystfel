@@ -98,14 +98,112 @@ function Base.show(io::IO, ::MIME"text/plain", reflist::RefList)
 end
 
 
-function intensity(refl::Reflection)
-    ccall((:get_intensity, libcrystfel),
-          Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+function detectorpos(refl::Reflection)
+    pfs = Ref{Cdouble}(0)
+    pss = Ref{Cdouble}(0)
+    pn = ccall((:get_panel_number, libcrystfel),
+               Cint, (Ptr{InternalReflection},), refl.internalptr)
+    ccall((:get_detector_pos, libcrystfel),
+          Cint, (Ptr{InternalReflection},Ref{Cdouble},Ref{Cdouble}),
+          refl.internalptr, pfs, pss)
+    (fs=pfs[], ss=pss[], panelnumber=pn)
 end
 
+
+function indices(refl::Reflection)
+    h = Ref{Cint}(0)
+    k = Ref{Cint}(0)
+    l = Ref{Cint}(0)
+    ccall((:get_indices, libcrystfel),
+          Cint, (Ptr{InternalReflection},Ref{Cint},Ref{Cint},Ref{Cint}),
+          refl.internalptr, h, k, l)
+    (h[], k[], l[])
+end
+
+
+function symmetricindices(refl::Reflection)
+    h = Ref{Cint}(0)
+    k = Ref{Cint}(0)
+    l = Ref{Cint}(0)
+    ccall((:get_symmetric_indices, libcrystfel),
+          Cint, (Ptr{InternalReflection},Ref{Cint},Ref{Cint},Ref{Cint}),
+          refl.internalptr, h, k, l)
+    (h[], k[], l[])
+end
+
+
+function Base.getproperty(refl::Reflection, name::Symbol)
+    if name === :intensity
+        ccall((:get_intensity, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :sigintensity
+        ccall((:get_esd_intensity, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :partiality
+        ccall((:get_partiality, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :khalf
+        ccall((:get_khalf, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :kpred
+        ccall((:get_kpred, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :excitationerror
+        ccall((:get_exerr, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :lorentzfactor
+        ccall((:get_lorentz, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :phase
+        ccall((:get_phase, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :peak
+        ccall((:get_peak, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :meanbackground
+        ccall((:get_mean_bg, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :temp1
+        ccall((:get_temp1, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :temp2
+        ccall((:get_temp2, libcrystfel),
+              Cdouble, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :nmeasurements
+        ccall((:get_redundancy, libcrystfel),
+              Cint, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :flag
+        ccall((:get_flag, libcrystfel),
+              Cint, (Ptr{InternalReflection},), refl.internalptr)
+    elseif name === :detectorposition
+        detectorpos(refl)
+    elseif name === :indices
+        indices(refl)
+    elseif name === :symmetricindices
+        symmetricindices(refl)
+    else
+        getfield(refl, name)
+    end
+end
+
+
+function Base.propertynames(::Reflection; private=false)
+    names = (:intensity,:sigintensity,:partiality,:khalf,:kpred,:lorentzfactor,
+             :excitationerror,:phase,:peak,:meanbackground,:temp1,:temp2,
+             :nmeasurements,:flag,:detectorposition,:indices,:symmetricindices)
+    if private
+        tuple(names..., :internalptr)
+    else
+        names
+    end
+end
+
+
 function Base.show(io::IO, refl::Reflection)
-    write(io, "Reflection(intensity=")
-    show(io, intensity(refl))
+    write(io, "Reflection(")
+    show(io, refl.indices)
+    write(io, ", intensity=")
+    show(io, refl.intensity)
     write(io, ")")
 end
 
