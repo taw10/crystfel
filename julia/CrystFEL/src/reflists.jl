@@ -78,6 +78,11 @@ function Base.iterate(iter::RefListIterator, _)
 end
 
 
+Base.IteratorEltype(::RefListIterator) = Reflection
+
+Base.isdone(iter::RefListIterator) = ((iter.internalptr == C_NULL) && (iter.lastrefl != C_NULL))
+
+
 function loadreflist(filename::AbstractString)
 
     psym = Ref{Cstring}()
