@@ -13,13 +13,13 @@ mutable struct InternalReflection end
 mutable struct InternalRefListIterator end
 
 # The Julian exposed types
-mutable struct RefList
-    internalptr::Ptr{InternalRefList}
-    symmetry::SymOpList
-end
-
 mutable struct Reflection
     internalptr::Ptr{InternalReflection}
+end
+
+mutable struct RefList <: AbstractArray{Reflection, 3}
+    internalptr::Ptr{InternalRefList}
+    symmetry::SymOpList
 end
 
 mutable struct RefListIterator
@@ -79,8 +79,23 @@ end
 
 
 Base.IteratorEltype(::RefListIterator) = Reflection
-
 Base.isdone(iter::RefListIterator) = ((iter.internalptr == C_NULL) && (iter.lastrefl != C_NULL))
+
+
+IndexStyle(::RefList) = IndexCartesian()
+
+function Base.getindex(reflist::RefList, h, k, l)
+
+    refl = ccall((:find_refl, libcrystfel),
+                 Ptr{InternalReflection}, (Ptr{InternalRefList},Cint,Cint,Cint),
+                 reflist.internalptr, h, k, l)
+
+    if refl == C_NULL
+        return nothing
+    else
+        return Reflection(refl)
+    end
+end
 
 
 function loadreflist(filename::AbstractString)
