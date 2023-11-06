@@ -1,5 +1,6 @@
 module RefLists
 
+using Printf
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.Symmetry: SymOpList, InternalSymOpList, symmetry_name
 export RefList, loadreflist, reflections
@@ -94,7 +95,22 @@ end
 
 
 function Base.show(io::IO, ::MIME"text/plain", reflist::RefList)
-    write(io, "Reflection list in point group ", symmetry_name(reflist.symmetry))
+    println(io, "Reflection list in point group ", symmetry_name(reflist.symmetry))
+    print(io, "   h    k    l  intensity")
+    let n = 0
+        for refl in Iterators.take(reflections(reflist), 11)
+            if n == 10
+                # We have printed 10 already, and are here again.  Truncate...
+                print(io, "\n   ⋮    ⋮    ⋮          ⋮")
+                break
+            end
+            let ind = refl.indices
+                write(io, "\n")
+                @printf(io, "%4i %4i %4i %10.2f", ind[1], ind[2], ind[3], refl.intensity)
+                n += 1
+            end
+        end
+    end
 end
 
 
