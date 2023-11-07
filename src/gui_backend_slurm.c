@@ -613,68 +613,89 @@ static int empty(const char *str)
 }
 
 
+static char *add_bits(char *old, const char *new1, const char *new2)
+{
+	size_t len;
+	char *nn;
+
+	if ( old == NULL ) return NULL;
+
+	len = strlen(new1) + strlen(new2) + strlen(old) + 12;
+	nn = malloc(len);
+	if ( nn == NULL ) {
+		ERROR("Failed to expand string for #SBATCH bits.\n");
+		return NULL;
+	}
+
+	strcpy(nn, old);
+	strcat(nn, "\n#SBATCH ");
+	strcat(nn, new1);
+	strcat(nn, " ");
+	strcat(nn, new2);
+	free(old);
+	return nn;
+}
+
+
+static char *sbatch_bits(struct slurm_common_opts *opts,
+                         const char *jobname,
+                         const char *array_inx,
+                         const char *stdout_filename,
+                         const char *stderr_filename)
+{
+	char time_limit[64];
+	char *str = strdup("");
+
+	if ( !empty(array_inx) ) {
+		str = add_bits(str, "--array", array_inx);
+	}
+	str = add_bits(str, "--job-name", jobname);
+	str = add_bits(str, "--output", stdout_filename);
+	str = add_bits(str, "--error", stderr_filename);
+	snprintf(time_limit, 63, "%i", opts->time_limit);
+	str = add_bits(str, "--time", time_limit);
+	if ( !empty(opts->email_address) ) {
+		str = add_bits(str, "--mail-user", opts->email_address);
+	}
+	if ( !empty(opts->partition) ) {
+		str = add_bits(str, "--partition", opts->partition);
+	}
+	if ( !empty(opts->constraint) ) {
+		str = add_bits(str, "--constraint", opts->constraint);
+	}
+	if ( !empty(opts->account) ) {
+		str = add_bits(str, "--account", opts->account);
+	}
+	if ( !empty(opts->reservation) ) {
+		str = add_bits(str, "--reservation", opts->reservation);
+	}
+	if ( !empty(opts->qos) ) {
+		str = add_bits(str, "--qos", opts->qos);
+	}
+	str = add_bits(str, "--nodes", "1");
+	str = add_bits(str, "--mail-type", "FAIL\n\n");
+
+	return str;
+}
+
+
 static struct slurm_job *start_slurm_job(enum gui_job_type type,
                                          const char *script_filename,
                                          const char *jobname,
-                                         const char *array_inx,
                                          GFile *workdir,
-                                         const char *stdout_filename,
-                                         const char *stderr_filename,
-                                         struct slurm_common_opts *opts)
+                                         const char *stderr_filename)
 {
-	char time_limit[64];
-	const gchar *args[64];
+	const gchar *args[5];
 	GError *error = NULL;
 	GSubprocess *sp;
 	char buf[256];
 	gsize bytes_read;
-	int n = 0;
 
-	snprintf(time_limit, 63, "%i", opts->time_limit);
-
-	args[n++] = "sbatch";
-	if ( !empty(array_inx) ) {
-		args[n++] = "--array";
-		args[n++] = array_inx;
-	}
-	args[n++] = "--job-name";
-	args[n++] = jobname;
-	args[n++] = "--output";
-	args[n++] = stdout_filename;
-	args[n++] = "--error";
-	args[n++] = stderr_filename;
-	args[n++] = "--time";
-	args[n++] = time_limit;
-	if ( !empty(opts->email_address) ) {
-		args[n++] = "--mail-user";
-		args[n++] = opts->email_address;
-	}
-	if ( !empty(opts->partition) ) {
-		args[n++] = "--partition";
-		args[n++] = opts->partition;
-	}
-	if ( !empty(opts->constraint) ) {
-		args[n++] = "--constraint";
-		args[n++] = opts->constraint;
-	}
-	if ( !empty(opts->account) ) {
-		args[n++] = "--account";
-		args[n++] = opts->account;
-	}
-	if ( !empty(opts->reservation) ) {
-		args[n++] = "--reservation";
-		args[n++] = opts->reservation;
-	}
-	if ( !empty(opts->qos) ) {
-		args[n++] = "--qos";
-		args[n++] = opts->qos;
-	}
-	args[n++] = "--nodes=1";
-	args[n++] = "--mail-type=FAIL";
-	args[n++] = "--comment";
-	args[n++] = "Submitted via CrystFEL GUI";
-	args[n++] = script_filename;
-	args[n++] = NULL;
+	args[0] = "sbatch";
+	args[1] = "--comment";
+	args[2] = "Submitted via CrystFEL GUI";
+	args[3] = script_filename;
+	args[4] = NULL;
 
 	sp = g_subprocess_newv(args, G_SUBPROCESS_FLAGS_STDOUT_PIPE
 	                           | G_SUBPROCESS_FLAGS_STDERR_MERGE, &error);
@@ -776,6 +797,7 @@ static void *run_indexing(const char *job_title,
 	gchar *files_rel_filename;
 	gchar *stream_rel_filename;
 	gchar *harvest_rel_filename;
+	char *slurm_prologue;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -821,6 +843,9 @@ static void *run_indexing(const char *job_title,
 	stderr_rel_filename = relative_to_cwd(workdir, "stderr-%a.log");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 
+	slurm_prologue = sbatch_bits(&opts->common, job_title, array_inx,
+	                             stdout_rel_filename, stderr_rel_filename);
+
 	if ( !write_indexamajig_script(sc_rel_filename,
 	                               proj->geom_filename,
 	                               "`nproc`",
@@ -832,19 +857,19 @@ static void *run_indexing(const char *job_title,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params,
 	                               wavelength_estimate,
-	                               clen_estimate) )
+	                               clen_estimate,
+	                               slurm_prologue) )
 	{
+		/* The stderr filename isn't used by indexing_progress() in the
+		 * Slurm backend - it knows where to find the files. */
 		job = start_slurm_job(GUI_JOB_INDEXING,
 		                      sc_rel_filename,
-		                      job_title,
-		                      array_inx,
-		                      workdir,
-		                      stdout_rel_filename,
-		                      stderr_rel_filename,
-		                      &opts->common);
+		                      job_title, workdir, "notused");
 	} else {
 		job = NULL;
 	}
+
+	free(slurm_prologue);
 
 	if ( job != NULL ) {
 		job->n_frames = proj->n_frames;
@@ -1023,6 +1048,7 @@ static void *run_ambi(const char *job_title,
 	char *fg_rel_filename;
 	char *intermediate_rel_filename;
 	char *harvest_rel_filename;
+	char *slurm_prologue;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -1035,21 +1061,26 @@ static void *run_ambi(const char *job_title,
 	intermediate_rel_filename = relative_to_cwd(workdir, "ambigator-input.stream");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 
+	slurm_prologue = sbatch_bits(&opts->common, job_title, NULL,
+	                             stdout_rel_filename, stderr_rel_filename);
+
 	if ( !write_ambigator_script(sc_rel_filename, input, "`nproc`",
 	                             &proj->ambi_params, stream_rel_filename,
 	                             stdout_rel_filename, stderr_rel_filename,
 	                             fg_rel_filename,
 	                             intermediate_rel_filename,
-	                             harvest_rel_filename) )
+	                             harvest_rel_filename,
+	                             slurm_prologue) )
 	{
 		job = start_slurm_job(GUI_JOB_AMBIGATOR,
-		                      sc_rel_filename, job_title, NULL, workdir,
-		                      stdout_rel_filename, stderr_rel_filename,
-		                      &opts->common);
+		                      sc_rel_filename, job_title, NULL,
+		                      stderr_rel_filename);
 		job->niter = proj->ambi_params.niter;
 	} else {
 		job = NULL;
 	}
+
+	free(slurm_prologue);
 	g_free(sc_rel_filename);
 	g_free(stdout_rel_filename);
 	g_free(stderr_rel_filename);
@@ -1079,6 +1110,7 @@ static void *run_merging(const char *job_title,
 	char *stderr_rel_filename;
 	char *harvest_rel_filename;
 	char *log_folder_rel;
+	char *slurm_prologue;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -1090,11 +1122,15 @@ static void *run_merging(const char *job_title,
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 	log_folder_rel = relative_to_cwd(workdir, "pr-logs");
 
+	slurm_prologue = sbatch_bits(&opts->common, job_title, NULL,
+	                             stdout_rel_filename, stderr_rel_filename);
+
 	if ( !write_merge_script(sc_rel_filename, input, "`nproc`",
 	                         &proj->merging_params, output_rel_filename,
 	                         stdout_rel_filename, stderr_rel_filename,
 	                         harvest_rel_filename,
-	                         log_folder_rel) )
+	                         log_folder_rel,
+	                         slurm_prologue) )
 	{
 		enum gui_job_type type;
 		if ( strcmp(proj->merging_params.model, "process_hkl") == 0 ) {
@@ -1107,12 +1143,12 @@ static void *run_merging(const char *job_title,
 			type = GUI_JOB_PARTIALATOR;
 		}
 		job = start_slurm_job(type, sc_rel_filename, job_title, NULL,
-		                      workdir, stdout_rel_filename,
-		                      stderr_rel_filename,
-		                      &opts->common);
+		                      stderr_rel_filename);
 	} else {
 		job = NULL;
 	}
+
+	free(slurm_prologue);
 
 	if ( job != NULL ) {
 

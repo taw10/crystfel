@@ -409,7 +409,7 @@ static void *run_ambi(const char *job_title,
 	                             stdout_rel_filename, stderr_rel_filename,
 	                             fg_rel_filename,
 	                             intermediate_rel_filename,
-	                             harvest_rel_filename) )
+	                             harvest_rel_filename, "") )
 	{
 		char *args[3];
 		args[0] = "sh";
@@ -472,7 +472,7 @@ static void *run_merging(const char *job_title,
 	                         &proj->merging_params, output_rel_filename,
 	                         stdout_rel_filename, stderr_rel_filename,
 	                         harvest_rel_filename,
-	                         log_folder_rel) )
+	                         log_folder_rel, "") )
 	{
 		char *args[3];
 		enum gui_job_type type;
@@ -568,7 +568,7 @@ static void *run_indexing(const char *job_title,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params,
 	                               wavelength_estimate,
-	                               clen_estimate) )
+	                               clen_estimate, "") )
 	{
 		char *args[3];
 		args[0] = "sh";

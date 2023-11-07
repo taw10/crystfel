@@ -483,7 +483,8 @@ int write_ambigator_script(const char *filename,
                            const char *stderr_filename,
                            const char *fg_filename,
                            const char *intermediate_rel_filename,
-                           const char *harvest_filename)
+                           const char *harvest_filename,
+                           const char *prologue)
 {
 	FILE *fh;
 	int i;
@@ -492,6 +493,7 @@ int write_ambigator_script(const char *filename,
 	if ( fh == NULL ) return 1;
 
 	fprintf(fh, "#!/bin/sh\n");
+	fprintf(fh, "%s", prologue);
 
 	fprintf(fh, "cat \\\n");
 	for ( i=0; i<input->n_streams; i++ ) {

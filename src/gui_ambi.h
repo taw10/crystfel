@@ -45,7 +45,8 @@ extern int write_ambigator_script(const char *filename,
                                   const char *stderr_filename,
                                   const char *fg_filename,
                                   const char *intermediate_rel_filename,
-                                  const char *harvest_filename);
+                                  const char *harvest_filename,
+                                  const char *prologue);
 
 extern double read_ambigator_progress(char *logfile_str, int niter);
 

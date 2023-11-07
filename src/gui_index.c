@@ -1083,7 +1083,8 @@ int write_indexamajig_script(const char *script_filename,
                              struct peak_params *peak_search_params,
                              struct index_params *indexing_params,
                              double wavelength_estimate,
-                             double clen_estimate)
+                             double clen_estimate,
+                             const char *prologue)
 {
 	FILE *fh;
 	int i;
@@ -1105,6 +1106,7 @@ int write_indexamajig_script(const char *script_filename,
 	if ( fh == NULL ) return 1;
 
 	fprintf(fh, "#!/bin/sh\n");
+	fprintf(fh, "%s", prologue);
 
 	i = 0;
 	while ( cmdline[i] != NULL ) {

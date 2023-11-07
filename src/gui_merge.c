@@ -355,7 +355,8 @@ static int write_partialator_script(const char *filename,
                                     const char *stdout_filename,
                                     const char *stderr_filename,
                                     const char *harvest_filename,
-                                    const char *log_folder)
+                                    const char *log_folder,
+                                    const char *prologue)
 {
 	FILE *fh;
 	int i;
@@ -364,6 +365,7 @@ static int write_partialator_script(const char *filename,
 	if ( fh == NULL ) return 1;
 
 	fprintf(fh, "#!/bin/sh\n");
+	fprintf(fh, "%s", prologue);
 
 	fprintf(fh, "partialator \\\n");
 
@@ -461,7 +463,8 @@ static int write_process_hkl_script(const char *filename,
                                     struct merging_params *params,
                                     const char *out_hkl,
                                     const char *stdout_filename,
-                                    const char *stderr_filename)
+                                    const char *stderr_filename,
+                                    const char *prologue)
 {
 	FILE *fh;
 
@@ -469,6 +472,7 @@ static int write_process_hkl_script(const char *filename,
 	if ( fh == NULL ) return 1;
 
 	fprintf(fh, "#!/bin/sh\n");
+	fprintf(fh, "%s", prologue);
 
 	add_process_hkl(fh, input, params, out_hkl,
 	                stdout_filename, stderr_filename, "", "");
@@ -490,20 +494,23 @@ int write_merge_script(const char *filename,
                        const char *stdout_filename,
                        const char *stderr_filename,
                        const char *harvest_filename,
-                       const char *log_folder)
+                       const char *log_folder,
+                       const char *prologue)
 {
 	if ( strcmp(params->model, "process_hkl") == 0 ) {
 		return write_process_hkl_script(filename, input,
 		                                params, out_hkl,
 		                                stdout_filename,
-		                                stderr_filename);
+		                                stderr_filename,
+		                                prologue);
 	} else {
 		return write_partialator_script(filename, input, n_thread_str,
 		                                params, out_hkl,
 		                                stdout_filename,
 		                                stderr_filename,
 		                                harvest_filename,
-		                                log_folder);
+		                                log_folder,
+		                                prologue);
 	}
 }
 
