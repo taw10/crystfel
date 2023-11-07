@@ -3,7 +3,7 @@ module RefLists
 using Printf
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.Symmetry: SymOpList, InternalSymOpList, symmetry_name
-export RefList, loadreflist, reflections
+export RefList, loadreflist
 
 
 # The internal libcrystfel structures, not exposed directly
@@ -23,44 +23,34 @@ mutable struct RefList <: AbstractArray{Reflection, 3}
 end
 
 mutable struct RefListIterator
-    reflist::RefList
     lastrefl::Ptr{InternalReflection}
     internalptr::Ptr{InternalRefListIterator}
 end
 
 
-function reflections(reflist::RefList)
-    iter = RefListIterator(reflist, C_NULL, C_NULL)
-    finalizer(iter) do x
-        if x.internalptr != C_NULL
-            ccall((:free_reflistiterator, libcrystfel),
-                  Cvoid, (Ptr{InternalRefListIterator},), x.internalptr)
-        end
-    end
-    return iter
-end
-
-
-function Base.iterate(iter::RefListIterator)
+function Base.iterate(reflist::RefList)
 
     rli = Ref{Ptr{InternalRefListIterator}}(C_NULL)
     refl = ccall((:first_refl, libcrystfel),
                  Ptr{InternalReflection}, (Ptr{InternalRefList},Ref{Ptr{InternalRefListIterator}}),
-                 iter.reflist.internalptr, rli)
+                 reflist.internalptr, rli)
 
     if refl == C_NULL
         throw(ArgumentError("Failed to find first reflection in list"))
     end
 
-    iter.lastrefl = refl
-    iter.internalptr = rli[]
+    iter = RefListIterator(refl,rli[])
+    finalizer(iter) do x
+        ccall((:free_reflistiterator, libcrystfel),
+              Cvoid, (Ptr{InternalRefListIterator},), x.internalptr)
+    end
 
     return Reflection(refl),iter
 
 end
 
 
-function Base.iterate(iter::RefListIterator, _)
+function Base.iterate(::RefList, iter)
 
     refl = ccall((:next_refl, libcrystfel),
                  Ptr{InternalReflection}, (Ptr{InternalReflection},Ptr{InternalRefListIterator}),
@@ -118,7 +108,7 @@ function Base.show(io::IO, ::MIME"text/plain", reflist::RefList)
     println(io, "Reflection list in point group ", symmetry_name(reflist.symmetry))
     print(io, "   h    k    l  intensity")
     let n = 0
-        for refl in Iterators.take(reflections(reflist), 11)
+        for refl in Iterators.take(reflist, 11)
             if n == 10
                 # We have printed 10 already, and are here again.  Truncate...
                 print(io, "\n   ⋮    ⋮    ⋮          ⋮")
