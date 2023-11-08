@@ -125,7 +125,6 @@ int main(int argc, char *argv[])
 	cr = crystal_new();
 	crystal_set_profile_radius(cr, 0.001e9);
 	crystal_set_mosaicity(cr, 0.0);  /* radians */
-	crystal_set_image(cr, &image);
 	crystal_set_cell(cr, cell);
 
 	image.n_crystals = 1;

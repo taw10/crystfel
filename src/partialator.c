@@ -259,7 +259,7 @@ static char *insert_into_filename(const char *fn, const char *add)
 
 /* Write custom split results (including a two-way split) */
 static void write_custom_split(struct custom_split *csplit, int dsn,
-                               Crystal **crystals, int n_crystals,
+                               Crystal **crystals, struct image **images, int n_crystals,
                                PartialityModel pmodel, int min_measurements,
                                double push_res, SymOpList *sym, int nthreads,
                                const char *outfile)
@@ -277,8 +277,8 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 		char *id;
 		int dsn_crystal;
 
-		fn = crystal_get_image(crystals[i])->filename;
-		evs = crystal_get_image(crystals[i])->ev;
+		fn = images[i]->filename;
+		evs = images[i]->ev;
 		if ( evs == NULL ) evs = "//";
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
@@ -362,7 +362,7 @@ static void show_help(const char *s)
 }
 
 
-static signed int find_first_crystal(Crystal **crystals, int n_crystals,
+static signed int find_first_crystal(Crystal **crystals, struct image **images, int n_crystals,
                                      struct custom_split *csplit, int dsn)
 {
 	int i;
@@ -373,8 +373,8 @@ static signed int find_first_crystal(Crystal **crystals, int n_crystals,
 		char *id;
 		int dsn_crystal;
 
-		fn = crystal_get_image(crystals[i])->filename;
-		evs = crystal_get_image(crystals[i])->ev;
+		fn = images[i]->filename;
+		evs = images[i]->ev;
 		if ( evs == NULL ) evs = "//";
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
@@ -394,7 +394,7 @@ static signed int find_first_crystal(Crystal **crystals, int n_crystals,
 }
 
 
-static void check_csplit(Crystal **crystals, int n_crystals,
+static void check_csplit(Crystal **crystals, struct image **images, int n_crystals,
                          struct custom_split *csplit)
 {
 	int i;
@@ -412,8 +412,8 @@ static void check_csplit(Crystal **crystals, int n_crystals,
 		char *id;
 		int dsn_crystal;
 
-		fn = crystal_get_image(crystals[i])->filename;
-		evs = crystal_get_image(crystals[i])->ev;
+		fn = images[i]->filename;
+		evs = images[i]->ev;
 		if ( evs == NULL ) evs = "//";
 
 		id = malloc(strlen(evs)+strlen(fn)+2);
@@ -437,7 +437,7 @@ static void check_csplit(Crystal **crystals, int n_crystals,
 	for ( i=0; i<csplit->n_datasets; i++ ) {
 
 		/* Try to find a crystal with dsn = i */
-		if ( find_first_crystal(crystals, n_crystals, csplit, i) != -1 )
+		if ( find_first_crystal(crystals, images, n_crystals, csplit, i) != -1 )
 		{
 			n_cry++;
 		} else {
@@ -621,11 +621,10 @@ static void skip_to_end(FILE *fh)
 }
 
 
-static int set_initial_params(Crystal *cr, FILE *fh, double force_bandwidth,
-                              double force_radius, double force_lambda)
+static int set_initial_params(Crystal *cr, struct image *image, FILE *fh,
+                              double force_bandwidth, double force_radius,
+                              double force_lambda)
 {
-	struct image *image = crystal_get_image(cr);
-
 	if ( fh != NULL ) {
 
 		int err;
@@ -1085,6 +1084,7 @@ int main(int argc, char *argv[])
 	int no_Bscale = 0;
 	int no_pr = 0;
 	Crystal **crystals;
+	struct image **images;
 	char *pmodel_str = NULL;
 	PartialityModel pmodel = PMODEL_XSPHERE;
 	int min_measurements = 2;
@@ -1526,6 +1526,7 @@ int main(int argc, char *argv[])
 	n_crystals = 0;
 	n_crystals_seen = 0;
 	crystals = NULL;
+	images = NULL;
 	if ( sparams_fn != NULL ) {
 		char line[1024];
 		sparams_fh = fopen(sparams_fn, "r");
@@ -1575,6 +1576,7 @@ int main(int argc, char *argv[])
 
 				Crystal *cr;
 				Crystal **crystals_new;
+				struct image **images_new;
 				RefList *cr_refl;
 				RefList *cr_refl_raw;
 				struct image *image_for_crystal;
@@ -1606,6 +1608,14 @@ int main(int argc, char *argv[])
 				crystals[n_crystals] = crystal_copy_deep(image->crystals[i]);
 				cr = crystals[n_crystals];
 
+				images_new = realloc(images,
+				                     (n_crystals+1)*sizeof(struct image *));
+				if ( images_new == NULL ) {
+					ERROR("Failed to allocate memory for image list\n");
+					return 1;
+				}
+				images = images_new;
+
 				/* Create a completely new, separate image
 				 * structure for this crystal. */
 				image_for_crystal = image_new();
@@ -1615,6 +1625,7 @@ int main(int argc, char *argv[])
 				}
 
 				*image_for_crystal = *image;
+				images[n_crystals] = image_for_crystal;
 				image_for_crystal->n_crystals = 1;
 				image_for_crystal->crystals = malloc(sizeof(Crystal *));
 				image_for_crystal->crystals[0] = cr;
@@ -1641,7 +1652,8 @@ int main(int argc, char *argv[])
 				crystal_set_user_flag(cr, PRFLAG_OK);
 				reflist_free(cr_refl);
 
-				if ( set_initial_params(cr, sparams_fh, force_bandwidth,
+				if ( set_initial_params(cr, image_for_crystal,
+				                        sparams_fh, force_bandwidth,
 				                        force_radius, force_lambda) )
 				{
 					ERROR("Failed to set initial parameters\n");
@@ -1681,16 +1693,16 @@ int main(int argc, char *argv[])
 	for ( icryst=0; icryst<n_crystals; icryst++ ) {
 
 		Crystal *cr = crystals[icryst];
-		update_predictions(cr);
+		update_predictions(cr, images[icryst]);
 
 		/* Polarisation correction requires kpred values */
 		polarisation_correction(crystal_get_reflections(cr),
 		                        crystal_get_cell(cr), polarisation);
 
-		calculate_partialities(cr, pmodel);
+		calculate_partialities(cr, images[icryst], pmodel);
 	}
 
-	if (csplit != NULL) check_csplit(crystals, n_crystals, csplit);
+	if (csplit != NULL) check_csplit(crystals, images, n_crystals, csplit);
 
 	/* Make a first pass at cutting out crap */
 	//STATUS("Early rejection...\n");
@@ -1770,7 +1782,7 @@ int main(int argc, char *argv[])
 				int j;
 				for ( j=0; j<csplit->n_datasets; j++ ) {
 					write_custom_split(csplit, j, crystals,
-					                   n_crystals, pmodel,
+					                   images, n_crystals, pmodel,
 					                   min_measurements,
 							   push_res, sym,
 					                   nthreads, tmp);
@@ -1826,7 +1838,7 @@ int main(int argc, char *argv[])
 	if ( csplit != NULL ) {
 		int i;
 		for ( i=0; i<csplit->n_datasets; i++ ) {
-			write_custom_split(csplit, i, crystals, n_crystals,
+			write_custom_split(csplit, i, crystals, images, n_crystals,
 			                   pmodel, min_measurements, push_res,
 			                   sym, nthreads, outfile);
 		}
