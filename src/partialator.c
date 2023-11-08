@@ -1614,7 +1614,6 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 
-				crystal_set_image(cr, image_for_crystal);
 				*image_for_crystal = *image;
 				image_for_crystal->n_crystals = 1;
 				image_for_crystal->crystals = malloc(sizeof(Crystal *));
@@ -1835,10 +1834,6 @@ int main(int argc, char *argv[])
 
 	/* Clean up */
 	gsl_rng_free(rng);
-	for ( icryst=0; icryst<n_crystals; icryst++ ) {
-		struct image *image = crystal_get_image(crystals[icryst]);
-		image_free(image);
-	}
 	free_contribs(full);
 	reflist_free(full);
 	free_symoplist(sym);

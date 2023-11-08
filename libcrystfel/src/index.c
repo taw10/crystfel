@@ -701,7 +701,6 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		/* ... starting at the end of the (complete) list ... */
 		Crystal *cr = image->crystals[this_crystal];
 
-		crystal_set_image(cr, image);
 		crystal_set_profile_radius(cr, 0.02e9);
 		crystal_set_mosaicity(cr, 0.0);
 
