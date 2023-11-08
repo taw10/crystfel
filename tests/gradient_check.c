@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	update_predictions(image.crystals[0]);
+	update_predictions(image.crystals[0], &image);
 	after = make_dev_list(rps, n_refls, image.detgeom);
 
 	for ( i=0; i<n_refls; i++ ) {
