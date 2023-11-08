@@ -68,11 +68,12 @@ function Base.iterate(::RefList, iter)
 end
 
 
+Base.IndexStyle(::RefList) = IndexLinear()
 Base.IteratorEltype(::RefListIterator) = Reflection
 Base.isdone(iter::RefListIterator) = ((iter.internalptr == C_NULL) && (iter.lastrefl != C_NULL))
+Base.size(reflist::RefList) = ccall((:num_reflections, libcrystfel),
+                                    Cint, (Ptr{InternalRefList},), reflist.internalptr)
 
-
-IndexStyle(::RefList) = IndexCartesian()
 
 function Base.getindex(reflist::RefList, h, k, l)
 
