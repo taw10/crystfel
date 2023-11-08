@@ -40,6 +40,7 @@ export Image
 
 include("reflists.jl")
 using .RefLists
-export RefList, Reflection, loadreflist, reflections
+export RefList, loadreflist
+export Reflection, MergedReflection, UnmergedReflection
 
 end  # of module
