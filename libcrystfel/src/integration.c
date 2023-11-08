@@ -1665,7 +1665,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 		res = estimate_resolution(image->crystals[i], image);
 		crystal_set_resolution_limit(image->crystals[i], res);
 
-		list = predict_to_res(image->crystals[i], res+push_res);
+		list = predict_to_res(image->crystals[i], image, res+push_res);
 		crystal_set_reflections(image->crystals[i], list);
 
 		if ( overpredict ) {

@@ -425,14 +425,15 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 /**
  * \param cryst: A \ref Crystal
+ * \param image: An image structure
  * \param max_res: Maximum resolution to predict to (m^-1)
  *
- * Calculates reflection positions for \p crys, up to maximum 1/d value
- * \p max_res
+ * Calculates reflection positions for \p crys, as seen in \p image,
+ * up to maximum 1/d value \p max_res
  *
  * \returns A list of predicted reflections
  */
-RefList *predict_to_res(Crystal *cryst, double max_res)
+RefList *predict_to_res(Crystal *cryst, struct image *image, double max_res)
 {
 	double ax, ay, az;
 	double bx, by, bz;
@@ -445,7 +446,6 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 	double mres;
 	signed int h, k, l;
 	UnitCell *cell;
-	struct image *image;
 
 	cell = crystal_get_cell(cryst);
 	if ( cell == NULL ) return NULL;
@@ -462,7 +462,6 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 
 	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	image = crystal_get_image(cryst);
 	mres = detgeom_max_resolution(image->detgeom, image->lambda);
 	if ( mres > max_res ) mres = max_res;
 
@@ -498,7 +497,7 @@ RefList *predict_to_res(Crystal *cryst, double max_res)
 		yl = h*asy + k*bsy + l*csy;
 		zl = h*asz + k*bsz + l*csz;
 
-		refl = check_reflection(crystal_get_image(cryst), cryst,
+		refl = check_reflection(image, cryst,
 		                        h, k, l, xl, yl, zl, NULL);
 
 		if ( refl != NULL ) {
@@ -534,22 +533,15 @@ static void set_unity_partialities(Crystal *cryst)
 }
 
 
-static void set_random_partialities(Crystal *cryst)
+static void set_random_partialities(Crystal *cryst, int image_serial)
 {
 	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
-	struct image *image;
 
 	list = crystal_get_reflections(cryst);
 	if ( list == NULL ) {
 		ERROR("No reflections for partiality calculation!\n");
-		return;
-	}
-
-	image = crystal_get_image(cryst);
-	if ( image == NULL ) {
-		ERROR("No image structure for partiality calculation!\n");
 		return;
 	}
 
@@ -559,7 +551,7 @@ static void set_random_partialities(Crystal *cryst)
 	{
 		signed int h, k, l;
 		get_symmetric_indices(refl, &h, &k, &l);
-		set_partiality(refl, random_partiality(h, k, l, image->serial));
+		set_partiality(refl, random_partiality(h, k, l, image_serial));
 		set_lorentz(refl, 1.0);
 	}
 }
@@ -682,25 +674,18 @@ static double do_integral(double q2, double zl, double R,
 }
 
 
-static void ginn_spectrum_partialities(Crystal *cryst)
+static void ginn_spectrum_partialities(Crystal *cryst, struct image *image)
 {
 	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 	double r0, m;
-	struct image *image;
 	UnitCell *cell;
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 
 	list = crystal_get_reflections(cryst);
 	if ( list == NULL ) {
 		ERROR("No reflections for partiality calculation!\n");
-		return;
-	}
-
-	image = crystal_get_image(cryst);
-	if ( image == NULL ) {
-		ERROR("No image for partiality calculation!\n");
 		return;
 	}
 
@@ -753,25 +738,18 @@ static void ginn_spectrum_partialities(Crystal *cryst)
 }
 
 
-static void ewald_offset_partialities(Crystal *cryst)
+static void ewald_offset_partialities(Crystal *cryst, struct image *image)
 {
 	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 	double r0, m;
-	struct image *image;
 	UnitCell *cell;
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 
 	list = crystal_get_reflections(cryst);
 	if ( list == NULL ) {
 		ERROR("No reflections for partiality calculation!\n");
-		return;
-	}
-
-	image = crystal_get_image(cryst);
-	if ( image == NULL ) {
-		ERROR("No image for partiality calculation!\n");
 		return;
 	}
 
@@ -826,7 +804,8 @@ static void ewald_offset_partialities(Crystal *cryst)
  * called \ref predict_to_res or \ref update_predictions, because this function
  * relies on the limiting wavelength values calculated by those functions.
  */
-void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
+void calculate_partialities(Crystal *cryst, struct image *image,
+                            PartialityModel pmodel)
 {
 	switch ( pmodel ) {
 
@@ -835,15 +814,15 @@ void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
 		break;
 
 		case PMODEL_XSPHERE :
-		ginn_spectrum_partialities(cryst);
+		ginn_spectrum_partialities(cryst, image);
 		break;
 
 		case PMODEL_OFFSET :
-		ewald_offset_partialities(cryst);
+		ewald_offset_partialities(cryst, image);
 		break;
 
 		case PMODEL_RANDOM :
-		set_random_partialities(cryst);
+		set_random_partialities(cryst, image->serial);
 		break;
 
 		case PMODEL_GGPM :
@@ -861,22 +840,23 @@ void calculate_partialities(Crystal *cryst, PartialityModel pmodel)
 
 /**
  * \param cryst A \ref Crystal
+ * \param image An image structure
  *
  * Updates the predicted reflections (positions and excitation errors, but not
- * the actual partialities) of \p cryst's reflections according to
- * the current state of the crystal (e.g. its unit cell parameters).
+ * the actual partialities) of \p cryst's reflections as seen in \p image,
+ * according to the current state of the crystal (e.g. its unit cell
+ * parameters).
  *
  * If you need to update the partialities as well, call
  * \ref calculate_partialities afterwards.
  */
-void update_predictions(Crystal *cryst)
+void update_predictions(Crystal *cryst, struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
-	struct image *image = crystal_get_image(cryst);
 
 	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);

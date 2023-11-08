@@ -41,9 +41,6 @@
 
 struct _crystal
 {
-	/* The image containing the crystal */
-	struct image            *image;
-
 	/* Information about the crystal */
 	UnitCell                *cell;
 	double                  m;     /* Mosaicity in radians */
@@ -222,18 +219,6 @@ long long int crystal_get_num_implausible_reflections(Crystal *cryst)
 }
 
 
-struct image *crystal_get_image(Crystal *cryst)
-{
-	return cryst->image;
-}
-
-
-const struct image *crystal_get_image_const(const Crystal *cryst)
-{
-	return cryst->image;
-}
-
-
 double crystal_get_osf(Crystal *cryst)
 {
 	return cryst->osf;
@@ -308,12 +293,6 @@ void crystal_set_num_saturated_reflections(Crystal *cryst, long long int n)
 void crystal_set_num_implausible_reflections(Crystal *cryst, long long int n)
 {
 	cryst->n_implausible = n;
-}
-
-
-void crystal_set_image(Crystal *cryst, struct image *image)
-{
-	cryst->image = image;
 }
 
 
