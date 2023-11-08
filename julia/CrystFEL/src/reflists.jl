@@ -4,6 +4,7 @@ using Printf
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.Symmetry: SymOpList, InternalSymOpList, symmetry_name
 export RefList, loadreflist
+export Reflection, UnmergedReflection, MergedReflection
 
 
 # The internal libcrystfel structures, not exposed directly
@@ -13,11 +14,9 @@ mutable struct InternalReflection end
 mutable struct InternalRefListIterator end
 
 # The Julian exposed types
-mutable struct Reflection
-    internalptr::Ptr{InternalReflection}
-end
+abstract type Reflection end
 
-mutable struct RefList <: AbstractArray{Reflection, 3}
+mutable struct RefList{T<:Reflection} <: AbstractArray{T, 3}
     internalptr::Ptr{InternalRefList}
     symmetry::SymOpList
 end
@@ -27,8 +26,16 @@ mutable struct RefListIterator
     internalptr::Ptr{InternalRefListIterator}
 end
 
+mutable struct MergedReflection <: Reflection
+    internalptr::Ptr{InternalReflection}
+end
 
-function Base.iterate(reflist::RefList)
+mutable struct UnmergedReflection <: Reflection
+    internalptr::Ptr{InternalReflection}
+end
+
+
+function Base.iterate(reflist::RefList{T}) where T
 
     rli = Ref{Ptr{InternalRefListIterator}}(C_NULL)
     refl = ccall((:first_refl, libcrystfel),
@@ -45,12 +52,12 @@ function Base.iterate(reflist::RefList)
               Cvoid, (Ptr{InternalRefListIterator},), x.internalptr)
     end
 
-    return Reflection(refl),iter
+    return T(refl),iter
 
 end
 
 
-function Base.iterate(::RefList, iter)
+function Base.iterate(::RefList{T}, iter) where T
 
     refl = ccall((:next_refl, libcrystfel),
                  Ptr{InternalReflection}, (Ptr{InternalReflection},Ptr{InternalRefListIterator}),
@@ -63,19 +70,19 @@ function Base.iterate(::RefList, iter)
 
     iter.lastrefl = refl
 
-    return Reflection(refl),iter
+    return T(refl),iter
 
 end
 
 
 Base.IndexStyle(::RefList) = IndexLinear()
-Base.IteratorEltype(::RefListIterator) = Reflection
+Base.IteratorEltype(::RefList{T}) where T = T
 Base.isdone(iter::RefListIterator) = ((iter.internalptr == C_NULL) && (iter.lastrefl != C_NULL))
 Base.size(reflist::RefList) = ccall((:num_reflections, libcrystfel),
                                     Cint, (Ptr{InternalRefList},), reflist.internalptr)
 
 
-function Base.getindex(reflist::RefList, h, k, l)
+function Base.getindex(reflist::RefList{T}, h, k, l) where T
 
     refl = ccall((:find_refl, libcrystfel),
                  Ptr{InternalReflection}, (Ptr{InternalRefList},Cint,Cint,Cint),
@@ -84,7 +91,7 @@ function Base.getindex(reflist::RefList, h, k, l)
     if refl == C_NULL
         return nothing
     else
-        return Reflection(refl)
+        return T(refl)
     end
 end
 
@@ -100,13 +107,33 @@ function loadreflist(filename::AbstractString)
     end
 
     symmetryname = unsafe_string(psym[])
-    return RefList(out, SymOpList(symmetryname))
+    return RefList{MergedReflection}(out, SymOpList(symmetryname))
 
 end
 
 
-function Base.show(io::IO, ::MIME"text/plain", reflist::RefList)
-    println(io, "Reflection list in point group ", symmetry_name(reflist.symmetry))
+function Base.show(io::IO, ::MIME"text/plain", reflist::RefList{MergedReflection})
+    println(io, "Merged reflection list in point group ", symmetry_name(reflist.symmetry))
+    print(io, "   h    k    l  intensity")
+    let n = 0
+        for refl in Iterators.take(reflist, 11)
+            if n == 10
+                # We have printed 10 already, and are here again.  Truncate...
+                print(io, "\n   ⋮    ⋮    ⋮          ⋮")
+                break
+            end
+            let ind = refl.indices
+                write(io, "\n")
+                @printf(io, "%4i %4i %4i %10.2f", ind[1], ind[2], ind[3], refl.intensity)
+                n += 1
+            end
+        end
+    end
+end
+
+
+function Base.show(io::IO, ::MIME"text/plain", reflist::RefList{UnmergedReflection})
+    println(io, "Unmerged reflection list in point group ", symmetry_name(reflist.symmetry))
     print(io, "   h    k    l  intensity")
     let n = 0
         for refl in Iterators.take(reflist, 11)
@@ -214,7 +241,7 @@ function Base.getproperty(refl::Reflection, name::Symbol)
 end
 
 
-function Base.propertynames(::Reflection; private=false)
+function Base.propertynames(::UnmergedReflection; private=false)
     names = (:intensity,:sigintensity,:partiality,:khalf,:kpred,:lorentzfactor,
              :excitationerror,:phase,:peak,:meanbackground,:temp1,:temp2,
              :nmeasurements,:flag,:detectorposition,:indices,:symmetricindices)
@@ -226,11 +253,26 @@ function Base.propertynames(::Reflection; private=false)
 end
 
 
-function Base.show(io::IO, refl::Reflection)
-    write(io, "Reflection(")
+function Base.propertynames(::MergedReflection; private=false)
+    names = (:intensity,:sigintensity,:phase,:temp1,:temp2,
+             :nmeasurements,:flag,:indices,:symmetricindices)
+    if private
+        tuple(names..., :internalptr)
+    else
+        names
+    end
+end
+
+
+function Base.show(io::IO, refl::MergedReflection)
+    write(io, "MergedReflection(")
     show(io, refl.indices)
     write(io, ", intensity=")
     show(io, refl.intensity)
+    write(io, ", σ(intensity)=")
+    show(io, refl.sigintensity)
+    write(io, ", nmeasurements=")
+    show(io, refl.nmeasurements)
     write(io, ")")
 end
 
