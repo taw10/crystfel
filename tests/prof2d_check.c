@@ -130,8 +130,8 @@ int main(int argc, char *argv[])
 	image.n_crystals = 1;
 	image.crystals = &cr;
 
-	list = predict_to_res(cr, detgeom_max_resolution(image.detgeom,
-	                                                 image.lambda));
+	list = predict_to_res(cr, &image, detgeom_max_resolution(image.detgeom,
+	                                                         image.lambda));
 	crystal_set_reflections(cr, list);
 
 	for ( fs=0; fs<w; fs++ ) {

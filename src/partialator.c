@@ -896,6 +896,7 @@ struct log_qargs
 	int iter;
 	int next;
 	Crystal **crystals;
+	struct image **images;
 	int n_crystals;
 	RefList *full;
 	int scaleflags;
@@ -908,6 +909,7 @@ struct log_qargs
 struct log_args
 {
 	Crystal *cr;
+	struct image *image;
 	RefList *full;
 	int scaleflags;
 	PartialityModel pmodel;
@@ -928,6 +930,7 @@ static void *get_log_task(void *vp)
 	if ( task == NULL ) return NULL;
 
 	task->cr = qargs->crystals[qargs->next];
+	task->image = qargs->images[qargs->next];
 	task->full = qargs->full;
 	task->iter = qargs->iter;
 	task->cnum = qargs->next;
@@ -943,11 +946,11 @@ static void *get_log_task(void *vp)
 static void write_logs(void *vp, int cookie)
 {
 	struct log_args *args = vp;
-	write_specgraph(args->cr, args->full, args->iter, args->cnum,
+	write_specgraph(args->cr, args->image, args->full, args->iter, args->cnum,
 	                args->log_folder);
-	write_gridscan(args->cr, args->full, args->iter, args->cnum,
+	write_gridscan(args->cr, args->image, args->full, args->iter, args->cnum,
 	               args->scaleflags, args->pmodel, args->log_folder);
-	write_test_logs(args->cr, args->full, args->iter, args->cnum,
+	write_test_logs(args->cr, args->image, args->full, args->iter, args->cnum,
 	                args->log_folder);
 }
 
@@ -962,7 +965,8 @@ static void done_log(void *vqargs, void *vp)
 }
 
 
-static void write_logs_parallel(Crystal **crystals, int n_crystals,
+static void write_logs_parallel(Crystal **crystals, struct image **images,
+                                int n_crystals,
                                 RefList *full, int iter, int n_threads,
                                 int scaleflags, PartialityModel pmodel,
                                 const char *log_folder)
@@ -973,6 +977,7 @@ static void write_logs_parallel(Crystal **crystals, int n_crystals,
 	qargs.next = 0;
 	qargs.full = full;
 	qargs.crystals = crystals;
+	qargs.images = images;
 	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.scaleflags = scaleflags;
@@ -1727,7 +1732,7 @@ int main(int argc, char *argv[])
 
 	if ( do_write_logs ) {
 		write_pgraph(full, crystals, n_crystals, 0, "", log_folder);
-		write_logs_parallel(crystals, n_crystals, full, 0, nthreads,
+		write_logs_parallel(crystals, images, n_crystals, full, 0, nthreads,
 		                    scaleflags, pmodel, log_folder);
 	}
 
@@ -1737,7 +1742,7 @@ int main(int argc, char *argv[])
 		STATUS("Scaling and refinement cycle %i of %i\n", itn+1, n_iter);
 
 		if ( !no_pr ) {
-			refine_all(crystals, n_crystals, full, nthreads, pmodel,
+			refine_all(crystals, images, n_crystals, full, nthreads, pmodel,
 			           itn+1, no_logs, sym, amb, scaleflags,
 			           log_folder);
 		}
@@ -1816,7 +1821,7 @@ int main(int argc, char *argv[])
 	show_all_residuals(crystals, n_crystals, full, no_free);
 	if ( do_write_logs ) {
 		write_pgraph(full, crystals, n_crystals, -1, "", log_folder);
-		write_logs_parallel(crystals, n_crystals, full, -1, nthreads,
+		write_logs_parallel(crystals, images, n_crystals, full, -1, nthreads,
 		                    scaleflags, pmodel, log_folder);
 	}
 
