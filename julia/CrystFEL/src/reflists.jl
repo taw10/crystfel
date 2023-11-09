@@ -134,17 +134,20 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", reflist::RefList{UnmergedReflection})
     println(io, "Unmerged reflection list in point group ", symmetry_name(reflist.symmetry))
-    print(io, "   h    k    l  intensity")
+    print(io, "   h    k    l  intensity  σ(intens)      fs      ss  panel")
     let n = 0
         for refl in Iterators.take(reflist, 11)
             if n == 10
                 # We have printed 10 already, and are here again.  Truncate...
-                print(io, "\n   ⋮    ⋮    ⋮          ⋮")
+                print(io, "\n   ⋮    ⋮    ⋮          ⋮          ⋮       ⋮       ⋮      ⋮")
                 break
             end
-            let ind = refl.indices
+            let ind = refl.indices,
+                pos = refl.detectorposition
                 write(io, "\n")
-                @printf(io, "%4i %4i %4i %10.2f", ind[1], ind[2], ind[3], refl.intensity)
+                @printf(io, "%4i %4i %4i %10.2f %10.2f %7.2f %7.2f %6i",
+                        ind[1], ind[2], ind[3], refl.intensity, refl.sigintensity,
+                        pos.fs, pos.ss, pos.panelnumber)
                 n += 1
             end
         end
@@ -275,5 +278,19 @@ function Base.show(io::IO, refl::MergedReflection)
     show(io, refl.nmeasurements)
     write(io, ")")
 end
+
+
+function Base.show(io::IO, refl::UnmergedReflection)
+    write(io, "UnmergedReflection(")
+    show(io, refl.indices)
+    write(io, " at ");
+    show(io, refl.detectorposition)
+    write(io, ", intensity=")
+    show(io, refl.intensity)
+    write(io, ", σ(intensity)=")
+    show(io, refl.sigintensity)
+    write(io, ")")
+end
+
 
 end  # of module
