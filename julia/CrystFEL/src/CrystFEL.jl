@@ -43,4 +43,12 @@ using .RefLists
 export RefList, loadreflist
 export Reflection, MergedReflection, UnmergedReflection
 
+include("crystal.jl")
+using .Crystals
+export Crystal, InternalCrystal
+
+include("diffcalc.jl")
+using .DiffractionCalculations
+export predictreflections
+
 end  # of module
