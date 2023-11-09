@@ -56,13 +56,14 @@ struct rf_alteration
 
 struct rf_priv
 {
-	Crystal *cr;      /**< Original crystal (before any refinement) */
+	Crystal *cr;         /**< Original crystal (before any refinement) */
+	struct image *image; /**< Original image (before any refinement) */
 	const RefList *full;
 	int serial;
 	int scaleflags;
 	PartialityModel pmodel;
 
-	Crystal *cr_tgt;        /**< Crystal to use for testing modifications */
+	Crystal *cr_tgt;         /**< Crystal to use for testing modifications */
 	struct image image_tgt; /**< Image structure to go with cr_tgt */
 };
 
@@ -151,32 +152,30 @@ static void rotate_cell_xy(UnitCell *source, UnitCell *tgt,
 
 
 static void apply_parameters(Crystal *cr_orig, Crystal *cr_tgt,
+                             struct image *im_orig, struct image *im_tgt,
                              struct rf_alteration alter)
 {
-	double R, lambda;
+	double R;
 	struct gaussian g;
-	struct image *image;
 
-	image = crystal_get_image(cr_tgt);
 	R = crystal_get_profile_radius(cr_orig);
-	lambda = crystal_get_image_const(cr_orig)->lambda;
 
 	rotate_cell_xy(crystal_get_cell(cr_orig), crystal_get_cell(cr_tgt),
 	               alter.rot_x, alter.rot_y);
 	crystal_set_profile_radius(cr_tgt, R+alter.delta_R);
-	image->lambda = lambda+alter.delta_wave;
+	im_tgt->lambda = im_orig->lambda+alter.delta_wave;
 
-	g.kcen = 1.0/image->lambda;
-	g.sigma = image->bw/image->lambda;
+	g.kcen = 1.0/im_tgt->lambda;
+	g.sigma = im_tgt->bw/im_tgt->lambda;
 	g.area = 1;
-	spectrum_set_gaussians(image->spectrum, &g, 1);
+	spectrum_set_gaussians(im_tgt->spectrum, &g, 1);
 }
 
 
 static double calc_residual(struct rf_priv *pv, struct rf_alteration alter,
                             int free)
 {
-	apply_parameters(pv->cr, pv->cr_tgt, alter);
+	apply_parameters(pv->cr, pv->cr_tgt, pv->image, &pv->image_tgt, alter);
 
 	if ( fabs(crystal_get_profile_radius(pv->cr_tgt)) > 5e9 ) {
 		STATUS("radius > 5e9\n");
@@ -189,13 +188,13 @@ static double calc_residual(struct rf_priv *pv, struct rf_alteration alter,
 		return NAN;
 	}
 
-	if ( crystal_get_image(pv->cr_tgt)->lambda <= 0.0 ) {
+	if ( pv->image_tgt.lambda <= 0.0 ) {
 		STATUS("lambda < 0\n");
 		return NAN;
 	}
 
-	update_predictions(pv->cr_tgt);
-	calculate_partialities(pv->cr_tgt, pv->pmodel);
+	update_predictions(pv->cr_tgt, &pv->image_tgt);
+	calculate_partialities(pv->cr_tgt, &pv->image_tgt, pv->pmodel);
 
 
 	return residual(pv->cr_tgt, pv->full, free, NULL, NULL);
@@ -264,7 +263,7 @@ static void reindex_cell(UnitCell *cell, SymOpList *amb, int idx)
 }
 
 
-static void try_reindex(Crystal *crin, const RefList *full,
+static void try_reindex(Crystal *crin, struct image *image, const RefList *full,
                         SymOpList *sym, SymOpList *amb, int scaleflags,
                         PartialityModel pmodel)
 {
@@ -296,8 +295,8 @@ static void try_reindex(Crystal *crin, const RefList *full,
 		                           amb, sym, idx);
 		crystal_set_reflections(cr, list);
 
-		update_predictions(cr);
-		calculate_partialities(cr, pmodel);
+		update_predictions(cr, image);
+		calculate_partialities(cr, image, pmodel);
 
 		if ( scale_one_crystal(cr, full, scaleflags) ) return;
 		residual_flipped = residual(cr, full, 0, NULL, NULL);
@@ -316,12 +315,11 @@ static void try_reindex(Crystal *crin, const RefList *full,
 }
 
 
-void write_test_logs(Crystal *crystal, const RefList *full,
+void write_test_logs(Crystal *crystal, struct image *image, const RefList *full,
                      signed int cycle, int serial,
                      const char *log_folder)
 {
 	FILE *fh;
-	struct image *image = crystal_get_image(crystal);
 	char tmp[256];
 	char ins[16];
 
@@ -367,7 +365,7 @@ void write_test_logs(Crystal *crystal, const RefList *full,
 }
 
 
-void write_specgraph(Crystal *crystal, const RefList *full,
+void write_specgraph(Crystal *crystal, struct image *image, const RefList *full,
                      signed int cycle, int serial,
                      const char *log_folder)
 {
@@ -378,7 +376,6 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 	double G = crystal_get_osf(crystal);
 	double B = crystal_get_Bfac(crystal);
 	UnitCell *cell;
-	struct image *image = crystal_get_image(crystal);
 	char ins[16];
 
 	snprintf(tmp, 256, "%s/specgraph-crystal%i.dat", log_folder, serial);
@@ -443,7 +440,7 @@ void write_specgraph(Crystal *crystal, const RefList *full,
 }
 
 
-static void write_angle_grid(Crystal *cr, const RefList *full,
+static void write_angle_grid(Crystal *cr, struct image *image, const RefList *full,
                              signed int cycle, int serial, int scaleflags,
                              PartialityModel pmodel,
                              const char *log_folder)
@@ -462,10 +459,9 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 	priv.scaleflags = scaleflags;
 	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
-	priv.image_tgt = *crystal_get_image(cr);
+	priv.image_tgt = *image;
 	spectrum = spectrum_new();
 	priv.image_tgt.spectrum = spectrum;
-	crystal_set_image(priv.cr_tgt, &priv.image_tgt);
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(priv.cr_tgt, list);
 	cell = cell_new_from_cell(crystal_get_cell(cr));
@@ -510,7 +506,7 @@ static void write_angle_grid(Crystal *cr, const RefList *full,
 }
 
 
-static void write_radius_grid(Crystal *cr, const RefList *full,
+static void write_radius_grid(Crystal *cr, struct image *image, const RefList *full,
                               signed int cycle, int serial, int scaleflags,
                               PartialityModel pmodel,
                               const char *log_folder)
@@ -529,10 +525,9 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 	priv.scaleflags = scaleflags;
 	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
-	priv.image_tgt = *crystal_get_image(cr);
+	priv.image_tgt = *image;
 	spectrum = spectrum_new();
 	priv.image_tgt.spectrum = spectrum;
-	crystal_set_image(priv.cr_tgt, &priv.image_tgt);
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(priv.cr_tgt, list);
 	cell = cell_new_from_cell(crystal_get_cell(cr));
@@ -577,13 +572,13 @@ static void write_radius_grid(Crystal *cr, const RefList *full,
 }
 
 
-void write_gridscan(Crystal *cr, const RefList *full,
+void write_gridscan(Crystal *cr, struct image *image, const RefList *full,
                     signed int cycle, int serial, int scaleflags,
                     PartialityModel pmodel,
                     const char *log_folder)
 {
-	write_angle_grid(cr, full, cycle, serial, scaleflags, pmodel, log_folder);
-	write_radius_grid(cr, full, cycle, serial, scaleflags, pmodel, log_folder);
+	write_angle_grid(cr, image, full, cycle, serial, scaleflags, pmodel, log_folder);
+	write_radius_grid(cr, image, full, cycle, serial, scaleflags, pmodel, log_folder);
 }
 
 
@@ -631,7 +626,7 @@ static int refine_loop(struct rf_alteration *cur, struct rf_alteration *dirns,
 			        *total_iter, lowest_fom, freefom,
 			        cur->rot_x, cur->rot_y,
 			        crystal_get_profile_radius(priv->cr)+cur->delta_R,
-			        crystal_get_image_const(priv->cr)->lambda+cur->delta_wave);
+			        priv->image->lambda+cur->delta_wave);
 		}
 
 	} while ( (best != 0) && (n_iter < 10) );
@@ -649,7 +644,7 @@ static void zero_alter(struct rf_alteration *alter)
 }
 
 
-static void do_pr_refine(Crystal *cr, const RefList *full,
+static void do_pr_refine(Crystal *cr, struct image *image, const RefList *full,
                          PartialityModel pmodel, int serial,
                          int cycle, int write_logs,
                          SymOpList *sym, SymOpList *amb, int scaleflags,
@@ -664,7 +659,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	UnitCell *cell;
 	Spectrum *spectrum;
 
-	try_reindex(cr, full, sym, amb, scaleflags, pmodel);
+	try_reindex(cr, image, full, sym, amb, scaleflags, pmodel);
 
 	zero_alter(&alter);
 
@@ -674,10 +669,9 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	priv.scaleflags = scaleflags;
 	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
-	priv.image_tgt = *crystal_get_image(cr);
+	priv.image_tgt = *image;
 	spectrum = spectrum_new();
 	priv.image_tgt.spectrum = spectrum;
-	crystal_set_image(priv.cr_tgt, &priv.image_tgt);
 	list = copy_reflist(crystal_get_reflections(cr));
 	crystal_set_reflections(priv.cr_tgt, list);
 	cell = cell_new_from_cell(crystal_get_cell(cr));
@@ -700,7 +694,7 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 			        n_iter, fom, freefom,
 			        alter.rot_x, alter.rot_y,
 			        crystal_get_profile_radius(cr)+alter.delta_R,
-			        crystal_get_image(cr)->lambda+alter.delta_wave);
+			        image->lambda+alter.delta_wave);
 		}
 
 	}
@@ -724,15 +718,15 @@ static void do_pr_refine(Crystal *cr, const RefList *full,
 	refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
 
 	/* Apply the final shifts */
-	apply_parameters(cr, cr, alter);
-	update_predictions(cr);
-	calculate_partialities(cr, pmodel);
+	apply_parameters(cr, cr, image, image, alter);
+	update_predictions(cr, image);
+	calculate_partialities(cr, image, pmodel);
 
 	if ( write_logs ) {
-		write_gridscan(cr, full, cycle, serial, scaleflags,
+		write_gridscan(cr, image, full, cycle, serial, scaleflags,
 		               pmodel, log_folder);
-		write_specgraph(cr, full, cycle, serial, log_folder);
-		write_test_logs(cr, full, cycle, serial, log_folder);
+		write_specgraph(cr, image, full, cycle, serial, log_folder);
+		write_test_logs(cr, image, full, cycle, serial, log_folder);
 	}
 
 	if ( crystal_get_profile_radius(cr) > 5e9 ) {
@@ -753,6 +747,7 @@ struct refine_args
 {
 	RefList *full;
 	Crystal *crystal;
+	struct image *image;
 	PartialityModel pmodel;
 	int serial;
 	int cycle;
@@ -769,6 +764,7 @@ struct pr_queue_args
 	int n_started;
 	int n_done;
 	Crystal **crystals;
+	struct image **images;
 	int n_crystals;
 	struct refine_args task_defaults;
 };
@@ -777,12 +773,11 @@ struct pr_queue_args
 static void refine_image(void *task, int id)
 {
 	struct refine_args *pargs = task;
-	Crystal *cr = pargs->crystal;
 	int write_logs = 0;
 
 	write_logs = !pargs->no_logs && (pargs->serial % 20 == 0);
 
-	do_pr_refine(cr, pargs->full, pargs->pmodel,
+	do_pr_refine(pargs->crystal, pargs->image, pargs->full, pargs->pmodel,
 	             pargs->serial, pargs->cycle, write_logs,
 	             pargs->sym, pargs->amb, pargs->scaleflags,
 	             pargs->log_folder);
@@ -798,6 +793,7 @@ static void *get_image(void *vqargs)
 	memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
 
 	task->crystal = qargs->crystals[qargs->n_started];
+	task->image = qargs->images[qargs->n_started];
 	task->serial = qargs->n_started;
 
 	qargs->n_started++;
@@ -817,7 +813,7 @@ static void done_image(void *vqargs, void *task)
 }
 
 
-void refine_all(Crystal **crystals, int n_crystals,
+void refine_all(Crystal **crystals, struct image **images, int n_crystals,
                 RefList *full, int nthreads, PartialityModel pmodel,
                 int cycle, int no_logs,
                 SymOpList *sym, SymOpList *amb, int scaleflags,
@@ -828,6 +824,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 
 	task_defaults.full = full;
 	task_defaults.crystal = NULL;
+	task_defaults.image = NULL;
 	task_defaults.pmodel = pmodel;
 	task_defaults.cycle = cycle;
 	task_defaults.no_logs = no_logs;
@@ -842,6 +839,7 @@ void refine_all(Crystal **crystals, int n_crystals,
 	qargs.n_done = 0;
 	qargs.n_crystals = n_crystals;
 	qargs.crystals = crystals;
+	qargs.images = images;
 
 	/* Don't have threads which are doing nothing */
 	if ( n_crystals < nthreads ) nthreads = n_crystals;
