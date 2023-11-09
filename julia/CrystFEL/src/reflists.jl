@@ -114,17 +114,18 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", reflist::RefList{MergedReflection})
     println(io, "Merged reflection list in point group ", symmetry_name(reflist.symmetry))
-    print(io, "   h    k    l  intensity")
+    print(io, "   h    k    l  intensity  σ(intens) nmeas")
     let n = 0
         for refl in Iterators.take(reflist, 11)
             if n == 10
                 # We have printed 10 already, and are here again.  Truncate...
-                print(io, "\n   ⋮    ⋮    ⋮          ⋮")
+                print(io, "\n   ⋮    ⋮    ⋮          ⋮          ⋮     ⋮")
                 break
             end
             let ind = refl.indices
                 write(io, "\n")
-                @printf(io, "%4i %4i %4i %10.2f", ind[1], ind[2], ind[3], refl.intensity)
+                @printf(io, "%4i %4i %4i %10.2f %10.2f %5i", ind[1], ind[2], ind[3],
+                        refl.intensity, refl.sigintensity, refl.nmeasurements)
                 n += 1
             end
         end
