@@ -153,8 +153,7 @@ struct _imagefeaturelist
 
 
 void image_add_feature(ImageFeatureList *flist, double fs, double ss,
-                       int pn,
-                       struct image *parent, double intensity, const char *name)
+                       int pn, double intensity, const char *name)
 {
 	if ( flist->n_features == flist->max_features ) {
 		struct imagefeature *nf;

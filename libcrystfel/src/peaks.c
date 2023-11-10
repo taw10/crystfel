@@ -401,7 +401,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 
 		/* Add using "better" coordinates */
 		image_add_feature(image->features, f_fs, f_ss, pn,
-		                  image, intensity, NULL);
+		                  intensity, NULL);
 		nacc++;
 
 		if ( nacc > 10000 ) {
@@ -547,7 +547,7 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 			image_add_feature(image->features,
 			                  peakList.centerOfMass_rawX[peak_number],
 			                  peakList.centerOfMass_rawY[peak_number],
-			                  panel_number, image,
+			                  panel_number,
 			                  peakList.totalIntensity[peak_number],
 			                  NULL);
 		}
@@ -723,8 +723,7 @@ void validate_peaks(struct image *image, double min_snr,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(flist, f->fs, f->ss, f->pn, image,
-		                  intensity, NULL);
+		image_add_feature(flist, f->fs, f->ss, f->pn, intensity, NULL);
 
 	}
 

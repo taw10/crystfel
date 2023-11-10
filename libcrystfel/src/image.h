@@ -201,9 +201,7 @@ extern ImageFeatureList *image_feature_list_new(void);
 extern void image_feature_list_free(ImageFeatureList *flist);
 
 extern void image_add_feature(ImageFeatureList *flist, double x, double y,
-                              int pn,
-                              struct image *parent, double intensity,
-                              const char *name);
+                              int pn, double intensity, const char *name);
 
 extern void image_remove_feature(ImageFeatureList *flist, int idx);
 
