@@ -1410,8 +1410,7 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 			ERROR("Failed to convert %i,%i to "
 			      "panel-relative coordinates\n", fs, ss);
 		} else {
-			image_add_feature(features, fs, ss, pn,
-			                  NULL, val, NULL);
+			image_add_feature(features, fs, ss, pn, val, NULL);
 		}
 
 	}
@@ -1537,8 +1536,7 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 			ERROR("Failed to convert %i,%i to "
 			      "panel-relative coordinates\n", fs, ss);
 		} else {
-			image_add_feature(features, fs, ss, pn,
-			                  NULL, val, NULL);
+			image_add_feature(features, fs, ss, pn, val, NULL);
 		}
 
 	}

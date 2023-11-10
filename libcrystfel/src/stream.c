@@ -148,8 +148,7 @@ static ImageFeatureList *read_peaks(Stream *st, struct image *image)
 				ERROR("Failed to convert peak coords\n");
 			} else {
 				image_add_feature(features, x, y,
-				                  pn, image, intensity,
-				                  NULL);
+				                  pn, intensity, NULL);
 			}
 
 		}

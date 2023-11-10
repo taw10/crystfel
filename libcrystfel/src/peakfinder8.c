@@ -1457,8 +1457,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 			image_add_feature(img->features,
 			                  pkdata->com_fs[pki]+0.5,
 			                  pkdata->com_ss[pki]+0.5,
-			                  pi, img, pkdata->tot_i[pki],
-			                  NULL);
+			                  pi, pkdata->tot_i[pki], NULL);
 		}
 	}
 	profile_end("pf8-search");

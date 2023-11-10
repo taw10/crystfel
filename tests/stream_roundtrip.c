@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	image->features = image_feature_list_new();
 	for ( i=0; i<N_PEAKS; i++ ) {
 		image_add_feature(image->features, peak_fs[i], peak_ss[i],
-		                  peak_pn[i], image, peak_i[i], NULL);
+		                  peak_pn[i], peak_i[i], NULL);
 	}
 
 	st = stream_open_for_write("stream_roundtrip.stream", dtempl);

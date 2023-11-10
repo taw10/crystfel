@@ -220,8 +220,7 @@ ImageFeatureList *image_msgpack_read_peaks(const DataTemplate *dtempl,
 			ERROR("Failed to convert %i,%i to "
 			      "panel-relative coordinates\n", fs, ss);
 		} else {
-			image_add_feature(features, fs, ss, pn,
-			                  NULL, val, NULL);
+			image_add_feature(features, fs, ss, pn, val, NULL);
 		}
 	}
 
