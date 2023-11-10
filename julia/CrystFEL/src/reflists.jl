@@ -16,7 +16,7 @@ mutable struct InternalRefListIterator end
 # The Julian exposed types
 abstract type Reflection end
 
-mutable struct RefList{T<:Reflection} <: AbstractArray{T, 3}
+mutable struct RefList{T<:Reflection}
     internalptr::Ptr{InternalRefList}
     symmetry::SymOpList
 end
@@ -75,11 +75,10 @@ function Base.iterate(::RefList{T}, iter) where T
 end
 
 
-Base.IndexStyle(::RefList) = IndexLinear()
 Base.IteratorEltype(::RefList{T}) where T = T
 Base.isdone(iter::RefListIterator) = ((iter.internalptr == C_NULL) && (iter.lastrefl != C_NULL))
-Base.size(reflist::RefList) = ccall((:num_reflections, libcrystfel),
-                                    Cint, (Ptr{InternalRefList},), reflist.internalptr)
+Base.length(reflist::RefList) = ccall((:num_reflections, libcrystfel),
+                                      Cint, (Ptr{InternalRefList},), reflist.internalptr)
 
 
 function Base.getindex(reflist::RefList{T}, h, k, l) where T
