@@ -34,6 +34,10 @@ include("datatemplates.jl")
 using .DataTemplates
 export DataTemplate, loaddatatemplate
 
+include("peaklist.jl")
+using .PeakLists
+export PeakList
+
 include("image.jl")
 using .Images
 export Image

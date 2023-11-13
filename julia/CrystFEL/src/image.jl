@@ -3,6 +3,7 @@ module Images
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.DetGeoms: DetGeom
+import ..CrystFEL.PeakLists: PeakList, InternalPeakList
 export Image
 
 const HEADER_CACHE_SIZE = 128
@@ -32,7 +33,7 @@ mutable struct InternalImage
     div::Cdouble
     bw::Cdouble
     peak_resolution::Cdouble
-    features::Ptr{Cvoid}
+    peaks::Ptr{InternalPeakList}
     ida::Ptr{Cvoid}
 end
 
