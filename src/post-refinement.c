@@ -459,6 +459,7 @@ static void write_angle_grid(Crystal *cr, struct image *image, const RefList *fu
 	priv.scaleflags = scaleflags;
 	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
+	priv.image = image;
 	priv.image_tgt = *image;
 	spectrum = spectrum_new();
 	priv.image_tgt.spectrum = spectrum;
@@ -525,6 +526,7 @@ static void write_radius_grid(Crystal *cr, struct image *image, const RefList *f
 	priv.scaleflags = scaleflags;
 	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
+	priv.image = image;
 	priv.image_tgt = *image;
 	spectrum = spectrum_new();
 	priv.image_tgt.spectrum = spectrum;
@@ -669,6 +671,7 @@ static void do_pr_refine(Crystal *cr, struct image *image, const RefList *full,
 	priv.scaleflags = scaleflags;
 	priv.pmodel = pmodel;
 	priv.cr_tgt = crystal_copy(cr);
+	priv.image = image;
 	priv.image_tgt = *image;
 	spectrum = spectrum_new();
 	priv.image_tgt.spectrum = spectrum;
