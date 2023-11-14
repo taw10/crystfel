@@ -33,7 +33,7 @@ mutable struct InternalImage
     div::Cdouble
     bw::Cdouble
     peak_resolution::Cdouble
-    peaks::Ptr{InternalPeakList}
+    peaklist::Ptr{InternalPeakList}
     ida::Ptr{Cvoid}
 end
 
@@ -48,7 +48,17 @@ function Base.getproperty(image::Image, name::Symbol)
         getfield(image, :internalptr)
     else
         idata = unsafe_load(image.internalptr)
-        getproperty(idata, name)
+        if name === :peaklist
+            let pl = getproperty(idata, :peaklist)
+                if pl == C_NULL
+                    throw(ErrorException("Image doesn't have a peak list"))
+                else
+                    PeakList(pl)
+                end
+            end
+        else
+            getproperty(idata, name)
+        end
     end
 end
 
