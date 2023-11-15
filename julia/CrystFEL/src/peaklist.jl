@@ -1,5 +1,6 @@
 module PeakLists
 
+using Printf
 import ..CrystFEL: libcrystfel
 export PeakList, InternalPeakList
 
@@ -78,5 +79,23 @@ function Base.iterate(peaklist::PeakList, state)
     end
 end
 
+
+function Base.show(io::IO, ::MIME"text/plain", peaklist::PeakList)
+    println(io, "Peak list with ", length(peaklist), " peaks")
+    print(io, "     fs      ss  panel  intensity  name")
+    let n = 0
+        for pk in Iterators.take(peaklist, 11)
+            if n == 10
+                # We have printed 10 already, and are here again.  Truncate...
+                print(io, "\n      ⋮       ⋮      ⋮          ⋮  ⋮")
+                break
+            end
+            write(io, "\n")
+            @printf(io, "%7.2f %7.2f %6i %10.2f  %s",
+                    pk.fs, pk.ss, pk.panelnumber, pk.intensity, pk.name)
+            n += 1
+        end
+    end
+end
 
 end   # of module
