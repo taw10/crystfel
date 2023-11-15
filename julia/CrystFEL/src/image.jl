@@ -63,6 +63,23 @@ function Base.getproperty(image::Image, name::Symbol)
 end
 
 
+function Base.setproperty!(image::Image, name::Symbol, val)
+    if name === :internalptr
+        setfield!(image, :internalptr, val)
+    else
+        idata = unsafe_load(image.internalptr)
+        if name === :peaklist
+            if val isa PeakList
+                setproperty!(idata, name, val.internalptr)
+                unsafe_store!(image.internalptr, idata)
+            else
+                throw(ArgumentError("Must be a PeakList"))
+            end
+        end
+    end
+end
+
+
 function Base.propertynames(image::Image; private=false)
     if private
         fieldnames(InternalImage)
