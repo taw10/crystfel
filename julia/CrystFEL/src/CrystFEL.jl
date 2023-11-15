@@ -55,4 +55,8 @@ include("diffcalc.jl")
 using .DiffractionCalculations
 export predictreflections
 
+include("indexing.jl")
+using .Indexing
+export Indexer
+
 end  # of module
