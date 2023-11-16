@@ -13,7 +13,7 @@ mutable struct Crystal
 end
 
 
-function Crystal(cell::UnitCell)
+function Crystal(cell::UnitCell; profileradius=2e6, mosaicity=0)
 
     out = ccall((:crystal_new, libcrystfel),
                 Ptr{InternalCrystal}, ())
@@ -25,6 +25,14 @@ function Crystal(cell::UnitCell)
     ccall((:crystal_set_cell, libcrystfel),
           Cvoid, (Ptr{InternalCrystal},Ptr{InternalUnitCell}),
           out, cell.internalptr)
+
+    ccall((:crystal_set_profile_radius, libcrystfel),
+          Cvoid, (Ptr{InternalCrystal},Cdouble),
+          out, profileradius)
+
+    ccall((:crystal_set_mosaicity, libcrystfel),
+          Cvoid, (Ptr{InternalCrystal},Cdouble),
+          out, mosaicity)
 
     cr = Crystal(out)
 
