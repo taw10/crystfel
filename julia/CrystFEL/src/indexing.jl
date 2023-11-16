@@ -2,7 +2,8 @@ module Indexing
 
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.UnitCells: UnitCell, InternalUnitCell
-export Indexer
+import ..CrystFEL.Images: Image, InternalImage
+export Indexer, index
 
 mutable struct IndexingPriv end
 
@@ -78,6 +79,15 @@ function Indexer(methods, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
 
     return indexer
 
+end
+
+
+function index(image::Image, idxr::Indexer)
+    @ccall libcrystfel.index_pattern_4(image.internalptr::Ptr{InternalImage},
+                                       idxr.indexingpriv::Ptr{IndexingPriv},
+                                       C_NULL::Ptr{Cvoid},
+                                       C_NULL::Ptr{Cvoid},
+                                       C_NULL::Ptr{Cvoid})::Cvoid
 end
 
 
