@@ -21,5 +21,5 @@ for refl in truth
 end
 
 # Index the pattern
-indexer = Indexer("asdf-cell", cell, retry=false, multilattice=false, refine=true)
+indexer = Indexer("asdf-cell", dtempl, cell, retry=false, multilattice=false, refine=true)
 index(image, indexer)

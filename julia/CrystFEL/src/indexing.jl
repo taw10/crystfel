@@ -3,6 +3,7 @@ module Indexing
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.UnitCells: UnitCell, InternalUnitCell
 import ..CrystFEL.Images: Image, InternalImage
+import ..CrystFEL.DataTemplates: wavelength, cameralength
 export Indexer, index
 
 mutable struct IndexingPriv end
@@ -33,9 +34,9 @@ function indexflags(retry, multilattice, refine, peakcheck, cellcheck)
 end
 
 
-function Indexer(methods, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
+function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
         retry=true, multilattice=false, refine=true, peakcheck=true, cellcheck=true,
-        wavelength_estimate=0.0, clen_estimate=0.0, n_threads=1)
+        wavelength_estimate=nothing, clen_estimate=missing, n_threads=1)
 
     taketwoopts = Ref{Ptr{Cvoid}}(C_NULL)
     xgandalfopts = Ref{Ptr{Cvoid}}(C_NULL)
@@ -52,6 +53,28 @@ function Indexer(methods, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
                                               asdfopts::Ref{Ptr{Cvoid}})::Cvoid
 
     flags = indexflags(retry, multilattice, refine, peakcheck, cellcheck)
+
+    let wlfromdtempl = wavelength(dtempl)
+        if !isnothing(wlfromdtempl)
+            wavelength_estimate = wlfromdtempl
+        else
+            if isnothing(wavelength_estimate)
+                throw(ArgumentError("Wavelength cannot be determined from data template.  "*
+                                    "Use Indexer(wavelength_estimate=...)"))
+            end
+        end
+    end
+
+    let clenfromdtempl = cameralength(dtempl)
+        if !isnothing(clenfromdtempl)
+            clen_estimate = clenfromdtempl
+        else
+            if isnothing(clen_estimate)
+                throw(ArgumentError("Camera length cannot be determined from data template.  "*
+                                    "Use Indexer(clen_estimate=...)"))
+            end
+        end
+    end
 
     out = @ccall libcrystfel.setup_indexing(methods::Cstring,
                                             cell.internalptr::Ptr{InternalUnitCell},
