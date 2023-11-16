@@ -64,7 +64,11 @@ end
 
 
 function Base.iterate(peaklist::PeakList)
-    return peaklist[1],(1,length(peaklist))
+    if length(peaklist) > 0
+        return peaklist[1],(1,length(peaklist))
+    else
+        return nothing
+    end
 end
 
 
