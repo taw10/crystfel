@@ -11,6 +11,27 @@ mutable struct Indexer
 end
 
 
+function indexflags(retry, multilattice, refine, peakcheck, cellcheck)
+    flags = 0
+    if retry
+        flags |= 1
+    end
+    if multilattice
+        flags |= 2
+    end
+    if refine
+        flags |= 4
+    end
+    if peakcheck
+        flags |= 32
+    end
+    if cellcheck
+        flags |= 64
+    end
+    return flags
+end
+
+
 function Indexer(methods, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
         retry=true, multilattice=false, refine=true, peakcheck=true, cellcheck=true,
         wavelength_estimate=0.0, clen_estimate=0.0, n_threads=1)
@@ -29,10 +50,12 @@ function Indexer(methods, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
                                               fromfileopts::Ref{Ptr{Cvoid}},
                                               asdfopts::Ref{Ptr{Cvoid}})::Cvoid
 
+    flags = indexflags(retry, multilattice, refine, peakcheck, cellcheck)
+
     out = @ccall libcrystfel.setup_indexing(methods::Cstring,
                                             cell.internalptr::Ptr{InternalUnitCell},
                                             tolerances::Ref{NTuple{6,Cdouble}},
-                                            0::Cint,
+                                            flags::Cint,
                                             wavelength_estimate::Cdouble,
                                             clen_estimate::Cdouble,
                                             n_threads::Cint,
