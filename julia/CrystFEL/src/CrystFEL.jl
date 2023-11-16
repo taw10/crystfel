@@ -32,7 +32,7 @@ export SymOpList
 
 include("datatemplates.jl")
 using .DataTemplates
-export DataTemplate, loaddatatemplate
+export DataTemplate, loaddatatemplate, wavelength, cameralength
 
 include("peaklist.jl")
 using .PeakLists
