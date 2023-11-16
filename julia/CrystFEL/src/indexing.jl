@@ -76,9 +76,17 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
         end
     end
 
+    tols = Vector{Cfloat}(undef, 6)
+    tols[1] = tolerances[1]
+    tols[2] = tolerances[2]
+    tols[3] = tolerances[3]
+    tols[4] = deg2rad(tolerances[4])
+    tols[5] = deg2rad(tolerances[5])
+    tols[6] = deg2rad(tolerances[6])
+
     out = @ccall libcrystfel.setup_indexing(methods::Cstring,
                                             cell.internalptr::Ptr{InternalUnitCell},
-                                            tolerances::Ref{NTuple{6,Cdouble}},
+                                            tols::Ptr{Cfloat},
                                             flags::Cint,
                                             wavelength_estimate::Cdouble,
                                             clen_estimate::Cdouble,
