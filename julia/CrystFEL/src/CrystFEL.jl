@@ -57,6 +57,6 @@ export predictreflections
 
 include("indexing.jl")
 using .Indexing
-export Indexer
+export Indexer, index
 
 end  # of module
