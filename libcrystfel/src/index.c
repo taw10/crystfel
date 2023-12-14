@@ -949,6 +949,10 @@ void index_pattern_4(struct image *image, IndexingPrivate *ipriv, int *ping,
 	image->crystals = NULL;
 	image->n_crystals = 0;
 
+	/* No peaks? */
+	if ( image->features == NULL ) return;
+	if ( image_feature_count(image->features) == 0 ) return;
+
 	if ( !isnan(ipriv->wavelength_estimate) ) {
 		if ( !within_tolerance(image->lambda,
 		                          ipriv->wavelength_estimate,
