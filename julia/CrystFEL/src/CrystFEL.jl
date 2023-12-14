@@ -21,6 +21,7 @@ export TetragonalLattice, HexagonalLattice, RhombohedralLattice, CubicLattice
 export PrimitiveCell, ACenteredCell, BCenteredCell, CCenteredCell
 export BodyCenteredCell, FaceCenteredCell, RhombohedralCell, RhombohedralCellOnHexagonalAxes
 export NoUniqueAxis, UnknownUniqueAxis, UniqueAxisA, UniqueAxisB, UniqueAxisC
+export rotatecell
 
 include("detgeom.jl")
 using .DetGeoms

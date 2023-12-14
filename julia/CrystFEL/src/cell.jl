@@ -7,6 +7,7 @@ export TetragonalLattice, HexagonalLattice, RhombohedralLattice, CubicLattice
 export PrimitiveCell, ACenteredCell, BCenteredCell, CCenteredCell
 export BodyCenteredCell, FaceCenteredCell, RhombohedralCell, RhombohedralCellOnHexagonalAxes
 export NoUniqueAxis, UnknownUniqueAxis, UniqueAxisA, UniqueAxisB, UniqueAxisC
+export rotatecell
 
 
 # Represents the real C-side (opaque) structure.
@@ -304,5 +305,22 @@ function Base.show(io::IO, uc::UnitCell)
     write(io, ")")
 end
 
+
+mutable struct CrystFELQuaternion
+    w::Cdouble
+    x::Cdouble
+    y::Cdouble
+    z::Cdouble
+end
+
+function rotatecell(uc, quat)
+    q = CrystFELQuaternion(quat...)
+    out = @ccall libcrystfel.cell_rotate(uc.internalptr::Ptr{InternalUnitCell},
+                                         q::CrystFELQuaternion)::Ptr{InternalUnitCell}
+    if out == C_NULL
+        throw(ErrorException("Failed to rotate unit cell"))
+    end
+    UnitCell(out)
+end
 
 end   # of module

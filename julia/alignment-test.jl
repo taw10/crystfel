@@ -1,44 +1,45 @@
 using CrystFEL
 using Random
 
-# Create empty image for simulation purposes
-dtempl = loaddatatemplate("julia/alignment-test.geom")
-image = Image(dtempl)
-
-# Create a crystal and calculate its reflections
-cell = UnitCell(MonoclinicLattice, PrimitiveCell, 123, 45, 80, 90, 97, 90)
-cr = Crystal(cell)  # FIXME: Random rotation
-truth = predictreflections(cr, image)
-
 # "Simulate" a diffraction pattern from the reflections
-function sketch_pattern(reflist)
-    peaks = PeakList()
+function sketch_pattern(image, cr)
+    reflist = predictreflections(cr, image)
+    peaklist = PeakList()
     for refl in reflist
         if randn() > 0
             let dpos = refl.detectorposition
-                push!(peaks, dpos.fs, dpos.ss, dpos.panelnumber, 100.0)
+                push!(peaklist, dpos.fs, dpos.ss, dpos.panelnumber, 100.0)
             end
         end
     end
-    return peaks
+    return peaklist
 end
 
-image.peaklist = sketch_pattern(truth)
 
-# Index the pattern
-indexer = Indexer("asdf", dtempl, cell, retry=false, multilattice=false, refine=true)
-index(image, indexer)
+function randomrotation(cell)
+    rotatecell(cell, (1,0,0,0))
+end
 
 
-# Utility routine for visualising peaks
-function plotpanel(image, pn)
-    x = []
-    y = []
-    for pk in image.peaklist
-        if pk.panelnumber == pn
-            push!(x, pk.fs)
-            push!(y, pk.ss)
-        end
+function simulate_and_index(cell, image_true, dtempl_moved, n)
+
+    indexer = Indexer("asdf", dtempl_moved, cell, retry=false, multilattice=false, refine=true)
+
+    for _ in 1:n
+
+        cr = Crystal(randomrotation(cell))
+        peaklist = sketch_pattern(image_true, cr)
+        image_moved = Image(dtempl_moved)
+
+        image_moved.peaklist = peaklist
+        index(image_moved, indexer)
+
     end
-    scatter(x, y)
 end
+
+
+dtempl_true = loaddatatemplate("julia/alignment-test.geom")
+image_true = Image(dtempl_true)
+cell = UnitCell(MonoclinicLattice, PrimitiveCell, 123, 45, 80, 90, 97, 90)
+dtempl_moved = loaddatatemplate("julia/alignment-test-moved.geom")
+simulate_and_index(cell, image_true, dtempl_moved, 100)
