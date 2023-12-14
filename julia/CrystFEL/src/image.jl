@@ -53,7 +53,7 @@ function Base.getproperty(image::Image, name::Symbol)
                 if pl == C_NULL
                     throw(ErrorException("Image doesn't have a peak list"))
                 else
-                    PeakList(pl)
+                    PeakList(pl, true)
                 end
             end
         else
@@ -70,7 +70,12 @@ function Base.setproperty!(image::Image, name::Symbol, val)
         idata = unsafe_load(image.internalptr)
         if name === :peaklist
             if val isa PeakList
+                if val.in_image
+                    throw(ArgumentError("PeakList is already in an image.  "*
+                                        "Add a copy (use `deepcopy`) instead."))
+                end
                 setproperty!(idata, name, val.internalptr)
+                val.in_image = true
                 unsafe_store!(image.internalptr, idata)
             else
                 throw(ArgumentError("Must be a PeakList"))
