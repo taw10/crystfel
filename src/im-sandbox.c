@@ -1189,7 +1189,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    Stream *stream, const char *tmpdir, int serial_start,
                    struct im_zmq_params *zmq_params,
                    struct im_asapo_params *asapo_params,
-                   int timeout, int profile, int cpu_pin)
+                   int timeout, int profile, int cpu_pin,
+                   int no_data_timeout)
 {
 	int i;
 	struct sandbox *sb;
@@ -1198,6 +1199,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	int r;
 	int allDone = 0;
 	struct get_pattern_ctx gpctx;
+	double t_last_data;
 
 	if ( n_proc > MAX_NUM_WORKERS ) {
 		ERROR("Number of workers (%i) is too large.  Using %i\n",
@@ -1346,6 +1348,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	        return 0;
 	}
 
+	t_last_data = get_monotonic_seconds();
 	do {
 
 		/* Check for stream output from workers */
@@ -1380,8 +1383,14 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			sb->shared->no_more = 1;
 		}
 
-		/* Case 3: All workers saw end of (ASAP::O) stream */
-		if ( all_got_end_of_stream(sb) ) allDone = 1;
+		/* Case 3: No (ASAP::O) data for a long time */
+		if ( get_monotonic_seconds() > t_last_data + no_data_timeout ) {
+			allDone = 1;
+		}
+		if ( !all_got_end_of_stream(sb) ) {
+			/* We are still getting data */
+			t_last_data = get_monotonic_seconds();
+		}
 
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 		/* End exit criterion checking */

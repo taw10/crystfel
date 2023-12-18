@@ -94,6 +94,7 @@ struct indexamajig_arguments
 	int if_multi;
 	int if_retry;
 	int profile;  /* Whether to do wall-clock time profiling */
+	int no_data_timeout;
 	char **copy_headers;
 	int n_copy_headers;
 	char *harvest_file;
@@ -455,6 +456,14 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 
 		case 223 :
 		args->cpu_pin = 1;
+		break;
+
+		case 224 :
+		if (sscanf(arg, "%d", &args->no_data_timeout) != 1)
+		{
+			ERROR("Invalid value for --no-data-timeout\n");
+			return EINVAL;
+		}
 		break;
 
 		/* ---------- Peak search ---------- */
@@ -910,6 +919,7 @@ int main(int argc, char *argv[])
 	args.if_refine = 1;
 	args.if_checkcell = 1;
 	args.profile = 0;
+	args.no_data_timeout = 60;
 	args.copy_headers = NULL;
 	args.n_copy_headers = 0;
 	args.harvest_file = NULL;
@@ -1028,6 +1038,8 @@ int main(int argc, char *argv[])
 		        "Wait for ASAP::O stream to appear"},
 		{"asapo-output-stream", 222, NULL, OPTION_NO_USAGE, "Create an ASAP::O hits-only stream"},
 		{"cpu-pin", 223, NULL, OPTION_NO_USAGE, "Pin worker processes to CPUs"},
+		{"no-data-timeout", 224, "s", OPTION_NO_USAGE,
+			"Shut down after this many seconds without ASAP::O data"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},
@@ -1449,7 +1461,8 @@ int main(int argc, char *argv[])
 	r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
 	                   fh, st, tmpdir, args.serial_start,
 	                   &args.zmq_params, &args.asapo_params,
-	                   timeout, args.profile, args.cpu_pin);
+	                   timeout, args.profile, args.cpu_pin,
+	                   args.no_data_timeout);
 
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
 	cell_free(args.iargs.cell);

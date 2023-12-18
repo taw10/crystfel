@@ -349,6 +349,12 @@ BASIC OPTIONS
 : If the ASAP::O stream does not exist, wait for it to be appear.  Without this
 : option, indexamajig will exit immediately if the stream is not found.
 
+**--no-data-timeout**
+: Shut down the entire indexamajig process if the specified number of seconds
+: elapse without any data being seen.  This currently applies to ASAP::O data
+: only, but might be extended to other streaming systems in future.  The
+: default is 60 seconds.
+
 **--data-format=format**
 : Specify the data format for data received over ZeroMQ or ASAP::O.  Possible
 : values in this version are msgpack, hdf5 and seedee.
