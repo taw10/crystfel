@@ -1,6 +1,6 @@
 # Meson file for Millepede-II
 project('millepede', ['c', 'fortran'],
-        version: '2.0.0',
+        version: 'V04-13-06',
         license: 'LGPL2+',
         default_options: ['buildtype=debugoptimized'])
 

@@ -1,6 +1,6 @@
 [wrap-git]
 directory = millepede
 url = https://gitlab.desy.de/claus.kleinwort/millepede-ii.git
-revision = main
+revision = V04-13-06
 depth = 1
 patch_directory = millepede
