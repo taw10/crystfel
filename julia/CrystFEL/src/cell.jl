@@ -1,5 +1,7 @@
 module UnitCells
 
+using Random
+
 import ..CrystFEL: libcrystfel
 export UnitCell, LatticeType, CenteringType, UniqueAxis
 export TriclinicLattice, MonoclinicLattice, OrthorhombicLattice
@@ -306,6 +308,8 @@ function Base.show(io::IO, uc::UnitCell)
 end
 
 
+# This type is for talking to libcrystfel, and is named to avoid conflicting
+# with other quaternion libraries.
 mutable struct CrystFELQuaternion
     w::Cdouble
     x::Cdouble
@@ -313,6 +317,18 @@ mutable struct CrystFELQuaternion
     z::Cdouble
 end
 
+function randomquat()
+    r = ()->2.0*rand(Float64)-1.0
+    q = [r(), r(), r(), r()]
+    q ./ √(sum(q.^2))
+end
+
+
+"""
+    rotatecell(uc::UnitCell, quaternion)
+
+Rotate a unit cell according to a quaternion (represented as a vector of 4 floats).
+"""
 function rotatecell(uc, quat)
     q = CrystFELQuaternion(quat...)
     out = @ccall libcrystfel.cell_rotate(uc.internalptr::Ptr{InternalUnitCell},
@@ -322,5 +338,17 @@ function rotatecell(uc, quat)
     end
     UnitCell(out)
 end
+
+
+"""
+    rotatecell(uc::UnitCell)
+
+Rotate a unit cell at random in three dimensions.  Use this routine for
+simulating serial crystallography datasets.
+
+Equivalent to CrystFEL routine `cell_rotate(uc, random_quaternion(<rng>))`.
+"""
+rotatecell(uc) = rotatecell(uc, randomquat())
+
 
 end   # of module
