@@ -44,6 +44,7 @@ struct im_asapo_params
 	char *stream;
 	int wait_for_stream;
 	int write_output_stream;
+	int consumer_timeout_ms;
 };
 
 struct im_asapo;

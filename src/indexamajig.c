@@ -466,6 +466,14 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		}
 		break;
 
+		case 225 :
+		if (sscanf(arg, "%d", &args->asapo_params.consumer_timeout_ms) != 1)
+		{
+			ERROR("Invalid value for --asapo-consumer-timeout\n");
+			return EINVAL;
+		}
+		break;
+
 		/* ---------- Peak search ---------- */
 
 		case 't' :
@@ -911,6 +919,7 @@ int main(int argc, char *argv[])
 	args.asapo_params.stream = NULL;
 	args.asapo_params.wait_for_stream = 0;
 	args.asapo_params.write_output_stream = 0;
+	args.asapo_params.consumer_timeout_ms = 500;
 	args.cpu_pin = 0;
 	args.serial_start = 1;
 	args.if_peaks = 1;
@@ -1040,6 +1049,8 @@ int main(int argc, char *argv[])
 		{"cpu-pin", 223, NULL, OPTION_NO_USAGE, "Pin worker processes to CPUs"},
 		{"no-data-timeout", 224, "s", OPTION_NO_USAGE,
 			"Shut down after this many seconds without ASAP::O data"},
+		{"asapo-consumer-timeout", 225, "ms", OPTION_NO_USAGE,
+			"ASAP::O get_next timeout for one frame (milliseconds)"},
 
 		{NULL, 0, 0, OPTION_DOC, "Peak search options:", 3},
 		{"peaks", 301, "method", 0, "Peak search method.  Default: zaef"},

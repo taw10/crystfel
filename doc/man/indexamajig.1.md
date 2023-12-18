@@ -355,6 +355,10 @@ BASIC OPTIONS
 : only, but might be extended to other streaming systems in future.  The
 : default is 60 seconds.
 
+**--asapo-consumer-timeout**
+: Set the timeout used for "get next" calls from ASAP::O, in ms.  The default
+: is 500 ms.
+
 **--data-format=format**
 : Specify the data format for data received over ZeroMQ or ASAP::O.  Possible
 : values in this version are msgpack, hdf5 and seedee.

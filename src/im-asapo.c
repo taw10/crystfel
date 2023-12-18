@@ -169,7 +169,7 @@ struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 	if ( create_producer(a, params) ) return NULL;
 
 	a->stream = strdup(params->stream);
-	asapo_consumer_set_timeout(a->consumer, 3000);
+	asapo_consumer_set_timeout(a->consumer, params->consumer_timeout_ms);
 	a->group_id = asapo_string_from_c_str(params->group_id);
 	a->wait_for_stream = params->wait_for_stream;
 
