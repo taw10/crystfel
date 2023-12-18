@@ -16,18 +16,13 @@ function sketch_pattern(image, cr)
 end
 
 
-function randomrotation(cell)
-    rotatecell(cell, (1,0,0,0))
-end
-
-
 function simulate_and_index(cell, image_true, dtempl_moved, n)
 
     indexer = Indexer("asdf", dtempl_moved, cell, retry=false, multilattice=false, refine=true)
 
     for _ in 1:n
 
-        cr = Crystal(randomrotation(cell))
+        cr = Crystal(rotatecell(cell))
         peaklist = sketch_pattern(image_true, cr)
         image_moved = Image(dtempl_moved)
 
