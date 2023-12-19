@@ -115,6 +115,19 @@ static int parse_group(const char *name, DataTemplate *dt, const char *val)
 		fail = 1;
 	} else {
 
+		/* A simple typo in the geometry file can segfault other
+		 * stuff, so check */
+		for ( i=0; i<n_members; i++ ) {
+			int j;
+			for ( j=0; j<i; j++ ) {
+				if ( strcmp(members[i], members[j]) == 0 ) {
+					ERROR("Duplicate member '%s' in group '%s'\n",
+					      members[i], name);
+					fail = 1;
+				}
+			}
+		}
+
 		for ( i=0; i<n_members; i++ ) {
 			gt->children[i] = find_group(dt, members[i]);
 			if ( gt->children[i] == NULL ) {
