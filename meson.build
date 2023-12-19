@@ -281,7 +281,6 @@ subdir('tests')
 pandoc = find_program('pandoc', required: false)
 
 pandoc_pages = ['indexamajig.1.md',
-                'crystfel_geometry.5.md',
                 'adjust_detector.1.md',
                 'align_detector.1.md']
 
@@ -296,6 +295,14 @@ if pandoc.found()
                   install_dir: join_paths(get_option('mandir'), 'man1'))
   endforeach
 endif
+
+custom_target('crystfel_geometry.5.md',
+              input: 'doc/man/crystfel_geometry.5.md',
+              output: 'crystfel_geometry.5',
+              command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
+                        '-s', '-f', 'markdown-smart', '-t', 'man'],
+              install: true,
+              install_dir: join_paths(get_option('mandir'), 'man5'))
 
 install_man(['doc/man/ambigator.1',
              'doc/man/cell_explorer.1',
