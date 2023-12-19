@@ -113,12 +113,19 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
 end
 
 
-function index(image::Image, idxr::Indexer)
+function index(image::Image, idxr::Indexer; mille=nothing)
+
+    if mille === nothing
+        imille = C_NULL
+    else
+        imille = mille.internalptr
+    end
+
     @ccall libcrystfel.index_pattern_4(image.internalptr::Ptr{InternalImage},
                                        idxr.indexingpriv::Ptr{IndexingPriv},
                                        C_NULL::Ptr{Cvoid},
                                        C_NULL::Ptr{Cvoid},
-                                       C_NULL::Ptr{Cvoid})::Cvoid
+                                       imille::Ptr{Cvoid})::Cvoid
 end
 
 

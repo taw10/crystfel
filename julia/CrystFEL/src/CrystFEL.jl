@@ -64,4 +64,8 @@ include("streams.jl")
 using .Streams
 export Stream
 
+include("millepede.jl")
+using .Millepede
+export Mille
+
 end  # of module

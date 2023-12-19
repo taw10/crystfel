@@ -47,3 +47,5 @@ q3/fs = x
 q3/ss = y
 q3/corner_x = -1054
 q3/corner_y = -1054
+
+group_all = q0,q1,q2,q3
