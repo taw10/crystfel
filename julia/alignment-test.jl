@@ -29,7 +29,11 @@ function simulate_and_index(cell, image_true, dtempl_moved, mille, n)
         image_moved.peaklist = peaklist
         index(image_moved, indexer, mille=mille)
 
+        print(".")
+
     end
+    println("")
+
 end
 
 
@@ -38,4 +42,4 @@ image_true = Image(dtempl_true)
 cell = UnitCell(MonoclinicLattice, PrimitiveCell, 123, 45, 80, 90, 97, 90)
 dtempl_moved = loaddatatemplate("julia/alignment-test-moved.geom")
 mille = Mille("mille.dat")
-simulate_and_index(cell, image_true, dtempl_moved, mille, 100)
+simulate_and_index(cell, image_true, dtempl_moved, mille, 10)
