@@ -2,7 +2,8 @@ module Streams
 
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
-export Stream
+import ..CrystFEL.Images: Image, InternalImage
+export Stream, chunkwrite
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalStream end
@@ -74,6 +75,29 @@ function Base.close(st::Stream)
         @ccall libcrystfel.stream_close(st.internalptr::Ptr{InternalStream})::Cvoid
         st.internalptr = C_NULL
     end
+end
+
+
+function streamflags(peaks, reflections, imagedata)
+    flags = 0
+    if reflections
+        flags |= 2
+    end
+    if peaks
+        flags |= 4
+    end
+    if imagedata
+        flags |= 8
+    end
+    return flags
+end
+
+
+function chunkwrite(st::Stream, image::Image; peaks=true, reflections=true)
+    flags = streamflags(peaks, reflections, false)
+    @ccall libcrystfel.stream_write_chunk(st.internalptr::Ptr{InternalStream},
+                                          image.internalptr::Ptr{InternalImage},
+                                          flags::Cint)::Cvoid
 end
 
 
