@@ -60,4 +60,8 @@ include("indexing.jl")
 using .Indexing
 export Indexer, index
 
+include("streams.jl")
+using .Streams
+export Stream
+
 end  # of module
