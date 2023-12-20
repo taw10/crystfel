@@ -34,6 +34,17 @@ function indexflags(retry, multilattice, refine, peakcheck, cellcheck)
 end
 
 
+"""
+    Indexer(methods, dtempl, cell;
+            tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
+            retry=true, multilattice=false, refine=true,
+            peakcheck=true, cellcheck=true,
+            wavelength_estimate=nothing, clen_estimate=missing,
+            n_threads=1)
+
+Creates a new CrystFEL indexing engine, which you can later apply to CrystFEL
+`Image` structures using `index()`.
+"""
 function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
         retry=true, multilattice=false, refine=true, peakcheck=true, cellcheck=true,
         wavelength_estimate=nothing, clen_estimate=missing, n_threads=1)
@@ -113,6 +124,14 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
 end
 
 
+"""
+    index(image::Image, indexer::Indexer; mille=nothing)
+
+Index `image` using `indexer`.
+
+If `mille` is a valid `Mille` object, detector geometry alignment data will
+be written.
+"""
 function index(image::Image, idxr::Indexer; mille=nothing)
 
     if mille === nothing
