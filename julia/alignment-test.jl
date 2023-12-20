@@ -46,6 +46,10 @@ dtempl_true = loaddatatemplate("julia/alignment-test.geom")
 image_true = Image(dtempl_true)
 cell = UnitCell(MonoclinicLattice, PrimitiveCell, 123, 45, 80, 90, 97, 90)
 dtempl_moved = loaddatatemplate("julia/alignment-test-moved.geom")
+let mille = Mille("mille.dat")
+    simulate_and_index(cell, image_true, dtempl_true, mille, 100)
+    close(mille)
+end
 
 
 function plotresiduals(filename)
