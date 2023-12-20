@@ -62,7 +62,7 @@ export Indexer, index
 
 include("streams.jl")
 using .Streams
-export Stream
+export Stream, chunkwrite
 
 include("millepede.jl")
 using .Millepede
