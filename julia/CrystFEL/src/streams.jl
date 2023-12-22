@@ -30,6 +30,10 @@ function Stream(filename, mode::AbstractString, dtempl::DataTemplate)
         if out == C_NULL
             throw(ErrorException("Failed to open stream for reading"))
         end
+
+        @ccall libcrystfel.stream_write_data_template(out::Ptr{InternalStream},
+                               dtempl.internalptr::Ptr{InternalDataTemplate})::Cvoid
+
         finalizer(close, Stream(out))
 
     elseif mode =="r"
