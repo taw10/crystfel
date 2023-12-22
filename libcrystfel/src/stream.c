@@ -1253,8 +1253,26 @@ void stream_write_indexing_methods(Stream *st, const char *indm_str)
  * \param st A \ref Stream
  * \param geom_filename geomtry file name
  *
- * Writes the content of the geometry file to \p st. This should usually be
- * called immediately after \ref write_command.
+ * Writes the content of the geometry file to \p st. This (or
+ * \ref stream_write_geometry_file) should usually be called immediately after
+ * \ref write_command.
+ */
+void stream_write_data_template(Stream *st, const DataTemplate *dtempl)
+{
+	fprintf(st->fh, STREAM_GEOM_START_MARKER"\n");
+	data_template_write_to_fh(dtempl, st->fh);
+	fprintf(st->fh, STREAM_GEOM_END_MARKER"\n");
+	fflush(st->fh);
+}
+
+
+/**
+ * \param st A \ref Stream
+ * \param geom_filename geomtry file name
+ *
+ * Writes the content of the geometry file to \p st. This (or
+ * \ref stream_write_data_template) should usually be called immediately after
+ * \ref write_command.
  */
 void stream_write_geometry_file(Stream *st, const char *geom_filename)
 {

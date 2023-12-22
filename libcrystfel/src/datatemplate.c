@@ -2304,13 +2304,9 @@ static const char *str_dim(int dim)
 }
 
 
-int data_template_write_to_file(const DataTemplate *dtempl, const char *filename)
+int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 {
-	FILE *fh;
 	int i;
-
-	fh = fopen(filename, "w");
-	if ( fh == NULL ) return 1;
 
 	/* Basic top-level parameters */
 	switch ( dtempl->wavelength_unit ) {
@@ -2643,8 +2639,19 @@ int data_template_write_to_file(const DataTemplate *dtempl, const char *filename
 		fprintf(fh, "\n");
 	}
 
-	fclose(fh);
 	return 0;
+}
+
+
+int data_template_write_to_file(const DataTemplate *dtempl, const char *filename)
+{
+	FILE *fh;
+	int r;
+	fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+	r = data_template_write_to_fh(dtempl, fh);
+	fclose(fh);
+	return r;
 }
 
 

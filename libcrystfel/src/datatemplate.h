@@ -103,6 +103,8 @@ extern int data_template_rotate_group(DataTemplate *dtempl,
                                       const char *group_name,
                                       double ang, char axis);
 
+extern int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh);
+
 extern int data_template_write_to_file(const DataTemplate *dtempl,
                                        const char *filename);
 

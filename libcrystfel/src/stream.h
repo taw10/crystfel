@@ -95,6 +95,8 @@ extern Stream *stream_open_fd_for_write(int fd,
 extern void stream_close(Stream *st);
 
 /* Writing things to stream header */
+extern void stream_write_data_template(Stream *st,
+                                       const DataTemplate *dtempl);
 extern void stream_write_geometry_file(Stream *st,
                                        const char *geom_filename);
 extern void stream_write_target_cell(Stream *st,
