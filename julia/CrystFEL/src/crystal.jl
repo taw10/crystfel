@@ -10,6 +10,7 @@ mutable struct InternalCrystal end
 
 mutable struct Crystal
     internalptr::Ptr{InternalCrystal}
+    in_image   # if true, this PeakList belongs to an Image struct
 end
 
 
@@ -34,11 +35,13 @@ function Crystal(cell::UnitCell; profileradius=2e6, mosaicity=0)
           Cvoid, (Ptr{InternalCrystal},Cdouble),
           out, mosaicity)
 
-    cr = Crystal(out)
+    cr = Crystal(out, false)
 
     finalizer(cr) do x
-        ccall((:crystal_free, libcrystfel), Cvoid, (Ptr{InternalCrystal},),
-              x.internalptr)
+        if !x.in_image
+            ccall((:crystal_free, libcrystfel), Cvoid, (Ptr{InternalCrystal},),
+                  x.internalptr)
+        end
     end
 
     return cr

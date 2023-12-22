@@ -39,10 +39,6 @@ include("peaklist.jl")
 using .PeakLists
 export PeakList
 
-include("image.jl")
-using .Images
-export Image
-
 include("reflists.jl")
 using .RefLists
 export RefList, loadreflist
@@ -51,6 +47,10 @@ export Reflection, MergedReflection, UnmergedReflection
 include("crystal.jl")
 using .Crystals
 export Crystal, InternalCrystal
+
+include("image.jl")
+using .Images
+export Image
 
 include("diffcalc.jl")
 using .DiffractionCalculations
