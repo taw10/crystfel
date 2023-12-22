@@ -105,6 +105,9 @@ function Base.setproperty!(image::Image, name::Symbol, val)
             else
                 throw(ArgumentError("Must be a PeakList"))
             end
+        else
+            setproperty!(idata, name, val)
+            unsafe_store!(image.internalptr, idata)
         end
     end
 end
