@@ -1,7 +1,7 @@
 module Crystals
 
 import ..CrystFEL: libcrystfel
-import ..CrystFEL.RefLists: RefList, UnmergedReflection
+import ..CrystFEL.RefLists: RefList, InternalRefList, UnmergedReflection
 import ..CrystFEL.UnitCells: UnitCell, InternalUnitCell
 export Crystal, InternalCrystal
 
@@ -45,6 +45,23 @@ function Crystal(cell::UnitCell; profileradius=2e6, mosaicity=0)
     end
 
     return cr
+end
+
+
+function Base.setproperty!(cr::Crystal, name::Symbol, val)
+    if name === :internalptr
+        setfield!(cr, :internalptr, val)
+    else
+        if name === :reflections
+            if val isa RefList{UnmergedReflection}
+                ccall((:crystal_set_reflections, libcrystfel),
+                      Cvoid, (Ptr{InternalCrystal},Ptr{InternalRefList}),
+                      cr.internalptr, val.internalptr)
+            else
+                throw(ArgumentError("Must be a RefList{UnmergedReflection}"))
+            end
+        end
+    end
 end
 
 
