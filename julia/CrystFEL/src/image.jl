@@ -4,6 +4,7 @@ import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.DetGeoms: DetGeom
 import ..CrystFEL.PeakLists: PeakList, InternalPeakList
+import ..CrystFEL.Crystals: Crystal, InternalCrystal
 export Image
 
 const HEADER_CACHE_SIZE = 128
@@ -43,11 +44,30 @@ mutable struct Image
 end
 
 
+function makecrystallist(listptr, n)
+
+    crystals = Crystal[]
+
+    if listptr == C_NULL
+        return crystals
+    end
+
+    for i in 1:n
+        crystalptr = unsafe_load(listptr, i)
+        push!(crystals, Crystal(crystalptr, true))
+    end
+
+    crystals
+
+end
+
+
 function Base.getproperty(image::Image, name::Symbol)
     if name === :internalptr
         getfield(image, :internalptr)
     else
         idata = unsafe_load(image.internalptr)
+
         if name === :peaklist
             let pl = getproperty(idata, :peaklist)
                 if pl == C_NULL
@@ -56,6 +76,11 @@ function Base.getproperty(image::Image, name::Symbol)
                     PeakList(pl, true)
                 end
             end
+
+        elseif name === :crystals
+            return makecrystallist(getproperty(idata, :crystals),
+                                   getproperty(idata, :n_crystals))
+
         else
             getproperty(idata, name)
         end
@@ -91,6 +116,17 @@ function Base.propertynames(image::Image; private=false)
     else
         tuple(fieldnames(InternalImage)..., :internalptr)
     end
+end
+
+
+function Base.push!(image::Image, cr::Crystal)
+    if cr.in_image
+        throw(ErrorException("Crystal is already in an image"))
+    end
+    ccall((:image_add_crystal, libcrystfel),
+          Cvoid, (Ptr{InternalImage},Ptr{InternalCrystal}),
+          image.internalptr, cr.internalptr)
+    cr.in_image = true
 end
 
 
