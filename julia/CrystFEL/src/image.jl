@@ -88,6 +88,9 @@ function Base.getproperty(image::Image, name::Symbol)
 end
 
 
+strdup(str) = @ccall strdup(str::Cstring)::Cstring
+
+
 function Base.setproperty!(image::Image, name::Symbol, val)
     if name === :internalptr
         setfield!(image, :internalptr, val)
@@ -105,6 +108,23 @@ function Base.setproperty!(image::Image, name::Symbol, val)
             else
                 throw(ArgumentError("Must be a PeakList"))
             end
+
+        elseif name === :filename
+            if val isa AbstractString
+                setproperty!(idata, :filename, strdup(val))
+                unsafe_store!(image.internalptr, idata)
+            else
+                throw(ArgumentError("Must be a string"))
+            end
+
+        elseif name === :ev
+            if val isa AbstractString
+                setproperty!(idata, :ev, strdup(val))
+                unsafe_store!(image.internalptr, idata)
+            else
+                throw(ArgumentError("Must be a string"))
+            end
+
         else
             setproperty!(idata, name, val)
             unsafe_store!(image.internalptr, idata)
