@@ -137,8 +137,8 @@ function Image(dtempl::DataTemplate,
 
     out = @ccall libcrystfel.image_read(dtempl.internalptr::Ptr{InternalDataTemplate},
                                         filename::Cstring, event::Cstring,
-                                       no_image_data::Cint, no_mask_data::Cint,
-                                       C_NULL::Ptr{Cvoid})::Ptr{Image}
+                                        no_image_data::Cint, no_mask_data::Cint,
+                                        C_NULL::Ptr{Cvoid})::Ptr{Image}
     if out == C_NULL
         throw(ArgumentError("Failed to load image"))
     end
