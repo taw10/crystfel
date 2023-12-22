@@ -161,12 +161,57 @@ Note that not all ``SymOpList`` objects represent a point group.  One
 counterexample is lists of indexing ambiguity operations.
 
 
+Images and DataTemplates
+========================
+
+A ``DataTemplate`` represents the contents of a CrystFEL geometry file, which
+describes the layout of information in the data, the physical positions of
+parts of the detector, and the values of various items of metadata (or
+information about where to get those values).  Create a ``DataTemplate`` by
+loading a geometry file::
+
+    dtempl = loaddatatemplate("/path/to/my.geom")
+
+An ``Image`` is an overall container structure representing one frame of a
+serial crystallography dataset.  Create one by loading an image from file::
+
+    image = Image(dtempl, "/path/to/mydata.cxi", "//32")
+
+You can use any kind of file supported by CrystFEL here.  In the example,
+``//32`` is the frame ID - leave it out if there is only one frame per file.
+
+If you're simulating data, you can create an empty image like this:
+
+    image = Image(dtempl)
+
+However, several caveats apply to doing this.  The ``DataTemplate`` must not
+say that any metadata values (e.g. the wavelength) should be taken from file
+headers, because there is no file in this case.  An error will be thrown if
+there is any problem.
+
+
 Peak lists
 ==========
+
+A ``PeakList`` represents a list of positions on the detector surface.  Create
+it and add peaks like this::
+
+    peaklist = PeakList()
+    push!(peaklist, 10.0, 20.0, 1, 2000.0)
+
+The arguments to ``push!(::PeakList, ...)`` are, in order, the fast scan
+coordinate, slow scan coordinate (both relative to the panel corner), panel
+number (indexed from zero) and the spot intensity in detector units.
+
+You can assign your peaklist to an ``Image`` by setting ``image.peaklist``.
+Note that any ``PeakList`` can only be assigned to a single ``Image``.  An
+error will be thrown if you try to add the same ``PeakList`` again (even to the
+same ``Image``).  If necessary, you can make a copy using ``deepcopy``.
 
 
 Crystals
 ========
+
 
 
 Indexing
