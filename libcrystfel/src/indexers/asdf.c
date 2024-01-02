@@ -90,9 +90,8 @@ struct tvector {
 
 struct fftw_vars fftw_vars_new()
 {
-	int N = 1024;
-
 	struct fftw_vars fftw;
+	int N = 1024;
 
 	fftw.N = N;
 	fftw.in = fftw_malloc(N * sizeof(double));
@@ -374,12 +373,9 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	int i;
 
 	int N = fftw.N; // number of points in fft calculation
-	double *in = fftw.in;
-	fftw_complex *out = fftw.out;
-	fftw_plan p = fftw.p;
 
 	for ( i=0; i<N; i++ ) {
-		in[i] = 0;
+		fftw.in[i] = 0;
 	}
 
 	for ( i=0; i<n; i++ ) {
@@ -392,10 +388,10 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 			      k, N);
 			return -1.0;
 		}
-		in[k]++;
+		fftw.in[k]++;
 	}
 
-	fftw_execute_dft_r2c(p, in, out);
+	fftw_execute(fftw.p);
 
 	int i_max = (int)(d_max * (projections_sorted[n - 1] -
 	                           projections_sorted[0]));
@@ -406,7 +402,7 @@ static float find_ds_fft(double *projections, int N_projections, double d_max,
 	double maxval = 0;
 	for ( i=1; i<=i_max; i++ ) {
 		double a;
-		a = sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]);
+		a = sqrt(fftw.out[i][0] * fftw.out[i][0] + fftw.out[i][1] * fftw.out[i][1]);
 		if (a > maxval) {
 			maxval = a;
 			d = i;
