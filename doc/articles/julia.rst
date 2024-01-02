@@ -75,17 +75,18 @@ or::
 Reflection lists
 ================
 
-In Julia, a distinction is made between merged and unmerged reflections.  No
-such distinction exists in CrystFEL's C API.  Merged reflections have
+A ``RefList`` is a container for reflection data. In Julia, a distinction is
+made between merged and unmerged reflections. Merged reflections have
 multiplicities (number of contributing measurements), whereas unmerged
 reflections have detector locations, background levels and parameters related
-to diffraction geometry such as excitation errors and Lorentz factors.  In
-reality, both types of reflection have all fields, just as for the C API.  The
-distinction controls how the objects are printed, and may help in writing
-clearer programs.
+to diffraction geometry such as excitation errors and
+Lorentz factors.
 
-Load a reflection list from a data file (".hkl file") using
-``loadreflist``::
+No such distinction exists in CrystFEL's C API, and in "reality", both types of
+reflection have all fields.  The distinction controls how the objects are
+printed, and may help in writing clearer programs.
+
+Load a reflection list from a data file (".hkl file") using ``loadreflist``::
 
     julia> q = loadreflist("example.hkl")
     Merged reflection list in point group mmm
@@ -141,7 +142,9 @@ Symmetry
 
 Symmetry operations are represented by ``SymOp`` objects, which are contained
 within ``SymOpList`` objects.  A point group is therefore represented by a
-``SymOpList``.
+``SymOpList``, but note that not all ``SymOpList`` objects represent a symmetry
+group (in the sense of group theory).  One counterexample is lists of indexing
+ambiguity operations.
 
 Create a point group from the Herman-Mauguin symbol as follows::
 
@@ -156,9 +159,6 @@ The list can be subscripted linearly::
 
     julia> s[1]
     SymOp("-h,-k,l")
-
-Note that not all ``SymOpList`` objects represent a point group.  One
-counterexample is lists of indexing ambiguity operations.
 
 
 Images and DataTemplates
@@ -180,7 +180,7 @@ serial crystallography dataset.  Create one by loading an image from file::
 You can use any kind of file supported by CrystFEL here.  In the example,
 ``//32`` is the frame ID - leave it out if there is only one frame per file.
 
-If you're simulating data, you can create an empty image like this:
+If you're simulating data, you can create an empty image like this::
 
     image = Image(dtempl)
 
