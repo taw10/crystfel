@@ -107,7 +107,6 @@ static void fftw_vars_free(struct fftw_vars fftw)
 	fftw_free(fftw.in);
 	fftw_free(fftw.out);
 	fftw_destroy_plan(fftw.p);
-	fftw_cleanup();
 }
 
 
