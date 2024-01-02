@@ -94,8 +94,8 @@ struct fftw_vars fftw_vars_new()
 	int N = 1024;
 
 	fftw.N = N;
-	fftw.in = fftw_malloc(N * sizeof(double));
-	fftw.out = fftw_malloc(N * sizeof(fftw_complex));
+	fftw.in = fftw_alloc_real(N);
+	fftw.out = fftw_alloc_complex(N);
 	fftw.p = fftw_plan_dft_r2c_1d(N, fftw.in, fftw.out, FFTW_MEASURE);
 
 	return fftw;
