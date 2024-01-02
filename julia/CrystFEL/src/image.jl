@@ -91,44 +91,54 @@ end
 strdup(str) = @ccall strdup(str::Cstring)::Cstring
 
 
+function assert_type(val, type)
+    if !(val isa type)
+        throw(ArgumentError("Must be a "*string(type)*" (have "*string(typeof(val))*" instead)"))
+    end
+end
+
+
+function set_peaklist(image, val)
+    assert_type(val, PeakList)
+    if val.in_image
+        throw(ArgumentError("PeakList is already in an image.  "*
+                            "Add a copy (use `deepcopy`) instead."))
+    end
+    val.in_image = true
+    val = val.internalptr
+    idata = unsafe_load(image.internalptr)
+    old = swapproperty!(idata, :peaklist, val)
+    unsafe_store!(image.internalptr, idata)
+
+    if old != C_NULL
+        @ccall libcrystfel.image_feature_list_free(old::Ptr{InternalPeakList})::Cvoid
+    end
+
+end
+
+
 function Base.setproperty!(image::Image, name::Symbol, val)
     if name === :internalptr
         setfield!(image, :internalptr, val)
     else
-        idata = unsafe_load(image.internalptr)
+
         if name === :peaklist
-            if val isa PeakList
-                if val.in_image
-                    throw(ArgumentError("PeakList is already in an image.  "*
-                                        "Add a copy (use `deepcopy`) instead."))
-                end
-                setproperty!(idata, name, val.internalptr)
-                val.in_image = true
-                unsafe_store!(image.internalptr, idata)
-            else
-                throw(ArgumentError("Must be a PeakList"))
-            end
+            return set_peaklist(image, val)
 
         elseif name === :filename
-            if val isa AbstractString
-                setproperty!(idata, :filename, strdup(val))
-                unsafe_store!(image.internalptr, idata)
-            else
-                throw(ArgumentError("Must be a string"))
-            end
+            assert_type(val, AbstractString)
+            val = strdup(val)
 
         elseif name === :ev
-            if val isa AbstractString
-                setproperty!(idata, :ev, strdup(val))
-                unsafe_store!(image.internalptr, idata)
-            else
-                throw(ArgumentError("Must be a string"))
-            end
+            assert_type(val, AbstractString)
+            val = strdup(val)
 
-        else
-            setproperty!(idata, name, val)
-            unsafe_store!(image.internalptr, idata)
         end
+
+        idata = unsafe_load(image.internalptr)
+        setproperty!(idata, name, val)
+        unsafe_store!(image.internalptr, idata)
+
     end
 end
 
