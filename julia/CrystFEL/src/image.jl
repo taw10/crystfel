@@ -41,6 +41,7 @@ end
 
 mutable struct Image
     internalptr::Ptr{InternalImage}
+    peaklist::Union{Nothing,PeakList}
 end
 
 
@@ -65,19 +66,12 @@ end
 function Base.getproperty(image::Image, name::Symbol)
     if name === :internalptr
         getfield(image, :internalptr)
+    elseif name === :peaklist
+        getfield(image, :peaklist)
     else
         idata = unsafe_load(image.internalptr)
 
-        if name === :peaklist
-            let pl = getproperty(idata, :peaklist)
-                if pl == C_NULL
-                    throw(ErrorException("Image doesn't have a peak list"))
-                else
-                    PeakList(pl, true)
-                end
-            end
-
-        elseif name === :crystals
+        if name === :crystals
             return makecrystallist(getproperty(idata, :crystals),
                                    getproperty(idata, :n_crystals))
 
@@ -98,20 +92,26 @@ function assert_type(val, type)
 end
 
 
-function set_peaklist(image, val)
-    assert_type(val, PeakList)
-    if val.in_image
+function set_peaklist(image, new_pl)
+
+    assert_type(new_pl, PeakList)
+
+    if new_pl.in_image
         throw(ArgumentError("PeakList is already in an image.  "*
                             "Add a copy (use `deepcopy`) instead."))
     end
-    val.in_image = true
-    val = val.internalptr
-    idata = unsafe_load(image.internalptr)
-    old = swapproperty!(idata, :peaklist, val)
-    unsafe_store!(image.internalptr, idata)
+    new_pl.in_image = true
+    old_pl = swapfield!(image, :peaklist, new_pl)
+    if old_pl !== nothing
+        old_pl.in_image = false
+        # The old PeakList will now get GCed
+    end
 
-    if old != C_NULL
-        @ccall libcrystfel.image_feature_list_free(old::Ptr{InternalPeakList})::Cvoid
+    idata = unsafe_load(image.internalptr)
+    old_i = swapfield!(idata, :peaklist, new_pl.internalptr)
+    if old_pl === nothing || old_i == old_pl.internalptr
+        unsafe_store!(image.internalptr, idata)
+        # else someone else already set a new peaklist
     end
 
 end
@@ -180,7 +180,7 @@ function Image(dtempl::DataTemplate)
         throw(ArgumentError("Failed to create image"))
     end
 
-    image = Image(out)
+    image = Image(out, nothing)
 
     finalizer(image) do x
         ccall((:image_free, libcrystfel), Cvoid, (Ptr{InternalImage},), x.internalptr)
@@ -212,7 +212,7 @@ function Image(dtempl::DataTemplate,
         throw(ArgumentError("Failed to load image"))
     end
 
-    image = Image(out)
+    image = Image(out, nothing)
 
     finalizer(image) do x
         ccall((:image_free, libcrystfel), Cvoid, (Ptr{InternalImage},), x.internalptr)

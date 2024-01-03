@@ -25,7 +25,12 @@ function PeakList()
     if out == C_NULL
         throw(ArgumentError("Failed to create peak list"))
     end
-    PeakList(out, false)
+    finalizer(PeakList(out, false)) do pl
+        if !pl.in_image
+            @ccall libcrystfel.image_feature_list_free(pl.internalptr::Ptr{InternalPeakList})::Cvoid
+            # else it belongs to the image structure
+        end
+    end
 end
 
 
