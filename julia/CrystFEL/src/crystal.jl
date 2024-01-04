@@ -23,9 +23,14 @@ function Crystal(cell::UnitCell; profileradius=2e6, mosaicity=0)
         throw(ArgumentError("Failed to create crystal"))
     end
 
+    # We make a copy of the cell, to avoid memory model shenanigans
+    uccopy = ccall((:cell_new_from_cell, libcrystfel),
+                   Ptr{InternalUnitCell}, (Ptr{InternalUnitCell},),
+                   cell.internalptr)
+
     ccall((:crystal_set_cell, libcrystfel),
           Cvoid, (Ptr{InternalCrystal},Ptr{InternalUnitCell}),
-          out, cell.internalptr)
+          out, uccopy)
 
     ccall((:crystal_set_profile_radius, libcrystfel),
           Cvoid, (Ptr{InternalCrystal},Cdouble),
