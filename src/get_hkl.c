@@ -948,6 +948,8 @@ int main(int argc, char *argv[])
 		ERROR("Failed to write output file.\n");
 	}
 
+	free(output);
+	free_symoplist(mero);
 	reflist_free(input);
 
 	return r;
