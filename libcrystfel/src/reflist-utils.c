@@ -159,6 +159,85 @@ int find_equiv_in_list(RefList *list, signed int h, signed int k,
 }
 
 
+RefList *read_mtz(const char *filename, char **psym_name, UnitCell **pcell)
+{
+#ifdef HAVE_LIBCCP4
+	int nspg;
+	MTZ *mtz;
+	int done;
+	int i;
+	const MTZCOL *columns[5];
+	MTZXTAL *xtal;
+	RefList *refls;
+	CCP4SPG *spg;
+	UnitCell *cell;
+
+	mtz = MtzGet(filename, 0);
+	if ( mtz == NULL ) return NULL;
+
+	columns[0] = MtzColLookup(mtz, "H");
+	columns[1] = MtzColLookup(mtz, "K");
+	columns[2] = MtzColLookup(mtz, "L");
+	columns[3] = MtzColLookup(mtz, "I");
+	columns[4] = MtzColLookup(mtz, "SIGI");
+
+	if ( columns[3] == NULL ) {
+		/* FIXME: Try I+/I- */
+		STATUS("Couldn't find intensity column in MTZ file\n");
+		return NULL;
+	}
+
+	xtal = MtzIxtal(mtz, 0);
+	cell = cell_new_from_parameters(xtal->cell[0]*1e-10,
+	                                xtal->cell[1]*1e-10,
+	                                xtal->cell[2]*1e-10,
+	                                deg2rad(xtal->cell[3]),
+	                                deg2rad(xtal->cell[4]),
+	                                deg2rad(xtal->cell[5]));
+
+	nspg = MtzSpacegroupNumber(mtz);
+	spg = ccp4spg_load_by_ccp4_num(nspg);
+	/* FIXME: Convert to CrystFEL (oriented) point group name */
+	ccp4spg_free(&spg);
+
+	i = 1;
+	refls = reflist_new();
+	do {
+
+		float res;
+		float vals[5];
+		int flags[5];
+		Reflection *refl;
+		signed int h, k, l;
+
+		done = ccp4_lrreff(mtz, &res, vals, flags, columns, 5, i++);
+		if ( done ) continue;
+
+		h = vals[0];
+		k = vals[1];
+		l = vals[2];
+
+		refl = add_refl(refls, h, k, l);
+		set_intensity(refl, vals[3]);
+		set_esd_intensity(refl, vals[4]);
+		set_redundancy(refl, 1);
+
+	} while ( !done );
+
+	MtzFree(mtz);
+
+	if ( pcell != NULL ) {
+		*pcell = cell;
+	} else {
+		cell_free(cell);
+	}
+	return refls;
+#else
+	return NULL;
+#endif
+}
+
+
 /*
  * Write the actual reflections to the file, no headers etc.
  * Reflections which have a redundancy of zero will not be written.
@@ -422,36 +501,71 @@ static RefList *read_reflections_from_file(FILE *fh, char **sym)
 
 
 /**
+ * read_reflections_3:
+ * \param filename: Filename to read from
+ * \param sym: Pointer to a "char *" at which to store the symmetry
+ * \param cell: Pointer to a "UnitCell *" at which to store the unit cell
+ *
+ * This function reads a reflection list from a file, including the
+ * point group name from the header (e.g. "4/mmm").
+ *
+ * The file can be a CrystFEL reflection data file, or an MTZ file provided
+ * that CrystFEL has been compiled with libCCP4 available.  The unit cell will
+ * only be returned when reading from an MTZ file - CrystFEL reflection data
+ * files don't contain this information.
+ *
+ * Returns: A %RefList read from the file, or NULL on error
+ */
+RefList *read_reflections_3(const char *filename, char **sym, UnitCell **cell)
+{
+	const char *ext;
+
+	if ( filename == NULL ) {
+		return read_reflections_from_file(stdin, sym);
+	}
+
+	ext = filename_extension(filename, NULL);
+	if ( strcmp(ext, ".mtz") == 0 ) {
+		return read_mtz(filename, sym, cell);
+	} else {
+
+		RefList *out;
+		FILE *fh = fopen(filename, "r");
+
+		if ( fh == NULL ) {
+			ERROR("Couldn't open input file '%s'.\n", filename);
+			return NULL;
+		}
+
+		out = read_reflections_from_file(fh, sym);
+		if ( cell != NULL ) *cell = NULL;
+
+		fclose(fh);
+
+		return out;
+
+	}
+}
+
+
+/**
  * read_reflections_2:
  * \param filename: Filename to read from
  * \param sym: Pointer to a "char *" at which to store the symmetry
  *
  * This function reads a reflection list from a file, including the
- * symmetry from the header (e.g. "Symmetry: 4/mmm").
+ * point group name from the header (e.g. "4/mmm").
+ *
+ * The file can be a CrystFEL reflection data file, or an MTZ file provided
+ * that CrystFEL has been compiled with libCCP4 available.  MTZ files contain
+ * the unit cell parameters - if you want this information, use
+ * %read_reflections_2 instead.
  *
  * Returns: A %RefList read from the file, or NULL on error
  */
 RefList *read_reflections_2(const char *filename, char **sym)
 {
-	FILE *fh;
-	RefList *out;
-
-	if ( filename == NULL ) {
-		fh = stdout;
-	} else {
-		fh = fopen(filename, "r");
-	}
-
-	if ( fh == NULL ) {
-		ERROR("Couldn't open input file '%s'.\n", filename);
-		return NULL;
-	}
-
-	out = read_reflections_from_file(fh, sym);
-
-	fclose(fh);
-
-	return out;
+	return read_reflections_3(filename, sym, NULL);
 }
 
 

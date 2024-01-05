@@ -56,6 +56,7 @@ extern int write_reflist_2(const char *filename, RefList *list, SymOpList *sym);
 
 extern RefList *read_reflections(const char *filename);
 extern RefList *read_reflections_2(const char *filename, char **sym);
+extern RefList *read_reflections_3(const char *filename, char **sym, UnitCell **cell);
 
 extern int check_list_symmetry(RefList *list, const SymOpList *sym);
 extern int find_equiv_in_list(RefList *list, signed int h, signed int k,
