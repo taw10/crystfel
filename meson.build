@@ -218,6 +218,7 @@ if gtkdep.found()
                  'src/gui_fom.c',
                  'src/gui_export.c',
                  'src/gui_ambi.c',
+                 'src/gui_align.c',
                  'src/gui_backend_local.c',
                  'src/gui_backend_slurm.c',
                  'src/gui_project.c',

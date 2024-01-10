@@ -56,6 +56,7 @@
 #include "gui_merge.h"
 #include "gui_fom.h"
 #include "gui_export.h"
+#include "gui_align.h"
 #include "gui_ambi.h"
 #include "gui_project.h"
 #include "version.h"
@@ -902,6 +903,8 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	           G_CALLBACK(index_all_sig), proj);
 	add_button(vbox, "Determine unit cell", "crystfel-unitcell",
 	           G_CALLBACK(cell_explorer_sig), proj);
+	add_button(vbox, "Refine detector geometry", "crystfel-geometry",
+	           G_CALLBACK(align_sig), proj);
 	add_button(vbox, "Indexing ambiguity", "crystfel-ambiguity",
 	           G_CALLBACK(ambi_sig), proj);
 	add_button(vbox, "Merge", "crystfel-merge",
