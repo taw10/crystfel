@@ -734,6 +734,7 @@ static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
 	GtkCellRenderer *renderer;
 	GtkWidget *button;
 	GtkWidget *hbox;
+	GtkWidget *label;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
@@ -758,6 +759,24 @@ static GtkWidget *stream_parameters(CrystFELIndexingOpts *io)
 	                   FALSE, FALSE, 4.0);
 	gtk_widget_set_tooltip_text(io->no_refls_in_stream,
 	                            "--no-refls-in-stream");
+
+	io->millepede = gtk_check_button_new_with_label("Write calibration data for detector alignment");
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(io->millepede),
+	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->millepede, "--mille");
+
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0.0);
+	label = gtk_label_new("Maximum refinement level:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 16.0);
+	io->max_mille = gtk_spin_button_new_with_range(0.0, 9.0, 1.0);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(io->max_mille),
+	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(io->max_mille, "--max-mille-level");
+	i_disable_if_not(io->millepede, io->max_mille);
+	i_disable_if_not(io->millepede, label);
 
 	io->copy_metadata_store = gtk_list_store_new(1, G_TYPE_STRING);
 
@@ -1052,6 +1071,14 @@ int crystfel_indexing_opts_get_exclude_peaks(CrystFELIndexingOpts *opts)
 int crystfel_indexing_opts_get_exclude_reflections(CrystFELIndexingOpts *opts)
 {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->no_refls_in_stream));
+}
+
+
+int crystfel_indexing_opts_get_millepede(CrystFELIndexingOpts *opts,
+                                         int *pmax_level)
+{
+	*pmax_level = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(opts->max_mille));
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(opts->millepede));
 }
 
 
@@ -1378,6 +1405,14 @@ void crystfel_indexing_opts_set_integration_radii(CrystFELIndexingOpts *opts,
 
 	snprintf(tmp, 63, "%.1f", ir_out);
 	gtk_entry_set_text(GTK_ENTRY(opts->ir_out), tmp);
+}
+
+
+void crystfel_indexing_opts_set_millepede(CrystFELIndexingOpts *opts,
+                                          int enable, int max_level)
+{
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(opts->max_mille), max_level);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->millepede), enable);
 }
 
 

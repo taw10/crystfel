@@ -96,6 +96,8 @@ struct _crystfelindexingopts
 	GtkWidget *exclude_nonhits;
 	GtkWidget *no_peaks_in_stream;
 	GtkWidget *no_refls_in_stream;
+	GtkWidget *millepede;
+	GtkWidget *max_mille;
 	GtkListStore *copy_metadata_store;
 };
 
@@ -133,6 +135,8 @@ extern int crystfel_indexing_opts_get_exclude_peaks(CrystFELIndexingOpts *opts);
 extern int crystfel_indexing_opts_get_exclude_reflections(CrystFELIndexingOpts *opts);
 extern char **crystfel_indexing_opts_get_metadata_to_copy(CrystFELIndexingOpts *opts,
                                                           int *n);
+extern int crystfel_indexing_opts_get_millepede(CrystFELIndexingOpts *opts,
+                                                int *pmax_level);
 extern double crystfel_indexing_opts_get_fixed_profile_radius(CrystFELIndexingOpts *opts,
                                                               int *active);
 extern double crystfel_indexing_opts_get_fixed_divergence(CrystFELIndexingOpts *opts);
@@ -191,6 +195,10 @@ extern void crystfel_indexing_opts_set_exclude_peaks(CrystFELIndexingOpts *opts,
                                                      int flag);
 extern void crystfel_indexing_opts_set_exclude_reflections(CrystFELIndexingOpts *opts,
                                                            int flag);
+
+extern void crystfel_indexing_opts_set_millepede(CrystFELIndexingOpts *opts,
+                                                 int enable, int max_level);
+
 extern void crystfel_indexing_opts_set_fixed_profile_radius(CrystFELIndexingOpts *opts,
                                                             int active,
                                                             double val);
