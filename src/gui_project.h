@@ -87,6 +87,8 @@ struct index_params {
 	int exclude_refls;
 	char **metadata_to_copy;
 	int n_metadata;
+	int millepede;
+	int max_mille_level;
 };
 
 struct merging_params {
