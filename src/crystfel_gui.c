@@ -467,34 +467,6 @@ static gint rescan_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
-static gint detector_shift_sig(GtkWidget *widget, struct crystfelproject *proj)
-{
-	struct gui_indexing_result *res = current_result(proj);
-	if ( res != NULL ) {
-		GError *error = NULL;
-		const gchar *args[64];
-		GSubprocess *sp;
-		int i;
-		args[0] = "detector-shift";
-		args[1] = "--";
-		for ( i=0; i<MIN(res->n_streams, 60); i++ ) {
-			args[2+i] = res->streams[i];
-		}
-		args[2+res->n_streams] = NULL;
-
-		sp = g_subprocess_newv(args, G_SUBPROCESS_FLAGS_NONE, &error);
-		if ( sp == NULL ) {
-			ERROR("Failed to invoke detector-shift: %s\n",
-			      error->message);
-			g_error_free(error);
-		}
-	} else {
-		ERROR("Select indexing result first!\n");
-	}
-	return FALSE;
-}
-
-
 static gint peakogram_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	struct gui_indexing_result *res = current_result(proj);
@@ -825,7 +797,6 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"rescan\" action=\"RescanAction\" />"
 		"	<menuitem name=\"jumpframe\" action=\"JumpFrameAction\" />"
 		"       <separator />"
-		"	<menuitem name=\"detectorshift\" action=\"DetectorShiftAction\" />"
 		"	<menuitem name=\"peakogram\" action=\"PeakogramAction\" />"
 		"</menu>"
 		"<menu name=\"help\" action=\"HelpAction\">"
@@ -852,8 +823,6 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 			G_CALLBACK(rescan_sig) },
 		{ "JumpFrameAction", NULL, "Jump to frame", NULL, NULL,
 			G_CALLBACK(goto_frame_sig) },
-		{ "DetectorShiftAction", NULL, "Check detector shift", NULL, NULL,
-			G_CALLBACK(detector_shift_sig) },
 		{ "PeakogramAction", NULL, "Check detector saturation (peakogram)", NULL, NULL,
 			G_CALLBACK(peakogram_sig) },
 
