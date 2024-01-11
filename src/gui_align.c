@@ -52,12 +52,88 @@ struct align_window
 };
 
 
+
 static int run_align(const char *input_name, int level, int out_of_plane,
-                     const char *out_geom)
+                     const char *out_geom, struct crystfelproject *proj)
 {
-	STATUS("Mock detector alignment from run '%s', level %i, %s  -----> %s\n",
-	       input_name, level, out_of_plane ? "out of plane" : "in plane",
-	       out_geom);
+	GSubprocess *sp;
+	struct gui_indexing_result *res;
+	GError *error;
+	const char *cmdline[16];
+	char level_str[64];
+	GFile *gstream;
+	GFile *gworkdir;
+	GFile *ggeom;
+	GFile *gmilledir;
+	char *input_geom;
+	int i;
+	char *mille_dir;
+
+	res = find_indexing_result_by_name(proj, input_name);
+	if ( res == NULL ) {
+		ERROR("Results for '%s' not found!\n", input_name);
+		return 1;
+	}
+
+	/* Figure out working directory for indexing job */
+	if ( res->n_streams < 1 ) {
+		ERROR("No streams?\n");
+		return 1;
+	}
+	gstream = g_file_new_for_path(res->streams[0]);
+	gworkdir = g_file_get_parent(gstream);
+	g_object_unref(gstream);
+
+	/* Look for Millepede files */
+	gmilledir = g_file_get_child(gworkdir, "mille-data");
+	if ( !g_file_query_exists(gmilledir, NULL) ) {
+		ERROR("No detector alignment data found for indexing run '%s'\n", input_name);
+		return 1;
+	}
+	mille_dir = g_file_get_path(gmilledir);
+	g_object_unref(gmilledir);
+
+	/* Input geometry file */
+	ggeom = g_file_get_child(gworkdir, "detector.geom");
+	input_geom = g_file_get_path(ggeom);
+	g_object_unref(ggeom);
+
+	/* Build command line */
+	snprintf(level_str, 63, "%i", level);
+	cmdline[0] = "align_detector";
+	cmdline[1] = "-g";
+	cmdline[2] = input_geom;
+	cmdline[3] = "--level";
+	cmdline[4] = level_str;
+	cmdline[5] = "-o";
+	cmdline[6] = out_geom;
+	if ( out_of_plane ) {
+		cmdline[7] = "--out-of-plane";
+		cmdline[8] = mille_dir;
+		cmdline[9] = NULL;
+	} else {
+		cmdline[7] = mille_dir;
+		cmdline[8] = NULL;
+	}
+
+	STATUS("Running program: ");
+	i = 0;
+	while ( cmdline[i] != NULL ) {
+		STATUS("%s ", cmdline[i++]);
+	}
+	STATUS("\n");
+
+	error = NULL;
+	sp = g_subprocess_newv(cmdline, G_SUBPROCESS_FLAGS_NONE, &error);
+	if ( sp == NULL ) {
+		ERROR("Failed to run align_detector: %s\n", error->message);
+		g_error_free(error);
+		return 1;
+	}
+
+	g_object_unref(gworkdir);
+	g_free(mille_dir);
+	g_free(input_geom);
 
 	return 0;
 }
@@ -86,7 +162,7 @@ static void align_response_sig(GtkWidget *dialog, gint resp,
 		out_of_plane = get_bool(win->out_of_plane);
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-		r = run_align(input_name, level, out_of_plane, filename);
+		r = run_align(input_name, level, out_of_plane, filename, win->proj);
 
 		g_free(filename);
 	}
