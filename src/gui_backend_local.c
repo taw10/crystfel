@@ -534,6 +534,7 @@ static void *run_indexing(const char *job_title,
 	gchar *files_rel_filename;
 	gchar *stream_rel_filename;
 	gchar *harvest_rel_filename;
+	gchar *mille_rel_filename;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -555,6 +556,7 @@ static void *run_indexing(const char *job_title,
 	files_rel_filename = relative_to_cwd(workdir, "files.lst");
 	stream_rel_filename = relative_to_cwd(workdir, "crystfel.stream");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
+	mille_rel_filename = relative_to_cwd(workdir, "mille-data");
 
 	if ( !write_indexamajig_script(sc_rel_filename,
 	                               proj->geom_filename,
@@ -564,6 +566,7 @@ static void *run_indexing(const char *job_title,
 	                               stdout_rel_filename,
 	                               stderr_rel_filename,
 	                               harvest_rel_filename,
+	                               mille_rel_filename,
 	                               NULL,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params,
@@ -598,6 +601,7 @@ static void *run_indexing(const char *job_title,
 	free(stdout_rel_filename);
 	free(stderr_rel_filename);
 	free(harvest_rel_filename);
+	free(mille_rel_filename);
 
 	return job;
 }

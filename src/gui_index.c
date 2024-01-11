@@ -851,6 +851,7 @@ static char **indexamajig_command_line(const char *geom_filename,
                                        const char *files_list,
                                        const char *stream_filename,
                                        const char *harvest_filename,
+                                       const char *mille_filename,
                                        const char *serial_start,
                                        struct peak_params *peak_search_params,
                                        struct index_params *indexing_params,
@@ -1002,7 +1003,10 @@ static char **indexamajig_command_line(const char *geom_filename,
 	if ( indexing_params->exclude_nonhits ) add_arg(args, n_args++, "--no-non-hits-in-stream");
 	if ( indexing_params->exclude_peaks ) add_arg(args, n_args++, "--no-peaks-in-stream");
 	if ( indexing_params->exclude_refls ) add_arg(args, n_args++, "--no-refls-in-stream");
-	if ( indexing_params->millepede ) add_arg(args, n_args++, "--millepede");
+	if ( indexing_params->millepede ) {
+		add_arg(args, n_args++, "--mille");
+		add_arg_string(args, n_args++, "--mille-dir", mille_filename);
+	}
 	if ( indexing_params->max_mille_level ) add_arg(args, n_args++, "--max-mille-level");
 	for ( i=0; i<indexing_params->n_metadata; i++ ) {
 		add_arg_string(args, n_args++, "copy-header",
@@ -1086,6 +1090,7 @@ int write_indexamajig_script(const char *script_filename,
                              const char *stdout_filename,
                              const char *stderr_filename,
                              const char *harvest_filename,
+                             const char *mille_filename,
                              const char *serial_start,
                              struct peak_params *peak_search_params,
                              struct index_params *indexing_params,
@@ -1102,6 +1107,7 @@ int write_indexamajig_script(const char *script_filename,
 	                                   files_list,
 	                                   stream_filename,
 	                                   harvest_filename,
+	                                   mille_filename,
 	                                   serial_start,
 	                                   peak_search_params,
 	                                   indexing_params,
