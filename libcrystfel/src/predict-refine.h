@@ -67,7 +67,8 @@ struct reflpeak {
  * Prediction refinement: refinement of indexing solutions before integration.
  */
 
-extern int refine_prediction(struct image *image, Crystal *cr, Mille *mille);
+extern int refine_prediction(struct image *image, Crystal *cr,
+                             Mille *mille, int max_mille_level);
 
 extern int refine_radius(Crystal *cr, struct image *image);
 

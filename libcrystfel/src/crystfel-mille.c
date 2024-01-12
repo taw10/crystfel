@@ -145,11 +145,28 @@ static void mille_add_measurement(Mille *m,
 }
 
 
+/* group must not be NULL
+ * count_depth() = 0 means this is the top group */
+static int count_depth(const struct detgeom_panel_group *group)
+{
+	int depth = 0;
+	assert(group != NULL);
+	do {
+		depth++;
+		group = group->parent;
+	} while ( group != NULL );
+	return depth-1;
+}
+
+
 void write_mille(Mille *mille, int n, UnitCell *cell,
                  struct reflpeak *rps, struct image *image,
-                 gsl_matrix **Minvs)
+                 int max_level, gsl_matrix **Minvs)
 {
 	int i;
+	int depth;
+
+	assert(max_level >= 0);
 
 	/* No groups -> no refinement */
 	if ( image->detgeom->top_group == NULL ) {
@@ -212,8 +229,13 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		/* Global gradients for each hierarchy level, starting at the
 		 * individual panel and working up to the top level */
 		j = 0;
-		levels = 0;
 		group = image->detgeom->panels[rps[i].peak->pn].group;
+		depth = count_depth(group);
+		while ( depth > max_level ) {
+			depth--;
+			group = group->parent;
+		}
+		levels = 0;
 		while ( group != NULL ) {
 
 			double cx, cy, cz;

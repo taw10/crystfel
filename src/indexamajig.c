@@ -754,6 +754,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 			ERROR("Invalid value for --max-mille-level\n");
 			return EINVAL;
 		}
+		if ( args->iargs.max_mille_level < 0 ) {
+			ERROR("Invalid value for --max-mille-level\n");
+			return EINVAL;
+		}
 		break;
 
 		/* ---------- Integration ---------- */
