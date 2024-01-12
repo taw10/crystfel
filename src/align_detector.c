@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -255,6 +256,22 @@ static int run_pede()
 }
 
 
+static void write_children(FILE *fh, const char *dir)
+{
+	DIR *d = opendir(dir);
+	struct dirent *dent = readdir(d);
+
+	while ( dent != NULL ) {
+		if ( dent->d_name[0] == 'm' ) {
+			fprintf(fh, "%s/%s\n", dir, dent->d_name);
+		}
+		dent = readdir(d);
+	}
+
+	closedir(d);
+}
+
+
 int main(int argc, char *argv[])
 {
 	int c;
@@ -352,7 +369,7 @@ int main(int argc, char *argv[])
 
 		r = stat(argv[i], &statbuf);
 		if ( r != 0 ) {
-			ERROR("File '%s' not found\n", argv[i]);
+			ERROR("File/directory '%s' not found\n", argv[i]);
 			return 1;
 		}
 
@@ -364,7 +381,11 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		fprintf(fh, "%s\n", argv[i]);
+		if ( is_dir(argv[i]) ) {
+			write_children(fh, argv[i]);
+		} else {
+			fprintf(fh, "%s\n", argv[i]);
+		}
 	}
 
 	if ( warn_times ) print_time_warning();

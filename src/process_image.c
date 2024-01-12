@@ -420,7 +420,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	set_last_task(last_task, "indexing");
 	profile_start("index");
 	index_pattern_4(image, iargs->ipriv, &sb_shared->pings[cookie],
-	                last_task, mille);
+	                last_task, mille, iargs->max_mille_level);
 	profile_end("index");
 
 	r = chdir(rn);

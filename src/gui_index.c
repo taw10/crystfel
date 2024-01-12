@@ -140,6 +140,8 @@ static void get_indexing_opts(struct crystfelproject *proj,
 	proj->indexing_params.exclude_nonhits = crystfel_indexing_opts_get_exclude_blanks(opts);
 	proj->indexing_params.exclude_peaks = crystfel_indexing_opts_get_exclude_peaks(opts);
 	proj->indexing_params.exclude_refls = crystfel_indexing_opts_get_exclude_reflections(opts);
+	proj->indexing_params.millepede = crystfel_indexing_opts_get_millepede(opts,
+	                       &proj->indexing_params.max_mille_level);
 	proj->indexing_params.metadata_to_copy = crystfel_indexing_opts_get_metadata_to_copy(opts,
 		               &proj->indexing_params.n_metadata);
 }
@@ -383,6 +385,9 @@ static void set_indexing_opts(struct crystfelproject *proj,
 	                                         proj->indexing_params.exclude_peaks);
 	crystfel_indexing_opts_set_exclude_reflections(opts,
 	                                               proj->indexing_params.exclude_refls);
+	crystfel_indexing_opts_set_millepede(opts,
+	                                     proj->indexing_params.millepede,
+	                                     proj->indexing_params.max_mille_level);
 	crystfel_indexing_opts_set_metadata_to_copy(opts,
 	                                            proj->indexing_params.metadata_to_copy,
 	                                            proj->indexing_params.n_metadata);
@@ -846,6 +851,7 @@ static char **indexamajig_command_line(const char *geom_filename,
                                        const char *files_list,
                                        const char *stream_filename,
                                        const char *harvest_filename,
+                                       const char *mille_filename,
                                        const char *serial_start,
                                        struct peak_params *peak_search_params,
                                        struct index_params *indexing_params,
@@ -997,6 +1003,11 @@ static char **indexamajig_command_line(const char *geom_filename,
 	if ( indexing_params->exclude_nonhits ) add_arg(args, n_args++, "--no-non-hits-in-stream");
 	if ( indexing_params->exclude_peaks ) add_arg(args, n_args++, "--no-peaks-in-stream");
 	if ( indexing_params->exclude_refls ) add_arg(args, n_args++, "--no-refls-in-stream");
+	if ( indexing_params->millepede ) {
+		add_arg(args, n_args++, "--mille");
+		add_arg_string(args, n_args++, "mille-dir", mille_filename);
+		add_arg_int(args, n_args++, "max-mille-level", indexing_params->max_mille_level);
+	}
 	for ( i=0; i<indexing_params->n_metadata; i++ ) {
 		add_arg_string(args, n_args++, "copy-header",
 		               indexing_params->metadata_to_copy[i]);
@@ -1079,6 +1090,7 @@ int write_indexamajig_script(const char *script_filename,
                              const char *stdout_filename,
                              const char *stderr_filename,
                              const char *harvest_filename,
+                             const char *mille_filename,
                              const char *serial_start,
                              struct peak_params *peak_search_params,
                              struct index_params *indexing_params,
@@ -1095,6 +1107,7 @@ int write_indexamajig_script(const char *script_filename,
 	                                   files_list,
 	                                   stream_filename,
 	                                   harvest_filename,
+	                                   mille_filename,
 	                                   serial_start,
 	                                   peak_search_params,
 	                                   indexing_params,

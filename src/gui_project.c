@@ -429,6 +429,12 @@ static void parse_stream_opt(const char *key, const char *val,
 	if ( strcmp(key, "stream.exclude_refls") == 0 ) {
 		ip->exclude_refls = parse_int(val);
 	}
+	if ( strcmp(key, "stream.millepede") == 0 ) {
+		ip->millepede = parse_int(val);
+	}
+	if ( strcmp(key, "stream.max_mille_level") == 0 ) {
+		ip->max_mille_level = parse_int(val);
+	}
 	if ( strcmp(key, "stream.metadata") == 0 ) {
 		add_metadata_to_copy(ip, val);
 	}
@@ -1048,6 +1054,10 @@ int save_project(struct crystfelproject *proj)
 	        proj->indexing_params.exclude_peaks);
 	fprintf(fh, "stream.exclude_refls %i\n",
 	        proj->indexing_params.exclude_refls);
+	fprintf(fh, "stream.millepede %i\n",
+	        proj->indexing_params.millepede);
+	fprintf(fh, "stream.max_mille_level %i\n",
+	        proj->indexing_params.max_mille_level);
 	if ( proj->indexing_params.metadata_to_copy != NULL ) {
 		int i;
 		for ( i=0; i<proj->indexing_params.n_metadata; i++ ) {
@@ -1287,6 +1297,8 @@ int default_project(struct crystfelproject *proj)
 	proj->indexing_params.exclude_nonhits = 0;
 	proj->indexing_params.exclude_peaks = 0;
 	proj->indexing_params.exclude_refls = 0;
+	proj->indexing_params.millepede = 1;
+	proj->indexing_params.max_mille_level = 1;
 	proj->indexing_params.metadata_to_copy = NULL;
 	proj->indexing_params.n_metadata = 0;
 	proj->indexing_params.fix_profile_radius = 0.01e9;

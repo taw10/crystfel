@@ -76,6 +76,7 @@ struct index_args
 	int n_threads;
 	int mille;
 	char *milledir;
+	int max_mille_level;
 
 	/* Integration */
 	IntegrationMethod int_meth;

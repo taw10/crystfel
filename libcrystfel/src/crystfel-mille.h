@@ -51,7 +51,7 @@ extern enum gparam mille_unlabel(int n);
 
 extern void write_mille(Mille *mille, int n, UnitCell *cell,
                         struct reflpeak *rps, struct image *image,
-                        gsl_matrix **Minvs);
+                        int max_level, gsl_matrix **Minvs);
 
 extern void crystfel_mille_delete_last_record(Mille *m);
 

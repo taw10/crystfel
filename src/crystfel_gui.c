@@ -56,6 +56,7 @@
 #include "gui_merge.h"
 #include "gui_fom.h"
 #include "gui_export.h"
+#include "gui_align.h"
 #include "gui_ambi.h"
 #include "gui_project.h"
 #include "version.h"
@@ -467,34 +468,6 @@ static gint rescan_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
-static gint detector_shift_sig(GtkWidget *widget, struct crystfelproject *proj)
-{
-	struct gui_indexing_result *res = current_result(proj);
-	if ( res != NULL ) {
-		GError *error = NULL;
-		const gchar *args[64];
-		GSubprocess *sp;
-		int i;
-		args[0] = "detector-shift";
-		args[1] = "--";
-		for ( i=0; i<MIN(res->n_streams, 60); i++ ) {
-			args[2+i] = res->streams[i];
-		}
-		args[2+res->n_streams] = NULL;
-
-		sp = g_subprocess_newv(args, G_SUBPROCESS_FLAGS_NONE, &error);
-		if ( sp == NULL ) {
-			ERROR("Failed to invoke detector-shift: %s\n",
-			      error->message);
-			g_error_free(error);
-		}
-	} else {
-		ERROR("Select indexing result first!\n");
-	}
-	return FALSE;
-}
-
-
 static gint peakogram_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	struct gui_indexing_result *res = current_result(proj);
@@ -825,7 +798,6 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"rescan\" action=\"RescanAction\" />"
 		"	<menuitem name=\"jumpframe\" action=\"JumpFrameAction\" />"
 		"       <separator />"
-		"	<menuitem name=\"detectorshift\" action=\"DetectorShiftAction\" />"
 		"	<menuitem name=\"peakogram\" action=\"PeakogramAction\" />"
 		"</menu>"
 		"<menu name=\"help\" action=\"HelpAction\">"
@@ -852,8 +824,6 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 			G_CALLBACK(rescan_sig) },
 		{ "JumpFrameAction", NULL, "Jump to frame", NULL, NULL,
 			G_CALLBACK(goto_frame_sig) },
-		{ "DetectorShiftAction", NULL, "Check detector shift", NULL, NULL,
-			G_CALLBACK(detector_shift_sig) },
 		{ "PeakogramAction", NULL, "Check detector saturation (peakogram)", NULL, NULL,
 			G_CALLBACK(peakogram_sig) },
 
@@ -933,6 +903,8 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 	           G_CALLBACK(index_all_sig), proj);
 	add_button(vbox, "Determine unit cell", "crystfel-unitcell",
 	           G_CALLBACK(cell_explorer_sig), proj);
+	add_button(vbox, "Refine detector geometry", "crystfel-geometry",
+	           G_CALLBACK(align_sig), proj);
 	add_button(vbox, "Indexing ambiguity", "crystfel-ambiguity",
 	           G_CALLBACK(ambi_sig), proj);
 	add_button(vbox, "Merge", "crystfel-merge",

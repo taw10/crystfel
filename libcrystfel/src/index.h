@@ -253,7 +253,8 @@ extern void index_pattern_3(struct image *image, IndexingPrivate *ipriv,
                             int *ping, char *last_task);
 
 extern void index_pattern_4(struct image *image, IndexingPrivate *ipriv,
-                            int *ping, char *last_task, Mille *mille);
+                            int *ping, char *last_task, Mille *mille,
+                            int max_mille_level);
 
 extern void cleanup_indexing(IndexingPrivate *ipriv);
 

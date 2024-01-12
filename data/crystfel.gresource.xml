@@ -21,5 +21,6 @@
     <file>crystfel-merge.png</file>
     <file>crystfel-peak-detection.png</file>
     <file>crystfel-unitcell.png</file>
+    <file>crystfel-geometry.png</file>
   </gresource>
 </gresources>

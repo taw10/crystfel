@@ -797,6 +797,7 @@ static void *run_indexing(const char *job_title,
 	gchar *files_rel_filename;
 	gchar *stream_rel_filename;
 	gchar *harvest_rel_filename;
+	gchar *mille_rel_filename;
 	char *slurm_prologue;
 
 	workdir = make_job_folder(job_title, job_notes);
@@ -842,6 +843,7 @@ static void *run_indexing(const char *job_title,
 	stdout_rel_filename = relative_to_cwd(workdir, "stdout-%a.log");
 	stderr_rel_filename = relative_to_cwd(workdir, "stderr-%a.log");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
+	mille_rel_filename = relative_to_cwd(workdir, "mille-data");
 
 	slurm_prologue = sbatch_bits(&opts->common, job_title, array_inx,
 	                             stdout_rel_filename, stderr_rel_filename);
@@ -853,6 +855,7 @@ static void *run_indexing(const char *job_title,
 	                               stream_rel_filename,
 	                               NULL, NULL,
 	                               harvest_rel_filename,
+	                               mille_rel_filename,
 	                               serial_offs,
 	                               &proj->peak_search_params,
 	                               &proj->indexing_params,
@@ -888,6 +891,7 @@ static void *run_indexing(const char *job_title,
 	free(stdout_rel_filename);
 	free(stderr_rel_filename);
 	free(harvest_rel_filename);
+	free(mille_rel_filename);
 	g_object_unref(workdir);
 
 	return job;

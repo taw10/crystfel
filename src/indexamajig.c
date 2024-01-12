@@ -748,6 +748,18 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->iargs.milledir = strdup(arg);
 		break;
 
+		case 418 :
+		if (sscanf(arg, "%d", &args->iargs.max_mille_level) != 1)
+		{
+			ERROR("Invalid value for --max-mille-level\n");
+			return EINVAL;
+		}
+		if ( args->iargs.max_mille_level < 0 ) {
+			ERROR("Invalid value for --max-mille-level\n");
+			return EINVAL;
+		}
+		break;
+
 		/* ---------- Integration ---------- */
 
 		case 501 :
@@ -996,6 +1008,7 @@ int main(int argc, char *argv[])
 	args.iargs.data_format = DATA_SOURCE_TYPE_UNKNOWN;
 	args.iargs.mille = 0;
 	args.iargs.milledir = strdup(".");
+	args.iargs.max_mille_level = 99;
 
 	argp_program_version_hook = show_version;
 
@@ -1122,8 +1135,8 @@ int main(int argc, char *argv[])
 		        "Estimate of the camera length, in metres."},
 		{"mille", 416, NULL, 0,
 		        "Generate data for detector geometry refinement using Millepede"},
-		{"mille-dir", 417, "dirname", 0,
-		        "Save Millepede data in folder"},
+		{"mille-dir", 417, "dirname", 0, "Save Millepede data in folder"},
+		{"max-mille-level", 418, "n", 0, "Maximum geometry refinement level"},
 
 		{NULL, 0, 0, OPTION_DOC, "Integration options:", 5},
 		{"integration", 501, "method", OPTION_NO_USAGE, "Integration method"},

@@ -796,7 +796,8 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 }
 
 
-int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
+int refine_prediction(struct image *image, Crystal *cr,
+                      Mille *mille, int max_mille_level)
 {
 	int n;
 	int i;
@@ -879,7 +880,8 @@ int refine_prediction(struct image *image, Crystal *cr, Mille *mille)
 
 	if ( mille != NULL ) {
 		profile_start("mille-calc");
-		write_mille(mille, n, crystal_get_cell(cr), rps, image, Minvs);
+		write_mille(mille, n, crystal_get_cell(cr), rps, image,
+		            max_mille_level, Minvs);
 		profile_end("mille-calc");
 	}
 
