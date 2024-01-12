@@ -1005,9 +1005,9 @@ static char **indexamajig_command_line(const char *geom_filename,
 	if ( indexing_params->exclude_refls ) add_arg(args, n_args++, "--no-refls-in-stream");
 	if ( indexing_params->millepede ) {
 		add_arg(args, n_args++, "--mille");
-		add_arg_string(args, n_args++, "--mille-dir", mille_filename);
+		add_arg_string(args, n_args++, "mille-dir", mille_filename);
+		add_arg_int(args, n_args++, "max-mille-level", indexing_params->max_mille_level);
 	}
-	if ( indexing_params->max_mille_level ) add_arg(args, n_args++, "--max-mille-level");
 	for ( i=0; i<indexing_params->n_metadata; i++ ) {
 		add_arg_string(args, n_args++, "copy-header",
 		               indexing_params->metadata_to_copy[i]);
