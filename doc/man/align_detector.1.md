@@ -45,6 +45,10 @@ panel "dominoes", and level **3** would refine the individual (roughly square)
 ASICs.  Higher refinement levels will generally require more and
 higher-resolution diffraction data.
 
+You can use **indexamajig** option **--max-mille-level** to reduce the size of
+the calibration data files, at the cost of limiting the maximum refinement
+level.
+
 The default behaviour is to refine only the position components in the x-y
 plane, perpendicular to the beam.  In favourable circumstances, you can add
 option **--out-of-plane** to refine the panel tilts and shifts out of this

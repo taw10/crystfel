@@ -594,6 +594,13 @@ INDEXING OPTIONS
 **--mille-dir=dirname**
 : Write the Millepede-II data into _dirname_.
 
+**--max-mille-level=n**
+: Write the Millepede-II data up to a maximum hierarchy depth _n_.  If _n_ is
+: 0, only the overall detector position can be refined.  Larger numbers allow
+: finer-grained refinement.  Set this to a large number (9 is high enough!)
+: to disable the limit, although this can make the Millepede-II files quite
+: large.
+
 **--wavelength-estimate=m** **--camera-length-estimate=m**
 : Some indexing algorithms need to know the camera length or the wavelength of
 : the incident radiation in advance, e.g. to prepare an internal look-up table.
