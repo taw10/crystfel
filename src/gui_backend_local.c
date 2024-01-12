@@ -535,6 +535,9 @@ static void *run_indexing(const char *job_title,
 	gchar *stream_rel_filename;
 	gchar *harvest_rel_filename;
 	gchar *mille_rel_filename;
+	GFile *ggeom;
+	GFile *ggeomcopy;
+	GError *error;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -557,6 +560,16 @@ static void *run_indexing(const char *job_title,
 	stream_rel_filename = relative_to_cwd(workdir, "crystfel.stream");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
 	mille_rel_filename = relative_to_cwd(workdir, "mille-data");
+
+	/* Copy geometry file into working directory
+	 * Used for geometry refinement, not indexing! */
+	ggeom = g_file_new_for_path(proj->geom_filename);
+	ggeomcopy = g_file_get_child(workdir, "detector.geom");
+	error = NULL;
+	g_file_copy(ggeom, ggeomcopy, G_FILE_COPY_BACKUP | G_FILE_COPY_ALL_METADATA,
+	            NULL, NULL, NULL, &error);
+	g_object_unref(ggeom);
+	g_object_unref(ggeomcopy);
 
 	if ( !write_indexamajig_script(sc_rel_filename,
 	                               proj->geom_filename,
