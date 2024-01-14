@@ -428,10 +428,11 @@ void search_peaks(struct image *image, float threshold, float min_sq_gradient,
 {
 	int i;
 
-	if ( image->features != NULL ) {
+	if ( (image->features != NULL) && (image->owns_peaklist) ) {
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
+	image->owns_peaklist = 1;
 
 	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 
@@ -466,10 +467,11 @@ int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
                              int max_res, int use_saturated,
                              int fast_mode, void *private_data)
 {
-	if ( image->features != NULL ) {
+	if ( (image->features != NULL) && (image->owns_peaklist) ) {
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
+	image->owns_peaklist = 1;
 
 	return peakfinder8(image, max_n_peaks, threshold, min_snr,
 	                   min_pix_count, max_pix_count,
@@ -493,10 +495,11 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 	float *data_copy_new;
 	int panel_number;
 
-	if ( image->features != NULL ) {
+	if ( (image->features != NULL) && (image->owns_peaklist) ) {
 		image_feature_list_free(image->features);
 	}
 	image->features = image_feature_list_new();
+	image->owns_peaklist = 1;
 
 	accuracy_consts.minSNR_biggestPixel = min_snr_biggest_pix;
 	accuracy_consts.minSNR_peakPixel = min_snr_peak_pix;
@@ -730,7 +733,10 @@ void validate_peaks(struct image *image, double min_snr,
 	//STATUS("HDF5: %i peaks, validated: %i.  WTF: %i, integration: %i, "
 	//       "SNR: %i, saturated: %i\n",
 	//       n, image_feature_count(flist), n_wtf, n_int, n_snr, n_sat);
-	image_feature_list_free(image->features);
+	if ( (image->features != NULL) && (image->owns_peaklist) ) {
+		image_feature_list_free(image->features);
+	}
+	image->owns_peaklist = 1;
 	image->features = flist;
 }
 
