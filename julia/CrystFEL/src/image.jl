@@ -36,6 +36,7 @@ mutable struct InternalImage
     peak_resolution::Cdouble
     peaklist::Ptr{InternalPeakList}
     ida::Ptr{Cvoid}
+    owns_peaklist::Cint
 end
 
 
@@ -63,11 +64,27 @@ function makecrystallist(listptr, n)
 end
 
 
+function getpeaklist(image)
+    idata = unsafe_load(image.internalptr)
+    if (image.peaklist === nothing) || (idata.peaklist != image.peaklist.internalptr)
+        if idata.peaklist != C_NULL
+            image.peaklist = PeakList(idata.peaklist)
+            # From now on, Julia is completely responsible for freeing the peaklist
+            idata.owns_peaklist = 0
+            unsafe_store!(image.internalptr, idata)
+        else
+            image.peaklist = nothing
+        end
+    end
+    return image.peaklist
+end
+
+
 function Base.getproperty(image::Image, name::Symbol)
     if name === :internalptr
         getfield(image, :internalptr)
     elseif name === :peaklist
-        getfield(image, :peaklist)
+        getpeaklist(image)
     else
         idata = unsafe_load(image.internalptr)
 
@@ -96,23 +113,13 @@ function set_peaklist(image, new_pl)
 
     assert_type(new_pl, PeakList)
 
-    if new_pl.in_image
-        throw(ArgumentError("PeakList is already in an image.  "*
-                            "Add a copy (use `deepcopy`) instead."))
-    end
-    new_pl.in_image = true
-    old_pl = swapfield!(image, :peaklist, new_pl)
-    if old_pl !== nothing
-        old_pl.in_image = false
-        # The old PeakList will now get GCed
-    end
-
     idata = unsafe_load(image.internalptr)
-    old_i = swapfield!(idata, :peaklist, new_pl.internalptr)
-    if old_pl === nothing || old_i == old_pl.internalptr
-        unsafe_store!(image.internalptr, idata)
-        # else someone else already set a new peaklist
+    if (idata.owns_peaklist == 0) && (idata.peaklist != C_NULL)
+        @ccall libcrystfel.image_feature_list_free(idata.peaklist::Ptr{InternalPeakList})::Cvoid
     end
+    idata.peaklist = new_pl.internalptr
+    idata.owns_peaklist = 0
+    unsafe_store!(image.internalptr, idata)
 
 end
 

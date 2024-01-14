@@ -190,6 +190,10 @@ struct image
 	/** Re-usable data array structure, or NULL if not used */
 	ImageDataArrays         *ida;
 
+	/** If set, then 'features' should be freed with the image.
+	 * Otherwise, it is managed externally (e.g. by Julia) */
+	int                      owns_peaklist;
+
 };
 
 #ifdef __cplusplus

@@ -16,7 +16,6 @@ mutable struct InternalPeakList end
 
 mutable struct PeakList
     internalptr::Ptr{InternalPeakList}
-    in_image   # if true, this PeakList belongs to an Image struct
 end
 
 
@@ -25,11 +24,8 @@ function PeakList()
     if out == C_NULL
         throw(ArgumentError("Failed to create peak list"))
     end
-    finalizer(PeakList(out, false)) do pl
-        if !pl.in_image
-            @ccall libcrystfel.image_feature_list_free(pl.internalptr::Ptr{InternalPeakList})::Cvoid
-            # else it belongs to the image structure
-        end
+    finalizer(PeakList(out)) do pl
+        @ccall libcrystfel.image_feature_list_free(pl.internalptr::Ptr{InternalPeakList})::Cvoid
     end
 end
 
@@ -39,7 +35,7 @@ function Base.deepcopy(peaklist::PeakList)
     if out == C_NULL
         throw(ErrorException("Failed to copy peak list"))
     end
-    PeakList(out, false)
+    PeakList(out)
 end
 
 function Base.length(peaklist::PeakList)

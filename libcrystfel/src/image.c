@@ -1394,7 +1394,7 @@ void image_free(struct image *image)
 	int i, np;
 
 	if ( image == NULL ) return;
-	image_feature_list_free(image->features);
+	if ( image->owns_peaklist ) image_feature_list_free(image->features);
 	free_all_crystals(image);
 	spectrum_free(image->spectrum);
 	cffree(image->filename);
@@ -1464,6 +1464,7 @@ struct image *image_new()
 	image->bw = -1.0;
 	image->peak_resolution = -1.0;
 	image->features = NULL;
+	image->owns_peaklist = 1;
 
 	return image;
 }
