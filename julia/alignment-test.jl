@@ -1,6 +1,7 @@
 using CrystFEL
 using Random
 using Plots
+using MillepedeII
 
 # "Simulate" a diffraction pattern from the reflections
 function sketch_pattern(image, cr)
@@ -54,6 +55,7 @@ end
 
 function plotresiduals(filename)
 
+    t = loadmille(filename)
     l = @layout([q0 q1; q2 q3])
     a = collect(Iterators.flatten(t))
 
