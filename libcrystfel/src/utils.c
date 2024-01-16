@@ -375,6 +375,83 @@ void ERROR(const char *format, ...)
 }
 
 
+/* ---------------------------- Memory management --------------------------- */
+
+struct _mmconf {
+	void *(*malloc)(size_t size);
+	void (*free)(void *ptr);
+	void *(*calloc)(size_t nmemb, size_t size);
+	void *(*realloc)(void *ptr, size_t size);
+} mm_conf = { malloc, free, calloc, realloc };
+
+void *cfmalloc(size_t size)
+{
+	return mm_conf.malloc(size);
+}
+
+void cffree(void *ptr)
+{
+	mm_conf.free(ptr);
+}
+
+void *cfcalloc(size_t nmemb, size_t size)
+{
+	return mm_conf.calloc(nmemb, size);
+}
+
+void *cfrealloc(void *ptr, size_t size)
+{
+	return mm_conf.realloc(ptr, size);
+}
+
+int set_mm_funcs(void *(*cfmalloc)(size_t size),
+                 void (*cffree)(void *ptr),
+                 void *(*cfcalloc)(size_t nmemb, size_t size),
+                 void *(*cfrealloc)(void *ptr, size_t size))
+{
+	mm_conf.malloc = cfmalloc;
+	mm_conf.free = cffree;
+	mm_conf.calloc = cfcalloc;
+	mm_conf.realloc = cfrealloc;
+	return 0;
+}
+
+char *cfstrdup(const char *s)
+{
+	size_t l = strlen(s);
+	char *r = cfmalloc(l+1);
+	if ( r == NULL ) return NULL;
+	strcpy(r, s);
+	return r;
+}
+
+char *cfstrndup(const char *s, size_t n)
+{
+	char *r = cfmalloc(n+1);
+	if ( r == NULL ) return NULL;
+	strncpy(r, s, n);
+	r[n] = '\0';
+	return r;
+}
+
+void *srealloc(void *arr, size_t new_size)
+{
+	void *new_arr = realloc(arr, new_size);
+	if ( new_arr == NULL ) {
+		free(arr);
+		return NULL;
+	} else {
+		return new_arr;
+	}
+}
+
+char *safe_strdup(const char *in)
+{
+	if ( in == NULL ) return NULL;
+	return strdup(in);
+}
+
+
 /* ------------------------------ Useful functions ---------------------------- */
 
 int convert_int(const char *str, int *pval)
@@ -672,13 +749,6 @@ char *check_prefix(char *prefix)
 }
 
 
-char *safe_strdup(const char *in)
-{
-	if ( in == NULL ) return NULL;
-	return strdup(in);
-}
-
-
 char *safe_basename(const char *in)
 {
 	int i;
@@ -954,18 +1024,6 @@ int compare_double(const void *av, const void *bv)
 	if ( a > b ) return 1;
 	if ( a < b ) return -1;
 	return 0;
-}
-
-
-void *srealloc(void *arr, size_t new_size)
-{
-	void *new_arr = realloc(arr, new_size);
-	if ( new_arr == NULL ) {
-		free(arr);
-		return NULL;
-	} else {
-		return new_arr;
-	}
 }
 
 
