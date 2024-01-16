@@ -35,8 +35,8 @@ mutable struct InternalImage
     bw::Cdouble
     peak_resolution::Cdouble
     peaklist::Ptr{InternalPeakList}
-    owns_peaklist::Cint
     ida::Ptr{Cvoid}
+    owns_peaklist::Cint
 end
 
 
