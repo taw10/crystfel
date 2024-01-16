@@ -524,7 +524,7 @@ static double matrix_trace(gsl_matrix *a)
 
 static char *add_unique_axis(const char *inp, char ua)
 {
-	char *pg = malloc(64);
+	char *pg = cfmalloc(64);
 	if ( pg == NULL ) return NULL;
 	snprintf(pg, 63, "%s_ua%c", inp, ua);
 	return pg;
@@ -584,7 +584,7 @@ static char *get_chiral_holohedry(UnitCell *cell)
 	if ( add_ua ) {
 		return add_unique_axis(pg, cell_get_unique_axis(cell));
 	} else {
-		return strdup(pg);
+		return cfstrdup(pg);
 	}
 }
 
@@ -595,7 +595,7 @@ static SymOpList *sym_ops_for_cell(UnitCell *cell)
 
 	char *pg = get_chiral_holohedry(cell);
 	rawList = get_pointgroup(pg);
-	free(pg);
+	cffree(pg);
 
 	return rawList;
 }
@@ -845,7 +845,7 @@ static int obs_vecs_match_angles(int her, int his,
 			new_size *= sizeof(struct Seed);
 
 			/* Reallocate the array to fit in another match */
-			struct Seed *tmp_seeds = realloc(*seeds, new_size);
+			struct Seed *tmp_seeds = cfrealloc(*seeds, new_size);
 
 			if ( tmp_seeds == NULL ) {
 				apologise();
@@ -878,8 +878,8 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 	gsl_matrix *sub = gsl_matrix_calloc(3, 3);
 	gsl_matrix *mul = gsl_matrix_calloc(3, 3);
 
-	gsl_matrix **rotations = malloc(sizeof(*rotations)* pow(member_num, 2)
-	                                - member_num);
+	gsl_matrix **rotations = cfmalloc(sizeof(*rotations)* pow(member_num, 2)
+	                                  - member_num);
 
 	int i, j, count;
 
@@ -929,7 +929,7 @@ static signed int finish_solution(gsl_matrix *rot, struct SpotVec *obs_vecs,
 		gsl_matrix_free(rotations[i]);
 	}
 
-	free(rotations);
+	cffree(rotations);
 	gsl_matrix_free(sub);
 	gsl_matrix_free(mul);
 
@@ -1011,7 +1011,7 @@ static int weed_duplicate_matches(struct Seed **seeds,
 		}
 	}
 
-	free(old_mats);
+	cffree(old_mats);
 
 	return 1;
 }
@@ -1310,8 +1310,8 @@ static unsigned int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 	}
 
 	/* indices of members of the self-consistent network of vectors */
-	obs_members = malloc((cell->member_thresh+3)*sizeof(int));
-	match_members = malloc((cell->member_thresh+3)*sizeof(int));
+	obs_members = cfmalloc((cell->member_thresh+3)*sizeof(int));
+	match_members = cfmalloc((cell->member_thresh+3)*sizeof(int));
 	if ( (obs_members == NULL) || (match_members == NULL) ) {
 		apologise();
 		return 0;
@@ -1334,8 +1334,8 @@ static unsigned int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 	while ( 1 ) {
 
 		if (start > obs_vec_count) {
-			free(obs_members);
-			free(match_members);
+			cffree(obs_members);
+			cffree(match_members);
 			return 0;
 		}
 
@@ -1347,8 +1347,8 @@ static unsigned int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 							&match_found, cell);
 
 		if ( member_num < 2 ) {
-			free(obs_members);
-			free(match_members);
+			cffree(obs_members);
+			cffree(match_members);
 			return 0;
 		}
 
@@ -1383,8 +1383,8 @@ static unsigned int grow_network(gsl_matrix *rot, int obs_idx1, int obs_idx2,
 	finish_solution(rot, obs_vecs, obs_members,
 	                match_members, member_num, cell);
 
-	free(obs_members);
-	free(match_members);
+	cffree(obs_members);
+	cffree(match_members);
 
 	return ( member_num );
 }
@@ -1519,7 +1519,7 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 			size_t new_size = cell->seed_count + seed_num;
 			new_size *= sizeof(struct Seed);
 
-			struct Seed *tmp = realloc(cell->seeds, new_size);
+			struct Seed *tmp = cfrealloc(cell->seeds, new_size);
 
 			if (tmp == NULL) {
 				apologise();
@@ -1539,7 +1539,7 @@ static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
 				cell->seed_count++;
 			}
 
-			free(seeds);
+			cffree(seeds);
 		}
 	}
 
@@ -1590,12 +1590,12 @@ static unsigned int start_seeds(gsl_matrix **rotation, struct TakeTwoCell *cell)
 		}
 
 		if (member_num >= NETWORK_MEMBER_THRESHOLD) {
-			free(seeds);
+			cffree(seeds);
 			return max_members;
 		}
 	}
 
-	free(seeds);
+	cffree(seeds);
 
 	return max_members;
 }
@@ -1652,7 +1652,7 @@ static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 	int i, j, k;
 	int numOps = num_equivs(rawList, NULL);
 
-	ttCell->rotSymOps = malloc(numOps * sizeof(gsl_matrix *));
+	ttCell->rotSymOps = cfmalloc(numOps * sizeof(gsl_matrix *));
 	ttCell->numOps = numOps;
 
 	if (ttCell->rotSymOps == NULL) {
@@ -1764,13 +1764,13 @@ static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_coun
 
 		/* Sort in order to get most agreeable matches first */
 		qsort(for_sort, count, sizeof(struct sortme), sort_theory_distances);
-		*match_array = malloc(count*sizeof(struct TheoryVec));
+		*match_array = cfmalloc(count*sizeof(struct TheoryVec));
 		*match_count = count;
 		for ( j=0; j<count; j++ ) {
 			(*match_array)[j] = for_sort[j].v;
 
 		}
-		free(for_sort);
+		cffree(for_sort);
 	}
 
 	return 1;
@@ -1806,8 +1806,8 @@ static int gen_observed_vecs(struct rvec *rlps, int rlp_count,
 			count++;
 
 			struct SpotVec *temp_obs_vecs;
-			temp_obs_vecs = realloc(cell->obs_vecs,
-						count*sizeof(struct SpotVec));
+			temp_obs_vecs = cfrealloc(cell->obs_vecs,
+			                          count*sizeof(struct SpotVec));
 
 			if ( temp_obs_vecs == NULL ) {
 				return 0;
@@ -1899,8 +1899,8 @@ static int gen_theoretical_vecs(UnitCell *cell, struct TheoryVec **cell_vecs,
 		count++;
 
 		struct TheoryVec *temp_cell_vecs;
-		temp_cell_vecs = realloc(*cell_vecs,
-		                         count*sizeof(struct TheoryVec));
+		temp_cell_vecs = cfrealloc(*cell_vecs,
+		                           count*sizeof(struct TheoryVec));
 
 		if ( temp_cell_vecs == NULL ) {
 			return 0;
@@ -1929,10 +1929,10 @@ static void cleanup_taketwo_obs_vecs(struct SpotVec *obs_vecs,
 {
 	int i;
 	for ( i=0; i<obs_vec_count; i++ ) {
-		free(obs_vecs[i].matches);
+		cffree(obs_vecs[i].matches);
 	}
 
-	free(obs_vecs);
+	cffree(obs_vecs);
 }
 
 static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
@@ -1943,7 +1943,7 @@ static void cleanup_taketwo_cell(struct TakeTwoCell *ttCell)
 	for ( i=0; i<ttCell->numOps; i++ ) {
 		gsl_matrix_free(ttCell->rotSymOps[i]);
 	}
-	free(ttCell->rotSymOps);
+	cffree(ttCell->rotSymOps);
 
 	cleanup_taketwo_obs_vecs(ttCell->obs_vecs,
 	                         ttCell->obs_vec_count);
@@ -2056,12 +2056,12 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 
 	/* Add the current solution to the previous solutions list */
 	int new_size = (tp->numPrevs + 1) * sizeof(gsl_matrix *);
-	gsl_matrix **tmp = realloc(tp->prevSols, new_size);
-	double *tmpScores = realloc(tp->prevScores,
+	gsl_matrix **tmp = cfrealloc(tp->prevSols, new_size);
+	double *tmpScores = cfrealloc(tp->prevScores,
 	                            (tp->numPrevs + 1) * sizeof(double));
 	unsigned int *tmpSuccesses;
-	tmpSuccesses = realloc(tp->membership,
-	                       (tp->numPrevs + 1) * sizeof(unsigned int));
+	tmpSuccesses = cfrealloc(tp->membership,
+	                         (tp->numPrevs + 1) * sizeof(unsigned int));
 
 	if (!tmp) {
 		apologise();
@@ -2096,11 +2096,11 @@ static void partial_taketwo_cleanup(struct taketwo_private *tp)
 			gsl_matrix_free(tp->prevSols[i]);
 		}
 
-		free(tp->prevSols);
+		cffree(tp->prevSols);
 	}
 
-	free(tp->prevScores);
-	free(tp->membership);
+	cffree(tp->prevScores);
+	cffree(tp->membership);
 	tp->prevScores = NULL;
 	tp->membership = NULL;
 	tp->xtal_num = 0;
@@ -2143,7 +2143,7 @@ int taketwo_index(struct image *image, void *priv)
 		tp->xtal_num = image->n_crystals;
 	}
 
-	rlps = malloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
+	rlps = cfmalloc((image_feature_count(image->features)+1)*sizeof(struct rvec));
 	for ( i=0; i<image_feature_count(image->features); i++ ) {
 
 		double r[3];
@@ -2164,7 +2164,7 @@ int taketwo_index(struct image *image, void *priv)
 	rlps[n_rlps++].w = 0.0;
 
 	cell = run_taketwo(tp->cell, tp->opts, rlps, n_rlps, tp);
-	free(rlps);
+	cffree(rlps);
 	if ( cell == NULL ) return 0;
 
 	cr = crystal_new();
@@ -2222,7 +2222,7 @@ void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
 
 	STATUS("\n");
 
-	tp = malloc(sizeof(struct taketwo_private));
+	tp = cfmalloc(sizeof(struct taketwo_private));
 	if ( tp == NULL ) return NULL;
 
 	tp->cell = cell;
@@ -2248,9 +2248,9 @@ void taketwo_cleanup(IndexingPrivate *pp)
 	struct taketwo_private *tp = (struct taketwo_private *)pp;
 
 	partial_taketwo_cleanup(tp);
-	free(tp->theory_vecs);
+	cffree(tp->theory_vecs);
 
-	free(tp);
+	cffree(tp);
 }
 
 
@@ -2280,7 +2280,7 @@ int taketwo_default_options(struct taketwo_options **opts_ptr)
 {
 	struct taketwo_options *opts;
 
-	opts = malloc(sizeof(struct taketwo_options));
+	opts = cfmalloc(sizeof(struct taketwo_options));
 	if ( opts == NULL ) return ENOMEM;
 	opts->member_thresh = -1.0;
 	opts->len_tol = -1.0;

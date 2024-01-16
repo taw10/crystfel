@@ -393,7 +393,7 @@ static int alloc_boxes(struct intcontext *ic, int new_max_boxes)
 {
 	struct peak_box *boxes_new;
 
-	boxes_new = realloc(ic->boxes, sizeof(struct peak_box)*new_max_boxes);
+	boxes_new = cfrealloc(ic->boxes, sizeof(struct peak_box)*new_max_boxes);
 	if ( boxes_new == NULL ) return 1;
 
 	ic->boxes = boxes_new;
@@ -467,7 +467,7 @@ struct intcontext *intcontext_new(struct image *image,
 	int i;
 	struct intcontext *ic;
 
-	ic = malloc(sizeof(struct intcontext));
+	ic = cfmalloc(sizeof(struct intcontext));
 	if ( ic == NULL ) return NULL;
 
 	ic->halfw = ir_out;
@@ -481,36 +481,36 @@ struct intcontext *intcontext_new(struct image *image,
 	ic->int_diag = INTDIAG_NONE;
 	ic->w = 2*ic->halfw + 1;
 
-	ic->bm = malloc(ic->w * ic->w * sizeof(enum boxmask_val));
+	ic->bm = cfmalloc(ic->w * ic->w * sizeof(enum boxmask_val));
 	if ( ic->bm == NULL ) {
 		ERROR("Failed to allocate box mask.\n");
-		free(ic);
+		cffree(ic);
 		return NULL;
 	}
 
 	/* How many reference profiles? */
 	ic->n_reference_profiles = 1;
-	ic->reference_profiles = calloc(ic->n_reference_profiles,
-	                                sizeof(double *));
+	ic->reference_profiles = cfcalloc(ic->n_reference_profiles,
+	                                  sizeof(double *));
 	if ( ic->reference_profiles == NULL ) {
-		free(ic);
+		cffree(ic);
 		return NULL;
 	}
-	ic->reference_den = calloc(ic->n_reference_profiles, sizeof(double *));
+	ic->reference_den = cfcalloc(ic->n_reference_profiles, sizeof(double *));
 	if ( ic->reference_den == NULL ) {
-		free(ic);
+		cffree(ic);
 		return NULL;
 	}
-	ic->n_profiles_in_reference = calloc(ic->n_reference_profiles,
-	                                     sizeof(int));
+	ic->n_profiles_in_reference = cfcalloc(ic->n_reference_profiles,
+	                                       sizeof(int));
 	if ( ic->n_profiles_in_reference == NULL ) {
-		free(ic);
+		cffree(ic);
 		return NULL;
 	}
 	for ( i=0; i<ic->n_reference_profiles; i++ ) {
-		ic->reference_profiles[i] = malloc(ic->w*ic->w*sizeof(double));
+		ic->reference_profiles[i] = cfmalloc(ic->w*ic->w*sizeof(double));
 		if ( ic->reference_profiles[i] == NULL ) return NULL;
-		ic->reference_den[i] = malloc(ic->w*ic->w*sizeof(double));
+		ic->reference_den[i] = cfmalloc(ic->w*ic->w*sizeof(double));
 		if ( ic->reference_den[i] == NULL ) return NULL;
 	}
 	zero_profiles(ic);
@@ -519,7 +519,7 @@ struct intcontext *intcontext_new(struct image *image,
 	ic->n_boxes = 0;
 	ic->max_boxes = 0;
 	if ( alloc_boxes(ic, 32) ) {
-		free(ic);
+		cffree(ic);
 		return NULL;
 	}
 
@@ -534,20 +534,20 @@ void intcontext_free(struct intcontext *ic)
 	int i;
 
 	for ( i=0; i<ic->n_boxes; i++ ) {
-		free(ic->boxes[i].bm);
+		cffree(ic->boxes[i].bm);
 		gsl_matrix_free(ic->boxes[i].bgm);
 	}
-	free(ic->boxes);
+	cffree(ic->boxes);
 
 	for ( i=0; i<ic->n_reference_profiles; i++ ) {
-		free(ic->reference_profiles[i]);
-		free(ic->reference_den[i]);
+		cffree(ic->reference_profiles[i]);
+		cffree(ic->reference_den[i]);
 	}
-	free(ic->reference_profiles);
-	free(ic->reference_den);
-	free(ic->n_profiles_in_reference);
-	free(ic->bm);
-	free(ic);
+	cffree(ic->reference_profiles);
+	cffree(ic->reference_den);
+	cffree(ic->n_profiles_in_reference);
+	cffree(ic->bm);
+	cffree(ic);
 }
 
 
@@ -604,7 +604,7 @@ static void delete_box(struct intcontext *ic, struct peak_box *bx)
 		return;
 	}
 
-	free(bx->bm);
+	cffree(bx->bm);
 	gsl_matrix_free(bx->bgm);
 
 	memmove(&ic->boxes[i], &ic->boxes[i+1],
@@ -803,7 +803,7 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 
 	if ( sat != NULL ) *sat = 0;
 
-	bx->bm = malloc(ic->w*ic->w*sizeof(enum boxmask_val));
+	bx->bm = cfmalloc(ic->w*ic->w*sizeof(enum boxmask_val));
 	if ( bx->bm == NULL ) {
 		ERROR("Failed to allocate box mask\n");
 		return 1;
@@ -980,7 +980,7 @@ static int center_and_check_box(struct intcontext *ic, struct peak_box *bx,
 		t_offs_fs += ifs;
 		t_offs_ss += iss;
 
-		free(bx->bm);
+		cffree(bx->bm);
 		if ( check_box(ic, bx, sat) ) {
 			return 1;
 		}
@@ -1515,7 +1515,7 @@ static double estimate_resolution(Crystal *cr, struct image *image)
 	UnitCell *cell;
 
 
-	acc = malloc(max_acc*sizeof(double));
+	acc = cfmalloc(max_acc*sizeof(double));
 	if ( acc == NULL ) {
 		ERROR("Allocation failed during estimate_resolution!\n");
 		return INFINITY;
@@ -1577,7 +1577,7 @@ static double estimate_resolution(Crystal *cr, struct image *image)
 
 	if ( n_acc < 3 ) {
 		STATUS("WARNING: Too few peaks to estimate resolution.\n");
-		free(acc);
+		cffree(acc);
 		return 0.0;
 	}
 
@@ -1587,7 +1587,7 @@ static double estimate_resolution(Crystal *cr, struct image *image)
 	if ( n < 2 ) n = 2;
 	max_res = acc[(n_acc-1)-n];
 
-	free(acc);
+	cffree(acc);
 	return max_res;
 }
 
@@ -1711,7 +1711,7 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 	}
 
 	for ( i=0; i<image->detgeom->n_panels; i++ ) {
-		free(masks[i]);
+		cffree(masks[i]);
 	}
 }
 
@@ -1794,7 +1794,7 @@ char *str_integration_method(IntegrationMethod m)
 		strcat(tmp, "-grad");
 	}
 
-	return strdup(tmp);
+	return cfstrdup(tmp);
 }
 
 
@@ -1854,10 +1854,10 @@ IntegrationMethod integration_method(const char *str, int *err)
 			return INTEGRATION_NONE;
 		}
 
-		free(methods[i]);
+		cffree(methods[i]);
 
 	}
-	free(methods);
+	cffree(methods);
 
 	return meth;
 

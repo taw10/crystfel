@@ -132,7 +132,7 @@ struct tvector tvector_new(int n)
 
 	t.t = gsl_vector_alloc(3);
 	t.n = 0;
-	t.fits = malloc(sizeof(int) * n);
+	t.fits = cfmalloc(sizeof(int) * n);
 
 	return t;
 }
@@ -141,7 +141,7 @@ struct tvector tvector_new(int n)
 static int tvector_free(struct tvector t)
 {
 	gsl_vector_free(t.t);
-	free(t.fits);
+	cffree(t.fits);
 
 	return 1;
 }
@@ -155,12 +155,12 @@ static int asdf_cell_free(struct asdf_cell *c)
 		gsl_vector_free(c->reciprocal[i]);
 	}
 
-	free(c->reflections);
+	cffree(c->reflections);
 	for ( i = 0; i < c->N_refls; i++ ) {
-		free(c->indices[i]);
+		cffree(c->indices[i]);
 	}
-	free(c->indices);
-	free(c);
+	cffree(c->indices);
+	cffree(c);
 
 	return 1;
 }
@@ -169,7 +169,7 @@ static int asdf_cell_free(struct asdf_cell *c)
 static struct asdf_cell *asdf_cell_new(int n)
 {
 	struct asdf_cell *c;
-	c = malloc(sizeof(struct asdf_cell));
+	c = cfmalloc(sizeof(struct asdf_cell));
 
 	int i;
 	for ( i = 0; i < 3; i++ ) {
@@ -178,20 +178,20 @@ static struct asdf_cell *asdf_cell_new(int n)
 	}
 
 	c->N_refls = n;
-	c->reflections = malloc(sizeof(int) * n);
+	c->reflections = cfmalloc(sizeof(int) * n);
 	if (c->reflections == NULL) return NULL;
 
-	c->indices = malloc(sizeof(double *) * n);
+	c->indices = cfmalloc(sizeof(double *) * n);
 	if (c->indices == NULL) {
-		free(c->reflections);
+		cffree(c->reflections);
 		return NULL;
 	}
 
 	for ( i = 0; i < n; i++ ) {
-		c->indices[i] = malloc(sizeof(double) * 3);
+		c->indices[i] = cfmalloc(sizeof(double) * 3);
 		if (c->indices[i] == NULL) {
-			free(c->reflections);
-			free(c->indices);
+			cffree(c->reflections);
+			cffree(c->indices);
 			return NULL;
 		}
 	}
@@ -224,7 +224,7 @@ static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src)
 		memcpy(dest->indices[i], src->indices[i], sizeof(double) * 3);
 	}
 	for ( i=n; i<dest->N_refls; i++ ) {
-		free(dest->indices[i]);
+		cffree(dest->indices[i]);
 	}
 	dest->N_refls = n;
 
@@ -928,7 +928,7 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 	}
 	*N = N_triplets;
 
-	int **triplets = malloc(N_triplets * sizeof(int *));
+	int **triplets = cfmalloc(N_triplets * sizeof(int *));
 
 	if ( triplets == NULL ) {
 		ERROR("Failed to allocate triplets in generate_triplets!\n");
@@ -940,7 +940,7 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 		// Reservoir sampling:
 		for ( i = 0; i < N_triplets_tot; i++ ) {
 			if ( n < N_triplets ) {
-				triplets[n] = (int *)malloc(3 * sizeof(int));
+				triplets[n] = (int *)cfmalloc(3 * sizeof(int));
 				if (triplets[n] == NULL) {
 					ERROR("Failed to allocate triplet in generate_triplets!\n");
 					return NULL;
@@ -957,10 +957,10 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 		}
 	} else {
 		// Random selection from the whole set:
-		int *tidx = (int *)malloc(N_triplets * sizeof(int));
+		int *tidx = (int *)cfmalloc(N_triplets * sizeof(int));
 		if ( tidx == NULL ) {
 			ERROR("Failed to allocate tidx in generate_triplets_2!\n");
-			free(triplets);
+			cffree(triplets);
 			return NULL;
 		}
 		while ( n < N_triplets ) {
@@ -973,7 +973,7 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 				}
 			}
 			tidx[n] = ri;
-			triplets[n] = (int *)malloc(3 * sizeof(int));
+			triplets[n] = (int *)cfmalloc(3 * sizeof(int));
 			if ( triplets[n] == NULL ) {
 				ERROR("Failed to allocate triplet in generate_triplets!\n");
 				return NULL;
@@ -981,7 +981,7 @@ static int **generate_triplets(int N_reflections, int N_triplets_max, int *N)
 			get_triplet_by_index(ri, N_reflections, triplets[n]);
 			n += 1;
 		}
-		free(tidx);
+		cffree(tidx);
 	}
 	return triplets;
 }
@@ -1002,7 +1002,7 @@ static int index_refls(gsl_vector **reflections, int N_reflections, int N_refl_m
 
 	gsl_vector **refl_sample;
 	if ( N_reflections > N_refl_max ) {
-		refl_sample = (gsl_vector **)malloc(N_refl_max * sizeof(gsl_vector *));
+		refl_sample = (gsl_vector **)cfmalloc(N_refl_max * sizeof(gsl_vector *));
 		n = 0;
 		for ( i = 0; i < N_reflections; i++ ) {
 			if (i < N_refl_max) {
@@ -1029,18 +1029,18 @@ static int index_refls(gsl_vector **reflections, int N_reflections, int N_refl_m
 	double projections[N_refl_max];
 	double ds;
 
-	int *fits = malloc(N_refl_max * sizeof(int));
+	int *fits = cfmalloc(N_refl_max * sizeof(int));
 	if ( fits == NULL ) {
 		ERROR("Failed to allocate fits in index_refls!\n");
-		if ( N_reflections > N_refl_max ) free(refl_sample);
+		if ( N_reflections > N_refl_max ) cffree(refl_sample);
 		return 0;
 	}
 
-	struct tvector *tvectors = malloc(N_triplets * sizeof(struct tvector));
+	struct tvector *tvectors = cfmalloc(N_triplets * sizeof(struct tvector));
 	if ( tvectors == NULL ) {
 		ERROR("Failed to allocate tvectors in index_refls!\n");
-		if ( N_reflections > N_refl_max ) free(refl_sample);
-		free(fits);
+		if ( N_reflections > N_refl_max ) cffree(refl_sample);
+		cffree(fits);
 		return 0;
 	}
 
@@ -1113,20 +1113,20 @@ static int index_refls(gsl_vector **reflections, int N_reflections, int N_refl_m
 		}
 	}
 	profile_end("asdf-search");
-	free(fits);
+	cffree(fits);
 
 	for ( i = 0; i < N_tvectors; i++ ) {
 		tvector_free(tvectors[i]);
 	}
-	free(tvectors);
+	cffree(tvectors);
 
 	for ( i = 0; i < N_triplets; i++ ) {
-		free(triplets[i]);
+		cffree(triplets[i]);
 	}
-	free(triplets);
+	cffree(triplets);
 
 	gsl_vector_free(normal);
-	if ( N_reflections > N_refl_max ) free(refl_sample);
+	if ( N_reflections > N_refl_max ) cffree(refl_sample);
 
 	if ( c->n ) return 1;
 
@@ -1262,7 +1262,7 @@ void *asdf_prepare(IndexingMethod *indm, UnitCell *cell, struct asdf_options *as
 	/* Flags that asdf knows about */
 	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_CELL_PARAMETERS;
 
-	dp = malloc(sizeof(struct asdf_private));
+	dp = cfmalloc(sizeof(struct asdf_private));
 	if ( dp == NULL ) return NULL;
 
 	dp->template = cell;
@@ -1279,7 +1279,7 @@ void asdf_cleanup(void *pp)
 	struct asdf_private *p;
 	p = (struct asdf_private *)pp;
 	fftw_vars_free(p->fftw);
-	free(p);
+	cffree(p);
 }
 
 
@@ -1332,7 +1332,7 @@ int asdf_default_options(struct asdf_options **opts_ptr)
 {
 	struct asdf_options *opts;
 
-	opts = malloc(sizeof(struct asdf_options));
+	opts = cfmalloc(sizeof(struct asdf_options));
 	if ( opts == NULL ) return ENOMEM;
 
 	opts->fast_execution = 0;

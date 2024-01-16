@@ -115,7 +115,7 @@ int *make_BgMask(struct image *image, struct detgeom_panel *p,
 	int *mask;
 	int i;
 
-	mask = calloc(p->w*p->h, sizeof(int));
+	mask = cfcalloc(p->w*p->h, sizeof(int));
 	if ( mask == NULL ) return NULL;
 
 	if ( image->crystals == NULL ) return mask;
@@ -524,10 +524,10 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 		det_size_one_panel.pix_ny = h;
 		det_size_one_panel.pix_nn = w * h;
 
-		data_copy_new = realloc(data_copy, w*h*sizeof(*data_copy));
+		data_copy_new = cfrealloc(data_copy, w*h*sizeof(*data_copy));
 		if ( data_copy_new == NULL ) {
 			if ( data_copy != NULL ) {
-				free(data_copy);
+				cffree(data_copy);
 			}
 			freePeakList(peakList);
 			return 1;
@@ -555,7 +555,7 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 	}
 
 	freePeakList(peakList);
-	free(data_copy);
+	cffree(data_copy);
 	return 0;
 }
 
@@ -747,7 +747,7 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
 	/* No peaks -> no resolution! */
 	if ( npk == 0 ) return 0.0;
 
-	rns = malloc(npk*sizeof(double));
+	rns = cfmalloc(npk*sizeof(double));
 	if ( rns == NULL ) return -1.0;
 
 	/* Get resolution values for all peaks */
@@ -771,7 +771,7 @@ double estimate_peak_resolution(ImageFeatureList *peaks, double lambda,
 	if ( ncut < 2 ) ncut = 0;
 	max_res = rns[(npk-1)-ncut];
 
-	free(rns);
+	cffree(rns);
 	return max_res;
 }
 

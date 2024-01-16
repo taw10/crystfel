@@ -277,7 +277,7 @@ static int felix_readable(struct image *image, struct felix_data *gs)
 			unsigned int endbit_length;
 			char *block_buffer = NULL;
 
-			block_buffer = malloc(i+1);
+			block_buffer = cfmalloc(i+1);
 			memcpy(block_buffer, gs->rbuffer, i);
 			block_buffer[i] = '\0';
 
@@ -286,7 +286,7 @@ static int felix_readable(struct image *image, struct felix_data *gs)
 			}
 
 			gs_parseline(block_buffer, image, gs);
-			free(block_buffer);
+			cffree(block_buffer);
 			endbit_length = i+2;
 
 			/* Now the block's been parsed, it should be
@@ -299,7 +299,7 @@ static int felix_readable(struct image *image, struct felix_data *gs)
 			gs->rbufpos = gs->rbufpos  - endbit_length;
 			new_rbuflen = gs->rbuflen - endbit_length;
 			if ( new_rbuflen == 0 ) new_rbuflen = 256;
-			gs->rbuffer = realloc(gs->rbuffer, new_rbuflen);
+			gs->rbuffer = cfrealloc(gs->rbuffer, new_rbuflen);
 			gs->rbuflen = new_rbuflen;
 
 		} else {
@@ -307,8 +307,8 @@ static int felix_readable(struct image *image, struct felix_data *gs)
 			if ( gs->rbufpos == gs->rbuflen ) {
 
 				/* More buffer space is needed */
-				gs->rbuffer = realloc(gs->rbuffer,
-				                      gs->rbuflen + 256);
+				gs->rbuffer = cfrealloc(gs->rbuffer,
+				                        gs->rbuflen + 256);
 				gs->rbuflen = gs->rbuflen + 256;
 				/* The new space gets used at the next
 				 * read, shortly... */
@@ -374,7 +374,7 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 	char gveFilename[1024];
 	char logFilename[1024];
 
-	filename = malloc(1024);
+	filename = cfmalloc(1024);
 	if ( filename == NULL ) return NULL;
 
 	snprintf(filename, 1023, "xfel.ini");
@@ -384,7 +384,7 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 	fh = fopen(filename, "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file '%s'\n", filename);
-		free(filename);
+		cffree(filename);
 		return NULL;
 	}
 
@@ -413,7 +413,7 @@ static char *write_ini(struct image *image, struct felix_private *gp)
 		fprintf(fh, "orispace octa\n");
 	} else{
 		ERROR("No felix supported orispace specified.\n");
-		free(filename);
+		cffree(filename);
 		filename = NULL;
 	}
 
@@ -450,7 +450,7 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 		return 0;
 	}
 
-	felix = malloc(sizeof(struct felix_data));
+	felix = cfmalloc(sizeof(struct felix_data));
 	if ( felix == NULL ) {
 		ERROR("Couldn't allocate memory for Felix data.\n");
 		return 0;
@@ -483,9 +483,9 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 
 	}
 
-	free(ini_filename);
+	cffree(ini_filename);
 
-	felix->rbuffer = malloc(256);
+	felix->rbuffer = cfmalloc(256);
 	felix->rbuflen = 256;
 	felix->rbufpos = 0;
 
@@ -534,18 +534,18 @@ int felix_index(struct image *image, IndexingPrivate *ipriv)
 	} while ( !rval );
 
 	close(felix->pty);
-	free(felix->rbuffer);
+	cffree(felix->rbuffer);
 	waitpid(felix->pid, &status, 0);
 
 	if ( status != 0 ) {
 		ERROR("Felix either timed out, or is not working properly.\n");
-		free(felix);
+		cffree(felix);
 		return 0;
 	}
 
 	rval = read_felix(gp, image, gff_filename);
 
-	free(felix);
+	cffree(felix);
 	return rval;
 
 }
@@ -625,7 +625,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 		return NULL;
 	}
 
-	gp = calloc(1, sizeof(*gp));
+	gp = cfcalloc(1, sizeof(*gp));
 	if ( gp == NULL ) return NULL;
 
 	/* Flags that Felix knows about */
@@ -640,7 +640,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	if ( gp->spacegroup == 0 ) {
 		ERROR("Couldn't determine representative space group for your cell.\n");
 		ERROR("Try again with a more conventional cell.\n");
-		free(gp);
+		cffree(gp);
 		return NULL;
 	}
 
@@ -710,8 +710,8 @@ void felix_cleanup(IndexingPrivate *pp)
 	struct felix_private *p;
 
 	p = (struct felix_private *) pp;
-	free(p->readhkl_file);
-	free(p);
+	cffree(p->readhkl_file);
+	cffree(p);
 }
 
 
@@ -812,7 +812,7 @@ int felix_default_options(struct felix_options **opts_ptr)
 {
 	struct felix_options *opts;
 
-	opts = malloc(sizeof(struct felix_options));
+	opts = cfmalloc(sizeof(struct felix_options));
 	if ( opts == NULL ) return ENOMEM;
 
 	opts->ttmin = -1.0;

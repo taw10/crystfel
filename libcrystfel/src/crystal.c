@@ -81,7 +81,7 @@ Crystal *crystal_new()
 {
 	Crystal *cryst;
 
-	cryst = malloc(sizeof(Crystal));
+	cryst = cfmalloc(sizeof(Crystal));
 	if ( cryst == NULL ) return NULL;
 
 	cryst->cell = NULL;
@@ -116,7 +116,7 @@ Crystal *crystal_copy(const Crystal *cryst)
 	if ( c == NULL ) return NULL;
 
 	memcpy(c, cryst, sizeof(Crystal));
-	if ( c->notes != NULL ) c->notes = strdup(c->notes);
+	if ( c->notes != NULL ) c->notes = cfstrdup(c->notes);
 
 	return c;
 }
@@ -140,7 +140,7 @@ Crystal *crystal_copy_deep(const Crystal *cryst)
 	if ( c == NULL ) return NULL;
 
 	memcpy(c, cryst, sizeof(Crystal));
-	if ( c->notes != NULL ) c->notes = strdup(c->notes);
+	if ( c->notes != NULL ) c->notes = cfstrdup(c->notes);
 
 	if ( cryst->cell != NULL ) {
 		UnitCell *cell;
@@ -169,8 +169,8 @@ Crystal *crystal_copy_deep(const Crystal *cryst)
 void crystal_free(Crystal *cryst)
 {
 	if ( cryst == NULL ) return;
-	free(cryst->notes);
-	free(cryst);
+	cffree(cryst->notes);
+	cffree(cryst);
 }
 
 
@@ -322,8 +322,8 @@ void crystal_set_mosaicity(Crystal *cryst, double m)
 
 void crystal_set_notes(Crystal *cryst, const char *notes)
 {
-	free(cryst->notes);  /* free(NULL) is OK */
-	cryst->notes = strdup(notes);
+	cffree(cryst->notes);  /* free(NULL) is OK */
+	cryst->notes = cfstrdup(notes);
 }
 
 
@@ -338,7 +338,7 @@ void crystal_add_notes(Crystal *cryst, const char *notes_add)
 	}
 
 	len = strlen(notes_add) + strlen(cryst->notes) + 2;
-	nnotes = malloc(len);
+	nnotes = cfmalloc(len);
 	if ( nnotes == NULL ) {
 		ERROR("Failed to add notes to crystal.\n");
 		return;
@@ -347,7 +347,7 @@ void crystal_add_notes(Crystal *cryst, const char *notes_add)
 	strcpy(nnotes, cryst->notes);
 	strcat(nnotes, "\n");
 	strcat(nnotes, notes_add);
-	free(cryst->notes);
+	cffree(cryst->notes);
 	cryst->notes = nnotes;
 }
 

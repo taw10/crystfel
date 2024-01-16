@@ -996,14 +996,14 @@ UnitCell *load_cell_from_file(const char *filename)
 
 		n1 = assplode(line, " \t", &bits, ASSPLODE_NONE);
 		if ( n1 < 3 ) {
-			for ( i=0; i<n1; i++ ) free(bits[i]);
-			free(bits);
+			for ( i=0; i<n1; i++ ) cffree(bits[i]);
+			cffree(bits);
 			continue;
 		}
 
 		if ( bits[0][0] == ';' ) {
-			for ( i=0; i<n1; i++ ) free(bits[i]);
-			free(bits);
+			for ( i=0; i<n1; i++ ) cffree(bits[i]);
+			cffree(bits);
 			continue;
 		}
 
@@ -1061,8 +1061,8 @@ UnitCell *load_cell_from_file(const char *filename)
 			ERROR("Unrecognised field '%s'\n", bits[0]);
 		}
 
-		for ( i=0; i<n1; i++ ) free(bits[i]);
-		free(bits);
+		for ( i=0; i<n1; i++ ) cffree(bits[i]);
+		cffree(bits);
 
 	} while ( rval != NULL );
 
@@ -1588,12 +1588,12 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 	int ia, ib, ic;
 	int i;
 
-	cands = malloc(max_cand * sizeof(struct cand));
+	cands = cfmalloc(max_cand * sizeof(struct cand));
 	if ( cands == NULL ) return NULL;
 
 	rat = rtnl_list(-5, 5, 1, csl ? 4 : 1, &nrat);
 	if ( rat == NULL ) {
-		free(cands);
+		cffree(cands);
 		return NULL;
 	}
 
@@ -1632,7 +1632,7 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 	/* Sort by difference from reference vector length */
 	qsort(cands, ncand, sizeof(struct cand), cmpcand);
 
-	r = malloc(ncand * 3 * sizeof(Rational));
+	r = cfmalloc(ncand * 3 * sizeof(Rational));
 	if ( r == 0 ) return NULL;
 
 	for ( i=0; i<ncand; i++ ) {
@@ -1640,7 +1640,7 @@ static Rational *find_candidates(double len, double *a, double *b, double *c,
 		r[3*i+1] = cands[i].abc[1];
 		r[3*i+2] = cands[i].abc[2];
 	}
-	free(cands);
+	cffree(cands);
 
 	*pncand = ncand;
 	return r;
@@ -1823,9 +1823,9 @@ int compare_derivative_cell_parameters(UnitCell *cell_in, UnitCell *reference_in
 	}
 
 	rtnl_mtx_free(M);
-	free(cand_a);
-	free(cand_b);
-	free(cand_c);
+	cffree(cand_a);
+	cffree(cand_b);
+	cffree(cand_c);
 
 	if ( CiAMCB == NULL ) {
 		*pmb = NULL;

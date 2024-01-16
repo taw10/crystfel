@@ -121,7 +121,7 @@ char *base_indexer_str(IndexingMethod indm)
 {
 	char *str;
 
-	str = malloc(256);
+	str = cfmalloc(256);
 	if ( str == NULL ) {
 		ERROR("Failed to allocate string.\n");
 		return NULL;
@@ -270,11 +270,11 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 	if ( priv == NULL ) {
 		ERROR("Failed to prepare indexing method %s\n", str);
-		free(str);
+		cffree(str);
 		return NULL;
 	}
 
-	free(str);
+	cffree(str);
 
 	if ( in != *m ) {
 		ERROR("Note: flags were altered to take into account "
@@ -296,7 +296,7 @@ IndexingMethod *parse_indexing_methods(const char *method_list,
 
 	n = assplode(method_list, ",", &method_strings, ASSPLODE_NONE);
 
-	methods = malloc(n * sizeof(IndexingMethod));
+	methods = cfmalloc(n * sizeof(IndexingMethod));
 	if ( methods == NULL ) {
 		ERROR("Failed to allocate indexing method list\n");
 		return NULL;
@@ -316,12 +316,12 @@ IndexingMethod *parse_indexing_methods(const char *method_list,
 			ERROR("To disable indexing retry ('noretry'), use --no-retry.\n");
 			ERROR("To enable multi-lattice indexing by 'delete and retry', use --multi\n");
 			ERROR("------------------\n");
-			free(methods);
+			cffree(methods);
 			return NULL;
 		}
-		free(method_strings[i]);
+		cffree(method_strings[i]);
 	}
-	free(method_strings);
+	cffree(method_strings);
 
 	*pn = n;
 	return methods;
@@ -393,13 +393,13 @@ IndexingPrivate *setup_indexing(const char *method_list,
 
 	}
 
-	ipriv = malloc(sizeof(struct _indexingprivate));
+	ipriv = cfmalloc(sizeof(struct _indexingprivate));
 	if ( ipriv == NULL ) {
 		ERROR("Failed to allocate indexing data\n");
 		return NULL;
 	}
 
-	ipriv->engine_private = malloc((n+1) * sizeof(void *));
+	ipriv->engine_private = cfmalloc((n+1) * sizeof(void *));
 
 	for ( i=0; i<n; i++ ) {
 
@@ -416,14 +416,14 @@ IndexingPrivate *setup_indexing(const char *method_list,
 							  asdf_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) {
-			free(ipriv->engine_private);
+			cffree(ipriv->engine_private);
 			return NULL;
 		}
 
 		for ( j=0; j<i; j++ ) {
 			if ( methods[i] == methods[j] ) {
 				ERROR("Duplicate indexing method.\n");
-				free(ipriv->engine_private);
+				cffree(ipriv->engine_private);
 				return NULL;
 			}
 		}
@@ -449,8 +449,8 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		char *str = indexer_str(methods[i]);
 		char *tmp = friendly_indexer_name(methods[i]);
 		STATUS("  %2i: %-25s (%s)\n", i, str, tmp);
-		free(str);
-		free(tmp);
+		cffree(str);
+		cffree(tmp);
 	}
 	show_indexing_flags(flags);
 
@@ -523,10 +523,10 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 
 	}
 
-	free(ipriv->methods);
-	free(ipriv->engine_private);
+	cffree(ipriv->methods);
+	cffree(ipriv->engine_private);
 	cell_free(ipriv->target_cell);
-	free(ipriv);
+	cffree(ipriv);
 }
 
 
@@ -1194,10 +1194,10 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 			return INDEXING_ERROR;
 		}
 
-		free(bits[i]);
+		cffree(bits[i]);
 
 	}
-	free(bits);
+	cffree(bits);
 
 	if ( !have_method ) return warn_method(str);
 
@@ -1229,7 +1229,7 @@ char *detect_indexing_methods(UnitCell *cell)
 {
 	char *methods;
 
-	methods = malloc(1024);
+	methods = cfmalloc(1024);
 	if ( methods == NULL ) return NULL;
 	methods[0] = '\0';
 
@@ -1244,7 +1244,7 @@ char *detect_indexing_methods(UnitCell *cell)
 	//do_probe(pinkIndexer_probe, cell, methods);
 
 	if ( strlen(methods) == 0 ) {
-		free(methods);
+		cffree(methods);
 		return NULL;
 	}
 

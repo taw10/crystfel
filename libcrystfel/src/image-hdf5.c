@@ -60,7 +60,7 @@ char **read_path_parts(const char *ev_orig, int *pn_plvals)
 	int n_plvals = 0;
 	char *start;
 
-	plvals = malloc(MAX_PATH_PARTS*sizeof(char *));
+	plvals = cfmalloc(MAX_PATH_PARTS*sizeof(char *));
 	if ( plvals == NULL ) return NULL;
 
 	if ( ev_orig == NULL ) {
@@ -69,9 +69,9 @@ char **read_path_parts(const char *ev_orig, int *pn_plvals)
 		return plvals;
 	}
 
-	ev = strdup(ev_orig);
+	ev = cfstrdup(ev_orig);
 	if ( ev == NULL ) {
-		free(plvals);
+		cffree(plvals);
 		return NULL;
 	}
 
@@ -87,8 +87,8 @@ char **read_path_parts(const char *ev_orig, int *pn_plvals)
 			 * must at least have // */
 			ERROR("Couldn't read path parts ('%s')\n",
 			      start);
-			free(ev);
-			free(plvals);
+			cffree(ev);
+			cffree(plvals);
 			return NULL;
 		}
 
@@ -97,19 +97,19 @@ char **read_path_parts(const char *ev_orig, int *pn_plvals)
 
 		if ( n_plvals == MAX_PATH_PARTS ) {
 			ERROR("Too many path parts: %s\n", ev_orig);
-			free(ev);
-			free(plvals);
+			cffree(ev);
+			cffree(plvals);
 			return NULL;
 		}
 
 		sep[0] = '\0';
-		plvals[n_plvals++] = strdup(start);
+		plvals[n_plvals++] = cfstrdup(start);
 
 		start = sep+1;
 
 	} while ( 1 );
 
-	free(ev);
+	cffree(ev);
 	*pn_plvals = n_plvals;
 	return plvals;
 }
@@ -135,7 +135,7 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 	ev = strstr(ev_orig, "//");
 	if ( ev == NULL ) return NULL;
 
-	dvals = malloc(MAX_DIMS*sizeof(int));
+	dvals = cfmalloc(MAX_DIMS*sizeof(int));
 	if ( dvals == NULL ) return NULL;
 
 	if ( ev[2] == '\0' ) {
@@ -144,9 +144,9 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 		return dvals;  /* NB Not NULL */
 	}
 
-	ev = strdup(ev+2);
+	ev = cfstrdup(ev+2);
 	if ( ev == NULL ) {
-		free(dvals);
+		cffree(dvals);
 		return NULL;
 	}
 
@@ -164,15 +164,15 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 
 		if ( n_dvals == MAX_PATH_PARTS ) {
 			ERROR("Too many path parts: %s\n", ev_orig);
-			free(ev);
-			free(dvals);
+			cffree(ev);
+			cffree(dvals);
 			return NULL;
 		}
 
 		if ( start[0] == '\0' ) {
 			ERROR("Missing dimension: %s\n", ev_orig);
-			free(ev);
-			free(dvals);
+			cffree(ev);
+			cffree(dvals);
 			return NULL;
 		}
 
@@ -182,7 +182,7 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 
 	} while ( !done );
 
-	free(ev);
+	cffree(ev);
 	*pn_dvals = n_dvals;
 	return dvals;
 }
@@ -247,19 +247,19 @@ char *substitute_path(const char *ev, const char *pattern, int skip_ok)
 	if ( n_pl_exp == 0 ) {
 		/* No placeholders in path */
 		for ( i=0; i<n_plvals; i++ ) {
-			free(plvals[i]);
+			cffree(plvals[i]);
 		}
-		free(plvals);
-		return strdup(pattern);
+		cffree(plvals);
+		return cfstrdup(pattern);
 	}
 
 	total_len = strlen(pattern) - n_pl_exp;
 	for ( i=0; i<n_plvals; i++ ) {
 		total_len += strlen(plvals[i]);
 	}
-	subs = malloc(total_len+1);
+	subs = cfmalloc(total_len+1);
 	if ( subs == NULL ) {
-		free(plvals);
+		cffree(plvals);
 		return NULL;
 	}
 
@@ -277,7 +277,7 @@ char *substitute_path(const char *ev, const char *pattern, int skip_ok)
 
 		/* Add the placeholder's value */
 		strcat(subs, plvals[i]);
-		free(plvals[i]);
+		cffree(plvals[i]);
 
 		/* Add the chars up to the next placeholder... */
 		pl_pos = strchr(start, '%');
@@ -289,7 +289,7 @@ char *substitute_path(const char *ev, const char *pattern, int skip_ok)
 		start = pl_pos+1;
 	}
 
-	free(plvals);
+	cffree(plvals);
 
 	return subs;
 }
@@ -400,12 +400,12 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		ERROR("Cannot open data for panel %s (%s)\n",
 		      p->name, panel_full_path);
 		profile_end("H5Dopen2");
-		free(panel_full_path);
+		cffree(panel_full_path);
 		return 1;
 	}
 	profile_end("H5Dopen2");
 
-	free(panel_full_path);
+	cffree(panel_full_path);
 
 	/* Set up dataspace for file
 	 * (determine where to read the data from) */
@@ -446,12 +446,12 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		n_dt_dims = total_dt_dims;
 	}
 
-	f_offset = malloc(ndims*sizeof(hsize_t));
-	f_count = malloc(ndims*sizeof(hsize_t));
+	f_offset = cfmalloc(ndims*sizeof(hsize_t));
+	f_count = cfmalloc(ndims*sizeof(hsize_t));
 	if ( (f_offset == NULL) || (f_count == NULL ) ) {
 		ERROR("Failed to allocate offset or count.\n");
-		free(f_offset);
-		free(f_count);
+		cffree(f_offset);
+		cffree(f_count);
 		H5Dclose(dh);
 		return 1;
 	}
@@ -492,15 +492,15 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		}
 	}
 
-	free(dim_vals);
+	cffree(dim_vals);
 
 	check = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
 	if ( check < 0 ) {
 		ERROR("Error selecting file dataspace for panel %s\n",
 		      p->name);
-		free(f_offset);
-		free(f_count);
+		cffree(f_offset);
+		cffree(f_count);
 		H5Dclose(dh);
 		return 1;
 	}
@@ -515,15 +515,15 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	if ( r < 0 ) {
 		ERROR("Couldn't read data for panel %s\n",
 		      p->name);
-		free(f_offset);
-		free(f_count);
-		free(data);
+		cffree(f_offset);
+		cffree(f_count);
+		cffree(data);
 		H5Dclose(dh);
 		return 1;
 	}
 
-	free(f_offset);
-	free(f_count);
+	cffree(f_offset);
+	cffree(f_count);
 
 	if ( orig_type != NULL ) {
 		*orig_type = H5Dget_type(dh);
@@ -679,7 +679,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 		return 1;
 	}
 
-	mask = malloc(p_w*p_h*sizeof(int));
+	mask = cfmalloc(p_w*p_h*sizeof(int));
 	if ( mask == NULL ) return 1;
 
 	if ( load_hdf5_hyperslab(p, fh, event,
@@ -687,7 +687,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 	                         sizeof(int), 1, mask_location, NULL) )
 	{
 		ERROR("Failed to load mask data\n");
-		free(mask);
+		cffree(mask);
 		return 1;
 	}
 
@@ -703,7 +703,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 
 	}
 
-	free(mask);
+	cffree(mask);
 	return 0;
 }
 
@@ -724,7 +724,7 @@ static char *read_single_fixed_string(hid_t dh)
 	sh = H5Screate(H5S_SCALAR);
 	type = H5Dget_type(dh);
 	size = H5Tget_size(type);
-	tmp = malloc(size+1);
+	tmp = cfmalloc(size+1);
 	if ( tmp == NULL ) {
 		H5Tclose(type);
 		return NULL;
@@ -733,7 +733,7 @@ static char *read_single_fixed_string(hid_t dh)
 	H5Sclose(sh);
 	H5Tclose(type);
 	if ( r < 0 ) {
-		free(tmp);
+		cffree(tmp);
 		ERROR("Couldn't read scalar string\n");
 		return NULL;
 	} else {
@@ -802,7 +802,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("No such numeric field '%s'\n", subst_name);
-		free(subst_name);
+		cffree(subst_name);
 		close_hdf5(fh);
 		return 1;
 	}
@@ -822,7 +822,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		ERROR("HDF5 header is not a recognised type (%s).\n",
 		      subst_name);
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 1;
 	}
 
@@ -833,7 +833,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	if ( ndims > 64 ) {
 		ERROR("Too many dimensions for numeric value\n");
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 1;
 	}
 	H5Sget_simple_extent_dims(sh, size, NULL);
@@ -855,12 +855,12 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			if ( r < 0 )  {
 				ERROR("Couldn't read scalar value from %s.\n",
 				      subst_name);
-				free(subst_name);
+				cffree(subst_name);
 				close_hdf5(fh);
 				return 1;
 			}
 			image_cache_header_float(image, name, val);
-			free(subst_name);
+			cffree(subst_name);
 			return 0;
 
 		} else if ( class == H5T_INTEGER ) {
@@ -871,12 +871,12 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			if ( r < 0 )  {
 				ERROR("Couldn't read scalar value from %s.\n",
 				      subst_name);
-				free(subst_name);
+				cffree(subst_name);
 				close_hdf5(fh);
 				return 1;
 			}
 			image_cache_header_int(image, name, val);
-			free(subst_name);
+			cffree(subst_name);
 			return 0;
 
 		} else if ( class == H5T_STRING ) {
@@ -902,7 +902,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 			if ( val != NULL ) {
 				image_cache_header_str(image, name, val);
-				free(val);
+				cffree(val);
 				rv = 0;
 			} else {
 				ERROR("Failed to read string '%s'\n",
@@ -910,14 +910,14 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				rv = 1;
 			}
 
-			free(subst_name);
+			cffree(subst_name);
 			close_hdf5(fh);
 			return rv;
 
 		} else {
 			/* Should never be reached */
 			ERROR("Invalid HDF5 class %i\n", class);
-			free(subst_name);
+			cffree(subst_name);
 			return 1;
 		}
 	}
@@ -926,16 +926,16 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	if ( dim_vals == NULL ) {
 		ERROR("Couldn't parse event '%s'\n");
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 1;
 	}
 
-	f_offset = malloc(ndims*sizeof(hsize_t));
-	f_count = malloc(ndims*sizeof(hsize_t));
+	f_offset = cfmalloc(ndims*sizeof(hsize_t));
+	f_count = cfmalloc(ndims*sizeof(hsize_t));
 	if ( (f_offset == NULL) || (f_count == NULL) ) {
 		ERROR("Couldn't allocate dimension arrays\n");
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 1;
 	}
 
@@ -953,8 +953,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				      subst_name, i,
 				      dim_vals[dim_val_pos], size[i]);
 				close_hdf5(fh);
-				free(subst_name);
-				free(dim_vals);
+				cffree(subst_name);
+				cffree(dim_vals);
 				return 1;
 			}
 
@@ -970,21 +970,21 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		}
 
 	}
-	free(dim_vals);
+	cffree(dim_vals);
 
 	check = H5Sselect_hyperslab(sh, H5S_SELECT_SET,
 	                            f_offset, NULL, f_count, NULL);
 	if ( check < 0 ) {
 		ERROR("Error selecting dataspace for header value\n");
-		free(f_offset);
-		free(f_count);
-		free(subst_name);
+		cffree(f_offset);
+		cffree(f_count);
+		cffree(subst_name);
 		close_hdf5(fh);
 		return 1;
 	}
 
-	free(f_offset);
-	free(f_count);
+	cffree(f_offset);
+	cffree(f_count);
 
 	ms = H5Screate_simple(1,msdims,NULL);
 	check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
@@ -992,7 +992,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	if ( check < 0 ) {
 		ERROR("Error selecting memory dataspace for header value\n");
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 1;
 	}
 
@@ -1003,13 +1003,13 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		if ( r < 0 )  {
 			ERROR("Couldn't read value.\n");
 			close_hdf5(fh);
-			free(subst_name);
+			cffree(subst_name);
 			return 1;
 		}
 
 		image_cache_header_float(image, name, val);
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 0;
 
 	} else if ( class == H5T_INTEGER ) {
@@ -1019,13 +1019,13 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		if ( r < 0 )  {
 			ERROR("Couldn't read value.\n");
 			close_hdf5(fh);
-			free(subst_name);
+			cffree(subst_name);
 			return 1;
 		}
 
 		image_cache_header_int(image, name, val);
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 0;
 
 	} else if ( class == H5T_STRING ) {
@@ -1044,16 +1044,16 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			if ( rv < 0 ) {
 				ERROR("Can't read HDF5 vlen string from array - %s\n",
 				      subst_name);
-				free(subst_name);
+				cffree(subst_name);
 				close_hdf5(fh);
 				return 1;
 			} else {
 
 				chomp(val);
 				image_cache_header_str(image, name, val);
-				free(val);
+				cffree(val);
 				close_hdf5(fh);
-				free(subst_name);
+				cffree(subst_name);
 				return 0;
 			}
 
@@ -1066,10 +1066,10 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			size_t ssize;
 
 			ssize = H5Tget_size(stype);
-			val = malloc(ssize+1);
+			val = cfmalloc(ssize+1);
 			if ( val == NULL ) {
 				close_hdf5(fh);
-				free(subst_name);
+				cffree(subst_name);
 				return 1;
 			}
 			rv = H5Dread(dh, stype, ms, sh, H5P_DEFAULT, val);
@@ -1078,16 +1078,16 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				ERROR("Couldn't read HDF5 fixed string from array - %s\n",
 				      subst_name);
 				close_hdf5(fh);
-				free(subst_name);
+				cffree(subst_name);
 				return 1;
 			} else {
 
 				val[ssize] = '\0';
 				chomp(val);
 				image_cache_header_str(image, name, val);
-				free(val);
+				cffree(val);
 				close_hdf5(fh);
-				free(subst_name);
+				cffree(subst_name);
 				return 0;
 
 			}
@@ -1098,7 +1098,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		/* Should never be reached */
 		ERROR("Invalid HDF5 class %i\n", class);
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return 1;
 	}
 }
@@ -1279,7 +1279,7 @@ static float *read_peak_line(hid_t fh, char *path, int line,
 		return NULL;
 	}
 
-	buf = malloc(size[1]*sizeof(float));
+	buf = cfmalloc(size[1]*sizeof(float));
 	if ( buf == NULL ) return NULL;
 	r = H5Dread(dh, H5T_NATIVE_FLOAT, mh, sh, H5P_DEFAULT, buf);
 	if ( r < 0 ) {
@@ -1336,19 +1336,19 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	dim_vals = read_dim_parts(event, &n_dim_vals);
 	if ( dim_vals == NULL ) {
 		ERROR("Couldn't parse event '%s'\n");
-		free(subst_name);
+		cffree(subst_name);
 		return NULL;
 	}
 
 	if ( n_dim_vals < 1 ) {
 		ERROR("Not enough dimensions in event ID to use CXI "
 		      "peak lists (%i)\n", n_dim_vals);
-		free(subst_name);
+		cffree(subst_name);
 		return NULL;
 	}
 
 	line = dim_vals[0];
-	free(dim_vals);
+	cffree(dim_vals);
 
 	snprintf(path_n, 1024, "%s/nPeaks", subst_name);
 	snprintf(path_x, 1024, "%s/peakXPosRaw", subst_name);
@@ -1358,37 +1358,37 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file (peaks/cxi): %s\n", filename);
-		free(subst_name);
+		cffree(subst_name);
 		return NULL;
 	}
 
 	r = read_peak_count(fh, path_n, line, &num_peaks);
 	if ( r != 0 ) {
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return NULL;
 	}
 
 	buf_x = read_peak_line(fh, path_x, line, num_peaks);
 	if ( buf_x == NULL ) {
 		close_hdf5(fh);
-		free(subst_name);
+		cffree(subst_name);
 		return NULL;
 	}
 
 	buf_y = read_peak_line(fh, path_y, line, num_peaks);
 	if ( buf_y == NULL ) {
-		free(buf_x);
-		free(subst_name);
+		cffree(buf_x);
+		cffree(subst_name);
 		close_hdf5(fh);
 		return NULL;
 	}
 
 	buf_i = read_peak_line(fh, path_i, line, num_peaks);
 	if ( buf_i == NULL ) {
-		free(buf_x);
-		free(buf_y);
-		free(subst_name);
+		cffree(buf_x);
+		cffree(buf_y);
+		cffree(subst_name);
 		close_hdf5(fh);
 		return NULL;
 	}
@@ -1415,10 +1415,10 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 
 	}
 
-	free(buf_x);
-	free(buf_y);
-	free(buf_i);
-	free(subst_name);
+	cffree(buf_x);
+	cffree(buf_y);
+	cffree(buf_i);
+	cffree(subst_name);
 
 	close_hdf5(fh);
 
@@ -1470,11 +1470,11 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 	dh = H5Dopen2(fh, subst_name, H5P_DEFAULT);
 	if ( dh < 0 ) {
 		ERROR("Peak list (%s) not found.\n", subst_name);
-		free(subst_name);
+		cffree(subst_name);
 		close_hdf5(fh);
 		return NULL;
 	}
-	free(subst_name);
+	cffree(subst_name);
 
 	sh = H5Dget_space(dh);
 	if ( sh < 0 ) {
@@ -1500,7 +1500,7 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	buf = malloc(sizeof(float)*size[0]*size[1]);
+	buf = cfmalloc(sizeof(float)*size[0]*size[1]);
 	if ( buf == NULL ) {
 		ERROR("Couldn't reserve memory for the peak list.\n");
 		close_hdf5(fh);
@@ -1541,7 +1541,7 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 
 	}
 
-	free(buf);
+	cffree(buf);
 	close_hdf5(fh);
 
 	return features;
@@ -1555,7 +1555,7 @@ static char *matches_pattern(const char *name, const char *pattern,
                              const char *ev_str_old)
 {
 	if ( strcmp(pattern, "%") == 0 ) {
-		char *nstr = malloc(strlen(ev_str_old)+strlen(name)+2);
+		char *nstr = cfmalloc(strlen(ev_str_old)+strlen(name)+2);
 		if ( nstr == NULL ) {
 			ERROR("Couldn't allocate memory\n");
 			return NULL;
@@ -1566,7 +1566,7 @@ static char *matches_pattern(const char *name, const char *pattern,
 		return nstr;
 	} else {
 		if ( strcmp(name, pattern) == 0 ) {
-			return strdup(ev_str_old);
+			return cfstrdup(ev_str_old);
 		} else {
 			return NULL;
 		}
@@ -1586,14 +1586,14 @@ struct ev_list
 static int add_ev_to_list(struct ev_list *list, char *ev_str)
 {
 	if ( list->n_events == list->max_events ) {
-		char **new_events = realloc(list->events,
-		                            (list->max_events+128)*sizeof(char *));
+		char **new_events = cfrealloc(list->events,
+		                              (list->max_events+128)*sizeof(char *));
 		if ( new_events == NULL ) return 1;
 		list->max_events += 128;
 		list->events = new_events;
 	}
 
-	list->events[list->n_events++] = strdup(ev_str);
+	list->events[list->n_events++] = cfstrdup(ev_str);
 
 	return 0;
 }
@@ -1604,9 +1604,9 @@ static char *demunge_event(const char *orig)
 	size_t len = strlen(orig);
 	char *slash;
 
-	if ( len == 0 ) return strdup("//");
+	if ( len == 0 ) return cfstrdup("//");
 
-	slash = malloc(len+3);
+	slash = cfmalloc(len+3);
 	if ( slash == NULL ) return NULL;
 	strcpy(slash, orig+1);
 	strcat(slash, "//");
@@ -1641,7 +1641,7 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 			return 1;
 		}
 
-		name = malloc(size+1);
+		name = cfmalloc(size+1);
 		if ( name == NULL ) {
 			ERROR("Couldn't allocate memory\n");
 			return 1;
@@ -1658,7 +1658,7 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 		ev_str_new = matches_pattern(name, pattern_bits[0],
 		                             ev_str);
 		if ( ev_str_new == NULL ) {
-			free(name);
+			cffree(name);
 			continue;
 		}
 
@@ -1666,8 +1666,8 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 		                        H5_ITER_INC, i, &obj_info, 0) < 0 )
 		{
 			ERROR("Couldn't get info\n");
-			free(name);
-			free(ev_str_new);
+			cffree(name);
+			cffree(ev_str_new);
 			return 1;
 		}
 
@@ -1678,16 +1678,16 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 			if ( n_pattern_bits == 1 ) {
 				ERROR("Pattern doesn't match file"
 				      " (too short)\n");
-				free(name);
-				free(ev_str_new);
+				cffree(name);
+				cffree(ev_str_new);
 				return 1;
 			}
 
 			child_gh = H5Gopen1(gh, name);
 			if ( child_gh < 0 ) {
 				ERROR("Couldn't open '%s'\n", name);
-				free(name);
-				free(ev_str_new);
+				cffree(name);
+				cffree(ev_str_new);
 				return 1;
 			}
 
@@ -1696,12 +1696,12 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 			                      &pattern_bits[1],
 			                      n_pattern_bits - 1) )
 			{
-				free(name);
-				free(ev_str_new);
+				cffree(name);
+				cffree(ev_str_new);
 				return 1;
 			}
 
-			free(ev_str_new);
+			cffree(ev_str_new);
 			H5Gclose(child_gh);
 
 		} else if ( obj_info.type == H5O_TYPE_DATASET ) {
@@ -1712,21 +1712,21 @@ static int rec_expand_paths(hid_t gh, struct ev_list *list,
 				ERROR("Pattern doesn't match file"
 				      " (too long by %i)\n",
 				      n_pattern_bits);
-				free(name);
-				free(ev_str_new);
+				cffree(name);
+				cffree(ev_str_new);
 				return 1;
 			}
 
 			addme = demunge_event(ev_str_new);
 			if ( addme != NULL ) {
 				add_ev_to_list(list, addme);
-				free(addme);
+				cffree(addme);
 			}
-			free(ev_str_new);
+			cffree(ev_str_new);
 
 		}
 
-		free(name);
+		cffree(name);
 
 	}
 
@@ -1755,7 +1755,7 @@ char **expand_paths(hid_t fh, char *pattern, int *n_evs)
 		if ( pattern[i] == '/' ) n_sep++;
 	}
 
-	pattern_bits = malloc(n_sep*sizeof(char *));
+	pattern_bits = cfmalloc(n_sep*sizeof(char *));
 	if ( pattern_bits == NULL ) return NULL;
 
 	start = pattern+1;
@@ -1764,7 +1764,7 @@ char **expand_paths(hid_t fh, char *pattern, int *n_evs)
 		if ( sep == NULL ) {
 			sep = start+strlen(start);
 		}
-		pattern_bits[i] = strndup(start, sep-start);
+		pattern_bits[i] = cfstrndup(start, sep-start);
 		if ( pattern_bits[i] == NULL ) return NULL;
 		start = sep+1;
 	}
@@ -1776,9 +1776,9 @@ char **expand_paths(hid_t fh, char *pattern, int *n_evs)
 	rec_expand_paths(fh, &list, "", pattern_bits, n_sep);
 
 	for ( i=0; i<n_sep; i++ ) {
-		free(pattern_bits[i]);
+		cffree(pattern_bits[i]);
 	}
-	free(pattern_bits);
+	cffree(pattern_bits);
 
 	*n_evs = list.n_events;
 	return list.events;
@@ -1795,7 +1795,7 @@ static int rec_expand_dims(struct ev_list *list,
 	size_t len;
 
 	len = strlen(path_ev);
-	dim_ev = malloc(len+16);
+	dim_ev = cfmalloc(len+16);
 	if ( dim_ev == NULL ) return 1;
 
 	if ( n_placeholder_dims == 1 ) {
@@ -1815,7 +1815,7 @@ static int rec_expand_dims(struct ev_list *list,
 
 	}
 
-	free(dim_ev);
+	cffree(dim_ev);
 	return 0;
 }
 
@@ -1953,8 +1953,8 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 			return NULL;
 		}
 
-		size = malloc(dims*sizeof(hsize_t));
-		placeholder_sizes = malloc(dims*sizeof(int));
+		size = cfmalloc(dims*sizeof(hsize_t));
+		placeholder_sizes = cfmalloc(dims*sizeof(int));
 		if ( (size == NULL) || (placeholder_sizes == NULL) ) {
 			ERROR("Failed to allocate dimensions\n");
 			close_hdf5(fh);
@@ -1973,7 +1973,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 				placeholder_sizes[n_placeholder_dims++] = size[j];
 			}
 		}
-		free(size);
+		cffree(size);
 
 		/* Path event ID ends with //, but expand_dims will
 		 * add a slash.  So, remove one slash */
@@ -1990,10 +1990,10 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 			for ( j=0; j<n_evs_this_path; j++ ) {
 				add_ev_to_list(&full_evs, evs_this_path[j]);
-				free(evs_this_path[j]);
+				cffree(evs_this_path[j]);
 			}
 
-			free(evs_this_path);
+			cffree(evs_this_path);
 
 		} else {
 
@@ -2002,14 +2002,14 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 
 		}
 
-		free(placeholder_sizes);
-		free(path);
-		free(path_evs[i]);
+		cffree(placeholder_sizes);
+		cffree(path);
+		cffree(path_evs[i]);
 
 	}
 
 	close_hdf5(fh);
-	free(path_evs);
+	cffree(path_evs);
 	*pn_frames = full_evs.n_events;
 	return full_evs.events;
 }

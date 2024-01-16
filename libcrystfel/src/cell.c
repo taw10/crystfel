@@ -109,7 +109,7 @@ UnitCell *cell_new()
 {
 	UnitCell *cell;
 
-	cell = malloc(sizeof(UnitCell));
+	cell = cfmalloc(sizeof(UnitCell));
 	if ( cell == NULL ) return NULL;
 
 	cell->a = 1.0;
@@ -140,7 +140,7 @@ UnitCell *cell_new()
 void cell_free(UnitCell *cell)
 {
 	if ( cell == NULL ) return;
-	free(cell);
+	cffree(cell);
 }
 
 

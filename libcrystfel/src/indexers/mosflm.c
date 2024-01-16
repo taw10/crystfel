@@ -162,13 +162,13 @@ static void mosflm_parseline(const char *line, struct image *image,
 		char *copy;
 		int i;
 
-		copy = strdup(line);
+		copy = cfstrdup(line);
 		for ( i=0; i<strlen(copy); i++ ) {
 			if ( copy[i] == '\r' ) copy[i]='r';
 			if ( copy[i] == '\n' ) copy[i]='\0';
 		}
 		STATUS("MOSFLM: %s\n", copy);
-		free(copy);
+		cffree(copy);
 	}
 }
 
@@ -366,13 +366,13 @@ static void write_img(struct image *image, const char *filename)
 	FILE *fh;
 	unsigned short int *intimage;
 
-	intimage = malloc(sizeof(unsigned short int));
+	intimage = cfmalloc(sizeof(unsigned short int));
 	intimage[0] = 1;
 
 	fh = fopen(filename, "w");
 	if ( !fh ) {
 		ERROR("Couldn't open temporary file '%s'\n", filename);
-		free(intimage);
+		cffree(intimage);
 		return;
 	}
 
@@ -389,7 +389,7 @@ static void write_img(struct image *image, const char *filename)
 	while ( ftell(fh) < 512 ) fprintf(fh," ");
 
 	fwrite(intimage, sizeof(unsigned short int), 1, fh);
-	free(intimage);
+	cffree(intimage);
 	fclose(fh);
 }
 
@@ -400,13 +400,13 @@ static void mosflm_sendline(const char *line, struct mosflm_data *mosflm)
 	char *copy;
 	int i;
 
-	copy = strdup(line);
+	copy = cfstrdup(line);
 	for ( i=0; i<strlen(copy); i++ ) {
 		if ( copy[i] == '\r' ) copy[i]='\0';
 		if ( copy[i] == '\n' ) copy[i]='\0';
 	}
 	STATUS("To MOSFLM: '%s'\n", copy);
-	free(copy);
+	cffree(copy);
 	#endif
 
 	if ( write(mosflm->pty, line, strlen(line)) == -1 ) {
@@ -469,7 +469,7 @@ static char *mosflm_spacegroup_for_lattice(UnitCell *cell)
 	}
 	assert(g != NULL);
 
-	result = malloc(32);
+	result = cfmalloc(32);
 	if ( result == NULL ) return NULL;
 
 	snprintf(result, 31, "%c%s", centering, g);
@@ -512,7 +512,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 			symm = mosflm_spacegroup_for_lattice(mosflm->mp->template);
 			snprintf(tmp, 255, "SYMM %s\n", symm);
 			//STATUS("Asking MOSFLM for '%s'\n", symm);
-			free(symm);
+			cffree(symm);
 			mosflm_sendline(tmp, mosflm);
 
 		} else {
@@ -629,7 +629,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 			switch ( type ) {
 
 				case MOSFLM_INPUT_LINE :
-				block_buffer = malloc(i+1);
+				block_buffer = cfmalloc(i+1);
 				memcpy(block_buffer, mosflm->rbuffer, i);
 				block_buffer[i] = '\0';
 
@@ -638,7 +638,7 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 				}
 
 				mosflm_parseline(block_buffer, image, mosflm);
-				free(block_buffer);
+				cffree(block_buffer);
 				endbit_length = i+2;
 				break;
 
@@ -667,8 +667,8 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 			                       - endbit_length;
 			new_rbuflen = mosflm->rbuflen - endbit_length;
 			if ( new_rbuflen == 0 ) new_rbuflen = 256;
-			mosflm->rbuffer = realloc(mosflm->rbuffer,
-			                               new_rbuflen);
+			mosflm->rbuffer = cfrealloc(mosflm->rbuffer,
+			                            new_rbuflen);
 			mosflm->rbuflen = new_rbuflen;
 
 		} else {
@@ -676,9 +676,8 @@ static int mosflm_readable(struct image *image, struct mosflm_data *mosflm)
 			if ( mosflm->rbufpos==mosflm->rbuflen ) {
 
 				/* More buffer space is needed */
-				mosflm->rbuffer = realloc(
-				                    mosflm->rbuffer,
-				                    mosflm->rbuflen + 256);
+				mosflm->rbuffer = cfrealloc(mosflm->rbuffer,
+				                            mosflm->rbuflen + 256);
 				mosflm->rbuflen = mosflm->rbuflen + 256;
 				/* The new space gets used at the next
 				 * read, shortly... */
@@ -701,7 +700,7 @@ int run_mosflm(struct image *image, void *ipriv)
 	int status;
 	int rval;
 
-	mosflm = malloc(sizeof(struct mosflm_data));
+	mosflm = cfmalloc(sizeof(struct mosflm_data));
 	if ( mosflm == NULL ) {
 		ERROR("Couldn't allocate memory for MOSFLM data.\n");
 		return 0;
@@ -720,7 +719,7 @@ int run_mosflm(struct image *image, void *ipriv)
 
 	if ( mosflm->pid == -1 ) {
 		ERROR("Failed to fork for MOSFLM: %s\n", strerror(errno));
-		free(mosflm);
+		cffree(mosflm);
 		return 0;
 	}
 	if ( mosflm->pid == 0 ) {
@@ -741,7 +740,7 @@ int run_mosflm(struct image *image, void *ipriv)
 
 	}
 
-	mosflm->rbuffer = malloc(256);
+	mosflm->rbuffer = cfmalloc(256);
 	mosflm->rbuflen = 256;
 	mosflm->rbufpos = 0;
 
@@ -796,7 +795,7 @@ int run_mosflm(struct image *image, void *ipriv)
 	} while ( !rval );
 
 	close(mosflm->pty);
-	free(mosflm->rbuffer);
+	cffree(mosflm->rbuffer);
 	waitpid(mosflm->pid, &status, 0);
 
 	if ( mosflm->finished_ok == 0 ) {
@@ -807,7 +806,7 @@ int run_mosflm(struct image *image, void *ipriv)
 	}
 
 	rval = mosflm->success;
-	free(mosflm);
+	cffree(mosflm);
 	return rval;
 }
 
@@ -835,7 +834,7 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell)
 		      "monoclinic C cell choice.\n");
 	}
 
-	mp = malloc(sizeof(struct mosflm_private));
+	mp = cfmalloc(sizeof(struct mosflm_private));
 	if ( mp == NULL ) return NULL;
 
 	mp->template = cell;
@@ -849,7 +848,7 @@ void mosflm_cleanup(void *pp)
 {
 	struct mosflm_private *p;
 	p = (struct mosflm_private *)pp;
-	free(p);
+	cffree(p);
 }
 
 

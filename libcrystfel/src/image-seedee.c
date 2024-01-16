@@ -170,20 +170,20 @@ int image_seedee_read(struct image *image,
 	                                  data_block, data_block_size,
 	                                  &zero_copy, &array);
 	profile_end("seedee-get-size");
-	array.data = malloc(array.size);
-	array.shape = malloc(array.ndims*sizeof(int));
+	array.data = cfmalloc(array.size);
+	array.shape = cfmalloc(array.ndims*sizeof(int));
 	if ( (array.data == NULL) || (array.shape == NULL) ) {
 		cJSON_Delete(json);
-		free(array.data);
-		free(array.shape);
+		cffree(array.data);
+		cffree(array.shape);
 		return 1;
 	}
 
 	if ( array.ndims != 2 ) {
 		ERROR("Seedee data has unexpected number of dimensions "
 		      "(%i, expected 2)\n", array.ndims);
-		free(array.data);
-		free(array.shape);
+		cffree(array.data);
+		cffree(array.shape);
 		return 1;
 	}
 
@@ -195,8 +195,8 @@ int image_seedee_read(struct image *image,
 	cJSON_Delete(json);
 	if ( r < 0 ) {
 		ERROR("Seedee deserialiation failed.\n");
-		free(array.data);
-		free(array.shape);
+		cffree(array.data);
+		cffree(array.shape);
 		return 1;
 	}
 
@@ -208,15 +208,15 @@ int image_seedee_read(struct image *image,
 			ERROR("Failed to load data for panel '%s'\n",
 			      dtempl->panels[i].name);
 			profile_end("seedee-panel");
-			free(array.data);
-			free(array.shape);
+			cffree(array.data);
+			cffree(array.shape);
 			return 1;
 		}
 	}
 	profile_end("seedee-panel");
 
-	free(array.data);
-	free(array.shape);
+	cffree(array.data);
+	cffree(array.shape);
 
 	return 0;
 }

@@ -198,7 +198,7 @@ Rational rtnl_abs(Rational a)
  */
 char *rtnl_format(Rational rt)
 {
-	char *v = malloc(32);
+	char *v = cfmalloc(32);
 	if ( v == NULL ) return NULL;
 	if ( rt.den == 1 ) {
 		snprintf(v, 31, "%lli", rt.num);
@@ -217,7 +217,7 @@ Rational *rtnl_list(signed int num_min, signed int num_max,
 	Rational *list;
 	int n = 0;
 
-	list = malloc((1+num_max-num_min)*(1+den_max-den_min)*sizeof(Rational));
+	list = cfmalloc((1+num_max-num_min)*(1+den_max-den_min)*sizeof(Rational));
 	if ( list == NULL ) return NULL;
 
 	for ( num=num_min; num<=num_max; num++ ) {
@@ -263,12 +263,12 @@ RationalMatrix *rtnl_mtx_new(unsigned int rows, unsigned int cols)
 	RationalMatrix *m;
 	int i;
 
-	m = malloc(sizeof(RationalMatrix));
+	m = cfmalloc(sizeof(RationalMatrix));
 	if ( m == NULL ) return NULL;
 
-	m->v = calloc(rows*cols, sizeof(Rational));
+	m->v = cfcalloc(rows*cols, sizeof(Rational));
 	if ( m->v == NULL ) {
-		free(m);
+		cffree(m);
 		return NULL;
 	}
 
@@ -372,8 +372,8 @@ IntegerMatrix *intmat_from_rtnl_mtx(const RationalMatrix *m)
 void rtnl_mtx_free(RationalMatrix *mtx)
 {
 	if ( mtx == NULL ) return;
-	free(mtx->v);
-	free(mtx);
+	cffree(mtx->v);
+	cffree(mtx);
 }
 
 
@@ -412,7 +412,7 @@ int transform_fractional_coords_rtnl(const RationalMatrix *P,
 	cm = rtnl_mtx_copy(P);
 	if ( cm == NULL ) return 1;
 
-	vec = malloc(cm->rows*sizeof(Rational));
+	vec = cfmalloc(cm->rows*sizeof(Rational));
 	if ( vec == NULL ) return 1;
 	for ( h=0; h<cm->rows; h++ ) vec[h] = ivec[h];
 
@@ -489,7 +489,7 @@ int transform_fractional_coords_rtnl(const RationalMatrix *P,
 		ans[i] = rtnl_div(sum, rtnl_mtx_get(cm, i, i));
 	}
 
-	free(vec);
+	cffree(vec);
 	rtnl_mtx_free(cm);
 
 	return 0;
@@ -517,7 +517,7 @@ void rtnl_mtx_print(const RationalMatrix *m)
 		for ( j=0; j<m->cols; j++ ) {
 			char *v = rtnl_format(rtnl_mtx_get(m, i, j));
 			fprintf(stderr, "%4s ", v);
-			free(v);
+			cffree(v);
 		}
 		fprintf(stderr, "]\n");
 	}

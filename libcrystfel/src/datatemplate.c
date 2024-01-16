@@ -73,14 +73,14 @@ static struct panel_group_template *add_group(const char *name, DataTemplate *dt
 		return NULL;
 	}
 
-	gt = malloc(sizeof(struct panel_group_template));
+	gt = cfmalloc(sizeof(struct panel_group_template));
 	if ( gt == NULL ) return NULL;
 
-	gt->name = strdup(name);
+	gt->name = cfstrdup(name);
 	gt->n_children = 0;
 
 	if ( gt->name == NULL ) {
-		free(gt);
+		cffree(gt);
 		return NULL;
 	}
 
@@ -140,8 +140,8 @@ static int parse_group(const char *name, DataTemplate *dt, const char *val)
 
 	}
 
-	for ( i=0; i<n_members; i++ ) free(members[i]);
-	free(members);
+	for ( i=0; i<n_members; i++ ) cffree(members[i]);
+	cffree(members);
 
 	return fail;
 }
@@ -156,14 +156,14 @@ static struct panel_template *new_panel(DataTemplate *det,
 	int i;
 
 	det->n_panels++;
-	det->panels = realloc(det->panels,
-	                      det->n_panels*sizeof(struct panel_template));
+	det->panels = cfrealloc(det->panels,
+	                        det->n_panels*sizeof(struct panel_template));
 
 	new = &det->panels[det->n_panels-1];
 	memcpy(new, defaults, sizeof(struct panel_template));
 
 	/* Set name */
-	new->name = strdup(name);
+	new->name = cfstrdup(name);
 
 	/* Copy strings */
 	new->data = safe_strdup(defaults->data);
@@ -186,7 +186,7 @@ static struct dt_badregion *new_bad_region(DataTemplate *det, const char *name)
 	struct dt_badregion *new;
 
 	det->n_bad++;
-	det->bad = realloc(det->bad, det->n_bad*sizeof(struct dt_badregion));
+	det->bad = cfrealloc(det->bad, det->n_bad*sizeof(struct dt_badregion));
 
 	new = &det->bad[det->n_bad-1];
 	new->min_x = NAN;
@@ -257,12 +257,12 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 	/* Add plus at start if no sign there already */
 	if ( (a_orig[0] != '+') && (a_orig[0] != '-') ) {
 		len += 1;
-		a = malloc(len+1);
+		a = cfmalloc(len+1);
 		snprintf(a, len+1, "+%s", a_orig);
 		a[len] = '\0';
 
 	} else {
-		a = strdup(a_orig);
+		a = cfstrdup(a_orig);
 	}
 
 	/* Count the expressions */
@@ -271,7 +271,7 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 		if ( (a[i] == '+') || (a[i] == '-') ) nexp++;
 	}
 
-	bits = calloc(nexp, sizeof(char *));
+	bits = cfcalloc(nexp, sizeof(char *));
 
 	/* Break the string up */
 	idx = -1;
@@ -288,7 +288,7 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 		if ( (ch == '+') || (ch == '-') ) {
 			if ( idx >= 0 ) bits[idx][istr] = '\0';
 			idx++;
-			bits[idx] = malloc(len+1);
+			bits[idx] = cfmalloc(len+1);
 			istr = 0;
 		}
 
@@ -306,7 +306,7 @@ static int assplode_algebraic(const char *a_orig, char ***pbits)
 	if ( idx >= 0 ) bits[idx][istr] = '\0';
 
 	*pbits = bits;
-	free(a);
+	cffree(a);
 
 	return nexp;
 }
@@ -381,10 +381,10 @@ static int dir_conv(const char *a, double *sx, double *sy, double *sz)
 			break;
 		}
 
-		free(bits[i]);
+		cffree(bits[i]);
 
 	}
-	free(bits);
+	cffree(bits);
 
 	return 0;
 }
@@ -450,7 +450,7 @@ static int parse_mask(struct panel_template *panel,
 		return 1;
 	}
 
-	key = strdup(key_orig);
+	key = cfstrdup(key_orig);
 	if ( key == NULL ) return 1;
 
 	key[4] = '_';
@@ -459,16 +459,16 @@ static int parse_mask(struct panel_template *panel,
 	 * Double underscore is deliberate! */
 	if ( strcmp(key, "mask__file") == 0 ) {
 
-		panel->masks[n].filename = strdup(val);
+		panel->masks[n].filename = cfstrdup(val);
 
 	} else if ( strcmp(key, "mask__data") == 0 ) {
 
 		if ( strncmp(val, "/", 1) != 0 ) {
 			ERROR("Invalid mask location '%s'\n", val);
-			free(key);
+			cffree(key);
 			return 1;
 		}
-		panel->masks[n].data_location = strdup(val);
+		panel->masks[n].data_location = cfstrdup(val);
 
 	} else if ( strcmp(key, "mask__goodbits") == 0 ) {
 
@@ -478,7 +478,7 @@ static int parse_mask(struct panel_template *panel,
 		if ( end != val ) {
 			panel->masks[n].good_bits = v;
 		} else {
-			free(key);
+			cffree(key);
 			return 1;
 		}
 
@@ -490,19 +490,19 @@ static int parse_mask(struct panel_template *panel,
 		if ( end != val ) {
 			panel->masks[n].bad_bits = v;
 		} else {
-			free(key);
+			cffree(key);
 			return 1;
 		}
 
 	} else {
 
 		ERROR("Invalid mask directive '%s'\n", key_orig);
-		free(key);
+		cffree(key);
 		return 1;
 	}
 
 	panel->masks[n].mask_default = def;
-	free(key);
+	cffree(key);
 	return 0;
 }
 
@@ -538,8 +538,8 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		reject = 1;
 
 	} else if ( strcmp(key, "data") == 0 ) {
-		free(panel->data);
-		panel->data = strdup(val);
+		cffree(panel->data);
+		panel->data = cfstrdup(val);
 		panel->data_default = def;
 
 	} else if ( strcmp(key, "mask_edge_pixels") == 0 ) {
@@ -563,10 +563,10 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 		reject = parse_mask(panel, key, val, def);
 
 	} else if ( strcmp(key, "saturation_map") == 0 ) {
-		panel->satmap = strdup(val);
+		panel->satmap = cfstrdup(val);
 		panel->satmap_default = def;
 	} else if ( strcmp(key, "saturation_map_file") == 0 ) {
-		panel->satmap_file = strdup(val);
+		panel->satmap_file = cfstrdup(val);
 		panel->satmap_file_default = def;
 
 	} else if ( strcmp(key, "coffset") == 0) {
@@ -685,7 +685,7 @@ static int parse_field_bad(struct dt_badregion *badr, const char *key,
 		badr->max_ss = atof(val);
 		reject = check_badr_fsss(badr, 1);
 	} else if ( strcmp(key, "panel") == 0 ) {
-		badr->panel_name = strdup(val);
+		badr->panel_name = cfstrdup(val);
 	} else {
 		ERROR("Unrecognised field '%s'\n", key);
 	}
@@ -701,13 +701,13 @@ static int parse_electron_voltage(const char *val,
 	char *valcpy;
 	char *sp;
 
-	valcpy = strdup(val);
+	valcpy = cfstrdup(val);
 	if ( valcpy == NULL ) return 1;
 
 	/* "electron_voltage" directive must have explicit units */
 	sp = strchr(valcpy, ' ');
 	if ( sp == NULL ) {
-		free(valcpy);
+		cffree(valcpy);
 		return 1;
 	}
 
@@ -716,7 +716,7 @@ static int parse_electron_voltage(const char *val,
 	} else if ( strcmp(sp+1, "kV") == 0 ) {
 		*punit = WAVELENGTH_ELECTRON_KV;
 	} else {
-		free(valcpy);
+		cffree(valcpy);
 		return 1;
 	}
 
@@ -733,13 +733,13 @@ static int parse_wavelength(const char *val,
 	char *valcpy;
 	char *sp;
 
-	valcpy = strdup(val);
+	valcpy = cfstrdup(val);
 	if ( valcpy == NULL ) return 1;
 
 	/* "wavelength" directive must have explicit units */
 	sp = strchr(valcpy, ' ');
 	if ( sp == NULL ) {
-		free(valcpy);
+		cffree(valcpy);
 		return 1;
 	}
 
@@ -748,7 +748,7 @@ static int parse_wavelength(const char *val,
 	} else if ( strcmp(sp+1, "A") == 0 ) {
 		*punit = WAVELENGTH_A;
 	} else {
-		free(valcpy);
+		cffree(valcpy);
 		return 1;
 	}
 
@@ -765,7 +765,7 @@ static int parse_photon_energy(const char *val,
 	char *valcpy;
 	char *sp;
 
-	valcpy = strdup(val);
+	valcpy = cfstrdup(val);
 	if ( valcpy == NULL ) return 1;
 
 	/* "photon_energy" is the only one of the wavelength
@@ -781,7 +781,7 @@ static int parse_photon_energy(const char *val,
 		sp[0] = '\0';
 	} else {
 		/* Unit specified, but unrecognised */
-		free(valcpy);
+		cffree(valcpy);
 		return 1;
 	}
 
@@ -819,13 +819,13 @@ static int parse_toplevel(DataTemplate *dt,
                           int *defaults_updated)
 {
 	if ( strcmp(key, "detector_shift_x") == 0 ) {
-		dt->shift_x_from = strdup(val);
+		dt->shift_x_from = cfstrdup(val);
 
 	} else if ( strcmp(key, "detector_shift_y") == 0 ) {
-		dt->shift_y_from = strdup(val);
+		dt->shift_y_from = cfstrdup(val);
 
 	} else if ( strcmp(key, "clen") == 0 ) {
-		dt->cnz_from = strdup(val);
+		dt->cnz_from = cfstrdup(val);
 
 	} else if ( strcmp(key, "photon_energy") == 0 ) {
 		return parse_photon_energy(val,
@@ -843,7 +843,7 @@ static int parse_toplevel(DataTemplate *dt,
 		                        &dt->wavelength_unit);
 
 	} else if ( strcmp(key, "peak_list") == 0 ) {
-		dt->peak_list = strdup(val);
+		dt->peak_list = cfstrdup(val);
 
 	} else if ( strcmp(key, "peak_list_type") == 0 ) {
 		return parse_peak_layout(val, &dt->peak_list_type);
@@ -1024,7 +1024,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	struct panel_template defaults;
 	int have_unused_defaults = 0;
 
-	dt = calloc(1, sizeof(DataTemplate));
+	dt = cfcalloc(1, sizeof(DataTemplate));
 	if ( dt == NULL ) return NULL;
 
 	dt->n_panels = 0;
@@ -1078,7 +1078,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.satmap_default = 1;
 	defaults.satmap_file = NULL;
 	defaults.satmap_file_default = 1;
-	defaults.data = strdup("/data/data");
+	defaults.data = cfstrdup("/data/data");
 	defaults.data_default = 1;
 	defaults.name = NULL;
 	defaults.dims[0] = DIM_SS;
@@ -1086,7 +1086,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	for ( i=2; i<MAX_DIMS; i++ ) defaults.dims[i] = DIM_UNDEFINED;
 	for ( i=0; i<MAX_DIMS; i++ ) defaults.dims_default[i] = 1;
 
-	string = strdup(string_in);
+	string = cfstrdup(string_in);
 	if ( string == NULL ) return NULL;
 	len = strlen(string);
 	for ( i=0; i<len; i++ ) {
@@ -1106,11 +1106,11 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		const char *nl = strchr(string, '\n');
 		if ( nl != NULL ) {
 			size_t nlen = nl - string;
-			line = strndup(string, nlen);
+			line = cfstrndup(string, nlen);
 			line[nlen] = '\0';
 			string += nlen+1;
 		} else {
-			line = strdup(string);
+			line = cfstrdup(string);
 			done = 1;
 		}
 
@@ -1119,8 +1119,8 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		char *line_orig = line;
 		while ( (line_orig[i] == ' ')
 		     || (line_orig[i] == '\t') ) i++;
-		line = strdup(line+i);
-		free(line_orig);
+		line = cfstrdup(line+i);
+		cffree(line_orig);
 
 		/* Stop at comment symbol */
 		char *comm = strchr(line, ';');
@@ -1129,7 +1129,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		/* Nothing left? Entire line was commented out,
 		 * and can be silently ignored */
 		if ( line[0] == '\0' ) {
-			free(line);
+			cffree(line);
 			continue;
 		}
 
@@ -1137,7 +1137,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		char *eq = strchr(line, '=');
 		if ( eq == NULL ) {
 			ERROR("Bad line in geometry file: '%s'\n", line);
-			free(line);
+			cffree(line);
 			reject = 1;
 			continue;
 		}
@@ -1167,7 +1167,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 				      line);
 				reject = 1;
 			}
-			free(line);
+			cffree(line);
 			continue;
 		}
 
@@ -1195,13 +1195,13 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			if ( parse_field_bad(badregion, key, val) ) reject = 1;
 		}
 
-		free(line);
+		cffree(line);
 
 	} while ( !done );
 
 	if ( dt->n_panels == 0 ) {
 		ERROR("No panel descriptions in geometry file.\n");
-		free(dt);
+		cffree(dt);
 		return NULL;
 	}
 
@@ -1390,10 +1390,10 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		}
 	}
 
-	free(defaults.data);
+	cffree(defaults.data);
 	for ( i=0; i<MAX_MASKS; i++ ) {
-		free(defaults.masks[i].data_location);
-		free(defaults.masks[i].filename);
+		cffree(defaults.masks[i].data_location);
+		cffree(defaults.masks[i].filename);
 	}
 
 	/* If this is a single-panel detector, there should only be one group
@@ -1402,7 +1402,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		parse_group("all", dt, dt->groups[0]->name);
 	}
 
-	free(string_orig);
+	cffree(string_orig);
 
 	if ( reject ) return NULL;
 
@@ -1422,7 +1422,7 @@ DataTemplate *data_template_new_from_file(const char *filename)
 	}
 
 	dt = data_template_new_from_string(contents);
-	free(contents);
+	cffree(contents);
 	return dt;
 }
 
@@ -1437,33 +1437,33 @@ void data_template_free(DataTemplate *dt)
 
 		int j;
 
-		free(dt->panels[i].name);
-		free(dt->panels[i].data);
-		free(dt->panels[i].satmap);
-		free(dt->panels[i].satmap_file);
+		cffree(dt->panels[i].name);
+		cffree(dt->panels[i].data);
+		cffree(dt->panels[i].satmap);
+		cffree(dt->panels[i].satmap_file);
 
 		for ( j=0; j<MAX_MASKS; j++ ) {
-			free(dt->panels[i].masks[j].filename);
-			free(dt->panels[i].masks[j].data_location);
+			cffree(dt->panels[i].masks[j].filename);
+			cffree(dt->panels[i].masks[j].data_location);
 		}
 	}
 
 	for ( i=0; i<dt->n_headers_to_copy; i++ ) {
-		free(dt->headers_to_copy[i]);
+		cffree(dt->headers_to_copy[i]);
 	}
 
 	for ( i=0; i<dt->n_groups; i++ ) {
-		free(dt->groups[i]->name);
-		free(dt->groups[i]);
+		cffree(dt->groups[i]->name);
+		cffree(dt->groups[i]);
 	}
 
-	free(dt->wavelength_from);
-	free(dt->peak_list);
-	free(dt->cnz_from);
+	cffree(dt->wavelength_from);
+	cffree(dt->peak_list);
+	cffree(dt->cnz_from);
 
-	free(dt->panels);
-	free(dt->bad);
-	free(dt);
+	cffree(dt->panels);
+	cffree(dt->bad);
+	cffree(dt);
 }
 
 
@@ -1564,7 +1564,7 @@ void data_template_add_copy_header(DataTemplate *dt,
 		return;
 	}
 
-	dt->headers_to_copy[dt->n_headers_to_copy++] = strdup(header);
+	dt->headers_to_copy[dt->n_headers_to_copy++] = cfstrdup(header);
 }
 
 
@@ -1682,14 +1682,14 @@ static int separate_value_and_units(const char *from,
 
 	if ( from == NULL ) return 1;
 
-	fromcpy = strdup(from);
+	fromcpy = cfstrdup(from);
 	if ( fromcpy == NULL ) return 1;
 
 	sp = strchr(fromcpy, ' ');
 	if ( sp == NULL ) {
 		unitscpy = NULL;
 	} else {
-		unitscpy = strdup(sp+1);
+		unitscpy = cfstrdup(sp+1);
 		sp[0] = '\0';
 	}
 
@@ -1725,14 +1725,14 @@ static int im_get_length(struct image *image, const char *from,
 		if ( convert_float(value_str, pval) == 0 ) {
 
 			/* Literal value with no units */
-			free(value_str);
+			cffree(value_str);
 			return 0;
 
 		} else {
 
 			int r;
 			r = image_read_header_float(image, value_str, pval);
-			free(value_str);
+			cffree(value_str);
 
 			if ( r == 0 ) {
 				/* Value read from headers with no units */
@@ -1756,16 +1756,16 @@ static int im_get_length(struct image *image, const char *from,
 			scale = 1.0;
 		} else {
 			ERROR("Invalid length unit '%s'\n", units);
-			free(value_str);
-			free(units);
+			cffree(value_str);
+			cffree(units);
 			return 1;
 		}
 
 		if ( convert_float(value_str, pval) == 0 ) {
 
 			/* Literal value, units specified */
-			free(value_str);
-			free(units);
+			cffree(value_str);
+			cffree(units);
 			*pval *= scale;
 			return 0;
 
@@ -1773,7 +1773,7 @@ static int im_get_length(struct image *image, const char *from,
 
 			int r;
 			r = image_read_header_float(image, value_str, pval);
-			free(value_str);
+			cffree(value_str);
 
 			if ( r == 0 ) {
 				/* Value read from headers, units specified */
@@ -1849,10 +1849,10 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 
 	if ( gt == NULL ) return NULL;
 
-	gr = malloc(sizeof(struct detgeom_panel_group));
+	gr = cfmalloc(sizeof(struct detgeom_panel_group));
 	if ( gr == NULL ) return NULL;
 
-	gr->name = strdup(gt->name);
+	gr->name = cfstrdup(gt->name);
 	gr->n_children = gt->n_children;
 
 	if ( gr->n_children == 0 ) {
@@ -1888,9 +1888,9 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 		double tz = 0.0;
 
 		gr->panel = NULL;
-		gr->children = malloc(gt->n_children*sizeof(struct detgeom_panel_group *));
+		gr->children = cfmalloc(gt->n_children*sizeof(struct detgeom_panel_group *));
 		if ( gr->children == NULL ) {
-			free(gr);
+			cffree(gr);
 			return NULL;
 		}
 
@@ -1928,14 +1928,14 @@ struct detgeom *create_detgeom(struct image *image,
 		return NULL;
 	}
 
-	detgeom = malloc(sizeof(struct detgeom));
+	detgeom = cfmalloc(sizeof(struct detgeom));
 	if ( detgeom == NULL ) return NULL;
 
 	detgeom->top_group = NULL;
 
-	detgeom->panels = malloc(dtempl->n_panels*sizeof(struct detgeom_panel));
+	detgeom->panels = cfmalloc(dtempl->n_panels*sizeof(struct detgeom_panel));
 	if ( detgeom->panels == NULL ) {
-		free(detgeom);
+		cffree(detgeom);
 		return NULL;
 	}
 
@@ -1946,8 +1946,8 @@ struct detgeom *create_detgeom(struct image *image,
 		  || (dtempl->shift_x_from != NULL)
 		  || (dtempl->shift_y_from != NULL) )
 		{
-			free(detgeom->panels);
-			free(detgeom);
+			cffree(detgeom->panels);
+			cffree(detgeom);
 			return NULL;
 		}
 	}
@@ -2680,7 +2680,7 @@ struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *
 	int i;
 	struct panel_group_template *group;
 
-	ginfo = malloc(sizeof(struct dg_group_info)*dtempl->n_groups);
+	ginfo = cfmalloc(sizeof(struct dg_group_info)*dtempl->n_groups);
 	if ( ginfo == NULL ) return NULL;
 
 	group = find_group(dtempl, "all");

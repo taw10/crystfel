@@ -88,11 +88,11 @@ static void *task_worker(void *pargsv)
 	struct task_queue *q = w->tq;
 	int *cookie_slot;
 
-	cookie_slot = malloc(sizeof(int));
+	cookie_slot = cfmalloc(sizeof(int));
 	*cookie_slot = w->id;
 	pthread_setspecific(status_label_key, cookie_slot);
 
-	free(w);
+	cffree(w);
 
 	do {
 
@@ -129,7 +129,7 @@ static void *task_worker(void *pargsv)
 
 	} while ( 1 );
 
-	free(cookie_slot);
+	cffree(cookie_slot);
 
 	return NULL;
 }
@@ -173,7 +173,7 @@ int run_threads(int n_threads, TPWorkFunc work,
 
 	pthread_key_create(&status_label_key, NULL);
 
-	workers = malloc(n_threads * sizeof(pthread_t));
+	workers = cfmalloc(n_threads * sizeof(pthread_t));
 
 	pthread_mutex_init(&q.lock, NULL);
 	q.work = work;
@@ -192,7 +192,7 @@ int run_threads(int n_threads, TPWorkFunc work,
 
 		struct worker_args *w;
 
-		w = malloc(sizeof(struct worker_args));
+		w = cfmalloc(sizeof(struct worker_args));
 
 		w->tq = &q;
 		w->tqr = NULL;
@@ -214,7 +214,7 @@ int run_threads(int n_threads, TPWorkFunc work,
 
 	use_status_labels = 0;
 
-	free(workers);
+	cffree(workers);
 
 	return q.n_completed;
 }

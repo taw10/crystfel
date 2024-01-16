@@ -119,26 +119,26 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 	int i;
 
 	struct radial_stats_pixels *rsp = NULL;
-	rsp = (struct radial_stats_pixels *)malloc(sizeof(struct radial_stats_pixels));
+	rsp = (struct radial_stats_pixels *)cfmalloc(sizeof(struct radial_stats_pixels));
 	if ( rsp == NULL ) {
 		return NULL;
 	}
-	rsp->n_pixels = (int *)malloc(rmaps->n_rmaps * sizeof(int));
+	rsp->n_pixels = (int *)cfmalloc(rmaps->n_rmaps * sizeof(int));
 	if ( rsp->n_pixels == NULL ) {
-		free(rsp);
+		cffree(rsp);
 		return NULL;
 	}
-	rsp->pidx = (int **)malloc(rmaps->n_rmaps * sizeof(int *));
+	rsp->pidx = (int **)cfmalloc(rmaps->n_rmaps * sizeof(int *));
 	if ( rsp->pidx == NULL ) {
-		free(rsp->n_pixels);
-		free(rsp);
+		cffree(rsp->n_pixels);
+		cffree(rsp);
 		return NULL;
 	}
-	rsp->radius = (int **)malloc(rmaps->n_rmaps * sizeof(int *));
+	rsp->radius = (int **)cfmalloc(rmaps->n_rmaps * sizeof(int *));
 	if ( rsp->radius == NULL ) {
-		free(rsp->n_pixels);
-		free(rsp->pidx);
-		free(rsp);
+		cffree(rsp->n_pixels);
+		cffree(rsp->pidx);
+		cffree(rsp);
 		return NULL;
 	}
 	srand(0);
@@ -147,16 +147,16 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 
 	// Assuming 5000 is the maximum possible radius
 	int n_bins = 5000;
-	int *n_pixels = (int *)malloc(n_bins * sizeof(int)); // selected pixels per bin
-	int *n_tot_pixels = (int *)malloc(n_bins * sizeof(int));; // total pixels per bin
-	int **panel = (int **)malloc(n_bins * sizeof(int *)); // panel ID of selected pixels
-	int **idx = (int **)malloc(n_bins * sizeof(int *)); // index of selected pixels
+	int *n_pixels = (int *)cfmalloc(n_bins * sizeof(int)); // selected pixels per bin
+	int *n_tot_pixels = (int *)cfmalloc(n_bins * sizeof(int));; // total pixels per bin
+	int **panel = (int **)cfmalloc(n_bins * sizeof(int *)); // panel ID of selected pixels
+	int **idx = (int **)cfmalloc(n_bins * sizeof(int *)); // index of selected pixels
 
 	for ( i = 0; i < n_bins; i++ ) {
 		n_pixels[i] = 0;
 		n_tot_pixels[i] = 0;
-		panel[i] = (int *)malloc(n_pixels_per_bin * sizeof(int));
-		idx[i] = (int *)malloc(n_pixels_per_bin * sizeof(int));
+		panel[i] = (int *)cfmalloc(n_pixels_per_bin * sizeof(int));
+		idx[i] = (int *)cfmalloc(n_pixels_per_bin * sizeof(int));
 	}
 	int radius;
 
@@ -186,40 +186,40 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 		}
 	}
 
-	int *sidx = (int *)malloc(rmaps->n_rmaps * sizeof(int));
+	int *sidx = (int *)cfmalloc(rmaps->n_rmaps * sizeof(int));
 	if ( sidx == NULL ) {
-		free(rsp->n_pixels);
-		free(rsp->pidx);
-		free(rsp->radius);
-		free(rsp);
+		cffree(rsp->n_pixels);
+		cffree(rsp->pidx);
+		cffree(rsp->radius);
+		cffree(rsp);
 		return NULL;
 	}
 	for ( p = 0; p < rmaps->n_rmaps; p++ ) {
-		rsp->pidx[p] = (int *)malloc(rsp->n_pixels[p] * sizeof(int));
+		rsp->pidx[p] = (int *)cfmalloc(rsp->n_pixels[p] * sizeof(int));
 		if ( rsp->pidx[p] == NULL ) {
 			for ( i = 0; i < p; i++ ) {
-				free(rsp->pidx[i]);
-				free(rsp->radius[i]);
+				cffree(rsp->pidx[i]);
+				cffree(rsp->radius[i]);
 			}
-			free(rsp->pidx);
-			free(rsp->radius);
-			free(rsp->n_pixels);
-			free(rsp);
-			free(sidx);
+			cffree(rsp->pidx);
+			cffree(rsp->radius);
+			cffree(rsp->n_pixels);
+			cffree(rsp);
+			cffree(sidx);
 			return NULL;
 		}
-		rsp->radius[p] = (int *)malloc(rsp->n_pixels[p] * sizeof(int));
+		rsp->radius[p] = (int *)cfmalloc(rsp->n_pixels[p] * sizeof(int));
 		if ( rsp->radius[p] == NULL ) {
 			for ( i = 0; i < p; i++ ) {
-				free(rsp->pidx[i]);
-				free(rsp->radius[i]);
+				cffree(rsp->pidx[i]);
+				cffree(rsp->radius[i]);
 			}
-			free(rsp->pidx[p]);
-			free(rsp->pidx);
-			free(rsp->radius);
-			free(rsp->n_pixels);
-			free(rsp);
-			free(sidx);
+			cffree(rsp->pidx[p]);
+			cffree(rsp->pidx);
+			cffree(rsp->radius);
+			cffree(rsp->n_pixels);
+			cffree(rsp);
+			cffree(sidx);
 			return NULL;
 		}
 		sidx[p] = 0;
@@ -233,15 +233,15 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 			sidx[p] += 1;
 		}
 	}
-	free(sidx);
+	cffree(sidx);
 	for ( i = 0; i < n_bins; i++ ) {
-		free(panel[i]);
-		free(idx[i]);
+		cffree(panel[i]);
+		cffree(idx[i]);
 	}
-	free(panel);
-	free(idx);
-	free(n_pixels);
-	free(n_tot_pixels);
+	cffree(panel);
+	cffree(idx);
+	cffree(n_pixels);
+	cffree(n_tot_pixels);
 
 	rsp->n_panels = rmaps->n_rmaps;
 	return rsp;
@@ -251,13 +251,13 @@ static void free_rstats_pixels(struct radial_stats_pixels *rsp)
 {
 	int i;
 	for ( i = 0; i < rsp->n_panels; i++ ) {
-		free(rsp->pidx[i]);
-		free(rsp->radius[i]);
+		cffree(rsp->pidx[i]);
+		cffree(rsp->radius[i]);
 	}
-	free(rsp->pidx);
-	free(rsp->radius);
-	free(rsp->n_pixels);
-	free(rsp);
+	cffree(rsp->pidx);
+	cffree(rsp->radius);
+	cffree(rsp->n_pixels);
+	cffree(rsp);
 }
 
 
@@ -267,20 +267,20 @@ static struct radius_maps *compute_radius_maps(struct detgeom *det)
 	struct detgeom_panel p;
 	struct radius_maps *rm = NULL;
 
-	rm = (struct radius_maps *)malloc(sizeof(struct radius_maps));
+	rm = (struct radius_maps *)cfmalloc(sizeof(struct radius_maps));
 	if ( rm == NULL ) {
 		return NULL;
 	}
 
-	rm->r_maps = (float **)malloc(det->n_panels*sizeof(float*));
+	rm->r_maps = (float **)cfmalloc(det->n_panels*sizeof(float*));
 	if ( rm->r_maps == NULL ) {
-		free(rm);
+		cffree(rm);
 		return NULL;
 	}
 
-	rm->n_pixels = (int *)malloc(det->n_panels*sizeof(int*));
+	rm->n_pixels = (int *)cfmalloc(det->n_panels*sizeof(int*));
 	if ( rm->r_maps == NULL ) {
-		free(rm);
+		cffree(rm);
 		return NULL;
 	}
 
@@ -289,13 +289,13 @@ static struct radius_maps *compute_radius_maps(struct detgeom *det)
 	for( i=0 ; i<det->n_panels ; i++ ) {
 
 		p = det->panels[i];
-		rm->r_maps[i] = (float *)malloc(p.h*p.w*sizeof(float));
+		rm->r_maps[i] = (float *)cfmalloc(p.h*p.w*sizeof(float));
 
 		if ( rm->r_maps[i] == NULL ) {
 			for ( u = 0; u<i; u++ ) {
-				free(rm->r_maps[u]);
+				cffree(rm->r_maps[u]);
 			}
-			free(rm);
+			cffree(rm);
 			return NULL;
 		}
 		rm->n_pixels[i] = p.h * p.w;
@@ -323,11 +323,11 @@ static void free_radius_maps(struct radius_maps *r_maps)
 	int i;
 
 	for ( i=0 ; i<r_maps->n_rmaps ; i++ ) {
-		free(r_maps->r_maps[i]);
+		cffree(r_maps->r_maps[i]);
 	}
-	free(r_maps->r_maps);
-	free(r_maps->n_pixels);
-	free(r_maps);
+	cffree(r_maps->r_maps);
+	cffree(r_maps->n_pixels);
+	cffree(r_maps);
 }
 
 
@@ -339,13 +339,13 @@ struct pf8_private_data *prepare_peakfinder8(struct detgeom *det, int fast_mode)
 		return NULL;
 	}
 
-	data = (struct pf8_private_data *)malloc(sizeof(struct pf8_private_data));
+	data = (struct pf8_private_data *)cfmalloc(sizeof(struct pf8_private_data));
 	if ( data == NULL ) {
 		return NULL;
 	}
 	data->rmaps = compute_radius_maps(det);
 	if ( data->rmaps == NULL ) {
-		free(data);
+		cffree(data);
 		return NULL;
 	}
 	if ( fast_mode ) {
@@ -369,7 +369,7 @@ void free_pf8_private_data(struct pf8_private_data *data)
 	if ( data->fast_mode ) {
 		free_rstats_pixels(data->rpixels);
 	}
-	free(data);
+	cffree(data);
 }
 
 
@@ -381,8 +381,8 @@ static struct peakfinder_mask *create_peakfinder_mask(struct image *img,
 	int i;
 	struct peakfinder_mask *msk;
 
-	msk = (struct peakfinder_mask *)malloc(sizeof(struct peakfinder_mask));
-	msk->masks =(char **) malloc(img->detgeom->n_panels*sizeof(char*));
+	msk = (struct peakfinder_mask *)cfmalloc(sizeof(struct peakfinder_mask));
+	msk->masks =(char **) cfmalloc(img->detgeom->n_panels*sizeof(char*));
 	msk->n_masks = img->detgeom->n_panels;
 	for ( i=0; i<img->detgeom->n_panels; i++) {
 
@@ -391,7 +391,7 @@ static struct peakfinder_mask *create_peakfinder_mask(struct image *img,
 
 		p = img->detgeom->panels[i];
 
-		msk->masks[i] = (char *)calloc(p.w*p.h,sizeof(char));
+		msk->masks[i] = (char *)cfcalloc(p.w*p.h,sizeof(char));
 
 		for ( iss=0 ; iss<p.h ; iss++ ) {
 			for ( ifs=0 ; ifs<p.w ; ifs++ ) {
@@ -422,10 +422,10 @@ static void free_peakfinder_mask(struct peakfinder_mask * pfmask)
 	int i;
 
 	for ( i=0 ; i<pfmask->n_masks ; i++ ) {
-		free(pfmask->masks[i]);
+		cffree(pfmask->masks[i]);
 	}
-	free(pfmask->masks);
-	free(pfmask);
+	cffree(pfmask->masks);
+	cffree(pfmask);
 }
 
 
@@ -434,29 +434,29 @@ static struct peakfinder_panel_data *allocate_panel_data(int num_panels)
 
 	struct peakfinder_panel_data *pfdata;
 
-	pfdata = (struct peakfinder_panel_data *)malloc(sizeof(struct peakfinder_panel_data));
+	pfdata = (struct peakfinder_panel_data *)cfmalloc(sizeof(struct peakfinder_panel_data));
 	if ( pfdata == NULL ) {
 		return NULL;
 	}
 
-	pfdata->panel_h = (int *)malloc(num_panels*sizeof(int));
+	pfdata->panel_h = (int *)cfmalloc(num_panels*sizeof(int));
 	if ( pfdata->panel_h == NULL ) {
-		free(pfdata);
+		cffree(pfdata);
 		return NULL;
 	}
 
-	pfdata->panel_w = (int *)malloc(num_panels*sizeof(int));
+	pfdata->panel_w = (int *)cfmalloc(num_panels*sizeof(int));
 	if ( pfdata->panel_w == NULL ) {
-		free(pfdata->panel_h);
-		free(pfdata);
+		cffree(pfdata->panel_h);
+		cffree(pfdata);
 		return NULL;
 	}
 
-	pfdata->panel_data = (float **)malloc(num_panels*sizeof(float*));
+	pfdata->panel_data = (float **)cfmalloc(num_panels*sizeof(float*));
 	if ( pfdata->panel_data == NULL ) {
-		free(pfdata->panel_w);
-		free(pfdata->panel_h);
-		free(pfdata);
+		cffree(pfdata->panel_w);
+		cffree(pfdata->panel_h);
+		cffree(pfdata);
 		return NULL;
 	}
 
@@ -468,10 +468,10 @@ static struct peakfinder_panel_data *allocate_panel_data(int num_panels)
 
 static void free_panel_data(struct peakfinder_panel_data *pfdata)
 {
-	free(pfdata->panel_data);
-	free(pfdata->panel_w);
-	free(pfdata->panel_h);
-	free(pfdata);
+	cffree(pfdata->panel_data);
+	cffree(pfdata->panel_w);
+	cffree(pfdata->panel_h);
+	cffree(pfdata);
 }
 
 
@@ -496,48 +496,48 @@ static struct radial_stats* allocate_radial_stats(int num_rad_bins)
 {
 	struct radial_stats* rstats;
 
-	rstats = (struct radial_stats *)malloc(sizeof(struct radial_stats));
+	rstats = (struct radial_stats *)cfmalloc(sizeof(struct radial_stats));
 	if ( rstats == NULL ) {
 		return NULL;
 	}
 
-	rstats->roffset = (float *)malloc(num_rad_bins*sizeof(float));
+	rstats->roffset = (float *)cfmalloc(num_rad_bins*sizeof(float));
 	if ( rstats->roffset == NULL ) {
-		free(rstats);
+		cffree(rstats);
 		return NULL;
 	}
 
-	rstats->rthreshold = (float *)malloc(num_rad_bins*sizeof(float));
+	rstats->rthreshold = (float *)cfmalloc(num_rad_bins*sizeof(float));
 	if ( rstats->rthreshold == NULL ) {
-		free(rstats->roffset);
-		free(rstats);
+		cffree(rstats->roffset);
+		cffree(rstats);
 		return NULL;
 	}
 
-	rstats->lthreshold = (float *)malloc(num_rad_bins*sizeof(float));
+	rstats->lthreshold = (float *)cfmalloc(num_rad_bins*sizeof(float));
 	if ( rstats->lthreshold == NULL ) {
-		free(rstats->rthreshold);
-		free(rstats->roffset);
-		free(rstats);
+		cffree(rstats->rthreshold);
+		cffree(rstats->roffset);
+		cffree(rstats);
 		return NULL;
 	}
 
-	rstats->rsigma = (float *)malloc(num_rad_bins*sizeof(float));
+	rstats->rsigma = (float *)cfmalloc(num_rad_bins*sizeof(float));
 	if ( rstats->rsigma == NULL ) {
-		free(rstats->roffset);
-		free(rstats->rthreshold);
-		free(rstats->lthreshold);
-		free(rstats);
+		cffree(rstats->roffset);
+		cffree(rstats->rthreshold);
+		cffree(rstats->lthreshold);
+		cffree(rstats);
 		return NULL;
 	}
 
-	rstats->rcount = (int *)malloc(num_rad_bins*sizeof(int));
+	rstats->rcount = (int *)cfmalloc(num_rad_bins*sizeof(int));
 	if ( rstats->rcount == NULL ) {
-		free(rstats->roffset);
-		free(rstats->rthreshold);
-		free(rstats->lthreshold);
-		free(rstats->rsigma);
-		free(rstats);
+		cffree(rstats->roffset);
+		cffree(rstats->rthreshold);
+		cffree(rstats->lthreshold);
+		cffree(rstats->rsigma);
+		cffree(rstats);
 		return NULL;
 	}
 
@@ -549,12 +549,12 @@ static struct radial_stats* allocate_radial_stats(int num_rad_bins)
 
 static void free_radial_stats(struct radial_stats *rstats)
 {
-	free(rstats->roffset);
-	free(rstats->rthreshold);
-	free(rstats->lthreshold);
-	free(rstats->rsigma);
-	free(rstats->rcount);
-	free(rstats);
+	cffree(rstats->roffset);
+	cffree(rstats->rthreshold);
+	cffree(rstats->lthreshold);
+	cffree(rstats->rsigma);
+	cffree(rstats->rcount);
+	cffree(rstats);
 }
 
 
@@ -663,85 +663,85 @@ struct peakfinder_peak_data *allocate_peak_data(int max_num_peaks)
 {
 	struct peakfinder_peak_data *pkdata;
 
-	pkdata = (struct peakfinder_peak_data*)malloc(sizeof(struct peakfinder_peak_data));
+	pkdata = (struct peakfinder_peak_data*)cfmalloc(sizeof(struct peakfinder_peak_data));
 	if ( pkdata == NULL ) {
 		return NULL;
 	}
 
-	pkdata->npix = (int *)malloc(max_num_peaks*sizeof(int));
+	pkdata->npix = (int *)cfmalloc(max_num_peaks*sizeof(int));
 	if ( pkdata->npix == NULL ) {
-		free(pkdata->npix);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata);
 		return NULL;
 	}
 
-	pkdata->com_fs = (float *)malloc(max_num_peaks*sizeof(float));
+	pkdata->com_fs = (float *)cfmalloc(max_num_peaks*sizeof(float));
 	if ( pkdata->com_fs == NULL ) {
-		free(pkdata->npix);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata);
 		return NULL;
 	}
 
-	pkdata->com_ss = (float *)malloc(max_num_peaks*sizeof(float));
+	pkdata->com_ss = (float *)cfmalloc(max_num_peaks*sizeof(float));
 	if ( pkdata->com_ss == NULL ) {
-		free(pkdata->npix);
-		free(pkdata->com_fs);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata->com_fs);
+		cffree(pkdata);
 		return NULL;
 	}
 
-	pkdata->com_index = (int *)malloc(max_num_peaks*sizeof(int));
+	pkdata->com_index = (int *)cfmalloc(max_num_peaks*sizeof(int));
 	if ( pkdata->com_ss == NULL ) {
-		free(pkdata->npix);
-		free(pkdata->com_fs);
-		free(pkdata->com_ss);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata->com_fs);
+		cffree(pkdata->com_ss);
+		cffree(pkdata);
 		return NULL;
 	}
 
-	pkdata->tot_i = (float *)malloc(max_num_peaks*sizeof(float));
+	pkdata->tot_i = (float *)cfmalloc(max_num_peaks*sizeof(float));
 	if ( pkdata->tot_i == NULL ) {
-		free(pkdata->npix);
-		free(pkdata->com_fs);
-		free(pkdata->com_ss);
-		free(pkdata->com_index);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata->com_fs);
+		cffree(pkdata->com_ss);
+		cffree(pkdata->com_index);
+		cffree(pkdata);
 		return NULL;
 	}
 
-	pkdata->max_i = (float *)malloc(max_num_peaks*sizeof(float));
+	pkdata->max_i = (float *)cfmalloc(max_num_peaks*sizeof(float));
 	if ( pkdata->max_i == NULL ) {
-		free(pkdata->npix);
-		free(pkdata->com_fs);
-		free(pkdata->com_ss);
-		free(pkdata->com_index);
-		free(pkdata->tot_i);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata->com_fs);
+		cffree(pkdata->com_ss);
+		cffree(pkdata->com_index);
+		cffree(pkdata->tot_i);
+		cffree(pkdata);
 		return NULL;
 	}
 
-	pkdata->sigma = (float *)malloc(max_num_peaks*sizeof(float));
+	pkdata->sigma = (float *)cfmalloc(max_num_peaks*sizeof(float));
 	if ( pkdata->sigma == NULL ) {
-		free(pkdata->npix);
-		free(pkdata->com_fs);
-		free(pkdata->com_ss);
-		free(pkdata->com_index);
-		free(pkdata->tot_i);
-		free(pkdata->max_i);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata->com_fs);
+		cffree(pkdata->com_ss);
+		cffree(pkdata->com_index);
+		cffree(pkdata->tot_i);
+		cffree(pkdata->max_i);
+		cffree(pkdata);
 		return NULL;
 	}
 
-	pkdata->snr = (float *)malloc(max_num_peaks*sizeof(float));
+	pkdata->snr = (float *)cfmalloc(max_num_peaks*sizeof(float));
 	if ( pkdata->snr == NULL ) {
-		free(pkdata->npix);
-		free(pkdata->com_fs);
-		free(pkdata->com_ss);
-		free(pkdata->com_index);
-		free(pkdata->tot_i);
-		free(pkdata->max_i);
-		free(pkdata->sigma);
-		free(pkdata);
+		cffree(pkdata->npix);
+		cffree(pkdata->com_fs);
+		cffree(pkdata->com_ss);
+		cffree(pkdata->com_index);
+		cffree(pkdata->tot_i);
+		cffree(pkdata->max_i);
+		cffree(pkdata->sigma);
+		cffree(pkdata);
 		return NULL;
 	}
 
@@ -750,15 +750,15 @@ struct peakfinder_peak_data *allocate_peak_data(int max_num_peaks)
 
 
 static void free_peak_data(struct peakfinder_peak_data *pkdata) {
-	free(pkdata->npix);
-	free(pkdata->com_fs);
-	free(pkdata->com_ss);
-	free(pkdata->com_index);
-	free(pkdata->tot_i);
-	free(pkdata->max_i);
-	free(pkdata->sigma);
-	free(pkdata->snr);
-	free(pkdata);
+	cffree(pkdata->npix);
+	cffree(pkdata->com_fs);
+	cffree(pkdata->com_ss);
+	cffree(pkdata->com_index);
+	cffree(pkdata->tot_i);
+	cffree(pkdata->max_i);
+	cffree(pkdata->sigma);
+	cffree(pkdata->snr);
+	cffree(pkdata);
 }
 
 
@@ -768,38 +768,38 @@ static struct peakfinder_intern_data *allocate_peakfinder_intern_data(int data_s
 
 	struct peakfinder_intern_data *intern_data;
 
-	intern_data = (struct peakfinder_intern_data *)malloc(sizeof(struct peakfinder_intern_data));
+	intern_data = (struct peakfinder_intern_data *)cfmalloc(sizeof(struct peakfinder_intern_data));
 	if ( intern_data == NULL ) {
 		return NULL;
 	}
 
-	intern_data->pix_in_peak_map =(char *)calloc(data_size, sizeof(char));
+	intern_data->pix_in_peak_map =(char *)cfcalloc(data_size, sizeof(char));
 	if ( intern_data->pix_in_peak_map == NULL ) {
-		free(intern_data);
+		cffree(intern_data);
 		return NULL;
 	}
 
-	intern_data->infs =(int *)calloc(data_size, sizeof(int));
+	intern_data->infs =(int *)cfcalloc(data_size, sizeof(int));
 	if ( intern_data->infs == NULL ) {
-		free(intern_data->pix_in_peak_map);
-		free(intern_data);
+		cffree(intern_data->pix_in_peak_map);
+		cffree(intern_data);
 		return NULL;
 	}
 
-	intern_data->inss =(int *)calloc(data_size, sizeof(int));
+	intern_data->inss =(int *)cfcalloc(data_size, sizeof(int));
 	if ( intern_data->inss == NULL ) {
-		free(intern_data->pix_in_peak_map);
-		free(intern_data->infs);
-		free(intern_data);
+		cffree(intern_data->pix_in_peak_map);
+		cffree(intern_data->infs);
+		cffree(intern_data);
 		return NULL;
 	}
 
-	intern_data->peak_pixels =(int *)calloc(max_pix_count, sizeof(int));
+	intern_data->peak_pixels =(int *)cfcalloc(max_pix_count, sizeof(int));
 	if ( intern_data->peak_pixels == NULL ) {
-		free(intern_data->pix_in_peak_map);
-		free(intern_data->infs);
-		free(intern_data->inss);
-		free(intern_data);
+		cffree(intern_data->pix_in_peak_map);
+		cffree(intern_data->infs);
+		cffree(intern_data->inss);
+		cffree(intern_data);
 		return NULL;
 	}
 
@@ -809,11 +809,11 @@ static struct peakfinder_intern_data *allocate_peakfinder_intern_data(int data_s
 
 static void free_peakfinder_intern_data(struct peakfinder_intern_data *pfid)
 {
-	free(pfid->peak_pixels);
-	free(pfid->pix_in_peak_map);
-	free(pfid->infs);
-	free(pfid->inss);
-	free(pfid);
+	cffree(pfid->peak_pixels);
+	cffree(pfid->pix_in_peak_map);
+	cffree(pfid->infs);
+	cffree(pfid->inss);
+	cffree(pfid);
 }
 
 
