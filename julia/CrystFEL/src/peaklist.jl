@@ -30,6 +30,8 @@ function PeakList()
 end
 
 
+Base.copy(::PeakList) = throw(ErrorException("Cannot copy(::PeakList), must deepcopy"))
+
 function Base.deepcopy(peaklist::PeakList)
     out = @ccall libcrystfel.image_feature_list_copy(peaklist.internalptr::Ptr{InternalPeakList})::Ptr{InternalPeakList}
     if out == C_NULL
