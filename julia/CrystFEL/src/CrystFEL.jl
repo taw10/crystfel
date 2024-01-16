@@ -13,6 +13,19 @@ module CrystFEL
 
 libcrystfel = "libcrystfel.so"
 
+# Configure libcrystfel to use Julia's memory management.  This is needed so
+# that the Julia GC knows about the memory we allocate via libcrystfel
+# routines.  Otherwise, potentially very large objects will be kept hanging
+# around in memory because Julia thinks it's using a very small amount of
+# memory, and rarely runs the GC.  In the case of image structures, the
+# difference between apparent and true memory use can be a factor of a million!
+function __init__()
+    @ccall libcrystfel.set_mm_funcs(cglobal(:jl_malloc)::Ptr{Cvoid},
+                                    cglobal(:jl_free)::Ptr{Cvoid},
+                                    cglobal(:jl_calloc)::Ptr{Cvoid},
+                                    cglobal(:jl_realloc)::Ptr{Cvoid})::Cint
+end
+
 include("cell.jl")
 using .UnitCells
 export UnitCell, LatticeType, CenteringType, UniqueAxis
