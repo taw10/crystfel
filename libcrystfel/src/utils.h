@@ -239,6 +239,20 @@ extern void set_log_message_func(LogMsgFunc new_log_msg_func,
                                  void *vp);
 
 
+/* ---------------------------- Memory management --------------------------- */
+
+extern void *cfmalloc(size_t size);
+extern void cffree(void *ptr);
+extern void *cfcalloc(size_t nmemb, size_t size);
+extern void *cfrealloc(void *ptr, size_t size);
+extern char *cfstrdup(const char *s);
+extern char *cfstrndup(const char *s, size_t n);
+extern int set_mm_funcs(void *(*cfmalloc)(size_t size),
+                        void (*cffree)(void *ptr),
+                        void *(*cfcalloc)(size_t nmemb, size_t size),
+                        void *(*cfrealloc)(void *ptr, size_t size));
+
+
 /* ------------------------------ File handling ----------------------------- */
 
 extern char *check_prefix(char *prefix);
