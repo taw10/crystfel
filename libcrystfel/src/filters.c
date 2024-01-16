@@ -136,7 +136,7 @@ void filter_median(struct image *image, int size)
 	nn = nn*nn;
 
 	/* "localBg" is way too big, but guaranteed big enough */
-	buffer = calloc(nn, sizeof(float));
+	buffer = cfcalloc(nn, sizeof(float));
 	if ( buffer == NULL ) {
 		ERROR("Failed to allocate LB buffer.\n");
 		return;
@@ -153,7 +153,7 @@ void filter_median(struct image *image, int size)
 
 		p = &image->detgeom->panels[pn];
 
-		localBg = calloc(p->w*p->h, sizeof(float));
+		localBg = cfcalloc(p->w*p->h, sizeof(float));
 		if ( localBg == NULL ) {
 			ERROR("Failed to allocate LB buffer.\n");
 			return;
@@ -195,8 +195,8 @@ void filter_median(struct image *image, int size)
 			image->dp[pn][i] -= localBg[i];
 		}
 
-		free(localBg);
+		cffree(localBg);
 	}
 
-	free(buffer);
+	cffree(buffer);
 }

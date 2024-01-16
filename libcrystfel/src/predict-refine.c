@@ -558,14 +558,14 @@ int refine_radius(Crystal *cr, struct image *image)
 	RefList *reflist;
 
 	/* Maximum possible size */
-	rps = malloc(image_feature_count(image->features)
-	                  * sizeof(struct reflpeak));
+	rps = cfmalloc(image_feature_count(image->features)
+	                    * sizeof(struct reflpeak));
 	if ( rps == NULL ) return 1;
 
 	reflist = reflist_new();
 	n_acc = pair_peaks(image, cr, reflist, rps);
 	if ( n_acc < 3 ) {
-		free(rps);
+		cffree(rps);
 		reflist_free(reflist);
 		return 1;
 	}
@@ -579,7 +579,7 @@ int refine_radius(Crystal *cr, struct image *image)
 	crystal_set_profile_radius(cr, fabs(get_exerr(rps[n].refl)));
 
 	reflist_free(reflist);
-	free(rps);
+	cffree(rps);
 
 	return 0;
 }
@@ -784,7 +784,7 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
 
 
 /* NB Only for use when the list of reflpeaks was created without a RefList.
- * If a RefList was used, then reflist_free the list then just free() the rps */
+ * If a RefList was used, then reflist_free the list then just cffree() the rps */
 static void free_rps_noreflist(struct reflpeak *rps, int n)
 {
 	int i;
@@ -792,7 +792,7 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 	for ( i=0; i<n; i++ ) {
 		reflection_free(rps[i].refl);
 	}
-	free(rps);
+	cffree(rps);
 }
 
 
@@ -809,14 +809,14 @@ int refine_prediction(struct image *image, Crystal *cr,
 	double total_shifts[12];
 	double res_r, res_fs, res_ss, res_overall;
 
-	rps = malloc(image_feature_count(image->features)
-	                       * sizeof(struct reflpeak));
+	rps = cfmalloc(image_feature_count(image->features)
+	                         * sizeof(struct reflpeak));
 	if ( rps == NULL ) return 1;
 
 	reflist = reflist_new();
 	n = pair_peaks(image, cr, reflist, rps);
 	if ( n < 10 ) {
-		free(rps);
+		cffree(rps);
 		reflist_free(reflist);
 		return 1;
 	}
@@ -832,7 +832,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 	}
 	if ( max_I <= 0.0 ) {
 		ERROR("All peaks negative?\n");
-		free(rps);
+		cffree(rps);
 		crystal_set_reflections(cr, NULL);
 		return 1;
 	}
@@ -888,7 +888,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		gsl_matrix_free(Minvs[i]);
 	}
-	free(Minvs);
+	cffree(Minvs);
 
 	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);

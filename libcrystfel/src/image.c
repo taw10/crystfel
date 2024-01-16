@@ -158,7 +158,7 @@ void image_add_feature(ImageFeatureList *flist, double fs, double ss,
 	if ( flist->n_features == flist->max_features ) {
 		struct imagefeature *nf;
 		int nmf = flist->max_features + 128;
-		nf = realloc(flist->features, nmf*sizeof(struct imagefeature));
+		nf = cfrealloc(flist->features, nmf*sizeof(struct imagefeature));
 		if ( nf == NULL ) return;
 		flist->features = nf;
 		flist->max_features = nmf;
@@ -178,7 +178,7 @@ ImageFeatureList *image_feature_list_new()
 {
 	ImageFeatureList *flist;
 
-	flist = malloc(sizeof(ImageFeatureList));
+	flist = cfmalloc(sizeof(ImageFeatureList));
 
 	flist->n_features = 0;
 	flist->max_features = 0;
@@ -207,9 +207,9 @@ ImageFeatureList *image_feature_list_copy(const ImageFeatureList *flist)
 	n = image_feature_list_new();
 	if ( n == NULL ) return NULL;
 
-	n->features = malloc(flist->n_features*sizeof(struct imagefeature));
+	n->features = cfmalloc(flist->n_features*sizeof(struct imagefeature));
 	if ( n->features == NULL ) {
-		free(n);
+		cffree(n);
 		return NULL;
 	}
 
@@ -241,8 +241,8 @@ ImageFeatureList *sort_peaks(ImageFeatureList *flist)
 void image_feature_list_free(ImageFeatureList *flist)
 {
 	if ( flist == NULL ) return;
-	free(flist->features);
-	free(flist);
+	cffree(flist->features);
+	cffree(flist);
 }
 
 
@@ -323,7 +323,7 @@ void image_add_crystal(struct image *image, Crystal *cryst)
 	int n;
 
 	n = image->n_crystals;
-	crs = realloc(image->crystals, (n+1)*sizeof(Crystal *));
+	crs = cfrealloc(image->crystals, (n+1)*sizeof(Crystal *));
 	if ( crs == NULL ) {
 		ERROR("Failed to allocate memory for crystals.\n");
 		return;
@@ -370,7 +370,7 @@ void free_all_crystals(struct image *image)
 		cell_free(crystal_get_cell(cr));
 		crystal_free(image->crystals[i]);
 	}
-	free(image->crystals);
+	cffree(image->crystals);
 	image->n_crystals = 0;
 }
 
@@ -397,10 +397,10 @@ void image_cache_header_int(struct image *image,
 	} else {
 
 		struct header_cache_entry *ce;
-		ce = malloc(sizeof(struct header_cache_entry));
+		ce = cfmalloc(sizeof(struct header_cache_entry));
 
 		if ( ce != NULL ) {
-			ce->header_name = strdup(header_name);
+			ce->header_name = cfstrdup(header_name);
 			ce->val_int = header_val;
 			ce->type = HEADER_INT;
 			image->header_cache[image->n_cached_headers++] = ce;
@@ -420,10 +420,10 @@ void image_cache_header_float(struct image *image,
 	} else {
 
 		struct header_cache_entry *ce;
-		ce = malloc(sizeof(struct header_cache_entry));
+		ce = cfmalloc(sizeof(struct header_cache_entry));
 
 		if ( ce != NULL ) {
-			ce->header_name = strdup(header_name);
+			ce->header_name = cfstrdup(header_name);
 			ce->val_float = header_val;
 			ce->type = HEADER_FLOAT;
 			image->header_cache[image->n_cached_headers++] = ce;
@@ -448,11 +448,11 @@ void image_cache_header_str(struct image *image,
 	} else {
 
 		struct header_cache_entry *ce;
-		ce = malloc(sizeof(struct header_cache_entry));
+		ce = cfmalloc(sizeof(struct header_cache_entry));
 
 		if ( ce != NULL ) {
-			ce->header_name = strdup(header_name);
-			ce->val_str = strdup(header_val);
+			ce->header_name = cfstrdup(header_name);
+			ce->val_str = cfstrdup(header_val);
 			ce->type = HEADER_STR;
 			image->header_cache[image->n_cached_headers++] = ce;
 		} else {
@@ -612,7 +612,7 @@ struct _image_data_arrays
 
 ImageDataArrays *image_data_arrays_new()
 {
-	ImageDataArrays *ida = malloc(sizeof(struct _image_data_arrays));
+	ImageDataArrays *ida = cfmalloc(sizeof(struct _image_data_arrays));
 	if ( ida == NULL ) return NULL;
 
 	ida->dp = NULL;
@@ -628,14 +628,14 @@ void image_data_arrays_free(ImageDataArrays *ida)
 	int i;
 
 	for ( i=0; i<ida->np; i++ ) {
-		if ( ida->dp != NULL ) free(ida->dp[i]);
-		if ( ida->bad != NULL ) free(ida->bad[i]);
+		if ( ida->dp != NULL ) cffree(ida->dp[i]);
+		if ( ida->bad != NULL ) cffree(ida->bad[i]);
 	}
 
-	free(ida->dp);
-	free(ida->bad);
+	cffree(ida->dp);
+	cffree(ida->bad);
 
-	free(ida);
+	cffree(ida);
 }
 
 
@@ -656,16 +656,16 @@ int image_create_dp_bad(struct image *image,
 
 		/* Allocate new arrays */
 
-		image->dp = malloc(dtempl->n_panels*sizeof(float *));
+		image->dp = cfmalloc(dtempl->n_panels*sizeof(float *));
 		if ( image->dp == NULL ) {
 			ERROR("Failed to allocate data array.\n");
 			return 1;
 		}
 
-		image->bad = malloc(dtempl->n_panels*sizeof(int *));
+		image->bad = cfmalloc(dtempl->n_panels*sizeof(int *));
 		if ( image->bad == NULL ) {
 			ERROR("Failed to allocate bad pixel mask\n");
-			free(image->dp);
+			cffree(image->dp);
 			return 1;
 		}
 
@@ -679,17 +679,17 @@ int image_create_dp_bad(struct image *image,
 
 			size_t nel = PANEL_WIDTH(&dtempl->panels[i]) * PANEL_HEIGHT(&dtempl->panels[i]);
 
-			image->dp[i] = malloc(nel*sizeof(float));
-			image->bad[i] = malloc(nel*sizeof(int));
+			image->dp[i] = cfmalloc(nel*sizeof(float));
+			image->bad[i] = cfmalloc(nel*sizeof(int));
 
 			if ( (image->dp[i] == NULL)|| (image->bad[i] == NULL) ) {
 				ERROR("Failed to allocate panel data arrays\n");
 				for ( i=0; i<dtempl->n_panels; i++ ) {
-					free(image->dp[i]);
-					free(image->bad[i]);
+					cffree(image->dp[i]);
+					cffree(image->bad[i]);
 				}
-				free(image->dp);
-				free(image->bad);
+				cffree(image->dp);
+				cffree(image->bad);
 				return 1;
 			}
 
@@ -1115,7 +1115,7 @@ static int create_satmap(struct image *image,
 
 	if ( !any ) return 0;
 
-	image->sat = malloc(dtempl->n_panels * sizeof(float *));
+	image->sat = cfmalloc(dtempl->n_panels * sizeof(float *));
 	if ( image->sat == NULL ) {
 		ERROR("Failed to allocate saturation map\n");
 		return 1;
@@ -1136,7 +1136,7 @@ static int create_satmap(struct image *image,
 			p_w = p->orig_max_fs - p->orig_min_fs + 1;
 			p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
-			image->sat[i] = malloc(p_w*p_h*sizeof(float));
+			image->sat[i] = cfmalloc(p_w*p_h*sizeof(float));
 
 			if ( image->sat[i] != NULL ) {
 				long int j;
@@ -1319,11 +1319,11 @@ struct image *image_read(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	image->filename = strdup(filename);
+	image->filename = cfstrdup(filename);
 	if ( event != NULL ) {
-		image->ev = strdup(event);
+		image->ev = cfstrdup(event);
 	} else {
-		image->ev = strdup("//");  /* Null event */
+		image->ev = cfstrdup("//");  /* Null event */
 	}
 	image->data_block = NULL;
 	image->data_block_size = 0;
@@ -1390,10 +1390,10 @@ void image_free(struct image *image)
 	if ( image->owns_peaklist ) image_feature_list_free(image->features);
 	free_all_crystals(image);
 	spectrum_free(image->spectrum);
-	free(image->filename);
-	free(image->ev);
-	free(image->data_block);
-	free(image->meta_data);
+	cffree(image->filename);
+	cffree(image->ev);
+	cffree(image->data_block);
+	cffree(image->meta_data);
 
 	if ( image->detgeom != NULL ) {
 		np = image->detgeom->n_panels;
@@ -1405,23 +1405,23 @@ void image_free(struct image *image)
 	if ( image->ida == NULL ) {
 
 		for ( i=0; i<np; i++ ) {
-			if ( image->dp != NULL ) free(image->dp[i]);
-			if ( image->sat != NULL ) free(image->sat[i]);
-			if ( image->bad != NULL ) free(image->bad[i]);
+			if ( image->dp != NULL ) cffree(image->dp[i]);
+			if ( image->sat != NULL ) cffree(image->sat[i]);
+			if ( image->bad != NULL ) cffree(image->bad[i]);
 		}
 
-		free(image->dp);
-		free(image->sat);
-		free(image->bad);
+		cffree(image->dp);
+		cffree(image->sat);
+		cffree(image->bad);
 
 	} /* else the arrays belong to the IDA structure */
 
 	for ( i=0; i<image->n_cached_headers; i++ ) {
-		free(image->header_cache[i]->header_name);
-		free(image->header_cache[i]);
+		cffree(image->header_cache[i]->header_name);
+		cffree(image->header_cache[i]);
 	}
 
-	free(image);
+	cffree(image);
 }
 
 
@@ -1429,7 +1429,7 @@ struct image *image_new()
 {
 	struct image *image;
 
-	image = malloc(sizeof(struct image));
+	image = cfmalloc(sizeof(struct image));
 	if ( image == NULL ) return NULL;
 
 	image->dp = NULL;
@@ -1537,11 +1537,11 @@ char **image_expand_frames(const DataTemplate *dtempl,
 
 	} else {
 		char **list;
-		list = malloc(sizeof(char *));
+		list = cfmalloc(sizeof(char *));
 		if ( list == NULL ) return NULL;
-		list[0] = strdup("//");
+		list[0] = cfstrdup("//");
 		if ( list[0] == NULL ) {
-			free(list);
+			cffree(list);
 			return NULL;
 		}
 		*n_frames = 1;

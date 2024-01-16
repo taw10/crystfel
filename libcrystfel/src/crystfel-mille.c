@@ -106,8 +106,8 @@ static void mille_add_measurement(Mille *m,
 			new_max_entries *= 2;
 		}
 
-		new_float_arr = realloc(m->float_arr, new_max_entries*sizeof(float));
-		new_int_arr = realloc(m->int_arr, new_max_entries*sizeof(int));
+		new_float_arr = cfrealloc(m->float_arr, new_max_entries*sizeof(float));
+		new_int_arr = cfrealloc(m->int_arr, new_max_entries*sizeof(int));
 		if ( (new_float_arr == NULL) || (new_int_arr == NULL) ) return;
 
 		m->float_arr = new_float_arr;
@@ -285,7 +285,7 @@ Mille *crystfel_mille_new(const char *outFileName)
 {
 	Mille *m;
 
-	m = malloc(sizeof(Mille));
+	m = cfmalloc(sizeof(Mille));
 	if ( m == NULL ) return NULL;
 
 	m->max_entries = 0;
@@ -296,7 +296,7 @@ Mille *crystfel_mille_new(const char *outFileName)
 	m->fh = fopen(outFileName, "wb");
 	if ( m->fh == NULL ) {
 		ERROR("Failed to open Mille file '%s'\n", outFileName);
-		free(m);
+		cffree(m);
 		return NULL;
 	}
 
@@ -309,9 +309,9 @@ void crystfel_mille_free(Mille *m)
 {
 	if ( m == NULL ) return;
 	fclose(m->fh);
-	free(m->float_arr);
-	free(m->int_arr);
-	free(m);
+	cffree(m->float_arr);
+	cffree(m->int_arr);
+	cffree(m);
 }
 
 

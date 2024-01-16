@@ -125,7 +125,7 @@ static Reflection *new_node(unsigned int serial)
 {
 	Reflection *new;
 
-	new = calloc(1, sizeof(struct _reflection));
+	new = cfcalloc(1, sizeof(struct _reflection));
 	if ( new == NULL ) return NULL;
 	new->in_list = 0;
 	new->serial = serial;
@@ -149,7 +149,7 @@ RefList *reflist_new()
 {
 	RefList *new;
 
-	new = malloc(sizeof(struct _reflist));
+	new = cfmalloc(sizeof(struct _reflist));
 	if ( new == NULL ) return NULL;
 
 	new->head = NULL;
@@ -184,7 +184,7 @@ Reflection *reflection_new(signed int h, signed int k, signed int l)
 void reflection_free(Reflection *refl)
 {
 	pthread_mutex_destroy(&refl->lock);
-	free(refl);
+	cffree(refl);
 }
 
 
@@ -212,8 +212,8 @@ void reflist_free(RefList *list)
 	if ( list->head != NULL ) {
 		recursive_free(list->head);
 	} /* else empty list */
-	if ( list->notes != NULL ) free(list->notes);
-	free(list);
+	if ( list->notes != NULL ) cffree(list->notes);
+	cffree(list);
 }
 
 
@@ -994,9 +994,9 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 	Reflection *refl;
 	RefListIterator *iter;
 
-	iter = malloc(sizeof(struct _reflistiterator));
+	iter = cfmalloc(sizeof(struct _reflistiterator));
 	iter->stack_size = 32;
-	iter->stack = malloc(iter->stack_size*sizeof(Reflection *));
+	iter->stack = cfmalloc(iter->stack_size*sizeof(Reflection *));
 	iter->stack_ptr = 0;
 	iter->is_const = 0;
 	*piter = iter;
@@ -1011,7 +1011,7 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 			iter->stack[iter->stack_ptr++] = refl;
 			if ( iter->stack_ptr == iter->stack_size ) {
 				iter->stack_size += 32;
-				iter->stack = realloc(iter->stack,
+				iter->stack = cfrealloc(iter->stack,
 				         iter->stack_size*sizeof(Reflection *));
 			}
 			refl = refl->child[0];
@@ -1019,8 +1019,8 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
 		}
 
 		if ( iter->stack_ptr == 0 ) {
-			free(iter->stack);
-			free(iter);
+			cffree(iter->stack);
+			cffree(iter);
 			return NULL;
 		}
 
@@ -1047,9 +1047,9 @@ const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
 	const Reflection *refl;
 	RefListIterator *iter;
 
-	iter = malloc(sizeof(struct _reflistiterator));
+	iter = cfmalloc(sizeof(struct _reflistiterator));
 	iter->stack_size = 32;
-	iter->stack_const = malloc(iter->stack_size*sizeof(Reflection *));
+	iter->stack_const = cfmalloc(iter->stack_size*sizeof(Reflection *));
 	iter->stack_ptr = 0;
 	iter->is_const = 1;
 	*piter = iter;
@@ -1064,7 +1064,7 @@ const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
 			iter->stack_const[iter->stack_ptr++] = refl;
 			if ( iter->stack_ptr == iter->stack_size ) {
 				iter->stack_size += 32;
-				iter->stack_const = realloc(iter->stack_const,
+				iter->stack_const = cfrealloc(iter->stack_const,
 				         iter->stack_size*sizeof(Reflection *));
 			}
 			refl = refl->child[0];
@@ -1072,8 +1072,8 @@ const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
 		}
 
 		if ( iter->stack_ptr == 0 ) {
-			free(iter->stack_const);
-			free(iter);
+			cffree(iter->stack_const);
+			cffree(iter);
 			return NULL;
 		}
 
@@ -1119,7 +1119,7 @@ Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 			iter->stack[iter->stack_ptr++] = refl;
 			if ( iter->stack_ptr == iter->stack_size ) {
 				iter->stack_size += 32;
-				iter->stack = realloc(iter->stack,
+				iter->stack = cfrealloc(iter->stack,
 				         iter->stack_size*sizeof(Reflection *));
 			}
 			refl = refl->child[0];
@@ -1127,8 +1127,8 @@ Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 
 		}
 		if ( iter->stack_ptr == 0 ) {
-			free(iter->stack);
-			free(iter);
+			cffree(iter->stack);
+			cffree(iter);
 			return NULL;
 		}
 
@@ -1172,7 +1172,7 @@ const Reflection *next_refl_const(const Reflection *refl, RefListIterator *iter)
 			iter->stack_const[iter->stack_ptr++] = refl;
 			if ( iter->stack_ptr == iter->stack_size ) {
 				iter->stack_size += 32;
-				iter->stack_const = realloc(iter->stack_const,
+				iter->stack_const = cfrealloc(iter->stack_const,
 				         iter->stack_size*sizeof(Reflection *));
 			}
 			refl = refl->child[0];
@@ -1194,11 +1194,11 @@ void free_reflistiterator(RefListIterator *iter)
 {
 	if ( iter != NULL ) {
 		if ( iter->is_const ) {
-			free(iter->stack_const);
+			cffree(iter->stack_const);
 		} else {
-			free(iter->stack);
+			cffree(iter->stack);
 		}
-		free(iter);
+		cffree(iter);
 	}
 }
 
@@ -1290,8 +1290,8 @@ void unlock_reflection(Reflection *refl)
 
 static void reflist_set_notes(RefList *reflist, const char *notes)
 {
-	free(reflist->notes);  /* free(NULL) is OK */
-	reflist->notes = strdup(notes);
+	cffree(reflist->notes);  /* free(NULL) is OK */
+	reflist->notes = cfstrdup(notes);
 }
 
 
@@ -1328,7 +1328,7 @@ void reflist_add_notes(RefList *reflist, const char *notes_add)
 	}
 
 	len = strlen(notes_add) + strlen(reflist->notes) + 2;
-	nnotes = malloc(len);
+	nnotes = cfmalloc(len);
 	if ( nnotes == NULL ) {
 		ERROR("Failed to add notes to crystal.\n");
 		return;

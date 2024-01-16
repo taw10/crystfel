@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "profile.h"
+#include "utils.h"
 
 #ifndef CLOCK_MONOTONIC_RAW
 #define CLOCK_MONOTONIC_RAW (CLOCK_MONOTONIC)
@@ -70,12 +71,12 @@ static struct _profile_block *start_profile_block(const char *name)
 {
 	struct _profile_block *b;
 
-	b = malloc(sizeof(struct _profile_block));
+	b = cfmalloc(sizeof(struct _profile_block));
 	if ( b == NULL ) return NULL;
 
-	b->name = strdup(name);
+	b->name = cfstrdup(name);
 	if ( b->name == NULL ) {
-		free(b);
+		cffree(b);
 		return NULL;
 	}
 	b->n_children = 0;
@@ -116,7 +117,7 @@ void profile_init()
 	}
 
 	if ( pd == NULL ) {
-		pd = malloc(sizeof(struct _profiledata));
+		pd = cfmalloc(sizeof(struct _profiledata));
 		if ( pd == NULL ) return;
 	}
 
@@ -137,7 +138,7 @@ static char *format_profile_block(struct _profile_block *b)
 	char **subbufs;
 	char *full_buf;
 
-	subbufs = malloc(b->n_children * sizeof(char *));
+	subbufs = cfmalloc(b->n_children * sizeof(char *));
 	if ( subbufs == NULL ) return NULL;
 
 	total_len = 32 + strlen(b->name);
@@ -147,16 +148,16 @@ static char *format_profile_block(struct _profile_block *b)
 		total_len += 1 + strlen(subbufs[i]);
 	}
 
-	full_buf = malloc(total_len);
+	full_buf = cfmalloc(total_len);
 	snprintf(full_buf, 32, "(%s %.3f", b->name, b->total_time);
 	for ( i=0; i<b->n_children; i++ ) {
 		strcat(full_buf, " ");
 		strcat(full_buf, subbufs[i]);
-		free(subbufs[i]);
+		cffree(subbufs[i]);
 	}
 	strcat(full_buf, ")");
 
-	free(subbufs);
+	cffree(subbufs);
 
 	return full_buf;
 }
@@ -168,9 +169,9 @@ static void free_profile_block(struct _profile_block *b)
 	for ( i=0; i<b->n_children; i++ ) {
 		free_profile_block(b->children[i]);
 	}
-	free(b->children);
-	free(b->name);
-	free(b);
+	cffree(b->children);
+	cffree(b->name);
+	cffree(b);
 }
 
 
@@ -195,12 +196,12 @@ void profile_print_and_reset(int worker_id)
 	stop_profile_block(pd->root);
 
 	buf = format_profile_block(pd->root);
-	buf2 = malloc(8+strlen(buf));
+	buf2 = cfmalloc(8+strlen(buf));
 	size_t len = 8+strlen(buf);
 	snprintf(buf2, len, "%i %s\n", worker_id, buf);
 	write(STDOUT_FILENO, buf2, strlen(buf2));
-	free(buf);
-	free(buf2);
+	cffree(buf);
+	cffree(buf2);
 
 	free_profile_block(pd->root);
 	pd->root = start_profile_block("root");
@@ -218,7 +219,7 @@ void profile_start(const char *name)
 	if ( pd->current->n_children >= pd->current->max_children ) {
 		struct _profile_block **nblock;
 		int nmax = pd->current->n_children + 64;
-		nblock = realloc(pd->current->children, nmax*sizeof(struct _profile_block *));
+		nblock = cfrealloc(pd->current->children, nmax*sizeof(struct _profile_block *));
 		if ( nblock == NULL ) {
 			fprintf(stderr, "Failed to allocate profiling record. "
 			                "Try again without --profile.\n");

@@ -101,7 +101,7 @@ struct fromfile_entry *add_unique(struct fromfile_entry **phead,
 
 		struct fromfile_entry *item;
 
-		item = malloc(sizeof(struct fromfile_entry));
+		item = cfmalloc(sizeof(struct fromfile_entry));
 		if ( item == NULL ) return NULL;
 
 		item->n_crystals = 0;
@@ -197,12 +197,12 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 	if ( opts->filename[0] == '/' ) {
 		fh = fopen(opts->filename, "r");
 	} else {
-		char *prefixed_fn = malloc(4+strlen(opts->filename));
+		char *prefixed_fn = cfmalloc(4+strlen(opts->filename));
 		if ( prefixed_fn == NULL ) return NULL;
 		strcpy(prefixed_fn, "../");
 		strcat(prefixed_fn, opts->filename);
 		fh = fopen(prefixed_fn, "r");
-		free(prefixed_fn);
+		cffree(prefixed_fn);
 	}
 
 	if ( fh == NULL ) {
@@ -210,7 +210,7 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 		return NULL;
 	}
 
-	dp = malloc(sizeof(struct fromfile_private));
+	dp = cfmalloc(sizeof(struct fromfile_private));
 	if ( dp == NULL ) {
 		fclose(fh);
 		return NULL;
@@ -305,8 +305,8 @@ void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
 
 		}
 
-		for ( i=0; i<n; i++ ) free(bits[i]);
-		free(bits);
+		for ( i=0; i<n; i++ ) cffree(bits[i]);
+		cffree(bits);
 
 	} while ( 1 );
 
@@ -360,7 +360,7 @@ void fromfile_cleanup(void *mpriv)
 		}
 	}
 
-	free(dp);
+	cffree(dp);
 }
 
 
@@ -376,7 +376,7 @@ static void fromfile_show_help()
 int fromfile_default_options(struct fromfile_options **opts_ptr)
 {
 	struct fromfile_options *opts;
-	opts = malloc(sizeof(struct fromfile_options));
+	opts = cfmalloc(sizeof(struct fromfile_options));
 	if ( opts == NULL ) return ENOMEM;
 	opts->filename = NULL;
 	*opts_ptr = opts;
@@ -402,7 +402,7 @@ static error_t fromfile_parse_arg(int key, char *arg,
 		return EINVAL;
 
 		case 2 :
-		(*opts_ptr)->filename = strdup(arg);
+		(*opts_ptr)->filename = cfstrdup(arg);
 		break;
 
 		default :

@@ -83,7 +83,7 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 	}
 
 	reciprocalPeaks_1_per_A.peakCount = 0;
-	intensities = malloc(npk*sizeof(float));
+	intensities = cfmalloc(npk*sizeof(float));
 	allocReciprocalPeaks(&reciprocalPeaks_1_per_A);
 	if ( intensities == NULL ) return 0;
 
@@ -116,7 +116,7 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 	                                                 pinkIndexer_private_data->maxRefinementDisbalance,
 	                                                 n_threads);
 
-	free(intensities);
+	cffree(intensities);
 	freeReciprocalPeaks(reciprocalPeaks_1_per_A);
 
 	if ( matchedPeaksCount == -1 ) {
@@ -205,7 +205,7 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 		return NULL;
 	}
 
-	struct pinkIndexer_private_data* pinkIndexer_private_data = malloc(sizeof(struct pinkIndexer_private_data));
+	struct pinkIndexer_private_data* pinkIndexer_private_data = cfmalloc(sizeof(struct pinkIndexer_private_data));
 	pinkIndexer_private_data->indm = *indm;
 	pinkIndexer_private_data->cellTemplate = cell;
 	pinkIndexer_private_data->maxRefinementDisbalance = pinkIndexer_opts->maxRefinementDisbalance;
@@ -424,7 +424,7 @@ int pinkIndexer_default_options(struct pinkindexer_options **opts_ptr)
 {
 	struct pinkindexer_options *opts;
 
-	opts = malloc(sizeof(struct pinkindexer_options));
+	opts = cfmalloc(sizeof(struct pinkindexer_options));
 	if ( opts == NULL ) return ENOMEM;
 
 	opts->considered_peaks_count = 4;

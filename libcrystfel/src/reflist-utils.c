@@ -399,7 +399,7 @@ static RefList *read_reflections_from_file(FILE *fh, char **sym)
 		if ( strncmp(line, "Symmetry: ", 10) != 0 ) return NULL;
 
 		if ( sym != NULL ) {
-			*sym = strdup(line+10);
+			*sym = cfstrdup(line+10);
 		}
 
 		/* Read (and ignore) the header */
@@ -780,9 +780,9 @@ void free_contribs(RefList *list)
 	{
 		struct reflection_contributions *c;
 		c = get_contributions(refl);
-		free(c->contribs);
-		free(c->contrib_crystals);
-		free(c);
+		cffree(c->contribs);
+		cffree(c->contrib_crystals);
+		cffree(c);
 	}
 }
 
@@ -793,13 +793,13 @@ static char *full_command_line(int argc, char *argv[])
 	size_t len = 1;
 	char *cl;
 
-	if ( argc == 0 ) return strdup("");
+	if ( argc == 0 ) return cfstrdup("");
 	for ( i=0; i<argc; i++ ) {
 		len += strlen(argv[i]) + 1;
 	}
 
-	cl = malloc(len);
-	if ( cl == NULL ) return strdup("");
+	cl = cfmalloc(len);
+	if ( cl == NULL ) return cfstrdup("");
 
 	cl[0] = '\0';
 	for ( i=0; i<argc; i++ ) {
@@ -822,7 +822,7 @@ void reflist_add_command_and_version(RefList *list, int argc, char *argv[])
 
 	tmp = full_command_line(argc, argv);
 	reflist_add_notes(list, tmp);
-	free(tmp);
+	cffree(tmp);
 }
 
 

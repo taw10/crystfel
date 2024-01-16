@@ -234,7 +234,7 @@ static char *terminate_str(const char *ptr, size_t len)
 	char *str;
 	if ( len < 1 ) return NULL;
 	if ( len > 16*1024 ) return NULL;
-	str = malloc(len+1);
+	str = cfmalloc(len+1);
 	if ( str == NULL ) return NULL;
 	strncpy(str, ptr, len);
 	str[len] = '\0';
@@ -301,7 +301,7 @@ int image_msgpack_read_header_to_cache(struct image *image,
 		}
 
 		image_cache_header_str(image, name, str);
-		free(str);
+		cffree(str);
 		msgpack_unpacked_destroy(&unpacked);
 		return 0;
 
@@ -356,23 +356,23 @@ static int load_msgpack_data(struct panel_template *p,
 		ERROR("Data 'type' isn't a string\n");
 		return 1;
 	}
-	dtype = strndup(type_obj->via.str.ptr, type_obj->via.str.size);
+	dtype = cfstrndup(type_obj->via.str.ptr, type_obj->via.str.size);
 
 	shape_obj = find_msgpack_kv(obj, "shape");
 	if ( shape_obj == NULL ) {
 		ERROR("Data 'shape' not found\n");
-		free(dtype);
+		cffree(dtype);
 		return 1;
 	}
 	if ( shape_obj->type != MSGPACK_OBJECT_ARRAY ) {
 		ERROR("Data 'shape' isn't an array\n");
-		free(dtype);
+		cffree(dtype);
 		return 1;
 	}
 	if ( shape_obj->via.array.size != 2 ) {
 		ERROR("Data 'shape' has wrong number of dimensions (%i)\n",
 		      shape_obj->via.array.size);
-		free(dtype);
+		cffree(dtype);
 		return 1;
 	}
 	data_size_ss = shape_obj->via.array.ptr[0].via.u64;
@@ -393,12 +393,12 @@ static int load_msgpack_data(struct panel_template *p,
 	data_obj = find_msgpack_kv(obj, "data");
 	if ( data_obj == NULL ) {
 		ERROR("Data 'data' not found\n");
-		free(dtype);
+		cffree(dtype);
 		return 1;
 	}
 	if ( data_obj->type != MSGPACK_OBJECT_BIN ) {
 		ERROR("Data 'data' isn't binary\n");
-		free(dtype);
+		cffree(dtype);
 		return 1;
 	}
 
@@ -434,7 +434,7 @@ static int load_msgpack_data(struct panel_template *p,
 		ERROR("Unrecognised data type '%s'\n", dtype);
 	}
 
-	free(dtype);
+	cffree(dtype);
 	return 0;
 }
 

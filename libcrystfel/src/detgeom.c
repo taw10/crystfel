@@ -74,9 +74,9 @@ static void free_group(struct detgeom_panel_group *g)
 		free_group(g->children[i]);
 	}
 
-	free(g->name);
-	free(g->children);
-	free(g);
+	cffree(g->name);
+	cffree(g->children);
+	cffree(g);
 }
 
 
@@ -87,12 +87,12 @@ void detgeom_free(struct detgeom *detgeom)
 	if ( detgeom == NULL ) return;
 
 	for ( i=0; i<detgeom->n_panels; i++ ) {
-		free(detgeom->panels[i].name);
+		cffree(detgeom->panels[i].name);
 	}
 
 	free_group(detgeom->top_group);
-	free(detgeom->panels);
-	free(detgeom);
+	cffree(detgeom->panels);
+	cffree(detgeom);
 }
 
 
@@ -250,7 +250,7 @@ gsl_matrix **make_panel_minvs(struct detgeom *dg)
 	int i;
 	gsl_matrix **Minvs;
 
-	Minvs = malloc(dg->n_panels * sizeof(gsl_matrix *));
+	Minvs = cfmalloc(dg->n_panels * sizeof(gsl_matrix *));
 	if ( Minvs == NULL ) return NULL;
 
 	for ( i=0; i<dg->n_panels; i++ ) {
