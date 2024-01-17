@@ -3,11 +3,11 @@
  *
  * A class representing a single crystal
  *
- * Copyright © 2013-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2020 Thomas White <taw@physics.org>
+ *   2013-2024 Thomas White <taw@physics.org>
  *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -31,7 +31,6 @@
 
 #include "crystal.h"
 #include "utils.h"
-#include "reflist-utils.h"
 
 
 /**
@@ -41,30 +40,18 @@
 
 struct _crystal
 {
-	/* Information about the crystal */
-	UnitCell                *cell;
+	UnitCell               *cell;
 	double                  m;     /* Mosaicity in radians */
 	double                  osf;
 	double                  Bfac;
 	double                  profile_radius;
-	int                     pr_dud;
 	double                  resolution_limit;
-
-	/* Integrated (or about-to-be-integrated) reflections */
-	RefList                 *reflections;
-	long long int           n_saturated;  /* Number of overloads */
-	long long int           n_implausible;  /* Number of implausibly
-	                                         * negative reflectionss */
-
-	/* User flag, e.g. for "this is a bad crystal". */
+	long long int           n_saturated;   /* Number of overloads */
+	long long int           n_implausible; /* Number of implausibly negative reflectionss */
 	int                     user_flag;
-
-	/* Text notes, which go in the stream */
-	char                    *notes;
-
-	/* Detector shift in metres */
-	double			det_shift_x;
-	double			det_shift_y;
+	char                   *notes; /* Text notes, which go in the stream */
+	double			det_shift_x; /* Detector x-shift in metres */
+	double			det_shift_y; /* Detector y-shift in metres */
 };
 
 
@@ -85,12 +72,15 @@ Crystal *crystal_new()
 	if ( cryst == NULL ) return NULL;
 
 	cryst->cell = NULL;
-	cryst->reflections = NULL;
+	cryst->m = 0.0;
+	cryst->osf = 1.0;
+	cryst->Bfac = 0.0;
+	cryst->profile_radius = 0.0;
 	cryst->resolution_limit = INFINITY;
 	cryst->n_saturated = 0;
 	cryst->n_implausible = 0;
-	cryst->notes = NULL;
 	cryst->user_flag = 0;
+	cryst->notes = NULL;
 	cryst->det_shift_x = 0;
 	cryst->det_shift_y = 0;
 
@@ -149,13 +139,6 @@ Crystal *crystal_copy_deep(const Crystal *cryst)
 		c->cell = cell;
 	}
 
-	if ( cryst->reflections != NULL ) {
-		RefList *refls;
-		refls = copy_reflist(cryst->reflections);
-		if ( refls == NULL ) return NULL;
-		c->reflections = refls;
-	}
-
 	return c;
 }
 
@@ -192,12 +175,6 @@ const UnitCell *crystal_get_cell_const(const Crystal *cryst)
 double crystal_get_profile_radius(const Crystal *cryst)
 {
 	return cryst->profile_radius;
-}
-
-
-RefList *crystal_get_reflections(Crystal *cryst)
-{
-	return cryst->reflections;
 }
 
 
@@ -269,12 +246,6 @@ void crystal_set_cell(Crystal *cryst, UnitCell *cell)
 void crystal_set_profile_radius(Crystal *cryst, double r)
 {
 	cryst->profile_radius = r;
-}
-
-
-void crystal_set_reflections(Crystal *cryst, RefList *reflist)
-{
-	cryst->reflections = reflist;
 }
 
 

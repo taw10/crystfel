@@ -366,7 +366,6 @@ void free_all_crystals(struct image *image)
 	if ( image->crystals == NULL ) return;
 	for ( i=0; i<image->n_crystals; i++ ) {
 		Crystal *cr = image->crystals[i];
-		reflist_free(crystal_get_reflections(cr));
 		cell_free(crystal_get_cell(cr));
 		crystal_free(image->crystals[i]);
 	}
