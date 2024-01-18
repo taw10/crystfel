@@ -512,13 +512,11 @@ RefList *predict_to_res(Crystal *cryst, struct image *image, double max_res)
 }
 
 
-static void set_unity_partialities(Crystal *cryst)
+static void set_unity_partialities(RefList *list)
 {
-	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 
-	list = crystal_get_reflections(cryst);
 	if ( list == NULL ) {
 		ERROR("No reflections for partiality calculation!\n");
 		return;
@@ -533,13 +531,11 @@ static void set_unity_partialities(Crystal *cryst)
 }
 
 
-static void set_random_partialities(Crystal *cryst, int image_serial)
+static void set_random_partialities(RefList *list, int image_serial)
 {
-	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 
-	list = crystal_get_reflections(cryst);
 	if ( list == NULL ) {
 		ERROR("No reflections for partiality calculation!\n");
 		return;
@@ -674,16 +670,14 @@ static double do_integral(double q2, double zl, double R,
 }
 
 
-static void ginn_spectrum_partialities(Crystal *cryst, struct image *image)
+static void ginn_spectrum_partialities(RefList *list, Crystal *cryst, struct image *image)
 {
-	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 	double r0, m;
 	UnitCell *cell;
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 
-	list = crystal_get_reflections(cryst);
 	if ( list == NULL ) {
 		ERROR("No reflections for partiality calculation!\n");
 		return;
@@ -701,7 +695,7 @@ static void ginn_spectrum_partialities(Crystal *cryst, struct image *image)
 	r0 = fabs(crystal_get_profile_radius(cryst));
 	m = crystal_get_mosaicity(cryst);
 
-	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -738,16 +732,14 @@ static void ginn_spectrum_partialities(Crystal *cryst, struct image *image)
 }
 
 
-static void ewald_offset_partialities(Crystal *cryst, struct image *image)
+static void ewald_offset_partialities(RefList *list, Crystal *cryst, struct image *image)
 {
-	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 	double r0, m;
 	UnitCell *cell;
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 
-	list = crystal_get_reflections(cryst);
 	if ( list == NULL ) {
 		ERROR("No reflections for partiality calculation!\n");
 		return;
@@ -765,7 +757,7 @@ static void ewald_offset_partialities(Crystal *cryst, struct image *image)
 	r0 = fabs(crystal_get_profile_radius(cryst));
 	m = crystal_get_mosaicity(cryst);
 
-	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -793,36 +785,40 @@ static void ewald_offset_partialities(Crystal *cryst, struct image *image)
 
 
 /**
+ * \param list A \ref RefList
  * \param cryst A \ref Crystal
+ * \param image An image structure
  * \param pmodel A \ref PartialityModel
  *
- * Calculates the partialities for the reflections in \p cryst, given the current
- * crystal and image parameters.  The crystal's image and reflection lists
- * must be set.  The specified \ref PartialityModel will be used.
+ * Calculates the partialities for the reflections in \p list, given the current
+ * state of \p cryst and \p image.
+ *
+ * If \p pmodel is PMODEL_RANDOM or PMODEL_UNITY, then \p cryst can be NULL.
+ * If \p pmodel is PMODEL_UNITY, then \p image can also be NULL.
  *
  * You must not have changed the crystal or image parameters since you last
  * called \ref predict_to_res or \ref update_predictions, because this function
  * relies on the limiting wavelength values calculated by those functions.
  */
-void calculate_partialities(Crystal *cryst, struct image *image,
+void calculate_partialities(RefList *list, Crystal *cryst, struct image *image,
                             PartialityModel pmodel)
 {
 	switch ( pmodel ) {
 
 		case PMODEL_UNITY :
-		set_unity_partialities(cryst);
+		set_unity_partialities(list);
 		break;
 
 		case PMODEL_XSPHERE :
-		ginn_spectrum_partialities(cryst, image);
+		ginn_spectrum_partialities(list, cryst, image);
 		break;
 
 		case PMODEL_OFFSET :
-		ewald_offset_partialities(cryst, image);
+		ewald_offset_partialities(list, cryst, image);
 		break;
 
 		case PMODEL_RANDOM :
-		set_random_partialities(cryst, image->serial);
+		set_random_partialities(list, image->serial);
 		break;
 
 		case PMODEL_GGPM :
@@ -839,18 +835,18 @@ void calculate_partialities(Crystal *cryst, struct image *image,
 
 
 /**
+ * \param list A \ref RefList
  * \param cryst A \ref Crystal
  * \param image An image structure
  *
  * Updates the predicted reflections (positions and excitation errors, but not
- * the actual partialities) of \p cryst's reflections as seen in \p image,
- * according to the current state of the crystal (e.g. its unit cell
- * parameters).
+ * the actual partialities) in \p list, to match the current statea of
+ * \p crys as seen in \p image.
  *
  * If you need to update the partialities as well, call
  * \ref calculate_partialities afterwards.
  */
-void update_predictions(Crystal *cryst, struct image *image)
+void update_predictions(RefList *list, Crystal *cryst, struct image *image)
 {
 	Reflection *refl;
 	RefListIterator *iter;
@@ -861,7 +857,7 @@ void update_predictions(Crystal *cryst, struct image *image)
 	cell_get_reciprocal(crystal_get_cell(cryst), &asx, &asy, &asz,
 	                    &bsx, &bsy, &bsz, &csx, &csy, &csz);
 
-	for ( refl = first_refl(crystal_get_reflections(cryst), &iter);
+	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
