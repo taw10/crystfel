@@ -5,6 +5,7 @@ import ..CrystFEL: libcrystfel
 import ..CrystFEL.Symmetry: SymOpList, InternalSymOpList, symmetry_name
 export RefList, loadreflist
 export Reflection, UnmergedReflection, MergedReflection
+export InternalRefList
 
 
 # The internal libcrystfel structures, not exposed directly
