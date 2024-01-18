@@ -169,14 +169,14 @@ static void add_to_csplit(struct custom_split *csplit, const char *id,
 
 
 /* Write two-way split results (i.e. for CC1/2 etc) for this list of crystals */
-static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
-                        int nthreads, PartialityModel pmodel,
+static void write_split(struct crystal_refls *crystals, int n_crystals,
+                        const char *outfile, int nthreads, PartialityModel pmodel,
                         int min_measurements, SymOpList *sym, double push_res)
 {
 	char tmp[1024];
 	RefList *split;
-	Crystal **crystals1;
-	Crystal **crystals2;
+	struct crystal_refls *crystals1;
+	struct crystal_refls *crystals2;
 	int n_crystals1 = 0;
 	int n_crystals2 = 0;
 	int i;
@@ -186,12 +186,11 @@ static void write_split(Crystal **crystals, int n_crystals, const char *outfile,
 		return;
 	}
 
-	crystals1 = malloc(n_crystals * sizeof(Crystal *));
+	crystals1 = malloc(n_crystals * sizeof(struct crystal_refls));
 	if ( crystals1 == NULL ) return;
 
-	crystals2 = malloc(n_crystals * sizeof(Crystal *));
+	crystals2 = malloc(n_crystals * sizeof(struct crystal_refls));
 	if ( crystals2 == NULL ) return;
-
 
 	for ( i=0; i<n_crystals; i++ ) {
 		if ( i % 2 ) {
@@ -259,14 +258,15 @@ static char *insert_into_filename(const char *fn, const char *add)
 
 /* Write custom split results (including a two-way split) */
 static void write_custom_split(struct custom_split *csplit, int dsn,
-                               Crystal **crystals, struct image **images, int n_crystals,
+                               struct crystal_refls *crystals,
+                               struct image **images, int n_crystals,
                                PartialityModel pmodel, int min_measurements,
                                double push_res, SymOpList *sym, int nthreads,
                                const char *outfile)
 {
 	char *tmp;
 	RefList *split;
-	Crystal *crystalsn[n_crystals];
+	struct crystal_refls crystalsn[n_crystals];
 	int n_crystalsn = 0;
 	int i;
 
@@ -362,7 +362,7 @@ static void show_help(const char *s)
 }
 
 
-static signed int find_first_crystal(Crystal **crystals, struct image **images, int n_crystals,
+static signed int find_first_crystal(struct image **images, int n_crystals,
                                      struct custom_split *csplit, int dsn)
 {
 	int i;
@@ -394,8 +394,8 @@ static signed int find_first_crystal(Crystal **crystals, struct image **images, 
 }
 
 
-static void check_csplit(Crystal **crystals, struct image **images, int n_crystals,
-                         struct custom_split *csplit)
+static void check_csplit(struct crystal_refls *crystals, struct image **images,
+                         int n_crystals, struct custom_split *csplit)
 {
 	int i;
 	int n_nosplit = 0;
@@ -437,7 +437,7 @@ static void check_csplit(Crystal **crystals, struct image **images, int n_crysta
 	for ( i=0; i<csplit->n_datasets; i++ ) {
 
 		/* Try to find a crystal with dsn = i */
-		if ( find_first_crystal(crystals, images, n_crystals, csplit, i) != -1 )
+		if ( find_first_crystal(images, n_crystals, csplit, i) != -1 )
 		{
 			n_cry++;
 		} else {
@@ -735,7 +735,7 @@ static void write_to_pgraph(FILE *fh, RefList *list, RefList *full, Crystal *cr,
 }
 
 
-static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
+static void write_pgraph(RefList *full, struct crystal_refls *crystals, int n_crystals,
                          signed int iter, const char *suff,
                          const char *log_folder)
 {
@@ -761,16 +761,16 @@ static void write_pgraph(RefList *full, Crystal **crystals, int n_crystals,
 	}
 
 	for ( i=0; i<n_crystals; i++ ) {
-		if ( crystal_get_user_flag(crystals[i]) != 0 ) continue;
-		write_to_pgraph(fh, crystal_get_reflections(crystals[i]), full,
-		                crystals[i], i, iter);
+		if ( crystal_get_user_flag(crystals[i].cr) != 0 ) continue;
+		write_to_pgraph(fh, crystals[i].refls, full,
+		                crystals[i].cr, i, iter);
 	}
 
 	fclose(fh);
 }
 
 
-static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
+static void all_residuals(struct crystal_refls *crystals, int n_crystals, RefList *full,
                           int no_free,
                           double *presidual, double *pfree_residual,
                           double *plog_residual, double *pfree_log_residual,
@@ -797,28 +797,28 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 		double r, free_r, log_r, free_log_r;
 		int n;
 
-		if ( crystal_get_user_flag(crystals[i]) ) continue;
+		if ( crystal_get_user_flag(crystals[i].cr) ) continue;
 
 		/* Scaling should have been done right before calling this */
-		r = residual(crystals[i], full, 0, &n, NULL);
+		r = residual(crystals[i].refls, crystals[i].cr, full, 0, &n, NULL);
 		if ( n == 0 ) {
 			n_non_linear++;
 		} else if ( isnan(r) ) {
 			n_nan_linear++;
 		}
-		free_r = residual(crystals[i], full, 1, &n, NULL);
+		free_r = residual(crystals[i].refls, crystals[i].cr, full, 1, &n, NULL);
 		if ( n == 0 ) {
 			n_non_linear_free++;
 		} else if ( isnan(free_r) ) {
 			n_nan_linear_free++;
 		}
-		log_r = log_residual(crystals[i], full, 0, &n, NULL);
+		log_r = log_residual(crystals[i].refls, crystals[i].cr, full, 0, &n, NULL);
 		if ( n == 0 ) {
 			n_non_log++;
 		} else if ( isnan(log_r) ) {
 			n_nan_log++;
 		}
-		free_log_r = log_residual(crystals[i], full, 1, &n, NULL);
+		free_log_r = log_residual(crystals[i].refls, crystals[i].cr, full, 1, &n, NULL);
 		if ( n == 0 ) {
 			n_non_log_free++;
 		} else if ( isnan(free_log_r) ) {
@@ -875,7 +875,7 @@ static void all_residuals(Crystal **crystals, int n_crystals, RefList *full,
 }
 
 
-static void show_all_residuals(Crystal **crystals, int n_crystals,
+static void show_all_residuals(struct crystal_refls *crystals, int n_crystals,
                                RefList *full, int no_free)
 {
 	double dev, free_dev, log_dev, free_log_dev;
@@ -895,7 +895,7 @@ struct log_qargs
 {
 	int iter;
 	int next;
-	Crystal **crystals;
+	struct crystal_refls *crystals;
 	struct image **images;
 	int n_crystals;
 	RefList *full;
@@ -909,6 +909,7 @@ struct log_qargs
 struct log_args
 {
 	Crystal *cr;
+	RefList *refls;
 	struct image *image;
 	RefList *full;
 	int scaleflags;
@@ -929,7 +930,8 @@ static void *get_log_task(void *vp)
 	task = malloc(sizeof(struct log_args));
 	if ( task == NULL ) return NULL;
 
-	task->cr = qargs->crystals[qargs->next];
+	task->cr = qargs->crystals[qargs->next].cr;
+	task->refls = qargs->crystals[qargs->next].refls;
 	task->image = qargs->images[qargs->next];
 	task->full = qargs->full;
 	task->iter = qargs->iter;
@@ -946,12 +948,13 @@ static void *get_log_task(void *vp)
 static void write_logs(void *vp, int cookie)
 {
 	struct log_args *args = vp;
-	write_specgraph(args->cr, args->image, args->full, args->iter, args->cnum,
-	                args->log_folder);
-	write_gridscan(args->cr, args->image, args->full, args->iter, args->cnum,
-	               args->scaleflags, args->pmodel, args->log_folder);
-	write_test_logs(args->cr, args->image, args->full, args->iter, args->cnum,
-	                args->log_folder);
+	write_specgraph(args->refls, args->cr, args->image, args->full,
+	                args->iter, args->cnum, args->log_folder);
+	write_gridscan(args->refls, args->cr, args->image, args->full,
+	               args->iter, args->cnum, args->scaleflags, args->pmodel,
+	               args->log_folder);
+	write_test_logs(args->cr, args->image, args->full, args->iter,
+	                args->cnum, args->log_folder);
 }
 
 
@@ -965,7 +968,7 @@ static void done_log(void *vqargs, void *vp)
 }
 
 
-static void write_logs_parallel(Crystal **crystals, struct image **images,
+static void write_logs_parallel(struct crystal_refls *crystals, struct image **images,
                                 int n_crystals,
                                 RefList *full, int iter, int n_threads,
                                 int scaleflags, PartialityModel pmodel,
@@ -1088,7 +1091,7 @@ int main(int argc, char *argv[])
 	int no_scale = 0;
 	int no_Bscale = 0;
 	int no_pr = 0;
-	Crystal **crystals;
+	struct crystal_refls *crystals;
 	struct image **images;
 	char *pmodel_str = NULL;
 	PartialityModel pmodel = PMODEL_XSPHERE;
@@ -1566,7 +1569,6 @@ int main(int argc, char *argv[])
 		do {
 
 			struct image *image;
-			RefList *as;
 			int i;
 
 			image = stream_read_chunk(st, STREAM_REFLECTIONS);
@@ -1580,41 +1582,39 @@ int main(int argc, char *argv[])
 			for ( i=0; i<image->n_crystals; i++ ) {
 
 				Crystal *cr;
-				Crystal **crystals_new;
+				struct crystal_refls *crystals_new;
 				struct image **images_new;
 				RefList *cr_refl;
-				RefList *cr_refl_raw;
 				struct image *image_for_crystal;
 				double lowest_r;
 
 				n_crystals_seen++;
 				if ( n_crystals_seen <= start_after ) continue;
 
-				if ( crystal_get_resolution_limit(image->crystals[i]) < min_res ) continue;
+				if ( crystal_get_resolution_limit(image->crystals[i].cr) < min_res ) continue;
 
-				lowest_r = lowest_reflection(crystal_get_cell(image->crystals[i]));
-				if ( crystal_get_profile_radius(image->crystals[i]) > 0.5*lowest_r ) {
+				lowest_r = lowest_reflection(crystal_get_cell(image->crystals[i].cr));
+				if ( crystal_get_profile_radius(image->crystals[i].cr) > 0.5*lowest_r ) {
 					ERROR("Rejecting %s %s crystal %i because "
 					      "profile radius is obviously too big (%e %e).\n",
 					      image->filename, image->ev, i,
-					      crystal_get_profile_radius(image->crystals[i]),
+					      crystal_get_profile_radius(image->crystals[i].cr),
 					      lowest_r);
 					continue;
 				}
 
 				crystals_new = realloc(crystals,
-				                       (n_crystals+1)*sizeof(Crystal *));
+				                       (n_crystals+1)*sizeof(struct crystal_refls));
 				if ( crystals_new == NULL ) {
 					ERROR("Failed to allocate memory for crystal "
 					      "list.\n");
 					return 1;
 				}
 				crystals = crystals_new;
-				crystals[n_crystals] = crystal_copy_deep(image->crystals[i]);
-				cr = crystals[n_crystals];
+				cr = crystal_copy_deep(image->crystals[i].cr);
+				crystals[n_crystals].cr = cr;
 
-				images_new = realloc(images,
-				                     (n_crystals+1)*sizeof(struct image *));
+				images_new = realloc(images, (n_crystals+1)*sizeof(struct image *));
 				if ( images_new == NULL ) {
 					ERROR("Failed to allocate memory for image list\n");
 					return 1;
@@ -1631,9 +1631,8 @@ int main(int argc, char *argv[])
 
 				*image_for_crystal = *image;
 				images[n_crystals] = image_for_crystal;
-				image_for_crystal->n_crystals = 1;
-				image_for_crystal->crystals = malloc(sizeof(Crystal *));
-				image_for_crystal->crystals[0] = cr;
+				image_for_crystal->n_crystals = 0;
+				image_for_crystal->crystals = NULL;
 				image_for_crystal->filename = strdup(image->filename);
 				image_for_crystal->ev = safe_strdup(image->ev);
 				image_for_crystal->detgeom = NULL;
@@ -1644,19 +1643,16 @@ int main(int argc, char *argv[])
 				image_for_crystal->bad = NULL;
 				image_for_crystal->sat = NULL;
 
-				/* This is the raw list of reflections */
-				cr_refl_raw = crystal_get_reflections(cr);
-
-				cr_refl = apply_max_adu(cr_refl_raw, max_adu);
-				reflist_free(cr_refl_raw);
-
+				cr_refl = apply_max_adu(image->crystals[i].refls, max_adu);
 				if ( !no_free ) select_free_reflections(cr_refl, rng);
-
-				as = asymmetric_indices(cr_refl, sym);
-				crystal_set_reflections(cr, as);
-				crystal_set_user_flag(cr, PRFLAG_OK);
+				image_add_crystal_refls(image_for_crystal, cr,
+				                        asymmetric_indices(cr_refl, sym));
 				reflist_free(cr_refl);
 
+				crystals[n_crystals].cr = image_for_crystal->crystals[0].cr;
+				crystals[n_crystals].refls = image_for_crystal->crystals[0].refls;
+
+				crystal_set_user_flag(cr, PRFLAG_OK);
 				if ( set_initial_params(cr, image_for_crystal,
 				                        sparams_fh, force_bandwidth,
 				                        force_radius, force_lambda) )
@@ -1697,14 +1693,13 @@ int main(int argc, char *argv[])
 	STATUS("Initial partiality calculation...\n");
 	for ( icryst=0; icryst<n_crystals; icryst++ ) {
 
-		Crystal *cr = crystals[icryst];
-		update_predictions(cr, images[icryst]);
+		Crystal *cr = crystals[icryst].cr;
+		RefList *refls = crystals[icryst].refls;
+		update_predictions(refls, cr, images[icryst]);
 
 		/* Polarisation correction requires kpred values */
-		polarisation_correction(crystal_get_reflections(cr),
-		                        crystal_get_cell(cr), polarisation);
-
-		calculate_partialities(cr, images[icryst], pmodel);
+		polarisation_correction(refls, crystal_get_cell(cr), polarisation);
+		calculate_partialities(refls, cr, images[icryst], pmodel);
 	}
 
 	if (csplit != NULL) check_csplit(crystals, images, n_crystals, csplit);

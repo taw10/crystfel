@@ -55,7 +55,7 @@ struct merge_queue_args
 {
 	RefList *full;
 	pthread_rwlock_t full_lock;
-	Crystal **crystals;
+	struct crystal_refls *crystals;
 	int n_started;
 	double push_res;
 	int use_weak;
@@ -68,6 +68,7 @@ struct merge_worker_args
 {
 	struct merge_queue_args *qargs;
 	Crystal *crystal;
+	RefList *refls;
 	int crystal_number;
 	int n_reflections;
 };
@@ -81,7 +82,9 @@ static void *create_merge_job(void *vqargs)
 	wargs = malloc(sizeof(struct merge_worker_args));
 	wargs->qargs = qargs;
 	wargs->crystal_number = qargs->n_started;
-	wargs->crystal = qargs->crystals[qargs->n_started++];
+	wargs->crystal = qargs->crystals[qargs->n_started].cr;
+	wargs->refls = qargs->crystals[qargs->n_started].refls;
+	qargs->n_started++;
 
 	return wargs;
 }
@@ -180,7 +183,7 @@ static void run_merge_job(void *vwargs, int cookie)
 	G = crystal_get_osf(cr);
 	B = crystal_get_Bfac(cr);
 
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	for ( refl = first_refl(wargs->refls, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -262,8 +265,8 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
-RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
-                           int min_meas,
+RefList *merge_intensities(struct crystal_refls *crystals, int n,
+                           int n_threads, int min_meas,
                            double push_res, int use_weak, int ln_merge)
 {
 	RefList *full;
@@ -364,7 +367,7 @@ double correct_reflection(double val, Reflection *refl, double osf, double Bfac,
 }
 
 
-double residual(Crystal *cr, const RefList *full, int free,
+double residual(RefList *list, Crystal *cr, const RefList *full, int free,
                 int *pn_used, const char *filename)
 {
 	Reflection *refl;
@@ -376,7 +379,7 @@ double residual(Crystal *cr, const RefList *full, int free,
 	double B = crystal_get_Bfac(cr);
 	UnitCell *cell = crystal_get_cell(cr);
 
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -420,7 +423,8 @@ double residual(Crystal *cr, const RefList *full, int free,
 }
 
 
-double log_residual(Crystal *cr, const RefList *full, int free,
+double log_residual(RefList *list, Crystal *cr,
+                    const RefList *full, int free,
                     int *pn_used, const char *filename)
 {
 	double dev = 0.0;
@@ -439,7 +443,7 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 		}
 	}
 
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -487,7 +491,7 @@ double log_residual(Crystal *cr, const RefList *full, int free,
 
 
 /* Has to match run_merge_job to be useful */
-void write_unmerged(const char *fn, Crystal **crystals, int n_crystals)
+void write_unmerged(const char *fn, struct crystal_refls *crystals, int n_crystals)
 {
 	FILE *fh;
 	int i;
@@ -506,17 +510,17 @@ void write_unmerged(const char *fn, Crystal **crystals, int n_crystals)
 		UnitCell *cell;
 
 		fprintf(fh, "Crystal %i\n", i);
-		if ( crystal_get_user_flag(crystals[i]) ) {
+		if ( crystal_get_user_flag(crystals[i].cr) ) {
 			fprintf(fh, "Flagged: yes\n");
 		} else {
 			fprintf(fh, "Flagged: no\n");
 		}
 
-		G = crystal_get_osf(crystals[i]);
-		B = crystal_get_Bfac(crystals[i]);
-		cell = crystal_get_cell(crystals[i]);
+		G = crystal_get_osf(crystals[i].cr);
+		B = crystal_get_Bfac(crystals[i].cr);
+		cell = crystal_get_cell(crystals[i].cr);
 
-		for ( refl = first_refl(crystal_get_reflections(crystals[i]), &iter);
+		for ( refl = first_refl(crystals[i].refls, &iter);
 		      refl != NULL;
 		      refl = next_refl(refl, iter) )
 		{

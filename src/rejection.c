@@ -63,7 +63,7 @@ static double mean_intensity(RefList *list)
 
 
 /* Reject really obvious outliers */
-void early_rejection(Crystal **crystals, int n)
+void early_rejection(struct crystal_refls *crystals, int n)
 {
 	int i;
 	double m = 0.0;
@@ -73,18 +73,16 @@ void early_rejection(Crystal **crystals, int n)
 
 	for ( i=0; i<n; i++ ) {
 		double u;
-		RefList *list = crystal_get_reflections(crystals[i]);
-		u = mean_intensity(list);
+		u = mean_intensity(crystals[i].refls);
 		m += u;
 		fprintf(fh, "%i %f\n", i, u);
 	}
 	mean_m = m/n;
 	for ( i=0; i<n; i++ ) {
 		double u;
-		RefList *list = crystal_get_reflections(crystals[i]);
-		u = mean_intensity(list);
+		u = mean_intensity(crystals[i].refls);
 		if ( u/mean_m < 0.2 ) {
-			crystal_set_user_flag(crystals[i], 5);
+			crystal_set_user_flag(crystals[i].cr, 5);
 			n_flag++;
 		}
 	}
@@ -219,7 +217,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		 * If the crystal is marked as bad, we should not remove it
 		 * because it did not contribute in the first place.  */
 		if ( exclude != NULL && !crystal_get_user_flag(exclude) ) {
-			exrefl = find_refl(crystal_get_reflections(exclude), h, k, l);
+			exrefl = find_refl(template, h, k, l);
 		} else {
 			exrefl = NULL;
 		}
@@ -275,7 +273,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 struct deltacchalf_queue_args
 {
 	RefList *full;
-	Crystal **crystals;
+	struct crystal_refls *crystals;
 	int n_crystals;
 	int n_done;
 	int n_started;
@@ -289,6 +287,7 @@ struct deltacchalf_worker_args
 {
 	RefList *full;
 	Crystal *crystal;
+	RefList *refls;
 	int crystal_number;
 	int non;
 	int nan;
@@ -304,7 +303,8 @@ static void *create_deltacchalf_job(void *vqargs)
 	wargs = malloc(sizeof(struct deltacchalf_worker_args));
 
 	wargs->full = qargs->full;
-	wargs->crystal = qargs->crystals[qargs->n_started];
+	wargs->crystal = qargs->crystals[qargs->n_started].cr;
+	wargs->refls = qargs->crystals[qargs->n_started].refls;
 	wargs->crystal_number = qargs->n_started;
 	wargs->non = 0;
 	wargs->nan = 0;
@@ -320,9 +320,8 @@ static void run_deltacchalf_job(void *vwargs, int cookie)
 	double cchalf, cchalfi;
 	struct deltacchalf_worker_args *wargs = vwargs;
 	int nref = 0;
-	RefList *template = crystal_get_reflections(wargs->crystal);
-	cchalf = calculate_cchalf(template, wargs->full, NULL, &nref);
-	cchalfi = calculate_cchalf(template, wargs->full, wargs->crystal, &nref);
+	cchalf = calculate_cchalf(wargs->refls, wargs->full, NULL, &nref);
+	cchalfi = calculate_cchalf(wargs->refls, wargs->full, wargs->crystal, &nref);
 	//STATUS("Frame %i:", i);
 	//STATUS("   With = %f  ", cchalf*100.0);
 	//STATUS("Without = %f", cchalfi*100.0);
@@ -355,8 +354,8 @@ static void finalise_deltacchalf_job(void *vqargs, void *vwargs)
 }
 
 
-static void check_deltacchalf(Crystal **crystals, int n, RefList *full,
-                              int n_threads)
+static void check_deltacchalf(struct crystal_refls *crystals, int n,
+                              RefList *full, int n_threads)
 {
 	double cchalf;
 	int i;
@@ -409,7 +408,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full,
 		if ( isnan(vals[i]) || isinf(vals[i])
 		  || ((vals[i]<0.0) && (vals[i] < mean-2.0*sd)) )
 		{
-			crystal_set_user_flag(crystals[i], PRFLAG_DELTACCHALF);
+			crystal_set_user_flag(crystals[i].cr, PRFLAG_DELTACCHALF);
 		}
 	}
 
@@ -417,7 +416,7 @@ static void check_deltacchalf(Crystal **crystals, int n, RefList *full,
 }
 
 
-static void show_duds(Crystal **crystals, int n_crystals)
+static void show_duds(struct crystal_refls *crystals, int n_crystals)
 {
 	int j;
 	int bads[32];
@@ -427,7 +426,7 @@ static void show_duds(Crystal **crystals, int n_crystals)
 
 	for ( j=0; j<n_crystals; j++ ) {
 		int flag;
-		flag = crystal_get_user_flag(crystals[j]);
+		flag = crystal_get_user_flag(crystals[j].cr);
 		assert(flag < 32);
 		bads[flag]++;
 		if ( flag != PRFLAG_OK ) any_bad++;
@@ -444,8 +443,8 @@ static void show_duds(Crystal **crystals, int n_crystals)
 }
 
 
-void check_rejection(Crystal **crystals, int n, RefList *full, double max_B,
-                     int no_deltacchalf, int n_threads)
+void check_rejection(struct crystal_refls *crystals, int n, RefList *full,
+                     double max_B, int no_deltacchalf, int n_threads)
 {
 	int i;
 	int n_acc = 0;
@@ -456,10 +455,10 @@ void check_rejection(Crystal **crystals, int n, RefList *full, double max_B,
 	}
 
 	for ( i=0; i<n; i++ ) {
-		if ( fabs(crystal_get_Bfac(crystals[i])) > max_B ) {
-			crystal_set_user_flag(crystals[i], PRFLAG_BIGB);
+		if ( fabs(crystal_get_Bfac(crystals[i].cr)) > max_B ) {
+			crystal_set_user_flag(crystals[i].cr, PRFLAG_BIGB);
 		}
-		if ( crystal_get_user_flag(crystals[i]) == 0 ) n_acc++;
+		if ( crystal_get_user_flag(crystals[i].cr) == 0 ) n_acc++;
 	}
 
 	show_duds(crystals, n);
