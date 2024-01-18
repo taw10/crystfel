@@ -5,16 +5,23 @@ import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.DetGeoms: DetGeom
 import ..CrystFEL.PeakLists: PeakList, InternalPeakList
 import ..CrystFEL.Crystals: Crystal, InternalCrystal
+import ..CrystFEL.RefLists: RefList, InternalRefList, UnmergedReflection
+import ..CrystFEL.Symmetry: SymOpList
 export Image
 
 const HEADER_CACHE_SIZE = 128
+
+mutable struct CrystalRefListPair
+    crystal::Ptr{InternalCrystal}
+    reflist::Ptr{InternalRefList}
+end
 
 mutable struct InternalImage
     dp::Ptr{Ptr{Cfloat}}
     bad::Ptr{Ptr{Cint}}
     sat::Ptr{Ptr{Cfloat}}
     hit::Cint
-    crystals::Ptr{Ptr{Cvoid}}
+    crystals::Ptr{CrystalRefListPair}
     n_crystals::Cint
     indexed_by::Cint
     n_indexing_tries::Cint
@@ -43,20 +50,28 @@ end
 mutable struct Image
     internalptr::Ptr{InternalImage}
     peaklist::Union{Nothing,PeakList}
+    crystals
+    reflists
 end
 
 
 function makecrystallist(listptr, n)
 
-    crystals = Crystal[]
+    crystals = []
 
     if listptr == C_NULL
         return crystals
     end
 
     for i in 1:n
-        crystalptr = unsafe_load(listptr, i)
-        push!(crystals, Crystal(crystalptr, true))
+        pairptr = unsafe_load(listptr, i)
+        cr = Crystal(pairptr.crystal)
+        if pairptr.reflist == C_NULL
+            reflist = nothing
+        else
+            reflist = RefList{UnmergedReflection}(pairptr.reflist, SymOpList("1"))
+        end
+        push!(crystals, (crystal=cr, reflections=reflist))
     end
 
     crystals
