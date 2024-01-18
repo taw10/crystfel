@@ -699,7 +699,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		int this_crystal = image->n_crystals - i - 1;
 
 		/* ... starting at the end of the (complete) list ... */
-		Crystal *cr = image->crystals[this_crystal];
+		Crystal *cr = image->crystals[this_crystal].cr;
 
 		crystal_set_profile_radius(cr, 0.02e9);
 		crystal_set_mosaicity(cr, 0.0);
@@ -756,7 +756,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		profile_start("cell-compare-to-others");
 		for ( j=0; j<this_crystal; j++ ) {
 
-			Crystal *that_cr = image->crystals[j];
+			Crystal *that_cr = image->crystals[j].cr;
 			/* 'tols' is in frac (not %) and radians */
 			const double tols[] = {0.1, 0.1, 0.1,
 			                       deg2rad(5.0),
@@ -908,7 +908,7 @@ static int finished_retry(IndexingMethod indm, IndexingFlags flags,
 		if ( flags & INDEXING_MULTI ) {
 			/* Remove "used" spots and try for another lattice */
 			Crystal *cr;
-			cr = image->crystals[image->n_crystals-1];
+			cr = image->crystals[image->n_crystals-1].cr;
 			return delete_explained_peaks(image, cr);
 		} else {
 			return 1;
@@ -945,8 +945,7 @@ void index_pattern_4(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 	if ( ipriv == NULL ) return;
 
-	image->crystals = NULL;
-	image->n_crystals = 0;
+	free_all_crystals(image);
 
 	/* No peaks? */
 	if ( image->features == NULL ) return;

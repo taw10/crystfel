@@ -317,21 +317,30 @@ void image_remove_feature(ImageFeatureList *flist, int idx)
 }
 
 
-void image_add_crystal(struct image *image, Crystal *cryst)
+void image_add_crystal_refls(struct image *image,
+                             Crystal *cryst,
+                             RefList *reflist)
 {
-	Crystal **crs;
+	struct crystal_refls *crs;
 	int n;
 
 	n = image->n_crystals;
-	crs = cfrealloc(image->crystals, (n+1)*sizeof(Crystal *));
+	crs = cfrealloc(image->crystals, (n+1)*sizeof(struct crystal_refls));
 	if ( crs == NULL ) {
 		ERROR("Failed to allocate memory for crystals.\n");
 		return;
 	}
 
-	crs[n] = cryst;
+	crs[n].cr = cryst;
+	crs[n].refls = reflist;
 	image->crystals = crs;
 	image->n_crystals = n+1;
+}
+
+
+void image_add_crystal(struct image *image, Crystal *cryst)
+{
+	image_add_crystal_refls(image, cryst, NULL);
 }
 
 
@@ -341,11 +350,12 @@ int remove_flagged_crystals(struct image *image)
 	int n_bad = 0;
 
 	for ( i=0; i<image->n_crystals; i++ ) {
-		if ( crystal_get_user_flag(image->crystals[i]) ) {
+		if ( crystal_get_user_flag(image->crystals[i].cr) ) {
 			int j;
-			Crystal *deleteme = image->crystals[i];
+			Crystal *deleteme = image->crystals[i].cr;
 			cell_free(crystal_get_cell(deleteme));
 			crystal_free(deleteme);
+			reflist_free(image->crystals[i].refls);
 			for ( j=i; j<image->n_crystals-1; j++ ) {
 				image->crystals[j] = image->crystals[j+1];
 			}
@@ -365,9 +375,10 @@ void free_all_crystals(struct image *image)
 	int i;
 	if ( image->crystals == NULL ) return;
 	for ( i=0; i<image->n_crystals; i++ ) {
-		Crystal *cr = image->crystals[i];
+		Crystal *cr = image->crystals[i].cr;
 		cell_free(crystal_get_cell(cr));
-		crystal_free(image->crystals[i]);
+		crystal_free(image->crystals[i].cr);
+		reflist_free(image->crystals[i].refls);
 	}
 	cffree(image->crystals);
 	image->n_crystals = 0;

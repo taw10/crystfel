@@ -338,11 +338,9 @@ static int num_integrated_reflections(RefList *list)
 }
 
 
-static int write_crystal(Stream *st, Crystal *cr,
-                         int include_reflections)
+static int write_crystal(Stream *st, Crystal *cr, RefList *reflist)
 {
 	UnitCell *cell;
-	RefList *reflist;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -389,7 +387,6 @@ static int write_crystal(Stream *st, Crystal *cr,
 	fprintf(st->fh, "predict_refine/det_shift x = %.3f y = %.3f mm\n",
 	        det_shift_x*1e3, det_shift_y*1e3);
 
-	reflist = crystal_get_reflections(cr);
 	if ( reflist != NULL ) {
 
 		fprintf(st->fh, "diffraction_resolution_limit"
@@ -406,20 +403,17 @@ static int write_crystal(Stream *st, Crystal *cr,
 
 	}
 
-	if ( include_reflections ) {
+	if ( reflist != NULL ) {
 
-		if ( reflist != NULL ) {
+		fprintf(st->fh, STREAM_REFLECTION_START_MARKER"\n");
+		ret = write_stream_reflections(st->fh, reflist,
+		                               st->dtempl_write);
+		fprintf(st->fh, STREAM_REFLECTION_END_MARKER"\n");
 
-			fprintf(st->fh, STREAM_REFLECTION_START_MARKER"\n");
-			ret = write_stream_reflections(st->fh, reflist,
-			                               st->dtempl_write);
-			fprintf(st->fh, STREAM_REFLECTION_END_MARKER"\n");
+	} else {
 
-		} else {
+		fprintf(st->fh, "No integrated reflections.\n");
 
-			fprintf(st->fh, "No integrated reflections.\n");
-
-		}
 	}
 
 	fprintf(st->fh, STREAM_CRYSTAL_END_MARKER"\n");
@@ -512,11 +506,11 @@ int stream_write_chunk(Stream *st, const struct image *i,
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {
-		if ( crystal_get_user_flag(i->crystals[j]) ) {
+		if ( crystal_get_user_flag(i->crystals[j].cr) ) {
 			continue;
 		}
-		ret = write_crystal(st, i->crystals[j],
-		                    srf & STREAM_REFLECTIONS);
+		ret = write_crystal(st, i->crystals[j].cr,
+		                    srf & STREAM_REFLECTIONS ? i->crystals[j].refls : NULL);
 	}
 
 	fprintf(st->fh, STREAM_CHUNK_END_MARKER"\n");
@@ -564,8 +558,7 @@ static void read_crystal(Stream *st, struct image *image,
 	char unique_axis = '*';
 	LatticeType lattice_type = L_TRICLINIC;
 	Crystal *cr;
-	int n;
-	Crystal **crystals_new;
+	RefList *reflist = NULL;
 	double shift_x, shift_y;
 
 	as.u = 0.0;  as.v = 0.0;  as.w = 0.0;
@@ -664,8 +657,6 @@ static void read_crystal(Stream *st, struct image *image,
 		if ( (strcmp(line, STREAM_REFLECTION_START_MARKER) == 0)
 		  && (srf & STREAM_REFLECTIONS) )
 		{
-
-			RefList *reflist;
 			reflist = read_stream_reflections_2_3(st);
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
@@ -673,9 +664,6 @@ static void read_crystal(Stream *st, struct image *image,
 				ERROR("Event = %s\n", image->ev);
 				break;
 			}
-
-			crystal_set_reflections(cr, reflist);
-
 		}
 
 		if ( strcmp(line, STREAM_CRYSTAL_END_MARKER) == 0 ) break;
@@ -713,17 +701,7 @@ static void read_crystal(Stream *st, struct image *image,
 	/* Unused at the moment */
 	crystal_set_mosaicity(cr, 0.0);
 
-	/* Add crystal to the list for this image */
-	n = image->n_crystals+1;
-	crystals_new = cfrealloc(image->crystals, n*sizeof(Crystal *));
-
-	if ( crystals_new == NULL ) {
-		ERROR("Failed to expand crystal list!\n");
-	} else {
-		image->crystals = crystals_new;
-		image->crystals[image->n_crystals++] = cr;
-	}
-
+	image_add_crystal_refls(image, cr, reflist);
 }
 
 
