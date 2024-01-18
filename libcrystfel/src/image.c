@@ -333,6 +333,8 @@ void image_add_crystal_refls(struct image *image,
 
 	crs[n].cr = cryst;
 	crs[n].refls = reflist;
+	crs[n].image_owns_crystal = 1;
+	crs[n].image_owns_refls = 1;
 	image->crystals = crs;
 	image->n_crystals = n+1;
 }
@@ -377,8 +379,12 @@ void free_all_crystals(struct image *image)
 	for ( i=0; i<image->n_crystals; i++ ) {
 		Crystal *cr = image->crystals[i].cr;
 		cell_free(crystal_get_cell(cr));
-		crystal_free(image->crystals[i].cr);
-		reflist_free(image->crystals[i].refls);
+		if ( image->crystals[i].image_owns_crystal ) {
+			crystal_free(image->crystals[i].cr);
+		}
+		if ( image->crystals[i].image_owns_refls ) {
+			reflist_free(image->crystals[i].refls);
+		}
 	}
 	cffree(image->crystals);
 	image->n_crystals = 0;

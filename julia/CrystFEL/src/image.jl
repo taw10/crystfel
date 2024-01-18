@@ -14,6 +14,8 @@ const HEADER_CACHE_SIZE = 128
 mutable struct CrystalRefListPair
     crystal::Ptr{InternalCrystal}
     reflist::Ptr{InternalRefList}
+    owns_crystal::Cint
+    owns_reflist::Cint
 end
 
 mutable struct InternalImage
@@ -55,7 +57,7 @@ mutable struct Image
 end
 
 
-function makecrystallist(listptr, n)
+function makecrystallist(image, listptr, n)
 
     crystals = []
 
@@ -65,16 +67,33 @@ function makecrystallist(listptr, n)
 
     for i in 1:n
         pairptr = unsafe_load(listptr, i)
-        cr = Crystal(pairptr.crystal)
+
+        # Re-use old Crystal if possible
+        n = findfirst(getfield(image, :crystals)) do x
+            x.internalptr == pairptr.crystal
+        end
+
+        if n !== nothing
+            cr = getfield(image, :crystals)[n]
+        else
+            cr = Crystal(pairptr.crystal)
+        end
+
         if pairptr.reflist == C_NULL
             reflist = nothing
         else
             reflist = RefList{UnmergedReflection}(pairptr.reflist, SymOpList("1"))
+            pairptr.owns_reflist = 0
         end
         push!(crystals, (crystal=cr, reflections=reflist))
+        pairptr.owns_crystal = 0
+        unsafe_store!(listptr, pairptr, i)
+        # We are now responsible for freeing the Crystal and RefList
     end
 
-    crystals
+    image.crystals = map(x->x.crystal, crystals)
+    image.reflists = map(x->x.reflections, crystals)
+    return crystals
 
 end
 
@@ -104,11 +123,12 @@ function Base.getproperty(image::Image, name::Symbol)
         idata = unsafe_load(image.internalptr)
 
         if name === :crystals
-            return makecrystallist(getproperty(idata, :crystals),
-                                   getproperty(idata, :n_crystals))
+            return makecrystallist(image,
+                                   getfield(idata, :crystals),
+                                   getfield(idata, :n_crystals))
 
         else
-            getproperty(idata, name)
+            getfield(idata, name)
         end
     end
 end
@@ -154,6 +174,12 @@ function Base.setproperty!(image::Image, name::Symbol, val)
         elseif name === :ev
             assert_type(val, AbstractString)
             val = strdup(val)
+
+        elseif name === :crystals
+            return setfield!(image, :crystals, val)
+
+        elseif name === :reflists
+            return setfield!(image, :reflists, val)
 
         end
 
@@ -202,7 +228,7 @@ function Image(dtempl::DataTemplate)
         throw(ArgumentError("Failed to create image"))
     end
 
-    image = Image(out, nothing)
+    image = Image(out, nothing, [], [])
 
     finalizer(image) do x
         ccall((:image_free, libcrystfel), Cvoid, (Ptr{InternalImage},), x.internalptr)
@@ -234,7 +260,7 @@ function Image(dtempl::DataTemplate,
         throw(ArgumentError("Failed to load image"))
     end
 
-    image = Image(out, nothing)
+    image = Image(out, nothing, [], [])
 
     finalizer(image) do x
         ccall((:image_free, libcrystfel), Cvoid, (Ptr{InternalImage},), x.internalptr)

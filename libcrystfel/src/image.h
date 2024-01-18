@@ -114,6 +114,8 @@ struct crystal_refls
 {
 	Crystal *cr;
 	RefList *refls;
+	int image_owns_crystal;
+	int image_owns_refls;
 };
 
 struct image
