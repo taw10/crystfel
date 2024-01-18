@@ -1287,7 +1287,8 @@ int main(int argc, char *argv[])
 			RefList *list;
 			UnitCell *cell;
 
-			cr = image->crystals[i];
+			cr = image->crystals[i].cr;
+			list = image->crystals[i].refls;
 			cell = crystal_get_cell(cr);
 
 			if ( n_crystals == max_crystals ) {
@@ -1308,7 +1309,6 @@ int main(int argc, char *argv[])
 
 			}
 
-			list = crystal_get_reflections(cr);
 			crystals[n_crystals] = asymm_and_merge(list, s_sym,
 			                                       cell,
 			                                       rmin, rmax,

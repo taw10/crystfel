@@ -434,20 +434,20 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	set_last_task(last_task, "prediction params");
 	if ( iargs->fix_profile_r >= 0.0 ) {
 		for ( i=0; i<image->n_crystals; i++ ) {
-			crystal_set_profile_radius(image->crystals[i],
+			crystal_set_profile_radius(image->crystals[i].cr,
 			                           iargs->fix_profile_r);
-			crystal_set_mosaicity(image->crystals[i], 0.0);
+			crystal_set_mosaicity(image->crystals[i].cr, 0.0);
 		}
 	} else {
 		for ( i=0; i<image->n_crystals; i++ ) {
-			crystal_set_profile_radius(image->crystals[i], 0.02e9);
-			crystal_set_mosaicity(image->crystals[i], 0.0);
+			crystal_set_profile_radius(image->crystals[i].cr, 0.02e9);
+			crystal_set_mosaicity(image->crystals[i].cr, 0.0);
 		}
 	}
 
 	if ( iargs->fix_profile_r < 0.0 ) {
 		for ( i=0; i<image->n_crystals; i++ ) {
-			if ( refine_radius(image->crystals[i], image) ) {
+			if ( refine_radius(image->crystals[i].cr, image) ) {
 				ERROR("WARNING: Radius determination failed\n");
 			}
 		}
@@ -479,7 +479,7 @@ streamwrite:
 
 	int n = 0;
 	for ( i=0; i<image->n_crystals; i++ ) {
-		n += crystal_get_num_implausible_reflections(image->crystals[i]);
+		n += crystal_get_num_implausible_reflections(image->crystals[i].cr);
 	}
 	if ( n > 0 ) {
 		STATUS("WARNING: %i implausibly negative reflection%s in %s "
@@ -495,7 +495,7 @@ out:
 	pthread_mutex_lock(&sb_shared->totals_lock);
 	any_crystals = 0;
 	for ( i=0; i<image->n_crystals; i++ ) {
-		if ( crystal_get_user_flag(image->crystals[i]) == 0 ) {
+		if ( crystal_get_user_flag(image->crystals[i].cr) == 0 ) {
 			sb_shared->n_crystals++;
 			any_crystals = 1;
 		}

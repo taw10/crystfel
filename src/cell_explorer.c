@@ -2002,9 +2002,7 @@ static int add_stream(CellWindow *w, const char *stream_filename,
 
 		for ( i=0; i<image->n_crystals; i++ ) {
 
-			Crystal *cr;
-
-			cr = image->crystals[i];
+			Crystal *cr = image->crystals[i].cr;
 
 			if ( w->n_cells == max_cells ) {
 
