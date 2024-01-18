@@ -1342,17 +1342,16 @@ static void setup_profile_boxes(struct intcontext *ic, RefList *list)
 
 
 void integrate_prof2d(IntegrationMethod meth,
-                      Crystal *cr, struct image *image, IntDiag int_diag,
+                      Crystal *cr, RefList *list,
+                      struct image *image, IntDiag int_diag,
                       signed int idh, signed int idk, signed int idl,
                       double ir_inn, double ir_mid, double ir_out,
                       pthread_mutex_t *term_lock, int **masks)
 {
-	RefList *list;
 	UnitCell *cell;
 	struct intcontext *ic;
 	int i;
 
-	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
 
 	ic = intcontext_new(image, cell, meth,
@@ -1593,12 +1592,12 @@ static double estimate_resolution(Crystal *cr, struct image *image)
 
 
 static void integrate_rings(IntegrationMethod meth,
-                            Crystal *cr, struct image *image, IntDiag int_diag,
+                            Crystal *cr, RefList *list,
+                            struct image *image, IntDiag int_diag,
                             signed int idh, signed int idk, signed int idl,
                             double ir_inn, double ir_mid, double ir_out,
                             pthread_mutex_t *term_lock, int **masks)
 {
-	RefList *list;
 	Reflection *refl;
 	RefListIterator *iter;
 	UnitCell *cell;
@@ -1606,7 +1605,6 @@ static void integrate_rings(IntegrationMethod meth,
 	int n_rej = 0;
 	int n_refl = 0;
 
-	list = crystal_get_reflections(cr);
 	cell = crystal_get_cell(cr);
 
 	ic = intcontext_new(image, cell, meth,
@@ -1653,23 +1651,21 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 	/* Predict all reflections */
 	for ( i=0; i<image->n_crystals; i++ ) {
 
-		RefList *list;
 		double res;
-		double saved_R = crystal_get_profile_radius(image->crystals[i]);
+		double saved_R = crystal_get_profile_radius(image->crystals[i].cr);
 
 		if ( overpredict ) {
-			crystal_set_profile_radius(image->crystals[i],
+			crystal_set_profile_radius(image->crystals[i].cr,
 			                           saved_R * 5);
 		}
 
-		res = estimate_resolution(image->crystals[i], image);
-		crystal_set_resolution_limit(image->crystals[i], res);
+		res = estimate_resolution(image->crystals[i].cr, image);
+		crystal_set_resolution_limit(image->crystals[i].cr, res);
 
-		list = predict_to_res(image->crystals[i], image, res+push_res);
-		crystal_set_reflections(image->crystals[i], list);
+		image->crystals[i].refls = predict_to_res(image->crystals[i].cr, image, res+push_res);
 
 		if ( overpredict ) {
-			crystal_set_profile_radius(image->crystals[i], saved_R);
+			crystal_set_profile_radius(image->crystals[i].cr, saved_R);
 		}
 
 	}
@@ -1681,22 +1677,26 @@ void integrate_all_5(struct image *image, IntegrationMethod meth,
 
 	for ( i=0; i<image->n_crystals; i++ ) {
 
-		Crystal *cr = image->crystals[i];
-
 		switch ( meth & INTEGRATION_METHOD_MASK ) {
 
 			case INTEGRATION_NONE :
 			break;
 
 			case INTEGRATION_RINGS :
-			integrate_rings(meth, cr, image,
+			integrate_rings(meth,
+			                image->crystals[i].cr,
+			                image->crystals[i].refls,
+			                image,
 			                int_diag, idh, idk, idl,
 			                ir_inn, ir_mid, ir_out,
 			                term_lock, masks);
 			break;
 
 			case INTEGRATION_PROF2D :
-			integrate_prof2d(meth, cr, image,
+			integrate_prof2d(meth,
+			                 image->crystals[i].cr,
+			                 image->crystals[i].refls,
+			                 image,
 			                 int_diag, idh, idk, idl,
 			                 ir_inn, ir_mid, ir_out,
 			                 term_lock, masks);

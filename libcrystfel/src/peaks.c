@@ -62,15 +62,15 @@
 
 /** \file peaks.h */
 
-static void add_crystal_to_mask(struct image *image,
-                                struct detgeom_panel *p, int pn,
-                                double ir_inn, int *mask, Crystal *cr)
+static void add_reflections_to_mask(struct image *image,
+                                    struct detgeom_panel *p, int pn,
+                                    double ir_inn, int *mask, RefList *list)
 {
 	Reflection *refl;
 	RefListIterator *iter;
 
 	/* Loop over all reflections */
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	for ( refl = first_refl(list, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -121,8 +121,8 @@ int *make_BgMask(struct image *image, struct detgeom_panel *p,
 	if ( image->crystals == NULL ) return mask;
 
 	for ( i=0; i<image->n_crystals; i++ ) {
-		add_crystal_to_mask(image, p, pn, ir_inn,
-		                    mask, image->crystals[i]);
+		add_reflections_to_mask(image, p, pn, ir_inn,
+		                        mask, image->crystals[i].refls);
 	}
 
 	return mask;
