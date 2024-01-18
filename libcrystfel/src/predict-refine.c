@@ -488,8 +488,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	/* Get the excitation errors and detector positions for the candidate
 	 * reflections */
-	crystal_set_reflections(cr, all_reflist);
-	update_predictions(cr, image);
+	update_predictions(all_reflist, cr, image);
 
 	/* Pass over the peaks again, keeping only the ones which look like
 	 * good pairings */
@@ -529,7 +528,6 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	}
 	reflist_free(all_reflist);
-	crystal_set_reflections(cr, NULL);
 
 	/* Sort the pairings by excitation error and look for a transition
 	 * between good pairings and outliers */
@@ -569,9 +567,7 @@ int refine_radius(Crystal *cr, struct image *image)
 		reflist_free(reflist);
 		return 1;
 	}
-	crystal_set_reflections(cr, reflist);
-	update_predictions(cr, image);
-	crystal_set_reflections(cr, NULL);
+	update_predictions(reflist, cr, image);
 
 	qsort(rps, n_acc, sizeof(struct reflpeak), cmpd2);
 	n = (n_acc-1) - n_acc/50;
@@ -820,7 +816,6 @@ int refine_prediction(struct image *image, Crystal *cr,
 		reflist_free(reflist);
 		return 1;
 	}
-	crystal_set_reflections(cr, reflist);
 
 	Minvs = make_panel_minvs(image->detgeom);
 
@@ -833,7 +828,6 @@ int refine_prediction(struct image *image, Crystal *cr,
 	if ( max_I <= 0.0 ) {
 		ERROR("All peaks negative?\n");
 		cffree(rps);
-		crystal_set_reflections(cr, NULL);
 		return 1;
 	}
 	for ( i=0; i<n; i++ ) {
@@ -855,10 +849,9 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	/* Refine (max 5 cycles) */
 	for ( i=0; i<5; i++ ) {
-		update_predictions(cr, image);
+		update_predictions(reflist, cr, image);
 		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs, total_shifts) )
 		{
-			crystal_set_reflections(cr, NULL);
 			return 1;
 		}
 
@@ -890,7 +883,6 @@ int refine_prediction(struct image *image, Crystal *cr,
 	}
 	cffree(Minvs);
 
-	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);
 
 	n = pair_peaks(image, cr, NULL, rps);
