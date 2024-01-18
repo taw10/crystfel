@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
 	#ifdef CHANGE_CELL
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-	UnitCell *cell = crystal_get_cell(image.crystals[0]);
+	UnitCell *cell = crystal_get_cell(image.crystals[0].cr);
 	step = 0.5e5;
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	update_predictions(image.crystals[0], &image);
+	update_predictions(image.crystals[0].refls, image.crystals[0].cr, &image);
 	after = make_dev_list(rps, n_refls, image.detgeom);
 
 	for ( i=0; i<n_refls; i++ ) {
@@ -124,11 +124,11 @@ int main(int argc, char *argv[])
 		double obs[3];
 
 		calc[0] = r_gradient(TEST_GPARAM, rps[i].refl,
-		                     crystal_get_cell(image.crystals[0]),
+		                     crystal_get_cell(image.crystals[0].cr),
 		                     image.lambda);
 
 		fs_ss_gradient(TEST_GPARAM, rps[i].refl,
-		               crystal_get_cell(image.crystals[0]),
+		               crystal_get_cell(image.crystals[0].cr),
 		               &image.detgeom->panels[rps[i].peak->pn],
 		               panel_matrices[rps[i].peak->pn], cx, cy, cz,
 		               &calc[1], &calc[2]);

@@ -38,11 +38,12 @@
 
 #include "histogram.h"
 
-extern void integrate_prof2d(IntegrationMethod meth,
-                             Crystal *cr, struct image *image, IntDiag int_diag,
-                             signed int idh, signed int idk, signed int idl,
-                             double ir_inn, double ir_mid, double ir_out,
-                             pthread_mutex_t *term_lock, int **masks);
+void integrate_prof2d(IntegrationMethod meth,
+                      Crystal *cr, RefList *list,
+                      struct image *image, IntDiag int_diag,
+                      signed int idh, signed int idk, signed int idl,
+                      double ir_inn, double ir_mid, double ir_out,
+                      pthread_mutex_t *term_lock, int **masks);
 
 
 #define ADD_PX(fs, ss, val) \
@@ -127,12 +128,12 @@ int main(int argc, char *argv[])
 	crystal_set_mosaicity(cr, 0.0);  /* radians */
 	crystal_set_cell(cr, cell);
 
-	image.n_crystals = 1;
-	image.crystals = &cr;
-
+	image.crystals = NULL;
+	image.n_crystals = 0;
 	list = predict_to_res(cr, &image, detgeom_max_resolution(image.detgeom,
 	                                                         image.lambda));
-	crystal_set_reflections(cr, list);
+
+	image_add_crystal_refls(&image, cr, list);
 
 	for ( fs=0; fs<w; fs++ ) {
 	for ( ss=0; ss<h; ss++ ) {
@@ -168,7 +169,7 @@ int main(int argc, char *argv[])
 
 	STATUS("%i strong, %i weak\n", n_strong, n_weak);
 
-	integrate_prof2d(INTEGRATION_PROF2D, cr, &image,
+	integrate_prof2d(INTEGRATION_PROF2D, cr, list, &image,
 	                 INTDIAG_NONE, 0, 0, 0, ir_inn, ir_mid, ir_out, 0,
 	                 NULL);
 
