@@ -53,6 +53,7 @@ struct scale_args
 {
 	RefList *full;
 	Crystal *crystal;
+	RefList *refls;
 	int flags;
 };
 
@@ -61,7 +62,7 @@ struct scale_queue_args
 {
 	int n_started;
 	int n_done;
-	Crystal **crystals;
+	struct crystal_refls *crystals;
 	int n_crystals;
 	struct scale_args task_defaults;
 };
@@ -70,7 +71,7 @@ struct scale_queue_args
 static void scale_crystal(void *task, int id)
 {
 	struct scale_args *pargs = task;
-	scale_one_crystal(pargs->crystal, pargs->full, pargs->flags);
+	scale_one_crystal(pargs->refls, pargs->crystal, pargs->full, pargs->flags);
 }
 
 
@@ -82,7 +83,8 @@ static void *get_crystal(void *vqargs)
 	task = malloc(sizeof(struct scale_args));
 	memcpy(task, &qargs->task_defaults, sizeof(struct scale_args));
 
-	task->crystal = qargs->crystals[qargs->n_started];
+	task->crystal = qargs->crystals[qargs->n_started].cr;
+	task->refls = qargs->crystals[qargs->n_started].refls;
 
 	qargs->n_started++;
 
@@ -99,8 +101,8 @@ static void done_crystal(void *vqargs, void *task)
 }
 
 
-static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
-                          int *ninc)
+static double total_log_r(struct crystal_refls *crystals, int n_crystals,
+                          RefList *full, int *ninc)
 {
 	int i;
 	double total = 0.0;
@@ -108,8 +110,9 @@ static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
 
 	for ( i=0; i<n_crystals; i++ ) {
 		double r;
-		if ( crystal_get_user_flag(crystals[i]) ) continue;
-		r = log_residual(crystals[i], full, 0, NULL, NULL);
+		if ( crystal_get_user_flag(crystals[i].cr) ) continue;
+		r = log_residual(crystals[i].refls, crystals[i].cr,
+		                 full, 0, NULL, NULL);
 		if ( isnan(r) ) continue;
 		total += r;
 		n++;
@@ -121,7 +124,7 @@ static double total_log_r(Crystal **crystals, int n_crystals, RefList *full,
 
 
 /* Perform iterative scaling, all the way to convergence */
-void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
+void scale_all(struct crystal_refls *crystals, int n_crystals, int nthreads, int scaleflags)
 {
 	struct scale_args task_defaults;
 	struct scale_queue_args qargs;
@@ -163,7 +166,7 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 		int i;
 		double meanB = 0.0;
 		for ( i=0; i<n_crystals; i++ ) {
-			meanB += crystal_get_Bfac(crystals[i]);
+			meanB += crystal_get_Bfac(crystals[i].cr);
 		}
 		meanB /= n_crystals;
 		STATUS("Mean B = %e\n", meanB);
@@ -181,7 +184,8 @@ void scale_all(Crystal **crystals, int n_crystals, int nthreads, int scaleflags)
 
 
 /* Calculates G and B, by which cr's reflections should be multiplied to fit reference */
-int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
+int scale_one_crystal(const RefList *listS, Crystal *cr,
+                      const RefList *listR, int flags)
 {
 	const Reflection *reflS;
 	RefListIterator *iter;
@@ -202,7 +206,6 @@ int scale_one_crystal(Crystal *cr, const RefList *listR, int flags)
 	int n_part = 0;
 	int n_nom = 0;
 	int n_red = 0;
-	RefList *listS = crystal_get_reflections(cr);
 	UnitCell *cell = crystal_get_cell(cr);
 	double G, B;
 

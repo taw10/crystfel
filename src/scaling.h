@@ -45,9 +45,10 @@ enum ScaleFlags
 	SCALE_VERBOSE_ERRORS = 1<<1,
 };
 
-extern int scale_one_crystal(Crystal *cr, const RefList *reference, int flags);
+extern int scale_one_crystal(const RefList *listS, Crystal *cr,
+                             const RefList *reference, int flags);
 
-extern void scale_all(Crystal **crystals, int n_crystals, int nthreads,
-                      int flags);
+extern void scale_all(struct crystal_refls *crystals, int n_crystals,
+                      int nthreads, int flags);
 
 #endif	/* SCALING_H */

@@ -58,19 +58,20 @@ enum prflag
 
 extern const char *str_prflag(enum prflag flag);
 
-extern void refine_all(Crystal **crystals, struct image **images, int n_crystals,
+extern void refine_all(struct crystal_refls *crystals, struct image **images,
+                       int n_crystals,
                        RefList *full, int nthreads, PartialityModel pmodel,
                        int cycle, int no_logs,
                        SymOpList *sym, SymOpList *amb, int scaleflags,
                        const char *log_folder);
 
-extern void write_gridscan(Crystal *cr, struct image *image,
+extern void write_gridscan(RefList *list, Crystal *cr, struct image *image,
                            const RefList *full,
                            int cycle, int serial, int scaleflags,
                            PartialityModel model,
                            const char *log_folder);
 
-extern void write_specgraph(Crystal *crystal, struct image *image,
+extern void write_specgraph(RefList *list, Crystal *crystal, struct image *image,
                             const RefList *full,
                             signed int cycle, int serial,
                             const char *log_folder);
