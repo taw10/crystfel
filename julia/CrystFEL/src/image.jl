@@ -202,13 +202,9 @@ end
 
 
 function Base.push!(image::Image, cr::Crystal)
-    if cr.in_image
-        throw(ErrorException("Crystal is already in an image"))
-    end
     ccall((:image_add_crystal, libcrystfel),
           Cvoid, (Ptr{InternalImage},Ptr{InternalCrystal}),
           image.internalptr, cr.internalptr)
-    cr.in_image = true
 end
 
 
