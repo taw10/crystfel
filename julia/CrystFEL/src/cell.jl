@@ -1,6 +1,7 @@
 module UnitCells
 
 using Random
+using Printf
 
 import ..CrystFEL: libcrystfel
 export UnitCell, LatticeType, CenteringType, UniqueAxis
@@ -297,12 +298,9 @@ function Base.show(io::IO, uc::UnitCell)
     show(io, cen); write(io, ", ")
     show(io, ua); write(io, ",\n         ")
     let cp = getcellparams(uc)
-        show(io, cp.a*1e10); write(io, " Å, ")
-        show(io, cp.b*1e10); write(io, " Å, ")
-        show(io, cp.c*1e10); write(io, " Å, ")
-        show(io, rad2deg(cp.α)); write(io, "°, ")
-        show(io, rad2deg(cp.β)); write(io, "°, ")
-        show(io, rad2deg(cp.γ)); write(io, "°")
+        @printf(io, "%.3f Å, %.3f Å, %.3f Å, %.3f°, %.3f°, %.3f°",
+                cp.a*1e10, cp.b*1e10, cp.c*1e10,
+                rad2deg(cp.α), rad2deg(cp.β), rad2deg(cp.γ))
     end
     write(io, ")")
 end
