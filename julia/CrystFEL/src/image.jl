@@ -100,17 +100,18 @@ end
 
 function getpeaklist(image)
     idata = unsafe_load(image.internalptr)
-    if (image.peaklist === nothing) || (idata.peaklist != image.peaklist.internalptr)
+    if (getfield(image, :peaklist) === nothing) ||
+        (idata.peaklist != getfield(image, :peaklist).internalptr)
         if idata.peaklist != C_NULL
-            image.peaklist = PeakList(idata.peaklist)
+            setfield!(image, :peaklist, PeakList(idata.peaklist))
             # From now on, Julia is completely responsible for freeing the peaklist
             idata.owns_peaklist = 0
             unsafe_store!(image.internalptr, idata)
         else
-            image.peaklist = nothing
+            setfield!(image, :peaklist, nothing)
         end
     end
-    return image.peaklist
+    return getfield(image, :peaklist)
 end
 
 
