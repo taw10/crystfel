@@ -3,7 +3,7 @@ using Random
 using Plots
 using MillepedeII
 
-# "Simulate" a diffraction pattern from the reflections
+# "Simulate" a diffraction pattern
 function sketch_pattern(image, cr)
     reflist = predictreflections(cr, image)
     peaklist = PeakList()
@@ -24,11 +24,17 @@ function simulate_and_index(cell, image_true, dtempl_moved, mille, n)
 
     for i in 1:n
 
+        # Create a diffraction pattern for a random orientation
         cr = Crystal(rotatecell(cell))
         peaklist = sketch_pattern(image_true, cr)
-        image_moved = Image(dtempl_moved)
 
+        # Make an image with the correct spot positions,
+        # but with an incorrect geometry
+        image_moved = Image(dtempl_moved)
         image_moved.peaklist = peaklist
+
+        # Index the pattern (and store Mille data),
+        # based on the incorrect geometry
         index(image_moved, indexer, mille=mille)
 
         if i % 100 == 0
@@ -47,7 +53,7 @@ dtempl_true = loaddatatemplate("julia/alignment-test.geom")
 image_true = Image(dtempl_true)
 cell = UnitCell(MonoclinicLattice, PrimitiveCell, 123, 45, 80, 90, 97, 90)
 dtempl_moved = loaddatatemplate("julia/alignment-test.geom")
-translategroup(dtempl_moved, "q0", 200e-6, 0, 0)
+translategroup(dtempl_moved, "q1", 200e-6, 0, 0)
 let mille = Mille("mille.dat")
     simulate_and_index(cell, image_true, dtempl_moved, mille, 100)
     close(mille)
