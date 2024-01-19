@@ -86,6 +86,8 @@ function Base.getproperty(cr::Crystal, name::Symbol)
         getfield(cr, :internalptr)
     elseif name === :cell
         return getcell(cr)
+    else
+        throw(ErrorException("Type Crystal has no field "*String(name)))
     end
 end
 
