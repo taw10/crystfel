@@ -41,6 +41,7 @@
 struct _crystal
 {
 	UnitCell               *cell;
+	int                     owns_cell;
 	double                  m;     /* Mosaicity in radians */
 	double                  osf;
 	double                  Bfac;
@@ -72,6 +73,7 @@ Crystal *crystal_new()
 	if ( cryst == NULL ) return NULL;
 
 	cryst->cell = NULL;
+	cryst->owns_cell = 1;
 	cryst->m = 0.0;
 	cryst->osf = 1.0;
 	cryst->Bfac = 0.0;
@@ -152,6 +154,7 @@ Crystal *crystal_copy_deep(const Crystal *cryst)
 void crystal_free(Crystal *cryst)
 {
 	if ( cryst == NULL ) return;
+	if ( cryst->owns_cell ) cell_free(cryst->cell);
 	cffree(cryst->notes);
 	cffree(cryst);
 }
@@ -162,6 +165,13 @@ void crystal_free(Crystal *cryst)
 
 UnitCell *crystal_get_cell(Crystal *cryst)
 {
+	return cryst->cell;
+}
+
+
+UnitCell *crystal_relinquish_cell(Crystal *cryst)
+{
+	cryst->owns_cell = 0;
 	return cryst->cell;
 }
 
@@ -240,6 +250,7 @@ void crystal_get_det_shift(Crystal *cryst, double* shift_x, double *shift_y)
 void crystal_set_cell(Crystal *cryst, UnitCell *cell)
 {
 	cryst->cell = cell;
+	cryst->owns_cell = 1;
 }
 
 

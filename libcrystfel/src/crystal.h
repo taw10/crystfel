@@ -53,6 +53,7 @@ extern Crystal *crystal_copy_deep(const Crystal *cryst);
 extern void crystal_free(Crystal *cryst);
 
 extern UnitCell *crystal_get_cell(Crystal *cryst);
+extern UnitCell *crystal_relinquish_cell(Crystal *cryst);
 extern double crystal_get_profile_radius(const Crystal *cryst);
 extern double crystal_get_resolution_limit(Crystal *cryst);
 extern int crystal_get_user_flag(Crystal *cryst);

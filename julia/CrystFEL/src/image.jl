@@ -76,7 +76,7 @@ function makecrystallist(image, listptr, n)
         if n !== nothing
             cr = getfield(image, :crystals)[n]
         else
-            cr = Crystal(pairptr.crystal)
+            cr = Crystal(pairptr.crystal, nothing)
         end
 
         if pairptr.reflist == C_NULL
