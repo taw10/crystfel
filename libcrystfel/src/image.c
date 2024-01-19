@@ -352,9 +352,7 @@ int remove_flagged_crystals(struct image *image)
 	for ( i=0; i<image->n_crystals; i++ ) {
 		if ( crystal_get_user_flag(image->crystals[i].cr) ) {
 			int j;
-			Crystal *deleteme = image->crystals[i].cr;
-			cell_free(crystal_get_cell(deleteme));
-			crystal_free(deleteme);
+			crystal_free(image->crystals[i].cr);
 			reflist_free(image->crystals[i].refls);
 			for ( j=i; j<image->n_crystals-1; j++ ) {
 				image->crystals[j] = image->crystals[j+1];
@@ -375,8 +373,6 @@ void free_all_crystals(struct image *image)
 	int i;
 	if ( image->crystals == NULL ) return;
 	for ( i=0; i<image->n_crystals; i++ ) {
-		Crystal *cr = image->crystals[i].cr;
-		cell_free(crystal_get_cell(cr));
 		crystal_free(image->crystals[i].cr);
 		reflist_free(image->crystals[i].refls);
 	}

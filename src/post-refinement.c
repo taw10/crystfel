@@ -268,7 +268,6 @@ static void try_reindex(RefList **prefls, Crystal *crin, struct image *image,
                         const RefList *full, SymOpList *sym, SymOpList *amb,
                         int scaleflags, PartialityModel pmodel)
 {
-	Crystal *cr;
 	double residual_original;
 	int idx, n;
 
@@ -277,39 +276,39 @@ static void try_reindex(RefList **prefls, Crystal *crin, struct image *image,
 	if ( scale_one_crystal(*prefls, crin, full, scaleflags) ) return;
 	residual_original = residual(*prefls, crin, full, 0, NULL, NULL);
 
-	cr = crystal_copy(crin);
-
 	n = num_equivs(amb, NULL);
 
 	for ( idx=0; idx<n; idx++ ) {
 
 		RefList *list;
 		UnitCell *cell;
-		double residual_flipped;
+		Crystal *cr;
 
-		cell = cell_new_from_cell(crystal_get_cell(crin));
-		if ( cell == NULL ) return;
-		reindex_cell(cell, amb, idx);
-		crystal_set_cell(cr, cell);
+		cr = crystal_copy(crin);
 
+		reindex_cell(crystal_get_cell(cr), amb, idx);
 		list = reindex_reflections(*prefls, amb, sym, idx);
+
 		update_predictions(list, cr, image);
 		calculate_partialities(list, cr, image, pmodel);
-		if ( scale_one_crystal(list, cr, full, scaleflags) ) return;
-		residual_flipped = residual(list, cr, full, 0, NULL, NULL);
+		if ( scale_one_crystal(list, cr, full, scaleflags) == 0 ) {
 
-		if ( residual_flipped < residual_original ) {
-			crystal_set_cell(crin, cell);
-			reflist_free(*prefls);
-			*prefls = list;
-			residual_original = residual_flipped;
-		} else {
-			cell_free(crystal_get_cell(cr));
-			reflist_free(list);
+			double residual_flipped;
+			residual_flipped = residual(list, cr, full, 0, NULL, NULL);
+
+			if ( residual_flipped < residual_original ) {
+				crystal_set_cell(crin, crystal_relinquish_cell(cr));
+				reflist_free(*prefls);
+				*prefls = list;
+				residual_original = residual_flipped;
+			} else {
+				reflist_free(list);
+			}
 		}
+
+		crystal_free(cr);
 	}
 
-	crystal_free(cr);
 }
 
 

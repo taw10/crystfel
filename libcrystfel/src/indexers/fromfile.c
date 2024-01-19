@@ -337,7 +337,7 @@ int fromfile_index(struct image *image, void *mpriv)
 
 	for ( i=0; i<p->n_crystals; i++ ) {
 		Crystal *cr;
-		cr = crystal_copy_deep(p->crystals[i]);
+		cr = crystal_copy(p->crystals[i]);
 		image_add_crystal(image, cr);
 	}
 
