@@ -1611,7 +1611,7 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				crystals = crystals_new;
-				cr = crystal_copy_deep(image->crystals[i].cr);
+				cr = crystal_copy(image->crystals[i].cr);
 				crystals[n_crystals].cr = cr;
 
 				images_new = realloc(images, (n_crystals+1)*sizeof(struct image *));

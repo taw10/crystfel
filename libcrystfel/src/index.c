@@ -552,7 +552,6 @@ static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
 	if ( out != NULL ) {
 
 		/* Replace crystal's cell with new one */
-		cell_free(crystal_get_cell(cr));
 		crystal_set_cell(cr, out);
 		rtnl_mtx_free(rm);
 		if ( !right_handed(out) ) STATUS("WARNING: left handed\n");

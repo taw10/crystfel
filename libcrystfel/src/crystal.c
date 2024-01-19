@@ -93,38 +93,14 @@ Crystal *crystal_new()
 /**
  * \param cryst: A \ref Crystal to copy.
  *
- * Creates a new \ref Crystal which is a copy of \p cryst.  The copy is a "shallow
- * copy", which means that copies are NOT made of the data structures which
- * \p cryst contains references to, for example its \ref RefList.
- *
- * \returns A (shallow) copy of \p cryst, or NULL on failure.
- *
- */
-Crystal *crystal_copy(const Crystal *cryst)
-{
-	Crystal *c;
-
-	c = crystal_new();
-	if ( c == NULL ) return NULL;
-
-	memcpy(c, cryst, sizeof(Crystal));
-	if ( c->notes != NULL ) c->notes = cfstrdup(c->notes);
-
-	return c;
-}
-
-
-/**
- * \param cryst: A \ref Crystal to copy.
- *
  * Creates a new \ref Crystal which is a copy of \p cryst.  The copy is a "deep
  * copy", which means that copies ARE made of the data structures which
- * \p cryst contains references to, for example its \ref RefList.
+ * \p cryst contains references to, for example its \ref UnitCell.
  *
  * \returns A (deep) copy of \p cryst, or NULL on failure.
  *
  */
-Crystal *crystal_copy_deep(const Crystal *cryst)
+Crystal *crystal_copy(const Crystal *cryst)
 {
 	Crystal *c;
 
