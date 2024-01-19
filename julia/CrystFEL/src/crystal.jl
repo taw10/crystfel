@@ -10,6 +10,7 @@ mutable struct InternalCrystal end
 
 mutable struct Crystal
     internalptr::Ptr{InternalCrystal}
+    cell
 end
 
 
@@ -39,7 +40,7 @@ function Crystal(cell::UnitCell; profileradius=2e6, mosaicity=0)
           Cvoid, (Ptr{InternalCrystal},Cdouble),
           out, mosaicity)
 
-    cr = Crystal(out)
+    cr = Crystal(out, nothing)
 
     finalizer(cr) do x
         ccall((:crystal_free, libcrystfel), Cvoid, (Ptr{InternalCrystal},),
@@ -66,5 +67,37 @@ function Base.setproperty!(cr::Crystal, name::Symbol, val)
     end
 end
 
+
+function getcell(cr)
+    out = @ccall libcrystfel.crystal_relinquish_cell(cr.internalptr::Ptr{InternalCrystal})::Ptr{InternalUnitCell}
+    if getfield(cr, :cell) === nothing || getfield(cr, :cell).internalptr != out
+        if out != C_NULL
+            setfield!(cr, :cell, UnitCell(out))
+        else
+            setfield!(cr, :cell, nothing)
+        end
+    end
+    return getfield(cr, :cell)
+end
+
+
+function Base.getproperty(cr::Crystal, name::Symbol)
+    if name === :internalptr
+        getfield(cr, :internalptr)
+    elseif name === :cell
+        return getcell(cr)
+    end
+end
+
+
+function Base.show(io::IO, cr::Crystal)
+    write(io, "Crystal(")
+    if cr.cell !== nothing
+        show(io, cr.cell)
+    else
+        write(io, "no cell")
+    end
+    write(io, ")")
+end
 
 end   # of module
