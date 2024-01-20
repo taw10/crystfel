@@ -281,7 +281,6 @@ static void try_reindex(RefList **prefls, Crystal *crin, struct image *image,
 	for ( idx=0; idx<n; idx++ ) {
 
 		RefList *list;
-		UnitCell *cell;
 		Crystal *cr;
 
 		cr = crystal_copy(crin);
