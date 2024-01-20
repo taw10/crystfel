@@ -1,5 +1,7 @@
 module Images
 
+using Printf
+
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.DetGeoms: DetGeom
@@ -264,6 +266,63 @@ function Image(dtempl::DataTemplate,
     end
 
     return image
+end
+
+
+function Base.show(io::IO, mime::MIME"text/plain", image::Image)
+
+    idata = unsafe_load(image.internalptr)
+    @printf(io, "CrystFEL.Image(%p):\n\n", image.internalptr)
+
+    println(io, "                    Serial number: ", idata.serial)
+    write(io, "                         Filename: ")
+    if idata.filename == C_NULL
+        write(io, "<not set>")
+    else
+        write(io, unsafe_string(idata.filename))
+    end
+    write(io, "\n")
+
+    write(io, "                         Frame ID: ")
+    if idata.ev == C_NULL
+        write(io, "<not set>")
+    else
+        write(io, unsafe_string(idata.ev))
+    end
+    write(io, "\n")
+
+    write(io, "\n")
+    println(io, "                       Wavelength: ", idata.lambda*1e10, " Å")
+    println(io, "                        Bandwidth: ", idata.bw*100, " %")
+    println(io, "                       Divergence: ", idata.div*1e3, " mrad")
+
+    write(io, "\n")
+    if idata.peaklist != C_NULL
+        let npk = @ccall libcrystfel.image_feature_count(idata.peaklist::Ptr{InternalPeakList})::Cint
+            println(io, "                  Number of peaks: ", npk)
+        end
+    else
+        println(io, "                  Number of peaks: 0 (no peak list)")
+    end
+
+    println(io, "             Estimated resolution: ", 1e10/idata.peak_resolution, " Å")
+    write(io, "                         Hit flag: ")
+    if idata.hit != 0
+        write(io, "set")
+    else
+        write(io, "not set")
+    end
+    write(io, "\n")
+
+    write(io, "\n")
+    println(io, "               Number of crystals: ", idata.n_crystals)
+    println(io, " Number of indexing attempts made: ", idata.n_crystals)
+    println(io, "             Indexed by algorithm: ", idata.indexed_by)
+end
+
+
+function Base.show(io::IO, image::Image)
+    @printf(io, "CrystFEL.Image(%p)", image.internalptr)
 end
 
 
