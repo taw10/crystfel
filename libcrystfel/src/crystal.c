@@ -225,6 +225,7 @@ void crystal_get_det_shift(Crystal *cryst, double* shift_x, double *shift_y)
 
 void crystal_set_cell(Crystal *cryst, UnitCell *cell)
 {
+	if ( cryst->owns_cell ) cell_free(cryst->cell);
 	cryst->cell = cell;
 	cryst->owns_cell = 1;
 }
