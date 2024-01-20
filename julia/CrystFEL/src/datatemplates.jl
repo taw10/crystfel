@@ -3,7 +3,7 @@ module DataTemplates
 import ..CrystFEL: libcrystfel
 export DataTemplate, InternalDataTemplate, loaddatatemplate
 export wavelength, cameralength
-export translategroup
+export translategroup!
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalDataTemplate end
@@ -85,14 +85,14 @@ end
 
 
 """
-    translategroup(datatemplate, groupname, xshift, yshift, zshift)
+    translategroup!(datatemplate, groupname, xshift, yshift, zshift)
 
 Modifies `DataTemplate` by moving the specified panel group by the specified
 amount (in metres).
 
 Corresponds to CrystFEL C API function `data_template_translate_group`.
 """
-function translategroup(dtempl::DataTemplate, groupname, xshift, yshift, zshift)
+function translategroup!(dtempl::DataTemplate, groupname, xshift, yshift, zshift)
     r = @ccall libcrystfel.data_template_translate_group_m(dtempl.internalptr::Ptr{InternalDataTemplate},
                                                              groupname::Cstring,
                                                              xshift::Cdouble,
