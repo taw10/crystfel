@@ -152,12 +152,13 @@ function set_peaklist(image, new_pl)
     assert_type(new_pl, PeakList)
 
     idata = unsafe_load(image.internalptr)
-    if (idata.owns_peaklist == 0) && (idata.peaklist != C_NULL)
+    if (idata.owns_peaklist == 1) && (idata.peaklist != C_NULL)
         @ccall libcrystfel.image_feature_list_free(idata.peaklist::Ptr{InternalPeakList})::Cvoid
     end
     idata.peaklist = new_pl.internalptr
     idata.owns_peaklist = 0
     unsafe_store!(image.internalptr, idata)
+    setfield!(image, :peaklist, new_pl)
 
 end
 
