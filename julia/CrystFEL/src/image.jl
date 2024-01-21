@@ -137,7 +137,7 @@ function Base.getproperty(image::Image, name::Symbol)
 end
 
 
-strdup(str) = @ccall strdup(str::Cstring)::Cstring
+strdup(str) = @ccall libcrystfel.cfstrdup(str::Cstring)::Cstring
 
 
 function assert_type(val, type)
