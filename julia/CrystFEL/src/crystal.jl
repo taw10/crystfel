@@ -1,5 +1,7 @@
 module Crystals
 
+using Printf
+
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.RefLists: RefList, InternalRefList, UnmergedReflection
 import ..CrystFEL.UnitCells: UnitCell, InternalUnitCell
@@ -86,20 +88,44 @@ function Base.getproperty(cr::Crystal, name::Symbol)
         getfield(cr, :internalptr)
     elseif name === :cell
         return getcell(cr)
+    elseif name === :Bfac
+        return @ccall libcrystfel.crystal_get_Bfac(cr.internalptr::Ptr{InternalCrystal})::Cdouble
+    elseif name === :osf
+        return @ccall libcrystfel.crystal_get_osf(cr.internalptr::Ptr{InternalCrystal})::Cdouble
+    elseif name === :mos
+        return @ccall libcrystfel.crystal_get_mosaicity(cr.internalptr::Ptr{InternalCrystal})::Cdouble
+    elseif name === :r
+        return @ccall libcrystfel.crystal_get_profile_radius(cr.internalptr::Ptr{InternalCrystal})::Cdouble
+    elseif name === :resolution
+        return @ccall libcrystfel.crystal_get_resolution_limit(cr.internalptr::Ptr{InternalCrystal})::Cdouble
+    elseif name === :flag
+        return @ccall libcrystfel.crystal_get_user_flag(cr.internalptr::Ptr{InternalCrystal})::Cint
     else
         throw(ErrorException("Type Crystal has no field "*String(name)))
     end
 end
 
 
-function Base.show(io::IO, cr::Crystal)
-    write(io, "Crystal(")
+function Base.show(io::IO, mime::MIME"text/plain", cr::Crystal)
+    @printf(io, "CrystFEL.Crystal(%p):\n\n", cr.internalptr)
     if cr.cell !== nothing
         show(io, cr.cell)
+        write(io, "\n\n")
     else
-        write(io, "no cell")
+        write(io, "Unit cell parameters not set\n\n")
     end
-    write(io, ")")
+    println(io, " Linear scale factor: ", cr.osf)
+    println(io, "  Debye-Walle factor: ", cr.Bfac)
+    println(io, "           Mosaicity: ", cr.mos)
+    println(io, "      Profile radius: ", cr.r/1e9, " nm⁻¹")
+    println(io, "    Resolution limit: ", cr.resolution)
+    println(io, "                Flag: ", cr.flag)
 end
+
+
+function Base.show(io::IO, cr::Crystal)
+    @printf(io, "CrystFEL.Crystal(%p)", cr.internalptr)
+end
+
 
 end   # of module
