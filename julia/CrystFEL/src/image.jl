@@ -217,6 +217,21 @@ function Base.push!(image::Image, cr::Crystal)
 end
 
 
+function Base.push!(image::Image, cr::Crystal, reflections::RefList{UnmergedReflection})
+    @ccall libcrystfel.image_add_crystal_refls(image.internalptr::Ptr{InternalImage},
+                                               cr.internalptr::Ptr{InternalCrystal},
+                                               reflections.internalptr::Ptr{InternalRefList})::Cvoid
+    idata = unsafe_load(image.internalptr)
+    ncryst = idata.n_crystals
+    pairptr = unsafe_load(idata.crystals, ncryst)
+    pairptr.owns_crystal = 0
+    pairptr.owns_reflist = 0
+    unsafe_store!(idata.crystals, pairptr, ncryst)
+    push!(getfield(image, :crystals), cr)
+    push!(getfield(image, :reflists), reflections)
+end
+
+
 """
     Image(dtempl::DataTemplate)
 
