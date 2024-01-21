@@ -205,9 +205,15 @@ end
 
 
 function Base.push!(image::Image, cr::Crystal)
-    ccall((:image_add_crystal, libcrystfel),
-          Cvoid, (Ptr{InternalImage},Ptr{InternalCrystal}),
-          image.internalptr, cr.internalptr)
+    @ccall libcrystfel.image_add_crystal(image.internalptr::Ptr{InternalImage},
+                                         cr.internalptr::Ptr{InternalCrystal})::Cvoid
+
+    idata = unsafe_load(image.internalptr)
+    ncryst = idata.n_crystals
+    pairptr = unsafe_load(idata.crystal_refls, ncryst)
+    pairptr.owns_crystal = 0
+    unsafe_store!(idata.crystal_refls, pairptr, ncryst)
+    push!(getfield(image, :crystals), cr)
 end
 
 
