@@ -10,8 +10,8 @@ let st = Stream("partials.stream", "w", dtempl)
         image.filename = "simulation_" * string(i)
         image.ev = "//"
         cr = Crystal(rotatecell(cell))
-        cr.reflections = predictreflections(cr, image)
-        push!(image, cr)
+        reflections = predictreflections(cr, image)
+        push!(image, cr, reflections)
         chunkwrite(st, image)
     end
 end
