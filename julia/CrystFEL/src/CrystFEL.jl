@@ -67,7 +67,8 @@ export Image
 
 include("diffcalc.jl")
 using .DiffractionCalculations
-export predictreflections
+export predictreflections, calculatepartialities!
+export PartialityModel, UnityModel, XSphereModel, OffsetModel, RandomModel, GeneralGaussianModel
 
 include("indexing.jl")
 using .Indexing
