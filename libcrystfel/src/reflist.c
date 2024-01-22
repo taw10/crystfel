@@ -1337,6 +1337,6 @@ void reflist_add_notes(RefList *reflist, const char *notes_add)
 	strcpy(nnotes, reflist->notes);
 	strcat(nnotes, "\n");
 	strcat(nnotes, notes_add);
-	free(reflist->notes);
+	cffree(reflist->notes);
 	reflist->notes = nnotes;
 }
