@@ -2,7 +2,7 @@ module Symmetry
 
 import ..CrystFEL: libcrystfel
 export SymOpList, InternalSymOpList, InternalIntegerMatrix
-export symmetry_name
+export symmetry_name, asymmetricindices
 
 
 # Types for pointers returned by libcrystfel
@@ -97,6 +97,17 @@ function Base.iterate(sym::SymOpList, i)
     else
         return (sym[i], i+1)
     end
+end
+
+
+function asymmetricindices(sym::SymOpList, h, k, l)
+    ho = Ref{Cint}(0)
+    ko = Ref{Cint}(0)
+    lo = Ref{Cint}(0)
+    @ccall libcrystfel.get_asymm(sym.internalptr::Ptr{InternalSymOpList},
+                                 h::Cint, k::Cint, l::Cint,
+                                 ho::Ref{Cint}, ko::Ref{Cint}, lo::Ref{Cint})::Cvoid
+    (ho[], ko[], lo[])
 end
 
 
