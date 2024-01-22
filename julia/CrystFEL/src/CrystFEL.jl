@@ -42,7 +42,7 @@ export Panel, DetGeom
 
 include("symmetry.jl")
 using .Symmetry
-export SymOpList
+export SymOpList, asymmetricindices
 
 include("datatemplates.jl")
 using .DataTemplates
