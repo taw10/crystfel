@@ -245,6 +245,65 @@ function Base.getproperty(refl::Reflection, name::Symbol)
 end
 
 
+function Base.setproperty!(refl::Reflection, name::Symbol, val)
+    if name === :intensity
+        @ccall libcrystfel.set_intensity(refl.internalptr::Ptr{InternalReflection},
+                                         val::Cdouble)::Cvoid
+    elseif name === :sigintensity
+        @ccall libcrystfel.set_esd_intensity(refl.internalptr::Ptr{InternalReflection},
+                                             val::Cdouble)::Cvoid
+    elseif name === :partiality
+        @ccall libcrystfel.set_partiality(refl.internalptr::Ptr{InternalReflection},
+                                          val::Cdouble)::Cvoid
+    elseif name === :khalf
+        @ccall libcrystfel.set_khalf(refl.internalptr::Ptr{InternalReflection},
+                                     val::Cdouble)::Cvoid
+    elseif name === :kpred
+        @ccall libcrystfel.set_kpred(refl.internalptr::Ptr{InternalReflection},
+                                     val::Cdouble)::Cvoid
+    elseif name === :excitationerror
+        @ccall libcrystfel.set_exerr(refl.internalptr::Ptr{InternalReflection},
+                                     val::Cdouble)::Cvoid
+    elseif name === :lorentzfactor
+        @ccall libcrystfel.set_lorentz(refl.internalptr::Ptr{InternalReflection},
+                                       val::Cdouble)::Cvoid
+    elseif name === :phase
+        @ccall libcrystfel.set_phase(refl.internalptr::Ptr{InternalReflection},
+                                     val::Cdouble)::Cvoid
+    elseif name === :peak
+        @ccall libcrystfel.set_peak(refl.internalptr::Ptr{InternalReflection},
+                                    val::Cdouble)::Cvoid
+    elseif name === :meanbackground
+        @ccall libcrystfel.set_mean_bg(refl.internalptr::Ptr{InternalReflection},
+                                       val::Cdouble)::Cvoid
+    elseif name === :temp1
+        @ccall libcrystfel.set_temp1(refl.internalptr::Ptr{InternalReflection},
+                                     val::Cdouble)::Cvoid
+    elseif name === :temp2
+        @ccall libcrystfel.set_temp2(refl.internalptr::Ptr{InternalReflection},
+                                     val::Cdouble)::Cvoid
+    elseif name === :nmeasurements
+        @ccall libcrystfel.set_redundancy(refl.internalptr::Ptr{InternalReflection},
+                                          val::Cint)::Cvoid
+    elseif name === :flag
+        @ccall libcrystfel.set_flag(refl.internalptr::Ptr{InternalReflection},
+                                    val::Cint)::Cvoid
+    elseif name === :detectorposition
+        @ccall libcrystfel.set_detector_pos(refl.internalptr::Ptr{InternalReflection},
+                                            val.fs::Cdouble, val.ss::Cdouble)::Cvoid
+        @ccall libcrystfel.set_panel_number(refl.internalptr::Ptr{InternalReflection},
+                                            val.panelnumber::Cint)::Cvoid
+    elseif name === :indices
+        throw(ErrorException("Cannot set the indices of a Reflection"))
+    elseif name === :symmetricindices
+        @ccall libcrystfel.set_symmetric_indices(refl.internalptr::Ptr{InternalReflection},
+                                                 val[1]::Cint, val[2]::Cint, val[3]::Cint)::Cvoid
+    else
+        setfield!(refl, name, val)
+    end
+end
+
+
 function Base.propertynames(::UnmergedReflection; private=false)
     names = (:intensity,:sigintensity,:partiality,:khalf,:kpred,:lorentzfactor,
              :excitationerror,:phase,:peak,:meanbackground,:temp1,:temp2,
