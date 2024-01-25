@@ -742,7 +742,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		if ( ipriv->flags & INDEXING_CHECK_PEAKS )
 		{
 			int mm = ipriv->flags & INDEXING_MULTI;
-			if ( !indexing_peak_check(image, &cr, 1, mm) ) {
+			if ( !indexing_peak_check(image, image->features, &cr, 1, mm) ) {
 				crystal_set_user_flag(cr, 1);
 				continue;
 			}

@@ -97,33 +97,26 @@ extern enum peak_search_method parse_peaksearch(const char *arg);
 extern int *make_BgMask(struct image *image, struct detgeom_panel *p,
                         int pn, double ir_inn);
 
-extern void search_peaks(struct image *image, float threshold,
-                         float min_gradient, float min_snr, double ir_inn,
-                         double ir_mid, double ir_out, int use_saturated);
+extern ImageFeatureList *search_peaks(const struct image *image, float threshold,
+                                      float min_gradient, float min_snr, double ir_inn,
+                                      double ir_mid, double ir_out, int use_saturated);
 
-extern int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
-                                    float threshold, float min_snr,
-                                    int mix_pix_count, int max_pix_count,
-                                    int local_bg_radius, int min_res,
-                                    int max_res, int use_saturated,
-                                    int fast_mode, void *private_data);
+extern ImageFeatureList *search_peaks_peakfinder9(const struct image *image,
+                                                  float min_snr_biggest_pix,
+                                                  float min_snr_peak_pix,
+                                                  float min_snr_whole_peak, float min_sig,
+                                                  float min_peak_over_neighbour,
+                                                  int window_radius);
 
-extern int search_peaks_peakfinder9(struct image *image,
-                                    float min_snr_biggest_pix,
-                                    float min_snr_peak_pix,
-                                    float min_snr_whole_peak, float min_sig,
-                                    float min_peak_over_neighbour,
-                                    int window_radius);
-
-extern int indexing_peak_check(struct image *image, Crystal **crystals,
+extern int indexing_peak_check(const struct image *image, ImageFeatureList *peaks,
+                               Crystal **crystals,
                                int n_cryst, int multi_mode);
 
-extern int peak_sanity_check(struct image *image, Crystal **crystals,
-                             int n_cryst);
-
-extern void validate_peaks(struct image *image, double min_snr,
-                           int ir_inn, int ir_mid, int ir_out,
-                           int use_saturated, int check_snr);
+extern ImageFeatureList *validate_peaks(const struct image *image,
+                                        ImageFeatureList *peaks,
+                                        double min_snr,
+                                        int ir_inn, int ir_mid, int ir_out,
+                                        int use_saturated, int check_snr);
 
 extern double estimate_peak_resolution(ImageFeatureList *peaks,
                                        double lambda,

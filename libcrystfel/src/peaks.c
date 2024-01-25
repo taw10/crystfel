@@ -131,7 +131,7 @@ int *make_BgMask(struct image *image, struct detgeom_panel *p,
 
 /* Returns non-zero if peak has been vetoed.
  * i.e. don't use result if return value is not zero. */
-int integrate_peak(struct image *image,
+int integrate_peak(const struct image *image,
                    int p_cfs, int p_css, int pn,
                    double *pfs, double *pss,
                    double *intensity, double *sigma,
@@ -254,7 +254,8 @@ int integrate_peak(struct image *image,
 }
 
 
-static void search_peaks_in_panel(struct image *image, float threshold,
+static void search_peaks_in_panel(ImageFeatureList *peaklist,
+                                  const struct image *image, float threshold,
                                   float min_sq_gradient, float min_snr, int pn,
                                   double ir_inn, double ir_mid, double ir_out,
                                   int use_saturated)
@@ -387,8 +388,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Check for a nearby feature */
-		image_feature_closest(image->features, f_fs, f_ss, pn,
-		                      &d, &idx);
+		image_feature_closest(peaklist, f_fs, f_ss, pn, &d, &idx);
 		if ( d < 2.0*ir_inn ) {
 			nrej_pro++;
 			continue;
@@ -400,8 +400,7 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 		}
 
 		/* Add using "better" coordinates */
-		image_add_feature(image->features, f_fs, f_ss, pn,
-		                  intensity, NULL);
+		image_add_feature(peaklist, f_fs, f_ss, pn, intensity, NULL);
 		nacc++;
 
 		if ( nacc > 10000 ) {
@@ -422,69 +421,38 @@ static void search_peaks_in_panel(struct image *image, float threshold,
 }
 
 
-void search_peaks(struct image *image, float threshold, float min_sq_gradient,
-                  float min_snr, double ir_inn, double ir_mid,
-                  double ir_out, int use_saturated)
+ImageFeatureList *search_peaks(const struct image *image,
+                               float threshold, float min_sq_gradient,
+                               float min_snr, double ir_inn, double ir_mid,
+                               double ir_out, int use_saturated)
 {
 	int i;
+	ImageFeatureList *peaklist;
 
-	if ( image->features != NULL ) {
-		image_feature_list_free(image->features);
-	}
-	image->features = image_feature_list_new();
+	peaklist = image_feature_list_new();
 
 	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 
-		search_peaks_in_panel(image, threshold, min_sq_gradient,
+		search_peaks_in_panel(peaklist, image,
+		                      threshold, min_sq_gradient,
 		                      min_snr, i, ir_inn, ir_mid, ir_out,
 		                      use_saturated);
 
 	}
-}
 
-
-/**
- * \param image An \ref image structure
- * \param max_n_peaks The maximum number of peaks to be searched for
- * \param threshold The image threshold value, in detector units
- * \param min_snr The minimum signal to noise ratio for a peak
- * \param min_pix_count The minimum number of pixels in a peak
- * \param max_pix_count The maximum number of pixels in a peak
- * \param local_bg_radius The averaging radius for background calculation
- * \param min_res The minimum number of pixels out from the center
- * \param max_res The maximum number of pixels out from the center
- * \param use_saturated Whether saturated peaks should be considered
- *
- * Runs the peakfinder8 peak search algorithm.  This is a thin wrapper which
- * creates an empty \ref ImageFeatureList for \p image, then calls
- * the actual \ref peakfinder8 function, found in \ref peakfinder8.h.
- */
-int search_peaks_peakfinder8(struct image *image, int max_n_peaks,
-                             float threshold, float min_snr,
-                             int min_pix_count, int max_pix_count,
-                             int local_bg_radius, int min_res,
-                             int max_res, int use_saturated,
-                             int fast_mode, void *private_data)
-{
-	if ( image->features != NULL ) {
-		image_feature_list_free(image->features);
-	}
-	image->features = image_feature_list_new();
-
-	return peakfinder8(image, max_n_peaks, threshold, min_snr,
-	                   min_pix_count, max_pix_count,
-	                   local_bg_radius, min_res,
-	                   max_res, use_saturated,
-			   fast_mode, private_data);
+	return peaklist;
 }
 
 
 #ifdef HAVE_FDIP
 
-int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
-                             float min_snr_peak_pix, float min_snr_whole_peak,
-                             float min_sig, float min_peak_over_neighbour,
-                             int window_radius)
+ImageFeatureList *search_peaks_peakfinder9(const struct image *image,
+                                           float min_snr_biggest_pix,
+                                           float min_snr_peak_pix,
+                                           float min_snr_whole_peak,
+                                           float min_sig,
+                                           float min_peak_over_neighbour,
+                                           int window_radius)
 {
 	peakFinder9_accuracyConstants_t accuracy_consts;
 	peakList_t peakList;
@@ -492,11 +460,7 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 	float *data_copy = NULL;
 	float *data_copy_new;
 	int panel_number;
-
-	if ( image->features != NULL ) {
-		image_feature_list_free(image->features);
-	}
-	image->features = image_feature_list_new();
+	ImageFeatureList *peaks;
 
 	accuracy_consts.minSNR_biggestPixel = min_snr_biggest_pix;
 	accuracy_consts.minSNR_peakPixel = min_snr_peak_pix;
@@ -505,7 +469,9 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 	accuracy_consts.minimumPeakOversizeOverNeighbours = min_peak_over_neighbour;
 	accuracy_consts.windowRadius = window_radius;
 
-	if ( allocatePeakList(&peakList, NpeaksMax) ) return 1;
+	if ( allocatePeakList(&peakList, NpeaksMax) ) return NULL;
+
+	peaks = image_feature_list_new();
 
 	for ( panel_number=0; panel_number<image->detgeom->n_panels; panel_number++ ) {
 
@@ -530,7 +496,7 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 				cffree(data_copy);
 			}
 			freePeakList(peakList);
-			return 1;
+			return NULL;
 		} else {
 			data_copy = data_copy_new;
 		}
@@ -544,7 +510,7 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 		                            &det_size_one_panel, &peakList);
 
 		for ( peak_number=0; peak_number<peakList.peakCount; peak_number++) {
-			image_add_feature(image->features,
+			image_add_feature(peaks,
 			                  peakList.centerOfMass_rawX[peak_number],
 			                  peakList.centerOfMass_rawY[peak_number],
 			                  panel_number,
@@ -556,18 +522,21 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 
 	freePeakList(peakList);
 	cffree(data_copy);
-	return 0;
+	return peaks;
 }
 
 #else
 
-int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
-                             float min_snr_peak_pix, float min_snr_whole_peak,
-                             float min_sig, float min_peak_over_neighbour,
-                             int window_radius)
+ImageFeatureList *search_peaks_peakfinder9(const struct image *image,
+                                           float min_snr_biggest_pix,
+                                           float min_snr_peak_pix,
+                                           float min_snr_whole_peak,
+                                           float min_sig,
+                                           float min_peak_over_neighbour,
+                                           int window_radius)
 {
 	ERROR("This copy of CrystFEL was compiled without peakfinder9 support.\n");
-	return 1;
+	return NULL;
 }
 
 #endif // HAVE_FDIP
@@ -575,17 +544,20 @@ int search_peaks_peakfinder9(struct image *image, float min_snr_biggest_pix,
 
 /**
  * \param image An \ref image structure
+ * \param peaks An \ref ImageFeatureList
  * \param crystals Pointer to array of pointers to crystals
  * \param n_cryst The number of crystals
  * \param multi_mode Whether the thresholds should be set for multi-lattice indexing
  *
- * Checks whether the peaks in \p image appear to be explained by the crystals
+ * Checks whether the peaks in \p peaks appear to be explained by the crystals
  * provided.
  *
  * Returns 1 if the peaks appear to be well-explained by the crystals.
  * Otherwise, if the indexing solutions appear to be "bad", returns 0.
  */
-int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
+int indexing_peak_check(const struct image *image,
+                        ImageFeatureList *peaks,
+                        Crystal **crystals, int n_cryst,
                         int multi_mode)
 {
 	int n_feat = 0;
@@ -593,7 +565,7 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 	int i;
 	const double min_dist = 0.25;
 
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
+	for ( i=0; i<image_feature_count(peaks); i++ ) {
 
 		struct imagefeature *f;
 		double q[3];
@@ -601,7 +573,7 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 		int ok = 0;
 
 		/* Assume all image "features" are genuine peaks */
-		f = image_get_feature(image->features, i);
+		f = image_get_feature(peaks, i);
 		if ( f == NULL ) continue;
 		n_feat++;
 
@@ -664,27 +636,21 @@ int indexing_peak_check(struct image *image, Crystal **crystals, int n_cryst,
 }
 
 
-/**
- * Deprecated: use indexing_peak_check instead
- */
-int peak_sanity_check(struct image *image, Crystal **crystals, int n_cryst)
-{
-	return indexing_peak_check(image, crystals, n_cryst, 1);
-}
-
-
-void validate_peaks(struct image *image, double min_snr,
-                    int ir_inn, int ir_mid, int ir_out, int use_saturated,
-                    int check_snr)
+ImageFeatureList *validate_peaks(const struct image *image, ImageFeatureList *peaks,
+                                 double min_snr,
+                                 int ir_inn, int ir_mid, int ir_out, int use_saturated,
+                                 int check_snr)
 {
 	int i, n;
 	ImageFeatureList *flist;
 	int n_wtf, n_int, n_snr, n_sat;
 
-	flist = image_feature_list_new();
-	if ( flist == NULL ) return;
+	if ( peaks == NULL ) return NULL;
 
-	n = image_feature_count(image->features);
+	flist = image_feature_list_new();
+	if ( flist == NULL ) return NULL;
+
+	n = image_feature_count(peaks);
 
 	/* Loop over peaks, putting each one through the integrator */
 	n_wtf = 0;  n_int = 0;  n_snr = 0;  n_sat = 0;
@@ -696,7 +662,7 @@ void validate_peaks(struct image *image, double min_snr,
 		double intensity, sigma;
 		int saturated;
 
-		f = image_get_feature(image->features, i);
+		f = image_get_feature(peaks, i);
 		if ( f == NULL ) {
 			n_wtf++;
 			continue;
@@ -730,8 +696,7 @@ void validate_peaks(struct image *image, double min_snr,
 	//STATUS("HDF5: %i peaks, validated: %i.  WTF: %i, integration: %i, "
 	//       "SNR: %i, saturated: %i\n",
 	//       n, image_feature_count(flist), n_wtf, n_int, n_snr, n_sat);
-	image_feature_list_free(image->features);
-	image->features = flist;
+	return flist;
 }
 
 
