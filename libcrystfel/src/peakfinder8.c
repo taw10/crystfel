@@ -373,7 +373,7 @@ void free_pf8_private_data(struct pf8_private_data *data)
 }
 
 
-static struct peakfinder_mask *create_peakfinder_mask(struct image *img,
+static struct peakfinder_mask *create_peakfinder_mask(const struct image *img,
                                                       struct radius_maps *rmps,
                                                       int min_res,
                                                       int max_res)
@@ -1248,14 +1248,15 @@ static int peakfinder8_base(float *roffset, float *rthreshold,
  * \param max_res The maximum number of pixels out from the center
  * \param use_saturated Whether saturated peaks should be considered
  *
- * Runs the peakfinder8 peak search algorithm
+ * Runs the peakfinder8 peak search algorithm, and returns an \ref ImageFeatureList,
+ * or NULL on error.
  */
-int peakfinder8(struct image *img, int max_n_peaks,
-                float threshold, float min_snr,
-                int min_pix_count, int max_pix_count,
-                int local_bg_radius, int min_res,
-                int max_res, int use_saturated,
-                int fast_mode, struct pf8_private_data *private_data)
+ImageFeatureList *peakfinder8(const struct image *img, int max_n_peaks,
+                              float threshold, float min_snr,
+                              int min_pix_count, int max_pix_count,
+                              int local_bg_radius, int min_res,
+                              int max_res, int use_saturated,
+                              int fast_mode, struct pf8_private_data *private_data)
 {
 	struct pf8_private_data *geomdata;
 	struct radius_maps *rmaps;
@@ -1272,10 +1273,11 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	int remaining_max_num_peaks;
 	int iterations;
 	float max_r;
+	ImageFeatureList *peaks;
 
 	iterations = 5;
 
-	if ( img->detgeom == NULL) return 1;
+	if ( img->detgeom == NULL) return NULL;
 
 	profile_start("pf8-rmaps");
 	if ( private_data == NULL ) {
@@ -1286,21 +1288,21 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	rmaps = geomdata->rmaps;
 	rspixels = geomdata->rpixels;
 	profile_end("pf8-rmaps");
-	if (geomdata == NULL) return 1;
+	if (geomdata == NULL) return NULL;
 
 	profile_start("pf8-mask");
 	pfmask = create_peakfinder_mask(img, rmaps, min_res, max_res);
 	profile_end("pf8-mask");
 	if ( pfmask == NULL ) {
 		if ( private_data == NULL ) free_pf8_private_data(geomdata);
-		return 1;
+		return NULL;
 	}
 
 	pfdata = allocate_panel_data(img->detgeom->n_panels);
 	if ( pfdata == NULL) {
 		if ( private_data == NULL ) free_pf8_private_data(geomdata);
 		free_peakfinder_mask(pfmask);
-		return 1;
+		return NULL;
 	}
 
 	for ( pi=0 ; pi<img->detgeom->n_panels ; pi++ ) {
@@ -1327,7 +1329,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		if ( private_data == NULL ) free_pf8_private_data(geomdata);
 		free_peakfinder_mask(pfmask);
 		free_panel_data(pfdata);
-		return 1;
+		return NULL;
 	}
 
 	for ( i=0 ; i<rstats->n_rad_bins ; i++) {
@@ -1389,10 +1391,11 @@ int peakfinder8(struct image *img, int max_n_peaks,
 		free_peakfinder_mask(pfmask);
 		free_panel_data(pfdata);
 		free_radial_stats(rstats);
-		return 1;
+		return NULL;
 	}
 
 	remaining_max_num_peaks = max_n_peaks;
+	peaks = image_feature_list_new();
 	profile_start("pf8-search");
 	for ( pi=0 ; pi<img->detgeom->n_panels ; pi++) {
 
@@ -1430,8 +1433,9 @@ int peakfinder8(struct image *img, int max_n_peaks,
 			free_peakfinder_mask(pfmask);
 			free_panel_data(pfdata);
 			free_radial_stats(rstats);
+			image_feature_list_free(peaks);
 			profile_end("pf8-search");
-			return 1;
+			return NULL;
 		}
 
 		peaks_to_add = num_found_peaks;
@@ -1454,7 +1458,7 @@ int peakfinder8(struct image *img, int max_n_peaks,
 				}
 			}
 
-			image_add_feature(img->features,
+			image_add_feature(peaks,
 			                  pkdata->com_fs[pki]+0.5,
 			                  pkdata->com_ss[pki]+0.5,
 			                  pi, pkdata->tot_i[pki], NULL);
@@ -1467,5 +1471,5 @@ int peakfinder8(struct image *img, int max_n_peaks,
 	free_panel_data(pfdata);
 	free_radial_stats(rstats);
 	free_peak_data(pkdata);
-	return 0;
+	return peaks;
 }

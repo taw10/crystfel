@@ -54,12 +54,13 @@ struct pf8_private_data *prepare_peakfinder8(struct detgeom *det, int fast_mode)
 
 void free_pf8_private_data(struct pf8_private_data *data);
 
-extern int peakfinder8(struct image *img, int max_n_peaks,
-                       float threshold, float min_snr,
-                       int mix_pix_count, int max_pix_count,
-                       int local_bg_radius, int min_res,
-                       int max_res, int use_saturated,
-                       int fast_mode, struct pf8_private_data *private_data);
+extern ImageFeatureList *peakfinder8(const struct image *img, int max_n_peaks,
+                                     float threshold, float min_snr,
+                                     int mix_pix_count, int max_pix_count,
+                                     int local_bg_radius, int min_res,
+                                     int max_res, int use_saturated,
+                                     int fast_mode,
+                                     struct pf8_private_data *private_data);
 
 #ifdef __cplusplus
 }
