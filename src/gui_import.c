@@ -370,7 +370,11 @@ static int load_multiple_streams(GSList *filenames, struct crystfelproject *proj
 
 	/* Result name based on the first stream in the list */
 	result_name = safe_basename(filenames->data);
-	snprintf(tmp, 127, "%s-et-al", result_name);
+	if ( ctx.n > 1 ) {
+		snprintf(tmp, 127, "%s-et-al", result_name);
+	} else {
+		snprintf(tmp, 127, "%s", result_name);
+	}
 	add_indexing_result(proj, tmp, ctx.filenames, ctx.n);
 	select_result(proj, tmp);
 	free(result_name);
