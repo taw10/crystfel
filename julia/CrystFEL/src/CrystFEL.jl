@@ -82,4 +82,8 @@ include("millepede.jl")
 using .Millepede
 export Mille
 
+include("peaksearch.jl")
+using .PeakSearch
+export zaefpeaks, peakfinder8, peakfinder9
+
 end  # of module
