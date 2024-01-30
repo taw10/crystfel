@@ -1755,7 +1755,7 @@ char *get_matrix_name(const IntegerMatrix *m, int col)
 }
 
 
-static char *name_equiv(const IntegerMatrix *op)
+char *name_equiv(const IntegerMatrix *op)
 {
 	char *h, *k, *l;
 	char *name;
