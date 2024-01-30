@@ -1180,8 +1180,7 @@ const Reflection *next_refl_const(const Reflection *refl, RefListIterator *iter)
 
 		}
 		if ( iter->stack_ptr == 0 ) {
-			free(iter->stack_const);
-			free(iter);
+			free_reflistiterator(iter);
 			return NULL;
 		}
 
@@ -1189,6 +1188,20 @@ const Reflection *next_refl_const(const Reflection *refl, RefListIterator *iter)
 
 	} while ( 1 );
 }
+
+
+void free_reflistiterator(RefListIterator *iter)
+{
+	if ( iter != NULL ) {
+		if ( iter->is_const ) {
+			cffree(iter->stack_const);
+		} else {
+			cffree(iter->stack);
+		}
+		cffree(iter);
+	}
+}
+
 
 /*********************************** Voodoo ***********************************/
 
