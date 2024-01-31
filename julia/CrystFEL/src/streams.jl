@@ -3,7 +3,7 @@ module Streams
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.Images: Image, InternalImage
-export Stream, chunkwrite
+export Stream, chunkwrite, chunkread
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalStream end
@@ -98,10 +98,27 @@ end
 
 
 function chunkwrite(st::Stream, image::Image; peaks=true, reflections=true)
+    st.internalptr == C_NULL && throw(ErrorException("Stream is closed"))
     flags = streamflags(peaks, reflections, false)
     @ccall libcrystfel.stream_write_chunk(st.internalptr::Ptr{InternalStream},
                                           image.internalptr::Ptr{InternalImage},
                                           flags::Cint)::Cvoid
+end
+
+
+function chunkread(st::Stream; peaks=true, reflections=true)
+
+    st.internalptr == C_NULL && throw(ErrorException("Stream is closed"))
+
+    flags = streamflags(peaks, reflections, true)
+    out = @ccall libcrystfel.stream_read_chunk(st.internalptr::Ptr{InternalStream},
+                                               flags::Cint)::Ptr{InternalImage}
+    out == C_NULL && return nothing
+
+    finalizer(Image(out, nothing, [], [])) do x
+        ccall((:image_free, libcrystfel), Cvoid, (Ptr{InternalImage},), x.internalptr)
+    end
+
 end
 
 
