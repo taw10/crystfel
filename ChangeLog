@@ -1,9 +1,19 @@
 Changes in this development version
 -----------------------------------
 
+- New detector geometry refinement system, using Millepede-II
+- New Homebrew formula and better build/test support for Mac OS
 - Removal of CMake build system
 - Removal of pattern_sim and partial_sim
+- get_hkl: Read MTZ files
+- GUI: Add configuration of Slurm reservation and QoS
+- GUI: Put Slurm parameters into script, for easy re-use
+- partialator: Add --unmerged-output
+- compare_hkl: Accept --fom=cchalf as synonym for --fom=cc (and others)
 - Complain more loudly if mask information in geometry file is incomplete
+- indexamajig: Add --cpu-pin
+- indexamajig/list_events: Catch common error "-i input.h5"
+- indexamajig: Add ASAP::O producer (hits-only stream)
 
 
 CrystFEL version 0.10.2, 20 February 2023
