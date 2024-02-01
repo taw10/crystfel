@@ -56,7 +56,7 @@ class Crystfel < Formula
     system bin / 'check_hkl', '--help'
     system bin / 'compare_hkl', '--help'
     system bin / 'crystfel', '--help'
-    system bin / 'detector-shift', '--help'
+    system bin / 'align_detector', '--help'
     system bin / 'get_hkl', '--help'
     system bin / 'indexamajig', '--help'
     system bin / 'list_events', '--help'
