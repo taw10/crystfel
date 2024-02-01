@@ -73,11 +73,6 @@ $ git clone https://gitlab.desy.de/thomas.white/crystfel.git
 $ cd crystfel
 $ brew install -v -s ./crystfel.rb --HEAD
 ```
-Normally, CrystFEL's build system would automatically download and install
-certain dependencies, notably (among others) XGandalf, MTZ output, PinkIndexer
-and PeakFinder9.  However, Homebrew prefers that packages do not do this.
-Therefore, unless you've installed them separately, the CrystFEL installation
-made this way will lack some features.
 
 We hope to contribute the Homebrew formula to the main repository soon, so that
 you can install CrystFEL with a simple `brew install crystfel`.
