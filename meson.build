@@ -279,7 +279,14 @@ subdir('tests')
 
 # ************************ Manual pages ************************
 
-pandoc = find_program('pandoc', required: false)
+pandoc = find_program('pandoc', version: '>=2.0.0', required: false)
+if pandoc.found()
+  mdfmt = 'markdown-smart'
+else
+  pandoc = find_program('pandoc', required: false)
+  mdfmt = 'markdown'
+endif
+
 
 pandoc_pages = ['indexamajig.1.md',
                 'adjust_detector.1.md',
@@ -291,7 +298,7 @@ if pandoc.found()
                   input: join_paths('doc/man', page),
                   output: '@BASENAME@',
                   command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
-                            '-s', '-f', 'markdown-smart', '-t', 'man'],
+                            '-s', '-f', mdfmt, '-t', 'man'],
                   install: true,
                   install_dir: join_paths(get_option('mandir'), 'man1'))
   endforeach
@@ -300,7 +307,7 @@ if pandoc.found()
                 input: 'doc/man/crystfel_geometry.5.md',
                 output: 'crystfel_geometry.5',
                 command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
-                          '-s', '-f', 'markdown-smart', '-t', 'man'],
+                          '-s', '-f', mdfmt, '-t', 'man'],
                 install: true,
                 install_dir: join_paths(get_option('mandir'), 'man5'))
 
