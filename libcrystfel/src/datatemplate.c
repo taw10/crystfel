@@ -2273,8 +2273,8 @@ static int rotate_all_panels(DataTemplate *dtempl,
 }
 
 /**
- * Alters dtempl by rotating the named panel group by ang (degrees) about its
- * center.
+ * Alters dtempl by rotating the named panel group by ang (radians) about the
+ * specified axis (char 'x', 'y' or 'z'), around the center of the group.
  *
  * \returns zero for success, non-zero on error
  */
