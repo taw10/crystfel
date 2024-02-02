@@ -36,6 +36,17 @@ mutable struct UnmergedReflection <: Reflection
 end
 
 
+function RefList{MergedReflection}(sym::SymOpList)
+    out = @ccall libcrystfel.reflist_new()::Ptr{InternalRefList}
+    if out == C_NULL
+        throw(ErrorException("Failed to create RefList"))
+    end
+    finalizer(RefList{MergedReflection}(out, sym)) do x
+        @ccall libcrystfel.reflist_free(x.internalptr::Ptr{InternalRefList})::Cvoid
+    end
+end
+
+
 function Base.iterate(reflist::RefList{T}) where T
 
     rli = Ref{Ptr{InternalRefListIterator}}(C_NULL)
