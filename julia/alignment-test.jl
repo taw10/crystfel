@@ -22,6 +22,7 @@ function simulate_and_index(cell, image_true, dtempl_moved, mille, n)
 
     indexer = Indexer("asdf", dtempl_moved, cell, retry=false, multilattice=false, refine=true)
 
+    nidx = 0
     for i in 1:n
 
         # Create a diffraction pattern for a random orientation
@@ -37,6 +38,10 @@ function simulate_and_index(cell, image_true, dtempl_moved, mille, n)
         # based on the incorrect geometry
         index(image_moved, indexer, mille=mille)
 
+        if image_moved.n_crystals > 0
+            nidx += 1
+        end
+
         if i % 100 == 0
             print("*")
         else
@@ -45,6 +50,8 @@ function simulate_and_index(cell, image_true, dtempl_moved, mille, n)
 
     end
     println("")
+
+    println("Indexed ", nidx, " out of ", n, " frames")
 
 end
 
