@@ -90,7 +90,7 @@ end
 Modifies `DataTemplate` by moving the specified panel group by the specified
 amount (in metres).
 
-Corresponds to CrystFEL C API function `data_template_translate_group`.
+Corresponds to CrystFEL C API function `data_template_translate_group_m`.
 """
 function translategroup!(dtempl::DataTemplate, groupname, xshift, yshift, zshift)
     r = @ccall libcrystfel.data_template_translate_group_m(dtempl.internalptr::Ptr{InternalDataTemplate},
