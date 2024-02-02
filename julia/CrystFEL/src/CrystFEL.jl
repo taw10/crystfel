@@ -46,7 +46,8 @@ export SymOpList, asymmetricindices
 
 include("datatemplates.jl")
 using .DataTemplates
-export DataTemplate, loaddatatemplate, wavelength, cameralength, translategroup!
+export DataTemplate, loaddatatemplate, wavelength, cameralength
+export translategroup!, rotategroup!
 
 include("peaklist.jl")
 using .PeakLists

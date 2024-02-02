@@ -3,7 +3,7 @@ module DataTemplates
 import ..CrystFEL: libcrystfel
 export DataTemplate, InternalDataTemplate, loaddatatemplate
 export wavelength, cameralength
-export translategroup!
+export translategroup!, rotategroup!
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalDataTemplate end
@@ -104,5 +104,24 @@ function translategroup!(dtempl::DataTemplate, groupname, xshift, yshift, zshift
 
 end
 
+
+"""
+    rotategroup!(datatemplate, groupname, angle, axis)
+
+Modifies `DataTemplate` by rotating the specified panel group by the specified
+amount (in degrees) about the specified xaxis (:x, :y or :z).
+
+Corresponds to CrystFEL C API function `data_template_rotate_group`.
+"""
+function rotategroup!(dtempl::DataTemplate, groupname, angle, axis)
+    r = @ccall libcrystfel.data_template_rotate_group(dtempl.internalptr::Ptr{InternalDataTemplate},
+                                                      groupname::Cstring,
+                                                      deg2rad(angle)::Cdouble,
+                                                      String(axis)[1]::Cchar)::Cint
+    if r != 0
+        throw(ErrorException("Failed to rotate DataTemplate"))
+    end
+
+end
 
 end  # of module
