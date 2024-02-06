@@ -31,8 +31,6 @@ class Crystfel < Formula
   depends_on 'libtiff'
   depends_on 'pango'
   depends_on 'eigen'
-  depends_on 'numpy'
-  depends_on 'python'
 
   def install
       args = std_meson_args
@@ -63,7 +61,6 @@ class Crystfel < Formula
     system bin / 'list_events', '--help'
     system bin / 'make_pixelmap', '--help'
     system bin / 'partialator', '--help'
-    system bin / 'peakogram-stream', '--help'
     system bin / 'process_hkl', '--help'
     system bin / 'render_hkl', '--help'
     system bin / 'whirligig', '--help'
