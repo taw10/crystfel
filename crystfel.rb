@@ -31,6 +31,7 @@ class Crystfel < Formula
   depends_on 'libtiff'
   depends_on 'pango'
   depends_on 'eigen'
+  depends_on 'numpy'
 
   def install
       args = std_meson_args
