@@ -1183,6 +1183,20 @@ int main(int argc, char *argv[])
 		{0}
 	};
 
+	#if defined(__APPLE__)
+	int q;
+	for ( q=0; q<argc; q++ ) {
+		if ( strcmp(argv[q], "--help") == 0 ) {
+			fprintf(stderr, "\n"
+			        "WARNING: 'indexamajig --help' crashes on some Mac OS versions.\n"
+			        "This is a known problem, and is due to a bug in external library "
+			        "code.\n\n");
+			fflush(stderr);
+			break;
+		}
+	}
+	#endif
+
 	static struct argp argp = { options, parse_arg, NULL, doc,
 	                            argp_children, NULL, NULL };
 	if ( argp_parse(&argp, argc, argv, 0, NULL, &args) ) return 1;

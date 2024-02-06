@@ -58,7 +58,6 @@ class Crystfel < Formula
     system bin / 'crystfel', '--help'
     system bin / 'align_detector', '--help'
     system bin / 'get_hkl', '--help'
-    system bin / 'indexamajig', '--help'
     system bin / 'list_events', '--help'
     system bin / 'make_pixelmap', '--help'
     system bin / 'partialator', '--help'
@@ -66,5 +65,6 @@ class Crystfel < Formula
     system bin / 'process_hkl', '--help'
     system bin / 'render_hkl', '--help'
     system bin / 'whirligig', '--help'
+    # indexamajig --help crashes on MacOS due to argp-standalone bug
   end
 end
