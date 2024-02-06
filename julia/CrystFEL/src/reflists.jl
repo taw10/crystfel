@@ -3,7 +3,7 @@ module RefLists
 using Printf
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.Symmetry: SymOpList, InternalSymOpList, symmetry_name
-export RefList, loadreflist
+export RefList, loadreflist, savereflist!
 export Reflection, UnmergedReflection, MergedReflection
 export InternalRefList
 
@@ -119,6 +119,19 @@ function loadreflist(filename::AbstractString)
 
     symmetryname = unsafe_string(psym[])
     return RefList{MergedReflection}(out, SymOpList(symmetryname))
+
+end
+
+
+function savereflist!(reflist::RefList{MergedReflection}, filename::AbstractString)
+
+    r = @ccall libcrystfel.write_reflist_2(filename::Cstring,
+                                           reflist.internalptr::Ptr{InternalRefList},
+                                           reflist.symmetry.internalptr::Ptr{InternalSymOpList})::Cint
+
+    if r != 0
+        throw(ErrorException("Failed to save reflection list"))
+    end
 
 end
 

@@ -55,7 +55,7 @@ export PeakList
 
 include("reflists.jl")
 using .RefLists
-export RefList, loadreflist
+export RefList, loadreflist, savereflist!
 export Reflection, MergedReflection, UnmergedReflection
 
 include("crystal.jl")
