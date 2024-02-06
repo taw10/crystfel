@@ -150,7 +150,6 @@ build-brew-macos:
   script:
     - brew update
     - brew upgrade
-    - brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson ninja python python-tk
     - brew uninstall -v -f crystfel
     - brew install -v -s ./crystfel.rb --HEAD
     - brew test crystfel
