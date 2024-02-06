@@ -32,6 +32,7 @@ class Crystfel < Formula
   depends_on 'pango'
   depends_on 'eigen'
   depends_on 'numpy'
+  depends_on 'python@3.x'
 
   def install
       args = std_meson_args
