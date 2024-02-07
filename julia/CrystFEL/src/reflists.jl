@@ -108,6 +108,21 @@ function Base.getindex(reflist::RefList{T}, indices) where T
 end
 
 
+function Base.push!(reflist::RefList{T}, indices) where T
+
+    refl = @ccall libcrystfel.add_refl(reflist.internalptr::Ptr{InternalRefList},
+                                       indices[1]::Cint,
+                                       indices[2]::Cint,
+                                       indices[3]::Cint)::Ptr{InternalReflection}
+
+    if refl == C_NULL
+        return nothing
+    else
+        return T(refl)
+    end
+end
+
+
 function loadreflist(filename::AbstractString)
 
     psym = Ref{Cstring}()
