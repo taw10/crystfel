@@ -93,11 +93,12 @@ Base.length(reflist::RefList) = ccall((:num_reflections, libcrystfel),
                                       Cint, (Ptr{InternalRefList},), reflist.internalptr)
 
 
-function Base.getindex(reflist::RefList{T}, h, k, l) where T
+function Base.getindex(reflist::RefList{T}, indices) where T
 
-    refl = ccall((:find_refl, libcrystfel),
-                 Ptr{InternalReflection}, (Ptr{InternalRefList},Cint,Cint,Cint),
-                 reflist.internalptr, h, k, l)
+    refl = @ccall libcrystfel.find_refl(reflist.internalptr::Ptr{InternalRefList},
+                                        indices[1]::Cint,
+                                        indices[2]::Cint,
+                                        indices[3]::Cint)::Ptr{InternalReflection}
 
     if refl == C_NULL
         return nothing

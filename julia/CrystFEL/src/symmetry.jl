@@ -100,12 +100,12 @@ function Base.iterate(sym::SymOpList, i)
 end
 
 
-function asymmetricindices(sym::SymOpList, h, k, l)
+function asymmetricindices(sym::SymOpList, indices)
     ho = Ref{Cint}(0)
     ko = Ref{Cint}(0)
     lo = Ref{Cint}(0)
     @ccall libcrystfel.get_asymm(sym.internalptr::Ptr{InternalSymOpList},
-                                 h::Cint, k::Cint, l::Cint,
+                                 indices[1]::Cint, indices[2]::Cint, indices[3]::Cint,
                                  ho::Ref{Cint}, ko::Ref{Cint}, lo::Ref{Cint})::Cvoid
     (ho[], ko[], lo[])
 end
