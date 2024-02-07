@@ -3,7 +3,7 @@ module Streams
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.Images: Image, InternalImage
-export Stream, chunkwrite, chunkread
+export Stream, chunkwrite, chunkread, allcrystals
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalStream end
@@ -119,6 +119,19 @@ function chunkread(st::Stream; peaks=true, reflections=true)
         ccall((:image_free, libcrystfel), Cvoid, (Ptr{InternalImage},), x.internalptr)
     end
 
+end
+
+
+function allcrystals(st)
+    Channel() do ch
+        while true
+            image = chunkread(st)
+            image === nothing && break
+            for cr in image.crystals
+                put!(ch, (cr.crystal, cr.reflections))
+            end
+        end
+    end
 end
 
 
