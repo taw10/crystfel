@@ -242,6 +242,9 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 		asapo_free_handle(&err);
 		asapo_free_handle(&meta);
 		asapo_free_handle(&data);
+		if ( asapo_error_get_type(err) == kWrongInput ) {
+			*pfinished = 1;
+		}
 		return NULL;
 	}
 
