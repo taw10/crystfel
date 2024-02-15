@@ -59,15 +59,18 @@ static int run_align(const char *input_name, int level, int out_of_plane,
 	GSubprocess *sp;
 	struct gui_indexing_result *res;
 	GError *error;
-	const char *cmdline[16];
+	const char *cmdline[1024];
+	char *freeme[1024];
+	int nfree = 0;
 	char level_str[64];
 	GFile *gstream;
 	GFile *gworkdir;
 	GFile *ggeom;
-	GFile *gmilledir;
 	char *input_geom;
 	int i;
-	char *mille_dir;
+	int ncmd = 0;
+	int mdstart;
+	GFileEnumerator *fenum;
 
 	res = find_indexing_result_by_name(proj, input_name);
 	if ( res == NULL ) {
@@ -84,15 +87,6 @@ static int run_align(const char *input_name, int level, int out_of_plane,
 	gworkdir = g_file_get_parent(gstream);
 	g_object_unref(gstream);
 
-	/* Look for Millepede files */
-	gmilledir = g_file_get_child(gworkdir, "mille-data");
-	if ( !g_file_query_exists(gmilledir, NULL) ) {
-		ERROR("No detector alignment data found for indexing run '%s'\n", input_name);
-		return 1;
-	}
-	mille_dir = g_file_get_path(gmilledir);
-	g_object_unref(gmilledir);
-
 	/* Input geometry file */
 	ggeom = g_file_get_child(gworkdir, "detector.geom");
 	input_geom = g_file_get_path(ggeom);
@@ -100,21 +94,53 @@ static int run_align(const char *input_name, int level, int out_of_plane,
 
 	/* Build command line */
 	snprintf(level_str, 63, "%i", level);
-	cmdline[0] = "align_detector";
-	cmdline[1] = "-g";
-	cmdline[2] = input_geom;
-	cmdline[3] = "--level";
-	cmdline[4] = level_str;
-	cmdline[5] = "-o";
-	cmdline[6] = out_geom;
+	cmdline[ncmd++] = "align_detector";
+	cmdline[ncmd++] = "-g";
+	cmdline[ncmd++] = input_geom;
+	cmdline[ncmd++] = "--level";
+	cmdline[ncmd++] = level_str;
+	cmdline[ncmd++] = "-o";
+	cmdline[ncmd++] = out_geom;
 	if ( out_of_plane ) {
-		cmdline[7] = "--out-of-plane";
-		cmdline[8] = mille_dir;
-		cmdline[9] = NULL;
-	} else {
-		cmdline[7] = mille_dir;
-		cmdline[8] = NULL;
+		cmdline[ncmd++] = "--out-of-plane";
 	}
+	mdstart = ncmd;
+
+	/* Look for Millepede files */
+	error = NULL;
+	fenum = g_file_enumerate_children(gworkdir,
+	                                  G_FILE_ATTRIBUTE_STANDARD_NAME,
+	                                  G_FILE_QUERY_INFO_NONE,
+	                                  NULL, &error);
+	if ( fenum == NULL ) {
+		ERROR("Failed to search alignment data\n");
+		return 1;
+	}
+
+	while ( 1 ) {
+		GFileInfo *finfo;
+		const char *n;
+		if ( !g_file_enumerator_iterate(fenum, &finfo, NULL, NULL, &error) ) goto out;
+		if ( !finfo ) break;
+		if ( ncmd >= 1023 ) {
+			ERROR("Too many Millepede directories!  Run align_detector manually.\n");
+			return 1;
+		}
+		n = g_file_info_get_name(finfo);
+		if ( strncmp(n, "mille-data", 10) != 0 ) continue;
+		char *ffs = relative_to_cwd(gworkdir, n);
+		cmdline[ncmd++] = ffs;
+		freeme[nfree++] = ffs;
+	}
+out:
+	g_object_unref(fenum);
+
+	if ( ncmd == mdstart ) {
+		ERROR("No detector alignment data found for indexing run '%s'\n", input_name);
+		return 1;
+	}
+
+	cmdline[ncmd++] = NULL;
 
 	STATUS("Running program: ");
 	i = 0;
@@ -131,8 +157,10 @@ static int run_align(const char *input_name, int level, int out_of_plane,
 		return 1;
 	}
 
+	for ( i=0; i<nfree; i++ ) {
+		g_free(freeme[i]);
+	}
 	g_object_unref(gworkdir);
-	g_free(mille_dir);
 	g_free(input_geom);
 
 	return 0;
