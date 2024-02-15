@@ -843,7 +843,7 @@ static void *run_indexing(const char *job_title,
 	stdout_rel_filename = relative_to_cwd(workdir, "stdout-%a.log");
 	stderr_rel_filename = relative_to_cwd(workdir, "stderr-%a.log");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
-	mille_rel_filename = relative_to_cwd(workdir, "mille-data");
+	mille_rel_filename = relative_to_cwd(workdir, "mille-data-${SLURM_ARRAY_TASK_ID}");
 
 	slurm_prologue = sbatch_bits(&opts->common, job_title, array_inx,
 	                             stdout_rel_filename, stderr_rel_filename);
