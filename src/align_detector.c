@@ -420,6 +420,7 @@ int main(int argc, char *argv[])
 	if ( make_zero_sum(fh, groups, n_groups, "all", level, out_of_plane) ) return 1;
 
 	fprintf(fh, "method inversion 5 0.1\n");
+	fprintf(fh, "closeandreopen\n");
 	fprintf(fh, "end\n");
 	fclose(fh);
 
