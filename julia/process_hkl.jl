@@ -9,10 +9,7 @@ for (cr,reflections) in allcrystals(st)
     for refl in reflections
 
         indices = asymmetricindices(sym, refl.indices)
-        model_version = merged[indices]
-        if model_version === nothing
-            model_version = push!(merged, indices)
-        end
+        model_version = get!(merged, indices)
 
         w = 1.0
         mean = model_version.intensity
