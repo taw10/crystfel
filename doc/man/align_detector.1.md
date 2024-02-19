@@ -31,7 +31,9 @@ Next, run **indexamajig** as usual, but with option **--mille**.  This will
 produce several files named **mille-data-0.bin**, **mille-data-1.bin**,
 **mille-data-2.bin** and so on - as many files as there were indexamajig
 subprocesses (set with **indexamajig -j**).  Use option **--mille-dir** to
-put these files in a useful location.
+put these files in a useful location.  If you are splitting the indexamajig
+processing across a cluster, be aware that each sub-task needs to have its
+own directory for **--mille-dir**.  See scripts/turbo-index-slurm for details.
 
 Finally, run **align_detector**, giving it the input geometry file, the "Mille"
 files, a refinement level and a filename for the updated geometry file.  The

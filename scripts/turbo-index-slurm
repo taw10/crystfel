@@ -81,6 +81,8 @@ for FILE in split-events-${RUN}.lst*; do
     command="indexamajig -i $FILE -o $STREAMDIR/$STREAM --serial-start=$POS"
     command="$command -j \`nproc\` -g $GEOM"
     #command="$command --peaks=zaef"  # Indexing parameters here
+    # Note: if using --mille, each indexamajig job needs its own directory:
+    # --mille-dir=mille-data-{$NUMBER}
 
     echo $command >> $SLURMFILE
 
