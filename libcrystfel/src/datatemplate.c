@@ -390,8 +390,8 @@ static int dir_conv(const char *a, double *sx, double *sy, double *sz)
 }
 
 
-int set_dim(struct panel_template *panel, int dimension,
-            const char *val)
+static int set_dim(struct panel_template *panel, int dimension,
+                   const char *val, int def)
 {
 	if ( dimension >= MAX_DIMS ) {
 		ERROR("Too many dimensions!\n");
@@ -400,10 +400,13 @@ int set_dim(struct panel_template *panel, int dimension,
 
 	if ( strcmp(val, "fs") == 0 ) {
 		panel->dims[dimension] = DIM_FS;
+		panel->dims_default[dimension] = def;
 	} else if ( strcmp(val, "ss") == 0 ) {
 		panel->dims[dimension] = DIM_SS;
+		panel->dims_default[dimension] = def;
 	} else if ( strcmp(val, "%") == 0 ) {
 		panel->dims[dimension] = DIM_PLACEHOLDER;
+		panel->dims_default[dimension] = def;
 	} else {
 		char *endptr;
 		unsigned long int fix_val = strtoul(val, &endptr, 10);
@@ -412,6 +415,7 @@ int set_dim(struct panel_template *panel, int dimension,
 			return 1;
 		} else {
 			panel->dims[dimension] = fix_val;
+			panel->dims_default[dimension] = def;
 		}
 	}
 	return 0;
@@ -623,7 +627,7 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 				ERROR("Invalid dimension number %s\n",
 				      key+3);
 			} else {
-				if ( set_dim(panel, dim_entry, val) ) {
+				if ( set_dim(panel, dim_entry, val, def) ) {
 					ERROR("Failed to set dim structure entry\n");
 				}
 			}
