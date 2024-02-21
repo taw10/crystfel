@@ -55,7 +55,7 @@ function Base.iterate(reflist::RefList{T}) where T
                  reflist.internalptr, rli)
 
     if refl == C_NULL
-        throw(ArgumentError("Failed to find first reflection in list"))
+        return nothing   # no reflections!
     end
 
     iter = RefListIterator(refl,rli[])
