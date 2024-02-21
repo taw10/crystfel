@@ -1,38 +1,46 @@
 using CrystFEL
 
-st = Stream("input.stream", "r")
-sym = SymOpList("2/m_uab")
-merged = RefList{MergedReflection}(sym)
 
-for (cr,reflections) in allcrystals(st)
+function mergereflections(correction, crystalrefls, sym)
 
-    for refl in reflections
+    merged = RefList{MergedReflection}(sym)
 
-        indices = asymmetricindices(sym, refl.indices)
-        model_version = get!(merged, indices)
+    for (cr,reflections) in crystalrefls
 
-        w = 1.0
-        mean = model_version.intensity
-        sumweight = model_version.temp1
-        M2 = model_version.temp2
-        temp = w + sumweight
-        delta = refl.intensity - mean
-        R = delta * w / temp
-        model_version.intensity = mean + R
-        model_version.temp1 = temp
-        model_version.temp2 = M2 + sumweight * delta * R
-        model_version.nmeasurements += 1
+        for refl in reflections
 
+            indices = asymmetricindices(sym, refl.indices)
+            model_version = get!(merged, indices)
+
+            w = 1.0
+            mean = model_version.intensity
+            sumweight = model_version.temp1
+            M2 = model_version.temp2
+            temp = w + sumweight
+            delta = correction(refl.intensity, cr) - mean
+            R = delta * w / temp
+            model_version.intensity = mean + R
+            model_version.temp1 = temp
+            model_version.temp2 = M2 + sumweight * delta * R
+            model_version.nmeasurements += 1
+
+        end
     end
+
+    for refl in merged
+        if refl.nmeasurements > 1
+            refl.sigintensity = sqrt(refl.temp2/refl.temp1)/sqrt(refl.nmeasurements)
+        else
+            refl.nmeasurements = 0
+        end
+    end
+
+    return merged
 
 end
 
-for refl in merged
-    if refl.nmeasurements > 1
-        refl.sigintensity = sqrt(refl.temp2/refl.temp1)/sqrt(refl.nmeasurements)
-    else
-        refl.nmeasurements = 0
-    end
-end
 
-savereflist!(merged, "merged.hkl")
+let st = Stream("input.stream", "r")
+    merged = mergereflections((i,cr)->i, allcrystals(st), SymOpList("2/m_uab"))
+    savereflist!(merged, "merged.hkl")
+end
