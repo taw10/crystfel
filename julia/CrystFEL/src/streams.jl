@@ -106,11 +106,11 @@ function chunkwrite(st::Stream, image::Image; peaks=true, reflections=true)
 end
 
 
-function chunkread(st::Stream; peaks=true, reflections=true)
+function chunkread(st::Stream; peaks=true, reflections=true, datageom=true)
 
     st.internalptr == C_NULL && throw(ErrorException("Stream is closed"))
 
-    flags = streamflags(peaks, reflections, true)
+    flags = streamflags(peaks, reflections, datageom)
     out = @ccall libcrystfel.stream_read_chunk(st.internalptr::Ptr{InternalStream},
                                                flags::Cint)::Ptr{InternalImage}
     out == C_NULL && return nothing
@@ -125,7 +125,7 @@ end
 function allcrystals(st)
     Channel() do ch
         while true
-            image = chunkread(st)
+            image = chunkread(st, peaks=false, reflections=true, datageom=false)
             image === nothing && break
             for cr in image.crystals
                 put!(ch, (cr.crystal, cr.reflections))
