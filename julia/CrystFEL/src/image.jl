@@ -86,11 +86,16 @@ function makecrystallist(image, listptr, n)
         else
             reflist = RefList{UnmergedReflection}(pairptr.reflist, SymOpList("1"))
             pairptr.owns_reflist = 0
+            finalizer(reflist) do x
+                @ccall libcrystfel.reflist_free(x.internalptr::Ptr{InternalRefList})::Cvoid
+            end
         end
         push!(crystals, (crystal=cr, reflections=reflist))
         pairptr.owns_crystal = 0
         unsafe_store!(listptr, pairptr, i)
-        # We are now responsible for freeing the Crystal and RefList
+        finalizer(cr) do x
+            @ccall libcrystfel.crystal_free(x.internalptr::Ptr{InternalCrystal})::Cvoid
+        end
     end
 
     image.crystals = map(x->x.crystal, crystals)
