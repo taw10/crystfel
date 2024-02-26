@@ -230,7 +230,7 @@ function indices(refl::Reflection)
     ccall((:get_indices, libcrystfel),
           Cint, (Ptr{InternalReflection},Ref{Cint},Ref{Cint},Ref{Cint}),
           refl.internalptr, h, k, l)
-    (h[], k[], l[])
+    [h[], k[], l[]]
 end
 
 
@@ -241,7 +241,7 @@ function symmetricindices(refl::Reflection)
     ccall((:get_symmetric_indices, libcrystfel),
           Cint, (Ptr{InternalReflection},Ref{Cint},Ref{Cint},Ref{Cint}),
           refl.internalptr, h, k, l)
-    (h[], k[], l[])
+    [h[], k[], l[]]
 end
 
 
