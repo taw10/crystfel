@@ -291,17 +291,95 @@ function getcellparams(cell)
 end
 
 
+# Returns the direct-space basis vectors as a Julia matrix
+# See matrix-notation.pdf for information.  This returns an "M-matrix".
+function directcartesianmatrix(uc)
+    ax = Ref{Cdouble}(0)
+    ay = Ref{Cdouble}(0)
+    az = Ref{Cdouble}(0)
+    bx = Ref{Cdouble}(0)
+    by = Ref{Cdouble}(0)
+    bz = Ref{Cdouble}(0)
+    cx = Ref{Cdouble}(0)
+    cy = Ref{Cdouble}(0)
+    cz = Ref{Cdouble}(0)
+    out = @ccall libcrystfel.cell_get_cartesian(uc.internalptr::Ptr{InternalUnitCell},
+                                                ax::Ref{Cdouble}, ay::Ref{Cdouble}, az::Ref{Cdouble},
+                                                bx::Ref{Cdouble}, by::Ref{Cdouble}, bz::Ref{Cdouble},
+                                                cx::Ref{Cdouble}, cy::Ref{Cdouble}, cz::Ref{Cdouble})::Cint
+    if out != 0
+        throw(ErrorException("Failed to convert cell parameters"))
+    end
+    return [ax[] bx[] cx[]; ay[] by[] cy[]; az[] bz[] cz[]]
+end
+
+
+# Returns the reciprocal-space basis vectors as a Julia matrix
+# See matrix-notation.pdf for information.  This returns an "R-matrix".
+function reciprocalcartesianmatrix(uc)
+    ax = Ref{Cdouble}(0)
+    ay = Ref{Cdouble}(0)
+    az = Ref{Cdouble}(0)
+    bx = Ref{Cdouble}(0)
+    by = Ref{Cdouble}(0)
+    bz = Ref{Cdouble}(0)
+    cx = Ref{Cdouble}(0)
+    cy = Ref{Cdouble}(0)
+    cz = Ref{Cdouble}(0)
+    out = @ccall libcrystfel.cell_get_reciprocal(uc.internalptr::Ptr{InternalUnitCell},
+                                                 ax::Ref{Cdouble}, ay::Ref{Cdouble}, az::Ref{Cdouble},
+                                                 bx::Ref{Cdouble}, by::Ref{Cdouble}, bz::Ref{Cdouble},
+                                                 cx::Ref{Cdouble}, cy::Ref{Cdouble}, cz::Ref{Cdouble})::Cint
+    if out != 0
+        throw(ErrorException("Failed to convert cell parameters"))
+    end
+    return [ax[] ay[] az[]; bx[] by[] bz[]; cx[] cy[] cz[]]
+end
+
+
+function Base.propertynames(uc::UnitCell; private=false)
+    (:a, :b, :c, :α, :β, :γ, :latticetype, :cellparams,
+     :directcartesian, :reciprocalcartesian,
+     :internalptr)
+end
+
+
+function Base.getproperty(uc::UnitCell, name::Symbol)
+    if name === :internalptr
+        getfield(uc, :internalptr)
+    elseif name === :cellparams
+        return getcellparams(uc)
+    elseif name === :latticetype
+        return getlatticetype(uc)
+    elseif name === :a
+        return getcellparams(uc).a
+    elseif name === :b
+        return getcellparams(uc).b
+    elseif name === :c
+        return getcellparams(uc).c
+    elseif name === :α
+        return getcellparams(uc).α
+    elseif name === :β
+        return getcellparams(uc).β
+    elseif name === :γ
+        return getcellparams(uc).γ
+    elseif name === :directcartesian
+        return directcartesianmatrix(uc)
+    elseif name === :reciprocalcartesian
+        return reciprocalcartesianmatrix(uc)
+    end
+end
+
+
 function Base.show(io::IO, uc::UnitCell)
     write(io, "UnitCell(")
-    lt,cen,ua = getlatticetype(uc)
+    lt,cen,ua = uc.latticetype
     show(io, lt); write(io, ", ")
     show(io, cen); write(io, ", ")
     show(io, ua); write(io, ",\n         ")
-    let cp = getcellparams(uc)
-        @printf(io, "%.3f Å, %.3f Å, %.3f Å, %.3f°, %.3f°, %.3f°",
-                cp.a*1e10, cp.b*1e10, cp.c*1e10,
-                rad2deg(cp.α), rad2deg(cp.β), rad2deg(cp.γ))
-    end
+    @printf(io, "%.3f Å, %.3f Å, %.3f Å, %.3f°, %.3f°, %.3f°",
+            uc.a*1e10, uc.b*1e10, uc.c*1e10,
+            rad2deg(uc.α), rad2deg(uc.β), rad2deg(uc.γ))
     write(io, ")")
 end
 
