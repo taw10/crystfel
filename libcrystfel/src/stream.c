@@ -199,7 +199,7 @@ static int write_peaks(const struct image *image,
 }
 
 
-static RefList *read_stream_reflections_2_3(Stream *st)
+static RefList *read_stream_reflections_2_3(Stream *st, double kpred)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -267,6 +267,7 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 			set_mean_bg(refl, bg);
 			set_redundancy(refl, 1);
 			set_symmetric_indices(refl, h, k, l);
+			set_kpred(refl, kpred);
 		}
 
 	} while ( rval != NULL );
@@ -657,7 +658,7 @@ static void read_crystal(Stream *st, struct image *image,
 		if ( (strcmp(line, STREAM_REFLECTION_START_MARKER) == 0)
 		  && (srf & STREAM_REFLECTIONS) )
 		{
-			reflist = read_stream_reflections_2_3(st);
+			reflist = read_stream_reflections_2_3(st, 1.0/image->lambda);
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				ERROR("Filename = %s\n", image->filename);
