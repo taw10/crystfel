@@ -1,8 +1,11 @@
 module MergeUtils
 
+import ..CrystFEL: libcrystfel
 using ..CrystFEL.RefLists
 using ..CrystFEL.Symmetry
+import ..CrystFEL.UnitCells: InternalUnitCell
 export @addmeasurement, cstddev, mergereflections
+
 
 macro addmeasurement(measurement, weight,
                      mean, sumweight, wksp)
@@ -19,11 +22,27 @@ end
 cstddev(nmeas, work1, work2) = sqrt(work2/work1)/sqrt(nmeas)
 
 
+struct Polarisation
+    fraction::Cdouble
+    angle::Cdouble
+    disable::Cint
+end
+
+function polarisation_correction!(reflist, cell, polfrac, polangle)
+    pol = Polarisation(polfrac, rad2deg(polangle), 0)
+    @ccall libcrystfel.polarisation_correction(reflist.internalptr::Ptr{InternalRefList},
+                                               cell.internalptr::Ptr{InternalUnitCell},
+                                               pol::Ref{Polarisation})::Cvoid
+end
+
+
 function mergereflections(correction, crystalrefls, sym)
 
     merged = RefList{MergedReflection}(sym)
 
     for (cr,reflections) in crystalrefls
+
+        polarisation_correction!(reflections, cr.cell, 1.0, 0.0)
 
         for refl in reflections
 
@@ -52,6 +71,8 @@ function mergereflections(correction, crystalrefls, sym)
     return merged
 
 end
+
+mergereflections(crystalrefls, sym) = mergereflections((refl,cr)->refl.intensity, crystalrefls, sym)
 
 
 end  # of module
