@@ -87,4 +87,8 @@ include("peaksearch.jl")
 using .PeakSearch
 export zaefpeaks, peakfinder8, peakfinder9
 
+include("mergeutils.jl")
+using .MergeUtils
+export @addmeasurement, cstddev, mergereflections
+
 end  # of module
