@@ -277,6 +277,8 @@ static void send_callback(void *a, AsapoRequestCallbackPayloadHandle payload,
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("ASAP::O send error", err);
 	}
+
+	free(a);
 }
 
 
@@ -314,6 +316,11 @@ static void send_real(struct im_asapo *a, struct image *image)
 		return;
 	}
 
+	/* Blank out the data block pointer, to avoid it being freed by
+	 * image_free shortly after we return.  Instead, it will be freed
+	 * by send_callback. */
+	image->data_block = NULL;
+
 	asapo_free_handle(&header);
 	asapo_free_handle(&err);
 }
@@ -324,6 +331,7 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
 	AsapoMessageHeaderHandle header;
 	AsapoErrorHandle err;
 	char filename[1024];
+	char *dummy;
 
 	snprintf(filename, 1024, "processed/%s_hits/%s-%i.placeholder",
 	         a->stream, a->stream, image->serial);
@@ -340,8 +348,9 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
                                              0,
                                              0);  /* Auto ID */
 
+	dummy = strdup("SKIPPED");
 	err = asapo_new_handle();
-	asapo_producer_send(a->producer, header, "SKIPPED",
+	asapo_producer_send(a->producer, header, dummy,
 	                    kTransferData | kStoreInDatabase, a->stream,
 	                    send_callback, &err);
 	if ( asapo_is_error(err) ) {
