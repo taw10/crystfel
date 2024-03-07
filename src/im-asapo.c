@@ -299,7 +299,9 @@ static void send_real(struct im_asapo *a, struct image *image)
 
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
-	STATUS("sent %s at %lli . %lli\n", filename, tv.tv_sec, tv.tv_usec);
+	STATUS("sent %s (%p, %lli bytes) at %lli . %lli\n", filename,
+	       image->data_block, image->data_block_size,
+	       tv.tv_sec, tv.tv_usec);
 
 	err = asapo_new_handle();
 	asapo_producer_send(a->producer, header, image->data_block,
