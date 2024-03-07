@@ -340,7 +340,7 @@ static void send_placeholder(struct im_asapo *a, struct image *image)
 
 	err = asapo_new_handle();
 	asapo_producer_send(a->producer, header, "SKIPPED",
-	                    kDefaultIngestMode, a->stream,
+	                    kTransferData | kStoreInDatabase, a->stream,
 	                    send_callback, &err);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Couldn't send ASAP::O message", err);
