@@ -1,5 +1,5 @@
-Changes in this development version
------------------------------------
+CrystFEL version 0.11.0, 17 April 2024
+--------------------------------------
 
 - New detector geometry refinement system, using Millepede-II
 - New Homebrew formula and better build/test support for Mac OS

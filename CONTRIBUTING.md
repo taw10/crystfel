@@ -13,8 +13,8 @@ The easiest way to ensure the future of CrystFEL is to use it and cite it in you
 
 You can also cite CrystFEL directly using one of the following DOIs:
 
-* All versions: [10.5281/zenodo.8183384](https://zenodo.org/record/8183384).
-* Version 0.10.2: [10.5281/zenodo.8183385](https://zenodo.org/record/8183385).
+* All versions: [10.5281/zenodo.8183384](https://doi.org/10.5281/zenodo.8183384).
+* This version (0.11.0): [10.5281/zenodo.10984700](https://10.5281/zenodo.10984700).
 
 
 Getting started
