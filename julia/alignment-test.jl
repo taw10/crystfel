@@ -68,7 +68,10 @@ end
 
 
 function ploth(a, n, offs, label)
-    histogram(map(x->x.residual,filter(x->in(n, keys(x.globalgradients)), a[offs:3:end])), label=label)
+    histogram(map(x->x.residual/x.esd,
+                  filter(x->in(n, keys(x.globalgradients)),
+                         a[offs:3:end])),
+              label=label)
 end
 
 
