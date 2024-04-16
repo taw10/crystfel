@@ -106,9 +106,13 @@
 
 * Philipp Middendorf <philipp.middendorf@desy.de>
   Gitlab continuous integration
+  General bug fixes
 
 * Nicholas Devenish <ndevenish@gmail.com>
   Build system bug fixing
 
 * Silvan Schön <silvan.schoen@cfel.de>
   Container images and CI
+
+* Parthasarathy Tirumalai <parthasarathy.tirumalai@desy.de>
+  Deployment, CI, MacOS testing
