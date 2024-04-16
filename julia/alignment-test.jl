@@ -10,7 +10,7 @@ function sketch_pattern(image, cr)
     for refl in reflist
         if randn() > 0
             let dpos = refl.detectorposition
-                push!(peaklist, dpos.fs, dpos.ss, dpos.panelnumber, 100.0)
+                push!(peaklist, round(dpos.fs), round(dpos.ss), dpos.panelnumber, 100.0)
             end
         end
     end
