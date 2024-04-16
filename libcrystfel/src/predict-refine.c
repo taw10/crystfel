@@ -46,7 +46,7 @@
 /** \file predict-refine.h */
 
 /* Weighting of excitation error term (m^-1) compared to position term (pixels) */
-#define EXC_WEIGHT (0.5e-7)
+#define EXC_WEIGHT (1.0e-7)
 
 
 double r_dev(struct reflpeak *rp)
