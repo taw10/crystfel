@@ -1,10 +1,8 @@
 Installation instructions
 =========================
 
-CrystFEL installation is easiest on GNU/Linux.  Installation on Mac OS X is
-supported, but more difficult because you have to get all the dependencies
-from a third-party repository.  Installation in Windows via
-[Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/)
+CrystFEL installation is supported on GNU/Linux and Mac OS X.  Installation in
+Windows via [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/)
 is also possible.
 
 
@@ -16,11 +14,11 @@ to find out if there's already a CrystFEL installation available at your site.
 
 If you want to use CrystFEL on a facility computer system, we recommend leaving
 the installation to facility IT staff.  This means that a single installation
-can be shared and maintained.  In addition, installing software from source, on
-a system where you don't have administrative access, can be quite difficult.
-Please feel free to tell the IT staff to get in touch with us for assistance,
-and also to make sure that the installation is documented on the list of
-supported facility installations.
+can be shared and maintained centrally.  In addition, installing software from
+source, on a system where you don't have administrative access, can be quite
+difficult. Please feel free to tell the IT staff to get in touch with us for
+assistance, and also to make sure that the installation is documented on the
+list of supported facility installations.
 
 
 Installation via container registry
@@ -58,7 +56,7 @@ CrystFEL is available through <a href="https://nixos.org/">NixOS</a> since
 22.05, for x86_64, Darwin and aarch64.  Two packages are
 available.  Package `crystfel` contains all tools including the GUI,
 whereas `crystfel-headless` excludes the GUI, making it easier to
-install and more suitable for (e.g.) backend data processing servers.
+install and more suitable for backend data processing servers.
 
 To install via NixOS, simply add the package globally to your
 `environment.systemPackages`, or enter a temporary shell via `nix shell
@@ -76,6 +74,40 @@ $ brew install -v -s ./crystfel.rb --HEAD
 
 We hope to contribute the Homebrew formula to the main repository soon, so that
 you can install CrystFEL with a simple `brew install crystfel`.
+
+
+Installation from source
+------------------------
+
+CrystFEL is compiled and installed using  [Meson](https://mesonbuild.com/).
+First, download the latest Git version or unpack the package from the
+[downloads page](https://desy.de/~twhite/crystfel/download.html):
+```
+$ git clone https://gitlab.desy.de/thomas.white/crystfel.git
+$ cd crystfel
+    or
+$ tar -xzf crystfel-0.11.0.tar.gz    # or whichever other version
+$ cd crystfel-0.11.0
+```
+Then, simply:
+```
+$ meson setup build
+$ meson compile -C build
+$ meson install -C build
+```
+The `meson setup` command will report if dependencies are missing - see the
+next section for details.  If necessary, the `meson install` command will ask
+for your password to gain administrative privileges.
+
+Run `indexamajig` for a basic check that the installation has succeeded.  A
+healthy newborn CrystFEL should complain that `You need to provide the input
+filename (use -i)` when run with no other command-line options.
+
+Alternatively, run `crystfel` to start the graphical user interface, provided
+that the dependencies for the GUI were met (see above).
+
+Refer to the [tutorial](doc/articles/tutorial.rst) to see where to go from
+here!
 
 
 Dependencies
@@ -116,8 +148,8 @@ distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
 We emphatically recommend against trying to install GTK, Cairo, Pango or
 gdk-pixbuf from source.
 
-If you compile using Meson, dependencies marked with \[\*\] above will be
-downloaded and compiled automatically if they are not available on the system.
+Dependencies marked with \[\*\] above will be downloaded and compiled
+automatically by Meson if they are not available on the system.
 If you don't want this, add option `--wrap-mode=nofallback` when invoking
 Meson.  See the Meson manual for other possibilities, such as using
 locally-provided files instead of downloading them.
@@ -136,14 +168,19 @@ environment.  Don't even "source" the Conda setup file before installing
 CrystFEL - keep it completely separate.  A Conda recipe for CrystFEL might be
 coming soon, though, if development resources allow for it.
 
+
 Installing the indexing engines
 -------------------------------
 
-Processing data relies on indexing 'engines'.  By default, you will have access
-to the [TakeTwo](https://journals.iucr.org/d/issues/2016/08/00/rr5128/)
-indexing algorithm.  Some of the optional dependencies listed above, if found,
-will add more indexing algorithms.  In addition, the following programs will be
-used for indexing if they are available:
+Processing data relies on indexing 'engines'.  At the absolute minimum, you
+will have access to the [TakeTwo](https://journals.iucr.org/d/issues/2016/08/00/rr5128/)
+indexing algorithm, since this is built into CrystFEL and does not have any
+other dependencies.  [Xgandalf](https://journals.iucr.org/a/issues/2019/05/00/ae5071/),
+[PinkIndexer](https://journals.iucr.org/a/issues/2020/02/00/ae5078/) and
+`asdf` will very likely be available as well - they have some dependencies
+(see above), but the required packages are quite common.  Still more indexing
+methods can be enabled by installing one or more of the following external
+programs:
 
 * [Mosflm](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/)
 * [DirAx](http://www.crystal.chem.uu.nl/distr/dirax/)
@@ -154,7 +191,7 @@ You can install these at any time before or after installing CrystFEL.  Note
 that you only need the Mosflm binary, not the full `iMosflm` user interface.
 [Download it here](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip).
 
-You probably have CCP4 installed already, with its own copy of `mosflm`.
+You probably have CCP4 installed already, which comes with its own copy of `mosflm`.
 However, you should keep your CCP4 installation separate from CrystFEL.  The
 reason is that CCP4 comes with its own private copies of all its dependencies,
 and it becomes very difficult to make the build process for CrystFEL (or
@@ -167,6 +204,20 @@ The script `install-indexers`, found in the `scripts` directory of the CrystFEL
 source code, can help you to install Mosflm, DirAx and XDS.  Run
 `scripts/install-indexers --help` for information.
 
+
+Finding syminfo.lib
+-------------------
+
+The CCP4 libraries need to refer to symmetry information in a file called
+`syminfo.lib`.  Unfortunately, they can only find this file if either `CLIBD`
+or `SYMINFO` are set in the environment.  The CrystFEL GUI (`crystfel`),
+`get_hkl` and `mosflm` therefore all need this variable to be set.  You could
+set this variable in your shell setup file (e.g. as part of a `module load`),
+or create wrapper scripts for these three programs.  The `install-indexers`
+script, which assists with installing indexing engines, creates such a wrapper
+for Mosflm already.
+
+
 Compiling without HDF5
 ----------------------
 
@@ -178,6 +229,7 @@ as follows, replacing the `meson build` step:
 ```
 meson build -Dhdf5=disabled
 ```
+
 
 Fedora 22 or later
 ------------------
@@ -289,56 +341,6 @@ $ ninja -C build
 $ sudo ninja -C build install
 $ sudo ldconfig
 ```
-
-Mac OS X
---------
-
-First install [Homebrew](https://brew.sh/), which will also cause
-[Xcode](https://developer.apple.com/xcode/) to be installed.  Then:
-
-```
-$ brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson
-$ export PATH="$(brew --prefix)/opt/bison/bin:$(brew --prefix)/opt/flex/bin:$PATH"
-$ export LDFLAGS="-L$(brew --prefix)/opt/bison/lib -L$(brew --prefix)/opt/flex/lib -L$(brew --prefix)/opt/argp-standalone/lib -largp $LDFLAGS"
-$ export CFLAGS="-I$(brew --prefix)/opt/flex/include -I$(brew --prefix)/opt/argp-standalone/include/ $CFLAGS"
-$ cd /home/user/downloads/crystfel
-$ meson build
-$ ninja -C build
-$ ninja -C build install
-```
-
-The `export` commands ensure that the libraries installed via Homebrew can be
-found by CrystFEL's build system.
-
-CrystFEL itself is compatible with M1 Macs, but some of the dependencies have
-problems.  Meson will try to build the dependencies anyway, resulting in a
-failure.  If this happens to you, add `--wrap-mode=nofallback` (as mentioned
-above) to disable automatic building of dependencies.
-
-
-Starting up
------------
-
-Run `indexamajig` for a basic check that the installation has succeeded.  A
-healthy newborn CrystFEL should complain that `You need to provide the input
-filename (use -i)` when run with no other command-line options.
-
-Alternatively, run `crystfel` to start the graphical user interface, provided
-that the dependencies for the GUI were met (see above).
-
-Refer to the tutorial to see where to go from here!
-
-
-Finding syminfo.lib
--------------------
-The CCP4 libraries need to refer to symmetry information in a file called
-`syminfo.lib`.  Unfortunately, they can only find this file if either `CLIBD`
-or `SYMINFO` are set in the environment.  The CrystFEL GUI (`crystfel`),
-`get_hkl` and `mosflm` therefore all need this variable to be set.  You could
-set this variable in your shell setup file (e.g. as part of a `module load`),
-or create wrapper scripts for these three programs.  The `install-indexers`
-script, which assists with installing indexing engines, creates such a wrapper
-for Mosflm already.
 
 
 Installation problems and solutions
