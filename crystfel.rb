@@ -6,8 +6,8 @@ class Crystfel < Formula
   homepage 'https://www.desy.de/~twhite/crystfel/index.html'
 
   stable do
-    url 'https://www.desy.de/~twhite/crystfel/crystfel-0.10.2.tar.gz'
-    sha256 '9c23bd9dd0ca4b9e1b54df48845062095373aa4ec1b029635c5ace9a5c7eb0fe'
+    url 'https://www.desy.de/~twhite/crystfel/crystfel-0.11.0.tar.gz'
+    sha256 'a203475987dbc51981e5374af0ad09a5c0a760e3b25daa501923e1f267e9f937'
   end
 
   head do
