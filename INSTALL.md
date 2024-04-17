@@ -69,7 +69,7 @@ To install the development version of CrystFEL using
 [crystfel.rb](https://gitlab.desy.de/thomas.white/crystfel/-/blob/master/crystfel.rb)
 from the Git repository, and use `brew install`:
 ```
-$ wget https://gitlab.desy.de/thomas.white/crystfel/-/blob/master/crystfel.rb
+$ wget https://gitlab.desy.de/thomas.white/crystfel/-/raw/master/crystfel.rb
 $ brew install -v -s ./crystfel.rb --HEAD
 ```
 Omit `--HEAD` to install the latest stable version.
