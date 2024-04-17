@@ -1,7 +1,7 @@
 .\"
 .\" CrystFEL main man page
 .\"
-.\" Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
+.\" Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY,
 .\"                       a research centre of the Helmholtz Association.
 .\"
 .\" Part of CrystFEL - crystallography with a FEL
@@ -9,23 +9,14 @@
 
 .TH CRYSTFEL 7
 .SH NAME
-CrystFEL \- data processing for FEL crystallography
+CrystFEL \- data processing for serial crystallography
 
 .SH DESCRIPTION
-CrystFEL is a suite of programs for processing Bragg diffraction data acquired with a free electron laser in a "serial" manner.  Some of the particular characteristics of such data which call for a specialised software suite are:
+CrystFEL is a suite of programs for processing data from serial crystallography
+experiments, performed at synchrotron and X-ray free-electron laser facilities,
+as well as in your home lab using an electron microscope.
 
-.RS
-Each crystal is used for only one exposure, and there is no oscillation, rotation nor a large bandwidth or divergence.  Therefore, many or all reflections are partially integrated.
-.PP
-The crystals might be very small and the illumination highly coherent, leading to significant Fourier truncation effects on the detector.
-.PP
-Many patterns, numbering tens of thousands or more, are required, so high throughput automated processing is important.
-.PP
-The crystal orientations in each pattern are random and uncorrelated, which leads to special considerations during scaling and merging.
-.RE
-
-CrystFEL includes programs processing patterns subject to the above
-characteristics.  The programs are:
+The programs in the suite are:
 
 .IP \fBindexamajig\fR
 Batch indexing, integration and data reduction program, which produces a "stream" containing the indexing and integration results for each diffraction pattern.
@@ -54,7 +45,7 @@ Tools for calculating figures of merit, such as completeness and R-factors.
 .IP \fBrender_hkl\fR
 A tool for rendering slices of reciprocal space in two dimensions.
 
-.IP \fBgeoptimiser\fR
+.IP \fBalign_detector\fR
 A program to refine and optimize detector geometry.
 
 .IP \fBlist_events\fR
@@ -64,7 +55,10 @@ A tool for creating lists of events from multi-event data files.
 A tool for locating runs of crystals with similar orientations, e.g. from 'mini rotation series' arising from the use of a slow extrusion sample injector.
 
 .IP \fBmake_pixelmap\fR
-A tool for for creating pixel maps for Cheetah, OnDA etc.
+A tool for creating pixel maps for Cheetah, OnDA etc.
+
+.IP \fBadjust_detector\fR
+A tool to alter detector geometry.
 
 .PP
 There is also a folder full of scripts for achieving many related tasks.
@@ -123,13 +117,24 @@ to this list if you experience difficulty with "-y" at any time.
 \fB23\fR, \fBm-3\fR, \fB432\fR, \fB-43m\fR, \fBm-3m\fR.
 
 .SH FUNDING ACKNOWLEDGEMENTS
-Development of CrystFEL is primarily funded by the Helmholtz Association via programme-oriented funds.
+Development of CrystFEL is primarily funded by the Helmholtz Association via DESY.
 
-Additional funding for CrystFEL is provided by "X-Probe", a project of the European Union's 2020 Research and Innovation Program Under the Marie Skłodowska-Curie grant agreement 637295 (2015-2018).
+Partial funding for CrystFEL has been provided by:
 
-Additional funding for CrystFEL is provided by the BMBF German-Russian Cooperation "SyncFELMed", grant 05K14CHA (2014-2017).
+* The consortium DAPHNE4NFDI in the context of the work of the NFDI e.V. The
+  consortium is funded by the Deutsche Forschungsgemeinschaft (DFG, German
+  Research Foundation) - project number 460248799 (2022-).
 
-Past funding for CrystFEL has been received from BioStruct-X, a project funded by the Seventh Framework Programme (FP7) of the European Commission.
+* European Union’s Horizon 2020 research and innovation programme under grant
+  agreement No 857641 (ExPaNDS) (2019-2023).
+
+* X-Probe, a project of the European Union's 2020 Research and Innovation
+  Program Under the Marie Skłodowska-Curie grant agreement 637295 (2015-2018).
+
+* The BMBF German-Russian Cooperation SyncFELMed, grant 05K14CHA (2014-2017).
+
+* BioStruct-X, a project funded by the Seventh Framework Programme (FP7) of the
+  European Commission (2011-2016).
 
 .SH AUTHOR
 This page was written by Thomas White and Valerio Mariani.
@@ -139,7 +144,7 @@ Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>
 
 .SH COPYRIGHT AND DISCLAIMER
 .PD 0
-Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
+Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY, a research centre of the Helmholtz Association.
 .PD
 .PP
 Please read the AUTHORS file in the CrystFEL source code distribution for a full list of contributions and contributors.
@@ -159,7 +164,6 @@ You should have received a copy of the GNU General Public License along with Cry
 .BR render_hkl (1),
 .BR get_hkl (1),
 .BR cell_tool (1),
-.BR geoptimiser (1),
 .BR whirligig (1),
 .BR list_events (1),
 .BR make_pixelmap (1),
