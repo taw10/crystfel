@@ -125,7 +125,7 @@ build-native-macos:
     GIT_STRATEGY: clone
   script:
     - brew update
-    - brew upgrade
+    - brew upgrade -f
     - brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson ninja
     - export PATH="$(brew --prefix)/opt/bison/bin:$(brew --prefix)/opt/flex/bin:$PATH"
     - export LDFLAGS="-L$(brew --prefix)/opt/bison/lib -L$(brew --prefix)/opt/flex/lib -L$(brew --prefix)/opt/argp-standalone/lib -largp $LDFLAGS"
@@ -149,7 +149,7 @@ build-brew-macos:
     GIT_STRATEGY: clone
   script:
     - brew update
-    - brew upgrade
+    - brew upgrade -f
     - brew uninstall -v -f crystfel
     - brew install -v -s ./crystfel.rb --HEAD
     - brew test crystfel
