@@ -95,7 +95,11 @@ Development of CrystFEL is primarily funded by the
 [Helmholtz Association](https://www.helmholtz.de/) via
 [DESY](https://www.desy.de/).
 
-Partial funding for CrystFEL has previously been provided by:
+Partial funding for CrystFEL has been provided by:
+
+* The consortium DAPHNE4NFDI in the context of the work of the NFDI e.V. The
+  consortium is funded by the Deutsche Forschungsgemeinschaft (DFG, German
+  Research Foundation) - project number 460248799 (2022-).
 
 * European Union’s Horizon 2020 research and innovation programme under grant
   agreement No 857641 ([ExPaNDS](https://expands.eu/)) (2019-2023).
@@ -114,7 +118,7 @@ Partial funding for CrystFEL has previously been provided by:
 Licence
 -------
 
-Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY, a research centre
+Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY, a research centre
 of the Helmholtz Association.
 
 See [AUTHORS](AUTHORS) as well as individual source code files for full details
