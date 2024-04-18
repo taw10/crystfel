@@ -1,9 +1,9 @@
 stages:
   - test
+  - deploy
   - test_brew
   - build_container
-  - deploy
-
+  
 .build-and-test:
   image: fedora:32
   script:
