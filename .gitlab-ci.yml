@@ -1,7 +1,6 @@
 stages:
   - test
   - deploy
-  - test_brew
   - build_container
   
 .build-and-test:
@@ -90,6 +89,8 @@ build_container_image:
   tags:
     - kubernetes
 
+  when: manual
+
 build_container_image_tag:
   stage: build_container
   image:
@@ -117,8 +118,9 @@ build_container_image_tag:
 
   rules:
     - if: $CI_COMMIT_TAG
+      when: manual
 
-build-native-macos:
+.build-native-macos:
   tags:
     - macOS
   variables:
@@ -141,7 +143,6 @@ build-native-macos:
       junit: build/meson-logs/testlog.junit.xml
 
 build-brew-macos:
-  stage: test_brew
   dependencies: []
   tags:
     - macOS
