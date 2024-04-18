@@ -148,8 +148,7 @@ static ImageFeatureList *read_peaks(Stream *st, struct image *image)
 				ERROR("Failed to convert peak coords\n");
 			} else {
 				image_add_feature(features, x, y,
-				                  pn, image, intensity,
-				                  NULL);
+				                  pn, intensity, NULL);
 			}
 
 		}
@@ -200,7 +199,7 @@ static int write_peaks(const struct image *image,
 }
 
 
-static RefList *read_stream_reflections_2_3(Stream *st)
+static RefList *read_stream_reflections_2_3(Stream *st, double kpred)
 {
 	char *rval = NULL;
 	int first = 1;
@@ -268,6 +267,7 @@ static RefList *read_stream_reflections_2_3(Stream *st)
 			set_mean_bg(refl, bg);
 			set_redundancy(refl, 1);
 			set_symmetric_indices(refl, h, k, l);
+			set_kpred(refl, kpred);
 		}
 
 	} while ( rval != NULL );
@@ -339,11 +339,9 @@ static int num_integrated_reflections(RefList *list)
 }
 
 
-static int write_crystal(Stream *st, Crystal *cr,
-                         int include_reflections)
+static int write_crystal(Stream *st, Crystal *cr, RefList *reflist)
 {
 	UnitCell *cell;
-	RefList *reflist;
 	double asx, asy, asz;
 	double bsx, bsy, bsz;
 	double csx, csy, csz;
@@ -390,7 +388,6 @@ static int write_crystal(Stream *st, Crystal *cr,
 	fprintf(st->fh, "predict_refine/det_shift x = %.3f y = %.3f mm\n",
 	        det_shift_x*1e3, det_shift_y*1e3);
 
-	reflist = crystal_get_reflections(cr);
 	if ( reflist != NULL ) {
 
 		fprintf(st->fh, "diffraction_resolution_limit"
@@ -407,20 +404,17 @@ static int write_crystal(Stream *st, Crystal *cr,
 
 	}
 
-	if ( include_reflections ) {
+	if ( reflist != NULL ) {
 
-		if ( reflist != NULL ) {
+		fprintf(st->fh, STREAM_REFLECTION_START_MARKER"\n");
+		ret = write_stream_reflections(st->fh, reflist,
+		                               st->dtempl_write);
+		fprintf(st->fh, STREAM_REFLECTION_END_MARKER"\n");
 
-			fprintf(st->fh, STREAM_REFLECTION_START_MARKER"\n");
-			ret = write_stream_reflections(st->fh, reflist,
-			                               st->dtempl_write);
-			fprintf(st->fh, STREAM_REFLECTION_END_MARKER"\n");
+	} else {
 
-		} else {
+		fprintf(st->fh, "No integrated reflections.\n");
 
-			fprintf(st->fh, "No integrated reflections.\n");
-
-		}
 	}
 
 	fprintf(st->fh, STREAM_CRYSTAL_END_MARKER"\n");
@@ -454,7 +448,7 @@ int stream_write_chunk(Stream *st, const struct image *i,
 	fprintf(st->fh, "hit = %i\n", i->hit);
 	indexer = indexer_str(i->indexed_by);
 	fprintf(st->fh, "indexed_by = %s\n", indexer);
-	free(indexer);
+	cffree(indexer);
 	if ( i->indexed_by != INDEXING_NONE ) {
 		fprintf(st->fh, "n_indexing_tries = %i\n", i->n_indexing_tries);
 	}
@@ -513,11 +507,11 @@ int stream_write_chunk(Stream *st, const struct image *i,
 	}
 
 	for ( j=0; j<i->n_crystals; j++ ) {
-		if ( crystal_get_user_flag(i->crystals[j]) ) {
+		if ( crystal_get_user_flag(i->crystals[j].cr) ) {
 			continue;
 		}
-		ret = write_crystal(st, i->crystals[j],
-		                    srf & STREAM_REFLECTIONS);
+		ret = write_crystal(st, i->crystals[j].cr,
+		                    srf & STREAM_REFLECTIONS ? i->crystals[j].refls : NULL);
 	}
 
 	fprintf(st->fh, STREAM_CHUNK_END_MARKER"\n");
@@ -565,8 +559,7 @@ static void read_crystal(Stream *st, struct image *image,
 	char unique_axis = '*';
 	LatticeType lattice_type = L_TRICLINIC;
 	Crystal *cr;
-	int n;
-	Crystal **crystals_new;
+	RefList *reflist = NULL;
 	double shift_x, shift_y;
 
 	as.u = 0.0;  as.v = 0.0;  as.w = 0.0;
@@ -665,18 +658,13 @@ static void read_crystal(Stream *st, struct image *image,
 		if ( (strcmp(line, STREAM_REFLECTION_START_MARKER) == 0)
 		  && (srf & STREAM_REFLECTIONS) )
 		{
-
-			RefList *reflist;
-			reflist = read_stream_reflections_2_3(st);
+			reflist = read_stream_reflections_2_3(st, 1.0/image->lambda);
 			if ( reflist == NULL ) {
 				ERROR("Failed while reading reflections\n");
 				ERROR("Filename = %s\n", image->filename);
 				ERROR("Event = %s\n", image->ev);
 				break;
 			}
-
-			crystal_set_reflections(cr, reflist);
-
 		}
 
 		if ( strcmp(line, STREAM_CRYSTAL_END_MARKER) == 0 ) break;
@@ -714,17 +702,7 @@ static void read_crystal(Stream *st, struct image *image,
 	/* Unused at the moment */
 	crystal_set_mosaicity(cr, 0.0);
 
-	/* Add crystal to the list for this image */
-	n = image->n_crystals+1;
-	crystals_new = realloc(image->crystals, n*sizeof(Crystal *));
-
-	if ( crystals_new == NULL ) {
-		ERROR("Failed to expand crystal list!\n");
-	} else {
-		image->crystals = crystals_new;
-		image->crystals[image->n_crystals++] = cr;
-	}
-
+	image_add_crystal_refls(image, cr, reflist);
 }
 
 
@@ -734,7 +712,7 @@ static void parse_header(const char *line_in, struct image *image,
 	char *line;
 	char *pos;
 
-	line = strdup(line_in);
+	line = cfstrdup(line_in);
 	chomp(line);
 
 	pos = strchr(line, ' ');
@@ -817,12 +795,12 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 		chomp(line);
 
 		if ( strncmp(line, "Image filename: ", 16) == 0 ) {
-			image->filename = strdup(line+16);
+			image->filename = cfstrdup(line+16);
 			have_filename = 1;
 		}
 
 		if ( strncmp(line, "Event: ", 7) == 0 ) {
-			image->ev = strdup(line+7);
+			image->ev = cfstrdup(line+7);
 		}
 
 		if ( strncmp(line, "hdf5/", 5) == 0 ) {
@@ -929,7 +907,7 @@ struct image *stream_read_chunk(Stream *st, StreamFlags srf)
 char *stream_audit_info(Stream *st)
 {
 	if ( st->audit_info == NULL ) return NULL;
-	return strdup(st->audit_info);
+	return cfstrdup(st->audit_info);
 }
 
 
@@ -946,7 +924,7 @@ static int read_geometry_file(Stream *st)
 	const size_t max_geom_len = 1024*1024;
 	char *geom;
 
-	geom = malloc(max_geom_len);
+	geom = cfmalloc(max_geom_len);
 	if ( geom == NULL ) {
 		ERROR("Failed to allocate memory for geometry file\n");
 		return 1;
@@ -963,7 +941,7 @@ static int read_geometry_file(Stream *st)
 		if ( rval == NULL ) {
 			ERROR("Failed to read stream geometry file.\n");
 			stream_close(st);
-			free(geom);
+			cffree(geom);
 			return 1;
 		}
 
@@ -976,7 +954,7 @@ static int read_geometry_file(Stream *st)
 		if ( len > max_geom_len-1 ) {
 			ERROR("Stream's geometry file is too long (%li > %i).\n",
 			      (long)len, (int)max_geom_len);
-			free(geom);
+			cffree(geom);
 			return 1;
 		} else {
 			strcat(geom, line);
@@ -995,7 +973,7 @@ static int read_headers(Stream *st)
 	int done = 0;
 	size_t len = 0;
 
-	st->audit_info = malloc(4096);
+	st->audit_info = cfmalloc(4096);
 	if ( st->audit_info == NULL ) {
 		ERROR("Failed to allocate memory for audit information\n");
 		return 1;
@@ -1042,7 +1020,7 @@ Stream *stream_open_for_read(const char *filename)
 {
 	Stream *st;
 
-	st = malloc(sizeof(struct _stream));
+	st = cfmalloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
 	st->audit_info = NULL;
@@ -1059,7 +1037,7 @@ Stream *stream_open_for_read(const char *filename)
 	}
 
 	if ( st->fh == NULL ) {
-		free(st);
+		cffree(st);
 		return NULL;
 	}
 
@@ -1109,7 +1087,7 @@ Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 {
 	Stream *st;
 
-	st = malloc(sizeof(struct _stream));
+	st = cfmalloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
 	st->audit_info = NULL;
@@ -1121,7 +1099,7 @@ Stream *stream_open_fd_for_write(int fd, const DataTemplate *dtempl)
 
 	st->fh = fdopen(fd, "w");
 	if ( st->fh == NULL ) {
-		free(st);
+		cffree(st);
 		return NULL;
 	}
 
@@ -1166,7 +1144,7 @@ Stream *stream_open_for_write(const char *filename,
 {
 	Stream *st;
 
-	st = malloc(sizeof(struct _stream));
+	st = cfmalloc(sizeof(struct _stream));
 	if ( st == NULL ) return NULL;
 	st->old_indexers = 0;
 	st->audit_info = NULL;
@@ -1179,7 +1157,7 @@ Stream *stream_open_for_write(const char *filename,
 	st->fh = fopen(filename, "w");
 	if ( st->fh == NULL ) {
 		ERROR("Failed to open stream.\n");
-		free(st);
+		cffree(st);
 		return NULL;
 	}
 
@@ -1210,11 +1188,11 @@ int stream_get_fd(Stream *st)
 void stream_close(Stream *st)
 {
 	if ( st == NULL ) return;
-	free(st->audit_info);
-	free(st->geometry_file);
+	cffree(st->audit_info);
+	cffree(st->geometry_file);
 	data_template_free(st->dtempl_read);
 	fclose(st->fh);
-	free(st);
+	cffree(st);
 }
 
 
@@ -1339,9 +1317,9 @@ struct _streamindex
 void stream_index_free(StreamIndex *index)
 {
 	if ( index == NULL ) return;
-	free(index->keys);
-	free(index->ptrs);
-	free(index);
+	cffree(index->keys);
+	cffree(index->ptrs);
+	cffree(index);
 }
 
 
@@ -1352,7 +1330,7 @@ static char *make_key(const char *filename,
 
 	if ( ev == NULL ) ev = "//";
 
-	key = malloc(strlen(filename)+strlen(ev)+2);
+	key = cfmalloc(strlen(filename)+strlen(ev)+2);
 	if ( key == NULL ) return NULL;
 
 	strcpy(key, filename);
@@ -1399,14 +1377,14 @@ static void add_index_record(StreamIndex *index,
 		char **new_keys;
 		long int *new_ptrs;
 
-		new_keys = realloc(index->keys,
-		                   new_max_keys*sizeof(char *));
+		new_keys = cfrealloc(index->keys,
+		                     new_max_keys*sizeof(char *));
 		if ( new_keys == NULL ) return;
 
-		new_ptrs = realloc(index->ptrs,
-		                   new_max_keys*sizeof(long int));
+		new_ptrs = cfrealloc(index->ptrs,
+		                     new_max_keys*sizeof(long int));
 		if ( new_ptrs == NULL ) {
-			free(new_keys);
+			cffree(new_keys);
 			return;
 		}
 
@@ -1437,7 +1415,7 @@ StreamIndex *stream_make_index(const char *filename)
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) return NULL;
 
-	index = malloc(sizeof(StreamIndex));
+	index = cfmalloc(sizeof(StreamIndex));
 	if ( index == NULL ) {
 		fclose(fh);
 		return NULL;
@@ -1468,11 +1446,11 @@ StreamIndex *stream_make_index(const char *filename)
 		}
 
 		if ( strncmp(line, "Image filename: ", 16) == 0 ) {
-			last_filename = strdup(line+16);
+			last_filename = cfstrdup(line+16);
 		}
 
 		if ( strncmp(line, "Event: ", 7) == 0 ) {
-			last_ev = strdup(line+7);
+			last_ev = cfstrdup(line+7);
 		}
 
 		if ( strcmp(line, STREAM_CHUNK_END_MARKER) == 0 ) {
@@ -1484,8 +1462,8 @@ StreamIndex *stream_make_index(const char *filename)
 				                 last_filename,
 				                 last_ev);
 			}
-			free(last_filename);
-			free(last_ev);
+			cffree(last_filename);
+			cffree(last_ev);
 			last_start_pos = 0;
 			last_filename = NULL;
 			last_ev = NULL;

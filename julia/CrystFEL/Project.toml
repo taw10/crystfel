@@ -1,0 +1,8 @@
+name = "CrystFEL"
+uuid = "02864af1-98e3-4af5-94a7-a156d2a4edba"
+authors = ["Thomas White <taw@physics.org>"]
+version = "0.1.0"
+
+[deps]
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"

@@ -35,6 +35,7 @@
 #include "cell.h"
 #include "crystal.h"
 #include "detgeom.h"
+#include "image.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,11 +78,14 @@ struct polarisation
 };
 
 
-extern RefList *predict_to_res(Crystal *cryst, double max_res);
+extern RefList *predict_to_res(Crystal *cryst, struct image *image, double max_res);
 
-extern void calculate_partialities(Crystal *cryst, PartialityModel pmodel);
+extern void calculate_partialities(RefList *list,
+                                   Crystal *cryst,
+                                   struct image *image,
+                                   PartialityModel pmodel);
 
-extern void update_predictions(Crystal *cryst);
+extern void update_predictions(RefList *list, Crystal *cryst, struct image *image);
 extern struct polarisation parse_polarisation(const char *text);
 extern void polarisation_correction(RefList *list, UnitCell *cell,
                                     struct polarisation p);

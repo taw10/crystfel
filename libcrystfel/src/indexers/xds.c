@@ -468,7 +468,7 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell)
 		return NULL;
 	}
 
-	xp = calloc(1, sizeof(*xp));
+	xp = cfcalloc(1, sizeof(*xp));
 	if ( xp == NULL ) return NULL;
 
 	/* Flags that XDS knows about */
@@ -487,7 +487,7 @@ void xds_cleanup(void *pp)
 	struct xds_private *xp;
 
 	xp = (struct xds_private *)pp;
-	free(xp);
+	cffree(xp);
 }
 
 

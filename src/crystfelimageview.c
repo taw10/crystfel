@@ -707,9 +707,8 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	if ( iv->show_refls ) {
 		int i;
 		for ( i=0; i<iv->image->n_crystals; i++ ) {
-			Crystal *cry = iv->image->crystals[i];
 			draw_refls(cr, iv,
-			           crystal_get_reflections(cry),
+			           iv->image->crystals[i].refls,
 			           iv->label_refls,
 			           crystal_cols[i % n_crystal_cols]);
 		}

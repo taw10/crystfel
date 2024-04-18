@@ -271,7 +271,7 @@ static void apply_kpred(double k, RefList *list)
 
 
 static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
-                         RefList *reference, const SymOpList *sym,
+                         RefList *new_refl, RefList *reference, const SymOpList *sym,
                          double **hist_vals, signed int hist_h,
                          signed int hist_k, signed int hist_l, int *hist_n,
                          struct polarisation p, double min_snr, double max_adu,
@@ -280,10 +280,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 {
 	Reflection *refl;
 	RefListIterator *iter;
-	RefList *new_refl;
 	double scale;
-
-	new_refl = crystal_get_reflections(cr);
 
 	/* First, correct for polarisation */
 	apply_kpred(1.0/image->lambda, new_refl);
@@ -309,7 +306,7 @@ static int merge_crystal(RefList *model, struct image *image, Crystal *cr,
 		scale = 1.0;
 	}
 
-	for ( refl = first_refl(crystal_get_reflections(cr), &iter);
+	for ( refl = first_refl(new_refl, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
@@ -431,7 +428,8 @@ static int merge_stream(Stream *st,
 
 		for ( i=0; i<image->n_crystals; i++ ) {
 
-			Crystal *cr = image->crystals[i];
+			Crystal *cr = image->crystals[i].cr;
+			RefList *refls = image->crystals[i].refls;
 
 			n_crystals_seen++;
 			if ( (n_crystals_seen > start_after)
@@ -440,8 +438,8 @@ static int merge_stream(Stream *st,
 			{
 				int r;
 				n_crystals++;
-				r = merge_crystal(model, image, cr, reference,
-				                  sym, hist_vals,
+				r = merge_crystal(model, image, cr, refls,
+				                  reference, sym, hist_vals,
 						  hist_h, hist_k, hist_l,
 				                  hist_i, p,
 						  min_snr, max_adu, push_res,

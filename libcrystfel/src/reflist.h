@@ -158,6 +158,7 @@ extern void add_refl_to_list(Reflection *refl, RefList *list);
 /* Iteration */
 extern Reflection *first_refl(RefList *list, RefListIterator **piter);
 extern Reflection *next_refl(Reflection *refl, RefListIterator *iter);
+extern void free_reflistiterator(RefListIterator *iter);
 extern const Reflection *first_refl_const(const RefList *list, RefListIterator **piter);
 extern const Reflection *next_refl_const(const Reflection *refl, RefListIterator *iter);
 

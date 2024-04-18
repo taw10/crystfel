@@ -35,10 +35,10 @@
 #endif
 
 
-#include "crystal.h"
+#include "image.h"
 
-extern void early_rejection(Crystal **crystals, int n);
-extern void check_rejection(Crystal **crystals, int n, RefList *full,
+extern void early_rejection(struct crystal_refls *crystals, int n);
+extern void check_rejection(struct crystal_refls *crystals, int n, RefList *full,
                             double max_B, int no_deltacchalf, int n_threads);
 
 #endif	/* REJECTION_H */

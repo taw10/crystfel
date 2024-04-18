@@ -302,7 +302,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 		gzbuffer(gzfh, 128*1024);
 		#endif
 
-		buf = malloc(bufsz);
+		buf = cfmalloc(bufsz);
 		if ( buf == NULL ) return NULL;
 
 		len = 0;
@@ -322,7 +322,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 
 		fh = fmemopen(buf, len, "rb");
 		if ( fh == NULL ) {
-			free(buf);
+			cffree(buf);
 			return NULL;
 		}
 
@@ -365,7 +365,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 				const char *elbo = line+29;
 				if ( strcmp(elbo, "LITTLE_ENDIAN") != 0 ) {
 					ERROR("Unsupported endianness: %s\n", elbo);
-					free(buf);
+					cffree(buf);
 					fclose(fh);
 					return NULL;
 				}
@@ -380,7 +380,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 				data_conversion = CBF_PACKED;
 			} else if ( strstr(line, "conversions=") != NULL ) {
 				ERROR("Unrecognised CBF content conversion: %s\n", line);
-				free(buf);
+				cffree(buf);
 				fclose(fh);
 				return NULL;
 			}
@@ -393,7 +393,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 				if ( data_type == CBF_NO_TYPE ) {
 					ERROR("Unrecognised element type: %s\n",
 					      eltype);
-					free(buf);
+					cffree(buf);
 					fclose(fh);
 					return NULL;
 				}
@@ -418,29 +418,29 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 
 			if ( data_compressed_len == 0 ) {
 				ERROR("Found CBF data before X-Binary-Size!\n");
-				free(buf);
+				cffree(buf);
 				fclose(fh);
 				return NULL;
 			}
 
 			if ( (*w == 0) || (*h == 0) ) {
 				ERROR("Found CBF data before dimensions!\n");
-				free(buf);
+				cffree(buf);
 				fclose(fh);
 				return NULL;
 			}
 
 			if ( data_compressed_len > 100*1024*1024 ) {
 				ERROR("Stated CBF data size too big\n");
-				free(buf);
+				cffree(buf);
 				fclose(fh);
 				return NULL;
 			}
 
-			data_compressed = malloc(data_compressed_len);
+			data_compressed = cfmalloc(data_compressed_len);
 			if ( data_compressed == NULL ) {
 				ERROR("Failed to allocate memory for CBF data\n");
-				free(buf);
+				cffree(buf);
 				fclose(fh);
 				return NULL;
 			}
@@ -449,18 +449,18 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 			len_read = fread(data_compressed, 1, data_compressed_len, fh);
 			if ( len_read < data_compressed_len ) {
 				ERROR("Couldn't read entire CBF data\n");
-				free(buf);
-				free(data_compressed);
+				cffree(buf);
+				cffree(data_compressed);
 				fclose(fh);
 				return NULL;
 			}
 
 			nmemb_exp = (*w) * (*h);
-			data_out = malloc(nmemb_exp*sizeof(float));
+			data_out = cfmalloc(nmemb_exp*sizeof(float));
 			if ( data_out == NULL ) {
 				ERROR("Failed to allocate memory for CBF data\n");
-				free(buf);
-				free(data_compressed);
+				cffree(buf);
+				cffree(data_compressed);
 				fclose(fh);
 				return NULL;
 			}
@@ -483,23 +483,23 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 				case CBF_CANONICAL:
 				ERROR("Don't yet know how to decompress "
 				      "CBF_PACKED or CBF_CANONICAL\n");
-				free(buf);
-				free(data_compressed);
+				cffree(buf);
+				cffree(data_compressed);
 				fclose(fh);
 				return NULL;
 
 			}
 
-			free(data_compressed);
+			cffree(data_compressed);
 
 			if ( r ) {
-				free(buf);
-				free(data_out);
+				cffree(buf);
+				cffree(data_out);
 				fclose(fh);
 				return NULL;
 			}
 
-			free(buf);
+			cffree(buf);
 			fclose(fh);
 			return data_out;
 
@@ -508,7 +508,7 @@ static float *read_cbf_data(const char *filename, int gz, int *w, int *h)
 	} while ( rval != NULL );
 
 	ERROR("Reached end of CBF file before finding data.\n");
-	free(buf);  /* might be NULL */
+	cffree(buf);  /* might be NULL */
 	return NULL;
 }
 
@@ -598,7 +598,7 @@ int image_cbf_read(struct image *image,
 		ERROR("Failed to read CBF data\n");
 		return 1;
 	}
-	free(data);
+	cffree(data);
 
 	//cbf_fill_in_beam_parameters(image->beam, f, image);
 	//cbf_fill_in_clen(image->det, f);

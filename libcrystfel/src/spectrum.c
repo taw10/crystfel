@@ -71,7 +71,7 @@ Spectrum *spectrum_new()
 {
 	Spectrum *s;
 
-	s = malloc(sizeof(Spectrum));
+	s = cfmalloc(sizeof(Spectrum));
 	if ( s == NULL ) return NULL;
 
 	s->rep = SPEC_GAUSSIANS;
@@ -95,10 +95,10 @@ Spectrum *spectrum_new()
 void spectrum_free(Spectrum *s)
 {
 	if ( s == NULL ) return;
-	free(s->gaussians);
-	free(s->k);
-	free(s->pdf);
-	free(s);
+	cffree(s->gaussians);
+	cffree(s->k);
+	cffree(s->pdf);
+	cffree(s);
 }
 
 
@@ -292,11 +292,11 @@ static void normalise_gaussians(struct gaussian *gauss, int n_gauss)
 void spectrum_set_gaussians(Spectrum *s, struct gaussian *gs, int n_gauss)
 {
 	/* Free old contents (if any - may be NULL) */
-	free(s->gaussians);
-	free(s->k);
-	free(s->pdf);
+	cffree(s->gaussians);
+	cffree(s->k);
+	cffree(s->pdf);
 
-	s->gaussians = malloc(n_gauss * sizeof(struct gaussian));
+	s->gaussians = cfmalloc(n_gauss * sizeof(struct gaussian));
 	if ( s->gaussians == NULL ) return;
 
 	memcpy(s->gaussians, gs, n_gauss*sizeof(struct gaussian));
@@ -348,17 +348,17 @@ void spectrum_set_pdf(Spectrum *s, double *kvals, double *heights, int n)
 	int i;
 
 	/* Free old contents (if any - may be NULL) */
-	free(s->gaussians);
-	free(s->k);
-	free(s->pdf);
+	cffree(s->gaussians);
+	cffree(s->k);
+	cffree(s->pdf);
 
-	s->k = malloc(n * sizeof(double));
+	s->k = cfmalloc(n * sizeof(double));
 	if ( s->k == NULL ) return;
 
-	s->pdf = malloc(n * sizeof(double));
+	s->pdf = cfmalloc(n * sizeof(double));
 	if ( s->pdf == NULL ) return;
 
-	perm = malloc(n * sizeof(size_t));
+	perm = cfmalloc(n * sizeof(size_t));
 	if ( perm == NULL ) return;
 
 	gsl_sort_index(perm, kvals, 1, n);
@@ -367,7 +367,7 @@ void spectrum_set_pdf(Spectrum *s, double *kvals, double *heights, int n)
 		s->k[i] = kvals[perm[i]];
 		s->pdf[i] = heights[perm[i]];
 	}
-	free(perm);
+	cffree(perm);
 
 	s->n_samples = n;
 	s->rep = SPEC_HISTOGRAM;
@@ -393,8 +393,8 @@ static int read_esrf_spectrum(FILE *fh, Spectrum *s)
 			k = srealloc(k, max_bins*sizeof(double));
 			samp = srealloc(samp, max_bins*sizeof(double));
 			if ( (k==NULL) || (samp==NULL) ) {
-				free(k);
-				free(samp);
+				cffree(k);
+				cffree(samp);
 				return 1;
 			}
 		}
@@ -406,8 +406,8 @@ static int read_esrf_spectrum(FILE *fh, Spectrum *s)
 	}
 
 	spectrum_set_pdf(s, k, samp, n_bins);
-	free(k);
-	free(samp);
+	cffree(k);
+	cffree(samp);
 
 	return 0;
 }

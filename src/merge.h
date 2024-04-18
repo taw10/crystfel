@@ -43,7 +43,7 @@
 #define MIN_PART_MERGE (0.3)
 
 
-extern RefList *merge_intensities(Crystal **crystals, int n, int n_threads,
+extern RefList *merge_intensities(struct crystal_refls *crystals, int n, int n_threads,
                                   int min_meas, double push_res, int use_weak,
                                   int ln_merge);
 
@@ -53,12 +53,12 @@ extern double correct_reflection_nopart(double val, Reflection *refl,
 extern double correct_reflection(double val, Reflection *refl, double osf,
                                  double Bfac, double res);
 
-extern double residual(Crystal *cr, const RefList *full, int free,
+extern double residual(RefList *list, Crystal *cr, const RefList *full, int free,
                        int *pn_used, const char *filename);
 
-extern double log_residual(Crystal *cr, const RefList *full, int free,
+extern double log_residual(RefList *list, Crystal *cr, const RefList *full, int free,
                            int *pn_used, const char *filename);
 
-extern void write_unmerged(const char *fn, Crystal **crystals, int n_crystals);
+extern void write_unmerged(const char *fn, struct crystal_refls *crystals, int n_crystals);
 
 #endif	/* MERGE */

@@ -46,7 +46,7 @@
 /** \file predict-refine.h */
 
 /* Weighting of excitation error term (m^-1) compared to position term (pixels) */
-#define EXC_WEIGHT (0.5e-7)
+#define EXC_WEIGHT (1.0e-7)
 
 
 double r_dev(struct reflpeak *rp)
@@ -488,8 +488,7 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	/* Get the excitation errors and detector positions for the candidate
 	 * reflections */
-	crystal_set_reflections(cr, all_reflist);
-	update_predictions(cr);
+	update_predictions(all_reflist, cr, image);
 
 	/* Pass over the peaks again, keeping only the ones which look like
 	 * good pairings */
@@ -529,7 +528,6 @@ static int pair_peaks(struct image *image, Crystal *cr,
 
 	}
 	reflist_free(all_reflist);
-	crystal_set_reflections(cr, NULL);
 
 	/* Sort the pairings by excitation error and look for a transition
 	 * between good pairings and outliers */
@@ -558,20 +556,18 @@ int refine_radius(Crystal *cr, struct image *image)
 	RefList *reflist;
 
 	/* Maximum possible size */
-	rps = malloc(image_feature_count(image->features)
-	                  * sizeof(struct reflpeak));
+	rps = cfmalloc(image_feature_count(image->features)
+	                    * sizeof(struct reflpeak));
 	if ( rps == NULL ) return 1;
 
 	reflist = reflist_new();
 	n_acc = pair_peaks(image, cr, reflist, rps);
 	if ( n_acc < 3 ) {
-		free(rps);
+		cffree(rps);
 		reflist_free(reflist);
 		return 1;
 	}
-	crystal_set_reflections(cr, reflist);
-	update_predictions(cr);
-	crystal_set_reflections(cr, NULL);
+	update_predictions(reflist, cr, image);
 
 	qsort(rps, n_acc, sizeof(struct reflpeak), cmpd2);
 	n = (n_acc-1) - n_acc/50;
@@ -579,7 +575,7 @@ int refine_radius(Crystal *cr, struct image *image)
 	crystal_set_profile_radius(cr, fabs(get_exerr(rps[n].refl)));
 
 	reflist_free(reflist);
-	free(rps);
+	cffree(rps);
 
 	return 0;
 }
@@ -784,7 +780,7 @@ static double pred_residual(struct reflpeak *rps, int n, struct detgeom *det,
 
 
 /* NB Only for use when the list of reflpeaks was created without a RefList.
- * If a RefList was used, then reflist_free the list then just free() the rps */
+ * If a RefList was used, then reflist_free the list then just cffree() the rps */
 static void free_rps_noreflist(struct reflpeak *rps, int n)
 {
 	int i;
@@ -792,7 +788,7 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 	for ( i=0; i<n; i++ ) {
 		reflection_free(rps[i].refl);
 	}
-	free(rps);
+	cffree(rps);
 }
 
 
@@ -809,18 +805,17 @@ int refine_prediction(struct image *image, Crystal *cr,
 	double total_shifts[12];
 	double res_r, res_fs, res_ss, res_overall;
 
-	rps = malloc(image_feature_count(image->features)
-	                       * sizeof(struct reflpeak));
+	rps = cfmalloc(image_feature_count(image->features)
+	                         * sizeof(struct reflpeak));
 	if ( rps == NULL ) return 1;
 
 	reflist = reflist_new();
 	n = pair_peaks(image, cr, reflist, rps);
 	if ( n < 10 ) {
-		free(rps);
+		cffree(rps);
 		reflist_free(reflist);
 		return 1;
 	}
-	crystal_set_reflections(cr, reflist);
 
 	Minvs = make_panel_minvs(image->detgeom);
 
@@ -832,8 +827,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 	}
 	if ( max_I <= 0.0 ) {
 		ERROR("All peaks negative?\n");
-		free(rps);
-		crystal_set_reflections(cr, NULL);
+		cffree(rps);
 		return 1;
 	}
 	for ( i=0; i<n; i++ ) {
@@ -855,10 +849,9 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	/* Refine (max 5 cycles) */
 	for ( i=0; i<5; i++ ) {
-		update_predictions(cr);
+		update_predictions(reflist, cr, image);
 		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs, total_shifts) )
 		{
-			crystal_set_reflections(cr, NULL);
 			return 1;
 		}
 
@@ -888,9 +881,8 @@ int refine_prediction(struct image *image, Crystal *cr,
 	for ( i=0; i<image->detgeom->n_panels; i++ ) {
 		gsl_matrix_free(Minvs[i]);
 	}
-	free(Minvs);
+	cffree(Minvs);
 
-	crystal_set_reflections(cr, NULL);
 	reflist_free(reflist);
 
 	n = pair_peaks(image, cr, NULL, rps);

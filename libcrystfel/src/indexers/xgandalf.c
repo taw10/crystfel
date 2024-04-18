@@ -158,7 +158,7 @@ int run_xgandalf(struct image *image, void *ipriv)
 void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
                        struct xgandalf_options *xgandalf_opts)
 {
-	struct xgandalf_private_data *xgandalf_private_data = malloc(sizeof(struct xgandalf_private_data));
+	struct xgandalf_private_data *xgandalf_private_data = cfmalloc(sizeof(struct xgandalf_private_data));
 	allocReciprocalPeaks(&(xgandalf_private_data->reciprocalPeaks_1_per_A));
 	xgandalf_private_data->indm = *indm;
 	xgandalf_private_data->cellTemplate = NULL;
@@ -264,7 +264,7 @@ void xgandalf_cleanup(void *pp)
 	if(xgandalf_private_data->centeringTransformation != NULL){
 		intmat_free(xgandalf_private_data->centeringTransformation);
 	}
-	free(xgandalf_private_data);
+	cffree(xgandalf_private_data);
 }
 
 static void reduceCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
@@ -382,7 +382,7 @@ int xgandalf_default_options(struct xgandalf_options **opts_ptr)
 {
 	struct xgandalf_options *opts;
 
-	opts = malloc(sizeof(struct xgandalf_options));
+	opts = cfmalloc(sizeof(struct xgandalf_options));
 	if ( opts == NULL ) return ENOMEM;
 
 	opts->sampling_pitch = 6;

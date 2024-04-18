@@ -3,11 +3,11 @@
  *
  * A class representing a single crystal
  *
- * Copyright © 2013-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2013-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2013-2020 Thomas White <taw@physics.org>
+ *   2013-2024 Thomas White <taw@physics.org>
  *   2016      Valerio Mariani
  *
  * This file is part of CrystFEL.
@@ -31,7 +31,6 @@
 
 #include "crystal.h"
 #include "utils.h"
-#include "reflist-utils.h"
 
 
 /**
@@ -41,33 +40,19 @@
 
 struct _crystal
 {
-	/* The image containing the crystal */
-	struct image            *image;
-
-	/* Information about the crystal */
-	UnitCell                *cell;
+	UnitCell               *cell;
+	int                     owns_cell;
 	double                  m;     /* Mosaicity in radians */
 	double                  osf;
 	double                  Bfac;
 	double                  profile_radius;
-	int                     pr_dud;
 	double                  resolution_limit;
-
-	/* Integrated (or about-to-be-integrated) reflections */
-	RefList                 *reflections;
-	long long int           n_saturated;  /* Number of overloads */
-	long long int           n_implausible;  /* Number of implausibly
-	                                         * negative reflectionss */
-
-	/* User flag, e.g. for "this is a bad crystal". */
+	long long int           n_saturated;   /* Number of overloads */
+	long long int           n_implausible; /* Number of implausibly negative reflectionss */
 	int                     user_flag;
-
-	/* Text notes, which go in the stream */
-	char                    *notes;
-
-	/* Detector shift in metres */
-	double			det_shift_x;
-	double			det_shift_y;
+	char                   *notes; /* Text notes, which go in the stream */
+	double			det_shift_x; /* Detector x-shift in metres */
+	double			det_shift_y; /* Detector y-shift in metres */
 };
 
 
@@ -84,16 +69,20 @@ Crystal *crystal_new()
 {
 	Crystal *cryst;
 
-	cryst = malloc(sizeof(Crystal));
+	cryst = cfmalloc(sizeof(Crystal));
 	if ( cryst == NULL ) return NULL;
 
 	cryst->cell = NULL;
-	cryst->reflections = NULL;
+	cryst->owns_cell = 1;
+	cryst->m = 0.0;
+	cryst->osf = 1.0;
+	cryst->Bfac = 0.0;
+	cryst->profile_radius = 0.0;
 	cryst->resolution_limit = INFINITY;
 	cryst->n_saturated = 0;
 	cryst->n_implausible = 0;
-	cryst->notes = NULL;
 	cryst->user_flag = 0;
+	cryst->notes = NULL;
 	cryst->det_shift_x = 0;
 	cryst->det_shift_y = 0;
 
@@ -104,11 +93,11 @@ Crystal *crystal_new()
 /**
  * \param cryst: A \ref Crystal to copy.
  *
- * Creates a new \ref Crystal which is a copy of \p cryst.  The copy is a "shallow
- * copy", which means that copies are NOT made of the data structures which
- * \p cryst contains references to, for example its \ref RefList.
+ * Creates a new \ref Crystal which is a copy of \p cryst.  The copy is a "deep
+ * copy", which means that copies ARE made of the data structures which
+ * \p cryst contains references to, for example its \ref UnitCell.
  *
- * \returns A (shallow) copy of \p cryst, or NULL on failure.
+ * \returns A (deep) copy of \p cryst, or NULL on failure.
  *
  */
 Crystal *crystal_copy(const Crystal *cryst)
@@ -119,44 +108,13 @@ Crystal *crystal_copy(const Crystal *cryst)
 	if ( c == NULL ) return NULL;
 
 	memcpy(c, cryst, sizeof(Crystal));
-	if ( c->notes != NULL ) c->notes = strdup(c->notes);
-
-	return c;
-}
-
-
-/**
- * \param cryst: A \ref Crystal to copy.
- *
- * Creates a new \ref Crystal which is a copy of \p cryst.  The copy is a "deep
- * copy", which means that copies ARE made of the data structures which
- * \p cryst contains references to, for example its \ref RefList.
- *
- * \returns A (deep) copy of \p cryst, or NULL on failure.
- *
- */
-Crystal *crystal_copy_deep(const Crystal *cryst)
-{
-	Crystal *c;
-
-	c = crystal_new();
-	if ( c == NULL ) return NULL;
-
-	memcpy(c, cryst, sizeof(Crystal));
-	if ( c->notes != NULL ) c->notes = strdup(c->notes);
+	if ( c->notes != NULL ) c->notes = cfstrdup(c->notes);
 
 	if ( cryst->cell != NULL ) {
 		UnitCell *cell;
 		cell = cell_new_from_cell(cryst->cell);
 		if ( cell == NULL ) return NULL;
 		c->cell = cell;
-	}
-
-	if ( cryst->reflections != NULL ) {
-		RefList *refls;
-		refls = copy_reflist(cryst->reflections);
-		if ( refls == NULL ) return NULL;
-		c->reflections = refls;
 	}
 
 	return c;
@@ -172,8 +130,9 @@ Crystal *crystal_copy_deep(const Crystal *cryst)
 void crystal_free(Crystal *cryst)
 {
 	if ( cryst == NULL ) return;
-	free(cryst->notes);
-	free(cryst);
+	if ( cryst->owns_cell ) cell_free(cryst->cell);
+	cffree(cryst->notes);
+	cffree(cryst);
 }
 
 
@@ -182,6 +141,13 @@ void crystal_free(Crystal *cryst)
 
 UnitCell *crystal_get_cell(Crystal *cryst)
 {
+	return cryst->cell;
+}
+
+
+UnitCell *crystal_relinquish_cell(Crystal *cryst)
+{
+	cryst->owns_cell = 0;
 	return cryst->cell;
 }
 
@@ -195,12 +161,6 @@ const UnitCell *crystal_get_cell_const(const Crystal *cryst)
 double crystal_get_profile_radius(const Crystal *cryst)
 {
 	return cryst->profile_radius;
-}
-
-
-RefList *crystal_get_reflections(Crystal *cryst)
-{
-	return cryst->reflections;
 }
 
 
@@ -219,18 +179,6 @@ long long int crystal_get_num_saturated_reflections(Crystal *cryst)
 long long int crystal_get_num_implausible_reflections(Crystal *cryst)
 {
 	return cryst->n_implausible;
-}
-
-
-struct image *crystal_get_image(Crystal *cryst)
-{
-	return cryst->image;
-}
-
-
-const struct image *crystal_get_image_const(const Crystal *cryst)
-{
-	return cryst->image;
 }
 
 
@@ -277,19 +225,15 @@ void crystal_get_det_shift(Crystal *cryst, double* shift_x, double *shift_y)
 
 void crystal_set_cell(Crystal *cryst, UnitCell *cell)
 {
+	if ( cryst->owns_cell ) cell_free(cryst->cell);
 	cryst->cell = cell;
+	cryst->owns_cell = 1;
 }
 
 
 void crystal_set_profile_radius(Crystal *cryst, double r)
 {
 	cryst->profile_radius = r;
-}
-
-
-void crystal_set_reflections(Crystal *cryst, RefList *reflist)
-{
-	cryst->reflections = reflist;
 }
 
 
@@ -308,12 +252,6 @@ void crystal_set_num_saturated_reflections(Crystal *cryst, long long int n)
 void crystal_set_num_implausible_reflections(Crystal *cryst, long long int n)
 {
 	cryst->n_implausible = n;
-}
-
-
-void crystal_set_image(Crystal *cryst, struct image *image)
-{
-	cryst->image = image;
 }
 
 
@@ -343,8 +281,8 @@ void crystal_set_mosaicity(Crystal *cryst, double m)
 
 void crystal_set_notes(Crystal *cryst, const char *notes)
 {
-	free(cryst->notes);  /* free(NULL) is OK */
-	cryst->notes = strdup(notes);
+	cffree(cryst->notes);  /* free(NULL) is OK */
+	cryst->notes = cfstrdup(notes);
 }
 
 
@@ -359,7 +297,7 @@ void crystal_add_notes(Crystal *cryst, const char *notes_add)
 	}
 
 	len = strlen(notes_add) + strlen(cryst->notes) + 2;
-	nnotes = malloc(len);
+	nnotes = cfmalloc(len);
 	if ( nnotes == NULL ) {
 		ERROR("Failed to add notes to crystal.\n");
 		return;
@@ -368,7 +306,7 @@ void crystal_add_notes(Crystal *cryst, const char *notes_add)
 	strcpy(nnotes, cryst->notes);
 	strcat(nnotes, "\n");
 	strcat(nnotes, notes_add);
-	free(cryst->notes);
+	cffree(cryst->notes);
 	cryst->notes = nnotes;
 }
 

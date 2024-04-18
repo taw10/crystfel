@@ -141,11 +141,9 @@ struct reflpeak *make_test_image(int *pn_refls, struct image *image)
 	}
 	crystal_set_mosaicity(cr, 0.0);
 	crystal_set_profile_radius(cr, 0.005e9);
-	crystal_set_image(cr, image);
 	crystal_set_cell(cr, random_rotated_cell(rng));
 
-	refls = predict_to_res(cr, detgeom_max_resolution(image->detgeom, image->lambda));
-	crystal_set_reflections(cr, refls);
+	refls = predict_to_res(cr, image, detgeom_max_resolution(image->detgeom, image->lambda));
 	n_refls = num_reflections(refls);
 
 	/* Associate a peak with every reflection */
@@ -175,7 +173,7 @@ struct reflpeak *make_test_image(int *pn_refls, struct image *image)
 		i++;
 	}
 
-	image_add_crystal(image, cr);
+	image_add_crystal_refls(image, cr, refls);
 
 	gsl_rng_free(rng);
 

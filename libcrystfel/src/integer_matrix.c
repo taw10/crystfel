@@ -62,12 +62,12 @@ IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
 {
 	IntegerMatrix *m;
 
-	m = malloc(sizeof(IntegerMatrix));
+	m = cfmalloc(sizeof(IntegerMatrix));
 	if ( m == NULL ) return NULL;
 
-	m->v = calloc(rows*cols, sizeof(signed int));
+	m->v = cfcalloc(rows*cols, sizeof(signed int));
 	if ( m->v == NULL ) {
-		free(m);
+		cffree(m);
 		return NULL;
 	}
 
@@ -109,8 +109,8 @@ IntegerMatrix *intmat_copy(const IntegerMatrix *m)
 void intmat_free(IntegerMatrix *m)
 {
 	if ( m == NULL ) return;
-	free(m->v);
-	free(m);
+	cffree(m->v);
+	cffree(m);
 }
 
 
@@ -190,7 +190,7 @@ signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
 	signed int *ans;
 	unsigned int j;
 
-	ans = malloc(P->rows * sizeof(signed int));
+	ans = cfmalloc(P->rows * sizeof(signed int));
 	if ( ans == NULL ) return NULL;
 
 	for ( j=0; j<P->cols; j++ ) {

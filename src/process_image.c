@@ -57,6 +57,8 @@
 #include "im-sandbox.h"
 #include "im-zmq.h"
 #include "im-asapo.h"
+#include "peaks.h"
+#include "peakfinder8.h"
 
 static float **backup_image_data(float **dp, struct detgeom *det)
 {
@@ -292,35 +294,42 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	profile_start("peak-search");
 	switch ( iargs->peak_search.method ) {
 
+		ImageFeatureList *peaks;
+
 		case PEAK_HDF5:
 		case PEAK_CXI:
 		set_last_task(last_task, "peaksearch:hdf5orcxi");
-		image->features = image_read_peaks(iargs->dtempl,
-		                                   pargs->filename,
-		                                   pargs->event,
-		                                   iargs->peak_search.half_pixel_shift);
-		if ( image->features == NULL ) {
-			ERROR("Failed to get peaks from HDF5 file.\n");
-		}
+		peaks = image_read_peaks(iargs->dtempl,
+		                         pargs->filename,
+		                         pargs->event,
+		                         iargs->peak_search.half_pixel_shift);
 		if ( iargs->peak_search.revalidate ) {
-			validate_peaks(image, iargs->peak_search.min_snr,
-				       iargs->peak_search.pk_inn, iargs->peak_search.pk_mid,
-		                       iargs->peak_search.pk_out, iargs->peak_search.use_saturated,
-				       iargs->peak_search.check_hdf5_snr);
+			ImageFeatureList *npeaks = validate_peaks(image, peaks,
+			                                          iargs->peak_search.min_snr,
+			                                          iargs->peak_search.pk_inn,
+			                                          iargs->peak_search.pk_mid,
+			                                          iargs->peak_search.pk_out,
+			                                          iargs->peak_search.use_saturated,
+			                                          iargs->peak_search.check_hdf5_snr);
+			image_feature_list_free(peaks);
+			image->features = npeaks;
 		}
 		break;
 
 		case PEAK_ZAEF:
 		set_last_task(last_task, "peaksearch:zaef");
-		search_peaks(image, iargs->peak_search.threshold,
-		             iargs->peak_search.min_sq_gradient, iargs->peak_search.min_snr,
-		             iargs->peak_search.pk_inn, iargs->peak_search.pk_mid, iargs->peak_search.pk_out,
-		             iargs->peak_search.use_saturated);
+		image->features = search_peaks(image, iargs->peak_search.threshold,
+		                               iargs->peak_search.min_sq_gradient,
+		                               iargs->peak_search.min_snr,
+		                               iargs->peak_search.pk_inn,
+		                               iargs->peak_search.pk_mid,
+		                               iargs->peak_search.pk_out,
+		                               iargs->peak_search.use_saturated);
 		break;
 
 		case PEAK_PEAKFINDER8:
 		set_last_task(last_task, "peaksearch:pf8");
-		if ( search_peaks_peakfinder8(image, 2048,
+		image->features = peakfinder8(image, 2048,
 		                              iargs->peak_search.threshold,
 		                              iargs->peak_search.min_snr,
 		                              iargs->peak_search.min_pix_count,
@@ -329,40 +338,36 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		                              iargs->peak_search.min_res,
 		                              iargs->peak_search.max_res,
 		                              iargs->peak_search.use_saturated,
-					      iargs->peak_search.peakfinder8_fast,
-					      iargs->pf_private) ) {
-			ERROR("Failed to find peaks in image %s"
-			      "(event %s).\n",
-			      image->filename, image->ev);
-		}
+		                              iargs->peak_search.peakfinder8_fast,
+		                              iargs->pf_private);
 		break;
 
 		case PEAK_PEAKFINDER9:
 		set_last_task(last_task, "peaksearch:pf9");
-		if ( search_peaks_peakfinder9(image,
-		                              iargs->peak_search.min_snr_biggest_pix,
-		                              iargs->peak_search.min_snr_peak_pix,
-		                              iargs->peak_search.min_snr,
-		                              iargs->peak_search.min_sig,
-		                              iargs->peak_search.min_peak_over_neighbour,
-		                              iargs->peak_search.local_bg_radius) )
-		{
-			ERROR("Failed to find peaks in image %s"
-			      "(event %s).\n",
-			      image->filename, image->ev);
-		}
+		image->features = search_peaks_peakfinder9(image,
+		                                           iargs->peak_search.min_snr_biggest_pix,
+		                                           iargs->peak_search.min_snr_peak_pix,
+		                                           iargs->peak_search.min_snr,
+		                                           iargs->peak_search.min_sig,
+		                                           iargs->peak_search.min_peak_over_neighbour,
+		                                           iargs->peak_search.local_bg_radius);
 		break;
 
 		case PEAK_MSGPACK:
-		image->features = image_msgpack_read_peaks(iargs->dtempl,
-		                                           pargs->zmq_data,
-		                                           pargs->zmq_data_size,
-		                                           iargs->peak_search.half_pixel_shift);
+		peaks = image_msgpack_read_peaks(iargs->dtempl,
+		                                 pargs->zmq_data,
+		                                 pargs->zmq_data_size,
+		                                 iargs->peak_search.half_pixel_shift);
 		if ( iargs->peak_search.revalidate ) {
-			validate_peaks(image, iargs->peak_search.min_snr,
-				       iargs->peak_search.pk_inn, iargs->peak_search.pk_mid,
-		                       iargs->peak_search.pk_out, iargs->peak_search.use_saturated,
-				       iargs->peak_search.check_hdf5_snr);
+			ImageFeatureList *npeaks = validate_peaks(image, peaks,
+			                                          iargs->peak_search.min_snr,
+			                                          iargs->peak_search.pk_inn,
+			                                          iargs->peak_search.pk_mid,
+			                                          iargs->peak_search.pk_out,
+			                                          iargs->peak_search.use_saturated,
+			                                          iargs->peak_search.check_hdf5_snr);
+			image_feature_list_free(peaks);
+			image->features = npeaks;
 		}
 		break;
 
@@ -370,6 +375,10 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		case PEAK_ERROR:
 		break;
 
+	}
+	if ( image->features == NULL ) {
+		ERROR("Peaksearch failed for image %s" "(event %s).\n",
+		      image->filename, image->ev);
 	}
 	profile_end("peak-search");
 
@@ -434,20 +443,20 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	set_last_task(last_task, "prediction params");
 	if ( iargs->fix_profile_r >= 0.0 ) {
 		for ( i=0; i<image->n_crystals; i++ ) {
-			crystal_set_profile_radius(image->crystals[i],
+			crystal_set_profile_radius(image->crystals[i].cr,
 			                           iargs->fix_profile_r);
-			crystal_set_mosaicity(image->crystals[i], 0.0);
+			crystal_set_mosaicity(image->crystals[i].cr, 0.0);
 		}
 	} else {
 		for ( i=0; i<image->n_crystals; i++ ) {
-			crystal_set_profile_radius(image->crystals[i], 0.02e9);
-			crystal_set_mosaicity(image->crystals[i], 0.0);
+			crystal_set_profile_radius(image->crystals[i].cr, 0.02e9);
+			crystal_set_mosaicity(image->crystals[i].cr, 0.0);
 		}
 	}
 
 	if ( iargs->fix_profile_r < 0.0 ) {
 		for ( i=0; i<image->n_crystals; i++ ) {
-			if ( refine_radius(image->crystals[i], image) ) {
+			if ( refine_radius(image->crystals[i].cr, image) ) {
 				ERROR("WARNING: Radius determination failed\n");
 			}
 		}
@@ -479,7 +488,7 @@ streamwrite:
 
 	int n = 0;
 	for ( i=0; i<image->n_crystals; i++ ) {
-		n += crystal_get_num_implausible_reflections(image->crystals[i]);
+		n += crystal_get_num_implausible_reflections(image->crystals[i].cr);
 	}
 	if ( n > 0 ) {
 		STATUS("WARNING: %i implausibly negative reflection%s in %s "
@@ -495,7 +504,7 @@ out:
 	pthread_mutex_lock(&sb_shared->totals_lock);
 	any_crystals = 0;
 	for ( i=0; i<image->n_crystals; i++ ) {
-		if ( crystal_get_user_flag(image->crystals[i]) == 0 ) {
+		if ( crystal_get_user_flag(image->crystals[i].cr) == 0 ) {
 			sb_shared->n_crystals++;
 			any_crystals = 1;
 		}

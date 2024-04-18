@@ -375,6 +375,83 @@ void ERROR(const char *format, ...)
 }
 
 
+/* ---------------------------- Memory management --------------------------- */
+
+struct _mmconf {
+	void *(*malloc)(size_t size);
+	void (*free)(void *ptr);
+	void *(*calloc)(size_t nmemb, size_t size);
+	void *(*realloc)(void *ptr, size_t size);
+} mm_conf = { malloc, free, calloc, realloc };
+
+void *cfmalloc(size_t size)
+{
+	return mm_conf.malloc(size);
+}
+
+void cffree(void *ptr)
+{
+	mm_conf.free(ptr);
+}
+
+void *cfcalloc(size_t nmemb, size_t size)
+{
+	return mm_conf.calloc(nmemb, size);
+}
+
+void *cfrealloc(void *ptr, size_t size)
+{
+	return mm_conf.realloc(ptr, size);
+}
+
+int set_mm_funcs(void *(*cfmalloc)(size_t size),
+                 void (*cffree)(void *ptr),
+                 void *(*cfcalloc)(size_t nmemb, size_t size),
+                 void *(*cfrealloc)(void *ptr, size_t size))
+{
+	mm_conf.malloc = cfmalloc;
+	mm_conf.free = cffree;
+	mm_conf.calloc = cfcalloc;
+	mm_conf.realloc = cfrealloc;
+	return 0;
+}
+
+char *cfstrdup(const char *s)
+{
+	size_t l = strlen(s);
+	char *r = cfmalloc(l+1);
+	if ( r == NULL ) return NULL;
+	strcpy(r, s);
+	return r;
+}
+
+char *cfstrndup(const char *s, size_t n)
+{
+	char *r = cfmalloc(n+1);
+	if ( r == NULL ) return NULL;
+	strncpy(r, s, n);
+	r[n] = '\0';
+	return r;
+}
+
+void *srealloc(void *arr, size_t new_size)
+{
+	void *new_arr = cfrealloc(arr, new_size);
+	if ( new_arr == NULL ) {
+		cffree(arr);
+		return NULL;
+	} else {
+		return new_arr;
+	}
+}
+
+char *safe_strdup(const char *in)
+{
+	if ( in == NULL ) return NULL;
+	return cfstrdup(in);
+}
+
+
 /* ------------------------------ Useful functions ---------------------------- */
 
 int convert_int(const char *str, int *pval)
@@ -555,9 +632,9 @@ static int assplode_extract(char ***pbits, int n, size_t n_captured,
                             size_t start, const char *a)
 {
 	char **bits = *pbits;
-	bits = realloc(bits, sizeof(char *)*(n+1));
+	bits = cfrealloc(bits, sizeof(char *)*(n+1));
 	assert(bits != NULL);
-	bits[n] = malloc(n_captured+1);
+	bits[n] = cfmalloc(n_captured+1);
 	assert(bits[n] != NULL);
 	memcpy(bits[n], a+start, n_captured);
 	bits[n][n_captured] = '\0';
@@ -572,8 +649,8 @@ static int assplode_extract(char ***pbits, int n, size_t n_captured,
  *  deliminators.
  * Store each segment in bits[0...n] where n is the number of segments and is
  *  the return value.  pbits = &bits
- * Each segment needs to be freed with free() when finished with.
- * The array of bits also needs to be freed with free() when finished with,
+ * Each segment needs to be freed with cffree() when finished with.
+ * The array of bits also needs to be freed with cffree() when finished with,
  *  unless n=0 in which case bits==NULL
  */
 int assplode(const char *a, const char *delims, char ***pbits,
@@ -665,17 +742,10 @@ char *check_prefix(char *prefix)
 	       " with a slash.  I'm going to add it for you.\n", prefix);
 	STATUS("If this isn't what you want, run with --no-check-prefix.\n");
 	len = strlen(prefix)+2;
-	new = malloc(len);
+	new = cfmalloc(len);
 	snprintf(new, len, "%s/", prefix);
-	free(prefix);
+	cffree(prefix);
 	return new;
-}
-
-
-char *safe_strdup(const char *in)
-{
-	if ( in == NULL ) return NULL;
-	return strdup(in);
 }
 
 
@@ -685,7 +755,7 @@ char *safe_basename(const char *in)
 	char *cpy;
 	char *res;
 
-	cpy = strdup(in);
+	cpy = cfstrdup(in);
 
 	/* Get rid of any trailing slashes */
 	for ( i=strlen(cpy)-1; i>0; i-- ) {
@@ -704,10 +774,10 @@ char *safe_basename(const char *in)
 		}
 	}
 
-	res = strdup(cpy+i);
+	res = cfstrdup(cpy+i);
 	/* If we didn't find a previous slash, i==0 so res==cpy */
 
-	free(cpy);
+	cffree(cpy);
 
 	return res;
 }
@@ -892,7 +962,7 @@ char *load_entire_file(const char *filename)
 		return NULL;
 	}
 
-	contents = malloc(statbuf.st_size+1);
+	contents = cfmalloc(statbuf.st_size+1);
 	if ( contents == NULL ) {
 		ERROR("Failed to allocate memory for file\n");
 		return NULL;
@@ -901,14 +971,14 @@ char *load_entire_file(const char *filename)
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
 		ERROR("Failed to open file '%s'\n", filename);
-		free(contents);
+		cffree(contents);
 		return NULL;
 	}
 
 	if ( fread(contents, 1, statbuf.st_size, fh) != statbuf.st_size ) {
 		ERROR("Failed to read file '%s'\n", filename);
 		fclose(fh);
-		free(contents);
+		cffree(contents);
 		return NULL;
 	}
 	contents[statbuf.st_size] = '\0';
@@ -954,18 +1024,6 @@ int compare_double(const void *av, const void *bv)
 	if ( a > b ) return 1;
 	if ( a < b ) return -1;
 	return 0;
-}
-
-
-void *srealloc(void *arr, size_t new_size)
-{
-	void *new_arr = realloc(arr, new_size);
-	if ( new_arr == NULL ) {
-		free(arr);
-		return NULL;
-	} else {
-		return new_arr;
-	}
 }
 
 

@@ -78,14 +78,14 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 	struct fom_context *fctx;
 	int i;
 
-	fctx = malloc(sizeof(struct fom_context));
+	fctx = cfmalloc(sizeof(struct fom_context));
 	if ( fctx == NULL ) return NULL;
 
 	fctx->fom = fom;
 	fctx->nshells = nshells;
-	fctx->cts = malloc(nshells*sizeof(int));
+	fctx->cts = cfmalloc(nshells*sizeof(int));
 	if ( fctx->cts == NULL ) {
-		free(fctx);
+		cffree(fctx);
 		return NULL;
 	}
 	for ( i=0; i<nshells; i++ ) {
@@ -106,8 +106,8 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 	switch ( fctx->fom ) {
 
 		case FOM_RANORSPLIT :
-		fctx->num2 = malloc(nshells*sizeof(double));
-		fctx->den2 = malloc(nshells*sizeof(double));
+		fctx->num2 = cfmalloc(nshells*sizeof(double));
+		fctx->den2 = cfmalloc(nshells*sizeof(double));
 		if ( (fctx->num2 == NULL) || (fctx->den2 == NULL) ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->num2[i] = 0.0;
@@ -123,8 +123,8 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_MEAN_INTENSITY :
 		case FOM_SNR :
 		case FOM_REDUNDANCY :
-		fctx->num = malloc(nshells*sizeof(double));
-		fctx->den = malloc(nshells*sizeof(double));
+		fctx->num = cfmalloc(nshells*sizeof(double));
+		fctx->den = cfmalloc(nshells*sizeof(double));
 		if ( (fctx->num == NULL) || (fctx->den == NULL) ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->num[i] = 0.0;
@@ -137,7 +137,7 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		break;
 
 		case FOM_NUM_MEASUREMENTS :
-		fctx->n_meas = calloc(nshells, sizeof(long int));
+		fctx->n_meas = cfcalloc(nshells, sizeof(long int));
 		if ( fctx->n_meas == NULL ) goto out;
 		break;
 
@@ -145,20 +145,20 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 		case FOM_CCSTAR :
 		case FOM_CCANO :
 		case FOM_CRDANO :
-		fctx->vec1 = malloc(nshells*sizeof(double *));
-		fctx->vec2 = malloc(nshells*sizeof(double *));
+		fctx->vec1 = cfmalloc(nshells*sizeof(double *));
+		fctx->vec2 = cfmalloc(nshells*sizeof(double *));
 		if ( (fctx->vec1 == NULL) || (fctx->vec2 == NULL) ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->vec1[i] = NULL;
 			fctx->vec2[i] = NULL;
 		}
 		for ( i=0; i<nshells; i++ ) {
-			fctx->vec1[i] = malloc(nmax*sizeof(double));
+			fctx->vec1[i] = cfmalloc(nmax*sizeof(double));
 			if ( fctx->vec1[i] == NULL ) goto out;
-			fctx->vec2[i] = malloc(nmax*sizeof(double));
+			fctx->vec2[i] = cfmalloc(nmax*sizeof(double));
 			if ( fctx->vec2[i] == NULL ) goto out;
 		}
-		fctx->n = malloc(nshells*sizeof(int));
+		fctx->n = cfmalloc(nshells*sizeof(int));
 		if ( fctx->n == NULL ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->n[i] = 0;
@@ -168,7 +168,7 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 
 		case FOM_D1SIG :
 		case FOM_D2SIG :
-		fctx->n_within = malloc(nshells*sizeof(int));
+		fctx->n_within = cfmalloc(nshells*sizeof(int));
 		if ( fctx->n_within == NULL ) goto out;
 		for ( i=0; i<nshells; i++ ) {
 			fctx->n_within[i] = 0;
@@ -180,26 +180,26 @@ static struct fom_context *init_fom(enum fom_type fom, int nmax, int nshells)
 	return fctx;
 
 out:
-	free(fctx->num2);
-	free(fctx->den2);
-	free(fctx->num);
-	free(fctx->den);
-	free(fctx->n_meas);
+	cffree(fctx->num2);
+	cffree(fctx->den2);
+	cffree(fctx->num);
+	cffree(fctx->den);
+	cffree(fctx->n_meas);
 	if ( fctx->vec1 != NULL ) {
 		for ( i=0; i<nshells; i++ ) {
-			free(fctx->vec1[i]);
+			cffree(fctx->vec1[i]);
 		}
-		free(fctx->vec1);
+		cffree(fctx->vec1);
 	}
 	if ( fctx->vec2 != NULL ) {
 		for ( i=0; i<nshells; i++ ) {
-			free(fctx->vec2[i]);
+			cffree(fctx->vec2[i]);
 		}
-		free(fctx->vec2);
+		cffree(fctx->vec2);
 	}
-	free(fctx->n);
-	free(fctx->n_within);
-	free(fctx);
+	cffree(fctx->n);
+	cffree(fctx->n_within);
+	cffree(fctx);
 	return NULL;
 }
 
@@ -404,8 +404,8 @@ double fom_overall_value(struct fom_context *fctx)
 		case FOM_CC :
 		case FOM_CCSTAR :
 		case FOM_CCANO :
-		overall_vec1 = malloc(fctx->nmax*sizeof(double));
-		overall_vec2 = malloc(fctx->nmax*sizeof(double));
+		overall_vec1 = cfmalloc(fctx->nmax*sizeof(double));
+		overall_vec2 = cfmalloc(fctx->nmax*sizeof(double));
 		overall_n = 0;
 		for ( i=0; i<fctx->nshells; i++ ) {
 			int j;
@@ -417,13 +417,13 @@ double fom_overall_value(struct fom_context *fctx)
 		}
 		cc = gsl_stats_correlation(overall_vec1, 1, overall_vec2, 1,
 		                           overall_n);
-		free(overall_vec1);
-		free(overall_vec2);
+		cffree(overall_vec1);
+		cffree(overall_vec2);
 		break;
 
 		case FOM_CRDANO :
-		overall_along_diagonal = malloc(fctx->nmax*sizeof(double));
-		overall_perpend_diagonal = malloc(fctx->nmax*sizeof(double));
+		overall_along_diagonal = cfmalloc(fctx->nmax*sizeof(double));
+		overall_perpend_diagonal = cfmalloc(fctx->nmax*sizeof(double));
 		overall_n = 0;
 		for ( i=0; i<fctx->nshells; i++ ) {
 			int j;
@@ -443,8 +443,8 @@ double fom_overall_value(struct fom_context *fctx)
 		                                      1, overall_n, 0.0);
 		cc = sqrt(variance_signal / variance_error );
 
-		free(overall_along_diagonal);
-		free(overall_perpend_diagonal);
+		cffree(overall_along_diagonal);
+		cffree(overall_perpend_diagonal);
 		break;
 
 		case FOM_D1SIG :
@@ -566,8 +566,8 @@ double fom_shell_value(struct fom_context *fctx, int i)
 		       (2.0*(fctx->num2[i]/fctx->den2[i]) / sqrt(2.0));
 
 		case FOM_CRDANO :
-		along_diagonal = malloc(fctx->n[i] * sizeof(double));
-		perpend_diagonal = malloc(fctx->n[i] * sizeof(double));
+		along_diagonal = cfmalloc(fctx->n[i] * sizeof(double));
+		perpend_diagonal = cfmalloc(fctx->n[i] * sizeof(double));
 		for ( j=0; j<fctx->n[i]; j++ ) {
 			along_diagonal[j] = ( fctx->vec1[i][j] +
 						 fctx->vec2[i][j] ) / sqrt(2.0);
@@ -578,8 +578,8 @@ double fom_shell_value(struct fom_context *fctx, int i)
 		                                       fctx->n[i], 0.0);
 		variance_error = gsl_stats_variance_m(perpend_diagonal, 1,
 		                                      fctx->n[i], 0.0);
-		free(along_diagonal);
-		free(perpend_diagonal);
+		cffree(along_diagonal);
+		cffree(perpend_diagonal);
 		return sqrt(variance_signal / variance_error);
 
 		case FOM_D1SIG :
@@ -616,17 +616,17 @@ struct fom_shells *fom_make_resolution_shells(double rmin, double rmax,
 	double total_vol, vol_per_shell;
 	int i;
 
-	s = malloc(sizeof(struct fom_shells));
+	s = cfmalloc(sizeof(struct fom_shells));
 	if ( s == NULL ) return NULL;
 
-	s->rmins = malloc(nshells*sizeof(double));
-	s->rmaxs = malloc(nshells*sizeof(double));
+	s->rmins = cfmalloc(nshells*sizeof(double));
+	s->rmaxs = cfmalloc(nshells*sizeof(double));
 
 	if ( (s->rmins==NULL) || (s->rmaxs==NULL) ) {
 		ERROR("Couldn't allocate memory for resolution shells.\n");
-		free(s->rmins);
-		free(s->rmaxs);
-		free(s);
+		cffree(s->rmins);
+		cffree(s->rmaxs);
+		cffree(s);
 		return NULL;
 	}
 
@@ -705,8 +705,8 @@ static int wilson_scale(RefList *list1, RefList *list2, UnitCell *cell)
 	double G, B;
 	double c0, c1, cov00, cov01, cov11, chisq;
 
-	x = malloc(max_n*sizeof(double));
-	y = malloc(max_n*sizeof(double));
+	x = cfmalloc(max_n*sizeof(double));
+	y = cfmalloc(max_n*sizeof(double));
 	if ( (x==NULL) || (y==NULL) ) {
 		ERROR("Failed to allocate memory for scaling.\n");
 		return 1;
@@ -772,8 +772,8 @@ static int wilson_scale(RefList *list1, RefList *list2, UnitCell *cell)
 	STATUS("A positive relative B factor means that the second reflection "
 	       "list falls off with resolution more quickly than the first.\n");
 
-	free(x);
-	free(y);
+	cffree(x);
+	cffree(y);
 
 	/* Apply the scaling factor */
 	for ( refl2 = first_refl(list2, &iter);
@@ -808,12 +808,12 @@ static int calculate_possible(struct fom_context *fctx,
 	double cx, cy, cz;
 	signed int h, k, l;
 
-	fctx->possible = calloc(fctx->nshells, sizeof(long int));
+	fctx->possible = cfcalloc(fctx->nshells, sizeof(long int));
 	if ( fctx->possible == NULL ) return 1;
 
 	counted = reflist_new();
 	if ( counted == NULL ) {
-		free(fctx->possible);
+		cffree(fctx->possible);
 		return 1;
 	}
 

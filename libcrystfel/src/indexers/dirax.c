@@ -118,13 +118,13 @@ static void dirax_parseline(const char *line, struct image *image,
 	#if DIRAX_VERBOSE
 	char *copy;
 
-	copy = strdup(line);
+	copy = cfstrdup(line);
 	for ( i=0; i<strlen(copy); i++ ) {
 		if ( copy[i] == '\r' ) copy[i]='r';
 		if ( copy[i] == '\n' ) copy[i]='\0';
 	}
 	STATUS("DirAx: %s\n", copy);
-	free(copy);
+	cffree(copy);
 	#endif
 
 	if ( strstr(line, "reflections from file") ) {
@@ -250,13 +250,13 @@ static void dirax_sendline(const char *line, struct dirax_data *dirax)
 	char *copy;
 	int i;
 
-	copy = strdup(line);
+	copy = cfstrdup(line);
 	for ( i=0; i<strlen(copy); i++ ) {
 		if ( copy[i] == '\r' ) copy[i]='\0';
 		if ( copy[i] == '\n' ) copy[i]='\0';
 	}
 	STATUS("To DirAx: '%s'\n", copy);
-	free(copy);
+	cffree(copy);
 	#endif
 
 	if ( write(dirax->pty, line, strlen(line)) == -1 ) {
@@ -399,7 +399,7 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 				case DIRAX_INPUT_LINE :
 				/* Make buffer a bit too big to keep Valgrind
 				 * quiet about alignment errors */
-				block_buffer = malloc(i+4);
+				block_buffer = cfmalloc(i+4);
 				memcpy(block_buffer, dirax->rbuffer, i);
 				block_buffer[i] = '\0';
 
@@ -408,7 +408,7 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 				}
 
 				dirax_parseline(block_buffer, image, dirax);
-				free(block_buffer);
+				cffree(block_buffer);
 				endbit_length = i+2;
 				break;
 
@@ -441,8 +441,7 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 			                       - endbit_length;
 			new_rbuflen = dirax->rbuflen - endbit_length;
 			if ( new_rbuflen == 0 ) new_rbuflen = 256;
-			dirax->rbuffer = realloc(dirax->rbuffer,
-			                               new_rbuflen);
+			dirax->rbuffer = cfrealloc(dirax->rbuffer, new_rbuflen);
 			dirax->rbuflen = new_rbuflen;
 
 		} else {
@@ -450,8 +449,8 @@ static int dirax_readable(struct image *image, struct dirax_data *dirax)
 			if ( dirax->rbufpos == dirax->rbuflen ) {
 
 				/* More buffer space is needed */
-				dirax->rbuffer = realloc(dirax->rbuffer,
-				                         dirax->rbuflen + 256);
+				dirax->rbuffer = cfrealloc(dirax->rbuffer,
+				                           dirax->rbuflen + 256);
 				dirax->rbuflen = dirax->rbuflen + 256;
 				/* The new space gets used at the next
 				 * read, shortly... */
@@ -511,7 +510,7 @@ int run_dirax(struct image *image, void *ipriv)
 
 	write_drx(image);
 
-	dirax = malloc(sizeof(struct dirax_data));
+	dirax = cfmalloc(sizeof(struct dirax_data));
 	if ( dirax == NULL ) {
 		ERROR("Couldn't allocate memory for DirAx data.\n");
 		return 0;
@@ -538,7 +537,7 @@ int run_dirax(struct image *image, void *ipriv)
 
 	}
 
-	dirax->rbuffer = malloc(256);
+	dirax->rbuffer = cfmalloc(256);
 	dirax->rbuflen = 256;
 	dirax->rbufpos = 0;
 
@@ -595,7 +594,7 @@ int run_dirax(struct image *image, void *ipriv)
 	} while ( !rval && !dirax->success );
 
 	close(dirax->pty);
-	free(dirax->rbuffer);
+	cffree(dirax->rbuffer);
 	waitpid(dirax->pid, &status, 0);
 
 	if ( dirax->finished_ok == 0 ) {
@@ -603,7 +602,7 @@ int run_dirax(struct image *image, void *ipriv)
 	}
 
 	rval = dirax->success;
-	free(dirax);
+	cffree(dirax);
 	return rval;
 }
 
@@ -621,7 +620,7 @@ void *dirax_prepare(IndexingMethod *indm, UnitCell *cell)
 	/* Flags that DirAx knows about */
 	*indm &= INDEXING_METHOD_MASK;
 
-	dp = malloc(sizeof(struct dirax_private));
+	dp = cfmalloc(sizeof(struct dirax_private));
 	if ( dp == NULL ) return NULL;
 
 	dp->template = cell;
@@ -635,7 +634,7 @@ void dirax_cleanup(void *pp)
 {
 	struct dirax_private *p;
 	p = (struct dirax_private *)pp;
-	free(p);
+	cffree(p);
 }
 
 

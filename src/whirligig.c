@@ -175,12 +175,11 @@ static void process_series(struct image *images, signed int *ser,
 	fprintf(fh, "%i frames in series\n\n", len);
 	fprintf(fh, "   # Serial Filename   EventID   Crystal\n");
 	for ( i=0; i<len; i++ ) {
-		Crystal *cr = images[i].crystals[ser[i]];
 		fprintf(fh, "%4i %5i %s %s %i\n", i, images[i].serial,
 		                             images[i].filename,
 		                             images[i].ev,
 		                             ser[i]);
-		p[i] = transform_reflections(crystal_get_reflections(cr),
+		p[i] = transform_reflections(images[i].crystals[ser[i]].refls,
 		                             mat[i]);
 	}
 
@@ -316,8 +315,8 @@ static IntegerMatrix *try_all(struct window *win, int n1, int n2,
 	for ( i=0; i<i1->n_crystals; i++ ) {
 	for ( j=0; j<i2->n_crystals; j++ ) {
 
-		if ( compare_permuted_cell_parameters_and_orientation(crystal_get_cell(i1->crystals[i]),
-		                                                      crystal_get_cell(i2->crystals[j]),
+		if ( compare_permuted_cell_parameters_and_orientation(crystal_get_cell(i1->crystals[i].cr),
+		                                                      crystal_get_cell(i2->crystals[j].cr),
 		                                                      tols, &m) )
 		{
 			if ( !crystal_used(win, n1, i)
@@ -377,12 +376,12 @@ static int try_join(struct window *win, int sn)
 
 	/* Get the appropriately transformed cell from the last crystal in this
 	 * series */
-	cr = win->img[sp].crystals[win->ser[sn][sp]];
+	cr = win->img[sp].crystals[win->ser[sn][sp]].cr;
 	ref = cell_transform_intmat(crystal_get_cell(cr), win->mat[sn][sp]);
 
 	for ( j=0; j<win->img[win->join_ptr].n_crystals; j++ ) {
 		Crystal *cr2;
-		cr2 = win->img[win->join_ptr].crystals[j];
+		cr2 = win->img[win->join_ptr].crystals[j].cr;
 		if ( compare_permuted_cell_parameters_and_orientation(ref, crystal_get_cell(cr2),
 		                                                      tols,
 		                                                      &win->mat[sn][win->join_ptr]) )

@@ -110,6 +110,14 @@ typedef enum
 } DataSourceType;
 
 
+struct crystal_refls
+{
+	Crystal *cr;
+	RefList *refls;
+	int image_owns_crystal;
+	int image_owns_refls;
+};
+
 struct image
 {
 	/** The image data, by panel */
@@ -124,8 +132,8 @@ struct image
 	/** Non-zero if the frame was determined to be a "hit" */
 	int                     hit;
 
-	/**Array of crystals in the image */
-	Crystal                 **crystals;
+	/** Array of crystals (with reflection lists) in the image */
+	struct crystal_refls   *crystals;
 
 	/** The number of crystals in the image (size of \p crystals) */
 	int                     n_crystals;
@@ -184,6 +192,10 @@ struct image
 	/** Re-usable data array structure, or NULL if not used */
 	ImageDataArrays         *ida;
 
+	/** If set, then 'features' should be freed with the image.
+	 * Otherwise, it is managed externally (e.g. by Julia) */
+	int                      owns_peaklist;
+
 };
 
 #ifdef __cplusplus
@@ -201,9 +213,7 @@ extern ImageFeatureList *image_feature_list_new(void);
 extern void image_feature_list_free(ImageFeatureList *flist);
 
 extern void image_add_feature(ImageFeatureList *flist, double x, double y,
-                              int pn,
-                              struct image *parent, double intensity,
-                              const char *name);
+                              int pn, double intensity, const char *name);
 
 extern void image_remove_feature(ImageFeatureList *flist, int idx);
 
@@ -220,6 +230,8 @@ extern ImageFeatureList *sort_peaks(ImageFeatureList *flist);
 extern ImageFeatureList *image_feature_list_copy(const ImageFeatureList *flist);
 
 extern void image_add_crystal(struct image *image, Crystal *cryst);
+extern void image_add_crystal_refls(struct image *image,
+                                    Crystal *cryst, RefList *reflist);
 extern int remove_flagged_crystals(struct image *image);
 extern void free_all_crystals(struct image *image);
 
