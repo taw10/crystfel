@@ -203,7 +203,7 @@ build-centos7:
     reports:
       junit: temp/crystfel/build/meson-logs/testlog.junit.xml
   rules:
-    - if: $CI_PROJECT_NAMESPACE == "thomas.white"
+    - if: $CI_PIPELINE_SOURCE != 'merge_request_event'
 
 build-deploy-local-maxwell:
   tags:
