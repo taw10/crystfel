@@ -202,6 +202,8 @@ build-centos7:
     expire_in: 1 day
     reports:
       junit: temp/crystfel/build/meson-logs/testlog.junit.xml
+  rules:
+    - if: $CI_PROJECT_NAMESPACE == "thomas.white"
 
 build-deploy-local-maxwell:
   tags:
