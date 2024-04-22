@@ -115,7 +115,6 @@ struct asdf_cell {
 	gsl_vector *reciprocal[3];
 
 	int n; // number of fitting reflections
-	double volume;
 
 	int N_refls; // total number of reflections
 	int *reflections; // reflections[i] = 1 if reflections fits
@@ -213,8 +212,6 @@ static int asdf_cell_memcpy(struct asdf_cell *dest, struct asdf_cell *src)
 		gsl_vector_memcpy(dest->reciprocal[i], src->reciprocal[i]);
 	}
 
-	dest->volume = src->volume;
-
 	int n = src->N_refls;
 
 	dest->n = src->n;
@@ -286,6 +283,25 @@ static int calc_reciprocal(gsl_vector **direct, gsl_vector **reciprocal)
 	gsl_vector_scale(reciprocal[2], 1/volume);
 
 	return 1;
+}
+
+
+static int asdf_right_handed(struct asdf_cell *cl)
+{
+	double volume;
+	gsl_vector *vc = gsl_vector_alloc(3);
+	cross_product(cl->axes[0], cl->axes[1], &vc);
+	gsl_blas_ddot(vc, cl->axes[2], &volume);
+	gsl_vector_free(vc);
+	return volume > 0.0;
+}
+
+
+static void force_right_handed(struct asdf_cell *cl)
+{
+	if ( !asdf_right_handed(cl) ) {
+		gsl_vector_scale(cl->axes[2], -1);
+	}
 }
 
 
@@ -694,12 +710,7 @@ static int reduce_asdf_cell(struct asdf_cell *cl)
 		if (n > 30) changed = 0;
 	}
 
-	cross_product(cl->axes[0], cl->axes[1], &vc);
-	gsl_blas_ddot(vc, cl->axes[2], &cl->volume);
-	if ( cl->volume < 0 ) {
-		gsl_vector_scale(cl->axes[2], -1);
-		cl->volume *= -1;
-	}
+	force_right_handed(cl);
 
 	gsl_vector_free(va);
 	gsl_vector_free(vb);
@@ -760,7 +771,6 @@ static int create_cell(struct tvector tvec1, struct tvector tvec2,
 	gsl_vector_memcpy(c->axes[1], tvec2.t);
 	gsl_vector_memcpy(c->axes[2], tvec3.t);
 
-	c->volume = volume;
 	check_refl_fitting_cell(c, reflections, N_reflections, IndexFit);
 
 	if ( c->n < 6 ) return 0;
