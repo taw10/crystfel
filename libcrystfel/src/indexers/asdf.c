@@ -577,6 +577,7 @@ static int refine_asdf_cell(struct asdf_cell *c, gsl_vector **reflections,
 
 	calc_reciprocal(c->reciprocal, c->axes);
 
+	force_right_handed(c);
 	double a[3];
 	for ( i = 0; i < 3; i++ ) {
 		a[i] = gsl_blas_dnrm2(c->axes[i]);
