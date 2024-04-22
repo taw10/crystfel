@@ -87,7 +87,7 @@ starting from this version.  For more detailed discussion of the rationale for
 this, see https://gitlab.desy.de/thomas.white/crystfel/-/issues/81
 
 If you need quantitative image simulations, there are several better options
-including [nanoBragg]<https://bl831.als.lbl.gov/~jamesh/nanoBragg/>.  For
+including [nanoBragg](https://bl831.als.lbl.gov/~jamesh/nanoBragg/).  For
 relative-scale geometry-only simulations of the kind done by `partial_sim`,
 a better option is expected in a future CrystFEL version - watch this space!
 

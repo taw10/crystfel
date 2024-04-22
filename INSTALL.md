@@ -80,7 +80,9 @@ the SHA256 hash of the downloaded tarball, which is not known until after the
 tarball has been created!
 
 We hope to contribute the Homebrew formula to the main repository soon, so that
-you can install CrystFEL with a simple `brew install crystfel`.
+you can install CrystFEL with a simple `brew install crystfel`.  See
+[issue #94](https://gitlab.desy.de/thomas.white/crystfel/-/issues/94) for some
+discussion.
 
 
 Installation from source
