@@ -227,7 +227,8 @@ static int run_pede()
 		strcpy(cmdline, dir);
 		strcat(cmdline, "/pede");
 		if ( !file_exists(cmdline) ) {
-			ERROR("Couldn't find %s - falling back on shell path\n");
+			ERROR("Couldn't find %s - falling back on shell path\n",
+			      cmdline);
 			strcpy(cmdline, "pede millepede.txt");
 		} else {
 			strcat(cmdline, " millepede.txt");
