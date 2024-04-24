@@ -59,6 +59,8 @@ extern void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
                             char **pmeta, char **pfilename, char **pevent,
                             int *pfinished, int *pmessageid);
 
+extern void im_asapo_finalise(struct im_asapo *a, uint64_t message_id);
+
 extern void im_asapo_send(struct im_asapo *a, struct image *image, int hit);
 
 #else /* defined(HAVE_ASAPO) */
@@ -87,6 +89,10 @@ static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize,
 }
 
 static UNUSED void im_asapo_send(struct im_asapo *a, struct image *image, int hit)
+{
+}
+
+static UNUSED void im_asapo_finalise(struct im_asapo *a, uint64_t message_id)
 {
 }
 

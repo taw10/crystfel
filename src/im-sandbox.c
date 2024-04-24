@@ -343,6 +343,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	struct im_asapo *asapostuff = NULL;
 	Mille *mille;
 	ImageDataArrays *ida;
+	int asapo_message_id;
 
 	if ( sb->profile ) {
 		profile_init();
@@ -490,7 +491,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			char *filename;
 			char *event;
 			int finished = 0;
-			int message_id;
 
 			profile_start("asapo-fetch");
 			set_last_task(sb->shared->last_task[cookie], "ASAPO fetch");
@@ -500,7 +500,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			                                  &filename,
 			                                  &event,
 			                                  &finished,
-			                                  &message_id);
+			                                  &asapo_message_id);
 			profile_end("asapo-fetch");
 			if ( pargs.asapo_data != NULL ) {
 				ok = 1;
@@ -515,7 +515,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 
 				/* We will also use ASAP::O's serial number
 				 * instead of our own. */
-				ser = message_id;
+				ser = asapo_message_id;
 			} else {
 				if ( finished ) {
 					sb->shared->end_of_stream[cookie] = 1;
@@ -533,6 +533,10 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			              sb->shared, sb->shared->last_task[cookie],
 			              asapostuff, mille, ida);
 			profile_end("process-image");
+		}
+
+		if ( sb->asapo_params != NULL ) {
+			im_asapo_finalise(asapostuff, asapo_message_id);
 		}
 
 		/* NB pargs.zmq_data, pargs.asapo_data and  pargs.asapo_meta

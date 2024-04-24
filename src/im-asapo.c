@@ -173,6 +173,8 @@ struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 	a->group_id = asapo_string_from_c_str(params->group_id);
 	a->wait_for_stream = params->wait_for_stream;
 
+	asapo_consumer_set_resend_nacs(a->consumer, 1, 10000, 3);
+
 	asapo_free_handle(&cred);
 
 	return a;
@@ -268,6 +270,18 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 
 	*pdata_size = msg_size;
 	return data_copy;
+}
+
+
+void im_asapo_finalise(struct im_asapo *a, uint64_t message_id)
+{
+	AsapoErrorHandle err = asapo_new_handle();
+	asapo_consumer_acknowledge(a->consumer, a->group_id, message_id,
+	                           a->stream, &err);
+	if ( asapo_is_error(err) ) {
+		show_asapo_error("Couldn't acknowledge ASAP::O message", err);
+	}
+	asapo_free_handle(&err);
 }
 
 
