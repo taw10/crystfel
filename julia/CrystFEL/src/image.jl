@@ -55,7 +55,7 @@ mutable struct Image
     internalptr::Ptr{InternalImage}
     peaklist::Union{Nothing,PeakList}
     crystals
-    reflists
+    reflists::Vector{Union{Nothing,RefList}}
 end
 
 
@@ -99,7 +99,7 @@ function makecrystallist(image, listptr, n)
     end
 
     image.crystals = map(x->x.crystal, crystals)
-    image.reflists = map(x->x.reflections, crystals)
+    image.reflists = Vector{Union{Nothing,RefList}}(map(x->x.reflections, crystals))
     return crystals
 
 end
