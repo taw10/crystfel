@@ -64,7 +64,7 @@ export Crystal, InternalCrystal
 
 include("image.jl")
 using .Images
-export Image
+export Image, setreflections!
 
 include("diffcalc.jl")
 using .DiffractionCalculations

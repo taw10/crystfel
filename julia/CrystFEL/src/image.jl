@@ -9,7 +9,7 @@ import ..CrystFEL.PeakLists: PeakList, InternalPeakList
 import ..CrystFEL.Crystals: Crystal, InternalCrystal
 import ..CrystFEL.RefLists: RefList, InternalRefList, UnmergedReflection
 import ..CrystFEL.Symmetry: SymOpList
-export Image
+export Image, setreflections!
 
 const HEADER_CACHE_SIZE = 128
 
@@ -234,6 +234,20 @@ function Base.push!(image::Image, cr::Crystal, reflections::RefList{UnmergedRefl
     unsafe_store!(idata.crystals, pairptr, ncryst)
     push!(getfield(image, :crystals), cr)
     push!(getfield(image, :reflists), reflections)
+end
+
+
+function setreflections!(image::Image, n, reflist)
+    idata = unsafe_load(image.internalptr)
+    ncryst = idata.n_crystals
+    if n > ncryst
+        throw(ArgumentError("Image does not have nominated crystal"))
+    end
+    pairptr = unsafe_load(idata.crystals, n)
+    pairptr.reflist = reflist.internalptr
+    pairptr.owns_reflist = 0
+    unsafe_store!(idata.crystals, pairptr, ncryst)
+    push!(getfield(image, :reflists), reflist)
 end
 
 
