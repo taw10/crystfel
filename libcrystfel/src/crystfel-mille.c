@@ -327,6 +327,9 @@ void crystfel_mille_write_record(Mille *m)
 	int ni = 0;
 	int nw = (m->n * 2)+2;
 
+	/* Don't write empty records */
+	if ( m->n == 0 ) return;
+
 	fwrite(&nw, sizeof(int), 1, m->fh);
 
 	fwrite(&nf, sizeof(float), 1, m->fh);
