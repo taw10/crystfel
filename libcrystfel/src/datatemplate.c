@@ -149,7 +149,6 @@ static int parse_group(const char *name, DataTemplate *dt, const char *val)
 }
 
 
-
 static struct panel_template *new_panel(DataTemplate *det,
                                         const char *name,
                                         struct panel_template *defaults)
