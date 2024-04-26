@@ -132,6 +132,8 @@ static int parse_group(const char *name, DataTemplate *dt, const char *val)
 			gt->children[i] = find_group(dt, members[i]);
 			if ( gt->children[i] == NULL ) {
 				ERROR("Unknown panel group '%s'\n", members[i]);
+				ERROR("Make sure the hierarchy groups definitions are AFTER the "
+				      "panel definitions in the geometry file.\n");
 				fail = 1;
 			}
 		}

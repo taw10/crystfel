@@ -534,6 +534,9 @@ above.
 
 The highest-level group should always be called **all**.
 
+The group definitions must come **after** the panel definitions.  A good way
+to go is to put all the group definitions at the very end of the geometry file.
+
 If the detector consists of only one panel, CrystFEL will automatically create
 the **all** group containing it.
 
