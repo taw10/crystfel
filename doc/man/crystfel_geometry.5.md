@@ -537,8 +537,10 @@ The highest-level group should always be called **all**.
 The group definitions must come **after** the panel definitions.  A good way
 to go is to put all the group definitions at the very end of the geometry file.
 
-If the detector consists of only one panel, CrystFEL will automatically create
-the **all** group containing it.
+If you do not define any groups, CrystFEL will automatically create the **all**
+group for you, containing all panels in a flat hierarchy.  This allows basic
+geometry refinement (level zero, see **align_detector**) to work without any
+extra work.
 
 The **group** system replaces the **rigid_group** system used in older versions
 of CrystFEL.  If the geometry file contains any **rigid_group** lines, they

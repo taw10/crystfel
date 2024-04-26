@@ -90,21 +90,13 @@ static struct panel_group_template *add_group(const char *name, DataTemplate *dt
 }
 
 
-static int parse_group(const char *name, DataTemplate *dt, const char *val)
+static int add_group_members(const char *name, DataTemplate *dt,
+                             char **members, int n_members)
 {
 	struct panel_group_template *gt;
-	int n_members;
-	char **members;
 	int i;
 	int fail = 0;
 
-	gt = add_group(name, dt);
-	if ( gt == NULL ) {
-		ERROR("Failed to add group\n");
-		return 1;
-	}
-
-	n_members = assplode(val, ",",  &members, ASSPLODE_NONE);
 	if ( n_members == 0 ) {
 		ERROR("Panel group '%s' has no members\n", name);
 		fail = 1;
@@ -113,34 +105,57 @@ static int parse_group(const char *name, DataTemplate *dt, const char *val)
 	if ( n_members > MAX_PANEL_GROUP_CHILDREN ) {
 		ERROR("Panel group '%s' has too many members\n", name);
 		fail = 1;
-	} else {
+	}
 
-		/* A simple typo in the geometry file can segfault other
-		 * stuff, so check */
-		for ( i=0; i<n_members; i++ ) {
-			int j;
-			for ( j=0; j<i; j++ ) {
-				if ( strcmp(members[i], members[j]) == 0 ) {
-					ERROR("Duplicate member '%s' in group '%s'\n",
-					      members[i], name);
-					fail = 1;
-				}
-			}
-		}
 
-		for ( i=0; i<n_members; i++ ) {
-			gt->children[i] = find_group(dt, members[i]);
-			if ( gt->children[i] == NULL ) {
-				ERROR("Unknown panel group '%s'\n", members[i]);
-				ERROR("Make sure the hierarchy groups definitions are AFTER the "
-				      "panel definitions in the geometry file.\n");
+	/* A simple typo in the geometry file can segfault other
+	* stuff, so check */
+	for ( i=0; i<n_members; i++ ) {
+		int j;
+		for ( j=0; j<i; j++ ) {
+			if ( strcmp(members[i], members[j]) == 0 ) {
+				ERROR("Duplicate member '%s' in group '%s'\n",
+				      members[i], name);
 				fail = 1;
 			}
 		}
-
-		gt->n_children = n_members;
-
 	}
+
+	if ( fail ) return fail;
+
+	gt = add_group(name, dt);
+	if ( gt == NULL ) {
+		ERROR("Failed to add group\n");
+		return 1;
+	}
+
+	for ( i=0; i<n_members; i++ ) {
+		gt->children[i] = find_group(dt, members[i]);
+		if ( gt->children[i] == NULL ) {
+			ERROR("Unknown panel group '%s'\n", members[i]);
+			ERROR("Make sure the hierarchy groups definitions are AFTER the "
+			      "panel definitions in the geometry file, and start from "
+			      "the lowest hierachy level.\n");
+			fail = 1;
+		}
+	}
+
+	gt->n_children = n_members;
+
+	return fail;
+}
+
+
+static int parse_group(const char *name, DataTemplate *dt, const char *val)
+{
+	int n_members;
+	char **members;
+	int i;
+	int fail = 0;
+
+	n_members = assplode(val, ",",  &members, ASSPLODE_NONE);
+
+	fail = add_group_members(name, dt, members, n_members);
 
 	for ( i=0; i<n_members; i++ ) cffree(members[i]);
 	cffree(members);
@@ -1401,10 +1416,20 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		cffree(defaults.masks[i].filename);
 	}
 
-	/* If this is a single-panel detector, there should only be one group
-	 * called "all" which points to the panel */
-	if ( (dt->n_panels == 1) && (dt->n_groups == 1) ) {
-		parse_group("all", dt, dt->groups[0]->name);
+	/* If no groups are defined, put everything in one group.
+	 * This allows at least basic geometry refinement to work. */
+	if ( dt->n_groups == dt->n_panels ) {
+		char **allg = malloc(dt->n_groups*sizeof(char *));
+		if ( allg == NULL ) {
+			ERROR("Failed to create top group\n");
+		} else {
+			int i;
+			for ( i=0; i<dt->n_groups; i++ ) {
+				allg[i] = dt->groups[i]->name;
+			}
+			add_group_members("all", dt, allg, dt->n_groups);
+			free(allg);
+		}
 	}
 
 	cffree(string_orig);
