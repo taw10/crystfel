@@ -529,13 +529,15 @@ Groups can themselves be combined into higher-level groups, for example:
 
     group_all = abc,def
 
-This defines a group called *all** which contains both of the groups created
+This defines a group called **all** which contains both of the groups created
 above.
 
 The highest-level group should always be called **all**.
 
-The group definitions must come **after** the panel definitions.  A good way
-to go is to put all the group definitions at the very end of the geometry file.
+All members of a group need to be defined before defining the group.  This
+means that the group definitions must come **after** the panel definitions, and
+the groups should be defined from the bottom to top level of the hierarchy -
+the **all** group coming last.
 
 If you do not define any groups, CrystFEL will automatically create the **all**
 group for you, containing all panels in a flat hierarchy.  This allows basic
