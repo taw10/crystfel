@@ -533,10 +533,11 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			              sb->shared, sb->shared->last_task[cookie],
 			              asapostuff, mille, ida);
 			profile_end("process-image");
-		}
 
-		if ( sb->asapo_params != NULL ) {
-			im_asapo_finalise(asapostuff, ser);
+			if ( sb->asapo_params != NULL ) {
+				im_asapo_finalise(asapostuff, ser);
+			}
+
 		}
 
 		/* NB pargs.zmq_data, pargs.asapo_data and  pargs.asapo_meta
