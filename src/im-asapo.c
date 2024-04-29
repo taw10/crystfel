@@ -278,6 +278,7 @@ void im_asapo_finalise(struct im_asapo *a, uint64_t message_id)
 	AsapoErrorHandle err = asapo_new_handle();
 	asapo_consumer_acknowledge(a->consumer, a->group_id, message_id,
 	                           a->stream, &err);
+	STATUS("Acknowledging ASAP::O message %lli\n", (long long int)message_id);
 	if ( asapo_is_error(err) ) {
 		show_asapo_error("Couldn't acknowledge ASAP::O message", err);
 	}

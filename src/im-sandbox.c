@@ -343,7 +343,6 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	struct im_asapo *asapostuff = NULL;
 	Mille *mille;
 	ImageDataArrays *ida;
-	int asapo_message_id;
 
 	if ( sb->profile ) {
 		profile_init();
@@ -491,6 +490,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 			char *filename;
 			char *event;
 			int finished = 0;
+			int asapo_message_id;
 
 			profile_start("asapo-fetch");
 			set_last_task(sb->shared->last_task[cookie], "ASAPO fetch");
@@ -536,7 +536,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 		}
 
 		if ( sb->asapo_params != NULL ) {
-			im_asapo_finalise(asapostuff, asapo_message_id);
+			im_asapo_finalise(asapostuff, ser);
 		}
 
 		/* NB pargs.zmq_data, pargs.asapo_data and  pargs.asapo_meta
