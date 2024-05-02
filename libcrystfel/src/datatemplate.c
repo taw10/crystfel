@@ -2527,17 +2527,19 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 	/* Bad regions */
 	for ( i=0; i<dtempl->n_bad; i++ ) {
 		const struct dt_badregion *bad = &dtempl->bad[i];
+		assert(strncmp(bad->name, "bad", 3) == 0);
 		if ( bad->is_fsss ) {
-			fprintf(fh, "bad_%s/panel = %s\n", bad->name, bad->panel_name);
-			fprintf(fh, "bad_%s/min_fs = %i\n", bad->name, bad->min_fs);
-			fprintf(fh, "bad_%s/max_fs = %i\n", bad->name, bad->max_fs);
-			fprintf(fh, "bad_%s/min_ss = %i\n", bad->name, bad->min_ss);
-			fprintf(fh, "bad_%s/max_ss = %i\n", bad->name, bad->max_ss);
+			const struct panel_template *p = &dtempl->panels[bad->panel_number];
+			fprintf(fh, "%s/panel = %s\n", bad->name, p->name);
+			fprintf(fh, "%s/min_fs = %i\n", bad->name, bad->min_fs+p->orig_min_fs);
+			fprintf(fh, "%s/max_fs = %i\n", bad->name, bad->max_fs+p->orig_min_fs);
+			fprintf(fh, "%s/min_ss = %i\n", bad->name, bad->min_ss+p->orig_min_ss);
+			fprintf(fh, "%s/max_ss = %i\n", bad->name, bad->max_ss+p->orig_min_ss);
 		} else {
-			fprintf(fh, "bad_%s/min_x = %f\n", bad->name, bad->min_x);
-			fprintf(fh, "bad_%s/max_x = %f\n", bad->name, bad->max_x);
-			fprintf(fh, "bad_%s/min_y = %f\n", bad->name, bad->min_y);
-			fprintf(fh, "bad_%s/max_y = %f\n", bad->name, bad->max_y);
+			fprintf(fh, "%s/min_x = %f\n", bad->name, bad->min_x);
+			fprintf(fh, "%s/max_x = %f\n", bad->name, bad->max_x);
+			fprintf(fh, "%s/min_y = %f\n", bad->name, bad->min_y);
+			fprintf(fh, "%s/max_y = %f\n", bad->name, bad->max_y);
 		}
 		fprintf(fh, "\n");
 	}
