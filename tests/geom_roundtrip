@@ -17,6 +17,17 @@ dim0 = %
 dim1 = ss
 dim2 = fs
 
+bad_t/panel = q3a15
+bad_t/min_fs = 1360
+bad_t/max_fs = 1365
+bad_t/min_ss = 1298
+bad_t/max_ss = 1300
+
+bad_u/min_x = -2000.000000
+bad_u/max_x = 2000.000000
+bad_u/min_y = -20.000000
+bad_u/max_y = 20.000000
+
 q0a0/min_fs = 0
 q0a0/max_fs = 193
 q0a0/min_ss = 0
