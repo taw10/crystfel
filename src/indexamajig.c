@@ -1241,7 +1241,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( (args.filename != NULL) && is_hdf5_file(args.filename, &err) ) {
+	if ( (args.filename != NULL)
+	  && (strcmp(args.filename, "-") != 0)
+	  && is_hdf5_file(args.filename, &err) )
+	{
 		ERROR("Your input file appears to be an HDF5 file.\n");
 		ERROR("The input file should be a list of data files, not the "
 		      "data file itself.\n");
