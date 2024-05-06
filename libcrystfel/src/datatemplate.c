@@ -591,7 +591,6 @@ static int parse_field_for_panel(struct panel_template *panel, const char *key,
 
 	} else if ( strcmp(key, "coffset") == 0) {
 		panel->cnz_offset = atof(val);
-		panel->cnz_offset_default = def;
 	} else if ( strcmp(key, "res") == 0 ) {
 		panel->pixel_pitch = 1.0/atof(val);
 		panel->pixel_pitch_default = def;
@@ -1067,7 +1066,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	defaults.cnx = NAN;
 	defaults.cny = NAN;
 	defaults.cnz_offset = 0.0;
-	defaults.cnz_offset_default = 1;
 	defaults.pixel_pitch = -1.0;
 	defaults.pixel_pitch_default = 1;
 	defaults.bad = 0;
@@ -2403,7 +2401,6 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 	}
 
 	/* Other top-levels */
-	int cnz_offset_done = 0;
 	int mask_done[MAX_MASKS] = {0};
 	int satmap_done = 0;
 	int satmap_file_done = 0;
@@ -2418,11 +2415,6 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 
 		const struct panel_template *p = &dtempl->panels[i];
 		int j;
-
-		if ( p->cnz_offset_default && !cnz_offset_done ) {
-			fprintf(fh, "coffset = %f\n", p->cnz_offset);
-			cnz_offset_done = 1;
-		}
 
 		for ( j=0; j<MAX_MASKS; j++ ) {
 			if ( p->masks[j].data_location == NULL ) continue;
@@ -2561,9 +2553,7 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 		fprintf(fh, "%s/ss = %fx %+fy %+fz\n", p->name,
 		        p->ssx, p->ssy, p->ssz);
 
-		if ( !p->cnz_offset_default ) {
-			fprintf(fh, "%s/coffset = %f\n", p->name, p->cnz_offset);
-		}
+		fprintf(fh, "%s/coffset = %f\n", p->name, p->cnz_offset);
 
 		for ( j=0; j<MAX_MASKS; j++ ) {
 			if ( p->masks[j].data_location == NULL ) continue;

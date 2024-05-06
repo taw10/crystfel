@@ -130,7 +130,6 @@ struct panel_template
 
 	/** The offset to be applied from clen */
 	double cnz_offset;
-	int cnz_offset_default;
 
 	/** Mask definitions */
 	struct mask_template masks[MAX_MASKS];
