@@ -2178,19 +2178,6 @@ IntegerMatrix *reduce_g6(struct g6 g, double epsrel)
 }
 
 
-static double cell_diff(UnitCell *cell, double a, double b, double c,
-                        double al, double be, double ga)
-{
-	double ta, tb, tc, tal, tbe, tga;
-	double diff = 0.0;
-	cell_get_parameters(cell, &ta, &tb, &tc, &tal, &tbe, &tga);
-	diff += fabs(a - ta);
-	diff += fabs(b - tb);
-	diff += fabs(c - tc);
-	return diff;
-}
-
-
 static int random_int(int max)
 {
 	int r;
@@ -2210,7 +2197,7 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
 	IntegerMatrix *m;
 	int i[9];
 	double a, b, c, al, be, ga;
-	double min_dist = +INFINITY;
+	double best_diff = +INFINITY;
 	int s, sel;
 	IntegerMatrix *best_m[24];
 	int n_best = 0;
@@ -2246,30 +2233,32 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
 		cell_free(tmp);
 
 		if ( compare_cell_parameters(nc, reference, tols) ) {
-			double dist = cell_diff(nc, a, b, c, al, be, ga);
-			if ( dist < min_dist ) {
 
-				/* If the new solution is significantly better,
+			double diff = g6_distance(nc, reference);
+			if ( diff < 0.999*best_diff ) {
+
+				/* New solution is significantly better,
 				 * dump all the previous ones */
 				for ( s=0; s<n_best; s++ ) {
 					intmat_free(best_m[s]);
 				}
-				min_dist = dist;
-				best_m[0] = intmat_copy(m);
-				n_best = 1;
+				best_diff = diff;
+				n_best = 0;
 
-			} else if ( dist == min_dist ) {
+			}
 
+			if ( diff < 1.001*best_diff ) {
+
+				/* If the new solution is the same as the
+				 * previous one, add it to the list */
 				if ( n_best == 24 ) {
 					ERROR("WARNING: Too many equivalent "
 					      "reindexed lattices\n");
 				} else {
-					/* If the new solution is the same as the
-					* previous one, add it to the list */
 					best_m[n_best++] = intmat_copy(m);
 				}
 
-			}
+			} /* else worse, so ignore */
 		}
 
 		cell_free(nc);
@@ -2288,38 +2277,9 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
 
 	if ( n_best == 0 ) return NULL;
 
-	sel = n_best;
-	if ( n_best == 1 ) {
-
-		/* If there's one solution, choose that one, of course */
-		sel = 0;
-
-	} else {
-
-		/* If one of the solutions results in an identity applied to the
-		 * original cell, choose that one */
-
-		for ( s=0; s<n_best; s++ ) {
-			RationalMatrix *tmp;
-			RationalMatrix *comb;
-			tmp = rtnlmtx_times_intmat(CiARA, best_m[s]);
-			comb = rtnlmtx_times_intmat(tmp, RiBCB);
-			if ( rtnl_mtx_is_identity(comb) ) {
-				sel = s;
-			}
-			rtnl_mtx_free(tmp);
-			rtnl_mtx_free(comb);
-		}
-
-	}
-
-	/* Still undecided?  Choose randomly, to avoid weird distributions
-	 * in the cell parameters */
-	if ( sel == n_best ) {
-		sel = random_int(n_best);
-	}
-
-	/* Free all the others */
+	/* Select a transformation at random from the equivalent versions,
+	 * and then free all the others */
+	sel = random_int(n_best);
 	for ( s=0; s<n_best; s++ ) {
 		if ( s != sel ) intmat_free(best_m[s]);
 	}
@@ -2345,11 +2305,10 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
  * irrelevant.  The tolerances will be applied to the transformed copy of
  * \p cell_in, i.e. the version of the input cell which looks similar to
  * \p reference_in.  Subject to the tolerances, the cell will be chosen which
- * has the lowest total absolute error in unit cell axis lengths.
+ * has the lowest distance measured in G^6 unit cell space.
  *
  * There will usually be several transformation matrices which produce exactly
- * the same total absolute error.  If one of the matrices is an identity, that
- * one will be used.  Otherwise, the matrix will be selected at random from the
+ * the same total absolute error.  A matrix will be selected at random from the
  * possibilities.  This avoids skewed distributions of unit cell parameters,
  * e.g. the angles always being greater than 90 degrees.
  *
