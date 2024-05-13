@@ -10,7 +10,7 @@ export TetragonalLattice, HexagonalLattice, RhombohedralLattice, CubicLattice
 export PrimitiveCell, ACenteredCell, BCenteredCell, CCenteredCell
 export BodyCenteredCell, FaceCenteredCell, RhombohedralCell, RhombohedralCellOnHexagonalAxes
 export NoUniqueAxis, UnknownUniqueAxis, UniqueAxisA, UniqueAxisB, UniqueAxisC
-export rotatecell
+export rotatecell, compare_reindexed_cell_parameters
 
 
 # Represents the real C-side (opaque) structure.
@@ -425,6 +425,22 @@ simulating serial crystallography datasets.
 Equivalent to CrystFEL routine `cell_rotate(uc, random_quaternion(<rng>))`.
 """
 rotatecell(uc) = rotatecell(uc, randomquat())
+
+
+"""
+    compare_reindexed_cell_parameters(uc, reference, tols)
+
+"""
+function compare_reindexed_cell_parameters(uc, reference, tols)
+    out = @ccall libcrystfel.compare_reindexed_cell_parameters(uc.internalptr::Ptr{InternalUnitCell},
+                                                               reference.internalptr::Ptr{InternalUnitCell},
+                                                               collect(Cdouble,tols)::Ptr{Cdouble},
+                                                               C_NULL::Ptr{Cvoid})::Ptr{InternalUnitCell}
+    if out == C_NULL
+        throw(ErrorException("Cell comparison failed"))
+    end
+    UnitCell(out)
+end
 
 
 end   # of module

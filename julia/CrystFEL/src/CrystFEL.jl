@@ -34,7 +34,7 @@ export TetragonalLattice, HexagonalLattice, RhombohedralLattice, CubicLattice
 export PrimitiveCell, ACenteredCell, BCenteredCell, CCenteredCell
 export BodyCenteredCell, FaceCenteredCell, RhombohedralCell, RhombohedralCellOnHexagonalAxes
 export NoUniqueAxis, UnknownUniqueAxis, UniqueAxisA, UniqueAxisB, UniqueAxisC
-export rotatecell
+export rotatecell, compare_reindexed_cell_parameters
 
 include("detgeom.jl")
 using .DetGeoms
