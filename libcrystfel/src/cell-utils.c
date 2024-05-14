@@ -2245,9 +2245,9 @@ static IntegerMatrix *check_permutations(UnitCell *cell_reduced, UnitCell *refer
 				best_diff = diff;
 				n_best = 0;
 
-			}
+				best_m[n_best++] = intmat_copy(m);
 
-			if ( diff < 1.001*best_diff ) {
+			} else if ( diff < 1.001*best_diff ) {
 
 				/* If the new solution is the same as the
 				 * previous one, add it to the list */
