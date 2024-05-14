@@ -2423,7 +2423,7 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 			fprintf(fh, "mask%i_data = %s\n",
 			        j, p->masks[j].data_location);
 			if ( p->masks[j].filename != NULL ) {
-				fprintf(fh, "mask%i_filename = %s\n",
+				fprintf(fh, "mask%i_file = %s\n",
 				        j, p->masks[j].filename);
 			}
 			fprintf(fh, "mask%i_goodbits = 0x%x\n",
@@ -2561,7 +2561,7 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 			fprintf(fh, "%s/mask%i_data = %s\n",
 			        p->name, j, p->masks[j].data_location);
 			if ( p->masks[j].filename != NULL ) {
-				fprintf(fh, "%smask%i_filename = %s\n",
+				fprintf(fh, "%smask%i_file = %s\n",
 				        p->name, j, p->masks[j].filename);
 			}
 			fprintf(fh, "%s/mask%i_goodbits = 0x%x\n",
