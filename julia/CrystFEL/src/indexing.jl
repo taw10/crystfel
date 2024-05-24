@@ -144,7 +144,8 @@ function index(image::Image, idxr::Indexer; mille=nothing)
                                        idxr.indexingpriv::Ptr{IndexingPriv},
                                        C_NULL::Ptr{Cvoid},
                                        C_NULL::Ptr{Cvoid},
-                                       imille::Ptr{Cvoid})::Cvoid
+                                       imille::Ptr{Cvoid},
+                                       99::Cint)::Cvoid
 end
 
 
