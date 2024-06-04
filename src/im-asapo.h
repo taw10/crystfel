@@ -45,6 +45,7 @@ struct im_asapo_params
 	int wait_for_stream;
 	int write_output_stream;
 	int consumer_timeout_ms;
+	int use_ack;
 };
 
 struct im_asapo;

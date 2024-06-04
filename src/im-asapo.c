@@ -55,6 +55,7 @@ struct im_asapo
 	AsapoProducerHandle producer;
 	AsapoStringHandle group_id;
 	int wait_for_stream;
+	int use_ack;
 };
 
 
@@ -173,7 +174,10 @@ struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 	a->group_id = asapo_string_from_c_str(params->group_id);
 	a->wait_for_stream = params->wait_for_stream;
 
-	asapo_consumer_set_resend_nacs(a->consumer, 1, 10000, 3);
+	a->use_ack = params->use_ack;
+	if ( a->use_ack ) {
+		asapo_consumer_set_resend_nacs(a->consumer, 1, 10000, 3);
+	}
 
 	asapo_free_handle(&cred);
 

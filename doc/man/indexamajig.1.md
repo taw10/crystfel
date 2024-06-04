@@ -359,6 +359,9 @@ BASIC OPTIONS
 : Set the timeout used for "get next" calls from ASAP::O, in ms.  The default
 : is 500 ms.
 
+**--asapo-acks*
+: Use ASAP::O acknowledgements for more reliable message delivery.
+
 **--data-format=format**
 : Specify the data format for data received over ZeroMQ or ASAP::O.  Possible
 : values in this version are msgpack, hdf5 and seedee.
