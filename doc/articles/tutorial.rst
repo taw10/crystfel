@@ -762,12 +762,12 @@ Advanced: Check and optimise the detector geometry
 
 Even if the geometry file is supposedly correct for the experiment, it's best
 to check that, for example, the beam position hasn't drifted.  CrystFEL
-includes a tool for refining the detector geometry, called ``align_detector``.
-This tool looks for small alterations to the geometry which improve the average
-fit between observed and calculated peak locations, for all patterns, while
-taking into account that changing the detector position will also change the
-orientation reported by the indexing procedure.  The topic of detector geometry
-refinement is deep and complex, but only a basic application is needed here.
+includes a tool for refining the detector geometry.  This tool looks for small
+alterations to the geometry which improve the average fit between observed and
+calculated peak locations, for all patterns, while taking into account that
+changing the detector position will also change the orientation reported by the
+indexing procedure.  The topic of detector geometry refinement is deep and
+complex, but only a basic application is needed here.
 
 Click  **Refine detector geometry** in the bar at the left of the CrystFEL GUI.
 You will be presented with a dialogue box to choose the filename for the new,
@@ -784,7 +784,7 @@ data than have been included in this tutorial.
 
 Once you click **Save**, the updated geometry file should appear after a moment
 of calculation.  The corrections applied to the detector position are reported
-in the terminal:::
+in the terminal::
 
    Millepede succeeded.
 
@@ -794,6 +794,10 @@ in the terminal:::
 
 If you process this dataset again, use this new geometry file and you should
 find that the indexing results are slightly better.
+
+The command-line tool for detector geometry refinement is called
+``align_detector``, and you can read more about how it works in its
+`manual page <../man/align_detector.1.md>`_.
 
 
 
