@@ -760,69 +760,40 @@ parameteters for just one frame, before launching the big processing job!
 Advanced: Check and optimise the detector geometry
 --------------------------------------------------
 
-This step is marked as *Advanced* because it needs some work outside the
-CrystFEL GUI, but it's a very good idea to do this check.
-
 Even if the geometry file is supposedly correct for the experiment, it's best
-to check that, for example, the beam position hasn't drifted.  Fortunately,
-CrystFEL has already done most of the work for you. After indexing each
-pattern, CrystFEL runs a short optimisation procedure, adjusting the unit cell
-parameters, orientation and beam centre position to get the best possible
-agreement between the observed and predicted peak locations at the same time as
-making sure that the observed peaks correspond to Bragg positions as closely as
-possible. The required beam shift (equivalently considered as a shift of the
-detector) is recorded in the stream for each pattern (see the *Advanced* part
-of section 8)::
+to check that, for example, the beam position hasn't drifted.  CrystFEL
+includes a tool for refining the detector geometry, called ``align_detector``.
+This tool looks for small alterations to the geometry which improve the average
+fit between observed and calculated peak locations, for all patterns, while
+taking into account that changing the detector position will also change the
+orientation reported by the indexing procedure.  The topic of detector geometry
+refinement is deep and complex, but only a basic application is needed here.
 
-   $ grep "predict_refine/det_shift" index-all-cell-1/crystfel.stream | head -n 5
-   predict_refine/det_shift x = 0.020 y = 0.010 mm
-   predict_refine/det_shift x = -0.028 y = -0.017 mm
-   predict_refine/det_shift x = 0.028 y = 0.048 mm
-   predict_refine/det_shift x = 0.022 y = -0.014 mm
-   predict_refine/det_shift x = -0.016 y = -0.002 mm
-   $
+Click  **Refine detector geometry** in the bar at the left of the CrystFEL GUI.
+You will be presented with a dialogue box to choose the filename for the new,
+refined geometry file.  Choose any suitable new filename, then look at the
+bottom of the window.  There is a drop-down menu where you should select the
+name of the indexing job from earlier in this step (using prior unit cell
+parameters).  The geometry refinement calculations will be based on the results
+of that indexing job.  Leave **Heirarchy level** at zero and **Include
+out-of-plane positions and tilts** unselected, to keep the refinement simple.
+This will only refine the overall beam center position on the detector.  Higher
+refinement levels will do a more fine-grained refinement where the subunits
+comprising the detector are refined individually, but this usually needs more
+data than have been included in this tutorial.
 
-A program provided with CrystFEL called detector-shift will plot these values.
-Simply run it on the stream::
+Once you click **Save**, the updated geometry file should appear after a moment
+of calculation.  The corrections applied to the detector position are reported
+in the terminal:::
 
-   $ detector-shift index-all-cell-1/crystfel.stream
-   Mean shifts: dx = 0.0062 mm,  dy = -0.0097 mm
+   Millepede succeeded.
 
-You can also run ``detector-shift`` conveniently from within the CrystFEL GUI:
-Simply choose **Check detector shift** from the **Tools** menu.  This will run
-``detector-shift`` on whichever indexing result is currently selected (see the
-start of section 7).
+   Group all:
+       x-translation +0.019464 mm
+       y-translation +0.001548 mm
 
-A window should open, which shows the detector shifts as a scatter plot:
-
-.. image:: tutorial-images/detector-shift.png
-
-The cyan point marks the origin (0,0), and the pink point marks the mean of all
-the offsets.  The pixel size of the `Jungfrau detector
-<https://www.psi.ch/en/lxn/jungfrau>`_, which was used for this experiment, is
-75 µm, so almost all of the offsets are less than 1 pixel, and the average
-offset is very much less than 1 pixel.  Therefore, no further refinement is
-required.
-
-Just for reference, here is how the graph might look if the offset were larger:
-
-.. image:: tutorial-images/detector-shift-2.png
-
-Notice that the cluster of points is significantly displaced from the origin.
-This offset has already been taken into account by CrystFEL when calculating
-the position of Bragg peaks, but the results will be better overall if the
-geometry is correct from the start of the process.  In this case, it would be a
-good idea to update the geometry file.  The detector-shift program can fix the
-geometry file for you::
-
-   $ detector-shift index-all-cell-1/crystfel.stream jf-swissfel-16M.geom
-   Mean shifts: dx = -0.14 mm,  dy = -0.25 mm
-   Applying corrections to jf-swissfel-16M.geom, output filename jf-swissfel-16M-predrefine.geom
-   default res 9097.525473
-
-The updated geometry file is called ``jf-swissfel-16M-predrefine.geom``, as the
-script tells you.  If you process this dataset again, use this new geometry
-file.
+If you process this dataset again, use this new geometry file and you should
+find that the indexing results are slightly better.
 
 
 
