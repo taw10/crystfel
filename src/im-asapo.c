@@ -279,13 +279,15 @@ void *im_asapo_fetch(struct im_asapo *a, size_t *pdata_size,
 
 void im_asapo_finalise(struct im_asapo *a, uint64_t message_id)
 {
-	AsapoErrorHandle err = asapo_new_handle();
-	asapo_consumer_acknowledge(a->consumer, a->group_id, message_id,
-	                           a->stream, &err);
-	if ( asapo_is_error(err) ) {
-		show_asapo_error("Couldn't acknowledge ASAP::O message", err);
+	if ( a->use_ack ) {
+		AsapoErrorHandle err = asapo_new_handle();
+		asapo_consumer_acknowledge(a->consumer, a->group_id, message_id,
+		                           a->stream, &err);
+		if ( asapo_is_error(err) ) {
+			show_asapo_error("Couldn't acknowledge ASAP::O message", err);
+		}
+		asapo_free_handle(&err);
 	}
-	asapo_free_handle(&err);
 }
 
 
