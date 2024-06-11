@@ -176,7 +176,7 @@ struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
 
 	a->use_ack = params->use_ack;
 	if ( a->use_ack ) {
-		asapo_consumer_set_resend_nacs(a->consumer, 1, 10000, 3);
+		asapo_consumer_set_resend_nacs(a->consumer, 1, 60000, 3);
 	}
 
 	asapo_free_handle(&cred);
