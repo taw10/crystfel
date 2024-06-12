@@ -4,7 +4,7 @@ using Printf
 
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
-import ..CrystFEL.DetGeoms: DetGeom
+import ..CrystFEL.DetGeoms: InternalDetGeom, copydetgeom
 import ..CrystFEL.PeakLists: PeakList, InternalPeakList
 import ..CrystFEL.Crystals: Crystal, InternalCrystal
 import ..CrystFEL.RefLists: RefList, InternalRefList, UnmergedReflection
@@ -29,7 +29,7 @@ mutable struct InternalImage
     n_crystals::Cint
     indexed_by::Cint
     n_indexing_tries::Cint
-    detgeom::Ptr{DetGeom}
+    detgeom::Ptr{InternalDetGeom}
     data_source_type::Cint
     filename::Cstring
     ev::Cstring
@@ -134,6 +134,9 @@ function Base.getproperty(image::Image, name::Symbol)
             return makecrystallist(image,
                                    getfield(idata, :crystals),
                                    getfield(idata, :n_crystals))
+
+        elseif name === :detgeom
+            return copydetgeom(getfield(idata, :detgeom))
 
         else
             getfield(idata, name)
