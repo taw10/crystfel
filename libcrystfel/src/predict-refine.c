@@ -811,7 +811,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	reflist = reflist_new();
 	n = pair_peaks(image, cr, reflist, rps);
-	if ( n < 10 ) {
+	if ( n < 3 ) {
 		cffree(rps);
 		reflist_free(reflist);
 		return 1;
@@ -887,7 +887,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	n = pair_peaks(image, cr, NULL, rps);
 	free_rps_noreflist(rps, n);
-	if ( n < 10 ) {
+	if ( n < 3 ) {
 		if ( mille != NULL ) {
 			crystfel_mille_delete_last_record(mille);
 		}
