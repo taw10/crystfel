@@ -3,42 +3,10 @@ stages:
   - deploy
   - build_container
   
-.build-and-test:
-  image: fedora:32
-  script:
-    - dnf group install -y 'Development Tools'
-    - dnf install -y hdf5-devel gsl-devel flex bison gcc-c++
-    - dnf install -y gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils
-    - dnf install -y meson pandoc
-    - meson setup build && ninja -C build
-    - ninja -C build test
-  artifacts:
-    when: always
-    paths:
-      - build/meson-logs/testlog.junit.xml
-    reports:
-      junit: build/meson-logs/testlog.junit.xml
-
 build-and-test:
   image: gitlab.desy.de:5555/thomas.white/crystfel/fedora32/dev_env
   script:
     - meson setup build && ninja -C build
-    - ninja -C build test
-  artifacts:
-    when: always
-    paths:
-      - build/meson-logs/testlog.junit.xml
-    reports:
-      junit: build/meson-logs/testlog.junit.xml
-
-.build-and-test-minimal:
-  image: fedora:37
-  script:
-    - dnf group install -y 'Development Tools'
-    - dnf install -y gsl-devel flex bison
-    - dnf install -y gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils
-    - dnf install -y meson
-    - meson setup build -Dhdf5=disabled && ninja -C build
     - ninja -C build test
   artifacts:
     when: always
@@ -120,28 +88,6 @@ build_container_image_tag:
     - if: $CI_COMMIT_TAG
       when: manual
 
-.build-native-macos:
-  tags:
-    - macOS
-  variables:
-    GIT_STRATEGY: clone
-  script:
-    - brew update
-    - brew upgrade -f
-    - brew install gsl hdf5 flex bison argp-standalone pkg-config doxygen gtk+3 cairo pango gdk-pixbuf fftw meson ninja
-    - export PATH="$(brew --prefix)/opt/bison/bin:$(brew --prefix)/opt/flex/bin:$PATH"
-    - export LDFLAGS="-L$(brew --prefix)/opt/bison/lib -L$(brew --prefix)/opt/flex/lib -L$(brew --prefix)/opt/argp-standalone/lib -largp $LDFLAGS"
-    - export CFLAGS="-I$(brew --prefix)/opt/flex/include -I$(brew --prefix)/opt/argp-standalone/include/ $CFLAGS"
-    - meson setup build
-    - ninja -C build
-    - ninja -C build test
-  artifacts:
-    when: always
-    paths:
-      - build/meson-logs/testlog.junit.xml
-    reports:
-      junit: build/meson-logs/testlog.junit.xml
-
 build-brew-macos:
   dependencies: []
   tags:
@@ -155,31 +101,6 @@ build-brew-macos:
     - brew install -v -s ./crystfel.rb --HEAD
     - brew test crystfel
     - brew uninstall -v -f crystfel
-
-.build-centos7:
-  image: centos:centos7
-  #image:centos:latest
-  #image: centos:centos7.9.2009
-  variables:
-    SECURE_FILES_DOWNLOAD_PATH: './downloads'
-  script:
-    - yum update -y
-    - yum group install -y "Development Tools"
-    - yum install -y wget lz4 lz4-devel bzip2-libs bzip2-devel python3 gtk3-devel curl which libcurl-devel pandoc
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-    - python3 -m pip  install meson ninja
-    - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
-    - chmod 755 ./run-me-desy-maxwell-centos7
-    - ./run-me-desy-maxwell-centos7 --yes-really
-    - cp -Rp /software $CI_PROJECT_DIR
-  artifacts:
-    paths:
-      - software/
-      - temp/crystfel/build/meson-logs/testlog.junit.xml
-    when: on_success
-    expire_in: 1 day
-    reports:
-      junit: temp/crystfel/build/meson-logs/testlog.junit.xml
 
 build-centos7:
   image: gitlab.desy.de:5555/thomas.white/crystfel/centos7/dev_env
