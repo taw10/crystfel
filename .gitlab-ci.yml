@@ -101,6 +101,8 @@ build-brew-macos:
     - brew install -v -s ./crystfel.rb --HEAD
     - brew test crystfel
     - brew uninstall -v -f crystfel
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
 
 build-centos7:
   image: gitlab.desy.de:5555/thomas.white/crystfel/centos7/dev_env
@@ -124,7 +126,7 @@ build-centos7:
     reports:
       junit: temp/crystfel/build/meson-logs/testlog.junit.xml
   rules:
-    - if: $CI_PIPELINE_SOURCE != 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == "master"
 
 build-deploy-local-maxwell:
   tags:
