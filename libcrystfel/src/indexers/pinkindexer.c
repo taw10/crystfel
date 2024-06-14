@@ -33,7 +33,6 @@
 
 
 #include <stdlib.h>
-#include <sys/errno.h>
 #include <argp.h>
 
 #include "utils.h"
