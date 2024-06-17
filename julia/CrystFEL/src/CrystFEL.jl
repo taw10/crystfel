@@ -38,7 +38,7 @@ export rotatecell, compare_reindexed_cell_parameters
 
 include("detgeom.jl")
 using .DetGeoms
-export Panel, DetGeom
+export Panel, DetGeom, DetGeomPanel, DetGeomGroup, findgroup
 
 include("symmetry.jl")
 using .Symmetry
