@@ -5,6 +5,8 @@ f = Figure(size=(1024,1024))
 ax = Axis3(f[1,1], aspect=(1,1,1),
            xlabel="x (meters)", ylabel="y (meters)", zlabel="z (meters)")
 sl = Slider(f[2,1], range=0:0.01:1)
+btoggle = Toggle(f, halign=:left, tellwidth=false)
+f[3,1] = grid!([1,1]=>Label(f, "Show beams", halign=:right, tellwidth=false), [1,2]=>btoggle)
 
 dtempl = loaddatatemplate("cxidb-21.geom")
 cfimage = CrystFEL.Image(dtempl)
@@ -115,5 +117,12 @@ triangles = lift(sl.value) do trscale
 
 end
 
+beams = map(cfimage.detgeom.panels) do p
+    cen = (p.corner+p.fsvec*p.w/2+p.ssvec*p.h/2)*1.5*p.pixel_pitch
+    ((0,0,0), Tuple(cen))
+end
+
 mesh!(triangles, color="#7f7f7f")
+beamv = lines!(collect(Iterators.flatten(beams[1:2:end])), color="#008080")
+connect!(beamv.visible, btoggle.active)
 f
