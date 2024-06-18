@@ -44,18 +44,12 @@ end
 
 mutable struct DetGeomPanel
     name
-    cx
-    cy
-    cz
+    corner
+    fsvec
+    ssvec
     pixel_pitch
     adu_per_photon
     max_adu
-    fsx
-    fsy
-    fsz
-    ssx
-    ssy
-    ssz
     w
     h
 end
@@ -76,10 +70,10 @@ end
 
 function copy_dg_panel(p::InternalPanel)
     DetGeomPanel(unsafe_string(p.name),
-                 p.cx, p.cy, p.cz,
+                 [p.cx, p.cy, p.cz],
+                 [p.fsx, p.fsy, p.fsz],
+                 [p.ssx, p.ssy, p.ssz],
                  p.pixel_pitch, p.adu_per_photon, p.max_adu,
-                 p.fsx, p.fsy, p.fsz,
-                 p.ssx, p.ssy, p.ssz,
                  p.w, p.h)
 end
 
@@ -141,12 +135,12 @@ function Base.show(io::IO, p::DetGeomPanel)
     write(io, "Panel(")
     write(io, "name=\"")
     write(io, p.name)
-    write(io, "\", center=(")
-    show(io, p.cx); write(io, ", "); show(io, p.cy); write(io, ", "); show(io, p.cz)
+    write(io, "\", corner=")
+    show(io, p.corner)
     write(io, "), fs=(")
-    show(io, p.fsx); write(io, ", "); show(io, p.fsy); write(io, ", "); show(io, p.fsz)
+    show(io, p.fsvec)
     write(io, "), ss=(")
-    show(io, p.ssx); write(io, ", "); show(io, p.ssy); write(io, ", "); show(io, p.ssz)
+    show(io, p.ssvec)
     write(io, "), size=(")
     show(io, p.w); write(io, ", "); show(io, p.h)
     write(io, "))")
