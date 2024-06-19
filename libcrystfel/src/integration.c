@@ -1467,11 +1467,6 @@ int integrate_rings_once(Reflection *refl,
 	 * appropriate size */
 	if ( intensity < -aduph ) {
 		sig2_poisson = -aduph*intensity;
-	} else if ( intensity < 0.0 ) {
-		/* If the intensity is negative (by less than one
-		 * photon), assume the reflection is very weak and
-		 * therefore has a Poisson error of one photon. */
-		sig2_poisson = aduph;
 	}
 
 	sigma = sqrt(sig2_poisson + bx->m*sig2_bg);
