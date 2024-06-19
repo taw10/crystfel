@@ -2,7 +2,7 @@ using CrystFEL
 using GLMakie
 
 f = Figure(size=(1024,1024))
-ax = Axis3(f[1,1], aspect=(1,1,1),
+ax = Axis3(f[1,1], aspect=:equal, limits=(nothing,nothing,nothing,nothing,0,0.3),
            xlabel="x (meters)", ylabel="y (meters)", zlabel="z (meters)")
 sl = Slider(f[2,1], range=0:0.01:1)
 btoggle = Toggle(f, halign=:left, tellwidth=false)
@@ -123,6 +123,6 @@ beams = map(cfimage.detgeom.panels) do p
 end
 
 mesh!(triangles, color="#7f7f7f")
-beamv = lines!(collect(Iterators.flatten(beams[1:2:end])), color="#008080")
+beamv = lines!(collect(Iterators.flatten(beams[1:4:end])), color="#008080")
 connect!(beamv.visible, btoggle.active)
 f
