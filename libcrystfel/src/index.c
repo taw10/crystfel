@@ -50,6 +50,7 @@
 #include "cell-utils.h"
 #include "predict-refine.h"
 #include "profile.h"
+#include "crystfel-mille.h"
 #include "indexers/dirax.h"
 #include "indexers/asdf.h"
 #include "indexers/mosflm.h"
@@ -773,6 +774,12 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 			}
 		}
 		profile_end("cell-compare-to-others");
+
+		if ( (mille != NULL) && !crystal_get_user_flag(cr) ) {
+			profile_start("mille-write");
+			crystfel_mille_write_record(mille);
+			profile_end("mille-write");
+		}
 
 	}
 

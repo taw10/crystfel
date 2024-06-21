@@ -872,6 +872,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 	crystal_add_notes(cr, tmp);
 
 	if ( mille != NULL ) {
+		crystfel_mille_delete_last_record(mille);
 		profile_start("mille-calc");
 		write_mille(mille, n, crystal_get_cell(cr), rps, image,
 		            max_mille_level, Minvs);
@@ -887,18 +888,10 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	n = pair_peaks(image, cr, NULL, rps);
 	free_rps_noreflist(rps, n);
+
 	if ( n < 3 ) {
-		if ( mille != NULL ) {
-			crystfel_mille_delete_last_record(mille);
-		}
 		return 1;
+	} else {
+		return 0;
 	}
-
-	if ( mille != NULL ) {
-		profile_start("mille-write");
-		crystfel_mille_write_record(mille);
-		profile_end("mille-write");
-	}
-
-	return 0;
 }
