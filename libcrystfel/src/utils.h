@@ -75,6 +75,7 @@ extern "C" {
 extern void show_matrix_eqn(gsl_matrix *M, gsl_vector *v);
 extern void show_matrix(gsl_matrix *M);
 extern void show_vector(gsl_vector *M);
+extern gsl_vector *solve_inv(gsl_vector *v, gsl_matrix *M);
 extern gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *n_filt,
                             int verbose);
 extern gsl_matrix *matrix_mult2(gsl_matrix *A, gsl_matrix *B);

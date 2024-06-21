@@ -167,6 +167,25 @@ gsl_matrix *matrix_invert(gsl_matrix *m)
 }
 
 
+gsl_vector *solve_inv(gsl_vector *v, gsl_matrix *M)
+{
+	gsl_matrix *Minv;
+	gsl_vector *s;
+	int n;
+
+	n = v->size;
+	if ( v->size != M->size1 ) return NULL;
+	if ( v->size != M->size2 ) return NULL;
+
+	Minv =  matrix_invert(M);
+	if ( Minv == NULL ) return NULL;
+
+	s = gsl_vector_calloc(n);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, M, v, 0.0, s);
+	return s;
+}
+
+
 static int check_eigen(gsl_vector *e_val, int verbose)
 {
 	int i;
