@@ -162,7 +162,6 @@ gsl_matrix *matrix_invert(gsl_matrix *m)
 	}
 
 	gsl_permutation_free(perm);
-	gsl_matrix_free(m);
 
 	return inv;
 }

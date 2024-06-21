@@ -269,6 +269,7 @@ gsl_matrix **make_panel_minvs(struct detgeom *dg)
 		gsl_matrix_set(M, 2, 2, p->pixel_pitch*p->ssz);
 
 		Minvs[i] = matrix_invert(M);
+		gsl_matrix_free(M);
 		if ( Minvs[i] == NULL ) {
 			ERROR("Failed to calculate inverse panel matrix for %s\n",
 			      p->name);
