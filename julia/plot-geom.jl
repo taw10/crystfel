@@ -2,14 +2,43 @@ using CrystFEL
 using GLMakie
 
 function readmillepede(filename)
-    motions = let fh = open(filename, "r")
-        readline(fh)   # discard header line
-        motions = map(eachline(fh)) do line
-            sgroupser,sdelta,_ = split(line)
-            (parse(Int,sgroupser), parse(Float64,sdelta))
-        end
-        motions
+    fh = open(filename, "r")
+    readline(fh)   # discard header line
+    motions = map(eachline(fh)) do line
+        sgroupser,sdelta,_ = split(line)
+        (parse(Int,sgroupser), parse(Float64,sdelta))
     end
+    return motions
+end
+
+function findeigenvector(fh, num)
+    while !eof(fh)
+        l = readline(fh)
+        bits = split(l)
+        if length(bits) == 5
+            if bits[1] == "Eigenvector"
+                if parse(Int, bits[2]) == num
+                    return
+                end
+            end
+        end
+    end
+    error("Eigenvector not found")
+end
+
+function readeigenvector(filename, num)
+    fh = open(filename, "r")
+    findeigenvector(fh, num)
+    motions = []
+    while !eof(fh)
+        l = readline(fh)
+        length(l) < 3 && return motions
+        bits = split(l)
+        for i in 1:2:length(bits)
+            push!(motions, (parse(Int,bits[i]), parse(Float64,bits[i+1])))
+        end
+    end
+    return motions
 end
 
 function translate!(panel::DetGeomPanel, vec)
