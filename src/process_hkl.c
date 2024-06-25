@@ -446,7 +446,7 @@ static int merge_stream(Stream *st,
 				if ( r == 0 ) n_crystals_used++;
 			}
 
-			if ( n_crystals_used == stop_after ) break;
+			if ( (stop_after>0) && (n_crystals_used == stop_after) ) break;
 
 		}
 
