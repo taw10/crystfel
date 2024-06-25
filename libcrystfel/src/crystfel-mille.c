@@ -72,6 +72,10 @@ struct mille
 	int *int_arr;
 	int max_entries;
 	int n;
+
+	int *have_local;
+	int n_local;
+
 	FILE *fh;
 };
 
@@ -115,6 +119,17 @@ static void mille_add_measurement(Mille *m,
 		m->max_entries = new_max_entries;
 	}
 
+	if ( NLC > m->n_local ) {
+		int i;
+		int *new_have_local = cfrealloc(m->have_local, NLC*sizeof(int));
+		if ( new_have_local == NULL ) return;
+		m->have_local = new_have_local;
+		for ( i=m->n_local; i<NLC; i++ ) {
+			m->have_local[i] = 0;
+		}
+		m->n_local = NLC;
+	}
+
 	/* The measurement */
 	m->float_arr[m->n] = rMeas;
 	m->int_arr[m->n] = 0;
@@ -126,6 +141,7 @@ static void mille_add_measurement(Mille *m,
 			m->float_arr[m->n] = derLc[i];
 			m->int_arr[m->n] = i+1;
 			m->n++;
+			m->have_local[i] = 1;
 		}
 	}
 
@@ -292,6 +308,8 @@ Mille *crystfel_mille_new(const char *outFileName)
 	m->n = 0;
 	m->float_arr = NULL;
 	m->int_arr = NULL;
+	m->have_local = NULL;
+	m->n_local = 0;
 
 	m->fh = fopen(outFileName, "wb");
 	if ( m->fh == NULL ) {
@@ -318,17 +336,29 @@ void crystfel_mille_free(Mille *m)
 void crystfel_mille_delete_last_record(Mille *m)
 {
 	m->n = 0;
+	cffree(m->have_local);
+	m->have_local = NULL;
+	m->n_local = 0;
 }
 
 
 void crystfel_mille_write_record(Mille *m)
 {
+	int i;
 	float nf = 0.0;
 	int ni = 0;
 	int nw = (m->n * 2)+2;
 
 	/* Don't write empty records */
 	if ( m->n == 0 ) return;
+
+	/* Don't write records with incomplete local gradients */
+	for ( i=0; i<m->n_local; i++ ) {
+		if ( !m->have_local[i] ) {
+			crystfel_mille_delete_last_record(m);
+			return;
+		}
+	}
 
 	fwrite(&nw, sizeof(int), 1, m->fh);
 
