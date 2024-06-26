@@ -150,7 +150,7 @@ int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
 	gsl_vector *dRdp;
 	gsl_vector *v;
 
-	get_indices(refl, &h, &k, &l);
+	get_symmetric_indices(refl, &h, &k, &l);
 
 	dRdp = gsl_vector_calloc(3);
 
@@ -302,7 +302,7 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	double mu;
 	double fs, ss;
 
-	get_indices(refl, &h, &k, &l);
+	get_symmetric_indices(refl, &h, &k, &l);
 	kpred = get_kpred(refl);
 	cell_get_reciprocal(cell, &asx, &asy, &asz,
 	                          &bsx, &bsy, &bsz,
