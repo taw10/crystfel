@@ -871,7 +871,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 	         total_shifts[0], total_shifts[1], total_shifts[2]);
 	crystal_add_notes(cr, tmp);
 
-	if ( mille != NULL ) {
+	if ( (mille != NULL) && (n>4) ) {
 		crystfel_mille_delete_last_record(mille);
 		profile_start("mille-calc");
 		write_mille(mille, n, crystal_get_cell(cr), rps, image,
