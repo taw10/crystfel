@@ -135,28 +135,24 @@ gsl_matrix *matrix_invert(gsl_matrix *m)
 	perm = gsl_permutation_alloc(m->size1);
 	if ( perm == NULL ) {
 		ERROR("Couldn't allocate permutation\n");
-		gsl_matrix_free(m);
 		return NULL;
 	}
 
 	inv = gsl_matrix_alloc(m->size1, m->size2);
 	if ( inv == NULL ) {
 		ERROR("Couldn't allocate inverse\n");
-		gsl_matrix_free(m);
 		gsl_permutation_free(perm);
 		return NULL;
 	}
 
 	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
 		ERROR("Couldn't decompose matrix\n");
-		gsl_matrix_free(m);
 		gsl_permutation_free(perm);
 		return NULL;
 	}
 
 	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert cell matrix:\n");
-		gsl_matrix_free(m);
+		ERROR("Couldn't invert matrix:\n");
 		gsl_permutation_free(perm);
 		return NULL;
 	}
