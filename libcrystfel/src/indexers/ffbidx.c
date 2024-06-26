@@ -74,7 +74,6 @@ int run_ffbidx(struct image *image, void *ipriv) {
 
     cifssr.min_spots = prv_data->opts.min_peaks;
     cpers.max_output_cells = prv_data->opts.output_cells;
-    cpers.num_candidate_vectors = prv_data->opts.num_candidate_vectors;
 
     struct input ffbidx_input;
     struct output ffbidx_output;
@@ -128,14 +127,7 @@ int run_ffbidx(struct image *image, void *ipriv) {
         ffbidx_input.cell.x[i] = cell_internal_double[0 + i] * 1e10;
         ffbidx_input.cell.y[i] = cell_internal_double[3 + i] * 1e10;
         ffbidx_input.cell.z[i] = cell_internal_double[6 + i] * 1e10;
-
-//        ffbidx_input.cell.x[i] = cell_internal_double[3*i] * 1e10;
-//        ffbidx_input.cell.y[i] = cell_internal_double[3*i+1] * 1e10;
-//        ffbidx_input.cell.z[i] = cell_internal_double[3*i+2] * 1e10;
     }
-
-    // settings.cvc_threshold = prv_data->opts.threshold_for_solution;
-    // settings.crt_num_sample_points = prv_data->opts.sample_points;
 
     int handle = create_indexer(&cpers, NULL, NULL);
     if (handle < 0) {
@@ -278,16 +270,9 @@ static void ffbidx_show_help()
            "     --ffbidx-min-peaks\n"
            "                            Maximum number of indexed peaks to accept solution.\n"
            "                            Default: 9\n"
-           "     --ffbidx-threshold\n"
-           "                            Threshold to accept solution as indexed.\n"
-           "                            Default: 0.02\n"
            "     --ffbidx-output-cells\n"
            "                            Number of output cells.\n"
            "                            Default: 1\n"
-           "     --ffbidx-sample-points\n"
-           "                            Number of sample points.\n"
-           "                            Default: 32768\n"
-
     );
 }
 
@@ -301,10 +286,7 @@ int ffbidx_default_options(struct ffbidx_options **opts_ptr)
 
     opts->max_peaks = 100;
     opts->min_peaks = 9;
-    opts->threshold_for_solution = 0.02f;
     opts->output_cells = 1;
-    opts->sample_points = 32*1024;
-    opts->num_candidate_vectors = 32;
     *opts_ptr = opts;
     return 0;
 }
@@ -338,30 +320,13 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
                 return EINVAL;
             }
             break;
-
         case 4 :
-            if (sscanf(arg, "%f", &(*opts_ptr)->threshold_for_solution) != 1) {
-                ERROR("Invalid value for --ffbidx-threshold\n");
-                return EINVAL;
-            }
-            if (((*opts_ptr)->threshold_for_solution <= 0.0f) || ((*opts_ptr)->threshold_for_solution > 1.0f)) {
-                ERROR("Invalid value for --ffbidx-threshold; must be in range 0.0-1.0\n");
-                return EINVAL;
-            }
-            break;
-        case 5 :
             if (sscanf(arg, "%u", &(*opts_ptr)->output_cells) != 1) {
                 ERROR("Invalid value for --ffbidx-output-cells\n");
                 return EINVAL;
             }
             if (((*opts_ptr)->output_cells == 0) || ((*opts_ptr)->output_cells > 128)) {
                 ERROR("Invalid value for --ffbidx-output-cells; must be in range 1-128\n");
-                return EINVAL;
-            }
-            break;
-        case 6 :
-            if (sscanf(arg, "%u", &(*opts_ptr)->sample_points) != 1) {
-                ERROR("Invalid value for --ffbidx-sample-points\n");
                 return EINVAL;
             }
             break;
@@ -375,9 +340,7 @@ static struct argp_option ffbidx_options[] = {
         {"help-ffbidx", 1, NULL, OPTION_NO_USAGE, "Show options for fast feedback indexing algorithm", 99},
         {"ffbidx-max-peaks", 2, "ffbidx_maxn", OPTION_HIDDEN, NULL},
         {"ffbidx-min-peaks", 3, "ffbidx_minn", OPTION_HIDDEN, NULL},
-        {"ffbidx-threshold", 4, "ffbidx_threshold", OPTION_HIDDEN, NULL},
         {"ffbidx-output-cells", 5, "ffbidx_out_cells", OPTION_HIDDEN, NULL},
-        {"ffbidx-sample-points", 6, "ffbidx_sample_points", OPTION_HIDDEN, NULL},
         {0}
 };
 
