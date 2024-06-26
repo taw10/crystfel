@@ -142,9 +142,9 @@ double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength
 /* Spot position gradients for diffraction physics (anything that changes the
  * diffracted ray direction) */
 int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
-                         struct detgeom_panel *p, gsl_matrix *Minv,
-                         double fs, double ss, double mu,
-                         float *fsg, float *ssg)
+                           struct detgeom_panel *p, gsl_matrix *Minv,
+                           double fs, double ss, double mu,
+                           float *fsg, float *ssg)
 {
 	signed int h, k, l;
 	gsl_vector *dRdp;
