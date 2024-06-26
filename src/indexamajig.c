@@ -103,6 +103,7 @@ struct indexamajig_arguments
 	struct taketwo_options **taketwo_opts_ptr;
 	struct felix_options **felix_opts_ptr;
 	struct xgandalf_options **xgandalf_opts_ptr;
+    struct ffbidx_options **ffbidx_opts_ptr;
 	struct pinkindexer_options **pinkindexer_opts_ptr;
 	struct fromfile_options **fromfile_opts_ptr;
 	struct asdf_options **asdf_opts_ptr;
@@ -323,6 +324,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		state->child_inputs[3] = args->pinkindexer_opts_ptr;
 		state->child_inputs[4] = args->fromfile_opts_ptr;
 		state->child_inputs[5] = args->asdf_opts_ptr;
+        state->child_inputs[6] = args->ffbidx_opts_ptr;
 		break;
 
 		case 'h' :
@@ -902,6 +904,7 @@ int main(int argc, char *argv[])
 	struct taketwo_options *taketwo_opts = NULL;
 	struct felix_options *felix_opts = NULL;
 	struct xgandalf_options *xgandalf_opts = NULL;
+    struct ffbidx_options *ffbidx_opts = NULL;
 	struct pinkindexer_options *pinkindexer_opts = NULL;
 	struct fromfile_options *fromfile_opts = NULL;
 	struct asdf_options *asdf_opts = NULL;
@@ -947,6 +950,7 @@ int main(int argc, char *argv[])
 	args.taketwo_opts_ptr = &taketwo_opts;
 	args.felix_opts_ptr = &felix_opts;
 	args.xgandalf_opts_ptr = &xgandalf_opts;
+    args.ffbidx_opts_ptr = &ffbidx_opts;
 	args.pinkindexer_opts_ptr = &pinkindexer_opts;
 	args.fromfile_opts_ptr = &fromfile_opts;
 	args.asdf_opts_ptr = &asdf_opts;
@@ -1180,6 +1184,7 @@ int main(int argc, char *argv[])
 		{&pinkIndexer_argp, 0, NULL, -2},
 		{&fromfile_argp, 0, NULL, -2},
 		{&asdf_argp, 0, NULL, -2},
+        {&ffbidx_argp, 0, NULL, -2},
 		{0}
 	};
 
@@ -1423,6 +1428,7 @@ int main(int argc, char *argv[])
 		                                  args.iargs.n_threads,
 		                                  taketwo_opts,
 		                                  xgandalf_opts,
+                                          ffbidx_opts,
 		                                  pinkindexer_opts,
 		                                  felix_opts,
 		                                  fromfile_opts,
