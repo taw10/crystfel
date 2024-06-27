@@ -39,6 +39,9 @@
  * The indexing subsystem
  */
 
+#ifdef HAVE_FFBIDX
+#include <ffbidx/c_api.h>
+#endif
 
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX)
 
@@ -160,9 +163,11 @@ struct xgandalf_options {
 };
 
 struct ffbidx_options {
-    unsigned max_peaks;
-    unsigned min_peaks;
-    unsigned output_cells;
+#ifdef HAVE_FFBIDX
+    struct config_runtime cruntime;
+    struct config_persistent cpers;
+    struct config_ifssr cifssr;
+#endif
 };
 
 struct taketwo_options

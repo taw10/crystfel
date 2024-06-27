@@ -61,19 +61,6 @@ int run_ffbidx(struct image *image, void *ipriv) {
     struct ffbidx_private_data *prv_data = (struct ffbidx_private_data *) ipriv;
 
     npk = image_feature_count(image->features);
-    if ( npk < prv_data->opts.min_peaks )
-        return 0;
-
-    // Setup configuration
-    struct config_runtime cruntime;
-    struct config_persistent cpers;
-    struct config_ifssr cifssr;
-
-    set_defaults(&cpers, &cruntime, &cifssr);
-    cpers.max_spots = prv_data->opts.max_peaks;
-
-    cifssr.min_spots = prv_data->opts.min_peaks;
-    cpers.max_output_cells = prv_data->opts.output_cells;
 
     struct input ffbidx_input;
     struct output ffbidx_output;
@@ -91,11 +78,11 @@ int run_ffbidx(struct image *image, void *ipriv) {
     ffbidx_input.new_cells = true;
     ffbidx_input.new_spots = true;
 
-    ffbidx_output.x = (float *) calloc(3 * cpers.max_output_cells, sizeof(float));
-    ffbidx_output.y = (float *) calloc(3 * cpers.max_output_cells, sizeof(float));
-    ffbidx_output.z = (float *) calloc(3 * cpers.max_output_cells, sizeof(float));
-    ffbidx_output.score = (float *) calloc(cpers.max_output_cells, sizeof(float));
-    ffbidx_output.n_cells = cpers.max_output_cells;
+    ffbidx_output.x = (float *) calloc(3 * prv_data->opts.cpers.max_output_cells, sizeof(float));
+    ffbidx_output.y = (float *) calloc(3 * prv_data->opts.cpers.max_output_cells, sizeof(float));
+    ffbidx_output.z = (float *) calloc(3 * prv_data->opts.cpers.max_output_cells, sizeof(float));
+    ffbidx_output.score = (float *) calloc(prv_data->opts.cpers.max_output_cells, sizeof(float));
+    ffbidx_output.n_cells = prv_data->opts.cpers.max_output_cells;
 
     for ( i=0; i<npk; i++ ) {
 
@@ -129,14 +116,14 @@ int run_ffbidx(struct image *image, void *ipriv) {
         ffbidx_input.cell.z[i] = cell_internal_double[6 + i] * 1e10;
     }
 
-    int handle = create_indexer(&cpers, NULL, NULL);
+    int handle = create_indexer(&prv_data->opts.cpers, NULL, NULL);
     if (handle < 0) {
         ERROR("Error creating indexer\n");
         return 0;
         // handle error
     }
 
-    if (index_start(handle, &ffbidx_input, &ffbidx_output, &cruntime, NULL, NULL)) {
+    if (index_start(handle, &ffbidx_input, &ffbidx_output, &prv_data->opts.cruntime, NULL, NULL)) {
         ERROR("Error running index_start\n");
         drop_indexer(handle);
         return 0;
@@ -148,7 +135,7 @@ int run_ffbidx(struct image *image, void *ipriv) {
         return 0;
     }
 
-    if (refine(handle, &ffbidx_input, &ffbidx_output, &cifssr, 0, 1)) {
+    if (refine(handle, &ffbidx_input, &ffbidx_output, &prv_data->opts.cifssr, 0, 1)) {
         ERROR("Error running refine\n");
         drop_indexer(handle);
         return 0;
@@ -264,15 +251,25 @@ const char *ffbidx_probe(UnitCell *cell)
 static void ffbidx_show_help()
 {
     printf("Parameters for the fast feedback indexing algorithm:\n"
-           "     --ffbidx-max-peaks\n"
+           "     --ffbidx-max-spots=\n"
            "                            Maximum number of peaks used for indexing.\n"
-           "                            Default: 100\n"
-           "     --ffbidx-min-peaks\n"
+           "     --ffbidx-min-spots=\n"
            "                            Maximum number of indexed peaks to accept solution.\n"
-           "                            Default: 9\n"
-           "     --ffbidx-output-cells\n"
+           "     --ffbidx-output-cells=\n"
            "                            Number of output cells.\n"
-           "                            Default: 1\n"
+           "     --ffbidx-redundant-calculations\n"
+           "     --ffbidx-no-redundant-calculations\n"
+           "     --ffbidx-ifssr-max-dist=\n"
+           "     --ffbidx-ifssr-max-iter=\n"
+           "     --ffbidx-ifssr-threshold-contraction=\n"
+           "     --ffbidx-length-threshold=\n"
+           "     --ffbidx-triml=\n"
+           "     --ffbidx-trimh=\n"
+           "     --ffbidx-delta=\n"
+           "     --ffbidx-dist1=\n"
+           "     --ffbidx-dist3=\n"
+           "     --ffbidx-num-halfsphere-points=\n"
+           "     --ffbidx-num-angle-points=\n"
     );
 }
 
@@ -284,9 +281,9 @@ int ffbidx_default_options(struct ffbidx_options **opts_ptr)
     opts = malloc(sizeof(struct ffbidx_options));
     if ( opts == NULL ) return ENOMEM;
 
-    opts->max_peaks = 100;
-    opts->min_peaks = 9;
-    opts->output_cells = 1;
+    set_defaults(&opts->cpers, &opts->cruntime, &opts->cifssr);
+    opts->cpers.max_input_cells = 1;
+
     *opts_ptr = opts;
     return 0;
 }
@@ -308,27 +305,109 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
             return EINVAL;
 
         case 2 :
-            if (sscanf(arg, "%u", &(*opts_ptr)->max_peaks) != 1) {
-                ERROR("Invalid value for --ffbidx-max-peaks\n");
+            if (sscanf(arg, "%u", &(*opts_ptr)->cpers.max_spots) != 1) {
+                ERROR("Invalid value for --ffbidx-max-spots\n");
                 return EINVAL;
             }
             break;
 
         case 3 :
-            if (sscanf(arg, "%u", &(*opts_ptr)->min_peaks) != 1) {
-                ERROR("Invalid value for --ffbidx-min-peaks\n");
+            if (sscanf(arg, "%u", &(*opts_ptr)->cifssr.min_spots) != 1) {
+                ERROR("Invalid value for --ffbidx-min-spots\n");
                 return EINVAL;
             }
             break;
         case 4 :
-            if (sscanf(arg, "%u", &(*opts_ptr)->output_cells) != 1) {
+            if (sscanf(arg, "%u", &(*opts_ptr)->cpers.max_output_cells) != 1) {
                 ERROR("Invalid value for --ffbidx-output-cells\n");
                 return EINVAL;
             }
-            if (((*opts_ptr)->output_cells == 0) || ((*opts_ptr)->output_cells > 128)) {
+
+            if (((*opts_ptr)->cpers.max_output_cells == 0) || ((*opts_ptr)->cpers.max_output_cells > 128)) {
                 ERROR("Invalid value for --ffbidx-output-cells; must be in range 1-128\n");
                 return EINVAL;
             }
+            break;
+        case 5:
+            if (sscanf(arg, "%u", &(*opts_ptr)->cpers.num_candidate_vectors) != 1) {
+                ERROR("Invalid value for --ffbidx-num-candidate-vectors\n");
+                return EINVAL;
+            }
+            break;
+        case 6:
+            (*opts_ptr)->cpers.redundant_computations = true;
+            break;
+        case 7:
+            (*opts_ptr)->cpers.redundant_computations = false;
+            break;
+        case 8:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cifssr.max_distance) != 1) {
+                ERROR("Invalid value for --ffbidx-ifssr-max-dist\n");
+                return EINVAL;
+            }
+            break;
+        case 9:
+            if (sscanf(arg, "%u", &(*opts_ptr)->cifssr.max_iter) != 1) {
+                ERROR("Invalid value for --ffbidx-ifssr-max-iter\n");
+                return EINVAL;
+            }
+            break;
+        case 10:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cifssr.threshold_contraction) != 1) {
+                ERROR("Invalid value for --ffbidx-ifssr-threshold-contraction\n");
+                return EINVAL;
+            }
+            break;
+        case 11:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cruntime.length_threshold) != 1) {
+                ERROR("Invalid value for --ffbidx-length-threshold\n");
+                return EINVAL;
+            }
+            break;
+        case 12:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cruntime.triml) != 1) {
+                ERROR("Invalid value for --ffbidx-triml\n");
+                return EINVAL;
+            }
+            break;
+        case 13:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cruntime.trimh) != 1) {
+                ERROR("Invalid value for --ffbidx-trimh\n");
+                return EINVAL;
+            }
+            break;
+        case 14:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cruntime.delta) != 1) {
+                ERROR("Invalid value for --ffbidx-delta\n");
+                return EINVAL;
+            }
+            break;
+        case 15:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cruntime.dist1) != 1) {
+                ERROR("Invalid value for --ffbidx-dist1\n");
+                return EINVAL;
+            }
+            break;
+        case 16:
+            if (sscanf(arg, "%f", &(*opts_ptr)->cruntime.dist3) != 1) {
+                ERROR("Invalid value for --ffbidx-dist3\n");
+                return EINVAL;
+            }
+            break;
+
+        case 17:
+            if (sscanf(arg, "%u", &(*opts_ptr)->cruntime.num_halfsphere_points) != 1) {
+                ERROR("Invalid value for --ffbidx-num-halfsphere-points\n");
+                return EINVAL;
+            }
+            break;
+        case 18:
+            if (sscanf(arg, "%u", &(*opts_ptr)->cruntime.num_angle_points) != 1) {
+                ERROR("Invalid value for --ffbidx-num-angle-points\n");
+                return EINVAL;
+            }
+            break;
+        default:
             break;
     }
 
@@ -338,9 +417,23 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
 
 static struct argp_option ffbidx_options[] = {
         {"help-ffbidx", 1, NULL, OPTION_NO_USAGE, "Show options for fast feedback indexing algorithm", 99},
-        {"ffbidx-max-peaks", 2, "ffbidx_maxn", OPTION_HIDDEN, NULL},
-        {"ffbidx-min-peaks", 3, "ffbidx_minn", OPTION_HIDDEN, NULL},
-        {"ffbidx-output-cells", 5, "ffbidx_out_cells", OPTION_HIDDEN, NULL},
+        {"ffbidx-max-spots", 2, "ffbidx_maxn", OPTION_HIDDEN, NULL},
+        {"ffbidx-min-spots", 3, "ffbidx_minn", OPTION_HIDDEN, NULL},
+        {"ffbidx-output-cells", 4, "ffbidx_out_cells", OPTION_HIDDEN, NULL},
+        {"ffbidx-num-candidate-vectors", 5, "ffbidx_num_candidate_vectors", OPTION_HIDDEN, NULL},
+        {"ffbidx-redundant-computations", 6, NULL, OPTION_HIDDEN, NULL},
+        {"ffbidx-no-redundant-computations", 7, NULL, OPTION_HIDDEN, NULL},
+        {"ffbidx-ifssr-max-dist", 8, "ffbidx_max_dist", OPTION_HIDDEN, NULL},
+        {"ffbidx-ifssr-max-iter", 9, "ffbidx_max_iter", OPTION_HIDDEN, NULL},
+        {"ffbidx-ifssr-threshold-contraction", 10, "ffbidx_thrc", OPTION_HIDDEN, NULL},
+        {"ffbidx-length-threshold", 11, "ffbidx_lt", OPTION_HIDDEN, NULL},
+        {"ffbidx-triml", 12, "ffbidx_lt", OPTION_HIDDEN, NULL},
+        {"ffbidx-trimh", 13, "ffbidx_lh", OPTION_HIDDEN, NULL},
+        {"ffbidx-delta", 14, "ffbidx_delta", OPTION_HIDDEN, NULL},
+        {"ffbidx-dist1", 15, "ffbidx_dist1", OPTION_HIDDEN, NULL},
+        {"ffbidx-dist3", 16, "ffbidx_dist3", OPTION_HIDDEN, NULL},
+        {"ffbidx-num-halfsphere-points", 17, "ffbidx_nhp", OPTION_HIDDEN, NULL},
+        {"ffbidx-num-angle-points", 18, "ffbidx_nap", OPTION_HIDDEN, NULL},
         {0}
 };
 
