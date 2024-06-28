@@ -322,11 +322,6 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
                 ERROR("Invalid value for --ffbidx-output-cells\n");
                 return EINVAL;
             }
-
-            if (((*opts_ptr)->cpers.max_output_cells == 0) || ((*opts_ptr)->cpers.max_output_cells > 128)) {
-                ERROR("Invalid value for --ffbidx-output-cells; must be in range 1-128\n");
-                return EINVAL;
-            }
             break;
         case 5:
             if (sscanf(arg, "%u", &(*opts_ptr)->cpers.num_candidate_vectors) != 1) {
@@ -409,6 +404,19 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
             break;
         default:
             break;
+    }
+
+    char msg[256];
+    memset(msg, 0, 256);
+    struct error ffbidx_err;
+    ffbidx_err.msg_len = 255;
+    ffbidx_err.message = msg;
+    if (check_config(&(*opts_ptr)->cpers,
+                     &(*opts_ptr)->cruntime, &
+                     (*opts_ptr)->cifssr,
+                     &ffbidx_err) != 0) {
+        ERROR(msg);
+        return EINVAL;
     }
 
     return 0;
