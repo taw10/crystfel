@@ -3,12 +3,12 @@
  *
  * Invoke the Fast Feedback Indexer library
  *
- * Copyright © 2023 Paul Scherrer Institute
+ * Copyright © 2023-2024 Paul Scherrer Institute
  * Copyright © 2017-2021 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2023 Filip Leonarski <filip.leonarski@psi.ch>
+ *   2023-2024 Filip Leonarski <filip.leonarski@psi.ch>
  *
  * This file is part of CrystFEL.
  *
@@ -248,29 +248,69 @@ const char *ffbidx_probe(UnitCell *cell)
 
 #endif
 
-static void ffbidx_show_help()
+static void ffbidx_show_help(void)
 {
-    printf("Parameters for the fast feedback indexing algorithm:\n"
-           "     --ffbidx-max-spots=\n"
-           "                            Maximum number of peaks used for indexing.\n"
-           "     --ffbidx-min-spots=\n"
-           "                            Maximum number of indexed peaks to accept solution.\n"
-           "     --ffbidx-output-cells=\n"
-           "                            Number of output cells.\n"
-           "     --ffbidx-redundant-calculations\n"
-           "     --ffbidx-no-redundant-calculations\n"
-           "     --ffbidx-ifssr-max-dist=\n"
-           "     --ffbidx-ifssr-max-iter=\n"
-           "     --ffbidx-ifssr-threshold-contraction=\n"
-           "     --ffbidx-length-threshold=\n"
-           "     --ffbidx-triml=\n"
-           "     --ffbidx-trimh=\n"
-           "     --ffbidx-delta=\n"
-           "     --ffbidx-dist1=\n"
-           "     --ffbidx-dist3=\n"
-           "     --ffbidx-num-halfsphere-points=\n"
-           "     --ffbidx-num-angle-points=\n"
-    );
+    struct config_runtime r;
+    struct config_persistent p;
+    struct config_ifssr i;
+    set_defaults(&p, &r, &i);
+    printf("Parameters for the fast feedback indexing algorithm:\n");;
+    printf("     --ffbidx-max-spots=\n");
+    printf("                            Maximum number of peaks used for indexing.\n");
+    printf("                            Default: %d\n", p.max_spots);
+    printf("     --ffbidx-output-cells=\n");
+    printf("                            Number of output cells.\n");
+    printf("                            Default: %d\n", p.max_output_cells);
+    printf("     --ffbidx-num-candidate-vectors=\n");
+    printf("                            Number of candidate vectors (per input cell vector).\n");
+    printf("                            Default: %d\n", p.num_candidate_vectors);
+    printf("     --ffbidx-redundant-calculations\n");
+    printf("     --ffbidx-no-redundant-calculations\n");
+    printf("                            Compute candidates for all three cell vectors instead of just one\n");
+    printf("                            Default: %s\n", p.redundant_computations
+                                                               ? "--ffbidx-redundant-calculations"
+                                                               : "--ffbidx-no-redundant-calculations");
+    printf("     --ffbidx-length-threshold=\n");
+    printf("                            Threshold for determining equal vector length (|va| - threshold < |vb| < |va| + threshold)\n");
+    printf("                            Default: %f\n", r.length_threshold);
+
+    printf("     --ffbidx-triml=\n");
+    printf("                            Lower trim value for distance to nearest integer objective value - 0 < triml < trimh\n");
+    printf("                            Default: %f\n", r.triml);
+
+    printf("     --ffbidx-trimh=\n");
+    printf("                            Higher trim value for distance to nearest integer objective value - triml < trimh < 0.5\n");
+    printf("                            Default: %f\n", r.trimh);
+    printf("     --ffbidx-delta=\n");
+    printf("                            Log2 curve position: score = log2(trim(dist(x)) + delta)\n");
+    printf("                            Default: %f\n", r.delta);
+    printf("     --ffbidx-dist1=\n");
+    printf("                            Maximum distance to int for single coordinate\n");
+    printf("                            Default: %f\n", r.dist1);
+    printf("     --ffbidx-dist3=\n");
+    printf("                            Maximum distance to int for triple coordinates\n");
+    printf("                            Default: %f\n", r.dist3);
+    printf("     --ffbidx-num-halfsphere-points=\n");
+    printf("                            Number of sample points on half sphere for finding vector candidates\n");
+    printf("                            Default: %d\n", r.num_halfsphere_points);
+    printf("     --ffbidx-num-angle-points=\n");
+    printf("                            Number of sample points in rotation space for finding cell candidates (0: auto)\n");
+    printf("                            Default: %d\n", r.num_angle_points);
+    printf("\n");
+    printf("     --ffbidx-min-spots=\n");
+    printf("                            Refinement: Maximum number of indexed peaks to accept solution.\n");
+    printf("                            Default: %d\n", i.min_spots);
+    printf("     --ffbidx-ifssr-max-dist=\n");
+    printf("                            Refinement: max distance to reciprocal spots for inliers\n");
+    printf("                            Default: %f\n", i.max_distance);
+
+    printf("     --ffbidx-ifssr-max-iter=\n");
+    printf("                            Refinement: max number of iterations\n");
+    printf("                            Default: %d\n", i.max_iter);
+
+    printf("     --ffbidx-ifssr-threshold-contraction=\n");
+    printf("                            Refinement: contract error threshold by this value in every iteration\n");
+    printf("                            Default: %f\n", i.threshold_contraction);
 }
 
 
@@ -289,6 +329,17 @@ int ffbidx_default_options(struct ffbidx_options **opts_ptr)
 }
 
 
+int sscanf_uint(const char *arg, unsigned *val) {
+    int tmp = 0;
+    int ret = sscanf(arg, "%d", &tmp);
+    if (ret != 1)
+        return -1;
+    if  (tmp < 0)
+        return -1;
+    *val = tmp;
+    return 1;
+}
+
 static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
 {
     struct ffbidx_options **opts_ptr = state->input;
@@ -305,26 +356,25 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
             return EINVAL;
 
         case 2 :
-            if (sscanf(arg, "%u", &(*opts_ptr)->cpers.max_spots) != 1) {
+            if (sscanf_uint(arg, &(*opts_ptr)->cpers.max_spots) != 1) {
                 ERROR("Invalid value for --ffbidx-max-spots\n");
                 return EINVAL;
             }
             break;
-
         case 3 :
-            if (sscanf(arg, "%u", &(*opts_ptr)->cifssr.min_spots) != 1) {
+            if (sscanf_uint(arg,  &(*opts_ptr)->cifssr.min_spots) != 1) {
                 ERROR("Invalid value for --ffbidx-min-spots\n");
                 return EINVAL;
             }
             break;
         case 4 :
-            if (sscanf(arg, "%u", &(*opts_ptr)->cpers.max_output_cells) != 1) {
+            if (sscanf_uint(arg,  &(*opts_ptr)->cpers.max_output_cells) != 1) {
                 ERROR("Invalid value for --ffbidx-output-cells\n");
                 return EINVAL;
             }
             break;
         case 5:
-            if (sscanf(arg, "%u", &(*opts_ptr)->cpers.num_candidate_vectors) != 1) {
+            if (sscanf_uint(arg,  &(*opts_ptr)->cpers.num_candidate_vectors) != 1) {
                 ERROR("Invalid value for --ffbidx-num-candidate-vectors\n");
                 return EINVAL;
             }
@@ -342,7 +392,7 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
             }
             break;
         case 9:
-            if (sscanf(arg, "%u", &(*opts_ptr)->cifssr.max_iter) != 1) {
+            if (sscanf_uint(arg,  &(*opts_ptr)->cifssr.max_iter) != 1) {
                 ERROR("Invalid value for --ffbidx-ifssr-max-iter\n");
                 return EINVAL;
             }
@@ -391,13 +441,13 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
             break;
 
         case 17:
-            if (sscanf(arg, "%u", &(*opts_ptr)->cruntime.num_halfsphere_points) != 1) {
+            if (sscanf_uint(arg,  &(*opts_ptr)->cruntime.num_halfsphere_points) != 1) {
                 ERROR("Invalid value for --ffbidx-num-halfsphere-points\n");
                 return EINVAL;
             }
             break;
         case 18:
-            if (sscanf(arg, "%u", &(*opts_ptr)->cruntime.num_angle_points) != 1) {
+            if (sscanf_uint(arg,  &(*opts_ptr)->cruntime.num_angle_points) != 1) {
                 ERROR("Invalid value for --ffbidx-num-angle-points\n");
                 return EINVAL;
             }
