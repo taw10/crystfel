@@ -801,7 +801,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 			exit(1);
 		}
 
-		snprintf(tmp, 63, "%s/worker.%i", sb->tmpdir, slot);
+		snprintf(tmp, ll, "%s/worker.%i", sb->tmpdir, slot);
 
 		if ( stat(tmp, &s) == -1 ) {
 			if ( errno != ENOENT ) {
@@ -1082,7 +1082,7 @@ static void try_status(struct sandbox *sb, int final)
 static void delete_temporary_folder(const char *tmpdir, int n_proc)
 {
 	int slot;
-	size_t len;
+	size_t len, pathlen, workerdirlen;
 	char *workerdir;
 	char *path;
 
@@ -1098,13 +1098,16 @@ static void delete_temporary_folder(const char *tmpdir, int n_proc)
 	if ( n_proc > 99999 ) return;  /* Paranoia */
 
 	len = strlen(tmpdir);
-	workerdir = calloc(len+32, 1);
-	path = calloc(len+64, 1);
+	workerdirlen = len+32;
+	workerdir = calloc(workerdirlen, 1);
+	pathlen = len+64;
+	path = calloc(pathlen, 1);
+
 	if ( (workerdir == NULL) || (path == NULL) ) return;
 
-	snprintf(path, 127, "%s/mosflm.lp", tmpdir);
+	snprintf(path, pathlen, "%s/mosflm.lp", tmpdir);
 	unlink(path);
-	snprintf(path, 127, "%s/SUMMARY", tmpdir);
+	snprintf(path, pathlen, "%s/SUMMARY", tmpdir);
 	unlink(path);
 
 	for ( slot=0; slot<n_proc; slot++ ) {
@@ -1112,11 +1115,11 @@ static void delete_temporary_folder(const char *tmpdir, int n_proc)
 		struct stat s;
 		int i;
 
-		snprintf(workerdir, 63, "%s/worker.%i", tmpdir, slot);
+		snprintf(workerdir, workerdirlen, "%s/worker.%i", tmpdir, slot);
 		if ( stat(workerdir, &s) == -1 ) continue;
 
 		for ( i=0; i<n_files; i++ ) {
-			snprintf(path, 127, "%s/%s", workerdir, files[i]);
+			snprintf(path, pathlen, "%s/%s", workerdir, files[i]);
 			unlink(path);
 		}
 
