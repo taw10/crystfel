@@ -118,7 +118,7 @@ build-almalinux9:
     - if: $CI_COMMIT_BRANCH == "master"
 
 
-.build-brew-macos:
+build-brew-macos:
   dependencies: []
   tags:
     - macOS
@@ -134,7 +134,7 @@ build-almalinux9:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
 
-.build-deploy-local-maxwell:
+build-deploy-local-maxwell:
   tags:
     - maxwell
   dependencies:
