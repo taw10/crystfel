@@ -1,0 +1,6 @@
+FROM  fedora:32
+
+RUN   dnf update -y &&  dnf group install -y 'Development Tools' && \
+      dnf install -y gsl-devel flex bison gcc-c++  gtk3-devel cairo-devel \
+      pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel hdf5-devel diffutils \
+      wget lz4 lz4-devel libcurl-devel cmake meson

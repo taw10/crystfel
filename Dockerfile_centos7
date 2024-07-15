@@ -1,0 +1,20 @@
+FROM  centos:centos7
+
+##  Following hack is required for Centos7 image as Centos7 is EOL.
+## yum-config-manager --nogpgcheck  --add-repo https://archive.kernel.org/centos-vault/7.9.2009/os/x86_64/Packages/
+## yum-config-manager --nogpgcheck  --add-repo http://archive.kernel.org/centos-vault/7.9.2009/updates/x86_64/
+## yum-config-manager --nogpgcheck  --add-repo https://mirror.nsc.liu.se/centos-store/7.9.2009/os/x86_64/Packages/
+## yum-config-manager --nogpgcheck  --add-repo https://mirror.nsc.liu.se/centos-store/7.9.2009/updates/x86_64/Packages/
+
+
+RUN  yum-config-manager --disable \* && \
+     yum-config-manager --nogpgcheck  --add-repo https://vault.centos.org/7.9.2009/os/x86_64/ && \
+     yum-config-manager --nogpgcheck  --add-repo https://vault.centos.org/7.9.2009/updates/x86_64/ **\
+     yum-config-manager --enable vault.centos.org_7.9.2009_os_x86_64_ && \
+     yum-config-manager --save --setopt=vault.centos.org_7.9.2009_os_x86_64_.gpgkey="file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7" && \
+     yum-config-manager --enable vault.centos.org_7.9.2009_updates_x86_64_ && \
+     yum-config-manager --save --setopt=vault.centos.org_7.9.2009_updates_x86_64_.gpgkey="file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7"
+
+RUN  yum update -y &&  yum group install -y "Development Tools" && \
+     yum install -y wget which lz4 lz4-devel bzip2-libs bzip2-devel libcurl-devel  python3 gtk3-devel
+

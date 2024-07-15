@@ -1,10 +1,47 @@
 stages:
+  - build
   - test
   - deploy
   - build_container
-  
+
+
+build_dev_images:
+  stage: build
+  dependencies: []
+  only:
+    - master
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+
+  variables:
+    IMAGE_TAG_LATEST: "latest"
+    IMAGE_TAG_SHA: $CI_COMMIT_SHORT_SHA
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context $CI_PROJECT_DIR
+      --dockerfile $CI_PROJECT_DIR/Dockerfile_$IMAGE
+      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
+      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
+      --build-arg HELM_VERSION=$HELM_VERSION
+      --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
+
+  tags:
+    - kubernetes
+ 
+  parallel:
+    matrix:
+     - IMAGE: ["fedora32","fedora37","centos7","alma9"]
+
+  when: manual
+
 build-and-test:
-  image: gitlab.desy.de:5555/thomas.white/crystfel/fedora32/dev_env
+  image: $CI_REGISTRY_IMAGE/fedora32
   script:
     - meson setup build && ninja -C build
     - ninja -C build test
@@ -16,7 +53,7 @@ build-and-test:
       junit: build/meson-logs/testlog.junit.xml
 
 build-and-test-minimal:
-  image: gitlab.desy.de:5555/thomas.white/crystfel/fedora37/dev_env
+  image: $CI_REGISTRY_IMAGE/fedora37
   script:
     - meson setup build -Dhdf5=disabled && ninja -C build
     - ninja -C build test
@@ -26,6 +63,150 @@ build-and-test-minimal:
       - build/meson-logs/testlog.junit.xml
     reports:
       junit: build/meson-logs/testlog.junit.xml
+
+build-centos7:
+  image: $CI_REGISTRY_IMAGE/centos7
+  #image:centos:latest
+  #image: centos:centos7.9.2009
+
+  variables:
+    SECURE_FILES_DOWNLOAD_PATH: './downloads'
+  script:
+    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
+    - python3 -m pip  install meson ninja
+    - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
+    - chmod 755 ./run-me-desy-maxwell-centos7
+    - ./run-me-desy-maxwell-centos7 --yes-really
+    - cp -Rp /software $CI_PROJECT_DIR/centos7/
+  artifacts:
+    paths:
+      - centos7/
+      - temp/crystfel/build/meson-logs/testlog.junit.xml
+    when: on_success
+    expire_in: 1 day
+    reports:
+      junit: temp/crystfel/build/meson-logs/testlog.junit.xml
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+build-almalinux9:
+  image: $CI_REGISTRY_IMAGE/alma9
+ 
+  variables:
+    SECURE_FILES_DOWNLOAD_PATH: './downloads'
+
+  script:
+    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
+    - python3 -m ensurepip --upgrade
+    - python3 -m pip install --upgrade pip
+    - python3 -m pip  install meson ninja
+    - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
+    - chmod 755 ./run-me-desy-maxwell-centos7
+    - ./run-me-desy-maxwell-centos7 --yes-really
+    - cp -Rp /software $CI_PROJECT_DIR/almalinux9/
+
+  artifacts:
+    paths:
+      - almalinux9/
+      - temp/crystfel/build/meson-logs/testlog.junit.xml
+    when: on_success
+    expire_in: 1 day
+    reports:
+      junit: temp/crystfel/build/meson-logs/testlog.junit.xml
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+
+.build-brew-macos:
+  dependencies: []
+  tags:
+    - macOS
+  variables:
+    GIT_STRATEGY: clone
+  script:
+    - brew update
+    - brew upgrade -f
+    - brew uninstall -v -f crystfel
+    - brew install -v -s ./crystfel.rb --HEAD
+    - brew test crystfel
+    - brew uninstall -v -f crystfel
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+.build-deploy-local-maxwell:
+  tags:
+    - maxwell
+  dependencies:
+    - build-centos7
+  variables:
+    GIT_STRATEGY: clone
+    SECURE_FILES_DOWNLOAD_PATH: './downloads'
+  script:
+    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
+    - wget  https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
+    - chmod 755 ./run-me-desy-maxwell-centos7
+    - if [ -d /software/crystfel/devel ]; then
+        mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
+      fi
+    - module load maxwell git
+    - ./run-me-desy-maxwell-centos7 --yes-really
+  rules:
+    - if: $MAXWELL_DEPLOYMENT == "local"  &&  $CI_COMMIT_BRANCH == "master"
+
+
+deploy-remote-maxwell:
+  stage: deploy
+  image: $CI_REGISTRY_IMAGE/alma9
+  
+  dependencies:
+    - build-centos7
+    - build-almalinux9
+ 
+  variables:
+    GIT_STRATEGY: none
+
+  tags:
+    - DESY-intern
+
+  before_script:
+  ##
+  ## Run ssh-agent (inside the build environment)
+  ## Give the right permissions, otherwise ssh-add will refuse to add files
+  ## Add the SSH key stored in MAXWELL_SSH_PRIVATE_KEY file type CI/CD variable to the agent store
+  ## Create the SSH directory and give it the right permissions
+  ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
+  ## to connect using Kerberos.
+    - if [ $HOST == "max-display-el9" ]; then
+          PREFIX="almalinux9";
+      else
+          PREFIX="centos7";
+      fi          
+ 
+    - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
+        eval $(ssh-agent -s);
+        chmod 400 "$MAXWELL_SSH_PRIVATE_KEY";
+        ssh-add "$MAXWELL_SSH_PRIVATE_KEY";
+      else
+        echo $MAXWELL_ACCOUNT_PASSWORD | kinit $MAXWELL_USER_NAME@DESY.DE;
+      fi
+    
+  script:
+    - ssh   $MAXWELL_USER_NAME@$HOST
+      "if [ -d /software/crystfel/devel ]; then
+           mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
+       else if [ ! -d /software/crystfel/ ]; then
+               mkdir -p /software/crystfel/;
+            fi;
+       fi"
+    - scp -r $PREFIX/crystfel/devel $MAXWELL_USER_NAME@$HOST:/software/crystfel/
+
+  rules:
+    - if: $MAXWELL_DEPLOYMENT == "remote"  && $CI_COMMIT_BRANCH == "master"
+
+  parallel:
+    matrix:
+       - HOST: ["max-wgs","max-display-el9"]
 
 build_container_image:
   stage: build_container
@@ -87,105 +268,3 @@ build_container_image_tag:
   rules:
     - if: $CI_COMMIT_TAG
       when: manual
-
-build-brew-macos:
-  dependencies: []
-  tags:
-    - macOS
-  variables:
-    GIT_STRATEGY: clone
-  script:
-    - brew update
-    - brew upgrade -f
-    - brew uninstall -v -f crystfel
-    - brew install -v -s ./crystfel.rb --HEAD
-    - brew test crystfel
-    - brew uninstall -v -f crystfel
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-
-build-centos7:
-  image: gitlab.desy.de:5555/thomas.white/crystfel/centos7/dev_env
-  #image:centos:latest
-  #image: centos:centos7.9.2009
-  variables:
-    SECURE_FILES_DOWNLOAD_PATH: './downloads'
-  script:
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-    - python3 -m pip  install meson ninja
-    - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
-    - chmod 755 ./run-me-desy-maxwell-centos7
-    - ./run-me-desy-maxwell-centos7 --yes-really
-    - cp -Rp /software $CI_PROJECT_DIR
-  artifacts:
-    paths:
-      - software/
-      - temp/crystfel/build/meson-logs/testlog.junit.xml
-    when: on_success
-    expire_in: 1 day
-    reports:
-      junit: temp/crystfel/build/meson-logs/testlog.junit.xml
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-
-build-deploy-local-maxwell:
-  tags:
-    - maxwell
-  dependencies:
-    - build-centos7
-  variables:
-    GIT_STRATEGY: clone
-    SECURE_FILES_DOWNLOAD_PATH: './downloads'
-  script:
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-    - wget  https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
-    - chmod 755 ./run-me-desy-maxwell-centos7
-    - if [ -d /software/crystfel/devel ]; then
-        mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
-      fi
-    - module load maxwell git
-    - ./run-me-desy-maxwell-centos7 --yes-really
-  rules:
-    - if: $MAXWELL_DEPLOYMENT == "local"  &&  $CI_COMMIT_BRANCH == "master"
-
-deploy-remote-maxwell:
-  stage: deploy
-  dependencies:
-    - build-centos7
-  image: centos:centos7
-  variables:
-    GIT_STRATEGY: none
-  tags:
-    - DESY-intern
-  before_script:
-  ##
-  ## Install ssh-agent or kerberos client if not already installed, it is required by Docker.
-  ## (change apt-get to yum if you use an RPM-based image)
-  ## Run ssh-agent (inside the build environment)
-  ## Give the right permissions, otherwise ssh-add will refuse to add files
-  ## Add the SSH key stored in MAXWELL_SSH_PRIVATE_KEY file type CI/CD variable to the agent store
-  ## Create the SSH directory and give it the right permissions
-  ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
-  ## to connect using Kerberos.
-  - yum update -y
-  - yum install -y wget
-  - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
-        command -v ssh-agent >/dev/null || ( yum install openssh-clients -y );
-        eval $(ssh-agent -s);
-        chmod 400 "$MAXWELL_SSH_PRIVATE_KEY";
-        ssh-add "$MAXWELL_SSH_PRIVATE_KEY";
-        mkdir -p ~/.ssh;
-        chmod 700 ~/.ssh;
-    else
-        yum install -y openssh-clients  krb5-workstation;
-        echo $MAXWELL_ACCOUNT_PASSWORD | kinit $MAXWELL_USER_NAME@DESY.DE;
-    fi
-  - wget -q https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
-  script:
-   - ssh   $MAXWELL_USER_NAME@max-wgs
-     "if [ -d /software/crystfel/devel ]; then
-        mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
-     fi"
-   - scp -r software/crystfel/devel $MAXWELL_USER_NAME@max-wgs:/software/crystfel/
-  rules:
-    - if: $MAXWELL_DEPLOYMENT == "remote"  && $CI_COMMIT_BRANCH == "master"
