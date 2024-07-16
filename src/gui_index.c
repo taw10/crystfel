@@ -816,7 +816,7 @@ static void add_arg_string(char **args, int pos, const char *label,
 	len = strlen(label)+strlen(val)+4;
 	str = malloc(len);
 	if ( str == NULL ) return;
-	snprintf(str, 63, "--%s=%s", label, val);
+	snprintf(str, len, "--%s=%s", label, val);
 	args[pos] = str;
 }
 
