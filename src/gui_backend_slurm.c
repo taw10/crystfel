@@ -799,6 +799,9 @@ static void *run_indexing(const char *job_title,
 	gchar *harvest_rel_filename;
 	gchar *mille_rel_filename;
 	char *slurm_prologue;
+	GFile *ggeom;
+	GFile *ggeomcopy;
+	GError *error;
 
 	workdir = make_job_folder(job_title, job_notes);
 	if ( workdir == NULL ) return NULL;
@@ -847,6 +850,16 @@ static void *run_indexing(const char *job_title,
 
 	slurm_prologue = sbatch_bits(&opts->common, job_title, array_inx,
 	                             stdout_rel_filename, stderr_rel_filename);
+
+	/* Copy geometry file into working directory
+	 * Used for geometry refinement, not indexing! */
+	ggeom = g_file_new_for_path(proj->geom_filename);
+	ggeomcopy = g_file_get_child(workdir, "detector.geom");
+	error = NULL;
+	g_file_copy(ggeom, ggeomcopy, G_FILE_COPY_BACKUP | G_FILE_COPY_ALL_METADATA,
+	            NULL, NULL, NULL, &error);
+	g_object_unref(ggeom);
+	g_object_unref(ggeomcopy);
 
 	if ( !write_indexamajig_script(sc_rel_filename,
 	                               proj->geom_filename,
