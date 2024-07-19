@@ -92,28 +92,28 @@ executable('cell_tool',
            ['src/cell_tool.c', versionc],
            dependencies: [mdep, libcrystfeldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # process_hkl
 process_hkl = executable('process_hkl',
                          ['src/process_hkl.c', versionc],
                          dependencies: [mdep, libcrystfeldep],
                          install: true,
-                         install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+                         install_rpath: crystfel_rpath)
 
 # list_events
 executable('list_events',
            ['src/list_events.c', versionc],
            dependencies: [mdep, libcrystfeldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # get_hkl
 executable('get_hkl',
            ['src/get_hkl.c', versionc],
            dependencies: [mdep, libcrystfeldep, gsldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # compare_hkl
 executable('compare_hkl',
@@ -127,7 +127,7 @@ executable('check_hkl',
            ['src/check_hkl.c', versionc],
            dependencies: [mdep, libcrystfeldep, gsldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # partialator
 partialator = executable('partialator',
@@ -160,7 +160,7 @@ executable('align_detector',
            ['src/align_detector.c', versionc],
            dependencies: [mdep, libcrystfeldep],
            install: true,
-           install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+           install_rpath: crystfel_rpath)
 
 # Millepede subproject gives us 'pede', needed for align_detector
 subproject('millepede', required: false)
@@ -170,7 +170,7 @@ adjust_detector = executable('adjust_detector',
                              ['src/adjust_detector.c', versionc],
                              dependencies: [mdep, libcrystfeldep],
                              install: true,
-                             install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib')
+                             install_rpath: crystfel_rpath)
 
 # indexamajig
 indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',

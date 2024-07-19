@@ -169,6 +169,7 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                                      hdf5dep, pthreaddep,
                                      xgandalfdep, pinkindexerdep, fdipdep,
                                      ccp4dep, msgpackdep, seedeedep, cjsondep],
+                      install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib:$ORIGIN',
                       install: true)
 
 libcrystfeldep = declare_dependency(include_directories: libcrystfel_includes,
