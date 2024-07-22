@@ -77,7 +77,7 @@ They will also be rejected if the peak is closer than twice the inner
 integration radius from another peak.
 
 If you instead use **--peaks=peakfinder8**, indexamajig will use the
-"peakfinder8" peak finding algorithm describerd in Barty et al. (2014). Pixels
+"peakfinder8" peak finding algorithm described in Barty et al. (2014). Pixels
 above a radius-dependent intensity threshold are considered as candidate peaks
 (although the user sets an absolute minimum threshold for candidate peaks).
 Peaks are then only accepted if their signal to noise level over the local
@@ -90,18 +90,18 @@ additional peak is ignored.
 If you instead use **--peaks=peakfinder9**, indexamajig will use the
 "peakfinder9" peak finding algorithm described in the master thesis "Real-time
 image analysis and data compression in high throughput X-ray diffraction
-experiments" by Gevorkov. Other than peakFinder8, peakFinder9 uses local
+experiments" by Gevorkov. Unlike peakfinder8, peakfinder9 uses local
 background estimation based on border pixels in a specified radius
 (**--local-bg-radius**). For being fast and precise, a hierarchy of
-conditions is used. First condition is only useful for speed consideration, it
+conditions is used. The first condition is only useful for speed consideration. It
 demands that a pixel that is the biggest pixel in a peak must be larger than
 every border pixel by a constant value (**--min-peak-over-neighbour**).
-Second condition ensures, that the pixel passing the previous condition is the
-highest pixel in the peak. It assumes, that peaks rise monotonically towards
-the biggest pixel. Third condition ensures, that the biggest pixel in the peak
+The second condition ensures that the pixel passing the previous condition is the
+highest pixel in the peak. It assumes that peaks rise monotonically towards
+the biggest pixel. The third condition ensures that the biggest pixel in the peak
 is significantly over the noise level (**--min-snr-biggest-pix**) by
 computing the local statistics from the border pixels in a specified radius.
-Fourth condition sums up all pixels belonging to the peak
+The fourth condition sums up all pixels belonging to the peak
 (**--min-snr-peak-pix**) and demands that the whole peak must be
 significantly over the noise level (**--min-snr**). Only if all conditions
 are passed, the peak is accepted.
@@ -123,7 +123,7 @@ reports that the pattern has been successfully indexed.  Choose from:
 : https://doi.org/10.1107/S0907444999009506.
 
 **asdf**
-: This is a implementation of the dirax algorithm, with some very small changes
+: This is an implementation of the dirax algorithm, with some very small changes
 : such as using a 1D Fourier transform for finding the lattice repeats.  This
 : algorithm is implemented natively within CrystFEL meaning that no external
 : software is required.
@@ -131,10 +131,11 @@ reports that the pattern has been successfully indexed.  Choose from:
 **felix**
 : Invoke Felix, which will use your cell parameters to find multiple crystals in
 : each pattern.
-: The Felix indexer has been developed by Soeren Schmidt <ssch@fysik.dtu.dk>. To
-: use this option, 'Felix' must be in your shell's search path. This can be a
+: To use this option, 'Felix' must be in your shell's search path. This can be a
 : link to the latest version of Felix. If you see the Felix version information
-: when you run Felix on the command line, things are set up correctly.
+: when you run Felix on the command line, things are set up correctly. See
+: Beyerlein et al., J. Appl. Cryst. 50, p1075-1083,
+: https://doi.org/10.1107/s1600576717007506.
 
 **xds**
 : Invoke XDS, and use its REFIDX procedure to attempt to index the pattern.
@@ -261,9 +262,9 @@ methods, and you specify the method using **--integration**.  Choose from:
 
 **prof2d**
 : Integrate the peaks using 2D profile fitting with a planar background, close to
-: the method described by Rossmann (1979) J. Appl. Cryst. 12 p225.  The default
-: behaviour with prof2d is to center the peak first - use prof2d-nocen to skip
-: this step.
+: the method described by Rossmann (1979) J. Appl. Cryst. 12 p225,
+: https://doi.org/10.1107/S0021889879012218.  The default behaviour with prof2d
+: is to center the peak first - use prof2d-nocen to skip this step.
 
 You can add one or more of the following to the above integration methods:
 
@@ -556,11 +557,11 @@ INDEXING OPTIONS
 : CrystFEL format.
 
 **--tolerance=tol**
-: Set the tolerances for unit cell comparison.  tol takes the form a,b,c,ang.  a,
-: b and c are the tolerances, in percent, for the respective reciprocal space
-: axes, and ang is the tolerance in degrees for the reciprocal space angles.  If
-: the unit cell is centered, the tolerances are applied to the corresponding
-: primitive unit cell.  The default is **--tolerance=5,5,5,1.5**.
+: Set the tolerances for unit cell comparison.  tol takes the form a,b,c,al,be,ga.
+: a, b and c are the tolerances, in percent, for the respective reciprocal space
+: axes, and al, be, ga are the tolerances in degrees for the reciprocal space angles.
+: If the unit cell is centered, the tolerances are applied to the corresponding
+: primitive unit cell.  The default is **--tolerance=5,5,5,1.5,1.5,1.5,1.5**.
 
 **--no-check-cell**
 : Do not check the cell parameters against the reference unit cell (given with
@@ -749,14 +750,14 @@ INTEGRATION OPTIONS
 : **--integration=rings-nocen**.
 
 **--fix-profile-radius=n**, **--fix-divergence=n**
-: Fix the beam and crystal paramters to the given values.  The profile radius is
+: Fix the beam and crystal parameters to the given values.  The profile radius is
 : given in m^-1 and the divergence in radians (full angle).  The default is to
 : set the divergence to zero, and then to automatically determine the profile
 : radius.
-: You do not have to use all three of these options together.  For example, if
+: You do not have to use both of these options together.  For example, if
 : the automatic profile radius determination is not working well for your data
 : set, you could fix that alone and continue using the default values for the
-: other parameters (which might be automatically determined in future versions of
+: other parameter (which might be automatically determined in future versions of
 : CrystFEL, but are not currently).
 
 **--int-radius=inner,middle,outer**
@@ -768,8 +769,8 @@ INTEGRATION OPTIONS
 **--int-diag=condition**
 : Show detailed information about reflection integration when condition is met.
 : The condition can be all, none, a set of Miller indices separated by commas,
-: random, implausible or negative.  random means to show information about a
-: random 1% of the peaks.  negative means to show peaks with intensities which
+: random, implausible, negative or strong.  random means to show information about
+: a random 1% of the peaks.  negative means to show peaks with intensities which
 : are negative by more than 3 sigma.  implausible means to show peaks with
 : intensities which are negative by more than 5 sigma.  strong means to show
 : peaks with intensities which are positive by more than 3 sigma  The default is
