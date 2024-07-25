@@ -620,8 +620,8 @@ static void handle_var(const char *key, const char *val,
 
 void clear_project_files(struct crystfelproject *proj)
 {
+	int i;
 	if ( proj->filenames != NULL ) {
-		int i;
 		for ( i=0; i<proj->n_frames; i++ ) {
 			free(proj->filenames[i]);
 			free(proj->events[i]);
@@ -634,6 +634,10 @@ void clear_project_files(struct crystfelproject *proj)
 	proj->filenames = NULL;
 	proj->events = NULL;
 	proj->cur_frame = 0;
+	for ( i=0; i<proj->n_unique_files; i++ ) {
+		free(proj->unique_files[i]);
+	}
+	proj->n_unique_files = 0;
 }
 
 
@@ -686,6 +690,20 @@ void add_file_to_project(struct crystfelproject *proj,
 	proj->filenames[proj->n_frames] = strdup(filename);
 	proj->events[proj->n_frames] = safe_strdup(event);
 	proj->n_frames++;
+
+	if ( proj->n_unique_files < 20 ) {
+		int i;
+		int found = 0;
+		for ( i=0; i<proj->n_unique_files; i++ ) {
+			if ( strcmp(filename, proj->unique_files[i]) == 0 ) {
+				found = 1;
+				break;
+			}
+		}
+		if ( !found ) {
+			proj->unique_files[proj->n_unique_files++] = strdup(filename);
+		}
+	}
 }
 
 
@@ -1221,6 +1239,7 @@ int default_project(struct crystfelproject *proj)
 	proj->indexing_new_job_title = NULL;
 	proj->merging_new_job_title = NULL;
 	proj->ambi_new_job_title = NULL;
+	proj->n_unique_files = 0;
 
 	proj->indexing_backend_selected = 0;
 	proj->merging_backend_selected = 0;

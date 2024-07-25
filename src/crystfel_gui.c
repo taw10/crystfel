@@ -324,13 +324,17 @@ static int pop_random_frame(struct crystfelproject *proj)
 }
 
 
-static int goto_frame(struct crystfelproject *proj, const char *ev)
+static int goto_frame(struct crystfelproject *proj,
+                      const char *filename,
+                      const char *ev)
 {
 	int i;
 	for ( i=0; i<proj->n_frames; i++ ) {
 		if ( strcmp(proj->events[i], ev) == 0 ) {
-			proj->cur_frame = i;
-			return 0;
+			if ( strcmp(proj->filenames[i], filename) == 0 ) {
+				proj->cur_frame = i;
+				return 0;
+			}
 		}
 	}
 	return 1;
@@ -339,7 +343,11 @@ static int goto_frame(struct crystfelproject *proj, const char *ev)
 
 struct goto_frame_stuff
 {
-	GtkWidget *entry;
+	GtkWidget *framenumchk;
+	GtkWidget *frameidchk;
+	GtkWidget *framenum;
+	GtkWidget *filename;
+	GtkWidget *entry;  /* Frame ID */
 	struct crystfelproject *proj;
 };
 
@@ -358,19 +366,48 @@ static void goto_frame_activate_sig(GtkEntry *entry, GtkDialog *dialog)
 
 
 static void goto_frame_response_sig(GtkDialog *dialog, gint response_id,
-                                    struct goto_frame_stuff *stuff)
+                                    struct goto_frame_stuff *ctx)
 {
-	if ( response_id == GTK_RESPONSE_OK ) {
-		if ( goto_frame(stuff->proj,
-		                gtk_entry_get_text(GTK_ENTRY(stuff->entry))) )
+	if ( response_id != GTK_RESPONSE_OK ) {
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+		return;
+	}
+
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->framenumchk)) ) {
+		int id = atoi(gtk_entry_get_text(GTK_ENTRY(ctx->framenum)));
+		if ( (id<=0) || (id>ctx->proj->n_frames) ) {
+			error_box(ctx->proj, "Invalid frame number");
+		} else {
+			ctx->proj->cur_frame = id-1;
+			update_imageview(ctx->proj);
+			gtk_widget_destroy(GTK_WIDGET(dialog));
+		}
+
+	} else {
+		if ( goto_frame(ctx->proj,
+		                gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(ctx->filename)),
+		                gtk_entry_get_text(GTK_ENTRY(ctx->entry))) )
 		{
-			error_box(stuff->proj, "Frame ID not found");
+			error_box(ctx->proj, "Frame ID not found");
 		} else {
 			gtk_widget_destroy(GTK_WIDGET(dialog));
-			update_imageview(stuff->proj);
+			update_imageview(ctx->proj);
 		}
+	}
+}
+
+
+static void goto_toggle_sig(GtkWidget *radio, struct goto_frame_stuff *ctx)
+{
+	gtk_widget_set_sensitive(ctx->framenum, FALSE);
+	gtk_widget_set_sensitive(ctx->filename, FALSE);
+	gtk_widget_set_sensitive(ctx->entry, FALSE);
+
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->framenumchk)) ) {
+		gtk_widget_set_sensitive(ctx->framenum, TRUE);
 	} else {
-		gtk_widget_destroy(GTK_WIDGET(dialog));
+		gtk_widget_set_sensitive(ctx->filename, TRUE);
+		gtk_widget_set_sensitive(ctx->entry, TRUE);
 	}
 }
 
@@ -379,8 +416,15 @@ static gint goto_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *window;
 	GtkWidget *hbox;
+	GtkWidget *vbox;
 	GtkWidget *label;
+	GtkWidget *content_area;
+	GSList *grp;
+	char tmp[64];
+	int i;
 	struct goto_frame_stuff *stuff;
+
+	if ( proj->events == NULL ) return 0;
 
 	stuff = malloc(sizeof(struct goto_frame_stuff));
 	if ( stuff == NULL ) return 0;
@@ -388,24 +432,70 @@ static gint goto_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 	stuff->proj = proj;
 
 	window = gtk_dialog_new_with_buttons("Jump to frame",
-					GTK_WINDOW(proj->window),
-					GTK_DIALOG_DESTROY_WITH_PARENT,
-					GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
-					GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+	                                     GTK_WINDOW(proj->window),
+	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+	                                     GTK_STOCK_CANCEL, GTK_RESPONSE_CLOSE,
+	                                     GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
 
-	hbox = gtk_hbox_new(FALSE, 8.0);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(window))),
-	                   hbox, FALSE, FALSE, 8);
-	gtk_container_set_border_width(GTK_CONTAINER(hbox), 8.0);
+	vbox = gtk_vbox_new(FALSE, 0.0);
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG(window));
+	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
-	label = gtk_label_new("Jump to frame ID:");
-	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 3);
+	/* Jump to frame number (sequence) */
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+	stuff->framenumchk = gtk_radio_button_new_with_label(NULL, "Frame number:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(stuff->framenumchk),
+	                   FALSE, FALSE, 4.0);
+	stuff->framenum = gtk_entry_new();
+	snprintf(tmp, 64, "%i", proj->cur_frame);
+	gtk_entry_set_text(GTK_ENTRY(stuff->framenum), tmp);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(stuff->framenum),
+	                   FALSE, FALSE, 4.0);
+	g_signal_connect(G_OBJECT(stuff->framenum), "activate",
+			 G_CALLBACK(goto_frame_activate_sig), window);
 
+	/* Jump to filename+event ID */
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 2.0);
+	gtk_widget_set_margin_top(hbox, 6.0);
+	grp = gtk_radio_button_get_group(GTK_RADIO_BUTTON(stuff->framenumchk));
+	stuff->frameidchk = gtk_radio_button_new_with_label(grp, "Filename:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(stuff->frameidchk),
+	                   FALSE, FALSE, 4.0);
+	stuff->filename = gtk_combo_box_text_new();
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(stuff->filename),
+	                   FALSE, FALSE, 2.0);
+	for ( i=0; i<proj->n_unique_files; i++ ) {
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(stuff->filename),
+		                          NULL, proj->unique_files[i]);
+		if ( strcmp(proj->unique_files[i], proj->filenames[proj->cur_frame]) == 0 ) {
+			gtk_combo_box_set_active(GTK_COMBO_BOX(stuff->filename), i);
+		}
+	}
+	if ( proj->n_unique_files >= 20 ) {
+		label = gtk_label_new("Only the first 20 filenames are listed here");
+		gtk_label_set_markup(GTK_LABEL(label),
+		                     "<b><i>Only the first 20 filenames are "
+		                     "listed here</i></b>");
+		gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(label), FALSE, FALSE, 8.0);
+	}
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+	label = gtk_label_new("Frame ID:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 4.0);
+	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+	gtk_widget_set_margin_start(label, 32);
 	stuff->entry = gtk_entry_new();
 	gtk_entry_set_text(GTK_ENTRY(stuff->entry),
 	                   proj->events[proj->cur_frame]);
 	gtk_box_pack_start(GTK_BOX(hbox), stuff->entry, TRUE, TRUE, 3);
+	gtk_widget_set_margin_bottom(hbox, 6.0);
 
+	g_signal_connect(stuff->framenumchk, "toggled", G_CALLBACK(goto_toggle_sig), stuff);
+	g_signal_connect(stuff->frameidchk, "toggled", G_CALLBACK(goto_toggle_sig), stuff);
+	goto_toggle_sig(stuff->framenumchk, stuff);
 	g_signal_connect(G_OBJECT(stuff->entry), "activate",
 			 G_CALLBACK(goto_frame_activate_sig), window);
 	g_signal_connect_data(G_OBJECT(window), "response",

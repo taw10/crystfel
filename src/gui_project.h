@@ -288,6 +288,9 @@ struct crystfelproject {
 	int resolution_rings;
 	int rescan_on_change;
 
+	char *unique_files[20];
+	int n_unique_files;
+
 	int show_peaks;
 	struct peak_params peak_search_params;
 
