@@ -63,7 +63,8 @@ static void show_help(const char *s)
 	       "  -g, --geometry=file        Input geometry file\n"
 	       "  -o, --output=file          Output geometry file\n"
 	       "  -l, --level=n              Alignment hierarchy level\n"
-	       "      --out-of-plane         Also refine out of x/y plane\n"
+	       "      --out-of-plane         Refine z-direction shifts\n"
+	       "      --out-of-plane-tilts   Refine panel rotations around x and y\n"
 	       "\n"
 	       "  -h, --help                 Display this help message\n"
 	       "      --version              Print version number and exit\n");
@@ -158,7 +159,8 @@ static void write_zero_sum(FILE *fh, struct dg_group_info *g,
 
 
 static int make_zero_sum(FILE *fh, struct dg_group_info *groups, int n_groups,
-                         const char *group_name, int level, int out_of_plane)
+                         const char *group_name, int level,
+                         int out_of_plane_shift, int out_of_plane_tilts)
 {
 	int i;
 	struct dg_group_info *g = find_group(groups, n_groups, group_name);
@@ -174,8 +176,10 @@ static int make_zero_sum(FILE *fh, struct dg_group_info *groups, int n_groups,
 	fprintf(fh, "! Hierarchy constraints for group %s\n", group_name);
 	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TX);
 	write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TY);
-	if ( out_of_plane ) {
+	if ( out_of_plane_shift ) {
 		write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_TZ);
+	}
+	if ( out_of_plane_tilts ) {
 		write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RX);
 		write_zero_sum(fh, g, groups, n_groups, GPARAM_DET_RY);
 	}
@@ -185,7 +189,8 @@ static int make_zero_sum(FILE *fh, struct dg_group_info *groups, int n_groups,
 	for ( i=0; i<n_groups; i++ ) {
 		if ( is_child(g, &groups[i]) ) {
 			if ( make_zero_sum(fh, groups, n_groups, groups[i].name,
-			                   level, out_of_plane) ) return 1;
+			                   level, out_of_plane_shift,
+			                   out_of_plane_tilts) ) return 1;
 		}
 	}
 
@@ -289,7 +294,8 @@ int main(int argc, char *argv[])
 	char line[256];
 	time_t first_mtime = 0;
 	int warn_times = 0;
-	int out_of_plane = 0;
+	int out_of_plane_shift = 0;
+	int out_of_plane_tilts = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -301,7 +307,8 @@ int main(int argc, char *argv[])
 		{"input",              1, NULL,               'g'},
 		{"output",             1, NULL,               'o'},
 		{"level",              1, NULL,               'l'},
-		{"out-of-plane",       0, &out_of_plane,       1},
+		{"out-of-plane",       0, &out_of_plane_shift, 1},
+		{"out-of-plane-tilts", 0, &out_of_plane_tilts, 1},
 
 		{0, 0, NULL, 0}
 	};
@@ -399,26 +406,28 @@ int main(int argc, char *argv[])
 	/* Top level */
 	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_DET_TX));
 	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_DET_TY));
-	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_TZ), out_of_plane ? 0 : -1);
-	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RX), out_of_plane ? 0 : -1);
-	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RY), out_of_plane ? 0 : -1);
+	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_TZ), out_of_plane_shift ? 0 : -1);
+	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RX), out_of_plane_tilts ? 0 : -1);
+	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RY), out_of_plane_tilts ? 0 : -1);
 	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RZ));
 
 	for ( i=0; i<n_groups; i++ ) {
 		int f_inplane = (groups[i].hierarchy_level > level) ? -1 : 0;
-		int f_outplane = out_of_plane ? f_inplane : -1;
+		int f_outplane_shift = out_of_plane_shift ? f_inplane : -1;
+		int f_outplane_tilts = out_of_plane_tilts ? f_inplane : -1;
 		if ( groups[i].hierarchy_level == 0 ) continue;
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TX), f_inplane);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TY), f_inplane);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f_outplane);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f_outplane);
-		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f_outplane);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_TZ), f_outplane_shift);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RX), f_outplane_tilts);
+		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RY), f_outplane_tilts);
 		fprintf(fh, "%i 0 %i\n", mille_label(groups[i].serial, GPARAM_DET_RZ), f_inplane);
 	}
 	fprintf(fh, "\n");
 
 	/* All corrections must sum to zero at each level of hierarchy */
-	if ( make_zero_sum(fh, groups, n_groups, "all", level, out_of_plane) ) return 1;
+	if ( make_zero_sum(fh, groups, n_groups, "all", level,
+	                   out_of_plane_shift, out_of_plane_tilts) ) return 1;
 
 	fprintf(fh, "method inversion 5 0.1\n");
 	fprintf(fh, "closeandreopen\n");

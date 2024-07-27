@@ -53,9 +53,10 @@ level.
 
 The default behaviour is to refine only the position components in the x-y
 plane, perpendicular to the beam.  In favourable circumstances, you can add
-option **--out-of-plane** to refine the panel tilts and shifts out of this
-plane.  However, be aware that this introduces additional cross-dependencies
-and is less stable.
+option **--out-of-plane** to refine the panel **translations** out of this
+plane. However, be aware that this introduces additional cross-dependencies
+and is less stable.  Add option **--out-of-plane-tilts** to additionally
+refine the panel **tilts** out of the x-y plane, which is even less stable.
 
 **align_detector** relies on the program **pede** from the Millepede-II
 package.  Usually, this will be installed as part of the CrystFEL installation
