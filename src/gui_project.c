@@ -1267,7 +1267,7 @@ int default_project(struct crystfelproject *proj)
 	proj->resolution_rings = 0;
 	proj->show_peaks = 1;
 	proj->show_refls = 1;
-	proj->label_refls = 1;
+	proj->label_refls = 0;
 	proj->rescan_on_change = 1;
 
 	proj->peak_search_params.method = PEAK_ZAEF;
