@@ -384,9 +384,9 @@ static void goto_frame_response_sig(GtkDialog *dialog, gint response_id,
 		}
 
 	} else {
-		if ( goto_frame(ctx->proj,
-		                gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(ctx->filename)),
-		                gtk_entry_get_text(GTK_ENTRY(ctx->entry))) )
+		int idx = gtk_combo_box_get_active(GTK_COMBO_BOX(ctx->filename));
+		if ( (idx==-1) || goto_frame(ctx->proj, ctx->proj->unique_files[idx],
+		                             gtk_entry_get_text(GTK_ENTRY(ctx->entry))) )
 		{
 			error_box(ctx->proj, "Frame ID not found");
 		} else {
@@ -468,8 +468,9 @@ static gint goto_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(stuff->filename),
 	                   FALSE, FALSE, 2.0);
 	for ( i=0; i<proj->n_unique_files; i++ ) {
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(stuff->filename),
-		                          NULL, proj->unique_files[i]);
+		char *bn = safe_basename(proj->unique_files[i]);
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(stuff->filename), NULL, bn);
+		free(bn);
 		if ( strcmp(proj->unique_files[i], proj->filenames[proj->cur_frame]) == 0 ) {
 			gtk_combo_box_set_active(GTK_COMBO_BOX(stuff->filename), i);
 		}
