@@ -306,7 +306,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 		z -= g.kcen;
 
 		/* Three because the general case fails in extreme cases */
-		if ( w0 / w1 <= DBL_MIN ) {
+		if ( isinf(w0) || (w0 / w1 <= DBL_MIN) ) {
 
 			/* 'Laue' corner case */
 			kpred = g.kcen;
@@ -352,6 +352,7 @@ static Reflection *check_reflection(struct image *image, Crystal *cryst,
 
 	/* Revert the 'Lorentz' factor */
 	partiality *= sqrt( ( R*R + M2_k/sumw_k) / ( R*R ) );
+	if ( isnan(partiality) ) partiality = 0.0;
 
 	if ( (updateme == NULL) && ( partiality < min_partiality ) ) return NULL;
 
