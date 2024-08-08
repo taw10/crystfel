@@ -264,12 +264,12 @@ static void ffbidx_show_help(void)
     printf("     --ffbidx-num-candidate-vectors=\n");
     printf("                            Number of candidate vectors (per input cell vector).\n");
     printf("                            Default: %d\n", p.num_candidate_vectors);
-    printf("     --ffbidx-redundant-calculations\n");
-    printf("     --ffbidx-no-redundant-calculations\n");
+    printf("     --ffbidx-redundant-computations\n");
+    printf("     --ffbidx-no-redundant-computations\n");
     printf("                            Compute candidates for all three cell vectors instead of just one\n");
     printf("                            Default: %s\n", p.redundant_computations
-                                                               ? "--ffbidx-redundant-calculations"
-                                                               : "--ffbidx-no-redundant-calculations");
+                                                               ? "--ffbidx-redundant-computations"
+                                                               : "--ffbidx-no-redundant-computations");
     printf("     --ffbidx-length-threshold=\n");
     printf("                            Threshold for determining equal vector length (|va| - threshold < |vb| < |va| + threshold)\n");
     printf("                            Default: %f\n", r.length_threshold);
