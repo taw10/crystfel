@@ -3,6 +3,7 @@
 #mesondefine HAVE_FFTW
 #mesondefine HAVE_XGANDALF
 #mesondefine HAVE_PINKINDEXER
+#mesondefine HAVE_FFBIDX
 #mesondefine HAVE_FDIP
 #mesondefine HAVE_ZLIB
 #mesondefine HAVE_GZBUFFER
