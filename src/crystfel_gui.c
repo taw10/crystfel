@@ -969,7 +969,7 @@ static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
 
 	button = gtk_button_new_with_label(label);
 	g_object_set(G_OBJECT(button), "image-position", GTK_POS_TOP, NULL);
-	image = gtk_image_new_from_icon_name(imagen, GTK_ICON_SIZE_DIALOG);
+	image = gtk_image_new_from_resource(imagen);
 	g_object_set(G_OBJECT(button), "image", image, NULL);
 	g_object_set(G_OBJECT(button), "always-show-image", TRUE, NULL);
 	gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
@@ -984,25 +984,25 @@ static void add_button(GtkWidget *vbox, const char *label, const char *imagen,
 
 static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 {
-	add_button(vbox, "Load data", "crystfel-load-data",
+	add_button(vbox, "Load data", "/de/desy/CrystFEL/crystfel-load-data.svg",
 	           G_CALLBACK(import_sig), proj);
-	add_button(vbox, "Peak detection", "crystfel-peak-detection",
+	add_button(vbox, "Peak detection", "/de/desy/CrystFEL/crystfel-peak-detection.svg",
 	           G_CALLBACK(peaksearch_sig), proj);
-	add_button(vbox, "Index this frame", "crystfel-index-frame",
+	add_button(vbox, "Index this frame", "/de/desy/CrystFEL/crystfel-index-frame.svg",
 	           G_CALLBACK(index_one_sig), proj);
-	add_button(vbox, "Index all frames", "crystfel-index-all",
+	add_button(vbox, "Index all frames", "/de/desy/CrystFEL/crystfel-index-all.svg",
 	           G_CALLBACK(index_all_sig), proj);
-	add_button(vbox, "Determine unit cell", "crystfel-unitcell",
+	add_button(vbox, "Determine unit cell", "/de/desy/CrystFEL/crystfel-unitcell.svg",
 	           G_CALLBACK(cell_explorer_sig), proj);
-	add_button(vbox, "Refine detector geometry", "crystfel-geometry",
+	add_button(vbox, "Refine detector geometry", "/de/desy/CrystFEL/crystfel-geometry.svg",
 	           G_CALLBACK(align_sig), proj);
-	add_button(vbox, "Indexing ambiguity", "crystfel-ambiguity",
+	add_button(vbox, "Indexing ambiguity", "/de/desy/CrystFEL/crystfel-ambiguity.svg",
 	           G_CALLBACK(ambi_sig), proj);
-	add_button(vbox, "Merge", "crystfel-merge",
+	add_button(vbox, "Merge", "/de/desy/CrystFEL/crystfel-merge.svg",
 	           G_CALLBACK(merge_sig), proj);
-	add_button(vbox, "Figures of merit", "crystfel-fom",
+	add_button(vbox, "Figures of merit", "/de/desy/CrystFEL/crystfel-fom.svg",
 	           G_CALLBACK(fom_sig), proj);
-	add_button(vbox, "Export data", "crystfel-export",
+	add_button(vbox, "Export data", "/de/desy/CrystFEL/crystfel-export.svg",
 	           G_CALLBACK(export_sig), proj);
 }
 
