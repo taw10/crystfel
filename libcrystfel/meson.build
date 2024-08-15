@@ -27,7 +27,7 @@ endif
 
 seedeedep = dependency('seedee', required: false)
 if seedeedep.found()
-  cjsondep = dependency('cjson',
+  cjsondep = dependency('libcjson',
                         required: true,
                         fallback: ['cjson', 'libcjson_dep'])
   if cjsondep.found() and seedeedep.found()
