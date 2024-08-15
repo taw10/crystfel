@@ -163,7 +163,10 @@ executable('align_detector',
            install_rpath: crystfel_rpath)
 
 # Millepede subproject gives us 'pede', needed for align_detector
-subproject('millepede', required: false)
+pede = find_program('pede', required: false)
+if not pede.found()
+  subproject('millepede', required: false)
+endif
 
 # adjust_detector
 adjust_detector = executable('adjust_detector',
