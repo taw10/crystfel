@@ -1514,6 +1514,7 @@ int main(int argc, char *argv[])
 
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
 	cell_free(args.iargs.cell);
+	free(args.iargs.milledir);
 	free(args.prefix);
 	free(args.temp_location);
 	free(tmpdir);

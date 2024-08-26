@@ -560,6 +560,7 @@ static int run_work(const struct index_args *iargs, Stream *st,
 	im_zmq_shutdown(zmqstuff);
 	im_asapo_shutdown(asapostuff);
 
+	data_template_free(iargs->dtempl);
 	cleanup_indexing(iargs->ipriv);
 	cell_free(iargs->cell);
 	return 0;
@@ -1430,6 +1431,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	sem_unlink(semname_q);
+	sem_close(sb->queue_sem);
 
 	for ( i=0; i<sb->n_read; i++ ) {
 		fclose(sb->fhs[i]);
