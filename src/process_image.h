@@ -75,7 +75,6 @@ struct index_args
 	float clen_estimate;
 	int n_threads;
 	int mille;
-	char *milledir;
 	int max_mille_level;
 
 	/* Integration */
