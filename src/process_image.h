@@ -42,7 +42,6 @@ struct index_args;
 #endif
 
 #include "integration.h"
-#include "im-sandbox.h"
 #include "peaks.h"
 #include "image.h"
 #include "im-asapo.h"
@@ -75,6 +74,7 @@ struct index_args
 	float clen_estimate;
 	int n_threads;
 	int mille;
+	char *milledir;
 	int max_mille_level;
 
 	/* Integration */
@@ -97,6 +97,8 @@ struct index_args
 	int stream_nonhits;
 };
 
+
+#include "im-sandbox.h"
 
 /* Information about the indexing process for one pattern */
 struct pattern_args

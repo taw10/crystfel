@@ -3,18 +3,11 @@
  *
  * Command line argument parsing for indexamajig
  *
- * Copyright © 2012-2023 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2023-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
- * Copyright © 2012 Richard Kirian
- * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2023 Thomas White <taw@physics.org>
- *   2011      Richard Kirian
- *   2012      Lorenzo Galli
- *   2012      Chunhong Yoon
- *   2017      Valerio Mariani <valerio.mariani@desy.de>
- *   2017-2018 Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>
+ *   2023-2024 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -46,44 +39,6 @@
 #include <argp.h>
 
 #include "version.h"
-
-
-struct indexamajig_arguments
-{
-	struct index_args iargs;  /* These are the options that will be
-	                           * given to process_image */
-	char *filename;
-	char *geom_filename;
-	char *outfile;
-	char *prefix;
-	int check_prefix;
-	int n_proc;
-	char *cellfile;
-	char *indm_str;
-	int basename;
-	struct im_zmq_params zmq_params;
-	struct im_asapo_params asapo_params;
-	int serial_start;
-	char *temp_location;
-	int if_refine;
-	int if_checkcell;
-	int if_peaks;
-	int if_multi;
-	int if_retry;
-	int profile;  /* Whether to do wall-clock time profiling */
-	int no_data_timeout;
-	char **copy_headers;
-	int n_copy_headers;
-	char *harvest_file;
-	int cpu_pin;
-
-	struct taketwo_options **taketwo_opts_ptr;
-	struct felix_options **felix_opts_ptr;
-	struct xgandalf_options **xgandalf_opts_ptr;
-	struct pinkindexer_options **pinkindexer_opts_ptr;
-	struct fromfile_options **fromfile_opts_ptr;
-	struct asdf_options **asdf_opts_ptr;
-};
 
 
 static void show_version(FILE *fh, struct argp_state *state)
@@ -686,6 +641,11 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->harvest_file = strdup(arg);
 		break;
 
+		/* ---------- Secret muti-processing stuff ---------- */
+		case 701 :
+		args->worker = 1;
+		break;
+
 		default :
 		return ARGP_ERR_UNKNOWN;
 
@@ -695,7 +655,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 }
 
 
-struct indexamajig_arguments *parse_args(int argc, char *argv[])
+struct indexamajig_arguments parse_indexamajig_args(int argc, char *argv[])
 {
 	struct indexamajig_arguments args;
 	int r;

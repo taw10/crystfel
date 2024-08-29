@@ -44,6 +44,7 @@ struct sb_shm;
 #include "process_image.h"
 #include "im-zmq.h"
 #include "im-asapo.h"
+#include "im-argparse.h"
 
 /* Length of event queue */
 #define QUEUE_SIZE (256)
@@ -84,6 +85,8 @@ struct sb_shm
 extern char *create_tempdir(const char *temp_location);
 
 extern void set_last_task(char *lt, const char *task);
+
+extern int run_work(const struct indexamajig_arguments *args);
 
 extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           int config_basename, FILE *fh,  Stream *stream,

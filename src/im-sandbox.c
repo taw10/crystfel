@@ -65,6 +65,7 @@
 #endif
 
 #include "im-sandbox.h"
+#include "im-argparse.h"
 #include "process_image.h"
 #include "im-zmq.h"
 #include "profile.h"
@@ -335,6 +336,284 @@ void set_last_task(char *lt, const char *task)
 }
 
 
+static void pin_to_cpu(int slot)
+{
+	#ifdef HAVE_SCHED_SETAFFINITY
+	cpu_set_t c;
+
+	CPU_ZERO(&c);
+	CPU_SET(slot, &c);
+	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
+		fprintf(stderr, "Failed to set CPU affinity for %i\n", slot);
+	}
+	#endif
+}
+
+
+int run_work(const struct indexamajig_arguments *args)
+{
+	int allDone = 0;
+	struct im_zmq *zmqstuff = NULL;
+	struct im_asapo *asapostuff = NULL;
+	Mille *mille;
+	ImageDataArrays *ida;
+
+	if ( args->cpu_pin ) pin_to_cpu(slot);
+
+	ll = 64 + strlen(sb->tmpdir);
+	tmp = malloc(ll);
+	if ( tmp == NULL ) {
+		ERROR("Failed to allocate temporary dir\n");
+		return 1;
+	}
+
+	snprintf(tmp, ll, "%s/worker.%i", sb->tmpdir, slot);
+
+	if ( stat(tmp, &s) == -1 ) {
+		if ( errno != ENOENT ) {
+			ERROR("Failed to stat temporary folder.\n");
+			exit(1);
+		}
+
+		r = mkdir(tmp, S_IRWXU);
+		if ( r ) {
+			ERROR("Failed to create temporary folder: %s\n",
+			strerror(errno));
+			exit(1);
+		}
+	}
+
+	st = stream_open_fd_for_write(args.fd_stream, sb->iargs->dtempl);
+
+	if ( args->profile ) {
+		profile_init();
+	}
+
+	/* Connect via ZMQ */
+	if ( sb->zmq_params != NULL ) {
+		zmqstuff = im_zmq_connect(sb->zmq_params);
+		if ( zmqstuff == NULL ) {
+			ERROR("ZMQ setup failed.\n");
+			return 1;
+		}
+	}
+
+	if ( sb->asapo_params != NULL ) {
+		asapostuff = im_asapo_connect(sb->asapo_params);
+		if ( asapostuff == NULL ) {
+			ERROR("ASAP::O setup failed.\n");
+			shared->should_shutdown = 1;
+			return 1;
+		}
+	}
+
+	mille = NULL;
+	if ( args->iargs.mille ) {
+		char tmp[1024];
+		snprintf(tmp, 1024, "%s/mille-data-%i.bin", args->iargs.milledir, cookie);
+		mille = crystfel_mille_new(tmp);
+	}
+
+	ida = image_data_arrays_new();
+
+	while ( !allDone ) {
+
+		struct pattern_args pargs;
+		int ser;
+		char *line;
+		size_t len;
+		int i;
+		char *event_str = NULL;
+		char *ser_str = NULL;
+		int ok = 1;
+
+		/* Wait until an event is ready */
+		shared->pings[cookie]++;
+		set_last_task(shared->last_task[cookie], "wait_event");
+		profile_start("wait-queue-semaphore");
+		if ( sem_wait(sb->queue_sem) != 0 ) {
+			ERROR("Failed to wait on queue semaphore: %s\n",
+			      strerror(errno));
+		}
+		profile_end("wait-queue-semaphore");
+
+		/* Get the event from the queue */
+		set_last_task(shared->last_task[cookie], "read_queue");
+		pthread_mutex_lock(&shared->queue_lock);
+		if ( ((shared->n_events==0) && (shared->no_more))
+		   || (shared->should_shutdown) )
+		{
+			/* Queue is empty and no more are coming,
+			 * or another process has initiated a shutdown.
+			 * Either way, it's time to get out of here. */
+			pthread_mutex_unlock(&shared->queue_lock);
+			allDone = 1;
+			continue;
+		}
+		if ( shared->n_events == 0 ) {
+			ERROR("Got the semaphore, but no events in queue!\n");
+			ERROR("no_more = %i\n", shared->no_more);
+			pthread_mutex_unlock(&shared->queue_lock);
+			allDone = 1;
+			continue;
+		}
+
+		line = strdup(shared->queue[0]);
+
+		len = strlen(line);
+		assert(len > 1);
+		for ( i=len-1; i>0; i-- ) {
+			if ( line[i] == ' ' ) {
+				line[i] = '\0';
+				ser_str = &line[i+1];
+				break;
+			}
+		}
+		len = strlen(line);
+		assert(len > 1);
+		for ( i=len-1; i>0; i-- ) {
+			if ( line[i] == ' ' ) {
+				line[i] = '\0';
+				event_str = &line[i+1];
+				break;
+			}
+		}
+		if ( (ser_str != NULL) && (event_str != NULL) ) {
+			if ( sscanf(ser_str, "%i", &ser) != 1 ) {
+				STATUS("Invalid serial number '%s'\n",
+				       ser_str);
+				ok = 0;
+			}
+		}
+		if ( !ok ) {
+			STATUS("Invalid event string '%s'\n",
+			       shared->queue[0]);
+			ok = 0;
+		}
+		memcpy(shared->last_ev[cookie], shared->queue[0],
+		       MAX_EV_LEN);
+		shuffle_events(shared);
+		pthread_mutex_unlock(&shared->queue_lock);
+
+		if ( !ok ) continue;
+
+		pargs.filename = strdup(line);
+		pargs.event = safe_strdup(event_str);
+
+		free(line);
+		ok = 0;
+
+		/* Default values */
+		pargs.zmq_data = NULL;
+		pargs.zmq_data_size = 0;
+		pargs.asapo_data = NULL;
+		pargs.asapo_data_size = 0;
+		pargs.asapo_meta = NULL;
+
+		if ( sb->zmq_params != NULL ) {
+
+			profile_start("zmq-fetch");
+			set_last_task(shared->last_task[cookie], "ZMQ fetch");
+			pargs.zmq_data = im_zmq_fetch(zmqstuff,
+			                              &pargs.zmq_data_size);
+			profile_end("zmq-fetch");
+
+			if ( (pargs.zmq_data != NULL)
+			  && (pargs.zmq_data_size > 15) ) ok = 1;
+
+			/* The filename/event, which will be 'fake' values in
+			 * this case, still came via the event queue.  More
+			 * importantly, the event queue gave us a unique
+			 * serial number for this image. */
+
+		} else if ( sb->asapo_params != NULL ) {
+
+			char *filename;
+			char *event;
+			int finished = 0;
+			int asapo_message_id;
+
+			profile_start("asapo-fetch");
+			set_last_task(shared->last_task[cookie], "ASAPO fetch");
+			pargs.asapo_data = im_asapo_fetch(asapostuff,
+			                                  &pargs.asapo_data_size,
+			                                  &pargs.asapo_meta,
+			                                  &filename,
+			                                  &event,
+			                                  &finished,
+			                                  &asapo_message_id);
+			profile_end("asapo-fetch");
+			if ( pargs.asapo_data != NULL ) {
+				ok = 1;
+
+				/* ASAP::O provides a meaningful filename, which
+				 * replaces the placeholder. */
+				free(pargs.filename);
+				free(pargs.event);
+				pargs.filename = filename;
+				pargs.event = event;
+				shared->end_of_stream[cookie] = 0;
+
+				/* We will also use ASAP::O's serial number
+				 * instead of our own. */
+				ser = asapo_message_id;
+			} else {
+				if ( finished ) {
+					shared->end_of_stream[cookie] = 1;
+				}
+			}
+
+		} else {
+			ok = 1;
+		}
+
+		if ( ok ) {
+			shared->time_last_start[cookie] = get_monotonic_seconds();
+			profile_start("process-image");
+			process_image(iargs, &pargs, st, cookie, tmpdir, ser,
+			              shared, shared->last_task[cookie],
+			              asapostuff, mille, ida);
+			profile_end("process-image");
+
+			if ( sb->asapo_params != NULL ) {
+				im_asapo_finalise(asapostuff, ser);
+			}
+
+		}
+
+		/* NB pargs.zmq_data, pargs.asapo_data and  pargs.asapo_meta
+		 * will be copied into the image structure, so
+		 * that it can be queried for "header" values etc.  They will
+		 * eventually be freed by image_free() under process_image(). */
+
+		if ( sb->profile ) {
+			profile_print_and_reset(cookie);
+		}
+
+		free(pargs.filename);
+		free(pargs.event);
+	}
+
+	stream_close(st);
+	free(tmp);
+	munmap(sb->shared, sizeof(struct sb_shm));
+
+	image_data_arrays_free(ida);
+	crystfel_mille_free(mille);
+
+	/* These are both no-ops if argument is NULL */
+	im_zmq_shutdown(zmqstuff);
+	im_asapo_shutdown(asapostuff);
+
+	data_template_free(iargs->dtempl);
+	cleanup_indexing(iargs->ipriv);
+	cell_free(iargs->cell);
+
+	return 0;
+}
+
+
+
 static ssize_t lwrite(int fd, const char *a)
 {
 	size_t l = strlen(a);
@@ -486,24 +765,12 @@ static void try_read(struct sandbox *sb)
 }
 
 
-static void pin_to_cpu(int slot)
-{
-	#ifdef HAVE_SCHED_SETAFFINITY
-	cpu_set_t c;
-
-	CPU_ZERO(&c);
-	CPU_SET(slot, &c);
-	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
-		fprintf(stderr, "Failed to set CPU affinity for %i\n", slot);
-	}
-	#endif
-}
-
-
 static void start_worker_process(struct sandbox *sb, int slot)
 {
 	pid_t p;
 	int stream_pipe[2];
+	const char **nargv;
+	int nargc;
 
 	if ( pipe(stream_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
@@ -526,6 +793,14 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 	/* Set up nargv including "new" args
 	 *  --worker --fd-stream --shm-queue --fd-mille */
+	nargc = sb->argc;
+	nargv = malloc((sb->argc+8)*sizeof(char *));
+	if ( nargv == NULL ) return;
+	for ( i=0; i<sb->argc; i++ ) {
+		nargv[nargc++] = sb->argv[i];
+	}
+	nargv[nargc++] = "--worker";
+	nargv[nargc++] = NULL;
 
 	if ( p == 0 ) {
 		execvp("/proc/self/exe", nargv);
@@ -884,7 +1159,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    Stream *stream, const char *tmpdir, int serial_start,
                    struct im_zmq_params *zmq_params,
                    struct im_asapo_params *asapo_params,
-                   int timeout, int profile, int no_data_timeout)
+                   int timeout, int profile, int cpu_pin,
+                   int no_data_timeout)
 {
 	int i;
 	struct sandbox *sb;
