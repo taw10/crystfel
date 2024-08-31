@@ -269,7 +269,7 @@ static void pin_to_cpu(int slot)
 }
 
 
-static int run_work(const struct indexamajig_arguments *args)
+static int run_work(struct indexamajig_arguments *args)
 {
 	int allDone = 0;
 	struct im_zmq *zmqstuff = NULL;
@@ -282,8 +282,6 @@ static int run_work(const struct indexamajig_arguments *args)
 	Stream *st;
 	struct sb_shm *shared;
 	sem_t *queue_sem;
-	int i, n;
-	const IndexingMethod *methods;
 	IndexingFlags flags = 0;
 
 	printf("I am the worker!\n");
@@ -806,13 +804,9 @@ int main(int argc, char *argv[])
 
 	} else {
 
-		methods = indexing_methods(args->iargs.ipriv, &n);
-		for ( i=0; i<n; i++ ) {
-			if ( (methods[i] & INDEXING_METHOD_MASK) == INDEXING_PINKINDEXER ) {
-				/* Extend timeout if using pinkIndexer */
-				timeout = 3000;
-				break;
-			}
+		if ( strstr(args->indm_str, "pinkindexer") != NULL ) {
+			/* Extend timeout if using pinkIndexer */
+			timeout = 3000;
 		}
 
 	}

@@ -507,7 +507,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 
 	/* Set up nargv including "new" args
 	 *  --worker --worker-id --fd-stream --shm-queue --fd-mille --worker-tmpdir */
-	nargc = sb->argc;
+	nargc = 0;
 	nargv = malloc((sb->argc+8)*sizeof(char *));
 	if ( nargv == NULL ) return;
 	for ( i=0; i<sb->argc; i++ ) {
