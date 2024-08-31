@@ -86,7 +86,7 @@ extern char *create_tempdir(const char *temp_location);
 
 extern void set_last_task(char *lt, const char *task);
 
-extern int run_work(const struct indexamajig_arguments *args);
+extern double get_monotonic_seconds(void);
 
 extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           int config_basename, FILE *fh,  Stream *stream,
