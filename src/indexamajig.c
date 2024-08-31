@@ -445,54 +445,6 @@ int main(int argc, char *argv[])
 
 	} else {
 
-		int i, n;
-		const IndexingMethod *methods;
-		IndexingFlags flags = 0;
-
-		if ( args->iargs.cell != NULL ) {
-			STATUS("This is what I understood your unit cell to be:\n");
-			cell_print(args->iargs.cell);
-		} else {
-			STATUS("No reference unit cell provided.\n");
-		}
-
-		if ( args->if_checkcell ) {
-			flags |= INDEXING_CHECK_CELL;
-		}
-		if ( args->if_refine ) {
-			flags |= INDEXING_REFINE;
-		}
-		if ( args->if_peaks ) {
-			flags |= INDEXING_CHECK_PEAKS;
-		}
-		if ( args->if_multi ) {
-			flags |= INDEXING_MULTI;
-		}
-		if ( args->if_retry ) {
-			flags |= INDEXING_RETRY;
-		}
-
-		args->iargs.ipriv = setup_indexing(args->indm_str,
-		                                   args->iargs.cell,
-		                                   args->iargs.tols,
-		                                   flags,
-		                                   args->iargs.wavelength_estimate,
-		                                   args->iargs.clen_estimate,
-		                                   args->iargs.n_threads,
-		                                   *args->taketwo_opts_ptr,
-		                                   *args->xgandalf_opts_ptr,
-		                                   *args->pinkindexer_opts_ptr,
-		                                   *args->felix_opts_ptr,
-		                                   *args->fromfile_opts_ptr,
-		                                   *args->asdf_opts_ptr);
-
-		free(args->filename);
-
-		if ( args->iargs.ipriv == NULL ) {
-			ERROR("Failed to set up indexing system\n");
-			return 1;
-		}
-
 		methods = indexing_methods(args->iargs.ipriv, &n);
 		for ( i=0; i<n; i++ ) {
 			if ( (methods[i] & INDEXING_METHOD_MASK) == INDEXING_PINKINDEXER ) {
