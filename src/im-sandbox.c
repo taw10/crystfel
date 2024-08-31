@@ -85,6 +85,8 @@ struct sandbox
 	int timeout;
 
 	struct index_args *iargs;
+	int argc;
+	char **argv;
 
 	/* Worker processes */
 	int n_proc;
@@ -357,19 +359,28 @@ int run_work(const struct indexamajig_arguments *args)
 	struct im_asapo *asapostuff = NULL;
 	Mille *mille;
 	ImageDataArrays *ida;
+	size_t ll;
+	char *tmp;
+	struct stat s;
+	Stream *st;
+	struct sb_shm *shared;
+	sem_t *queue_sem;
 
-	if ( args->cpu_pin ) pin_to_cpu(slot);
+	if ( args->cpu_pin ) pin_to_cpu(args->worker_id);
 
-	ll = 64 + strlen(sb->tmpdir);
+	ll = 64 + strlen(args->worker_tmpdir);
 	tmp = malloc(ll);
 	if ( tmp == NULL ) {
 		ERROR("Failed to allocate temporary dir\n");
 		return 1;
 	}
 
-	snprintf(tmp, ll, "%s/worker.%i", sb->tmpdir, slot);
+	snprintf(tmp, ll, "%s/worker.%i", args->worker_tmpdir, args->worker_id);
 
 	if ( stat(tmp, &s) == -1 ) {
+
+		int r;
+
 		if ( errno != ENOENT ) {
 			ERROR("Failed to stat temporary folder.\n");
 			exit(1);
@@ -383,23 +394,23 @@ int run_work(const struct indexamajig_arguments *args)
 		}
 	}
 
-	st = stream_open_fd_for_write(args.fd_stream, sb->iargs->dtempl);
+	st = stream_open_fd_for_write(args->fd_stream, args->iargs.dtempl);
 
 	if ( args->profile ) {
 		profile_init();
 	}
 
 	/* Connect via ZMQ */
-	if ( sb->zmq_params != NULL ) {
-		zmqstuff = im_zmq_connect(sb->zmq_params);
+	if ( args->zmq_params.addr != NULL ) {
+		zmqstuff = im_zmq_connect(&args->zmq_params);
 		if ( zmqstuff == NULL ) {
 			ERROR("ZMQ setup failed.\n");
 			return 1;
 		}
 	}
 
-	if ( sb->asapo_params != NULL ) {
-		asapostuff = im_asapo_connect(sb->asapo_params);
+	if ( args->asapo_params.endpoint != NULL ) {
+		asapostuff = im_asapo_connect(&args->asapo_params);
 		if ( asapostuff == NULL ) {
 			ERROR("ASAP::O setup failed.\n");
 			shared->should_shutdown = 1;
@@ -408,13 +419,17 @@ int run_work(const struct indexamajig_arguments *args)
 	}
 
 	mille = NULL;
-	if ( args->iargs.mille ) {
-		char tmp[1024];
-		snprintf(tmp, 1024, "%s/mille-data-%i.bin", args->iargs.milledir, cookie);
-		mille = crystfel_mille_new(tmp);
-	}
+	/* FIXME: Set up Mille to send down pipe */
 
 	ida = image_data_arrays_new();
+
+	/* FIXME: Set up SHM */
+
+	queue_sem = sem_open(args->queue_sem, 0, S_IRUSR | S_IWUSR, 0);
+	if ( queue_sem == SEM_FAILED ) {
+		ERROR("Failed to open semaphore: %s\n", strerror(errno));
+		return 1;
+	}
 
 	while ( !allDone ) {
 
@@ -428,17 +443,17 @@ int run_work(const struct indexamajig_arguments *args)
 		int ok = 1;
 
 		/* Wait until an event is ready */
-		shared->pings[cookie]++;
-		set_last_task(shared->last_task[cookie], "wait_event");
+		shared->pings[args->worker_id]++;
+		set_last_task(shared->last_task[args->worker_id], "wait_event");
 		profile_start("wait-queue-semaphore");
-		if ( sem_wait(sb->queue_sem) != 0 ) {
+		if ( sem_wait(queue_sem) != 0 ) {
 			ERROR("Failed to wait on queue semaphore: %s\n",
 			      strerror(errno));
 		}
 		profile_end("wait-queue-semaphore");
 
 		/* Get the event from the queue */
-		set_last_task(shared->last_task[cookie], "read_queue");
+		set_last_task(shared->last_task[args->worker_id], "read_queue");
 		pthread_mutex_lock(&shared->queue_lock);
 		if ( ((shared->n_events==0) && (shared->no_more))
 		   || (shared->should_shutdown) )
@@ -490,7 +505,7 @@ int run_work(const struct indexamajig_arguments *args)
 			       shared->queue[0]);
 			ok = 0;
 		}
-		memcpy(shared->last_ev[cookie], shared->queue[0],
+		memcpy(shared->last_ev[args->worker_id], shared->queue[0],
 		       MAX_EV_LEN);
 		shuffle_events(shared);
 		pthread_mutex_unlock(&shared->queue_lock);
@@ -510,10 +525,10 @@ int run_work(const struct indexamajig_arguments *args)
 		pargs.asapo_data_size = 0;
 		pargs.asapo_meta = NULL;
 
-		if ( sb->zmq_params != NULL ) {
+		if ( args->zmq_params.addr != NULL ) {
 
 			profile_start("zmq-fetch");
-			set_last_task(shared->last_task[cookie], "ZMQ fetch");
+			set_last_task(shared->last_task[args->worker_id], "ZMQ fetch");
 			pargs.zmq_data = im_zmq_fetch(zmqstuff,
 			                              &pargs.zmq_data_size);
 			profile_end("zmq-fetch");
@@ -526,7 +541,7 @@ int run_work(const struct indexamajig_arguments *args)
 			 * importantly, the event queue gave us a unique
 			 * serial number for this image. */
 
-		} else if ( sb->asapo_params != NULL ) {
+		} else if ( args->asapo_params.endpoint != NULL ) {
 
 			char *filename;
 			char *event;
@@ -534,7 +549,7 @@ int run_work(const struct indexamajig_arguments *args)
 			int asapo_message_id;
 
 			profile_start("asapo-fetch");
-			set_last_task(shared->last_task[cookie], "ASAPO fetch");
+			set_last_task(shared->last_task[args->worker_id], "ASAPO fetch");
 			pargs.asapo_data = im_asapo_fetch(asapostuff,
 			                                  &pargs.asapo_data_size,
 			                                  &pargs.asapo_meta,
@@ -552,14 +567,14 @@ int run_work(const struct indexamajig_arguments *args)
 				free(pargs.event);
 				pargs.filename = filename;
 				pargs.event = event;
-				shared->end_of_stream[cookie] = 0;
+				shared->end_of_stream[args->worker_id] = 0;
 
 				/* We will also use ASAP::O's serial number
 				 * instead of our own. */
 				ser = asapo_message_id;
 			} else {
 				if ( finished ) {
-					shared->end_of_stream[cookie] = 1;
+					shared->end_of_stream[args->worker_id] = 1;
 				}
 			}
 
@@ -568,14 +583,14 @@ int run_work(const struct indexamajig_arguments *args)
 		}
 
 		if ( ok ) {
-			shared->time_last_start[cookie] = get_monotonic_seconds();
+			shared->time_last_start[args->worker_id] = get_monotonic_seconds();
 			profile_start("process-image");
-			process_image(iargs, &pargs, st, cookie, tmpdir, ser,
-			              shared, shared->last_task[cookie],
+			process_image(&args->iargs, &pargs, st, args->worker_id, args->worker_tmpdir, ser,
+			              shared, shared->last_task[args->worker_id],
 			              asapostuff, mille, ida);
 			profile_end("process-image");
 
-			if ( sb->asapo_params != NULL ) {
+			if ( asapostuff != NULL ) {
 				im_asapo_finalise(asapostuff, ser);
 			}
 
@@ -586,8 +601,8 @@ int run_work(const struct indexamajig_arguments *args)
 		 * that it can be queried for "header" values etc.  They will
 		 * eventually be freed by image_free() under process_image(). */
 
-		if ( sb->profile ) {
-			profile_print_and_reset(cookie);
+		if ( args->profile ) {
+			profile_print_and_reset(args->worker_id);
 		}
 
 		free(pargs.filename);
@@ -596,7 +611,8 @@ int run_work(const struct indexamajig_arguments *args)
 
 	stream_close(st);
 	free(tmp);
-	munmap(sb->shared, sizeof(struct sb_shm));
+	munmap(shared, sizeof(struct sb_shm));
+	sem_close(queue_sem);
 
 	image_data_arrays_free(ida);
 	crystfel_mille_free(mille);
@@ -605,9 +621,9 @@ int run_work(const struct indexamajig_arguments *args)
 	im_zmq_shutdown(zmqstuff);
 	im_asapo_shutdown(asapostuff);
 
-	data_template_free(iargs->dtempl);
-	cleanup_indexing(iargs->ipriv);
-	cell_free(iargs->cell);
+	data_template_free(args->iargs.dtempl);
+	cleanup_indexing(args->iargs.ipriv);
+	cell_free(args->iargs.cell);
 
 	return 0;
 }
@@ -769,8 +785,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 {
 	pid_t p;
 	int stream_pipe[2];
-	const char **nargv;
+	char **nargv;
 	int nargc;
+	int i;
 
 	if ( pipe(stream_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
@@ -792,7 +809,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	}
 
 	/* Set up nargv including "new" args
-	 *  --worker --fd-stream --shm-queue --fd-mille */
+	 *  --worker --worker-id --fd-stream --shm-queue --fd-mille --worker-tmpdir */
 	nargc = sb->argc;
 	nargv = malloc((sb->argc+8)*sizeof(char *));
 	if ( nargv == NULL ) return;
@@ -1160,7 +1177,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    struct im_zmq_params *zmq_params,
                    struct im_asapo_params *asapo_params,
                    int timeout, int profile, int cpu_pin,
-                   int no_data_timeout)
+                   int no_data_timeout, int argc, char *argv[])
 {
 	int i;
 	struct sandbox *sb;
@@ -1209,6 +1226,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->tmpdir = tmpdir;
 	sb->profile = profile;
 	sb->timeout = timeout;
+	sb->argc = argc;
+	sb->argv = argv;
 
 	if ( zmq_params->addr != NULL ) {
 		sb->zmq_params = zmq_params;

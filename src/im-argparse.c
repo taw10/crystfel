@@ -39,6 +39,7 @@
 #include <argp.h>
 
 #include "version.h"
+#include "im-argparse.h"
 
 
 static void show_version(FILE *fh, struct argp_state *state)
@@ -56,6 +57,21 @@ static DataSourceType parse_data_format(const char *str)
 	/* CBF and CBFGZ should be added here once image-cbf.c supports
 	 * in-memory access */
 	return DATA_SOURCE_TYPE_UNKNOWN;
+}
+
+
+static void add_copy_header(struct indexamajig_arguments *args,
+                            const char *header)
+{
+	char **new_copy_headers = realloc(args->copy_headers,
+	                                  (args->n_copy_headers+1)*sizeof(char *));
+	if ( new_copy_headers == NULL ) {
+		ERROR("Failed to add copy header '%s'\n", header);
+		return;
+	}
+
+	args->copy_headers = new_copy_headers;
+	args->copy_headers[args->n_copy_headers++] = strdup(header);
 }
 
 
@@ -646,6 +662,10 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		args->worker = 1;
 		break;
 
+		case 706 :
+		args->worker_id = atoi(optarg);
+		break;
+
 		default :
 		return ARGP_ERR_UNKNOWN;
 
@@ -655,122 +675,123 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 }
 
 
-struct indexamajig_arguments parse_indexamajig_args(int argc, char *argv[])
+struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 {
-	struct indexamajig_arguments args;
-	int r;
+	struct indexamajig_arguments *args;
 	struct taketwo_options *taketwo_opts = NULL;
 	struct felix_options *felix_opts = NULL;
 	struct xgandalf_options *xgandalf_opts = NULL;
 	struct pinkindexer_options *pinkindexer_opts = NULL;
 	struct fromfile_options *fromfile_opts = NULL;
 	struct asdf_options *asdf_opts = NULL;
-	int err = 0;
+
+	args = malloc(sizeof(struct indexamajig_arguments));
+	if ( args == NULL ) return NULL;
 
 	/* Defaults for "top level" arguments */
-	args.filename = NULL;
-	args.geom_filename = NULL;
-	args.outfile = NULL;
-	args.temp_location = strdup(".");
-	args.prefix = strdup("");
-	args.check_prefix = 1;
-	args.n_proc = 1;
-	args.cellfile = NULL;
-	args.indm_str = NULL;
-	args.basename = 0;
-	args.zmq_params.addr = NULL;
-	args.zmq_params.request = NULL;
-	args.zmq_params.n_subscriptions = 0;
-	args.asapo_params.endpoint = NULL;
-	args.asapo_params.token = NULL;
-	args.asapo_params.beamtime = NULL;
-	args.asapo_params.group_id = NULL;
-	args.asapo_params.source = NULL;
-	args.asapo_params.stream = NULL;
-	args.asapo_params.wait_for_stream = 0;
-	args.asapo_params.write_output_stream = 0;
-	args.asapo_params.consumer_timeout_ms = 500;
-	args.asapo_params.use_ack = 0;
-	args.cpu_pin = 0;
-	args.serial_start = 1;
-	args.if_peaks = 1;
-	args.if_multi = 0;
-	args.if_retry = 1;
-	args.if_refine = 1;
-	args.if_checkcell = 1;
-	args.profile = 0;
-	args.no_data_timeout = 60;
-	args.copy_headers = NULL;
-	args.n_copy_headers = 0;
-	args.harvest_file = NULL;
-	args.taketwo_opts_ptr = &taketwo_opts;
-	args.felix_opts_ptr = &felix_opts;
-	args.xgandalf_opts_ptr = &xgandalf_opts;
-	args.pinkindexer_opts_ptr = &pinkindexer_opts;
-	args.fromfile_opts_ptr = &fromfile_opts;
-	args.asdf_opts_ptr = &asdf_opts;
-	args.worker = 0;
-	args.fd_stream = 0;
-	args.fd_mille = 0;
+	args->filename = NULL;
+	args->geom_filename = NULL;
+	args->outfile = NULL;
+	args->temp_location = strdup(".");
+	args->prefix = strdup("");
+	args->check_prefix = 1;
+	args->n_proc = 1;
+	args->cellfile = NULL;
+	args->indm_str = NULL;
+	args->basename = 0;
+	args->zmq_params.addr = NULL;
+	args->zmq_params.request = NULL;
+	args->zmq_params.n_subscriptions = 0;
+	args->asapo_params.endpoint = NULL;
+	args->asapo_params.token = NULL;
+	args->asapo_params.beamtime = NULL;
+	args->asapo_params.group_id = NULL;
+	args->asapo_params.source = NULL;
+	args->asapo_params.stream = NULL;
+	args->asapo_params.wait_for_stream = 0;
+	args->asapo_params.write_output_stream = 0;
+	args->asapo_params.consumer_timeout_ms = 500;
+	args->asapo_params.use_ack = 0;
+	args->cpu_pin = 0;
+	args->serial_start = 1;
+	args->if_peaks = 1;
+	args->if_multi = 0;
+	args->if_retry = 1;
+	args->if_refine = 1;
+	args->if_checkcell = 1;
+	args->profile = 0;
+	args->no_data_timeout = 60;
+	args->copy_headers = NULL;
+	args->n_copy_headers = 0;
+	args->harvest_file = NULL;
+	args->taketwo_opts_ptr = &taketwo_opts;
+	args->felix_opts_ptr = &felix_opts;
+	args->xgandalf_opts_ptr = &xgandalf_opts;
+	args->pinkindexer_opts_ptr = &pinkindexer_opts;
+	args->fromfile_opts_ptr = &fromfile_opts;
+	args->asdf_opts_ptr = &asdf_opts;
+	args->worker = 0;
+	args->fd_stream = 0;
+	args->fd_mille = 0;
 
 	/* Defaults for process_image arguments */
-	args.iargs.cell = NULL;
-	args.iargs.peak_search.noisefilter = 0;
-	args.iargs.peak_search.median_filter = 0;
-	args.iargs.tols[0] = 0.05;  /* frac (not %) */
-	args.iargs.tols[1] = 0.05;  /* frac (not %) */
-	args.iargs.tols[2] = 0.05;  /* frac (not %) */
-	args.iargs.tols[3] = deg2rad(1.5); /* radians */
-	args.iargs.tols[4] = deg2rad(1.5); /* radians */
-	args.iargs.tols[5] = deg2rad(1.5); /* radians */
-	args.iargs.peak_search.threshold = 800.0;
-	args.iargs.peak_search.min_sq_gradient = 100000.0;
-	args.iargs.peak_search.min_snr = 5.0;
-	args.iargs.peak_search.min_pix_count = 2;
-	args.iargs.peak_search.max_pix_count = 200;
-	args.iargs.peak_search.min_res = 0;
-	args.iargs.peak_search.max_res = 1200;
-	args.iargs.peak_search.local_bg_radius = 3;
-	args.iargs.peak_search.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
-	args.iargs.peak_search.min_snr_peak_pix = 6.0;
-	args.iargs.peak_search.min_sig = 11.0;
-	args.iargs.peak_search.min_peak_over_neighbour = -INFINITY;
-	args.iargs.peak_search.check_hdf5_snr = 0;
-	args.iargs.peak_search.peakfinder8_fast = 0;
-	args.iargs.pf_private = NULL;
-	args.iargs.dtempl = NULL;
-	args.iargs.peak_search.method = PEAK_ZAEF;
-	args.iargs.peak_search.half_pixel_shift = 1;
-	args.iargs.peak_search.pk_inn = -1.0;
-	args.iargs.peak_search.pk_mid = -1.0;
-	args.iargs.peak_search.pk_out = -1.0;
-	args.iargs.ir_inn = -1.0;
-	args.iargs.ir_mid = -1.0;
-	args.iargs.ir_out = -1.0;
-	args.iargs.peak_search.use_saturated = 1;
-	args.iargs.peak_search.revalidate = 1;
-	args.iargs.stream_flags = STREAM_PEAKS | STREAM_REFLECTIONS;
-	args.iargs.stream_nonhits = 1;
-	args.iargs.int_diag = INTDIAG_NONE;
-	args.iargs.min_peaks = 0;
-	args.iargs.overpredict = 0;
-	args.iargs.cell_params_only = 0;
-	args.iargs.wait_for_file = 0;
-	args.iargs.ipriv = NULL;  /* No default */
-	args.iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
-	args.iargs.push_res = +INFINITY;
-	args.iargs.highres = +INFINITY;
-	args.iargs.fix_profile_r = -1.0;
-	args.iargs.fix_divergence = -1.0;
-	args.iargs.no_image_data = 0;
-	args.iargs.no_mask_data = 0;
-	args.iargs.wavelength_estimate = NAN;
-	args.iargs.clen_estimate = NAN;
-	args.iargs.n_threads = 1;
-	args.iargs.data_format = DATA_SOURCE_TYPE_UNKNOWN;
-	args.iargs.mille = 0;
-	args.iargs.milledir = strdup(".");
-	args.iargs.max_mille_level = 99;
+	args->iargs.cell = NULL;
+	args->iargs.peak_search.noisefilter = 0;
+	args->iargs.peak_search.median_filter = 0;
+	args->iargs.tols[0] = 0.05;  /* frac (not %) */
+	args->iargs.tols[1] = 0.05;  /* frac (not %) */
+	args->iargs.tols[2] = 0.05;  /* frac (not %) */
+	args->iargs.tols[3] = deg2rad(1.5); /* radians */
+	args->iargs.tols[4] = deg2rad(1.5); /* radians */
+	args->iargs.tols[5] = deg2rad(1.5); /* radians */
+	args->iargs.peak_search.threshold = 800.0;
+	args->iargs.peak_search.min_sq_gradient = 100000.0;
+	args->iargs.peak_search.min_snr = 5.0;
+	args->iargs.peak_search.min_pix_count = 2;
+	args->iargs.peak_search.max_pix_count = 200;
+	args->iargs.peak_search.min_res = 0;
+	args->iargs.peak_search.max_res = 1200;
+	args->iargs.peak_search.local_bg_radius = 3;
+	args->iargs.peak_search.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
+	args->iargs.peak_search.min_snr_peak_pix = 6.0;
+	args->iargs.peak_search.min_sig = 11.0;
+	args->iargs.peak_search.min_peak_over_neighbour = -INFINITY;
+	args->iargs.peak_search.check_hdf5_snr = 0;
+	args->iargs.peak_search.peakfinder8_fast = 0;
+	args->iargs.pf_private = NULL;
+	args->iargs.dtempl = NULL;
+	args->iargs.peak_search.method = PEAK_ZAEF;
+	args->iargs.peak_search.half_pixel_shift = 1;
+	args->iargs.peak_search.pk_inn = -1.0;
+	args->iargs.peak_search.pk_mid = -1.0;
+	args->iargs.peak_search.pk_out = -1.0;
+	args->iargs.ir_inn = -1.0;
+	args->iargs.ir_mid = -1.0;
+	args->iargs.ir_out = -1.0;
+	args->iargs.peak_search.use_saturated = 1;
+	args->iargs.peak_search.revalidate = 1;
+	args->iargs.stream_flags = STREAM_PEAKS | STREAM_REFLECTIONS;
+	args->iargs.stream_nonhits = 1;
+	args->iargs.int_diag = INTDIAG_NONE;
+	args->iargs.min_peaks = 0;
+	args->iargs.overpredict = 0;
+	args->iargs.cell_params_only = 0;
+	args->iargs.wait_for_file = 0;
+	args->iargs.ipriv = NULL;  /* No default */
+	args->iargs.int_meth = integration_method("rings-nocen-nosat-nograd", NULL);
+	args->iargs.push_res = +INFINITY;
+	args->iargs.highres = +INFINITY;
+	args->iargs.fix_profile_r = -1.0;
+	args->iargs.fix_divergence = -1.0;
+	args->iargs.no_image_data = 0;
+	args->iargs.no_mask_data = 0;
+	args->iargs.wavelength_estimate = NAN;
+	args->iargs.clen_estimate = NAN;
+	args->iargs.n_threads = 1;
+	args->iargs.data_format = DATA_SOURCE_TYPE_UNKNOWN;
+	args->iargs.mille = 0;
+	args->iargs.milledir = strdup(".");
+	args->iargs.max_mille_level = 99;
 
 	argp_program_version_hook = show_version;
 
@@ -931,10 +952,12 @@ struct indexamajig_arguments parse_indexamajig_args(int argc, char *argv[])
 			"used in JSON format"},
 
 		{"worker", 701, NULL, OPTION_HIDDEN, "Be a worker process"},
-		{"fd-input", 702, NULL, OPTION_HIDDEN, "File descriptor for stream"},
 		{"fd-stream", 703, NULL, OPTION_HIDDEN, "File descriptor for input"},
 		{"shm-queue", 704, NULL, OPTION_HIDDEN, "SHM handle for queue structure"},
 		{"fd-mille", 705, NULL, OPTION_HIDDEN, "File descriptor for Mille data"},
+		{"worker-id", 706, NULL, OPTION_HIDDEN, "Worker process number"},
+		{"worker-tmpdir", 707, NULL, OPTION_HIDDEN, "Worker temporary dir"},
+		{"queue-semaphore", 708, NULL, OPTION_HIDDEN, "Queue semaphore name"},
 
 		{NULL, 0, 0, OPTION_DOC, "More information:", 99},
 
@@ -968,7 +991,7 @@ struct indexamajig_arguments parse_indexamajig_args(int argc, char *argv[])
 
 	static struct argp argp = { options, parse_arg, NULL, doc,
 	                            argp_children, NULL, NULL };
-	if ( argp_parse(&argp, argc, argv, 0, NULL, &args) ) return NULL;
+	if ( argp_parse(&argp, argc, argv, 0, NULL, args) ) return NULL;
 
 	return args;
 }

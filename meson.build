@@ -176,7 +176,9 @@ adjust_detector = executable('adjust_detector',
                              install_rpath: crystfel_rpath)
 
 # indexamajig
-indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
+indexamajig_sources = ['src/indexamajig.c',
+                       'src/im-sandbox.c',
+                       'src/im-argparse.c',
                        'src/process_image.c',
                        versionc]
 if zmqdep.found()

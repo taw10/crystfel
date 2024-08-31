@@ -57,7 +57,7 @@ struct im_zmq
 };
 
 
-struct im_zmq *im_zmq_connect(struct im_zmq_params *params)
+struct im_zmq *im_zmq_connect(const struct im_zmq_params *params)
 {
 	struct im_zmq *z;
 

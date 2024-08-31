@@ -122,7 +122,7 @@ static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
 }
 
 
-struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
+struct im_asapo *im_asapo_connect(const struct im_asapo_params *params)
 {
 	struct im_asapo *a;
 	AsapoSourceCredentialsHandle cred;

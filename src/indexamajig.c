@@ -43,7 +43,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <gsl/gsl_errno.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -236,26 +235,11 @@ static void write_harvest_file(struct index_args *args,
 }
 
 
-static void add_copy_header(struct indexamajig_arguments *args,
-                            const char *header)
-{
-	char **new_copy_headers = realloc(args->copy_headers,
-	                                  (args->n_copy_headers+1)*sizeof(char *));
-	if ( new_copy_headers == NULL ) {
-		ERROR("Failed to add copy header '%s'\n", header);
-		return;
-	}
-
-	args->copy_headers = new_copy_headers;
-	args->copy_headers[args->n_copy_headers++] = strdup(header);
-}
-
-
 int main(int argc, char *argv[])
 {
 	FILE *fh = NULL;
 	Stream *st;
-	struct indexamajig_arguments args;
+	struct indexamajig_arguments *args;
 	char *tmpdir;  /* e.g. /tmp/indexamajig.12345 */
 	char *rn;  /* e.g. /home/taw/indexing */
 	int r;
@@ -267,156 +251,156 @@ int main(int argc, char *argv[])
 	args = parse_indexamajig_args(argc, argv);
 
 	/* Load data template (new API) */
-	args.iargs.dtempl = data_template_new_from_file(args.geom_filename);
-	if ( args.iargs.dtempl == NULL ) {
+	args->iargs.dtempl = data_template_new_from_file(args->geom_filename);
+	if ( args->iargs.dtempl == NULL ) {
 		ERROR("Failed to read detector geometry from '%s'\n",
-		      args.geom_filename);
+		      args->geom_filename);
 		return 1;
 	}
 
 	/* Add any headers we need to copy */
-	for ( r=0; r<args.n_copy_headers; r++ ) {
-		data_template_add_copy_header(args.iargs.dtempl,
-		                              args.copy_headers[r]);
+	for ( r=0; r<args->n_copy_headers; r++ ) {
+		data_template_add_copy_header(args->iargs.dtempl,
+		                              args->copy_headers[r]);
 	}
 
 
-	wl_from_dt = data_template_get_wavelength_if_possible(args.iargs.dtempl);
+	wl_from_dt = data_template_get_wavelength_if_possible(args->iargs.dtempl);
 	if ( !isnan(wl_from_dt) ) {
-		if ( !isnan(args.iargs.wavelength_estimate) && !args.worker) {
+		if ( !isnan(args->iargs.wavelength_estimate) && !args->worker) {
 			ERROR("WARNING: Ignoring your value for "
 			      "--wavelength-estimate because the geometry file "
 			      "already contains a static value.\n");
 		}
-		args.iargs.wavelength_estimate = wl_from_dt;
+		args->iargs.wavelength_estimate = wl_from_dt;
 	}
 
-	clen_from_dt = data_template_get_clen_if_possible(args.iargs.dtempl);
+	clen_from_dt = data_template_get_clen_if_possible(args->iargs.dtempl);
 	if ( !isnan(clen_from_dt) ) {
-		if ( !isnan(args.iargs.clen_estimate) && !args.worker) {
+		if ( !isnan(args->iargs.clen_estimate) && !args->worker) {
 			ERROR("WARNING: Ignoring your value for "
 			      "--camera-length-estimate because the geometry file "
 			      "already contains a static value.\n");
 		}
-		args.iargs.clen_estimate = clen_from_dt;
+		args->iargs.clen_estimate = clen_from_dt;
 	}
 
-	if ( args.worker ) {
+	if ( args->worker ) {
 		/* I am a worker process */
-		return run_work(&args);
+		return run_work(args);
 	} /* else I am the main process */
 
 	/* Check for minimal information */
-	if ( (args.filename == NULL)
-	  && (args.zmq_params.addr == NULL)
-	  && (args.asapo_params.endpoint == NULL) ) {
+	if ( (args->filename == NULL)
+	  && (args->zmq_params.addr == NULL)
+	  && (args->asapo_params.endpoint == NULL) ) {
 		ERROR("You need to provide the input filename (use -i)\n");
 		return 1;
 	}
-	if ( args.geom_filename == NULL ) {
+	if ( args->geom_filename == NULL ) {
 		ERROR("You need to specify the geometry filename (use -g)\n");
 		return 1;
 	}
-	if ( args.outfile == NULL ) {
+	if ( args->outfile == NULL ) {
 		ERROR("You need to specify the output filename (use -o)\n");
 		return 1;
 	}
 
-	if ( (args.filename != NULL) && (args.zmq_params.addr != NULL) ) {
+	if ( (args->filename != NULL) && (args->zmq_params.addr != NULL) ) {
 		ERROR("The options --input and --zmq-input are mutually "
 		      "exclusive.\n");
 		return 1;
 	}
 
-	if ( (args.filename != NULL) && (args.asapo_params.endpoint != NULL) ) {
+	if ( (args->filename != NULL) && (args->asapo_params.endpoint != NULL) ) {
 		ERROR("The options --input and --asapo-endpoint are mutually "
 		      "exclusive.\n");
 		return 1;
 	}
 
-	if ( (args.asapo_params.endpoint != NULL) && (args.zmq_params.addr != NULL) ) {
+	if ( (args->asapo_params.endpoint != NULL) && (args->zmq_params.addr != NULL) ) {
 		ERROR("The options --asapo-endpoint and --zmq-input are mutually "
 		      "exclusive.\n");
 		return 1;
 	}
 
-	if ( (args.zmq_params.request != NULL) && (args.zmq_params.n_subscriptions > 0) ) {
+	if ( (args->zmq_params.request != NULL) && (args->zmq_params.n_subscriptions > 0) ) {
 		ERROR("The options --zmq-request and --zmq-subscribe are "
 		      "mutually exclusive.\n");
 		return 1;
 	}
 
-	if ( (args.filename != NULL)
-	  && (strcmp(args.filename, "-") != 0)
-	  && is_hdf5_file(args.filename, &err) )
+	if ( (args->filename != NULL)
+	  && (strcmp(args->filename, "-") != 0)
+	  && is_hdf5_file(args->filename, &err) )
 	{
 		ERROR("Your input file appears to be an HDF5 file.\n");
 		ERROR("The input file should be a list of data files, not the "
 		      "data file itself.\n");
 		ERROR("If you have only one input file, try the following:\n");
-		ERROR("  echo %s > files.lst\n", args.filename);
+		ERROR("  echo %s > files.lst\n", args->filename);
 		ERROR("  indexamajig -i files.lst -o %s -g %s ...\n",
-		      args.outfile, args.geom_filename);
+		      args->outfile, args->geom_filename);
 		return 1;
 	} else if ( err ) {
-		ERROR("Couldn't open '%s'\n", args.filename);
+		ERROR("Couldn't open '%s'\n", args->filename);
 		return 1;
 	}
 
 	/* Open input */
-	if ( args.filename != NULL ) {
-		if ( strcmp(args.filename, "-") == 0 ) {
+	if ( args->filename != NULL ) {
+		if ( strcmp(args->filename, "-") == 0 ) {
 			fh = stdin;
 		} else {
-			fh = fopen(args.filename, "r");
+			fh = fopen(args->filename, "r");
 		}
 		if ( fh == NULL ) {
-			ERROR("Failed to open input file '%s'\n", args.filename);
+			ERROR("Failed to open input file '%s'\n", args->filename);
 			return 1;
 		}
 	}
 
 	/* Check prefix (if given) */
-	if ( args.check_prefix ) {
-		args.prefix = check_prefix(args.prefix);
+	if ( args->check_prefix ) {
+		args->prefix = check_prefix(args->prefix);
 	}
 
 	/* Check number of processes */
-	if ( args.n_proc == 0 ) {
+	if ( args->n_proc == 0 ) {
 		ERROR("Invalid number of processes.\n");
 		return 1;
 	}
 
 	/* If no integration radii were given, apply the defaults */
-	if ( args.iargs.ir_inn < 0 ) {
+	if ( args->iargs.ir_inn < 0 ) {
 		STATUS("WARNING: You did not specify --int-radius.\n");
 		STATUS("WARNING: I will use the default values, which are"
 		       " probably not appropriate for your patterns.\n");
-		args.iargs.ir_inn = 4.0;
-		args.iargs.ir_mid = 5.0;
-		args.iargs.ir_out = 7.0;
+		args->iargs.ir_inn = 4.0;
+		args->iargs.ir_mid = 5.0;
+		args->iargs.ir_out = 7.0;
 	}
 
 	/* If no peak radii were given, copy the integration radii */
-	if ( args.iargs.peak_search.pk_inn < 0.0 ) {
-		args.iargs.peak_search.pk_inn = args.iargs.ir_inn;
-		args.iargs.peak_search.pk_mid = args.iargs.ir_mid;
-		args.iargs.peak_search.pk_out = args.iargs.ir_out;
+	if ( args->iargs.peak_search.pk_inn < 0.0 ) {
+		args->iargs.peak_search.pk_inn = args->iargs.ir_inn;
+		args->iargs.peak_search.pk_mid = args->iargs.ir_mid;
+		args->iargs.peak_search.pk_out = args->iargs.ir_out;
 	}
 
 	/* Load unit cell (if given) */
-	if ( args.cellfile != NULL ) {
-		args.iargs.cell = load_cell_from_file(args.cellfile);
-		if ( args.iargs.cell == NULL ) {
-			ERROR("Couldn't read unit cell (from %s)\n", args.cellfile);
+	if ( args->cellfile != NULL ) {
+		args->iargs.cell = load_cell_from_file(args->cellfile);
+		if ( args->iargs.cell == NULL ) {
+			ERROR("Couldn't read unit cell (from %s)\n", args->cellfile);
 			return 1;
 		}
-		free(args.cellfile);
+		free(args->cellfile);
 	} else {
-		args.iargs.cell = NULL;
+		args->iargs.cell = NULL;
 	}
 
-	tmpdir = create_tempdir(args.temp_location);
+	tmpdir = create_tempdir(args->temp_location);
 	if ( tmpdir == NULL ) return 1;
 
 	/* Change into temporary folder, temporarily, to control the crap
@@ -430,7 +414,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Auto-detect indexing methods if 'requested' */
-	if ( args.indm_str == NULL ) {
+	if ( args->indm_str == NULL ) {
 
 		STATUS("No indexing methods specified.  I will try to ");
 		STATUS("automatically detect the available methods.\n");
@@ -438,12 +422,12 @@ int main(int argc, char *argv[])
 		STATUS("which methods to use with --indexing=<methods>.\n");
 		STATUS("Use --indexing=none to disable indexing and integration.\n");
 
-		args.indm_str = detect_indexing_methods(args.iargs.cell);
+		args->indm_str = detect_indexing_methods(args->iargs.cell);
 
 	}
 
 	/* Prepare the indexing system */
-	if ( args.indm_str == NULL ) {
+	if ( args->indm_str == NULL ) {
 
 		ERROR("No indexing method specified, and no usable indexing ");
 		ERROR("methods auto-detected.\n");
@@ -451,13 +435,13 @@ int main(int argc, char *argv[])
 		ERROR("try again with --indexing=none.\n");
 		return 1;
 
-	} else if ( strcmp(args.indm_str, "none") == 0 ) {
+	} else if ( strcmp(args->indm_str, "none") == 0 ) {
 
 		STATUS("Indexing/integration disabled.\n");
-		if ( args.iargs.cell != NULL ) {
+		if ( args->iargs.cell != NULL ) {
 			STATUS("Ignoring your unit cell.\n");
 		}
-		args.iargs.ipriv = NULL;
+		args->iargs.ipriv = NULL;
 
 	} else {
 
@@ -465,51 +449,51 @@ int main(int argc, char *argv[])
 		const IndexingMethod *methods;
 		IndexingFlags flags = 0;
 
-		if ( args.iargs.cell != NULL ) {
+		if ( args->iargs.cell != NULL ) {
 			STATUS("This is what I understood your unit cell to be:\n");
-			cell_print(args.iargs.cell);
+			cell_print(args->iargs.cell);
 		} else {
 			STATUS("No reference unit cell provided.\n");
 		}
 
-		if ( args.if_checkcell ) {
+		if ( args->if_checkcell ) {
 			flags |= INDEXING_CHECK_CELL;
 		}
-		if ( args.if_refine ) {
+		if ( args->if_refine ) {
 			flags |= INDEXING_REFINE;
 		}
-		if ( args.if_peaks ) {
+		if ( args->if_peaks ) {
 			flags |= INDEXING_CHECK_PEAKS;
 		}
-		if ( args.if_multi ) {
+		if ( args->if_multi ) {
 			flags |= INDEXING_MULTI;
 		}
-		if ( args.if_retry ) {
+		if ( args->if_retry ) {
 			flags |= INDEXING_RETRY;
 		}
 
-		args.iargs.ipriv = setup_indexing(args.indm_str,
-		                                  args.iargs.cell,
-		                                  args.iargs.tols,
-		                                  flags,
-		                                  args.iargs.wavelength_estimate,
-		                                  args.iargs.clen_estimate,
-		                                  args.iargs.n_threads,
-		                                  *args.taketwo_opts_ptr,
-		                                  *args.xgandalf_opts_ptr,
-		                                  *args.pinkindexer_opts_ptr,
-		                                  *args.felix_opts_ptr,
-		                                  *args.fromfile_opts_ptr,
-		                                  *args.asdf_opts_ptr);
+		args->iargs.ipriv = setup_indexing(args->indm_str,
+		                                   args->iargs.cell,
+		                                   args->iargs.tols,
+		                                   flags,
+		                                   args->iargs.wavelength_estimate,
+		                                   args->iargs.clen_estimate,
+		                                   args->iargs.n_threads,
+		                                   *args->taketwo_opts_ptr,
+		                                   *args->xgandalf_opts_ptr,
+		                                   *args->pinkindexer_opts_ptr,
+		                                   *args->felix_opts_ptr,
+		                                   *args->fromfile_opts_ptr,
+		                                   *args->asdf_opts_ptr);
 
-		free(args.filename);
+		free(args->filename);
 
-		if ( args.iargs.ipriv == NULL ) {
+		if ( args->iargs.ipriv == NULL ) {
 			ERROR("Failed to set up indexing system\n");
 			return 1;
 		}
 
-		methods = indexing_methods(args.iargs.ipriv, &n);
+		methods = indexing_methods(args->iargs.ipriv, &n);
 		for ( i=0; i<n; i++ ) {
 			if ( (methods[i] & INDEXING_METHOD_MASK) == INDEXING_PINKINDEXER ) {
 				/* Extend timeout if using pinkIndexer */
@@ -531,28 +515,28 @@ int main(int argc, char *argv[])
 	free(rn);
 
 	/* Open output stream */
-	st = stream_open_for_write(args.outfile, args.iargs.dtempl);
+	st = stream_open_for_write(args->outfile, args->iargs.dtempl);
 	if ( st == NULL ) {
-		ERROR("Failed to open stream '%s'\n", args.outfile);
+		ERROR("Failed to open stream '%s'\n", args->outfile);
 		return 1;
 	}
 
 	/* Write audit info */
 	stream_write_commandline_args(st, argc, argv);
-	stream_write_geometry_file(st, args.geom_filename);
-	stream_write_target_cell(st, args.iargs.cell);
-	stream_write_indexing_methods(st, args.indm_str);
+	stream_write_geometry_file(st, args->geom_filename);
+	stream_write_target_cell(st, args->iargs.cell);
+	stream_write_indexing_methods(st, args->indm_str);
 
-	if ( (args.harvest_file != NULL) && (args.serial_start <= 1) ) {
-		write_harvest_file(&args.iargs, args.harvest_file,
-		                   args.if_multi, args.if_refine, args.if_retry,
-		                   args.if_peaks, args.if_checkcell);
+	if ( (args->harvest_file != NULL) && (args->serial_start <= 1) ) {
+		write_harvest_file(&args->iargs, args->harvest_file,
+		                   args->if_multi, args->if_refine, args->if_retry,
+		                   args->if_peaks, args->if_checkcell);
 	}
 
-	free(args.outfile);
-	free(args.indm_str);
+	free(args->outfile);
+	free(args->indm_str);
 
-	r = mkdir(args.iargs.milledir, S_IRWXU);
+	r = mkdir(args->iargs.milledir, S_IRWXU);
 	if ( r ) {
 		if ( errno != EEXIST ) {
 			ERROR("Failed to create folder for Millepede data: %s\n",
@@ -564,36 +548,28 @@ int main(int argc, char *argv[])
 	gsl_set_error_handler_off();
 
 	struct pf8_private_data *pf8_data = NULL;
-	if ( args.iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
-		struct detgeom *detgeom = data_template_get_2d_detgeom_if_possible(args.iargs.dtempl);
-		pf8_data = prepare_peakfinder8(detgeom, args.iargs.peak_search.peakfinder8_fast);
-		args.iargs.pf_private = pf8_data;
+	if ( args->iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
+		struct detgeom *detgeom = data_template_get_2d_detgeom_if_possible(args->iargs.dtempl);
+		pf8_data = prepare_peakfinder8(detgeom, args->iargs.peak_search.peakfinder8_fast);
+		args->iargs.pf_private = pf8_data;
 		detgeom_free(detgeom);
 	}
 
-	if ( args.worker ) {
-
-		r = run_work(&args);
-
-	} else {
-
-		r = create_sandbox(&args.iargs, args.n_proc, args.prefix, args.basename,
-		                   fh, st, tmpdir, args.serial_start,
-		                   &args.zmq_params, &args.asapo_params,
-		                   timeout, args.profile, args.cpu_pin,
-		                   args.no_data_timeout);
-
-	}
+	r = create_sandbox(&args->iargs, args->n_proc, args->prefix, args->basename,
+	                   fh, st, tmpdir, args->serial_start,
+	                   &args->zmq_params, &args->asapo_params,
+	                   timeout, args->profile, args->cpu_pin,
+	                   args->no_data_timeout, argc, argv);
 
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
-	cell_free(args.iargs.cell);
-	free(args.iargs.milledir);
-	free(args.prefix);
-	free(args.temp_location);
+	cell_free(args->iargs.cell);
+	free(args->iargs.milledir);
+	free(args->prefix);
+	free(args->temp_location);
 	free(tmpdir);
-	data_template_free(args.iargs.dtempl);
+	data_template_free(args->iargs.dtempl);
 	stream_close(st);
-	cleanup_indexing(args.iargs.ipriv);
+	cleanup_indexing(args->iargs.ipriv);
 
 	return r;
 }

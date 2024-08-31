@@ -61,8 +61,15 @@ struct indexamajig_arguments
 	char **copy_headers;
 	int n_copy_headers;
 	char *harvest_file;
+	char *milledir;
+	char *millefile;
 	int cpu_pin;
 	int worker;
+	int worker_id;
+	char *worker_tmpdir;
+	int fd_stream;
+	int fd_mille;
+	char *queue_sem;
 
 	struct taketwo_options **taketwo_opts_ptr;
 	struct felix_options **felix_opts_ptr;
@@ -72,6 +79,6 @@ struct indexamajig_arguments
 	struct asdf_options **asdf_opts_ptr;
 };
 
-extern struct indexamajig_arguments parse_indexamajig_args(int argc, char *argv[]);
+extern struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[]);
 
 #endif /* IM_ARGPARSE_H */
