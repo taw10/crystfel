@@ -3,12 +3,12 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2020 Thomas White <taw@physics.org>
+ *   2009-2024 Thomas White <taw@physics.org>
  *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
@@ -34,6 +34,7 @@
 #include <gsl/gsl_matrix.h>
 
 #include "cell.h"
+#include "symmetry.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,6 +102,8 @@ extern UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
                                                    UnitCell *reference_in,
                                                    const double *tols,
                                                    RationalMatrix **pmb);
+
+extern SymOpList *get_lattice_symmetry(UnitCell *cell);
 
 #ifdef __cplusplus
 }

@@ -522,84 +522,6 @@ static double matrix_trace(gsl_matrix *a)
 	return tr;
 }
 
-static char *add_unique_axis(const char *inp, char ua)
-{
-	char *pg = cfmalloc(64);
-	if ( pg == NULL ) return NULL;
-	snprintf(pg, 63, "%s_ua%c", inp, ua);
-	return pg;
-}
-
-
-static char *get_chiral_holohedry(UnitCell *cell)
-{
-	LatticeType lattice = cell_get_lattice_type(cell);
-	char *pg;
-	int add_ua = 1;
-
-	switch (lattice)
-	{
-		case L_TRICLINIC:
-		pg = "1";
-		add_ua = 0;
-		break;
-
-		case L_MONOCLINIC:
-		pg = "2";
-		break;
-
-		case L_ORTHORHOMBIC:
-		pg = "222";
-		add_ua = 0;
-		break;
-
-		case L_TETRAGONAL:
-		pg = "422";
-		break;
-
-		case L_RHOMBOHEDRAL:
-		pg = "3_R";
-		add_ua = 0;
-		break;
-
-		case L_HEXAGONAL:
-		if ( cell_get_centering(cell) == 'H' ) {
-			pg = "3_H";
-			add_ua = 0;
-		} else {
-			pg = "622";
-		}
-		break;
-
-		case L_CUBIC:
-		pg = "432";
-		add_ua = 0;
-		break;
-
-		default:
-		pg = "error";
-		break;
-	}
-
-	if ( add_ua ) {
-		return add_unique_axis(pg, cell_get_unique_axis(cell));
-	} else {
-		return cfstrdup(pg);
-	}
-}
-
-
-static SymOpList *sym_ops_for_cell(UnitCell *cell)
-{
-	SymOpList *rawList;
-
-	char *pg = get_chiral_holohedry(cell);
-	rawList = get_pointgroup(pg);
-	cffree(pg);
-
-	return rawList;
-}
-
 static int rot_mats_are_similar(gsl_matrix *rot1, gsl_matrix *rot2,
                                 gsl_matrix *sub, gsl_matrix *mul,
                                 double *score, struct TakeTwoCell *cell)
@@ -1619,7 +1541,7 @@ static void set_gsl_matrix(gsl_matrix *mat,
 
 static int generate_rotation_sym_ops(struct TakeTwoCell *ttCell)
 {
-	SymOpList *rawList = sym_ops_for_cell(ttCell->cell);
+	SymOpList *rawList = get_lattice_symmetry(ttCell->cell);
 
 	/* Now we must convert these into rotation matrices rather than hkl
 	 * transformations (affects triclinic, monoclinic, rhombohedral and
@@ -1858,7 +1780,7 @@ static int gen_theoretical_vecs(UnitCell *cell, struct TheoryVec **cell_vecs,
 			    &bsx, &bsy, &bsz,
 			    &csx, &csy, &csz);
 
-	SymOpList *rawList = sym_ops_for_cell(cell);
+	SymOpList *rawList = get_lattice_symmetry(cell);
 
 	cell_get_parameters(cell, &a, &b, &c, &alpha, &beta, &gamma);
 

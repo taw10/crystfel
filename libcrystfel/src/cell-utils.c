@@ -3,12 +3,12 @@
  *
  * Unit Cell utility functions
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2009-2021 Thomas White <taw@physics.org>
+ *   2009-2024 Thomas White <taw@physics.org>
  *   2012      Lorenzo Galli
  *
  * This file is part of CrystFEL.
@@ -42,6 +42,7 @@
 #include "cell-utils.h"
 #include "utils.h"
 #include "image.h"
+#include "symmetry.h"
 
 
 /**
@@ -2413,4 +2414,92 @@ UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 	cell_free(cell_reduced);
 
 	return match;
+}
+
+
+static char *add_unique_axis(const char *inp, char ua)
+{
+	char *pg = cfmalloc(64);
+	if ( pg == NULL ) return NULL;
+	snprintf(pg, 63, "%s_ua%c", inp, ua);
+	return pg;
+}
+
+
+static char *get_chiral_holohedry(UnitCell *cell)
+{
+	LatticeType lattice = cell_get_lattice_type(cell);
+	char *pg;
+	int add_ua = 1;
+
+	switch (lattice)
+	{
+		case L_TRICLINIC:
+		pg = "1";
+		add_ua = 0;
+		break;
+
+		case L_MONOCLINIC:
+		pg = "2";
+		break;
+
+		case L_ORTHORHOMBIC:
+		pg = "222";
+		add_ua = 0;
+		break;
+
+		case L_TETRAGONAL:
+		pg = "422";
+		break;
+
+		case L_RHOMBOHEDRAL:
+		pg = "3_R";
+		add_ua = 0;
+		break;
+
+		case L_HEXAGONAL:
+		if ( cell_get_centering(cell) == 'H' ) {
+			pg = "3_H";
+			add_ua = 0;
+		} else {
+			pg = "622";
+		}
+		break;
+
+		case L_CUBIC:
+		pg = "432";
+		add_ua = 0;
+		break;
+
+		default:
+		pg = "error";
+		break;
+	}
+
+	if ( add_ua ) {
+		return add_unique_axis(pg, cell_get_unique_axis(cell));
+	} else {
+		return cfstrdup(pg);
+	}
+}
+
+
+/**
+ * \param cell: A UnitCell
+ *
+ * Determines the chiral point group of the lattice, based on the lattice type
+ * and unique axis of \p cell (the lattice parameters are not checked).
+ *
+ * This point group is often needed within indexing algorithms.
+ *
+ * \returns a newly allocated SymOpList.
+ *
+ */
+SymOpList *get_lattice_symmetry(UnitCell *cell)
+{
+	SymOpList *rawList;
+	char *pg = get_chiral_holohedry(cell);
+	rawList = get_pointgroup(pg);
+	cffree(pg);
+	return rawList;
 }
