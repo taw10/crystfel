@@ -78,6 +78,7 @@ struct indexamajig_arguments
 	struct pinkindexer_options **pinkindexer_opts_ptr;
 	struct fromfile_options **fromfile_opts_ptr;
 	struct asdf_options **asdf_opts_ptr;
+	struct smallcell_options **smallcell_opts_ptr;
 };
 
 extern struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[]);

@@ -152,6 +152,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/indexers/xgandalf.c',
                        'src/indexers/pinkindexer.c',
                        'src/indexers/fromfile.c',
+                       'src/indexers/smallcell.c',
                        symop_lex_ch,
                        symop_parse_ch]
 

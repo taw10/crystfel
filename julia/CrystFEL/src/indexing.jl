@@ -54,6 +54,7 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
     pinkindexeropts = Ref{Ptr{Cvoid}}(C_NULL)
     felixopts = Ref{Ptr{Cvoid}}(C_NULL)
     fromfileopts = Ref{Ptr{Cvoid}}(C_NULL)
+    smallcellopts = Ref{Ptr{Cvoid}}(C_NULL)
     asdfopts = Ref{Ptr{Cvoid}}(C_NULL)
 
     @ccall libcrystfel.default_method_options(taketwoopts::Ref{Ptr{Cvoid}},
@@ -61,6 +62,7 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
                                               pinkindexeropts::Ref{Ptr{Cvoid}},
                                               felixopts::Ref{Ptr{Cvoid}},
                                               fromfileopts::Ref{Ptr{Cvoid}},
+                                              smallcellopts::Ref{Ptr{Cvoid}},
                                               asdfopts::Ref{Ptr{Cvoid}})::Cvoid
 
     flags = indexflags(retry, multilattice, refine, peakcheck, cellcheck)
