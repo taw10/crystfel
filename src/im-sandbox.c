@@ -514,10 +514,13 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	nargv[nargc++] = "--queue-sem";
 	nargv[nargc++] = sb->sem_name;
 	nargv[nargc++] = "--worker-tmpdir";
-	nargv[nargc++] = sb->tmpdir;
+	nargv[nargc++] = strdup(sb->tmpdir);
 	nargv[nargc++] = "--worker-id";
 	snprintf(tmp, 64, "%i", slot);
-	nargv[nargc++] = tmp;
+	nargv[nargc++] = strdup(tmp);
+	nargv[nargc++] = "--fd-stream";
+	snprintf(tmp, 64, "%i", stream_pipe[1]);
+	nargv[nargc++] = strdup(tmp);
 	nargv[nargc++] = NULL;
 
 	p = fork();
@@ -610,6 +613,11 @@ static int setup_shm(struct sandbox *sb)
 		return 1;
 	}
 	sb->shm_name = strdup(tmp);
+
+	if ( ftruncate(shm_fd, sizeof(struct sb_shm)) == -1 ) {
+		ERROR("SHM setup failed: %s\n", strerror(errno));
+		return 1;
+	}
 
 	sb->shared = mmap(NULL, sizeof(struct sb_shm), PROT_READ | PROT_WRITE,
 	                  MAP_SHARED, shm_fd, 0);
@@ -1145,6 +1153,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	delete_temporary_folder(sb->tmpdir, n_proc);
 
+	shm_unlink(sb->shm_name);
 	munmap(sb->shared, sizeof(struct sb_shm));
 	free(sb);
 
