@@ -658,12 +658,29 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		break;
 
 		/* ---------- Secret muti-processing stuff ---------- */
-		case 701 :
-		args->worker = 1;
+		case 703 :
+		args->fd_stream = atoi(arg);
+		break;
+
+		case 704 :
+		args->shm_name = strdup(arg);
+		break;
+
+		case 705 :
+		args->fd_mille = atoi(arg);
 		break;
 
 		case 706 :
-		args->worker_id = atoi(optarg);
+		args->worker_id = atoi(arg);
+		args->worker = 1;
+		break;
+
+		case 707 :
+		args->worker_tmpdir = strdup(arg);
+		break;
+
+		case 708 :
+		args->queue_sem = strdup(arg);
 		break;
 
 		default :
@@ -674,16 +691,16 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 	return 0;
 }
 
+struct taketwo_options *taketwo_opts = NULL;
+struct felix_options *felix_opts = NULL;
+struct xgandalf_options *xgandalf_opts = NULL;
+struct pinkindexer_options *pinkindexer_opts = NULL;
+struct fromfile_options *fromfile_opts = NULL;
+struct asdf_options *asdf_opts = NULL;
 
 struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 {
 	struct indexamajig_arguments *args;
-	struct taketwo_options *taketwo_opts = NULL;
-	struct felix_options *felix_opts = NULL;
-	struct xgandalf_options *xgandalf_opts = NULL;
-	struct pinkindexer_options *pinkindexer_opts = NULL;
-	struct fromfile_options *fromfile_opts = NULL;
-	struct asdf_options *asdf_opts = NULL;
 
 	args = malloc(sizeof(struct indexamajig_arguments));
 	if ( args == NULL ) return NULL;
@@ -951,13 +968,12 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 		{"harvest-file", 606, "filename", OPTION_NO_USAGE, "Write the actual parameters "
 			"used in JSON format"},
 
-		{"worker", 701, NULL, OPTION_HIDDEN, "Be a worker process"},
-		{"fd-stream", 703, NULL, OPTION_HIDDEN, "File descriptor for input"},
-		{"shm-queue", 704, NULL, OPTION_HIDDEN, "SHM handle for queue structure"},
-		{"fd-mille", 705, NULL, OPTION_HIDDEN, "File descriptor for Mille data"},
-		{"worker-id", 706, NULL, OPTION_HIDDEN, "Worker process number"},
-		{"worker-tmpdir", 707, NULL, OPTION_HIDDEN, "Worker temporary dir"},
-		{"queue-semaphore", 708, NULL, OPTION_HIDDEN, "Queue semaphore name"},
+		{"fd-stream", 703, "fd", OPTION_HIDDEN, "File descriptor for input"},
+		{"shm-name", 704, "n", OPTION_HIDDEN, "SHM name for queue structure"},
+		{"fd-mille", 705, "fd", OPTION_HIDDEN, "File descriptor for Mille data"},
+		{"worker-id", 706, "id", OPTION_HIDDEN, "Worker process number"},
+		{"worker-tmpdir", 707, "dir", OPTION_HIDDEN, "Worker temporary dir"},
+		{"queue-semaphore", 708, "sem", OPTION_HIDDEN, "Queue semaphore name"},
 
 		{NULL, 0, 0, OPTION_DOC, "More information:", 99},
 

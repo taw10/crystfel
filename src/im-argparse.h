@@ -70,6 +70,7 @@ struct indexamajig_arguments
 	int fd_stream;
 	int fd_mille;
 	char *queue_sem;
+	char *shm_name;
 
 	struct taketwo_options **taketwo_opts_ptr;
 	struct felix_options **felix_opts_ptr;

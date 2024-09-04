@@ -105,7 +105,9 @@ struct sandbox
 	int serial;
 
 	struct sb_shm *shared;
+	char *shm_name;
 	sem_t *queue_sem;
+	char *sem_name;
 
 	const char *tmpdir;
 
@@ -485,6 +487,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	char **nargv;
 	int nargc;
 	int i;
+	char tmp[64];
 
 	if ( pipe(stream_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
@@ -499,25 +502,32 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	sb->shared->warned_long_running[slot] = 0;
 	pthread_mutex_unlock(&sb->shared->queue_lock);
 
+	/* Set up nargv including "new" args */
+	nargc = 0;
+	nargv = malloc((sb->argc+16)*sizeof(char *));
+	if ( nargv == NULL ) return;
+	for ( i=0; i<sb->argc; i++ ) {
+		nargv[nargc++] = sb->argv[i];
+	}
+	nargv[nargc++] = "--shm-name";
+	nargv[nargc++] = sb->shm_name;
+	nargv[nargc++] = "--queue-sem";
+	nargv[nargc++] = sb->sem_name;
+	nargv[nargc++] = "--worker-tmpdir";
+	nargv[nargc++] = sb->tmpdir;
+	nargv[nargc++] = "--worker-id";
+	snprintf(tmp, 64, "%i", slot);
+	nargv[nargc++] = tmp;
+	nargv[nargc++] = NULL;
+
 	p = fork();
 	if ( p == -1 ) {
 		ERROR("fork() failed!\n");
 		return;
 	}
 
-	/* Set up nargv including "new" args
-	 *  --worker --worker-id --fd-stream --shm-queue --fd-mille --worker-tmpdir */
-	nargc = 0;
-	nargv = malloc((sb->argc+8)*sizeof(char *));
-	if ( nargv == NULL ) return;
-	for ( i=0; i<sb->argc; i++ ) {
-		nargv[nargc++] = sb->argv[i];
-	}
-	nargv[nargc++] = "--worker";
-	nargv[nargc++] = NULL;
-
 	if ( p == 0 ) {
-		execvp("/proc/self/exe", nargv);
+		execvp("indexamajig", nargv);
 		ERROR("Failed to exec!\n");
 		return;
 	}
@@ -590,14 +600,24 @@ static void handle_zombie(struct sandbox *sb, int respawn)
 static int setup_shm(struct sandbox *sb)
 {
 	pthread_mutexattr_t attr;
+	char tmp[128];
+	int shm_fd;
+
+	snprintf(tmp, 127, "/indexamajig.shm.%i", getpid());
+	shm_fd = shm_open(tmp, O_CREAT | O_EXCL | O_RDWR, 0600);
+	if ( shm_fd == -1 ) {
+		ERROR("SHM setup failed: %s\n", strerror(errno));
+		return 1;
+	}
+	sb->shm_name = strdup(tmp);
 
 	sb->shared = mmap(NULL, sizeof(struct sb_shm), PROT_READ | PROT_WRITE,
-	                  MAP_SHARED | MAP_ANON, -1, 0);
-
+	                  MAP_SHARED, shm_fd, 0);
 	if ( sb->shared == MAP_FAILED ) {
 		ERROR("SHM setup failed: %s\n", strerror(errno));
 		return 1;
 	}
+	STATUS("shm FD %i ptr %p, name %s\n", shm_fd, sb->shared, sb->shm_name);
 
 	if ( pthread_mutexattr_init(&attr) ) {
 		ERROR("Failed to initialise mutex attr.\n");
@@ -976,6 +996,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		ERROR("Failed to create semaphore: %s\n", strerror(errno));
 		return 0;
 	}
+	sb->sem_name = strdup(semname_q);
 
 	sb->pids = calloc(n_proc, sizeof(pid_t));
 	sb->running = calloc(n_proc, sizeof(int));

@@ -280,11 +280,10 @@ static int run_work(struct indexamajig_arguments *args)
 	char *tmp;
 	struct stat s;
 	Stream *st;
+	int shm_fd;
 	struct sb_shm *shared;
 	sem_t *queue_sem;
 	IndexingFlags flags = 0;
-
-	printf("I am the worker!\n");
 
 	if ( args->cpu_pin ) pin_to_cpu(args->worker_id);
 
@@ -364,6 +363,24 @@ static int run_work(struct indexamajig_arguments *args)
 		return 1;
 	}
 
+	/* Set up SHM */
+	shm_fd = shm_open(args->shm_name, O_RDWR, 0);
+	if ( shm_fd == -1 ) {
+		ERROR("SHM setup failed: %s\n", strerror(errno));
+		return 1;
+	}
+	shared = mmap(NULL, sizeof(struct sb_shm), PROT_READ | PROT_WRITE,
+			MAP_SHARED, shm_fd, 0);
+	if ( shared == MAP_FAILED ) {
+		ERROR("SHM setup failed: %s\n", strerror(errno));
+		return 1;
+	}
+
+	queue_sem = sem_open(args->queue_sem, 0);
+	if ( queue_sem == SEM_FAILED ) {
+		ERROR("Failed to open semaphore: %s\n", strerror(errno));
+		return 1;
+	}
 
 	/* Connect via ZMQ */
 	if ( args->zmq_params.addr != NULL ) {
@@ -387,14 +404,6 @@ static int run_work(struct indexamajig_arguments *args)
 	/* FIXME: Set up Mille to send down pipe */
 
 	ida = image_data_arrays_new();
-
-	/* FIXME: Set up SHM */
-
-	queue_sem = sem_open(args->queue_sem, 0, S_IRUSR | S_IWUSR, 0);
-	if ( queue_sem == SEM_FAILED ) {
-		ERROR("Failed to open semaphore: %s\n", strerror(errno));
-		return 1;
-	}
 
 	while ( !allDone ) {
 
