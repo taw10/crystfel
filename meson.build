@@ -192,7 +192,8 @@ endif
 
 indexamajig = executable('indexamajig', indexamajig_sources,
                          dependencies: [mdep, rtdep, libcrystfeldep, gsldep,
-                                        pthreaddep, zmqdep, asapodep, asapoproddep],
+                                        pthreaddep, zmqdep, asapodep, asapoproddep,
+                                        fftwdep],
                          install: true,
                          install_rpath: crystfel_rpath)
 

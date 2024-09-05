@@ -54,6 +54,10 @@
 #include <assert.h>
 #include <sys/mman.h>
 
+#ifdef HAVE_FFTW
+#include <fftw3.h>
+#endif
+
 #include <utils.h>
 #include <index.h>
 #include <peaks.h>
@@ -601,6 +605,10 @@ static int run_work(struct indexamajig_arguments *args)
 	cleanup_indexing(args->iargs.ipriv);
 	cell_free(args->iargs.cell);
 	cleanup_indexamajig_args(args);
+
+#ifdef HAVE_FFTW
+	fftw_cleanup();
+#endif
 
 	return 0;
 }

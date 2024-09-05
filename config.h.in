@@ -7,3 +7,4 @@
 #mesondefine HAVE_HDF5
 #mesondefine HAVE_ASAPO
 #mesondefine HAVE_SCHED_SETAFFINITY
+#mesondefine HAVE_FFTW
