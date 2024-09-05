@@ -81,5 +81,6 @@ struct indexamajig_arguments
 };
 
 extern struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[]);
+extern void cleanup_indexamajig_args(struct indexamajig_arguments *args);
 
 #endif /* IM_ARGPARSE_H */

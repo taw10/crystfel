@@ -750,6 +750,10 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 	args->worker = 0;
 	args->fd_stream = 0;
 	args->fd_mille = 0;
+	args->millefile = strdup("mille-data.bin");
+	args->worker_tmpdir = NULL;
+	args->queue_sem = NULL;
+	args->shm_name = NULL;
 
 	/* Defaults for process_image arguments */
 	args->iargs.cell = NULL;
@@ -1010,4 +1014,46 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 	if ( argp_parse(&argp, argc, argv, 0, NULL, args) ) return NULL;
 
 	return args;
+}
+
+
+void cleanup_indexamajig_args(struct indexamajig_arguments *args)
+{
+	int i;
+
+	free(args->iargs.milledir);
+	free(args->millefile);
+	free(args->prefix);
+	free(args->temp_location);
+	free(args->harvest_file);
+	free(*args->taketwo_opts_ptr);
+	free(*args->felix_opts_ptr);
+	free(*args->xgandalf_opts_ptr);
+	free(*args->pinkindexer_opts_ptr);
+	free(*args->fromfile_opts_ptr);
+	free(*args->asdf_opts_ptr);
+	free(args->filename);
+	free(args->outfile);
+	free(args->zmq_params.addr);
+	free(args->zmq_params.request);
+	for ( i=0; i<args->zmq_params.n_subscriptions; i++ ) {
+		free(args->zmq_params.subscriptions[i]);
+	}
+	free(args->asapo_params.endpoint);
+	free(args->asapo_params.token);
+	free(args->asapo_params.beamtime);
+	free(args->asapo_params.endpoint);
+	free(args->asapo_params.group_id);
+	free(args->asapo_params.source);
+	free(args->asapo_params.stream);
+	free(args->indm_str);
+	free(args->cellfile);
+	free(args->worker_tmpdir);
+	free(args->queue_sem);
+	free(args->shm_name);
+	for ( i=0; i<args->n_copy_headers; i++ ) {
+		free(args->copy_headers[i]);
+	}
+	free(args->copy_headers);
+	free(args);
 }

@@ -356,8 +356,6 @@ static int run_work(struct indexamajig_arguments *args)
 	                                   *args->fromfile_opts_ptr,
 	                                   *args->asdf_opts_ptr);
 
-	free(args->filename);
-
 	if ( args->iargs.ipriv == NULL ) {
 		ERROR("Failed to set up indexing system\n");
 		return 1;
@@ -598,6 +596,7 @@ static int run_work(struct indexamajig_arguments *args)
 	data_template_free(args->iargs.dtempl);
 	cleanup_indexing(args->iargs.ipriv);
 	cell_free(args->iargs.cell);
+	cleanup_indexamajig_args(args);
 
 	return 0;
 }
@@ -611,7 +610,6 @@ int main(int argc, char *argv[])
 	char *tmpdir;  /* e.g. /tmp/indexamajig.12345 */
 	char *rn;  /* e.g. /home/taw/indexing */
 	int r;
-	int i;
 	int timeout = 240;
 	double wl_from_dt;
 	double clen_from_dt;
@@ -764,7 +762,6 @@ int main(int argc, char *argv[])
 			ERROR("Couldn't read unit cell (from %s)\n", args->cellfile);
 			return 1;
 		}
-		free(args->cellfile);
 	} else {
 		args->iargs.cell = NULL;
 	}
@@ -850,9 +847,6 @@ int main(int argc, char *argv[])
 		                   args->if_peaks, args->if_checkcell);
 	}
 
-	free(args->outfile);
-	free(args->indm_str);
-
 	r = mkdir(args->iargs.milledir, S_IRWXU);
 	if ( r ) {
 		if ( errno != EEXIST ) {
@@ -879,27 +873,11 @@ int main(int argc, char *argv[])
 	                   args->no_data_timeout, argc, argv);
 
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
-	cell_free(args->iargs.cell);
-	free(args->iargs.milledir);
-	free(args->prefix);
-	free(args->temp_location);
 	free(tmpdir);
 	data_template_free(args->iargs.dtempl);
+	cell_free(args->iargs.cell);
 	stream_close(st);
-	cleanup_indexing(args->iargs.ipriv);
-	free(args->filename);
-	for ( i=0; i<args->n_copy_headers; i++ ) {
-		free(args->copy_headers[i]);
-	}
-	free(args->copy_headers);
-	free(args->harvest_file);
-	free(*args->taketwo_opts_ptr);
-	free(*args->felix_opts_ptr);
-	free(*args->xgandalf_opts_ptr);
-	free(*args->pinkindexer_opts_ptr);
-	free(*args->fromfile_opts_ptr);
-	free(*args->asdf_opts_ptr);
-	free(args);
+	cleanup_indexamajig_args(args);
 
 	return r;
 }
