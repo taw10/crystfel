@@ -494,6 +494,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	char *tmpdir_copy;
 	char *worker_id;
 	char *fd_stream;
+	char buf[1024];
+	const char *indexamajig = NULL;
+	size_t len;
 
 	if ( pipe(stream_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
@@ -534,6 +537,30 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	nargv[nargc++] = fd_stream;
 	nargv[nargc++] = NULL;
 
+	len = readlink("/proc/self/exe", buf, 1024);
+
+	if ( (len == -1) || (len >= 1023)  ) {
+		ERROR("readlink() failed: %s\n", strerror(errno));
+	} else {
+		buf[len] = '\0';
+		if ( strstr(buf, "indexamajig") == NULL ) {
+			ERROR("Didn't recognise /proc/self/exe (%s)\n", buf);
+		} else {
+			indexamajig = buf;
+		}
+	}
+	if ( indexamajig == NULL ) {
+		if ( strstr(sb->argv[0], "indexamajig") == NULL ) {
+			ERROR("Didn't recognise argv[0] (%s)\n", sb->argv[0]);
+		} else {
+			indexamajig = sb->argv[0];
+		}
+	}
+	if ( indexamajig == NULL ) {
+		ERROR("Falling back on shell search path.\n");
+		indexamajig = "indexamajig";
+	}
+
 	p = fork();
 	if ( p == -1 ) {
 		ERROR("fork() failed!\n");
@@ -541,7 +568,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	}
 
 	if ( p == 0 ) {
-		execvp("indexamajig", nargv);
+		execvp(indexamajig, nargv);
 		ERROR("Failed to exec!\n");
 		return;
 	}
