@@ -1431,6 +1431,9 @@ void image_free(struct image *image)
 
 	for ( i=0; i<image->n_cached_headers; i++ ) {
 		cffree(image->header_cache[i]->header_name);
+		if ( image->header_cache[i]->type == HEADER_STR ) {
+			cffree(image->header_cache[i]->val_str);
+		}
 		cffree(image->header_cache[i]);
 	}
 
