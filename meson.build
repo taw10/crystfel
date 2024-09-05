@@ -19,6 +19,7 @@ conf_data = configuration_data()
 # Mandatory dependencies
 cc = meson.get_compiler('c')
 mdep = cc.find_library('m', required: true)
+rtdep = cc.find_library('rt', required: false)
 gsldep = dependency('gsl', required: true)
 pthreaddep = dependency('threads', required: true)
 
@@ -190,7 +191,7 @@ if asapodep.found()
 endif
 
 indexamajig = executable('indexamajig', indexamajig_sources,
-                         dependencies: [mdep, libcrystfeldep, gsldep,
+                         dependencies: [mdep, rtdep, libcrystfeldep, gsldep,
                                         pthreaddep, zmqdep, asapodep, asapoproddep],
                          install: true,
                          install_rpath: crystfel_rpath)
