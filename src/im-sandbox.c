@@ -285,7 +285,11 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 		filename = read_prefixed_filename(gpctx, &evstr);
 
 		/* Nothing left in file -> we're done */
-		if ( filename == NULL ) return 0;
+		if ( filename == NULL ) {
+			free(gpctx->filename);
+			free(gpctx->events);
+			return 0;
+		}
 
 		/* Does the line from the input file contain an event ID?
 		 * If so, just send it straight back. */
@@ -487,7 +491,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	char **nargv;
 	int nargc;
 	int i;
-	char tmp[64];
+	char *tmpdir_copy;
+	char *worker_id;
+	char *fd_stream;
 
 	if ( pipe(stream_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
@@ -514,13 +520,18 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	nargv[nargc++] = "--queue-sem";
 	nargv[nargc++] = sb->sem_name;
 	nargv[nargc++] = "--worker-tmpdir";
-	nargv[nargc++] = strdup(sb->tmpdir);
+	tmpdir_copy = strdup(sb->tmpdir);
+	if ( tmpdir_copy == NULL ) return;
+	nargv[nargc++] = tmpdir_copy;
 	nargv[nargc++] = "--worker-id";
-	snprintf(tmp, 64, "%i", slot);
-	nargv[nargc++] = strdup(tmp);
+	worker_id = malloc(64);
+	if ( worker_id == NULL ) return;
+	snprintf(worker_id, 64, "%i", slot);
+	nargv[nargc++] = worker_id;
 	nargv[nargc++] = "--fd-stream";
-	snprintf(tmp, 64, "%i", stream_pipe[1]);
-	nargv[nargc++] = strdup(tmp);
+	fd_stream = malloc(64);
+	snprintf(fd_stream, 64, "%i", stream_pipe[1]);
+	nargv[nargc++] = fd_stream;
 	nargv[nargc++] = NULL;
 
 	p = fork();
@@ -534,6 +545,11 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		ERROR("Failed to exec!\n");
 		return;
 	}
+
+	free(tmpdir_copy);
+	free(worker_id);
+	free(fd_stream);
+	free(nargv);
 
 	/* Parent process gets the 'write' end of the filename pipe
 	 * and the 'read' end of the result pipe. */
@@ -1155,6 +1171,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	shm_unlink(sb->shm_name);
 	munmap(sb->shared, sizeof(struct sb_shm));
+	free(sb->shm_name);
+	free(sb->sem_name);
 	free(sb);
 
 	return r;

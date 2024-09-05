@@ -611,6 +611,7 @@ int main(int argc, char *argv[])
 	char *tmpdir;  /* e.g. /tmp/indexamajig.12345 */
 	char *rn;  /* e.g. /home/taw/indexing */
 	int r;
+	int i;
 	int timeout = 240;
 	double wl_from_dt;
 	double clen_from_dt;
@@ -886,6 +887,19 @@ int main(int argc, char *argv[])
 	data_template_free(args->iargs.dtempl);
 	stream_close(st);
 	cleanup_indexing(args->iargs.ipriv);
+	free(args->filename);
+	for ( i=0; i<args->n_copy_headers; i++ ) {
+		free(args->copy_headers[i]);
+	}
+	free(args->copy_headers);
+	free(args->harvest_file);
+	free(*args->taketwo_opts_ptr);
+	free(*args->felix_opts_ptr);
+	free(*args->xgandalf_opts_ptr);
+	free(*args->pinkindexer_opts_ptr);
+	free(*args->fromfile_opts_ptr);
+	free(*args->asdf_opts_ptr);
+	free(args);
 
 	return r;
 }
