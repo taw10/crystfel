@@ -87,6 +87,7 @@ struct sandbox
 	struct index_args *iargs;
 	int argc;
 	char **argv;
+	const char *probed_methods;
 
 	/* Worker processes */
 	int n_proc;
@@ -535,6 +536,10 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	fd_stream = malloc(64);
 	snprintf(fd_stream, 64, "%i", stream_pipe[1]);
 	nargv[nargc++] = fd_stream;
+	if ( sb->probed_methods != NULL ) {
+		nargv[nargc++] = "--indexing";
+		nargv[nargc++] = sb->probed_methods;
+	}
 	nargv[nargc++] = NULL;
 
 	len = readlink("/proc/self/exe", buf, 1024);
@@ -944,7 +949,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    struct im_zmq_params *zmq_params,
                    struct im_asapo_params *asapo_params,
                    int timeout, int profile, int cpu_pin,
-                   int no_data_timeout, int argc, char *argv[])
+                   int no_data_timeout, int argc, char *argv[],
+                   const char *probed_methods)
 {
 	int i;
 	struct sandbox *sb;
@@ -995,6 +1001,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->timeout = timeout;
 	sb->argc = argc;
 	sb->argv = argv;
+	sb->probed_methods = probed_methods;
 
 	if ( zmq_params->addr != NULL ) {
 		sb->zmq_params = zmq_params;

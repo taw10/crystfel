@@ -94,6 +94,7 @@ extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           struct im_zmq_params *zmq_params,
                           struct im_asapo_params *asapo_params,
                           int timeout, int profile, int cpu_pin,
-                          int no_data_timeout, int argc, char *argv[]);
+                          int no_data_timeout, int argc, char *argv[],
+                          const char *probed_methods);
 
 #endif /* IM_SANDBOX_H */

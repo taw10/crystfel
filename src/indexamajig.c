@@ -319,11 +319,15 @@ static int run_work(struct indexamajig_arguments *args)
 		profile_init();
 	}
 
-	if ( args->iargs.cell != NULL ) {
-		STATUS("This is what I understood your unit cell to be:\n");
-		cell_print(args->iargs.cell);
+	/* Load unit cell (if given) */
+	if ( args->cellfile != NULL ) {
+		args->iargs.cell = load_cell_from_file(args->cellfile);
+		if ( args->iargs.cell == NULL ) {
+			ERROR("Couldn't read unit cell (from %s)\n", args->cellfile);
+			return 1;
+		}
 	} else {
-		STATUS("No reference unit cell provided.\n");
+		args->iargs.cell = NULL;
 	}
 
 	if ( args->if_checkcell ) {
@@ -614,6 +618,7 @@ int main(int argc, char *argv[])
 	double wl_from_dt;
 	double clen_from_dt;
 	int err = 0;
+	char *probed_methods = NULL;
 
 	args = parse_indexamajig_args(argc, argv);
 
@@ -766,6 +771,13 @@ int main(int argc, char *argv[])
 		args->iargs.cell = NULL;
 	}
 
+	if ( args->iargs.cell != NULL ) {
+		STATUS("This is what I understood your unit cell to be:\n");
+		cell_print(args->iargs.cell);
+	} else {
+		STATUS("No reference unit cell provided.\n");
+	}
+
 	tmpdir = create_tempdir(args->temp_location);
 	if ( tmpdir == NULL ) return 1;
 
@@ -788,18 +800,16 @@ int main(int argc, char *argv[])
 		STATUS("which methods to use with --indexing=<methods>.\n");
 		STATUS("Use --indexing=none to disable indexing and integration.\n");
 
-		args->indm_str = detect_indexing_methods(args->iargs.cell);
-
-	}
-
-	/* Prepare the indexing system */
-	if ( args->indm_str == NULL ) {
-
-		ERROR("No indexing method specified, and no usable indexing ");
-		ERROR("methods auto-detected.\n");
-		ERROR("Install some indexing programs (mosflm,dirax etc), or ");
-		ERROR("try again with --indexing=none.\n");
-		return 1;
+		probed_methods = detect_indexing_methods(args->iargs.cell);
+		if ( probed_methods == NULL ) {
+			ERROR("No indexing method specified, and no usable indexing ");
+			ERROR("methods auto-detected.\n");
+			ERROR("Install some indexing programs (mosflm,dirax etc), or ");
+			ERROR("try again with --indexing=none.\n");
+			return 1;
+		} else {
+			STATUS("Auto-determined indexing methods: %s\n", probed_methods);
+		}
 
 	} else if ( strcmp(args->indm_str, "none") == 0 ) {
 
@@ -870,10 +880,12 @@ int main(int argc, char *argv[])
 	                   fh, st, tmpdir, args->serial_start,
 	                   &args->zmq_params, &args->asapo_params,
 	                   timeout, args->profile, args->cpu_pin,
-	                   args->no_data_timeout, argc, argv);
+	                   args->no_data_timeout, argc, argv,
+			   probed_methods);
 
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
 	free(tmpdir);
+	free(probed_methods);
 	data_template_free(args->iargs.dtempl);
 	cell_free(args->iargs.cell);
 	stream_close(st);
