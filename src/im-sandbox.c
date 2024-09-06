@@ -766,8 +766,7 @@ static void sigusr1_handler(int sig, siginfo_t *si, void *uc_v)
 }
 
 
-static void check_signals(struct sandbox *sb, const char *semname_q,
-                          int respawn)
+static void check_signals(struct sandbox *sb, int respawn)
 {
 	if ( at_zombies ) {
 		at_zombies = 0;
@@ -775,7 +774,8 @@ static void check_signals(struct sandbox *sb, const char *semname_q,
 	}
 
 	if ( at_interrupt ) {
-		sem_unlink(semname_q);
+		sem_unlink(sb->sem_name);
+		shm_unlink(sb->shm_name);
 		exit(0);
 	}
 
@@ -1121,7 +1121,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		try_read(sb);
 
 		/* Check for interrupt or zombies */
-		check_signals(sb, semname_q, 1);
+		check_signals(sb, 1);
 
 		/* Check for hung workers */
 		check_hung_workers(sb);
@@ -1179,7 +1179,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	for ( i=0; i<n_proc; i++ ) {
 		while ( any_running(sb) ) {
 			try_read(sb);
-			check_signals(sb, semname_q, 0);
+			check_signals(sb, 0);
 			check_hung_workers(sb);
 			try_status(sb, 0);
 		}
