@@ -628,6 +628,15 @@ static void handle_zombie(struct sandbox *sb, int respawn)
 			sb->running[i] = 0;
 
 			if ( WIFEXITED(status) ) {
+				if ( WEXITSTATUS(status) != 0 ) {
+					STATUS("Worker %i returned error code %i\n",
+					       i, WEXITSTATUS(status));
+					STATUS("Shutting down.\n");
+					/* Error status from worker */
+					pthread_mutex_lock(&sb->shared->totals_lock);
+					sb->shared->should_shutdown = 1;
+					pthread_mutex_unlock(&sb->shared->totals_lock);
+				}
 				continue;
 			}
 
