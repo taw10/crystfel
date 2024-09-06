@@ -493,6 +493,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	int nargc;
 	int i;
 	char *tmpdir_copy;
+	char *methods_copy = NULL;
 	char *worker_id;
 	char *fd_stream;
 	char buf[1024];
@@ -537,8 +538,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	snprintf(fd_stream, 64, "%i", stream_pipe[1]);
 	nargv[nargc++] = fd_stream;
 	if ( sb->probed_methods != NULL ) {
+		methods_copy = strdup(sb->probed_methods);
 		nargv[nargc++] = "--indexing";
-		nargv[nargc++] = sb->probed_methods;
+		nargv[nargc++] = methods_copy;
 	}
 	nargv[nargc++] = NULL;
 
@@ -579,6 +581,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	}
 
 	free(tmpdir_copy);
+	free(methods_copy);
 	free(worker_id);
 	free(fd_stream);
 	free(nargv);
