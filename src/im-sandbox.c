@@ -668,7 +668,6 @@ static int setup_shm(struct sandbox *sb)
 		ERROR("SHM setup failed: %s\n", strerror(errno));
 		return 1;
 	}
-	STATUS("shm FD %i ptr %p, name %s\n", shm_fd, sb->shared, sb->shm_name);
 
 	if ( pthread_mutexattr_init(&attr) ) {
 		ERROR("Failed to initialise mutex attr.\n");
