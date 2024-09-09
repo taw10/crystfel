@@ -633,47 +633,50 @@ INDEXING OPTIONS
 : The rotation matrix trace tolerance in degrees.  Default 3.
 
 **--felix-domega=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Degree range of omega (moscaicity) to consider. Default 2.
 
 **--felix-fraction-max-visits=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Cutoff for minimum fraction of the max visits. Default: 0.75.
 
 **--felix-max-internal-angle=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Cutoff for maximum internal angle between observed spots and predicted spots.
+: Default: 0.25.
 
 **--felix-max-uniqueness=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Cutoff for maximum fraction of found spots which can belong to other crystallites.
+: Default: 0.5.
 
 **--felix-min-completeness=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Cutoff for minimum fraction of projected spots found in the pattern.
+: Default: 0.001.
 
 **--felix-min-visits=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Cutoff for minimum number of voxel visits. Default: 15.
 
 **--felix-num-voxels=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Number of voxels for Rodrigues space search Default: 100.
 
 **--felix-sigma=n**
-: Low-level parameter for the Felix indexing algorithm.
+: The sigma of the 2theta, eta and omega angles. Default: 0.2.
 
 **--felix-tthrange-max=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Maximum 2theta to consider for indexing (degrees). Default: 30.
 
 **--felix-tthrange-min=n**
-: Low-level parameter for the Felix indexing algorithm.
+: Minimum 2theta to consider for indexing (degrees). Default: 0.
 
 **--xgandalf-sampling-pitch=n**
 : Selects how dense the reciprocal space is sampled. [0-4]: extremelyLoose to
-: extremelyDense. [5-7]: standardWithSeondaryMillerIndices to
-: extremelyDenseWithSeondaryMillerIndices. Default is 6
-: (denseWithSeondaryMillerIndices).
+: extremelyDense. [5-7]: standardWithSecondaryMillerIndices to
+: extremelyDenseWithSecondaryMillerIndices. Default: 6
+: (denseWithSecondaryMillerIndices).
 
 **--xgandalf-grad-desc-iterations**
 : Selects how many gradient descent iterations are performed. [0-5]: veryFew to
-: extremelyMany. Default is 4 (manyMany).
+: extremelyMany. Default: 4 (manyMany).
 
 **--xgandalf-tolerance**
-: relative tolerance of the lattice vectors. Default is 0.02.
+: relative tolerance of the lattice vectors. Default: 0.02.
 
 **--xgandalf-no-deviation-from-provided-cell**
 : If a prior unit cell was provided, and this flag is set, the found unit cell
@@ -682,14 +685,14 @@ INDEXING OPTIONS
 **--xgandalf-min-lattice-vector-length** **--xgandalf-min-lattice-vector-length**
 : Minimum and maximum possible lattice vector lengths (unit is A). Used for
 : fitting without prior lattice as starting point for gradient descent, so the
-: final minimum lattice vector length can be smaller/highier as min/max. Note:
+: final minimum lattice vector length can be smaller/bigger than min/max. Note:
 : This is valid for the uncentered cell, i.e. the P-cell! Default is 30A and 250A
 : respectively.
 
 **--xgandalf-max-peaks**
 : Maximum number of peaks used for indexing. For refinement all peaks are used.
 : Peaks are selected by increasing radius. Limits the maximum execution time for
-: Patterns with a huge amount of peaks - either real ones or false positives.
+: patterns with a huge amount of peaks - either real ones or false positives.
 : Default is 250.
 
 **--xgandalf-fast-execution**
@@ -697,27 +700,28 @@ INDEXING OPTIONS
 
 **--pinkIndexer-considered-peaks-count**
 : Selects how many peaks are considered for indexing. [0-4] (veryFew to
-: manyMany). Default is 4 (manyMany).
+: manyMany). Default: 4 (manyMany).
 
 **--pinkIndexer-angle-resolution**
 : Selects how dense the orientation angles of the sample lattice are sampled.
-: [0-4] (extremelyLoose to extremelyDense). Default is 2 (normal).
+: [0-4] (extremelyLoose to extremelyDense). Default: 2 (normal).
 
 **--pinkIndexer-refinement-type**
 : Selects the refinement type. 0 = none, 1 = fixedLatticeParameters, 2 =
 : variableLatticeParameters, 3 = firstFixedThenVariableLatticeParameters, 4 =
 : firstFixedThenVariableLatticeParametersMultiSeed, 5 =
-: firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed.
+: firstFixedThenVariableLatticeParametersCenterAdjustmentMultiSeed. Default: 1
+: (fixedLatticeParameters).
 
 **--pinkIndexer-tolerance**
 : Selects the tolerance of the pinkIndexer (relative tolerance of the lattice
-: vectors). Default is 0.06. For bad geometrys or cell parameters use a high
+: vectors). For bad geometries or cell parameters use a high
 : tolerance. For a well known geometry and cell use a small tolerance. Only
 : important for refinement and indexed/not indexed identificaton. Too small
 : tolerance will lead to refining to only a fraction of the peaks and possibly
 : discarding of correctly indexed images. Too high tolerance will lead to bad
-: Fitting in presence of multiples or noise and can mark wrongly-indexed patterns
-: as indexed.
+: fitting in presence of multiples or noise and can mark wrongly-indexed patterns
+: as indexed. Default: 0.06.
 
 **--pinkIndexer-reflection-radius**
 : Sets radius of the reflections in reciprocal space in 1/A. Default is 2%% of a*
@@ -726,14 +730,14 @@ INDEXING OPTIONS
 
 **--pinkIndexer-max-resolution-for-indexing**
 : Sets the maximum resolution in 1/A used for indexing. Peaks at high resolution
-: Don't add much information, but they add a lot of computation time. Default is
+: don't add much information, but they add a lot of computation time. Default is
 : infinity. Does not influence the refinement.
 
 **--pinkIndexer-max-refinement-disbalance**
 : Indexing solutions are dismissed if the refinement refined very well to one
 : side of the detector and very badly to the other side. Allowed values range
 : from 0 (no disbalance) to 2 (extreme disbalance), default 0.4. Disbalance after
-: Refinement usually appears for bad geometries or bad prior unit cell
+: refinement usually appears for bad geometries or bad prior unit cell
 : parameters.
 
 **--asdf-fast**
