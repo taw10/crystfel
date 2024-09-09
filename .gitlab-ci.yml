@@ -206,7 +206,7 @@ deploy-remote-maxwell:
 
   parallel:
     matrix:
-       - HOST: ["max-wgs","max-display-el9"]
+       - HOST: ["max-wgs"]
 
 build_container_image:
   stage: build_container
