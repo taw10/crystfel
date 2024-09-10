@@ -33,7 +33,7 @@ build_dev_images:
 
   tags:
     - kubernetes
- 
+
   parallel:
     matrix:
      - IMAGE: ["fedora32","fedora37","centos7","alma9"]
@@ -91,7 +91,7 @@ build-centos7:
 
 build-almalinux9:
   image: $CI_REGISTRY_IMAGE/alma9
- 
+
   variables:
     SECURE_FILES_DOWNLOAD_PATH: './downloads'
 
@@ -158,11 +158,11 @@ build-deploy-local-maxwell:
 deploy-remote-maxwell:
   stage: deploy
   image: $CI_REGISTRY_IMAGE/alma9
-  
+
   dependencies:
     - build-centos7
     - build-almalinux9
- 
+
   variables:
     GIT_STRATEGY: none
 
@@ -178,7 +178,7 @@ deploy-remote-maxwell:
   ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
   ## to connect using Kerberos.
     - PREFIX="almalinux9";
- 
+
     - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
         eval $(ssh-agent -s);
         chmod 400 "$MAXWELL_SSH_PRIVATE_KEY";
@@ -186,7 +186,7 @@ deploy-remote-maxwell:
       else
         echo $MAXWELL_ACCOUNT_PASSWORD | kinit $MAXWELL_USER_NAME@DESY.DE;
       fi
-    
+
   script:
     - ssh   $MAXWELL_USER_NAME@$HOST
       "if [ -d /software/crystfel/devel ]; then
