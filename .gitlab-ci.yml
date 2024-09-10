@@ -177,11 +177,7 @@ deploy-remote-maxwell:
   ## Create the SSH directory and give it the right permissions
   ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
   ## to connect using Kerberos.
-    - if [ $HOST == "max-display-el9" ]; then
-          PREFIX="almalinux9";
-      else
-          PREFIX="centos7";
-      fi          
+    - PREFIX="almalinux9";
  
     - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
         eval $(ssh-agent -s);
