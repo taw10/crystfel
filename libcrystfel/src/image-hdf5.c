@@ -414,6 +414,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 	if ( ndims < 0 ) {
 		ERROR("Failed to get number of dimensions for panel %s\n",
 		      p->name);
+		H5Sclose(dataspace);
 		H5Dclose(dh);
 		return 1;
 	}
@@ -436,6 +437,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 			      p->name, ndims, total_dt_dims,
 			      total_dt_dims - plh_dt_dims);
 			H5Dclose(dh);
+			H5Sclose(dataspace);
 			return 1;
 		}
 	} else {
@@ -453,6 +455,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		cffree(f_offset);
 		cffree(f_count);
 		H5Dclose(dh);
+		H5Sclose(dataspace);
 		return 1;
 	}
 
@@ -502,6 +505,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		cffree(f_offset);
 		cffree(f_count);
 		H5Dclose(dh);
+		H5Sclose(dataspace);
 		return 1;
 	}
 
@@ -511,6 +515,8 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 
 	profile_start("H5Dread");
 	r = H5Dread(dh, el_type, memspace, dataspace, H5P_DEFAULT, data);
+	H5Sclose(memspace);
+	H5Sclose(dataspace);
 	profile_end("H5Dread");
 	if ( r < 0 ) {
 		ERROR("Couldn't read data for panel %s\n",
@@ -720,6 +726,7 @@ static char *read_single_fixed_string(hid_t dh)
 	sh = H5Dget_space(dh);
 	if ( H5Sget_simple_extent_ndims(sh) ) {
 		ERROR("Non-scalar string\n");
+		H5Sclose(sh);
 		return NULL;
 	}
 
@@ -729,6 +736,7 @@ static char *read_single_fixed_string(hid_t dh)
 	tmp = cfmalloc(size+1);
 	if ( tmp == NULL ) {
 		H5Tclose(type);
+		H5Sclose(sh);
 		return NULL;
 	}
 	r = H5Dread(dh, type, sh, H5S_ALL, H5P_DEFAULT, tmp);
@@ -834,6 +842,7 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	ndims = H5Sget_simple_extent_ndims(sh);
 	if ( ndims > 64 ) {
 		ERROR("Too many dimensions for numeric value\n");
+		H5Sclose(sh);
 		close_hdf5(fh);
 		cffree(subst_name);
 		return 1;
@@ -858,11 +867,15 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				ERROR("Couldn't read scalar value from %s.\n",
 				      subst_name);
 				cffree(subst_name);
+				H5Sclose(sh);
+				H5Sclose(ms);
 				close_hdf5(fh);
 				return 1;
 			}
 			image_cache_header_float(image, name, val);
 			cffree(subst_name);
+			H5Sclose(sh);
+			H5Sclose(ms);
 			return 0;
 
 		} else if ( class == H5T_INTEGER ) {
@@ -870,6 +883,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			int val;
 			r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT,
 			            &val);
+			H5Sclose(sh);
+			H5Sclose(ms);
 			if ( r < 0 )  {
 				ERROR("Couldn't read scalar value from %s.\n",
 				      subst_name);
@@ -914,12 +929,16 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 			cffree(subst_name);
 			close_hdf5(fh);
+			H5Sclose(sh);
+			H5Sclose(ms);
 			return rv;
 
 		} else {
 			/* Should never be reached */
 			ERROR("Invalid HDF5 class %i\n", class);
 			cffree(subst_name);
+			H5Sclose(sh);
+			H5Sclose(ms);
 			return 1;
 		}
 	}
@@ -929,6 +948,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		ERROR("Couldn't parse event '%s'\n");
 		close_hdf5(fh);
 		cffree(subst_name);
+		H5Sclose(sh);
+		H5Sclose(ms);
 		return 1;
 	}
 
@@ -938,6 +959,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		ERROR("Couldn't allocate dimension arrays\n");
 		close_hdf5(fh);
 		cffree(subst_name);
+		H5Sclose(sh);
+		H5Sclose(ms);
 		return 1;
 	}
 
@@ -955,6 +978,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 				      subst_name, i,
 				      dim_vals[dim_val_pos], size[i]);
 				close_hdf5(fh);
+				H5Sclose(sh);
+				H5Sclose(ms);
 				cffree(subst_name);
 				cffree(dim_vals);
 				return 1;
@@ -981,6 +1006,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 		cffree(f_offset);
 		cffree(f_count);
 		cffree(subst_name);
+		H5Sclose(sh);
+		H5Sclose(ms);
 		close_hdf5(fh);
 		return 1;
 	}
@@ -988,12 +1015,13 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	cffree(f_offset);
 	cffree(f_count);
 
-	ms = H5Screate_simple(1,msdims,NULL);
 	check = H5Sselect_hyperslab(ms, H5S_SELECT_SET,
 	                            m_offset, NULL, m_count, NULL);
 	if ( check < 0 ) {
 		ERROR("Error selecting memory dataspace for header value\n");
 		close_hdf5(fh);
+		H5Sclose(sh);
+		H5Sclose(ms);
 		cffree(subst_name);
 		return 1;
 	}
@@ -1002,6 +1030,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 		double val;
 		r = H5Dread(dh, H5T_NATIVE_DOUBLE, ms, sh, H5P_DEFAULT, &val);
+		H5Sclose(sh);
+		H5Sclose(ms);
 		if ( r < 0 )  {
 			ERROR("Couldn't read value.\n");
 			close_hdf5(fh);
@@ -1018,6 +1048,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 		int val;
 		r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT, &val);
+		H5Sclose(sh);
+		H5Sclose(ms);
 		if ( r < 0 )  {
 			ERROR("Couldn't read value.\n");
 			close_hdf5(fh);
@@ -1043,6 +1075,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			char *val;
 
 			rv = H5Dread(dh, stype, ms, sh, H5P_DEFAULT, &val);
+			H5Sclose(sh);
+			H5Sclose(ms);
 			if ( rv < 0 ) {
 				ERROR("Can't read HDF5 vlen string from array - %s\n",
 				      subst_name);
@@ -1071,10 +1105,14 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 			val = cfmalloc(ssize+1);
 			if ( val == NULL ) {
 				close_hdf5(fh);
+				H5Sclose(ms);
+				H5Sclose(sh);
 				cffree(subst_name);
 				return 1;
 			}
 			rv = H5Dread(dh, stype, ms, sh, H5P_DEFAULT, val);
+			H5Sclose(sh);
+			H5Sclose(ms);
 			H5Tclose(stype);
 			if ( rv < 0 ) {
 				ERROR("Couldn't read HDF5 fixed string from array - %s\n",
@@ -1099,6 +1137,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 	} else {
 		/* Should never be reached */
 		ERROR("Invalid HDF5 class %i\n", class);
+		H5Sclose(sh);
+		H5Sclose(ms);
 		close_hdf5(fh);
 		cffree(subst_name);
 		return 1;
@@ -1488,6 +1528,7 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 	if ( H5Sget_simple_extent_ndims(sh) != 2 ) {
 		ERROR("Peak list has the wrong dimensionality (%i).\n",
 		      H5Sget_simple_extent_ndims(sh));
+		H5Sclose(sh);
 		close_hdf5(fh);
 		return NULL;
 	}
@@ -1952,6 +1993,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 			      "(%s has %i, expected %i)\n",
 			      path, dims, dims_expected);
 			close_hdf5(fh);
+			H5Sclose(sh);
 			return NULL;
 		}
 
@@ -1960,14 +2002,18 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		if ( (size == NULL) || (placeholder_sizes == NULL) ) {
 			ERROR("Failed to allocate dimensions\n");
 			close_hdf5(fh);
+			H5Sclose(sh);
 			return NULL;
 		}
 
 		if ( H5Sget_simple_extent_dims(sh, size, NULL) < 0 ) {
 			ERROR("Failed to get size\n");
 			close_hdf5(fh);
+			H5Sclose(sh);
 			return NULL;
 		}
+
+		H5Sclose(sh);
 
 		n_placeholder_dims = 0;
 		for ( j=0; j<dims; j++ ) {
