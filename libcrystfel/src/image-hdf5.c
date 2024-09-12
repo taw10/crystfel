@@ -650,6 +650,7 @@ int image_hdf5_read_satmap(struct panel_template *p,
 	                         sizeof(float), 1, map_location, NULL) )
 	{
 		ERROR("Failed to load saturation map data\n");
+		close_hdf5(fh);
 		return 1;
 	}
 
@@ -687,6 +688,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 	                         sizeof(int), 1, mask_location, NULL) )
 	{
 		ERROR("Failed to load mask data\n");
+		close_hdf5(fh);
 		cffree(mask);
 		return 1;
 	}
