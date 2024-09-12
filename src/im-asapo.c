@@ -74,7 +74,7 @@ static void show_asapo_error(const char *msg, const AsapoErrorHandle err)
 }
 
 
-static int create_producer(struct im_asapo *a, struct im_asapo_params *params)
+static int create_producer(struct im_asapo *a, const struct im_asapo_params *params)
 {
 	char *source;
 	AsapoSourceCredentialsHandle cred;
