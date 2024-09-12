@@ -544,6 +544,7 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 static hid_t open_hdf5_file(const char *filename)
 {
 	hid_t fh;
+	hid_t fapl;
 
 	if ( access(filename, R_OK) == -1 ) {
 		ERROR("File does not exist or cannot be read: %s\n",
@@ -551,7 +552,10 @@ static hid_t open_hdf5_file(const char *filename)
 		return -1;
 	}
 
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fapl = H5Pcreate(H5P_FILE_ACCESS);
+	H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG);
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, fapl);
+	H5Pclose(fapl);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open HDF5 file: %s\n", filename);
 		return -1;
@@ -1345,7 +1349,7 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
                                             int half_pixel_shift)
 {
 	ImageFeatureList *features;
-	hid_t fh;
+	hid_t fh, fapl;
 	char path_n[1024];
 	char path_x[1024];
 	char path_y[1024];
@@ -1397,7 +1401,10 @@ ImageFeatureList *image_hdf5_read_peaks_cxi(const DataTemplate *dtempl,
 	snprintf(path_y, 1024, "%s/peakYPosRaw", subst_name);
 	snprintf(path_i, 1024, "%s/peakTotalIntensity", subst_name);
 
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fapl = H5Pcreate(H5P_FILE_ACCESS);
+	H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG);
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, fapl);
+	H5Pclose(fapl);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file (peaks/cxi): %s\n", filename);
 		cffree(subst_name);
@@ -1473,7 +1480,7 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
                                              const char *event,
                                              int half_pixel_shift)
 {
-	hid_t fh, dh, sh;
+	hid_t fh, dh, sh, fapl;
 	hsize_t size[2];
 	hsize_t max_size[2];
 	int i;
@@ -1495,7 +1502,10 @@ ImageFeatureList *image_hdf5_read_peaks_hdf5(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fapl = H5Pcreate(H5P_FILE_ACCESS);
+	H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG);
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, fapl);
+	H5Pclose(fapl);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file (peaks/hdf5): %s\n", filename);
 		return NULL;
@@ -1903,7 +1913,7 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 {
 	char **path_evs;
 	int n_path_evs;
-	hid_t fh;
+	hid_t fh, fapl;
 	int i;
 	int dims_expected;
 	struct ev_list full_evs;
@@ -1929,7 +1939,10 @@ char **image_hdf5_expand_frames(const DataTemplate *dtempl,
 		return NULL;
 	}
 
-	fh = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fapl = H5Pcreate(H5P_FILE_ACCESS);
+	H5Pset_fclose_degree(fapl, H5F_CLOSE_STRONG);
+	fh = H5Fopen(filename, H5F_ACC_RDONLY, fapl);
+	H5Pclose(fapl);
 	if ( fh < 0 ) {
 		ERROR("Couldn't open file (hdf5_expand_frames): %s\n", filename);
 		return NULL;
