@@ -377,7 +377,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	}
 	if ( image->features == NULL ) {
-		ERROR("Peaksearch failed for image %s" "(event %s).\n",
+		ERROR("Peak search failed for image %s (event %s).\n",
 		      image->filename, image->ev);
 	}
 	profile_end("peak-search");
