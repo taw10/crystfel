@@ -141,7 +141,6 @@ static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rma
 		cffree(rsp);
 		return NULL;
 	}
-	srand(0);
 
 	int n_pixels_per_bin = 100; // Can make this a parameter
 
