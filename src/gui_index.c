@@ -908,6 +908,9 @@ static char **indexamajig_command_line(const char *geom_filename,
 		            peak_search_params->min_res);
 		add_arg_int(args, n_args++, "max-res",
 		            peak_search_params->max_res);
+		if ( peak_search_params->peakfinder8_fast ) {
+			add_arg(args, n_args++, "--peakfinder8-fast");
+		}
 	}
 	snprintf(tols, 2048, "--peak-radius=%.1f,%.1f,%.1f",
 	         peak_search_params->pk_inn,

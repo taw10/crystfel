@@ -83,7 +83,9 @@ void update_peaks(struct crystfelproject *proj)
 		                                        proj->peak_search_params.local_bg_radius,
 		                                        proj->peak_search_params.min_res,
 		                                        proj->peak_search_params.max_res,
-		                                        1, 0, NULL);
+		                                        1,
+							proj->peak_search_params.peakfinder8_fast,
+							NULL);
 		break;
 
 		case PEAK_PEAKFINDER9:
@@ -400,6 +402,9 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		add_int_param(proj->peak_params, "Maximum resolution (pixels):",
 		              &proj->peak_search_params.max_res, proj,
 		              "--max-res");
+		add_check_param(proj->peak_params, "Fast mode",
+		               &proj->peak_search_params.peakfinder8_fast, proj,
+			       "--peakfinder8-fast");
 
 	} else if ( strcmp(algo_id, "peakfinder9") == 0 ) {
 

@@ -225,6 +225,10 @@ static void parse_peaksearch_opt(const char *key, const char *val,
 	if ( strcmp(key, "peak_search_params.revalidate") == 0 ) {
 		proj->peak_search_params.revalidate = parse_int(val);
 	}
+
+	if ( strcmp(key, "peak_search_params.peakfinder8_fast") == 0 ) {
+		proj->peak_search_params.peakfinder8_fast = parse_int(val);
+	}
 }
 
 
@@ -980,6 +984,8 @@ int save_project(struct crystfelproject *proj)
 	        proj->peak_search_params.half_pixel_shift);
 	fprintf(fh, "peak_search_params.revalidate %i\n",
 	        proj->peak_search_params.revalidate);
+	fprintf(fh, "peak_search_params.peakfinder8_fast %i\n",
+	        proj->peak_search_params.peakfinder8_fast);
 
 	if ( proj->indexing_params.cell_file != NULL ) {
 		fprintf(fh, "indexing.cell_file %s\n",
