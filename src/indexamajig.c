@@ -665,6 +665,20 @@ int main(int argc, char *argv[])
 		args->iargs.clen_estimate = clen_from_dt;
 	}
 
+	/* If no integration radii were given, apply the defaults */
+	if ( args->iargs.ir_inn < 0 ) {
+		args->iargs.ir_inn = 4.0;
+		args->iargs.ir_mid = 5.0;
+		args->iargs.ir_out = 7.0;
+	}
+
+	/* If no peak radii were given, copy the integration radii */
+	if ( args->iargs.peak_search.pk_inn < 0.0 ) {
+		args->iargs.peak_search.pk_inn = args->iargs.ir_inn;
+		args->iargs.peak_search.pk_mid = args->iargs.ir_mid;
+		args->iargs.peak_search.pk_out = args->iargs.ir_out;
+	}
+
 	if ( args->worker ) {
 		/* I am a worker process */
 		return run_work(args);
@@ -749,23 +763,6 @@ int main(int argc, char *argv[])
 	if ( args->n_proc == 0 ) {
 		ERROR("Invalid number of processes.\n");
 		return 1;
-	}
-
-	/* If no integration radii were given, apply the defaults */
-	if ( args->iargs.ir_inn < 0 ) {
-		STATUS("WARNING: You did not specify --int-radius.\n");
-		STATUS("WARNING: I will use the default values, which are"
-		       " probably not appropriate for your patterns.\n");
-		args->iargs.ir_inn = 4.0;
-		args->iargs.ir_mid = 5.0;
-		args->iargs.ir_out = 7.0;
-	}
-
-	/* If no peak radii were given, copy the integration radii */
-	if ( args->iargs.peak_search.pk_inn < 0.0 ) {
-		args->iargs.peak_search.pk_inn = args->iargs.ir_inn;
-		args->iargs.peak_search.pk_mid = args->iargs.ir_mid;
-		args->iargs.peak_search.pk_out = args->iargs.ir_out;
 	}
 
 	/* Load unit cell (if given) */
