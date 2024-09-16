@@ -1811,6 +1811,8 @@ IntegrationMethod integration_method(const char *str, int *err)
 			meth = INTEGRATION_DEFAULTS_PROF2D;
 
 		} else if ( strcmp(methods[i], "none") == 0 ) {
+			cffree(methods[i]);
+			cffree(methods);
 			return INTEGRATION_NONE;
 
 		} else if ( strcmp(methods[i], "sat") == 0 ) {
