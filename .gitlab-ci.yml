@@ -88,7 +88,7 @@ build-almalinux9:
 
     # Seedee
     - tar -xzf downloads/seedee-main.tar.gz
-    - pushd seedee-main
+    - pushd seedee
     - mkdir build
     - cd build
     - cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$CFPREFIX -DCMAKE_BUILD_TYPE=RelWithDebInfo
