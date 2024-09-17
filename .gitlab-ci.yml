@@ -4,7 +4,6 @@ stages:
   - deploy
   - build_container
 
-
 build_dev_images:
   stage: build
   dependencies: []
@@ -36,27 +35,34 @@ build_dev_images:
 
   parallel:
     matrix:
-     - IMAGE: ["fedora32","fedora37","centos7","alma9"]
+     - IMAGE: ["centos7","alma9","fedora","ubuntu"]
 
   when: manual
 
 build-and-test:
-  image: $CI_REGISTRY_IMAGE/fedora32
+  image: $CI_REGISTRY_IMAGE/$IMAGE
+
   script:
-    - meson setup build && ninja -C build
-    - ninja -C build test
+    - meson setup build && ninja -C build &&  ninja -C build test
+
   artifacts:
     when: always
     paths:
       - build/meson-logs/testlog.junit.xml
     reports:
       junit: build/meson-logs/testlog.junit.xml
+
+  parallel:
+    matrix:
+     - IMAGE:  ["centos7","alma9","fedora","ubuntu"]
 
 build-and-test-minimal:
-  image: $CI_REGISTRY_IMAGE/fedora37
+  image: $IMAGE:latest
   script:
-    - meson setup build -Dhdf5=disabled && ninja -C build
-    - ninja -C build test
+    - dnf update -y && dnf group install -y 'Development Tools' &&
+      dnf install -y gsl-devel flex bison  cmake meson
+    - meson setup build -Dhdf5=disabled --wrap-mode=nofallback && ninja -C build &&  ninja -C build test
+
   artifacts:
     when: always
     paths:
@@ -64,55 +70,75 @@ build-and-test-minimal:
     reports:
       junit: build/meson-logs/testlog.junit.xml
 
-build-centos7:
-  image: $CI_REGISTRY_IMAGE/centos7
-  #image:centos:latest
-  #image: centos:centos7.9.2009
-
-  variables:
-    SECURE_FILES_DOWNLOAD_PATH: './downloads'
-  script:
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-    - python3 -m pip  install meson ninja
-    - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
-    - chmod 755 ./run-me-desy-maxwell-centos7
-    - ./run-me-desy-maxwell-centos7 --yes-really
-    - cp -Rp /software $CI_PROJECT_DIR/centos7/
-  artifacts:
-    paths:
-      - centos7/
-      - temp/crystfel/build/meson-logs/testlog.junit.xml
-    when: on_success
-    expire_in: 1 day
-    reports:
-      junit: temp/crystfel/build/meson-logs/testlog.junit.xml
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
+  parallel:
+    matrix:
+     - IMAGE: ["fedora"]
 
 build-almalinux9:
   image: $CI_REGISTRY_IMAGE/alma9
 
   variables:
+    GIT_STRATEGY: clone
     SECURE_FILES_DOWNLOAD_PATH: './downloads'
 
   script:
     - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-    - python3 -m ensurepip --upgrade
-    - python3 -m pip install --upgrade pip
-    - python3 -m pip  install meson ninja
-    - wget https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
-    - chmod 755 ./run-me-desy-maxwell-centos7
-    - ./run-me-desy-maxwell-centos7 --yes-really
+    # Seedee is available as a secure download only so it cannot be 
+    # downloaded from Docker build.
+
+    # Seedee
+    - tar -xzf downloads/seedee-main.tar.gz
+    - pushd seedee-main
+    - mkdir build
+    - cd build
+    - cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$CFPREFIX -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    - cd ..
+    - ninja -C build
+    - ninja -C build install
+    - popd
+
+    # CrystFEL
+    # (automatically installs libccp4 and FDIP via Wrap)
+    # Cannot clone with --depth 1, because it needs to find the last tag
+    
+    - meson setup build --prefix $CFPREFIX
+    - ninja -v -C build
+    - ninja -v -C build test
+    - ninja -C build install
+     
+    # Tweak CrystFEL GUI so that it can find syminfo.lib
+    - mv $CFPREFIX/bin/crystfel $CFPREFIX/bin/crystfel.real
+    - echo '#!/bin/sh' > $CFPREFIX/bin/crystfel
+    - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/crystfel
+    - echo "$CFPREFIX/bin/crystfel.real \$@" >> $CFPREFIX/bin/crystfel
+    - chmod +x $CFPREFIX/bin/crystfel
+    
+    # Tweak get_hkl in the same way
+    - mv $CFPREFIX/bin/get_hkl $CFPREFIX/bin/get_hkl.real
+    - echo '#!/bin/sh' > $CFPREFIX/bin/get_hkl
+    - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/get_hkl
+    - echo "$CFPREFIX/bin/get_hkl.real \$@" >> $CFPREFIX/bin/get_hkl
+    - chmod +x $CFPREFIX/bin/get_hkl
+    
+    # Mosflm (tweaked to find syminfo.lib and not load environ.def/default.def)
+    - wget -nv https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip
+    - unzip mosflm-linux-64-noX11.zip
+    - mv mosflm-linux-64-noX11 $CFPREFIX/bin/mosflm.real
+    - echo '#!/bin/sh' > $CFPREFIX/bin/mosflm
+    - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/mosflm
+    - echo "$CFPREFIX/bin/mosflm.real -n \$@" >> $CFPREFIX/bin/mosflm
+    - chmod +x $CFPREFIX/bin/mosflm
+
     - cp -Rp /software $CI_PROJECT_DIR/almalinux9/
 
   artifacts:
     paths:
       - almalinux9/
-      - temp/crystfel/build/meson-logs/testlog.junit.xml
+      - build/meson-logs/testlog.junit.xml
     when: on_success
     expire_in: 1 day
     reports:
-      junit: temp/crystfel/build/meson-logs/testlog.junit.xml
+      junit: build/meson-logs/testlog.junit.xml
 
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
@@ -134,41 +160,15 @@ build-brew-macos:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
 
-build-deploy-local-maxwell:
-  tags:
-    - maxwell
-  dependencies:
-    - build-centos7
-  variables:
-    GIT_STRATEGY: clone
-    SECURE_FILES_DOWNLOAD_PATH: './downloads'
-  script:
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-    - wget  https://gitlab.desy.de/thomas.white/install-crystfel/-/raw/main/run-me-desy-maxwell-centos7
-    - chmod 755 ./run-me-desy-maxwell-centos7
-    - if [ -d /software/crystfel/devel ]; then
-        mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
-      fi
-    - module load maxwell git
-    - ./run-me-desy-maxwell-centos7 --yes-really
-  rules:
-    - if: $MAXWELL_DEPLOYMENT == "local"  &&  $CI_COMMIT_BRANCH == "master"
-
-
 deploy-remote-maxwell:
   stage: deploy
   image: $CI_REGISTRY_IMAGE/alma9
-
   dependencies:
-    - build-centos7
     - build-almalinux9
-
   variables:
     GIT_STRATEGY: none
-
   tags:
     - DESY-intern
-
   before_script:
   ##
   ## Run ssh-agent (inside the build environment)
@@ -177,8 +177,8 @@ deploy-remote-maxwell:
   ## Create the SSH directory and give it the right permissions
   ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
   ## to connect using Kerberos.
+    - HOST="max-wgs";
     - PREFIX="almalinux9";
-
     - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
         eval $(ssh-agent -s);
         chmod 400 "$MAXWELL_SSH_PRIVATE_KEY";
@@ -199,10 +199,6 @@ deploy-remote-maxwell:
 
   rules:
     - if: $MAXWELL_DEPLOYMENT == "remote"  && $CI_COMMIT_BRANCH == "master"
-
-  parallel:
-    matrix:
-       - HOST: ["max-wgs"]
 
 build_container_image:
   stage: build_container
