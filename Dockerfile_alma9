@@ -7,9 +7,10 @@ ENV LD_RUN_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV PATH=$CFPREFIX/bin:$PATH
 
 RUN    dnf -y install epel-release ; \
-       dnf -y update ; \
-       dnf -y group install  'Development Tools' ; \
-       dnf -y install  gsl-devel flex bison gcc-c++ gcc-gfortran gtk3-devel cairo-devel \
+RUN    crb
+RUN    dnf -y update
+RUN    dnf -y group install  'Development Tools'
+RUN    dnf -y install  gsl-devel flex bison gcc-c++ gcc-gfortran gtk3-devel cairo-devel \
               pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils \
               zeromq-devel python3-devel which wget lz4 lz4-devel \
               bzip2-libs bzip2-devel libcurl-devel openssh-clients krb5-workstation cmake \
