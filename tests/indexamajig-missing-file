@@ -23,7 +23,7 @@ for FILE in $INFILES; do
 	echo $FILE >> test-input.lst
 done
 
-$INDEXAMAJIG -i test-input.lst -o test-output.stream -g $GEOM
+$INDEXAMAJIG -i test-input.lst -o test-output.stream -g $GEOM --indexing=none
 OUTVAL=$?
 
 rm -f test-output.stream test-input.lst
