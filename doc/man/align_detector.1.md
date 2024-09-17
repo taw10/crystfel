@@ -81,7 +81,10 @@ OPTIONS
 : detector.
 
 **--out-of-plane**
-: Additionally refine out-of-plane panel positions and tilts of the detector.
+: Additionally refine out-of-plane panel translations.
+
+**--out-of-plane-tilts**
+: Additionally refine out-of-plane panel tilts.
 
 
 AUTHOR

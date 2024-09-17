@@ -247,7 +247,7 @@ gint align_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	gtk_widget_set_tooltip_text(win->level, "--level");
 
-	win->out_of_plane = gtk_check_button_new_with_label("Include out-of-plane positions and tilts");
+	win->out_of_plane = gtk_check_button_new_with_label("Include out-of-plane shifts");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->out_of_plane),
 	                   FALSE, FALSE, 4.0);
 	gtk_widget_set_tooltip_text(win->out_of_plane, "--out-of-plane");
