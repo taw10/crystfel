@@ -595,8 +595,9 @@ INDEXING OPTIONS
 **--mille**
 : Write detector calibration data in Millepede-II format.
 
-**--mille-dir=dirname**
-: Write the Millepede-II data into _dirname_.
+**--mille-file=filename**
+: Write the Millepede-II data into _filename_.  The default is mille-data.bin,
+: in the current directory.
 
 **--max-mille-level=n**
 : Write the Millepede-II data up to a maximum hierarchy depth _n_.  If _n_ is

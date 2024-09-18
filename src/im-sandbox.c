@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2020 Thomas White <taw@physics.org>
+ *   2010-2024 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
@@ -73,6 +73,16 @@
 #include "predict-refine.h"
 
 
+typedef struct
+{
+	int n_read;
+	int *fds;
+	void **buffers;
+	size_t *buffer_len;
+	size_t *buffer_pos;
+} PipeList;
+
+
 struct sandbox
 {
 	int n_processed_last_stats;
@@ -99,9 +109,8 @@ struct sandbox
 	int cpu_pin;
 
 	/* Streams to read from (NB not the same indices as the above) */
-	int n_read;
-	FILE **fhs;
-	int *fds;
+	PipeList *st_from_workers;
+	PipeList *mille_from_workers;
 
 	int serial;
 
@@ -120,6 +129,7 @@ struct sandbox
 
 	/* Final output */
 	Stream *stream;
+	FILE *mille_fh;
 };
 
 struct get_pattern_ctx
@@ -334,126 +344,163 @@ void set_last_task(char *lt, const char *task)
 }
 
 
-static ssize_t lwrite(int fd, const char *a)
+static const char *str_in_str(const char *haystack, size_t len, const char *needle)
 {
-	size_t l = strlen(a);
-	return write(fd, a, l);
+	size_t u;
+	const size_t endl = strlen(needle);
+
+	if ( len < endl ) return NULL;
+
+	for ( u=0; u<len-endl; u++ ) {
+		size_t v;
+		int ok = 1;
+		for ( v=0; v<endl; v++ ) {
+			if ( haystack[u+v] != needle[v] ) {
+				ok = 0;
+				break;
+			}
+		}
+		if ( ok ) {
+			return &haystack[u];
+		}
+	}
+	return NULL;
 }
 
 
-static int pump_chunk(FILE *fh, int ofd)
+static size_t pump_chunk(void *buf, size_t len, struct sandbox *sb)
 {
-	int chunk_started = 0;
+	const char *txt = (char *)buf;
+	const char *endpos;
+	size_t chunk_len;
 
-	do {
+	endpos = str_in_str(txt, len, STREAM_CHUNK_END_MARKER"\n");
+	if ( endpos == NULL ) return 0;
 
-		char line[1024];
-		char *rval;
+	chunk_len = (endpos-txt)+strlen(STREAM_CHUNK_END_MARKER"\n");
+	write(stream_get_fd(sb->stream), buf, chunk_len);
 
-		rval = fgets(line, 1024, fh);
-		if ( rval == NULL ) {
+	return chunk_len;
+}
 
-			if ( feof(fh) ) {
-				/* Whoops, connection lost */
-				if ( chunk_started ) {
-					ERROR("EOF during chunk!\n");
-					lwrite(ofd, "Unfinished chunk!\n");
-					lwrite(ofd, STREAM_CHUNK_END_MARKER"\n");
-				} /* else normal end of output */
-				return 1;
-			}
 
-			ERROR("fgets() failed: %s\n", strerror(errno));
-			if ( errno != EINTR ) return 1;
+static size_t pump_mille(void *buf, size_t len, struct sandbox *sb)
+{
+	int n;
+	int ni;
 
-		}
+	if ( len < 4 ) return 0;
+	ni = *(int *)buf;
+	n = ni/2;
+	if ( len < 8*n ) return 0;
 
-		if ( strcmp(line, "FLUSH\n") == 0 ) break;
-		lwrite(ofd, line);
+	fwrite(buf, 4, 2*n+1, sb->mille_fh);
+	fflush(sb->mille_fh);
 
-		if ( strcmp(line, STREAM_CHUNK_START_MARKER"\n") == 0 ) {
-			chunk_started = 1;
-		}
-		if ( strcmp(line, STREAM_CHUNK_END_MARKER"\n") == 0 ) break;
+	return 8*n+4;
+}
 
-	} while ( 1 );
-	return 0;
+
+static PipeList *pipe_list_new()
+{
+	PipeList *pd = malloc(sizeof(PipeList));
+	if ( pd == NULL ) return NULL;
+	pd->fds = NULL;
+	pd->buffers = NULL;
+	pd->buffer_len = NULL;
+	pd->buffer_pos = NULL;
+	pd->n_read = 0;
+	return pd;
+}
+
+
+static void pipe_list_destroy(PipeList *pd)
+{
+	int i;
+	for ( i=0; i<pd->n_read; i++ ) {
+		free(pd->buffers[i]);
+	}
+	free(pd->buffers);
+	free(pd->buffer_len);
+	free(pd->buffer_pos);
+	free(pd->fds);
+	free(pd);
 }
 
 
 /* Add an fd to the list of pipes to be read from */
-static void add_pipe(struct sandbox *sb, int fd)
+static void add_pipe(PipeList *pd, int fd)
 {
 	int *fds_new;
-	FILE **fhs_new;
+	void **buffers_new;
+	size_t *buflens_new;
+	size_t *bufposs_new;
 	int slot;
 
-	fds_new = realloc(sb->fds, (sb->n_read+1)*sizeof(int));
-	if ( fds_new == NULL ) {
+	fds_new = realloc(pd->fds, (pd->n_read+1)*sizeof(int));
+	buffers_new = realloc(pd->buffers, (pd->n_read+1)*sizeof(void *));
+	buflens_new = realloc(pd->buffer_len, (pd->n_read+1)*sizeof(size_t));
+	bufposs_new = realloc(pd->buffer_pos, (pd->n_read+1)*sizeof(size_t));
+	if ( (fds_new == NULL) || (buffers_new == NULL)
+	  || (buflens_new == NULL) || (bufposs_new == NULL) )
+	{
 		ERROR("Failed to allocate memory for new pipe.\n");
 		return;
 	}
 
-	fhs_new = realloc(sb->fhs, (sb->n_read+1)*sizeof(FILE *));
-	if ( fhs_new == NULL ) {
-		ERROR("Failed to allocate memory for new FH.\n");
-		free(fds_new);
-		return;
-	}
+	pd->fds = fds_new;
+	pd->buffers = buffers_new;
+	pd->buffer_len = buflens_new;
+	pd->buffer_pos = bufposs_new;
 
-	sb->fds = fds_new;
-	sb->fhs = fhs_new;
-	slot = sb->n_read;
+	slot = pd->n_read;
+	pd->fds[slot] = fd;
+	pd->buffers[slot] = malloc(64*1024);
+	if ( pd->buffers[slot] == NULL ) return;
+	pd->buffer_len[slot] = 64*1024;
+	pd->buffer_pos[slot] = 0;
 
-	sb->fds[slot] = fd;
-
-	sb->fhs[slot] = fdopen(fd, "r");
-	if ( sb->fhs[slot] == NULL ) {
-		ERROR("Couldn't fdopen() stream!\n");
-		return;
-	}
-
-	sb->n_read++;
+	pd->n_read++;
 }
 
 
-static void remove_pipe(struct sandbox *sb, int d)
+static void remove_pipe(PipeList *pd, int d)
 {
 	int i;
 
-	fclose(sb->fhs[d]);
+	close(pd->fds[d]);
 
-	for ( i=d; i<sb->n_read; i++ ) {
-		if ( i < sb->n_read-1 ) {
-			sb->fds[i] = sb->fds[i+1];
-			sb->fhs[i] = sb->fhs[i+1];
+	for ( i=d; i<pd->n_read; i++ ) {
+		if ( i < pd->n_read-1 ) {
+			pd->fds[i] = pd->fds[i+1];
+			pd->buffers[i] = pd->buffers[i+1];
 		} /* else don't bother */
 	}
 
-	sb->n_read--;
+	pd->n_read--;
 
 	/* We don't bother shrinking the arrays */
 }
 
 
-static void try_read(struct sandbox *sb)
+static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct sandbox *),
+                        struct sandbox *sb)
 {
 	int r, i;
 	struct timeval tv;
 	fd_set fds;
 	int fdmax;
-	const int ofd = stream_get_fd(sb->stream);
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 500000;
 
 	FD_ZERO(&fds);
 	fdmax = 0;
-	for ( i=0; i<sb->n_read; i++ ) {
+	for ( i=0; i<pd->n_read; i++ ) {
 
 		int fd;
 
-		fd = sb->fds[i];
+		fd = pd->fds[i];
 
 		FD_SET(fd, &fds);
 		if ( fd > fdmax ) fdmax = fd;
@@ -469,19 +516,51 @@ static void try_read(struct sandbox *sb)
 		return;
 	}
 
-	for ( i=0; i<sb->n_read; i++ ) {
+	for ( i=0; i<pd->n_read; i++ ) {
 
-		if ( !FD_ISSET(sb->fds[i], &fds) ) {
+		size_t r;
+
+		if ( !FD_ISSET(pd->fds[i], &fds) ) {
 			continue;
+		}
+
+		if ( pd->buffer_len[i] == pd->buffer_pos[i] ) {
+			void *buf_new = realloc(pd->buffers[i],
+			                        pd->buffer_len[i]+64*1024);
+			if ( buf_new == NULL ) {
+				ERROR("Failed to grow buffer\n");
+				continue;
+			}
+			pd->buffers[i] = buf_new;
+			pd->buffer_len[i] += 64*1024;
 		}
 
 		/* If the chunk cannot be read, assume the connection
 		 * is broken and that the process will die soon. */
-		if ( pump_chunk(sb->fhs[i], ofd) ) {
-			remove_pipe(sb, i);
+		r = read(pd->fds[i], pd->buffers[i]+pd->buffer_pos[i],
+		         pd->buffer_len[i]-pd->buffer_pos[i]);
+
+		if ( r == 0 ) {
+			remove_pipe(pd, i);
+		} else {
+			size_t h;
+			pd->buffer_pos[i] += r;
+			h = pump(pd->buffers[i], pd->buffer_pos[i], sb);
+			if ( h > 0 ) {
+				memmove(pd->buffers[i], pd->buffers[i]+h,
+				        pd->buffer_pos[i]-h);
+				pd->buffer_pos[i] -= h;
+			}
 		}
 
 	}
+}
+
+
+static void try_read(struct sandbox *sb)
+{
+	check_pipes(sb->st_from_workers, pump_chunk, sb);
+	check_pipes(sb->mille_from_workers, pump_mille, sb);
 }
 
 
@@ -489,6 +568,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 {
 	pid_t p;
 	int stream_pipe[2];
+	int mille_pipe[2];
 	char **nargv;
 	int nargc;
 	int i;
@@ -496,11 +576,17 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	char *methods_copy = NULL;
 	char *worker_id;
 	char *fd_stream;
+	char *fd_mille;
 	char buf[1024];
 	const char *indexamajig = NULL;
 	size_t len;
 
 	if ( pipe(stream_pipe) == - 1 ) {
+		ERROR("pipe() failed!\n");
+		return;
+	}
+
+	if ( pipe(mille_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
 		return;
 	}
@@ -520,23 +606,34 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	for ( i=0; i<sb->argc; i++ ) {
 		nargv[nargc++] = sb->argv[i];
 	}
+
 	nargv[nargc++] = "--shm-name";
 	nargv[nargc++] = sb->shm_name;
+
 	nargv[nargc++] = "--queue-sem";
 	nargv[nargc++] = sb->sem_name;
+
 	nargv[nargc++] = "--worker-tmpdir";
 	tmpdir_copy = strdup(sb->tmpdir);
 	if ( tmpdir_copy == NULL ) return;
 	nargv[nargc++] = tmpdir_copy;
+
 	nargv[nargc++] = "--worker-id";
 	worker_id = malloc(64);
 	if ( worker_id == NULL ) return;
 	snprintf(worker_id, 64, "%i", slot);
 	nargv[nargc++] = worker_id;
+
 	nargv[nargc++] = "--fd-stream";
 	fd_stream = malloc(64);
 	snprintf(fd_stream, 64, "%i", stream_pipe[1]);
 	nargv[nargc++] = fd_stream;
+
+	nargv[nargc++] = "--fd-mille";
+	fd_mille = malloc(64);
+	snprintf(fd_mille, 64, "%i", mille_pipe[1]);
+	nargv[nargc++] = fd_mille;
+
 	if ( sb->probed_methods != NULL ) {
 		methods_copy = strdup(sb->probed_methods);
 		nargv[nargc++] = "--indexing";
@@ -584,6 +681,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	free(methods_copy);
 	free(worker_id);
 	free(fd_stream);
+	free(fd_mille);
 	free(nargv);
 
 	/* Parent process gets the 'write' end of the filename pipe
@@ -591,7 +689,8 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	sb->pids[slot] = p;
 	sb->running[slot] = 1;
 	stamp_response(sb, slot);
-	add_pipe(sb, stream_pipe[0]);
+	add_pipe(sb->st_from_workers, stream_pipe[0]);
+	add_pipe(sb->mille_from_workers, mille_pipe[0]);
 	close(stream_pipe[1]);
 }
 
@@ -978,7 +1077,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    struct im_asapo_params *asapo_params,
                    int timeout, int profile, int cpu_pin,
                    int no_data_timeout, int argc, char *argv[],
-                   const char *probed_methods)
+                   const char *probed_methods, FILE *mille_fh)
 {
 	int i;
 	struct sandbox *sb;
@@ -1030,6 +1129,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->argc = argc;
 	sb->argv = argv;
 	sb->probed_methods = probed_methods;
+	sb->mille_fh = mille_fh;
 
 	if ( zmq_params->addr != NULL ) {
 		sb->zmq_params = zmq_params;
@@ -1049,8 +1149,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return 0;
 	}
 
-	sb->fds = NULL;
-	sb->fhs = NULL;
+	sb->st_from_workers = pipe_list_new();
+	sb->mille_from_workers = pipe_list_new();
 	sb->stream = stream;
 
 	gpctx.fh = fh;
@@ -1215,11 +1315,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sem_unlink(semname_q);
 	sem_close(sb->queue_sem);
 
-	for ( i=0; i<sb->n_read; i++ ) {
-		fclose(sb->fhs[i]);
-	}
-	free(sb->fhs);
-	free(sb->fds);
+	pipe_list_destroy(sb->st_from_workers);
+	pipe_list_destroy(sb->mille_from_workers);
 	free(sb->running);
 	free(sb->last_response);
 	free(sb->pids);

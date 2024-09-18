@@ -43,6 +43,7 @@ typedef struct mille Mille;
  */
 
 extern Mille *crystfel_mille_new(const char *outFileName);
+extern Mille *crystfel_mille_new_fd(int fd);
 
 extern void crystfel_mille_free(Mille *m);
 

@@ -750,6 +750,7 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 	args->worker = 0;
 	args->fd_stream = 0;
 	args->fd_mille = 0;
+	args->milledir = strdup(".");
 	args->millefile = strdup("mille-data.bin");
 	args->worker_tmpdir = NULL;
 	args->queue_sem = NULL;
@@ -811,7 +812,6 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 	args->iargs.n_threads = 1;
 	args->iargs.data_format = DATA_SOURCE_TYPE_UNKNOWN;
 	args->iargs.mille = 0;
-	args->iargs.milledir = strdup(".");
 	args->iargs.max_mille_level = 99;
 
 	argp_program_version_hook = show_version;
@@ -940,8 +940,9 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 		        "Estimate of the camera length, in metres."},
 		{"mille", 416, NULL, 0,
 		        "Generate data for detector geometry refinement using Millepede"},
-		{"mille-dir", 417, "dirname", 0, "Save Millepede data in folder"},
+		{"mille-dir", 417, "dirname", OPTION_HIDDEN, "Save Millepede data in folder"},
 		{"max-mille-level", 418, "n", 0, "Maximum geometry refinement level"},
+		{"mille-file", 419, "filename", 0, "Filename for Millepede data (default mille-data.bin)"},
 
 		{NULL, 0, 0, OPTION_DOC, "Integration options:", 5},
 		{"integration", 501, "method", OPTION_NO_USAGE, "Integration method"},
@@ -1021,7 +1022,7 @@ void cleanup_indexamajig_args(struct indexamajig_arguments *args)
 {
 	int i;
 
-	free(args->iargs.milledir);
+	free(args->milledir);
 	free(args->millefile);
 	free(args->prefix);
 	free(args->temp_location);

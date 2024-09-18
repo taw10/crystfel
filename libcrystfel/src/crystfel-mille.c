@@ -297,7 +297,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 }
 
 
-Mille *crystfel_mille_new(const char *outFileName)
+static Mille *mille_new()
 {
 	Mille *m;
 
@@ -311,6 +311,15 @@ Mille *crystfel_mille_new(const char *outFileName)
 	m->have_local = NULL;
 	m->n_local = 0;
 
+	return m;
+}
+
+
+Mille *crystfel_mille_new(const char *outFileName)
+{
+	Mille *m = mille_new();
+	if ( m == NULL ) return NULL;
+
 	m->fh = fopen(outFileName, "wb");
 	if ( m->fh == NULL ) {
 		ERROR("Failed to open Mille file '%s'\n", outFileName);
@@ -318,6 +327,21 @@ Mille *crystfel_mille_new(const char *outFileName)
 		return NULL;
 	}
 
+	return m;
+}
+
+
+Mille *crystfel_mille_new_fd(int fd)
+{
+	Mille *m = mille_new();
+	if ( m == NULL ) return NULL;
+
+	m->fh = fdopen(fd, "wb");
+	if ( m->fh == NULL ) {
+		ERROR("Failed to open Mille FD %i\n", fd);
+		cffree(m);
+		return NULL;
+	}
 
 	return m;
 }

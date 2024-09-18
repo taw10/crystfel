@@ -408,8 +408,7 @@ static int run_work(struct indexamajig_arguments *args)
 		}
 	}
 
-	mille = NULL;
-	/* FIXME: Set up Mille to send down pipe */
+	mille = crystfel_mille_new_fd(args->fd_mille);
 
 	ida = image_data_arrays_new();
 
@@ -641,6 +640,9 @@ int main(int argc, char *argv[])
 	double clen_from_dt;
 	int err = 0;
 	char *probed_methods = NULL;
+	size_t mille_fn_len;
+	char *mille_filename;
+	FILE *mille_fh;
 
 	args = parse_indexamajig_args(argc, argv);
 
@@ -876,16 +878,28 @@ int main(int argc, char *argv[])
 		                   args->if_peaks, args->if_checkcell);
 	}
 
-	r = mkdir(args->iargs.milledir, S_IRWXU);
+	r = mkdir(args->milledir, S_IRWXU);
 	if ( r ) {
 		if ( errno != EEXIST ) {
 			ERROR("Failed to create folder for Millepede data: %s\n",
 			      strerror(errno));
-			exit(1);
+			return 1;
 		}
 	}
-
 	gsl_set_error_handler_off();
+	mille_fn_len = strlen(args->milledir) +strlen(args->millefile)+2;
+	mille_filename = malloc(mille_fn_len);
+	if ( mille_filename == NULL ) {
+		ERROR("Failed to generate Millepede filename\n");
+		return 1;
+	}
+	snprintf(mille_filename, mille_fn_len, "%s/%s", args->milledir, args->millefile);
+	mille_fh = fopen(mille_filename, "wb");
+	if ( mille_fh == NULL ) {
+		ERROR("Failed to open Millepede file: %s\n", strerror(errno));
+		return 1;
+	}
+	free(mille_filename);
 
 	struct pf8_private_data *pf8_data = NULL;
 	if ( args->iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
@@ -900,8 +914,9 @@ int main(int argc, char *argv[])
 	                   &args->zmq_params, &args->asapo_params,
 	                   timeout, args->profile, args->cpu_pin,
 	                   args->no_data_timeout, argc, argv,
-			   probed_methods);
+			   probed_methods, mille_fh);
 
+	fclose(mille_fh);
 	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
 	free(tmpdir);
 	free(probed_methods);
