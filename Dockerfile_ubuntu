@@ -13,7 +13,7 @@ RUN    export DEBIAN_FRONTEND=noninteractive; \
               libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libfftw3-dev libpng-dev libmsgpack-dev \
               libeigen3-dev libccp4-dev libhdf5-dev libzmq3-dev libpython3-dev python3-full  python3-venv \
               liblz4-dev libbz2-dev libcurl4-openssl-dev  debianutils wget lz4 diffutils openssh-client \
-              krb5-user sssd-krb5 git
+              krb5-user sssd-krb5 git curl unzip
 
 RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.conf ; \
        sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf ; \
