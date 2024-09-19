@@ -676,6 +676,7 @@ static int setup_shm(struct sandbox *sb)
 
 	if ( ftruncate(shm_fd, sizeof(struct sb_shm)) == -1 ) {
 		ERROR("SHM setup failed: %s\n", strerror(errno));
+		free(sb->shm_name);
 		return 1;
 	}
 
@@ -683,31 +684,44 @@ static int setup_shm(struct sandbox *sb)
 	                  MAP_SHARED, shm_fd, 0);
 	if ( sb->shared == MAP_FAILED ) {
 		ERROR("SHM setup failed: %s\n", strerror(errno));
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutexattr_init(&attr) ) {
 		ERROR("Failed to initialise mutex attr.\n");
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) ) {
 		ERROR("Failed to set process shared attribute.\n");
+		pthread_mutexattr_destroy(&attr);
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutex_init(&sb->shared->term_lock, &attr) ) {
 		ERROR("Terminal lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutex_init(&sb->shared->queue_lock, &attr) ) {
 		ERROR("Queue lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		pthread_mutex_destroy(&sb->shared->term_lock);
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutex_init(&sb->shared->totals_lock, &attr) ) {
 		ERROR("Totals lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		pthread_mutex_destroy(&sb->shared->term_lock);
+		pthread_mutex_destroy(&sb->shared->queue_lock);
+		free(sb->shm_name);
 		return 1;
 	}
 
