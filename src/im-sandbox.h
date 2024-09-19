@@ -44,7 +44,6 @@ struct sb_shm;
 #include "process_image.h"
 #include "im-zmq.h"
 #include "im-asapo.h"
-#include "im-argparse.h"
 
 /* Length of event queue */
 #define QUEUE_SIZE (256)
