@@ -825,7 +825,9 @@ static void try_status(struct sandbox *sb, int final)
 	time_this = tNow - sb->t_last_stats;
 	if ( !final && (time_this < 5) ) return;
 
+	pthread_mutex_lock(&sb->shared->totals_lock);
 	n_proc_this = sb->shared->n_processed - sb->n_processed_last_stats;
+	pthread_mutex_unlock(&sb->shared->totals_lock);
 
 	r = pthread_mutex_trylock(&sb->shared->term_lock);
 	if ( r ) return; /* No lock -> don't bother */

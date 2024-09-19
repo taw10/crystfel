@@ -401,7 +401,9 @@ static int run_work(struct indexamajig_arguments *args)
 		asapostuff = im_asapo_connect(&args->asapo_params);
 		if ( asapostuff == NULL ) {
 			ERROR("ASAP::O setup failed.\n");
+			pthread_mutex_lock(&shared->totals_lock);
 			shared->should_shutdown = 1;
+			pthread_mutex_unlock(&shared->totals_lock);
 			return 1;
 		}
 	}
@@ -421,10 +423,13 @@ static int run_work(struct indexamajig_arguments *args)
 		char *event_str = NULL;
 		char *ser_str = NULL;
 		int ok = 1;
+		int should_shutdown;
 
 		/* Wait until an event is ready */
+		pthread_mutex_lock(&shared->queue_lock);
 		shared->pings[args->worker_id]++;
 		set_last_task(shared->last_task[args->worker_id], "wait_event");
+		pthread_mutex_unlock(&shared->queue_lock);
 		profile_start("wait-queue-semaphore");
 		if ( sem_wait(queue_sem) != 0 ) {
 			ERROR("Failed to wait on queue semaphore: %s\n",
@@ -434,9 +439,12 @@ static int run_work(struct indexamajig_arguments *args)
 
 		/* Get the event from the queue */
 		set_last_task(shared->last_task[args->worker_id], "read_queue");
+		pthread_mutex_lock(&shared->totals_lock);
+		should_shutdown = shared->should_shutdown;
+		pthread_mutex_unlock(&shared->totals_lock);
 		pthread_mutex_lock(&shared->queue_lock);
 		if ( ((shared->n_events==0) && (shared->no_more))
-		   || (shared->should_shutdown) )
+		   || should_shutdown )
 		{
 			/* Queue is empty and no more are coming,
 			 * or another process has initiated a shutdown.
@@ -547,14 +555,18 @@ static int run_work(struct indexamajig_arguments *args)
 				free(pargs.event);
 				pargs.filename = filename;
 				pargs.event = event;
+				pthread_mutex_lock(&shared->queue_lock);
 				shared->end_of_stream[args->worker_id] = 0;
+				pthread_mutex_unlock(&shared->queue_lock);
 
 				/* We will also use ASAP::O's serial number
 				 * instead of our own. */
 				ser = asapo_message_id;
 			} else {
 				if ( finished ) {
+					pthread_mutex_lock(&shared->queue_lock);
 					shared->end_of_stream[args->worker_id] = 1;
+					pthread_mutex_unlock(&shared->queue_lock);
 				}
 			}
 
@@ -563,7 +575,9 @@ static int run_work(struct indexamajig_arguments *args)
 		}
 
 		if ( ok ) {
+			pthread_mutex_lock(&shared->queue_lock);
 			shared->time_last_start[args->worker_id] = get_monotonic_seconds();
+			pthread_mutex_unlock(&shared->queue_lock);
 			profile_start("process-image");
 			process_image(&args->iargs, &pargs, st, args->worker_id, args->worker_tmpdir, ser,
 			              shared, shared->last_task[args->worker_id],
