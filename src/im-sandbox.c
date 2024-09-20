@@ -378,7 +378,8 @@ static size_t pump_chunk(void *buf, size_t len, struct sandbox *sb)
 	if ( endpos == NULL ) return 0;
 
 	chunk_len = (endpos-txt)+strlen(STREAM_CHUNK_END_MARKER"\n");
-	write(stream_get_fd(sb->stream), buf, chunk_len);
+	fwrite(buf, 1, chunk_len, stream_get_fh(sb->stream));
+	fflush(stream_get_fh(sb->stream));
 
 	return chunk_len;
 }
