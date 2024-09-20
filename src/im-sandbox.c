@@ -470,17 +470,30 @@ static void remove_pipe(PipeList *pd, int d)
 	int i;
 
 	close(pd->fds[d]);
+	free(pd->buffers[d]);
 
 	for ( i=d; i<pd->n_read; i++ ) {
 		if ( i < pd->n_read-1 ) {
 			pd->fds[i] = pd->fds[i+1];
 			pd->buffers[i] = pd->buffers[i+1];
+			pd->buffer_len[i] = pd->buffer_len[i+1];
+			pd->buffer_pos[i] = pd->buffer_pos[i+1];
 		} /* else don't bother */
 	}
 
 	pd->n_read--;
 
 	/* We don't bother shrinking the arrays */
+}
+
+
+static int find_marked(PipeList *pd)
+{
+	int i;
+	for ( i=0; i<pd->n_read; i++ ) {
+		if ( pd->buffer_len[i] == 0 ) return i;
+	}
+	return -1;
 }
 
 
@@ -542,18 +555,26 @@ static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct s
 		         pd->buffer_len[i]-pd->buffer_pos[i]);
 
 		if ( r == 0 ) {
-			remove_pipe(pd, i);
+			/* Mark for deletion */
+			pd->buffer_len[i] = 0;
 		} else {
 			size_t h;
 			pd->buffer_pos[i] += r;
 			h = pump(pd->buffers[i], pd->buffer_pos[i], sb);
+			assert(h <= pd->buffer_pos[i]);
+			assert(h >= 0);
 			if ( h > 0 ) {
 				memmove(pd->buffers[i], pd->buffers[i]+h,
 				        pd->buffer_pos[i]-h);
 				pd->buffer_pos[i] -= h;
 			}
 		}
+	}
 
+	int deleteme = find_marked(pd);
+	while ( deleteme != -1 ) {
+		remove_pipe(pd, deleteme);
+		deleteme = find_marked(pd);
 	}
 }
 
