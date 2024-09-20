@@ -886,7 +886,6 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
-	gsl_set_error_handler_off();
 	mille_fn_len = strlen(args->milledir) +strlen(args->millefile)+2;
 	mille_filename = malloc(mille_fn_len);
 	if ( mille_filename == NULL ) {
