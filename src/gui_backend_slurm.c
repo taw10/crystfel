@@ -49,6 +49,7 @@ struct slurm_common_opts
 	char *account;
 	char *constraint;
 	int time_limit;
+	int exclusive;
 };
 
 
@@ -417,12 +418,21 @@ static gboolean timelimit_focus_sig(GtkEntry *entry, GdkEvent *event,
 	return FALSE;
 }
 
+
+static void exclusive_toggle_sig(GtkToggleButton *toggle, gpointer data)
+{
+	struct slurm_common_opts *opts = data;
+	opts->exclusive = gtk_toggle_button_get_active(toggle);
+}
+
+
 static void add_common_opts(GtkWidget *vbox,
                             struct slurm_common_opts *opts)
 {
 	GtkWidget *hbox;
 	GtkWidget *entry;
 	GtkWidget *label;
+	GtkWidget *toggle;
 	char tmp[64];
 
 	/* Partition */
@@ -541,6 +551,16 @@ static void add_common_opts(GtkWidget *vbox,
 	                 G_CALLBACK(qos_activate_sig), opts);
 	g_signal_connect(G_OBJECT(entry), "focus-out-event",
 	                 G_CALLBACK(qos_focus_sig), opts);
+
+	/* Exclusive */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 0);
+	toggle = gtk_check_button_new_with_label("Request exclusive use of compute node(s)");
+	set_active(toggle, opts->exclusive);
+	gtk_widget_set_tooltip_text(toggle, "--exclusive");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(toggle), FALSE, FALSE, 0);
+	g_signal_connect(G_OBJECT(toggle), "toggled",
+	                 G_CALLBACK(exclusive_toggle_sig), opts);
 }
 
 
@@ -580,6 +600,9 @@ static void write_common_opts(FILE *fh,
 
 	fprintf(fh, "%s.slurm.time_limit %i\n",
 	        prefix, opts->time_limit);
+
+	fprintf(fh, "%s.slurm.exclusive %i\n",
+	        prefix, opts->exclusive);
 }
 
 
@@ -608,8 +631,10 @@ static char *add_bits(char *old, const char *new1, const char *new2)
 	strcpy(nn, old);
 	strcat(nn, "\n#SBATCH ");
 	strcat(nn, new1);
-	strcat(nn, " ");
-	strcat(nn, new2);
+	if ( strlen(new2) > 0 ) {
+		strcat(nn, " ");
+		strcat(nn, new2);
+	}
 	free(old);
 	return nn;
 }
@@ -649,6 +674,9 @@ static char *sbatch_bits(struct slurm_common_opts *opts,
 	}
 	if ( !empty(opts->qos) ) {
 		str = add_bits(str, "--qos", opts->qos);
+	}
+	if ( opts->exclusive ) {
+		str = add_bits(str, "--exclusive", "");
 	}
 	str = add_bits(str, "--nodes", "1");
 	str = add_bits(str, "--mail-type", "FAIL\n\n");
@@ -950,6 +978,7 @@ static void set_default_common_opts(struct slurm_common_opts *opts)
 	opts->constraint = NULL;
 	opts->time_limit = 60;
 	opts->qos = NULL;
+	opts->exclusive = 1;
 	opts->reservation = NULL;
 }
 
@@ -1023,6 +1052,10 @@ static void read_indexing_opt(void *opts_priv,
 
 	if ( strcmp(key, "indexing.slurm.time_limit") == 0 ) {
 		opts->common.time_limit = atoi(val);
+	}
+
+	if ( strcmp(key, "indexing.slurm.exclusive") == 0 ) {
+		opts->common.exclusive = atoi(val);
 	}
 }
 
@@ -1218,6 +1251,10 @@ static void read_merging_opt(void *opts_priv,
 	if ( strcmp(key, "merging.slurm.time_limit") == 0 ) {
 		opts->common.time_limit = atoi(val);
 	}
+
+	if ( strcmp(key, "merging.slurm.exclusive") == 0 ) {
+		opts->common.exclusive = atoi(val);
+	}
 }
 
 
@@ -1279,6 +1316,10 @@ static void read_ambi_opt(void *opts_priv,
 
 	if ( strcmp(key, "ambi.slurm.time_limit") == 0 ) {
 		opts->common.time_limit = atoi(val);
+	}
+
+	if ( strcmp(key, "ambi.slurm.exclusive") == 0 ) {
+		opts->common.exclusive = atoi(val);
 	}
 }
 
