@@ -1,3 +1,36 @@
+Development version
+-------------------
+
+- Introduction of Julia bindings for libcrystfel
+- General cleanup of libcrystfel API
+- Improvements to CI/CD setup (Parthasarathy Tirumalai)
+- GUI: Improve "jump to frame" feature
+- GUI: Improve Slurm progress bar for indexing
+- GUI: Add exclusive option for Slurm jobs
+- Catch NaNs in GGPM model [Gitlab #109]
+- GUI: Use SVG icons
+- indexamajig: Fix memory leak due to missing H5Sclose calls
+- indexamajig: Fix buf with --peaks=hdf5 --no-revalidate
+- indexamajig: Fix distorted cell distributions with xgandalf [GitLab #95]
+- indexamajig: Fix rare left-handed cells
+- indexamajig: Add ASAP::O acknowledgements
+- indexamajig: Fix buffer overrun with long temporary folder names (Philipp Middendorf)
+- indexamajig: Fix "-i -" (stdin) [GitHub #12]
+- indexamajig: Avoid writing empty Mille records [GitHub #9]
+- indexamajig: Defer writing Mille data until crystal is accepted [GitLab #99]
+- indexamajig: Avoid writing Mille records with incomplete local gradients
+- align_detector: Fix crash when 'pede' is not easily found [GitHub #8]
+- align_detector: Fix several problems with geometry file output [GitHub #11 & others]
+- align_detector: Add --out-of-plane-tilts
+- GUI: Copy geometry file for detector refinement [Gitlab #101]
+- GUI: Fix unclosed bracket in script file [Gitlab #106]
+- Allow basic geometry refinement without hierarchy [Gitlab #96]
+- Improve documentation about geometry hierarchy and refinement [GitHub #10]
+- Fix out-of-date documentation about geometry refinement [Gitlab #97]
+- Fix minor bug in unmerged sig(I) calculation at low photon counts
+- process_hkl: Fix ancient bug with --even-only multi-crystal indexing
+
+
 CrystFEL version 0.11.0, 17 April 2024
 --------------------------------------
 
