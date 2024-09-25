@@ -58,6 +58,13 @@ plane. However, be aware that this introduces additional cross-dependencies
 and is less stable.  Add option **--out-of-plane-tilts** to additionally
 refine the panel **tilts** out of the x-y plane, which is even less stable.
 
+The overall detector z-position (camera length) is usually quite strongly
+correlated with the crystal cell parameters, making it difficult to refine.
+With high-resolution data, it can be possible, however.  To refine the overall
+camera length, add **--camera-length**.  Without this option, the overall
+camera length will not be altered, even with **--out-of-plane**.  Instead, only
+the z-positions of the panels relative to one another will be refined.
+
 **align_detector** relies on the program **pede** from the Millepede-II
 package.  Usually, this will be installed as part of the CrystFEL installation
 procedure.  If not, it can easily be installed from the Millepede-II repository
@@ -81,11 +88,14 @@ OPTIONS
 : detector.
 
 **--out-of-plane**
-: Additionally refine out-of-plane panel translations.
+: Additionally refine out-of-plane panel translations, relative to one another
+: (see **--camera-length**).
 
 **--out-of-plane-tilts**
 : Additionally refine out-of-plane panel tilts.
 
+**--camera-length**
+: Additionally refine the overall camera length.
 
 AUTHOR
 ======

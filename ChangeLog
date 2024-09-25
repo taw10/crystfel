@@ -21,7 +21,7 @@ Development version
 - indexamajig: Avoid writing Mille records with incomplete local gradients
 - align_detector: Fix crash when 'pede' is not easily found [GitHub #8]
 - align_detector: Fix several problems with geometry file output [GitHub #11 & others]
-- align_detector: Add --out-of-plane-tilts
+- align_detector: Add --out-of-plane-tilts and --camera-length
 - GUI: Copy geometry file for detector refinement [Gitlab #101]
 - GUI: Fix unclosed bracket in script file [Gitlab #106]
 - Allow basic geometry refinement without hierarchy [Gitlab #96]
