@@ -64,6 +64,7 @@ for FILE in split-events-${RUN}.lst*; do
     echo "#SBATCH --partition=mypartition" >> $SLURMFILE  # Set your partition here
     echo "#SBATCH --time=01:00:00" >> $SLURMFILE
     echo "#SBATCH --nodes=1" >> $SLURMFILE
+    echo "#SBATCH --exclusive" >> $SLURMFILE
     # It may be polite to set the priority very low to allow other jobs through:
     #echo "#SBATCH --nice=100" >> $SLURMFILE
     echo >> $SLURMFILE
