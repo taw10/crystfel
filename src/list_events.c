@@ -200,6 +200,11 @@ int main(int argc, char *argv[])
 	} while ( rval != NULL );
 
 	data_template_free(dtempl);
+	fclose(ofh);
+	fclose(ifh);
+	free(geom);
+	free(input);
+	free(output);
 
 	return 0;
 }
