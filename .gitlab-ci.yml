@@ -43,7 +43,6 @@ build-and-test:
   image: $CI_REGISTRY_IMAGE/$PLATFORM
   variables:
     GIT_STRATEGY: clone
-    SECURE_FILES_DOWNLOAD_PATH: './downloads'
 
   script:
     - meson setup build --prefix $CFPREFIX
