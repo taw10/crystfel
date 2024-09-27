@@ -3,11 +3,11 @@
  *
  * Data template structure
  *
- * Copyright © 2019-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2019-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2019-2021 Thomas White <taw@physics.org>
+ *   2019-2024 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -830,12 +830,35 @@ static int parse_peak_layout(const char *val,
 	return 1;
 }
 
+#define MAX_FOR_LATER (1024)
+
+struct forlater
+{
+	char *keys[MAX_FOR_LATER];
+	char *vals[MAX_FOR_LATER];
+	int n_forlater;
+};
+
+
+static void store_for_later(struct forlater *fl, const char *key, const char *val)
+{
+	if ( fl->n_forlater >= MAX_FOR_LATER ) {
+		ERROR("Too many lines stored.\n");
+		return;
+	}
+
+	fl->keys[fl->n_forlater] = strdup(key);
+	fl->vals[fl->n_forlater] = strdup(val);
+	fl->n_forlater++;
+}
+
 
 static int parse_toplevel(DataTemplate *dt,
                           const char *key,
                           const char *val,
                           struct panel_template *defaults,
-                          int *defaults_updated)
+                          int *defaults_updated,
+                          struct forlater *for_later)
 {
 	if ( strcmp(key, "detector_shift_x") == 0 ) {
 		dt->shift_x_from = cfstrdup(val);
@@ -883,8 +906,12 @@ static int parse_toplevel(DataTemplate *dt,
 
 	} else if ( strncmp(key, "group_", 6) == 0 ) {
 
-		if ( parse_group(key+6, dt, val) ) {
-			return 1;
+		if ( for_later != NULL ) {
+			store_for_later(for_later, key, val);
+		} else {
+			if ( parse_group(key+6, dt, val) ) {
+				return 1;
+			}
 		}
 
 	} else {
@@ -1042,6 +1069,9 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	size_t len;
 	struct panel_template defaults;
 	int have_unused_defaults = 0;
+	struct forlater lines_for_later;
+
+	lines_for_later.n_forlater = 0;
 
 	dt = cfcalloc(1, sizeof(DataTemplate));
 	if ( dt == NULL ) return NULL;
@@ -1179,10 +1209,10 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 			/* Top-level option */
 		        if ( parse_toplevel(dt, line, val,
 		                            &defaults,
-		                            &have_unused_defaults) )
+		                            &have_unused_defaults,
+			                    &lines_for_later) )
 			{
-				ERROR("Invalid top-level line '%s'\n",
-				      line);
+				ERROR("Invalid top-level line '%s'\n", line);
 				reject = 1;
 			}
 			cffree(line);
@@ -1216,6 +1246,21 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		cffree(line);
 
 	} while ( !done );
+
+	for ( i=0; i<lines_for_later.n_forlater; i++ ) {
+		char *key = lines_for_later.keys[i];
+		char *val = lines_for_later.vals[i];
+		if ( parse_toplevel(dt, key, val,
+		                    &defaults,
+	                            &have_unused_defaults,
+		                    NULL) )
+		{
+			ERROR("Invalid top-level line '%s' = '%s'\n", key, val);
+			reject = 1;
+		}
+		cffree(key);
+		cffree(val);
+	}
 
 	if ( dt->n_panels == 0 ) {
 		ERROR("No panel descriptions in geometry file.\n");
