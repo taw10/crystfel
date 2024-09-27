@@ -46,25 +46,6 @@ build-and-test:
     SECURE_FILES_DOWNLOAD_PATH: './downloads'
 
   script:
-    - curl --silent "https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer" | bash
-    # Seedee is available as a secure download only so it cannot be 
-    # downloaded from Docker build.
-
-    # Seedee
-    - tar -xzf downloads/seedee-main.tar.gz
-    - pushd seedee-main
-    - mkdir build
-    - cd build
-    - cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$CFPREFIX -DCMAKE_BUILD_TYPE=RelWithDebInfo
-    - cd ..
-    - ninja -C build
-    - ninja -C build install
-    - popd
-
-    # CrystFEL
-    # (automatically installs libccp4 and FDIP via Wrap)
-    # Cannot clone with --depth 1, because it needs to find the last tag
-    
     - meson setup build --prefix $CFPREFIX
     - ninja -v -C build
     - ninja -v -C build test
