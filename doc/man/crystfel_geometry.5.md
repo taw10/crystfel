@@ -535,9 +535,15 @@ above.
 The highest-level group should always be called **all**.
 
 All members of a group need to be defined before defining the group.  This
-means that the group definitions must come **after** the panel definitions, and
-the groups should be defined from the bottom to top level of the hierarchy -
-the **all** group coming last.
+means that the group definitions shuld come **after** the panel definitions,
+and the groups should be defined from the bottom to top level of the hierarchy
+with the **all** group coming last.  As a convenience, CrystFEL 0.11.1 and
+later defer processing **group** lines until the rest of the geometry file
+has been read.  That means that you can put your **group** lines near the top
+of the file, but the groups must still be defined from bottom to top level.
+To maintain compatability with CrystFEL 0.11.0, tools that write geometry
+files (e.g. **align_detector**) from later CrystFEL versions will put the group
+directives at the end of the file.
 
 If you do not define any groups, CrystFEL will automatically create the **all**
 group for you, containing all panels in a flat hierarchy.  This allows basic
