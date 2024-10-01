@@ -491,7 +491,10 @@ double log_residual(RefList *list, Crystal *cr,
 
 
 /* Has to match run_merge_job to be useful */
-void write_unmerged(const char *fn, struct crystal_refls *crystals, int n_crystals)
+void write_unmerged(const char *fn,
+                    struct crystal_refls *crystals,
+                    struct image **images,
+                    int n_crystals)
 {
 	FILE *fh;
 	int i;
@@ -510,6 +513,7 @@ void write_unmerged(const char *fn, struct crystal_refls *crystals, int n_crysta
 		UnitCell *cell;
 
 		fprintf(fh, "Crystal %i\n", i);
+		fprintf(fh, "Filename: %s %s\n", images[i]->filename, images[i]->ev);
 		if ( crystal_get_user_flag(crystals[i].cr) ) {
 			fprintf(fh, "Flagged: yes\n");
 		} else {

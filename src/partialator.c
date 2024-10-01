@@ -1809,7 +1809,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ( unmerged_filename != NULL ) {
-		write_unmerged(unmerged_filename, crystals, n_crystals);
+		write_unmerged(unmerged_filename, crystals, images, n_crystals);
 	}
 
 	/* Write final figures of merit (no rejection any more) */

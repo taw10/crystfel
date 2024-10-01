@@ -35,6 +35,7 @@
 #endif
 
 
+#include "image.h"
 #include "crystal.h"
 #include "reflist.h"
 #include "geometry.h"
@@ -59,6 +60,9 @@ extern double residual(RefList *list, Crystal *cr, const RefList *full, int free
 extern double log_residual(RefList *list, Crystal *cr, const RefList *full, int free,
                            int *pn_used, const char *filename);
 
-extern void write_unmerged(const char *fn, struct crystal_refls *crystals, int n_crystals);
+extern void write_unmerged(const char *fn,
+                           struct crystal_refls *crystals,
+                           struct image **images,
+                           int n_crystals);
 
 #endif	/* MERGE */
