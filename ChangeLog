@@ -10,7 +10,7 @@ Development version
 - Catch NaNs in GGPM model [Gitlab #109]
 - GUI: Use SVG icons
 - indexamajig: Fix memory leak due to missing H5Sclose calls
-- indexamajig: Fix buf with --peaks=hdf5 --no-revalidate
+- indexamajig: Fix bug with --peaks=hdf5 --no-revalidate
 - indexamajig: Fix distorted cell distributions with xgandalf [GitLab #95]
 - indexamajig: Fix rare left-handed cells
 - indexamajig: Add ASAP::O acknowledgements
@@ -25,10 +25,12 @@ Development version
 - GUI: Copy geometry file for detector refinement [Gitlab #101]
 - GUI: Fix unclosed bracket in script file [Gitlab #106]
 - Allow basic geometry refinement without hierarchy [Gitlab #96]
+- Allow detector panel groups to appear at top of geometry file
 - Improve documentation about geometry hierarchy and refinement [GitHub #10]
 - Fix out-of-date documentation about geometry refinement [Gitlab #97]
 - Fix minor bug in unmerged sig(I) calculation at low photon counts
 - process_hkl: Fix ancient bug with --even-only multi-crystal indexing
+- partialator: Add filename/frame ID to --unmerged-output
 
 
 CrystFEL version 0.11.0, 17 April 2024
