@@ -449,7 +449,7 @@ static gint goto_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(stuff->framenumchk),
 	                   FALSE, FALSE, 4.0);
 	stuff->framenum = gtk_entry_new();
-	snprintf(tmp, 64, "%i", proj->cur_frame);
+	snprintf(tmp, 64, "%i", proj->cur_frame+1);
 	gtk_entry_set_text(GTK_ENTRY(stuff->framenum), tmp);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(stuff->framenum),
 	                   FALSE, FALSE, 4.0);
