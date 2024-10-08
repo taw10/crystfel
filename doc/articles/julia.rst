@@ -71,6 +71,16 @@ or::
     UnitCell(RhombohedralLattice, RhombohedralCell, NoUniqueAxis,
          23.0 Å, 23.0 Å, 23.0 Å, 75.0°, 75.0°, 75.0°)
 
+A ``UnitCell`` also keeps a record of the orientation of the lattice.  You can
+get the real and reciprocal space matrices of lattice vectors with
+``cell.directcartesian`` and ``cell.reciprocalcartesian``, respectively::
+
+    julia> uc.directcartesian
+    3×3 Matrix{Float64}:
+     1.37e-8  8.38883e-25  8.38883e-25
+     0.0      1.37e-8      8.38883e-25
+     0.0      0.0          1.37e-8
+
 
 Reflection lists
 ================
@@ -212,12 +222,47 @@ same ``Image``).  If necessary, you can make a copy using ``deepcopy``.
 Crystals
 ========
 
+A ``Crystal`` is made up of a ``UnitCell`` (which includes the orientation of
+the crystal, as mentioned above) and a few other parameters::
+
+    julia> cr = Crystal(uc)
+    CrystFEL.Crystal(0x000000001ad0ada0):
+
+    UnitCell(CubicLattice, FaceCenteredCell, NoUniqueAxis,
+             137.000 Å, 137.000 Å, 137.000 Å, 90.000°, 90.000°, 90.000°)
+
+     Linear scale factor: 1.0
+      Debye-Walle factor: 0.0
+               Mosaicity: 0.0
+          Profile radius: 0.002 nm⁻¹
+        Resolution limit: Inf
+                    Flag: 0
 
 
 Indexing
 ========
 
+Create an indexing engine like this::
+
+    indexer = Indexer("asdf", dtempl, cell)
+
+The first argument is handled exactly as by ``indexamajig --indexing=``.  The
+second argument is the detector geometry (``DataTemplate``), and you also need
+to provide the target unit cell.
+
+Run the indexing engine on an image like this::
+
+    index(image, indexer)
+
 
 Prediction
 ==========
+
+Given a ``Crystal`` and and ``Image``, the function
+``predictreflections(cr, image)`` will return a ``RefList{UnmergedReflection}``
+containing the predicted reflections.
+
+You can subsequently calculate partialities with::
+
+    calculatepartialities!(reflist, cr, image, model=XSphereModel)
 
