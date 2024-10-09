@@ -645,6 +645,7 @@ int main(int argc, char *argv[])
 	FILE *mille_fh;
 
 	args = parse_indexamajig_args(argc, argv);
+	if ( args == NULL ) return 1;
 
 	/* Load data template (new API) */
 	args->iargs.dtempl = data_template_new_from_file(args->geom_filename);
