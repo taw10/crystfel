@@ -106,7 +106,6 @@ static struct image *file_wait_open_read(const char *filename,
                                          const char *event,
                                          DataTemplate *dtempl,
                                          struct sb_shm *sb_shared,
-                                         char *last_task,
                                          signed int wait_for_file,
                                          int cookie,
                                          int no_image_data,
@@ -119,13 +118,13 @@ static struct image *file_wait_open_read(const char *filename,
 	int r;
 	struct image *image;
 
-	set_last_task(last_task, "wait for file");
+	set_last_task("wait for file");
 
 	do {
 
 		struct stat statbuf;
 
-		sb_shared->pings[cookie]++;
+		notify_alive();
 		r = stat(filename, &statbuf);
 		if ( r ) {
 
@@ -152,8 +151,8 @@ static struct image *file_wait_open_read(const char *filename,
 
 	do {
 
-		set_last_task(last_task, "read file");
-		sb_shared->pings[cookie]++;
+		set_last_task("read file");
+		notify_alive();
 
 		profile_start("image-read");
 		image = image_read(dtempl, filename, event,
@@ -181,7 +180,7 @@ static struct image *file_wait_open_read(const char *filename,
 void process_image(const struct index_args *iargs, struct pattern_args *pargs,
                    Stream *st, int cookie, const char *tmpdir,
                    int serial, struct sb_shm *sb_shared,
-                   char *last_task, struct im_asapo *asapostuff,
+                   struct im_asapo *asapostuff,
                    Mille *mille, ImageDataArrays *ida)
 {
 	struct image *image;
@@ -194,7 +193,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	if ( pargs->zmq_data != NULL ) {
 
-		set_last_task(last_task, "unpacking ZMQ data");
+		set_last_task("unpacking ZMQ data");
 		profile_start("read-zmq-data");
 		image = image_read_data_block(iargs->dtempl,
 		                              pargs->zmq_data,
@@ -217,7 +216,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	} else if ( pargs->asapo_data != NULL ) {
 
-		set_last_task(last_task, "unpacking ASAP::O data");
+		set_last_task("unpacking ASAP::O data");
 		profile_start("read-asapo-data");
 		image = image_read_data_block(iargs->dtempl,
 		                              pargs->asapo_data,
@@ -241,7 +240,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		profile_start("file-wait-open-read");
 		image = file_wait_open_read(pargs->filename, pargs->event,
 		                            iargs->dtempl,
-		                            sb_shared, last_task,
+		                            sb_shared,
 		                            iargs->wait_for_file,
 		                            cookie,
 		                            iargs->no_image_data,
@@ -261,9 +260,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image->serial = serial;
 
 	/* Take snapshot of image before applying horrible noise filters */
-	set_last_task(last_task, "image filter");
+	set_last_task("image filter");
 	profile_start("image-filter");
-	sb_shared->pings[cookie]++;
+	notify_alive();
 
 	if ( (iargs->peak_search.median_filter > 0) || iargs->peak_search.noisefilter ) {
 		profile_start("data-backup");
@@ -286,11 +285,11 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 	profile_end("image-filter");
 
-	set_last_task(last_task, "resolution range");
-	sb_shared->pings[cookie]++;
+	set_last_task("resolution range");
+	notify_alive();
 	mark_resolution_range_as_bad(image, iargs->highres, +INFINITY);
 
-	sb_shared->pings[cookie]++;
+	notify_alive();
 	profile_start("peak-search");
 	switch ( iargs->peak_search.method ) {
 
@@ -298,7 +297,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 		case PEAK_HDF5:
 		case PEAK_CXI:
-		set_last_task(last_task, "peaksearch:hdf5orcxi");
+		set_last_task("peaksearch:hdf5orcxi");
 		peaks = image_read_peaks(iargs->dtempl,
 		                         pargs->filename,
 		                         pargs->event,
@@ -319,7 +318,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_ZAEF:
-		set_last_task(last_task, "peaksearch:zaef");
+		set_last_task("peaksearch:zaef");
 		image->features = search_peaks(image, iargs->peak_search.threshold,
 		                               iargs->peak_search.min_sq_gradient,
 		                               iargs->peak_search.min_snr,
@@ -330,7 +329,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_PEAKFINDER8:
-		set_last_task(last_task, "peaksearch:pf8");
+		set_last_task("peaksearch:pf8");
 		image->features = peakfinder8(image, 2048,
 		                              iargs->peak_search.threshold,
 		                              iargs->peak_search.min_snr,
@@ -345,7 +344,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 		break;
 
 		case PEAK_PEAKFINDER9:
-		set_last_task(last_task, "peaksearch:pf9");
+		set_last_task("peaksearch:pf9");
 		image->features = search_peaks_peakfinder9(image,
 		                                           iargs->peak_search.min_snr_biggest_pix,
 		                                           iargs->peak_search.min_snr_peak_pix,
@@ -428,10 +427,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	image->hit = 1;
 
 	/* Index the pattern */
-	set_last_task(last_task, "indexing");
+	set_last_task("indexing");
 	profile_start("index");
-	index_pattern_4(image, iargs->ipriv, &sb_shared->pings[cookie],
-	                last_task, mille, iargs->max_mille_level);
+	index_pattern_5(image, iargs->ipriv, mille, iargs->max_mille_level);
 	profile_end("index");
 
 	r = chdir(rn);
@@ -442,7 +440,7 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	free(rn);
 
 	/* Set beam/crystal parameters */
-	set_last_task(last_task, "prediction params");
+	set_last_task("prediction params");
 	if ( iargs->fix_profile_r >= 0.0 ) {
 		for ( i=0; i<image->n_crystals; i++ ) {
 			crystal_set_profile_radius(image->crystals[i].cr,
@@ -466,9 +464,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 
 	/* Integrate! */
 	if ( !iargs->cell_params_only ) {
-		set_last_task(last_task, "integration");
+		set_last_task("integration");
 		profile_start("integration");
-		sb_shared->pings[cookie]++;
+		notify_alive();
 		integrate_all_5(image, iargs->int_meth, PMODEL_XSPHERE,
 		                iargs->push_res,
 		                iargs->ir_inn, iargs->ir_mid, iargs->ir_out,
@@ -479,9 +477,9 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 streamwrite:
-	set_last_task(last_task, "stream write");
+	set_last_task("stream write");
 	profile_start("write-stream");
-	sb_shared->pings[cookie]++;
+	notify_alive();
 	ret = stream_write_chunk(st, image, iargs->stream_flags);
 	if ( ret != 0 ) {
 		ERROR("Error writing stream file.\n");
@@ -501,8 +499,8 @@ streamwrite:
 
 out:
 	/* Count crystals which are still good */
-	set_last_task(last_task, "process_image finalisation");
-	sb_shared->pings[cookie]++;
+	set_last_task("process_image finalisation");
+	notify_alive();
 	pthread_mutex_lock(&sb_shared->totals_lock);
 	any_crystals = 0;
 	for ( i=0; i<image->n_crystals; i++ ) {
@@ -521,5 +519,5 @@ out:
 	image_free(image);
 	profile_end("free-image");
 
-	set_last_task(last_task, "sandbox");
+	set_last_task("sandbox");
 }

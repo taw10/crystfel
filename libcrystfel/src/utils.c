@@ -466,7 +466,43 @@ char *safe_strdup(const char *in)
 }
 
 
-/* ------------------------------ Useful functions ---------------------------- */
+/* -------------------------------- Debugging ------------------------------- */
+
+static void set_last_task_dummy(const char *task)
+{
+	/* Do nothing */
+}
+
+static void notify_alive_dummy()
+{
+	/* Do nothing */
+}
+
+struct _debugconf {
+	void (*set_last_task)(const char *task);
+	void (*notify_alive)(void);
+} debug_conf = { set_last_task_dummy, notify_alive_dummy };
+
+int set_debug_funcs(void (*slt)(const char *),
+                    void (*ping)(void))
+{
+	debug_conf.set_last_task = slt;
+	debug_conf.notify_alive = ping;
+	return 0;
+}
+
+void set_last_task(const char *task)
+{
+	debug_conf.set_last_task(task);
+}
+
+void notify_alive()
+{
+	debug_conf.notify_alive();
+}
+
+
+/* ----------------------------- Useful functions --------------------------- */
 
 int convert_int(const char *str, int *pval)
 {

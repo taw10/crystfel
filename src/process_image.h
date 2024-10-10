@@ -118,7 +118,7 @@ struct pattern_args
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
                           int cookie, const char *tmpdir, int serial,
-                          struct sb_shm *sb_shared, char *last_task,
+                          struct sb_shm *sb_shared,
                           struct im_asapo *asapostuff,
                           Mille *mille, ImageDataArrays *ida);
 

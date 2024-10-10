@@ -273,6 +273,23 @@ static void pin_to_cpu(int slot)
 }
 
 
+struct sb_shm *shared;
+int _worker;
+
+static void set_last_task_sandbox(const char *task)
+{
+	assert(strlen(task) < MAX_TASK_LEN-1);
+	pthread_mutex_lock(&shared->queue_lock);
+	strcpy(shared->last_task[_worker], task);
+	pthread_mutex_unlock(&shared->queue_lock);
+}
+
+static void notify_alive_sandbox()
+{
+	shared->pings[_worker]++;
+}
+
+
 static int run_work(struct indexamajig_arguments *args)
 {
 	int allDone = 0;
@@ -285,11 +302,11 @@ static int run_work(struct indexamajig_arguments *args)
 	struct stat s;
 	Stream *st;
 	int shm_fd;
-	struct sb_shm *shared;
 	sem_t *queue_sem;
 	IndexingFlags flags = 0;
 
 	if ( args->cpu_pin ) pin_to_cpu(args->worker_id);
+	_worker = args->worker_id;
 
 	ll = 64 + strlen(args->worker_tmpdir);
 	tmp = malloc(ll);
@@ -408,6 +425,8 @@ static int run_work(struct indexamajig_arguments *args)
 		}
 	}
 
+	set_debug_funcs(set_last_task_sandbox, notify_alive_sandbox);
+
 	mille = crystfel_mille_new_fd(args->fd_mille);
 
 	ida = image_data_arrays_new();
@@ -426,9 +445,9 @@ static int run_work(struct indexamajig_arguments *args)
 
 		/* Wait until an event is ready */
 		pthread_mutex_lock(&shared->queue_lock);
-		shared->pings[args->worker_id]++;
-		set_last_task(shared->last_task[args->worker_id], "wait_event");
+		notify_alive();
 		pthread_mutex_unlock(&shared->queue_lock);
+		set_last_task("wait_event");
 		profile_start("wait-queue-semaphore");
 		if ( sem_wait(queue_sem) != 0 ) {
 			ERROR("Failed to wait on queue semaphore: %s\n",
@@ -437,7 +456,7 @@ static int run_work(struct indexamajig_arguments *args)
 		profile_end("wait-queue-semaphore");
 
 		/* Get the event from the queue */
-		set_last_task(shared->last_task[args->worker_id], "read_queue");
+		set_last_task("read_queue");
 		pthread_mutex_lock(&shared->totals_lock);
 		should_shutdown = shared->should_shutdown;
 		pthread_mutex_unlock(&shared->totals_lock);
@@ -515,7 +534,7 @@ static int run_work(struct indexamajig_arguments *args)
 		if ( args->zmq_params.addr != NULL ) {
 
 			profile_start("zmq-fetch");
-			set_last_task(shared->last_task[args->worker_id], "ZMQ fetch");
+			set_last_task("ZMQ fetch");
 			pargs.zmq_data = im_zmq_fetch(zmqstuff,
 			                              &pargs.zmq_data_size);
 			profile_end("zmq-fetch");
@@ -536,7 +555,7 @@ static int run_work(struct indexamajig_arguments *args)
 			int asapo_message_id;
 
 			profile_start("asapo-fetch");
-			set_last_task(shared->last_task[args->worker_id], "ASAPO fetch");
+			set_last_task("ASAPO fetch");
 			pargs.asapo_data = im_asapo_fetch(asapostuff,
 			                                  &pargs.asapo_data_size,
 			                                  &pargs.asapo_meta,
@@ -578,9 +597,9 @@ static int run_work(struct indexamajig_arguments *args)
 			shared->time_last_start[args->worker_id] = get_monotonic_seconds();
 			pthread_mutex_unlock(&shared->queue_lock);
 			profile_start("process-image");
-			process_image(&args->iargs, &pargs, st, args->worker_id, args->worker_tmpdir, ser,
-			              shared, shared->last_task[args->worker_id],
-			              asapostuff, mille, ida);
+			process_image(&args->iargs, &pargs, st, args->worker_id,
+			              args->worker_tmpdir, ser,
+			              shared, asapostuff, mille, ida);
 			profile_end("process-image");
 
 			if ( asapostuff != NULL ) {

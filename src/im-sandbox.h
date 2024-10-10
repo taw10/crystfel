@@ -51,8 +51,7 @@ struct sb_shm;
 /* Maximum length of an event ID including serial number */
 #define MAX_EV_LEN (1024)
 
-/* Maximum length of a task ID, e.g. indexing:xgandalf.
- * NB If changing this, also update the value in index.c */
+/* Maximum length of a task ID, e.g. indexing:xgandalf. */
 #define MAX_TASK_LEN (32)
 
 /* Maximum number of workers */
@@ -82,8 +81,6 @@ struct sb_shm
 };
 
 extern char *create_tempdir(const char *temp_location);
-
-extern void set_last_task(char *lt, const char *task);
 
 extern double get_monotonic_seconds(void);
 

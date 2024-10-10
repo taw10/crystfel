@@ -336,14 +336,6 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 }
 
 
-void set_last_task(char *lt, const char *task)
-{
-	if ( lt == NULL ) return;
-	assert(strlen(task) < MAX_TASK_LEN-1);
-	strcpy(lt, task);
-}
-
-
 static const char *str_in_str(const char *haystack, size_t len, const char *needle)
 {
 	size_t u;

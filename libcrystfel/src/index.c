@@ -87,20 +87,6 @@ static const char *onoff(int a)
 	return "off";
 }
 
-/* Definition and function definition duplicated here (from im-sandbox.{c,h})
- * because libcrystfel code cannot depend on core CrystFEL programs.
- *
- * Must match the value and definition in im-sandbox.h
- */
-#define MAX_TASK_LEN (32)
-
-static void set_last_task(char *lt, const char *task)
-{
-	if ( lt == NULL ) return;
-	assert(strlen(task) < MAX_TASK_LEN-1);
-	strcpy(lt, task);
-}
-
 
 static void show_indexing_flags(IndexingFlags flags)
 {
@@ -591,7 +577,7 @@ static float real_time()
 
 /* Return non-zero for "success" */
 static int try_indexer(struct image *image, IndexingMethod indm,
-                       IndexingPrivate *ipriv, void *mpriv, char *last_task,
+                       IndexingPrivate *ipriv, void *mpriv,
                        Mille *mille, int max_mille_level)
 {
 	int i, r;
@@ -610,63 +596,63 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		return 0;
 
 		case INDEXING_DIRAX :
-		set_last_task(last_task, "indexing:dirax");
+		set_last_task("indexing:dirax");
 		profile_start("dirax");
 		r = run_dirax(image, mpriv);
 		profile_end("dirax");
 		break;
 
 		case INDEXING_ASDF :
-		set_last_task(last_task, "indexing:asdf");
+		set_last_task("indexing:asdf");
 		profile_start("asdf");
 		r = run_asdf(image, mpriv);
 		profile_end("asdf");
 		break;
 
 		case INDEXING_MOSFLM :
-		set_last_task(last_task, "indexing:mosflm");
+		set_last_task("indexing:mosflm");
 		profile_start("mosflm");
 		r = run_mosflm(image, mpriv);
 		profile_end("mosflm");
 		break;
 
 		case INDEXING_XDS :
-		set_last_task(last_task, "indexing:xds");
+		set_last_task("indexing:xds");
 		profile_start("xds");
 		r = run_xds(image, mpriv);
 		profile_end("xds");
 		break;
 
 		case INDEXING_FILE :
-		set_last_task(last_task, "indexing:file");
+		set_last_task("indexing:file");
 		profile_start("fromfile");
 		r = fromfile_index(image, mpriv);
 		profile_end("fromfile");
 		break;
 
 		case INDEXING_FELIX :
-		set_last_task(last_task, "indexing:felix");
+		set_last_task("indexing:felix");
 		profile_start("felix");
 		r = felix_index(image, mpriv);
 		profile_end("felix");
 		break;
 
 		case INDEXING_TAKETWO :
-		set_last_task(last_task, "indexing:taketwo");
+		set_last_task("indexing:taketwo");
 		profile_start("taketwo");
 		r = taketwo_index(image, mpriv);
 		profile_end("taketwo");
 		break;
 
 		case INDEXING_PINKINDEXER :
-		set_last_task(last_task, "indexing:pinkindexer");
+		set_last_task("indexing:pinkindexer");
 		profile_start("pinkindexer");
 		r = run_pinkIndexer(image, mpriv, ipriv->n_threads);
 		profile_end("pinkindexer");
 		break;
 
 		case INDEXING_XGANDALF :
-		set_last_task(last_task, "indexing:xgandalf");
+		set_last_task("indexing:xgandalf");
 		profile_start("xgandalf");
 		r = run_xgandalf(image, mpriv);
 		profile_end("xgandalf");
@@ -678,7 +664,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	}
 
-	set_last_task(last_task, "indexing:finalisation");
+	set_last_task("indexing:finalisation");
 
 	#ifdef MEASURE_INDEX_TIME
 	time_end = real_time();
@@ -998,13 +984,13 @@ void index_pattern_4(struct image *image, IndexingPrivate *ipriv, int *ping,
 
 			r = try_indexer(image, ipriv->methods[n],
 			                ipriv, ipriv->engine_private[n],
-			                last_task, mille, max_mille_level);
+			                mille, max_mille_level);
 			success += r;
 			ntry++;
 			done = finished_retry(ipriv->methods[n], ipriv->flags,
 			                      r, image);
 			if ( ntry > 5 ) done = 1;
-			if ( ping != NULL ) (*ping)++;
+			notify_alive();
 
 		} while ( !done );
 
@@ -1028,6 +1014,13 @@ void index_pattern_4(struct image *image, IndexingPrivate *ipriv, int *ping,
 	}
 
 	image->features = orig;
+}
+
+
+void index_pattern_5(struct image *image, IndexingPrivate *ipriv,
+                     Mille *mille, int max_mille_level)
+{
+	index_pattern_4(image, ipriv, NULL, NULL, mille, max_mille_level);
 }
 
 
