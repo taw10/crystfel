@@ -180,6 +180,8 @@ static void check_hung_workers(struct sandbox *sb)
 {
 	int i;
 	time_t tnow = get_monotonic_seconds();
+
+	pthread_mutex_lock(&sb->shared->debug_lock);
 	for ( i=0; i<sb->n_proc; i++ ) {
 
 		if ( !sb->running[i] ) continue;
@@ -209,6 +211,7 @@ static void check_hung_workers(struct sandbox *sb)
 		}
 
 	}
+	pthread_mutex_unlock(&sb->shared->debug_lock);
 }
 
 
@@ -705,7 +708,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	 * and the 'read' end of the result pipe. */
 	sb->pids[slot] = p;
 	sb->running[slot] = 1;
+	pthread_mutex_lock(&sb->shared->debug_lock);
 	stamp_response(sb, slot);
+	pthread_mutex_unlock(&sb->shared->debug_lock);
 	add_pipe(sb->st_from_workers, stream_pipe[0]);
 	add_pipe(sb->mille_from_workers, mille_pipe[0]);
 	close(stream_pipe[1]);
@@ -1290,6 +1295,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		/* Begin exit criterion checking */
 		pthread_mutex_lock(&sb->shared->queue_lock);
+		pthread_mutex_lock(&sb->shared->totals_lock);
 
 		/* Case 1: Queue empty and no more coming? */
 		if ( sb->shared->no_more && (sb->shared->n_events == 0) ) allDone = 1;
@@ -1310,6 +1316,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			t_last_data = get_monotonic_seconds();
 		}
 
+		pthread_mutex_unlock(&sb->shared->totals_lock);
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 		/* End exit criterion checking */
 
