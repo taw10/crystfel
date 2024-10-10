@@ -105,6 +105,7 @@ struct sandbox
 	int *running;
 	time_t *last_response;
 	int last_ping[MAX_NUM_WORKERS];
+	int warned_long_running[MAX_NUM_WORKERS];
 	int profile;  /* Whether to do wall-clock time profiling */
 	int cpu_pin;
 
@@ -198,7 +199,7 @@ static void check_hung_workers(struct sandbox *sb)
 		}
 
 		if ( tnow - sb->shared->time_last_start[i] > sb->timeout*3 ) {
-			if ( !sb->shared->warned_long_running[i] ) {
+			if ( !sb->warned_long_running[i] ) {
 				STATUS("Worker %i has been working on one "
 				       "frame for more than %i seconds (just "
 				       "for info).\n", i, sb->timeout);
@@ -206,7 +207,7 @@ static void check_hung_workers(struct sandbox *sb)
 				       sb->shared->last_ev[i]);
 				STATUS("Task ID is: %s\n",
 				       sb->shared->last_task[i]);
-				sb->shared->warned_long_running[i] = 1;
+				sb->warned_long_running[i] = 1;
 			}
 		}
 
@@ -616,8 +617,9 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	sb->shared->pings[slot] = 0;
 	sb->last_ping[slot] = 0;
 	sb->shared->time_last_start[slot] = get_monotonic_seconds();
-	sb->shared->warned_long_running[slot] = 0;
 	pthread_mutex_unlock(&sb->shared->debug_lock);
+
+	sb->warned_long_running[slot] = 0;
 
 	/* Set up nargv including "new" args */
 	nargc = 0;

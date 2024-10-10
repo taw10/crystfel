@@ -72,7 +72,6 @@ struct sb_shm
 	char last_task[MAX_NUM_WORKERS][MAX_TASK_LEN];
 	int pings[MAX_NUM_WORKERS];
 	time_t time_last_start[MAX_NUM_WORKERS];
-	int warned_long_running[MAX_NUM_WORKERS];
 
 	pthread_mutex_t totals_lock;
 	int n_processed;
