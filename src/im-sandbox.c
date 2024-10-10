@@ -606,12 +606,15 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	}
 
 	pthread_mutex_lock(&sb->shared->queue_lock);
-	sb->shared->pings[slot] = 0;
 	sb->shared->end_of_stream[slot] = 0;
+	pthread_mutex_unlock(&sb->shared->queue_lock);
+
+	pthread_mutex_lock(&sb->shared->debug_lock);
+	sb->shared->pings[slot] = 0;
 	sb->last_ping[slot] = 0;
 	sb->shared->time_last_start[slot] = get_monotonic_seconds();
 	sb->shared->warned_long_running[slot] = 0;
-	pthread_mutex_unlock(&sb->shared->queue_lock);
+	pthread_mutex_unlock(&sb->shared->debug_lock);
 
 	/* Set up nargv including "new" args */
 	nargc = 0;
@@ -829,11 +832,21 @@ static int setup_shm(struct sandbox *sb)
 		return 1;
 	}
 
+	if ( pthread_mutex_init(&sb->shared->debug_lock, &attr) ) {
+		ERROR("Queue lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		pthread_mutex_destroy(&sb->shared->term_lock);
+		pthread_mutex_destroy(&sb->shared->queue_lock);
+		free(sb->shm_name);
+		return 1;
+	}
+
 	if ( pthread_mutex_init(&sb->shared->totals_lock, &attr) ) {
 		ERROR("Totals lock setup failed.\n");
 		pthread_mutexattr_destroy(&attr);
 		pthread_mutex_destroy(&sb->shared->term_lock);
 		pthread_mutex_destroy(&sb->shared->queue_lock);
+		pthread_mutex_destroy(&sb->shared->debug_lock);
 		free(sb->shm_name);
 		return 1;
 	}

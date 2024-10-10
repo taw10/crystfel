@@ -279,14 +279,16 @@ int _worker;
 static void set_last_task_sandbox(const char *task)
 {
 	assert(strlen(task) < MAX_TASK_LEN-1);
-	pthread_mutex_lock(&shared->queue_lock);
+	pthread_mutex_lock(&shared->debug_lock);
 	strcpy(shared->last_task[_worker], task);
-	pthread_mutex_unlock(&shared->queue_lock);
+	pthread_mutex_unlock(&shared->debug_lock);
 }
 
 static void notify_alive_sandbox()
 {
+	pthread_mutex_lock(&shared->debug_lock);
 	shared->pings[_worker]++;
+	pthread_mutex_unlock(&shared->debug_lock);
 }
 
 
@@ -444,9 +446,7 @@ static int run_work(struct indexamajig_arguments *args)
 		int should_shutdown;
 
 		/* Wait until an event is ready */
-		pthread_mutex_lock(&shared->queue_lock);
 		notify_alive();
-		pthread_mutex_unlock(&shared->queue_lock);
 		set_last_task("wait_event");
 		profile_start("wait-queue-semaphore");
 		if ( sem_wait(queue_sem) != 0 ) {
@@ -593,9 +593,9 @@ static int run_work(struct indexamajig_arguments *args)
 		}
 
 		if ( ok ) {
-			pthread_mutex_lock(&shared->queue_lock);
+			pthread_mutex_lock(&shared->debug_lock);
 			shared->time_last_start[args->worker_id] = get_monotonic_seconds();
-			pthread_mutex_unlock(&shared->queue_lock);
+			pthread_mutex_unlock(&shared->debug_lock);
 			profile_start("process-image");
 			process_image(&args->iargs, &pargs, st, args->worker_id,
 			              args->worker_tmpdir, ser,
