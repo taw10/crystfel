@@ -64,27 +64,10 @@
 #define MAX_NODES (8072)
 #define DIFF_TOL (1e8)
 #define PIXEL_RING_TOL (6)
-struct sortmerefl
-{
-	signed int h;
-	signed int k;
-	signed int l;
-	double resolution;
-	int multi;
-	int ring_number;
-};
 
-
-static int cmpres(const void *av, const void *bv)
-{
-	const struct sortmerefl *a = av;
-	const struct sortmerefl *b = bv;
-	return a->resolution > b->resolution;
-}
 
 struct g_matrix
 {
-
 	double A;
 	double B;
 	double C;
@@ -94,12 +77,11 @@ struct g_matrix
 	double G;
 	double H;
 	double J;
-
 };
 
 struct smallcell_private
 {
-	struct sortmerefl *powderrings;
+	struct powder_ring *powderrings;
 	int num_rings;
 	SymOpList *sym;
 	struct g_matrix g9;
@@ -118,183 +100,17 @@ void *smallcell_prepare(IndexingMethod * indm, struct smallcell_options *opts,
 
 
 	struct smallcell_private *dp;
-
-	char *add_unique_axis(const char *inp, char ua)
-	{
-		char *pg = cfmalloc(64);
-		if (pg == NULL)
-			return NULL;
-		snprintf(pg, 63, "%s_ua%c", inp, ua);
-		return pg;
-	}
-
-
-	char *get_chiral_holohedry(UnitCell * cell)
-	{
-		LatticeType lattice = cell_get_lattice_type(cell);
-		char *pg;
-		int add_ua = 1;
-
-		switch (lattice) {
-			case L_TRICLINIC:
-				pg = "1";
-				add_ua = 0;
-				break;
-
-			case L_MONOCLINIC:
-				pg = "2";
-				break;
-
-			case L_ORTHORHOMBIC:
-				pg = "222";
-				add_ua = 0;
-				break;
-
-			case L_TETRAGONAL:
-				pg = "422";
-				break;
-
-			case L_RHOMBOHEDRAL:
-				pg = "3_R";
-				add_ua = 0;
-				break;
-
-			case L_HEXAGONAL:
-				if (cell_get_centering(cell) == 'H') {
-					pg = "3_H";
-					add_ua = 0;
-				} else {
-					pg = "622";
-				}
-				break;
-
-			case L_CUBIC:
-				pg = "432";
-				add_ua = 0;
-				break;
-
-			default:
-				pg = "error";
-				break;
-		}
-
-		if (add_ua) {
-			return add_unique_axis(pg, cell_get_unique_axis(cell));
-		} else {
-			return cfstrdup(pg);
-		}
-	}
-
-
-	SymOpList *sym;
-
-	char *pg = get_chiral_holohedry(cell);
-	sym = get_pointgroup(pg);
-	cffree(pg);
-
-	double mres = 1 / (1e-10);      // 1/Angstrom
-
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	int hmax, kmax, lmax;
-	signed int h, k, l;
-	RefList *reflist;
-	int i, n;
-	RefListIterator *iter;
-	Reflection *ring;
-	struct sortmerefl *sortus;
+	double asx, bsx, csx;
+	double asy, bsy, csy;
+	double asz, bsz, csz;
 
 	dp = cfmalloc(sizeof(struct smallcell_private));
 
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
-	hmax = mres * modulus(ax, ay, az);
-	kmax = mres * modulus(bx, by, bz);
-	lmax = mres * modulus(cx, cy, cz);
-	reflist = reflist_new();
-	for (h = -hmax; h <= hmax; h++) {
-		for (k = -kmax; k <= kmax; k++) {
-			for (l = -lmax; l <= lmax; l++) {
+	dp->sym = get_lattice_symmetry(cell);
+	dp->powderrings = powder_rings(cell, dp->sym, 1/1e-10, &dp->num_rings);
 
-				signed int ha, ka, la;
-
-				if (forbidden_reflection(cell, h, k, l))
-					continue;
-				if (2.0 * resolution(cell, h, k, l) > mres)
-					continue;
-
-				if (sym != NULL) {
-
-					Reflection *refl;
-
-					get_asymm(sym, h, k, l, &ha, &ka, &la);
-					refl = find_refl(reflist, ha, ka, la);
-					if (refl == NULL) {
-						refl = add_refl(reflist, ha, ka,
-						                la);
-						set_redundancy(refl, 1);
-					} else {
-						set_redundancy(refl,
-						               get_redundancy
-						               (refl) + 1);
-					}
-
-				} else {
-					Reflection *refl;
-					refl = add_refl(reflist, h, k, l);
-					set_redundancy(refl, 1);
-				}
-
-			}
-		}
-	}
-
-	n = num_reflections(reflist);
-	sortus = cfmalloc(n * sizeof(struct sortmerefl));
-	i = 0;
-	for (ring = first_refl(reflist, &iter);
-	     ring != NULL; ring = next_refl(ring, iter)) {
-		signed int rh, rk, rl;
-
-		get_indices(ring, &rh, &rk, &rl);
-
-		sortus[i].ring_number = i;      // how many rings
-		sortus[i].h = rh;
-		sortus[i].k = rk;
-		sortus[i].l = rl;
-		sortus[i].resolution = 2.0 * resolution(cell, rh, rk, rl);      /* one over d */
-		sortus[i].multi = get_redundancy(ring);
-		i++;
-
-	}
-
-	qsort(sortus, n, sizeof(struct sortmerefl), cmpres);
-
-	STATUS("\nAll powder rings up to %f Ångstrøms.\n", 1e+10 / mres);
-	STATUS("Note that screw axis or glide plane absences are not "
-	       "omitted from this list.\n");
-	STATUS("\n  No.  d (Å)   1/d (m^-1)    h    k    l    multiplicity\n");
-	STATUS("------------------------------------------------------\n");
-	for (i = 0; i < n; i++) {
-		printf("%4i  %10.3f %e %4i %4i %4i    m = %i\n",
-		       i + 1, 1e10 / sortus[i].resolution, sortus[i].resolution,
-		       sortus[i].h, sortus[i].k, sortus[i].l, sortus[i].multi);
-	}
-
-
-	// get reciprocal unit cell elements in order to create G* matrix and store in private
-
-	double asx;
-	double bsx;
-	double csx;
-	double asy;
-	double bsy;
-	double csy;
-	double asz;
-	double bsz;
-	double csz;
-
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	/* Get reciprocal unit cell elements in order to create G* matrix
+	 * and store in private */
 
 	cell_get_reciprocal(cell,
 	                    &asx, &asy, &asz,
@@ -310,13 +126,9 @@ void *smallcell_prepare(IndexingMethod * indm, struct smallcell_options *opts,
 	dp->g9.H = (csx * bsx) + (csy * bsy) + (csz * bsz);
 	dp->g9.J = (csx * csx) + (csy * csy) + (csz * csz);
 
-
-	dp->sym = sym;
-	dp->powderrings = sortus;
-	dp->num_rings = n;
-
 	return dp;
 }
+
 
 /* PeakInfo structure for storing peak-related information for every match found*/
 typedef struct PeakInfo
@@ -574,7 +386,7 @@ void BK(struct Nodelist *R, struct Nodelist *P, struct Nodelist *X,
 int smallcell_index(struct image *image, void *mpriv)
 {
 	struct smallcell_private *priv = (struct smallcell_private *) mpriv;
-	struct sortmerefl *powderrings = priv->powderrings;
+	struct powder_ring *powderrings = priv->powderrings;
 	int num_rings = priv->num_rings;
 
 

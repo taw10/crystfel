@@ -105,6 +105,19 @@ extern UnitCell *compare_reindexed_cell_parameters(UnitCell *cell_in,
 
 extern SymOpList *get_lattice_symmetry(UnitCell *cell);
 
+struct powder_ring {
+	signed int h;
+	signed int k;
+	signed int l;
+	double resolution;
+	int multi;
+};
+
+extern struct powder_ring *powder_rings(UnitCell *cell,
+                                        SymOpList *sym,
+                                        double mres,
+                                        int *n_rings);
+
 #ifdef __cplusplus
 }
 #endif
