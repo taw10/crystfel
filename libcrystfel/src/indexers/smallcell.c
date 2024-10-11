@@ -345,8 +345,9 @@ struct Cliquelist
 static struct Nodelist *CopyRlist(struct Nodelist *R)
 {
 	struct Nodelist *Rcopy = cfmalloc(sizeof(struct Nodelist));
+	int i;
 	Rcopy->n_mem = 0;
-	for (int i = 0; i < R->n_mem; i++) {
+	for (i = 0; i < R->n_mem; i++) {
 		Rcopy->mem[i] = R->mem[i];
 		Rcopy->n_mem++;
 	}
@@ -437,8 +438,9 @@ static struct Nodelist *exclunode(struct Nodelist *a, struct PeakInfo *v)
 	int j;
 	for (j = 0; j < a->n_mem; j++) {
 		if (a->mem[j] == v) {
+			int i;
 			int hole_index = j;
-			for (int i = hole_index; i < a->n_mem - 1; i++) {
+			for (i = hole_index; i < a->n_mem - 1; i++) {
 				a->mem[i] = a->mem[i + 1];
 			}
 		}
@@ -467,7 +469,8 @@ static double avg_weight(int num_neigh, double *weights)
 
 	double avg;
 	double avg_add = 0.0;
-	for (int j = 0; j < num_neigh; j++) {
+	int j;
+	for (j = 0; j < num_neigh; j++) {
 		avg_add = avg_add + weights[j];
 	}
 
@@ -497,7 +500,8 @@ void BK(struct Nodelist *R, struct Nodelist *P, struct Nodelist *X,
 	double n_max_weight =
 	        avg_weight(piv_pool->mem[0]->n_neigh,
 	                   piv_pool->mem[0]->weight_list);
-	for (int i = 1; i < piv_pool->n_mem; i++) {
+	int i;
+	for (i = 1; i < piv_pool->n_mem; i++) {
 		if (piv_pool->mem[i]->n_neigh > n_max) {
 			n_max = piv_pool->mem[i]->n_neigh;
 			piv = piv_pool->mem[i];
@@ -529,8 +533,8 @@ void BK(struct Nodelist *R, struct Nodelist *P, struct Nodelist *X,
 	cffree(piv_pool);
 	cffree(piv_neighbours);
 
-
-	for (int u = 0; u < P_excl->n_mem; u++) {
+	int u;
+	for (u = 0; u < P_excl->n_mem; u++) {
 		//For all members of the subset of P we are concered with (P_excl = P\N(pivot))
 		struct PeakInfo *v = P_excl->mem[u];
 
@@ -601,9 +605,10 @@ int smallcell_index(struct image *image, void *mpriv)
 
 	int num_peak_infos = 0;
 	int peaks_with_matches = 0;
+	int i;
 
 	//Loop through each peak, calculate d, then 1/d value (based on estimate_peak_resolution from peak.c), then use match_rings function to create structs for this peak with all possible h,k,l values
-	for (int i = 0; i < npk; i++) {
+	for (i = 0; i < npk; i++) {
 		struct imagefeature *f = image_get_feature(peaks, i);
 		double r[3];
 		detgeom_transform_coords(&det->panels[f->pn], f->fs, f->ss,
@@ -613,8 +618,9 @@ int smallcell_index(struct image *image, void *mpriv)
 		double z_res = (r[2]);
 		double rns = modulus(r[0], r[1], r[2]);
 		int init_num_peak_infos = num_peak_infos;
+		int j;
 
-		for (int j = 0; j < num_rings; j++) {
+		for (j = 0; j < num_rings; j++) {
 			if (fabs(powderrings[j].resolution - rns) <= tol) {
 
 				signed int h = powderrings[j].h;
@@ -625,7 +631,8 @@ int smallcell_index(struct image *image, void *mpriv)
 				SymOpMask *m = new_symopmask(priv->sym);
 				special_position(priv->sym, m, h, k, l);
 				int n = num_equivs(priv->sym, m);
-				for (int y = 0; y < n; y++) {
+				int y;
+				for (y = 0; y < n; y++) {
 
 					if (num_peak_infos >= peak_infos_size) {        //Adding more structs if necessary
 						peak_infos_size *= 2;
@@ -651,7 +658,8 @@ int smallcell_index(struct image *image, void *mpriv)
 					peak_infos[num_peak_infos].x = x_res;
 					peak_infos[num_peak_infos].y = y_res;
 					peak_infos[num_peak_infos].z = z_res;
-					for (int w = 0; w < MAX_NEIGH; w++) {
+					int w;
+					for (w = 0; w < MAX_NEIGH; w++) {
 						peak_infos[num_peak_infos].
 						        neigh[w] = NULL;
 					}
@@ -677,16 +685,18 @@ int smallcell_index(struct image *image, void *mpriv)
 	struct g_matrix g9 = priv->g9;
 	double dtol = DIFF_TOL;
 	int n_connected_nodes = 0;
+	int j;
 
 	//Loop through peak numbers
-	for (int j = 0; j < num_peak_infos; j++) {
+	for (j = 0; j < num_peak_infos; j++) {
 
 		int node_a_h = peak_infos[j].h;
 		int node_a_k = peak_infos[j].k;
 		int node_a_l = peak_infos[j].l;
+		int y;
 
 		//Loop through the rest of the peak infos
-		for (int y = j + 1; y < num_peak_infos - 1; y++) {
+		for (y = j + 1; y < num_peak_infos - 1; y++) {
 
 			if (peak_infos[y].peak_number ==
 			    peak_infos[j].peak_number)
@@ -779,7 +789,6 @@ int smallcell_index(struct image *image, void *mpriv)
 	X->n_mem = 0;
 	P->n_mem = 0;
 	//To make P; create nodelist of all peak_infos
-	int i;
 	for (i = 0; i < num_peak_infos; i++) {
 		if (peak_infos[i].n_neigh != 0) {
 			add(P, &peak_infos[i]);
@@ -804,10 +813,12 @@ int smallcell_index(struct image *image, void *mpriv)
 	Max->n = 0;
 	Max->list[0] = Max_cliques->list[0];
 	Max->n++;
-	for (int m = 1; m < Max_cliques->n; m++) {
+	int m;
+	for (m = 1; m < Max_cliques->n; m++) {
 		if (Max_cliques->list[m]->n_mem > Max_clique_len) {
 			Max_clique_len = Max_cliques->list[m]->n_mem;
-			for (int t = 0; t < Max->n; t++) {
+			int t;
+			for (t = 0; t < Max->n; t++) {
 				Max->list[t] = NULL;
 			}
 			Max->n = 0;
@@ -820,7 +831,7 @@ int smallcell_index(struct image *image, void *mpriv)
 	}
 	//If more than one max_clique with the same number of nodes is found, take only the right-handed solution
 	//This requires first getting the unit cell for each max_clique, and then using the right_handed function from cell-utils
-	for (int m = 0; m < Max->n; m++) {
+	for (m = 0; m < Max->n; m++) {
 		if (Max->list[m]->n_mem < 5 && m == (Max->n) - 1)
 			return 0;
 		if (Max->list[m]->n_mem < 5)
@@ -832,7 +843,8 @@ int smallcell_index(struct image *image, void *mpriv)
 		int count_node = 0;
 		int col_count = 0;
 		int have_a = 0, have_b = 0, have_c = 0;
-		for (int i = 0; i < 3 * (Max->list[m]->n_mem); i++) {
+		int i;
+		for (i = 0; i < 3 * (Max->list[m]->n_mem); i++) {
 			if (i > 0 && i % 3 == 0) {
 				count_node++;
 				col_count = 0;
@@ -856,7 +868,7 @@ int smallcell_index(struct image *image, void *mpriv)
 
 		int count_mem = 0;
 		int count_comp = 0;
-		for (int i = 0; i < 3 * (Max->list[m]->n_mem); i++) {
+		for (i = 0; i < 3 * (Max->list[m]->n_mem); i++) {
 
 			gsl_vector_set(h_vec, i,
 			               Max->list[m]->mem[count_mem]->x);
@@ -942,11 +954,11 @@ int smallcell_index(struct image *image, void *mpriv)
 	}
 
 
-	for (int t = 0; t < Max_cliques->n; t++) {
-		cffree(Max_cliques->list[t]);
+	for (i = 0; i < Max_cliques->n; i++) {
+		cffree(Max_cliques->list[i]);
 	}
-	for (int t = 0; t < Max->n; t++) {
-		cffree(Max->list[t]);
+	for (i = 0; i < Max->n; i++) {
+		cffree(Max->list[i]);
 	}
 
 	cffree(Max_cliques);
