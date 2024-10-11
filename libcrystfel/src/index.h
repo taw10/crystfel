@@ -178,10 +178,12 @@ struct fromfile_options
 	char *filename;
 };
 
+
 struct smallcell_options
 {
-       char *filename; 
+       int dummy;  /* No options ...yet */
 };
+
 
 struct felix_options
 {
