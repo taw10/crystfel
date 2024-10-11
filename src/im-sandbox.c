@@ -340,6 +340,7 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 }
 
 
+/* Like strstr(), but with a length parameter instead of nul-termination */
 static const char *str_in_str(const char *haystack, size_t len, const char *needle)
 {
 	size_t u;
@@ -452,9 +453,9 @@ static void add_pipe(PipeList *pd, int fd)
 
 	slot = pd->n_read;
 	pd->fds[slot] = fd;
-	pd->buffers[slot] = malloc(64*1024);
+	pd->buffer_len[slot] = 64*1024;  /* Initial buffer size */
+	pd->buffers[slot] = malloc(pd->buffer_len[slot]);
 	if ( pd->buffers[slot] == NULL ) return;
-	pd->buffer_len[slot] = 64*1024;
 	pd->buffer_pos[slot] = 0;
 
 	pd->n_read++;
@@ -535,14 +536,15 @@ static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct s
 		}
 
 		if ( pd->buffer_len[i] == pd->buffer_pos[i] ) {
+			const size_t buffer_increment = 64*1024;
 			void *buf_new = realloc(pd->buffers[i],
-			                        pd->buffer_len[i]+64*1024);
+			                        pd->buffer_len[i]+buffer_increment);
 			if ( buf_new == NULL ) {
 				ERROR("Failed to grow buffer\n");
 				continue;
 			}
 			pd->buffers[i] = buf_new;
-			pd->buffer_len[i] += 64*1024;
+			pd->buffer_len[i] += buffer_increment;
 		}
 
 		/* If the chunk cannot be read, assume the connection

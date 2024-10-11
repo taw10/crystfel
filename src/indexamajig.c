@@ -511,8 +511,12 @@ static int run_work(struct indexamajig_arguments *args)
 			       shared->queue[0]);
 			ok = 0;
 		}
+
+		pthread_mutex_lock(&shared->debug_lock);
 		memcpy(shared->last_ev[args->worker_id], shared->queue[0],
 		       MAX_EV_LEN);
+		pthread_mutex_unlock(&shared->debug_lock);
+
 		shuffle_events(shared);
 		pthread_mutex_unlock(&shared->queue_lock);
 
