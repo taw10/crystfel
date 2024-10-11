@@ -83,7 +83,7 @@ struct sb_shm
 
 extern char *create_tempdir(const char *temp_location);
 
-extern double get_monotonic_seconds(void);
+extern time_t get_monotonic_seconds(void);
 
 extern int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                           int config_basename, FILE *fh,  Stream *stream,
