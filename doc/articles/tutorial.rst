@@ -775,7 +775,7 @@ refined geometry file.  Choose any suitable new filename, then look at the
 bottom of the window.  There is a drop-down menu where you should select the
 name of the indexing job from earlier in this step (using prior unit cell
 parameters).  The geometry refinement calculations will be based on the results
-of that indexing job.  Leave **Heirarchy level** at zero and **Include
+of that indexing job.  Leave **Hierarchy level** at zero and **Include
 out-of-plane positions and tilts** unselected, to keep the refinement simple.
 This will only refine the overall beam center position on the detector.  Higher
 refinement levels will do a more fine-grained refinement where the subunits
