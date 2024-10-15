@@ -83,7 +83,7 @@ typedef enum {
 	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
 	INDEXING_PINKINDEXER = 11,/**< Use PinkIndexer (via optional library) */
-	INDEXING_SMALLCELL = 12,/**< Use Smallcell */
+	INDEXING_SMALLCELL = 12,  /**< Use Smallcell */
 
 	INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
 	                           *   engine */
@@ -237,7 +237,7 @@ extern void default_method_options(struct taketwo_options **ttopts,
                                    struct pinkindexer_options **pinkIndexer_opts,
                                    struct felix_options **felix_opts,
                                    struct fromfile_options **fromfile_opts,
-				   struct smallcell_options **smallcell_opts,
+                                   struct smallcell_options **smallcell_opts,
                                    struct asdf_options **asdf_opts);
 
 extern IndexingPrivate *setup_indexing(const char *methods,
@@ -252,7 +252,7 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        struct pinkindexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts,
                                        struct fromfile_options *fromfile_opts,
-				       struct smallcell_options *smallcell_opts,
+                                       struct smallcell_options *smallcell_opts,
                                        struct asdf_options *asdf_opts);
 
 extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);

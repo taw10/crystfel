@@ -1,16 +1,15 @@
 /*
  * smallcell.h
  *
- * Perform indexing from solution file
+ * Re-implementation of graph theory indexing algorithm for small unit cells
+ *  borrowed from cctbx.small_cell
  *
- * Copyright © 2020-2021 Max-Planck-Gesellschaft
- *                       zur Förderung der Wissenschaften e.V.
- * Copyright © 2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2024 Deutsches Elektronen-Synchrotron DESY,
  *                  a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2020 Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>
- *   2021 Thomas White <thomas.white@desy.de>
+ *   2024 Isabel Costello <isabel.costello@desy.de>
+ *   2024 Thomas White <thomas.white@desy.de>
  *
  * This file is part of CrystFEL.
  *
@@ -32,13 +31,13 @@
 #ifndef SMALLCELL_H
 #define SMALLCELL_H
 
-#include <argp.h>
-
 #include "image.h"
+#include "cell.h"
+#include "index.h"
 
 extern int smallcell_default_options(struct smallcell_options **opts_ptr);
 extern void *smallcell_prepare(IndexingMethod *indm,
-                              struct smallcell_options *opts, UnitCell *cell);
+                               struct smallcell_options *opts, UnitCell *cell);
 extern int smallcell_index(struct image *image, void *mpriv);
 extern void smallcell_cleanup(void *mpriv);
 
