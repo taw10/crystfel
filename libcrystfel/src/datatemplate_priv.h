@@ -41,7 +41,7 @@
 #define MAX_PATH_PARTS (16)
 
 /* Maximum number of panel groups */
-#define MAX_PANEL_GROUPS (256)
+#define MAX_PANEL_GROUPS (512)
 
 /* Maximum number of panel groups that can derive from one panel */
 #define MAX_PANEL_GROUP_CHILDREN (64)
