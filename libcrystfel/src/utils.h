@@ -254,6 +254,14 @@ extern int set_mm_funcs(void *(*cfmalloc)(size_t size),
                         void *(*cfrealloc)(void *ptr, size_t size));
 
 
+/* -------------------------------- Debugging ------------------------------- */
+
+extern void set_last_task(const char *task);
+extern void notify_alive(void);
+extern int set_debug_funcs(void (*slt)(const char *),
+                           void (*ping)(void));
+
+
 /* ------------------------------ File handling ----------------------------- */
 
 extern char *check_prefix(char *prefix);

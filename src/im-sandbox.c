@@ -3,13 +3,13 @@
  *
  * Sandbox for indexing
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  * Copyright © 2012 Richard Kirian
  * Copyright © 2012 Lorenzo Galli
  *
  * Authors:
- *   2010-2020 Thomas White <taw@physics.org>
+ *   2010-2024 Thomas White <taw@physics.org>
  *   2014      Valerio Mariani
  *   2011      Richard Kirian
  *   2012      Lorenzo Galli
@@ -65,6 +65,7 @@
 #endif
 
 #include "im-sandbox.h"
+#include "im-argparse.h"
 #include "process_image.h"
 #include "im-zmq.h"
 #include "profile.h"
@@ -72,10 +73,20 @@
 #include "predict-refine.h"
 
 
+typedef struct
+{
+	int n_read;
+	int *fds;
+	void **buffers;
+	size_t *buffer_len;
+	size_t *buffer_pos;
+} PipeList;
+
+
 struct sandbox
 {
 	int n_processed_last_stats;
-	double t_last_stats;
+	time_t t_last_stats;
 
 	/* Processing timeout in seconds.  After this long without responding
 	 * to a ping, the worker will be killed.  After 3 times this long
@@ -84,6 +95,9 @@ struct sandbox
 	int timeout;
 
 	struct index_args *iargs;
+	int argc;
+	char **argv;
+	const char *probed_methods;
 
 	/* Worker processes */
 	int n_proc;
@@ -91,18 +105,20 @@ struct sandbox
 	int *running;
 	time_t *last_response;
 	int last_ping[MAX_NUM_WORKERS];
+	int warned_long_running[MAX_NUM_WORKERS];
 	int profile;  /* Whether to do wall-clock time profiling */
 	int cpu_pin;
 
 	/* Streams to read from (NB not the same indices as the above) */
-	int n_read;
-	FILE **fhs;
-	int *fds;
+	PipeList *st_from_workers;
+	PipeList *mille_from_workers;
 
 	int serial;
 
 	struct sb_shm *shared;
+	char *shm_name;
 	sem_t *queue_sem;
+	char *sem_name;
 
 	const char *tmpdir;
 
@@ -114,6 +130,7 @@ struct sandbox
 
 	/* Final output */
 	Stream *stream;
+	FILE *mille_fh;
 };
 
 struct get_pattern_ctx
@@ -131,11 +148,11 @@ struct get_pattern_ctx
 
 #ifdef HAVE_CLOCK_GETTIME
 
-static double get_monotonic_seconds()
+time_t get_monotonic_seconds()
 {
 	struct timespec tp;
 	clock_gettime(CLOCK_MONOTONIC, &tp);
-	return tp.tv_sec + tp.tv_nsec * 1e-9;
+	return tp.tv_sec;
 }
 
 #else
@@ -143,11 +160,11 @@ static double get_monotonic_seconds()
 /* Fallback version of the above.  The time according to gettimeofday() is not
  * monotonic, so measuring intervals based on it will screw up if there's a
  * timezone change (e.g. daylight savings) while the program is running. */
-static double get_monotonic_seconds()
+time_t get_monotonic_seconds()
 {
 	struct timeval tp;
 	gettimeofday(&tp, NULL);
-	return tp.tv_sec + tp.tv_usec * 1e-6;
+	return tp.tv_sec;
 }
 
 #endif
@@ -164,6 +181,8 @@ static void check_hung_workers(struct sandbox *sb)
 {
 	int i;
 	time_t tnow = get_monotonic_seconds();
+
+	pthread_mutex_lock(&sb->shared->debug_lock);
 	for ( i=0; i<sb->n_proc; i++ ) {
 
 		if ( !sb->running[i] ) continue;
@@ -180,7 +199,7 @@ static void check_hung_workers(struct sandbox *sb)
 		}
 
 		if ( tnow - sb->shared->time_last_start[i] > sb->timeout*3 ) {
-			if ( !sb->shared->warned_long_running[i] ) {
+			if ( !sb->warned_long_running[i] ) {
 				STATUS("Worker %i has been working on one "
 				       "frame for more than %i seconds (just "
 				       "for info).\n", i, sb->timeout);
@@ -188,11 +207,12 @@ static void check_hung_workers(struct sandbox *sb)
 				       sb->shared->last_ev[i]);
 				STATUS("Task ID is: %s\n",
 				       sb->shared->last_task[i]);
-				sb->shared->warned_long_running[i] = 1;
+				sb->warned_long_running[i] = 1;
 			}
 		}
 
 	}
+	pthread_mutex_unlock(&sb->shared->debug_lock);
 }
 
 
@@ -280,7 +300,11 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 		filename = read_prefixed_filename(gpctx, &evstr);
 
 		/* Nothing left in file -> we're done */
-		if ( filename == NULL ) return 0;
+		if ( filename == NULL ) {
+			free(gpctx->filename);
+			free(gpctx->events);
+			return 0;
+		}
 
 		/* Does the line from the input file contain an event ID?
 		 * If so, just send it straight back. */
@@ -316,377 +340,178 @@ static int get_pattern(struct get_pattern_ctx *gpctx,
 }
 
 
-static void shuffle_events(struct sb_shm *sb_shared)
+/* Like strstr(), but with a length parameter instead of nul-termination */
+static const char *str_in_str(const char *haystack, size_t len, const char *needle)
+{
+	size_t u;
+	const size_t endl = strlen(needle);
+
+	if ( len < endl ) return NULL;
+
+	for ( u=0; u<len-endl; u++ ) {
+		size_t v;
+		int ok = 1;
+		for ( v=0; v<endl; v++ ) {
+			if ( haystack[u+v] != needle[v] ) {
+				ok = 0;
+				break;
+			}
+		}
+		if ( ok ) {
+			return &haystack[u];
+		}
+	}
+	return NULL;
+}
+
+
+static size_t pump_chunk(void *buf, size_t len, struct sandbox *sb)
+{
+	const char *txt = (char *)buf;
+	const char *endpos;
+	size_t chunk_len;
+
+	endpos = str_in_str(txt, len, STREAM_CHUNK_END_MARKER"\n");
+	if ( endpos == NULL ) return 0;
+
+	chunk_len = (endpos-txt)+strlen(STREAM_CHUNK_END_MARKER"\n");
+	fwrite(buf, 1, chunk_len, stream_get_fh(sb->stream));
+	fflush(stream_get_fh(sb->stream));
+
+	return chunk_len;
+}
+
+
+static size_t pump_mille(void *buf, size_t len, struct sandbox *sb)
+{
+	int n;
+	int ni;
+
+	if ( len < 4 ) return 0;
+	ni = *(int *)buf;
+	n = ni/2;
+	if ( len < 8*n ) return 0;
+
+	fwrite(buf, 4, 2*n+1, sb->mille_fh);
+	fflush(sb->mille_fh);
+
+	return 8*n+4;
+}
+
+
+static PipeList *pipe_list_new()
+{
+	PipeList *pd = malloc(sizeof(PipeList));
+	if ( pd == NULL ) return NULL;
+	pd->fds = NULL;
+	pd->buffers = NULL;
+	pd->buffer_len = NULL;
+	pd->buffer_pos = NULL;
+	pd->n_read = 0;
+	return pd;
+}
+
+
+static void pipe_list_destroy(PipeList *pd)
 {
 	int i;
-
-	for ( i=1; i<sb_shared->n_events; i++ ) {
-		memcpy(sb_shared->queue[i-1], sb_shared->queue[i], MAX_EV_LEN);
+	for ( i=0; i<pd->n_read; i++ ) {
+		free(pd->buffers[i]);
 	}
-	sb_shared->n_events--;
-}
-
-
-void set_last_task(char *lt, const char *task)
-{
-	if ( lt == NULL ) return;
-	assert(strlen(task) < MAX_TASK_LEN-1);
-	strcpy(lt, task);
-}
-
-
-static int run_work(const struct index_args *iargs, Stream *st,
-                    int cookie, const char *tmpdir, struct sandbox *sb)
-{
-	int allDone = 0;
-	struct im_zmq *zmqstuff = NULL;
-	struct im_asapo *asapostuff = NULL;
-	Mille *mille;
-	ImageDataArrays *ida;
-
-	if ( sb->profile ) {
-		profile_init();
-	}
-
-	/* Connect via ZMQ */
-	if ( sb->zmq_params != NULL ) {
-		zmqstuff = im_zmq_connect(sb->zmq_params);
-		if ( zmqstuff == NULL ) {
-			ERROR("ZMQ setup failed.\n");
-			return 1;
-		}
-	}
-
-	if ( sb->asapo_params != NULL ) {
-		asapostuff = im_asapo_connect(sb->asapo_params);
-		if ( asapostuff == NULL ) {
-			ERROR("ASAP::O setup failed.\n");
-			sb->shared->should_shutdown = 1;
-			return 1;
-		}
-	}
-
-	mille = NULL;
-	if ( iargs->mille ) {
-		char tmp[1024];
-		snprintf(tmp, 1024, "%s/mille-data-%i.bin", iargs->milledir, cookie);
-		mille = crystfel_mille_new(tmp);
-	}
-
-	ida = image_data_arrays_new();
-
-	while ( !allDone ) {
-
-		struct pattern_args pargs;
-		int ser;
-		char *line;
-		size_t len;
-		int i;
-		char *event_str = NULL;
-		char *ser_str = NULL;
-		int ok = 1;
-
-		/* Wait until an event is ready */
-		sb->shared->pings[cookie]++;
-		set_last_task(sb->shared->last_task[cookie], "wait_event");
-		profile_start("wait-queue-semaphore");
-		if ( sem_wait(sb->queue_sem) != 0 ) {
-			ERROR("Failed to wait on queue semaphore: %s\n",
-			      strerror(errno));
-		}
-		profile_end("wait-queue-semaphore");
-
-		/* Get the event from the queue */
-		set_last_task(sb->shared->last_task[cookie], "read_queue");
-		pthread_mutex_lock(&sb->shared->queue_lock);
-		if ( ((sb->shared->n_events==0) && (sb->shared->no_more))
-		   || (sb->shared->should_shutdown) )
-		{
-			/* Queue is empty and no more are coming,
-			 * or another process has initiated a shutdown.
-			 * Either way, it's time to get out of here. */
-			pthread_mutex_unlock(&sb->shared->queue_lock);
-			allDone = 1;
-			continue;
-		}
-		if ( sb->shared->n_events == 0 ) {
-			ERROR("Got the semaphore, but no events in queue!\n");
-			ERROR("no_more = %i\n", sb->shared->no_more);
-			pthread_mutex_unlock(&sb->shared->queue_lock);
-			allDone = 1;
-			continue;
-		}
-
-		line = strdup(sb->shared->queue[0]);
-
-		len = strlen(line);
-		assert(len > 1);
-		for ( i=len-1; i>0; i-- ) {
-			if ( line[i] == ' ' ) {
-				line[i] = '\0';
-				ser_str = &line[i+1];
-				break;
-			}
-		}
-		len = strlen(line);
-		assert(len > 1);
-		for ( i=len-1; i>0; i-- ) {
-			if ( line[i] == ' ' ) {
-				line[i] = '\0';
-				event_str = &line[i+1];
-				break;
-			}
-		}
-		if ( (ser_str != NULL) && (event_str != NULL) ) {
-			if ( sscanf(ser_str, "%i", &ser) != 1 ) {
-				STATUS("Invalid serial number '%s'\n",
-				       ser_str);
-				ok = 0;
-			}
-		}
-		if ( !ok ) {
-			STATUS("Invalid event string '%s'\n",
-			       sb->shared->queue[0]);
-			ok = 0;
-		}
-		memcpy(sb->shared->last_ev[cookie], sb->shared->queue[0],
-		       MAX_EV_LEN);
-		shuffle_events(sb->shared);
-		pthread_mutex_unlock(&sb->shared->queue_lock);
-
-		if ( !ok ) continue;
-
-		pargs.filename = strdup(line);
-		pargs.event = safe_strdup(event_str);
-
-		free(line);
-		ok = 0;
-
-		/* Default values */
-		pargs.zmq_data = NULL;
-		pargs.zmq_data_size = 0;
-		pargs.asapo_data = NULL;
-		pargs.asapo_data_size = 0;
-		pargs.asapo_meta = NULL;
-
-		if ( sb->zmq_params != NULL ) {
-
-			profile_start("zmq-fetch");
-			set_last_task(sb->shared->last_task[cookie], "ZMQ fetch");
-			pargs.zmq_data = im_zmq_fetch(zmqstuff,
-			                              &pargs.zmq_data_size);
-			profile_end("zmq-fetch");
-
-			if ( (pargs.zmq_data != NULL)
-			  && (pargs.zmq_data_size > 15) ) ok = 1;
-
-			/* The filename/event, which will be 'fake' values in
-			 * this case, still came via the event queue.  More
-			 * importantly, the event queue gave us a unique
-			 * serial number for this image. */
-
-		} else if ( sb->asapo_params != NULL ) {
-
-			char *filename;
-			char *event;
-			int finished = 0;
-			int asapo_message_id;
-
-			profile_start("asapo-fetch");
-			set_last_task(sb->shared->last_task[cookie], "ASAPO fetch");
-			pargs.asapo_data = im_asapo_fetch(asapostuff,
-			                                  &pargs.asapo_data_size,
-			                                  &pargs.asapo_meta,
-			                                  &filename,
-			                                  &event,
-			                                  &finished,
-			                                  &asapo_message_id);
-			profile_end("asapo-fetch");
-			if ( pargs.asapo_data != NULL ) {
-				ok = 1;
-
-				/* ASAP::O provides a meaningful filename, which
-				 * replaces the placeholder. */
-				free(pargs.filename);
-				free(pargs.event);
-				pargs.filename = filename;
-				pargs.event = event;
-				sb->shared->end_of_stream[cookie] = 0;
-
-				/* We will also use ASAP::O's serial number
-				 * instead of our own. */
-				ser = asapo_message_id;
-			} else {
-				if ( finished ) {
-					sb->shared->end_of_stream[cookie] = 1;
-				}
-			}
-
-		} else {
-			ok = 1;
-		}
-
-		if ( ok ) {
-			sb->shared->time_last_start[cookie] = get_monotonic_seconds();
-			profile_start("process-image");
-			process_image(iargs, &pargs, st, cookie, tmpdir, ser,
-			              sb->shared, sb->shared->last_task[cookie],
-			              asapostuff, mille, ida);
-			profile_end("process-image");
-
-			if ( sb->asapo_params != NULL ) {
-				im_asapo_finalise(asapostuff, ser);
-			}
-
-		}
-
-		/* NB pargs.zmq_data, pargs.asapo_data and  pargs.asapo_meta
-		 * will be copied into the image structure, so
-		 * that it can be queried for "header" values etc.  They will
-		 * eventually be freed by image_free() under process_image(). */
-
-		if ( sb->profile ) {
-			profile_print_and_reset(cookie);
-		}
-
-		free(pargs.filename);
-		free(pargs.event);
-	}
-
-	image_data_arrays_free(ida);
-	crystfel_mille_free(mille);
-
-	/* These are both no-ops if argument is NULL */
-	im_zmq_shutdown(zmqstuff);
-	im_asapo_shutdown(asapostuff);
-
-	data_template_free(iargs->dtempl);
-	cleanup_indexing(iargs->ipriv);
-	cell_free(iargs->cell);
-	return 0;
-}
-
-
-static ssize_t lwrite(int fd, const char *a)
-{
-	size_t l = strlen(a);
-	return write(fd, a, l);
-}
-
-
-static int pump_chunk(FILE *fh, int ofd)
-{
-	int chunk_started = 0;
-
-	do {
-
-		char line[1024];
-		char *rval;
-
-		rval = fgets(line, 1024, fh);
-		if ( rval == NULL ) {
-
-			if ( feof(fh) ) {
-				/* Whoops, connection lost */
-				if ( chunk_started ) {
-					ERROR("EOF during chunk!\n");
-					lwrite(ofd, "Unfinished chunk!\n");
-					lwrite(ofd, STREAM_CHUNK_END_MARKER"\n");
-				} /* else normal end of output */
-				return 1;
-			}
-
-			ERROR("fgets() failed: %s\n", strerror(errno));
-			if ( errno != EINTR ) return 1;
-
-		}
-
-		if ( strcmp(line, "FLUSH\n") == 0 ) break;
-		lwrite(ofd, line);
-
-		if ( strcmp(line, STREAM_CHUNK_START_MARKER"\n") == 0 ) {
-			chunk_started = 1;
-		}
-		if ( strcmp(line, STREAM_CHUNK_END_MARKER"\n") == 0 ) break;
-
-	} while ( 1 );
-	return 0;
+	free(pd->buffers);
+	free(pd->buffer_len);
+	free(pd->buffer_pos);
+	free(pd->fds);
+	free(pd);
 }
 
 
 /* Add an fd to the list of pipes to be read from */
-static void add_pipe(struct sandbox *sb, int fd)
+static void add_pipe(PipeList *pd, int fd)
 {
 	int *fds_new;
-	FILE **fhs_new;
+	void **buffers_new;
+	size_t *buflens_new;
+	size_t *bufposs_new;
 	int slot;
 
-	fds_new = realloc(sb->fds, (sb->n_read+1)*sizeof(int));
-	if ( fds_new == NULL ) {
+	fds_new = realloc(pd->fds, (pd->n_read+1)*sizeof(int));
+	buffers_new = realloc(pd->buffers, (pd->n_read+1)*sizeof(void *));
+	buflens_new = realloc(pd->buffer_len, (pd->n_read+1)*sizeof(size_t));
+	bufposs_new = realloc(pd->buffer_pos, (pd->n_read+1)*sizeof(size_t));
+	if ( (fds_new == NULL) || (buffers_new == NULL)
+	  || (buflens_new == NULL) || (bufposs_new == NULL) )
+	{
 		ERROR("Failed to allocate memory for new pipe.\n");
 		return;
 	}
 
-	fhs_new = realloc(sb->fhs, (sb->n_read+1)*sizeof(FILE *));
-	if ( fhs_new == NULL ) {
-		ERROR("Failed to allocate memory for new FH.\n");
-		free(fds_new);
-		return;
-	}
+	pd->fds = fds_new;
+	pd->buffers = buffers_new;
+	pd->buffer_len = buflens_new;
+	pd->buffer_pos = bufposs_new;
 
-	sb->fds = fds_new;
-	sb->fhs = fhs_new;
-	slot = sb->n_read;
+	slot = pd->n_read;
+	pd->fds[slot] = fd;
+	pd->buffer_len[slot] = 64*1024;  /* Initial buffer size */
+	pd->buffers[slot] = malloc(pd->buffer_len[slot]);
+	if ( pd->buffers[slot] == NULL ) return;
+	pd->buffer_pos[slot] = 0;
 
-	sb->fds[slot] = fd;
-
-	sb->fhs[slot] = fdopen(fd, "r");
-	if ( sb->fhs[slot] == NULL ) {
-		ERROR("Couldn't fdopen() stream!\n");
-		return;
-	}
-
-	sb->n_read++;
+	pd->n_read++;
 }
 
 
-static void remove_pipe(struct sandbox *sb, int d)
+static void remove_pipe(PipeList *pd, int d)
 {
 	int i;
 
-	fclose(sb->fhs[d]);
+	close(pd->fds[d]);
+	free(pd->buffers[d]);
 
-	for ( i=d; i<sb->n_read; i++ ) {
-		if ( i < sb->n_read-1 ) {
-			sb->fds[i] = sb->fds[i+1];
-			sb->fhs[i] = sb->fhs[i+1];
+	for ( i=d; i<pd->n_read; i++ ) {
+		if ( i < pd->n_read-1 ) {
+			pd->fds[i] = pd->fds[i+1];
+			pd->buffers[i] = pd->buffers[i+1];
+			pd->buffer_len[i] = pd->buffer_len[i+1];
+			pd->buffer_pos[i] = pd->buffer_pos[i+1];
 		} /* else don't bother */
 	}
 
-	sb->n_read--;
+	pd->n_read--;
 
 	/* We don't bother shrinking the arrays */
 }
 
 
-static void try_read(struct sandbox *sb)
+static int find_marked(PipeList *pd)
+{
+	int i;
+	for ( i=0; i<pd->n_read; i++ ) {
+		if ( pd->buffer_len[i] == 0 ) return i;
+	}
+	return -1;
+}
+
+
+static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct sandbox *),
+                        struct sandbox *sb)
 {
 	int r, i;
 	struct timeval tv;
 	fd_set fds;
 	int fdmax;
-	const int ofd = stream_get_fd(sb->stream);
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 500000;
 
 	FD_ZERO(&fds);
 	fdmax = 0;
-	for ( i=0; i<sb->n_read; i++ ) {
+	for ( i=0; i<pd->n_read; i++ ) {
 
 		int fd;
 
-		fd = sb->fds[i];
+		fd = pd->fds[i];
 
 		FD_SET(fd, &fds);
 		if ( fd > fdmax ) fdmax = fd;
@@ -702,33 +527,60 @@ static void try_read(struct sandbox *sb)
 		return;
 	}
 
-	for ( i=0; i<sb->n_read; i++ ) {
+	for ( i=0; i<pd->n_read; i++ ) {
 
-		if ( !FD_ISSET(sb->fds[i], &fds) ) {
+		size_t r;
+
+		if ( !FD_ISSET(pd->fds[i], &fds) ) {
 			continue;
+		}
+
+		if ( pd->buffer_len[i] == pd->buffer_pos[i] ) {
+			const size_t buffer_increment = 64*1024;
+			void *buf_new = realloc(pd->buffers[i],
+			                        pd->buffer_len[i]+buffer_increment);
+			if ( buf_new == NULL ) {
+				ERROR("Failed to grow buffer\n");
+				continue;
+			}
+			pd->buffers[i] = buf_new;
+			pd->buffer_len[i] += buffer_increment;
 		}
 
 		/* If the chunk cannot be read, assume the connection
 		 * is broken and that the process will die soon. */
-		if ( pump_chunk(sb->fhs[i], ofd) ) {
-			remove_pipe(sb, i);
-		}
+		r = read(pd->fds[i], pd->buffers[i]+pd->buffer_pos[i],
+		         pd->buffer_len[i]-pd->buffer_pos[i]);
 
+		if ( r == 0 ) {
+			/* Mark for deletion */
+			pd->buffer_len[i] = 0;
+		} else {
+			size_t h;
+			pd->buffer_pos[i] += r;
+			h = pump(pd->buffers[i], pd->buffer_pos[i], sb);
+			assert(h <= pd->buffer_pos[i]);
+			assert(h >= 0);
+			if ( h > 0 ) {
+				memmove(pd->buffers[i], pd->buffers[i]+h,
+				        pd->buffer_pos[i]-h);
+				pd->buffer_pos[i] -= h;
+			}
+		}
+	}
+
+	int deleteme = find_marked(pd);
+	while ( deleteme != -1 ) {
+		remove_pipe(pd, deleteme);
+		deleteme = find_marked(pd);
 	}
 }
 
 
-static void pin_to_cpu(int slot)
+static void try_read(struct sandbox *sb)
 {
-	#ifdef HAVE_SCHED_SETAFFINITY
-	cpu_set_t c;
-
-	CPU_ZERO(&c);
-	CPU_SET(slot, &c);
-	if ( sched_setaffinity(0, sizeof(cpu_set_t), &c) ) {
-		fprintf(stderr, "Failed to set CPU affinity for %i\n", slot);
-	}
-	#endif
+	check_pipes(sb->st_from_workers, pump_chunk, sb);
+	check_pipes(sb->mille_from_workers, pump_mille, sb);
 }
 
 
@@ -736,19 +588,106 @@ static void start_worker_process(struct sandbox *sb, int slot)
 {
 	pid_t p;
 	int stream_pipe[2];
+	int mille_pipe[2];
+	char **nargv;
+	int nargc;
+	int i;
+	char *tmpdir_copy;
+	char *methods_copy = NULL;
+	char *worker_id;
+	char *fd_stream;
+	char *fd_mille;
+	char buf[1024];
+	const char *indexamajig = NULL;
+	size_t len;
 
 	if ( pipe(stream_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
 		return;
 	}
 
+	if ( pipe(mille_pipe) == - 1 ) {
+		ERROR("pipe() failed!\n");
+		return;
+	}
+
 	pthread_mutex_lock(&sb->shared->queue_lock);
-	sb->shared->pings[slot] = 0;
 	sb->shared->end_of_stream[slot] = 0;
+	pthread_mutex_unlock(&sb->shared->queue_lock);
+
+	pthread_mutex_lock(&sb->shared->debug_lock);
+	sb->shared->pings[slot] = 0;
 	sb->last_ping[slot] = 0;
 	sb->shared->time_last_start[slot] = get_monotonic_seconds();
-	sb->shared->warned_long_running[slot] = 0;
-	pthread_mutex_unlock(&sb->shared->queue_lock);
+	pthread_mutex_unlock(&sb->shared->debug_lock);
+
+	sb->warned_long_running[slot] = 0;
+
+	/* Set up nargv including "new" args */
+	nargc = 0;
+	nargv = malloc((sb->argc+16)*sizeof(char *));
+	if ( nargv == NULL ) return;
+	for ( i=0; i<sb->argc; i++ ) {
+		nargv[nargc++] = sb->argv[i];
+	}
+
+	nargv[nargc++] = "--shm-name";
+	nargv[nargc++] = sb->shm_name;
+
+	nargv[nargc++] = "--queue-sem";
+	nargv[nargc++] = sb->sem_name;
+
+	nargv[nargc++] = "--worker-tmpdir";
+	tmpdir_copy = strdup(sb->tmpdir);
+	if ( tmpdir_copy == NULL ) return;
+	nargv[nargc++] = tmpdir_copy;
+
+	nargv[nargc++] = "--worker-id";
+	worker_id = malloc(64);
+	if ( worker_id == NULL ) return;
+	snprintf(worker_id, 64, "%i", slot);
+	nargv[nargc++] = worker_id;
+
+	nargv[nargc++] = "--fd-stream";
+	fd_stream = malloc(64);
+	snprintf(fd_stream, 64, "%i", stream_pipe[1]);
+	nargv[nargc++] = fd_stream;
+
+	nargv[nargc++] = "--fd-mille";
+	fd_mille = malloc(64);
+	snprintf(fd_mille, 64, "%i", mille_pipe[1]);
+	nargv[nargc++] = fd_mille;
+
+	if ( sb->probed_methods != NULL ) {
+		methods_copy = strdup(sb->probed_methods);
+		nargv[nargc++] = "--indexing";
+		nargv[nargc++] = methods_copy;
+	}
+	nargv[nargc++] = NULL;
+
+	len = readlink("/proc/self/exe", buf, 1024);
+
+	if ( (len == -1) || (len >= 1023)  ) {
+		ERROR("readlink() failed: %s\n", strerror(errno));
+	} else {
+		buf[len] = '\0';
+		if ( strstr(buf, "indexamajig") == NULL ) {
+			ERROR("Didn't recognise /proc/self/exe (%s)\n", buf);
+		} else {
+			indexamajig = buf;
+		}
+	}
+	if ( indexamajig == NULL ) {
+		if ( strstr(sb->argv[0], "indexamajig") == NULL ) {
+			ERROR("Didn't recognise argv[0] (%s)\n", sb->argv[0]);
+		} else {
+			indexamajig = sb->argv[0];
+		}
+	}
+	if ( indexamajig == NULL ) {
+		ERROR("Falling back on shell search path.\n");
+		indexamajig = "indexamajig";
+	}
 
 	p = fork();
 	if ( p == -1 ) {
@@ -757,102 +696,27 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	}
 
 	if ( p == 0 ) {
-
-		Stream *st;
-		struct sigaction sa;
-		int r;
-		char *tmp;
-		struct stat s;
-		size_t ll;
-		int i;
-
-		if ( sb->cpu_pin ) pin_to_cpu(slot);
-
-	        /* First, disconnect the signal handlers */
-	        sa.sa_flags = 0;
-	        sigemptyset(&sa.sa_mask);
-	        sa.sa_handler = SIG_DFL;
-	        r = sigaction(SIGCHLD, &sa, NULL);
-	        if ( r == -1 ) {
-			ERROR("Failed to set signal handler!\n");
-			exit(1);
-	        }
-	        r = sigaction(SIGINT, &sa, NULL);
-	        if ( r == -1 ) {
-			ERROR("Failed to set signal handler!\n");
-			exit(1);
-	        }
-	        r = sigaction(SIGQUIT, &sa, NULL);
-	        if ( r == -1 ) {
-			ERROR("Failed to set signal handler!\n");
-			exit(1);
-	        }
-
-	        sa.sa_handler = SIG_IGN;
-	        r = sigaction(SIGUSR1, &sa, NULL);
-	        if ( r == -1 ) {
-			ERROR("Failed to set signal handler!\n");
-			exit(1);
-	        }
-
-		ll = 64 + strlen(sb->tmpdir);
-		tmp = malloc(ll);
-		if ( tmp == NULL ) {
-			ERROR("Failed to allocate temporary dir\n");
-			exit(1);
-		}
-
-		snprintf(tmp, ll, "%s/worker.%i", sb->tmpdir, slot);
-
-		if ( stat(tmp, &s) == -1 ) {
-			if ( errno != ENOENT ) {
-				ERROR("Failed to stat temporary folder.\n");
-				exit(1);
-			}
-
-			r = mkdir(tmp, S_IRWXU);
-			if ( r ) {
-				ERROR("Failed to create temporary folder: %s\n",
-				strerror(errno));
-				exit(1);
-			}
-		}
-
-		/* Free resources which will not be needed by worker */
-		free(sb->pids);
-		for ( i=0; i<sb->n_read; i++ ) {
-			fclose(sb->fhs[i]);
-		}
-		free(sb->fhs);
-		free(sb->fds);
-		free(sb->running);
-		/* Not freed because it's not worth passing them down just for
-		 * this purpose: event list file handle,
-		 *               main output stream handle
-		 *               original temp dir name (without indexamajig.XX)
-		 *               prefix
-		 */
-
-		st = stream_open_fd_for_write(stream_pipe[1], sb->iargs->dtempl);
-		r = run_work(sb->iargs, st, slot, tmp, sb);
-		stream_close(st);
-
-		free(tmp);
-
-		munmap(sb->shared, sizeof(struct sb_shm));
-
-		free(sb);
-
-		exit(r);
-
+		execvp(indexamajig, nargv);
+		ERROR("Failed to exec!\n");
+		return;
 	}
+
+	free(tmpdir_copy);
+	free(methods_copy);
+	free(worker_id);
+	free(fd_stream);
+	free(fd_mille);
+	free(nargv);
 
 	/* Parent process gets the 'write' end of the filename pipe
 	 * and the 'read' end of the result pipe. */
 	sb->pids[slot] = p;
 	sb->running[slot] = 1;
+	pthread_mutex_lock(&sb->shared->debug_lock);
 	stamp_response(sb, slot);
-	add_pipe(sb, stream_pipe[0]);
+	pthread_mutex_unlock(&sb->shared->debug_lock);
+	add_pipe(sb->st_from_workers, stream_pipe[0]);
+	add_pipe(sb->mille_from_workers, mille_pipe[0]);
 	close(stream_pipe[1]);
 }
 
@@ -889,6 +753,15 @@ static void handle_zombie(struct sandbox *sb, int respawn)
 			sb->running[i] = 0;
 
 			if ( WIFEXITED(status) ) {
+				if ( WEXITSTATUS(status) != 0 ) {
+					STATUS("Worker %i returned error code %i\n",
+					       i, WEXITSTATUS(status));
+					STATUS("Shutting down.\n");
+					/* Error status from worker */
+					pthread_mutex_lock(&sb->shared->totals_lock);
+					sb->shared->should_shutdown = 1;
+					pthread_mutex_unlock(&sb->shared->totals_lock);
+				}
 				continue;
 			}
 
@@ -915,37 +788,75 @@ static void handle_zombie(struct sandbox *sb, int respawn)
 static int setup_shm(struct sandbox *sb)
 {
 	pthread_mutexattr_t attr;
+	char tmp[128];
+	int shm_fd;
+
+	snprintf(tmp, 127, "/indexamajig.shm.%i", getpid());
+	shm_fd = shm_open(tmp, O_CREAT | O_EXCL | O_RDWR, 0600);
+	if ( shm_fd == -1 ) {
+		ERROR("SHM setup failed: %s\n", strerror(errno));
+		return 1;
+	}
+	sb->shm_name = strdup(tmp);
+
+	if ( ftruncate(shm_fd, sizeof(struct sb_shm)) == -1 ) {
+		ERROR("SHM setup failed: %s\n", strerror(errno));
+		free(sb->shm_name);
+		return 1;
+	}
 
 	sb->shared = mmap(NULL, sizeof(struct sb_shm), PROT_READ | PROT_WRITE,
-	                  MAP_SHARED | MAP_ANON, -1, 0);
-
+	                  MAP_SHARED, shm_fd, 0);
 	if ( sb->shared == MAP_FAILED ) {
 		ERROR("SHM setup failed: %s\n", strerror(errno));
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutexattr_init(&attr) ) {
 		ERROR("Failed to initialise mutex attr.\n");
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) ) {
 		ERROR("Failed to set process shared attribute.\n");
+		pthread_mutexattr_destroy(&attr);
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutex_init(&sb->shared->term_lock, &attr) ) {
 		ERROR("Terminal lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutex_init(&sb->shared->queue_lock, &attr) ) {
 		ERROR("Queue lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		pthread_mutex_destroy(&sb->shared->term_lock);
+		free(sb->shm_name);
+		return 1;
+	}
+
+	if ( pthread_mutex_init(&sb->shared->debug_lock, &attr) ) {
+		ERROR("Queue lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		pthread_mutex_destroy(&sb->shared->term_lock);
+		pthread_mutex_destroy(&sb->shared->queue_lock);
+		free(sb->shm_name);
 		return 1;
 	}
 
 	if ( pthread_mutex_init(&sb->shared->totals_lock, &attr) ) {
 		ERROR("Totals lock setup failed.\n");
+		pthread_mutexattr_destroy(&attr);
+		pthread_mutex_destroy(&sb->shared->term_lock);
+		pthread_mutex_destroy(&sb->shared->queue_lock);
+		pthread_mutex_destroy(&sb->shared->debug_lock);
+		free(sb->shm_name);
 		return 1;
 	}
 
@@ -1013,8 +924,7 @@ static void sigusr1_handler(int sig, siginfo_t *si, void *uc_v)
 }
 
 
-static void check_signals(struct sandbox *sb, const char *semname_q,
-                          int respawn)
+static void check_signals(struct sandbox *sb, int respawn)
 {
 	if ( at_zombies ) {
 		at_zombies = 0;
@@ -1022,7 +932,8 @@ static void check_signals(struct sandbox *sb, const char *semname_q,
 	}
 
 	if ( at_interrupt ) {
-		sem_unlink(semname_q);
+		sem_unlink(sb->sem_name);
+		shm_unlink(sb->shm_name);
 		exit(0);
 	}
 
@@ -1040,8 +951,8 @@ static void try_status(struct sandbox *sb, int final)
 {
 	int r;
 	int n_proc_this;
-	double tNow;
-	double time_this;
+	time_t tNow;
+	time_t time_this;
 	const char *finalstr;
 	char persec[64];
 
@@ -1049,7 +960,9 @@ static void try_status(struct sandbox *sb, int final)
 	time_this = tNow - sb->t_last_stats;
 	if ( !final && (time_this < 5) ) return;
 
+	pthread_mutex_lock(&sb->shared->totals_lock);
 	n_proc_this = sb->shared->n_processed - sb->n_processed_last_stats;
+	pthread_mutex_unlock(&sb->shared->totals_lock);
 
 	r = pthread_mutex_trylock(&sb->shared->term_lock);
 	if ( r ) return; /* No lock -> don't bother */
@@ -1199,7 +1112,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
                    struct im_zmq_params *zmq_params,
                    struct im_asapo_params *asapo_params,
                    int timeout, int profile, int cpu_pin,
-                   int no_data_timeout)
+                   int no_data_timeout, int argc, char *argv[],
+                   const char *probed_methods, FILE *mille_fh)
 {
 	int i;
 	struct sandbox *sb;
@@ -1208,7 +1122,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	int r;
 	int allDone = 0;
 	struct get_pattern_ctx gpctx;
-	double t_last_data;
+	time_t t_last_data;
 
 	if ( n_proc > MAX_NUM_WORKERS ) {
 		ERROR("Number of workers (%i) is too large.  Using %i\n",
@@ -1248,7 +1162,10 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sb->tmpdir = tmpdir;
 	sb->profile = profile;
 	sb->timeout = timeout;
-	sb->cpu_pin = cpu_pin;
+	sb->argc = argc;
+	sb->argv = argv;
+	sb->probed_methods = probed_methods;
+	sb->mille_fh = mille_fh;
 
 	if ( zmq_params->addr != NULL ) {
 		sb->zmq_params = zmq_params;
@@ -1268,8 +1185,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		return 0;
 	}
 
-	sb->fds = NULL;
-	sb->fhs = NULL;
+	sb->st_from_workers = pipe_list_new();
+	sb->mille_from_workers = pipe_list_new();
 	sb->stream = stream;
 
 	gpctx.fh = fh;
@@ -1300,6 +1217,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		ERROR("Failed to create semaphore: %s\n", strerror(errno));
 		return 0;
 	}
+	sb->sem_name = strdup(semname_q);
 
 	sb->pids = calloc(n_proc, sizeof(pid_t));
 	sb->running = calloc(n_proc, sizeof(int));
@@ -1364,7 +1282,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		try_read(sb);
 
 		/* Check for interrupt or zombies */
-		check_signals(sb, semname_q, 1);
+		check_signals(sb, 1);
 
 		/* Check for hung workers */
 		check_hung_workers(sb);
@@ -1381,6 +1299,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 		/* Begin exit criterion checking */
 		pthread_mutex_lock(&sb->shared->queue_lock);
+		pthread_mutex_lock(&sb->shared->totals_lock);
 
 		/* Case 1: Queue empty and no more coming? */
 		if ( sb->shared->no_more && (sb->shared->n_events == 0) ) allDone = 1;
@@ -1401,6 +1320,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 			t_last_data = get_monotonic_seconds();
 		}
 
+		pthread_mutex_unlock(&sb->shared->totals_lock);
 		pthread_mutex_unlock(&sb->shared->queue_lock);
 		/* End exit criterion checking */
 
@@ -1422,7 +1342,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	for ( i=0; i<n_proc; i++ ) {
 		while ( any_running(sb) ) {
 			try_read(sb);
-			check_signals(sb, semname_q, 0);
+			check_signals(sb, 0);
 			check_hung_workers(sb);
 			try_status(sb, 0);
 		}
@@ -1433,11 +1353,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	sem_unlink(semname_q);
 	sem_close(sb->queue_sem);
 
-	for ( i=0; i<sb->n_read; i++ ) {
-		fclose(sb->fhs[i]);
-	}
-	free(sb->fhs);
-	free(sb->fds);
+	pipe_list_destroy(sb->st_from_workers);
+	pipe_list_destroy(sb->mille_from_workers);
 	free(sb->running);
 	free(sb->last_response);
 	free(sb->pids);
@@ -1448,7 +1365,10 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 
 	delete_temporary_folder(sb->tmpdir, n_proc);
 
+	shm_unlink(sb->shm_name);
 	munmap(sb->shared, sizeof(struct sb_shm));
+	free(sb->shm_name);
+	free(sb->sem_name);
 	free(sb);
 
 	return r;

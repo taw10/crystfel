@@ -46,13 +46,13 @@ struct im_zmq_params
 
 #if defined(HAVE_ZMQ)
 
-extern struct im_zmq *im_zmq_connect(struct im_zmq_params *params);
+extern struct im_zmq *im_zmq_connect(const struct im_zmq_params *params);
 extern void im_zmq_shutdown(struct im_zmq *z);
 extern void *im_zmq_fetch(struct im_zmq *z, size_t *pdata_size);
 
 #else /* defined(HAVE_ZMQ) */
 
-static UNUSED struct im_zmq *im_zmq_connect(struct im_zmq_params *params) { return NULL; }
+static UNUSED struct im_zmq *im_zmq_connect(const struct im_zmq_params *params) { return NULL; }
 static UNUSED void im_zmq_shutdown(struct im_zmq *z) { }
 static UNUSED void *im_zmq_fetch(struct im_zmq *z, size_t *psize) { *psize = 0; return NULL; }
 

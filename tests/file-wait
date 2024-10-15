@@ -27,7 +27,7 @@ fi
 make_link &
 
 echo "file_wait_input.h5" > file_wait_input.lst
-$INDEXAMAJIG -i file_wait_input.lst -o file_wait_input.stream -g $GEOM --wait-for-file=10
+$INDEXAMAJIG -i file_wait_input.lst -o file_wait_input.stream -g $GEOM --indexing=none --wait-for-file=10
 OUTVAL=$?
 
 wait

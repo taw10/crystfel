@@ -19,6 +19,7 @@ conf_data = configuration_data()
 # Mandatory dependencies
 cc = meson.get_compiler('c')
 mdep = cc.find_library('m', required: true)
+rtdep = cc.find_library('rt', required: false)
 gsldep = dependency('gsl', required: true)
 pthreaddep = dependency('threads', required: true)
 
@@ -176,7 +177,9 @@ adjust_detector = executable('adjust_detector',
                              install_rpath: crystfel_rpath)
 
 # indexamajig
-indexamajig_sources = ['src/indexamajig.c', 'src/im-sandbox.c',
+indexamajig_sources = ['src/indexamajig.c',
+                       'src/im-sandbox.c',
+                       'src/im-argparse.c',
                        'src/process_image.c',
                        versionc]
 if zmqdep.found()
@@ -188,8 +191,9 @@ if asapodep.found()
 endif
 
 indexamajig = executable('indexamajig', indexamajig_sources,
-                         dependencies: [mdep, libcrystfeldep, gsldep,
-                                        pthreaddep, zmqdep, asapodep, asapoproddep],
+                         dependencies: [mdep, rtdep, libcrystfeldep, gsldep,
+                                        pthreaddep, zmqdep, asapodep, asapoproddep,
+                                        fftwdep],
                          install: true,
                          install_rpath: crystfel_rpath)
 

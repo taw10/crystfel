@@ -42,7 +42,6 @@ struct index_args;
 #endif
 
 #include "integration.h"
-#include "im-sandbox.h"
 #include "peaks.h"
 #include "image.h"
 #include "im-asapo.h"
@@ -75,7 +74,6 @@ struct index_args
 	float clen_estimate;
 	int n_threads;
 	int mille;
-	char *milledir;
 	int max_mille_level;
 
 	/* Integration */
@@ -99,6 +97,8 @@ struct index_args
 };
 
 
+#include "im-sandbox.h"
+
 /* Information about the indexing process for one pattern */
 struct pattern_args
 {
@@ -118,7 +118,7 @@ struct pattern_args
 extern void process_image(const struct index_args *iargs,
                           struct pattern_args *pargs, Stream *st,
                           int cookie, const char *tmpdir, int serial,
-                          struct sb_shm *sb_shared, char *last_task,
+                          struct sb_shm *sb_shared,
                           struct im_asapo *asapostuff,
                           Mille *mille, ImageDataArrays *ida);
 

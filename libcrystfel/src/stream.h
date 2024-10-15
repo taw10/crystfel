@@ -36,6 +36,8 @@
  * Stream functions (for indexing results)
  */
 
+#include <stdio.h>
+
 struct image;
 
 #include "datatemplate.h"
@@ -112,7 +114,7 @@ extern char *stream_audit_info(Stream *st);
 extern char *stream_geometry_file(Stream *st);
 
 /* Low-level stuff used for indexamajig sandbox */
-extern int stream_get_fd(Stream *st);
+extern FILE *stream_get_fh(Stream *st);
 extern int stream_rewind(Stream *st);
 
 /* Random access */

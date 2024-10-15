@@ -1174,9 +1174,9 @@ Stream *stream_open_for_write(const char *filename,
 }
 
 
-int stream_get_fd(Stream *st)
+FILE *stream_get_fh(Stream *st)
 {
-	return fileno(st->fh);
+	return st->fh;
 }
 
 

@@ -256,6 +256,9 @@ extern void index_pattern_4(struct image *image, IndexingPrivate *ipriv,
                             int *ping, char *last_task, Mille *mille,
                             int max_mille_level);
 
+extern void index_pattern_5(struct image *image, IndexingPrivate *ipriv,
+                            Mille *mille, int max_mille_level);
+
 extern void cleanup_indexing(IndexingPrivate *ipriv);
 
 #ifdef __cplusplus

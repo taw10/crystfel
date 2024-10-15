@@ -52,7 +52,7 @@ struct im_asapo;
 
 #if defined(HAVE_ASAPO)
 
-extern struct im_asapo *im_asapo_connect(struct im_asapo_params *params);
+extern struct im_asapo *im_asapo_connect(const struct im_asapo_params *params);
 
 extern void im_asapo_shutdown(struct im_asapo *a);
 
@@ -66,7 +66,7 @@ extern void im_asapo_send(struct im_asapo *a, struct image *image, int hit);
 
 #else /* defined(HAVE_ASAPO) */
 
-static UNUSED struct im_asapo *im_asapo_connect(struct im_asapo_params *params)
+static UNUSED struct im_asapo *im_asapo_connect(const struct im_asapo_params *params)
 {
 	ERROR("This installation of CrystFEL was compiled without ASAP::O support.\n");
 	return NULL;
