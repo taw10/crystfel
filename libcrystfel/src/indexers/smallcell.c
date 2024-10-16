@@ -280,14 +280,14 @@ static struct Nodelist *append(struct Nodelist *a, struct PeakInfo *v)
 
 
 /* Average weight function */
-static double avg_weight(int num_neigh, double *weights)
+static double avg_weight(const struct PeakInfo *pk)
 {
-	double avg_add = 0.0;
 	int j;
-	for ( j=0; j<num_neigh; j++ ) {
-		avg_add += weights[j];
+	double avg_add = 0.0;
+	for ( j=0; j<pk->n_neigh; j++ ) {
+		avg_add += pk->weight_list[j];
 	}
-	return avg_add / num_neigh;
+	return avg_add / pk->n_neigh;
 }
 
 
@@ -309,26 +309,17 @@ static void BK(struct Nodelist *R,
 	struct PeakInfo *piv = NULL;
 	piv = piv_pool->mem[0];
 	int n_max = piv_pool->mem[0]->n_neigh;
-	double n_max_weight =
-	        avg_weight(piv_pool->mem[0]->n_neigh,
-	                   piv_pool->mem[0]->weight_list);
+	double n_max_weight = avg_weight(piv_pool->mem[0]);
 	int i;
 	for ( i=1; i<piv_pool->n_mem; i++ ) {
 		if (piv_pool->mem[i]->n_neigh > n_max) {
 			n_max = piv_pool->mem[i]->n_neigh;
 			piv = piv_pool->mem[i];
-			n_max_weight =
-			        avg_weight(piv_pool->mem[i]->n_neigh,
-			                   piv_pool->mem[i]->weight_list);
+			n_max_weight = avg_weight(piv_pool->mem[0]);
 		} else if (piv_pool->mem[i]->n_neigh == n_max) {
 			if (piv_pool->n_mem == 1) {
 				piv = piv_pool->mem[0];
-			} else if ((n_max > 0)
-			           &&
-			           (avg_weight
-			            (piv_pool->mem[i]->n_neigh,
-			             piv_pool->mem[i]->weight_list) <
-			            n_max_weight)) {
+			} else if ((n_max > 0) && (avg_weight(piv_pool->mem[0]) < n_max_weight)) {
 				piv = piv_pool->mem[i];
 			}
 		}
