@@ -414,6 +414,7 @@ int smallcell_index(struct image *image, void *mpriv)
 	int num_peak_infos = 0;
 	int peaks_with_matches = 0;
 	int i;
+	SymOpMask *msk = new_symopmask(priv->sym);
 
 	/* Loop through each peak, calculate d, then 1/d value
 	 * (based on estimate_peak_resolution from peak.c), then use match_rings
@@ -439,9 +440,8 @@ int smallcell_index(struct image *image, void *mpriv)
 
 				/* Looking for symmetries and creating more
 				 * PeakInfo structs with these symmetry indices */
-				SymOpMask *m = new_symopmask(priv->sym);
-				special_position(priv->sym, m, h, k, l);
-				int n = num_equivs(priv->sym, m);
+				special_position(priv->sym, msk, h, k, l);
+				int n = num_equivs(priv->sym, msk);
 				int y;
 				for ( y=0; y<n; y++ ) {
 
@@ -477,7 +477,6 @@ int smallcell_index(struct image *image, void *mpriv)
 					peak_infos[num_peak_infos].n_neigh = 0;
 					(num_peak_infos)++;
 				}
-				free_symopmask(m);
 			}
 
 		}
@@ -490,6 +489,8 @@ int smallcell_index(struct image *image, void *mpriv)
 	STATUS("The number of matches in this image (including symmetric "
 	       "indices) is %d for %d/%d peaks\n",
 	       num_peak_infos, peaks_with_matches, npk);
+
+	free_symopmask(msk);
 
 
 	/*  Now to connect the nodes using calculated and measured reciprocal distance */
