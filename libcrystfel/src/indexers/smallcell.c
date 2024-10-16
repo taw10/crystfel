@@ -334,6 +334,7 @@ static void BK(struct Nodelist *R,
 	/* Find pivot u from set of nodes in P U X */
 	struct Nodelist *piv_pool = Union(P, X);
 	struct PeakInfo *piv = find_pivot(piv_pool);
+	cffree(piv_pool);
 	if ( piv == NULL ) {
 		ERROR("Couldn't find pivot\n");
 		return;
@@ -345,7 +346,6 @@ static void BK(struct Nodelist *R,
 	/* Remove pivot neighbours from P list */
 	struct Nodelist *P_excl = exclusion(P, piv_neighbours);
 
-	cffree(piv_pool);
 	cffree(piv_neighbours);
 
 	int u;
