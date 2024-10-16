@@ -708,9 +708,6 @@ int smallcell_index(struct image *image, void *mpriv)
 	for ( i=0; i<Max_cliques->n; i++ ) {
 		cffree(Max_cliques->list[i]);
 	}
-	for ( i=0; i<Max->n; i++ ) {
-		cffree(Max->list[i]);
-	}
 
 	cffree(Max_cliques);
 	cffree(Max);
