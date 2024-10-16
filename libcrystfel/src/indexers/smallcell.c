@@ -405,7 +405,6 @@ int smallcell_index(struct image *image, void *mpriv)
 	const double tol = PIXEL_RING_TOL / (lambda * det->panels[0].cnz);
 
 	int npk = image_feature_count(peaks);
-
 	if ( npk <= 3 ) return 0;
 
 	int peak_infos_size = 100;      /*  Arbitrary initial size allocation */
@@ -420,19 +419,18 @@ int smallcell_index(struct image *image, void *mpriv)
 	 * (based on estimate_peak_resolution from peak.c), then use match_rings
 	 * function to create structs for this peak with all possible h,k,l values */
 	for ( i=0; i<npk; i++ ) {
+
 		struct imagefeature *f = image_get_feature(peaks, i);
 		double r[3];
 		detgeom_transform_coords(&det->panels[f->pn], f->fs, f->ss,
 		                         lambda, 0.0, 0.0, r);
-		double x_res = r[0];
-		double y_res = (r[1]);
-		double z_res = (r[2]);
 		double rns = modulus(r[0], r[1], r[2]);
 		int init_num_peak_infos = num_peak_infos;
 		int j;
 
 		for ( j=0; j<priv->num_rings; j++ ) {
-			if (fabs(priv->powderrings[j].resolution - rns) <= tol) {
+
+			if ( fabs(priv->powderrings[j].resolution - rns) <= tol ) {
 
 				signed int h = priv->powderrings[j].h;
 				signed int k = priv->powderrings[j].k;
@@ -445,37 +443,31 @@ int smallcell_index(struct image *image, void *mpriv)
 				int y;
 				for ( y=0; y<n; y++ ) {
 
-					if (num_peak_infos >= peak_infos_size) {
+					if ( num_peak_infos >= peak_infos_size ) {
 						peak_infos_size *= 2;
-						peak_infos =
-						        cfrealloc(peak_infos,
-						                  peak_infos_size
-						                  *
-						                  sizeof
-						                  (PeakInfo));
+						peak_infos = cfrealloc(peak_infos,
+						                       peak_infos_size * sizeof(PeakInfo));
 					}
 
 					signed int ha, ka, la;
-					get_equiv(priv->sym, m, y, h, k, l, &ha,
-					          &ka, &la);
+					get_equiv(priv->sym, msk, y, h, k, l, &ha, &ka, &la);
+
 					/*  Add ha, ka, la to list of reflections  */
-					peak_infos[num_peak_infos].peak_number =
-					        i;
-					peak_infos[num_peak_infos].peak_res =
-					        rns;
+					peak_infos[num_peak_infos].peak_number = i;
+					peak_infos[num_peak_infos].peak_res = rns;
 					peak_infos[num_peak_infos].h = ha;
 					peak_infos[num_peak_infos].k = ka;
 					peak_infos[num_peak_infos].l = la;
-					peak_infos[num_peak_infos].x = x_res;
-					peak_infos[num_peak_infos].y = y_res;
-					peak_infos[num_peak_infos].z = z_res;
+					peak_infos[num_peak_infos].x = r[0];
+					peak_infos[num_peak_infos].y = r[1];
+					peak_infos[num_peak_infos].z = r[2];
+
 					int w;
 					for ( w=0; w<MAX_NEIGH; w++ ) {
-						peak_infos[num_peak_infos].
-						        neigh[w] = NULL;
+						peak_infos[num_peak_infos].neigh[w] = NULL;
 					}
 					peak_infos[num_peak_infos].n_neigh = 0;
-					(num_peak_infos)++;
+					num_peak_infos++;
 				}
 			}
 
@@ -486,11 +478,11 @@ int smallcell_index(struct image *image, void *mpriv)
 		}
 	}
 
-	STATUS("The number of matches in this image (including symmetric "
-	       "indices) is %d for %d/%d peaks\n",
-	       num_peak_infos, peaks_with_matches, npk);
-
 	free_symopmask(msk);
+
+	STATUS("The number of matches in this image (including symmetric indices) "
+	       "is %d for %d/%d peaks\n",
+	       num_peak_infos, peaks_with_matches, npk);
 
 
 	/*  Now to connect the nodes using calculated and measured reciprocal distance */
@@ -506,15 +498,12 @@ int smallcell_index(struct image *image, void *mpriv)
 		/* Loop through the rest of the peak infos */
 		for ( y=j+1; y<num_peak_infos-1; y++ ) {
 
-			if (peak_infos[y].peak_number ==
-			    peak_infos[j].peak_number)
-				continue;
+			if ( peak_infos[y].peak_number == peak_infos[j].peak_number ) continue;
 
 			/* Observed dist. d_1 = fabs(res.vec_j - res.vec_y) */
-			double d_1 =
-			        modulus(peak_infos[j].x - peak_infos[y].x,
-			                peak_infos[j].y - peak_infos[y].y,
-			                peak_infos[j].z - peak_infos[y].z);
+			double d_1 = modulus(peak_infos[j].x - peak_infos[y].x,
+			                     peak_infos[j].y - peak_infos[y].y,
+			                     peak_infos[j].z - peak_infos[y].z);
 
 			/* Predicted d_2 */
 			double d_2 = calc_d2(peak_infos[j], peak_infos[y], priv->g9);
@@ -522,33 +511,25 @@ int smallcell_index(struct image *image, void *mpriv)
 			double diff = fabs(d_2 - d_1);
 
 			/* Now test difference */
-			if (diff <= dtol) {
+			if ( diff <= dtol ) {
 
 				/* Connect nodes */
+				if ( peak_infos[j].n_neigh <= MAX_NEIGH ) {
 
-				if (peak_infos[j].n_neigh <= MAX_NEIGH) {
-
-					/* Pointing to the info of the connected peak
-					 * (adding node_b as neighbour due to its connection
-					 * to node_a) */
 					peak_infos[j].neigh[peak_infos[j].n_neigh] = &peak_infos[y];
-
-					/* add weight for later */
 					peak_infos[j].weight_list[peak_infos[j].n_neigh] = diff;
-
-					/* increasing number of connection/neighbours that node_a has */
 					peak_infos[j].n_neigh++;
 
 				} else {
-
 					ERROR("Too many neighbours.\n");
 				}
 
-				if (peak_infos[y].n_neigh <= MAX_NEIGH) {
+				if ( peak_infos[y].n_neigh <= MAX_NEIGH ) {
 
-					peak_infos[y].neigh[peak_infos[y].n_neigh] = &peak_infos[j];    /* Also pointing other way(i.e. adding node_a as a neghbour to node_b as we wont loop back through the upper part of the list when j = peak_no of node_b) */
-					peak_infos[y].weight_list[peak_infos[y].n_neigh] = diff;        /* add weight for later */
-					peak_infos[y].n_neigh++;        /* increasing number of connection/neighbours that node_b has */
+					peak_infos[y].neigh[peak_infos[y].n_neigh] = &peak_infos[j];
+					peak_infos[y].weight_list[peak_infos[y].n_neigh] = diff;
+					peak_infos[y].n_neigh++;
+
 				} else {
 					ERROR("Too many neighbours.\n");
 				}
@@ -558,7 +539,7 @@ int smallcell_index(struct image *image, void *mpriv)
 		}
 
 		/* Counting number of nodes with 1 or more connection (may be unnecessary)... */
-		if (peak_infos[j].n_neigh != 0) {
+		if ( peak_infos[j].n_neigh != 0 ) {
 			n_connected_nodes++;
 		}
 
@@ -567,24 +548,26 @@ int smallcell_index(struct image *image, void *mpriv)
 	/* Store the max.cliques found */
 	struct Cliquelist *Max_cliques = cfmalloc(sizeof(struct Cliquelist));
 	Max_cliques->n = 0;
-	/*  R: array of nodes forming a clique (array of pointers to node infos) */
-	/*  P: array of all prosepctive nodes that are connected to R which may be added to R. To begin, this is all nodes i.e all peak_infos */
-	/*  X: exculsion set (same form as R but nodes that are NOT candidats for the max. clique, were originaly in P) */
+	/*  R: array of nodes forming a clique */
+	/*  P: array of all prosepctive nodes that are connected to R which may be added to R.
+	 *     To begin, this is all nodes i.e all peak_infos */
+	/*  X: exculsion set (same form as R but nodes that are NOT candidates for
+	 *     the max. clique, were originaly in P) */
 	struct Nodelist *R = new_nodelist();
 	struct Nodelist *X = new_nodelist();
 	struct Nodelist *P = new_nodelist();
+
 	/* To make P; create nodelist of all peak_infos */
 	for ( i=0; i<num_peak_infos; i++ ) {
-		if (peak_infos[i].n_neigh != 0) {
+		if ( peak_infos[i].n_neigh != 0 ) {
 			add(P, &peak_infos[i]);
 		}
 	}
 
-	if (P->n_mem <= 2) {
+	if ( P->n_mem <= 2 ) {
 		ERROR("No peaks with neighbours\n");
 		return 0;
 	}
-	/* Call BK using current peak info nodes for this image */
 
 	BK(R, P, X, Max_cliques);
 	STATUS("The number of cliques found = %d.\n", Max_cliques->n);
@@ -595,95 +578,89 @@ int smallcell_index(struct image *image, void *mpriv)
 	Max->n = 0;
 	Max->list[0] = Max_cliques->list[0];
 	Max->n++;
-	int m;
-	for ( m=1; m<Max_cliques->n; m++ ) {
-		if (Max_cliques->list[m]->n_mem > Max_clique_len) {
-			Max_clique_len = Max_cliques->list[m]->n_mem;
+	for ( i=1; i<Max_cliques->n; i++ ) {
+		if (Max_cliques->list[i]->n_mem > Max_clique_len) {
+			Max_clique_len = Max_cliques->list[i]->n_mem;
 			int t;
 			for ( t=0; t<Max->n; t++ ) {
 				Max->list[t] = NULL;
 			}
 			Max->n = 0;
-			Max->list[0] = Max_cliques->list[m];
+			Max->list[0] = Max_cliques->list[i];
 			Max->n++;
-		} else if (Max_cliques->list[m]->n_mem == Max_clique_len) {
-			Max->list[Max->n] = Max_cliques->list[m];
+		} else if (Max_cliques->list[i]->n_mem == Max_clique_len) {
+			Max->list[Max->n] = Max_cliques->list[i];
 			Max->n++;
 		}
 	}
 	/* If more than one max_clique with the same number of nodes is found, take only the right-handed solution */
 	/* This requires first getting the unit cell for each max_clique, and then using the right_handed function from cell-utils */
-	for ( m=0; m<Max->n; m++ ) {
-		if (Max->list[m]->n_mem < 5 && m == (Max->n) - 1)
-			return 0;
-		if (Max->list[m]->n_mem < 5)
-			continue;
-		gsl_matrix *h_mat =
-		        gsl_matrix_calloc(3 * (Max->list[m]->n_mem), 9);
-		gsl_vector *h_vec = gsl_vector_alloc(3 * (Max->list[m]->n_mem));
+	for ( i=0; i<Max->n; i++ ) {
+
+		if (Max->list[i]->n_mem < 5 && i == (Max->n) - 1) return 0;
+		if (Max->list[i]->n_mem < 5) continue;
+
+		gsl_matrix *h_mat = gsl_matrix_calloc(3 * (Max->list[i]->n_mem), 9);
+		gsl_vector *h_vec = gsl_vector_alloc(3 * (Max->list[i]->n_mem));
 
 		int count_node = 0;
 		int col_count = 0;
 		int have_a = 0, have_b = 0, have_c = 0;
-		int i;
-		for ( i=0; i<3*Max->list[m]->n_mem; i++) {
-			if (i > 0 && i % 3 == 0) {
+		int j;
+
+		for ( j=0; j<3*Max->list[i]->n_mem; j++) {
+			if (j > 0 && j % 3 == 0) {
 				count_node++;
 				col_count = 0;
 			}
 
-			if (Max->list[m]->mem[count_node]->h != 0)
-				have_a = 1;
-			if (Max->list[m]->mem[count_node]->k != 0)
-				have_b = 1;
-			if (Max->list[m]->mem[count_node]->l != 0)
-				have_c = 1;
+			if ( Max->list[i]->mem[count_node]->h != 0 ) have_a = 1;
+			if ( Max->list[i]->mem[count_node]->k != 0 ) have_b = 1;
+			if ( Max->list[i]->mem[count_node]->l != 0 ) have_c = 1;
 
-			gsl_matrix_set(h_mat, i, col_count,
-			               Max->list[m]->mem[count_node]->h);
-			gsl_matrix_set(h_mat, i, col_count + 3,
-			               Max->list[m]->mem[count_node]->k);
-			gsl_matrix_set(h_mat, i, col_count + 6,
-			               Max->list[m]->mem[count_node]->l);
+			gsl_matrix_set(h_mat, j, col_count,
+			               Max->list[i]->mem[count_node]->h);
+			gsl_matrix_set(h_mat, j, col_count + 3,
+			               Max->list[i]->mem[count_node]->k);
+			gsl_matrix_set(h_mat, j, col_count + 6,
+			               Max->list[i]->mem[count_node]->l);
 			col_count++;
 		}
 
 		int count_mem = 0;
 		int count_comp = 0;
-		for ( i=0; i<3*Max->list[m]->n_mem; i++) {
+		for ( j=0; j<3*Max->list[i]->n_mem; j++) {
 
-			gsl_vector_set(h_vec, i,
-			               Max->list[m]->mem[count_mem]->x);
+			gsl_vector_set(h_vec, j,
+			               Max->list[i]->mem[count_mem]->x);
 			if (count_comp == 0) {
-				gsl_vector_set(h_vec, i,
-				               Max->list[m]->mem[count_mem]->x);
+				gsl_vector_set(h_vec, j,
+				               Max->list[i]->mem[count_mem]->x);
 				count_comp++;
 			} else if (count_comp == 1) {
-				gsl_vector_set(h_vec, i,
-				               Max->list[m]->mem[count_mem]->y);
+				gsl_vector_set(h_vec, j,
+				               Max->list[i]->mem[count_mem]->y);
 				count_comp++;
 			} else if (count_comp == 2) {
-				gsl_vector_set(h_vec, i,
-				               Max->list[m]->mem[count_mem]->z);
+				gsl_vector_set(h_vec, j,
+				               Max->list[i]->mem[count_mem]->z);
 				count_comp = 0;
 				count_mem++;
 			}
 		}
-		/* Solve matrix-vector equation for unit-cell for this clique m */
+
+		/* Solve matrix-vector equation for unit-cell for this clique i */
 		gsl_vector *cell_vecs = gsl_vector_alloc(9);
 		/* cell_vec = [a*x a*y a*z b*x b*y b*z c*x c*y c*z]  */
 		double chisq;
-		gsl_matrix *cov =
-		        gsl_matrix_alloc(3 * (Max->list[m]->n_mem), 9);
-		gsl_multifit_linear_workspace *work =
-		        gsl_multifit_linear_alloc(3 * (Max->list[m]->n_mem), 9);
-		if (gsl_multifit_linear
-		    (h_mat, h_vec, cell_vecs, cov, &chisq, work)) {
+		gsl_matrix *cov = gsl_matrix_alloc(3 * (Max->list[i]->n_mem), 9);
+		gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(3 * (Max->list[i]->n_mem), 9);
+		if (gsl_multifit_linear(h_mat, h_vec, cell_vecs, cov, &chisq, work)) {
 			ERROR("Multifit failed\n");
+			continue;
 		}
 
 		UnitCell *uc;
-
 		uc = cell_new();
 		cell_set_reciprocal(uc,
 		                    gsl_vector_get(cell_vecs, 0),
@@ -697,7 +674,7 @@ int smallcell_index(struct image *image, void *mpriv)
 		                    gsl_vector_get(cell_vecs, 8));
 		/* FIXME: Set lattice type */
 
-		if (uc == NULL) {
+		if ( uc == NULL ) {
 			ERROR("Unit cell not created.. returned NULL\n");
 			continue;
 		}
