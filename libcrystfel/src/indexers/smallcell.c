@@ -386,6 +386,15 @@ static void BK(struct Nodelist *R,
 }
 
 
+static double calc_d2(struct PeakInfo a, struct PeakInfo b, struct g_matrix g9)
+{
+	/* d_2 = sqrt(Transpose(MI_b - MI_a).G*.(MI_b - MI_a)) */
+	return sqrt((b.h - a.h) * (g9.A * (b.h - a.h) + g9.D * (b.k - a.k) + g9.G * (b.l - a.l))
+	          + (b.k - a.k) * (g9.B * (b.h - a.h) + g9.E * (b.k - a.k) + g9.H * (b.l - a.l))
+	          + (b.l - a.l) * (g9.C * (b.h - a.h) + g9.F * (b.k - a.k) + g9.J * (b.l - a.l)));
+}
+
+
 int smallcell_index(struct image *image, void *mpriv)
 {
 	struct smallcell_private *priv = (struct smallcell_private *)mpriv;
@@ -484,8 +493,6 @@ int smallcell_index(struct image *image, void *mpriv)
 
 
 	/*  Now to connect the nodes using calculated and measured reciprocal distance */
-
-	struct g_matrix g9 = priv->g9;
 	double dtol = DIFF_TOL;
 	int n_connected_nodes = 0;
 	int j;
@@ -493,9 +500,6 @@ int smallcell_index(struct image *image, void *mpriv)
 	/* Loop through peak numbers */
 	for ( j=0; j<num_peak_infos; j++ ) {
 
-		int node_a_h = peak_infos[j].h;
-		int node_a_k = peak_infos[j].k;
-		int node_a_l = peak_infos[j].l;
 		int y;
 
 		/* Loop through the rest of the peak infos */
@@ -512,33 +516,7 @@ int smallcell_index(struct image *image, void *mpriv)
 			                peak_infos[j].z - peak_infos[y].z);
 
 			/* Predicted d_2 */
-			int node_b_h = peak_infos[y].h;
-			int node_b_k = peak_infos[y].k;
-			int node_b_l = peak_infos[y].l;
-
-			/* d_2 = sqrt(Transpose(MI_b - MI_a).G*.(MI_b - MI_a)) */
-			double d_2 =
-			        sqrt((node_b_h -
-			              node_a_h) * (g9.A * (node_b_h -
-			                                   node_a_h) +
-			                           g9.D * (node_b_k -
-			                                   node_a_k) +
-			                           g9.G * (node_b_l - node_a_l))
-			             + (node_b_k -
-			                node_a_k) * (g9.B * (node_b_h -
-			                                     node_a_h) +
-			                             g9.E * (node_b_k -
-			                                     node_a_k) +
-			                             g9.H * (node_b_l -
-			                                     node_a_l))
-			             + (node_b_l -
-			                node_a_l) * (g9.C * (node_b_h -
-			                                     node_a_h) +
-			                             g9.F * (node_b_k -
-			                                     node_a_k) +
-			                             g9.J * (node_b_l -
-			                                     node_a_l)));
-
+			double d_2 = calc_d2(peak_infos[j], peak_infos[y], priv->g9);
 
 			double diff = fabs(d_2 - d_1);
 
