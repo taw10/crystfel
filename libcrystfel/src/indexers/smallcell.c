@@ -291,6 +291,30 @@ static double avg_weight(const struct PeakInfo *pk)
 }
 
 
+static struct PeakInfo *find_pivot(struct Nodelist *piv_pool)
+{
+	int i;
+	struct PeakInfo *piv = NULL;
+	double min_weight = +INFINITY;
+	int max_neigh = 0;
+
+	for ( i=0; i<piv_pool->n_mem; i++ ) {
+
+		if ( piv_pool->mem[i]->n_neigh > max_neigh ) {
+			min_weight = avg_weight(piv_pool->mem[i]);
+			piv = piv_pool->mem[i];
+
+		} else if ( piv_pool->mem[i]->n_neigh == max_neigh ) {
+			if ( avg_weight(piv_pool->mem[i]) < min_weight ) {
+				min_weight = avg_weight(piv_pool->mem[i]);
+				piv = piv_pool->mem[i];
+			}
+		}
+	}
+	return piv;
+}
+
+
 /* Bron-Kerbosch algorithm, with pivoting */
 static void BK(struct Nodelist *R,
                struct Nodelist *P,
@@ -306,26 +330,8 @@ static void BK(struct Nodelist *R,
 
 	/* Find pivot u from set of nodes in P U X */
 	struct Nodelist *piv_pool = Union(P, X);
-	struct PeakInfo *piv = NULL;
-	piv = piv_pool->mem[0];
-	int n_max = piv_pool->mem[0]->n_neigh;
-	double n_max_weight = avg_weight(piv_pool->mem[0]);
-	int i;
-	for ( i=1; i<piv_pool->n_mem; i++ ) {
-		if (piv_pool->mem[i]->n_neigh > n_max) {
-			n_max = piv_pool->mem[i]->n_neigh;
-			piv = piv_pool->mem[i];
-			n_max_weight = avg_weight(piv_pool->mem[0]);
-		} else if (piv_pool->mem[i]->n_neigh == n_max) {
-			if (piv_pool->n_mem == 1) {
-				piv = piv_pool->mem[0];
-			} else if ((n_max > 0) && (avg_weight(piv_pool->mem[0]) < n_max_weight)) {
-				piv = piv_pool->mem[i];
-			}
-		}
-	}
-
-	if (piv == NULL) {
+	struct PeakInfo *piv = find_pivot(piv_pool);
+	if ( piv == NULL ) {
 		ERROR("Couldn't find pivot\n");
 		return;
 	}
