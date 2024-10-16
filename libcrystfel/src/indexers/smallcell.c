@@ -808,7 +808,7 @@ static error_t smallcell_parse_arg(int key, char *arg, struct argp_state *state)
 static struct argp_option smallcell_options[] = {
 
 	{"help-smallcell", 1, NULL, OPTION_NO_USAGE,
-	 "Show options for 'from file' indexing", 99},
+	 "Show options for 'smallcell' indexing", 99},
 
 	{0}
 };
