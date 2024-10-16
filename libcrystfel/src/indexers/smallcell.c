@@ -151,11 +151,19 @@ struct Cliquelist
 };
 
 
+static struct Nodelist *new_nodelist()
+{
+	struct Nodelist *r = cfmalloc(sizeof(struct Nodelist));
+	if ( r == NULL ) return NULL;
+	r->n_mem = 0;
+	return r;
+}
+
+
 static struct Nodelist *CopyRlist(struct Nodelist *R)
 {
-	struct Nodelist *Rcopy = cfmalloc(sizeof(struct Nodelist));
 	int i;
-	Rcopy->n_mem = 0;
+	struct Nodelist *Rcopy = new_nodelist();
 	for ( i=0; i<R->n_mem; i++ ) {
 		Rcopy->mem[i] = R->mem[i];
 		Rcopy->n_mem++;
@@ -168,7 +176,7 @@ static struct Nodelist *CopyRlist(struct Nodelist *R)
 static struct Nodelist *neighbours(struct PeakInfo *in)
 {
 	int i;
-	struct Nodelist *list = cfmalloc(sizeof(struct Nodelist));
+	struct Nodelist *list = new_nodelist();
 	for ( i=0; i<in->n_neigh; i++ ) {
 		list->mem[i] = in->neigh[i];
 	}
@@ -201,9 +209,7 @@ static void add(struct Nodelist *c, struct PeakInfo *test)
 static struct Nodelist *Union(struct Nodelist *a, struct Nodelist *b)
 {
 	int i, j;
-	struct Nodelist *c = cfmalloc(sizeof(struct Nodelist));
-
-	c->n_mem = 0;
+	struct Nodelist *c = new_nodelist();
 	for ( i=0; i<a->n_mem; i++ ) {
 		add(c, a->mem[i]);
 	}
@@ -218,9 +224,8 @@ static struct Nodelist *Union(struct Nodelist *a, struct Nodelist *b)
  *  i.e. c = a intersection b */
 static struct Nodelist *intersection(struct Nodelist *a, struct Nodelist *b)
 {
-	struct Nodelist *c = cfmalloc(sizeof(struct Nodelist));
-	c->n_mem = 0;
 	int j;
+	struct Nodelist *c = new_nodelist();
 	for ( j=0; j<a->n_mem; j++ ) {
 		if ( isin(b, a->mem[j]) == 1 ) {
 			add(c, a->mem[j]);
@@ -234,9 +239,8 @@ static struct Nodelist *intersection(struct Nodelist *a, struct Nodelist *b)
  *  i.e. c = a\b */
 static struct Nodelist *exclusion(struct Nodelist *a, struct Nodelist *b)
 {
-	struct Nodelist *c = cfmalloc(sizeof(struct Nodelist));
-	c->n_mem = 0;
 	int j;
+	struct Nodelist *c = new_nodelist();
 	for ( j=0; j<a->n_mem; j++ ) {
 		if ( isin(b, a->mem[j]) == 0 ) {
 			add(c, a->mem[j]);
@@ -267,9 +271,8 @@ static struct Nodelist *exclunode(struct Nodelist *a, struct PeakInfo *v)
 /* Function to append a node to a list (creating a new list) */
 static struct Nodelist *append(struct Nodelist *a, struct PeakInfo *v)
 {
-	struct Nodelist *c = cfmalloc(sizeof(struct Nodelist));
-	c->n_mem = 0;
 	int j;
+	struct Nodelist *c = new_nodelist();
 	for ( j=0; j<a->n_mem; j++ ) {
 		add(c, a->mem[j]);
 	}
@@ -584,12 +587,9 @@ int smallcell_index(struct image *image, void *mpriv)
 	/*  R: array of nodes forming a clique (array of pointers to node infos) */
 	/*  P: array of all prosepctive nodes that are connected to R which may be added to R. To begin, this is all nodes i.e all peak_infos */
 	/*  X: exculsion set (same form as R but nodes that are NOT candidats for the max. clique, were originaly in P) */
-	struct Nodelist *R = cfmalloc(sizeof(struct Nodelist));
-	struct Nodelist *X = cfmalloc(sizeof(struct Nodelist));
-	struct Nodelist *P = cfmalloc(sizeof(struct Nodelist));
-	R->n_mem = 0;
-	X->n_mem = 0;
-	P->n_mem = 0;
+	struct Nodelist *R = new_nodelist();
+	struct Nodelist *X = new_nodelist();
+	struct Nodelist *P = new_nodelist();
 	/* To make P; create nodelist of all peak_infos */
 	for ( i=0; i<num_peak_infos; i++ ) {
 		if (peak_infos[i].n_neigh != 0) {
