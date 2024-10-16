@@ -379,12 +379,7 @@ int smallcell_index(struct image *image, void *mpriv)
 	double lambda = image->lambda;
 	struct detgeom *det = image->detgeom;
 
-	/* Calculating a tolerance value of PIXEL_RING_TOL pixel lengths from a peak */
-	double pixel_metres = det->panels[0].pixel_pitch;
-	double ten_pix_len = pixel_metres * PIXEL_RING_TOL;
-	double detector_len = det->panels[0].cnz;
-	double detector_len_m = pixel_metres * detector_len;
-	double tol = ten_pix_len / (lambda * detector_len_m);
+	const double tol = PIXEL_RING_TOL / (lambda * det->panels[0].cnz);
 
 	int npk = image_feature_count(peaks);
 
