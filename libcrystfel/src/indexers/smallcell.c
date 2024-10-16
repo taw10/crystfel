@@ -61,6 +61,7 @@
 
 #define MAX_NEIGH (50)
 #define MAX_NODES (8072)
+#define MAX_CLIQUES (128)
 #define DIFF_TOL (1e8)
 #define PIXEL_RING_TOL (6)
 
@@ -147,7 +148,7 @@ struct Nodelist
 struct Cliquelist
 {
 	int n;
-	struct Nodelist *list[MAX_NEIGH];
+	struct Nodelist *list[MAX_CLIQUES];
 };
 
 
@@ -326,8 +327,12 @@ static void BK(struct Nodelist *R,
 {
 	/* If P & X are empty -> add R to the un-mapped clique array */
 	if ( P->n_mem == 0 && X->n_mem == 0 ) {
-		Max_cliques->list[Max_cliques->n] = CopyRlist(R);
-		Max_cliques->n++;
+		if ( Max_cliques->n >= MAX_CLIQUES ) {
+			ERROR("Too many cliques!\n");
+		} else {
+			Max_cliques->list[Max_cliques->n] = CopyRlist(R);
+			Max_cliques->n++;
+		}
 		return;
 	}
 
@@ -581,8 +586,7 @@ int smallcell_index(struct image *image, void *mpriv)
 	}
 
 	/* Store the max.cliques found */
-	struct Cliquelist *Max_cliques =
-	        cfmalloc(sizeof(struct Nodelist) * sizeof(struct Cliquelist));
+	struct Cliquelist *Max_cliques = cfmalloc(sizeof(struct Cliquelist));
 	Max_cliques->n = 0;
 	/*  R: array of nodes forming a clique (array of pointers to node infos) */
 	/*  P: array of all prosepctive nodes that are connected to R which may be added to R. To begin, this is all nodes i.e all peak_infos */
@@ -608,8 +612,7 @@ int smallcell_index(struct image *image, void *mpriv)
 
 	/* get the max. clique from list of Maximal cliques found */
 	int Max_clique_len = Max_cliques->list[0]->n_mem;
-	struct Cliquelist *Max =
-	        cfmalloc(sizeof(struct Nodelist) * sizeof(struct Cliquelist));
+	struct Cliquelist *Max = cfmalloc(sizeof(struct Cliquelist));
 	Max->n = 0;
 	Max->list[0] = Max_cliques->list[0];
 	Max->n++;
