@@ -473,26 +473,9 @@ static struct PeakInfo *associate_to_rings(ImageFeatureList *peaks,
 }
 
 
-int smallcell_index(struct image *image, void *mpriv)
+static void link_nodes(struct PeakInfo *peak_infos, int num_peak_infos, struct g_matrix g9)
 {
-	struct PeakInfo *peak_infos;
-	int num_peak_infos;
-	int i;
-	struct smallcell_private *priv = (struct smallcell_private *)mpriv;
-
-	peak_infos = associate_to_rings(image->features,
-	                                priv->powderrings,
-	                                priv->num_rings,
-	                                priv->sym,
-	                                image->detgeom,
-	                                image->lambda,
-					&num_peak_infos);
-
-	STATUS("Number of matched rings: %i", num_peak_infos);
-
-	/*  Now to connect the nodes using calculated and measured reciprocal distance */
-	double dtol = DIFF_TOL;
-	int n_connected_nodes = 0;
+	const double dtol = DIFF_TOL;
 	int j;
 
 	/* Loop through peak numbers */
@@ -511,7 +494,7 @@ int smallcell_index(struct image *image, void *mpriv)
 			                     peak_infos[j].z - peak_infos[y].z);
 
 			/* Predicted d_2 */
-			double d_2 = calc_d2(peak_infos[j], peak_infos[y], priv->g9);
+			double d_2 = calc_d2(peak_infos[j], peak_infos[y], g9);
 
 			double diff = fabs(d_2 - d_1);
 
@@ -538,17 +521,30 @@ int smallcell_index(struct image *image, void *mpriv)
 				} else {
 					ERROR("Too many neighbours.\n");
 				}
-
 			}
-
 		}
-
-		/* Counting number of nodes with 1 or more connection (may be unnecessary)... */
-		if ( peak_infos[j].n_neigh != 0 ) {
-			n_connected_nodes++;
-		}
-
 	}
+}
+
+
+int smallcell_index(struct image *image, void *mpriv)
+{
+	struct PeakInfo *peak_infos;
+	int num_peak_infos;
+	int i;
+	struct smallcell_private *priv = (struct smallcell_private *)mpriv;
+
+	peak_infos = associate_to_rings(image->features,
+	                                priv->powderrings,
+	                                priv->num_rings,
+	                                priv->sym,
+	                                image->detgeom,
+	                                image->lambda,
+					&num_peak_infos);
+
+	STATUS("Number of matched rings: %i", num_peak_infos);
+
+	link_nodes(peak_infos, num_peak_infos, priv->g9);
 
 	/* Store the max.cliques found */
 	struct Cliquelist *Max_cliques = cfmalloc(sizeof(struct Cliquelist));
