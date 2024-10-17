@@ -356,28 +356,25 @@ static void BK(struct Nodelist *R,
 	int u;
 	for ( u=0; u<P_excl->n_mem; u++ ) {
 
-		/* For all members of the subset of P we are concered with (P_excl = P\N(pivot)) */
+		/* Set up recursive call:
+		 * BK(R <union> {v},
+		 *    P <intersect> N(v),
+		 *    X <intersect> N(v)
+		 */
 		struct PeakInfo *v = P_excl->mem[u];
-
-		/* Create Nodelist for v using neighbour function */
 		struct Nodelist *v_neighs = neighbours(v);
-
-		/* Add v to R */
 		struct Nodelist *R_new = append(R, v);
-
-		/* Find intersection of P_excl with N(v) */
 		struct Nodelist *P_new = intersection(P, v_neighs);
-
-		/* ''                 '' X with N(v)     */
 		struct Nodelist *X_new = intersection(X, v_neighs);
+		cffree(v_neighs);
+
 		BK(R_new, P_new, X_new, Max_cliques);
 
 		cffree(R_new);
 		cffree(P_new);
 		cffree(X_new);
-		cffree(v_neighs);
 
-		/* Redefine P and X as P\v and XUv */
+		/* Redefine P and X as P\v and X <union> {v} */
 		exclunode(P, v);
 		add(X, v);
 	}
