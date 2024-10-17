@@ -392,25 +392,21 @@ static double calc_d2(struct PeakInfo a, struct PeakInfo b, struct g_matrix g9)
 }
 
 
-int smallcell_index(struct image *image, void *mpriv)
+static struct PeakInfo *associate_to_rings(ImageFeatureList *peaks,
+                                           struct powder_ring *rings,
+                                           int n_rings,
+                                           SymOpList *sym,
+                                           struct detgeom *det,
+                                           double lambda,
+                                           int *pn_matches)
 {
-	struct smallcell_private *priv = (struct smallcell_private *)mpriv;
-	ImageFeatureList *peaks = image->features;
-	double lambda = image->lambda;
-	struct detgeom *det = image->detgeom;
-
 	const double tol = PIXEL_RING_TOL / (lambda * det->panels[0].cnz);
-
-	int npk = image_feature_count(peaks);
-	if ( npk <= 3 ) return 0;
-
 	int peak_infos_size = 100;      /*  Arbitrary initial size allocation */
 	PeakInfo *peak_infos = cfmalloc(peak_infos_size * sizeof(PeakInfo));
-
 	int num_peak_infos = 0;
-	int peaks_with_matches = 0;
 	int i;
-	SymOpMask *msk = new_symopmask(priv->sym);
+	int npk = image_feature_count(peaks);
+	SymOpMask *msk = new_symopmask(sym);
 
 	/* Loop through each peak, calculate d, then 1/d value
 	 * (based on estimate_peak_resolution from peak.c), then use match_rings
@@ -422,21 +418,20 @@ int smallcell_index(struct image *image, void *mpriv)
 		detgeom_transform_coords(&det->panels[f->pn], f->fs, f->ss,
 		                         lambda, 0.0, 0.0, r);
 		double rns = modulus(r[0], r[1], r[2]);
-		int init_num_peak_infos = num_peak_infos;
 		int j;
 
-		for ( j=0; j<priv->num_rings; j++ ) {
+		for ( j=0; j<n_rings; j++ ) {
 
-			if ( fabs(priv->powderrings[j].resolution - rns) <= tol ) {
+			if ( fabs(rings[j].resolution - rns) <= tol ) {
 
-				signed int h = priv->powderrings[j].h;
-				signed int k = priv->powderrings[j].k;
-				signed int l = priv->powderrings[j].l;
+				signed int h = rings[j].h;
+				signed int k = rings[j].k;
+				signed int l = rings[j].l;
 
 				/* Looking for symmetries and creating more
 				 * PeakInfo structs with these symmetry indices */
-				special_position(priv->sym, msk, h, k, l);
-				int n = num_equivs(priv->sym, msk);
+				special_position(sym, msk, h, k, l);
+				int n = num_equivs(sym, msk);
 				int y;
 				for ( y=0; y<n; y++ ) {
 
@@ -447,7 +442,7 @@ int smallcell_index(struct image *image, void *mpriv)
 					}
 
 					signed int ha, ka, la;
-					get_equiv(priv->sym, msk, y, h, k, l, &ha, &ka, &la);
+					get_equiv(sym, msk, y, h, k, l, &ha, &ka, &la);
 
 					/*  Add ha, ka, la to list of reflections  */
 					peak_infos[num_peak_infos].peak_number = i;
@@ -469,18 +464,31 @@ int smallcell_index(struct image *image, void *mpriv)
 			}
 
 		}
-
-		if (num_peak_infos != init_num_peak_infos) {
-			peaks_with_matches++;
-		}
 	}
 
 	free_symopmask(msk);
 
-	STATUS("The number of matches in this image (including symmetric indices) "
-	       "is %d for %d/%d peaks\n",
-	       num_peak_infos, peaks_with_matches, npk);
+	*pn_matches = num_peak_infos;
+	return peak_infos;
+}
 
+
+int smallcell_index(struct image *image, void *mpriv)
+{
+	struct PeakInfo *peak_infos;
+	int num_peak_infos;
+	int i;
+	struct smallcell_private *priv = (struct smallcell_private *)mpriv;
+
+	peak_infos = associate_to_rings(image->features,
+	                                priv->powderrings,
+	                                priv->num_rings,
+	                                priv->sym,
+	                                image->detgeom,
+	                                image->lambda,
+					&num_peak_infos);
+
+	STATUS("Number of matched rings: %i", num_peak_infos);
 
 	/*  Now to connect the nodes using calculated and measured reciprocal distance */
 	double dtol = DIFF_TOL;
