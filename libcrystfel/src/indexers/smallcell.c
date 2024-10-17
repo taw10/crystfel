@@ -706,7 +706,7 @@ int smallcell_index(struct image *image, void *mpriv)
 			continue;
 		}
 
-		if ( validate_cell(uc) == 0 ) {
+		if ( right_handed(uc) && !validate_cell(uc) ) {
 
 			Crystal *cr = crystal_new();
 			if ( cr == NULL ) {
