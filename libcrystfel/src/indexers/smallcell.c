@@ -540,7 +540,7 @@ int smallcell_index(struct image *image, void *mpriv)
 	                                image->lambda,
 					&num_peak_infos);
 
-	STATUS("Number of matched rings: %i", num_peak_infos);
+	STATUS("Number of matched rings: %i\n", num_peak_infos);
 
 	link_nodes(peak_infos, num_peak_infos, priv->g9);
 
@@ -569,7 +569,7 @@ int smallcell_index(struct image *image, void *mpriv)
 	}
 
 	BK(R, P, X, Max_cliques);
-	STATUS("The number of cliques found = %d.\n", Max_cliques->n);
+	STATUS("Number of cliques found: %i\n", Max_cliques->n);
 
 	/* get the max. clique from list of Maximal cliques found */
 	int Max_clique_len = Max_cliques->list[0]->n_mem;
