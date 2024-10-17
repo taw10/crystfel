@@ -525,11 +525,55 @@ static void link_nodes(struct PeakInfo *peak_infos, int num_peak_infos, struct g
 }
 
 
+static struct Cliquelist *find_max_cliques(struct PeakInfo *peak_infos,
+                                           int num_peak_infos)
+{
+	struct Nodelist *R;
+	struct Nodelist *X;
+	struct Nodelist *P;
+	struct Cliquelist *Max_cliques;
+	int i;
+
+	/*  R: array of nodes forming a clique
+	 *  P: array of all prospective nodes that are connected to R which
+	 *     may be added to R. To begin, this is all nodes i.e all peak_infos
+	 *  X: exculsion set (same form as R but nodes that are NOT candidates for
+	 *     the max. clique, were originaly in P) */
+	R = new_nodelist();
+	X = new_nodelist();
+	P = new_nodelist();
+
+	/* To make P; create nodelist of all peak_infos */
+	for ( i=0; i<num_peak_infos; i++ ) {
+		if ( peak_infos[i].n_neigh != 0 ) {
+			add(P, &peak_infos[i]);
+		}
+	}
+
+	if ( P->n_mem <= 2 ) {
+		ERROR("No peaks with neighbours\n");
+		return NULL;
+	}
+
+	Max_cliques = cfmalloc(sizeof(struct Cliquelist));
+	Max_cliques->n = 0;
+
+	BK(R, P, X, Max_cliques);
+
+	cffree(X);
+	cffree(P);
+	cffree(R);
+
+	return Max_cliques;
+}
+
+
 int smallcell_index(struct image *image, void *mpriv)
 {
 	struct PeakInfo *peak_infos;
 	int num_peak_infos;
 	int i;
+	struct Cliquelist *Max_cliques;
 	struct smallcell_private *priv = (struct smallcell_private *)mpriv;
 
 	peak_infos = associate_to_rings(image->features,
@@ -544,31 +588,9 @@ int smallcell_index(struct image *image, void *mpriv)
 
 	link_nodes(peak_infos, num_peak_infos, priv->g9);
 
-	/* Store the max.cliques found */
-	struct Cliquelist *Max_cliques = cfmalloc(sizeof(struct Cliquelist));
-	Max_cliques->n = 0;
-	/*  R: array of nodes forming a clique */
-	/*  P: array of all prosepctive nodes that are connected to R which may be added to R.
-	 *     To begin, this is all nodes i.e all peak_infos */
-	/*  X: exculsion set (same form as R but nodes that are NOT candidates for
-	 *     the max. clique, were originaly in P) */
-	struct Nodelist *R = new_nodelist();
-	struct Nodelist *X = new_nodelist();
-	struct Nodelist *P = new_nodelist();
+	Max_cliques = find_max_cliques(peak_infos, num_peak_infos);
+	if ( Max_cliques == NULL ) return 0;
 
-	/* To make P; create nodelist of all peak_infos */
-	for ( i=0; i<num_peak_infos; i++ ) {
-		if ( peak_infos[i].n_neigh != 0 ) {
-			add(P, &peak_infos[i]);
-		}
-	}
-
-	if ( P->n_mem <= 2 ) {
-		ERROR("No peaks with neighbours\n");
-		return 0;
-	}
-
-	BK(R, P, X, Max_cliques);
 	STATUS("Number of cliques found: %i\n", Max_cliques->n);
 
 	/* get the max. clique from list of Maximal cliques found */
@@ -592,7 +614,6 @@ int smallcell_index(struct image *image, void *mpriv)
 			Max->n++;
 		}
 	}
-
 	/* If more than one max_clique with the same number of nodes is found,
 	 * take only the right-handed solution.  This requires first getting the
 	 * unit cell for each max_clique, and then using the right_handed
@@ -713,9 +734,6 @@ int smallcell_index(struct image *image, void *mpriv)
 
 	cffree(Max_cliques);
 	cffree(Max);
-	cffree(X);
-	cffree(P);
-	cffree(R);
 	cffree(peak_infos);
 	return 0;
 }
