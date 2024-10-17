@@ -62,8 +62,6 @@
 #define MAX_NEIGH (50)
 #define MAX_NODES (8072)
 #define MAX_CLIQUES (128)
-#define DIFF_TOL (1e8)
-#define PIXEL_RING_TOL (6)
 
 
 struct g_matrix
@@ -400,7 +398,7 @@ static struct PeakInfo *associate_to_rings(ImageFeatureList *peaks,
                                            double lambda,
                                            int *pn_matches)
 {
-	const double tol = PIXEL_RING_TOL / (lambda * det->panels[0].cnz);
+	const double tol = 6 / (lambda * det->panels[0].cnz);  /* 6 pixels at center */
 	int peak_infos_size = 100;      /*  Arbitrary initial size allocation */
 	PeakInfo *peak_infos = cfmalloc(peak_infos_size * sizeof(PeakInfo));
 	int num_peak_infos = 0;
@@ -475,7 +473,7 @@ static struct PeakInfo *associate_to_rings(ImageFeatureList *peaks,
 
 static void link_nodes(struct PeakInfo *peak_infos, int num_peak_infos, struct g_matrix g9)
 {
-	const double dtol = DIFF_TOL;
+	const double dtol = 1e8;
 	int j;
 
 	/* Loop through peak numbers */
