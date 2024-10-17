@@ -592,8 +592,11 @@ int smallcell_index(struct image *image, void *mpriv)
 			Max->n++;
 		}
 	}
-	/* If more than one max_clique with the same number of nodes is found, take only the right-handed solution */
-	/* This requires first getting the unit cell for each max_clique, and then using the right_handed function from cell-utils */
+
+	/* If more than one max_clique with the same number of nodes is found,
+	 * take only the right-handed solution.  This requires first getting the
+	 * unit cell for each max_clique, and then using the right_handed
+	 * function from cell-utils */
 	for ( i=0; i<Max->n; i++ ) {
 
 		if (Max->list[i]->n_mem < 5 && i == (Max->n) - 1) return 0;
