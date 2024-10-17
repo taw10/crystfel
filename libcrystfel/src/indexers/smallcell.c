@@ -568,12 +568,110 @@ static struct Cliquelist *find_max_cliques(struct PeakInfo *peak_infos,
 }
 
 
+static int compare_cliques(const void *av, const void *bv)
+{
+	struct Nodelist * const *a = av;
+	struct Nodelist * const *b = bv;
+	if ( (*a)->n_mem < (*b)->n_mem ) return 1;
+	if ( (*a)->n_mem > (*b)->n_mem ) return -1;
+	return 0;
+}
+
+
+static UnitCell *fit_cell(struct Nodelist *clique)
+{
+	UnitCell *uc;
+	gsl_matrix *h_mat = gsl_matrix_calloc(3 * (clique->n_mem), 9);
+	gsl_vector *h_vec = gsl_vector_alloc(3 * (clique->n_mem));
+	int count_node = 0;
+	int col_count = 0;
+	int have_a = 0, have_b = 0, have_c = 0;
+	int j;
+
+	for ( j=0; j<3*clique->n_mem; j++) {
+		if (j > 0 && j % 3 == 0) {
+			count_node++;
+			col_count = 0;
+		}
+
+		if ( clique->mem[count_node]->h != 0 ) have_a = 1;
+		if ( clique->mem[count_node]->k != 0 ) have_b = 1;
+		if ( clique->mem[count_node]->l != 0 ) have_c = 1;
+
+		gsl_matrix_set(h_mat, j, col_count,
+		               clique->mem[count_node]->h);
+		gsl_matrix_set(h_mat, j, col_count + 3,
+		               clique->mem[count_node]->k);
+		gsl_matrix_set(h_mat, j, col_count + 6,
+		               clique->mem[count_node]->l);
+		col_count++;
+	}
+
+	int count_mem = 0;
+	int count_comp = 0;
+	for ( j=0; j<3*clique->n_mem; j++) {
+
+		gsl_vector_set(h_vec, j,
+		               clique->mem[count_mem]->x);
+		if (count_comp == 0) {
+			gsl_vector_set(h_vec, j,
+			               clique->mem[count_mem]->x);
+			count_comp++;
+		} else if (count_comp == 1) {
+			gsl_vector_set(h_vec, j,
+			               clique->mem[count_mem]->y);
+			count_comp++;
+		} else if (count_comp == 2) {
+			gsl_vector_set(h_vec, j,
+			               clique->mem[count_mem]->z);
+			count_comp = 0;
+			count_mem++;
+		}
+	}
+
+	/* Solve matrix-vector equation for unit-cell for this clique i */
+	gsl_vector *cell_vecs = gsl_vector_alloc(9);
+	/* cell_vec = [a*x a*y a*z b*x b*y b*z c*x c*y c*z]  */
+	double chisq;
+	gsl_matrix *cov = gsl_matrix_alloc(3 * (clique->n_mem), 9);
+	gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(3 * (clique->n_mem), 9);
+	if (gsl_multifit_linear(h_mat, h_vec, cell_vecs, cov, &chisq, work)) {
+		ERROR("Multifit failed\n");
+		return NULL;
+	}
+
+	uc = cell_new();
+	cell_set_reciprocal(uc,
+	                    gsl_vector_get(cell_vecs, 0),
+	                    gsl_vector_get(cell_vecs, 1),
+	                    gsl_vector_get(cell_vecs, 2),
+	                    gsl_vector_get(cell_vecs, 3),
+	                    gsl_vector_get(cell_vecs, 4),
+	                    gsl_vector_get(cell_vecs, 5),
+	                    gsl_vector_get(cell_vecs, 6),
+	                    gsl_vector_get(cell_vecs, 7),
+	                    gsl_vector_get(cell_vecs, 8));
+	/* FIXME: Set lattice type */
+
+	/* Free up matrix and vector memeories */
+	gsl_multifit_linear_free(work);
+	gsl_vector_free(cell_vecs);
+	gsl_vector_free(h_vec);
+	gsl_matrix_free(cov);
+	gsl_matrix_free(h_mat);
+
+	if (!(have_a && have_b && have_c)) return NULL;
+
+	return uc;
+}
+
+
 int smallcell_index(struct image *image, void *mpriv)
 {
 	struct PeakInfo *peak_infos;
 	int num_peak_infos;
 	int i;
-	struct Cliquelist *Max_cliques;
+	struct Cliquelist *cliques;
 	struct smallcell_private *priv = (struct smallcell_private *)mpriv;
 
 	peak_infos = associate_to_rings(image->features,
@@ -588,129 +686,25 @@ int smallcell_index(struct image *image, void *mpriv)
 
 	link_nodes(peak_infos, num_peak_infos, priv->g9);
 
-	Max_cliques = find_max_cliques(peak_infos, num_peak_infos);
-	if ( Max_cliques == NULL ) return 0;
+	cliques = find_max_cliques(peak_infos, num_peak_infos);
+	if ( cliques == NULL ) return 0;
 
-	STATUS("Number of cliques found: %i\n", Max_cliques->n);
+	STATUS("Number of cliques found: %i\n", cliques->n);
 
-	/* get the max. clique from list of Maximal cliques found */
-	int Max_clique_len = Max_cliques->list[0]->n_mem;
-	struct Cliquelist *Max = cfmalloc(sizeof(struct Cliquelist));
-	Max->n = 0;
-	Max->list[0] = Max_cliques->list[0];
-	Max->n++;
-	for ( i=1; i<Max_cliques->n; i++ ) {
-		if (Max_cliques->list[i]->n_mem > Max_clique_len) {
-			Max_clique_len = Max_cliques->list[i]->n_mem;
-			int t;
-			for ( t=0; t<Max->n; t++ ) {
-				Max->list[t] = NULL;
-			}
-			Max->n = 0;
-			Max->list[0] = Max_cliques->list[i];
-			Max->n++;
-		} else if (Max_cliques->list[i]->n_mem == Max_clique_len) {
-			Max->list[Max->n] = Max_cliques->list[i];
-			Max->n++;
-		}
-	}
-	/* If more than one max_clique with the same number of nodes is found,
-	 * take only the right-handed solution.  This requires first getting the
-	 * unit cell for each max_clique, and then using the right_handed
-	 * function from cell-utils */
-	for ( i=0; i<Max->n; i++ ) {
+	/* Sort the list of cliques by number of members */
+	qsort(cliques->list, cliques->n, sizeof(struct Nodelist *),
+	      compare_cliques);
 
-		if (Max->list[i]->n_mem < 5 && i == (Max->n) - 1) return 0;
-		if (Max->list[i]->n_mem < 5) continue;
+	/* Go down the list until we find an acceptable solution */
+	for ( i=0; i<cliques->n; i++ ) {
 
-		gsl_matrix *h_mat = gsl_matrix_calloc(3 * (Max->list[i]->n_mem), 9);
-		gsl_vector *h_vec = gsl_vector_alloc(3 * (Max->list[i]->n_mem));
+		if ( cliques->list[i]->n_mem < 5 ) continue;
 
-		int count_node = 0;
-		int col_count = 0;
-		int have_a = 0, have_b = 0, have_c = 0;
-		int j;
-
-		for ( j=0; j<3*Max->list[i]->n_mem; j++) {
-			if (j > 0 && j % 3 == 0) {
-				count_node++;
-				col_count = 0;
-			}
-
-			if ( Max->list[i]->mem[count_node]->h != 0 ) have_a = 1;
-			if ( Max->list[i]->mem[count_node]->k != 0 ) have_b = 1;
-			if ( Max->list[i]->mem[count_node]->l != 0 ) have_c = 1;
-
-			gsl_matrix_set(h_mat, j, col_count,
-			               Max->list[i]->mem[count_node]->h);
-			gsl_matrix_set(h_mat, j, col_count + 3,
-			               Max->list[i]->mem[count_node]->k);
-			gsl_matrix_set(h_mat, j, col_count + 6,
-			               Max->list[i]->mem[count_node]->l);
-			col_count++;
-		}
-
-		int count_mem = 0;
-		int count_comp = 0;
-		for ( j=0; j<3*Max->list[i]->n_mem; j++) {
-
-			gsl_vector_set(h_vec, j,
-			               Max->list[i]->mem[count_mem]->x);
-			if (count_comp == 0) {
-				gsl_vector_set(h_vec, j,
-				               Max->list[i]->mem[count_mem]->x);
-				count_comp++;
-			} else if (count_comp == 1) {
-				gsl_vector_set(h_vec, j,
-				               Max->list[i]->mem[count_mem]->y);
-				count_comp++;
-			} else if (count_comp == 2) {
-				gsl_vector_set(h_vec, j,
-				               Max->list[i]->mem[count_mem]->z);
-				count_comp = 0;
-				count_mem++;
-			}
-		}
-
-		/* Solve matrix-vector equation for unit-cell for this clique i */
-		gsl_vector *cell_vecs = gsl_vector_alloc(9);
-		/* cell_vec = [a*x a*y a*z b*x b*y b*z c*x c*y c*z]  */
-		double chisq;
-		gsl_matrix *cov = gsl_matrix_alloc(3 * (Max->list[i]->n_mem), 9);
-		gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(3 * (Max->list[i]->n_mem), 9);
-		if (gsl_multifit_linear(h_mat, h_vec, cell_vecs, cov, &chisq, work)) {
-			ERROR("Multifit failed\n");
-			continue;
-		}
-
-		UnitCell *uc;
-		uc = cell_new();
-		cell_set_reciprocal(uc,
-		                    gsl_vector_get(cell_vecs, 0),
-		                    gsl_vector_get(cell_vecs, 1),
-		                    gsl_vector_get(cell_vecs, 2),
-		                    gsl_vector_get(cell_vecs, 3),
-		                    gsl_vector_get(cell_vecs, 4),
-		                    gsl_vector_get(cell_vecs, 5),
-		                    gsl_vector_get(cell_vecs, 6),
-		                    gsl_vector_get(cell_vecs, 7),
-		                    gsl_vector_get(cell_vecs, 8));
-		/* FIXME: Set lattice type */
-
+		UnitCell *uc = fit_cell(cliques->list[i]);
 		if ( uc == NULL ) {
 			ERROR("Unit cell not created.. returned NULL\n");
 			continue;
 		}
-
-		/* Free up matrix and vector memeories */
-		gsl_multifit_linear_free(work);
-		gsl_vector_free(cell_vecs);
-		gsl_vector_free(h_vec);
-		gsl_matrix_free(cov);
-		gsl_matrix_free(h_mat);
-
-		if (!(have_a && have_b && have_c))
-			return 0;
 
 		if ( validate_cell(uc) == 0 ) {
 
@@ -728,12 +722,11 @@ int smallcell_index(struct image *image, void *mpriv)
 
 	}
 
-	for ( i=0; i<Max_cliques->n; i++ ) {
-		cffree(Max_cliques->list[i]);
+	for ( i=0; i<cliques->n; i++ ) {
+		cffree(cliques->list[i]);
 	}
 
-	cffree(Max_cliques);
-	cffree(Max);
+	cffree(cliques);
 	cffree(peak_infos);
 	return 0;
 }
