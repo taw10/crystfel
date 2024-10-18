@@ -59,7 +59,7 @@ RUN    wget -nv https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0
                 -DMSGPACK_BUILD_EXAMPLES=OFF \
                 -DMSGPACK_ENABLE_CXX=OFF \
                 -DCMAKE_BUILD_TYPE=Release ; \
-       popd # build ; \
+       popd ; \
        make -C build -j 32 ; \
        make -C build install ; \
        popd # msgpack-3.3.0
