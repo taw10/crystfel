@@ -2584,6 +2584,7 @@ struct powder_ring *powder_rings(UnitCell *cell, SymOpList *sym, double mres,
 		i++;
 
 	}
+	reflist_free(list);
 
 	qsort(sortus, n, sizeof(struct powder_ring), cmpres);
 
