@@ -343,6 +343,7 @@ static void BK(struct Nodelist *R,
 		if ( Max_cliques->n >= MAX_CLIQUES ) {
 			int mini = smallest_clique(Max_cliques);
 			if ( R->n_mem > Max_cliques->list[mini]->n_mem ) {
+				cffree(Max_cliques->list[mini]);
 				Max_cliques->list[mini] = CopyRlist(R);
 			}
 		} else {
@@ -557,8 +558,6 @@ static struct Cliquelist *find_max_cliques(struct PeakInfo *peak_infos,
 	 *     may be added to R. To begin, this is all nodes i.e all peak_infos
 	 *  X: exculsion set (same form as R but nodes that are NOT candidates for
 	 *     the max. clique, were originaly in P) */
-	R = new_nodelist();
-	X = new_nodelist();
 	P = new_nodelist();
 
 	/* To make P; create nodelist of all peak_infos */
@@ -570,8 +569,12 @@ static struct Cliquelist *find_max_cliques(struct PeakInfo *peak_infos,
 
 	if ( P->n_mem <= 2 ) {
 		ERROR("No peaks with neighbours\n");
+		cffree(P);
 		return NULL;
 	}
+
+	R = new_nodelist();
+	X = new_nodelist();
 
 	Max_cliques = cfmalloc(sizeof(struct Cliquelist));
 	Max_cliques->n = 0;
@@ -676,6 +679,18 @@ static UnitCell *fit_cell(struct Nodelist *clique)
 }
 
 
+static void free_cliquelist(struct Cliquelist *cliques)
+{
+	int i;
+
+	for ( i=0; i<cliques->n; i++ ) {
+		cffree(cliques->list[i]);
+	}
+
+	cffree(cliques);
+}
+
+
 int smallcell_index(struct image *image, void *mpriv)
 {
 	struct PeakInfo *peak_infos;
@@ -697,7 +712,10 @@ int smallcell_index(struct image *image, void *mpriv)
 	link_nodes(peak_infos, num_peak_infos, priv->g9);
 
 	cliques = find_max_cliques(peak_infos, num_peak_infos);
-	if ( cliques == NULL ) return 0;
+	if ( cliques == NULL ) {
+		cffree(peak_infos);
+		return 0;
+	}
 
 	STATUS("Number of cliques found: %i\n", cliques->n);
 
@@ -725,6 +743,8 @@ int smallcell_index(struct image *image, void *mpriv)
 			}
 			crystal_set_cell(cr, uc);
 			image_add_crystal(image, cr);
+			free_cliquelist(cliques);
+			cffree(peak_infos);
 			return 1;
 		}
 
@@ -732,11 +752,7 @@ int smallcell_index(struct image *image, void *mpriv)
 
 	}
 
-	for ( i=0; i<cliques->n; i++ ) {
-		cffree(cliques->list[i]);
-	}
-
-	cffree(cliques);
+	free_cliquelist(cliques);
 	cffree(peak_infos);
 	return 0;
 }
@@ -745,6 +761,8 @@ int smallcell_index(struct image *image, void *mpriv)
 void smallcell_cleanup(void *mpriv)
 {
 	struct smallcell_private *dp = mpriv;
+	cffree(dp->powderrings);
+	free_symoplist(dp->sym);
 	cffree(dp);
 }
 
