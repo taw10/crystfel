@@ -599,86 +599,78 @@ static int compare_cliques(const void *av, const void *bv)
 static UnitCell *fit_cell(struct Nodelist *clique)
 {
 	UnitCell *uc;
-	gsl_matrix *h_mat = gsl_matrix_calloc(3 * (clique->n_mem), 9);
-	gsl_vector *h_vec = gsl_vector_alloc(3 * (clique->n_mem));
-	int count_node = 0;
-	int col_count = 0;
-	int have_a = 0, have_b = 0, have_c = 0;
-	int j;
-
-	for ( j=0; j<3*clique->n_mem; j++) {
-		if (j > 0 && j % 3 == 0) {
-			count_node++;
-			col_count = 0;
-		}
-
-		if ( clique->mem[count_node]->h != 0 ) have_a = 1;
-		if ( clique->mem[count_node]->k != 0 ) have_b = 1;
-		if ( clique->mem[count_node]->l != 0 ) have_c = 1;
-
-		gsl_matrix_set(h_mat, j, col_count,
-		               clique->mem[count_node]->h);
-		gsl_matrix_set(h_mat, j, col_count + 3,
-		               clique->mem[count_node]->k);
-		gsl_matrix_set(h_mat, j, col_count + 6,
-		               clique->mem[count_node]->l);
-		col_count++;
-	}
-
-	int count_mem = 0;
-	int count_comp = 0;
-	for ( j=0; j<3*clique->n_mem; j++) {
-
-		gsl_vector_set(h_vec, j,
-		               clique->mem[count_mem]->x);
-		if (count_comp == 0) {
-			gsl_vector_set(h_vec, j,
-			               clique->mem[count_mem]->x);
-			count_comp++;
-		} else if (count_comp == 1) {
-			gsl_vector_set(h_vec, j,
-			               clique->mem[count_mem]->y);
-			count_comp++;
-		} else if (count_comp == 2) {
-			gsl_vector_set(h_vec, j,
-			               clique->mem[count_mem]->z);
-			count_comp = 0;
-			count_mem++;
-		}
-	}
-
-	/* Solve matrix-vector equation for unit-cell for this clique i */
-	gsl_vector *cell_vecs = gsl_vector_alloc(9);
-	/* cell_vec = [a*x a*y a*z b*x b*y b*z c*x c*y c*z]  */
+	gsl_matrix *h_mat;
+	gsl_vector *h_vec;
+	gsl_vector *cell_vec;
 	double chisq;
-	gsl_matrix *cov = gsl_matrix_alloc(3 * (clique->n_mem), 9);
-	gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(3 * (clique->n_mem), 9);
-	if (gsl_multifit_linear(h_mat, h_vec, cell_vecs, cov, &chisq, work)) {
-		ERROR("Multifit failed\n");
+	gsl_matrix *cov;
+	gsl_multifit_linear_workspace *work;
+	int i;
+	int r;
+	int have_a = 0, have_b = 0, have_c = 0;
+
+	h_mat = gsl_matrix_calloc(3*clique->n_mem, 9);
+	h_vec = gsl_vector_alloc(3*clique->n_mem);
+
+	for ( i=0; i<clique->n_mem; i++) {
+
+		struct PeakInfo *node = clique->mem[i];
+
+		gsl_matrix_set(h_mat, 3*i, 0, node->h);
+		gsl_matrix_set(h_mat, 3*i, 3, node->k);
+		gsl_matrix_set(h_mat, 3*i, 6, node->l);
+		gsl_vector_set(h_vec, 3*i, node->x);
+
+		gsl_matrix_set(h_mat, 3*i+1, 1, node->h);
+		gsl_matrix_set(h_mat, 3*i+1, 4, node->k);
+		gsl_matrix_set(h_mat, 3*i+1, 7, node->l);
+		gsl_vector_set(h_vec, 3*i+1, node->y);
+
+		gsl_matrix_set(h_mat, 3*i+2, 2, node->h);
+		gsl_matrix_set(h_mat, 3*i+2, 5, node->k);
+		gsl_matrix_set(h_mat, 3*i+2, 8, node->l);
+		gsl_vector_set(h_vec, 3*i+2, node->z);
+
+		if ( node->h != 0 ) have_a = 1;
+		if ( node->k != 0 ) have_b = 1;
+		if ( node->l != 0 ) have_c = 1;
+
+	}
+
+	/* Must have all three axes represented */
+	if ( !(have_a && have_b && have_c) ) {
+		gsl_vector_free(h_vec);
+		gsl_matrix_free(h_mat);
 		return NULL;
 	}
 
-	uc = cell_new();
-	cell_set_reciprocal(uc,
-	                    gsl_vector_get(cell_vecs, 0),
-	                    gsl_vector_get(cell_vecs, 1),
-	                    gsl_vector_get(cell_vecs, 2),
-	                    gsl_vector_get(cell_vecs, 3),
-	                    gsl_vector_get(cell_vecs, 4),
-	                    gsl_vector_get(cell_vecs, 5),
-	                    gsl_vector_get(cell_vecs, 6),
-	                    gsl_vector_get(cell_vecs, 7),
-	                    gsl_vector_get(cell_vecs, 8));
-	/* FIXME: Set lattice type */
+	cell_vec = gsl_vector_alloc(9);
+	cov = gsl_matrix_alloc(3*clique->n_mem, 9);
+	work = gsl_multifit_linear_alloc(3*clique->n_mem, 9);
+	r = gsl_multifit_linear(h_mat, h_vec, cell_vec, cov, &chisq, work);
 
-	/* Free up matrix and vector memeories */
 	gsl_multifit_linear_free(work);
-	gsl_vector_free(cell_vecs);
-	gsl_vector_free(h_vec);
 	gsl_matrix_free(cov);
+	gsl_vector_free(h_vec);
 	gsl_matrix_free(h_mat);
 
-	if (!(have_a && have_b && have_c)) return NULL;
+	if ( r ) return NULL;
+
+	/* cell_vec = [a*x a*y a*z b*x b*y b*z c*x c*y c*z]  */
+	uc = cell_new();
+	cell_set_reciprocal(uc,
+	                    gsl_vector_get(cell_vec, 0),
+	                    gsl_vector_get(cell_vec, 1),
+	                    gsl_vector_get(cell_vec, 2),
+	                    gsl_vector_get(cell_vec, 3),
+	                    gsl_vector_get(cell_vec, 4),
+	                    gsl_vector_get(cell_vec, 5),
+	                    gsl_vector_get(cell_vec, 6),
+	                    gsl_vector_get(cell_vec, 7),
+	                    gsl_vector_get(cell_vec, 8));
+	/* FIXME: Set lattice type */
+
+	gsl_vector_free(cell_vec);
 
 	return uc;
 }
