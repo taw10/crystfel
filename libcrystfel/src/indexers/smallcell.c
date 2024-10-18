@@ -317,6 +317,21 @@ static struct PeakInfo *find_pivot(struct Nodelist *piv_pool)
 }
 
 
+static int smallest_clique(struct Cliquelist *cliques)
+{
+	int i;
+	int mini = 0;
+	int minc = cliques->list[0]->n_mem;
+	for ( i=1; i<cliques->n; i++ ) {
+		if ( cliques->list[i]->n_mem < minc ) {
+			minc = cliques->list[i]->n_mem;
+			mini = i;
+		}
+	}
+	return mini;
+}
+
+
 /* Bron-Kerbosch algorithm, with pivoting */
 static void BK(struct Nodelist *R,
                struct Nodelist *P,
@@ -326,7 +341,10 @@ static void BK(struct Nodelist *R,
 	/* If P & X are empty -> add R to the un-mapped clique array */
 	if ( P->n_mem == 0 && X->n_mem == 0 ) {
 		if ( Max_cliques->n >= MAX_CLIQUES ) {
-			ERROR("Too many cliques!\n");
+			int mini = smallest_clique(Max_cliques);
+			if ( R->n_mem > Max_cliques->list[mini]->n_mem ) {
+				Max_cliques->list[mini] = CopyRlist(R);
+			}
 		} else {
 			Max_cliques->list[Max_cliques->n] = CopyRlist(R);
 			Max_cliques->n++;
