@@ -98,6 +98,19 @@ static int load_seedee_data(struct panel_template *p,
 			}
 		}
 
+	} else if ( (array->datatype == 'u')
+	         && (array->itemsize == 1))
+	{
+		int fs, ss;
+		uint8_t *in_data = (uint8_t *)array->data;
+
+		for ( ss=0; ss<PANEL_HEIGHT(p); ss++ ) {
+			for ( fs=0; fs<PANEL_WIDTH(p); fs++ ) {
+				size_t idx = fs+p->orig_min_fs + (ss+p->orig_min_ss)*data_size_fs;
+				data[fs+ss*PANEL_WIDTH(p)] = in_data[idx];
+			}
+		}
+
 	} else if ( (array->datatype == 'i')
 	  && (array->itemsize == 4)
 	  && (array->byteorder == '<') )
