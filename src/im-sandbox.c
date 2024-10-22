@@ -386,16 +386,19 @@ static size_t pump_mille(void *buf, size_t len, struct sandbox *sb)
 {
 	int n;
 	int ni;
+	size_t reclen;
 
-	if ( len < 4 ) return 0;
+	if ( len < sizeof(int) ) return 0;
 	ni = *(int *)buf;
-	n = ni/2;
-	if ( len < 8*n ) return 0;
+	n = (ni-2)/2;
 
-	fwrite(buf, 4, 2*n+1, sb->mille_fh);
+	reclen = (2+n)*sizeof(int) + (1+n)*sizeof(float);
+	if ( len < reclen ) return 0;
+
+	fwrite(buf, 1, reclen, sb->mille_fh);
 	fflush(sb->mille_fh);
 
-	return 8*n+4;
+	return reclen;
 }
 
 
