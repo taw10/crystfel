@@ -369,6 +369,8 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 			                                          iargs->peak_search.check_hdf5_snr);
 			image_feature_list_free(peaks);
 			image->features = npeaks;
+		} else {
+			image->features = peaks;
 		}
 		break;
 
