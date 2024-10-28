@@ -306,6 +306,7 @@ static int run_work(struct indexamajig_arguments *args)
 	int shm_fd;
 	sem_t *queue_sem;
 	IndexingFlags flags = 0;
+	struct pf8_private_data *pf8_data = NULL;
 
 	if ( args->cpu_pin ) pin_to_cpu(args->worker_id);
 	_worker = args->worker_id;
@@ -386,6 +387,18 @@ static int run_work(struct indexamajig_arguments *args)
 	if ( args->iargs.ipriv == NULL ) {
 		ERROR("Failed to set up indexing system\n");
 		return 1;
+	}
+
+	if ( args->iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
+		struct detgeom *dg;
+		dg = data_template_get_2d_detgeom_if_possible(args->iargs.dtempl);
+		if ( dg == NULL ) {
+			ERROR("WARNING: Detector geometry is not static.  "
+			      "Peak search will be slower than optimal.\n");
+		}
+		pf8_data = prepare_peakfinder8(dg, args->iargs.peak_search.peakfinder8_fast);
+		args->iargs.pf_private = pf8_data;
+		detgeom_free(dg);
 	}
 
 	/* Set up SHM */
@@ -638,6 +651,7 @@ static int run_work(struct indexamajig_arguments *args)
 	im_asapo_shutdown(asapostuff);
 
 	data_template_free(args->iargs.dtempl);
+	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
 	cleanup_indexing(args->iargs.ipriv);
 	cell_free(args->iargs.cell);
 	cleanup_indexamajig_args(args);
@@ -924,14 +938,6 @@ int main(int argc, char *argv[])
 	}
 	free(mille_filename);
 
-	struct pf8_private_data *pf8_data = NULL;
-	if ( args->iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
-		struct detgeom *detgeom = data_template_get_2d_detgeom_if_possible(args->iargs.dtempl);
-		pf8_data = prepare_peakfinder8(detgeom, args->iargs.peak_search.peakfinder8_fast);
-		args->iargs.pf_private = pf8_data;
-		detgeom_free(detgeom);
-	}
-
 	r = create_sandbox(&args->iargs, args->n_proc, args->prefix, args->basename,
 	                   fh, st, tmpdir, args->serial_start,
 	                   &args->zmq_params, &args->asapo_params,
@@ -940,7 +946,6 @@ int main(int argc, char *argv[])
 			   probed_methods, mille_fh);
 
 	fclose(mille_fh);
-	if ( pf8_data != NULL ) free_pf8_private_data(pf8_data);
 	free(tmpdir);
 	free(probed_methods);
 	data_template_free(args->iargs.dtempl);
