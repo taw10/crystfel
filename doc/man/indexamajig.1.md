@@ -508,7 +508,8 @@ PEAK SEARCH OPTIONS
 
 **--max-res=px**
 : Only accept peaks if they lay at less than px pixels from the center of the
-: detector when using **--peaks=peakfinder8**.  The default is **--max-res=1200**.
+: detector when using **--peaks=peakfinder8**.  The default is **--max-res=0**,
+: which disables the cutoff.
 
 **--no-use-saturated**
 : Normally, peaks which contain one or more pixels above max_adu (defined in the

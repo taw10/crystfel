@@ -1284,7 +1284,7 @@ int default_project(struct crystfelproject *proj)
 	proj->peak_search_params.max_pix_count = 200;
 	proj->peak_search_params.local_bg_radius = 3;
 	proj->peak_search_params.min_res = 0;
-	proj->peak_search_params.max_res = 1200;
+	proj->peak_search_params.max_res = 0;
 	proj->peak_search_params.min_snr_biggest_pix = 7.0;
 	proj->peak_search_params.min_snr_peak_pix = 6.0;
 	proj->peak_search_params.min_sig = 11.0;

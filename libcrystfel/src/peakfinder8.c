@@ -399,8 +399,9 @@ static struct peakfinder_mask *create_peakfinder_mask(const struct image *img,
 
 				idx = ifs + iss*p.w;
 
-				if ( rmps->r_maps[i][idx] < max_res
-				  && rmps->r_maps[i][idx] > min_res ) {
+				if ( ((max_res == 0) || (rmps->r_maps[i][idx] < max_res))
+				  && rmps->r_maps[i][idx] > min_res )
+				{
 
 					if  (! ( ( img->bad != NULL )
 					      && ( img->bad[i] != NULL )

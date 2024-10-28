@@ -401,7 +401,7 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		              "--min-res");
 		add_int_param(proj->peak_params, "Maximum resolution (pixels):",
 		              &proj->peak_search_params.max_res, proj,
-		              "--max-res");
+		              "--max-res (zero to disable)");
 		add_check_param(proj->peak_params, "Fast mode",
 		               &proj->peak_search_params.peakfinder8_fast, proj,
 			       "--peakfinder8-fast");

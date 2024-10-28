@@ -772,7 +772,7 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 	args->iargs.peak_search.min_pix_count = 2;
 	args->iargs.peak_search.max_pix_count = 200;
 	args->iargs.peak_search.min_res = 0;
-	args->iargs.peak_search.max_res = 1200;
+	args->iargs.peak_search.max_res = 0;
 	args->iargs.peak_search.local_bg_radius = 3;
 	args->iargs.peak_search.min_snr_biggest_pix = 7.0;    /* peak finder 9  */
 	args->iargs.peak_search.min_snr_peak_pix = 6.0;
