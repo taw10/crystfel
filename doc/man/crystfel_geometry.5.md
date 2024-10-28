@@ -135,7 +135,7 @@ For each panel, the physical location is controlled by the **fs**, **ss**,
 
 **coffset**
 : The offset of the panel along the z-direction from the position given by
-: **clen**.
+: **clen**, in metres.
 
 The overall detector position in the z-direction is given by **clen**, which
 can only be specified once in the geometry file (not for each panel):

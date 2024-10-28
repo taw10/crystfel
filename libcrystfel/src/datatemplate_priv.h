@@ -128,7 +128,7 @@ struct panel_template
 	double cny;
 	/**@}*/
 
-	/** The offset to be applied from clen */
+	/** The offset to be applied from clen (in m) */
 	double cnz_offset;
 
 	/** Mask definitions */
