@@ -104,6 +104,8 @@ CrystFEL.  Read [the paper](http://dx.doi.org/10.1038/s41467-022-35280-8).
 
 [DatView](https://github.com/nstander/DatView) helps with multivariate analysis
 of large datasets.  Read [the paper](https://doi.org/10.1107/s1600576719012044).
+[More information here](https://sites.google.com/view/zatsepinlab/resources/datview)
+including a tutorial and manual.
 
 
 Funding acknowledgements
