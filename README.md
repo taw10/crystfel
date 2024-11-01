@@ -33,6 +33,7 @@ Documentation
 -------------
 
 * [Basic Tutorial](doc/articles/tutorial.rst)
+* [Which indexing method(s) should I use?](doc/articles/indexer-choice.rst)
 * [How to choose the right point group for merging](doc/articles/pointgroup.rst)
 * [How to increase data processing speed](doc/articles/speed.rst)
 * [Real-time data processing](doc/articles/online.rst)
