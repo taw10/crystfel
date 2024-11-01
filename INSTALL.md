@@ -246,7 +246,7 @@ Fedora 22 or later
 All dependencies can be taken from the Fedora repositories:
 
 ```
-$ sudo dnf group install 'Development Tools'
+$ sudo dnf group install development-tools
 $ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson gcc-c++ fftw-devel zeromq-devel msgpack-devel flex bison gcc-gfortran pandoc
 $ cd /home/user/downloads/crystfel
 $ meson build

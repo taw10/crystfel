@@ -91,9 +91,9 @@ build-and-test:
 build-and-test-minimal:
   image: $IMAGE:latest
   script:
-    - dnf update -y && dnf group install -y 'Development Tools' &&
-      dnf install -y gsl-devel flex bison  cmake meson
-    - meson setup build -Dhdf5=disabled --wrap-mode=nofallback && ninja -C build &&  ninja -C build test
+    - dnf update -y && dnf group install -y development-tools &&
+      dnf install -y gsl-devel flex bison cmake meson
+    - meson setup build -Dhdf5=disabled --wrap-mode=nofallback && ninja -C build && ninja -C build test
 
   artifacts:
     when: always

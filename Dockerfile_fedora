@@ -8,7 +8,7 @@ ENV PATH=$CFPREFIX/bin:$PATH
 
 RUN    dnf -y install epel-release ; \
        dnf -y update ; \
-       dnf -y group install  'Development Tools' ; \
+       dnf -y group install development-tools; \
        dnf -y install  gsl-devel flex bison gcc-c++  gtk3-devel cairo-devel \
               pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils \
               hdf5-devel zeromq-devel python3-devel which wget lz4 lz4-devel \
