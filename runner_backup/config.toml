@@ -1,0 +1,16 @@
+[[runners]]
+  name = "macos_runner.desy.de"
+  url = "https://gitlab.desy.de/"
+  id = 9999
+  token = "registration token"
+  token_obtained_at = 2023-05-10T11:19:56Z
+  token_expires_at = 0001-01-01T00:00:00Z
+  executor = "shell"
+  [runners.custom_build_dir]
+  [runners.cache]
+    MaxUploadedArchiveSize = 0
+    [runners.cache.s3]
+    [runners.cache.gcs]
+    [runners.cache.azure]
+  [runners.feature_flags]
+    FF_ENABLE_JOB_CLEANUP = true
