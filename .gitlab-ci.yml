@@ -24,7 +24,7 @@ build_dev_images:
     - >
       /kaniko/executor
       --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/Dockerfile_$IMAGE
+      --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile_$IMAGE
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
       --build-arg HELM_VERSION=$HELM_VERSION
@@ -183,7 +183,7 @@ build_container_image:
     - >
       /kaniko/executor
       --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/Dockerfile
+      --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
       --build-arg HELM_VERSION=$HELM_VERSION
@@ -211,7 +211,7 @@ build_container_image_tag:
     - >
       /kaniko/executor
       --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/Dockerfile
+      --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_VER
       --build-arg HELM_VERSION=$HELM_VERSION
       --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
