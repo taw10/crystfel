@@ -1465,7 +1465,6 @@ struct image *image_new()
 	image->ida = NULL;
 
 	image->n_cached_headers = 0;
-	image->id = 0;
 	image->serial = 0;
 	image->spectrum = NULL;
 	image->lambda = -1.0;

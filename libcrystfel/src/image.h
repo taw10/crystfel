@@ -165,9 +165,6 @@ struct image
 	struct header_cache_entry *header_cache[HEADER_CACHE_SIZE];
 	int                        n_cached_headers;
 
-	/** ID number of the worker processing handling this image */
-	int                     id;
-
 	/** Monotonically increasing serial number for this image */
 	int                     serial;
 
