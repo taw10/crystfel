@@ -389,6 +389,10 @@ static int run_work(struct indexamajig_arguments *args)
 		return 1;
 	}
 
+	if ( _worker == 0 ) {
+		print_indexing_info(args->iargs.ipriv);
+	}
+
 	if ( args->iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
 		struct detgeom *dg;
 		dg = data_template_get_2d_detgeom_if_possible(args->iargs.dtempl);

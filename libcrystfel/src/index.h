@@ -240,6 +240,8 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        struct fromfile_options *fromfile_opts,
                                        struct asdf_options *asdf_opts);
 
+extern void print_indexing_info(IndexingPrivate *ipriv);
+
 extern const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n);
 
 extern char *detect_indexing_methods(UnitCell *cell);

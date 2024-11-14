@@ -88,22 +88,6 @@ static const char *onoff(int a)
 }
 
 
-static void show_indexing_flags(IndexingFlags flags)
-{
-	STATUS("Indexing parameters:\n");
-	STATUS("                  Check unit cell parameters: %s\n",
-	       onoff(flags & INDEXING_CHECK_CELL));
-	STATUS("                        Check peak alignment: %s\n",
-	       onoff(flags & INDEXING_CHECK_PEAKS));
-	STATUS("                   Refine indexing solutions: %s\n",
-	       onoff(flags & INDEXING_REFINE));
-	STATUS(" Multi-lattice indexing (\"delete and retry\"): %s\n",
-	       onoff(flags & INDEXING_MULTI));
-	STATUS("                              Retry indexing: %s\n",
-	       onoff(flags & INDEXING_RETRY));
-}
-
-
 char *base_indexer_str(IndexingMethod indm)
 {
 	char *str;
@@ -431,17 +415,34 @@ IndexingPrivate *setup_indexing(const char *method_list,
 	}
 	for ( i=0; i<6; i++ ) ipriv->tolerance[i] = tols[i];
 
+	return ipriv;
+}
+
+
+void print_indexing_info(IndexingPrivate *ipriv)
+{
+	int i;
+
 	STATUS("List of indexing methods:\n");
-	for ( i=0; i<n; i++ ) {
-		char *str = indexer_str(methods[i]);
-		char *tmp = friendly_indexer_name(methods[i]);
+	for ( i=0; i<ipriv->n_methods; i++ ) {
+		char *str = indexer_str(ipriv->methods[i]);
+		char *tmp = friendly_indexer_name(ipriv->methods[i]);
 		STATUS("  %2i: %-25s (%s)\n", i, str, tmp);
 		cffree(str);
 		cffree(tmp);
 	}
-	show_indexing_flags(flags);
 
-	return ipriv;
+	STATUS("Indexing parameters:\n");
+	STATUS("                  Check unit cell parameters: %s\n",
+	       onoff(ipriv->flags & INDEXING_CHECK_CELL));
+	STATUS("                        Check peak alignment: %s\n",
+	       onoff(ipriv->flags & INDEXING_CHECK_PEAKS));
+	STATUS("                   Refine indexing solutions: %s\n",
+	       onoff(ipriv->flags & INDEXING_REFINE));
+	STATUS(" Multi-lattice indexing (\"delete and retry\"): %s\n",
+	       onoff(ipriv->flags & INDEXING_MULTI));
+	STATUS("                              Retry indexing: %s\n",
+	       onoff(ipriv->flags & INDEXING_RETRY));
 }
 
 
