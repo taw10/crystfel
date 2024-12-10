@@ -470,6 +470,12 @@ static void remove_pipe(PipeList *pd, int d)
 	int i;
 
 	close(pd->fds[d]);
+
+	if ( pd->buffer_pos[d] > 0 ) {
+		ERROR("WARNING: Closing pipe with %lli bytes remaining in buffer.\n",
+		      (long long)pd->buffer_pos[d]);
+	}
+
 	free(pd->buffers[d]);
 
 	for ( i=d; i<pd->n_read; i++ ) {
