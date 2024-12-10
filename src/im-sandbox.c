@@ -348,7 +348,7 @@ static const char *str_in_str(const char *haystack, size_t len, const char *need
 
 	if ( len < endl ) return NULL;
 
-	for ( u=0; u<len-endl; u++ ) {
+	for ( u=0; u<=len-endl; u++ ) {
 		size_t v;
 		int ok = 1;
 		for ( v=0; v<endl; v++ ) {
