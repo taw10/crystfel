@@ -556,26 +556,30 @@ static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct s
 			pd->buffer_len[i] += buffer_increment;
 		}
 
-		/* If the chunk cannot be read, assume the connection
-		 * is broken and that the process will die soon. */
 		r = read(pd->fds[i], pd->buffers[i]+pd->buffer_pos[i],
 		         pd->buffer_len[i]-pd->buffer_pos[i]);
 
-		if ( r == 0 ) {
-			/* Mark for deletion */
-			pd->buffer_len[i] = 0;
-		} else {
-			size_t h;
-			pd->buffer_pos[i] += r;
-			h = pump(pd->buffers[i], pd->buffer_pos[i], sb);
-			assert(h <= pd->buffer_pos[i]);
-			assert(h >= 0);
-			if ( h > 0 ) {
-				memmove(pd->buffers[i], pd->buffers[i]+h,
-				        pd->buffer_pos[i]-h);
-				pd->buffer_pos[i] -= h;
-			}
+		if ( r == -1 ) {
+			ERROR("read() failed\n");
+			continue;
 		}
+
+		/* End of file? */
+		if ( r == 0 ) {
+			pd->buffer_len[i] = 0;    /* Mark for deletion */
+		}
+
+		size_t h;
+		pd->buffer_pos[i] += r;
+		h = pump(pd->buffers[i], pd->buffer_pos[i], sb);
+		assert(h <= pd->buffer_pos[i]);
+		assert(h >= 0);
+		if ( h > 0 ) {
+			memmove(pd->buffers[i], pd->buffers[i]+h,
+			        pd->buffer_pos[i]-h);
+			pd->buffer_pos[i] -= h;
+		}
+
 	}
 
 	int deleteme = find_marked(pd);
