@@ -83,7 +83,7 @@ typedef enum {
 	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
 	INDEXING_PINKINDEXER = 11,/**< Use PinkIndexer (via optional library) */
-    INDEXING_FFBIDX = 12, /**< Use PSI Fast Indexer (via optional library) */
+	INDEXING_FFBIDX = 12,     /**< Use PSI Fast Indexer (via optional library) */
 	INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
 	                           *   engine */
 
@@ -164,9 +164,9 @@ struct xgandalf_options {
 
 struct ffbidx_options {
 #ifdef HAVE_FFBIDX
-    struct config_runtime cruntime;
-    struct config_persistent cpers;
-    struct config_ifssr cifssr;
+	struct config_runtime cruntime;
+	struct config_persistent cpers;
+	struct config_ifssr cifssr;
 #endif
 };
 

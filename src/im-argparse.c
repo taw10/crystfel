@@ -90,7 +90,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		state->child_inputs[3] = args->pinkindexer_opts_ptr;
 		state->child_inputs[4] = args->fromfile_opts_ptr;
 		state->child_inputs[5] = args->asdf_opts_ptr;
-        state->child_inputs[6] = args->ffbidx_opts_ptr;
+		state->child_inputs[6] = args->ffbidx_opts_ptr;
 		break;
 
 		case 'h' :

@@ -46,7 +46,7 @@ if xgandalfdep.found()
 endif
 
 ffbidxdep = dependency('fast_indexer',
-                         required: false)
+                       required: false)
 if ffbidxdep.found()
   conf_data.set10('HAVE_FFBIDX', true)
 endif
