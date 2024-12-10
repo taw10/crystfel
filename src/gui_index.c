@@ -113,6 +113,7 @@ static void get_indexing_opts(struct crystfelproject *proj,
 	proj->indexing_params.no_peak_check = !crystfel_indexing_opts_get_peak_check(opts);
 	proj->indexing_params.no_cell_check = !crystfel_indexing_opts_get_cell_check(opts);
 	proj->indexing_params.min_peaks = crystfel_indexing_opts_get_min_peaks(opts);
+	crystfel_indexing_opts_get_tolerances(opts, proj->indexing_params.tols);
 
 	proj->indexing_params.pinkindexer_cpeaks = crystfel_indexing_opts_get_pinkindexer_cpeaks(opts);
 	proj->indexing_params.pinkindexer_use_max_res = crystfel_indexing_opts_get_pinkindexer_use_max_res(opts);
