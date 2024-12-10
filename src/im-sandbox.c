@@ -711,7 +711,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	if ( p == 0 ) {
 		execvp(indexamajig, nargv);
 		ERROR("Failed to exec!\n");
-		return;
+		exit(1);
 	}
 
 	free(tmpdir_copy);
