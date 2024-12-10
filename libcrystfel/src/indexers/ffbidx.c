@@ -327,10 +327,15 @@ const char *ffbidx_probe(UnitCell *cell)
 	return NULL;
 }
 
+int ffbidx_default_options(struct ffbidx_options **opts_ptr)
+{
+    return 0;
+}
 #endif
 
 static void ffbidx_show_help(void)
 {
+#ifdef HAVE_FFBIDX
     struct config_runtime r;
     struct config_persistent p;
     struct config_ifssr i;
@@ -408,9 +413,13 @@ static void ffbidx_show_help(void)
     printf("     --ffbidx-ifssr-threshold-contraction=\n");
     printf("                            Cell refinement: contract error threshold by this value in every iteration\n");
     printf("                            Default: %f\n", i.threshold_contraction);
+#else
+    printf("This copy of CrystFEL was compiled without FFBIDX support.\n");
+#endif
 }
 
 
+#ifdef HAVE_FFBIDX
 int ffbidx_default_options(struct ffbidx_options **opts_ptr)
 {
     struct ffbidx_options *opts;
@@ -436,9 +445,11 @@ int sscanf_uint(const char *arg, unsigned *val) {
     *val = tmp;
     return 1;
 }
+#endif
 
 static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
 {
+#ifdef HAVE_FFBIDX
     struct ffbidx_options **opts_ptr = state->input;
     int r;
 
@@ -565,12 +576,22 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
     ffbidx_err.msg_len = 255;
     ffbidx_err.message = msg;
     if (check_config(&(*opts_ptr)->cpers,
-                     &(*opts_ptr)->cruntime, &
-                     (*opts_ptr)->cifssr,
+                     &(*opts_ptr)->cruntime,
+                     &(*opts_ptr)->cifssr,
                      &ffbidx_err) != 0) {
         ERROR(msg);
         return EINVAL;
     }
+#else
+    switch ( key ) {
+        case 1:
+            ffbidx_show_help();
+            return EINVAL;
+
+        default:
+            break;
+    }
+#endif
 
     return 0;
 }
@@ -578,6 +599,7 @@ static error_t ffbidx_parse_arg(int key, char *arg, struct argp_state *state)
 
 static struct argp_option ffbidx_options[] = {
         {"help-ffbidx", 1, NULL, OPTION_NO_USAGE, "Show options for fast feedback indexing algorithm", 99},
+#ifdef HAVE_FFBIDX
         {"ffbidx-max-spots", 2, "ffbidx_maxn", OPTION_HIDDEN, NULL},
         {"ffbidx-ifssr-min-spots", 3, "ffbidx_cminn", OPTION_HIDDEN, NULL},
         {"ffbidx-output-cells", 4, "ffbidx_out_cells", OPTION_HIDDEN, NULL},
@@ -596,6 +618,7 @@ static struct argp_option ffbidx_options[] = {
         {"ffbidx-num-halfsphere-points", 17, "ffbidx_nhp", OPTION_HIDDEN, NULL},
         {"ffbidx-num-angle-points", 18, "ffbidx_nap", OPTION_HIDDEN, NULL},
         {"ffbidx-min-spots", 19, "ffbidx_vminn", OPTION_HIDDEN, NULL},
+#endif
         {0}
 };
 
