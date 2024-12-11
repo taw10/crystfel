@@ -1113,6 +1113,12 @@ static int all_got_end_of_stream(struct sandbox *sb)
 }
 
 
+static int any_open(struct sandbox *sb)
+{
+	return (sb->st_from_workers->n_read > 0) || (sb->mille_from_workers->n_read > 0);
+}
+
+
 /* Returns the number of frames processed (not necessarily indexed).
  * If the return value is zero, something is probably wrong. */
 int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
@@ -1357,6 +1363,13 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 		}
 		/* If this worker died and got waited by the zombie handler,
 		 * waitpid() returns -1 and the loop still exits. */
+	}
+
+	if ( any_open(sb) ) {
+		STATUS("Waiting for data pipes to close...\n");
+		do {
+			try_read(sb);
+		} while ( any_open(sb) );
 	}
 
 	sem_unlink(semname_q);
