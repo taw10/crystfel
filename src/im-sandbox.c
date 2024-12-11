@@ -57,6 +57,7 @@
 #include <assert.h>
 #include <sys/mman.h>
 #include <semaphore.h>
+#include <poll.h>
 
 #ifdef HAVE_CLOCK_GETTIME
 #include <time.h>
@@ -507,42 +508,34 @@ static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct s
                         struct sandbox *sb)
 {
 	int r, i;
-	struct timeval tv;
-	fd_set fds;
-	int fdmax;
+	struct pollfd *pf;
 
-	tv.tv_sec = 0;
-	tv.tv_usec = 500000;
-
-	FD_ZERO(&fds);
-	fdmax = 0;
-	for ( i=0; i<pd->n_read; i++ ) {
-
-		int fd;
-
-		fd = pd->fds[i];
-
-		FD_SET(fd, &fds);
-		if ( fd > fdmax ) fdmax = fd;
-
+	pf = malloc(pd->n_read*sizeof(struct pollfd));
+	if ( pf == NULL ) {
+		ERROR("Couldn't allocate poll structure!\n");
+		return;
 	}
 
-	r = select(fdmax+1, &fds, NULL, NULL, &tv);
+	for ( i=0; i<pd->n_read; i++ ) {
+		pf[i].fd = pd->fds[i];
+		pf[i].events = POLLIN;
+		pf[i].revents = 0;
+	}
+
+	r = poll(pf, pd->n_read, 500);
 
 	if ( r == -1 ) {
 		if ( errno != EINTR ) {
-			ERROR("select() failed: %s\n", strerror(errno));
-		} /* Otherwise no big deal */
-		return;
+			ERROR("poll() failed: %s\n", strerror(errno));
+			return;
+		}
 	}
 
 	for ( i=0; i<pd->n_read; i++ ) {
 
 		size_t r;
 
-		if ( !FD_ISSET(pd->fds[i], &fds) ) {
-			continue;
-		}
+		if ( pf[i].revents == 0 ) continue;
 
 		if ( pd->buffer_len[i] == pd->buffer_pos[i] ) {
 			const size_t buffer_increment = 64*1024;
@@ -581,6 +574,8 @@ static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct s
 		}
 
 	}
+
+	free(pf);
 
 	int deleteme = find_marked(pd);
 	while ( deleteme != -1 ) {
