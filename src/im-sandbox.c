@@ -726,6 +726,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	add_pipe(sb->st_from_workers, stream_pipe[0]);
 	add_pipe(sb->mille_from_workers, mille_pipe[0]);
 	close(stream_pipe[1]);
+	close(mille_pipe[1]);
 }
 
 
