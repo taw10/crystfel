@@ -90,6 +90,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 		state->child_inputs[3] = args->pinkindexer_opts_ptr;
 		state->child_inputs[4] = args->fromfile_opts_ptr;
 		state->child_inputs[5] = args->asdf_opts_ptr;
+		state->child_inputs[6] = args->ffbidx_opts_ptr;
 		break;
 
 		case 'h' :
@@ -694,6 +695,7 @@ static error_t parse_arg(int key, char *arg, struct argp_state *state)
 struct taketwo_options *taketwo_opts = NULL;
 struct felix_options *felix_opts = NULL;
 struct xgandalf_options *xgandalf_opts = NULL;
+struct ffbidx_options *ffbidx_opts = NULL;
 struct pinkindexer_options *pinkindexer_opts = NULL;
 struct fromfile_options *fromfile_opts = NULL;
 struct asdf_options *asdf_opts = NULL;
@@ -744,6 +746,7 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 	args->taketwo_opts_ptr = &taketwo_opts;
 	args->felix_opts_ptr = &felix_opts;
 	args->xgandalf_opts_ptr = &xgandalf_opts;
+	args->ffbidx_opts_ptr = &ffbidx_opts;
 	args->pinkindexer_opts_ptr = &pinkindexer_opts;
 	args->fromfile_opts_ptr = &fromfile_opts;
 	args->asdf_opts_ptr = &asdf_opts;
@@ -993,6 +996,7 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 		{&pinkIndexer_argp, 0, NULL, -2},
 		{&fromfile_argp, 0, NULL, -2},
 		{&asdf_argp, 0, NULL, -2},
+		{&ffbidx_argp, 0, NULL, -2},
 		{0}
 	};
 
@@ -1030,6 +1034,7 @@ void cleanup_indexamajig_args(struct indexamajig_arguments *args)
 	free(*args->taketwo_opts_ptr);
 	free(*args->felix_opts_ptr);
 	free(*args->xgandalf_opts_ptr);
+	free(*args->ffbidx_opts_ptr);
 	free(*args->pinkindexer_opts_ptr);
 	free(*args->fromfile_opts_ptr);
 	free(*args->asdf_opts_ptr);

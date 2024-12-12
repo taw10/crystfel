@@ -586,6 +586,8 @@ static void run_indexing_once(struct crystfelproject *proj)
 	struct pinkindexer_options *pinkIndexer_opts;
 	struct fromfile_options *fromfile_opts;
 	struct asdf_options *asdf_opts;
+	struct ffbidx_options *ffbidx_opts;
+
 	char *old_cwd;
 	char *tmpdir;
 	int r;
@@ -620,10 +622,11 @@ static void run_indexing_once(struct crystfelproject *proj)
 	 * The GUI currently does not allow them to be changed */
 	default_method_options(&taketwoopts,
 	                       &xgandalf_opts,
+	                       &ffbidx_opts,
 	                       &pinkIndexer_opts,
 	                       &felix_opts,
 	                       &fromfile_opts,
-			       &asdf_opts);
+	                       &asdf_opts);
 
 	ipriv = setup_indexing(methods, cell,
 	                       proj->indexing_params.tols,
@@ -632,8 +635,8 @@ static void run_indexing_once(struct crystfelproject *proj)
 	                       detgeom_mean_camera_length(proj->cur_image->detgeom),
 	                       1,
 	                       taketwoopts, xgandalf_opts,
-	                       pinkIndexer_opts, felix_opts,
-	                       NULL, asdf_opts);
+	                       ffbidx_opts, pinkIndexer_opts,
+	                       felix_opts, NULL, asdf_opts);
 	free(methods);
 
 	index_pattern(proj->cur_image, ipriv);
