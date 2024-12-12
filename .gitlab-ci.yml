@@ -126,7 +126,7 @@ deploy-remote-maxwell:
   stage: deploy
   image: $CI_REGISTRY_IMAGE/alma9
   dependencies:
-    - build-and-test: ["alma9"]
+    - "build-and-test: [alma9]"
   variables:
     GIT_STRATEGY: none
   tags:
