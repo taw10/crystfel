@@ -672,6 +672,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Pre-refinement unit cell check if requested */
+		set_last_task("indexing:pre-refine-cell-check");
 		profile_start("prerefine-cell-check");
 		r = check_cell(ipriv->flags, cr, ipriv->target_cell,
 		               ipriv->tolerance);
@@ -686,6 +687,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		{
 			int r;
 			profile_start("refine");
+			set_last_task("indexing:prediction-refinement");
 			r = refine_prediction(image, cr, mille, max_mille_level);
 			profile_end("refine");
 			if ( r ) {
@@ -696,6 +698,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		/* After refinement unit cell check if requested */
 		profile_start("postrefine-cell-check");
+		set_last_task("indexing:post-refine-cell-check");
 		if ( (ipriv->flags & INDEXING_CHECK_CELL)
 		  && !compare_cell_parameters(crystal_get_cell(cr), ipriv->target_cell,
 		                              ipriv->tolerance) )
@@ -707,6 +710,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		profile_end("postrefine-cell-check");
 
 		/* Peak alignment check if requested */
+		set_last_task("indexing:peak-check");
 		if ( ipriv->flags & INDEXING_CHECK_PEAKS )
 		{
 			int mm = ipriv->flags & INDEXING_MULTI;
@@ -721,6 +725,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		/* Check if cell is too similar to existing ones */
 		profile_start("cell-compare-to-others");
+		set_last_task("indexing:compare-to-others");
 		for ( j=0; j<this_crystal; j++ ) {
 
 			Crystal *that_cr = image->crystals[j].cr;
@@ -742,6 +747,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		}
 		profile_end("cell-compare-to-others");
 
+		set_last_task("indexing:write-mille");
 		if ( (mille != NULL) && !crystal_get_user_flag(cr) ) {
 			profile_start("mille-write");
 			crystfel_mille_write_record(mille);
@@ -750,6 +756,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 	}
 
+	set_last_task("indexing:remove-flagged");
 	n_bad = remove_flagged_crystals(image);
 	assert(r >= n_bad);
 
