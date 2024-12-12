@@ -672,7 +672,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Pre-refinement unit cell check if requested */
-		set_last_task("indexing:pre-refine-cell-check");
+		set_last_task("indexing:pre-cellcheck");
 		profile_start("prerefine-cell-check");
 		r = check_cell(ipriv->flags, cr, ipriv->target_cell,
 		               ipriv->tolerance);
@@ -687,7 +687,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		{
 			int r;
 			profile_start("refine");
-			set_last_task("indexing:prediction-refinement");
+			set_last_task("indexing:predrefine");
 			r = refine_prediction(image, cr, mille, max_mille_level);
 			profile_end("refine");
 			if ( r ) {
@@ -698,7 +698,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 
 		/* After refinement unit cell check if requested */
 		profile_start("postrefine-cell-check");
-		set_last_task("indexing:post-refine-cell-check");
+		set_last_task("indexing:post-cellcheck");
 		if ( (ipriv->flags & INDEXING_CHECK_CELL)
 		  && !compare_cell_parameters(crystal_get_cell(cr), ipriv->target_cell,
 		                              ipriv->tolerance) )
