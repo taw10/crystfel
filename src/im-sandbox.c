@@ -562,16 +562,19 @@ static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct s
 			pd->buffer_len[i] = 0;    /* Mark for deletion */
 		}
 
-		size_t h;
 		pd->buffer_pos[i] += r;
-		h = pump(pd->buffers[i], pd->buffer_pos[i], sb);
-		assert(h <= pd->buffer_pos[i]);
-		assert(h >= 0);
-		if ( h > 0 ) {
-			memmove(pd->buffers[i], pd->buffers[i]+h,
-			        pd->buffer_pos[i]-h);
-			pd->buffer_pos[i] -= h;
-		}
+
+		size_t h;
+		do {
+			h = pump(pd->buffers[i], pd->buffer_pos[i], sb);
+			assert(h <= pd->buffer_pos[i]);
+			assert(h >= 0);
+			if ( h > 0 ) {
+				memmove(pd->buffers[i], pd->buffers[i]+h,
+				        pd->buffer_pos[i]-h);
+				pd->buffer_pos[i] -= h;
+			}
+		} while ( h > 0 );
 
 	}
 
