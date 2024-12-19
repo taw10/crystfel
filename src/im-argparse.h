@@ -75,6 +75,7 @@ struct indexamajig_arguments
 	struct taketwo_options **taketwo_opts_ptr;
 	struct felix_options **felix_opts_ptr;
 	struct xgandalf_options **xgandalf_opts_ptr;
+	struct ffbidx_options **ffbidx_opts_ptr;
 	struct pinkindexer_options **pinkindexer_opts_ptr;
 	struct fromfile_options **fromfile_opts_ptr;
 	struct asdf_options **asdf_opts_ptr;

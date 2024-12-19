@@ -39,6 +39,9 @@
  * The indexing subsystem
  */
 
+#ifdef HAVE_FFBIDX
+#include <ffbidx/c_api.h>
+#endif
 
 #define INDEXING_DEFAULTS_DIRAX (INDEXING_DIRAX)
 
@@ -61,6 +64,8 @@
 
 #define INDEXING_DEFAULTS_PINKINDEXER (INDEXING_PINKINDEXER | INDEXING_USE_CELL_PARAMETERS)
 
+#define INDEXING_DEFAULTS_FFBIDX (INDEXING_FFBIDX | INDEXING_USE_CELL_PARAMETERS)
+
 /**
  * An enumeration of all the available indexing methods.
  **/
@@ -78,6 +83,7 @@ typedef enum {
 	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
 	INDEXING_PINKINDEXER = 11,/**< Use PinkIndexer (via optional library) */
+	INDEXING_FFBIDX = 12,     /**< Use PSI Fast Indexer (via optional library) */
 
 	INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
 	                           *   engine */
@@ -157,6 +163,13 @@ struct xgandalf_options {
 	int maxPeaksForIndexing;
 };
 
+struct ffbidx_options {
+#ifdef HAVE_FFBIDX
+	struct config_runtime cruntime;
+	struct config_persistent cpers;
+	struct config_ifssr cifssr;
+#endif
+};
 
 struct taketwo_options
 {
@@ -216,11 +229,13 @@ extern struct argp felix_argp;
 extern struct argp pinkIndexer_argp;
 extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
+extern struct argp ffbidx_argp;
 extern struct argp fromfile_argp;
 extern struct argp asdf_argp;
 
 extern void default_method_options(struct taketwo_options **ttopts,
                                    struct xgandalf_options **xgandalf_opts,
+                                   struct ffbidx_options **ffbidx_opts,
                                    struct pinkindexer_options **pinkIndexer_opts,
                                    struct felix_options **felix_opts,
                                    struct fromfile_options **fromfile_opts,
@@ -235,6 +250,7 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        int n_threads,
                                        struct taketwo_options *ttopts,
                                        struct xgandalf_options *xgandalf_opts,
+                                       struct ffbidx_options *ffbidx_opts,
                                        struct pinkindexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts,
                                        struct fromfile_options *fromfile_opts,

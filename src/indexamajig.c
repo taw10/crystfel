@@ -379,6 +379,7 @@ static int run_work(struct indexamajig_arguments *args)
 	                                   args->iargs.n_threads,
 	                                   *args->taketwo_opts_ptr,
 	                                   *args->xgandalf_opts_ptr,
+	                                   *args->ffbidx_opts_ptr,
 	                                   *args->pinkindexer_opts_ptr,
 	                                   *args->felix_opts_ptr,
 	                                   *args->fromfile_opts_ptr,
