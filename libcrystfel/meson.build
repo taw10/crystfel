@@ -45,6 +45,12 @@ if xgandalfdep.found()
   conf_data.set10('HAVE_XGANDALF', true)
 endif
 
+ffbidxdep = dependency('fast_indexer',
+                       required: false)
+if ffbidxdep.found()
+  conf_data.set10('HAVE_FFBIDX', true)
+endif
+
 pinkindexerdep = dependency('pinkIndexer',
                             required: false,
                             fallback: ['pinkindexer', 'pinkindexer_dep'])
@@ -150,6 +156,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/indexers/xds.c',
                        'src/indexers/asdf.c',
                        'src/indexers/xgandalf.c',
+                       'src/indexers/ffbidx.c',
                        'src/indexers/pinkindexer.c',
                        'src/indexers/fromfile.c',
                        symop_lex_ch,
@@ -166,7 +173,7 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       include_directories: [libcrystfel_includes,
                                             libcrystfel_conf_inc],
                       dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
-                                     hdf5dep, pthreaddep,
+                                     hdf5dep, pthreaddep, ffbidxdep,
                                      xgandalfdep, pinkindexerdep, fdipdep,
                                      ccp4dep, msgpackdep, seedeedep, cjsondep],
                       install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib:$ORIGIN',

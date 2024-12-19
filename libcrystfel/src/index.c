@@ -60,6 +60,7 @@
 #include "indexers/xgandalf.h"
 #include "indexers/pinkindexer.h"
 #include "indexers/fromfile.h"
+#include "indexers/ffbidx.h"
 
 #include "uthash.h"
 
@@ -145,6 +146,10 @@ char *base_indexer_str(IndexingMethod indm)
 		strcpy(str, "file");
 		break;
 
+		case INDEXING_FFBIDX :
+		strcpy(str, "ffbidx");
+		break;
+
 		default :
 		strcpy(str, "(unknown)");
 		break;
@@ -177,6 +182,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             double wavelength_estimate,
                             double clen_estimate,
                             struct xgandalf_options *xgandalf_opts,
+                            struct ffbidx_options *ffbidx_opts,
                             struct pinkindexer_options* pinkIndexer_opts,
                             struct felix_options *felix_opts,
                             struct taketwo_options *taketwo_opts,
@@ -223,6 +229,10 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 		case INDEXING_XGANDALF :
 		priv = xgandalf_prepare(m, cell, xgandalf_opts);
+		break;
+
+		case INDEXING_FFBIDX :
+		priv = ffbidx_prepare(m, cell, ffbidx_opts);
 		break;
 
 		case INDEXING_PINKINDEXER :
@@ -309,6 +319,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 int n_threads,
                                 struct taketwo_options *ttopts,
                                 struct xgandalf_options *xgandalf_opts,
+                                struct ffbidx_options *ffbidx_opts,
                                 struct pinkindexer_options *pinkIndexer_opts,
                                 struct felix_options *felix_opts,
                                 struct fromfile_options *fromfile_opts,
@@ -380,11 +391,12 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		                                          wavelength_estimate,
 		                                          clen_estimate,
 		                                          xgandalf_opts,
+		                                          ffbidx_opts,
 		                                          pinkIndexer_opts,
 		                                          felix_opts,
 		                                          ttopts,
 		                                          fromfile_opts,
-							  asdf_opts);
+		                                          asdf_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) {
 			cffree(ipriv->engine_private);
@@ -496,6 +508,10 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 
 			case INDEXING_XGANDALF :
 			xgandalf_cleanup(ipriv->engine_private[n]);
+			break;
+
+			case INDEXING_FFBIDX:
+			ffbidx_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_PINKINDEXER :
@@ -641,6 +657,13 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		profile_start("xgandalf");
 		r = run_xgandalf(image, mpriv);
 		profile_end("xgandalf");
+		break;
+
+		case INDEXING_FFBIDX:
+		set_last_task("indexing:ffbidx");
+		profile_start("ffbidx");
+		r = run_ffbidx(image, mpriv);
+		profile_end("ffbidx");
 		break;
 
 		default :
@@ -1131,6 +1154,11 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 			method = INDEXING_FILE;
 			return method;
 
+		} else if ( strcmp(bits[i], "ffbidx") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_DEFAULTS_FFBIDX;
+			have_method = 1;
+
 		} else if ( strcmp(bits[i], "latt") == 0) {
 			method = set_lattice(method);
 
@@ -1215,6 +1243,7 @@ char *detect_indexing_methods(UnitCell *cell)
 	do_probe(asdf_probe, cell, methods);
 	do_probe(dirax_probe, cell, methods);
 	do_probe(xds_probe, cell, methods);
+	do_probe(ffbidx_probe, cell, methods);
 
 	//do_probe(felix_probe, cell, methods);
 	//do_probe(pinkIndexer_probe, cell, methods);
@@ -1230,6 +1259,7 @@ char *detect_indexing_methods(UnitCell *cell)
 
 void default_method_options(struct taketwo_options **ttopts,
                             struct xgandalf_options **xgandalf_opts,
+                            struct ffbidx_options **ffbidx_opts,
                             struct pinkindexer_options **pinkIndexer_opts,
                             struct felix_options **felix_opts,
                             struct fromfile_options **fromfile_opts,
@@ -1237,6 +1267,7 @@ void default_method_options(struct taketwo_options **ttopts,
 {
 	taketwo_default_options(ttopts);
 	xgandalf_default_options(xgandalf_opts);
+	ffbidx_default_options(ffbidx_opts);
 	pinkIndexer_default_options(pinkIndexer_opts);
 	felix_default_options(felix_opts);
 	fromfile_default_options(fromfile_opts);
