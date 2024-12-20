@@ -51,6 +51,7 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
 
     taketwoopts = Ref{Ptr{Cvoid}}(C_NULL)
     xgandalfopts = Ref{Ptr{Cvoid}}(C_NULL)
+    ffbidxopts = Ref{Ptr{Cvoid}}(C_NULL)
     pinkindexeropts = Ref{Ptr{Cvoid}}(C_NULL)
     felixopts = Ref{Ptr{Cvoid}}(C_NULL)
     fromfileopts = Ref{Ptr{Cvoid}}(C_NULL)
@@ -59,6 +60,7 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
 
     @ccall libcrystfel.default_method_options(taketwoopts::Ref{Ptr{Cvoid}},
                                               xgandalfopts::Ref{Ptr{Cvoid}},
+                                              ffbidxopts::Ref{Ptr{Cvoid}},
                                               pinkindexeropts::Ref{Ptr{Cvoid}},
                                               felixopts::Ref{Ptr{Cvoid}},
                                               fromfileopts::Ref{Ptr{Cvoid}},
@@ -106,9 +108,11 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
                                             n_threads::Cint,
                                             taketwoopts[]::Ptr{Cvoid},
                                             xgandalfopts[]::Ptr{Cvoid},
+                                            ffbidxopts[]::Ptr{Cvoid},
                                             pinkindexeropts[]::Ptr{Cvoid},
                                             felixopts[]::Ptr{Cvoid},
                                             fromfileopts[]::Ptr{Cvoid},
+                                            smallcellopts[]::Ptr{Cvoid},
                                             asdfopts[]::Ptr{Cvoid})::Ptr{IndexingPriv}
 
     if out == C_NULL
