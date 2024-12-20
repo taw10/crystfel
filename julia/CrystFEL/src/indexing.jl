@@ -146,10 +146,8 @@ function index(image::Image, idxr::Indexer; mille=nothing)
         imille = mille.internalptr
     end
 
-    @ccall libcrystfel.index_pattern_4(image.internalptr::Ptr{InternalImage},
+    @ccall libcrystfel.index_pattern_5(image.internalptr::Ptr{InternalImage},
                                        idxr.indexingpriv::Ptr{IndexingPriv},
-                                       C_NULL::Ptr{Cvoid},
-                                       C_NULL::Ptr{Cvoid},
                                        imille::Ptr{Cvoid},
                                        99::Cint)::Cvoid
 end
