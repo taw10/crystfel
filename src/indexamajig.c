@@ -383,6 +383,7 @@ static int run_work(struct indexamajig_arguments *args)
 	                                   *args->pinkindexer_opts_ptr,
 	                                   *args->felix_opts_ptr,
 	                                   *args->fromfile_opts_ptr,
+	                                   *args->smallcell_opts_ptr,
 	                                   *args->asdf_opts_ptr);
 
 	if ( args->iargs.ipriv == NULL ) {

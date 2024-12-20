@@ -57,6 +57,11 @@
                                    | INDEXING_USE_CELL_PARAMETERS \
                                    | INDEXING_USE_LATTICE_TYPE)
 
+#define INDEXING_DEFAULTS_SMALLCELL (INDEXING_SMALLCELL \
+                                   | INDEXING_USE_CELL_PARAMETERS \
+                                   | INDEXING_USE_LATTICE_TYPE)
+
+
 #define INDEXING_DEFAULTS_XDS (INDEXING_XDS | INDEXING_USE_LATTICE_TYPE \
                                      | INDEXING_USE_CELL_PARAMETERS)
 
@@ -84,6 +89,7 @@ typedef enum {
 	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
 	INDEXING_PINKINDEXER = 11,/**< Use PinkIndexer (via optional library) */
 	INDEXING_FFBIDX = 12,     /**< Use PSI Fast Indexer (via optional library) */
+	INDEXING_SMALLCELL = 13,  /**< Use Smallcell */
 
 	INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
 	                           *   engine */
@@ -186,6 +192,12 @@ struct fromfile_options
 };
 
 
+struct smallcell_options
+{
+       int dummy;  /* No options ...yet */
+};
+
+
 struct felix_options
 {
 	double ttmin;  /* radians */
@@ -231,6 +243,7 @@ extern struct argp taketwo_argp;
 extern struct argp xgandalf_argp;
 extern struct argp ffbidx_argp;
 extern struct argp fromfile_argp;
+extern struct argp smallcell_argp;
 extern struct argp asdf_argp;
 
 extern void default_method_options(struct taketwo_options **ttopts,
@@ -239,6 +252,7 @@ extern void default_method_options(struct taketwo_options **ttopts,
                                    struct pinkindexer_options **pinkIndexer_opts,
                                    struct felix_options **felix_opts,
                                    struct fromfile_options **fromfile_opts,
+                                   struct smallcell_options **smallcell_opts,
                                    struct asdf_options **asdf_opts);
 
 extern IndexingPrivate *setup_indexing(const char *methods,
@@ -254,6 +268,7 @@ extern IndexingPrivate *setup_indexing(const char *methods,
                                        struct pinkindexer_options *pinkIndexer_opts,
                                        struct felix_options *felix_opts,
                                        struct fromfile_options *fromfile_opts,
+                                       struct smallcell_options *smallcell_opts,
                                        struct asdf_options *asdf_opts);
 
 extern void print_indexing_info(IndexingPrivate *ipriv);

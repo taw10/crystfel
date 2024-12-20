@@ -61,6 +61,7 @@
 #include "indexers/pinkindexer.h"
 #include "indexers/fromfile.h"
 #include "indexers/ffbidx.h"
+#include "indexers/smallcell.h"
 
 #include "uthash.h"
 
@@ -150,6 +151,10 @@ char *base_indexer_str(IndexingMethod indm)
 		strcpy(str, "ffbidx");
 		break;
 
+		case INDEXING_SMALLCELL :
+		strcpy(str, "smallcell");
+		break;
+
 		default :
 		strcpy(str, "(unknown)");
 		break;
@@ -187,6 +192,7 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
                             struct felix_options *felix_opts,
                             struct taketwo_options *taketwo_opts,
                             struct fromfile_options *fromfile_opts,
+			    struct smallcell_options *smallcell_opts,
                             struct asdf_options *asdf_opts)
 {
 	char *str;
@@ -217,6 +223,10 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 
 		case INDEXING_FILE :
 		priv = fromfile_prepare(m, fromfile_opts);
+		break;
+
+		case INDEXING_SMALLCELL :
+		priv = smallcell_prepare(m, smallcell_opts, cell);
 		break;
 
 		case INDEXING_FELIX :
@@ -323,6 +333,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 struct pinkindexer_options *pinkIndexer_opts,
                                 struct felix_options *felix_opts,
                                 struct fromfile_options *fromfile_opts,
+                                struct smallcell_options *smallcell_opts,
                                 struct asdf_options *asdf_opts)
 {
 	IndexingPrivate *ipriv;
@@ -396,7 +407,8 @@ IndexingPrivate *setup_indexing(const char *method_list,
 		                                          felix_opts,
 		                                          ttopts,
 		                                          fromfile_opts,
-		                                          asdf_opts);
+							  smallcell_opts,
+							  asdf_opts);
 
 		if ( ipriv->engine_private[i] == NULL ) {
 			cffree(ipriv->engine_private);
@@ -500,6 +512,10 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 
 			case INDEXING_FILE :
 			fromfile_cleanup(ipriv->engine_private[n]);
+			break;
+
+			case INDEXING_SMALLCELL :
+			smallcell_cleanup(ipriv->engine_private[n]);
 			break;
 
 			case INDEXING_TAKETWO :
@@ -629,6 +645,13 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		profile_start("fromfile");
 		r = fromfile_index(image, mpriv);
 		profile_end("fromfile");
+		break;
+
+		case INDEXING_SMALLCELL :
+		set_last_task("indexing:smallcell");
+		profile_start("smallcell");
+		r = smallcell_index(image, mpriv);
+		profile_end("smallcell");
 		break;
 
 		case INDEXING_FELIX :
@@ -1159,6 +1182,11 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 			method = INDEXING_DEFAULTS_FFBIDX;
 			have_method = 1;
 
+		} else if ( strcmp(bits[i], "smallcell") == 0) {
+			if ( have_method ) return warn_method(str);
+			method = INDEXING_SMALLCELL;
+			return method;
+
 		} else if ( strcmp(bits[i], "latt") == 0) {
 			method = set_lattice(method);
 
@@ -1263,6 +1291,7 @@ void default_method_options(struct taketwo_options **ttopts,
                             struct pinkindexer_options **pinkIndexer_opts,
                             struct felix_options **felix_opts,
                             struct fromfile_options **fromfile_opts,
+                            struct smallcell_options **smallcell_opts,
                             struct asdf_options **asdf_opts)
 {
 	taketwo_default_options(ttopts);
@@ -1271,5 +1300,6 @@ void default_method_options(struct taketwo_options **ttopts,
 	pinkIndexer_default_options(pinkIndexer_opts);
 	felix_default_options(felix_opts);
 	fromfile_default_options(fromfile_opts);
+	smallcell_default_options(smallcell_opts);
 	asdf_default_options(asdf_opts);
 }

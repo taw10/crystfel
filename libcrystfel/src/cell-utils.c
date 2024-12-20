@@ -2503,3 +2503,91 @@ SymOpList *get_lattice_symmetry(UnitCell *cell)
 	cffree(pg);
 	return rawList;
 }
+
+
+static int cmpres(const void *av, const void *bv)
+{
+	const struct powder_ring *a = av;
+	const struct powder_ring *b = bv;
+	return a->resolution > b->resolution;
+}
+
+
+struct powder_ring *powder_rings(UnitCell *cell, SymOpList *sym, double mres,
+                                 int *n_rings)
+{
+	double ax, ay, az;
+	double bx, by, bz;
+	double cx, cy, cz;
+	int hmax, kmax, lmax;
+	signed int h, k, l;
+	RefList *list;
+	int i, n;
+	RefListIterator *iter;
+	Reflection *ring;
+	struct powder_ring *sortus;
+
+	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+	hmax = mres * modulus(ax, ay, az);
+	kmax = mres * modulus(bx, by, bz);
+	lmax = mres * modulus(cx, cy, cz);
+	list = reflist_new();
+	for ( h=-hmax; h<=hmax; h++ ) {
+	for ( k=-kmax; k<=kmax; k++ ) {
+	for ( l=-lmax; l<=lmax; l++ ) {
+
+		signed int ha, ka, la;
+
+		if ( forbidden_reflection(cell, h, k, l) ) continue;
+		if ( 2.0*resolution(cell, h, k, l) > mres ) continue;
+
+		if ( sym != NULL ) {
+
+			Reflection *refl;
+
+			get_asymm(sym, h, k, l, &ha, &ka, &la);
+			refl = find_refl(list, ha, ka, la);
+			if ( refl == NULL ) {
+				refl = add_refl(list, ha, ka, la);
+				set_redundancy(refl, 1);
+			} else {
+				set_redundancy(refl, get_redundancy(refl)+1);
+			}
+
+		} else {
+			Reflection *refl;
+			refl = add_refl(list, h, k, l);
+			set_redundancy(refl, 1);
+		}
+
+	}
+	}
+	}
+
+	n = num_reflections(list);
+	sortus = malloc(n*sizeof(struct powder_ring));
+
+	i = 0;
+	for ( ring = first_refl(list, &iter);
+	      ring != NULL;
+	      ring = next_refl(ring, iter) )
+	{
+		signed int rh, rk, rl;
+
+		get_indices(ring, &rh, &rk, &rl);
+
+		sortus[i].h = rh;
+		sortus[i].k = rk;
+		sortus[i].l = rl;
+		sortus[i].resolution = 2.0*resolution(cell, rh, rk, rl);  /* one over d */
+		sortus[i].multi = get_redundancy(ring);
+		i++;
+
+	}
+	reflist_free(list);
+
+	qsort(sortus, n, sizeof(struct powder_ring), cmpres);
+
+	*n_rings = n;
+	return sortus;
+}
