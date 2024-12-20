@@ -118,6 +118,8 @@ extern struct powder_ring *powder_rings(UnitCell *cell,
                                         double mres,
                                         int *n_rings);
 
+extern void free_powder_rings(struct powder_ring *r);
+
 #ifdef __cplusplus
 }
 #endif

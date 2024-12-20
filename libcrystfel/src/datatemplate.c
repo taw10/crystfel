@@ -847,8 +847,8 @@ static void store_for_later(struct forlater *fl, const char *key, const char *va
 		return;
 	}
 
-	fl->keys[fl->n_forlater] = strdup(key);
-	fl->vals[fl->n_forlater] = strdup(val);
+	fl->keys[fl->n_forlater] = cfstrdup(key);
+	fl->vals[fl->n_forlater] = cfstrdup(val);
 	fl->n_forlater++;
 }
 
@@ -1462,7 +1462,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	/* If no groups are defined, put everything in one group.
 	 * This allows at least basic geometry refinement to work. */
 	if ( dt->n_groups == dt->n_panels ) {
-		char **allg = malloc(dt->n_groups*sizeof(char *));
+		char **allg = cfmalloc(dt->n_groups*sizeof(char *));
 		if ( allg == NULL ) {
 			ERROR("Failed to create top group\n");
 		} else {
@@ -1471,7 +1471,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 				allg[i] = dt->groups[i]->name;
 			}
 			add_group_members("all", dt, allg, dt->n_groups);
-			free(allg);
+			cffree(allg);
 		}
 	}
 

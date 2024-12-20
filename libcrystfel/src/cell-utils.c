@@ -2505,6 +2505,12 @@ SymOpList *get_lattice_symmetry(UnitCell *cell)
 }
 
 
+void free_powder_rings(struct powder_ring *r)
+{
+	cffree(r);
+}
+
+
 static int cmpres(const void *av, const void *bv)
 {
 	const struct powder_ring *a = av;
@@ -2565,7 +2571,7 @@ struct powder_ring *powder_rings(UnitCell *cell, SymOpList *sym, double mres,
 	}
 
 	n = num_reflections(list);
-	sortus = malloc(n*sizeof(struct powder_ring));
+	sortus = cfmalloc(n*sizeof(struct powder_ring));
 
 	i = 0;
 	for ( ring = first_refl(list, &iter);

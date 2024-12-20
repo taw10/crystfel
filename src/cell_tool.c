@@ -183,7 +183,7 @@ static int all_rings(UnitCell *cell, SymOpList *sym, double mres)
 		       rings[i].multi);
 	}
 
-	free(rings);
+	free_powder_rings(rings);
 
 	return 0;
 }
