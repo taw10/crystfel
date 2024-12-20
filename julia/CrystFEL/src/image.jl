@@ -38,7 +38,6 @@ mutable struct InternalImage
     meta_data::Cstring
     header_cache::NTuple{HEADER_CACHE_SIZE, Ptr{Cvoid}}
     n_cached_headers::Cint
-    id::Cint
     serial::Cint
     spectrum::Ptr{Cvoid}
     lambda::Cdouble
