@@ -267,6 +267,8 @@ struct crystfelproject {
 	GtkWidget *last_button;
 	int range_set;
 
+	GThread *index_once_thread;
+
 	int unsaved;
 
 	int cur_frame;

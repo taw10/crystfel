@@ -373,6 +373,11 @@ static void goto_frame_response_sig(GtkDialog *dialog, gint response_id,
 		return;
 	}
 
+	if ( ctx->proj->index_once_thread != NULL ) {
+		ERROR("Can't change image while indexing is running.\n");
+		return;
+	}
+
 	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->framenumchk)) ) {
 		int id = atoi(gtk_entry_get_text(GTK_ENTRY(ctx->framenum)));
 		if ( (id<=0) || (id>ctx->proj->n_frames) ) {
@@ -604,6 +609,10 @@ static gint reset_range_sig(GtkWidget *widget, struct crystfelproject *proj)
 static gint first_frame_sig(GtkWidget *widget,
                             struct crystfelproject *proj)
 {
+	if ( proj->index_once_thread != NULL ) {
+		ERROR("Can't change image while indexing is running.\n");
+		return FALSE;
+	}
 	proj->cur_frame = 0;
 	update_imageview(proj);
 	return FALSE;
@@ -613,6 +622,10 @@ static gint first_frame_sig(GtkWidget *widget,
 static gint prev_frame_sig(GtkWidget *widget,
                            struct crystfelproject *proj)
 {
+	if ( proj->index_once_thread != NULL ) {
+		ERROR("Can't change image while indexing is running.\n");
+		return FALSE;
+	}
 	if ( proj->cur_frame == 0 ) return FALSE;
 	proj->cur_frame--;
 	update_imageview(proj);
@@ -624,6 +637,10 @@ static gint random_frame_sig(GtkWidget *widget,
                              GdkEventButton *event,
                              struct crystfelproject *proj)
 {
+	if ( proj->index_once_thread != NULL ) {
+		ERROR("Can't change image while indexing is running.\n");
+		return FALSE;
+	}
 	if ( event->state & GDK_SHIFT_MASK ) {
 		if ( proj->n_random_history > 0 ) {
 			proj->cur_frame = pop_random_frame(proj);
@@ -641,6 +658,10 @@ static gint random_frame_sig(GtkWidget *widget,
 static gint next_frame_sig(GtkWidget *widget,
                            struct crystfelproject *proj)
 {
+	if ( proj->index_once_thread != NULL ) {
+		ERROR("Can't change image while indexing is running.\n");
+		return FALSE;
+	}
 	if ( proj->cur_frame == proj->n_frames - 1 ) return FALSE;
 	proj->cur_frame++;
 	update_imageview(proj);
@@ -651,6 +672,10 @@ static gint next_frame_sig(GtkWidget *widget,
 static gint last_frame_sig(GtkWidget *widget,
                            struct crystfelproject *proj)
 {
+	if ( proj->index_once_thread != NULL ) {
+		ERROR("Can't change image while indexing is running.\n");
+		return FALSE;
+	}
 	proj->cur_frame = proj->n_frames - 1;
 	update_imageview(proj);
 	return FALSE;
@@ -796,6 +821,10 @@ static gint image_info_clicked_sig(GtkWidget *widget,
 static gint results_combo_changed_sig(GtkComboBox *w,
                                       struct crystfelproject *proj)
 {
+	if ( proj->index_once_thread != NULL ) {
+		ERROR("Can't change image while indexing is running.\n");
+		return FALSE;
+	}
 	update_imageview(proj);
 	return FALSE;
 }

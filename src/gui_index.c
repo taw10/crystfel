@@ -696,6 +696,31 @@ static void run_indexing_once(struct crystfelproject *proj)
 }
 
 
+static gboolean thread_index_once_end(gpointer vp)
+{
+	struct crystfelproject *proj = vp;
+
+	g_thread_unref(proj->index_once_thread);
+	proj->index_once_thread = NULL;
+
+	crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                      proj->indexing_params.ir_inn);
+	force_refls_on(proj);
+	redraw_widget(proj->imageview);
+
+	return FALSE;
+}
+
+
+static void *thread_index_once(void *vp)
+{
+	struct crystfelproject *proj = vp;
+	run_indexing_once(proj);
+	gdk_threads_add_idle(thread_index_once_end, proj);
+	return NULL;
+}
+
+
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
@@ -703,12 +728,11 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 	if ( resp == GTK_RESPONSE_OK ) {
 		get_indexing_opts(proj,
 		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
-		run_indexing_once(proj);
-
-		crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                      proj->indexing_params.ir_inn);
-		force_refls_on(proj);
-		redraw_widget(proj->imageview);
+		if ( proj->index_once_thread != NULL ) {
+			ERROR("Please wait for previous indexing to finish\n");
+			return;
+		}
+		proj->index_once_thread = g_thread_new("index-once", thread_index_once, proj);
 	}
 
 	gtk_widget_destroy(dialog);
