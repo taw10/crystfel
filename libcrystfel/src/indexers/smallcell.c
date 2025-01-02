@@ -568,7 +568,6 @@ static struct Cliquelist *find_max_cliques(struct PeakInfo *peak_infos,
 	}
 
 	if ( P->n_mem <= 2 ) {
-		ERROR("No peaks with neighbours\n");
 		cffree(P);
 		return NULL;
 	}
@@ -707,8 +706,6 @@ int smallcell_index(struct image *image, void *mpriv)
 	                                image->lambda,
 					&num_peak_infos);
 
-	STATUS("Number of matched rings: %i\n", num_peak_infos);
-
 	link_nodes(peak_infos, num_peak_infos, priv->g9);
 
 	cliques = find_max_cliques(peak_infos, num_peak_infos);
@@ -716,8 +713,6 @@ int smallcell_index(struct image *image, void *mpriv)
 		cffree(peak_infos);
 		return 0;
 	}
-
-	STATUS("Number of cliques found: %i\n", cliques->n);
 
 	/* Sort the list of cliques by number of members */
 	qsort(cliques->list, cliques->n, sizeof(struct Nodelist *),
@@ -729,10 +724,7 @@ int smallcell_index(struct image *image, void *mpriv)
 		if ( cliques->list[i]->n_mem < 5 ) continue;
 
 		UnitCell *uc = fit_cell(cliques->list[i]);
-		if ( uc == NULL ) {
-			ERROR("Unit cell not created.. returned NULL\n");
-			continue;
-		}
+		if ( uc == NULL ) continue;
 
 		if ( right_handed(uc) && !validate_cell(uc) ) {
 
