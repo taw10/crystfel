@@ -143,6 +143,7 @@ roughly in order of importance:
 * [XGandalf](https://stash.desy.de/users/gevorkov/repos/xgandalf) \[\*\] (for `xgandalf` indexing)
 * [Zlib](https://www.zlib.net/) \[\*\] (required for reading gzipped CBF files.  Version 1.2.3.5 or later preferred for better decompression speed)
 * [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
+* [Fast feedback indexer](https://github.com/paulscherrerinstitute/fast-feedback-indexer) (for GPU-based `ffbidx` indexing)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
 * [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
 * [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)

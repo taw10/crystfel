@@ -87,10 +87,13 @@ values. This is only possible with a static detector geometry (see below).
 Choose the fastest indexing algorithms
 ======================================
 
-In our tests, ``asdf`` gives the best compromise between speed and success
-rate, so it's the best choice if you need fast processing.  The ``indexamajig``
-option ``--asdf-fast`` makes it about three times faster with only a small
-reduction in success rate.
+The GPU-based ``ffbidx`` algorithm is the fastest indexing currently available,
+taking around 1 ms per frame.  However, it requires a GPU and additional
+libraries.
+
+If ``ffbidx`` is not available, use ``asdf``, which gives the best compromise
+between speed and success rate.  The ``indexamajig`` option ``--asdf-fast``
+makes it about three times faster with only a small reduction in success rate.
 
 DirAx, TakeTwo, Mosflm and XGandalf are also good choices (roughly in that
 order). Don't use PinkIndexer, unless you really need it (wide bandwidth or

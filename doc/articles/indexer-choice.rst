@@ -43,9 +43,10 @@ algorithms will be mixed up together.
 Fastest indexing (e.g. real-time analysis pipelines)
 ====================================================
 
-Read the `document about data processing speed <speed.rst>`_.  The best choice
-is probably ``asdf`` or ``xgandalf`` with ``--xgandalf-fast``, but there are
-many other considerations for increasing processing speed.
+Read the `document about data processing speed <speed.rst>`_.  If you have a
+GPU available, use ``ffbidx``.  Otherwise, the best choice is probably ``asdf``
+or ``xgandalf`` with ``--xgandalf-fast``, but there are many other
+considerations for increasing processing speed.
 
 
 Wide-bandwidth X-ray diffraction (Laue/pink beam)
@@ -68,12 +69,9 @@ Use ``pinkindexer``, but first read the `document about electrons <electrons.rst
 Small unit cell
 ===============
 
-In this version of CrystFEL, none of the algorithms are very well-suited for
-small unit cells.  Nevertheless, some researchers have had success using
-``xgandalf``.  It's also worth trying with ``taketwo`` because of the way its
-algorithms are devised.
-
-A specific algorithm for small unit cells is expected in CrystFEL 0.12.0.
+For very small unit cells (<20 Angstrom axis length), use ``smallcell``.  For
+larger (but still "small") cells, researchers have also had success using
+``xgandalf``, and it's also worth trying with ``taketwo``.
 
 
 Multiple overlapping diffraction patterns

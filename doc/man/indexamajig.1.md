@@ -156,6 +156,10 @@ reports that the pattern has been successfully indexed.  Choose from:
 **file**
 : See **Re-playing old indexing and injecting external results** below.
 
+**ffbidx**
+: Use the GPU-based fast-feedback indexer, similar to the TORO algorithm.
+: See https://doi.org/10.1107/S1600576724003182 for details.
+
 Most of the indexing methods require some extra software to be installed,
 either at the time of compiling CrystFEL or afterwards.  CrystFEL is
 distributed with a script (scripts/install-indexers) which can help you to
