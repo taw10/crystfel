@@ -158,7 +158,13 @@ reports that the pattern has been successfully indexed.  Choose from:
 
 **ffbidx**
 : Use the GPU-based fast-feedback indexer, similar to the TORO algorithm.
-: See https://doi.org/10.1107/S1600576724003182 for details.
+: See Gasparotto et al., J. Applied Crystallography 57 (2024) p931,
+: https://doi.org/10.1107/S1600576724003182.
+
+**smallcell**
+: Use an implementation of the cctbx.small_cell algorithm.
+: See Brewster et al., Acta Crystallographica D71 (2015) p357,
+: https://doi.org/10.1107/S1399004714026145.
 
 Most of the indexing methods require some extra software to be installed,
 either at the time of compiling CrystFEL or afterwards.  CrystFEL is
@@ -364,7 +370,7 @@ BASIC OPTIONS
 : Set the timeout used for "get next" calls from ASAP::O, in ms.  The default
 : is 500 ms.
 
-**--asapo-acks*
+**--asapo-acks**
 : Use ASAP::O acknowledgements for more reliable message delivery.
 
 **--data-format=format**
