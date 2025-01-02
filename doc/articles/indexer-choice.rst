@@ -85,9 +85,10 @@ hold of a copy of the Felix executable.
 CrystFEL was installed minimally
 ================================
 
-The ``taketwo`` algorithm has no dependencies, neither compile-time nor
-run-time, so is always available.  Note that ``taketwo`` always needs prior
-lattice parameters.
+The ``taketwo`` and ``smallcell`` algorithms have no dependencies, neither
+compile-time nor run-time, so are both always available.  Note however that
+both always need prior lattice parameters, and ``smallcell`` is a specialist
+algorithm for small unit cells (i.e. not macromolecules).
 
 Even if you have no system-wide access to the computer system, you can still
 make a user-local installation of ``dirax``, ``mosflm``, ``xds`` or ``felix``.
