@@ -1010,24 +1010,52 @@ static void add_task_buttons(GtkWidget *vbox, struct crystfelproject *proj)
 }
 
 
-static void add_gui_message(enum log_msg_type type, const char *msg,
-                            void *vp)
+struct logmsg_data
 {
+	struct crystfelproject *proj;
+	enum log_msg_type type;
+	char *msg;
+};
+
+
+static gboolean add_gui_message_real(gpointer vp)
+{
+	struct logmsg_data *data = vp;
+
 	GtkTextBuffer *buf;
 	GtkTextIter iter;
 	GtkTextMark *mark;
-	struct crystfelproject *proj = vp;
 
-	buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(proj->report));
+	buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(data->proj->report));
 	gtk_text_buffer_get_end_iter(buf, &iter);
-	gtk_text_buffer_insert(buf, &iter, msg, -1);
+	gtk_text_buffer_insert(buf, &iter, data->msg, -1);
 
 	mark = gtk_text_mark_new(NULL, FALSE);
 	gtk_text_buffer_get_end_iter(buf, &iter);
 	gtk_text_buffer_add_mark(buf, mark, &iter);
-	gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(proj->report),
+	gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(data->proj->report),
 	                             mark, 0.0, FALSE, 0.0, 0.0);
 	gtk_text_buffer_delete_mark(buf, mark);
+
+	free(data->msg);
+	free(data);
+
+	return FALSE;
+}
+
+
+static void add_gui_message(enum log_msg_type type, const char *msg,
+                            void *vp)
+{
+	struct crystfelproject *proj = vp;
+	struct logmsg_data *data;
+
+	data = malloc(sizeof(struct logmsg_data));
+	data->proj = proj;
+	data->type = type;
+	data->msg = strdup(msg);
+
+	gdk_threads_add_idle(add_gui_message_real, data);
 }
 
 
