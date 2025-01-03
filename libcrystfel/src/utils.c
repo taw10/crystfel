@@ -473,19 +473,20 @@ static void set_last_task_dummy(const char *task, void *vp)
 	/* Do nothing */
 }
 
-static void notify_alive_dummy(void *vp)
+static int notify_alive_dummy(void *vp)
 {
 	/* Do nothing */
+	return 0;
 }
 
 struct _debugconf {
 	void (*set_last_task)(const char *task, void *vp);
-	void (*notify_alive)(void *vp);
+	int (*notify_alive)(void *vp);
 	void *debug_data;
 } debug_conf = { set_last_task_dummy, notify_alive_dummy, NULL };
 
 int set_debug_funcs(void (*slt)(const char *, void *),
-                    void (*ping)(void *),
+                    int (*ping)(void *),
                     void *vp)
 {
 	debug_conf.set_last_task = slt;
@@ -499,9 +500,9 @@ void set_last_task(const char *task)
 	debug_conf.set_last_task(task, debug_conf.debug_data);
 }
 
-void notify_alive()
+int notify_alive()
 {
-	debug_conf.notify_alive(debug_conf.debug_data);
+	return debug_conf.notify_alive(debug_conf.debug_data);
 }
 
 

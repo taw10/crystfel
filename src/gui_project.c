@@ -1248,6 +1248,8 @@ int default_project(struct crystfelproject *proj)
 	proj->n_unique_files = 0;
 	proj->index_once_thread = NULL;
 	proj->index_once_infobar = NULL;
+	proj->index_once_progress_bar = NULL;
+	proj->index_once_cancel = 0;
 
 	proj->indexing_backend_selected = 0;
 	proj->merging_backend_selected = 0;

@@ -270,6 +270,7 @@ struct crystfelproject {
 	GThread *index_once_thread;
 	GtkWidget *index_once_infobar;
 	GtkWidget *index_once_progress_bar;
+	volatile int index_once_cancel;
 
 	int unsaved;
 

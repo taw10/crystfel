@@ -743,10 +743,22 @@ static gboolean index_once_pulse(gpointer vp)
 }
 
 
-static void gui_notify_alive(void *vp)
+static int gui_notify_alive(void *vp)
 {
 	struct crystfelproject *proj = vp;
 	gdk_threads_add_idle(index_once_pulse, proj);
+	return proj->index_once_cancel;
+}
+
+
+static void index_once_infobar_response_sig(GtkInfoBar *infobar, gint resp,
+                                            gpointer data)
+{
+	struct crystfelproject *proj = data;
+
+	if ( resp == GTK_RESPONSE_CANCEL ) {
+		proj->index_once_cancel = 1;
+	}
 }
 
 
@@ -778,9 +790,8 @@ static void add_ionce_infobar(struct crystfelproject *proj)
 	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
 	                               TRUE);
 
-	//g_signal_connect_data(G_OBJECT(task->info_bar), "response",
-	//                      G_CALLBACK(infobar_response_sig), ibdata,
-	//                      free_ib_callback_params, 0);
+	g_signal_connect(G_OBJECT(info_bar), "response",
+	                 G_CALLBACK(index_once_infobar_response_sig), proj);
 
 	gtk_widget_show_all(info_bar);
 
@@ -804,6 +815,7 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 			ERROR("Please wait for previous indexing to finish\n");
 			return;
 		}
+		proj->index_once_cancel = 0;
 		proj->index_once_thread = g_thread_new("index-once", thread_index_once, proj);
 		add_ionce_infobar(proj);
 	}

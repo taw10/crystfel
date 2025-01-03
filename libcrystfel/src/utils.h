@@ -257,9 +257,9 @@ extern int set_mm_funcs(void *(*cfmalloc)(size_t size),
 /* -------------------------------- Debugging ------------------------------- */
 
 extern void set_last_task(const char *task);
-extern void notify_alive(void);
+extern int notify_alive(void);
 extern int set_debug_funcs(void (*slt)(const char *, void *vp),
-                           void (*ping)(void *vp),
+                           int (*ping)(void *vp),
                            void *debug_data);
 
 

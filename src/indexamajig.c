@@ -290,12 +290,13 @@ static void set_last_task_sandbox(const char *task, void *vp)
 }
 
 
-static void notify_alive_sandbox(void *vp)
+static int notify_alive_sandbox(void *vp)
 {
 	struct indexamajig_debug_data *db = vp;
 	pthread_mutex_lock(&db->shared->debug_lock);
 	db->shared->pings[db->worker]++;
 	pthread_mutex_unlock(&db->shared->debug_lock);
+	return 0;
 }
 
 
