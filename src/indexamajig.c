@@ -273,22 +273,29 @@ static void pin_to_cpu(int slot)
 }
 
 
-struct sb_shm *shared;
-int _worker;
-
-static void set_last_task_sandbox(const char *task)
+struct indexamajig_debug_data
 {
+	struct sb_shm *shared;
+	int worker;
+};
+
+
+static void set_last_task_sandbox(const char *task, void *vp)
+{
+	struct indexamajig_debug_data *db = vp;
 	assert(strlen(task) < MAX_TASK_LEN-1);
-	pthread_mutex_lock(&shared->debug_lock);
-	strcpy(shared->last_task[_worker], task);
-	pthread_mutex_unlock(&shared->debug_lock);
+	pthread_mutex_lock(&db->shared->debug_lock);
+	strcpy(db->shared->last_task[db->worker], task);
+	pthread_mutex_unlock(&db->shared->debug_lock);
 }
 
-static void notify_alive_sandbox()
+
+static void notify_alive_sandbox(void *vp)
 {
-	pthread_mutex_lock(&shared->debug_lock);
-	shared->pings[_worker]++;
-	pthread_mutex_unlock(&shared->debug_lock);
+	struct indexamajig_debug_data *db = vp;
+	pthread_mutex_lock(&db->shared->debug_lock);
+	db->shared->pings[db->worker]++;
+	pthread_mutex_unlock(&db->shared->debug_lock);
 }
 
 
@@ -307,9 +314,10 @@ static int run_work(struct indexamajig_arguments *args)
 	sem_t *queue_sem;
 	IndexingFlags flags = 0;
 	struct pf8_private_data *pf8_data = NULL;
+	struct indexamajig_debug_data debugdata;
+	struct sb_shm *shared;
 
 	if ( args->cpu_pin ) pin_to_cpu(args->worker_id);
-	_worker = args->worker_id;
 
 	ll = 64 + strlen(args->worker_tmpdir);
 	tmp = malloc(ll);
@@ -391,7 +399,7 @@ static int run_work(struct indexamajig_arguments *args)
 		return 1;
 	}
 
-	if ( _worker == 0 ) {
+	if ( args->worker_id == 0 ) {
 		print_indexing_info(args->iargs.ipriv);
 	}
 
@@ -446,7 +454,9 @@ static int run_work(struct indexamajig_arguments *args)
 		}
 	}
 
-	set_debug_funcs(set_last_task_sandbox, notify_alive_sandbox);
+	debugdata.shared = shared;
+	debugdata.worker = args->worker_id;
+	set_debug_funcs(set_last_task_sandbox, notify_alive_sandbox, &debugdata);
 
 	mille = crystfel_mille_new_fd(args->fd_mille);
 

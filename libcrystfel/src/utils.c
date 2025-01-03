@@ -468,37 +468,40 @@ char *safe_strdup(const char *in)
 
 /* -------------------------------- Debugging ------------------------------- */
 
-static void set_last_task_dummy(const char *task)
+static void set_last_task_dummy(const char *task, void *vp)
 {
 	/* Do nothing */
 }
 
-static void notify_alive_dummy()
+static void notify_alive_dummy(void *vp)
 {
 	/* Do nothing */
 }
 
 struct _debugconf {
-	void (*set_last_task)(const char *task);
-	void (*notify_alive)(void);
-} debug_conf = { set_last_task_dummy, notify_alive_dummy };
+	void (*set_last_task)(const char *task, void *vp);
+	void (*notify_alive)(void *vp);
+	void *debug_data;
+} debug_conf = { set_last_task_dummy, notify_alive_dummy, NULL };
 
-int set_debug_funcs(void (*slt)(const char *),
-                    void (*ping)(void))
+int set_debug_funcs(void (*slt)(const char *, void *),
+                    void (*ping)(void *),
+                    void *vp)
 {
 	debug_conf.set_last_task = slt;
 	debug_conf.notify_alive = ping;
+	debug_conf.debug_data = vp;
 	return 0;
 }
 
 void set_last_task(const char *task)
 {
-	debug_conf.set_last_task(task);
+	debug_conf.set_last_task(task, debug_conf.debug_data);
 }
 
 void notify_alive()
 {
-	debug_conf.notify_alive();
+	debug_conf.notify_alive(debug_conf.debug_data);
 }
 
 
