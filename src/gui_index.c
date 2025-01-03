@@ -724,10 +724,35 @@ static void *thread_index_once(void *vp)
 }
 
 
+static void gui_set_last_task(const char *task, void *vp)
+{
+	struct crystfelproject *proj = vp;
+	char tmp[256];
+	snprintf(tmp, 255, "Indexing this frame (%s)", task);
+	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar), tmp);
+}
+
+
+static gboolean index_once_pulse(gpointer vp)
+{
+	struct crystfelproject *proj = vp;
+	if ( proj->index_once_progress_bar != NULL ) {
+		gtk_progress_bar_pulse(GTK_PROGRESS_BAR(proj->index_once_progress_bar));
+	}
+	return FALSE;
+}
+
+
+static void gui_notify_alive(void *vp)
+{
+	struct crystfelproject *proj = vp;
+	gdk_threads_add_idle(index_once_pulse, proj);
+}
+
+
 static void add_ionce_infobar(struct crystfelproject *proj)
 {
 	GtkWidget *info_bar;
-	GtkWidget *progress_bar;
 	GtkWidget *bar_area;
 
 	info_bar = gtk_info_bar_new();
@@ -744,15 +769,14 @@ static void add_ionce_infobar(struct crystfelproject *proj)
 	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
 
 	/* Create progress bar */
-	progress_bar = gtk_progress_bar_new();
+	proj->index_once_progress_bar = gtk_progress_bar_new();
 	gtk_box_pack_start(GTK_BOX(bar_area),
-	                   GTK_WIDGET(progress_bar),
+	                   GTK_WIDGET(proj->index_once_progress_bar),
 	                   TRUE, TRUE, 0.0);
-	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(progress_bar),
+	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
 	                          "Indexing this frame");
-	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress_bar),
+	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
 	                               TRUE);
-	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 10);
 
 	//g_signal_connect_data(G_OBJECT(task->info_bar), "response",
 	//                      G_CALLBACK(infobar_response_sig), ibdata,
@@ -765,13 +789,14 @@ static void add_ionce_infobar(struct crystfelproject *proj)
 #endif
 
 	proj->index_once_infobar = info_bar;
+
+	set_debug_funcs(gui_set_last_task, gui_notify_alive, proj);
 }
 
 
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
-
 	if ( resp == GTK_RESPONSE_OK ) {
 		get_indexing_opts(proj,
 		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
