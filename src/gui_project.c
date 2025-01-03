@@ -1247,6 +1247,7 @@ int default_project(struct crystfelproject *proj)
 	proj->ambi_new_job_title = NULL;
 	proj->n_unique_files = 0;
 	proj->index_once_thread = NULL;
+	proj->index_once_infobar = NULL;
 
 	proj->indexing_backend_selected = 0;
 	proj->merging_backend_selected = 0;

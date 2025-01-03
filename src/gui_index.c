@@ -700,6 +700,9 @@ static gboolean thread_index_once_end(gpointer vp)
 {
 	struct crystfelproject *proj = vp;
 
+	gtk_widget_destroy(proj->index_once_infobar);
+	proj->index_once_infobar = NULL;
+
 	g_thread_unref(proj->index_once_thread);
 	proj->index_once_thread = NULL;
 
@@ -721,6 +724,50 @@ static void *thread_index_once(void *vp)
 }
 
 
+static void add_ionce_infobar(struct crystfelproject *proj)
+{
+	GtkWidget *info_bar;
+	GtkWidget *progress_bar;
+	GtkWidget *bar_area;
+
+	info_bar = gtk_info_bar_new();
+	gtk_info_bar_set_message_type(GTK_INFO_BAR(info_bar),
+	                              GTK_MESSAGE_INFO);
+
+	gtk_info_bar_add_button(GTK_INFO_BAR(info_bar),
+	                        GTK_STOCK_CANCEL,
+	                        GTK_RESPONSE_CANCEL);
+
+	gtk_box_pack_end(GTK_BOX(proj->main_vbox), GTK_WIDGET(info_bar),
+	                 FALSE, FALSE, 0.0);
+
+	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
+
+	/* Create progress bar */
+	progress_bar = gtk_progress_bar_new();
+	gtk_box_pack_start(GTK_BOX(bar_area),
+	                   GTK_WIDGET(progress_bar),
+	                   TRUE, TRUE, 0.0);
+	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(progress_bar),
+	                          "Indexing this frame");
+	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress_bar),
+	                               TRUE);
+	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 10);
+
+	//g_signal_connect_data(G_OBJECT(task->info_bar), "response",
+	//                      G_CALLBACK(infobar_response_sig), ibdata,
+	//                      free_ib_callback_params, 0);
+
+	gtk_widget_show_all(info_bar);
+
+#if GTK_CHECK_VERSION(3,22,29)
+	gtk_info_bar_set_revealed(GTK_INFO_BAR(info_bar), TRUE);
+#endif
+
+	proj->index_once_infobar = info_bar;
+}
+
+
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
@@ -733,6 +780,7 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 			return;
 		}
 		proj->index_once_thread = g_thread_new("index-once", thread_index_once, proj);
+		add_ionce_infobar(proj);
 	}
 
 	gtk_widget_destroy(dialog);

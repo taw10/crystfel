@@ -268,6 +268,7 @@ struct crystfelproject {
 	int range_set;
 
 	GThread *index_once_thread;
+	GtkWidget *index_once_infobar;
 
 	int unsaved;
 
