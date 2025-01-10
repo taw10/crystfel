@@ -271,6 +271,8 @@ struct crystfelproject {
 	GtkWidget *index_once_infobar;
 	GtkWidget *index_once_progress_bar;
 	volatile int index_once_cancel;
+	GMutex index_once_last_task_lock;
+	char *index_once_last_task;
 
 	int unsaved;
 

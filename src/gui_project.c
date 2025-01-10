@@ -1250,6 +1250,9 @@ int default_project(struct crystfelproject *proj)
 	proj->index_once_infobar = NULL;
 	proj->index_once_progress_bar = NULL;
 	proj->index_once_cancel = 0;
+	proj->index_once_last_task = NULL;
+	g_mutex_init(&proj->index_once_last_task_lock);
+
 
 	proj->indexing_backend_selected = 0;
 	proj->merging_backend_selected = 0;

@@ -724,12 +724,28 @@ static void *thread_index_once(void *vp)
 }
 
 
-static void gui_set_last_task(const char *task, void *vp)
+static gboolean index_once_show_task(gpointer vp)
 {
 	struct crystfelproject *proj = vp;
 	char tmp[256];
-	snprintf(tmp, 255, "Indexing this frame (%s)", task);
-	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar), tmp);
+	g_mutex_lock(&proj->index_once_last_task_lock);
+	snprintf(tmp, 255, "Indexing this frame (%s)", proj->index_once_last_task);
+	g_mutex_unlock(&proj->index_once_last_task_lock);
+	if ( proj->index_once_progress_bar != NULL ) {
+		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar), tmp);
+	}
+	return FALSE;
+}
+
+
+static void gui_set_last_task(const char *task, void *vp)
+{
+	struct crystfelproject *proj = vp;
+	g_mutex_lock(&proj->index_once_last_task_lock);
+	free(proj->index_once_last_task);
+	proj->index_once_last_task = strdup(task);
+	g_mutex_unlock(&proj->index_once_last_task_lock);
+	gdk_threads_add_idle(index_once_show_task, proj);
 }
 
 
