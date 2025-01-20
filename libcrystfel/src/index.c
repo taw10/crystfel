@@ -1014,7 +1014,7 @@ void index_pattern_4(struct image *image, IndexingPrivate *ipriv, int *ping,
 			done = finished_retry(ipriv->methods[n], ipriv->flags,
 			                      r, image);
 			if ( ntry > 5 ) done = 1;
-			notify_alive();
+			if ( notify_alive() ) done = 1;
 
 		} while ( !done );
 

@@ -696,19 +696,144 @@ static void run_indexing_once(struct crystfelproject *proj)
 }
 
 
+static gboolean thread_index_once_end(gpointer vp)
+{
+	struct crystfelproject *proj = vp;
+
+	gtk_widget_destroy(proj->index_once_infobar);
+	proj->index_once_infobar = NULL;
+
+	g_thread_unref(proj->index_once_thread);
+	proj->index_once_thread = NULL;
+
+	crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                      proj->indexing_params.ir_inn);
+	force_refls_on(proj);
+	redraw_widget(proj->imageview);
+
+	return FALSE;
+}
+
+
+static void *thread_index_once(void *vp)
+{
+	struct crystfelproject *proj = vp;
+	run_indexing_once(proj);
+	gdk_threads_add_idle(thread_index_once_end, proj);
+	return NULL;
+}
+
+
+static gboolean index_once_show_task(gpointer vp)
+{
+	struct crystfelproject *proj = vp;
+	char tmp[256];
+	g_mutex_lock(&proj->index_once_last_task_lock);
+	snprintf(tmp, 255, "Indexing this frame (%s)", proj->index_once_last_task);
+	g_mutex_unlock(&proj->index_once_last_task_lock);
+	if ( proj->index_once_progress_bar != NULL ) {
+		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar), tmp);
+	}
+	return FALSE;
+}
+
+
+static void gui_set_last_task(const char *task, void *vp)
+{
+	struct crystfelproject *proj = vp;
+	g_mutex_lock(&proj->index_once_last_task_lock);
+	free(proj->index_once_last_task);
+	proj->index_once_last_task = strdup(task);
+	g_mutex_unlock(&proj->index_once_last_task_lock);
+	gdk_threads_add_idle(index_once_show_task, proj);
+}
+
+
+static gboolean index_once_pulse(gpointer vp)
+{
+	struct crystfelproject *proj = vp;
+	if ( proj->index_once_progress_bar != NULL ) {
+		gtk_progress_bar_pulse(GTK_PROGRESS_BAR(proj->index_once_progress_bar));
+	}
+	return FALSE;
+}
+
+
+static int gui_notify_alive(void *vp)
+{
+	struct crystfelproject *proj = vp;
+	gdk_threads_add_idle(index_once_pulse, proj);
+	return proj->index_once_cancel;
+}
+
+
+static void index_once_infobar_response_sig(GtkInfoBar *infobar, gint resp,
+                                            gpointer data)
+{
+	struct crystfelproject *proj = data;
+
+	if ( resp == GTK_RESPONSE_CANCEL ) {
+		proj->index_once_cancel = 1;
+	}
+}
+
+
+static void add_ionce_infobar(struct crystfelproject *proj)
+{
+	GtkWidget *info_bar;
+	GtkWidget *bar_area;
+
+	info_bar = gtk_info_bar_new();
+	gtk_info_bar_set_message_type(GTK_INFO_BAR(info_bar),
+	                              GTK_MESSAGE_INFO);
+
+	gtk_info_bar_add_button(GTK_INFO_BAR(info_bar),
+	                        GTK_STOCK_CANCEL,
+	                        GTK_RESPONSE_CANCEL);
+
+	gtk_box_pack_end(GTK_BOX(proj->main_vbox), GTK_WIDGET(info_bar),
+	                 FALSE, FALSE, 0.0);
+
+	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
+
+	/* Create progress bar */
+	proj->index_once_progress_bar = gtk_progress_bar_new();
+	gtk_box_pack_start(GTK_BOX(bar_area),
+	                   GTK_WIDGET(proj->index_once_progress_bar),
+	                   TRUE, TRUE, 0.0);
+	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
+	                          "Indexing this frame");
+	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
+	                               TRUE);
+
+	g_signal_connect(G_OBJECT(info_bar), "response",
+	                 G_CALLBACK(index_once_infobar_response_sig), proj);
+
+	gtk_widget_show_all(info_bar);
+
+#if GTK_CHECK_VERSION(3,22,29)
+	gtk_info_bar_set_revealed(GTK_INFO_BAR(info_bar), TRUE);
+#endif
+
+	proj->index_once_infobar = info_bar;
+
+	set_debug_funcs(gui_set_last_task, gui_notify_alive, proj);
+}
+
+
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
-
 	if ( resp == GTK_RESPONSE_OK ) {
 		get_indexing_opts(proj,
 		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
-		run_indexing_once(proj);
-
-		crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                                      proj->indexing_params.ir_inn);
-		force_refls_on(proj);
-		redraw_widget(proj->imageview);
+		if ( proj->index_once_thread != NULL ) {
+			ERROR("Please wait for previous indexing to finish\n");
+			return;
+		}
+		proj->index_once_cancel = 0;
+		proj->index_once_thread = g_thread_new("index-once", thread_index_once, proj);
+		add_ionce_infobar(proj);
 	}
 
 	gtk_widget_destroy(dialog);

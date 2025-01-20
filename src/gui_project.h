@@ -267,6 +267,13 @@ struct crystfelproject {
 	GtkWidget *last_button;
 	int range_set;
 
+	GThread *index_once_thread;
+	GtkWidget *index_once_infobar;
+	GtkWidget *index_once_progress_bar;
+	volatile int index_once_cancel;
+	GMutex index_once_last_task_lock;
+	char *index_once_last_task;
+
 	int unsaved;
 
 	int cur_frame;
