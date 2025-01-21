@@ -55,6 +55,12 @@
 
 int is_hdf5_file(const char *filename, int *err)
 {
+	const char *ext = filename_extension(filename, NULL);
+	/* for long lists of cbf files, opening each one is expensive */
+	/* so we short-circuit here as an optimization */
+	if ( strcmp(ext, ".cbf.gz") == 0 || strcmp(ext, ".cbf") == 0 ) {
+		return 0;
+	}
 	FILE *fh;
 	unsigned char bytes[8];
 	unsigned char sig[8] = {137, 'H', 'D', 'F', '\r', '\n', 26, '\n'};
