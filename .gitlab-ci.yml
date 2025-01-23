@@ -128,7 +128,7 @@ deploy-remote-maxwell:
   dependencies:
     - "build-and-test: [alma9]"
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: clone
   tags:
     - DESY-intern
   before_script:
