@@ -150,14 +150,7 @@ deploy-remote-maxwell:
       fi
 
   script:
-    - ssh   $MAXWELL_USER_NAME@$HOST
-      "if [ -d /software/crystfel/devel ]; then
-           mv -f /software/crystfel/devel /software/crystfel/devel-`date +%F-%H:%M:%S`;
-       else if [ ! -d /software/crystfel/ ]; then
-               mkdir -p /software/crystfel/;
-            fi;
-       fi"
-    - scp -r $PREFIX/crystfel/devel $MAXWELL_USER_NAME@$HOST:/software/crystfel/
+    - deployment/deploy-to-maxwell.sh "$MAXWELL_USER_NAME" "$HOST" "$PREFIX"
 
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
