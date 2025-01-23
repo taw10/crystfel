@@ -40,7 +40,7 @@ build_dev_images:
   when: manual
 
 build-and-test:
-  image: $CI_REGISTRY_IMAGE/$PLATFORM
+  image: gitlab.desy.de:5555/philipp.middendorf/crystfel/$PLATFORM
   variables:
     GIT_STRATEGY: clone
 
