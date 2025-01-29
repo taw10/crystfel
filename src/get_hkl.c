@@ -75,6 +75,9 @@ static void show_help(const char *s)
 "      --no-need-all-parts    Output a twinned reflection even if not all\n"
 "                              the necessary equivalents were present.\n"
 "\n"
+"You can specify the space group to be written to the file.\n"
+"      --space-group=<sym>    Space group to write to the file\n"
+"\n"
 "You can reindex the reflections according to an operation, e.g. k,h,-l:\n"
 "      --reindex=<op>         Reindex according to <op>.\n"
 "\n"
@@ -473,6 +476,7 @@ int main(int argc, char *argv[])
 	double highres = INFINITY;  /* 1/d value */
 	UnitCell *cell = NULL;
 	char *output_format_str = NULL;
+	char *space_group_str = NULL;
 	int r;
 
 	/* Long options */
@@ -498,6 +502,7 @@ int main(int argc, char *argv[])
 		{"reindex",            1, NULL,                4},
 		{"lowres",             1, NULL,                6},
 		{"output-format",      1, NULL,                7},
+		{"space-group",        1, NULL,                8},
 		{0, 0, NULL, 0}
 	};
 
@@ -570,6 +575,10 @@ int main(int argc, char *argv[])
 
 			case 7 :
 			output_format_str = strdup(optarg);
+			break;
+
+			case 8 :
+			space_group_str = strdup(optarg);
 			break;
 
 			case 0 :
@@ -918,7 +927,8 @@ int main(int argc, char *argv[])
 			r = 1;
 		} else {
 			r = write_to_mtz(input, mero, cell, 0, INFINITY, output,
-			                 "dataset", "crystal", "project", 0);
+			                 "dataset", "crystal", "project", 0,
+			                 space_group_str);
 		}
 	} else if ( strcasecmp(output_format_str, "mtz-bij") == 0 ) {
 		if ( !libcrystfel_can_write_mtz() ) {
@@ -930,7 +940,8 @@ int main(int argc, char *argv[])
 			r = 1;
 		} else {
 			r = write_to_mtz(input, mero, cell, 0, INFINITY, output,
-			                 "dataset", "crystal", "project", 1);
+			                 "dataset", "crystal", "project", 1,
+			                 space_group_str);
 		}
 	} else if ( strcasecmp(output_format_str, "xds") == 0 ) {
 		if ( output == NULL ) {
@@ -951,6 +962,7 @@ int main(int argc, char *argv[])
 	free(output);
 	free_symoplist(mero);
 	reflist_free(input);
+	free(space_group_str);
 
 	return r;
 }
