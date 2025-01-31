@@ -1288,7 +1288,8 @@ int write_to_mtz(RefList *reflist,
                  const char *dataset_name,
                  const char *crystal_name,
                  const char *project_name,
-                 int bij)
+                 int bij,
+		 const char *spg_input)
 {
 #ifdef HAVE_LIBCCP4
 	MTZ *mtz;
@@ -1301,11 +1302,14 @@ int write_to_mtz(RefList *reflist,
 	CCP4SPG *spg;
 	const char *spg_name;
 
-	spg_name = space_group_for_mtz(symmetry_name(sym),
-	                               cell_get_centering(cell));
-	if ( spg_name == NULL ) {
-		reflist_free(reflist);
-		return 1;
+	if ( spg_input == NULL ) {
+		spg_name = space_group_for_mtz(symmetry_name(sym), cell_get_centering(cell));
+		if ( spg_name == NULL ) {
+	  		reflist_free(reflist);
+			return 1;
+		}
+	} else {
+		spg_name = spg_input;
 	}
 
 	mtz = MtzMalloc(0, 0);

@@ -89,7 +89,7 @@ static int export_to_xds(struct gui_merge_result *result,
 static int export_to_mtz(struct gui_merge_result *result,
                          const char *filename, UnitCell *cell,
                          double min_res, double max_res,
-                         int bij)
+                         int bij, const char *spg)
 {
 	RefList *reflist;
 	char *sym_str;
@@ -113,7 +113,8 @@ static int export_to_mtz(struct gui_merge_result *result,
 		crystal_name = "unknown";
 	}
 	r = write_to_mtz(reflist, sym, cell, min_res, max_res, filename,
-	                 result->name, crystal_name, dir_basename, bij);
+	                 result->name, crystal_name, dir_basename, bij,
+			 spg);
 
 	free(dir_name);
 	free(dir_basename);
@@ -190,7 +191,7 @@ static int export_data(struct export_window *win, char *filename)
 	       min_res, max_res);
 
 	if ( strcmp(format, "mtz") == 0 ) {
-		r = export_to_mtz(result, filename, cell, min_res, max_res, 0);
+		r = export_to_mtz(result, filename, cell, min_res, max_res, 0, NULL);
 		reminder(win->window,
 		         "CrystFEL <b>does not know</b> the space "
 		         "group of your structure.\n\n"
@@ -203,7 +204,7 @@ static int export_data(struct export_window *win, char *filename)
 		         "<a href=\"https://gitlab.desy.de/thomas.white/crystfel/-/blob/master/doc/articles/pointgroup.rst\">"
 		         "Click here for some background information</a>");
 	} else if ( strcmp(format, "mtz-bij") == 0 ) {
-		r = export_to_mtz(result, filename, cell, min_res, max_res, 1);
+		r = export_to_mtz(result, filename, cell, min_res, max_res, 1, NULL);
 		reminder(win->window,
 		         "CrystFEL <b>does not know</b> the space "
 		         "group of your structure.\n\n"

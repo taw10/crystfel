@@ -54,14 +54,14 @@ build-and-test:
     - mv $CFPREFIX/bin/crystfel $CFPREFIX/bin/crystfel.real
     - echo '#!/bin/sh' > $CFPREFIX/bin/crystfel
     - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/crystfel
-    - echo "$CFPREFIX/bin/crystfel.real \$@" >> $CFPREFIX/bin/crystfel
+    - echo "$CFPREFIX/bin/crystfel.real \"\$@\"" >> $CFPREFIX/bin/crystfel
     - chmod +x $CFPREFIX/bin/crystfel
     
     # Tweak get_hkl in the same way
     - mv $CFPREFIX/bin/get_hkl $CFPREFIX/bin/get_hkl.real
     - echo '#!/bin/sh' > $CFPREFIX/bin/get_hkl
     - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/get_hkl
-    - echo "$CFPREFIX/bin/get_hkl.real \$@" >> $CFPREFIX/bin/get_hkl
+    - echo "$CFPREFIX/bin/get_hkl.real \"\$@\"" >> $CFPREFIX/bin/get_hkl
     - chmod +x $CFPREFIX/bin/get_hkl
     
     # Mosflm (tweaked to find syminfo.lib and not load environ.def/default.def)
@@ -70,7 +70,7 @@ build-and-test:
     - mv mosflm-linux-64-noX11 $CFPREFIX/bin/mosflm.real
     - echo '#!/bin/sh' > $CFPREFIX/bin/mosflm
     - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/mosflm
-    - echo "$CFPREFIX/bin/mosflm.real -n \$@" >> $CFPREFIX/bin/mosflm
+    - echo "$CFPREFIX/bin/mosflm.real -n \"\$@\"" >> $CFPREFIX/bin/mosflm
     - chmod +x $CFPREFIX/bin/mosflm
 
     - cp -Rp /software $CI_PROJECT_DIR/$PLATFORM

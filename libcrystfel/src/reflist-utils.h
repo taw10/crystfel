@@ -84,7 +84,7 @@ extern int write_to_mtz(RefList *reflist, SymOpList *sym, UnitCell *cell,
                         double min_res, double max_res,
                         const char *filename, const char *dataset_name,
                         const char *crystal_name, const char *project_name,
-                        int bij);
+                        int bij, const char *spg_input);
 
 extern int write_to_xds(RefList *reflist, SymOpList *sym, UnitCell *cell,
                         double min_res, double max_res, const char *filename);
