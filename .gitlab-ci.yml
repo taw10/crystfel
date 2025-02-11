@@ -113,8 +113,6 @@ build-brew-macos:
   variables:
     GIT_STRATEGY: clone
   script:
-    - brew update
-    - brew upgrade -f
     - brew uninstall -v -f crystfel
     - brew install -v -s ./crystfel.rb --HEAD
     - brew test crystfel
