@@ -36,7 +36,7 @@ set output "correlation.png"
 set xlabel "Number of crystals"
 set ylabel "Correlation"
 rnd(x) = x - floor(x) < 0.5 ? floor(x) : ceil(x)
-round(x1,x2)=rnd(10**x2*x1)/10.0**x2
+cfround(x1,x2)=rnd(10**x2*x1)/10.0**x2
 set xzeroaxis lc rgb "black" lt 1
 set key top left
 set xrange [0:${NITER}*${NPATT}]
@@ -54,8 +54,8 @@ plot\
  "${FILE}" u 0:1 ps 0.2 pt 7 lc rgb "orange" notitle,\
  "${FILE}" u 0:2 ps 0.2 pt 7 lc rgb "#0088FF" notitle,\
  "${FILE}" u 0:(rand(0)>0.5?\$1:1/0) ps 0.2 pt 7 lc rgb "orange" notitle ,\
- "${FILE}" u (round(\$0, -3)):(\$1>\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
- "${FILE}" u (round(\$0, -3)):(\$1<\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
- "${FILE}" u (round(\$0, -3)):1 lw 3 lc rgb "red" smooth unique notitle,\
- "${FILE}" u (round(\$0, -3)):2 lw 3 lc rgb "blue" smooth unique notitle
+ "${FILE}" u (cfround(\$0, -3)):(\$1>\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
+ "${FILE}" u (cfround(\$0, -3)):(\$1<\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
+ "${FILE}" u (cfround(\$0, -3)):1 lw 3 lc rgb "red" smooth unique notitle,\
+ "${FILE}" u (cfround(\$0, -3)):2 lw 3 lc rgb "blue" smooth unique notitle
 EOF
