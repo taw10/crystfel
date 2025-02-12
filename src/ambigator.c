@@ -1261,6 +1261,12 @@ int main(int argc, char *argv[])
 	}
 
 	infile = argv[optind++];
+
+	if ( strcmp(infile, "-") == 0 && outfile != NULL ) {
+		ERROR("ambigator stream input cannot be from stdin ('-') if --output is specified\n");
+		return 1;
+	}
+
 	st = stream_open_for_read(infile);
 	if ( st == NULL ) {
 		ERROR("Failed to open input stream '%s'\n", infile);
