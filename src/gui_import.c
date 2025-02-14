@@ -626,6 +626,8 @@ gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                "Individual CBF files ('*.cbf')");
 	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "cbfgz",
 	                "Individual gzipped CBF files ('*.cbf.gz')");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "nexus",
+	                "NeXus master files ('*master*.{h5,nx5,nxs}')");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(ctx->search_pattern),
 	                         proj->data_search_pattern);
 

@@ -76,6 +76,7 @@ static const char *str_matchtype(enum match_type_id mt)
 	case MATCH_CHEETAH_CXI : return "cheetah-cxi";
 	case MATCH_CBF : return "cbf";
 	case MATCH_CBFGZ : return "cbfgz";
+	case MATCH_NEXUS : return "nexus";
 	}
 	return NULL;
 }
@@ -89,6 +90,7 @@ enum match_type_id decode_matchtype(const char *type_id)
 	if ( strcmp(type_id, "cheetah-cxi") == 0 ) return MATCH_CHEETAH_CXI;
 	if ( strcmp(type_id, "cbf") == 0 ) return MATCH_CBF;
 	if ( strcmp(type_id, "cbfgz") == 0 ) return MATCH_CBFGZ;
+	if ( strcmp(type_id, "nexus") == 0 ) return MATCH_NEXUS;
 	ERROR("Unknown match type id '%s'\n", type_id);
 	return MATCH_EVERYTHING;
 }
@@ -115,6 +117,14 @@ int match_filename(const char *fn, enum match_type_id mt)
 		if ( ext2 != NULL ) {
 			return strcmp(ext2, ".cbf.gz")==0;
 		}
+	}
+	if ( mt == MATCH_NEXUS ) {
+		if ( strstr(fn, "master") != NULL ) {
+			if ( strcmp(ext, ".h5") == 0 ) return 1;
+			if ( strcmp(ext, ".nx5") == 0 ) return 1;
+			if ( strcmp(ext, ".nxs") == 0 ) return 1;
+		}
+		return 0;
 	}
 
 	return 0;

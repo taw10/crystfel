@@ -44,6 +44,7 @@ enum match_type_id
 	 MATCH_CHEETAH_CXI,
 	 MATCH_CBF,
 	 MATCH_CBFGZ,
+	 MATCH_NEXUS,
 };
 
 struct index_params {
