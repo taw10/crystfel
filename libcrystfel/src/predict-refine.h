@@ -62,6 +62,10 @@ struct reflpeak {
 	double Ih;   /* normalised */
 };
 
+/* Weighting of excitation error term (m^-1) compared to position term (pixels) */
+#define EXC_WEIGHT (1.0e-7)
+
+
 /**
  * \file predict-refine.h
  * Prediction refinement: refinement of indexing solutions before integration.

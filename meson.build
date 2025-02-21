@@ -163,6 +163,13 @@ executable('align_detector',
            install: true,
            install_rpath: crystfel_rpath)
 
+# show_residuals
+executable('show_residuals',
+           ['src/show_residuals.c', versionc],
+           dependencies: [mdep, libcrystfeldep],
+           install: true,
+           install_rpath: crystfel_rpath)
+
 # Millepede subproject gives us 'pede', needed for align_detector
 pede = find_program('pede', required: false)
 if not pede.found()
