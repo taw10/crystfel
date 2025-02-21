@@ -1059,6 +1059,7 @@ int main(int argc, char *argv[])
 	SymOpList *amb;
 	int n_iter = 6;
 	int n_crystals, n_chunks, max_crystals;
+	int have_tty;
 	int n_dif;
 	struct flist **crystals;
 	Stream *st;
@@ -1277,6 +1278,7 @@ int main(int argc, char *argv[])
 	n_crystals = 0;
 	max_crystals = 0;
 	n_chunks = 0;
+	have_tty = isatty(STDERR_FILENO) && tcgetpgrp(STDERR_FILENO) == getpgrp();
 	do {
 
 		struct image *image;
@@ -1329,11 +1331,20 @@ int main(int argc, char *argv[])
 
 		}
 
-		fprintf(stderr, "Loaded %i crystals from %i chunks\r",
-		        n_crystals, ++n_chunks);
+		++n_chunks;
+		if ( have_tty ) {
+			fprintf(stderr, "Loaded %i crystals from %i chunks\r",
+			        n_crystals, n_chunks);
+		} else if ( n_chunks % 1000 == 0 ) {
+			fprintf(stderr, "Loaded %i crystals from %i chunks\n",
+			        n_crystals, n_chunks);
+		}
 
 	} while ( 1 );
-	fprintf(stderr, "\n");
+
+	if ( have_tty ) {
+		fprintf(stderr, "\n");
+	}
 
 	stream_close(st);
 
