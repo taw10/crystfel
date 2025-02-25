@@ -2733,6 +2733,7 @@ static void add_group_info(struct dg_group_info *ginfo, int *ppos,
 	ginfo[i].name = group->name;
 	ginfo[i].serial = serial;
 	ginfo[i].hierarchy_level = level;
+	ginfo[i].leaf = (group->n_children == 0);
 
 	for ( j=0; j<group->n_children; j++ ) {
 		add_group_info(ginfo, ppos, group->children[j],

@@ -48,6 +48,7 @@ struct dg_group_info
 	const char *name;
 	int serial;
 	int hierarchy_level;
+	int leaf;
 };
 
 
