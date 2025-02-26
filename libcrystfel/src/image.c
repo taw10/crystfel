@@ -55,10 +55,11 @@
 
 int is_hdf5_file(const char *filename, int *err)
 {
-	const char *ext = filename_extension(filename, NULL);
+        const char *ext2;
+	const char *ext = filename_extension(filename, &ext2);
 	/* for long lists of cbf files, opening each one is expensive */
 	/* so we short-circuit here as an optimization */
-	if ( strcmp(ext, ".cbf.gz") == 0 || strcmp(ext, ".cbf") == 0 ) {
+	if ( ( ext2 != NULL && strcmp(ext2, ".cbf.gz") == 0 ) || strcmp(ext, ".cbf") == 0 ) {
 		return 0;
 	}
 	FILE *fh;
