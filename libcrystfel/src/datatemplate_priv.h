@@ -43,7 +43,10 @@
 /* Maximum number of panel groups */
 #define MAX_PANEL_GROUPS (512)
 
-/* Maximum number of panel groups that can derive from one panel */
+/* Maximum number of panel groups that can derive from one panel.
+ * This isn't just a memory allocation thing.  If there are more than 99
+ * children, the numbering scheme (struct detgeom_panel_group.serial) will
+ * overflow and break geometry refinement in a horrible way. */
 #define MAX_PANEL_GROUP_CHILDREN (64)
 
 enum adu_per_unit
