@@ -316,17 +316,13 @@ this isn't what you want.
 PIXEL SIZE
 ==========
 
-You will need to specify the size of the pixels, of course.  Use one of the
-following:
-
-**pixel_pitch** = _pixelSize_
-: The width of the pixels, in meters.
+You will need to specify the size of the pixels, of course.  Use the following:
 
 **res** = _pixelsPerMeter_
 : The resolution, in pixels per metre, i.e. one divided by the pixel size in
 : metres.
 
-These values effectively give the scale factor between the length of the
+This gives the scale factor between the length of the
 **fs,ss** vectors and physical space.  If the **fs** and **ss** vectors have
 different magnitudes, the pixels will not be square.  This is allowed, but
 comes with a possibility of strange problems, because many algorithms assume
