@@ -272,6 +272,13 @@ static int read_file(const char *filename,
 
 			/* Mille residuals are in pixels, we want metres */
 			p = which_panel(serials, n_serials, detgeom, groups, n_groups);
+			if ( p == NULL ) {
+				ERROR("Could not work out the panel for measurement "
+				      "in record %i.\n", n_records);
+				ERROR("Did you use indexamajig --max-mille-level? "
+				      "If so, remove the option and try again.\n");
+				exit(1);
+			}
 			dx = (fs*p->fsx + ss*p->ssx)*p->pixel_pitch;
 			dy = (fs*p->fsy + ss*p->ssy)*p->pixel_pitch;
 

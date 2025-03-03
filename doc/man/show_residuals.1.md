@@ -23,10 +23,16 @@ To interpret the Millepede data, the geometry file is required.  The geometry
 file should match the one used for the **indexamajig** run that generated the
 data.
 
+**show_residuals** requires that the Millepede data contains information all
+the way down to the level of individual panels.  Otherwise, it cannot work out
+the panel on which each peak was found.  In practice, this means that you must
+not use **indexamajig --max-mille-level** to limit the size of the Millepede
+files.
+
 The program will show the spot position offsets and the average (absolute)
 excitation errors of the reflections, averaged across the detector's hierarchy
 groups.  Averages will be calculated at every level of hierarchy found in the
-Millepede files, limited by **indexamajig --max-mille-level**.
+Millepede files.
 
 
 OPTIONS
