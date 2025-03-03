@@ -4,6 +4,7 @@ import ..CrystFEL: libcrystfel
 export DataTemplate, InternalDataTemplate, loaddatatemplate
 export wavelength, cameralength
 export translategroup!, rotategroup!
+export writedatatemplate!
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalDataTemplate end
@@ -39,6 +40,23 @@ function loaddatatemplate(filename::AbstractString)
     return dt
 end
 
+
+"""
+    writedatatemplate!(filename)
+
+Writes a CrystFEL DataTemplate to a geometry file.
+
+Corresponds to CrystFEL C API function `data_template_write_to_file()`.
+"""
+function writedatatemplate!(dtempl::DataTemplate, filename::AbstractString)
+
+    out = ccall((:data_template_write_to_file, libcrystfel),
+                Cint, (Ptr{InternalDataTemplate},Cstring),
+                dtempl.internalptr, filename)
+    if out != 0
+        throw(ArgumentError("Failed to write geometry file"))
+    end
+end
 
 """
     wavelength(datatemplate)
