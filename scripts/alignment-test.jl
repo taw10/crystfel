@@ -68,7 +68,7 @@ end
 
 
 function ploth(a, n, offs, label)
-    histogram(map(x->x.residual/x.esd,
+    histogram(map(x->x.residual,
                   filter(x->in(n, keys(x.globalgradients)),
                          a[offs:3:end])),
               label=label)
@@ -85,7 +85,7 @@ function plotfs(filename)
     q1 = ploth(a, 201, 1, "q1")
     q2 = ploth(a, 301, 1, "q2")
     q3 = ploth(a, 401, 1, "q3")
-    plot(q0, q1, q2, q3, layout=l, plot_title="Fast scan residual")
+    plot(q0, q1, q2, q3, layout=l, plot_title="Fast scan residual / px")
 
 end
 
@@ -100,7 +100,7 @@ function plotss(filename)
     q1 = ploth(a, 202, 2, "q1")
     q2 = ploth(a, 302, 2, "q2")
     q3 = ploth(a, 402, 2, "q3")
-    plot(q0, q1, q2, q3, layout=l, plot_title="Slow scan residual")
+    plot(q0, q1, q2, q3, layout=l, plot_title="Slow scan residual / px")
 
 end
 
@@ -110,5 +110,5 @@ function plotr(filename)
     l = @layout([q0 q1; q2 q3])
     a = collect(Iterators.flatten(t))
     meas = histogram(map(x->x.residual, a[3:3:end]))
-    plot(meas, plot_title="Excitation error residual")
+    plot(meas, plot_title="Excitation error residual / UNITS")
 end
