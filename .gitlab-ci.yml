@@ -10,7 +10,7 @@ build_dev_images:
   only:
     - master
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
     entrypoint: [ "" ]
 
   variables:
@@ -89,7 +89,7 @@ build-and-test:
      - PLATFORM:  ["centos7","alma9","fedora","ubuntu"]
 
 build-and-test-minimal:
-  image: $IMAGE:latest
+  image: tollerort.desy.de/hub.docker.com/$IMAGE:latest
   script:
     - dnf update -y && dnf group install -y development-tools &&
       dnf install -y gsl-devel flex bison cmake meson
@@ -159,7 +159,7 @@ build_container_image:
   only:
     - master
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
     entrypoint: [ "" ]
 
   variables:
@@ -188,7 +188,7 @@ build_container_image:
 build_container_image_tag:
   stage: build_container
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
     entrypoint: [ "" ]
 
   variables:
