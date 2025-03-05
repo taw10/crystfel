@@ -16,12 +16,7 @@ RUN    dnf -y install  gsl-devel flex bison gcc-c++ gcc-gfortran gtk3-devel cair
               bzip2-libs bzip2-devel libcurl-devel openssh-clients krb5-workstation cmake \
               meson ninja-build pandoc
 RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.conf ; \
-       sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf ; \
-       if [ ! -d ~/.ssh ]; then \
-             mkdir -p ~/.ssh; \ 
-             chmod 700 ~/.ssh; \
-       fi;  \
-       wget -q https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
+       sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf
 
 # HDF5
 RUN    wget -nv https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.1/src/hdf5-1.12.1.tar.bz2; \
