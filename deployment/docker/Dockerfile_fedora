@@ -20,7 +20,7 @@ RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.con
              mkdir -p ~/.ssh; \ 
              chmod 700 ~/.ssh; \
        fi;  \
-       wget -q https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
+       wget https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
 RUN    python3 -m ensurepip --upgrade && python3 -m pip  install meson ninja
 
 # HDF5 filter plugins
