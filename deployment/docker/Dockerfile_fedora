@@ -17,7 +17,7 @@ RUN    dnf -y install epel-release ; \
 RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.conf ; \
        sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf ; \
        if [ ! -d ~/.ssh ]; then \
-             mkdir -p ~/.ssh; \ 
+             mkdir -p ~/.ssh; \
              chmod 700 ~/.ssh; \
        fi;  \
        wget https://wims.desy.de/system/ALL_afs/etc/ssh_known_hosts2 -O ~/.ssh/known_hosts
