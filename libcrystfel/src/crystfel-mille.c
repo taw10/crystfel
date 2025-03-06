@@ -195,15 +195,15 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 	/* Local parameters */
 	const enum gparam rvl[] =
 	{
-		GPARAM_ASX,
-		GPARAM_ASY,
-		GPARAM_ASZ,
-		GPARAM_BSX,
-		GPARAM_BSY,
-		GPARAM_BSZ,
-		GPARAM_CSX,
-		GPARAM_CSY,
-		GPARAM_CSZ,
+		GPARAM_A_STAR,
+		GPARAM_B_STAR,
+		GPARAM_C_STAR,
+		GPARAM_AL_STAR,
+		GPARAM_BE_STAR,
+		GPARAM_GA_STAR,
+		GPARAM_CELL_RX,
+		GPARAM_CELL_RY,
+		GPARAM_CELL_RZ,
 	};
 	const int nl = 9;
 

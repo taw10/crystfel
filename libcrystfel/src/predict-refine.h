@@ -35,15 +35,15 @@ struct reflpeak;
 
 /** Enumeration of parameters which may want to be refined */
 enum gparam {
-	GPARAM_ASX,
-	GPARAM_ASY,
-	GPARAM_ASZ,
-	GPARAM_BSX,
-	GPARAM_BSY,
-	GPARAM_BSZ,
-	GPARAM_CSX,
-	GPARAM_CSY,
-	GPARAM_CSZ,
+	GPARAM_A_STAR,
+	GPARAM_B_STAR,
+	GPARAM_C_STAR,
+	GPARAM_AL_STAR,
+	GPARAM_BE_STAR,
+	GPARAM_GA_STAR,
+	GPARAM_CELL_RX,  /* Cell rotation around +x */
+	GPARAM_CELL_RY,  /* Cell rotation around +y */
+	GPARAM_CELL_RZ,  /* Cell rotation around +z */
 	GPARAM_DET_TX,
 	GPARAM_DET_TY,
 	GPARAM_DET_TZ,
@@ -89,5 +89,9 @@ extern int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
                           struct detgeom_panel *p, gsl_matrix *panel_Minv,
                           double cx, double cy, double cz,
                           float *fsg, float *ssg);
+
+extern void crossp_norm(double c1[3], double c2[3], double u[3]);
+extern void rotate3d(double vec[3], double axis[3], double ang);
+extern void adjust_vector_length(double vec[3], double adj);
 
 #endif	/* PREDICT_REFINE_H */
