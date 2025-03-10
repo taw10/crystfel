@@ -710,8 +710,8 @@ static void do_pr_refine(RefList **plist_in, Crystal *cr, struct image *image,
 	refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
 
 	/* Refine wavelength */
-	zero_alter(&dirns[0]);  dirns[0].delta_wave += 2.0e-14;
-	zero_alter(&dirns[1]);  dirns[1].delta_wave -= 2.0e-14;
+	zero_alter(&dirns[0]);  dirns[0].delta_wave += image->lambda/1000.0;
+	zero_alter(&dirns[1]);  dirns[1].delta_wave -= image->lambda/1000.0;
 	refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
 
 	/* Apply the final shifts */
