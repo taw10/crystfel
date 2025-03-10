@@ -55,18 +55,21 @@
 
 int is_hdf5_file(const char *filename, int *err)
 {
-        const char *ext2;
-	const char *ext = filename_extension(filename, &ext2);
-	/* for long lists of cbf files, opening each one is expensive */
-	/* so we short-circuit here as an optimization */
-	if ( ( ext2 != NULL && strcmp(ext2, ".cbf.gz") == 0 ) || strcmp(ext, ".cbf") == 0 ) {
-		return 0;
-	}
+	const char *ext2;
 	FILE *fh;
 	unsigned char bytes[8];
 	unsigned char sig[8] = {137, 'H', 'D', 'F', '\r', '\n', 26, '\n'};
 	size_t n;
 	int i;
+	const char *ext = filename_extension(filename, &ext2);
+
+	if ( err != NULL ) *err = 0;
+
+	/* For long lists of CBF files, opening each one is expensive, */
+	/* so we short-circuit here as an optimization */
+	if ( ( ext2 != NULL && strcmp(ext2, ".cbf.gz") == 0 ) || strcmp(ext, ".cbf") == 0 ) {
+		return 0;
+	}
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -82,9 +85,7 @@ int is_hdf5_file(const char *filename, int *err)
 		return 0;
 	}
 
-	if ( err != NULL ) *err = 0;
-
-	/* HDF5 superblock signature from the specification document */
+	/* Check against HDF5 superblock signature from the specification document */
 	for ( i=0; i<8; i++ ) {
 		if ( bytes[i] != sig[i] ) return 0;
 	}
@@ -96,6 +97,8 @@ int is_cbf_file(const char *filename, int *err)
 {
 	FILE *fh;
 	char line[1024];
+
+	if ( err != NULL ) *err = 0;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
@@ -111,7 +114,6 @@ int is_cbf_file(const char *filename, int *err)
 
 	fclose(fh);
 
-	if ( err != NULL ) *err = 0;
 	if ( strncmp(line, "###CBF: VERSION", 15) == 0 ) {
 		return 1;
 	} else {
@@ -126,6 +128,8 @@ int is_cbfgz_file(const char *filename, int *err)
 	gzFile gzfh;
 	char line[1024];
 
+	if ( err != NULL ) *err = 0;
+
 	gzfh = gzopen(filename, "rb");
 	if ( gzfh == NULL ) {
 		if ( err != NULL ) *err = 1;
@@ -137,7 +141,6 @@ int is_cbfgz_file(const char *filename, int *err)
 	}
 	gzclose(gzfh);
 
-	if ( err != NULL ) *err = 0;
 	if ( strncmp(line, "###CBF: VERSION", 15) == 0 ) {
 		return 1;
 	} else {
