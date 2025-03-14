@@ -85,6 +85,8 @@
 #include "profile.h"
 
 
+#ifdef HAVE_CJSON
+
 static double nan_if_neg(double n)
 {
 	if ( n < 0.0 ) {
@@ -138,6 +140,8 @@ static void write_methods(cJSON *gp, const char *name, IndexingPrivate *ipriv)
 		}
 	}
 }
+
+#endif /* HAVE_CJSON */
 
 
 static void write_harvest_file(struct index_args *args,
