@@ -84,6 +84,7 @@ extern gsl_matrix *matrix_invert(gsl_matrix *m);
 
 extern size_t notrail(char *s);
 extern int convert_int(const char *str, int *pval);
+extern int convert_long_int(const char *str, long long int *pval);
 extern int convert_float(const char *str, double *pval);
 extern void chomp(char *s);
 extern void *srealloc(void *arr, size_t new_size);

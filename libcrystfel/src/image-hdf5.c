@@ -884,8 +884,8 @@ int image_hdf5_read_header_to_cache(struct image *image, const char *name)
 
 		} else if ( class == H5T_INTEGER ) {
 
-			int val;
-			r = H5Dread(dh, H5T_NATIVE_INT, ms, sh, H5P_DEFAULT,
+			long long int val;
+			r = H5Dread(dh, H5T_NATIVE_LLONG, ms, sh, H5P_DEFAULT,
 			            &val);
 			H5Sclose(sh);
 			H5Sclose(ms);

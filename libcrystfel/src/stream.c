@@ -469,7 +469,7 @@ int stream_write_chunk(Stream *st, const struct image *i,
 			break;
 
 			case HEADER_INT:
-			fprintf(st->fh, "header/int/%s = %i\n",
+			fprintf(st->fh, "header/int/%s = %lli\n",
 			        ce->header_name, ce->val_int);
 			break;
 
@@ -735,7 +735,7 @@ static void parse_header(const char *line_in, struct image *image,
 	switch ( type ) {
 
 		double vf;
-		int vi;
+		long long int vi;
 
 		case HEADER_FLOAT:
 		if ( convert_float(pos+3, &vf) != 0 ) {
@@ -746,7 +746,7 @@ static void parse_header(const char *line_in, struct image *image,
 		break;
 
 		case HEADER_INT:
-		if ( convert_int(pos+3, &vi) != 0 ) {
+		if ( convert_long_int(pos+2, &vi) != 0 ) {
 			ERROR("Invalid header line '%s' (invalid value)\n", line);
 			return;
 		}

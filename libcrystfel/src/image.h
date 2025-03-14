@@ -91,7 +91,7 @@ struct header_cache_entry {
 	char *header_name;
 	HeaderCacheType type;
 	union {
-		int val_int;
+		long long int val_int;
 		double val_float;
 		char *val_str;
 	};
@@ -267,7 +267,7 @@ extern void image_cache_header_float(struct image *image,
 
 extern void image_cache_header_int(struct image *image,
                                    const char *header_name,
-                                   int header_val);
+                                   long int header_val);
 
 extern void image_cache_header_str(struct image *image,
                                    const char *header_name,
