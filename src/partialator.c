@@ -42,6 +42,10 @@
 #include <gsl/gsl_errno.h>
 #include <sys/stat.h>
 
+#ifdef HAVE_CJSON
+#include <cjson/cJSON.h>
+#endif
+
 #include <image.h>
 #include <utils.h>
 #include <symmetry.h>
@@ -59,7 +63,6 @@
 #include "merge.h"
 #include "rejection.h"
 #include "version.h"
-#include "json-utils.h"
 
 
 struct csplit_hash_entry
@@ -1021,15 +1024,6 @@ static int add_stream(const char *filename, struct stream_list *list)
 }
 
 
-static void write_polarisation(FILE *fh, const char *name,
-                               struct polarisation p)
-{
-	fprintf(fh, "    \"%s\": {\n", name);
-	fprintf(fh, "      \"angle_from_horizontal_deg\": %f,\n", rad2deg(p.angle));
-	fprintf(fh, "      \"fraction\": %f\n", p.fraction);
-	fprintf(fh, "    },\n");
-}
-
 static void write_harvest_file(const char *filename,
                                const char *model, const char *symmetry,
                                int scale, int bscale, int postref,
@@ -1038,32 +1032,54 @@ static void write_harvest_file(const char *filename,
                                double min_res, double push_res,
                                struct polarisation p)
 {
+	#ifdef HAVE_CJSON
 	FILE *fh;
+	cJSON *harvest;
+	cJSON *gp;
+	cJSON *pol;
+
+	harvest = cJSON_CreateObject();
+	if ( harvest == NULL ) return;
+
+	gp = cJSON_AddObjectToObject(harvest, "merging");
+
+	cJSON_AddStringToObject(gp, "partiality_model", model);
+	cJSON_AddStringToObject(gp, "symmetry", symmetry);
+	cJSON_AddBoolToObject(gp, "scale", scale);
+	cJSON_AddBoolToObject(gp, "Bscale", bscale);
+	cJSON_AddBoolToObject(gp, "post_refine", postref);
+	cJSON_AddNumberToObject(gp, "num_iterations", niter);
+
+	pol = cJSON_AddObjectToObject(gp, "polarisation_correction");
+	cJSON_AddNumberToObject(pol, "angle_from_horizontal_deg", rad2deg(p.angle));
+	cJSON_AddNumberToObject(pol, "fraction", p.fraction);
+
+	cJSON_AddBoolToObject(gp, "deltaCChalf", deltacchalf);
+	cJSON_AddNumberToObject(gp, "min_measurements_per_unique_reflection", min_measurements);
+	cJSON_AddNumberToObject(gp, "max_adu", max_adu);
+	cJSON_AddNumberToObject(gp, "min_resolution_invm", min_res);
+	cJSON_AddNumberToObject(gp, "push_res_invm", push_res);
+
+	char *json = cJSON_Print(harvest);
+	if ( json == NULL ) {
+		cJSON_Delete(harvest);
+		return;
+	}
 
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) {
 		ERROR("Unable to write parameter harvesting file.\n");
 		return;
 	}
-
-	fprintf(fh, "{\n");
-	fprintf(fh, "  \"merging\": {\n");
-	write_str(fh, 1, "partiality_model", model);
-	write_str(fh, 1, "symmetry", symmetry);
-	write_bool(fh, 1, "scale", scale);
-	write_bool(fh, 1, "Bscale", bscale);
-	write_bool(fh, 1, "post_refine", postref);
-	write_int(fh, 1, "num_iterations", niter);
-	write_polarisation(fh, "polarisation_correction", p);
-	write_bool(fh, 1, "deltaCChalf", deltacchalf);
-	write_int(fh, 1, "min_measurements_per_unique_reflection", min_measurements);
-	write_float(fh, 1, "max_adu", max_adu);
-	write_float(fh, 1, "min_resolution_invm", min_res);
-	write_float(fh, 0, "push_res_invm", push_res);
-	fprintf(fh, "  }\n");
-	fprintf(fh, "}\n");
-
+	fputs(json, fh);
 	fclose(fh);
+
+	cJSON_Delete(harvest);
+	free(json);
+
+	#else /* HAVE_CJSON */
+	ERROR("Cannot write harvest file - cJSON library not present\n");
+	#endif /* HAVE_CJSON */
 }
 
 

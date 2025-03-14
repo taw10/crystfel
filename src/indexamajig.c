@@ -54,6 +54,10 @@
 #include <assert.h>
 #include <sys/mman.h>
 
+#ifdef HAVE_CJSON
+#include <cjson/cJSON.h>
+#endif
+
 #ifdef HAVE_FFTW
 #include <fftw3.h>
 #endif
@@ -78,7 +82,6 @@
 #include "im-zmq.h"
 #include "im-asapo.h"
 #include "version.h"
-#include "json-utils.h"
 #include "profile.h"
 
 
@@ -92,72 +95,48 @@ static double nan_if_neg(double n)
 }
 
 
-static void write_json_cell(FILE *fh, const char *name, UnitCell *cell)
+static void write_json_cell(cJSON *gp, const char *name, UnitCell *cell)
 {
 	double a, b, c, al, be, ga;
 	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 
 	if ( cell == NULL ) {
-		fprintf(fh, "    \"%s\": null,\n", name);
+		cJSON_AddNullToObject(gp, name);
 	} else {
-		fprintf(fh, "    \"%s\": {\n", name);
-		fprintf(fh, "      \"lattice_type\": \"%s\",\n",
-		        str_lattice(cell_get_lattice_type(cell)));
-		fprintf(fh, "      \"centering\": \"%c\",\n",
-		        cell_get_centering(cell));
-		fprintf(fh, "      \"unique_axis\": \"%c\",\n",
-		        cell_get_unique_axis(cell));
-		fprintf(fh, "      \"a_Angstrom\": %f,\n", a*1e10);
-		fprintf(fh, "      \"b_Angstrom\": %f,\n", b*1e10);
-		fprintf(fh, "      \"c_Angstrom\": %f,\n", c*1e10);
-		fprintf(fh, "      \"alpha_deg\": %f,\n", rad2deg(al));
-		fprintf(fh, "      \"beta_deg\": %f,\n", rad2deg(be));
-		fprintf(fh, "      \"gamma_deg\": %f\n", rad2deg(ga));  /* NB No comma */
-		fprintf(fh, "    },\n");
+
+		cJSON *obj = cJSON_AddObjectToObject(gp, name);
+		char tmp[2];
+
+		cJSON_AddStringToObject(obj, "lattice_type", str_lattice(cell_get_lattice_type(cell)));
+
+		tmp[0] = cell_get_centering(cell);   tmp[1] = '\0';
+		cJSON_AddStringToObject(obj, "centering", tmp);
+
+		tmp[0] = cell_get_unique_axis(cell);
+		cJSON_AddStringToObject(obj, "unique_axis", tmp);
+
+		cJSON_AddNumberToObject(obj, "a_Angstrom", a*1e10);
+		cJSON_AddNumberToObject(obj, "b_Angstrom", b*1e10);
+		cJSON_AddNumberToObject(obj, "c_Angstrom", c*1e10);
+		cJSON_AddNumberToObject(obj, "alpha_deg", rad2deg(al));
+		cJSON_AddNumberToObject(obj, "beta_deg", rad2deg(be));
+		cJSON_AddNumberToObject(obj, "gamma_deg", rad2deg(ga));
 	}
 }
 
 
-static void write_json_tolerances(FILE *fh, const char *name, float tols[6])
+static void write_methods(cJSON *gp, const char *name, IndexingPrivate *ipriv)
 {
-	fprintf(fh, "    \"%s\": {\n", name);
-	fprintf(fh, "      \"a_percent\": %f,\n", 100.0*tols[0]);
-	fprintf(fh, "      \"b_percent\": %f,\n", 100.0*tols[1]);
-	fprintf(fh, "      \"c_percent\": %f,\n", 100.0*tols[2]);
-	fprintf(fh, "      \"alpha_deg\": %f,\n", rad2deg(tols[3]));
-	fprintf(fh, "      \"beta_deg\": %f,\n", rad2deg(tols[4]));
-	fprintf(fh, "      \"gamma_deg\": %f\n", rad2deg(tols[5]));
-	fprintf(fh, "    },\n");
-}
-
-
-static void write_json_radii(FILE *fh, const char *name,
-                             double inn, double mid, double out)
-{
-	fprintf(fh, "    \"%s\": {\n", name);
-	fprintf(fh, "      \"inner_px\": %f,\n", inn);
-	fprintf(fh, "      \"middle_px\": %f,\n", mid);
-	fprintf(fh, "      \"outer_px\": %f\n", out);
-	fprintf(fh, "    },\n");
-}
-
-
-static void write_methods(FILE *fh, const char *name, IndexingPrivate *ipriv)
-{
-	fprintf(fh, "    \"%s\": [", name);
+	cJSON *arr = cJSON_AddArrayToObject(gp, name);
 
 	if ( ipriv != NULL ) {
 		const IndexingMethod *methods;
 		int i, n;
 		methods = indexing_methods(ipriv, &n);
 		for ( i=0; i<n; i++ ) {
-			fprintf(fh, " \"%s\"", indexer_str(methods[i]));
-			if ( i < n-1 ) {
-				fprintf(fh, ",");
-			}
+			cJSON_AddItemToArray(arr, cJSON_CreateString(indexer_str(methods[i])));
 		}
 	}
-	fprintf(fh, " ],\n");
 }
 
 
@@ -166,85 +145,112 @@ static void write_harvest_file(struct index_args *args,
                                int if_multi, int if_refine, int if_retry,
                                int if_peaks, int if_checkcell)
 {
+	#ifdef HAVE_CJSON
 	FILE *fh;
+	cJSON *harvest;
+	cJSON *gp;
+	cJSON *radii;
+
+	harvest = cJSON_CreateObject();
+	if ( harvest == NULL ) return;
+
+	gp = cJSON_AddObjectToObject(harvest, "input");
+	cJSON_AddNumberToObject(gp, "highres", args->highres);
+
+	gp = cJSON_AddObjectToObject(harvest, "peaksearch");
+	cJSON_AddStringToObject(gp, "method", str_peaksearch(args->peak_search.method));
+
+	radii = cJSON_AddObjectToObject(gp, "radii");
+	cJSON_AddNumberToObject(radii, "inner_px", args->peak_search.pk_inn);
+	cJSON_AddNumberToObject(radii, "middle_px",  args->peak_search.pk_mid);
+	cJSON_AddNumberToObject(radii, "outer_px",  args->peak_search.pk_out);
+
+	cJSON_AddBoolToObject(gp, "noise_filter", args->peak_search.noisefilter);
+	cJSON_AddNumberToObject(gp, "median_filter", args->peak_search.median_filter);
+	cJSON_AddNumberToObject(gp, "threshold_adu", args->peak_search.threshold);
+	cJSON_AddNumberToObject(gp, "min_squared_gradient_adu2", args->peak_search.min_sq_gradient);
+	cJSON_AddNumberToObject(gp, "min_snr", args->peak_search.min_snr);
+	cJSON_AddBoolToObject(gp, "check_hdf5_snr", args->peak_search.check_hdf5_snr);
+	cJSON_AddBoolToObject(gp, "peakfinder8_fast", args->peak_search.peakfinder8_fast);
+	cJSON_AddBoolToObject(gp, "half_pixel_shift", args->peak_search.half_pixel_shift);
+	cJSON_AddNumberToObject(gp, "min_res_px", args->peak_search.min_res);
+	cJSON_AddNumberToObject(gp, "max_res_px", args->peak_search.max_res);
+	cJSON_AddNumberToObject(gp, "min_pixel_count", args->peak_search.min_pix_count);
+	cJSON_AddNumberToObject(gp, "max_pixel_count", args->peak_search.max_pix_count);
+	cJSON_AddNumberToObject(gp, "local_bg_radius_px", args->peak_search.local_bg_radius);
+	cJSON_AddBoolToObject(gp, "use_saturated", args->peak_search.use_saturated);
+	cJSON_AddBoolToObject(gp, "revalidate_hdf5", args->peak_search.revalidate);
+	cJSON_AddNumberToObject(gp, "min_snr_of_biggest_pixel", args->peak_search.min_snr_biggest_pix);
+	cJSON_AddNumberToObject(gp, "min_snr_of_peak_pixel", args->peak_search.min_snr_peak_pix);
+	cJSON_AddNumberToObject(gp, "min_sig_adu", args->peak_search.min_sig);
+	cJSON_AddNumberToObject(gp, "min_peak_over_neighbour_adu", args->peak_search.min_peak_over_neighbour);
+
+	gp = cJSON_AddObjectToObject(harvest, "hitfinding");
+	cJSON_AddNumberToObject(gp, "min_num_peaks", args->min_peaks);
+
+	if ( args->ipriv == NULL ) {
+		cJSON_AddNullToObject(harvest, "indexing");
+		cJSON_AddNullToObject(harvest, "integration");
+	} else {
+
+		gp = cJSON_AddObjectToObject(harvest, "indexing");
+		write_methods(gp, "methods", args->ipriv);
+		write_json_cell(gp, "target_cell", args->cell);
+
+		cJSON *tol = cJSON_AddObjectToObject(gp, "tolerances");
+		cJSON_AddNumberToObject(tol, "a_percent", 100.0*args->tols[0]);
+		cJSON_AddNumberToObject(tol, "b_percent", 100.0*args->tols[1]);
+		cJSON_AddNumberToObject(tol, "c_percent", 100.0*args->tols[2]);
+		cJSON_AddNumberToObject(tol, "alpha_deg", rad2deg(args->tols[3]));
+		cJSON_AddNumberToObject(tol, "beta_deg",  rad2deg(args->tols[4]));
+		cJSON_AddNumberToObject(tol, "gamma_deg", rad2deg(args->tols[5]));
+
+		cJSON_AddBoolToObject(gp, "multi_lattice", if_multi);
+		cJSON_AddBoolToObject(gp, "refine", if_refine);
+		cJSON_AddBoolToObject(gp, "retry", if_retry);
+		cJSON_AddBoolToObject(gp, "check_peaks", if_peaks);
+		cJSON_AddBoolToObject(gp, "check_cell", if_checkcell);
+		cJSON_AddNumberToObject(gp, "wavelength_estimate_m", args->wavelength_estimate);
+		cJSON_AddNumberToObject(gp, "clen_estimate_m", args->clen_estimate);
+
+		gp = cJSON_AddObjectToObject(harvest, "integration");
+
+		char *tmp = str_integration_method(args->int_meth);
+		cJSON_AddStringToObject(gp, "method", tmp);
+		free(tmp);
+
+		radii = cJSON_AddObjectToObject(gp, "radii");
+		cJSON_AddNumberToObject(radii, "inner_px", args->ir_inn);
+		cJSON_AddNumberToObject(radii, "middle_px",  args->ir_mid);
+		cJSON_AddNumberToObject(radii, "outer_px",  args->ir_out);
+
+		cJSON_AddNumberToObject(gp, "push_res_invm", args->push_res);
+		cJSON_AddNumberToObject(gp, "fix_profile_radius_invm", nan_if_neg(args->fix_profile_r));
+		cJSON_AddNumberToObject(gp, "fix_divergence_rad", nan_if_neg(args->fix_divergence));
+		cJSON_AddBoolToObject(gp, "overpredict", args->overpredict);
+		cJSON_AddBoolToObject(gp, "cell_parameters_only", args->cell_params_only);
+	}
+
+	char *json = cJSON_Print(harvest);
+	if ( json == NULL ) {
+		cJSON_Delete(harvest);
+		return;
+	}
 
 	fh = fopen(filename, "w");
 	if ( fh == NULL ) {
 		ERROR("Unable to write parameter harvesting file.\n");
 		return;
 	}
-
-	fprintf(fh, "{\n");
-	fprintf(fh, "  \"input\": {\n");
-	write_float(fh, 0, "highres", args->highres);
-	fprintf(fh, "  },\n");
-
-	fprintf(fh, "  \"peaksearch\": {\n");
-	write_str(fh, 1, "method", str_peaksearch(args->peak_search.method));
-	write_json_radii(fh, "radii", args->peak_search.pk_inn,
-	                              args->peak_search.pk_mid,
-	                              args->peak_search.pk_out);
-	write_bool(fh, 1, "noise_filter", args->peak_search.noisefilter);
-	write_int(fh, 1, "median_filter", args->peak_search.median_filter);
-	write_float(fh, 1, "threshold_adu", args->peak_search.threshold);
-	write_float(fh, 1, "min_squared_gradient_adu2", args->peak_search.min_sq_gradient);
-	write_float(fh, 1, "min_snr", args->peak_search.min_snr);
-	write_bool(fh, 1, "check_hdf5_snr", args->peak_search.check_hdf5_snr);
-	write_bool(fh, 1, "peakfinder8_fast", args->peak_search.peakfinder8_fast);
-	write_bool(fh, 1, "half_pixel_shift", args->peak_search.half_pixel_shift);
-	write_int(fh, 1, "min_res_px", args->peak_search.min_res);
-	write_int(fh, 1, "max_res_px", args->peak_search.max_res);
-	write_int(fh, 1, "min_pixel_count", args->peak_search.min_pix_count);
-	write_int(fh, 1, "max_pixel_count", args->peak_search.max_pix_count);
-	write_int(fh, 1, "local_bg_radius_px", args->peak_search.local_bg_radius);
-	write_bool(fh, 1, "use_saturated", args->peak_search.use_saturated);
-	write_bool(fh, 1, "revalidate_hdf5", args->peak_search.revalidate);
-	write_float(fh, 1, "min_snr_of_biggest_pixel", args->peak_search.min_snr_biggest_pix);
-	write_float(fh, 1, "min_snr_of_peak_pixel", args->peak_search.min_snr_peak_pix);
-	write_float(fh, 1, "min_sig_adu", args->peak_search.min_sig);
-	write_float(fh, 0, "min_peak_over_neighbour_adu", args->peak_search.min_peak_over_neighbour);
-	fprintf(fh, "  },\n");
-
-	fprintf(fh, "  \"hitfinding\": {\n");
-	write_int(fh, 0, "min_num_peaks", args->min_peaks);
-	fprintf(fh, "  },\n");
-
-	if ( args->ipriv == NULL ) {
-		fprintf(fh, "  \"indexing\": null,\n");
-		fprintf(fh, "  \"integration\": null\n");
-	} else {
-
-		char *tmp;
-
-		fprintf(fh, "  \"indexing\": {\n");
-		write_methods(fh, "methods", args->ipriv);
-		write_json_cell(fh, "target_cell", args->cell);
-		write_json_tolerances(fh, "tolerances", args->tols);
-		write_bool(fh, 1, "multi_lattice", if_multi);
-		write_bool(fh, 1, "refine", if_refine);
-		write_bool(fh, 1, "retry", if_retry);
-		write_bool(fh, 1, "check_peaks", if_peaks);
-		write_bool(fh, 1, "check_cell", if_checkcell);
-		write_float(fh, 1, "wavelength_estimate_m", args->wavelength_estimate);
-		write_float(fh, 0, "clen_estimate_m", args->clen_estimate);
-		fprintf(fh, "  },\n");
-
-		fprintf(fh, "  \"integration\": {\n");
-		tmp = str_integration_method(args->int_meth);
-		write_str(fh, 1, "method", tmp);
-		free(tmp);
-		write_json_radii(fh, "radii", args->ir_inn, args->ir_mid, args->ir_out);
-		write_float(fh, 1, "push_res_invm", args->push_res);
-		write_float(fh, 1, "fix_profile_radius_invm", nan_if_neg(args->fix_profile_r));
-		write_float(fh, 1, "fix_divergence_rad", nan_if_neg(args->fix_divergence));
-		write_bool(fh, 1, "overpredict", args->overpredict);
-		write_bool(fh, 0, "cell_parameters_only", args->cell_params_only);
-		fprintf(fh, "  }\n"); /* NB No comma */
-	}
-
-	fprintf(fh, "}\n");
-
+	fputs(json, fh);
 	fclose(fh);
+
+	cJSON_Delete(harvest);
+	free(json);
+
+	#else /* HAVE_CJSON */
+	ERROR("Cannot write harvest file - cJSON library not present\n");
+	#endif /* HAVE_CJSON */
 }
 
 

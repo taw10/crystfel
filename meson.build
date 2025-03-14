@@ -55,6 +55,14 @@ if zmqdep.found()
   conf_data.set10('HAVE_ZMQ', true)
 endif
 
+# Used for harvest files, and also by libcrystfel for Seedee headers
+cjsondep = dependency('libcjson',
+                      required: false,
+                      fallback: ['cjson', 'libcjson_dep'])
+if cjsondep.found()
+  conf_data.set10('HAVE_CJSON', true)
+endif
+
 # There are two separate dependencies for ASAP::O (consumer and producer)
 # We need both of them.
 asapoproddep = dependency('libasapo-producer', required: false)
@@ -138,7 +146,8 @@ partialator = executable('partialator',
                           'src/rejection.c',
                           'src/scaling.c',
                           versionc],
-                         dependencies: [mdep, libcrystfeldep, gsldep, pthreaddep],
+                         dependencies: [mdep, libcrystfeldep, gsldep, pthreaddep,
+                                        cjsondep],
                          install: true,
                          install_rpath: crystfel_rpath)
 
@@ -200,7 +209,7 @@ endif
 indexamajig = executable('indexamajig', indexamajig_sources,
                          dependencies: [mdep, rtdep, libcrystfeldep, gsldep,
                                         pthreaddep, zmqdep, asapodep, asapoproddep,
-                                        fftwdep],
+                                        fftwdep, cjsondep],
                          install: true,
                          install_rpath: crystfel_rpath)
 
