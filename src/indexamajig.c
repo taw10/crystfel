@@ -407,7 +407,15 @@ static int run_work(struct indexamajig_arguments *args)
 	}
 
 	if ( args->worker_id == 0 ) {
+
 		print_indexing_info(args->iargs.ipriv);
+
+		if ( (args->harvest_file != NULL) && (args->serial_start <= 1) ) {
+			write_harvest_file(&args->iargs, args->harvest_file,
+			                   args->if_multi, args->if_refine, args->if_retry,
+			                   args->if_peaks, args->if_checkcell);
+		}
+
 	}
 
 	if ( args->iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
@@ -932,12 +940,6 @@ int main(int argc, char *argv[])
 	stream_write_geometry_file(st, args->geom_filename);
 	stream_write_target_cell(st, args->iargs.cell);
 	stream_write_indexing_methods(st, args->indm_str);
-
-	if ( (args->harvest_file != NULL) && (args->serial_start <= 1) ) {
-		write_harvest_file(&args->iargs, args->harvest_file,
-		                   args->if_multi, args->if_refine, args->if_retry,
-		                   args->if_peaks, args->if_checkcell);
-	}
 
 	r = mkdir(args->milledir, S_IRWXU);
 	if ( r ) {
