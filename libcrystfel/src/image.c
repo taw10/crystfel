@@ -534,6 +534,42 @@ static struct header_cache_entry *cached_header(struct image *image, const char 
 }
 
 
+int image_read_header_int(struct image *image, const char *from,
+                          long long int *val)
+{
+	struct header_cache_entry *ce;
+
+	if ( image == NULL ) return 1;
+
+	ce = cached_header(image, from);
+	if ( ce == NULL ) return 1;
+
+	switch ( ce->type ) {
+
+		case HEADER_FLOAT:
+		*val = ce->val_float;
+		return 0;
+
+		case HEADER_INT:
+		*val = ce->val_int;
+		return 0;
+
+		case HEADER_STR:
+		if ( convert_long_int(ce->val_str, val) == 0 ) {
+			return 0;
+		} else {
+			ERROR("Value '%s' (%s) can't be converted to int\n",
+			      ce->val_str, from);
+			return 1;
+		}
+
+		default:
+		ERROR("Unrecognised header cache type %i\n", ce->type);
+		return 1;
+	}
+}
+
+
 int image_read_header_float(struct image *image, const char *from, double *val)
 {
 	struct header_cache_entry *ce;

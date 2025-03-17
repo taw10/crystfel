@@ -258,8 +258,11 @@ extern void image_free(struct image *image);
 extern int image_read_header_float(struct image *image, const char *from,
                                    double *val);
 
-/* NB image_read_header_int and image_read_header_str should exist, but there
- * is currently no use for them.  Get in touch if you disagree! */
+extern int image_read_header_int(struct image *image, const char *from,
+                                 long long int *val);
+
+/* NB image_read_header_str should exist, but there is currently no use for it.
+ * Get in touch if you disagree! */
 
 extern void image_cache_header_float(struct image *image,
                                      const char *header_name,
