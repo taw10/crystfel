@@ -83,6 +83,12 @@ test('stream_read',
      exe,
      args: [test_stream])
 
+exe = executable('header_read',
+                 ['header_read.c'],
+                 dependencies : [libcrystfeldep])
+test('header_read', exe,
+     args: [files('header_read.geom'), files('header_read.h5')])
+
 exe = executable('integration_check',
                  ['integration_check.c',
                   'histogram.c'],
