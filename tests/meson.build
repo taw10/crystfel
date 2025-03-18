@@ -61,7 +61,7 @@ simple_tests = ['ambi_check',
 
 foreach name : simple_tests
   exe = executable(name, ''.join([name, '.c']),
-                   dependencies : [libcrystfeldep, mdep, gsldep, hdf5dep],
+                   dependencies : [libcrystfeldep, mdep, gsldep],
 		   include_directories: conf_inc)
 
   test(name, exe, timeout : 60)
@@ -85,7 +85,7 @@ test('stream_read',
 
 exe = executable('header_read',
                  ['header_read.c'],
-                 dependencies : [libcrystfeldep])
+                 dependencies : [libcrystfeldep, hdf5dep])
 test('header_read', exe,
      args: [files('header_read.geom'), files('header_read.h5')])
 
