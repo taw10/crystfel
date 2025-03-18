@@ -47,9 +47,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	data_template_add_copy_header(dtempl, "/bigint");
+	data_template_add_copy_header(dtempl, argv[4]);
 
-	image = image_read(dtempl, argv[2], "//", 0, 0, NULL);
+	image = image_read(dtempl, argv[2], argv[3], 0, 0, NULL);
 	if ( image == NULL ) {
 		ERROR("Failed to load image\n");
 		return 1;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	}
 	stream_close(st);
 
-	image_read_header_int(image, "/bigint", &v);
+	image_read_header_int(image, argv[4], &v);
 	if ( v != 1234567890123456789 ) {
 		ERROR("Wrong value read (%lli)\n", v);
 		return 1;

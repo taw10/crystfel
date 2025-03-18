@@ -84,11 +84,19 @@ test('stream_read',
      args: [test_stream])
 
 if hdf5dep.found()
-  exe = executable('header_read',
+
+  exe = executable('header_read_single',
                    ['header_read.c'],
                    dependencies : [libcrystfeldep, hdf5dep])
-  test('header_read', exe,
-       args: [files('header_read.geom'), files('header_read.h5')])
+  test('header_read_single', exe,
+       args: [files('header_read_single.geom'), files('header_read.h5'), '//', '/bigint_single'])
+
+  exe = executable('header_read_arr',
+                   ['header_read.c'],
+                   dependencies : [libcrystfeldep, hdf5dep])
+  test('header_read_arr', exe,
+       args: [files('header_read_arr.geom'), files('header_read.h5'), '//1', '/bigint_arr'])
+
 endif
 
 exe = executable('integration_check',
