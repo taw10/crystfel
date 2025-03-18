@@ -270,7 +270,7 @@ extern void image_cache_header_float(struct image *image,
 
 extern void image_cache_header_int(struct image *image,
                                    const char *header_name,
-                                   long int header_val);
+                                   long long int header_val);
 
 extern void image_cache_header_str(struct image *image,
                                    const char *header_name,

@@ -413,7 +413,7 @@ static struct header_cache_entry *find_cache_entry(struct image *image,
 
 void image_cache_header_int(struct image *image,
                             const char *header_name,
-                            long int header_val)
+                            long long int header_val)
 {
 	if ( image->n_cached_headers >= HEADER_CACHE_SIZE ) {
 		ERROR("Too many headers to copy.\n");
