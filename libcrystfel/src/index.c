@@ -734,7 +734,8 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 			int r;
 			profile_start("refine");
 			set_last_task("indexing:predrefine");
-			r = refine_prediction(image, cr, mille, max_mille_level);
+			r = refine_prediction(image, cr, mille, max_mille_level,
+			                      ipriv->target_cell);
 			profile_end("refine");
 			if ( r ) {
 				crystal_set_user_flag(cr, 1);

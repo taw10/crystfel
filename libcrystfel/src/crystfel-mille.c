@@ -176,6 +176,7 @@ static int count_depth(const struct detgeom_panel_group *group)
 
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
+                 enum gparam *rvl, int nl,
                  struct reflpeak *rps, struct image *image,
                  int max_level, gsl_matrix **Minvs)
 {
@@ -191,21 +192,6 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		      "(group 'all' not found)\n");
 		return;
 	}
-
-	/* Local parameters */
-	const enum gparam rvl[] =
-	{
-		GPARAM_A_STAR,
-		GPARAM_B_STAR,
-		GPARAM_C_STAR,
-		GPARAM_AL_STAR,
-		GPARAM_BE_STAR,
-		GPARAM_GA_STAR,
-		GPARAM_CELL_RX,
-		GPARAM_CELL_RY,
-		GPARAM_CELL_RZ,
-	};
-	const int nl = 9;
 
 	/* Global parameters */
 	const enum gparam rvg[] =

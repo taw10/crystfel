@@ -51,6 +51,7 @@ extern int mille_label(int group_serial, enum gparam param);
 extern enum gparam mille_unlabel(int n);
 
 extern void write_mille(Mille *mille, int n, UnitCell *cell,
+                        enum gparam *rvl, int nl,
                         struct reflpeak *rps, struct image *image,
                         int max_level, gsl_matrix **Minvs);
 

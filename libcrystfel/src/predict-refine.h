@@ -72,7 +72,8 @@ struct reflpeak {
  */
 
 extern int refine_prediction(struct image *image, Crystal *cr,
-                             Mille *mille, int max_mille_level);
+                             Mille *mille, int max_mille_level,
+                             UnitCell *target);
 
 extern int refine_radius(Crystal *cr, struct image *image);
 

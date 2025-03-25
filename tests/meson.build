@@ -57,7 +57,8 @@ simple_tests = ['ambi_check',
                 'evparse5',
                 'evparse6',
                 'evparse7',
-                'symop_parse']
+                'symop_parse',
+                'impose_bravais']
 
 foreach name : simple_tests
   exe = executable(name, ''.join([name, '.c']),

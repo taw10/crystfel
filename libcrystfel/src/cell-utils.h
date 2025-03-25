@@ -120,6 +120,8 @@ extern struct powder_ring *powder_rings(UnitCell *cell,
 
 extern void free_powder_rings(struct powder_ring *r);
 
+extern UnitCell *impose_bravais(UnitCell *cell, LatticeType latt, char ua);
+
 #ifdef __cplusplus
 }
 #endif

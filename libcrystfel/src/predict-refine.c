@@ -615,29 +615,40 @@ void adjust_vector_length(double vec[3], double adj)
 }
 
 
-static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image, gsl_matrix **Minvs,
-                   double *total_shifts)
+static void adjust_astar(double bs[3], double cs[3], double shift)
+{
+	double u[3];
+	crossp_norm(cs, bs, u);
+	rotate3d(bs, u, shift);
+}
+
+
+static void adjust_bstar(double as[3], double cs[3], double shift)
+{
+	double u[3];
+	crossp_norm(as, cs, u);
+	rotate3d(cs, u, shift);
+}
+
+
+static void adjust_cstar(double as[3], double bs[3], double shift)
+{
+	double u[3];
+	crossp_norm(bs, as, u);
+	rotate3d(as, u, shift);
+}
+
+
+static int iterate(struct reflpeak *rps, int n,
+                   enum gparam *rv, int num_params, UnitCell *cell,
+                   struct image *image, gsl_matrix **Minvs)
 {
 	int i;
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
-	double as[3], bs[3], cs[3], u[3];
-	const enum gparam rv[] = {
-		GPARAM_A_STAR,
-		GPARAM_B_STAR,
-		GPARAM_C_STAR,
-		GPARAM_AL_STAR,
-		GPARAM_BE_STAR,
-		GPARAM_GA_STAR,
-		GPARAM_CELL_RX,
-		GPARAM_CELL_RY,
-		GPARAM_CELL_RZ,
-	};
-	const int num_params = 9;
+	double as[3], bs[3], cs[3];
 
-	/* Number of parameters to refine */
 	M = gsl_matrix_calloc(num_params, num_params);
 	v = gsl_vector_calloc(num_params);
 
@@ -754,49 +765,92 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		return 1;
 	}
 
-	for ( i=0; i<num_params; i++ ) {
-	//	STATUS("Shift %i = %e\n", i, gsl_vector_get(shifts, i));
-		if ( isnan(gsl_vector_get(shifts, i)) ) {
-			gsl_vector_set(shifts, i, 0.0);
-		}
-		total_shifts[i] += gsl_vector_get(shifts, i);
-	}
-
 	/* Apply shifts */
 	cell_get_reciprocal(cell, &as[0], &as[1], &as[2],
 	                          &bs[0], &bs[1], &bs[2],
 	                          &cs[0], &cs[1], &cs[2]);
+	for ( i=0; i<num_params; i++ ) {
 
-	/* Ensure the order here matches the order in rv[] */
-	adjust_vector_length(as, gsl_vector_get(shifts, 0));
-	adjust_vector_length(bs, gsl_vector_get(shifts, 1));
-	adjust_vector_length(cs, gsl_vector_get(shifts, 2));
+		double shift = gsl_vector_get(shifts, i);
+		if ( isnan(shift) ) shift = 0.0;
 
-	crossp_norm(cs, bs, u);
-	rotate3d(bs, u, gsl_vector_get(shifts, 3));
+		LatticeType lt = cell_get_lattice_type(cell);
+		char ua = cell_get_unique_axis(cell);
 
-	crossp_norm(as, cs, u);
-	rotate3d(cs, u, gsl_vector_get(shifts, 4));
+		switch ( rv[i] ) {
 
-	crossp_norm(bs, as, u);
-	rotate3d(as, u, gsl_vector_get(shifts, 5));
+			case GPARAM_A_STAR :
+			adjust_vector_length(as, shift);
+			if ( (lt == L_TETRAGONAL) || (lt == L_HEXAGONAL) ) {
+				if ( ua == 'b' ) {
+					adjust_vector_length(cs, shift);
+				} else if ( ua == 'c' ) {
+					adjust_vector_length(bs, shift);
+				}
+			}
+			if ( (lt == L_CUBIC) || (lt == L_RHOMBOHEDRAL) ) {
+				adjust_vector_length(bs, shift);
+				adjust_vector_length(cs, shift);
+			}
+			break;
 
-	rotate2d(&as[1], &as[2], 0.0, 0.0, gsl_vector_get(shifts, 6));
-	rotate2d(&bs[1], &bs[2], 0.0, 0.0, gsl_vector_get(shifts, 6));
-	rotate2d(&cs[1], &cs[2], 0.0, 0.0, gsl_vector_get(shifts, 6));
+			case GPARAM_B_STAR :
+			adjust_vector_length(bs, shift);
+			if ( (lt == L_TETRAGONAL) || (lt == L_HEXAGONAL) ) {
+				if ( ua == 'a' ) {
+					adjust_vector_length(cs, shift);
+				}
+			}
+			break;
 
-	rotate2d(&as[2], &as[0], 0.0, 0.0, gsl_vector_get(shifts, 7));
-	rotate2d(&bs[2], &bs[0], 0.0, 0.0, gsl_vector_get(shifts, 7));
-	rotate2d(&cs[2], &cs[0], 0.0, 0.0, gsl_vector_get(shifts, 7));
+			case GPARAM_C_STAR :
+			adjust_vector_length(cs, shift);
+			break;
 
-	rotate2d(&as[0], &as[1], 0.0, 0.0, gsl_vector_get(shifts, 8));
-	rotate2d(&bs[0], &bs[1], 0.0, 0.0, gsl_vector_get(shifts, 8));
-	rotate2d(&cs[0], &cs[1], 0.0, 0.0, gsl_vector_get(shifts, 8));
+			case GPARAM_AL_STAR :
+			adjust_astar(bs, cs, shift);
+			if ( lt == L_RHOMBOHEDRAL ) {
+				adjust_bstar(as, cs, shift);
+				adjust_cstar(as, bs, shift);
+			}
+			break;
 
+			case GPARAM_BE_STAR :
+			adjust_bstar(as, cs, shift);
+			break;
+
+			case GPARAM_GA_STAR :
+			adjust_cstar(as, bs, shift);
+			break;
+
+			case GPARAM_CELL_RX :
+			rotate2d(&as[1], &as[2], 0.0, 0.0, shift);
+			rotate2d(&bs[1], &bs[2], 0.0, 0.0, shift);
+			rotate2d(&cs[1], &cs[2], 0.0, 0.0, shift);
+			break;
+
+			case GPARAM_CELL_RY :
+			rotate2d(&as[2], &as[0], 0.0, 0.0, shift);
+			rotate2d(&bs[2], &bs[0], 0.0, 0.0, shift);
+			rotate2d(&cs[2], &cs[0], 0.0, 0.0, shift);
+			break;
+
+			case GPARAM_CELL_RZ :
+			rotate2d(&as[0], &as[1], 0.0, 0.0, shift);
+			rotate2d(&bs[0], &bs[1], 0.0, 0.0, shift);
+			rotate2d(&cs[0], &cs[1], 0.0, 0.0, shift);
+			break;
+
+			default :
+			ERROR("Unrecognised parameter %i\n", rv[i]);
+			break;
+
+		}
+
+	}
 	cell_set_reciprocal(cell, as[0], as[1], as[2],
 	                          bs[0], bs[1], bs[2],
 	                          cs[0], cs[1], cs[2]);
-
 	gsl_vector_free(shifts);
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
@@ -841,8 +895,98 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 }
 
 
+static int parameters_to_refine(UnitCell *cell, enum gparam *rv)
+{
+	int num_params = 0;
+
+	switch ( cell_get_lattice_type(cell) ) {
+
+		case L_TRICLINIC :
+		case L_MONOCLINIC :
+		case L_ORTHORHOMBIC :
+		rv[num_params++] = GPARAM_A_STAR;
+		rv[num_params++] = GPARAM_B_STAR;
+		rv[num_params++] = GPARAM_C_STAR;
+		break;
+
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		if ( cell_get_unique_axis(cell) == 'a' ) {
+			rv[num_params++] = GPARAM_A_STAR;
+			rv[num_params++] = GPARAM_B_STAR; /* == GPARAM_C_STAR */
+		} else if ( cell_get_unique_axis(cell) == 'b' ) {
+			rv[num_params++] = GPARAM_A_STAR; /* == GPARAM_C_STAR */
+			rv[num_params++] = GPARAM_B_STAR;
+		} else if ( cell_get_unique_axis(cell) == 'c' ) {
+			rv[num_params++] = GPARAM_A_STAR; /* == GPARAM_B_STAR */
+			rv[num_params++] = GPARAM_C_STAR;
+		} else {
+			ERROR("Unrecognised unique axis:\n");
+			cell_print(cell);
+			return 0;
+		}
+		break;
+
+		case L_CUBIC :
+		case L_RHOMBOHEDRAL :
+		rv[num_params++] = GPARAM_A_STAR;
+		break;
+
+		default :
+		ERROR("Unrecognised lattice type:\n");
+		cell_print(cell);
+		return 0;
+
+	};
+
+	switch ( cell_get_lattice_type(cell) ) {
+
+		case L_TRICLINIC :
+		rv[num_params++] = GPARAM_AL_STAR;
+		rv[num_params++] = GPARAM_BE_STAR;
+		rv[num_params++] = GPARAM_GA_STAR;
+		break;
+
+		case L_MONOCLINIC :
+		if ( cell_get_unique_axis(cell) == 'a' ) {
+			rv[num_params++] = GPARAM_AL_STAR;
+		} else if ( cell_get_unique_axis(cell) == 'b' ) {
+			rv[num_params++] = GPARAM_BE_STAR;
+		} else if ( cell_get_unique_axis(cell) == 'c' ) {
+			rv[num_params++] = GPARAM_GA_STAR;
+		} else {
+			ERROR("Unrecognised unique axis:\n");
+			cell_print(cell);
+			return 0;
+		}
+
+		case L_RHOMBOHEDRAL :
+		rv[num_params++] = GPARAM_AL_STAR; /* == beta and gamma */
+		break;
+
+		case L_ORTHORHOMBIC :
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		case L_CUBIC :
+		break;
+
+		default :
+		ERROR("Unrecognised lattice type:\n");
+		cell_print(cell);
+		return 0;
+	};
+
+	/* Always refine orientation */
+	rv[num_params++] = GPARAM_CELL_RX;
+	rv[num_params++] = GPARAM_CELL_RY;
+	rv[num_params++] = GPARAM_CELL_RZ;
+	return num_params;
+}
+
+
 int refine_prediction(struct image *image, Crystal *cr,
-                      Mille *mille, int max_mille_level)
+                      Mille *mille, int max_mille_level,
+                      UnitCell *target)
 {
 	int n;
 	int i;
@@ -851,8 +995,20 @@ int refine_prediction(struct image *image, Crystal *cr,
 	RefList *reflist;
 	char tmp[256];
 	gsl_matrix **Minvs;
-	double total_shifts[12];
 	double res_r, res_fs, res_ss, res_overall;
+
+	enum gparam rv[] = {
+		GPARAM_A_STAR,
+		GPARAM_B_STAR,
+		GPARAM_C_STAR,
+		GPARAM_AL_STAR,
+		GPARAM_BE_STAR,
+		GPARAM_GA_STAR,
+		GPARAM_CELL_RX,
+		GPARAM_CELL_RY,
+		GPARAM_CELL_RZ,
+	};
+	int num_params = 9;
 
 	rps = cfmalloc(image_feature_count(image->features)
 	                         * sizeof(struct reflpeak));
@@ -894,12 +1050,45 @@ int refine_prediction(struct image *image, Crystal *cr,
 	//STATUS("Initial residual = %f (%f %f %f)\n",
 	//       res_overall, res_r, res_fs, res_ss);
 
-	for ( i=0; i<12; i++ ) total_shifts[i] = 0.0;
+	/* Pretend it's triclinic for now */
+	cell_set_lattice_type(crystal_get_cell(cr), L_TRICLINIC);
 
 	/* Refine (max 5 cycles) */
 	for ( i=0; i<5; i++ ) {
 		update_predictions(reflist, cr, image);
-		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs, total_shifts) )
+		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
+		{
+			return 1;
+		}
+
+		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+		//STATUS("Residual after %i = %f (%f %f %f)\n",
+		//       i, res_overall, res_r, res_fs, res_ss);
+	}
+
+	UnitCell *nc = impose_bravais(crystal_get_cell(cr),
+	                              cell_get_lattice_type(target),
+	                              cell_get_unique_axis(target));
+	if ( nc == NULL ) {
+		ERROR("Failed to impose Bravais conditions\n");
+		return 1;
+	}
+	crystal_set_cell(cr, nc);
+	num_params = parameters_to_refine(nc, rv);
+	if ( num_params == 0 ) {
+		ERROR("Couldn't determine which parameters to refine\n");
+		return 1;
+	}
+
+	update_predictions(reflist, cr, image);
+	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+	//STATUS("After applying Bravais constraints = %f (%f %f %f)\n",
+	//       res_overall, res_r, res_fs, res_ss);
+
+	/* Refine again, with Bravais constraints (max 5 cycles) */
+	for ( i=0; i<5; i++ ) {
+		update_predictions(reflist, cr, image);
+		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
 		{
 			return 1;
 		}
@@ -916,15 +1105,11 @@ int refine_prediction(struct image *image, Crystal *cr,
 	//STATUS("Final residual = %f (%f %f %f)\n",
 	//       res_overall, res_r, res_fs, res_ss);
 
-	snprintf(tmp, 255, "predict_refine/total_shifts = %e %e %e",
-	         total_shifts[0], total_shifts[1], total_shifts[2]);
-	crystal_add_notes(cr, tmp);
-
 	if ( (mille != NULL) && (n>4) ) {
 		crystfel_mille_delete_last_record(mille);
 		profile_start("mille-calc");
-		write_mille(mille, n, crystal_get_cell(cr), rps, image,
-		            max_mille_level, Minvs);
+		write_mille(mille, n, crystal_get_cell(cr), rv, num_params,
+		            rps, image, max_mille_level, Minvs);
 		profile_end("mille-calc");
 	}
 
