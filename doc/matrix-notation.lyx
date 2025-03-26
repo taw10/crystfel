@@ -1,16 +1,21 @@
-#LyX 2.3 created this file. For more info see http://www.lyx.org/
-\lyxformat 544
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
 \begin_document
 \begin_header
 \save_transient_properties true
 \origin unavailable
 \textclass article
+\begin_preamble
+% Added by lyx2lyx
+\setlength{\parskip}{\smallskipamount}
+\setlength{\parindent}{0pt}
+\end_preamble
 \use_default_options true
-\maintain_unincluded_children false
+\maintain_unincluded_children no
 \language english
 \language_package default
-\inputencoding auto
-\fontencoding global
+\inputencoding auto-legacy
+\fontencoding auto
 \font_roman "default" "default"
 \font_sans "default" "default"
 \font_typewriter "default" "default"
@@ -18,7 +23,9 @@
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
-\font_osf false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
 \font_sf_scale 100 100
 \font_tt_scale 100 100
 \use_microtype false
@@ -31,7 +38,7 @@
 \paperfontsize default
 \spacing single
 \use_hyperref false
-\papersize a4paper
+\papersize a4
 \use_geometry true
 \use_package amsmath 1
 \use_package amssymb 1
@@ -52,7 +59,9 @@
 \suppress_date true
 \justification true
 \use_refstyle 1
+\use_formatted_ref 0
 \use_minted 0
+\use_lineno 0
 \index Index
 \shortcut idx
 \color #008000
@@ -64,8 +73,8 @@
 \headsep 0cm
 \secnumdepth 3
 \tocdepth 3
-\paragraph_separation skip
-\defskip smallskip
+\paragraph_separation indent
+\paragraph_indentation default
 \is_math_indent 0
 \math_numbering_side default
 \quotes_style english
@@ -73,11 +82,16 @@
 \papercolumns 1
 \papersides 1
 \paperpagestyle empty
+\tablestyle default
 \tracking_changes false
 \output_changes false
+\change_bars false
+\postpone_fragile_content false
 \html_math_output 0
 \html_css_as_file 0
 \html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
 \end_header
 
 \begin_body
@@ -122,21 +136,23 @@ thispagestyle{empty}
 \end_layout
 
 \begin_layout Standard
-CrystFEL's UnitCell structure doesn't expose its contents as a matrix, only
- as named components (
+CrystFEL's UnitCell structure doesn't expose its contents as a matrix,
+ only as named components (
 \begin_inset Formula $a_{x}^{*}$
 \end_inset
 
 ,
+ 
 \begin_inset Formula $c_{y}$
 \end_inset
 
  an so on).
- However, the arrangement of the transformation matrices given to functions
- such as cell_transform_rational() are important.
+ However,
+ the arrangement of the transformation matrices given to functions such as cell_transform_rational() are important.
  This document aims to make the conventions explicit.
- The notation used in CrystFEL follows that used in the International Tables
- for Crystallography, volume A, chapter 5.1 (
+ The notation used in CrystFEL follows that used in the International Tables for Crystallography,
+ volume A,
+ chapter 5.1 (
 \begin_inset Quotes eld
 \end_inset
 
@@ -148,7 +164,8 @@ Transformations of the coordinate system (unit-cell transformations)
 \begin_inset Quotes eld
 \end_inset
 
-Point coordinates, symmetry operations and their symbols
+Point coordinates,
+ symmetry operations and their symbols
 \begin_inset Quotes erd
 \end_inset
 
@@ -161,12 +178,13 @@ Point coordinates, symmetry operations and their symbols
 cell_transform_gsl_direct
 \emph default
 ,
+
 \emph on
-cell_transform_rational
+ cell_transform_rational
 \emph default
  and
 \emph on
-cell_transform_intmat
+ cell_transform_intmat
 \emph default
  all do what is written in equation
 \begin_inset CommandInset ref
@@ -175,16 +193,17 @@ reference "eq:cell_transform"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
 .
- These functions all take a
+ These functions all take a 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
  matrix.
- The
+ The 
 \begin_inset Quotes eld
 \end_inset
 
@@ -192,7 +211,7 @@ intmat
 \begin_inset Quotes erd
 \end_inset
 
- and
+ and 
 \begin_inset Quotes eld
 \end_inset
 
@@ -200,8 +219,7 @@ rational
 \begin_inset Quotes erd
 \end_inset
 
- versions will additionally determine the centering of the resulting unit
- cell (and hopefully eventually the lattice type and unique axis).
+ versions will additionally determine the centering of the resulting unit cell (and hopefully eventually the lattice type and unique axis).
 \end_layout
 
 \begin_layout Itemize
@@ -209,18 +227,19 @@ rational
 \emph on
 transform_indices
 \emph default
- does what is written in equation
+ does what is written in equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:indices"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
 .
- It takes a vector of (reciprocal space) Miller indices and a
+ It takes a vector of (reciprocal space) Miller indices and a 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
@@ -228,11 +247,14 @@ noprefix "false"
 \end_layout
 
 \begin_layout Itemize
-A SymOpList is essentially a list of
+A SymOpList is essentially a list of 
 \begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
 \end_inset
 
- matrices, which, as shown below, behave like
+ matrices,
+ which,
+ as shown below,
+ behave like 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
@@ -240,49 +262,52 @@ A SymOpList is essentially a list of
 \end_layout
 
 \begin_layout Itemize
-transform_fractional_coords_rtnl takes a
+transform_fractional_coords_rtnl takes a 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
- matrix and a column vector of fractional coordinates, calculates the
+ matrix and a column vector of fractional coordinates,
+ calculates the 
 \begin_inset Formula $\boldsymbol{\hat{Q}}$
 \end_inset
 
- matrix and evaluates equation
+ matrix and evaluates equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:fractional-coord-transform-basis-change"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
  (NB
 \series bold
-not
+ not
 \series default
- equation
+ equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:fractional-coord-transform-symmetry"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
 ).
 
 \emph on
-Implementation detail:
+ Implementation detail:
+
 \emph default
-it actually solves a matrix-vector equation rather than going all the way
- to the inverted matrix.
+ it actually solves a matrix-vector equation rather than going all the way to the inverted matrix.
 \end_layout
 
 \begin_layout Itemize
-transform_fractional_coords_rtnl_inverse takes a
+transform_fractional_coords_rtnl_inverse takes a 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
@@ -290,19 +315,21 @@ transform_fractional_coords_rtnl_inverse takes a
 \begin_inset Formula $\boldsymbol{v}$
 \end_inset
 
-, and does the reverse of transform_fractional_coords_rtnl.
- That means it just has to evaluate
+,
+ and does the reverse of transform_fractional_coords_rtnl.
+ That means it just has to evaluate 
 \begin_inset Formula $\boldsymbol{\hat{P}}\boldsymbol{v}$
 \end_inset
 
 .
- This looks like equation
+ This looks like equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:fractional-coord-transform-symmetry"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
@@ -314,8 +341,9 @@ Matrices of unit cell components
 \end_layout
 
 \begin_layout Standard
-When matrix calculations are performed in CrystFEL, which is usually only
- inside certain libcrystfel functions, basis vectors
+When matrix calculations are performed in CrystFEL,
+ which is usually only inside certain libcrystfel functions,
+ basis vectors 
 \begin_inset Formula $(\boldsymbol{a},\boldsymbol{b},\boldsymbol{c})$
 \end_inset
 
@@ -323,7 +351,7 @@ When matrix calculations are performed in CrystFEL, which is usually only
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \[
 \boldsymbol{\hat{M}}=\left(\begin{array}{ccc}
 a_{x} & b_{x} & c_{x}\\
@@ -342,7 +370,7 @@ Reciprocal basis vectors are written as the rows of the matrix.
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \[
 \boldsymbol{\hat{R}}=\left(\begin{array}{ccc}
 a_{x}^{*} & a_{y}^{*} & a_{z}^{*}\\
@@ -366,13 +394,13 @@ inverse transposes of each other
 \end_inset
 
 .
- The components of the two matrices are already transposed with respect
- to one another (one has vectors in columns, the other in rows).
- Therefore
+ The components of the two matrices are already transposed with respect to one another (one has vectors in columns,
+ the other in rows).
+ Therefore 
 \begin_inset Formula $\boldsymbol{\hat{M}}=\boldsymbol{\hat{R}}^{-1}$
 \end_inset
 
- and
+ and 
 \begin_inset Formula $\boldsymbol{\hat{R}}=\boldsymbol{\hat{M}}^{-1}$
 \end_inset
 
@@ -384,19 +412,21 @@ Transformation of unit cell basis
 \end_layout
 
 \begin_layout Standard
-Given a transformation matrix
+Given a transformation matrix 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
- which means
+ which means 
 \begin_inset Formula $\boldsymbol{a}^{\prime}=\boldsymbol{a}-\boldsymbol{b}$
 \end_inset
 
 ,
+ 
 \begin_inset Formula $\boldsymbol{b}^{\prime}=\boldsymbol{b}$
 \end_inset
 
 ,
+ 
 \begin_inset Formula $\boldsymbol{c}^{\prime}=\boldsymbol{c}$
 \end_inset
 
@@ -404,7 +434,7 @@ Given a transformation matrix
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \begin{equation}
 \boldsymbol{\hat{M}}^{\prime}=\boldsymbol{\hat{M}}\boldsymbol{\hat{P}}=\left(\begin{array}{ccc}
 a_{x} & b_{x} & c_{x}\\
@@ -423,7 +453,7 @@ a_{z} & b_{z} & c_{z}
 \end_layout
 
 \begin_layout Standard
-Note that the
+Note that the 
 \begin_inset Quotes eld
 \end_inset
 
@@ -431,11 +461,12 @@ amount of old a,b,c to make new a
 \begin_inset Quotes erd
 \end_inset
 
- is found in the first column of the
+ is found in the first column of the 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
- matrix, and so on.
+ matrix,
+ and so on.
 \end_layout
 
 \begin_layout Subsection*
@@ -448,18 +479,21 @@ With the same transformation as before (
 \end_inset
 
 ,
+ 
 \begin_inset Formula $\boldsymbol{b}^{\prime}=\boldsymbol{b}$
 \end_inset
 
 ,
+ 
 \begin_inset Formula $\boldsymbol{c}^{\prime}=\boldsymbol{c}$
 \end_inset
 
-), the reciprocal basis transforms as follows:
+),
+ the reciprocal basis transforms as follows:
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \[
 \boldsymbol{\hat{R}}^{\prime}=\left(\begin{array}{ccc}
 a_{x}^{*} & a_{y}^{*} & a_{z}^{*}\\
@@ -490,18 +524,17 @@ c_{x}^{*} & c_{y}^{*} & c_{z}^{*}
 \end_layout
 
 \begin_layout Subsection*
-Miller indices (reciprocal space) under transformation of unit cell basis
- (real-space)
+Miller indices (reciprocal space) under transformation of unit cell basis (real-space)
 \end_layout
 
 \begin_layout Standard
-From ITA chapter 5.1, this is how the reflections would be re-labelled if
- the axes were changed.
+From ITA chapter 5.1,
+ this is how the reflections would be re-labelled if the axes were changed.
  See later for how to apply symmetry operations.
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \begin{equation}
 \left(h^{\prime},k^{\prime},l^{\prime}\right)=\left(h^{\prime},k^{\prime},l^{\prime}\right)\boldsymbol{\hat{P}}=\left(h,k,l\right)\left(\begin{array}{ccc}
 1 & 0 & 0\\
@@ -520,12 +553,14 @@ Fractional coordinates under transformation of unit cell basis
 \end_layout
 
 \begin_layout Standard
-Where u, v and w are fractional coordinates, i.e.
+Where u,
+ v and w are fractional coordinates,
+ i.e.
  the cartesian coordinates are:
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \[
 \boldsymbol{\hat{M}}\left(\begin{array}{c}
 u\\
@@ -544,11 +579,12 @@ w
 
 \end_inset
 
-From ITA chapter 5.1, the new coordinates are:
+From ITA chapter 5.1,
+ the new coordinates are:
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \begin{equation}
 \left(\begin{array}{c}
 u^{\prime}\\
@@ -575,13 +611,16 @@ Symmetry operations acting on fractional coordinates
 \end_layout
 
 \begin_layout Standard
-Following ITA chapter 11.1, the following matrix represents the symmetry
- operation written as
+Following ITA chapter 11.1,
+ the following matrix represents the symmetry operation written as 
 \begin_inset Formula $-y,x,z$
 \end_inset
 
-, where for this time only, x,y and z are fractional coordinates:
-\begin_inset Formula
+,
+ where for this time only,
+ x,
+ y and z are fractional coordinates:
+\begin_inset Formula 
 \begin{equation}
 \boldsymbol{\hat{W}}=\left(\begin{array}{ccc}
 0 & \bar{1} & 0\\
@@ -600,7 +639,7 @@ It transforms the fractional coordinates as follows:
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \begin{equation}
 \left(\begin{array}{c}
 u^{\prime}\\
@@ -627,21 +666,20 @@ w
 \end_layout
 
 \begin_layout Standard
-Note also that we're ignoring the translational part of the symmetry operation
- (there isn't one in this case).
+Note also that we're ignoring the translational part of the symmetry operation (there isn't one in this case).
 \end_layout
 
 \begin_layout Standard
-Note that
+Note that 
 \begin_inset Formula $\boldsymbol{\hat{W}}$
 \end_inset
 
- behaves like
+ behaves like 
 \begin_inset Formula $\boldsymbol{\hat{P}}^{-1}$
 \end_inset
 
  above.
- CrystFEL's
+ CrystFEL's 
 \begin_inset Quotes eld
 \end_inset
 
@@ -649,11 +687,12 @@ SymOpList
 \begin_inset Quotes erd
 \end_inset
 
- structure contains IntegerMatrix objects representing
+ structure contains IntegerMatrix objects representing 
 \begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
 \end_inset
 
- matrices, also known as
+ matrices,
+ also known as 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
@@ -665,29 +704,31 @@ Symmetry operations acting on Miller indices (reciprocal space)
 \end_layout
 
 \begin_layout Standard
-Since
+Since 
 \begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
 \end_inset
 
- matrices are just
+ matrices are just 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
- matrices, simply change the
+ matrices,
+ simply change the 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
- into
+ into 
 \begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
 \end_inset
 
- in equation
+ in equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:indices"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
@@ -695,7 +736,7 @@ noprefix "false"
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \begin{equation}
 \left(h^{\prime},k^{\prime},l^{\prime}\right)=\left(h,k,l\right)\boldsymbol{\hat{W}}^{-1}=\left(h^{\prime},k^{\prime},l^{\prime}\right)\left(\begin{array}{ccc}
 0 & 1 & 0\\
@@ -710,16 +751,19 @@ noprefix "false"
 \end_layout
 
 \begin_layout Standard
-In this case, the symmetry operation is a rotation, so the matrix inverse
- is just the same as a matrix transpose.
- However, don't get confused: the matrix appearing here is the inverse of
- the one appearing in equation
+In this case,
+ the symmetry operation is a rotation,
+ so the matrix inverse is just the same as a matrix transpose.
+ However,
+ don't get confused:
+ the matrix appearing here is the inverse of the one appearing in equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:wmatrix"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
@@ -727,19 +771,21 @@ noprefix "false"
 \end_layout
 
 \begin_layout Standard
-Note that the
+Note that the 
 \begin_inset Quotes eld
 \end_inset
 
-amount of old h, k and l to make new h
+amount of old h,
+ k and l to make new h
 \begin_inset Quotes erd
 \end_inset
 
- is found in the first column of the
+ is found in the first column of the 
 \begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
 \end_inset
 
- matrix, and so on.
+ matrix,
+ and so on.
 \end_layout
 
 \begin_layout Subsection*
@@ -747,31 +793,35 @@ Transforming symmetry operations
 \end_layout
 
 \begin_layout Standard
-Given a
+Given a 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
- matrix which transforms the unit cell as written in equation
+ matrix which transforms the unit cell as written in equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:cell_transform"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
-, and a
+,
+ and a 
 \begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
 \end_inset
 
- matrix representing a symmetry operation, we seek to apply the symmetry
- operation to the cell as it would appear after applying the transformation.
- For example, let
+ matrix representing a symmetry operation,
+ we seek to apply the symmetry operation to the cell as it would appear after applying the transformation.
+ For example,
+ let 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
- permute the cell axes, turning a
+ permute the cell axes,
+ turning a 
 \begin_inset Quotes eld
 \end_inset
 
@@ -787,7 +837,8 @@ unique axis c
 \begin_inset Quotes erd
 \end_inset
 
- one, and let
+ one,
+ and let 
 \begin_inset Formula $\boldsymbol{\hat{W}}^{-1}$
 \end_inset
 
@@ -795,11 +846,12 @@ unique axis c
 \end_layout
 
 \begin_layout Standard
-To transform a set of Miller indices
+To transform a set of Miller indices 
 \begin_inset Formula $(h,k,l)$
 \end_inset
 
-, first use
+,
+ first use 
 \begin_inset Formula $\boldsymbol{\hat{P}}$
 \end_inset
 
@@ -811,33 +863,38 @@ unique axis c
 \begin_inset Quotes erd
 \end_inset
 
- setting using equation
+ setting using equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:indices"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
-, then apply the symmetry operation using equation
+,
+ then apply the symmetry operation using equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:symmetry"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
-, and finally transform back to the original cell using equation
+,
+ and finally transform back to the original cell using equation 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:indices"
 plural "false"
 caps "false"
 noprefix "false"
+nolink "false"
 
 \end_inset
 
@@ -845,7 +902,7 @@ noprefix "false"
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula
+\begin_inset Formula 
 \[
 (h^{\prime},k^{\prime},l^{\prime})=(h,k,l)\boldsymbol{\hat{P}}\boldsymbol{\hat{W}}^{-1}\boldsymbol{\hat{P}}^{-1}
 \]
@@ -856,12 +913,11 @@ noprefix "false"
 \end_layout
 
 \begin_layout Standard
-The combined matrix
+The combined matrix 
 \begin_inset Formula $\boldsymbol{\hat{P}}\boldsymbol{\hat{W}}^{-1}\boldsymbol{\hat{P}}^{-1}$
 \end_inset
 
- represents a twofold rotation symmetry operation along the b axis instead
- of c.
+ represents a twofold rotation symmetry operation along the b axis instead of c.
 \end_layout
 
 \end_body
