@@ -354,54 +354,6 @@ static void show_rvec(struct rvec r2)
  * functions called under the core functions, still specialised (Level 3)
  * ------------------------------------------------------------------------*/
 
-/* cell_transform_gsl_direct() doesn't do quite what we want here.
- * The matrix m should be post-multiplied by a matrix of real or reciprocal
- * basis vectors (it doesn't matter which because it's just a rotation).
- * M contains the basis vectors written in columns:  M' = mM */
-static UnitCell *cell_post_smiley_face(UnitCell *in, gsl_matrix *m)
-{
-	gsl_matrix *c;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	gsl_matrix *res;
-	UnitCell *out;
-
-	cell_get_cartesian(in, &asx, &asy, &asz,
-	                       &bsx, &bsy, &bsz,
-	                       &csx, &csy, &csz);
-
-	c = gsl_matrix_alloc(3, 3);
-	gsl_matrix_set(c, 0, 0, asx);
-	gsl_matrix_set(c, 1, 0, asy);
-	gsl_matrix_set(c, 2, 0, asz);
-	gsl_matrix_set(c, 0, 1, bsx);
-	gsl_matrix_set(c, 1, 1, bsy);
-	gsl_matrix_set(c, 2, 1, bsz);
-	gsl_matrix_set(c, 0, 2, csx);
-	gsl_matrix_set(c, 1, 2, csy);
-	gsl_matrix_set(c, 2, 2, csz);
-
-	res = gsl_matrix_calloc(3, 3);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
-
-	out = cell_new_from_cell(in);
-	cell_set_cartesian(out, gsl_matrix_get(res, 0, 0),
-	                        gsl_matrix_get(res, 1, 0),
-	                        gsl_matrix_get(res, 2, 0),
-	                        gsl_matrix_get(res, 0, 1),
-	                        gsl_matrix_get(res, 1, 1),
-	                        gsl_matrix_get(res, 2, 1),
-	                        gsl_matrix_get(res, 0, 2),
-	                        gsl_matrix_get(res, 1, 2),
-	                        gsl_matrix_get(res, 2, 2));
-
-	gsl_matrix_free(res);
-	gsl_matrix_free(c);
-	return out;
-}
-
-
 static void rotation_around_axis(struct rvec c, double th,
 				 gsl_matrix *res)
 {
@@ -2000,7 +1952,7 @@ static UnitCell *run_taketwo(UnitCell *cell, const struct taketwo_options *opts,
 	}
 
 	/* Prepare the solution for CrystFEL friendliness */
-	result = cell_post_smiley_face(cell, solution);
+	result = cell_rotate_gsl_direct(cell, solution);
 	cleanup_taketwo_cell(&ttCell);
 
 	return result;
