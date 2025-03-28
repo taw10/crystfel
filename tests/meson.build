@@ -162,11 +162,21 @@ foreach name : panel_gradient_tests
   test(name[0], exe)
 endforeach
 
+# Extra test for axis length while applying cubic conditions
+exe = executable('gradient_cell_astar_cubic',
+                 ['gradient_check.c',
+                  'gradient_check_utils.c'],
+                 c_args : ['-DTEST_GPARAM=GPARAM_A_STAR',
+                           '-DCELL_AXIS_LENGTH_CUBIC'],
+                 dependencies : [libcrystfeldep, mdep, gsldep])
+test('gradient_cell_astar_cubic', exe)
+
 
 # Refinement gradient checks, part 4: diffraction physics, cell angles
 panel_gradient_tests = [['gradient_cell_alstar', 'GPARAM_AL_STAR', 'ANGLE_AL'],
                         ['gradient_cell_bestar', 'GPARAM_BE_STAR', 'ANGLE_BE'],
-                        ['gradient_cell_gastar', 'GPARAM_GA_STAR', 'ANGLE_GA']]
+                        ['gradient_cell_gastar', 'GPARAM_GA_STAR', 'ANGLE_GA'],
+                        ['gradient_cell_alstar_rhombohedral', 'GPARAM_AL_STAR', 'ANGLE_AL_RHOMBOHEDRAL']]
 
 foreach name : panel_gradient_tests
   exe = executable(name[0],

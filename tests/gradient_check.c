@@ -110,7 +110,23 @@ int main(int argc, char *argv[])
 	didsomething = 1;
 	#endif
 
-	#if defined(ANGLE_AL) || defined(ANGLE_BE) || defined(ANGLE_GA)
+	#ifdef CELL_AXIS_LENGTH_CUBIC
+	double as[3], bs[3], cs[3];
+	UnitCell *cell = crystal_get_cell(image.crystals[0].cr);
+	step = 0.5e5;
+	cell_get_reciprocal(cell, &as[0], &as[1], &as[2],
+	                          &bs[0], &bs[1], &bs[2],
+	                          &cs[0], &cs[1], &cs[2]);
+	adjust_vector_length(as, step);
+	adjust_vector_length(bs, step);
+	adjust_vector_length(cs, step);
+	cell_set_reciprocal(cell, as[0], as[1], as[2],
+	                          bs[0], bs[1], bs[2],
+	                          cs[0], cs[1], cs[2]);
+	didsomething = 1;
+	#endif
+
+	#if defined(ANGLE_AL) || defined(ANGLE_BE) || defined(ANGLE_GA) || defined(ANGLE_AL_RHOMBOHEDRAL)
 	double as[3], bs[3], cs[3], u[3];
 	UnitCell *cell = crystal_get_cell(image.crystals[0].cr);
 	step = deg2rad(0.01);
@@ -128,6 +144,15 @@ int main(int argc, char *argv[])
 	didsomething = 1;
 	#endif
 	#ifdef ANGLE_GA
+	crossp_norm(bs, as, u);
+	rotate3d(as, u, step);
+	didsomething = 1;
+	#endif
+	#ifdef ANGLE_AL_RHOMBOHEDRAL
+	crossp_norm(cs, bs, u);
+	rotate3d(bs, u, step);
+	crossp_norm(as, cs, u);
+	rotate3d(cs, u, step);
 	crossp_norm(bs, as, u);
 	rotate3d(as, u, step);
 	didsomething = 1;
@@ -208,13 +233,13 @@ int main(int argc, char *argv[])
 		if ( fabs(obs[2] - calc[2]) > 1.0 ) n_wrong_ss++;  /* (numbers are big) */
 		#endif
 
-		#ifdef CELL_AXIS_LENGTH
+		#if defined(CELL_AXIS_LENGTH) || defined(CELL_AXIS_LENGTH_CUBIC)
 		if ( fabs(obs[0] - calc[0]) > 1e-8 ) n_wrong_r++;
 		if ( fabs(obs[1] - calc[1]) > 1e-8 ) n_wrong_fs++;
 		if ( fabs(obs[2] - calc[2]) > 1e-8 ) n_wrong_ss++;
 		#endif
 
-		#if defined(ANGLE_AL) || defined(ANGLE_BE) || defined(ANGLE_GA)
+		#if defined(ANGLE_AL) || defined(ANGLE_BE) || defined(ANGLE_GA) || defined(ANGLE_AL_RHOMBOHEDRAL)
 		if ( fabs(obs[0] - calc[0]) > 1.0 ) n_wrong_r++;
 		if ( fabs(obs[1] - calc[1]) > 1.0 ) n_wrong_fs++;
 		if ( fabs(obs[2] - calc[2]) > 1.0 ) n_wrong_ss++;

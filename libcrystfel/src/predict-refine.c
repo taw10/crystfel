@@ -186,6 +186,88 @@ static gsl_vector *ray_vector_gradient(int param, UnitCell *cell, Reflection *re
 }
 
 
+static void add_and_free(gsl_vector *total, gsl_vector *n)
+{
+	gsl_vector_add(total, n);
+	gsl_vector_free(n);
+}
+
+
+static gsl_vector *ray_vector_gradient_bravais(int param, UnitCell *cell,
+                                               Reflection *refl,
+                                               gsl_vector **q)
+{
+	if ( cell_get_lattice_type(cell) == L_RHOMBOHEDRAL ) {
+		if ( param == GPARAM_AL_STAR ) {
+			gsl_vector *tot = gsl_vector_calloc(3);
+			add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_BE_STAR, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_GA_STAR, cell, refl, q));
+			return tot;
+		}
+	}
+
+	switch ( cell_get_lattice_type(cell) ) {
+
+		case L_TRICLINIC :
+		case L_MONOCLINIC :
+		case L_ORTHORHOMBIC :
+		break;
+
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		switch ( cell_get_unique_axis(cell) ) {
+
+			case 'a' :
+			if ( param == GPARAM_B_STAR ) {
+				gsl_vector *tot = gsl_vector_calloc(3);
+				add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+				add_and_free(tot, ray_vector_gradient(GPARAM_C_STAR, cell, refl, q));
+				return tot;
+			}
+			break;
+
+			case 'b' :
+			if ( param == GPARAM_A_STAR ) {
+				gsl_vector *tot = gsl_vector_calloc(3);
+				add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+				add_and_free(tot, ray_vector_gradient(GPARAM_C_STAR, cell, refl, q));
+				return tot;
+			}
+			break;
+
+			case 'c' :
+			if ( param == GPARAM_A_STAR ) {
+				gsl_vector *tot = gsl_vector_calloc(3);
+				add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+				add_and_free(tot, ray_vector_gradient(GPARAM_B_STAR, cell, refl, q));
+				return tot;
+			}
+			break;
+
+			default :
+			ERROR("Invalid unique axis\n");
+			return NULL;
+		}
+		break;
+
+		case L_CUBIC :
+		case L_RHOMBOHEDRAL :
+		if ( param == GPARAM_A_STAR ) {
+			gsl_vector *tot = gsl_vector_calloc(3);
+			add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_B_STAR, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_C_STAR, cell, refl, q));
+			return tot;
+		}
+		break;
+
+	}
+
+	return ray_vector_gradient(param, cell, refl, q);
+}
+
+
 double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength)
 {
 	gsl_vector *dRdp;
@@ -197,7 +279,7 @@ double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength
 		 * no effect on excitation error */
 		return 0;
 	}
-	dRdp = ray_vector_gradient(param, cell, refl, &q);
+	dRdp = ray_vector_gradient_bravais(param, cell, refl, &q);
 
 	gsl_vector_set(q, 2, gsl_vector_get(q,2)+1.0/wavelength);
 	gsl_blas_ddot(q, dRdp, &qdotd);
@@ -220,7 +302,7 @@ int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
 	gsl_vector *dRdp;
 	gsl_vector *v;
 
-	dRdp = ray_vector_gradient(param, cell, refl, NULL);
+	dRdp = ray_vector_gradient_bravais(param, cell, refl, NULL);
 
 	v = gsl_vector_calloc(3);
 	gsl_blas_dgemv(CblasNoTrans, 1.0, Minv, dRdp, 0.0, v);
