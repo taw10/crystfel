@@ -217,9 +217,9 @@ function Base.push!(image::Image, cr::Crystal)
 
     idata = unsafe_load(image.internalptr)
     ncryst = idata.n_crystals
-    pairptr = unsafe_load(idata.crystal_refls, ncryst)
+    pairptr = unsafe_load(idata.crystals, ncryst)
     pairptr.owns_crystal = 0
-    unsafe_store!(idata.crystal_refls, pairptr, ncryst)
+    unsafe_store!(idata.crystals, pairptr, ncryst)
     push!(getfield(image, :crystals), cr)
 end
 
