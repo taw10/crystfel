@@ -10,7 +10,7 @@ export TetragonalLattice, HexagonalLattice, RhombohedralLattice, CubicLattice
 export PrimitiveCell, ACenteredCell, BCenteredCell, CCenteredCell
 export BodyCenteredCell, FaceCenteredCell, RhombohedralCell, RhombohedralCellOnHexagonalAxes
 export NoUniqueAxis, UnknownUniqueAxis, UniqueAxisA, UniqueAxisB, UniqueAxisC
-export rotatecell, compare_reindexed_cell_parameters
+export rotatecell, compare_reindexed_cell_parameters, uncenter
 
 
 # Represents the real C-side (opaque) structure.
@@ -442,5 +442,21 @@ function compare_reindexed_cell_parameters(uc, reference, tols)
     UnitCell(out)
 end
 
+"""
+    uncenter(uc)
+
+Returns a primitive copy of the cell.
+
+Equivalent to CrystFEL routine `uncenter_cell(uc, NULL, NULL)`.
+"""
+function uncenter(uc)
+    out = @ccall libcrystfel.uncenter_cell(uc.internalptr::Ptr{InternalUnitCell},
+                                           C_NULL::Ptr{Cvoid},
+                                           C_NULL::Ptr{Cvoid})::Ptr{InternalUnitCell}
+    if out == C_NULL
+        throw(ErrorException("Cell uncentering failed"))
+    end
+    UnitCell(out)
+end
 
 end   # of module
