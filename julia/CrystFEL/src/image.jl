@@ -242,7 +242,7 @@ end
 function setreflections!(image::Image, n, reflist)
     idata = unsafe_load(image.internalptr)
     ncryst = idata.n_crystals
-    if n > ncryst
+    if (n > ncryst) || (n <1)
         throw(ArgumentError("Image does not have nominated crystal"))
     end
     pairptr = unsafe_load(idata.crystals, n)
