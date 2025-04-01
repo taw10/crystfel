@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	st = stream_open_for_write("header_read.stream", dtempl);
+	st = stream_open_for_write(argv[5], dtempl);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream for writing\n");
 		return 1;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 	stream_close(st);
 	image_free(image);
 
-	st = stream_open_for_read("header_read.stream");
+	st = stream_open_for_read(argv[5]);
 	if ( st == NULL ) {
 		ERROR("Failed to open stream for reading\n");
 		return 1;
