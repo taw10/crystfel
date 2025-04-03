@@ -62,7 +62,7 @@ RUN    wget -nv https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0
 # ASAP::O
 RUN    git clone https://gitlab.desy.de/asapo/asapo.git ; \
        pushd asapo ; \
-       git checkout 23.12.0-alpha ; \
+       git checkout 24.11.1 ; \
        mkdir build ; \
        pushd build ; \
        cmake .. -GNinja -DBUILD_CLIENTS_ONLY=ON -DBUILD_PYTHON=OFF \
