@@ -3,7 +3,7 @@ module Streams
 import ..CrystFEL: libcrystfel
 import ..CrystFEL.DataTemplates: DataTemplate, InternalDataTemplate
 import ..CrystFEL.Images: Image, InternalImage
-export Stream, chunkwrite, chunkread, allcrystals
+export Stream, chunkwrite, chunkread, allcrystals, rewindstream
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalStream end
@@ -134,5 +134,10 @@ function allcrystals(st)
     end
 end
 
+
+function rewindstream(st::Stream)
+    st.internalptr == C_NULL && throw(ErrorException("Stream is closed"))
+    @ccall libcrystfel.stream_rewind(st.internalptr::Ptr{InternalStream})::Cint
+end
 
 end  # of module

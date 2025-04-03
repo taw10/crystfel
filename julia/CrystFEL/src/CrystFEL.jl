@@ -77,7 +77,7 @@ export Indexer, index
 
 include("streams.jl")
 using .Streams
-export Stream, chunkwrite, chunkread, allcrystals
+export Stream, chunkwrite, chunkread, allcrystals, rewindstream
 
 include("millepede.jl")
 using .Millepede
