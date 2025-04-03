@@ -137,6 +137,12 @@ function Base.getproperty(image::Image, name::Symbol)
         elseif name === :detgeom
             return copydetgeom(getfield(idata, :detgeom))
 
+        elseif name === :filename
+            return unsafe_string(getfield(idata, :filename))
+
+        elseif name === :ev
+            return unsafe_string(getfield(idata, :ev))
+
         else
             getfield(idata, name)
         end
