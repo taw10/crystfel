@@ -248,7 +248,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			for ( g=0; g<ng; g++ ) {
 				fs_ss_gradient(rvg[g], rps[i].refl, cell,
 				               &image->detgeom->panels[rps[i].peak->pn],
-				               Minvs[rps[i].peak->pn], 0, 0, 0,
+				               Minvs[rps[i].peak->pn], cx, cy, cz,
 				               &global_gradients_fs[j],
 				               &global_gradients_ss[j]);
 				labels[j] = mille_label(group->serial, rvg[g]);
