@@ -2597,3 +2597,174 @@ struct powder_ring *powder_rings(UnitCell *cell, SymOpList *sym, double mres,
 	*n_rings = n;
 	return sortus;
 }
+
+
+static gsl_matrix *transformation_from_reference(UnitCell *cell)
+{
+	UnitCell *ref;
+	double a, b, c, al, be, ga;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	gsl_matrix *M;
+	gsl_matrix *Bs;
+	gsl_matrix *U;
+
+	cell_get_cartesian(cell, &asx, &asy, &asz,
+	                         &bsx, &bsy, &bsz,
+	                         &csx, &csy, &csz);
+
+	M = gsl_matrix_alloc(3, 3);
+	Bs = gsl_matrix_alloc(3, 3);
+	U = gsl_matrix_alloc(3, 3);
+	if ( (M == NULL) || (Bs == NULL) || (U == NULL) ) {
+		ERROR("Couldn't allocate memory for matrix\n");
+		return NULL;
+	}
+	gsl_matrix_set(M, 0, 0, asx);
+	gsl_matrix_set(M, 1, 0, asy);
+	gsl_matrix_set(M, 2, 0, asz);
+	gsl_matrix_set(M, 0, 1, bsx);
+	gsl_matrix_set(M, 1, 1, bsy);
+	gsl_matrix_set(M, 2, 1, bsz);
+	gsl_matrix_set(M, 0, 2, csx);
+	gsl_matrix_set(M, 1, 2, csy);
+	gsl_matrix_set(M, 2, 2, csz);
+
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	ref = cell_new_from_parameters(a, b, c, al, be, ga);
+	cell_get_reciprocal(ref, &asx, &asy, &asz,
+	                         &bsx, &bsy, &bsz,
+	                         &csx, &csy, &csz);
+	cell_free(ref);
+
+	gsl_matrix_set(Bs, 0, 0, asx);
+	gsl_matrix_set(Bs, 1, 0, asy);
+	gsl_matrix_set(Bs, 2, 0, asz);
+	gsl_matrix_set(Bs, 0, 1, bsx);
+	gsl_matrix_set(Bs, 1, 1, bsy);
+	gsl_matrix_set(Bs, 2, 1, bsz);
+	gsl_matrix_set(Bs, 0, 2, csx);
+	gsl_matrix_set(Bs, 1, 2, csy);
+	gsl_matrix_set(Bs, 2, 2, csz);
+
+	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, M, Bs, 0.0, U);
+	gsl_matrix_free(M);
+	gsl_matrix_free(Bs);
+
+	return U;
+}
+
+
+UnitCell *impose_bravais(UnitCell *cell, LatticeType latt, char ua)
+{
+	double a, b, c, al, be, ga;
+	gsl_matrix *U;
+	UnitCell *n;
+	UnitCell *out;
+	double av;
+
+	U = transformation_from_reference(cell);
+
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+
+	/* Lengths */
+	switch ( latt ) {
+
+		case L_TRICLINIC:
+		case L_MONOCLINIC:
+		case L_ORTHORHOMBIC:
+		break;
+
+		case L_TETRAGONAL:
+		case L_HEXAGONAL:
+		if ( ua == 'a' ) {
+			av = (b+c)/2.0;
+			b = av;  c = av;
+		} else if ( ua == 'b' ) {
+			av = (a+c)/2.0;
+			a = av;  c = av;
+		} else if ( ua == 'c' ) {
+			av = (a+b)/2.0;
+			a = av;  b = av;
+		} else {
+			ERROR("Unrecognised unique axis '%c'\n", ua);
+			return NULL;
+		}
+		break;
+
+		case L_RHOMBOHEDRAL:
+		case L_CUBIC:
+		av = (a+b+c)/3.0;
+		a = av;  b = av;  c = av;
+		break;
+
+	}
+
+	/* Angles */
+	switch ( latt ) {
+
+		case L_TRICLINIC:
+		break;
+
+		case L_MONOCLINIC:
+		if ( ua == 'a' ) {
+			be = deg2rad(90);
+			ga = deg2rad(90);
+		} else if ( ua == 'b' ) {
+			al = deg2rad(90);
+			ga = deg2rad(90);
+		} else if ( ua == 'c' ) {
+			al = deg2rad(90);
+			be = deg2rad(90);
+		} else {
+			ERROR("Unrecognised unique axis '%c'\n", ua);
+			return NULL;
+		}
+		break;
+
+		case L_HEXAGONAL:
+		if ( ua == 'a' ) {
+			al = deg2rad(120);
+			be = deg2rad(90);
+			ga = deg2rad(90);
+		} else if ( ua == 'b' ) {
+			al = deg2rad(90);
+			be = deg2rad(120);
+			ga = deg2rad(90);
+		} else if ( ua == 'c' ) {
+			al = deg2rad(90);
+			be = deg2rad(90);
+			ga = deg2rad(120);
+		} else {
+			ERROR("Unrecognised unique axis '%c'\n", ua);
+			return NULL;
+		}
+		break;
+
+		case L_ORTHORHOMBIC:
+		case L_TETRAGONAL:
+		case L_CUBIC:
+		al = deg2rad(90);
+		be = deg2rad(90);
+		ga = deg2rad(90);
+		break;
+
+		case L_RHOMBOHEDRAL:
+		av = (al+be+ga)/3.0;
+		al = av;  be = av;  ga = av;
+		break;
+
+	}
+
+	n = cell_new_from_parameters(a, b, c, al, be, ga);
+	cell_set_centering(n, cell_get_centering(cell));
+	out = cell_rotate_gsl_direct(n, U);
+	cell_free(n);
+	gsl_matrix_free(U);
+
+	cell_set_lattice_type(out, latt);
+	cell_set_unique_axis(out, ua);
+
+	return out;
+}

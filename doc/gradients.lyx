@@ -1,0 +1,666 @@
+#LyX 2.4 created this file. For more info see https://www.lyx.org/
+\lyxformat 620
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children no
+\language british
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement class
+\float_alignment class
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date true
+\justification true
+\use_refstyle 1
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1cm
+\topmargin 1cm
+\rightmargin 1cm
+\bottommargin 1cm
+\headheight 1cm
+\headsep 1cm
+\footskip 1cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation 0bp
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle empty
+\tablestyle default
+\tracking_changes false
+\output_changes false
+\change_bars false
+\postpone_fragile_content true
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\end_header
+
+\begin_body
+
+\begin_layout Title
+
+\lang english
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+vskip -3em
+\end_layout
+
+\end_inset
+
+
+\lang british
+Prediction parameter gradients
+\end_layout
+
+\begin_layout Standard
+
+\lang english
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+vskip -4em
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+thispagestyle{empty}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Calculating the detector coordinates of a Bragg spot
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\vec{R}$
+\end_inset
+
+ be the vector from the center of the Ewald sphere to the reciprocal lattice point.
+ The radius of the Ewald sphere is 
+\begin_inset Formula $k_{\mathrm{pred}}$
+\end_inset
+
+,
+ which is 
+\begin_inset Formula $1/\lambda$
+\end_inset
+
+ for monochromatic radiation.
+ For wide-bandwidth radiation,
+ take the wavelength which excites the reflection.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\vec{R}=\left(\begin{array}{c}
+x_{l}\\
+y_{l}\\
+z_{l}+k_{\mathrm{pred}}
+\end{array}\right),
+\]
+
+\end_inset
+
+where
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+x_{l}\\
+y_{l}\\
+z_{l}
+\end{array}\right)=\left(\begin{array}{ccc}
+a_{x}^{*} & a_{y}^{*} & a_{z}^{*}\\
+b_{x}^{*} & b_{y}^{*} & b_{z}^{*}\\
+c_{x}^{*} & c_{y}^{*} & c_{z}^{*}
+\end{array}\right)\left(\begin{array}{c}
+h\\
+k\\
+l
+\end{array}\right).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The direction of 
+\begin_inset Formula $\vec{R}$
+\end_inset
+
+ in reciprocal space is the same as the direction of the diffracted ray.
+ The diffracted ray intersects the detector panel at pixel coordinates 
+\begin_inset Formula $\left(X,Y\right)$
+\end_inset
+
+.
+ Let the corner of the panel be 
+\begin_inset Formula $\vec{C}$
+\end_inset
+
+,
+ and the fast and slow scan basis vectors 
+\begin_inset Formula $\vec{f}$
+\end_inset
+
+ and 
+\begin_inset Formula $\vec{s}$
+\end_inset
+
+ respectively.
+ We can write:
+\begin_inset Formula 
+\[
+\mu\vec{R}=\vec{C}+X\vec{f}+Y\vec{s},
+\]
+
+\end_inset
+
+or equivalently in matrix form:
+\begin_inset Formula 
+\[
+\mu\vec{R}=\left(\begin{array}{ccc}
+c_{x} & f_{x} & s_{x}\\
+c_{y} & f_{y} & s_{y}\\
+c_{z} & f_{z} & s_{z}
+\end{array}\right)\left(\begin{array}{c}
+1\\
+X\\
+Y
+\end{array}\right)=\hat{M}\left(\begin{array}{c}
+1\\
+X\\
+Y
+\end{array}\right).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Dividing both sides by 
+\begin_inset Formula $\mu$
+\end_inset
+
+ gives:
+\begin_inset Formula 
+\[
+\vec{R}=\hat{M}\left(\begin{array}{c}
+1/\mu\\
+X/\mu\\
+Y/\mu
+\end{array}\right)=\hat{M}\vec{P},
+\]
+
+\end_inset
+
+which can be solved for 
+\begin_inset Formula $X$
+\end_inset
+
+ and 
+\begin_inset Formula $Y$
+\end_inset
+
+.
+ Since there are usually a large number of reflections,
+ it may be better to calculate and store the inverse of 
+\begin_inset Formula $\hat{M}$
+\end_inset
+
+ and calculate 
+\begin_inset Formula $\vec{P}=\hat{M}^{-1}\vec{R}$
+\end_inset
+
+ (as of version 0.11.1,
+ CrystFEL does not do this).
+\end_layout
+
+\begin_layout Subsection*
+Gradients of spot position
+\end_layout
+
+\begin_layout Standard
+We seek 
+\begin_inset Formula $\nicefrac{d}{d\bullet}(X)$
+\end_inset
+
+ and 
+\begin_inset Formula $\nicefrac{d}{d\bullet}(Y)$
+\end_inset
+
+,
+ where 
+\begin_inset Formula $\bullet$
+\end_inset
+
+ represents any parameter (e.g.
+ 
+\begin_inset Formula $c_{y}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $f_{x}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $a_{z}^{*}$
+\end_inset
+
+).
+ Start by calculating 
+\begin_inset Formula $\nicefrac{d}{d\bullet}(\vec{P})$
+\end_inset
+
+ and therefore 
+\begin_inset Formula $\nicefrac{d}{d\bullet}(\nicefrac{X}{\mu})$
+\end_inset
+
+ and 
+\begin_inset Formula $\nicefrac{d}{d\bullet}(\nicefrac{Y}{\mu})$
+\end_inset
+
+,
+ as well as 
+\begin_inset Formula $\nicefrac{d}{d\bullet}(\nicefrac{1}{\mu})$
+\end_inset
+
+.
+ The required gradients can then be calculated using the product rule:
+\begin_inset Formula 
+\[
+\frac{d(X/\mu)}{d\bullet}=\frac{1}{\mu}\frac{dX}{d\bullet}+X\frac{d(1/\text{µ})}{d\bullet},
+\]
+
+\end_inset
+
+rearranging to get
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{dX}{d\bullet}=\mu\left[\frac{d(X/\mu)}{d\bullet}-X\frac{d(1/\text{µ})}{d\bullet}\right],
+\]
+
+\end_inset
+
+and similarly for 
+\begin_inset Formula $Y$
+\end_inset
+
+.
+ To calculate 
+\begin_inset Formula $\nicefrac{d}{d\bullet}(\vec{P})$
+\end_inset
+
+,
+ apply the product rule as follows:
+\begin_inset Formula 
+\[
+\frac{d\vec{P}}{d\bullet}=\frac{d}{d\bullet}(\hat{M}^{-1}\vec{R})=\hat{M}^{-1}\frac{d\vec{R}}{d\bullet}+\frac{d\hat{M}^{-1}}{d\bullet}\vec{R}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This separates the gradients into terms which depend on the detector geometry (
+\begin_inset Formula $\frac{d\hat{M}^{-1}}{d\bullet}$
+\end_inset
+
+) and terms which depend on the diffraction physics (
+\begin_inset Formula $\frac{d\vec{R}}{d\bullet}$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Subsubsection*
+Detector geometry terms
+\end_layout
+
+\begin_layout Standard
+Convert the derivative of the inverse matrix into the derivative of the original matrix using:
+\begin_inset Formula 
+\[
+\frac{d}{d\bullet}\hat{M}^{-1}=-M^{-1}\frac{d\hat{M}}{d\bullet}M^{-1}.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Physics terms
+\end_layout
+
+\begin_layout Standard
+The gradients of 
+\begin_inset Formula $\vec{R}$
+\end_inset
+
+ are calculated in vector form by routine ray_vector_gradient() inside CrystFEL.
+ The gradient with respect to the reciprocal axis length 
+\begin_inset Formula $\left|a^{*}\right|$
+\end_inset
+
+ is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\vec{R}}{d\left|\vec{a}^{*}\right|}=\frac{h\vec{a^{*}}}{\left|\vec{a}^{*}\right|},
+\]
+
+\end_inset
+
+ and similarly for 
+\begin_inset Formula $\left|b^{*}\right|$
+\end_inset
+
+ and 
+\begin_inset Formula $\left|c^{*}\right|$
+\end_inset
+
+.
+ The vector gradients of 
+\begin_inset Formula $\vec{R}$
+\end_inset
+
+ with respect to rotations around 
+\begin_inset Formula $x$
+\end_inset
+
+,
+ 
+\begin_inset Formula $y$
+\end_inset
+
+ and 
+\begin_inset Formula $z$
+\end_inset
+
+ are respectively
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+0\\
+-z_{l}\\
+y_{l}
+\end{array}\right),\left(\begin{array}{c}
+z_{l}\\
+0\\
+-x_{l}
+\end{array}\right),\left(\begin{array}{c}
+-y_{l}\\
+x_{l}\\
+0
+\end{array}\right).
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The gradients of 
+\begin_inset Formula $\vec{R}$
+\end_inset
+
+ with respect to reciprocal inter-axial angles 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+,
+ 
+\begin_inset Formula $\beta^{*}$
+\end_inset
+
+ and 
+\begin_inset Formula $\gamma^{*}$
+\end_inset
+
+ are calculated starting with the following conventions:
+\end_layout
+
+\begin_layout Itemize
+Increasing 
+\begin_inset Formula $\alpha^{*}$
+\end_inset
+
+ rotates the 
+\begin_inset Formula $b^{*}$
+\end_inset
+
+ axis around 
+\begin_inset Formula $c^{*}\wedge b^{*}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Increasing 
+\begin_inset Formula $\beta^{*}$
+\end_inset
+
+ rotates the 
+\begin_inset Formula $c^{*}$
+\end_inset
+
+ axis around 
+\begin_inset Formula $a^{*}\wedge c^{*}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Increasing 
+\begin_inset Formula $\gamma^{*}$
+\end_inset
+
+ rotates the 
+\begin_inset Formula $a^{*}$
+\end_inset
+
+ axis around 
+\begin_inset Formula $b^{*}\wedge a^{*}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+All rotations follow the right hand grip rule convention.
+ For small rotations,
+ the general rotation matrix is
+\begin_inset Formula 
+\[
+\left(\begin{array}{ccc}
+1 & -\theta u_{z} & \theta u_{y}\\
+\theta u_{z} & 1 & -\theta u_{x}\\
+-\theta u_{y} & \theta u_{x} & 1
+\end{array}\right),
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $(u_{x},u_{y},u_{z})$
+\end_inset
+
+ is the rotation axis and 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is the small rotation angle.
+ The gradient of this matrix with respect to 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is simply
+\begin_inset Formula 
+\[
+\left(\begin{array}{ccc}
+0 & -u_{z} & u_{y}\\
+u_{z} & 0 & -u_{x}\\
+-u_{y} & u_{x} & 0
+\end{array}\right),
+\]
+
+\end_inset
+
+which leads to the following gradients (in each case with the axis defined as listed above):
+\begin_inset Formula 
+\begin{eqnarray*}
+\frac{d\vec{R}}{d\alpha^{*}} & = & -k\left(u_{z}b_{y}^{*}+u_{y}b_{z}^{*}\right),\\
+\frac{d\vec{R}}{d\beta^{*}} & = & -l\left(u_{z}c_{y}^{*}+u_{y}c_{z}^{*}\right),\\
+\frac{d\vec{R}}{d\gamma^{*}} & = & -h\left(u_{z}a_{y}^{*}+u_{y}a_{z}^{*}\right).
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Gradients of excitation error
+\end_layout
+
+\begin_layout Standard
+The excitation error is defined as 
+\begin_inset Formula $1/\lambda-\left|\vec{R}\right|$
+\end_inset
+
+.
+ The gradient of excitation error is therefore
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+-\frac{d}{d\bullet}\left|\vec{R}\right| & = & -\frac{d}{d\bullet}\left[\left|\vec{R}\right|^{2}\right]^{\nicefrac{1}{2}}=-\frac{d}{d\bullet}\left[x_{l}^{2}+y_{l}^{2}+z_{l}^{2}+\frac{2z_{l}}{\lambda}+\frac{1}{\lambda^{2}}\right]^{\nicefrac{1}{2}}\\
+ & = & -\frac{1}{2\left|\vec{R}\right|}\left[\frac{d(x_{l}^{2})}{d\bullet}+\frac{d(y_{l}^{2})}{d\bullet}+\frac{d(z_{l}^{2})}{d\bullet}+\frac{2}{\lambda}\frac{dz_{l}}{d\bullet}\right]\\
+ & = & -\frac{1}{2\left|\vec{R}\right|}\left[2x_{l}\frac{dx_{l}}{d\bullet}+2y_{l}\frac{dy_{l}}{d\bullet}+2z_{l}\frac{dz_{l}}{d\bullet}+\frac{2}{\lambda}\frac{dz_{l}}{d\bullet}\right]\\
+ & = & -\frac{1}{\left|\vec{R}\right|}\left(\begin{array}{c}
+\nicefrac{dx_{l}}{d\bullet}\\
+\nicefrac{dy_{l}}{d\bullet}\\
+\nicefrac{dz_{l}}{d\bullet}
+\end{array}\right)\cdot\vec{R}.
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We assume that 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ is a constant,
+ so:
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+\nicefrac{dx_{l}}{d\bullet}\\
+\nicefrac{dy_{l}}{d\bullet}\\
+\nicefrac{dz_{l}}{d\bullet}
+\end{array}\right)=\frac{d\vec{R}}{d\bullet},
+\]
+
+\end_inset
+
+which allows the formulae from the previous section to be re-used.
+\end_layout
+
+\end_body
+\end_document

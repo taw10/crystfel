@@ -600,6 +600,15 @@ char cell_get_unique_axis(const UnitCell *cell)
 }
 
 
+/**
+ * \param in: A %UnitCell
+ * \param m: A GSL matrix
+ *
+ * Transforms \p in by combining the crystallographic axes as described by
+ * \p m.  See doc/matrix-notation.pdf, equation 1.
+ *
+ * \returns a newly-allocated transformed %UnitCell.
+ */
 UnitCell *cell_transform_gsl_direct(UnitCell *in, gsl_matrix *m)
 {
 	gsl_matrix *c;
@@ -625,6 +634,65 @@ UnitCell *cell_transform_gsl_direct(UnitCell *in, gsl_matrix *m)
 
 	res = gsl_matrix_calloc(3, 3);
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, c, m, 0.0, res);
+
+	out = cell_new_from_cell(in);
+	cell_set_cartesian(out, gsl_matrix_get(res, 0, 0),
+	                        gsl_matrix_get(res, 1, 0),
+	                        gsl_matrix_get(res, 2, 0),
+	                        gsl_matrix_get(res, 0, 1),
+	                        gsl_matrix_get(res, 1, 1),
+	                        gsl_matrix_get(res, 2, 1),
+	                        gsl_matrix_get(res, 0, 2),
+	                        gsl_matrix_get(res, 1, 2),
+	                        gsl_matrix_get(res, 2, 2));
+
+	gsl_matrix_free(res);
+	gsl_matrix_free(c);
+	return out;
+}
+
+
+/**
+ * \param in: A %UnitCell
+ * \param m: A GSL matrix
+ *
+ * Transforms \p in by altering the cartesian axes according to \p m.
+ * Note that this is not the same as cell_transform_gsl_direct(), because that
+ * routine transforms the crystallographic axes whereas this one transforms
+ * the cartesian axes - the order of matrix multiplication is opposite.
+ *
+ * This routine has its name because the usual application of this type of
+ * transformation is to rotate a unit cell in 3D space.  Other types of
+ * transformation, e.g. including a stretch or shear of space, are possible but
+ * don't make much crystallographic sense.
+ *
+ * \returns a newly-allocated transformed %UnitCell.
+ */
+UnitCell *cell_rotate_gsl_direct(UnitCell *in, gsl_matrix *m)
+{
+	gsl_matrix *c;
+	double asx, asy, asz;
+	double bsx, bsy, bsz;
+	double csx, csy, csz;
+	gsl_matrix *res;
+	UnitCell *out;
+
+	cell_get_cartesian(in, &asx, &asy, &asz, &bsx, &bsy,
+	                       &bsz, &csx, &csy, &csz);
+
+	c = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set(c, 0, 0, asx);
+	gsl_matrix_set(c, 1, 0, asy);
+	gsl_matrix_set(c, 2, 0, asz);
+	gsl_matrix_set(c, 0, 1, bsx);
+	gsl_matrix_set(c, 1, 1, bsy);
+	gsl_matrix_set(c, 2, 1, bsz);
+	gsl_matrix_set(c, 0, 2, csx);
+	gsl_matrix_set(c, 1, 2, csy);
+	gsl_matrix_set(c, 2, 2, csz);
+
+	res = gsl_matrix_calloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m, c, 0.0, res);
 
 	out = cell_new_from_cell(in);
 	cell_set_cartesian(out, gsl_matrix_get(res, 0, 0),

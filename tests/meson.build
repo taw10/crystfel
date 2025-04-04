@@ -57,7 +57,8 @@ simple_tests = ['ambi_check',
                 'evparse5',
                 'evparse6',
                 'evparse7',
-                'symop_parse']
+                'symop_parse',
+                'impose_bravais']
 
 foreach name : simple_tests
   exe = executable(name, ''.join([name, '.c']),
@@ -145,24 +146,61 @@ foreach name : panel_gradient_tests
 endforeach
 
 
-# Refinement gradient checks, part 3: diffraction physics
-panel_gradient_tests = [['gradient_cell_asx', 'asx', 'GPARAM_ASX'],
-                        ['gradient_cell_asy', 'asy', 'GPARAM_ASY'],
-                        ['gradient_cell_asz', 'asz', 'GPARAM_ASZ'],
-                        ['gradient_cell_bsx', 'bsx', 'GPARAM_BSX'],
-                        ['gradient_cell_bsy', 'bsy', 'GPARAM_BSY'],
-                        ['gradient_cell_bsz', 'bsz', 'GPARAM_BSZ'],
-                        ['gradient_cell_csx', 'csx', 'GPARAM_CSX'],
-                        ['gradient_cell_csy', 'csy', 'GPARAM_CSY'],
-                        ['gradient_cell_csz', 'csz', 'GPARAM_CSZ']]
+# Refinement gradient checks, part 3: diffraction physics, cell axis lengths
+panel_gradient_tests = [['gradient_cell_astar', 'GPARAM_A_STAR', 'as'],
+                        ['gradient_cell_bstar', 'GPARAM_B_STAR', 'bs'],
+                        ['gradient_cell_cstar', 'GPARAM_C_STAR', 'cs']]
 
 foreach name : panel_gradient_tests
   exe = executable(name[0],
                    ['gradient_check.c',
                     'gradient_check_utils.c'],
-                   c_args : ['-DTHING_TO_MOVE='+name[1],
-                             '-DTEST_GPARAM='+name[2],
-                             '-DCHANGE_CELL=1'],
+                   c_args : ['-DTEST_GPARAM='+name[1],
+                             '-DCELL_AXIS_LENGTH',
+                             '-DAXIS='+name[2]],
+                   dependencies : [libcrystfeldep, mdep, gsldep])
+  test(name[0], exe)
+endforeach
+
+# Extra test for axis length while applying cubic conditions
+exe = executable('gradient_cell_astar_cubic',
+                 ['gradient_check.c',
+                  'gradient_check_utils.c'],
+                 c_args : ['-DTEST_GPARAM=GPARAM_A_STAR',
+                           '-DCELL_AXIS_LENGTH_CUBIC'],
+                 dependencies : [libcrystfeldep, mdep, gsldep])
+test('gradient_cell_astar_cubic', exe)
+
+
+# Refinement gradient checks, part 4: diffraction physics, cell angles
+panel_gradient_tests = [['gradient_cell_alstar', 'GPARAM_AL_STAR', 'ANGLE_AL'],
+                        ['gradient_cell_bestar', 'GPARAM_BE_STAR', 'ANGLE_BE'],
+                        ['gradient_cell_gastar', 'GPARAM_GA_STAR', 'ANGLE_GA'],
+                        ['gradient_cell_alstar_rhombohedral', 'GPARAM_AL_STAR', 'ANGLE_AL_RHOMBOHEDRAL']]
+
+foreach name : panel_gradient_tests
+  exe = executable(name[0],
+                   ['gradient_check.c',
+                    'gradient_check_utils.c'],
+                   c_args : ['-DTEST_GPARAM='+name[1],
+                             '-D'+name[2]],
+                   dependencies : [libcrystfeldep, mdep, gsldep])
+  test(name[0], exe)
+endforeach
+
+
+# Refinement gradient checks, part 5: diffraction physics, cell rotation
+panel_gradient_tests = [['gradient_cell_rx', 'GPARAM_CELL_RX', '-DROT_X'],
+                        ['gradient_cell_ry', 'GPARAM_CELL_RY', '-DROT_Y'],
+                        ['gradient_cell_rz', 'GPARAM_CELL_RZ', '-DROT_Z']]
+
+foreach name : panel_gradient_tests
+  exe = executable(name[0],
+                   ['gradient_check.c',
+                    'gradient_check_utils.c'],
+                   c_args : ['-DTEST_GPARAM='+name[1],
+                             '-DCELL_ROTATION',
+                             name[2]],
                    dependencies : [libcrystfeldep, mdep, gsldep])
   test(name[0], exe)
 endforeach

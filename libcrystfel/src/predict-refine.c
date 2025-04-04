@@ -68,70 +68,227 @@ double ss_dev(struct reflpeak *rp, struct detgeom *det)
 }
 
 
-double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength)
+void crossp_norm(double c1[3], double c2[3], double u[3])
 {
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
+	double nrm;
+
+	u[0] = c1[1] * c2[2] - c1[2] * c2[1];
+	u[1] = - c1[0] * c2[2] + c1[2] * c2[0];
+	u[2] = c1[0] * c2[1] - c1[1] * c2[0];
+	nrm = modulus(u[0], u[1], u[2]);
+	u[0] /= nrm;
+	u[1] /= nrm;
+	u[2] /= nrm;
+}
+
+
+void rotate3d(double vec[3], double axis[3], double ang)
+{
+	double t = 1.0 - cos(ang);
+	double c = cos(ang);
+	double s = sin(ang);
+	double nx, ny, nz;
+	double ux, uy, uz;
+	double x, y, z;
+
+	x = vec[0];  y = vec[1];  z = vec[2];
+	ux = axis[0]; uy = axis[1]; uz = axis[2];
+
+	nx = (t*ux*ux+c)*x    + (t*ux*uy-s*uz)*y + (t*ux*uz+s*uy)*z;
+	ny = (t*ux*uy+s*uz)*x + (t*uy*uy+c)*y    + (t*uy*uz-s*ux)*z;
+	nz = (t*ux*uz-s*uy)*x + (t*uz*uy+s*ux)*y + (t*uz*uz+c)*z;
+
+	vec[0] = nx; vec[1] = ny; vec[2] = nz;
+}
+
+
+static gsl_vector *vec3(double x, double y, double z)
+{
+	gsl_vector *v = gsl_vector_alloc(3);
+	gsl_vector_set(v, 0, x);
+	gsl_vector_set(v, 1, y);
+	gsl_vector_set(v, 2, z);
+	return v;
+}
+
+
+/* Calculate dR/d(param), where R is the vector from the center of the Ewald
+ * sphere through the reciprocal lattice point */
+static gsl_vector *ray_vector_gradient(int param, UnitCell *cell, Reflection *refl,
+                                       gsl_vector **q)
+{
+	double as[3], bs[3], cs[3];
+	double u[3];
 	double xl, yl, zl;
-	signed int hs, ks, ls;
-	double tl, phi, azi;
+	signed int h, k, l;
+	double m;
 
-	get_symmetric_indices(refl, &hs, &ks, &ls);
+	get_symmetric_indices(refl, &h, &k, &l);
 
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
-	xl = hs*asx + ks*bsx + ls*csx;
-	yl = hs*asy + ks*bsy + ls*csy;
-	zl = hs*asz + ks*bsz + ls*csz;
+	cell_get_reciprocal(cell, &as[0], &as[1], &as[2],
+	                          &bs[0], &bs[1], &bs[2],
+	                          &cs[0], &cs[1], &cs[2]);
 
-	tl = sqrt(xl*xl + yl*yl);
-	phi = angle_between_2d(tl, zl+1.0/wavelength, 0.0, 1.0); /* 2theta */
-	azi = atan2(yl, xl); /* azimuth */
+	xl = h*as[0] + k*bs[0] + l*cs[0];
+	yl = h*as[1] + k*bs[1] + l*cs[1];
+	zl = h*as[2] + k*bs[2] + l*cs[2];
+
+	if ( q != NULL ) {
+		*q = vec3(xl, yl, zl);
+	}
 
 	switch ( param ) {
 
-		case GPARAM_ASX :
-		return - hs * sin(phi) * cos(azi) * EXC_WEIGHT;
+		case GPARAM_A_STAR :
+		m = modulus(as[0], as[1], as[2]);
+		return vec3(h*as[0]/m, h*as[1]/m, h*as[2]/m);
 
-		case GPARAM_BSX :
-		return - ks * sin(phi) * cos(azi) * EXC_WEIGHT;
+		case GPARAM_B_STAR :
+		m = modulus(bs[0], bs[1], bs[2]);
+		return vec3(k*bs[0]/m, k*bs[1]/m, k*bs[2]/m);
 
-		case GPARAM_CSX :
-		return - ls * sin(phi) * cos(azi) * EXC_WEIGHT;
+		case GPARAM_C_STAR :
+		m = modulus(cs[0], cs[1], cs[2]);
+		return vec3(l*cs[0]/m, l*cs[1]/m, l*cs[2]/m);
 
-		case GPARAM_ASY :
-		return - hs * sin(phi) * sin(azi) * EXC_WEIGHT;
+		case GPARAM_AL_STAR :
+		crossp_norm(cs, bs, u);
+		return vec3(u[1]*bs[2]*k - u[2]*bs[1]*k,
+		            u[2]*bs[0]*k - u[0]*bs[2]*k,
+		            u[0]*bs[1]*k - u[1]*bs[0]*k);
 
-		case GPARAM_BSY :
-		return - ks * sin(phi) * sin(azi) * EXC_WEIGHT;
+		case GPARAM_BE_STAR :
+		crossp_norm(as, cs, u);
+		return vec3(u[1]*cs[2]*l - u[2]*cs[1]*l,
+		            u[2]*cs[0]*l - u[0]*cs[2]*l,
+		            u[0]*cs[1]*l - u[1]*cs[0]*l);
 
-		case GPARAM_CSY :
-		return - ls * sin(phi) * sin(azi) * EXC_WEIGHT;
+		case GPARAM_GA_STAR :
+		crossp_norm(bs, as, u);
+		return vec3(u[1]*as[2]*h - u[2]*as[1]*h,
+		            u[2]*as[0]*h - u[0]*as[2]*h,
+		            u[0]*as[1]*h - u[1]*as[0]*h);
 
-		case GPARAM_ASZ :
-		return - hs * cos(phi) * EXC_WEIGHT;
+		case GPARAM_CELL_RX :
+		return vec3(0.0, -zl, yl);
 
-		case GPARAM_BSZ :
-		return - ks * cos(phi) * EXC_WEIGHT;
+		case GPARAM_CELL_RY :
+		return vec3(zl, 0.0, -xl);
 
-		case GPARAM_CSZ :
-		return - ls * cos(phi) * EXC_WEIGHT;
+		case GPARAM_CELL_RZ :
+		return vec3(-yl, xl, 0.0);
 
-		/* Detector movements don't affect excitation error */
-		case GPARAM_DET_TX :
-		case GPARAM_DET_TY :
-		case GPARAM_DET_TZ :
-		case GPARAM_DET_RX :
-		case GPARAM_DET_RY :
-		case GPARAM_DET_RZ :
-		return 0.0;
+		default :
+		ERROR("Invalid physics gradient parameter %i\n", param);
+		abort();
+
+	}
+}
+
+
+static void add_and_free(gsl_vector *total, gsl_vector *n)
+{
+	gsl_vector_add(total, n);
+	gsl_vector_free(n);
+}
+
+
+static gsl_vector *ray_vector_gradient_bravais(int param, UnitCell *cell,
+                                               Reflection *refl,
+                                               gsl_vector **q)
+{
+	if ( cell_get_lattice_type(cell) == L_RHOMBOHEDRAL ) {
+		if ( param == GPARAM_AL_STAR ) {
+			gsl_vector *tot = gsl_vector_calloc(3);
+			add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_BE_STAR, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_GA_STAR, cell, refl, q));
+			return tot;
+		}
+	}
+
+	switch ( cell_get_lattice_type(cell) ) {
+
+		case L_TRICLINIC :
+		case L_MONOCLINIC :
+		case L_ORTHORHOMBIC :
+		break;
+
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		switch ( cell_get_unique_axis(cell) ) {
+
+			case 'a' :
+			if ( param == GPARAM_B_STAR ) {
+				gsl_vector *tot = gsl_vector_calloc(3);
+				add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+				add_and_free(tot, ray_vector_gradient(GPARAM_C_STAR, cell, refl, q));
+				return tot;
+			}
+			break;
+
+			case 'b' :
+			if ( param == GPARAM_A_STAR ) {
+				gsl_vector *tot = gsl_vector_calloc(3);
+				add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+				add_and_free(tot, ray_vector_gradient(GPARAM_C_STAR, cell, refl, q));
+				return tot;
+			}
+			break;
+
+			case 'c' :
+			if ( param == GPARAM_A_STAR ) {
+				gsl_vector *tot = gsl_vector_calloc(3);
+				add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+				add_and_free(tot, ray_vector_gradient(GPARAM_B_STAR, cell, refl, q));
+				return tot;
+			}
+			break;
+
+			default :
+			ERROR("Invalid unique axis\n");
+			return NULL;
+		}
+		break;
+
+		case L_CUBIC :
+		case L_RHOMBOHEDRAL :
+		if ( param == GPARAM_A_STAR ) {
+			gsl_vector *tot = gsl_vector_calloc(3);
+			add_and_free(tot, ray_vector_gradient(param, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_B_STAR, cell, refl, q));
+			add_and_free(tot, ray_vector_gradient(GPARAM_C_STAR, cell, refl, q));
+			return tot;
+		}
+		break;
 
 	}
 
-	ERROR("No r gradient defined for parameter %i\n", param);
-	abort();
+	return ray_vector_gradient(param, cell, refl, q);
+}
+
+
+double r_gradient(int param, Reflection *refl, UnitCell *cell, double wavelength)
+{
+	gsl_vector *dRdp;
+	gsl_vector *q;
+	double qdotd, modq;
+
+	if ( param >= GPARAM_CELL_RZ ) {
+		/* This is a panel parameter, not a physics parameter, so has
+		 * no effect on excitation error */
+		return 0;
+	}
+	dRdp = ray_vector_gradient_bravais(param, cell, refl, &q);
+
+	gsl_vector_set(q, 2, gsl_vector_get(q,2)+1.0/wavelength);
+	gsl_blas_ddot(q, dRdp, &qdotd);
+	modq = gsl_blas_dnrm2(q);
+
+	gsl_vector_free(q);
+	gsl_vector_free(dRdp);
+
+	return -EXC_WEIGHT * qdotd / modq;
 }
 
 
@@ -142,56 +299,10 @@ int fs_ss_gradient_physics(int param, Reflection *refl, UnitCell *cell,
                            double fs, double ss, double mu,
                            float *fsg, float *ssg)
 {
-	signed int h, k, l;
 	gsl_vector *dRdp;
 	gsl_vector *v;
 
-	get_symmetric_indices(refl, &h, &k, &l);
-
-	dRdp = gsl_vector_calloc(3);
-
-	switch ( param ) {
-
-		case GPARAM_ASX :
-		gsl_vector_set(dRdp, 0, h);
-		break;
-
-		case GPARAM_BSX :
-		gsl_vector_set(dRdp, 0, k);
-		break;
-
-		case GPARAM_CSX :
-		gsl_vector_set(dRdp, 0, l);
-		break;
-
-		case GPARAM_ASY :
-		gsl_vector_set(dRdp, 1, h);
-		break;
-
-		case GPARAM_BSY :
-		gsl_vector_set(dRdp, 1, k);
-		break;
-
-		case GPARAM_CSY :
-		gsl_vector_set(dRdp, 1, l);
-		break;
-
-		case GPARAM_ASZ :
-		gsl_vector_set(dRdp, 2, h);
-		break;
-
-		case GPARAM_BSZ :
-		gsl_vector_set(dRdp, 2, k);
-		break;
-
-		case GPARAM_CSZ :
-		gsl_vector_set(dRdp, 2, l);
-		break;
-
-		default :
-		ERROR("Invalid physics gradient %i\n", param);
-		return 1;
-	}
+	dRdp = ray_vector_gradient_bravais(param, cell, refl, NULL);
 
 	v = gsl_vector_calloc(3);
 	gsl_blas_dgemv(CblasNoTrans, 1.0, Minv, dRdp, 0.0, v);
@@ -259,7 +370,7 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
 		break;
 
 		default:
-		ERROR("Invalid panel gradient %i\n", param);
+		ERROR("Invalid panel gradient parameter %i\n", param);
 		return 1;
 
 	}
@@ -341,7 +452,7 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 	ss = mu*gsl_vector_get(v, 2);
 	gsl_vector_free(v);
 
-	if ( param <= GPARAM_CSZ ) {
+	if ( param <= GPARAM_CELL_RZ ) {
 		gsl_vector_free(t);
 		return fs_ss_gradient_physics(param, refl, cell, p,
 		                              Minv, fs, ss, mu,
@@ -577,31 +688,49 @@ int refine_radius(Crystal *cr, struct image *image)
 }
 
 
-static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
-                   struct image *image, gsl_matrix **Minvs,
-                   double *total_shifts)
+void adjust_vector_length(double vec[3], double adj)
+{
+	double m = modulus(vec[0], vec[1], vec[2]);
+	vec[0] += adj*(vec[0])/m;
+	vec[1] += adj*(vec[1])/m;
+	vec[2] += adj*(vec[2])/m;
+}
+
+
+static void adjust_astar(double bs[3], double cs[3], double shift)
+{
+	double u[3];
+	crossp_norm(cs, bs, u);
+	rotate3d(bs, u, shift);
+}
+
+
+static void adjust_bstar(double as[3], double cs[3], double shift)
+{
+	double u[3];
+	crossp_norm(as, cs, u);
+	rotate3d(cs, u, shift);
+}
+
+
+static void adjust_cstar(double as[3], double bs[3], double shift)
+{
+	double u[3];
+	crossp_norm(bs, as, u);
+	rotate3d(as, u, shift);
+}
+
+
+static int iterate(struct reflpeak *rps, int n,
+                   enum gparam *rv, int num_params, UnitCell *cell,
+                   struct image *image, gsl_matrix **Minvs)
 {
 	int i;
 	gsl_matrix *M;
 	gsl_vector *v;
 	gsl_vector *shifts;
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	const enum gparam rv[] = {
-		GPARAM_ASX,
-		GPARAM_ASY,
-		GPARAM_ASZ,
-		GPARAM_BSX,
-		GPARAM_BSY,
-		GPARAM_BSZ,
-		GPARAM_CSX,
-		GPARAM_CSY,
-		GPARAM_CSZ,
-	};
-	const int num_params = 9;
+	double as[3], bs[3], cs[3];
 
-	/* Number of parameters to refine */
 	M = gsl_matrix_calloc(num_params, num_params);
 	v = gsl_vector_calloc(num_params);
 
@@ -718,32 +847,92 @@ static int iterate(struct reflpeak *rps, int n, UnitCell *cell,
 		return 1;
 	}
 
-	for ( i=0; i<num_params; i++ ) {
-	//	STATUS("Shift %i = %e\n", i, gsl_vector_get(shifts, i));
-		if ( isnan(gsl_vector_get(shifts, i)) ) {
-			gsl_vector_set(shifts, i, 0.0);
-		}
-		total_shifts[i] += gsl_vector_get(shifts, i);
-	}
-
 	/* Apply shifts */
-	cell_get_reciprocal(cell, &asx, &asy, &asz,
-	                          &bsx, &bsy, &bsz,
-	                          &csx, &csy, &csz);
+	cell_get_reciprocal(cell, &as[0], &as[1], &as[2],
+	                          &bs[0], &bs[1], &bs[2],
+	                          &cs[0], &cs[1], &cs[2]);
+	for ( i=0; i<num_params; i++ ) {
 
-	/* Ensure the order here matches the order in rv[] */
-	asx += gsl_vector_get(shifts, 0);
-	asy += gsl_vector_get(shifts, 1);
-	asz += gsl_vector_get(shifts, 2);
-	bsx += gsl_vector_get(shifts, 3);
-	bsy += gsl_vector_get(shifts, 4);
-	bsz += gsl_vector_get(shifts, 5);
-	csx += gsl_vector_get(shifts, 6);
-	csy += gsl_vector_get(shifts, 7);
-	csz += gsl_vector_get(shifts, 8);
+		double shift = gsl_vector_get(shifts, i);
+		if ( isnan(shift) ) shift = 0.0;
 
-	cell_set_reciprocal(cell, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+		LatticeType lt = cell_get_lattice_type(cell);
+		char ua = cell_get_unique_axis(cell);
 
+		switch ( rv[i] ) {
+
+			case GPARAM_A_STAR :
+			adjust_vector_length(as, shift);
+			if ( (lt == L_TETRAGONAL) || (lt == L_HEXAGONAL) ) {
+				if ( ua == 'b' ) {
+					adjust_vector_length(cs, shift);
+				} else if ( ua == 'c' ) {
+					adjust_vector_length(bs, shift);
+				}
+			}
+			if ( (lt == L_CUBIC) || (lt == L_RHOMBOHEDRAL) ) {
+				adjust_vector_length(bs, shift);
+				adjust_vector_length(cs, shift);
+			}
+			break;
+
+			case GPARAM_B_STAR :
+			adjust_vector_length(bs, shift);
+			if ( (lt == L_TETRAGONAL) || (lt == L_HEXAGONAL) ) {
+				if ( ua == 'a' ) {
+					adjust_vector_length(cs, shift);
+				}
+			}
+			break;
+
+			case GPARAM_C_STAR :
+			adjust_vector_length(cs, shift);
+			break;
+
+			case GPARAM_AL_STAR :
+			adjust_astar(bs, cs, shift);
+			if ( lt == L_RHOMBOHEDRAL ) {
+				adjust_bstar(as, cs, shift);
+				adjust_cstar(as, bs, shift);
+			}
+			break;
+
+			case GPARAM_BE_STAR :
+			adjust_bstar(as, cs, shift);
+			break;
+
+			case GPARAM_GA_STAR :
+			adjust_cstar(as, bs, shift);
+			break;
+
+			case GPARAM_CELL_RX :
+			rotate2d(&as[1], &as[2], 0.0, 0.0, shift);
+			rotate2d(&bs[1], &bs[2], 0.0, 0.0, shift);
+			rotate2d(&cs[1], &cs[2], 0.0, 0.0, shift);
+			break;
+
+			case GPARAM_CELL_RY :
+			rotate2d(&as[2], &as[0], 0.0, 0.0, shift);
+			rotate2d(&bs[2], &bs[0], 0.0, 0.0, shift);
+			rotate2d(&cs[2], &cs[0], 0.0, 0.0, shift);
+			break;
+
+			case GPARAM_CELL_RZ :
+			rotate2d(&as[0], &as[1], 0.0, 0.0, shift);
+			rotate2d(&bs[0], &bs[1], 0.0, 0.0, shift);
+			rotate2d(&cs[0], &cs[1], 0.0, 0.0, shift);
+			break;
+
+			default :
+			ERROR("Unrecognised parameter %i\n", rv[i]);
+			break;
+
+		}
+
+	}
+	cell_set_reciprocal(cell, as[0], as[1], as[2],
+	                          bs[0], bs[1], bs[2],
+	                          cs[0], cs[1], cs[2]);
 	gsl_vector_free(shifts);
 	gsl_matrix_free(M);
 	gsl_vector_free(v);
@@ -788,8 +977,98 @@ static void free_rps_noreflist(struct reflpeak *rps, int n)
 }
 
 
+static int parameters_to_refine(UnitCell *cell, enum gparam *rv)
+{
+	int num_params = 0;
+
+	switch ( cell_get_lattice_type(cell) ) {
+
+		case L_TRICLINIC :
+		case L_MONOCLINIC :
+		case L_ORTHORHOMBIC :
+		rv[num_params++] = GPARAM_A_STAR;
+		rv[num_params++] = GPARAM_B_STAR;
+		rv[num_params++] = GPARAM_C_STAR;
+		break;
+
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		if ( cell_get_unique_axis(cell) == 'a' ) {
+			rv[num_params++] = GPARAM_A_STAR;
+			rv[num_params++] = GPARAM_B_STAR; /* == GPARAM_C_STAR */
+		} else if ( cell_get_unique_axis(cell) == 'b' ) {
+			rv[num_params++] = GPARAM_A_STAR; /* == GPARAM_C_STAR */
+			rv[num_params++] = GPARAM_B_STAR;
+		} else if ( cell_get_unique_axis(cell) == 'c' ) {
+			rv[num_params++] = GPARAM_A_STAR; /* == GPARAM_B_STAR */
+			rv[num_params++] = GPARAM_C_STAR;
+		} else {
+			ERROR("Unrecognised unique axis:\n");
+			cell_print(cell);
+			return 0;
+		}
+		break;
+
+		case L_CUBIC :
+		case L_RHOMBOHEDRAL :
+		rv[num_params++] = GPARAM_A_STAR;
+		break;
+
+		default :
+		ERROR("Unrecognised lattice type:\n");
+		cell_print(cell);
+		return 0;
+
+	};
+
+	switch ( cell_get_lattice_type(cell) ) {
+
+		case L_TRICLINIC :
+		rv[num_params++] = GPARAM_AL_STAR;
+		rv[num_params++] = GPARAM_BE_STAR;
+		rv[num_params++] = GPARAM_GA_STAR;
+		break;
+
+		case L_MONOCLINIC :
+		if ( cell_get_unique_axis(cell) == 'a' ) {
+			rv[num_params++] = GPARAM_AL_STAR;
+		} else if ( cell_get_unique_axis(cell) == 'b' ) {
+			rv[num_params++] = GPARAM_BE_STAR;
+		} else if ( cell_get_unique_axis(cell) == 'c' ) {
+			rv[num_params++] = GPARAM_GA_STAR;
+		} else {
+			ERROR("Unrecognised unique axis:\n");
+			cell_print(cell);
+			return 0;
+		}
+
+		case L_RHOMBOHEDRAL :
+		rv[num_params++] = GPARAM_AL_STAR; /* == beta and gamma */
+		break;
+
+		case L_ORTHORHOMBIC :
+		case L_TETRAGONAL :
+		case L_HEXAGONAL :
+		case L_CUBIC :
+		break;
+
+		default :
+		ERROR("Unrecognised lattice type:\n");
+		cell_print(cell);
+		return 0;
+	};
+
+	/* Always refine orientation */
+	rv[num_params++] = GPARAM_CELL_RX;
+	rv[num_params++] = GPARAM_CELL_RY;
+	rv[num_params++] = GPARAM_CELL_RZ;
+	return num_params;
+}
+
+
 int refine_prediction(struct image *image, Crystal *cr,
-                      Mille *mille, int max_mille_level)
+                      Mille *mille, int max_mille_level,
+                      UnitCell *target)
 {
 	int n;
 	int i;
@@ -798,8 +1077,20 @@ int refine_prediction(struct image *image, Crystal *cr,
 	RefList *reflist;
 	char tmp[256];
 	gsl_matrix **Minvs;
-	double total_shifts[12];
 	double res_r, res_fs, res_ss, res_overall;
+
+	enum gparam rv[] = {
+		GPARAM_A_STAR,
+		GPARAM_B_STAR,
+		GPARAM_C_STAR,
+		GPARAM_AL_STAR,
+		GPARAM_BE_STAR,
+		GPARAM_GA_STAR,
+		GPARAM_CELL_RX,
+		GPARAM_CELL_RY,
+		GPARAM_CELL_RZ,
+	};
+	int num_params = 9;
 
 	rps = cfmalloc(image_feature_count(image->features)
 	                         * sizeof(struct reflpeak));
@@ -841,12 +1132,45 @@ int refine_prediction(struct image *image, Crystal *cr,
 	//STATUS("Initial residual = %f (%f %f %f)\n",
 	//       res_overall, res_r, res_fs, res_ss);
 
-	for ( i=0; i<12; i++ ) total_shifts[i] = 0.0;
+	/* Pretend it's triclinic for now */
+	cell_set_lattice_type(crystal_get_cell(cr), L_TRICLINIC);
 
 	/* Refine (max 5 cycles) */
 	for ( i=0; i<5; i++ ) {
 		update_predictions(reflist, cr, image);
-		if ( iterate(rps, n, crystal_get_cell(cr), image, Minvs, total_shifts) )
+		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
+		{
+			return 1;
+		}
+
+		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+		//STATUS("Residual after %i = %f (%f %f %f)\n",
+		//       i, res_overall, res_r, res_fs, res_ss);
+	}
+
+	UnitCell *nc = impose_bravais(crystal_get_cell(cr),
+	                              cell_get_lattice_type(target),
+	                              cell_get_unique_axis(target));
+	if ( nc == NULL ) {
+		ERROR("Failed to impose Bravais conditions\n");
+		return 1;
+	}
+	crystal_set_cell(cr, nc);
+	num_params = parameters_to_refine(nc, rv);
+	if ( num_params == 0 ) {
+		ERROR("Couldn't determine which parameters to refine\n");
+		return 1;
+	}
+
+	update_predictions(reflist, cr, image);
+	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+	//STATUS("After applying Bravais constraints = %f (%f %f %f)\n",
+	//       res_overall, res_r, res_fs, res_ss);
+
+	/* Refine again, with Bravais constraints (max 5 cycles) */
+	for ( i=0; i<5; i++ ) {
+		update_predictions(reflist, cr, image);
+		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
 		{
 			return 1;
 		}
@@ -863,15 +1187,11 @@ int refine_prediction(struct image *image, Crystal *cr,
 	//STATUS("Final residual = %f (%f %f %f)\n",
 	//       res_overall, res_r, res_fs, res_ss);
 
-	snprintf(tmp, 255, "predict_refine/total_shifts = %e %e %e",
-	         total_shifts[0], total_shifts[1], total_shifts[2]);
-	crystal_add_notes(cr, tmp);
-
 	if ( (mille != NULL) && (n>4) ) {
 		crystfel_mille_delete_last_record(mille);
 		profile_start("mille-calc");
-		write_mille(mille, n, crystal_get_cell(cr), rps, image,
-		            max_mille_level, Minvs);
+		write_mille(mille, n, crystal_get_cell(cr), rv, num_params,
+		            rps, image, max_mille_level, Minvs);
 		profile_end("mille-calc");
 	}
 

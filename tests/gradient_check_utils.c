@@ -67,6 +67,16 @@ static UnitCell *random_rotated_cell(gsl_rng *rng)
 	                                deg2rad(90.0),
 	                                deg2rad(90.0),
 	                                deg2rad(90.0));
+
+	#ifdef ANGLE_AL_RHOMBOHEDRAL
+	cell_set_lattice_type(cell, L_RHOMBOHEDRAL);
+	cell_set_centering(cell, 'R');
+	#endif
+
+	#ifdef CELL_AXIS_LENGTH_CUBIC
+	cell_set_lattice_type(cell, L_CUBIC);
+	#endif
+
 	orientation = random_quaternion(rng);
 	return cell_rotate(cell, orientation);
 }

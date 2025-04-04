@@ -67,6 +67,9 @@ static int locate_peak_on_panel(double x, double y, double z, double k,
 		return 0;
 	}
 
+	/* Scattered ray vector, whose direction is the same in reciproal and
+	 * real space.   In ray_vector_gradient(), we will calculate the
+	 * gradient of this vector w.r.t. everything. */
 	gsl_vector_set(t, 0, x);
 	gsl_vector_set(t, 1, y);
 	gsl_vector_set(t, 2, k+z);
