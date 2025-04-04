@@ -84,7 +84,7 @@ function Indexer(methods, dtempl, cell; tolerances=(0.05,0.05,0.05,1.5,1.5,1.5),
         if !isnothing(clenfromdtempl)
             clen_estimate = clenfromdtempl
         else
-            if isnothing(clen_estimate)
+            if ismissing(clen_estimate)
                 throw(ArgumentError("Camera length cannot be determined from data template.  "*
                                     "Use Indexer(clen_estimate=...)"))
             end
