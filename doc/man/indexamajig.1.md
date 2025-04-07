@@ -615,7 +615,7 @@ INDEXING OPTIONS
 : 0, only the overall detector position can be refined.  Larger numbers allow
 : finer-grained refinement.  Set this to a large number (9 is high enough!)
 : to disable the limit, although this can make the Millepede-II files quite
-: large.
+: large.  The default is **--max-mille-level=99**, i.e. effectively no limit.
 
 **--wavelength-estimate=m** **--camera-length-estimate=m**
 : Some indexing algorithms need to know the camera length or the wavelength of
