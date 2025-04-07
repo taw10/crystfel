@@ -1148,6 +1148,8 @@ int refine_prediction(struct image *image, Crystal *cr,
 		//       i, res_overall, res_r, res_fs, res_ss);
 	}
 
+	if ( target == NULL ) goto done;
+
 	UnitCell *nc = impose_bravais(crystal_get_cell(cr),
 	                              cell_get_lattice_type(target),
 	                              cell_get_unique_axis(target));
@@ -1180,6 +1182,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 		//       i, res_overall, res_r, res_fs, res_ss);
 	}
 
+done:
 	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
 	snprintf(tmp, 255, "predict_refine/final_residual = %f (%f %f %f)",
 	         res_overall, res_r, res_fs, res_ss);
