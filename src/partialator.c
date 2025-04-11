@@ -1619,6 +1619,14 @@ int main(int argc, char *argv[])
 					continue;
 				}
 
+				if ( !(crystal_get_profile_radius(image->crystals[i].cr) > 0) && (pmodel == PMODEL_XSPHERE) ) {
+					ERROR("Rejecting %s %s crystal %i because "
+					      "profile radius is zero or negatve, and we "
+					      "are using xsphere.\n",
+					      image->filename, image->ev, i);
+					continue;
+				}
+
 				crystals_new = realloc(crystals,
 				                       (n_crystals+1)*sizeof(struct crystal_refls));
 				if ( crystals_new == NULL ) {
