@@ -1,3 +1,29 @@
+Changes in this development version (incomplete list)
+-----------------------------------------------------
+
+- Enforce lattice type restrictions during refinement
+- Add ffbidx indexer (Hans-Christian Stadler)
+- Add smallcell indexer (Isabel Costello)
+- indexamajig: Fix incorrect Mille data for out-of-plane tilts
+- partialator: Fix crash when xsphere encounters a crystal with zero profile radius
+- indexamajig: Write only one Mille file for all workers
+- indexamajig: Disable peakfinder8 --max-res by default
+- GUI: Add progress bar/abort option for "index one pattern"
+- GUI: Add new search pattern for NeXus master files
+- Introduce new program show_residuals
+- Avoid overflow reading HDF5 values (e.g. EuXFEL train IDs)
+- New article about choice of indexing method
+- partialator: Fix post-refinement of wavelength for electron diffraction
+- list_events: Speed up enumeration of CBF files (Philipp Middendorf)
+- get_hkl: Add --space-group-override (Philipp Middendorf)
+- Fix fg-graph for recent Gnuplot versions (Philipp Middendorf)
+- ambigator: Detect and exit if reading from stdin with --output (Philipp Middendorf)
+- indexamajig: Always call exec() after fork()
+- asdf: Support H-centering correctly
+- Increase the maximum number of panel groups from 256 to 512
+- Add u1 image data format for Seedee
+
+
 CrystFEL version 0.11.1, 8 October 2024
 ---------------------------------------
 
