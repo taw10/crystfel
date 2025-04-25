@@ -46,6 +46,7 @@
 
 #include "datatemplate.h"
 #include "datatemplate_priv.h"
+#include "image-hdf5.h"
 
 
 /* Get the path parts of the event ID

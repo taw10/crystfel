@@ -1180,54 +1180,52 @@ static int create_satmap(struct image *image,
 		return 1;
 	}
 
+	/* Set up default saturation map for all panels */
 	for ( i=0; i<dtempl->n_panels; i++ ) {
 
 		struct panel_template *p = &dtempl->panels[i];
+		int p_w, p_h;
 
-		if ( p->satmap == NULL ) {
+		p_w = p->orig_max_fs - p->orig_min_fs + 1;
+		p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
-			/* At least one other panel has a saturation map,
-			 * but it isn't this one.  Therefore make a fake
-			 * saturation map */
+		image->sat[i] = cfmalloc(p_w*p_h*sizeof(float));
 
-			int p_w, p_h;
-
-			p_w = p->orig_max_fs - p->orig_min_fs + 1;
-			p_h = p->orig_max_ss - p->orig_min_ss + 1;
-
-			image->sat[i] = cfmalloc(p_w*p_h*sizeof(float));
-
-			if ( image->sat[i] != NULL ) {
-				long int j;
-				for ( j=0; j<p_w*p_h; j++ ) {
-					image->sat[i][j] = INFINITY;
-				}
+		if ( image->sat[i] != NULL ) {
+			long int j;
+			for ( j=0; j<p_w*p_h; j++ ) {
+				image->sat[i][j] = INFINITY;
 			}
-
 		} else {
-
-			const char *map_fn;
-
-			if ( p->satmap_file == NULL ) {
-				map_fn = image->filename;
-			} else {
-				map_fn = p->satmap_file;
-			}
-
-			if ( is_hdf5_file(map_fn, NULL) ) {
-				#ifdef HAVE_HDF5
-				image_hdf5_read_satmap(p, map_fn, image->ev, p->satmap);
-				#endif
-
-			} else {
-				ERROR("Saturation map must be in HDF5 format\n");
-				return 1;
-			}
+			ERROR("Failed to allocate saturation map (panel %s)\n", p->name);
+			return 1;
 		}
 
-		if ( image->sat[i] == NULL ) {
-			ERROR("Failed to allocate saturation map (panel %s)\n",
-			      p->name);
+	}
+
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+
+		const char *map_fn;
+		struct panel_template *p = &dtempl->panels[i];
+
+		if ( p->satmap == NULL ) continue;
+
+		if ( p->satmap_file == NULL ) {
+			map_fn = image->filename;
+		} else {
+			map_fn = p->satmap_file;
+		}
+
+		if ( is_hdf5_file(map_fn, NULL) ) {
+			#ifdef HAVE_HDF5
+			if ( image->sat[i] != NULL ) {
+				image_hdf5_read_satmap(p, map_fn, image->ev, p->satmap,
+				                       image->sat[i]);
+			}
+			#endif
+
+		} else {
+			ERROR("Saturation map must be in HDF5 format\n");
 			return 1;
 		}
 
