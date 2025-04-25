@@ -1082,12 +1082,13 @@ static int load_mask(struct panel_template *p,
                      int *bad,
                      const char *mask_location,
                      unsigned int mask_good,
-                     unsigned int mask_bad)
+                     unsigned int mask_bad,
+                     void *c)
 {
 	if ( is_hdf5_file(mask_fn, NULL) ) {
 		#ifdef HAVE_HDF5
 		return image_hdf5_read_mask(p, mask_fn, ev, bad, mask_location,
-		                            mask_good, mask_bad);
+		                            mask_good, mask_bad, c);
 		#endif
 
 	} else if ( is_cbf_file(mask_fn, NULL) ) {
@@ -1135,6 +1136,12 @@ static int create_badmap(struct image *image,
                          int no_mask_data)
 {
 	int i;
+
+	#ifdef HAVE_HDF5
+	ImageHDFCache *c = image_hdf5_cache_new();
+	#else
+	void *c = NULL;
+	#endif
 
 	/* The bad pixel map array is already created (see image_create_dp_bad),
 	 * and a preliminary mask (with NaN/inf pixels marked) has already been
@@ -1196,7 +1203,7 @@ static int create_badmap(struct image *image,
 				if ( load_mask(p, mask_fn, image->ev, image->bad[i],
 				               p->masks[j].data_location,
 				               p->masks[j].good_bits,
-				               p->masks[j].bad_bits) )
+				               p->masks[j].bad_bits, c) )
 				{
 					ERROR("Failed to load mask for %s\n",
 					      p->name);
@@ -1208,6 +1215,10 @@ static int create_badmap(struct image *image,
 			profile_end("load-masks");
 		}
 	}
+
+	#ifdef HAVE_HDF5
+	image_hdf5_cache_free(c);
+	#endif
 
 	profile_start("mark-regions");
 	mark_bad_regions(image, dtempl);

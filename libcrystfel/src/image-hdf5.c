@@ -299,6 +299,13 @@ char *substitute_path(const char *ev, const char *pattern, int skip_ok)
 
 #ifdef HAVE_HDF5
 
+struct _imagehdfcache
+{
+	char *filename;
+	hid_t fh;
+};
+
+
 static void make_placeholder_skip(signed int *dt_dims,
                                   signed int *panel_dims)
 {
@@ -359,6 +366,24 @@ static void close_hdf5(hid_t fh)
         }
 
         H5Fclose(fh);
+}
+
+ImageHDFCache *image_hdf5_cache_new()
+{
+	ImageHDFCache *c = cfmalloc(sizeof(struct _imagehdfcache));
+	if ( c == NULL ) return NULL;
+	c->filename = NULL;
+	return c;
+}
+
+
+void image_hdf5_cache_free(ImageHDFCache *c)
+{
+	if ( c->filename != NULL ) {
+		cffree(c->filename);
+		close_hdf5(c->fh);
+	}
+	cffree(c);
 }
 
 
@@ -682,7 +707,8 @@ int image_hdf5_read_satmap(struct panel_template *p,
 int image_hdf5_read_mask(struct panel_template *p,
                          const char *filename, const char *event,
                          int *bad, const char *mask_location,
-                         int mask_good, int mask_bad)
+                         int mask_good, int mask_bad,
+                         ImageHDFCache *cache)
 {
 	int p_w, p_h;
 	int *mask = NULL;
@@ -692,10 +718,30 @@ int image_hdf5_read_mask(struct panel_template *p,
 	p_w = p->orig_max_fs - p->orig_min_fs + 1;
 	p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
-	fh = open_hdf5_file(filename);
-	if ( fh < 0 ) {
-		ERROR("Failed to open mask '%s'\n", filename);
-		return 1;
+	if ( cache != NULL ) {
+		if ( (cache->filename != NULL) && (strcmp(cache->filename, filename) == 0) ) {
+			fh = cache->fh;
+		} else {
+
+			if ( cache->filename != NULL ) {
+				cffree(cache->filename);
+				close_hdf5(cache->fh);
+			}
+
+			fh = open_hdf5_file(filename);
+			if ( fh < 0 ) {
+				ERROR("Failed to open mask '%s'\n", filename);
+				return 1;
+			}
+			cache->fh = fh;
+			cache->filename = cfstrdup(filename);
+		}
+	} else {
+		fh = open_hdf5_file(filename);
+		if ( fh < 0 ) {
+			ERROR("Failed to open mask '%s'\n", filename);
+			return 1;
+		}
 	}
 
 	mask = cfmalloc(p_w*p_h*sizeof(int));
@@ -706,12 +752,12 @@ int image_hdf5_read_mask(struct panel_template *p,
 	                         sizeof(int), 1, mask_location, NULL) )
 	{
 		ERROR("Failed to load mask data\n");
-		close_hdf5(fh);
+		if ( cache == NULL) close_hdf5(fh);
 		cffree(mask);
 		return 1;
 	}
 
-	close_hdf5(fh);
+	if ( cache == NULL) close_hdf5(fh);
 
 	for ( j=0; j<p_w*p_h; j++ ) {
 
