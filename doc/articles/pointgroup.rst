@@ -98,15 +98,13 @@ orientation of the crystal.  The results will be an equal mixture of correctly
 indexed patterns, and ones where the Miller indices for the reflections are
 wrong.  But, we're getting ahead of ourselves...
 
-Just by looking at the parameters of the lattice (the unit cell parameters), we
-can determine the symmetry that the merged dataset will exhibit.  This is the
-symmetry that the indexing algorithm is able to discern (by looking at the
-Bragg positions only), and therefore which reflections should be considered
-symmetrically equivalent.  This is the point group which we will tell to
-``process_hkl`` or ``partialator``.
+If we ignore the possibility of indexing ambiguities, then the symmetry of the
+intensity dataset we will get by merging the diffraction patterns will be
+whatever symmetry the indexing algorithm can discern, which is the symmetry
+of the crystal lattice.
 
-The following table shows the possible cases and the point group to use in
-each case.  Use the furthest down row that is compatible with your data, for
+The following table shows the possible cases and the symmetry of the lattice
+in each case.  Use the furthest down row that is compatible with your data, for
 example if the axis lengths are all equal (*a=b=c*) and the angles are all 90°,
 you should use ``432``, even though ``32_R``, ``422``, ``222``, ``2`` and ``1``
 would all fit.
@@ -125,7 +123,7 @@ step, unless you have "H-centering", which is a special case that we will come
 to later.
 
 =================================== =======================
-Unit cell parameters                Point group for merging
+Unit cell parameters                Symmetry of lattice
 =================================== =======================
 No restrictions                     ``1``
 alpha=beta=90°                      ``2``
@@ -139,7 +137,7 @@ All angles 90° and a=b=c            ``432``
 
 Perhaps your cell parameters resemble one of the cases, but with the axes
 "re-named".  For example, you might have beta=gamma=90°, alpha≠90°, and all
-axes different.  This is the same as point group *2* above, but with the axes
+axes different.  This matches the second row in the table, but with the axes
 *a,b,c* re-labelled as *b,c,a*.  We can deal with that, as described in the
 next step.
 
@@ -200,47 +198,7 @@ which is a synonym for ``422_uac`` since the unique axis is assumed to be *c*:
 a=123 Å, b=123 Å, c=44 Å, alpha=beta=gamma=90°
 
 
-Step 4: Add an inversion center to merge Friedel pairs
-======================================================
-
-Remember that the point group tells CrystFEL which reflections to consider
-as symmetrically equivalent.  The point group you have, at this point, will
-*not* include an inversion center, i.e. it will *not* consider reflections
-h,k,l and -h,-k,-l as equivalent.  This means that the merging process will
-preserve any anomalous signal present in your data.
-
-If you don't expect (or want) an anomalous signal, you can get better results
-by merging Friedel pairs of reflections.  This doubles the number of
-measurements per symmetrically unique reflection, which can make a large
-improvement!  To do this, simply add the missing inversion center to the point
-group.  This will change the point group symbol in a way that's not immediately
-logical.  The following table shows the results of adding an inversion symmetry
-to each of the point groups, so you just have to look up your case.
-
-===========    =================================
-Point group    Point group with inversion center
-===========    =================================
-``1``          ``-1``
-``2``          ``2/m``
-``222``        ``mmm``
-``422``        ``4/mmm``
-``32_R``       ``-3m_R``
-``321_H``      ``-3m1_H``
-``622``        ``6/mmm``
-``432``        ``m-3m``
-===========    =================================
-
-The point group symbols in the table above look quite strange.  If you need to
-look up one of these symbols in a crystallographic textbook, you just need to
-know that the minus signs are supposed to indicate a "bar" over the following
-digit.  However, there's usually no need to worry about that.
-
-If you've added a unique axis suffix, add the same suffix to your new point
-group.  For example, ``622_uab`` goes to ``6/mmm_uab`` (although, either of
-these cases would be considered very unconventional).
-
-
-Step 5: Worry about indexing ambiguities
+Step 4: Worry about indexing ambiguities
 ========================================
 
 At this point, you're in a position to merge your data.  If your prior
@@ -293,6 +251,52 @@ particularly problematic, with quite a large number of real point groups giving
 the apparent *622* symmetry.  One of those cases, point group ``3_H`` exhibits
 a *double ambiguity* where there are four indexing possibilities for each
 pattern, not just the usual two.
+
+
+Step 5: Add an inversion center to merge Friedel pairs
+======================================================
+
+Remember that the point group tells CrystFEL which reflections to consider
+as symmetrically equivalent.  The point group you have, at this point, will
+*not* include an inversion center, i.e. it will *not* consider reflections
+h,k,l and -h,-k,-l as equivalent.  This means that the merging process will
+preserve any anomalous signal present in your data.
+
+If you don't expect (or want) an anomalous signal, you can get better results
+by merging Friedel pairs of reflections.  This doubles the number of
+measurements per symmetrically unique reflection, which can make a large
+improvement!  To do this, simply add the missing inversion center to the point
+group.  This will change the point group symbol in a way that's not immediately
+logical.  The following table shows the results of adding an inversion symmetry
+to each of the point groups, so you just have to look up your case.
+
+===========    =================================
+Point group    Point group with inversion center
+===========    =================================
+``1``          ``-1``
+``2``          ``2/m``
+``222``        ``mmm``
+``4``          ``4/m``
+``422``        ``4/mmm``
+``3_R``        ``-3_R``
+``32_R``       ``-3m_R``
+``3_H``        ``-3_H``
+``321_H``      ``-3m1_H``
+``312_H``      ``-31m_H``
+``6``          ``6/m``
+``622``        ``6/mmm``
+``23``         ``m-3``
+``432``        ``m-3m``
+===========    =================================
+
+The point group symbols in the table above look quite strange.  If you need to
+look up one of these symbols in a crystallographic textbook, you just need to
+know that the minus signs are supposed to indicate a "bar" over the following
+digit.  However, there's usually no need to worry about that.
+
+If you've added a unique axis suffix, add the same suffix to your new point
+group.  For example, ``622_uab`` goes to ``6/mmm_uab`` (although, either of
+these cases would be considered very unconventional).
 
 
 Step 6: Extra information about "H cells"
@@ -414,7 +418,7 @@ CrystFEL's ``cell_tool`` can calculate the rhombohedral representation::
 Step 7: "It still isn't working!"
 =================================
 
-The ambiguities described in step 5 are the most common cases, but there are
+The ambiguities described in step 4 are the most common cases, but there are
 more possibilities.  Sometimes, the lattice parameters "accidentally" give rise
 to indexing ambiguities.  As noted above, it's the *apparent* symmetries of the
 lattice that matter here.  For example, unless the indexing is *very* accurate
