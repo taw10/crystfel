@@ -396,7 +396,6 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	rn = getcwd(NULL, 0);
-
 	r = chdir(tmpdir);
 	if ( r ) {
 		ERROR("Failed to chdir to temporary folder: %s\n",
@@ -412,12 +411,15 @@ void process_image(const struct index_args *iargs, struct pattern_args *pargs,
 	}
 
 	if ( image_feature_count(image->features) < iargs->min_peaks ) {
+
+		/* Change back to original PWD */
 		r = chdir(rn);
 		if ( r ) {
 			ERROR("Failed to chdir: %s\n", strerror(errno));
 			return;
 		}
 		free(rn);
+
 		image->hit = 0;
 
 		if ( iargs->stream_nonhits ) {
