@@ -603,7 +603,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	char **nargv;
 	int nargc;
 	int i;
-	char *tmpdir_copy;
+	char *tmpdir;
 	char *methods_copy = NULL;
 	char *worker_id;
 	char *fd_stream;
@@ -611,6 +611,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	char buf[1024];
 	const char *indexamajig = NULL;
 	size_t len;
+	struct stat s;
 
 	if ( pipe(stream_pipe) == - 1 ) {
 		ERROR("pipe() failed!\n");
@@ -649,9 +650,27 @@ static void start_worker_process(struct sandbox *sb, int slot)
 	nargv[nargc++] = sb->sem_name;
 
 	nargv[nargc++] = "--worker-tmpdir";
-	tmpdir_copy = strdup(sb->tmpdir);
-	if ( tmpdir_copy == NULL ) return;
-	nargv[nargc++] = tmpdir_copy;
+	len = 64 + strlen(sb->tmpdir);
+	tmpdir = malloc(len);
+	if ( tmpdir == NULL ) {
+		ERROR("Failed to allocate temporary dir\n");
+		return;
+	}
+	snprintf(tmpdir, len, "%s/worker.%i", sb->tmpdir, slot);
+	if ( stat(tmpdir, &s) == -1 ) {
+		int r;
+		if ( errno != ENOENT ) {
+			ERROR("Failed to stat temporary folder.\n");
+			return;
+		}
+		r = mkdir(tmpdir, S_IRWXU);
+		if ( r ) {
+			ERROR("Failed to create temporary folder: %s\n",
+			strerror(errno));
+			return;
+		}
+	}
+	nargv[nargc++] = tmpdir;
 
 	nargv[nargc++] = "--worker-id";
 	worker_id = malloc(64);
@@ -712,7 +731,7 @@ static void start_worker_process(struct sandbox *sb, int slot)
 		exit(1);
 	}
 
-	free(tmpdir_copy);
+	free(tmpdir);
 	free(methods_copy);
 	free(worker_id);
 	free(fd_stream);

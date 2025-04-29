@@ -317,9 +317,6 @@ static int run_work(struct indexamajig_arguments *args)
 	struct im_asapo *asapostuff = NULL;
 	Mille *mille;
 	ImageDataArrays *ida;
-	size_t ll;
-	char *tmp;
-	struct stat s;
 	Stream *st;
 	int shm_fd;
 	sem_t *queue_sem;
@@ -329,32 +326,6 @@ static int run_work(struct indexamajig_arguments *args)
 	struct sb_shm *shared;
 
 	if ( args->cpu_pin ) pin_to_cpu(args->worker_id);
-
-	ll = 64 + strlen(args->worker_tmpdir);
-	tmp = malloc(ll);
-	if ( tmp == NULL ) {
-		ERROR("Failed to allocate temporary dir\n");
-		return 1;
-	}
-
-	snprintf(tmp, ll, "%s/worker.%i", args->worker_tmpdir, args->worker_id);
-
-	if ( stat(tmp, &s) == -1 ) {
-
-		int r;
-
-		if ( errno != ENOENT ) {
-			ERROR("Failed to stat temporary folder.\n");
-			exit(1);
-		}
-
-		r = mkdir(tmp, S_IRWXU);
-		if ( r ) {
-			ERROR("Failed to create temporary folder: %s\n",
-			strerror(errno));
-			exit(1);
-		}
-	}
 
 	st = stream_open_fd_for_write(args->fd_stream, args->iargs.dtempl);
 
@@ -674,7 +645,6 @@ static int run_work(struct indexamajig_arguments *args)
 	}
 
 	stream_close(st);
-	free(tmp);
 	munmap(shared, sizeof(struct sb_shm));
 	sem_close(queue_sem);
 
