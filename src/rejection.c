@@ -109,7 +109,6 @@ static int calculate_refl_mean_var(RefList *full)
 		struct reflection_contributions *c;
 		int j;
 		signed int h, k, l;
-		double res;
 		double K;
 		double Ex = 0.0;
 		double Ex2 = 0.0;
@@ -129,15 +128,12 @@ static int calculate_refl_mean_var(RefList *full)
 		c = get_contributions(refl);
 		if ( c == NULL ) return 1;
 
-		/* Calculate the resolution just once, using the cell from the
-		 * first crystal to contribute, otherwise it takes too long */
-		res = resolution(crystal_get_cell(c->contrib_crystals[0]),
-		                 h, k, l);
-
 		/* Mean of contributions */
 		for ( j=0; j<c->n_contrib; j++ ) {
 
-			double Ii, G, B;
+			double Ii, G, B, res;
+			res = resolution(crystal_get_cell(c->contrib_crystals[j]),
+			                 h, k, l);
 
 			G = crystal_get_osf(c->contrib_crystals[j]);
 			B = crystal_get_Bfac(c->contrib_crystals[j]);
@@ -184,7 +180,6 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		int n_removed = 0;
 		double w = 1.0;
 		double meanOld;
-		double res;
 		struct reflection_contributions *c;
 		Reflection *refl;
 		Reflection *exrefl;
@@ -209,10 +204,6 @@ static double calculate_cchalf(RefList *template, RefList *full,
 		c = get_contributions(refl);
 		assert(c != NULL);
 
-		/* Resolution from first contributing crystal, like above */
-		res = resolution(crystal_get_cell(c->contrib_crystals[0]),
-		                 h, k, l);
-
 		/* Remove contribution(s) from the excluded crystal.
 		 * If the crystal is marked as bad, we should not remove it
 		 * because it did not contribute in the first place.  */
@@ -224,10 +215,11 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 		while ( exrefl != NULL ) {
 
-			double G, B;
+			double G, B, res;
 
 			G = crystal_get_osf(exclude);
 			B = crystal_get_Bfac(exclude);
+			res = resolution(crystal_get_cell(exclude), h, k, l);
 
 			if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
 
