@@ -88,7 +88,8 @@ extern double data_template_get_wavelength_if_possible(const DataTemplate *dt);
 
 extern double data_template_get_clen_if_possible(const DataTemplate *dt);
 
-extern struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTemplate *dt);
+extern struct detgeom *data_template_get_detgeom_if_possible(const DataTemplate *dt,
+                                                             int no_clen_ok);
 
 extern void data_template_show_hierarchy(const DataTemplate *dtempl);
 

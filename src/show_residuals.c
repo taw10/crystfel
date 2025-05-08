@@ -392,7 +392,7 @@ int main(int argc, char *argv[])
 
 	dtempl = data_template_new_from_file(in_geom);
 	groups = data_template_group_info(dtempl, &n_groups);
-	dg = data_template_get_2d_detgeom_if_possible(dtempl);
+	dg = data_template_get_detgeom_if_possible(dtempl, 1);
 	if ( dg == NULL ) {
 		ERROR("Can't transform residuals because geometry is not static\n");
 		return 1;

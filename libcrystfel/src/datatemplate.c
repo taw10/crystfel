@@ -1990,7 +1990,7 @@ static struct detgeom_panel_group *walk_group(const DataTemplate *dtempl,
 
 struct detgeom *create_detgeom(struct image *image,
                                const DataTemplate *dtempl,
-                               int two_d_only)
+                               int no_clen_ok)
 {
 	struct detgeom *detgeom;
 	int i;
@@ -2014,23 +2014,23 @@ struct detgeom *create_detgeom(struct image *image,
 
 	detgeom->n_panels = dtempl->n_panels;
 
-	if ( two_d_only ) {
-		if ( !detector_flat(dtempl)
-		  || (dtempl->shift_x_from != NULL)
-		  || (dtempl->shift_y_from != NULL) )
-		{
-			cffree(detgeom->panels);
-			cffree(detgeom);
-			return NULL;
-		}
+	/* Cannot do x/y shift without image */
+	if ( (image == NULL) && ((dtempl->shift_x_from != NULL)
+	                      || (dtempl->shift_y_from != NULL)) )
+	{
+		cffree(detgeom->panels);
+		cffree(detgeom);
+		return NULL;
 	}
 
 	if ( im_get_length(image, dtempl->cnz_from, 1e-3, &clen) )
 	{
-		if ( two_d_only ) {
-			clen = NAN;
+		if ( no_clen_ok ) {
+			clen = 0.0;
 		} else {
-			ERROR("Failed to read length from '%s'\n", dtempl->cnz_from);
+			if ( image != NULL ) {
+				ERROR("Failed to read length from '%s'\n", dtempl->cnz_from);
+			}
 			return NULL;
 		}
 	}
@@ -2124,38 +2124,53 @@ struct detgeom *create_detgeom(struct image *image,
 
 
 /**
- * Create a detgeom structure from the DataTemplate, if possible, and ignoring
- * 3D information.
+ * Create a detgeom structure from the DataTemplate, if it's possible to do so.
  *
- * This procedure will create a detgeom structure provided that the detector
- *  is close to lying in a single flat plane perpendicular to the beam
- *  direction.  If certain things (e.g. panel z-positions) refer to headers,
- *  it might not be possible to determine that the detector is really flat
- *  until an image is loaded.  Therefore you must gracefully handle a NULL
- *  return value from this routine.
+ * This procedure will create a %detgeom structure, provided that this can
+ * be done without loading an image.  References to image metadata (e.g. HDF5
+ * datasets) for clen or detector_shift_x/y will prevent this from working.
+ *
+ * If you do not care about the overall detector distance, set \p no_clen_ok
+ * to any non-zero value.  In this case, the relative z-positions of the panels
+ * will be correct, but the overall z-position (along the beam direction) may
+ * be wrong.
+ *
+ * You should take care to gracefully handle a NULL return value from this
+ * routine.
  *
  * \returns the detgeom structure, or NULL if impossible.
  */
-struct detgeom *data_template_get_2d_detgeom_if_possible(const DataTemplate *dt)
+struct detgeom *data_template_get_detgeom_if_possible(const DataTemplate *dt, int no_clen_ok)
 {
-	return create_detgeom(NULL, dt, 1);
+	return create_detgeom(NULL, dt, no_clen_ok);
 }
 
 
 /**
- * Returns the mean clen in m, or NAN in the following circumstances:
- * 1. If the individual panel distances vary by more than 10% of the average
- * 2. If the tilt of the panel creates a distance variation of more than 10%
+ * Returns the mean panel z-position in m, provided that:
+ * 1. The individual panel distances vary by no more than 10% of the average
+ * 2. The tilt of the panel creates a distance variation of no more than 10%
  *    of the corner value over the extent of the panel
- * 3. If the detector geometry is not static (per-frame clen)
+ * 3. The detector geometry is static (no per-frame clen)
  *
- * \returns the mean camera length, or NAN if impossible.
+ * If these prerequisites are not met, returns NAN.
+ *
+ * The very notion of a single "camera length" value relies on the traditional
+ * experiment model of a flat detector, perpendicular to the beam.  You should
+ * avoid embedding this assumption into any programs, as much as possible.
+ * Therefore, avoid using this routine.
+ *
+ * \returns the mean camera length, or NAN.
  */
 double data_template_get_clen_if_possible(const DataTemplate *dt)
 {
 	struct detgeom *dg;
 	double clen;
-	dg = data_template_get_2d_detgeom_if_possible(dt);
+
+	/* Single value for clen only makes sense if detector is flat */
+	if ( !detector_flat(dt) ) return NAN;
+
+	dg = data_template_get_detgeom_if_possible(dt, 0);
 	if ( dg == NULL ) return NAN;
 	clen = detgeom_mean_camera_length(dg);
 	detgeom_free(dg);

@@ -395,7 +395,7 @@ static int run_work(struct indexamajig_arguments *args)
 
 	if ( args->iargs.peak_search.method == PEAK_PEAKFINDER8 ) {
 		struct detgeom *dg;
-		dg = data_template_get_2d_detgeom_if_possible(args->iargs.dtempl);
+		dg = data_template_get_detgeom_if_possible(args->iargs.dtempl, 1);
 		if ( dg == NULL ) {
 			ERROR("WARNING: Detector geometry is not static.  "
 			      "Peak search will be slower than optimal.\n");
