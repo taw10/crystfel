@@ -1890,7 +1890,7 @@ static int all_panels_perpendicular_to_beam(const DataTemplate *dtempl)
 		double z_diff;
 		struct panel_template *p = &dtempl->panels[i];
 		z_diff = p->fsz*PANEL_WIDTH(p) + p->ssz*PANEL_HEIGHT(p);
-		if ( z_diff > 10.0 ) return 0;
+		if ( fabs(z_diff) > 10.0 ) return 0;
 	}
 	return 1;
 }
