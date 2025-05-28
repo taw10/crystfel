@@ -1134,6 +1134,13 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	for ( i=2; i<MAX_DIMS; i++ ) defaults.dims[i] = DIM_UNDEFINED;
 	for ( i=0; i<MAX_DIMS; i++ ) defaults.dims_default[i] = 1;
 
+	defaults.overall_shift_x = 0.0;
+	defaults.overall_shift_y = 0.0;
+	defaults.overall_shift_z = 0.0;
+	defaults.overall_rot_x = 0.0;
+	defaults.overall_rot_y = 0.0;
+	defaults.overall_rot_z = 0.0;
+
 	string = cfstrdup(string_in);
 	if ( string == NULL ) return NULL;
 	len = strlen(string);
@@ -2188,7 +2195,13 @@ static int translate_group_contents(DataTemplate *dtempl,
 	if ( group->n_children == 0 ) {
 
 		struct panel_template *p = find_panel_by_name(dtempl, group->name);
+		double ox, oy, oz;
 		if ( p == NULL ) return 1;
+
+		/* All in m */
+		ox = p->cnx*p->pixel_pitch;
+		oy = p->cny*p->pixel_pitch;
+		oz = p->cnz_offset;
 
 		if ( is_metres ) {
 			p->cnx += x/p->pixel_pitch;
@@ -2199,6 +2212,10 @@ static int translate_group_contents(DataTemplate *dtempl,
 			p->cny += y;
 			p->cnz_offset += z*p->pixel_pitch;
 		}
+
+		p->overall_shift_x += (p->cnx*p->pixel_pitch)-ox;
+		p->overall_shift_y += (p->cny*p->pixel_pitch)-oy;
+		p->overall_shift_z += p->cnz_offset - oz;
 
 	} else {
 		for ( i=0; i<group->n_children; i++ ) {
@@ -2308,6 +2325,7 @@ static int rotate_all_panels(DataTemplate *dtempl,
 {
 	if ( group->n_children == 0 ) {
 
+		double ox, oy, oz;
 		double cnz_px;
 		struct panel_template *p = find_panel_by_name(dtempl, group->name);
 		if ( p == NULL ) return 1;
@@ -2317,6 +2335,11 @@ static int rotate_all_panels(DataTemplate *dtempl,
 		cz /= p->pixel_pitch;
 		cnz_px = p->cnz_offset / p->pixel_pitch;
 
+		/* All in m */
+		ox = p->cnx*p->pixel_pitch;
+		oy = p->cny*p->pixel_pitch;
+		oz = p->cnz_offset;
+
 		switch ( axis )
 		{
 			case 'x':
@@ -2324,6 +2347,7 @@ static int rotate_all_panels(DataTemplate *dtempl,
 			rotate2d(&p->fsy, &p->fsz, 0, 0, ang);
 			rotate2d(&p->ssy, &p->ssz, 0, 0, ang);
 			p->cnz_offset = cnz_px * p->pixel_pitch;
+			p->overall_rot_x += ang;
 			break;
 
 			case 'y':
@@ -2331,18 +2355,24 @@ static int rotate_all_panels(DataTemplate *dtempl,
 			rotate2d(&p->fsz, &p->fsx, 0, 0, ang);
 			rotate2d(&p->ssz, &p->ssx, 0, 0, ang);
 			p->cnz_offset = cnz_px * p->pixel_pitch;
+			p->overall_rot_y += ang;
 			break;
 
 			case 'z':
 			rotate2d(&p->cnx, &p->cny, cx, cy, ang);
 			rotate2d(&p->fsx, &p->fsy, 0, 0, ang);
 			rotate2d(&p->ssx, &p->ssy, 0, 0, ang);
+			p->overall_rot_z += ang;
 			break;
 
 			default:
 			ERROR("Invalid rotation axis '%c'\n", axis);
 			return 1;
 		}
+
+		p->overall_shift_x += (p->cnx*p->pixel_pitch)-ox;
+		p->overall_shift_y += (p->cny*p->pixel_pitch)-oy;
+		p->overall_shift_z += p->cnz_offset - oz;
 
 		return 0;
 
@@ -2772,4 +2802,34 @@ struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *
 
 	*n = dtempl->n_groups;
 	return ginfo;
+}
+
+
+void data_template_reset_total_movements(DataTemplate *dtempl)
+{
+	int i;
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		dtempl->panels[i].overall_shift_x = 0.0;
+		dtempl->panels[i].overall_shift_y = 0.0;
+		dtempl->panels[i].overall_shift_z = 0.0;
+		dtempl->panels[i].overall_rot_x = 0.0;
+		dtempl->panels[i].overall_rot_y = 0.0;
+		dtempl->panels[i].overall_rot_z = 0.0;
+	}
+}
+
+
+void data_template_print_total_movements(const DataTemplate *dtempl)
+{
+	int i;
+	printf("    Name   Tx (mm)  Ty (mm)  Tz (mm)           Rx        Ry        Rz\n");
+	for ( i=0; i<dtempl->n_panels; i++ ) {
+		struct panel_template *p = &dtempl->panels[i];
+		printf("%8s: ", p->name);
+		printf("%8.3f %8.3f %8.3f     %8.3f° %8.3f° %8.3f°\n",
+		       p->overall_shift_x*1e3, p->overall_shift_y*1e3, p->overall_shift_z*1e3,
+		       rad2deg(p->overall_rot_x),
+		       rad2deg(p->overall_rot_y),
+		       rad2deg(p->overall_rot_z));
+	}
 }

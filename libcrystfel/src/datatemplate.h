@@ -112,6 +112,10 @@ extern int data_template_write_to_file(const DataTemplate *dtempl,
 
 extern struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *n);
 
+extern void data_template_reset_total_movements(DataTemplate *dtempl);
+
+extern void data_template_print_total_movements(const DataTemplate *dtempl);
+
 #ifdef __cplusplus
 }
 #endif

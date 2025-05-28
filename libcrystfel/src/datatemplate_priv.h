@@ -195,6 +195,13 @@ struct panel_template
 	int orig_min_ss;
 	int orig_max_ss;
 	/*@}*/
+
+    double overall_shift_x;
+    double overall_shift_y;
+    double overall_shift_z;
+    double overall_rot_x;
+    double overall_rot_y;
+    double overall_rot_z;
 };
 
 
