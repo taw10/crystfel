@@ -59,6 +59,11 @@ OPTIONS
 : axis.  The center of rotation will be the centroid of the corners of the
 : panel, or the centroid of all the panel centers in the specified group.
 
+**--panel-totals**
+: Display the total translation and rotation changes for each panel. This does
+: not affect the refinement or the output geometry file in any way, only the
+: console output.
+
 
 AUTHOR
 ======
@@ -75,8 +80,8 @@ Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>
 COPYRIGHT AND DISCLAIMER
 ========================
 
-Copyright © 2023 Deutsches Elektronen-Synchrotron DESY, a research centre of
-the Helmholtz Association.
+Copyright © 2023-2025 Deutsches Elektronen-Synchrotron DESY, a research centre
+of the Helmholtz Association.
 
 adjust_detector, and this manual, are part of CrystFEL.
 

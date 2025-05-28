@@ -66,6 +66,7 @@ static void show_help(const char *s)
 	       "      --out-of-plane         Refine (relative) z-direction shifts\n"
 	       "      --out-of-plane-tilts   Refine panel rotations around x and y\n"
 	       "      --camera-length        Refine overall camera length\n"
+	       "      --panel-totals         Display total panel movements\n"
 	       "\n"
 	       "  -h, --help                 Display this help message\n"
 	       "      --version              Print version number and exit\n");
@@ -298,6 +299,7 @@ int main(int argc, char *argv[])
 	int out_of_plane_shift = 0;
 	int out_of_plane_tilts = 0;
 	int refine_clen = 0;
+	int panel_totals = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -312,6 +314,7 @@ int main(int argc, char *argv[])
 		{"out-of-plane",       0, &out_of_plane_shift, 1},
 		{"out-of-plane-tilts", 0, &out_of_plane_tilts, 1},
 		{"camera-length",      0, &refine_clen,        1},
+		{"panel-totals",       0, &panel_totals,       1},
 
 		{0, 0, NULL, 0}
 	};
@@ -457,6 +460,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	data_template_reset_total_movements(dtempl);
+
 	int last_group_serial = -1;
 	do {
 
@@ -566,6 +571,10 @@ int main(int argc, char *argv[])
 	} while ( rval == line );
 
 	fclose(fh);
+
+	if ( panel_totals ) {
+		data_template_print_total_movements(dtempl);
+	}
 
 	data_template_write_to_file(dtempl, out_geom);
 

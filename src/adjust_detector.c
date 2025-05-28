@@ -57,6 +57,7 @@ static void show_help(const char *s)
 	       "  -o, --output=file          Output geometry file\n"
 	       "  -p, --panel=p              Panel (or group) to move\n"
 	       "      --mm                   Interpret shifts as mm, not px\n"
+	       "      --panel-totals         Display total panel movements\n"
 	       "\n"
 	       "  --rotx                     Rotation around x-axis (deg)\n"
 	       "  --roty                     Rotation around y-axis (deg)\n"
@@ -101,6 +102,7 @@ int main(int argc, char *argv[])
 	int mm = 0;
 	char *group = strdup("all");
 	int r;
+	int panel_totals = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -113,6 +115,7 @@ int main(int argc, char *argv[])
 		{"output",             1, NULL,               'o'},
 		{"panel",              1, NULL,               'p'},
 		{"mm",                 0, NULL,                3},
+		{"panel-totals",       0, &panel_totals,       1},
 
 		{"shiftx",             1, NULL,                11},
 		{"shifty",             1, NULL,                12},
@@ -204,6 +207,8 @@ int main(int argc, char *argv[])
 	dtempl = data_template_new_from_file(in_geom);
 	if ( dtempl == NULL ) return 1;
 
+	data_template_reset_total_movements(dtempl);
+
 	if ( mm ) {
 		r = data_template_translate_group_m(dtempl, group,
 		                                    x_shift * 1e-3,
@@ -232,6 +237,10 @@ int main(int argc, char *argv[])
 	if ( data_template_rotate_group(dtempl, group, deg2rad(z_rot), 'z') ) {
 		ERROR("Failed to rotate group around z.\n");
 		return 1;
+	}
+
+	if ( panel_totals ) {
+		data_template_print_total_movements(dtempl);
 	}
 
 	if ( data_template_write_to_file(dtempl, out_geom) ) {
