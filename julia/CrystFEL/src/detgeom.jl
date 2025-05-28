@@ -1,6 +1,6 @@
 module DetGeoms
 export DetGeom, DetGeomPanel, DetGeomGroup, InternalDetGeom, copydetgeom
-export findgroup
+export findpanel, findgroup
 
 mutable struct InternalPanel
     name::Cstring
@@ -109,6 +109,7 @@ function copydetgeom(dg::Ptr{InternalDetGeom})
     DetGeom(panels, topgroup)
 end
 
+findpanel(dg::DetGeom, name) = dg.panels[findfirst(x->x.name==name, dg.panels)]
 
 function seq100(ser, head)
     if ser == 0
