@@ -5,6 +5,7 @@ export DataTemplate, InternalDataTemplate, loaddatatemplate
 export wavelength, cameralength
 export translategroup!, rotategroup!
 export writedatatemplate!
+export resetpaneltotals!, printpaneltotals
 
 # Represents the real C-side (opaque) structure.
 mutable struct InternalDataTemplate end
@@ -140,6 +141,25 @@ function rotategroup!(dtempl::DataTemplate, groupname, angle, axis)
         throw(ErrorException("Failed to rotate DataTemplate"))
     end
 
+end
+
+
+"""
+    resetpaneltotals!(datatemplate)
+
+Corresponds to CrystFEL C API function `data_template_reset_total_movements`.
+"""
+function resetpaneltotals!(dtempl::DataTemplate)
+    @ccall libcrystfel.data_template_reset_total_movements(dtempl.internalptr::Ptr{InternalDataTemplate})::Cvoid
+end
+
+"""
+    printpaneltotals(datatemplate)
+
+Corresponds to CrystFEL C API function `data_template_print_total_movements`.
+"""
+function printpaneltotals(dtempl::DataTemplate)
+    @ccall libcrystfel.data_template_print_total_movements(dtempl.internalptr::Ptr{InternalDataTemplate})::Cvoid
 end
 
 end  # of module

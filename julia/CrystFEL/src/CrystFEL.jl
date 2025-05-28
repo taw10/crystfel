@@ -48,6 +48,7 @@ include("datatemplates.jl")
 using .DataTemplates
 export DataTemplate, loaddatatemplate, wavelength, cameralength
 export translategroup!, rotategroup!, writedatatemplate!
+export resetpaneltotals!, printpaneltotals
 
 include("peaklist.jl")
 using .PeakLists
