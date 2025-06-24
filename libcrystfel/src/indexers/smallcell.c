@@ -87,8 +87,8 @@ struct smallcell_private
 };
 
 
-void *smallcell_prepare(IndexingMethod * indm, struct smallcell_options *opts,
-                        UnitCell * cell)
+void *smallcell_prepare(IndexingMethod *indm, struct smallcell_options *opts,
+                        UnitCell *cell)
 {
 	struct smallcell_private *dp;
 	double asx, bsx, csx;
