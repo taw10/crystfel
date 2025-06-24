@@ -100,6 +100,7 @@ void *smallcell_prepare(IndexingMethod *indm, struct smallcell_options *opts,
 
 	dp->sym = get_lattice_symmetry(cell);
 	dp->powderrings = powder_rings(cell, dp->sym, 1/1e-10, &dp->num_rings);
+	dp->template = cell_new_from_cell(cell);
 
 	/* Get reciprocal unit cell elements in order to create G* matrix
 	 * and store in private */
@@ -670,7 +671,6 @@ static UnitCell *fit_cell(struct Nodelist *clique)
 	                    gsl_vector_get(cell_vec, 6),
 	                    gsl_vector_get(cell_vec, 7),
 	                    gsl_vector_get(cell_vec, 8));
-	/* FIXME: Set lattice type */
 
 	gsl_vector_free(cell_vec);
 
@@ -725,6 +725,9 @@ int smallcell_index(struct image *image, void *mpriv)
 
 		UnitCell *uc = fit_cell(cliques->list[i]);
 		if ( uc == NULL ) continue;
+		cell_set_lattice_type(uc, cell_get_lattice_type(priv->template));
+		cell_set_centering(uc, cell_get_centering(priv->template));
+		cell_set_unique_axis(uc, cell_get_unique_axis(priv->template));
 
 		if ( right_handed(uc) && !validate_cell(uc) ) {
 
