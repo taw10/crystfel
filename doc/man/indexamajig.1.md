@@ -237,11 +237,13 @@ To describe multiple overlapping diffraction patterns in one frame, simply
 use the same _filename_ and _frameID_ in multiple lines.
 
 The lattice type and centering information are contained in _latt\_cen_.
-This should consist of two characters, e.g. **tI** or **aP**.  The first letter
-represents the lattice type (**a**, **m**, **o**, **t**, **c**, **h**, **r**
-for, respectively, triclinic, monoclinic, orthorhombic, tetragonal, cubic,
-hexagonal or rhombohedral).  The centering symbol (**P**, **A**, **B**, **C**,
-**I**, **F**, **H** or **R**) follows.
+This should consist of two or three characters, e.g. **tIc**, **aP** or **oP**.
+The first letter represents the lattice type (**a**, **m**, **o**, **t**,
+**c**, **h**, **r** for, respectively, triclinic, monoclinic, orthorhombic,
+tetragonal, cubic, hexagonal or rhombohedral).  The centering symbol (**P**,
+**A**, **B**, **C**, **I**, **F**, **H** or **R**) follows.  For monoclinic,
+tetragonal or hexagonal lattice types, the unique axis should be given as the
+third character.  Otherwise, there should be only two characters.
 
 The vector components _asx_,_asy_,... are the reciprocal lattice basis vectors
 in reciprocal nanometres.  The _xshift_ and _yshift_ values are the offsets of
