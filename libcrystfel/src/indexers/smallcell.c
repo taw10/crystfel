@@ -471,11 +471,6 @@ static struct PeakInfo *associate_to_rings(ImageFeatureList *peaks,
 					peak_infos[num_peak_infos].x = r[0];
 					peak_infos[num_peak_infos].y = r[1];
 					peak_infos[num_peak_infos].z = r[2];
-
-					int w;
-					for ( w=0; w<MAX_NEIGH; w++ ) {
-						peak_infos[num_peak_infos].neigh[w] = NULL;
-					}
 					peak_infos[num_peak_infos].n_neigh = 0;
 					num_peak_infos++;
 				}
