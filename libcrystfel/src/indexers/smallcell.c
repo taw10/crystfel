@@ -497,7 +497,7 @@ static void link_nodes(struct PeakInfo *peak_infos, int num_peak_infos, struct g
 		int y;
 
 		/* Loop through the rest of the peak infos */
-		for ( y=j+1; y<num_peak_infos-1; y++ ) {
+		for ( y=j+1; y<num_peak_infos; y++ ) {
 
 			if ( peak_infos[y].peak_number == peak_infos[j].peak_number ) continue;
 
