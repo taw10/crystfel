@@ -2453,7 +2453,7 @@ static char *get_chiral_holohedry(UnitCell *cell)
 		break;
 
 		case L_RHOMBOHEDRAL:
-		pg = "3_R";
+		pg = "32_R";
 		add_ua = 0;
 		break;
 
