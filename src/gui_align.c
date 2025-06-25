@@ -48,12 +48,15 @@ struct align_window
 	GtkWidget *window;
 	GtkWidget *input_combo;
 	GtkWidget *out_of_plane;
+	GtkWidget *out_of_plane_tilts;
+	GtkWidget *clen;
 	GtkWidget *level;
 };
 
 
 
 static int run_align(const char *input_name, int level, int out_of_plane,
+                     int out_of_plane_tilts, int clen,
                      const char *out_geom, struct crystfelproject *proj)
 {
 	GSubprocess *sp;
@@ -103,6 +106,12 @@ static int run_align(const char *input_name, int level, int out_of_plane,
 	cmdline[ncmd++] = out_geom;
 	if ( out_of_plane ) {
 		cmdline[ncmd++] = "--out-of-plane";
+	}
+	if ( out_of_plane_tilts ) {
+		cmdline[ncmd++] = "--out-of-plane-tilts";
+	}
+	if ( clen ) {
+		cmdline[ncmd++] = "--camera-length";
 	}
 	mdstart = ncmd;
 
@@ -176,7 +185,6 @@ static void align_response_sig(GtkWidget *dialog, gint resp,
 
 		int level;
 		const char *input_name;
-		int out_of_plane;
 		gchar *filename;
 
 		level = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(win->level));
@@ -187,10 +195,13 @@ static void align_response_sig(GtkWidget *dialog, gint resp,
 			r = 1;
 		}
 
-		out_of_plane = get_bool(win->out_of_plane);
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-		r = run_align(input_name, level, out_of_plane, filename, win->proj);
+		r = run_align(input_name, level,
+		              get_bool(win->out_of_plane),
+		              get_bool(win->out_of_plane_tilts),
+		              get_bool(win->clen),
+		              filename, win->proj);
 
 		g_free(filename);
 	}
@@ -247,10 +258,20 @@ gint align_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	gtk_widget_set_tooltip_text(win->level, "--level");
 
-	win->out_of_plane = gtk_check_button_new_with_label("Include out-of-plane shifts");
+	win->out_of_plane = gtk_check_button_new_with_label("Out-of-plane shifts");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->out_of_plane),
 	                   FALSE, FALSE, 4.0);
 	gtk_widget_set_tooltip_text(win->out_of_plane, "--out-of-plane");
+
+	win->out_of_plane_tilts = gtk_check_button_new_with_label("Out-of-plane tilts");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->out_of_plane_tilts),
+	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(win->out_of_plane_tilts, "--out-of-plane-tilts");
+
+	win->clen = gtk_check_button_new_with_label("Camera length");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->clen),
+	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(win->clen, "--camera-length");
 
 	g_signal_connect(G_OBJECT(win->window), "response",
 	                 G_CALLBACK(align_response_sig), win);
