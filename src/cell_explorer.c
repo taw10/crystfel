@@ -746,6 +746,16 @@ static void check_minmax(HistoBox *h, double val)
 }
 
 
+static void ensure_minimum_width(HistoBox *h, double min_w)
+{
+	if ( h->max - h->min < min_w ) {
+		double av = (h->min+h->max)/2.0;
+		h->min = av - min_w/2.0;
+		h->max = av + min_w/2.0;
+	}
+}
+
+
 static void set_minmax(HistoBox *h)
 {
 	multihistogram_set_min(h->h, h->min);
@@ -794,6 +804,10 @@ static void scan_minmax(CellWindow *w)
 		}
 
 	}
+
+	ensure_minimum_width(w->hist_al, 1.1);
+	ensure_minimum_width(w->hist_be, 1.1);
+	ensure_minimum_width(w->hist_ga, 1.1);
 
 	set_minmax(w->hist_a);
 	set_minmax(w->hist_b);
@@ -1858,7 +1872,7 @@ static HistoBox *histobox_new(CellWindow *w, const char *units, const char *n)
 	h->parent = w;
 	h->min = +INFINITY;
 	h->max = -INFINITY;
-	h->n = 100;  /* Number of bins */
+	h->n = 99;  /* Number of bins */
 	h->label = n;
 
 	h->h = multihistogram_new();
