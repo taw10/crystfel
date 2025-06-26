@@ -2,23 +2,26 @@ Changes in this development version (incomplete list)
 -----------------------------------------------------
 
 - Enforce lattice type restrictions during refinement
-- Add ffbidx indexer (Hans-Christian Stadler)
+- Add ffbidx indexer (Hans-Christian Stadler) [GitLab #112]
 - Add smallcell indexer (Isabel Costello)
 - indexamajig: Fix incorrect Mille data for out-of-plane tilts
 - partialator: Fix crash when xsphere encounters a crystal with zero profile radius
-- indexamajig: Write only one Mille file for all workers
+- indexamajig: Write only one Mille file for all workers [GitLab #92]
 - indexamajig: Disable peakfinder8 --max-res by default
-- GUI: Add progress bar/abort option for "index one pattern"
-- GUI: Add new search pattern for NeXus master files
+- GUI: Add progress bar/abort option for "index one pattern" [GitLab #23]
+- GUI: Add new search pattern for NeXus master files [GitLab #116]
 - Introduce new program show_residuals
-- Avoid overflow reading HDF5 values (e.g. EuXFEL train IDs)
+- Avoid overflow reading HDF5 values (e.g. EuXFEL train IDs) [GitLab #120]
+- Fix slight non-determinisim in merging, due to deltaCChalf
+- Fix spurious warning about non-static geometry [GitLab #127]
 - New article about choice of indexing method
+- align/adjust_detector: Add new option --panel-totals
 - partialator: Fix post-refinement of wavelength for electron diffraction
 - list_events: Speed up enumeration of CBF files (Philipp Middendorf)
 - get_hkl: Add --space-group-override (Philipp Middendorf)
 - Fix fg-graph for recent Gnuplot versions (Philipp Middendorf)
 - ambigator: Detect and exit if reading from stdin with --output (Philipp Middendorf)
-- indexamajig: Always call exec() after fork()
+- indexamajig: Always call exec() after fork() [GitLab #86]
 - asdf: Support H-centering correctly
 - Increase the maximum number of panel groups from 256 to 512
 - Add u1 image data format for Seedee
