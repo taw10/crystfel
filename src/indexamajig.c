@@ -309,6 +309,88 @@ static int notify_alive_sandbox(void *vp)
 }
 
 
+static int get_queue_entry(struct sb_shm *shared,
+                           sem_t *queue_sem,
+                           int worker_id,
+                           struct pattern_args *pargs,
+                           int *ser, int *allDone)
+{
+	int err = 0;
+	char *line;
+	size_t len;
+	int i;
+	char *event_str = NULL;
+	char *ser_str = NULL;
+
+	/* Wait until an event is ready */
+	set_last_task("wait_event");
+	profile_start("wait-queue-semaphore");
+	if ( sem_wait(queue_sem) != 0 ) {
+		ERROR("Failed to wait on queue semaphore: %s\n",
+		      strerror(errno));
+	}
+	profile_end("wait-queue-semaphore");
+
+	/* Get the event from the queue */
+	set_last_task("read_queue");
+	pthread_mutex_lock(&shared->queue_lock);
+	if ( (shared->n_events==0) && (shared->no_more) ) {
+		/* Queue is empty and no more are coming */
+		pthread_mutex_unlock(&shared->queue_lock);
+		*allDone = 1;
+		return 1;
+	}
+	if ( shared->n_events == 0 ) {
+		ERROR("Got the semaphore, but no events in queue! (no_more = %i)\n",
+		      shared->no_more);
+		pthread_mutex_unlock(&shared->queue_lock);
+		*allDone = 1;
+		return 1;
+	}
+
+	line = strdup(shared->queue[0]);
+
+	len = strlen(line);
+	assert(len > 1);
+	for ( i=len-1; i>0; i-- ) {
+		if ( line[i] == ' ' ) {
+			line[i] = '\0';
+			ser_str = &line[i+1];
+			break;
+		}
+	}
+	len = strlen(line);
+	assert(len > 1);
+	for ( i=len-1; i>0; i-- ) {
+		if ( line[i] == ' ' ) {
+			line[i] = '\0';
+			event_str = &line[i+1];
+			break;
+		}
+	}
+	if ( (ser_str != NULL) && (event_str != NULL) ) {
+		if ( sscanf(ser_str, "%i", ser) != 1 ) {
+			STATUS("Invalid serial number '%s'\n", ser_str);
+			err = 1;
+		}
+	}
+
+	pthread_mutex_lock(&shared->debug_lock);
+	memcpy(shared->last_ev[worker_id], shared->queue[0], MAX_EV_LEN);
+	pthread_mutex_unlock(&shared->debug_lock);
+
+	shuffle_events(shared);
+	pthread_mutex_unlock(&shared->queue_lock);
+
+	pargs->filename = strdup(line);
+	pargs->event = safe_strdup(event_str);
+
+	free(line);
+
+	return err;
+}
+
+
 static int run_work(struct indexamajig_arguments *args)
 {
 	int allDone = 0;
@@ -460,99 +542,20 @@ static int run_work(struct indexamajig_arguments *args)
 	while ( !allDone ) {
 
 		struct pattern_args pargs;
+		int err = 0;
 		int ser;
-		char *line;
-		size_t len;
-		int i;
-		char *event_str = NULL;
-		char *ser_str = NULL;
-		int ok = 1;
 		int should_shutdown;
 
-		/* Wait until an event is ready */
 		notify_alive();
-		set_last_task("wait_event");
-		profile_start("wait-queue-semaphore");
-		if ( sem_wait(queue_sem) != 0 ) {
-			ERROR("Failed to wait on queue semaphore: %s\n",
-			      strerror(errno));
-		}
-		profile_end("wait-queue-semaphore");
 
-		/* Get the event from the queue */
-		set_last_task("read_queue");
 		pthread_mutex_lock(&shared->totals_lock);
 		should_shutdown = shared->should_shutdown;
 		pthread_mutex_unlock(&shared->totals_lock);
-		pthread_mutex_lock(&shared->queue_lock);
-		if ( ((shared->n_events==0) && (shared->no_more))
-		   || should_shutdown )
-		{
-			/* Queue is empty and no more are coming,
-			 * or another process has initiated a shutdown.
-			 * Either way, it's time to get out of here. */
-			pthread_mutex_unlock(&shared->queue_lock);
-			allDone = 1;
-			continue;
-		}
-		if ( shared->n_events == 0 ) {
-			ERROR("Got the semaphore, but no events in queue!\n");
-			ERROR("no_more = %i\n", shared->no_more);
-			pthread_mutex_unlock(&shared->queue_lock);
-			allDone = 1;
-			continue;
-		}
-
-		line = strdup(shared->queue[0]);
-
-		len = strlen(line);
-		assert(len > 1);
-		for ( i=len-1; i>0; i-- ) {
-			if ( line[i] == ' ' ) {
-				line[i] = '\0';
-				ser_str = &line[i+1];
-				break;
-			}
-		}
-		len = strlen(line);
-		assert(len > 1);
-		for ( i=len-1; i>0; i-- ) {
-			if ( line[i] == ' ' ) {
-				line[i] = '\0';
-				event_str = &line[i+1];
-				break;
-			}
-		}
-		if ( (ser_str != NULL) && (event_str != NULL) ) {
-			if ( sscanf(ser_str, "%i", &ser) != 1 ) {
-				STATUS("Invalid serial number '%s'\n",
-				       ser_str);
-				ok = 0;
-			}
-		}
-		if ( !ok ) {
-			STATUS("Invalid event string '%s'\n",
-			       shared->queue[0]);
-			ok = 0;
-		}
-
-		pthread_mutex_lock(&shared->debug_lock);
-		memcpy(shared->last_ev[args->worker_id], shared->queue[0],
-		       MAX_EV_LEN);
-		pthread_mutex_unlock(&shared->debug_lock);
-
-		shuffle_events(shared);
-		pthread_mutex_unlock(&shared->queue_lock);
-
-		if ( !ok ) continue;
-
-		pargs.filename = strdup(line);
-		pargs.event = safe_strdup(event_str);
-
-		free(line);
-		ok = 0;
+		if ( should_shutdown ) allDone = 1;
 
 		/* Default values */
+		pargs.filename = NULL;
+		pargs.event = NULL;
 		pargs.zmq_data = NULL;
 		pargs.zmq_data_size = 0;
 		pargs.asapo_data = NULL;
@@ -561,54 +564,44 @@ static int run_work(struct indexamajig_arguments *args)
 
 		if ( args->zmq_params.addr != NULL ) {
 
+			int r;
+
 			profile_start("zmq-fetch");
 			set_last_task("ZMQ fetch");
 			pargs.zmq_data = im_zmq_fetch(zmqstuff,
 			                              &pargs.zmq_data_size);
 			profile_end("zmq-fetch");
 
-			if ( (pargs.zmq_data != NULL)
-			  && (pargs.zmq_data_size > 15) ) ok = 1;
+			if ( pargs.zmq_data == NULL ) err = 1;
+			if ( pargs.zmq_data_size <= 15 ) err = 1;
 
-			/* The filename/event, which will be 'fake' values in
-			 * this case, still came via the event queue.  More
-			 * importantly, the event queue gave us a unique
-			 * serial number for this image. */
+			/* No filename/frame ID or serial number via ZMQ (yet) */
+			r = get_queue_entry(shared, queue_sem, args->worker_id,
+			                    &pargs, &ser, &allDone);
+			if ( r ) err = 1;
 
 		} else if ( args->asapo_params.endpoint != NULL ) {
 
-			char *filename;
-			char *event;
 			int finished = 0;
-			int asapo_message_id;
 
 			profile_start("asapo-fetch");
 			set_last_task("ASAPO fetch");
 			pargs.asapo_data = im_asapo_fetch(asapostuff,
 			                                  &pargs.asapo_data_size,
 			                                  &pargs.asapo_meta,
-			                                  &filename,
-			                                  &event,
+			                                  &pargs.filename,
+			                                  &pargs.event,
 			                                  &finished,
-			                                  &asapo_message_id);
+			                                  &ser);
 			profile_end("asapo-fetch");
 			if ( pargs.asapo_data != NULL ) {
-				ok = 1;
 
-				/* ASAP::O provides a meaningful filename, which
-				 * replaces the placeholder. */
-				free(pargs.filename);
-				free(pargs.event);
-				pargs.filename = filename;
-				pargs.event = event;
 				pthread_mutex_lock(&shared->queue_lock);
 				shared->end_of_stream[args->worker_id] = 0;
 				pthread_mutex_unlock(&shared->queue_lock);
 
-				/* We will also use ASAP::O's serial number
-				 * instead of our own. */
-				ser = asapo_message_id;
 			} else {
+				err = 1;
 				if ( finished ) {
 					pthread_mutex_lock(&shared->queue_lock);
 					shared->end_of_stream[args->worker_id] = 1;
@@ -617,10 +610,15 @@ static int run_work(struct indexamajig_arguments *args)
 			}
 
 		} else {
-			ok = 1;
+
+			/* Normal filename/frame ID */
+			err = get_queue_entry(shared, queue_sem, args->worker_id,
+			                      &pargs, &ser, &allDone);
+
 		}
 
-		if ( ok ) {
+		if ( !err ) {
+
 			pthread_mutex_lock(&shared->debug_lock);
 			shared->time_last_start[args->worker_id] = get_monotonic_seconds();
 			pthread_mutex_unlock(&shared->debug_lock);
@@ -636,14 +634,14 @@ static int run_work(struct indexamajig_arguments *args)
 
 		}
 
+		if ( args->profile ) {
+			profile_print_and_reset(args->worker_id);
+		}
+
 		/* NB pargs.zmq_data, pargs.asapo_data and  pargs.asapo_meta
 		 * will be copied into the image structure, so
 		 * that it can be queried for "header" values etc.  They will
 		 * eventually be freed by image_free() under process_image(). */
-
-		if ( args->profile ) {
-			profile_print_and_reset(args->worker_id);
-		}
 
 		free(pargs.filename);
 		free(pargs.event);
