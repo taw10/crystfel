@@ -605,6 +605,9 @@ static int run_work(struct indexamajig_arguments *args)
 				if ( finished ) {
 					pthread_mutex_lock(&shared->queue_lock);
 					shared->end_of_stream[args->worker_id] = 1;
+					if ( shared->no_more ) {
+						allDone = 1;
+					}
 					pthread_mutex_unlock(&shared->queue_lock);
 				}
 			}
