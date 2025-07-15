@@ -266,6 +266,10 @@ struct _datatemplate
 
 	char                      *headers_to_copy[MAX_COPY_HEADERS];
 	int                        n_headers_to_copy;
+
+	/** Any comments from the beginning of the geometry file,
+	 * to be copied when the file is saved */
+	char                      *preamble;
 };
 
 extern double convert_to_m(double val, int units);

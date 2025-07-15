@@ -1058,6 +1058,31 @@ void data_template_show_hierarchy(const DataTemplate *dtempl)
 }
 
 
+static void add_preamble(DataTemplate *dt, const char *notes_add)
+{
+	size_t len;
+	char *nnotes;
+
+	if ( dt->preamble == NULL ) {
+		dt->preamble = strdup(notes_add);
+		return;
+	}
+
+	len = strlen(notes_add) + strlen(dt->preamble) + 2;
+	nnotes = cfmalloc(len);
+	if ( nnotes == NULL ) {
+		ERROR("Failed to preserve initial geometry comments.\n");
+		return;
+	}
+
+	strcpy(nnotes, dt->preamble);
+	strcat(nnotes, "\n");
+	strcat(nnotes, notes_add);
+	cffree(dt->preamble);
+	dt->preamble = nnotes;
+}
+
+
 DataTemplate *data_template_new_from_string(const char *string_in)
 {
 	DataTemplate *dt;
@@ -1070,6 +1095,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	struct panel_template defaults;
 	int have_unused_defaults = 0;
 	struct forlater lines_for_later;
+	int content_started = 0;
 
 	lines_for_later.n_forlater = 0;
 
@@ -1087,6 +1113,7 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->cnz_from = NULL;
 	dt->n_headers_to_copy = 0;
 	dt->n_groups = 0;
+	dt->preamble = NULL;
 
 	/* The default defaults... */
 	defaults.orig_min_fs = -1;
@@ -1175,7 +1202,6 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		while ( (line_orig[i] == ' ')
 		     || (line_orig[i] == '\t') ) i++;
 		line = cfstrdup(line+i);
-		cffree(line_orig);
 
 		/* Stop at comment symbol */
 		char *comm = strchr(line, ';');
@@ -1185,8 +1211,17 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 		 * and can be silently ignored */
 		if ( line[0] == '\0' ) {
 			cffree(line);
+
+			/* Preserve any comments before the first "real" line */
+			if ( !content_started ) {
+				add_preamble(dt, line_orig);
+			}
+
+			cffree(line_orig);
 			continue;
 		}
+		cffree(line_orig);
+		content_started = 1;
 
 		/* Find the equals sign */
 		char *eq = strchr(line, '=');
@@ -2425,6 +2460,11 @@ static const char *str_dim(int dim)
 int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 {
 	int i;
+
+	if ( dtempl->preamble != NULL ) {
+		fputs(dtempl->preamble, fh);
+		fputs("\n", fh);
+	}
 
 	/* Basic top-level parameters */
 	switch ( dtempl->wavelength_unit ) {
