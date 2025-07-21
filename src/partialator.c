@@ -1479,11 +1479,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* Decide whether or not to create stuff in the pr-logs folder */
-	if ( !(no_logs || (no_pr && pmodel == PMODEL_UNITY)) ) {
+	if ( !no_logs ) {
 		do_write_logs = 1;
 	} else {
 		do_write_logs = 0;
 	}
+
 
 	if ( do_write_logs ) {
 		int r = mkdir(log_folder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
