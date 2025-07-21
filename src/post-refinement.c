@@ -349,7 +349,6 @@ void write_test_logs(Crystal *crystal, struct image *image, const RefList *full,
 	fprintf(fh, "%s bandwidth = %f\n", ins, image->bw);
 	fprintf(fh, "%s my scale factor = %e\n", ins, crystal_get_osf(crystal));
 	fprintf(fh, "%s my B factor (crystal) = %e\n", crystal_get_Bfac(crystal)*1e20);
-	fprintf(fh, "%s my B factor (cr) = %e\n", crystal_get_Bfac(cr)*1e20);
 	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
 	cell_get_reciprocal(crystal_get_cell(crystal), &asx, &asy, &asz,
 	                                               &bsx, &bsy, &bsz,
