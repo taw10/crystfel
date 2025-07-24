@@ -79,8 +79,7 @@ def update_graph():
     levels = np.arange(0.0, 1.6, 0.1)
 
     if cnt:
-        for coll in cnt.collections:
-            coll.remove()
+        cnt.remove()
 
     cnt = ax.contour(Z, levels, origin='lower', linewidths=1, alpha=1, extent=extent, cmap=plt.cm.Greens)
 
@@ -91,7 +90,7 @@ def update_graph():
 
     if centre_marker:
         centre_marker.remove()
-    centre_marker, = plt.plot(cur1, cur2, 'bH', color='r')
+    centre_marker, = plt.plot(cur1, cur2, 'bH')
 
     fig.canvas.draw()
 
