@@ -33,7 +33,7 @@ def update_graph():
     pgraphE.cla()
     pgraphE.scatter([x[0] for x in pgraph if x[2]==inum if x[3]<resmax if x[3]>resmin],
                  [x[1] for x in pgraph if x[2]==inum if x[3]<resmax if x[3]>resmin], marker="+")
-    pgraphE.grid(b=True, which='major', color='k', linestyle='--')
+    pgraphE.grid(which='major', color='k', linestyle='--')
     if not first:
         pgraphE.set_xlim(xlim)
         pgraphE.set_ylim(ylim)
@@ -158,7 +158,7 @@ pobsE = specgraphE.plot([0,1],[0,1],label="pobs")[0]
 pcalcE = specgraphE.plot([0,1],[0,1],label="pcalc")[0]
 specgraphE.set_xlabel("khalf / m^-1")
 specgraphE.set_ylabel("Partiality")
-specgraphE.grid(b=True, which='major', color='k', linestyle='--')
+specgraphE.grid(which='major', color='k', linestyle='--')
 specgraphE.legend()
 
 # Iteration selector
@@ -182,7 +182,7 @@ ax.hist([x[3] for x in pgraph],weights=[x[4] for x in pgraph],bins=100)
 ax.set_xlabel("Resolution / m^-1")
 ax.set_ylabel("Frequency")
 ax.set_title("Resolution selector")
-resolution = SpanSelector(ax, resolutionchange, 'horizontal', span_stays=True, useblit=True)
+resolution = SpanSelector(ax, resolutionchange, 'horizontal', interactive=True, useblit=True)
 
 # Crystal switcher
 ax = plt.axes([0.75, 0.10, 0.09, 0.05])
