@@ -952,12 +952,6 @@ static void add_arg_string(char **args, int pos, const char *label,
 }
 
 
-static int is_method(IndexingMethod m, IndexingMethod b)
-{
-	return (m & INDEXING_METHOD_MASK) == b;
-}
-
-
 static int pinkindexer_used(const char *methods)
 {
 	IndexingMethod *m;
@@ -968,7 +962,7 @@ static int pinkindexer_used(const char *methods)
 
 	m = parse_indexing_methods(methods, &n);
 	for ( i=0; i<n; i++ ) {
-		if ( is_method(m[i], INDEXING_PINKINDEXER) ) {
+		if ( m[i] == INDEXING_PINKINDEXER ) {
 			r = 1;
 			break;
 		}

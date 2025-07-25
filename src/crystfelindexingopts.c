@@ -116,17 +116,14 @@ static GtkWidget *make_tolerances(CrystFELIndexingOpts *io)
 
 static void add_method(GtkListStore *store, const char *name,
                        const char *friendly_name,
-                       gboolean enabled, gboolean prior_cell,
-                       gboolean prior_latt)
+                       gboolean enabled)
 {
 	GtkTreeIter iter;
 	gtk_list_store_append(store, &iter);
 	gtk_list_store_set(store, &iter,
 	                   0, enabled,
 	                   1, friendly_name,
-	                   2, prior_cell,
-	                   3, prior_latt,
-	                   4, name,
+	                   2, name,
 	                   -1);
 }
 
@@ -158,45 +155,27 @@ static void indm_toggled(GtkCellRendererToggle *cr,
 }
 
 
-static void prior_cell_toggled(GtkCellRendererToggle *cr,
-                               gchar *path_str,
-                               CrystFELIndexingOpts *io)
-{
-	toggle_column(io->indm_store, path_str, 2);
-}
-
-
-static void prior_latt_toggled(GtkCellRendererToggle *cr,
-                               gchar *path_str,
-                               CrystFELIndexingOpts *io)
-{
-	toggle_column(io->indm_store, path_str, 3);
-}
-
-
 static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 {
 	GtkWidget *treeview;
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
 
-	io->indm_store = gtk_list_store_new(5,
+	io->indm_store = gtk_list_store_new(3,
 	                           G_TYPE_BOOLEAN,  /* Algo on */
 	                           G_TYPE_STRING,   /* Friendly name */
-	                           G_TYPE_BOOLEAN,  /* Prior cell */
-	                           G_TYPE_BOOLEAN,  /* Prior latt */
 	                           G_TYPE_STRING);  /* Real name */
 
-	add_method(io->indm_store, "dirax", "DirAx", TRUE, FALSE, FALSE);
-	add_method(io->indm_store, "mosflm", "MOSFLM", TRUE, TRUE, TRUE);
-	add_method(io->indm_store, "xds", "XDS", TRUE, TRUE, TRUE);
-	add_method(io->indm_store, "xgandalf", "XGANDALF", TRUE, TRUE, FALSE);
-	add_method(io->indm_store, "pinkIndexer", "PinkIndexer", FALSE, TRUE, FALSE);
-	add_method(io->indm_store, "taketwo", "TakeTwo", TRUE, TRUE, FALSE);
-	add_method(io->indm_store, "asdf", "ASDF", TRUE, TRUE, FALSE);
-	add_method(io->indm_store, "felix", "Felix", FALSE, TRUE, FALSE);
-	add_method(io->indm_store, "smallcell", "Small cell", FALSE, TRUE, FALSE);
-	add_method(io->indm_store, "ffbidx", "ffbidx (GPU)", FALSE, TRUE, FALSE);
+	add_method(io->indm_store, "dirax", "DirAx", TRUE);
+	add_method(io->indm_store, "mosflm", "MOSFLM", TRUE);
+	add_method(io->indm_store, "xds", "XDS", TRUE);
+	add_method(io->indm_store, "xgandalf", "XGANDALF", TRUE);
+	add_method(io->indm_store, "pinkIndexer", "PinkIndexer", FALSE);
+	add_method(io->indm_store, "taketwo", "TakeTwo", TRUE);
+	add_method(io->indm_store, "asdf", "ASDF", TRUE);
+	add_method(io->indm_store, "felix", "Felix", FALSE);
+	add_method(io->indm_store, "smallcell", "Small cell", FALSE);
+	add_method(io->indm_store, "ffbidx", "ffbidx (GPU)", FALSE);
 
 	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(io->indm_store));
 
@@ -215,24 +194,6 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 	                                                  "text", 1,
 	                                                  NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-
-	renderer = gtk_cell_renderer_toggle_new();
-	column = gtk_tree_view_column_new_with_attributes("Prior unit cell",
-	                                                  renderer,
-	                                                  "active", 2,
-	                                                  NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-	g_signal_connect(G_OBJECT(renderer), "toggled",
-	                 G_CALLBACK(prior_cell_toggled), io);
-
-	renderer = gtk_cell_renderer_toggle_new();
-	column = gtk_tree_view_column_new_with_attributes("Prior lattice type",
-	                                                  renderer,
-	                                                  "active", 3,
-	                                                  NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-	g_signal_connect(G_OBJECT(renderer), "toggled",
-	                 G_CALLBACK(prior_latt_toggled), io);
 
 	return treeview;
 }
@@ -307,7 +268,7 @@ static GtkWidget *indexing_parameters(CrystFELIndexingOpts *io)
 	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(io->auto_indm), "toggled",
 	                 G_CALLBACK(auto_indm_toggle_sig), io);
-	expander = gtk_expander_new("Select indexing methods and prior information");
+	expander = gtk_expander_new("Select indexing methods");
 	frame = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(expander), GTK_WIDGET(frame));
@@ -893,15 +854,13 @@ char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *op
 
 	indm_str[0] = '\0';
 	do {
-		gboolean enabled, prior_cell, prior_latt;
+		gboolean enabled;
 		gchar *name;
 
 		gtk_tree_model_get(GTK_TREE_MODEL(opts->indm_store),
 		                   &iter,
 		                   0, &enabled,
-		                   2, &prior_cell,
-		                   3, &prior_latt,
-		                   4, &name,
+		                   2, &name,
 		                   -1);
 
 		if ( enabled ) {
@@ -910,16 +869,6 @@ char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *op
 			}
 			first = 0;
 			strcat(indm_str, name);
-			if ( prior_cell ) {
-				strcat(indm_str, "-cell");
-			} else {
-				strcat(indm_str, "-nocell");
-			}
-			if ( prior_latt ) {
-				strcat(indm_str, "-latt");
-			} else {
-				strcat(indm_str, "-nolatt");
-			}
 		}
 
 	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
@@ -1277,7 +1226,7 @@ void crystfel_indexing_opts_set_indexing_method_string(CrystFELIndexingOpts *opt
 		                   -1);
 
 		for ( i=0; i<n; i++ ) {
-			char *str = base_indexer_str(methods[i]);
+			const char *str = indexer_str(methods[i]);
 			if ( strcmp(str, name) == 0 ) {
 				this_method = methods[i];
 				break;
@@ -1286,8 +1235,6 @@ void crystfel_indexing_opts_set_indexing_method_string(CrystFELIndexingOpts *opt
 
 		gtk_list_store_set(opts->indm_store, &iter,
 		                   0, (this_method != 0),
-		                   2, (this_method & INDEXING_USE_CELL_PARAMETERS),
-		                   3, (this_method & INDEXING_USE_LATTICE_TYPE),
 		                   -1);
 
 	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
