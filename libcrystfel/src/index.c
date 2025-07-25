@@ -90,100 +90,59 @@ static const char *onoff(int a)
 }
 
 
-char *base_indexer_str(IndexingMethod indm)
+const char *indexer_str(IndexingMethod indm)
 {
-	char *str;
-
-	str = cfmalloc(256);
-	if ( str == NULL ) {
-		ERROR("Failed to allocate string.\n");
-		return NULL;
-	}
-	str[0] = '\0';
-
-	switch ( indm & INDEXING_METHOD_MASK ) {
+	switch ( indm ) {
 
 		case INDEXING_NONE :
-		strcpy(str, "none");
-		return str;
+		return "none";
 
 		case INDEXING_DIRAX :
-		strcpy(str, "dirax");
+		return "dirax";
 		break;
 
 		case INDEXING_ASDF :
-		strcpy(str, "asdf");
-		break;
+		return "asdf";
 
 		case INDEXING_MOSFLM :
-		strcpy(str, "mosflm");
-		break;
+		return "mosflm";
 
 		case INDEXING_FELIX :
-		strcpy(str, "felix");
-		break;
+		return "felix";
 
 		case INDEXING_XDS :
-		strcpy(str, "xds");
-		break;
+		return "xds";
 
 		case INDEXING_TAKETWO :
-		strcpy(str, "taketwo");
-		break;
+		return "taketwo";
 
 		case INDEXING_XGANDALF:
-		strcpy(str, "xgandalf");
-		break;
+		return "xgandalf";
 
 		case INDEXING_PINKINDEXER:
-		strcpy(str, "pinkIndexer");
-		break;
+		return "pinkIndexer";
 
 		case INDEXING_SIMULATION :
-		strcpy(str, "simulation");
-		break;
+		return "simulation";
 
 		case INDEXING_FILE :
-		strcpy(str, "file");
-		break;
+		return "file";
 
 		case INDEXING_FFBIDX :
-		strcpy(str, "ffbidx");
-		break;
+		return "ffbidx";
 
 		case INDEXING_SMALLCELL :
-		strcpy(str, "smallcell");
-		break;
+		return "smallcell";
 
 		default :
-		strcpy(str, "(unknown)");
-		break;
+		return "(unknown)";
 
 	}
-
-	return str;
 }
 
 
-static char *friendly_indexer_name(IndexingMethod m)
-{
-	char *base = base_indexer_str(m & INDEXING_METHOD_MASK);
-	if ( (m & INDEXING_USE_CELL_PARAMETERS)
-	  && (m & INDEXING_USE_LATTICE_TYPE) ) {
-		strcat(base, " using cell parameters and Bravais lattice type "
-		             "as prior information");
-	} else if ( m & INDEXING_USE_CELL_PARAMETERS ) {
-		strcat(base, " using cell parameters as prior information");
-	} else if ( m & INDEXING_USE_LATTICE_TYPE ) {
-		strcat(base, " using Bravais lattice type as prior information");
-	} else {
-		strcat(base, " - no prior information");
-	}
-	return base;
-}
-
-
-static void *prepare_method(IndexingMethod *m, UnitCell *cell,
+static void *prepare_method(IndexingMethod m,
+                            UnitCell *cell,
                             double wavelength_estimate,
                             double clen_estimate,
                             struct xgandalf_options *xgandalf_opts,
@@ -195,83 +154,69 @@ static void *prepare_method(IndexingMethod *m, UnitCell *cell,
 			    struct smallcell_options *smallcell_opts,
                             struct asdf_options *asdf_opts)
 {
-	char *str;
-	IndexingMethod in = *m;
 	void *priv = NULL;
 
-	switch ( *m & INDEXING_METHOD_MASK ) {
+	switch ( m ) {
 
 		case INDEXING_NONE :
 		priv = "none";
 		break;
 
 		case INDEXING_DIRAX :
-		priv = dirax_prepare(m, cell);
+		priv = dirax_prepare(&m, cell);
 		break;
 
 		case INDEXING_ASDF :
-		priv = asdf_prepare(m, cell, asdf_opts);
+		priv = asdf_prepare(&m, cell, asdf_opts);
 		break;
 
 		case INDEXING_MOSFLM :
-		priv = mosflm_prepare(m, cell);
+		priv = mosflm_prepare(&m, cell);
 		break;
 
 		case INDEXING_XDS :
-		priv = xds_prepare(m, cell);
+		priv = xds_prepare(&m, cell);
 		break;
 
 		case INDEXING_FILE :
-		priv = fromfile_prepare(m, fromfile_opts);
+		priv = fromfile_prepare(&m, fromfile_opts);
 		break;
 
 		case INDEXING_SMALLCELL :
-		priv = smallcell_prepare(m, smallcell_opts, cell);
+		priv = smallcell_prepare(&m, smallcell_opts, cell);
 		break;
 
 		case INDEXING_FELIX :
-		priv = felix_prepare(m, cell, felix_opts);
+		priv = felix_prepare(&m, cell, felix_opts);
 		break;
 
 		case INDEXING_TAKETWO :
-		priv = taketwo_prepare(m, taketwo_opts, cell);
+		priv = taketwo_prepare(&m, taketwo_opts, cell);
 		break;
 
 		case INDEXING_XGANDALF :
-		priv = xgandalf_prepare(m, cell, xgandalf_opts);
+		priv = xgandalf_prepare(&m, cell, xgandalf_opts);
 		break;
 
 		case INDEXING_FFBIDX :
-		priv = ffbidx_prepare(m, cell, ffbidx_opts);
+		priv = ffbidx_prepare(&m, cell, ffbidx_opts);
 		break;
 
 		case INDEXING_PINKINDEXER :
-		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
+		priv = pinkIndexer_prepare(&m, cell, pinkIndexer_opts,
 		                           wavelength_estimate,
 		                           clen_estimate);
 		break;
 
 		default :
-		ERROR("Don't know how to prepare indexing method %i\n", *m);
+		ERROR("Don't know how to prepare indexing method %i\n", m);
 		break;
 
 	}
 
-	str = indexer_str(*m);
-
 	if ( priv == NULL ) {
-		ERROR("Failed to prepare indexing method %s\n", str);
-		cffree(str);
+		ERROR("Failed to prepare indexing method %s\n", indexer_str(m));
 		return NULL;
-	}
-
-	cffree(str);
-
-	if ( in != *m ) {
-		ERROR("Note: flags were altered to take into account "
-		      "the information provided and/or the limitations "
-		      "of the indexing method.\nPlease check the "
-		      "methods listed above carefully.\n");
 	}
 
 	return priv;
@@ -299,13 +244,7 @@ IndexingMethod *parse_indexing_methods(const char *method_list,
 		if ( err ) {
 			ERROR("----- Notice -----\n");
 			ERROR("The way indexing options are given has changed in this CrystFEL version.\n");
-			ERROR("The indexing method should contain only the method itself and ");
-			ERROR("prior information modifiers ('cell' or 'latt')\n");
-			ERROR("To disable prediction refinement ('norefine'), use --no-refine.\n");
-			ERROR("To disable all unit cell checks ('raw'), use --no-check-cell.\n");
-			ERROR("To disable peak alignment check ('bad'), use --no-check-peaks.\n");
-			ERROR("To disable indexing retry ('noretry'), use --no-retry.\n");
-			ERROR("To enable multi-lattice indexing by 'delete and retry', use --multi\n");
+			ERROR("Prior information modifiers ('cell' or 'latt') are no longer used.\n");
 			ERROR("------------------\n");
 			cffree(methods);
 			return NULL;
@@ -345,45 +284,11 @@ IndexingPrivate *setup_indexing(const char *method_list,
 	/* No cell parameters -> no cell checking, no prior cell */
 	if ( !cell_has_parameters(cell) ) {
 
-		int warn = 0;
-
 		if ( flags & INDEXING_CHECK_CELL ) {
 			ERROR("WARNING: Forcing --no-check-cell because "
-			      "reference unit cell parameters were not "
-			      "given.\n");
+			      "reference unit cell parameters were not given.\n");
 			flags &= ~INDEXING_CHECK_CELL;
 		}
-
-		for ( i=0; i<n; i++ ) {
-			if ( methods[i] & INDEXING_USE_CELL_PARAMETERS ) {
-				methods[i] &= ~INDEXING_USE_CELL_PARAMETERS;
-				warn = 1;
-			}
-		}
-		if ( warn ) {
-			ERROR("WARNING: Forcing all indexing methods to use "
-			      "\"-nocell\", because reference cell parameters "
-			      "were not given.\n");
-		}
-	}
-
-	/* No cell at all -> no prior lattice type */
-	if ( cell == NULL ) {
-
-		int warn = 0;
-
-		for ( i=0; i<n; i++ ) {
-			if ( methods[i] & INDEXING_USE_LATTICE_TYPE ) {
-				methods[i] &= ~INDEXING_USE_LATTICE_TYPE;
-				warn = 1;
-			}
-		}
-		if ( warn ) {
-			ERROR("WARNING: Forcing all indexing methods to use "
-			      "\"-nolatt\", because reference Bravais lattice "
-			      "type was not given.\n");
-		}
-
 	}
 
 	ipriv = cfmalloc(sizeof(struct _indexingprivate));
@@ -398,7 +303,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
 
 		int j;
 
-		ipriv->engine_private[i] = prepare_method(&methods[i], cell,
+		ipriv->engine_private[i] = prepare_method(methods[i], cell,
 		                                          wavelength_estimate,
 		                                          clen_estimate,
 		                                          xgandalf_opts,
@@ -449,11 +354,7 @@ void print_indexing_info(IndexingPrivate *ipriv)
 
 	STATUS("List of indexing methods:\n");
 	for ( i=0; i<ipriv->n_methods; i++ ) {
-		char *str = indexer_str(ipriv->methods[i]);
-		char *tmp = friendly_indexer_name(ipriv->methods[i]);
-		STATUS("  %2i: %-25s (%s)\n", i, str, tmp);
-		cffree(str);
-		cffree(tmp);
+		STATUS("  %2i: %-25s\n", i, indexer_str(ipriv->methods[i]));
 	}
 
 	STATUS("Indexing parameters:\n");
@@ -485,7 +386,7 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 
 	for ( n=0; n<ipriv->n_methods; n++ ) {
 
-		switch ( ipriv->methods[n] & INDEXING_METHOD_MASK ) {
+		switch ( ipriv->methods[n] ) {
 
 			case INDEXING_NONE :
 			break;
@@ -607,7 +508,7 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 	int n_bad = 0;
 	int n_before = image->n_crystals;
 
-	switch ( indm & INDEXING_METHOD_MASK ) {
+	switch ( indm ) {
 
 		case INDEXING_NONE :
 		return 0;
@@ -1049,61 +950,9 @@ void index_pattern_5(struct image *image, IndexingPrivate *ipriv,
 }
 
 
-/* Set the indexer flags for "use no lattice type information" */
-static IndexingMethod set_nolattice(IndexingMethod a)
-{
-	return a & ~INDEXING_USE_LATTICE_TYPE;
-}
-
-
-/* Set the indexer flags for "use lattice type information" */
-static IndexingMethod set_lattice(IndexingMethod a)
-{
-	return a | INDEXING_USE_LATTICE_TYPE;
-}
-
-
-/* Set the indexer flags for "use no unit cell parameters" */
-static IndexingMethod set_nocellparams(IndexingMethod a)
-{
-	return a & ~INDEXING_USE_CELL_PARAMETERS;
-}
-
-
-/* Set the indexer flags for "use unit cell parameters" */
-static IndexingMethod set_cellparams(IndexingMethod a)
-{
-	return a | INDEXING_USE_CELL_PARAMETERS;
-}
-
-
-char *indexer_str(IndexingMethod indm)
-{
-	char *str = base_indexer_str(indm);
-
-	if ( (indm & INDEXING_METHOD_MASK) == INDEXING_SIMULATION ) return str;
-	if ( (indm & INDEXING_METHOD_MASK) == INDEXING_NONE ) return str;
-
-	if ( indm & INDEXING_USE_LATTICE_TYPE ) {
-		strcat(str, "-latt");
-	} else {
-		strcat(str, "-nolatt");
-	}
-
-	if ( indm & INDEXING_USE_CELL_PARAMETERS ) {
-		strcat(str, "-cell");
-	} else {
-		strcat(str, "-nocell");
-	}
-
-	return str;
-}
-
-
 static IndexingMethod warn_method(const char *str)
 {
-	ERROR("Indexing method must contain exactly one engine name: '%s'\n",
-	      str);
+	ERROR("Indexing method must contain exactly one engine name: '%s'\n", str);
 	return INDEXING_ERROR;
 }
 
@@ -1123,44 +972,44 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 
 		if ( strcmp(bits[i], "dirax") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_DIRAX;
+			method = INDEXING_DIRAX;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "asdf") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_ASDF;
+			method = INDEXING_ASDF;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "mosflm") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_MOSFLM;
+			method = INDEXING_MOSFLM;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "xds") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_XDS;
+			method = INDEXING_XDS;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "felix") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_FELIX;
+			method = INDEXING_FELIX;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "taketwo") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_TAKETWO;
+			method = INDEXING_TAKETWO;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "xgandalf") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_XGANDALF;
+			method = INDEXING_XGANDALF;
 			have_method = 1;
 
 		} else if ( (strcmp(bits[i], "pinkIndexer") == 0)
 		         || (strcmp(bits[i], "pinkindexer") == 0) )
 		{
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_PINKINDEXER;
+			method = INDEXING_PINKINDEXER;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "none") == 0) {
@@ -1180,25 +1029,13 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 
 		} else if ( strcmp(bits[i], "ffbidx") == 0) {
 			if ( have_method ) return warn_method(str);
-			method = INDEXING_DEFAULTS_FFBIDX;
+			method = INDEXING_FFBIDX;
 			have_method = 1;
 
 		} else if ( strcmp(bits[i], "smallcell") == 0) {
 			if ( have_method ) return warn_method(str);
 			method = INDEXING_SMALLCELL;
 			return method;
-
-		} else if ( strcmp(bits[i], "latt") == 0) {
-			method = set_lattice(method);
-
-		} else if ( strcmp(bits[i], "nolatt") == 0) {
-			method = set_nolattice(method);
-
-		} else if ( strcmp(bits[i], "cell") == 0) {
-			method = set_cellparams(method);
-
-		} else if ( strcmp(bits[i], "nocell") == 0) {
-			method = set_nocellparams(method);
 
 		/* Deprecated options */
 		} else if ( strcmp(bits[i], "retry") == 0) {
@@ -1220,6 +1057,14 @@ IndexingMethod get_indm_from_string_2(const char *str, int *err)
 		} else if ( strcmp(bits[i], "comb") == 0) {
 			if ( err != NULL ) *err = 1;
 		} else if ( strcmp(bits[i], "axes") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "latt") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "nolatt") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "cell") == 0) {
+			if ( err != NULL ) *err = 1;
+		} else if ( strcmp(bits[i], "nocell") == 0) {
 			if ( err != NULL ) *err = 1;
 
 		} else {
