@@ -77,7 +77,6 @@ typedef enum {
 
 
 struct mosflm_private {
-	IndexingMethod          indm;
 	UnitCell                *template;
 };
 
@@ -111,7 +110,7 @@ static int check_mosflm_cell(struct mosflm_private *mp, struct image *image,
 
 	/* If we sent lattice information, make sure that we got back what we
 	 * asked for, not (e.g.) some "H" version of a rhombohedral R cell */
-	if ( mp->indm & INDEXING_USE_LATTICE_TYPE ) {
+	if ( mp->template != NULL ) {
 
 		LatticeType latt_m, latt_r;
 		char cen_m, cen_r;
@@ -499,8 +498,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 3 :
-		if ( (mosflm->mp->indm & INDEXING_USE_LATTICE_TYPE)
-		  && (mosflm->mp->template != NULL) )
+		if ( mosflm->mp->template != NULL )
 		{
 			char *symm;
 
@@ -546,7 +544,7 @@ static void mosflm_send_next(struct image *image, struct mosflm_data *mosflm)
 		break;
 
 		case 9 :
-		if ( mosflm->mp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+		if ( mosflm->mp->template != NULL ) {
 			char cen;
 			cell_get_parameters(mosflm->mp->template,
 			                    &a, &b, &c, &alpha, &beta, &gamma);
@@ -811,7 +809,7 @@ int run_mosflm(struct image *image, void *ipriv)
 }
 
 
-void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell)
+void *mosflm_prepare(IndexingMethod indm, UnitCell *cell)
 {
 	struct mosflm_private *mp;
 
@@ -820,10 +818,6 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell)
 		ERROR("Please check your Mosflm installation.\n");
 		return NULL;
 	}
-
-	/* Flags that MOSFLM knows about */
-	*indm &= INDEXING_METHOD_MASK
-	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
 
 	if ( (cell != NULL) && (cell_get_centering(cell) == 'I')
 	  && (cell_get_lattice_type(cell) == L_MONOCLINIC) )
@@ -838,7 +832,6 @@ void *mosflm_prepare(IndexingMethod *indm, UnitCell *cell)
 	if ( mp == NULL ) return NULL;
 
 	mp->template = cell;
-	mp->indm = *indm;
 
 	return (IndexingPrivate *)mp;
 }

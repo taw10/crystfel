@@ -73,7 +73,6 @@ struct fftw_vars {
 
 
 struct asdf_private {
-	IndexingMethod          indm;
 	UnitCell                *template;
 	struct fftw_vars        fftw;
 	int                     fast_execution;
@@ -1168,7 +1167,7 @@ int run_asdf(struct image *image, void *ipriv)
 		N_triplets_max = 20000;
 	}
 
-	if ( dp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+	if ( dp->template != NULL ) {
 
 		double a, b, c, gamma, beta, alpha;
 		cell_get_parameters(dp->template, &a, &b, &c,
@@ -1267,18 +1266,14 @@ int run_asdf(struct image *image, void *ipriv)
 /**
  * Prepare the ASDF indexing algorithm
  */
-void *asdf_prepare(IndexingMethod *indm, UnitCell *cell, struct asdf_options *asdf_opts)
+void *asdf_prepare(IndexingMethod indm, UnitCell *cell, struct asdf_options *asdf_opts)
 {
 	struct asdf_private *dp;
-
-	/* Flags that asdf knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_CELL_PARAMETERS;
 
 	dp = cfmalloc(sizeof(struct asdf_private));
 	if ( dp == NULL ) return NULL;
 
 	dp->template = cell;
-	dp->indm = *indm;
 	dp->fast_execution = asdf_opts->fast_execution;
 	dp->fftw = fftw_vars_new();
 
@@ -1309,7 +1304,7 @@ int run_asdf(struct image *image, void *ipriv)
 }
 
 
-void *asdf_prepare(IndexingMethod *indm, UnitCell *cell, struct asdf_options *asdf_opts)
+void *asdf_prepare(IndexingMethod indm, UnitCell *cell, struct asdf_options *asdf_opts)
 {
        ERROR("This copy of CrystFEL was compiled without FFTW support.\n");
        ERROR("To use asdf indexing, recompile with FFTW.\n");

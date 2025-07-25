@@ -50,7 +50,6 @@
 struct pinkIndexer_private_data {
 	PinkIndexer *pinkIndexer;
 
-	IndexingMethod indm;
 	UnitCell *cellTemplate;
 
 	float maxRefinementDisbalance;
@@ -177,7 +176,7 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 }
 
 
-void *pinkIndexer_prepare(IndexingMethod *indm,
+void *pinkIndexer_prepare(IndexingMethod indm,
                           UnitCell *cell,
                           struct pinkindexer_options *pinkIndexer_opts,
                           double wavelength_estimate,
@@ -205,7 +204,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 	}
 
 	struct pinkIndexer_private_data* pinkIndexer_private_data = cfmalloc(sizeof(struct pinkIndexer_private_data));
-	pinkIndexer_private_data->indm = *indm;
 	pinkIndexer_private_data->cellTemplate = cell;
 	pinkIndexer_private_data->maxRefinementDisbalance = pinkIndexer_opts->maxRefinementDisbalance;
 
@@ -264,10 +262,6 @@ void *pinkIndexer_prepare(IndexingMethod *indm,
 
 	ExperimentSettings_delete(experimentSettings);
 	cell_free(primitiveCell);
-
-	/* Flags that pinkIndexer knows about */
-	*indm &= INDEXING_METHOD_MASK
-	        | INDEXING_USE_CELL_PARAMETERS;
 
 	return pinkIndexer_private_data;
 }
@@ -369,7 +363,7 @@ int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 	return 0;
 }
 
-extern void *pinkIndexer_prepare(IndexingMethod *indm,
+extern void *pinkIndexer_prepare(IndexingMethod indm,
                                  UnitCell *cell,
                                  struct pinkindexer_options *pinkIndexer_opts,
                                  double wavelength_estimate,

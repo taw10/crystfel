@@ -183,7 +183,7 @@ static int set_lattice(UnitCell *cell, const char *ltsym)
 }
 
 
-void *fromfile_prepare(IndexingMethod *indm, struct fromfile_options *opts)
+void *fromfile_prepare(IndexingMethod indm, struct fromfile_options *opts)
 {
 	FILE *fh;
 	struct fromfile_private *dp;

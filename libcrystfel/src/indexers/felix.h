@@ -41,7 +41,7 @@
 
 extern int felix_default_options(struct felix_options **opts_ptr);
 
-extern void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
+extern void *felix_prepare(IndexingMethod indm, UnitCell *cell,
                            struct felix_options *opts);
 
 extern const char *felix_probe(UnitCell *cell);

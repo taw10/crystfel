@@ -69,7 +69,6 @@ typedef enum {
 
 
 struct dirax_private {
-	IndexingMethod          indm;
 	UnitCell                *template;
 };
 
@@ -607,7 +606,7 @@ int run_dirax(struct image *image, void *ipriv)
 }
 
 
-void *dirax_prepare(IndexingMethod *indm, UnitCell *cell)
+void *dirax_prepare(IndexingMethod indm, UnitCell *cell)
 {
 	struct dirax_private *dp;
 
@@ -617,14 +616,10 @@ void *dirax_prepare(IndexingMethod *indm, UnitCell *cell)
 		return NULL;
 	}
 
-	/* Flags that DirAx knows about */
-	*indm &= INDEXING_METHOD_MASK;
-
 	dp = cfmalloc(sizeof(struct dirax_private));
 	if ( dp == NULL ) return NULL;
 
 	dp->template = cell;
-	dp->indm = *indm;
 
 	return (IndexingPrivate *)dp;
 }

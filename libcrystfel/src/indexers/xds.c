@@ -65,7 +65,6 @@
 /* Global private data, prepared once */
 struct xds_private
 {
-	IndexingMethod indm;
 	UnitCell *cell;
 };
 
@@ -335,16 +334,12 @@ static int write_inp(struct image *image, struct xds_private *xp)
 	fprintf(fh, "DATA_RANGE=1 1\n");
 	fprintf(fh, "SPOT_RANGE=1 1\n");
 
-	if ( xp->indm & INDEXING_USE_LATTICE_TYPE ) {
-		fprintf(fh, "SPACE_GROUP_NUMBER= %s\n",
-			    xds_spacegroup_for_lattice(xp->cell));
-	} else {
-		fprintf(fh, "SPACE_GROUP_NUMBER= 0\n");
-	}
-
-	if ( xp->indm & INDEXING_USE_CELL_PARAMETERS ) {
+	if ( xp->cell != NULL ) {
 
 		double a, b, c, al, be, ga;
+
+		fprintf(fh, "SPACE_GROUP_NUMBER= %s\n",
+			    xds_spacegroup_for_lattice(xp->cell));
 
 		cell_get_parameters(xp->cell, &a, &b, &c, &al, &be, &ga);
 
@@ -354,6 +349,7 @@ static int write_inp(struct image *image, struct xds_private *xp)
 		            rad2deg(al), rad2deg(be), rad2deg(ga));
 
         } else {
+		fprintf(fh, "SPACE_GROUP_NUMBER= 0\n");
 		fprintf(fh, "UNIT_CELL_CONSTANTS= 0 0 0 0 0 0\n");
 	}
 
@@ -433,33 +429,13 @@ int run_xds(struct image *image, void *priv)
 }
 
 
-void *xds_prepare(IndexingMethod *indm, UnitCell *cell)
+void *xds_prepare(IndexingMethod indm, UnitCell *cell)
 {
 	struct xds_private *xp;
 
 	if ( xds_probe(cell) == NULL ) {
 		ERROR("XDS does not appear to run properly.\n");
 		ERROR("Please check your XDS installation.\n");
-		return NULL;
-	}
-
-	/* Either cell,latt and cell provided, or nocell-nolatt and no cell
-	 * - complain about anything else.  Could figure this out automatically,
-	 * but we'd have to decide whether the user just forgot the cell, or
-	 * forgot "-nolatt", or whatever. */
-	if ( (*indm & INDEXING_USE_LATTICE_TYPE)
-	  && !(*indm & INDEXING_USE_CELL_PARAMETERS) )
-	{
-		ERROR("Invalid XDS options (-latt-nocell): "
-		      "try xds-nolatt-nocell.\n");
-		return NULL;
-	}
-
-	if ( (*indm & INDEXING_USE_CELL_PARAMETERS)
-	  && !(*indm & INDEXING_USE_LATTICE_TYPE) )
-	{
-		ERROR("Invalid XDS options (-cell-nolatt): "
-		      "try xds-nolatt-nocell.\n");
 		return NULL;
 	}
 
@@ -471,12 +447,7 @@ void *xds_prepare(IndexingMethod *indm, UnitCell *cell)
 	xp = cfcalloc(1, sizeof(*xp));
 	if ( xp == NULL ) return NULL;
 
-	/* Flags that XDS knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_LATTICE_TYPE
-	          | INDEXING_USE_CELL_PARAMETERS;
-
 	xp->cell = cell;
-	xp->indm = *indm;
 
 	return xp;
 }

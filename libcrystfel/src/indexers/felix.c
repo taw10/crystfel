@@ -71,7 +71,6 @@
 /* Global private data, prepared once */
 struct felix_private
 {
-	IndexingMethod indm;
 	UnitCell *cell;
 
 	/* Options specific to Felix */
@@ -609,7 +608,7 @@ static int sg_number_for_cell(UnitCell *cell)
 }
 
 
-void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
+void *felix_prepare(IndexingMethod indm, UnitCell *cell,
                     struct felix_options *opts)
 {
 	struct felix_private *gp;
@@ -628,12 +627,7 @@ void *felix_prepare(IndexingMethod *indm, UnitCell *cell,
 	gp = cfcalloc(1, sizeof(*gp));
 	if ( gp == NULL ) return NULL;
 
-	/* Flags that Felix knows about */
-	*indm &= INDEXING_METHOD_MASK
-	       | INDEXING_USE_LATTICE_TYPE | INDEXING_USE_CELL_PARAMETERS;
-
 	gp->cell = cell;
-	gp->indm = *indm;
 
 	/* Default values of felix options */
 	gp->spacegroup = sg_number_for_cell(cell);

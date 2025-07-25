@@ -46,7 +46,7 @@ extern "C" {
 extern int run_asdf(struct image *image, void *ipriv);
 extern int asdf_default_options(struct asdf_options **opts_ptr);
 
-extern void *asdf_prepare(IndexingMethod *indm, UnitCell *cell,
+extern void *asdf_prepare(IndexingMethod indm, UnitCell *cell,
                           struct asdf_options *asdf_opts);
 extern const char *asdf_probe(UnitCell *cell);
 

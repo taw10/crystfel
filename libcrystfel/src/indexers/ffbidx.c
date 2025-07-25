@@ -212,7 +212,7 @@ int run_ffbidx(struct image *image, void *ipriv) {
     return 1;
 }
 
-void *ffbidx_prepare(IndexingMethod *indm, UnitCell *cell, struct ffbidx_options *opts) {
+void *ffbidx_prepare(IndexingMethod indm, UnitCell *cell, struct ffbidx_options *opts) {
     if ( cell == NULL ) {
         ERROR("ffbidx: Unit cell information is required but missing.\n");
         return NULL;
@@ -271,7 +271,6 @@ void *ffbidx_prepare(IndexingMethod *indm, UnitCell *cell, struct ffbidx_options
         return NULL;
     }
 
-    *indm &= INDEXING_METHOD_MASK | INDEXING_USE_CELL_PARAMETERS;
     priv->state = STATE_CREATED;
     return priv;
 }
@@ -346,7 +345,7 @@ int run_ffbidx(struct image *image, void *ipriv)
 }
 
 
-void *ffbidx_prepare(IndexingMethod *indm, UnitCell *cell, struct ffbidx_options *opts)
+void *ffbidx_prepare(IndexingMethod indm, UnitCell *cell, struct ffbidx_options *opts)
 {
 	ERROR("This copy of CrystFEL was compiled without FFBIDX support.\n");
 	ERROR("To use FFBIDX indexing, recompile with FFBIDX.\n");

@@ -39,7 +39,7 @@
 /** \file taketwo.h */
 
 extern int taketwo_default_options(struct taketwo_options **opts_ptr);
-extern void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
+extern void *taketwo_prepare(IndexingMethod indm, struct taketwo_options *opts,
                              UnitCell *cell);
 extern const char *taketwo_probe(UnitCell *cell);
 extern int taketwo_index(struct image *image, void *priv);

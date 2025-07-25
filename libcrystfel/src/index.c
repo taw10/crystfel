@@ -163,47 +163,47 @@ static void *prepare_method(IndexingMethod m,
 		break;
 
 		case INDEXING_DIRAX :
-		priv = dirax_prepare(&m, cell);
+		priv = dirax_prepare(m, cell);
 		break;
 
 		case INDEXING_ASDF :
-		priv = asdf_prepare(&m, cell, asdf_opts);
+		priv = asdf_prepare(m, cell, asdf_opts);
 		break;
 
 		case INDEXING_MOSFLM :
-		priv = mosflm_prepare(&m, cell);
+		priv = mosflm_prepare(m, cell);
 		break;
 
 		case INDEXING_XDS :
-		priv = xds_prepare(&m, cell);
+		priv = xds_prepare(m, cell);
 		break;
 
 		case INDEXING_FILE :
-		priv = fromfile_prepare(&m, fromfile_opts);
+		priv = fromfile_prepare(m, fromfile_opts);
 		break;
 
 		case INDEXING_SMALLCELL :
-		priv = smallcell_prepare(&m, smallcell_opts, cell);
+		priv = smallcell_prepare(m, smallcell_opts, cell);
 		break;
 
 		case INDEXING_FELIX :
-		priv = felix_prepare(&m, cell, felix_opts);
+		priv = felix_prepare(m, cell, felix_opts);
 		break;
 
 		case INDEXING_TAKETWO :
-		priv = taketwo_prepare(&m, taketwo_opts, cell);
+		priv = taketwo_prepare(m, taketwo_opts, cell);
 		break;
 
 		case INDEXING_XGANDALF :
-		priv = xgandalf_prepare(&m, cell, xgandalf_opts);
+		priv = xgandalf_prepare(m, cell, xgandalf_opts);
 		break;
 
 		case INDEXING_FFBIDX :
-		priv = ffbidx_prepare(&m, cell, ffbidx_opts);
+		priv = ffbidx_prepare(m, cell, ffbidx_opts);
 		break;
 
 		case INDEXING_PINKINDEXER :
-		priv = pinkIndexer_prepare(&m, cell, pinkIndexer_opts,
+		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
 		                           wavelength_estimate,
 		                           clen_estimate);
 		break;

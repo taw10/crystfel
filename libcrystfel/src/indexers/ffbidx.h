@@ -42,7 +42,7 @@ extern int ffbidx_default_options(struct ffbidx_options **opts_ptr);
 
 extern int run_ffbidx(struct image *image, void *ipriv);
 
-extern void *ffbidx_prepare(IndexingMethod *indm, UnitCell *cell, struct ffbidx_options *opts);
+extern void *ffbidx_prepare(IndexingMethod indm, UnitCell *cell, struct ffbidx_options *opts);
 
 extern void ffbidx_cleanup(void *pp);
 

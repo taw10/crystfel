@@ -43,7 +43,7 @@ extern int xgandalf_default_options(struct xgandalf_options **opts_ptr);
 
 extern int run_xgandalf(struct image *image, void *ipriv);
 
-extern void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
+extern void *xgandalf_prepare(IndexingMethod indm, UnitCell *cell,
                               struct xgandalf_options *xgandalf_opts);
 
 extern void xgandalf_cleanup(void *pp);

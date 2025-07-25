@@ -152,7 +152,6 @@ struct Seed
 
 struct taketwo_private
 {
-	IndexingMethod indm;
 	struct taketwo_options *opts;
 	UnitCell       *cell;
 	int   serial_num; /**< Serial of last image, -1 if unassigned */
@@ -2055,22 +2054,10 @@ int taketwo_index(struct image *image, void *priv)
 }
 
 
-void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
+void *taketwo_prepare(IndexingMethod indm, struct taketwo_options *opts,
                       UnitCell *cell)
 {
 	struct taketwo_private *tp;
-
-	/* Flags that TakeTwo knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_LATTICE_TYPE
-	                              | INDEXING_USE_CELL_PARAMETERS;
-
-	if ( !( (*indm & INDEXING_USE_LATTICE_TYPE)
-	       && (*indm & INDEXING_USE_CELL_PARAMETERS)) )
-	{
-		ERROR("TakeTwo indexing requires cell and lattice type "
-		      "information.\n");
-		return NULL;
-	}
 
 	if ( cell == NULL ) {
 		ERROR("TakeTwo indexing requires a unit cell.\n");
@@ -2101,7 +2088,6 @@ void *taketwo_prepare(IndexingMethod *indm, struct taketwo_options *opts,
 
 	tp->cell = cell;
 	tp->opts = opts;
-	tp->indm = *indm;
 	tp->serial_num = -1;
 	tp->xtal_num = 0;
 	tp->prevSols = NULL;

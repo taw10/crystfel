@@ -51,7 +51,6 @@ struct xgandalf_private_data {
 	IndexerPlain *indexer;
 	reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;
 
-	IndexingMethod indm;
 	UnitCell *cellTemplate;
 	Lattice_t sampleRealLattice_A;   //same as cellTemplate
 	IntegerMatrix *centeringTransformation;
@@ -155,12 +154,11 @@ int run_xgandalf(struct image *image, void *ipriv)
 	return goodLatticesCount;
 }
 
-void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
+void *xgandalf_prepare(IndexingMethod indm, UnitCell *cell,
                        struct xgandalf_options *xgandalf_opts)
 {
 	struct xgandalf_private_data *xgandalf_private_data = cfmalloc(sizeof(struct xgandalf_private_data));
 	allocReciprocalPeaks(&(xgandalf_private_data->reciprocalPeaks_1_per_A));
-	xgandalf_private_data->indm = *indm;
 	xgandalf_private_data->cellTemplate = NULL;
 	xgandalf_private_data->centeringTransformation = NULL;
 
@@ -168,7 +166,7 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 	samplingPitch_t samplingPitch = xgandalf_opts->sampling_pitch;
 	gradientDescentIterationsCount_t gradientDescentIterationsCount = xgandalf_opts->grad_desc_iterations;
 
-	if (*indm & INDEXING_USE_CELL_PARAMETERS) {
+	if ( cell != NULL ) {
 
 		xgandalf_private_data->cellTemplate = cell;
 
@@ -248,9 +246,6 @@ void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
 	IndexerPlain_setMaxPeaksToUseForIndexing(xgandalf_private_data->indexer,
 			xgandalf_opts->maxPeaksForIndexing);
 
-	/* Flags that XGANDALF knows about */
-	*indm &= INDEXING_METHOD_MASK | INDEXING_USE_CELL_PARAMETERS;
-
 	return xgandalf_private_data;
 }
 
@@ -325,7 +320,7 @@ int run_xgandalf(struct image *image, void *ipriv)
 }
 
 
-void *xgandalf_prepare(IndexingMethod *indm, UnitCell *cell,
+void *xgandalf_prepare(IndexingMethod indm, UnitCell *cell,
                        struct xgandalf_options *xgandalf_opts)
 {
 	ERROR("This copy of CrystFEL was compiled without XGANDALF support.\n");
