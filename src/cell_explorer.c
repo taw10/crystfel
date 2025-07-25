@@ -1960,7 +1960,6 @@ static void indexing_method_list(CellWindow *w, GtkWidget *vbox)
 	for ( j=0; j<w->n_unique_indms; j++ ) {
 
 		GtkWidget *button;
-		char *label;
 		struct toggle_method *tm = malloc(sizeof(struct toggle_method));
 
 		if ( tm == NULL ) {
@@ -1968,9 +1967,7 @@ static void indexing_method_list(CellWindow *w, GtkWidget *vbox)
 			continue;
 		}
 
-		label = indexer_str(w->unique_indms[j]);
-		button = gtk_toggle_button_new_with_label(label);
-		free(label);
+		button = gtk_toggle_button_new_with_label(indexer_str(w->unique_indms[j]));
 
 		gtk_box_pack_start(GTK_BOX(w->indmlist), button,
 	                           FALSE, FALSE, 5.0);

@@ -436,7 +436,6 @@ int stream_write_chunk(Stream *st, const struct image *i,
                        StreamFlags srf)
 {
 	int j;
-	char *indexer;
 	int ret = 0;
 
 	fprintf(st->fh, STREAM_CHUNK_START_MARKER"\n");
@@ -446,9 +445,7 @@ int stream_write_chunk(Stream *st, const struct image *i,
 	fprintf(st->fh, "Image serial number: %i\n", i->serial);
 
 	fprintf(st->fh, "hit = %i\n", i->hit);
-	indexer = indexer_str(i->indexed_by);
-	fprintf(st->fh, "indexed_by = %s\n", indexer);
-	cffree(indexer);
+	fprintf(st->fh, "indexed_by = %s\n", indexer_str(i->indexed_by));
 	if ( i->indexed_by != INDEXING_NONE ) {
 		fprintf(st->fh, "n_indexing_tries = %i\n", i->n_indexing_tries);
 	}
