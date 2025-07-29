@@ -8,15 +8,15 @@ CFPREFIX=/usr
 SYMINFO=/usr/local/share/ccp4/syminfo.lib
 
 SYS=`uname -sm`
-if [ "$SYS" == "Linux x86_64" ]; then
+if [ "$SYS" = "Linux x86_64" ]; then
 	MOSFLM=mosflm-linux-64-noX11
 	DIRAX=dirax1.17-Linux-x86_64-static.tar.Z
 	DIRAX_TAR_ARGS=-xZf
-	XDS=XDS-INTEL64_Linux_x86_64
+	XDS=XDS-gfortran_Linux_x86_64
 	PLATFORM="Linux x86_64"
 fi
 
-if [ "$SYS" == "Linux i686" ]; then
+if [ "$SYS" = "Linux i686" ]; then
 	MOSFLM=mosflm-linux-32-noX11
 	DIRAX=dirax1.17-Linux-i686-static.tar.Z
 	DIRAX_TAR_ARGS=-xZf
@@ -24,7 +24,7 @@ if [ "$SYS" == "Linux i686" ]; then
 	PLATFORM="Linux x86 (32 bit)"
 fi
 
-if [ "$SYS" == "Darwin x86_64" ]; then
+if [ "$SYS" = "Darwin x86_64" ]; then
 	MOSFLM=mosflm-linux-64-noX11
 	DIRAX=dirax1.16-Darwin-x86_64.tar.gz
 	DIRAX_TAR_ARGS=-xzf
@@ -32,20 +32,20 @@ if [ "$SYS" == "Darwin x86_64" ]; then
 	PLATFORM="MacOS x86_64"
 fi
 
-if [ "$SYS" == "Darwin arm64" ]; then
+if [ "$SYS" = "Darwin arm64" ]; then
 	MOSFLM=x
 	DIRAX=x
 	XDS=XDS-Apple_M1.tar.gz
 	PLATFORM="MacOS ARM (Apple silicon)"
 fi
 
-if [ "x$PLATFORM" == x ]; then
+if [ "x$PLATFORM" = x ]; then
 	echo Could not identify your system: $SYS
 	uname -a
 	exit 1
 fi
 
-if [ x$1 == x--help ]; then
+if [ x$1 = x--help ]; then
 	echo 'This script downloads and installs Mosflm, DirAx and XDS'
 	echo
 	echo Step 1: $0
@@ -70,7 +70,7 @@ set -e
 
 if [ x$1 != xinstall ]; then
 
-	if [ x$USER == xroot ]; then
+	if [ x$USER = xroot ]; then
 		echo Do not run this as root
 		exit 1
 	fi
@@ -97,7 +97,7 @@ if [ x$1 != xinstall ]; then
 		fi
 
 		mkdir mosflm-tempdir
-		pushd mosflm-tempdir
+		cd mosflm-tempdir
 		wget -nv https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/$MOSFLM.zip
 		unzip $MOSFLM.zip
 		mv $MOSFLM mosflm.real
@@ -105,14 +105,14 @@ if [ x$1 != xinstall ]; then
 		echo "export SYMINFO=$SYMINFO" >> mosflm
 		echo "$CFPREFIX/bin/mosflm.real -n \$@" >> mosflm
 		chmod +x mosflm
-		popd
+		cd ..
 	else
 		echo "Mosflm is not available for your system."
 	fi
-	
+
 	if [ x$DIRAX != xx ]; then
 		mkdir dirax-tempdir
-		pushd dirax-tempdir
+		cd dirax-tempdir
 		wget -nv http://www.crystal.chem.uu.nl/distr/dirax/download/$DIRAX
 		set +e
 		tar $DIRAX_TAR_ARGS $DIRAX
@@ -125,21 +125,24 @@ if [ x$1 != xinstall ]; then
 		echo "#!/bin/sh" > dirax
 		echo "exec $CFPREFIX/bin/dirax.real \"\$@\"" >> dirax
 		chmod +x dirax
-		popd
+		cd ..
 	else
 		echo Dirax is not available for your system.
 	fi
-	
+
 	if [ x$XDS != xx ]; then
 		mkdir xds-tempdir
-		pushd xds-tempdir
-		wget -nv https://xds.mr.mpg.de/$XDS.tar.gz
+		cd xds-tempdir
+		wget -nv https://wiki.uni-konstanz.de/pub/xds/$XDS.tar.gz
 		tar -xzf $XDS.tar.gz
 		mv $XDS/xds xds
-		popd
+		cd ..
 	else
 		echo XDS is not available for your system.
 	fi
+
+	echo Now run the script again, adding \'install\' to the command line.
+	echo If installing to a system location, prefix with \'sudo\'.
 
 else
 
