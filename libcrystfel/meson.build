@@ -65,6 +65,12 @@ if ccp4dep.found()
   conf_data.set10('HAVE_LIBCCP4', true)
 endif
 
+tiffdep = dependency('libtiff-4',
+                     required: false)
+if tiffdep.found()
+  conf_data.set10('HAVE_LIBTIFF', true)
+endif
+
 msgpackdep = dependency('msgpack-c', required: false)
 if not msgpackdep.found()
   msgpackdep = dependency('msgpack', required: false)
@@ -142,6 +148,7 @@ libcrystfel_sources = ['src/image.c',
                        'src/image-hdf5.c',
                        'src/image-msgpack.c',
                        'src/image-seedee.c',
+                       'src/image-tiff.c',
                        'src/indexers/dirax.c',
                        'src/indexers/felix.c',
                        'src/indexers/mosflm.c',
@@ -169,7 +176,8 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                       dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
                                      hdf5dep, pthreaddep, ffbidxdep,
                                      xgandalfdep, pinkindexerdep, fdipdep,
-                                     ccp4dep, msgpackdep, seedeedep, cjsondep],
+                                     ccp4dep, msgpackdep, seedeedep, cjsondep,
+                                     tiffdep],
                       install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib:$ORIGIN',
                       install: true)
 

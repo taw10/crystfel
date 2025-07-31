@@ -46,6 +46,7 @@
 #include "image-cbf.h"
 #include "image-msgpack.h"
 #include "image-seedee.h"
+#include "image-tiff.h"
 #include "profile.h"
 
 #include "datatemplate.h"
@@ -150,6 +151,38 @@ int is_cbfgz_file(const char *filename, int *err)
 	if ( err != NULL ) *err = 1;
 	return 0;
 	#endif
+}
+
+
+int is_tiff_file(const char *filename, int *err)
+{
+	FILE *fh;
+	unsigned char bytes[4];
+	size_t n;
+
+	if ( err != NULL ) *err = 0;
+
+	fh = fopen(filename, "r");
+	if ( fh == NULL ) {
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+
+	n = fread(bytes, 1, 4, fh);
+	fclose(fh);
+
+	if ( n != 4 ) {
+		if ( err != NULL ) *err = 1;
+		return 0;
+	}
+
+	if ( (bytes[0] != 0x49) && (bytes[0] != 0x4d) ) return 0;
+	if ( bytes[0] != bytes[1] ) return 0;
+	if ( (bytes[2] == 0x2a) && (bytes[3] == 0x00) ) return 1;
+	if ( (bytes[2] == 0x2b) && (bytes[3] == 0x00) ) return 1;
+	if ( (bytes[2] == 0x00) && (bytes[3] == 0x2a) ) return 1;
+	if ( (bytes[2] == 0x00) && (bytes[3] == 0x2b) ) return 1;
+	return 0;
 }
 
 
@@ -504,6 +537,13 @@ static int read_header_to_cache(struct image *image, const char *from)
 		case DATA_SOURCE_TYPE_CBFGZ:
 		return image_cbf_read_header_to_cache(image, from);
 
+		case DATA_SOURCE_TYPE_TIFF:
+		#ifdef HAVE_LIBTIFF
+		return image_tiff_read_header_to_cache(image, from);
+		#else
+		return 1;
+		#endif
+
 		case DATA_SOURCE_TYPE_MSGPACK:
 		return image_msgpack_read_header_to_cache(image, from);
 
@@ -634,6 +674,14 @@ static DataSourceType file_type(const char *filename)
 	}
 	if ( err ) {
 		ERROR("Couldn't check for CBF.gz file: %s\n",  filename);
+		return DATA_SOURCE_TYPE_NONE;
+	}
+
+	if ( is_tiff_file(filename, &err) ) {
+		return DATA_SOURCE_TYPE_TIFF;
+	}
+	if ( err ) {
+		ERROR("Couldn't check for TIFF file: %s\n",  filename);
 		return DATA_SOURCE_TYPE_NONE;
 	}
 
@@ -804,6 +852,13 @@ static int image_read_image_data(struct image *image,
 
 		case DATA_SOURCE_TYPE_CBFGZ:
 		return image_cbf_read(image, dtempl, 1);
+
+		case DATA_SOURCE_TYPE_TIFF:
+		#ifdef HAVE_LIBTIFF
+		return image_tiff_read(image, dtempl);
+		#else
+		return 1;
+		#endif
 
 		case DATA_SOURCE_TYPE_MSGPACK:
 		return image_msgpack_read(image, dtempl, image->data_block,
