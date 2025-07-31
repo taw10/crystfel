@@ -133,7 +133,7 @@ if [ x$1 != xinstall ]; then
 	if [ x$XDS != xx ]; then
 		mkdir xds-tempdir
 		cd xds-tempdir
-		wget -nv https://wiki.uni-konstanz.de/pub/xds/$XDS.tar.gz
+		wget -nv https://xds.mr.mpg.de/$XDS.tar.gz
 		tar -xzf $XDS.tar.gz
 		mv $XDS/xds xds
 		cd ..
