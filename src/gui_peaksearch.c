@@ -106,12 +106,15 @@ void update_peaks(struct crystfelproject *proj)
 		                         proj->peak_search_params.half_pixel_shift);
 		if ( proj->peak_search_params.revalidate ) {
 			proj->cur_image->features = validate_peaks(proj->cur_image, peaks,
-			                                           proj->peak_search_params.min_snr,
+			                                           0.0, /* SNR - not used */
 			                                           proj->peak_search_params.pk_inn,
 			                                           proj->peak_search_params.pk_mid,
 			                                           proj->peak_search_params.pk_out,
-			                                           1, 0);
+			                                           1,  /* use_saturated = true */
+			                                           0); /* check_snr = false */
 			image_feature_list_free(peaks);
+		} else {
+			proj->cur_image->features = peaks;
 		}
 		break;
 
@@ -436,7 +439,7 @@ static void peaksearch_algo_changed(GtkWidget *combo,
 		add_check_param(proj->peak_params, "Half pixel shift",
 		                &proj->peak_search_params.half_pixel_shift,
 		                proj, "--no-half-pixel-shift");
-		add_check_param(proj->peak_params, "Check peaks first",
+		add_check_param(proj->peak_params, "Check peaks for bad regions",
 		                &proj->peak_search_params.revalidate,
 		                proj, "--no-revalidate");
 		add_radii(proj->peak_params, proj);

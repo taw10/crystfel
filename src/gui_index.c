@@ -1016,15 +1016,18 @@ static char **indexamajig_command_line(const char *geom_filename,
 	add_arg(args, n_args++, "--peaks");
 	add_arg(args, n_args++, str_peaksearch(peak_search_params->method));
 
-	if ( peak_search_params->method == PEAK_ZAEF ) {
+	switch ( peak_search_params->method ) {
+
+		case PEAK_ZAEF:
 		add_arg_float(args, n_args++, "threshold",
 		              peak_search_params->threshold);
 		add_arg_float(args, n_args++, "min-squared-gradient",
 		              peak_search_params->min_sq_gradient);
 		add_arg_float(args, n_args++, "min-snr",
 		              peak_search_params->min_snr);
+		break;
 
-	} else if ( peak_search_params->method == PEAK_PEAKFINDER8 ) {
+		case PEAK_PEAKFINDER8:
 		add_arg_float(args, n_args++, "threshold",
 		              peak_search_params->threshold);
 		add_arg_float(args, n_args++, "min-snr",
@@ -1042,7 +1045,25 @@ static char **indexamajig_command_line(const char *geom_filename,
 		if ( peak_search_params->peakfinder8_fast ) {
 			add_arg(args, n_args++, "--peakfinder8-fast");
 		}
+		break;
+
+		case PEAK_CXI:
+		case PEAK_HDF5:
+		if ( !peak_search_params->half_pixel_shift ) {
+			add_arg(args, n_args++, "--no-half-pixel-shift");
+		}
+		if ( !peak_search_params->revalidate ) {
+			add_arg(args, n_args++, "--no-revalidate");
+		}
+		/* --check-hdf5-snr is not exposed via GUI, no need to add --min-snr */
+		break;
+
+		default:
+		ERROR("Unrecognised peak search method when constructing command line\n");
+		break;
+
 	}
+
 	snprintf(tols, 2048, "--peak-radius=%.1f,%.1f,%.1f",
 	         peak_search_params->pk_inn,
 	         peak_search_params->pk_mid,
