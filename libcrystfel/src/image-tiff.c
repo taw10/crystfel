@@ -94,12 +94,19 @@ static int unpack_panels(struct image *image,
 }
 
 
+static int min(int x, int y)
+{
+	if ( x < y ) return x;
+	return y;
+}
+
+
 int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 {
 	TIFF *fh;
 	float *data;
 	uint32_t w, h ;
-	uint16_t sampleformat, bps;
+	uint16_t sampleformat, bps, spp;
 
 	if ( image->data_block != NULL ) {
 		ERROR("In-memory TIFF not (yet!) implemented.\n");
@@ -118,20 +125,71 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 		return 1;
 	}
 
-	TIFFPrintDirectory(fh, stdout, TIFFPRINT_STRIPS);
-
 	TIFFGetField(fh, TIFFTAG_IMAGEWIDTH, &w);
         TIFFGetField(fh, TIFFTAG_IMAGELENGTH, &h);
-        TIFFGetField(fh, TIFFTAG_SAMPLEFORMAT, &sampleformat); //SAMPLEFORMAT_IEEEFP);
+        if ( TIFFGetField(fh, TIFFTAG_SAMPLEFORMAT, &sampleformat) != 1 ) {
+	        sampleformat = SAMPLEFORMAT_UINT;
+	}
         TIFFGetField(fh, TIFFTAG_BITSPERSAMPLE, &bps);
-        //TIFFGetField(fh, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(fh, 0));
+        if ( TIFFGetField(fh, TIFFTAG_SAMPLESPERPIXEL, &spp) == 1 ) {
+	        if ( spp != 1 ) {
+		        ERROR("Unable to read TIFF data - more than one sample per pixel\n");
+			TIFFClose(fh);
+			return 1;
+		}
+	}
 
-	printf("got %i x %i,  %i bits per sample, format=%i\n", w, h, bps, sampleformat);
+	if ( sampleformat != SAMPLEFORMAT_UINT ) {
+		ERROR("Unable to read TIFF data - not unsigned int format\n");
+		TIFFClose(fh);
+		return 1;
+	}
+
+	if ( bps != 16 ) {
+		ERROR("Unable to read TIFF data - not 16 bit format\n");
+		TIFFClose(fh);
+		return 1;
+	}
+
+	uint32_t *bc;
+	int nstrips = TIFFNumberOfStrips(fh);
+	size_t stripsize = 0;
+	int s, rps;
+	int y = 0;
+	TIFFGetField(fh, TIFFTAG_STRIPBYTECOUNTS, &bc);
+	TIFFGetField(fh, TIFFTAG_ROWSPERSTRIP, &rps);
+	for ( s=0; s<nstrips; s++ ) {
+		if ( bc[s] > stripsize ) stripsize = bc[s];
+	}
+
+	data = cfmalloc(w*h*sizeof(float));
+	uint16_t *strip = cfmalloc(stripsize);
+	if ( (data == NULL) || (strip == NULL) ) {
+		ERROR("Failed to allocate memory for TIFF read\n");
+		TIFFClose(fh);
+		return 1;
+	}
+
+	for ( s=0; s<TIFFNumberOfStrips(fh); s++ ) {
+		int i, rows_in_strip;
+		TIFFReadEncodedStrip(fh, s, strip, stripsize);
+		rows_in_strip = min(h-y, rps);
+		for ( i=0; i<rows_in_strip; i++ ) {
+			int x;
+			for ( x=0; x<w; x++ ) {
+				data[x+(y+i)*w] = strip[x+i*w];
+			}
+		}
+		y += rows_in_strip;
+	}
+
+	cffree(strip);
 
 	TIFFClose(fh);
 
 	if ( unpack_panels(image, dtempl, data, w, h) ) {
 		ERROR("Failed to read TIFF data\n");
+		cffree(data);
 		return 1;
 	}
 	cffree(data);
