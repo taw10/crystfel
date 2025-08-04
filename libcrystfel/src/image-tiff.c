@@ -101,6 +101,33 @@ static int min(int x, int y)
 }
 
 
+struct sis_md
+{
+	uint32_t magic;
+	uint32_t ignore1;
+	uint16_t ignore2;
+	uint16_t min;
+	uint16_t hour;
+	uint16_t day;
+	uint16_t month;
+	uint16_t year;
+} __attribute__((packed));
+
+
+struct sis_md2
+{
+	char ignore[10];
+	int16_t unitExp;
+	double sizeX;
+	double sizeY;
+	char ignore2[8];
+	double mag;
+	uint16_t ignore3;
+	char cname[34];
+	char ptype[32];
+} __attribute__((packed));
+
+
 int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 {
 	TIFF *fh;
@@ -185,7 +212,50 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 
 	cffree(strip);
 
+	uint32_t count;
+	void *hdata;
+	uint32_t sis_offs;
+	int have_sis_metadata;
+
+	have_sis_metadata = TIFFGetField(fh, 33560, &count, &hdata);
+
+	if ( have_sis_metadata ) {
+		sis_offs = *(uint32_t *)hdata;
+	}
+
 	TIFFClose(fh);
+
+	if ( have_sis_metadata ) {
+
+		FILE *ifh = fopen(image->filename, "rb");
+
+		struct sis_md buf;
+		fseek(ifh, sis_offs, SEEK_SET);
+		fread(&buf, sizeof(buf), 1, ifh);
+
+		if ( buf.magic != 810764627 ) {
+			ERROR("Invalid SIS metadata\n");
+		} else {
+
+			uint32_t offs;
+			fseek(ifh, sis_offs+64, SEEK_SET);
+			fread(&offs, 4, 1, ifh);
+
+			struct sis_md2 buf2;
+			fseek(ifh, offs, SEEK_SET);
+			fread(&buf2, sizeof(buf2), 1, ifh);
+			printf("unitexp = %i\n", buf2.unitExp);
+			printf("sizeX = %e\n", buf2.sizeX);
+			printf("sizeY = %e\n", buf2.sizeY);
+			printf("mag = %e\n", buf2.mag);
+			printf("camname = %s\n", buf2.cname);
+			printf("pictype = %s\n", buf2.ptype);
+
+		}
+
+		fclose(ifh);
+
+	}
 
 	if ( unpack_panels(image, dtempl, data, w, h) ) {
 		ERROR("Failed to read TIFF data\n");
