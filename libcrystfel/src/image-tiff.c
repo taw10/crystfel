@@ -127,6 +127,18 @@ struct sis_md2
 	char ptype[32];
 } __attribute__((packed));
 
+#define TIFF_SISOFFSET (33560)
+
+static const TIFFFieldInfo sis_fields[] = {
+	{TIFF_SISOFFSET, 1, 1, TIFF_LONG, FIELD_CUSTOM, 0, 0, "Olympus SIS Metadata Offset"}
+};
+
+
+static void merge_tiff_tags(TIFF *fh)
+{
+	TIFFMergeFieldInfo(fh, sis_fields, 1);
+}
+
 
 int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 {
@@ -134,6 +146,8 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 	float *data;
 	uint32_t w, h ;
 	uint16_t sampleformat, bps, spp;
+	uint32_t sis_offs;
+	int have_sis_metadata;
 
 	if ( image->data_block != NULL ) {
 		ERROR("In-memory TIFF not (yet!) implemented.\n");
@@ -145,6 +159,8 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 		      image->filename);
 		return 1;
 	}
+
+	TIFFSetTagExtender(merge_tiff_tags);
 
 	fh = TIFFOpen(image->filename, "r");
 	if ( fh == NULL ) {
@@ -212,16 +228,7 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 
 	cffree(strip);
 
-	uint32_t count;
-	void *hdata;
-	uint32_t sis_offs;
-	int have_sis_metadata;
-
-	have_sis_metadata = TIFFGetField(fh, 33560, &count, &hdata);
-
-	if ( have_sis_metadata ) {
-		sis_offs = *(uint32_t *)hdata;
-	}
+	have_sis_metadata = TIFFGetField(fh, TIFF_SISOFFSET, &sis_offs);
 
 	TIFFClose(fh);
 
