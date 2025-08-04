@@ -251,12 +251,12 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 			struct sis_md2 buf2;
 			fseek(ifh, offs, SEEK_SET);
 			fread(&buf2, sizeof(buf2), 1, ifh);
-			printf("unitexp = %i\n", buf2.unitExp);
-			printf("sizeX = %e\n", buf2.sizeX);
-			printf("sizeY = %e\n", buf2.sizeY);
-			printf("mag = %e\n", buf2.mag);
-			printf("camname = %s\n", buf2.cname);
-			printf("pictype = %s\n", buf2.ptype);
+			//printf("unitexp = %i\n", buf2.unitExp);
+			//printf("sizeX = %e\n", buf2.sizeX);
+			//printf("sizeY = %e\n", buf2.sizeY);
+			//printf("mag = %e\n", buf2.mag);
+			//printf("camname = %s\n", buf2.cname);
+			//printf("pictype = %s\n", buf2.ptype);
 
 		}
 
