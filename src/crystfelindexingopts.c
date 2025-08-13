@@ -195,6 +195,8 @@ static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 	add_method(io->indm_store, "taketwo", "TakeTwo", TRUE, TRUE, FALSE);
 	add_method(io->indm_store, "asdf", "ASDF", TRUE, TRUE, FALSE);
 	add_method(io->indm_store, "felix", "Felix", FALSE, TRUE, FALSE);
+	add_method(io->indm_store, "smallcell", "Small cell", FALSE, TRUE, FALSE);
+	add_method(io->indm_store, "ffbidx", "ffbidx (GPU)", FALSE, TRUE, FALSE);
 
 	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(io->indm_store));
 
@@ -668,6 +670,21 @@ static GtkWidget *advanced_parameters(CrystFELIndexingOpts *io)
 	                      "currently not available through the GUI.");
 	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
 	gtk_container_add(GTK_CONTAINER(expander), label);
+
+	expander = gtk_expander_new("ffbidx");
+	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
+	label = gtk_label_new("Advanced options for this indexing method are "
+	                      "currently not available through the GUI.");
+	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+	gtk_container_add(GTK_CONTAINER(expander), label);
+
+	expander = gtk_expander_new("smallcell");
+	gtk_box_pack_start(GTK_BOX(box), expander, FALSE, FALSE, 8);
+	label = gtk_label_new("Advanced options for this indexing method are "
+	                      "currently not available through the GUI.");
+	gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+	gtk_container_add(GTK_CONTAINER(expander), label);
+
 
 	return box;
 }

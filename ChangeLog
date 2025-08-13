@@ -1,5 +1,5 @@
-Changes in this development version (incomplete list)
------------------------------------------------------
+CrystFEL version 0.12.0, 15 August 2025
+---------------------------------------
 
 - Enforce lattice type restrictions during refinement
 - Add ffbidx indexer (Hans-Christian Stadler) [GitLab #112]
@@ -11,6 +11,7 @@ Changes in this development version (incomplete list)
 - GUI: Add progress bar/abort option for "index one pattern" [GitLab #23]
 - GUI: Add new search pattern for NeXus master files [GitLab #116]
 - Introduce new program show_residuals
+- align/adjust_detector: Preserve comments at top of file
 - Avoid overflow reading HDF5 values (e.g. EuXFEL train IDs) [GitLab #120]
 - Fix slight non-determinisim in merging, due to deltaCChalf
 - Fix spurious warning about non-static geometry [GitLab #127]
@@ -22,6 +23,9 @@ Changes in this development version (incomplete list)
 - Fix fg-graph for recent Gnuplot versions (Philipp Middendorf)
 - ambigator: Detect and exit if reading from stdin with --output (Philipp Middendorf)
 - indexamajig: Always call exec() after fork() [GitLab #86]
+- Fix handling of saturation maps (broken since 0.10.2)
+- scripts/install-indexers: Multiple fixes
+- scripts/plot-pr-contourmap: Update for recent Matplotlib versions
 - asdf: Support H-centering correctly
 - Increase the maximum number of panel groups from 256 to 512
 - Add u1 image data format for Seedee

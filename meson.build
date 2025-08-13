@@ -1,11 +1,11 @@
 # Meson file for CrystFEL
 project('crystfel', 'c',
-        version: '0.11.1',
+        version: '0.12.0',
         license: 'GPL3+',
         meson_version: '>=0.55.0',
         default_options: ['buildtype=debugoptimized'])
 
-libcrystfel_api_version = 18
+libcrystfel_api_version = 19
 crystfel_rpath = '$ORIGIN/../lib64/:$ORIGIN/../lib:$ORIGIN/../../asapo-libraries/lib:$ORIGIN/../../asapo-libraries/lib64'
 
 add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
