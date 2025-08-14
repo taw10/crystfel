@@ -112,6 +112,7 @@ build-brew-macos:
     - macOS
   variables:
     GIT_STRATEGY: clone
+    HOMEBREW_DEVELOPER: 1
   script:
     - brew uninstall -v -f crystfel
     - brew install -v -s ./crystfel.rb --HEAD
