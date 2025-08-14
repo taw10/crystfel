@@ -118,8 +118,6 @@ build-brew-macos:
     - brew install -v -s ./crystfel.rb --HEAD
     - brew test crystfel
     - brew uninstall -v -f crystfel
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
 
 deploy-remote-maxwell:
   stage: deploy
