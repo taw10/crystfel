@@ -67,9 +67,8 @@ int is_hdf5_file(const char *filename, int *err)
 
 	/* For long lists of CBF files, opening each one is expensive, */
 	/* so we short-circuit here as an optimization */
-	if ( ( ext2 != NULL && strcmp(ext2, ".cbf.gz") == 0 ) || strcmp(ext, ".cbf") == 0 ) {
-		return 0;
-	}
+	if ( (ext2 != NULL) && (strcmp(ext2, ".cbf.gz") == 0) ) return 0;
+	if ( (ext != NULL) && (strcmp(ext, ".cbf") == 0) ) return 0;
 
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
