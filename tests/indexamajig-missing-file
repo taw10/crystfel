@@ -3,7 +3,7 @@
 INDEXAMAJIG=$1
 GEOM=$2
 
-INFILES=`echo file_does_not_exist{1..10}.h5`
+INFILES=$(echo file_does_not_exist{1..10}.h5)
 
 if [ -f test-input.lst ]; then
 	echo test-input.lst exists.  Not proceeding!

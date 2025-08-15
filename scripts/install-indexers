@@ -7,7 +7,7 @@ CFPREFIX=/usr
 # Set the location of syminfo.lib here
 SYMINFO=/usr/local/share/ccp4/syminfo.lib
 
-SYS=`uname -sm`
+SYS=$(uname -sm)
 if [ "$SYS" = "Linux x86_64" ]; then
 	MOSFLM=mosflm-linux-64-noX11
 	DIRAX=dirax1.17-Linux-x86_64-static.tar.Z

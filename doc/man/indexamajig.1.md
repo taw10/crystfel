@@ -391,7 +391,7 @@ BASIC OPTIONS
 
 **-j n**
 : Run n analyses in parallel.  Default: 1.  See also **--max-indexer-threads.**
-: Tip: use -j ``nproc`` (note the backticks) to use as many processes as there
+: Tip: use -j $(nproc) to use as many processes as there
 : are available CPUs.
 
 **--cpu-pin**

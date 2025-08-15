@@ -869,7 +869,7 @@ static void *run_indexing(const char *job_title,
 
 	if ( !write_indexamajig_script(sc_rel_filename,
 	                               proj->geom_filename,
-	                               "`nproc`",
+	                               "$(nproc)",
 	                               files_rel_filename,
 	                               stream_rel_filename,
 	                               NULL, NULL,
@@ -1092,7 +1092,7 @@ static void *run_ambi(const char *job_title,
 	slurm_prologue = sbatch_bits(&opts->common, job_title, NULL,
 	                             stdout_rel_filename, stderr_rel_filename);
 
-	if ( !write_ambigator_script(sc_rel_filename, input, "`nproc`",
+	if ( !write_ambigator_script(sc_rel_filename, input, "$(nproc)",
 	                             &proj->ambi_params, stream_rel_filename,
 	                             stdout_rel_filename, stderr_rel_filename,
 	                             fg_rel_filename,
@@ -1153,7 +1153,7 @@ static void *run_merging(const char *job_title,
 	slurm_prologue = sbatch_bits(&opts->common, job_title, NULL,
 	                             stdout_rel_filename, stderr_rel_filename);
 
-	if ( !write_merge_script(sc_rel_filename, input, "`nproc`",
+	if ( !write_merge_script(sc_rel_filename, input, "$(nproc)",
 	                         &proj->merging_params, output_rel_filename,
 	                         stdout_rel_filename, stderr_rel_filename,
 	                         harvest_rel_filename,

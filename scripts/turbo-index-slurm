@@ -45,14 +45,14 @@ rm -f events-${RUN}.lst
 for FILE in split-events-${RUN}.lst*; do
 
     # Stream file is the output of crystfel
-    STREAM=`echo $FILE | sed -e "s/split-events-${RUN}.lst/${RUN}.stream/"`
+    STREAM=$(echo $FILE | sed -e "s/split-events-${RUN}.lst/${RUN}.stream/")
 
     # Job name
-    NAME=`echo $FILE | sed -e "s/split-events-${RUN}.lst/${RUN}-/"`
+    NAME=$(echo $FILE | sed -e "s/split-events-${RUN}.lst/${RUN}-/")
 
     # Job number
     NUMBER=${NAME##$RUN-}
-    POS=`expr $NUMBER \* $SPLIT + 1`
+    POS=$(expr $NUMBER \* $SPLIT + 1)
 
     echo "$NAME (serial start $POS): $FILE  --->  $STREAM"
 
@@ -80,7 +80,7 @@ for FILE in split-events-${RUN}.lst*; do
     echo >> $SLURMFILE
 
     command="indexamajig -i $FILE -o $STREAMDIR/$STREAM --serial-start=$POS"
-    command="$command -j \`nproc\` -g $GEOM"
+    command="$command -j \$(nproc) -g $GEOM"
     #command="$command --peaks=zaef"  # Indexing parameters here
     # Note: if using --mille, each indexamajig job needs its own filename:
     # --mille-file=mille-data-{$NUMBER}.bin
