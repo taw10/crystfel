@@ -524,7 +524,6 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 		      p->name);
 		cffree(f_offset);
 		cffree(f_count);
-		cffree(data);
 		H5Dclose(dh);
 		return 1;
 	}
