@@ -1041,6 +1041,7 @@ static int parameters_to_refine(UnitCell *cell, enum gparam *rv)
 			cell_print(cell);
 			return 0;
 		}
+		break;
 
 		case L_RHOMBOHEDRAL :
 		rv[num_params++] = GPARAM_AL_STAR; /* == beta and gamma */
