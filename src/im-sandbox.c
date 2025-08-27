@@ -78,7 +78,7 @@ typedef struct
 {
 	int n_read;
 	int *fds;
-	void **buffers;
+	char **buffers;
 	size_t *buffer_len;
 	size_t *buffer_pos;
 } PipeList;
@@ -366,7 +366,7 @@ static const char *str_in_str(const char *haystack, size_t len, const char *need
 }
 
 
-static size_t pump_chunk(void *buf, size_t len, struct sandbox *sb)
+static size_t pump_chunk(char *buf, size_t len, struct sandbox *sb)
 {
 	const char *txt = (char *)buf;
 	const char *endpos;
@@ -383,7 +383,7 @@ static size_t pump_chunk(void *buf, size_t len, struct sandbox *sb)
 }
 
 
-static size_t pump_mille(void *buf, size_t len, struct sandbox *sb)
+static size_t pump_mille(char *buf, size_t len, struct sandbox *sb)
 {
 	int n;
 	int ni;
@@ -434,13 +434,13 @@ static void pipe_list_destroy(PipeList *pd)
 static void add_pipe(PipeList *pd, int fd)
 {
 	int *fds_new;
-	void **buffers_new;
+	char **buffers_new;
 	size_t *buflens_new;
 	size_t *bufposs_new;
 	int slot;
 
 	fds_new = realloc(pd->fds, (pd->n_read+1)*sizeof(int));
-	buffers_new = realloc(pd->buffers, (pd->n_read+1)*sizeof(void *));
+	buffers_new = realloc(pd->buffers, (pd->n_read+1)*sizeof(char *));
 	buflens_new = realloc(pd->buffer_len, (pd->n_read+1)*sizeof(size_t));
 	bufposs_new = realloc(pd->buffer_pos, (pd->n_read+1)*sizeof(size_t));
 	if ( (fds_new == NULL) || (buffers_new == NULL)
@@ -504,7 +504,7 @@ static int find_marked(PipeList *pd)
 }
 
 
-static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct sandbox *),
+static void check_pipes(PipeList *pd, size_t(*pump)(char *, size_t len, struct sandbox *),
                         struct sandbox *sb)
 {
 	int r, i;
@@ -539,7 +539,7 @@ static void check_pipes(PipeList *pd, size_t(*pump)(void *, size_t len, struct s
 
 		if ( pd->buffer_len[i] == pd->buffer_pos[i] ) {
 			const size_t buffer_increment = 64*1024;
-			void *buf_new = realloc(pd->buffers[i],
+			char *buf_new = realloc(pd->buffers[i],
 			                        pd->buffer_len[i]+buffer_increment);
 			if ( buf_new == NULL ) {
 				ERROR("Failed to grow buffer\n");
