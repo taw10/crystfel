@@ -802,7 +802,6 @@ static void crystfel_image_view_set_property(GObject *obj, guint id,
 		break;
 
 		default :
-		printf("setting %i\n", id);
 		break;
 
 	}
