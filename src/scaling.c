@@ -133,7 +133,8 @@ void scale_all(struct crystal_refls *crystals, int n_crystals, int nthreads, int
 
 	task_defaults.crystal = NULL;
 	task_defaults.flags = scaleflags;
-	task_defaults.full = NULL;  /* (not used) */
+	task_defaults.full = NULL;  /* (will be overwritten) */
+	task_defaults.refls = NULL;  /* (will be overwritten) */
 
 	qargs.task_defaults = task_defaults;
 	qargs.n_crystals = n_crystals;
