@@ -764,6 +764,13 @@ static void write_partial_file_list(GFile *workdir,
 	file_path = g_file_get_path(file);
 
 	fh = fopen(file_path, "w");
+	if ( fh == NULL ) {
+		ERROR("Failed to write %s\n", file_path);
+		g_free(file_path);
+		g_object_unref(file);
+		return;
+	}
+
 	for ( i=j*block_size;
 	      (i<(j+1)*block_size) && (i<n_frames);
 	      i++ )

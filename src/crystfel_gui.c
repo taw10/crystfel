@@ -1724,8 +1724,12 @@ GFile *make_job_folder(const char *job_title, const char *job_notes)
 	notes_file = g_file_get_child(workdir_file, "notes.txt");
 	notes_path = g_file_get_path(notes_file);
 	fh = fopen(notes_path, "w");
-	fputs(job_notes, fh);
-	fclose(fh);
+	if ( fh != NULL ) {
+		fputs(job_notes, fh);
+		fclose(fh);
+	} else {
+		ERROR("Couldn't write '%s'\n", notes_path);
+	}
 	g_free(notes_path);
 	g_object_unref(notes_file);
 

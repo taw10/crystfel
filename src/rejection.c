@@ -71,6 +71,11 @@ void early_rejection(struct crystal_refls *crystals, int n)
 	FILE *fh = fopen("reject.dat", "w");
 	int n_flag = 0;
 
+	if ( fh == NULL ) {
+		ERROR("Failed to open reject.dat\n");
+		return;
+	}
+
 	for ( i=0; i<n; i++ ) {
 		double u;
 		u = mean_intensity(crystals[i].refls);
