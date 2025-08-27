@@ -1471,8 +1471,8 @@ int main(int argc, char *argv[])
 			for ( i=0; i<n_crystals; i++ ) {
 				fprintf(fh, "%i\n", assignments[i]);
 			}
+			fclose(fh);
 		}
-		fclose(fh);
 	}
 
 	n_dif = 0;
