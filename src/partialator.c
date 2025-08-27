@@ -276,9 +276,12 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 {
 	char *tmp;
 	RefList *split;
-	struct crystal_refls crystalsn[n_crystals];
+	struct crystal_refls *crystalsn;
 	int n_crystalsn = 0;
 	int i;
+
+	crystalsn = calloc(n_crystals, sizeof(struct crystal_refls));
+	if ( crystalsn == NULL ) return;
 
 	for ( i=0; i<n_crystals; i++ ) {
 
@@ -294,6 +297,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 		id = malloc(strlen(evs)+strlen(fn)+2);
 		if ( id == NULL ) {
 			ERROR("Failed to allocate ID\n");
+			free(crystalsn);
 			return;
 		}
 		strcpy(id, fn);
@@ -313,6 +317,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	if ( n_crystalsn == 0 ) {
 		ERROR("Not writing dataset '%s' because it contains no "
 		      "crystals\n", csplit->dataset_names[dsn]);
+		free(crystalsn);
 		return;
 	}
 
@@ -327,6 +332,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	write_split(crystalsn, n_crystalsn, tmp, nthreads, pmodel,
 	            min_measurements, sym, push_res);
 	free(tmp);
+	free(crystalsn);
 }
 
 
