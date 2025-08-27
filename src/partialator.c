@@ -197,7 +197,10 @@ static void write_split(struct crystal_refls *crystals, int n_crystals,
 	if ( crystals1 == NULL ) return;
 
 	crystals2 = malloc(n_crystals * sizeof(struct crystal_refls));
-	if ( crystals2 == NULL ) return;
+	if ( crystals2 == NULL ) {
+		free(crystals1);
+		return;
+	}
 
 	for ( i=0; i<n_crystals; i++ ) {
 		if ( i % 2 ) {
