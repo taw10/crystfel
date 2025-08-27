@@ -1285,10 +1285,10 @@ ImageFeatureList *peakfinder8(const struct image *img, int max_n_peaks,
 	} else {
 		geomdata = private_data;
 	}
-	rmaps = geomdata->rmaps;
-	rspixels = geomdata->rpixels;
 	profile_end("pf8-rmaps");
 	if (geomdata == NULL) return NULL;
+	rmaps = geomdata->rmaps;
+	rspixels = geomdata->rpixels;
 
 	profile_start("pf8-mask");
 	pfmask = create_peakfinder_mask(img, rmaps, min_res, max_res);
