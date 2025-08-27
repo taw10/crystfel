@@ -86,8 +86,11 @@ struct custom_split
 static int csplit_hash(const char *id)
 {
 	int i;
-	size_t len = strlen(id);
+	size_t len;
 	int h = 0;
+
+	assert(id != NULL);
+	len = strlen(id);
 
 	for ( i=0; i<len; i++ ) {
 		h = (h*31 + id[i]) % CSPLIT_HASH_MAX;
@@ -108,6 +111,7 @@ static void add_to_hash_entry(struct csplit_hash_entry *he, const char *id,
 		abort();
 	}
 
+	assert(id != NULL);
 	he->events[he->n_events] = strdup(id);
 	he->datasets[he->n_events] = dsn;
 	he->n_events++;
