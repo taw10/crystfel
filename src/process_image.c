@@ -51,9 +51,9 @@
 #include <detgeom.h>
 #include <image-msgpack.h>
 #include <profile.h>
+#include <predict-refine.h>
 
 #include "process_image.h"
-#include "predict-refine.h"
 #include "im-sandbox.h"
 #include "im-zmq.h"
 #include "im-asapo.h"
