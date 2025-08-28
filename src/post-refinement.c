@@ -721,9 +721,9 @@ static void do_pr_refine(RefList **plist_in, Crystal *cr, struct image *image,
 	calculate_partialities(*plist_in, cr, image, pmodel);
 
 	if ( write_logs ) {
-		write_gridscan(*plist_in, cr, image, full, cycle, serial, scaleflags,
+		//write_gridscan(*plist_in, cr, image, full, cycle, serial, scaleflags,
 		               pmodel, log_folder);
-		write_specgraph(*plist_in, cr, image, full, cycle, serial, log_folder);
+		//write_specgraph(*plist_in, cr, image, full, cycle, serial, log_folder);
 		write_test_logs(cr, image, full, cycle, serial, log_folder);
 	}
 
