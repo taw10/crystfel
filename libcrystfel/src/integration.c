@@ -833,6 +833,10 @@ static int check_box(struct intcontext *ic, struct peak_box *bx, int *sat)
 		bx->bm[p+ic->w*q] = ic->bm[p+ic->w*q];
 
 		if ( ic->image->bad[bx->pn][fs + bx->p->w*ss] ) {
+			if ( bx->bm[p+ic->w*q] == BM_PK ) {
+				/* Bad pixel in peak region - reject! */
+				return 1;
+			}
 			bx->bm[p+ic->w*q] = BM_BH;
 		}
 
