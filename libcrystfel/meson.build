@@ -236,4 +236,5 @@ endif
 # pkg-config file
 pkg = import('pkgconfig')
 pkg.generate(libcrystfel,
+             subdirs: ['crystfel'],
              description: 'Data processing for serial crystallography (shared library)')
