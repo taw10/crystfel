@@ -1,9 +1,9 @@
 Installation instructions
 =========================
 
-CrystFEL installation is supported on GNU/Linux and Mac OS X.  Installation in
-Windows via [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/)
-is also possible.
+CrystFEL installation is supported on GNU/Linux and Mac OS X.  Installation on
+Windows is not supported, but is reported to be possible via
+[Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/).
 
 
 Supported installations at facilities
@@ -95,8 +95,8 @@ First, download the latest Git version or unpack the package from the
 $ git clone https://gitlab.desy.de/thomas.white/crystfel.git
 $ cd crystfel
     or
-$ tar -xzf crystfel-0.11.0.tar.gz    # or whichever other version
-$ cd crystfel-0.11.0
+$ tar -xzf crystfel-0.12.0.tar.gz    # or whichever other version
+$ cd crystfel-0.12.0
 ```
 Then, simply:
 ```
@@ -140,14 +140,14 @@ roughly in order of importance:
 * [Pango](https://pango.gnome.org/) 1.0 or later, including [PangoCairo](https://docs.gtk.org/PangoCairo/) (required for GUI)
 * [gdk-pixbuf](https://docs.gtk.org/gdk-pixbuf/) 2.0 or later (required for GUI)
 * [libccp4](ftp://ftp.ccp4.ac.uk/opensource/) \[\*\] (required for MTZ import/export)
-* [XGandalf](https://stash.desy.de/users/gevorkov/repos/xgandalf) \[\*\] (for `xgandalf` indexing)
+* [XGandalf](https://gitlab.desy.de/thomas.white/xgandalf/) \[\*\] (for `xgandalf` indexing)
 * [Zlib](https://www.zlib.net/) \[\*\] (required for reading gzipped CBF files.  Version 1.2.3.5 or later preferred for better decompression speed)
-* [PinkIndexer](https://stash.desy.de/users/gevorkov/repos/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
+* [PinkIndexer](https://gitlab.desy.de/thomas.white/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
 * [Fast feedback indexer](https://github.com/paulscherrerinstitute/fast-feedback-indexer) (for GPU-based `ffbidx` indexing)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
-* [FDIP](https://stash.desy.de/users/gevorkov/repos/fastdiffractionimageprocessing/) \[\*\] (for `peakFinder9` peak search algorithm)
+* [FDIP](https://gitlab.desy.de/thomas.white/fdip) \[\*\] (for `peakFinder9` peak search algorithm)
 * [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)
-* [libasapo-consumer](https://stash.desy.de/projects/ASAPO/repos/asapo/browse) (for online and offline data streaming via DESY's ASAP::O framework)
+* [libasapo-consumer](https://gitlab.desy.de/asapo/asapo) (for online and offline data streaming via DESY's ASAP::O framework)
 * [msgpack-c](https://github.com/msgpack/msgpack-c) (for streaming data in MsgPack format)
 * [Seedee](https://gitlab.desy.de/fs-sc/seedee) (for streaming data serialised with Seedee)
 * [cJSON](https://github.com/DaveGamble/cJSON/) \[\*\] (extra dependency if Seedee is found)
