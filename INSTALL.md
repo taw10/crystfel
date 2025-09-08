@@ -356,6 +356,26 @@ $ sudo ldconfig
 Installation problems and solutions
 -----------------------------------
 
+* **Problem**: Compilation fails with the following error:
+    ```
+        ./subprojects/libccp4-8.0.0/ccp4/library_utils.c: In function ‘ccp4_utils_setenv’:
+    ../subprojects/libccp4-8.0.0/ccp4/library_utils.c:152:11: error: too many arguments to function ‘putenv’; expected 0, have 1
+      152 |   return (putenv (param));
+          |           ^~~~~~  ~~~~~
+    ../subprojects/libccp4-8.0.0/ccp4/library_utils.c:144:7: note: declared here
+      144 |   int putenv ();
+          |       ^~~~~~
+    ```
+
+    **Explanation**: You are using a recent version of GCC (15.2+) which
+    defaults to a newer C standard (gnu23/C23).  The CCP4 core libraries are
+    written using an older standard, and the build system does not explicitly
+    specify the standard to be used.
+
+    **Solution**: Run `meson wrap update libccp4c`, then delete the build
+    directory (`rm -rf build`) and the subproject directory for libccp4c
+    (`rm -rf subprojects/libccp4-8.0.0`) and re-run from `meson setup build`.
+
 * **Problem**: After installation, CrystFEL programs fail to start with an error about a missing shared object file:
     ```
     $ crystfel
