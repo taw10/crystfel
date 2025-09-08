@@ -8,6 +8,7 @@ CrystFEL version 0.12.0, 15 August 2025
 - partialator: Fix crash when xsphere encounters a crystal with zero profile radius
 - indexamajig: Write only one Mille file for all workers [GitLab #92]
 - indexamajig: Disable peakfinder8 --max-res by default
+- Don't integrate reflections which hit bad pixels
 - GUI: Add progress bar/abort option for "index one pattern" [GitLab #23]
 - GUI: Add new search pattern for NeXus master files [GitLab #116]
 - Introduce new program show_residuals
@@ -18,6 +19,7 @@ CrystFEL version 0.12.0, 15 August 2025
 - New article about choice of indexing method
 - align/adjust_detector: Add new option --panel-totals
 - partialator: Fix post-refinement of wavelength for electron diffraction
+- partialator: Avoid crash or strange behaviour with very large data sets
 - list_events: Speed up enumeration of CBF files (Philipp Middendorf)
 - get_hkl: Add --space-group-override (Philipp Middendorf)
 - Fix fg-graph for recent Gnuplot versions (Philipp Middendorf)
