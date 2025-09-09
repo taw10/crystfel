@@ -72,6 +72,8 @@ int is_hdf5_file(const char *filename, int *err)
 	if ( (ext2 != NULL) && (strcmp(ext2, ".cbf.gz") == 0) ) return 0;
 	if ( (ext != NULL) && (strcmp(ext, ".cbf") == 0) ) return 0;
 
+	if ( (ext != NULL) && (strcmp(ext, ".h5") == 0) ) return 1;
+
 	fh = fopen(filename, "r");
 	if ( fh == NULL ) {
 		if ( err != NULL ) *err = 1;
