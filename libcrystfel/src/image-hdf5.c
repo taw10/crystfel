@@ -299,10 +299,18 @@ char *substitute_path(const char *ev, const char *pattern, int skip_ok)
 
 #ifdef HAVE_HDF5
 
-struct _imagehdfcache
+#define HDF5_CACHE_SIZE (16)
+
+struct _imagehdfcache_entry
 {
 	char *filename;
 	hid_t fh;
+};
+
+struct _imagehdfcache
+{
+	struct _imagehdfcache_entry cache[HDF5_CACHE_SIZE];
+	int next;
 };
 
 
@@ -370,18 +378,26 @@ static void close_hdf5(hid_t fh)
 
 ImageHDFCache *image_hdf5_cache_new()
 {
+	int i;
 	ImageHDFCache *c = cfmalloc(sizeof(struct _imagehdfcache));
 	if ( c == NULL ) return NULL;
-	c->filename = NULL;
+	c->next = 0;
+	for ( i=0; i<HDF5_CACHE_SIZE; i++ ) {
+		c->cache[i].filename = NULL;
+	}
 	return c;
 }
 
 
 void image_hdf5_cache_free(ImageHDFCache *c)
 {
-	if ( c->filename != NULL ) {
-		cffree(c->filename);
-		close_hdf5(c->fh);
+	int i;
+
+	for ( i=0; i<HDF5_CACHE_SIZE; i++ ) {
+		if ( c->cache[i].filename != NULL ) {
+			cffree(c->cache[i].filename);
+			close_hdf5(c->cache[i].fh);
+		}
 	}
 	cffree(c);
 }
@@ -703,6 +719,37 @@ int image_hdf5_read_satmap(struct panel_template *p,
 }
 
 
+static hid_t open_hdf5_file_with_cache(const char *filename, ImageHDFCache *c)
+{
+	int i;
+	hid_t fh;
+
+	/* Already in cache? */
+	for ( i=0; i<HDF5_CACHE_SIZE; i++ ) {
+		if ( c->cache[i].filename == NULL ) continue;
+		if ( strcmp(c->cache[i].filename, filename) == 0 ) {
+			return c->cache[i].fh;
+		}
+	}
+
+	if ( c->cache[c->next].filename != NULL ) {
+		cffree(c->cache[c->next].filename);
+		close_hdf5(c->cache[c->next].fh);
+	}
+
+	fh = open_hdf5_file(filename);
+	if ( fh < 0 ) {
+		ERROR("Failed to open mask '%s'\n", filename);
+		return -1;
+	}
+	c->cache[c->next].fh = fh;
+	c->cache[c->next].filename = cfstrdup(filename);
+	c->next++;
+	if ( c->next >= HDF5_CACHE_SIZE ) c->next = 0;
+
+	return fh;
+}
+
 
 int image_hdf5_read_mask(struct panel_template *p,
                          const char *filename, const char *event,
@@ -719,23 +766,7 @@ int image_hdf5_read_mask(struct panel_template *p,
 	p_h = p->orig_max_ss - p->orig_min_ss + 1;
 
 	if ( cache != NULL ) {
-		if ( (cache->filename != NULL) && (strcmp(cache->filename, filename) == 0) ) {
-			fh = cache->fh;
-		} else {
-
-			if ( cache->filename != NULL ) {
-				cffree(cache->filename);
-				close_hdf5(cache->fh);
-			}
-
-			fh = open_hdf5_file(filename);
-			if ( fh < 0 ) {
-				ERROR("Failed to open mask '%s'\n", filename);
-				return 1;
-			}
-			cache->fh = fh;
-			cache->filename = cfstrdup(filename);
-		}
+		fh = open_hdf5_file_with_cache(filename, cache);
 	} else {
 		fh = open_hdf5_file(filename);
 		if ( fh < 0 ) {
