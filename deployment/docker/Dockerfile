@@ -47,6 +47,7 @@ RUN cd crystfel && meson install -C build
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y \
    libhdf5-310 \
+   libhdf5-hl-310 \
    libgsl28 \
    libgtk-3-0t64 \
    libcairo2 \
