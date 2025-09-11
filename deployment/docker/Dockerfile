@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:trixie
 
 RUN apt-get update && apt-get install -y \
    pkg-config \
@@ -47,7 +47,7 @@ RUN cd crystfel && ninja -C build test
 RUN cd crystfel && ninja -C build install
 
 ## Stage 2
-FROM debian:buster-slim
+FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y \
    libhdf5-103 \
    libgsl23 \
