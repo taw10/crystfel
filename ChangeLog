@@ -1,5 +1,5 @@
-CrystFEL version 0.12.0, 15 August 2025
----------------------------------------
+CrystFEL version 0.12.0, 11 September 2025
+------------------------------------------
 
 - Enforce lattice type restrictions during refinement
 - Add ffbidx indexer (Hans-Christian Stadler) [GitLab #112]
