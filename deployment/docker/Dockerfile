@@ -10,18 +10,18 @@ RUN apt-get update && apt-get install -y \
    libcairo2-dev \
    libeigen3-dev \
    libpango1.0-dev \
-   libgdk-pixbuf2.0-dev \
+   libgdk-pixbuf-2.0-dev \
    libfftw3-dev \
-   libncurses-dev \
-   libpng-dev \
-   libtiff5-dev \
+   libccp4-dev \
    git \
    flex \
    bison \
    libzmq3-dev \
    libmsgpack-dev \
+   libcjson-dev \
    python3-dev \
    python3-pip \
+   pandoc \
    unzip \
    wget \
    curl \
@@ -49,18 +49,18 @@ RUN cd crystfel && ninja -C build install
 ## Stage 2
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y \
-   libhdf5-103 \
-   libgsl23 \
-   libgtk-3-0 \
+   libhdf5-310 \
+   libgsl28 \
+   libgtk-3-0t64 \
    libcairo2 \
-   libpango1.0 \
-   libgdk-pixbuf2.0 \
+   libpango-1.0-0 \
+   libgdk-pixbuf-2.0-0 \
    libfftw3-double3 \
-   libncurses6 \
-   libpng16-16 \
-   libtiff5 \
+   libpng16-16t64 \
    libzmq5 \
-   libmsgpackc2 \
+   libmsgpack-c2 \
+   libccp4c0t64 \
+   libcjson1 \
    && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=0 /usr/local /usr/local
 
