@@ -693,37 +693,39 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 
 	/* Alphabetical by family name */
 	const gchar *contributors[] = {
-		"Steve Aplin <steve.aplin@desy.de>",
-		"Andrew Aquila <andrew.aquila@cfel.de>",
+		"Steve Aplin",
+		"Andrew Aquila",
 		"Anton Barty <anton.barty@desy.de>",
-		"Kenneth Beyerlein <kenneth.beyerlein@desy.de>",
+		"Kenneth Beyerlein",
 		"Wolfgang Brehm <wolfgang.brehm@gmail.com>",
 		"Robert Bücker <robert.buecker@cssb-hamburg.de>",
 		"Fedor Chervinskii <fedor.chervinskii@gmail.com>",
+		"Isabel Costello",
 		"Nicholas Devenish <ndevenish@gmail.com>",
-		"Lorenzo Galli <lorenzo.galli@desy.de>",
-		"Cornelius Gati <cornelius.gati@cfel.de>",
-		"Yaroslav Gevorkov <yaroslav.gevorkov@desy.de>",
-		"Helen Ginn <helen@strubi.ox.ac.uk>",
+		"Lorenzo Galli",
+		"Cornelius Gati",
+		"Yaroslav Gevorkov",
+		"Helen Ginn",
 		"Thomas Grant <tgrant@hwi.buffalo.edu>",
 		"Pascal Hogan-Lamarre <pascal.hogan.lamarre@mail.utoronto.ca>",
 		"Richard Kirian <rkirian@asu.edu>",
-		"Valerio Mariani <<alerio.mariani@desy.de>",
-		"Andrew Martin <andrew.martin@desy.de>",
+		"Valerio Mariani",
+		"Andrew Martin",
 	        "Philipp Middendorf <philipp.middendorf@desy.de>",
 		"Omri Mor <omor1@asu.edu>",
 		"Takanori Nakane <nakane.t@gmail.com>",
-		"Karol Nass <karol.nass@desy.de>",
+		"Karol Nass",
 		"Nicolas Riebesel <nicolas.riebesel@tuhh.de>",
 	        "Silvan Schön <silvan.schoen@cfel.de>",
+	        "Hans-Christian Stadler",
 		"Mamoru Suzuki <mamoru.suzuki@protein.osaka-u.ac.jp>",
 	        "Parthasarathy Tirumalai <parthasarathy.tirumalai@desy.de>",
 		"Alexandra Tolstikova <alexandra.tolstikova@desy.de>",
 		"Parker de Waal <Parker.deWaal@vai.org>",
 		"Keitaro Yamashita <k.yamashita@spring8.or.jp>",
 		"Oleksandr Yefanov <oleksandr.yefanov@desy.de>",
-		"Chun Hong Yoon <chun.hong.yoon@desy.de>",
-		"Nadia Zatsepin <nadia.zatsepin@asu.edu>",
+		"Chun Hong Yoon",
+		"Nadia Zatsepin",
 		NULL
 	};
 
@@ -752,7 +754,7 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window),
 	                             crystfel_version_string());
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"© 2020-2024 Deutsches Elektronen-Synchrotron DESY, "
+		"© 2020-2025 Deutsches Elektronen-Synchrotron DESY, "
 		"a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
 		"https://www.desy.de/~twhite/crystfel");
