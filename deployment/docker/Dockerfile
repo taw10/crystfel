@@ -27,10 +27,8 @@ RUN apt-get update && apt-get install -y \
    curl \
    ninja-build \
    gfortran \
+   meson \
    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /root
-RUN pip3 install meson
 
 WORKDIR /home/crystfel-build
 
@@ -41,10 +39,10 @@ RUN mv mosflm-linux-64-noX11 /usr/local/bin/mosflm
 
 # CrystFEL
 RUN git clone https://gitlab.desy.de/thomas.white/crystfel.git
-RUN cd crystfel && meson build -Dprefix=/usr/local
-RUN cd crystfel && ninja -C build
-RUN cd crystfel && ninja -C build test
-RUN cd crystfel && ninja -C build install
+RUN cd crystfel && meson setup build -Dprefix=/usr/local
+RUN cd crystfel && meson compile -C build
+RUN cd crystfel && meson test -C build
+RUN cd crystfel && meson install -C build
 
 ## Stage 2
 FROM debian:trixie-slim
@@ -64,8 +62,7 @@ RUN apt-get update && apt-get install -y \
    && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=0 /usr/local /usr/local
 
-# Environment variable needed for CrystFEL GUI and Mosflm
-# The file is installed by libccp4c, a wrapped subproject of CrystFEL
+# Environment variable needed for CrystFEL GUI, get_hkl and Mosflm
 ENV SYMINFO=/usr/share/ccp4/syminfo.lib
 
 RUN ldconfig
