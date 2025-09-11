@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
    libpango1.0-dev \
    libgdk-pixbuf-2.0-dev \
    libfftw3-dev \
-   libccp4-dev \
    git \
    flex \
    bison \
@@ -57,12 +56,12 @@ RUN apt-get update && apt-get install -y \
    libpng16-16t64 \
    libzmq5 \
    libmsgpack-c2 \
-   libccp4c0t64 \
    libcjson1 \
    && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=0 /usr/local /usr/local
 
 # Environment variable needed for CrystFEL GUI, get_hkl and Mosflm
-ENV SYMINFO=/usr/share/ccp4/syminfo.lib
+# (installed by Meson wrap for libccp4c)
+ENV SYMINFO=/usr/local/share/ccp4/syminfo.lib
 
 RUN ldconfig
