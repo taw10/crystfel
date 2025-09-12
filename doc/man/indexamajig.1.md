@@ -176,45 +176,11 @@ automatically determine which indexing methods are available.  You can also
 specify indexing method none, in which case no indexing will be done.  This is
 useful if you just want to check that the peak detection is working properly.
 
-
-### Prior unit cell information
-
-You can add one or more of the following to the above indexing methods, to
-control what information should be provided to them.  Note that indexamajig
-performs a series of checks on the indexing results, including checking that
-the result is consistent with the target unit cell parameters.  To get
-completely "raw" indexing, you need to disable these checks (see below) and not
-provide prior information.
-
-**-latt**
-: Provide the Bravais lattice type (e.g. the knowledge that the lattice is
-: tetragonal primitive), as prior information to the indexing engine.
-
-**-nolatt**
-: The opposite of -latt: do not provide Bravais lattice type information to the
-: indexing engine.
-
-**-cell**
-: Provide your unit cell parameters as prior information to the indexing
-: engine.
-
-**-nocell**
-: The opposite of -cell: do not provide unit cell parameters as prior information
-: to the indexing engine.
-
-Example: **--indexing=mosflm-cell-latt** means to use Mosflm for indexing, and
-provide it with unit cell parameters and Bravais lattice type information.
-
-Usually, you do not need to explicitly specify anything more than the indexing
-method itself (e.g. mosflm or asdf).  The default behaviour for all indexing
-methods is to make the maximum possible use of prior information such as the
-lattice type and cell parameters.  If you do not provide this information, for
-example if you do not give any unit cell file or if the unit cell file does not
-contain cell parameters (only lattice type information), the indexing methods
-you give will be modified accordingly.  If you only specify the indexing
-methods themselves, in most cases indexamajig will do what you want and
-intuitively expect!  However, the options are available if you need finer
-control.
+Versions of CrystFEL prior to (including) 0.12.0 allowed the indexing methods
+to be suffixed with flags **-latt**, **-cell**, **-nolatt** and **--nocell**,
+to control what prior information is given to the indexing algorithm.  These
+are no longer used.  The maximum posisble use of the provided prior unit cell
+information will always be made.
 
 
 ### Post-indexing stages
