@@ -447,25 +447,20 @@ int main(int argc, char *argv[])
 					STATUS("Hierarchy level %i:\n\n", lvl);
 					done_header = 1;
 				}
-				STATUS("Group %s:\n", groups[i].name);
-				STATUS("   Mean spot deviation in x-direction "
-				       "(%i measurements) = %+f µm\n",
-				       aves[i].x.n_meas, calc_mean(aves[i].x)*1e6);
-				STATUS("   Mean spot deviation in y-direction "
-				       "(%i measurements) = %+f µm\n",
-				       aves[i].x.n_meas, calc_mean(aves[i].y)*1e6);
-				STATUS("   Mean absolute reflection excitation error "
-				       "(%i measurements) = %+f nm^-1\n",
-				       aves[i].exerr.n_meas, 1e-9*calc_mean(aves[i].exerr));
-				STATUS("   Root mean square spot deviation in x-direction "
-				       "(%i measurements) = %+f µm\n",
-				       aves[i].rmsd.n_meas, sqrt(calc_mean(aves[i].rmsd_x))*1e6);
-				STATUS("   Root mean square spot deviation in y-direction"
-				       "(%i measurements) = %+f µm\n",
-				       aves[i].rmsd.n_meas, sqrt(calc_mean(aves[i].rmsd_y))*1e6);
-				STATUS("   Overall root mean square spot deviation "
-				       "(%i measurements) = %+f µm\n",
-				       aves[i].rmsd.n_meas, sqrt(calc_mean(aves[i].rmsd))*1e6);
+				STATUS("Group %s (%i measurements):\n",
+				       groups[i].name, aves[i].x.n_meas);
+				STATUS("               Mean spot deviation in x-direction = %+10.5f µm\n",
+				       calc_mean(aves[i].x)*1e6);
+				STATUS("               Mean spot deviation in y-direction = %+10.5f µm\n",
+				       calc_mean(aves[i].y)*1e6);
+				STATUS("        Mean absolute reflection excitation error = %+10.5f nm^-1\n",
+				       1e-9*calc_mean(aves[i].exerr));
+				STATUS("   Root mean square spot deviation in x-direction = %10.5f µm\n",
+				       sqrt(calc_mean(aves[i].rmsd_x))*1e6);
+				STATUS("   Root mean square spot deviation in y-direction = %10.5f µm\n",
+				       sqrt(calc_mean(aves[i].rmsd_y))*1e6);
+				STATUS("          Overall root mean square spot deviation = %10.5f µm\n",
+				       sqrt(calc_mean(aves[i].rmsd))*1e6);
 			}
 		}
 	}
