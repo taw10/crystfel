@@ -117,9 +117,8 @@ struct gm_ave
 	struct stable_running_mean x;
 	struct stable_running_mean y;
 	struct stable_running_mean exerr;
-	struct stable_running_mean rmsd_x;
-	struct stable_running_mean rmsd_y;
-	struct stable_running_mean rmsd;
+	struct stable_running_mean x2;
+	struct stable_running_mean y2;
 };
 
 
@@ -291,9 +290,8 @@ static int read_file(const char *filename,
 				add_to_ave(&aves[gid].x, dx);
 				add_to_ave(&aves[gid].y, dy);
 				add_to_ave(&aves[gid].exerr, fabs(ex/EXC_WEIGHT));
-				add_to_ave(&aves[gid].rmsd_x, dx*dx);
-				add_to_ave(&aves[gid].rmsd_y, dy*dy);
-				add_to_ave(&aves[gid].rmsd, dx*dx + dy*dy);
+				add_to_ave(&aves[gid].x2, dx*dx);
+				add_to_ave(&aves[gid].y2, dy*dy);
 			}
 
 		}
@@ -414,9 +412,8 @@ int main(int argc, char *argv[])
 		init_ave(&aves[i].x);
 		init_ave(&aves[i].y);
 		init_ave(&aves[i].exerr);
-		init_ave(&aves[i].rmsd);
-		init_ave(&aves[i].rmsd_x);
-		init_ave(&aves[i].rmsd_y);
+		init_ave(&aves[i].x2);
+		init_ave(&aves[i].y2);
 	}
 
 	for ( i=optind; i<argc; i++ ) {
@@ -456,11 +453,11 @@ int main(int argc, char *argv[])
 				STATUS("        Mean absolute reflection excitation error = %+10.5f nm^-1\n",
 				       1e-9*calc_mean(aves[i].exerr));
 				STATUS("   Root mean square spot deviation in x-direction = %10.5f µm\n",
-				       sqrt(calc_mean(aves[i].rmsd_x))*1e6);
+				       sqrt(calc_mean(aves[i].x2))*1e6);
 				STATUS("   Root mean square spot deviation in y-direction = %10.5f µm\n",
-				       sqrt(calc_mean(aves[i].rmsd_y))*1e6);
+				       sqrt(calc_mean(aves[i].y2))*1e6);
 				STATUS("          Overall root mean square spot deviation = %10.5f µm\n",
-				       sqrt(calc_mean(aves[i].rmsd))*1e6);
+				       sqrt(calc_mean(aves[i].x2)+calc_mean(aves[i].y2))*1e6);
 			}
 		}
 	}
