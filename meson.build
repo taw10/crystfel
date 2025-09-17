@@ -351,3 +351,22 @@ install_man(['doc/man/ambigator.1',
              'doc/man/process_hkl.1',
              'doc/man/render_hkl.1',
              'doc/man/whirligig.1'])
+
+cppcheck_exe = find_program('cppcheck', required: false)
+if cppcheck_exe.found()
+  run_target(
+    'cppcheck',
+    command : [
+      'cppcheck',
+      '--enable=all',
+      '--check-level=exhaustive',
+      # xml for GitLab CI ingest
+      '--xml',
+      '--output-file=' + join_paths(meson.build_root(), 'cppcheck.xml'),
+      '--suppress=missingIncludeSystem',
+      '-i'+join_paths(meson.source_root(), 'subprojects'),
+      '-i'+join_paths(meson.source_root(), 'tests'),
+      '--project=' + join_paths(meson.build_root(), 'compile_commands.json')
+    ]
+  )
+endif

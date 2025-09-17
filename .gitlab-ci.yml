@@ -7,8 +7,6 @@ stages:
 build_dev_images:
   stage: build
   dependencies: []
-  only:
-    - master
   image:
     name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
     entrypoint: [ "" ]
@@ -39,8 +37,31 @@ build_dev_images:
 
   when: manual
 
+# A separate job for now, might be merged with build-and-test?
+build-and-cppcheck:
+  # hard-code fedora, makes no sense to use different cppchecks for different platforms
+  image: $CI_REGISTRY_IMAGE/fedora
+  variables:
+    GIT_STRATEGY: clone
+
+  script:
+    - meson setup build --prefix $CFPREFIX
+    - ninja -v -C build
+    - ninja -v -C build cppcheck
+    - python3 -m venv venv
+    - . venv/bin/activate
+    - pip install cppcheck-codequality
+    - cd build && cppcheck-codequality
+    - cppcheck-htmlreport --source-dir=.. --title=CF --file=cppcheck.xml --report-dir report
+
+  artifacts:
+    reports:
+      codequality: build/cppcheck.json
+    paths:
+      - build/report
+
 build-and-test:
-  image: gitlab.desy.de:5555/thomas.white/crystfel/$PLATFORM
+  image: $CI_REGISTRY_IMAGE/$PLATFORM
   variables:
     GIT_STRATEGY: clone
 
