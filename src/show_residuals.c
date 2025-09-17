@@ -117,6 +117,8 @@ struct gm_ave
 	struct stable_running_mean x;
 	struct stable_running_mean y;
 	struct stable_running_mean exerr;
+	struct stable_running_mean x2;
+	struct stable_running_mean y2;
 };
 
 
@@ -288,6 +290,8 @@ static int read_file(const char *filename,
 				add_to_ave(&aves[gid].x, dx);
 				add_to_ave(&aves[gid].y, dy);
 				add_to_ave(&aves[gid].exerr, fabs(ex/EXC_WEIGHT));
+				add_to_ave(&aves[gid].x2, dx*dx);
+				add_to_ave(&aves[gid].y2, dy*dy);
 			}
 
 		}
@@ -408,6 +412,8 @@ int main(int argc, char *argv[])
 		init_ave(&aves[i].x);
 		init_ave(&aves[i].y);
 		init_ave(&aves[i].exerr);
+		init_ave(&aves[i].x2);
+		init_ave(&aves[i].y2);
 	}
 
 	for ( i=optind; i<argc; i++ ) {
@@ -438,16 +444,20 @@ int main(int argc, char *argv[])
 					STATUS("Hierarchy level %i:\n\n", lvl);
 					done_header = 1;
 				}
-				STATUS("Group %s:\n", groups[i].name);
-				STATUS("   Mean spot deviation in x-direction "
-				       "(%i measurements) = %+f µm\n",
-				       aves[i].x.n_meas, calc_mean(aves[i].x)*1e6);
-				STATUS("   Mean spot deviation in y-direction "
-				       "(%i measurements) = %+f µm\n",
-				       aves[i].x.n_meas, calc_mean(aves[i].y)*1e6);
-				STATUS("   Mean absolute reflection excitation error "
-				       "(%i measurements) = %+f nm^-1\n",
-				       aves[i].exerr.n_meas, 1e-9*calc_mean(aves[i].exerr));
+				STATUS("Group %s (%i measurements):\n",
+				       groups[i].name, aves[i].x.n_meas);
+				STATUS("               Mean spot deviation in x-direction = %+10.5f µm\n",
+				       calc_mean(aves[i].x)*1e6);
+				STATUS("               Mean spot deviation in y-direction = %+10.5f µm\n",
+				       calc_mean(aves[i].y)*1e6);
+				STATUS("        Mean absolute reflection excitation error = %+10.5f nm^-1\n",
+				       1e-9*calc_mean(aves[i].exerr));
+				STATUS("   Root mean square spot deviation in x-direction = %10.5f µm\n",
+				       sqrt(calc_mean(aves[i].x2))*1e6);
+				STATUS("   Root mean square spot deviation in y-direction = %10.5f µm\n",
+				       sqrt(calc_mean(aves[i].y2))*1e6);
+				STATUS("          Overall root mean square spot deviation = %10.5f µm\n",
+				       sqrt(calc_mean(aves[i].x2)+calc_mean(aves[i].y2))*1e6);
 			}
 		}
 	}
