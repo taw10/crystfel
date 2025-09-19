@@ -133,12 +133,28 @@ build-brew-macos:
     - macOS
   variables:
     GIT_STRATEGY: clone
-    HOMEBREW_DEVELOPER: 1
+  only:
+    - master
   script:
     - brew uninstall -v -f crystfel
-    - brew install -v -s ./crystfel.rb --HEAD
-    - brew test crystfel
+    - brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
+    - brew install -v crystfel --HEAD --fetch-HEAD
+    - brew test -v crystfel
     - brew uninstall -v -f crystfel
+    - brew untap desy/crystfel
+
+build-macos:
+  dependencies: []
+  tags:
+    - macOS
+  variables:
+    GIT_STRATEGY: clone
+  script:
+    - brew install bison meson ninja pkg-config argp-standalone cairo fftw gdk-pixbuf gsl gtk+3 hdf5 pango eigen pandoc
+    - export PATH="$(brew --prefix)/opt/bison/bin:$PATH"
+    - meson setup build -Dc_args=-I$(brew --prefix)/include -Dc_link_args=-largp -Dcpp_link_args=-largp
+    - meson compile -C build
+    - meson test -C build
 
 deploy-remote-maxwell:
   stage: deploy
