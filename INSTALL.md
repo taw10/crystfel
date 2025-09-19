@@ -65,24 +65,13 @@ nixpkgs#crystfel` to have all CrystFEL tools in your `PATH`.
 ### Homebrew
 
 To install the development version of CrystFEL using
-[Homebrew](https://brew.sh/), download the latest version of
-[crystfel.rb](https://gitlab.desy.de/thomas.white/crystfel/-/blob/master/crystfel.rb)
-from the Git repository, and use `brew install`:
+[Homebrew](https://brew.sh/), first add our 'tap', then use `brew install`:
 ```
-$ wget https://gitlab.desy.de/thomas.white/crystfel/-/raw/master/crystfel.rb
-$ brew install -v -s ./crystfel.rb --HEAD
+$ brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
+$ brew install crystfel
 ```
-Omit `--HEAD` to install the latest stable version.
-
-Note that the Homebrew formulae included in the "tarball" release files always
-refer to the *previous* release.  This is because the formula has to contain
-the SHA256 hash of the downloaded tarball, which is not known until after the
-tarball has been created!
-
-We hope to contribute the Homebrew formula to the main repository soon, so that
-you can install CrystFEL with a simple `brew install crystfel`.  See
-[issue #94](https://gitlab.desy.de/thomas.white/crystfel/-/issues/94) for some
-discussion.
+Use `brew install --HEAD crystfel` to install the cutting-edge version with the
+latest features (and the latest bugs).
 
 
 Installation from source
