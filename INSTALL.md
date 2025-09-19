@@ -291,48 +291,6 @@ CrystFEL will install the remaining dependencies (Xgandalf, PinkIndexer, FDIP)
 automatically as part of its build process.
 
 
-Ubuntu 16.04 LTS ("Xenial")
---------------------------
-
-The Meson version in Ubuntu 16.04 is too old for CrystFEL, and unfortunately
-the Python version is also "end of life" and too old for recent versions of
-Meson.  However, the last release of Meson before it became incompatible with
-older Python versions, 0.56.2, is new enough to build CrystFEL.
-
-Ninja is not available in this Ubuntu release, but fortunately it's an easy
-download.
-
-The Eigen version is too old for XGandalf and PinkIndexer, so you should not
-install Eigen from Ubuntu (`libeigen3-dev`), instead let Meson take care of
-it during the build process.
-
-Finally, the dynamic library loader has to be made aware that libraries have
-been installed under `/usr/local`.
-
-```
-$ apt install -y build-essential libhdf5-dev libgsl-dev \
-                 libgtk-3-dev libcairo2-dev libpango1.0-dev \
-                 libgdk-pixbuf2.0-dev libfftw3-dev \
-                 git flex bison libzmq3-dev libmsgpack-dev \
-                 libccp4-dev wget python3 unzip
-
-$ wget https://github.com/mesonbuild/meson/releases/download/0.56.2/meson-0.56.2.tar.gz
-$ tar -xzf meson-0.56.2.tar.gz
-$ export MESON=`pwd`/meson-0.56.2/meson.py
-
-$ wget https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip
-$ unzip ninja-linux.zip
-$ export NINJA=`pwd`/ninja
-
-$ cd /home/user/downloads/crystfel
-$ $MESON build
-$ $NINJA -C build
-$ sudo $NINJA -C build install
-
-$ sudo echo "/usr/local/lib/x86_64-linux-gnu/" > /etc/ld.so.conf.d/local.conf
-$ sudo ldconfig
-```
-
 Debian 11 (Bullseye)
 --------------------
 
