@@ -106,7 +106,8 @@ $ meson install -C build
 ```
 The `meson setup` command will report if dependencies are missing - see the
 next section for details.  If necessary, the `meson install` command will ask
-for your password to gain administrative privileges.
+for your password to gain administrative privileges.  You may also need to run
+`sudo ldconfig` to update the shared library cache after installation.
 
 Run `indexamajig` for a basic check that the installation has succeeded.  A
 healthy newborn CrystFEL should complain that `You need to provide the input
@@ -178,6 +179,34 @@ environment.  Don't even "source" the Conda setup file before installing
 CrystFEL - keep it completely separate.  A Conda recipe for CrystFEL might be
 coming soon, though, if development resources allow for it.
 
+In Fedora 22 or later, install most of the dependencies like this:
+```
+$ sudo dnf group install development-tools
+$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson \
+                   gcc-c++ fftw-devel zeromq-devel msgpack-devel flex bison gcc-gfortran pandoc
+```
+
+Up to Fedora 32 (inclusive), you can also install `libccp4-devel` via `dnf`.
+
+For Debian 11 ("Bullseye") and later as well as Ubuntu 18.04 ("Bionic") and
+later, most of the dependencies are available using `apt`:
+```
+$ sudo apt install build-essential libhdf5-dev libgsl-dev libgtk-3-dev libcairo2-dev libpango1.0-dev \
+                   libgdk-pixbuf2.0-dev libfftw3-dev git flex bison libzmq3-dev libmsgpack-dev \
+                   libeigen3-dev libccp4-dev meson ninja-build
+```
+
+Make sure that the "universe" repository is enabled for Ubuntu -
+[instructions here](https://help.ubuntu.com/community/Repositories/Ubuntu).
+
+In Ubuntu 20.04 ("Focal") and older, the Meson version is slightly too old for
+CrystFEL.  Install version 0.60.0 or later from the
+[Meson website](https://mesonbuild.com/Getting-meson.html).
+You don't need to "install" it, but do remember the location where you unpacked
+it.  You will need to additionally install `python3`, if it's not already
+present.  Then refer to the downloaded Meson version directly, e.g.
+`/home/myself/Downloads/meson/meson.py setup build`.
+
 
 Installing the indexing engines
 -------------------------------
@@ -238,76 +267,6 @@ below) are related to HDF5.  To build without HDF5, set up your build directory
 as follows, replacing the `meson build` step:
 ```
 meson build -Dhdf5=disabled
-```
-
-
-Fedora 22 or later
-------------------
-
-All dependencies can be taken from the Fedora repositories:
-
-```
-$ sudo dnf group install development-tools
-$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson gcc-c++ fftw-devel zeromq-devel msgpack-devel flex bison gcc-gfortran pandoc
-$ cd /home/user/downloads/crystfel
-$ meson build
-$ ninja -C build
-$ sudo ninja -C build install
-```
-
-Up to Fedora 32 (inclusive), you can also install `libccp4-devel` via `dnf`.
-This package was removed starting from Fedora 33, but CrystFEL's build system
-will take care of it.
-
-
-Ubuntu 18.04 LTS ("Bionic") and 20.04 LTS ("Focal")
----------------------------------------------------
-
-The Meson version in these Ubuntu releases is slightly too old for CrystFEL.
-Install version 0.55.0 or later from the
-[Meson website](https://mesonbuild.com/Getting-meson.html).
-You don't need to "install" it, but do remember the location where you unpacked
-it.  You will need to additionally install `python3`, if it's not already
-present.
-
-All other dependencies are available in the Ubuntu repositories.  Make sure
-that the "universe" repository is enabled -
-[instructions here](https://help.ubuntu.com/community/Repositories/Ubuntu).
-```
-$ apt install -y build-essential libhdf5-dev libgsl-dev \
-                 libgtk-3-dev libcairo2-dev libpango1.0-dev \
-                 libgdk-pixbuf2.0-dev libfftw3-dev \
-                 git flex bison libzmq3-dev libmsgpack-dev \
-                 libeigen3-dev libccp4-dev \
-                 ninja-build python3
-$ cd /home/user/downloads/crystfel
-$ /home/user/downloads/meson/meson.py build
-$ ninja -C build
-$ sudo ninja -C build install
-$ sudo ldconfig
-```
-
-CrystFEL will install the remaining dependencies (Xgandalf, PinkIndexer, FDIP)
-automatically as part of its build process.
-
-
-Debian 11 (Bullseye)
---------------------
-
-All dependencies can be taken from the Debain repositories:
-
-```
-$ sudo apt install -y build-essential libhdf5-dev libgsl-dev \
-                      libgtk-3-dev libcairo2-dev libpango1.0-dev \
-                      libgdk-pixbuf2.0-dev libfftw3-dev \
-                      git flex bison libzmq3-dev libmsgpack-dev \
-                      libeigen3-dev libccp4-dev \
-                      meson ninja-build
-$ cd /home/user/downloads/crystfel
-$ meson build
-$ ninja -C build
-$ sudo ninja -C build install
-$ sudo ldconfig
 ```
 
 
