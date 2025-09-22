@@ -114,88 +114,36 @@ static GtkWidget *make_tolerances(CrystFELIndexingOpts *io)
 }
 
 
-static void add_method(GtkListStore *store, const char *name,
-                       const char *friendly_name,
-                       gboolean enabled)
+static void add_method(GtkWidget *grid, int y, int x, const char *name,
+                       const char *friendly_name, gboolean enabled)
 {
-	GtkTreeIter iter;
-	gtk_list_store_append(store, &iter);
-	gtk_list_store_set(store, &iter,
-	                   0, enabled,
-	                   1, friendly_name,
-	                   2, name,
-	                   -1);
-}
-
-
-static void toggle_column(GtkListStore *store,
-                          gchar *path_str, int column)
-{
-	GtkTreePath *path;
-	GtkTreeIter iter;
-	gboolean val;
-
-	path = gtk_tree_path_new_from_string(path_str);
-	gtk_tree_model_get_iter(GTK_TREE_MODEL(store),
-	                        &iter, path);
-	gtk_tree_path_free(path);
-
-	gtk_tree_model_get(GTK_TREE_MODEL(store),
-	                   &iter, column, &val, -1);
-
-	gtk_list_store_set(store, &iter, column, !val, -1);
-}
-
-
-static void indm_toggled(GtkCellRendererToggle *cr,
-                         gchar *path_str,
-                         CrystFELIndexingOpts *io)
-{
-	toggle_column(io->indm_store, path_str, 0);
+	GtkWidget *cb = gtk_check_button_new_with_label(friendly_name);
+	gtk_widget_set_name(cb, name);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cb), enabled);
+	gtk_grid_attach(GTK_GRID(grid), cb, x, y, 1, 1);
 }
 
 
 static GtkWidget *make_indexing_methods(CrystFELIndexingOpts *io)
 {
-	GtkWidget *treeview;
-	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *column;
+	GtkWidget *grid = gtk_grid_new();
 
-	io->indm_store = gtk_list_store_new(3,
-	                           G_TYPE_BOOLEAN,  /* Algo on */
-	                           G_TYPE_STRING,   /* Friendly name */
-	                           G_TYPE_STRING);  /* Real name */
+	gtk_grid_set_column_homogeneous(GTK_GRID(grid), TRUE);
 
-	add_method(io->indm_store, "dirax", "DirAx", TRUE);
-	add_method(io->indm_store, "mosflm", "MOSFLM", TRUE);
-	add_method(io->indm_store, "xds", "XDS", TRUE);
-	add_method(io->indm_store, "xgandalf", "XGANDALF", TRUE);
-	add_method(io->indm_store, "pinkIndexer", "PinkIndexer", FALSE);
-	add_method(io->indm_store, "taketwo", "TakeTwo", TRUE);
-	add_method(io->indm_store, "asdf", "ASDF", TRUE);
-	add_method(io->indm_store, "felix", "Felix", FALSE);
-	add_method(io->indm_store, "smallcell", "Small cell", FALSE);
-	add_method(io->indm_store, "ffbidx", "ffbidx (GPU)", FALSE);
+	/* If changing the size of the grid, be sure to change the iteration
+	 * limits in crystfel_indexing_opts_{s,g}et_indexing_method_string */
+	add_method(grid, 0, 0, "xgandalf", "XGANDALF", TRUE);
+	add_method(grid, 1, 0, "asdf", "ASDF", TRUE);
+	add_method(grid, 2, 0, "mosflm", "MOSFLM", TRUE);
+	add_method(grid, 3, 0, "taketwo", "TakeTwo", TRUE);
+	add_method(grid, 0, 1, "dirax", "DirAx", TRUE);
+	add_method(grid, 1, 1, "xds", "XDS", TRUE);
+	add_method(grid, 2, 1, "pinkIndexer", "PinkIndexer", FALSE);
+	add_method(grid, 3, 1, "felix", "Felix", FALSE);
+	add_method(grid, 0, 2, "smallcell", "Small cell", FALSE);
+	add_method(grid, 1, 2, "ffbidx", "ffbidx (GPU)", FALSE);
 
-	treeview = gtk_tree_view_new_with_model(GTK_TREE_MODEL(io->indm_store));
-
-	renderer = gtk_cell_renderer_toggle_new();
-	column = gtk_tree_view_column_new_with_attributes(NULL,
-	                                                  renderer,
-	                                                  "active", 0,
-	                                                  NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-	g_signal_connect(G_OBJECT(renderer), "toggled",
-	                 G_CALLBACK(indm_toggled), io);
-
-	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Method",
-	                                                  renderer,
-	                                                  "text", 1,
-	                                                  NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-
-	return treeview;
+	return grid;
 }
 
 
@@ -838,8 +786,7 @@ char *crystfel_indexing_opts_get_cell_file(CrystFELIndexingOpts *opts)
  * "none" means "no indexing" */
 char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *opts)
 {
-	GtkTreePath *path;
-	GtkTreeIter iter;
+	int x, y;
 	char indm_str[1024];
 	int first = 1;
 
@@ -847,32 +794,20 @@ char *crystfel_indexing_opts_get_indexing_method_string(CrystFELIndexingOpts *op
 		return NULL;
 	}
 
-	path = gtk_tree_path_new_from_string("0");
-	gtk_tree_model_get_iter(GTK_TREE_MODEL(opts->indm_store),
-	                        &iter, path);
-	gtk_tree_path_free(path);
-
 	indm_str[0] = '\0';
-	do {
-		gboolean enabled;
-		gchar *name;
-
-		gtk_tree_model_get(GTK_TREE_MODEL(opts->indm_store),
-		                   &iter,
-		                   0, &enabled,
-		                   2, &name,
-		                   -1);
-
-		if ( enabled ) {
-			if ( !first ) {
-				strcat(indm_str, ",");
+	for ( x=0; x<3; x++ ) {
+		for ( y=0; y<5; y++ ) {
+			GtkWidget *w = gtk_grid_get_child_at(GTK_GRID(opts->indm_chooser), x, y);
+			if ( w == NULL ) continue;
+			if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w)) ) {
+				if ( !first ) {
+					strcat(indm_str, ",");
+				}
+				first = 0;
+				strcat(indm_str, gtk_widget_get_name(w));
 			}
-			first = 0;
-			strcat(indm_str, name);
 		}
-
-	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
-	                                   &iter) );
+	}
 
 	if ( indm_str[0] == '\0' ) {
 		strcpy(indm_str, "none");
@@ -1196,14 +1131,14 @@ static const char *integration_method_id(IntegrationMethod meth)
 void crystfel_indexing_opts_set_indexing_method_string(CrystFELIndexingOpts *opts,
                                                        const char *indm_str)
 {
-	GtkTreePath *path;
-	GtkTreeIter iter;
 	IndexingMethod *methods;
-	int i, n;
+	int x, y;
+	int n;
 
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->auto_indm),
-	                             (indm_str == NULL));
-	if ( indm_str == NULL ) return;
+	if ( indm_str == NULL ) {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->auto_indm), TRUE);
+		return;
+	}
 
 	methods = parse_indexing_methods(indm_str, &n);
 	if ( methods == NULL ) {
@@ -1211,34 +1146,27 @@ void crystfel_indexing_opts_set_indexing_method_string(CrystFELIndexingOpts *opt
 		return;
 	}
 
-	path = gtk_tree_path_new_from_string("0");
-	gtk_tree_model_get_iter(GTK_TREE_MODEL(opts->indm_store),
-	                        &iter, path);
-	gtk_tree_path_free(path);
+	for ( x=0; x<3; x++ ) {
+		for ( y=0; y<5; y++ ) {
 
-	do {
-		gchar *name;
-		IndexingMethod this_method = 0;
+			int i;
+			const char *name;
+			GtkWidget *w;
 
-		gtk_tree_model_get(GTK_TREE_MODEL(opts->indm_store),
-		                   &iter,
-		                   4, &name,
-		                   -1);
+			w = gtk_grid_get_child_at(GTK_GRID(opts->indm_chooser), x, y);
+			if ( w == NULL ) continue;
 
-		for ( i=0; i<n; i++ ) {
-			const char *str = indexer_str(methods[i]);
-			if ( strcmp(str, name) == 0 ) {
-				this_method = methods[i];
-				break;
+			name = gtk_widget_get_name(w);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), FALSE);
+			for ( i=0; i<n; i++ ) {
+				const char *str = indexer_str(methods[i]);
+				if ( strcmp(str, name) == 0 ) {
+					gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), TRUE);
+					break;
+				}
 			}
 		}
-
-		gtk_list_store_set(opts->indm_store, &iter,
-		                   0, (this_method != 0),
-		                   -1);
-
-	} while ( gtk_tree_model_iter_next(GTK_TREE_MODEL(opts->indm_store),
-	                                   &iter) );
+	}
 
 	free(methods);
 }
