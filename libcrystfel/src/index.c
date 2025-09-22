@@ -280,6 +280,7 @@ IndexingPrivate *setup_indexing(const char *method_list,
 	int n, i;
 
 	methods = parse_indexing_methods(method_list, &n);
+	if ( methods == NULL ) return NULL;
 
 	/* No cell parameters -> no cell checking, no prior cell */
 	if ( !cell_has_parameters(cell) ) {
