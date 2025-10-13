@@ -285,7 +285,7 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 		if ( isnan(gsl_vector_get(SB, i)) ) gsl_vector_set(SB, i, 0.0);
 		for ( j=0; j<n; j++ ) {
 			if ( isnan(gsl_matrix_get(SAS, i, j)) ) {
-					gsl_matrix_set(SAS, i, j, 0.0);
+				gsl_matrix_set(SAS, i, j, 0.0);
 			}
 		}
 	}
