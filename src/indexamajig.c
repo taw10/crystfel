@@ -448,6 +448,8 @@ static int run_work(struct indexamajig_arguments *args)
 	debugdata.worker = args->worker_id;
 	set_debug_funcs(set_last_task_sandbox, notify_alive_sandbox, &debugdata);
 
+	gsl_set_error_handler_off();
+
 	mille = crystfel_mille_new_fd(args->fd_mille);
 
 	ida = image_data_arrays_new();
