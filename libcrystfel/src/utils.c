@@ -293,7 +293,9 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 	/* Do the SVD */
 	s_val = gsl_vector_calloc(n);
 	s_vec = gsl_matrix_calloc(n, n);
-	err = gsl_linalg_SV_decomp_jacobi(SAS, s_vec, s_val);
+	gsl_vector *work = gsl_vector_calloc(n);
+	err = gsl_linalg_SV_decomp(SAS, s_vec, s_val, work);
+	gsl_vector_free(work);
 	if ( err ) {
 		if ( verbose ) ERROR("SVD failed: %s\n", gsl_strerror(err));
 		gsl_matrix_free(s_vec);
