@@ -94,6 +94,7 @@ struct _crystfelimageview
 	int                  show_peaks;
 	int                  show_refls;
 	int                  label_refls;
+	int                  label_panels;
 	float                peak_box_size;
 	float                refl_box_size;
 	int                  resolution_rings;
@@ -129,6 +130,9 @@ extern void crystfel_image_view_set_show_reflections(CrystFELImageView *iv,
 
 extern void crystfel_image_view_set_label_reflections(CrystFELImageView *iv,
                                                       int label_refls);
+
+extern void crystfel_image_view_set_label_panels(CrystFELImageView *iv,
+                                                 int label_panels);
 
 extern void crystfel_image_view_set_peak_box_size(CrystFELImageView *iv,
                                                   float box_size);

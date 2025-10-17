@@ -270,6 +270,8 @@ void update_imageview(struct crystfelproject *proj)
 	                                         proj->show_refls);
 	crystfel_image_view_set_label_reflections(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                          proj->label_refls);
+	crystfel_image_view_set_label_panels(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                     proj->label_panels);
 	crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
 	                                      proj->indexing_params.ir_inn);
 	crystfel_image_view_set_show_peaks(CRYSTFEL_IMAGE_VIEW(proj->imageview),
@@ -899,6 +901,15 @@ static gint label_refls_sig(GtkWidget *w, struct crystfelproject *proj)
 }
 
 
+static gint label_panels_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	proj->label_panels = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	crystfel_image_view_set_label_panels(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                     proj->label_panels);
+	return FALSE;
+}
+
+
 static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 {
 	GError *error = NULL;
@@ -912,6 +923,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"peaks\" action=\"PeaksAction\" />"
 		"	<menuitem name=\"refls\" action=\"ReflsAction\" />"
 		"	<menuitem name=\"labelrefls\" action=\"LabelReflsAction\" />"
+		"	<menuitem name=\"labelpanels\" action=\"LabelPanelsAction\" />"
 		"	<menuitem name=\"centre\" action=\"CentreAction\" />"
 		"	<menuitem name=\"resrings\" action=\"ResolutionRingsAction\" />"
 		"       <separator />"
@@ -967,6 +979,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		  G_CALLBACK(label_refls_sig), FALSE },
 		{ "CentreAction", NULL, "Beam centre", NULL, NULL,
 		  G_CALLBACK(show_centre_sig), FALSE },
+		{ "LabelPanelsAction", NULL, "Show panel names", NULL, NULL,
+		  G_CALLBACK(label_panels_sig), FALSE },
 		{ "ResolutionRingsAction", NULL, "Resolution rings", NULL, NULL,
 		  G_CALLBACK(resolution_rings_sig), FALSE },
 		{ "RescanOnChangeAction", NULL, "Rescan streams when changing frame", NULL, NULL,
@@ -1430,6 +1444,10 @@ int main(int argc, char *argv[])
 	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/labelrefls");
 	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
 	                             proj.label_refls);
+
+	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/labelpanels");
+	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
+	                             proj.label_panels);
 
 	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/resrings");
 	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),

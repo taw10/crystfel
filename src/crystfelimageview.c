@@ -399,6 +399,38 @@ static void draw_panel_rectangle(cairo_t *cr, CrystFELImageView *iv,
 		draw_pixel_values(cr, min_fs, max_fs, min_ss, max_ss, p,
 		                  iv->image->dp[i], iv->image->bad[i]);
 	}
+
+	if ( iv->label_panels ) {
+
+		PangoLayout *layout;
+		PangoFontDescription *fontdesc;
+		double rw, rh;
+		PangoRectangle rec;
+
+		cairo_save(cr);
+
+		cairo_scale(cr, p.pixel_pitch, p.pixel_pitch);
+		cairo_translate(cr, p.cnx, p.cny);
+		cairo_translate(cr, p.fsx*p.w*0.5, p.fsy*p.w*0.5);
+		cairo_translate(cr, p.ssx*p.h*0.5, p.ssy*p.h*0.5);
+
+		layout = pango_cairo_create_layout(cr);
+		fontdesc = pango_font_description_from_string("Sans 48");
+		pango_layout_set_font_description(layout, fontdesc);
+		pango_layout_set_text(layout, p.name, -1);
+		pango_cairo_update_layout(cr, layout);
+		pango_layout_get_extents(layout, NULL, &rec);
+		rw = pango_units_to_double(rec.width);
+		rh = pango_units_to_double(rec.height);
+		cairo_scale(cr, 1.0, -1.0);
+		cairo_move_to(cr, -rw/2.0, -rh/2.0);
+		cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+		pango_cairo_show_layout(cr, layout);
+		pango_font_description_free(fontdesc);
+		g_object_unref(layout);
+
+		cairo_restore(cr);
+	}
 }
 
 
@@ -688,6 +720,7 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	}
 
 	if ( iv->show_centre ) {
+		cairo_new_path(cr);
 		cairo_arc(cr, 0.0, 0.0, 0.006, 0, 2.0*M_PI);
 		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.9);
 		cairo_set_line_width(cr, 0.0001);
@@ -1163,6 +1196,15 @@ void crystfel_image_view_set_label_reflections(CrystFELImageView *iv,
                                                int label_refls)
 {
 	iv->label_refls = label_refls;
+	iv->need_rerender = 1;
+	redraw(iv);
+}
+
+
+void crystfel_image_view_set_label_panels(CrystFELImageView *iv,
+                                          int label_panels)
+{
+	iv->label_panels = label_panels;
 	iv->need_rerender = 1;
 	redraw(iv);
 }

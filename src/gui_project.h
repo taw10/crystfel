@@ -304,6 +304,7 @@ struct crystfelproject {
 
 	int show_refls;
 	int label_refls;
+	int label_panels;
 	struct index_params indexing_params;
 	int indexing_backend_selected;
 	GtkWidget *indexing_opts;
