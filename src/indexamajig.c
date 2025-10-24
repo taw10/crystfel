@@ -917,27 +917,29 @@ int main(int argc, char *argv[])
 	stream_write_target_cell(st, args->iargs.cell);
 	stream_write_indexing_methods(st, args->indm_str);
 
-	r = mkdir(args->milledir, S_IRWXU);
-	if ( r ) {
-		if ( errno != EEXIST ) {
-			ERROR("Failed to create folder for Millepede data: %s\n",
-			      strerror(errno));
+	if ( args->iargs.mille ) {
+		r = mkdir(args->milledir, S_IRWXU);
+		if ( r ) {
+			if ( errno != EEXIST ) {
+				ERROR("Failed to create folder for Millepede data: %s\n",
+				      strerror(errno));
+				return 1;
+			}
+		}
+		mille_fn_len = strlen(args->milledir) +strlen(args->millefile)+2;
+		mille_filename = malloc(mille_fn_len);
+		if ( mille_filename == NULL ) {
+			ERROR("Failed to generate Millepede filename\n");
 			return 1;
 		}
+		snprintf(mille_filename, mille_fn_len, "%s/%s", args->milledir, args->millefile);
+		mille_fh = fopen(mille_filename, "wb");
+		if ( mille_fh == NULL ) {
+			ERROR("Failed to open Millepede file: %s\n", strerror(errno));
+			return 1;
+		}
+		free(mille_filename);
 	}
-	mille_fn_len = strlen(args->milledir) +strlen(args->millefile)+2;
-	mille_filename = malloc(mille_fn_len);
-	if ( mille_filename == NULL ) {
-		ERROR("Failed to generate Millepede filename\n");
-		return 1;
-	}
-	snprintf(mille_filename, mille_fn_len, "%s/%s", args->milledir, args->millefile);
-	mille_fh = fopen(mille_filename, "wb");
-	if ( mille_fh == NULL ) {
-		ERROR("Failed to open Millepede file: %s\n", strerror(errno));
-		return 1;
-	}
-	free(mille_filename);
 
 	r = create_sandbox(&args->iargs, args->n_proc, args->prefix, args->basename,
 	                   fh, st, tmpdir, args->serial_start,
@@ -946,7 +948,9 @@ int main(int argc, char *argv[])
 	                   args->no_data_timeout, argc, argv,
 			   probed_methods, mille_fh);
 
-	fclose(mille_fh);
+	if ( mille_fh != NULL ) {
+		fclose(mille_fh);
+	}
 	free(tmpdir);
 	free(probed_methods);
 	data_template_free(args->iargs.dtempl);
