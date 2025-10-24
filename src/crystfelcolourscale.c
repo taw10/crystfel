@@ -154,7 +154,7 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELColourScale *cs)
 	for ( pos=0.0; pos<cs->visible_height; pos += 1.0 ) {
 		double r, g, b;
 		cairo_rectangle(cr, 0.0, pos, bar_w, 1.0);
-		colscale_lookup(pos, cs->visible_height, SCALE_COLOUR, &r, &g, &b);
+		colscale_lookup(pos, cs->visible_height, cs->colour_scheme, &r, &g, &b);
 		cairo_set_source_rgb(cr, r, g, b);
 		cairo_fill(cr);
 	}
@@ -262,6 +262,7 @@ GtkWidget *crystfel_colour_scale_new()
 
 	cs = g_object_new(CRYSTFEL_TYPE_COLOUR_SCALE, NULL);
 
+	cs->colour_scheme = SCALE_COLOUR;
 	cs->sample = calloc(COLSCALE_SAMPLE_SIZE, sizeof(float));
 	if ( cs->sample == NULL ) return NULL;
 
@@ -374,4 +375,11 @@ void crystfel_colour_scale_get_range(CrystFELColourScale *cs,
 {
 	*scale_min = cs->lo;
 	*scale_max = cs->hi;
+}
+
+void crystfel_colour_scale_set_colour_scheme(CrystFELColourScale *cs,
+                                             int colour_scheme)
+{
+	cs->colour_scheme = colour_scheme;
+	gtk_widget_queue_draw(GTK_WIDGET(cs));
 }

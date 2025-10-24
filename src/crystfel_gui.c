@@ -850,6 +850,16 @@ static gint show_centre_sig(GtkWidget *w, struct crystfelproject *proj)
 }
 
 
+static gint colour_scheme_sig(GtkRadioAction *action, GtkRadioAction *current, struct crystfelproject *proj)
+{
+	int choice = gtk_radio_action_get_current_value(GTK_RADIO_ACTION(current));
+
+	crystfel_colour_scale_set_colour_scheme(CRYSTFEL_COLOUR_SCALE(proj->colscale), choice);
+	crystfel_image_view_set_colour_scheme(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+	                                      choice);
+	return FALSE;
+}
+
 static gint resolution_rings_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	int tr = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
@@ -928,6 +938,11 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"resrings\" action=\"ResolutionRingsAction\" />"
 		"       <separator />"
 		"	<menuitem name=\"resetzoom\" action=\"ResetZoomAction\" />"
+		"	<menu name=\"colorscale\" action=\"ColourSchemeAction\">"
+                "              <menuitem action=\"ColourAction\"/>"
+                "              <menuitem action=\"MonoAction\"/>"
+                "              <menuitem action=\"InvMonoAction\"/>"
+		"       </menu>"
 		"	<menuitem name=\"resetrange\" action=\"ResetRangeAction\" />"
 		"</menu>"
 		"<menu name=\"tools\" action=\"ToolsAction\" >"
@@ -955,6 +970,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 			G_CALLBACK(reset_zoom_sig) },
 		{ "ResetRangeAction", NULL, "Reset colour scale", NULL, NULL,
 			G_CALLBACK(reset_range_sig) },
+		{ "ColourSchemeAction", NULL, "Colour scheme", NULL, NULL, NULL },
 
 		{ "ToolsAction", NULL, "_Tools", NULL, NULL, NULL },
 		{ "RescanAction", NULL, "Rescan streams", NULL, NULL,
@@ -987,11 +1003,20 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		  G_CALLBACK(rescan_on_change_sig), FALSE },
 	};
 
+	GtkRadioActionEntry colour_schemes[] = {
+		{ "ColourAction", NULL, "Colour", NULL, "Colour", SCALE_COLOUR },
+		{ "MonoAction", NULL, "Monochrome", NULL, "Monochrome", SCALE_MONO },
+		{ "InvMonoAction", NULL, "Inverse monochrome", NULL, "Inverse monochrome",  SCALE_INVMONO }
+	};
+
 	proj->action_group = gtk_action_group_new("cellwindow");
 	gtk_action_group_add_actions(proj->action_group, entries,
 	                             G_N_ELEMENTS(entries), proj);
 	gtk_action_group_add_toggle_actions(proj->action_group, toggles,
 	                                    G_N_ELEMENTS(toggles), proj);
+	gtk_action_group_add_radio_actions(proj->action_group, colour_schemes,
+	                                   G_N_ELEMENTS(colour_schemes),
+					   SCALE_COLOUR, G_CALLBACK(colour_scheme_sig), proj);
 
 	proj->ui = gtk_ui_manager_new();
 	gtk_ui_manager_insert_action_group(proj->ui, proj->action_group, 0);
