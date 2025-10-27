@@ -450,7 +450,11 @@ static int run_work(struct indexamajig_arguments *args)
 
 	gsl_set_error_handler_off();
 
-	mille = crystfel_mille_new_fd(args->fd_mille);
+	if ( args->iargs.mille ) {
+		mille = crystfel_mille_new_fd(args->fd_mille);
+	} else {
+		mille = NULL;
+	}
 
 	ida = image_data_arrays_new();
 
@@ -939,6 +943,8 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		free(mille_filename);
+	} else {
+		mille_fh = NULL;
 	}
 
 	r = create_sandbox(&args->iargs, args->n_proc, args->prefix, args->basename,
