@@ -40,7 +40,6 @@
 
 #include <utils.h>
 #include <detgeom.h>
-#include <colscale.h>
 
 #include "crystfelimageview.h"
 
@@ -939,6 +938,7 @@ GtkWidget *crystfel_image_view_new()
 	iv->need_rerender = 0;
 	iv->need_recentre = 1;
 	iv->resolution_rings = 0;
+	iv->colour_scheme = SCALE_COLOUR;
 	iv->scale_lo = 0.0;
 	iv->scale_hi = 100000.0;
 
@@ -1105,7 +1105,7 @@ static int rerender_image(CrystFELImageView *iv)
 		                              iv->image->bad[i],
 		                              iv->image->detgeom->panels[i].w,
 		                              iv->image->detgeom->panels[i].h,
-		                              SCALE_COLOUR,
+		                              iv->colour_scheme,
 		                              iv->scale_lo, iv->scale_hi);
 		if ( iv->pixbufs[i] == NULL ) return 1;
 	}
@@ -1242,6 +1242,14 @@ void crystfel_image_view_set_colour_scale(CrystFELImageView *iv,
 {
 	iv->scale_lo = lo;
 	iv->scale_hi = hi;
+	iv->need_rerender = 1;
+	redraw(iv);
+}
+
+void crystfel_image_view_set_colour_scheme(CrystFELImageView *iv,
+                                           int colour_scheme)
+{
+	iv->colour_scheme = colour_scheme;
 	iv->need_rerender = 1;
 	redraw(iv);
 }

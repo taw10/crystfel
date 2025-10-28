@@ -65,6 +65,7 @@ struct _crystfelcolourscale
 	double               drag_start_y;
 	double               drag_min;
 
+	int                  colour_scheme;
 	double               lo;
 	double               hi;
 	int                  bins[COLSCALE_N_BINS];
@@ -89,6 +90,9 @@ extern void crystfel_colour_scale_scan_image(CrystFELColourScale *cs,
 extern void crystfel_colour_scale_get_range(CrystFELColourScale *cs,
                                             double *scale_min,
                                             double *scale_max);
+
+extern void crystfel_colour_scale_set_colour_scheme(CrystFELColourScale *cs,
+                                                    int colour_scheme);
 
 extern void crystfel_colour_scale_auto_range(CrystFELColourScale *cs);
 

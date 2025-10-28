@@ -35,6 +35,7 @@
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
+#include <colscale.h>
 #include <image.h>
 #include <datatemplate.h>
 
@@ -69,6 +70,7 @@ struct _crystfelimageview
 	/* Redraw/scroll stuff */
 	int                  need_rerender;
 	int                  need_recentre;
+	int                  colour_scheme;
 	double               scale_lo;
 	double               scale_hi;
 	GtkScrollablePolicy  hpol;
@@ -146,4 +148,6 @@ extern void crystfel_image_view_set_resolution_rings(CrystFELImageView *iv,
 extern void crystfel_image_view_set_colour_scale(CrystFELImageView *iv,
                                                  double lo, double hi);
 
+extern void crystfel_image_view_set_colour_scheme(CrystFELImageView *iv,
+                                                  int scheme);
 #endif	/* CRYSTFELIMAGEVIEW_H */
