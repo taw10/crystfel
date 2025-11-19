@@ -241,13 +241,14 @@ IndexingMethod *parse_indexing_methods(const char *method_list,
 	for ( i=0; i<n; i++ ) {
 		int err = 0;
 		methods[i] = get_indm_from_string_2(method_strings[i], &err);
+		if ( methods[i] == INDEXING_ERROR ) {
+			return NULL;
+		}
 		if ( err ) {
 			ERROR("----- Notice -----\n");
 			ERROR("The way indexing options are given has changed in this CrystFEL version.\n");
 			ERROR("Prior information modifiers ('cell' or 'latt') are no longer used.\n");
 			ERROR("------------------\n");
-			cffree(methods);
-			return NULL;
 		}
 		cffree(method_strings[i]);
 	}
