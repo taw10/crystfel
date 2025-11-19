@@ -1,12 +1,10 @@
-#!/bin/bash
-
-# Copyright © 2014 Wolfgang Brehm
-# Copyright © 2014-2020 Deutsches Elektronen-Synchrotron DESY,
-#                       a research centre of the Helmholtz Association.
+#!/usr/bin/env python
+#
+# Copyright © 2025 Deutsches Elektronen-Synchrotron DESY,
+#                  a research centre of the Helmholtz Association.
 #
 # Authors:
-#   2013-2014 Wolfgang Brehm <wolfgang.brehm@gmail.com>
-#   2014 Thomas White <taw@physics.org>
+#   2025 Thomas White <taw@physics.org>
 #
 # This file is part of CrystFEL.
 #
@@ -22,40 +20,83 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
-#
 
-FILE=fg.dat
-NPATT=4000
-NITER=4
-CMIN=-0.1
-CMAX=0.3
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import signal
 
-gnuplot -p << EOF
-set terminal pngcairo size 1600,1000 enhanced font 'Helvetica,20' linewidth 2
-set output "correlation.png"
-set xlabel "Number of crystals"
-set ylabel "Correlation"
-rnd(x) = x - floor(x) < 0.5 ? floor(x) : ceil(x)
-cfround(x1,x2)=rnd(10**x2*x1)/10.0**x2
-set xzeroaxis lc rgb "black" lt 1
-set key top left
-set xrange [0:${NITER}*${NPATT}]
-set yrange [${CMIN}:${CMAX}]
-set ytics nomirror
-set xtics nomirror
-set x2tics nomirror
 
-set x2range [0:${NITER}]
-set x2label "Number of passes over all crystals"
-set arrow from ${NPATT},${CMIN} to ${NPATT},${CMAX} nohead lc rgb "black"
+f = []
+g = []
+n = 0
 
-plot\
- 1 lc rgb "black" lt 1 notitle,\
- "${FILE}" u 0:1 ps 0.2 pt 7 lc rgb "orange" notitle,\
- "${FILE}" u 0:2 ps 0.2 pt 7 lc rgb "#0088FF" notitle,\
- "${FILE}" u 0:(rand(0)>0.5?\$1:1/0) ps 0.2 pt 7 lc rgb "orange" notitle ,\
- "${FILE}" u (cfround(\$0, -3)):(\$1>\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
- "${FILE}" u (cfround(\$0, -3)):(\$1<\$2?\$1:\$2) lw 3 lc rgb "black" smooth unique notitle,\
- "${FILE}" u (cfround(\$0, -3)):1 lw 3 lc rgb "red" smooth unique notitle,\
- "${FILE}" u (cfround(\$0, -3)):2 lw 3 lc rgb "blue" smooth unique notitle
-EOF
+for file in sys.argv[1:]:
+
+    if file == "-":
+        fh = sys.stdin
+    else:
+        fh = open(file)
+
+    for line in fh:
+
+        f.append(float(line.strip().split(" ")[0]))
+        g.append(float(line.strip().split(" ")[1]))
+
+        n += 1
+        if n%1000==0:
+            sys.stdout.write("\r%i data points" % n)
+            sys.stdout.flush()
+
+    fh.close()
+
+
+fn = np.asarray(f,dtype=float)
+gn = np.asarray(g,dtype=float)
+xn = np.arange(0, n)
+
+sys.stdout.write("\rRead %i f-g pairs\n" % n)
+sys.stdout.flush()
+
+fig, ax = plt.subplots()
+
+fgmin = np.minimum(fn, gn)
+fgmax = np.maximum(fn, gn)
+ax.set_ylim([np.mean(fgmin)-2.5*np.std(fgmin),
+             np.mean(fgmax)+2.5*np.std(fgmax),])
+
+ax.scatter(xn, gn, color='#0088ff', marker=',', s=1,
+           label="Correlation coefficient in opposite orientation")
+ax.scatter(xn, fn, color='#ff8800', marker=',', s=1,
+           label="Correlation coefficient in correct orientation")
+
+def smooth(p, len, bs):
+    xn = []
+    smoothed = []
+    for x in range(0, len, bs):
+        xn.append(x+bs/2)
+        smoothed.append(np.mean(p[x:x+bs]))
+    return xn,smoothed
+
+bs = 500
+
+xsmooth,fsmooth = smooth(fn, n, bs)
+ax.plot(xsmooth, fsmooth, color='#ff0000', linewidth=2,
+        label="Moving average correlation in correct orientation")
+
+xsmooth,gsmooth = smooth(gn, n, bs)
+ax.plot(xsmooth, gsmooth, color='#0000ff', linewidth=2,
+        label="Moving average correlation in opposite orientation")
+
+xsmooth,maxsmooth = smooth(fgmax, n, bs)
+ax.plot(xsmooth, maxsmooth, color='#550000', linewidth=2,
+        label="Moving average of highest correlation")
+
+xsmooth,minsmooth = smooth(fgmin, n, bs)
+ax.plot(xsmooth, minsmooth, color='#000050', linewidth=2,
+        label="Moving average of lowest correlation")
+
+ax.legend()
+ax.grid(True)
+
+plt.show()
