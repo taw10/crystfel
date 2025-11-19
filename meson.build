@@ -291,7 +291,8 @@ install_data(['data/crystfel.svg'],
 # ************************ Scripts ************************
 
 install_data(['scripts/detector-shift',
-              'scripts/peakogram-stream'],
+              'scripts/peakogram-stream',
+              'scripts/fg-graph'],
              install_dir: 'bin')
 
 

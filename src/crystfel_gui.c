@@ -566,6 +566,57 @@ static gint rescan_sig(GtkWidget *widget, struct crystfelproject *proj)
 }
 
 
+static gint fggraph_sig(GtkWidget *widget, struct crystfelproject *proj)
+{
+	GError *error = NULL;
+	const gchar *args[3];
+	GFile *f;
+	GFile *g;
+	GFile *h;
+	char *fgname;
+	GSubprocess *sp;
+	struct gui_indexing_result *res;
+
+	res = current_result(proj);
+	if ( res == NULL ) {
+		ERROR("Select indexing result first!\n");
+		return FALSE;
+	}
+
+	f = g_file_new_for_path(res->streams[0]);
+	g = g_file_get_parent(f);
+	h = g_file_get_child(g, "fg.dat");
+	fgname = g_file_get_path(h);
+	g_object_unref(G_OBJECT(f));
+	g_object_unref(G_OBJECT(g));
+	g_object_unref(G_OBJECT(h));
+	if ( fgname == NULL ) {
+		ERROR("Failed to construct path to fg.dat\n");
+		return FALSE;
+	}
+
+	if ( !file_exists(fgname) ) {
+		ERROR("Couldn't find fg.dat - is the current indexing result from ambigator?\n");
+		g_free(fgname);
+		return FALSE;
+	}
+
+	args[0] = "fg-graph";
+	args[1] = fgname;
+	args[2] = NULL;
+
+	sp = g_subprocess_newv(args, G_SUBPROCESS_FLAGS_NONE, &error);
+	if ( sp == NULL ) {
+		ERROR("Failed to invoke fg-graph: %s\n", error->message);
+		g_error_free(error);
+	}
+
+	g_free(fgname);
+
+	return FALSE;
+}
+
+
 static gint peakogram_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	struct gui_indexing_result *res = current_result(proj);
@@ -951,6 +1002,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 		"	<menuitem name=\"jumpframe\" action=\"JumpFrameAction\" />"
 		"       <separator />"
 		"	<menuitem name=\"peakogram\" action=\"PeakogramAction\" />"
+		"	<menuitem name=\"fggraph\" action=\"FGGraphAction\" />"
 		"</menu>"
 		"<menu name=\"help\" action=\"HelpAction\">"
 		"	<menuitem name=\"about\" action=\"AboutAction\" />"
@@ -977,8 +1029,10 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 			G_CALLBACK(rescan_sig) },
 		{ "JumpFrameAction", NULL, "Jump to frame", NULL, NULL,
 			G_CALLBACK(goto_frame_sig) },
-		{ "PeakogramAction", NULL, "Check detector saturation (peakogram)", NULL, NULL,
-			G_CALLBACK(peakogram_sig) },
+		{ "PeakogramAction", NULL, "Check detector saturation (peakogram)",
+			NULL, NULL, G_CALLBACK(peakogram_sig) },
+		{ "FGGraphAction", NULL, "Indexing ambiguity separation plot (fg-graph)",
+			NULL, NULL, G_CALLBACK(fggraph_sig) },
 
 		{ "HelpAction", NULL, "_Help", NULL, NULL, NULL },
 		{ "AboutAction", GTK_STOCK_ABOUT, "_About", NULL, NULL,
