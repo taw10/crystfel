@@ -150,7 +150,7 @@ build-macos:
   variables:
     GIT_STRATEGY: clone
   script:
-    - brew install bison meson ninja pkg-config argp-standalone cairo fftw gdk-pixbuf gsl gtk+3 hdf5 pango eigen pandoc
+    - brew install bison meson ninja pkg-config argp-standalone cairo fftw gdk-pixbuf gsl gtk+3 hdf5 pango eigen@3 pandoc
     - export PATH="$(brew --prefix)/opt/bison/bin:$PATH"
     - meson setup build -Dc_args=-I$(brew --prefix)/include -Dc_link_args=-largp -Dcpp_link_args=-largp
     - meson compile -C build
