@@ -136,11 +136,11 @@ build-brew-macos:
   only:
     - master
   script:
-    - brew uninstall -v -f crystfel
     - brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
     - brew install -v crystfel --HEAD --fetch-HEAD
     - brew test -v crystfel
     - brew uninstall -v -f crystfel
+    - brew autoremove -v
     - brew untap desy/crystfel
 
 build-macos:
