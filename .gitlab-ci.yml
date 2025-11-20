@@ -140,7 +140,7 @@ build-brew-macos:
     - brew install -v crystfel --HEAD --fetch-HEAD
     - brew test -v crystfel
     - brew uninstall -v -f crystfel
-    - brew autoremove -v
+    - brew remove -v -f fdip xgandalf pinkindexer
     - brew untap desy/crystfel
 
 build-macos:
