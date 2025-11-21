@@ -47,6 +47,7 @@
 #include "image-msgpack.h"
 #include "image-seedee.h"
 #include "image-tiff.h"
+#include "image-raw.h"
 #include "profile.h"
 
 #include "datatemplate.h"
@@ -868,6 +869,10 @@ static int image_read_image_data(struct image *image,
 		return image_seedee_read(image, dtempl, image->data_block,
 		                         image->data_block_size,
 		                         image->meta_data);
+
+		case DATA_SOURCE_TYPE_RAW:
+		return image_raw_read(image, dtempl, image->data_block,
+		                      image->data_block_size, image->meta_data);
 
 		default:
 		ERROR("Unrecognised file type %i (image_read_image_data)\n",
