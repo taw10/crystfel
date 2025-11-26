@@ -61,6 +61,7 @@ struct merge_queue_args
 	int use_weak;
 	long long int n_reflections;
 	int ln_merge;
+	int n_used;
 };
 
 
@@ -71,6 +72,7 @@ struct merge_worker_args
 	RefList *refls;
 	int crystal_number;
 	int n_reflections;
+	int used;
 };
 
 
@@ -84,6 +86,8 @@ static void *create_merge_job(void *vqargs)
 	wargs->crystal_number = qargs->n_started;
 	wargs->crystal = qargs->crystals[qargs->n_started].cr;
 	wargs->refls = qargs->crystals[qargs->n_started].refls;
+	wargs->used = 0;
+
 	qargs->n_started++;
 
 	return wargs;
@@ -180,6 +184,8 @@ static void run_merge_job(void *vwargs, int cookie)
 	 * merged intensities */
 	if ( crystal_get_user_flag(cr) != 0 ) return;
 
+	wargs->used = 1;
+
 	G = crystal_get_osf(cr);
 	B = crystal_get_Bfac(cr);
 
@@ -261,13 +267,15 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 	struct merge_queue_args *qargs = vqargs;
 	struct merge_worker_args *wargs = vwargs;
 	qargs->n_reflections += wargs->n_reflections;
+	qargs->n_used += wargs->used;
 	free(vwargs);
 }
 
 
 RefList *merge_intensities(struct crystal_refls *crystals, int n,
                            int n_threads, int min_meas,
-                           double push_res, int use_weak, int ln_merge)
+                           double push_res, int use_weak, int ln_merge,
+                           int *pn_used)
 {
 	RefList *full;
 	RefList *full2;
@@ -286,6 +294,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	qargs.use_weak = use_weak;
 	qargs.n_reflections = 0;
 	qargs.ln_merge = ln_merge;
+	qargs.n_used = 0;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -340,6 +349,10 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 			free(c);
 
 		}
+	}
+
+	if ( pn_used != NULL ) {
+		*pn_used = qargs.n_used;
 	}
 
 	reflist_free(full);

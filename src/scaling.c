@@ -150,7 +150,7 @@ void scale_all(struct crystal_refls *crystals, int n_crystals, int nthreads, int
 		double bef_res;
 
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         2, INFINITY, 0, 1);
+		                         2, INFINITY, 0, 1, NULL);
 		old_res = new_res;
 		bef_res = total_log_r(crystals, n_crystals, full, NULL);
 

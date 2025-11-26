@@ -213,7 +213,7 @@ static void write_split(struct crystal_refls *crystals, int n_crystals,
 	}
 	snprintf(tmp, 1024, "%s1", outfile);
 	split = merge_intensities(crystals1, n_crystals1, nthreads,
-		                  min_measurements, push_res, 1, 0);
+		                  min_measurements, push_res, 1, 0, NULL);
 
 	if ( split == NULL ) {
 		ERROR("Not enough crystals for two way split!\n");
@@ -228,7 +228,7 @@ static void write_split(struct crystal_refls *crystals, int n_crystals,
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
 	split = merge_intensities(crystals2, n_crystals2, nthreads,
-		                  min_measurements, push_res, 1, 0);
+		                  min_measurements, push_res, 1, 0, NULL);
 	STATUS("and %s\n", tmp);
 	write_reflist_2(tmp, split, sym);
 	free_contribs(split);
@@ -279,6 +279,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	struct crystal_refls *crystalsn;
 	int n_crystalsn = 0;
 	int i;
+	int n_used = 0;
 
 	crystalsn = calloc(n_crystals, sizeof(struct crystal_refls));
 	if ( crystalsn == NULL ) return;
@@ -321,10 +322,10 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 		return;
 	}
 
-	STATUS("Writing dataset '%s' to %s (%i crystals)\n",
-	       csplit->dataset_names[dsn], tmp, n_crystalsn);
 	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
-		                  min_measurements, push_res, 1, 0);
+		                  min_measurements, push_res, 1, 0, &n_used);
+	STATUS("Writing dataset '%s' to %s (%i crystals used out of %i)\n",
+	       csplit->dataset_names[dsn], tmp, n_used, n_crystalsn);
 	write_reflist_2(tmp, split, sym);
 	free_contribs(split);
 	reflist_free(split);
@@ -1156,6 +1157,7 @@ int main(int argc, char *argv[])
 	int no_deltacchalf = 0;
 	char *harvest_file = NULL;
 	char *log_folder = "pr-logs";
+	int n_used = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1752,7 +1754,7 @@ int main(int argc, char *argv[])
 			scale_all(crystals, n_crystals, nthreads, scaleflags);
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         min_measurements, push_res, 1, 0);
+		                         min_measurements, push_res, 1, 0, NULL);
 	} else {
 		full = reference;
 	}
@@ -1789,7 +1791,7 @@ int main(int argc, char *argv[])
 			}
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         min_measurements,
-			                         push_res, 1, 0);
+			                         push_res, 1, 0, NULL);
 		} /* else full still equals reference */
 
 		check_rejection(crystals, n_crystals, full, max_B,
@@ -1839,10 +1841,10 @@ int main(int argc, char *argv[])
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements,
-		                         push_res, 1, 0);
+		                         push_res, 1, 0, &n_used);
 	} else {
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         min_measurements, push_res, 1, 0);
+		                         min_measurements, push_res, 1, 0, &n_used);
 	}
 
 	if ( unmerged_filename != NULL ) {
@@ -1858,7 +1860,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Output results */
-	STATUS("Writing overall results to %s\n", outfile);
+	STATUS("Writing overall results to %s (%i crystals used out of %i)\n",
+	       outfile, n_used, n_crystals);
 	reflist_add_command_and_version(full, argc, argv);
 	if ( audit_info != NULL ) {
 		reflist_add_notes(full, "Audit information from stream:");
