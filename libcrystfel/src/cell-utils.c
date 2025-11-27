@@ -947,6 +947,16 @@ void write_cell(UnitCell *cell, FILE *fh)
 }
 
 
+int write_cell_to_file(UnitCell *cell, const char *filename)
+{
+	FILE *fh = fopen(filename, "w");
+	if ( fh == NULL ) return 1;
+	write_cell(cell, fh);
+	fclose(fh);
+	return 0;
+}
+
+
 /**
  * \param filename: The filename from which to load the cell
  *

@@ -1303,16 +1303,6 @@ static UnitCell *get_cell(CellWindow *w)
 }
 
 
-static int write_cell_to_file(UnitCell *cell, const char *filename)
-{
-	FILE *fh = fopen(filename, "w");
-	if ( fh == NULL ) return 1;
-	write_cell(cell, fh);
-	fclose(fh);
-	return 0;
-}
-
-
 static char *cell_string(UnitCell *cell)
 {
 	LatticeType lt;
