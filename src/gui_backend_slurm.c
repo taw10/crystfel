@@ -1144,6 +1144,7 @@ static void *run_merging(const char *job_title,
 	char *stdout_rel_filename;
 	char *stderr_rel_filename;
 	char *harvest_rel_filename;
+	char *outcell_rel_filename;
 	char *log_folder_rel;
 	char *slurm_prologue;
 
@@ -1155,6 +1156,7 @@ static void *run_merging(const char *job_title,
 	stdout_rel_filename = relative_to_cwd(workdir, "stdout.log");
 	stderr_rel_filename = relative_to_cwd(workdir, "stderr.log");
 	harvest_rel_filename = relative_to_cwd(workdir, "parameters.json");
+	outcell_rel_filename = relative_to_cwd(workdir, "average.cell");
 	log_folder_rel = relative_to_cwd(workdir, "pr-logs");
 
 	slurm_prologue = sbatch_bits(&opts->common, job_title, NULL,
@@ -1163,7 +1165,7 @@ static void *run_merging(const char *job_title,
 	if ( !write_merge_script(sc_rel_filename, input, "$(nproc)",
 	                         &proj->merging_params, output_rel_filename,
 	                         stdout_rel_filename, stderr_rel_filename,
-	                         harvest_rel_filename,
+	                         harvest_rel_filename, outcell_rel_filename,
 	                         log_folder_rel,
 	                         slurm_prologue) )
 	{

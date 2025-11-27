@@ -355,6 +355,7 @@ static int write_partialator_script(const char *filename,
                                     const char *stdout_filename,
                                     const char *stderr_filename,
                                     const char *harvest_filename,
+                                    const char *outcell_filename,
                                     const char *log_folder,
                                     const char *prologue)
 {
@@ -412,6 +413,8 @@ static int write_partialator_script(const char *filename,
 	if ( !params->pr_logs ) {
 		fprintf(fh, " --no-logs");
 	}
+
+	fprintf(fh, " --output-cell=%s", outcell_filename);
 
 	fprintf(fh, " --iterations=%i", params->niter);
 	fprintf(fh, " --harvest-file=%s", harvest_filename);
@@ -494,6 +497,7 @@ int write_merge_script(const char *filename,
                        const char *stdout_filename,
                        const char *stderr_filename,
                        const char *harvest_filename,
+                       const char *outcell_filename,
                        const char *log_folder,
                        const char *prologue)
 {
@@ -509,6 +513,7 @@ int write_merge_script(const char *filename,
 		                                stdout_filename,
 		                                stderr_filename,
 		                                harvest_filename,
+		                                outcell_filename,
 		                                log_folder,
 		                                prologue);
 	}
