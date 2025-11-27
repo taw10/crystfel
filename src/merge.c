@@ -566,3 +566,85 @@ void write_unmerged(const char *fn,
 
 	fclose(fh);
 }
+
+
+static UnitCell *first_accepted_cell(struct crystal_refls *crystals,
+                                     int n_crystals)
+{
+	int i;
+	for ( i=0; i<n_crystals; i++ ) {
+		if ( crystal_get_user_flag(crystals[i].cr) ) continue;
+		return crystal_get_cell(crystals[i].cr);
+	}
+	return NULL;
+}
+
+
+void average_unit_cell(struct crystal_refls *crystals,
+                       int n_crystals,
+                       const char *outcell_filename)
+{
+	int i;
+	UnitCell *cmean;
+	double a_sumw = 0.0, a_mean = 0.0, a_M2;
+	double b_sumw = 0.0, b_mean = 0.0, b_M2 = 0.0;
+	double c_sumw = 0.0, c_mean = 0.0, c_M2 = 0.0;
+	double al_sumw = 0.0, al_mean = 0.0, al_M2 = 0.0;
+	double be_sumw = 0.0, be_mean = 0.0, be_M2 = 0.0;
+	double ga_sumw = 0.0, ga_mean = 0.0, ga_M2 = 0.0;
+	char ua, cen;
+	LatticeType lt;
+	int n_nonmatch = 0;
+	int n_acc = 0;
+
+	UnitCell *cell = first_accepted_cell(crystals, n_crystals);
+	if ( cell == NULL ) {
+		ERROR("No accepted crystals - can't calculate average cell.\n");
+		return;
+	}
+	lt = cell_get_lattice_type(cell);
+	ua = cell_get_unique_axis(cell);
+	cen = cell_get_centering(cell);
+
+	for ( i=0; i<n_crystals; i++ ) {
+		UnitCell *cell;
+		double a, b, c, al, be, ga;
+		if ( crystal_get_user_flag(crystals[i].cr) ) continue;
+		cell = crystal_get_cell(crystals[i].cr);
+		if ( (cell_get_lattice_type(cell) != lt)
+		  || (cell_get_unique_axis(cell) != ua)
+		  || (cell_get_centering(cell) != cen) )
+		{
+			n_nonmatch++;
+			continue;
+		}
+		cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+		mean_variance(a, 1.0, &a_sumw, &a_mean, &a_M2);
+		mean_variance(b, 1.0, &b_sumw, &b_mean, &b_M2);
+		mean_variance(c, 1.0, &c_sumw, &c_mean, &c_M2);
+		mean_variance(al, 1.0, &al_sumw, &al_mean, &al_M2);
+		mean_variance(be, 1.0, &be_sumw, &be_mean, &be_M2);
+		mean_variance(ga, 1.0, &ga_sumw, &ga_mean, &ga_M2);
+		n_acc++;
+	}
+
+	cmean = cell_new_from_parameters(a_mean, b_mean, c_mean,
+	                                 al_mean, be_mean, ga_mean);
+	cell_set_unique_axis(cmean, ua);
+	cell_set_lattice_type(cmean, lt);
+	cell_set_centering(cmean, cen);
+
+	STATUS("Average unit cell from %i accepted crystals:\n", n_acc);
+	cell_print(cmean);
+
+	if ( n_nonmatch > 0 ) {
+		ERROR("WARNING: %i crystals were not included in the average "
+		      "cell, because they had different lattice types, "
+		      "centering or unique axes.\n", n_nonmatch);
+	}
+
+	if ( outcell_filename != NULL ) {
+		write_cell_to_file(cmean, outcell_filename);
+	}
+	cell_free(cmean);
+}

@@ -197,6 +197,11 @@ Write a list of parameters to \fIfn\fR, in JSON format.  This is intended to be 
 .PD
 Write unmerged, but otherwise fully corrected, intensities to \fIfn\fR.
 
+.PD 0
+.IP \fB--output-cell=\fIfn\fR
+.PD
+Write the average unit cell to \fIfn\fR.  The average is taken over a,b,c,al,be,ga from the crystals that contributed to the final merged intensity data, including any changes made to the parameters by post-refinement.  Crystals will be omitted from the average if their lattice type, unique axis or centering don't match the first accepted crystal.
+
 .SH PARTIALITY MODELS
 
 The available partiality models are:

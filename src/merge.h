@@ -65,4 +65,8 @@ extern void write_unmerged(const char *fn,
                            struct image **images,
                            int n_crystals);
 
+extern void average_unit_cell(struct crystal_refls *crystals,
+                              int n_crystals,
+                              const char *outcell_filename);
+
 #endif	/* MERGE */
