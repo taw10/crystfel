@@ -58,6 +58,7 @@ struct fom_window
 	GtkWidget *min_snr;
 	GtkWidget *min_meas;
 	GtkWidget *cell_chooser;
+	int cell_manual;
 	GtkWidget *graph;
 	GtkWidget *input_combo;
 
@@ -398,6 +399,7 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 	int need_ano;
 	UnitCell *cell;
 	struct fom_shells *shells;
+	char *fom_cell_filename;
 
 	f->proj->fom_res_min = get_float(f->min_res);
 	f->proj->fom_res_max = get_float(f->max_res);
@@ -429,13 +431,6 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 		return;
 	}
 
-	f->proj->fom_cell_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(f->cell_chooser));
-	cell = load_cell_from_file(f->proj->fom_cell_filename);
-	if ( cell == NULL ) {
-		ERROR("Invalid cell file '%s'\n", f->proj->fom_cell_filename);
-		return;
-	}
-
 	need_ano = anomalous_foms_selected(f);
 
 	const char *name;
@@ -451,6 +446,20 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 	/* Load dataset */
 	name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(f->input_combo));
 	result = find_merge_result_by_name(f->proj, name);
+
+	if ( !f->cell_manual ) {
+		char *fn = cell_file_for_result(result);
+		if ( fn != NULL ) {
+			gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(f->cell_chooser), fn);
+		}
+	}
+
+	fom_cell_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(f->cell_chooser));
+	cell = load_cell_from_file(fom_cell_filename);
+	if ( cell == NULL ) {
+		ERROR("Invalid cell file '%s'\n", fom_cell_filename);
+		return;
+	}
 
 	if ( load_dataset(result, need_ano, cell,
 	                  f->proj->fom_res_min,
@@ -664,12 +673,21 @@ static void res_range_to_data_sig(GtkButton *buton,
 }
 
 
+static void cell_file_set_sig(GtkButton *button,
+                              struct fom_window *f)
+{
+	f->cell_manual = 1;
+	update_fom(NULL, f);  /* Will now use the file in the widget */
+}
+
+
 static void cell_file_clear_sig(GtkButton *button,
                                 struct fom_window *f)
 {
 	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(f->cell_chooser),
 	                              "(none)");
-	update_fom(NULL, f);
+	f->cell_manual = 0;
+	update_fom(NULL, f);  /* Will now try to find merged cell */
 }
 
 
@@ -691,6 +709,7 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	f->proj = proj;
 	f->n_foms = 0;
 	f->calc_fom_overall = NULL;
+	f->cell_manual = 0;
 
 	dialog = gtk_dialog_new_with_buttons("Calculate figures of merit",
 	                                     GTK_WINDOW(proj->window),
@@ -745,16 +764,12 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                   FALSE, FALSE, 4.0);
 	f->cell_chooser = gtk_file_chooser_button_new("Unit cell file",
 	                                              GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(f->cell_chooser),
-	                                TRUE);
-	if ( proj->fom_cell_filename != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(f->cell_chooser),
-		                              proj->fom_cell_filename);
-	}
+	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(f->cell_chooser), TRUE);
+
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(f->cell_chooser),
 	                   FALSE, FALSE, 4.0);
 	g_signal_connect(G_OBJECT(f->cell_chooser), "file-set",
-	                 G_CALLBACK(update_fom), f);
+	                 G_CALLBACK(cell_file_set_sig), f);
 	button = gtk_button_new_from_icon_name("edit-clear",
 	                                       GTK_ICON_SIZE_BUTTON);
 	g_signal_connect(G_OBJECT(button), "clicked",

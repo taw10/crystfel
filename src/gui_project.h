@@ -337,7 +337,6 @@ struct crystfelproject {
 	int fom_nbins;
 	double fom_min_snr;
 	int fom_min_meas;
-	char *fom_cell_filename;
 
 	double export_res_min;  /* Angstroms */
 	double export_res_max;  /* Angstroms */
@@ -387,6 +386,8 @@ extern int add_merge_result(struct crystfelproject *proj, const char *name,
 
 extern struct gui_merge_result *find_merge_result_by_name(struct crystfelproject *proj,
                                                           const char *name);
+
+extern char *cell_file_for_result(struct gui_merge_result *res);
 
 extern const char *selected_result(struct crystfelproject *proj);
 

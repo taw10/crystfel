@@ -426,7 +426,13 @@ static void parse_fom_opt(const char *key, const char *val,
 		proj->fom_min_meas = parse_int(val);
 	}
 	if ( strcmp(key, "fom.cell_file") == 0 ) {
-		proj->fom_cell_filename = strdup(val);
+		STATUS("The project file mentions a unit cell file for export and figure of merit calculation:\n");
+		STATUS("  %s\n", val);
+		STATUS("This will be ignored by this version of the CrystFEL GUI.\n");
+		STATUS("For datasets merged in this version of the CrystFEL GUI, the unit cell "
+		       "will be automatically determined for you.\n");
+		STATUS("For older merged datasets, you will need to select the unit cell file again in the "
+		       "FoM and export windows.\n");
 	}
 }
 
@@ -1183,9 +1189,6 @@ int save_project(struct crystfelproject *proj)
 	fprintf(fh, "fom.num_bins %i\n", proj->fom_nbins);
 	fprintf(fh, "fom.min_snr %f\n", proj->fom_min_snr);
 	fprintf(fh, "fom.min_meas %i\n", proj->fom_min_meas);
-	if ( proj->fom_cell_filename != NULL ) {
-		fprintf(fh, "fom.cell_file %s\n", proj->fom_cell_filename);
-	}
 
 	fprintf(fh, "show_centre %i\n", proj->show_centre);
 	fprintf(fh, "resolution_rings %i\n", proj->resolution_rings);
@@ -1402,7 +1405,6 @@ int default_project(struct crystfelproject *proj)
 	proj->fom_nbins = 20;
 	proj->fom_min_snr = -INFINITY;
 	proj->fom_min_meas = 1;
-	proj->fom_cell_filename = NULL;
 
 	/* NB Export options are currently not saved (because I'm lazy) */
 	proj->export_res_min = INFINITY;  /* Angstroms */
@@ -1503,6 +1505,25 @@ struct gui_indexing_result *find_indexing_result_by_name(struct crystfelproject 
 		}
 	}
 	return NULL;
+}
+
+
+char *cell_file_for_result(struct gui_merge_result *res)
+{
+	GFile *hkl;
+	GFile *parent;
+	GFile *rel;
+	char *path;
+
+	hkl = g_file_new_for_commandline_arg(res->hkl);
+	parent = g_file_get_parent(hkl);
+	g_object_unref(hkl);
+	rel = g_file_get_child(parent, "average.cell");
+	g_object_unref(parent);
+	path = g_file_get_path(rel);
+	g_object_unref(rel);
+
+	return path;
 }
 
 
