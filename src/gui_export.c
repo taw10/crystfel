@@ -294,6 +294,26 @@ static void format_changed_sig(GtkWidget *format, struct export_window *win)
 }
 
 
+/* Dataset changed, update unit cell if appropriate */
+static void ds_changed_sig(GtkWidget *widget, struct export_window *win)
+{
+	const char *dataset;
+	struct gui_merge_result *result;
+	char *fn;
+
+	dataset = gtk_combo_box_get_active_id(GTK_COMBO_BOX(win->dataset));
+	if ( dataset == NULL ) return;
+
+	result = find_merge_result_by_name(win->proj, dataset);
+	if ( result == NULL ) return;
+
+	fn = cell_file_for_result(result);
+	if ( fn != NULL ) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(win->cell_chooser), fn);
+	}
+}
+
+
 gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *dialog;
@@ -342,6 +362,9 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 		                          proj->merge_results[i].name,
 		                          proj->merge_results[i].name);
 	}
+	g_signal_connect(G_OBJECT(win->dataset), "changed",
+	                 G_CALLBACK(ds_changed_sig), win);
+
 	label = gtk_label_new("Format");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
 	                   FALSE, FALSE, 4.0);
@@ -368,13 +391,6 @@ gint export_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                                              GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(win->cell_chooser),
 	                                TRUE);
-	/* Use the "FoM" cell file because there should only be one
-	 * point of truth for the "final" cell parameters.  Eventually, I hope
-	 * to determine this automatically. */
-	if ( proj->fom_cell_filename != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(win->cell_chooser),
-		                              proj->fom_cell_filename);
-	}
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->cell_chooser),
 	                   FALSE, FALSE, 4.0);
 
