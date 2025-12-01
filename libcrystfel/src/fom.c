@@ -1371,6 +1371,11 @@ struct fom_rejections fom_select_reflections(RefList *raw_list,
 			ig = 1;
 		}
 
+		if ( get_redundancy(refl) < mul_cutoff ) {
+			rej.few_measurements++;
+			ig = 1;
+		}
+
 		if ( ignore_negs && (val < 0.0) ) {
 			rej.negative_deleted++;
 			ig = 1;
