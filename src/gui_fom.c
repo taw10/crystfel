@@ -60,6 +60,7 @@ struct fom_window
 	GtkWidget *cell_chooser;
 	int cell_manual;
 	GtkWidget *graph;
+	GtkTextBuffer *table1;
 	GtkWidget *input_combo;
 
 	int n_foms;
@@ -393,6 +394,160 @@ static void fom_response_sig(GtkWidget *dialog, gint resp,
 }
 
 
+/* Override some of the FoM names:
+ *  1. To avoid bad markup e.g. "D<1sig"
+ *  2. So that we can have proper subscripts and Greek letters
+ *  3. So that CC can be called CC½ as the user would expect
+ */
+static const char *fom_name_t1(enum fom_type a)
+{
+	if ( a == FOM_CC ) return "CC<span rise=\"-6000\" size=\"x-small\">½</span>";
+	if ( a == FOM_SNR ) return "I/σ(I)";
+	if ( a == FOM_RSPLIT ) return "R<span rise=\"-6000\" size=\"x-small\">split</span>";
+	if ( a == FOM_D1SIG ) return "D&lt;1σ";
+	if ( a == FOM_D2SIG ) return "D&lt;2σ";
+	if ( a == FOM_CCANO ) return "CC<span rise=\"-6000\" size=\"x-small\">ano</span>";
+	if ( a == FOM_RANO ) return "R<span rise=\"-6000\" size=\"x-small\">ano</span>";
+	if ( a == FOM_RANORSPLIT ) return "R<span rise=\"-6000\" size=\"x-small\">ano</span> "
+	                                  "÷ R<span rise=\"-6000\" size=\"x-small\">split</span>";
+
+	return fom_name(a);
+}
+
+
+static void find_or_calc_fom(GtkTextBuffer *tb,
+                             enum fom_type fomtype,
+                             UnitCell *cell,
+                             struct fom_window *f,
+                             RefList *all_refls,
+                             RefList *all_refls_anom,
+                             RefList *part1,
+                             RefList *part2,
+                             RefList *part1_anom,
+                             RefList *part2_anom,
+                             SymOpList *sym)
+{
+	int i;
+	double shell, overall;
+	GtkTextIter end;
+	char tmp[256];
+	int found = 0;
+
+	if ( fom_is_anomalous(fomtype) && is_centrosymmetric(sym) ) {
+		gtk_text_buffer_get_end_iter(tb, &end);
+		snprintf(tmp, 255, "%s\tn/a\n", fom_name_t1(fomtype));
+		gtk_text_buffer_insert_markup(tb, &end, tmp, -1);
+		return;
+	}
+
+	for ( i=0; i<f->calc_n_foms; i++ ) {
+		if ( f->calc_fom_types[i] == fomtype ) {
+			overall = f->calc_fom_overall[i];
+			shell = f->calc_fom_values[i][f->calc_shells->nshells-1];
+			found = 1;
+			break;
+		}
+	}
+
+	if ( !found ) {
+		/* Not already calculated, have to do the work */
+		struct fom_context *ctx;
+		ctx = dispatch_fom(all_refls, all_refls_anom, part1, part2,
+		                   part1_anom, part2_anom, cell,
+		                   f->calc_shells, sym, fomtype);
+		overall = fom_overall_value(ctx);
+		shell = fom_shell_value(ctx, f->calc_shells->nshells-1);
+		fom_free(ctx);
+	}
+
+	gtk_text_buffer_get_end_iter(tb, &end);
+	snprintf(tmp, 255, "%s\t%.3f (%.3f)\n",
+	         fom_name_t1(fomtype), overall, shell);
+	gtk_text_buffer_insert_markup(tb, &end, tmp, -1);
+}
+
+
+static void update_table1(GtkTextBuffer *tb,
+                          UnitCell *cell,
+                          struct fom_window *f,
+                          RefList *all_refls,
+                          RefList *all_refls_anom,
+                          RefList *part1,
+                          RefList *part2,
+                          RefList *part1_anom,
+                          RefList *part2_anom,
+                          SymOpList *sym)
+{
+	GtkTextIter end;
+	char tmp[256];
+	int i;
+	const int ts = f->calc_shells->nshells-1;  /* Top shell */
+
+	gtk_text_buffer_set_text(tb, "", -1);
+
+	gtk_text_buffer_get_end_iter(tb, &end);
+	snprintf(tmp, 255, "Resolution range (Å)\t%.2f-%.2f (%.2f-%.2f)\n",
+		1e10/f->calc_shells->rmins[0], 1e10/f->calc_shells->rmaxs[ts],
+		1e10/f->calc_shells->rmins[ts], 1e10/f->calc_shells->rmaxs[ts]);
+	gtk_text_buffer_insert(tb, &end, tmp, -1);
+
+	double a,b,c,al,be,ga;
+	gtk_text_buffer_get_end_iter(tb, &end);
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	snprintf(tmp, 255, "a,b,c (Å)\t%.2f, %.2f, %.2f\n", a*1e10, b*1e10, c*1e10);
+	gtk_text_buffer_insert(tb, &end, tmp, -1);
+	gtk_text_buffer_get_end_iter(tb, &end);
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	snprintf(tmp, 255, "α,β,γ (°)\t%.2f, %.2f, %.2f\n",
+             rad2deg(al), rad2deg(be), rad2deg(ga));
+	gtk_text_buffer_insert(tb, &end, tmp, -1);
+
+	struct fom_context *compl_ctx = fom_calculate(all_refls, NULL, cell, f->calc_shells,
+	                                              FOM_COMPLETENESS, 1, sym);
+
+	gtk_text_buffer_get_end_iter(tb, &end);
+	snprintf(tmp, 255, "Unique reflections\t%i (%i)\n",
+	         fom_overall_num_reflections(compl_ctx),
+	         fom_shell_num_reflections(compl_ctx, ts));
+	gtk_text_buffer_insert(tb, &end, tmp, -1);
+
+	find_or_calc_fom(tb, FOM_SNR, cell, f, all_refls, all_refls_anom,
+	                 part1, part2, part1_anom, part2_anom, sym);
+	find_or_calc_fom(tb, FOM_COMPLETENESS, cell, f, all_refls, all_refls_anom,
+	                 part1, part2, part1_anom, part2_anom, sym);
+	find_or_calc_fom(tb, FOM_REDUNDANCY, cell, f, all_refls, all_refls_anom,
+	                 part1, part2, part1_anom, part2_anom, sym);
+	find_or_calc_fom(tb, FOM_RSPLIT, cell, f, all_refls, all_refls_anom,
+	                 part1, part2, part1_anom, part2_anom, sym);
+	find_or_calc_fom(tb, FOM_CC, cell, f, all_refls, all_refls_anom,
+	                 part1, part2, part1_anom, part2_anom, sym);
+	find_or_calc_fom(tb, FOM_CCSTAR, cell, f, all_refls, all_refls_anom,
+	                 part1, part2, part1_anom, part2_anom, sym);
+
+	/* Add anything "strange" that was also selected */
+	for ( i=0; i<f->calc_n_foms; i++ ) {
+		switch ( f->calc_fom_types[i] ) {
+			case FOM_SNR:
+			case FOM_COMPLETENESS:
+			case FOM_REDUNDANCY:
+			case FOM_RSPLIT:
+			case FOM_CC:
+			case FOM_CCSTAR:
+			break;
+
+			default:
+			find_or_calc_fom(tb, f->calc_fom_types[i], cell, f,
+			                 all_refls, all_refls_anom,
+			                 part1, part1, part1_anom, part2_anom,
+			                 sym);
+			break;
+		}
+	}
+
+	fom_free(compl_ctx);
+}
+
+
 static void update_fom(GtkWidget *widget, struct fom_window *f)
 {
 	int fom;
@@ -518,6 +673,10 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 	f->calc_fom_types = fom_types;
 	f->calc_fom_values = fom_values;
 	f->calc_fom_overall = overall_values;
+
+	update_table1(f->table1, cell, f,
+	              all_refls, all_refls_anom, part1, part2, part1_anom, part2_anom, sym);
+
 
 	reflist_free(all_refls);
 	reflist_free(all_refls_anom);
@@ -705,6 +864,8 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	GtkWidget *hbox;
 	GtkWidget *label;
 	GtkWidget *button;
+	GtkWidget *table1;
+	GtkWidget *nb;
 	char tmp[64];
 	struct fom_window *f;
 	int i;
@@ -864,8 +1025,27 @@ gint fom_sig(GtkWidget *widget, struct crystfelproject *proj)
 	                 G_CALLBACK(update_fom), f);
 
 	f->graph = crystfel_fom_graph_new();
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(f->graph),
-	                   TRUE, TRUE, 4.0);
+	f->table1 = gtk_text_buffer_new(NULL);
+	table1 = gtk_text_view_new_with_buffer(f->table1);
+	gtk_text_view_set_top_margin(GTK_TEXT_VIEW(table1), 20);
+	gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(table1), 20);
+	gtk_text_view_set_left_margin(GTK_TEXT_VIEW(table1), 20);
+	gtk_text_view_set_right_margin(GTK_TEXT_VIEW(table1), 20);
+	gtk_text_view_set_editable(GTK_TEXT_VIEW(table1), FALSE);
+	gtk_text_view_set_pixels_below_lines(GTK_TEXT_VIEW(table1), 6);
+	PangoTabArray *tabs = pango_tab_array_new(2, TRUE);
+	pango_tab_array_set_tab(tabs, 0, PANGO_TAB_LEFT, 0);
+	pango_tab_array_set_tab(tabs, 1, PANGO_TAB_LEFT, 200);
+	gtk_text_view_set_tabs(GTK_TEXT_VIEW(table1), tabs);
+	pango_tab_array_free(tabs);
+
+	nb = gtk_notebook_new();
+	gtk_notebook_set_tab_pos(GTK_NOTEBOOK(nb), GTK_POS_TOP);
+	gtk_notebook_append_page(GTK_NOTEBOOK(nb), f->graph,
+	                         gtk_label_new("Graph"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(nb), table1,
+	                         gtk_label_new("Table 1"));
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(nb), TRUE, TRUE, 4.0);
 
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(f->fom_checkboxes[3]), TRUE);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(f->fom_checkboxes[5]), TRUE);
