@@ -500,6 +500,8 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 		overall_values[fomi] = fom_overall_value(fctx);
 		fomi++;
 
+		fom_free(fctx);
+
 	}
 
 	free(f->calc_fom_overall);
@@ -519,6 +521,10 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 
 	reflist_free(all_refls);
 	reflist_free(all_refls_anom);
+	reflist_free(part1);
+	reflist_free(part2);
+	reflist_free(part1_anom);
+	reflist_free(part2_anom);
 	free_symoplist(sym);
 }
 
