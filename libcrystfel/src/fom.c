@@ -1503,3 +1503,29 @@ const char *fom_name(enum fom_type f)
 		default : return "unknown FoM";
 	}
 }
+
+
+void fom_free(struct fom_context *fctx)
+{
+	int i;
+	cffree(fctx->num2);
+	cffree(fctx->den2);
+	cffree(fctx->num);
+	cffree(fctx->den);
+	cffree(fctx->n_meas);
+	if ( fctx->vec1 != NULL ) {
+		for ( i=0; i<fctx->nshells; i++ ) {
+			cffree(fctx->vec1[i]);
+		}
+		cffree(fctx->vec1);
+	}
+	if ( fctx->vec2 != NULL ) {
+		for ( i=0; i<fctx->nshells; i++ ) {
+			cffree(fctx->vec2[i]);
+		}
+		cffree(fctx->vec2);
+	}
+	cffree(fctx->n);
+	cffree(fctx->n_within);
+	cffree(fctx);
+}

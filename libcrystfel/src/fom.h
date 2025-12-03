@@ -138,4 +138,6 @@ extern int fom_is_comparison(enum fom_type f);
 
 extern const char *fom_name(enum fom_type f);
 
+extern void fom_free(struct fom_context *fctx);
+
 #endif	/* FOM */
