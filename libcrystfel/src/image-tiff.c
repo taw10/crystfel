@@ -68,10 +68,10 @@ static int unpack_panels(struct image *image,
 			ERROR("Panel %s is outside range of data in TIFF file\n",
 			      p->name);
 			return 1;
-               }
+		}
 
-               for ( ss=0; ss<p_h; ss++ ) {
-               for ( fs=0; fs<p_w; fs++ ) {
+		for ( ss=0; ss<p_h; ss++ ) {
+		for ( fs=0; fs<p_w; fs++ ) {
 
 			int idx;
 			int cfs, css;
@@ -169,14 +169,14 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 	}
 
 	TIFFGetField(fh, TIFFTAG_IMAGEWIDTH, &w);
-        TIFFGetField(fh, TIFFTAG_IMAGELENGTH, &h);
-        if ( TIFFGetField(fh, TIFFTAG_SAMPLEFORMAT, &sampleformat) != 1 ) {
-	        sampleformat = SAMPLEFORMAT_UINT;
+	TIFFGetField(fh, TIFFTAG_IMAGELENGTH, &h);
+	if ( TIFFGetField(fh, TIFFTAG_SAMPLEFORMAT, &sampleformat) != 1 ) {
+		sampleformat = SAMPLEFORMAT_UINT;
 	}
-        TIFFGetField(fh, TIFFTAG_BITSPERSAMPLE, &bps);
-        if ( TIFFGetField(fh, TIFFTAG_SAMPLESPERPIXEL, &spp) == 1 ) {
-	        if ( spp != 1 ) {
-		        ERROR("Unable to read TIFF data - more than one sample per pixel\n");
+	TIFFGetField(fh, TIFFTAG_BITSPERSAMPLE, &bps);
+	if ( TIFFGetField(fh, TIFFTAG_SAMPLESPERPIXEL, &spp) == 1 ) {
+		if ( spp != 1 ) {
+			ERROR("Unable to read TIFF data - more than one sample per pixel\n");
 			TIFFClose(fh);
 			return 1;
 		}
@@ -276,7 +276,7 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 
 
 int image_tiff_read_header_to_cache(struct image *image,
-                                   const char *from)
+                                    const char *from)
 {
 	/* FIXME: Implementation (GitLab #10) */
 	ERROR("Reading headers from TIFF files is not currently supported.\n");
