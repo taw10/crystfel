@@ -602,6 +602,11 @@ static void update_fom(GtkWidget *widget, struct fom_window *f)
 	name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(f->input_combo));
 	result = find_merge_result_by_name(f->proj, name);
 
+	if ( result == NULL ) {
+		ERROR("No merge result found for name '%s'\n", name);
+		return;
+	}
+
 	if ( !f->cell_manual ) {
 		char *fn = cell_file_for_result(result);
 		if ( fn != NULL ) {
