@@ -275,6 +275,7 @@ struct crystfelproject {
 	GMutex index_once_last_task_lock;
 	char *index_once_last_task;
 
+	char *projfile;
 	int unsaved;
 
 	int cur_frame;
@@ -390,5 +391,7 @@ extern struct gui_merge_result *find_merge_result_by_name(struct crystfelproject
 extern char *cell_file_for_result(struct gui_merge_result *res);
 
 extern const char *selected_result(struct crystfelproject *proj);
+
+extern void set_project_file_path(struct crystfelproject *proj);
 
 #endif

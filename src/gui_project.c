@@ -932,12 +932,28 @@ static void read_frames(FILE *fh, struct crystfelproject *proj)
 }
 
 
+void set_project_file_path(struct crystfelproject *proj)
+{
+	GFile *file;
+
+	file = g_file_new_for_commandline_arg("crystfel.project");
+	proj->projfile = g_file_get_path(file);
+	if ( proj->projfile == NULL ) {
+		ERROR("Failed to determine absolute path of crystfel.project\n");
+		proj->projfile = strdup("crystfel.project");
+		return;
+	}
+}
+
+
 /* NB caller is responsible for applying default_project() to proj */
 int load_project(struct crystfelproject *proj)
 {
 	FILE *fh;
 
-	fh = fopen("crystfel.project", "r");
+	set_project_file_path(proj);
+
+	fh = fopen(proj->projfile, "r");
 	if ( fh == NULL ) return 1;
 
 	read_parameters(fh, proj);
@@ -955,7 +971,7 @@ int save_project(struct crystfelproject *proj)
 	int ibackend, iresult, iframe;
 	FILE *fh;
 
-	fh = fopen("crystfel.project", "w");
+	fh = fopen(proj->projfile, "w");
 	if ( fh == NULL ) {
 		STATUS("Couldn't save project.\n");
 		return 1;

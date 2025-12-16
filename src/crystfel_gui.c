@@ -1339,6 +1339,7 @@ int main(int argc, char *argv[])
 	}
 
 	proj.image_info = NULL;
+	proj.projfile = NULL;
 
 	proj.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(proj.window), "CrystFEL");

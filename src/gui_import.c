@@ -254,6 +254,8 @@ int load_stream(struct crystfelproject *proj, char *stream_filename)
 	const char *geom_str;
 	char *result_name;
 
+	set_project_file_path(proj);
+
 	st = stream_open_for_read(stream_filename);
 	if ( st == NULL ) return 1;
 
