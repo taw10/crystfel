@@ -82,7 +82,7 @@ function copydggroup(panels, grp)
     grpdata = unsafe_load(grp, 1)
     name = unsafe_string(grpdata.name)
     children = DetGeomGroup[]
-    if grpdata.n_children > 1
+    if grpdata.n_children > 0
         for i in 1:grpdata.n_children
             cdata = unsafe_load(grpdata.children, i)
             push!(children, copydggroup(panels, cdata))
