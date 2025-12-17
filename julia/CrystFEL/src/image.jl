@@ -121,6 +121,21 @@ function getpeaklist(image)
 end
 
 
+function image_data(image, idata)
+
+    detgeom = image.detgeom
+    ptrarr = unsafe_wrap(Array, getfield(idata, :dp), length(detgeom.panels))
+
+    arr = Array[]
+    for (parr,panel) in zip(ptrarr,detgeom.panels)
+        push!(arr, unsafe_wrap(Array, parr, (panel.w,panel.h)))
+    end
+
+    return arr
+
+end
+
+
 function Base.getproperty(image::Image, name::Symbol)
     if name === :internalptr
         getfield(image, :internalptr)
@@ -142,6 +157,9 @@ function Base.getproperty(image::Image, name::Symbol)
 
         elseif name === :ev
             return unsafe_string(getfield(idata, :ev))
+
+        elseif name === :dp
+            return image_data(image, idata)
 
         else
             getfield(idata, name)

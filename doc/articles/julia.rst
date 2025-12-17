@@ -190,6 +190,16 @@ serial crystallography dataset.  Create one by loading an image from file::
 You can use any kind of file supported by CrystFEL here.  In the example,
 ``//32`` is the frame ID - leave it out if there is only one frame per file.
 
+Access the image data itself as follows, where ``pn`` is the panel number, and
+``fs`` and ``ss`` are the fast-scan and slow-scan coordinates::
+
+    image.dp[pn][fs,ss]
+
+The detector geometry (``struct detgeom``) can be accessed with
+``image.detgeom``, and the number of detector panels is::
+
+    length(image.detgeom.panels)
+
 If you're simulating data, you can create an empty image like this::
 
     image = Image(dtempl)
