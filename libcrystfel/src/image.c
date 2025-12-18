@@ -831,7 +831,7 @@ static int image_read_image_data(struct image *image,
 	  && (!file_exists(image->filename)) )
 	{
 		ERROR("File not found: %s (read data)\n", image->filename);
-		return image_set_zero_data(image, dtempl);
+		return 1;
 	}
 
 	switch ( image->data_source_type ) {
