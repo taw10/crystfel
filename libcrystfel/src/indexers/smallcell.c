@@ -199,8 +199,9 @@ static int isin(struct Nodelist *b, struct PeakInfo *test)
 static void add(struct Nodelist *c, struct PeakInfo *test)
 {
 	if (isin(c, test)) return;
-	assert(c->n_mem < MAX_NODES);
-	c->mem[c->n_mem++] = test;
+	if ( c->n_mem < MAX_NODES ) {
+		c->mem[c->n_mem++] = test;
+	} /* else too many */
 }
 
 
@@ -521,9 +522,7 @@ static void link_nodes(struct PeakInfo *peak_infos, int num_peak_infos, struct g
 					peak_infos[j].weight_list[peak_infos[j].n_neigh] = diff;
 					peak_infos[j].n_neigh++;
 
-				} else {
-					ERROR("Too many neighbours.\n");
-				}
+				} /* else too many neighbours */
 
 				if ( peak_infos[y].n_neigh <= MAX_NEIGH ) {
 
@@ -531,9 +530,7 @@ static void link_nodes(struct PeakInfo *peak_infos, int num_peak_infos, struct g
 					peak_infos[y].weight_list[peak_infos[y].n_neigh] = diff;
 					peak_infos[y].n_neigh++;
 
-				} else {
-					ERROR("Too many neighbours.\n");
-				}
+				} /* else too many neighbours */
 			}
 		}
 	}
