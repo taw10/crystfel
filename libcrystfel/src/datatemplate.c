@@ -2197,6 +2197,13 @@ struct detgeom *create_detgeom(struct image *image,
 		p->ssy = tmpl->ssy;
 		p->ssz = tmpl->ssz;
 
+		if ( dtempl->have_scanv ) {
+			p->cnx += dtempl->scanv_beamxy[0]*image->scan_coords[0]
+			        + dtempl->scanv_beamxy[1]*image->scan_coords[1];
+			p->cny += dtempl->scanv_beamxy[2]*image->scan_coords[0]
+			        + dtempl->scanv_beamxy[3]*image->scan_coords[1];
+		}
+
 	}
 
 	detgeom->top_group = walk_group(dtempl, find_group(dtempl, "all"), detgeom, 0, 100);

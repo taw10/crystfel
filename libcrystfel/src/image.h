@@ -195,6 +195,9 @@ struct image
 	 * Otherwise, it is managed externally (e.g. by Julia) */
 	int                      owns_peaklist;
 
+	/** Scan coordinates, used for electron diffraction */
+	float                    scan_coords[2];
+
 };
 
 #ifdef __cplusplus

@@ -1579,6 +1579,9 @@ struct image *image_new()
 	image->features = NULL;
 	image->owns_peaklist = 1;
 
+	image->scan_coords[0] = 0.0;
+	image->scan_coords[1] = 0.0;
+
 	return image;
 }
 
