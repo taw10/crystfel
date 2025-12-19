@@ -172,6 +172,15 @@ versions.
 : not specified, the value will be taken as metres.  nnn can be a file metadata
 : location (e.g. an HDF5 path).
 
+### Scan-dependent beam center
+
+**scanv_beamxy** = _a_,_b_,_c_,_d_
+: This works similarly to **detector_shift_**[x,y], except that the beam shift
+: (xoffs,yoffs) will be calculated from the scan coordinates (x,y) using the
+: following equations:
+: xoffs = a*x + b*y
+: yoffs = c*x + d*y
+
 
 PANEL DATA LOCATIONS
 ====================

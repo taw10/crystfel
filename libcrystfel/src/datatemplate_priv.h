@@ -270,6 +270,12 @@ struct _datatemplate
 	/** Any comments from the beginning of the geometry file,
 	 * to be copied when the file is saved */
 	char                      *preamble;
+
+	/** Whether we have scan-vary geometry components (scanv_beamxy etc) */
+	int                        have_scanv;
+
+	/** Matrix components for scan-varying beam shift */
+	float                      scanv_beamxy[4];
 };
 
 extern double convert_to_m(double val, int units);

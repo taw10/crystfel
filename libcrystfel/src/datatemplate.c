@@ -830,6 +830,40 @@ static int parse_peak_layout(const char *val,
 	return 1;
 }
 
+
+static int parse_comma_list(const char *val, float *arr, int n_expected)
+{
+	int n_vals;
+	char **vals;
+	int i;
+	int fail = 0;
+
+	n_vals = assplode(val, ",",  &vals, ASSPLODE_NONE);
+
+	if ( n_vals == n_expected ) {
+		for ( i=0; i<n_vals; i++ ) {
+			double v;
+			if ( convert_float(vals[i], &v) == 0 ) {
+				arr[i] = v;
+			} else {
+				ERROR("Failed to parse '%s' as float\n", vals[i]);
+				fail = 1;
+				break;
+			}
+		}
+	} else {
+		ERROR("Wrong number of values (expected %i): '%s'\n",
+		      n_expected, val);
+		fail = 1;
+	}
+
+	for ( i=0; i<n_vals; i++ ) cffree(vals[i]);
+	cffree(vals);
+
+	return fail;
+}
+
+
 #define MAX_FOR_LATER (1024)
 
 struct forlater
@@ -899,6 +933,10 @@ static int parse_toplevel(DataTemplate *dt,
 		} else {
 			ERROR("Invalid value for bandwidth\n");
 		}
+
+	} else if ( strcmp(key, "scanv_beamxy") == 0 ) {
+		dt->have_scanv = 1;
+		return parse_comma_list(val, dt->scanv_beamxy, 4);
 
 	} else if ( strncmp(key, "rigid_group", 11) == 0 ) {
 
@@ -1114,6 +1152,11 @@ DataTemplate *data_template_new_from_string(const char *string_in)
 	dt->n_headers_to_copy = 0;
 	dt->n_groups = 0;
 	dt->preamble = NULL;
+	dt->have_scanv = 0;
+	dt->scanv_beamxy[0] = 0.0;
+	dt->scanv_beamxy[1] = 0.0;
+	dt->scanv_beamxy[2] = 0.0;
+	dt->scanv_beamxy[3] = 0.0;
 
 	/* The default defaults... */
 	defaults.orig_min_fs = -1;
@@ -2645,6 +2688,13 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 	}
 
 	fprintf(fh, "\n");
+
+	if ( dtempl->have_scanv ) {
+		fprintf(fh, "scanv_beamxy = %.4f,%.4f,%.4f,%.4f\n",
+		        dtempl->scanv_beamxy[0], dtempl->scanv_beamxy[1],
+		        dtempl->scanv_beamxy[2], dtempl->scanv_beamxy[3]);
+		fprintf(fh, "\n");
+	}
 
 	/* Bad regions */
 	for ( i=0; i<dtempl->n_bad; i++ ) {
