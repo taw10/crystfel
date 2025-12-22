@@ -50,6 +50,10 @@ enum gparam {
 	GPARAM_DET_RX,  /* Detector panel (group) rotation about +x */
 	GPARAM_DET_RY,  /* Detector panel (group) rotation about +y */
 	GPARAM_DET_RZ,  /* Detector panel (group) rotation about +z */
+	GPARAM_SCANV_BEAM_A,
+	GPARAM_SCANV_BEAM_B,
+	GPARAM_SCANV_BEAM_C,
+	GPARAM_SCANV_BEAM_D,
 };
 
 
@@ -89,7 +93,7 @@ extern double r_gradient(int param, Reflection *refl, UnitCell *cell,
 extern int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
                           struct detgeom_panel *p, gsl_matrix *panel_Minv,
                           double cx, double cy, double cz,
-                          float *fsg, float *ssg);
+                          float *fsg, float *ssg, float *scan_coords);
 
 extern void crossp_norm(double c1[3], double c2[3], double u[3]);
 extern void rotate3d(double vec[3], double axis[3], double ang);

@@ -138,6 +138,8 @@ struct reflpeak *make_test_image(int *pn_refls, struct image *image)
 	image->bw = 0.00001;
 	image->filename = malloc(256);
 	image->spectrum = spectrum_generate_gaussian(image->lambda, image->bw);
+	image->scan_coords[0] = 0.0;
+	image->scan_coords[1] = 0.0;
 
 	image->crystals = NULL;
 	image->n_crystals = 0;

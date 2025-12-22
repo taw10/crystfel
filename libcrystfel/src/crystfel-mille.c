@@ -46,6 +46,10 @@ int mille_label(int group_serial, enum gparam param)
 		case GPARAM_DET_RX : return group_serial+4;  /* Rotation around x */
 		case GPARAM_DET_RY : return group_serial+5;  /* Rotation around y */
 		case GPARAM_DET_RZ : return group_serial+6;  /* Rotation around z */
+		case GPARAM_SCANV_BEAM_A : return group_serial+7;  /* Scan-varying beam center, A-coefficient */
+		case GPARAM_SCANV_BEAM_B : return group_serial+8;  /* Scan-varying beam center, B-coefficient */
+		case GPARAM_SCANV_BEAM_C : return group_serial+9;  /* Scan-varying beam center, C-coefficient */
+		case GPARAM_SCANV_BEAM_D : return group_serial+10;  /* Scan-varying beam center, D-coefficient */
 		default : abort();
 	}
 }
@@ -61,6 +65,10 @@ enum gparam mille_unlabel(int n)
 		case 4 : return GPARAM_DET_RX;
 		case 5 : return GPARAM_DET_RY;
 		case 6 : return GPARAM_DET_RZ;
+		case 7 : return GPARAM_SCANV_BEAM_A;
+		case 8 : return GPARAM_SCANV_BEAM_B;
+		case 9 : return GPARAM_SCANV_BEAM_C;
+		case 10 : return GPARAM_SCANV_BEAM_D;
 		default : abort();
 	}
 }
@@ -185,6 +193,7 @@ static int count_depth(const struct detgeom_panel_group *group)
 
 #define MAX_HIERARCHY_LEVELS (8)
 #define NG (6)
+#define NG_TOPLEVEL (4)
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
                  enum gparam *rvl, int nl,
@@ -214,15 +223,22 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		GPARAM_DET_RY,
 		GPARAM_DET_RZ,
 	};
+	const enum gparam rvg_toplevel[] =
+	{
+		GPARAM_SCANV_BEAM_A,
+		GPARAM_SCANV_BEAM_B,
+		GPARAM_SCANV_BEAM_C,
+		GPARAM_SCANV_BEAM_D
+	};
 
 	for ( i=0; i<n; i++ ) {
 
 		float local_gradients_fs[nl];
 		float local_gradients_ss[nl];
 		float local_gradients_r[nl];
-		float global_gradients_fs[NG*MAX_HIERARCHY_LEVELS];
-		float global_gradients_ss[NG*MAX_HIERARCHY_LEVELS];
-		int labels[NG*MAX_HIERARCHY_LEVELS];
+		float global_gradients_fs[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
+		float global_gradients_ss[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
+		int labels[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
 		int j, levels;
 		const struct detgeom_panel_group *group;
 
@@ -232,7 +248,8 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			               &image->detgeom->panels[rps[i].peak->pn],
 			               Minvs[rps[i].peak->pn], 0, 0, 0,
 			               &local_gradients_fs[j],
-			               &local_gradients_ss[j]);
+			               &local_gradients_ss[j],
+			               image->scan_coords);
 			local_gradients_r[j] = r_gradient(rvl[j], rps[i].refl,
 			                                  cell, image->lambda);
 		}
@@ -259,9 +276,24 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 				               &image->detgeom->panels[rps[i].peak->pn],
 				               Minvs[rps[i].peak->pn], cx, cy, cz,
 				               &global_gradients_fs[j],
-				               &global_gradients_ss[j]);
+				               &global_gradients_ss[j],
+				               NULL);
 				labels[j] = mille_label(group->serial, rvg[g]);
 				j++;
+			}
+
+			/* If we are at the top level, add some extra parameters */
+			if ( group->serial == 0 ) {
+				for ( g=0; g<NG_TOPLEVEL; g++ ) {
+					fs_ss_gradient(rvg_toplevel[g], rps[i].refl, cell,
+					               &image->detgeom->panels[rps[i].peak->pn],
+					               Minvs[rps[i].peak->pn], cx, cy, cz,
+					               &global_gradients_fs[j],
+					               &global_gradients_ss[j],
+					               image->scan_coords);
+					labels[j] = mille_label(0, rvg_toplevel[g]);
+					j++;
+				}
 			}
 
 			levels++;

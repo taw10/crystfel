@@ -322,7 +322,7 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
                          struct detgeom_panel *p, gsl_matrix *Minv,
                          double fs, double ss, double mu,
                          gsl_vector *t, double cx, double cy, double cz,
-                         float *fsg, float *ssg)
+                         float *fsg, float *ssg, float *scan_coords)
 {
 	gsl_vector *v;
 	gsl_matrix *gM;  /* M^-1 * dM/dx * M^-1 */
@@ -369,6 +369,22 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
 		gsl_matrix_set(dMdp, 1, 2, p->pixel_pitch*p->ssx);
 		break;
 
+		case GPARAM_SCANV_BEAM_A :
+		gsl_matrix_set(dMdp, 0, 0, scan_coords[0]);
+		break;
+
+		case GPARAM_SCANV_BEAM_B :
+		gsl_matrix_set(dMdp, 0, 0, scan_coords[1]);
+		break;
+
+		case GPARAM_SCANV_BEAM_C :
+		gsl_matrix_set(dMdp, 1, 0, scan_coords[0]);
+		break;
+
+		case GPARAM_SCANV_BEAM_D :
+		gsl_matrix_set(dMdp, 1, 0, scan_coords[1]);
+		break;
+
 		default:
 		ERROR("Invalid panel gradient parameter %i\n", param);
 		return 1;
@@ -398,7 +414,7 @@ int fs_ss_gradient_panel(int param, Reflection *refl, UnitCell *cell,
 int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
                    struct detgeom_panel *p, gsl_matrix *Minv,
                    double cx, double cy, double cz,
-                   float *fsg, float *ssg)
+                   float *fsg, float *ssg, float *scan_coords)
 {
 	signed int h, k, l;
 	double xl, yl, zl, kpred;
@@ -461,7 +477,7 @@ int fs_ss_gradient(int param, Reflection *refl, UnitCell *cell,
 		return fs_ss_gradient_panel(param, refl, cell, p,
 		                            Minv, fs, ss, mu, t,
 		                            cx, cy, cz,
-		                            fsg, ssg);
+		                            fsg, ssg, scan_coords);
 	}
 }
 
@@ -735,7 +751,8 @@ static int iterate(struct reflpeak *rps, int n,
 			int pn = rps[i].peak->pn;
 			r_gradients[k] = r_gradient(rv[k], rps[i].refl, cell, image->lambda);
 			fs_ss_gradient(rv[k], rps[i].refl, cell, &image->detgeom->panels[pn],
-			               Minvs[pn], 0, 0, 0, &fs_gradients[k], &ss_gradients[k]);
+			               Minvs[pn], 0, 0, 0, &fs_gradients[k], &ss_gradients[k],
+			               image->scan_coords);
 		}
 
 		/* Excitation error terms */

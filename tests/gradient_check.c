@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 		               crystal_get_cell(image.crystals[0].cr),
 		               &image.detgeom->panels[rps[i].peak->pn],
 		               panel_matrices[rps[i].peak->pn], cx, cy, cz,
-		               &calc[1], &calc[2]);
+		               &calc[1], &calc[2], image.scan_coords);
 
 		obs[0] = (after[0][i] - before[0][i]) / step;
 		obs[1] = (after[1][i] - before[1][i]) / step;
