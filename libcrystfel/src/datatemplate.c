@@ -2099,13 +2099,16 @@ struct detgeom *create_detgeom(struct image *image,
 
 	detgeom->n_panels = dtempl->n_panels;
 
-	/* Cannot do x/y shift without image */
-	if ( (image == NULL) && ((dtempl->shift_x_from != NULL)
-	                      || (dtempl->shift_y_from != NULL)) )
-	{
-		cffree(detgeom->panels);
-		cffree(detgeom);
-		return NULL;
+	/* Some stuff can't be worked out without an image */
+	if ( image == NULL ) {
+		if ( (dtempl->shift_x_from != NULL)
+		  || (dtempl->shift_y_from != NULL)
+		  || (dtempl->have_scanv) )
+		{
+			cffree(detgeom->panels);
+			cffree(detgeom);
+			return NULL;
+		}
 	}
 
 	if ( im_get_length(image, dtempl->cnz_from, 1e-3, &clen) )
