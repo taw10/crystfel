@@ -85,6 +85,10 @@ static const char *str_param(enum gparam param)
 		case GPARAM_DET_RX : return "x-rotation";
 		case GPARAM_DET_RY : return "y-rotation";
 		case GPARAM_DET_RZ : return "z-rotation";
+		case GPARAM_SCANV_BEAM_A : return "x/scanX";
+		case GPARAM_SCANV_BEAM_B : return "x/scanY";
+		case GPARAM_SCANV_BEAM_C : return "y/scanX";
+		case GPARAM_SCANV_BEAM_D : return "y/scanY";
 		default : return "(unknown)";
 	}
 }
@@ -461,6 +465,10 @@ int main(int argc, char *argv[])
 	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RX), out_of_plane_tilts ? 0 : -1);
 	fprintf(fh, "%i 0 %i\n", mille_label(0, GPARAM_DET_RY), out_of_plane_tilts ? 0 : -1);
 	fprintf(fh, "%i 0 -1\n", mille_label(0, GPARAM_DET_RZ));
+	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_SCANV_BEAM_A));
+	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_SCANV_BEAM_B));
+	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_SCANV_BEAM_C));
+	fprintf(fh, "%i 0 0\n", mille_label(0, GPARAM_SCANV_BEAM_D));
 
 	for ( i=0; i<n_groups; i++ ) {
 		int f_inplane = (groups[i].hierarchy_level > level) ? -1 : 0;
@@ -569,6 +577,13 @@ int main(int argc, char *argv[])
 				case GPARAM_DET_RZ:
 				STATUS("   %14s %+f deg\n", str_param(p), rad2deg(shift));
 				break;
+
+				case GPARAM_SCANV_BEAM_A:
+				case GPARAM_SCANV_BEAM_B:
+				case GPARAM_SCANV_BEAM_C:
+				case GPARAM_SCANV_BEAM_D:
+				STATUS("   %14s %+f mm/scan unit\n", str_param(p), 1e3*shift);
+				break;
 			}
 
 			if ( group_name == NULL ) {
@@ -606,6 +621,13 @@ int main(int argc, char *argv[])
 				case GPARAM_DET_RZ:
 				data_template_rotate_group(dtempl, group_name,
 				                           -shift, 'z');
+				break;
+
+				case GPARAM_SCANV_BEAM_A:
+				case GPARAM_SCANV_BEAM_B:
+				case GPARAM_SCANV_BEAM_C:
+				case GPARAM_SCANV_BEAM_D:
+				/* FIXME: Apply parameters */
 				break;
 
 				default:
