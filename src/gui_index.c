@@ -619,8 +619,6 @@ static void run_indexing_once(struct crystfelproject *proj)
 		methods = strdup(proj->indexing_params.indexing_methods);
 	}
 
-	/* Get default options for the indexing methods.
-	 * The GUI currently does not allow them to be changed */
 	default_method_options(&taketwoopts,
 	                       &xgandalf_opts,
 	                       &ffbidx_opts,
@@ -629,6 +627,22 @@ static void run_indexing_once(struct crystfelproject *proj)
 	                       &fromfile_opts,
 			       &smallcell_opts,
 			       &asdf_opts);
+
+	pinkIndexer_opts->considered_peaks_count = proj->indexing_params.pinkindexer_cpeaks;
+	pinkIndexer_opts->angle_resolution = proj->indexing_params.pinkindexer_angle_density;
+	pinkIndexer_opts->refinement_type = proj->indexing_params.pinkindexer_refinement_type;
+	pinkIndexer_opts->tolerance = proj->indexing_params.pinkindexer_tolerance;
+	if ( proj->indexing_params.pinkindexer_use_max_res ) {
+		pinkIndexer_opts->maxResolutionForIndexing_1_per_A = proj->indexing_params.pinkindexer_max_res;
+	} else {
+		pinkIndexer_opts->maxResolutionForIndexing_1_per_A = +INFINITY;
+	}
+	if ( proj->indexing_params.pinkindexer_use_refl_radius ) {
+		pinkIndexer_opts->reflectionRadius = proj->indexing_params.pinkindexer_refl_radius/1e10;
+	} else {
+		pinkIndexer_opts->reflectionRadius = -1;
+	}
+	pinkIndexer_opts->maxRefinementDisbalance = proj->indexing_params.pinkindexer_max_imbalance;
 
 	ipriv = setup_indexing(methods, cell,
 	                       proj->indexing_params.tols,
