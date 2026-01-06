@@ -822,13 +822,13 @@ static void free_peakfinder_intern_data(struct peakfinder_intern_data *pfid)
  * computes the center of mass.
  */
 static int floodfill_peak(int fs, int ss,
-						  struct peakfinder_intern_data *pfinter,
-						  float *copy, char *mask, float *r_map,
-						  float *rthreshold, float *roffset,
-						  int asic_size_fs, int asic_size_ss,
-						  int aifs, int aiss, int num_pix_fs,
-						  float *peak_com_fs, float *peak_com_ss,
-						  int max_pix_count)
+                          struct peakfinder_intern_data *pfinter,
+                          float *copy, char *mask, float *r_map,
+                          float *rthreshold, float *roffset,
+                          int asic_size_fs, int asic_size_ss,
+                          int aifs, int aiss, int num_pix_fs,
+                          float *peak_com_fs, float *peak_com_ss,
+                          int max_pix_count)
 {
 	int k, pi, p;
 	int num_pix_in_peak;
