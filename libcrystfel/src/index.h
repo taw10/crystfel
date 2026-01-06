@@ -111,7 +111,6 @@ struct pinkindexer_options {
 	float maxResolutionForIndexing_1_per_A;
 	float tolerance;
 	float reflectionRadius; /* In m^-1 */
-	float customBandwidth;
 	float maxRefinementDisbalance;
 };
 
