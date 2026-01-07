@@ -817,63 +817,94 @@ static void free_peakfinder_intern_data(struct peakfinder_intern_data *pfid)
 }
 
 
-
-static void peak_search(int p,
-                        struct peakfinder_intern_data *pfinter,
-                        float *copy, char *mask, float *r_map,
-                        float *rthreshold, float *roffset,
-                        int *num_pix_in_peak, int asic_size_fs,
-                        int asic_size_ss, int aifs, int aiss,
-                        int num_pix_fs, float *sum_com_fs,
-                        float *sum_com_ss, float *sum_i, int max_pix_count)
+/* Finds all connected pixels above the threshold, starting
+ * from a given pixel using the flood-fill algorithm, and
+ * computes the center of mass.
+ */
+static int floodfill_peak(int fs, int ss,
+                          struct peakfinder_intern_data *pfinter,
+                          float *copy, char *mask, float *r_map,
+                          float *rthreshold, float *roffset,
+                          int asic_size_fs, int asic_size_ss,
+                          int aifs, int aiss, int num_pix_fs,
+                          float *peak_com_fs, float *peak_com_ss,
+                          int max_pix_count)
 {
-
-	int k, pi;
-	int curr_radius;
-	float curr_threshold;
+	int k, pi, p;
+	int num_pix_in_peak;
 	int curr_fs;
 	int curr_ss;
 	float curr_i;
+	float sum_i;
+	float sum_com_fs;
+	float sum_com_ss;
 
-	int search_fs[9] = { 0, -1, 0, 1, -1, 1, -1, 0, 1 };
-	int search_ss[9] = { 0, -1, -1, -1, 0, 0, 1, 1, 1 };
-	int search_n = 9;
+	int search_fs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+	int search_ss[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+	int search_n = 8;
+	// initialize accumulators
+	sum_i = 0;
+	sum_com_fs = 0;
+	sum_com_ss = 0;
+	// push the first pixel in the queue
+	curr_fs = fs + aifs * asic_size_fs;
+	curr_ss = ss + aiss * asic_size_ss;
+	pi = curr_fs + curr_ss * num_pix_fs;
 
-	// Loop through search pattern
-	for ( k=0; k<search_n; k++ ) {
+	pfinter->infs[0] = fs;
+	pfinter->inss[0] = ss;
+	pfinter->pix_in_peak_map[pi] = 1;
+	num_pix_in_peak = 1;
 
-		if ( (pfinter->infs[p] + search_fs[k]) < 0 ) continue;
-		if ( (pfinter->infs[p] + search_fs[k]) >= asic_size_fs ) continue;
-		if ( (pfinter->inss[p] + search_ss[k]) < 0 ) continue;
-		if ( (pfinter->inss[p] + search_ss[k]) >= asic_size_ss ) continue;
-
-		// Neighbour point in big array
-		curr_fs = pfinter->infs[p] + search_fs[k] + aifs * asic_size_fs;
-		curr_ss = pfinter->inss[p] + search_ss[k] + aiss * asic_size_ss;
+	p = 0;
+	while ( p != num_pix_in_peak ) {
+		// pull the next pixel from the queue
+		curr_fs = pfinter->infs[p] + aifs * asic_size_fs;
+		curr_ss = pfinter->inss[p] + aiss * asic_size_ss;
 		pi = curr_fs + curr_ss * num_pix_fs;
-
-		curr_radius = (int)rint(r_map[pi]);
-		curr_threshold = rthreshold[curr_radius];
-
-		// Above threshold?
-		if ( copy[pi] > curr_threshold
-		  && pfinter->pix_in_peak_map[pi] == 0
-		  && mask[pi] != 0 ) {
-
-			curr_i = copy[pi] - roffset[curr_radius];
-			*sum_i += curr_i;
-			*sum_com_fs += curr_i * ((float)curr_fs);  // for center of mass x
-			*sum_com_ss += curr_i * ((float)curr_ss);  // for center of mass y
-
-			pfinter->inss[*num_pix_in_peak] = pfinter->inss[p] + search_ss[k];
-			pfinter->infs[*num_pix_in_peak] = pfinter->infs[p] + search_fs[k];
-			pfinter->pix_in_peak_map[pi] = 1;
-			if ( *num_pix_in_peak < max_pix_count ) {
-				  pfinter->peak_pixels[*num_pix_in_peak] = pi;
-			}
-			*num_pix_in_peak = *num_pix_in_peak + 1;
+		// ... and process it
+		// (negative values have the same deviation from the background
+		// as positive, should have the same weight)
+		curr_i = fabs(copy[pi] - roffset[(int)rint(r_map[pi])]);
+		sum_i += curr_i;
+		sum_com_fs += curr_i * ((float)curr_fs);  // for center of mass x
+		sum_com_ss += curr_i * ((float)curr_ss);  // for center of mass y
+		if ( p < max_pix_count ) {
+			// store only max_pix_count pixels, because of the array size
+			// but continue floodfill the peak
+			pfinter->peak_pixels[p] = pi;
 		}
+		// push blank neighbours in the queue
+		for ( k=0; k<search_n; k++ ) {
+			// check panel borders
+			if ( (pfinter->infs[p] + search_fs[k]) < 0 ) continue;
+			if ( (pfinter->infs[p] + search_fs[k]) >= asic_size_fs ) continue;
+			if ( (pfinter->inss[p] + search_ss[k]) < 0 ) continue;
+			if ( (pfinter->inss[p] + search_ss[k]) >= asic_size_ss ) continue;
+			// neighbour index
+			curr_fs = pfinter->infs[p] + search_fs[k] + aifs * asic_size_fs;
+			curr_ss = pfinter->inss[p] + search_ss[k] + aiss * asic_size_ss;
+			pi = curr_fs + curr_ss * num_pix_fs;
+			// look for blank and above threshold
+			if ( copy[pi] > rthreshold[(int)rint(r_map[pi])]
+			  && pfinter->pix_in_peak_map[pi] == 0
+			  && mask[pi] != 0 ) {
+				pfinter->inss[num_pix_in_peak] = pfinter->inss[p] + search_ss[k];
+				pfinter->infs[num_pix_in_peak] = pfinter->infs[p] + search_fs[k];
+				pfinter->pix_in_peak_map[pi] = 1;
+				num_pix_in_peak = num_pix_in_peak + 1;
+			}
+		}
+		p++;
 	}
+	// error if for some reason sum_i is 0
+	if (sum_i < 1e-10)
+		return -1;
+	// Calculate center of mass
+	*peak_com_fs = sum_com_fs / sum_i;
+	*peak_com_ss = sum_com_ss / sum_i;
+
+	return num_pix_in_peak;
 }
 
 
@@ -996,7 +1027,6 @@ static void process_panel(int asic_size_fs, int asic_size_ss, int num_pix_fs,
 
 				// This might be the start of a new peak - start searching
 				float sum_com_fs, sum_com_ss;
-				float sum_i;
 				float peak_com_fs, peak_com_ss;
 				float peak_com_fs_int, peak_com_ss_int;
 				float peak_tot_i, pk_tot_i_raw;
@@ -1004,54 +1034,23 @@ static void process_panel(int asic_size_fs, int asic_size_ss, int num_pix_fs,
 				float peak_snr;
 				float local_sigma, local_offset;
 				float background_max_i;
-				int lt_num_pix_in_pk;
 				int ring_width;
 				int peak_idx;
 				int com_idx;
-				int p;
 
-				pfinter->infs[0] = pxfs;
-				pfinter->inss[0] = pxss;
-				pfinter->peak_pixels[0] = pxidx;
-				num_pix_in_peak = 0; //y 1;
+				num_pix_in_peak = floodfill_peak(pxfs, pxss,
+				                                 pfinter, copy, mask, r_map,
+				                                 rthreshold, roffset,
+				                                 asic_size_fs, asic_size_ss,
+				                                 aifs, aiss, num_pix_fs,
+				                                 &peak_com_fs, &peak_com_ss,
+				                                 max_pix_count);
 
-				sum_i = 0;
-				sum_com_fs = 0;
-				sum_com_ss = 0;
-
-				// Keep looping until the pixel count within this peak does not change
-				do {
-					lt_num_pix_in_pk = num_pix_in_peak;
-
-					// Loop through points known to be within this peak
-					for ( p=0; p<=num_pix_in_peak; p++ ) { //changed from 1 to 0 by O.Y.
-						peak_search(p,
-						            pfinter, copy, mask,
-						            r_map,
-						            rthreshold,
-						            roffset,
-						            &num_pix_in_peak,
-						            asic_size_fs,
-						            asic_size_ss,
-						            aifs, aiss,
-						            num_pix_fs,
-						            &sum_com_fs,
-						            &sum_com_ss,
-						            &sum_i,
-						            max_pix_count);
-					}
-
-				} while ( lt_num_pix_in_pk != num_pix_in_peak );
+				// skip if error
+				if ( num_pix_in_peak < 0) continue;
 
 				// Too many or too few pixels means ignore this 'peak'; move on now
 				if ( num_pix_in_peak < min_pix_count || num_pix_in_peak > max_pix_count ) continue;
-
-				// If for some reason sum_i is 0 - it's better to skip
-				if ( fabs(sum_i) < 1e-10 ) continue;
-
-				// Calculate center of mass for this peak from initial peak search
-				peak_com_fs = sum_com_fs / fabs(sum_i);
-				peak_com_ss = sum_com_ss / fabs(sum_i);
 
 				com_idx = (int)rint(peak_com_fs) + (int)rint(peak_com_ss) * num_pix_fs;
 
