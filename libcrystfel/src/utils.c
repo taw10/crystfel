@@ -248,7 +248,6 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 	gsl_matrix *SAS;
 	int i;
 	int n_filt;
-	gsl_matrix *SAS_copy;
 
 	n = v->size;
 	if ( v->size != M->size1 ) return NULL;
@@ -276,9 +275,6 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 		STATUS("The equation after rescaling:\n");
 		show_matrix_eqn(SAS, SB);
 	}
-
-	SAS_copy = gsl_matrix_alloc(SAS->size1, SAS->size2);
-	gsl_matrix_memcpy(SAS_copy, SAS);
 
 	for ( i=0; i<n; i++ ) {
 		int j;
@@ -309,8 +305,6 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 	/* Filter the eigenvalues */
 	n_filt = check_eigen(s_val, verbose);
 	if ( pn_filt != NULL ) *pn_filt = n_filt;
-
-	gsl_matrix_free(SAS_copy);
 
 	/* Solve the equation SAS.SinvX = SB */
 	SinvX = gsl_vector_calloc(n);
