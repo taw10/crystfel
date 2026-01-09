@@ -21,6 +21,11 @@ function centroid(a::AbstractArray)
     return moments ./ total
 end
 
+n = 1
+A = Matrix{Float32}(undef, 3, w*h)
+xv = Vector{Float32}(undef, 0)
+yv = Vector{Float32}(undef, 0)
+
 for fnstr in eachline("files.lst")
 
     filename = split(fnstr)[1]
@@ -41,42 +46,29 @@ for fnstr in eachline("files.lst")
         xcenters[x,y],ycenters[x,y] = Tuple(cen).+(235,200)
         brightfield[x,y] = sum(region)
         darkfield[x,y] = sum(image.dp[1]) - brightfield[x,y]
-    end
-end
 
-function fitplane(plane,flags)
-
-    n = 1
-    A = Matrix{Float32}(undef, 3, length(plane))
-    v = Vector{Float32}(undef, 0)
-
-    for x in 1:size(plane)[1]
-        for y in 1:size(plane)[2]
-            if flags[x,y] > 400000
-                A[1,n] = x
-                A[2,n] = y
-                A[3,n] = 1
-                push!(v, plane[x,y])
-                n += 1
-            end
+        if darkfield[x,y] > 400000
+            A[1,n] = image.scan_coords[1]
+            A[2,n] = image.scan_coords[2]
+            A[3,n] = 1
+            push!(xv, xcenters[x,y])
+            push!(yv, ycenters[x,y])
+            global n += 1
         end
     end
-
-    B = Matrix{Float32}(undef, 3, n-1)
-    for y in 1:n-1
-        B[:,y] = A[:,y]
-    end
-
-    return transpose(pinv(B))*v
 end
 
+B = Matrix{Float32}(undef, 3, n-1)
+for y in 1:n-1
+    B[:,y] = A[:,y]
+end
 
-x = fitplane(xcenters, darkfield)
-y = fitplane(ycenters, darkfield)
+xans = transpose(pinv(B))*xv
+yans = transpose(pinv(B))*yv
 
-println("panel/corner_x = ",-x[3])
-println("panel/corner_y = ",-y[3])
-println("scanv_beamxy = ", -x[1], ",", -x[2], ",", -y[1], ",", -y[2])
+println("panel/corner_x = ",-xans[3]+0.5)
+println("panel/corner_y = ",-yans[3]+0.5)
+println("scanv_beamxy = ", -xans[1], ",", -xans[2], ",", -yans[1], ",", -yans[2])
 
 p1 = heatmap(xcenters, title="Beam center x")
 p2 = heatmap(ycenters, title="Beam center y")
