@@ -47,6 +47,7 @@ mutable struct InternalImage
     peaklist::Ptr{InternalPeakList}
     ida::Ptr{Cvoid}
     owns_peaklist::Cint
+    scan_coords::NTuple{2, Cfloat}
 end
 
 
