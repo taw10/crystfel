@@ -542,6 +542,7 @@ static int read_header_to_cache(struct image *image, const char *from)
 		#ifdef HAVE_LIBTIFF
 		return image_tiff_read_header_to_cache(image, from);
 		#else
+		ERROR("This installation of CrystFEL does not support TIFF format\n");
 		return 1;
 		#endif
 
@@ -858,6 +859,7 @@ static int image_read_image_data(struct image *image,
 		#ifdef HAVE_LIBTIFF
 		return image_tiff_read(image, dtempl);
 		#else
+		ERROR("This installation of CrystFEL does not support TIFF format\n");
 		return 1;
 		#endif
 
