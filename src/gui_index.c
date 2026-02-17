@@ -846,6 +846,7 @@ static void index_one_response_sig(GtkWidget *dialog, gint resp,
 			return;
 		}
 		proj->index_once_cancel = 0;
+		free_all_crystals(proj->cur_image);
 		proj->index_once_thread = g_thread_new("index-once", thread_index_once, proj);
 		add_ionce_infobar(proj);
 	}
