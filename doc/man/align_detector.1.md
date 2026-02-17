@@ -99,6 +99,13 @@ OPTIONS
 : not affect the refinement or the output geometry file in any way, only the
 : console output.
 
+**--min-measurements**=_n_
+: Require at least _n_ measurements contributing to a detector geometry
+: parameter before updating that parameter.  Higher values give more stable
+: refinement.  Note that there are two measurements per peak-reflection pair,
+: because the position offsets are two dimensional.  The default value is
+: 100, i.e. at least 50 pairs are needed for each parameter.
+
 
 AUTHOR
 ======

@@ -3,11 +3,11 @@
  *
  * Align detector using Millepede
  *
- * Copyright © 2023 Deutsches Elektronen-Synchrotron DESY,
- *                  a research centre of the Helmholtz Association.
+ * Copyright © 2023-2026 Deutsches Elektronen-Synchrotron DESY,
+ *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2023 Thomas White <taw@physics.org>
+ *   2023-2026 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -67,6 +67,7 @@ static void show_help(const char *s)
 	       "      --out-of-plane-tilts   Refine panel rotations around x and y\n"
 	       "      --camera-length        Refine overall camera length\n"
 	       "      --panel-totals         Display total panel movements\n"
+	       "      --min-measurements     Minimum measurements per parameter\n"
 	       "\n"
 	       "  -h, --help                 Display this help message\n"
 	       "      --version              Print version number and exit\n");
@@ -300,6 +301,7 @@ int main(int argc, char *argv[])
 	int out_of_plane_tilts = 0;
 	int refine_clen = 0;
 	int panel_totals = 0;
+	int min_measurements = 100;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -315,6 +317,7 @@ int main(int argc, char *argv[])
 		{"out-of-plane-tilts", 0, &out_of_plane_tilts, 1},
 		{"camera-length",      0, &refine_clen,        1},
 		{"panel-totals",       0, &panel_totals,       1},
+		{"min-measurements",   1, NULL,                2},
 
 		{0, 0, NULL, 0}
 	};
@@ -349,6 +352,15 @@ int main(int argc, char *argv[])
 			level = strtol(optarg, &rval, 10);
 			if ( *rval != '\0' ) {
 				ERROR("Invalid value for --level.\n");
+				return 1;
+			}
+			break;
+
+			case 2 :
+			errno = 0;
+			min_measurements = strtol(optarg, &rval, 10);
+			if ( *rval != '\0' ) {
+				ERROR("Invalid value for --min-measurements.\n");
 				return 1;
 			}
 			break;
@@ -438,6 +450,7 @@ int main(int argc, char *argv[])
 
 	fprintf(fh, "method inversion 5 0.1\n");
 	fprintf(fh, "closeandreopen\n");
+	fprintf(fh, "entries %i\n", min_measurements);
 	fprintf(fh, "end\n");
 	fclose(fh);
 
