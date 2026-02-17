@@ -351,6 +351,7 @@ int main(int argc, char *argv[])
 				ERROR("Invalid value for --level.\n");
 				return 1;
 			}
+			break;
 
 			case 0 :
 			break;
