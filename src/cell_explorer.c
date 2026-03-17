@@ -1804,6 +1804,9 @@ static gint scroll_sig(GtkWidget *widget, GdkEventScroll *event, HistoBox *h)
 
 		case GDK_SCROLL_SMOOTH:
 		if ( gdk_event_get_scroll_deltas((GdkEvent *)event, &xs, &ys) ) {
+			#ifdef __APPLE__
+			ys /= 10.0;
+			#endif
 			handle_scroll_click(1.0+ys*0.1, h, pos);
 		}
 		break;
