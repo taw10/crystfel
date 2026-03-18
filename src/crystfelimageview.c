@@ -722,16 +722,27 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELImageView *iv)
 	}
 
 	if ( iv->show_centre ) {
+
+		double lw, cs;
+
+		lw = 2.0;
+		cs = 100.0;  /* not used */
+		cairo_device_to_user_distance(cr, &lw, &cs);
+		lw = fabs(lw);
+
+		cs = iv->image->detgeom->panels[0].pixel_pitch * 20.0;
+
+		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.9);
+		cairo_set_line_width(cr, lw);
+
 		cairo_new_path(cr);
-		cairo_arc(cr, 0.0, 0.0, 0.006, 0, 2.0*M_PI);
-		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.9);
-		cairo_set_line_width(cr, 0.0001);
+		cairo_arc(cr, 0.0, 0.0, cs*2, 0, 2.0*M_PI);
 		cairo_stroke(cr);
-		cairo_move_to(cr, -0.001, 0.0);
-		cairo_line_to(cr, 0.001, 0.0);
-		cairo_move_to(cr, 0.0, -0.001);
-		cairo_line_to(cr, 0.0, 0.001);
-		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.9);
+
+		cairo_move_to(cr, -cs, 0.0);
+		cairo_line_to(cr, cs, 0.0);
+		cairo_move_to(cr, 0.0, -cs);
+		cairo_line_to(cr, 0.0, cs);
 		cairo_stroke(cr);
 	}
 
