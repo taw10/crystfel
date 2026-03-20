@@ -103,6 +103,7 @@ struct merging_params {
 	char *polarisation;
 	int deltacchalf;
 	int min_measurements;
+	char *error_model;
 	float max_adu;
 	char *custom_split;
 	int pr_logs;
