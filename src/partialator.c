@@ -3,11 +3,11 @@
  *
  * Scaling and post refinement for coherent nanocrystallography
  *
- * Copyright © 2012-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2012-2026 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *   2010-2021 Thomas White <taw@physics.org>
+ *   2010-2026 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -376,7 +376,8 @@ static void show_help(const char *s)
 "      --operator=<op>        Indexing ambiguity operator for resolving.\n"
 "      --force-bandwidth=<n>  Set all bandwidths to <n> (fraction).\n"
 "      --force-radius=<n>     Set all profile radii to <n> nm^-1.\n"
-"      --force-lambda=<n>     Set all wavelengths to <n> A.\n");
+"      --force-lambda=<n>     Set all wavelengths to <n> A.\n"
+"      --error-model=<m>      Error model (equivs,ev11 etc).\n");
 }
 
 
@@ -1160,6 +1161,7 @@ int main(int argc, char *argv[])
 	char *harvest_file = NULL;
 	char *log_folder = "pr-logs";
 	int n_used = 0;
+	char *error_model = "ev11";
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1196,6 +1198,7 @@ int main(int argc, char *argv[])
 		{"log-folder",         1, NULL,               17},
 		{"unmerged-output",    1, NULL,               18},
 		{"output-cell",        1, NULL,               19},
+		{"error-model",        1, NULL,               20},
 
 		{"no-scale",           0, &no_scale,           1},
 		{"no-Bscale",          0, &no_Bscale,          1},
@@ -1395,6 +1398,10 @@ int main(int argc, char *argv[])
 
 			case 19 :
 			outcell_filename = strdup(optarg);
+			break;
+
+			case 20 :
+			error_model = strdup(optarg);
 			break;
 
 			case 0 :
@@ -1853,7 +1860,8 @@ int main(int argc, char *argv[])
 		                         push_res, 1, 0, &n_used);
 	} else {
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         min_measurements, push_res, 1, 0, &n_used);
+		                         min_measurements, push_res, 1, 0, &n_used,
+		                         error_model);
 	}
 
 	if ( unmerged_filename != NULL ) {

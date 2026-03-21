@@ -46,7 +46,7 @@
 
 extern RefList *merge_intensities(struct crystal_refls *crystals, int n, int n_threads,
                                   int min_meas, double push_res, int use_weak,
-                                  int ln_merge, int *pn_used);
+                                  int ln_merge, int *pn_used, const char *error_model);
 
 extern double correct_reflection_nopart(double val, Reflection *refl,
                                         double osf, double Bfac, double res);
