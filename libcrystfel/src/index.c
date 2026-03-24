@@ -454,14 +454,10 @@ void cleanup_indexing(IndexingPrivate *ipriv)
 
 
 /* Return 0 for cell OK, 1 for cell incorrect */
-static int check_cell(IndexingFlags flags, Crystal *cr, UnitCell *target,
-                      double *tolerance)
+static int check_cell(Crystal *cr, UnitCell *target, double *tolerance)
 {
 	UnitCell *out;
 	RationalMatrix *rm;
-
-	/* Check at all? */
-	if ( !(flags & INDEXING_CHECK_CELL) ) return 0;
 
 	if ( !right_handed(target) ) {
 		STATUS("WARNING: reference cell is left handed\n");
@@ -621,14 +617,16 @@ static int try_indexer(struct image *image, IndexingMethod indm,
 		crystal_set_mosaicity(cr, 0.0);
 
 		/* Pre-refinement unit cell check if requested */
-		set_last_task("indexing:pre-cellcheck");
-		profile_start("prerefine-cell-check");
-		r = check_cell(ipriv->flags, cr, ipriv->target_cell,
-		               ipriv->tolerance);
-		profile_end("prerefine-cell-check");
-		if ( r ) {
-			crystal_set_user_flag(cr, 1);
-			continue;
+		if ( ipriv->flags & INDEXING_CHECK_CELL ) {
+			set_last_task("indexing:pre-cellcheck");
+			profile_start("prerefine-cell-check");
+			r = check_cell(cr, ipriv->target_cell,
+			               ipriv->tolerance);
+			profile_end("prerefine-cell-check");
+			if ( r ) {
+				crystal_set_user_flag(cr, 1);
+				continue;
+			}
 		}
 
 		/* Prediction refinement if requested */
