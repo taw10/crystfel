@@ -1136,16 +1136,17 @@ int refine_prediction(struct image *image, Crystal *cr,
 	/* Pretend it's triclinic for now */
 	cell_set_lattice_type(crystal_get_cell(cr), L_TRICLINIC);
 
+	update_predictions(reflist, cr, image);
+
 	/* Refine (max 5 cycles) */
-	for ( i=0; i<5; i++ ) {
-		update_predictions(reflist, cr, image);
+	for ( i=1; i<=5; i++ ) {
 		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
 		{
 			return 1;
 		}
-
+		update_predictions(reflist, cr, image);
 		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
-		//STATUS("Residual after %i = %f (%f %f %f)\n",
+		//STATUS("Residual after iteration %i = %f (%f %f %f)\n",
 		//       i, res_overall, res_r, res_fs, res_ss);
 	}
 
@@ -1171,15 +1172,14 @@ int refine_prediction(struct image *image, Crystal *cr,
 	//       res_overall, res_r, res_fs, res_ss);
 
 	/* Refine again, with Bravais constraints (max 5 cycles) */
-	for ( i=0; i<5; i++ ) {
-		update_predictions(reflist, cr, image);
+	for ( i=1; i<=5; i++ ) {
 		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
 		{
 			return 1;
 		}
-
+		update_predictions(reflist, cr, image);
 		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
-		//STATUS("Residual after %i = %f (%f %f %f)\n",
+		//STATUS("Residual after iteration %i = %f (%f %f %f)\n",
 		//       i, res_overall, res_r, res_fs, res_ss);
 	}
 
