@@ -838,7 +838,6 @@ static int iterate(struct reflpeak *rps, int n,
 		gsl_matrix_set(M, k, k, M_curr+1e-18);
 	}
 
-	//show_matrix_eqn(M, v);
 	shifts = solve_svd(v, M, NULL, 0);
 	if ( shifts == NULL ) {
 		ERROR("Failed to solve equations.\n");

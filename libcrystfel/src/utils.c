@@ -253,6 +253,11 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 	if ( v->size != M->size1 ) return NULL;
 	if ( v->size != M->size2 ) return NULL;
 
+	if ( verbose ) {
+		STATUS("The original equation:\n");
+		show_matrix_eqn(M, v);
+	}
+
 	/* Calculate the rescaling matrix S */
 	S = gsl_matrix_calloc(n, n);
 	for ( i=0; i<n; i++ ) {
@@ -327,6 +332,14 @@ gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 
 	gsl_matrix_free(S);
 	gsl_vector_free(SinvX);
+
+	if ( verbose ) {
+		int i;
+		STATUS("The solution:\n");
+		for ( i=0; i<shifts->size; i++ ) {
+			STATUS(" %2i : %e\n", i, gsl_vector_get(shifts, i));
+		}
+	}
 
 	return shifts;
 }
