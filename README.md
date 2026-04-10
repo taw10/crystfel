@@ -54,6 +54,9 @@ Documentation
 Journal articles and book chapters
 ----------------------------------
 
+* [Detector alignment for X-ray crystallography using
+  Millepede-II](https://doi.org/10.1107/S1600576726001287) - describes how
+  detector geometry is refined by align_detector.
 * [Processing serial crystallography data with CrystFEL: a step-by-step
   guide](https://doi.org/10.1107/S205979831801238X) - covers command-line
   processing only (pre-dates the GUI).
