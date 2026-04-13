@@ -188,8 +188,8 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 		return 1;
 	}
 
-	if ( bps != 16 ) {
-		ERROR("Unable to read TIFF data - not 16 bit format\n");
+	if ( (bps != 16) && (bps != 32) ) {
+		ERROR("Unable to read TIFF data - unrecognised length (%i)\n", bps);
 		TIFFClose(fh);
 		return 1;
 	}
@@ -206,7 +206,7 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 	}
 
 	data = cfmalloc(w*h*sizeof(float));
-	uint16_t *strip = cfmalloc(stripsize);
+	uint32_t *strip = cfmalloc(stripsize);
 	if ( (data == NULL) || (strip == NULL) ) {
 		ERROR("Failed to allocate memory for TIFF read\n");
 		TIFFClose(fh);
@@ -220,7 +220,11 @@ int image_tiff_read(struct image *image, const DataTemplate *dtempl)
 		for ( i=0; i<rows_in_strip; i++ ) {
 			int x;
 			for ( x=0; x<w; x++ ) {
-				data[x+(y+i)*w] = strip[x+i*w];
+				if ( bps == 16 ) {
+					data[x+(y+i)*w] = ((uint16_t *)strip)[x+i*w];
+				} else {
+					data[x+(y+i)*w] = strip[x+i*w];
+				}
 			}
 		}
 		y += rows_in_strip;
