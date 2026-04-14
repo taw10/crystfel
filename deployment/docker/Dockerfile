@@ -32,9 +32,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /home/crystfel-build
 
 # Mosflm
-RUN wget -nv https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip
-RUN unzip mosflm-linux-64-noX11.zip
-RUN mv mosflm-linux-64-noX11 /usr/local/bin/mosflm
+RUN wget -nv https://www.mrc-lmb.cam.ac.uk/harry/imosflm/ver740/downloads/imosflm-7.4.0-linux-64.zip
+RUN unzip imosflm-7.4.0-linux-64.zip imosflm/bin/mosflm
+RUN mv imosflm/bin/mosflm /usr/local/bin/mosflm
 
 # CrystFEL
 RUN git clone https://gitlab.desy.de/thomas.white/crystfel.git

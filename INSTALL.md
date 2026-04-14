@@ -210,14 +210,20 @@ other dependencies.  [Xgandalf](https://journals.iucr.org/a/issues/2019/05/00/ae
 methods can be enabled by installing one or more of the following external
 programs:
 
-* [Mosflm](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/)
+* [Mosflm](https://www.mrc-lmb.cam.ac.uk/harry/imosflm/)
 * [DirAx](http://www.crystal.chem.uu.nl/distr/dirax/)
 * [XDS](http://xds.mpimf-heidelberg.mpg.de/)
 * [Felix](https://doi.org/10.1107/S1600576717007506)
 
-You can install these at any time before or after installing CrystFEL.  Note
-that you only need the Mosflm binary, not the full `iMosflm` user interface.
-[Download it here](https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip).
+You can install these at any time before or after installing CrystFEL.  The
+script `install-indexers`, found in the `scripts` directory of the CrystFEL
+source code, can help you to install Mosflm, DirAx and XDS.  Run
+`scripts/install-indexers --help` for information.
+
+Note that you only need the `mosflm` binary, not the full `iMosflm` user
+interface.  Downloads for `mosflm` on its own, without `iMosflm`, are no longer
+available (since 2026).  The `install-indexers` program will extract the
+`mosflm` binary from the `iMosflm` download, to save some disk space.
 
 You probably have CCP4 installed already, which comes with its own copy of `mosflm`.
 However, you should keep your CCP4 installation separate from CrystFEL.  The
@@ -228,9 +234,6 @@ setup file before trying to install CrystFEL, and make sure that the setup file
 is not automatically referenced in your shell setup files (`.bashrc` and
 others).
 
-The script `install-indexers`, found in the `scripts` directory of the CrystFEL
-source code, can help you to install Mosflm, DirAx and XDS.  Run
-`scripts/install-indexers --help` for information.
 
 
 Finding syminfo.lib

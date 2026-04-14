@@ -86,9 +86,9 @@ build-and-test:
     - chmod +x $CFPREFIX/bin/get_hkl
     
     # Mosflm (tweaked to find syminfo.lib and not load environ.def/default.def)
-    - wget -nv https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/ver740/pre-built/mosflm-linux-64-noX11.zip
-    - unzip mosflm-linux-64-noX11.zip
-    - mv mosflm-linux-64-noX11 $CFPREFIX/bin/mosflm.real
+    - wget -nv https://www.mrc-lmb.cam.ac.uk/harry/imosflm/ver740/downloads/imosflm-7.4.0-linux-64.zip
+    - unzip imosflm-7.4.0-linux-64.zip imosflm/bin/mosflm
+    - mv imosflm/bin/mosflm $CFPREFIX/bin/mosflm.real
     - echo '#!/bin/sh' > $CFPREFIX/bin/mosflm
     - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/mosflm
     - echo "$CFPREFIX/bin/mosflm.real -n \"\$@\"" >> $CFPREFIX/bin/mosflm
