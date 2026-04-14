@@ -160,7 +160,7 @@ static void draw_x_axis(cairo_t *cr, double *tics, int n_tics,
 	cairo_set_line_width(cr, 1.0);
 	cairo_stroke(cr);
 
-	for ( i=0; i<15; i++ ) {
+	for ( i=0; i<n_tics; i++ ) {
 
 		cairo_text_extents_t ext;
 		char label[128];
@@ -285,9 +285,10 @@ static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 
 	/* x-axis */
 	double tics[] = {20.0, 15.0, 10.0, 5.0, 4.0, 3.0, 2.5, 2.0, 1.7, 1.5,
-		         1.4, 1.3, 1.2, 1.1, 1.0};
+	                 1.4, 1.3, 1.2, 1.1, 1.0,
+	                 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	draw_x_axis(cr, tics, 15, x1, x2, ox, w, h, axsp);
+	draw_x_axis(cr, tics, 24, x1, x2, ox, w, h, axsp);
 
 	cairo_translate(cr, ox, axsp);
 	w -= ox;
