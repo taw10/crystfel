@@ -229,6 +229,7 @@ static int run_pede()
 	char buf[1024];
 	char cmdline[1280];
 	int r;
+	FILE *fh;
 
 	if ( readlink("/proc/self/exe", buf, 1024) != -1 ) {
 		char *dir = dirname(buf);
@@ -258,6 +259,33 @@ static int run_pede()
 	}
 	if ( WEXITSTATUS(r) != 0 ) {
 		ERROR("Millepede returned an error status (%i)\n", WEXITSTATUS(r));
+		return 1;
+	}
+
+	fh = fopen("millepede.end", "r");
+	if ( fh == NULL ) {
+		ERROR("Failed to open millepede.end\n");
+		return 1;
+	}
+
+	if ( fgets(buf, 256, fh) != buf ) {
+		ERROR("Failed to read first line of millepede.end\n");
+		return 1;
+	}
+
+	fclose(fh);
+
+	chomp(buf);
+	if ( sscanf(buf, "%i", &r) != 1 ) {
+		ERROR("Failed to parse millepede.end: %s\n", buf);
+		return 1;
+	}
+
+	STATUS("Millepede status: %s\n", buf);
+
+	/* "Ended with severe warnings", or worse? */
+	if ( r > 1 ) {
+		ERROR("Status is %i, Millepede failed.\n", r);
 		return 1;
 	}
 
