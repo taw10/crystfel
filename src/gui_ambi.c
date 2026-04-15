@@ -86,6 +86,10 @@ static int run_ambi(struct crystfelproject *proj,
 	job_priv = be->run_ambi(job_title, job_notes, proj, input,
 	                        be->ambi_opts_priv);
 
+	if ( proj->autosave ) {
+		save_project(proj);
+	}
+
 	if ( job_priv != NULL ) {
 		char name[256];
 		snprintf(name, 255, "Resolving indexing ambiguity (%s)", job_title);

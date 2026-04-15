@@ -198,6 +198,10 @@ static int run_indexing_all(struct crystfelproject *proj,
 	                            wavelength_estimate,
 	                            clen_estimate);
 
+	if ( proj->autosave ) {
+		save_project(proj);
+	}
+
 	if ( job_priv != NULL ) {
 		char name[256];
 		snprintf(name, 255, "Indexing all frames (%s)",

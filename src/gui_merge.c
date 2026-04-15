@@ -110,6 +110,10 @@ static int run_merging(struct crystfelproject *proj,
 	job_priv = be->run_merging(job_title, job_notes, proj, input,
 	                           be->merging_opts_priv);
 
+	if ( proj->autosave ) {
+		save_project(proj);
+	}
+
 	if ( job_priv != NULL ) {
 		char name[256];
 		snprintf(name, 255, "Merging data (%s)", job_title);

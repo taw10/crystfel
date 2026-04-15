@@ -277,6 +277,7 @@ struct crystfelproject {
 
 	char *projfile;
 	int unsaved;
+	int autosave;
 
 	int cur_frame;
 	struct image *cur_image;

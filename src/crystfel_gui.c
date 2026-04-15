@@ -118,6 +118,9 @@ void error_box(struct crystfelproject *proj, const char *message)
 static gboolean delete_event_sig(GtkWidget *da, GdkEvent *event,
                                  struct crystfelproject *proj)
 {
+	if ( proj->autosave && proj->unsaved ) {
+		save_project(proj);
+	}
 	if ( proj->unsaved ) {
 		if ( !confirm_exit(proj) ) return TRUE;
 	}
@@ -520,6 +523,9 @@ static gint goto_frame_sig(GtkWidget *widget, struct crystfelproject *proj)
 /* File->Quit */
 static gint quit_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
+	if ( proj->autosave && proj->unsaved ) {
+		save_project(proj);
+	}
 	if ( proj->unsaved ) {
 		if ( !confirm_exit(proj) ) return TRUE;
 	}
@@ -935,6 +941,13 @@ static gint resolution_rings_sig(GtkWidget *w, struct crystfelproject *proj)
 }
 
 
+static gint autosave_set_sig(GtkWidget *w, struct crystfelproject *proj)
+{
+	proj->autosave = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
+	return FALSE;
+}
+
+
 static gint show_peaks_sig(GtkWidget *w, struct crystfelproject *proj)
 {
 	proj->show_peaks = gtk_toggle_action_get_active(GTK_TOGGLE_ACTION(w));
@@ -978,6 +991,7 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 	const char *ui = "<ui> <menubar name=\"mainwindow\">"
 		"<menu name=\"file\" action=\"FileAction\">"
 		"	<menuitem name=\"save\" action=\"SaveAction\" />"
+		"	<menuitem name=\"autosave\" action=\"AutoSaveAction\" />"
 		"	<menuitem name=\"quit\" action=\"QuitAction\" />"
 		"</menu>"
 		"<menu name=\"view\" action=\"ViewAction\" >"
@@ -1041,6 +1055,8 @@ static void add_menu_bar(struct crystfelproject *proj, GtkWidget *vbox)
 	};
 
 	GtkToggleActionEntry toggles[] = {
+		{ "AutoSaveAction", NULL, "Automatically save project", NULL, NULL,
+		  G_CALLBACK(autosave_set_sig), FALSE },
 		{ "PeaksAction", NULL, "Peak detection results", NULL, NULL,
 		  G_CALLBACK(show_peaks_sig), FALSE },
 		{ "ReflsAction", NULL, "Calculated reflection positions", NULL, NULL,
@@ -1487,9 +1503,11 @@ int main(int argc, char *argv[])
 	if ( optind < argc ) {
 		/* Create view of stream - probably temporary */
 		load_result = load_stream(&proj, argv[optind++]);
+		proj.autosave = 0;
 	} else {
 		/* Try to load state from disk */
 		load_result = load_project(&proj);
+		proj.autosave = 1;
 	}
 
 	if ( load_result == 0 ) {
@@ -1508,6 +1526,10 @@ int main(int argc, char *argv[])
 
 		update_imageview(&proj);
 	}
+
+	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/file/autosave");
+	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
+	                             proj.autosave);
 
 	act = gtk_ui_manager_get_action(proj.ui, "/mainwindow/view/centre");
 	gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(act),
