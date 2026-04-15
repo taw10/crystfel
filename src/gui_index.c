@@ -198,6 +198,7 @@ static int run_indexing_all(struct crystfelproject *proj,
 	                            wavelength_estimate,
 	                            clen_estimate);
 
+	proj->unsaved = 1;
 	if ( proj->autosave ) {
 		save_project(proj);
 	}

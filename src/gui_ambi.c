@@ -86,6 +86,7 @@ static int run_ambi(struct crystfelproject *proj,
 	job_priv = be->run_ambi(job_title, job_notes, proj, input,
 	                        be->ambi_opts_priv);
 
+	proj->unsaved = 1;
 	if ( proj->autosave ) {
 		save_project(proj);
 	}
