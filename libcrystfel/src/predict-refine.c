@@ -1078,6 +1078,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 	char tmp[256];
 	gsl_matrix **Minvs;
 	double res_r, res_fs, res_ss, res_overall;
+	int verbose = 0;
 
 	enum gparam rv[] = {
 		GPARAM_A_STAR,
@@ -1129,8 +1130,10 @@ int refine_prediction(struct image *image, Crystal *cr,
 	snprintf(tmp, 255, "predict_refine/initial_residual = %f (%f %f %f)",
 	         res_overall, res_r, res_fs, res_ss);
 	crystal_add_notes(cr, tmp);
-	//STATUS("Initial residual = %f (%f %f %f)\n",
-	//       res_overall, res_r, res_fs, res_ss);
+	if ( verbose ) {
+		STATUS("Initial residual = %f (%f %f %f)\n",
+		       res_overall, res_r, res_fs, res_ss);
+	}
 
 	/* Pretend it's triclinic for now */
 	cell_set_lattice_type(crystal_get_cell(cr), L_TRICLINIC);
@@ -1145,8 +1148,10 @@ int refine_prediction(struct image *image, Crystal *cr,
 		}
 		update_predictions(reflist, cr, image);
 		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
-		//STATUS("Residual after iteration %i = %f (%f %f %f)\n",
-		//       i, res_overall, res_r, res_fs, res_ss);
+		if ( verbose ) {
+			STATUS("Residual after iteration %i = %f (%f %f %f)\n",
+			       i, res_overall, res_r, res_fs, res_ss);
+		}
 	}
 
 	if ( target == NULL ) goto done;
@@ -1167,8 +1172,10 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	update_predictions(reflist, cr, image);
 	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
-	//STATUS("After applying Bravais constraints = %f (%f %f %f)\n",
-	//       res_overall, res_r, res_fs, res_ss);
+	if ( verbose ) {
+		STATUS("After applying Bravais constraints = %f (%f %f %f)\n",
+		       res_overall, res_r, res_fs, res_ss);
+	}
 
 	/* Refine again, with Bravais constraints (max 5 cycles) */
 	for ( i=1; i<=5; i++ ) {
@@ -1178,8 +1185,10 @@ int refine_prediction(struct image *image, Crystal *cr,
 		}
 		update_predictions(reflist, cr, image);
 		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
-		//STATUS("Residual after iteration %i = %f (%f %f %f)\n",
-		//       i, res_overall, res_r, res_fs, res_ss);
+		if ( verbose ) {
+			STATUS("Residual after iteration %i = %f (%f %f %f)\n",
+			       i, res_overall, res_r, res_fs, res_ss);
+		}
 	}
 
 done:
@@ -1187,8 +1196,10 @@ done:
 	snprintf(tmp, 255, "predict_refine/final_residual = %f (%f %f %f)",
 	         res_overall, res_r, res_fs, res_ss);
 	crystal_add_notes(cr, tmp);
-	//STATUS("Final residual = %f (%f %f %f)\n",
-	//       res_overall, res_r, res_fs, res_ss);
+	if ( verbose ) {
+		STATUS("Final residual = %f (%f %f %f)\n",
+		       res_overall, res_r, res_fs, res_ss);
+	}
 
 	if ( (mille != NULL) && (n>4) ) {
 		crystfel_mille_delete_last_record(mille);
