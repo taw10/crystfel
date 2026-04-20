@@ -1,3 +1,33 @@
+Changes in this development version
+-----------------------------------
+
+- indexamajig: Removal of 'latt' and 'cell' switches [GitLab #126]
+- Fix ignored multiplicity cutoff in FoMs
+- Support for TIFF images
+- indexamajig: Remove triclinic pre-refinement stage
+- show_residuals: Additionally display spot position RMSDs [GitHub #19]
+- Change SVD algorithm (to Golub-Reinsch instead of Jacobi)
+- indexamajig: Do not write mille.bin unless --mille is given [Github #23]
+- Re-write fg-graph in Python
+- partialator: Report the number of crystals actually used [GitLab #121]
+- partialator: Add --output-cell
+- Fix incorrect flood fill in peakfinder8 [GitLab #60] (Egor Sobolev)
+- align_detector: Add --min-measurements [GitLab #137]
+- align_detector: Don't say 'Millepede succeeded' unless it did [GitLab #141]
+- GUI: Add choice of colour scales (Takanori Nakane)
+- GUI: Add option to display panel names
+- GUI: Add menu item for fg-graph [GitLab #132]
+- GUI: Automatically choose unit cell for FoM and export [GitLab #30]
+- GUI: Add "Table 1" generator [GitLab #134]
+- GUI: Fix saving of project file in wrong folder [GitLab #138]
+- GUI: Fix segfault when indexing twice [GitLab #139]
+- GUI: Restrict scroll delta on Mac OS [GitLab #136]
+- GUI: Extend range of x-ticks for resolution graph
+- GUI: Add automatic saving of project file
+- install-indexers: Adapt to removal of old Mosflm download location
+- Move Homebrew formula to external tap
+
+
 CrystFEL version 0.12.0, 11 September 2025
 ------------------------------------------
 
