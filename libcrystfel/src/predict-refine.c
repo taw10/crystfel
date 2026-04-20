@@ -1097,6 +1097,8 @@ int refine_prediction(struct image *image, Crystal *cr,
 	                         * sizeof(struct reflpeak));
 	if ( rps == NULL ) return 1;
 
+	/* Pair the peaks using the lattice straight out of the indexer
+	 * (before applying constraints) */
 	reflist = reflist_new();
 	n = pair_peaks(image, cr, reflist, rps);
 	if ( n < 3 ) {
@@ -1127,34 +1129,13 @@ int refine_prediction(struct image *image, Crystal *cr,
 	}
 
 	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
-	snprintf(tmp, 255, "predict_refine/initial_residual = %f (%f %f %f)",
+	snprintf(tmp, 255, "predict_refine/residual_before_constraints = %f (%f %f %f)",
 	         res_overall, res_r, res_fs, res_ss);
 	crystal_add_notes(cr, tmp);
 	if ( verbose ) {
-		STATUS("Initial residual = %f (%f %f %f)\n",
+		STATUS("Residual before constraints = %f (%f %f %f)\n",
 		       res_overall, res_r, res_fs, res_ss);
 	}
-
-	/* Pretend it's triclinic for now */
-	cell_set_lattice_type(crystal_get_cell(cr), L_TRICLINIC);
-
-	update_predictions(reflist, cr, image);
-
-	/* Refine (max 5 cycles) */
-	for ( i=1; i<=5; i++ ) {
-		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
-		{
-			return 1;
-		}
-		update_predictions(reflist, cr, image);
-		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
-		if ( verbose ) {
-			STATUS("Residual after iteration %i = %f (%f %f %f)\n",
-			       i, res_overall, res_r, res_fs, res_ss);
-		}
-	}
-
-	if ( target == NULL ) goto done;
 
 	UnitCell *nc = impose_bravais(crystal_get_cell(cr),
 	                              cell_get_lattice_type(target),
@@ -1172,12 +1153,15 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	update_predictions(reflist, cr, image);
 	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
+	snprintf(tmp, 255, "predict_refine/initial_residual = %f (%f %f %f)",
+	         res_overall, res_r, res_fs, res_ss);
+	crystal_add_notes(cr, tmp);
 	if ( verbose ) {
 		STATUS("After applying Bravais constraints = %f (%f %f %f)\n",
 		       res_overall, res_r, res_fs, res_ss);
 	}
 
-	/* Refine again, with Bravais constraints (max 5 cycles) */
+	/* Refine, with Bravais constraints (max 5 cycles) */
 	for ( i=1; i<=5; i++ ) {
 		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
 		{
@@ -1191,7 +1175,6 @@ int refine_prediction(struct image *image, Crystal *cr,
 		}
 	}
 
-done:
 	res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
 	snprintf(tmp, 255, "predict_refine/final_residual = %f (%f %f %f)",
 	         res_overall, res_r, res_fs, res_ss);
