@@ -161,14 +161,18 @@ static int in_list(int ser, int *serials, int n_serials)
 }
 
 
-static int read_measurement(int *arri, int cur_meas_pos, int arrlen,
-                            int *serials, int *n_serials)
+static int read_measurement(int *arri, float *arrf, int cur_meas_pos, int arrlen,
+                            int *serials, int *n_serials, double *meas, double *sigma)
 {
 	int next_meas_pos, mid_sep;
 	int lj;
 
+	*meas = arrf[cur_meas_pos];
+
 	find_markers(arri, cur_meas_pos, arrlen,
 	             &mid_sep, &next_meas_pos);
+
+	*sigma = arrf[mid_sep];
 
 	for ( lj=mid_sep+1; lj<next_meas_pos; lj++ ) {
 		int group_serial = arri[lj] - (arri[lj] % 100);
@@ -256,21 +260,19 @@ static int read_file(const char *filename,
 		while ( cur_meas_pos < arrlen ) {
 
 			double fs, ss, ex;
+			double sigfs, sigss, sigex;
 			int j;
 			int n_serials = 0;
 			int serials[32];
 			struct detgeom_panel *p;
 			double dx, dy;
 
-			fs = arrf[cur_meas_pos];
-			cur_meas_pos = read_measurement(arri, cur_meas_pos, arrlen,
-			                                serials, &n_serials);
-			ss = arrf[cur_meas_pos];
-			cur_meas_pos = read_measurement(arri, cur_meas_pos, arrlen,
-			                                serials, &n_serials);
-			ex = arrf[cur_meas_pos];
-			cur_meas_pos = read_measurement(arri, cur_meas_pos, arrlen,
-			                                serials, &n_serials);
+			cur_meas_pos = read_measurement(arri, arrf, cur_meas_pos, arrlen,
+			                                serials, &n_serials, &fs, &sigfs);
+			cur_meas_pos = read_measurement(arri, arrf, cur_meas_pos, arrlen,
+			                                serials, &n_serials, &ss, &sigss);
+			cur_meas_pos = read_measurement(arri, arrf, cur_meas_pos, arrlen,
+			                                serials, &n_serials, &ex, &sigex);
 
 			/* Mille residuals are in pixels, we want metres */
 			p = which_panel(serials, n_serials, detgeom, groups, n_groups);
