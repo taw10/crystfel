@@ -1137,15 +1137,19 @@ int refine_prediction(struct image *image, Crystal *cr,
 		       res_overall, res_r, res_fs, res_ss);
 	}
 
-	UnitCell *nc = impose_bravais(crystal_get_cell(cr),
-	                              cell_get_lattice_type(target),
-	                              cell_get_unique_axis(target));
-	if ( nc == NULL ) {
-		ERROR("Failed to impose Bravais conditions\n");
-		return 1;
+	if ( target != NULL ) {
+		UnitCell *nc;
+		nc = impose_bravais(crystal_get_cell(cr),
+		                    cell_get_lattice_type(target),
+		                    cell_get_unique_axis(target));
+		if ( nc == NULL ) {
+			ERROR("Failed to impose Bravais conditions\n");
+			return 1;
+		}
+		crystal_set_cell(cr, nc);
 	}
-	crystal_set_cell(cr, nc);
-	num_params = parameters_to_refine(nc, rv);
+
+	num_params = parameters_to_refine(crystal_get_cell(cr), rv);
 	if ( num_params == 0 ) {
 		ERROR("Couldn't determine which parameters to refine\n");
 		return 1;
