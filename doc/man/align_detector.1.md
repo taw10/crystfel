@@ -106,6 +106,11 @@ OPTIONS
 : because the position offsets are two dimensional.  The default value is
 : 100, i.e. at least 50 pairs are needed for each parameter.
 
+**--big-errors**
+: Tell **pede** to be very tolerant of large residuals in the input data.
+: Add this option if an initial refinement fails due to too many "huge"
+: rejects.
+
 
 AUTHOR
 ======

@@ -68,6 +68,7 @@ static void show_help(const char *s)
 	       "      --camera-length        Refine overall camera length\n"
 	       "      --panel-totals         Display total panel movements\n"
 	       "      --min-measurements     Minimum measurements per parameter\n"
+	       "      --big-errors           Increase tolerance for large residuals\n"
 	       "\n"
 	       "  -h, --help                 Display this help message\n"
 	       "      --version              Print version number and exit\n");
@@ -330,6 +331,7 @@ int main(int argc, char *argv[])
 	int refine_clen = 0;
 	int panel_totals = 0;
 	int min_measurements = 100;
+	int big_errors = 0;
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -345,6 +347,7 @@ int main(int argc, char *argv[])
 		{"out-of-plane-tilts", 0, &out_of_plane_tilts, 1},
 		{"camera-length",      0, &refine_clen,        1},
 		{"panel-totals",       0, &panel_totals,       1},
+		{"big-errors",         0, &big_errors,         1},
 		{"min-measurements",   1, NULL,                2},
 
 		{0, 0, NULL, 0}
@@ -475,6 +478,10 @@ int main(int argc, char *argv[])
 	/* All corrections must sum to zero at each level of hierarchy */
 	if ( make_zero_sum(fh, groups, n_groups, "all", level,
 	                   out_of_plane_shift, out_of_plane_tilts) ) return 1;
+
+	if ( big_errors ) {
+		fprintf(fh, "hugecut 1000\n");
+	}
 
 	fprintf(fh, "method inversion 5 0.1\n");
 	fprintf(fh, "closeandreopen\n");
