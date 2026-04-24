@@ -482,29 +482,18 @@ static int check_outlier_transition(struct reflpeak *rps, int n,
                                     struct detgeom *det)
 {
 	int i;
+	double median;
 
 	if ( n < 3 ) return n;
 
 	qsort(rps, n, sizeof(struct reflpeak), cmpd2);
+	median = fabs(get_exerr(rps[n/2].refl));
 
-	for ( i=1; i<n-1; i++ ) {
-
-		int j;
-		double grad = fabs(get_exerr(rps[i].refl)) / i;
-
-		for ( j=i+1; j<n; j++ ) {
-			if ( fabs(get_exerr(rps[j].refl)) < 0.001e9+grad*j ) {
-				break;
-			}
-		}
-		if ( j == n ) {
-			//STATUS("Outlier transition found at position %i / %i\n",
-			//       i, n);
+	for ( i=n/2; i<n; i++ ) {
+		if ( fabs(get_exerr(rps[i].refl)) > median*1.5 ) {
 			return i;
 		}
 	}
-
-	//STATUS("No outlier transition found.\n");
 	return n;
 }
 
