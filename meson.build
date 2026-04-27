@@ -23,6 +23,13 @@ rtdep = cc.find_library('rt', required: false)
 gsldep = dependency('gsl', required: true)
 pthreaddep = dependency('threads', required: true)
 
+# argp is part of glibc, but musl needs argp-standalone
+if cc.has_function('argp_parse', prefix: '#include <argp.h>')
+  argpdep = declare_dependency()
+else
+  argpdep = cc.find_library('argp', required: true)
+endif
+
 # Find HDF5 using inbuilt Meson methods.  Requires Meson >= 0.50.0
 hdf5dep = dependency('hdf5', language: 'c', required: get_option('hdf5'))
 if hdf5dep.found()
@@ -208,8 +215,8 @@ endif
 
 indexamajig = executable('indexamajig', indexamajig_sources,
                          dependencies: [mdep, rtdep, libcrystfeldep, gsldep,
-                                        pthreaddep, zmqdep, asapodep, asapoproddep,
-                                        fftwdep, cjsondep],
+                                        pthreaddep, argpdep, zmqdep, asapodep,
+                                        asapoproddep, fftwdep, cjsondep],
                          install: true,
                          install_rpath: crystfel_rpath)
 
