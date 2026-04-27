@@ -92,6 +92,8 @@ if cc.has_function('forkpty', dependencies: utildep, prefix: '#include <pty.h>')
   conf_data.set10('HAVE_FORKPTY_PTY_H', true)
 elif cc.has_function('forkpty', dependencies: utildep, prefix: '#include <util.h>')
   conf_data.set10('HAVE_FORKPTY_UTIL_H', true)
+elif cc.has_function('forkpty', dependencies: utildep, prefix: '#include <libutil.h>')
+  conf_data.set10('HAVE_FORKPTY_LIBUTIL_H', true)
 else
   error('Couldn\'t find forkpty()')
 endif

@@ -39,7 +39,6 @@
 
 #ifdef HAVE_SCHED_SETAFFINITY
 #define _GNU_SOURCE
-#include <sys/sysinfo.h>
 #include <sched.h>
 #endif
 
@@ -1168,7 +1167,7 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
 	}
 
 	#ifdef HAVE_SCHED_SETAFFINITY
-	int n_cpus = get_nprocs();
+	int n_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 	if ( n_proc > n_cpus ) {
 		ERROR("WARNING: Number of workers (%i) is larger than the "
 		      "number of available CPUs (%i)\n", n_proc, n_cpus);

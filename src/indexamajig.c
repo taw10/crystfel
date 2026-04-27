@@ -40,7 +40,6 @@
 
 #ifdef HAVE_SCHED_SETAFFINITY
 #define _GNU_SOURCE
-#include <sys/sysinfo.h>
 #include <sched.h>
 #endif
 
