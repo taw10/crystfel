@@ -92,6 +92,15 @@ static void mille_add_measurement(Mille *m,
 
 	if ( m == NULL ) return;
 
+	for ( i=0; i<NLC; i++ ) {
+		if ( isnan(derLc[i]) ) return;
+	}
+	for ( i=0; i<NGL; i++ ) {
+		if ( isnan(derGl[i]) ) return;
+	}
+	if ( isnan(rMeas) ) return;
+	if ( isnan(sigma) ) return;
+
 	/* Allocate extra space if necessary */
 	space_required = m->n + NLC + NGL + 2;
 	if ( space_required > m->max_entries ) {
