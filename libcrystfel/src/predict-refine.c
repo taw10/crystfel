@@ -712,7 +712,7 @@ static void adjust_cstar(double as[3], double bs[3], double shift)
 
 static int iterate(struct reflpeak *rps, int n,
                    enum gparam *rv, int num_params, UnitCell *cell,
-                   struct image *image, gsl_matrix **Minvs)
+                   struct image *image, gsl_matrix **Minvs, int *pn_filt)
 {
 	int i;
 	gsl_matrix *M;
@@ -827,7 +827,7 @@ static int iterate(struct reflpeak *rps, int n,
 		gsl_matrix_set(M, k, k, M_curr+1e-18);
 	}
 
-	shifts = solve_svd(v, M, NULL, 0);
+	shifts = solve_svd(v, M, pn_filt, 0);
 	if ( shifts == NULL ) {
 		ERROR("Failed to solve equations.\n");
 		gsl_matrix_free(M);
@@ -1067,6 +1067,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 	char tmp[256];
 	gsl_matrix **Minvs;
 	double res_r, res_fs, res_ss, res_overall;
+	int n_filt = 0;
 	int verbose = 0;
 
 	enum gparam rv[] = {
@@ -1156,7 +1157,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 
 	/* Refine, with Bravais constraints (max 5 cycles) */
 	for ( i=1; i<=5; i++ ) {
-		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs) )
+		if ( iterate(rps, n, rv, num_params, crystal_get_cell(cr), image, Minvs, &n_filt) )
 		{
 			return 1;
 		}
@@ -1177,7 +1178,7 @@ int refine_prediction(struct image *image, Crystal *cr,
 		       res_overall, res_r, res_fs, res_ss);
 	}
 
-	if ( (mille != NULL) && (n>4) ) {
+	if ( (mille != NULL) && (n>4) && (n_filt==0) ) {
 		crystfel_mille_delete_last_record(mille);
 		profile_start("mille-calc");
 		write_mille(mille, n, crystal_get_cell(cr), rv, num_params,
