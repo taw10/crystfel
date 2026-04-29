@@ -1162,10 +1162,15 @@ int refine_prediction(struct image *image, Crystal *cr,
 			return 1;
 		}
 		update_predictions(reflist, cr, image);
+		double prev_res = res_overall;
 		res_overall = pred_residual(rps, n, image->detgeom, &res_r, &res_fs, &res_ss);
 		if ( verbose ) {
 			STATUS("Residual after iteration %i = %f (%f %f %f)\n",
 			       i, res_overall, res_r, res_fs, res_ss);
+		}
+		if ( res_overall > prev_res*1.001 ) {
+			ERROR("Residual increased (%e to %e), aborting refinement!\n", prev_res, res_overall);
+			return 1;
 		}
 	}
 
