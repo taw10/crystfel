@@ -544,6 +544,8 @@ int main(int argc, char *argv[])
 			int p;
 			const char *group_name;
 			int group_serial;
+			double updates[4] = {0,0,0,0};
+
 
 			if ( convert_int(bits[0], &code) ) {
 				ERROR("Didn't understand '%s'\n", bits[0]);
@@ -624,10 +626,23 @@ int main(int argc, char *argv[])
 				break;
 
 				case GPARAM_SCANV_BEAM_A:
+				updates[0] = -shift;
+				data_template_add_to_scanv_beamxy(dtempl, updates);
+				break;
+
 				case GPARAM_SCANV_BEAM_B:
+				updates[1] = -shift;
+				data_template_add_to_scanv_beamxy(dtempl, updates);
+				break;
+
 				case GPARAM_SCANV_BEAM_C:
+				updates[2] = -shift;
+				data_template_add_to_scanv_beamxy(dtempl, updates);
+				break;
+
 				case GPARAM_SCANV_BEAM_D:
-				/* FIXME: Apply parameters */
+				updates[3] = -shift;
+				data_template_add_to_scanv_beamxy(dtempl, updates);
 				break;
 
 				default:

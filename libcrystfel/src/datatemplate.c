@@ -2905,6 +2905,22 @@ struct dg_group_info *data_template_group_info(const DataTemplate *dtempl, int *
 }
 
 
+int data_template_add_to_scanv_beamxy(DataTemplate *dtempl, double updates[4])
+{
+	int i;
+	if ( !dtempl->have_scanv ) {
+		for ( i=0; i<4; i++ ) {
+			dtempl->scanv_beamxy[i] = 0.0;
+		}
+	}
+	for ( i=0; i<4; i++ ) {
+		dtempl->scanv_beamxy[i] += updates[i];
+	}
+	dtempl->have_scanv = 1;
+	return 0;
+}
+
+
 void data_template_reset_total_movements(DataTemplate *dtempl)
 {
 	int i;
