@@ -2201,10 +2201,10 @@ struct detgeom *create_detgeom(struct image *image,
 		p->ssz = tmpl->ssz;
 
 		if ( dtempl->have_scanv ) {
-			p->cnx += dtempl->scanv_beamxy[0]*image->scan_coords[0]
-			        + dtempl->scanv_beamxy[1]*image->scan_coords[1];
-			p->cny += dtempl->scanv_beamxy[2]*image->scan_coords[0]
-			        + dtempl->scanv_beamxy[3]*image->scan_coords[1];
+			p->cnx += (dtempl->scanv_beamxy[0]*image->scan_coords[0]
+			         + dtempl->scanv_beamxy[1]*image->scan_coords[1])/p->pixel_pitch;
+			p->cny += (dtempl->scanv_beamxy[2]*image->scan_coords[0]
+			         + dtempl->scanv_beamxy[3]*image->scan_coords[1])/p->pixel_pitch;
 		}
 
 	}
@@ -2700,7 +2700,7 @@ int data_template_write_to_fh(const DataTemplate *dtempl, FILE *fh)
 	fprintf(fh, "\n");
 
 	if ( dtempl->have_scanv ) {
-		fprintf(fh, "scanv_beamxy = %.4f,%.4f,%.4f,%.4f\n",
+		fprintf(fh, "scanv_beamxy = %.4e,%.4e,%.4e,%.4e\n",
 		        dtempl->scanv_beamxy[0], dtempl->scanv_beamxy[1],
 		        dtempl->scanv_beamxy[2], dtempl->scanv_beamxy[3]);
 		fprintf(fh, "\n");

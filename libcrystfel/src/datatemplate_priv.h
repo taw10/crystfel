@@ -274,7 +274,7 @@ struct _datatemplate
 	/** Whether we have scan-vary geometry components (scanv_beamxy etc) */
 	int                        have_scanv;
 
-	/** Matrix components for scan-varying beam shift */
+	/** Matrix components for scan-varying beam shift, in m per scan unit */
 	float                      scanv_beamxy[4];
 };
 
