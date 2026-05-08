@@ -893,9 +893,7 @@ int crystfel_indexing_opts_get_min_peaks(CrystFELIndexingOpts *opts)
 			      rval);
 			return 0;
 		}
-		/* Subtract one because the dialog box says to skip
-		 * frames with "FEWER THAN" this number */
-		return fewer_peaks - 1;
+		return fewer_peaks;
 	} else {
 		return 0;
 	}
@@ -1239,8 +1237,7 @@ void crystfel_indexing_opts_set_min_peaks(CrystFELIndexingOpts *opts,
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(opts->enable_hitfind),
 	                             (min_peaks > 0));
 
-	/* Plus one because dialog says skip when "fewer than" X peaks */
-	snprintf(tmp, 63, "%i", min_peaks+1);
+	snprintf(tmp, 63, "%i", min_peaks);
 	gtk_entry_set_text(GTK_ENTRY(opts->ignore_fewer_peaks), tmp);
 }
 
