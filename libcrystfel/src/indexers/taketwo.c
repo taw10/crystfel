@@ -1291,7 +1291,7 @@ static int sort_seed_by_score(const void *av, const void *bv)
 {
 	struct Seed *a = (struct Seed *)av;
 	struct Seed *b = (struct Seed *)bv;
-	return a->score > b->score;
+	return (a->score > b->score) - (a->score < b->score);
 }
 
 static void remove_old_solutions(struct TakeTwoCell *cell,
@@ -1585,7 +1585,7 @@ static int sort_theory_distances(const void *av, const void *bv)
 {
 	struct sortme *a = (struct sortme *)av;
 	struct sortme *b = (struct sortme *)bv;
-	return a->dist > b->dist;
+	return (a->dist > b->dist) - (a->dist < b->dist);
 }
 
 static int match_obs_to_cell_vecs(struct TheoryVec *cell_vecs, int cell_vec_count,
@@ -1653,7 +1653,7 @@ static int compare_spot_vecs(const void *av, const void *bv)
 {
 	struct SpotVec *a = (struct SpotVec *)av;
 	struct SpotVec *b = (struct SpotVec *)bv;
-	return a->distance > b->distance;
+	return (a->distance > b->distance) - (a->distance < b->distance);
 }
 
 static int gen_observed_vecs(struct rvec *rlps, int rlp_count,

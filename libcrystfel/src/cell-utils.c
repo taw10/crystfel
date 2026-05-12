@@ -1582,7 +1582,7 @@ static int cmpcand(const void *av, const void *bv)
 {
 	const struct cand *a = av;
 	const struct cand *b = bv;
-	return a->fom > b->fom;
+	return (a->fom > b->fom) - (a->fom < b->fom);
 }
 
 
@@ -2525,7 +2525,7 @@ static int cmpres(const void *av, const void *bv)
 {
 	const struct powder_ring *a = av;
 	const struct powder_ring *b = bv;
-	return a->resolution > b->resolution;
+	return (a->resolution > b->resolution) - (a->resolution < b->resolution);
 }
 
 

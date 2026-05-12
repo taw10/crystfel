@@ -236,7 +236,7 @@ static int comp(const void *a, const void *b)
 	const struct imagefeature *ap = a;
 	const struct imagefeature *bp = b;
 
-	return ap->intensity < bp->intensity;
+	return (ap->intensity < bp->intensity) - (ap->intensity > bp->intensity);
 }
 
 

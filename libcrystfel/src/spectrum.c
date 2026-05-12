@@ -258,8 +258,7 @@ static signed int cmp_gauss(const void *va, const void *vb)
 {
 	const struct gaussian *a = va;
 	const struct gaussian *b = vb;
-	if ( a->area > b->area ) return +1;
-	return -1;
+	return (a->area > b->area) - (a->area < b->area);
 }
 
 
