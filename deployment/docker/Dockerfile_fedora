@@ -7,13 +7,15 @@ ENV LD_RUN_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV PATH=$CFPREFIX/bin:$PATH
 
 RUN    dnf -y install epel-release ; \
+       crb enable ; \
        dnf -y update ; \
        dnf -y group install development-tools; \
-       dnf -y install  gsl-devel flex bison gcc-c++  gtk3-devel cairo-devel \
+       dnf -y install  gsl-devel flex bison gcc-c++  gcc-gfortran gtk3-devel cairo-devel \
               pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils \
               hdf5-devel zeromq-devel python3-devel which wget lz4 lz4-devel \
-              bzip2-libs bzip2-devel libcurl-devel openssh-clients cmake \
-              gcc-gfortran cppcheck cppcheck-htmlreport
+              bzip2-libs bzip2-devel libcurl-devel openssh-clients krb5-workstation cmake \
+              meson ninja-build pandoc cppcheck cppcheck-htmlreport
+             
 RUN    python3 -m ensurepip --upgrade && python3 -m pip  install meson ninja
 
 # HDF5 filter plugins
