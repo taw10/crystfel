@@ -33,7 +33,7 @@ build_dev_images:
 
   parallel:
     matrix:
-     - IMAGE: ["centos7","alma9","fedora","ubuntu"]
+     - IMAGE: ["centos7","alma9","alma10","fedora","ubuntu"]
 
   when: manual
 
