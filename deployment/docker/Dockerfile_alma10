@@ -1,0 +1,86 @@
+FROM  almalinux:latest
+
+ENV CFPREFIX=/software/crystfel/devel
+ENV PKG_CONFIG_PATH=$CFPREFIX/lib64/pkgconfig:$CFPREFIX/lib/pkgconfig
+ENV LD_LIBRARY_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
+ENV LD_RUN_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
+ENV PATH=$CFPREFIX/bin:$PATH
+
+RUN    dnf -y install epel-release
+RUN    crb enable
+RUN    dnf -y group install  'Development Tools'
+RUN    dnf -y install  gsl-devel flex bison gcc-c++ gcc-gfortran gtk3-devel cairo-devel \
+              pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils \
+              hdf5-devel zeromq-devel python3-devel which wget lz4 lz4-devel \
+              bzip2-libs bzip2-devel libcurl-devel openssh-clients krb5-workstation cmake \
+              meson ninja-build pandoc cppcheck cppcheck-htmlreport
+RUN    dnf -y update
+
+RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.conf ; \
+       sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf
+
+# HDF5
+RUN    wget -nv https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.1/src/hdf5-1.12.1.tar.bz2; \
+       tar -xf hdf5-1.12.1.tar.bz2; \
+       pushd hdf5-1.12.1; \
+       ./configure --prefix=$CFPREFIX \
+                   --enable-shared --disable-static \
+                   --with-default-plugindir=${CFPREFIX}/lib64/plugins; \
+       make; \
+       make install; \
+       popd # hdf5-1.12.1
+
+# HDF5 filter plugins
+RUN    git clone --depth 1 https://github.com/nexusformat/HDF5-External-Filter-Plugins.git ; \
+       pushd HDF5-External-Filter-Plugins; \
+       mkdir build; \
+       pushd build; \
+       cmake .. -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
+                -DENABLE_BITSHUFFLE_PLUGIN=yes \
+                -DENABLE_LZ4_PLUGIN=yes \
+                -DENABLE_BZIP2_PLUGIN=yes \
+                -DCMAKE_BUILD_TYPE=Release ; \
+       popd; \
+       make -C build -j 32; \
+       make -C build install; \
+       popd # HDF5-External-Filter-Plugins
+
+# MsgPack
+RUN    wget -nv https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz ; \
+       tar -xzf msgpack-3.3.0.tar.gz ;  \
+       pushd msgpack-3.3.0; \
+       mkdir build; \
+       pushd build; \
+       cmake .. -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
+                -DMSGPACK_BUILD_EXAMPLES=OFF \
+                -DMSGPACK_ENABLE_CXX=OFF \
+                -DCMAKE_BUILD_TYPE=Release ; \
+       popd ; \
+       make -C build -j 32 ; \
+       make -C build install ; \
+       popd # msgpack-3.3.0
+
+# ASAP::O
+RUN    git clone https://gitlab.desy.de/asapo/asapo.git ; \
+       pushd asapo ; \
+       git checkout 24.11.1 ; \
+       mkdir build ; \
+       pushd build ; \
+       cmake .. -GNinja -DBUILD_CLIENTS_ONLY=ON -DBUILD_PYTHON=OFF \
+                -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
+                -DCMAKE_BUILD_TYPE=RelWithDebInfo ; \
+       popd ; \
+       ninja -C build ; \
+       ninja -C build install  ; \
+       popd
+
+# Seedee
+RUN    git clone https://gitlab.desy.de/fs-sc/seedee.git ; \
+       pushd seedee ; \
+       mkdir build ; \
+       cd build ; \
+       cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$CFPREFIX -DCMAKE_BUILD_TYPE=RelWithDebInfo ; \
+       cd .. ; \
+       ninja -C build ; \
+       ninja -C build install ; \
+       popd
