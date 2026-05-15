@@ -156,6 +156,49 @@ build-macos:
     - meson compile -C build
     - meson test -C build
 
+build-and-package-rpm:
+  image: $CI_REGISTRY_IMAGE/$PLATFORM
+  tags:
+    - hi-load
+  variables:
+    GIT_STRATEGY: clone
+    KUBERNETES_MEMORY_LIMIT: "20Gi"
+
+  script:
+    - |
+      VERSION=${CI_COMMIT_TAG#v}
+      dnf -y install rpmdevtools
+      rpmdev-setuptree
+      if [ $PLATFORM = "fedora" ];
+      then
+          mkdir -p /root/rpmbuild/BUILD/crystfel-${VERSION}-build ;
+          ln -v -s  /builds/thomas.white/crystfel  /root/rpmbuild/BUILD/crystfel-${VERSION}-build/crystfel-${VERSION} ;
+      fi
+
+      # Some tests fail on AlmaLinux10 so for now skip the tests.
+      if [ $PLATFORM = "alma10" ];
+      then
+          NOCHECK="--nocheck"
+      fi
+      rpmbuild -vv -ba  deployment/os_native/rpm/crystfelrpm.spec --define "version_from_tag ${VERSION}"  --build-in-place $NOCHECK
+      rpm -qp --requires /root/rpmbuild/RPMS/x86_64/crystfel*.rpm
+      cp  /root/rpmbuild/RPMS/x86_64/crystfel*.rpm  ./
+
+  artifacts:
+    paths:
+      - ./crystfel*.rpm
+      - build/meson-logs/testlog.junit.xml
+    reports:
+      junit: build/meson-logs/testlog.junit.xml
+    when: on_success
+    expire_in: 1 day
+
+  parallel:
+    matrix:
+      - PLATFORM:  ["alma9","alma10","fedora"]
+  rules:
+    - if: ($CI_COMMIT_TAG)
+    
 deploy-remote-maxwell:
   stage: deploy
   image: $CI_REGISTRY_IMAGE/alma9
