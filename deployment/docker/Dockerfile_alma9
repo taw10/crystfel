@@ -1,4 +1,4 @@
-FROM  almalinux:9.4
+FROM  almalinux:9.7
 
 ENV CFPREFIX=/software/crystfel/devel
 ENV PKG_CONFIG_PATH=$CFPREFIX/lib64/pkgconfig:$CFPREFIX/lib/pkgconfig
@@ -12,9 +12,10 @@ RUN    dnf -y update
 RUN    dnf -y group install  'Development Tools'
 RUN    dnf -y install  gsl-devel flex bison gcc-c++ gcc-gfortran gtk3-devel cairo-devel \
               pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils \
-              zeromq-devel python3-devel which wget lz4 lz4-devel \
+              hdf5-devel zeromq-devel python3-devel which wget lz4 lz4-devel \
               bzip2-libs bzip2-devel libcurl-devel openssh-clients krb5-workstation cmake \
-              meson ninja-build pandoc
+              meson ninja-build pandoc cppcheck cppcheck-htmlreport
+
 RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.conf ; \
        sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf
 
