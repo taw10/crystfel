@@ -175,12 +175,7 @@ build-and-package-rpm:
           ln -v -s  /builds/thomas.white/crystfel  /root/rpmbuild/BUILD/crystfel-${VERSION}-build/crystfel-${VERSION} ;
       fi
 
-      # Some tests fail on AlmaLinux10 so for now skip the tests.
-      if [ $PLATFORM = "alma10" ];
-      then
-          NOCHECK="--nocheck"
-      fi
-      rpmbuild -vv -ba  deployment/os_native/rpm/crystfelrpm.spec --define "version_from_tag ${VERSION}"  --build-in-place $NOCHECK
+      rpmbuild -vv -ba  deployment/os_native/rpm/crystfelrpm.spec --define "version_from_tag ${VERSION}"  --build-in-place
       rpm -qp --requires /root/rpmbuild/RPMS/x86_64/crystfel*.rpm
       cp  /root/rpmbuild/RPMS/x86_64/crystfel*.rpm  ./
 
