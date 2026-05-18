@@ -46,7 +46,7 @@ linux:
   stage: build
   parallel:
     matrix:
-     - PLATFORM: ["centos7","alma9","fedora","ubuntu"]
+     - PLATFORM: ["centos7","alma9","alma10","fedora","ubuntu"]
   image: $CI_REGISTRY_IMAGE/$PLATFORM
   variables:
     GIT_STRATEGY: clone
