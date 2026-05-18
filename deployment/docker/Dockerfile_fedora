@@ -6,9 +6,7 @@ ENV LD_LIBRARY_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV LD_RUN_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV PATH=$CFPREFIX/bin:$PATH
 
-RUN    dnf -y install epel-release ; \
-       crb enable ; \
-       dnf -y update ; \
+RUN    dnf -y update ; \
        dnf -y group install development-tools; \
        dnf -y install  gsl-devel flex bison gcc-c++  gcc-gfortran gtk3-devel cairo-devel \
               pango-devel gdk-pixbuf2-devel fftw-devel libpng-devel diffutils \
