@@ -13,7 +13,7 @@ RUN    dnf -y update ; \
               hdf5-devel zeromq-devel python3-devel which wget lz4 lz4-devel \
               bzip2-libs bzip2-devel libcurl-devel openssh-clients krb5-workstation cmake \
               meson ninja-build pandoc cppcheck cppcheck-htmlreport
-             
+
 RUN    python3 -m ensurepip --upgrade && python3 -m pip  install meson ninja
 
 # HDF5 filter plugins
