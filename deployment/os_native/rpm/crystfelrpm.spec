@@ -9,14 +9,21 @@ URL: https://gitlab.desy.de/thomas.white/%{name}
 
 Prefix: /usr/local
 %global _prefix /usr/local
+
+%global _smp_ncpus_max 2
+%global _smp_tasksize_proc 4194304
+%if  0%{?fedora} == 0
+%global _smp_mflags -l2
+%endif
+
 %global debug_package %{nil}
 %global __requires_exclude ^perl\\(
-%global CFPREFIX /software/crystfel/devel
 %global PKG_CONFIG_PATH %{_prefix}/%{_libdir}/%{name}/pkgconfig:%{_prefix}/lib/%{name}/pkgconfig
 %global LD_LIBRARY_PATH %{_prefix}/%{_libdir}/%{name}:%{_prefix}/lib%{name}
 %global LD_RUN_PATH %{_prefix}/%{_libdir}/%{name}:%{_prefix}/lib/%{name}
 %global PATH %{_prefix}/bin/:$PATH
 %global QA_RPATHS 0x0002
+%global __meson_wrap_mode default
 
 BuildRequires: which
 BuildRequires: wget
@@ -69,84 +76,53 @@ performed at synchrotron and X-ray free-electron laser facilities, as well as in
 %dnl %auto_setup
 
 %build
-%dnl %configure
-%dnl %make_build
+echo "CPUs: $(nproc)"
+echo "CPU max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null)"
+echo "CPU quota: $(cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us)"
+echo "CPU period: $(cat /sys/fs/cgroup/cpu/cpu.cfs_period_us)"
+echo "Memory limit: $(cat /sys/fs/cgroup/memory.max 2>/dev/null)"
+echo "Disk free: $(df -h / 2>/dev/null)"
 
-meson setup build --prefix %{CFPREFIX}
-ninja -v -C build
+%meson
+%meson_build
 
 %check
-ninja -v -C build test
+%meson_test
 
 %install
-ninja -C build install
+%meson_install
+cp -rp /software/crystfel/devel/*  %{buildroot}/%{_prefix}
      
 # Tweak CrystFEL GUI so that it can find syminfo.lib
-mv %{CFPREFIX}/bin/crystfel %{CFPREFIX}/bin/crystfel.real
-echo '#!/bin/sh' > %{CFPREFIX}/bin/crystfel
-echo "export SYMINFO=%{_prefix}/share/ccp4/syminfo.lib" >> %{CFPREFIX}/bin/crystfel
-echo "%{_prefix}/bin/crystfel.real \"\$@\"" >> %{CFPREFIX}/bin/crystfel
-chmod +x %{CFPREFIX}/bin/crystfel
+mv %{buildroot}/%{_prefix}/bin/crystfel %{buildroot}/%{_prefix}/bin/crystfel.real
+echo '#!/bin/sh' > %{buildroot}/%{_prefix}/bin/crystfel
+echo "export SYMINFO=%{_prefix}/share/ccp4/syminfo.lib" >> %{buildroot}/%{_prefix}/bin/crystfel
+echo "%{_prefix}/bin/crystfel.real \"\$@\"" >> %{buildroot}/%{_prefix}/bin/crystfel
+chmod +x %{buildroot}/%{_prefix}/bin/crystfel
     
 # Tweak get_hkl in the same way
-mv %{CFPREFIX}/bin/get_hkl %{CFPREFIX}/bin/get_hkl.real
-echo '#!/bin/sh' > %{CFPREFIX}/bin/get_hkl
-echo "export SYMINFO=%{_prefix}/share/ccp4/syminfo.lib" >> %{CFPREFIX}/bin/get_hkl
-echo "%{_prefix}/bin/get_hkl.real \"\$@\"" >> %{CFPREFIX}/bin/get_hkl
-chmod +x %{CFPREFIX}/bin/get_hkl
+mv %{buildroot}/%{_prefix}/bin/get_hkl %{buildroot}/%{_prefix}/bin/get_hkl.real
+echo '#!/bin/sh' > %{buildroot}/%{_prefix}/bin/get_hkl
+echo "export SYMINFO=%{_prefix}/share/ccp4/syminfo.lib" >> %{buildroot}/%{_prefix}/bin/get_hkl
+echo "%{_prefix}/bin/get_hkl.real \"\$@\"" >> %{buildroot}/%{_prefix}/bin/get_hkl
+chmod +x %{buildroot}/%{_prefix}/bin/get_hkl
     
 # Mosflm (tweaked to find syminfo.lib and not load environ.def/default.def)
 wget -nv https://www.mrc-lmb.cam.ac.uk/harry/imosflm/ver740/downloads/imosflm-7.4.0-linux-64.zip
 unzip imosflm-7.4.0-linux-64.zip imosflm/bin/mosflm
-mv imosflm/bin/mosflm %{CFPREFIX}/bin/mosflm.real
-echo '#!/bin/sh' > %{CFPREFIX}/bin/mosflm
-echo "export SYMINFO=%{_prefix}/share/ccp4/syminfo.lib" >> %{CFPREFIX}/bin/mosflm
-echo "%{_prefix}/bin/mosflm.real -n \"\$@\"" >> %{CFPREFIX}/bin/mosflm
-chmod +x %{CFPREFIX}/bin/mosflm
+mv imosflm/bin/mosflm %{buildroot}/%{_prefix}/bin/mosflm.real
+echo '#!/bin/sh' > %{buildroot}/%{_prefix}/bin/mosflm
+echo "export SYMINFO=%{_prefix}/share/ccp4/syminfo.lib" >> %{buildroot}/%{_prefix}/bin/mosflm
+echo "%{_prefix}/bin/mosflm.real -n \"\$@\"" >> %{buildroot}/%{_prefix}/bin/mosflm
+chmod +x %{buildroot}/%{_prefix}/bin/mosflm
 
-sed -i 's/python/python3/'   %{CFPREFIX}/bin/fg-graph
-grep "python" %{CFPREFIX}/bin/fg-graph
-sed -i 's/python/python3/'   %{CFPREFIX}/bin/peakogram-stream
-grep "python" %{CFPREFIX}/bin/peakogram-stream
+sed -i 's/python/python3/'   %{buildroot}/%{_prefix}/bin/fg-graph
+grep "python" %{buildroot}/%{_prefix}/bin/fg-graph
+sed -i 's/python/python3/'   %{buildroot}/%{_prefix}/bin/peakogram-stream
+grep "python" %{buildroot}/%{_prefix}/bin/peakogram-stream
 
 export QA_RPATHS=%{QA_RPATHS}
-%dnl rm -rf $RPM_BUILD_ROOT
-rm -rf %{buildroot}
 
-cd %{CFPREFIX}
-
-if [ -d bin ] ;
-then
-    mkdir -p %{buildroot}/%{_bindir} ;
-    cp -rp bin/*  -t %{buildroot}/%{_bindir} ;
-fi ;
-
-if [ -d lib ] ;
-then
-    mkdir -p %{buildroot}/usr/local/lib/%{name} ;
-    cp -rp lib/*  -t %{buildroot}/usr/local/lib/%{name} ;
-fi ;
-
-if [ -d lib64 ] ;
-then
-    mkdir -p %{buildroot}/%{_libdir}/%{name}/pkgconfig ;
-    cp -rp lib64/*  -t %{buildroot}/%{_libdir}/%{name} ;
-    cp -rp lib64/pkgconfig/*  -t %{buildroot}/%{_libdir}/%{name}/pkgconfig ;
-fi ;
-
-if [ -d include ] ;
-then
-    mkdir -p %{buildroot}/%{_includedir}/%{name} ;
-    cp -rp include/*  -t %{buildroot}/%{_includedir}/%{name} ;
-fi ;
-
-if [ -d share  ] ;
-then
-    mkdir -p %{buildroot}/%{_datarootdir}/%{name} ;
-    cp -rp share/*  -t %{buildroot}/%{_datarootdir}/%{name} ;
-fi ;
-
-%dnl install -m 0755 bin/%{name} %{buildroot}/%{_bindir}/%{name}
 
 %files
 # Package all subdirectories and files under /usr/local/*
@@ -165,5 +141,7 @@ fi ;
 %dnl %{_libdir}/%{name}/pkgconfig/*
 
 %changelog
-* Wed May 8 2026 tirumala
+* Fri May 22  2026 tirumala
+- Leverage built in meson rpm macros.
+* Wed May 19  2026 tirumala
 - Initial version

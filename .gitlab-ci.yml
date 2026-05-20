@@ -158,11 +158,11 @@ build-macos:
 
 build-and-package-rpm:
   image: $CI_REGISTRY_IMAGE/$PLATFORM
-  tags:
-    - hi-load
+#  tags:
+#   - hi-load
   variables:
     GIT_STRATEGY: clone
-    KUBERNETES_MEMORY_LIMIT: "20Gi"
+#   KUBERNETES_MEMORY_LIMIT: "20Gi"
 
   script:
     - |
@@ -175,7 +175,7 @@ build-and-package-rpm:
           ln -v -s  /builds/thomas.white/crystfel  /root/rpmbuild/BUILD/crystfel-${VERSION}-build/crystfel-${VERSION} ;
       fi
 
-      rpmbuild -vv -ba  deployment/os_native/rpm/crystfelrpm.spec --define "version_from_tag ${VERSION}"  --build-in-place
+      rpmbuild -v -ba  deployment/os_native/rpm/crystfelrpm.spec --define "version_from_tag ${VERSION}"  --build-in-place
       rpm -qp --requires /root/rpmbuild/RPMS/x86_64/crystfel*.rpm
       cp  /root/rpmbuild/RPMS/x86_64/crystfel*.rpm  ./
 
