@@ -51,12 +51,13 @@ struct align_window
 	GtkWidget *out_of_plane_tilts;
 	GtkWidget *clen;
 	GtkWidget *level;
+	GtkWidget *bigerrors;
 };
 
 
 
 static int run_align(const char *input_name, int level, int out_of_plane,
-                     int out_of_plane_tilts, int clen,
+                     int out_of_plane_tilts, int clen, int bigerrors,
                      const char *out_geom, struct crystfelproject *proj)
 {
 	GSubprocess *sp;
@@ -112,6 +113,9 @@ static int run_align(const char *input_name, int level, int out_of_plane,
 	}
 	if ( clen ) {
 		cmdline[ncmd++] = "--camera-length";
+	}
+	if ( bigerrors ) {
+		cmdline[ncmd++] = "--big-errors";
 	}
 	mdstart = ncmd;
 
@@ -201,6 +205,7 @@ static void align_response_sig(GtkWidget *dialog, gint resp,
 		              get_bool(win->out_of_plane),
 		              get_bool(win->out_of_plane_tilts),
 		              get_bool(win->clen),
+		              get_bool(win->bigerrors),
 		              filename, win->proj);
 
 		g_free(filename);
@@ -213,6 +218,7 @@ static void align_response_sig(GtkWidget *dialog, gint resp,
 gint align_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
 	GtkWidget *hbox;
+	GtkWidget *vbox;
 	GtkWidget *label;
 	struct align_window *win;
 	int i;
@@ -231,10 +237,14 @@ gint align_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(win->window),
 	                                               TRUE);
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
+	vbox = gtk_vbox_new(FALSE, 0.0);
 	gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(win->window),
-	                                  GTK_WIDGET(hbox));
-	gtk_container_set_border_width(GTK_CONTAINER(hbox), 4);
+	                                  GTK_WIDGET(vbox));
+	gtk_container_set_border_width(GTK_CONTAINER(vbox), 4);
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
 
 	label = gtk_label_new("Refine using indexing result:");
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
@@ -272,6 +282,14 @@ gint align_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->clen),
 	                   FALSE, FALSE, 4.0);
 	gtk_widget_set_tooltip_text(win->clen, "--camera-length");
+
+	hbox = gtk_hbox_new(FALSE, 0.0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 4.0);
+	win->bigerrors = gtk_check_button_new_with_label("Expect big position errors");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(win->bigerrors),
+	                   FALSE, FALSE, 4.0);
+	gtk_widget_set_tooltip_text(win->bigerrors, "--big-errors");
 
 	g_signal_connect(G_OBJECT(win->window), "response",
 	                 G_CALLBACK(align_response_sig), win);
