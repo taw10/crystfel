@@ -137,7 +137,7 @@ build-brew-macos:
     - master
   script:
     - brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
-    - brew trust --formula desy/crystfel
+    - brew trust desy/crystfel
     - brew install -v crystfel --HEAD --fetch-HEAD
     - brew test -v crystfel
     - brew uninstall -v -f crystfel
