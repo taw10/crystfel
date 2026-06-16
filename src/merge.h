@@ -69,4 +69,4 @@ extern void average_unit_cell(struct crystal_refls *crystals,
                               int n_crystals,
                               const char *outcell_filename);
 
-#endif	/* MERGE */
+#endif	/* MERGE_H */
