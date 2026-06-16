@@ -1641,7 +1641,9 @@ int main(int argc, char *argv[])
 					continue;
 				}
 
-				if ( !(crystal_get_profile_radius(image->crystals[i].cr) > 0) && (pmodel == PMODEL_XSPHERE) ) {
+				if ( !(crystal_get_profile_radius(image->crystals[i].cr) > 0)
+				     && (pmodel == PMODEL_XSPHERE) )
+				{
 					ERROR("Rejecting %s %s crystal %i because "
 					      "profile radius is zero or negatve, and we "
 					      "are using xsphere.\n",
