@@ -178,7 +178,8 @@ static void add_to_csplit(struct custom_split *csplit, const char *id,
 /* Write two-way split results (i.e. for CC1/2 etc) for this list of crystals */
 static void write_split(struct crystal_refls *crystals, int n_crystals,
                         const char *outfile, int nthreads, PartialityModel pmodel,
-                        int min_measurements, SymOpList *sym, double push_res)
+                        int min_measurements, SymOpList *sym, double push_res,
+                        ErrorModel emodel)
 {
 	char tmp[1024];
 	RefList *split;
@@ -213,7 +214,8 @@ static void write_split(struct crystal_refls *crystals, int n_crystals,
 	}
 	snprintf(tmp, 1024, "%s1", outfile);
 	split = merge_intensities(crystals1, n_crystals1, nthreads,
-		                  min_measurements, push_res, 1, 0, NULL);
+		                  min_measurements, push_res, 1, 0, NULL,
+	                          emodel);
 
 	if ( split == NULL ) {
 		ERROR("Not enough crystals for two way split!\n");
@@ -228,7 +230,8 @@ static void write_split(struct crystal_refls *crystals, int n_crystals,
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
 	split = merge_intensities(crystals2, n_crystals2, nthreads,
-		                  min_measurements, push_res, 1, 0, NULL);
+		                  min_measurements, push_res, 1, 0, NULL,
+	                          emodel);
 	STATUS("and %s\n", tmp);
 	write_reflist_2(tmp, split, sym);
 	free_contribs(split);
@@ -272,7 +275,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
                                struct image **images, int n_crystals,
                                PartialityModel pmodel, int min_measurements,
                                double push_res, SymOpList *sym, int nthreads,
-                               const char *outfile)
+                               const char *outfile, ErrorModel emodel)
 {
 	char *tmp;
 	RefList *split;
@@ -323,7 +326,8 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	}
 
 	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
-		                  min_measurements, push_res, 1, 0, &n_used);
+		                  min_measurements, push_res, 1, 0, &n_used,
+	                          emodel);
 	STATUS("Writing dataset '%s' to %s (%i crystals used out of %i)\n",
 	       csplit->dataset_names[dsn], tmp, n_used, n_crystalsn);
 	write_reflist_2(tmp, split, sym);
@@ -331,7 +335,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	reflist_free(split);
 
 	write_split(crystalsn, n_crystalsn, tmp, nthreads, pmodel,
-	            min_measurements, sym, push_res);
+	            min_measurements, sym, push_res, emodel);
 	free(tmp);
 	free(crystalsn);
 }
@@ -1128,6 +1132,8 @@ int main(int argc, char *argv[])
 	struct image **images;
 	char *pmodel_str = NULL;
 	PartialityModel pmodel = PMODEL_XSPHERE;
+	char *error_model_str = NULL;
+	ErrorModel error_model = EMODEL_EQUIVS;
 	int min_measurements = 2;
 	char *rval;
 	struct polarisation polarisation = {.fraction = 1.0,
@@ -1161,7 +1167,6 @@ int main(int argc, char *argv[])
 	char *harvest_file = NULL;
 	char *log_folder = "pr-logs";
 	int n_used = 0;
-	char *error_model = "ev11";
 
 	/* Long options */
 	const struct option longopts[] = {
@@ -1401,7 +1406,7 @@ int main(int argc, char *argv[])
 			break;
 
 			case 20 :
-			error_model = strdup(optarg);
+			error_model_str = strdup(optarg);
 			break;
 
 			case 0 :
@@ -1501,6 +1506,21 @@ int main(int argc, char *argv[])
 		no_pr = 1;
 		STATUS("Setting --no-pr because we are not modelling "
 		       "partialities (--model=unity).\n");
+	}
+
+	if ( error_model_str != NULL ) {
+		if ( strcmp(error_model_str, "equivs") == 0 ) {
+			error_model = EMODEL_EQUIVS;
+		} else if ( strcmp(error_model_str, "ev11") == 0 ) {
+			error_model = EMODEL_EV11;
+		} else if ( strcmp(error_model_str, "kh23") == 0 ) {
+			error_model = EMODEL_KH23;
+		} else if ( strcmp(error_model_str, "mm24") == 0 ) {
+			error_model = EMODEL_MM24;
+		} else {
+			ERROR("Unknown error model '%s'.\n", error_model_str);
+			return 1;
+		}
 	}
 
 	if ( no_Bscale ) {
@@ -1767,10 +1787,12 @@ int main(int argc, char *argv[])
 	if ( reference == NULL ) {
 		if ( !no_scale ) {
 			STATUS("Initial scaling...\n");
-			scale_all(crystals, n_crystals, nthreads, scaleflags);
+			scale_all(crystals, n_crystals, nthreads, scaleflags,
+			          error_model);
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         min_measurements, push_res, 1, 0, NULL);
+		                         min_measurements, push_res, 1, 0, NULL,
+					 error_model);
 	} else {
 		full = reference;
 	}
@@ -1803,11 +1825,11 @@ int main(int argc, char *argv[])
 			reflist_free(full);
 			if ( !no_scale ) {
 				scale_all(crystals, n_crystals, nthreads,
-				          scaleflags);
+				          scaleflags, error_model);
 			}
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         min_measurements,
-			                         push_res, 1, 0, NULL);
+			                         push_res, 1, 0, NULL, error_model);
 		} /* else full still equals reference */
 
 		check_rejection(crystals, n_crystals, full, max_B,
@@ -1830,7 +1852,7 @@ int main(int argc, char *argv[])
 
 			/* Output split results */
 			write_split(crystals, n_crystals, tmp, nthreads, pmodel,
-			            min_measurements, sym, push_res);
+			            min_measurements, sym, push_res, error_model);
 
 			/* Output custom split results */
 			if ( csplit != NULL ) {
@@ -1840,7 +1862,8 @@ int main(int argc, char *argv[])
 					                   images, n_crystals, pmodel,
 					                   min_measurements,
 							   push_res, sym,
-					                   nthreads, tmp);
+					                   nthreads, tmp,
+					                   error_model);
 				}
 			}
 
@@ -1853,11 +1876,11 @@ int main(int argc, char *argv[])
 		free_contribs(full);
 		reflist_free(full);
 		if ( !no_scale ) {
-			scale_all(crystals, n_crystals, nthreads, scaleflags);
+			scale_all(crystals, n_crystals, nthreads, scaleflags, error_model);
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements,
-		                         push_res, 1, 0, &n_used);
+		                         push_res, 1, 0, &n_used, error_model);
 	} else {
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1, 0, &n_used,
@@ -1891,7 +1914,7 @@ int main(int argc, char *argv[])
 
 	/* Output split results */
 	write_split(crystals, n_crystals, outfile, nthreads, pmodel,
-	            min_measurements, sym, push_res);
+	            min_measurements, sym, push_res, error_model);
 
 	/* Output custom split results */
 	if ( csplit != NULL ) {
@@ -1899,7 +1922,7 @@ int main(int argc, char *argv[])
 		for ( i=0; i<csplit->n_datasets; i++ ) {
 			write_custom_split(csplit, i, crystals, images, n_crystals,
 			                   pmodel, min_measurements, push_res,
-			                   sym, nthreads, outfile);
+			                   sym, nthreads, outfile, error_model);
 		}
 	}
 

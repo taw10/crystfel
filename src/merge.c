@@ -275,7 +275,7 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 RefList *merge_intensities(struct crystal_refls *crystals, int n,
                            int n_threads, int min_meas,
                            double push_res, int use_weak, int ln_merge,
-                           int *pn_used, const char *error_model)
+                           int *pn_used, ErrorModel emodel)
 {
 	RefList *full;
 	RefList *full2;

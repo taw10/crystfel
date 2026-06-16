@@ -44,9 +44,23 @@
 #define MIN_PART_MERGE (0.3)
 
 
+/**
+ * An ErrorModel describes a statistical model for the errors
+ * in the merged data.
+ **/
+typedef enum {
+
+	EMODEL_EQUIVS,   /**< Observed intensity spread (the "old" method). */
+	EMODEL_EV11,     /**< Evans 2011. */
+	EMODEL_KH23,     /**< Khouchen et al. 2023. */
+	EMODEL_MM24,     /**< Mittan-Moreau 2025. */
+
+} ErrorModel;
+
+
 extern RefList *merge_intensities(struct crystal_refls *crystals, int n, int n_threads,
                                   int min_meas, double push_res, int use_weak,
-                                  int ln_merge, int *pn_used, const char *error_model);
+                                  int ln_merge, int *pn_used, ErrorModel emodel);
 
 extern double correct_reflection_nopart(double val, Reflection *refl,
                                         double osf, double Bfac, double res);
