@@ -465,6 +465,10 @@ static int check_cell(Crystal *cr, UnitCell *target, double *tolerance)
 	if ( !right_handed(crystal_get_cell(cr)) ) {
 		STATUS("WARNING: unmatched cell is left handed\n");
 	}
+	if ( validate_cell(crystal_get_cell(cr)) > 1 ) {
+		STATUS("Invalid cell produced by indexing algorithm.\n");
+		return 1;
+	}
 	out = compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
 	                                        tolerance, &rm);
 

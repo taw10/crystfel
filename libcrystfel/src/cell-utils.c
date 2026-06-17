@@ -1220,6 +1220,23 @@ int cell_is_sensible(UnitCell *cell)
 }
 
 
+int cell_is_practical(UnitCell *cell)
+{
+	double a, b, c, al, be, ga;
+	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+	if ( a > 1e6*b ) return 0;
+	if ( a > 1e6*c ) return 0;
+	if ( b > 1e6*a ) return 0;
+	if ( b > 1e6*c ) return 0;
+	if ( c > 1e6*a ) return 0;
+	if ( c > 1e6*b ) return 0;
+	if ( al < deg2rad(10.0) ) return 0;
+	if ( be < deg2rad(10.0) ) return 0;
+	if ( ga < deg2rad(10.0) ) return 0;
+	return 1;
+}
+
+
 /**
  * \param cell: A %UnitCell to validate
  *
@@ -1250,6 +1267,11 @@ int validate_cell(UnitCell *cell)
 	if ( cell_has_parameters(cell) && !right_handed(cell) ) {
 		ERROR("WARNING: Unit cell is not right handed.\n");
 		err = 1;
+	}
+
+	if ( cell_has_parameters(cell) && !cell_is_practical(cell) ) {
+		ERROR("WARNING: Impractical unit cell parameters detected.\n");
+		err  = 2;
 	}
 
 	/* For monoclinic A, B or C centering, the unique axis must be something
