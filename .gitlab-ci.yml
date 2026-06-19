@@ -130,7 +130,7 @@ build-and-test-minimal:
 build-brew-macos:
   dependencies: []
   tags:
-    - macOS
+    - $TAG
   variables:
     GIT_STRATEGY: clone
   only:
@@ -144,11 +144,14 @@ build-brew-macos:
     - brew remove -v -f fdip xgandalf pinkindexer
     - brew untrust desy/crystfel
     - brew untap desy/crystfel
+  parallel:
+    matrix:
+     - TAG: ["macOS", "macMini"]
 
 build-macos:
   dependencies: []
   tags:
-    - macOS
+    - $TAG
   variables:
     GIT_STRATEGY: clone
   script:
@@ -157,6 +160,9 @@ build-macos:
     - meson setup build -Dc_args=-I$(brew --prefix)/include -Dc_link_args=-largp -Dcpp_link_args=-largp
     - meson compile -C build
     - meson test -C build
+  parallel:
+    matrix:
+     - TAG: ["macOS", "macMini"]
 
 build-and-package-rpm:
   image: $CI_REGISTRY_IMAGE/$PLATFORM
