@@ -847,7 +847,7 @@ UnitCell *load_cell_from_pdb(const char *filename)
 	fclose(fh);
 
 	if ( cell != NULL ) {
-		validate_cell(cell);
+		validate_cell(cell);  /* Complain, but don't fail */
 	} else {
 		ERROR("Failed to load cell from %s\n", filename);
 	}
@@ -1116,7 +1116,7 @@ UnitCell *load_cell_from_file(const char *filename)
 		break;
 	}
 
-	validate_cell(cell);
+	validate_cell(cell);  /* Complain, but don't fail */
 
 	return cell;
 }
