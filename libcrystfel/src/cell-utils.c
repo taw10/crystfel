@@ -1253,11 +1253,6 @@ int validate_cell(UnitCell *cell)
 {
 	int err = 0;
 
-	if ( cell_has_parameters(cell) && !cell_is_sensible(cell) ) {
-		ERROR("WARNING: Unit cell parameters are not sensible.\n");
-		err = 2;
-	}
-
 	if ( !bravais_lattice(cell) ) {
 		ERROR("WARNING: Unit cell is not a conventional Bravais"
 		      " lattice.\n");
@@ -1267,6 +1262,11 @@ int validate_cell(UnitCell *cell)
 	if ( cell_has_parameters(cell) && !right_handed(cell) ) {
 		ERROR("WARNING: Unit cell is not right handed.\n");
 		err = 1;
+	}
+
+	if ( cell_has_parameters(cell) && !cell_is_sensible(cell) ) {
+		ERROR("WARNING: Unit cell parameters are not sensible.\n");
+		err = 2;
 	}
 
 	if ( cell_has_parameters(cell) && !cell_is_practical(cell) ) {
