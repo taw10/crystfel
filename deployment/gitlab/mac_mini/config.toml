@@ -1,0 +1,25 @@
+concurrent = 1
+check_interval = 0
+connection_max_age = "15m0s"
+shutdown_timeout = 0
+
+[session_server]
+  session_timeout = 1800
+
+[[runners]]
+  name = "fssc66737dev"
+  url = "https://gitlab.desy.de"
+  id = 2565
+  token = "Enter registration token here"
+  token_obtained_at = 2026-06-22T09:40:10Z
+  token_expires_at = 0001-01-01T00:00:00Z
+  executor = "shell"
+  [runners.cache]
+    MaxUploadedArchiveSize = 0
+    [runners.cache.s3]
+      AssumeRoleMaxConcurrency = 0
+    [runners.cache.gcs]
+    [runners.cache.azure]
+ [runners.feature_flags]
+    FF_ENABLE_JOB_CLEANUP = true
+
