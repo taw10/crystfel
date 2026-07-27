@@ -6,7 +6,7 @@ project('crystfel', 'c',
         default_options: ['buildtype=debugoptimized'])
 
 libcrystfel_api_version = 19
-crystfel_rpath = '$ORIGIN/../lib64/:$ORIGIN/../lib:$ORIGIN/../../asapo-libraries/lib:$ORIGIN/../../asapo-libraries/lib64'
+crystfel_rpath = '$ORIGIN/../lib64/:$ORIGIN/../lib'
 
 add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
 
