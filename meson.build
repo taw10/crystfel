@@ -7,8 +7,12 @@ project('crystfel', 'c',
 
 libcrystfel_api_version = 19
 
-fs = import('fs')
-crystfel_rpath = join_paths('$ORIGIN', fs.relative_to(get_option('libdir'), get_option('bindir')))
+if meson.version().version_compare('>=1.3.0')
+  fs = import('fs')
+  crystfel_rpath = join_paths('$ORIGIN', fs.relative_to(get_option('libdir'), get_option('bindir')))
+else
+  crystfel_rpath = join_paths('$ORIGIN', '..', 'lib') + ':' + join_paths('$ORIGIN', '..', 'lib64')
+endif
 message('RPATH will be set to ', crystfel_rpath)
 
 add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
