@@ -6,7 +6,10 @@ project('crystfel', 'c',
         default_options: ['buildtype=debugoptimized'])
 
 libcrystfel_api_version = 19
-crystfel_rpath = '$ORIGIN/../lib64/:$ORIGIN/../lib'
+
+fs = import('fs')
+crystfel_rpath = join_paths('$ORIGIN', fs.relative_to(get_option('libdir'), get_option('bindir')))
+message('RPATH will be set to ', crystfel_rpath)
 
 add_project_arguments('-DHAVE_CONFIG_H', language: 'c')
 
