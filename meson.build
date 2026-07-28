@@ -377,11 +377,11 @@ if cppcheck_exe.found()
       '--check-level=exhaustive',
       # xml for GitLab CI ingest
       '--xml',
-      '--output-file=' + join_paths(meson.build_root(), 'cppcheck.xml'),
+      '--output-file=' + join_paths(meson.project_build_root(), 'cppcheck.xml'),
       '--suppress=missingIncludeSystem',
-      '-i'+join_paths(meson.source_root(), 'subprojects'),
-      '-i'+join_paths(meson.source_root(), 'tests'),
-      '--project=' + join_paths(meson.build_root(), 'compile_commands.json')
+      '-i'+join_paths(meson.project_source_root(), 'subprojects'),
+      '-i'+join_paths(meson.project_source_root(), 'tests'),
+      '--project=' + join_paths(meson.project_build_root(), 'compile_commands.json')
     ]
   )
 endif
