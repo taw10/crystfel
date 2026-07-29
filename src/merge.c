@@ -38,6 +38,8 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_fit.h>
+#include <gsl/gsl_rstat.h>
+#include <gsl/gsl_cdf.h>
 
 #include "image.h"
 #include "peaks.h"
@@ -62,6 +64,9 @@ struct merge_queue_args
 	long long int n_reflections;
 	int ln_merge;
 	int n_used;
+	double sdfac;
+	double sdb;
+	double sdadd;
 };
 
 
@@ -272,6 +277,39 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
+static double mean_I_without_contrib(struct reflection_contributions *c, int j)
+{
+    int i;
+    long double total = 0.0;
+
+    for ( i=0; i<c->n_contrib; i++)  {
+
+	double Ii, G, B, res;
+	signed int h, k, l;
+
+	if ( i == j ) continue;
+
+	get_indices(c->contribs[j], &h, &k, &l);
+	res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
+	G = crystal_get_osf(c->contrib_crystals[j]);
+	B = crystal_get_Bfac(c->contrib_crystals[j]);
+	Ii = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
+
+	total += Ii;
+
+    }
+
+    return total / (c->n_contrib-1);
+}
+
+
+static double corr_esd(double sigij, double Ih, double sdfac, double sdb, double sdadd)
+{
+    double c = sigij*sigij + sdb*sdb*Ih + sdadd*sdadd*Ih*Ih;
+    return sqrt(sdfac*sdfac*c);
+}
+
+
 RefList *merge_intensities(struct crystal_refls *crystals, int n,
                            int n_threads, int min_meas,
                            double push_res, int use_weak, int ln_merge,
@@ -282,6 +320,12 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	struct merge_queue_args qargs;
 	Reflection *refl;
 	RefListIterator *iter;
+	double *ppx;
+	double *ppy;
+
+	double sdfac = 1.0;
+	double sdb = 0.0;
+	double sdadd = 0.0;
 
 	if ( n == 0 ) return NULL;
 
@@ -295,12 +339,66 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	qargs.n_reflections = 0;
 	qargs.ln_merge = ln_merge;
 	qargs.n_used = 0;
+	qargs.sdfac = sdfac;
+	qargs.sdb = sdb;
+	qargs.sdadd = sdadd;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
 	            finalise_merge_job, &qargs, n, 0, 0, 0);
 
 	pthread_rwlock_destroy(&qargs.full_lock);
+
+	/* Normal probability plot */
+	STATUS("Calculating normal probability plot...\n");
+	const int nquant = 20;
+	int i;
+	gsl_rstat_quantile_workspace *quantiles[nquant];
+	for ( i=0; i<nquant; i++ ) {
+	    double plotpos = (i+1-0.375)/(nquant+0.25);
+	    quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
+	    if ( quantiles[i] == NULL ) return NULL;
+	}
+
+	for ( refl = first_refl(full, &iter);
+	      refl != NULL;
+	      refl = next_refl(refl, iter) )
+	{
+	    struct reflection_contributions *c = get_contributions(refl);
+	    int j;
+
+	    if ( c->n_contrib < 2 ) continue;
+
+	    for ( j=0; j<c->n_contrib; j++ ) {
+
+		/* Mean I(hkl) without contribution j */
+		double mIhj = mean_I_without_contrib(c, j);
+		double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
+		                   * (get_intensity(c->contribs[j]) - mIhj)
+				   / corr_esd(get_esd_intensity(c->contribs[j]),
+					      get_intensity(refl),
+					      sdfac, sdb, sdadd);
+
+		for ( i=0; i<nquant; i++ ) {
+		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
+		}
+
+	    }
+	}
+
+	ppx = calloc(nquant, sizeof(double));
+	ppy = calloc(nquant, sizeof(double));
+	if ( (ppx == NULL) || (ppy == NULL) ) return NULL;
+
+	printf("Normal plot:\n");
+	for ( i=0; i<nquant; i++ ) {
+	    double plotpos = (i+1-0.375)/(nquant+0.25);
+	    ppx[i] = gsl_cdf_gaussian_Pinv(plotpos, 1.0);
+	    ppy[i] = gsl_rstat_quantile_get(quantiles[i]);
+	    gsl_rstat_quantile_free(quantiles[i]);
+	    printf("%e %e\n", ppx[i], ppy[i]);
+	}
+	printf("\n\n");
 
 	/* Calculate ESDs from variances, including only reflections with
 	 * enough measurements */
