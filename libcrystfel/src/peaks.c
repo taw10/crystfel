@@ -269,12 +269,12 @@ static void search_peaks_in_panel(ImageFeatureList *peaklist,
 	double f_ss = 0.0;
 	double intensity = 0.0;
 	double sigma = 0.0;
-	int nrej_dis = 0;
-	int nrej_pro = 0;
-	int nrej_fra = 0;
-	int nrej_fail = 0;
-	int nrej_snr = 0;
-	int nrej_sat = 0;
+	UNUSED int nrej_dis = 0;
+	UNUSED int nrej_pro = 0;
+	UNUSED int nrej_fra = 0;
+	UNUSED int nrej_fail = 0;
+	UNUSED int nrej_snr = 0;
+	UNUSED int nrej_sat = 0;
 	int nacc = 0;
 
 	p = &image->detgeom->panels[pn];
@@ -643,7 +643,7 @@ ImageFeatureList *validate_peaks(const struct image *image, ImageFeatureList *pe
 {
 	int i, n;
 	ImageFeatureList *flist;
-	int n_wtf, n_int, n_snr, n_sat;
+	UNUSED int n_wtf, n_int, n_snr, n_sat;
 
 	if ( peaks == NULL ) return NULL;
 
