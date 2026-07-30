@@ -841,8 +841,6 @@ static int weed_duplicate_matches(struct Seed **seeds,
 
 	signed int i, j;
 
-	int duplicates = 0;
-
 	/* Now we weed out the self-duplicates from the remaining batch */
 
 	for (i = *match_count - 1; i >= 0; i--) {
@@ -863,8 +861,6 @@ static int weed_duplicate_matches(struct Seed **seeds,
 				(*seeds)[i].idx1 = -1;
 				(*seeds)[i].idx2 = -1;
 				found = 1;
-
-				duplicates++;
 
 				gsl_matrix_free(mat);
 				break;
@@ -1298,7 +1294,6 @@ static int sort_seed_by_score(const void *av, const void *bv)
 static void remove_old_solutions(struct TakeTwoCell *cell,
                                  struct taketwo_private *tp)
 {
-	int duplicates = 0;
 	struct Seed *seeds = cell->seeds;
 	unsigned int total = cell->seed_count;
 
@@ -1328,7 +1323,6 @@ static void remove_old_solutions(struct TakeTwoCell *cell,
 			{
 				seeds[i].idx1 = -1;
 				seeds[i].idx2 = -1;
-				duplicates++;
 				break;
 			}
 		}
@@ -1336,7 +1330,6 @@ static void remove_old_solutions(struct TakeTwoCell *cell,
 		gsl_matrix_free(mat);
 	}
 
-//	STATUS("Removing %i duplicates due to prev solutions.\n", duplicates);
 }
 
 static int find_seeds(struct TakeTwoCell *cell, struct taketwo_private *tp)
