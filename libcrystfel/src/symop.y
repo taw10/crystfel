@@ -96,8 +96,9 @@ static int try_add_symop(void *scanner, SymOpList *list, RationalMatrix *m, int 
 
 %%
 
+/* The reference to yynerrs below is just to suppress a compiler warning about it being unused. */
 symoplist:
-  symop                       { try_add_symop(scanner, list, m, 0); }
+  symop                       { (void)yynerrs;  try_add_symop(scanner, list, m, 0); }
 | symoplist SEMICOLON symop   { if ( try_add_symop(scanner, list, m, 1) ) YYERROR; }
 ;
 
