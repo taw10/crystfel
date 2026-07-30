@@ -1074,6 +1074,8 @@ static void match_all_obs_to_sol(struct TakeTwoCell *ttCell)
 	}
 }
 
+#define TOTAL_DIRS (3*3*3)
+
 /**
  * Refines a matrix against all of the observed vectors against their
  * closest theoretical neighbour, by perturbing the matrix along the principle
@@ -1087,10 +1089,9 @@ static void refine_solution(struct TakeTwoCell *ttCell)
 	match_all_obs_to_sol(ttCell);
 
 	int i, j, k;
-	const int total = 3 * 3 * 3;
-	const int middle = (total - 1) / 2;
+	const int middle = (TOTAL_DIRS - 1) / 2;
 
-	struct rvec steps[total];
+	struct rvec steps[TOTAL_DIRS];
 	double start = obs_to_sol_score(ttCell);
 	const int max_tries = 100;
 
@@ -1116,10 +1117,10 @@ static void refine_solution(struct TakeTwoCell *ttCell)
 
 	while (size > ANGLE_CONVERGE_SIZE && count < max_tries)
 	{
-		struct rvec sized[total];
+		struct rvec sized[TOTAL_DIRS];
 
 		int best_num = middle;
-		for (i = 0; i < total; i++)
+		for (i = 0; i < TOTAL_DIRS; i++)
 		{
 			struct rvec sized_step = steps[i];
 			sized_step.u *= size;

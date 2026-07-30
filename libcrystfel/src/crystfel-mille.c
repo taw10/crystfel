@@ -183,6 +183,8 @@ static int count_depth(const struct detgeom_panel_group *group)
 	return depth-1;
 }
 
+#define MAX_HIERARCHY_LEVELS (8)
+#define NG (6)
 
 void write_mille(Mille *mille, int n, UnitCell *cell,
                  enum gparam *rvl, int nl,
@@ -203,7 +205,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 	}
 
 	/* Global parameters */
-	const enum gparam rvg[] =
+	const enum gparam rvg[NG] =
 	{
 		GPARAM_DET_TX,
 		GPARAM_DET_TY,
@@ -212,17 +214,15 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 		GPARAM_DET_RY,
 		GPARAM_DET_RZ,
 	};
-	const int ng = 6;
-	const int max_hierarchy_levels = 8;
 
 	for ( i=0; i<n; i++ ) {
 
 		float local_gradients_fs[nl];
 		float local_gradients_ss[nl];
 		float local_gradients_r[nl];
-		float global_gradients_fs[ng*max_hierarchy_levels];
-		float global_gradients_ss[ng*max_hierarchy_levels];
-		int labels[ng*max_hierarchy_levels];
+		float global_gradients_fs[NG*MAX_HIERARCHY_LEVELS];
+		float global_gradients_ss[NG*MAX_HIERARCHY_LEVELS];
+		int labels[NG*MAX_HIERARCHY_LEVELS];
 		int j, levels;
 		const struct detgeom_panel_group *group;
 
@@ -254,7 +254,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 
 			detgeom_group_center(group, &cx, &cy, &cz);
 
-			for ( g=0; g<ng; g++ ) {
+			for ( g=0; g<NG; g++ ) {
 				fs_ss_gradient(rvg[g], rps[i].refl, cell,
 				               &image->detgeom->panels[rps[i].peak->pn],
 				               Minvs[rps[i].peak->pn], cx, cy, cz,
@@ -267,7 +267,7 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
 			levels++;
 			group = group->parent;
 
-			if ( levels >= max_hierarchy_levels ) {
+			if ( levels >= MAX_HIERARCHY_LEVELS ) {
 				ERROR("Too many nested hierarchy levels for refinement.\n");
 				break;
 			}
