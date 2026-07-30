@@ -433,10 +433,17 @@ static int load_hdf5_hyperslab(struct panel_template *p,
 			make_placeholder_skip(dt_dims, p->dims);
 			n_dt_dims = total_dt_dims - plh_dt_dims;
 		} else {
-			ERROR("Unexpected number of dimensions for "
-			      "panel %s (%i, but expected %i or %i)\n",
-			      p->name, ndims, total_dt_dims,
-			      total_dt_dims - plh_dt_dims);
+			if ( plh_dt_dims == 0 ) {
+				ERROR("Unexpected number of dimensions for "
+				      "panel %s (%i, but expected %i)\n",
+				      p->name, ndims, total_dt_dims,
+				      total_dt_dims - plh_dt_dims);
+			} else {
+				ERROR("Unexpected number of dimensions for "
+				      "panel %s (%i, but expected %i or %i)\n",
+				      p->name, ndims, total_dt_dims,
+				      total_dt_dims - plh_dt_dims);
+			}
 			H5Dclose(dh);
 			H5Sclose(dataspace);
 			return 1;
