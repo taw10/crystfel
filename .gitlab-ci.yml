@@ -157,7 +157,7 @@ build-macos:
   script:
     - brew install bison meson ninja pkg-config argp-standalone cairo fftw gdk-pixbuf gsl gtk+3 hdf5 pango eigen@3 pandoc
     - export PATH="$(brew --prefix)/opt/bison/bin:$PATH"
-    - meson setup build -Dc_link_args="-L$(brew --prefix)/lib"
+    - meson setup build -Dc_args=-I$(brew --prefix)/include -Dc_link_args="-L$(brew --prefix)/lib" -Dcpp_link_args="-L$(brew --prefix)/lib"
     - meson compile -C build
     - meson test -C build
   parallel:
