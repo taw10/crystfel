@@ -276,3 +276,43 @@ You can subsequently calculate partialities with::
 
     calculatepartialities!(reflist, cr, image, model=XSphereModel)
 
+
+Streams (reading)
+=================
+
+Open a stream for read like this::
+
+    st = Stream("my.stream", "r")
+
+You can close the stream manually (rarely needed) with ``close(st)``.
+
+Once opened, ``chunkread`` will return the next ``Image`` described in the
+stream.  The keyword arguments can be used to control what gets read::
+
+    image = readchunk(st, peaks=true, reflections=true, datageom=true)
+
+You can also get a ``Channel`` which will yield all the crystals in the stream,
+e.g. for merging reflection data::
+
+    for (cr,reflections) in allcrystals(st)
+        ....
+    end
+
+Finally, you can use ``rewindstream(st)`` to reset the stream to the beginning,
+reading to start reading again.
+
+
+Streams (writing)
+=================
+
+Opening a stream for write requires a ``DataTemplate``::
+
+    st = Stream("my.stream", "w", dtempl)
+
+As for reading, you can close the stream manually (rarely needed) with
+``close(st)``.
+
+Use ``chunkwrite`` to write each chunk.  You can control whether peak lists
+or reflection lists will be written::
+
+    chunkwrite(st, image, peaks=true, reflections=true)
