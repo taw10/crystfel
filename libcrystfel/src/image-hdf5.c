@@ -124,6 +124,7 @@ char **read_path_parts(const char *ev_orig, int *pn_plvals)
 int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 
 {
+	const char *ev_in;
 	char *ev;
 	int n_dvals = 0;
 	int *dvals;
@@ -133,19 +134,19 @@ int *read_dim_parts(const char *ev_orig, int *pn_dvals)
 	if ( ev_orig == NULL ) ev_orig = "//";
 
 	/* Valid event ID? (Just the part after //, please) */
-	ev = strstr(ev_orig, "//");
-	if ( ev == NULL ) return NULL;
+	ev_in = strstr(ev_orig, "//");
+	if ( ev_in == NULL ) return NULL;
 
 	dvals = cfmalloc(MAX_DIMS*sizeof(int));
 	if ( dvals == NULL ) return NULL;
 
-	if ( ev[2] == '\0' ) {
+	if ( ev_in[2] == '\0' ) {
 		/* No dimension parts - early bailout */
 		*pn_dvals = 0;
 		return dvals;  /* NB Not NULL */
 	}
 
-	ev = cfstrdup(ev+2);
+	ev = cfstrdup(ev_in+2);
 	if ( ev == NULL ) {
 		cffree(dvals);
 		return NULL;
