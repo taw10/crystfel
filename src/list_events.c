@@ -37,6 +37,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <sys/stat.h>
 
 #include <utils.h>
 #include <image.h>
@@ -59,6 +60,13 @@ static void show_help(const char *s)
 "  -g, --geometry=<file>      Get data layout from geometry file.\n"
 "  -o, --output=<file>        Output filename (list of events).\n"
 );
+}
+
+static int is_named_pipe(const char *file_name)
+{
+	struct stat st;
+	stat(file_name, &st);
+	return S_ISFIFO(st.st_mode);
 }
 
 
@@ -133,17 +141,21 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if ( is_hdf5_file(input, &err) ) {
-		ERROR("Your input file appears to be an HDF5 file.\n");
-		ERROR("The input file should be a list of data files, not the "
-		      "data file itself.\n");
-		ERROR("If you have only one input file, try the following:\n");
-		ERROR("  echo %s > files.lst\n", input);
-		ERROR("  list_events -i files.lst -o %s -g %s ...\n", output, geom);
-		return 1;
-	} else if ( err ) {
-		ERROR("Couldn't open '%s'\n", input);
-		return 1;
+	/* For named pipes, we cannot open, check, and then reopen. We */
+	/* have to read it in one go. So skip the HDF5 check. */
+	if ( !is_named_pipe(input) ) {
+		if ( is_hdf5_file(input, &err) ) {
+			ERROR("Your input file appears to be an HDF5 file.\n");
+			ERROR("The input file should be a list of data files, not the "
+			      "data file itself.\n");
+			ERROR("If you have only one input file, try the following:\n");
+			ERROR("  echo %s > files.lst\n", input);
+			ERROR("  list_events -i files.lst -o %s -g %s ...\n", output, geom);
+			return 1;
+		} else if ( err ) {
+			ERROR("Couldn't open to test for HDF5 '%s'\n", input);
+			return 1;
+		}
 	}
 
 	ifh = fopen(input, "r");
