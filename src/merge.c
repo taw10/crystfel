@@ -40,6 +40,7 @@
 #include <gsl/gsl_fit.h>
 #include <gsl/gsl_rstat.h>
 #include <gsl/gsl_cdf.h>
+#include <gsl/gsl_multimin.h>
 
 #include "image.h"
 #include "peaks.h"
@@ -284,18 +285,18 @@ static double mean_I_without_contrib(struct reflection_contributions *c, int j)
 
     for ( i=0; i<c->n_contrib; i++)  {
 
-	double Ii, G, B, res;
-	signed int h, k, l;
+	    double Ii, G, B, res;
+	    signed int h, k, l;
 
-	if ( i == j ) continue;
+	    if ( i == j ) continue;
 
-	get_indices(c->contribs[j], &h, &k, &l);
-	res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
-	G = crystal_get_osf(c->contrib_crystals[j]);
-	B = crystal_get_Bfac(c->contrib_crystals[j]);
-	Ii = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
+	    get_indices(c->contribs[j], &h, &k, &l);
+	    res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
+	    G = crystal_get_osf(c->contrib_crystals[j]);
+	    B = crystal_get_Bfac(c->contrib_crystals[j]);
+	    Ii = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
 
-	total += Ii;
+	    total += Ii;
 
     }
 
@@ -307,6 +308,66 @@ static double corr_esd(double sigij, double Ih, double sdfac, double sdb, double
 {
     double c = sigij*sigij + sdb*sdb*Ih + sdadd*sdadd*Ih*Ih;
     return sqrt(sdfac*sdfac*c);
+}
+
+
+#define NQUANT (20)
+
+static double norm_res(const gsl_vector *sdparams, void *vp)
+{
+    RefList *full = vp;
+	double sdfac, sdb, sdadd;
+    Reflection *refl;
+    RefListIterator *iter;
+	gsl_rstat_quantile_workspace *quantiles[NQUANT];
+    int i;
+
+    sdfac = gsl_vector_get(sdparams, 0);
+    sdb = gsl_vector_get(sdparams, 1);
+    sdadd = gsl_vector_get(sdparams, 2);
+
+    STATUS("Calculating residual at %f %f %f\n", sdfac, sdb, sdadd);
+
+	for ( i=0; i<NQUANT; i++ ) {
+	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
+	    quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
+	    if ( quantiles[i] == NULL ) return GSL_NAN;
+	}
+
+    for ( refl = first_refl(full, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+	{
+	    struct reflection_contributions *c = get_contributions(refl);
+	    int j;
+
+	    if ( c->n_contrib < 2 ) continue;
+
+	    for ( j=0; j<c->n_contrib; j++ ) {
+
+            /* Mean I(hkl) without contribution j */
+		    double mIhj = mean_I_without_contrib(c, j);
+		    double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
+		                       * (get_intensity(c->contribs[j]) - mIhj)
+				   / corr_esd(get_esd_intensity(c->contribs[j]),
+					      get_intensity(refl),
+					      sdfac, sdb, sdadd);
+
+		    for ( i=0; i<NQUANT; i++ ) {
+		        gsl_rstat_quantile_add(norm_dev, quantiles[i]);
+		    }
+
+	    }
+	}
+
+    double total = 0.0;
+	for ( i=0; i<NQUANT; i++ ) {
+	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
+        total += pow(gsl_rstat_quantile_get(quantiles[i]) - gsl_cdf_gaussian_Pinv(plotpos, 1.0), 2.0);
+	    gsl_rstat_quantile_free(quantiles[i]);
+	}
+    STATUS(" = %e\n", total);
+    return total;
 }
 
 
@@ -349,13 +410,14 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 
 	pthread_rwlock_destroy(&qargs.full_lock);
 
+	if ( ln_merge ) goto skip_errormodel;
+
 	/* Normal probability plot */
 	STATUS("Calculating normal probability plot...\n");
-	const int nquant = 20;
 	int i;
-	gsl_rstat_quantile_workspace *quantiles[nquant];
-	for ( i=0; i<nquant; i++ ) {
-	    double plotpos = (i+1-0.375)/(nquant+0.25);
+	gsl_rstat_quantile_workspace *quantiles[NQUANT];
+	for ( i=0; i<NQUANT; i++ ) {
+	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
 	    quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
 	    if ( quantiles[i] == NULL ) return NULL;
 	}
@@ -379,26 +441,68 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 					      get_intensity(refl),
 					      sdfac, sdb, sdadd);
 
-		for ( i=0; i<nquant; i++ ) {
+		for ( i=0; i<NQUANT; i++ ) {
 		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
 		}
 
 	    }
 	}
 
-	ppx = calloc(nquant, sizeof(double));
-	ppy = calloc(nquant, sizeof(double));
+	ppx = calloc(NQUANT, sizeof(double));
+	ppy = calloc(NQUANT, sizeof(double));
 	if ( (ppx == NULL) || (ppy == NULL) ) return NULL;
 
 	printf("Normal plot:\n");
-	for ( i=0; i<nquant; i++ ) {
-	    double plotpos = (i+1-0.375)/(nquant+0.25);
+	for ( i=0; i<NQUANT; i++ ) {
+	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
 	    ppx[i] = gsl_cdf_gaussian_Pinv(plotpos, 1.0);
 	    ppy[i] = gsl_rstat_quantile_get(quantiles[i]);
 	    gsl_rstat_quantile_free(quantiles[i]);
 	    printf("%e %e\n", ppx[i], ppy[i]);
 	}
 	printf("\n\n");
+
+	free(ppx);
+	free(ppy);
+
+skip_np:
+
+    STATUS("Refining error model...\n");
+	gsl_multimin_fminimizer *mini;
+	gsl_multimin_function myfunc;
+	gsl_vector *sdparams;
+	gsl_vector *stepsize;
+	sdparams = gsl_vector_alloc(3);
+	gsl_vector_set(sdparams, 0, sdfac);
+	gsl_vector_set(sdparams, 1, sdb);
+	gsl_vector_set(sdparams, 2, sdadd);
+	stepsize = gsl_vector_alloc(3);
+	gsl_vector_set(stepsize, 0, 0.5);
+	gsl_vector_set(stepsize, 1, 0.1);
+	gsl_vector_set(stepsize, 2, 0.1);
+	myfunc.n = 3;
+	myfunc.f = norm_res;
+	myfunc.params = full;
+	mini = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2, 3);
+	gsl_multimin_fminimizer_set(mini, &myfunc, sdparams, stepsize);
+
+    int r;
+    int niter = 0;
+    do {
+        niter++;
+        r = gsl_multimin_fminimizer_iterate(mini);
+        if ( r ) break;
+        r = gsl_multimin_test_size(mini->size, 0.01);
+        printf("%2i  |   %f %f %f\n", niter,
+                gsl_vector_get(mini->x, 0),
+                gsl_vector_get(mini->x, 1),
+                gsl_vector_get(mini->x, 2));
+    } while ( r == GSL_CONTINUE && niter < 100 );
+    STATUS("Done.\n");
+
+	gsl_multimin_fminimizer_free(mini);
+
+skip_errormodel:
 
 	/* Calculate ESDs from variances, including only reflections with
 	 * enough measurements */
