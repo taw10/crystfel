@@ -373,6 +373,8 @@ static double norm_res(const gsl_vector *sdparams, void *vp)
 					          get_intensity(refl),
 					          sdfac2, sdb2, sdadd2);
 
+		if ( norm_dev < -10 ) continue;
+		if ( norm_dev > 10 ) continue;
 		for ( i=0; i<NQUANT; i++ ) {
 		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
 		}
@@ -426,6 +428,8 @@ static void normal_probability_plot(RefList *full, double sdfac2, double sdb2, d
 					   get_intensity(refl),
 					   sdfac2, sdb2, sdadd2);
 
+		if ( norm_dev < -10 ) continue;
+		if ( norm_dev > 10 ) continue;
 		for ( i=0; i<NQUANT; i++ ) {
 		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
 		}
