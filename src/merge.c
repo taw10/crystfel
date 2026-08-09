@@ -390,8 +390,9 @@ static void normal_probability_plot(RefList *full, double sdfac2, double sdb2, d
 	Reflection *refl;
 	RefListIterator *iter;
 	gsl_rstat_quantile_workspace *quantiles[NQUANT];
-	double *ppx;
-	double *ppy;
+	double minv = +INFINITY;
+	double maxv = -INFINITY;
+	double hstart;
 
 	for ( i=0; i<NQUANT; i++ ) {
 	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
@@ -423,26 +424,27 @@ static void normal_probability_plot(RefList *full, double sdfac2, double sdb2, d
 		for ( i=0; i<NQUANT; i++ ) {
 		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
 		}
+		if ( norm_dev > maxv ) maxv = norm_dev;
+		if ( norm_dev < minv ) minv = norm_dev;
 
 	    }
 	}
 
-	ppx = calloc(NQUANT, sizeof(double));
-	ppy = calloc(NQUANT, sizeof(double));
-	if ( (ppx == NULL) || (ppy == NULL) ) return;
-
 	printf("Normal plot:\n");
+	hstart = minv;
 	for ( i=0; i<NQUANT; i++ ) {
 	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
-	    ppx[i] = gsl_cdf_gaussian_Pinv(plotpos, 1.0);
-	    ppy[i] = gsl_rstat_quantile_get(quantiles[i]);
+	    double hend = gsl_rstat_quantile_get(quantiles[i]);
+	    printf("%8.5f  %8.5f   %8.5f   %e\n",
+		   hend, gsl_cdf_gaussian_Pinv(plotpos, 1.0),
+		   hstart+(hend-hstart)/2.0, (double)(1.0/NQUANT)/(hend-hstart));
+	    hstart = hend;
 	    gsl_rstat_quantile_free(quantiles[i]);
-	    printf("%e %e\n", ppx[i], ppy[i]);
 	}
+	printf("%8.5f  %8.5f   %8.5f   %e\n",
+	       maxv, gsl_cdf_gaussian_Pinv((NQUANT+1-0.375)/(NQUANT+0.25), 1.0),
+	       hstart+(maxv-hstart)/2.0, (1.0/NQUANT)/(maxv-hstart));
 	printf("\n\n");
-
-	free(ppx);
-	free(ppy);
 }
 
 
