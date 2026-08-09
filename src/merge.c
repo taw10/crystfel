@@ -319,10 +319,10 @@ static double mean_I_without_contrib_slow(struct reflection_contributions *c, in
 }
 
 
-static double corr_esd(double sigij, double Ih, double sdfac, double sdb, double sdadd)
+static double corr_esd(double sigij, double Ih, double sdfac2, double sdb2, double sdadd2)
 {
-    double c = sigij*sigij + sdb*sdb*Ih + sdadd*sdadd*Ih*Ih;
-    return sqrt(sdfac*sdfac*c);
+    double c = sigij*sigij + sdb2*Ih + sdadd2*Ih*Ih;
+    return sqrt(sdfac2*c);
 }
 
 
@@ -330,16 +330,16 @@ static double corr_esd(double sigij, double Ih, double sdfac, double sdb, double
 
 static double norm_res(const gsl_vector *sdparams, void *vp)
 {
-    RefList *full = vp;
-	double sdfac, sdb, sdadd;
+	RefList *full = vp;
+	double sdfac2, sdb2, sdadd2;
 	Reflection *refl;
 	RefListIterator *iter;
 	gsl_rstat_quantile_workspace *quantiles[NQUANT];
 	int i;
 
-	sdfac = gsl_vector_get(sdparams, 0);
-	sdb = gsl_vector_get(sdparams, 1);
-	sdadd = gsl_vector_get(sdparams, 2);
+	sdfac2 = gsl_vector_get(sdparams, 0);
+	sdb2 = gsl_vector_get(sdparams, 1);
+	sdadd2 = gsl_vector_get(sdparams, 2);
 
 	for ( i=0; i<NQUANT; i++ ) {
 	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
@@ -364,8 +364,8 @@ static double norm_res(const gsl_vector *sdparams, void *vp)
 		double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
 		                       * (get_intensity(c->contribs[j]) - mIhj)
 		                       / corr_esd(get_esd_intensity(c->contribs[j]),
-					       get_intensity(refl),
-					       sdfac, sdb, sdadd);
+					          get_intensity(refl),
+					          sdfac2, sdb2, sdadd2);
 
 		    for ( i=0; i<NQUANT; i++ ) {
 		        gsl_rstat_quantile_add(norm_dev, quantiles[i]);
@@ -384,7 +384,7 @@ static double norm_res(const gsl_vector *sdparams, void *vp)
 }
 
 
-static void normal_probability_plot(RefList *full, double sdfac, double sdb, double sdadd)
+static void normal_probability_plot(RefList *full, double sdfac2, double sdb2, double sdadd2)
 {
 	int i;
 	Reflection *refl;
@@ -418,7 +418,7 @@ static void normal_probability_plot(RefList *full, double sdfac, double sdb, dou
 		                   * (get_intensity(c->contribs[j]) - mIhj)
 				   / corr_esd(get_esd_intensity(c->contribs[j]),
 					   get_intensity(refl),
-					   sdfac, sdb, sdadd);
+					   sdfac2, sdb2, sdadd2);
 
 		for ( i=0; i<NQUANT; i++ ) {
 		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
@@ -446,7 +446,7 @@ static void normal_probability_plot(RefList *full, double sdfac, double sdb, dou
 }
 
 
-static void refine_error_model(RefList *full, double *sdfac, double *sdb, double *sdadd)
+static void refine_error_model(RefList *full, double *sdfac2, double *sdb2, double *sdadd2)
 {
 	gsl_multimin_fminimizer *mini;
 	gsl_multimin_function myfunc;
@@ -456,14 +456,14 @@ static void refine_error_model(RefList *full, double *sdfac, double *sdb, double
 	int niter;
 
 	sdparams = gsl_vector_alloc(3);
-	gsl_vector_set(sdparams, 0, *sdfac);
-	gsl_vector_set(sdparams, 1, *sdb);
-	gsl_vector_set(sdparams, 2, *sdadd);
+	gsl_vector_set(sdparams, 0, *sdfac2);
+	gsl_vector_set(sdparams, 1, *sdb2);
+	gsl_vector_set(sdparams, 2, *sdadd2);
 
 	stepsize = gsl_vector_alloc(3);
-	gsl_vector_set(stepsize, 0, 0.5);
-	gsl_vector_set(stepsize, 1, 0.1);
-	gsl_vector_set(stepsize, 2, 0.1);
+	gsl_vector_set(stepsize, 0, 0.25);
+	gsl_vector_set(stepsize, 1, 0.01);
+	gsl_vector_set(stepsize, 2, 0.01);
 
 	myfunc.n = 3;
 	myfunc.f = norm_res;
@@ -480,17 +480,17 @@ static void refine_error_model(RefList *full, double *sdfac, double *sdb, double
 	    if ( r ) break;
 	    r = gsl_multimin_test_size(mini->size, 0.01);
 	    STATUS("%2i  |   %f %f %f\n", niter,
-		    gsl_vector_get(mini->x, 0),
-		    gsl_vector_get(mini->x, 1),
-		    gsl_vector_get(mini->x, 2));
+		    sqrt(gsl_vector_get(mini->x, 0)),
+		    sqrt(gsl_vector_get(mini->x, 1)),
+		    sqrt(gsl_vector_get(mini->x, 2)));
 	} while ( r == GSL_CONTINUE && niter < 20 );
 	STATUS("Done.\n");
 
 	gsl_multimin_fminimizer_free(mini);
 
-	*sdfac = gsl_vector_get(sdparams, 0);
-	*sdb = gsl_vector_get(sdparams, 1);
-	*sdadd = gsl_vector_get(sdparams, 2);
+	*sdfac2 = gsl_vector_get(sdparams, 0);
+	*sdb2 = gsl_vector_get(sdparams, 1);
+	*sdadd2 = gsl_vector_get(sdparams, 2);
 	gsl_vector_free(sdparams);
 	gsl_vector_free(stepsize);
 }
@@ -507,9 +507,9 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	Reflection *refl;
 	RefListIterator *iter;
 
-	double sdfac = 1.0;
-	double sdb = 0.0;
-	double sdadd = 0.0;
+	double sdfac2 = 1.0;
+	double sdb2 = 0.0;
+	double sdadd2 = 0.0;
 
 	if ( n == 0 ) return NULL;
 
@@ -523,9 +523,9 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	qargs.n_reflections = 0;
 	qargs.ln_merge = ln_merge;
 	qargs.n_used = 0;
-	qargs.sdfac = sdfac;
-	qargs.sdb = sdb;
-	qargs.sdadd = sdadd;
+	qargs.sdfac = sqrt(sdfac2);
+	qargs.sdb = sqrt(sdb2);
+	qargs.sdadd = sqrt(sdadd2);
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -534,9 +534,9 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	pthread_rwlock_destroy(&qargs.full_lock);
 
 	if ( !ln_merge ) {
-	    normal_probability_plot(full, sdfac, sdb, sdadd);
-	    refine_error_model(full, &sdfac, &sdb, &sdadd);
-	    normal_probability_plot(full, sdfac, sdb, sdadd);
+	    normal_probability_plot(full, sdfac2, sdb2, sdadd2);
+	    refine_error_model(full, &sdfac2, &sdb2, &sdadd2);
+	    normal_probability_plot(full, sdfac2, sdb2, sdadd2);
 	}
 
 	/* Calculate ESDs from variances, including only reflections with
