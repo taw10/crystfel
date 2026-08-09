@@ -278,7 +278,22 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
-static double mean_I_without_contrib(struct reflection_contributions *c, int j)
+double mean_I_without_contrib_fast(double Ih, struct reflection_contributions *c, int j)
+{
+    double Ij, G, B, res;
+    signed int h, k, l;
+
+    get_indices(c->contribs[j], &h, &k, &l);
+    res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
+    G = crystal_get_osf(c->contrib_crystals[j]);
+    B = crystal_get_Bfac(c->contrib_crystals[j]);
+    Ij = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
+
+    return (Ih*c->n_contrib - Ij)/(c->n_contrib-1);
+}
+
+
+static double mean_I_without_contrib_slow(struct reflection_contributions *c, int j)
 {
     int i;
     long double total = 0.0;
@@ -290,11 +305,11 @@ static double mean_I_without_contrib(struct reflection_contributions *c, int j)
 
 	    if ( i == j ) continue;
 
-	    get_indices(c->contribs[j], &h, &k, &l);
-	    res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
-	    G = crystal_get_osf(c->contrib_crystals[j]);
-	    B = crystal_get_Bfac(c->contrib_crystals[j]);
-	    Ii = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
+	    get_indices(c->contribs[i], &h, &k, &l);
+	    res = resolution(crystal_get_cell(c->contrib_crystals[i]), h, k, l);
+	    G = crystal_get_osf(c->contrib_crystals[i]);
+	    B = crystal_get_Bfac(c->contrib_crystals[i]);
+	    Ii = correct_reflection(get_intensity(c->contribs[i]), c->contribs[i], G, B, res);
 
 	    total += Ii;
 
