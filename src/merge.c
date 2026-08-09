@@ -319,6 +319,13 @@ static double mean_I_without_contrib_slow(struct reflection_contributions *c, in
 }
 
 
+static double mean_I_without_contrib(double Ih, struct reflection_contributions *c, int j)
+{
+    //return mean_I_without_contrib_slow(c, j);
+    return mean_I_without_contrib_fast(Ih, c, j);
+}
+
+
 static double corr_esd(double sigij, double Ih, double sdfac2, double sdb2, double sdadd2)
 {
     double c = sigij*sigij + sdb2*Ih + sdadd2*Ih*Ih;
@@ -359,17 +366,16 @@ static double norm_res(const gsl_vector *sdparams, void *vp)
 	    for ( j=0; j<c->n_contrib; j++ ) {
 
 		/* Mean I(hkl) without contribution j */
-		//double mIhj = mean_I_without_contrib(c, j);
-		double mIhj = get_intensity(refl);
+		double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
 		double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
 		                       * (get_intensity(c->contribs[j]) - mIhj)
 		                       / corr_esd(get_esd_intensity(c->contribs[j]),
 					          get_intensity(refl),
 					          sdfac2, sdb2, sdadd2);
 
-		    for ( i=0; i<NQUANT; i++ ) {
-		        gsl_rstat_quantile_add(norm_dev, quantiles[i]);
-		    }
+		for ( i=0; i<NQUANT; i++ ) {
+		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
+		}
 
 	    }
 	}
@@ -413,8 +419,7 @@ static void normal_probability_plot(RefList *full, double sdfac2, double sdb2, d
 	    for ( j=0; j<c->n_contrib; j++ ) {
 
 		/* Mean I(hkl) without contribution j */
-		//double mIhj = mean_I_without_contrib(c, j);
-		double mIhj = get_intensity(refl);
+		double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
 		double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
 		                   * (get_intensity(c->contribs[j]) - mIhj)
 				   / corr_esd(get_esd_intensity(c->contribs[j]),
