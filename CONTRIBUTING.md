@@ -38,8 +38,6 @@ Opening an issue on one of the project pages is the best way if your problem is 
 
 When the problem is less well defined, for example "I upgraded to the latest version and now my data doesn't come out as well as before", it's better to get in touch directly because I'll probably need to look at your data to find the problem.  In the case of a change in final data quality, I'd rather hear about it directly than read about it an a journal article, which is rarely useful for making further improvements (even if the change is positive!).
 
-The CrystFEL project on the [DESY Jira](https://agira.desy.de/projects/CRYS/issues) server is now regarded as deprecated.  Please do not open any new issues there.
-
 
 "Getting your new paper into CrystFEL"
 --------------------------------------
@@ -59,8 +57,6 @@ Use one of the following methods, in rough order of preference:
 * Create a merge request on the [DESY GitLab](https://gitlab.desy.de/thomas.white/crystfel), if you have a DESY or [Helmholtz AAI](https://login.helmholtz.de/home/) account.
 * Open a pull request on [Github](https://github.com/taw10/crystfel).  You will need a (free) Github account for this.
 * Send a patch to me (taw@physics.org).
-
-The CrystFEL repository on the [DESY Bitbucket](https://stash.desy.de/projects/CRYS/repos/crystfel/) server is now regarded as deprecated.  Please do not create any new pull requests there.
 
 All contributions must be under the [GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.html), with option to re-distribute under a later GPL version.  The copyright holder of your contributed code depends on your situation, and we do not require any re-assignment of copyright when contributing.  In Germany, the copyright holder will probably be your employer.  Please update the copyright and authorship details at the top of each file you make changes to.  Including your email address in the source code is optional.
 
