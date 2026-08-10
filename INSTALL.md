@@ -121,8 +121,8 @@ CrystFEL - keep it completely separate.
 Next, download the package from the [downloads page](https://desy.de/~twhite/crystfel/download.html)
 and unpack it like this:
 ```
-$ tar -xzf crystfel-0.12.0.tar.gz
-$ cd crystfel-0.12.0
+$ tar -xzf crystfel-0.13.0.tar.gz
+$ cd crystfel-0.13.0
 ```
 
 Alternatively, for the latest features, clone our Git repository:

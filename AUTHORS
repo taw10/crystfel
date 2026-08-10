@@ -125,3 +125,6 @@
 
 * Egor Sobolev
   Bug fix for peakfinder8
+
+* James Wrigley
+  Build system fixes including FreeBSD support

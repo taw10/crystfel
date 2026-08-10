@@ -14,7 +14,7 @@ The easiest way to ensure the future of CrystFEL is to use it and cite it in you
 You can also cite CrystFEL directly using one of the following DOIs:
 
 * All versions: [10.5281/zenodo.8183384](https://doi.org/10.5281/zenodo.8183384).
-* This version (0.12.0): [10.5281/zenodo.16811429](https://doi.org/10.5281/zenodo.16811429).
+* This version (0.13.0): [10.5281/zenodo.21874031](https://doi.org/10.5281/zenodo.21874031).
 
 
 Getting started

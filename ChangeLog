@@ -1,5 +1,5 @@
-Changes in this development version
------------------------------------
+CrystFEL version 0.13.0, 10 August 2026
+---------------------------------------
 
 - indexamajig: Removal of 'latt' and 'cell' switches [GitLab #126]
 - Fix ignored multiplicity cutoff in FoMs

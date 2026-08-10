@@ -142,7 +142,7 @@ Partial funding for CrystFEL has been provided by:
 Licence
 -------
 
-Copyright © 2012-2024 Deutsches Elektronen-Synchrotron DESY, a research centre
+Copyright © 2012-2026 Deutsches Elektronen-Synchrotron DESY, a research centre
 of the Helmholtz Association.
 
 See [AUTHORS](AUTHORS) as well as individual source code files for full details

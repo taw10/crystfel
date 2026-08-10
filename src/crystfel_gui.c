@@ -782,6 +782,7 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 		"Parthasarathy Tirumalai <parthasarathy.tirumalai@desy.de>",
 		"Alexandra Tolstikova <alexandra.tolstikova@desy.de>",
 		"Parker de Waal <Parker.deWaal@vai.org>",
+		"James Wrigley",
 		"Keitaro Yamashita <k.yamashita@spring8.or.jp>",
 		"Oleksandr Yefanov <oleksandr.yefanov@desy.de>",
 		"Chun Hong Yoon",
@@ -814,7 +815,7 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(window),
 	                             crystfel_version_string());
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(window),
-		"© 2020-2025 Deutsches Elektronen-Synchrotron DESY, "
+		"© 2020-2026 Deutsches Elektronen-Synchrotron DESY, "
 		"a research centre of the Helmholtz Association.");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
 		"https://www.desy.de/~twhite/crystfel");

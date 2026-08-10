@@ -1,11 +1,11 @@
 # Meson file for CrystFEL
 project('crystfel', 'c',
-        version: '0.12.0',
+        version: '0.13.0',
         license: 'GPL3+',
         meson_version: '>=0.60.0',
         default_options: ['buildtype=debugoptimized'])
 
-libcrystfel_api_version = 19
+libcrystfel_api_version = 20
 
 if meson.version().version_compare('>=1.3.0')
   fs = import('fs')
