@@ -2,14 +2,22 @@ Installation instructions
 =========================
 
 CrystFEL installation is supported on GNU/Linux and Mac OS X.  Installation on
-Windows is not supported, but is reported to be possible via
+Windows is not (yet) supported, but is reported to be possible via
 [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/).
+
+After installation, run `indexamajig` for a basic check that the installation
+has succeeded.  A healthy newborn CrystFEL should complain that `You need to
+provide the input filename (use -i)` when run with no other command-line
+options.  Then, run `crystfel` to start the graphical user interface.
+
+To help you get started, there is a [video tutorial](https://vimeo.com/585412404),
+as well as a [text tutorial](doc/articles/tutorial.rst).
 
 
 Supported installations at facilities
 -------------------------------------
 
-Before starting, check the [list of facility installations](https://www.desy.de/~twhite/crystfel/facilities.html)
+First, check the [list of facility installations](https://www.desy.de/~twhite/crystfel/facilities.html)
 to find out if there's already a CrystFEL installation available at your site.
 
 If you want to use CrystFEL on a facility computer system, we recommend leaving
@@ -21,12 +29,27 @@ assistance, and also to make sure that the installation is documented on the
 list of supported facility installations.
 
 
-Installation via container registry
------------------------------------
+Installation with Homebrew
+--------------------------
 
-The easiest way to get started is to download our container image and run it
-using a virtualization tool of your choice (e.g. Docker, Podman,
-[Singularity/Apptainer](http://apptainer.org/)).  For example, using Apptainer:
+Installation using [Homebrew](https://brew.sh/) is primarily aimed at Mac OS
+users, but is also fully supported on Linux.  First install Homebrew itself,
+then install CrystFEL by first adding our 'tap' before using `brew install`:
+```
+$ brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
+$ brew trust desy/crystfel
+$ brew install crystfel
+```
+This will give you the latest stable version of CrystFEL.  To instead get the
+latest development version, use `brew install --HEAD crystfel`.
+
+
+Installation using container (Apptainer, Singularity, Docker, Podman)
+---------------------------------------------------------------------
+
+Download our container image and run it using a virtualization tool of your
+choice (e.g. Docker, Podman, [Singularity/Apptainer](http://apptainer.org/)).
+For example, using Apptainer:
 ```
 $ apptainer pull docker://gitlab.desy.de:5555/thomas.white/crystfel/crystfel:latest
 $ apptainer run -B /path/to/data crystfel_latest.sif
@@ -41,76 +64,100 @@ including your home directory. The argument ```--bind /path/to/data``` tells
 Apptainer to additionally make the given path available. You will probably need
 to use this to access your data.
 
-"Singularity" changed name to "Apptainer" in 2021. If you're using a slightly
-older version, simply replace ```apptainer``` with ```singularity``` in the
-commands above. Don't worry, it's the same software! Further documentation is
-available on [their website](http://apptainer.org/).
 
-
-Installation via package manager
---------------------------------
-
-### Nix
+Installation with Nix
+---------------------
 
 CrystFEL is available through <a href="https://nixos.org/">NixOS</a> since
-22.05, for x86_64, Darwin and aarch64.  Two packages are
-available.  Package `crystfel` contains all tools including the GUI,
-whereas `crystfel-headless` excludes the GUI, making it easier to
-install and more suitable for backend data processing servers.
+22.05, for x86_64, Darwin and aarch64.  Two packages are available.  Package
+`crystfel` contains all tools including the GUI, whereas `crystfel-headless`
+excludes the GUI, making it easier to install and more suitable for backend
+data processing servers.
 
 To install via NixOS, simply add the package globally to your
 `environment.systemPackages`, or enter a temporary shell via `nix shell
 nixpkgs#crystfel` to have all CrystFEL tools in your `PATH`.
 
-### Homebrew
-
-To install the development version of CrystFEL using
-[Homebrew](https://brew.sh/), first add our 'tap', then use `brew install`:
-```
-$ brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
-$ brew install crystfel
-```
-Use `brew install --HEAD crystfel` to install the cutting-edge version with the
-latest features (and the latest bugs).
-
 
 Installation from source
 ------------------------
 
-CrystFEL is compiled and installed using  [Meson](https://mesonbuild.com/).
-First, download the latest Git version or unpack the package from the
-[downloads page](https://desy.de/~twhite/crystfel/download.html):
+If none of the above are suitable, CrystFEL is relatively easy to install from
+source.
+
+Start by installing the dependencies.  The following command will install the
+most common dependencies on Debian 11 ("Bullseye") and later, as well as Ubuntu
+18.04 ("Bionic") and later:
+```
+$ sudo apt install build-essential libhdf5-dev libgsl-dev libgtk-3-dev libcairo2-dev libpango1.0-dev \
+                   libgdk-pixbuf2.0-dev libfftw3-dev git flex bison libzmq3-dev libmsgpack-dev \
+                   libeigen3-dev libccp4-dev meson ninja-build libtiff-dev
+```
+
+On Ubuntu, you may first need to enable "universe" repository -
+[instructions here](https://help.ubuntu.com/community/Repositories/Ubuntu).
+
+On Fedora (22 or later), install the dependencies with this command:
+```
+$ sudo dnf group install development-tools
+$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson \
+                   gcc-c++ fftw-devel zeromq-devel msgpack-devel flex bison gcc-gfortran pandoc \
+                   libtiff-devel
+```
+
+Or, for Mac OS (after installing [Homebrew](https://brew.sh/)):
+```
+$ brew install bison meson ninja pkg-config argp-standalone cairo fftw gdk-pixbuf gsl gtk+3 hdf5 pango eigen@3 pandoc libtiff
+```
+Note that this is only needed if you want to compile CrystFEL from source yourself.
+If you have Homebrew installed anyway, you can simply install via our tap as
+described above.
+
+We also do not recommend using dependencies from Conda/Anaconda.  Do not
+activate any Conda environment before compiling CrystFEL, not even the "base"
+environment.  Don't even "source" the Conda setup file before installing
+CrystFEL - keep it completely separate.
+
+Next, download the package from the [downloads page](https://desy.de/~twhite/crystfel/download.html)
+and unpack it like this:
+```
+$ tar -xzf crystfel-0.12.0.tar.gz
+$ cd crystfel-0.12.0
+```
+
+Alternatively, for the latest features, clone our Git repository:
 ```
 $ git clone https://gitlab.desy.de/thomas.white/crystfel.git
 $ cd crystfel
-    or
-$ tar -xzf crystfel-0.12.0.tar.gz    # or whichever other version
-$ cd crystfel-0.12.0
 ```
-Then, simply:
+
+Then, configure the build system:
 ```
 $ meson setup build
+```
+
+On Mac OS, use this incantation instead, which instructs it to look at the
+Homebrew location for dependencies:
+```
+meson setup build -Dc_args="-I$(brew --prefix)/include" -Dc_link_args="-L$(brew --prefix)/lib" -Dcpp_link_args="-L$(brew --prefix)/lib"
+```
+
+If everything looks good, compile and install like this:
+```
 $ meson compile -C build
 $ meson install -C build
 ```
-The `meson setup` command will report if dependencies are missing - see the
-next section for details.  If necessary, the `meson install` command will ask
-for your password to gain administrative privileges.  You may also need to run
-`sudo ldconfig` to update the shared library cache after installation.
+If necessary, the `meson install` command will ask for your password to gain
+administrative privileges.
 
-Run `indexamajig` for a basic check that the installation has succeeded.  A
-healthy newborn CrystFEL should complain that `You need to provide the input
-filename (use -i)` when run with no other command-line options.
-
-Alternatively, run `crystfel` to start the graphical user interface, provided
-that the dependencies for the GUI were met (see above).
-
-Refer to the [tutorial](doc/articles/tutorial.rst) to see where to go from
-here!
+On Linux, you may also need to run `sudo ldconfig` to update the shared library
+cache after installation.  Depending on where you installed CrystFEL (and its
+dependencies), you may also need to configure your system's library paths - see
+the problems section below.
 
 
-Dependencies
-------------
+Detailed information about dependencies
+---------------------------------------
 
 There are very few mandatory dependencies for CrystFEL.  They are:
 
@@ -119,9 +166,9 @@ There are very few mandatory dependencies for CrystFEL.  They are:
 * [Bison](https://www.gnu.org/software/bison/) 2.6 or later
 * [Flex](https://www.gnu.org/software/flex/)
 
-The following dependencies are "optional", in the sense that you can install
-CrystFEL without them.  However, a CrystFEL installation without these will lack
-important features such as the graphical user interface.  The following list is
+However, a minimal installation of CrystFEL will lack important features and
+not be very useful.  CrystFEL can make use of many external libraries, and which
+ones are needed will depend on your particular use case.  The following list is
 roughly in order of importance:
 
 * [HDF5](https://www.hdfgroup.org/downloads/hdf5/) 1.8.0 or later (required for HDF5 file read/write.  Version 1.10.0 or later is required for many recent data formats which use the 'virtual data set' feature)
@@ -135,6 +182,7 @@ roughly in order of importance:
 * [PinkIndexer](https://gitlab.desy.de/thomas.white/pinkindexer) \[\*\] (for indexing electron or wide bandwidth diffraction patterns)
 * [Fast feedback indexer](https://github.com/paulscherrerinstitute/fast-feedback-indexer) (for GPU-based `ffbidx` indexing)
 * [FFTW](http://fftw.org/) 3.0 or later (required for `asdf` indexing)
+* [LibTIFF](https://libtiff.gitlab.io/libtiff/) version 4.0.0 or higher (for reading TIFF files)
 * [FDIP](https://gitlab.desy.de/thomas.white/fdip) \[\*\] (for `peakFinder9` peak search algorithm)
 * [libZMQ](https://github.com/zeromq/libzmq/) (for online data streaming)
 * [libasapo-consumer](https://gitlab.desy.de/asapo/asapo) (for online and offline data streaming via DESY's ASAP::O framework)
@@ -142,11 +190,6 @@ roughly in order of importance:
 * [Seedee](https://gitlab.desy.de/fs-sc/seedee) (for streaming data serialised with Seedee)
 * [cJSON](https://github.com/DaveGamble/cJSON/) \[\*\] (extra dependency if Seedee is found)
 * [Pandoc](https://pandoc.org/) (to convert documentation to `man` format)
-
-Most of the dependencies mentioned above should be available from your Linux
-distribution's package manager, or from [Homebrew](https://brew.sh/) on Mac OS.
-We emphatically recommend against trying to install GTK, Cairo, Pango or
-gdk-pixbuf from source.
 
 Dependencies marked with \[\*\] above will be downloaded and compiled
 automatically by Meson if they are not available on the system.
@@ -162,48 +205,14 @@ $ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/user/xgandalf/lib64/pkgconfig
 If the libraries are automatically installed by Meson (see above about \[\*\]),
 you will not have to worry about this.
 
-We also do not recommend using dependencies from Conda/Anaconda.  Do not
-activate any Conda environment before compiling CrystFEL, not even the "base"
-environment.  Don't even "source" the Conda setup file before installing
-CrystFEL - keep it completely separate.  A Conda recipe for CrystFEL might be
-coming soon, though, if development resources allow for it.
-
-In Fedora 22 or later, install most of the dependencies like this:
-```
-$ sudo dnf group install development-tools
-$ sudo dnf install hdf5-devel gsl-devel gtk3-devel cairo-devel pango-devel gdk-pixbuf2-devel meson \
-                   gcc-c++ fftw-devel zeromq-devel msgpack-devel flex bison gcc-gfortran pandoc
-```
-
-Up to Fedora 32 (inclusive), you can also install `libccp4-devel` via `dnf`.
-
-For Debian 11 ("Bullseye") and later, as well as Ubuntu 18.04 ("Bionic") and
-later, most of the dependencies are available using `apt`:
-```
-$ sudo apt install build-essential libhdf5-dev libgsl-dev libgtk-3-dev libcairo2-dev libpango1.0-dev \
-                   libgdk-pixbuf2.0-dev libfftw3-dev git flex bison libzmq3-dev libmsgpack-dev \
-                   libeigen3-dev libccp4-dev meson ninja-build
-```
-
-Make sure that the "universe" repository is enabled for Ubuntu -
-[instructions here](https://help.ubuntu.com/community/Repositories/Ubuntu).
-
-In Ubuntu 20.04 ("Focal") and older, the Meson version is slightly too old for
-CrystFEL.  Install version 0.60.0 or later from the
-[Meson website](https://mesonbuild.com/Getting-meson.html).
-You don't need to "install" it, but do remember the location where you unpacked
-it.  You will need to additionally install `python3`, if it's not already
-present.  Then refer to the downloaded Meson version directly, e.g.
-`/home/myself/Downloads/meson/meson.py setup build`.
-
 
 Installing the indexing engines
 -------------------------------
 
 Processing data relies on indexing 'engines'.  At the absolute minimum, you
 will have access to the [TakeTwo](https://journals.iucr.org/d/issues/2016/08/00/rr5128/)
-indexing algorithm, since this is built into CrystFEL and does not have any
-other dependencies.  [Xgandalf](https://journals.iucr.org/a/issues/2019/05/00/ae5071/),
+and `smallcell` indexing algorithms, since these are built into CrystFEL and
+do not have any other dependencies. [Xgandalf](https://journals.iucr.org/a/issues/2019/05/00/ae5071/),
 [PinkIndexer](https://journals.iucr.org/a/issues/2020/02/00/ae5078/) and
 `asdf` will very likely be available as well - they have some dependencies
 (see above), but the required packages are quite common.  Still more indexing
@@ -233,7 +242,6 @@ anything else) find the right versions of everything.  Do not 'source' the CCP4
 setup file before trying to install CrystFEL, and make sure that the setup file
 is not automatically referenced in your shell setup files (`.bashrc` and
 others).
-
 
 
 Finding syminfo.lib
