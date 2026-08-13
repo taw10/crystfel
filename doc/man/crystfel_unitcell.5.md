@@ -29,8 +29,6 @@ The first line of a unit cell file must be exactly this:
     CrystFEL unit cell file version 1.0
 
 If the first line is anything else, the file will be treated as a PDB file.
-This is the most common reason for a unit cell file not being read as
-expected.
 
 The remaining lines have the following general form:
 
@@ -66,7 +64,7 @@ LATTICE TYPE AND CENTERING
 
 The unique axis **must** be given for **monoclinic**, **tetragonal** and
 **hexagonal** lattice types, and the file will be rejected if you leave it
-out.  It makes no sense for the other lattice types, and giving it for
+out.  It is not applicable to the other lattice types, and giving it for
 **triclinic**, **orthorhombic**, **rhombohedral** or **cubic** will produce a
 warning.
 
@@ -93,15 +91,8 @@ CELL PARAMETERS
 : The unit cell angles alpha, beta and gamma.  The units must be given, and
   must be **deg** (degrees) or **rad** (radians).
 
-All six parameters must be given, otherwise the file will be taken to describe
-a lattice with no parameters at all.  A partially-specified cell is silently
-treated as if none of the parameters had been given, so a typo in one field
-name will quietly cost you all six values.
-
-The parameters are not checked for consistency with the lattice type, so it is
-your responsibility to make sure that, for example, a cell declared as
-**cubic** really does have three equal axes and three right angles.
-
+All six parameters must be given. A partially-specified cell is 
+treated as if none of the parameters had been given.
 
 EXAMPLES
 ========
@@ -161,12 +152,6 @@ group, from which the lattice type and centering will be deduced.
 Reading the cell from a PDB file is convenient, but the unit cell file format
 is preferred because it is explicit: it does not require the space group to be
 interpreted, and it allows a lattice to be specified without any parameters.
-
-
-AUTHOR
-======
-
-This page was written by Kevin Dalton.
 
 
 REPORTING BUGS
