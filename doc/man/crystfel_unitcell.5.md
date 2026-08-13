@@ -91,7 +91,7 @@ CELL PARAMETERS
 : The unit cell angles alpha, beta and gamma.  The units must be given, and
   must be **deg** (degrees) or **rad** (radians).
 
-All six parameters must be given. A partially-specified cell is 
+All six parameters must be given. A partially-specified cell is
 treated as if none of the parameters had been given.
 
 EXAMPLES
