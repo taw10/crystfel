@@ -350,6 +350,14 @@ if pandoc.found()
                 install: true,
                 install_dir: join_paths(get_option('mandir'), 'man5'))
 
+  custom_target('crystfel_unitcell.5.md',
+                input: 'doc/man/crystfel_unitcell.5.md',
+                output: 'crystfel_unitcell.5',
+                command: [pandoc, '@INPUT@','-o', '@OUTPUT@',
+                          '-s', '-f', mdfmt, '-t', 'man'],
+                install: true,
+                install_dir: join_paths(get_option('mandir'), 'man5'))
+
 endif
 
 install_man(['doc/man/ambigator.1',

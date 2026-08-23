@@ -592,5 +592,5 @@ CrystFEL.  If not, see <http://www.gnu.org/licenses/>.
 SEE ALSO
 ========
 
-**crystfel**(7), **indexamajig**(1), **adjust_detector**(1),
-**align_detector**(1)
+**crystfel**(7), **crystfel_unitcell**(5), **indexamajig**(1),
+**adjust_detector**(1), **align_detector**(1)
