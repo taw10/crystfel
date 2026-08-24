@@ -143,7 +143,7 @@ build-brew-macos:
     - brew uninstall -v -f crystfel
     - brew autoremove -v
     - brew untrust desy/crystfel
-    - brew untap desy/crystfel
+    - brew untap -f desy/crystfel
   parallel:
     matrix:
      - TAG: ["macOS", "macMini"]
