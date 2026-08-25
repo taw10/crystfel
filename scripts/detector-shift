@@ -8,7 +8,7 @@ echo
 echo To update the detector center based on the indexing results,
 echo add --mille to the indexamajig arguments, then run the following:
 echo
-echo align_detector -i old.geom -o new.geom --level=0 mille-data-*.bin
+echo align_detector -g old.geom -o new.geom --level=0 mille-data-*.bin
 echo
 echo -------------------------------------------------------------
 exit 1
