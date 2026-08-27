@@ -92,7 +92,7 @@ if [ x$1 != xinstall ]; then
 
 		if [ ! -f $SYMINFO ]; then
 			echo Cannot find SYMINFO file at $SYMINFO
-			echo -n You need to install libCCP4
+			echo You need to install libCCP4
 			echo ' (separately, or as part of the CrystFEL installation process)'
 			echo Or, edit the script to set the correct location
 			exit 1
