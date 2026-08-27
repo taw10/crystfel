@@ -37,6 +37,10 @@ if [ "$SYS" = "Darwin arm64" ]; then
 	DIRAX=x
 	PLATFORM="MacOS ARM (Apple silicon)"
 	D=
+	echo I cannot install any indexers for your system.  Sorry!
+	echo
+	echo To install XDS, follow the instructions at https://dectris.com/en/detectors/XDS/
+	exit 1
 fi
 
 if [ "x$PLATFORM" = x ]; then
