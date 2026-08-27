@@ -13,6 +13,7 @@ if [ "$SYS" = "Linux x86_64" ]; then
 	DIRAX=dirax1.17-Linux-x86_64-static.tar.Z
 	DIRAX_TAR_ARGS=-xZf
 	PLATFORM="Linux x86_64"
+	D=-D
 fi
 
 if [ "$SYS" = "Linux i686" ]; then
@@ -20,6 +21,7 @@ if [ "$SYS" = "Linux i686" ]; then
 	DIRAX=dirax1.17-Linux-i686-static.tar.Z
 	DIRAX_TAR_ARGS=-xZf
 	PLATFORM="Linux x86 (32 bit)"
+	D=-D
 fi
 
 if [ "$SYS" = "Darwin x86_64" ]; then
@@ -27,12 +29,14 @@ if [ "$SYS" = "Darwin x86_64" ]; then
 	DIRAX=dirax1.16-Darwin-x86_64.tar.gz
 	DIRAX_TAR_ARGS=-xzf
 	PLATFORM="MacOS x86_64"
+	D=
 fi
 
 if [ "$SYS" = "Darwin arm64" ]; then
 	MOSFLM=x
 	DIRAX=x
 	PLATFORM="MacOS ARM (Apple silicon)"
+	D=
 fi
 
 if [ "x$PLATFORM" = x ]; then
@@ -140,13 +144,13 @@ else
 	set -x
 
 	if [ -f mosflm-tempdir/mosflm ]; then
-		install -D mosflm-tempdir/mosflm.real $CFPREFIX/bin/mosflm.real
-		install mosflm-tempdir/mosflm $CFPREFIX/bin/mosflm
+		install -b $D mosflm-tempdir/mosflm.real $CFPREFIX/bin/mosflm.real
+		install -b $D mosflm-tempdir/mosflm $CFPREFIX/bin/mosflm
 	fi
 
 	if [ -f dirax-tempdir/dirax ]; then
-		install dirax-tempdir/dirax dirax-tempdir/dirax.real $CFPREFIX/bin
-		install --mode=644 dirax-tempdir/dirax.commands $CFPREFIX/bin
+		install -b $D dirax-tempdir/dirax dirax-tempdir/dirax.real $CFPREFIX/bin
+		install -b $D -m 644 dirax-tempdir/dirax.commands $CFPREFIX/bin
 	fi
 
 fi
