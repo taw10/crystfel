@@ -221,12 +221,12 @@ programs:
 
 * [Mosflm](https://www.mrc-lmb.cam.ac.uk/harry/imosflm/)
 * [DirAx](http://www.crystal.chem.uu.nl/distr/dirax/)
-* [XDS](http://xds.mpimf-heidelberg.mpg.de/)
+* [XDS](https://dectris.com/en/detectors/XDS/)
 * [Felix](https://doi.org/10.1107/S1600576717007506)
 
 You can install these at any time before or after installing CrystFEL.  The
 script `install-indexers`, found in the `scripts` directory of the CrystFEL
-source code, can help you to install Mosflm, DirAx and XDS.  Run
+source code, can help you to install Mosflm and DirAx.  Run
 `scripts/install-indexers --help` for information.
 
 Note that you only need the `mosflm` binary, not the full `iMosflm` user

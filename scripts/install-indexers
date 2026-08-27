@@ -12,7 +12,6 @@ if [ "$SYS" = "Linux x86_64" ]; then
 	MOSFLM=imosflm-7.4.0-linux-64.zip
 	DIRAX=dirax1.17-Linux-x86_64-static.tar.Z
 	DIRAX_TAR_ARGS=-xZf
-	XDS=XDS-gfortran_Linux_x86_64
 	PLATFORM="Linux x86_64"
 fi
 
@@ -20,7 +19,6 @@ if [ "$SYS" = "Linux i686" ]; then
 	MOSFLM=imosflm-7.4.0-linux-32.zip
 	DIRAX=dirax1.17-Linux-i686-static.tar.Z
 	DIRAX_TAR_ARGS=-xZf
-	XDS=x
 	PLATFORM="Linux x86 (32 bit)"
 fi
 
@@ -28,14 +26,12 @@ if [ "$SYS" = "Darwin x86_64" ]; then
 	MOSFLM=imosflm-7.4.0-osx-64.zip
 	DIRAX=dirax1.16-Darwin-x86_64.tar.gz
 	DIRAX_TAR_ARGS=-xzf
-	XDS=XDS-OSX_64.tar.gz
 	PLATFORM="MacOS x86_64"
 fi
 
 if [ "$SYS" = "Darwin arm64" ]; then
 	MOSFLM=x
 	DIRAX=x
-	XDS=XDS-Apple_M1.tar.gz
 	PLATFORM="MacOS ARM (Apple silicon)"
 fi
 
@@ -46,7 +42,7 @@ if [ "x$PLATFORM" = x ]; then
 fi
 
 if [ x$1 = x--help ]; then
-	echo 'This script downloads and installs Mosflm, DirAx and XDS'
+	echo 'This script downloads and installs Mosflm and DirAx'
 	echo
 	echo Step 1: $0
 	echo Step 2: $0 'install    ' \# perhaps with sudo
@@ -60,7 +56,9 @@ if [ x$1 = x--help ]; then
 	echo 'Please note the license conditions for each program:'
 	echo '   DirAx: http://www.crystal.chem.uu.nl/distr/dirax/'
 	echo '  Mosflm: https://www.mrc-lmb.cam.ac.uk/mosflm/mosflm/'
-	echo '     XDS: https://xds.mr.mpg.de/'
+	echo
+	echo Since 2026, XDS can no longer be downloaded automatically.
+	echo To install XDS, follow the instructions at https://dectris.com/en/detectors/XDS/
 	exit 0
 fi
 
@@ -75,9 +73,9 @@ if [ x$1 != xinstall ]; then
 		exit 1
 	fi
 
-	if [ -d mosflm-tempdir -o -d xds-tempdir -o -d dirax-tempdir ]; then
+	if [ -d mosflm-tempdir -o -d dirax-tempdir ]; then
 		echo Delete the following directories before trying again:
-		echo mosflm-tempdir xds-tempdir dirax-tempdir
+		echo mosflm-tempdir dirax-tempdir
 		exit 1
 	fi
 
@@ -130,27 +128,14 @@ if [ x$1 != xinstall ]; then
 		echo Dirax is not available for your system.
 	fi
 
-	if [ x$XDS != xx ]; then
-		mkdir xds-tempdir
-		cd xds-tempdir
-		wget -nv https://xds.mr.mpg.de/$XDS.tar.gz
-		tar -xzf $XDS.tar.gz
-		mv $XDS/xds xds
-		cd ..
-	else
-		echo XDS is not available for your system.
-	fi
-
 	echo Now run the script again, adding \'install\' to the command line.
 	echo If installing to a system location, prefix with \'sudo\'.
 
 else
 
 	if [ ! -f mosflm-tempdir/mosflm.real ]; then
-		if [ ! -f xds-tempdir/xds ]; then
-			echo Run this script without \'install\' first
-			exit 1
-		fi
+		echo Run this script without \'install\' first
+		exit 1
 	fi
 	set -x
 
@@ -162,10 +147,6 @@ else
 	if [ -f dirax-tempdir/dirax ]; then
 		install dirax-tempdir/dirax dirax-tempdir/dirax.real $CFPREFIX/bin
 		install --mode=644 dirax-tempdir/dirax.commands $CFPREFIX/bin
-	fi
-
-	if [ -f xds-tempdir/xds ]; then
-		install xds-tempdir/xds $CFPREFIX/bin/xds
 	fi
 
 fi
