@@ -20,15 +20,17 @@ RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.con
        sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf
 
 # HDF5
-RUN    wget -nv https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.1/src/hdf5-1.12.1.tar.bz2; \
-       tar -xf hdf5-1.12.1.tar.bz2; \
-       pushd hdf5-1.12.1; \
-       ./configure --prefix=$CFPREFIX \
-                   --enable-shared --disable-static \
-                   --with-default-plugindir=${CFPREFIX}/lib64/plugins; \
-       make; \
-       make install; \
-       popd # hdf5-1.12.1
+RUN    wget -nv https://github.com/HDFGroup/hdf5/releases/download/2.2.0/hdf5-2.2.0.tar.gz; \
+       tar -xf hdf5-2.2.0.tar.gz; \
+       pushd hdf5-2.2.0; \
+       mkdir build; \
+       pushd build; \
+       cmake .. -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
+                -DCMAKE_BUILD_TYPE=Release ; \
+       popd; \
+       make -C build -j 32; \
+       make -C build install; \
+       popd # hdf5-2.2.0
 
 # HDF5 filter plugins
 RUN    git clone --depth 1 https://github.com/nexusformat/HDF5-External-Filter-Plugins.git ; \
