@@ -1,4 +1,4 @@
-FROM  almalinux:9.7
+FROM  almalinux:9.8
 
 ENV CFPREFIX=/software/crystfel/devel
 ENV PKG_CONFIG_PATH=$CFPREFIX/lib64/pkgconfig:$CFPREFIX/lib/pkgconfig
