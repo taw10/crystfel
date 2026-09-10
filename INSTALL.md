@@ -36,12 +36,17 @@ Installation using [Homebrew](https://brew.sh/) is primarily aimed at Mac OS
 users, but is also fully supported on Linux.  First install Homebrew itself,
 then install CrystFEL by first adding our 'tap' before using `brew install`:
 ```
+$ brew trust https://gitlab.desy.de/thomas.white/homebrew-crystfel.git/
 $ brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
-$ brew trust desy/crystfel
 $ brew install crystfel
 ```
 This will give you the latest stable version of CrystFEL.  To instead get the
 latest development version, use `brew install --HEAD crystfel`.
+
+On slightly older versions of Homebrew, you might need to use
+`brew trust desy/crystfel` instead of the longer `brew trust` command given
+above.  In that case, run the `brew trust` command *after* the `brew tap`
+command.
 
 
 Installation using container (Apptainer, Singularity, Docker, Podman)
@@ -406,3 +411,22 @@ Installation problems and solutions
   **Explanation**: This change to the HDF5 headers seems to confuse `ccache`.
 
   **Solution**: The (somewhat drastic) fix is simply to `rm -rf ~/.ccache`.
+
+
+* **Problem**: When installing with Homebrew, the `brew tap` command fails with
+    copious errors like this:
+    ```
+    Error: Invalid formula (golden_gate): /opt/homebrew/Library/Taps/desy/homebrew-crystfel/Formula/crystfel.rb
+    Refusing to load formula desy/crystfel/crystfel from untrusted tap desy/crystfel.
+    Run `brew trust --formula desy/crystfel/crystfel` or `brew trust desy/crystfel` to trust it.
+    Error: Invalid formula (golden_gate): /opt/homebrew/Library/Taps/desy/homebrew-crystfel/Formula/fdip.rb
+    Refusing to load formula desy/crystfel/fdip from untrusted tap desy/crystfel.
+    Run `brew trust --formula desy/crystfel/fdip` or `brew trust desy/crystfel` to trust it.
+    ```
+
+  **Explanation**: See [this PR](https://github.com/Homebrew/brew/pull/22611)
+  and references therein.
+
+  **Solution**: Run `brew trust` with the tap's full URL (not just
+  `desy/crystfel`), **before** running the `brew tap` command.  See the
+  section on Homebrew above.
