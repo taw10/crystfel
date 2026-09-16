@@ -1890,6 +1890,8 @@ int main(int argc, char *argv[])
 
 	average_unit_cell(crystals, n_crystals, outcell_filename);
 
+	print_error_model(emodel);
+
 	/* Write final figures of merit (no rejection any more) */
 	show_all_residuals(crystals, n_crystals, full, no_free);
 	if ( do_write_logs ) {

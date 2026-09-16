@@ -449,3 +449,53 @@ ErrorModelType parse_error_model(const char *str, int *err)
 		return EMODEL_EQUIVS;
 	}
 }
+
+
+static double isigi_asymptotic(ErrorModel *emodel)
+{
+	switch ( emodel->type ) {
+
+		case EMODEL_EQUIVS:
+		return NAN;
+
+		case EMODEL_EV11:
+		case EMODEL_KH23:
+		return 1.0/(emodel->sdfac*emodel->sdadd); /* FIXME: Really no sdB? */
+
+		case EMODEL_XSCALE:
+		return 1.0/(emodel->sdfac*emodel->sdadd);
+
+	}
+	abort();
+}
+
+
+void print_error_model(ErrorModel *emodel)
+{
+	switch ( emodel->type ) {
+
+		case EMODEL_EQUIVS:
+		STATUS("No error modelling was performed.");
+		break;
+
+		case EMODEL_EV11:
+		STATUS("Error model parameters (Ev11): sdFac=%.3f, sdB=%.3f, sdAdd=%.3f\n",
+		        emodel->sdfac, emodel->sdb, emodel->sdadd);
+		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
+		break;
+
+		case EMODEL_KH23:
+		STATUS("Error model parameters (Kh23): sdFac=%.3f, sdB=%.3f, sdAdd=%.3f\n",
+		        emodel->sdfac, emodel->sdb, emodel->sdadd);
+		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
+		break;
+
+		case EMODEL_XSCALE:
+		STATUS("Error model parameters (XSCALE): sdFac=%.3f, sdAdd=%.3f\n",
+		        emodel->sdfac, emodel->sdadd);
+		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
+		break;
+
+	}
+
+}
