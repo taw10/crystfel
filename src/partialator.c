@@ -1856,7 +1856,7 @@ int main(int argc, char *argv[])
 					write_custom_split(csplit, j, crystals,
 					                   images, n_crystals, pmodel,
 					                   min_measurements,
-							   push_res, sym,
+					                   push_res, sym,
 					                   nthreads, tmp,
 					                   error_model);
 				}
