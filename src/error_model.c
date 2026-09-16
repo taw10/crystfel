@@ -170,20 +170,20 @@ static void error_model_params_set_from_vector(ErrorModel *emodel, const gsl_vec
 		break;
 
 		case EMODEL_EV11:
-		emodel->sdfac = gsl_vector_get(sdparams, 0);
-		emodel->sdb   = gsl_vector_get(sdparams, 1);
-		emodel->sdadd = gsl_vector_get(sdparams, 2);
+		emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
+		emodel->sdb   = fabs(gsl_vector_get(sdparams, 1));
+		emodel->sdadd = fabs(gsl_vector_get(sdparams, 2));
 		break;
 
 		case EMODEL_XSCALE:
-		emodel->sdfac = gsl_vector_get(sdparams, 0);
-		emodel->sdadd = gsl_vector_get(sdparams, 1);
+		emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
+		emodel->sdadd = fabs(gsl_vector_get(sdparams, 1));
 		break;
 
 		case EMODEL_KH23:
-		emodel->sdfac = gsl_vector_get(sdparams, 0);
-		emodel->sdb   = gsl_vector_get(sdparams, 1);
-		emodel->sdadd = gsl_vector_get(sdparams, 2);
+		emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
+		emodel->sdb   = fabs(gsl_vector_get(sdparams, 1));
+		emodel->sdadd = fabs(gsl_vector_get(sdparams, 2));
 		break;
 
 	}
