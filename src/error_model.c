@@ -162,6 +162,34 @@ static double norm_res(ErrorModel *emodel, RefList *full)
 }
 
 
+static void error_model_params_set_from_vector(ErrorModel *emodel, const gsl_vector *sdparams)
+{
+	switch ( emodel->type ) {
+
+		case EMODEL_EQUIVS:
+		break;
+
+		case EMODEL_EV11:
+		emodel->sdfac = gsl_vector_get(sdparams, 0);
+		emodel->sdb   = gsl_vector_get(sdparams, 1);
+		emodel->sdadd = gsl_vector_get(sdparams, 2);
+		break;
+
+		case EMODEL_XSCALE:
+		emodel->sdfac = gsl_vector_get(sdparams, 0);
+		emodel->sdadd = gsl_vector_get(sdparams, 1);
+		break;
+
+		case EMODEL_KH23:
+		emodel->sdfac = gsl_vector_get(sdparams, 0);
+		emodel->sdb   = gsl_vector_get(sdparams, 1);
+		emodel->sdadd = gsl_vector_get(sdparams, 2);
+		break;
+
+	}
+}
+
+
 static double norm_res_equivs(const gsl_vector *sdparams, void *vp)
 {
 	ErrorModel emodel;
@@ -176,9 +204,7 @@ static double norm_res_ev11(const gsl_vector *sdparams, void *vp)
 	ErrorModel emodel;
 	RefList *full = vp;
 	emodel.type = EMODEL_EV11;
-	emodel.sdfac = gsl_vector_get(sdparams, 0);
-	emodel.sdb   = gsl_vector_get(sdparams, 1);
-	emodel.sdadd = gsl_vector_get(sdparams, 2);
+	error_model_params_set_from_vector(&emodel, sdparams);
 	return norm_res(&emodel, full);
 }
 
@@ -188,8 +214,7 @@ static double norm_res_xscale(const gsl_vector *sdparams, void *vp)
 	ErrorModel emodel;
 	RefList *full = vp;
 	emodel.type = EMODEL_XSCALE;
-	emodel.sdfac = gsl_vector_get(sdparams, 0);
-	emodel.sdadd = gsl_vector_get(sdparams, 1);
+	error_model_params_set_from_vector(&emodel, sdparams);
 	return norm_res(&emodel, full);
 }
 
@@ -200,9 +225,7 @@ static double norm_res_kh23(const gsl_vector *sdparams, void *vp)
 	ErrorModel emodel;
 	RefList *full = vp;
 	emodel.type = EMODEL_KH23;
-	emodel.sdfac = gsl_vector_get(sdparams, 0);
-	emodel.sdb   = gsl_vector_get(sdparams, 1);
-	emodel.sdadd = gsl_vector_get(sdparams, 2);
+	error_model_params_set_from_vector(&emodel, sdparams);
 	return norm_res(&emodel, full);
 }
 
@@ -358,34 +381,6 @@ static gsl_vector *error_model_step_vector(ErrorModel *emodel)
 	}
 
 	return stepsize;
-}
-
-
-static void error_model_params_set_from_vector(ErrorModel *emodel, gsl_vector *sdparams)
-{
-	switch ( emodel->type ) {
-
-		case EMODEL_EQUIVS:
-		break;
-
-		case EMODEL_EV11:
-		emodel->sdfac = gsl_vector_get(sdparams, 0);
-		emodel->sdb   = gsl_vector_get(sdparams, 1);
-		emodel->sdadd = gsl_vector_get(sdparams, 2);
-		break;
-
-		case EMODEL_XSCALE:
-		emodel->sdfac = gsl_vector_get(sdparams, 0);
-		emodel->sdadd = gsl_vector_get(sdparams, 1);
-		break;
-
-		case EMODEL_KH23:
-		emodel->sdfac = gsl_vector_get(sdparams, 0);
-		emodel->sdb   = gsl_vector_get(sdparams, 1);
-		emodel->sdadd = gsl_vector_get(sdparams, 2);
-		break;
-
-	}
 }
 
 
