@@ -282,7 +282,8 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 RefList *merge_intensities(struct crystal_refls *crystals, int n,
                            int n_threads, int min_meas,
                            double push_res, int use_weak, int ln_merge,
-                           int *pn_used, ErrorModelType emodel)
+                           ErrorModel *emodel, int refine_emodel,
+                           int *pn_used)
 {
 	RefList *full;
 	RefList *full2;
@@ -302,7 +303,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	qargs.n_reflections = 0;
 	qargs.ln_merge = ln_merge;
 	qargs.n_used = 0;
-	qargs.emodel = error_model_new(emodel);
+	qargs.emodel = emodel;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -310,10 +311,12 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 
 	pthread_rwlock_destroy(&qargs.full_lock);
 
-	if ( !ln_merge ) {
-		normal_probability_plot(full, qargs.emodel);
-		refine_error_model(full, qargs.emodel);
-		normal_probability_plot(full, qargs.emodel);
+	if ( refine_emodel ) {
+		STATUS("Normal probability plot before refinement:\n");
+		normal_probability_plot(full, emodel);
+		refine_error_model(full, emodel);
+		STATUS("Normal probability plot after refinement:\n");
+		normal_probability_plot(full, emodel);
 	}
 
 	/* Calculate ESDs from variances, including only reflections with

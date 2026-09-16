@@ -180,7 +180,7 @@ static void add_to_csplit(struct custom_split *csplit, const char *id,
 static void write_split(struct crystal_refls *crystals, int n_crystals,
                         const char *outfile, int nthreads, PartialityModel pmodel,
                         int min_measurements, SymOpList *sym, double push_res,
-                        ErrorModelType emodel)
+                        ErrorModel *emodel)
 {
 	char tmp[1024];
 	RefList *split;
@@ -215,8 +215,8 @@ static void write_split(struct crystal_refls *crystals, int n_crystals,
 	}
 	snprintf(tmp, 1024, "%s1", outfile);
 	split = merge_intensities(crystals1, n_crystals1, nthreads,
-		                  min_measurements, push_res, 1, 0, NULL,
-	                          emodel);
+		                  min_measurements, push_res, 1, 0,
+	                          emodel, 0, NULL);
 
 	if ( split == NULL ) {
 		ERROR("Not enough crystals for two way split!\n");
@@ -231,8 +231,8 @@ static void write_split(struct crystal_refls *crystals, int n_crystals,
 	reflist_free(split);
 	snprintf(tmp, 1024, "%s2", outfile);
 	split = merge_intensities(crystals2, n_crystals2, nthreads,
-		                  min_measurements, push_res, 1, 0, NULL,
-	                          emodel);
+		                  min_measurements, push_res, 1, 0,
+	                          emodel, 0, NULL);
 	STATUS("and %s\n", tmp);
 	write_reflist_2(tmp, split, sym);
 	free_contribs(split);
@@ -276,7 +276,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
                                struct image **images, int n_crystals,
                                PartialityModel pmodel, int min_measurements,
                                double push_res, SymOpList *sym, int nthreads,
-                               const char *outfile, ErrorModelType emodel)
+                               const char *outfile, ErrorModel *emodel)
 {
 	char *tmp;
 	RefList *split;
@@ -327,8 +327,8 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
 	}
 
 	split = merge_intensities(crystalsn, n_crystalsn, nthreads,
-		                  min_measurements, push_res, 1, 0, &n_used,
-	                          emodel);
+		                  min_measurements, push_res, 1, 0,
+	                          emodel, 0, &n_used);
 	STATUS("Writing dataset '%s' to %s (%i crystals used out of %i)\n",
 	       csplit->dataset_names[dsn], tmp, n_used, n_crystalsn);
 	write_reflist_2(tmp, split, sym);
@@ -1135,6 +1135,7 @@ int main(int argc, char *argv[])
 	PartialityModel pmodel = PMODEL_XSPHERE;
 	char *error_model_str = NULL;
 	ErrorModelType error_model = EMODEL_EQUIVS;
+	ErrorModel *emodel = NULL;
 	int min_measurements = 2;
 	char *rval;
 	struct polarisation polarisation = {.fraction = 1.0,
@@ -1517,6 +1518,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
+	emodel = error_model_new(error_model);
 
 	if ( no_Bscale ) {
 		scaleflags |= SCALE_NO_B;
@@ -1782,12 +1784,11 @@ int main(int argc, char *argv[])
 	if ( reference == NULL ) {
 		if ( !no_scale ) {
 			STATUS("Initial scaling...\n");
-			scale_all(crystals, n_crystals, nthreads, scaleflags,
-			          error_model);
+			scale_all(crystals, n_crystals, nthreads, scaleflags, emodel);
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         min_measurements, push_res, 1, 0, NULL,
-					 error_model);
+		                         min_measurements, push_res, 1, 0,
+		                         emodel, 1, NULL);
 	} else {
 		full = reference;
 	}
@@ -1820,11 +1821,12 @@ int main(int argc, char *argv[])
 			reflist_free(full);
 			if ( !no_scale ) {
 				scale_all(crystals, n_crystals, nthreads,
-				          scaleflags, error_model);
+				          scaleflags, emodel);
 			}
 			full = merge_intensities(crystals, n_crystals, nthreads,
 			                         min_measurements,
-			                         push_res, 1, 0, NULL, error_model);
+			                         push_res, 1, 0,
+			                         emodel, 1, NULL);
 		} /* else full still equals reference */
 
 		check_rejection(crystals, n_crystals, full, max_B,
@@ -1847,7 +1849,7 @@ int main(int argc, char *argv[])
 
 			/* Output split results */
 			write_split(crystals, n_crystals, tmp, nthreads, pmodel,
-			            min_measurements, sym, push_res, error_model);
+			            min_measurements, sym, push_res, emodel);
 
 			/* Output custom split results */
 			if ( csplit != NULL ) {
@@ -1858,7 +1860,7 @@ int main(int argc, char *argv[])
 					                   min_measurements,
 					                   push_res, sym,
 					                   nthreads, tmp,
-					                   error_model);
+					                   emodel);
 				}
 			}
 
@@ -1871,15 +1873,15 @@ int main(int argc, char *argv[])
 		free_contribs(full);
 		reflist_free(full);
 		if ( !no_scale ) {
-			scale_all(crystals, n_crystals, nthreads, scaleflags, error_model);
+			scale_all(crystals, n_crystals, nthreads, scaleflags, emodel);
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements,
-		                         push_res, 1, 0, &n_used, error_model);
+		                         push_res, 1, 0, emodel, 1, &n_used);
 	} else {
 		full = merge_intensities(crystals, n_crystals, nthreads,
-		                         min_measurements, push_res, 1, 0, &n_used,
-		                         error_model);
+		                         min_measurements, push_res, 1, 0,
+		                         emodel, 1, &n_used);
 	}
 
 	if ( unmerged_filename != NULL ) {
@@ -1909,7 +1911,7 @@ int main(int argc, char *argv[])
 
 	/* Output split results */
 	write_split(crystals, n_crystals, outfile, nthreads, pmodel,
-	            min_measurements, sym, push_res, error_model);
+	            min_measurements, sym, push_res, emodel);
 
 	/* Output custom split results */
 	if ( csplit != NULL ) {
@@ -1917,7 +1919,7 @@ int main(int argc, char *argv[])
 		for ( i=0; i<csplit->n_datasets; i++ ) {
 			write_custom_split(csplit, i, crystals, images, n_crystals,
 			                   pmodel, min_measurements, push_res,
-			                   sym, nthreads, outfile, error_model);
+			                   sym, nthreads, outfile, emodel);
 		}
 	}
 
