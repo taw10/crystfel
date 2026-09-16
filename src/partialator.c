@@ -1783,8 +1783,10 @@ int main(int argc, char *argv[])
 	/* Create reference data set if we don't already have one */
 	if ( reference == NULL ) {
 		if ( !no_scale ) {
+			ErrorModel *equivs = error_model_new(EMODEL_EQUIVS);
 			STATUS("Initial scaling...\n");
-			scale_all(crystals, n_crystals, nthreads, scaleflags, emodel);
+			scale_all(crystals, n_crystals, nthreads, scaleflags, equivs);
+			error_model_free(equivs);
 		}
 		full = merge_intensities(crystals, n_crystals, nthreads,
 		                         min_measurements, push_res, 1, 0,

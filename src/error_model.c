@@ -499,3 +499,9 @@ void print_error_model(ErrorModel *emodel)
 	}
 
 }
+
+
+void error_model_free(ErrorModel *emodel)
+{
+	free(emodel);
+}

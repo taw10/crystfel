@@ -51,6 +51,7 @@ typedef enum {
 } ErrorModelType;
 
 extern ErrorModel *error_model_new(ErrorModelType t);
+extern void error_model_free(ErrorModel *emodel);
 extern void refine_error_model(RefList *full, ErrorModel *emodel);
 extern void normal_probability_plot(RefList *full, ErrorModel *emodel);
 extern ErrorModelType parse_error_model(const char *str, int *err);
