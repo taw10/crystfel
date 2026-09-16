@@ -51,9 +51,9 @@ struct error_model
 {
 	ErrorModelType type;
 
-	double sdfac2;
-	double sdb2;
-	double sdadd2;
+	double sdfac;
+	double sdb;
+	double sdadd;
 };
 
 
@@ -63,9 +63,9 @@ ErrorModel *error_model_new(ErrorModelType t)
 	if ( e == NULL ) return NULL;
 	e->type = t;
 
-	e->sdfac2 = 1.0;
-	e->sdb2 = 0.0;
-	e->sdadd2 = 0.0;
+	e->sdfac = 1.0;
+	e->sdb = 0.0;
+	e->sdadd = 0.0;
 
 	return e;
 }
@@ -97,12 +97,12 @@ static double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 
 		case EMODEL_EV11:
 		case EMODEL_KH23:
-		c = sigij*sigij + emodel->sdb2*Ih + emodel->sdadd2*Ih*Ih;
-		return sqrt(emodel->sdfac2*c);
+		c = sigij*sigij + emodel->sdb*emodel->sdb*Ih + emodel->sdadd*emodel->sdadd*Ih*Ih;
+		return sqrt(emodel->sdfac*emodel->sdfac*c);
 
 		case EMODEL_XSCALE:
-		c = sigij*sigij + emodel->sdadd2*Ih*Ih;
-		return sqrt(emodel->sdfac2*c);
+		c = sigij*sigij + emodel->sdadd*emodel->sdadd*Ih*Ih;
+		return sqrt(emodel->sdfac*emodel->sdfac*c);
 
 	}
 	abort();
@@ -176,9 +176,9 @@ static double norm_res_ev11(const gsl_vector *sdparams, void *vp)
 	ErrorModel emodel;
 	RefList *full = vp;
 	emodel.type = EMODEL_EV11;
-	emodel.sdfac2 = gsl_vector_get(sdparams, 0);
-	emodel.sdb2 = gsl_vector_get(sdparams, 1);
-	emodel.sdadd2 = gsl_vector_get(sdparams, 2);
+	emodel.sdfac = gsl_vector_get(sdparams, 0);
+	emodel.sdb   = gsl_vector_get(sdparams, 1);
+	emodel.sdadd = gsl_vector_get(sdparams, 2);
 	return norm_res(&emodel, full);
 }
 
@@ -188,8 +188,8 @@ static double norm_res_xscale(const gsl_vector *sdparams, void *vp)
 	ErrorModel emodel;
 	RefList *full = vp;
 	emodel.type = EMODEL_XSCALE;
-	emodel.sdfac2 = gsl_vector_get(sdparams, 0);
-	emodel.sdadd2 = gsl_vector_get(sdparams, 1);
+	emodel.sdfac = gsl_vector_get(sdparams, 0);
+	emodel.sdadd = gsl_vector_get(sdparams, 1);
 	return norm_res(&emodel, full);
 }
 
@@ -200,9 +200,9 @@ static double norm_res_kh23(const gsl_vector *sdparams, void *vp)
 	ErrorModel emodel;
 	RefList *full = vp;
 	emodel.type = EMODEL_KH23;
-	emodel.sdfac2 = gsl_vector_get(sdparams, 0);
-	emodel.sdb2 = gsl_vector_get(sdparams, 1);
-	emodel.sdadd2 = gsl_vector_get(sdparams, 2);
+	emodel.sdfac = gsl_vector_get(sdparams, 0);
+	emodel.sdb   = gsl_vector_get(sdparams, 1);
+	emodel.sdadd = gsl_vector_get(sdparams, 2);
 	return norm_res(&emodel, full);
 }
 
@@ -307,20 +307,20 @@ static gsl_vector *error_model_params_vector(ErrorModel *emodel)
 		break;
 
 		case EMODEL_EV11:
-		gsl_vector_set(sdparams, 0, emodel->sdfac2);
-		gsl_vector_set(sdparams, 1, emodel->sdb2);
-		gsl_vector_set(sdparams, 2, emodel->sdadd2);
+		gsl_vector_set(sdparams, 0, emodel->sdfac);
+		gsl_vector_set(sdparams, 1, emodel->sdb);
+		gsl_vector_set(sdparams, 2, emodel->sdadd);
 		break;
 
 		case EMODEL_XSCALE:
-		gsl_vector_set(sdparams, 0, emodel->sdfac2);
-		gsl_vector_set(sdparams, 1, emodel->sdadd2);
+		gsl_vector_set(sdparams, 0, emodel->sdfac);
+		gsl_vector_set(sdparams, 1, emodel->sdadd);
 		break;
 
 		case EMODEL_KH23:
-		gsl_vector_set(sdparams, 0, emodel->sdfac2);
-		gsl_vector_set(sdparams, 1, emodel->sdb2);
-		gsl_vector_set(sdparams, 2, emodel->sdadd2);
+		gsl_vector_set(sdparams, 0, emodel->sdfac);
+		gsl_vector_set(sdparams, 1, emodel->sdb);
+		gsl_vector_set(sdparams, 2, emodel->sdadd);
 		break;
 
 	}
@@ -369,20 +369,20 @@ static void error_model_params_set_from_vector(ErrorModel *emodel, gsl_vector *s
 		break;
 
 		case EMODEL_EV11:
-		emodel->sdfac2 = gsl_vector_get(sdparams, 0);
-		emodel->sdb2  = gsl_vector_get(sdparams, 1);
-		emodel->sdadd2 = gsl_vector_get(sdparams, 2);
+		emodel->sdfac = gsl_vector_get(sdparams, 0);
+		emodel->sdb   = gsl_vector_get(sdparams, 1);
+		emodel->sdadd = gsl_vector_get(sdparams, 2);
 		break;
 
 		case EMODEL_XSCALE:
-		emodel->sdfac2 = gsl_vector_get(sdparams, 0);
-		emodel->sdadd2 = gsl_vector_get(sdparams, 1);
+		emodel->sdfac = gsl_vector_get(sdparams, 0);
+		emodel->sdadd = gsl_vector_get(sdparams, 1);
 		break;
 
 		case EMODEL_KH23:
-		emodel->sdfac2 = gsl_vector_get(sdparams, 0);
-		emodel->sdb2   = gsl_vector_get(sdparams, 1);
-		emodel->sdadd2 = gsl_vector_get(sdparams, 2);
+		emodel->sdfac = gsl_vector_get(sdparams, 0);
+		emodel->sdb   = gsl_vector_get(sdparams, 1);
+		emodel->sdadd = gsl_vector_get(sdparams, 2);
 		break;
 
 	}
