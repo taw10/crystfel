@@ -47,6 +47,7 @@
 #include "cell-utils.h"
 #include "scaling.h"
 #include "reflist-utils.h"
+#include "error_model.h"
 
 
 struct scale_args
@@ -125,7 +126,7 @@ static double total_log_r(struct crystal_refls *crystals, int n_crystals,
 
 /* Perform iterative scaling, all the way to convergence */
 void scale_all(struct crystal_refls *crystals, int n_crystals, int nthreads,
-               int scaleflags, ErrorModel emodel)
+               int scaleflags, ErrorModelType emodel)
 {
 	struct scale_args task_defaults;
 	struct scale_queue_args qargs;

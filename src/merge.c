@@ -52,6 +52,7 @@
 #include "reflist-utils.h"
 #include "cell-utils.h"
 #include "merge.h"
+#include "error_model.h"
 
 
 struct merge_queue_args
@@ -65,9 +66,7 @@ struct merge_queue_args
 	long long int n_reflections;
 	int ln_merge;
 	int n_used;
-	double sdfac;
-	double sdb;
-	double sdadd;
+	ErrorModel *emodel;
 };
 
 
@@ -79,6 +78,7 @@ struct merge_worker_args
 	int crystal_number;
 	int n_reflections;
 	int used;
+	ErrorModel *emodel;
 };
 
 
@@ -93,6 +93,7 @@ static void *create_merge_job(void *vqargs)
 	wargs->crystal = qargs->crystals[qargs->n_started].cr;
 	wargs->refls = qargs->crystals[qargs->n_started].refls;
 	wargs->used = 0;
+	wargs->emodel = qargs->emodel;
 
 	qargs->n_started++;
 
@@ -278,216 +279,16 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 }
 
 
-static double mean_I_without_contrib(double Ih, struct reflection_contributions *c, int j)
-{
-    double Ij, G, B, res;
-    signed int h, k, l;
-
-    get_indices(c->contribs[j], &h, &k, &l);
-    res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
-    G = crystal_get_osf(c->contrib_crystals[j]);
-    B = crystal_get_Bfac(c->contrib_crystals[j]);
-    Ij = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
-
-    return (Ih*c->n_contrib - Ij)/(c->n_contrib-1);
-}
-
-
-static double corr_esd(double sigij, double Ih, double sdfac2, double sdb2, double sdadd2)
-{
-    double c = sigij*sigij + sdb2*Ih + sdadd2*Ih*Ih;
-    return sqrt(sdfac2*c);
-}
-
-
-#define NQUANT (20)
-
-static double norm_res(const gsl_vector *sdparams, void *vp)
-{
-	RefList *full = vp;
-	double sdfac2, sdb2, sdadd2;
-	Reflection *refl;
-	RefListIterator *iter;
-	gsl_rstat_quantile_workspace *quantiles[NQUANT];
-	int i;
-
-	sdfac2 = gsl_vector_get(sdparams, 0);
-	sdb2 = gsl_vector_get(sdparams, 1);
-	sdadd2 = gsl_vector_get(sdparams, 2);
-
-	for ( i=0; i<NQUANT; i++ ) {
-	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
-	    quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
-	    if ( quantiles[i] == NULL ) return GSL_NAN;
-	}
-
-	for ( refl = first_refl(full, &iter);
-              refl != NULL;
-              refl = next_refl(refl, iter) )
-	{
-	    struct reflection_contributions *c = get_contributions(refl);
-	    int j;
-
-	    if ( c->n_contrib < 2 ) continue;
-
-	    for ( j=0; j<c->n_contrib; j++ ) {
-
-		/* Mean I(hkl) without contribution j */
-		double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
-		double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
-		                       * (get_intensity(c->contribs[j]) - mIhj)
-		                       / corr_esd(get_esd_intensity(c->contribs[j]),
-					          get_intensity(refl),
-					          sdfac2, sdb2, sdadd2);
-
-		if ( norm_dev < -10 ) continue;
-		if ( norm_dev > 10 ) continue;
-		for ( i=0; i<NQUANT; i++ ) {
-		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
-		}
-
-	    }
-	}
-
-	double total = 0.0;
-	for ( i=0; i<NQUANT; i++ ) {
-	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
-	    total += pow(gsl_rstat_quantile_get(quantiles[i]) - gsl_cdf_gaussian_Pinv(plotpos, 1.0), 2.0);
-	    gsl_rstat_quantile_free(quantiles[i]);
-	}
-	return total;
-}
-
-
-static void normal_probability_plot(RefList *full, double sdfac2, double sdb2, double sdadd2)
-{
-	int i;
-	Reflection *refl;
-	RefListIterator *iter;
-	gsl_rstat_quantile_workspace *quantiles[NQUANT];
-	double minv = +INFINITY;
-	double maxv = -INFINITY;
-	double hstart;
-
-	for ( i=0; i<NQUANT; i++ ) {
-	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
-	    quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
-	    if ( quantiles[i] == NULL ) return;
-	}
-
-	STATUS("Calculating normal probability plot...\n");
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-	    struct reflection_contributions *c = get_contributions(refl);
-	    int j;
-
-	    if ( c->n_contrib < 2 ) continue;
-
-	    for ( j=0; j<c->n_contrib; j++ ) {
-
-		/* Mean I(hkl) without contribution j */
-		double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
-		double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
-		                   * (get_intensity(c->contribs[j]) - mIhj)
-				   / corr_esd(get_esd_intensity(c->contribs[j]),
-					   get_intensity(refl),
-					   sdfac2, sdb2, sdadd2);
-
-		if ( norm_dev < -10 ) continue;
-		if ( norm_dev > 10 ) continue;
-		for ( i=0; i<NQUANT; i++ ) {
-		    gsl_rstat_quantile_add(norm_dev, quantiles[i]);
-		}
-		if ( norm_dev > maxv ) maxv = norm_dev;
-		if ( norm_dev < minv ) minv = norm_dev;
-
-	    }
-	}
-
-	printf("Normal plot:\n");
-	hstart = minv;
-	for ( i=0; i<NQUANT; i++ ) {
-	    double plotpos = (i+1-0.375)/(NQUANT+0.25);
-	    double hend = gsl_rstat_quantile_get(quantiles[i]);
-	    printf("%8.5f  %8.5f   %8.5f   %e\n",
-		   hend, gsl_cdf_gaussian_Pinv(plotpos, 1.0),
-		   hstart+(hend-hstart)/2.0, (double)(1.0/NQUANT)/(hend-hstart));
-	    hstart = hend;
-	    gsl_rstat_quantile_free(quantiles[i]);
-	}
-	printf("%8.5f  %8.5f   %8.5f   %e\n",
-	       maxv, gsl_cdf_gaussian_Pinv((NQUANT+1-0.375)/(NQUANT+0.25), 1.0),
-	       hstart+(maxv-hstart)/2.0, (1.0/NQUANT)/(maxv-hstart));
-	printf("\n\n");
-}
-
-
-static void refine_error_model(RefList *full, double *sdfac2, double *sdb2, double *sdadd2)
-{
-	gsl_multimin_fminimizer *mini;
-	gsl_multimin_function myfunc;
-	gsl_vector *sdparams;
-	gsl_vector *stepsize;
-	int r;
-	int niter;
-
-	sdparams = gsl_vector_alloc(3);
-	gsl_vector_set(sdparams, 0, *sdfac2);
-	gsl_vector_set(sdparams, 1, *sdb2);
-	gsl_vector_set(sdparams, 2, *sdadd2);
-
-	stepsize = gsl_vector_alloc(3);
-	gsl_vector_set(stepsize, 0, 0.25);
-	gsl_vector_set(stepsize, 1, 0.01);
-	gsl_vector_set(stepsize, 2, 0.01);
-
-	myfunc.n = 3;
-	myfunc.f = norm_res;
-	myfunc.params = full;
-
-	mini = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2, 3);
-	gsl_multimin_fminimizer_set(mini, &myfunc, sdparams, stepsize);
-
-	STATUS("Refining error model...\n");
-	niter = 0;
-	do {
-	    niter++;
-	    r = gsl_multimin_fminimizer_iterate(mini);
-	    if ( r ) break;
-	    r = gsl_multimin_test_size(mini->size, 0.01);
-	    STATUS("%2i  |   %f %f %f\n", niter,
-		    sqrt(gsl_vector_get(mini->x, 0)),
-		    sqrt(gsl_vector_get(mini->x, 1)),
-		    sqrt(gsl_vector_get(mini->x, 2)));
-	} while ( r == GSL_CONTINUE && niter < 20 );
-	STATUS("Done.\n");
-
-	gsl_multimin_fminimizer_free(mini);
-
-	*sdfac2 = gsl_vector_get(sdparams, 0);
-	*sdb2 = gsl_vector_get(sdparams, 1);
-	*sdadd2 = gsl_vector_get(sdparams, 2);
-	gsl_vector_free(sdparams);
-	gsl_vector_free(stepsize);
-}
-
-
 RefList *merge_intensities(struct crystal_refls *crystals, int n,
                            int n_threads, int min_meas,
                            double push_res, int use_weak, int ln_merge,
-                           int *pn_used, ErrorModel emodel)
+                           int *pn_used, ErrorModelType emodel)
 {
 	RefList *full;
 	RefList *full2;
 	struct merge_queue_args qargs;
 	Reflection *refl;
 	RefListIterator *iter;
-
-	double sdfac2 = 1.0;
-	double sdb2 = 0.0;
-	double sdadd2 = 0.0;
 
 	if ( n == 0 ) return NULL;
 
@@ -501,9 +302,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	qargs.n_reflections = 0;
 	qargs.ln_merge = ln_merge;
 	qargs.n_used = 0;
-	qargs.sdfac = sqrt(sdfac2);
-	qargs.sdb = sqrt(sdb2);
-	qargs.sdadd = sqrt(sdadd2);
+	qargs.emodel = error_model_new(emodel);
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -512,9 +311,9 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	pthread_rwlock_destroy(&qargs.full_lock);
 
 	if ( !ln_merge ) {
-	    normal_probability_plot(full, sdfac2, sdb2, sdadd2);
-	    refine_error_model(full, &sdfac2, &sdb2, &sdadd2);
-	    normal_probability_plot(full, sdfac2, sdb2, sdadd2);
+		normal_probability_plot(full, qargs.emodel);
+		refine_error_model(full, qargs.emodel);
+		normal_probability_plot(full, qargs.emodel);
 	}
 
 	/* Calculate ESDs from variances, including only reflections with

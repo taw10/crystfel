@@ -109,6 +109,18 @@ void show_vector(gsl_vector *v)
 }
 
 
+void show_vector_oneline(gsl_vector *v)
+{
+	int i;
+
+	STATUS("[ ");
+	for ( i=0; i<v->size; i++ ) {
+		STATUS("%+9.3e ", gsl_vector_get(v, i));
+	}
+	STATUS("]\n");
+}
+
+
 gsl_matrix *matrix_mult(gsl_matrix *A, gsl_matrix *B)
 {
 	gsl_matrix *r = gsl_matrix_calloc(A->size1, A->size2);

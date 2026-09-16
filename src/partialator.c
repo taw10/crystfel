@@ -63,6 +63,7 @@
 #include "merge.h"
 #include "rejection.h"
 #include "version.h"
+#include "error_model.h"
 
 
 struct csplit_hash_entry
@@ -179,7 +180,7 @@ static void add_to_csplit(struct custom_split *csplit, const char *id,
 static void write_split(struct crystal_refls *crystals, int n_crystals,
                         const char *outfile, int nthreads, PartialityModel pmodel,
                         int min_measurements, SymOpList *sym, double push_res,
-                        ErrorModel emodel)
+                        ErrorModelType emodel)
 {
 	char tmp[1024];
 	RefList *split;
@@ -275,7 +276,7 @@ static void write_custom_split(struct custom_split *csplit, int dsn,
                                struct image **images, int n_crystals,
                                PartialityModel pmodel, int min_measurements,
                                double push_res, SymOpList *sym, int nthreads,
-                               const char *outfile, ErrorModel emodel)
+                               const char *outfile, ErrorModelType emodel)
 {
 	char *tmp;
 	RefList *split;
@@ -1133,7 +1134,7 @@ int main(int argc, char *argv[])
 	char *pmodel_str = NULL;
 	PartialityModel pmodel = PMODEL_XSPHERE;
 	char *error_model_str = NULL;
-	ErrorModel error_model = EMODEL_EQUIVS;
+	ErrorModelType error_model = EMODEL_EQUIVS;
 	int min_measurements = 2;
 	char *rval;
 	struct polarisation polarisation = {.fraction = 1.0,
@@ -1509,15 +1510,9 @@ int main(int argc, char *argv[])
 	}
 
 	if ( error_model_str != NULL ) {
-		if ( strcmp(error_model_str, "equivs") == 0 ) {
-			error_model = EMODEL_EQUIVS;
-		} else if ( strcmp(error_model_str, "ev11") == 0 ) {
-			error_model = EMODEL_EV11;
-		} else if ( strcmp(error_model_str, "kh23") == 0 ) {
-			error_model = EMODEL_KH23;
-		} else if ( strcmp(error_model_str, "mm24") == 0 ) {
-			error_model = EMODEL_MM24;
-		} else {
+		int err;
+		error_model = parse_error_model(error_model_str, &err);
+		if ( err ) {
 			ERROR("Unknown error model '%s'.\n", error_model_str);
 			return 1;
 		}
