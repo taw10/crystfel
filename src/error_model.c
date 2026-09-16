@@ -407,6 +407,8 @@ void refine_error_model(RefList *full, ErrorModel *emodel)
 
 	mini = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2, myfunc.n);
 	gsl_multimin_fminimizer_set(mini, &myfunc, sdparams, stepsize);
+	gsl_vector_free(sdparams);
+	gsl_vector_free(stepsize);
 
 	STATUS("Refining error model...\n");
 	niter = 0;
@@ -420,11 +422,9 @@ void refine_error_model(RefList *full, ErrorModel *emodel)
 	} while ( r == GSL_CONTINUE && niter < 20 );
 	STATUS("Done.\n");
 
-	gsl_multimin_fminimizer_free(mini);
+	error_model_params_set_from_vector(emodel, mini->x);
 
-	error_model_params_set_from_vector(emodel, sdparams);
-	gsl_vector_free(sdparams);
-	gsl_vector_free(stepsize);
+	gsl_multimin_fminimizer_free(mini);
 }
 
 
