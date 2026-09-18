@@ -254,7 +254,7 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 	double hstart;
 
 	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = (i+1-0.375)/(NQUANT+0.25);
+		double plotpos = ((double)i+1)/(NQUANT+1);
 		quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
 		if ( quantiles[i] == NULL ) return;
 	}
@@ -290,20 +290,24 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 		}
 	}
 
-	printf("Normal plot:\n");
+	printf("Bin start    Bin middle     Bin end        Density   Theoretical\n");
+	printf("                        (=Sample quantile)            quantile  \n");
+	printf("------------------------------------------------------------------\n");
 	hstart = minv;
+	printf("       -              -    %8.5f   %e             -\n", hstart, 0.0);
 	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = (i+1-0.375)/(NQUANT+0.25);
+		double plotpos = ((double)i+1)/(NQUANT+1);
 		double hend = gsl_rstat_quantile_get(quantiles[i]);
-		printf("%8.5f  %8.5f   %8.5f   %e\n",
-		       hend, gsl_cdf_gaussian_Pinv(plotpos, 1.0),
-		       hstart+(hend-hstart)/2.0, (double)(1.0/NQUANT)/(hend-hstart));
+		printf("%8.5f       %8.5f    %8.5f   %e      %8.5f\n",
+		       hstart, hstart+(hend-hstart)/2.0, hend,
+		       (1.0/(NQUANT+1))/(hend-hstart),
+		       gsl_cdf_gaussian_Pinv(plotpos, 1.0));
 		hstart = hend;
 		gsl_rstat_quantile_free(quantiles[i]);
 	}
-	printf("%8.5f  %8.5f   %8.5f   %e\n",
-	       maxv, gsl_cdf_gaussian_Pinv((NQUANT+1-0.375)/(NQUANT+0.25), 1.0),
-	       hstart+(maxv-hstart)/2.0, (1.0/NQUANT)/(maxv-hstart));
+	printf("%8.5f       %8.5f    %8.5f   %e             -\n",
+	       hstart, hstart+(maxv-hstart)/2.0, maxv,
+	       (1.0/(NQUANT+1))/(maxv-hstart));
 	printf("\n\n");
 }
 
