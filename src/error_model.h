@@ -44,8 +44,8 @@ typedef struct error_model ErrorModel;
 typedef enum {
 
 	EMODEL_EQUIVS,   /**< Observed intensity spread (the "old" method). */
-	EMODEL_EV11,     /**< Evans 2011 with sdFac, sdB and sdAdd. */
-	EMODEL_XSCALE,   /**< As EMODEL_EV11, but without sdB. */
+	EMODEL_EV11,     /**< Evans (2011) with sdFac, sdB and sdAdd. */
+	EMODEL_EV06,     /**< Evans (2006), like EMODEL_EV11, but without sdB. */
 	EMODEL_KH23,     /**< Khouchen et al. 2023. */
 
 } ErrorModelType;

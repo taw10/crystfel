@@ -100,7 +100,7 @@ static double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 		c = sigij*sigij + emodel->sdb*emodel->sdb*Ih + emodel->sdadd*emodel->sdadd*Ih*Ih;
 		return sqrt(emodel->sdfac*emodel->sdfac*c);
 
-		case EMODEL_XSCALE:
+		case EMODEL_EV06:
 		c = sigij*sigij + emodel->sdadd*emodel->sdadd*Ih*Ih;
 		return sqrt(emodel->sdfac*emodel->sdfac*c);
 
@@ -175,7 +175,7 @@ static void error_model_params_set_from_vector(ErrorModel *emodel, const gsl_vec
 		emodel->sdadd = fabs(gsl_vector_get(sdparams, 2));
 		break;
 
-		case EMODEL_XSCALE:
+		case EMODEL_EV06:
 		emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
 		emodel->sdadd = fabs(gsl_vector_get(sdparams, 1));
 		break;
@@ -209,11 +209,11 @@ static double norm_res_ev11(const gsl_vector *sdparams, void *vp)
 }
 
 
-static double norm_res_xscale(const gsl_vector *sdparams, void *vp)
+static double norm_res_ev06(const gsl_vector *sdparams, void *vp)
 {
 	ErrorModel emodel;
 	RefList *full = vp;
-	emodel.type = EMODEL_XSCALE;
+	emodel.type = EMODEL_EV06;
 	error_model_params_set_from_vector(&emodel, sdparams);
 	return norm_res(&emodel, full);
 }
@@ -236,7 +236,7 @@ static double (*error_model_norm_res_func(ErrorModelType t))(const gsl_vector *,
 	switch ( t ) {
 		case EMODEL_EQUIVS: return norm_res_equivs;
 		case EMODEL_EV11:   return norm_res_ev11;
-		case EMODEL_XSCALE: return norm_res_xscale;
+		case EMODEL_EV06:   return norm_res_ev06;
 		case EMODEL_KH23:   return norm_res_kh23;
 	}
 	abort();
@@ -313,7 +313,7 @@ static int error_model_num_params(ErrorModel *emodel)
 	switch ( emodel->type ) {
 		case EMODEL_EQUIVS: return 0;
 		case EMODEL_EV11:   return 3;
-		case EMODEL_XSCALE: return 2;
+		case EMODEL_EV06:   return 2;
 		case EMODEL_KH23:   return 3;
 	}
 	abort();
@@ -335,7 +335,7 @@ static gsl_vector *error_model_params_vector(ErrorModel *emodel)
 		gsl_vector_set(sdparams, 2, emodel->sdadd);
 		break;
 
-		case EMODEL_XSCALE:
+		case EMODEL_EV06:
 		gsl_vector_set(sdparams, 0, emodel->sdfac);
 		gsl_vector_set(sdparams, 1, emodel->sdadd);
 		break;
@@ -367,7 +367,7 @@ static gsl_vector *error_model_step_vector(ErrorModel *emodel)
 		gsl_vector_set(stepsize, 2, 0.01);
 		break;
 
-		case EMODEL_XSCALE:
+		case EMODEL_EV06:
 		gsl_vector_set(stepsize, 0, 0.25);
 		gsl_vector_set(stepsize, 1, 0.01);
 		break;
@@ -439,7 +439,10 @@ ErrorModelType parse_error_model(const char *str, int *err)
 		return EMODEL_EV11;
 
 	} else if ( strcmp(str, "xscale") == 0 ) {
-		return EMODEL_XSCALE;
+		return EMODEL_EV06;
+
+	} else if ( strcmp(str, "ev06") == 0 ) {
+		return EMODEL_EV06;
 
 	} else if ( strcmp(str, "kh23") == 0 ) {
 		return EMODEL_KH23;
@@ -460,10 +463,9 @@ static double isigi_asymptotic(ErrorModel *emodel)
 
 		case EMODEL_EV11:
 		case EMODEL_KH23:
-		return 1.0/(emodel->sdfac*emodel->sdadd); /* FIXME: Really no sdB? */
-
-		case EMODEL_XSCALE:
+		case EMODEL_EV06:
 		return 1.0/(emodel->sdfac*emodel->sdadd);
+		/* The SdB term in Ev11 and Kh23 does not affect ISa */
 
 	}
 	abort();
@@ -490,8 +492,8 @@ void print_error_model(ErrorModel *emodel)
 		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
 		break;
 
-		case EMODEL_XSCALE:
-		STATUS("Error model parameters (XSCALE): sdFac=%.3f, sdAdd=%.3f\n",
+		case EMODEL_EV06:
+		STATUS("Error model parameters (Ev06): sdFac=%.3f, sdAdd=%.3f\n",
 		        emodel->sdfac, emodel->sdadd);
 		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
 		break;
