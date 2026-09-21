@@ -103,11 +103,10 @@ static void *create_merge_job(void *vqargs)
 
 static int alloc_contribs(struct reflection_contributions *c)
 {
-	c->contribs = realloc(c->contribs, c->max_contrib*sizeof(Reflection *));
-	c->contrib_crystals = realloc(c->contrib_crystals,
-	                              c->max_contrib*sizeof(Crystal *));
+	c->contribs = realloc(c->contribs, c->max_contrib*sizeof(double));
+	c->contrib_esds = realloc(c->contrib_esds, c->max_contrib*sizeof(double));
 	if ( c->contribs == NULL ) return 1;
-	if ( c->contrib_crystals == NULL ) return 1;
+	if ( c->contrib_esds == NULL ) return 1;
 	return 0;
 }
 
@@ -147,7 +146,7 @@ static Reflection *get_locked_reflection(RefList *list, pthread_rwlock_t *lock,
 				c->n_contrib = 0;
 				c->max_contrib = 32;
 				c->contribs = NULL;
-				c->contrib_crystals = NULL;
+				c->contrib_esds = NULL;
 				if ( alloc_contribs(c) ) {
 					set_contributions(f, NULL);
 				} else {
@@ -204,6 +203,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double mean, sumweight, M2, temp, delta, R;
 		double res, w;
+		double Ii;
 		struct reflection_contributions *c;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
@@ -239,10 +239,11 @@ static void run_merge_job(void *vwargs, int cookie)
 
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
+		Ii = correct_reflection(get_intensity(refl), refl, G,  B, res);
 		if ( ln_merge ) {
-			delta = log(correct_reflection(get_intensity(refl), refl, G, B, res)) - mean;
+			delta = log(Ii) - mean;
 		} else {
-			delta = correct_reflection(get_intensity(refl), refl, G,  B, res) - mean;
+			delta = Ii - mean;
 		}
 		R = delta * w / temp;
 		set_intensity(f, mean + R);
@@ -253,8 +254,8 @@ static void run_merge_job(void *vwargs, int cookie)
 		/* Record this contribution */
 		c = get_contributions(f);
 		if ( c != NULL ) {
-			c->contribs[c->n_contrib] = refl;
-			c->contrib_crystals[c->n_contrib++] = cr;
+			c->contribs[c->n_contrib] = Ii;
+			c->contrib_esds[c->n_contrib++] = get_esd_intensity(refl);
 			if ( c->n_contrib == c->max_contrib ) {
 				c->max_contrib += 64;
 				alloc_contribs(c);
@@ -362,7 +363,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 			struct reflection_contributions *c;
 			c = get_contributions(refl);
 			free(c->contribs);
-			free(c->contrib_crystals);
+			free(c->contrib_esds);
 			free(c);
 
 		}

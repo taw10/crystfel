@@ -88,8 +88,8 @@ struct reflection_contributions
 {
 	int          n_contrib;
 	int          max_contrib;
-	Reflection **contribs;
-	Crystal    **contrib_crystals;
+	double      *contribs;
+	double      *contrib_esds;
 };
 
 extern RefList *reflist_new(void);

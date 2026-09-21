@@ -781,7 +781,7 @@ void free_contribs(RefList *list)
 		struct reflection_contributions *c;
 		c = get_contributions(refl);
 		cffree(c->contribs);
-		cffree(c->contrib_crystals);
+		cffree(c->contrib_esds);
 		cffree(c);
 	}
 }

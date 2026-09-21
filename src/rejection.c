@@ -135,18 +135,9 @@ static int calculate_refl_mean_var(RefList *full)
 
 		/* Mean of contributions */
 		for ( j=0; j<c->n_contrib; j++ ) {
-
-			double Ii, G, B, res;
-			res = resolution(crystal_get_cell(c->contrib_crystals[j]),
-			                 h, k, l);
-
-			G = crystal_get_osf(c->contrib_crystals[j]);
-			B = crystal_get_Bfac(c->contrib_crystals[j]);
-			Ii = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
-
+			double Ii = c->contribs[j];
 			Ex += Ii - K;
 			Ex2 += (Ii - K) * (Ii - K);
-
 		}
 
 		if ( c->n_contrib < 2 ) continue;

@@ -73,16 +73,7 @@ ErrorModel *error_model_new(ErrorModelType t)
 
 static double mean_I_without_contrib(double Ih, struct reflection_contributions *c, int j)
 {
-	double Ij, G, B, res;
-	signed int h, k, l;
-
-	get_indices(c->contribs[j], &h, &k, &l);
-	res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
-	G = crystal_get_osf(c->contrib_crystals[j]);
-	B = crystal_get_Bfac(c->contrib_crystals[j]);
-	Ij = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
-
-	return (Ih*c->n_contrib - Ij)/(c->n_contrib-1);
+	return (Ih*c->n_contrib - c->contribs[j])/(c->n_contrib-1);
 }
 
 
@@ -138,8 +129,8 @@ static double norm_res(ErrorModel *emodel, RefList *full)
 			/* Mean I(hkl) without contribution j */
 			double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
 			double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
-			                       * (get_intensity(c->contribs[j]) - mIhj)
-			                       / corr_esd(get_esd_intensity(c->contribs[j]),
+			                       * (c->contribs[j] - mIhj)
+			                       / corr_esd(c->contrib_esds[j],
 			                                  get_intensity(refl),
 			                                  emodel);
 
@@ -275,14 +266,7 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 			 * error model equation, instead of the mean. */
 			Ih = -INFINITY;
 			for ( j=0; j<c->n_contrib; j++ ) {
-				double Ij, G, B, res;
-				signed int h, k, l;
-				get_indices(c->contribs[j], &h, &k, &l);
-				res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
-				G = crystal_get_osf(c->contrib_crystals[j]);
-				B = crystal_get_Bfac(c->contrib_crystals[j]);
-				Ij = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
-				if ( Ij > Ih ) Ih = Ij;
+				if ( c->contribs[j] > Ih ) Ih = c->contribs[j];
 			}
 		} else {
 			Ih = get_intensity(refl);
@@ -293,9 +277,8 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 			/* Mean I(hkl) without contribution j */
 			double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
 			double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
-			                   * (get_intensity(c->contribs[j]) - mIhj)
-			                   / corr_esd(get_esd_intensity(c->contribs[j]),
-			                   Ih, emodel);
+			                   * (c->contribs[j] - mIhj)
+			                   / corr_esd(c->contrib_esds[j], Ih, emodel);
 
 			if ( norm_dev < -10 ) continue;
 			if ( norm_dev > 10 ) continue;
