@@ -203,7 +203,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		signed int h, k, l;
 		double mean, sumweight, M2, temp, delta, R;
 		double res, w;
-		double Ii;
+		double Ii, esdIi;
 		struct reflection_contributions *c;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
@@ -240,6 +240,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
 		Ii = correct_reflection(get_intensity(refl), refl, G,  B, res);
+		esdIi = correct_reflection(get_esd_intensity(refl), refl, G, B, res);
 		if ( ln_merge ) {
 			delta = log(Ii) - mean;
 		} else {
@@ -255,7 +256,7 @@ static void run_merge_job(void *vwargs, int cookie)
 		c = get_contributions(f);
 		if ( c != NULL ) {
 			c->contribs[c->n_contrib] = Ii;
-			c->contrib_esds[c->n_contrib++] = get_esd_intensity(refl);
+			c->contrib_esds[c->n_contrib++] = esdIi;
 			if ( c->n_contrib == c->max_contrib ) {
 				c->max_contrib += 64;
 				alloc_contribs(c);
