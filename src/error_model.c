@@ -421,7 +421,7 @@ void refine_error_model(RefList *full, ErrorModel *emodel)
 		niter++;
 		r = gsl_multimin_fminimizer_iterate(mini);
 		if ( r ) break;
-		r = gsl_multimin_test_size(mini->size, 0.01);
+		r = gsl_multimin_test_size(mini->size, 0.1);
 		STATUS("%2i  |   ", niter);
 		show_vector_oneline(mini->x);
 	} while ( r == GSL_CONTINUE && niter < 20 );
