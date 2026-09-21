@@ -266,8 +266,27 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 	{
 		struct reflection_contributions *c = get_contributions(refl);
 		int j;
+		double Ih;
 
 		if ( c->n_contrib < 2 ) continue;
+
+		if ( emodel->type == EMODEL_KH23 ) {
+			/* Kh23 uses the highest intensity contribution in the
+			 * error model equation, instead of the mean. */
+			Ih = -INFINITY;
+			for ( j=0; j<c->n_contrib; j++ ) {
+				double Ij, G, B, res;
+				signed int h, k, l;
+				get_indices(c->contribs[j], &h, &k, &l);
+				res = resolution(crystal_get_cell(c->contrib_crystals[j]), h, k, l);
+				G = crystal_get_osf(c->contrib_crystals[j]);
+				B = crystal_get_Bfac(c->contrib_crystals[j]);
+				Ij = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
+				if ( Ij > Ih ) Ih = Ij;
+			}
+		} else {
+			Ih = get_intensity(refl);
+		}
 
 		for ( j=0; j<c->n_contrib; j++ ) {
 
@@ -276,8 +295,7 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 			double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
 			                   * (get_intensity(c->contribs[j]) - mIhj)
 			                   / corr_esd(get_esd_intensity(c->contribs[j]),
-			                   get_intensity(refl),
-			                   emodel);
+			                   Ih, emodel);
 
 			if ( norm_dev < -10 ) continue;
 			if ( norm_dev > 10 ) continue;
