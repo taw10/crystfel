@@ -71,12 +71,6 @@ ErrorModel *error_model_new(ErrorModelType t)
 }
 
 
-static double mean_I_without_contrib(double Ih, struct reflection_contributions *c, int j)
-{
-	return (Ih*c->n_contrib - c->contribs[j])/(c->n_contrib-1);
-}
-
-
 static double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 {
 	double c;
@@ -102,53 +96,87 @@ static double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 
 #define NQUANT (20)
 
-static double norm_res(ErrorModel *emodel, RefList *full)
+static gsl_rstat_quantile_workspace **fill_quantiles(RefList *full, ErrorModel *emodel,
+		                                     double *pminv, double *pmaxv)
 {
+	int i;
 	Reflection *refl;
 	RefListIterator *iter;
-	gsl_rstat_quantile_workspace *quantiles[NQUANT];
-	int i;
+	gsl_rstat_quantile_workspace **quantiles;
+	double minv = +INFINITY;
+	double maxv = -INFINITY;
+
+	quantiles = malloc(NQUANT*sizeof(gsl_rstat_quantile_workspace *));
+	if ( quantiles == NULL ) return NULL;
 
 	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = (i+1-0.375)/(NQUANT+0.25);
+		double plotpos = ((double)i+1)/(NQUANT+1);
 		quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
-		if ( quantiles[i] == NULL ) return GSL_NAN;
+		if ( quantiles[i] == NULL ) return NULL;
 	}
 
 	for ( refl = first_refl(full, &iter);
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		struct reflection_contributions *c = get_contributions(refl);
 		int j;
+		double Ih;
+		struct reflection_contributions *c = get_contributions(refl);
 
 		if ( c->n_contrib < 2 ) continue;
 
+		if ( emodel->type == EMODEL_KH23 ) {
+			/* Kh23 uses the highest intensity contribution in the
+			 * error model equation, instead of the mean. */
+			Ih = -INFINITY;
+			for ( j=0; j<c->n_contrib; j++ ) {
+				if ( c->contribs[j] > Ih ) Ih = c->contribs[j];
+			}
+		} else {
+			Ih = get_intensity(refl);
+		}
+
 		for ( j=0; j<c->n_contrib; j++ ) {
 
-			/* Mean I(hkl) without contribution j */
-			double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
-			double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
-			                       * (c->contribs[j] - mIhj)
-			                       / corr_esd(c->contrib_esds[j],
-			                                  get_intensity(refl),
-			                                  emodel);
+			/* Mean (not max, for Kh23) without contribution j */
+			double mIhj = (get_intensity(refl)*c->n_contrib - c->contribs[j])/(c->n_contrib-1);
+
+			double bcorr = sqrt(((double)c->n_contrib-1)/c->n_contrib);
+			double norm_dev = bcorr * (c->contribs[j] - mIhj)
+			                   / corr_esd(c->contrib_esds[j], Ih, emodel);
 
 			if ( norm_dev < -10 ) continue;
 			if ( norm_dev > 10 ) continue;
 			for ( i=0; i<NQUANT; i++ ) {
 				gsl_rstat_quantile_add(norm_dev, quantiles[i]);
 			}
+			if ( norm_dev > maxv ) maxv = norm_dev;
+			if ( norm_dev < minv ) minv = norm_dev;
 
-	    }
+		}
 	}
+
+	*pminv = minv;
+	*pmaxv = maxv;
+	return quantiles;
+}
+
+
+static double norm_res(ErrorModel *emodel, RefList *full)
+{
+	gsl_rstat_quantile_workspace **quantiles;
+	double minv, maxv;
+	int i;
+
+	quantiles = fill_quantiles(full, emodel, &minv, &maxv);
 
 	double total = 0.0;
 	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = (i+1-0.375)/(NQUANT+0.25);
+		double plotpos = ((double)i+1)/(NQUANT+1);
 		total += pow(gsl_rstat_quantile_get(quantiles[i]) - gsl_cdf_gaussian_Pinv(plotpos, 1.0), 2.0);
 		gsl_rstat_quantile_free(quantiles[i]);
 	}
+	free(quantiles);
 	return total;
 }
 
@@ -236,61 +264,12 @@ static double (*error_model_norm_res_func(ErrorModelType t))(const gsl_vector *,
 
 void normal_probability_plot(RefList *full, ErrorModel *emodel)
 {
-	int i;
-	Reflection *refl;
-	RefListIterator *iter;
-	gsl_rstat_quantile_workspace *quantiles[NQUANT];
-	double minv = +INFINITY;
-	double maxv = -INFINITY;
+	gsl_rstat_quantile_workspace **quantiles;
 	double hstart;
+	int i;
+	double minv, maxv;
 
-	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = ((double)i+1)/(NQUANT+1);
-		quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
-		if ( quantiles[i] == NULL ) return;
-	}
-
-	STATUS("Calculating normal probability plot...\n");
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		struct reflection_contributions *c = get_contributions(refl);
-		int j;
-		double Ih;
-
-		if ( c->n_contrib < 2 ) continue;
-
-		if ( emodel->type == EMODEL_KH23 ) {
-			/* Kh23 uses the highest intensity contribution in the
-			 * error model equation, instead of the mean. */
-			Ih = -INFINITY;
-			for ( j=0; j<c->n_contrib; j++ ) {
-				if ( c->contribs[j] > Ih ) Ih = c->contribs[j];
-			}
-		} else {
-			Ih = get_intensity(refl);
-		}
-
-		for ( j=0; j<c->n_contrib; j++ ) {
-
-			/* Mean I(hkl) without contribution j */
-			double mIhj = mean_I_without_contrib(get_intensity(refl), c, j);
-			double norm_dev = sqrt(((double)c->n_contrib-1)/c->n_contrib)
-			                   * (c->contribs[j] - mIhj)
-			                   / corr_esd(c->contrib_esds[j], Ih, emodel);
-
-			if ( norm_dev < -10 ) continue;
-			if ( norm_dev > 10 ) continue;
-			for ( i=0; i<NQUANT; i++ ) {
-				gsl_rstat_quantile_add(norm_dev, quantiles[i]);
-			}
-			if ( norm_dev > maxv ) maxv = norm_dev;
-			if ( norm_dev < minv ) minv = norm_dev;
-
-		}
-	}
-
+	quantiles = fill_quantiles(full, emodel, &minv, &maxv);
 	printf("Bin start    Bin middle     Bin end        Density   Theoretical\n");
 	printf("                        (=Sample quantile)            quantile  \n");
 	printf("------------------------------------------------------------------\n");
@@ -310,6 +289,7 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 	       hstart, hstart+(maxv-hstart)/2.0, maxv,
 	       (1.0/(NQUANT+1))/(maxv-hstart));
 	printf("\n\n");
+	free(quantiles);
 }
 
 
