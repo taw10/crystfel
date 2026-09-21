@@ -234,13 +234,21 @@ static void run_merge_job(void *vwargs, int cookie)
 			continue;
 		}
 
-		/* Reflections count less the more they have to be scaled up */
-		w = get_partiality(refl) / correct_reflection_nopart(1.0, refl, G, B, res);
+		Ii = correct_reflection(get_intensity(refl), refl, G,  B, res);
+		esdIi = correct_reflection(get_esd_intensity(refl), refl, G, B, res);
+
+		/* Weighting factor */
+		if ( wargs->qargs->emodel->type == EMODEL_EQUIVS ) {
+			/* Preserve old behaviour for 'equivs'
+			 * (no option provided for sigma-weighting without error modelling) */
+			w = get_partiality(refl) / correct_reflection_nopart(1.0, refl, G, B, res);
+		} else {
+			double  esdIiC = corr_esd(esdIiC, Ih, wargs->qargs->emodel);
+			w = 1.0/(esdIiC*esdIiC);
+		}
 
 		/* Running mean and variance calculation */
 		temp = w + sumweight;
-		Ii = correct_reflection(get_intensity(refl), refl, G,  B, res);
-		esdIi = correct_reflection(get_esd_intensity(refl), refl, G, B, res);
 		if ( ln_merge ) {
 			delta = log(Ii) - mean;
 		} else {

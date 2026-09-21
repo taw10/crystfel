@@ -71,7 +71,7 @@ ErrorModel *error_model_new(ErrorModelType t)
 }
 
 
-static double corr_esd(double sigij, double Ih, ErrorModel *emodel)
+double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 {
 	double c;
 
