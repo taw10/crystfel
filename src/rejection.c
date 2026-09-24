@@ -126,9 +126,7 @@ static int calculate_refl_mean_var(RefList *full)
 		if ( (h==oh) && (k==ok) && (l==ol) ) continue;
 		oh = h;  ok = k;  ol = l;
 
-		/* We use the mean (merged) intensity as the reference point
-		 * for shifting the data in the variance calculation */
-		K = get_intensity(refl);
+		K = get_unweighted_mean(refl);
 
 		c = get_contributions(refl);
 		if ( c == NULL ) return 1;
