@@ -71,7 +71,7 @@ ErrorModel *error_model_new(ErrorModelType t)
 }
 
 
-double corr_esd(double sigij, double Ih, ErrorModel *emodel)
+static double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 {
 	double c;
 
@@ -91,6 +91,31 @@ double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 
 	}
 	abort();
+}
+
+
+double *make_weights_array(struct reflection_contributions *c, Reflection *refl, ErrorModel *emodel)
+{
+	int i;
+	double *w;
+
+	w = malloc(c->n_contrib * sizeof(double));
+
+	for ( i=0; i<c->n_contrib; i++ ) {
+		if ( emodel->type == EMODEL_EQUIVS ) {
+			/* Preserve old behaviour for 'equivs'
+			 * (no option provided for sigma-weighting without error modelling) */
+			w[i] = c->contrib_legacy_weights[i];;
+		} else if ( emodel->type == EMODEL_KH23 ) {
+			double  esdIiC = corr_esd(c->contrib_esds[i], get_max_measurement(refl), emodel);
+			w[i] = 1.0/(esdIiC*esdIiC);
+		} else {
+			double  esdIiC = corr_esd(c->contrib_esds[i], get_unweighted_mean(refl), emodel);
+			w[i] = 1.0/(esdIiC*esdIiC);
+		}
+	}
+
+	return w;
 }
 
 

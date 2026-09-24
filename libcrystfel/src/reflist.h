@@ -90,6 +90,7 @@ struct reflection_contributions
 	int          max_contrib;
 	double      *contribs;
 	double      *contrib_esds;
+	double      *contrib_legacy_weights;
 };
 
 extern RefList *reflist_new(void);

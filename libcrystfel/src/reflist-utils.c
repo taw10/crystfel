@@ -782,6 +782,7 @@ void free_contribs(RefList *list)
 		c = get_contributions(refl);
 		cffree(c->contribs);
 		cffree(c->contrib_esds);
+		cffree(c->contrib_legacy_weights);
 		cffree(c);
 	}
 }
