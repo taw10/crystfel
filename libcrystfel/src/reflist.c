@@ -57,13 +57,6 @@ struct _refldata {
 	double ss;
 	int panel_number;
 
-	/* Non-zero if this reflection can be used for scaling */
-	int scalable;
-
-	/* Non-zero if this reflection should be used as a "guide star" for
-	 * post refinement */
-	int refinable;
-
 	/* Intensity */
 	double intensity;
 	double esd_i;
