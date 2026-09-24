@@ -60,6 +60,8 @@ struct _refldata {
 	/* Intensity */
 	double intensity;
 	double esd_i;
+	double max_measurement;
+	double unweighted_mean;
 
 	/* Phase */
 	double phase;
@@ -556,6 +558,30 @@ struct reflection_contributions *get_contributions(const Reflection *refl)
 	return refl->data.contribs;
 }
 
+
+/**
+ * \param refl: Reflection
+ *
+ * \returns the reflection's maximum scaled measurement intensity
+ *
+ **/
+double get_max_measurement(Reflection *refl)
+{
+	return refl->data.max_measurement;
+}
+
+
+/**
+ * \param refl: Reflection
+ *
+ * \returns the reflection's unweighted mean
+ *
+ **/
+double get_unweighted_mean(Reflection *refl)
+{
+	return refl->data.unweighted_mean;
+}
+
 /********************************** Setters ***********************************/
 
 /**
@@ -810,6 +836,29 @@ void set_contributions(Reflection *refl,
 {
 	refl->data.contribs = contribs;
 }
+
+
+/**
+ * \param refl: Reflection
+ * \param max_meas: The maximum scaled measurement intensity
+ *
+ **/
+void set_max_measurement(Reflection *refl, double max_meas)
+{
+	refl->data.max_measurement = max_meas;
+}
+
+
+/**
+ * \param refl: Reflection
+ * \param unw: The unweighted mean of scaled measurements of this reflection
+ *
+ **/
+void set_unweighted_mean(Reflection *refl, double unw)
+{
+	refl->data.unweighted_mean = unw;
+}
+
 
 
 /********************************* Insertion **********************************/
