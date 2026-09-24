@@ -33,14 +33,6 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_linalg.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_fit.h>
-#include <gsl/gsl_rstat.h>
-#include <gsl/gsl_cdf.h>
-#include <gsl/gsl_multimin.h>
 
 #include "image.h"
 #include "peaks.h"
