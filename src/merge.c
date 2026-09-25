@@ -314,6 +314,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 		signed int h, k, l;
 		struct reflection_contributions *c;
 		double *weights;
+		double wmean, var;
 
 		c = get_contributions(refl_in);
 
@@ -338,15 +339,18 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 		set_redundancy(f, get_redundancy(refl_in));
 
 		/* Unweighted mean (used for Ev06, Ev11 etc, also deltaCChalf) */
-		set_unweighted_mean(f, gsl_stats_mean(c->contribs, 0, c->n_contrib));
+		set_unweighted_mean(f, gsl_stats_mean(c->contribs, 1, c->n_contrib));
 
 		/* Max scaled intensity (used for Kh23) */
-		set_max_measurement(f, gsl_stats_max(c->contribs, 0, c->n_contrib));
+		set_max_measurement(f, gsl_stats_max(c->contribs, 1, c->n_contrib));
 
 		weights = make_weights_array(c, f, emodel);
 
-		set_intensity(f, gsl_stats_wmean(weights, 0, c->contribs, 0, c->n_contrib));
-		set_esd_intensity(f, gsl_stats_wsd(weights, 0, c->contribs, 0, c->n_contrib));
+		wmean = gsl_stats_wmean(weights, 1, c->contribs, 1, c->n_contrib);
+		set_intensity(f, wmean);
+
+		var = gsl_stats_wvariance_m(weights, 1, c->contribs, 1, c->n_contrib, wmean);
+		set_esd_intensity(f, sqrt(var)/sqrt(c->n_contrib));
 
 		/* Correct for averaging log of intensities */
 		if ( ln_merge ) {
