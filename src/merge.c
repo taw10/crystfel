@@ -314,7 +314,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 		signed int h, k, l;
 		struct reflection_contributions *c;
 		double *weights;
-		double wmean, var;
+		double wmean;
 
 		c = get_contributions(refl_in);
 
@@ -349,8 +349,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 		wmean = gsl_stats_wmean(weights, 1, c->contribs, 1, c->n_contrib);
 		set_intensity(f, wmean);
 
-		var = gsl_stats_wvariance_m(weights, 1, c->contribs, 1, c->n_contrib, wmean);
-		set_esd_intensity(f, sqrt(var)/sqrt(c->n_contrib));
+		set_esd_intensity(f, merged_esd(c, weights, wmean, emodel));
 
 		/* Correct for averaging log of intensities */
 		if ( ln_merge ) {

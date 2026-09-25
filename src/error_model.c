@@ -35,6 +35,7 @@
 #include <assert.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_cdf.h>
+#include <gsl/gsl_statistics.h>
 #include <gsl/gsl_rstat.h>
 #include <gsl/gsl_multimin.h>
 
@@ -68,6 +69,25 @@ ErrorModel *error_model_new(ErrorModelType t)
 	e->sdadd = 0.0;
 
 	return e;
+}
+
+
+double merged_esd(struct reflection_contributions *c, double *weights,
+                  double wmean, ErrorModel *emodel)
+{
+	if ( emodel->type == EMODEL_EQUIVS ) {
+		double var;
+		var = gsl_stats_wvariance_m(c->contrib_legacy_weights, 1,
+		                            c->contribs, 1, c->n_contrib, wmean);
+		return sqrt(var)/sqrt(c->n_contrib);
+	} else {
+		int i;
+		double total = 0.0;
+		for ( i=0; i<c->n_contrib; i++ ) {
+			total += weights[i];
+		}
+		return sqrt(1.0/total);
+	}
 }
 
 

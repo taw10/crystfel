@@ -53,6 +53,8 @@ typedef enum {
 
 extern ErrorModel *error_model_new(ErrorModelType t);
 extern void error_model_free(ErrorModel *emodel);
+extern double merged_esd(struct reflection_contributions *c, double *weights,
+                         double wmean, ErrorModel *emodel);
 extern double *make_weights_array(struct reflection_contributions *c, Reflection *refl, ErrorModel *e);
 extern void refine_error_model(RefList *full, ErrorModel *emodel);
 extern void normal_probability_plot(RefList *full, ErrorModel *emodel);
