@@ -192,7 +192,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 		/* We use the mean (merged) intensity as the reference point
 		 * for shifting the data in the variance calculation */
-		K = get_intensity(refl);
+		K = get_unweighted_mean(refl);
 		Ex = get_temp1(refl);
 		Ex2 = get_temp2(refl);
 		c = get_contributions(refl);
@@ -217,6 +217,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 			if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
 
+				/* FIXME: Wrong? */
 				double Ii = correct_reflection(get_intensity(exrefl), exrefl, G, B, res);
 
 				/* Remove contribution of this reflection */
