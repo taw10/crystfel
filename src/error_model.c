@@ -171,24 +171,17 @@ static gsl_rstat_quantile_workspace **fill_quantiles(RefList *full, ErrorModel *
 		if ( c->n_contrib < 2 ) continue;
 
 		if ( emodel->type == EMODEL_KH23 ) {
-			/* Kh23 uses the highest intensity contribution in the
-			 * error model equation, instead of the mean. */
-			Ih = -INFINITY;
-			for ( j=0; j<c->n_contrib; j++ ) {
-				if ( c->contribs[j] > Ih ) Ih = c->contribs[j];
-			}
+			Ih = get_max_measurement(refl);
 		} else {
-			Ih = get_intensity(refl);
+			Ih = get_unweighted_mean(refl);
 		}
 
 		for ( j=0; j<c->n_contrib; j++ ) {
 
 			/* Mean (not max, for Kh23) without contribution j */
-			double mIhj = (get_intensity(refl)*c->n_contrib - c->contribs[j])/(c->n_contrib-1);
-
+			double mIhj = (get_unweighted_mean(refl)*c->n_contrib - c->contribs[j])/(c->n_contrib-1);
 			double bcorr = sqrt(((double)c->n_contrib-1)/c->n_contrib);
-			double norm_dev = bcorr * (c->contribs[j] - mIhj)
-			                   / corr_esd(c->contrib_esds[j], Ih, emodel);
+			double norm_dev = bcorr * (c->contribs[j] - mIhj) / corr_esd(c->contrib_esds[j], Ih, emodel);
 
 			if ( norm_dev < -10 ) continue;
 			if ( norm_dev > 10 ) continue;
