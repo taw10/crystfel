@@ -598,7 +598,7 @@ void average_unit_cell(struct crystal_refls *crystals,
 {
 	int i;
 	UnitCell *cmean;
-	double a_sumw = 0.0, a_mean = 0.0, a_M2;
+	double a_sumw = 0.0, a_mean = 0.0, a_M2 = 0.0;
 	double b_sumw = 0.0, b_mean = 0.0, b_M2 = 0.0;
 	double c_sumw = 0.0, c_mean = 0.0, c_M2 = 0.0;
 	double al_sumw = 0.0, al_mean = 0.0, al_M2 = 0.0;
