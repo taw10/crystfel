@@ -356,6 +356,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 			set_unweighted_mean(f, exp(get_unweighted_mean(f)));
 			set_intensity(f, exp(get_intensity(f)));
 			set_esd_intensity(f, exp(get_esd_intensity(f)));
+			set_max_measurement(f, exp(get_max_measurement(f)));
 		}
 
 		free(weights);
