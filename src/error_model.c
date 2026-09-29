@@ -164,7 +164,7 @@ static gsl_rstat_quantile_workspace **fill_quantiles(RefList *full, ErrorModel *
 	      refl != NULL;
 	      refl = next_refl(refl, iter) )
 	{
-		int j;
+		int j, n;
 		double Ih;
 		struct reflection_contributions *c = get_contributions(refl);
 
@@ -176,11 +176,12 @@ static gsl_rstat_quantile_workspace **fill_quantiles(RefList *full, ErrorModel *
 			Ih = get_unweighted_mean(refl);
 		}
 
+		n = c->n_contrib;
 		for ( j=0; j<c->n_contrib; j++ ) {
 
 			/* Mean (not max, for Kh23) without contribution j */
-			double mIhj = (get_unweighted_mean(refl)*c->n_contrib - c->contribs[j])/(c->n_contrib-1);
-			double bcorr = sqrt(((double)c->n_contrib-1)/c->n_contrib);
+			double mIhj = (get_unweighted_mean(refl)*n - c->contribs[j])/(n-1);
+			double bcorr = sqrt(((double)n-1)/n);
 			double norm_dev = bcorr * (c->contribs[j] - mIhj) / corr_esd(c->contrib_esds[j], Ih, emodel);
 
 			if ( norm_dev < -10 ) continue;
