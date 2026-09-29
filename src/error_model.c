@@ -250,6 +250,7 @@ static double norm_res(const gsl_vector *sdparams, void *vp)
 	error_model_params_set_from_vector(&emodel, sdparams);
 
 	quantiles = fill_quantiles(params->full, &emodel, &minv, &maxv);
+	if ( quantiles == NULL ) return GSL_NAN;
 
 	double total = 0.0;
 	for ( i=0; i<NQUANT; i++ ) {
@@ -271,6 +272,10 @@ void normal_probability_plot(RefList *full, ErrorModel *emodel)
 	double minv, maxv;
 
 	quantiles = fill_quantiles(full, emodel, &minv, &maxv);
+	if ( quantiles == NULL ) {
+		ERROR("Failed to calculate quantiles\n");
+		return;
+	}
 	printf("Bin start    Bin middle     Bin end        Density   Theoretical\n");
 	printf("                        (=Sample quantile)            quantile  \n");
 	printf("------------------------------------------------------------------\n");
