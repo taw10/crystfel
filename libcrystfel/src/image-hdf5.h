@@ -34,6 +34,11 @@
 
 #include "datatemplate_priv.h"
 
+typedef struct _imagehdfcache ImageHDFCache;
+
+extern ImageHDFCache *image_hdf5_cache_new(void);
+extern void image_hdf5_cache_free(ImageHDFCache *c);
+
 extern int image_hdf5_read_header_to_cache(struct image *image,
                                            const char *name);
 
@@ -44,7 +49,8 @@ extern int image_hdf5_read_mask(struct panel_template *p,
                                 const char *filename,
                                 const char *event, int *bad,
                                 const char *mask_location,
-                                int mask_good, int mask_bad);
+                                int mask_good, int mask_bad,
+                                ImageHDFCache *cache);
 
 extern int image_hdf5_read_satmap(struct panel_template *p,
                                   const char *filename,
