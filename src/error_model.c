@@ -200,23 +200,14 @@ static gsl_rstat_quantile_workspace **fill_quantiles(RefList *full, ErrorModel *
 }
 
 
-static double norm_res(ErrorModel *emodel, RefList *full)
+struct emodel_refine_params
 {
-	gsl_rstat_quantile_workspace **quantiles;
-	double minv, maxv;
-	int i;
-
-	quantiles = fill_quantiles(full, emodel, &minv, &maxv);
-
-	double total = 0.0;
-	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = ((double)i+1)/(NQUANT+1);
-		total += pow(gsl_rstat_quantile_get(quantiles[i]) - gsl_cdf_gaussian_Pinv(plotpos, 1.0), 2.0);
-		gsl_rstat_quantile_free(quantiles[i]);
-	}
-	free(quantiles);
-	return total;
-}
+	RefList *full;
+	ErrorModelType type;
+	double minv;
+	double maxv;
+	int nbins;
+};
 
 
 static void error_model_params_set_from_vector(ErrorModel *emodel, const gsl_vector *sdparams)
@@ -247,56 +238,28 @@ static void error_model_params_set_from_vector(ErrorModel *emodel, const gsl_vec
 }
 
 
-static double norm_res_equivs(const gsl_vector *sdparams, void *vp)
+static double norm_res(const gsl_vector *sdparams, void *vp)
 {
+	gsl_rstat_quantile_workspace **quantiles;
+	double minv, maxv;
+	int i;
+	struct emodel_refine_params *params = vp;
 	ErrorModel emodel;
-	RefList *full = vp;
-	emodel.type = EMODEL_EQUIVS;
-	return norm_res(&emodel, full);
-}
 
-
-static double norm_res_ev11(const gsl_vector *sdparams, void *vp)
-{
-	ErrorModel emodel;
-	RefList *full = vp;
-	emodel.type = EMODEL_EV11;
+	emodel.type = params->type;
 	error_model_params_set_from_vector(&emodel, sdparams);
-	return norm_res(&emodel, full);
-}
 
+	quantiles = fill_quantiles(params->full, &emodel, &minv, &maxv);
 
-static double norm_res_ev06(const gsl_vector *sdparams, void *vp)
-{
-	ErrorModel emodel;
-	RefList *full = vp;
-	emodel.type = EMODEL_EV06;
-	error_model_params_set_from_vector(&emodel, sdparams);
-	return norm_res(&emodel, full);
-}
-
-
-
-static double norm_res_kh23(const gsl_vector *sdparams, void *vp)
-{
-	ErrorModel emodel;
-	RefList *full = vp;
-	emodel.type = EMODEL_KH23;
-	error_model_params_set_from_vector(&emodel, sdparams);
-	return norm_res(&emodel, full);
-}
-
-
-/* Return a wrapper function that can be used by GSL for minimisation */
-static double (*error_model_norm_res_func(ErrorModelType t))(const gsl_vector *, void *)
-{
-	switch ( t ) {
-		case EMODEL_EQUIVS: return norm_res_equivs;
-		case EMODEL_EV11:   return norm_res_ev11;
-		case EMODEL_EV06:   return norm_res_ev06;
-		case EMODEL_KH23:   return norm_res_kh23;
+	double total = 0.0;
+	for ( i=0; i<NQUANT; i++ ) {
+		double plotpos = ((double)i+1)/(NQUANT+1);
+		total += pow(gsl_rstat_quantile_get(quantiles[i]) - gsl_cdf_gaussian_Pinv(plotpos, 1.0), 2.0);
+		gsl_rstat_quantile_free(quantiles[i]);
 	}
-	abort();
+
+	free(quantiles);
+	return total;
 }
 
 
@@ -415,18 +378,22 @@ void refine_error_model(RefList *full, ErrorModel *emodel)
 	gsl_vector *stepsize;
 	int r;
 	int niter;
+	struct emodel_refine_params params;
 
 	if ( emodel->type == EMODEL_EQUIVS ) {
 		STATUS("Not refining equivs model\n");
 		return;
 	}
 
+	params.full = full;
+	params.type = emodel->type;
+
 	sdparams = error_model_params_vector(emodel);
 	stepsize = error_model_step_vector(emodel);
 
 	myfunc.n = error_model_num_params(emodel);
-	myfunc.f = error_model_norm_res_func(emodel->type);
-	myfunc.params = full;
+	myfunc.f = norm_res;
+	myfunc.params = &params;
 
 	mini = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2, myfunc.n);
 	gsl_multimin_fminimizer_set(mini, &myfunc, sdparams, stepsize);
