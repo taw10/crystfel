@@ -358,11 +358,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	reflist_free(full);
 
 	if ( refine_emodel ) {
-		STATUS("Normal probability plot before refinement:\n");
-		normal_probability_plot(out, emodel);
 		refine_error_model(out, emodel);
-		STATUS("Normal probability plot after refinement:\n");
-		normal_probability_plot(out, emodel);
 	}
 
 	if ( pn_used != NULL ) {

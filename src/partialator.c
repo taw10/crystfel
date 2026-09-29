@@ -1902,6 +1902,9 @@ int main(int argc, char *argv[])
 		                    scaleflags, pmodel, log_folder);
 	}
 
+	STATUS("Normal probability plot:\n");
+	normal_probability_plot(full, emodel);
+
 	/* Output results */
 	STATUS("Writing overall results to %s (%i crystals used out of %i)\n",
 	       outfile, n_used, n_crystals);
