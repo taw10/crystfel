@@ -473,7 +473,7 @@ void print_error_model(ErrorModel *emodel)
 	switch ( emodel->type ) {
 
 		case EMODEL_EQUIVS:
-		STATUS("No error modelling was performed.");
+		STATUS("No error modelling was performed.\n");
 		break;
 
 		case EMODEL_EV11:
