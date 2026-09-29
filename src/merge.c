@@ -297,14 +297,6 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 
 	pthread_rwlock_destroy(&qargs.full_lock);
 
-	if ( refine_emodel ) {
-		STATUS("Normal probability plot before refinement:\n");
-		normal_probability_plot(full, emodel);
-		refine_error_model(full, emodel);
-		STATUS("Normal probability plot after refinement:\n");
-		normal_probability_plot(full, emodel);
-	}
-
 	out = reflist_new();
 	for ( refl_in = first_refl(full, &iter);
 	      refl_in != NULL;
@@ -363,11 +355,20 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 
 	}
 
+	reflist_free(full);
+
+	if ( refine_emodel ) {
+		STATUS("Normal probability plot before refinement:\n");
+		normal_probability_plot(out, emodel);
+		refine_error_model(out, emodel);
+		STATUS("Normal probability plot after refinement:\n");
+		normal_probability_plot(out, emodel);
+	}
+
 	if ( pn_used != NULL ) {
 		*pn_used = qargs.n_used;
 	}
 
-	reflist_free(full);
 	return out;
 }
 
