@@ -438,7 +438,7 @@ void check_rejection(struct crystal_refls *crystals, int n, RefList *full,
 
     /* Check according to delta CC½ */
     if ( !no_deltacchalf && (full != NULL) ) {
-         check_deltacchalf(crystals, n, full, n_threads);
+        check_deltacchalf(crystals, n, full, n_threads);
     }
 
     for ( i=0; i<n; i++ ) {

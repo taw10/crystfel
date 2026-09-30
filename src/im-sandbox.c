@@ -1282,8 +1282,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
     sa.sa_sigaction = sigchld_handler;
     r = sigaction(SIGCHLD, &sa, NULL);
     if ( r == -1 ) {
-            ERROR("Failed to set signal handler!\n");
-            return 0;
+        ERROR("Failed to set signal handler!\n");
+        return 0;
     }
 
     /* Set up signal handler to clean up semaphore on exit */
@@ -1292,13 +1292,13 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
     sa.sa_sigaction = sigint_handler;
     r = sigaction(SIGINT, &sa, NULL);
     if ( r == -1 ) {
-            ERROR("Failed to set signal handler!\n");
-            return 0;
+        ERROR("Failed to set signal handler!\n");
+        return 0;
     }
     r = sigaction(SIGQUIT, &sa, NULL);
     if ( r == -1 ) {
-            ERROR("Failed to set signal handler!\n");
-            return 0;
+        ERROR("Failed to set signal handler!\n");
+        return 0;
     }
 
     /* Set up signal handler to shut down gracefully on request */
@@ -1307,8 +1307,8 @@ int create_sandbox(struct index_args *iargs, int n_proc, char *prefix,
     sa.sa_sigaction = sigusr1_handler;
     r = sigaction(SIGUSR1, &sa, NULL);
     if ( r == -1 ) {
-            ERROR("Failed to set signal handler!\n");
-            return 0;
+        ERROR("Failed to set signal handler!\n");
+        return 0;
     }
 
     t_last_data = get_monotonic_seconds();
