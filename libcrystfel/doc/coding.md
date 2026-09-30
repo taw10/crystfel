@@ -19,21 +19,20 @@ Perl, shell script, build scripts or other parts of the codebase.
 
 ### Indentation
 
-*Indentation* is done with *tabs* and *alignment* is done with spaces.
-For example:
+Indentation is four spaces, no tabs.  Parameter lists split over multiple
+lines are aligned with the opening bracket.  For example:
 
     int function(int a, int b)
     {
-    <-tab-->int p;  /* <--- Tab character used to indent code inside function */
-            char *str;
+        int p;  /* <--- Tab character used to indent code inside function */
+        char *str;
 
-    <-tab-->do_something(a, "A long string which takes up a lot of space",
-    <-tab-->.............str, &p);   /* <--- spaces used to align with bracket */
+        do_something(a, "A long string which takes up a lot of space",
+        .............str, &p);   /* <--- spaces used to align with bracket */
     }
 
-**Rationale:** Using tab characters makes it easy to align code correctly,
-because you can't slip out of alignment by one character.  It also makes the
-code look neat whatever width you configure your editor to display tabs as.
+Note that a different style (tabs for indentation, spaces for alignment) was
+used previously.  The style was changed at the end of September 2026.
 
 ### Wrap width
 

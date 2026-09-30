@@ -1,3 +1,16 @@
+Development version (last updated 30 Sep 2026)
+----------------------------------------------
+
+- Grand Reindentation (tabs -> 4 spaces)
+- Scan-varying beam center (and refinement thereof)
+- partialator: Add error modelling (Ev11 and friends)
+- indexamajig: Cache HDF5 handles when loading files
+- ambigator: Handle non-integer ambiguity operations
+- Add man page for unit cell file (Kevin Dalton)
+- Fixes/updates for install-indexers script
+- Removal of stream_grep
+
+
 CrystFEL version 0.13.0, 10 August 2026
 ---------------------------------------
 
