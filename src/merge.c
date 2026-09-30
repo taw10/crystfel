@@ -33,11 +33,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_linalg.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_fit.h>
+#include <gsl/gsl_statistics.h>
 
 #include "image.h"
 #include "peaks.h"
@@ -49,6 +45,7 @@
 #include "reflist-utils.h"
 #include "cell-utils.h"
 #include "merge.h"
+#include "error_model.h"
 
 
 struct merge_queue_args
@@ -62,6 +59,7 @@ struct merge_queue_args
 	long long int n_reflections;
 	int ln_merge;
 	int n_used;
+	ErrorModel *emodel;
 };
 
 
@@ -73,6 +71,7 @@ struct merge_worker_args
 	int crystal_number;
 	int n_reflections;
 	int used;
+	ErrorModel *emodel;
 };
 
 
@@ -87,6 +86,7 @@ static void *create_merge_job(void *vqargs)
 	wargs->crystal = qargs->crystals[qargs->n_started].cr;
 	wargs->refls = qargs->crystals[qargs->n_started].refls;
 	wargs->used = 0;
+	wargs->emodel = qargs->emodel;
 
 	qargs->n_started++;
 
@@ -96,11 +96,12 @@ static void *create_merge_job(void *vqargs)
 
 static int alloc_contribs(struct reflection_contributions *c)
 {
-	c->contribs = realloc(c->contribs, c->max_contrib*sizeof(Reflection *));
-	c->contrib_crystals = realloc(c->contrib_crystals,
-	                              c->max_contrib*sizeof(Crystal *));
+	c->contribs = realloc(c->contribs, c->max_contrib*sizeof(double));
+	c->contrib_esds = realloc(c->contrib_esds, c->max_contrib*sizeof(double));
+	c->contrib_legacy_weights = realloc(c->contrib_legacy_weights, c->max_contrib*sizeof(double));
 	if ( c->contribs == NULL ) return 1;
-	if ( c->contrib_crystals == NULL ) return 1;
+	if ( c->contrib_esds == NULL ) return 1;
+	if ( c->contrib_legacy_weights == NULL ) return 1;
 	return 0;
 }
 
@@ -140,7 +141,8 @@ static Reflection *get_locked_reflection(RefList *list, pthread_rwlock_t *lock,
 				c->n_contrib = 0;
 				c->max_contrib = 32;
 				c->contribs = NULL;
-				c->contrib_crystals = NULL;
+				c->contrib_esds = NULL;
+				c->contrib_legacy_weights = NULL;
 				if ( alloc_contribs(c) ) {
 					set_contributions(f, NULL);
 				} else {
@@ -195,8 +197,8 @@ static void run_merge_job(void *vwargs, int cookie)
 	{
 		Reflection *f;
 		signed int h, k, l;
-		double mean, sumweight, M2, temp, delta, R;
-		double res, w;
+		double res;
+		double Ii, esdIi, legacy_weight;
 		struct reflection_contributions *c;
 
 		if ( get_partiality(refl) < MIN_PART_MERGE ) continue;
@@ -216,43 +218,34 @@ static void run_merge_job(void *vwargs, int cookie)
 		f = get_locked_reflection(full, &wargs->qargs->full_lock,
 		                          h, k, l);
 
-		mean = get_intensity(f);
-		sumweight = get_temp1(f);
-		M2 = get_temp2(f);
-
 		res = resolution(crystal_get_cell(cr), h, k, l);
-
 		if ( 2.0*res > crystal_get_resolution_limit(cr)+push_res ) {
 			unlock_reflection(f);
 			continue;
 		}
 
-		/* Reflections count less the more they have to be scaled up */
-		w = get_partiality(refl) / correct_reflection_nopart(1.0, refl, G, B, res);
+		Ii = correct_reflection(get_intensity(refl), refl, G,  B, res);
+		esdIi = correct_reflection(get_esd_intensity(refl), refl, G, B, res);
+		legacy_weight = get_partiality(refl) / correct_reflection_nopart(1.0, refl, G, B, res);
 
-		/* Running mean and variance calculation */
-		temp = w + sumweight;
 		if ( ln_merge ) {
-			delta = log(correct_reflection(get_intensity(refl), refl, G, B, res)) - mean;
-		} else {
-			delta = correct_reflection(get_intensity(refl), refl, G,  B, res) - mean;
+			Ii = log(Ii);
 		}
-		R = delta * w / temp;
-		set_intensity(f, mean + R);
-		set_temp2(f, M2 + sumweight * delta * R);
-		set_temp1(f, temp);
-		set_redundancy(f, get_redundancy(f)+1);
 
-		/* Record this contribution */
+		set_redundancy(f, get_redundancy(f)+1);
 		c = get_contributions(f);
-		if ( c != NULL ) {
-			c->contribs[c->n_contrib] = refl;
-			c->contrib_crystals[c->n_contrib++] = cr;
+		if ( c == NULL ) {
+			ERROR("Failed to get contributions for %i %i %i\n", h, k, l);
+		} else {
+			c->contribs[c->n_contrib] = Ii;
+			c->contrib_esds[c->n_contrib] = esdIi;
+			c->contrib_legacy_weights[c->n_contrib] = legacy_weight;
+			c->n_contrib++;
 			if ( c->n_contrib == c->max_contrib ) {
 				c->max_contrib += 64;
 				alloc_contribs(c);
 			}
-		} /* else, too bad! */
+		}
 
 		unlock_reflection(f);
 
@@ -275,12 +268,13 @@ static void finalise_merge_job(void *vqargs, void *vwargs)
 RefList *merge_intensities(struct crystal_refls *crystals, int n,
                            int n_threads, int min_meas,
                            double push_res, int use_weak, int ln_merge,
+                           ErrorModel *emodel, int refine_emodel,
                            int *pn_used)
 {
 	RefList *full;
-	RefList *full2;
+	RefList *out;
 	struct merge_queue_args qargs;
-	Reflection *refl;
+	Reflection *refl_in;
 	RefListIterator *iter;
 
 	if ( n == 0 ) return NULL;
@@ -295,6 +289,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 	qargs.n_reflections = 0;
 	qargs.ln_merge = ln_merge;
 	qargs.n_used = 0;
+	qargs.emodel = emodel;
 	pthread_rwlock_init(&qargs.full_lock, NULL);
 
 	run_threads(n_threads, run_merge_job, create_merge_job,
@@ -302,61 +297,75 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
 
 	pthread_rwlock_destroy(&qargs.full_lock);
 
-	/* Calculate ESDs from variances, including only reflections with
-	 * enough measurements */
-	full2 = reflist_new();
-	if ( full2 == NULL ) return NULL;
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
+	out = reflist_new();
+	for ( refl_in = first_refl(full, &iter);
+	      refl_in != NULL;
+	      refl_in = next_refl(refl_in, iter) )
 	{
-		double var;
-		int red;
+		Reflection *f;
+		signed int h, k, l;
+		struct reflection_contributions *c;
+		double *weights;
+		double wmean;
 
-		/* Correct for averaging log of intensities*/
-		if ( ln_merge ) {
+		c = get_contributions(refl_in);
 
-			double ln_I, ln_temp2;
-
-			ln_temp2 = get_temp2(refl);
-			set_temp2(refl, exp(ln_temp2));
-
-			ln_I = get_intensity(refl);
-			set_intensity(refl, exp(ln_I));
-
-		}
-
-		red = get_redundancy(refl);
-		var = get_temp2(refl) / get_temp1(refl);
-		set_esd_intensity(refl, sqrt(var)/sqrt(red));
-
-		if ( red >= min_meas ) {
-
-			signed int h, k, l;
-			Reflection *r2;
-
-			get_indices(refl, &h, &k, &l);
-			r2 = add_refl(full2, h, k, l);
-			copy_data(r2, refl);
-
-		} else {
+		if ( get_redundancy(refl_in) < min_meas ) {
 
 			/* We do not need the contribution list any more */
 			struct reflection_contributions *c;
-			c = get_contributions(refl);
+			c = get_contributions(refl_in);
 			free(c->contribs);
-			free(c->contrib_crystals);
+			free(c->contrib_esds);
+			free(c->contrib_legacy_weights);
 			free(c);
 
+			continue;
+
 		}
+
+		get_indices(refl_in, &h, &k, &l);
+		f = add_refl(out, h, k, l);
+
+		set_contributions(f, c);
+		set_redundancy(f, get_redundancy(refl_in));
+
+		/* Unweighted mean (used for Ev06, Ev11 etc, also deltaCChalf) */
+		set_unweighted_mean(f, gsl_stats_mean(c->contribs, 1, c->n_contrib));
+
+		/* Max scaled intensity (used for Kh23) */
+		set_max_measurement(f, gsl_stats_max(c->contribs, 1, c->n_contrib));
+
+		weights = make_weights_array(c, f, emodel);
+
+		wmean = gsl_stats_wmean(weights, 1, c->contribs, 1, c->n_contrib);
+		set_intensity(f, wmean);
+
+		set_esd_intensity(f, merged_esd(c, weights, wmean, emodel));
+
+		/* Correct for averaging log of intensities */
+		if ( ln_merge ) {
+			set_unweighted_mean(f, exp(get_unweighted_mean(f)));
+			set_intensity(f, exp(get_intensity(f)));
+			set_esd_intensity(f, exp(get_esd_intensity(f)));
+			set_max_measurement(f, exp(get_max_measurement(f)));
+		}
+
+		free(weights);
+
+	}
+
+	reflist_free(full);
+
+	if ( refine_emodel ) {
+		refine_error_model(out, emodel);
 	}
 
 	if ( pn_used != NULL ) {
 		*pn_used = qargs.n_used;
 	}
 
-	reflist_free(full);
-	return full2;
+	return out;
 }
 
 
@@ -586,7 +595,7 @@ void average_unit_cell(struct crystal_refls *crystals,
 {
 	int i;
 	UnitCell *cmean;
-	double a_sumw = 0.0, a_mean = 0.0, a_M2;
+	double a_sumw = 0.0, a_mean = 0.0, a_M2 = 0.0;
 	double b_sumw = 0.0, b_mean = 0.0, b_M2 = 0.0;
 	double c_sumw = 0.0, c_mean = 0.0, c_M2 = 0.0;
 	double al_sumw = 0.0, al_mean = 0.0, al_M2 = 0.0;

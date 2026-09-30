@@ -3,11 +3,11 @@
  *
  * A GTK widget to set merge options
  *
- * Copyright © 2020-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2020-2026 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *  2020 Thomas White <taw@physics.org>
+ *  2020-2026 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -63,6 +63,7 @@ struct _crystfelmergeopts
 	GtkWidget *polarisation;
 	GtkWidget *deltacchalf;
 	GtkWidget *min_measurements;
+	GtkWidget *error_model;
 	GtkWidget *use_max_adu;
 	GtkWidget *max_adu;
 	GtkWidget *custom_split;
@@ -105,6 +106,8 @@ extern void crystfel_merge_opts_set_deltacchalf(CrystFELMergeOpts *opts,
                                                 int deltacchalf);
 extern void crystfel_merge_opts_set_min_measurements(CrystFELMergeOpts *opts,
                                                      int min_measurements);
+extern void crystfel_merge_opts_set_error_model(CrystFELMergeOpts *opts,
+                                                const char *error_model);
 extern void crystfel_merge_opts_set_max_adu(CrystFELMergeOpts *opts,
                                             float max_adu);
 extern void crystfel_merge_opts_set_custom_split(CrystFELMergeOpts *opts,
@@ -126,6 +129,7 @@ extern int crystfel_merge_opts_get_niter(CrystFELMergeOpts *opts);
 extern const char *crystfel_merge_opts_get_polarisation(CrystFELMergeOpts *opts);
 extern int crystfel_merge_opts_get_deltacchalf(CrystFELMergeOpts *opts);
 extern int crystfel_merge_opts_get_min_measurements(CrystFELMergeOpts *opts);
+extern const char *crystfel_merge_opts_get_error_model(CrystFELMergeOpts *opts);
 extern float crystfel_merge_opts_get_max_adu(CrystFELMergeOpts *opts);
 extern const char *crystfel_merge_opts_get_custom_split(CrystFELMergeOpts *opts);
 extern int crystfel_merge_opts_get_pr_logs(CrystFELMergeOpts *opts);

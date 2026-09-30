@@ -107,6 +107,11 @@ The default is \fB--polarisation=horiz\fR.
 Synonym for \fB--polarisation=none\fR.
 
 .PD 0
+.IP \fB--error-model=\fR\fImodel\fR
+.PD
+Specify the error model.  See the list below for possible choices.  The default is \fB--error-model=equivs\fR.
+
+.PD 0
 .IP \fB--max-adu=\fR\fIn\fR
 .PD
 Include reflections only if their peak values were less than \fIn\fR.  That means, \fIn\fR is the saturation value of the detector.  The default is infinity, i.e. no cutoff.
@@ -223,6 +228,26 @@ Treat the radiation as perfectly monochromatic, and calculate the partiality as 
 .IP \fBggpm\fR
 .PD
 An analytical overlap integral modelling the reflection profiles as Gaussian functions, and the radiation spectrum as a sum of Gaussians.
+
+.SH ERROR MODELS
+
+The available error models are:
+
+.IP \fBequivs\fR
+.PD
+No modelling, just use the observed distribution of measurements for each reflection.
+
+.IP \fBev06\fR
+.PD
+Two parameter model with sdFac and sdAdd as described by Evans (2006), Acta Cryst. D62 p72 (appendix A3). Also matches the model used in XDS, see Diederichs (2010), Acta Cryst. D66 p733.
+
+.IP \fBev11\fR
+.PD
+Three parameter model with sdFac, sdB and sdAdd as described by Evans (2011), Acta Cryst. D67 p282 (appendix B), except that the value of sdB reported by partialator is the square root of the one described in the paper, consistent with e.g. Brewster et al. (2019), Acta Cryst. D75 p959.
+
+.IP \fBkh23\fR
+.PD
+Modification of ev11 as described by Khouchen et al. (2023), Acta Cryst. A79 p427.
 
 .SH USAGE CASES
 

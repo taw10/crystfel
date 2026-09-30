@@ -78,6 +78,7 @@ static void get_merging_opts(struct merging_params *opts,
 	opts->polarisation = strdup(crystfel_merge_opts_get_polarisation(mo));
 	opts->deltacchalf = crystfel_merge_opts_get_deltacchalf(mo);
 	opts->min_measurements = crystfel_merge_opts_get_min_measurements(mo);
+	opts->error_model = strdup(crystfel_merge_opts_get_error_model(mo));
 	opts->max_adu = crystfel_merge_opts_get_max_adu(mo);
 	free(opts->custom_split);
 	opts->custom_split = safe_strdup(crystfel_merge_opts_get_custom_split(mo));
@@ -186,6 +187,7 @@ static void set_merging_opts(struct merging_params *opts,
 	crystfel_merge_opts_set_polarisation(mo, opts->polarisation);
 	crystfel_merge_opts_set_deltacchalf(mo, opts->deltacchalf);
 	crystfel_merge_opts_set_min_measurements(mo, opts->min_measurements);
+	crystfel_merge_opts_set_error_model(mo, opts->error_model);
 	crystfel_merge_opts_set_max_adu(mo, opts->max_adu);
 	crystfel_merge_opts_set_custom_split(mo, opts->custom_split);
 	crystfel_merge_opts_set_pr_logs(mo, opts->pr_logs);
@@ -387,6 +389,7 @@ static int write_partialator_script(const char *filename,
 
 	fprintf(fh, " --polarisation=%s", params->polarisation);
 	fprintf(fh, " --min-measurements=%i", params->min_measurements);
+	fprintf(fh, " --error-model=%s", params->error_model);
 	fprintf(fh, " --max-adu=%f", params->max_adu);
 	fprintf(fh, " --min-res=%f", params->min_res);
 	fprintf(fh, " --push-res=%f", params->push_res);

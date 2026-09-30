@@ -37,6 +37,8 @@
 
 #include "crystal.h"
 #include "geometry.h"
+#include "merge.h"
+#include "error_model.h"
 
 enum ScaleFlags
 {
@@ -49,6 +51,6 @@ extern int scale_one_crystal(const RefList *listS, Crystal *cr,
                              const RefList *reference, int flags);
 
 extern void scale_all(struct crystal_refls *crystals, int n_crystals,
-                      int nthreads, int flags);
+                      int nthreads, int flags, ErrorModel *emodel);
 
 #endif	/* SCALING_H */

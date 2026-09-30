@@ -3,11 +3,11 @@
  *
  * A GTK widget to set merge options
  *
- * Copyright © 2020-2021 Deutsches Elektronen-Synchrotron DESY,
+ * Copyright © 2020-2026 Deutsches Elektronen-Synchrotron DESY,
  *                       a research centre of the Helmholtz Association.
  *
  * Authors:
- *  2020-2021 Thomas White <taw@physics.org>
+ *  2020-2026 Thomas White <taw@physics.org>
  *
  * This file is part of CrystFEL.
  *
@@ -97,6 +97,8 @@ static int check_greyout(GtkWidget *nothing, CrystFELMergeOpts *mo)
 		disable_and_deactivate(mo->deltacchalf);
 		disable_and_deactivate(mo->custom_split);
 		disable_and_deactivate(mo->detwin);
+		crystfel_merge_opts_set_error_model(mo, "equivs");
+		gtk_widget_set_sensitive(GTK_WIDGET(mo->error_model), FALSE);
 	} else {
 		gtk_widget_set_sensitive(GTK_WIDGET(mo->niter), TRUE);
 		gtk_widget_set_sensitive(GTK_WIDGET(mo->bscale), TRUE);
@@ -108,6 +110,7 @@ static int check_greyout(GtkWidget *nothing, CrystFELMergeOpts *mo)
 		disable_if_inactive(mo->detwin, mo->detwin_sym);
 		disable_if_inactive(mo->scale, mo->bscale);
 		deactivate_if_inactive(mo->scale, mo->bscale);
+		gtk_widget_set_sensitive(GTK_WIDGET(mo->error_model), TRUE);
 	}
 
 	disable_if_inactive(mo->use_max_adu, mo->max_adu);
@@ -257,6 +260,26 @@ static GtkWidget *merge_parameters(CrystFELMergeOpts *mo)
 	                   FALSE, FALSE, 0);
 	gtk_widget_set_tooltip_text(hbox, "--min-measurements");
 
+	/* Error model */
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+	                   FALSE, FALSE, 0);
+	label = gtk_label_new("Error model:");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+	                   FALSE, FALSE, 0);
+	mo->error_model = gtk_combo_box_text_new();
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->error_model), "equivs",
+	                          "Observed intensity spread");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->error_model), "ev11",
+	                          "Evans (2011)");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->error_model), "kh23",
+	                          "Khouchen et al. (2023)");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(mo->error_model), "mm24",
+	                          "Mittan-Moreau (2025)");
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(mo->error_model),
+	                   FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_text(hbox, "--error-model={equivs,ev11,kh23,mm24}");
+
 	/* Custom split */
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
@@ -401,6 +424,21 @@ void crystfel_merge_opts_set_polarisation(CrystFELMergeOpts *opts,
 
 	if ( done == 0 ) {
 		ERROR("Unrecognised polarisation '%s'\n", polar);
+	}
+}
+
+
+void crystfel_merge_opts_set_error_model(CrystFELMergeOpts *opts,
+                                         const char *error_model)
+{
+	int done = 0;
+	done += set_if(opts->error_model, error_model, "equivs");
+	done += set_if(opts->error_model, error_model, "ev11");
+	done += set_if(opts->error_model, error_model, "kh23");
+	done += set_if(opts->error_model, error_model, "mm24");
+
+	if ( done == 0 ) {
+		ERROR("Unrecognised error model '%s'\n", error_model);
 	}
 }
 
@@ -561,6 +599,12 @@ int crystfel_merge_opts_get_deltacchalf(CrystFELMergeOpts *opts)
 int crystfel_merge_opts_get_min_measurements(CrystFELMergeOpts *opts)
 {
 	return get_uint(opts->min_measurements);
+}
+
+
+const char *crystfel_merge_opts_get_error_model(CrystFELMergeOpts *opts)
+{
+	return gtk_combo_box_get_active_id(GTK_COMBO_BOX(opts->error_model));
 }
 
 

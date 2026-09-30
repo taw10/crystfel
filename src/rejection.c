@@ -126,27 +126,16 @@ static int calculate_refl_mean_var(RefList *full)
 		if ( (h==oh) && (k==ok) && (l==ol) ) continue;
 		oh = h;  ok = k;  ol = l;
 
-		/* We use the mean (merged) intensity as the reference point
-		 * for shifting the data in the variance calculation */
-		K = get_intensity(refl);
+		K = get_unweighted_mean(refl);
 
 		c = get_contributions(refl);
 		if ( c == NULL ) return 1;
 
 		/* Mean of contributions */
 		for ( j=0; j<c->n_contrib; j++ ) {
-
-			double Ii, G, B, res;
-			res = resolution(crystal_get_cell(c->contrib_crystals[j]),
-			                 h, k, l);
-
-			G = crystal_get_osf(c->contrib_crystals[j]);
-			B = crystal_get_Bfac(c->contrib_crystals[j]);
-			Ii = correct_reflection(get_intensity(c->contribs[j]), c->contribs[j], G, B, res);
-
+			double Ii = c->contribs[j];
 			Ex += Ii - K;
 			Ex2 += (Ii - K) * (Ii - K);
-
 		}
 
 		if ( c->n_contrib < 2 ) continue;
@@ -203,7 +192,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 		/* We use the mean (merged) intensity as the reference point
 		 * for shifting the data in the variance calculation */
-		K = get_intensity(refl);
+		K = get_unweighted_mean(refl);
 		Ex = get_temp1(refl);
 		Ex2 = get_temp2(refl);
 		c = get_contributions(refl);
@@ -228,6 +217,7 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
 			if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
 
+				/* FIXME: Wrong? */
 				double Ii = correct_reflection(get_intensity(exrefl), exrefl, G, B, res);
 
 				/* Remove contribution of this reflection */

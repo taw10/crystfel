@@ -1403,6 +1403,7 @@ int default_project(struct crystfelproject *proj)
 	proj->merging_params.polarisation = strdup("horiz");
 	proj->merging_params.deltacchalf = 1;
 	proj->merging_params.min_measurements = 2;
+	proj->merging_params.error_model = strdup("ev11");
 	proj->merging_params.max_adu = INFINITY;
 	proj->merging_params.custom_split = NULL;
 	proj->merging_params.pr_logs = 1;
