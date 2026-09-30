@@ -70,74 +70,74 @@
 
 struct _indexingprivate
 {
-	IndexingFlags flags;
-	UnitCell *target_cell;
-	double tolerance[6];
-	double wavelength_estimate;
-	double clen_estimate;
-	int n_threads;
+    IndexingFlags flags;
+    UnitCell *target_cell;
+    double tolerance[6];
+    double wavelength_estimate;
+    double clen_estimate;
+    int n_threads;
 
-	int n_methods;
-	IndexingMethod *methods;
-	void **engine_private;
+    int n_methods;
+    IndexingMethod *methods;
+    void **engine_private;
 };
 
 
 static const char *onoff(int a)
 {
-	if ( a ) return "on";
-	return "off";
+    if ( a ) return "on";
+    return "off";
 }
 
 
 const char *indexer_str(IndexingMethod indm)
 {
-	switch ( indm ) {
+    switch ( indm ) {
 
-		case INDEXING_NONE :
-		return "none";
+        case INDEXING_NONE :
+        return "none";
 
-		case INDEXING_DIRAX :
-		return "dirax";
-		break;
+        case INDEXING_DIRAX :
+        return "dirax";
+        break;
 
-		case INDEXING_ASDF :
-		return "asdf";
+        case INDEXING_ASDF :
+        return "asdf";
 
-		case INDEXING_MOSFLM :
-		return "mosflm";
+        case INDEXING_MOSFLM :
+        return "mosflm";
 
-		case INDEXING_FELIX :
-		return "felix";
+        case INDEXING_FELIX :
+        return "felix";
 
-		case INDEXING_XDS :
-		return "xds";
+        case INDEXING_XDS :
+        return "xds";
 
-		case INDEXING_TAKETWO :
-		return "taketwo";
+        case INDEXING_TAKETWO :
+        return "taketwo";
 
-		case INDEXING_XGANDALF:
-		return "xgandalf";
+        case INDEXING_XGANDALF:
+        return "xgandalf";
 
-		case INDEXING_PINKINDEXER:
-		return "pinkIndexer";
+        case INDEXING_PINKINDEXER:
+        return "pinkIndexer";
 
-		case INDEXING_SIMULATION :
-		return "simulation";
+        case INDEXING_SIMULATION :
+        return "simulation";
 
-		case INDEXING_FILE :
-		return "file";
+        case INDEXING_FILE :
+        return "file";
 
-		case INDEXING_FFBIDX :
-		return "ffbidx";
+        case INDEXING_FFBIDX :
+        return "ffbidx";
 
-		case INDEXING_SMALLCELL :
-		return "smallcell";
+        case INDEXING_SMALLCELL :
+        return "smallcell";
 
-		default :
-		return "(unknown)";
+        default :
+        return "(unknown)";
 
-	}
+    }
 }
 
 
@@ -151,111 +151,111 @@ static void *prepare_method(IndexingMethod m,
                             struct felix_options *felix_opts,
                             struct taketwo_options *taketwo_opts,
                             struct fromfile_options *fromfile_opts,
-			    struct smallcell_options *smallcell_opts,
+                struct smallcell_options *smallcell_opts,
                             struct asdf_options *asdf_opts)
 {
-	void *priv = NULL;
+    void *priv = NULL;
 
-	switch ( m ) {
+    switch ( m ) {
 
-		case INDEXING_NONE :
-		priv = "none";
-		break;
+        case INDEXING_NONE :
+        priv = "none";
+        break;
 
-		case INDEXING_DIRAX :
-		priv = dirax_prepare(m, cell);
-		break;
+        case INDEXING_DIRAX :
+        priv = dirax_prepare(m, cell);
+        break;
 
-		case INDEXING_ASDF :
-		priv = asdf_prepare(m, cell, asdf_opts);
-		break;
+        case INDEXING_ASDF :
+        priv = asdf_prepare(m, cell, asdf_opts);
+        break;
 
-		case INDEXING_MOSFLM :
-		priv = mosflm_prepare(m, cell);
-		break;
+        case INDEXING_MOSFLM :
+        priv = mosflm_prepare(m, cell);
+        break;
 
-		case INDEXING_XDS :
-		priv = xds_prepare(m, cell);
-		break;
+        case INDEXING_XDS :
+        priv = xds_prepare(m, cell);
+        break;
 
-		case INDEXING_FILE :
-		priv = fromfile_prepare(m, fromfile_opts);
-		break;
+        case INDEXING_FILE :
+        priv = fromfile_prepare(m, fromfile_opts);
+        break;
 
-		case INDEXING_SMALLCELL :
-		priv = smallcell_prepare(m, smallcell_opts, cell);
-		break;
+        case INDEXING_SMALLCELL :
+        priv = smallcell_prepare(m, smallcell_opts, cell);
+        break;
 
-		case INDEXING_FELIX :
-		priv = felix_prepare(m, cell, felix_opts);
-		break;
+        case INDEXING_FELIX :
+        priv = felix_prepare(m, cell, felix_opts);
+        break;
 
-		case INDEXING_TAKETWO :
-		priv = taketwo_prepare(m, taketwo_opts, cell);
-		break;
+        case INDEXING_TAKETWO :
+        priv = taketwo_prepare(m, taketwo_opts, cell);
+        break;
 
-		case INDEXING_XGANDALF :
-		priv = xgandalf_prepare(m, cell, xgandalf_opts);
-		break;
+        case INDEXING_XGANDALF :
+        priv = xgandalf_prepare(m, cell, xgandalf_opts);
+        break;
 
-		case INDEXING_FFBIDX :
-		priv = ffbidx_prepare(m, cell, ffbidx_opts);
-		break;
+        case INDEXING_FFBIDX :
+        priv = ffbidx_prepare(m, cell, ffbidx_opts);
+        break;
 
-		case INDEXING_PINKINDEXER :
-		priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
-		                           wavelength_estimate,
-		                           clen_estimate);
-		break;
+        case INDEXING_PINKINDEXER :
+        priv = pinkIndexer_prepare(m, cell, pinkIndexer_opts,
+                                   wavelength_estimate,
+                                   clen_estimate);
+        break;
 
-		default :
-		ERROR("Don't know how to prepare indexing method %i\n", m);
-		break;
+        default :
+        ERROR("Don't know how to prepare indexing method %i\n", m);
+        break;
 
-	}
+    }
 
-	if ( priv == NULL ) {
-		ERROR("Failed to prepare indexing method %s\n", indexer_str(m));
-		return NULL;
-	}
+    if ( priv == NULL ) {
+        ERROR("Failed to prepare indexing method %s\n", indexer_str(m));
+        return NULL;
+    }
 
-	return priv;
+    return priv;
 }
 
 
 IndexingMethod *parse_indexing_methods(const char *method_list,
                                        int *pn)
 {
-	int i, n;
-	char **method_strings;
-	IndexingMethod *methods;
+    int i, n;
+    char **method_strings;
+    IndexingMethod *methods;
 
-	n = assplode(method_list, ",", &method_strings, ASSPLODE_NONE);
+    n = assplode(method_list, ",", &method_strings, ASSPLODE_NONE);
 
-	methods = cfmalloc(n * sizeof(IndexingMethod));
-	if ( methods == NULL ) {
-		ERROR("Failed to allocate indexing method list\n");
-		return NULL;
-	}
+    methods = cfmalloc(n * sizeof(IndexingMethod));
+    if ( methods == NULL ) {
+        ERROR("Failed to allocate indexing method list\n");
+        return NULL;
+    }
 
-	for ( i=0; i<n; i++ ) {
-		int err = 0;
-		methods[i] = get_indm_from_string_2(method_strings[i], &err);
-		if ( methods[i] == INDEXING_ERROR ) {
-			return NULL;
-		}
-		if ( err ) {
-			ERROR("----- Notice -----\n");
-			ERROR("The way indexing options are given has changed in this CrystFEL version.\n");
-			ERROR("Prior information modifiers ('cell' or 'latt') are no longer used.\n");
-			ERROR("------------------\n");
-		}
-		cffree(method_strings[i]);
-	}
-	cffree(method_strings);
+    for ( i=0; i<n; i++ ) {
+        int err = 0;
+        methods[i] = get_indm_from_string_2(method_strings[i], &err);
+        if ( methods[i] == INDEXING_ERROR ) {
+            return NULL;
+        }
+        if ( err ) {
+            ERROR("----- Notice -----\n");
+            ERROR("The way indexing options are given has changed in this CrystFEL version.\n");
+            ERROR("Prior information modifiers ('cell' or 'latt') are no longer used.\n");
+            ERROR("------------------\n");
+        }
+        cffree(method_strings[i]);
+    }
+    cffree(method_strings);
 
-	*pn = n;
-	return methods;
+    *pn = n;
+    return methods;
 }
 
 
@@ -276,228 +276,228 @@ IndexingPrivate *setup_indexing(const char *method_list,
                                 struct smallcell_options *smallcell_opts,
                                 struct asdf_options *asdf_opts)
 {
-	IndexingPrivate *ipriv;
-	IndexingMethod *methods;
-	int n, i;
+    IndexingPrivate *ipriv;
+    IndexingMethod *methods;
+    int n, i;
 
-	methods = parse_indexing_methods(method_list, &n);
-	if ( methods == NULL ) return NULL;
+    methods = parse_indexing_methods(method_list, &n);
+    if ( methods == NULL ) return NULL;
 
-	/* No cell parameters -> no cell checking, no prior cell */
-	if ( !cell_has_parameters(cell) ) {
+    /* No cell parameters -> no cell checking, no prior cell */
+    if ( !cell_has_parameters(cell) ) {
 
-		if ( flags & INDEXING_CHECK_CELL ) {
-			ERROR("WARNING: Forcing --no-check-cell because "
-			      "reference unit cell parameters were not given.\n");
-			flags &= ~INDEXING_CHECK_CELL;
-		}
-	}
+        if ( flags & INDEXING_CHECK_CELL ) {
+            ERROR("WARNING: Forcing --no-check-cell because "
+                  "reference unit cell parameters were not given.\n");
+            flags &= ~INDEXING_CHECK_CELL;
+        }
+    }
 
-	ipriv = cfmalloc(sizeof(struct _indexingprivate));
-	if ( ipriv == NULL ) {
-		ERROR("Failed to allocate indexing data\n");
-		return NULL;
-	}
+    ipriv = cfmalloc(sizeof(struct _indexingprivate));
+    if ( ipriv == NULL ) {
+        ERROR("Failed to allocate indexing data\n");
+        return NULL;
+    }
 
-	ipriv->engine_private = cfmalloc((n+1) * sizeof(void *));
+    ipriv->engine_private = cfmalloc((n+1) * sizeof(void *));
 
-	for ( i=0; i<n; i++ ) {
+    for ( i=0; i<n; i++ ) {
 
-		int j;
+        int j;
 
-		ipriv->engine_private[i] = prepare_method(methods[i], cell,
-		                                          wavelength_estimate,
-		                                          clen_estimate,
-		                                          xgandalf_opts,
-		                                          ffbidx_opts,
-		                                          pinkIndexer_opts,
-		                                          felix_opts,
-		                                          ttopts,
-		                                          fromfile_opts,
-							  smallcell_opts,
-							  asdf_opts);
+        ipriv->engine_private[i] = prepare_method(methods[i], cell,
+                                                  wavelength_estimate,
+                                                  clen_estimate,
+                                                  xgandalf_opts,
+                                                  ffbidx_opts,
+                                                  pinkIndexer_opts,
+                                                  felix_opts,
+                                                  ttopts,
+                                                  fromfile_opts,
+                              smallcell_opts,
+                              asdf_opts);
 
-		if ( ipriv->engine_private[i] == NULL ) {
-			cffree(ipriv->engine_private);
-			return NULL;
-		}
+        if ( ipriv->engine_private[i] == NULL ) {
+            cffree(ipriv->engine_private);
+            return NULL;
+        }
 
-		for ( j=0; j<i; j++ ) {
-			if ( methods[i] == methods[j] ) {
-				ERROR("Duplicate indexing method.\n");
-				cffree(ipriv->engine_private);
-				return NULL;
-			}
-		}
+        for ( j=0; j<i; j++ ) {
+            if ( methods[i] == methods[j] ) {
+                ERROR("Duplicate indexing method.\n");
+                cffree(ipriv->engine_private);
+                return NULL;
+            }
+        }
 
-	}
+    }
 
-	ipriv->methods = methods;
-	ipriv->n_methods = n;
-	ipriv->flags = flags;
-	ipriv->wavelength_estimate = wavelength_estimate;
-	ipriv->clen_estimate = clen_estimate;
-	ipriv->n_threads = n_threads;
+    ipriv->methods = methods;
+    ipriv->n_methods = n;
+    ipriv->flags = flags;
+    ipriv->wavelength_estimate = wavelength_estimate;
+    ipriv->clen_estimate = clen_estimate;
+    ipriv->n_threads = n_threads;
 
-	if ( cell != NULL ) {
-		ipriv->target_cell = cell_new_from_cell(cell);
-	} else {
-		ipriv->target_cell = NULL;
-	}
-	for ( i=0; i<6; i++ ) ipriv->tolerance[i] = tols[i];
+    if ( cell != NULL ) {
+        ipriv->target_cell = cell_new_from_cell(cell);
+    } else {
+        ipriv->target_cell = NULL;
+    }
+    for ( i=0; i<6; i++ ) ipriv->tolerance[i] = tols[i];
 
-	return ipriv;
+    return ipriv;
 }
 
 
 void print_indexing_info(IndexingPrivate *ipriv)
 {
-	int i;
+    int i;
 
-	STATUS("List of indexing methods:\n");
-	for ( i=0; i<ipriv->n_methods; i++ ) {
-		STATUS("  %2i: %-25s\n", i, indexer_str(ipriv->methods[i]));
-	}
+    STATUS("List of indexing methods:\n");
+    for ( i=0; i<ipriv->n_methods; i++ ) {
+        STATUS("  %2i: %-25s\n", i, indexer_str(ipriv->methods[i]));
+    }
 
-	STATUS("Indexing parameters:\n");
-	STATUS("                  Check unit cell parameters: %s\n",
-	       onoff(ipriv->flags & INDEXING_CHECK_CELL));
-	STATUS("                        Check peak alignment: %s\n",
-	       onoff(ipriv->flags & INDEXING_CHECK_PEAKS));
-	STATUS("                   Refine indexing solutions: %s\n",
-	       onoff(ipriv->flags & INDEXING_REFINE));
-	STATUS(" Multi-lattice indexing (\"delete and retry\"): %s\n",
-	       onoff(ipriv->flags & INDEXING_MULTI));
-	STATUS("                              Retry indexing: %s\n",
-	       onoff(ipriv->flags & INDEXING_RETRY));
+    STATUS("Indexing parameters:\n");
+    STATUS("                  Check unit cell parameters: %s\n",
+           onoff(ipriv->flags & INDEXING_CHECK_CELL));
+    STATUS("                        Check peak alignment: %s\n",
+           onoff(ipriv->flags & INDEXING_CHECK_PEAKS));
+    STATUS("                   Refine indexing solutions: %s\n",
+           onoff(ipriv->flags & INDEXING_REFINE));
+    STATUS(" Multi-lattice indexing (\"delete and retry\"): %s\n",
+           onoff(ipriv->flags & INDEXING_MULTI));
+    STATUS("                              Retry indexing: %s\n",
+           onoff(ipriv->flags & INDEXING_RETRY));
 }
 
 
 const IndexingMethod *indexing_methods(IndexingPrivate *p, int *n)
 {
-	*n = p->n_methods;
-	return p->methods;
+    *n = p->n_methods;
+    return p->methods;
 }
 
 
 void cleanup_indexing(IndexingPrivate *ipriv)
 {
-	int n;
+    int n;
 
-	if ( ipriv == NULL ) return;  /* Nothing to do */
+    if ( ipriv == NULL ) return;  /* Nothing to do */
 
-	for ( n=0; n<ipriv->n_methods; n++ ) {
+    for ( n=0; n<ipriv->n_methods; n++ ) {
 
-		switch ( ipriv->methods[n] ) {
+        switch ( ipriv->methods[n] ) {
 
-			case INDEXING_NONE :
-			break;
+            case INDEXING_NONE :
+            break;
 
-			case INDEXING_DIRAX :
-			dirax_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_DIRAX :
+            dirax_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_ASDF :
-			asdf_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_ASDF :
+            asdf_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_MOSFLM :
-			mosflm_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_MOSFLM :
+            mosflm_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_XDS :
-			xds_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_XDS :
+            xds_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_FELIX :
-			felix_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_FELIX :
+            felix_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_FILE :
-			fromfile_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_FILE :
+            fromfile_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_SMALLCELL :
-			smallcell_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_SMALLCELL :
+            smallcell_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_TAKETWO :
-			taketwo_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_TAKETWO :
+            taketwo_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_XGANDALF :
-			xgandalf_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_XGANDALF :
+            xgandalf_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_FFBIDX:
-			ffbidx_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_FFBIDX:
+            ffbidx_cleanup(ipriv->engine_private[n]);
+            break;
 
-			case INDEXING_PINKINDEXER :
-			pinkIndexer_cleanup(ipriv->engine_private[n]);
-			break;
+            case INDEXING_PINKINDEXER :
+            pinkIndexer_cleanup(ipriv->engine_private[n]);
+            break;
 
-			default :
-			ERROR("Don't know how to clean up indexing method %i\n",
-			      ipriv->methods[n]);
-			break;
+            default :
+            ERROR("Don't know how to clean up indexing method %i\n",
+                  ipriv->methods[n]);
+            break;
 
-		}
+        }
 
-	}
+    }
 
-	cffree(ipriv->methods);
-	cffree(ipriv->engine_private);
-	cell_free(ipriv->target_cell);
-	cffree(ipriv);
+    cffree(ipriv->methods);
+    cffree(ipriv->engine_private);
+    cell_free(ipriv->target_cell);
+    cffree(ipriv);
 }
 
 
 /* Return 0 for cell OK, 1 for cell incorrect */
 static int check_cell(Crystal *cr, UnitCell *target, double *tolerance)
 {
-	UnitCell *out;
-	RationalMatrix *rm;
+    UnitCell *out;
+    RationalMatrix *rm;
 
-	if ( !right_handed(target) ) {
-		STATUS("WARNING: reference cell is left handed\n");
-	}
-	if ( !right_handed(crystal_get_cell(cr)) ) {
-		STATUS("WARNING: unmatched cell is left handed\n");
-	}
-	if ( validate_cell(crystal_get_cell(cr)) > 1 ) {
-		STATUS("Invalid cell produced by indexing algorithm.\n");
-		return 1;
-	}
-	out = compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
-	                                        tolerance, &rm);
+    if ( !right_handed(target) ) {
+        STATUS("WARNING: reference cell is left handed\n");
+    }
+    if ( !right_handed(crystal_get_cell(cr)) ) {
+        STATUS("WARNING: unmatched cell is left handed\n");
+    }
+    if ( validate_cell(crystal_get_cell(cr)) > 1 ) {
+        STATUS("Invalid cell produced by indexing algorithm.\n");
+        return 1;
+    }
+    out = compare_reindexed_cell_parameters(crystal_get_cell(cr), target,
+                                            tolerance, &rm);
 
-	if ( out != NULL ) {
+    if ( out != NULL ) {
 
-		/* Replace crystal's cell with new one */
-		crystal_set_cell(cr, out);
-		rtnl_mtx_free(rm);
-		if ( !right_handed(out) ) STATUS("WARNING: left handed\n");
+        /* Replace crystal's cell with new one */
+        crystal_set_cell(cr, out);
+        rtnl_mtx_free(rm);
+        if ( !right_handed(out) ) STATUS("WARNING: left handed\n");
 
-		/* Copy the target cell's lattice type and unique axis
-		 * onto the crystal's cell.  The cell from compare_r_c_p doesn't
-		 * (yet) have the right values, because cell_transform_rational
-		 * don't know how to determine them.  The cell should be close
-		 * to the target, of course, so this is less bad than leaving
-		 * the lattice type as triclinic. */
-		cell_set_lattice_type(out, cell_get_lattice_type(target));
-		cell_set_unique_axis(out, cell_get_unique_axis(target));
+        /* Copy the target cell's lattice type and unique axis
+         * onto the crystal's cell.  The cell from compare_r_c_p doesn't
+         * (yet) have the right values, because cell_transform_rational
+         * don't know how to determine them.  The cell should be close
+         * to the target, of course, so this is less bad than leaving
+         * the lattice type as triclinic. */
+        cell_set_lattice_type(out, cell_get_lattice_type(target));
+        cell_set_unique_axis(out, cell_get_unique_axis(target));
 
-		/* Correct P to R centering, for the same reason */
-		if ( (cell_get_centering(target) == 'R')
-		     && (cell_get_centering(out) == 'P') ) {
-			cell_set_centering(out, 'R');
-		}
+        /* Correct P to R centering, for the same reason */
+        if ( (cell_get_centering(target) == 'R')
+             && (cell_get_centering(out) == 'P') ) {
+            cell_set_centering(out, 'R');
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 
-	return 1;
+    return 1;
 }
 
 
@@ -506,296 +506,296 @@ static int try_indexer(struct image *image, IndexingMethod indm,
                        IndexingPrivate *ipriv, void *mpriv,
                        Mille *mille, int max_mille_level)
 {
-	int i, r;
-	int n_bad = 0;
-	int n_before = image->n_crystals;
+    int i, r;
+    int n_bad = 0;
+    int n_before = image->n_crystals;
 
-	switch ( indm ) {
+    switch ( indm ) {
 
-		case INDEXING_NONE :
-		return 0;
+        case INDEXING_NONE :
+        return 0;
 
-		case INDEXING_DIRAX :
-		set_last_task("indexing:dirax");
-		profile_start("dirax");
-		r = run_dirax(image, mpriv);
-		profile_end("dirax");
-		break;
+        case INDEXING_DIRAX :
+        set_last_task("indexing:dirax");
+        profile_start("dirax");
+        r = run_dirax(image, mpriv);
+        profile_end("dirax");
+        break;
 
-		case INDEXING_ASDF :
-		set_last_task("indexing:asdf");
-		profile_start("asdf");
-		r = run_asdf(image, mpriv);
-		profile_end("asdf");
-		break;
+        case INDEXING_ASDF :
+        set_last_task("indexing:asdf");
+        profile_start("asdf");
+        r = run_asdf(image, mpriv);
+        profile_end("asdf");
+        break;
 
-		case INDEXING_MOSFLM :
-		set_last_task("indexing:mosflm");
-		profile_start("mosflm");
-		r = run_mosflm(image, mpriv);
-		profile_end("mosflm");
-		break;
+        case INDEXING_MOSFLM :
+        set_last_task("indexing:mosflm");
+        profile_start("mosflm");
+        r = run_mosflm(image, mpriv);
+        profile_end("mosflm");
+        break;
 
-		case INDEXING_XDS :
-		set_last_task("indexing:xds");
-		profile_start("xds");
-		r = run_xds(image, mpriv);
-		profile_end("xds");
-		break;
+        case INDEXING_XDS :
+        set_last_task("indexing:xds");
+        profile_start("xds");
+        r = run_xds(image, mpriv);
+        profile_end("xds");
+        break;
 
-		case INDEXING_FILE :
-		set_last_task("indexing:file");
-		profile_start("fromfile");
-		r = fromfile_index(image, mpriv);
-		profile_end("fromfile");
-		break;
+        case INDEXING_FILE :
+        set_last_task("indexing:file");
+        profile_start("fromfile");
+        r = fromfile_index(image, mpriv);
+        profile_end("fromfile");
+        break;
 
-		case INDEXING_SMALLCELL :
-		set_last_task("indexing:smallcell");
-		profile_start("smallcell");
-		r = smallcell_index(image, mpriv);
-		profile_end("smallcell");
-		break;
+        case INDEXING_SMALLCELL :
+        set_last_task("indexing:smallcell");
+        profile_start("smallcell");
+        r = smallcell_index(image, mpriv);
+        profile_end("smallcell");
+        break;
 
-		case INDEXING_FELIX :
-		set_last_task("indexing:felix");
-		profile_start("felix");
-		r = felix_index(image, mpriv);
-		profile_end("felix");
-		break;
+        case INDEXING_FELIX :
+        set_last_task("indexing:felix");
+        profile_start("felix");
+        r = felix_index(image, mpriv);
+        profile_end("felix");
+        break;
 
-		case INDEXING_TAKETWO :
-		set_last_task("indexing:taketwo");
-		profile_start("taketwo");
-		r = taketwo_index(image, mpriv);
-		profile_end("taketwo");
-		break;
+        case INDEXING_TAKETWO :
+        set_last_task("indexing:taketwo");
+        profile_start("taketwo");
+        r = taketwo_index(image, mpriv);
+        profile_end("taketwo");
+        break;
 
-		case INDEXING_PINKINDEXER :
-		set_last_task("indexing:pinkindexer");
-		profile_start("pinkindexer");
-		r = run_pinkIndexer(image, mpriv, ipriv->n_threads);
-		profile_end("pinkindexer");
-		break;
+        case INDEXING_PINKINDEXER :
+        set_last_task("indexing:pinkindexer");
+        profile_start("pinkindexer");
+        r = run_pinkIndexer(image, mpriv, ipriv->n_threads);
+        profile_end("pinkindexer");
+        break;
 
-		case INDEXING_XGANDALF :
-		set_last_task("indexing:xgandalf");
-		profile_start("xgandalf");
-		r = run_xgandalf(image, mpriv);
-		profile_end("xgandalf");
-		break;
+        case INDEXING_XGANDALF :
+        set_last_task("indexing:xgandalf");
+        profile_start("xgandalf");
+        r = run_xgandalf(image, mpriv);
+        profile_end("xgandalf");
+        break;
 
-		case INDEXING_FFBIDX:
-		set_last_task("indexing:ffbidx");
-		profile_start("ffbidx");
-		r = run_ffbidx(image, mpriv);
-		profile_end("ffbidx");
-		break;
+        case INDEXING_FFBIDX:
+        set_last_task("indexing:ffbidx");
+        profile_start("ffbidx");
+        r = run_ffbidx(image, mpriv);
+        profile_end("ffbidx");
+        break;
 
-		default :
-		ERROR("Unrecognised indexing method: %i\n", indm);
-		return 0;
+        default :
+        ERROR("Unrecognised indexing method: %i\n", indm);
+        return 0;
 
-	}
+    }
 
-	set_last_task("indexing:finalisation");
+    set_last_task("indexing:finalisation");
 
-	/* Stop a really difficult to debug situation in its tracks */
-	if ( image->n_crystals - n_before != r ) {
-		ERROR("Whoops, indexer didn't return the right number "
-		      "of crystals!\n");
-		exit(1);
-	}
+    /* Stop a really difficult to debug situation in its tracks */
+    if ( image->n_crystals - n_before != r ) {
+        ERROR("Whoops, indexer didn't return the right number "
+              "of crystals!\n");
+        exit(1);
+    }
 
-	/* For all the crystals found this time ... */
-	for ( i=0; i<r; i++ ) {
+    /* For all the crystals found this time ... */
+    for ( i=0; i<r; i++ ) {
 
-		int j;
-		int r;
-		int this_crystal = image->n_crystals - i - 1;
+        int j;
+        int r;
+        int this_crystal = image->n_crystals - i - 1;
 
-		/* ... starting at the end of the (complete) list ... */
-		Crystal *cr = image->crystals[this_crystal].cr;
+        /* ... starting at the end of the (complete) list ... */
+        Crystal *cr = image->crystals[this_crystal].cr;
 
-		crystal_set_profile_radius(cr, 0.02e9);
-		crystal_set_mosaicity(cr, 0.0);
+        crystal_set_profile_radius(cr, 0.02e9);
+        crystal_set_mosaicity(cr, 0.0);
 
-		/* Pre-refinement unit cell check if requested */
-		if ( ipriv->flags & INDEXING_CHECK_CELL ) {
-			set_last_task("indexing:pre-cellcheck");
-			profile_start("prerefine-cell-check");
-			r = check_cell(cr, ipriv->target_cell,
-			               ipriv->tolerance);
-			profile_end("prerefine-cell-check");
-			if ( r ) {
-				crystal_set_user_flag(cr, 1);
-				continue;
-			}
-		}
+        /* Pre-refinement unit cell check if requested */
+        if ( ipriv->flags & INDEXING_CHECK_CELL ) {
+            set_last_task("indexing:pre-cellcheck");
+            profile_start("prerefine-cell-check");
+            r = check_cell(cr, ipriv->target_cell,
+                           ipriv->tolerance);
+            profile_end("prerefine-cell-check");
+            if ( r ) {
+                crystal_set_user_flag(cr, 1);
+                continue;
+            }
+        }
 
-		/* Prediction refinement if requested */
-		if ( ipriv->flags & INDEXING_REFINE )
-		{
-			int r;
-			profile_start("refine");
-			set_last_task("indexing:predrefine");
-			r = refine_prediction(image, cr, mille, max_mille_level,
-			                      ipriv->target_cell);
-			profile_end("refine");
-			if ( r ) {
-				crystal_set_user_flag(cr, 1);
-				continue;
-			}
-		}
+        /* Prediction refinement if requested */
+        if ( ipriv->flags & INDEXING_REFINE )
+        {
+            int r;
+            profile_start("refine");
+            set_last_task("indexing:predrefine");
+            r = refine_prediction(image, cr, mille, max_mille_level,
+                                  ipriv->target_cell);
+            profile_end("refine");
+            if ( r ) {
+                crystal_set_user_flag(cr, 1);
+                continue;
+            }
+        }
 
-		/* After refinement unit cell check if requested */
-		profile_start("postrefine-cell-check");
-		set_last_task("indexing:post-cellcheck");
-		if ( (ipriv->flags & INDEXING_CHECK_CELL)
-		  && !compare_cell_parameters(crystal_get_cell(cr), ipriv->target_cell,
-		                              ipriv->tolerance) )
-		{
-			profile_end("postrefine-cell-check");
-			crystal_set_user_flag(cr, 1);
-			continue;
-		}
-		profile_end("postrefine-cell-check");
+        /* After refinement unit cell check if requested */
+        profile_start("postrefine-cell-check");
+        set_last_task("indexing:post-cellcheck");
+        if ( (ipriv->flags & INDEXING_CHECK_CELL)
+          && !compare_cell_parameters(crystal_get_cell(cr), ipriv->target_cell,
+                                      ipriv->tolerance) )
+        {
+            profile_end("postrefine-cell-check");
+            crystal_set_user_flag(cr, 1);
+            continue;
+        }
+        profile_end("postrefine-cell-check");
 
-		/* Peak alignment check if requested */
-		set_last_task("indexing:peak-check");
-		if ( ipriv->flags & INDEXING_CHECK_PEAKS )
-		{
-			int mm = ipriv->flags & INDEXING_MULTI;
-			if ( !indexing_peak_check(image, image->features, &cr, 1, mm) ) {
-				crystal_set_user_flag(cr, 1);
-				continue;
-			}
-		}
+        /* Peak alignment check if requested */
+        set_last_task("indexing:peak-check");
+        if ( ipriv->flags & INDEXING_CHECK_PEAKS )
+        {
+            int mm = ipriv->flags & INDEXING_MULTI;
+            if ( !indexing_peak_check(image, image->features, &cr, 1, mm) ) {
+                crystal_set_user_flag(cr, 1);
+                continue;
+            }
+        }
 
-		/* Don't do similarity check if this crystal is bad */
-		if ( crystal_get_user_flag(cr) ) continue;
+        /* Don't do similarity check if this crystal is bad */
+        if ( crystal_get_user_flag(cr) ) continue;
 
-		/* Check if cell is too similar to existing ones */
-		profile_start("cell-compare-to-others");
-		set_last_task("indexing:compare-to-others");
-		for ( j=0; j<this_crystal; j++ ) {
+        /* Check if cell is too similar to existing ones */
+        profile_start("cell-compare-to-others");
+        set_last_task("indexing:compare-to-others");
+        for ( j=0; j<this_crystal; j++ ) {
 
-			Crystal *that_cr = image->crystals[j].cr;
-			/* 'tols' is in frac (not %) and radians */
-			const double tols[] = {0.1, 0.1, 0.1,
-			                       deg2rad(5.0),
-			                       deg2rad(5.0),
-			                       deg2rad(5.0)};
+            Crystal *that_cr = image->crystals[j].cr;
+            /* 'tols' is in frac (not %) and radians */
+            const double tols[] = {0.1, 0.1, 0.1,
+                                   deg2rad(5.0),
+                                   deg2rad(5.0),
+                                   deg2rad(5.0)};
 
-			/* Don't do similarity check against bad crystals */
-			if ( crystal_get_user_flag(that_cr) ) continue;
+            /* Don't do similarity check against bad crystals */
+            if ( crystal_get_user_flag(that_cr) ) continue;
 
-			if ( compare_permuted_cell_parameters_and_orientation(crystal_get_cell(cr),
-			                                                      crystal_get_cell(that_cr),
-			                                                      tols, NULL) )
-			{
-				crystal_set_user_flag(cr, 1);
-			}
-		}
-		profile_end("cell-compare-to-others");
+            if ( compare_permuted_cell_parameters_and_orientation(crystal_get_cell(cr),
+                                                                  crystal_get_cell(that_cr),
+                                                                  tols, NULL) )
+            {
+                crystal_set_user_flag(cr, 1);
+            }
+        }
+        profile_end("cell-compare-to-others");
 
-		set_last_task("indexing:write-mille");
-		if ( (mille != NULL) && !crystal_get_user_flag(cr) ) {
-			profile_start("mille-write");
-			crystfel_mille_write_record(mille);
-			profile_end("mille-write");
-		}
+        set_last_task("indexing:write-mille");
+        if ( (mille != NULL) && !crystal_get_user_flag(cr) ) {
+            profile_start("mille-write");
+            crystfel_mille_write_record(mille);
+            profile_end("mille-write");
+        }
 
-	}
+    }
 
-	set_last_task("indexing:remove-flagged");
-	n_bad = remove_flagged_crystals(image);
-	assert(r >= n_bad);
+    set_last_task("indexing:remove-flagged");
+    n_bad = remove_flagged_crystals(image);
+    assert(r >= n_bad);
 
-	return r - n_bad;
+    return r - n_bad;
 }
 
 
 static int delete_weakest_peaks(ImageFeatureList *peaks)
 {
-	int i;
-	int np, ndel, n;
+    int i;
+    int np, ndel, n;
 
-	np = image_feature_count(peaks);
-	n = 0;
-	for ( i=0; i<np; i++ ) {
-		if ( image_get_feature(peaks, i) != NULL ) n++;
-	}
+    np = image_feature_count(peaks);
+    n = 0;
+    for ( i=0; i<np; i++ ) {
+        if ( image_get_feature(peaks, i) != NULL ) n++;
+    }
 
-	if ( n < 6 ) return 1;
+    if ( n < 6 ) return 1;
 
-	/* Delete 10% weakest peaks */
-	ndel = n/10;
-	if ( ndel == 0 ) return 1;
+    /* Delete 10% weakest peaks */
+    ndel = n/10;
+    if ( ndel == 0 ) return 1;
 
-	for ( i=n-1; i>n-ndel-1; i-- ) {
-		image_remove_feature(peaks, i);
-	}
+    for ( i=n-1; i>n-ndel-1; i-- ) {
+        image_remove_feature(peaks, i);
+    }
 
-	return 0;
+    return 0;
 }
 
 
 static int delete_explained_peaks(struct image *image, Crystal *cr)
 {
-	double ax, ay, az;
-	double bx, by, bz;
-	double cx, cy, cz;
-	double dx, dy;
-	const double min_dist = 0.25;
-	int i, nspots = 0, nindexed = 0;
+    double ax, ay, az;
+    double bx, by, bz;
+    double cx, cy, cz;
+    double dx, dy;
+    const double min_dist = 0.25;
+    int i, nspots = 0, nindexed = 0;
 
-	/* Round towards nearest */
-	fesetround(1);
+    /* Round towards nearest */
+    fesetround(1);
 
-	/* Cell basis vectors for this image */
-	cell_get_cartesian(crystal_get_cell(cr), &ax, &ay, &az,
-	                   &bx, &by, &bz, &cx, &cy, &cz);
+    /* Cell basis vectors for this image */
+    cell_get_cartesian(crystal_get_cell(cr), &ax, &ay, &az,
+                       &bx, &by, &bz, &cx, &cy, &cz);
 
-	crystal_get_det_shift(cr, &dx, &dy);
+    crystal_get_det_shift(cr, &dx, &dy);
 
-	/* Loop over peaks, checking proximity to nearest reflection */
-	for ( i=0; i<image_feature_count(image->features); i++ ) {
+    /* Loop over peaks, checking proximity to nearest reflection */
+    for ( i=0; i<image_feature_count(image->features); i++ ) {
 
-		struct imagefeature *f;
-		double q[3];
-		double h, k, l, hd, kd, ld;
-		double dsq;
+        struct imagefeature *f;
+        double q[3];
+        double h, k, l, hd, kd, ld;
+        double dsq;
 
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
-		nspots++;
+        f = image_get_feature(image->features, i);
+        if ( f == NULL ) continue;
+        nspots++;
 
-		/* Reciprocal space position of found peak */
-		detgeom_transform_coords(&image->detgeom->panels[f->pn],
-		                         f->fs, f->ss, image->lambda, dx, dy,
-		                         q);
+        /* Reciprocal space position of found peak */
+        detgeom_transform_coords(&image->detgeom->panels[f->pn],
+                                 f->fs, f->ss, image->lambda, dx, dy,
+                                 q);
 
-		/* Decimal and fractional Miller indices of nearest
-		 * reciprocal lattice point */
-		hd = q[0] * ax + q[1] * ay + q[2] * az;
-		kd = q[0] * bx + q[1] * by + q[2] * bz;
-		ld = q[0] * cx + q[1] * cy + q[2] * cz;
-		h = lrint(hd);
-		k = lrint(kd);
-		l = lrint(ld);
+        /* Decimal and fractional Miller indices of nearest
+         * reciprocal lattice point */
+        hd = q[0] * ax + q[1] * ay + q[2] * az;
+        kd = q[0] * bx + q[1] * by + q[2] * bz;
+        ld = q[0] * cx + q[1] * cy + q[2] * cz;
+        h = lrint(hd);
+        k = lrint(kd);
+        l = lrint(ld);
 
-		/* Check distance */
-		dsq = pow(h-hd, 2.0) + pow(k-kd, 2.0) + pow(l-ld, 2.0);
+        /* Check distance */
+        dsq = pow(h-hd, 2.0) + pow(k-kd, 2.0) + pow(l-ld, 2.0);
 
-		if ( sqrt(dsq) < min_dist ) {
-			image_remove_feature(image->features, i);
-			nindexed++;
-		}
-	}
+        if ( sqrt(dsq) < min_dist ) {
+            image_remove_feature(image->features, i);
+            nindexed++;
+        }
+    }
 
-	/* Return TRUE if not enough peaks to continue */
-	return (nspots - nindexed) < 5;
+    /* Return TRUE if not enough peaks to continue */
+    return (nspots - nindexed) < 5;
 
 }
 
@@ -809,329 +809,329 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
 static int finished_retry(IndexingMethod indm, IndexingFlags flags,
                           int r, struct image *image)
 {
-	if ( r == 0 ) {
+    if ( r == 0 ) {
 
-		/* Indexing failed on the previous attempt.  Maybe try again
-		 * after poking the peak list a bit */
+        /* Indexing failed on the previous attempt.  Maybe try again
+         * after poking the peak list a bit */
 
-		if ( flags & INDEXING_RETRY ) {
-			/* Retry with fewer peaks */
-			return delete_weakest_peaks(image->features);
-		} else {
-			/* Indexing failed, opted not to try again */
-			return 1;
-		}
+        if ( flags & INDEXING_RETRY ) {
+            /* Retry with fewer peaks */
+            return delete_weakest_peaks(image->features);
+        } else {
+            /* Indexing failed, opted not to try again */
+            return 1;
+        }
 
-	} else {
+    } else {
 
-		/* Indexing succeeded on previous attempt.  Maybe try again
-		 * after deleting the explained peaks */
+        /* Indexing succeeded on previous attempt.  Maybe try again
+         * after deleting the explained peaks */
 
-		if ( flags & INDEXING_MULTI ) {
-			/* Remove "used" spots and try for another lattice */
-			Crystal *cr;
-			cr = image->crystals[image->n_crystals-1].cr;
-			return delete_explained_peaks(image, cr);
-		} else {
-			return 1;
-		}
+        if ( flags & INDEXING_MULTI ) {
+            /* Remove "used" spots and try for another lattice */
+            Crystal *cr;
+            cr = image->crystals[image->n_crystals-1].cr;
+            return delete_explained_peaks(image, cr);
+        } else {
+            return 1;
+        }
 
-	}
+    }
 }
 
 
 void index_pattern(struct image *image, IndexingPrivate *ipriv)
 {
-	index_pattern_4(image, ipriv, NULL, NULL, NULL, 0);
+    index_pattern_4(image, ipriv, NULL, NULL, NULL, 0);
 }
 
 
 void index_pattern_2(struct image *image, IndexingPrivate *ipriv, int *ping)
 {
-	index_pattern_4(image, ipriv, ping, NULL, NULL, 0);
+    index_pattern_4(image, ipriv, ping, NULL, NULL, 0);
 }
 
 
 void index_pattern_3(struct image *image, IndexingPrivate *ipriv, int *ping,
                      char *last_task)
 {
-	index_pattern_4(image, ipriv, ping, last_task, NULL, 0);
+    index_pattern_4(image, ipriv, ping, last_task, NULL, 0);
 }
 
 
 void index_pattern_4(struct image *image, IndexingPrivate *ipriv, int *ping,
                      char *last_task, Mille *mille, int max_mille_level)
 {
-	int n = 0;
-	ImageFeatureList *orig;
+    int n = 0;
+    ImageFeatureList *orig;
 
-	if ( ipriv == NULL ) return;
+    if ( ipriv == NULL ) return;
 
-	free_all_crystals(image);
+    free_all_crystals(image);
 
-	/* No peaks? */
-	if ( image->features == NULL ) return;
-	if ( image_feature_count(image->features) == 0 ) return;
+    /* No peaks? */
+    if ( image->features == NULL ) return;
+    if ( image_feature_count(image->features) == 0 ) return;
 
-	if ( !isnan(ipriv->wavelength_estimate) ) {
-		if ( !within_tolerance(image->lambda,
-		                          ipriv->wavelength_estimate,
-		                          10.0) )
-		{
-			   ERROR("WARNING: Wavelength for %s %s (%e) differs by "
-			         "more than 10%% from estimated value (%e)\n",
-			         image->filename, image->ev,
-			         image->lambda, ipriv->wavelength_estimate);
-		}
-	}
+    if ( !isnan(ipriv->wavelength_estimate) ) {
+        if ( !within_tolerance(image->lambda,
+                                  ipriv->wavelength_estimate,
+                                  10.0) )
+        {
+               ERROR("WARNING: Wavelength for %s %s (%e) differs by "
+                     "more than 10%% from estimated value (%e)\n",
+                     image->filename, image->ev,
+                     image->lambda, ipriv->wavelength_estimate);
+        }
+    }
 
-	if ( !isnan(ipriv->clen_estimate) ) {
-		double mean_clen = detgeom_mean_camera_length(image->detgeom);
-		if ( !within_tolerance(mean_clen, ipriv->clen_estimate, 10.0) )
-		{
-			   ERROR("WARNING: Camera length for %s %s (%e) differs by "
-			         "more than 10%% from estimated value (%e)\n",
-			         image->filename, image->ev,
-			         mean_clen, ipriv->clen_estimate);
-		}
-	}
+    if ( !isnan(ipriv->clen_estimate) ) {
+        double mean_clen = detgeom_mean_camera_length(image->detgeom);
+        if ( !within_tolerance(mean_clen, ipriv->clen_estimate, 10.0) )
+        {
+               ERROR("WARNING: Camera length for %s %s (%e) differs by "
+                     "more than 10%% from estimated value (%e)\n",
+                     image->filename, image->ev,
+                     mean_clen, ipriv->clen_estimate);
+        }
+    }
 
-	orig = image->features;
+    orig = image->features;
 
-	for ( n=0; n<ipriv->n_methods; n++ ) {
+    for ( n=0; n<ipriv->n_methods; n++ ) {
 
-		int done = 0;
-		int ntry = 0;
-		int success = 0;
+        int done = 0;
+        int ntry = 0;
+        int success = 0;
 
-		if ( ipriv->methods[0] != INDEXING_FILE ) {
-			image->features = sort_peaks(orig);
-		}
+        if ( ipriv->methods[0] != INDEXING_FILE ) {
+            image->features = sort_peaks(orig);
+        }
 
-		do {
+        do {
 
-			int r;
+            int r;
 
-			r = try_indexer(image, ipriv->methods[n],
-			                ipriv, ipriv->engine_private[n],
-			                mille, max_mille_level);
-			success += r;
-			ntry++;
-			done = finished_retry(ipriv->methods[n], ipriv->flags,
-			                      r, image);
-			if ( ntry > 5 ) done = 1;
-			if ( notify_alive() ) done = 1;
+            r = try_indexer(image, ipriv->methods[n],
+                            ipriv, ipriv->engine_private[n],
+                            mille, max_mille_level);
+            success += r;
+            ntry++;
+            done = finished_retry(ipriv->methods[n], ipriv->flags,
+                                  r, image);
+            if ( ntry > 5 ) done = 1;
+            if ( notify_alive() ) done = 1;
 
-		} while ( !done );
+        } while ( !done );
 
-		if ( ipriv->methods[0] != INDEXING_FILE ) {
-			image_feature_list_free(image->features);
-		}
+        if ( ipriv->methods[0] != INDEXING_FILE ) {
+            image_feature_list_free(image->features);
+        }
 
-		/* Stop now if the pattern is indexed (don't try again for more
-		 * crystals with a different indexing method) */
-		if ( success ) {
-			image->n_indexing_tries = ntry;
-			break;
-		}
+        /* Stop now if the pattern is indexed (don't try again for more
+         * crystals with a different indexing method) */
+        if ( success ) {
+            image->n_indexing_tries = ntry;
+            break;
+        }
 
-	}
+    }
 
-	if ( n < ipriv->n_methods ) {
-		image->indexed_by = ipriv->methods[n];
-	} else {
-		image->indexed_by = INDEXING_NONE;
-	}
+    if ( n < ipriv->n_methods ) {
+        image->indexed_by = ipriv->methods[n];
+    } else {
+        image->indexed_by = INDEXING_NONE;
+    }
 
-	image->features = orig;
+    image->features = orig;
 }
 
 
 void index_pattern_5(struct image *image, IndexingPrivate *ipriv,
                      Mille *mille, int max_mille_level)
 {
-	index_pattern_4(image, ipriv, NULL, NULL, mille, max_mille_level);
+    index_pattern_4(image, ipriv, NULL, NULL, mille, max_mille_level);
 }
 
 
 static IndexingMethod warn_method(const char *str)
 {
-	ERROR("Indexing method must contain exactly one engine name: '%s'\n", str);
-	return INDEXING_ERROR;
+    ERROR("Indexing method must contain exactly one engine name: '%s'\n", str);
+    return INDEXING_ERROR;
 }
 
 
 IndexingMethod get_indm_from_string_2(const char *str, int *err)
 {
-	int n, i;
-	char **bits;
-	IndexingMethod method = INDEXING_NONE;
-	int have_method = 0;
+    int n, i;
+    char **bits;
+    IndexingMethod method = INDEXING_NONE;
+    int have_method = 0;
 
-	if ( err != NULL ) *err = 0;
+    if ( err != NULL ) *err = 0;
 
-	n = assplode(str, "-", &bits, ASSPLODE_NONE);
+    n = assplode(str, "-", &bits, ASSPLODE_NONE);
 
-	for ( i=0; i<n; i++ ) {
+    for ( i=0; i<n; i++ ) {
 
-		if ( strcmp(bits[i], "dirax") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_DIRAX;
-			have_method = 1;
+        if ( strcmp(bits[i], "dirax") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_DIRAX;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "asdf") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_ASDF;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "asdf") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_ASDF;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "mosflm") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_MOSFLM;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "mosflm") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_MOSFLM;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "xds") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_XDS;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "xds") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_XDS;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "felix") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_FELIX;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "felix") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_FELIX;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "taketwo") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_TAKETWO;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "taketwo") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_TAKETWO;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "xgandalf") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_XGANDALF;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "xgandalf") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_XGANDALF;
+            have_method = 1;
 
-		} else if ( (strcmp(bits[i], "pinkIndexer") == 0)
-		         || (strcmp(bits[i], "pinkindexer") == 0) )
-		{
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_PINKINDEXER;
-			have_method = 1;
+        } else if ( (strcmp(bits[i], "pinkIndexer") == 0)
+                 || (strcmp(bits[i], "pinkindexer") == 0) )
+        {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_PINKINDEXER;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "none") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_NONE;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "none") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_NONE;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "simulation") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_SIMULATION;
-			return method;
+        } else if ( strcmp(bits[i], "simulation") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_SIMULATION;
+            return method;
 
-		} else if ( strcmp(bits[i], "file") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_FILE;
-			return method;
+        } else if ( strcmp(bits[i], "file") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_FILE;
+            return method;
 
-		} else if ( strcmp(bits[i], "ffbidx") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_FFBIDX;
-			have_method = 1;
+        } else if ( strcmp(bits[i], "ffbidx") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_FFBIDX;
+            have_method = 1;
 
-		} else if ( strcmp(bits[i], "smallcell") == 0) {
-			if ( have_method ) return warn_method(str);
-			method = INDEXING_SMALLCELL;
-			return method;
+        } else if ( strcmp(bits[i], "smallcell") == 0) {
+            if ( have_method ) return warn_method(str);
+            method = INDEXING_SMALLCELL;
+            return method;
 
-		/* Deprecated options */
-		} else if ( strcmp(bits[i], "retry") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "noretry") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "multi") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "nomulti") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "refine") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "norefine") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "raw") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "bad") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "comb") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "axes") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "latt") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "nolatt") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "cell") == 0) {
-			if ( err != NULL ) *err = 1;
-		} else if ( strcmp(bits[i], "nocell") == 0) {
-			if ( err != NULL ) *err = 1;
+        /* Deprecated options */
+        } else if ( strcmp(bits[i], "retry") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "noretry") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "multi") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "nomulti") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "refine") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "norefine") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "raw") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "bad") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "comb") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "axes") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "latt") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "nolatt") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "cell") == 0) {
+            if ( err != NULL ) *err = 1;
+        } else if ( strcmp(bits[i], "nocell") == 0) {
+            if ( err != NULL ) *err = 1;
 
-		} else {
-			ERROR("Bad list of indexing methods: '%s'\n", str);
-			return INDEXING_ERROR;
-		}
+        } else {
+            ERROR("Bad list of indexing methods: '%s'\n", str);
+            return INDEXING_ERROR;
+        }
 
-		cffree(bits[i]);
+        cffree(bits[i]);
 
-	}
-	cffree(bits);
+    }
+    cffree(bits);
 
-	if ( !have_method ) return warn_method(str);
+    if ( !have_method ) return warn_method(str);
 
-	return method;
+    return method;
 }
 
 
 IndexingMethod get_indm_from_string(const char *str)
 {
-	return get_indm_from_string_2(str, NULL);
+    return get_indm_from_string_2(str, NULL);
 }
 
 
 static void do_probe(const char *(*func)(UnitCell *cell),
                      UnitCell *cell, char *methods)
 {
-	const char *probe;
-	probe = func(cell);
-	if ( probe != NULL ) {
-		if ( methods[0] != '\0' ) {
-			strcat(methods, ",");
-		}
-		strcat(methods, probe);
-	}
+    const char *probe;
+    probe = func(cell);
+    if ( probe != NULL ) {
+        if ( methods[0] != '\0' ) {
+            strcat(methods, ",");
+        }
+        strcat(methods, probe);
+    }
 }
 
 
 char *detect_indexing_methods(UnitCell *cell)
 {
-	char *methods;
+    char *methods;
 
-	methods = cfmalloc(1024);
-	if ( methods == NULL ) return NULL;
-	methods[0] = '\0';
+    methods = cfmalloc(1024);
+    if ( methods == NULL ) return NULL;
+    methods[0] = '\0';
 
-	do_probe(taketwo_probe, cell, methods);
-	do_probe(xgandalf_probe, cell, methods);
-	do_probe(mosflm_probe, cell, methods);
-	do_probe(asdf_probe, cell, methods);
-	do_probe(dirax_probe, cell, methods);
-	do_probe(xds_probe, cell, methods);
-	do_probe(ffbidx_probe, cell, methods);
+    do_probe(taketwo_probe, cell, methods);
+    do_probe(xgandalf_probe, cell, methods);
+    do_probe(mosflm_probe, cell, methods);
+    do_probe(asdf_probe, cell, methods);
+    do_probe(dirax_probe, cell, methods);
+    do_probe(xds_probe, cell, methods);
+    do_probe(ffbidx_probe, cell, methods);
 
-	//do_probe(felix_probe, cell, methods);
-	//do_probe(pinkIndexer_probe, cell, methods);
+    //do_probe(felix_probe, cell, methods);
+    //do_probe(pinkIndexer_probe, cell, methods);
 
-	if ( strlen(methods) == 0 ) {
-		cffree(methods);
-		return NULL;
-	}
+    if ( strlen(methods) == 0 ) {
+        cffree(methods);
+        return NULL;
+    }
 
-	return methods;
+    return methods;
 }
 
 
@@ -1144,12 +1144,12 @@ void default_method_options(struct taketwo_options **ttopts,
                             struct smallcell_options **smallcell_opts,
                             struct asdf_options **asdf_opts)
 {
-	taketwo_default_options(ttopts);
-	xgandalf_default_options(xgandalf_opts);
-	ffbidx_default_options(ffbidx_opts);
-	pinkIndexer_default_options(pinkIndexer_opts);
-	felix_default_options(felix_opts);
-	fromfile_default_options(fromfile_opts);
-	smallcell_default_options(smallcell_opts);
-	asdf_default_options(asdf_opts);
+    taketwo_default_options(ttopts);
+    xgandalf_default_options(xgandalf_opts);
+    ffbidx_default_options(ffbidx_opts);
+    pinkIndexer_default_options(pinkIndexer_opts);
+    felix_default_options(felix_opts);
+    fromfile_default_options(fromfile_opts);
+    smallcell_default_options(smallcell_opts);
+    asdf_default_options(asdf_opts);
 }

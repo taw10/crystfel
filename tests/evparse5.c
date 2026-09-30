@@ -33,27 +33,27 @@ extern int *read_dim_parts(const char *ev_orig, int *pn_dvals);
 
 int main(int argc, char *argv[])
 {
-	int *dvals;
-	int n_dvals = 99;
-	int r = 0;
+    int *dvals;
+    int n_dvals = 99;
+    int r = 0;
 
-	dvals = read_dim_parts("cc/data123/bb//59", &n_dvals);
+    dvals = read_dim_parts("cc/data123/bb//59", &n_dvals);
 
-	if ( n_dvals != 1 ) {
-		printf("Wrong number of dimension parts\n");
-		r++;
-	}
+    if ( n_dvals != 1 ) {
+        printf("Wrong number of dimension parts\n");
+        r++;
+    }
 
-	if ( dvals == NULL ) {
-		printf("read_dim_parts failed\n");
-		return 1;
-	}
+    if ( dvals == NULL ) {
+        printf("read_dim_parts failed\n");
+        return 1;
+    }
 
-	if ( dvals[0] != 59 ) {
-		printf("First dimension part is wrong "
-		       "(%i, should be %i)\n", dvals[0], 59);
-		r++;
-	}
+    if ( dvals[0] != 59 ) {
+        printf("First dimension part is wrong "
+               "(%i, should be %i)\n", dvals[0], 59);
+        r++;
+    }
 
-	return r;
+    return r;
 }

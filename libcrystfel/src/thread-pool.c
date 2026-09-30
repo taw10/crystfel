@@ -48,90 +48,90 @@ static pthread_key_t status_label_key;
 
 struct worker_args
 {
-	struct task_queue_range *tqr;
-	struct task_queue *tq;
-	int id;
+    struct task_queue_range *tqr;
+    struct task_queue *tq;
+    int id;
 };
 
 
 signed int get_status_label()
 {
-	int *cookie;
+    int *cookie;
 
-	if ( !use_status_labels ) {
-		return -1;
-	}
+    if ( !use_status_labels ) {
+        return -1;
+    }
 
-	cookie = pthread_getspecific(status_label_key);
-	return *cookie;
+    cookie = pthread_getspecific(status_label_key);
+    return *cookie;
 }
 
 
 struct task_queue
 {
-	pthread_mutex_t  lock;
+    pthread_mutex_t  lock;
 
-	int              n_started;
-	int              n_completed;
-	int              max;
+    int              n_started;
+    int              n_completed;
+    int              max;
 
-	void *(*get_task)(void *);
-	void (*finalise)(void *, void *);
-	void *queue_args;
-	void (*work)(void *, int);
+    void *(*get_task)(void *);
+    void (*finalise)(void *, void *);
+    void *queue_args;
+    void (*work)(void *, int);
 };
 
 
 static void *task_worker(void *pargsv)
 {
-	struct worker_args *w = pargsv;
-	struct task_queue *q = w->tq;
-	int *cookie_slot;
+    struct worker_args *w = pargsv;
+    struct task_queue *q = w->tq;
+    int *cookie_slot;
 
-	cookie_slot = cfmalloc(sizeof(int));
-	*cookie_slot = w->id;
-	pthread_setspecific(status_label_key, cookie_slot);
+    cookie_slot = cfmalloc(sizeof(int));
+    *cookie_slot = w->id;
+    pthread_setspecific(status_label_key, cookie_slot);
 
-	cffree(w);
+    cffree(w);
 
-	do {
+    do {
 
-		void *task;
-		int cookie;
+        void *task;
+        int cookie;
 
-		/* Get a task */
-		pthread_mutex_lock(&q->lock);
-		if ( (q->max) && (q->n_started >= q->max) ) {
-			pthread_mutex_unlock(&q->lock);
-			break;
-		}
-		task = q->get_task(q->queue_args);
+        /* Get a task */
+        pthread_mutex_lock(&q->lock);
+        if ( (q->max) && (q->n_started >= q->max) ) {
+            pthread_mutex_unlock(&q->lock);
+            break;
+        }
+        task = q->get_task(q->queue_args);
 
-		/* No more tasks? */
-		if ( task == NULL ) {
-			pthread_mutex_unlock(&q->lock);
-			break;
-		}
+        /* No more tasks? */
+        if ( task == NULL ) {
+            pthread_mutex_unlock(&q->lock);
+            break;
+        }
 
-		q->n_started++;
-		pthread_mutex_unlock(&q->lock);
+        q->n_started++;
+        pthread_mutex_unlock(&q->lock);
 
-		cookie = *(int *)pthread_getspecific(status_label_key);
-		q->work(task, cookie);
+        cookie = *(int *)pthread_getspecific(status_label_key);
+        q->work(task, cookie);
 
-		/* Update totals etc */
-		pthread_mutex_lock(&q->lock);
-		q->n_completed++;
-		if ( q->finalise ) {
-			q->finalise(q->queue_args, task);
-		}
-		pthread_mutex_unlock(&q->lock);
+        /* Update totals etc */
+        pthread_mutex_lock(&q->lock);
+        q->n_completed++;
+        if ( q->finalise ) {
+            q->finalise(q->queue_args, task);
+        }
+        pthread_mutex_unlock(&q->lock);
 
-	} while ( 1 );
+    } while ( 1 );
 
-	cffree(cookie_slot);
+    cffree(cookie_slot);
 
-	return NULL;
+    return NULL;
 }
 
 
@@ -167,54 +167,54 @@ int run_threads(int n_threads, TPWorkFunc work,
                 void *queue_args, int max,
                 int cpu_num, int cpu_groupsize, int cpu_offset)
 {
-	pthread_t *workers;
-	int i;
-	struct task_queue q;
+    pthread_t *workers;
+    int i;
+    struct task_queue q;
 
-	pthread_key_create(&status_label_key, NULL);
+    pthread_key_create(&status_label_key, NULL);
 
-	workers = cfmalloc(n_threads * sizeof(pthread_t));
+    workers = cfmalloc(n_threads * sizeof(pthread_t));
 
-	pthread_mutex_init(&q.lock, NULL);
-	q.work = work;
-	q.get_task = get_task;
-	q.finalise = final;
-	q.queue_args = queue_args;
-	q.n_started = 0;
-	q.n_completed = 0;
-	q.max = max;
+    pthread_mutex_init(&q.lock, NULL);
+    q.work = work;
+    q.get_task = get_task;
+    q.finalise = final;
+    q.queue_args = queue_args;
+    q.n_started = 0;
+    q.n_completed = 0;
+    q.max = max;
 
-	/* Now it's safe to start using the status labels */
-	if ( n_threads > 1 ) use_status_labels = 1;
+    /* Now it's safe to start using the status labels */
+    if ( n_threads > 1 ) use_status_labels = 1;
 
-	/* Start threads */
-	for ( i=0; i<n_threads; i++ ) {
+    /* Start threads */
+    for ( i=0; i<n_threads; i++ ) {
 
-		struct worker_args *w;
+        struct worker_args *w;
 
-		w = cfmalloc(sizeof(struct worker_args));
+        w = cfmalloc(sizeof(struct worker_args));
 
-		w->tq = &q;
-		w->tqr = NULL;
-		w->id = i;
+        w->tq = &q;
+        w->tqr = NULL;
+        w->id = i;
 
-		if ( pthread_create(&workers[i], NULL, task_worker, w) ) {
-			/* Not ERROR() here */
-			fprintf(stderr, "Couldn't start thread %i\n", i);
-			n_threads = i;
-			break;
-		}
+        if ( pthread_create(&workers[i], NULL, task_worker, w) ) {
+            /* Not ERROR() here */
+            fprintf(stderr, "Couldn't start thread %i\n", i);
+            n_threads = i;
+            break;
+        }
 
-	}
+    }
 
-	/* Join threads */
-	for ( i=0; i<n_threads; i++ ) {
-		pthread_join(workers[i], NULL);
-	}
+    /* Join threads */
+    for ( i=0; i<n_threads; i++ ) {
+        pthread_join(workers[i], NULL);
+    }
 
-	use_status_labels = 0;
+    use_status_labels = 0;
 
-	cffree(workers);
+    cffree(workers);
 
-	return q.n_completed;
+    return q.n_completed;
 }

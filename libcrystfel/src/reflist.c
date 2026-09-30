@@ -40,76 +40,76 @@
 
 struct _refldata {
 
-	/* Symmetric indices (i.e. the "real" indices) */
-	signed int hs;
-	signed int ks;
-	signed int ls;
+    /* Symmetric indices (i.e. the "real" indices) */
+    signed int hs;
+    signed int ks;
+    signed int ls;
 
-	/* Partiality and related geometrical stuff */
-	double khalf; /* Wavenumber of middle of reflection */
-	double kpred; /* Wavenumber for prediction */
-	double exerr; /* Excitation error */
-	double p;     /* Partiality */
-	double L;     /* Lorentz factor */
+    /* Partiality and related geometrical stuff */
+    double khalf; /* Wavenumber of middle of reflection */
+    double kpred; /* Wavenumber for prediction */
+    double exerr; /* Excitation error */
+    double p;     /* Partiality */
+    double L;     /* Lorentz factor */
 
-	/* Location in image */
-	double fs;
-	double ss;
-	int panel_number;
+    /* Location in image */
+    double fs;
+    double ss;
+    int panel_number;
 
-	/* Intensity */
-	double intensity;
-	double esd_i;
-	double max_measurement;
-	double unweighted_mean;
+    /* Intensity */
+    double intensity;
+    double esd_i;
+    double max_measurement;
+    double unweighted_mean;
 
-	/* Phase */
-	double phase;
-	int have_phase;
+    /* Phase */
+    double phase;
+    int have_phase;
 
-	/* Redundancy */
-	int redundancy;
+    /* Redundancy */
+    int redundancy;
 
-	/* Peak height and mean background */
-	double peak;
-	double mean_bg;
+    /* Peak height and mean background */
+    double peak;
+    double mean_bg;
 
-	/* Contributions */
-	struct reflection_contributions *contribs;
+    /* Contributions */
+    struct reflection_contributions *contribs;
 
-	/* User-specified temporary values */
-	double temp1;
-	double temp2;
-	int flag;
+    /* User-specified temporary values */
+    double temp1;
+    double temp2;
+    int flag;
 };
 
 
 enum _nodecol {
-	RED,
-	BLACK
+    RED,
+    BLACK
 };
 
 
 struct _reflection {
 
-	/* Listy stuff */
-	unsigned int serial;          /* Unique serial number, key */
-	struct _reflection *child[2]; /* Child nodes */
-	struct _reflection *next;     /* Next and previous in doubly linked */
-	struct _reflection *prev;     /*  list of duplicate reflections */
-	enum _nodecol col;            /* Colour (red or black) */
-	int in_list;                  /* If 0, reflection is not in a list */
+    /* Listy stuff */
+    unsigned int serial;          /* Unique serial number, key */
+    struct _reflection *child[2]; /* Child nodes */
+    struct _reflection *next;     /* Next and previous in doubly linked */
+    struct _reflection *prev;     /*  list of duplicate reflections */
+    enum _nodecol col;            /* Colour (red or black) */
+    int in_list;                  /* If 0, reflection is not in a list */
 
-	/* Payload */
-	pthread_mutex_t lock;         /* Protects the contents of "data" */
-	struct _refldata data;
+    /* Payload */
+    pthread_mutex_t lock;         /* Protects the contents of "data" */
+    struct _refldata data;
 };
 
 
 struct _reflist {
 
-	struct _reflection *head;
-	char *notes;
+    struct _reflection *head;
+    char *notes;
 
 };
 
@@ -118,20 +118,20 @@ struct _reflist {
 
 static Reflection *new_node(unsigned int serial)
 {
-	Reflection *new;
+    Reflection *new;
 
-	new = cfcalloc(1, sizeof(struct _reflection));
-	if ( new == NULL ) return NULL;
-	new->in_list = 0;
-	new->serial = serial;
-	new->next = NULL;
-	new->prev = NULL;
-	new->child[0] = NULL;
-	new->child[1] = NULL;
-	new->col = RED;
-	pthread_mutex_init(&new->lock, NULL);
+    new = cfcalloc(1, sizeof(struct _reflection));
+    if ( new == NULL ) return NULL;
+    new->in_list = 0;
+    new->serial = serial;
+    new->next = NULL;
+    new->prev = NULL;
+    new->child[0] = NULL;
+    new->child[1] = NULL;
+    new->col = RED;
+    pthread_mutex_init(&new->lock, NULL);
 
-	return new;
+    return new;
 }
 
 
@@ -142,15 +142,15 @@ static Reflection *new_node(unsigned int serial)
  */
 RefList *reflist_new()
 {
-	RefList *new;
+    RefList *new;
 
-	new = cfmalloc(sizeof(struct _reflist));
-	if ( new == NULL ) return NULL;
+    new = cfmalloc(sizeof(struct _reflist));
+    if ( new == NULL ) return NULL;
 
-	new->head = NULL;
-	new->notes = NULL;
+    new->head = NULL;
+    new->notes = NULL;
 
-	return new;
+    return new;
 }
 
 
@@ -164,10 +164,10 @@ RefList *reflist_new()
  */
 Reflection *reflection_new(signed int h, signed int k, signed int l)
 {
-	assert(abs(h)<512);
-	assert(abs(k)<512);
-	assert(abs(l)<512);
-	return new_node(SERIAL(h, k, l));
+    assert(abs(h)<512);
+    assert(abs(k)<512);
+    assert(abs(l)<512);
+    return new_node(SERIAL(h, k, l));
 }
 
 
@@ -178,21 +178,21 @@ Reflection *reflection_new(signed int h, signed int k, signed int l)
  */
 void reflection_free(Reflection *refl)
 {
-	pthread_mutex_destroy(&refl->lock);
-	cffree(refl);
+    pthread_mutex_destroy(&refl->lock);
+    cffree(refl);
 }
 
 
 static void recursive_free(Reflection *refl)
 {
-	if ( refl->child[0] != NULL ) recursive_free(refl->child[0]);
-	if ( refl->child[1] != NULL ) recursive_free(refl->child[1]);
+    if ( refl->child[0] != NULL ) recursive_free(refl->child[0]);
+    if ( refl->child[1] != NULL ) recursive_free(refl->child[1]);
 
-	while ( refl != NULL ) {
-		Reflection *next = refl->next;
-		reflection_free(refl);
-		refl = next;
-	}
+    while ( refl != NULL ) {
+        Reflection *next = refl->next;
+        reflection_free(refl);
+        refl = next;
+    }
 }
 
 
@@ -203,12 +203,12 @@ static void recursive_free(Reflection *refl)
  */
 void reflist_free(RefList *list)
 {
-	if ( list == NULL ) return;
-	if ( list->head != NULL ) {
-		recursive_free(list->head);
-	} /* else empty list */
-	if ( list->notes != NULL ) cffree(list->notes);
-	cffree(list);
+    if ( list == NULL ) return;
+    if ( list->head != NULL ) {
+        recursive_free(list->head);
+    } /* else empty list */
+    if ( list->notes != NULL ) cffree(list->notes);
+    cffree(list);
 }
 
 
@@ -231,46 +231,46 @@ void reflist_free(RefList *list)
 Reflection *find_refl(const RefList *list,
                       signed int h, signed int k, signed int l)
 {
-	unsigned int search = SERIAL(h, k, l);
-	Reflection *refl;
+    unsigned int search = SERIAL(h, k, l);
+    Reflection *refl;
 
-	if ( list->head == NULL ) return NULL;
+    if ( list->head == NULL ) return NULL;
 
-	/* Indices greater than or equal to 512 are filtered out when
-	 * reflections are added, so don't even bother looking.
-	 * (also, looking for such reflections causes trouble because the search
-	 * serial number would be invalid) */
-	if ( abs(h) >= 512 ) return NULL;
-	if ( abs(k) >= 512 ) return NULL;
-	if ( abs(l) >= 512 ) return NULL;
+    /* Indices greater than or equal to 512 are filtered out when
+     * reflections are added, so don't even bother looking.
+     * (also, looking for such reflections causes trouble because the search
+     * serial number would be invalid) */
+    if ( abs(h) >= 512 ) return NULL;
+    if ( abs(k) >= 512 ) return NULL;
+    if ( abs(l) >= 512 ) return NULL;
 
-	refl = list->head;
+    refl = list->head;
 
-	while ( refl != NULL ) {
+    while ( refl != NULL ) {
 
-		if ( refl->serial == search ) {
+        if ( refl->serial == search ) {
 
-			assert(search == refl->serial);
-			assert(h == GET_H(refl->serial));
-			assert(k == GET_K(refl->serial));
-			assert(l == GET_L(refl->serial));
-			return refl;
+            assert(search == refl->serial);
+            assert(h == GET_H(refl->serial));
+            assert(k == GET_K(refl->serial));
+            assert(l == GET_L(refl->serial));
+            return refl;
 
-		} else {
+        } else {
 
-			int dir = search > refl->serial;
-			if ( refl->child[dir] != NULL ) {
-				refl = refl->child[dir];
-			} else {
-				/* Hit the bottom of the tree */
-				return NULL;
-			}
+            int dir = search > refl->serial;
+            if ( refl->child[dir] != NULL ) {
+                refl = refl->child[dir];
+            } else {
+                /* Hit the bottom of the tree */
+                return NULL;
+            }
 
-		}
+        }
 
-	}
+    }
 
-	return NULL;
+    return NULL;
 }
 
 
@@ -285,9 +285,9 @@ Reflection *find_refl(const RefList *list,
  **/
 Reflection *next_found_refl(Reflection *refl)
 {
-	if ( refl->next != NULL ) assert(refl->serial == refl->next->serial);
+    if ( refl->next != NULL ) assert(refl->serial == refl->next->serial);
 
-	return refl->next;  /* Well, that was easy... */
+    return refl->next;  /* Well, that was easy... */
 }
 
 
@@ -302,8 +302,8 @@ Reflection *next_found_refl(Reflection *refl)
  **/
 void get_detector_pos(const Reflection *refl, double *fs, double *ss)
 {
-	*fs = refl->data.fs;
-	*ss = refl->data.ss;
+    *fs = refl->data.fs;
+    *ss = refl->data.ss;
 }
 
 
@@ -316,7 +316,7 @@ void get_detector_pos(const Reflection *refl, double *fs, double *ss)
  **/
 int get_panel_number(const Reflection *refl)
 {
-	return refl->data.panel_number;
+    return refl->data.panel_number;
 }
 
 
@@ -330,9 +330,9 @@ int get_panel_number(const Reflection *refl)
 void get_indices(const Reflection *refl,
                  signed int *h, signed int *k, signed int *l)
 {
-	*h = GET_H(refl->serial);
-	*k = GET_K(refl->serial);
-	*l = GET_L(refl->serial);
+    *h = GET_H(refl->serial);
+    *k = GET_K(refl->serial);
+    *l = GET_L(refl->serial);
 }
 
 
@@ -352,9 +352,9 @@ void get_symmetric_indices(const Reflection *refl,
                                   signed int *hs, signed int *ks,
                                   signed int *ls)
 {
-	*hs = refl->data.hs;
-	*ks = refl->data.ks;
-	*ls = refl->data.ls;
+    *hs = refl->data.hs;
+    *ks = refl->data.ks;
+    *ls = refl->data.ls;
 }
 
 
@@ -365,7 +365,7 @@ void get_symmetric_indices(const Reflection *refl,
  **/
 double get_partiality(const Reflection *refl)
 {
-	return refl->data.p;
+    return refl->data.p;
 }
 
 
@@ -377,7 +377,7 @@ double get_partiality(const Reflection *refl)
  **/
 double get_lorentz(const Reflection *refl)
 {
-	return refl->data.L;
+    return refl->data.L;
 }
 
 
@@ -388,7 +388,7 @@ double get_lorentz(const Reflection *refl)
  **/
 double get_intensity(const Reflection *refl)
 {
-	return refl->data.intensity;
+    return refl->data.intensity;
 }
 
 
@@ -401,7 +401,7 @@ double get_intensity(const Reflection *refl)
  **/
 double get_khalf(const Reflection *refl)
 {
-	return refl->data.khalf;
+    return refl->data.khalf;
 }
 
 
@@ -415,7 +415,7 @@ double get_khalf(const Reflection *refl)
  **/
 double get_kpred(const Reflection *refl)
 {
-	return refl->data.kpred;
+    return refl->data.kpred;
 }
 
 
@@ -427,7 +427,7 @@ double get_kpred(const Reflection *refl)
  **/
 double get_exerr(const Reflection *refl)
 {
-	return refl->data.exerr;
+    return refl->data.exerr;
 }
 
 
@@ -446,7 +446,7 @@ double get_exerr(const Reflection *refl)
  **/
 int get_redundancy(const Reflection *refl)
 {
-	return refl->data.redundancy;
+    return refl->data.redundancy;
 }
 
 
@@ -459,7 +459,7 @@ int get_redundancy(const Reflection *refl)
  **/
 double get_esd_intensity(const Reflection *refl)
 {
-	return refl->data.esd_i;
+    return refl->data.esd_i;
 }
 
 
@@ -472,8 +472,8 @@ double get_esd_intensity(const Reflection *refl)
  **/
 double get_phase(const Reflection *refl, int *have_phase)
 {
-	if ( have_phase != NULL ) *have_phase = refl->data.have_phase;
-	return refl->data.phase;
+    if ( have_phase != NULL ) *have_phase = refl->data.have_phase;
+    return refl->data.phase;
 }
 
 
@@ -486,7 +486,7 @@ double get_phase(const Reflection *refl, int *have_phase)
  **/
 double get_peak(const Reflection *refl)
 {
-	return refl->data.peak;
+    return refl->data.peak;
 }
 
 
@@ -498,7 +498,7 @@ double get_peak(const Reflection *refl)
  **/
 double get_mean_bg(const Reflection *refl)
 {
-	return refl->data.mean_bg;
+    return refl->data.mean_bg;
 }
 
 
@@ -513,7 +513,7 @@ double get_mean_bg(const Reflection *refl)
  **/
 double get_temp1(const Reflection *refl)
 {
-	return refl->data.temp1;
+    return refl->data.temp1;
 }
 
 
@@ -528,7 +528,7 @@ double get_temp1(const Reflection *refl)
  **/
 double get_temp2(const Reflection *refl)
 {
-	return refl->data.temp2;
+    return refl->data.temp2;
 }
 
 
@@ -543,7 +543,7 @@ double get_temp2(const Reflection *refl)
  **/
 int get_flag(const Reflection *refl)
 {
-	return refl->data.flag;
+    return refl->data.flag;
 }
 
 
@@ -555,7 +555,7 @@ int get_flag(const Reflection *refl)
  **/
 struct reflection_contributions *get_contributions(const Reflection *refl)
 {
-	return refl->data.contribs;
+    return refl->data.contribs;
 }
 
 
@@ -567,7 +567,7 @@ struct reflection_contributions *get_contributions(const Reflection *refl)
  **/
 double get_max_measurement(Reflection *refl)
 {
-	return refl->data.max_measurement;
+    return refl->data.max_measurement;
 }
 
 
@@ -579,7 +579,7 @@ double get_max_measurement(Reflection *refl)
  **/
 double get_unweighted_mean(Reflection *refl)
 {
-	return refl->data.unweighted_mean;
+    return refl->data.unweighted_mean;
 }
 
 /********************************** Setters ***********************************/
@@ -597,7 +597,7 @@ double get_unweighted_mean(Reflection *refl)
  **/
 void copy_data(Reflection *to, const Reflection *from)
 {
-	memcpy(&to->data, &from->data, sizeof(struct _refldata));
+    memcpy(&to->data, &from->data, sizeof(struct _refldata));
 }
 
 
@@ -609,8 +609,8 @@ void copy_data(Reflection *to, const Reflection *from)
  **/
 void set_detector_pos(Reflection *refl, double fs, double ss)
 {
-	refl->data.fs = fs;
-	refl->data.ss = ss;
+    refl->data.fs = fs;
+    refl->data.ss = ss;
 }
 
 
@@ -622,7 +622,7 @@ void set_detector_pos(Reflection *refl, double fs, double ss)
  **/
 void set_panel_number(Reflection *refl, int pn)
 {
-	refl->data.panel_number = pn;
+    refl->data.panel_number = pn;
 }
 
 
@@ -634,7 +634,7 @@ void set_panel_number(Reflection *refl, int pn)
  **/
 void set_khalf(Reflection *refl, double khalf)
 {
-	refl->data.khalf = khalf;
+    refl->data.khalf = khalf;
 }
 
 
@@ -647,7 +647,7 @@ void set_khalf(Reflection *refl, double khalf)
  **/
 void set_kpred(Reflection *refl, double kpred)
 {
-	refl->data.kpred = kpred;
+    refl->data.kpred = kpred;
 }
 
 
@@ -658,7 +658,7 @@ void set_kpred(Reflection *refl, double kpred)
  **/
 void set_exerr(Reflection *refl, double exerr)
 {
-	refl->data.exerr = exerr;
+    refl->data.exerr = exerr;
 }
 
 
@@ -670,7 +670,7 @@ void set_exerr(Reflection *refl, double exerr)
  **/
 void set_partiality(Reflection *refl, double p)
 {
-	refl->data.p = p;
+    refl->data.p = p;
 }
 
 /**
@@ -682,7 +682,7 @@ void set_partiality(Reflection *refl, double p)
  **/
 void set_lorentz(Reflection *refl, double L)
 {
-	refl->data.L = L;
+    refl->data.L = L;
 }
 
 
@@ -694,7 +694,7 @@ void set_lorentz(Reflection *refl, double L)
  **/
 void set_intensity(Reflection *refl, double intensity)
 {
-	refl->data.intensity = intensity;
+    refl->data.intensity = intensity;
 }
 
 
@@ -712,7 +712,7 @@ void set_intensity(Reflection *refl, double intensity)
  **/
 void set_redundancy(Reflection *refl, int red)
 {
-	refl->data.redundancy = red;
+    refl->data.redundancy = red;
 }
 
 
@@ -723,7 +723,7 @@ void set_redundancy(Reflection *refl, int red)
  **/
 void set_esd_intensity(Reflection *refl, double esd)
 {
-	refl->data.esd_i = esd;
+    refl->data.esd_i = esd;
 }
 
 
@@ -734,8 +734,8 @@ void set_esd_intensity(Reflection *refl, double esd)
  **/
 void set_phase(Reflection *refl, double phase)
 {
-	refl->data.phase = phase;
-	refl->data.have_phase = 1;
+    refl->data.phase = phase;
+    refl->data.have_phase = 1;
 }
 
 
@@ -746,7 +746,7 @@ void set_phase(Reflection *refl, double phase)
  **/
 void set_peak(Reflection *refl, double peak)
 {
-	refl->data.peak = peak;
+    refl->data.peak = peak;
 }
 
 
@@ -757,7 +757,7 @@ void set_peak(Reflection *refl, double peak)
  **/
 void set_mean_bg(Reflection *refl, double mean_bg)
 {
-	refl->data.mean_bg = mean_bg;
+    refl->data.mean_bg = mean_bg;
 }
 
 
@@ -776,9 +776,9 @@ void set_mean_bg(Reflection *refl, double mean_bg)
 void set_symmetric_indices(Reflection *refl,
                            signed int hs, signed int ks, signed int ls)
 {
-	refl->data.hs = hs;
-	refl->data.ks = ks;
-	refl->data.ls = ls;
+    refl->data.hs = hs;
+    refl->data.ks = ks;
+    refl->data.ls = ls;
 }
 
 
@@ -792,7 +792,7 @@ void set_symmetric_indices(Reflection *refl,
  **/
 void set_temp1(Reflection *refl, double temp)
 {
-	refl->data.temp1 = temp;
+    refl->data.temp1 = temp;
 }
 
 
@@ -806,7 +806,7 @@ void set_temp1(Reflection *refl, double temp)
  **/
 void set_temp2(Reflection *refl, double temp)
 {
-	refl->data.temp2 = temp;
+    refl->data.temp2 = temp;
 }
 
 
@@ -820,7 +820,7 @@ void set_temp2(Reflection *refl, double temp)
  **/
 void set_flag(Reflection *refl, int flag)
 {
-	refl->data.flag = flag;
+    refl->data.flag = flag;
 }
 
 
@@ -834,7 +834,7 @@ void set_flag(Reflection *refl, int flag)
 void set_contributions(Reflection *refl,
                        struct reflection_contributions *contribs)
 {
-	refl->data.contribs = contribs;
+    refl->data.contribs = contribs;
 }
 
 
@@ -845,7 +845,7 @@ void set_contributions(Reflection *refl,
  **/
 void set_max_measurement(Reflection *refl, double max_meas)
 {
-	refl->data.max_measurement = max_meas;
+    refl->data.max_measurement = max_meas;
 }
 
 
@@ -856,7 +856,7 @@ void set_max_measurement(Reflection *refl, double max_meas)
  **/
 void set_unweighted_mean(Reflection *refl, double unw)
 {
-	refl->data.unweighted_mean = unw;
+    refl->data.unweighted_mean = unw;
 }
 
 
@@ -865,69 +865,69 @@ void set_unweighted_mean(Reflection *refl, double unw)
 
 static Reflection *rotate_once(Reflection *refl, int dir)
 {
-	Reflection *s = refl->child[!dir];
+    Reflection *s = refl->child[!dir];
 
-	refl->child[!dir] = s->child[dir];
-	s->child[dir] = refl;
+    refl->child[!dir] = s->child[dir];
+    s->child[dir] = refl;
 
-	refl->col = RED;
-	s->col = BLACK;
+    refl->col = RED;
+    s->col = BLACK;
 
-	return s;
+    return s;
 }
 
 
 static Reflection *rotate_twice(Reflection *refl, int dir)
 {
-	refl->child[!dir] = rotate_once(refl->child[!dir], !dir);
-	return rotate_once(refl, dir);
+    refl->child[!dir] = rotate_once(refl->child[!dir], !dir);
+    return rotate_once(refl, dir);
 }
 
 
 static int is_red(Reflection *refl)
 {
-	return (refl != NULL) && (refl->col == RED);
+    return (refl != NULL) && (refl->col == RED);
 }
 
 
 static Reflection *insert_node(Reflection *refl, Reflection *new)
 {
-	if ( refl == NULL ) {
+    if ( refl == NULL ) {
 
-		refl = new;
+        refl = new;
 
-	} else {
+    } else {
 
-		int dir;
-		Reflection *rcd;
+        int dir;
+        Reflection *rcd;
 
-		assert(new->serial != refl->serial);
-		dir = new->serial > refl->serial;
-		refl->child[dir] = insert_node(refl->child[dir], new);
+        assert(new->serial != refl->serial);
+        dir = new->serial > refl->serial;
+        refl->child[dir] = insert_node(refl->child[dir], new);
 
-		rcd = refl->child[dir];
-		if ( is_red(rcd) ) {
+        rcd = refl->child[dir];
+        if ( is_red(rcd) ) {
 
-			if ( is_red(refl->child[!dir]) ) {
+            if ( is_red(refl->child[!dir]) ) {
 
-				refl->col = RED;
-				refl->child[0]->col = BLACK;
-				refl->child[1]->col = BLACK;
+                refl->col = RED;
+                refl->child[0]->col = BLACK;
+                refl->child[1]->col = BLACK;
 
-			} else {
+            } else {
 
-				if ( is_red(rcd->child[dir] ) ) {
-					refl = rotate_once(refl, !dir);
-				} else if ( is_red(rcd->child[!dir] ) ) {
-					refl = rotate_twice(refl, !dir);
-				}
+                if ( is_red(rcd->child[dir] ) ) {
+                    refl = rotate_once(refl, !dir);
+                } else if ( is_red(rcd->child[!dir] ) ) {
+                    refl = rotate_twice(refl, !dir);
+                }
 
-			}
-		}
+            }
+        }
 
-	}
+    }
 
-	return refl;
+    return refl;
 }
 
 
@@ -937,27 +937,27 @@ static void add_refl_to_list_real(RefList *list,
                                   signed int k,
                                   signed int l)
 {
-	Reflection *f;
+    Reflection *f;
 
-	assert(!new->in_list);
+    assert(!new->in_list);
 
-	f = find_refl(list, h, k, l);
-	if ( f == NULL ) {
+    f = find_refl(list, h, k, l);
+    if ( f == NULL ) {
 
-		list->head = insert_node(list->head, new);
-		list->head->col = BLACK;
+        list->head = insert_node(list->head, new);
+        list->head->col = BLACK;
 
-	} else {
+    } else {
 
-		/* New reflection is identical to a previous one */
-		while ( f->next != NULL ) {
-			f = f->next;
-		}
-		f->next = new;
-		new->prev = f;
-	}
+        /* New reflection is identical to a previous one */
+        while ( f->next != NULL ) {
+            f = f->next;
+        }
+        f->next = new;
+        new->prev = f;
+    }
 
-	new->in_list = 1;
+    new->in_list = 1;
 }
 
 
@@ -976,18 +976,18 @@ static void add_refl_to_list_real(RefList *list,
  **/
 Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
 {
-	Reflection *new;
+    Reflection *new;
 
-	assert(abs(h)<512);
-	assert(abs(k)<512);
-	assert(abs(l)<512);
+    assert(abs(h)<512);
+    assert(abs(k)<512);
+    assert(abs(l)<512);
 
-	new = new_node(SERIAL(h, k, l));
-	if ( new == NULL ) return NULL;
+    new = new_node(SERIAL(h, k, l));
+    if ( new == NULL ) return NULL;
 
-	add_refl_to_list_real(list, new, h, k, l);
+    add_refl_to_list_real(list, new, h, k, l);
 
-	return new;
+    return new;
 }
 
 
@@ -1000,11 +1000,11 @@ Reflection *add_refl(RefList *list, signed int h, signed int k, signed int l)
  **/
 void add_refl_to_list(Reflection *refl, RefList *list)
 {
-	signed int h, k, l;
+    signed int h, k, l;
 
-	get_indices(refl, &h, &k, &l);
+    get_indices(refl, &h, &k, &l);
 
-	add_refl_to_list_real(list, refl, h, k, l);
+    add_refl_to_list_real(list, refl, h, k, l);
 }
 
 
@@ -1012,11 +1012,11 @@ void add_refl_to_list(Reflection *refl, RefList *list)
 
 struct _reflistiterator {
 
-	int stack_size;
-	int stack_ptr;
-	Reflection **stack;
-	const Reflection **stack_const;
-	int is_const;
+    int stack_size;
+    int stack_ptr;
+    Reflection **stack;
+    const Reflection **stack_const;
+    int is_const;
 };
 
 
@@ -1033,44 +1033,44 @@ struct _reflistiterator {
  **/
 Reflection *first_refl(RefList *list, RefListIterator **piter)
 {
-	Reflection *refl;
-	RefListIterator *iter;
+    Reflection *refl;
+    RefListIterator *iter;
 
-	iter = cfmalloc(sizeof(struct _reflistiterator));
-	iter->stack_size = 32;
-	iter->stack = cfmalloc(iter->stack_size*sizeof(Reflection *));
-	iter->stack_ptr = 0;
-	iter->is_const = 0;
-	*piter = iter;
+    iter = cfmalloc(sizeof(struct _reflistiterator));
+    iter->stack_size = 32;
+    iter->stack = cfmalloc(iter->stack_size*sizeof(Reflection *));
+    iter->stack_ptr = 0;
+    iter->is_const = 0;
+    *piter = iter;
 
-	if ( list == NULL ) return NULL;
+    if ( list == NULL ) return NULL;
 
-	refl = list->head;
+    refl = list->head;
 
-	do {
+    do {
 
-		if ( refl != NULL ) {
-			iter->stack[iter->stack_ptr++] = refl;
-			if ( iter->stack_ptr == iter->stack_size ) {
-				iter->stack_size += 32;
-				iter->stack = cfrealloc(iter->stack,
-				         iter->stack_size*sizeof(Reflection *));
-			}
-			refl = refl->child[0];
-			continue;
-		}
+        if ( refl != NULL ) {
+            iter->stack[iter->stack_ptr++] = refl;
+            if ( iter->stack_ptr == iter->stack_size ) {
+                iter->stack_size += 32;
+                iter->stack = cfrealloc(iter->stack,
+                         iter->stack_size*sizeof(Reflection *));
+            }
+            refl = refl->child[0];
+            continue;
+        }
 
-		if ( iter->stack_ptr == 0 ) {
-			cffree(iter->stack);
-			cffree(iter);
-			return NULL;
-		}
+        if ( iter->stack_ptr == 0 ) {
+            cffree(iter->stack);
+            cffree(iter);
+            return NULL;
+        }
 
-		refl = iter->stack[--iter->stack_ptr];
+        refl = iter->stack[--iter->stack_ptr];
 
-		return refl;
+        return refl;
 
-	} while ( 1 );
+    } while ( 1 );
 }
 
 
@@ -1086,44 +1086,44 @@ Reflection *first_refl(RefList *list, RefListIterator **piter)
  **/
 const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
 {
-	const Reflection *refl;
-	RefListIterator *iter;
+    const Reflection *refl;
+    RefListIterator *iter;
 
-	iter = cfmalloc(sizeof(struct _reflistiterator));
-	iter->stack_size = 32;
-	iter->stack_const = cfmalloc(iter->stack_size*sizeof(Reflection *));
-	iter->stack_ptr = 0;
-	iter->is_const = 1;
-	*piter = iter;
+    iter = cfmalloc(sizeof(struct _reflistiterator));
+    iter->stack_size = 32;
+    iter->stack_const = cfmalloc(iter->stack_size*sizeof(Reflection *));
+    iter->stack_ptr = 0;
+    iter->is_const = 1;
+    *piter = iter;
 
-	if ( list == NULL ) return NULL;
+    if ( list == NULL ) return NULL;
 
-	refl = list->head;
+    refl = list->head;
 
-	do {
+    do {
 
-		if ( refl != NULL ) {
-			iter->stack_const[iter->stack_ptr++] = refl;
-			if ( iter->stack_ptr == iter->stack_size ) {
-				iter->stack_size += 32;
-				iter->stack_const = cfrealloc(iter->stack_const,
-				         iter->stack_size*sizeof(Reflection *));
-			}
-			refl = refl->child[0];
-			continue;
-		}
+        if ( refl != NULL ) {
+            iter->stack_const[iter->stack_ptr++] = refl;
+            if ( iter->stack_ptr == iter->stack_size ) {
+                iter->stack_size += 32;
+                iter->stack_const = cfrealloc(iter->stack_const,
+                         iter->stack_size*sizeof(Reflection *));
+            }
+            refl = refl->child[0];
+            continue;
+        }
 
-		if ( iter->stack_ptr == 0 ) {
-			cffree(iter->stack_const);
-			cffree(iter);
-			return NULL;
-		}
+        if ( iter->stack_ptr == 0 ) {
+            cffree(iter->stack_const);
+            cffree(iter);
+            return NULL;
+        }
 
-		refl = iter->stack_const[--iter->stack_ptr];
+        refl = iter->stack_const[--iter->stack_ptr];
 
-		return refl;
+        return refl;
 
-	} while ( 1 );
+    } while ( 1 );
 }
 
 
@@ -1139,44 +1139,44 @@ const Reflection *first_refl_const(const RefList *list, RefListIterator **piter)
  **/
 Reflection *next_refl(Reflection *refl, RefListIterator *iter)
 {
-	assert(!iter->is_const);
+    assert(!iter->is_const);
 
-	/* Are there more reflections with the same indices? */
-	if ( refl->next != NULL ) {
-		return refl->next;
-	} else {
+    /* Are there more reflections with the same indices? */
+    if ( refl->next != NULL ) {
+        return refl->next;
+    } else {
 
-		/* No, so rewind back to the head of the list */
-		while ( refl->prev != NULL ) {
-			refl = refl->prev;
-		}
+        /* No, so rewind back to the head of the list */
+        while ( refl->prev != NULL ) {
+            refl = refl->prev;
+        }
 
-	}
+    }
 
-	refl = refl->child[1];
-	do {
+    refl = refl->child[1];
+    do {
 
-		if ( refl != NULL ) {
+        if ( refl != NULL ) {
 
-			iter->stack[iter->stack_ptr++] = refl;
-			if ( iter->stack_ptr == iter->stack_size ) {
-				iter->stack_size += 32;
-				iter->stack = cfrealloc(iter->stack,
-				         iter->stack_size*sizeof(Reflection *));
-			}
-			refl = refl->child[0];
-			continue;
+            iter->stack[iter->stack_ptr++] = refl;
+            if ( iter->stack_ptr == iter->stack_size ) {
+                iter->stack_size += 32;
+                iter->stack = cfrealloc(iter->stack,
+                         iter->stack_size*sizeof(Reflection *));
+            }
+            refl = refl->child[0];
+            continue;
 
-		}
-		if ( iter->stack_ptr == 0 ) {
-			cffree(iter->stack);
-			cffree(iter);
-			return NULL;
-		}
+        }
+        if ( iter->stack_ptr == 0 ) {
+            cffree(iter->stack);
+            cffree(iter);
+            return NULL;
+        }
 
-		return iter->stack[--iter->stack_ptr];
+        return iter->stack[--iter->stack_ptr];
 
-	} while ( 1 );
+    } while ( 1 );
 }
 
 
@@ -1192,56 +1192,56 @@ Reflection *next_refl(Reflection *refl, RefListIterator *iter)
  **/
 const Reflection *next_refl_const(const Reflection *refl, RefListIterator *iter)
 {
-	assert(iter->is_const);
+    assert(iter->is_const);
 
-	/* Are there more reflections with the same indices? */
-	if ( refl->next != NULL ) {
-		return refl->next;
-	} else {
+    /* Are there more reflections with the same indices? */
+    if ( refl->next != NULL ) {
+        return refl->next;
+    } else {
 
-		/* No, so rewind back to the head of the list */
-		while ( refl->prev != NULL ) {
-			refl = refl->prev;
-		}
+        /* No, so rewind back to the head of the list */
+        while ( refl->prev != NULL ) {
+            refl = refl->prev;
+        }
 
-	}
+    }
 
-	refl = refl->child[1];
-	do {
+    refl = refl->child[1];
+    do {
 
-		if ( refl != NULL ) {
+        if ( refl != NULL ) {
 
-			iter->stack_const[iter->stack_ptr++] = refl;
-			if ( iter->stack_ptr == iter->stack_size ) {
-				iter->stack_size += 32;
-				iter->stack_const = cfrealloc(iter->stack_const,
-				         iter->stack_size*sizeof(Reflection *));
-			}
-			refl = refl->child[0];
-			continue;
+            iter->stack_const[iter->stack_ptr++] = refl;
+            if ( iter->stack_ptr == iter->stack_size ) {
+                iter->stack_size += 32;
+                iter->stack_const = cfrealloc(iter->stack_const,
+                         iter->stack_size*sizeof(Reflection *));
+            }
+            refl = refl->child[0];
+            continue;
 
-		}
-		if ( iter->stack_ptr == 0 ) {
-			free_reflistiterator(iter);
-			return NULL;
-		}
+        }
+        if ( iter->stack_ptr == 0 ) {
+            free_reflistiterator(iter);
+            return NULL;
+        }
 
-		return iter->stack_const[--iter->stack_ptr];
+        return iter->stack_const[--iter->stack_ptr];
 
-	} while ( 1 );
+    } while ( 1 );
 }
 
 
 void free_reflistiterator(RefListIterator *iter)
 {
-	if ( iter != NULL ) {
-		if ( iter->is_const ) {
-			cffree(iter->stack_const);
-		} else {
-			cffree(iter->stack);
-		}
-		cffree(iter);
-	}
+    if ( iter != NULL ) {
+        if ( iter->is_const ) {
+            cffree(iter->stack_const);
+        } else {
+            cffree(iter->stack);
+        }
+        cffree(iter);
+    }
 }
 
 
@@ -1249,35 +1249,35 @@ void free_reflistiterator(RefListIterator *iter)
 
 static int recursive_depth(Reflection *refl)
 {
-	int depth_left, depth_right;
+    int depth_left, depth_right;
 
-	if ( refl == NULL ) return 0;
+    if ( refl == NULL ) return 0;
 
-	depth_left = recursive_depth(refl->child[0]);
-	depth_right = recursive_depth(refl->child[1]);
+    depth_left = recursive_depth(refl->child[0]);
+    depth_right = recursive_depth(refl->child[1]);
 
-	return 1 + biggest(depth_left, depth_right);
+    return 1 + biggest(depth_left, depth_right);
 }
 
 
 static int recursive_count(Reflection *refl)
 {
-	int count_left, count_right;
-	Reflection *probe;
-	int n_this = 1;
+    int count_left, count_right;
+    Reflection *probe;
+    int n_this = 1;
 
-	if ( refl == NULL ) return 0;
+    if ( refl == NULL ) return 0;
 
-	probe = refl;
-	while ( probe->next != NULL ) {
-		probe = probe->next;
-		n_this++;
-	}
+    probe = refl;
+    while ( probe->next != NULL ) {
+        probe = probe->next;
+        n_this++;
+    }
 
-	count_left = recursive_count(refl->child[0]);
-	count_right = recursive_count(refl->child[1]);
+    count_left = recursive_count(refl->child[0]);
+    count_right = recursive_count(refl->child[1]);
 
-	return n_this + count_left + count_right;
+    return n_this + count_left + count_right;
 }
 
 
@@ -1289,7 +1289,7 @@ static int recursive_count(Reflection *refl)
  **/
 int num_reflections(RefList *list)
 {
-	return recursive_count(list->head);
+    return recursive_count(list->head);
 }
 
 
@@ -1304,7 +1304,7 @@ int num_reflections(RefList *list)
  **/
 int tree_depth(RefList *list)
 {
-	return recursive_depth(list->head);
+    return recursive_depth(list->head);
 }
 
 
@@ -1315,7 +1315,7 @@ int tree_depth(RefList *list)
  */
 void lock_reflection(Reflection *refl)
 {
-	pthread_mutex_lock(&refl->lock);
+    pthread_mutex_lock(&refl->lock);
 }
 
 
@@ -1326,14 +1326,14 @@ void lock_reflection(Reflection *refl)
  */
 void unlock_reflection(Reflection *refl)
 {
-	pthread_mutex_unlock(&refl->lock);
+    pthread_mutex_unlock(&refl->lock);
 }
 
 
 static void reflist_set_notes(RefList *reflist, const char *notes)
 {
-	cffree(reflist->notes);  /* free(NULL) is OK */
-	reflist->notes = cfstrdup(notes);
+    cffree(reflist->notes);  /* free(NULL) is OK */
+    reflist->notes = cfstrdup(notes);
 }
 
 
@@ -1345,7 +1345,7 @@ static void reflist_set_notes(RefList *reflist, const char *notes)
  */
 const char *reflist_get_notes(RefList *reflist)
 {
-	return reflist->notes;
+    return reflist->notes;
 }
 
 
@@ -1361,24 +1361,24 @@ const char *reflist_get_notes(RefList *reflist)
  */
 void reflist_add_notes(RefList *reflist, const char *notes_add)
 {
-	size_t len;
-	char *nnotes;
+    size_t len;
+    char *nnotes;
 
-	if ( reflist->notes == NULL ) {
-		reflist_set_notes(reflist, notes_add);
-		return;
-	}
+    if ( reflist->notes == NULL ) {
+        reflist_set_notes(reflist, notes_add);
+        return;
+    }
 
-	len = strlen(notes_add) + strlen(reflist->notes) + 2;
-	nnotes = cfmalloc(len);
-	if ( nnotes == NULL ) {
-		ERROR("Failed to add notes to crystal.\n");
-		return;
-	}
+    len = strlen(notes_add) + strlen(reflist->notes) + 2;
+    nnotes = cfmalloc(len);
+    if ( nnotes == NULL ) {
+        ERROR("Failed to add notes to crystal.\n");
+        return;
+    }
 
-	strcpy(nnotes, reflist->notes);
-	strcat(nnotes, "\n");
-	strcat(nnotes, notes_add);
-	cffree(reflist->notes);
-	reflist->notes = nnotes;
+    strcpy(nnotes, reflist->notes);
+    strcat(nnotes, "\n");
+    strcat(nnotes, notes_add);
+    cffree(reflist->notes);
+    reflist->notes = nnotes;
 }

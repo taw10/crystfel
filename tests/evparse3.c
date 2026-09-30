@@ -33,21 +33,21 @@ extern char **read_path_parts(const char *ev_orig, int *pn_plvals);
 
 int main(int argc, char *argv[])
 {
-	char **plvals;
-	int n_plvals;
-	int r = 0;
+    char **plvals;
+    int n_plvals;
+    int r = 0;
 
-	plvals = read_path_parts("//234/59", &n_plvals);
+    plvals = read_path_parts("//234/59", &n_plvals);
 
-	if ( plvals == NULL ) {
-		printf("read_path_parts failed\n");
-		r++;
-	}
+    if ( plvals == NULL ) {
+        printf("read_path_parts failed\n");
+        r++;
+    }
 
-	if ( n_plvals != 0 ) {
-		printf("Wrong number of path parts\n");
-		r++;
-	}
+    if ( n_plvals != 0 ) {
+        printf("Wrong number of path parts\n");
+        r++;
+    }
 
-	return r;
+    return r;
 }

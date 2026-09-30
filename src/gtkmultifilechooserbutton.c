@@ -47,102 +47,102 @@ G_DEFINE_TYPE(GtkMultiFileChooserButton,
 
 static void gtk_multi_file_chooser_button_finalize(GObject *obj)
 {
-	GtkMultiFileChooserButton *mfc = GTK_MULTI_FILE_CHOOSER_BUTTON(obj);
-	free(mfc->text);
-	G_OBJECT_CLASS(gtk_multi_file_chooser_button_parent_class)->finalize(obj);
+    GtkMultiFileChooserButton *mfc = GTK_MULTI_FILE_CHOOSER_BUTTON(obj);
+    free(mfc->text);
+    G_OBJECT_CLASS(gtk_multi_file_chooser_button_parent_class)->finalize(obj);
 }
 
 
 static void gtk_multi_file_chooser_button_class_init(GtkMultiFileChooserButtonClass *klass)
 {
-	GObjectClass *object_class = G_OBJECT_CLASS(klass);
-	object_class->finalize = gtk_multi_file_chooser_button_finalize;
+    GObjectClass *object_class = G_OBJECT_CLASS(klass);
+    object_class->finalize = gtk_multi_file_chooser_button_finalize;
 }
 
 
 static void gtk_multi_file_chooser_button_init(GtkMultiFileChooserButton *mfc)
 {
-	mfc->chooser = NULL;
-	mfc->filenames = NULL;
+    mfc->chooser = NULL;
+    mfc->filenames = NULL;
 }
 
 
 static void chooser_destroy_sig(GtkWidget *widget, GtkMultiFileChooserButton *mfc)
 {
-	mfc->chooser = NULL;
+    mfc->chooser = NULL;
 }
 
 
 static void delstring(gpointer data, gpointer user_data)
 {
-	g_free(data);
+    g_free(data);
 }
 
 
 static void chooser_response_sig(GtkWidget *dialog, gint resp,
                                  GtkMultiFileChooserButton *mfc)
 {
-	if ( resp == GTK_RESPONSE_ACCEPT ) {
+    if ( resp == GTK_RESPONSE_ACCEPT ) {
 
-		int n;
-		char tmp[64];
+        int n;
+        char tmp[64];
 
-		if ( mfc->filenames != NULL ) {
-			g_slist_foreach(mfc->filenames, delstring, NULL);
-			g_slist_free(mfc->filenames);
-		}
+        if ( mfc->filenames != NULL ) {
+            g_slist_foreach(mfc->filenames, delstring, NULL);
+            g_slist_free(mfc->filenames);
+        }
 
-		mfc->filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
+        mfc->filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
 
-		n = g_slist_length(mfc->filenames);
-		snprintf(tmp, 63, "%i files selected", n);
-		gtk_button_set_label(GTK_BUTTON(mfc), tmp);
+        n = g_slist_length(mfc->filenames);
+        snprintf(tmp, 63, "%i files selected", n);
+        gtk_button_set_label(GTK_BUTTON(mfc), tmp);
 
-	}
+    }
 
-	gtk_widget_destroy(dialog);
+    gtk_widget_destroy(dialog);
 }
 
 
 static void click_sig(GtkMultiFileChooserButton *mfc, gpointer data)
 {
-	GtkWidget *parent;
+    GtkWidget *parent;
 
-	if ( mfc->chooser != NULL ) return;
+    if ( mfc->chooser != NULL ) return;
 
-	parent = gtk_widget_get_toplevel(GTK_WIDGET(mfc));
-	if ( !GTK_IS_WINDOW(parent) ) {
-		parent = NULL;
-	}
-	mfc->chooser = gtk_file_chooser_dialog_new(mfc->text,
-	                                           GTK_WINDOW(parent),
-	                                           GTK_FILE_CHOOSER_ACTION_OPEN,
-	                                           GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-	                                           "Select", GTK_RESPONSE_ACCEPT,
-	                                           NULL);
-	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(mfc->chooser), TRUE);
-	g_signal_connect(mfc->chooser, "destroy",
-	                 G_CALLBACK(chooser_destroy_sig), mfc);
-	g_signal_connect(G_OBJECT(mfc->chooser), "response",
-	                 G_CALLBACK(chooser_response_sig), mfc);
-	gtk_widget_show(mfc->chooser);
+    parent = gtk_widget_get_toplevel(GTK_WIDGET(mfc));
+    if ( !GTK_IS_WINDOW(parent) ) {
+        parent = NULL;
+    }
+    mfc->chooser = gtk_file_chooser_dialog_new(mfc->text,
+                                               GTK_WINDOW(parent),
+                                               GTK_FILE_CHOOSER_ACTION_OPEN,
+                                               GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                               "Select", GTK_RESPONSE_ACCEPT,
+                                               NULL);
+    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(mfc->chooser), TRUE);
+    g_signal_connect(mfc->chooser, "destroy",
+                     G_CALLBACK(chooser_destroy_sig), mfc);
+    g_signal_connect(G_OBJECT(mfc->chooser), "response",
+                     G_CALLBACK(chooser_response_sig), mfc);
+    gtk_widget_show(mfc->chooser);
 }
 
 
 GtkWidget *gtk_multi_file_chooser_button_new(const char *text)
 {
-	GtkMultiFileChooserButton *mfc;
+    GtkMultiFileChooserButton *mfc;
 
-	mfc = g_object_new(GTK_TYPE_MULTI_FILE_CHOOSER_BUTTON, NULL);
-	mfc->text = strdup(text);
-	gtk_button_set_label(GTK_BUTTON(mfc), mfc->text);
-	g_signal_connect(mfc, "clicked", G_CALLBACK(click_sig), NULL);
+    mfc = g_object_new(GTK_TYPE_MULTI_FILE_CHOOSER_BUTTON, NULL);
+    mfc->text = strdup(text);
+    gtk_button_set_label(GTK_BUTTON(mfc), mfc->text);
+    g_signal_connect(mfc, "clicked", G_CALLBACK(click_sig), NULL);
 
-	return GTK_WIDGET(mfc);
+    return GTK_WIDGET(mfc);
 }
 
 
 GSList *gtk_multi_file_chooser_button_get_filenames(GtkMultiFileChooserButton *mfc)
 {
-	return mfc->filenames;
+    return mfc->filenames;
 }

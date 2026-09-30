@@ -43,45 +43,45 @@
 
 static void filter_noise_in_panel(float *data, int width, int height)
 {
-	int x, y;
+    int x, y;
 
-	for ( y=0; y<height; y++ ) {
-	for ( x=0; x<width; x++ ) {
+    for ( y=0; y<height; y++ ) {
+    for ( x=0; x<width; x++ ) {
 
-		int dx, dy;
-		float val = data[x+width*y];
+        int dx, dy;
+        float val = data[x+width*y];
 
-		/* This isn't really the right thing to do at the edges,
-		 * but this filter is so horrible it's unlikely to matter. */
-		if ( (x==0) || (x==width-1)
-		  || (y==0) || (y==height-1) ) {
-			if ( val < 0 ) {
-				data[x+width*y] = 0.0;
-			}
-			continue;
-		}
+        /* This isn't really the right thing to do at the edges,
+         * but this filter is so horrible it's unlikely to matter. */
+        if ( (x==0) || (x==width-1)
+          || (y==0) || (y==height-1) ) {
+            if ( val < 0 ) {
+                data[x+width*y] = 0.0;
+            }
+            continue;
+        }
 
-		for ( dy=-1; dy<=+1; dy++ ) {
-		for ( dx=-1; dx<=+1; dx++ ) {
-			if ( data[(x+dx)+width*(y+dy)] ) val = 0.0;
-		}
-		}
+        for ( dy=-1; dy<=+1; dy++ ) {
+        for ( dx=-1; dx<=+1; dx++ ) {
+            if ( data[(x+dx)+width*(y+dy)] ) val = 0.0;
+        }
+        }
 
-		data[x+width*y] = val;
+        data[x+width*y] = val;
 
-	}
-	}
+    }
+    }
 }
 
 
 void filter_noise(struct image *image)
 {
-	int i;
+    int i;
 
-	for ( i=0; i<image->detgeom->n_panels; i++ ) {
-		struct detgeom_panel *p = &image->detgeom->panels[i];
-		filter_noise_in_panel(image->dp[i], p->w, p->h);
-	}
+    for ( i=0; i<image->detgeom->n_panels; i++ ) {
+        struct detgeom_panel *p = &image->detgeom->panels[i];
+        filter_noise_in_panel(image->dp[i], p->w, p->h);
+    }
 }
 
 
@@ -95,108 +95,108 @@ void filters_fudge_gslcblas()
 #define SWAP(a,b) { float t=(a);(a)=(b);(b)=t; }
 static float kth_smallest(float *a, int n, int k)
 {
-	long l, m;
+    long l, m;
 
-	l = 0;
-	m = n-1;
+    l = 0;
+    m = n-1;
 
-	while ( l < m ) {
-		long i, j;
-		float x;
-		x=a[k];
-		i=l;
-		j=m;
-		do {
-			while (a[i]<x) i++;
-			while (x<a[j]) j--;
-			if ( i<=j ) {
-				SWAP(a[i],a[j]);
-				i++;
-				j--;
-			}
-		} while (i<=j);
-		if ( j<k ) l = i;
-		if ( k<i ) m = j;
-	}
-	return a[k];
+    while ( l < m ) {
+        long i, j;
+        float x;
+        x=a[k];
+        i=l;
+        j=m;
+        do {
+            while (a[i]<x) i++;
+            while (x<a[j]) j--;
+            if ( i<=j ) {
+                SWAP(a[i],a[j]);
+                i++;
+                j--;
+            }
+        } while (i<=j);
+        if ( j<k ) l = i;
+        if ( k<i ) m = j;
+    }
+    return a[k];
 }
 #undef SWAP
 
 
 void filter_median(struct image *image, int size)
 {
-	int counter;
-	int nn;
-	float *buffer;
-	int pn;
+    int counter;
+    int nn;
+    float *buffer;
+    int pn;
 
-	if ( size <= 0 ) return;
+    if ( size <= 0 ) return;
 
-	nn = 2*size+1;
-	nn = nn*nn;
+    nn = 2*size+1;
+    nn = nn*nn;
 
-	/* "localBg" is way too big, but guaranteed big enough */
-	buffer = cfcalloc(nn, sizeof(float));
-	if ( buffer == NULL ) {
-		ERROR("Failed to allocate LB buffer.\n");
-		return;
-	}
+    /* "localBg" is way too big, but guaranteed big enough */
+    buffer = cfcalloc(nn, sizeof(float));
+    if ( buffer == NULL ) {
+        ERROR("Failed to allocate LB buffer.\n");
+        return;
+    }
 
-	/* Determine local background
-	 * (median over window width either side of current pixel) */
-	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+    /* Determine local background
+     * (median over window width either side of current pixel) */
+    for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
 
-		int fs, ss;
-		int i;
-		struct detgeom_panel *p;
-		float *localBg;
+        int fs, ss;
+        int i;
+        struct detgeom_panel *p;
+        float *localBg;
 
-		p = &image->detgeom->panels[pn];
+        p = &image->detgeom->panels[pn];
 
-		localBg = cfcalloc(p->w*p->h, sizeof(float));
-		if ( localBg == NULL ) {
-			ERROR("Failed to allocate LB buffer.\n");
-			return;
-		}
+        localBg = cfcalloc(p->w*p->h, sizeof(float));
+        if ( localBg == NULL ) {
+            ERROR("Failed to allocate LB buffer.\n");
+            return;
+        }
 
-		for ( ss=0; ss<p->h; ss++ ) {
-		for ( fs=0; fs<p->w; fs++ ) {
+        for ( ss=0; ss<p->h; ss++ ) {
+        for ( fs=0; fs<p->w; fs++ ) {
 
-			int ifs, iss;
+            int ifs, iss;
 
-			counter = 0;
+            counter = 0;
 
-			// Loop over median window
-			for ( iss=-size; iss<=size; iss++ ) {
-			for ( ifs=-size; ifs<=size; ifs++ ) {
+            // Loop over median window
+            for ( iss=-size; iss<=size; iss++ ) {
+            for ( ifs=-size; ifs<=size; ifs++ ) {
 
-				int idx;
+                int idx;
 
-				if ( (fs+ifs) < 0 ) continue;
-				if ( (fs+ifs) >= p->w ) continue;
-				if ( (ss+iss) < 0 ) continue;
-				if ( (ss+iss) >= p->h ) continue;
+                if ( (fs+ifs) < 0 ) continue;
+                if ( (fs+ifs) >= p->w ) continue;
+                if ( (ss+iss) < 0 ) continue;
+                if ( (ss+iss) >= p->h ) continue;
 
-				idx = fs+ifs + (ss+iss)*p->w;
-				buffer[counter++] = image->dp[pn][idx];
+                idx = fs+ifs + (ss+iss)*p->w;
+                buffer[counter++] = image->dp[pn][idx];
 
-			}
-			}
+            }
+            }
 
-			// Find median value
-			localBg[fs+p->w*ss] = kth_smallest(buffer, counter,
-			                                   counter/2);
+            // Find median value
+            localBg[fs+p->w*ss] = kth_smallest(buffer, counter,
+                                               counter/2);
 
-		}
-		}
+        }
+        }
 
-		/* Do the background subtraction */
-		for ( i=0; i<p->w*p->h; i++ ) {
-			image->dp[pn][i] -= localBg[i];
-		}
+        /* Do the background subtraction */
+        for ( i=0; i<p->w*p->h; i++ ) {
+            image->dp[pn][i] -= localBg[i];
+        }
 
-		cffree(localBg);
-	}
+        cffree(localBg);
+    }
 
-	cffree(buffer);
+    cffree(buffer);
 }

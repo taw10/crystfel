@@ -48,209 +48,209 @@ G_DEFINE_TYPE(CrystFELColourScale, crystfel_colour_scale,
 
 static gint destroy_sig(GtkWidget *window, CrystFELColourScale *cs)
 {
-	return FALSE;
+    return FALSE;
 }
 
 
 static gint realise_sig(GtkWidget *window, CrystFELColourScale *cs)
 {
-	return FALSE;
+    return FALSE;
 }
 
 
 static gint button_press_sig(GtkWidget *window, GdkEventButton *event,
                              CrystFELColourScale *cs)
 {
-	cs->drag_start_x = event->x;
-	cs->drag_start_y = event->y;
-	cs->drag_min = cs->lo;
-	gtk_widget_grab_focus(GTK_WIDGET(cs));
-	return TRUE;
+    cs->drag_start_x = event->x;
+    cs->drag_start_y = event->y;
+    cs->drag_min = cs->lo;
+    gtk_widget_grab_focus(GTK_WIDGET(cs));
+    return TRUE;
 }
 
 
 static gint button_release_sig(GtkWidget *window, GdkEventButton *event,
                                CrystFELColourScale *cs)
 {
-	g_signal_emit_by_name(cs, "range-changed");
-	return FALSE;
+    g_signal_emit_by_name(cs, "range-changed");
+    return FALSE;
 }
 
 
 static void make_histogram(CrystFELColourScale *cs)
 {
-	int i;
-	int n_bins = COLSCALE_N_BINS;
-	float min = cs->lo;
-	float max = cs->hi;
+    int i;
+    int n_bins = COLSCALE_N_BINS;
+    float min = cs->lo;
+    float max = cs->hi;
 
-	for ( i=0; i<COLSCALE_N_BINS; i++ ) {
-		cs->bins[i] = 0;
-	}
+    for ( i=0; i<COLSCALE_N_BINS; i++ ) {
+        cs->bins[i] = 0;
+    }
 
-	for ( i=0; i<COLSCALE_SAMPLE_SIZE; i++ ) {
-		int bin;
-		double v = cs->sample[i];
-		bin = n_bins*(v-min)/(max-min);
-		if ( (bin >= 0) && (bin < n_bins) ) {
-			cs->bins[bin]++;
-		}
-	}
+    for ( i=0; i<COLSCALE_SAMPLE_SIZE; i++ ) {
+        int bin;
+        double v = cs->sample[i];
+        bin = n_bins*(v-min)/(max-min);
+        if ( (bin >= 0) && (bin < n_bins) ) {
+            cs->bins[bin]++;
+        }
+    }
 }
 
 
 static gint motion_sig(GtkWidget *window, GdkEventMotion *event,
                        CrystFELColourScale *cs)
 {
-	double span = cs->hi - cs->lo;
+    double span = cs->hi - cs->lo;
 
-	cs->lo = cs->drag_min + span*(event->y - cs->drag_start_y)/cs->visible_height;
-	cs->hi = cs->lo + span;
+    cs->lo = cs->drag_min + span*(event->y - cs->drag_start_y)/cs->visible_height;
+    cs->hi = cs->lo + span;
 
-	make_histogram(cs);
-	gtk_widget_queue_draw(GTK_WIDGET(cs));
+    make_histogram(cs);
+    gtk_widget_queue_draw(GTK_WIDGET(cs));
 
-	if ( event->is_hint ) {
-		gdk_window_get_pointer(gtk_widget_get_window(GTK_WIDGET(cs)),
-		                       NULL, NULL, NULL);
-	}
+    if ( event->is_hint ) {
+        gdk_window_get_pointer(gtk_widget_get_window(GTK_WIDGET(cs)),
+                               NULL, NULL, NULL);
+    }
 
-	return FALSE;
+    return FALSE;
 }
 
 
 static gint configure_sig(GtkWidget *window, GdkEventConfigure *rec,
                           CrystFELColourScale *cs)
 {
-	cs->visible_width = rec->width;
-	cs->visible_height = rec->height;
-	return FALSE;
+    cs->visible_width = rec->width;
+    cs->visible_height = rec->height;
+    return FALSE;
 }
 
 
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELColourScale *cs)
 {
-	int i;
-	int mx = 0;
-	double histo_w = 3.0 * cs->visible_width / 4.0;
-	double bar_w = cs->visible_width / 4.0;
-	double bin_h = cs->visible_height/COLSCALE_N_BINS;
-	double pos;
+    int i;
+    int mx = 0;
+    double histo_w = 3.0 * cs->visible_width / 4.0;
+    double bar_w = cs->visible_width / 4.0;
+    double bin_h = cs->visible_height/COLSCALE_N_BINS;
+    double pos;
 
-	cairo_save(cr);
+    cairo_save(cr);
 
-	/* Overall background */
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-	cairo_paint(cr);
+    /* Overall background */
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_paint(cr);
 
-	for ( i=0; i<COLSCALE_N_BINS; i++ ) {
-		if ( cs->bins[i] > mx ) mx = cs->bins[i];
-	}
+    for ( i=0; i<COLSCALE_N_BINS; i++ ) {
+        if ( cs->bins[i] > mx ) mx = cs->bins[i];
+    }
 
-	/* Origin at bottom right */
-	cairo_translate(cr, cs->visible_width, cs->visible_height);
-	cairo_scale(cr, -1.0, -1.0);
+    /* Origin at bottom right */
+    cairo_translate(cr, cs->visible_width, cs->visible_height);
+    cairo_scale(cr, -1.0, -1.0);
 
-	for ( pos=0.0; pos<cs->visible_height; pos += 1.0 ) {
-		double r, g, b;
-		cairo_rectangle(cr, 0.0, pos, bar_w, 1.0);
-		colscale_lookup(pos, cs->visible_height, cs->colour_scheme, &r, &g, &b);
-		cairo_set_source_rgb(cr, r, g, b);
-		cairo_fill(cr);
-	}
+    for ( pos=0.0; pos<cs->visible_height; pos += 1.0 ) {
+        double r, g, b;
+        cairo_rectangle(cr, 0.0, pos, bar_w, 1.0);
+        colscale_lookup(pos, cs->visible_height, cs->colour_scheme, &r, &g, &b);
+        cairo_set_source_rgb(cr, r, g, b);
+        cairo_fill(cr);
+    }
 
-	for ( i=0; i<COLSCALE_N_BINS; i++ ) {
-		cairo_rectangle(cr, bar_w, bin_h*i, histo_w*cs->bins[i]/mx, bin_h);
-		cairo_set_source_rgb(cr, 0, 0, 0);
-		cairo_fill(cr);
-	}
+    for ( i=0; i<COLSCALE_N_BINS; i++ ) {
+        cairo_rectangle(cr, bar_w, bin_h*i, histo_w*cs->bins[i]/mx, bin_h);
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_fill(cr);
+    }
 
-	cairo_restore(cr);
+    cairo_restore(cr);
 
-	return FALSE;
+    return FALSE;
 }
 
 
 static void handle_scroll_click(double zoom_scale, CrystFELColourScale *cs,
                                 double pos)
 {
-	cs->lo = pos - (pos - cs->lo)*zoom_scale;
-	cs->hi = pos + (cs->hi - pos)*zoom_scale;
-	g_signal_emit_by_name(cs, "range-changed");
+    cs->lo = pos - (pos - cs->lo)*zoom_scale;
+    cs->hi = pos + (cs->hi - pos)*zoom_scale;
+    g_signal_emit_by_name(cs, "range-changed");
 }
 
 
 static gint scroll_sig(GtkWidget *widget, GdkEventScroll *event,
                        CrystFELColourScale *cs)
 {
-	double xs, ys;
-	double span = cs->hi - cs->lo;
-	double pos = cs->lo + span*(1.0-event->y/cs->visible_height);
+    double xs, ys;
+    double span = cs->hi - cs->lo;
+    double pos = cs->lo + span*(1.0-event->y/cs->visible_height);
 
-	switch ( event->direction ) {
+    switch ( event->direction ) {
 
-		case GDK_SCROLL_UP:
-		handle_scroll_click(0.9, cs, pos);
-		break;
+        case GDK_SCROLL_UP:
+        handle_scroll_click(0.9, cs, pos);
+        break;
 
-		case GDK_SCROLL_DOWN:
-		handle_scroll_click(1.1, cs, pos);
-		break;
+        case GDK_SCROLL_DOWN:
+        handle_scroll_click(1.1, cs, pos);
+        break;
 
-		case GDK_SCROLL_SMOOTH:
-		if ( gdk_event_get_scroll_deltas((GdkEvent *)event, &xs, &ys) ) {
-			#ifdef __APPLE__
-			ys /= 10.0;
-			#endif
-			handle_scroll_click(1.0+ys*0.1, cs, pos);
-		}
-		break;
+        case GDK_SCROLL_SMOOTH:
+        if ( gdk_event_get_scroll_deltas((GdkEvent *)event, &xs, &ys) ) {
+            #ifdef __APPLE__
+            ys /= 10.0;
+            #endif
+            handle_scroll_click(1.0+ys*0.1, cs, pos);
+        }
+        break;
 
-		case GDK_SCROLL_LEFT:
-		case GDK_SCROLL_RIGHT:
-		return FALSE;  /* Not handled here */
+        case GDK_SCROLL_LEFT:
+        case GDK_SCROLL_RIGHT:
+        return FALSE;  /* Not handled here */
 
-		default:
-		STATUS("Unhandled scroll direction %i\n", event->direction);
-		return FALSE;
-	}
+        default:
+        STATUS("Unhandled scroll direction %i\n", event->direction);
+        return FALSE;
+    }
 
-	make_histogram(cs);
-	gtk_widget_grab_focus(GTK_WIDGET(cs));
-	gtk_widget_queue_draw(GTK_WIDGET(cs));
+    make_histogram(cs);
+    gtk_widget_grab_focus(GTK_WIDGET(cs));
+    gtk_widget_queue_draw(GTK_WIDGET(cs));
 
-	return TRUE;
+    return TRUE;
 }
 
 static GtkSizeRequestMode get_request_mode(GtkWidget *widget)
 {
-	return GTK_SIZE_REQUEST_CONSTANT_SIZE;
+    return GTK_SIZE_REQUEST_CONSTANT_SIZE;
 }
 
 
 static void get_preferred_width(GtkWidget *widget, gint *min, gint *natural)
 {
-	*min = 0;
-	*natural = 40;
+    *min = 0;
+    *natural = 40;
 }
 
 
 static void get_preferred_height(GtkWidget *widget, gint *min, gint *natural)
 {
-	*min = 0;
-	*natural = 640;
+    *min = 0;
+    *natural = 640;
 }
 
 
 static void crystfel_colour_scale_class_init(CrystFELColourScaleClass *klass)
 {
-	GTK_WIDGET_CLASS(klass)->get_request_mode = get_request_mode;
-	GTK_WIDGET_CLASS(klass)->get_preferred_width = get_preferred_width;
-	GTK_WIDGET_CLASS(klass)->get_preferred_height = get_preferred_height;
-	GTK_WIDGET_CLASS(klass)->get_preferred_height_for_width = NULL;
+    GTK_WIDGET_CLASS(klass)->get_request_mode = get_request_mode;
+    GTK_WIDGET_CLASS(klass)->get_preferred_width = get_preferred_width;
+    GTK_WIDGET_CLASS(klass)->get_preferred_height = get_preferred_height;
+    GTK_WIDGET_CLASS(klass)->get_preferred_height_for_width = NULL;
 
-	g_signal_new("range-changed", CRYSTFEL_TYPE_COLOUR_SCALE,
-	             G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
+    g_signal_new("range-changed", CRYSTFEL_TYPE_COLOUR_SCALE,
+                 G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
 }
 
 
@@ -261,114 +261,114 @@ static void crystfel_colour_scale_init(CrystFELColourScale *cs)
 
 GtkWidget *crystfel_colour_scale_new()
 {
-	CrystFELColourScale *cs;
+    CrystFELColourScale *cs;
 
-	cs = g_object_new(CRYSTFEL_TYPE_COLOUR_SCALE, NULL);
+    cs = g_object_new(CRYSTFEL_TYPE_COLOUR_SCALE, NULL);
 
-	cs->colour_scheme = SCALE_COLOUR;
-	cs->sample = calloc(COLSCALE_SAMPLE_SIZE, sizeof(float));
-	if ( cs->sample == NULL ) return NULL;
+    cs->colour_scheme = SCALE_COLOUR;
+    cs->sample = calloc(COLSCALE_SAMPLE_SIZE, sizeof(float));
+    if ( cs->sample == NULL ) return NULL;
 
-	g_signal_connect(G_OBJECT(cs), "destroy",
-	                 G_CALLBACK(destroy_sig), cs);
-	g_signal_connect(G_OBJECT(cs), "realize",
-	                 G_CALLBACK(realise_sig), cs);
-	g_signal_connect(G_OBJECT(cs), "button-press-event",
-	                 G_CALLBACK(button_press_sig), cs);
-	g_signal_connect(G_OBJECT(cs), "button-release-event",
-	                 G_CALLBACK(button_release_sig), cs);
-	g_signal_connect(G_OBJECT(cs), "motion-notify-event",
-	                 G_CALLBACK(motion_sig), cs);
-	g_signal_connect(G_OBJECT(cs), "configure-event",
-	                 G_CALLBACK(configure_sig), cs);
-	g_signal_connect(G_OBJECT(cs), "scroll-event",
-	                 G_CALLBACK(scroll_sig), cs);
-	g_signal_connect(G_OBJECT(cs), "draw",
-	                 G_CALLBACK(draw_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "destroy",
+                     G_CALLBACK(destroy_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "realize",
+                     G_CALLBACK(realise_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "button-press-event",
+                     G_CALLBACK(button_press_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "button-release-event",
+                     G_CALLBACK(button_release_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "motion-notify-event",
+                     G_CALLBACK(motion_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "configure-event",
+                     G_CALLBACK(configure_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "scroll-event",
+                     G_CALLBACK(scroll_sig), cs);
+    g_signal_connect(G_OBJECT(cs), "draw",
+                     G_CALLBACK(draw_sig), cs);
 
-	gtk_widget_set_can_focus(GTK_WIDGET(cs), TRUE);
-	gtk_widget_add_events(GTK_WIDGET(cs),
-	                      GDK_POINTER_MOTION_HINT_MASK
-	                       | GDK_BUTTON1_MOTION_MASK
-	                       | GDK_BUTTON_PRESS_MASK
-	                       | GDK_BUTTON_RELEASE_MASK
-	                       | GDK_SCROLL_MASK
-	                       | GDK_SMOOTH_SCROLL_MASK
-	                       | GDK_KEY_PRESS_MASK
-	                       | GDK_KEY_RELEASE_MASK);
+    gtk_widget_set_can_focus(GTK_WIDGET(cs), TRUE);
+    gtk_widget_add_events(GTK_WIDGET(cs),
+                          GDK_POINTER_MOTION_HINT_MASK
+                           | GDK_BUTTON1_MOTION_MASK
+                           | GDK_BUTTON_PRESS_MASK
+                           | GDK_BUTTON_RELEASE_MASK
+                           | GDK_SCROLL_MASK
+                           | GDK_SMOOTH_SCROLL_MASK
+                           | GDK_KEY_PRESS_MASK
+                           | GDK_KEY_RELEASE_MASK);
 
-	gtk_widget_grab_focus(GTK_WIDGET(cs));
+    gtk_widget_grab_focus(GTK_WIDGET(cs));
 
-	gtk_widget_show(GTK_WIDGET(cs));
+    gtk_widget_show(GTK_WIDGET(cs));
 
-	return GTK_WIDGET(cs);
+    return GTK_WIDGET(cs);
 }
 
 
 void crystfel_colour_scale_auto_range(CrystFELColourScale *cs)
 {
-	double mean;
-	double variance;
+    double mean;
+    double variance;
 
-	mean = gsl_stats_float_mean(cs->sample, 1, cs->n_samples);
-	variance = gsl_stats_float_variance_m(cs->sample, 1,
-	                                      cs->n_samples, mean);
+    mean = gsl_stats_float_mean(cs->sample, 1, cs->n_samples);
+    variance = gsl_stats_float_variance_m(cs->sample, 1,
+                                          cs->n_samples, mean);
 
-	cs->lo = 0.0;
-	cs->hi = mean + 10.0*sqrt(variance);
+    cs->lo = 0.0;
+    cs->hi = mean + 10.0*sqrt(variance);
 
-	make_histogram(cs);
+    make_histogram(cs);
 
-	g_signal_emit_by_name(cs, "range-changed");
-	gtk_widget_queue_draw(GTK_WIDGET(cs));
+    g_signal_emit_by_name(cs, "range-changed");
+    gtk_widget_queue_draw(GTK_WIDGET(cs));
 }
 
 
 void crystfel_colour_scale_scan_image(CrystFELColourScale *cs,
                                       struct image *image)
 {
-	int i;
-	int pn;
-	long int n_pix;
+    int i;
+    int pn;
+    long int n_pix;
 
-	if ( image == NULL ) {
-		for ( i=0; i<COLSCALE_SAMPLE_SIZE; i++ ) {
-			cs->sample[i] = 0;
-		}
-		cs->n_samples = COLSCALE_SAMPLE_SIZE;
-		make_histogram(cs);
-		return;
-	}
+    if ( image == NULL ) {
+        for ( i=0; i<COLSCALE_SAMPLE_SIZE; i++ ) {
+            cs->sample[i] = 0;
+        }
+        cs->n_samples = COLSCALE_SAMPLE_SIZE;
+        make_histogram(cs);
+        return;
+    }
 
-	n_pix = 0;
-	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
-		int w, h;
-		w = image->detgeom->panels[pn].w;
-		h = image->detgeom->panels[pn].h;
-		for ( i=0; i<w*h; i++ ) {
-			if ( !image->bad[pn][i] ) n_pix++;
-		}
-	}
-	float p = (float)COLSCALE_SAMPLE_SIZE/n_pix;
+    n_pix = 0;
+    for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+        int w, h;
+        w = image->detgeom->panels[pn].w;
+        h = image->detgeom->panels[pn].h;
+        for ( i=0; i<w*h; i++ ) {
+            if ( !image->bad[pn][i] ) n_pix++;
+        }
+    }
+    float p = (float)COLSCALE_SAMPLE_SIZE/n_pix;
 
-	cs->n_samples = 0;
-	for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
-		int w, h;
-		long int i;
-		w = image->detgeom->panels[pn].w;
-		h = image->detgeom->panels[pn].h;
-		for ( i=0; i<w*h; i++ ) {
-			if ( !image->bad[pn][i] ) {
-				if ( rand() < p*RAND_MAX ) {
-					cs->sample[cs->n_samples++] = image->dp[pn][i];
-				}
-			}
-			if ( cs->n_samples == COLSCALE_SAMPLE_SIZE ) break;
-		}
-		if ( cs->n_samples == COLSCALE_SAMPLE_SIZE ) break;
-	}
+    cs->n_samples = 0;
+    for ( pn=0; pn<image->detgeom->n_panels; pn++ ) {
+        int w, h;
+        long int i;
+        w = image->detgeom->panels[pn].w;
+        h = image->detgeom->panels[pn].h;
+        for ( i=0; i<w*h; i++ ) {
+            if ( !image->bad[pn][i] ) {
+                if ( rand() < p*RAND_MAX ) {
+                    cs->sample[cs->n_samples++] = image->dp[pn][i];
+                }
+            }
+            if ( cs->n_samples == COLSCALE_SAMPLE_SIZE ) break;
+        }
+        if ( cs->n_samples == COLSCALE_SAMPLE_SIZE ) break;
+    }
 
-	make_histogram(cs);
+    make_histogram(cs);
 }
 
 
@@ -376,13 +376,13 @@ void crystfel_colour_scale_get_range(CrystFELColourScale *cs,
                                      double *scale_min,
                                      double *scale_max)
 {
-	*scale_min = cs->lo;
-	*scale_max = cs->hi;
+    *scale_min = cs->lo;
+    *scale_max = cs->hi;
 }
 
 void crystfel_colour_scale_set_colour_scheme(CrystFELColourScale *cs,
                                              int colour_scheme)
 {
-	cs->colour_scheme = colour_scheme;
-	gtk_widget_queue_draw(GTK_WIDGET(cs));
+    cs->colour_scheme = colour_scheme;
+    gtk_widget_queue_draw(GTK_WIDGET(cs));
 }

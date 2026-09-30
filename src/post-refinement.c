@@ -47,108 +47,108 @@
 
 struct rf_alteration
 {
-	double rot_x;
-	double rot_y;
-	double delta_R;
-	double delta_wave;
+    double rot_x;
+    double rot_y;
+    double delta_R;
+    double delta_wave;
 };
 
 
 struct rf_priv
 {
-	Crystal *cr;         /**< Original crystal (before any refinement) */
-	struct image *image; /**< Original image (before any refinement) */
-	const RefList *full;
-	int serial;
-	int scaleflags;
-	PartialityModel pmodel;
+    Crystal *cr;         /**< Original crystal (before any refinement) */
+    struct image *image; /**< Original image (before any refinement) */
+    const RefList *full;
+    int serial;
+    int scaleflags;
+    PartialityModel pmodel;
 
-	Crystal *cr_tgt;         /**< Crystal to use for testing modifications */
-	struct image image_tgt;  /**< Image structure to go with cr_tgt */
-	RefList *refls;          /**< The reflections to use */
+    Crystal *cr_tgt;         /**< Crystal to use for testing modifications */
+    struct image image_tgt;  /**< Image structure to go with cr_tgt */
+    RefList *refls;          /**< The reflections to use */
 };
 
 
 const char *str_prflag(enum prflag flag)
 {
-	switch ( flag ) {
+    switch ( flag ) {
 
-		case PRFLAG_OK :
-		return "OK";
+        case PRFLAG_OK :
+        return "OK";
 
-		case PRFLAG_FEWREFL :
-		return "not enough reflections";
+        case PRFLAG_FEWREFL :
+        return "not enough reflections";
 
-		case PRFLAG_SOLVEFAIL :
-		return "PR solve failed";
+        case PRFLAG_SOLVEFAIL :
+        return "PR solve failed";
 
-		case PRFLAG_EARLY :
-		return "early rejection";
+        case PRFLAG_EARLY :
+        return "early rejection";
 
-		case PRFLAG_DELTACCHALF :
-		return "negative delta CC½";
+        case PRFLAG_DELTACCHALF :
+        return "negative delta CC½";
 
-		case PRFLAG_BIGB :
-		return "B too big";
+        case PRFLAG_BIGB :
+        return "B too big";
 
-		case PRFLAG_SCALEBAD :
-		return "bad scaling";
+        case PRFLAG_SCALEBAD :
+        return "bad scaling";
 
-		default :
-		return "Unknown flag";
-	}
+        default :
+        return "Unknown flag";
+    }
 }
 
 
 static void rotate_cell_xy(UnitCell *source, UnitCell *tgt,
                            double ang1, double ang2)
 {
-	double asx, asy, asz;
-	double bsx, bsy, bsz;
-	double csx, csy, csz;
-	double xnew, ynew, znew;
+    double asx, asy, asz;
+    double bsx, bsy, bsz;
+    double csx, csy, csz;
+    double xnew, ynew, znew;
 
-	cell_get_reciprocal(source, &asx, &asy, &asz,
-	                            &bsx, &bsy, &bsz,
-	                            &csx, &csy, &csz);
+    cell_get_reciprocal(source, &asx, &asy, &asz,
+                                &bsx, &bsy, &bsz,
+                                &csx, &csy, &csz);
 
-	/* "a" around x */
-	xnew = asx;
-	ynew = asy*cos(ang1) + asz*sin(ang1);
-	znew = -asy*sin(ang1) + asz*cos(ang1);
-	asx = xnew;  asy = ynew;  asz = znew;
+    /* "a" around x */
+    xnew = asx;
+    ynew = asy*cos(ang1) + asz*sin(ang1);
+    znew = -asy*sin(ang1) + asz*cos(ang1);
+    asx = xnew;  asy = ynew;  asz = znew;
 
-	/* "b" around x */
-	xnew = bsx;
-	ynew = bsy*cos(ang1) + bsz*sin(ang1);
-	znew = -bsy*sin(ang1) + bsz*cos(ang1);
-	bsx = xnew;  bsy = ynew;  bsz = znew;
+    /* "b" around x */
+    xnew = bsx;
+    ynew = bsy*cos(ang1) + bsz*sin(ang1);
+    znew = -bsy*sin(ang1) + bsz*cos(ang1);
+    bsx = xnew;  bsy = ynew;  bsz = znew;
 
-	/* "c" around x */
-	xnew = csx;
-	ynew = csy*cos(ang1) + csz*sin(ang1);
-	znew = -csy*sin(ang1) + csz*cos(ang1);
-	csx = xnew;  csy = ynew;  csz = znew;
+    /* "c" around x */
+    xnew = csx;
+    ynew = csy*cos(ang1) + csz*sin(ang1);
+    znew = -csy*sin(ang1) + csz*cos(ang1);
+    csx = xnew;  csy = ynew;  csz = znew;
 
-	/* "a" around y */
-	xnew = asx*cos(ang2) + asz*sin(ang2);
-	ynew = asy;
-	znew = -asx*sin(ang2) + asz*cos(ang2);
-	asx = xnew;  asy = ynew;  asz = znew;
+    /* "a" around y */
+    xnew = asx*cos(ang2) + asz*sin(ang2);
+    ynew = asy;
+    znew = -asx*sin(ang2) + asz*cos(ang2);
+    asx = xnew;  asy = ynew;  asz = znew;
 
-	/* "b" around y */
-	xnew = bsx*cos(ang2) + bsz*sin(ang2);
-	ynew = bsy;
-	znew = -bsx*sin(ang2) + bsz*cos(ang2);
-	bsx = xnew;  bsy = ynew;  bsz = znew;
+    /* "b" around y */
+    xnew = bsx*cos(ang2) + bsz*sin(ang2);
+    ynew = bsy;
+    znew = -bsx*sin(ang2) + bsz*cos(ang2);
+    bsx = xnew;  bsy = ynew;  bsz = znew;
 
-	/* "c" around y */
-	xnew = csx*cos(ang2) + csz*sin(ang2);
-	ynew = csy;
-	znew = -csx*sin(ang2) + csz*cos(ang2);
-	csx = xnew;  csy = ynew;  csz = znew;
+    /* "c" around y */
+    xnew = csx*cos(ang2) + csz*sin(ang2);
+    ynew = csy;
+    znew = -csx*sin(ang2) + csz*cos(ang2);
+    csx = xnew;  csy = ynew;  csz = znew;
 
-	cell_set_reciprocal(tgt, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
+    cell_set_reciprocal(tgt, asx, asy, asz, bsx, bsy, bsz, csx, csy, csz);
 }
 
 
@@ -156,111 +156,111 @@ static void apply_parameters(Crystal *cr_orig, Crystal *cr_tgt,
                              struct image *im_orig, struct image *im_tgt,
                              struct rf_alteration alter)
 {
-	double R;
-	struct gaussian g;
+    double R;
+    struct gaussian g;
 
-	R = crystal_get_profile_radius(cr_orig);
+    R = crystal_get_profile_radius(cr_orig);
 
-	rotate_cell_xy(crystal_get_cell(cr_orig), crystal_get_cell(cr_tgt),
-	               alter.rot_x, alter.rot_y);
-	crystal_set_profile_radius(cr_tgt, R+alter.delta_R);
-	im_tgt->lambda = im_orig->lambda+alter.delta_wave;
+    rotate_cell_xy(crystal_get_cell(cr_orig), crystal_get_cell(cr_tgt),
+                   alter.rot_x, alter.rot_y);
+    crystal_set_profile_radius(cr_tgt, R+alter.delta_R);
+    im_tgt->lambda = im_orig->lambda+alter.delta_wave;
 
-	g.kcen = 1.0/im_tgt->lambda;
-	g.sigma = im_tgt->bw/im_tgt->lambda;
-	g.area = 1;
-	spectrum_set_gaussians(im_tgt->spectrum, &g, 1);
+    g.kcen = 1.0/im_tgt->lambda;
+    g.sigma = im_tgt->bw/im_tgt->lambda;
+    g.area = 1;
+    spectrum_set_gaussians(im_tgt->spectrum, &g, 1);
 }
 
 
 static double calc_residual(struct rf_priv *pv, struct rf_alteration alter,
                             int free)
 {
-	apply_parameters(pv->cr, pv->cr_tgt, pv->image, &pv->image_tgt, alter);
+    apply_parameters(pv->cr, pv->cr_tgt, pv->image, &pv->image_tgt, alter);
 
-	if ( fabs(crystal_get_profile_radius(pv->cr_tgt)) > 5e9 ) {
-		STATUS("radius > 5e9\n");
-		return NAN;
-	}
+    if ( fabs(crystal_get_profile_radius(pv->cr_tgt)) > 5e9 ) {
+        STATUS("radius > 5e9\n");
+        return NAN;
+    }
 
-	/* Can happen with grid scans and certain --force-radius values */
-	if ( fabs(crystal_get_profile_radius(pv->cr_tgt)) < 0.0000001e9 ) {
-		//STATUS("radius very small\n");
-		return NAN;
-	}
+    /* Can happen with grid scans and certain --force-radius values */
+    if ( fabs(crystal_get_profile_radius(pv->cr_tgt)) < 0.0000001e9 ) {
+        //STATUS("radius very small\n");
+        return NAN;
+    }
 
-	if ( pv->image_tgt.lambda <= 0.0 ) {
-		STATUS("lambda < 0\n");
-		return NAN;
-	}
+    if ( pv->image_tgt.lambda <= 0.0 ) {
+        STATUS("lambda < 0\n");
+        return NAN;
+    }
 
-	update_predictions(pv->refls, pv->cr_tgt, &pv->image_tgt);
-	calculate_partialities(pv->refls, pv->cr_tgt, &pv->image_tgt, pv->pmodel);
+    update_predictions(pv->refls, pv->cr_tgt, &pv->image_tgt);
+    calculate_partialities(pv->refls, pv->cr_tgt, &pv->image_tgt, pv->pmodel);
 
 
-	return residual(pv->refls, pv->cr_tgt, pv->full, free, NULL, NULL);
+    return residual(pv->refls, pv->cr_tgt, pv->full, free, NULL, NULL);
 }
 
 
 static RefList *reindex_reflections(RefList *input, SymOpList *amb,
                                     SymOpList *sym, int idx)
 {
-	RefList *n;
-	Reflection *refl;
-	RefListIterator *iter;
+    RefList *n;
+    Reflection *refl;
+    RefListIterator *iter;
 
-	n = reflist_new();
+    n = reflist_new();
 
-	for ( refl = first_refl(input, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		Reflection *rn;
+    for ( refl = first_refl(input, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        signed int h, k, l;
+        Reflection *rn;
 
-		get_indices(refl, &h, &k, &l);
-		get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
-		get_asymm(sym, h, k, l, &h, &k, &l);
-		rn = add_refl(n, h, k, l);
-		copy_data(rn, refl);
+        get_indices(refl, &h, &k, &l);
+        get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
+        get_asymm(sym, h, k, l, &h, &k, &l);
+        rn = add_refl(n, h, k, l);
+        copy_data(rn, refl);
 
-		get_symmetric_indices(rn, &h, &k, &l);
-		get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
-		set_symmetric_indices(rn, h, k, l);
-	}
+        get_symmetric_indices(rn, &h, &k, &l);
+        get_equiv(amb, NULL, idx, h, k, l, &h, &k, &l);
+        set_symmetric_indices(rn, h, k, l);
+    }
 
-	return n;
+    return n;
 }
 
 
 static void reindex_cell(UnitCell *cell, SymOpList *amb, int idx)
 {
-	signed int h, k, l;
-	struct rvec na, nb, nc;
-	struct rvec as, bs, cs;
+    signed int h, k, l;
+    struct rvec na, nb, nc;
+    struct rvec as, bs, cs;
 
-	cell_get_reciprocal(cell, &as.u, &as.v, &as.w,
-	                          &bs.u, &bs.v, &bs.w,
-	                          &cs.u, &cs.v, &cs.w);
+    cell_get_reciprocal(cell, &as.u, &as.v, &as.w,
+                              &bs.u, &bs.v, &bs.w,
+                              &cs.u, &cs.v, &cs.w);
 
-	get_equiv(amb, NULL, idx, 1, 0, 0, &h, &k, &l);
-	na.u = as.u*h + bs.u*k + cs.u*l;
-	na.v = as.v*h + bs.v*k + cs.v*l;
-	na.w = as.w*h + bs.w*k + cs.w*l;
+    get_equiv(amb, NULL, idx, 1, 0, 0, &h, &k, &l);
+    na.u = as.u*h + bs.u*k + cs.u*l;
+    na.v = as.v*h + bs.v*k + cs.v*l;
+    na.w = as.w*h + bs.w*k + cs.w*l;
 
-	get_equiv(amb, NULL, idx, 0, 1, 0, &h, &k, &l);
-	nb.u = as.u*h + bs.u*k + cs.u*l;
-	nb.v = as.v*h + bs.v*k + cs.v*l;
-	nb.w = as.w*h + bs.w*k + cs.w*l;
+    get_equiv(amb, NULL, idx, 0, 1, 0, &h, &k, &l);
+    nb.u = as.u*h + bs.u*k + cs.u*l;
+    nb.v = as.v*h + bs.v*k + cs.v*l;
+    nb.w = as.w*h + bs.w*k + cs.w*l;
 
-	get_equiv(amb, NULL, idx, 0, 0, 1, &h, &k, &l);
-	nc.u = as.u*h + bs.u*k + cs.u*l;
-	nc.v = as.v*h + bs.v*k + cs.v*l;
-	nc.w = as.w*h + bs.w*k + cs.w*l;
+    get_equiv(amb, NULL, idx, 0, 0, 1, &h, &k, &l);
+    nc.u = as.u*h + bs.u*k + cs.u*l;
+    nc.v = as.v*h + bs.v*k + cs.v*l;
+    nc.w = as.w*h + bs.w*k + cs.w*l;
 
-	cell_set_reciprocal(cell, na.u, na.v, na.w,
-	                          nb.u, nb.v, nb.w,
-	                          nc.u, nc.v, nc.w);
+    cell_set_reciprocal(cell, na.u, na.v, na.w,
+                              nb.u, nb.v, nb.w,
+                              nc.u, nc.v, nc.w);
 }
 
 
@@ -268,45 +268,45 @@ static void try_reindex(RefList **prefls, Crystal *crin, struct image *image,
                         const RefList *full, SymOpList *sym, SymOpList *amb,
                         int scaleflags, PartialityModel pmodel)
 {
-	double residual_original;
-	int idx, n;
+    double residual_original;
+    int idx, n;
 
-	if ( sym == NULL || amb == NULL ) return;
+    if ( sym == NULL || amb == NULL ) return;
 
-	if ( scale_one_crystal(*prefls, crin, full, scaleflags) ) return;
-	residual_original = residual(*prefls, crin, full, 0, NULL, NULL);
+    if ( scale_one_crystal(*prefls, crin, full, scaleflags) ) return;
+    residual_original = residual(*prefls, crin, full, 0, NULL, NULL);
 
-	n = num_equivs(amb, NULL);
+    n = num_equivs(amb, NULL);
 
-	for ( idx=0; idx<n; idx++ ) {
+    for ( idx=0; idx<n; idx++ ) {
 
-		RefList *list;
-		Crystal *cr;
+        RefList *list;
+        Crystal *cr;
 
-		cr = crystal_copy(crin);
+        cr = crystal_copy(crin);
 
-		reindex_cell(crystal_get_cell(cr), amb, idx);
-		list = reindex_reflections(*prefls, amb, sym, idx);
+        reindex_cell(crystal_get_cell(cr), amb, idx);
+        list = reindex_reflections(*prefls, amb, sym, idx);
 
-		update_predictions(list, cr, image);
-		calculate_partialities(list, cr, image, pmodel);
-		if ( scale_one_crystal(list, cr, full, scaleflags) == 0 ) {
+        update_predictions(list, cr, image);
+        calculate_partialities(list, cr, image, pmodel);
+        if ( scale_one_crystal(list, cr, full, scaleflags) == 0 ) {
 
-			double residual_flipped;
-			residual_flipped = residual(list, cr, full, 0, NULL, NULL);
+            double residual_flipped;
+            residual_flipped = residual(list, cr, full, 0, NULL, NULL);
 
-			if ( residual_flipped < residual_original ) {
-				crystal_set_cell(crin, crystal_relinquish_cell(cr));
-				reflist_free(*prefls);
-				*prefls = list;
-				residual_original = residual_flipped;
-			} else {
-				reflist_free(list);
-			}
-		}
+            if ( residual_flipped < residual_original ) {
+                crystal_set_cell(crin, crystal_relinquish_cell(cr));
+                reflist_free(*prefls);
+                *prefls = list;
+                residual_original = residual_flipped;
+            } else {
+                reflist_free(list);
+            }
+        }
 
-		crystal_free(cr);
-	}
+        crystal_free(cr);
+    }
 
 }
 
@@ -315,49 +315,49 @@ void write_test_logs(Crystal *crystal, struct image *image, const RefList *full,
                      signed int cycle, int serial,
                      const char *log_folder)
 {
-	FILE *fh;
-	char tmp[256];
-	char ins[16];
+    FILE *fh;
+    char tmp[256];
+    char ins[16];
 
-	snprintf(tmp, 256, "%s/parameters-crystal%i.dat", log_folder, serial);
+    snprintf(tmp, 256, "%s/parameters-crystal%i.dat", log_folder, serial);
 
-	if ( cycle == 0 ) {
-		fh = fopen(tmp, "w");
-	} else {
-		fh = fopen(tmp, "a");
-	}
+    if ( cycle == 0 ) {
+        fh = fopen(tmp, "w");
+    } else {
+        fh = fopen(tmp, "a");
+    }
 
-	if ( fh == NULL ) {
-		ERROR("Failed to open '%s'\n", tmp);
-		return;
-	}
+    if ( fh == NULL ) {
+        ERROR("Failed to open '%s'\n", tmp);
+        return;
+    }
 
-	if ( cycle == 0 ) {
-		fprintf(fh, "Image: %s %s\n", image->filename, image->ev);
-	}
+    if ( cycle == 0 ) {
+        fprintf(fh, "Image: %s %s\n", image->filename, image->ev);
+    }
 
-	if ( cycle >= 0 ) {
-		snprintf(ins, 16, "%i", cycle);
-	} else {
-		ins[0] = 'F';
-		ins[1] = '\0';
-	}
+    if ( cycle >= 0 ) {
+        snprintf(ins, 16, "%i", cycle);
+    } else {
+        ins[0] = 'F';
+        ins[1] = '\0';
+    }
 
-	fprintf(fh, "%s rlp_size = %e\n", ins, crystal_get_profile_radius(crystal)/1e10);
-	fprintf(fh, "%s mosaicity = %e\n", ins, crystal_get_mosaicity(crystal));
-	fprintf(fh, "%s wavelength = %f A\n", ins, image->lambda*1e10);
-	fprintf(fh, "%s bandwidth = %f\n", ins, image->bw);
-	fprintf(fh, "%s my scale factor = %e\n", ins, crystal_get_osf(crystal));
+    fprintf(fh, "%s rlp_size = %e\n", ins, crystal_get_profile_radius(crystal)/1e10);
+    fprintf(fh, "%s mosaicity = %e\n", ins, crystal_get_mosaicity(crystal));
+    fprintf(fh, "%s wavelength = %f A\n", ins, image->lambda*1e10);
+    fprintf(fh, "%s bandwidth = %f\n", ins, image->bw);
+    fprintf(fh, "%s my scale factor = %e\n", ins, crystal_get_osf(crystal));
 
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-	cell_get_reciprocal(crystal_get_cell(crystal), &asx, &asy, &asz,
-	                                               &bsx, &bsy, &bsz,
-	                                               &csx, &csy, &csz);
-	fprintf(fh, "%s %f, %f, %f, %f, %f, %f, %f, %f, %f\n", ins,
-	        asx/1e10, bsx/1e10, csx/1e10,
-	        asy/1e10, bsy/1e10, csy/1e10,
-	        asz/1e10, bsz/1e10, csz/1e10);
-	fclose(fh);
+    double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+    cell_get_reciprocal(crystal_get_cell(crystal), &asx, &asy, &asz,
+                                                   &bsx, &bsy, &bsz,
+                                                   &csx, &csy, &csz);
+    fprintf(fh, "%s %f, %f, %f, %f, %f, %f, %f, %f, %f\n", ins,
+            asx/1e10, bsx/1e10, csx/1e10,
+            asy/1e10, bsy/1e10, csy/1e10,
+            asz/1e10, bsz/1e10, csz/1e10);
+    fclose(fh);
 }
 
 
@@ -365,74 +365,74 @@ void write_specgraph(RefList *list, Crystal *crystal, struct image *image, const
                      signed int cycle, int serial,
                      const char *log_folder)
 {
-	FILE *fh;
-	char tmp[256];
-	Reflection *refl;
-	RefListIterator *iter;
-	double G = crystal_get_osf(crystal);
-	double B = crystal_get_Bfac(crystal);
-	UnitCell *cell;
-	char ins[16];
+    FILE *fh;
+    char tmp[256];
+    Reflection *refl;
+    RefListIterator *iter;
+    double G = crystal_get_osf(crystal);
+    double B = crystal_get_Bfac(crystal);
+    UnitCell *cell;
+    char ins[16];
 
-	snprintf(tmp, 256, "%s/specgraph-crystal%i.dat", log_folder, serial);
+    snprintf(tmp, 256, "%s/specgraph-crystal%i.dat", log_folder, serial);
 
-	if ( cycle == 0 ) {
-		fh = fopen(tmp, "w");
-	} else {
-		fh = fopen(tmp, "a");
-	}
+    if ( cycle == 0 ) {
+        fh = fopen(tmp, "w");
+    } else {
+        fh = fopen(tmp, "a");
+    }
 
-	if ( fh == NULL ) {
-		ERROR("Failed to open '%s'\n", tmp);
-		return;
-	}
+    if ( fh == NULL ) {
+        ERROR("Failed to open '%s'\n", tmp);
+        return;
+    }
 
-	if ( cycle == 0 ) {
-		fprintf(fh, "Image: %s %s\n", image->filename, image->ev);
-		fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration  h  k  l\n");
-	}
+    if ( cycle == 0 ) {
+        fprintf(fh, "Image: %s %s\n", image->filename, image->ev);
+        fprintf(fh, "khalf/m   1/d(m)  pcalc    pobs   iteration  h  k  l\n");
+    }
 
-	cell = crystal_get_cell(crystal);
+    cell = crystal_get_cell(crystal);
 
-	if ( cycle >= 0 ) {
-		snprintf(ins, 16, "%i", cycle);
-	} else {
-		ins[0] = 'F';
-		ins[1] = '\0';
-	}
+    if ( cycle >= 0 ) {
+        snprintf(ins, 16, "%i", cycle);
+    } else {
+        ins[0] = 'F';
+        ins[1] = '\0';
+    }
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double Ipart, Ifull, pobs, pcalc;
-		double res;
-		signed int h, k, l;
-		Reflection *match;
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        double Ipart, Ifull, pobs, pcalc;
+        double res;
+        signed int h, k, l;
+        Reflection *match;
 
-		/* Strong reflections only */
-		if ( get_intensity(refl) < 3.0*get_esd_intensity(refl) ) continue;
+        /* Strong reflections only */
+        if ( get_intensity(refl) < 3.0*get_esd_intensity(refl) ) continue;
 
-		get_indices(refl, &h, &k, &l);
-		res = resolution(cell, h, k, l);
+        get_indices(refl, &h, &k, &l);
+        res = resolution(cell, h, k, l);
 
-		match = find_refl(full, h, k, l);
-		if ( match == NULL ) continue;
+        match = find_refl(full, h, k, l);
+        if ( match == NULL ) continue;
 
-		/* Don't calculate pobs if reference reflection is weak */
-		if ( fabs(get_intensity(match)) / get_esd_intensity(match) < 3.0 ) continue;
+        /* Don't calculate pobs if reference reflection is weak */
+        if ( fabs(get_intensity(match)) / get_esd_intensity(match) < 3.0 ) continue;
 
-		Ipart = correct_reflection_nopart(get_intensity(refl), refl, G, B, res);
-		Ifull = get_intensity(match);
-		pobs = Ipart / Ifull;
-		pcalc = get_partiality(refl);
+        Ipart = correct_reflection_nopart(get_intensity(refl), refl, G, B, res);
+        Ifull = get_intensity(match);
+        pobs = Ipart / Ifull;
+        pcalc = get_partiality(refl);
 
-		fprintf(fh, "%e   %e   %f   %f   %s  %4i %4i %4i\n",
-		        get_khalf(refl), 2.0*res, pcalc, pobs, ins, h, k, l);
+        fprintf(fh, "%e   %e   %f   %f   %s  %4i %4i %4i\n",
+                get_khalf(refl), 2.0*res, pcalc, pobs, ins, h, k, l);
 
-	}
+    }
 
-	fclose(fh);
+    fclose(fh);
 }
 
 
@@ -442,63 +442,63 @@ static void write_angle_grid(RefList *list_in, Crystal *cr, struct image *image,
                              PartialityModel pmodel,
                              const char *log_folder)
 {
-	FILE *fh;
-	char fn[64];
-	char ins[16];
-	struct rf_priv priv;
-	UnitCell *cell;
-	Spectrum *spectrum;
+    FILE *fh;
+    char fn[64];
+    char ins[16];
+    struct rf_priv priv;
+    UnitCell *cell;
+    Spectrum *spectrum;
 
-	priv.cr = cr;
-	priv.full = full;
-	priv.serial = serial;
-	priv.scaleflags = scaleflags;
-	priv.pmodel = pmodel;
-	priv.cr_tgt = crystal_copy(cr);
-	priv.image = image;
-	priv.image_tgt = *image;
-	spectrum = spectrum_new();
-	priv.image_tgt.spectrum = spectrum;
-	priv.refls = copy_reflist(list_in);
-	cell = cell_new_from_cell(crystal_get_cell(cr));
-	crystal_set_cell(priv.cr_tgt, cell);
+    priv.cr = cr;
+    priv.full = full;
+    priv.serial = serial;
+    priv.scaleflags = scaleflags;
+    priv.pmodel = pmodel;
+    priv.cr_tgt = crystal_copy(cr);
+    priv.image = image;
+    priv.image_tgt = *image;
+    spectrum = spectrum_new();
+    priv.image_tgt.spectrum = spectrum;
+    priv.refls = copy_reflist(list_in);
+    cell = cell_new_from_cell(crystal_get_cell(cr));
+    crystal_set_cell(priv.cr_tgt, cell);
 
-	if ( cycle >= 0 ) {
-		snprintf(ins, 16, "%i", cycle);
-	} else {
-		ins[0] = 'F';
-		ins[1] = '\0';
-	}
+    if ( cycle >= 0 ) {
+        snprintf(ins, 16, "%i", cycle);
+    } else {
+        ins[0] = 'F';
+        ins[1] = '\0';
+    }
 
-	snprintf(fn, 64, "%s/grid-crystal%i-cycle%s-ang1-ang2.dat",
-	         log_folder, serial, ins);
-	fh = fopen(fn, "w");
-	if ( fh != NULL ) {
-		double v1, v2;
-		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_x/rad");
-		fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_y/rad");
-		for ( v2=-5.0e-3; v2<=5.1e-3; v2+=0.25e-3 ) {
-			int first=1;
-			for ( v1=-5.0e-3; v1<=5.1e-3; v1+=0.25e-3 ) {
-				double res;
-				struct rf_alteration alter;
-				alter.rot_x = v1;
-				alter.rot_y = v2;
-				alter.delta_R = 0.0;
-				alter.delta_wave = 0.0;
-				res = calc_residual(&priv, alter, 0);
-				if ( !first ) fprintf(fh, " ");
-				first = 0;
-				fprintf(fh, "%e", res);
-			}
-			fprintf(fh, "\n");
-		}
-		fclose(fh);
-	}
+    snprintf(fn, 64, "%s/grid-crystal%i-cycle%s-ang1-ang2.dat",
+             log_folder, serial, ins);
+    fh = fopen(fn, "w");
+    if ( fh != NULL ) {
+        double v1, v2;
+        fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_x/rad");
+        fprintf(fh, "%e %e %e %s\n", -5.0e-3, 5.0e-3, 0.0, "rot_y/rad");
+        for ( v2=-5.0e-3; v2<=5.1e-3; v2+=0.25e-3 ) {
+            int first=1;
+            for ( v1=-5.0e-3; v1<=5.1e-3; v1+=0.25e-3 ) {
+                double res;
+                struct rf_alteration alter;
+                alter.rot_x = v1;
+                alter.rot_y = v2;
+                alter.delta_R = 0.0;
+                alter.delta_wave = 0.0;
+                res = calc_residual(&priv, alter, 0);
+                if ( !first ) fprintf(fh, " ");
+                first = 0;
+                fprintf(fh, "%e", res);
+            }
+            fprintf(fh, "\n");
+        }
+        fclose(fh);
+    }
 
-	reflist_free(priv.refls);
-	crystal_free(priv.cr_tgt);
-	spectrum_free(spectrum);
+    reflist_free(priv.refls);
+    crystal_free(priv.cr_tgt);
+    spectrum_free(spectrum);
 }
 
 
@@ -508,63 +508,63 @@ static void write_radius_grid(RefList *list_in, Crystal *cr, struct image *image
                               PartialityModel pmodel,
                               const char *log_folder)
 {
-	FILE *fh;
-	char fn[64];
-	char ins[16];
-	struct rf_priv priv;
-	UnitCell *cell;
-	Spectrum *spectrum;
+    FILE *fh;
+    char fn[64];
+    char ins[16];
+    struct rf_priv priv;
+    UnitCell *cell;
+    Spectrum *spectrum;
 
-	priv.cr = cr;
-	priv.full = full;
-	priv.serial = serial;
-	priv.scaleflags = scaleflags;
-	priv.pmodel = pmodel;
-	priv.cr_tgt = crystal_copy(cr);
-	priv.image = image;
-	priv.image_tgt = *image;
-	spectrum = spectrum_new();
-	priv.image_tgt.spectrum = spectrum;
-	priv.refls = copy_reflist(list_in);
-	cell = cell_new_from_cell(crystal_get_cell(cr));
-	crystal_set_cell(priv.cr_tgt, cell);
+    priv.cr = cr;
+    priv.full = full;
+    priv.serial = serial;
+    priv.scaleflags = scaleflags;
+    priv.pmodel = pmodel;
+    priv.cr_tgt = crystal_copy(cr);
+    priv.image = image;
+    priv.image_tgt = *image;
+    spectrum = spectrum_new();
+    priv.image_tgt.spectrum = spectrum;
+    priv.refls = copy_reflist(list_in);
+    cell = cell_new_from_cell(crystal_get_cell(cr));
+    crystal_set_cell(priv.cr_tgt, cell);
 
-	if ( cycle >= 0 ) {
-		snprintf(ins, 16, "%i", cycle);
-	} else {
-		ins[0] = 'F';
-		ins[1] = '\0';
-	}
+    if ( cycle >= 0 ) {
+        snprintf(ins, 16, "%i", cycle);
+    } else {
+        ins[0] = 'F';
+        ins[1] = '\0';
+    }
 
-	snprintf(fn, 64, "%s/grid-crystal%i-cycle%s-R-wave.dat",
-	         log_folder, serial, ins);
-	fh = fopen(fn, "w");
-	if ( fh != NULL ) {
-		double v1, v2;
-		fprintf(fh, "%e %e %e %s\n", -4e-13, 4e-13, 0.0, "wavelength change/m");
-		fprintf(fh, "%e %e %e %s\n", -2e6, 2e6, 0.0, "radius change/m^-1");
-		for ( v2=-2e6; v2<=2.001e6; v2+=100000 ) {
-			int first=1;
-			for ( v1=-4e-13; v1<=4.001e-13; v1+=2e-14 ) {
-				double res;
-				struct rf_alteration alter;
-				alter.rot_x = 0.0;
-				alter.rot_y = 0.0;
-				alter.delta_R = v2;
-				alter.delta_wave = v1;
-				res = calc_residual(&priv, alter, 0);
-				if ( !first ) fprintf(fh, " ");
-				first = 0;
-				fprintf(fh, "%e", res);
-			}
-			fprintf(fh, "\n");
-		}
-		fclose(fh);
-	}
+    snprintf(fn, 64, "%s/grid-crystal%i-cycle%s-R-wave.dat",
+             log_folder, serial, ins);
+    fh = fopen(fn, "w");
+    if ( fh != NULL ) {
+        double v1, v2;
+        fprintf(fh, "%e %e %e %s\n", -4e-13, 4e-13, 0.0, "wavelength change/m");
+        fprintf(fh, "%e %e %e %s\n", -2e6, 2e6, 0.0, "radius change/m^-1");
+        for ( v2=-2e6; v2<=2.001e6; v2+=100000 ) {
+            int first=1;
+            for ( v1=-4e-13; v1<=4.001e-13; v1+=2e-14 ) {
+                double res;
+                struct rf_alteration alter;
+                alter.rot_x = 0.0;
+                alter.rot_y = 0.0;
+                alter.delta_R = v2;
+                alter.delta_wave = v1;
+                res = calc_residual(&priv, alter, 0);
+                if ( !first ) fprintf(fh, " ");
+                first = 0;
+                fprintf(fh, "%e", res);
+            }
+            fprintf(fh, "\n");
+        }
+        fclose(fh);
+    }
 
-	reflist_free(priv.refls);
-	crystal_free(priv.cr_tgt);
-	spectrum_free(spectrum);
+    reflist_free(priv.refls);
+    crystal_free(priv.cr_tgt);
+    spectrum_free(spectrum);
 }
 
 
@@ -574,8 +574,8 @@ void write_gridscan(RefList *list,
                     PartialityModel pmodel,
                     const char *log_folder)
 {
-	write_angle_grid(list, cr, image, full, cycle, serial, scaleflags, pmodel, log_folder);
-	write_radius_grid(list, cr, image, full, cycle, serial, scaleflags, pmodel, log_folder);
+    write_angle_grid(list, cr, image, full, cycle, serial, scaleflags, pmodel, log_folder);
+    write_radius_grid(list, cr, image, full, cycle, serial, scaleflags, pmodel, log_folder);
 }
 
 
@@ -583,61 +583,61 @@ static int refine_loop(struct rf_alteration *cur, struct rf_alteration *dirns,
                        int n_dirns, struct rf_priv *priv, int *total_iter,
                        FILE *fh)
 {
-	int n_iter = 0;
-	int best;
+    int n_iter = 0;
+    int best;
 
-	do {
+    do {
 
-		struct rf_alteration trials[n_dirns+1];
-		double lowest_fom = INFINITY;
-		double freefom;
-		int i;
+        struct rf_alteration trials[n_dirns+1];
+        double lowest_fom = INFINITY;
+        double freefom;
+        int i;
 
-		best = 0;
+        best = 0;
 
-		trials[0] = *cur;
-		for ( i=0; i<n_dirns; i++ ) {
-			trials[i+1] = *cur;
-			trials[i+1].rot_x += dirns[i].rot_x;
-			trials[i+1].rot_y += dirns[i].rot_y;
-			trials[i+1].delta_R += dirns[i].delta_R;
-			trials[i+1].delta_wave += dirns[i].delta_wave;
-		}
+        trials[0] = *cur;
+        for ( i=0; i<n_dirns; i++ ) {
+            trials[i+1] = *cur;
+            trials[i+1].rot_x += dirns[i].rot_x;
+            trials[i+1].rot_y += dirns[i].rot_y;
+            trials[i+1].delta_R += dirns[i].delta_R;
+            trials[i+1].delta_wave += dirns[i].delta_wave;
+        }
 
-		for ( i=0; i<n_dirns+1; i++ ) {
-			double nfom = calc_residual(priv, trials[i], 0);
-			if ( nfom < lowest_fom ) {
-				best = i;
-				lowest_fom = nfom;
-			}
-		}
+        for ( i=0; i<n_dirns+1; i++ ) {
+            double nfom = calc_residual(priv, trials[i], 0);
+            if ( nfom < lowest_fom ) {
+                best = i;
+                lowest_fom = nfom;
+            }
+        }
 
-		*cur = trials[best];
+        *cur = trials[best];
 
-		n_iter++;
-		(*total_iter)++;
+        n_iter++;
+        (*total_iter)++;
 
-		freefom = calc_residual(priv, *cur, 1);
-		if ( fh != NULL ) {
-			fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
-			        *total_iter, lowest_fom, freefom,
-			        cur->rot_x, cur->rot_y,
-			        crystal_get_profile_radius(priv->cr)+cur->delta_R,
-			        priv->image->lambda+cur->delta_wave);
-		}
+        freefom = calc_residual(priv, *cur, 1);
+        if ( fh != NULL ) {
+            fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
+                    *total_iter, lowest_fom, freefom,
+                    cur->rot_x, cur->rot_y,
+                    crystal_get_profile_radius(priv->cr)+cur->delta_R,
+                    priv->image->lambda+cur->delta_wave);
+        }
 
-	} while ( (best != 0) && (n_iter < 10) );
+    } while ( (best != 0) && (n_iter < 10) );
 
-	return 0;
+    return 0;
 }
 
 
 static void zero_alter(struct rf_alteration *alter)
 {
-	alter->rot_x = 0.0;
-	alter->rot_y = 0.0;
-	alter->delta_R = 0.0;
-	alter->delta_wave = 0.0;
+    alter->rot_x = 0.0;
+    alter->rot_y = 0.0;
+    alter->delta_R = 0.0;
+    alter->delta_wave = 0.0;
 }
 
 
@@ -648,168 +648,168 @@ static void do_pr_refine(RefList **plist_in, Crystal *cr, struct image *image,
                          SymOpList *sym, SymOpList *amb, int scaleflags,
                          const char *log_folder)
 {
-	struct rf_priv priv;
-	struct rf_alteration alter;
-	int n_iter = 0;
-	double fom, freefom;
-	FILE *fh = NULL;
-	UnitCell *cell;
-	Spectrum *spectrum;
+    struct rf_priv priv;
+    struct rf_alteration alter;
+    int n_iter = 0;
+    double fom, freefom;
+    FILE *fh = NULL;
+    UnitCell *cell;
+    Spectrum *spectrum;
 
-	try_reindex(plist_in, cr, image, full, sym, amb, scaleflags, pmodel);
+    try_reindex(plist_in, cr, image, full, sym, amb, scaleflags, pmodel);
 
-	zero_alter(&alter);
+    zero_alter(&alter);
 
-	priv.cr = cr;
-	priv.full = full;
-	priv.serial = serial;
-	priv.scaleflags = scaleflags;
-	priv.pmodel = pmodel;
-	priv.cr_tgt = crystal_copy(cr);
-	priv.image = image;
-	priv.image_tgt = *image;
-	spectrum = spectrum_new();
-	priv.image_tgt.spectrum = spectrum;
-	priv.refls = copy_reflist(*plist_in);
-	cell = cell_new_from_cell(crystal_get_cell(cr));
-	crystal_set_cell(priv.cr_tgt, cell);
+    priv.cr = cr;
+    priv.full = full;
+    priv.serial = serial;
+    priv.scaleflags = scaleflags;
+    priv.pmodel = pmodel;
+    priv.cr_tgt = crystal_copy(cr);
+    priv.image = image;
+    priv.image_tgt = *image;
+    spectrum = spectrum_new();
+    priv.image_tgt.spectrum = spectrum;
+    priv.refls = copy_reflist(*plist_in);
+    cell = cell_new_from_cell(crystal_get_cell(cr));
+    crystal_set_cell(priv.cr_tgt, cell);
 
-	fom = calc_residual(&priv, alter, 0);
-	freefom = calc_residual(&priv, alter, 1);
+    fom = calc_residual(&priv, alter, 0);
+    freefom = calc_residual(&priv, alter, 1);
 
-	if ( write_logs ) {
+    if ( write_logs ) {
 
-		char fn[64];
+        char fn[64];
 
-		snprintf(fn, 63, "%s/crystal%i-cycle%i.log",
-		         log_folder, serial, cycle);
-		fh = fopen(fn, "w");
-		if ( fh != NULL ) {
-			fprintf(fh, "iter  FoM        FreeFoM     rotx/rad   "
-			            "roty/rad    radius/m      wavelength/m\n");
-			fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
-			        n_iter, fom, freefom,
-			        alter.rot_x, alter.rot_y,
-			        crystal_get_profile_radius(cr)+alter.delta_R,
-			        image->lambda+alter.delta_wave);
-		}
+        snprintf(fn, 63, "%s/crystal%i-cycle%i.log",
+                 log_folder, serial, cycle);
+        fh = fopen(fn, "w");
+        if ( fh != NULL ) {
+            fprintf(fh, "iter  FoM        FreeFoM     rotx/rad   "
+                        "roty/rad    radius/m      wavelength/m\n");
+            fprintf(fh, "%5i %10.8f  %10.8f %10.8f %10.8f  %e  %e\n",
+                    n_iter, fom, freefom,
+                    alter.rot_x, alter.rot_y,
+                    crystal_get_profile_radius(cr)+alter.delta_R,
+                    image->lambda+alter.delta_wave);
+        }
 
-	}
+    }
 
-	/* Refine orientation */
-	struct rf_alteration dirns[4];
-	zero_alter(&dirns[0]);  dirns[0].rot_x += 0.1e-3;
-	zero_alter(&dirns[1]);  dirns[1].rot_x -= 0.1e-3;
-	zero_alter(&dirns[2]);  dirns[2].rot_y += 0.1e-3;
-	zero_alter(&dirns[3]);  dirns[3].rot_y -= 0.1e-3;
-	refine_loop(&alter, dirns, 4, &priv, &n_iter, fh);
+    /* Refine orientation */
+    struct rf_alteration dirns[4];
+    zero_alter(&dirns[0]);  dirns[0].rot_x += 0.1e-3;
+    zero_alter(&dirns[1]);  dirns[1].rot_x -= 0.1e-3;
+    zero_alter(&dirns[2]);  dirns[2].rot_y += 0.1e-3;
+    zero_alter(&dirns[3]);  dirns[3].rot_y -= 0.1e-3;
+    refine_loop(&alter, dirns, 4, &priv, &n_iter, fh);
 
-	/* Refine profile radius */
-	zero_alter(&dirns[0]);  dirns[0].delta_R += 1e5;
-	zero_alter(&dirns[1]);  dirns[1].delta_R -= 1e5;
-	refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
+    /* Refine profile radius */
+    zero_alter(&dirns[0]);  dirns[0].delta_R += 1e5;
+    zero_alter(&dirns[1]);  dirns[1].delta_R -= 1e5;
+    refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
 
-	/* Refine wavelength */
-	zero_alter(&dirns[0]);  dirns[0].delta_wave += image->lambda/1000.0;
-	zero_alter(&dirns[1]);  dirns[1].delta_wave -= image->lambda/1000.0;
-	refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
+    /* Refine wavelength */
+    zero_alter(&dirns[0]);  dirns[0].delta_wave += image->lambda/1000.0;
+    zero_alter(&dirns[1]);  dirns[1].delta_wave -= image->lambda/1000.0;
+    refine_loop(&alter, dirns, 2, &priv, &n_iter, fh);
 
-	/* Apply the final shifts */
-	apply_parameters(cr, cr, image, image, alter);
-	update_predictions(*plist_in, cr, image);
-	calculate_partialities(*plist_in, cr, image, pmodel);
+    /* Apply the final shifts */
+    apply_parameters(cr, cr, image, image, alter);
+    update_predictions(*plist_in, cr, image);
+    calculate_partialities(*plist_in, cr, image, pmodel);
 
-	if ( write_logs ) {
-		write_gridscan(*plist_in, cr, image, full, cycle, serial, scaleflags,
-		               pmodel, log_folder);
-		write_specgraph(*plist_in, cr, image, full, cycle, serial, log_folder);
-		write_test_logs(cr, image, full, cycle, serial, log_folder);
-	}
+    if ( write_logs ) {
+        write_gridscan(*plist_in, cr, image, full, cycle, serial, scaleflags,
+                       pmodel, log_folder);
+        write_specgraph(*plist_in, cr, image, full, cycle, serial, log_folder);
+        write_test_logs(cr, image, full, cycle, serial, log_folder);
+    }
 
-	if ( crystal_get_profile_radius(cr) > 5e9 ) {
-		ERROR("WARNING: Very large radius: crystal %i\n", serial);
-	}
+    if ( crystal_get_profile_radius(cr) > 5e9 ) {
+        ERROR("WARNING: Very large radius: crystal %i\n", serial);
+    }
 
-	if ( fh != NULL ) {
-		fclose(fh);
-	}
+    if ( fh != NULL ) {
+        fclose(fh);
+    }
 
-	reflist_free(priv.refls);
-	crystal_free(priv.cr_tgt);
-	spectrum_free(spectrum);
+    reflist_free(priv.refls);
+    crystal_free(priv.cr_tgt);
+    spectrum_free(spectrum);
 }
 
 
 struct refine_args
 {
-	RefList *full;
-	Crystal *crystal;
-	RefList **prefls;
-	struct image *image;
-	PartialityModel pmodel;
-	int serial;
-	int cycle;
-	int no_logs;
-	SymOpList *sym;
-	SymOpList *amb;
-	int scaleflags;
-	const char *log_folder;
+    RefList *full;
+    Crystal *crystal;
+    RefList **prefls;
+    struct image *image;
+    PartialityModel pmodel;
+    int serial;
+    int cycle;
+    int no_logs;
+    SymOpList *sym;
+    SymOpList *amb;
+    int scaleflags;
+    const char *log_folder;
 };
 
 
 struct pr_queue_args
 {
-	int n_started;
-	int n_done;
-	struct crystal_refls *crystals;
-	struct image **images;
-	int n_crystals;
-	struct refine_args task_defaults;
+    int n_started;
+    int n_done;
+    struct crystal_refls *crystals;
+    struct image **images;
+    int n_crystals;
+    struct refine_args task_defaults;
 };
 
 
 static void refine_image(void *task, int id)
 {
-	struct refine_args *pargs = task;
-	int write_logs = 0;
+    struct refine_args *pargs = task;
+    int write_logs = 0;
 
-	write_logs = !pargs->no_logs && (pargs->serial % 20 == 0);
+    write_logs = !pargs->no_logs && (pargs->serial % 20 == 0);
 
-	do_pr_refine(pargs->prefls, pargs->crystal, pargs->image,
-	             pargs->full, pargs->pmodel,
-	             pargs->serial, pargs->cycle, write_logs,
-	             pargs->sym, pargs->amb, pargs->scaleflags,
-	             pargs->log_folder);
+    do_pr_refine(pargs->prefls, pargs->crystal, pargs->image,
+                 pargs->full, pargs->pmodel,
+                 pargs->serial, pargs->cycle, write_logs,
+                 pargs->sym, pargs->amb, pargs->scaleflags,
+                 pargs->log_folder);
 }
 
 
 static void *get_image(void *vqargs)
 {
-	struct refine_args *task;
-	struct pr_queue_args *qargs = vqargs;
+    struct refine_args *task;
+    struct pr_queue_args *qargs = vqargs;
 
-	task = malloc(sizeof(struct refine_args));
-	memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
+    task = malloc(sizeof(struct refine_args));
+    memcpy(task, &qargs->task_defaults, sizeof(struct refine_args));
 
-	task->crystal = qargs->crystals[qargs->n_started].cr;
-	task->prefls = &qargs->crystals[qargs->n_started].refls;
-	task->image = qargs->images[qargs->n_started];
-	task->serial = qargs->n_started;
+    task->crystal = qargs->crystals[qargs->n_started].cr;
+    task->prefls = &qargs->crystals[qargs->n_started].refls;
+    task->image = qargs->images[qargs->n_started];
+    task->serial = qargs->n_started;
 
-	qargs->n_started++;
+    qargs->n_started++;
 
-	return task;
+    return task;
 }
 
 
 static void done_image(void *vqargs, void *task)
 {
-	struct pr_queue_args *qa = vqargs;
+    struct pr_queue_args *qa = vqargs;
 
-	qa->n_done++;
+    qa->n_done++;
 
-	progress_bar(qa->n_done, qa->n_crystals, "Refining");
-	free(task);
+    progress_bar(qa->n_done, qa->n_crystals, "Refining");
+    free(task);
 }
 
 
@@ -819,32 +819,32 @@ void refine_all(struct crystal_refls *crystals, struct image **images, int n_cry
                 SymOpList *sym, SymOpList *amb, int scaleflags,
                 const char *log_folder)
 {
-	struct refine_args task_defaults;
-	struct pr_queue_args qargs;
+    struct refine_args task_defaults;
+    struct pr_queue_args qargs;
 
-	task_defaults.full = full;
-	task_defaults.crystal = NULL;
-	task_defaults.prefls = NULL;
-	task_defaults.image = NULL;
-	task_defaults.pmodel = pmodel;
-	task_defaults.cycle = cycle;
-	task_defaults.no_logs = no_logs;
-	task_defaults.sym = sym;
-	task_defaults.amb = amb;
-	task_defaults.scaleflags = scaleflags;
-	task_defaults.serial = 0;
-	task_defaults.log_folder = log_folder;
+    task_defaults.full = full;
+    task_defaults.crystal = NULL;
+    task_defaults.prefls = NULL;
+    task_defaults.image = NULL;
+    task_defaults.pmodel = pmodel;
+    task_defaults.cycle = cycle;
+    task_defaults.no_logs = no_logs;
+    task_defaults.sym = sym;
+    task_defaults.amb = amb;
+    task_defaults.scaleflags = scaleflags;
+    task_defaults.serial = 0;
+    task_defaults.log_folder = log_folder;
 
-	qargs.task_defaults = task_defaults;
-	qargs.n_started = 0;
-	qargs.n_done = 0;
-	qargs.n_crystals = n_crystals;
-	qargs.crystals = crystals;
-	qargs.images = images;
+    qargs.task_defaults = task_defaults;
+    qargs.n_started = 0;
+    qargs.n_done = 0;
+    qargs.n_crystals = n_crystals;
+    qargs.crystals = crystals;
+    qargs.images = images;
 
-	/* Don't have threads which are doing nothing */
-	if ( n_crystals < nthreads ) nthreads = n_crystals;
+    /* Don't have threads which are doing nothing */
+    if ( n_crystals < nthreads ) nthreads = n_crystals;
 
-	run_threads(nthreads, refine_image, get_image, done_image,
-	            &qargs, n_crystals, 0, 0, 0);
+    run_threads(nthreads, refine_image, get_image, done_image,
+                &qargs, n_crystals, 0, 0, 0);
 }

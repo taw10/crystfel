@@ -340,16 +340,16 @@ int sscanf_uint(const char *arg, unsigned *val) {
 
 int run_ffbidx(struct image *image, void *ipriv)
 {
-	ERROR("This copy of CrystFEL was compiled without FFBIDX support.\n");
-	return 0;
+    ERROR("This copy of CrystFEL was compiled without FFBIDX support.\n");
+    return 0;
 }
 
 
 void *ffbidx_prepare(IndexingMethod indm, UnitCell *cell, struct ffbidx_options *opts)
 {
-	ERROR("This copy of CrystFEL was compiled without FFBIDX support.\n");
-	ERROR("To use FFBIDX indexing, recompile with FFBIDX.\n");
-	return NULL;
+    ERROR("This copy of CrystFEL was compiled without FFBIDX support.\n");
+    ERROR("To use FFBIDX indexing, recompile with FFBIDX.\n");
+    return NULL;
 }
 
 
@@ -360,7 +360,7 @@ void ffbidx_cleanup(void *pp)
 
 const char *ffbidx_probe(UnitCell *cell)
 {
-	return NULL;
+    return NULL;
 }
 
 int ffbidx_default_options(struct ffbidx_options **opts_ptr)

@@ -48,25 +48,25 @@
 
 struct _symoplist
 {
-	IntegerMatrix **ops;
-	int n_ops;
-	int max_ops;
-	char *name;
-	int num_equivs;
+    IntegerMatrix **ops;
+    int n_ops;
+    int max_ops;
+    char *name;
+    int num_equivs;
 };
 
 
 struct _symopmask
 {
-	const SymOpList *list;
-	int *mask;
+    const SymOpList *list;
+    int *mask;
 };
 
 
 
 static void alloc_ops(SymOpList *ops)
 {
-	ops->ops = cfrealloc(ops->ops, ops->max_ops*sizeof(IntegerMatrix *));
+    ops->ops = cfrealloc(ops->ops, ops->max_ops*sizeof(IntegerMatrix *));
 }
 
 
@@ -79,40 +79,40 @@ static void alloc_ops(SymOpList *ops)
  **/
 SymOpMask *new_symopmask(const SymOpList *list)
 {
-	SymOpMask *m;
-	int i;
+    SymOpMask *m;
+    int i;
 
-	m = cfmalloc(sizeof(struct _symopmask));
-	if ( m == NULL ) return NULL;
+    m = cfmalloc(sizeof(struct _symopmask));
+    if ( m == NULL ) return NULL;
 
-	m->list = list;
-	m->mask = cfmalloc(sizeof(int)*list->n_ops);
-	if ( m->mask == NULL ) {
-		cffree(m);
-		return NULL;
-	}
+    m->list = list;
+    m->mask = cfmalloc(sizeof(int)*list->n_ops);
+    if ( m->mask == NULL ) {
+        cffree(m);
+        return NULL;
+    }
 
-	for ( i=0; i<list->n_ops; i++ ) {
-		m->mask[i] = 1;
-	}
+    for ( i=0; i<list->n_ops; i++ ) {
+        m->mask[i] = 1;
+    }
 
-	return m;
+    return m;
 }
 
 
 /* Creates a new SymOpList */
 static SymOpList *new_symoplist()
 {
-	SymOpList *new;
-	new = cfmalloc(sizeof(SymOpList));
-	if ( new == NULL ) return NULL;
-	new->max_ops = 16;
-	new->n_ops = 0;
-	new->ops = NULL;
-	new->name = NULL;
-	new->num_equivs = 1;
-	alloc_ops(new);
-	return new;
+    SymOpList *new;
+    new = cfmalloc(sizeof(SymOpList));
+    if ( new == NULL ) return NULL;
+    new->max_ops = 16;
+    new->n_ops = 0;
+    new->ops = NULL;
+    new->name = NULL;
+    new->num_equivs = 1;
+    alloc_ops(new);
+    return new;
 }
 
 
@@ -123,15 +123,15 @@ static SymOpList *new_symoplist()
  **/
 void free_symoplist(SymOpList *ops)
 {
-	int i;
+    int i;
 
-	if ( ops == NULL ) return;
-	for ( i=0; i<ops->n_ops; i++ ) {
-		intmat_free(ops->ops[i]);
-	}
-	if ( ops->ops != NULL ) cffree(ops->ops);
-	if ( ops->name != NULL ) cffree(ops->name);
-	cffree(ops);
+    if ( ops == NULL ) return;
+    for ( i=0; i<ops->n_ops; i++ ) {
+        intmat_free(ops->ops[i]);
+    }
+    if ( ops->ops != NULL ) cffree(ops->ops);
+    if ( ops->name != NULL ) cffree(ops->name);
+    cffree(ops);
 }
 
 /**
@@ -141,9 +141,9 @@ void free_symoplist(SymOpList *ops)
  **/
 void free_symopmask(SymOpMask *m)
 {
-	if ( m == NULL ) return;
-	cffree(m->mask);
-	cffree(m);
+    if ( m == NULL ) return;
+    cffree(m->mask);
+    cffree(m);
 }
 
 
@@ -151,7 +151,7 @@ void free_symopmask(SymOpMask *m)
  * to num_equivs() if the point group is being constructed. */
 static int num_ops(const SymOpList *ops)
 {
-	return ops->n_ops;
+    return ops->n_ops;
 }
 
 
@@ -163,12 +163,12 @@ static int num_ops(const SymOpList *ops)
  **/
 void add_symop(SymOpList *ops, IntegerMatrix *m)
 {
-	if ( ops->n_ops == ops->max_ops ) {
-		ops->max_ops += 16;
-		alloc_ops(ops);
-	}
+    if ( ops->n_ops == ops->max_ops ) {
+        ops->max_ops += 16;
+        alloc_ops(ops);
+    }
 
-	ops->ops[ops->n_ops++] = m;
+    ops->ops[ops->n_ops++] = m;
 }
 
 
@@ -176,21 +176,21 @@ void add_symop(SymOpList *ops, IntegerMatrix *m)
 static void add_symop_v(SymOpList *ops,
                         signed int *h, signed int *k, signed int *l)
 {
-	IntegerMatrix *m;
-	int i;
+    IntegerMatrix *m;
+    int i;
 
-	m = intmat_new(3, 3);
-	assert(m != NULL);
+    m = intmat_new(3, 3);
+    assert(m != NULL);
 
-	for ( i=0; i<3; i++ ) intmat_set(m, i, 0, h[i]);
-	for ( i=0; i<3; i++ ) intmat_set(m, i, 1, k[i]);
-	for ( i=0; i<3; i++ ) intmat_set(m, i, 2, l[i]);
+    for ( i=0; i<3; i++ ) intmat_set(m, i, 0, h[i]);
+    for ( i=0; i<3; i++ ) intmat_set(m, i, 1, k[i]);
+    for ( i=0; i<3; i++ ) intmat_set(m, i, 2, l[i]);
 
-	cffree(h);
-	cffree(k);
-	cffree(l);
+    cffree(h);
+    cffree(k);
+    cffree(l);
 
-	add_symop(ops, m);
+    add_symop(ops, m);
 }
 
 
@@ -208,51 +208,51 @@ static void add_symop_v(SymOpList *ops,
  **/
 IntegerMatrix *get_symop(const SymOpList *ops, const SymOpMask *m, int idx)
 {
-	const int n = num_ops(ops);
+    const int n = num_ops(ops);
 
-	if ( m != NULL ) {
+    if ( m != NULL ) {
 
-		int i, c;
+        int i, c;
 
-		c = 0;
-		for ( i=0; i<n; i++ ) {
+        c = 0;
+        for ( i=0; i<n; i++ ) {
 
-			if ( (c == idx) && m->mask[i] ) {
-				return ops->ops[i];
-			}
+            if ( (c == idx) && m->mask[i] ) {
+                return ops->ops[i];
+            }
 
-			if ( m->mask[i] ) {
-				c++;
-			}
+            if ( m->mask[i] ) {
+                c++;
+            }
 
-		}
+        }
 
-		ERROR("Index %i out of range for point group '%s'\n",
-			      idx, symmetry_name(ops));
+        ERROR("Index %i out of range for point group '%s'\n",
+                  idx, symmetry_name(ops));
 
-		return NULL;
+        return NULL;
 
-	}
+    }
 
-	if ( idx >= n ) {
+    if ( idx >= n ) {
 
-		ERROR("Index %i out of range for point group '%s'\n", idx,
-		      symmetry_name(ops));
+        ERROR("Index %i out of range for point group '%s'\n", idx,
+              symmetry_name(ops));
 
-		return NULL;
+        return NULL;
 
-	}
+    }
 
-	return ops->ops[idx];
+    return ops->ops[idx];
 }
 
 static signed int *v(signed int h, signed int k, signed int i, signed int l)
 {
-	signed int *vec = cfmalloc(3*sizeof(signed int));
-	if ( vec == NULL ) return NULL;
-	/* Convert back to 3-index form now */
-	vec[0] = h-i;  vec[1] = k-i;  vec[2] = l;
-	return vec;
+    signed int *vec = cfmalloc(3*sizeof(signed int));
+    if ( vec == NULL ) return NULL;
+    /* Convert back to 3-index form now */
+    vec[0] = h-i;  vec[1] = k-i;  vec[2] = l;
+    return vec;
 }
 
 
@@ -266,37 +266,37 @@ static signed int *v(signed int h, signed int k, signed int i, signed int l)
  **/
 int num_equivs(const SymOpList *ops, const SymOpMask *m)
 {
-	int n = num_ops(ops);
-	int i;
-	int c;
+    int n = num_ops(ops);
+    int i;
+    int c;
 
-	if ( m == NULL ) return n;
+    if ( m == NULL ) return n;
 
-	c = 0;
-	for ( i=0; i<n; i++ ) {
-		if ( m->mask[i] ) c++;
-	}
+    c = 0;
+    for ( i=0; i<n; i++ ) {
+        if ( m->mask[i] ) c++;
+    }
 
-	return c;
+    return c;
 }
 
 
 static void add_identity(SymOpList *s)
 {
-	int i, ni;
-	int found;
+    int i, ni;
+    int found;
 
-	found = 0;
-	ni = num_ops(s);
-	for ( i=0; i<ni; i++ ) {
-		if ( intmat_is_identity(s->ops[i]) ) {
-			found = 1;
-			break;
-		}
-	}
-	if ( !found ) {
-		add_symop_v(s, v(1,0,0,0), v(0,1,0,0), v(0,0,0,1));  /* I */
-	}
+    found = 0;
+    ni = num_ops(s);
+    for ( i=0; i<ni; i++ ) {
+        if ( intmat_is_identity(s->ops[i]) ) {
+            found = 1;
+            break;
+        }
+    }
+    if ( !found ) {
+        add_symop_v(s, v(1,0,0,0), v(0,1,0,0), v(0,0,0,1));  /* I */
+    }
 }
 
 
@@ -304,53 +304,53 @@ static void add_identity(SymOpList *s)
  * generators */
 static void expand_ops(SymOpList *s)
 {
-	int added;
+    int added;
 
-	add_identity(s);
+    add_identity(s);
 
-	do {
+    do {
 
-		int i, ni;
+        int i, ni;
 
-		added = 0;
+        added = 0;
 
-		ni = num_ops(s);
-		for ( i=0; i<ni; i++ ) {
+        ni = num_ops(s);
+        for ( i=0; i<ni; i++ ) {
 
-			int j;
-			IntegerMatrix *opi = s->ops[i];
+            int j;
+            IntegerMatrix *opi = s->ops[i];
 
-			/* Apply op 'i' to all the current ops in the list */
-			for ( j=0; j<ni; j++ ) {
+            /* Apply op 'i' to all the current ops in the list */
+            for ( j=0; j<ni; j++ ) {
 
-				IntegerMatrix *opj = s->ops[j];
-				IntegerMatrix *m;
-				int k, nk;
-				int found;
+                IntegerMatrix *opj = s->ops[j];
+                IntegerMatrix *m;
+                int k, nk;
+                int found;
 
-				m = intmat_times_intmat(opi, opj);
-				assert(m != NULL);
+                m = intmat_times_intmat(opi, opj);
+                assert(m != NULL);
 
-				nk = num_ops(s);
-				found = 0;
-				for ( k=0; k<nk; k++ ) {
-					if ( intmat_equals(m, s->ops[k]) ) {
-						found = 1;
-						intmat_free(m);
-						break;
-					}
-				}
+                nk = num_ops(s);
+                found = 0;
+                for ( k=0; k<nk; k++ ) {
+                    if ( intmat_equals(m, s->ops[k]) ) {
+                        found = 1;
+                        intmat_free(m);
+                        break;
+                    }
+                }
 
-				if ( !found ) {
-					add_symop(s, m);
-					added++;
-				}
+                if ( !found ) {
+                    add_symop(s, m);
+                    added++;
+                }
 
-			}
+            }
 
-		}
+        }
 
-	} while ( added );
+    } while ( added );
 }
 
 
@@ -359,49 +359,49 @@ static void expand_ops(SymOpList *s)
  * not also be an integer matrix). */
 static void transform_ops(SymOpList *s, IntegerMatrix *P)
 {
-	int n, i;
-	IntegerMatrix *Pi;
-	signed int det;
+    int n, i;
+    IntegerMatrix *Pi;
+    signed int det;
 
-	det = intmat_det(P);
-	if ( det == -1 ) {
-		ERROR("WARNING: mirrored SymOpList.\n");
-	} else if ( det != 1 ) {
-		ERROR("Invalid transformation for SymOpList.\n");
-		return;
-	}
+    det = intmat_det(P);
+    if ( det == -1 ) {
+        ERROR("WARNING: mirrored SymOpList.\n");
+    } else if ( det != 1 ) {
+        ERROR("Invalid transformation for SymOpList.\n");
+        return;
+    }
 
-	Pi = intmat_inverse(P);
-	if ( Pi == NULL ) {
-		ERROR("Failed to invert matrix.\n");
-		return;
-	}
+    Pi = intmat_inverse(P);
+    if ( Pi == NULL ) {
+        ERROR("Failed to invert matrix.\n");
+        return;
+    }
 
-	n = num_ops(s);
-	for ( i=0; i<n; i++ ) {
+    n = num_ops(s);
+    for ( i=0; i<n; i++ ) {
 
-		IntegerMatrix *r, *f;
+        IntegerMatrix *r, *f;
 
-		r = intmat_times_intmat(P, s->ops[i]);
-		if ( r == NULL ) {
-			ERROR("Matrix multiplication failed.\n");
-			return;
-		}
+        r = intmat_times_intmat(P, s->ops[i]);
+        if ( r == NULL ) {
+            ERROR("Matrix multiplication failed.\n");
+            return;
+        }
 
-		f = intmat_times_intmat(r, Pi);
-		if ( f == NULL ) {
-			ERROR("Matrix multiplication failed.\n");
-			return;
-		}
-		intmat_free(r);
+        f = intmat_times_intmat(r, Pi);
+        if ( f == NULL ) {
+            ERROR("Matrix multiplication failed.\n");
+            return;
+        }
+        intmat_free(r);
 
-		intmat_free(s->ops[i]);
-		s->ops[i] = intmat_copy(f);
-		intmat_free(f);
+        intmat_free(s->ops[i]);
+        s->ops[i] = intmat_copy(f);
+        intmat_free(f);
 
-	}
+    }
 
-	intmat_free(Pi);
+    intmat_free(Pi);
 }
 
 
@@ -409,20 +409,20 @@ static void transform_ops(SymOpList *s, IntegerMatrix *P)
 
 static SymOpList *make_1bar()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1));  /* -I */
-	new->name = cfstrdup("-1");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1));  /* -I */
+    new->name = cfstrdup("-1");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_1()
 {
-	SymOpList *new = new_symoplist();
-	new->name = cfstrdup("1");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    new->name = cfstrdup("1");
+    expand_ops(new);
+    return new;
 }
 
 
@@ -430,32 +430,32 @@ static SymOpList *make_1()
 
 static SymOpList *make_2m()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
-	add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1));  /* m -| l */
-	new->name = cfstrdup("2/m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
+    add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1));  /* m -| l */
+    new->name = cfstrdup("2/m");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_2()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
-	new->name = cfstrdup("2");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
+    new->name = cfstrdup("2");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_m()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1));  /* m -| l */
-	new->name = cfstrdup("m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1));  /* m -| l */
+    new->name = cfstrdup("m");
+    expand_ops(new);
+    return new;
 }
 
 
@@ -463,35 +463,35 @@ static SymOpList *make_m()
 
 static SymOpList *make_mmm()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
-	add_symop_v(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m -| k */
-	new->name = cfstrdup("mmm");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
+    add_symop_v(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m -| k */
+    new->name = cfstrdup("mmm");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_222()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
-	new->name = cfstrdup("222");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
+    new->name = cfstrdup("222");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_mm2()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
-	add_symop_v(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m -| k */
-	new->name = cfstrdup("mm2");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
+    add_symop_v(new, v(1,0,0,0), v(0,-1,0,0), v(0,0,0,1));  /* m -| k */
+    new->name = cfstrdup("mm2");
+    expand_ops(new);
+    return new;
 }
 
 
@@ -499,88 +499,88 @@ static SymOpList *make_mm2()
 
 static SymOpList *make_4m()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
-	add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* m -| l */
-	new->name = cfstrdup("4/m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
+    add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* m -| l */
+    new->name = cfstrdup("4/m");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_4()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
-	new->name = cfstrdup("4");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
+    new->name = cfstrdup("4");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_4mm()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1)); /* m -| l */
-	new->name = cfstrdup("4mm");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1)); /* m -| l */
+    new->name = cfstrdup("4mm");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_422()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1));  /* 4 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
-	new->name = cfstrdup("422");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1));  /* 4 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
+    new->name = cfstrdup("422");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_4bar()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
-	new->name = cfstrdup("-4");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
+    new->name = cfstrdup("-4");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_4bar2m()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
-	new->name = cfstrdup("-42m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
+    new->name = cfstrdup("-42m");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_4barm2()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1)); /* 2 // h+k */
-	new->name = cfstrdup("-4m2");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1)); /* 2 // h+k */
+    new->name = cfstrdup("-4m2");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_4mmm()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1)); /* m -| k */
-	add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* m -| l */
-	new->name = cfstrdup("4/mmm");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,1)); /* m -| k */
+    add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* m -| l */
+    new->name = cfstrdup("4/mmm");
+    expand_ops(new);
+    return new;
 }
 
 
@@ -588,56 +588,56 @@ static SymOpList *make_4mmm()
 
 static SymOpList *make_3_R()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* 3 // h+k+l */
-	new->name = cfstrdup("3_R");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* 3 // h+k+l */
+    new->name = cfstrdup("3_R");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_3bar_R()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* -3 // h+k+l */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	new->name = cfstrdup("-3_R");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* -3 // h+k+l */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    new->name = cfstrdup("-3_R");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_32_R()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* 3 // h+k+l */
-	add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* 2 -| 3 */
-	new->name = cfstrdup("32_R");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* 3 // h+k+l */
+    add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* 2 -| 3 */
+    new->name = cfstrdup("32_R");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_3m_R()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* 3 // h+k+l */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1)); /* m */
-	new->name = cfstrdup("3m_R");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* 3 // h+k+l */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1)); /* m */
+    new->name = cfstrdup("3m_R");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_3barm_R()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* -3 // h+k+l */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1));    /* m */
-	new->name = cfstrdup("-3m_R");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,0,1), v(1,0,0,0), v(0,1,0,0)); /* -3 // h+k+l */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1));    /* m */
+    new->name = cfstrdup("-3m_R");
+    expand_ops(new);
+    return new;
 }
 
 
@@ -645,90 +645,90 @@ static SymOpList *make_3barm_R()
 
 static SymOpList *make_3_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1)); /* 3 // l */
-	new->name = cfstrdup("3_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1)); /* 3 // l */
+    new->name = cfstrdup("3_H");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_3bar_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	new->name = cfstrdup("-3_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    new->name = cfstrdup("-3_H");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_321_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));  /* 3 // l */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1)); /* 2 // h */
-	new->name = cfstrdup("321_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));  /* 3 // l */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1)); /* 2 // h */
+    new->name = cfstrdup("321_H");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_312_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
-	add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* 2 // h+k */
-	new->name = cfstrdup("312_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
+    add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* 2 // h+k */
+    new->name = cfstrdup("312_H");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_3m1_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1)); /* 3 // l */
-	add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
-	new->name = cfstrdup("3m1_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1)); /* 3 // l */
+    add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
+    new->name = cfstrdup("3m1_H");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_31m_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1)); /* 3 // l */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1)); /* m -| (k+i) */
-	new->name = cfstrdup("31m_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1)); /* 3 // l */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1)); /* m -| (k+i) */
+    new->name = cfstrdup("31m_H");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_3barm1_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1));   /* 2 // h */
-	new->name = cfstrdup("-3m1_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1));   /* 2 // h */
+    new->name = cfstrdup("-3m1_H");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_3bar1m_H()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* 2 // h+k */
-	new->name = cfstrdup("-31m_H");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,1));    /* 3 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* 2 // h+k */
+    new->name = cfstrdup("-31m_H");
+    expand_ops(new);
+    return new;
 }
 
 
@@ -736,88 +736,88 @@ static SymOpList *make_3bar1m_H()
 
 static SymOpList *make_6()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
-	new->name = cfstrdup("6");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
+    new->name = cfstrdup("6");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_6bar()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
-	new->name = cfstrdup("-6");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
+    new->name = cfstrdup("-6");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_6m()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
-	add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1));  /* m -| l */
-	new->name = cfstrdup("6/m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
+    add_symop_v(new, v(1,0,0,0), v(0,1,0,0), v(0,0,0,-1));  /* m -| l */
+    new->name = cfstrdup("6/m");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_622()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1));   /* 2 // h */
-	new->name = cfstrdup("622");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,-1));   /* 2 // h */
+    new->name = cfstrdup("622");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_6mm()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
-	add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
-	new->name = cfstrdup("6mm");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,-1,0), v(-1,0,0,0), v(0,0,0,1)); /* 6 // l */
+    add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
+    new->name = cfstrdup("6mm");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_6barm2()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
-	add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
-	new->name = cfstrdup("-6m2");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
+    add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
+    new->name = cfstrdup("-6m2");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_6bar2m()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
-	add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1));  /* m -| (k+i) */
-	new->name = cfstrdup("-62m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
+    add_symop_v(new, v(0,1,0,0), v(1,0,0,0), v(0,0,0,1));  /* m -| (k+i) */
+    new->name = cfstrdup("-62m");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_6mmm()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
-	add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	new->name = cfstrdup("6/mmm");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,0,1,0), v(1,0,0,0), v(0,0,0,-1)); /* -6 // l */
+    add_symop_v(new, v(0,-1,0,0), v(-1,0,0,0), v(0,0,0,1)); /* m -| i */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    new->name = cfstrdup("6/mmm");
+    expand_ops(new);
+    return new;
 }
 
 
@@ -825,219 +825,219 @@ static SymOpList *make_6mmm()
 
 static SymOpList *make_23()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
-	add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0)); /* 3 // h+k+l */
-	new->name = cfstrdup("23");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
+    add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0)); /* 3 // h+k+l */
+    new->name = cfstrdup("23");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_m3bar()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
-	add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0)); /* 3 // h+k+l */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	new->name = cfstrdup("m-3");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,1)); /* 2 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
+    add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0)); /* 3 // h+k+l */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    new->name = cfstrdup("m-3");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_432()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1));/* 2 // k */
-	add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0));  /* 3 // h+k+l */
-	new->name = cfstrdup("432");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1));/* 2 // k */
+    add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0));  /* 3 // h+k+l */
+    new->name = cfstrdup("432");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_4bar3m()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
-	add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0));   /* 3 // h+k+l */
-	new->name = cfstrdup("-43m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,1,0,0), v(-1,0,0,0), v(0,0,0,-1)); /* -4 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1)); /* 2 // k */
+    add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0));   /* 3 // h+k+l */
+    new->name = cfstrdup("-43m");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *make_m3barm()
 {
-	SymOpList *new = new_symoplist();
-	add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
-	add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1));/* 2 // k */
-	add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0));  /* 3 // h+k+l */
-	add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
-	new->name = cfstrdup("m-3m");
-	expand_ops(new);
-	return new;
+    SymOpList *new = new_symoplist();
+    add_symop_v(new, v(0,-1,0,0), v(1,0,0,0), v(0,0,0,1)); /* 4 // l */
+    add_symop_v(new, v(-1,0,0,0), v(0,1,0,0), v(0,0,0,-1));/* 2 // k */
+    add_symop_v(new, v(0,1,0,0), v(0,0,0,1), v(1,0,0,0));  /* 3 // h+k+l */
+    add_symop_v(new, v(-1,0,0,0), v(0,-1,0,0), v(0,0,0,-1)); /* -I */
+    new->name = cfstrdup("m-3m");
+    expand_ops(new);
+    return new;
 }
 
 
 static SymOpList *getpg_uac(const char *sym)
 {
-	/* Triclinic */
-	if ( strcmp(sym, "-1") == 0 ) return make_1bar();
-	if ( strcmp(sym, "1") == 0 ) return make_1();
+    /* Triclinic */
+    if ( strcmp(sym, "-1") == 0 ) return make_1bar();
+    if ( strcmp(sym, "1") == 0 ) return make_1();
 
-	/* Monoclinic */
-	if ( strcmp(sym, "2/m") == 0 ) return make_2m();
-	if ( strcmp(sym, "2") == 0 ) return make_2();
-	if ( strcmp(sym, "m") == 0 ) return make_m();
+    /* Monoclinic */
+    if ( strcmp(sym, "2/m") == 0 ) return make_2m();
+    if ( strcmp(sym, "2") == 0 ) return make_2();
+    if ( strcmp(sym, "m") == 0 ) return make_m();
 
-	/* Orthorhombic */
-	if ( strcmp(sym, "mmm") == 0 ) return make_mmm();
-	if ( strcmp(sym, "222") == 0 ) return make_222();
-	if ( strcmp(sym, "mm2") == 0 ) return make_mm2();
+    /* Orthorhombic */
+    if ( strcmp(sym, "mmm") == 0 ) return make_mmm();
+    if ( strcmp(sym, "222") == 0 ) return make_222();
+    if ( strcmp(sym, "mm2") == 0 ) return make_mm2();
 
-	/* Tetragonal */
-	if ( strcmp(sym, "4/m") == 0 ) return make_4m();
-	if ( strcmp(sym, "4") == 0 ) return make_4();
-	if ( strcmp(sym, "-4") == 0 ) return make_4bar();
-	if ( strcmp(sym, "4/mmm") == 0 ) return make_4mmm();
-	if ( strcmp(sym, "422") == 0 ) return make_422();
-	if ( strcmp(sym, "-42m") == 0 ) return make_4bar2m();
-	if ( strcmp(sym, "-4m2") == 0 ) return make_4barm2();
-	if ( strcmp(sym, "4mm") == 0 ) return make_4mm();
+    /* Tetragonal */
+    if ( strcmp(sym, "4/m") == 0 ) return make_4m();
+    if ( strcmp(sym, "4") == 0 ) return make_4();
+    if ( strcmp(sym, "-4") == 0 ) return make_4bar();
+    if ( strcmp(sym, "4/mmm") == 0 ) return make_4mmm();
+    if ( strcmp(sym, "422") == 0 ) return make_422();
+    if ( strcmp(sym, "-42m") == 0 ) return make_4bar2m();
+    if ( strcmp(sym, "-4m2") == 0 ) return make_4barm2();
+    if ( strcmp(sym, "4mm") == 0 ) return make_4mm();
 
-	/* Trigonal (rhombohedral) */
-	if ( strcmp(sym, "3_R") == 0 ) return make_3_R();
-	if ( strcmp(sym, "-3_R") == 0 ) return make_3bar_R();
-	if ( strcmp(sym, "32_R") == 0 ) return make_32_R();
-	if ( strcmp(sym, "3m_R") == 0 ) return make_3m_R();
-	if ( strcmp(sym, "-3m_R") == 0 ) return make_3barm_R();
+    /* Trigonal (rhombohedral) */
+    if ( strcmp(sym, "3_R") == 0 ) return make_3_R();
+    if ( strcmp(sym, "-3_R") == 0 ) return make_3bar_R();
+    if ( strcmp(sym, "32_R") == 0 ) return make_32_R();
+    if ( strcmp(sym, "3m_R") == 0 ) return make_3m_R();
+    if ( strcmp(sym, "-3m_R") == 0 ) return make_3barm_R();
 
-	/* Trigonal (hexagonal) */
-	if ( strcmp(sym, "3_H") == 0 ) return make_3_H();
-	if ( strcmp(sym, "-3_H") == 0 ) return make_3bar_H();
-	if ( strcmp(sym, "321_H") == 0 ) return make_321_H();
-	if ( strcmp(sym, "312_H") == 0 ) return make_312_H();
-	if ( strcmp(sym, "3m1_H") == 0 ) return make_3m1_H();
-	if ( strcmp(sym, "31m_H") == 0 ) return make_31m_H();
-	if ( strcmp(sym, "-3m1_H") == 0 ) return make_3barm1_H();
-	if ( strcmp(sym, "-31m_H") == 0 ) return make_3bar1m_H();
+    /* Trigonal (hexagonal) */
+    if ( strcmp(sym, "3_H") == 0 ) return make_3_H();
+    if ( strcmp(sym, "-3_H") == 0 ) return make_3bar_H();
+    if ( strcmp(sym, "321_H") == 0 ) return make_321_H();
+    if ( strcmp(sym, "312_H") == 0 ) return make_312_H();
+    if ( strcmp(sym, "3m1_H") == 0 ) return make_3m1_H();
+    if ( strcmp(sym, "31m_H") == 0 ) return make_31m_H();
+    if ( strcmp(sym, "-3m1_H") == 0 ) return make_3barm1_H();
+    if ( strcmp(sym, "-31m_H") == 0 ) return make_3bar1m_H();
 
-	/* Hexagonal */
-	if ( strcmp(sym, "6/m") == 0 ) return make_6m();
-	if ( strcmp(sym, "6") == 0 ) return make_6();
-	if ( strcmp(sym, "-6") == 0 ) return make_6bar();
-	if ( strcmp(sym, "6/mmm") == 0 ) return make_6mmm();
-	if ( strcmp(sym, "622") == 0 ) return make_622();
-	if ( strcmp(sym, "-62m") == 0 ) return make_6bar2m();
-	if ( strcmp(sym, "-6m2") == 0 ) return make_6barm2();
-	if ( strcmp(sym, "6mm") == 0 ) return make_6mm();
+    /* Hexagonal */
+    if ( strcmp(sym, "6/m") == 0 ) return make_6m();
+    if ( strcmp(sym, "6") == 0 ) return make_6();
+    if ( strcmp(sym, "-6") == 0 ) return make_6bar();
+    if ( strcmp(sym, "6/mmm") == 0 ) return make_6mmm();
+    if ( strcmp(sym, "622") == 0 ) return make_622();
+    if ( strcmp(sym, "-62m") == 0 ) return make_6bar2m();
+    if ( strcmp(sym, "-6m2") == 0 ) return make_6barm2();
+    if ( strcmp(sym, "6mm") == 0 ) return make_6mm();
 
-	/* Cubic */
-	if ( strcmp(sym, "23") == 0 ) return make_23();
-	if ( strcmp(sym, "m-3") == 0 ) return make_m3bar();
-	if ( strcmp(sym, "432") == 0 ) return make_432();
-	if ( strcmp(sym, "-43m") == 0 ) return make_4bar3m();
-	if ( strcmp(sym, "m-3m") == 0 ) return make_m3barm();
+    /* Cubic */
+    if ( strcmp(sym, "23") == 0 ) return make_23();
+    if ( strcmp(sym, "m-3") == 0 ) return make_m3bar();
+    if ( strcmp(sym, "432") == 0 ) return make_432();
+    if ( strcmp(sym, "-43m") == 0 ) return make_4bar3m();
+    if ( strcmp(sym, "m-3m") == 0 ) return make_m3barm();
 
-	ERROR("Unknown point group '%s'\n", sym);
-	return NULL;
+    ERROR("Unknown point group '%s'\n", sym);
+    return NULL;
 }
 
 
 static int char_count(const char *a, char b)
 {
-	size_t i;
-	int n;
+    size_t i;
+    int n;
 
-	i = 0;  n = 0;
-	do {
-		if ( a[i] == b ) n++;
-		if ( a[i] == '\0' ) return n;
-		i++;
-	} while ( 1 );
+    i = 0;  n = 0;
+    do {
+        if ( a[i] == b ) n++;
+        if ( a[i] == '\0' ) return n;
+        i++;
+    } while ( 1 );
 }
 
 
 static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
 {
-	char ua;
-	char *pg_type;
-	SymOpList *pg;
-	IntegerMatrix *t;
-	char *new_name;
+    char ua;
+    char *pg_type;
+    SymOpList *pg;
+    IntegerMatrix *t;
+    char *new_name;
 
-	if ( strncmp(sym+s, "ua", 2) == 0 ) {
-		ua = sym[s+2];
-	} else {
-		ERROR("Unrecognised point group '%s'\n", sym);
-		return NULL;
-	}
+    if ( strncmp(sym+s, "ua", 2) == 0 ) {
+        ua = sym[s+2];
+    } else {
+        ERROR("Unrecognised point group '%s'\n", sym);
+        return NULL;
+    }
 
-	pg_type = cfstrndup(sym, s-1);
-	if ( pg_type == NULL ) {
-		ERROR("Couldn't allocate string.\n");
-		return NULL;
-	}
+    pg_type = cfstrndup(sym, s-1);
+    if ( pg_type == NULL ) {
+        ERROR("Couldn't allocate string.\n");
+        return NULL;
+    }
 
-	pg = getpg_uac(pg_type);
-	if ( pg == NULL ) {
-		ERROR("Unrecognised point group type '%s'\n",
-		      pg_type);
-		return NULL;
-	}
-	cffree(pg_type);
+    pg = getpg_uac(pg_type);
+    if ( pg == NULL ) {
+        ERROR("Unrecognised point group type '%s'\n",
+              pg_type);
+        return NULL;
+    }
+    cffree(pg_type);
 
-	t = intmat_new(3, 3);
-	if ( t == NULL ) return NULL;
+    t = intmat_new(3, 3);
+    if ( t == NULL ) return NULL;
 
-	switch ( ua ) {
+    switch ( ua ) {
 
-		case 'a' :
-		intmat_set(t, 0, 2, 1);
-		intmat_set(t, 1, 0, 1);
-		intmat_set(t, 2, 1, 1);
-		break;
+        case 'a' :
+        intmat_set(t, 0, 2, 1);
+        intmat_set(t, 1, 0, 1);
+        intmat_set(t, 2, 1, 1);
+        break;
 
-		case 'b' :
-		intmat_set(t, 0, 1, 1);
-		intmat_set(t, 1, 2, 1);
-		intmat_set(t, 2, 0, 1);
+        case 'b' :
+        intmat_set(t, 0, 1, 1);
+        intmat_set(t, 1, 2, 1);
+        intmat_set(t, 2, 0, 1);
 
-		break;
+        break;
 
-		case 'c' :
-		intmat_set(t, 0, 0, 1);
-		intmat_set(t, 1, 1, 1);
-		intmat_set(t, 2, 2, 1);
-		break;
+        case 'c' :
+        intmat_set(t, 0, 0, 1);
+        intmat_set(t, 1, 1, 1);
+        intmat_set(t, 2, 2, 1);
+        break;
 
-		default :
-		ERROR("Bad unique axis '%c'\n", ua);
-		free_symoplist(pg);
-		return NULL;
+        default :
+        ERROR("Bad unique axis '%c'\n", ua);
+        free_symoplist(pg);
+        return NULL;
 
-	}
+    }
 
-	transform_ops(pg, t);
-	intmat_free(t);
+    transform_ops(pg, t);
+    intmat_free(t);
 
-	new_name = cfmalloc(64);
-	if ( new_name == NULL ) {
-		ERROR("Couldn't allocate space for PG name\n");
-		return NULL;
-	}
+    new_name = cfmalloc(64);
+    if ( new_name == NULL ) {
+        ERROR("Couldn't allocate space for PG name\n");
+        return NULL;
+    }
 
-	snprintf(new_name, 64, "%s_ua%c", pg->name, ua);
-	cffree(pg->name);
-	pg->name = new_name;
+    snprintf(new_name, 64, "%s_ua%c", pg->name, ua);
+    cffree(pg->name);
+    pg->name = new_name;
 
-	return pg;
+    return pg;
 }
 
 
@@ -1056,48 +1056,48 @@ static SymOpList *getpg_arbitrary_ua(const char *sym, size_t s)
  **/
 SymOpList *get_pointgroup(const char *sym)
 {
-	int n_underscore;
+    int n_underscore;
 
-	n_underscore = char_count(sym, '_');
+    n_underscore = char_count(sym, '_');
 
-	/* No spaces nor underscores -> old system */
-	if ( n_underscore == 0 ) return getpg_uac(sym);
+    /* No spaces nor underscores -> old system */
+    if ( n_underscore == 0 ) return getpg_uac(sym);
 
-	/* No spaces and 1 underscore -> old system + lattice or UA */
-	if ( n_underscore == 1 ) {
+    /* No spaces and 1 underscore -> old system + lattice or UA */
+    if ( n_underscore == 1 ) {
 
-		const char *s;
+        const char *s;
 
-		s = strchr(sym, '_');
-		assert(s != NULL);
-		s++;
+        s = strchr(sym, '_');
+        assert(s != NULL);
+        s++;
 
-		/* Old system with H/R lattice? */
-		if ( (s[0] == 'H') || (s[0] == 'R') ) {
-			return getpg_uac(sym);
-		}
+        /* Old system with H/R lattice? */
+        if ( (s[0] == 'H') || (s[0] == 'R') ) {
+            return getpg_uac(sym);
+        }
 
-		/* Old system with unique axis */
-		return getpg_arbitrary_ua(sym, s-sym);
+        /* Old system with unique axis */
+        return getpg_arbitrary_ua(sym, s-sym);
 
-	}
+    }
 
-	ERROR("Unrecognised point group '%s'\n", sym);
-	return NULL;
+    ERROR("Unrecognised point group '%s'\n", sym);
+    return NULL;
 }
 
 
 void pointgroup_warning(const char *sym)
 {
-	if ( (strcmp(sym, "m") == 0)
-	  || (strcmp(sym, "2/m") == 0)
-	  || (strcmp(sym, "2") == 0) )
-	{
-		ERROR("WARNING: You have specified a monoclinic point group "
-		      "without a unique axis.  The default unique axis is 'c'. "
-		      "If you want unique axis b, append '_uab' to your point "
-		      "group.\n");
-	}
+    if ( (strcmp(sym, "m") == 0)
+      || (strcmp(sym, "2/m") == 0)
+      || (strcmp(sym, "2") == 0) )
+    {
+        ERROR("WARNING: You have specified a monoclinic point group "
+              "without a unique axis.  The default unique axis is 'c'. "
+              "If you want unique axis b, append '_uab' to your point "
+              "group.\n");
+    }
 
 }
 
@@ -1106,16 +1106,16 @@ static void do_op(const IntegerMatrix *op,
                   signed int h, signed int k, signed int l,
                   signed int *he, signed int *ke, signed int *le)
 {
-	signed int vec[3];
-	signed int *ans;
+    signed int vec[3];
+    signed int *ans;
 
-	vec[0] = h;  vec[1] = k;  vec[2] = l;
+    vec[0] = h;  vec[1] = k;  vec[2] = l;
 
-	ans = transform_indices(op, vec);
-	assert(ans != NULL);
+    ans = transform_indices(op, vec);
+    assert(ans != NULL);
 
-	*he = ans[0];  *ke = ans[1];  *le = ans[2];
-	cffree(ans);
+    *he = ans[0];  *ke = ans[1];  *le = ans[2];
+    cffree(ans);
 }
 
 
@@ -1144,13 +1144,13 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
                signed int h, signed int k, signed int l,
                signed int *he, signed int *ke, signed int *le)
 {
-	IntegerMatrix *op;
-	op = get_symop(ops, m, idx);
-	if ( op == NULL ) {
-		fprintf(stderr, "Cannot proceed.\n");
-		abort();
-	}
-	do_op(op, h, k, l, he, ke, le);
+    IntegerMatrix *op;
+    op = get_symop(ops, m, idx);
+    if ( op == NULL ) {
+        fprintf(stderr, "Cannot proceed.\n");
+        abort();
+    }
+    do_op(op, h, k, l, he, ke, le);
 }
 
 
@@ -1167,53 +1167,53 @@ void get_equiv(const SymOpList *ops, const SymOpMask *m, int idx,
 void special_position(const SymOpList *ops, SymOpMask *m,
                       signed int h, signed int k, signed int l)
 {
-	int i, n;
-	signed int *htest;
-	signed int *ktest;
-	signed int *ltest;
+    int i, n;
+    signed int *htest;
+    signed int *ktest;
+    signed int *ltest;
 
-	assert(m->list == ops);
+    assert(m->list == ops);
 
-	n = num_equivs(ops, NULL);
-	htest = cfmalloc(n*sizeof(signed int));
-	ktest = cfmalloc(n*sizeof(signed int));
-	ltest = cfmalloc(n*sizeof(signed int));
+    n = num_equivs(ops, NULL);
+    htest = cfmalloc(n*sizeof(signed int));
+    ktest = cfmalloc(n*sizeof(signed int));
+    ltest = cfmalloc(n*sizeof(signed int));
 
-	for ( i=0; i<n; i++ ) {
+    for ( i=0; i<n; i++ ) {
 
-		signed int he, ke, le;
-		int j;
+        signed int he, ke, le;
+        int j;
 
-		get_equiv(ops, NULL, i, h, k, l, &he, &ke, &le);
+        get_equiv(ops, NULL, i, h, k, l, &he, &ke, &le);
 
-		m->mask[i] = 1;
-		for ( j=0; j<i; j++ ) {
-			if ( (he==htest[j]) && (ke==ktest[j])
-			  && (le==ltest[j]) )
-			{
-				m->mask[i] = 0;
-				break;  /* Only need to find one */
-			}
-		}
+        m->mask[i] = 1;
+        for ( j=0; j<i; j++ ) {
+            if ( (he==htest[j]) && (ke==ktest[j])
+              && (le==ltest[j]) )
+            {
+                m->mask[i] = 0;
+                break;  /* Only need to find one */
+            }
+        }
 
-		htest[i] = he;
-		ktest[i] = ke;
-		ltest[i] = le;
+        htest[i] = he;
+        ktest[i] = ke;
+        ltest[i] = le;
 
-	}
+    }
 
-	cffree(htest);
-	cffree(ktest);
-	cffree(ltest);
+    cffree(htest);
+    cffree(ktest);
+    cffree(ltest);
 }
 
 
 static int any_negative(signed int h, signed int k, signed int l)
 {
-	if ( h < 0 ) return 1;
-	if ( k < 0 ) return 1;
-	if ( l < 0 ) return 1;
-	return 0;
+    if ( h < 0 ) return 1;
+    if ( k < 0 ) return 1;
+    if ( l < 0 ) return 1;
+    return 0;
 }
 
 
@@ -1230,17 +1230,17 @@ static int any_negative(signed int h, signed int k, signed int l)
  **/
 int is_centric(signed int h, signed int k, signed int l, const SymOpList *ops)
 {
-	signed int ha, ka, la;
-	signed int hb, kb, lb;
+    signed int ha, ka, la;
+    signed int hb, kb, lb;
 
-	get_asymm(ops, h, k, l, &ha, &ka, &la);
-	get_asymm(ops, -h, -k, -l, &hb, &kb, &lb);
+    get_asymm(ops, h, k, l, &ha, &ka, &la);
+    get_asymm(ops, -h, -k, -l, &hb, &kb, &lb);
 
-	if ( ha != hb ) return 0;
-	if ( ka != kb ) return 0;
-	if ( la != lb ) return 0;
+    if ( ha != hb ) return 0;
+    if ( ka != kb ) return 0;
+    if ( la != lb ) return 0;
 
-	return 1;
+    return 1;
 }
 
 
@@ -1268,55 +1268,55 @@ void get_asymm(const SymOpList *ops,
                signed int h, signed int k, signed int l,
                signed int *hp, signed int *kp, signed int *lp)
 {
-	int nequiv;
-	int p;
-	signed int best_h, best_k, best_l;
-	int have_negs;
+    int nequiv;
+    int p;
+    signed int best_h, best_k, best_l;
+    int have_negs;
 
-	nequiv = num_equivs(ops, NULL);
+    nequiv = num_equivs(ops, NULL);
 
-	best_h = h;  best_k = k;  best_l = l;
-	have_negs = any_negative(best_h, best_k, best_l);
-	for ( p=0; p<nequiv; p++ ) {
+    best_h = h;  best_k = k;  best_l = l;
+    have_negs = any_negative(best_h, best_k, best_l);
+    for ( p=0; p<nequiv; p++ ) {
 
-		int will_have_negs;
+        int will_have_negs;
 
-		get_equiv(ops, NULL, p, h, k, l, hp, kp, lp);
+        get_equiv(ops, NULL, p, h, k, l, hp, kp, lp);
 
-		will_have_negs = any_negative(*hp, *kp, *lp);
+        will_have_negs = any_negative(*hp, *kp, *lp);
 
-		/* Don't lose "no negs" status */
-		if ( !have_negs && will_have_negs ) continue;
+        /* Don't lose "no negs" status */
+        if ( !have_negs && will_have_negs ) continue;
 
-		if ( have_negs && !will_have_negs ) {
-			best_h = *hp;  best_k = *kp;  best_l = *lp;
-			have_negs = 0;
-			continue;
-		}
+        if ( have_negs && !will_have_negs ) {
+            best_h = *hp;  best_k = *kp;  best_l = *lp;
+            have_negs = 0;
+            continue;
+        }
 
-		if ( *hp > best_h ) {
-			best_h = *hp;  best_k = *kp;  best_l = *lp;
-			have_negs = any_negative(best_h, best_k, best_l);
-			continue;
-		}
-		if ( *hp < best_h ) continue;
+        if ( *hp > best_h ) {
+            best_h = *hp;  best_k = *kp;  best_l = *lp;
+            have_negs = any_negative(best_h, best_k, best_l);
+            continue;
+        }
+        if ( *hp < best_h ) continue;
 
-		if ( *kp > best_k ) {
-			best_h = *hp;  best_k = *kp;  best_l = *lp;
-			have_negs = any_negative(best_h, best_k, best_l);
-			continue;
-		}
-		if ( *kp < best_k ) continue;
+        if ( *kp > best_k ) {
+            best_h = *hp;  best_k = *kp;  best_l = *lp;
+            have_negs = any_negative(best_h, best_k, best_l);
+            continue;
+        }
+        if ( *kp < best_k ) continue;
 
-		if ( *lp > best_l ) {
-			best_h = *hp;  best_k = *kp;  best_l = *lp;
-			have_negs = any_negative(best_h, best_k, best_l);
-			continue;
-		}
+        if ( *lp > best_l ) {
+            best_h = *hp;  best_k = *kp;  best_l = *lp;
+            have_negs = any_negative(best_h, best_k, best_l);
+            continue;
+        }
 
-	}
+    }
 
-	*hp = best_h;  *kp = best_k;  *lp = best_l;
+    *hp = best_h;  *kp = best_k;  *lp = best_l;
 }
 
 
@@ -1327,14 +1327,14 @@ void get_asymm(const SymOpList *ops,
  */
 int is_centrosymmetric(const SymOpList *s)
 {
-	int i, n;
+    int i, n;
 
-	n = num_ops(s);
-	for ( i=0; i<n; i++ ) {
-		if ( intmat_is_inversion(s->ops[i]) ) return 1;
-	}
+    n = num_ops(s);
+    for ( i=0; i<n; i++ ) {
+        if ( intmat_is_inversion(s->ops[i]) ) return 1;
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -1342,16 +1342,16 @@ int is_centrosymmetric(const SymOpList *s)
 static int check_mult(const IntegerMatrix *ans,
                       const IntegerMatrix *a, const IntegerMatrix *b)
 {
-	int val;
-	IntegerMatrix *m;
+    int val;
+    IntegerMatrix *m;
 
-	m = intmat_times_intmat(a, b);
-	assert(m != NULL);
+    m = intmat_times_intmat(a, b);
+    assert(m != NULL);
 
-	val = intmat_equals(ans, m);
-	intmat_free(m);
+    val = intmat_equals(ans, m);
+    intmat_free(m);
 
-	return val;
+    return val;
 }
 
 
@@ -1363,149 +1363,149 @@ static int check_mult(const IntegerMatrix *ans,
  **/
 int is_subgroup(const SymOpList *source, const SymOpList *target)
 {
-	int n_src, n_tgt;
-	int i;
+    int n_src, n_tgt;
+    int i;
 
-	n_src = num_ops(source);
-	n_tgt = num_ops(target);
+    n_src = num_ops(source);
+    n_tgt = num_ops(target);
 
-	for ( i=0; i<n_tgt; i++ ) {
+    for ( i=0; i<n_tgt; i++ ) {
 
-		int j;
-		int found = 0;
+        int j;
+        int found = 0;
 
-		for ( j=0; j<n_src; j++ ) {
+        for ( j=0; j<n_src; j++ ) {
 
-			if ( intmat_equals(target->ops[i], source->ops[j]) ) {
-				found = 1;
-				break;
-			}
+            if ( intmat_equals(target->ops[i], source->ops[j]) ) {
+                found = 1;
+                break;
+            }
 
-		}
+        }
 
-		if ( !found ) return 0;
+        if ( !found ) return 0;
 
-	}
+    }
 
-	return 1;
+    return 1;
 }
 
 
 /* Returns n, where m^n = I */
 static int order(const IntegerMatrix *m)
 {
-	IntegerMatrix *a;
-	int i;
+    IntegerMatrix *a;
+    int i;
 
-	a = intmat_new(3, 3);
-	assert(a != NULL);
-	intmat_set(a, 0, 0, 1);
-	intmat_set(a, 1, 1, 1);
-	intmat_set(a, 2, 2, 1);
+    a = intmat_new(3, 3);
+    assert(a != NULL);
+    intmat_set(a, 0, 0, 1);
+    intmat_set(a, 1, 1, 1);
+    intmat_set(a, 2, 2, 1);
 
-	i = 0;
-	do {
+    i = 0;
+    do {
 
-		IntegerMatrix *anew;
+        IntegerMatrix *anew;
 
-		anew = intmat_times_intmat(m, a);
-		assert(anew != NULL);
-		intmat_free(a);
-		a = anew;
+        anew = intmat_times_intmat(m, a);
+        assert(anew != NULL);
+        intmat_free(a);
+        a = anew;
 
-		i++;
+        i++;
 
-	} while ( !intmat_is_identity(a) );
+    } while ( !intmat_is_identity(a) );
 
-	return i;
+    return i;
 }
 
 
 static SymOpList *flack_reorder(const SymOpList *source)
 {
-	SymOpList *src_reordered;
-	SymOpMask *used;
-	int i, n_src;
+    SymOpList *src_reordered;
+    SymOpMask *used;
+    int i, n_src;
 
-	src_reordered = new_symoplist();
-	used = new_symopmask(source);
+    src_reordered = new_symoplist();
+    used = new_symopmask(source);
 
-	n_src = num_ops(source);
+    n_src = num_ops(source);
 
-	/* Find identity */
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		if ( intmat_is_identity(source->ops[i]) ) {
-			add_symop(src_reordered, intmat_copy(source->ops[i]));
-			used->mask[i] = 0;
-		}
-	}
+    /* Find identity */
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        if ( intmat_is_identity(source->ops[i]) ) {
+            add_symop(src_reordered, intmat_copy(source->ops[i]));
+            used->mask[i] = 0;
+        }
+    }
 
-	/* Find binary options (order=2) of first kind (determinant positive) */
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		if ( (order(source->ops[i]) == 2)
-		  && (intmat_det(source->ops[i]) > 0) ) {
-			add_symop(src_reordered, intmat_copy(source->ops[i]));
-			used->mask[i] = 0;
-		}
-	}
+    /* Find binary options (order=2) of first kind (determinant positive) */
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        if ( (order(source->ops[i]) == 2)
+          && (intmat_det(source->ops[i]) > 0) ) {
+            add_symop(src_reordered, intmat_copy(source->ops[i]));
+            used->mask[i] = 0;
+        }
+    }
 
-	/* Find other operations of first kind (determinant positive) */
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		if ( intmat_det(source->ops[i]) > 0 ) {
-			add_symop(src_reordered, intmat_copy(source->ops[i]));
-			used->mask[i] = 0;
-		}
-	}
+    /* Find other operations of first kind (determinant positive) */
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        if ( intmat_det(source->ops[i]) > 0 ) {
+            add_symop(src_reordered, intmat_copy(source->ops[i]));
+            used->mask[i] = 0;
+        }
+    }
 
-	/* Find inversion */
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		if ( intmat_is_inversion(source->ops[i]) ) {
-			add_symop(src_reordered, intmat_copy(source->ops[i]));
-			used->mask[i] = 0;
-		}
-	}
+    /* Find inversion */
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        if ( intmat_is_inversion(source->ops[i]) ) {
+            add_symop(src_reordered, intmat_copy(source->ops[i]));
+            used->mask[i] = 0;
+        }
+    }
 
-	/* Find binary options of second kind (determinant negative) */
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		if ( (order(source->ops[i]) == 2)
-		  && (intmat_det(source->ops[i]) < 0) ) {
-			add_symop(src_reordered, intmat_copy(source->ops[i]));
-			used->mask[i] = 0;
-		}
-	}
+    /* Find binary options of second kind (determinant negative) */
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        if ( (order(source->ops[i]) == 2)
+          && (intmat_det(source->ops[i]) < 0) ) {
+            add_symop(src_reordered, intmat_copy(source->ops[i]));
+            used->mask[i] = 0;
+        }
+    }
 
-	/* Find other operations of second kind (determinant negative) */
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		if ( intmat_det(source->ops[i]) < 0 ) {
-			add_symop(src_reordered, intmat_copy(source->ops[i]));
-			used->mask[i] = 0;
-		}
-	}
+    /* Find other operations of second kind (determinant negative) */
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        if ( intmat_det(source->ops[i]) < 0 ) {
+            add_symop(src_reordered, intmat_copy(source->ops[i]));
+            used->mask[i] = 0;
+        }
+    }
 
-	int n_left_over = 0;
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		n_left_over++;
-	}
-	if ( n_left_over != 0 ) {
-		ERROR("%i operations left over after rearranging for"
-		      " left coset decomposition.\n", n_left_over);
-	}
+    int n_left_over = 0;
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        n_left_over++;
+    }
+    if ( n_left_over != 0 ) {
+        ERROR("%i operations left over after rearranging for"
+              " left coset decomposition.\n", n_left_over);
+    }
 
-	if ( num_ops(src_reordered) != num_ops(source) ) {
-		ERROR("%i ops went to %i after rearranging.\n",
-		      num_ops(src_reordered), num_ops(source));
-	}
+    if ( num_ops(src_reordered) != num_ops(source) ) {
+        ERROR("%i ops went to %i after rearranging.\n",
+              num_ops(src_reordered), num_ops(source));
+    }
 
-	free_symopmask(used);
+    free_symopmask(used);
 
-	return src_reordered;
+    return src_reordered;
 }
 
 
@@ -1527,119 +1527,119 @@ static SymOpList *flack_reorder(const SymOpList *source)
  */
 SymOpList *get_ambiguities(const SymOpList *source, const SymOpList *target)
 {
-	int n_src, n_tgt;
-	int i;
-	SymOpList *twins;
-	SymOpList *src_reordered;
-	SymOpList *tgt_reordered;
-	SymOpMask *used;
-	char *name;
-	int have_identity = 0;
+    int n_src, n_tgt;
+    int i;
+    SymOpList *twins;
+    SymOpList *src_reordered;
+    SymOpList *tgt_reordered;
+    SymOpMask *used;
+    char *name;
+    int have_identity = 0;
 
-	n_src = num_ops(source);
-	n_tgt = num_ops(target);
+    n_src = num_ops(source);
+    n_tgt = num_ops(target);
 
-	if ( !is_subgroup(source, target) ) {
-		ERROR("'%s' is not a subgroup of '%s'\n",
-		      symmetry_name(target), symmetry_name(source));
-		return NULL;
-	}
+    if ( !is_subgroup(source, target) ) {
+        ERROR("'%s' is not a subgroup of '%s'\n",
+              symmetry_name(target), symmetry_name(source));
+        return NULL;
+    }
 
-	if ( n_src % n_tgt != 0 ) {
-		ERROR("Subgroup index would be fractional.\n");
-		return NULL;
-	}
+    if ( n_src % n_tgt != 0 ) {
+        ERROR("Subgroup index would be fractional.\n");
+        return NULL;
+    }
 
-	/* Reorder operations to prefer rotations in the output */
-	src_reordered = flack_reorder(source);
-	if ( src_reordered == NULL ) return NULL;
+    /* Reorder operations to prefer rotations in the output */
+    src_reordered = flack_reorder(source);
+    if ( src_reordered == NULL ) return NULL;
 
-	/* Reorder the subgroup as well, but strictly speaking we only need
-	 * the identity at the beginning */
-	tgt_reordered = flack_reorder(target);
-	if ( tgt_reordered == NULL ) return NULL;
+    /* Reorder the subgroup as well, but strictly speaking we only need
+     * the identity at the beginning */
+    tgt_reordered = flack_reorder(target);
+    if ( tgt_reordered == NULL ) return NULL;
 
-	used = new_symopmask(src_reordered);
-	for ( i=0; i<n_src; i++ ) {
+    used = new_symopmask(src_reordered);
+    for ( i=0; i<n_src; i++ ) {
 
-		int j;
-		if ( used->mask[i] == 0 ) continue;
+        int j;
+        if ( used->mask[i] == 0 ) continue;
 
-		for ( j=1; j<n_tgt; j++ ) {
+        for ( j=1; j<n_tgt; j++ ) {
 
-			int k;
-			for ( k=i+1; k<n_src; k++ ) {
-				if ( check_mult(src_reordered->ops[k],
-				                src_reordered->ops[i],
-				                tgt_reordered->ops[j]) )
-				{
-					used->mask[k] = 0;
-				}
-			}
+            int k;
+            for ( k=i+1; k<n_src; k++ ) {
+                if ( check_mult(src_reordered->ops[k],
+                                src_reordered->ops[i],
+                                tgt_reordered->ops[j]) )
+                {
+                    used->mask[k] = 0;
+                }
+            }
 
-		}
+        }
 
-	}
+    }
 
-	twins = new_symoplist();
-	for ( i=0; i<n_src; i++ ) {
-		if ( used->mask[i] == 0 ) continue;
-		if ( intmat_det(src_reordered->ops[i]) < 0 ) {
-			/* A mirror or inversion turned up in the list.
-			 * That means that no pure rotational ambiguity can
-			 * account for this subgroup relationship. */
-			free_symoplist(twins);
-			free_symopmask(used);
-			free_symoplist(src_reordered);
-			return NULL;
-		}
-		if ( !intmat_is_identity(src_reordered->ops[i]) ) {
-			add_symop(twins, intmat_copy(src_reordered->ops[i]));
-		} else {
-			have_identity = 1;
-		}
+    twins = new_symoplist();
+    for ( i=0; i<n_src; i++ ) {
+        if ( used->mask[i] == 0 ) continue;
+        if ( intmat_det(src_reordered->ops[i]) < 0 ) {
+            /* A mirror or inversion turned up in the list.
+             * That means that no pure rotational ambiguity can
+             * account for this subgroup relationship. */
+            free_symoplist(twins);
+            free_symopmask(used);
+            free_symoplist(src_reordered);
+            return NULL;
+        }
+        if ( !intmat_is_identity(src_reordered->ops[i]) ) {
+            add_symop(twins, intmat_copy(src_reordered->ops[i]));
+        } else {
+            have_identity = 1;
+        }
 
-	}
+    }
 
-	if ( !have_identity ) {
-		ERROR("WARNING: Identity not found during left coset decomp\n");
-	}
+    if ( !have_identity ) {
+        ERROR("WARNING: Identity not found during left coset decomp\n");
+    }
 
-	free_symopmask(used);
-	free_symoplist(src_reordered);
-	free_symoplist(tgt_reordered);
+    free_symopmask(used);
+    free_symoplist(src_reordered);
+    free_symoplist(tgt_reordered);
 
-	name = cfmalloc(64);
-	snprintf(name, 63, "%s -> %s", symmetry_name(source),
-	                               symmetry_name(target));
-	twins->name = name;
+    name = cfmalloc(64);
+    snprintf(name, 63, "%s -> %s", symmetry_name(source),
+                                   symmetry_name(target));
+    twins->name = name;
 
-	return twins;
+    return twins;
 }
 
 
 /* Parse a single symmetry operation, e.g. 'h,-2k,(h+l)/3' */
 RationalMatrix *parse_symmetry_operation(const char *s)
 {
-	YY_BUFFER_STATE b;
-	RationalMatrix *m;
-	int r;
-	void *scanner;
+    YY_BUFFER_STATE b;
+    RationalMatrix *m;
+    int r;
+    void *scanner;
 
-	m = rtnl_mtx_new(3, 3);
-	symoplex_init(&scanner);
-	b = symop_scan_string(s, scanner);
-	r = symopparse(scanner, m, NULL);
-	symop_delete_buffer(b, scanner);
-	symoplex_destroy(scanner);
+    m = rtnl_mtx_new(3, 3);
+    symoplex_init(&scanner);
+    b = symop_scan_string(s, scanner);
+    r = symopparse(scanner, m, NULL);
+    symop_delete_buffer(b, scanner);
+    symoplex_destroy(scanner);
 
-	if ( r ) {
-		ERROR("Failed to parse '%s'\n", s);
-		rtnl_mtx_free(m);
-		return NULL;
-	}
+    if ( r ) {
+        ERROR("Failed to parse '%s'\n", s);
+        rtnl_mtx_free(m);
+        return NULL;
+    }
 
-	return m;
+    return m;
 }
 
 
@@ -1654,7 +1654,7 @@ RationalMatrix *parse_symmetry_operation(const char *s)
  */
 RationalMatrix *parse_cell_transformation(const char *s)
 {
-	return parse_symmetry_operation(s);
+    return parse_symmetry_operation(s);
 }
 
 
@@ -1669,109 +1669,109 @@ RationalMatrix *parse_cell_transformation(const char *s)
  */
 SymOpList *parse_symmetry_operations(const char *s)
 {
-	YY_BUFFER_STATE b;
-	RationalMatrix *m;
-	SymOpList *list;
-	int r;
-	void *scanner;
+    YY_BUFFER_STATE b;
+    RationalMatrix *m;
+    SymOpList *list;
+    int r;
+    void *scanner;
 
-	m = rtnl_mtx_new(3, 3); /* Scratch space for parser */
-	list = new_symoplist(); /* The result we want */
+    m = rtnl_mtx_new(3, 3); /* Scratch space for parser */
+    list = new_symoplist(); /* The result we want */
 
-	symoplex_init(&scanner);
-	b = symop_scan_string(s, scanner);
-	r = symopparse(scanner, m, list);
-	symop_delete_buffer(b, scanner);
-	symoplex_destroy(scanner);
-	rtnl_mtx_free(m);
+    symoplex_init(&scanner);
+    b = symop_scan_string(s, scanner);
+    r = symopparse(scanner, m, list);
+    symop_delete_buffer(b, scanner);
+    symoplex_destroy(scanner);
+    rtnl_mtx_free(m);
 
-	if ( r ) {
-		ERROR("Failed to parse '%s'\n", s);
-		free_symoplist(list);
-		return NULL;
-	}
+    if ( r ) {
+        ERROR("Failed to parse '%s'\n", s);
+        free_symoplist(list);
+        return NULL;
+    }
 
-	return list;
+    return list;
 }
 
 
 static void add_chars(char *t, const char *s, size_t max_len)
 {
-	size_t len;
+    size_t len;
 
-	len = strlen(t) + strlen(s);
-	if ( len > max_len ) {
-		ERROR("get_matrix_name: String too long!\n");
-		return;
-	}
+    len = strlen(t) + strlen(s);
+    if ( len > max_len ) {
+        ERROR("get_matrix_name: String too long!\n");
+        return;
+    }
 
-	strcat(t, s);
+    strcat(t, s);
 }
 
 
 char *get_matrix_name(const IntegerMatrix *m, int col)
 {
-	char *text;
-	const size_t max_len = 31;
-	int i;
-	int printed = 0;
+    char *text;
+    const size_t max_len = 31;
+    int i;
+    int printed = 0;
 
-	text = cfmalloc(max_len+1);
-	text[0] = '\0';
+    text = cfmalloc(max_len+1);
+    text[0] = '\0';
 
-	for ( i=0; i<3; i++ ) {
+    for ( i=0; i<3; i++ ) {
 
-		signed int val;
+        signed int val;
 
-		val = intmat_get(m, i, col);
+        val = intmat_get(m, i, col);
 
-		if ( val == 0 ) continue;
+        if ( val == 0 ) continue;
 
-		if ( val < 0 ) {
-			add_chars(text, "-", max_len);
-		} else {
-			if ( printed ) add_chars(text, "+", max_len);
-		}
+        if ( val < 0 ) {
+            add_chars(text, "-", max_len);
+        } else {
+            if ( printed ) add_chars(text, "+", max_len);
+        }
 
-		if ( abs(val) > 1 ) {
-			char num[11];
-			snprintf(num, 11, "%i", abs(val));
-			add_chars(text, num, max_len);
-		}
+        if ( abs(val) > 1 ) {
+            char num[11];
+            snprintf(num, 11, "%i", abs(val));
+            add_chars(text, num, max_len);
+        }
 
-		switch ( i )
-		{
-			case 0  : add_chars(text, "h", max_len); break;
-			case 1  : add_chars(text, "k", max_len); break;
-			case 2  : add_chars(text, "l", max_len); break;
-			default : add_chars(text, "X", max_len); break;
-		}
+        switch ( i )
+        {
+            case 0  : add_chars(text, "h", max_len); break;
+            case 1  : add_chars(text, "k", max_len); break;
+            case 2  : add_chars(text, "l", max_len); break;
+            default : add_chars(text, "X", max_len); break;
+        }
 
-		printed = 1;
+        printed = 1;
 
-	}
+    }
 
-	return text;
+    return text;
 }
 
 
 char *name_equiv(const IntegerMatrix *op)
 {
-	char *h, *k, *l;
-	char *name;
+    char *h, *k, *l;
+    char *name;
 
-	h = get_matrix_name(op, 0);
-	k = get_matrix_name(op, 1);
-	l = get_matrix_name(op, 2);
-	name = cfmalloc(32);
+    h = get_matrix_name(op, 0);
+    k = get_matrix_name(op, 1);
+    l = get_matrix_name(op, 2);
+    name = cfmalloc(32);
 
-	if ( strlen(h)+strlen(k)+strlen(l) == 3 ) {
-		snprintf(name, 31, "%s%s%s", h, k, l);
-	} else {
-		snprintf(name, 31, "%s,%s,%s", h, k, l);
-	}
+    if ( strlen(h)+strlen(k)+strlen(l) == 3 ) {
+        snprintf(name, 31, "%s%s%s", h, k, l);
+    } else {
+        snprintf(name, 31, "%s,%s,%s", h, k, l);
+    }
 
-	return name;
+    return name;
 }
 
 
@@ -1782,39 +1782,39 @@ char *name_equiv(const IntegerMatrix *op)
  */
 void describe_symmetry(const SymOpList *s)
 {
-	int i, n;
-	size_t max_len = 0;
+    int i, n;
+    size_t max_len = 0;
 
-	n = num_equivs(s, NULL);
+    n = num_equivs(s, NULL);
 
-	STATUS("%15s : ", symmetry_name(s));
+    STATUS("%15s : ", symmetry_name(s));
 
-	for ( i=0; i<n; i++ ) {
-		size_t len;
-		char *name = name_equiv(s->ops[i]);
-		len = strlen(name);
-		if ( len > max_len ) max_len = len;
-		cffree(name);
-	}
-	if ( max_len < 8 ) max_len = 8;
+    for ( i=0; i<n; i++ ) {
+        size_t len;
+        char *name = name_equiv(s->ops[i]);
+        len = strlen(name);
+        if ( len > max_len ) max_len = len;
+        cffree(name);
+    }
+    if ( max_len < 8 ) max_len = 8;
 
-	for ( i=0; i<n; i++ ) {
+    for ( i=0; i<n; i++ ) {
 
-		char *name;
-		size_t m, j;
+        char *name;
+        size_t m, j;
 
-		name = name_equiv(s->ops[i]);
-		m = max_len - strlen(name) + 3;
+        name = name_equiv(s->ops[i]);
+        m = max_len - strlen(name) + 3;
 
-		STATUS("%s", name);
-		for ( j=0; j<m; j++ ) {
-			STATUS(" ");
-		}
-		cffree(name);
-		if ( (i!=0) && (i%8==0) ) STATUS("\n%15s   ", "");
+        STATUS("%s", name);
+        for ( j=0; j<m; j++ ) {
+            STATUS(" ");
+        }
+        cffree(name);
+        if ( (i!=0) && (i%8==0) ) STATUS("\n%15s   ", "");
 
-	}
-	STATUS("\n");
+    }
+    STATUS("\n");
 }
 
 
@@ -1825,7 +1825,7 @@ void describe_symmetry(const SymOpList *s)
  */
 const char *symmetry_name(const SymOpList *ops)
 {
-	return ops->name;
+    return ops->name;
 }
 
 
@@ -1839,5 +1839,5 @@ const char *symmetry_name(const SymOpList *ops)
  */
 void set_symmetry_name(SymOpList *ops, const char *name)
 {
-	ops->name = cfstrdup(name);
+    ops->name = cfstrdup(name);
 }

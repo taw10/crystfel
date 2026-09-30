@@ -34,29 +34,29 @@
 
 int main(int argc, char *argv[])
 {
-	Stream *st;
-	int n;
-	char *stream_filename = argv[1];
+    Stream *st;
+    int n;
+    char *stream_filename = argv[1];
 
-	st = stream_open_for_read(stream_filename);
-	if ( st == NULL ) {
-		fprintf(stderr, "Failed to open '%s'\n",
-		        stream_filename);
-		return 1;
-	}
+    st = stream_open_for_read(stream_filename);
+    if ( st == NULL ) {
+        fprintf(stderr, "Failed to open '%s'\n",
+                stream_filename);
+        return 1;
+    }
 
-	n = 0;
-	do {
+    n = 0;
+    do {
 
-		struct image *image = stream_read_chunk(st, 0);
-		if ( image == NULL ) break;
-		n++;
+        struct image *image = stream_read_chunk(st, 0);
+        if ( image == NULL ) break;
+        n++;
 
-		image_free(image);
+        image_free(image);
 
-	} while ( 1 );
+    } while ( 1 );
 
-	printf("Got %i chunks\n", n);
+    printf("Got %i chunks\n", n);
 
-	return (n != 70);
+    return (n != 70);
 }

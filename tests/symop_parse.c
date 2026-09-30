@@ -35,34 +35,34 @@
 
 int main(int argc, char *argv[])
 {
-	int r = 0;
-	RationalMatrix *mtx;
-	SymOpList *sym;
+    int r = 0;
+    RationalMatrix *mtx;
+    SymOpList *sym;
 
-	mtx = parse_symmetry_operation("h,k,l");
-	if ( !rtnl_mtx_is_identity(mtx) ) {
-		printf("h,k,l not an identity:\n");
-		rtnl_mtx_print(mtx);
-		r = 1;
-	}
+    mtx = parse_symmetry_operation("h,k,l");
+    if ( !rtnl_mtx_is_identity(mtx) ) {
+        printf("h,k,l not an identity:\n");
+        rtnl_mtx_print(mtx);
+        r = 1;
+    }
 
-	mtx = parse_symmetry_operation("k,h,-l");
+    mtx = parse_symmetry_operation("k,h,-l");
 
-	mtx = parse_symmetry_operation("h,k,l");
-	if ( !rtnl_mtx_is_identity(mtx) ) {
-		printf("h,k,l not an identity on second attempt:\n");
-		rtnl_mtx_print(mtx);
-		r = 1;
-	}
+    mtx = parse_symmetry_operation("h,k,l");
+    if ( !rtnl_mtx_is_identity(mtx) ) {
+        printf("h,k,l not an identity on second attempt:\n");
+        rtnl_mtx_print(mtx);
+        r = 1;
+    }
 
-	sym = parse_symmetry_operations("h,k,l;k,h,-l;-h,-k,l");
-	if ( sym == NULL ) r = 1;
+    sym = parse_symmetry_operations("h,k,l;k,h,-l;-h,-k,l");
+    if ( sym == NULL ) r = 1;
 
-	mtx = parse_symmetry_operation("h,k,fail");
-	if ( mtx != NULL ) r = 1;
+    mtx = parse_symmetry_operation("h,k,fail");
+    if ( mtx != NULL ) r = 1;
 
-	sym = parse_symmetry_operations("k,h,-l;h,k,fail;h,k,l");
-	if ( sym != NULL ) r = 1;
+    sym = parse_symmetry_operations("k,h,-l;h,k,fail;h,k,l");
+    if ( sym != NULL ) r = 1;
 
-	return r;
+    return r;
 }

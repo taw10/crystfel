@@ -34,20 +34,20 @@ extern char *substitute_path(const char *ev, const char *pattern, int skip_ok);
 
 int main(int argc, char *argv[])
 {
-	char *subs;
+    char *subs;
 
-	subs = substitute_path("cc/data123/bb//234/59",
-	                       "/data/%/test/%/%", 0);
+    subs = substitute_path("cc/data123/bb//234/59",
+                           "/data/%/test/%/%", 0);
 
-	if ( subs == NULL ) {
-		printf("substitute_path() failed\n");
-		return 1;
-	}
+    if ( subs == NULL ) {
+        printf("substitute_path() failed\n");
+        return 1;
+    }
 
-	if ( strcmp(subs, "/data/cc/test/data123/bb") != 0 ) {
-		printf("Wrong substitution: got '%s'\n", subs);
-		return 1;
-	}
+    if ( strcmp(subs, "/data/cc/test/data123/bb") != 0 ) {
+        printf("Wrong substitution: got '%s'\n", subs);
+        return 1;
+    }
 
-	return 0;
+    return 0;
 }

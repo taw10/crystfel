@@ -46,43 +46,43 @@ extern int integrate_peak(struct image *image,
 static void third_integration_check(struct image *image, int n_trials,
                                     int *fail, gsl_rng *rng)
 {
-	double mean_intensity = 0.0;
-	double mean_sigma = 0.0;
-	int i;
-	int fs, ss;
-	int nfail = 0;
+    double mean_intensity = 0.0;
+    double mean_sigma = 0.0;
+    int i;
+    int fs, ss;
+    int nfail = 0;
 
-	for ( i=0; i<n_trials; i++ ) {
+    for ( i=0; i<n_trials; i++ ) {
 
-		double intensity, sigma;
-		double fsp, ssp;
-		int r;
+        double intensity, sigma;
+        double fsp, ssp;
+        int r;
 
-		for ( fs=0; fs<image->detgeom->panels[0].w; fs++ ) {
-		for ( ss=0; ss<image->detgeom->panels[0].h; ss++ ) {
-			image->dp[0][fs+image->detgeom->panels[0].w*ss]
-			                           = poisson_noise(rng, 1000.0);
-		}
-		}
+        for ( fs=0; fs<image->detgeom->panels[0].w; fs++ ) {
+        for ( ss=0; ss<image->detgeom->panels[0].h; ss++ ) {
+            image->dp[0][fs+image->detgeom->panels[0].w*ss]
+                                       = poisson_noise(rng, 1000.0);
+        }
+        }
 
-		r = integrate_peak(image, 64, 64, 0,
-		                   &fsp, &ssp, &intensity, &sigma,
-		                   10.0, 15.0, 17.0, NULL);
+        r = integrate_peak(image, 64, 64, 0,
+                           &fsp, &ssp, &intensity, &sigma,
+                           10.0, 15.0, 17.0, NULL);
 
-		if ( r == 0 ) {
-			mean_intensity += intensity;
-			mean_sigma += sigma;
-		} else {
-			nfail++;
-		}
+        if ( r == 0 ) {
+            mean_intensity += intensity;
+            mean_sigma += sigma;
+        } else {
+            nfail++;
+        }
 
-	}
-	mean_intensity /= n_trials;
-	mean_sigma /= n_trials;
+    }
+    mean_intensity /= n_trials;
+    mean_sigma /= n_trials;
 
-	STATUS("  Third check (mean values): intensity = %.2f, sigma = %.2f,"
-	       " integration failed %i/%i times\n",
-	       mean_intensity, mean_sigma, nfail, n_trials);
+    STATUS("  Third check (mean values): intensity = %.2f, sigma = %.2f,"
+           " integration failed %i/%i times\n",
+           mean_intensity, mean_sigma, nfail, n_trials);
 
 /* These values are always wrong, because the integration sucks */
 //	if ( fabs(mean_intensity) > 5.0 ) {
@@ -102,215 +102,215 @@ static void third_integration_check(struct image *image, int n_trials,
 static void fourth_integration_check(struct image *image, int n_trials,
                                      int *fail, gsl_rng *rng)
 {
-	double mean_intensity = 0.0;
-	double mean_sigma = 0.0;
-	int i;
-	int fs, ss;
-	int pcount = 0;
-	int nfail = 0;
+    double mean_intensity = 0.0;
+    double mean_sigma = 0.0;
+    int i;
+    int fs, ss;
+    int pcount = 0;
+    int nfail = 0;
 
-	for ( i=0; i<n_trials; i++ ) {
+    for ( i=0; i<n_trials; i++ ) {
 
-		double intensity, sigma;
-		double fsp, ssp;
-		int r;
+        double intensity, sigma;
+        double fsp, ssp;
+        int r;
 
-		for ( fs=0; fs<image->detgeom->panels[0].w; fs++ ) {
-		for ( ss=0; ss<image->detgeom->panels[0].h; ss++ ) {
-			int idx = fs+image->detgeom->panels[0].w*ss;
-			image->dp[0][idx] = poisson_noise(rng, 1000.0);
-			if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-			image->dp[0][idx] += 1000.0;
-			pcount++;
-		}
-		}
+        for ( fs=0; fs<image->detgeom->panels[0].w; fs++ ) {
+        for ( ss=0; ss<image->detgeom->panels[0].h; ss++ ) {
+            int idx = fs+image->detgeom->panels[0].w*ss;
+            image->dp[0][idx] = poisson_noise(rng, 1000.0);
+            if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
+            image->dp[0][idx] += 1000.0;
+            pcount++;
+        }
+        }
 
-		r = integrate_peak(image, 64, 64, 0,
-		                   &fsp, &ssp, &intensity, &sigma,
-		                   10.0, 15.0, 17.0, NULL);
+        r = integrate_peak(image, 64, 64, 0,
+                           &fsp, &ssp, &intensity, &sigma,
+                           10.0, 15.0, 17.0, NULL);
 
-		if ( r == 0 ) {
-			mean_intensity += intensity;
-			mean_sigma += sigma;
-		} else {
-			nfail++;
-		}
+        if ( r == 0 ) {
+            mean_intensity += intensity;
+            mean_sigma += sigma;
+        } else {
+            nfail++;
+        }
 
-	}
-	mean_intensity /= n_trials;
-	mean_sigma /= n_trials;
-	pcount /= n_trials;
+    }
+    mean_intensity /= n_trials;
+    mean_sigma /= n_trials;
+    pcount /= n_trials;
 
-	STATUS(" Fourth check (mean values): intensity = %.2f, sigma = %.2f,"
-	       " integration failed %i/%i times\n",
-	       mean_intensity, mean_sigma, nfail, n_trials);
+    STATUS(" Fourth check (mean values): intensity = %.2f, sigma = %.2f,"
+           " integration failed %i/%i times\n",
+           mean_intensity, mean_sigma, nfail, n_trials);
 
-	if ( fabs(mean_intensity - pcount*1000.0) > 4000.0 ) {
-		ERROR("Mean intensity should be close to %f\n", pcount*1000.0);
-		*fail = 1;
-	}
-	if ( fabs(mean_intensity) < mean_sigma ) {
-		ERROR("Mean intensity should be greater than mean sigma.\n");
-		*fail = 1;
-	}
+    if ( fabs(mean_intensity - pcount*1000.0) > 4000.0 ) {
+        ERROR("Mean intensity should be close to %f\n", pcount*1000.0);
+        *fail = 1;
+    }
+    if ( fabs(mean_intensity) < mean_sigma ) {
+        ERROR("Mean intensity should be greater than mean sigma.\n");
+        *fail = 1;
+    }
 }
 
 
 int main(int argc, char *argv[])
 {
-	struct image image;
-	double fsp, ssp, intensity, sigma;
-	int fs, ss;
-	FILE *fh;
-	unsigned long int seed;
-	int fail = 0;
-	const int n_trials = 100;
-	int r, npx;
-	double ex;
-	gsl_rng *rng;
+    struct image image;
+    double fsp, ssp, intensity, sigma;
+    int fs, ss;
+    FILE *fh;
+    unsigned long int seed;
+    int fail = 0;
+    const int n_trials = 100;
+    int r, npx;
+    double ex;
+    gsl_rng *rng;
 
-	rng = gsl_rng_alloc(gsl_rng_mt19937);
+    rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-	fh = fopen("/dev/urandom", "r");
-	if ( fread(&seed, sizeof(seed), 1, fh) == 1 ) {
-		gsl_rng_set(rng, seed);
-	} else {
-		ERROR("Failed to seed RNG\n");
-	}
-	fclose(fh);
-	gsl_rng_set(rng, seed);
+    fh = fopen("/dev/urandom", "r");
+    if ( fread(&seed, sizeof(seed), 1, fh) == 1 ) {
+        gsl_rng_set(rng, seed);
+    } else {
+        ERROR("Failed to seed RNG\n");
+    }
+    fclose(fh);
+    gsl_rng_set(rng, seed);
 
-	image.dp = malloc(sizeof(float *));
-	image.dp[0] = malloc(128*128*sizeof(float));
-	image.bad = malloc(sizeof(int *));
-	image.bad[0] = calloc(128*128, sizeof(int));
-	image.lambda = ph_eV_to_lambda(1000.0);
+    image.dp = malloc(sizeof(float *));
+    image.dp[0] = malloc(128*128*sizeof(float));
+    image.bad = malloc(sizeof(int *));
+    image.bad[0] = calloc(128*128, sizeof(int));
+    image.lambda = ph_eV_to_lambda(1000.0);
 
-	image.detgeom = calloc(1, sizeof(struct detgeom));
-	image.detgeom->n_panels = 1;
-	image.detgeom->panels = calloc(1, sizeof(struct detgeom_panel));
+    image.detgeom = calloc(1, sizeof(struct detgeom));
+    image.detgeom->n_panels = 1;
+    image.detgeom->panels = calloc(1, sizeof(struct detgeom_panel));
 
-	image.detgeom->panels[0].fsx = 1.0;
-	image.detgeom->panels[0].fsy = 0.0;
-	image.detgeom->panels[0].ssx = 0.0;
-	image.detgeom->panels[0].ssy = 1.0;
-	image.detgeom->panels[0].cnx = -64.0;
-	image.detgeom->panels[0].cny = -64.0;
-	image.detgeom->panels[0].cnz = 1.0;
-	image.detgeom->panels[0].pixel_pitch = 1.0;
-	image.detgeom->panels[0].w = 128;
-	image.detgeom->panels[0].h = 128;
-	image.detgeom->panels[0].adu_per_photon = 1.0;
-	image.detgeom->panels[0].max_adu = +INFINITY;  /* No cutoff */
+    image.detgeom->panels[0].fsx = 1.0;
+    image.detgeom->panels[0].fsy = 0.0;
+    image.detgeom->panels[0].ssx = 0.0;
+    image.detgeom->panels[0].ssy = 1.0;
+    image.detgeom->panels[0].cnx = -64.0;
+    image.detgeom->panels[0].cny = -64.0;
+    image.detgeom->panels[0].cnz = 1.0;
+    image.detgeom->panels[0].pixel_pitch = 1.0;
+    image.detgeom->panels[0].w = 128;
+    image.detgeom->panels[0].h = 128;
+    image.detgeom->panels[0].adu_per_photon = 1.0;
+    image.detgeom->panels[0].max_adu = +INFINITY;  /* No cutoff */
 
-	memset(image.dp[0], 0, 128*128*sizeof(float));
+    memset(image.dp[0], 0, 128*128*sizeof(float));
 
-	image.n_crystals = 0;
-	image.crystals = NULL;
+    image.n_crystals = 0;
+    image.crystals = NULL;
 
-	/* First check: no intensity -> no peak, or very low intensity */
-	r = integrate_peak(&image, 64, 64, 0,
-	                   &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL);
-	STATUS("  First check: integrate_peak() returned %i", r);
-	if ( r == 0 ) {
+    /* First check: no intensity -> no peak, or very low intensity */
+    r = integrate_peak(&image, 64, 64, 0,
+                       &fsp, &ssp, &intensity, &sigma,
+                       10.0, 15.0, 17.0, NULL);
+    STATUS("  First check: integrate_peak() returned %i", r);
+    if ( r == 0 ) {
 
-		STATUS(", intensity = %.2f, sigma = %.2f\n", intensity, sigma);
+        STATUS(", intensity = %.2f, sigma = %.2f\n", intensity, sigma);
 
-		if ( fabs(intensity) > 0.01 ) {
-			ERROR("Intensity should be very close to zero.\n");
-			fail = 1;
-		}
+        if ( fabs(intensity) > 0.01 ) {
+            ERROR("Intensity should be very close to zero.\n");
+            fail = 1;
+        }
 
-	} else {
-		STATUS(" (correct)\n");
-	}
+    } else {
+        STATUS(" (correct)\n");
+    }
 
-	/* Second check: uniform peak gives correct I and low sigma(I) */
-	npx = 0;
-	for ( fs=0; fs<image.detgeom->panels[0].w; fs++ ) {
-	for ( ss=0; ss<image.detgeom->panels[0].h; ss++ ) {
-		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.dp[0][fs+image.detgeom->panels[0].w*ss] = 1000.0;
-		npx++;
-	}
-	}
+    /* Second check: uniform peak gives correct I and low sigma(I) */
+    npx = 0;
+    for ( fs=0; fs<image.detgeom->panels[0].w; fs++ ) {
+    for ( ss=0; ss<image.detgeom->panels[0].h; ss++ ) {
+        if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
+        image.dp[0][fs+image.detgeom->panels[0].w*ss] = 1000.0;
+        npx++;
+    }
+    }
 
-	r = integrate_peak(&image, 64, 64, 0,
-	                   &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL);
-	if ( r ) {
-		ERROR(" Second check: integrate_peak() returned %i (wrong).\n",
-		      r);
-		fail = 1;
-	} else {
+    r = integrate_peak(&image, 64, 64, 0,
+                       &fsp, &ssp, &intensity, &sigma,
+                       10.0, 15.0, 17.0, NULL);
+    if ( r ) {
+        ERROR(" Second check: integrate_peak() returned %i (wrong).\n",
+              r);
+        fail = 1;
+    } else {
 
-		STATUS(" Second check: intensity = %.2f, sigma = %.2f\n",
-		       intensity, sigma);
+        STATUS(" Second check: intensity = %.2f, sigma = %.2f\n",
+               intensity, sigma);
 
-		ex = npx*1000.0;
-		if ( within_tolerance(ex, intensity, 1.0) == 0 ) {
-			ERROR("Intensity should be close to %f\n", ex);
-			fail = 1;
-		}
+        ex = npx*1000.0;
+        if ( within_tolerance(ex, intensity, 1.0) == 0 ) {
+            ERROR("Intensity should be close to %f\n", ex);
+            fail = 1;
+        }
 
-		ex = sqrt(npx*1000.0);
-		if ( within_tolerance(ex, sigma, 1.0) == 0 ) {
-			ERROR("Sigma should be roughly %f.\n", ex);
-			fail = 1;
-		}
+        ex = sqrt(npx*1000.0);
+        if ( within_tolerance(ex, sigma, 1.0) == 0 ) {
+            ERROR("Sigma should be roughly %f.\n", ex);
+            fail = 1;
+        }
 
-	}
+    }
 
-	/* Third check: Poisson background should get mostly subtracted */
-	third_integration_check(&image, n_trials, &fail, rng);
+    /* Third check: Poisson background should get mostly subtracted */
+    third_integration_check(&image, n_trials, &fail, rng);
 
-	/* Fourth check: peak on Poisson background */
-	fourth_integration_check(&image, n_trials, &fail, rng);
+    /* Fourth check: peak on Poisson background */
+    fourth_integration_check(&image, n_trials, &fail, rng);
 
-	/* Fifth check: uniform peak on uniform background */
-	npx = 0;
-	for ( fs=0; fs<image.detgeom->panels[0].w; fs++ ) {
-	for ( ss=0; ss<image.detgeom->panels[0].h; ss++ ) {
-		image.dp[0][fs+image.detgeom->panels[0].w*ss] = 1000.0;
-		if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
-		image.dp[0][fs+image.detgeom->panels[0].w*ss] += 1000.0;
-		npx++;
-	}
-	}
+    /* Fifth check: uniform peak on uniform background */
+    npx = 0;
+    for ( fs=0; fs<image.detgeom->panels[0].w; fs++ ) {
+    for ( ss=0; ss<image.detgeom->panels[0].h; ss++ ) {
+        image.dp[0][fs+image.detgeom->panels[0].w*ss] = 1000.0;
+        if ( (fs-64)*(fs-64) + (ss-64)*(ss-64) > 9*9 ) continue;
+        image.dp[0][fs+image.detgeom->panels[0].w*ss] += 1000.0;
+        npx++;
+    }
+    }
 
-	r = integrate_peak(&image, 64, 64, 0,
-	                   &fsp, &ssp, &intensity, &sigma,
-	                   10.0, 15.0, 17.0, NULL);
-	if ( r ) {
-		ERROR("   Fifth check: integrate_peak() returned %i (wrong).\n",
-		      r);
-		fail = 1;
-	} else {
+    r = integrate_peak(&image, 64, 64, 0,
+                       &fsp, &ssp, &intensity, &sigma,
+                       10.0, 15.0, 17.0, NULL);
+    if ( r ) {
+        ERROR("   Fifth check: integrate_peak() returned %i (wrong).\n",
+              r);
+        fail = 1;
+    } else {
 
-		STATUS("  Fifth check: intensity = %.2f, sigma = %.2f\n",
-		       intensity, sigma);
+        STATUS("  Fifth check: intensity = %.2f, sigma = %.2f\n",
+               intensity, sigma);
 
-		ex = npx*1000.0;
-		if ( within_tolerance(ex, intensity, 1.0) == 0 ) {
-			ERROR("Intensity should be close to %f\n", ex);
-			fail = 1;
-		}
+        ex = npx*1000.0;
+        if ( within_tolerance(ex, intensity, 1.0) == 0 ) {
+            ERROR("Intensity should be close to %f\n", ex);
+            fail = 1;
+        }
 
-		ex = sqrt(npx*1000.0);
-		if ( within_tolerance(ex, sigma, 1.0) == 0 ) {
-			ERROR("Sigma should be roughly %f.\n", ex);
-			fail = 1;
-		}
+        ex = sqrt(npx*1000.0);
+        if ( within_tolerance(ex, sigma, 1.0) == 0 ) {
+            ERROR("Sigma should be roughly %f.\n", ex);
+            fail = 1;
+        }
 
-	}
+    }
 
-	detgeom_free(image.detgeom);
-	free(image.dp[0]);
-	free(image.dp);
-	gsl_rng_free(rng);
+    detgeom_free(image.detgeom);
+    free(image.dp[0]);
+    free(image.dp);
+    gsl_rng_free(rng);
 
-	if ( fail ) return 1;
+    if ( fail ) return 1;
 
-	return 0;
+    return 0;
 }

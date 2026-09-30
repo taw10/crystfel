@@ -35,34 +35,34 @@
 
 int main(int argc, char *argv[])
 {
-	char **event_ids;
-	int n_event_ids;
-	DataTemplate *dtempl;
+    char **event_ids;
+    int n_event_ids;
+    DataTemplate *dtempl;
 
-	dtempl = data_template_new_from_file(argv[2]);
-	if ( dtempl == NULL ) {
-		ERROR("Failed to load data template\n");
-		return 1;
-	}
+    dtempl = data_template_new_from_file(argv[2]);
+    if ( dtempl == NULL ) {
+        ERROR("Failed to load data template\n");
+        return 1;
+    }
 
-	event_ids = image_expand_frames(dtempl, argv[1], &n_event_ids);
+    event_ids = image_expand_frames(dtempl, argv[1], &n_event_ids);
 
-	if ( n_event_ids != 1 ) {
-		printf("n_event_ids = %i\n", n_event_ids);
-		return 1;
-	}
+    if ( n_event_ids != 1 ) {
+        printf("n_event_ids = %i\n", n_event_ids);
+        return 1;
+    }
 
-	if ( event_ids == NULL ) {
-		printf("event_ids not NULL\n");
-		return 1;
-	}
+    if ( event_ids == NULL ) {
+        printf("event_ids not NULL\n");
+        return 1;
+    }
 
-	if ( strcmp(event_ids[0], "//") != 0 ) {
-		printf("Event is not '//' ('%s')\n", event_ids[0]);
-		return 1;
-	}
+    if ( strcmp(event_ids[0], "//") != 0 ) {
+        printf("Event is not '//' ('%s')\n", event_ids[0]);
+        return 1;
+    }
 
-	data_template_free(dtempl);
+    data_template_free(dtempl);
 
-	return 0;
+    return 0;
 }

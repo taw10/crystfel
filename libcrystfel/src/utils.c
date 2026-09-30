@@ -56,25 +56,25 @@
  **/
 void show_matrix_eqn(gsl_matrix *M, gsl_vector *v)
 {
-	int i, j;
+    int i, j;
 
-	if ( M->size1 != v->size ) {
-		ERROR("Matrix and vector sizes don't agree.\n");
-		return;
-	}
+    if ( M->size1 != v->size ) {
+        ERROR("Matrix and vector sizes don't agree.\n");
+        return;
+    }
 
-	for ( i=0; i<M->size1; i++ ) {
-		STATUS("[ ");
-		for ( j=0; j<M->size2; j++ ) {
-			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
-		}
-		if ( i < M->size2 ) {
-			STATUS("][ a%2i ] = [ %+9.3e ]\n", i,
-			       gsl_vector_get(v, i));
-		} else {
-			STATUS("]        = [ +%9.3e ]\n", gsl_vector_get(v, i));
-		}
-	}
+    for ( i=0; i<M->size1; i++ ) {
+        STATUS("[ ");
+        for ( j=0; j<M->size2; j++ ) {
+            STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
+        }
+        if ( i < M->size2 ) {
+            STATUS("][ a%2i ] = [ %+9.3e ]\n", i,
+                   gsl_vector_get(v, i));
+        } else {
+            STATUS("]        = [ +%9.3e ]\n", gsl_vector_get(v, i));
+        }
+    }
 }
 
 
@@ -85,156 +85,156 @@ void show_matrix_eqn(gsl_matrix *M, gsl_vector *v)
  **/
 void show_matrix(gsl_matrix *M)
 {
-	int i, j;
+    int i, j;
 
-	for ( i=0; i<M->size1; i++ ) {
-		STATUS("[ ");
-		for ( j=0; j<M->size2; j++ ) {
-			STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
-		}
-		STATUS("]\n");
-	}
+    for ( i=0; i<M->size1; i++ ) {
+        STATUS("[ ");
+        for ( j=0; j<M->size2; j++ ) {
+            STATUS("%+9.3e ", gsl_matrix_get(M, i, j));
+        }
+        STATUS("]\n");
+    }
 }
 
 
 void show_vector(gsl_vector *v)
 {
-	int i;
+    int i;
 
-	for ( i=0; i<v->size; i++ ) {
-		STATUS("[ ");
-		STATUS("%+9.3e ", gsl_vector_get(v, i));
-		STATUS("]\n");
-	}
+    for ( i=0; i<v->size; i++ ) {
+        STATUS("[ ");
+        STATUS("%+9.3e ", gsl_vector_get(v, i));
+        STATUS("]\n");
+    }
 }
 
 
 void show_vector_oneline(gsl_vector *v)
 {
-	int i;
+    int i;
 
-	STATUS("[ ");
-	for ( i=0; i<v->size; i++ ) {
-		STATUS("%+9.3e ", gsl_vector_get(v, i));
-	}
-	STATUS("]\n");
+    STATUS("[ ");
+    for ( i=0; i<v->size; i++ ) {
+        STATUS("%+9.3e ", gsl_vector_get(v, i));
+    }
+    STATUS("]\n");
 }
 
 
 gsl_matrix *matrix_mult(gsl_matrix *A, gsl_matrix *B)
 {
-	gsl_matrix *r = gsl_matrix_calloc(A->size1, A->size2);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 0.0, r);
-	return r;
+    gsl_matrix *r = gsl_matrix_calloc(A->size1, A->size2);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 0.0, r);
+    return r;
 }
 
 
 gsl_matrix *matrix_mult3(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C)
 {
-	gsl_matrix *tmp = matrix_mult(B, C);
-	gsl_matrix *r = matrix_mult(A, tmp);
-	gsl_matrix_free(tmp);
-	return r;
+    gsl_matrix *tmp = matrix_mult(B, C);
+    gsl_matrix *r = matrix_mult(A, tmp);
+    gsl_matrix_free(tmp);
+    return r;
 }
 
 
 gsl_matrix *matrix_invert(gsl_matrix *m)
 {
-	gsl_permutation *perm;
-	gsl_matrix *inv;
-	int s;
+    gsl_permutation *perm;
+    gsl_matrix *inv;
+    int s;
 
-	perm = gsl_permutation_alloc(m->size1);
-	if ( perm == NULL ) {
-		ERROR("Couldn't allocate permutation\n");
-		return NULL;
-	}
+    perm = gsl_permutation_alloc(m->size1);
+    if ( perm == NULL ) {
+        ERROR("Couldn't allocate permutation\n");
+        return NULL;
+    }
 
-	inv = gsl_matrix_alloc(m->size1, m->size2);
-	if ( inv == NULL ) {
-		ERROR("Couldn't allocate inverse\n");
-		gsl_permutation_free(perm);
-		return NULL;
-	}
+    inv = gsl_matrix_alloc(m->size1, m->size2);
+    if ( inv == NULL ) {
+        ERROR("Couldn't allocate inverse\n");
+        gsl_permutation_free(perm);
+        return NULL;
+    }
 
-	if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
-		ERROR("Couldn't decompose matrix\n");
-		gsl_permutation_free(perm);
-		return NULL;
-	}
+    if ( gsl_linalg_LU_decomp(m, perm, &s) ) {
+        ERROR("Couldn't decompose matrix\n");
+        gsl_permutation_free(perm);
+        return NULL;
+    }
 
-	if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
-		ERROR("Couldn't invert matrix:\n");
-		gsl_permutation_free(perm);
-		return NULL;
-	}
+    if ( gsl_linalg_LU_invert(m, perm, inv)  ) {
+        ERROR("Couldn't invert matrix:\n");
+        gsl_permutation_free(perm);
+        return NULL;
+    }
 
-	gsl_permutation_free(perm);
+    gsl_permutation_free(perm);
 
-	return inv;
+    return inv;
 }
 
 
 gsl_vector *solve_inv(gsl_vector *v, gsl_matrix *M)
 {
-	gsl_matrix *Minv;
-	gsl_vector *s;
-	int n;
+    gsl_matrix *Minv;
+    gsl_vector *s;
+    int n;
 
-	n = v->size;
-	if ( v->size != M->size1 ) return NULL;
-	if ( v->size != M->size2 ) return NULL;
+    n = v->size;
+    if ( v->size != M->size1 ) return NULL;
+    if ( v->size != M->size2 ) return NULL;
 
-	Minv =  matrix_invert(M);
-	if ( Minv == NULL ) return NULL;
+    Minv =  matrix_invert(M);
+    if ( Minv == NULL ) return NULL;
 
-	s = gsl_vector_calloc(n);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, M, v, 0.0, s);
-	return s;
+    s = gsl_vector_calloc(n);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, M, v, 0.0, s);
+    return s;
 }
 
 
 static int check_eigen(gsl_vector *e_val, int verbose)
 {
-	int i;
-	double vmax, vmin;
-	const int n = e_val->size;
-	const double max_condition = 1e6;
-	int n_filt = 0;
+    int i;
+    double vmax, vmin;
+    const int n = e_val->size;
+    const double max_condition = 1e6;
+    int n_filt = 0;
 
-	if ( verbose ) STATUS("Eigenvalues:\n");
-	vmin = +INFINITY;
-	vmax = 0.0;
-	for ( i=0; i<n; i++ ) {
-		double val = gsl_vector_get(e_val, i);
-		if ( verbose ) STATUS("%i: %e\n", i, val);
-		if ( val > vmax ) vmax = val;
-		if ( val < vmin ) vmin = val;
-	}
+    if ( verbose ) STATUS("Eigenvalues:\n");
+    vmin = +INFINITY;
+    vmax = 0.0;
+    for ( i=0; i<n; i++ ) {
+        double val = gsl_vector_get(e_val, i);
+        if ( verbose ) STATUS("%i: %e\n", i, val);
+        if ( val > vmax ) vmax = val;
+        if ( val < vmin ) vmin = val;
+    }
 
-	for ( i=0; i<n; i++ ) {
-		double val = gsl_vector_get(e_val, i);
-		if ( val < vmax/max_condition ) {
-			gsl_vector_set(e_val, i, 0.0);
-			n_filt++;
-		}
-	}
+    for ( i=0; i<n; i++ ) {
+        double val = gsl_vector_get(e_val, i);
+        if ( val < vmax/max_condition ) {
+            gsl_vector_set(e_val, i, 0.0);
+            n_filt++;
+        }
+    }
 
-	vmin = +INFINITY;
-	vmax = 0.0;
-	for ( i=0; i<n; i++ ) {
-		double val = gsl_vector_get(e_val, i);
-		if ( val == 0.0 ) continue;
-		if ( val > vmax ) vmax = val;
-		if ( val < vmin ) vmin = val;
-	}
-	if ( verbose ) {
-		STATUS("Condition number: %e / %e = %5.2f\n",
-		       vmax, vmin, vmax/vmin);
-		STATUS("%i out of %i eigenvalues filtered.\n", n_filt, n);
-	}
+    vmin = +INFINITY;
+    vmax = 0.0;
+    for ( i=0; i<n; i++ ) {
+        double val = gsl_vector_get(e_val, i);
+        if ( val == 0.0 ) continue;
+        if ( val > vmax ) vmax = val;
+        if ( val < vmin ) vmin = val;
+    }
+    if ( verbose ) {
+        STATUS("Condition number: %e / %e = %5.2f\n",
+               vmax, vmin, vmax/vmin);
+        STATUS("%i out of %i eigenvalues filtered.\n", n_filt, n);
+    }
 
-	return n_filt;
+    return n_filt;
 }
 
 
@@ -249,111 +249,111 @@ static int check_eigen(gsl_vector *e_val, int verbose)
  **/
 gsl_vector *solve_svd(gsl_vector *v, gsl_matrix *M, int *pn_filt, int verbose)
 {
-	gsl_matrix *s_vec;
-	gsl_vector *s_val;
-	int err, n;
-	gsl_vector *shifts;
-	gsl_vector *SB;
-	gsl_vector *SinvX;
-	gsl_matrix *S;  /* rescaling matrix due to Bricogne */
-	gsl_matrix *AS;
-	gsl_matrix *SAS;
-	int i;
-	int n_filt;
+    gsl_matrix *s_vec;
+    gsl_vector *s_val;
+    int err, n;
+    gsl_vector *shifts;
+    gsl_vector *SB;
+    gsl_vector *SinvX;
+    gsl_matrix *S;  /* rescaling matrix due to Bricogne */
+    gsl_matrix *AS;
+    gsl_matrix *SAS;
+    int i;
+    int n_filt;
 
-	n = v->size;
-	if ( v->size != M->size1 ) return NULL;
-	if ( v->size != M->size2 ) return NULL;
+    n = v->size;
+    if ( v->size != M->size1 ) return NULL;
+    if ( v->size != M->size2 ) return NULL;
 
-	if ( verbose ) {
-		STATUS("The original equation:\n");
-		show_matrix_eqn(M, v);
-	}
+    if ( verbose ) {
+        STATUS("The original equation:\n");
+        show_matrix_eqn(M, v);
+    }
 
-	/* Calculate the rescaling matrix S */
-	S = gsl_matrix_calloc(n, n);
-	for ( i=0; i<n; i++ ) {
-		double sii = pow(gsl_matrix_get(M, i, i), -0.5);
-		gsl_matrix_set(S, i, i, sii);
-	}
+    /* Calculate the rescaling matrix S */
+    S = gsl_matrix_calloc(n, n);
+    for ( i=0; i<n; i++ ) {
+        double sii = pow(gsl_matrix_get(M, i, i), -0.5);
+        gsl_matrix_set(S, i, i, sii);
+    }
 
-	/* Calculate the matrix SAS, which we will be (not) inverting */
-	AS = gsl_matrix_calloc(n, n);
-	SAS = gsl_matrix_calloc(n, n);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, M, S, 0.0, AS);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, S, AS, 0.0, SAS);
-	gsl_matrix_free(AS);
+    /* Calculate the matrix SAS, which we will be (not) inverting */
+    AS = gsl_matrix_calloc(n, n);
+    SAS = gsl_matrix_calloc(n, n);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, M, S, 0.0, AS);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, S, AS, 0.0, SAS);
+    gsl_matrix_free(AS);
 
-	/* Calculate the vector SB, which is the RHS of the equation */
-	SB = gsl_vector_calloc(n);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, S, v, 0.0, SB);
+    /* Calculate the vector SB, which is the RHS of the equation */
+    SB = gsl_vector_calloc(n);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, S, v, 0.0, SB);
 
-	if ( verbose ) {
-		STATUS("The equation after rescaling:\n");
-		show_matrix_eqn(SAS, SB);
-	}
+    if ( verbose ) {
+        STATUS("The equation after rescaling:\n");
+        show_matrix_eqn(SAS, SB);
+    }
 
-	for ( i=0; i<n; i++ ) {
-		int j;
-		if ( isnan(gsl_vector_get(SB, i)) ) gsl_vector_set(SB, i, 0.0);
-		for ( j=0; j<n; j++ ) {
-			if ( isnan(gsl_matrix_get(SAS, i, j)) ) {
-				gsl_matrix_set(SAS, i, j, 0.0);
-			}
-		}
-	}
+    for ( i=0; i<n; i++ ) {
+        int j;
+        if ( isnan(gsl_vector_get(SB, i)) ) gsl_vector_set(SB, i, 0.0);
+        for ( j=0; j<n; j++ ) {
+            if ( isnan(gsl_matrix_get(SAS, i, j)) ) {
+                gsl_matrix_set(SAS, i, j, 0.0);
+            }
+        }
+    }
 
-	/* Do the SVD */
-	s_val = gsl_vector_calloc(n);
-	s_vec = gsl_matrix_calloc(n, n);
-	gsl_vector *work = gsl_vector_calloc(n);
-	err = gsl_linalg_SV_decomp(SAS, s_vec, s_val, work);
-	gsl_vector_free(work);
-	if ( err ) {
-		if ( verbose ) ERROR("SVD failed: %s\n", gsl_strerror(err));
-		gsl_matrix_free(s_vec);
-		gsl_vector_free(s_val);
-		gsl_matrix_free(SAS);
-		gsl_matrix_free(S);
-		return NULL;
-	}
-	/* "SAS" is now "U" */
+    /* Do the SVD */
+    s_val = gsl_vector_calloc(n);
+    s_vec = gsl_matrix_calloc(n, n);
+    gsl_vector *work = gsl_vector_calloc(n);
+    err = gsl_linalg_SV_decomp(SAS, s_vec, s_val, work);
+    gsl_vector_free(work);
+    if ( err ) {
+        if ( verbose ) ERROR("SVD failed: %s\n", gsl_strerror(err));
+        gsl_matrix_free(s_vec);
+        gsl_vector_free(s_val);
+        gsl_matrix_free(SAS);
+        gsl_matrix_free(S);
+        return NULL;
+    }
+    /* "SAS" is now "U" */
 
-	/* Filter the eigenvalues */
-	n_filt = check_eigen(s_val, verbose);
-	if ( pn_filt != NULL ) *pn_filt = n_filt;
+    /* Filter the eigenvalues */
+    n_filt = check_eigen(s_val, verbose);
+    if ( pn_filt != NULL ) *pn_filt = n_filt;
 
-	/* Solve the equation SAS.SinvX = SB */
-	SinvX = gsl_vector_calloc(n);
-	err = gsl_linalg_SV_solve(SAS, s_vec, s_val, SB, SinvX);
-	gsl_vector_free(SB);
-	gsl_matrix_free(SAS);
-	gsl_matrix_free(s_vec);
-	gsl_vector_free(s_val);
+    /* Solve the equation SAS.SinvX = SB */
+    SinvX = gsl_vector_calloc(n);
+    err = gsl_linalg_SV_solve(SAS, s_vec, s_val, SB, SinvX);
+    gsl_vector_free(SB);
+    gsl_matrix_free(SAS);
+    gsl_matrix_free(s_vec);
+    gsl_vector_free(s_val);
 
-	if ( err ) {
-		ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
-		gsl_matrix_free(S);
-		gsl_vector_free(SinvX);
-		return NULL;
-	}
+    if ( err ) {
+        ERROR("Matrix solution failed: %s\n", gsl_strerror(err));
+        gsl_matrix_free(S);
+        gsl_vector_free(SinvX);
+        return NULL;
+    }
 
-	/* Calculate S.SinvX to get X, the shifts */
-	shifts = gsl_vector_calloc(n);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, S, SinvX, 0.0, shifts);
+    /* Calculate S.SinvX to get X, the shifts */
+    shifts = gsl_vector_calloc(n);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, S, SinvX, 0.0, shifts);
 
-	gsl_matrix_free(S);
-	gsl_vector_free(SinvX);
+    gsl_matrix_free(S);
+    gsl_vector_free(SinvX);
 
-	if ( verbose ) {
-		int i;
-		STATUS("The solution:\n");
-		for ( i=0; i<shifts->size; i++ ) {
-			STATUS(" %2i : %e\n", i, gsl_vector_get(shifts, i));
-		}
-	}
+    if ( verbose ) {
+        int i;
+        STATUS("The solution:\n");
+        for ( i=0; i<shifts->size; i++ ) {
+            STATUS(" %2i : %e\n", i, gsl_vector_get(shifts, i));
+        }
+    }
 
-	return shifts;
+    return shifts;
 }
 
 
@@ -366,13 +366,13 @@ pthread_mutex_t stderr_lock = PTHREAD_MUTEX_INITIALIZER;
 static void log_to_stderr(enum log_msg_type type, const char *msg,
                           void *vp)
 {
-	int error_print_val = get_status_label();
-	pthread_mutex_lock(&stderr_lock);
-	if ( error_print_val >= 0 ) {
-		fprintf(stderr, "%3i: ", error_print_val);
-	}
-	fprintf(stderr, "%s", msg);
-	pthread_mutex_unlock(&stderr_lock);
+    int error_print_val = get_status_label();
+    pthread_mutex_lock(&stderr_lock);
+    if ( error_print_val >= 0 ) {
+        fprintf(stderr, "%3i: ", error_print_val);
+    }
+    fprintf(stderr, "%s", msg);
+    pthread_mutex_unlock(&stderr_lock);
 }
 
 
@@ -383,60 +383,60 @@ void *log_msg_vp = NULL;
 
 void set_log_message_func(LogMsgFunc new_log_msg_func, void *vp)
 {
-	log_msg_func = new_log_msg_func;
-	log_msg_vp = vp;
+    log_msg_func = new_log_msg_func;
+    log_msg_vp = vp;
 }
 
 
 void STATUS(const char *format, ...)
 {
-	va_list args;
-	char tmp[1024];
-	va_start(args, format);
-	vsnprintf(tmp, 1024, format, args);
-	va_end(args);
-	log_msg_func(LOG_MSG_STATUS, tmp, log_msg_vp);
+    va_list args;
+    char tmp[1024];
+    va_start(args, format);
+    vsnprintf(tmp, 1024, format, args);
+    va_end(args);
+    log_msg_func(LOG_MSG_STATUS, tmp, log_msg_vp);
 }
 
 
 void ERROR(const char *format, ...)
 {
-	va_list args;
-	char tmp[1024];
-	va_start(args, format);
-	vsnprintf(tmp, 1024, format, args);
-	va_end(args);
-	log_msg_func(LOG_MSG_ERROR, tmp, log_msg_vp);
+    va_list args;
+    char tmp[1024];
+    va_start(args, format);
+    vsnprintf(tmp, 1024, format, args);
+    va_end(args);
+    log_msg_func(LOG_MSG_ERROR, tmp, log_msg_vp);
 }
 
 
 /* ---------------------------- Memory management --------------------------- */
 
 struct _mmconf {
-	void *(*malloc)(size_t size);
-	void (*free)(void *ptr);
-	void *(*calloc)(size_t nmemb, size_t size);
-	void *(*realloc)(void *ptr, size_t size);
+    void *(*malloc)(size_t size);
+    void (*free)(void *ptr);
+    void *(*calloc)(size_t nmemb, size_t size);
+    void *(*realloc)(void *ptr, size_t size);
 } mm_conf = { malloc, free, calloc, realloc };
 
 void *cfmalloc(size_t size)
 {
-	return mm_conf.malloc(size);
+    return mm_conf.malloc(size);
 }
 
 void cffree(void *ptr)
 {
-	mm_conf.free(ptr);
+    mm_conf.free(ptr);
 }
 
 void *cfcalloc(size_t nmemb, size_t size)
 {
-	return mm_conf.calloc(nmemb, size);
+    return mm_conf.calloc(nmemb, size);
 }
 
 void *cfrealloc(void *ptr, size_t size)
 {
-	return mm_conf.realloc(ptr, size);
+    return mm_conf.realloc(ptr, size);
 }
 
 int set_mm_funcs(void *(*cfmalloc)(size_t size),
@@ -444,46 +444,46 @@ int set_mm_funcs(void *(*cfmalloc)(size_t size),
                  void *(*cfcalloc)(size_t nmemb, size_t size),
                  void *(*cfrealloc)(void *ptr, size_t size))
 {
-	mm_conf.malloc = cfmalloc;
-	mm_conf.free = cffree;
-	mm_conf.calloc = cfcalloc;
-	mm_conf.realloc = cfrealloc;
-	return 0;
+    mm_conf.malloc = cfmalloc;
+    mm_conf.free = cffree;
+    mm_conf.calloc = cfcalloc;
+    mm_conf.realloc = cfrealloc;
+    return 0;
 }
 
 char *cfstrdup(const char *s)
 {
-	size_t l = strlen(s);
-	char *r = cfmalloc(l+1);
-	if ( r == NULL ) return NULL;
-	strcpy(r, s);
-	return r;
+    size_t l = strlen(s);
+    char *r = cfmalloc(l+1);
+    if ( r == NULL ) return NULL;
+    strcpy(r, s);
+    return r;
 }
 
 char *cfstrndup(const char *s, size_t n)
 {
-	char *r = cfmalloc(n+1);
-	if ( r == NULL ) return NULL;
-	strncpy(r, s, n);
-	r[n] = '\0';
-	return r;
+    char *r = cfmalloc(n+1);
+    if ( r == NULL ) return NULL;
+    strncpy(r, s, n);
+    r[n] = '\0';
+    return r;
 }
 
 void *srealloc(void *arr, size_t new_size)
 {
-	void *new_arr = cfrealloc(arr, new_size);
-	if ( new_arr == NULL ) {
-		cffree(arr);
-		return NULL;
-	} else {
-		return new_arr;
-	}
+    void *new_arr = cfrealloc(arr, new_size);
+    if ( new_arr == NULL ) {
+        cffree(arr);
+        return NULL;
+    } else {
+        return new_arr;
+    }
 }
 
 char *safe_strdup(const char *in)
 {
-	if ( in == NULL ) return NULL;
-	return cfstrdup(in);
+    if ( in == NULL ) return NULL;
+    return cfstrdup(in);
 }
 
 
@@ -491,39 +491,39 @@ char *safe_strdup(const char *in)
 
 static void set_last_task_dummy(const char *task, void *vp)
 {
-	/* Do nothing */
+    /* Do nothing */
 }
 
 static int notify_alive_dummy(void *vp)
 {
-	/* Do nothing */
-	return 0;
+    /* Do nothing */
+    return 0;
 }
 
 struct _debugconf {
-	void (*set_last_task)(const char *task, void *vp);
-	int (*notify_alive)(void *vp);
-	void *debug_data;
+    void (*set_last_task)(const char *task, void *vp);
+    int (*notify_alive)(void *vp);
+    void *debug_data;
 } debug_conf = { set_last_task_dummy, notify_alive_dummy, NULL };
 
 int set_debug_funcs(void (*slt)(const char *, void *),
                     int (*ping)(void *),
                     void *vp)
 {
-	debug_conf.set_last_task = slt;
-	debug_conf.notify_alive = ping;
-	debug_conf.debug_data = vp;
-	return 0;
+    debug_conf.set_last_task = slt;
+    debug_conf.notify_alive = ping;
+    debug_conf.debug_data = vp;
+    return 0;
 }
 
 void set_last_task(const char *task)
 {
-	debug_conf.set_last_task(task, debug_conf.debug_data);
+    debug_conf.set_last_task(task, debug_conf.debug_data);
 }
 
 int notify_alive()
 {
-	return debug_conf.notify_alive(debug_conf.debug_data);
+    return debug_conf.notify_alive(debug_conf.debug_data);
 }
 
 
@@ -531,206 +531,206 @@ int notify_alive()
 
 int convert_int(const char *str, int *pval)
 {
-	long int val;
-	char *rval;
+    long int val;
+    char *rval;
 
-	val = strtol(str, &rval, 10);
-	if ( *rval != '\0' ) {
-		return 1;
-	} else {
-		*pval = val;
-		return 0;
-	}
+    val = strtol(str, &rval, 10);
+    if ( *rval != '\0' ) {
+        return 1;
+    } else {
+        *pval = val;
+        return 0;
+    }
 }
 
 
 int convert_long_int(const char *str, long long int *pval)
 {
-	long long int val;
-	char *rval;
+    long long int val;
+    char *rval;
 
-	val = strtoll(str, &rval, 10);
-	if ( *rval != '\0' ) {
-		return 1;
-	} else {
-		*pval = val;
-		return 0;
-	}
+    val = strtoll(str, &rval, 10);
+    if ( *rval != '\0' ) {
+        return 1;
+    } else {
+        *pval = val;
+        return 0;
+    }
 }
 
 
 int convert_float(const char *str, double *pval)
 {
-	double val;
-	char *rval;
+    double val;
+    char *rval;
 
-	val = strtod(str, &rval);
-	if ( *rval != '\0' ) {
-		return 1;
-	} else {
-		*pval = val;
-		return 0;
-	}
+    val = strtod(str, &rval);
+    if ( *rval != '\0' ) {
+        return 1;
+    } else {
+        *pval = val;
+        return 0;
+    }
 }
 
 
 size_t notrail(char *s)
 {
-	ssize_t i;
-	size_t munched = 0;
+    ssize_t i;
+    size_t munched = 0;
 
-	for ( i=strlen(s)-1; i>=0; i-- ) {
-		if ( (s[i] == ' ') || (s[i] == '\t') ) {
-			s[i] = '\0';
-			munched++;
-		} else {
-			return munched;
-		}
-	}
+    for ( i=strlen(s)-1; i>=0; i-- ) {
+        if ( (s[i] == ' ') || (s[i] == '\t') ) {
+            s[i] = '\0';
+            munched++;
+        } else {
+            return munched;
+        }
+    }
 
-	return munched;
+    return munched;
 }
 
 
 void chomp(char *s)
 {
-	size_t i;
-	size_t len;
+    size_t i;
+    size_t len;
 
-	if ( s == NULL ) return;
-	len = strlen(s);
+    if ( s == NULL ) return;
+    len = strlen(s);
 
-	for ( i=0; i<len; i++ ) {
-		if ( (s[i] == '\n') || (s[i] == '\r') ) {
-			s[i] = '\0';
-			return;
-		}
-	}
+    for ( i=0; i<len; i++ ) {
+        if ( (s[i] == '\n') || (s[i] == '\r') ) {
+            s[i] = '\0';
+            return;
+        }
+    }
 }
 
 
 void progress_bar(int val, int total, const char *text)
 {
-	double frac;
-	int n, i;
-	char s[1024];
-	const int width = 50;
+    double frac;
+    int n, i;
+    char s[1024];
+    const int width = 50;
 
-	if ( total == 0 ) return;
+    if ( total == 0 ) return;
 
-	if ( !isatty(STDERR_FILENO) ) return;
-	if ( tcgetpgrp(STDERR_FILENO) != getpgrp() ) return;
+    if ( !isatty(STDERR_FILENO) ) return;
+    if ( tcgetpgrp(STDERR_FILENO) != getpgrp() ) return;
 
-	frac = (double)val/total;
-	n = (int)(frac*width);
+    frac = (double)val/total;
+    n = (int)(frac*width);
 
-	for ( i=0; i<n; i++ ) s[i] = '=';
-	for ( i=n; i<width; i++ ) s[i] = '.';
-	s[width] = '\0';
+    for ( i=0; i<n; i++ ) s[i] = '=';
+    for ( i=n; i<width; i++ ) s[i] = '.';
+    s[width] = '\0';
 
-	pthread_mutex_lock(&stderr_lock);
-	fprintf(stderr, "\r%s: |%s|", text, s);
-	if ( val == total ) fprintf(stderr, "\n");
-	pthread_mutex_unlock(&stderr_lock);
+    pthread_mutex_lock(&stderr_lock);
+    fprintf(stderr, "\r%s: |%s|", text, s);
+    if ( val == total ) fprintf(stderr, "\n");
+    pthread_mutex_unlock(&stderr_lock);
 
-	fflush(stdout);
+    fflush(stdout);
 }
 
 
 void rotate2d(double *x, double *y, double cx, double cy, double ang)
 {
-	double nx, ny;
-	nx = cx + (*x-cx)*cos(ang) - (*y-cy)*sin(ang);
-	ny = cy + (*x-cx)*sin(ang) + (*y-cy)*cos(ang);
-	*x = nx;  *y = ny;
+    double nx, ny;
+    nx = cx + (*x-cx)*cos(ang) - (*y-cy)*sin(ang);
+    ny = cy + (*x-cx)*sin(ang) + (*y-cy)*cos(ang);
+    *x = nx;  *y = ny;
 }
 
 
 double random_flat(gsl_rng *rng, double max)
 {
-	return max * gsl_rng_uniform(rng);
+    return max * gsl_rng_uniform(rng);
 }
 
 
 double flat_noise(gsl_rng *rng, double expected, double width)
 {
-	double noise = random_flat(rng, 2.0*width);
-	return expected+noise-width;
+    double noise = random_flat(rng, 2.0*width);
+    return expected+noise-width;
 }
 
 
 double gaussian_noise(gsl_rng *rng, double expected, double stddev)
 {
-	double x1, x2, noise;
+    double x1, x2, noise;
 
-	/* Generate two uniformly distributed random numbers between 0 and 1,
-	 * including 1 but not 0. */
-	x1 = 1.0 - gsl_rng_uniform(rng);
-	x2 = 1.0 - gsl_rng_uniform(rng);
+    /* Generate two uniformly distributed random numbers between 0 and 1,
+     * including 1 but not 0. */
+    x1 = 1.0 - gsl_rng_uniform(rng);
+    x2 = 1.0 - gsl_rng_uniform(rng);
 
-	noise = sqrt(-2.0*log(x1)) * cos(2.0*M_PI*x2);
+    noise = sqrt(-2.0*log(x1)) * cos(2.0*M_PI*x2);
 
-	return expected + noise*stddev;
+    return expected + noise*stddev;
 }
 
 
 static int fake_poisson_noise(gsl_rng *rng, double expected)
 {
-	double rf = gaussian_noise(rng, expected, sqrt(expected));
-	return (int)rf;
+    double rf = gaussian_noise(rng, expected, sqrt(expected));
+    return (int)rf;
 }
 
 
 int poisson_noise(gsl_rng *rng, double expected)
 {
-	double L;
-	int k = 0;
-	double p = 1.0;
+    double L;
+    int k = 0;
+    double p = 1.0;
 
-	/* For large values of the mean, we get big problems with arithmetic.
-	 * In such cases, fall back on a Gaussian with the right variance. */
-	if ( expected > 100.0 ) return fake_poisson_noise(rng, expected);
+    /* For large values of the mean, we get big problems with arithmetic.
+     * In such cases, fall back on a Gaussian with the right variance. */
+    if ( expected > 100.0 ) return fake_poisson_noise(rng, expected);
 
-	L = exp(-expected);
+    L = exp(-expected);
 
-	do {
+    do {
 
-		double r;
+        double r;
 
-		k++;
-		r = gsl_rng_uniform(rng);
-		p *= r;
+        k++;
+        r = gsl_rng_uniform(rng);
+        p *= r;
 
-	} while ( p > L );
+    } while ( p > L );
 
-	return k - 1;
+    return k - 1;
 }
 
 
 /* Return non-zero if c is in delims */
 static int assplode_isdelim(const char c, const char *delims)
 {
-	size_t i;
-	for ( i=0; i<strlen(delims); i++ ) {
-		if ( c == delims[i] ) return 1;
-	}
-	return 0;
+    size_t i;
+    for ( i=0; i<strlen(delims); i++ ) {
+        if ( c == delims[i] ) return 1;
+    }
+    return 0;
 }
 
 
 static int assplode_extract(char ***pbits, int n, size_t n_captured,
                             size_t start, const char *a)
 {
-	char **bits = *pbits;
-	bits = cfrealloc(bits, sizeof(char *)*(n+1));
-	assert(bits != NULL);
-	bits[n] = cfmalloc(n_captured+1);
-	assert(bits[n] != NULL);
-	memcpy(bits[n], a+start, n_captured);
-	bits[n][n_captured] = '\0';
-	n++;
-	*pbits = bits;
-	return n;
+    char **bits = *pbits;
+    bits = cfrealloc(bits, sizeof(char *)*(n+1));
+    assert(bits != NULL);
+    bits[n] = cfmalloc(n_captured+1);
+    assert(bits[n] != NULL);
+    memcpy(bits[n], a+start, n_captured);
+    bits[n][n_captured] = '\0';
+    n++;
+    *pbits = bits;
+    return n;
 }
 
 
@@ -746,170 +746,170 @@ static int assplode_extract(char ***pbits, int n, size_t n_captured,
 int assplode(const char *a, const char *delims, char ***pbits,
              AssplodeFlag flags)
 {
-	size_t i, start, n_captured;
-	int n, last_was_delim;
-	char **bits;
+    size_t i, start, n_captured;
+    int n, last_was_delim;
+    char **bits;
 
-	n = 0;
-	i = 0;
-	n_captured = 0;
-	start = 0;
-	last_was_delim = 0;
-	bits = NULL;
-	while ( i < strlen(a) ) {
+    n = 0;
+    i = 0;
+    n_captured = 0;
+    start = 0;
+    last_was_delim = 0;
+    bits = NULL;
+    while ( i < strlen(a) ) {
 
-		if ( assplode_isdelim(a[i], delims) ) {
+        if ( assplode_isdelim(a[i], delims) ) {
 
-			if ( n_captured > 0 ) {
-				/* This is a deliminator after a sequence of
-				 * non-deliminator chars */
-				n = assplode_extract(&bits, n, n_captured,
-				                     start, a);
-			}
+            if ( n_captured > 0 ) {
+                /* This is a deliminator after a sequence of
+                 * non-deliminator chars */
+                n = assplode_extract(&bits, n, n_captured,
+                                     start, a);
+            }
 
-			n_captured = 0;
-			if ( (flags & ASSPLODE_DUPS) && last_was_delim ) {
-				n = assplode_extract(&bits, n, 0, start, a);
-			}
-			last_was_delim = 1;
+            n_captured = 0;
+            if ( (flags & ASSPLODE_DUPS) && last_was_delim ) {
+                n = assplode_extract(&bits, n, 0, start, a);
+            }
+            last_was_delim = 1;
 
-		} else {
+        } else {
 
-			if ( n_captured == 0 ) {
-				/* No characters currently found, so this is the
-				 * start */
-				start = i;
-			}
-			n_captured++;
-			last_was_delim = 0;
+            if ( n_captured == 0 ) {
+                /* No characters currently found, so this is the
+                 * start */
+                start = i;
+            }
+            n_captured++;
+            last_was_delim = 0;
 
-		}
+        }
 
-		i++;
+        i++;
 
-	}
-	/* Left over characters at the end? */
-	if ( n_captured > 0 ) {
-		n = assplode_extract(&bits, n, n_captured, start, a);
-	}
+    }
+    /* Left over characters at the end? */
+    if ( n_captured > 0 ) {
+        n = assplode_extract(&bits, n, n_captured, start, a);
+    }
 
-	*pbits = bits;
-	return n;
+    *pbits = bits;
+    return n;
 }
 
 
 char *check_prefix(char *prefix)
 {
-	int r;
-	struct stat statbuf;
-	char *new;
-	size_t len;
+    int r;
+    struct stat statbuf;
+    char *new;
+    size_t len;
 
-	if ( prefix[0] == '\0' ) return prefix;
+    if ( prefix[0] == '\0' ) return prefix;
 
-	/* Is "prefix" a directory? */
-	r = stat(prefix, &statbuf);
-	if ( r != 0 ) {
-		/* "prefix" probably doesn't exist.  This is fine - assume
-		 * the user knows what they're doing, and that "prefix"
-		 * suffixed with the actual filename will produce something
-		 * sensible. */
-		return prefix;
-	}
+    /* Is "prefix" a directory? */
+    r = stat(prefix, &statbuf);
+    if ( r != 0 ) {
+        /* "prefix" probably doesn't exist.  This is fine - assume
+         * the user knows what they're doing, and that "prefix"
+         * suffixed with the actual filename will produce something
+         * sensible. */
+        return prefix;
+    }
 
-	if ( !S_ISDIR(statbuf.st_mode) ) {
-		/* Also fine, as above. */
-		return prefix;
-	}
+    if ( !S_ISDIR(statbuf.st_mode) ) {
+        /* Also fine, as above. */
+        return prefix;
+    }
 
-	/* Does the prefix end in a slash? */
-	if ( prefix[strlen(prefix)-1] == '/' ) {
-		/* This looks sensible. */
-		return prefix;
-	}
+    /* Does the prefix end in a slash? */
+    if ( prefix[strlen(prefix)-1] == '/' ) {
+        /* This looks sensible. */
+        return prefix;
+    }
 
-	STATUS("Your prefix ('%s') is a directory, but doesn't end"
-	       " with a slash.  I'm going to add it for you.\n", prefix);
-	STATUS("If this isn't what you want, run with --no-check-prefix.\n");
-	len = strlen(prefix)+2;
-	new = cfmalloc(len);
-	snprintf(new, len, "%s/", prefix);
-	cffree(prefix);
-	return new;
+    STATUS("Your prefix ('%s') is a directory, but doesn't end"
+           " with a slash.  I'm going to add it for you.\n", prefix);
+    STATUS("If this isn't what you want, run with --no-check-prefix.\n");
+    len = strlen(prefix)+2;
+    new = cfmalloc(len);
+    snprintf(new, len, "%s/", prefix);
+    cffree(prefix);
+    return new;
 }
 
 
 char *safe_basename(const char *in)
 {
-	int i;
-	char *cpy;
-	char *res;
+    int i;
+    char *cpy;
+    char *res;
 
-	cpy = cfstrdup(in);
+    cpy = cfstrdup(in);
 
-	/* Get rid of any trailing slashes */
-	for ( i=strlen(cpy)-1; i>0; i-- ) {
-		if ( cpy[i] == '/' ) {
-			cpy[i] = '\0';
-		} else {
-			break;
-		}
-	}
+    /* Get rid of any trailing slashes */
+    for ( i=strlen(cpy)-1; i>0; i-- ) {
+        if ( cpy[i] == '/' ) {
+            cpy[i] = '\0';
+        } else {
+            break;
+        }
+    }
 
-	/* Find the base name */
-	for ( i=strlen(cpy)-1; i>0; i-- ) {
-		if ( cpy[i] == '/' ) {
-			i++;
-			break;
-		}
-	}
+    /* Find the base name */
+    for ( i=strlen(cpy)-1; i>0; i-- ) {
+        if ( cpy[i] == '/' ) {
+            i++;
+            break;
+        }
+    }
 
-	res = cfstrdup(cpy+i);
-	/* If we didn't find a previous slash, i==0 so res==cpy */
+    res = cfstrdup(cpy+i);
+    /* If we didn't find a previous slash, i==0 so res==cpy */
 
-	cffree(cpy);
+    cffree(cpy);
 
-	return res;
+    return res;
 }
 
 
 void strip_extension(char *bfn)
 {
-	size_t r = strlen(bfn);
+    size_t r = strlen(bfn);
 
-	if ( r < 3 ) return;
+    if ( r < 3 ) return;
 
-	r -= 1;
-	while ( r > 1 ) {   /* Don't strip down to nothing */
-		if ( bfn[r] == '.') {
-			bfn[r] = '\0';
-			return;
-		}
-		r--;
-	}
+    r -= 1;
+    while ( r > 1 ) {   /* Don't strip down to nothing */
+        if ( bfn[r] == '.') {
+            bfn[r] = '\0';
+            return;
+        }
+        r--;
+    }
 }
 
 
 const char *filename_extension(const char *fn, const char **pext2)
 {
-	const char *ext = NULL;
-	const char *ext2 = NULL;
-	size_t r = strlen(fn)-1;
+    const char *ext = NULL;
+    const char *ext2 = NULL;
+    size_t r = strlen(fn)-1;
 
-	while ( r > 0 ) {
-		if ( fn[r] == '.' ) {
-			if ( ext != NULL ) {
-				ext2 = fn+r;
-				break;
-			} else {
-				ext = fn+r;
-			}
-		}
-		r--;
-	}
+    while ( r > 0 ) {
+        if ( fn[r] == '.' ) {
+            if ( ext != NULL ) {
+                ext2 = fn+r;
+                break;
+            } else {
+                ext = fn+r;
+            }
+        }
+        r--;
+    }
 
-	if ( pext2 != NULL ) *pext2 = ext2;
-	return ext;
+    if ( pext2 != NULL ) *pext2 = ext2;
+    return ext;
 }
 
 
@@ -929,7 +929,7 @@ void utils_fudge_gslcblas()
  **/
 double quaternion_modulus(struct quaternion q)
 {
-	return sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+    return sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
 }
 
 
@@ -942,17 +942,17 @@ double quaternion_modulus(struct quaternion q)
  **/
 struct quaternion normalise_quaternion(struct quaternion q)
 {
-	double mod;
-	struct quaternion r;
+    double mod;
+    struct quaternion r;
 
-	mod = quaternion_modulus(q);
+    mod = quaternion_modulus(q);
 
-	r.w = q.w / mod;
-	r.x = q.x / mod;
-	r.y = q.y / mod;
-	r.z = q.z / mod;
+    r.w = q.w / mod;
+    r.x = q.x / mod;
+    r.y = q.y / mod;
+    r.z = q.z / mod;
 
-	return r;
+    return r;
 }
 
 
@@ -963,15 +963,15 @@ struct quaternion normalise_quaternion(struct quaternion q)
  **/
 struct quaternion random_quaternion(gsl_rng *rng)
 {
-	struct quaternion q;
+    struct quaternion q;
 
-	q.w = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q.x = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q.y = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q.z = 2.0*gsl_rng_uniform(rng) - 1.0;
-	q = normalise_quaternion(q);
+    q.w = 2.0*gsl_rng_uniform(rng) - 1.0;
+    q.x = 2.0*gsl_rng_uniform(rng) - 1.0;
+    q.y = 2.0*gsl_rng_uniform(rng) - 1.0;
+    q.z = 2.0*gsl_rng_uniform(rng) - 1.0;
+    q = normalise_quaternion(q);
 
-	return q;
+    return q;
 }
 
 
@@ -988,15 +988,15 @@ struct quaternion random_quaternion(gsl_rng *rng)
  **/
 int quaternion_valid(struct quaternion q)
 {
-	double qmod;
+    double qmod;
 
-	qmod = quaternion_modulus(q);
+    qmod = quaternion_modulus(q);
 
-	/* Modulus = 1 to within some tolerance?
-	 * Nasty allowance for floating-point accuracy follows... */
-	if ( (qmod > 0.999) && (qmod < 1.001) ) return 1;
+    /* Modulus = 1 to within some tolerance?
+     * Nasty allowance for floating-point accuracy follows... */
+    if ( (qmod > 0.999) && (qmod < 1.001) ) return 1;
 
-	return 0;
+    return 0;
 }
 
 
@@ -1010,110 +1010,110 @@ int quaternion_valid(struct quaternion q)
  **/
 struct rvec quat_rot(struct rvec q, struct quaternion z)
 {
-	struct rvec res;
-	double t01, t02, t03, t11, t12, t13, t22, t23, t33;
+    struct rvec res;
+    double t01, t02, t03, t11, t12, t13, t22, t23, t33;
 
-	t01 = z.w*z.x;
-	t02 = z.w*z.y;
-	t03 = z.w*z.z;
-	t11 = z.x*z.x;
-	t12 = z.x*z.y;
-	t13 = z.x*z.z;
-	t22 = z.y*z.y;
-	t23 = z.y*z.z;
-	t33 = z.z*z.z;
+    t01 = z.w*z.x;
+    t02 = z.w*z.y;
+    t03 = z.w*z.z;
+    t11 = z.x*z.x;
+    t12 = z.x*z.y;
+    t13 = z.x*z.z;
+    t22 = z.y*z.y;
+    t23 = z.y*z.z;
+    t33 = z.z*z.z;
 
-	res.u = (1.0 - 2.0 * (t22 + t33)) * q.u
-	            + (2.0 * (t12 + t03)) * q.v
-	            + (2.0 * (t13 - t02)) * q.w;
+    res.u = (1.0 - 2.0 * (t22 + t33)) * q.u
+                + (2.0 * (t12 + t03)) * q.v
+                + (2.0 * (t13 - t02)) * q.w;
 
-	res.v =       (2.0 * (t12 - t03)) * q.u
-	      + (1.0 - 2.0 * (t11 + t33)) * q.v
-	            + (2.0 * (t01 + t23)) * q.w;
+    res.v =       (2.0 * (t12 - t03)) * q.u
+          + (1.0 - 2.0 * (t11 + t33)) * q.v
+                + (2.0 * (t01 + t23)) * q.w;
 
-	res.w =       (2.0 * (t02 + t13)) * q.u
-	            + (2.0 * (t23 - t01)) * q.v
-	      + (1.0 - 2.0 * (t11 + t22)) * q.w;
+    res.w =       (2.0 * (t02 + t13)) * q.u
+                + (2.0 * (t23 - t01)) * q.v
+          + (1.0 - 2.0 * (t11 + t22)) * q.w;
 
-	return res;
+    return res;
 }
 
 
 char *load_entire_file(const char *filename)
 {
-	struct stat statbuf;
-	int r;
-	char *contents;
-	FILE *fh;
+    struct stat statbuf;
+    int r;
+    char *contents;
+    FILE *fh;
 
-	r = stat(filename, &statbuf);
-	if ( r != 0 ) {
-		ERROR("File '%s' not found\n", filename);
-		return NULL;
-	}
+    r = stat(filename, &statbuf);
+    if ( r != 0 ) {
+        ERROR("File '%s' not found\n", filename);
+        return NULL;
+    }
 
-	contents = cfmalloc(statbuf.st_size+1);
-	if ( contents == NULL ) {
-		ERROR("Failed to allocate memory for file\n");
-		return NULL;
-	}
+    contents = cfmalloc(statbuf.st_size+1);
+    if ( contents == NULL ) {
+        ERROR("Failed to allocate memory for file\n");
+        return NULL;
+    }
 
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) {
-		ERROR("Failed to open file '%s'\n", filename);
-		cffree(contents);
-		return NULL;
-	}
+    fh = fopen(filename, "r");
+    if ( fh == NULL ) {
+        ERROR("Failed to open file '%s'\n", filename);
+        cffree(contents);
+        return NULL;
+    }
 
-	if ( fread(contents, 1, statbuf.st_size, fh) != statbuf.st_size ) {
-		ERROR("Failed to read file '%s'\n", filename);
-		fclose(fh);
-		cffree(contents);
-		return NULL;
-	}
-	contents[statbuf.st_size] = '\0';
+    if ( fread(contents, 1, statbuf.st_size, fh) != statbuf.st_size ) {
+        ERROR("Failed to read file '%s'\n", filename);
+        fclose(fh);
+        cffree(contents);
+        return NULL;
+    }
+    contents[statbuf.st_size] = '\0';
 
-	fclose(fh);
+    fclose(fh);
 
-	return contents;
+    return contents;
 }
 
 
 int file_exists(const char *filename)
 {
-	struct stat statbuf;
-	int r;
+    struct stat statbuf;
+    int r;
 
-	r = stat(filename, &statbuf);
-	if ( r != 0 ) {
-		return 0;
-	}
+    r = stat(filename, &statbuf);
+    if ( r != 0 ) {
+        return 0;
+    }
 
-	return 1;
+    return 1;
 }
 
 
 int is_dir(const char *filename)
 {
-	struct stat statbuf;
-	int r;
+    struct stat statbuf;
+    int r;
 
-	r = stat(filename, &statbuf);
-	if ( r != 0 ) {
-		return 0;
-	}
+    r = stat(filename, &statbuf);
+    if ( r != 0 ) {
+        return 0;
+    }
 
-	return S_ISDIR(statbuf.st_mode);
+    return S_ISDIR(statbuf.st_mode);
 }
 
 
 int compare_double(const void *av, const void *bv)
 {
-	double a = *(double *)av;
-	double b = *(double *)bv;
-	if ( a > b ) return 1;
-	if ( a < b ) return -1;
-	return 0;
+    double a = *(double *)av;
+    double b = *(double *)bv;
+    if ( a > b ) return 1;
+    if ( a < b ) return -1;
+    return 0;
 }
 
 
@@ -1122,8 +1122,8 @@ int compare_double(const void *av, const void *bv)
 int crystfel_has_peakfinder9()
 {
 #ifdef HAVE_FDIP
-	return 1;
+    return 1;
 #else
-	return 0;
+    return 0;
 #endif
 }

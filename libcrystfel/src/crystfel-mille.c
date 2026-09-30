@@ -39,52 +39,52 @@
 
 int mille_label(int group_serial, enum gparam param)
 {
-	switch ( param ) {
-		case GPARAM_DET_TX : return group_serial+1;  /* x-shift */
-		case GPARAM_DET_TY : return group_serial+2;  /* y-shift */
-		case GPARAM_DET_TZ : return group_serial+3;  /* z-shift */
-		case GPARAM_DET_RX : return group_serial+4;  /* Rotation around x */
-		case GPARAM_DET_RY : return group_serial+5;  /* Rotation around y */
-		case GPARAM_DET_RZ : return group_serial+6;  /* Rotation around z */
-		case GPARAM_SCANV_BEAM_A : return group_serial+7;  /* Scan-varying beam center, A-coefficient */
-		case GPARAM_SCANV_BEAM_B : return group_serial+8;  /* Scan-varying beam center, B-coefficient */
-		case GPARAM_SCANV_BEAM_C : return group_serial+9;  /* Scan-varying beam center, C-coefficient */
-		case GPARAM_SCANV_BEAM_D : return group_serial+10;  /* Scan-varying beam center, D-coefficient */
-		default : abort();
-	}
+    switch ( param ) {
+        case GPARAM_DET_TX : return group_serial+1;  /* x-shift */
+        case GPARAM_DET_TY : return group_serial+2;  /* y-shift */
+        case GPARAM_DET_TZ : return group_serial+3;  /* z-shift */
+        case GPARAM_DET_RX : return group_serial+4;  /* Rotation around x */
+        case GPARAM_DET_RY : return group_serial+5;  /* Rotation around y */
+        case GPARAM_DET_RZ : return group_serial+6;  /* Rotation around z */
+        case GPARAM_SCANV_BEAM_A : return group_serial+7;  /* Scan-varying beam center, A-coefficient */
+        case GPARAM_SCANV_BEAM_B : return group_serial+8;  /* Scan-varying beam center, B-coefficient */
+        case GPARAM_SCANV_BEAM_C : return group_serial+9;  /* Scan-varying beam center, C-coefficient */
+        case GPARAM_SCANV_BEAM_D : return group_serial+10;  /* Scan-varying beam center, D-coefficient */
+        default : abort();
+    }
 }
 
 
 /* Opposite of mille_label(), for decoding labels later */
 enum gparam mille_unlabel(int n)
 {
-	switch ( n ) {
-		case 1 : return GPARAM_DET_TX;
-		case 2 : return GPARAM_DET_TY;
-		case 3 : return GPARAM_DET_TZ;
-		case 4 : return GPARAM_DET_RX;
-		case 5 : return GPARAM_DET_RY;
-		case 6 : return GPARAM_DET_RZ;
-		case 7 : return GPARAM_SCANV_BEAM_A;
-		case 8 : return GPARAM_SCANV_BEAM_B;
-		case 9 : return GPARAM_SCANV_BEAM_C;
-		case 10 : return GPARAM_SCANV_BEAM_D;
-		default : abort();
-	}
+    switch ( n ) {
+        case 1 : return GPARAM_DET_TX;
+        case 2 : return GPARAM_DET_TY;
+        case 3 : return GPARAM_DET_TZ;
+        case 4 : return GPARAM_DET_RX;
+        case 5 : return GPARAM_DET_RY;
+        case 6 : return GPARAM_DET_RZ;
+        case 7 : return GPARAM_SCANV_BEAM_A;
+        case 8 : return GPARAM_SCANV_BEAM_B;
+        case 9 : return GPARAM_SCANV_BEAM_C;
+        case 10 : return GPARAM_SCANV_BEAM_D;
+        default : abort();
+    }
 }
 
 
 struct mille
 {
-	float *float_arr;
-	int *int_arr;
-	int max_entries;
-	int n;
+    float *float_arr;
+    int *int_arr;
+    int max_entries;
+    int n;
 
-	int *have_local;
-	int n_local;
+    int *have_local;
+    int n_local;
 
-	FILE *fh;
+    FILE *fh;
 };
 
 typedef struct mille Mille;
@@ -95,86 +95,86 @@ static void mille_add_measurement(Mille *m,
                                   int NGL, float *derGl, int *labels,
                                   float rMeas, float sigma)
 {
-	int space_required;
-	int i;
+    int space_required;
+    int i;
 
-	if ( m == NULL ) return;
+    if ( m == NULL ) return;
 
-	for ( i=0; i<NLC; i++ ) {
-		if ( isnan(derLc[i]) ) return;
-	}
-	for ( i=0; i<NGL; i++ ) {
-		if ( isnan(derGl[i]) ) return;
-	}
-	if ( isnan(rMeas) ) return;
-	if ( isnan(sigma) ) return;
+    for ( i=0; i<NLC; i++ ) {
+        if ( isnan(derLc[i]) ) return;
+    }
+    for ( i=0; i<NGL; i++ ) {
+        if ( isnan(derGl[i]) ) return;
+    }
+    if ( isnan(rMeas) ) return;
+    if ( isnan(sigma) ) return;
 
-	/* Allocate extra space if necessary */
-	space_required = m->n + NLC + NGL + 2;
-	if ( space_required > m->max_entries ) {
+    /* Allocate extra space if necessary */
+    space_required = m->n + NLC + NGL + 2;
+    if ( space_required > m->max_entries ) {
 
-		float *new_float_arr;
-		int *new_int_arr;
-		int new_max_entries;
+        float *new_float_arr;
+        int *new_int_arr;
+        int new_max_entries;
 
-		if ( m->max_entries == 0 ) {
-			new_max_entries = 256;
-		} else {
-			new_max_entries = m->max_entries;
-		}
+        if ( m->max_entries == 0 ) {
+            new_max_entries = 256;
+        } else {
+            new_max_entries = m->max_entries;
+        }
 
-		while ( new_max_entries < space_required ) {
-			new_max_entries *= 2;
-		}
+        while ( new_max_entries < space_required ) {
+            new_max_entries *= 2;
+        }
 
-		new_float_arr = cfrealloc(m->float_arr, new_max_entries*sizeof(float));
-		new_int_arr = cfrealloc(m->int_arr, new_max_entries*sizeof(int));
-		if ( (new_float_arr == NULL) || (new_int_arr == NULL) ) return;
+        new_float_arr = cfrealloc(m->float_arr, new_max_entries*sizeof(float));
+        new_int_arr = cfrealloc(m->int_arr, new_max_entries*sizeof(int));
+        if ( (new_float_arr == NULL) || (new_int_arr == NULL) ) return;
 
-		m->float_arr = new_float_arr;
-		m->int_arr = new_int_arr;
-		m->max_entries = new_max_entries;
-	}
+        m->float_arr = new_float_arr;
+        m->int_arr = new_int_arr;
+        m->max_entries = new_max_entries;
+    }
 
-	if ( NLC > m->n_local ) {
-		int i;
-		int *new_have_local = cfrealloc(m->have_local, NLC*sizeof(int));
-		if ( new_have_local == NULL ) return;
-		m->have_local = new_have_local;
-		for ( i=m->n_local; i<NLC; i++ ) {
-			m->have_local[i] = 0;
-		}
-		m->n_local = NLC;
-	}
+    if ( NLC > m->n_local ) {
+        int i;
+        int *new_have_local = cfrealloc(m->have_local, NLC*sizeof(int));
+        if ( new_have_local == NULL ) return;
+        m->have_local = new_have_local;
+        for ( i=m->n_local; i<NLC; i++ ) {
+            m->have_local[i] = 0;
+        }
+        m->n_local = NLC;
+    }
 
-	/* The measurement */
-	m->float_arr[m->n] = rMeas;
-	m->int_arr[m->n] = 0;
-	m->n++;
+    /* The measurement */
+    m->float_arr[m->n] = rMeas;
+    m->int_arr[m->n] = 0;
+    m->n++;
 
-	/* Local gradients */
-	for ( i=0; i<NLC; i++ ) {
-		if ( derLc[i] != 0.0 ) {
-			m->float_arr[m->n] = derLc[i];
-			m->int_arr[m->n] = i+1;
-			m->n++;
-			m->have_local[i] = 1;
-		}
-	}
+    /* Local gradients */
+    for ( i=0; i<NLC; i++ ) {
+        if ( derLc[i] != 0.0 ) {
+            m->float_arr[m->n] = derLc[i];
+            m->int_arr[m->n] = i+1;
+            m->n++;
+            m->have_local[i] = 1;
+        }
+    }
 
-	/* The measurement error */
-	m->float_arr[m->n] = sigma;
-	m->int_arr[m->n] = 0;
-	m->n++;
+    /* The measurement error */
+    m->float_arr[m->n] = sigma;
+    m->int_arr[m->n] = 0;
+    m->n++;
 
-	/* Global gradients */
-	for ( i=0; i<NGL; i++ ) {
-		if ( (derGl[i] != 0.0) && (labels[i] > 0) ) {
-			m->float_arr[m->n] = derGl[i];
-			m->int_arr[m->n] = labels[i];
-			m->n++;
-		}
-	}
+    /* Global gradients */
+    for ( i=0; i<NGL; i++ ) {
+        if ( (derGl[i] != 0.0) && (labels[i] > 0) ) {
+            m->float_arr[m->n] = derGl[i];
+            m->int_arr[m->n] = labels[i];
+            m->n++;
+        }
+    }
 }
 
 
@@ -182,13 +182,13 @@ static void mille_add_measurement(Mille *m,
  * count_depth() = 0 means this is the top group */
 static int count_depth(const struct detgeom_panel_group *group)
 {
-	int depth = 0;
-	assert(group != NULL);
-	do {
-		depth++;
-		group = group->parent;
-	} while ( group != NULL );
-	return depth-1;
+    int depth = 0;
+    assert(group != NULL);
+    do {
+        depth++;
+        group = group->parent;
+    } while ( group != NULL );
+    return depth-1;
 }
 
 #define MAX_HIERARCHY_LEVELS (8)
@@ -200,223 +200,223 @@ void write_mille(Mille *mille, int n, UnitCell *cell,
                  struct reflpeak *rps, struct image *image,
                  int max_level, gsl_matrix **Minvs)
 {
-	int i;
-	int depth;
+    int i;
+    int depth;
 
-	assert(max_level >= 0);
+    assert(max_level >= 0);
 
-	/* No groups -> no refinement */
-	if ( image->detgeom->top_group == NULL ) {
-		ERROR("Cannot write calibration data (--mille) because "
-		      "geometry does not contain hierarchy information "
-		      "(group 'all' not found)\n");
-		return;
-	}
+    /* No groups -> no refinement */
+    if ( image->detgeom->top_group == NULL ) {
+        ERROR("Cannot write calibration data (--mille) because "
+              "geometry does not contain hierarchy information "
+              "(group 'all' not found)\n");
+        return;
+    }
 
-	/* Global parameters */
-	const enum gparam rvg[NG] =
-	{
-		GPARAM_DET_TX,
-		GPARAM_DET_TY,
-		GPARAM_DET_TZ,
-		GPARAM_DET_RX,
-		GPARAM_DET_RY,
-		GPARAM_DET_RZ,
-	};
-	const enum gparam rvg_toplevel[] =
-	{
-		GPARAM_SCANV_BEAM_A,
-		GPARAM_SCANV_BEAM_B,
-		GPARAM_SCANV_BEAM_C,
-		GPARAM_SCANV_BEAM_D
-	};
+    /* Global parameters */
+    const enum gparam rvg[NG] =
+    {
+        GPARAM_DET_TX,
+        GPARAM_DET_TY,
+        GPARAM_DET_TZ,
+        GPARAM_DET_RX,
+        GPARAM_DET_RY,
+        GPARAM_DET_RZ,
+    };
+    const enum gparam rvg_toplevel[] =
+    {
+        GPARAM_SCANV_BEAM_A,
+        GPARAM_SCANV_BEAM_B,
+        GPARAM_SCANV_BEAM_C,
+        GPARAM_SCANV_BEAM_D
+    };
 
-	for ( i=0; i<n; i++ ) {
+    for ( i=0; i<n; i++ ) {
 
-		float local_gradients_fs[nl];
-		float local_gradients_ss[nl];
-		float local_gradients_r[nl];
-		float global_gradients_fs[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
-		float global_gradients_ss[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
-		int labels[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
-		int j, levels;
-		const struct detgeom_panel_group *group;
+        float local_gradients_fs[nl];
+        float local_gradients_ss[nl];
+        float local_gradients_r[nl];
+        float global_gradients_fs[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
+        float global_gradients_ss[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
+        int labels[NG*MAX_HIERARCHY_LEVELS+NG_TOPLEVEL];
+        int j, levels;
+        const struct detgeom_panel_group *group;
 
-		/* Local gradients */
-		for ( j=0; j<nl; j++ ) {
-			fs_ss_gradient(rvl[j], rps[i].refl, cell,
-			               &image->detgeom->panels[rps[i].peak->pn],
-			               Minvs[rps[i].peak->pn], 0, 0, 0,
-			               &local_gradients_fs[j],
-			               &local_gradients_ss[j],
-			               image->scan_coords);
-			local_gradients_r[j] = r_gradient(rvl[j], rps[i].refl,
-			                                  cell, image->lambda);
-		}
+        /* Local gradients */
+        for ( j=0; j<nl; j++ ) {
+            fs_ss_gradient(rvl[j], rps[i].refl, cell,
+                           &image->detgeom->panels[rps[i].peak->pn],
+                           Minvs[rps[i].peak->pn], 0, 0, 0,
+                           &local_gradients_fs[j],
+                           &local_gradients_ss[j],
+                           image->scan_coords);
+            local_gradients_r[j] = r_gradient(rvl[j], rps[i].refl,
+                                              cell, image->lambda);
+        }
 
-		/* Global gradients for each hierarchy level, starting at the
-		 * individual panel and working up to the top level */
-		j = 0;
-		group = image->detgeom->panels[rps[i].peak->pn].group;
-		depth = count_depth(group);
-		while ( depth > max_level ) {
-			depth--;
-			group = group->parent;
-		}
-		levels = 0;
-		while ( group != NULL ) {
+        /* Global gradients for each hierarchy level, starting at the
+         * individual panel and working up to the top level */
+        j = 0;
+        group = image->detgeom->panels[rps[i].peak->pn].group;
+        depth = count_depth(group);
+        while ( depth > max_level ) {
+            depth--;
+            group = group->parent;
+        }
+        levels = 0;
+        while ( group != NULL ) {
 
-			double cx, cy, cz;
-			int g;
+            double cx, cy, cz;
+            int g;
 
-			detgeom_group_center(group, &cx, &cy, &cz);
+            detgeom_group_center(group, &cx, &cy, &cz);
 
-			for ( g=0; g<NG; g++ ) {
-				fs_ss_gradient(rvg[g], rps[i].refl, cell,
-				               &image->detgeom->panels[rps[i].peak->pn],
-				               Minvs[rps[i].peak->pn], cx, cy, cz,
-				               &global_gradients_fs[j],
-				               &global_gradients_ss[j],
-				               NULL);
-				labels[j] = mille_label(group->serial, rvg[g]);
-				j++;
-			}
+            for ( g=0; g<NG; g++ ) {
+                fs_ss_gradient(rvg[g], rps[i].refl, cell,
+                               &image->detgeom->panels[rps[i].peak->pn],
+                               Minvs[rps[i].peak->pn], cx, cy, cz,
+                               &global_gradients_fs[j],
+                               &global_gradients_ss[j],
+                               NULL);
+                labels[j] = mille_label(group->serial, rvg[g]);
+                j++;
+            }
 
-			/* If we are at the top level, add some extra parameters */
-			if ( group->serial == 0 ) {
-				for ( g=0; g<NG_TOPLEVEL; g++ ) {
-					fs_ss_gradient(rvg_toplevel[g], rps[i].refl, cell,
-					               &image->detgeom->panels[rps[i].peak->pn],
-					               Minvs[rps[i].peak->pn], cx, cy, cz,
-					               &global_gradients_fs[j],
-					               &global_gradients_ss[j],
-					               image->scan_coords);
-					labels[j] = mille_label(0, rvg_toplevel[g]);
-					j++;
-				}
-			}
+            /* If we are at the top level, add some extra parameters */
+            if ( group->serial == 0 ) {
+                for ( g=0; g<NG_TOPLEVEL; g++ ) {
+                    fs_ss_gradient(rvg_toplevel[g], rps[i].refl, cell,
+                                   &image->detgeom->panels[rps[i].peak->pn],
+                                   Minvs[rps[i].peak->pn], cx, cy, cz,
+                                   &global_gradients_fs[j],
+                                   &global_gradients_ss[j],
+                                   image->scan_coords);
+                    labels[j] = mille_label(0, rvg_toplevel[g]);
+                    j++;
+                }
+            }
 
-			levels++;
-			group = group->parent;
+            levels++;
+            group = group->parent;
 
-			if ( levels >= MAX_HIERARCHY_LEVELS ) {
-				ERROR("Too many nested hierarchy levels for refinement.\n");
-				break;
-			}
-		}
+            if ( levels >= MAX_HIERARCHY_LEVELS ) {
+                ERROR("Too many nested hierarchy levels for refinement.\n");
+                break;
+            }
+        }
 
-		/* Add fs measurement */
-		mille_add_measurement(mille,
-		                      nl, local_gradients_fs,
-		                      j, global_gradients_fs, labels,
-		                      fs_dev(&rps[i], image->detgeom), 0.3);
+        /* Add fs measurement */
+        mille_add_measurement(mille,
+                              nl, local_gradients_fs,
+                              j, global_gradients_fs, labels,
+                              fs_dev(&rps[i], image->detgeom), 0.3);
 
-		/* Add ss measurement */
-		mille_add_measurement(mille,
-		                      nl, local_gradients_ss,
-		                      j, global_gradients_ss, labels,
-		                      ss_dev(&rps[i], image->detgeom), 0.3);
+        /* Add ss measurement */
+        mille_add_measurement(mille,
+                              nl, local_gradients_ss,
+                              j, global_gradients_ss, labels,
+                              ss_dev(&rps[i], image->detgeom), 0.3);
 
-		/* Add excitation error "measurement" (local-only) */
-		mille_add_measurement(mille, nl, local_gradients_r,
-		                      0, NULL, NULL, r_dev(&rps[i]), 0.2);
-	}
+        /* Add excitation error "measurement" (local-only) */
+        mille_add_measurement(mille, nl, local_gradients_r,
+                              0, NULL, NULL, r_dev(&rps[i]), 0.2);
+    }
 }
 
 
 static Mille *mille_new()
 {
-	Mille *m;
+    Mille *m;
 
-	m = cfmalloc(sizeof(Mille));
-	if ( m == NULL ) return NULL;
+    m = cfmalloc(sizeof(Mille));
+    if ( m == NULL ) return NULL;
 
-	m->max_entries = 0;
-	m->n = 0;
-	m->float_arr = NULL;
-	m->int_arr = NULL;
-	m->have_local = NULL;
-	m->n_local = 0;
+    m->max_entries = 0;
+    m->n = 0;
+    m->float_arr = NULL;
+    m->int_arr = NULL;
+    m->have_local = NULL;
+    m->n_local = 0;
 
-	return m;
+    return m;
 }
 
 
 Mille *crystfel_mille_new(const char *outFileName)
 {
-	Mille *m = mille_new();
-	if ( m == NULL ) return NULL;
+    Mille *m = mille_new();
+    if ( m == NULL ) return NULL;
 
-	m->fh = fopen(outFileName, "wb");
-	if ( m->fh == NULL ) {
-		ERROR("Failed to open Mille file '%s'\n", outFileName);
-		cffree(m);
-		return NULL;
-	}
+    m->fh = fopen(outFileName, "wb");
+    if ( m->fh == NULL ) {
+        ERROR("Failed to open Mille file '%s'\n", outFileName);
+        cffree(m);
+        return NULL;
+    }
 
-	return m;
+    return m;
 }
 
 
 Mille *crystfel_mille_new_fd(int fd)
 {
-	Mille *m = mille_new();
-	if ( m == NULL ) return NULL;
+    Mille *m = mille_new();
+    if ( m == NULL ) return NULL;
 
-	m->fh = fdopen(fd, "wb");
-	if ( m->fh == NULL ) {
-		ERROR("Failed to open Mille FD %i\n", fd);
-		cffree(m);
-		return NULL;
-	}
+    m->fh = fdopen(fd, "wb");
+    if ( m->fh == NULL ) {
+        ERROR("Failed to open Mille FD %i\n", fd);
+        cffree(m);
+        return NULL;
+    }
 
-	return m;
+    return m;
 }
 
 
 void crystfel_mille_free(Mille *m)
 {
-	if ( m == NULL ) return;
-	fclose(m->fh);
-	cffree(m->float_arr);
-	cffree(m->int_arr);
-	cffree(m);
+    if ( m == NULL ) return;
+    fclose(m->fh);
+    cffree(m->float_arr);
+    cffree(m->int_arr);
+    cffree(m);
 }
 
 
 void crystfel_mille_delete_last_record(Mille *m)
 {
-	m->n = 0;
-	cffree(m->have_local);
-	m->have_local = NULL;
-	m->n_local = 0;
+    m->n = 0;
+    cffree(m->have_local);
+    m->have_local = NULL;
+    m->n_local = 0;
 }
 
 
 void crystfel_mille_write_record(Mille *m)
 {
-	int i;
-	float nf = 0.0;
-	int ni = 0;
-	int nw = (m->n * 2)+2;
+    int i;
+    float nf = 0.0;
+    int ni = 0;
+    int nw = (m->n * 2)+2;
 
-	/* Don't write empty records */
-	if ( m->n == 0 ) return;
+    /* Don't write empty records */
+    if ( m->n == 0 ) return;
 
-	/* Don't write records with incomplete local gradients */
-	for ( i=0; i<m->n_local; i++ ) {
-		if ( !m->have_local[i] ) {
-			crystfel_mille_delete_last_record(m);
-			return;
-		}
-	}
+    /* Don't write records with incomplete local gradients */
+    for ( i=0; i<m->n_local; i++ ) {
+        if ( !m->have_local[i] ) {
+            crystfel_mille_delete_last_record(m);
+            return;
+        }
+    }
 
-	fwrite(&nw, sizeof(int), 1, m->fh);
+    fwrite(&nw, sizeof(int), 1, m->fh);
 
-	fwrite(&nf, sizeof(float), 1, m->fh);
-	fwrite(m->float_arr, sizeof(float), m->n, m->fh);
+    fwrite(&nf, sizeof(float), 1, m->fh);
+    fwrite(m->float_arr, sizeof(float), m->n, m->fh);
 
-	fwrite(&ni, sizeof(int), 1, m->fh);
-	fwrite(m->int_arr, sizeof(int), m->n, m->fh);
-	m->n = 0;
+    fwrite(&ni, sizeof(int), 1, m->fh);
+    fwrite(m->int_arr, sizeof(int), m->n, m->fh);
+    m->n = 0;
 }

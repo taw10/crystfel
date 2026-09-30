@@ -50,456 +50,456 @@
 
 struct error_model
 {
-	ErrorModelType type;
+    ErrorModelType type;
 
-	double sdfac;
-	double sdb;
-	double sdadd;
+    double sdfac;
+    double sdb;
+    double sdadd;
 };
 
 
 ErrorModel *error_model_new(ErrorModelType t)
 {
-	ErrorModel *e = malloc(sizeof(struct error_model));
-	if ( e == NULL ) return NULL;
-	e->type = t;
+    ErrorModel *e = malloc(sizeof(struct error_model));
+    if ( e == NULL ) return NULL;
+    e->type = t;
 
-	e->sdfac = 1.0;
-	e->sdb = 0.0;
-	e->sdadd = 0.0;
+    e->sdfac = 1.0;
+    e->sdb = 0.0;
+    e->sdadd = 0.0;
 
-	return e;
+    return e;
 }
 
 
 double merged_esd(struct reflection_contributions *c, double *weights,
                   double wmean, ErrorModel *emodel)
 {
-	if ( emodel->type == EMODEL_EQUIVS ) {
-		double var;
-		var = gsl_stats_wvariance_m(c->contrib_legacy_weights, 1,
-		                            c->contribs, 1, c->n_contrib, wmean);
-		return sqrt(var)/sqrt(c->n_contrib);
-	} else {
-		int i;
-		double total = 0.0;
-		for ( i=0; i<c->n_contrib; i++ ) {
-			total += weights[i];
-		}
-		return sqrt(1.0/total);
-	}
+    if ( emodel->type == EMODEL_EQUIVS ) {
+        double var;
+        var = gsl_stats_wvariance_m(c->contrib_legacy_weights, 1,
+                                    c->contribs, 1, c->n_contrib, wmean);
+        return sqrt(var)/sqrt(c->n_contrib);
+    } else {
+        int i;
+        double total = 0.0;
+        for ( i=0; i<c->n_contrib; i++ ) {
+            total += weights[i];
+        }
+        return sqrt(1.0/total);
+    }
 }
 
 
 static double corr_esd(double sigij, double Ih, ErrorModel *emodel)
 {
-	double c;
+    double c;
 
-	switch ( emodel->type ) {
+    switch ( emodel->type ) {
 
-		case EMODEL_EQUIVS:
-		return sigij;
+        case EMODEL_EQUIVS:
+        return sigij;
 
-		case EMODEL_EV11:
-		case EMODEL_KH23:
-		c = sigij*sigij + emodel->sdb*emodel->sdb*Ih + emodel->sdadd*emodel->sdadd*Ih*Ih;
-		return sqrt(emodel->sdfac*emodel->sdfac*c);
+        case EMODEL_EV11:
+        case EMODEL_KH23:
+        c = sigij*sigij + emodel->sdb*emodel->sdb*Ih + emodel->sdadd*emodel->sdadd*Ih*Ih;
+        return sqrt(emodel->sdfac*emodel->sdfac*c);
 
-		case EMODEL_EV06:
-		c = sigij*sigij + emodel->sdadd*emodel->sdadd*Ih*Ih;
-		return sqrt(emodel->sdfac*emodel->sdfac*c);
+        case EMODEL_EV06:
+        c = sigij*sigij + emodel->sdadd*emodel->sdadd*Ih*Ih;
+        return sqrt(emodel->sdfac*emodel->sdfac*c);
 
-	}
-	abort();
+    }
+    abort();
 }
 
 
 double *make_weights_array(struct reflection_contributions *c, Reflection *refl, ErrorModel *emodel)
 {
-	int i;
-	double *w;
+    int i;
+    double *w;
 
-	w = malloc(c->n_contrib * sizeof(double));
+    w = malloc(c->n_contrib * sizeof(double));
 
-	for ( i=0; i<c->n_contrib; i++ ) {
-		if ( emodel->type == EMODEL_EQUIVS ) {
-			/* Preserve old behaviour for 'equivs'
-			 * (no option provided for sigma-weighting without error modelling) */
-			w[i] = c->contrib_legacy_weights[i];;
-		} else if ( emodel->type == EMODEL_KH23 ) {
-			double  esdIiC = corr_esd(c->contrib_esds[i], get_max_measurement(refl), emodel);
-			w[i] = 1.0/(esdIiC*esdIiC);
-		} else {
-			double  esdIiC = corr_esd(c->contrib_esds[i], get_unweighted_mean(refl), emodel);
-			w[i] = 1.0/(esdIiC*esdIiC);
-		}
-	}
+    for ( i=0; i<c->n_contrib; i++ ) {
+        if ( emodel->type == EMODEL_EQUIVS ) {
+            /* Preserve old behaviour for 'equivs'
+             * (no option provided for sigma-weighting without error modelling) */
+            w[i] = c->contrib_legacy_weights[i];;
+        } else if ( emodel->type == EMODEL_KH23 ) {
+            double  esdIiC = corr_esd(c->contrib_esds[i], get_max_measurement(refl), emodel);
+            w[i] = 1.0/(esdIiC*esdIiC);
+        } else {
+            double  esdIiC = corr_esd(c->contrib_esds[i], get_unweighted_mean(refl), emodel);
+            w[i] = 1.0/(esdIiC*esdIiC);
+        }
+    }
 
-	return w;
+    return w;
 }
 
 
 #define NQUANT (20)
 
 static gsl_rstat_quantile_workspace **fill_quantiles(RefList *full, ErrorModel *emodel,
-		                                     double *pminv, double *pmaxv)
+                                             double *pminv, double *pmaxv)
 {
-	int i;
-	Reflection *refl;
-	RefListIterator *iter;
-	gsl_rstat_quantile_workspace **quantiles;
-	double minv = +INFINITY;
-	double maxv = -INFINITY;
+    int i;
+    Reflection *refl;
+    RefListIterator *iter;
+    gsl_rstat_quantile_workspace **quantiles;
+    double minv = +INFINITY;
+    double maxv = -INFINITY;
 
-	quantiles = malloc(NQUANT*sizeof(gsl_rstat_quantile_workspace *));
-	if ( quantiles == NULL ) return NULL;
+    quantiles = malloc(NQUANT*sizeof(gsl_rstat_quantile_workspace *));
+    if ( quantiles == NULL ) return NULL;
 
-	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = ((double)i+1)/(NQUANT+1);
-		quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
-		if ( quantiles[i] == NULL ) return NULL;
-	}
+    for ( i=0; i<NQUANT; i++ ) {
+        double plotpos = ((double)i+1)/(NQUANT+1);
+        quantiles[i] = gsl_rstat_quantile_alloc(plotpos);
+        if ( quantiles[i] == NULL ) return NULL;
+    }
 
-	for ( refl = first_refl(full, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		int j, n;
-		double Ih;
-		struct reflection_contributions *c = get_contributions(refl);
+    for ( refl = first_refl(full, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        int j, n;
+        double Ih;
+        struct reflection_contributions *c = get_contributions(refl);
 
-		if ( c->n_contrib < 2 ) continue;
+        if ( c->n_contrib < 2 ) continue;
 
-		if ( emodel->type == EMODEL_KH23 ) {
-			Ih = get_max_measurement(refl);
-		} else {
-			Ih = get_unweighted_mean(refl);
-		}
+        if ( emodel->type == EMODEL_KH23 ) {
+            Ih = get_max_measurement(refl);
+        } else {
+            Ih = get_unweighted_mean(refl);
+        }
 
-		n = c->n_contrib;
-		for ( j=0; j<c->n_contrib; j++ ) {
+        n = c->n_contrib;
+        for ( j=0; j<c->n_contrib; j++ ) {
 
-			/* Mean (not max, for Kh23) without contribution j */
-			double mIhj = (get_unweighted_mean(refl)*n - c->contribs[j])/(n-1);
-			double bcorr = sqrt(((double)n-1)/n);
-			double norm_dev = bcorr * (c->contribs[j] - mIhj) / corr_esd(c->contrib_esds[j], Ih, emodel);
+            /* Mean (not max, for Kh23) without contribution j */
+            double mIhj = (get_unweighted_mean(refl)*n - c->contribs[j])/(n-1);
+            double bcorr = sqrt(((double)n-1)/n);
+            double norm_dev = bcorr * (c->contribs[j] - mIhj) / corr_esd(c->contrib_esds[j], Ih, emodel);
 
-			if ( norm_dev < -10 ) continue;
-			if ( norm_dev > 10 ) continue;
-			for ( i=0; i<NQUANT; i++ ) {
-				gsl_rstat_quantile_add(norm_dev, quantiles[i]);
-			}
-			if ( norm_dev > maxv ) maxv = norm_dev;
-			if ( norm_dev < minv ) minv = norm_dev;
+            if ( norm_dev < -10 ) continue;
+            if ( norm_dev > 10 ) continue;
+            for ( i=0; i<NQUANT; i++ ) {
+                gsl_rstat_quantile_add(norm_dev, quantiles[i]);
+            }
+            if ( norm_dev > maxv ) maxv = norm_dev;
+            if ( norm_dev < minv ) minv = norm_dev;
 
-		}
-	}
+        }
+    }
 
-	*pminv = minv;
-	*pmaxv = maxv;
-	return quantiles;
+    *pminv = minv;
+    *pmaxv = maxv;
+    return quantiles;
 }
 
 
 struct emodel_refine_params
 {
-	RefList *full;
-	ErrorModelType type;
-	double minv;
-	double maxv;
-	int nbins;
+    RefList *full;
+    ErrorModelType type;
+    double minv;
+    double maxv;
+    int nbins;
 };
 
 
 static void error_model_params_set_from_vector(ErrorModel *emodel, const gsl_vector *sdparams)
 {
-	switch ( emodel->type ) {
+    switch ( emodel->type ) {
 
-		case EMODEL_EQUIVS:
-		break;
+        case EMODEL_EQUIVS:
+        break;
 
-		case EMODEL_EV11:
-		emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
-		emodel->sdb   = fabs(gsl_vector_get(sdparams, 1));
-		emodel->sdadd = fabs(gsl_vector_get(sdparams, 2));
-		break;
+        case EMODEL_EV11:
+        emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
+        emodel->sdb   = fabs(gsl_vector_get(sdparams, 1));
+        emodel->sdadd = fabs(gsl_vector_get(sdparams, 2));
+        break;
 
-		case EMODEL_EV06:
-		emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
-		emodel->sdadd = fabs(gsl_vector_get(sdparams, 1));
-		break;
+        case EMODEL_EV06:
+        emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
+        emodel->sdadd = fabs(gsl_vector_get(sdparams, 1));
+        break;
 
-		case EMODEL_KH23:
-		emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
-		emodel->sdb   = fabs(gsl_vector_get(sdparams, 1));
-		emodel->sdadd = fabs(gsl_vector_get(sdparams, 2));
-		break;
+        case EMODEL_KH23:
+        emodel->sdfac = fabs(gsl_vector_get(sdparams, 0));
+        emodel->sdb   = fabs(gsl_vector_get(sdparams, 1));
+        emodel->sdadd = fabs(gsl_vector_get(sdparams, 2));
+        break;
 
-	}
+    }
 }
 
 
 static double norm_res(const gsl_vector *sdparams, void *vp)
 {
-	gsl_rstat_quantile_workspace **quantiles;
-	double minv, maxv;
-	int i;
-	struct emodel_refine_params *params = vp;
-	ErrorModel emodel;
+    gsl_rstat_quantile_workspace **quantiles;
+    double minv, maxv;
+    int i;
+    struct emodel_refine_params *params = vp;
+    ErrorModel emodel;
 
-	emodel.type = params->type;
-	error_model_params_set_from_vector(&emodel, sdparams);
+    emodel.type = params->type;
+    error_model_params_set_from_vector(&emodel, sdparams);
 
-	quantiles = fill_quantiles(params->full, &emodel, &minv, &maxv);
-	if ( quantiles == NULL ) return GSL_NAN;
+    quantiles = fill_quantiles(params->full, &emodel, &minv, &maxv);
+    if ( quantiles == NULL ) return GSL_NAN;
 
-	double total = 0.0;
-	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = ((double)i+1)/(NQUANT+1);
-		total += pow(gsl_rstat_quantile_get(quantiles[i]) - gsl_cdf_gaussian_Pinv(plotpos, 1.0), 2.0);
-		gsl_rstat_quantile_free(quantiles[i]);
-	}
+    double total = 0.0;
+    for ( i=0; i<NQUANT; i++ ) {
+        double plotpos = ((double)i+1)/(NQUANT+1);
+        total += pow(gsl_rstat_quantile_get(quantiles[i]) - gsl_cdf_gaussian_Pinv(plotpos, 1.0), 2.0);
+        gsl_rstat_quantile_free(quantiles[i]);
+    }
 
-	free(quantiles);
-	return total;
+    free(quantiles);
+    return total;
 }
 
 
 void normal_probability_plot(RefList *full, ErrorModel *emodel)
 {
-	gsl_rstat_quantile_workspace **quantiles;
-	double hstart;
-	int i;
-	double minv, maxv;
+    gsl_rstat_quantile_workspace **quantiles;
+    double hstart;
+    int i;
+    double minv, maxv;
 
-	quantiles = fill_quantiles(full, emodel, &minv, &maxv);
-	if ( quantiles == NULL ) {
-		ERROR("Failed to calculate quantiles\n");
-		return;
-	}
-	printf("Bin start    Bin middle     Bin end        Density   Theoretical\n");
-	printf("                        (=Sample quantile)            quantile  \n");
-	printf("------------------------------------------------------------------\n");
-	hstart = minv;
-	printf("       -              -    %8.5f   %e             -\n", hstart, 0.0);
-	for ( i=0; i<NQUANT; i++ ) {
-		double plotpos = ((double)i+1)/(NQUANT+1);
-		double hend = gsl_rstat_quantile_get(quantiles[i]);
-		printf("%8.5f       %8.5f    %8.5f   %e      %8.5f\n",
-		       hstart, hstart+(hend-hstart)/2.0, hend,
-		       (1.0/(NQUANT+1))/(hend-hstart),
-		       gsl_cdf_gaussian_Pinv(plotpos, 1.0));
-		hstart = hend;
-		gsl_rstat_quantile_free(quantiles[i]);
-	}
-	printf("%8.5f       %8.5f    %8.5f   %e             -\n",
-	       hstart, hstart+(maxv-hstart)/2.0, maxv,
-	       (1.0/(NQUANT+1))/(maxv-hstart));
-	printf("\n\n");
-	free(quantiles);
+    quantiles = fill_quantiles(full, emodel, &minv, &maxv);
+    if ( quantiles == NULL ) {
+        ERROR("Failed to calculate quantiles\n");
+        return;
+    }
+    printf("Bin start    Bin middle     Bin end        Density   Theoretical\n");
+    printf("                        (=Sample quantile)            quantile  \n");
+    printf("------------------------------------------------------------------\n");
+    hstart = minv;
+    printf("       -              -    %8.5f   %e             -\n", hstart, 0.0);
+    for ( i=0; i<NQUANT; i++ ) {
+        double plotpos = ((double)i+1)/(NQUANT+1);
+        double hend = gsl_rstat_quantile_get(quantiles[i]);
+        printf("%8.5f       %8.5f    %8.5f   %e      %8.5f\n",
+               hstart, hstart+(hend-hstart)/2.0, hend,
+               (1.0/(NQUANT+1))/(hend-hstart),
+               gsl_cdf_gaussian_Pinv(plotpos, 1.0));
+        hstart = hend;
+        gsl_rstat_quantile_free(quantiles[i]);
+    }
+    printf("%8.5f       %8.5f    %8.5f   %e             -\n",
+           hstart, hstart+(maxv-hstart)/2.0, maxv,
+           (1.0/(NQUANT+1))/(maxv-hstart));
+    printf("\n\n");
+    free(quantiles);
 }
 
 
 static int error_model_num_params(ErrorModel *emodel)
 {
-	switch ( emodel->type ) {
-		case EMODEL_EQUIVS: return 0;
-		case EMODEL_EV11:   return 3;
-		case EMODEL_EV06:   return 2;
-		case EMODEL_KH23:   return 3;
-	}
-	abort();
+    switch ( emodel->type ) {
+        case EMODEL_EQUIVS: return 0;
+        case EMODEL_EV11:   return 3;
+        case EMODEL_EV06:   return 2;
+        case EMODEL_KH23:   return 3;
+    }
+    abort();
 }
 
 
 static gsl_vector *error_model_params_vector(ErrorModel *emodel)
 {
-	gsl_vector *sdparams = gsl_vector_alloc(error_model_num_params(emodel));
+    gsl_vector *sdparams = gsl_vector_alloc(error_model_num_params(emodel));
 
-	switch ( emodel->type ) {
+    switch ( emodel->type ) {
 
-		case EMODEL_EQUIVS:
-		break;
+        case EMODEL_EQUIVS:
+        break;
 
-		case EMODEL_EV11:
-		gsl_vector_set(sdparams, 0, emodel->sdfac);
-		gsl_vector_set(sdparams, 1, emodel->sdb);
-		gsl_vector_set(sdparams, 2, emodel->sdadd);
-		break;
+        case EMODEL_EV11:
+        gsl_vector_set(sdparams, 0, emodel->sdfac);
+        gsl_vector_set(sdparams, 1, emodel->sdb);
+        gsl_vector_set(sdparams, 2, emodel->sdadd);
+        break;
 
-		case EMODEL_EV06:
-		gsl_vector_set(sdparams, 0, emodel->sdfac);
-		gsl_vector_set(sdparams, 1, emodel->sdadd);
-		break;
+        case EMODEL_EV06:
+        gsl_vector_set(sdparams, 0, emodel->sdfac);
+        gsl_vector_set(sdparams, 1, emodel->sdadd);
+        break;
 
-		case EMODEL_KH23:
-		gsl_vector_set(sdparams, 0, emodel->sdfac);
-		gsl_vector_set(sdparams, 1, emodel->sdb);
-		gsl_vector_set(sdparams, 2, emodel->sdadd);
-		break;
+        case EMODEL_KH23:
+        gsl_vector_set(sdparams, 0, emodel->sdfac);
+        gsl_vector_set(sdparams, 1, emodel->sdb);
+        gsl_vector_set(sdparams, 2, emodel->sdadd);
+        break;
 
-	}
+    }
 
-	return sdparams;
+    return sdparams;
 }
 
 
 static gsl_vector *error_model_step_vector(ErrorModel *emodel)
 {
-	gsl_vector *stepsize = gsl_vector_alloc(error_model_num_params(emodel));
+    gsl_vector *stepsize = gsl_vector_alloc(error_model_num_params(emodel));
 
-	switch ( emodel->type ) {
+    switch ( emodel->type ) {
 
-		case EMODEL_EQUIVS:
-		break;
+        case EMODEL_EQUIVS:
+        break;
 
-		case EMODEL_EV11:
-		gsl_vector_set(stepsize, 0, 0.25);
-		gsl_vector_set(stepsize, 1, 0.01);
-		gsl_vector_set(stepsize, 2, 0.01);
-		break;
+        case EMODEL_EV11:
+        gsl_vector_set(stepsize, 0, 0.25);
+        gsl_vector_set(stepsize, 1, 0.01);
+        gsl_vector_set(stepsize, 2, 0.01);
+        break;
 
-		case EMODEL_EV06:
-		gsl_vector_set(stepsize, 0, 0.25);
-		gsl_vector_set(stepsize, 1, 0.01);
-		break;
+        case EMODEL_EV06:
+        gsl_vector_set(stepsize, 0, 0.25);
+        gsl_vector_set(stepsize, 1, 0.01);
+        break;
 
-		case EMODEL_KH23:
-		gsl_vector_set(stepsize, 0, 0.25);
-		gsl_vector_set(stepsize, 1, 0.01);
-		gsl_vector_set(stepsize, 2, 0.01);
-		break;
+        case EMODEL_KH23:
+        gsl_vector_set(stepsize, 0, 0.25);
+        gsl_vector_set(stepsize, 1, 0.01);
+        gsl_vector_set(stepsize, 2, 0.01);
+        break;
 
-	}
+    }
 
-	return stepsize;
+    return stepsize;
 }
 
 
 void refine_error_model(RefList *full, ErrorModel *emodel)
 {
-	gsl_multimin_fminimizer *mini;
-	gsl_multimin_function myfunc;
-	gsl_vector *sdparams;
-	gsl_vector *stepsize;
-	int r;
-	int niter;
-	struct emodel_refine_params params;
+    gsl_multimin_fminimizer *mini;
+    gsl_multimin_function myfunc;
+    gsl_vector *sdparams;
+    gsl_vector *stepsize;
+    int r;
+    int niter;
+    struct emodel_refine_params params;
 
-	if ( emodel->type == EMODEL_EQUIVS ) {
-		STATUS("Not refining equivs model\n");
-		return;
-	}
+    if ( emodel->type == EMODEL_EQUIVS ) {
+        STATUS("Not refining equivs model\n");
+        return;
+    }
 
-	params.full = full;
-	params.type = emodel->type;
+    params.full = full;
+    params.type = emodel->type;
 
-	sdparams = error_model_params_vector(emodel);
-	stepsize = error_model_step_vector(emodel);
+    sdparams = error_model_params_vector(emodel);
+    stepsize = error_model_step_vector(emodel);
 
-	myfunc.n = error_model_num_params(emodel);
-	myfunc.f = norm_res;
-	myfunc.params = &params;
+    myfunc.n = error_model_num_params(emodel);
+    myfunc.f = norm_res;
+    myfunc.params = &params;
 
-	mini = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2, myfunc.n);
-	gsl_multimin_fminimizer_set(mini, &myfunc, sdparams, stepsize);
-	gsl_vector_free(sdparams);
-	gsl_vector_free(stepsize);
+    mini = gsl_multimin_fminimizer_alloc(gsl_multimin_fminimizer_nmsimplex2, myfunc.n);
+    gsl_multimin_fminimizer_set(mini, &myfunc, sdparams, stepsize);
+    gsl_vector_free(sdparams);
+    gsl_vector_free(stepsize);
 
-	STATUS("Refining error model...\n");
-	niter = 0;
-	do {
-		niter++;
-		r = gsl_multimin_fminimizer_iterate(mini);
-		if ( r ) break;
-		r = gsl_multimin_test_size(mini->size, 0.1);
-		//STATUS("%2i  |   ", niter);
-		//show_vector_oneline(mini->x);
-	} while ( r == GSL_CONTINUE && niter < 20 );
+    STATUS("Refining error model...\n");
+    niter = 0;
+    do {
+        niter++;
+        r = gsl_multimin_fminimizer_iterate(mini);
+        if ( r ) break;
+        r = gsl_multimin_test_size(mini->size, 0.1);
+        //STATUS("%2i  |   ", niter);
+        //show_vector_oneline(mini->x);
+    } while ( r == GSL_CONTINUE && niter < 20 );
 
-	error_model_params_set_from_vector(emodel, mini->x);
-	print_error_model(emodel);
+    error_model_params_set_from_vector(emodel, mini->x);
+    print_error_model(emodel);
 
-	gsl_multimin_fminimizer_free(mini);
+    gsl_multimin_fminimizer_free(mini);
 }
 
 
 ErrorModelType parse_error_model(const char *str, int *err)
 {
-	*err = 0;
+    *err = 0;
 
-	if ( strcmp(str, "equivs") == 0 ) {
-		return EMODEL_EQUIVS;
+    if ( strcmp(str, "equivs") == 0 ) {
+        return EMODEL_EQUIVS;
 
-	} else if ( strcmp(str, "ev11") == 0 ) {
-		return EMODEL_EV11;
+    } else if ( strcmp(str, "ev11") == 0 ) {
+        return EMODEL_EV11;
 
-	} else if ( strcmp(str, "xscale") == 0 ) {
-		return EMODEL_EV06;
+    } else if ( strcmp(str, "xscale") == 0 ) {
+        return EMODEL_EV06;
 
-	} else if ( strcmp(str, "ev06") == 0 ) {
-		return EMODEL_EV06;
+    } else if ( strcmp(str, "ev06") == 0 ) {
+        return EMODEL_EV06;
 
-	} else if ( strcmp(str, "kh23") == 0 ) {
-		return EMODEL_KH23;
+    } else if ( strcmp(str, "kh23") == 0 ) {
+        return EMODEL_KH23;
 
-	} else {
-		*err = 1;
-		return EMODEL_EQUIVS;
-	}
+    } else {
+        *err = 1;
+        return EMODEL_EQUIVS;
+    }
 }
 
 
 static double isigi_asymptotic(ErrorModel *emodel)
 {
-	switch ( emodel->type ) {
+    switch ( emodel->type ) {
 
-		case EMODEL_EQUIVS:
-		return NAN;
+        case EMODEL_EQUIVS:
+        return NAN;
 
-		case EMODEL_EV11:
-		case EMODEL_KH23:
-		case EMODEL_EV06:
-		return 1.0/(emodel->sdfac*emodel->sdadd);
-		/* The SdB term in Ev11 and Kh23 does not affect ISa */
+        case EMODEL_EV11:
+        case EMODEL_KH23:
+        case EMODEL_EV06:
+        return 1.0/(emodel->sdfac*emodel->sdadd);
+        /* The SdB term in Ev11 and Kh23 does not affect ISa */
 
-	}
-	abort();
+    }
+    abort();
 }
 
 
 void print_error_model(ErrorModel *emodel)
 {
-	switch ( emodel->type ) {
+    switch ( emodel->type ) {
 
-		case EMODEL_EQUIVS:
-		STATUS("No error modelling was performed.\n");
-		break;
+        case EMODEL_EQUIVS:
+        STATUS("No error modelling was performed.\n");
+        break;
 
-		case EMODEL_EV11:
-		STATUS("Error model parameters (Ev11): sdFac=%.3f, sdB=%.3f, sdAdd=%.3f\n",
-		        emodel->sdfac, emodel->sdb, emodel->sdadd);
-		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
-		break;
+        case EMODEL_EV11:
+        STATUS("Error model parameters (Ev11): sdFac=%.3f, sdB=%.3f, sdAdd=%.3f\n",
+                emodel->sdfac, emodel->sdb, emodel->sdadd);
+        STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
+        break;
 
-		case EMODEL_KH23:
-		STATUS("Error model parameters (Kh23): sdFac=%.3f, sdB=%.3f, sdAdd=%.3f\n",
-		        emodel->sdfac, emodel->sdb, emodel->sdadd);
-		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
-		break;
+        case EMODEL_KH23:
+        STATUS("Error model parameters (Kh23): sdFac=%.3f, sdB=%.3f, sdAdd=%.3f\n",
+                emodel->sdfac, emodel->sdb, emodel->sdadd);
+        STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
+        break;
 
-		case EMODEL_EV06:
-		STATUS("Error model parameters (Ev06): sdFac=%.3f, sdAdd=%.3f\n",
-		        emodel->sdfac, emodel->sdadd);
-		STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
-		break;
+        case EMODEL_EV06:
+        STATUS("Error model parameters (Ev06): sdFac=%.3f, sdAdd=%.3f\n",
+                emodel->sdfac, emodel->sdadd);
+        STATUS("Overall (I/sigI)_asymptotic = %.3f\n", isigi_asymptotic(emodel));
+        break;
 
-	}
+    }
 
 }
 
 
 void error_model_free(ErrorModel *emodel)
 {
-	free(emodel);
+    free(emodel);
 }

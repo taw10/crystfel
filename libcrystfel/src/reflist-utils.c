@@ -62,70 +62,70 @@
  */
 int check_list_symmetry(RefList *list, const SymOpList *sym)
 {
-	Reflection *refl;
-	RefListIterator *iter;
-	SymOpMask *mask;
+    Reflection *refl;
+    RefListIterator *iter;
+    SymOpMask *mask;
 
-	mask = new_symopmask(sym);
-	if ( mask == NULL ) {
-		ERROR("Couldn't create mask for list symmetry check.\n");
-		return 1;
-	}
+    mask = new_symopmask(sym);
+    if ( mask == NULL ) {
+        ERROR("Couldn't create mask for list symmetry check.\n");
+        return 1;
+    }
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) ) {
 
-		int j;
-		int found = 0;
-		signed int h, k, l;
-		int n;
+        int j;
+        int found = 0;
+        signed int h, k, l;
+        int n;
 
-		get_indices(refl, &h, &k, &l);
+        get_indices(refl, &h, &k, &l);
 
-		special_position(sym, mask, h, k, l);
-		n = num_equivs(sym, mask);
+        special_position(sym, mask, h, k, l);
+        n = num_equivs(sym, mask);
 
-		for ( j=0; j<n; j++ ) {
+        for ( j=0; j<n; j++ ) {
 
-			signed int he, ke, le;
-			Reflection *f;
+            signed int he, ke, le;
+            Reflection *f;
 
-			get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
+            get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
 
-			f = find_refl(list, he, ke, le);
-			if ( f != NULL ) found++;
+            f = find_refl(list, he, ke, le);
+            if ( f != NULL ) found++;
 
-		}
+        }
 
-		assert(found != 0);  /* That'd just be silly */
-		if ( found > 1 ) {
+        assert(found != 0);  /* That'd just be silly */
+        if ( found > 1 ) {
 
-			STATUS("Found %i %i %i: %i times:\n", h, k, l, found);
+            STATUS("Found %i %i %i: %i times:\n", h, k, l, found);
 
-			for ( j=0; j<n; j++ ) {
+            for ( j=0; j<n; j++ ) {
 
-				signed int he, ke, le;
-				Reflection *f;
+                signed int he, ke, le;
+                Reflection *f;
 
-				get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
+                get_equiv(sym, mask, j, h, k, l, &he, &ke, &le);
 
-				f = find_refl(list, he, ke, le);
-				if ( f != NULL ) {
-					STATUS("%3i %3i %3i\n", he, ke, le);
-				}
+                f = find_refl(list, he, ke, le);
+                if ( f != NULL ) {
+                    STATUS("%3i %3i %3i\n", he, ke, le);
+                }
 
-			}
-			free_symopmask(mask);
+            }
+            free_symopmask(mask);
 
-			return 1;  /* Symmetry is wrong! */
-		}
+            return 1;  /* Symmetry is wrong! */
+        }
 
-	}
+    }
 
-	free_symopmask(mask);
+    free_symopmask(mask);
 
-	return 0;
+    return 0;
 }
 
 
@@ -133,107 +133,107 @@ int find_equiv_in_list(RefList *list, signed int h, signed int k,
                        signed int l, const SymOpList *sym, signed int *hu,
                        signed int *ku, signed int *lu)
 {
-	int i;
-	int found = 0;
+    int i;
+    int found = 0;
 
-	for ( i=0; i<num_equivs(sym, NULL); i++ ) {
+    for ( i=0; i<num_equivs(sym, NULL); i++ ) {
 
-		signed int he, ke, le;
-		Reflection *f;
-		get_equiv(sym, NULL, i, h, k, l, &he, &ke, &le);
-		f = find_refl(list, he, ke, le);
+        signed int he, ke, le;
+        Reflection *f;
+        get_equiv(sym, NULL, i, h, k, l, &he, &ke, &le);
+        f = find_refl(list, he, ke, le);
 
-		/* There must only be one equivalent.  If there are more, it
-		 * indicates that the user lied about the input symmetry.
-		 * This situation should have been checked for earlier by
-		 * calling check_symmetry() with 'items' and 'mero'. */
+        /* There must only be one equivalent.  If there are more, it
+         * indicates that the user lied about the input symmetry.
+         * This situation should have been checked for earlier by
+         * calling check_symmetry() with 'items' and 'mero'. */
 
-		if ( (f != NULL) && !found ) {
-			*hu = he;  *ku = ke;  *lu = le;
-			return 1;
-		}
+        if ( (f != NULL) && !found ) {
+            *hu = he;  *ku = ke;  *lu = le;
+            return 1;
+        }
 
-	}
+    }
 
-	return 0;
+    return 0;
 }
 
 
 RefList *read_mtz(const char *filename, char **psym_name, UnitCell **pcell)
 {
 #ifdef HAVE_LIBCCP4
-	int nspg;
-	MTZ *mtz;
-	int done;
-	int i;
-	const MTZCOL *columns[5];
-	MTZXTAL *xtal;
-	RefList *refls;
-	CCP4SPG *spg;
-	UnitCell *cell;
+    int nspg;
+    MTZ *mtz;
+    int done;
+    int i;
+    const MTZCOL *columns[5];
+    MTZXTAL *xtal;
+    RefList *refls;
+    CCP4SPG *spg;
+    UnitCell *cell;
 
-	mtz = MtzGet(filename, 0);
-	if ( mtz == NULL ) return NULL;
+    mtz = MtzGet(filename, 0);
+    if ( mtz == NULL ) return NULL;
 
-	columns[0] = MtzColLookup(mtz, "H");
-	columns[1] = MtzColLookup(mtz, "K");
-	columns[2] = MtzColLookup(mtz, "L");
-	columns[3] = MtzColLookup(mtz, "I");
-	columns[4] = MtzColLookup(mtz, "SIGI");
+    columns[0] = MtzColLookup(mtz, "H");
+    columns[1] = MtzColLookup(mtz, "K");
+    columns[2] = MtzColLookup(mtz, "L");
+    columns[3] = MtzColLookup(mtz, "I");
+    columns[4] = MtzColLookup(mtz, "SIGI");
 
-	if ( columns[3] == NULL ) {
-		/* FIXME: Try I+/I- */
-		STATUS("Couldn't find intensity column in MTZ file\n");
-		return NULL;
-	}
+    if ( columns[3] == NULL ) {
+        /* FIXME: Try I+/I- */
+        STATUS("Couldn't find intensity column in MTZ file\n");
+        return NULL;
+    }
 
-	xtal = MtzIxtal(mtz, 0);
-	cell = cell_new_from_parameters(xtal->cell[0]*1e-10,
-	                                xtal->cell[1]*1e-10,
-	                                xtal->cell[2]*1e-10,
-	                                deg2rad(xtal->cell[3]),
-	                                deg2rad(xtal->cell[4]),
-	                                deg2rad(xtal->cell[5]));
+    xtal = MtzIxtal(mtz, 0);
+    cell = cell_new_from_parameters(xtal->cell[0]*1e-10,
+                                    xtal->cell[1]*1e-10,
+                                    xtal->cell[2]*1e-10,
+                                    deg2rad(xtal->cell[3]),
+                                    deg2rad(xtal->cell[4]),
+                                    deg2rad(xtal->cell[5]));
 
-	nspg = MtzSpacegroupNumber(mtz);
-	spg = ccp4spg_load_by_ccp4_num(nspg);
-	/* FIXME: Convert to CrystFEL (oriented) point group name */
-	ccp4spg_free(&spg);
+    nspg = MtzSpacegroupNumber(mtz);
+    spg = ccp4spg_load_by_ccp4_num(nspg);
+    /* FIXME: Convert to CrystFEL (oriented) point group name */
+    ccp4spg_free(&spg);
 
-	i = 1;
-	refls = reflist_new();
-	do {
+    i = 1;
+    refls = reflist_new();
+    do {
 
-		float res;
-		float vals[5];
-		int flags[5];
-		Reflection *refl;
-		signed int h, k, l;
+        float res;
+        float vals[5];
+        int flags[5];
+        Reflection *refl;
+        signed int h, k, l;
 
-		done = ccp4_lrreff(mtz, &res, vals, flags, columns, 5, i++);
-		if ( done ) continue;
+        done = ccp4_lrreff(mtz, &res, vals, flags, columns, 5, i++);
+        if ( done ) continue;
 
-		h = vals[0];
-		k = vals[1];
-		l = vals[2];
+        h = vals[0];
+        k = vals[1];
+        l = vals[2];
 
-		refl = add_refl(refls, h, k, l);
-		set_intensity(refl, vals[3]);
-		set_esd_intensity(refl, vals[4]);
-		set_redundancy(refl, 1);
+        refl = add_refl(refls, h, k, l);
+        set_intensity(refl, vals[3]);
+        set_esd_intensity(refl, vals[4]);
+        set_redundancy(refl, 1);
 
-	} while ( !done );
+    } while ( !done );
 
-	MtzFree(mtz);
+    MtzFree(mtz);
 
-	if ( pcell != NULL ) {
-		*pcell = cell;
-	} else {
-		cell_free(cell);
-	}
-	return refls;
+    if ( pcell != NULL ) {
+        *pcell = cell;
+    } else {
+        cell_free(cell);
+    }
+    return refls;
 #else
-	return NULL;
+    return NULL;
 #endif
 }
 
@@ -245,42 +245,42 @@ RefList *read_mtz(const char *filename, char **psym_name, UnitCell **pcell)
  **/
 static void write_reflections_to_file(FILE *fh, RefList *list)
 {
-	Reflection *refl;
-	RefListIterator *iter;
+    Reflection *refl;
+    RefListIterator *iter;
 
-	fprintf(fh, "   h    k    l          I    phase   sigma(I)   nmeas\n");
+    fprintf(fh, "   h    k    l          I    phase   sigma(I)   nmeas\n");
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
 
-		signed int h, k, l;
-		double intensity, esd_i, ph;
-		int red;
-		char phs[16];
-		int have_phase;
+        signed int h, k, l;
+        double intensity, esd_i, ph;
+        int red;
+        char phs[16];
+        int have_phase;
 
-		get_indices(refl, &h, &k, &l);
-		intensity = get_intensity(refl);
-		esd_i = get_esd_intensity(refl);
-		red = get_redundancy(refl);
-		ph = get_phase(refl, &have_phase);
+        get_indices(refl, &h, &k, &l);
+        intensity = get_intensity(refl);
+        esd_i = get_esd_intensity(refl);
+        red = get_redundancy(refl);
+        ph = get_phase(refl, &have_phase);
 
-		/* Reflections with redundancy = 0 are not written */
-		if ( red == 0 ) continue;
+        /* Reflections with redundancy = 0 are not written */
+        if ( red == 0 ) continue;
 
-		if ( have_phase ) {
-			snprintf(phs, 16, "%8.2f", rad2deg(ph));
-		} else {
-			strncpy(phs, "       -", 15);
-		}
+        if ( have_phase ) {
+            snprintf(phs, 16, "%8.2f", rad2deg(ph));
+        } else {
+            strncpy(phs, "       -", 15);
+        }
 
-		fprintf(fh,
-		       "%4i %4i %4i %10.2f %s %10.2f %7i\n",
-		       h, k, l, intensity, phs, esd_i, red);
+        fprintf(fh,
+               "%4i %4i %4i %10.2f %s %10.2f %7i\n",
+               h, k, l, intensity, phs, esd_i, red);
 
-	}
+    }
 }
 
 
@@ -300,39 +300,39 @@ static void write_reflections_to_file(FILE *fh, RefList *list)
  **/
 int write_reflist_2(const char *filename, RefList *list, SymOpList *sym)
 {
-	FILE *fh;
-	const char *ssym;
+    FILE *fh;
+    const char *ssym;
 
-	if ( filename == NULL ) {
-		fh = stdout;
-	} else {
-		fh = fopen(filename, "w");
-	}
+    if ( filename == NULL ) {
+        fh = stdout;
+    } else {
+        fh = fopen(filename, "w");
+    }
 
-	if ( fh == NULL ) {
-		ERROR("Couldn't open output file '%s'.\n", filename);
-		return 1;
-	}
+    if ( fh == NULL ) {
+        ERROR("Couldn't open output file '%s'.\n", filename);
+        return 1;
+    }
 
-	fprintf(fh, "CrystFEL reflection list version 2.0\n");
+    fprintf(fh, "CrystFEL reflection list version 2.0\n");
 
-	if ( sym == NULL ) {
-		ssym = "unknown";
-	} else {
-		ssym = symmetry_name(sym);
-	}
-	fprintf(fh, "Symmetry: %s\n", ssym);
+    if ( sym == NULL ) {
+        ssym = "unknown";
+    } else {
+        ssym = symmetry_name(sym);
+    }
+    fprintf(fh, "Symmetry: %s\n", ssym);
 
-	write_reflections_to_file(fh, list);
-	fprintf(fh, REFLECTION_END_MARKER"\n");
+    write_reflections_to_file(fh, list);
+    fprintf(fh, REFLECTION_END_MARKER"\n");
 
-	if ( reflist_get_notes(list) != NULL ) {
-		fprintf(fh, "%s\n", reflist_get_notes(list));
-	}
+    if ( reflist_get_notes(list) != NULL ) {
+        fprintf(fh, "%s\n", reflist_get_notes(list));
+    }
 
-	fclose(fh);
+    fclose(fh);
 
-	return 0;
+    return 0;
 }
 
 
@@ -356,12 +356,12 @@ int write_reflist_2(const char *filename, RefList *list, SymOpList *sym)
  **/
 int write_reflist(const char *filename, RefList *list)
 {
-	return write_reflist_2(filename, list, NULL);
+    return write_reflist_2(filename, list, NULL);
 }
 
 
 #define HEADER_1_0 "  h   k   l          I    phase   sigma(I)  counts  " \
-	                  "fs/px  ss/px"
+                      "fs/px  ss/px"
 
 #define HEADER_2_0 "CrystFEL reflection list version 2.0"
 
@@ -374,129 +374,129 @@ int write_reflist(const char *filename, RefList *list)
  */
 static RefList *read_reflections_from_file(FILE *fh, char **sym)
 {
-	char *rval = NULL;
-	RefList *out;
-	int major_version;  /* Minor version as well, but not used yet */
-	char line[1024];
+    char *rval = NULL;
+    RefList *out;
+    int major_version;  /* Minor version as well, but not used yet */
+    char line[1024];
 
-	rval = fgets(line, 1023, fh);
-	if ( rval == NULL ) return NULL;
-	chomp(line);
-	if ( strcmp(line, HEADER_1_0) == 0 ) {
-		major_version = 1;
-	} else if ( strcmp(line, HEADER_2_0) == 0 ) {
-		major_version = 2;
-	} else {
-		fprintf(stderr, "Unrecognised header '%s'\n", line);
-		return NULL;
-	}
+    rval = fgets(line, 1023, fh);
+    if ( rval == NULL ) return NULL;
+    chomp(line);
+    if ( strcmp(line, HEADER_1_0) == 0 ) {
+        major_version = 1;
+    } else if ( strcmp(line, HEADER_2_0) == 0 ) {
+        major_version = 2;
+    } else {
+        fprintf(stderr, "Unrecognised header '%s'\n", line);
+        return NULL;
+    }
 
-	if ( major_version >= 2 ) {
+    if ( major_version >= 2 ) {
 
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) return NULL;
-		chomp(line);
-		if ( strncmp(line, "Symmetry: ", 10) != 0 ) return NULL;
+        rval = fgets(line, 1023, fh);
+        if ( rval == NULL ) return NULL;
+        chomp(line);
+        if ( strncmp(line, "Symmetry: ", 10) != 0 ) return NULL;
 
-		if ( sym != NULL ) {
-			*sym = cfstrdup(line+10);
-		}
+        if ( sym != NULL ) {
+            *sym = cfstrdup(line+10);
+        }
 
-		/* Read (and ignore) the header */
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) return NULL;
+        /* Read (and ignore) the header */
+        rval = fgets(line, 1023, fh);
+        if ( rval == NULL ) return NULL;
 
-	}
+    }
 
-	out = reflist_new();
+    out = reflist_new();
 
-	do {
+    do {
 
-		Reflection *refl;
+        Reflection *refl;
 
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
+        rval = fgets(line, 1023, fh);
+        if ( rval == NULL ) continue;
+        chomp(line);
 
-		if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) break;
+        if ( strcmp(line, REFLECTION_END_MARKER) == 0 ) break;
 
-		if ( major_version >= 2 ) {
+        if ( major_version >= 2 ) {
 
-			double ph;
-			char *v;
-			signed int h, k, l;
-			float intensity, sigma;
-			char phs[1024];
-			int cts;
-			int r;
+            double ph;
+            char *v;
+            signed int h, k, l;
+            float intensity, sigma;
+            char phs[1024];
+            int cts;
+            int r;
 
-			r = sscanf(line, "%i %i %i %f %64s %f %i",
-				   &h, &k, &l, &intensity, phs, &sigma, &cts);
+            r = sscanf(line, "%i %i %i %f %64s %f %i",
+                   &h, &k, &l, &intensity, phs, &sigma, &cts);
 
-			if ( r != 7 ) {
-				reflist_free(out);
-				printf("Bad line '%s'\n", line);
-				return NULL;
-			}
+            if ( r != 7 ) {
+                reflist_free(out);
+                printf("Bad line '%s'\n", line);
+                return NULL;
+            }
 
-			refl = add_refl(out, h, k, l);
-			set_intensity(refl, intensity);
-			set_esd_intensity(refl, sigma);
-			set_redundancy(refl, cts);
+            refl = add_refl(out, h, k, l);
+            set_intensity(refl, intensity);
+            set_esd_intensity(refl, sigma);
+            set_redundancy(refl, cts);
 
-			ph = strtod(phs, &v);
-			if ( v != phs ) set_phase(refl, deg2rad(ph));
+            ph = strtod(phs, &v);
+            if ( v != phs ) set_phase(refl, deg2rad(ph));
 
-		} else {
+        } else {
 
-			/* Deprecated reflection format */
+            /* Deprecated reflection format */
 
-			double ph;
-			char *v;
-			signed int h, k, l;
-			float intensity, sigma, fs, ss;
-			char phs[1024];
-			int cts;
-			int r;
+            double ph;
+            char *v;
+            signed int h, k, l;
+            float intensity, sigma, fs, ss;
+            char phs[1024];
+            int cts;
+            int r;
 
-			r = sscanf(line, "%i %i %i %f %64s %f %i %f %f",
-				   &h, &k, &l, &intensity, phs, &sigma,
-				   &cts, &fs, &ss);
+            r = sscanf(line, "%i %i %i %f %64s %f %i %f %f",
+                   &h, &k, &l, &intensity, phs, &sigma,
+                   &cts, &fs, &ss);
 
-			if ( r != 9 ) {
-				reflist_free(out);
-				return NULL;
-			}
+            if ( r != 9 ) {
+                reflist_free(out);
+                return NULL;
+            }
 
-			refl = add_refl(out, h, k, l);
-			set_intensity(refl, intensity);
-			set_detector_pos(refl, fs, ss);
+            refl = add_refl(out, h, k, l);
+            set_intensity(refl, intensity);
+            set_detector_pos(refl, fs, ss);
 
-			set_esd_intensity(refl, sigma);
-			set_redundancy(refl, cts);
+            set_esd_intensity(refl, sigma);
+            set_redundancy(refl, cts);
 
-			ph = strtod(phs, &v);
-			if ( v != phs ) set_phase(refl, deg2rad(ph));
+            ph = strtod(phs, &v);
+            if ( v != phs ) set_phase(refl, deg2rad(ph));
 
-		}
+        }
 
-	} while ( rval != NULL );
+    } while ( rval != NULL );
 
-	if ( strcmp(line, REFLECTION_END_MARKER) != 0 ) {
-		/* Got read error of some kind before finding
-		 * PEAK_LIST_END_MARKER */
-		return NULL;
-	}
+    if ( strcmp(line, REFLECTION_END_MARKER) != 0 ) {
+        /* Got read error of some kind before finding
+         * PEAK_LIST_END_MARKER */
+        return NULL;
+    }
 
-	/* We are now in the notes region */
-	do {
-		rval = fgets(line, 1023, fh);
-		if ( rval == NULL ) continue;
-		chomp(line);
-		reflist_add_notes(out, line);
-	} while ( rval != NULL );
+    /* We are now in the notes region */
+    do {
+        rval = fgets(line, 1023, fh);
+        if ( rval == NULL ) continue;
+        chomp(line);
+        reflist_add_notes(out, line);
+    } while ( rval != NULL );
 
-	return out;
+    return out;
 }
 
 
@@ -518,33 +518,33 @@ static RefList *read_reflections_from_file(FILE *fh, char **sym)
  */
 RefList *read_reflections_3(const char *filename, char **sym, UnitCell **cell)
 {
-	const char *ext;
+    const char *ext;
 
-	if ( filename == NULL ) {
-		return read_reflections_from_file(stdin, sym);
-	}
+    if ( filename == NULL ) {
+        return read_reflections_from_file(stdin, sym);
+    }
 
-	ext = filename_extension(filename, NULL);
-	if ( strcmp(ext, ".mtz") == 0 ) {
-		return read_mtz(filename, sym, cell);
-	} else {
+    ext = filename_extension(filename, NULL);
+    if ( strcmp(ext, ".mtz") == 0 ) {
+        return read_mtz(filename, sym, cell);
+    } else {
 
-		RefList *out;
-		FILE *fh = fopen(filename, "r");
+        RefList *out;
+        FILE *fh = fopen(filename, "r");
 
-		if ( fh == NULL ) {
-			ERROR("Couldn't open input file '%s'.\n", filename);
-			return NULL;
-		}
+        if ( fh == NULL ) {
+            ERROR("Couldn't open input file '%s'.\n", filename);
+            return NULL;
+        }
 
-		out = read_reflections_from_file(fh, sym);
-		if ( cell != NULL ) *cell = NULL;
+        out = read_reflections_from_file(fh, sym);
+        if ( cell != NULL ) *cell = NULL;
 
-		fclose(fh);
+        fclose(fh);
 
-		return out;
+        return out;
 
-	}
+    }
 }
 
 
@@ -565,7 +565,7 @@ RefList *read_reflections_3(const char *filename, char **sym, UnitCell **cell)
  */
 RefList *read_reflections_2(const char *filename, char **sym)
 {
-	return read_reflections_3(filename, sym, NULL);
+    return read_reflections_3(filename, sym, NULL);
 }
 
 
@@ -579,7 +579,7 @@ RefList *read_reflections_2(const char *filename, char **sym)
  */
 RefList *read_reflections(const char *filename)
 {
-	return read_reflections_2(filename, NULL);
+    return read_reflections_2(filename, NULL);
 }
 
 
@@ -597,34 +597,34 @@ RefList *read_reflections(const char *filename)
  **/
 RefList *asymmetric_indices(RefList *in, const SymOpList *sym)
 {
-	Reflection *refl;
-	RefListIterator *iter;
-	RefList *new;
+    Reflection *refl;
+    RefListIterator *iter;
+    RefList *new;
 
-	new = reflist_new();
-	if ( new == NULL ) return NULL;
+    new = reflist_new();
+    if ( new == NULL ) return NULL;
 
-	for ( refl = first_refl(in, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) ) {
+    for ( refl = first_refl(in, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) ) {
 
-		signed int h, k, l;
-		signed int ha, ka, la;
-		Reflection *cr;
+        signed int h, k, l;
+        signed int ha, ka, la;
+        Reflection *cr;
 
-		get_indices(refl, &h, &k, &l);
+        get_indices(refl, &h, &k, &l);
 
-		get_asymm(sym, h, k, l, &ha, &ka, &la);
+        get_asymm(sym, h, k, l, &ha, &ka, &la);
 
-		cr = add_refl(new, ha, ka, la);
-		assert(cr != NULL);
+        cr = add_refl(new, ha, ka, la);
+        assert(cr != NULL);
 
-		copy_data(cr, refl);
-		set_symmetric_indices(cr, h, k, l);
+        copy_data(cr, refl);
+        set_symmetric_indices(cr, h, k, l);
 
-	}
+    }
 
-	return new;
+    return new;
 }
 
 
@@ -641,25 +641,25 @@ RefList *asymmetric_indices(RefList *in, const SymOpList *sym)
 void resolution_limits(RefList *list, UnitCell *cell,
                        double *rmin, double *rmax)
 {
-	Reflection *refl;
-	RefListIterator *iter;
+    Reflection *refl;
+    RefListIterator *iter;
 
-	*rmin = INFINITY;
-	*rmax = 0.0;
+    *rmin = INFINITY;
+    *rmax = 0.0;
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double r;
-		signed int h, k, l;
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        double r;
+        signed int h, k, l;
 
-		get_indices(refl, &h, &k, &l);
-		r = 2.0 * resolution(cell, h, k, l);
+        get_indices(refl, &h, &k, &l);
+        r = 2.0 * resolution(cell, h, k, l);
 
-		if ( r > *rmax ) *rmax = r;
-		if ( r < *rmin ) *rmin = r;
-	}
+        if ( r > *rmax ) *rmax = r;
+        if ( r < *rmin ) *rmin = r;
+    }
 }
 
 
@@ -671,21 +671,21 @@ void resolution_limits(RefList *list, UnitCell *cell,
  **/
 double max_intensity(RefList *list)
 {
-	Reflection *refl;
-	RefListIterator *iter;
-	double max;
+    Reflection *refl;
+    RefListIterator *iter;
+    double max;
 
-	max = -INFINITY;
+    max = -INFINITY;
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double val = get_intensity(refl);
-		if ( val > max ) max = val;
-	}
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        double val = get_intensity(refl);
+        if ( val > max ) max = val;
+    }
 
-	return max;
+    return max;
 }
 
 
@@ -703,32 +703,32 @@ double max_intensity(RefList *list)
  **/
 RefList *res_cutoff(RefList *list, UnitCell *cell, double min, double max)
 {
-	Reflection *refl;
-	RefListIterator *iter;
-	RefList *new;
+    Reflection *refl;
+    RefListIterator *iter;
+    RefList *new;
 
-	new = reflist_new();
+    new = reflist_new();
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		double one_over_d;
-		signed int h, k, l;
-		Reflection *n;
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        double one_over_d;
+        signed int h, k, l;
+        Reflection *n;
 
-		get_indices(refl, &h, &k, &l);
+        get_indices(refl, &h, &k, &l);
 
-		one_over_d = 2.0 * resolution(cell, h, k, l);
-		if ( one_over_d < min ) continue;
-		if ( one_over_d > max ) continue;
+        one_over_d = 2.0 * resolution(cell, h, k, l);
+        if ( one_over_d < min ) continue;
+        if ( one_over_d > max ) continue;
 
-		n = add_refl(new, h, k, l);
-		copy_data(n, refl);
-	}
+        n = add_refl(new, h, k, l);
+        copy_data(n, refl);
+    }
 
-	reflist_free(list);
-	return new;
+    reflist_free(list);
+    return new;
 }
 
 
@@ -740,26 +740,26 @@ RefList *res_cutoff(RefList *list, UnitCell *cell, double min, double max)
  **/
 RefList *copy_reflist(RefList *list)
 {
-	Reflection *refl;
-	RefListIterator *iter;
-	RefList *new;
+    Reflection *refl;
+    RefListIterator *iter;
+    RefList *new;
 
-	new = reflist_new();
+    new = reflist_new();
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		Reflection *n;
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        signed int h, k, l;
+        Reflection *n;
 
-		get_indices(refl, &h, &k, &l);
+        get_indices(refl, &h, &k, &l);
 
-		n = add_refl(new, h, k, l);
-		copy_data(n, refl);
-	}
+        n = add_refl(new, h, k, l);
+        copy_data(n, refl);
+    }
 
-	return new;
+    return new;
 }
 
 
@@ -771,71 +771,71 @@ RefList *copy_reflist(RefList *list)
  **/
 void free_contribs(RefList *list)
 {
-	Reflection *refl;
-	RefListIterator *iter;
+    Reflection *refl;
+    RefListIterator *iter;
 
-	for ( refl = first_refl(list, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		struct reflection_contributions *c;
-		c = get_contributions(refl);
-		cffree(c->contribs);
-		cffree(c->contrib_esds);
-		cffree(c->contrib_legacy_weights);
-		cffree(c);
-	}
+    for ( refl = first_refl(list, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        struct reflection_contributions *c;
+        c = get_contributions(refl);
+        cffree(c->contribs);
+        cffree(c->contrib_esds);
+        cffree(c->contrib_legacy_weights);
+        cffree(c);
+    }
 }
 
 
 static char *full_command_line(int argc, char *argv[])
 {
-	int i;
-	size_t len = 1;
-	char *cl;
+    int i;
+    size_t len = 1;
+    char *cl;
 
-	if ( argc == 0 ) return cfstrdup("");
-	for ( i=0; i<argc; i++ ) {
-		len += strlen(argv[i]) + 1;
-	}
+    if ( argc == 0 ) return cfstrdup("");
+    for ( i=0; i<argc; i++ ) {
+        len += strlen(argv[i]) + 1;
+    }
 
-	cl = cfmalloc(len);
-	if ( cl == NULL ) return cfstrdup("");
+    cl = cfmalloc(len);
+    if ( cl == NULL ) return cfstrdup("");
 
-	cl[0] = '\0';
-	for ( i=0; i<argc; i++ ) {
-		if ( i > 0 ) strcat(cl, " ");
-		strcat(cl, argv[i]);
-	}
+    cl[0] = '\0';
+    for ( i=0; i<argc; i++ ) {
+        if ( i > 0 ) strcat(cl, " ");
+        strcat(cl, argv[i]);
+    }
 
-	return cl;
+    return cl;
 }
 
 
 void reflist_add_command_and_version(RefList *list, int argc, char *argv[])
 {
-	char *tmp;
-	char vers[128];
+    char *tmp;
+    char vers[128];
 
-	snprintf(vers, 128, "Generated by CrystFEL %s",
-	         libcrystfel_version_string());
-	reflist_add_notes(list, vers);
+    snprintf(vers, 128, "Generated by CrystFEL %s",
+             libcrystfel_version_string());
+    reflist_add_notes(list, vers);
 
-	tmp = full_command_line(argc, argv);
-	reflist_add_notes(list, tmp);
-	cffree(tmp);
+    tmp = full_command_line(argc, argv);
+    reflist_add_notes(list, tmp);
+    cffree(tmp);
 }
 
 
 struct point_group_conversion
 {
-	char centering;
-	const char *crystfel;
-	int friedel;
+    char centering;
+    const char *crystfel;
+    int friedel;
 
-	int xds_spgnum;
+    int xds_spgnum;
 
-	const char *ccp4;
+    const char *ccp4;
 };
 
 
@@ -846,204 +846,204 @@ struct point_group_conversion
  * without re-indexing the dataset. */
 struct point_group_conversion pg_conversions[] = {
 
-	/* Triclinic  */
-	{'P', "1",       0,      1,     "P 1"},
-	{'P', "-1",      1,      1,     "P 1"},
+    /* Triclinic  */
+    {'P', "1",       0,      1,     "P 1"},
+    {'P', "-1",      1,      1,     "P 1"},
 
-	/* Monoclinic */
-	{'P', "2_uaa",   0,      0,     "P211"},
-	{'P', "m_uaa",   0,      0,     "Pm11"},
-	{'P', "2/m_uaa", 1,      0,     "P211"},
-	{'P', "2_uab",   0,      3,     "P121"},
-	{'P', "m_uab",   0,      0,     "P1m1"},
-	{'P', "2/m_uab", 1,      3,     "P121"},
-	{'P', "2_uac",   0,      0,     "P112"},
-	{'P', "m_uac",   0,      0,     "P11m"},
-	{'P', "2/m_uac", 1,      0,     "P112"},
-	{'P', "2",       0,      0,     "P112"}, /* unique axis c */
-	{'P', "m",       0,      0,     "P11m"}, /* unique axis c */
-	{'P', "2/m",     1,      0,     "P112"}, /* unique axis c */
+    /* Monoclinic */
+    {'P', "2_uaa",   0,      0,     "P211"},
+    {'P', "m_uaa",   0,      0,     "Pm11"},
+    {'P', "2/m_uaa", 1,      0,     "P211"},
+    {'P', "2_uab",   0,      3,     "P121"},
+    {'P', "m_uab",   0,      0,     "P1m1"},
+    {'P', "2/m_uab", 1,      3,     "P121"},
+    {'P', "2_uac",   0,      0,     "P112"},
+    {'P', "m_uac",   0,      0,     "P11m"},
+    {'P', "2/m_uac", 1,      0,     "P112"},
+    {'P', "2",       0,      0,     "P112"}, /* unique axis c */
+    {'P', "m",       0,      0,     "P11m"}, /* unique axis c */
+    {'P', "2/m",     1,      0,     "P112"}, /* unique axis c */
 
-	{'A', "2_uab",   0,      0,     "A121"},
-	{'A', "m_uab",   0,      0,     "A1m1"},
-	{'A', "2/m_uab", 1,      0,     "A121"},
-	{'A', "2_uac",   0,      0,     "A112"},
-	{'A', "m_uac",   0,      0,     "A11m"},
-	{'A', "2/m_uac", 1,      0,     "A112"},
-	{'A', "2",       0,      0,     "A121"}, /* unique axis c */
-	{'A', "m",       0,      0,     "A11m"}, /* unique axis c */
-	{'A', "2/m",     1,      0,     "A121"}, /* unique axis c */
+    {'A', "2_uab",   0,      0,     "A121"},
+    {'A', "m_uab",   0,      0,     "A1m1"},
+    {'A', "2/m_uab", 1,      0,     "A121"},
+    {'A', "2_uac",   0,      0,     "A112"},
+    {'A', "m_uac",   0,      0,     "A11m"},
+    {'A', "2/m_uac", 1,      0,     "A112"},
+    {'A', "2",       0,      0,     "A121"}, /* unique axis c */
+    {'A', "m",       0,      0,     "A11m"}, /* unique axis c */
+    {'A', "2/m",     1,      0,     "A121"}, /* unique axis c */
 
-	{'B', "2_uaa",   0,      0,     "B211"},
-	{'B', "m_uaa",   0,      0,     "Bm11"},
-	{'B', "2/m_uaa", 1,      0,     "B211"},
-	{'B', "2_uac",   0,      0,     "B112"},
-	{'B', "m_uac",   0,      0,     "B11m"},
-	{'B', "2/m_uac", 1,      0,     "B112"},
-	{'B', "2",       0,      0,     "B112"}, /* unique axis c */
-	{'B', "m",       0,      0,     "B11m"}, /* unique axis c */
-	{'B', "2/m",     1,      0,     "B112"}, /* unique axis c */
+    {'B', "2_uaa",   0,      0,     "B211"},
+    {'B', "m_uaa",   0,      0,     "Bm11"},
+    {'B', "2/m_uaa", 1,      0,     "B211"},
+    {'B', "2_uac",   0,      0,     "B112"},
+    {'B', "m_uac",   0,      0,     "B11m"},
+    {'B', "2/m_uac", 1,      0,     "B112"},
+    {'B', "2",       0,      0,     "B112"}, /* unique axis c */
+    {'B', "m",       0,      0,     "B11m"}, /* unique axis c */
+    {'B', "2/m",     1,      0,     "B112"}, /* unique axis c */
 
-	{'C', "2_uaa",   0,      0,     "C211"},
-	{'C', "m_uaa",   0,      0,     "Cm11"},
-	{'C', "2/m_uaa", 1,      0,     "C211"},
-	{'C', "2_uab",   0,      5,     "C121"},
-	{'C', "m_uab",   0,      0,     "C1m1"},
-	{'C', "2/m_uab", 1,      5,     "C121"},
+    {'C', "2_uaa",   0,      0,     "C211"},
+    {'C', "m_uaa",   0,      0,     "Cm11"},
+    {'C', "2/m_uaa", 1,      0,     "C211"},
+    {'C', "2_uab",   0,      5,     "C121"},
+    {'C', "m_uab",   0,      0,     "C1m1"},
+    {'C', "2/m_uab", 1,      5,     "C121"},
 
-	{'I', "2_uaa",   0,      0,     "I211"},
-	{'I', "m_uaa",   0,      0,     "Im11"},
-	{'I', "2/m_uaa", 1,      0,     "I211"},
-	{'I', "2_uab",   0,      0,     "I121"},
-	{'I', "m_uab",   0,      0,     "I1m1"},
-	{'I', "2/m_uab", 1,      0,     "I121"},
-	{'I', "2_uac",   0,      0,     "I112"},
-	{'I', "m_uac",   0,      0,     "I11m"},
-	{'I', "2/m_uac", 1,      0,     "I112"},
-	{'I', "2",       0,      0,     "I121"}, /* unique axis c */
-	{'I', "m",       0,      0,     "I11m"}, /* unique axis c */
-	{'I', "2/m",     1,      0,     "I121"}, /* unique axis c */
+    {'I', "2_uaa",   0,      0,     "I211"},
+    {'I', "m_uaa",   0,      0,     "Im11"},
+    {'I', "2/m_uaa", 1,      0,     "I211"},
+    {'I', "2_uab",   0,      0,     "I121"},
+    {'I', "m_uab",   0,      0,     "I1m1"},
+    {'I', "2/m_uab", 1,      0,     "I121"},
+    {'I', "2_uac",   0,      0,     "I112"},
+    {'I', "m_uac",   0,      0,     "I11m"},
+    {'I', "2/m_uac", 1,      0,     "I112"},
+    {'I', "2",       0,      0,     "I121"}, /* unique axis c */
+    {'I', "m",       0,      0,     "I11m"}, /* unique axis c */
+    {'I', "2/m",     1,      0,     "I121"}, /* unique axis c */
 
-	/* Orthorhombic */
-	{'P', "222",       0,     16,     "P222"},
-	{'P', "mmm",       1,     16,     "P222"},
-	{'P', "mm2",       0,     25,     "Pmm2"},
-	{'A', "222",       0,      0,     "A222"},
-	{'A', "mmm",       1,      0,     "A222"},
-	{'A', "mm2",       0,     38,     "Amm2"},
-	{'B', "222",       0,      0,     "B222"},
-	{'B', "mmm",       1,      0,     "B222"},
-	{'B', "mm2",       0,      0,     "Bmm2"},
-	{'C', "222",       0,     21,     "C222"},
-	{'C', "mmm",       1,     21,     "C222"},
-	{'C', "mm2",       0,     35,     "Cmm2"},
-	{'F', "222",       0,     22,     "F222"},
-	{'F', "mmm",       1,     22,     "F222"},
-	{'F', "mm2",       0,     42,     "Fmm2"},
-	{'I', "222",       0,     23,     "I222"},
-	{'I', "mmm",       1,     23,     "I222"},
-	{'I', "mm2",       0,     45,     "Imm2"},
+    /* Orthorhombic */
+    {'P', "222",       0,     16,     "P222"},
+    {'P', "mmm",       1,     16,     "P222"},
+    {'P', "mm2",       0,     25,     "Pmm2"},
+    {'A', "222",       0,      0,     "A222"},
+    {'A', "mmm",       1,      0,     "A222"},
+    {'A', "mm2",       0,     38,     "Amm2"},
+    {'B', "222",       0,      0,     "B222"},
+    {'B', "mmm",       1,      0,     "B222"},
+    {'B', "mm2",       0,      0,     "Bmm2"},
+    {'C', "222",       0,     21,     "C222"},
+    {'C', "mmm",       1,     21,     "C222"},
+    {'C', "mm2",       0,     35,     "Cmm2"},
+    {'F', "222",       0,     22,     "F222"},
+    {'F', "mmm",       1,     22,     "F222"},
+    {'F', "mm2",       0,     42,     "Fmm2"},
+    {'I', "222",       0,     23,     "I222"},
+    {'I', "mmm",       1,     23,     "I222"},
+    {'I', "mm2",       0,     45,     "Imm2"},
 
-	/* Tetragonal */
-	{'P', "4",         0,     75,     "P4"},    /* unique axis c */
-	{'P', "4/m",       1,     75,     "P4"},    /* unique axis c */
-	{'P', "422",       0,     89,     "P422"},  /* unique axis c */
-	{'P', "4/mmm",     1,     89,     "P422"},  /* unique axis c */
-	{'P', "4mm",       0,     99,     "P4mm"},  /* unique axis c */
-	{'P', "-4",        0,     81,     "P-4"},   /* unique axis c */
-	{'P', "-42m",      0,    111,     "P-42m"}, /* unique axis c */
-	{'P', "-4m2",      0,    115,     "P-4m2"}, /* unique axis c */
-	{'P', "4_uac",     0,     75,     "P4"},
-	{'P', "4/m_uac",   1,     75,     "P4"},
-	{'P', "422_uac",   0,     89,     "P422"},
-	{'P', "4/mmm_uac", 1,     89,     "P422"},
-	{'P', "4mm_uac",   0,     99,     "P4mm"},
-	{'P', "-4_uac",    0,     81,     "P-4"},
-	{'P', "-42m_uac",  0,    111,     "P-42m"},
-	{'P', "-4m2_uac",  0,    115,     "P-4m2"},
-	{'I', "4",         0,     79,     "I4"},    /* unique axis c */
-	{'I', "4/m",       1,     79,     "I4"},    /* unique axis c */
-	{'I', "422",       0,     97,     "I422"},  /* unique axis c */
-	{'I', "4/mmm",     1,     97,     "I422"},  /* unique axis c */
-	{'I', "4mm",       0,    107,     "I4mm"},  /* unique axis c */
-	{'I', "-4",        0,     82,     "I-4"},   /* unique axis c */
-	{'I', "-42m",      0,    121,     "I-42m"}, /* unique axis c */
-	{'I', "-4m2",      0,    119,     "I-4m2"}, /* unique axis c */
-	{'I', "4_uac",     0,     79,     "I4"},
-	{'I', "4/m_uac",   1,     79,     "I4"},
-	{'I', "422_uac",   0,     97,     "I422"},
-	{'I', "4/mmm_uac", 1,     97,     "I422"},
-	{'I', "4mm_uac",   0,    107,     "I4mm"},
-	{'I', "-4_uac",    0,     82,     "I-4"},
-	{'I', "-42m_uac",  0,    121,     "I-42m"},
-	{'I', "-4m2_uac",  0,    119,     "I-4m2"},
+    /* Tetragonal */
+    {'P', "4",         0,     75,     "P4"},    /* unique axis c */
+    {'P', "4/m",       1,     75,     "P4"},    /* unique axis c */
+    {'P', "422",       0,     89,     "P422"},  /* unique axis c */
+    {'P', "4/mmm",     1,     89,     "P422"},  /* unique axis c */
+    {'P', "4mm",       0,     99,     "P4mm"},  /* unique axis c */
+    {'P', "-4",        0,     81,     "P-4"},   /* unique axis c */
+    {'P', "-42m",      0,    111,     "P-42m"}, /* unique axis c */
+    {'P', "-4m2",      0,    115,     "P-4m2"}, /* unique axis c */
+    {'P', "4_uac",     0,     75,     "P4"},
+    {'P', "4/m_uac",   1,     75,     "P4"},
+    {'P', "422_uac",   0,     89,     "P422"},
+    {'P', "4/mmm_uac", 1,     89,     "P422"},
+    {'P', "4mm_uac",   0,     99,     "P4mm"},
+    {'P', "-4_uac",    0,     81,     "P-4"},
+    {'P', "-42m_uac",  0,    111,     "P-42m"},
+    {'P', "-4m2_uac",  0,    115,     "P-4m2"},
+    {'I', "4",         0,     79,     "I4"},    /* unique axis c */
+    {'I', "4/m",       1,     79,     "I4"},    /* unique axis c */
+    {'I', "422",       0,     97,     "I422"},  /* unique axis c */
+    {'I', "4/mmm",     1,     97,     "I422"},  /* unique axis c */
+    {'I', "4mm",       0,    107,     "I4mm"},  /* unique axis c */
+    {'I', "-4",        0,     82,     "I-4"},   /* unique axis c */
+    {'I', "-42m",      0,    121,     "I-42m"}, /* unique axis c */
+    {'I', "-4m2",      0,    119,     "I-4m2"}, /* unique axis c */
+    {'I', "4_uac",     0,     79,     "I4"},
+    {'I', "4/m_uac",   1,     79,     "I4"},
+    {'I', "422_uac",   0,     97,     "I422"},
+    {'I', "4/mmm_uac", 1,     97,     "I422"},
+    {'I', "4mm_uac",   0,    107,     "I4mm"},
+    {'I', "-4_uac",    0,     82,     "I-4"},
+    {'I', "-42m_uac",  0,    121,     "I-42m"},
+    {'I', "-4m2_uac",  0,    119,     "I-4m2"},
 
-	/* Trigonal (rhombohedral) */
-	{'R', "3_R",       0,      0,     "R3:R"},
-	{'R', "-3_R",      1,      0,     "R3:R"},
-	{'R', "32_R",      0,      0,     "R32:R"},
-	{'R', "-3m_R",     1,      0,     "R32:R"},
-	{'R', "3m_R",      0,      0,     "R3m:R"},
+    /* Trigonal (rhombohedral) */
+    {'R', "3_R",       0,      0,     "R3:R"},
+    {'R', "-3_R",      1,      0,     "R3:R"},
+    {'R', "32_R",      0,      0,     "R32:R"},
+    {'R', "-3m_R",     1,      0,     "R32:R"},
+    {'R', "3m_R",      0,      0,     "R3m:R"},
 
-	/* Trigonal (rhombohedral on hexagonal axes) */
-	{'H', "3_H",       0,    146,     "R3:H"},
-	{'H', "-3_H",      1,    146,     "R3:H"},
-	{'H', "32_H",      0,    155,     "R3:H"},
-	{'H', "-3m_H",     1,    155,     "R3:H"},
-	{'H', "3m_H",      0,      0,     "R3m:H"},
+    /* Trigonal (rhombohedral on hexagonal axes) */
+    {'H', "3_H",       0,    146,     "R3:H"},
+    {'H', "-3_H",      1,    146,     "R3:H"},
+    {'H', "32_H",      0,    155,     "R3:H"},
+    {'H', "-3m_H",     1,    155,     "R3:H"},
+    {'H', "3m_H",      0,      0,     "R3m:H"},
 
-	/* Trigonal (hexagonal) */
-	{'P', "3_H",       0,    143,     "P3"},
-	{'P', "-3_H",      1,    143,     "P3"},
-	{'P', "312_H",     0,    149,     "P312"},
-	{'P', "-31m_H",    1,    149,     "P312"},
-	{'P', "321_H",     0,    150,     "P321"},
-	{'P', "-3m1_H",    1,    150,     "P321"},
-	{'P', "3m1_H",     0,    156,     "P3m1"},
-	{'P', "31m_H",     0,    157,     "P31m"},
+    /* Trigonal (hexagonal) */
+    {'P', "3_H",       0,    143,     "P3"},
+    {'P', "-3_H",      1,    143,     "P3"},
+    {'P', "312_H",     0,    149,     "P312"},
+    {'P', "-31m_H",    1,    149,     "P312"},
+    {'P', "321_H",     0,    150,     "P321"},
+    {'P', "-3m1_H",    1,    150,     "P321"},
+    {'P', "3m1_H",     0,    156,     "P3m1"},
+    {'P', "31m_H",     0,    157,     "P31m"},
 
-	/* Hexagonal */
-	{'P', "6",         0,    168,     "P6"},
-	{'P', "6/m",       1,    168,     "P6"},
-	{'P', "622",       0,    177,     "P622"},
-	{'P', "6/mmm",     1,    177,     "P622"},
-	{'P', "6mm",       0,    177,     "P6mm"},
-	{'P', "-6m2",      0,    187,     "P-6m2"},
-	{'P', "-62m",      0,    189,     "P-62m"},
+    /* Hexagonal */
+    {'P', "6",         0,    168,     "P6"},
+    {'P', "6/m",       1,    168,     "P6"},
+    {'P', "622",       0,    177,     "P622"},
+    {'P', "6/mmm",     1,    177,     "P622"},
+    {'P', "6mm",       0,    177,     "P6mm"},
+    {'P', "-6m2",      0,    187,     "P-6m2"},
+    {'P', "-62m",      0,    189,     "P-62m"},
 
-	/* Cubic */
-	{'P', "23",        0,    195,     "P23"},
-	{'P', "m-3",       1,    195,     "P23"},
-	{'P', "432",       0,    207,     "P432"},
-	{'P', "m-3m",      1,    207,     "P432"},
-	{'P', "-43m",      0,    215,     "P -4 3 m"},
-	{'I', "23",        0,    197,     "I23"},
-	{'I', "m-3",       1,    197,     "I23"},
-	{'I', "432",       0,    211,     "I432"},
-	{'I', "m-3m",      1,    211,     "I432"},
-	{'I', "-43m",      0,    217,     "I -4 3 m"},
-	{'F', "23",        0,    196,     "F23"},
-	{'F', "m-3",       1,    196,     "F23"},
-	{'F', "432",       0,    209,     "F432"},
-	{'F', "m-3m",      1,    209,     "F432"},
-	{'F', "-43m",      0,    216,     "F -4 3 m"},
+    /* Cubic */
+    {'P', "23",        0,    195,     "P23"},
+    {'P', "m-3",       1,    195,     "P23"},
+    {'P', "432",       0,    207,     "P432"},
+    {'P', "m-3m",      1,    207,     "P432"},
+    {'P', "-43m",      0,    215,     "P -4 3 m"},
+    {'I', "23",        0,    197,     "I23"},
+    {'I', "m-3",       1,    197,     "I23"},
+    {'I', "432",       0,    211,     "I432"},
+    {'I', "m-3m",      1,    211,     "I432"},
+    {'I', "-43m",      0,    217,     "I -4 3 m"},
+    {'F', "23",        0,    196,     "F23"},
+    {'F', "m-3",       1,    196,     "F23"},
+    {'F', "432",       0,    209,     "F432"},
+    {'F', "m-3m",      1,    209,     "F432"},
+    {'F', "-43m",      0,    216,     "F -4 3 m"},
 
-	{'*', NULL,  0, 0, NULL}
+    {'*', NULL,  0, 0, NULL}
 };
 
 
 static int space_group_for_xds(const char *sym_str, char cen)
 {
-	int i = 0;
-	do {
-		if ( (pg_conversions[i].centering == cen)
-		  && (strcmp(sym_str, pg_conversions[i].crystfel) == 0) )
-		{
-			return pg_conversions[i].xds_spgnum;
-		}
-		i++;
-	} while (pg_conversions[i].centering != '*');
+    int i = 0;
+    do {
+        if ( (pg_conversions[i].centering == cen)
+          && (strcmp(sym_str, pg_conversions[i].crystfel) == 0) )
+        {
+            return pg_conversions[i].xds_spgnum;
+        }
+        i++;
+    } while (pg_conversions[i].centering != '*');
 
-	ERROR("Couldn't derive XDS representation of symmetry.\n");
-	return 0;
+    ERROR("Couldn't derive XDS representation of symmetry.\n");
+    return 0;
 }
 
 
 #ifdef HAVE_LIBCCP4
 static const char *space_group_for_mtz(const char *sym_str, char cen)
 {
-	int i = 0;
-	do {
-		if ( (pg_conversions[i].centering == cen)
-		  && (strcmp(sym_str, pg_conversions[i].crystfel) == 0) )
-		{
-			return pg_conversions[i].ccp4;
-		}
-		i++;
-	} while (pg_conversions[i].centering != '*');
+    int i = 0;
+    do {
+        if ( (pg_conversions[i].centering == cen)
+          && (strcmp(sym_str, pg_conversions[i].crystfel) == 0) )
+        {
+            return pg_conversions[i].ccp4;
+        }
+        i++;
+    } while (pg_conversions[i].centering != '*');
 
-	ERROR("Couldn't derive CCP4 representation of symmetry.\n");
-	return NULL;
+    ERROR("Couldn't derive CCP4 representation of symmetry.\n");
+    return NULL;
 }
 #endif
 
@@ -1055,86 +1055,86 @@ int write_to_xds(RefList *reflist,
                  double max_res,
                  const char *filename)
 {
-	FILE *fh;
-	RefListIterator *iter;
-	Reflection *refl;
-	double a, b, c, al, be,ga;
-	int spg;
+    FILE *fh;
+    RefListIterator *iter;
+    Reflection *refl;
+    double a, b, c, al, be,ga;
+    int spg;
 
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+    cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
 
-	spg = space_group_for_xds(symmetry_name(sym),
-	                          cell_get_centering(cell));
-	if ( spg == 0 ) return 1;
+    spg = space_group_for_xds(symmetry_name(sym),
+                              cell_get_centering(cell));
+    if ( spg == 0 ) return 1;
 
-	fh = fopen(filename, "w");
-	if ( fh == NULL ) return 1;
+    fh = fopen(filename, "w");
+    if ( fh == NULL ) return 1;
 
-	fprintf(fh, "!FORMAT=XDS_ASCII MERGE=TRUE FRIEDEL'S_LAW=%s\n",
-	        is_centrosymmetric(sym) ? "TRUE" : "FALSE");
-	fprintf(fh, "!SPACE_GROUP_NUMBER=%i\n", spg);
-	fprintf(fh, "!UNIT_CELL_CONSTANTS= %.2f %.2f %.2f %.2f %.2f %.2f\n",
-	        a*1e10, b*1e10, c*1e10, rad2deg(al), rad2deg(be), rad2deg(ga));
-	fprintf(fh, "!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=5\n");
-	fprintf(fh, "!ITEM_H=1\n");
-	fprintf(fh, "!ITEM_K=2\n");
-	fprintf(fh, "!ITEM_L=3\n");
-	fprintf(fh, "!ITEM_IOBS=4\n");
-	fprintf(fh, "!ITEM_SIGMA(IOBS)=5\n");
-	fprintf(fh, "!END_OF_HEADER\n");
+    fprintf(fh, "!FORMAT=XDS_ASCII MERGE=TRUE FRIEDEL'S_LAW=%s\n",
+            is_centrosymmetric(sym) ? "TRUE" : "FALSE");
+    fprintf(fh, "!SPACE_GROUP_NUMBER=%i\n", spg);
+    fprintf(fh, "!UNIT_CELL_CONSTANTS= %.2f %.2f %.2f %.2f %.2f %.2f\n",
+            a*1e10, b*1e10, c*1e10, rad2deg(al), rad2deg(be), rad2deg(ga));
+    fprintf(fh, "!NUMBER_OF_ITEMS_IN_EACH_DATA_RECORD=5\n");
+    fprintf(fh, "!ITEM_H=1\n");
+    fprintf(fh, "!ITEM_K=2\n");
+    fprintf(fh, "!ITEM_L=3\n");
+    fprintf(fh, "!ITEM_IOBS=4\n");
+    fprintf(fh, "!ITEM_SIGMA(IOBS)=5\n");
+    fprintf(fh, "!END_OF_HEADER\n");
 
-	for ( refl = first_refl(reflist, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double one_over_d;
+    for ( refl = first_refl(reflist, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        signed int h, k, l;
+        double one_over_d;
 
-		get_indices(refl, &h, &k, &l);
+        get_indices(refl, &h, &k, &l);
 
-		one_over_d = 2.0*resolution(cell, h, k, l);
-		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
+        one_over_d = 2.0*resolution(cell, h, k, l);
+        if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
 
-			fprintf(fh, "%6i %6i %6i %9.2f %9.2f\n",
-			        h, k, l,
-			        get_intensity(refl),
-			        get_esd_intensity(refl));
+            fprintf(fh, "%6i %6i %6i %9.2f %9.2f\n",
+                    h, k, l,
+                    get_intensity(refl),
+                    get_esd_intensity(refl));
 
-		}
-	}
+        }
+    }
 
-	fprintf(fh, "!END_OF_DATA\n");
+    fprintf(fh, "!END_OF_DATA\n");
 
-	fclose(fh);
-	return 0;
+    fclose(fh);
+    return 0;
 }
 
 
 #ifdef HAVE_LIBCCP4
 static CCP4SPG *add_mtz_symmetry_header(MTZ *mtz, const char *spg_name)
 {
-	CCP4SPG *spg;
-	float rsymx[192][4][4];
-	char ltypex[2];
-	int i;
+    CCP4SPG *spg;
+    float rsymx[192][4][4];
+    char ltypex[2];
+    int i;
 
-	spg = ccp4spg_load_by_spgname(spg_name);
-	if ( spg == NULL ) {
-		ERROR("Couldn't look up CCP4 space group '%s'\n", spg_name);
-		return NULL;
-	}
+    spg = ccp4spg_load_by_spgname(spg_name);
+    if ( spg == NULL ) {
+        ERROR("Couldn't look up CCP4 space group '%s'\n", spg_name);
+        return NULL;
+    }
 
-	for ( i=0; i<spg->nsymop; i++ ) {
-		rotandtrn_to_mat4(rsymx[i], spg->symop[i]);
-	}
-	ltypex[0] = spg->symbol_old[0];
-	ltypex[1] = '\0';
+    for ( i=0; i<spg->nsymop; i++ ) {
+        rotandtrn_to_mat4(rsymx[i], spg->symop[i]);
+    }
+    ltypex[0] = spg->symbol_old[0];
+    ltypex[1] = '\0';
 
-	ccp4_lwsymm(mtz, spg->nsymop, spg->nsymop_prim,
-	            rsymx, ltypex, spg->spg_ccp4_num, spg->symbol_old,
-	            spg->point_group);
+    ccp4_lwsymm(mtz, spg->nsymop, spg->nsymop_prim,
+                rsymx, ltypex, spg->spg_ccp4_num, spg->symbol_old,
+                spg->point_group);
 
-	return spg;
+    return spg;
 }
 #endif
 
@@ -1144,91 +1144,91 @@ static void write_mtz_refls_bij(MTZ *mtz, MTZSET *ds, CCP4SPG *spg,
                                 RefList *reflist, UnitCell *cell, SymOpList *sym,
                                 double min_res, double max_res)
 {
-	MTZCOL *columns[7];
-	int refl_i;
-	Reflection *refl;
-	RefListIterator *iter;
+    MTZCOL *columns[7];
+    int refl_i;
+    Reflection *refl;
+    RefListIterator *iter;
 
-	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
-	columns[1] = MtzAddColumn(mtz, ds, "K", "H");
-	columns[2] = MtzAddColumn(mtz, ds, "L", "H");
-	columns[3] = MtzAddColumn(mtz, ds, "I(+)", "K");
-	columns[4] = MtzAddColumn(mtz, ds, "SIGI(+)", "M");
-	columns[5] = MtzAddColumn(mtz, ds, "I(-)", "K");
-	columns[6] = MtzAddColumn(mtz, ds, "SIGI(-)", "M");
+    columns[0] = MtzAddColumn(mtz, ds, "H", "H");
+    columns[1] = MtzAddColumn(mtz, ds, "K", "H");
+    columns[2] = MtzAddColumn(mtz, ds, "L", "H");
+    columns[3] = MtzAddColumn(mtz, ds, "I(+)", "K");
+    columns[4] = MtzAddColumn(mtz, ds, "SIGI(+)", "M");
+    columns[5] = MtzAddColumn(mtz, ds, "I(-)", "K");
+    columns[6] = MtzAddColumn(mtz, ds, "SIGI(-)", "M");
 
-	refl_i = 1;
-	for ( refl = first_refl(reflist, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double one_over_d;
+    refl_i = 1;
+    for ( refl = first_refl(reflist, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        signed int h, k, l;
+        double one_over_d;
 
-		get_indices(refl, &h, &k, &l);
+        get_indices(refl, &h, &k, &l);
 
-		one_over_d = 2.0*resolution(cell, h, k, l);
-		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
+        one_over_d = 2.0*resolution(cell, h, k, l);
+        if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
 
-			int isym;
-			float refldata[7];
-			signed int nh, nk, nl;
-			signed int fh, fk, fl;
-			Reflection *friedel;
-			Reflection *refl_plus;
-			Reflection *refl_minus;
+            int isym;
+            float refldata[7];
+            signed int nh, nk, nl;
+            signed int fh, fk, fl;
+            Reflection *friedel;
+            Reflection *refl_plus;
+            Reflection *refl_minus;
 
-			/* Look for Friedel partner */
-			if ( find_equiv_in_list(reflist, -h, -k, -l,
-			                        sym, &fh, &fk, &fl) )
-			{
-				friedel = find_refl(reflist, fh, fk, fl);
-			} else {
-				friedel = NULL;
-			}
+            /* Look for Friedel partner */
+            if ( find_equiv_in_list(reflist, -h, -k, -l,
+                                    sym, &fh, &fk, &fl) )
+            {
+                friedel = find_refl(reflist, fh, fk, fl);
+            } else {
+                friedel = NULL;
+            }
 
-			/* Move to CCP4's idea of the ASU */
-			isym = ccp4spg_put_in_asu(spg, h, k, l, &nh, &nk, &nl);
+            /* Move to CCP4's idea of the ASU */
+            isym = ccp4spg_put_in_asu(spg, h, k, l, &nh, &nk, &nl);
 
-			/* Ok, do we have an I+ or an I- ? */
-			if ( is_odd(isym) ) {
-				/* I+ */
-				refl_plus = refl;
-				refl_minus = friedel;
-			} else {
-				/* I- */
-				refl_minus = refl;
-				refl_plus = friedel;
-			}
+            /* Ok, do we have an I+ or an I- ? */
+            if ( is_odd(isym) ) {
+                /* I+ */
+                refl_plus = refl;
+                refl_minus = friedel;
+            } else {
+                /* I- */
+                refl_minus = refl;
+                refl_plus = friedel;
+            }
 
-			/* If we are looking at an I-, only write it out now
-			 * if the corresponding I+ if not in 'reflist'.
-			 * If I+ is present, then this I- will get written when
-			 * the Friedel pair is processed. */
-			if ( !is_odd(isym) && (refl_plus != NULL) ) continue;
+            /* If we are looking at an I-, only write it out now
+             * if the corresponding I+ if not in 'reflist'.
+             * If I+ is present, then this I- will get written when
+             * the Friedel pair is processed. */
+            if ( !is_odd(isym) && (refl_plus != NULL) ) continue;
 
-			refldata[0] = nh;
-			refldata[1] = nk;
-			refldata[2] = nl;
-			if ( refl_plus != NULL ) {
-				refldata[3] = get_intensity(refl_plus);
-				refldata[4] = get_esd_intensity(refl_plus);
-			} else {
-				refldata[3] = NAN;
-				refldata[4] = NAN;
-			}
-			if ( refl_minus != NULL ) {
-				refldata[5] = get_intensity(refl_minus);
-				refldata[6] = get_esd_intensity(refl_minus);
-			} else {
-				refldata[5] = NAN;
-				refldata[6] = NAN;
-			}
+            refldata[0] = nh;
+            refldata[1] = nk;
+            refldata[2] = nl;
+            if ( refl_plus != NULL ) {
+                refldata[3] = get_intensity(refl_plus);
+                refldata[4] = get_esd_intensity(refl_plus);
+            } else {
+                refldata[3] = NAN;
+                refldata[4] = NAN;
+            }
+            if ( refl_minus != NULL ) {
+                refldata[5] = get_intensity(refl_minus);
+                refldata[6] = get_esd_intensity(refl_minus);
+            } else {
+                refldata[5] = NAN;
+                refldata[6] = NAN;
+            }
 
-			ccp4_lwrefl(mtz, refldata, columns, 7, refl_i++);
+            ccp4_lwrefl(mtz, refldata, columns, 7, refl_i++);
 
-		}
-	}
+        }
+    }
 }
 
 
@@ -1236,46 +1236,46 @@ static void write_mtz_refls_plain(MTZ *mtz, MTZSET *ds, CCP4SPG *spg,
                                   RefList *reflist, UnitCell *cell,
                                   double min_res, double max_res)
 {
-	MTZCOL *columns[7];
-	int refl_i;
-	Reflection *refl;
-	RefListIterator *iter;
+    MTZCOL *columns[7];
+    int refl_i;
+    Reflection *refl;
+    RefListIterator *iter;
 
-	columns[0] = MtzAddColumn(mtz, ds, "H", "H");
-	columns[1] = MtzAddColumn(mtz, ds, "K", "H");
-	columns[2] = MtzAddColumn(mtz, ds, "L", "H");
-	columns[3] = MtzAddColumn(mtz, ds, "I", "J");
-	columns[4] = MtzAddColumn(mtz, ds, "SIGI", "Q");
+    columns[0] = MtzAddColumn(mtz, ds, "H", "H");
+    columns[1] = MtzAddColumn(mtz, ds, "K", "H");
+    columns[2] = MtzAddColumn(mtz, ds, "L", "H");
+    columns[3] = MtzAddColumn(mtz, ds, "I", "J");
+    columns[4] = MtzAddColumn(mtz, ds, "SIGI", "Q");
 
-	refl_i = 1;
-	for ( refl = first_refl(reflist, &iter);
-	      refl != NULL;
-	      refl = next_refl(refl, iter) )
-	{
-		signed int h, k, l;
-		double one_over_d;
+    refl_i = 1;
+    for ( refl = first_refl(reflist, &iter);
+          refl != NULL;
+          refl = next_refl(refl, iter) )
+    {
+        signed int h, k, l;
+        double one_over_d;
 
-		get_indices(refl, &h, &k, &l);
+        get_indices(refl, &h, &k, &l);
 
-		one_over_d = 2.0*resolution(cell, h, k, l);
-		if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
+        one_over_d = 2.0*resolution(cell, h, k, l);
+        if ( (one_over_d > min_res) && (one_over_d < max_res) ) {
 
-			float refldata[5];
-			signed int nh, nk, nl;
+            float refldata[5];
+            signed int nh, nk, nl;
 
-			/* Move to CCP4's idea of the ASU */
-			ccp4spg_put_in_asu(spg, h, k, l, &nh, &nk, &nl);
-			refldata[0] = nh;
-			refldata[1] = nk;
-			refldata[2] = nl;
+            /* Move to CCP4's idea of the ASU */
+            ccp4spg_put_in_asu(spg, h, k, l, &nh, &nk, &nl);
+            refldata[0] = nh;
+            refldata[1] = nk;
+            refldata[2] = nl;
 
-			refldata[3] = get_intensity(refl);
-			refldata[4] = get_esd_intensity(refl);
+            refldata[3] = get_intensity(refl);
+            refldata[4] = get_esd_intensity(refl);
 
-			ccp4_lwrefl(mtz, refldata, columns, 5, refl_i++);
+            ccp4_lwrefl(mtz, refldata, columns, 5, refl_i++);
 
-		}
-	}
+        }
+    }
 }
 #endif
 
@@ -1290,66 +1290,66 @@ int write_to_mtz(RefList *reflist,
                  const char *crystal_name,
                  const char *project_name,
                  int bij,
-		 const char *spg_input)
+         const char *spg_input)
 {
 #ifdef HAVE_LIBCCP4
-	MTZ *mtz;
-	MTZXTAL *cr;
-	MTZSET *ds;
-	double a, b, c, al, be, ga;
-	int r;
-	char tmp[128];
-	float cellp[6];
-	CCP4SPG *spg;
-	const char *spg_name;
+    MTZ *mtz;
+    MTZXTAL *cr;
+    MTZSET *ds;
+    double a, b, c, al, be, ga;
+    int r;
+    char tmp[128];
+    float cellp[6];
+    CCP4SPG *spg;
+    const char *spg_name;
 
-	if ( spg_input == NULL ) {
-		spg_name = space_group_for_mtz(symmetry_name(sym), cell_get_centering(cell));
-		if ( spg_name == NULL ) {
-	  		reflist_free(reflist);
-			return 1;
-		}
-	} else {
-		spg_name = spg_input;
-	}
+    if ( spg_input == NULL ) {
+        spg_name = space_group_for_mtz(symmetry_name(sym), cell_get_centering(cell));
+        if ( spg_name == NULL ) {
+      		reflist_free(reflist);
+            return 1;
+        }
+    } else {
+        spg_name = spg_input;
+    }
 
-	mtz = MtzMalloc(0, 0);
+    mtz = MtzMalloc(0, 0);
 
-	snprintf(tmp, 128, "Data exported via CrystFEL version %s",
-	         libcrystfel_version_string());
-	ccp4_lwtitl(mtz, tmp, 0);
+    snprintf(tmp, 128, "Data exported via CrystFEL version %s",
+             libcrystfel_version_string());
+    ccp4_lwtitl(mtz, tmp, 0);
 
-	mtz->refs_in_memory = 0;
-	mtz->fileout = MtzOpenForWrite(filename);
+    mtz->refs_in_memory = 0;
+    mtz->fileout = MtzOpenForWrite(filename);
 
-	spg = add_mtz_symmetry_header(mtz, spg_name);
-	if ( spg == NULL ) {
-		return 1;
-	}
+    spg = add_mtz_symmetry_header(mtz, spg_name);
+    if ( spg == NULL ) {
+        return 1;
+    }
 
-	cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
-	cellp[0] = a*1e10;
-	cellp[1] = b*1e10;
-	cellp[2] = c*1e10;
-	cellp[3] = rad2deg(al);
-	cellp[4] = rad2deg(be);
-	cellp[5] = rad2deg(ga);
+    cell_get_parameters(cell, &a, &b, &c, &al, &be, &ga);
+    cellp[0] = a*1e10;
+    cellp[1] = b*1e10;
+    cellp[2] = c*1e10;
+    cellp[3] = rad2deg(al);
+    cellp[4] = rad2deg(be);
+    cellp[5] = rad2deg(ga);
 
-	cr = MtzAddXtal(mtz, crystal_name, project_name, cellp);
-	ds = MtzAddDataset(mtz, cr, dataset_name, 0.0);
+    cr = MtzAddXtal(mtz, crystal_name, project_name, cellp);
+    ds = MtzAddDataset(mtz, cr, dataset_name, 0.0);
 
-	if ( bij ) {
-		write_mtz_refls_bij(mtz, ds, spg, reflist, cell, sym, min_res, max_res);
-	} else {
-		write_mtz_refls_plain(mtz, ds, spg, reflist, cell, min_res, max_res);
-	}
+    if ( bij ) {
+        write_mtz_refls_bij(mtz, ds, spg, reflist, cell, sym, min_res, max_res);
+    } else {
+        write_mtz_refls_plain(mtz, ds, spg, reflist, cell, min_res, max_res);
+    }
 
-	r = MtzPut(mtz, " ");
-	ccp4spg_free(&spg);
-	MtzFree(mtz);
-	return 1-r; /* Yes, really.  MtzPut return values are backwards */
+    r = MtzPut(mtz, " ");
+    ccp4spg_free(&spg);
+    MtzFree(mtz);
+    return 1-r; /* Yes, really.  MtzPut return values are backwards */
 #else
-	return 1;
+    return 1;
 #endif
 }
 
@@ -1357,8 +1357,8 @@ int write_to_mtz(RefList *reflist,
 int libcrystfel_can_write_mtz()
 {
 #ifdef HAVE_LIBCCP4
-	return 1;
+    return 1;
 #else
-	return 0;
+    return 0;
 #endif
 }

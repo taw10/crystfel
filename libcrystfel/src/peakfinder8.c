@@ -47,328 +47,328 @@
 
 struct radius_maps
 {
-	float **r_maps;
-	int *n_pixels;
-	int n_rmaps;
+    float **r_maps;
+    int *n_pixels;
+    int n_rmaps;
 };
 
 
 struct radial_stats_pixels
 {
-	int n_panels;
-	int *n_pixels; // n_pixels[panel]
-	int **pidx;	   // pixel_index[panel][0..n_pixels]
-	int **radius;  // pixel_radius[panel][0..n_pixels]
+    int n_panels;
+    int *n_pixels; // n_pixels[panel]
+    int **pidx;	   // pixel_index[panel][0..n_pixels]
+    int **radius;  // pixel_radius[panel][0..n_pixels]
 };
 
 
 struct peakfinder_mask
 {
-	char **masks;
-	int n_masks;
+    char **masks;
+    int n_masks;
 };
 
 
 struct peakfinder_panel_data
 {
-	float **panel_data;
-	int *panel_h;
-	int *panel_w;
-	int num_panels;
+    float **panel_data;
+    int *panel_h;
+    int *panel_w;
+    int num_panels;
 };
 // End of CrystFEL-only block 1
 
 
 struct radial_stats
 {
-	float *roffset;
-	float *rthreshold;
-	float *lthreshold;
-	float *rsigma;
-	int *rcount;
-	int n_rad_bins;
+    float *roffset;
+    float *rthreshold;
+    float *lthreshold;
+    float *rsigma;
+    int *rcount;
+    int n_rad_bins;
 };
 
 
 struct peakfinder_intern_data
 {
-	char *pix_in_peak_map;
-	int *infs;
-	int *inss;
-	int *peak_pixels;
+    char *pix_in_peak_map;
+    int *infs;
+    int *inss;
+    int *peak_pixels;
 };
 
 
 struct peakfinder_peak_data
 {
-	int num_found_peaks;
-	int *npix;
-	float *com_fs;
-	float *com_ss;
-	int *com_index;
-	float *tot_i;
-	float *max_i;
-	float *sigma;
-	float *snr;
+    int num_found_peaks;
+    int *npix;
+    float *com_fs;
+    float *com_ss;
+    int *com_index;
+    float *tot_i;
+    float *max_i;
+    float *sigma;
+    float *snr;
 };
 
 
 static struct radial_stats_pixels *compute_rstats_pixels(struct radius_maps *rmaps)
 {
-	int p;
-	int i;
+    int p;
+    int i;
 
-	struct radial_stats_pixels *rsp = NULL;
-	rsp = (struct radial_stats_pixels *)cfmalloc(sizeof(struct radial_stats_pixels));
-	if ( rsp == NULL ) {
-		return NULL;
-	}
-	rsp->n_pixels = (int *)cfmalloc(rmaps->n_rmaps * sizeof(int));
-	if ( rsp->n_pixels == NULL ) {
-		cffree(rsp);
-		return NULL;
-	}
-	rsp->pidx = (int **)cfmalloc(rmaps->n_rmaps * sizeof(int *));
-	if ( rsp->pidx == NULL ) {
-		cffree(rsp->n_pixels);
-		cffree(rsp);
-		return NULL;
-	}
-	rsp->radius = (int **)cfmalloc(rmaps->n_rmaps * sizeof(int *));
-	if ( rsp->radius == NULL ) {
-		cffree(rsp->n_pixels);
-		cffree(rsp->pidx);
-		cffree(rsp);
-		return NULL;
-	}
+    struct radial_stats_pixels *rsp = NULL;
+    rsp = (struct radial_stats_pixels *)cfmalloc(sizeof(struct radial_stats_pixels));
+    if ( rsp == NULL ) {
+        return NULL;
+    }
+    rsp->n_pixels = (int *)cfmalloc(rmaps->n_rmaps * sizeof(int));
+    if ( rsp->n_pixels == NULL ) {
+        cffree(rsp);
+        return NULL;
+    }
+    rsp->pidx = (int **)cfmalloc(rmaps->n_rmaps * sizeof(int *));
+    if ( rsp->pidx == NULL ) {
+        cffree(rsp->n_pixels);
+        cffree(rsp);
+        return NULL;
+    }
+    rsp->radius = (int **)cfmalloc(rmaps->n_rmaps * sizeof(int *));
+    if ( rsp->radius == NULL ) {
+        cffree(rsp->n_pixels);
+        cffree(rsp->pidx);
+        cffree(rsp);
+        return NULL;
+    }
 
-	int n_pixels_per_bin = 100; // Can make this a parameter
+    int n_pixels_per_bin = 100; // Can make this a parameter
 
-	// Assuming 5000 is the maximum possible radius
-	int n_bins = 5000;
-	int *n_pixels = (int *)cfmalloc(n_bins * sizeof(int)); // selected pixels per bin
-	int *n_tot_pixels = (int *)cfmalloc(n_bins * sizeof(int));; // total pixels per bin
-	int **panel = (int **)cfmalloc(n_bins * sizeof(int *)); // panel ID of selected pixels
-	int **idx = (int **)cfmalloc(n_bins * sizeof(int *)); // index of selected pixels
+    // Assuming 5000 is the maximum possible radius
+    int n_bins = 5000;
+    int *n_pixels = (int *)cfmalloc(n_bins * sizeof(int)); // selected pixels per bin
+    int *n_tot_pixels = (int *)cfmalloc(n_bins * sizeof(int));; // total pixels per bin
+    int **panel = (int **)cfmalloc(n_bins * sizeof(int *)); // panel ID of selected pixels
+    int **idx = (int **)cfmalloc(n_bins * sizeof(int *)); // index of selected pixels
 
-	for ( i = 0; i < n_bins; i++ ) {
-		n_pixels[i] = 0;
-		n_tot_pixels[i] = 0;
-		panel[i] = (int *)cfmalloc(n_pixels_per_bin * sizeof(int));
-		idx[i] = (int *)cfmalloc(n_pixels_per_bin * sizeof(int));
-	}
-	int radius;
+    for ( i = 0; i < n_bins; i++ ) {
+        n_pixels[i] = 0;
+        n_tot_pixels[i] = 0;
+        panel[i] = (int *)cfmalloc(n_pixels_per_bin * sizeof(int));
+        idx[i] = (int *)cfmalloc(n_pixels_per_bin * sizeof(int));
+    }
+    int radius;
 
-	for ( p = 0; p < rmaps->n_rmaps; p++ ) {
-		rsp->n_pixels[p] = 0;
-		for ( i = 0; i < rmaps->n_pixels[p]; i++ ) {
-			// Reservoir sampling:
-			radius = (int)rint(rmaps->r_maps[p][i]);
-			n_tot_pixels[radius] += 1;
+    for ( p = 0; p < rmaps->n_rmaps; p++ ) {
+        rsp->n_pixels[p] = 0;
+        for ( i = 0; i < rmaps->n_pixels[p]; i++ ) {
+            // Reservoir sampling:
+            radius = (int)rint(rmaps->r_maps[p][i]);
+            n_tot_pixels[radius] += 1;
 
-			if ( n_pixels[radius] < n_pixels_per_bin ) {
-				panel[radius][n_pixels[radius]] = p;
-				idx[radius][n_pixels[radius]] = i;
+            if ( n_pixels[radius] < n_pixels_per_bin ) {
+                panel[radius][n_pixels[radius]] = p;
+                idx[radius][n_pixels[radius]] = i;
 
-				n_pixels[radius] += 1;
-				rsp->n_pixels[p] += 1;
-			} else {
-				int rand_i = rand() % n_tot_pixels[radius];
-				if ( rand_i < n_pixels_per_bin ) {
-					rsp->n_pixels[panel[radius][rand_i]] -= 1;
-					rsp->n_pixels[p] += 1;
+                n_pixels[radius] += 1;
+                rsp->n_pixels[p] += 1;
+            } else {
+                int rand_i = rand() % n_tot_pixels[radius];
+                if ( rand_i < n_pixels_per_bin ) {
+                    rsp->n_pixels[panel[radius][rand_i]] -= 1;
+                    rsp->n_pixels[p] += 1;
 
-					panel[radius][rand_i] = p;
-					idx[radius][rand_i] = i;
-				}
-			}
-		}
-	}
+                    panel[radius][rand_i] = p;
+                    idx[radius][rand_i] = i;
+                }
+            }
+        }
+    }
 
-	int *sidx = (int *)cfmalloc(rmaps->n_rmaps * sizeof(int));
-	if ( sidx == NULL ) {
-		cffree(rsp->n_pixels);
-		cffree(rsp->pidx);
-		cffree(rsp->radius);
-		cffree(rsp);
-		return NULL;
-	}
-	for ( p = 0; p < rmaps->n_rmaps; p++ ) {
-		rsp->pidx[p] = (int *)cfmalloc(rsp->n_pixels[p] * sizeof(int));
-		if ( rsp->pidx[p] == NULL ) {
-			for ( i = 0; i < p; i++ ) {
-				cffree(rsp->pidx[i]);
-				cffree(rsp->radius[i]);
-			}
-			cffree(rsp->pidx);
-			cffree(rsp->radius);
-			cffree(rsp->n_pixels);
-			cffree(rsp);
-			cffree(sidx);
-			return NULL;
-		}
-		rsp->radius[p] = (int *)cfmalloc(rsp->n_pixels[p] * sizeof(int));
-		if ( rsp->radius[p] == NULL ) {
-			for ( i = 0; i < p; i++ ) {
-				cffree(rsp->pidx[i]);
-				cffree(rsp->radius[i]);
-			}
-			cffree(rsp->pidx[p]);
-			cffree(rsp->pidx);
-			cffree(rsp->radius);
-			cffree(rsp->n_pixels);
-			cffree(rsp);
-			cffree(sidx);
-			return NULL;
-		}
-		sidx[p] = 0;
-	}
+    int *sidx = (int *)cfmalloc(rmaps->n_rmaps * sizeof(int));
+    if ( sidx == NULL ) {
+        cffree(rsp->n_pixels);
+        cffree(rsp->pidx);
+        cffree(rsp->radius);
+        cffree(rsp);
+        return NULL;
+    }
+    for ( p = 0; p < rmaps->n_rmaps; p++ ) {
+        rsp->pidx[p] = (int *)cfmalloc(rsp->n_pixels[p] * sizeof(int));
+        if ( rsp->pidx[p] == NULL ) {
+            for ( i = 0; i < p; i++ ) {
+                cffree(rsp->pidx[i]);
+                cffree(rsp->radius[i]);
+            }
+            cffree(rsp->pidx);
+            cffree(rsp->radius);
+            cffree(rsp->n_pixels);
+            cffree(rsp);
+            cffree(sidx);
+            return NULL;
+        }
+        rsp->radius[p] = (int *)cfmalloc(rsp->n_pixels[p] * sizeof(int));
+        if ( rsp->radius[p] == NULL ) {
+            for ( i = 0; i < p; i++ ) {
+                cffree(rsp->pidx[i]);
+                cffree(rsp->radius[i]);
+            }
+            cffree(rsp->pidx[p]);
+            cffree(rsp->pidx);
+            cffree(rsp->radius);
+            cffree(rsp->n_pixels);
+            cffree(rsp);
+            cffree(sidx);
+            return NULL;
+        }
+        sidx[p] = 0;
+    }
 
-	for ( radius = 0; radius < n_bins; radius++ ) {
-		for ( i = 0; i < n_pixels[radius]; i++ ) {
-			p = panel[radius][i];
-			rsp->pidx[p][sidx[p]] = idx[radius][i];
-			rsp->radius[p][sidx[p]] = radius;
-			sidx[p] += 1;
-		}
-	}
-	cffree(sidx);
-	for ( i = 0; i < n_bins; i++ ) {
-		cffree(panel[i]);
-		cffree(idx[i]);
-	}
-	cffree(panel);
-	cffree(idx);
-	cffree(n_pixels);
-	cffree(n_tot_pixels);
+    for ( radius = 0; radius < n_bins; radius++ ) {
+        for ( i = 0; i < n_pixels[radius]; i++ ) {
+            p = panel[radius][i];
+            rsp->pidx[p][sidx[p]] = idx[radius][i];
+            rsp->radius[p][sidx[p]] = radius;
+            sidx[p] += 1;
+        }
+    }
+    cffree(sidx);
+    for ( i = 0; i < n_bins; i++ ) {
+        cffree(panel[i]);
+        cffree(idx[i]);
+    }
+    cffree(panel);
+    cffree(idx);
+    cffree(n_pixels);
+    cffree(n_tot_pixels);
 
-	rsp->n_panels = rmaps->n_rmaps;
-	return rsp;
+    rsp->n_panels = rmaps->n_rmaps;
+    return rsp;
 }
 
 static void free_rstats_pixels(struct radial_stats_pixels *rsp)
 {
-	int i;
-	for ( i = 0; i < rsp->n_panels; i++ ) {
-		cffree(rsp->pidx[i]);
-		cffree(rsp->radius[i]);
-	}
-	cffree(rsp->pidx);
-	cffree(rsp->radius);
-	cffree(rsp->n_pixels);
-	cffree(rsp);
+    int i;
+    for ( i = 0; i < rsp->n_panels; i++ ) {
+        cffree(rsp->pidx[i]);
+        cffree(rsp->radius[i]);
+    }
+    cffree(rsp->pidx);
+    cffree(rsp->radius);
+    cffree(rsp->n_pixels);
+    cffree(rsp);
 }
 
 
 static struct radius_maps *compute_radius_maps(struct detgeom *det)
 {
-	int i, u, iss, ifs;
-	struct detgeom_panel p;
-	struct radius_maps *rm = NULL;
+    int i, u, iss, ifs;
+    struct detgeom_panel p;
+    struct radius_maps *rm = NULL;
 
-	rm = (struct radius_maps *)cfmalloc(sizeof(struct radius_maps));
-	if ( rm == NULL ) {
-		return NULL;
-	}
+    rm = (struct radius_maps *)cfmalloc(sizeof(struct radius_maps));
+    if ( rm == NULL ) {
+        return NULL;
+    }
 
-	rm->r_maps = (float **)cfmalloc(det->n_panels*sizeof(float*));
-	if ( rm->r_maps == NULL ) {
-		cffree(rm);
-		return NULL;
-	}
+    rm->r_maps = (float **)cfmalloc(det->n_panels*sizeof(float*));
+    if ( rm->r_maps == NULL ) {
+        cffree(rm);
+        return NULL;
+    }
 
-	rm->n_pixels = (int *)cfmalloc(det->n_panels*sizeof(int*));
-	if ( rm->r_maps == NULL ) {
-		cffree(rm);
-		return NULL;
-	}
+    rm->n_pixels = (int *)cfmalloc(det->n_panels*sizeof(int*));
+    if ( rm->r_maps == NULL ) {
+        cffree(rm);
+        return NULL;
+    }
 
-	rm->n_rmaps = det->n_panels;
+    rm->n_rmaps = det->n_panels;
 
-	for( i=0 ; i<det->n_panels ; i++ ) {
+    for( i=0 ; i<det->n_panels ; i++ ) {
 
-		p = det->panels[i];
-		rm->r_maps[i] = (float *)cfmalloc(p.h*p.w*sizeof(float));
+        p = det->panels[i];
+        rm->r_maps[i] = (float *)cfmalloc(p.h*p.w*sizeof(float));
 
-		if ( rm->r_maps[i] == NULL ) {
-			for ( u = 0; u<i; u++ ) {
-				cffree(rm->r_maps[u]);
-			}
-			cffree(rm);
-			return NULL;
-		}
-		rm->n_pixels[i] = p.h * p.w;
-		for ( iss=0 ; iss<p.h ; iss++ ) {
-			for ( ifs=0; ifs<p.w; ifs++ ) {
+        if ( rm->r_maps[i] == NULL ) {
+            for ( u = 0; u<i; u++ ) {
+                cffree(rm->r_maps[u]);
+            }
+            cffree(rm);
+            return NULL;
+        }
+        rm->n_pixels[i] = p.h * p.w;
+        for ( iss=0 ; iss<p.h ; iss++ ) {
+            for ( ifs=0; ifs<p.w; ifs++ ) {
 
-				int rmi;
-				int x,y;
+                int rmi;
+                int x,y;
 
-				rmi = ifs + p.w * iss;
+                rmi = ifs + p.w * iss;
 
-				x = (p.cnx  + ifs * p.fsx + iss * p.ssx);
-				y = (p.cny  + ifs * p.fsy + iss * p.ssy);
+                x = (p.cnx  + ifs * p.fsx + iss * p.ssx);
+                y = (p.cny  + ifs * p.fsy + iss * p.ssy);
 
-				rm->r_maps[i][rmi] = sqrt(x * x + y * y);
-			}
-		}
-	}
-	return rm;
+                rm->r_maps[i][rmi] = sqrt(x * x + y * y);
+            }
+        }
+    }
+    return rm;
 }
 
 
 static void free_radius_maps(struct radius_maps *r_maps)
 {
-	int i;
+    int i;
 
-	for ( i=0 ; i<r_maps->n_rmaps ; i++ ) {
-		cffree(r_maps->r_maps[i]);
-	}
-	cffree(r_maps->r_maps);
-	cffree(r_maps->n_pixels);
-	cffree(r_maps);
+    for ( i=0 ; i<r_maps->n_rmaps ; i++ ) {
+        cffree(r_maps->r_maps[i]);
+    }
+    cffree(r_maps->r_maps);
+    cffree(r_maps->n_pixels);
+    cffree(r_maps);
 }
 
 
 // CrystFEL-only block 2
 struct pf8_private_data *prepare_peakfinder8(struct detgeom *det, int fast_mode)
 {
-	struct pf8_private_data *data = NULL;
-	if ( det == NULL ) {
-		return NULL;
-	}
+    struct pf8_private_data *data = NULL;
+    if ( det == NULL ) {
+        return NULL;
+    }
 
-	data = (struct pf8_private_data *)cfmalloc(sizeof(struct pf8_private_data));
-	if ( data == NULL ) {
-		return NULL;
-	}
-	data->rmaps = compute_radius_maps(det);
-	if ( data->rmaps == NULL ) {
-		cffree(data);
-		return NULL;
-	}
-	if ( fast_mode ) {
-		data->rpixels = compute_rstats_pixels(data->rmaps);
-		if ( data->rpixels == NULL ) {
-			free_radius_maps(data->rmaps);
-			free(data);
-			return NULL;
-		}
-	} else {
-		data->rpixels = NULL;
-	}
-	data->fast_mode = fast_mode;
-	return data;
+    data = (struct pf8_private_data *)cfmalloc(sizeof(struct pf8_private_data));
+    if ( data == NULL ) {
+        return NULL;
+    }
+    data->rmaps = compute_radius_maps(det);
+    if ( data->rmaps == NULL ) {
+        cffree(data);
+        return NULL;
+    }
+    if ( fast_mode ) {
+        data->rpixels = compute_rstats_pixels(data->rmaps);
+        if ( data->rpixels == NULL ) {
+            free_radius_maps(data->rmaps);
+            free(data);
+            return NULL;
+        }
+    } else {
+        data->rpixels = NULL;
+    }
+    data->fast_mode = fast_mode;
+    return data;
 }
 
 
 void free_pf8_private_data(struct pf8_private_data *data)
 {
-	free_radius_maps(data->rmaps);
-	if ( data->fast_mode ) {
-		free_rstats_pixels(data->rpixels);
-	}
-	cffree(data);
+    free_radius_maps(data->rmaps);
+    if ( data->fast_mode ) {
+        free_rstats_pixels(data->rpixels);
+    }
+    cffree(data);
 }
 
 
@@ -377,184 +377,184 @@ static struct peakfinder_mask *create_peakfinder_mask(const struct image *img,
                                                       int min_res,
                                                       int max_res)
 {
-	int i;
-	struct peakfinder_mask *msk;
+    int i;
+    struct peakfinder_mask *msk;
 
-	msk = (struct peakfinder_mask *)cfmalloc(sizeof(struct peakfinder_mask));
-	msk->masks =(char **) cfmalloc(img->detgeom->n_panels*sizeof(char*));
-	msk->n_masks = img->detgeom->n_panels;
-	for ( i=0; i<img->detgeom->n_panels; i++) {
+    msk = (struct peakfinder_mask *)cfmalloc(sizeof(struct peakfinder_mask));
+    msk->masks =(char **) cfmalloc(img->detgeom->n_panels*sizeof(char*));
+    msk->n_masks = img->detgeom->n_panels;
+    for ( i=0; i<img->detgeom->n_panels; i++) {
 
-		struct detgeom_panel p;
-		int iss, ifs;
+        struct detgeom_panel p;
+        int iss, ifs;
 
-		p = img->detgeom->panels[i];
+        p = img->detgeom->panels[i];
 
-		msk->masks[i] = (char *)cfcalloc(p.w*p.h,sizeof(char));
+        msk->masks[i] = (char *)cfcalloc(p.w*p.h,sizeof(char));
 
-		for ( iss=0 ; iss<p.h ; iss++ ) {
-			for ( ifs=0 ; ifs<p.w ; ifs++ ) {
+        for ( iss=0 ; iss<p.h ; iss++ ) {
+            for ( ifs=0 ; ifs<p.w ; ifs++ ) {
 
-				int idx;
+                int idx;
 
-				idx = ifs + iss*p.w;
+                idx = ifs + iss*p.w;
 
-				if ( ((max_res == 0) || (rmps->r_maps[i][idx] < max_res))
-				  && rmps->r_maps[i][idx] > min_res )
-				{
+                if ( ((max_res == 0) || (rmps->r_maps[i][idx] < max_res))
+                  && rmps->r_maps[i][idx] > min_res )
+                {
 
-					if  (! ( ( img->bad != NULL )
-					      && ( img->bad[i] != NULL )
-					      && ( img->bad[i][idx] != 0 ) ) ) {
-						msk->masks[i][idx] = 1;
-					}
+                    if  (! ( ( img->bad != NULL )
+                          && ( img->bad[i] != NULL )
+                          && ( img->bad[i][idx] != 0 ) ) ) {
+                        msk->masks[i][idx] = 1;
+                    }
 
-				}
-			}
-		}
-	}
-	return msk;
+                }
+            }
+        }
+    }
+    return msk;
 }
 
 
 static void free_peakfinder_mask(struct peakfinder_mask * pfmask)
 {
-	int i;
+    int i;
 
-	for ( i=0 ; i<pfmask->n_masks ; i++ ) {
-		cffree(pfmask->masks[i]);
-	}
-	cffree(pfmask->masks);
-	cffree(pfmask);
+    for ( i=0 ; i<pfmask->n_masks ; i++ ) {
+        cffree(pfmask->masks[i]);
+    }
+    cffree(pfmask->masks);
+    cffree(pfmask);
 }
 
 
 static struct peakfinder_panel_data *allocate_panel_data(int num_panels)
 {
 
-	struct peakfinder_panel_data *pfdata;
+    struct peakfinder_panel_data *pfdata;
 
-	pfdata = (struct peakfinder_panel_data *)cfmalloc(sizeof(struct peakfinder_panel_data));
-	if ( pfdata == NULL ) {
-		return NULL;
-	}
+    pfdata = (struct peakfinder_panel_data *)cfmalloc(sizeof(struct peakfinder_panel_data));
+    if ( pfdata == NULL ) {
+        return NULL;
+    }
 
-	pfdata->panel_h = (int *)cfmalloc(num_panels*sizeof(int));
-	if ( pfdata->panel_h == NULL ) {
-		cffree(pfdata);
-		return NULL;
-	}
+    pfdata->panel_h = (int *)cfmalloc(num_panels*sizeof(int));
+    if ( pfdata->panel_h == NULL ) {
+        cffree(pfdata);
+        return NULL;
+    }
 
-	pfdata->panel_w = (int *)cfmalloc(num_panels*sizeof(int));
-	if ( pfdata->panel_w == NULL ) {
-		cffree(pfdata->panel_h);
-		cffree(pfdata);
-		return NULL;
-	}
+    pfdata->panel_w = (int *)cfmalloc(num_panels*sizeof(int));
+    if ( pfdata->panel_w == NULL ) {
+        cffree(pfdata->panel_h);
+        cffree(pfdata);
+        return NULL;
+    }
 
-	pfdata->panel_data = (float **)cfmalloc(num_panels*sizeof(float*));
-	if ( pfdata->panel_data == NULL ) {
-		cffree(pfdata->panel_w);
-		cffree(pfdata->panel_h);
-		cffree(pfdata);
-		return NULL;
-	}
+    pfdata->panel_data = (float **)cfmalloc(num_panels*sizeof(float*));
+    if ( pfdata->panel_data == NULL ) {
+        cffree(pfdata->panel_w);
+        cffree(pfdata->panel_h);
+        cffree(pfdata);
+        return NULL;
+    }
 
-	pfdata->num_panels = num_panels;
+    pfdata->num_panels = num_panels;
 
-	return pfdata;
+    return pfdata;
 }
 
 
 static void free_panel_data(struct peakfinder_panel_data *pfdata)
 {
-	cffree(pfdata->panel_data);
-	cffree(pfdata->panel_w);
-	cffree(pfdata->panel_h);
-	cffree(pfdata);
+    cffree(pfdata->panel_data);
+    cffree(pfdata->panel_w);
+    cffree(pfdata->panel_h);
+    cffree(pfdata);
 }
 
 
 static void compute_num_radial_bins(int w, int h, float *r_map, float *max_r)
 {
-	int ifs, iss;
-	int pidx;
+    int ifs, iss;
+    int pidx;
 
-	for ( iss=0 ; iss<h ; iss++ ) {
-		for ( ifs=0 ; ifs<w ; ifs++ ) {
-			pidx = iss * w + ifs;
-			if ( r_map[pidx] > *max_r ) {
-				*max_r = r_map[pidx];
-			}
-		}
-	}
+    for ( iss=0 ; iss<h ; iss++ ) {
+        for ( ifs=0 ; ifs<w ; ifs++ ) {
+            pidx = iss * w + ifs;
+            if ( r_map[pidx] > *max_r ) {
+                *max_r = r_map[pidx];
+            }
+        }
+    }
 }
 // End of CrystFEL-only block 2
 
 
 static struct radial_stats* allocate_radial_stats(int num_rad_bins)
 {
-	struct radial_stats* rstats;
+    struct radial_stats* rstats;
 
-	rstats = (struct radial_stats *)cfmalloc(sizeof(struct radial_stats));
-	if ( rstats == NULL ) {
-		return NULL;
-	}
+    rstats = (struct radial_stats *)cfmalloc(sizeof(struct radial_stats));
+    if ( rstats == NULL ) {
+        return NULL;
+    }
 
-	rstats->roffset = (float *)cfmalloc(num_rad_bins*sizeof(float));
-	if ( rstats->roffset == NULL ) {
-		cffree(rstats);
-		return NULL;
-	}
+    rstats->roffset = (float *)cfmalloc(num_rad_bins*sizeof(float));
+    if ( rstats->roffset == NULL ) {
+        cffree(rstats);
+        return NULL;
+    }
 
-	rstats->rthreshold = (float *)cfmalloc(num_rad_bins*sizeof(float));
-	if ( rstats->rthreshold == NULL ) {
-		cffree(rstats->roffset);
-		cffree(rstats);
-		return NULL;
-	}
+    rstats->rthreshold = (float *)cfmalloc(num_rad_bins*sizeof(float));
+    if ( rstats->rthreshold == NULL ) {
+        cffree(rstats->roffset);
+        cffree(rstats);
+        return NULL;
+    }
 
-	rstats->lthreshold = (float *)cfmalloc(num_rad_bins*sizeof(float));
-	if ( rstats->lthreshold == NULL ) {
-		cffree(rstats->rthreshold);
-		cffree(rstats->roffset);
-		cffree(rstats);
-		return NULL;
-	}
+    rstats->lthreshold = (float *)cfmalloc(num_rad_bins*sizeof(float));
+    if ( rstats->lthreshold == NULL ) {
+        cffree(rstats->rthreshold);
+        cffree(rstats->roffset);
+        cffree(rstats);
+        return NULL;
+    }
 
-	rstats->rsigma = (float *)cfmalloc(num_rad_bins*sizeof(float));
-	if ( rstats->rsigma == NULL ) {
-		cffree(rstats->roffset);
-		cffree(rstats->rthreshold);
-		cffree(rstats->lthreshold);
-		cffree(rstats);
-		return NULL;
-	}
+    rstats->rsigma = (float *)cfmalloc(num_rad_bins*sizeof(float));
+    if ( rstats->rsigma == NULL ) {
+        cffree(rstats->roffset);
+        cffree(rstats->rthreshold);
+        cffree(rstats->lthreshold);
+        cffree(rstats);
+        return NULL;
+    }
 
-	rstats->rcount = (int *)cfmalloc(num_rad_bins*sizeof(int));
-	if ( rstats->rcount == NULL ) {
-		cffree(rstats->roffset);
-		cffree(rstats->rthreshold);
-		cffree(rstats->lthreshold);
-		cffree(rstats->rsigma);
-		cffree(rstats);
-		return NULL;
-	}
+    rstats->rcount = (int *)cfmalloc(num_rad_bins*sizeof(int));
+    if ( rstats->rcount == NULL ) {
+        cffree(rstats->roffset);
+        cffree(rstats->rthreshold);
+        cffree(rstats->lthreshold);
+        cffree(rstats->rsigma);
+        cffree(rstats);
+        return NULL;
+    }
 
-	rstats->n_rad_bins = num_rad_bins;
+    rstats->n_rad_bins = num_rad_bins;
 
-	return rstats;
+    return rstats;
 }
 
 
 static void free_radial_stats(struct radial_stats *rstats)
 {
-	cffree(rstats->roffset);
-	cffree(rstats->rthreshold);
-	cffree(rstats->lthreshold);
-	cffree(rstats->rsigma);
-	cffree(rstats->rcount);
-	cffree(rstats);
+    cffree(rstats->roffset);
+    cffree(rstats->rthreshold);
+    cffree(rstats->lthreshold);
+    cffree(rstats->rsigma);
+    cffree(rstats->rcount);
+    cffree(rstats);
 }
 
 
@@ -569,54 +569,54 @@ static void fill_radial_bins(float *data,
                              float *rsigma,
                              int *rcount)
 {
-	int iss, ifs;
-	int pidx;
+    int iss, ifs;
+    int pidx;
 
-	int curr_r;
-	float value;
+    int curr_r;
+    float value;
 
-	for ( iss=0; iss<h; iss++ ) {
-		for ( ifs=0; ifs<w; ifs++ ) {
-			pidx = iss * w + ifs;
-			if ( mask[pidx] != 0 ) {
-				curr_r = (int)rint(r_map[pidx]);
-				value = data[pidx];
-				if ( value < rthreshold[curr_r]
-				  && value > lthreshold[curr_r] )
-				{
-					roffset[curr_r] += value;
-					rsigma[curr_r] += (value * value);
-					rcount[curr_r] += 1;
-				}
-			}
-		}
-	}
+    for ( iss=0; iss<h; iss++ ) {
+        for ( ifs=0; ifs<w; ifs++ ) {
+            pidx = iss * w + ifs;
+            if ( mask[pidx] != 0 ) {
+                curr_r = (int)rint(r_map[pidx]);
+                value = data[pidx];
+                if ( value < rthreshold[curr_r]
+                  && value > lthreshold[curr_r] )
+                {
+                    roffset[curr_r] += value;
+                    rsigma[curr_r] += (value * value);
+                    rcount[curr_r] += 1;
+                }
+            }
+        }
+    }
 }
 
 static void fill_radial_bins_fast(float *data, int w, int h, int n_pixels,
-				  int *pidx, int *radius, char *mask,
-				  float *rthreshold, float *lthreshold,
-				  float *roffset, float *rsigma, int *rcount)
+                  int *pidx, int *radius, char *mask,
+                  float *rthreshold, float *lthreshold,
+                  float *roffset, float *rsigma, int *rcount)
 {
-	int i;
+    int i;
 
-	int curr_r;
-	float value;
+    int curr_r;
+    float value;
 
-	for (i = 0; i < n_pixels; i++)
-	{
-		if (mask[pidx[i]] != 0)
-		{
-			curr_r = radius[i];
-			value = data[pidx[i]];
-			if (value < rthreshold[curr_r] && value > lthreshold[curr_r])
-			{
-				roffset[curr_r] += value;
-				rsigma[curr_r] += (value * value);
-				rcount[curr_r] += 1;
-			}
-		}
-	}
+    for (i = 0; i < n_pixels; i++)
+    {
+        if (mask[pidx[i]] != 0)
+        {
+            curr_r = radius[i];
+            value = data[pidx[i]];
+            if (value < rthreshold[curr_r] && value > lthreshold[curr_r])
+            {
+                roffset[curr_r] += value;
+                rsigma[curr_r] += (value * value);
+                rcount[curr_r] += 1;
+            }
+        }
+    }
 }
 
 static void compute_radial_stats(float *rthreshold,
@@ -628,137 +628,137 @@ static void compute_radial_stats(float *rthreshold,
                                  float min_snr,
                                  float acd_threshold)
 {
-	int ri;
-	float this_offset, this_sigma;
+    int ri;
+    float this_offset, this_sigma;
 
-	for ( ri=0 ; ri<num_rad_bins ; ri++ ) {
+    for ( ri=0 ; ri<num_rad_bins ; ri++ ) {
 
-		if ( rcount[ri] == 0 ) {
-			roffset[ri] = 0;
-			rsigma[ri] = 0;
-			rthreshold[ri] = FLT_MAX;
-			lthreshold[ri] = FLT_MIN;
-		} else {
-			this_offset = roffset[ri] / rcount[ri];
-			this_sigma = rsigma[ri] / rcount[ri] - (this_offset * this_offset);
-			if ( this_sigma >= 0 ) {
-				this_sigma = sqrt(this_sigma);
-			}
+        if ( rcount[ri] == 0 ) {
+            roffset[ri] = 0;
+            rsigma[ri] = 0;
+            rthreshold[ri] = FLT_MAX;
+            lthreshold[ri] = FLT_MIN;
+        } else {
+            this_offset = roffset[ri] / rcount[ri];
+            this_sigma = rsigma[ri] / rcount[ri] - (this_offset * this_offset);
+            if ( this_sigma >= 0 ) {
+                this_sigma = sqrt(this_sigma);
+            }
 
-			roffset[ri] = this_offset;
-			rsigma[ri] = this_sigma;
-			rthreshold[ri] = roffset[ri] + min_snr*rsigma[ri];
-			lthreshold[ri] = roffset[ri] - min_snr*rsigma[ri];
+            roffset[ri] = this_offset;
+            rsigma[ri] = this_sigma;
+            rthreshold[ri] = roffset[ri] + min_snr*rsigma[ri];
+            lthreshold[ri] = roffset[ri] - min_snr*rsigma[ri];
 
-			if ( rthreshold[ri] < acd_threshold ) {
-				rthreshold[ri] = acd_threshold;
-			}
-		}
-	}
+            if ( rthreshold[ri] < acd_threshold ) {
+                rthreshold[ri] = acd_threshold;
+            }
+        }
+    }
 
 }
 
 
 struct peakfinder_peak_data *allocate_peak_data(int max_num_peaks)
 {
-	struct peakfinder_peak_data *pkdata;
+    struct peakfinder_peak_data *pkdata;
 
-	pkdata = (struct peakfinder_peak_data*)cfmalloc(sizeof(struct peakfinder_peak_data));
-	if ( pkdata == NULL ) {
-		return NULL;
-	}
+    pkdata = (struct peakfinder_peak_data*)cfmalloc(sizeof(struct peakfinder_peak_data));
+    if ( pkdata == NULL ) {
+        return NULL;
+    }
 
-	pkdata->npix = (int *)cfmalloc(max_num_peaks*sizeof(int));
-	if ( pkdata->npix == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->npix = (int *)cfmalloc(max_num_peaks*sizeof(int));
+    if ( pkdata->npix == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	pkdata->com_fs = (float *)cfmalloc(max_num_peaks*sizeof(float));
-	if ( pkdata->com_fs == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->com_fs = (float *)cfmalloc(max_num_peaks*sizeof(float));
+    if ( pkdata->com_fs == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	pkdata->com_ss = (float *)cfmalloc(max_num_peaks*sizeof(float));
-	if ( pkdata->com_ss == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata->com_fs);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->com_ss = (float *)cfmalloc(max_num_peaks*sizeof(float));
+    if ( pkdata->com_ss == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata->com_fs);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	pkdata->com_index = (int *)cfmalloc(max_num_peaks*sizeof(int));
-	if ( pkdata->com_ss == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata->com_fs);
-		cffree(pkdata->com_ss);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->com_index = (int *)cfmalloc(max_num_peaks*sizeof(int));
+    if ( pkdata->com_ss == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata->com_fs);
+        cffree(pkdata->com_ss);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	pkdata->tot_i = (float *)cfmalloc(max_num_peaks*sizeof(float));
-	if ( pkdata->tot_i == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata->com_fs);
-		cffree(pkdata->com_ss);
-		cffree(pkdata->com_index);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->tot_i = (float *)cfmalloc(max_num_peaks*sizeof(float));
+    if ( pkdata->tot_i == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata->com_fs);
+        cffree(pkdata->com_ss);
+        cffree(pkdata->com_index);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	pkdata->max_i = (float *)cfmalloc(max_num_peaks*sizeof(float));
-	if ( pkdata->max_i == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata->com_fs);
-		cffree(pkdata->com_ss);
-		cffree(pkdata->com_index);
-		cffree(pkdata->tot_i);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->max_i = (float *)cfmalloc(max_num_peaks*sizeof(float));
+    if ( pkdata->max_i == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata->com_fs);
+        cffree(pkdata->com_ss);
+        cffree(pkdata->com_index);
+        cffree(pkdata->tot_i);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	pkdata->sigma = (float *)cfmalloc(max_num_peaks*sizeof(float));
-	if ( pkdata->sigma == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata->com_fs);
-		cffree(pkdata->com_ss);
-		cffree(pkdata->com_index);
-		cffree(pkdata->tot_i);
-		cffree(pkdata->max_i);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->sigma = (float *)cfmalloc(max_num_peaks*sizeof(float));
+    if ( pkdata->sigma == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata->com_fs);
+        cffree(pkdata->com_ss);
+        cffree(pkdata->com_index);
+        cffree(pkdata->tot_i);
+        cffree(pkdata->max_i);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	pkdata->snr = (float *)cfmalloc(max_num_peaks*sizeof(float));
-	if ( pkdata->snr == NULL ) {
-		cffree(pkdata->npix);
-		cffree(pkdata->com_fs);
-		cffree(pkdata->com_ss);
-		cffree(pkdata->com_index);
-		cffree(pkdata->tot_i);
-		cffree(pkdata->max_i);
-		cffree(pkdata->sigma);
-		cffree(pkdata);
-		return NULL;
-	}
+    pkdata->snr = (float *)cfmalloc(max_num_peaks*sizeof(float));
+    if ( pkdata->snr == NULL ) {
+        cffree(pkdata->npix);
+        cffree(pkdata->com_fs);
+        cffree(pkdata->com_ss);
+        cffree(pkdata->com_index);
+        cffree(pkdata->tot_i);
+        cffree(pkdata->max_i);
+        cffree(pkdata->sigma);
+        cffree(pkdata);
+        return NULL;
+    }
 
-	return pkdata;
+    return pkdata;
 }
 
 
 static void free_peak_data(struct peakfinder_peak_data *pkdata) {
-	cffree(pkdata->npix);
-	cffree(pkdata->com_fs);
-	cffree(pkdata->com_ss);
-	cffree(pkdata->com_index);
-	cffree(pkdata->tot_i);
-	cffree(pkdata->max_i);
-	cffree(pkdata->sigma);
-	cffree(pkdata->snr);
-	cffree(pkdata);
+    cffree(pkdata->npix);
+    cffree(pkdata->com_fs);
+    cffree(pkdata->com_ss);
+    cffree(pkdata->com_index);
+    cffree(pkdata->tot_i);
+    cffree(pkdata->max_i);
+    cffree(pkdata->sigma);
+    cffree(pkdata->snr);
+    cffree(pkdata);
 }
 
 
@@ -766,54 +766,54 @@ static struct peakfinder_intern_data *allocate_peakfinder_intern_data(int data_s
                                                                       int max_pix_count)
 {
 
-	struct peakfinder_intern_data *intern_data;
+    struct peakfinder_intern_data *intern_data;
 
-	intern_data = (struct peakfinder_intern_data *)cfmalloc(sizeof(struct peakfinder_intern_data));
-	if ( intern_data == NULL ) {
-		return NULL;
-	}
+    intern_data = (struct peakfinder_intern_data *)cfmalloc(sizeof(struct peakfinder_intern_data));
+    if ( intern_data == NULL ) {
+        return NULL;
+    }
 
-	intern_data->pix_in_peak_map =(char *)cfcalloc(data_size, sizeof(char));
-	if ( intern_data->pix_in_peak_map == NULL ) {
-		cffree(intern_data);
-		return NULL;
-	}
+    intern_data->pix_in_peak_map =(char *)cfcalloc(data_size, sizeof(char));
+    if ( intern_data->pix_in_peak_map == NULL ) {
+        cffree(intern_data);
+        return NULL;
+    }
 
-	intern_data->infs =(int *)cfcalloc(data_size, sizeof(int));
-	if ( intern_data->infs == NULL ) {
-		cffree(intern_data->pix_in_peak_map);
-		cffree(intern_data);
-		return NULL;
-	}
+    intern_data->infs =(int *)cfcalloc(data_size, sizeof(int));
+    if ( intern_data->infs == NULL ) {
+        cffree(intern_data->pix_in_peak_map);
+        cffree(intern_data);
+        return NULL;
+    }
 
-	intern_data->inss =(int *)cfcalloc(data_size, sizeof(int));
-	if ( intern_data->inss == NULL ) {
-		cffree(intern_data->pix_in_peak_map);
-		cffree(intern_data->infs);
-		cffree(intern_data);
-		return NULL;
-	}
+    intern_data->inss =(int *)cfcalloc(data_size, sizeof(int));
+    if ( intern_data->inss == NULL ) {
+        cffree(intern_data->pix_in_peak_map);
+        cffree(intern_data->infs);
+        cffree(intern_data);
+        return NULL;
+    }
 
-	intern_data->peak_pixels =(int *)cfcalloc(max_pix_count, sizeof(int));
-	if ( intern_data->peak_pixels == NULL ) {
-		cffree(intern_data->pix_in_peak_map);
-		cffree(intern_data->infs);
-		cffree(intern_data->inss);
-		cffree(intern_data);
-		return NULL;
-	}
+    intern_data->peak_pixels =(int *)cfcalloc(max_pix_count, sizeof(int));
+    if ( intern_data->peak_pixels == NULL ) {
+        cffree(intern_data->pix_in_peak_map);
+        cffree(intern_data->infs);
+        cffree(intern_data->inss);
+        cffree(intern_data);
+        return NULL;
+    }
 
-	return intern_data;
+    return intern_data;
 }
 
 
 static void free_peakfinder_intern_data(struct peakfinder_intern_data *pfid)
 {
-	cffree(pfid->peak_pixels);
-	cffree(pfid->pix_in_peak_map);
-	cffree(pfid->infs);
-	cffree(pfid->inss);
-	cffree(pfid);
+    cffree(pfid->peak_pixels);
+    cffree(pfid->pix_in_peak_map);
+    cffree(pfid->infs);
+    cffree(pfid->inss);
+    cffree(pfid);
 }
 
 
@@ -830,81 +830,81 @@ static int floodfill_peak(int fs, int ss,
                           float *peak_com_fs, float *peak_com_ss,
                           int max_pix_count)
 {
-	int k, pi, p;
-	int num_pix_in_peak;
-	int curr_fs;
-	int curr_ss;
-	float curr_i;
-	float sum_i;
-	float sum_com_fs;
-	float sum_com_ss;
+    int k, pi, p;
+    int num_pix_in_peak;
+    int curr_fs;
+    int curr_ss;
+    float curr_i;
+    float sum_i;
+    float sum_com_fs;
+    float sum_com_ss;
 
-	int search_fs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
-	int search_ss[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
-	int search_n = 8;
-	// initialize accumulators
-	sum_i = 0;
-	sum_com_fs = 0;
-	sum_com_ss = 0;
-	// push the first pixel in the queue
-	curr_fs = fs + aifs * asic_size_fs;
-	curr_ss = ss + aiss * asic_size_ss;
-	pi = curr_fs + curr_ss * num_pix_fs;
+    int search_fs[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+    int search_ss[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+    int search_n = 8;
+    // initialize accumulators
+    sum_i = 0;
+    sum_com_fs = 0;
+    sum_com_ss = 0;
+    // push the first pixel in the queue
+    curr_fs = fs + aifs * asic_size_fs;
+    curr_ss = ss + aiss * asic_size_ss;
+    pi = curr_fs + curr_ss * num_pix_fs;
 
-	pfinter->infs[0] = fs;
-	pfinter->inss[0] = ss;
-	pfinter->pix_in_peak_map[pi] = 1;
-	num_pix_in_peak = 1;
+    pfinter->infs[0] = fs;
+    pfinter->inss[0] = ss;
+    pfinter->pix_in_peak_map[pi] = 1;
+    num_pix_in_peak = 1;
 
-	p = 0;
-	while ( p != num_pix_in_peak ) {
-		// pull the next pixel from the queue
-		curr_fs = pfinter->infs[p] + aifs * asic_size_fs;
-		curr_ss = pfinter->inss[p] + aiss * asic_size_ss;
-		pi = curr_fs + curr_ss * num_pix_fs;
-		// ... and process it
-		// (negative values have the same deviation from the background
-		// as positive, should have the same weight)
-		curr_i = fabs(copy[pi] - roffset[(int)rint(r_map[pi])]);
-		sum_i += curr_i;
-		sum_com_fs += curr_i * ((float)curr_fs);  // for center of mass x
-		sum_com_ss += curr_i * ((float)curr_ss);  // for center of mass y
-		if ( p < max_pix_count ) {
-			// store only max_pix_count pixels, because of the array size
-			// but continue floodfill the peak
-			pfinter->peak_pixels[p] = pi;
-		}
-		// push blank neighbours in the queue
-		for ( k=0; k<search_n; k++ ) {
-			// check panel borders
-			if ( (pfinter->infs[p] + search_fs[k]) < 0 ) continue;
-			if ( (pfinter->infs[p] + search_fs[k]) >= asic_size_fs ) continue;
-			if ( (pfinter->inss[p] + search_ss[k]) < 0 ) continue;
-			if ( (pfinter->inss[p] + search_ss[k]) >= asic_size_ss ) continue;
-			// neighbour index
-			curr_fs = pfinter->infs[p] + search_fs[k] + aifs * asic_size_fs;
-			curr_ss = pfinter->inss[p] + search_ss[k] + aiss * asic_size_ss;
-			pi = curr_fs + curr_ss * num_pix_fs;
-			// look for blank and above threshold
-			if ( copy[pi] > rthreshold[(int)rint(r_map[pi])]
-			  && pfinter->pix_in_peak_map[pi] == 0
-			  && mask[pi] != 0 ) {
-				pfinter->inss[num_pix_in_peak] = pfinter->inss[p] + search_ss[k];
-				pfinter->infs[num_pix_in_peak] = pfinter->infs[p] + search_fs[k];
-				pfinter->pix_in_peak_map[pi] = 1;
-				num_pix_in_peak = num_pix_in_peak + 1;
-			}
-		}
-		p++;
-	}
-	// error if for some reason sum_i is 0
-	if (sum_i < 1e-10)
-		return -1;
-	// Calculate center of mass
-	*peak_com_fs = sum_com_fs / sum_i;
-	*peak_com_ss = sum_com_ss / sum_i;
+    p = 0;
+    while ( p != num_pix_in_peak ) {
+        // pull the next pixel from the queue
+        curr_fs = pfinter->infs[p] + aifs * asic_size_fs;
+        curr_ss = pfinter->inss[p] + aiss * asic_size_ss;
+        pi = curr_fs + curr_ss * num_pix_fs;
+        // ... and process it
+        // (negative values have the same deviation from the background
+        // as positive, should have the same weight)
+        curr_i = fabs(copy[pi] - roffset[(int)rint(r_map[pi])]);
+        sum_i += curr_i;
+        sum_com_fs += curr_i * ((float)curr_fs);  // for center of mass x
+        sum_com_ss += curr_i * ((float)curr_ss);  // for center of mass y
+        if ( p < max_pix_count ) {
+            // store only max_pix_count pixels, because of the array size
+            // but continue floodfill the peak
+            pfinter->peak_pixels[p] = pi;
+        }
+        // push blank neighbours in the queue
+        for ( k=0; k<search_n; k++ ) {
+            // check panel borders
+            if ( (pfinter->infs[p] + search_fs[k]) < 0 ) continue;
+            if ( (pfinter->infs[p] + search_fs[k]) >= asic_size_fs ) continue;
+            if ( (pfinter->inss[p] + search_ss[k]) < 0 ) continue;
+            if ( (pfinter->inss[p] + search_ss[k]) >= asic_size_ss ) continue;
+            // neighbour index
+            curr_fs = pfinter->infs[p] + search_fs[k] + aifs * asic_size_fs;
+            curr_ss = pfinter->inss[p] + search_ss[k] + aiss * asic_size_ss;
+            pi = curr_fs + curr_ss * num_pix_fs;
+            // look for blank and above threshold
+            if ( copy[pi] > rthreshold[(int)rint(r_map[pi])]
+              && pfinter->pix_in_peak_map[pi] == 0
+              && mask[pi] != 0 ) {
+                pfinter->inss[num_pix_in_peak] = pfinter->inss[p] + search_ss[k];
+                pfinter->infs[num_pix_in_peak] = pfinter->infs[p] + search_fs[k];
+                pfinter->pix_in_peak_map[pi] = 1;
+                num_pix_in_peak = num_pix_in_peak + 1;
+            }
+        }
+        p++;
+    }
+    // error if for some reason sum_i is 0
+    if (sum_i < 1e-10)
+        return -1;
+    // Calculate center of mass
+    *peak_com_fs = sum_com_fs / sum_i;
+    *peak_com_ss = sum_com_ss / sum_i;
 
-	return num_pix_in_peak;
+    return num_pix_in_peak;
 }
 
 
@@ -917,80 +917,80 @@ static void search_in_ring(int ring_width, int com_fs_int, int com_ss_int,
                            float *background_max_i, int com_idx,
                            int local_bg_radius)
 {
-	int ssj, fsi;
-	float pix_radius;
-	int curr_fs, curr_ss;
-	int pi;
-	int curr_radius;
-	float curr_threshold;
-	float curr_i;
+    int ssj, fsi;
+    float pix_radius;
+    int curr_fs, curr_ss;
+    int pi;
+    int curr_radius;
+    float curr_threshold;
+    float curr_i;
 
-	int np_sigma;
-	int local_radius;
+    int np_sigma;
+    int local_radius;
 
-	float sum_i;
-	float sum_i_squared;
+    float sum_i;
+    float sum_i_squared;
 
-	ring_width = 2 * local_bg_radius;
+    ring_width = 2 * local_bg_radius;
 
-	sum_i = 0;
-	sum_i_squared = 0;
-	np_sigma = 0;
-	local_radius = 0;
+    sum_i = 0;
+    sum_i_squared = 0;
+    np_sigma = 0;
+    local_radius = 0;
 
-	for ( ssj = -ring_width ; ssj<ring_width ; ssj++ ) {
-		for ( fsi = -ring_width ; fsi<ring_width ; fsi++ ) {
+    for ( ssj = -ring_width ; ssj<ring_width ; ssj++ ) {
+        for ( fsi = -ring_width ; fsi<ring_width ; fsi++ ) {
 
-			// Within-ASIC check
-			if ( (com_fs_int + fsi) < 0 ) continue;
-			if ( (com_fs_int + fsi) >= asic_size_fs ) continue;
-			if ( (com_ss_int + ssj) < 0 ) continue;
-			if ( (com_ss_int + ssj) >= asic_size_ss )
-			continue;
+            // Within-ASIC check
+            if ( (com_fs_int + fsi) < 0 ) continue;
+            if ( (com_fs_int + fsi) >= asic_size_fs ) continue;
+            if ( (com_ss_int + ssj) < 0 ) continue;
+            if ( (com_ss_int + ssj) >= asic_size_ss )
+            continue;
 
-			// Within outer ring check
-			pix_radius = sqrt(fsi * fsi + ssj * ssj);
-			if ( pix_radius>ring_width ) continue;
+            // Within outer ring check
+            pix_radius = sqrt(fsi * fsi + ssj * ssj);
+            if ( pix_radius>ring_width ) continue;
 
-			// Position of this point in data stream
-			curr_fs = com_fs_int + fsi + aifs * asic_size_fs;
-			curr_ss = com_ss_int + ssj + aiss * asic_size_ss;
-			pi = curr_fs + curr_ss * num_pix_fs;
+            // Position of this point in data stream
+            curr_fs = com_fs_int + fsi + aifs * asic_size_fs;
+            curr_ss = com_ss_int + ssj + aiss * asic_size_ss;
+            pi = curr_fs + curr_ss * num_pix_fs;
 
-			curr_radius = (int)rint(r_map[pi]);
-			curr_threshold = rthreshold[curr_radius];
+            curr_radius = (int)rint(r_map[pi]);
+            curr_threshold = rthreshold[curr_radius];
 
-			// Intensity above background ??? just intensity?
-			curr_i = copy[pi];
+            // Intensity above background ??? just intensity?
+            curr_i = copy[pi];
 
-			// Keep track of value and value-squared for offset and sigma calculation
-			if ( curr_i < curr_threshold && pix_in_peak_map[pi] == 0 && mask[pi] != 0 ) {
+            // Keep track of value and value-squared for offset and sigma calculation
+            if ( curr_i < curr_threshold && pix_in_peak_map[pi] == 0 && mask[pi] != 0 ) {
 
-				np_sigma++;
-				sum_i += curr_i;
-				sum_i_squared += (curr_i * curr_i);
+                np_sigma++;
+                sum_i += curr_i;
+                sum_i_squared += (curr_i * curr_i);
 
-				if ( curr_i > *background_max_i ) {
-					*background_max_i = curr_i;
-				}
-			}
-		}
-	}
+                if ( curr_i > *background_max_i ) {
+                    *background_max_i = curr_i;
+                }
+            }
+        }
+    }
 
-	// Calculate local background and standard deviation
-	if ( np_sigma != 0 ) {
-		*local_offset = sum_i / np_sigma;
-		*local_sigma = sum_i_squared / np_sigma - (*local_offset * *local_offset);
-		if (*local_sigma >= 0) {
-			*local_sigma = sqrt(*local_sigma);
-		} else {
-			*local_sigma = 0.01;
-		}
-	} else {
-		local_radius = (int)rint(r_map[(int)rint(com_idx)]);
-		*local_offset = roffset[local_radius];
-		*local_sigma = 0.01;
-	}
+    // Calculate local background and standard deviation
+    if ( np_sigma != 0 ) {
+        *local_offset = sum_i / np_sigma;
+        *local_sigma = sum_i_squared / np_sigma - (*local_offset * *local_offset);
+        if (*local_sigma >= 0) {
+            *local_sigma = sqrt(*local_sigma);
+        } else {
+            *local_sigma = 0.01;
+        }
+    } else {
+        local_radius = (int)rint(r_map[(int)rint(com_idx)]);
+        *local_offset = roffset[local_radius];
+        *local_sigma = 0.01;
+    }
 }
 
 
@@ -1004,181 +1004,181 @@ static void process_panel(int asic_size_fs, int asic_size_ss, int num_pix_fs,
                           int min_pix_count, int max_pix_count,
                           int local_bg_radius, float min_snr, int max_n_peaks)
 {
-	int pxss, pxfs;
-	int num_pix_in_peak;
+    int pxss, pxfs;
+    int num_pix_in_peak;
 
-	// Loop over pixels within a module
-	for ( pxss=1 ; pxss<asic_size_ss-1 ; pxss++ ) {
-		for ( pxfs=1 ; pxfs<asic_size_fs-1 ; pxfs++ ) {
+    // Loop over pixels within a module
+    for ( pxss=1 ; pxss<asic_size_ss-1 ; pxss++ ) {
+        for ( pxfs=1 ; pxfs<asic_size_fs-1 ; pxfs++ ) {
 
-			float curr_thresh;
-			int pxidx;
-			int curr_rad;
+            float curr_thresh;
+            int pxidx;
+            int curr_rad;
 
-			pxidx = (pxss + aiss * asic_size_ss) * num_pix_fs +
-			pxfs + aifs * asic_size_fs;
+            pxidx = (pxss + aiss * asic_size_ss) * num_pix_fs +
+            pxfs + aifs * asic_size_fs;
 
-			curr_rad = (int)rint(r_map[pxidx]);
-			curr_thresh = rthreshold[curr_rad];
+            curr_rad = (int)rint(r_map[pxidx]);
+            curr_thresh = rthreshold[curr_rad];
 
-			if ( copy[pxidx] > curr_thresh
-			  && pfinter->pix_in_peak_map[pxidx] == 0
-			  && mask[pxidx] != 0 ) {   //??? not sure if needed
+            if ( copy[pxidx] > curr_thresh
+              && pfinter->pix_in_peak_map[pxidx] == 0
+              && mask[pxidx] != 0 ) {   //??? not sure if needed
 
-				// This might be the start of a new peak - start searching
-				float sum_com_fs, sum_com_ss;
-				float peak_com_fs, peak_com_ss;
-				float peak_com_fs_int, peak_com_ss_int;
-				float peak_tot_i, pk_tot_i_raw;
-				float peak_max_i, pk_max_i_raw;
-				float peak_snr;
-				float local_sigma, local_offset;
-				float background_max_i;
-				int ring_width;
-				int peak_idx;
-				int com_idx;
+                // This might be the start of a new peak - start searching
+                float sum_com_fs, sum_com_ss;
+                float peak_com_fs, peak_com_ss;
+                float peak_com_fs_int, peak_com_ss_int;
+                float peak_tot_i, pk_tot_i_raw;
+                float peak_max_i, pk_max_i_raw;
+                float peak_snr;
+                float local_sigma, local_offset;
+                float background_max_i;
+                int ring_width;
+                int peak_idx;
+                int com_idx;
 
-				num_pix_in_peak = floodfill_peak(pxfs, pxss,
-				                                 pfinter, copy, mask, r_map,
-				                                 rthreshold, roffset,
-				                                 asic_size_fs, asic_size_ss,
-				                                 aifs, aiss, num_pix_fs,
-				                                 &peak_com_fs, &peak_com_ss,
-				                                 max_pix_count);
+                num_pix_in_peak = floodfill_peak(pxfs, pxss,
+                                                 pfinter, copy, mask, r_map,
+                                                 rthreshold, roffset,
+                                                 asic_size_fs, asic_size_ss,
+                                                 aifs, aiss, num_pix_fs,
+                                                 &peak_com_fs, &peak_com_ss,
+                                                 max_pix_count);
 
-				// skip if error
-				if ( num_pix_in_peak < 0) continue;
+                // skip if error
+                if ( num_pix_in_peak < 0) continue;
 
-				// Too many or too few pixels means ignore this 'peak'; move on now
-				if ( num_pix_in_peak < min_pix_count || num_pix_in_peak > max_pix_count ) continue;
+                // Too many or too few pixels means ignore this 'peak'; move on now
+                if ( num_pix_in_peak < min_pix_count || num_pix_in_peak > max_pix_count ) continue;
 
-				com_idx = (int)rint(peak_com_fs) + (int)rint(peak_com_ss) * num_pix_fs;
+                com_idx = (int)rint(peak_com_fs) + (int)rint(peak_com_ss) * num_pix_fs;
 
-				peak_com_fs_int = (int)rint(peak_com_fs) - aifs * asic_size_fs;
-				peak_com_ss_int = (int)rint(peak_com_ss) - aiss * asic_size_ss;
+                peak_com_fs_int = (int)rint(peak_com_fs) - aifs * asic_size_fs;
+                peak_com_ss_int = (int)rint(peak_com_ss) - aiss * asic_size_ss;
 
-				// Calculate the local signal-to-noise ratio and local background in an annulus around
-				// this peak (excluding pixels which look like they might be part of another peak)
-				local_sigma = 0.0;
-				local_offset = 0.0;
-				background_max_i = 0.0;
+                // Calculate the local signal-to-noise ratio and local background in an annulus around
+                // this peak (excluding pixels which look like they might be part of another peak)
+                local_sigma = 0.0;
+                local_offset = 0.0;
+                background_max_i = 0.0;
 
-				ring_width = 2 * local_bg_radius;
+                ring_width = 2 * local_bg_radius;
 
-				search_in_ring(ring_width, peak_com_fs_int,
-				               peak_com_ss_int,
-				               copy, r_map, rthreshold,
-				               roffset,
-				               pfinter->pix_in_peak_map,
-				               mask, asic_size_fs,
-				               asic_size_ss,
-				               aifs, aiss,
-				               num_pix_fs,
-				               &local_sigma,
-				               &local_offset,
-				               &background_max_i,
-				               com_idx, local_bg_radius);
+                search_in_ring(ring_width, peak_com_fs_int,
+                               peak_com_ss_int,
+                               copy, r_map, rthreshold,
+                               roffset,
+                               pfinter->pix_in_peak_map,
+                               mask, asic_size_fs,
+                               asic_size_ss,
+                               aifs, aiss,
+                               num_pix_fs,
+                               &local_sigma,
+                               &local_offset,
+                               &background_max_i,
+                               com_idx, local_bg_radius);
 
-				// Re-integrate (and re-centroid) peak using local background estimates
-				peak_tot_i = 0;
-				pk_tot_i_raw = 0;
-				peak_max_i = 0;
-				pk_max_i_raw = 0;
-				sum_com_fs = 0;
-				sum_com_ss = 0;
+                // Re-integrate (and re-centroid) peak using local background estimates
+                peak_tot_i = 0;
+                pk_tot_i_raw = 0;
+                peak_max_i = 0;
+                pk_max_i_raw = 0;
+                sum_com_fs = 0;
+                sum_com_ss = 0;
 
-				for ( peak_idx = 0 ;
-					peak_idx < num_pix_in_peak && peak_idx < max_pix_count ;
-					peak_idx++ ) {
+                for ( peak_idx = 0 ;
+                    peak_idx < num_pix_in_peak && peak_idx < max_pix_count ;
+                    peak_idx++ ) {
 
-					int curr_idx;
-					float curr_i;
-					float curr_i_raw;
-					int curr_fs, curr_ss;
+                    int curr_idx;
+                    float curr_i;
+                    float curr_i_raw;
+                    int curr_fs, curr_ss;
 
-					curr_idx = pfinter->peak_pixels[peak_idx];
-					curr_i_raw = copy[curr_idx];
-					curr_i = curr_i_raw - local_offset;
-					peak_tot_i += curr_i;
-					pk_tot_i_raw += curr_i_raw;
+                    curr_idx = pfinter->peak_pixels[peak_idx];
+                    curr_i_raw = copy[curr_idx];
+                    curr_i = curr_i_raw - local_offset;
+                    peak_tot_i += curr_i;
+                    pk_tot_i_raw += curr_i_raw;
 
-					// Remember that curr_idx = curr_fs + curr_ss*num_pix_fs
-					curr_fs = curr_idx % num_pix_fs;
-					curr_ss = curr_idx / num_pix_fs;
-					sum_com_fs += curr_i_raw * ((float)curr_fs);
-					sum_com_ss += curr_i_raw * ((float)curr_ss);
+                    // Remember that curr_idx = curr_fs + curr_ss*num_pix_fs
+                    curr_fs = curr_idx % num_pix_fs;
+                    curr_ss = curr_idx / num_pix_fs;
+                    sum_com_fs += curr_i_raw * ((float)curr_fs);
+                    sum_com_ss += curr_i_raw * ((float)curr_ss);
 
-					if ( curr_i_raw > pk_max_i_raw ) pk_max_i_raw = curr_i_raw;
-					if ( curr_i > peak_max_i ) peak_max_i = curr_i;
-				}
+                    if ( curr_i_raw > pk_max_i_raw ) pk_max_i_raw = curr_i_raw;
+                    if ( curr_i > peak_max_i ) peak_max_i = curr_i;
+                }
 
 
-				// This CAN happen! Better to skip...
-				if ( fabs(pk_tot_i_raw) < 1e-10 ) continue;
+                // This CAN happen! Better to skip...
+                if ( fabs(pk_tot_i_raw) < 1e-10 ) continue;
 
-				peak_com_fs = sum_com_fs / fabs(pk_tot_i_raw);
-				peak_com_ss = sum_com_ss / fabs(pk_tot_i_raw);
+                peak_com_fs = sum_com_fs / fabs(pk_tot_i_raw);
+                peak_com_ss = sum_com_ss / fabs(pk_tot_i_raw);
 
-				// Calculate signal-to-noise and apply SNR criteria
-				if ( fabs(local_sigma) > 1e-10 ) {
-					peak_snr = peak_tot_i / local_sigma;
-				} else {
-					peak_snr = 0;
-				}
+                // Calculate signal-to-noise and apply SNR criteria
+                if ( fabs(local_sigma) > 1e-10 ) {
+                    peak_snr = peak_tot_i / local_sigma;
+                } else {
+                    peak_snr = 0;
+                }
 
-				if (peak_snr < min_snr) continue;
+                if (peak_snr < min_snr) continue;
 
-				// Is the maximum intensity in the peak enough above intensity in background region to
-				// be a peak and not noise? The more pixels there are in the peak, the more relaxed we
-				// are about this criterion
-				//f_background_thresh = background_max_i - local_offset; //!!! Ofiget'!  If I uncomment
-				// if (peak_max_i < f_background_thresh) {               // these lines the result is
-				// different!
-				if (peak_max_i < background_max_i - local_offset) continue;
+                // Is the maximum intensity in the peak enough above intensity in background region to
+                // be a peak and not noise? The more pixels there are in the peak, the more relaxed we
+                // are about this criterion
+                //f_background_thresh = background_max_i - local_offset; //!!! Ofiget'!  If I uncomment
+                // if (peak_max_i < f_background_thresh) {               // these lines the result is
+                // different!
+                if (peak_max_i < background_max_i - local_offset) continue;
 
-				if ( peak_com_fs < aifs*asic_size_fs
-				  || peak_com_fs > (aifs+1)*asic_size_fs-1
-				  || peak_com_ss < aiss*asic_size_ss
-				  || peak_com_ss > (aiss+1)*asic_size_ss-1)
-				{
-					continue;
-				}
+                if ( peak_com_fs < aifs*asic_size_fs
+                  || peak_com_fs > (aifs+1)*asic_size_fs-1
+                  || peak_com_ss < aiss*asic_size_ss
+                  || peak_com_ss > (aiss+1)*asic_size_ss-1)
+                {
+                    continue;
+                }
 
-				// This is a peak? If so, add info to peak list
-				if ( num_pix_in_peak >= min_pix_count
-				  && num_pix_in_peak <= max_pix_count ) {
+                // This is a peak? If so, add info to peak list
+                if ( num_pix_in_peak >= min_pix_count
+                  && num_pix_in_peak <= max_pix_count ) {
 
-					// Bragg peaks in the mask
-					for ( peak_idx = 0 ;
-					      peak_idx < num_pix_in_peak &&
-					      peak_idx < max_pix_count ;
-					      peak_idx++ ) {
-						pfinter->pix_in_peak_map[pfinter->peak_pixels[peak_idx]] = 2;
-					}
+                    // Bragg peaks in the mask
+                    for ( peak_idx = 0 ;
+                          peak_idx < num_pix_in_peak &&
+                          peak_idx < max_pix_count ;
+                          peak_idx++ ) {
+                        pfinter->pix_in_peak_map[pfinter->peak_pixels[peak_idx]] = 2;
+                    }
 
-					int peak_com_idx;
-					peak_com_idx = (int)rint(peak_com_fs) + (int)rint(peak_com_ss) *
-						                num_pix_fs;
-					// Remember peak information
-					if ( *peak_count < max_n_peaks ) {
+                    int peak_com_idx;
+                    peak_com_idx = (int)rint(peak_com_fs) + (int)rint(peak_com_ss) *
+                                        num_pix_fs;
+                    // Remember peak information
+                    if ( *peak_count < max_n_peaks ) {
 
-						int pidx;
-						pidx = *peak_count;
+                        int pidx;
+                        pidx = *peak_count;
 
-						npix[pidx] = num_pix_in_peak;
-						com_fs[pidx] = peak_com_fs;
-						com_ss[pidx] = peak_com_ss;
-						com_index[pidx] = peak_com_idx;
-						tot_i[pidx] = peak_tot_i;
-						max_i[pidx] = peak_max_i;
-						sigma[pidx] = local_sigma;
-						snr[pidx] = peak_snr;
-					}
-					*peak_count += 1;
-				}
-			}
-		}
-	}
+                        npix[pidx] = num_pix_in_peak;
+                        com_fs[pidx] = peak_com_fs;
+                        com_ss[pidx] = peak_com_ss;
+                        com_index[pidx] = peak_com_idx;
+                        tot_i[pidx] = peak_tot_i;
+                        max_i[pidx] = peak_max_i;
+                        sigma[pidx] = local_sigma;
+                        snr[pidx] = peak_snr;
+                    }
+                    *peak_count += 1;
+                }
+            }
+        }
+    }
 }
 
 
@@ -1195,43 +1195,43 @@ static int peakfinder8_base(float *roffset, float *rthreshold,
                             char* outliersMask)
 {
 
-	int num_pix_fs, num_pix_ss, num_pix_tot;
-	int aifs, aiss;
-	int peak_count;
-	struct peakfinder_intern_data *pfinter;
+    int num_pix_fs, num_pix_ss, num_pix_tot;
+    int aifs, aiss;
+    int peak_count;
+    struct peakfinder_intern_data *pfinter;
 
-	num_pix_fs = asic_size_fs * num_asics_fs;
-	num_pix_ss = asic_size_ss * num_asics_ss;
-	num_pix_tot = num_pix_fs * num_pix_ss;
+    num_pix_fs = asic_size_fs * num_asics_fs;
+    num_pix_ss = asic_size_ss * num_asics_ss;
+    num_pix_tot = num_pix_fs * num_pix_ss;
 
-	pfinter = allocate_peakfinder_intern_data(num_pix_tot, max_pix_count);
-	if ( pfinter == NULL ) {
-		return 1;
-	}
+    pfinter = allocate_peakfinder_intern_data(num_pix_tot, max_pix_count);
+    if ( pfinter == NULL ) {
+        return 1;
+    }
 
-	peak_count = 0;
+    peak_count = 0;
 
-	// Loop over modules (nxn array)
-	for ( aiss=0 ; aiss<num_asics_ss ; aiss++ ) {
-		for ( aifs=0 ; aifs<num_asics_fs ; aifs++ ) {                 // ??? to change to proper panels need
-			process_panel(asic_size_fs, asic_size_ss, num_pix_fs, // change copy, mask, r_map
-			              aiss, aifs, rthreshold, roffset,
-			              &peak_count, data, pfinter, r_map, mask,
-			              npix, com_fs, com_ss, com_index, tot_i,
-			              max_i, sigma, snr, min_pix_count,
-			              max_pix_count, local_bg_radius, min_snr,
-			              max_n_peaks);
-		}
-	}
-	*num_found_peaks = peak_count;
+    // Loop over modules (nxn array)
+    for ( aiss=0 ; aiss<num_asics_ss ; aiss++ ) {
+        for ( aifs=0 ; aifs<num_asics_fs ; aifs++ ) {                 // ??? to change to proper panels need
+            process_panel(asic_size_fs, asic_size_ss, num_pix_fs, // change copy, mask, r_map
+                          aiss, aifs, rthreshold, roffset,
+                          &peak_count, data, pfinter, r_map, mask,
+                          npix, com_fs, com_ss, com_index, tot_i,
+                          max_i, sigma, snr, min_pix_count,
+                          max_pix_count, local_bg_radius, min_snr,
+                          max_n_peaks);
+        }
+    }
+    *num_found_peaks = peak_count;
 
-	if (outliersMask != NULL) {
-		memcpy(outliersMask, pfinter->pix_in_peak_map, num_pix_tot*sizeof(char));
-	}
+    if (outliersMask != NULL) {
+        memcpy(outliersMask, pfinter->pix_in_peak_map, num_pix_tot*sizeof(char));
+    }
 
-	free_peakfinder_intern_data(pfinter);
+    free_peakfinder_intern_data(pfinter);
 
-	return 0;
+    return 0;
 }
 
 
@@ -1257,218 +1257,218 @@ ImageFeatureList *peakfinder8(const struct image *img, int max_n_peaks,
                               int max_res, int use_saturated,
                               int fast_mode, struct pf8_private_data *private_data)
 {
-	struct pf8_private_data *geomdata;
-	struct radius_maps *rmaps;
-	struct radial_stats_pixels *rspixels;
+    struct pf8_private_data *geomdata;
+    struct radius_maps *rmaps;
+    struct radial_stats_pixels *rspixels;
 
-	struct peakfinder_mask *pfmask;
-	struct peakfinder_panel_data *pfdata;
-	struct radial_stats *rstats;
-	struct peakfinder_peak_data *pkdata;
-	int num_rad_bins;
-	int pi;
-	int i, it_counter;
-	int num_found_peaks;
-	int remaining_max_num_peaks;
-	int iterations;
-	float max_r;
-	ImageFeatureList *peaks;
+    struct peakfinder_mask *pfmask;
+    struct peakfinder_panel_data *pfdata;
+    struct radial_stats *rstats;
+    struct peakfinder_peak_data *pkdata;
+    int num_rad_bins;
+    int pi;
+    int i, it_counter;
+    int num_found_peaks;
+    int remaining_max_num_peaks;
+    int iterations;
+    float max_r;
+    ImageFeatureList *peaks;
 
-	iterations = 5;
+    iterations = 5;
 
-	if ( img->detgeom == NULL) return NULL;
+    if ( img->detgeom == NULL) return NULL;
 
-	profile_start("pf8-rmaps");
-	if ( private_data == NULL ) {
-		geomdata = prepare_peakfinder8(img->detgeom, fast_mode);
-	} else {
-		geomdata = private_data;
-	}
-	profile_end("pf8-rmaps");
-	if (geomdata == NULL) return NULL;
-	rmaps = geomdata->rmaps;
-	rspixels = geomdata->rpixels;
+    profile_start("pf8-rmaps");
+    if ( private_data == NULL ) {
+        geomdata = prepare_peakfinder8(img->detgeom, fast_mode);
+    } else {
+        geomdata = private_data;
+    }
+    profile_end("pf8-rmaps");
+    if (geomdata == NULL) return NULL;
+    rmaps = geomdata->rmaps;
+    rspixels = geomdata->rpixels;
 
-	profile_start("pf8-mask");
-	pfmask = create_peakfinder_mask(img, rmaps, min_res, max_res);
-	profile_end("pf8-mask");
-	if ( pfmask == NULL ) {
-		if ( private_data == NULL ) free_pf8_private_data(geomdata);
-		return NULL;
-	}
+    profile_start("pf8-mask");
+    pfmask = create_peakfinder_mask(img, rmaps, min_res, max_res);
+    profile_end("pf8-mask");
+    if ( pfmask == NULL ) {
+        if ( private_data == NULL ) free_pf8_private_data(geomdata);
+        return NULL;
+    }
 
-	pfdata = allocate_panel_data(img->detgeom->n_panels);
-	if ( pfdata == NULL) {
-		if ( private_data == NULL ) free_pf8_private_data(geomdata);
-		free_peakfinder_mask(pfmask);
-		return NULL;
-	}
+    pfdata = allocate_panel_data(img->detgeom->n_panels);
+    if ( pfdata == NULL) {
+        if ( private_data == NULL ) free_pf8_private_data(geomdata);
+        free_peakfinder_mask(pfmask);
+        return NULL;
+    }
 
-	for ( pi=0 ; pi<img->detgeom->n_panels ; pi++ ) {
-		pfdata->panel_h[pi] = img->detgeom->panels[pi].h;
-		pfdata->panel_w[pi] = img->detgeom->panels[pi].w;
-		pfdata->panel_data[pi] = img->dp[pi];
-		pfdata->num_panels = img->detgeom->n_panels;
-	}
+    for ( pi=0 ; pi<img->detgeom->n_panels ; pi++ ) {
+        pfdata->panel_h[pi] = img->detgeom->panels[pi].h;
+        pfdata->panel_w[pi] = img->detgeom->panels[pi].w;
+        pfdata->panel_data[pi] = img->dp[pi];
+        pfdata->num_panels = img->detgeom->n_panels;
+    }
 
-	max_r = -1e9;
+    max_r = -1e9;
 
-	for ( pi=0 ; pi<pfdata->num_panels ; pi++ ) {
+    for ( pi=0 ; pi<pfdata->num_panels ; pi++ ) {
 
-		compute_num_radial_bins(pfdata->panel_w[pi],
-		                        pfdata->panel_h[pi],
-		                        rmaps->r_maps[pi],
-		                        &max_r);
-	}
+        compute_num_radial_bins(pfdata->panel_w[pi],
+                                pfdata->panel_h[pi],
+                                rmaps->r_maps[pi],
+                                &max_r);
+    }
 
-	num_rad_bins = (int)ceil(max_r) + 1;
+    num_rad_bins = (int)ceil(max_r) + 1;
 
-	rstats = allocate_radial_stats(num_rad_bins);
-	if ( rstats == NULL ) {
-		if ( private_data == NULL ) free_pf8_private_data(geomdata);
-		free_peakfinder_mask(pfmask);
-		free_panel_data(pfdata);
-		return NULL;
-	}
+    rstats = allocate_radial_stats(num_rad_bins);
+    if ( rstats == NULL ) {
+        if ( private_data == NULL ) free_pf8_private_data(geomdata);
+        free_peakfinder_mask(pfmask);
+        free_panel_data(pfdata);
+        return NULL;
+    }
 
-	for ( i=0 ; i<rstats->n_rad_bins ; i++) {
-		rstats->rthreshold[i] = 1e9;
-		rstats->lthreshold[i] = -1e9;
-	}
-	profile_start("pf8-rstats");
-	for ( it_counter=0 ; it_counter<iterations ; it_counter++ ) {
+    for ( i=0 ; i<rstats->n_rad_bins ; i++) {
+        rstats->rthreshold[i] = 1e9;
+        rstats->lthreshold[i] = -1e9;
+    }
+    profile_start("pf8-rstats");
+    for ( it_counter=0 ; it_counter<iterations ; it_counter++ ) {
 
-		for ( i=0; i<num_rad_bins; i++ ) {
-			rstats->roffset[i] = 0;
-			rstats->rsigma[i] = 0;
-			rstats->rcount[i] = 0;
-		}
+        for ( i=0; i<num_rad_bins; i++ ) {
+            rstats->roffset[i] = 0;
+            rstats->rsigma[i] = 0;
+            rstats->rcount[i] = 0;
+        }
 
-		for ( pi=0 ; pi<pfdata->num_panels ; pi++ ) {
-			if ( fast_mode ) {
-				fill_radial_bins_fast(pfdata->panel_data[pi],
-						      pfdata->panel_w[pi],
-						      pfdata->panel_h[pi],
-						      rspixels->n_pixels[pi],
-						      rspixels->pidx[pi],
-						      rspixels->radius[pi],
-						      pfmask->masks[pi],
-						      rstats->rthreshold,
-						      rstats->lthreshold,
-						      rstats->roffset,
-						      rstats->rsigma,
-						      rstats->rcount);
-			} else {
-				fill_radial_bins(pfdata->panel_data[pi],
-						 pfdata->panel_w[pi],
-						 pfdata->panel_h[pi],
-						 rmaps->r_maps[pi],
-						 pfmask->masks[pi],
-						 rstats->rthreshold,
-						 rstats->lthreshold,
-						 rstats->roffset,
-						 rstats->rsigma,
-						 rstats->rcount);
-			}
-		}
+        for ( pi=0 ; pi<pfdata->num_panels ; pi++ ) {
+            if ( fast_mode ) {
+                fill_radial_bins_fast(pfdata->panel_data[pi],
+                              pfdata->panel_w[pi],
+                              pfdata->panel_h[pi],
+                              rspixels->n_pixels[pi],
+                              rspixels->pidx[pi],
+                              rspixels->radius[pi],
+                              pfmask->masks[pi],
+                              rstats->rthreshold,
+                              rstats->lthreshold,
+                              rstats->roffset,
+                              rstats->rsigma,
+                              rstats->rcount);
+            } else {
+                fill_radial_bins(pfdata->panel_data[pi],
+                         pfdata->panel_w[pi],
+                         pfdata->panel_h[pi],
+                         rmaps->r_maps[pi],
+                         pfmask->masks[pi],
+                         rstats->rthreshold,
+                         rstats->lthreshold,
+                         rstats->roffset,
+                         rstats->rsigma,
+                         rstats->rcount);
+            }
+        }
 
-		compute_radial_stats(rstats->rthreshold,
-		                     rstats->lthreshold,
-		                     rstats->roffset,
-		                     rstats->rsigma,
-		                     rstats->rcount,
-		                     num_rad_bins,
-		                     min_snr,
-		                     threshold);
+        compute_radial_stats(rstats->rthreshold,
+                             rstats->lthreshold,
+                             rstats->roffset,
+                             rstats->rsigma,
+                             rstats->rcount,
+                             num_rad_bins,
+                             min_snr,
+                             threshold);
 
-	}
-	profile_end("pf8-rstats");
+    }
+    profile_end("pf8-rstats");
 
-	pkdata = allocate_peak_data(max_n_peaks);
-	if ( pkdata == NULL ) {
-		if ( private_data == NULL ) free_pf8_private_data(geomdata);
-		free_peakfinder_mask(pfmask);
-		free_panel_data(pfdata);
-		free_radial_stats(rstats);
-		return NULL;
-	}
+    pkdata = allocate_peak_data(max_n_peaks);
+    if ( pkdata == NULL ) {
+        if ( private_data == NULL ) free_pf8_private_data(geomdata);
+        free_peakfinder_mask(pfmask);
+        free_panel_data(pfdata);
+        free_radial_stats(rstats);
+        return NULL;
+    }
 
-	remaining_max_num_peaks = max_n_peaks;
-	peaks = image_feature_list_new();
-	profile_start("pf8-search");
-	for ( pi=0 ; pi<img->detgeom->n_panels ; pi++) {
+    remaining_max_num_peaks = max_n_peaks;
+    peaks = image_feature_list_new();
+    profile_start("pf8-search");
+    for ( pi=0 ; pi<img->detgeom->n_panels ; pi++) {
 
-		int peaks_to_add;
-		int pki;
-		int ret;
+        int peaks_to_add;
+        int pki;
+        int ret;
 
-		num_found_peaks = 0;
+        num_found_peaks = 0;
 
-		ret = peakfinder8_base(rstats->roffset,
-		                       rstats->rthreshold,
-		                       pfdata->panel_data[pi],
-		                       pfmask->masks[pi],
-		                       rmaps->r_maps[pi],
-		                       pfdata->panel_w[pi], 1,
-		                       pfdata->panel_h[pi], 1,
-		                       max_n_peaks,
-		                       &num_found_peaks,
-		                       pkdata->npix,
-		                       pkdata->com_fs,
-		                       pkdata->com_ss,
-		                       pkdata->com_index,
-		                       pkdata->tot_i,
-		                       pkdata->max_i,
-		                       pkdata->sigma,
-		                       pkdata->snr,
-		                       min_pix_count,
-		                       max_pix_count,
-		                       local_bg_radius,
-		                       min_snr,
-		                       NULL);
+        ret = peakfinder8_base(rstats->roffset,
+                               rstats->rthreshold,
+                               pfdata->panel_data[pi],
+                               pfmask->masks[pi],
+                               rmaps->r_maps[pi],
+                               pfdata->panel_w[pi], 1,
+                               pfdata->panel_h[pi], 1,
+                               max_n_peaks,
+                               &num_found_peaks,
+                               pkdata->npix,
+                               pkdata->com_fs,
+                               pkdata->com_ss,
+                               pkdata->com_index,
+                               pkdata->tot_i,
+                               pkdata->max_i,
+                               pkdata->sigma,
+                               pkdata->snr,
+                               min_pix_count,
+                               max_pix_count,
+                               local_bg_radius,
+                               min_snr,
+                               NULL);
 
-		if ( ret != 0 ) {
-			if ( private_data == NULL ) free_pf8_private_data(geomdata);
-			free_peakfinder_mask(pfmask);
-			free_panel_data(pfdata);
-			free_radial_stats(rstats);
-			image_feature_list_free(peaks);
-			profile_end("pf8-search");
-			return NULL;
-		}
+        if ( ret != 0 ) {
+            if ( private_data == NULL ) free_pf8_private_data(geomdata);
+            free_peakfinder_mask(pfmask);
+            free_panel_data(pfdata);
+            free_radial_stats(rstats);
+            image_feature_list_free(peaks);
+            profile_end("pf8-search");
+            return NULL;
+        }
 
-		peaks_to_add = num_found_peaks;
+        peaks_to_add = num_found_peaks;
 
-		if ( num_found_peaks > remaining_max_num_peaks ) {
-			peaks_to_add = remaining_max_num_peaks;
-		}
+        if ( num_found_peaks > remaining_max_num_peaks ) {
+            peaks_to_add = remaining_max_num_peaks;
+        }
 
-		remaining_max_num_peaks -= peaks_to_add;
+        remaining_max_num_peaks -= peaks_to_add;
 
-		for ( pki=0 ; pki<peaks_to_add ; pki++ ) {
+        for ( pki=0 ; pki<peaks_to_add ; pki++ ) {
 
-			struct detgeom_panel *p;
+            struct detgeom_panel *p;
 
-			p = &img->detgeom->panels[pi];
+            p = &img->detgeom->panels[pi];
 
-			if ( pkdata->max_i[pki] > p->max_adu ) {
-				if ( !use_saturated ) {
-					continue;
-				}
-			}
+            if ( pkdata->max_i[pki] > p->max_adu ) {
+                if ( !use_saturated ) {
+                    continue;
+                }
+            }
 
-			image_add_feature(peaks,
-			                  pkdata->com_fs[pki]+0.5,
-			                  pkdata->com_ss[pki]+0.5,
-			                  pi, pkdata->tot_i[pki], NULL);
-		}
-	}
-	profile_end("pf8-search");
+            image_add_feature(peaks,
+                              pkdata->com_fs[pki]+0.5,
+                              pkdata->com_ss[pki]+0.5,
+                              pi, pkdata->tot_i[pki], NULL);
+        }
+    }
+    profile_end("pf8-search");
 
-	if ( private_data == NULL ) free_pf8_private_data(geomdata);
-	free_peakfinder_mask(pfmask);
-	free_panel_data(pfdata);
-	free_radial_stats(rstats);
-	free_peak_data(pkdata);
-	return peaks;
+    if ( private_data == NULL ) free_pf8_private_data(geomdata);
+    free_peakfinder_mask(pfmask);
+    free_panel_data(pfdata);
+    free_radial_stats(rstats);
+    free_peak_data(pkdata);
+    return peaks;
 }

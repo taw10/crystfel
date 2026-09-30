@@ -36,61 +36,61 @@
 
 int main(int argc, char *argv[])
 {
-	DataTemplate *dtempl;
-	struct image *image;
-	Stream *st;
-	long long int v;
+    DataTemplate *dtempl;
+    struct image *image;
+    Stream *st;
+    long long int v;
 
-	dtempl = data_template_new_from_file(argv[1]);
-	if ( dtempl == NULL ) {
-		ERROR("Failed to load data template\n");
-		return 1;
-	}
+    dtempl = data_template_new_from_file(argv[1]);
+    if ( dtempl == NULL ) {
+        ERROR("Failed to load data template\n");
+        return 1;
+    }
 
-	data_template_add_copy_header(dtempl, argv[4]);
+    data_template_add_copy_header(dtempl, argv[4]);
 
-	image = image_read(dtempl, argv[2], argv[3], 0, 0, NULL);
-	if ( image == NULL ) {
-		ERROR("Failed to load image\n");
-		return 1;
-	}
+    image = image_read(dtempl, argv[2], argv[3], 0, 0, NULL);
+    if ( image == NULL ) {
+        ERROR("Failed to load image\n");
+        return 1;
+    }
 
-	st = stream_open_for_write(argv[5], dtempl);
-	if ( st == NULL ) {
-		ERROR("Failed to open stream for writing\n");
-		return 1;
-	}
+    st = stream_open_for_write(argv[5], dtempl);
+    if ( st == NULL ) {
+        ERROR("Failed to open stream for writing\n");
+        return 1;
+    }
 
-	stream_write_geometry_file(st, argv[1]);
+    stream_write_geometry_file(st, argv[1]);
 
-	if ( stream_write_chunk(st, image, 0) ) {
-		ERROR("Failed to write stream chunk\n");
-		return 1;
-	}
+    if ( stream_write_chunk(st, image, 0) ) {
+        ERROR("Failed to write stream chunk\n");
+        return 1;
+    }
 
-	stream_close(st);
-	image_free(image);
+    stream_close(st);
+    image_free(image);
 
-	st = stream_open_for_read(argv[5]);
-	if ( st == NULL ) {
-		ERROR("Failed to open stream for reading\n");
-		return 1;
-	}
+    st = stream_open_for_read(argv[5]);
+    if ( st == NULL ) {
+        ERROR("Failed to open stream for reading\n");
+        return 1;
+    }
 
-	image = stream_read_chunk(st, 0);
-	if ( image == NULL ) {
-		ERROR("Failed to read stream chunk\n");
-		return 1;
-	}
-	stream_close(st);
+    image = stream_read_chunk(st, 0);
+    if ( image == NULL ) {
+        ERROR("Failed to read stream chunk\n");
+        return 1;
+    }
+    stream_close(st);
 
-	image_read_header_int(image, argv[4], &v);
-	if ( v != 1234567890123456789 ) {
-		ERROR("Wrong value read (%lli)\n", v);
-		return 1;
-	}
+    image_read_header_int(image, argv[4], &v);
+    if ( v != 1234567890123456789 ) {
+        ERROR("Wrong value read (%lli)\n", v);
+        return 1;
+    }
 
-	image_free(image);
-	unlink("header_read.stream");
-	return 0;
+    image_free(image);
+    unlink("header_read.stream");
+    return 0;
 }

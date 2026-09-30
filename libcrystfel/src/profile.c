@@ -44,23 +44,23 @@
 
 struct _profile_block
 {
-	char *name;
+    char *name;
 
-	time_t start_sec;
-	long start_nsec;
-	double total_time;
+    time_t start_sec;
+    long start_nsec;
+    double total_time;
 
-	struct _profile_block *parent;
-	struct _profile_block **children;
-	int n_children;
-	int max_children;
+    struct _profile_block *parent;
+    struct _profile_block **children;
+    int n_children;
+    int max_children;
 };
 
 
 struct _profiledata
 {
-	struct _profile_block *root;
-	struct _profile_block *current;
+    struct _profile_block *root;
+    struct _profile_block *current;
 };
 
 
@@ -69,191 +69,191 @@ struct _profiledata *pd = NULL;
 
 static struct _profile_block *start_profile_block(const char *name)
 {
-	struct _profile_block *b;
+    struct _profile_block *b;
 
-	b = cfmalloc(sizeof(struct _profile_block));
-	if ( b == NULL ) return NULL;
+    b = cfmalloc(sizeof(struct _profile_block));
+    if ( b == NULL ) return NULL;
 
-	b->name = cfstrdup(name);
-	if ( b->name == NULL ) {
-		cffree(b);
-		return NULL;
-	}
-	b->n_children = 0;
-	b->max_children = 0;
-	b->children = NULL;
+    b->name = cfstrdup(name);
+    if ( b->name == NULL ) {
+        cffree(b);
+        return NULL;
+    }
+    b->n_children = 0;
+    b->max_children = 0;
+    b->children = NULL;
 
 #ifdef HAVE_CLOCK_GETTIME
-	struct timespec tp;
-	clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-	b->start_sec = tp.tv_sec;
-	b->start_nsec = tp.tv_nsec;
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
+    b->start_sec = tp.tv_sec;
+    b->start_nsec = tp.tv_nsec;
 #endif
 
-	return b;
+    return b;
 }
 
 
 static void stop_profile_block(struct _profile_block *b)
 {
 #ifdef HAVE_CLOCK_GETTIME
-	struct timespec tp;
-	clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-	time_t sec = tp.tv_sec - b->start_sec;
-	long nsec = tp.tv_nsec - b->start_nsec;
-	b->total_time = sec + nsec*1e-9;
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
+    time_t sec = tp.tv_sec - b->start_sec;
+    long nsec = tp.tv_nsec - b->start_nsec;
+    b->total_time = sec + nsec*1e-9;
 #else
-	b->total_time = 0.0;
+    b->total_time = 0.0;
 #endif
 }
 
 
 void profile_init()
 {
-	if ( pd != NULL ) {
-		fprintf(stderr, "Attempted to initialise profiling twice!\n");
-		fflush(stderr);
-		abort();
-	}
+    if ( pd != NULL ) {
+        fprintf(stderr, "Attempted to initialise profiling twice!\n");
+        fflush(stderr);
+        abort();
+    }
 
-	if ( pd == NULL ) {
-		pd = cfmalloc(sizeof(struct _profiledata));
-		if ( pd == NULL ) return;
-	}
+    if ( pd == NULL ) {
+        pd = cfmalloc(sizeof(struct _profiledata));
+        if ( pd == NULL ) return;
+    }
 
-	pd->root = start_profile_block("root");
-	pd->current = pd->root;
-	pd->root->parent = NULL;
+    pd->root = start_profile_block("root");
+    pd->current = pd->root;
+    pd->root->parent = NULL;
 
 #ifndef HAVE_CLOCK_GETTIME
-	printf("Profiling disabled because clock_gettime is not available\n");
+    printf("Profiling disabled because clock_gettime is not available\n");
 #endif
 }
 
 
 static char *format_profile_block(struct _profile_block *b)
 {
-	int i;
-	size_t total_len = 0;
-	char **subbufs;
-	char *full_buf;
+    int i;
+    size_t total_len = 0;
+    char **subbufs;
+    char *full_buf;
 
-	subbufs = cfmalloc(b->n_children * sizeof(char *));
-	if ( subbufs == NULL ) return NULL;
+    subbufs = cfmalloc(b->n_children * sizeof(char *));
+    if ( subbufs == NULL ) return NULL;
 
-	total_len = 32 + strlen(b->name);
-	for ( i=0; i<b->n_children; i++ ) {
-		subbufs[i] = format_profile_block(b->children[i]);
-		if ( subbufs[i] == NULL ) return NULL;
-		total_len += 1 + strlen(subbufs[i]);
-	}
+    total_len = 32 + strlen(b->name);
+    for ( i=0; i<b->n_children; i++ ) {
+        subbufs[i] = format_profile_block(b->children[i]);
+        if ( subbufs[i] == NULL ) return NULL;
+        total_len += 1 + strlen(subbufs[i]);
+    }
 
-	full_buf = cfmalloc(total_len);
-	snprintf(full_buf, 32, "(%s %.3f", b->name, b->total_time);
-	for ( i=0; i<b->n_children; i++ ) {
-		strcat(full_buf, " ");
-		strcat(full_buf, subbufs[i]);
-		cffree(subbufs[i]);
-	}
-	strcat(full_buf, ")");
+    full_buf = cfmalloc(total_len);
+    snprintf(full_buf, 32, "(%s %.3f", b->name, b->total_time);
+    for ( i=0; i<b->n_children; i++ ) {
+        strcat(full_buf, " ");
+        strcat(full_buf, subbufs[i]);
+        cffree(subbufs[i]);
+    }
+    strcat(full_buf, ")");
 
-	cffree(subbufs);
+    cffree(subbufs);
 
-	return full_buf;
+    return full_buf;
 }
 
 
 static void free_profile_block(struct _profile_block *b)
 {
-	int i;
-	for ( i=0; i<b->n_children; i++ ) {
-		free_profile_block(b->children[i]);
-	}
-	cffree(b->children);
-	cffree(b->name);
-	cffree(b);
+    int i;
+    for ( i=0; i<b->n_children; i++ ) {
+        free_profile_block(b->children[i]);
+    }
+    cffree(b->children);
+    cffree(b->name);
+    cffree(b);
 }
 
 
 void profile_print_and_reset(int worker_id)
 {
-	char *buf;
-	char *buf2;
+    char *buf;
+    char *buf2;
 
-	if ( pd == NULL ) {
-		fprintf(stderr, "Profiling not initialised yet!\n");
-		fflush(stderr);
-		abort();
-	}
+    if ( pd == NULL ) {
+        fprintf(stderr, "Profiling not initialised yet!\n");
+        fflush(stderr);
+        abort();
+    }
 
-	if ( pd->current != pd->root ) {
-		fprintf(stderr, "Attempted to finalise profiling while not "
-		        "on root block (%s)\n", pd->current->name);
-		fflush(stderr);
-		abort();
-	}
+    if ( pd->current != pd->root ) {
+        fprintf(stderr, "Attempted to finalise profiling while not "
+                "on root block (%s)\n", pd->current->name);
+        fflush(stderr);
+        abort();
+    }
 
-	stop_profile_block(pd->root);
+    stop_profile_block(pd->root);
 
-	buf = format_profile_block(pd->root);
-	buf2 = cfmalloc(8+strlen(buf));
-	size_t len = 8+strlen(buf);
-	snprintf(buf2, len, "%i %s\n", worker_id, buf);
-	write(STDOUT_FILENO, buf2, strlen(buf2));
-	cffree(buf);
-	cffree(buf2);
+    buf = format_profile_block(pd->root);
+    buf2 = cfmalloc(8+strlen(buf));
+    size_t len = 8+strlen(buf);
+    snprintf(buf2, len, "%i %s\n", worker_id, buf);
+    write(STDOUT_FILENO, buf2, strlen(buf2));
+    cffree(buf);
+    cffree(buf2);
 
-	free_profile_block(pd->root);
-	pd->root = start_profile_block("root");
-	pd->current = pd->root;
-	pd->root->parent = NULL;
+    free_profile_block(pd->root);
+    pd->root = start_profile_block("root");
+    pd->current = pd->root;
+    pd->root->parent = NULL;
 }
 
 
 void profile_start(const char *name)
 {
-	struct _profile_block *b;
+    struct _profile_block *b;
 
-	if ( pd == NULL ) return;
+    if ( pd == NULL ) return;
 
-	if ( pd->current->n_children >= pd->current->max_children ) {
-		struct _profile_block **nblock;
-		int nmax = pd->current->n_children + 64;
-		nblock = cfrealloc(pd->current->children, nmax*sizeof(struct _profile_block *));
-		if ( nblock == NULL ) {
-			fprintf(stderr, "Failed to allocate profiling record. "
-			                "Try again without --profile.\n");
-			abort();
-		}
-		pd->current->children = nblock;
-		pd->current->max_children = nmax;
-	}
+    if ( pd->current->n_children >= pd->current->max_children ) {
+        struct _profile_block **nblock;
+        int nmax = pd->current->n_children + 64;
+        nblock = cfrealloc(pd->current->children, nmax*sizeof(struct _profile_block *));
+        if ( nblock == NULL ) {
+            fprintf(stderr, "Failed to allocate profiling record. "
+                            "Try again without --profile.\n");
+            abort();
+        }
+        pd->current->children = nblock;
+        pd->current->max_children = nmax;
+    }
 
-	b = start_profile_block(name);
-	b->parent = pd->current;
-	pd->current->children[pd->current->n_children++] = b;
-	pd->current = b;
+    b = start_profile_block(name);
+    b->parent = pd->current;
+    pd->current->children[pd->current->n_children++] = b;
+    pd->current = b;
 }
 
 
 void profile_end(const char *name)
 {
-	if ( pd == NULL ) return;
+    if ( pd == NULL ) return;
 
-	if ( pd->current == NULL ) {
-		fprintf(stderr, "No current profile block!\n");
-		fflush(stderr);
-		abort();
-	}
+    if ( pd->current == NULL ) {
+        fprintf(stderr, "No current profile block!\n");
+        fflush(stderr);
+        abort();
+    }
 
-	if ( strcmp(name, pd->current->name) != 0 ) {
-		fprintf(stderr, "Attempt to close wrong profile block (%s) "
-		        "current block is %s\n", name, pd->current->name);
-		fflush(stderr);
-		abort();
-	}
+    if ( strcmp(name, pd->current->name) != 0 ) {
+        fprintf(stderr, "Attempt to close wrong profile block (%s) "
+                "current block is %s\n", name, pd->current->name);
+        fflush(stderr);
+        abort();
+    }
 
-	stop_profile_block(pd->current);
+    stop_profile_block(pd->current);
 
-	pd->current = pd->current->parent;
+    pd->current = pd->current->parent;
 }

@@ -40,102 +40,102 @@
 
 struct _multihistogram
 {
-	double min;
-	double max;
+    double min;
+    double max;
 
-	int n_bins;
-	double bin_width;
+    int n_bins;
+    double bin_width;
 
-	int *bins[32];
+    int *bins[32];
 };
 
 
 void multihistogram_delete_all_values(MultiHistogram *hi)
 {
-	int i;
+    int i;
 
-	for ( i=0; i<32; i++ ) {
-		if ( hi->bins[i] != NULL ) free(hi->bins[i]);
-	}
+    for ( i=0; i<32; i++ ) {
+        if ( hi->bins[i] != NULL ) free(hi->bins[i]);
+    }
 
-	for ( i=0; i<32; i++ ) {
-		hi->bins[i] = calloc(hi->n_bins, sizeof(int));
-	}
+    for ( i=0; i<32; i++ ) {
+        hi->bins[i] = calloc(hi->n_bins, sizeof(int));
+    }
 }
 
 
 MultiHistogram *multihistogram_new()
 {
-	MultiHistogram *hi;
-	int i;
+    MultiHistogram *hi;
+    int i;
 
-	hi = malloc(sizeof(struct _multihistogram));
-	if ( hi == NULL ) return NULL;
+    hi = malloc(sizeof(struct _multihistogram));
+    if ( hi == NULL ) return NULL;
 
-	hi->max = -INFINITY;
-	hi->min = INFINITY;
+    hi->max = -INFINITY;
+    hi->min = INFINITY;
 
-	hi->n_bins = 50;
+    hi->n_bins = 50;
 
-	for ( i=0; i<32; i++ ) hi->bins[i] = NULL;
+    for ( i=0; i<32; i++ ) hi->bins[i] = NULL;
 
-	return hi;
+    return hi;
 }
 
 
 void multihistogram_free(MultiHistogram *hi)
 {
-	int i;
-	for ( i=0; i<32; i++ ) {
-		if ( hi->bins[i] != NULL ) free(hi->bins[i]);
-	}
-	free(hi);
+    int i;
+    for ( i=0; i<32; i++ ) {
+        if ( hi->bins[i] != NULL ) free(hi->bins[i]);
+    }
+    free(hi);
 }
 
 
 void multihistogram_add_value(MultiHistogram *hi, double val, unsigned int cat)
 {
-	int i, j;
+    int i, j;
 
-	j = (val - hi->min) / hi->bin_width;
+    j = (val - hi->min) / hi->bin_width;
 
-	/* Tidy up rounding errors */
-	if ( j < 0 ) j = 0;
-	if ( j >= hi->n_bins ) j = hi->n_bins - 1;
+    /* Tidy up rounding errors */
+    if ( j < 0 ) j = 0;
+    if ( j >= hi->n_bins ) j = hi->n_bins - 1;
 
-	for ( i=0; i<32; i++ ) {
-		if ( cat & (unsigned)1<<i ) hi->bins[i][j]++;
-	}
+    for ( i=0; i<32; i++ ) {
+        if ( cat & (unsigned)1<<i ) hi->bins[i][j]++;
+    }
 }
 
 
 int *multihistogram_get_data(MultiHistogram *hi, int cat)
 {
-	if ( cat < 0 ) return NULL;
-	if ( cat > 31 ) return NULL;
-	return hi->bins[cat];
+    if ( cat < 0 ) return NULL;
+    if ( cat > 31 ) return NULL;
+    return hi->bins[cat];
 }
 
 
 void multihistogram_set_min(MultiHistogram *hi, double min)
 {
-	hi->min = min;
-	hi->bin_width = (hi->max - hi->min)/hi->n_bins;
-	multihistogram_delete_all_values(hi);
+    hi->min = min;
+    hi->bin_width = (hi->max - hi->min)/hi->n_bins;
+    multihistogram_delete_all_values(hi);
 }
 
 
 void multihistogram_set_max(MultiHistogram *hi, double max)
 {
-	hi->max = max;
-	hi->bin_width = (hi->max - hi->min)/hi->n_bins;
-	multihistogram_delete_all_values(hi);
+    hi->max = max;
+    hi->bin_width = (hi->max - hi->min)/hi->n_bins;
+    multihistogram_delete_all_values(hi);
 }
 
 
 void multihistogram_set_num_bins(MultiHistogram *hi, int n)
 {
-	hi->n_bins = n;
-	hi->bin_width = (hi->max - hi->min)/hi->n_bins;
-	multihistogram_delete_all_values(hi);
+    hi->n_bins = n;
+    hi->bin_width = (hi->max - hi->min)/hi->n_bins;
+    multihistogram_delete_all_values(hi);
 }

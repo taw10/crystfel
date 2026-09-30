@@ -27,15 +27,15 @@
  */
 
 %{
-  #include <stdio.h>
+    #include <stdio.h>
 
-  #include "rational.h"
-  #include "symmetry.h"
+    #include "rational.h"
+    #include "symmetry.h"
 
-  #include "symop-parse.h"
-  #include "symop-lex.h"
+    #include "symop-parse.h"
+    #include "symop-lex.h"
 
-  void symoperror(void *scanner, RationalMatrix *m, SymOpList *list, const char *s);
+    void symoperror(void *scanner, RationalMatrix *m, SymOpList *list, const char *s);
 %}
 
 %define api.prefix {symop}
@@ -44,14 +44,14 @@
 %lex-param {void *scanner}
 
 %code requires {
-  #include "symmetry.h"
+    #include "symmetry.h"
 }
 
 %union {
-  RationalMatrix *m;  /* Full rational matrix */
-  Rational rv[3];     /* Rational vector, e.g. '1/2h+3k' */
-  Rational r;         /* Rational number */
-  int n;              /* Just a number */
+    RationalMatrix *m;  /* Full rational matrix */
+    Rational rv[3];     /* Rational vector, e.g. '1/2h+3k' */
+    Rational r;         /* Rational number */
+    int n;              /* Just a number */
 }
 
 %token SEMICOLON
@@ -74,23 +74,23 @@
 %{
 static int try_add_symop(void *scanner, SymOpList *list, RationalMatrix *m, int complain)
 {
-	if ( list == NULL ) {
-		/* Only complain if this isn't the only operation provided */
-		if ( complain ) {
-			yyerror(scanner, m, list, "Must be a single symmetry operation");
-		}
-		return 1;
-	} else {
-		IntegerMatrix *im;
-		im = intmat_from_rtnl_mtx(m);
-		if ( im == NULL ) {
-			yyerror(scanner, m, list, "Symmetry operations must all be integer");
-			return 1;
-		} else {
-			add_symop(list, im);
-		}
-	}
-	return 0;
+    if ( list == NULL ) {
+        /* Only complain if this isn't the only operation provided */
+        if ( complain ) {
+            yyerror(scanner, m, list, "Must be a single symmetry operation");
+        }
+        return 1;
+    } else {
+        IntegerMatrix *im;
+        im = intmat_from_rtnl_mtx(m);
+        if ( im == NULL ) {
+            yyerror(scanner, m, list, "Symmetry operations must all be integer");
+            return 1;
+        } else {
+            add_symop(list, im);
+        }
+    }
+    return 0;
 }
 %}
 
@@ -139,5 +139,5 @@ fraction:
 %%
 
 void symoperror(void *scanner, RationalMatrix *m, SymOpList *list, const char *s) {
-	printf("Error: %s\n", s);
+    printf("Error: %s\n", s);
 }

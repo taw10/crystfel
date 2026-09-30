@@ -35,39 +35,39 @@
 
 int main(int argc, char *argv[])
 {
-	char **event_ids;
-	int n_event_ids;
-	int i;
-	DataTemplate *dtempl;
+    char **event_ids;
+    int n_event_ids;
+    int i;
+    DataTemplate *dtempl;
 
-	dtempl = data_template_new_from_file(argv[2]);
-	if ( dtempl == NULL ) {
-		ERROR("Failed to load data template\n");
-		return 1;
-	}
+    dtempl = data_template_new_from_file(argv[2]);
+    if ( dtempl == NULL ) {
+        ERROR("Failed to load data template\n");
+        return 1;
+    }
 
-	event_ids = image_expand_frames(dtempl, argv[1], &n_event_ids);
+    event_ids = image_expand_frames(dtempl, argv[1], &n_event_ids);
 
-	if ( event_ids == NULL ) {
-		printf("event_ids = NULL\n");
-		return 1;
-	}
+    if ( event_ids == NULL ) {
+        printf("event_ids = NULL\n");
+        return 1;
+    }
 
-	for ( i=0; i<n_event_ids; i++ ) {
-		char tmp[64];
-		char c = i < 100 ? 'a' : 'b';
-		int n = i < 100 ? i : (i-100);
-		snprintf(tmp, 64, "%c//%i", c, n);
-		if ( strcmp(tmp, event_ids[i]) != 0 ) {
-			printf("Event ID %i is wrong '%s'\n",
-			       i, event_ids[i]);
-			return 1;
-		}
-		free(event_ids[i]);
-	}
-	free(event_ids);
+    for ( i=0; i<n_event_ids; i++ ) {
+        char tmp[64];
+        char c = i < 100 ? 'a' : 'b';
+        int n = i < 100 ? i : (i-100);
+        snprintf(tmp, 64, "%c//%i", c, n);
+        if ( strcmp(tmp, event_ids[i]) != 0 ) {
+            printf("Event ID %i is wrong '%s'\n",
+                   i, event_ids[i]);
+            return 1;
+        }
+        free(event_ids[i]);
+    }
+    free(event_ids);
 
-	data_template_free(dtempl);
+    data_template_free(dtempl);
 
-	return 0;
+    return 0;
 }

@@ -34,36 +34,36 @@ extern char **read_path_parts(const char *ev_orig, int *pn_plvals);
 
 int main(int argc, char *argv[])
 {
-	char **plvals;
-	int n_plvals;
-	int r = 0;
+    char **plvals;
+    int n_plvals;
+    int r = 0;
 
-	plvals = read_path_parts("cc/data123/bb//234/59", &n_plvals);
+    plvals = read_path_parts("cc/data123/bb//234/59", &n_plvals);
 
-	if ( plvals == NULL ) {
-		printf("read_path_parts failed\n");
-		r++;
-	}
+    if ( plvals == NULL ) {
+        printf("read_path_parts failed\n");
+        r++;
+    }
 
-	if ( n_plvals != 3 ) {
-		printf("Wrong number of path parts\n");
-		r++;
-	}
+    if ( n_plvals != 3 ) {
+        printf("Wrong number of path parts\n");
+        r++;
+    }
 
-	if ( plvals == NULL ) return r;
+    if ( plvals == NULL ) return r;
 
-	if ( strcmp(plvals[0], "cc") != 0 ) {
-		printf("First path part is wrong\n");
-		r++;
-	}
-	if ( strcmp(plvals[1], "data123") != 0 ) {
-		printf("Second path part is wrong\n");
-		r++;
-	}
-	if ( strcmp(plvals[2], "bb") != 0 ) {
-		printf("Third path part is wrong\n");
-		r++;
-	}
+    if ( strcmp(plvals[0], "cc") != 0 ) {
+        printf("First path part is wrong\n");
+        r++;
+    }
+    if ( strcmp(plvals[1], "data123") != 0 ) {
+        printf("Second path part is wrong\n");
+        r++;
+    }
+    if ( strcmp(plvals[2], "bb") != 0 ) {
+        printf("Third path part is wrong\n");
+        r++;
+    }
 
-	return r;
+    return r;
 }

@@ -55,23 +55,23 @@ static void add_all_events(struct crystfelproject *proj,
                            const char *filename,
                            const DataTemplate *dtempl)
 {
-	char **events;
-	int i;
-	int n_events;
+    char **events;
+    int i;
+    int n_events;
 
-	events = image_expand_frames(dtempl, filename, &n_events);
-	if ( events == NULL ) {
-		ERROR("Couldn't expand event list.  Either the data file(s)"
-		      " are corrupted, or the geometry file does not match"
-		      " their contents.\n");
-		return;
-	}
+    events = image_expand_frames(dtempl, filename, &n_events);
+    if ( events == NULL ) {
+        ERROR("Couldn't expand event list.  Either the data file(s)"
+              " are corrupted, or the geometry file does not match"
+              " their contents.\n");
+        return;
+    }
 
-	for ( i=0; i<n_events; i++ ) {
-		add_file_to_project(proj, filename, events[i]);
-		free(events[i]);
-	}
-	free(events);
+    for ( i=0; i<n_events; i++ ) {
+        add_file_to_project(proj, filename, events[i]);
+        free(events[i]);
+    }
+    free(events);
 }
 
 
@@ -79,49 +79,49 @@ static void add_files(struct crystfelproject *proj, GFile *folder,
                       enum match_type_id type,
                       const DataTemplate *dtempl)
 {
-	GFileEnumerator *fenum;
-	GFileInfo *finfo;
-	GError *error = NULL;
+    GFileEnumerator *fenum;
+    GFileInfo *finfo;
+    GError *error = NULL;
 
-	fenum = g_file_enumerate_children(folder, "standard::name,standard::type",
-	                                  G_FILE_QUERY_INFO_NONE,
-	                                  NULL, &error);
+    fenum = g_file_enumerate_children(folder, "standard::name,standard::type",
+                                      G_FILE_QUERY_INFO_NONE,
+                                      NULL, &error);
 
-	do {
+    do {
 
-		GFile *file;
+        GFile *file;
 
-		finfo = g_file_enumerator_next_file(fenum, NULL, &error);
+        finfo = g_file_enumerator_next_file(fenum, NULL, &error);
 
-		if ( error != NULL ) {
-			STATUS("Error!\n");
-			g_object_unref(fenum);
-			return;
-		}
+        if ( error != NULL ) {
+            STATUS("Error!\n");
+            g_object_unref(fenum);
+            return;
+        }
 
-		if ( finfo == NULL ) continue;
+        if ( finfo == NULL ) continue;
 
-		file = g_file_get_child(folder, g_file_info_get_name(finfo));
+        file = g_file_get_child(folder, g_file_info_get_name(finfo));
 
-		if ( g_file_info_get_file_type(finfo) == G_FILE_TYPE_DIRECTORY ) {
+        if ( g_file_info_get_file_type(finfo) == G_FILE_TYPE_DIRECTORY ) {
 
-			add_files(proj, file, type, dtempl);
+            add_files(proj, file, type, dtempl);
 
-		} else {
+        } else {
 
-			char *bn = g_file_get_basename(file);
-			if ( match_filename(bn, type) ) {
-				add_all_events(proj, g_file_get_path(file),
-				               dtempl);
-			}
+            char *bn = g_file_get_basename(file);
+            if ( match_filename(bn, type) ) {
+                add_all_events(proj, g_file_get_path(file),
+                               dtempl);
+            }
 
-		}
+        }
 
-		g_object_unref(finfo);
+        g_object_unref(finfo);
 
-	} while ( finfo != NULL );
+    } while ( finfo != NULL );
 
-	g_object_unref(fenum);
+    g_object_unref(fenum);
 }
 
 
@@ -129,582 +129,582 @@ static void add_frames_from_stream(Stream *st,
                                    DataTemplate *dtempl,
                                    struct crystfelproject *proj)
 {
-	do {
-		struct image *image;
-		image = stream_read_chunk(st, 0);
-		if ( image == NULL ) break;
-		add_file_to_project(proj, image->filename, image->ev);
-		image_free(image);
+    do {
+        struct image *image;
+        image = stream_read_chunk(st, 0);
+        if ( image == NULL ) break;
+        add_file_to_project(proj, image->filename, image->ev);
+        image_free(image);
 
-	} while ( 1 );
+    } while ( 1 );
 }
 
 
 struct finddata_ctx
 {
-	struct crystfelproject *proj;
+    struct crystfelproject *proj;
 
-	GtkWidget *replace_geom;
-	GtkWidget *geom_file;
+    GtkWidget *replace_geom;
+    GtkWidget *geom_file;
 
-	/* "Select individual file" */
-	GtkWidget *indiv;
-	GtkWidget *indiv_chooser;
+    /* "Select individual file" */
+    GtkWidget *indiv;
+    GtkWidget *indiv_chooser;
 
-	/* Read list of files */
-	GtkWidget *list;  /* "Import list" radio */
-	GtkWidget *list_chooser;
+    /* Read list of files */
+    GtkWidget *list;  /* "Import list" radio */
+    GtkWidget *list_chooser;
 
-	/* Search for files */
-	GtkWidget *search;
-	GtkWidget *search_chooser;
-	GtkWidget *search_pattern;
+    /* Search for files */
+    GtkWidget *search;
+    GtkWidget *search_chooser;
+    GtkWidget *search_pattern;
 
-	/* Load stream */
-	GtkWidget *stream;
-	GtkWidget *stream_chooser;
+    /* Load stream */
+    GtkWidget *stream;
+    GtkWidget *stream_chooser;
 
-	GtkWidget *dump;
-	GtkWidget *dump_results;
+    GtkWidget *dump;
+    GtkWidget *dump_results;
 };
 
 enum import_mode
 {
-	IMPORT_FILES,
-	IMPORT_LIST,
-	IMPORT_SEARCH,
-	IMPORT_STREAM
+    IMPORT_FILES,
+    IMPORT_LIST,
+    IMPORT_SEARCH,
+    IMPORT_STREAM
 };
 
 
 static enum import_mode import_mode(struct finddata_ctx *ctx)
 {
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->indiv))) {
-		return IMPORT_FILES;
-	} else if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->list))) {
-		return IMPORT_LIST;
-	} else if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->search))) {
-		return IMPORT_SEARCH;
-	} else {
-		return IMPORT_STREAM;
-	}
+    if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->indiv))) {
+        return IMPORT_FILES;
+    } else if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->list))) {
+        return IMPORT_LIST;
+    } else if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->search))) {
+        return IMPORT_SEARCH;
+    } else {
+        return IMPORT_STREAM;
+    }
 }
 
 
 static void finddata_typetoggle_sig(GtkWidget *radio,
                                     struct finddata_ctx *ctx)
 {
-	gtk_widget_set_sensitive(ctx->indiv_chooser, FALSE);
-	gtk_widget_set_sensitive(ctx->list_chooser, FALSE);
-	gtk_widget_set_sensitive(ctx->search_chooser, FALSE);
-	gtk_widget_set_sensitive(ctx->search_pattern, FALSE);
-	gtk_widget_set_sensitive(ctx->stream_chooser, FALSE);
+    gtk_widget_set_sensitive(ctx->indiv_chooser, FALSE);
+    gtk_widget_set_sensitive(ctx->list_chooser, FALSE);
+    gtk_widget_set_sensitive(ctx->search_chooser, FALSE);
+    gtk_widget_set_sensitive(ctx->search_pattern, FALSE);
+    gtk_widget_set_sensitive(ctx->stream_chooser, FALSE);
 
-	gtk_widget_set_sensitive(ctx->geom_file, TRUE);
+    gtk_widget_set_sensitive(ctx->geom_file, TRUE);
 
-	switch ( import_mode(ctx) ) {
+    switch ( import_mode(ctx) ) {
 
-		case IMPORT_FILES :
-		gtk_widget_set_sensitive(ctx->indiv_chooser, TRUE);
-		break;
+        case IMPORT_FILES :
+        gtk_widget_set_sensitive(ctx->indiv_chooser, TRUE);
+        break;
 
-		case IMPORT_LIST :
-		gtk_widget_set_sensitive(ctx->list_chooser, TRUE);
-		break;
+        case IMPORT_LIST :
+        gtk_widget_set_sensitive(ctx->list_chooser, TRUE);
+        break;
 
-		case IMPORT_SEARCH :
-		gtk_widget_set_sensitive(ctx->search_chooser, TRUE);
-		gtk_widget_set_sensitive(ctx->search_pattern, TRUE);
-		break;
+        case IMPORT_SEARCH :
+        gtk_widget_set_sensitive(ctx->search_chooser, TRUE);
+        gtk_widget_set_sensitive(ctx->search_pattern, TRUE);
+        break;
 
-		case IMPORT_STREAM :
-		gtk_widget_set_sensitive(ctx->geom_file, FALSE);
-		gtk_widget_set_sensitive(ctx->stream_chooser, TRUE);
-		break;
-	}
+        case IMPORT_STREAM :
+        gtk_widget_set_sensitive(ctx->geom_file, FALSE);
+        gtk_widget_set_sensitive(ctx->stream_chooser, TRUE);
+        break;
+    }
 }
 
 
 static void import_via_search(struct finddata_ctx *ctx)
 {
-	GFile *top;
-	const char *type_id;
-	struct crystfelproject *proj = ctx->proj;
+    GFile *top;
+    const char *type_id;
+    struct crystfelproject *proj = ctx->proj;
 
-	top = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(ctx->search_chooser));
-	if ( top == NULL ) return;
+    top = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(ctx->search_chooser));
+    if ( top == NULL ) return;
 
-	type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(ctx->search_pattern));
-	proj->data_search_pattern = decode_matchtype(type_id);
+    type_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(ctx->search_pattern));
+    proj->data_search_pattern = decode_matchtype(type_id);
 
-	g_free(proj->data_top_folder);
-	proj->data_top_folder = g_file_get_path(top);
+    g_free(proj->data_top_folder);
+    proj->data_top_folder = g_file_get_path(top);
 
-	add_files(proj, top, proj->data_search_pattern, proj->dtempl);
+    add_files(proj, top, proj->data_search_pattern, proj->dtempl);
 
-	g_object_unref(top);
+    g_object_unref(top);
 }
 
 
 /* stream_filename will be adopted */
 int load_stream(struct crystfelproject *proj, char *stream_filename)
 {
-	Stream *st;
-	DataTemplate *dtempl;
-	const char *geom_str;
-	char *result_name;
+    Stream *st;
+    DataTemplate *dtempl;
+    const char *geom_str;
+    char *result_name;
 
-	set_project_file_path(proj);
+    set_project_file_path(proj);
 
-	st = stream_open_for_read(stream_filename);
-	if ( st == NULL ) return 1;
+    st = stream_open_for_read(stream_filename);
+    if ( st == NULL ) return 1;
 
-	geom_str = stream_geometry_file(st);
-	if ( geom_str == NULL ) {
-		ERROR("No geometry file\n");
-		stream_close(st);
-		return 1;
-	}
+    geom_str = stream_geometry_file(st);
+    if ( geom_str == NULL ) {
+        ERROR("No geometry file\n");
+        stream_close(st);
+        return 1;
+    }
 
-	dtempl = data_template_new_from_string(geom_str);
-	if ( dtempl == NULL ) {
-		stream_close(st);
-		return 1;
-	}
+    dtempl = data_template_new_from_string(geom_str);
+    if ( dtempl == NULL ) {
+        stream_close(st);
+        return 1;
+    }
 
-	/* If we do not yet have a DataTemplate, the one from the file
-	 * becomes it.  If we already have one, it will be kept.  Note that the
-	 * stream's DataTemplate will always be used for display in the GUI. */
-	if ( proj->dtempl == NULL ) {
-		proj->dtempl = dtempl;
-	}
+    /* If we do not yet have a DataTemplate, the one from the file
+     * becomes it.  If we already have one, it will be kept.  Note that the
+     * stream's DataTemplate will always be used for display in the GUI. */
+    if ( proj->dtempl == NULL ) {
+        proj->dtempl = dtempl;
+    }
 
-	/* Use the user's nominated DataTemplate over the one from the stream.
-	 * If it doesn't match, better that things break earlier. */
-	add_frames_from_stream(st, proj->dtempl, proj);
-	stream_close(st);
+    /* Use the user's nominated DataTemplate over the one from the stream.
+     * If it doesn't match, better that things break earlier. */
+    add_frames_from_stream(st, proj->dtempl, proj);
+    stream_close(st);
 
-	result_name = safe_basename(stream_filename);
-	add_indexing_result(proj, result_name, &stream_filename, 1);
-	select_result(proj, result_name);
-	free(result_name);
+    result_name = safe_basename(stream_filename);
+    add_indexing_result(proj, result_name, &stream_filename, 1);
+    select_result(proj, result_name);
+    free(result_name);
 
-	return 0;
+    return 0;
 }
 
 
 struct add_stuff_ctx
 {
-	int max;
-	int n;
-	char **filenames;
-	struct crystfelproject *proj;
-	int err;
+    int max;
+    int n;
+    char **filenames;
+    struct crystfelproject *proj;
+    int err;
 };
 
 
 static void add_stream_stuff(gpointer data, gpointer user_data)
 {
-	struct add_stuff_ctx *ctx = user_data;
-	const char *filename = data;
-	Stream *st;
+    struct add_stuff_ctx *ctx = user_data;
+    const char *filename = data;
+    Stream *st;
 
-	st = stream_open_for_read(filename);
-	if ( st != NULL ) {
-		add_frames_from_stream(st, ctx->proj->dtempl, ctx->proj);
-		stream_close(st);
-	} else {
-		ctx->err = 1;
-	}
+    st = stream_open_for_read(filename);
+    if ( st != NULL ) {
+        add_frames_from_stream(st, ctx->proj->dtempl, ctx->proj);
+        stream_close(st);
+    } else {
+        ctx->err = 1;
+    }
 
-	if ( ctx->n >= ctx->max ) {
-		ctx->err = 1;
-	} else {
-		ctx->filenames[ctx->n++] = strdup(filename);
-	}
+    if ( ctx->n >= ctx->max ) {
+        ctx->err = 1;
+    } else {
+        ctx->filenames[ctx->n++] = strdup(filename);
+    }
 }
 
 
 static int load_multiple_streams(GSList *filenames, struct crystfelproject *proj)
 {
-	Stream *st;
-	DataTemplate *dtempl;
-	const char *geom_str;
-	char *result_name;
-	struct add_stuff_ctx ctx;
-	char tmp[128];
+    Stream *st;
+    DataTemplate *dtempl;
+    const char *geom_str;
+    char *result_name;
+    struct add_stuff_ctx ctx;
+    char tmp[128];
 
-	/* Get geometry from first stream */
-	st = stream_open_for_read(filenames->data);
-	if ( st == NULL ) return 1;
+    /* Get geometry from first stream */
+    st = stream_open_for_read(filenames->data);
+    if ( st == NULL ) return 1;
 
-	geom_str = stream_geometry_file(st);
-	if ( geom_str == NULL ) {
-		ERROR("No geometry file\n");
-		stream_close(st);
-		return 1;
-	}
+    geom_str = stream_geometry_file(st);
+    if ( geom_str == NULL ) {
+        ERROR("No geometry file\n");
+        stream_close(st);
+        return 1;
+    }
 
-	dtempl = data_template_new_from_string(geom_str);
-	if ( dtempl == NULL ) {
-		stream_close(st);
-		return 1;
-	}
+    dtempl = data_template_new_from_string(geom_str);
+    if ( dtempl == NULL ) {
+        stream_close(st);
+        return 1;
+    }
 
-	stream_close(st);
+    stream_close(st);
 
-	/* If we do not yet have a DataTemplate, the one from the file
-	 * becomes it.  If we already have one, it will be kept.  Note that the
-	 * stream's DataTemplate will always be used for display in the GUI. */
-	if ( proj->dtempl == NULL ) {
-		proj->dtempl = dtempl;
-	}
+    /* If we do not yet have a DataTemplate, the one from the file
+     * becomes it.  If we already have one, it will be kept.  Note that the
+     * stream's DataTemplate will always be used for display in the GUI. */
+    if ( proj->dtempl == NULL ) {
+        proj->dtempl = dtempl;
+    }
 
-	/* Add all the streams */
-	ctx.max = g_slist_length(filenames);
-	ctx.n = 0;
-	ctx.filenames = malloc(ctx.max*sizeof(char *));
-	ctx.err = 0;
-	ctx.proj = proj;
-	if ( ctx.filenames == NULL ) return 1;
-	g_slist_foreach(filenames, add_stream_stuff, &ctx);
-	if ( ctx.err ) return 1;
+    /* Add all the streams */
+    ctx.max = g_slist_length(filenames);
+    ctx.n = 0;
+    ctx.filenames = malloc(ctx.max*sizeof(char *));
+    ctx.err = 0;
+    ctx.proj = proj;
+    if ( ctx.filenames == NULL ) return 1;
+    g_slist_foreach(filenames, add_stream_stuff, &ctx);
+    if ( ctx.err ) return 1;
 
-	/* Result name based on the first stream in the list */
-	result_name = safe_basename(filenames->data);
-	if ( ctx.n > 1 ) {
-		snprintf(tmp, 127, "%s-et-al", result_name);
-	} else {
-		snprintf(tmp, 127, "%s", result_name);
-	}
-	add_indexing_result(proj, tmp, ctx.filenames, ctx.n);
-	select_result(proj, tmp);
-	free(result_name);
+    /* Result name based on the first stream in the list */
+    result_name = safe_basename(filenames->data);
+    if ( ctx.n > 1 ) {
+        snprintf(tmp, 127, "%s-et-al", result_name);
+    } else {
+        snprintf(tmp, 127, "%s", result_name);
+    }
+    add_indexing_result(proj, tmp, ctx.filenames, ctx.n);
+    select_result(proj, tmp);
+    free(result_name);
 
-	free(ctx.filenames);
+    free(ctx.filenames);
 
-	return 0;
+    return 0;
 }
 
 static void import_stream(struct finddata_ctx *ctx)
 {
-	GSList *filenames;
+    GSList *filenames;
 
-	filenames = gtk_multi_file_chooser_button_get_filenames(
-	                    GTK_MULTI_FILE_CHOOSER_BUTTON(ctx->stream_chooser));
-	if ( filenames == NULL ) return;
+    filenames = gtk_multi_file_chooser_button_get_filenames(
+                        GTK_MULTI_FILE_CHOOSER_BUTTON(ctx->stream_chooser));
+    if ( filenames == NULL ) return;
 
-	if ( load_multiple_streams(filenames, ctx->proj) ) {
-		error_box(ctx->proj, "Failed to load streams");
-	}
+    if ( load_multiple_streams(filenames, ctx->proj) ) {
+        error_box(ctx->proj, "Failed to load streams");
+    }
 }
 
 
 static void import_file_list(struct finddata_ctx *ctx)
 {
-	struct crystfelproject *proj = ctx->proj;
-	char *list_filename;
-	FILE *fh;
+    struct crystfelproject *proj = ctx->proj;
+    char *list_filename;
+    FILE *fh;
 
-	list_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->list_chooser));
-	if ( list_filename == NULL ) return;
+    list_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->list_chooser));
+    if ( list_filename == NULL ) return;
 
-	fh = fopen(list_filename, "r");
-	if ( fh == NULL ) return;
+    fh = fopen(list_filename, "r");
+    if ( fh == NULL ) return;
 
-	do {
+    do {
 
-		char line[1024];
-		char *event = NULL;
-		size_t n;
+        char line[1024];
+        char *event = NULL;
+        size_t n;
 
-		if ( fgets(line, 1024, fh) == NULL ) break;
-		chomp(line);
+        if ( fgets(line, 1024, fh) == NULL ) break;
+        chomp(line);
 
-		/* Chop off event ID */
-		n = strlen(line);
-		while ( line[n] != ' ' && n > 2 ) n--;
-		if ( n != 2 ) {
-			/* Event descriptor must contain "//".
-			 * If it doesn't, assume the filename just contains a
-			 * space. */
-			if ( strstr(&line[n], "//") != NULL ) {
-				line[n] = '\0';
-				event = &line[n+1];
-			}
-		} /* else no spaces at all */
+        /* Chop off event ID */
+        n = strlen(line);
+        while ( line[n] != ' ' && n > 2 ) n--;
+        if ( n != 2 ) {
+            /* Event descriptor must contain "//".
+             * If it doesn't, assume the filename just contains a
+             * space. */
+            if ( strstr(&line[n], "//") != NULL ) {
+                line[n] = '\0';
+                event = &line[n+1];
+            }
+        } /* else no spaces at all */
 
-		if ( event != NULL ) {
-			/* Explicit event ID given */
-			add_file_to_project(proj, line, event);
-		} else {
-			/* No event ID - expand (possibly 1:1) */
-			add_all_events(proj, line, proj->dtempl);
-		}
+        if ( event != NULL ) {
+            /* Explicit event ID given */
+            add_file_to_project(proj, line, event);
+        } else {
+            /* No event ID - expand (possibly 1:1) */
+            add_all_events(proj, line, proj->dtempl);
+        }
 
-	} while ( 1 );
+    } while ( 1 );
 
-	fclose(fh);
+    fclose(fh);
 }
 
 
 static void import_file(struct finddata_ctx *ctx)
 {
-	struct crystfelproject *proj = ctx->proj;
-	char *filename;
+    struct crystfelproject *proj = ctx->proj;
+    char *filename;
 
-	filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->indiv_chooser));
-	if ( filename == NULL ) return;
+    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->indiv_chooser));
+    if ( filename == NULL ) return;
 
-	add_all_events(proj, filename, proj->dtempl);
+    add_all_events(proj, filename, proj->dtempl);
 }
 
 
 static void finddata_response_sig(GtkWidget *dialog, gint resp,
                                   struct finddata_ctx *ctx)
 {
-	struct crystfelproject *proj = ctx->proj;
+    struct crystfelproject *proj = ctx->proj;
 
-	if ( (resp == GTK_RESPONSE_DELETE_EVENT)
-	  || (resp == GTK_RESPONSE_CANCEL) )
-	{
-		gtk_widget_destroy(dialog);
-		free(ctx);
-		return;
-	}
+    if ( (resp == GTK_RESPONSE_DELETE_EVENT)
+      || (resp == GTK_RESPONSE_CANCEL) )
+    {
+        gtk_widget_destroy(dialog);
+        free(ctx);
+        return;
+    }
 
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->dump)) ) {
-		clear_project_files(proj);
-		crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-		                              NULL);
+    if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->dump)) ) {
+        clear_project_files(proj);
+        crystfel_image_view_set_image(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+                                      NULL);
 
-		if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->dump_results)) ) {
-			clear_indexing_results(proj);
-		}
-	}
+        if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->dump_results)) ) {
+            clear_indexing_results(proj);
+        }
+    }
 
-	if ( import_mode(ctx) != IMPORT_STREAM ) {
-		if ( (ctx->replace_geom == NULL)
-		  || (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->replace_geom))) )
-		{
-			gchar *geom_filename;
+    if ( import_mode(ctx) != IMPORT_STREAM ) {
+        if ( (ctx->replace_geom == NULL)
+          || (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ctx->replace_geom))) )
+        {
+            gchar *geom_filename;
 
-			geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->geom_file));
-			if ( geom_filename == NULL ) {
-				error_box(proj, "Geometry file not found");
-				return;
-			}
-			g_free(proj->geom_filename);
-			proj->geom_filename = geom_filename;
+            geom_filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ctx->geom_file));
+            if ( geom_filename == NULL ) {
+                error_box(proj, "Geometry file not found");
+                return;
+            }
+            g_free(proj->geom_filename);
+            proj->geom_filename = geom_filename;
 
-			data_template_free(proj->dtempl);
-			proj->dtempl = data_template_new_from_file(geom_filename);
-			if ( proj->dtempl == NULL ) {
-				error_box(proj, "Invalid geometry file");
-				return;
-			}
-		}
-	} /* else don't touch the geometry */
+            data_template_free(proj->dtempl);
+            proj->dtempl = data_template_new_from_file(geom_filename);
+            if ( proj->dtempl == NULL ) {
+                error_box(proj, "Invalid geometry file");
+                return;
+            }
+        }
+    } /* else don't touch the geometry */
 
-	if ( (import_mode(ctx) != IMPORT_STREAM) && (proj->dtempl == NULL) ) {
-		error_box(proj, "You must specify the geometry file.");
-		return;
-	}
+    if ( (import_mode(ctx) != IMPORT_STREAM) && (proj->dtempl == NULL) ) {
+        error_box(proj, "You must specify the geometry file.");
+        return;
+    }
 
-	switch ( import_mode(ctx) ) {
+    switch ( import_mode(ctx) ) {
 
-		case IMPORT_FILES :
-		import_file(ctx);
-		break;
+        case IMPORT_FILES :
+        import_file(ctx);
+        break;
 
-		case IMPORT_LIST :
-		import_file_list(ctx);
-		break;
+        case IMPORT_LIST :
+        import_file_list(ctx);
+        break;
 
-		case IMPORT_SEARCH :
-		import_via_search(ctx);
-		break;
+        case IMPORT_SEARCH :
+        import_via_search(ctx);
+        break;
 
-		case IMPORT_STREAM :
-		import_stream(ctx);
-		break;
-	}
+        case IMPORT_STREAM :
+        import_stream(ctx);
+        break;
+    }
 
-	proj->unsaved = 1;
-	proj->cur_frame = 0;
-	crystfel_image_view_reset_zoom(CRYSTFEL_IMAGE_VIEW(proj->imageview));
-	update_imageview(proj);
+    proj->unsaved = 1;
+    proj->cur_frame = 0;
+    crystfel_image_view_reset_zoom(CRYSTFEL_IMAGE_VIEW(proj->imageview));
+    update_imageview(proj);
 
-	free(ctx);
-	gtk_widget_destroy(dialog);
+    free(ctx);
+    gtk_widget_destroy(dialog);
 }
 
 
 gint import_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
-	GtkWidget *dialog;
-	GtkWidget *content_area;
-	GtkWidget *vbox;
-	GtkWidget *hbox;
-	GtkWidget *label;
-	struct finddata_ctx *ctx;
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *vbox;
+    GtkWidget *hbox;
+    GtkWidget *label;
+    struct finddata_ctx *ctx;
 
-	ctx = malloc(sizeof(struct finddata_ctx));
-	if ( ctx == NULL ) return FALSE;
+    ctx = malloc(sizeof(struct finddata_ctx));
+    if ( ctx == NULL ) return FALSE;
 
-	ctx->proj = proj;
+    ctx->proj = proj;
 
-	dialog = gtk_dialog_new_with_buttons("Import data",
-	                                     GTK_WINDOW(proj->window),
-	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                     "Cancel", GTK_RESPONSE_CANCEL,
-	                                     "Import", GTK_RESPONSE_ACCEPT,
-	                                     NULL);
+    dialog = gtk_dialog_new_with_buttons("Import data",
+                                         GTK_WINDOW(proj->window),
+                                         GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         "Cancel", GTK_RESPONSE_CANCEL,
+                                         "Import", GTK_RESPONSE_ACCEPT,
+                                         NULL);
 
-	vbox = gtk_vbox_new(FALSE, 0.0);
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	gtk_container_add(GTK_CONTAINER(content_area), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
+    vbox = gtk_vbox_new(FALSE, 0.0);
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_add(GTK_CONTAINER(content_area), vbox);
+    gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
-	/* Select individual files */
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
-	ctx->indiv = gtk_radio_button_new_with_label(NULL,
-	                                             "Select an individual file");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->indiv),
-	                   FALSE, FALSE, 4.0);
-	ctx->indiv_chooser = gtk_file_chooser_button_new("Select file",
-	                                                 GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->indiv_chooser),
-	                   FALSE, FALSE, 4.0);
+    /* Select individual files */
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+    ctx->indiv = gtk_radio_button_new_with_label(NULL,
+                                                 "Select an individual file");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->indiv),
+                       FALSE, FALSE, 4.0);
+    ctx->indiv_chooser = gtk_file_chooser_button_new("Select file",
+                                                     GTK_FILE_CHOOSER_ACTION_OPEN);
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->indiv_chooser),
+                       FALSE, FALSE, 4.0);
 
-	/* Pre-prepared list of files */
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
-	ctx->list = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(ctx->indiv),
-	                                                        "Read a list of files");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->list),
-	                   FALSE, FALSE, 4.0);
-	ctx->list_chooser = gtk_file_chooser_button_new("Select the list of filenames",
-	                                                GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->list_chooser),
-	                   FALSE, FALSE, 4.0);
+    /* Pre-prepared list of files */
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+    ctx->list = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(ctx->indiv),
+                                                            "Read a list of files");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->list),
+                       FALSE, FALSE, 4.0);
+    ctx->list_chooser = gtk_file_chooser_button_new("Select the list of filenames",
+                                                    GTK_FILE_CHOOSER_ACTION_OPEN);
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->list_chooser),
+                       FALSE, FALSE, 4.0);
 
-	/* Search in folder */
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 2.0);
-	gtk_widget_set_margin_top(hbox, 6.0);
-	ctx->search = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(ctx->indiv),
-	                                                      "Search for files in folder");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->search),
-	                   FALSE, FALSE, 4.0);
-	ctx->search_chooser = gtk_file_chooser_button_new("Select a folder",
-	                                              GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
-	if ( proj->data_top_folder != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->search_chooser),
-		                              proj->data_top_folder);
-	}
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->search_chooser),
-	                   TRUE, TRUE, 2.0);
+    /* Search in folder */
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 2.0);
+    gtk_widget_set_margin_top(hbox, 6.0);
+    ctx->search = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(ctx->indiv),
+                                                          "Search for files in folder");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->search),
+                       FALSE, FALSE, 4.0);
+    ctx->search_chooser = gtk_file_chooser_button_new("Select a folder",
+                                                  GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
+    if ( proj->data_top_folder != NULL ) {
+        gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->search_chooser),
+                                      proj->data_top_folder);
+    }
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->search_chooser),
+                       TRUE, TRUE, 2.0);
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_widget_set_margin_bottom(hbox, 6.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 2.0);
-	label = gtk_label_new("Search pattern:");
-	gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
-	gtk_widget_set_margin_start(label, 32);
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
-	ctx->search_pattern = gtk_combo_box_text_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->search_pattern), TRUE, TRUE, 2.0);
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "everything",
-	                "All files in folder and subfolders");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "hdf5",
-	                "All HDF5 files ('*.h5')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "lcls-cheetah-hdf5",
-	                "Individual LCLS files from Cheetah ('LCLS*.h5')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "cheetah-cxi",
-	                "Multi-event CXI files from Cheetah ('*.cxi')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "cbf",
-	                "Individual CBF files ('*.cbf')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "cbfgz",
-	                "Individual gzipped CBF files ('*.cbf.gz')");
-	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "nexus",
-	                "NeXus master files ('*master*.{h5,nx5,nxs}')");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(ctx->search_pattern),
-	                         proj->data_search_pattern);
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_widget_set_margin_bottom(hbox, 6.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 2.0);
+    label = gtk_label_new("Search pattern:");
+    gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+    gtk_widget_set_margin_start(label, 32);
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label), FALSE, FALSE, 2.0);
+    ctx->search_pattern = gtk_combo_box_text_new();
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->search_pattern), TRUE, TRUE, 2.0);
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "everything",
+                    "All files in folder and subfolders");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "hdf5",
+                    "All HDF5 files ('*.h5')");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "lcls-cheetah-hdf5",
+                    "Individual LCLS files from Cheetah ('LCLS*.h5')");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "cheetah-cxi",
+                    "Multi-event CXI files from Cheetah ('*.cxi')");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "cbf",
+                    "Individual CBF files ('*.cbf')");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "cbfgz",
+                    "Individual gzipped CBF files ('*.cbf.gz')");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(ctx->search_pattern), "nexus",
+                    "NeXus master files ('*master*.{h5,nx5,nxs}')");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(ctx->search_pattern),
+                             proj->data_search_pattern);
 
-	/* Load a stream */
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
-	ctx->stream = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(ctx->indiv),
-	                                                          "Load stream");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream),
-	                   FALSE, FALSE, 4.0);
-	ctx->stream_chooser = gtk_multi_file_chooser_button_new("Select stream file(s)");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream_chooser),
-	                   TRUE, TRUE, 2.0);
+    /* Load a stream */
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+    ctx->stream = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(ctx->indiv),
+                                                              "Load stream");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream),
+                       FALSE, FALSE, 4.0);
+    ctx->stream_chooser = gtk_multi_file_chooser_button_new("Select stream file(s)");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->stream_chooser),
+                       TRUE, TRUE, 2.0);
 
-	/* Stuff at bottom */
-	gtk_box_pack_start(GTK_BOX(vbox),
-	                   gtk_separator_new(GTK_ORIENTATION_HORIZONTAL),
-	                   FALSE, FALSE, 4.0);
+    /* Stuff at bottom */
+    gtk_box_pack_start(GTK_BOX(vbox),
+                       gtk_separator_new(GTK_ORIENTATION_HORIZONTAL),
+                       FALSE, FALSE, 4.0);
 
-	/* Geometry file */
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+    /* Geometry file */
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
 
-	ctx->geom_file = gtk_file_chooser_button_new("Select geometry file",
-	                                             GTK_FILE_CHOOSER_ACTION_OPEN);
-	if ( proj->geom_filename != NULL ) {
-		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->geom_file),
-		                              proj->geom_filename);
-	}
-	if ( proj->dtempl == NULL ) {
-		label = gtk_label_new("Geometry file:");
-		gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
-		gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-		                   FALSE, FALSE, 4.0);
-		ctx->replace_geom = NULL;
-	} else {
-		ctx->replace_geom = gtk_check_button_new_with_label("Replace geometry file:");
-		gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->replace_geom),
-		                   FALSE, FALSE, 4.0);
-		g_signal_connect(G_OBJECT(ctx->replace_geom), "toggled",
-		                 G_CALLBACK(i_maybe_disable), ctx->geom_file);
-		gtk_widget_set_sensitive(ctx->geom_file, FALSE);
-	}
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->geom_file), TRUE, TRUE, 2.0);
+    ctx->geom_file = gtk_file_chooser_button_new("Select geometry file",
+                                                 GTK_FILE_CHOOSER_ACTION_OPEN);
+    if ( proj->geom_filename != NULL ) {
+        gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(ctx->geom_file),
+                                      proj->geom_filename);
+    }
+    if ( proj->dtempl == NULL ) {
+        label = gtk_label_new("Geometry file:");
+        gtk_misc_set_alignment(GTK_MISC(label), 1.0, 0.5);
+        gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+                           FALSE, FALSE, 4.0);
+        ctx->replace_geom = NULL;
+    } else {
+        ctx->replace_geom = gtk_check_button_new_with_label("Replace geometry file:");
+        gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->replace_geom),
+                           FALSE, FALSE, 4.0);
+        g_signal_connect(G_OBJECT(ctx->replace_geom), "toggled",
+                         G_CALLBACK(i_maybe_disable), ctx->geom_file);
+        gtk_widget_set_sensitive(ctx->geom_file, FALSE);
+    }
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->geom_file), TRUE, TRUE, 2.0);
 
-	/* Replace data toggle */
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
-	ctx->dump = gtk_check_button_new_with_label("Replace all the current data");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->dump),
-	                   FALSE, FALSE, 4.0);
-	ctx->dump_results = gtk_check_button_new_with_label("Forget about indexing results");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->dump_results),
-	                   FALSE, FALSE, 4.0);
-	g_signal_connect(G_OBJECT(ctx->dump), "toggled",
-	                 G_CALLBACK(i_maybe_disable_and_deselect),
-	                 ctx->dump_results);
-	gtk_widget_set_sensitive(ctx->dump_results, FALSE);
+    /* Replace data toggle */
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox), FALSE, FALSE, 8.0);
+    ctx->dump = gtk_check_button_new_with_label("Replace all the current data");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->dump),
+                       FALSE, FALSE, 4.0);
+    ctx->dump_results = gtk_check_button_new_with_label("Forget about indexing results");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(ctx->dump_results),
+                       FALSE, FALSE, 4.0);
+    g_signal_connect(G_OBJECT(ctx->dump), "toggled",
+                     G_CALLBACK(i_maybe_disable_and_deselect),
+                     ctx->dump_results);
+    gtk_widget_set_sensitive(ctx->dump_results, FALSE);
 
-	g_signal_connect(ctx->indiv, "toggled",
-	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
-	g_signal_connect(ctx->list, "toggled",
-	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
-	g_signal_connect(ctx->search, "toggled",
-	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
-	g_signal_connect(ctx->stream, "toggled",
-	                 G_CALLBACK(finddata_typetoggle_sig), ctx);
+    g_signal_connect(ctx->indiv, "toggled",
+                     G_CALLBACK(finddata_typetoggle_sig), ctx);
+    g_signal_connect(ctx->list, "toggled",
+                     G_CALLBACK(finddata_typetoggle_sig), ctx);
+    g_signal_connect(ctx->search, "toggled",
+                     G_CALLBACK(finddata_typetoggle_sig), ctx);
+    g_signal_connect(ctx->stream, "toggled",
+                     G_CALLBACK(finddata_typetoggle_sig), ctx);
 
-	g_signal_connect(dialog, "response",
-	                 G_CALLBACK(finddata_response_sig), ctx);
+    g_signal_connect(dialog, "response",
+                     G_CALLBACK(finddata_response_sig), ctx);
 
-	gtk_window_set_default_size(GTK_WINDOW(dialog), 512, 0);
-	finddata_typetoggle_sig(ctx->search, ctx);
-	gtk_widget_show_all(dialog);
-	return FALSE;
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 512, 0);
+    finddata_typetoggle_sig(ctx->search, ctx);
+    gtk_widget_show_all(dialog);
+    return FALSE;
 }
 
 

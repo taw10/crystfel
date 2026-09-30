@@ -59,92 +59,92 @@
 
 void cell_explorer_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
-	GSubprocess *sp;
-	GError *error = NULL;
-	const gchar *results_name;
-	struct gui_indexing_result *res;
-	const gchar **streams;
-	int i;
+    GSubprocess *sp;
+    GError *error = NULL;
+    const gchar *results_name;
+    struct gui_indexing_result *res;
+    const gchar **streams;
+    int i;
 
-	results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
-	if ( strcmp(results_name, "crystfel-gui-internal") == 0 ) {
-		STATUS("Please select results first.\n");
-		return;
-	}
+    results_name = gtk_combo_box_get_active_id(GTK_COMBO_BOX(proj->results_combo));
+    if ( strcmp(results_name, "crystfel-gui-internal") == 0 ) {
+        STATUS("Please select results first.\n");
+        return;
+    }
 
-	res = find_indexing_result_by_name(proj, results_name);
-	if ( res == NULL ) {
-		ERROR("Results for '%s' not found!\n", results_name);
-		return;
-	}
+    res = find_indexing_result_by_name(proj, results_name);
+    if ( res == NULL ) {
+        ERROR("Results for '%s' not found!\n", results_name);
+        return;
+    }
 
-	streams = malloc((res->n_streams+2)*sizeof(gchar *));
-	if ( streams == NULL ) return;
+    streams = malloc((res->n_streams+2)*sizeof(gchar *));
+    if ( streams == NULL ) return;
 
-	streams[0] = "cell_explorer";
-	for ( i=0; i<res->n_streams; i++ ) {
-		streams[i+1] = res->streams[i];
-	}
-	streams[res->n_streams+1] = NULL;
+    streams[0] = "cell_explorer";
+    for ( i=0; i<res->n_streams; i++ ) {
+        streams[i+1] = res->streams[i];
+    }
+    streams[res->n_streams+1] = NULL;
 
-	sp = g_subprocess_newv(streams, G_SUBPROCESS_FLAGS_NONE,
-	                       &error);
-	free(streams);
-	if ( sp == NULL ) {
-		ERROR("Failed to start cell_explorer: %s\n",
-		      error->message);
-		g_error_free(error);
-		return;
-	}
+    sp = g_subprocess_newv(streams, G_SUBPROCESS_FLAGS_NONE,
+                           &error);
+    free(streams);
+    if ( sp == NULL ) {
+        ERROR("Failed to start cell_explorer: %s\n",
+              error->message);
+        g_error_free(error);
+        return;
+    }
 
-	STATUS("Starting cell_explorer...\n");
+    STATUS("Starting cell_explorer...\n");
 }
 
 
 static void get_indexing_opts(struct crystfelproject *proj,
                               CrystFELIndexingOpts *opts)
 {
-	/* Indexing */
-	proj->indexing_params.cell_file = crystfel_indexing_opts_get_cell_file(opts);
-	proj->indexing_params.indexing_methods = crystfel_indexing_opts_get_indexing_method_string(opts);
-	proj->indexing_params.multi = crystfel_indexing_opts_get_multi_lattice(opts);
-	proj->indexing_params.no_refine = !crystfel_indexing_opts_get_refine(opts);
-	proj->indexing_params.no_retry = !crystfel_indexing_opts_get_retry(opts);
-	proj->indexing_params.no_peak_check = !crystfel_indexing_opts_get_peak_check(opts);
-	proj->indexing_params.no_cell_check = !crystfel_indexing_opts_get_cell_check(opts);
-	proj->indexing_params.min_peaks = crystfel_indexing_opts_get_min_peaks(opts);
-	crystfel_indexing_opts_get_tolerances(opts, proj->indexing_params.tols);
+    /* Indexing */
+    proj->indexing_params.cell_file = crystfel_indexing_opts_get_cell_file(opts);
+    proj->indexing_params.indexing_methods = crystfel_indexing_opts_get_indexing_method_string(opts);
+    proj->indexing_params.multi = crystfel_indexing_opts_get_multi_lattice(opts);
+    proj->indexing_params.no_refine = !crystfel_indexing_opts_get_refine(opts);
+    proj->indexing_params.no_retry = !crystfel_indexing_opts_get_retry(opts);
+    proj->indexing_params.no_peak_check = !crystfel_indexing_opts_get_peak_check(opts);
+    proj->indexing_params.no_cell_check = !crystfel_indexing_opts_get_cell_check(opts);
+    proj->indexing_params.min_peaks = crystfel_indexing_opts_get_min_peaks(opts);
+    crystfel_indexing_opts_get_tolerances(opts, proj->indexing_params.tols);
 
-	proj->indexing_params.pinkindexer_cpeaks = crystfel_indexing_opts_get_pinkindexer_cpeaks(opts);
-	proj->indexing_params.pinkindexer_use_max_res = crystfel_indexing_opts_get_pinkindexer_use_max_res(opts);
-	proj->indexing_params.pinkindexer_max_res = crystfel_indexing_opts_get_pinkindexer_max_res(opts);
-	proj->indexing_params.pinkindexer_angle_density = crystfel_indexing_opts_get_pinkindexer_angle_density(opts);
-	proj->indexing_params.pinkindexer_refinement_type = crystfel_indexing_opts_get_pinkindexer_refinement_type(opts);
-	proj->indexing_params.pinkindexer_tolerance = crystfel_indexing_opts_get_pinkindexer_tolerance(opts);
-	proj->indexing_params.pinkindexer_use_refl_radius = crystfel_indexing_opts_get_pinkindexer_use_refl_radius(opts);
-	proj->indexing_params.pinkindexer_refl_radius = crystfel_indexing_opts_get_pinkindexer_refl_radius(opts);
-	proj->indexing_params.pinkindexer_max_imbalance = crystfel_indexing_opts_get_pinkindexer_max_imbalance(opts);
+    proj->indexing_params.pinkindexer_cpeaks = crystfel_indexing_opts_get_pinkindexer_cpeaks(opts);
+    proj->indexing_params.pinkindexer_use_max_res = crystfel_indexing_opts_get_pinkindexer_use_max_res(opts);
+    proj->indexing_params.pinkindexer_max_res = crystfel_indexing_opts_get_pinkindexer_max_res(opts);
+    proj->indexing_params.pinkindexer_angle_density = crystfel_indexing_opts_get_pinkindexer_angle_density(opts);
+    proj->indexing_params.pinkindexer_refinement_type = crystfel_indexing_opts_get_pinkindexer_refinement_type(opts);
+    proj->indexing_params.pinkindexer_tolerance = crystfel_indexing_opts_get_pinkindexer_tolerance(opts);
+    proj->indexing_params.pinkindexer_use_refl_radius = crystfel_indexing_opts_get_pinkindexer_use_refl_radius(opts);
+    proj->indexing_params.pinkindexer_refl_radius = crystfel_indexing_opts_get_pinkindexer_refl_radius(opts);
+    proj->indexing_params.pinkindexer_max_imbalance = crystfel_indexing_opts_get_pinkindexer_max_imbalance(opts);
 
-	/* Integration */
-	proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
-	proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
-	proj->indexing_params.push_res = crystfel_indexing_opts_get_push_res(opts);
-	crystfel_indexing_opts_get_integration_radii(opts,
-	                                             &proj->indexing_params.ir_inn,
-	                                             &proj->indexing_params.ir_mid,
-	                                             &proj->indexing_params.ir_out);
-	proj->indexing_params.fix_profile_radius = crystfel_indexing_opts_get_fixed_profile_radius(opts,
-	                                      &proj->indexing_params.use_fix_profile_radius);
-	proj->indexing_params.fix_divergence = crystfel_indexing_opts_get_fixed_divergence(opts);
+    /* Integration */
+    proj->indexing_params.integration_method = crystfel_indexing_opts_get_integration_method_string(opts);
+    proj->indexing_params.overpredict = crystfel_indexing_opts_get_overpredict(opts);
+    proj->indexing_params.push_res = crystfel_indexing_opts_get_push_res(opts);
+    crystfel_indexing_opts_get_integration_radii(opts,
+                                                 &proj->indexing_params.ir_inn,
+                                                 &proj->indexing_params.ir_mid,
+                                                 &proj->indexing_params.ir_out);
+    proj->indexing_params.fix_profile_radius = crystfel_indexing_opts_get_fixed_profile_radius(opts,
+                                          &proj->indexing_params.use_fix_profile_radius);
+    proj->indexing_params.fix_divergence = crystfel_indexing_opts_get_fixed_divergence(opts);
 
-	/* Stream output */
-	proj->indexing_params.exclude_nonhits = crystfel_indexing_opts_get_exclude_blanks(opts);
-	proj->indexing_params.exclude_peaks = crystfel_indexing_opts_get_exclude_peaks(opts);
-	proj->indexing_params.exclude_refls = crystfel_indexing_opts_get_exclude_reflections(opts);
-	proj->indexing_params.millepede = crystfel_indexing_opts_get_millepede(opts,
-	                       &proj->indexing_params.max_mille_level);
-	proj->indexing_params.metadata_to_copy = crystfel_indexing_opts_get_metadata_to_copy(opts,
-		               &proj->indexing_params.n_metadata);
+    /* Stream output */
+    proj->indexing_params.exclude_nonhits = crystfel_indexing_opts_get_exclude_blanks(opts);
+    proj->indexing_params.exclude_peaks = crystfel_indexing_opts_get_exclude_peaks(opts);
+    proj->indexing_params.exclude_refls = crystfel_indexing_opts_get_exclude_reflections(opts);
+    proj->indexing_params.millepede = crystfel_indexing_opts_get_millepede(opts,
+                           &proj->indexing_params.max_mille_level);
+    proj->indexing_params.metadata_to_copy = crystfel_indexing_opts_get_metadata_to_copy(opts,
+                       &proj->indexing_params.n_metadata);
 }
 
 
@@ -152,30 +152,30 @@ static int get_first_frame_parameters(struct crystfelproject *proj,
                                       double *wavelength_estimate,
                                       double *clen_estimate)
 {
-	struct image *image;
+    struct image *image;
 
-	if ( proj->n_frames < 1 ) {
-		ERROR("No frames!\n");
-		return 1;
-	}
+    if ( proj->n_frames < 1 ) {
+        ERROR("No frames!\n");
+        return 1;
+    }
 
 
-	image = image_read(proj->dtempl,
-	                   proj->filenames[0],
-	                   proj->events[0],
-	                   0, 0, NULL);
+    image = image_read(proj->dtempl,
+                       proj->filenames[0],
+                       proj->events[0],
+                       0, 0, NULL);
 
-	if ( image == NULL ) {
-		ERROR("Failed to load first frame\n");
-		return 1;
-	}
+    if ( image == NULL ) {
+        ERROR("Failed to load first frame\n");
+        return 1;
+    }
 
-	*wavelength_estimate = image->lambda;
-	*clen_estimate = detgeom_mean_camera_length(image->detgeom);
+    *wavelength_estimate = image->lambda;
+    *clen_estimate = detgeom_mean_camera_length(image->detgeom);
 
-	image_free(image);
+    image_free(image);
 
-	return 0;
+    return 0;
 }
 
 
@@ -183,813 +183,813 @@ static int run_indexing_all(struct crystfelproject *proj,
                             int backend_idx, const char *job_title,
                             const char *job_notes)
 {
-	struct crystfel_backend *be;
-	void *job_priv;
-	double wavelength_estimate;
-	double clen_estimate;
+    struct crystfel_backend *be;
+    void *job_priv;
+    double wavelength_estimate;
+    double clen_estimate;
 
-	/* Get parameters from first frame */
-	if ( get_first_frame_parameters(proj, &wavelength_estimate,
-	                                      &clen_estimate) ) return 1;
+    /* Get parameters from first frame */
+    if ( get_first_frame_parameters(proj, &wavelength_estimate,
+                                          &clen_estimate) ) return 1;
 
-	be = &proj->backends[backend_idx];
-	job_priv = be->run_indexing(job_title, job_notes, proj,
-	                            be->indexing_opts_priv,
-	                            wavelength_estimate,
-	                            clen_estimate);
+    be = &proj->backends[backend_idx];
+    job_priv = be->run_indexing(job_title, job_notes, proj,
+                                be->indexing_opts_priv,
+                                wavelength_estimate,
+                                clen_estimate);
 
-	proj->unsaved = 1;
-	if ( proj->autosave ) {
-		save_project(proj);
-	}
+    proj->unsaved = 1;
+    if ( proj->autosave ) {
+        save_project(proj);
+    }
 
-	if ( job_priv != NULL ) {
-		char name[256];
-		snprintf(name, 255, "Indexing all frames (%s)",
-		         job_title);
-		add_running_task(proj, name, be, job_priv);
-		return 0;
-	} else {
-		return 1;
-	}
+    if ( job_priv != NULL ) {
+        char name[256];
+        snprintf(name, 255, "Indexing all frames (%s)",
+                 job_title);
+        add_running_task(proj, name, be, job_priv);
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 
 struct new_index_job_params {
-	struct crystfelproject *proj;
-	struct gui_job_notes_page *notes_page;
-	GtkWidget *indexing_backend_combo;
-	GtkWidget *indexing_backend_opts_widget;
-	GtkWidget *indexing_backend_opts_box;
-	GtkWidget *job_title_entry;
+    struct crystfelproject *proj;
+    struct gui_job_notes_page *notes_page;
+    GtkWidget *indexing_backend_combo;
+    GtkWidget *indexing_backend_opts_widget;
+    GtkWidget *indexing_backend_opts_box;
+    GtkWidget *job_title_entry;
 };
 
 
 static void index_all_response_sig(GtkWidget *dialog, gint resp,
                                    struct new_index_job_params *njp)
 {
-	if ( resp == GTK_RESPONSE_OK ) {
+    if ( resp == GTK_RESPONSE_OK ) {
 
-		int backend_idx;
-		const char *job_title;
-		char *job_notes;
+        int backend_idx;
+        const char *job_title;
+        char *job_notes;
 
-		get_indexing_opts(njp->proj,
-		                  CRYSTFEL_INDEXING_OPTS(njp->proj->indexing_opts));
+        get_indexing_opts(njp->proj,
+                          CRYSTFEL_INDEXING_OPTS(njp->proj->indexing_opts));
 
-		backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(njp->indexing_backend_combo));
-		if ( backend_idx < 0 ) return;
+        backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(njp->indexing_backend_combo));
+        if ( backend_idx < 0 ) return;
 
-		job_title = gtk_entry_get_text(GTK_ENTRY(njp->job_title_entry));
-		job_notes = get_all_text(GTK_TEXT_VIEW(njp->notes_page->textview));
+        job_title = gtk_entry_get_text(GTK_ENTRY(njp->job_title_entry));
+        job_notes = get_all_text(GTK_TEXT_VIEW(njp->notes_page->textview));
 
-		if ( job_title[0] == '\0' ) {
-			ERROR("You must provide a job name.\n");
-			return;
-		}
+        if ( job_title[0] == '\0' ) {
+            ERROR("You must provide a job name.\n");
+            return;
+        }
 
-		free(njp->proj->indexing_new_job_title);
-		njp->proj->indexing_new_job_title = strdup(job_title);
+        free(njp->proj->indexing_new_job_title);
+        njp->proj->indexing_new_job_title = strdup(job_title);
 
-		if ( run_indexing_all(njp->proj, backend_idx,
-		                      job_title, job_notes) == 0 )
-		{
-			gtk_widget_destroy(dialog);
-			njp->proj->indexing_opts = NULL;
-		}
+        if ( run_indexing_all(njp->proj, backend_idx,
+                              job_title, job_notes) == 0 )
+        {
+            gtk_widget_destroy(dialog);
+            njp->proj->indexing_opts = NULL;
+        }
 
-		free(job_notes);
+        free(job_notes);
 
-	} else {
-		gtk_widget_destroy(dialog);
-		njp->proj->indexing_opts = NULL;
-	}
+    } else {
+        gtk_widget_destroy(dialog);
+        njp->proj->indexing_opts = NULL;
+    }
 }
 
 
 static void indexing_backend_changed_sig(GtkWidget *combo,
                                          struct new_index_job_params *njp)
 {
-	int backend_idx;
-	struct crystfel_backend *be;
+    int backend_idx;
+    struct crystfel_backend *be;
 
-	backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
-	if ( backend_idx < 0 ) return;
-	njp->proj->indexing_backend_selected = backend_idx;
+    backend_idx = gtk_combo_box_get_active(GTK_COMBO_BOX(combo));
+    if ( backend_idx < 0 ) return;
+    njp->proj->indexing_backend_selected = backend_idx;
 
-	be = &njp->proj->backends[backend_idx];
+    be = &njp->proj->backends[backend_idx];
 
-	if ( njp->indexing_backend_opts_widget != NULL ) {
-		gtk_widget_destroy(njp->indexing_backend_opts_widget);
-	}
+    if ( njp->indexing_backend_opts_widget != NULL ) {
+        gtk_widget_destroy(njp->indexing_backend_opts_widget);
+    }
 
-	njp->indexing_backend_opts_widget = be->make_indexing_parameters_widget(be->indexing_opts_priv);
+    njp->indexing_backend_opts_widget = be->make_indexing_parameters_widget(be->indexing_opts_priv);
 
-	gtk_box_pack_start(GTK_BOX(njp->indexing_backend_opts_box),
-	                   GTK_WIDGET(njp->indexing_backend_opts_widget),
-	                   FALSE, FALSE, 0);
-	gtk_widget_show_all(njp->indexing_backend_opts_widget);
+    gtk_box_pack_start(GTK_BOX(njp->indexing_backend_opts_box),
+                       GTK_WIDGET(njp->indexing_backend_opts_widget),
+                       FALSE, FALSE, 0);
+    gtk_widget_show_all(njp->indexing_backend_opts_widget);
 }
 
 
 static GtkWidget *make_backend_opts(struct new_index_job_params *njp)
 {
-	GtkWidget *box;
-	GtkWidget *hbox;
-	GtkWidget *label;
-	int i;
+    GtkWidget *box;
+    GtkWidget *hbox;
+    GtkWidget *label;
+    int i;
 
-	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-	gtk_container_set_border_width(GTK_CONTAINER(box), 8);
+    box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    gtk_container_set_border_width(GTK_CONTAINER(box), 8);
 
-	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-	gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 0);
-	label = gtk_label_new("Batch system:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 0);
+    hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_box_pack_start(GTK_BOX(box), GTK_WIDGET(hbox),
+                       FALSE, FALSE, 0);
+    label = gtk_label_new("Batch system:");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+                       FALSE, FALSE, 0);
 
-	njp->indexing_backend_combo = gtk_combo_box_text_new();
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->indexing_backend_combo),
-	                   FALSE, FALSE, 0);
+    njp->indexing_backend_combo = gtk_combo_box_text_new();
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->indexing_backend_combo),
+                       FALSE, FALSE, 0);
 
-	for ( i=0; i<njp->proj->n_backends; i++ ) {
-		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(njp->indexing_backend_combo),
-		                          njp->proj->backends[i].name,
-		                          njp->proj->backends[i].friendly_name);
-	}
+    for ( i=0; i<njp->proj->n_backends; i++ ) {
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(njp->indexing_backend_combo),
+                                  njp->proj->backends[i].name,
+                                  njp->proj->backends[i].friendly_name);
+    }
 
-	njp->indexing_backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
-	                                              0);
-	gtk_box_pack_start(GTK_BOX(box),
-	                   GTK_WIDGET(njp->indexing_backend_opts_box),
-	                   FALSE, FALSE, 0);
-	njp->indexing_backend_opts_widget = NULL;
+    njp->indexing_backend_opts_box = gtk_box_new(GTK_ORIENTATION_VERTICAL,
+                                                  0);
+    gtk_box_pack_start(GTK_BOX(box),
+                       GTK_WIDGET(njp->indexing_backend_opts_box),
+                       FALSE, FALSE, 0);
+    njp->indexing_backend_opts_widget = NULL;
 
-	/* njp->indexing_backend_opts{_box} must exist before the following */
-	g_signal_connect(G_OBJECT(njp->indexing_backend_combo), "changed",
-	                 G_CALLBACK(indexing_backend_changed_sig), njp);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(njp->indexing_backend_combo),
-	                         njp->proj->indexing_backend_selected);
+    /* njp->indexing_backend_opts{_box} must exist before the following */
+    g_signal_connect(G_OBJECT(njp->indexing_backend_combo), "changed",
+                     G_CALLBACK(indexing_backend_changed_sig), njp);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(njp->indexing_backend_combo),
+                             njp->proj->indexing_backend_selected);
 
-	return box;
+    return box;
 }
 
 
 static void set_indexing_opts(struct crystfelproject *proj,
                               CrystFELIndexingOpts *opts)
 {
-	/* Indexing */
-	crystfel_indexing_opts_set_cell_file(opts, proj->indexing_params.cell_file);
-	crystfel_indexing_opts_set_indexing_method_string(opts, proj->indexing_params.indexing_methods);
-	crystfel_indexing_opts_set_multi_lattice(opts, proj->indexing_params.multi);
-	crystfel_indexing_opts_set_refine(opts, !proj->indexing_params.no_refine);
-	crystfel_indexing_opts_set_retry(opts, !proj->indexing_params.no_retry);
-	crystfel_indexing_opts_set_peak_check(opts, !proj->indexing_params.no_peak_check);
-	crystfel_indexing_opts_set_cell_check(opts, !proj->indexing_params.no_cell_check);
-	crystfel_indexing_opts_set_tolerances(opts, proj->indexing_params.tols);
-	crystfel_indexing_opts_set_min_peaks(opts, proj->indexing_params.min_peaks);
+    /* Indexing */
+    crystfel_indexing_opts_set_cell_file(opts, proj->indexing_params.cell_file);
+    crystfel_indexing_opts_set_indexing_method_string(opts, proj->indexing_params.indexing_methods);
+    crystfel_indexing_opts_set_multi_lattice(opts, proj->indexing_params.multi);
+    crystfel_indexing_opts_set_refine(opts, !proj->indexing_params.no_refine);
+    crystfel_indexing_opts_set_retry(opts, !proj->indexing_params.no_retry);
+    crystfel_indexing_opts_set_peak_check(opts, !proj->indexing_params.no_peak_check);
+    crystfel_indexing_opts_set_cell_check(opts, !proj->indexing_params.no_cell_check);
+    crystfel_indexing_opts_set_tolerances(opts, proj->indexing_params.tols);
+    crystfel_indexing_opts_set_min_peaks(opts, proj->indexing_params.min_peaks);
 
-	/* PinkIndexer */
-	crystfel_indexing_opts_set_pinkindexer_cpeaks(opts,
-	                       proj->indexing_params.pinkindexer_cpeaks);
-	crystfel_indexing_opts_set_pinkindexer_use_max_res(opts,
-	                       proj->indexing_params.pinkindexer_use_max_res);
-	crystfel_indexing_opts_set_pinkindexer_max_res(opts,
-	                       proj->indexing_params.pinkindexer_max_res);
-	crystfel_indexing_opts_set_pinkindexer_angle_density(opts,
-	                       proj->indexing_params.pinkindexer_angle_density);
-	crystfel_indexing_opts_set_pinkindexer_refinement_type(opts,
-	                       proj->indexing_params.pinkindexer_refinement_type);
-	crystfel_indexing_opts_set_pinkindexer_tolerance(opts,
-	                       proj->indexing_params.pinkindexer_tolerance);
-	crystfel_indexing_opts_set_pinkindexer_use_refl_radius(opts,
-	                       proj->indexing_params.pinkindexer_use_refl_radius);
-	crystfel_indexing_opts_set_pinkindexer_refl_radius(opts,
-	                       proj->indexing_params.pinkindexer_refl_radius);
-	crystfel_indexing_opts_set_pinkindexer_max_imbalance(opts,
-	                       proj->indexing_params.pinkindexer_max_imbalance);
+    /* PinkIndexer */
+    crystfel_indexing_opts_set_pinkindexer_cpeaks(opts,
+                           proj->indexing_params.pinkindexer_cpeaks);
+    crystfel_indexing_opts_set_pinkindexer_use_max_res(opts,
+                           proj->indexing_params.pinkindexer_use_max_res);
+    crystfel_indexing_opts_set_pinkindexer_max_res(opts,
+                           proj->indexing_params.pinkindexer_max_res);
+    crystfel_indexing_opts_set_pinkindexer_angle_density(opts,
+                           proj->indexing_params.pinkindexer_angle_density);
+    crystfel_indexing_opts_set_pinkindexer_refinement_type(opts,
+                           proj->indexing_params.pinkindexer_refinement_type);
+    crystfel_indexing_opts_set_pinkindexer_tolerance(opts,
+                           proj->indexing_params.pinkindexer_tolerance);
+    crystfel_indexing_opts_set_pinkindexer_use_refl_radius(opts,
+                           proj->indexing_params.pinkindexer_use_refl_radius);
+    crystfel_indexing_opts_set_pinkindexer_refl_radius(opts,
+                           proj->indexing_params.pinkindexer_refl_radius);
+    crystfel_indexing_opts_set_pinkindexer_max_imbalance(opts,
+                           proj->indexing_params.pinkindexer_max_imbalance);
 
-	/* Integration */
-	crystfel_indexing_opts_set_integration_method_string(opts, proj->indexing_params.integration_method);
-	crystfel_indexing_opts_set_overpredict(opts, proj->indexing_params.overpredict);
-	crystfel_indexing_opts_set_push_res(opts, proj->indexing_params.push_res);
-	crystfel_indexing_opts_set_integration_radii(opts,
-	                                             proj->indexing_params.ir_inn,
-	                                             proj->indexing_params.ir_mid,
-	                                             proj->indexing_params.ir_out);
-	crystfel_indexing_opts_set_fixed_profile_radius(opts,
-	                                                proj->indexing_params.use_fix_profile_radius,
-	                                                proj->indexing_params.fix_profile_radius);
-	crystfel_indexing_opts_set_fixed_divergence(opts,
-	                                            proj->indexing_params.fix_divergence);
+    /* Integration */
+    crystfel_indexing_opts_set_integration_method_string(opts, proj->indexing_params.integration_method);
+    crystfel_indexing_opts_set_overpredict(opts, proj->indexing_params.overpredict);
+    crystfel_indexing_opts_set_push_res(opts, proj->indexing_params.push_res);
+    crystfel_indexing_opts_set_integration_radii(opts,
+                                                 proj->indexing_params.ir_inn,
+                                                 proj->indexing_params.ir_mid,
+                                                 proj->indexing_params.ir_out);
+    crystfel_indexing_opts_set_fixed_profile_radius(opts,
+                                                    proj->indexing_params.use_fix_profile_radius,
+                                                    proj->indexing_params.fix_profile_radius);
+    crystfel_indexing_opts_set_fixed_divergence(opts,
+                                                proj->indexing_params.fix_divergence);
 
-	/* Stream output */
-	crystfel_indexing_opts_set_exclude_blanks(opts,
-	                                          proj->indexing_params.exclude_nonhits);
-	crystfel_indexing_opts_set_exclude_peaks(opts,
-	                                         proj->indexing_params.exclude_peaks);
-	crystfel_indexing_opts_set_exclude_reflections(opts,
-	                                               proj->indexing_params.exclude_refls);
-	crystfel_indexing_opts_set_millepede(opts,
-	                                     proj->indexing_params.millepede,
-	                                     proj->indexing_params.max_mille_level);
-	crystfel_indexing_opts_set_metadata_to_copy(opts,
-	                                            proj->indexing_params.metadata_to_copy,
-	                                            proj->indexing_params.n_metadata);
+    /* Stream output */
+    crystfel_indexing_opts_set_exclude_blanks(opts,
+                                              proj->indexing_params.exclude_nonhits);
+    crystfel_indexing_opts_set_exclude_peaks(opts,
+                                             proj->indexing_params.exclude_peaks);
+    crystfel_indexing_opts_set_exclude_reflections(opts,
+                                                   proj->indexing_params.exclude_refls);
+    crystfel_indexing_opts_set_millepede(opts,
+                                         proj->indexing_params.millepede,
+                                         proj->indexing_params.max_mille_level);
+    crystfel_indexing_opts_set_metadata_to_copy(opts,
+                                                proj->indexing_params.metadata_to_copy,
+                                                proj->indexing_params.n_metadata);
 }
 
 
 static void free_new_index_job_params(gpointer njp, GClosure *closure)
 {
-	free(njp);
+    free(njp);
 }
 
 
 gint index_all_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
-	GtkWidget *dialog;
-	GtkWidget *content_area;
-	GtkWidget *vbox;
-	GtkWidget *hbox;
-	GtkWidget *label;
-	GtkWidget *backend_page;
-	char *new_title;
-	struct new_index_job_params *njp;
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *vbox;
+    GtkWidget *hbox;
+    GtkWidget *label;
+    GtkWidget *backend_page;
+    char *new_title;
+    struct new_index_job_params *njp;
 
-	if ( proj->indexing_opts != NULL ) return FALSE;
+    if ( proj->indexing_opts != NULL ) return FALSE;
 
-	if ( proj->geom_filename == NULL ) {
-		error_box(proj, "No geometry file was selected.  "
-		"You must select a geometry file via 'Load data' before using "
-		"this function");
-		return FALSE;
-	}
+    if ( proj->geom_filename == NULL ) {
+        error_box(proj, "No geometry file was selected.  "
+        "You must select a geometry file via 'Load data' before using "
+        "this function");
+        return FALSE;
+    }
 
-	njp = malloc(sizeof(struct new_index_job_params));
-	if ( njp == NULL ) return FALSE;
+    njp = malloc(sizeof(struct new_index_job_params));
+    if ( njp == NULL ) return FALSE;
 
-	njp->proj = proj;
+    njp->proj = proj;
 
-	dialog = gtk_dialog_new_with_buttons("Index all frames",
-	                                     GTK_WINDOW(proj->window),
-	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                     "Cancel", GTK_RESPONSE_CANCEL,
-	                                     "Run", GTK_RESPONSE_OK,
-	                                     NULL);
+    dialog = gtk_dialog_new_with_buttons("Index all frames",
+                                         GTK_WINDOW(proj->window),
+                                         GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         "Cancel", GTK_RESPONSE_CANCEL,
+                                         "Run", GTK_RESPONSE_OK,
+                                         NULL);
 
-	g_signal_connect_data(G_OBJECT(dialog), "response",
-	                      G_CALLBACK(index_all_response_sig),
-	                      njp, free_new_index_job_params, 0);
+    g_signal_connect_data(G_OBJECT(dialog), "response",
+                          G_CALLBACK(index_all_response_sig),
+                          njp, free_new_index_job_params, 0);
 
-	vbox = gtk_vbox_new(FALSE, 0.0);
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	gtk_container_add(GTK_CONTAINER(content_area), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
+    vbox = gtk_vbox_new(FALSE, 0.0);
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_add(GTK_CONTAINER(content_area), vbox);
+    gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
-	hbox = gtk_hbox_new(FALSE, 0.0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
-	                   FALSE, FALSE, 4.0);
-	label = gtk_label_new("Job/output name:");
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
-	                   FALSE, FALSE, 4.0);
-	njp->job_title_entry = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(njp->job_title_entry), 16);
-	gtk_entry_set_placeholder_text(GTK_ENTRY(njp->job_title_entry),
-	                               "indexing-trial-1");
-	new_title = make_new_job_title(proj->indexing_new_job_title);
-	if ( new_title != NULL ) {
-		gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry), new_title);
-		free(new_title);
-	}
-	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
-	                   TRUE, TRUE, 4.0);
+    hbox = gtk_hbox_new(FALSE, 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(hbox),
+                       FALSE, FALSE, 4.0);
+    label = gtk_label_new("Job/output name:");
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(label),
+                       FALSE, FALSE, 4.0);
+    njp->job_title_entry = gtk_entry_new();
+    gtk_entry_set_width_chars(GTK_ENTRY(njp->job_title_entry), 16);
+    gtk_entry_set_placeholder_text(GTK_ENTRY(njp->job_title_entry),
+                                   "indexing-trial-1");
+    new_title = make_new_job_title(proj->indexing_new_job_title);
+    if ( new_title != NULL ) {
+        gtk_entry_set_text(GTK_ENTRY(njp->job_title_entry), new_title);
+        free(new_title);
+    }
+    gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(njp->job_title_entry),
+                       TRUE, TRUE, 4.0);
 
-	proj->indexing_opts = crystfel_indexing_opts_new();
-	crystfel_indexing_opts_set_show_stream_opts(CRYSTFEL_INDEXING_OPTS(proj->indexing_opts),
-	                                            TRUE);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(proj->indexing_opts),
-	                   FALSE, FALSE, 8.0);
-	set_indexing_opts(proj,
-	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
+    proj->indexing_opts = crystfel_indexing_opts_new();
+    crystfel_indexing_opts_set_show_stream_opts(CRYSTFEL_INDEXING_OPTS(proj->indexing_opts),
+                                                TRUE);
+    gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(proj->indexing_opts),
+                       FALSE, FALSE, 8.0);
+    set_indexing_opts(proj,
+                      CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 
-	backend_page = make_backend_opts(njp);
-	gtk_notebook_append_page(GTK_NOTEBOOK(proj->indexing_opts),
-	                          backend_page,
-	                          gtk_label_new("Cluster/batch system"));
+    backend_page = make_backend_opts(njp);
+    gtk_notebook_append_page(GTK_NOTEBOOK(proj->indexing_opts),
+                              backend_page,
+                              gtk_label_new("Cluster/batch system"));
 
-	njp->notes_page = add_job_notes_page(proj->indexing_opts);
+    njp->notes_page = add_job_notes_page(proj->indexing_opts);
 
-	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
-	                                GTK_RESPONSE_OK);
-	gtk_widget_show_all(dialog);
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog),
+                                    GTK_RESPONSE_OK);
+    gtk_widget_show_all(dialog);
 
-	return FALSE;
+    return FALSE;
 }
 
 
 static IndexingFlags indexing_flags(struct index_params *params)
 {
-	IndexingFlags fl = 0;
+    IndexingFlags fl = 0;
 
-	if ( !params->no_retry ) fl |= INDEXING_RETRY;
-	if ( params->multi ) fl |= INDEXING_MULTI;
-	if ( !params->no_refine ) fl |= INDEXING_REFINE;
-	if ( !params->no_peak_check ) fl |= INDEXING_CHECK_PEAKS;
-	if ( !params->no_cell_check ) fl |= INDEXING_CHECK_CELL;
+    if ( !params->no_retry ) fl |= INDEXING_RETRY;
+    if ( params->multi ) fl |= INDEXING_MULTI;
+    if ( !params->no_refine ) fl |= INDEXING_REFINE;
+    if ( !params->no_peak_check ) fl |= INDEXING_CHECK_PEAKS;
+    if ( !params->no_cell_check ) fl |= INDEXING_CHECK_CELL;
 
-	return fl;
+    return fl;
 }
 
 
 static char *enter_gui_tempdir()
 {
-	char *tmpdir;
-	struct stat s;
+    char *tmpdir;
+    struct stat s;
 
-	tmpdir = malloc(64);
-	if ( tmpdir == NULL ) {
-		ERROR("Failed to allocate temporary directory name\n");
-		return NULL;
-	}
-	snprintf(tmpdir, 63, "crystfel-gui.%i", getpid());
+    tmpdir = malloc(64);
+    if ( tmpdir == NULL ) {
+        ERROR("Failed to allocate temporary directory name\n");
+        return NULL;
+    }
+    snprintf(tmpdir, 63, "crystfel-gui.%i", getpid());
 
-	if ( stat(tmpdir, &s) == -1 ) {
+    if ( stat(tmpdir, &s) == -1 ) {
 
-		int r;
+        int r;
 
-		if ( errno != ENOENT ) {
-			ERROR("Failed to stat temporary folder.\n");
-			return NULL;
-		}
+        if ( errno != ENOENT ) {
+            ERROR("Failed to stat temporary folder.\n");
+            return NULL;
+        }
 
-		r = mkdir(tmpdir, S_IRWXU);
-		if ( r ) {
-			ERROR("Failed to create temporary folder: %s\n",
-			      strerror(errno));
-			return NULL;
-		}
+        r = mkdir(tmpdir, S_IRWXU);
+        if ( r ) {
+            ERROR("Failed to create temporary folder: %s\n",
+                  strerror(errno));
+            return NULL;
+        }
 
-	}
+    }
 
-	if ( chdir(tmpdir) ) {
-		ERROR("Failed to chdir to temporary fodler: %s\n",
-		      strerror(errno));
-		/* Still return as usual */
-	}
+    if ( chdir(tmpdir) ) {
+        ERROR("Failed to chdir to temporary fodler: %s\n",
+              strerror(errno));
+        /* Still return as usual */
+    }
 
-	return tmpdir;
+    return tmpdir;
 }
 
 
 static void delete_gui_tempdir(char *tmpdir)
 {
-	char *path;
-	int i;
-	size_t pathlen;
+    char *path;
+    int i;
+    size_t pathlen;
 
-	/* List of files which it's safe to delete */
-	char *files[] = {"gmon.out", "mosflm.lp", "SUMMARY", "XDS.INP",
-	                 "xfel_001.img", "xfel_001.spt", "xfel.drx",
-	                 "xfel.felix", "xfel.gve", "xfel.ini", "xfel.log",
-	                 "IDXREF.LP", "SPOT.XDS", "xfel.newmat", "XPARM.XDS"};
+    /* List of files which it's safe to delete */
+    char *files[] = {"gmon.out", "mosflm.lp", "SUMMARY", "XDS.INP",
+                     "xfel_001.img", "xfel_001.spt", "xfel.drx",
+                     "xfel.felix", "xfel.gve", "xfel.ini", "xfel.log",
+                     "IDXREF.LP", "SPOT.XDS", "xfel.newmat", "XPARM.XDS"};
 
-	/* Number of items in the above list */
-	int n_files = 15;
+    /* Number of items in the above list */
+    int n_files = 15;
 
-	if ( tmpdir == NULL ) return;
+    if ( tmpdir == NULL ) return;
 
-	pathlen = strlen(tmpdir)+64;
-	path = calloc(pathlen, 1);
-	if ( path == NULL ) return;
+    pathlen = strlen(tmpdir)+64;
+    path = calloc(pathlen, 1);
+    if ( path == NULL ) return;
 
-	for ( i=0; i<n_files; i++ ) {
-		snprintf(path, pathlen, "%s/%s", tmpdir, files[i]);
-		unlink(path);
-	}
+    for ( i=0; i<n_files; i++ ) {
+        snprintf(path, pathlen, "%s/%s", tmpdir, files[i]);
+        unlink(path);
+    }
 
-	if ( rmdir(tmpdir) ) {
-		ERROR("Failed to delete GUI temporary folder: %s\n",
-		      strerror(errno));
-	}
+    if ( rmdir(tmpdir) ) {
+        ERROR("Failed to delete GUI temporary folder: %s\n",
+              strerror(errno));
+    }
 
-	free(tmpdir);
+    free(tmpdir);
 }
 
 
 static void run_indexing_once(struct crystfelproject *proj)
 {
-	IndexingPrivate *ipriv;
-	UnitCell *cell;
-	IntegrationMethod int_method;
-	char *methods;
-	int i;
-	int err;
-	struct taketwo_options *taketwoopts;
-	struct felix_options *felix_opts;
-	struct xgandalf_options *xgandalf_opts;
-	struct pinkindexer_options *pinkIndexer_opts;
-	struct fromfile_options *fromfile_opts;
-	struct smallcell_options *smallcell_opts;
-	struct asdf_options *asdf_opts;
-	struct ffbidx_options *ffbidx_opts;
+    IndexingPrivate *ipriv;
+    UnitCell *cell;
+    IntegrationMethod int_method;
+    char *methods;
+    int i;
+    int err;
+    struct taketwo_options *taketwoopts;
+    struct felix_options *felix_opts;
+    struct xgandalf_options *xgandalf_opts;
+    struct pinkindexer_options *pinkIndexer_opts;
+    struct fromfile_options *fromfile_opts;
+    struct smallcell_options *smallcell_opts;
+    struct asdf_options *asdf_opts;
+    struct ffbidx_options *ffbidx_opts;
 
-	char *old_cwd;
-	char *tmpdir;
-	int r;
+    char *old_cwd;
+    char *tmpdir;
+    int r;
 
-	if ( proj->cur_image == NULL ) {
-		ERROR("No image to index!\n");
-		return;
-	}
+    if ( proj->cur_image == NULL ) {
+        ERROR("No image to index!\n");
+        return;
+    }
 
-	if ( proj->indexing_params.cell_file != NULL ) {
-		cell = load_cell_from_file(proj->indexing_params.cell_file);
-	} else {
-		cell = NULL;
-	}
+    if ( proj->indexing_params.cell_file != NULL ) {
+        cell = load_cell_from_file(proj->indexing_params.cell_file);
+    } else {
+        cell = NULL;
+    }
 
-	if ( proj->cur_image->features == NULL ) {
-		update_peaks(proj);
-	}
+    if ( proj->cur_image->features == NULL ) {
+        update_peaks(proj);
+    }
 
-	old_cwd = getcwd(NULL, 0);
-	tmpdir = enter_gui_tempdir();
+    old_cwd = getcwd(NULL, 0);
+    tmpdir = enter_gui_tempdir();
 
-	if ( proj->indexing_params.indexing_methods == NULL ) {
-		methods = detect_indexing_methods(cell);
-		STATUS("Auto-detected indexng methods: %s\n",
-		       methods);
-	} else {
-		methods = strdup(proj->indexing_params.indexing_methods);
-	}
+    if ( proj->indexing_params.indexing_methods == NULL ) {
+        methods = detect_indexing_methods(cell);
+        STATUS("Auto-detected indexng methods: %s\n",
+               methods);
+    } else {
+        methods = strdup(proj->indexing_params.indexing_methods);
+    }
 
-	default_method_options(&taketwoopts,
-	                       &xgandalf_opts,
-	                       &ffbidx_opts,
-	                       &pinkIndexer_opts,
-	                       &felix_opts,
-	                       &fromfile_opts,
-			       &smallcell_opts,
-			       &asdf_opts);
+    default_method_options(&taketwoopts,
+                           &xgandalf_opts,
+                           &ffbidx_opts,
+                           &pinkIndexer_opts,
+                           &felix_opts,
+                           &fromfile_opts,
+                   &smallcell_opts,
+                   &asdf_opts);
 
-	pinkIndexer_opts->considered_peaks_count = proj->indexing_params.pinkindexer_cpeaks;
-	pinkIndexer_opts->angle_resolution = proj->indexing_params.pinkindexer_angle_density;
-	pinkIndexer_opts->refinement_type = proj->indexing_params.pinkindexer_refinement_type;
-	pinkIndexer_opts->tolerance = proj->indexing_params.pinkindexer_tolerance;
-	if ( proj->indexing_params.pinkindexer_use_max_res ) {
-		pinkIndexer_opts->maxResolutionForIndexing_1_per_A = proj->indexing_params.pinkindexer_max_res;
-	} else {
-		pinkIndexer_opts->maxResolutionForIndexing_1_per_A = +INFINITY;
-	}
-	if ( proj->indexing_params.pinkindexer_use_refl_radius ) {
-		pinkIndexer_opts->reflectionRadius = proj->indexing_params.pinkindexer_refl_radius/1e10;
-	} else {
-		pinkIndexer_opts->reflectionRadius = -1;
-	}
-	pinkIndexer_opts->maxRefinementDisbalance = proj->indexing_params.pinkindexer_max_imbalance;
+    pinkIndexer_opts->considered_peaks_count = proj->indexing_params.pinkindexer_cpeaks;
+    pinkIndexer_opts->angle_resolution = proj->indexing_params.pinkindexer_angle_density;
+    pinkIndexer_opts->refinement_type = proj->indexing_params.pinkindexer_refinement_type;
+    pinkIndexer_opts->tolerance = proj->indexing_params.pinkindexer_tolerance;
+    if ( proj->indexing_params.pinkindexer_use_max_res ) {
+        pinkIndexer_opts->maxResolutionForIndexing_1_per_A = proj->indexing_params.pinkindexer_max_res;
+    } else {
+        pinkIndexer_opts->maxResolutionForIndexing_1_per_A = +INFINITY;
+    }
+    if ( proj->indexing_params.pinkindexer_use_refl_radius ) {
+        pinkIndexer_opts->reflectionRadius = proj->indexing_params.pinkindexer_refl_radius/1e10;
+    } else {
+        pinkIndexer_opts->reflectionRadius = -1;
+    }
+    pinkIndexer_opts->maxRefinementDisbalance = proj->indexing_params.pinkindexer_max_imbalance;
 
-	ipriv = setup_indexing(methods, cell,
-	                       proj->indexing_params.tols,
-	                       indexing_flags(&proj->indexing_params),
-	                       proj->cur_image->lambda,
-	                       detgeom_mean_camera_length(proj->cur_image->detgeom),
-	                       1,
-	                       taketwoopts, xgandalf_opts,
-	                       ffbidx_opts, pinkIndexer_opts,
-	                       felix_opts, NULL, smallcell_opts, asdf_opts);
-	free(methods);
+    ipriv = setup_indexing(methods, cell,
+                           proj->indexing_params.tols,
+                           indexing_flags(&proj->indexing_params),
+                           proj->cur_image->lambda,
+                           detgeom_mean_camera_length(proj->cur_image->detgeom),
+                           1,
+                           taketwoopts, xgandalf_opts,
+                           ffbidx_opts, pinkIndexer_opts,
+                           felix_opts, NULL, smallcell_opts, asdf_opts);
+    free(methods);
 
-	index_pattern(proj->cur_image, ipriv);
+    index_pattern(proj->cur_image, ipriv);
 
-	for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
-		crystal_set_mosaicity(proj->cur_image->crystals[i].cr, 0.0);
-		if ( proj->indexing_params.use_fix_profile_radius ) {
+    for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
+        crystal_set_mosaicity(proj->cur_image->crystals[i].cr, 0.0);
+        if ( proj->indexing_params.use_fix_profile_radius ) {
 
-			/* Manual radius */
-			crystal_set_profile_radius(proj->cur_image->crystals[i].cr,
-			                           proj->indexing_params.fix_profile_radius);
+            /* Manual radius */
+            crystal_set_profile_radius(proj->cur_image->crystals[i].cr,
+                                       proj->indexing_params.fix_profile_radius);
 
-		} else {
+        } else {
 
-			/* Auto radius determination */
-			crystal_set_profile_radius(proj->cur_image->crystals[i].cr,
-			                           0.02e9);
-			if ( refine_radius(proj->cur_image->crystals[i].cr,
-		                           proj->cur_image) )
-			{
-				ERROR("WARNING: Radius determination failed\n");
-			}
+            /* Auto radius determination */
+            crystal_set_profile_radius(proj->cur_image->crystals[i].cr,
+                                       0.02e9);
+            if ( refine_radius(proj->cur_image->crystals[i].cr,
+                                   proj->cur_image) )
+            {
+                ERROR("WARNING: Radius determination failed\n");
+            }
 
-		}
-	}
+        }
+    }
 
-	r = chdir(old_cwd);
-	if ( r ) {
-		ERROR("Failed to chdir: %s\n", strerror(errno));
-		return;
-	}
-	free(old_cwd);
-	delete_gui_tempdir(tmpdir);
+    r = chdir(old_cwd);
+    if ( r ) {
+        ERROR("Failed to chdir: %s\n", strerror(errno));
+        return;
+    }
+    free(old_cwd);
+    delete_gui_tempdir(tmpdir);
 
-	err = 0;
-	int_method = integration_method(proj->indexing_params.integration_method,
-	                                &err);
+    err = 0;
+    int_method = integration_method(proj->indexing_params.integration_method,
+                                    &err);
 
-	integrate_all_5(proj->cur_image, int_method, PMODEL_XSPHERE,
-	                proj->indexing_params.push_res,
-	                proj->indexing_params.ir_inn,
-	                proj->indexing_params.ir_mid,
-	                proj->indexing_params.ir_out,
-	                INTDIAG_NONE, 0, 0, 0, NULL,
-	                proj->indexing_params.overpredict);
+    integrate_all_5(proj->cur_image, int_method, PMODEL_XSPHERE,
+                    proj->indexing_params.push_res,
+                    proj->indexing_params.ir_inn,
+                    proj->indexing_params.ir_mid,
+                    proj->indexing_params.ir_out,
+                    INTDIAG_NONE, 0, 0, 0, NULL,
+                    proj->indexing_params.overpredict);
 
-	cleanup_indexing(ipriv);
+    cleanup_indexing(ipriv);
 
-	STATUS("Number of crystals: %i\n",
-	       proj->cur_image->n_crystals);
-	for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
-		cell_print(crystal_get_cell(proj->cur_image->crystals[i].cr));
-	}
+    STATUS("Number of crystals: %i\n",
+           proj->cur_image->n_crystals);
+    for ( i=0; i<proj->cur_image->n_crystals; i++ ) {
+        cell_print(crystal_get_cell(proj->cur_image->crystals[i].cr));
+    }
 
 }
 
 
 static gboolean thread_index_once_end(gpointer vp)
 {
-	struct crystfelproject *proj = vp;
+    struct crystfelproject *proj = vp;
 
-	gtk_widget_destroy(proj->index_once_infobar);
-	proj->index_once_infobar = NULL;
+    gtk_widget_destroy(proj->index_once_infobar);
+    proj->index_once_infobar = NULL;
 
-	g_thread_unref(proj->index_once_thread);
-	proj->index_once_thread = NULL;
+    g_thread_unref(proj->index_once_thread);
+    proj->index_once_thread = NULL;
 
-	crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
-	                                      proj->indexing_params.ir_inn);
-	force_refls_on(proj);
-	redraw_widget(proj->imageview);
+    crystfel_image_view_set_refl_box_size(CRYSTFEL_IMAGE_VIEW(proj->imageview),
+                                          proj->indexing_params.ir_inn);
+    force_refls_on(proj);
+    redraw_widget(proj->imageview);
 
-	return FALSE;
+    return FALSE;
 }
 
 
 static void *thread_index_once(void *vp)
 {
-	struct crystfelproject *proj = vp;
-	run_indexing_once(proj);
-	gdk_threads_add_idle(thread_index_once_end, proj);
-	return NULL;
+    struct crystfelproject *proj = vp;
+    run_indexing_once(proj);
+    gdk_threads_add_idle(thread_index_once_end, proj);
+    return NULL;
 }
 
 
 static gboolean index_once_show_task(gpointer vp)
 {
-	struct crystfelproject *proj = vp;
-	char tmp[256];
-	g_mutex_lock(&proj->index_once_last_task_lock);
-	snprintf(tmp, 255, "Indexing this frame (%s)", proj->index_once_last_task);
-	g_mutex_unlock(&proj->index_once_last_task_lock);
-	if ( proj->index_once_progress_bar != NULL ) {
-		gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar), tmp);
-	}
-	return FALSE;
+    struct crystfelproject *proj = vp;
+    char tmp[256];
+    g_mutex_lock(&proj->index_once_last_task_lock);
+    snprintf(tmp, 255, "Indexing this frame (%s)", proj->index_once_last_task);
+    g_mutex_unlock(&proj->index_once_last_task_lock);
+    if ( proj->index_once_progress_bar != NULL ) {
+        gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar), tmp);
+    }
+    return FALSE;
 }
 
 
 static void gui_set_last_task(const char *task, void *vp)
 {
-	struct crystfelproject *proj = vp;
-	g_mutex_lock(&proj->index_once_last_task_lock);
-	free(proj->index_once_last_task);
-	proj->index_once_last_task = strdup(task);
-	g_mutex_unlock(&proj->index_once_last_task_lock);
-	gdk_threads_add_idle(index_once_show_task, proj);
+    struct crystfelproject *proj = vp;
+    g_mutex_lock(&proj->index_once_last_task_lock);
+    free(proj->index_once_last_task);
+    proj->index_once_last_task = strdup(task);
+    g_mutex_unlock(&proj->index_once_last_task_lock);
+    gdk_threads_add_idle(index_once_show_task, proj);
 }
 
 
 static gboolean index_once_pulse(gpointer vp)
 {
-	struct crystfelproject *proj = vp;
-	if ( proj->index_once_progress_bar != NULL ) {
-		gtk_progress_bar_pulse(GTK_PROGRESS_BAR(proj->index_once_progress_bar));
-	}
-	return FALSE;
+    struct crystfelproject *proj = vp;
+    if ( proj->index_once_progress_bar != NULL ) {
+        gtk_progress_bar_pulse(GTK_PROGRESS_BAR(proj->index_once_progress_bar));
+    }
+    return FALSE;
 }
 
 
 static int gui_notify_alive(void *vp)
 {
-	struct crystfelproject *proj = vp;
-	gdk_threads_add_idle(index_once_pulse, proj);
-	return proj->index_once_cancel;
+    struct crystfelproject *proj = vp;
+    gdk_threads_add_idle(index_once_pulse, proj);
+    return proj->index_once_cancel;
 }
 
 
 static void index_once_infobar_response_sig(GtkInfoBar *infobar, gint resp,
                                             gpointer data)
 {
-	struct crystfelproject *proj = data;
+    struct crystfelproject *proj = data;
 
-	if ( resp == GTK_RESPONSE_CANCEL ) {
-		proj->index_once_cancel = 1;
-	}
+    if ( resp == GTK_RESPONSE_CANCEL ) {
+        proj->index_once_cancel = 1;
+    }
 }
 
 
 static void add_ionce_infobar(struct crystfelproject *proj)
 {
-	GtkWidget *info_bar;
-	GtkWidget *bar_area;
+    GtkWidget *info_bar;
+    GtkWidget *bar_area;
 
-	info_bar = gtk_info_bar_new();
-	gtk_info_bar_set_message_type(GTK_INFO_BAR(info_bar),
-	                              GTK_MESSAGE_INFO);
+    info_bar = gtk_info_bar_new();
+    gtk_info_bar_set_message_type(GTK_INFO_BAR(info_bar),
+                                  GTK_MESSAGE_INFO);
 
-	gtk_info_bar_add_button(GTK_INFO_BAR(info_bar),
-	                        GTK_STOCK_CANCEL,
-	                        GTK_RESPONSE_CANCEL);
+    gtk_info_bar_add_button(GTK_INFO_BAR(info_bar),
+                            GTK_STOCK_CANCEL,
+                            GTK_RESPONSE_CANCEL);
 
-	gtk_box_pack_end(GTK_BOX(proj->main_vbox), GTK_WIDGET(info_bar),
-	                 FALSE, FALSE, 0.0);
+    gtk_box_pack_end(GTK_BOX(proj->main_vbox), GTK_WIDGET(info_bar),
+                     FALSE, FALSE, 0.0);
 
-	bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
+    bar_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
 
-	/* Create progress bar */
-	proj->index_once_progress_bar = gtk_progress_bar_new();
-	gtk_box_pack_start(GTK_BOX(bar_area),
-	                   GTK_WIDGET(proj->index_once_progress_bar),
-	                   TRUE, TRUE, 0.0);
-	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
-	                          "Indexing this frame");
-	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
-	                               TRUE);
+    /* Create progress bar */
+    proj->index_once_progress_bar = gtk_progress_bar_new();
+    gtk_box_pack_start(GTK_BOX(bar_area),
+                       GTK_WIDGET(proj->index_once_progress_bar),
+                       TRUE, TRUE, 0.0);
+    gtk_progress_bar_set_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
+                              "Indexing this frame");
+    gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(proj->index_once_progress_bar),
+                                   TRUE);
 
-	g_signal_connect(G_OBJECT(info_bar), "response",
-	                 G_CALLBACK(index_once_infobar_response_sig), proj);
+    g_signal_connect(G_OBJECT(info_bar), "response",
+                     G_CALLBACK(index_once_infobar_response_sig), proj);
 
-	gtk_widget_show_all(info_bar);
+    gtk_widget_show_all(info_bar);
 
 #if GTK_CHECK_VERSION(3,22,29)
-	gtk_info_bar_set_revealed(GTK_INFO_BAR(info_bar), TRUE);
+    gtk_info_bar_set_revealed(GTK_INFO_BAR(info_bar), TRUE);
 #endif
 
-	proj->index_once_infobar = info_bar;
+    proj->index_once_infobar = info_bar;
 
-	set_debug_funcs(gui_set_last_task, gui_notify_alive, proj);
+    set_debug_funcs(gui_set_last_task, gui_notify_alive, proj);
 }
 
 
 static void index_one_response_sig(GtkWidget *dialog, gint resp,
                                    struct crystfelproject *proj)
 {
-	if ( resp == GTK_RESPONSE_OK ) {
-		get_indexing_opts(proj,
-		                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
-		if ( proj->index_once_thread != NULL ) {
-			ERROR("Please wait for previous indexing to finish\n");
-			return;
-		}
-		proj->index_once_cancel = 0;
-		free_all_crystals(proj->cur_image);
-		proj->index_once_thread = g_thread_new("index-once", thread_index_once, proj);
-		add_ionce_infobar(proj);
-	}
+    if ( resp == GTK_RESPONSE_OK ) {
+        get_indexing_opts(proj,
+                          CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
+        if ( proj->index_once_thread != NULL ) {
+            ERROR("Please wait for previous indexing to finish\n");
+            return;
+        }
+        proj->index_once_cancel = 0;
+        free_all_crystals(proj->cur_image);
+        proj->index_once_thread = g_thread_new("index-once", thread_index_once, proj);
+        add_ionce_infobar(proj);
+    }
 
-	gtk_widget_destroy(dialog);
-	proj->indexing_opts = NULL;
+    gtk_widget_destroy(dialog);
+    proj->indexing_opts = NULL;
 }
 
 
 gint index_one_sig(GtkWidget *widget, struct crystfelproject *proj)
 {
-	GtkWidget *dialog;
-	GtkWidget *content_area;
-	GtkWidget *vbox;
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *vbox;
 
-	if ( proj->indexing_opts != NULL ) return FALSE;
+    if ( proj->indexing_opts != NULL ) return FALSE;
 
-	dialog = gtk_dialog_new_with_buttons("Index one frame",
-	                                     GTK_WINDOW(proj->window),
-	                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                     "Cancel", GTK_RESPONSE_CANCEL,
-	                                     "Run", GTK_RESPONSE_OK,
-	                                     NULL);
+    dialog = gtk_dialog_new_with_buttons("Index one frame",
+                                         GTK_WINDOW(proj->window),
+                                         GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         "Cancel", GTK_RESPONSE_CANCEL,
+                                         "Run", GTK_RESPONSE_OK,
+                                         NULL);
 
-	g_signal_connect(G_OBJECT(dialog), "response",
-	                 G_CALLBACK(index_one_response_sig), proj);
+    g_signal_connect(G_OBJECT(dialog), "response",
+                     G_CALLBACK(index_one_response_sig), proj);
 
-	vbox = gtk_vbox_new(FALSE, 0.0);
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	gtk_container_add(GTK_CONTAINER(content_area), vbox);
-	gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
+    vbox = gtk_vbox_new(FALSE, 0.0);
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    gtk_container_add(GTK_CONTAINER(content_area), vbox);
+    gtk_container_set_border_width(GTK_CONTAINER(content_area), 8);
 
-	proj->indexing_opts = crystfel_indexing_opts_new();
-	gtk_box_pack_start(GTK_BOX(vbox),
-	                   GTK_WIDGET(proj->indexing_opts),
-	                   FALSE, FALSE, 8.0);
-	set_indexing_opts(proj,
-	                  CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
+    proj->indexing_opts = crystfel_indexing_opts_new();
+    gtk_box_pack_start(GTK_BOX(vbox),
+                       GTK_WIDGET(proj->indexing_opts),
+                       FALSE, FALSE, 8.0);
+    set_indexing_opts(proj,
+                      CRYSTFEL_INDEXING_OPTS(proj->indexing_opts));
 
-	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
-	                                GTK_RESPONSE_OK);
-	gtk_widget_show_all(dialog);
-	crystfel_indexing_opts_set_show_stream_opts(CRYSTFEL_INDEXING_OPTS(proj->indexing_opts),
-	                                            FALSE);
-	return FALSE;
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog),
+                                    GTK_RESPONSE_OK);
+    gtk_widget_show_all(dialog);
+    crystfel_indexing_opts_set_show_stream_opts(CRYSTFEL_INDEXING_OPTS(proj->indexing_opts),
+                                                FALSE);
+    return FALSE;
 }
 
 
 static int contains_spaces(const char *str)
 {
-	int i;
-	size_t len;
-	len = strlen(str);
-	for ( i=0; i<len; i++ ) {
-		if ( str[i] == ' ' ) return 1;
-	}
-	return 0;
+    int i;
+    size_t len;
+    len = strlen(str);
+    for ( i=0; i<len; i++ ) {
+        if ( str[i] == ' ' ) return 1;
+    }
+    return 0;
 }
 
 
 static void add_arg(char **args, int pos, const char *label)
 {
-	if ( contains_spaces(label) ) {
-		size_t len = strlen(label)+3;
-		args[pos] = malloc(len);
-		args[pos][0] = '"';
-		args[pos][1] = '\0';
-		strcat(args[pos], label);
-		args[pos][len-2] = '"';
-		args[pos][len-1] = '\0';
-	} else {
-		args[pos] = strdup(label);
-	}
+    if ( contains_spaces(label) ) {
+        size_t len = strlen(label)+3;
+        args[pos] = malloc(len);
+        args[pos][0] = '"';
+        args[pos][1] = '\0';
+        strcat(args[pos], label);
+        args[pos][len-2] = '"';
+        args[pos][len-1] = '\0';
+    } else {
+        args[pos] = strdup(label);
+    }
 }
 
 
 static void add_arg_float(char **args, int pos, const char *label,
                           float val)
 {
-	char *str = malloc(64);
-	if ( str == NULL ) return;
-	snprintf(str, 63, "--%s=%f", label, val);
-	args[pos] = str;
+    char *str = malloc(64);
+    if ( str == NULL ) return;
+    snprintf(str, 63, "--%s=%f", label, val);
+    args[pos] = str;
 }
 
 
 static void add_arg_float_exp(char **args, int pos, const char *label,
                               float val)
 {
-	char *str = malloc(64);
-	if ( str == NULL ) return;
-	snprintf(str, 63, "--%s=%e", label, val);
-	args[pos] = str;
+    char *str = malloc(64);
+    if ( str == NULL ) return;
+    snprintf(str, 63, "--%s=%e", label, val);
+    args[pos] = str;
 }
 
 
 static void add_arg_int(char **args, int pos, const char *label,
                         int val)
 {
-	char *str = malloc(64);
-	if ( str == NULL ) return;
-	snprintf(str, 63, "--%s=%i", label, val);
-	args[pos] = str;
+    char *str = malloc(64);
+    if ( str == NULL ) return;
+    snprintf(str, 63, "--%s=%i", label, val);
+    args[pos] = str;
 }
 
 
 static void add_arg_string(char **args, int pos, const char *label,
                            const char *val)
 {
-	size_t len;
-	char *str;
+    size_t len;
+    char *str;
 
-	len = strlen(label)+strlen(val)+4;
-	str = malloc(len);
-	if ( str == NULL ) return;
-	snprintf(str, len, "--%s=%s", label, val);
-	args[pos] = str;
+    len = strlen(label)+strlen(val)+4;
+    str = malloc(len);
+    if ( str == NULL ) return;
+    snprintf(str, len, "--%s=%s", label, val);
+    args[pos] = str;
 }
 
 
 static int pinkindexer_used(const char *methods)
 {
-	IndexingMethod *m;
-	int n, i;
-	int r = 0;
+    IndexingMethod *m;
+    int n, i;
+    int r = 0;
 
-	if ( methods == NULL ) return 0;
+    if ( methods == NULL ) return 0;
 
-	m = parse_indexing_methods(methods, &n);
-	for ( i=0; i<n; i++ ) {
-		if ( m[i] == INDEXING_PINKINDEXER ) {
-			r = 1;
-			break;
-		}
-	}
+    m = parse_indexing_methods(methods, &n);
+    for ( i=0; i<n; i++ ) {
+        if ( m[i] == INDEXING_PINKINDEXER ) {
+            r = 1;
+            break;
+        }
+    }
 
-	free(m);
-	return r;
+    free(m);
+    return r;
 }
 
 
@@ -1005,251 +1005,251 @@ static char **indexamajig_command_line(const char *geom_filename,
                                        double wavelength_estimate,
                                        double clen_estimate)
 {
-	char **args;
-	char tols[2048];
-	int i;
-	int n_args = 0;
+    char **args;
+    char tols[2048];
+    int i;
+    int n_args = 0;
 
-	args = malloc(64*sizeof(char *));
-	if ( args == NULL ) return NULL;
+    args = malloc(64*sizeof(char *));
+    if ( args == NULL ) return NULL;
 
-	/* The basics */
-	add_arg(args, n_args++, "indexamajig");
-	add_arg(args, n_args++, "-i");
-	add_arg(args, n_args++, files_list);
-	if ( geom_filename != NULL ) {
-		add_arg(args, n_args++, "-g");
-		add_arg(args, n_args++, geom_filename);
-	}
-	add_arg(args, n_args++, "-o");
-	add_arg(args, n_args++, stream_filename);
-	add_arg(args, n_args++, "-j");
-	add_arg(args, n_args++, n_thread_str);
+    /* The basics */
+    add_arg(args, n_args++, "indexamajig");
+    add_arg(args, n_args++, "-i");
+    add_arg(args, n_args++, files_list);
+    if ( geom_filename != NULL ) {
+        add_arg(args, n_args++, "-g");
+        add_arg(args, n_args++, geom_filename);
+    }
+    add_arg(args, n_args++, "-o");
+    add_arg(args, n_args++, stream_filename);
+    add_arg(args, n_args++, "-j");
+    add_arg(args, n_args++, n_thread_str);
 
-	/* Peak search */
-	add_arg(args, n_args++, "--peaks");
-	add_arg(args, n_args++, str_peaksearch(peak_search_params->method));
+    /* Peak search */
+    add_arg(args, n_args++, "--peaks");
+    add_arg(args, n_args++, str_peaksearch(peak_search_params->method));
 
-	switch ( peak_search_params->method ) {
+    switch ( peak_search_params->method ) {
 
-		case PEAK_ZAEF:
-		add_arg_float(args, n_args++, "threshold",
-		              peak_search_params->threshold);
-		add_arg_float(args, n_args++, "min-squared-gradient",
-		              peak_search_params->min_sq_gradient);
-		add_arg_float(args, n_args++, "min-snr",
-		              peak_search_params->min_snr);
-		break;
+        case PEAK_ZAEF:
+        add_arg_float(args, n_args++, "threshold",
+                      peak_search_params->threshold);
+        add_arg_float(args, n_args++, "min-squared-gradient",
+                      peak_search_params->min_sq_gradient);
+        add_arg_float(args, n_args++, "min-snr",
+                      peak_search_params->min_snr);
+        break;
 
-		case PEAK_PEAKFINDER8:
-		add_arg_float(args, n_args++, "threshold",
-		              peak_search_params->threshold);
-		add_arg_float(args, n_args++, "min-snr",
-		              peak_search_params->min_snr);
-		add_arg_int(args, n_args++, "min-pix-count",
-		            peak_search_params->min_pix_count);
-		add_arg_int(args, n_args++, "max-pix-count",
-		            peak_search_params->max_pix_count);
-		add_arg_int(args, n_args++, "local-bg-radius",
-		            peak_search_params->local_bg_radius);
-		add_arg_int(args, n_args++, "min-res",
-		            peak_search_params->min_res);
-		add_arg_int(args, n_args++, "max-res",
-		            peak_search_params->max_res);
-		if ( peak_search_params->peakfinder8_fast ) {
-			add_arg(args, n_args++, "--peakfinder8-fast");
-		}
-		break;
+        case PEAK_PEAKFINDER8:
+        add_arg_float(args, n_args++, "threshold",
+                      peak_search_params->threshold);
+        add_arg_float(args, n_args++, "min-snr",
+                      peak_search_params->min_snr);
+        add_arg_int(args, n_args++, "min-pix-count",
+                    peak_search_params->min_pix_count);
+        add_arg_int(args, n_args++, "max-pix-count",
+                    peak_search_params->max_pix_count);
+        add_arg_int(args, n_args++, "local-bg-radius",
+                    peak_search_params->local_bg_radius);
+        add_arg_int(args, n_args++, "min-res",
+                    peak_search_params->min_res);
+        add_arg_int(args, n_args++, "max-res",
+                    peak_search_params->max_res);
+        if ( peak_search_params->peakfinder8_fast ) {
+            add_arg(args, n_args++, "--peakfinder8-fast");
+        }
+        break;
 
-		case PEAK_CXI:
-		case PEAK_HDF5:
-		if ( !peak_search_params->half_pixel_shift ) {
-			add_arg(args, n_args++, "--no-half-pixel-shift");
-		}
-		if ( !peak_search_params->revalidate ) {
-			add_arg(args, n_args++, "--no-revalidate");
-		}
-		/* --check-hdf5-snr is not exposed via GUI, no need to add --min-snr */
-		break;
+        case PEAK_CXI:
+        case PEAK_HDF5:
+        if ( !peak_search_params->half_pixel_shift ) {
+            add_arg(args, n_args++, "--no-half-pixel-shift");
+        }
+        if ( !peak_search_params->revalidate ) {
+            add_arg(args, n_args++, "--no-revalidate");
+        }
+        /* --check-hdf5-snr is not exposed via GUI, no need to add --min-snr */
+        break;
 
-		default:
-		ERROR("Unrecognised peak search method when constructing command line\n");
-		break;
+        default:
+        ERROR("Unrecognised peak search method when constructing command line\n");
+        break;
 
-	}
+    }
 
-	snprintf(tols, 2048, "--peak-radius=%.1f,%.1f,%.1f",
-	         peak_search_params->pk_inn,
-	         peak_search_params->pk_mid,
-	         peak_search_params->pk_out);
-	add_arg(args, n_args++, tols);
+    snprintf(tols, 2048, "--peak-radius=%.1f,%.1f,%.1f",
+             peak_search_params->pk_inn,
+             peak_search_params->pk_mid,
+             peak_search_params->pk_out);
+    add_arg(args, n_args++, tols);
 
-	if ( indexing_params->min_peaks > 0 ) {
-		add_arg_int(args, n_args++, "min-peaks",
-		            indexing_params->min_peaks);
-	}
+    if ( indexing_params->min_peaks > 0 ) {
+        add_arg_int(args, n_args++, "min-peaks",
+                    indexing_params->min_peaks);
+    }
 
-	/* Indexing */
-	if ( indexing_params->indexing_methods != NULL ) {
-		add_arg(args, n_args++, "--indexing");
-		add_arg(args, n_args++, indexing_params->indexing_methods);
+    /* Indexing */
+    if ( indexing_params->indexing_methods != NULL ) {
+        add_arg(args, n_args++, "--indexing");
+        add_arg(args, n_args++, indexing_params->indexing_methods);
 
-		if ( pinkindexer_used(indexing_params->indexing_methods) ) {
-			add_arg_float_exp(args, n_args++, "wavelength-estimate",
-			                  wavelength_estimate);
-			add_arg_float(args, n_args++, "camera-length-estimate",
-			              clen_estimate);
-		}
-	}
-	if ( indexing_params->cell_file != NULL ) {
-		add_arg(args, n_args++, "-p");
-		add_arg(args, n_args++, indexing_params->cell_file);
-	}
-	/* indexing_params->tols is in frac (not %) and radians.
-	 * Indexamajig command line wants percent and degrees */
-	snprintf(tols, 2048, "--tolerance=%f,%f,%f,%f,%f,%f",
-	         indexing_params->tols[0]*100.0,
-	         indexing_params->tols[1]*100.0,
-	         indexing_params->tols[2]*100.0,
-	         rad2deg(indexing_params->tols[3]),
-	         rad2deg(indexing_params->tols[4]),
-	         rad2deg(indexing_params->tols[5]));
-	add_arg(args, n_args++, tols);
-	if ( indexing_params->multi ) add_arg(args, n_args++, "--multi");
-	if ( indexing_params->no_refine ) add_arg(args, n_args++, "--no-refine");
-	if ( indexing_params->no_retry ) add_arg(args, n_args++, "--no-retry");
-	if ( indexing_params->no_peak_check ) add_arg(args, n_args++, "--no-check-peaks");
-	if ( indexing_params->no_cell_check ) add_arg(args, n_args++, "--no-check-cell");
+        if ( pinkindexer_used(indexing_params->indexing_methods) ) {
+            add_arg_float_exp(args, n_args++, "wavelength-estimate",
+                              wavelength_estimate);
+            add_arg_float(args, n_args++, "camera-length-estimate",
+                          clen_estimate);
+        }
+    }
+    if ( indexing_params->cell_file != NULL ) {
+        add_arg(args, n_args++, "-p");
+        add_arg(args, n_args++, indexing_params->cell_file);
+    }
+    /* indexing_params->tols is in frac (not %) and radians.
+     * Indexamajig command line wants percent and degrees */
+    snprintf(tols, 2048, "--tolerance=%f,%f,%f,%f,%f,%f",
+             indexing_params->tols[0]*100.0,
+             indexing_params->tols[1]*100.0,
+             indexing_params->tols[2]*100.0,
+             rad2deg(indexing_params->tols[3]),
+             rad2deg(indexing_params->tols[4]),
+             rad2deg(indexing_params->tols[5]));
+    add_arg(args, n_args++, tols);
+    if ( indexing_params->multi ) add_arg(args, n_args++, "--multi");
+    if ( indexing_params->no_refine ) add_arg(args, n_args++, "--no-refine");
+    if ( indexing_params->no_retry ) add_arg(args, n_args++, "--no-retry");
+    if ( indexing_params->no_peak_check ) add_arg(args, n_args++, "--no-check-peaks");
+    if ( indexing_params->no_cell_check ) add_arg(args, n_args++, "--no-check-cell");
 
-	/* PinkIndexer-specific */
-	if ( pinkindexer_used(indexing_params->indexing_methods) ) {
-		add_arg_int(args, n_args++,
-		            "pinkIndexer-considered-peaks-count",
-		            indexing_params->pinkindexer_cpeaks);
-		if ( indexing_params->pinkindexer_use_max_res ) {
-			add_arg_float(args, n_args++,
-			              "pinkIndexer-max-resolution-for-indexing",
-			              indexing_params->pinkindexer_max_res);
-		}
-		add_arg_int(args, n_args++,
-		            "pinkIndexer-angle-resolution",
-		            indexing_params->pinkindexer_angle_density);
-		add_arg_int(args, n_args++,
-		            "pinkIndexer-refinement-type",
-		            indexing_params->pinkindexer_refinement_type);
-		add_arg_float(args, n_args++,
-		              "pinkIndexer-tolerance",
-		              indexing_params->pinkindexer_tolerance);
-		if ( indexing_params->pinkindexer_use_refl_radius ) {
-			add_arg_float(args, n_args++,
-			              "pinkIndexer-reflection-radius",
-			              indexing_params->pinkindexer_refl_radius);
-		}
-		add_arg_float(args, n_args++,
-		              "pinkIndexer-max-refinement-disbalance",
-		              indexing_params->pinkindexer_max_imbalance);
-	}
+    /* PinkIndexer-specific */
+    if ( pinkindexer_used(indexing_params->indexing_methods) ) {
+        add_arg_int(args, n_args++,
+                    "pinkIndexer-considered-peaks-count",
+                    indexing_params->pinkindexer_cpeaks);
+        if ( indexing_params->pinkindexer_use_max_res ) {
+            add_arg_float(args, n_args++,
+                          "pinkIndexer-max-resolution-for-indexing",
+                          indexing_params->pinkindexer_max_res);
+        }
+        add_arg_int(args, n_args++,
+                    "pinkIndexer-angle-resolution",
+                    indexing_params->pinkindexer_angle_density);
+        add_arg_int(args, n_args++,
+                    "pinkIndexer-refinement-type",
+                    indexing_params->pinkindexer_refinement_type);
+        add_arg_float(args, n_args++,
+                      "pinkIndexer-tolerance",
+                      indexing_params->pinkindexer_tolerance);
+        if ( indexing_params->pinkindexer_use_refl_radius ) {
+            add_arg_float(args, n_args++,
+                          "pinkIndexer-reflection-radius",
+                          indexing_params->pinkindexer_refl_radius);
+        }
+        add_arg_float(args, n_args++,
+                      "pinkIndexer-max-refinement-disbalance",
+                      indexing_params->pinkindexer_max_imbalance);
+    }
 
-	/* Integration */
-	add_arg(args, n_args++, "--integration");
-	add_arg(args, n_args++, indexing_params->integration_method);
-	if ( indexing_params->overpredict ) add_arg(args, n_args++, "--overpredict");
-	if ( !isinf(indexing_params->push_res) ) {
-		add_arg_float(args, n_args++, "push-res",
-		              indexing_params->push_res);
-	}
-	snprintf(tols, 2048, "--int-radius=%.1f,%.1f,%.1f",
-	         indexing_params->ir_inn,
-	         indexing_params->ir_mid,
-	         indexing_params->ir_out);
-	add_arg(args, n_args++, tols);
-	if ( indexing_params->use_fix_profile_radius ) {
-		add_arg_float(args, n_args++, "fix-profile-radius",
-		              indexing_params->fix_profile_radius);
-	}
-	add_arg_float(args, n_args++, "fix-divergence",
-	              indexing_params->fix_divergence);
+    /* Integration */
+    add_arg(args, n_args++, "--integration");
+    add_arg(args, n_args++, indexing_params->integration_method);
+    if ( indexing_params->overpredict ) add_arg(args, n_args++, "--overpredict");
+    if ( !isinf(indexing_params->push_res) ) {
+        add_arg_float(args, n_args++, "push-res",
+                      indexing_params->push_res);
+    }
+    snprintf(tols, 2048, "--int-radius=%.1f,%.1f,%.1f",
+             indexing_params->ir_inn,
+             indexing_params->ir_mid,
+             indexing_params->ir_out);
+    add_arg(args, n_args++, tols);
+    if ( indexing_params->use_fix_profile_radius ) {
+        add_arg_float(args, n_args++, "fix-profile-radius",
+                      indexing_params->fix_profile_radius);
+    }
+    add_arg_float(args, n_args++, "fix-divergence",
+                  indexing_params->fix_divergence);
 
-	/* Stream output */
-	if ( indexing_params->exclude_nonhits ) add_arg(args, n_args++, "--no-non-hits-in-stream");
-	if ( indexing_params->exclude_peaks ) add_arg(args, n_args++, "--no-peaks-in-stream");
-	if ( indexing_params->exclude_refls ) add_arg(args, n_args++, "--no-refls-in-stream");
-	if ( indexing_params->millepede ) {
-		add_arg(args, n_args++, "--mille");
-		add_arg_string(args, n_args++, "mille-dir", mille_filename);
-		add_arg_int(args, n_args++, "max-mille-level", indexing_params->max_mille_level);
-	}
-	for ( i=0; i<indexing_params->n_metadata; i++ ) {
-		add_arg_string(args, n_args++, "copy-header",
-		               indexing_params->metadata_to_copy[i]);
-	}
+    /* Stream output */
+    if ( indexing_params->exclude_nonhits ) add_arg(args, n_args++, "--no-non-hits-in-stream");
+    if ( indexing_params->exclude_peaks ) add_arg(args, n_args++, "--no-peaks-in-stream");
+    if ( indexing_params->exclude_refls ) add_arg(args, n_args++, "--no-refls-in-stream");
+    if ( indexing_params->millepede ) {
+        add_arg(args, n_args++, "--mille");
+        add_arg_string(args, n_args++, "mille-dir", mille_filename);
+        add_arg_int(args, n_args++, "max-mille-level", indexing_params->max_mille_level);
+    }
+    for ( i=0; i<indexing_params->n_metadata; i++ ) {
+        add_arg_string(args, n_args++, "copy-header",
+                       indexing_params->metadata_to_copy[i]);
+    }
 
-	if ( serial_start != NULL ) {
-		add_arg_string(args, n_args++, "serial-start", serial_start);
-	}
+    if ( serial_start != NULL ) {
+        add_arg_string(args, n_args++, "serial-start", serial_start);
+    }
 
-	add_arg_string(args, n_args++, "harvest-file", harvest_filename);
+    add_arg_string(args, n_args++, "harvest-file", harvest_filename);
 
-	args[n_args] = NULL;
-	return args;
+    args[n_args] = NULL;
+    return args;
 }
 
 
 int read_number_processed(const char *filename)
 {
-	FILE *fh = fopen(filename, "r");
-	int n_proc = 0;
-	long len = 0;
-	int found;
+    FILE *fh = fopen(filename, "r");
+    int n_proc = 0;
+    long len = 0;
+    int found;
 
-	/* Normal situation if SLURM job hasn't started yet */
-	if ( fh == NULL ) return 0;
+    /* Normal situation if SLURM job hasn't started yet */
+    if ( fh == NULL ) return 0;
 
-	do {
+    do {
 
-		len += 4096;
+        len += 4096;
 
-		/* Only look at the last part of the file */
-		if ( fseek(fh, -len, SEEK_END) ) {
-			/* Whoops, tried to go too far.
-			 * Start from beginning, and don't loop again */
-			fseek(fh, 0, SEEK_SET);
-			found = 1;
-		} else {
-			found = 0;
-		}
+        /* Only look at the last part of the file */
+        if ( fseek(fh, -len, SEEK_END) ) {
+            /* Whoops, tried to go too far.
+             * Start from beginning, and don't loop again */
+            fseek(fh, 0, SEEK_SET);
+            found = 1;
+        } else {
+            found = 0;
+        }
 
-		do {
-			char line[1024];
-			if ( fgets(line, 1024, fh) == NULL ) break;
+        do {
+            char line[1024];
+            if ( fgets(line, 1024, fh) == NULL ) break;
 
-			if ( strncmp(line, "Final: ", 7) == 0 ) {
-				int i;
-				if ( sscanf(line, "Final: %i images processed", &i) == 1 ) {
-					n_proc = i;
-					found = 1;
-				}
-			} else if ( strstr(line, " images processed, ") != NULL ) {
-				int i;
-				if ( sscanf(line, "%i ", &i) == 1 ) {
-					n_proc = i;
-					found = 1;
-				}
-			}
+            if ( strncmp(line, "Final: ", 7) == 0 ) {
+                int i;
+                if ( sscanf(line, "Final: %i images processed", &i) == 1 ) {
+                    n_proc = i;
+                    found = 1;
+                }
+            } else if ( strstr(line, " images processed, ") != NULL ) {
+                int i;
+                if ( sscanf(line, "%i ", &i) == 1 ) {
+                    n_proc = i;
+                    found = 1;
+                }
+            }
 
-		} while ( 1 );
+        } while ( 1 );
 
-	} while ( !found && (len < 16384) );
+    } while ( !found && (len < 16384) );
 
-	if ( !found ) {
-		ERROR("Couldn't find status message in last 16k of %s - "
-		      "indexamajig output probably contains copious errors.\n",
-		      filename);
-	}
+    if ( !found ) {
+        ERROR("Couldn't find status message in last 16k of %s - "
+              "indexamajig output probably contains copious errors.\n",
+              filename);
+    }
 
-	fclose(fh);
+    fclose(fh);
 
-	return n_proc;
+    return n_proc;
 }
 
 
@@ -1269,40 +1269,40 @@ int write_indexamajig_script(const char *script_filename,
                              double clen_estimate,
                              const char *prologue)
 {
-	FILE *fh;
-	int i;
-	char **cmdline;
+    FILE *fh;
+    int i;
+    char **cmdline;
 
-	cmdline = indexamajig_command_line(geom_filename,
-	                                   n_thread_str,
-	                                   files_list,
-	                                   stream_filename,
-	                                   harvest_filename,
-	                                   mille_filename,
-	                                   serial_start,
-	                                   peak_search_params,
-	                                   indexing_params,
-	                                   wavelength_estimate,
-	                                   clen_estimate);
-	if ( cmdline == NULL ) return 1;
+    cmdline = indexamajig_command_line(geom_filename,
+                                       n_thread_str,
+                                       files_list,
+                                       stream_filename,
+                                       harvest_filename,
+                                       mille_filename,
+                                       serial_start,
+                                       peak_search_params,
+                                       indexing_params,
+                                       wavelength_estimate,
+                                       clen_estimate);
+    if ( cmdline == NULL ) return 1;
 
-	fh = fopen(script_filename, "w");
-	if ( fh == NULL ) return 1;
+    fh = fopen(script_filename, "w");
+    if ( fh == NULL ) return 1;
 
-	fprintf(fh, "#!/bin/sh\n");
-	fprintf(fh, "%s", prologue);
+    fprintf(fh, "#!/bin/sh\n");
+    fprintf(fh, "%s", prologue);
 
-	i = 0;
-	while ( cmdline[i] != NULL ) {
-		fprintf(fh, "%s ", cmdline[i]);
-		free(cmdline[i]);
-		i++;
-	};
-	free(cmdline);
-	if ( stdout_filename != NULL ) {
-		fprintf(fh, ">%s 2>%s\n", stdout_filename, stderr_filename);
-	}
+    i = 0;
+    while ( cmdline[i] != NULL ) {
+        fprintf(fh, "%s ", cmdline[i]);
+        free(cmdline[i]);
+        i++;
+    };
+    free(cmdline);
+    if ( stdout_filename != NULL ) {
+        fprintf(fh, ">%s 2>%s\n", stdout_filename, stderr_filename);
+    }
 
-	fclose(fh);
-	return 0;
+    fclose(fh);
+    return 0;
 }

@@ -47,104 +47,104 @@ G_DEFINE_TYPE(CrystFELFoMGraph, crystfel_fom_graph,
 
 static gint destroy_sig(GtkWidget *window, CrystFELFoMGraph *fg)
 {
-	return FALSE;
+    return FALSE;
 }
 
 
 static gint configure_sig(GtkWidget *window, GdkEventConfigure *rec,
                           CrystFELFoMGraph *fg)
 {
-	fg->visible_width = rec->width;
-	fg->visible_height = rec->height;
-	return FALSE;
+    fg->visible_width = rec->width;
+    fg->visible_height = rec->height;
+    return FALSE;
 }
 
 
 static void fom_colour(enum fom_type t, double *col)
 {
-	switch ( t ) {
-		case FOM_R1I :
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
-		case FOM_R1F:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
-		case FOM_R2:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
-		case FOM_RSPLIT:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
-		case FOM_CC:
-		col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.3; break;
-		case FOM_CCSTAR:
-		col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.5; break;
-		case FOM_CCANO:
-		col[0] = 0.0;  col[1] = 0.0;  col[2] = 1.0; break;
-		case FOM_CRDANO:
-		col[0] = 0.5;  col[1] = 0.0;  col[2] = 0.5; break;
-		case FOM_RANO:
-		col[0] = 0.5;  col[1] = 0.2;  col[2] = 0.0; break;
-		case FOM_RANORSPLIT:
-		col[0] = 0.8;  col[1] = 0.2;  col[2] = 0.0; break;
-		case FOM_D1SIG:
-		col[0] = 0.0;  col[1] = 0.3;  col[2] = 0.0; break;
-		case FOM_D2SIG:
-		col[0] = 1.0;  col[1] = 0.5;  col[2] = 0.0; break;
-		case FOM_REDUNDANCY:
-		col[0] = 0.0;  col[1] = 1.0;  col[2] = 0.0; break;
-		case FOM_SNR:
-		col[0] = 0.5;  col[1] = 0.5;  col[2] = 0.0; break;
-		case FOM_COMPLETENESS:
-		col[0] = 0.3;  col[1] = 0.3;  col[2] = 0.3; break;
-		default:
-		col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
-	}
+    switch ( t ) {
+        case FOM_R1I :
+        col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+        case FOM_R1F:
+        col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+        case FOM_R2:
+        col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+        case FOM_RSPLIT:
+        col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+        case FOM_CC:
+        col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.3; break;
+        case FOM_CCSTAR:
+        col[0] = 0.0;  col[1] = 0.0;  col[2] = 0.5; break;
+        case FOM_CCANO:
+        col[0] = 0.0;  col[1] = 0.0;  col[2] = 1.0; break;
+        case FOM_CRDANO:
+        col[0] = 0.5;  col[1] = 0.0;  col[2] = 0.5; break;
+        case FOM_RANO:
+        col[0] = 0.5;  col[1] = 0.2;  col[2] = 0.0; break;
+        case FOM_RANORSPLIT:
+        col[0] = 0.8;  col[1] = 0.2;  col[2] = 0.0; break;
+        case FOM_D1SIG:
+        col[0] = 0.0;  col[1] = 0.3;  col[2] = 0.0; break;
+        case FOM_D2SIG:
+        col[0] = 1.0;  col[1] = 0.5;  col[2] = 0.0; break;
+        case FOM_REDUNDANCY:
+        col[0] = 0.0;  col[1] = 1.0;  col[2] = 0.0; break;
+        case FOM_SNR:
+        col[0] = 0.5;  col[1] = 0.5;  col[2] = 0.0; break;
+        case FOM_COMPLETENESS:
+        col[0] = 0.3;  col[1] = 0.3;  col[2] = 0.3; break;
+        default:
+        col[0] = 1.0;  col[1] = 0.0;  col[2] = 0.0; break;
+    }
 }
 
 
 static void fom_range(enum fom_type t, double *vals, int n_shells,
                       double *min, double *max)
 {
-	double cmin, cmax;
+    double cmin, cmax;
 
-	switch ( t ) {
-		case FOM_R1I:              cmin = 0.0;   cmax = 0.8;   break;
-		case FOM_R1F:              cmin = 0.0;   cmax = 0.8;   break;
-		case FOM_R2:               cmin = 0.0;   cmax = 0.8;   break;
-		case FOM_RSPLIT:           cmin = 0.0;   cmax = 0.8;   break;
-		case FOM_CC:               cmin = 0.9;   cmax = 1.0;   break;
-		case FOM_CCSTAR:           cmin = 0.9;   cmax = 1.0;   break;
-		case FOM_CCANO:            cmin = 0.9;   cmax = 1.0;   break;
-		case FOM_CRDANO:           cmin = 0.5;   cmax = 1.0;   break;
-		case FOM_RANO:             cmin = 0.0;   cmax = 0.8;   break;
-		case FOM_RANORSPLIT:       cmin = NAN;   cmax = NAN;   break;
-		case FOM_D1SIG:            cmin = 0.0;   cmax = 1.0;   break;
-		case FOM_D2SIG:            cmin = 0.0;   cmax = 1.0;   break;
-		case FOM_REDUNDANCY:       cmin = 0.0;   cmax = NAN;   break;
-		case FOM_SNR:              cmin = 0.0;   cmax = NAN;   break;
-		case FOM_COMPLETENESS:     cmin = 0.0;   cmax = 1.0;   break;
-		default:                   cmin = 0.0;   cmax = 1.0;   break;
-	}
+    switch ( t ) {
+        case FOM_R1I:              cmin = 0.0;   cmax = 0.8;   break;
+        case FOM_R1F:              cmin = 0.0;   cmax = 0.8;   break;
+        case FOM_R2:               cmin = 0.0;   cmax = 0.8;   break;
+        case FOM_RSPLIT:           cmin = 0.0;   cmax = 0.8;   break;
+        case FOM_CC:               cmin = 0.9;   cmax = 1.0;   break;
+        case FOM_CCSTAR:           cmin = 0.9;   cmax = 1.0;   break;
+        case FOM_CCANO:            cmin = 0.9;   cmax = 1.0;   break;
+        case FOM_CRDANO:           cmin = 0.5;   cmax = 1.0;   break;
+        case FOM_RANO:             cmin = 0.0;   cmax = 0.8;   break;
+        case FOM_RANORSPLIT:       cmin = NAN;   cmax = NAN;   break;
+        case FOM_D1SIG:            cmin = 0.0;   cmax = 1.0;   break;
+        case FOM_D2SIG:            cmin = 0.0;   cmax = 1.0;   break;
+        case FOM_REDUNDANCY:       cmin = 0.0;   cmax = NAN;   break;
+        case FOM_SNR:              cmin = 0.0;   cmax = NAN;   break;
+        case FOM_COMPLETENESS:     cmin = 0.0;   cmax = 1.0;   break;
+        default:                   cmin = 0.0;   cmax = 1.0;   break;
+    }
 
-	if ( isnan(cmin) || isnan(cmax) ) {
-		int i;
-		double vmin = INFINITY;
-		double vmax = -INFINITY;
-		for ( i=0; i<n_shells; i++ ) {
-			if ( vals[i] < vmin )  vmin = vals[i];
-			if ( vals[i] > vmax )  vmax = vals[i];
-		}
-		if ( isnan(cmin) ) {
-			*min = vmin;
-		} else {
-			*min = cmin;
-		}
-		if ( isnan(cmax) ) {
-			*max = vmax;
-		} else {
-			*max = cmax;
-		}
-	} else {
-		*min = cmin;
-		*max = cmax;
-	}
+    if ( isnan(cmin) || isnan(cmax) ) {
+        int i;
+        double vmin = INFINITY;
+        double vmax = -INFINITY;
+        for ( i=0; i<n_shells; i++ ) {
+            if ( vals[i] < vmin )  vmin = vals[i];
+            if ( vals[i] > vmax )  vmax = vals[i];
+        }
+        if ( isnan(cmin) ) {
+            *min = vmin;
+        } else {
+            *min = cmin;
+        }
+        if ( isnan(cmax) ) {
+            *max = vmax;
+        } else {
+            *max = cmax;
+        }
+    } else {
+        *min = cmin;
+        *max = cmax;
+    }
 }
 
 
@@ -152,211 +152,211 @@ static void draw_x_axis(cairo_t *cr, double *tics, int n_tics,
                         double x1, double x2, double ox, double w, double h,
                         double axsp)
 {
-	int i;
+    int i;
 
-	cairo_new_path(cr);
-	cairo_move_to(cr, ox, axsp);
-	cairo_line_to(cr, w, axsp);
-	cairo_set_line_width(cr, 1.0);
-	cairo_stroke(cr);
+    cairo_new_path(cr);
+    cairo_move_to(cr, ox, axsp);
+    cairo_line_to(cr, w, axsp);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
 
-	for ( i=0; i<n_tics; i++ ) {
+    for ( i=0; i<n_tics; i++ ) {
 
-		cairo_text_extents_t ext;
-		char label[128];
-		double x;
+        cairo_text_extents_t ext;
+        char label[128];
+        double x;
 
-		if ( (1e10/tics[i] > x1) && (1e10/tics[i] < x2) ) {
+        if ( (1e10/tics[i] > x1) && (1e10/tics[i] < x2) ) {
 
-			x = ox + (w-ox) * (1e10/tics[i]-x1)/(x2-x1);
+            x = ox + (w-ox) * (1e10/tics[i]-x1)/(x2-x1);
 
-			cairo_move_to(cr, x, h);
-			cairo_line_to(cr, x, axsp-5.0);
-			cairo_set_line_width(cr, 1.0);
-			cairo_stroke(cr);
+            cairo_move_to(cr, x, h);
+            cairo_line_to(cr, x, axsp-5.0);
+            cairo_set_line_width(cr, 1.0);
+            cairo_stroke(cr);
 
-			cairo_save(cr);
-			snprintf(label, 127, "%.1f A", tics[i]);
-			cairo_text_extents(cr, label, &ext);
-			cairo_move_to(cr, x-ext.x_advance/2, -3.0);
-			cairo_scale(cr, 1.0, -1.0);
-			cairo_show_text(cr, label);
-			cairo_restore(cr);
+            cairo_save(cr);
+            snprintf(label, 127, "%.1f A", tics[i]);
+            cairo_text_extents(cr, label, &ext);
+            cairo_move_to(cr, x-ext.x_advance/2, -3.0);
+            cairo_scale(cr, 1.0, -1.0);
+            cairo_show_text(cr, label);
+            cairo_restore(cr);
 
-		}
-	}
+        }
+    }
 }
 
 
 static void draw_y_axis(cairo_t *cr, double h, double oy,
                         double y1, double y2, const char *name)
 {
-	int i;
-	cairo_text_extents_t ext;
+    int i;
+    cairo_text_extents_t ext;
 
-	cairo_new_path(cr);
-	cairo_move_to(cr, 0, oy);
-	cairo_line_to(cr, 0, h);
-	cairo_set_line_width(cr, 1.0);
-	cairo_stroke(cr);
+    cairo_new_path(cr);
+    cairo_move_to(cr, 0, oy);
+    cairo_line_to(cr, 0, h);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
 
-	for ( i=0; i<=5; i++ ) {
+    for ( i=0; i<=5; i++ ) {
 
-		char label[128];
-		double y_pos;
-		double y_val;
+        char label[128];
+        double y_pos;
+        double y_val;
 
-		y_val = y1 + i*(y2-y1)/5.0;
-		y_pos = oy + (h-oy) * (y_val-y1)/(y2-y1);
+        y_val = y1 + i*(y2-y1)/5.0;
+        y_pos = oy + (h-oy) * (y_val-y1)/(y2-y1);
 
-		cairo_move_to(cr, 0.0, y_pos);
-		cairo_line_to(cr, -5.0, y_pos);
-		cairo_set_line_width(cr, 1.0);
-		cairo_stroke(cr);
+        cairo_move_to(cr, 0.0, y_pos);
+        cairo_line_to(cr, -5.0, y_pos);
+        cairo_set_line_width(cr, 1.0);
+        cairo_stroke(cr);
 
-		cairo_save(cr);
-		snprintf(label, 127, "%.2f", y_val);
-		cairo_text_extents(cr, label, &ext);
-		cairo_move_to(cr, -ext.width-5.0, y_pos-ext.height/2.0);
-		cairo_scale(cr, 1.0, -1.0);
-		cairo_show_text(cr, label);
-		cairo_restore(cr);
+        cairo_save(cr);
+        snprintf(label, 127, "%.2f", y_val);
+        cairo_text_extents(cr, label, &ext);
+        cairo_move_to(cr, -ext.width-5.0, y_pos-ext.height/2.0);
+        cairo_scale(cr, 1.0, -1.0);
+        cairo_show_text(cr, label);
+        cairo_restore(cr);
 
-	}
+    }
 
-	cairo_save(cr);
-	cairo_text_extents(cr, name, &ext);
-	cairo_move_to(cr, -ext.height-30.0, oy+(h-oy+ext.x_advance)/2.0);
-	cairo_scale(cr, 1.0, -1.0);
-	cairo_rotate(cr, M_PI_2);
-	cairo_show_text(cr, name);
-	cairo_restore(cr);
+    cairo_save(cr);
+    cairo_text_extents(cr, name, &ext);
+    cairo_move_to(cr, -ext.height-30.0, oy+(h-oy+ext.x_advance)/2.0);
+    cairo_scale(cr, 1.0, -1.0);
+    cairo_rotate(cr, M_PI_2);
+    cairo_show_text(cr, name);
+    cairo_restore(cr);
 }
 
 
 static gint draw_sig(GtkWidget *window, cairo_t *cr, CrystFELFoMGraph *fg)
 {
-	int j;
+    int j;
 
-	cairo_save(cr);
+    cairo_save(cr);
 
-	/* Overall background */
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-	cairo_paint(cr);
+    /* Overall background */
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_paint(cr);
 
-	if ( fg->n_foms == 0 ) {
-		cairo_restore(cr);
-		return FALSE;
-	}
+    if ( fg->n_foms == 0 ) {
+        cairo_restore(cr);
+        return FALSE;
+    }
 
-	double border = 10.0;
-	double w = fg->visible_width;
-	double h = fg->visible_height;
-	double axsp = 20.0;   /* Vertical space for x-axis labels */
-	double yaxsp = 50.0;  /* Horizontal space for y-axis labels */
-	double x1 = fg->shell_centers[0];
-	double x2 = fg->shell_centers[fg->n_shells-1];
+    double border = 10.0;
+    double w = fg->visible_width;
+    double h = fg->visible_height;
+    double axsp = 20.0;   /* Vertical space for x-axis labels */
+    double yaxsp = 50.0;  /* Horizontal space for y-axis labels */
+    double x1 = fg->shell_centers[0];
+    double x2 = fg->shell_centers[fg->n_shells-1];
 
-	/* Logical coordinates */
-	cairo_translate(cr, 0.0, h);
-	cairo_scale(cr, 1.0, -1.0);
+    /* Logical coordinates */
+    cairo_translate(cr, 0.0, h);
+    cairo_scale(cr, 1.0, -1.0);
 
-	/* Add empty border */
-	cairo_translate(cr, border, border);
-	w -= border*2.0;
-	h -= border*2.0;
+    /* Add empty border */
+    cairo_translate(cr, border, border);
+    w -= border*2.0;
+    h -= border*2.0;
 
-	/* y-axes (multiple) */
-	double ox = 0.0;
-	cairo_save(cr);
-	cairo_translate(cr, yaxsp, 0.0);
-	for ( j=0; j<fg->n_foms; j++ ) {
-		double col[3];
-		double y1, y2;
-		fom_colour(fg->fom_types[j], col);
-		fom_range(fg->fom_types[j], fg->fom_values[j], fg->n_shells,
-		          &y1, &y2);
-		cairo_set_source_rgb(cr, col[0], col[1], col[2]);
-		draw_y_axis(cr, h, axsp, y1, y2, fom_name(fg->fom_types[j]));
-		ox += yaxsp;
-		cairo_translate(cr, yaxsp, 0.0);
-	}
-	cairo_restore(cr);
+    /* y-axes (multiple) */
+    double ox = 0.0;
+    cairo_save(cr);
+    cairo_translate(cr, yaxsp, 0.0);
+    for ( j=0; j<fg->n_foms; j++ ) {
+        double col[3];
+        double y1, y2;
+        fom_colour(fg->fom_types[j], col);
+        fom_range(fg->fom_types[j], fg->fom_values[j], fg->n_shells,
+                  &y1, &y2);
+        cairo_set_source_rgb(cr, col[0], col[1], col[2]);
+        draw_y_axis(cr, h, axsp, y1, y2, fom_name(fg->fom_types[j]));
+        ox += yaxsp;
+        cairo_translate(cr, yaxsp, 0.0);
+    }
+    cairo_restore(cr);
 
-	/* x-axis */
-	double tics[] = {20.0, 15.0, 10.0, 5.0, 4.0, 3.0, 2.5, 2.0, 1.7, 1.5,
-	                 1.4, 1.3, 1.2, 1.1, 1.0,
-	                 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	draw_x_axis(cr, tics, 24, x1, x2, ox, w, h, axsp);
+    /* x-axis */
+    double tics[] = {20.0, 15.0, 10.0, 5.0, 4.0, 3.0, 2.5, 2.0, 1.7, 1.5,
+                     1.4, 1.3, 1.2, 1.1, 1.0,
+                     0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    draw_x_axis(cr, tics, 24, x1, x2, ox, w, h, axsp);
 
-	cairo_translate(cr, ox, axsp);
-	w -= ox;
-	h -= axsp;
-	cairo_rectangle(cr, 0, 0, w, h);
-	cairo_set_source_rgba(cr, 0.9, 0.9, 0.9, 0.9);
-	cairo_clip_preserve(cr);
-	cairo_fill(cr);
-	for ( j=0; j<fg->n_foms; j++ ) {
-		int i;
-		double col[3];
-		double y1, y2;
-		int split = 1;
-		fom_range(fg->fom_types[j], fg->fom_values[j], fg->n_shells,
-		          &y1, &y2);
-		for ( i=0; i<fg->n_shells; i++ ) {
-			double fv = fg->fom_values[j][i];
-			if ( !isnan(fv) ) {
-				if ( split ) {
-					cairo_move_to(cr, w*(fg->shell_centers[i]-x1)/(x2-x1),
-					              h*(fv-y1)/(y2-y1));
-					split = 0;
-				} else {
-					cairo_line_to(cr, w*(fg->shell_centers[i]-x1)/(x2-x1),
-					              h*(fv-y1)/(y2-y1));
-				}
-			} else {
-				split = 1;
-			}
-		}
-		cairo_set_line_width(cr, 1.0);
-		fom_colour(fg->fom_types[j], col);
-		cairo_set_source_rgb(cr, col[0], col[1], col[2]);
-		cairo_stroke(cr);
-	}
+    cairo_translate(cr, ox, axsp);
+    w -= ox;
+    h -= axsp;
+    cairo_rectangle(cr, 0, 0, w, h);
+    cairo_set_source_rgba(cr, 0.9, 0.9, 0.9, 0.9);
+    cairo_clip_preserve(cr);
+    cairo_fill(cr);
+    for ( j=0; j<fg->n_foms; j++ ) {
+        int i;
+        double col[3];
+        double y1, y2;
+        int split = 1;
+        fom_range(fg->fom_types[j], fg->fom_values[j], fg->n_shells,
+                  &y1, &y2);
+        for ( i=0; i<fg->n_shells; i++ ) {
+            double fv = fg->fom_values[j][i];
+            if ( !isnan(fv) ) {
+                if ( split ) {
+                    cairo_move_to(cr, w*(fg->shell_centers[i]-x1)/(x2-x1),
+                                  h*(fv-y1)/(y2-y1));
+                    split = 0;
+                } else {
+                    cairo_line_to(cr, w*(fg->shell_centers[i]-x1)/(x2-x1),
+                                  h*(fv-y1)/(y2-y1));
+                }
+            } else {
+                split = 1;
+            }
+        }
+        cairo_set_line_width(cr, 1.0);
+        fom_colour(fg->fom_types[j], col);
+        cairo_set_source_rgb(cr, col[0], col[1], col[2]);
+        cairo_stroke(cr);
+    }
 
-	cairo_restore(cr);
+    cairo_restore(cr);
 
-	return FALSE;
+    return FALSE;
 }
 
 
 static GtkSizeRequestMode get_request_mode(GtkWidget *widget)
 {
-	return GTK_SIZE_REQUEST_CONSTANT_SIZE;
+    return GTK_SIZE_REQUEST_CONSTANT_SIZE;
 }
 
 
 static void get_preferred_width(GtkWidget *widget, gint *min, gint *natural)
 {
-	*min = 0;
-	*natural = 480;
+    *min = 0;
+    *natural = 480;
 }
 
 
 static void get_preferred_height(GtkWidget *widget, gint *min, gint *natural)
 {
-	*min = 0;
-	*natural = 320;
+    *min = 0;
+    *natural = 320;
 }
 
 
 static void crystfel_fom_graph_class_init(CrystFELFoMGraphClass *klass)
 {
-	GTK_WIDGET_CLASS(klass)->get_request_mode = get_request_mode;
-	GTK_WIDGET_CLASS(klass)->get_preferred_width = get_preferred_width;
-	GTK_WIDGET_CLASS(klass)->get_preferred_height = get_preferred_height;
-	GTK_WIDGET_CLASS(klass)->get_preferred_height_for_width = NULL;
+    GTK_WIDGET_CLASS(klass)->get_request_mode = get_request_mode;
+    GTK_WIDGET_CLASS(klass)->get_preferred_width = get_preferred_width;
+    GTK_WIDGET_CLASS(klass)->get_preferred_height = get_preferred_height;
+    GTK_WIDGET_CLASS(klass)->get_preferred_height_for_width = NULL;
 }
 
 
@@ -367,28 +367,28 @@ static void crystfel_fom_graph_init(CrystFELFoMGraph *fg)
 
 GtkWidget *crystfel_fom_graph_new()
 {
-	CrystFELFoMGraph *fg;
+    CrystFELFoMGraph *fg;
 
-	fg = g_object_new(CRYSTFEL_TYPE_FOM_GRAPH, NULL);
+    fg = g_object_new(CRYSTFEL_TYPE_FOM_GRAPH, NULL);
 
-	fg->n_shells = 0;
-	fg->shell_centers = NULL;
-	fg->n_foms = 0;
-	fg->fom_types = NULL;
-	fg->fom_values = NULL;
+    fg->n_shells = 0;
+    fg->shell_centers = NULL;
+    fg->n_foms = 0;
+    fg->fom_types = NULL;
+    fg->fom_values = NULL;
 
-	g_signal_connect(G_OBJECT(fg), "destroy",
-	                 G_CALLBACK(destroy_sig), fg);
-	g_signal_connect(G_OBJECT(fg), "configure-event",
-	                 G_CALLBACK(configure_sig), fg);
-	g_signal_connect(G_OBJECT(fg), "draw",
-	                 G_CALLBACK(draw_sig), fg);
+    g_signal_connect(G_OBJECT(fg), "destroy",
+                     G_CALLBACK(destroy_sig), fg);
+    g_signal_connect(G_OBJECT(fg), "configure-event",
+                     G_CALLBACK(configure_sig), fg);
+    g_signal_connect(G_OBJECT(fg), "draw",
+                     G_CALLBACK(draw_sig), fg);
 
-	gtk_widget_set_can_focus(GTK_WIDGET(fg), FALSE);
+    gtk_widget_set_can_focus(GTK_WIDGET(fg), FALSE);
 
-	gtk_widget_show(GTK_WIDGET(fg));
+    gtk_widget_show(GTK_WIDGET(fg));
 
-	return GTK_WIDGET(fg);
+    return GTK_WIDGET(fg);
 }
 
 
@@ -397,19 +397,19 @@ void crystfel_fom_graph_set_data(CrystFELFoMGraph *fg,
                                  enum fom_type *fom_types, double **fom_values,
                                  int n_foms)
 {
-	int i;
-	for ( i=0; i<fg->n_foms; i++ ) {
-		free(fg->fom_values[i]);
-	}
-	free(fg->shell_centers);
-	free(fg->fom_types);
-	free(fg->fom_values);
+    int i;
+    for ( i=0; i<fg->n_foms; i++ ) {
+        free(fg->fom_values[i]);
+    }
+    free(fg->shell_centers);
+    free(fg->fom_types);
+    free(fg->fom_values);
 
-	fg->n_shells = n_shells;
-	fg->shell_centers = shell_centers;
-	fg->n_foms = n_foms;
-	fg->fom_types = fom_types;
-	fg->fom_values= fom_values;
+    fg->n_shells = n_shells;
+    fg->shell_centers = shell_centers;
+    fg->n_foms = n_foms;
+    fg->fom_types = fom_types;
+    fg->fom_values= fom_values;
 
-	gtk_widget_queue_draw(GTK_WIDGET(fg));
+    gtk_widget_queue_draw(GTK_WIDGET(fg));
 }

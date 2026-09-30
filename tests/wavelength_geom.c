@@ -35,33 +35,33 @@
 
 int main(int argc, char *argv[])
 {
-	DataTemplate *dtempl;
-	struct image *image;
-	const char *geom_filename;
-	const char *image_filename;
-	double expected_wavelength_m;
+    DataTemplate *dtempl;
+    struct image *image;
+    const char *geom_filename;
+    const char *image_filename;
+    double expected_wavelength_m;
 
-	image_filename = argv[1];
-	geom_filename = argv[2];
-	expected_wavelength_m = atof(argv[3]);
+    image_filename = argv[1];
+    geom_filename = argv[2];
+    expected_wavelength_m = atof(argv[3]);
 
-	dtempl = data_template_new_from_file(geom_filename);
-	if ( dtempl == NULL ) {
-		ERROR("Failed to load data template\n");
-		return 1;
-	}
+    dtempl = data_template_new_from_file(geom_filename);
+    if ( dtempl == NULL ) {
+        ERROR("Failed to load data template\n");
+        return 1;
+    }
 
-	image = image_read(dtempl, image_filename, NULL, 0, 0, NULL);
-	if ( image == NULL ) return 1;
+    image = image_read(dtempl, image_filename, NULL, 0, 0, NULL);
+    if ( image == NULL ) return 1;
 
-	printf("wavelength = %e\n", image->lambda);
-	printf("should be %e\n", expected_wavelength_m);
+    printf("wavelength = %e\n", image->lambda);
+    printf("should be %e\n", expected_wavelength_m);
 
-	if ( !within_tolerance(image->lambda,
-	                       expected_wavelength_m,
-	                       0.1) ) return 1;
+    if ( !within_tolerance(image->lambda,
+                           expected_wavelength_m,
+                           0.1) ) return 1;
 
-	data_template_free(dtempl);
+    data_template_free(dtempl);
 
-	return 0;
+    return 0;
 }

@@ -42,22 +42,22 @@
 
 enum spectrumrep
 {
-	SPEC_HISTOGRAM,
-	SPEC_GAUSSIANS
+    SPEC_HISTOGRAM,
+    SPEC_GAUSSIANS
 };
 
 struct _spectrum
 {
-	enum spectrumrep rep;
+    enum spectrumrep rep;
 
-	/* Gaussian representation */
-	struct gaussian *gaussians;
-	int n_gaussians;
+    /* Gaussian representation */
+    struct gaussian *gaussians;
+    int n_gaussians;
 
-	/* Histogram representation */
-	double *k;
-	double *pdf;
-	int n_samples;
+    /* Histogram representation */
+    double *k;
+    double *pdf;
+    int n_samples;
 };
 
 
@@ -69,21 +69,21 @@ struct _spectrum
  */
 Spectrum *spectrum_new()
 {
-	Spectrum *s;
+    Spectrum *s;
 
-	s = cfmalloc(sizeof(Spectrum));
-	if ( s == NULL ) return NULL;
+    s = cfmalloc(sizeof(Spectrum));
+    if ( s == NULL ) return NULL;
 
-	s->rep = SPEC_GAUSSIANS;
+    s->rep = SPEC_GAUSSIANS;
 
-	s->gaussians = NULL;
-	s->n_gaussians = 0;
+    s->gaussians = NULL;
+    s->n_gaussians = 0;
 
-	s->k = NULL;
-	s->pdf = NULL;
-	s->n_samples = 0;
+    s->k = NULL;
+    s->pdf = NULL;
+    s->n_samples = 0;
 
-	return s;
+    return s;
 }
 
 
@@ -94,11 +94,11 @@ Spectrum *spectrum_new()
  */
 void spectrum_free(Spectrum *s)
 {
-	if ( s == NULL ) return;
-	cffree(s->gaussians);
-	cffree(s->k);
-	cffree(s->pdf);
-	cffree(s);
+    if ( s == NULL ) return;
+    cffree(s->gaussians);
+    cffree(s->k);
+    cffree(s->pdf);
+    cffree(s);
 }
 
 
@@ -110,8 +110,8 @@ void spectrum_free(Spectrum *s)
  */
 int spectrum_get_num_gaussians(Spectrum *s)
 {
-	if ( s->rep == SPEC_GAUSSIANS ) return s->n_gaussians;
-	return 0;
+    if ( s->rep == SPEC_GAUSSIANS ) return s->n_gaussians;
+    return 0;
 }
 
 
@@ -130,15 +130,15 @@ int spectrum_get_num_gaussians(Spectrum *s)
  */
 struct gaussian spectrum_get_gaussian(Spectrum *s, int n)
 {
-	struct gaussian g;
-	if ( (s->rep != SPEC_GAUSSIANS) || (n >= s->n_gaussians) ) {
-		g.kcen = 0.0;
-		g.sigma = 0.0;
-		g.area = 0.0;
-	} else {
-		g = s->gaussians[n];
-	}
-	return g;
+    struct gaussian g;
+    if ( (s->rep != SPEC_GAUSSIANS) || (n >= s->n_gaussians) ) {
+        g.kcen = 0.0;
+        g.sigma = 0.0;
+        g.area = 0.0;
+    } else {
+        g = s->gaussians[n];
+    }
+    return g;
 }
 
 
@@ -155,78 +155,78 @@ struct gaussian spectrum_get_gaussian(Spectrum *s, int n)
  */
 double spectrum_get_density_at_k(Spectrum *s, double k)
 {
-	if ( s->rep == SPEC_HISTOGRAM ) {
-		int i = 0;
-		double frac;
-		if ( k <= s->k[0] ) return 0.0;
-		if ( k >= s->k[s->n_samples-1] ) return 0.0;
-		/* k is definitely after the first sample, and definitely
-		 * before the last one */
-		while ( (i<s->n_samples) && (s->k[i] < k) ) i++;
-		assert(i < s->n_samples);
-		frac = (k - s->k[i-1]) / (s->k[i] - s->k[i-1]);
-		return s->pdf[i-1] + frac * (s->pdf[i] - s->pdf[i-1]);
-	}
+    if ( s->rep == SPEC_HISTOGRAM ) {
+        int i = 0;
+        double frac;
+        if ( k <= s->k[0] ) return 0.0;
+        if ( k >= s->k[s->n_samples-1] ) return 0.0;
+        /* k is definitely after the first sample, and definitely
+         * before the last one */
+        while ( (i<s->n_samples) && (s->k[i] < k) ) i++;
+        assert(i < s->n_samples);
+        frac = (k - s->k[i-1]) / (s->k[i] - s->k[i-1]);
+        return s->pdf[i-1] + frac * (s->pdf[i] - s->pdf[i-1]);
+    }
 
-	if ( s->rep == SPEC_GAUSSIANS ) {
-		double total = 0.0;
-		int i;
-		for ( i=0; i<s->n_gaussians; i++ ) {
-			double a = s->gaussians[i].area;
-			double b = s->gaussians[i].kcen;
-			double c = s->gaussians[i].sigma;
-			total += a*exp(-(k-b)*(k-b)/(2.0*c*c)) / (c*sqrt(2.0*M_PI));
-		}
-		return total;
-	}
+    if ( s->rep == SPEC_GAUSSIANS ) {
+        double total = 0.0;
+        int i;
+        for ( i=0; i<s->n_gaussians; i++ ) {
+            double a = s->gaussians[i].area;
+            double b = s->gaussians[i].kcen;
+            double c = s->gaussians[i].sigma;
+            total += a*exp(-(k-b)*(k-b)/(2.0*c*c)) / (c*sqrt(2.0*M_PI));
+        }
+        return total;
+    }
 
-	return 0.0;
+    return 0.0;
 }
 
 
 static double smallest_in_list(double *vals, int n_vals)
 {
-	int i;
-	double v = +INFINITY;
-	for ( i=0; i<n_vals; i++ ) {
-		if ( vals[i] < v ) v = vals[i];
-	}
-	return v;
+    int i;
+    double v = +INFINITY;
+    for ( i=0; i<n_vals; i++ ) {
+        if ( vals[i] < v ) v = vals[i];
+    }
+    return v;
 }
 
 
 static double largest_in_list(double *vals, int n_vals)
 {
-	int i;
-	double v = -INFINITY;
-	for ( i=0; i<n_vals; i++ ) {
-		if ( vals[i] > v ) v = vals[i];
-	}
-	return v;
+    int i;
+    double v = -INFINITY;
+    for ( i=0; i<n_vals; i++ ) {
+        if ( vals[i] > v ) v = vals[i];
+    }
+    return v;
 }
 
 
 static double gauss_low(struct gaussian *gauss, int n_gauss)
 {
-	int i;
-	double v = +INFINITY;
-	for ( i=0; i<n_gauss; i++ ) {
-		double gv = gauss[i].kcen - 5.0*gauss[i].sigma;
-		if ( gv < v ) v = gv;
-	}
-	return v;
+    int i;
+    double v = +INFINITY;
+    for ( i=0; i<n_gauss; i++ ) {
+        double gv = gauss[i].kcen - 5.0*gauss[i].sigma;
+        if ( gv < v ) v = gv;
+    }
+    return v;
 }
 
 
 static double gauss_high(struct gaussian *gauss, int n_gauss)
 {
-	int i;
-	double v = -INFINITY;
-	for ( i=0; i<n_gauss; i++ ) {
-		double gv = gauss[i].kcen + 5.0*gauss[i].sigma;
-		if ( gv > v ) v = gv;
-	}
-	return v;
+    int i;
+    double v = -INFINITY;
+    for ( i=0; i<n_gauss; i++ ) {
+        double gv = gauss[i].kcen + 5.0*gauss[i].sigma;
+        if ( gv > v ) v = gv;
+    }
+    return v;
 }
 
 
@@ -243,35 +243,35 @@ static double gauss_high(struct gaussian *gauss, int n_gauss)
  */
 void spectrum_get_range(Spectrum *s, double *kmin, double *kmax)
 {
-	if ( s->rep == SPEC_HISTOGRAM ) {
-		*kmin = smallest_in_list(s->k, s->n_samples);
-		*kmax = largest_in_list(s->k, s->n_samples);
-	} else {
-		assert(s->rep == SPEC_GAUSSIANS);
-		*kmin = gauss_low(s->gaussians, s->n_gaussians);
-		*kmax = gauss_high(s->gaussians, s->n_gaussians);
-	}
+    if ( s->rep == SPEC_HISTOGRAM ) {
+        *kmin = smallest_in_list(s->k, s->n_samples);
+        *kmax = largest_in_list(s->k, s->n_samples);
+    } else {
+        assert(s->rep == SPEC_GAUSSIANS);
+        *kmin = gauss_low(s->gaussians, s->n_gaussians);
+        *kmax = gauss_high(s->gaussians, s->n_gaussians);
+    }
 }
 
 
 static signed int cmp_gauss(const void *va, const void *vb)
 {
-	const struct gaussian *a = va;
-	const struct gaussian *b = vb;
-	return (a->area > b->area) - (a->area < b->area);
+    const struct gaussian *a = va;
+    const struct gaussian *b = vb;
+    return (a->area > b->area) - (a->area < b->area);
 }
 
 
 static void normalise_gaussians(struct gaussian *gauss, int n_gauss)
 {
-	int i;
-	double total_area = 0.0;
-	for ( i=0; i<n_gauss; i++ ) {
-		total_area += gauss[i].area;
-	}
-	for ( i=0; i<n_gauss; i++ ) {
-		gauss[i].area /= total_area;
-	}
+    int i;
+    double total_area = 0.0;
+    for ( i=0; i<n_gauss; i++ ) {
+        total_area += gauss[i].area;
+    }
+    for ( i=0; i<n_gauss; i++ ) {
+        gauss[i].area /= total_area;
+    }
 }
 
 
@@ -290,39 +290,39 @@ static void normalise_gaussians(struct gaussian *gauss, int n_gauss)
  */
 void spectrum_set_gaussians(Spectrum *s, struct gaussian *gs, int n_gauss)
 {
-	/* Free old contents (if any - may be NULL) */
-	cffree(s->gaussians);
-	cffree(s->k);
-	cffree(s->pdf);
+    /* Free old contents (if any - may be NULL) */
+    cffree(s->gaussians);
+    cffree(s->k);
+    cffree(s->pdf);
 
-	s->gaussians = cfmalloc(n_gauss * sizeof(struct gaussian));
-	if ( s->gaussians == NULL ) return;
+    s->gaussians = cfmalloc(n_gauss * sizeof(struct gaussian));
+    if ( s->gaussians == NULL ) return;
 
-	memcpy(s->gaussians, gs, n_gauss*sizeof(struct gaussian));
-	s->n_gaussians = n_gauss;
-	s->rep = SPEC_GAUSSIANS;
+    memcpy(s->gaussians, gs, n_gauss*sizeof(struct gaussian));
+    s->n_gaussians = n_gauss;
+    s->rep = SPEC_GAUSSIANS;
 
-	qsort(s->gaussians, s->n_gaussians, sizeof(struct gaussian), cmp_gauss);
-	normalise_gaussians(s->gaussians, s->n_gaussians);
+    qsort(s->gaussians, s->n_gaussians, sizeof(struct gaussian), cmp_gauss);
+    normalise_gaussians(s->gaussians, s->n_gaussians);
 }
 
 
 /* Samples must already have been sorted */
 static void normalise_pdf(double *k, double *pdf, int n)
 {
-	int i;
-	double total_area = 0.0;
-	double old_k = k[0];
-	double old_pdf = pdf[0];
-	for ( i=1; i<n; i++ ) {
-		total_area += (pdf[i]+old_pdf)*(k[i]-old_k)/2.0;
-		old_k = k[i];
-		old_pdf = pdf[i];
-	}
+    int i;
+    double total_area = 0.0;
+    double old_k = k[0];
+    double old_pdf = pdf[0];
+    for ( i=1; i<n; i++ ) {
+        total_area += (pdf[i]+old_pdf)*(k[i]-old_k)/2.0;
+        old_k = k[i];
+        old_pdf = pdf[i];
+    }
 
-	for ( i=0; i<n; i++ ) {
-		pdf[i] /= total_area;
-	}
+    for ( i=0; i<n; i++ ) {
+        pdf[i] /= total_area;
+    }
 }
 
 
@@ -343,72 +343,72 @@ static void normalise_pdf(double *k, double *pdf, int n)
  */
 void spectrum_set_pdf(Spectrum *s, double *kvals, double *heights, int n)
 {
-	size_t *perm;
-	int i;
+    size_t *perm;
+    int i;
 
-	/* Free old contents (if any - may be NULL) */
-	cffree(s->gaussians);
-	cffree(s->k);
-	cffree(s->pdf);
+    /* Free old contents (if any - may be NULL) */
+    cffree(s->gaussians);
+    cffree(s->k);
+    cffree(s->pdf);
 
-	s->k = cfmalloc(n * sizeof(double));
-	if ( s->k == NULL ) return;
+    s->k = cfmalloc(n * sizeof(double));
+    if ( s->k == NULL ) return;
 
-	s->pdf = cfmalloc(n * sizeof(double));
-	if ( s->pdf == NULL ) return;
+    s->pdf = cfmalloc(n * sizeof(double));
+    if ( s->pdf == NULL ) return;
 
-	perm = cfmalloc(n * sizeof(size_t));
-	if ( perm == NULL ) return;
+    perm = cfmalloc(n * sizeof(size_t));
+    if ( perm == NULL ) return;
 
-	gsl_sort_index(perm, kvals, 1, n);
+    gsl_sort_index(perm, kvals, 1, n);
 
-	for ( i=0; i<n; i++ ) {
-		s->k[i] = kvals[perm[i]];
-		s->pdf[i] = heights[perm[i]];
-	}
-	cffree(perm);
+    for ( i=0; i<n; i++ ) {
+        s->k[i] = kvals[perm[i]];
+        s->pdf[i] = heights[perm[i]];
+    }
+    cffree(perm);
 
-	s->n_samples = n;
-	s->rep = SPEC_HISTOGRAM;
+    s->n_samples = n;
+    s->rep = SPEC_HISTOGRAM;
 
-	normalise_pdf(s->k, s->pdf, s->n_samples);
+    normalise_pdf(s->k, s->pdf, s->n_samples);
 }
 
 
 static int read_esrf_spectrum(FILE *fh, Spectrum *s)
 {
-	double *k = NULL;
-	double *samp = NULL;
-	int n_bins = 0;
-	int max_bins = 0;
+    double *k = NULL;
+    double *samp = NULL;
+    int n_bins = 0;
+    int max_bins = 0;
 
-	while ( !feof(fh) ) {
+    while ( !feof(fh) ) {
 
-		float energy, weight;
-		if ( fscanf(fh, "%e %e\n", &energy, &weight) != 2 ) return 1;
+        float energy, weight;
+        if ( fscanf(fh, "%e %e\n", &energy, &weight) != 2 ) return 1;
 
-		if ( n_bins == max_bins ) {
-			max_bins += 64;
-			k = srealloc(k, max_bins*sizeof(double));
-			samp = srealloc(samp, max_bins*sizeof(double));
-			if ( (k==NULL) || (samp==NULL) ) {
-				cffree(k);
-				cffree(samp);
-				return 1;
-			}
-		}
+        if ( n_bins == max_bins ) {
+            max_bins += 64;
+            k = srealloc(k, max_bins*sizeof(double));
+            samp = srealloc(samp, max_bins*sizeof(double));
+            if ( (k==NULL) || (samp==NULL) ) {
+                cffree(k);
+                cffree(samp);
+                return 1;
+            }
+        }
 
-		k[n_bins] = ph_eV_to_k(energy*1000.0);
-		samp[n_bins] = weight;
-		n_bins++;
+        k[n_bins] = ph_eV_to_k(energy*1000.0);
+        samp[n_bins] = weight;
+        n_bins++;
 
-	}
+    }
 
-	spectrum_set_pdf(s, k, samp, n_bins);
-	cffree(k);
-	cffree(samp);
+    spectrum_set_pdf(s, k, samp, n_bins);
+    cffree(k);
+    cffree(samp);
 
-	return 0;
+    return 0;
 }
 
 
@@ -422,44 +422,44 @@ static int read_esrf_spectrum(FILE *fh, Spectrum *s)
  */
 Spectrum *spectrum_load(const char *filename)
 {
-	FILE *fh;
-	Spectrum *s;
-	char line[1024];
+    FILE *fh;
+    Spectrum *s;
+    char line[1024];
 
-	fh = fopen(filename, "r");
-	if ( fh == NULL ) return NULL;
+    fh = fopen(filename, "r");
+    if ( fh == NULL ) return NULL;
 
-	s = spectrum_new();
-	if ( s == NULL ) {
-		fclose(fh);
-		return NULL;
-	}
+    s = spectrum_new();
+    if ( s == NULL ) {
+        fclose(fh);
+        return NULL;
+    }
 
-	if ( fgets(line, 1024, fh) != line ) {
-		ERROR("Failed to read '%s'\n", filename);
-		spectrum_free(s);
-		fclose(fh);
-		return NULL;
-	}
+    if ( fgets(line, 1024, fh) != line ) {
+        ERROR("Failed to read '%s'\n", filename);
+        spectrum_free(s);
+        fclose(fh);
+        return NULL;
+    }
 
-	chomp(line);
-	if ( strcmp(line, "# energy/keV current/A") == 0 ) {
-		if ( read_esrf_spectrum(fh, s) ) {
-			ERROR("Failed to read ESRF spectrum from %s\n",
-			      filename);
-			spectrum_free(s);
-			fclose(fh);
-			return NULL;
-		}
-	} else {
-		ERROR("Spectrum format not recognised: %s\n", filename);
-		fclose(fh);
-		spectrum_free(s);
-		return NULL;
-	}
+    chomp(line);
+    if ( strcmp(line, "# energy/keV current/A") == 0 ) {
+        if ( read_esrf_spectrum(fh, s) ) {
+            ERROR("Failed to read ESRF spectrum from %s\n",
+                  filename);
+            spectrum_free(s);
+            fclose(fh);
+            return NULL;
+        }
+    } else {
+        ERROR("Spectrum format not recognised: %s\n", filename);
+        fclose(fh);
+        spectrum_free(s);
+        return NULL;
+    }
 
-	fclose(fh);
-	return s;
+    fclose(fh);
+    return s;
 }
 
 
@@ -474,21 +474,21 @@ Spectrum *spectrum_load(const char *filename)
  */
 Spectrum *spectrum_generate_tophat(double wavelength, double bandwidth)
 {
-	Spectrum *s;
-	double kvals[2];
-	double samp[2];
-	double kcen;
+    Spectrum *s;
+    double kvals[2];
+    double samp[2];
+    double kcen;
 
-	s = spectrum_new();
-	if ( s == NULL ) return NULL;
+    s = spectrum_new();
+    if ( s == NULL ) return NULL;
 
-	kcen = 1.0/wavelength;
-	kvals[0] = kcen - kcen*bandwidth/2.0;
-	kvals[1] = kcen + kcen*bandwidth/2.0;
-	samp[0] = 1.0;
-	samp[1] = 1.0;
-	spectrum_set_pdf(s, kvals, samp, 2);
-	return s;
+    kcen = 1.0/wavelength;
+    kvals[0] = kcen - kcen*bandwidth/2.0;
+    kvals[1] = kcen + kcen*bandwidth/2.0;
+    samp[0] = 1.0;
+    samp[1] = 1.0;
+    spectrum_set_pdf(s, kvals, samp, 2);
+    return s;
 }
 
 
@@ -504,18 +504,18 @@ Spectrum *spectrum_generate_tophat(double wavelength, double bandwidth)
  */
 Spectrum *spectrum_generate_gaussian(double wavelength, double bandwidth)
 {
-	Spectrum *s;
-	struct gaussian g;
+    Spectrum *s;
+    struct gaussian g;
 
-	s = spectrum_new();
-	if ( s == NULL ) return NULL;
+    s = spectrum_new();
+    if ( s == NULL ) return NULL;
 
-	g.kcen = 1.0/wavelength;
-	g.sigma = bandwidth/wavelength;
-	g.area = 1;
-	spectrum_set_gaussians(s, &g, 1);
+    g.kcen = 1.0/wavelength;
+    g.sigma = bandwidth/wavelength;
+    g.area = 1;
+    spectrum_set_gaussians(s, &g, 1);
 
-	return s;
+    return s;
 }
 
 
@@ -539,22 +539,22 @@ Spectrum *spectrum_generate_gaussian(double wavelength, double bandwidth)
 Spectrum *spectrum_generate_sase(double wavelength, double bandwidth,
                                  double spike_width, gsl_rng *rng)
 {
-	int i;
-	Spectrum *s;
-	struct gaussian g[15];
+    int i;
+    Spectrum *s;
+    struct gaussian g[15];
 
-	s = spectrum_new();
-	if ( s == NULL ) return NULL;
+    s = spectrum_new();
+    if ( s == NULL ) return NULL;
 
-	for ( i=0; i<15; i++ ) {
-		g[i].kcen = 1.0/wavelength + (gsl_rng_uniform_pos(rng)-0.5) * bandwidth/wavelength;
-		g[i].sigma = spike_width/wavelength;
-		g[i].area = gsl_rng_uniform(rng);
-	}
+    for ( i=0; i<15; i++ ) {
+        g[i].kcen = 1.0/wavelength + (gsl_rng_uniform_pos(rng)-0.5) * bandwidth/wavelength;
+        g[i].sigma = spike_width/wavelength;
+        g[i].area = gsl_rng_uniform(rng);
+    }
 
-	spectrum_set_gaussians(s, g, 15);
+    spectrum_set_gaussians(s, g, 15);
 
-	return s;
+    return s;
 }
 
 
@@ -572,21 +572,21 @@ Spectrum *spectrum_generate_sase(double wavelength, double bandwidth,
 Spectrum *spectrum_generate_twocolour(double wavelength, double bandwidth,
                                       double separation)
 {
-	Spectrum *s;
-	struct gaussian g[2];
+    Spectrum *s;
+    struct gaussian g[2];
 
-	s = spectrum_new();
-	if ( s == NULL ) return NULL;
+    s = spectrum_new();
+    if ( s == NULL ) return NULL;
 
-	g[0].kcen = 1.0/wavelength - separation/2.0;
-	g[0].sigma = bandwidth/wavelength;
-	g[0].area = 1;
+    g[0].kcen = 1.0/wavelength - separation/2.0;
+    g[0].sigma = bandwidth/wavelength;
+    g[0].area = 1;
 
-	g[1].kcen = 1.0/wavelength + separation/2.0;
-	g[1].sigma = bandwidth/wavelength;
-	g[1].area = 1;
+    g[1].kcen = 1.0/wavelength + separation/2.0;
+    g[1].sigma = bandwidth/wavelength;
+    g[1].area = 1;
 
-	spectrum_set_gaussians(s, g, 2);
+    spectrum_set_gaussians(s, g, 2);
 
-	return s;
+    return s;
 }

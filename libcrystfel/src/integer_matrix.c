@@ -43,10 +43,10 @@
 
 struct _integermatrix
 {
-	unsigned int rows;
-	unsigned int cols;
+    unsigned int rows;
+    unsigned int cols;
 
-	signed int *v;
+    signed int *v;
 };
 
 
@@ -60,21 +60,21 @@ struct _integermatrix
  **/
 IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
 {
-	IntegerMatrix *m;
+    IntegerMatrix *m;
 
-	m = cfmalloc(sizeof(IntegerMatrix));
-	if ( m == NULL ) return NULL;
+    m = cfmalloc(sizeof(IntegerMatrix));
+    if ( m == NULL ) return NULL;
 
-	m->v = cfcalloc(rows*cols, sizeof(signed int));
-	if ( m->v == NULL ) {
-		cffree(m);
-		return NULL;
-	}
+    m->v = cfcalloc(rows*cols, sizeof(signed int));
+    if ( m->v == NULL ) {
+        cffree(m);
+        return NULL;
+    }
 
-	m->rows = rows;
-	m->cols = cols;
+    m->rows = rows;
+    m->cols = cols;
 
-	return m;
+    return m;
 }
 
 
@@ -85,19 +85,19 @@ IntegerMatrix *intmat_new(unsigned int rows, unsigned int cols)
  **/
 IntegerMatrix *intmat_copy(const IntegerMatrix *m)
 {
-	IntegerMatrix *p;
-	int i, j;
+    IntegerMatrix *p;
+    int i, j;
 
-	p = intmat_new(m->rows, m->cols);
-	if ( p == NULL ) return NULL;
+    p = intmat_new(m->rows, m->cols);
+    if ( p == NULL ) return NULL;
 
-	for ( i=0; i<m->rows; i++ ) {
-	for ( j=0; j<m->rows; j++ ) {
-		intmat_set(p, i, j, intmat_get(m, i, j));
-	}
-	}
+    for ( i=0; i<m->rows; i++ ) {
+    for ( j=0; j<m->rows; j++ ) {
+        intmat_set(p, i, j, intmat_get(m, i, j));
+    }
+    }
 
-	return p;
+    return p;
 }
 
 
@@ -108,9 +108,9 @@ IntegerMatrix *intmat_copy(const IntegerMatrix *m)
  **/
 void intmat_free(IntegerMatrix *m)
 {
-	if ( m == NULL ) return;
-	cffree(m->v);
-	cffree(m);
+    if ( m == NULL ) return;
+    cffree(m->v);
+    cffree(m);
 }
 
 
@@ -123,14 +123,14 @@ void intmat_free(IntegerMatrix *m)
  */
 void intmat_size(const IntegerMatrix *m, unsigned int *rows, unsigned int *cols)
 {
-	if ( m == NULL ) {
-		*rows = 0;
-		*cols = 0;
-		return;
-	}
+    if ( m == NULL ) {
+        *rows = 0;
+        *cols = 0;
+        return;
+    }
 
-	*rows = m->rows;
-	*cols = m->cols;
+    *rows = m->rows;
+    *cols = m->cols;
 }
 
 
@@ -144,9 +144,9 @@ void intmat_size(const IntegerMatrix *m, unsigned int *rows, unsigned int *cols)
  **/
 void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j, signed int v)
 {
-	assert(i < m->rows);
-	assert(j < m->cols);
-	m->v[j + m->cols*i] = v;
+    assert(i < m->rows);
+    assert(j < m->cols);
+    m->v[j + m->cols*i] = v;
 }
 
 
@@ -161,9 +161,9 @@ void intmat_set(IntegerMatrix *m, unsigned int i, unsigned int j, signed int v)
  **/
 signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
 {
-	assert(i < m->rows);
-	assert(j < m->cols);
-	return m->v[j + m->cols*i];
+    assert(i < m->rows);
+    assert(j < m->cols);
+    return m->v[j + m->cols*i];
 }
 
 
@@ -187,23 +187,23 @@ signed int intmat_get(const IntegerMatrix *m, unsigned int i, unsigned int j)
  **/
 signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
 {
-	signed int *ans;
-	unsigned int j;
+    signed int *ans;
+    unsigned int j;
 
-	ans = cfmalloc(P->rows * sizeof(signed int));
-	if ( ans == NULL ) return NULL;
+    ans = cfmalloc(P->rows * sizeof(signed int));
+    if ( ans == NULL ) return NULL;
 
-	for ( j=0; j<P->cols; j++ ) {
+    for ( j=0; j<P->cols; j++ ) {
 
-		unsigned int i;
-		ans[j] = 0;
-		for ( i=0; i<P->rows; i++ ) {
-			ans[j] += intmat_get(P, i, j) * hkl[i];
-		}
+        unsigned int i;
+        ans[j] = 0;
+        for ( i=0; i<P->rows; i++ ) {
+            ans[j] += intmat_get(P, i, j) * hkl[i];
+        }
 
-	}
+    }
 
-	return ans;
+    return ans;
 }
 
 
@@ -219,35 +219,35 @@ signed int *transform_indices(const IntegerMatrix *P, const signed int *hkl)
 IntegerMatrix *intmat_times_intmat(const IntegerMatrix *a,
                                    const IntegerMatrix *b)
 {
-	unsigned int i, j;
-	IntegerMatrix *ans;
+    unsigned int i, j;
+    IntegerMatrix *ans;
 
-	if ( a->cols != b->rows ) return NULL;
+    if ( a->cols != b->rows ) return NULL;
 
-	ans = intmat_new(a->rows, a->cols);
-	if ( ans == NULL ) return NULL;
+    ans = intmat_new(a->rows, a->cols);
+    if ( ans == NULL ) return NULL;
 
-	for ( i=0; i<ans->rows; i++ ) {
-	for ( j=0; j<ans->cols; j++ ) {
+    for ( i=0; i<ans->rows; i++ ) {
+    for ( j=0; j<ans->cols; j++ ) {
 
-		unsigned int k;
-		signed int r = 0;
+        unsigned int k;
+        signed int r = 0;
 
-		for ( k=0; k<a->cols; k++ ) {  /* a->cols == b->rows */
-			r += intmat_get(a, i, k) * intmat_get(b, k, j);
-		}
-		intmat_set(ans, i, j, r);
+        for ( k=0; k<a->cols; k++ ) {  /* a->cols == b->rows */
+            r += intmat_get(a, i, k) * intmat_get(b, k, j);
+        }
+        intmat_set(ans, i, j, r);
 
-	}
-	}
+    }
+    }
 
-	return ans;
+    return ans;
 }
 
 
 void intmat_zero(IntegerMatrix *m)
 {
-	memset(m->v, 0, m->rows*m->cols*sizeof(signed int));
+    memset(m->v, 0, m->rows*m->cols*sizeof(signed int));
 }
 
 
@@ -255,49 +255,49 @@ static IntegerMatrix *intmat_delete_row_and_column(const IntegerMatrix *m,
                                                    unsigned int di,
                                                    unsigned int dj)
 {
-	IntegerMatrix *n;
-	unsigned int i, j;
+    IntegerMatrix *n;
+    unsigned int i, j;
 
-	n = intmat_new(m->rows-1, m->cols-1);
-	if ( n == NULL ) return NULL;
+    n = intmat_new(m->rows-1, m->cols-1);
+    if ( n == NULL ) return NULL;
 
-	for ( i=0; i<n->rows; i++ ) {
-	for ( j=0; j<n->cols; j++ ) {
+    for ( i=0; i<n->rows; i++ ) {
+    for ( j=0; j<n->cols; j++ ) {
 
-		signed int val;
-		unsigned int gi, gj;
+        signed int val;
+        unsigned int gi, gj;
 
-		gi = (i>=di) ? i+1 : i;
-		gj = (j>=dj) ? j+1 : j;
-		val = intmat_get(m, gi, gj);
-		intmat_set(n, i, j, val);
+        gi = (i>=di) ? i+1 : i;
+        gj = (j>=dj) ? j+1 : j;
+        val = intmat_get(m, gi, gj);
+        intmat_set(n, i, j, val);
 
-	}
-	}
+    }
+    }
 
-	return n;
+    return n;
 }
 
 
 static signed int intmat_cofactor(const IntegerMatrix *m,
                                   unsigned int i, unsigned int j)
 {
-	IntegerMatrix *n;
-	signed int t, C;
+    IntegerMatrix *n;
+    signed int t, C;
 
-	n = intmat_delete_row_and_column(m, i, j);
-	if ( n == NULL ) {
-		fprintf(stderr, "Failed to allocate matrix.\n");
-		return 0;
-	}
+    n = intmat_delete_row_and_column(m, i, j);
+    if ( n == NULL ) {
+        fprintf(stderr, "Failed to allocate matrix.\n");
+        return 0;
+    }
 
-	/* -1 if odd, +1 if even */
-	t = (i+j) & 0x1 ? -1 : +1;
+    /* -1 if odd, +1 if even */
+    t = (i+j) & 0x1 ? -1 : +1;
 
-	C = t * intmat_det(n);
-	intmat_free(n);
+    C = t * intmat_det(n);
+    intmat_free(n);
 
-	return C;
+    return C;
 }
 
 
@@ -310,44 +310,44 @@ static signed int intmat_cofactor(const IntegerMatrix *m,
  **/
 signed int intmat_det(const IntegerMatrix *m)
 {
-	unsigned int i, j;
-	signed int det = 0;
+    unsigned int i, j;
+    signed int det = 0;
 
-	assert(m->rows == m->cols);  /* Otherwise determinant doesn't exist */
+    assert(m->rows == m->cols);  /* Otherwise determinant doesn't exist */
 
-	if ( m->rows == 2 ) {
-		return intmat_get(m, 0, 0)*intmat_get(m, 1, 1)
-		     - intmat_get(m, 0, 1)*intmat_get(m, 1, 0);
-	}
+    if ( m->rows == 2 ) {
+        return intmat_get(m, 0, 0)*intmat_get(m, 1, 1)
+             - intmat_get(m, 0, 1)*intmat_get(m, 1, 0);
+    }
 
-	i = 0;  /* Fixed */
-	for ( j=0; j<m->cols; j++ ) {
+    i = 0;  /* Fixed */
+    for ( j=0; j<m->cols; j++ ) {
 
-		det += intmat_get(m, i, j) * intmat_cofactor(m, i, j);
+        det += intmat_get(m, i, j) * intmat_cofactor(m, i, j);
 
-	}
+    }
 
-	return det;
+    return det;
 }
 
 
 static IntegerMatrix *intmat_cofactors(const IntegerMatrix *m)
 {
-	IntegerMatrix *n;
-	signed int i, j;
+    IntegerMatrix *n;
+    signed int i, j;
 
-	n = intmat_new(m->rows, m->cols);
-	if ( n == NULL ) return NULL;
+    n = intmat_new(m->rows, m->cols);
+    if ( n == NULL ) return NULL;
 
-	for ( i=0; i<n->rows; i++ ) {
-	for ( j=0; j<n->cols; j++ ) {
+    for ( i=0; i<n->rows; i++ ) {
+    for ( j=0; j<n->cols; j++ ) {
 
-		intmat_set(n, i, j, intmat_cofactor(m, i, j));
+        intmat_set(n, i, j, intmat_cofactor(m, i, j));
 
-	}
-	}
+    }
+    }
 
-	return n;
+    return n;
 }
 
 
@@ -363,41 +363,41 @@ static IntegerMatrix *intmat_cofactors(const IntegerMatrix *m)
  **/
 IntegerMatrix *intmat_inverse(const IntegerMatrix *m)
 {
-	IntegerMatrix *adjugateT;
-	IntegerMatrix *inverse;
-	unsigned int i, j;
-	signed int det;
+    IntegerMatrix *adjugateT;
+    IntegerMatrix *inverse;
+    unsigned int i, j;
+    signed int det;
 
-	det = intmat_det(m);
-	if ( (det != +1) && (det != -1) ) {
-		fprintf(stderr,
-		        "Inverse matrix not an integer matrix (det = %i).\n",
-		        det);
-		return NULL;
-	}
+    det = intmat_det(m);
+    if ( (det != +1) && (det != -1) ) {
+        fprintf(stderr,
+                "Inverse matrix not an integer matrix (det = %i).\n",
+                det);
+        return NULL;
+    }
 
-	adjugateT = intmat_cofactors(m);
-	if ( adjugateT == NULL ) return NULL;
+    adjugateT = intmat_cofactors(m);
+    if ( adjugateT == NULL ) return NULL;
 
-	inverse = intmat_new(m->cols, m->rows);  /* The other way round */
-	if ( inverse == NULL ) return NULL;
+    inverse = intmat_new(m->cols, m->rows);  /* The other way round */
+    if ( inverse == NULL ) return NULL;
 
-	for ( i=0; i<inverse->rows; i++ ) {
-	for ( j=0; j<inverse->cols; j++ ) {
+    for ( i=0; i<inverse->rows; i++ ) {
+    for ( j=0; j<inverse->cols; j++ ) {
 
-		signed int v;
+        signed int v;
 
-		v = intmat_get(adjugateT, j, i);
+        v = intmat_get(adjugateT, j, i);
 
-		/* 1/-1 = -1 and 1/+1 = +1, and these are the only two cases */
-		intmat_set(inverse, i, j, v*det);
+        /* 1/-1 = -1 and 1/+1 = +1, and these are the only two cases */
+        intmat_set(inverse, i, j, v*det);
 
-	}
-	}
+    }
+    }
 
-	intmat_free(adjugateT);
+    intmat_free(adjugateT);
 
-	return inverse;
+    return inverse;
 }
 
 
@@ -409,21 +409,21 @@ IntegerMatrix *intmat_inverse(const IntegerMatrix *m)
  */
 void intmat_print(const IntegerMatrix *m)
 {
-	unsigned int i, j;
+    unsigned int i, j;
 
-	if ( m == NULL ) {
-		fprintf(stderr, "(NULL matrix)\n");
-		return;
-	}
+    if ( m == NULL ) {
+        fprintf(stderr, "(NULL matrix)\n");
+        return;
+    }
 
-	for ( i=0; i<m->rows; i++ ) {
+    for ( i=0; i<m->rows; i++ ) {
 
-		fprintf(stderr, "[ ");
-		for ( j=0; j<m->cols; j++ ) {
-			fprintf(stderr, "%4i ", intmat_get(m, i, j));
-		}
-		fprintf(stderr, "]\n");
-	}
+        fprintf(stderr, "[ ");
+        for ( j=0; j<m->cols; j++ ) {
+            fprintf(stderr, "%4i ", intmat_get(m, i, j));
+        }
+        fprintf(stderr, "]\n");
+    }
 }
 
 
@@ -435,27 +435,27 @@ void intmat_print(const IntegerMatrix *m)
  */
 int intmat_is_identity(const IntegerMatrix *m)
 {
-	int i, j;
+    int i, j;
 
-	if ( m->rows != m->cols ) return 0;
+    if ( m->rows != m->cols ) return 0;
 
-	for ( i=0; i<m->rows; i++ ) {
-	for ( j=0; j<m->cols; j++ ) {
+    for ( i=0; i<m->rows; i++ ) {
+    for ( j=0; j<m->cols; j++ ) {
 
-		signed int v;
+        signed int v;
 
-		v = intmat_get(m, i, j);
+        v = intmat_get(m, i, j);
 
-		if ( i == j ) {
-			if ( v != 1 ) return 0;
-		} else {
-			if ( v != 0 ) return 0;
-		}
+        if ( i == j ) {
+            if ( v != 1 ) return 0;
+        } else {
+            if ( v != 0 ) return 0;
+        }
 
-	}
-	}
+    }
+    }
 
-	return 1;
+    return 1;
 }
 
 
@@ -467,27 +467,27 @@ int intmat_is_identity(const IntegerMatrix *m)
  */
 int intmat_is_inversion(const IntegerMatrix *m)
 {
-	int i, j;
+    int i, j;
 
-	if ( m->rows != m->cols ) return 0;
+    if ( m->rows != m->cols ) return 0;
 
-	for ( i=0; i<m->rows; i++ ) {
-	for ( j=0; j<m->cols; j++ ) {
+    for ( i=0; i<m->rows; i++ ) {
+    for ( j=0; j<m->cols; j++ ) {
 
-		signed int v;
+        signed int v;
 
-		v = intmat_get(m, i, j);
+        v = intmat_get(m, i, j);
 
-		if ( i == j ) {
-			if ( v != -1 ) return 0;
-		} else {
-			if ( v != 0 ) return 0;
-		}
+        if ( i == j ) {
+            if ( v != -1 ) return 0;
+        } else {
+            if ( v != 0 ) return 0;
+        }
 
-	}
-	}
+    }
+    }
 
-	return 1;
+    return 1;
 }
 
 
@@ -500,24 +500,24 @@ int intmat_is_inversion(const IntegerMatrix *m)
  */
 int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b)
 {
-	int i, j;
+    int i, j;
 
-	if ( a->rows != b->rows ) return 0;
-	if ( a->cols != b->cols ) return 0;
+    if ( a->rows != b->rows ) return 0;
+    if ( a->cols != b->cols ) return 0;
 
-	for ( i=0; i<a->rows; i++ ) {
-	for ( j=0; j<b->cols; j++ ) {
+    for ( i=0; i<a->rows; i++ ) {
+    for ( j=0; j<b->cols; j++ ) {
 
-		signed int v;
+        signed int v;
 
-		v = intmat_get(a, i, j);
+        v = intmat_get(a, i, j);
 
-		if ( v != intmat_get(b, i, j) ) return 0;
+        if ( v != intmat_get(b, i, j) ) return 0;
 
-	}
-	}
+    }
+    }
 
-	return 1;
+    return 1;
 }
 
 
@@ -529,25 +529,25 @@ int intmat_equals(const IntegerMatrix *a, const IntegerMatrix *b)
  */
 IntegerMatrix *intmat_identity(int size)
 {
-	IntegerMatrix *m;
-	int i, j;
+    IntegerMatrix *m;
+    int i, j;
 
-	m = intmat_new(size, size);
-	if ( m == NULL ) return NULL;
+    m = intmat_new(size, size);
+    if ( m == NULL ) return NULL;
 
-	for ( i=0; i<size; i++ ) {
-	for ( j=0; j<size; j++ ) {
+    for ( i=0; i<size; i++ ) {
+    for ( j=0; j<size; j++ ) {
 
-		if ( i == j ) {
-			intmat_set(m, i, j, 1);
-		} else {
-			intmat_set(m, i, j, 0);
-		}
+        if ( i == j ) {
+            intmat_set(m, i, j, 1);
+        } else {
+            intmat_set(m, i, j, 0);
+        }
 
-	}
-	}
+    }
+    }
 
-	return m;
+    return m;
 }
 
 
@@ -568,19 +568,19 @@ IntegerMatrix *intmat_create_3x3(signed int m11, signed int m12, signed int m13,
                                  signed int m21, signed int m22, signed int m23,
                                  signed int m31, signed int m32, signed int m33)
 {
-	IntegerMatrix *m = intmat_new(3, 3);
-	if ( m == NULL ) return NULL;
+    IntegerMatrix *m = intmat_new(3, 3);
+    if ( m == NULL ) return NULL;
 
-	intmat_set(m, 0, 0, m11);
-	intmat_set(m, 0, 1, m12);
-	intmat_set(m, 0, 2, m13);
+    intmat_set(m, 0, 0, m11);
+    intmat_set(m, 0, 1, m12);
+    intmat_set(m, 0, 2, m13);
 
-	intmat_set(m, 1, 0, m21);
-	intmat_set(m, 1, 1, m22);
-	intmat_set(m, 1, 2, m23);
+    intmat_set(m, 1, 0, m21);
+    intmat_set(m, 1, 1, m22);
+    intmat_set(m, 1, 2, m23);
 
-	intmat_set(m, 2, 0, m31);
-	intmat_set(m, 2, 1, m32);
-	intmat_set(m, 2, 2, m33);
-	return m;
+    intmat_set(m, 2, 0, m31);
+    intmat_set(m, 2, 1, m32);
+    intmat_set(m, 2, 2, m33);
+    return m;
 }

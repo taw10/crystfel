@@ -40,120 +40,120 @@
 
 char *get_all_text(GtkTextView *view)
 {
-	GtkTextBuffer *buf;
-	GtkTextIter start, end;
+    GtkTextBuffer *buf;
+    GtkTextIter start, end;
 
-	buf = gtk_text_view_get_buffer(view);
+    buf = gtk_text_view_get_buffer(view);
 
-	gtk_text_buffer_get_start_iter(buf, &start);
-	gtk_text_buffer_get_end_iter(buf, &end);
+    gtk_text_buffer_get_start_iter(buf, &start);
+    gtk_text_buffer_get_end_iter(buf, &end);
 
-	return gtk_text_buffer_get_text(buf, &start, &end, FALSE);
+    return gtk_text_buffer_get_text(buf, &start, &end, FALSE);
 }
 
 
 float get_float(GtkWidget *entry)
 {
-	const gchar *text;
-	char *rval;
-	float val;
-	text = gtk_entry_get_text(GTK_ENTRY(entry));
-	errno = 0;
-	val = strtof(text, &rval);
-	if ( *rval != '\0' ) return NAN;
-	return val;
+    const gchar *text;
+    char *rval;
+    float val;
+    text = gtk_entry_get_text(GTK_ENTRY(entry));
+    errno = 0;
+    val = strtof(text, &rval);
+    if ( *rval != '\0' ) return NAN;
+    return val;
 }
 
 
 unsigned int get_uint(GtkWidget *entry)
 {
-	const gchar *text;
-	char *rval;
-	unsigned long int val;
-	text = gtk_entry_get_text(GTK_ENTRY(entry));
-	errno = 0;
-	val = strtoul(text, &rval, 10);
-	if ( *rval != '\0' ) {
-		printf("Invalid integer '%s'\n", text);
-		return 0;
-	}
-	return val;
+    const gchar *text;
+    char *rval;
+    unsigned long int val;
+    text = gtk_entry_get_text(GTK_ENTRY(entry));
+    errno = 0;
+    val = strtoul(text, &rval, 10);
+    if ( *rval != '\0' ) {
+        printf("Invalid integer '%s'\n", text);
+        return 0;
+    }
+    return val;
 }
 
 
 int get_bool(GtkWidget *widget)
 {
-	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+    return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 
 int i_maybe_disable(GtkWidget *toggle, GtkWidget *widget)
 {
-	gtk_widget_set_sensitive(GTK_WIDGET(widget),
-	                         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
-	return FALSE;
+    gtk_widget_set_sensitive(GTK_WIDGET(widget),
+                             gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+    return FALSE;
 }
 
 
 int i_maybe_disable_and_deselect(GtkWidget *toggle, GtkWidget *widget)
 {
-	int active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle));
-	gtk_widget_set_sensitive(GTK_WIDGET(widget), active);
-	if ( !active ) {
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);
-	}
-	return FALSE;
+    int active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle));
+    gtk_widget_set_sensitive(GTK_WIDGET(widget), active);
+    if ( !active ) {
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);
+    }
+    return FALSE;
 }
 
 
 static int inv_maybe_disable(GtkWidget *toggle, GtkWidget *victim)
 {
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)) ) {
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(victim), FALSE);
-	}
-	return FALSE;
+    if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)) ) {
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(victim), FALSE);
+    }
+    return FALSE;
 }
 
 
 void deselect_when_active(GtkWidget *toggle, GtkWidget *victim)
 {
-	g_signal_connect(G_OBJECT(toggle), "toggled",
-	                 G_CALLBACK(inv_maybe_disable),
-	                 victim);
-	inv_maybe_disable(toggle, victim);
+    g_signal_connect(G_OBJECT(toggle), "toggled",
+                     G_CALLBACK(inv_maybe_disable),
+                     victim);
+    inv_maybe_disable(toggle, victim);
 }
 
 
 void set_active(GtkWidget *tb, int active)
 {
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tb), active);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tb), active);
 }
 
 
 void set_combo_id(GtkWidget *cb, const char *id)
 {
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(cb), id);
+    gtk_combo_box_set_active_id(GTK_COMBO_BOX(cb), id);
 }
 
 
 const char *get_combo_id(GtkWidget *cb)
 {
-	return gtk_combo_box_get_active_id(GTK_COMBO_BOX(cb));
+    return gtk_combo_box_get_active_id(GTK_COMBO_BOX(cb));
 }
 
 
 void redraw_widget(GtkWidget *wid)
 {
-	gint w, h;
-	w = gtk_widget_get_allocated_width(GTK_WIDGET(wid));
-	h = gtk_widget_get_allocated_height(GTK_WIDGET(wid));
-	gtk_widget_queue_draw_area(GTK_WIDGET(wid), 0, 0, w, h);
+    gint w, h;
+    w = gtk_widget_get_allocated_width(GTK_WIDGET(wid));
+    h = gtk_widget_get_allocated_height(GTK_WIDGET(wid));
+    gtk_widget_queue_draw_area(GTK_WIDGET(wid), 0, 0, w, h);
 }
 
 
 const char *get_text_or_null(GtkEntry *entry)
 {
-	const char *text = gtk_entry_get_text(entry);
-	if ( text[0] == '\0' ) return NULL;
-	return text;
+    const char *text = gtk_entry_get_text(entry);
+    if ( text[0] == '\0' ) return NULL;
+    return text;
 }

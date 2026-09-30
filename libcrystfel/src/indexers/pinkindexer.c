@@ -48,14 +48,14 @@
 #include <pinkIndexer/adaptions/crystfel/PinkIndexer.h>
 
 struct pinkIndexer_private_data {
-	PinkIndexer *pinkIndexer;
+    PinkIndexer *pinkIndexer;
 
-	UnitCell *cellTemplate;
+    UnitCell *cellTemplate;
 
-	float maxRefinementDisbalance;
+    float maxRefinementDisbalance;
 
-	IntegerMatrix *centeringTransformation;
-	LatticeTransform_t latticeReductionTransform;
+    IntegerMatrix *centeringTransformation;
+    LatticeTransform_t latticeReductionTransform;
 };
 
 //static void reduceCell(UnitCell* cell, LatticeTransform_t* appliedReductionTransform);
@@ -67,112 +67,112 @@ static void makeRightHanded(UnitCell* cell);
 
 int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 {
-	struct pinkIndexer_private_data *pinkIndexer_private_data = ipriv;
-	reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;
-	float *intensities;
-	int npk;
-	int i;
+    struct pinkIndexer_private_data *pinkIndexer_private_data = ipriv;
+    reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A;
+    float *intensities;
+    int npk;
+    int i;
 
-	npk = image_feature_count(image->features);
-	if ( npk < 5 ) return 0;
+    npk = image_feature_count(image->features);
+    if ( npk < 5 ) return 0;
 
-	if ( npk > MAX_PEAK_COUNT_FOR_INDEXER ) {
-		npk = MAX_PEAK_COUNT_FOR_INDEXER;
-	}
+    if ( npk > MAX_PEAK_COUNT_FOR_INDEXER ) {
+        npk = MAX_PEAK_COUNT_FOR_INDEXER;
+    }
 
-	reciprocalPeaks_1_per_A.peakCount = 0;
-	intensities = cfmalloc(npk*sizeof(float));
-	allocReciprocalPeaks(&reciprocalPeaks_1_per_A);
-	if ( intensities == NULL ) return 0;
+    reciprocalPeaks_1_per_A.peakCount = 0;
+    intensities = cfmalloc(npk*sizeof(float));
+    allocReciprocalPeaks(&reciprocalPeaks_1_per_A);
+    if ( intensities == NULL ) return 0;
 
-	for ( i=0; i<npk; i++ ) {
+    for ( i=0; i<npk; i++ ) {
 
-		struct imagefeature *f;
-		double r[3];
+        struct imagefeature *f;
+        double r[3];
 
-		f = image_get_feature(image->features, i);
-		if ( f == NULL ) continue;
+        f = image_get_feature(image->features, i);
+        if ( f == NULL ) continue;
 
-		detgeom_transform_coords(&image->detgeom->panels[f->pn],
-		                         f->fs, f->ss, image->lambda,
-		                         0.0, 0.0, r);
-		reciprocalPeaks_1_per_A.coordinates_x[reciprocalPeaks_1_per_A.peakCount] = r[2] * 1e-10;
-		reciprocalPeaks_1_per_A.coordinates_y[reciprocalPeaks_1_per_A.peakCount] = r[0] * 1e-10;
-		reciprocalPeaks_1_per_A.coordinates_z[reciprocalPeaks_1_per_A.peakCount] = r[1] * 1e-10;
-		intensities[reciprocalPeaks_1_per_A.peakCount] = f->intensity;
-		reciprocalPeaks_1_per_A.peakCount++;
-	}
-	int indexed = 0;
+        detgeom_transform_coords(&image->detgeom->panels[f->pn],
+                                 f->fs, f->ss, image->lambda,
+                                 0.0, 0.0, r);
+        reciprocalPeaks_1_per_A.coordinates_x[reciprocalPeaks_1_per_A.peakCount] = r[2] * 1e-10;
+        reciprocalPeaks_1_per_A.coordinates_y[reciprocalPeaks_1_per_A.peakCount] = r[0] * 1e-10;
+        reciprocalPeaks_1_per_A.coordinates_z[reciprocalPeaks_1_per_A.peakCount] = r[1] * 1e-10;
+        intensities[reciprocalPeaks_1_per_A.peakCount] = f->intensity;
+        reciprocalPeaks_1_per_A.peakCount++;
+    }
+    int indexed = 0;
 
-	float center_shift[2];
-	Lattice_t indexedLattice;
-	int matchedPeaksCount = PinkIndexer_indexPattern(pinkIndexer_private_data->pinkIndexer,
-	                                                 &indexedLattice,
-	                                                 center_shift,
-	                                                 &reciprocalPeaks_1_per_A,
-	                                                 intensities,
-	                                                 pinkIndexer_private_data->maxRefinementDisbalance,
-	                                                 n_threads);
+    float center_shift[2];
+    Lattice_t indexedLattice;
+    int matchedPeaksCount = PinkIndexer_indexPattern(pinkIndexer_private_data->pinkIndexer,
+                                                     &indexedLattice,
+                                                     center_shift,
+                                                     &reciprocalPeaks_1_per_A,
+                                                     intensities,
+                                                     pinkIndexer_private_data->maxRefinementDisbalance,
+                                                     n_threads);
 
-	cffree(intensities);
-	freeReciprocalPeaks(reciprocalPeaks_1_per_A);
+    cffree(intensities);
+    freeReciprocalPeaks(reciprocalPeaks_1_per_A);
 
-	if ( matchedPeaksCount == -1 ) {
+    if ( matchedPeaksCount == -1 ) {
 
-		STATUS("WARNING: Indexing solution was rejected due to too "
-		       "large imbalance of the refinement.\n"
-		       "If you see this message often, check the documentation "
-		       "for parameter --pinkIndexer-max-refinement-disbalance\n");
+        STATUS("WARNING: Indexing solution was rejected due to too "
+               "large imbalance of the refinement.\n"
+               "If you see this message often, check the documentation "
+               "for parameter --pinkIndexer-max-refinement-disbalance\n");
 
-	} else {
+    } else {
 
-		UnitCell *uc;
-		UnitCell *new_cell_trans;
+        UnitCell *uc;
+        UnitCell *new_cell_trans;
 
-		uc = cell_new();
+        uc = cell_new();
 
-		cell_set_reciprocal(uc, indexedLattice.ay * 1e10,
-		                        indexedLattice.az * 1e10,
-		                        indexedLattice.ax * 1e10,
-		                        indexedLattice.by * 1e10,
-		                        indexedLattice.bz * 1e10,
-		                        indexedLattice.bx * 1e10,
-		                        indexedLattice.cy * 1e10,
-		                        indexedLattice.cz * 1e10,
-		                        indexedLattice.cx * 1e10);
+        cell_set_reciprocal(uc, indexedLattice.ay * 1e10,
+                                indexedLattice.az * 1e10,
+                                indexedLattice.ax * 1e10,
+                                indexedLattice.by * 1e10,
+                                indexedLattice.bz * 1e10,
+                                indexedLattice.bx * 1e10,
+                                indexedLattice.cy * 1e10,
+                                indexedLattice.cz * 1e10,
+                                indexedLattice.cx * 1e10);
 
-		restoreReciprocalCell(uc, &pinkIndexer_private_data->latticeReductionTransform);
+        restoreReciprocalCell(uc, &pinkIndexer_private_data->latticeReductionTransform);
 
-		new_cell_trans = cell_transform_intmat(uc, pinkIndexer_private_data->centeringTransformation);
-		cell_free(uc);
+        new_cell_trans = cell_transform_intmat(uc, pinkIndexer_private_data->centeringTransformation);
+        cell_free(uc);
 
-		cell_set_lattice_type(new_cell_trans,
-		                      cell_get_lattice_type(pinkIndexer_private_data->cellTemplate));
-		cell_set_centering(new_cell_trans,
-		                   cell_get_centering(pinkIndexer_private_data->cellTemplate));
-		cell_set_unique_axis(new_cell_trans,
-		                     cell_get_unique_axis(pinkIndexer_private_data->cellTemplate));
+        cell_set_lattice_type(new_cell_trans,
+                              cell_get_lattice_type(pinkIndexer_private_data->cellTemplate));
+        cell_set_centering(new_cell_trans,
+                           cell_get_centering(pinkIndexer_private_data->cellTemplate));
+        cell_set_unique_axis(new_cell_trans,
+                             cell_get_unique_axis(pinkIndexer_private_data->cellTemplate));
 
-		if ( validate_cell(new_cell_trans) ) {
-			ERROR("pinkIndexer: problem with returned cell!\n");
-		} else {
+        if ( validate_cell(new_cell_trans) ) {
+            ERROR("pinkIndexer: problem with returned cell!\n");
+        } else {
 
-			Crystal *cr = crystal_new();
-			if ( cr == NULL ) {
-				ERROR("Failed to allocate crystal.\n");
-				return 0;
-			}
-			crystal_set_cell(cr, new_cell_trans);
-			crystal_set_det_shift(cr, center_shift[0],
-			                          center_shift[1]);
-			image_add_crystal(image, cr);
-			indexed++;
+            Crystal *cr = crystal_new();
+            if ( cr == NULL ) {
+                ERROR("Failed to allocate crystal.\n");
+                return 0;
+            }
+            crystal_set_cell(cr, new_cell_trans);
+            crystal_set_det_shift(cr, center_shift[0],
+                                      center_shift[1]);
+            image_add_crystal(image, cr);
+            indexed++;
 
-		}
+        }
 
-	}
+    }
 
-	return indexed;
+    return indexed;
 }
 
 
@@ -182,88 +182,88 @@ void *pinkIndexer_prepare(IndexingMethod indm,
                           double wavelength_estimate,
                           double clen_estimate)
 {
-	float beamEenergy_eV;
+    float beamEenergy_eV;
 
-	if ( isnan(wavelength_estimate) ) {
-		ERROR("PinkIndexer requires a wavelength estimate.  "
-		      "Try again with --wavelength-estimate=xx\n");
-		return NULL;
-	} else {
-		beamEenergy_eV = J_to_eV(ph_lambda_to_en(wavelength_estimate));
-	}
+    if ( isnan(wavelength_estimate) ) {
+        ERROR("PinkIndexer requires a wavelength estimate.  "
+              "Try again with --wavelength-estimate=xx\n");
+        return NULL;
+    } else {
+        beamEenergy_eV = J_to_eV(ph_lambda_to_en(wavelength_estimate));
+    }
 
-	if ( isnan(clen_estimate) ) {
-		ERROR("PinkIndexer requires a camera length estimate.  "
-		      "Try again with --camera-length-estimate=xx\n");
-		return NULL;
-	}
+    if ( isnan(clen_estimate) ) {
+        ERROR("PinkIndexer requires a camera length estimate.  "
+              "Try again with --camera-length-estimate=xx\n");
+        return NULL;
+    }
 
-	if ( cell == NULL ) {
-		ERROR("Unit cell information is required for PinkIndexer.\n");
-		return NULL;
-	}
+    if ( cell == NULL ) {
+        ERROR("Unit cell information is required for PinkIndexer.\n");
+        return NULL;
+    }
 
-	struct pinkIndexer_private_data* pinkIndexer_private_data = cfmalloc(sizeof(struct pinkIndexer_private_data));
-	pinkIndexer_private_data->cellTemplate = cell;
-	pinkIndexer_private_data->maxRefinementDisbalance = pinkIndexer_opts->maxRefinementDisbalance;
+    struct pinkIndexer_private_data* pinkIndexer_private_data = cfmalloc(sizeof(struct pinkIndexer_private_data));
+    pinkIndexer_private_data->cellTemplate = cell;
+    pinkIndexer_private_data->maxRefinementDisbalance = pinkIndexer_opts->maxRefinementDisbalance;
 
-	UnitCell* primitiveCell = uncenter_cell(cell, &pinkIndexer_private_data->centeringTransformation, NULL);
+    UnitCell* primitiveCell = uncenter_cell(cell, &pinkIndexer_private_data->centeringTransformation, NULL);
 
-	//reduceCell(primitiveCell, &pinkIndexer_private_data->latticeReductionTransform);
-	reduceReciprocalCell(primitiveCell, &pinkIndexer_private_data->latticeReductionTransform);
+    //reduceCell(primitiveCell, &pinkIndexer_private_data->latticeReductionTransform);
+    reduceReciprocalCell(primitiveCell, &pinkIndexer_private_data->latticeReductionTransform);
 
-	double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
-	int ret = cell_get_reciprocal(primitiveCell, &asx, &asy, &asz, &bsx, &bsy, &bsz, &csx, &csy, &csz);
-	if (ret != 0) {
-		ERROR("cell_get_reciprocal did not finish properly!");
-	}
+    double asx, asy, asz, bsx, bsy, bsz, csx, csy, csz;
+    int ret = cell_get_reciprocal(primitiveCell, &asx, &asy, &asz, &bsx, &bsy, &bsz, &csx, &csy, &csz);
+    if (ret != 0) {
+        ERROR("cell_get_reciprocal did not finish properly!");
+    }
 
-	Lattice_t lattice = { .ax = asz * 1e-10, .ay = asx * 1e-10, .az = asy * 1e-10,
-	        .bx = bsz * 1e-10, .by = bsx * 1e-10, .bz = bsy * 1e-10,
-	        .cx = csz * 1e-10, .cy = csx * 1e-10, .cz = csy * 1e-10 };
+    Lattice_t lattice = { .ax = asz * 1e-10, .ay = asx * 1e-10, .az = asy * 1e-10,
+            .bx = bsz * 1e-10, .by = bsx * 1e-10, .bz = bsy * 1e-10,
+            .cx = csz * 1e-10, .cy = csx * 1e-10, .cz = csy * 1e-10 };
 
-	float nonMonochromaticity = 0.01;
+    float nonMonochromaticity = 0.01;
 
-	float reflectionRadius_1_per_A;
-	if (pinkIndexer_opts->reflectionRadius < 0) {
-		reflectionRadius_1_per_A = 0.02 * modulus(lattice.ax, lattice.ay, lattice.az);
-	}
-	else {
-		reflectionRadius_1_per_A = pinkIndexer_opts->reflectionRadius * 1e10;  /* m^-1 to A^-1*/
-	}
+    float reflectionRadius_1_per_A;
+    if (pinkIndexer_opts->reflectionRadius < 0) {
+        reflectionRadius_1_per_A = 0.02 * modulus(lattice.ax, lattice.ay, lattice.az);
+    }
+    else {
+        reflectionRadius_1_per_A = pinkIndexer_opts->reflectionRadius * 1e10;  /* m^-1 to A^-1*/
+    }
 
-	if(beamEenergy_eV > 75000 && nonMonochromaticity < 0.02 && reflectionRadius_1_per_A < 0.0005){
-		STATUS("Trying to index electron diffraction? It might be "
-		       " helpful to set a higher reflection radius "
-		       "(see documentation for --pinkIndexer-reflection-radius)");
-	}
+    if(beamEenergy_eV > 75000 && nonMonochromaticity < 0.02 && reflectionRadius_1_per_A < 0.0005){
+        STATUS("Trying to index electron diffraction? It might be "
+               " helpful to set a higher reflection radius "
+               "(see documentation for --pinkIndexer-reflection-radius)");
+    }
 
-	float divergenceAngle_deg = 0.01; //fake
+    float divergenceAngle_deg = 0.01; //fake
 
-	float tolerance = pinkIndexer_opts->tolerance;
-	Lattice_t sampleReciprocalLattice_1_per_A = lattice;
-	float detectorRadius_m = 0.03; //fake, only for prediction
-	ExperimentSettings *experimentSettings = ExperimentSettings_new(beamEenergy_eV,
-	                                                                clen_estimate,
-	                                                                detectorRadius_m,
-	                                                                divergenceAngle_deg,
-	                                                                nonMonochromaticity,
-	                                                                sampleReciprocalLattice_1_per_A,
-	                                                                tolerance,
-	                                                                reflectionRadius_1_per_A);
+    float tolerance = pinkIndexer_opts->tolerance;
+    Lattice_t sampleReciprocalLattice_1_per_A = lattice;
+    float detectorRadius_m = 0.03; //fake, only for prediction
+    ExperimentSettings *experimentSettings = ExperimentSettings_new(beamEenergy_eV,
+                                                                    clen_estimate,
+                                                                    detectorRadius_m,
+                                                                    divergenceAngle_deg,
+                                                                    nonMonochromaticity,
+                                                                    sampleReciprocalLattice_1_per_A,
+                                                                    tolerance,
+                                                                    reflectionRadius_1_per_A);
 
-	consideredPeaksCount_t consideredPeaksCount = pinkIndexer_opts->considered_peaks_count;
-	angleResolution_t angleResolution = pinkIndexer_opts->angle_resolution;
-	refinementType_t refinementType = pinkIndexer_opts->refinement_type;
-	float maxResolutionForIndexing_1_per_A = pinkIndexer_opts->maxResolutionForIndexing_1_per_A;
-	pinkIndexer_private_data->pinkIndexer = PinkIndexer_new(experimentSettings, consideredPeaksCount, angleResolution,
-	        refinementType,
-	        maxResolutionForIndexing_1_per_A);
+    consideredPeaksCount_t consideredPeaksCount = pinkIndexer_opts->considered_peaks_count;
+    angleResolution_t angleResolution = pinkIndexer_opts->angle_resolution;
+    refinementType_t refinementType = pinkIndexer_opts->refinement_type;
+    float maxResolutionForIndexing_1_per_A = pinkIndexer_opts->maxResolutionForIndexing_1_per_A;
+    pinkIndexer_private_data->pinkIndexer = PinkIndexer_new(experimentSettings, consideredPeaksCount, angleResolution,
+            refinementType,
+            maxResolutionForIndexing_1_per_A);
 
-	ExperimentSettings_delete(experimentSettings);
-	cell_free(primitiveCell);
+    ExperimentSettings_delete(experimentSettings);
+    cell_free(primitiveCell);
 
-	return pinkIndexer_private_data;
+    return pinkIndexer_private_data;
 }
 
 //static void reduceCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
@@ -301,66 +301,66 @@ void *pinkIndexer_prepare(IndexingMethod indm,
 
 static void reduceReciprocalCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
 {
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
-	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+    double ax, ay, az, bx, by, bz, cx, cy, cz;
+    cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	Lattice_t l = { ax, ay, az, bx, by, bz, cx, cy, cz };
+    Lattice_t l = { ax, ay, az, bx, by, bz, cx, cy, cz };
 
-	reduceLattice(&l, appliedReductionTransform);
+    reduceLattice(&l, appliedReductionTransform);
 
-	cell_set_reciprocal(cell, l.ax, l.ay, l.az,
-	        l.bx, l.by, l.bz,
-	        l.cx, l.cy, l.cz);
+    cell_set_reciprocal(cell, l.ax, l.ay, l.az,
+            l.bx, l.by, l.bz,
+            l.cx, l.cy, l.cz);
 
-	makeRightHanded(cell);
+    makeRightHanded(cell);
 }
 
 static void restoreReciprocalCell(UnitCell *cell, LatticeTransform_t* appliedReductionTransform)
 {
 
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
-	cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+    double ax, ay, az, bx, by, bz, cx, cy, cz;
+    cell_get_reciprocal(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	Lattice_t l = { ax, ay, az, bx, by, bz, cx, cy, cz };
+    Lattice_t l = { ax, ay, az, bx, by, bz, cx, cy, cz };
 
-	restoreLattice(&l, appliedReductionTransform);
+    restoreLattice(&l, appliedReductionTransform);
 
-	cell_set_reciprocal(cell, l.ax, l.ay, l.az,
-	        l.bx, l.by, l.bz,
-	        l.cx, l.cy, l.cz);
+    cell_set_reciprocal(cell, l.ax, l.ay, l.az,
+            l.bx, l.by, l.bz,
+            l.cx, l.cy, l.cz);
 
-	makeRightHanded(cell);
+    makeRightHanded(cell);
 }
 
 static void makeRightHanded(UnitCell *cell)
 {
-	double ax, ay, az, bx, by, bz, cx, cy, cz;
-	cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
+    double ax, ay, az, bx, by, bz, cx, cy, cz;
+    cell_get_cartesian(cell, &ax, &ay, &az, &bx, &by, &bz, &cx, &cy, &cz);
 
-	if (!right_handed(cell)) {
-		cell_set_cartesian(cell, -ax, -ay, -az, -bx, -by, -bz, -cx, -cy, -cz);
-	}
+    if (!right_handed(cell)) {
+        cell_set_cartesian(cell, -ax, -ay, -az, -bx, -by, -bz, -cx, -cy, -cz);
+    }
 }
 
 void pinkIndexer_cleanup(void *pp)
 {
-	struct pinkIndexer_private_data* pinkIndexer_private_data = (struct pinkIndexer_private_data*) pp;
+    struct pinkIndexer_private_data* pinkIndexer_private_data = (struct pinkIndexer_private_data*) pp;
 
-	intmat_free(pinkIndexer_private_data->centeringTransformation);
-	PinkIndexer_delete(pinkIndexer_private_data->pinkIndexer);
+    intmat_free(pinkIndexer_private_data->centeringTransformation);
+    PinkIndexer_delete(pinkIndexer_private_data->pinkIndexer);
 }
 
 const char *pinkIndexer_probe(UnitCell *cell)
 {
-	return "pinkIndexer";
+    return "pinkIndexer";
 }
 
 #else /* HAVE_PINKINDEXER */
 
 int run_pinkIndexer(struct image *image, void *ipriv, int n_threads)
 {
-	ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
-	return 0;
+    ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
+    return 0;
 }
 
 extern void *pinkIndexer_prepare(IndexingMethod indm,
@@ -369,9 +369,9 @@ extern void *pinkIndexer_prepare(IndexingMethod indm,
                                  double wavelength_estimate,
                                  double clen_estimate)
 {
-	ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
-	ERROR("To use PINKINDEXER indexing, recompile with PINKINDEXER.\n");
-	return NULL;
+    ERROR("This copy of CrystFEL was compiled without PINKINDEXER support.\n");
+    ERROR("To use PINKINDEXER indexing, recompile with PINKINDEXER.\n");
+    return NULL;
 }
 
 void pinkIndexer_cleanup(void *pp)
@@ -380,14 +380,14 @@ void pinkIndexer_cleanup(void *pp)
 
 const char *pinkIndexer_probe(UnitCell *cell)
 {
-	return NULL;
+    return NULL;
 }
 
 #endif /* HAVE_PINKINDEXER */
 
 static void pinkIndexer_show_help()
 {
-	printf(
+    printf(
 "Parameters for the PinkIndexer indexing algorithm:\n"
 "     --pinkIndexer-considered-peaks-count=n\n"
 "                           Considered peaks count, 0 (fewest) to 4 (most)\n"
@@ -409,178 +409,178 @@ static void pinkIndexer_show_help()
 "     --pinkIndexer-max-refinement-disbalance=n\n"
 "                           Maximum imbalance after refinement:\n"
 "                            0 (no imbalance) to 2 (extreme imbalance), default 0.4\n"
-	);
+    );
 }
 
 
 int pinkIndexer_default_options(struct pinkindexer_options **opts_ptr)
 {
-	struct pinkindexer_options *opts;
+    struct pinkindexer_options *opts;
 
-	opts = cfmalloc(sizeof(struct pinkindexer_options));
-	if ( opts == NULL ) return ENOMEM;
+    opts = cfmalloc(sizeof(struct pinkindexer_options));
+    if ( opts == NULL ) return ENOMEM;
 
-	opts->considered_peaks_count = 4;
-	opts->angle_resolution = 2;
-	opts->refinement_type = 1;
-	opts->tolerance = 0.06;
-	opts->maxResolutionForIndexing_1_per_A = +INFINITY;
-	opts->reflectionRadius = -1;
-	opts->maxRefinementDisbalance = 0.4;
+    opts->considered_peaks_count = 4;
+    opts->angle_resolution = 2;
+    opts->refinement_type = 1;
+    opts->tolerance = 0.06;
+    opts->maxResolutionForIndexing_1_per_A = +INFINITY;
+    opts->reflectionRadius = -1;
+    opts->maxRefinementDisbalance = 0.4;
 
-	*opts_ptr = opts;
-	return 0;
+    *opts_ptr = opts;
+    return 0;
 }
 
 
 static error_t pinkindexer_parse_arg(int key, char *arg,
                                      struct argp_state *state)
 {
-	float tmp;
-	int r;
-	struct pinkindexer_options **opts_ptr = state->input;
+    float tmp;
+    int r;
+    struct pinkindexer_options **opts_ptr = state->input;
 
-	switch ( key ) {
+    switch ( key ) {
 
-		case ARGP_KEY_INIT :
-		r = pinkIndexer_default_options(opts_ptr);
-		if ( r ) return r;
-		break;
+        case ARGP_KEY_INIT :
+        r = pinkIndexer_default_options(opts_ptr);
+        if ( r ) return r;
+        break;
 
-		case 1 :
-		pinkIndexer_show_help();
-		return EINVAL;
+        case 1 :
+        pinkIndexer_show_help();
+        return EINVAL;
 
-		case 2 :
-		if (sscanf(arg, "%u", &(*opts_ptr)->considered_peaks_count) != 1)
-		{
-			ERROR("Invalid value for "
-			      "--pinkIndexer-considered-peaks-count\n");
-			return EINVAL;
-		}
-		break;
+        case 2 :
+        if (sscanf(arg, "%u", &(*opts_ptr)->considered_peaks_count) != 1)
+        {
+            ERROR("Invalid value for "
+                  "--pinkIndexer-considered-peaks-count\n");
+            return EINVAL;
+        }
+        break;
 
-		case 3 :
-		if (sscanf(arg, "%u", &(*opts_ptr)->angle_resolution) != 1)
-		{
-			ERROR("Invalid value for "
-			      "--pinkIndexer-angle_resolution\n");
-			return EINVAL;
-		}
-		break;
+        case 3 :
+        if (sscanf(arg, "%u", &(*opts_ptr)->angle_resolution) != 1)
+        {
+            ERROR("Invalid value for "
+                  "--pinkIndexer-angle_resolution\n");
+            return EINVAL;
+        }
+        break;
 
-		case 4 :
-		if (sscanf(arg, "%u", &(*opts_ptr)->refinement_type) != 1)
-		{
-			ERROR("Invalid value for "
-			      "--pinkIndexer-refinement-type\n");
-			return EINVAL;
-		}
-		break;
+        case 4 :
+        if (sscanf(arg, "%u", &(*opts_ptr)->refinement_type) != 1)
+        {
+            ERROR("Invalid value for "
+                  "--pinkIndexer-refinement-type\n");
+            return EINVAL;
+        }
+        break;
 
-		case 5 :
-		ERROR("Please use --max-indexer-threads instead of "
-		      "--pinkIndexer-thread-count.\n");
-		return EINVAL;
+        case 5 :
+        ERROR("Please use --max-indexer-threads instead of "
+              "--pinkIndexer-thread-count.\n");
+        return EINVAL;
 
-		case 6 :
-		if (sscanf(arg, "%f", &(*opts_ptr)->maxResolutionForIndexing_1_per_A) != 1)
-		{
-			ERROR("Invalid value for "
-			      "--pinkIndexer-max-resolution-for-indexing\n");
-			return EINVAL;
-		}
-		break;
+        case 6 :
+        if (sscanf(arg, "%f", &(*opts_ptr)->maxResolutionForIndexing_1_per_A) != 1)
+        {
+            ERROR("Invalid value for "
+                  "--pinkIndexer-max-resolution-for-indexing\n");
+            return EINVAL;
+        }
+        break;
 
-		case 7 :
-		if (sscanf(arg, "%f", &(*opts_ptr)->tolerance) != 1)
-		{
-			ERROR("Invalid value for --pinkIndexer-tolerance\n");
-			return EINVAL;
-		}
-		break;
+        case 7 :
+        if (sscanf(arg, "%f", &(*opts_ptr)->tolerance) != 1)
+        {
+            ERROR("Invalid value for --pinkIndexer-tolerance\n");
+            return EINVAL;
+        }
+        break;
 
-		case 8 :
-		ERROR("WARNING: --pinkIndexer-multi is ignored.\n");
-		break;
+        case 8 :
+        ERROR("WARNING: --pinkIndexer-multi is ignored.\n");
+        break;
 
-		case 9 :
-		ERROR("WARNING: --pinkIndexer-no-check-indexed is ignored.\n");
-		break;
+        case 9 :
+        ERROR("WARNING: --pinkIndexer-no-check-indexed is ignored.\n");
+        break;
 
-		case 10 :
-		if (sscanf(arg, "%f", &tmp) != 1) {
-			ERROR("Invalid value for --pinkIndexer-reflection-radius\n");
-			return EINVAL;
-		}
-		(*opts_ptr)->reflectionRadius = tmp / 1e10; /* A^-1 to m^-1 */
-		break;
+        case 10 :
+        if (sscanf(arg, "%f", &tmp) != 1) {
+            ERROR("Invalid value for --pinkIndexer-reflection-radius\n");
+            return EINVAL;
+        }
+        (*opts_ptr)->reflectionRadius = tmp / 1e10; /* A^-1 to m^-1 */
+        break;
 
-		case 11 :
-		ERROR("Please use --wavelength-estimate instead of "
-		      "--pinkIndexer-override-photon-energy.\n");
-		return EINVAL;
+        case 11 :
+        ERROR("Please use --wavelength-estimate instead of "
+              "--pinkIndexer-override-photon-energy.\n");
+        return EINVAL;
 
-		case 12 :
-		ERROR("This CrystFEL version does not handle wide bandwidth  ");
-		ERROR("(invalid option --pinkIndexer-override-bandwidth)\n");
-		return EINVAL;
+        case 12 :
+        ERROR("This CrystFEL version does not handle wide bandwidth  ");
+        ERROR("(invalid option --pinkIndexer-override-bandwidth)\n");
+        return EINVAL;
 
-		case 13 :
-		ERROR("This CrystFEL version does not handle wide bandwidth  ");
-		ERROR("(invalid option --pinkIndexer-override-visible-energy-range)\n");
-		return EINVAL;
+        case 13 :
+        ERROR("This CrystFEL version does not handle wide bandwidth  ");
+        ERROR("(invalid option --pinkIndexer-override-visible-energy-range)\n");
+        return EINVAL;
 
-		case 14 :
-		if (sscanf(arg, "%f", &(*opts_ptr)->maxRefinementDisbalance) != 1)
-		{
-			ERROR("Invalid value for --pinkIndexer-max-refinement-disbalance\n");
-			return EINVAL;
-		}
-	}
+        case 14 :
+        if (sscanf(arg, "%f", &(*opts_ptr)->maxRefinementDisbalance) != 1)
+        {
+            ERROR("Invalid value for --pinkIndexer-max-refinement-disbalance\n");
+            return EINVAL;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 
 static struct argp_option pinkindexer_options[] = {
 
-	{"help-pinkindexer", 1, NULL, OPTION_NO_USAGE,
-	 "Show options for PinkIndexer indexing algorithm", 99},
+    {"help-pinkindexer", 1, NULL, OPTION_NO_USAGE,
+     "Show options for PinkIndexer indexing algorithm", 99},
 
-	{"pinkIndexer-considered-peaks-count", 2, "n", OPTION_HIDDEN, NULL},
-	{"pinkIndexer-cpc", 2, "n", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-considered-peaks-count", 2, "n", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-cpc", 2, "n", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-angle-resolution", 3, "ang", OPTION_HIDDEN, NULL},
-	{"pinkIndexer-ar", 3, "ang", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-angle-resolution", 3, "ang", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-ar", 3, "ang", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-refinement-type", 4, "t", OPTION_HIDDEN, NULL},
-	{"pinkIndexer-rt", 4, "t", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-refinement-type", 4, "t", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-rt", 4, "t", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-thread-count", 5, "n", OPTION_HIDDEN, NULL},
-	{"pinkIndexer-tc", 5, "n", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-thread-count", 5, "n", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-tc", 5, "n", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-max-resolution-for-indexing", 6, "res", OPTION_HIDDEN, NULL},
-	{"pinkIndexer-mrfi", 6, "res", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-max-resolution-for-indexing", 6, "res", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-mrfi", 6, "res", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-tolerance", 7, "tol", OPTION_HIDDEN, NULL},
-	{"pinkIndexer-tol", 7, "tol", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-tolerance", 7, "tol", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-tol", 7, "tol", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-multi", 8, NULL, OPTION_HIDDEN, NULL},
+    {"pinkIndexer-multi", 8, NULL, OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-no-check-indexed", 9, NULL, OPTION_HIDDEN, NULL},
+    {"pinkIndexer-no-check-indexed", 9, NULL, OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-reflection-radius", 10, "r", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-reflection-radius", 10, "r", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-override-photon-energy", 11, "ev", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-override-photon-energy", 11, "ev", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-override-bandwidth", 12, "bw", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-override-bandwidth", 12, "bw", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-override-visible-energy-range", 13, "overridenVisibleEnergyRange", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-override-visible-energy-range", 13, "overridenVisibleEnergyRange", OPTION_HIDDEN, NULL},
 
-	{"pinkIndexer-max-refinement-disbalance", 14, "maxDisbalance", OPTION_HIDDEN, NULL},
+    {"pinkIndexer-max-refinement-disbalance", 14, "maxDisbalance", OPTION_HIDDEN, NULL},
 
-	{0}
+    {0}
 };
 
 
