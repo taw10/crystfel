@@ -35,6 +35,10 @@
 #include "index.h"
 #include "datatemplate.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int pinkIndexer_default_options(struct pinkindexer_options **opts_ptr);
 
 extern int run_pinkIndexer(struct image *image, void *ipriv, int n_threads);
@@ -48,5 +52,9 @@ extern void *pinkIndexer_prepare(IndexingMethod indm,
 extern void pinkIndexer_cleanup(void *pp);
 
 extern const char *pinkIndexer_probe(UnitCell *cell);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* LIBCRYSTFEL_SRC_PINKINDEXER_H_ */

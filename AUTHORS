@@ -128,3 +128,6 @@
 
 * James Wrigley
   Build system fixes including FreeBSD support
+
+* Jerome Kieffer
+  Python binding
