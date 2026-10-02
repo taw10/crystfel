@@ -1,6 +1,7 @@
-Development version (last updated 30 Sep 2026)
-----------------------------------------------
+Development version (last updated 2 Oct 2026)
+---------------------------------------------
 
+- libcrystfel: Install the headers for peakfinder8 and the indexing engines
 - Grand Reindentation (tabs -> 4 spaces)
 - Scan-varying beam center (and refinement thereof)
 - partialator: Add error modelling (Ev11 and friends)
