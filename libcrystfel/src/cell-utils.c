@@ -338,8 +338,8 @@ void cell_print_full(UnitCell *cell)
         STATUS("c = %10.3e %10.3e %10.3e m\n", cx, cy, cz);
 
         cell_get_reciprocal(cell, &asx, &asy, &asz,
-                              &bsx, &bsy, &bsz,
-                              &csx, &csy, &csz);
+                                  &bsx, &bsy, &bsz,
+                                  &csx, &csy, &csz);
 
         STATUS("a* = %10.3e %10.3e %10.3e m^-1 (modulus %10.3e m^-1)\n",
                asx, asy, asz, modulus(asx, asy, asz));
@@ -1125,7 +1125,7 @@ UnitCell *load_cell_from_file(const char *filename)
 /* Force the linker to bring in CBLAS to make GSL happy */
 void cell_fudge_gslcblas()
 {
-        STATUS("%p\n", cblas_sgemm);
+    STATUS("%p\n", cblas_sgemm);
 }
 
 
@@ -1271,7 +1271,7 @@ int validate_cell(UnitCell *cell)
 
     if ( cell_has_parameters(cell) && !cell_is_practical(cell) ) {
         ERROR("WARNING: Impractical unit cell parameters detected.\n");
-        err  = 2;
+        err = 2;
     }
 
     /* For monoclinic A, B or C centering, the unique axis must be something

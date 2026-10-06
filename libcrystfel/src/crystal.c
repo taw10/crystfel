@@ -51,8 +51,8 @@ struct _crystal
     long long int           n_implausible; /* Number of implausibly negative reflectionss */
     int                     user_flag;
     char                   *notes; /* Text notes, which go in the stream */
-    double			det_shift_x; /* Detector x-shift in metres */
-    double			det_shift_y; /* Detector y-shift in metres */
+    double                  det_shift_x; /* Detector x-shift in metres */
+    double                  det_shift_y; /* Detector y-shift in metres */
 };
 
 

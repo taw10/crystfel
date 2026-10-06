@@ -63,7 +63,7 @@ simple_tests = ['ambi_check',
 foreach name : simple_tests
   exe = executable(name, ''.join([name, '.c']),
                    dependencies : [libcrystfeldep, mdep, gsldep],
-		   include_directories: conf_inc)
+                   include_directories: conf_inc)
 
   test(name, exe, timeout : 60)
 endforeach
