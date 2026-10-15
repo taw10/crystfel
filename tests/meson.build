@@ -254,3 +254,26 @@ endif
 test('geom_roundtrip',
      find_program('geom_roundtrip'),
      args: [adjust_detector.full_path()])
+
+
+# Indexing tests
+index_tests = [['taketwo', 'nomulti'],
+               ['taketwo', 'multi'],
+               ['smallcell', 'nomulti'],
+               ['smallcell', 'multi']]
+if fftwdep.found()
+  index_tests += [['asdf', 'nomulti']]
+  index_tests += [['asdf', 'multi']]
+endif
+if xgandalfdep.found()
+  index_tests += [['xgandalf', 'nomulti']]
+  index_tests += [['xgandalf', 'multi']]
+endif
+
+exe = executable('indextest', ['indextest.c'], dependencies : [libcrystfeldep])
+foreach indexer : index_tests
+  test('indextest.'+indexer[0]+'.'+indexer[1]+'.norefine', exe,
+    args: [files('indextest.geom'), indexer[0], indexer[1], 'norefine'])
+  test('indextest.'+indexer[0]+'.'+indexer[1]+'.refine', exe,
+    args: [files('indextest.geom'), indexer[0], indexer[1], 'refine'])
+endforeach
