@@ -289,7 +289,7 @@ You can close the stream manually (rarely needed) with ``close(st)``.
 Once opened, ``chunkread`` will return the next ``Image`` described in the
 stream.  The keyword arguments can be used to control what gets read::
 
-    image = readchunk(st, peaks=true, reflections=true, datageom=true)
+    image = chunkread(st, peaks=true, reflections=true, datageom=true)
 
 You can also get a ``Channel`` which will yield all the crystals in the stream,
 e.g. for merging reflection data::
