@@ -58,6 +58,7 @@ simple_tests = ['ambi_check',
                 'evparse6',
                 'evparse7',
                 'symop_parse',
+                'peaklist',
                 'impose_bravais']
 
 foreach name : simple_tests
