@@ -151,7 +151,7 @@ static void *prepare_method(IndexingMethod m,
                             struct felix_options *felix_opts,
                             struct taketwo_options *taketwo_opts,
                             struct fromfile_options *fromfile_opts,
-                struct smallcell_options *smallcell_opts,
+                            struct smallcell_options *smallcell_opts,
                             struct asdf_options *asdf_opts)
 {
     void *priv = NULL;

@@ -630,8 +630,8 @@ static void run_indexing_once(struct crystfelproject *proj)
                            &pinkIndexer_opts,
                            &felix_opts,
                            &fromfile_opts,
-                   &smallcell_opts,
-                   &asdf_opts);
+                           &smallcell_opts,
+                           &asdf_opts);
 
     pinkIndexer_opts->considered_peaks_count = proj->indexing_params.pinkindexer_cpeaks;
     pinkIndexer_opts->angle_resolution = proj->indexing_params.pinkindexer_angle_density;

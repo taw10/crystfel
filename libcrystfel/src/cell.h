@@ -89,7 +89,7 @@ extern void cell_free(UnitCell *cell);
 
 /* Lengths in m, angles in radians */
 extern UnitCell *cell_new_from_parameters(double a, double b, double c,
-				double alpha, double beta, double gamma);
+                                          double alpha, double beta, double gamma);
 
 extern UnitCell *cell_new_from_reciprocal_axes(struct rvec as, struct rvec bs,
                                                struct rvec cs);
