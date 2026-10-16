@@ -26,7 +26,8 @@ RUN    wget -nv https://github.com/HDFGroup/hdf5/releases/download/2.2.0/hdf5-2.
        mkdir build; \
        pushd build; \
        cmake .. -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
-                -DCMAKE_BUILD_TYPE=Release ; \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DH5_DEFAULT_PLUGINDIR=$CFPREFIX/lib64/plugins ; \
        popd; \
        make -C build -j 32; \
        make -C build install; \
