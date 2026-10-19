@@ -37,7 +37,7 @@ users, but is also fully supported on Linux.  First install Homebrew itself,
 then install CrystFEL by first adding our 'tap' before using `brew install`:
 ```
 $ brew trust https://gitlab.desy.de/thomas.white/homebrew-crystfel.git/
-$ brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel
+$ brew tap desy/crystfel https://gitlab.desy.de/thomas.white/homebrew-crystfel.git/
 $ brew install crystfel
 ```
 This will give you the latest stable version of CrystFEL.  To instead get the
