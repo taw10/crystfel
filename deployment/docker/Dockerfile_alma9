@@ -23,30 +23,10 @@ RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.con
 RUN    wget -nv https://github.com/HDFGroup/hdf5/releases/download/2.2.0/hdf5-2.2.0.tar.gz; \
        tar -xf hdf5-2.2.0.tar.gz; \
        pushd hdf5-2.2.0; \
-       mkdir build; \
-       pushd build; \
-       cmake .. -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DH5_DEFAULT_PLUGINDIR=$CFPREFIX/lib64/plugins ; \
-       popd; \
-       make -C build -j 32; \
-       make -C build install; \
-       popd # hdf5-2.2.0
-
-# HDF5 filter plugins
-RUN    git clone --depth 1 https://github.com/nexusformat/HDF5-External-Filter-Plugins.git ; \
-       pushd HDF5-External-Filter-Plugins; \
-       mkdir build; \
-       pushd build; \
-       cmake .. -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
-                -DENABLE_BITSHUFFLE_PLUGIN=yes \
-                -DENABLE_LZ4_PLUGIN=yes \
-                -DENABLE_BZIP2_PLUGIN=yes \
-                -DCMAKE_BUILD_TYPE=Release ; \
-       popd; \
-       make -C build -j 32; \
-       make -C build install; \
-       popd # HDF5-External-Filter-Plugins
+       cp ../crystfel/deployment/HDF5CMakeUserPresets.json CMakeUserPresets.json \
+       cmake --workflow --preset my-StdShar-GNUC --fresh \
+       cmake --install ../build/myStdShar-GNUC \
+       popd
 
 # MsgPack
 RUN    wget -nv https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz ; \
