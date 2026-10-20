@@ -23,10 +23,10 @@ RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.con
 RUN    wget -nv https://github.com/HDFGroup/hdf5/releases/download/2.2.0/hdf5-2.2.0.tar.gz; \
        tar -xf hdf5-2.2.0.tar.gz; \
        pushd hdf5-2.2.0; \
-       cp ../crystfel/deployment/HDF5CMakeUserPresets.json CMakeUserPresets.json \
-       cmake --workflow --preset my-StdShar-GNUC --fresh \
-       cmake --install ../build/myStdShar-GNUC \
-       popd
+       cp ../crystfel/deployment/HDF5CMakeUserPresets.json CMakeUserPresets.json; \
+       cmake --workflow --preset my-StdShar-GNUC --fresh; \
+       cmake --install ../build/myStdShar-GNUC; \
+       popd # hdf5-2.2.0
 
 # MsgPack
 RUN    wget -nv https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz ; \
