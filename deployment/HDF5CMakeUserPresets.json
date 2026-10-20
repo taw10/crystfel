@@ -4,7 +4,29 @@
     {
       "name": "my-StdShar-GNUC",
       "inherits": "ci-StdShar-GNUC",
-      "installDir": "/software/crystfel/devel"
+      "installDir": "/software/crystfel/devel",
+      "cacheVariables": {
+        "HDF5_BUILD_EXAMPLES": {
+          "type": "BOOL",
+          "value": "OFF"
+        },
+        "HDF5_PACK_EXAMPLES": {
+          "type": "BOOL",
+          "value": "OFF"
+        },
+        "BUILD_TESTING": {
+          "type": "BOOL",
+          "value": "OFF"
+        },
+        "HDF5_BUILD_FORTRAN": {
+          "type": "BOOL",
+          "value": "OFF"
+        },
+        "HDF5_BUILD_JAVA": {
+          "type": "BOOL",
+          "value": "OFF"
+        }
+      }
     }
   ],
   "buildPresets": [

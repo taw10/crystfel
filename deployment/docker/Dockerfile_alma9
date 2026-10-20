@@ -20,12 +20,13 @@ RUN    sed -i -E '/default_ccache_name/s//# default_ccache_name/g' /etc/krb5.con
        sed -i -E '/#\s+default_realm\s* =\s*EXAMPLE.COM\s*/s//default_realm = DESY.DE/g' /etc/krb5.conf
 
 # HDF5
+COPY   /deployment/HDF5CMakeUserPresets.json .
 RUN    wget -nv https://github.com/HDFGroup/hdf5/releases/download/2.2.0/hdf5-2.2.0.tar.gz; \
        tar -xf hdf5-2.2.0.tar.gz; \
        pushd hdf5-2.2.0; \
-       cp ../crystfel/deployment/HDF5CMakeUserPresets.json CMakeUserPresets.json; \
+       mv ../HDF5CMakeUserPresets.json CMakeUserPresets.json; \
        cmake --workflow --preset my-StdShar-GNUC --fresh; \
-       cmake --install ../build/myStdShar-GNUC; \
+       cmake --install ../build/my-StdShar-GNUC; \
        popd # hdf5-2.2.0
 
 # MsgPack
