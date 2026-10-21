@@ -36,50 +36,50 @@ struct indexamajig_arguments;
 
 struct indexamajig_arguments
 {
-	struct index_args iargs;  /* These are the options that will be
-	                           * given to process_image */
-	char *filename;
-	char *geom_filename;
-	char *outfile;
-	char *prefix;
-	int check_prefix;
-	int n_proc;
-	char *cellfile;
-	char *indm_str;
-	int basename;
-	struct im_zmq_params zmq_params;
-	struct im_asapo_params asapo_params;
-	int serial_start;
-	char *temp_location;
-	int if_refine;
-	int if_checkcell;
-	int if_peaks;
-	int if_multi;
-	int if_retry;
-	int profile;  /* Whether to do wall-clock time profiling */
-	int no_data_timeout;
-	char **copy_headers;
-	int n_copy_headers;
-	char *harvest_file;
-	char *milledir;
-	char *millefile;
-	int cpu_pin;
-	int worker;
-	int worker_id;
-	char *worker_tmpdir;
-	int fd_stream;
-	int fd_mille;
-	char *queue_sem;
-	char *shm_name;
+    struct index_args iargs;  /* These are the options that will be
+                               * given to process_image */
+    char *filename;
+    char *geom_filename;
+    char *outfile;
+    char *prefix;
+    int check_prefix;
+    int n_proc;
+    char *cellfile;
+    char *indm_str;
+    int basename;
+    struct im_zmq_params zmq_params;
+    struct im_asapo_params asapo_params;
+    int serial_start;
+    char *temp_location;
+    int if_refine;
+    int if_checkcell;
+    int if_peaks;
+    int if_multi;
+    int if_retry;
+    int profile;  /* Whether to do wall-clock time profiling */
+    int no_data_timeout;
+    char **copy_headers;
+    int n_copy_headers;
+    char *harvest_file;
+    char *milledir;
+    char *millefile;
+    int cpu_pin;
+    int worker;
+    int worker_id;
+    char *worker_tmpdir;
+    int fd_stream;
+    int fd_mille;
+    char *queue_sem;
+    char *shm_name;
 
-	struct taketwo_options **taketwo_opts_ptr;
-	struct felix_options **felix_opts_ptr;
-	struct xgandalf_options **xgandalf_opts_ptr;
-	struct ffbidx_options **ffbidx_opts_ptr;
-	struct pinkindexer_options **pinkindexer_opts_ptr;
-	struct fromfile_options **fromfile_opts_ptr;
-	struct asdf_options **asdf_opts_ptr;
-	struct smallcell_options **smallcell_opts_ptr;
+    struct taketwo_options **taketwo_opts_ptr;
+    struct felix_options **felix_opts_ptr;
+    struct xgandalf_options **xgandalf_opts_ptr;
+    struct ffbidx_options **ffbidx_opts_ptr;
+    struct pinkindexer_options **pinkindexer_opts_ptr;
+    struct fromfile_options **fromfile_opts_ptr;
+    struct asdf_options **asdf_opts_ptr;
+    struct smallcell_options **smallcell_opts_ptr;
 };
 
 extern struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[]);

@@ -53,41 +53,41 @@
 
 struct pointgroup_widget
 {
-	GtkWidget *w;
-	const char *symbol;
-	int centro;
-	int sohnke;
-	LatticeType lattice_type;
-	char *unique_axis;
+    GtkWidget *w;
+    const char *symbol;
+    int centro;
+    int sohnke;
+    LatticeType lattice_type;
+    char *unique_axis;
 };
 
 
 struct _crystfelsymmetryselector
 {
-	GtkButton parent_instance;
+    GtkButton parent_instance;
 
-	/*< private >*/
-	GtkWindow *parent_window;
-	GtkWidget *label;
-	GtkWidget *dialog;
-	GtkWidget *lattice_combo;
-	GtkWidget *sohnke_checkbox;
-	GtkWidget *centro_checkbox;
-	GtkWidget *flowbox;
-	GtkWidget *unique_axis_combo;
-	GtkWidget *weird;
-	GtkWidget *rhombo1;
-	GtkWidget *rhombo2;
-	GtkWidget *nonbio;
-	int have_pg;
-	int n_pgs;
+    /*< private >*/
+    GtkWindow *parent_window;
+    GtkWidget *label;
+    GtkWidget *dialog;
+    GtkWidget *lattice_combo;
+    GtkWidget *sohnke_checkbox;
+    GtkWidget *centro_checkbox;
+    GtkWidget *flowbox;
+    GtkWidget *unique_axis_combo;
+    GtkWidget *weird;
+    GtkWidget *rhombo1;
+    GtkWidget *rhombo2;
+    GtkWidget *nonbio;
+    int have_pg;
+    int n_pgs;
 
-	struct pointgroup_widget *pointgroups;
+    struct pointgroup_widget *pointgroups;
 };
 
 struct _crystfelsymmetryselectorclass
 {
-	GtkButtonClass parent_class;
+    GtkButtonClass parent_class;
 };
 
 typedef struct _crystfelsymmetryselector CrystFELSymmetrySelector;

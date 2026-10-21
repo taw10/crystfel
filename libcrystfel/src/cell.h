@@ -48,9 +48,9 @@
  **/
 struct rvec
 {
-	double   u;  /**< x component (in reciprocal space) */
-	double   v;  /**< y component (in reciprocal space) */
-	double   w;  /**< z component (in reciprocal space) */
+    double   u;  /**< x component (in reciprocal space) */
+    double   v;  /**< y component (in reciprocal space) */
+    double   w;  /**< z component (in reciprocal space) */
 };
 
 
@@ -60,13 +60,13 @@ struct rvec
  **/
 typedef enum
 {
-	L_TRICLINIC,
-	L_MONOCLINIC,
-	L_ORTHORHOMBIC,
-	L_TETRAGONAL,
-	L_RHOMBOHEDRAL,
-	L_HEXAGONAL,
-	L_CUBIC
+    L_TRICLINIC,
+    L_MONOCLINIC,
+    L_ORTHORHOMBIC,
+    L_TETRAGONAL,
+    L_RHOMBOHEDRAL,
+    L_HEXAGONAL,
+    L_CUBIC
 } LatticeType;
 
 
@@ -105,7 +105,7 @@ extern void cell_set_cartesian(UnitCell *cell,
                                double cx, double cy, double cz);
 
 extern void cell_set_parameters(UnitCell *cell, double a, double b, double c,
-				double alpha, double beta, double gamma);
+                                double alpha, double beta, double gamma);
 
 extern int cell_get_parameters(UnitCell *cell, double *a, double *b, double *c,
                                double *alpha, double *beta, double *gamma);
@@ -130,12 +130,12 @@ extern void cell_set_lattice_type(UnitCell *cell, LatticeType lattice_type);
 
 struct g6
 {
-	double A;
-	double B;
-	double C;
-	double D;
-	double E;
-	double F;
+    double A;
+    double B;
+    double C;
+    double D;
+    double E;
+    double F;
 };
 
 extern struct g6 cell_get_G6(UnitCell *cell);

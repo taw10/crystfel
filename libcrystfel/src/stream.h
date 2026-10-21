@@ -71,16 +71,16 @@ typedef struct _stream Stream;
  **/
 typedef enum {
 
-	/** Read the integrated reflections */
-	STREAM_REFLECTIONS = 2,
+    /** Read the integrated reflections */
+    STREAM_REFLECTIONS = 2,
 
-	/** Read the peak search results */
-	STREAM_PEAKS = 4,
+    /** Read the peak search results */
+    STREAM_PEAKS = 4,
 
-	/** Reconstruct the detgeom structure,
-	 * and create (blank) data/mask arrays.
-	 * (NB this is (currently) a slow operation) */
-	STREAM_DATA_DETGEOM = 8,
+    /** Reconstruct the detgeom structure,
+     * and create (blank) data/mask arrays.
+     * (NB this is (currently) a slow operation) */
+    STREAM_DATA_DETGEOM = 8,
 
 } StreamFlags;
 

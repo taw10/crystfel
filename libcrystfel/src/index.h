@@ -48,23 +48,23 @@
  **/
 typedef enum {
 
-	INDEXING_NONE   = 0,      /**< No indexing to be performed */
+    INDEXING_NONE   = 0,      /**< No indexing to be performed */
 
-	INDEXING_DIRAX  = 1,      /**< Invoke DirAx program */
-	INDEXING_MOSFLM = 2,      /**< Invoke MOSFLM program */
-	INDEXING_FELIX = 4,       /**< Invoke Felix program */
-	INDEXING_XDS = 5,         /**< Invoke XDS program (NB not nXDS) */
-	INDEXING_SIMULATION = 6,  /**< Dummy value for simulated data */
-	INDEXING_FILE = 7,        /**< Results injector for debugging */
-	INDEXING_ASDF = 8,        /**< Use built-in ASDF algorithm */
-	INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
-	INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
-	INDEXING_PINKINDEXER = 11,/**< Use PinkIndexer (via optional library) */
-	INDEXING_FFBIDX = 12,     /**< Use PSI Fast Indexer (via optional library) */
-	INDEXING_SMALLCELL = 13,  /**< Use Smallcell */
+    INDEXING_DIRAX  = 1,      /**< Invoke DirAx program */
+    INDEXING_MOSFLM = 2,      /**< Invoke MOSFLM program */
+    INDEXING_FELIX = 4,       /**< Invoke Felix program */
+    INDEXING_XDS = 5,         /**< Invoke XDS program (NB not nXDS) */
+    INDEXING_SIMULATION = 6,  /**< Dummy value for simulated data */
+    INDEXING_FILE = 7,        /**< Results injector for debugging */
+    INDEXING_ASDF = 8,        /**< Use built-in ASDF algorithm */
+    INDEXING_TAKETWO = 9,     /**< Use built-in TakeTwo algorithm */
+    INDEXING_XGANDALF = 10,   /**< Use XGANDALF (via optional library) */
+    INDEXING_PINKINDEXER = 11,/**< Use PinkIndexer (via optional library) */
+    INDEXING_FFBIDX = 12,     /**< Use PSI Fast Indexer (via optional library) */
+    INDEXING_SMALLCELL = 13,  /**< Use Smallcell */
 
-	INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
-	                           *   engine */
+    INDEXING_ERROR = 255,     /**< Special value for unrecognised indexing
+                               *   engine */
 
 } IndexingMethod;
 
@@ -74,23 +74,23 @@ typedef enum {
  */
 typedef enum {
 
-	/** Retry indexing if it doesn't work */
-	INDEXING_RETRY = 1,
+    /** Retry indexing if it doesn't work */
+    INDEXING_RETRY = 1,
 
-	/** Attempt to index remaining peaks to find more lattices */
-	INDEXING_MULTI = 2,
+    /** Attempt to index remaining peaks to find more lattices */
+    INDEXING_MULTI = 2,
 
-	/** Refine the indexing solution */
-	INDEXING_REFINE = 4,
+    /** Refine the indexing solution */
+    INDEXING_REFINE = 4,
 
-	/* 8, 16 reserved (formerly INDEXING_CHECK_CELL_COMBINATIONS and
-	 * INDEXING_CHECK_CELL_AXES respectively) */
+    /* 8, 16 reserved (formerly INDEXING_CHECK_CELL_COMBINATIONS and
+     * INDEXING_CHECK_CELL_AXES respectively) */
 
-	/** Check that the peaks agree with the indexing solution */
-	INDEXING_CHECK_PEAKS = 32,
+    /** Check that the peaks agree with the indexing solution */
+    INDEXING_CHECK_PEAKS = 32,
 
-	/** Check that the unit cell agrees with the target cell */
-	INDEXING_CHECK_CELL = 64,
+    /** Check that the unit cell agrees with the target cell */
+    INDEXING_CHECK_CELL = 64,
 
 } IndexingFlags;
 
@@ -100,51 +100,51 @@ typedef enum {
  */
 
 struct asdf_options {
-	int fast_execution;
+    int fast_execution;
 };
 
 
 struct pinkindexer_options {
-	unsigned int considered_peaks_count;
-	unsigned int angle_resolution;
-	unsigned int refinement_type;
-	float maxResolutionForIndexing_1_per_A;
-	float tolerance;
-	float reflectionRadius; /* In m^-1 */
-	float maxRefinementDisbalance;
+    unsigned int considered_peaks_count;
+    unsigned int angle_resolution;
+    unsigned int refinement_type;
+    float maxResolutionForIndexing_1_per_A;
+    float tolerance;
+    float reflectionRadius; /* In m^-1 */
+    float maxRefinementDisbalance;
 };
 
 
 struct xgandalf_options {
-	unsigned int sampling_pitch;
-	unsigned int grad_desc_iterations;
-	float tolerance;
-	unsigned int no_deviation_from_provided_cell;
-	float minLatticeVectorLength_A;
-	float maxLatticeVectorLength_A;
-	int maxPeaksForIndexing;
+    unsigned int sampling_pitch;
+    unsigned int grad_desc_iterations;
+    float tolerance;
+    unsigned int no_deviation_from_provided_cell;
+    float minLatticeVectorLength_A;
+    float maxLatticeVectorLength_A;
+    int maxPeaksForIndexing;
 };
 
 struct ffbidx_options {
 #ifdef HAVE_FFBIDX
-	struct config_runtime cruntime;
-	struct config_persistent cpers;
-	struct config_ifssr cifssr;
+    struct config_runtime cruntime;
+    struct config_persistent cpers;
+    struct config_ifssr cifssr;
 #endif
 };
 
 struct taketwo_options
 {
-	int member_thresh;
-	double len_tol;
-	double angle_tol;
-	double trace_tol;
+    int member_thresh;
+    double len_tol;   /**< In reciprocal metres */
+    double angle_tol; /**< In radians */
+    double trace_tol; /**< Contains sqrt(4*(1-cos(angle))) */
 };
 
 
 struct fromfile_options
 {
-	char *filename;
+    char *filename;
 };
 
 
@@ -156,16 +156,16 @@ struct smallcell_options
 
 struct felix_options
 {
-	double ttmin;  /* radians */
-	double ttmax;  /* radians */
-	int min_visits;
-	double min_completeness;
-	double max_uniqueness;
-	int n_voxels;
-	double fraction_max_visits;
-	double sigma;
-	double domega;
-	double max_internal_angle;
+    double ttmin;  /* radians */
+    double ttmax;  /* radians */
+    int min_visits;
+    double min_completeness;
+    double max_uniqueness;
+    int n_voxels;
+    double fraction_max_visits;
+    double sigma;
+    double domega;
+    double max_internal_angle;
 };
 
 

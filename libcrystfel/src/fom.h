@@ -43,15 +43,15 @@
  */
 struct fom_rejections
 {
-	int common;              /**< Number of common reflection pairs accepted */
-	int low_snr;             /**< Reflections with I/sigI too low */
-	int negative_deleted;    /**< Negative intensities which were deleted */
-	int negative_zeroed;     /**< Negative intensities which were set to zero */
-	int few_measurements;    /**< Reflections with too few measurements */
-	int outside_resolution_range;  /**< Reflections outside resolution range */
-	int no_bijvoet;          /**< Reflections with no Bijvoet partner */
-	int centric;             /**< Reflections which are centric */
-	int nan_inf_value;       /**< Reflections with NaN or infinite intensity */
+    int common;              /**< Number of common reflection pairs accepted */
+    int low_snr;             /**< Reflections with I/sigI too low */
+    int negative_deleted;    /**< Negative intensities which were deleted */
+    int negative_zeroed;     /**< Negative intensities which were set to zero */
+    int few_measurements;    /**< Reflections with too few measurements */
+    int outside_resolution_range;  /**< Reflections outside resolution range */
+    int no_bijvoet;          /**< Reflections with no Bijvoet partner */
+    int centric;             /**< Reflections which are centric */
+    int nan_inf_value;       /**< Reflections with NaN or infinite intensity */
 };
 
 /**
@@ -59,30 +59,30 @@ struct fom_rejections
  */
 enum fom_type
 {
-	FOM_R1I,
-	FOM_R1F,
-	FOM_R2,
-	FOM_RSPLIT,
-	FOM_CC,
-	FOM_CCSTAR,
-	FOM_CCANO,
-	FOM_CRDANO,
-	FOM_RANO,
-	FOM_RANORSPLIT,
-	FOM_D1SIG,
-	FOM_D2SIG,
-	FOM_NUM_MEASUREMENTS,
-	FOM_REDUNDANCY,
-	FOM_SNR,
-	FOM_MEAN_INTENSITY,
-	FOM_COMPLETENESS,
+    FOM_R1I,
+    FOM_R1F,
+    FOM_R2,
+    FOM_RSPLIT,
+    FOM_CC,
+    FOM_CCSTAR,
+    FOM_CCANO,
+    FOM_CRDANO,
+    FOM_RANO,
+    FOM_RANORSPLIT,
+    FOM_D1SIG,
+    FOM_D2SIG,
+    FOM_NUM_MEASUREMENTS,
+    FOM_REDUNDANCY,
+    FOM_SNR,
+    FOM_MEAN_INTENSITY,
+    FOM_COMPLETENESS,
 };
 
 struct fom_shells
 {
-	int nshells;
-	double *rmins;
-	double *rmaxs;
+    int nshells;
+    double *rmins;
+    double *rmaxs;
 };
 
 struct fom_context;

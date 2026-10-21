@@ -35,25 +35,25 @@ struct reflpeak;
 
 /** Enumeration of parameters which may want to be refined */
 enum gparam {
-	GPARAM_A_STAR,
-	GPARAM_B_STAR,
-	GPARAM_C_STAR,
-	GPARAM_AL_STAR,
-	GPARAM_BE_STAR,
-	GPARAM_GA_STAR,
-	GPARAM_CELL_RX,  /* Cell rotation around +x */
-	GPARAM_CELL_RY,  /* Cell rotation around +y */
-	GPARAM_CELL_RZ,  /* Cell rotation around +z */
-	GPARAM_DET_TX,
-	GPARAM_DET_TY,
-	GPARAM_DET_TZ,
-	GPARAM_DET_RX,  /* Detector panel (group) rotation about +x */
-	GPARAM_DET_RY,  /* Detector panel (group) rotation about +y */
-	GPARAM_DET_RZ,  /* Detector panel (group) rotation about +z */
-	GPARAM_SCANV_BEAM_A,
-	GPARAM_SCANV_BEAM_B,
-	GPARAM_SCANV_BEAM_C,
-	GPARAM_SCANV_BEAM_D,
+    GPARAM_A_STAR,
+    GPARAM_B_STAR,
+    GPARAM_C_STAR,
+    GPARAM_AL_STAR,
+    GPARAM_BE_STAR,
+    GPARAM_GA_STAR,
+    GPARAM_CELL_RX,  /* Cell rotation around +x */
+    GPARAM_CELL_RY,  /* Cell rotation around +y */
+    GPARAM_CELL_RZ,  /* Cell rotation around +z */
+    GPARAM_DET_TX,
+    GPARAM_DET_TY,
+    GPARAM_DET_TZ,
+    GPARAM_DET_RX,  /* Detector panel (group) rotation about +x */
+    GPARAM_DET_RY,  /* Detector panel (group) rotation about +y */
+    GPARAM_DET_RZ,  /* Detector panel (group) rotation about +z */
+    GPARAM_SCANV_BEAM_A,
+    GPARAM_SCANV_BEAM_B,
+    GPARAM_SCANV_BEAM_C,
+    GPARAM_SCANV_BEAM_D,
 };
 
 
@@ -61,9 +61,9 @@ enum gparam {
 #include "crystfel-mille.h"
 
 struct reflpeak {
-	Reflection *refl;
-	struct imagefeature *peak;
-	double Ih;   /* normalised */
+    Reflection *refl;
+    struct imagefeature *peak;
+    double Ih;   /* normalised */
 };
 
 /* Weighting of excitation error term (m^-1) compared to position term (pixels) */

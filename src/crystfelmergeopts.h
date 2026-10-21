@@ -51,35 +51,35 @@
 
 struct _crystfelmergeopts
 {
-	GtkNotebook parent_instance;
+    GtkNotebook parent_instance;
 
-	/*< private >*/
-	GtkWidget *model_combo;
-	GtkWidget *symmetry;
-	GtkWidget *scale;
-	GtkWidget *bscale;
-	GtkWidget *postref;
-	GtkWidget *niter;
-	GtkWidget *polarisation;
-	GtkWidget *deltacchalf;
-	GtkWidget *min_measurements;
-	GtkWidget *error_model;
-	GtkWidget *use_max_adu;
-	GtkWidget *max_adu;
-	GtkWidget *custom_split;
-	GtkWidget *custom_split_file;
-	GtkWidget *pr_logs;
-	GtkWidget *detwin;
-	GtkWidget *detwin_sym;
-	GtkWidget *min_res;
-	GtkWidget *min_res_val;
-	GtkWidget *limit_res;  /* check box for push-res < infinity */
-	GtkWidget *push_res;   /* entry for push-res value */
+    /*< private >*/
+    GtkWidget *model_combo;
+    GtkWidget *symmetry;
+    GtkWidget *scale;
+    GtkWidget *bscale;
+    GtkWidget *postref;
+    GtkWidget *niter;
+    GtkWidget *polarisation;
+    GtkWidget *deltacchalf;
+    GtkWidget *min_measurements;
+    GtkWidget *error_model;
+    GtkWidget *use_max_adu;
+    GtkWidget *max_adu;
+    GtkWidget *custom_split;
+    GtkWidget *custom_split_file;
+    GtkWidget *pr_logs;
+    GtkWidget *detwin;
+    GtkWidget *detwin_sym;
+    GtkWidget *min_res;
+    GtkWidget *min_res_val;
+    GtkWidget *limit_res;  /* check box for push-res < infinity */
+    GtkWidget *push_res;   /* entry for push-res value */
 };
 
 struct _crystfelmergeoptsclass
 {
-	GtkNotebookClass parent_class;
+    GtkNotebookClass parent_class;
 };
 
 typedef struct _crystfelmergeopts CrystFELMergeOpts;

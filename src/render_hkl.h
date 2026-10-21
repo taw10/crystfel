@@ -34,10 +34,10 @@
 #define RENDER_HKL_H
 
 enum {
-	WGHT_I,
-	WGHT_SQRTI,
-	WGHT_COUNTS,
-	WGHT_RAWCOUNTS,
+    WGHT_I,
+    WGHT_SQRTI,
+    WGHT_COUNTS,
+    WGHT_RAWCOUNTS,
 };
 
 #endif	/* RENDER_HKL_H */

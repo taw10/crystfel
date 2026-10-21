@@ -55,20 +55,20 @@ struct image;
 /** Represents a peak in an image. */
 struct imagefeature {
 
-	/** \name Coordinates on panel (fast scan, slow scan)
-	 *  Note carefully that these are the distances, measured in pixels,
-	 *  from the corner of the panel.  They are NOT pixel indices.
-	 *  If the peak is in the middle of the first pixel, its coordinates would be
-	 *  0.5,0.5. */
-	/**@{*/
-	double                          fs;
-	double                          ss;
-	/**@}*/
+    /** \name Coordinates on panel (fast scan, slow scan)
+     *  Note carefully that these are the distances, measured in pixels,
+     *  from the corner of the panel.  They are NOT pixel indices.
+     *  If the peak is in the middle of the first pixel, its coordinates would be
+     *  0.5,0.5. */
+    /**@{*/
+    double                          fs;
+    double                          ss;
+    /**@}*/
 
-	int                             pn;         /**< Panel number */
-	double                          intensity;  /**< Intensity */
+    int                             pn;         /**< Panel number */
+    double                          intensity;  /**< Intensity */
 
-	const char                      *name;  /**< Text name, e.g. "5,3,-1" */
+    const char                      *name;  /**< Text name, e.g. "5,3,-1" */
 };
 
 
@@ -82,121 +82,121 @@ typedef struct _image_data_arrays ImageDataArrays;
 
 typedef enum
 {
-	HEADER_FLOAT,
-	HEADER_INT,
-	HEADER_STR
+    HEADER_FLOAT,
+    HEADER_INT,
+    HEADER_STR
 } HeaderCacheType;
 
 struct header_cache_entry {
-	char *header_name;
-	HeaderCacheType type;
-	union {
-		long long int val_int;
-		double val_float;
-		char *val_str;
-	};
+    char *header_name;
+    HeaderCacheType type;
+    union {
+        long long int val_int;
+        double val_float;
+        char *val_str;
+    };
 };
 
 
 typedef enum
 {
-	DATA_SOURCE_TYPE_UNKNOWN,
-	DATA_SOURCE_TYPE_NONE,
-	DATA_SOURCE_TYPE_HDF5,
-	DATA_SOURCE_TYPE_CBF,
-	DATA_SOURCE_TYPE_CBFGZ,
-	DATA_SOURCE_TYPE_MSGPACK,
-	DATA_SOURCE_TYPE_SEEDEE,
-	DATA_SOURCE_TYPE_TIFF,
-	DATA_SOURCE_TYPE_RAW
+    DATA_SOURCE_TYPE_UNKNOWN,
+    DATA_SOURCE_TYPE_NONE,
+    DATA_SOURCE_TYPE_HDF5,
+    DATA_SOURCE_TYPE_CBF,
+    DATA_SOURCE_TYPE_CBFGZ,
+    DATA_SOURCE_TYPE_MSGPACK,
+    DATA_SOURCE_TYPE_SEEDEE,
+    DATA_SOURCE_TYPE_TIFF,
+    DATA_SOURCE_TYPE_RAW
 } DataSourceType;
 
 
 struct crystal_refls
 {
-	Crystal *cr;
-	RefList *refls;
-	int image_owns_crystal;
-	int image_owns_refls;
+    Crystal *cr;
+    RefList *refls;
+    int image_owns_crystal;
+    int image_owns_refls;
 };
 
 struct image
 {
-	/** The image data, by panel */
-	float                   **dp;
+    /** The image data, by panel */
+    float                   **dp;
 
-	/** The bad pixel mask, by panel */
-	int                     **bad;
+    /** The bad pixel mask, by panel */
+    int                     **bad;
 
-	/** The per-pixel saturation values, by panel */
-	float                   **sat;
+    /** The per-pixel saturation values, by panel */
+    float                   **sat;
 
-	/** Non-zero if the frame was determined to be a "hit" */
-	int                     hit;
+    /** Non-zero if the frame was determined to be a "hit" */
+    int                     hit;
 
-	/** Array of crystals (with reflection lists) in the image */
-	struct crystal_refls   *crystals;
+    /** Array of crystals (with reflection lists) in the image */
+    struct crystal_refls   *crystals;
 
-	/** The number of crystals in the image (size of \p crystals) */
-	int                     n_crystals;
+    /** The number of crystals in the image (size of \p crystals) */
+    int                     n_crystals;
 
-	/** Indexing method which indexed this pattern */
-	IndexingMethod          indexed_by;
+    /** Indexing method which indexed this pattern */
+    IndexingMethod          indexed_by;
 
-	/** Number of times the indexer was tried before succeeding */
-	int                     n_indexing_tries;
+    /** Number of times the indexer was tried before succeeding */
+    int                     n_indexing_tries;
 
-	/** The detector structure */
-	struct detgeom          *detgeom;
+    /** The detector structure */
+    struct detgeom          *detgeom;
 
-	DataSourceType           data_source_type;
+    DataSourceType           data_source_type;
 
-	/** \name The filename and event ID for the image
-	 * @{ */
-	char                    *filename;
-	char                    *ev;
-	/** @} */
+    /** \name The filename and event ID for the image
+     * @{ */
+    char                    *filename;
+    char                    *ev;
+    /** @} */
 
-	/** The data block, e.g. received over ZMQ, for the image.
-	 * filenename/ev OR this should be filled in, but not both */
-	void                    *data_block;
-	size_t                   data_block_size;
-	char                    *meta_data;
+    /** The data block, e.g. received over ZMQ, for the image.
+     * filenename/ev OR this should be filled in, but not both */
+    void                    *data_block;
+    size_t                   data_block_size;
+    char                    *meta_data;
 
-	/** A list of metadata read from the stream */
-	struct header_cache_entry *header_cache[HEADER_CACHE_SIZE];
-	int                        n_cached_headers;
+    /** A list of metadata read from the stream */
+    struct header_cache_entry *header_cache[HEADER_CACHE_SIZE];
+    int                        n_cached_headers;
 
-	/** Monotonically increasing serial number for this image */
-	int                     serial;
+    /** Monotonically increasing serial number for this image */
+    int                     serial;
 
-	/** Spectrum information */
-	Spectrum               *spectrum;
+    /** Spectrum information */
+    Spectrum               *spectrum;
 
-	/** Wavelength of the incident radiation, in metres */
-	double                  lambda;
+    /** Wavelength of the incident radiation, in metres */
+    double                  lambda;
 
-	/** Convergence angle of the incident ration, in radians (full angle) */
-	double                  div;
+    /** Convergence angle of the incident ration, in radians (full angle) */
+    double                  div;
 
-	/** Full-width half-maximum bandwidth as a fraction, applied to wavelength */
-	double                  bw;
+    /** Full-width half-maximum bandwidth as a fraction, applied to wavelength */
+    double                  bw;
 
-	/** Resolution estimate based on peaks */
-	double                  peak_resolution;
+    /** Resolution estimate based on peaks */
+    double                  peak_resolution;
 
-	/** List of peaks found in the image */
-	ImageFeatureList        *features;
+    /** List of peaks found in the image */
+    ImageFeatureList        *features;
 
-	/** Re-usable data array structure, or NULL if not used */
-	ImageDataArrays         *ida;
+    /** Re-usable data array structure, or NULL if not used */
+    ImageDataArrays         *ida;
 
-	/** If set, then 'features' should be freed with the image.
-	 * Otherwise, it is managed externally (e.g. by Julia) */
-	int                      owns_peaklist;
+    /** If set, then 'features' should be freed with the image.
+     * Otherwise, it is managed externally (e.g. by Julia) */
+    int                      owns_peaklist;
 
-	/** Scan coordinates, used for electron diffraction */
-	float                    scan_coords[2];
+    /** Scan coordinates, used for electron diffraction */
+    float                    scan_coords[2];
 
 };
 

@@ -59,26 +59,26 @@ struct sb_shm;
 
 struct sb_shm
 {
-	pthread_mutex_t term_lock;
+    pthread_mutex_t term_lock;
 
-	pthread_mutex_t queue_lock;
-	int n_events;
-	char queue[QUEUE_SIZE][MAX_EV_LEN];
-	int no_more;
-	int end_of_stream[MAX_NUM_WORKERS];
+    pthread_mutex_t queue_lock;
+    int n_events;
+    char queue[QUEUE_SIZE][MAX_EV_LEN];
+    int no_more;
+    int end_of_stream[MAX_NUM_WORKERS];
 
-	pthread_mutex_t debug_lock;
-	char last_ev[MAX_NUM_WORKERS][MAX_EV_LEN];
-	char last_task[MAX_NUM_WORKERS][MAX_TASK_LEN];
-	int pings[MAX_NUM_WORKERS];
-	time_t time_last_start[MAX_NUM_WORKERS];
+    pthread_mutex_t debug_lock;
+    char last_ev[MAX_NUM_WORKERS][MAX_EV_LEN];
+    char last_task[MAX_NUM_WORKERS][MAX_TASK_LEN];
+    int pings[MAX_NUM_WORKERS];
+    time_t time_last_start[MAX_NUM_WORKERS];
 
-	pthread_mutex_t totals_lock;
-	int n_processed;
-	int n_hits;
-	int n_hadcrystals;
-	int n_crystals;
-	int should_shutdown;
+    pthread_mutex_t totals_lock;
+    int n_processed;
+    int n_hits;
+    int n_hadcrystals;
+    int n_crystals;
+    int should_shutdown;
 };
 
 extern char *create_tempdir(const char *temp_location);

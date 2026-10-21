@@ -34,17 +34,17 @@
 
 struct gui_job_notes_page
 {
-	GtkWidget *textview;
+    GtkWidget *textview;
 };
 
 
 enum gui_job_type
 {
-	GUI_JOB_INDEXING,
-	GUI_JOB_PROCESS_HKL,
-	GUI_JOB_PROCESS_HKL_SCALE,
-	GUI_JOB_PARTIALATOR,
-	GUI_JOB_AMBIGATOR,
+    GUI_JOB_INDEXING,
+    GUI_JOB_PROCESS_HKL,
+    GUI_JOB_PROCESS_HKL_SCALE,
+    GUI_JOB_PARTIALATOR,
+    GUI_JOB_AMBIGATOR,
 };
 
 extern void error_box(struct crystfelproject *proj, const char *message);

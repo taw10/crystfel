@@ -96,8 +96,8 @@ extern void *srealloc(void *arr, size_t new_size);
  * Controls the behaviour of \ref assplode.
  **/
 typedef enum {
-	ASSPLODE_NONE	= 0,    /**< Nothing */
-	ASSPLODE_DUPS	= 1<<0  /**< Don't merge deliminators */
+    ASSPLODE_NONE	= 0,    /**< Nothing */
+    ASSPLODE_DUPS	= 1<<0  /**< Don't merge deliminators */
 } AssplodeFlag;
 extern int assplode(const char *a, const char *delims, char ***pbits,
                     AssplodeFlag flags);
@@ -110,70 +110,70 @@ extern int poisson_noise(gsl_rng *rng, double expected);
 
 static inline double sq(double a)
 {
-	return a*a;
+    return a*a;
 }
 
 static inline double distance(double x1, double y1, double x2, double y2)
 {
-	return sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+    return sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
 }
 
 static inline double modulus(double x, double y, double z)
 {
-	return sqrt(x*x + y*y + z*z);
+    return sqrt(x*x + y*y + z*z);
 }
 
 static inline double modulus2d(double x, double y)
 {
-	return sqrt(x*x + y*y);
+    return sqrt(x*x + y*y);
 }
 
 static inline double modulus_squared(double x, double y, double z) {
-	return x*x + y*y + z*z;
+    return x*x + y*y + z*z;
 }
 
 static inline double distance3d(double x1, double y1, double z1,
                                 double x2, double y2, double z2)
 {
-	double d = modulus(x1-x2, y1-y2, z1-z2);
-	return d;
+    double d = modulus(x1-x2, y1-y2, z1-z2);
+    return d;
 }
 
 /* Answer in radians */
 static inline double angle_between(double x1, double y1, double z1,
                                    double x2, double y2, double z2)
 {
-	double mod1 = modulus(x1, y1, z1);
-	double mod2 = modulus(x2, y2, z2);
-	double cosine = (x1*x2 + y1*y2 + z1*z2) / (mod1*mod2);
+    double mod1 = modulus(x1, y1, z1);
+    double mod2 = modulus(x2, y2, z2);
+    double cosine = (x1*x2 + y1*y2 + z1*z2) / (mod1*mod2);
 
-	/* Fix domain if outside due to rounding */
-	if ( cosine > 1.0 ) cosine = 1.0;
-	if ( cosine < -1.0 ) cosine = -1.0;
+    /* Fix domain if outside due to rounding */
+    if ( cosine > 1.0 ) cosine = 1.0;
+    if ( cosine < -1.0 ) cosine = -1.0;
 
-	return acos(cosine);
+    return acos(cosine);
 }
 
 /* Answer in radians */
 static inline double angle_between_2d(double x1, double y1,
                                       double x2, double y2)
 {
-	double mod1 = modulus2d(x1, y1);
-	double mod2 = modulus2d(x2, y2);
-	double cosine = (x1*x2 + y1*y2) / (mod1*mod2);
+    double mod1 = modulus2d(x1, y1);
+    double mod2 = modulus2d(x2, y2);
+    double cosine = (x1*x2 + y1*y2) / (mod1*mod2);
 
-	/* Fix domain if outside due to rounding */
-	if ( cosine > 1.0 ) cosine = 1.0;
-	if ( cosine < -1.0 ) cosine = -1.0;
+    /* Fix domain if outside due to rounding */
+    if ( cosine > 1.0 ) cosine = 1.0;
+    if ( cosine < -1.0 ) cosine = -1.0;
 
-	return acos(cosine);
+    return acos(cosine);
 }
 
 static inline int within_tolerance(double a, double b, double percent)
 {
-	double tol = fabs(a) * (percent/100.0);
-	if ( fabs(b-a) < tol ) return 1;
-	return 0;
+    double tol = fabs(a) * (percent/100.0);
+    if ( fabs(b-a) < tol ) return 1;
+    return 0;
 }
 
 extern void rotate2d(double *x, double *y, double cx, double cy, double ang);
@@ -214,12 +214,12 @@ extern void rotate2d(double *x, double *y, double cx, double cy, double ang);
 /* Electron accelerating voltage (V) to wavelength (m) */
 static inline double el_V_to_lambda(double E)
 {
-	double Estar;
+    double Estar;
 
-	/* Relativistically corrected accelerating voltage */
-	Estar = E * (1.0 + E * ELECTRON_CHARGE/(2.0*ELECTRON_MASS*C_VACUO*C_VACUO));
+    /* Relativistically corrected accelerating voltage */
+    Estar = E * (1.0 + E * ELECTRON_CHARGE/(2.0*ELECTRON_MASS*C_VACUO*C_VACUO));
 
-	return PLANCK / sqrt(2.0*ELECTRON_MASS*ELECTRON_CHARGE*Estar);
+    return PLANCK / sqrt(2.0*ELECTRON_MASS*ELECTRON_CHARGE*Estar);
 }
 
 
@@ -298,10 +298,10 @@ extern const char *filename_extension(const char *fn, const char **ext2);
 struct quaternion;
 
 struct quaternion {
-	double w;
-	double x;
-	double y;
-	double z;
+    double w;
+    double x;
+    double y;
+    double z;
 };
 
 extern struct quaternion normalise_quaternion(struct quaternion q);
@@ -315,12 +315,12 @@ extern int compare_double(const void *av, const void *bv);
 /* Keep these ones inline, to avoid function call overhead */
 static inline struct quaternion invalid_quaternion(void)
 {
-	struct quaternion quat;
-	quat.w = 0.0;
-	quat.x = 0.0;
-	quat.y = 0.0;
-	quat.z = 0.0;
-	return quat;
+    struct quaternion quat;
+    quat.w = 0.0;
+    quat.x = 0.0;
+    quat.y = 0.0;
+    quat.z = 0.0;
+    return quat;
 }
 
 
@@ -336,15 +336,15 @@ static inline struct quaternion invalid_quaternion(void)
 static inline void mean_variance(const double x, const double w,
                                  double *sumw, double *mean, double *M2)
 {
-	const double temp  = w + *sumw;
-	const double delta = x - *mean;
-	const double R = delta * w / temp;
+    const double temp  = w + *sumw;
+    const double delta = x - *mean;
+    const double R = delta * w / temp;
 
-	if ( w < DBL_MIN ) return;
+    if ( w < DBL_MIN ) return;
 
-	*mean += R;
-	*M2   += *sumw*delta*R;
-	*sumw  = temp;
+    *mean += R;
+    *M2   += *sumw*delta*R;
+    *sumw  = temp;
 }
 
 

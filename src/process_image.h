@@ -51,49 +51,49 @@ struct index_args;
 /* Information about the indexing process which is common to all patterns */
 struct index_args
 {
-	/* Input */
-	DataTemplate *dtempl;
-	signed int wait_for_file; /* -1 means wait forever */
-	int no_image_data;
-	int no_mask_data;
-	float highres;
-	DataSourceType data_format;
+    /* Input */
+    DataTemplate *dtempl;
+    signed int wait_for_file; /* -1 means wait forever */
+    int no_image_data;
+    int no_mask_data;
+    float highres;
+    DataSourceType data_format;
 
-	/* Peak search */
-	struct peak_params peak_search;
-	void *pf_private;
+    /* Peak search */
+    struct peak_params peak_search;
+    void *pf_private;
 
-	/* Hit finding */
-	int min_peaks;
+    /* Hit finding */
+    int min_peaks;
 
-	/* Indexing */
-	IndexingPrivate *ipriv;
-	UnitCell *cell;
-	float tols[6];
-	float wavelength_estimate;
-	float clen_estimate;
-	int n_threads;
-	int mille;
-	int max_mille_level;
+    /* Indexing */
+    IndexingPrivate *ipriv;
+    UnitCell *cell;
+    float tols[6];
+    float wavelength_estimate;
+    float clen_estimate;
+    int n_threads;
+    int mille;
+    int max_mille_level;
 
-	/* Integration */
-	IntegrationMethod int_meth;
-	IntDiag int_diag;
-	float ir_inn;
-	float ir_mid;
-	float ir_out;
-	signed int int_diag_h;
-	signed int int_diag_k;
-	signed int int_diag_l;
-	float push_res;
-	float fix_profile_r;
-	float fix_divergence;
-	int overpredict;
-	int cell_params_only;
+    /* Integration */
+    IntegrationMethod int_meth;
+    IntDiag int_diag;
+    float ir_inn;
+    float ir_mid;
+    float ir_out;
+    signed int int_diag_h;
+    signed int int_diag_k;
+    signed int int_diag_l;
+    float push_res;
+    float fix_profile_r;
+    float fix_divergence;
+    int overpredict;
+    int cell_params_only;
 
-	/* Output */
-	int stream_flags;
-	int stream_nonhits;
+    /* Output */
+    int stream_flags;
+    int stream_nonhits;
 };
 
 
@@ -102,16 +102,16 @@ struct index_args
 /* Information about the indexing process for one pattern */
 struct pattern_args
 {
-	/* "Input" */
-	char *filename;
-	char *event;
+    /* "Input" */
+    char *filename;
+    char *event;
 
-	void *zmq_data;
-	size_t zmq_data_size;
+    void *zmq_data;
+    size_t zmq_data_size;
 
-	char *asapo_data;
-	size_t asapo_data_size;
-	char *asapo_meta;
+    char *asapo_data;
+    size_t asapo_data_size;
+    char *asapo_meta;
 };
 
 

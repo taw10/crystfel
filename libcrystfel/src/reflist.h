@@ -86,11 +86,11 @@ extern "C" {
 /* Structure representing the contributions to a merged reflection */
 struct reflection_contributions
 {
-	int          n_contrib;
-	int          max_contrib;
-	double      *contribs;
-	double      *contrib_esds;
-	double      *contrib_legacy_weights;
+    int          n_contrib;
+    int          max_contrib;
+    double      *contribs;
+    double      *contrib_esds;
+    double      *contrib_legacy_weights;
 };
 
 extern RefList *reflist_new(void);

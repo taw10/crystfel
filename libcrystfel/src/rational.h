@@ -42,9 +42,9 @@
  * contents, except by using the accessor functions.
  **/
 typedef struct {
-	/* Private, don't modify */
-	signed long long int num;
-	signed long long int den;
+    /* Private, don't modify */
+    signed long long int num;
+    signed long long int den;
 } Rational;
 
 

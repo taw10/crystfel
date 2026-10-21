@@ -58,24 +58,24 @@
 
 struct _crystfelcolourscale
 {
-	GtkDrawingArea       parent_instance;
-	double               visible_width;
-	double               visible_height;
-	double               drag_start_x;
-	double               drag_start_y;
-	double               drag_min;
+    GtkDrawingArea       parent_instance;
+    double               visible_width;
+    double               visible_height;
+    double               drag_start_x;
+    double               drag_start_y;
+    double               drag_min;
 
-	int                  colour_scheme;
-	double               lo;
-	double               hi;
-	int                  bins[COLSCALE_N_BINS];
-	float               *sample;
-	int                  n_samples;
+    int                  colour_scheme;
+    double               lo;
+    double               hi;
+    int                  bins[COLSCALE_N_BINS];
+    float               *sample;
+    int                  n_samples;
 };
 
 struct _crystfelcolourscaleclass
 {
-	GtkDrawingAreaClass parent_class;
+    GtkDrawingAreaClass parent_class;
 };
 
 typedef struct _crystfelcolourscale CrystFELColourScale;

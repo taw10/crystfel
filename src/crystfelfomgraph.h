@@ -58,21 +58,21 @@
 
 struct _crystfelfomgraph
 {
-	GtkDrawingArea       parent_instance;
-	double               visible_width;
-	double               visible_height;
+    GtkDrawingArea       parent_instance;
+    double               visible_width;
+    double               visible_height;
 
-	int n_shells;
-	double *shell_centers;
+    int n_shells;
+    double *shell_centers;
 
-	int n_foms;
-	enum fom_type *fom_types;
-	double **fom_values;
+    int n_foms;
+    enum fom_type *fom_types;
+    double **fom_values;
 };
 
 struct _crystfelfomgraphclass
 {
-	GtkDrawingAreaClass parent_class;
+    GtkDrawingAreaClass parent_class;
 };
 
 typedef struct _crystfelfomgraph CrystFELFoMGraph;

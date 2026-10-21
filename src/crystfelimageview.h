@@ -58,53 +58,53 @@
 
 struct _crystfelimageview
 {
-	GtkDrawingArea       parent_instance;
+    GtkDrawingArea       parent_instance;
 
-	/*< private >*/
-	GtkIMContext        *im_context;
+    /*< private >*/
+    GtkIMContext        *im_context;
 
-	/* Detector size in metres */
-	double               detector_w;
-	double               detector_h;
+    /* Detector size in metres */
+    double               detector_w;
+    double               detector_h;
 
-	/* Redraw/scroll stuff */
-	int                  need_rerender;
-	int                  need_recentre;
-	int                  colour_scheme;
-	double               scale_lo;
-	double               scale_hi;
-	GtkScrollablePolicy  hpol;
-	GtkScrollablePolicy  vpol;
-	GtkAdjustment       *hadj;
-	GtkAdjustment       *vadj;
-	double               visible_width;
-	double               visible_height;
-	double               zoom;  /* screen pixels per m */
-	double               drag_start_x;
-	double               drag_start_y;
-	double               drag_start_sp_x;
-	double               drag_start_sp_y;
-	double               min_x;
-	double               max_y;
+    /* Redraw/scroll stuff */
+    int                  need_rerender;
+    int                  need_recentre;
+    int                  colour_scheme;
+    double               scale_lo;
+    double               scale_hi;
+    GtkScrollablePolicy  hpol;
+    GtkScrollablePolicy  vpol;
+    GtkAdjustment       *hadj;
+    GtkAdjustment       *vadj;
+    double               visible_width;
+    double               visible_height;
+    double               zoom;  /* screen pixels per m */
+    double               drag_start_x;
+    double               drag_start_y;
+    double               drag_start_sp_x;
+    double               drag_start_sp_y;
+    double               min_x;
+    double               max_y;
 
-	const struct image  *image;
+    const struct image  *image;
 
-	GdkPixbuf          **pixbufs;
+    GdkPixbuf          **pixbufs;
 
-	double               brightness;
-	int                  show_centre;
-	int                  show_peaks;
-	int                  show_refls;
-	int                  label_refls;
-	int                  label_panels;
-	float                peak_box_size;
-	float                refl_box_size;
-	int                  resolution_rings;
+    double               brightness;
+    int                  show_centre;
+    int                  show_peaks;
+    int                  show_refls;
+    int                  label_refls;
+    int                  label_panels;
+    float                peak_box_size;
+    float                refl_box_size;
+    int                  resolution_rings;
 };
 
 struct _crystfelimageviewclass
 {
-	GtkDrawingAreaClass parent_class;
+    GtkDrawingAreaClass parent_class;
 };
 
 typedef struct _crystfelimageview CrystFELImageView;

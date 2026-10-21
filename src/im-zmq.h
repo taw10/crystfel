@@ -38,10 +38,10 @@
 
 struct im_zmq_params
 {
-	char *addr;
-	char *request;
-	char *subscriptions[256];
-	int n_subscriptions;
+    char *addr;
+    char *request;
+    char *subscriptions[256];
+    int n_subscriptions;
 };
 
 #if defined(HAVE_ZMQ)

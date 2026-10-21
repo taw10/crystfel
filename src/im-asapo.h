@@ -36,16 +36,16 @@
 
 struct im_asapo_params
 {
-	char *endpoint;
-	char *token;
-	char *beamtime;
-	char *group_id;
-	char *source;
-	char *stream;
-	int wait_for_stream;
-	int write_output_stream;
-	int consumer_timeout_ms;
-	int use_ack;
+    char *endpoint;
+    char *token;
+    char *beamtime;
+    char *group_id;
+    char *source;
+    char *stream;
+    int wait_for_stream;
+    int write_output_stream;
+    int consumer_timeout_ms;
+    int use_ack;
 };
 
 struct im_asapo;
@@ -68,8 +68,8 @@ extern void im_asapo_send(struct im_asapo *a, struct image *image, int hit);
 
 static UNUSED struct im_asapo *im_asapo_connect(const struct im_asapo_params *params)
 {
-	ERROR("This installation of CrystFEL was compiled without ASAP::O support.\n");
-	return NULL;
+    ERROR("This installation of CrystFEL was compiled without ASAP::O support.\n");
+    return NULL;
 }
 
 static UNUSED void im_asapo_shutdown(struct im_asapo *a)
@@ -80,13 +80,13 @@ static UNUSED void *im_asapo_fetch(struct im_asapo *a, size_t *psize,
                                    char **pmeta, char **pfilename, char **pevent,
                                    int *pfinished, int *pmessageid)
 {
-	*psize = 0;
-	*pmeta = NULL;
-	*pfilename = NULL;
-	*pevent = NULL;
-	*pfinished = 1;
-	*pmessageid = 0;
-	return NULL;
+    *psize = 0;
+    *pmeta = NULL;
+    *pfilename = NULL;
+    *pevent = NULL;
+    *pfinished = 1;
+    *pmessageid = 0;
+    return NULL;
 }
 
 static UNUSED void im_asapo_send(struct im_asapo *a, struct image *image, int hit)

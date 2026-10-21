@@ -51,18 +51,18 @@
 
 struct _gtkmultifilechooserbutton
 {
-	GtkButton parent_instance;
+    GtkButton parent_instance;
 
-	/*< private >*/
-	GtkWidget *chooser;
-	char *text;
-	GSList *filenames;
+    /*< private >*/
+    GtkWidget *chooser;
+    char *text;
+    GSList *filenames;
 };
 
 struct _gtkmultifilechooserbuttonclass
 {
-	GtkButtonClass parent_class;
-	int dummy;
+    GtkButtonClass parent_class;
+    int dummy;
 };
 
 typedef struct _gtkmultifilechooserbutton GtkMultiFileChooserButton;

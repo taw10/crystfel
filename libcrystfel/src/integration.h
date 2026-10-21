@@ -42,30 +42,30 @@
  **/
 typedef enum {
 
-	/** Never show diagnostics */
-	INTDIAG_NONE,
+    /** Never show diagnostics */
+    INTDIAG_NONE,
 
-	/** Show diagnostics for a randomly selected 1% of reflections */
-	INTDIAG_RANDOM,
+    /** Show diagnostics for a randomly selected 1% of reflections */
+    INTDIAG_RANDOM,
 
-	/** Show diagnostics for all reflections */
-	INTDIAG_ALL,
+    /** Show diagnostics for all reflections */
+    INTDIAG_ALL,
 
-	/** Show diagnostics when the Miller indices of the reflection are the
-	 * ones specified */
-	INTDIAG_INDICES,
+    /** Show diagnostics when the Miller indices of the reflection are the
+     * ones specified */
+    INTDIAG_INDICES,
 
-	/** Show diagnostics when the measured intensity is less than minus
-	 * three times its estimated error. */
-	INTDIAG_NEGATIVE,
+    /** Show diagnostics when the measured intensity is less than minus
+     * three times its estimated error. */
+    INTDIAG_NEGATIVE,
 
-	/** Show diagnostics when the measured intensity is less than minus five
-	 * times its estimated error. */
-	INTDIAG_IMPLAUSIBLE,
+    /** Show diagnostics when the measured intensity is less than minus five
+     * times its estimated error. */
+    INTDIAG_IMPLAUSIBLE,
 
-	/** Show diagnostics when the measured intensity is more than three
-	 * times its estimated error. */
-	INTDIAG_STRONG
+    /** Show diagnostics when the measured intensity is more than three
+     * times its estimated error. */
+    INTDIAG_STRONG
 
 } IntDiag;
 
@@ -79,25 +79,25 @@ typedef enum {
  */
 typedef enum {
 
-	/** No integration at all */
-	INTEGRATION_NONE   = 0,
+    /** No integration at all */
+    INTEGRATION_NONE   = 0,
 
-	/** Summation of pixel values inside ring, minus background */
-	INTEGRATION_RINGS  = 1,
+    /** Summation of pixel values inside ring, minus background */
+    INTEGRATION_RINGS  = 1,
 
-	/** Two dimensional profile fitting */
-	INTEGRATION_PROF2D = 2,
+    /** Two dimensional profile fitting */
+    INTEGRATION_PROF2D = 2,
 
-	/** Integrate saturated reflections */
-	INTEGRATION_SATURATED = 256,
+    /** Integrate saturated reflections */
+    INTEGRATION_SATURATED = 256,
 
-	/** Center the peak in the box prior to integration */
-	INTEGRATION_CENTER = 512,
+    /** Center the peak in the box prior to integration */
+    INTEGRATION_CENTER = 512,
 
-	/* 1024 was INTEGRATION_RESCUT, which is no longer used */
+    /* 1024 was INTEGRATION_RESCUT, which is no longer used */
 
-	/** Fit a gradient to the background */
-	INTEGRATION_GRADIENTBG = 2048,
+    /** Fit a gradient to the background */
+    INTEGRATION_GRADIENTBG = 2048,
 
 } IntegrationMethod;
 

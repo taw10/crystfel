@@ -42,9 +42,9 @@
 
 enum ScaleFlags
 {
-	SCALE_NONE = 0,
-	SCALE_NO_B = 1<<0,  /* Don't use Debye-Waller part */
-	SCALE_VERBOSE_ERRORS = 1<<1,
+    SCALE_NONE = 0,
+    SCALE_NO_B = 1<<0,  /* Don't use Debye-Waller part */
+    SCALE_VERBOSE_ERRORS = 1<<1,
 };
 
 extern int scale_one_crystal(const RefList *listS, Crystal *cr,

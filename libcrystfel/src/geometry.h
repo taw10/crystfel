@@ -54,11 +54,11 @@ extern "C" {
  **/
 typedef enum {
 
-	PMODEL_UNITY,   /**< Set all partialities and Lorentz factors to 1. */
-	PMODEL_XSPHERE, /**< Flat sphere model with super-Gaussian spectrum */
-	PMODEL_OFFSET,  /**< Ewald offset model for monochromatic beam */
-	PMODEL_RANDOM,  /**< Randomly assigned partialities */
-	PMODEL_GGPM     /**< Generalised gaussian prediction model */
+    PMODEL_UNITY,   /**< Set all partialities and Lorentz factors to 1. */
+    PMODEL_XSPHERE, /**< Flat sphere model with super-Gaussian spectrum */
+    PMODEL_OFFSET,  /**< Ewald offset model for monochromatic beam */
+    PMODEL_RANDOM,  /**< Randomly assigned partialities */
+    PMODEL_GGPM     /**< Generalised gaussian prediction model */
 
 } PartialityModel;
 
@@ -68,13 +68,13 @@ typedef enum {
  */
 struct polarisation
 {
-	double fraction;   /**< Polarisation fraction (0 to 1) */
+    double fraction;   /**< Polarisation fraction (0 to 1) */
 
-	double angle;      /**< Angle of electron beam, radians, clockwise from
-	                    * horizontal when looking along beam */
+    double angle;      /**< Angle of electron beam, radians, clockwise from
+                        * horizontal when looking along beam */
 
-	int disable;       /**< If set, don't even correct for the polarisation
-	                    * of the diffracted beam (1 - 0.5sin^2(2theta)) */
+    int disable;       /**< If set, don't even correct for the polarisation
+                        * of the diffracted beam (1 - 0.5sin^2(2theta)) */
 };
 
 

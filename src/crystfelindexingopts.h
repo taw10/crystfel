@@ -51,59 +51,59 @@
 
 struct _crystfelindexingopts
 {
-	GtkNotebook parent_instance;
+    GtkNotebook parent_instance;
 
-	/*< private >*/
-	int show_stream_opts;
-	GtkWidget *stream_params;  /* Stream output page */
+    /*< private >*/
+    int show_stream_opts;
+    GtkWidget *stream_params;  /* Stream output page */
 
-	char *cell_file;
-	GtkWidget *cell_chooser;
-	GtkWidget *auto_indm;
-	GtkWidget *indm_chooser;
-	GtkListStore *indm_store;
-	GtkWidget *multi;
-	GtkWidget *refine;
-	GtkWidget *retry;
-	GtkWidget *check_peaks;
-	GtkWidget *check_cell;
-	GtkWidget *tols[6]; /* frac (not %) and radians */
-	GtkWidget *enable_hitfind;
-	GtkWidget *ignore_fewer_peaks;
+    char *cell_file;
+    GtkWidget *cell_chooser;
+    GtkWidget *auto_indm;
+    GtkWidget *indm_chooser;
+    GtkListStore *indm_store;
+    GtkWidget *multi;
+    GtkWidget *refine;
+    GtkWidget *retry;
+    GtkWidget *check_peaks;
+    GtkWidget *check_cell;
+    GtkWidget *tols[6]; /* frac (not %) and radians */
+    GtkWidget *enable_hitfind;
+    GtkWidget *ignore_fewer_peaks;
 
-	GtkWidget *integration_combo;
-	GtkWidget *centering;
-	GtkWidget *overpredict;
-	GtkWidget *limit_res;
-	GtkWidget *push_res;
-	GtkWidget *ir_inn;
-	GtkWidget *ir_mid;
-	GtkWidget *ir_out;
-	GtkWidget *fix_profile_radius_p;
-	GtkWidget *fix_profile_radius;
-	GtkWidget *fix_divergence;
+    GtkWidget *integration_combo;
+    GtkWidget *centering;
+    GtkWidget *overpredict;
+    GtkWidget *limit_res;
+    GtkWidget *push_res;
+    GtkWidget *ir_inn;
+    GtkWidget *ir_mid;
+    GtkWidget *ir_out;
+    GtkWidget *fix_profile_radius_p;
+    GtkWidget *fix_profile_radius;
+    GtkWidget *fix_divergence;
 
-	GtkWidget *pinkindexer_cpeaks;
-	GtkWidget *pinkindexer_use_max_res;
-	GtkWidget *pinkindexer_max_res;
-	GtkWidget *pinkindexer_angle_density;
-	GtkWidget *pinkindexer_refinement_type;
-	GtkWidget *pinkindexer_tolerance;
-	GtkWidget *pinkindexer_use_refl_radius;
-	GtkWidget *pinkindexer_refl_radius;
-	GtkWidget *pinkindexer_max_imbalance;
+    GtkWidget *pinkindexer_cpeaks;
+    GtkWidget *pinkindexer_use_max_res;
+    GtkWidget *pinkindexer_max_res;
+    GtkWidget *pinkindexer_angle_density;
+    GtkWidget *pinkindexer_refinement_type;
+    GtkWidget *pinkindexer_tolerance;
+    GtkWidget *pinkindexer_use_refl_radius;
+    GtkWidget *pinkindexer_refl_radius;
+    GtkWidget *pinkindexer_max_imbalance;
 
-	GtkWidget *exclude_nonhits;
-	GtkWidget *no_peaks_in_stream;
-	GtkWidget *no_refls_in_stream;
-	GtkWidget *millepede;
-	GtkWidget *max_mille;
-	GtkListStore *copy_metadata_store;
+    GtkWidget *exclude_nonhits;
+    GtkWidget *no_peaks_in_stream;
+    GtkWidget *no_refls_in_stream;
+    GtkWidget *millepede;
+    GtkWidget *max_mille;
+    GtkListStore *copy_metadata_store;
 };
 
 struct _crystfelindexingoptsclass
 {
-	GtkNotebookClass parent_class;
+    GtkNotebookClass parent_class;
 };
 
 typedef struct _crystfelindexingopts CrystFELIndexingOpts;
