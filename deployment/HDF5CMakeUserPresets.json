@@ -25,7 +25,11 @@
         "HDF5_BUILD_JAVA": {
           "type": "BOOL",
           "value": "OFF"
-        }
+        },
+	"H5_DEFAULT_PLUGINDIR": {
+          "type": "STRING",
+          "value": "/software/crystfel/devel/lib64/plugin"
+	}
       }
     }
   ],
