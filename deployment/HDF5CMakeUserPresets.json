@@ -26,28 +26,14 @@
           "type": "BOOL",
           "value": "OFF"
         },
-	"H5_DEFAULT_PLUGINDIR": {
+        "H5_DEFAULT_PLUGINDIR": {
           "type": "STRING",
           "value": "/software/crystfel/devel/lib64/plugin"
-	}
+        }
       }
     }
   ],
   "buildPresets": [
-    {
-      "name": "my-StdShar-GNUC",
-      "inherits": "ci-StdShar-GNUC",
-      "configurePreset": "my-StdShar-GNUC"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "my-StdShar-GNUC",
-      "inherits": "ci-StdShar-GNUC",
-      "configurePreset": "my-StdShar-GNUC"
-    }
-  ],
-  "packagePresets": [
     {
       "name": "my-StdShar-GNUC",
       "inherits": "ci-StdShar-GNUC",
