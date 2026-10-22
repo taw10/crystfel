@@ -166,6 +166,21 @@ libcrystfel_sources = ['src/image.c',
                        symop_lex_ch,
                        symop_parse_ch]
 
+# If we are building with Xgandalf, we also need to build a small C++ shim
+linkwith_libs = []
+if xgandalfdep.found()
+  add_languages('cpp', native: false, required: true)
+  eigendep = dependency('eigen3',
+                        required: true,
+                        fallback: ['eigen', 'eigen_dep'])
+  xgshim = static_library('xgandalf_shim',
+                          'src/indexers/xgandalf_shim.cpp',
+                          install: false,
+                          dependencies: [eigendep,xgandalfdep],
+                          override_options: ['cpp_std=c++11'])
+  linkwith_libs += xgshim
+endif
+
 configure_file(input: 'libcrystfel-config.h.meson.in',
                output: 'libcrystfel-config.h',
                configuration: conf_data)
@@ -178,9 +193,10 @@ libcrystfel = library('crystfel', [libcrystfel_sources, libcrystfel_versionc],
                                             libcrystfel_conf_inc],
                       dependencies: [mdep, utildep, fftwdep, gsldep, zlibdep,
                                      hdf5dep, pthreaddep, argpdep, ffbidxdep,
-                                     xgandalfdep, pinkindexerdep, fdipdep,
+                                     pinkindexerdep, fdipdep,
                                      ccp4dep, msgpackdep, seedeedep, cjsondep,
                                      tiffdep],
+                      link_with: linkwith_libs,
                       install_rpath: '$ORIGIN/../lib64/:$ORIGIN/../lib:$ORIGIN',
                       install: true)
 

@@ -38,9 +38,7 @@
 #include "index.h"
 
 #ifdef HAVE_XGANDALF
-#include "xgandalf/adaptions/crystfel/Lattice.h"
-#include "xgandalf/adaptions/crystfel/ExperimentSettings.h"
-#include "xgandalf/adaptions/crystfel/IndexerPlain.h"
+#include "xgandalf_shim.h"
 #endif
 
 /** \file xgandalf.h */
