@@ -44,7 +44,7 @@ typedef struct
     float *coordinates_y;
     float *coordinates_z;
     int peakCount;
-} reciprocalPeaks_1_per_A_t;
+} xgreciprocalPeaks_1_per_A_t;
 
 typedef struct
 {
@@ -59,7 +59,7 @@ typedef struct
     float cx;
     float cy;
     float cz;
-} Lattice_t;
+} xgLattice_t;
 
 typedef struct
 {
@@ -72,32 +72,32 @@ typedef struct
     float matrixElement_0_2;
     float matrixElement_1_2;
     float matrixElement_2_2;
-} LatticeTransform_t;
+} xgLatticeTransform_t;
 
-void allocReciprocalPeaks(reciprocalPeaks_1_per_A_t *reciprocalPeaks_1_per_A);
-void freeReciprocalPeaks(reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A);
+void xgallocReciprocalPeaks(xgreciprocalPeaks_1_per_A_t *reciprocalPeaks_1_per_A);
+void xgfreeReciprocalPeaks(xgreciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A);
 
-typedef struct ExperimentSettings ExperimentSettings;
+typedef struct ExperimentSettings xgExperimentSettings;
 
-ExperimentSettings *ExperimentSettings_new_nolatt(float beamEenergy_eV,
-                                                  float detectorDistance_m,
-                                                  float detectorRadius_m,
-                                                  float divergenceAngle_deg,
-                                                  float nonMonochromaticity,
-                                                  float minRealLatticeVectorLength_A,
-                                                  float maxRealLatticeVectorLength_A,
-                                                  float reflectionRadius_1_per_A);
+xgExperimentSettings *xgExperimentSettings_new_nolatt(float beamEenergy_eV,
+                                                      float detectorDistance_m,
+                                                      float detectorRadius_m,
+                                                      float divergenceAngle_deg,
+                                                      float nonMonochromaticity,
+                                                      float minRealLatticeVectorLength_A,
+                                                      float maxRealLatticeVectorLength_A,
+                                                      float reflectionRadius_1_per_A);
 
-ExperimentSettings *ExperimentSettings_new(float beamEenergy_eV,
-                                           float detectorDistance_m,
-                                           float detectorRadius_m,
-                                           float divergenceAngle_deg,
-                                           float nonMonochromaticity,
-                                           const Lattice_t sampleReciprocalLattice_1A,
-                                           float tolerance,
-                                           float reflectionRadius_1_per_A);
+xgExperimentSettings *xgExperimentSettings_new(float beamEenergy_eV,
+                                               float detectorDistance_m,
+                                               float detectorRadius_m,
+                                               float divergenceAngle_deg,
+                                               float nonMonochromaticity,
+                                               const xgLattice_t sampleReciprocalLattice_1A,
+                                               float tolerance,
+                                               float reflectionRadius_1_per_A);
 
-void ExperimentSettings_delete(ExperimentSettings *experimentSettings);
+void xgExperimentSettings_delete(xgExperimentSettings *experimentSettings);
 
 typedef enum {
     SAMPLING_PITCH_extremelyLoose = 0,
@@ -111,7 +111,7 @@ typedef enum {
     SAMPLING_PITCH_extremelyDenseWithSeondaryMillerIndices = 7,
 
     SAMPLING_PITCH_lastEnum
-} samplingPitch_t;
+} xgsamplingPitch_t;
 
 typedef enum {
     GRADIENT_DESCENT_ITERATION_COUNT_verryFew = 0,
@@ -124,31 +124,31 @@ typedef enum {
     GRADIENT_DESCENT_ITERATION_COUNT_custom = 6,
 
     GRADIENT_DESCENT_ITERATION_COUNT_lastEnum
-} gradientDescentIterationsCount_t;
+} xggradientDescentIterationsCount_t;
 
-typedef struct IndexerPlain IndexerPlain;
+typedef struct IndexerPlain xgIndexerPlain;
 
-IndexerPlain *IndexerPlain_new(ExperimentSettings* experimentSettings);
-void IndexerPlain_delete(IndexerPlain* indexerPlain);
+xgIndexerPlain *xgIndexerPlain_new(xgExperimentSettings* experimentSettings);
+void xgIndexerPlain_delete(xgIndexerPlain* indexerPlain);
 
-void IndexerPlain_setSamplingPitch(IndexerPlain *indexerPlain,
-                                   samplingPitch_t samplingPitch);
-void IndexerPlain_setGradientDescentIterationsCount(IndexerPlain *indexerPlain,
-                                                    gradientDescentIterationsCount_t gradientDescentIterationsCount);
-void IndexerPlain_setRefineWithExactLattice(IndexerPlain *indexerPlain, int flag);
-void IndexerPlain_setMaxPeaksToUseForIndexing(IndexerPlain *indexerPlain,
-                                              int maxPeaksToUseForIndexing);
+void xgIndexerPlain_setSamplingPitch(xgIndexerPlain *indexerPlain,
+                                   xgsamplingPitch_t samplingPitch);
+void xgIndexerPlain_setGradientDescentIterationsCount(xgIndexerPlain *indexerPlain,
+                                                    xggradientDescentIterationsCount_t gradientDescentIterationsCount);
+void xgIndexerPlain_setRefineWithExactLattice(xgIndexerPlain *indexerPlain, int flag);
+void xgIndexerPlain_setMaxPeaksToUseForIndexing(xgIndexerPlain *indexerPlain,
+                                                int maxPeaksToUseForIndexing);
 
-void IndexerPlain_index(IndexerPlain *indexerPlain,
-                        Lattice_t *assembledLattices,
-                        int *assembledLatticesCount,
-                        int maxAssambledLatticesCount,
-                        reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A,
-                        int *peakCountOnLattices);
+void xgIndexerPlain_index(xgIndexerPlain *indexerPlain,
+                          xgLattice_t *assembledLattices,
+                          int *assembledLatticesCount,
+                          int maxAssambledLatticesCount,
+                          xgreciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A,
+                          int *peakCountOnLattices);
 
-void reorderLattice(const Lattice_t* prototype, Lattice_t* lattice);
-void reduceLattice(Lattice_t* lattice, LatticeTransform_t* appliedReductionTransform);
-void restoreLattice(Lattice_t* lattice, LatticeTransform_t* appliedReductionTransform);
+void xgreorderLattice(const xgLattice_t* prototype, xgLattice_t* lattice);
+void xgreduceLattice(xgLattice_t* lattice, xgLatticeTransform_t* appliedReductionTransform);
+void xgrestoreLattice(xgLattice_t* lattice, xgLatticeTransform_t* appliedReductionTransform);
 
 #ifdef __cplusplus
 }

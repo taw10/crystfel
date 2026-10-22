@@ -35,14 +35,14 @@
 
 namespace xgandalf {
 
-    ExperimentSettings *ExperimentSettings_new_nolatt(float beamEenergy_eV,
-                                                      float detectorDistance_m,
-                                                      float detectorRadius_m,
-                                                      float divergenceAngle_deg,
-                                                      float nonMonochromaticity,
-                                                      float minRealLatticeVectorLength_A,
-                                                      float maxRealLatticeVectorLength_A,
-                                                      float reflectionRadius_1_per_A)
+    xgExperimentSettings *xgExperimentSettings_new_nolatt(float beamEenergy_eV,
+                                                          float detectorDistance_m,
+                                                          float detectorRadius_m,
+                                                          float divergenceAngle_deg,
+                                                          float nonMonochromaticity,
+                                                          float minRealLatticeVectorLength_A,
+                                                          float maxRealLatticeVectorLength_A,
+                                                          float reflectionRadius_1_per_A)
     {
         return new ExperimentSettings(beamEenergy_eV,
                                       detectorDistance_m,
@@ -54,14 +54,14 @@ namespace xgandalf {
                                       reflectionRadius_1_per_A);
     }
 
-    ExperimentSettings *ExperimentSettings_new(float beamEenergy_eV,
-                                               float detectorDistance_m,
-                                               float detectorRadius_m,
-                                               float divergenceAngle_deg,
-                                               float nonMonochromaticity,
-                                               const Lattice_t l,
-                                               float tolerance,
-                                               float reflectionRadius_1_per_A)
+    xgExperimentSettings *xgExperimentSettings_new(float beamEenergy_eV,
+                                                   float detectorDistance_m,
+                                                   float detectorRadius_m,
+                                                   float divergenceAngle_deg,
+                                                   float nonMonochromaticity,
+                                                   const xgLattice_t l,
+                                                   float tolerance,
+                                                   float reflectionRadius_1_per_A)
     {
         Eigen::Matrix3f lattice;
         lattice << l.ax, l.bx, l.cx, l.ay, l.by, l.cy, l.az, l.bz, l.cz;
@@ -76,36 +76,36 @@ namespace xgandalf {
                                       reflectionRadius_1_per_A);
     }
 
-    void ExperimentSettings_delete(ExperimentSettings *experimentSettings)
+    void xgExperimentSettings_delete(xgExperimentSettings *experimentSettings)
     {
         delete experimentSettings;
     }
 
-    void allocReciprocalPeaks(reciprocalPeaks_1_per_A_t *reciprocalPeaks_1_per_A)
+    void xgallocReciprocalPeaks(xgreciprocalPeaks_1_per_A_t *reciprocalPeaks_1_per_A)
     {
         reciprocalPeaks_1_per_A->coordinates_x = new float[MAX_PEAK_COUNT_FOR_INDEXER];
         reciprocalPeaks_1_per_A->coordinates_y = new float[MAX_PEAK_COUNT_FOR_INDEXER];
         reciprocalPeaks_1_per_A->coordinates_z = new float[MAX_PEAK_COUNT_FOR_INDEXER];
     }
 
-    void freeReciprocalPeaks(reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A)
+    void xgfreeReciprocalPeaks(xgreciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A)
     {
         delete[] reciprocalPeaks_1_per_A.coordinates_x;
         delete[] reciprocalPeaks_1_per_A.coordinates_y;
         delete[] reciprocalPeaks_1_per_A.coordinates_z;
     }
 
-    IndexerPlain *IndexerPlain_new(ExperimentSettings *experimentSettings)
+    xgIndexerPlain *xgIndexerPlain_new(xgExperimentSettings *experimentSettings)
     {
         return new IndexerPlain(*experimentSettings);
     }
 
-    void IndexerPlain_delete(IndexerPlain *indexerPlain)
+    void xgIndexerPlain_delete(xgIndexerPlain *indexerPlain)
     {
         delete indexerPlain;
     }
 
-    void IndexerPlain_setSamplingPitch(IndexerPlain *indexerPlain, samplingPitch_t samplingPitch)
+    void xgIndexerPlain_setSamplingPitch(xgIndexerPlain *indexerPlain, xgsamplingPitch_t samplingPitch)
     {
         IndexerPlain::SamplingPitch pitch;
         switch (samplingPitch)
@@ -143,8 +143,8 @@ namespace xgandalf {
         indexerPlain->setSamplingPitch(pitch);
     }
 
-    void IndexerPlain_setGradientDescentIterationsCount(IndexerPlain *indexerPlain,
-            gradientDescentIterationsCount_t gradientDescentIterationsCount)
+    void xgIndexerPlain_setGradientDescentIterationsCount(xgIndexerPlain *indexerPlain,
+            xggradientDescentIterationsCount_t gradientDescentIterationsCount)
     {
         IndexerPlain::GradientDescentIterationsCount iterationsCount;
 
@@ -177,22 +177,22 @@ namespace xgandalf {
         indexerPlain->setGradientDescentIterationsCount(iterationsCount);
     }
 
-    void IndexerPlain_setRefineWithExactLattice(IndexerPlain *indexerPlain, int flag)
+    void xgIndexerPlain_setRefineWithExactLattice(xgIndexerPlain *indexerPlain, int flag)
     {
         indexerPlain->setRefineWithExactLattice((bool)flag);
     }
 
-    void IndexerPlain_setMaxPeaksToUseForIndexing(IndexerPlain *indexerPlain, int maxPeaksToUseForIndexing)
+    void xgIndexerPlain_setMaxPeaksToUseForIndexing(xgIndexerPlain *indexerPlain, int maxPeaksToUseForIndexing)
     {
         indexerPlain->setMaxPeaksToUseForIndexing(maxPeaksToUseForIndexing);
     }
 
-    void IndexerPlain_index(IndexerPlain *indexerPlain,
-                            Lattice_t *assembledLattices,
-                            int *assembledLatticesCount,
-                            int maxAssambledLatticesCount,
-                            reciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A,
-                            int *peakCountOnLattices)
+    void xgIndexerPlain_index(xgIndexerPlain *indexerPlain,
+                              xgLattice_t *assembledLattices,
+                              int *assembledLatticesCount,
+                              int maxAssambledLatticesCount,
+                              xgreciprocalPeaks_1_per_A_t reciprocalPeaks_1_per_A,
+                              int *peakCountOnLattices)
     {
         Eigen::Matrix3Xf reciprocalPeaks_1_per_A_matrix(3, reciprocalPeaks_1_per_A.peakCount);
         for (int i = 0; i < reciprocalPeaks_1_per_A.peakCount; i++)
@@ -229,7 +229,7 @@ namespace xgandalf {
         }
     }
 
-    void reorderLattice(const Lattice_t *prototype, Lattice_t *lattice)
+    void xgreorderLattice(const xgLattice_t *prototype, xgLattice_t *lattice)
     {
         Eigen::Matrix3f prototypeBasis;
         prototypeBasis << prototype->ax, prototype->bx, prototype->cx,
@@ -258,7 +258,7 @@ namespace xgandalf {
         lattice->cz = basis(2, 2);
     }
 
-    void reduceLattice(Lattice_t *lattice, LatticeTransform_t *appliedReductionTransform)
+    void xgreduceLattice(xgLattice_t *lattice, xgLatticeTransform_t *appliedReductionTransform)
     {
         Eigen::Matrix3f basis, reducedBasis;
         basis << lattice->ax, lattice->bx, lattice->cx,
@@ -291,7 +291,7 @@ namespace xgandalf {
         appliedReductionTransform->matrixElement_2_2 = transformMatrix(2, 2);
     }
 
-    void restoreLattice(Lattice_t *lattice, LatticeTransform_t *appliedReductionTransform)
+    void xgrestoreLattice(xgLattice_t *lattice, xgLatticeTransform_t *appliedReductionTransform)
     {
         Eigen::Matrix3f transformMatrix;
 
