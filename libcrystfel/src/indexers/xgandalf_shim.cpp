@@ -59,12 +59,10 @@ namespace xgandalf {
                                                float detectorRadius_m,
                                                float divergenceAngle_deg,
                                                float nonMonochromaticity,
-                                               const Lattice_t sampleReciprocalLattice_1A,
+                                               const Lattice_t l,
                                                float tolerance,
                                                float reflectionRadius_1_per_A)
     {
-        const Lattice_t& l = sampleReciprocalLattice_1A;
-
         Eigen::Matrix3f lattice;
         lattice << l.ax, l.bx, l.cx, l.ay, l.by, l.cy, l.az, l.bz, l.cz;
 
