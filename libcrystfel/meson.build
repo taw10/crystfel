@@ -197,6 +197,7 @@ install_headers(['src/reflist.h',
                  'src/utils.h',
                  'src/geometry.h',
                  'src/peaks.h',
+                 'src/peakfinder8.h',
                  'src/stream.h',
                  'src/index.h',
                  'src/image.h',
@@ -214,6 +215,24 @@ install_headers(['src/reflist.h',
                  'src/fom.h',
                  'src/crystfel-mille.h'],
                 subdir: 'crystfel')
+
+# The indexing engines.  The high-level interface in index.h is enough for
+# most purposes, but these headers let a caller (notably a language binding)
+# reach an individual engine: *_default_options() to get a tunable option
+# structure, and *_probe() to find out whether the engine is available in this
+# build of CrystFEL and can handle a given unit cell.
+install_headers(['src/indexers/asdf.h',
+                 'src/indexers/dirax.h',
+                 'src/indexers/felix.h',
+                 'src/indexers/ffbidx.h',
+                 'src/indexers/fromfile.h',
+                 'src/indexers/mosflm.h',
+                 'src/indexers/pinkindexer.h',
+                 'src/indexers/smallcell.h',
+                 'src/indexers/taketwo.h',
+                 'src/indexers/xds.h',
+                 'src/indexers/xgandalf.h'],
+                subdir: 'crystfel/indexers')
 
 # API documentation (Doxygen)
 doxygen = find_program('doxygen', required: false)

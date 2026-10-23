@@ -36,9 +36,17 @@
 
 #include "image.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int fromfile_default_options(struct fromfile_options **opts_ptr);
 extern void *fromfile_prepare(IndexingMethod indm, struct fromfile_options *opts);
 extern int fromfile_index(struct image *image, void *mpriv);
 extern void fromfile_cleanup(void *mpriv);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* FROMFILE_H */

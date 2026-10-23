@@ -38,11 +38,19 @@
 
 /** \file taketwo.h */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int taketwo_default_options(struct taketwo_options **opts_ptr);
 extern void *taketwo_prepare(IndexingMethod indm, struct taketwo_options *opts,
                              UnitCell *cell);
 extern const char *taketwo_probe(UnitCell *cell);
 extern int taketwo_index(struct image *image, void *priv);
 extern void taketwo_cleanup(IndexingPrivate *pp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* TAKETWO_H */

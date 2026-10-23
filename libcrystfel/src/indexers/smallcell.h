@@ -35,10 +35,18 @@
 #include "cell.h"
 #include "index.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int smallcell_default_options(struct smallcell_options **opts_ptr);
 extern void *smallcell_prepare(IndexingMethod indm,
                                struct smallcell_options *opts, UnitCell *cell);
 extern int smallcell_index(struct image *image, void *mpriv);
 extern void smallcell_cleanup(void *mpriv);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* SMALLCELL_H */

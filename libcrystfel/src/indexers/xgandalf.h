@@ -39,6 +39,10 @@
 
 #include "index.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int xgandalf_default_options(struct xgandalf_options **opts_ptr);
 
 extern int run_xgandalf(struct image *image, void *ipriv);
@@ -49,5 +53,9 @@ extern void *xgandalf_prepare(IndexingMethod indm, UnitCell *cell,
 extern void xgandalf_cleanup(void *pp);
 extern const char *xgandalf_probe(UnitCell *cell);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* LIBCRYSTFEL_SRC_XGANDALF_H */

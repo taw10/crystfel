@@ -33,11 +33,17 @@
 #include <argp.h>
 
 #include "cell.h"
+#include "image.h"
+#include "index.h"
 
 /**
  * \file felix.h
  * Felix indexer interface
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int felix_default_options(struct felix_options **opts_ptr);
 
@@ -50,5 +56,9 @@ extern void felix_cleanup(IndexingPrivate *pp);
 
 extern int felix_index(struct image *image, IndexingPrivate *p);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* FELIX_H */
