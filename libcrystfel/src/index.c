@@ -760,7 +760,7 @@ static int delete_explained_peaks(struct image *image, Crystal *cr)
     crystal_get_det_shift(cr, &dx, &dy);
 
     /* Loop over peaks, checking proximity to nearest reflection */
-    for ( i=0; i<image_feature_count(image->features); i++ ) {
+    for ( i=image_feature_count(image->features); i>0; i-- ) {
 
         struct imagefeature *f;
         double q[3];
