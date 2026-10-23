@@ -261,19 +261,26 @@ index_tests = [['taketwo', 'nomulti'],
                ['taketwo', 'multi'],
                ['smallcell', 'nomulti'],
                ['smallcell', 'multi']]
+envvars = []
 if fftwdep.found()
   index_tests += [['asdf', 'nomulti']]
   index_tests += [['asdf', 'multi']]
 endif
 if xgandalfdep.found()
-  index_tests += [['xgandalf', 'nomulti']]
-  index_tests += [['xgandalf', 'multi']]
+  sp = xgandalfdep.get_variable('samplePoints', default_value: '')
+  if sp != ''
+    index_tests += [['xgandalf', 'nomulti']]
+    index_tests += [['xgandalf', 'multi']]
+    envvars += ['XGANDALF_SAMPLE_POINTS='+sp]
+  else
+    message('Not testing XGandalf because library is too old')
+  endif
 endif
 
 exe = executable('indextest', ['indextest.c'], dependencies : [libcrystfeldep])
 foreach indexer : index_tests
-  test('indextest.'+indexer[0]+'.'+indexer[1]+'.norefine', exe,
+  test('indextest.'+indexer[0]+'.'+indexer[1]+'.norefine', exe, env: envvars,
     args: [files('indextest.geom'), indexer[0], indexer[1], 'norefine'])
-  test('indextest.'+indexer[0]+'.'+indexer[1]+'.refine', exe,
+  test('indextest.'+indexer[0]+'.'+indexer[1]+'.refine', exe, env: envvars,
     args: [files('indextest.geom'), indexer[0], indexer[1], 'refine'])
 endforeach
