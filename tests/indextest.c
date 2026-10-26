@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <image.h>
 #include <index.h>
@@ -174,6 +175,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Got %i crystals (should be %i)\n", image->n_crystals, n_exp);
         return 1;
     }
+
+    /* Junk left behind by Felix */
+    unlink("gmon.out");
 
     return 0;
 }
