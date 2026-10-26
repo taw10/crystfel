@@ -257,30 +257,52 @@ test('geom_roundtrip',
 
 
 # Indexing tests
-index_tests = [['taketwo', 'nomulti'],
-               ['taketwo', 'multi'],
-               ['smallcell', 'nomulti'],
-               ['smallcell', 'multi']]
+index_tests = [['taketwo', 'nomulti', true],
+               ['taketwo', 'multi', true],
+               ['smallcell', 'nomulti', true],
+               ['smallcell', 'multi', true]]
 envvars = []
 if fftwdep.found()
-  index_tests += [['asdf', 'nomulti']]
-  index_tests += [['asdf', 'multi']]
+  index_tests += [['asdf', 'nomulti', true]]
+  index_tests += [['asdf', 'multi', true]]
 endif
 if xgandalfdep.found()
   sp = xgandalfdep.get_variable('samplePoints', default_value: '')
   if sp != ''
-    index_tests += [['xgandalf', 'nomulti']]
-    index_tests += [['xgandalf', 'multi']]
+    index_tests += [['xgandalf', 'nomulti', true]]
+    index_tests += [['xgandalf', 'multi', true]]
     envvars += ['XGANDALF_SAMPLE_POINTS='+sp]
   else
     message('Not testing XGandalf because library is too old')
   endif
 endif
 
+if get_option('test-external-indexers')
+  if find_program('mosflm', required: false).found()
+    # Mosflm output files will overlap so not safe to run in parallel
+    index_tests += [['mosflm', 'nomulti', false]]
+    index_tests += [['mosflm', 'multi', false]]
+  endif
+  if find_program('dirax', required: false).found()
+    # No multi-lattice, only one test so safe to run in parallel with others
+    index_tests += [['dirax', 'nomulti', true]]
+  endif
+  if find_program('xds', required: false).found()
+    index_tests += [['xds', 'nomulti', false]]
+    index_tests += [['xds', 'multi', false]]
+  endif
+  if find_program('Felix', required: false).found()
+    index_tests += [['felix', 'nomulti', false]]
+    index_tests += [['felix', 'multi', false]]
+  endif
+endif
+
 exe = executable('indextest', ['indextest.c'], dependencies : [libcrystfeldep])
 foreach indexer : index_tests
   test('indextest.'+indexer[0]+'.'+indexer[1]+'.norefine', exe, env: envvars,
-    args: [files('indextest.geom'), indexer[0], indexer[1], 'norefine'])
+    args: [files('indextest.geom'), indexer[0], indexer[1], 'norefine'],
+    is_parallel: indexer[2])
   test('indextest.'+indexer[0]+'.'+indexer[1]+'.refine', exe, env: envvars,
-    args: [files('indextest.geom'), indexer[0], indexer[1], 'refine'])
+    args: [files('indextest.geom'), indexer[0], indexer[1], 'refine'],
+    is_parallel: indexer[2])
 endforeach
