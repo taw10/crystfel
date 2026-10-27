@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 
     image->features = image_feature_list_new();
     for ( i=0; i<n_peaks; i++ ) {
-        image_add_feature(image->features, peak_fs[i], peak_ss[i], peak_pn[i], 1.0, NULL);
+        image_add_feature(image->features, peak_fs[i], peak_ss[i], peak_pn[i], i, NULL);
     }
 
     wl = data_template_get_wavelength_if_possible(dtempl);
