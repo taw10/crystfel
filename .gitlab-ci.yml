@@ -16,6 +16,7 @@ build_dev_images:
     IMAGE_TAG_SHA: $CI_COMMIT_SHORT_SHA
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+    NUM_CPUS_AVAILABLE: 2
 
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
@@ -27,6 +28,7 @@ build_dev_images:
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
       --build-arg HELM_VERSION=$HELM_VERSION
       --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
+      --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE
 
   tags:
     - kubernetes
@@ -43,11 +45,12 @@ build-and-cppcheck:
   image: $CI_REGISTRY_IMAGE/fedora
   variables:
     GIT_STRATEGY: clone
+    NUM_CPUS_AVAILABLE: 2
 
   script:
     - meson setup build --prefix $CFPREFIX
-    - ninja -v -C build
-    - ninja -v -C build cppcheck
+    - ninja -v -j $NUM_CPUS_AVAILABLE -C build
+    - ninja -v -j $NUM_CPUS_AVAILABLE -C build cppcheck
     - python3 -m venv venv
     - . venv/bin/activate
     - pip install cppcheck-codequality
@@ -64,12 +67,13 @@ build-and-test:
   image: $CI_REGISTRY_IMAGE/$PLATFORM
   variables:
     GIT_STRATEGY: clone
+    NUM_CPUS_AVAILABLE: 2
 
   script:
     - meson setup build --prefix $CFPREFIX
-    - ninja -v -C build
-    - ninja -v -C build test
-    - ninja -C build install
+    - ninja -v -j $NUM_CPUS_AVAILABLE -C build
+    - ninja -v -j $NUM_CPUS_AVAILABLE -C build test
+    - ninja -j $NUM_CPUS_AVAILABLE -C build install
      
     # Tweak CrystFEL GUI so that it can find syminfo.lib
     - mv $CFPREFIX/bin/crystfel $CFPREFIX/bin/crystfel.real
@@ -111,10 +115,13 @@ build-and-test:
 
 build-and-test-minimal:
   image: tollerort.desy.de/hub.docker.com/$IMAGE:latest
+  variables:
+    NUM_CPUS_AVAILABLE: 2
+
   script:
     - dnf update -y && dnf group install -y development-tools &&
       dnf install -y gsl-devel flex bison cmake meson
-    - meson setup build -Dhdf5=disabled --wrap-mode=nofallback && ninja -C build && ninja -C build test
+    - meson setup build -Dhdf5=disabled --wrap-mode=nofallback && ninja -j $NUM_CPUS_AVAILABLE -C build && ninja -j $NUM_CPUS_AVAILABLE -C build test
 
   artifacts:
     when: always
@@ -249,6 +256,7 @@ build_container_image:
     IMAGE_TAG_SHA: $CI_COMMIT_SHORT_SHA
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+    NUM_CPUS_AVAILABLE: 2
 
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
@@ -260,6 +268,7 @@ build_container_image:
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
       --build-arg HELM_VERSION=$HELM_VERSION
       --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
+      --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE
 
   tags:
     - kubernetes
@@ -277,6 +286,7 @@ build_container_image_tag:
     IMAGE_TAG_VER: $CI_COMMIT_TAG
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+    NUM_CPUS_AVAILABLE: 2
 
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json

@@ -5,6 +5,7 @@ ENV PKG_CONFIG_PATH=$CFPREFIX/lib64/pkgconfig:$CFPREFIX/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV LD_RUN_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV PATH=$CFPREFIX/bin:$PATH
+ARG NUM_CPUS_AVAILABLE
 
 RUN    dnf -y install epel-release
 RUN    crb enable
@@ -26,7 +27,7 @@ RUN    wget -nv https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.
        ./configure --prefix=$CFPREFIX \
                    --enable-shared --disable-static \
                    --with-default-plugindir=${CFPREFIX}/lib64/plugins; \
-       make; \
+       make -j $NUM_CPUS_AVAILABLE; \
        make install; \
        popd # hdf5-1.12.1
 
@@ -41,7 +42,7 @@ RUN    git clone --depth 1 https://github.com/nexusformat/HDF5-External-Filter-P
                 -DENABLE_BZIP2_PLUGIN=yes \
                 -DCMAKE_BUILD_TYPE=Release ; \
        popd; \
-       make -C build -j 32; \
+       make -C build -j $NUM_CPUS_AVAILABLE; \
        make -C build install; \
        popd # HDF5-External-Filter-Plugins
 
@@ -56,7 +57,7 @@ RUN    wget -nv https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0
                 -DMSGPACK_ENABLE_CXX=OFF \
                 -DCMAKE_BUILD_TYPE=Release ; \
        popd ; \
-       make -C build -j 32 ; \
+       make -C build -j $NUM_CPUS_AVAILABLE; \
        make -C build install ; \
        popd # msgpack-3.3.0
 
@@ -70,7 +71,7 @@ RUN    git clone https://gitlab.desy.de/asapo/asapo.git ; \
                 -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
                 -DCMAKE_BUILD_TYPE=RelWithDebInfo ; \
        popd ; \
-       ninja -C build ; \
+       ninja -C build -j $NUM_CPUS_AVAILABLE; \
        ninja -C build install  ; \
        popd
 
@@ -81,6 +82,6 @@ RUN    git clone https://gitlab.desy.de/fs-sc/seedee.git ; \
        cd build ; \
        cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$CFPREFIX -DCMAKE_BUILD_TYPE=RelWithDebInfo ; \
        cd .. ; \
-       ninja -C build ; \
+       ninja -C build -j $NUM_CPUS_AVAILABLE; \
        ninja -C build install ; \
        popd

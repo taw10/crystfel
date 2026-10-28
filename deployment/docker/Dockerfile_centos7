@@ -11,6 +11,7 @@ ENV PKG_CONFIG_PATH=$CFPREFIX/lib64/pkgconfig:$CFPREFIX/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV LD_RUN_PATH=$CFPREFIX/lib64:$CFPREFIX/lib
 ENV PATH=$CFPREFIX/bin:/opt/cmake-3.18.2-Linux-x86_64/bin/:$PATH
+ARG NUM_CPUS_AVAILABLE
 
 RUN  yum-config-manager --disable \* && \
      yum-config-manager --nogpgcheck  --add-repo https://vault.centos.org/7.9.2009/os/x86_64/ && \
@@ -42,7 +43,7 @@ RUN    wget -nv https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.
        ./configure --prefix=$CFPREFIX \
                 --enable-shared  --disable-static \
                 --with-default-plugindir=${CFPREFIX}/lib64/plugins ;\
-       make -j 32; \
+       make -j $NUM_CPUS_AVAILABLE; \
        make install; \
        popd; \ 
        rm -rf hdf5-1.12.1 hdf5-1.12.1.tar.bz2
@@ -58,7 +59,7 @@ RUN    git clone --depth 1 https://github.com/nexusformat/HDF5-External-Filter-P
                 -DENABLE_BZIP2_PLUGIN=yes \
                 -DCMAKE_BUILD_TYPE=Release ; \
        popd; \
-       make -C build -j 32; \
+       make -C build -j $NUM_CPUS_AVAILABLE; \
        make -C build install; \
        popd ; \
        rm -rf HDF5-External-Filter-Plugins
@@ -68,7 +69,7 @@ RUN    wget -nv http://ftp.fau.de/gnu/gsl/gsl-2.6.tar.gz ; \
        tar -xzf gsl-2.6.tar.gz ; \
        pushd gsl-2.6 ; \
        ./configure --prefix=$CFPREFIX ; \
-       make -j 32 ; \
+       make -j $NUM_CPUS_AVAILABLE; \
        make install ; \
        popd ; \
        rm -rf gsl-2.6 gsl-2.6.tar.gz
@@ -78,7 +79,7 @@ RUN    wget -nv http://fftw.org/fftw-3.3.9.tar.gz ; \
        tar -xzf fftw-3.3.9.tar.gz ; \
        pushd fftw-3.3.9 ; \
        ./configure --enable-shared --prefix=$CFPREFIX ; \
-       make -j 32 ; \
+       make -j $NUM_CPUS_AVAILABLE; \
        make install ; \
        popd ; \
        rm -rf fftw-3.3.9 fftw-3.3.9.tar.gz ; 
@@ -94,7 +95,7 @@ RUN    wget -nv https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0
                 -DMSGPACK_ENABLE_CXX=OFF \
                 -DCMAKE_BUILD_TYPE=Release ; \
        popd ; \
-       make -C build -j 32 ; \
+       make -C build -j $NUM_CPUS_AVAILABLE; \
        make -C build install ; \
        popd ; \
        rm -rf msgpack-3.3.0 msgpack-3.3.0.tar.gz
@@ -109,7 +110,7 @@ RUN    git clone https://gitlab.desy.de/asapo/asapo.git ; \
                 -DCMAKE_INSTALL_PREFIX=$CFPREFIX \
                 -DCMAKE_BUILD_TYPE=RelWithDebInfo ; \
        popd ; \
-       ninja -C build ; \
+       ninja -C build -j $NUM_CPUS_AVAILABLE; \
        ninja -C build install  ; \
        popd
 
@@ -120,6 +121,6 @@ RUN    git clone https://gitlab.desy.de/fs-sc/seedee.git ; \
        cd build ; \
        cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=$CFPREFIX -DCMAKE_BUILD_TYPE=RelWithDebInfo ; \
        cd .. ; \
-       ninja -C build ; \
+       ninja -C build -j $NUM_CPUS_AVAILABLE; \
        ninja -C build install ; \
        popd
