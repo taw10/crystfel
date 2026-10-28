@@ -26,8 +26,6 @@ build_dev_images:
       --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile_$IMAGE
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
-      --build-arg HELM_VERSION=$HELM_VERSION
-      --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
       --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE
 
   tags:
@@ -114,7 +112,7 @@ build-and-test:
      - PLATFORM:  ["centos7","alma9","fedora","ubuntu"]
 
 build-and-test-minimal:
-  image: tollerort.desy.de/hub.docker.com/$IMAGE:latest
+  image: tollerort.desy.de/hub.docker.com/fedora:latest
   variables:
     NUM_CPUS_AVAILABLE: 2
 
@@ -129,10 +127,6 @@ build-and-test-minimal:
       - build/meson-logs/testlog.junit.xml
     reports:
       junit: build/meson-logs/testlog.junit.xml
-
-  parallel:
-    matrix:
-     - IMAGE: ["fedora"]
 
 build-brew-macos:
   dependencies: []
@@ -172,11 +166,8 @@ build-macos:
 
 build-and-package-rpm:
   image: $CI_REGISTRY_IMAGE/$PLATFORM
-#  tags:
-#   - hi-load
   variables:
     GIT_STRATEGY: clone
-#   KUBERNETES_MEMORY_LIMIT: "20Gi"
 
   script:
     - |
@@ -266,8 +257,6 @@ build_container_image:
       --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
-      --build-arg HELM_VERSION=$HELM_VERSION
-      --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
       --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE
 
   tags:
@@ -295,8 +284,6 @@ build_container_image_tag:
       --context $CI_PROJECT_DIR
       --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile
       --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_VER
-      --build-arg HELM_VERSION=$HELM_VERSION
-      --build-arg RANCHER_CLI_VERSION=$RANCHER_CLI_VERSION
 
   tags:
     - kubernetes
