@@ -68,7 +68,7 @@ build-and-test:
     NUM_CPUS_AVAILABLE: 2
 
   script:
-    - meson setup build --prefix $CFPREFIX
+    - meson setup build --prefix $CFPREFIX -Dbuildtype=debugoptimized
     - ninja -v -j $NUM_CPUS_AVAILABLE -C build
     - ninja -v -j $NUM_CPUS_AVAILABLE -C build test
     - ninja -j $NUM_CPUS_AVAILABLE -C build install
