@@ -1,16 +1,18 @@
 stages:
+  - dev-images
   - build
-  - test
+  - package
   - deploy
-  - build_container
 
-build_dev_images:
-  stage: build
+build-dev-images:
+  stage: dev-images
   variables:
     TAG: $CI_REGISTRY_IMAGE/$IMAGE:latest
     NUM_CPUS_AVAILABLE: 8
   script:
-    - docker buildx build --output type=image,push=true,name=$TAG,compression=zstd -f $CI_PROJECT_DIR/deployment/docker/Dockerfile_$IMAGE --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE .
+    - docker buildx build --output type=image,push=true,name=$TAG,compression=zstd .
+                          -f $CI_PROJECT_DIR/deployment/docker/Dockerfile_$IMAGE
+                          --build-arg NUM_CPUS_AVAILABLE
   tags:
     - vm-runner
   parallel:
@@ -18,56 +20,65 @@ build_dev_images:
      - IMAGE: ["centos7","alma9","alma10","fedora","ubuntu"]
   when: manual
 
-# A separate job for now, might be merged with build-and-test?
-build-and-cppcheck:
-  # hard-code fedora, makes no sense to use different cppchecks for different platforms
+
+cppcheck:
+  stage: build
   image: $CI_REGISTRY_IMAGE/fedora
   variables:
     GIT_STRATEGY: clone
     NUM_CPUS_AVAILABLE: 2
-
   script:
     - meson setup build --prefix $CFPREFIX
-    - ninja -v -j $NUM_CPUS_AVAILABLE -C build
     - ninja -v -j $NUM_CPUS_AVAILABLE -C build cppcheck
     - python3 -m venv venv
     - . venv/bin/activate
     - pip install cppcheck-codequality
     - cd build && cppcheck-codequality
     - cppcheck-htmlreport --source-dir=.. --title=CF --file=cppcheck.xml --report-dir report
-
   artifacts:
     reports:
       codequality: build/cppcheck.json
     paths:
       - build/report
 
-build-and-test:
+
+linux:
+  stage: build
+  parallel:
+    matrix:
+     - PLATFORM: ["centos7","alma9","fedora","ubuntu"]
   image: $CI_REGISTRY_IMAGE/$PLATFORM
   variables:
     GIT_STRATEGY: clone
     NUM_CPUS_AVAILABLE: 2
-
+  artifacts:
+    paths:
+      - $PLATFORM
+      - build/meson-logs/testlog.junit.xml
+    reports:
+      junit: build/meson-logs/testlog.junit.xml
+    when: on_success
+    expire_in: 1 day
   script:
     - meson setup build --prefix $CFPREFIX -Dbuildtype=debugoptimized
     - ninja -v -j $NUM_CPUS_AVAILABLE -C build
     - ninja -v -j $NUM_CPUS_AVAILABLE -C build test
     - ninja -j $NUM_CPUS_AVAILABLE -C build install
-     
+
     # Tweak CrystFEL GUI so that it can find syminfo.lib
     - mv $CFPREFIX/bin/crystfel $CFPREFIX/bin/crystfel.real
     - echo '#!/bin/sh' > $CFPREFIX/bin/crystfel
     - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/crystfel
     - echo "$CFPREFIX/bin/crystfel.real \"\$@\"" >> $CFPREFIX/bin/crystfel
     - chmod +x $CFPREFIX/bin/crystfel
-    
+
     # Tweak get_hkl in the same way
     - mv $CFPREFIX/bin/get_hkl $CFPREFIX/bin/get_hkl.real
     - echo '#!/bin/sh' > $CFPREFIX/bin/get_hkl
     - echo "export SYMINFO=$CFPREFIX/share/ccp4/syminfo.lib" >> $CFPREFIX/bin/get_hkl
     - echo "$CFPREFIX/bin/get_hkl.real \"\$@\"" >> $CFPREFIX/bin/get_hkl
     - chmod +x $CFPREFIX/bin/get_hkl
-    
+
     # Mosflm (tweaked to find syminfo.lib and not load environ.def/default.def)
     - wget -nv https://www.mrc-lmb.cam.ac.uk/harry/imosflm/ver740/downloads/imosflm-7.4.0-linux-64.zip
     - unzip imosflm-7.4.0-linux-64.zip imosflm/bin/mosflm
@@ -79,29 +90,19 @@ build-and-test:
 
     - cp -Rp /software $CI_PROJECT_DIR/$PLATFORM
 
-  artifacts:
-    paths:
-      - $PLATFORM
-      - build/meson-logs/testlog.junit.xml
-    reports:
-      junit: build/meson-logs/testlog.junit.xml
-    when: on_success
-    expire_in: 1 day
 
-  parallel:
-    matrix:
-     - PLATFORM:  ["centos7","alma9","fedora","ubuntu"]
-
-build-and-test-minimal:
+linux-minimal:
+  stage: build
   image: tollerort.desy.de/hub.docker.com/fedora:latest
   variables:
     NUM_CPUS_AVAILABLE: 2
-
   script:
-    - dnf update -y && dnf group install -y development-tools &&
-      dnf install -y gsl-devel flex bison cmake meson
-    - meson setup build -Dhdf5=disabled --wrap-mode=nofallback && ninja -j $NUM_CPUS_AVAILABLE -C build && ninja -j $NUM_CPUS_AVAILABLE -C build test
-
+    - dnf update -y
+    - dnf group install -y development-tools
+    - dnf install -y gsl-devel flex bison cmake meson
+    - meson setup build -Dhdf5=disabled --wrap-mode=nofallback
+    - ninja -j $NUM_CPUS_AVAILABLE -C build
+    - ninja -j $NUM_CPUS_AVAILABLE -C build test
   artifacts:
     when: always
     paths:
@@ -109,8 +110,12 @@ build-and-test-minimal:
     reports:
       junit: build/meson-logs/testlog.junit.xml
 
-build-brew-macos:
-  dependencies: []
+
+macos-brew:
+  stage: build
+  parallel:
+    matrix:
+     - TAG: ["macOS", "macMini"]
   tags:
     - $TAG
   variables:
@@ -125,78 +130,93 @@ build-brew-macos:
     - brew uninstall -v -f crystfel
     - brew untap -f desy/crystfel
     - brew untrust https://gitlab.desy.de/thomas.white/homebrew-crystfel.git/
+
+
+macos-manualbuild:
+  stage: build
   parallel:
     matrix:
      - TAG: ["macOS", "macMini"]
-
-build-macos:
-  dependencies: []
   tags:
     - $TAG
   variables:
     GIT_STRATEGY: clone
   script:
-    - brew install bison meson ninja pkg-config argp-standalone cairo fftw gdk-pixbuf gsl gtk+3 hdf5 pango eigen@3 pandoc
+    - brew install bison meson ninja pkg-config argp-standalone cairo fftw
+                   gdk-pixbuf gsl gtk+3 hdf5 pango eigen@3 pandoc
     - export PATH="$(brew --prefix)/opt/bison/bin:$PATH"
-    - meson setup build -Dc_args="-I$(brew --prefix)/include" -Dc_link_args="-L$(brew --prefix)/lib" -Dcpp_link_args="-L$(brew --prefix)/lib"
+    - meson setup build -Dc_args="-I$(brew --prefix)/include"
+                        -Dc_link_args="-L$(brew --prefix)/lib"
+                        -Dcpp_link_args="-L$(brew --prefix)/lib"
     - meson compile -C build
     - meson test -C build
-  parallel:
-    matrix:
-     - TAG: ["macOS", "macMini"]
 
-build-and-package-rpm:
+
+rpm:
+  stage: package
   image: $CI_REGISTRY_IMAGE/$PLATFORM
   variables:
     GIT_STRATEGY: clone
-
+  parallel:
+    matrix:
+      - PLATFORM: ["alma9","alma10","fedora"]
   script:
-    - |
-      VERSION=${CI_COMMIT_TAG#v}
-      dnf -y install rpmdevtools
-      rpmdev-setuptree
-      if [ $PLATFORM = "fedora" ];
+    - VERSION=${CI_COMMIT_TAG#v}
+    - dnf -y install rpmdevtools
+    - rpmdev-setuptree
+    - if [ $PLATFORM = "fedora" ];
       then
           mkdir -p /root/rpmbuild/BUILD/crystfel-${VERSION}-build ;
           ln -v -s  /builds/thomas.white/crystfel  /root/rpmbuild/BUILD/crystfel-${VERSION}-build/crystfel-${VERSION} ;
       fi
-
-      rpmbuild -v -ba  deployment/os_native/rpm/crystfelrpm.spec --define "version_from_tag ${VERSION}"  --build-in-place
-      rpm -qp --requires /root/rpmbuild/RPMS/x86_64/crystfel*.rpm
-      cp  /root/rpmbuild/RPMS/x86_64/crystfel*.rpm  ./
-
+    - rpmbuild -v -ba  deployment/os_native/rpm/crystfelrpm.spec --define "version_from_tag ${VERSION}"  --build-in-place
+    - rpm -qp --requires /root/rpmbuild/RPMS/x86_64/crystfel*.rpm
+    - cp  /root/rpmbuild/RPMS/x86_64/crystfel*.rpm  ./
   artifacts:
     paths:
       - ./crystfel*.rpm
-      - build/meson-logs/testlog.junit.xml
-    reports:
-      junit: build/meson-logs/testlog.junit.xml
     when: on_success
-    expire_in: 1 day
-
-  parallel:
-    matrix:
-      - PLATFORM:  ["alma9","alma10","fedora"]
   rules:
     - if: ($CI_COMMIT_TAG)
-    
-deploy-remote-maxwell:
+
+
+container:
+  stage: package
+  only:
+    - master
+  image:
+    name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+  when: manual
+  variables:
+    IMAGE: "crystfel"
+    IMAGE_TAG_LATEST: "latest"
+    IMAGE_TAG_SHA: $CI_COMMIT_SHORT_SHA
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    NUM_CPUS_AVAILABLE: 2
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor
+         --context $CI_PROJECT_DIR
+         --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile
+         --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
+         --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
+         --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE
+
+
+maxwell:
   stage: deploy
-  image: $CI_REGISTRY_IMAGE/alma9
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
   dependencies:
-    - "build-and-test: [alma9]"
+    - "linux: [alma9]"
+  image: $CI_REGISTRY_IMAGE/alma9
   variables:
     GIT_STRATEGY: clone
   tags:
     - DESY-intern
   before_script:
-  ##
-  ## Run ssh-agent (inside the build environment)
-  ## Give the right permissions, otherwise ssh-add will refuse to add files
-  ## Add the SSH key stored in MAXWELL_SSH_PRIVATE_KEY file type CI/CD variable to the agent store
-  ## Create the SSH directory and give it the right permissions
-  ## If MAXWELL_SSH_PRIVATE_KEY is not set then use $MAXWELL_USER_NAME and $MAXWELL_ACCOUNT_PASSWORD
-  ## to connect using Kerberos.
     - HOST="max-wgs";
     - PREFIX="alma9";
     - if [ $MAXWELL_SSH_PRIVATE_KEY ]; then
@@ -206,69 +226,5 @@ deploy-remote-maxwell:
       else
         echo $MAXWELL_ACCOUNT_PASSWORD | kinit $MAXWELL_USER_NAME@DESY.DE;
       fi
-
   script:
     - deployment/deploy-to-maxwell.sh "$MAXWELL_USER_NAME" "$HOST" "$PREFIX"
-
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-
-build_container_image:
-  stage: build_container
-  dependencies: []
-  only:
-    - master
-  image:
-    name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
-    entrypoint: [ "" ]
-
-  variables:
-    IMAGE: "crystfel"
-    IMAGE_TAG_LATEST: "latest"
-    IMAGE_TAG_SHA: $CI_COMMIT_SHORT_SHA
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    NUM_CPUS_AVAILABLE: 2
-
-  script:
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - >
-      /kaniko/executor
-      --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile
-      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
-      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
-      --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE
-
-  tags:
-    - kubernetes
-
-  when: manual
-
-build_container_image_tag:
-  stage: build_container
-  image:
-    name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
-    entrypoint: [ "" ]
-
-  variables:
-    IMAGE: "crystfel"
-    IMAGE_TAG_VER: $CI_COMMIT_TAG
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    NUM_CPUS_AVAILABLE: 2
-
-  script:
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - >
-      /kaniko/executor
-      --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile
-      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_VER
-
-  tags:
-    - kubernetes
-
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: manual
