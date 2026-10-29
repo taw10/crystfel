@@ -6,35 +6,16 @@ stages:
 
 build_dev_images:
   stage: build
-  dependencies: []
-  image:
-    name: tollerort.desy.de/gcr.io/kaniko-project/executor:debug
-    entrypoint: [ "" ]
-
   variables:
-    IMAGE_TAG_LATEST: "latest"
-    IMAGE_TAG_SHA: $CI_COMMIT_SHORT_SHA
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    NUM_CPUS_AVAILABLE: 2
-
+    TAG: $CI_REGISTRY_IMAGE/$IMAGE:latest
+    NUM_CPUS_AVAILABLE: 8
   script:
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - >
-      /kaniko/executor
-      --context $CI_PROJECT_DIR
-      --dockerfile $CI_PROJECT_DIR/deployment/docker/Dockerfile_$IMAGE
-      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_LATEST
-      --destination $CI_REGISTRY_IMAGE/$IMAGE:$IMAGE_TAG_SHA
-      --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE
-
+    - docker buildx build --output type=image,push=true,name=$TAG,compression=zstd -f $CI_PROJECT_DIR/deployment/docker/Dockerfile_$IMAGE --build-arg NUM_CPUS_AVAILABLE=$NUM_CPUS_AVAILABLE .
   tags:
-    - kubernetes
-
+    - vm-runner
   parallel:
     matrix:
      - IMAGE: ["centos7","alma9","alma10","fedora","ubuntu"]
-
   when: manual
 
 # A separate job for now, might be merged with build-and-test?
