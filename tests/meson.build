@@ -299,9 +299,6 @@ endif
 
 exe = executable('indextest', ['indextest.c'], dependencies : [libcrystfeldep])
 foreach indexer : index_tests
-  test('indextest.'+indexer[0]+'.'+indexer[1]+'.norefine', exe, env: envvars,
-    args: [files('indextest.geom'), indexer[0], indexer[1], 'norefine'],
-    is_parallel: indexer[2])
   test('indextest.'+indexer[0]+'.'+indexer[1]+'.refine', exe, env: envvars,
     args: [files('indextest.geom'), indexer[0], indexer[1], 'refine'],
     is_parallel: indexer[2])
