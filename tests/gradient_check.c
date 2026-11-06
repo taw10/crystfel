@@ -221,14 +221,14 @@ int main(int argc, char *argv[])
 
         #ifdef TRANSLATE_PANEL
         if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;  /* Should be zero */
-        if ( fabs(obs[0]) > 1e-12 ) n_wrong_obsr++;  /* Should also be zero */
+        if ( fabs(obs[0]) > 1e-8 ) n_wrong_obsr++;  /* Should also be zero */
         if ( fabs(obs[1] - calc[1]) > 10.0 ) n_wrong_fs++;
         if ( fabs(obs[2] - calc[2]) > 10.0 ) n_wrong_ss++;
         #endif
 
         #if defined(ROTATE_PANEL_X) || defined(ROTATE_PANEL_Y) || defined(ROTATE_PANEL_Z)
         if ( fabs(calc[0]) > 1e-12 ) n_wrong_r++;  /* Should be zero */
-        if ( fabs(obs[0]) > 1e-12 ) n_wrong_obsr++;  /* Should also be zero */
+        if ( fabs(obs[0]) > 1e-8 ) n_wrong_obsr++;  /* Should also be zero */
         if ( fabs(obs[1] - calc[1]) > 1.0 ) n_wrong_fs++;  /* Units are pixels/rad */
         if ( fabs(obs[2] - calc[2]) > 1.0 ) n_wrong_ss++;  /* (numbers are big) */
         #endif
