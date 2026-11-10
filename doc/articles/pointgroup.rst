@@ -434,11 +434,11 @@ is *2* (unique axis *b*), but the apparent symmetry is *222*.
 Things can get even more complicated than this, and some very "interesting"
 ambiguities have turned up over the years.  CrystFEL's ``cell_tool`` utility
 can analyse your unit cell and spot possible ambiguities.  See `the manual
-<https://desy.de/~twhite/crystfel/manual-cell_tool.html>`_ for details.
+<https://crystfel.pages.desy.de/manual-cell_tool.html>`_ for details.
 
 Crystal structures seem to have a way of finding new ways to cause trouble.
 So, if things are still not working, or if you're just confused, we're happy to
-help.  Just send an email!  See the `contact <https://desy.de/~twhite/crystfel/contact.html>`_
+help.  Just send an email!  See the `contact <https://crystfel.pages.desy.de/contact.html>`_
 page on the CrystFEL website for details.
 
 **Good luck, and may all your indexing be unambiguous!**

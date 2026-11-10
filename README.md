@@ -26,7 +26,7 @@ GUI.
 
 For command-line use, standard ```man``` pages are available.  Start with
 ```man crystfel```.  The manual pages are also
-[available on the web](https://www.desy.de/~twhite/crystfel/manual.html).
+[available on the web](https://crystfel.pages.desy.de/manual.html).
 
 
 Documentation
@@ -45,7 +45,7 @@ Documentation
 * [Examples folder](doc/examples) - contains some template input files.
 * [Contributing to CrystFEL](CONTRIBUTING.md) - including how to cite CrystFEL
   and how to find good first issues to work on.
-* [Citation list](https://www.desy.de/~twhite/crystfel/citations.html) - please
+* [Citation list](https://crystfel.pages.desy.de/citations.html) - please
   send us details of your paper, if it's missing!
 * [Scripts folder](scripts) - a miscellany of smaller programs to help at
   various stages of data processing.
@@ -69,7 +69,7 @@ Journal articles and book chapters
   most other articles, which introduce the physical aspects for biologists!).
 * [Original paper about CrystFEL](http://dx.doi.org/10.1107/S0021889812002312)
   from 2012.  Not open access, but a "reprint" is available
-  [here](https://www.desy.de/~twhite/crystfel/db5097-reprint.pdf).
+  [here](https://crystfel.pages.desy.de/db5097-reprint.pdf).
 * [Climbing the Data Mountain: Processing of SFX
   Data](https://link.springer.com/chapter/10.1007/978-3-030-00551-1_7) -
   emphasizes data volume issues for XFELs.  Unfortunately not open access.

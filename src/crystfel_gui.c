@@ -818,7 +818,7 @@ static gint about_sig(GtkWidget *widget, struct crystfelproject *proj)
         "© 2020-2026 Deutsches Elektronen-Synchrotron DESY, "
         "a research centre of the Helmholtz Association.");
     gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
-        "https://www.desy.de/~twhite/crystfel");
+        "https://crystfel.pages.desy.de");
 
     gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
     gtk_about_dialog_add_credit_section(GTK_ABOUT_DIALOG(window),

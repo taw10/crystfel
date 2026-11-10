@@ -4,7 +4,7 @@ Contributing to CrystFEL
 Citing CrystFEL
 ---------------
 
-The easiest way to ensure the future of CrystFEL is to use it and cite it in your publications.  If your paper doesn't already appear on the [citations page](https://www.desy.de/~twhite/crystfel/citations.html), or if the information there is incomplete, be sure to get in touch about it.  Citing any of the following papers should be enough to trigger your paper's inclusion in the list:
+The easiest way to ensure the future of CrystFEL is to use it and cite it in your publications.  If your paper doesn't already appear on the [citations page](https://crystfel.pages.desy.de/citations.html), or if the information there is incomplete, be sure to get in touch about it.  Citing any of the following papers should be enough to trigger your paper's inclusion in the list:
 
 * T. A. White. "Processing serial crystallography data with CrystFEL: a step-by-step guide". Acta Cryst. D75 (2019).  [doi:10.1107/S205979831801238X](https://doi.org/10.1107/S205979831801238X)
 * T. A. White, V. Mariani, W. Brehm, O. Yefanov, A. Barty, K. R. Beyerlein, F. Chervinskii, L. Galli, C. Gati, T. Nakane, A. Tolstikova, K. Yamashita, C. H. Yoon, K. Diederichs and H. N. Chapman. "Recent developments in CrystFEL". J. Applied Crystallography 49 (2016) p680-689.  [doi:10.1107/S1600576716004751](http://dx.doi.org/10.1107/S1600576716004751)

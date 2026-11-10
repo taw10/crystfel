@@ -1642,7 +1642,7 @@ static gint about_sig(GtkWidget *widget, CellWindow *w)
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(window),
         "Examine unit cell distributions");
     gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(window),
-        "https://www.desy.de/~twhite/crystfel");
+        "https://crystfel.pages.desy.de");
     gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(window), authors);
 
     g_signal_connect(window, "response", G_CALLBACK(gtk_widget_destroy),

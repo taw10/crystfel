@@ -27,7 +27,7 @@ you ever need to, you can remove the CrystFEL package in the usual way::
     (@v1.9) pkg> rm CrystFEL
 
 The Julia package for CrystFEL is a fairly thin wrapper around the
-`libcrystfel C API <https://www.desy.de/~twhite/crystfel/reference/index.html>`_,
+`libcrystfel C API <https://crystfel.pages.desy.de/reference/index.html>`_,
 so you can read the API documentation for some idea of the possibilities.
 Below is a brief overview.
 

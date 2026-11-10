@@ -166,7 +166,7 @@ Flick through a few images and check that everything makes sense:
   the frame, as well as a for many horizontal and vertical lines criss-crossing
   each of the detector panels.  These pixels have been masked out in the
   geometry file (see
-  `man crystfel_geometry <https://www.desy.de/~twhite/crystfel/manual-crystfel_geometry.html>`_
+  `man crystfel_geometry <https://crystfel.pages.desy.de/manual-crystfel_geometry.html>`_
   for details), and therefore show up in a dark brown colour.  If you zoom in
   closely, you will see that the pixel values are be in parentheses.
 

@@ -824,7 +824,7 @@ struct indexamajig_arguments *parse_indexamajig_args(int argc, char *argv[])
 
     static char doc[] = "Index and integrate snapshot diffraction images.\v"
                         "For more information including a tutorial, visit "
-                        "https://www.desy.de/~twhite/crystfel";
+                        "https://crystfel.pages.desy.de";
 
     static struct argp_option options[] = {
 

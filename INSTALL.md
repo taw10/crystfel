@@ -17,7 +17,7 @@ as well as a [text tutorial](doc/articles/tutorial.rst).
 Supported installations at facilities
 -------------------------------------
 
-First, check the [list of facility installations](https://www.desy.de/~twhite/crystfel/facilities.html)
+First, check the [list of facility installations](https://crystfel.pages.desy.de/facilities.html)
 to find out if there's already a CrystFEL installation available at your site.
 
 If you want to use CrystFEL on a facility computer system, we recommend leaving
@@ -123,7 +123,7 @@ activate any Conda environment before compiling CrystFEL, not even the "base"
 environment.  Don't even "source" the Conda setup file before installing
 CrystFEL - keep it completely separate.
 
-Next, download the package from the [downloads page](https://desy.de/~twhite/crystfel/download.html)
+Next, download the package from the [downloads page](https://crystfel.pages.desy.de/download.html)
 and unpack it like this:
 ```
 $ tar -xzf crystfel-0.13.0.tar.gz

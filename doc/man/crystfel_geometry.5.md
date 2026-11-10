@@ -576,7 +576,7 @@ This page was written by Thomas White and Valerio Mariani.
 REPORTING BUGS
 ==============
 
-Report bugs to <taw@physics.org>, or visit <http://www.desy.de/~twhite/crystfel>.
+Report bugs to <taw@physics.org>, or visit <http://crystfel.pages.desy.de>.
 
 
 COPYRIGHT AND DISCLAIMER
