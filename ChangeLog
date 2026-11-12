@@ -10,7 +10,12 @@ Development version (last updated 12 Nov 2026)
 - Fixes/updates for install-indexers script
 - Removal of stream_grep
 - libcrystfel: Install the headers for peakfinder8
-
+- indexamajig: Fix TakeTwo options
+- Bug fix "delete-and-retry" multi-lattice indexing
+- Add unit tests for indexing engines
+- Move XGandalf C++ wrapper into libcrystfel
+- Fix compilation error with XGandalf and PinkIndexer (GitLab #145)
+- Fix geometry file writing with mask_file
 
 
 CrystFEL version 0.13.0, 10 August 2026
