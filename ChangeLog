@@ -1,4 +1,4 @@
-Development version (last updated 30 Sep 2026)
+Development version (last updated 12 Nov 2026)
 ----------------------------------------------
 
 - Grand Reindentation (tabs -> 4 spaces)
@@ -9,6 +9,8 @@ Development version (last updated 30 Sep 2026)
 - Add man page for unit cell file (Kevin Dalton)
 - Fixes/updates for install-indexers script
 - Removal of stream_grep
+- libcrystfel: Install the headers for peakfinder8
+
 
 
 CrystFEL version 0.13.0, 10 August 2026
