@@ -98,56 +98,6 @@ void early_rejection(struct crystal_refls *crystals, int n)
 }
 
 
-static int calculate_refl_mean_var(RefList *full)
-{
-    Reflection *refl;
-    RefListIterator *iter;
-    signed int oh = 0;
-    signed int ok = 0;
-    signed int ol = 0;
-
-    /* Iterate over all reflections */
-    for ( refl = first_refl(full, &iter);
-          refl != NULL;
-          refl = next_refl(refl, iter) )
-    {
-        struct reflection_contributions *c;
-        int j;
-        signed int h, k, l;
-        double K;
-        double Ex = 0.0;
-        double Ex2 = 0.0;
-
-        get_indices(refl, &h, &k, &l);
-
-        /* next_refl() will iterate over multiple copies of the same
-         * unique reflection, but we are only interested in seeing each
-         * unique reflection once. */
-        if ( (h==oh) && (k==ok) && (l==ol) ) continue;
-        oh = h;  ok = k;  ol = l;
-
-        K = get_unweighted_mean(refl);
-
-        c = get_contributions(refl);
-        if ( c == NULL ) return 1;
-
-        /* Mean of contributions */
-        for ( j=0; j<c->n_contrib; j++ ) {
-            double Ii = c->contribs[j];
-            Ex += Ii - K;
-            Ex2 += (Ii - K) * (Ii - K);
-        }
-
-        if ( c->n_contrib < 2 ) continue;
-
-        set_temp1(refl, Ex);
-        set_temp2(refl, Ex2);
-    }
-
-    return 0;
-}
-
-
 static double calculate_cchalf(RefList *template, RefList *full,
                                Crystal *exclude, int *pnref)
 {
@@ -155,13 +105,12 @@ static double calculate_cchalf(RefList *template, RefList *full,
     RefListIterator *iter;
     double sig2E, sig2Y;
     int n = 0;
-    double wSum = 0.0;
-    double mean = 0.0;
-    double S = 0.0;
-    double all_sum_var = 0.0;
     signed int oh = 0;
     signed int ok = 0;
     signed int ol = 0;
+    double *means = NULL;
+    double *variances = NULL;
+    int max_n = 0;
 
     /* "template" is the list of reflections to be included in CChalf */
     for ( trefl = first_refl(template, &iter);
@@ -169,14 +118,13 @@ static double calculate_cchalf(RefList *template, RefList *full,
           trefl = next_refl(trefl, iter) )
     {
         signed int h, k, l;
-        double refl_mean, refl_var;
-        double Ex, Ex2, K;
         int n_removed = 0;
-        double w = 1.0;
-        double meanOld;
         struct reflection_contributions *c;
         Reflection *refl;
         Reflection *exrefl;
+        double this_mean;
+        double this_var;
+        double K;
 
         /* The values we need are stored in the "full" list, not the
          * template list */
@@ -190,19 +138,20 @@ static double calculate_cchalf(RefList *template, RefList *full,
                                         * been enough measurements for
                                         * it to appear in "full" */
 
+        c = get_contributions(refl);
+        assert(c != NULL);
+
         /* We use the mean (merged) intensity as the reference point
          * for shifting the data in the variance calculation */
         K = get_unweighted_mean(refl);
-        Ex = get_temp1(refl);
-        Ex2 = get_temp2(refl);
-        c = get_contributions(refl);
-        assert(c != NULL);
+        this_mean = K;
+        this_var = gsl_stats_variance_m(c->contribs, 1, c->n_contrib, K);
 
         /* Remove contribution(s) from the excluded crystal.
          * If the crystal is marked as bad, we should not remove it
          * because it did not contribute in the first place.  */
         if ( exclude != NULL && !crystal_get_user_flag(exclude) ) {
-            exrefl = find_refl(template, h, k, l);
+            exrefl = find_refl(template, h, k, l);  // FIXME: Should be 'full'?
         } else {
             exrefl = NULL;
         }
@@ -221,10 +170,15 @@ static double calculate_cchalf(RefList *template, RefList *full,
                 double Ii = correct_reflection(get_intensity(exrefl), exrefl, G, B, res);
 
                 /* Remove contribution of this reflection */
-                Ex -= Ii - K;
-                Ex2 -= (Ii - K)*(Ii - K);
+                this_mean *= c->n_contrib-n_removed-1;
+                this_var *= c->n_contrib-n_removed;
+
+                this_var -= (Ii - K)*(Ii - K);
+                this_mean -= Ii;
 
                 n_removed++;
+                this_var /= c->n_contrib-n_removed-1;
+                this_mean /= c->n_contrib-n_removed;
 
             }
 
@@ -233,22 +187,26 @@ static double calculate_cchalf(RefList *template, RefList *full,
 
         if ( c->n_contrib - n_removed < 2 ) continue;
 
-        refl_mean = K + (Ex / (c->n_contrib - n_removed));
-        refl_var = (Ex2 - (Ex*Ex)/(c->n_contrib - n_removed)) / (c->n_contrib - n_removed - 1);
-        refl_var /= (c->n_contrib - n_removed) / 2.0;
-
-        all_sum_var += refl_var;
+        if ( n >= max_n ) {
+            max_n += 1024;
+            means = realloc(means, max_n*sizeof(double));
+            variances = realloc(variances, max_n*sizeof(double));
+            if ( (means == NULL) || (variances == NULL) ) {
+                ERROR("Failed to allocate memory for CChalf calculation\n");
+                return NAN;
+            }
+        }
+        means[n] = this_mean;
+        variances[n] = this_var / ((c->n_contrib - n_removed)/2.0);
         n++;
 
-        /* Running variance calculation to get sig2Y */
-        wSum += w;
-        meanOld = mean;
-        mean = meanOld + (w/wSum) * (refl_mean - meanOld);
-        S += w * (refl_mean - meanOld) * (refl_mean - mean);
     }
 
-    sig2E = all_sum_var / n;
-    sig2Y = S / (wSum - 1.0);
+    sig2E = gsl_stats_mean(variances, 1, n);
+    sig2Y = gsl_stats_variance(means, 1, n);
+
+    free(variances);
+    free(means);
 
     if ( pnref != NULL ) {
         *pnref = n;
@@ -352,12 +310,6 @@ static void check_deltacchalf(struct crystal_refls *crystals, int n,
     double mean, sd;
     int nref = 0;
     struct deltacchalf_queue_args qargs;
-
-    if ( calculate_refl_mean_var(full) ) {
-        STATUS("No reflection contributions for deltaCChalf "
-               "calculation (using reference reflections?)\n");
-        return;
-    }
 
     cchalf = calculate_cchalf(full, full, NULL, &nref);
     STATUS("Overall CChalf = %f %% (%i reflections)\n", cchalf*100.0, nref);
