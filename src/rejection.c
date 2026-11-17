@@ -99,7 +99,7 @@ void early_rejection(struct crystal_refls *crystals, int n)
 
 
 static double calculate_cchalf(RefList *template, RefList *full,
-                               Crystal *exclude, int *pnref)
+                               int crystal_number, int do_exclude, int *pnref)
 {
     Reflection *trefl;
     RefListIterator *iter;
@@ -108,9 +108,14 @@ static double calculate_cchalf(RefList *template, RefList *full,
     signed int oh = 0;
     signed int ok = 0;
     signed int ol = 0;
+
     double *means = NULL;
     double *variances = NULL;
     int max_n = 0;
+
+    double *Ii = NULL;
+    double *weights = NULL;
+    int max_I = 0;
 
     /* "template" is the list of reflections to be included in CChalf */
     for ( trefl = first_refl(template, &iter);
@@ -118,13 +123,11 @@ static double calculate_cchalf(RefList *template, RefList *full,
           trefl = next_refl(trefl, iter) )
     {
         signed int h, k, l;
-        int n_removed = 0;
         struct reflection_contributions *c;
         Reflection *refl;
-        Reflection *exrefl;
-        double this_mean;
-        double this_var;
-        double K;
+        int ninc = 0;
+        int i;
+        int n_would_inc = 0;
 
         /* The values we need are stored in the "full" list, not the
          * template list */
@@ -134,58 +137,22 @@ static double calculate_cchalf(RefList *template, RefList *full,
         oh = h;  ok = k;  ol = l;
 
         refl = find_refl(full, h, k, l);
-        if ( refl == NULL ) continue;  /* However, there might not have
+        if ( refl == NULL ) continue;  /* There might not have
                                         * been enough measurements for
                                         * it to appear in "full" */
 
         c = get_contributions(refl);
         assert(c != NULL);
 
-        /* We use the mean (merged) intensity as the reference point
-         * for shifting the data in the variance calculation */
-        K = get_unweighted_mean(refl);
-        this_mean = K;
-        this_var = gsl_stats_variance_m(c->contribs, 1, c->n_contrib, K);
-
-        /* Remove contribution(s) from the excluded crystal.
-         * If the crystal is marked as bad, we should not remove it
-         * because it did not contribute in the first place.  */
-        if ( exclude != NULL && !crystal_get_user_flag(exclude) ) {
-            exrefl = find_refl(template, h, k, l);  // FIXME: Should be 'full'?
-        } else {
-            exrefl = NULL;
-        }
-
-        while ( exrefl != NULL ) {
-
-            double G, B, res;
-
-            G = crystal_get_osf(exclude);
-            B = crystal_get_Bfac(exclude);
-            res = resolution(crystal_get_cell(exclude), h, k, l);
-
-            if ( get_partiality(exrefl) > MIN_PART_MERGE ) {
-
-                /* FIXME: Wrong? */
-                double Ii = correct_reflection(get_intensity(exrefl), exrefl, G, B, res);
-
-                /* Remove contribution of this reflection */
-                this_mean *= c->n_contrib-n_removed-1;
-                this_var *= c->n_contrib-n_removed;
-
-                this_var -= (Ii - K)*(Ii - K);
-                this_mean -= Ii;
-
-                n_removed++;
-                this_var /= c->n_contrib-n_removed-1;
-                this_mean /= c->n_contrib-n_removed;
-
+        if ( c->n_contrib > max_I ) {
+            Ii = realloc(Ii, c->n_contrib*sizeof(double));
+            weights = realloc(weights, c->n_contrib*sizeof(double));
+            max_I = c->n_contrib;
+            if ( (Ii == NULL) || (weights == NULL) ) {
+                ERROR("Failed to allocate memory for CChalf calculation\n");
+                return NAN;
             }
-
-            exrefl = next_found_refl(exrefl);
         }
-
-        if ( c->n_contrib - n_removed < 2 ) continue;
 
         if ( n >= max_n ) {
             max_n += 1024;
@@ -196,14 +163,38 @@ static double calculate_cchalf(RefList *template, RefList *full,
                 return NAN;
             }
         }
-        means[n] = this_mean;
-        variances[n] = this_var / ((c->n_contrib - n_removed)/2.0);
+
+        for ( i=0; i<c->n_contrib; i++ ) {
+
+            int is_crystal = (c->contrib_crystal_idxs[i] == crystal_number);
+
+            if ( !do_exclude && !is_crystal ) n_would_inc++;
+            if ( do_exclude && is_crystal ) continue;
+
+            Ii[ninc] = c->contribs[i];
+            weights[ninc] = c->contrib_legacy_weights[i];
+            ninc++;
+
+        }
+
+        if ( ninc < 2 ) continue;
+
+        /* Even if we are not excluding a crystal, we need to make sure that
+         * the calculation uses the same reflections that would be considered
+         * if we were excluding. */
+        if ( !do_exclude && n_would_inc < 2 ) continue;
+
+        means[n] = gsl_stats_wmean(weights, 1, Ii, 1, ninc);
+        variances[n] = gsl_stats_wvariance_m(weights, 1, Ii, 1, ninc, means[n])/(ninc/2.0);
         n++;
 
     }
 
     sig2E = gsl_stats_mean(variances, 1, n);
     sig2Y = gsl_stats_variance(means, 1, n);
+
+    free(Ii);
+    free(weights);
 
     free(variances);
     free(means);
@@ -231,7 +222,6 @@ struct deltacchalf_queue_args
 struct deltacchalf_worker_args
 {
     RefList *full;
-    Crystal *crystal;
     RefList *refls;
     int crystal_number;
     int non;
@@ -248,7 +238,6 @@ static void *create_deltacchalf_job(void *vqargs)
     wargs = malloc(sizeof(struct deltacchalf_worker_args));
 
     wargs->full = qargs->full;
-    wargs->crystal = qargs->crystals[qargs->n_started].cr;
     wargs->refls = qargs->crystals[qargs->n_started].refls;
     wargs->crystal_number = qargs->n_started;
     wargs->non = 0;
@@ -266,8 +255,8 @@ static void run_deltacchalf_job(void *vwargs, int cookie)
     struct deltacchalf_worker_args *wargs = vwargs;
     int nref1 = 0;
     int nref2 = 0;
-    cchalf = calculate_cchalf(wargs->refls, wargs->full, NULL, &nref1);
-    cchalfi = calculate_cchalf(wargs->refls, wargs->full, wargs->crystal, &nref2);
+    cchalf = calculate_cchalf(wargs->refls, wargs->full, wargs->crystal_number, 0, &nref1);
+    cchalfi = calculate_cchalf(wargs->refls, wargs->full, wargs->crystal_number, 1, &nref2);
     assert(nref1 == nref2);
     //STATUS("Frame %i:", wargs->crystal_number);
     //STATUS("   With = %f  ", cchalf*100.0);
@@ -311,7 +300,7 @@ static void check_deltacchalf(struct crystal_refls *crystals, int n,
     int nref = 0;
     struct deltacchalf_queue_args qargs;
 
-    cchalf = calculate_cchalf(full, full, NULL, &nref);
+    cchalf = calculate_cchalf(full, full, -1, 0, &nref);
     STATUS("Overall CChalf = %f %% (%i reflections)\n", cchalf*100.0, nref);
 
     vals = malloc(n*sizeof(double));
