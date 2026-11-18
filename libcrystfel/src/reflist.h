@@ -91,6 +91,7 @@ struct reflection_contributions
     double      *contribs;
     double      *contrib_esds;
     double      *contrib_legacy_weights;
+    int         *contrib_crystal_idxs;
 };
 
 extern RefList *reflist_new(void);

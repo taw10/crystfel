@@ -99,9 +99,11 @@ static int alloc_contribs(struct reflection_contributions *c)
     c->contribs = realloc(c->contribs, c->max_contrib*sizeof(double));
     c->contrib_esds = realloc(c->contrib_esds, c->max_contrib*sizeof(double));
     c->contrib_legacy_weights = realloc(c->contrib_legacy_weights, c->max_contrib*sizeof(double));
+    c->contrib_crystal_idxs = realloc(c->contrib_crystal_idxs, c->max_contrib*sizeof(int));
     if ( c->contribs == NULL ) return 1;
     if ( c->contrib_esds == NULL ) return 1;
     if ( c->contrib_legacy_weights == NULL ) return 1;
+    if ( c->contrib_crystal_idxs == NULL ) return 1;
     return 0;
 }
 
@@ -143,6 +145,7 @@ static Reflection *get_locked_reflection(RefList *list, pthread_rwlock_t *lock,
                 c->contribs = NULL;
                 c->contrib_esds = NULL;
                 c->contrib_legacy_weights = NULL;
+                c->contrib_crystal_idxs = NULL;
                 if ( alloc_contribs(c) ) {
                     set_contributions(f, NULL);
                 } else {
@@ -240,6 +243,7 @@ static void run_merge_job(void *vwargs, int cookie)
             c->contribs[c->n_contrib] = Ii;
             c->contrib_esds[c->n_contrib] = esdIi;
             c->contrib_legacy_weights[c->n_contrib] = legacy_weight;
+            c->contrib_crystal_idxs[c->n_contrib] = wargs->crystal_number;
             c->n_contrib++;
             if ( c->n_contrib == c->max_contrib ) {
                 c->max_contrib += 64;
@@ -318,6 +322,7 @@ RefList *merge_intensities(struct crystal_refls *crystals, int n,
             free(c->contribs);
             free(c->contrib_esds);
             free(c->contrib_legacy_weights);
+            free(c->contrib_crystal_idxs);
             free(c);
 
             continue;
