@@ -306,15 +306,17 @@ static void run_deltacchalf_job(void *vwargs, int cookie)
 {
     double cchalf, cchalfi;
     struct deltacchalf_worker_args *wargs = vwargs;
-    int nref = 0;
-    cchalf = calculate_cchalf(wargs->refls, wargs->full, NULL, &nref);
-    cchalfi = calculate_cchalf(wargs->refls, wargs->full, wargs->crystal, &nref);
-    //STATUS("Frame %i:", i);
+    int nref1 = 0;
+    int nref2 = 0;
+    cchalf = calculate_cchalf(wargs->refls, wargs->full, NULL, &nref1);
+    cchalfi = calculate_cchalf(wargs->refls, wargs->full, wargs->crystal, &nref2);
+    assert(nref1 == nref2);
+    //STATUS("Frame %i:", wargs->crystal_number);
     //STATUS("   With = %f  ", cchalf*100.0);
     //STATUS("Without = %f", cchalfi*100.0);
     //STATUS("  Delta = %f  ", (cchalf - cchalfi)*100.0);
-    //STATUS("(nref = %i)\n", nref);
-    if ( nref == 0 ) {
+    //STATUS("(nref = %i)\n", nref1);
+    if ( nref1 == 0 ) {
         wargs->deltaCChalf = 0.0;
         wargs->non = 1;
     } else {
