@@ -141,6 +141,8 @@ static double calculate_cchalf(RefList *template, RefList *full,
                                         * been enough measurements for
                                         * it to appear in "full" */
 
+        if ( get_intensity(refl) < 3.0*get_esd_intensity(refl) ) continue;
+
         c = get_contributions(refl);
         assert(c != NULL);
 
@@ -301,7 +303,7 @@ static void check_deltacchalf(struct crystal_refls *crystals, int n,
     struct deltacchalf_queue_args qargs;
 
     cchalf = calculate_cchalf(full, full, -1, 0, &nref);
-    STATUS("Overall CChalf = %f %% (%i reflections)\n", cchalf*100.0, nref);
+    STATUS("Overall CChalf = %f %% (%i reflections with I/sigI>3)\n", cchalf*100.0, nref);
 
     vals = malloc(n*sizeof(double));
     if ( vals == NULL ) {
