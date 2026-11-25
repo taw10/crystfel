@@ -114,6 +114,18 @@ exe = executable('prof2d_check',
 test('prof2d_check', exe)
 
 
+exe = executable('deltacchalf',
+                 ['deltacchalf.c',
+                  '../src/error_model.c',
+                  '../src/merge.c',
+                  '../src/rejection.c',
+                  '../src/post-refinement.c',
+                  '../src/scaling.c',
+                  versionc],
+                 dependencies: [mdep, libcrystfeldep],
+                 install: false)
+test('deltacchalf', exe)
+
 # Refinement gradient checks, part 1: panel translations
 panel_gradient_tests = [['gradient_panel_x', 'cnx', 'GPARAM_DET_TX'],
                         ['gradient_panel_y', 'cny', 'GPARAM_DET_TY'],
