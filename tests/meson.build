@@ -122,7 +122,7 @@ exe = executable('deltacchalf',
                   '../src/post-refinement.c',
                   '../src/scaling.c',
                   versionc],
-                 dependencies: [mdep, libcrystfeldep],
+                 dependencies: [mdep, libcrystfeldep, pthreaddep],
                  install: false)
 test('deltacchalf', exe)
 
