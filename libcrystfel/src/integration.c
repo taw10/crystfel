@@ -258,6 +258,8 @@ static void show_peak_box(struct intcontext *ic, struct peak_box *bx,
     printf("-------- Start of integration diagnostics\n");
     printf("Indices %i %i %i\nPanel %s\nPosition fs = %.1f, ss = %.1f\n\n",
            h, k, l, bx->p->name, fs, ss);
+    printf("File %s\n", ic->image->filename);
+    printf("Frame %s\n", ic->image->ev);
 
     printf("Pixel values:\n");
     for ( q=ic->w-1; q>=0; q-- ) {
